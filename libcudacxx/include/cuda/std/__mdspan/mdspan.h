@@ -472,24 +472,25 @@ private:
 #  if defined(__MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION)
 _CCCL_TEMPLATE(class _ElementType, class... _SizeTypes)
 _CCCL_REQUIRES(__fold_and_v<_CCCL_TRAIT(is_integral, _SizeTypes)...> _CCCL_AND(sizeof...(_SizeTypes) > 0))
-_CCCL_HOST_DEVICE explicit mdspan(_ElementType*,
-                                  _SizeTypes...) -> mdspan<_ElementType, dextents<size_t, sizeof...(_SizeTypes)>>;
+_CCCL_HOST_DEVICE explicit mdspan(_ElementType*, _SizeTypes...)
+  -> mdspan<_ElementType, dextents<size_t, sizeof...(_SizeTypes)>>;
 
 _CCCL_TEMPLATE(class _Pointer)
 _CCCL_REQUIRES(_CCCL_TRAIT(is_pointer, _CUDA_VSTD::remove_reference_t<_Pointer>))
-_CCCL_HOST_DEVICE
-mdspan(_Pointer&&) -> mdspan<_CUDA_VSTD::remove_pointer_t<_CUDA_VSTD::remove_reference_t<_Pointer>>, extents<size_t>>;
+_CCCL_HOST_DEVICE mdspan(_Pointer&&)
+  -> mdspan<_CUDA_VSTD::remove_pointer_t<_CUDA_VSTD::remove_reference_t<_Pointer>>, extents<size_t>>;
 _CCCL_TEMPLATE(class _CArray)
 _CCCL_REQUIRES(_CCCL_TRAIT(is_array, _CArray) _CCCL_AND(rank_v<_CArray> == 1))
 _CCCL_HOST_DEVICE mdspan(_CArray&)
   -> mdspan<_CUDA_VSTD::remove_all_extents_t<_CArray>, extents<size_t, _CUDA_VSTD::extent_v<_CArray, 0>>>;
 
 template <class _ElementType, class _SizeType, size_t _Np>
-_CCCL_HOST_DEVICE mdspan(_ElementType*,
-                         const _CUDA_VSTD::array<_SizeType, _Np>&) -> mdspan<_ElementType, dextents<size_t, _Np>>;
+_CCCL_HOST_DEVICE mdspan(_ElementType*, const _CUDA_VSTD::array<_SizeType, _Np>&)
+  -> mdspan<_ElementType, dextents<size_t, _Np>>;
 
 template <class _ElementType, class _SizeType, size_t _Np>
-_CCCL_HOST_DEVICE mdspan(_ElementType*, _CUDA_VSTD::span<_SizeType, _Np>) -> mdspan<_ElementType, dextents<size_t, _Np>>;
+_CCCL_HOST_DEVICE mdspan(_ElementType*, _CUDA_VSTD::span<_SizeType, _Np>)
+  -> mdspan<_ElementType, dextents<size_t, _Np>>;
 
 // This one is necessary because all the constructors take `data_handle_type`s, not
 // `_ElementType*`s, and `data_handle_type` is taken from `accessor_type::data_handle_type`, which

@@ -21,10 +21,8 @@ _CCCL_DEVICE static inline void tensormap_replace_global_address(space_global_t,
   static_assert(sizeof(_B64) == 8, "");
   NV_IF_ELSE_TARGET(
     NV_HAS_FEATURE_SM_90a,
-    (asm("tensormap.replace.tile.global_address.global.b1024.b64    [%0], %1;"
-         :
-         : "l"(__as_ptr_gmem(__tm_addr)), "l"(__as_b64(__new_val))
-         : "memory");),
+    (asm("tensormap.replace.tile.global_address.global.b1024.b64    [%0], %1;" : : "l"(__as_ptr_gmem(__tm_addr)),
+         "l"(__as_b64(__new_val)) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_tensormap_replace_global_address_is_not_supported_before_SM_90a__();));
@@ -49,10 +47,8 @@ _CCCL_DEVICE static inline void tensormap_replace_global_address(space_shared_t,
   static_assert(sizeof(_B64) == 8, "");
   NV_IF_ELSE_TARGET(
     NV_HAS_FEATURE_SM_90a,
-    (asm("tensormap.replace.tile.global_address.shared::cta.b1024.b64    [%0], %1;"
-         :
-         : "r"(__as_ptr_smem(__tm_addr)), "l"(__as_b64(__new_val))
-         : "memory");),
+    (asm("tensormap.replace.tile.global_address.shared::cta.b1024.b64    [%0], %1;" : : "r"(__as_ptr_smem(__tm_addr)),
+         "l"(__as_b64(__new_val)) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_tensormap_replace_global_address_is_not_supported_before_SM_90a__();));
@@ -77,10 +73,8 @@ _CCCL_DEVICE static inline void tensormap_replace_rank(space_global_t, void* __t
   static_assert(sizeof(_B32) == 4, "");
   NV_IF_ELSE_TARGET(
     NV_HAS_FEATURE_SM_90a,
-    (asm("tensormap.replace.tile.rank.global.b1024.b32              [%0], %1;"
-         :
-         : "l"(__as_ptr_gmem(__tm_addr)), "r"(__as_b32(__new_val))
-         : "memory");),
+    (asm("tensormap.replace.tile.rank.global.b1024.b32              [%0], %1;" : : "l"(__as_ptr_gmem(__tm_addr)),
+         "r"(__as_b32(__new_val)) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_tensormap_replace_rank_is_not_supported_before_SM_90a__();));
@@ -105,10 +99,8 @@ _CCCL_DEVICE static inline void tensormap_replace_rank(space_shared_t, void* __t
   static_assert(sizeof(_B32) == 4, "");
   NV_IF_ELSE_TARGET(
     NV_HAS_FEATURE_SM_90a,
-    (asm("tensormap.replace.tile.rank.shared::cta.b1024.b32              [%0], %1;"
-         :
-         : "r"(__as_ptr_smem(__tm_addr)), "r"(__as_b32(__new_val))
-         : "memory");),
+    (asm("tensormap.replace.tile.rank.shared::cta.b1024.b32              [%0], %1;" : : "r"(__as_ptr_smem(__tm_addr)),
+         "r"(__as_b32(__new_val)) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_tensormap_replace_rank_is_not_supported_before_SM_90a__();));
@@ -135,10 +127,9 @@ tensormap_replace_box_dim(space_global_t, void* __tm_addr, n32_t<_N32> __ord, _B
   static_assert(sizeof(_B32) == 4, "");
   NV_IF_ELSE_TARGET(
     NV_HAS_FEATURE_SM_90a,
-    (asm("tensormap.replace.tile.box_dim.global.b1024.b32           [%0], %1, %2;"
-         :
-         : "l"(__as_ptr_gmem(__tm_addr)), "n"(__ord.value), "r"(__as_b32(__new_val))
-         : "memory");),
+    (asm("tensormap.replace.tile.box_dim.global.b1024.b32           [%0], %1, %2;" : : "l"(__as_ptr_gmem(__tm_addr)),
+         "n"(__ord.value),
+         "r"(__as_b32(__new_val)) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_tensormap_replace_box_dim_is_not_supported_before_SM_90a__();));
@@ -165,10 +156,10 @@ tensormap_replace_box_dim(space_shared_t, void* __tm_addr, n32_t<_N32> __ord, _B
   static_assert(sizeof(_B32) == 4, "");
   NV_IF_ELSE_TARGET(
     NV_HAS_FEATURE_SM_90a,
-    (asm("tensormap.replace.tile.box_dim.shared::cta.b1024.b32           [%0], %1, %2;"
-         :
-         : "r"(__as_ptr_smem(__tm_addr)), "n"(__ord.value), "r"(__as_b32(__new_val))
-         : "memory");),
+    (asm(
+       "tensormap.replace.tile.box_dim.shared::cta.b1024.b32           [%0], %1, %2;" : : "r"(__as_ptr_smem(__tm_addr)),
+       "n"(__ord.value),
+       "r"(__as_b32(__new_val)) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_tensormap_replace_box_dim_is_not_supported_before_SM_90a__();));
@@ -195,10 +186,9 @@ tensormap_replace_global_dim(space_global_t, void* __tm_addr, n32_t<_N32> __ord,
   static_assert(sizeof(_B32) == 4, "");
   NV_IF_ELSE_TARGET(
     NV_HAS_FEATURE_SM_90a,
-    (asm("tensormap.replace.tile.global_dim.global.b1024.b32        [%0], %1, %2;"
-         :
-         : "l"(__as_ptr_gmem(__tm_addr)), "n"(__ord.value), "r"(__as_b32(__new_val))
-         : "memory");),
+    (asm("tensormap.replace.tile.global_dim.global.b1024.b32        [%0], %1, %2;" : : "l"(__as_ptr_gmem(__tm_addr)),
+         "n"(__ord.value),
+         "r"(__as_b32(__new_val)) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_tensormap_replace_global_dim_is_not_supported_before_SM_90a__();));
@@ -225,10 +215,10 @@ tensormap_replace_global_dim(space_shared_t, void* __tm_addr, n32_t<_N32> __ord,
   static_assert(sizeof(_B32) == 4, "");
   NV_IF_ELSE_TARGET(
     NV_HAS_FEATURE_SM_90a,
-    (asm("tensormap.replace.tile.global_dim.shared::cta.b1024.b32        [%0], %1, %2;"
-         :
-         : "r"(__as_ptr_smem(__tm_addr)), "n"(__ord.value), "r"(__as_b32(__new_val))
-         : "memory");),
+    (asm(
+       "tensormap.replace.tile.global_dim.shared::cta.b1024.b32        [%0], %1, %2;" : : "r"(__as_ptr_smem(__tm_addr)),
+       "n"(__ord.value),
+       "r"(__as_b32(__new_val)) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_tensormap_replace_global_dim_is_not_supported_before_SM_90a__();));
@@ -255,10 +245,9 @@ tensormap_replace_global_stride(space_global_t, void* __tm_addr, n32_t<_N32> __o
   static_assert(sizeof(_B64) == 8, "");
   NV_IF_ELSE_TARGET(
     NV_HAS_FEATURE_SM_90a,
-    (asm("tensormap.replace.tile.global_stride.global.b1024.b64     [%0], %1, %2;"
-         :
-         : "l"(__as_ptr_gmem(__tm_addr)), "n"(__ord.value), "l"(__as_b64(__new_val))
-         : "memory");),
+    (asm("tensormap.replace.tile.global_stride.global.b1024.b64     [%0], %1, %2;" : : "l"(__as_ptr_gmem(__tm_addr)),
+         "n"(__ord.value),
+         "l"(__as_b64(__new_val)) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_tensormap_replace_global_stride_is_not_supported_before_SM_90a__();));
@@ -285,10 +274,10 @@ tensormap_replace_global_stride(space_shared_t, void* __tm_addr, n32_t<_N32> __o
   static_assert(sizeof(_B64) == 8, "");
   NV_IF_ELSE_TARGET(
     NV_HAS_FEATURE_SM_90a,
-    (asm("tensormap.replace.tile.global_stride.shared::cta.b1024.b64     [%0], %1, %2;"
-         :
-         : "r"(__as_ptr_smem(__tm_addr)), "n"(__ord.value), "l"(__as_b64(__new_val))
-         : "memory");),
+    (asm(
+       "tensormap.replace.tile.global_stride.shared::cta.b1024.b64     [%0], %1, %2;" : : "r"(__as_ptr_smem(__tm_addr)),
+       "n"(__ord.value),
+       "l"(__as_b64(__new_val)) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_tensormap_replace_global_stride_is_not_supported_before_SM_90a__();));
@@ -315,10 +304,9 @@ tensormap_replace_element_size(space_global_t, void* __tm_addr, n32_t<_N32> __or
   static_assert(sizeof(_B32) == 4, "");
   NV_IF_ELSE_TARGET(
     NV_HAS_FEATURE_SM_90a,
-    (asm("tensormap.replace.tile.element_stride.global.b1024.b32    [%0], %1, %2;"
-         :
-         : "l"(__as_ptr_gmem(__tm_addr)), "n"(__ord.value), "r"(__as_b32(__new_val))
-         : "memory");),
+    (asm("tensormap.replace.tile.element_stride.global.b1024.b32    [%0], %1, %2;" : : "l"(__as_ptr_gmem(__tm_addr)),
+         "n"(__ord.value),
+         "r"(__as_b32(__new_val)) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_tensormap_replace_element_size_is_not_supported_before_SM_90a__();));
@@ -345,10 +333,10 @@ tensormap_replace_element_size(space_shared_t, void* __tm_addr, n32_t<_N32> __or
   static_assert(sizeof(_B32) == 4, "");
   NV_IF_ELSE_TARGET(
     NV_HAS_FEATURE_SM_90a,
-    (asm("tensormap.replace.tile.element_stride.shared::cta.b1024.b32    [%0], %1, %2;"
-         :
-         : "r"(__as_ptr_smem(__tm_addr)), "n"(__ord.value), "r"(__as_b32(__new_val))
-         : "memory");),
+    (asm(
+       "tensormap.replace.tile.element_stride.shared::cta.b1024.b32    [%0], %1, %2;" : : "r"(__as_ptr_smem(__tm_addr)),
+       "n"(__ord.value),
+       "r"(__as_b32(__new_val)) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_tensormap_replace_element_size_is_not_supported_before_SM_90a__();));
@@ -372,10 +360,8 @@ _CCCL_DEVICE static inline void tensormap_replace_elemtype(space_global_t, void*
   // __space == space_global (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_HAS_FEATURE_SM_90a,
-    (asm("tensormap.replace.tile.elemtype.global.b1024.b32          [%0], %1;"
-         :
-         : "l"(__as_ptr_gmem(__tm_addr)), "n"(__new_val.value)
-         : "memory");),
+    (asm("tensormap.replace.tile.elemtype.global.b1024.b32          [%0], %1;" : : "l"(__as_ptr_gmem(__tm_addr)),
+         "n"(__new_val.value) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_tensormap_replace_elemtype_is_not_supported_before_SM_90a__();));
@@ -399,10 +385,8 @@ _CCCL_DEVICE static inline void tensormap_replace_elemtype(space_shared_t, void*
   // __space == space_shared (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_HAS_FEATURE_SM_90a,
-    (asm("tensormap.replace.tile.elemtype.shared::cta.b1024.b32          [%0], %1;"
-         :
-         : "r"(__as_ptr_smem(__tm_addr)), "n"(__new_val.value)
-         : "memory");),
+    (asm("tensormap.replace.tile.elemtype.shared::cta.b1024.b32          [%0], %1;" : : "r"(__as_ptr_smem(__tm_addr)),
+         "n"(__new_val.value) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_tensormap_replace_elemtype_is_not_supported_before_SM_90a__();));
@@ -427,10 +411,8 @@ tensormap_replace_interleave_layout(space_global_t, void* __tm_addr, n32_t<_N32>
   // __space == space_global (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_HAS_FEATURE_SM_90a,
-    (asm("tensormap.replace.tile.interleave_layout.global.b1024.b32 [%0], %1;"
-         :
-         : "l"(__as_ptr_gmem(__tm_addr)), "n"(__new_val.value)
-         : "memory");),
+    (asm("tensormap.replace.tile.interleave_layout.global.b1024.b32 [%0], %1;" : : "l"(__as_ptr_gmem(__tm_addr)),
+         "n"(__new_val.value) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_tensormap_replace_interleave_layout_is_not_supported_before_SM_90a__();));
@@ -455,10 +437,8 @@ tensormap_replace_interleave_layout(space_shared_t, void* __tm_addr, n32_t<_N32>
   // __space == space_shared (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_HAS_FEATURE_SM_90a,
-    (asm("tensormap.replace.tile.interleave_layout.shared::cta.b1024.b32 [%0], %1;"
-         :
-         : "r"(__as_ptr_smem(__tm_addr)), "n"(__new_val.value)
-         : "memory");),
+    (asm("tensormap.replace.tile.interleave_layout.shared::cta.b1024.b32 [%0], %1;" : : "r"(__as_ptr_smem(__tm_addr)),
+         "n"(__new_val.value) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_tensormap_replace_interleave_layout_is_not_supported_before_SM_90a__();));
@@ -482,10 +462,8 @@ _CCCL_DEVICE static inline void tensormap_replace_swizzle_mode(space_global_t, v
   // __space == space_global (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_HAS_FEATURE_SM_90a,
-    (asm("tensormap.replace.tile.swizzle_mode.global.b1024.b32      [%0], %1;"
-         :
-         : "l"(__as_ptr_gmem(__tm_addr)), "n"(__new_val.value)
-         : "memory");),
+    (asm("tensormap.replace.tile.swizzle_mode.global.b1024.b32      [%0], %1;" : : "l"(__as_ptr_gmem(__tm_addr)),
+         "n"(__new_val.value) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_tensormap_replace_swizzle_mode_is_not_supported_before_SM_90a__();));
@@ -509,10 +487,8 @@ _CCCL_DEVICE static inline void tensormap_replace_swizzle_mode(space_shared_t, v
   // __space == space_shared (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_HAS_FEATURE_SM_90a,
-    (asm("tensormap.replace.tile.swizzle_mode.shared::cta.b1024.b32      [%0], %1;"
-         :
-         : "r"(__as_ptr_smem(__tm_addr)), "n"(__new_val.value)
-         : "memory");),
+    (asm("tensormap.replace.tile.swizzle_mode.shared::cta.b1024.b32      [%0], %1;" : : "r"(__as_ptr_smem(__tm_addr)),
+         "n"(__new_val.value) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_tensormap_replace_swizzle_mode_is_not_supported_before_SM_90a__();));
@@ -536,10 +512,8 @@ _CCCL_DEVICE static inline void tensormap_replace_fill_mode(space_global_t, void
   // __space == space_global (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_HAS_FEATURE_SM_90a,
-    (asm("tensormap.replace.tile.fill_mode.global.b1024.b32         [%0], %1;"
-         :
-         : "l"(__as_ptr_gmem(__tm_addr)), "n"(__new_val.value)
-         : "memory");),
+    (asm("tensormap.replace.tile.fill_mode.global.b1024.b32         [%0], %1;" : : "l"(__as_ptr_gmem(__tm_addr)),
+         "n"(__new_val.value) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_tensormap_replace_fill_mode_is_not_supported_before_SM_90a__();));
@@ -563,10 +537,8 @@ _CCCL_DEVICE static inline void tensormap_replace_fill_mode(space_shared_t, void
   // __space == space_shared (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_HAS_FEATURE_SM_90a,
-    (asm("tensormap.replace.tile.fill_mode.shared::cta.b1024.b32         [%0], %1;"
-         :
-         : "r"(__as_ptr_smem(__tm_addr)), "n"(__new_val.value)
-         : "memory");),
+    (asm("tensormap.replace.tile.fill_mode.shared::cta.b1024.b32         [%0], %1;" : : "r"(__as_ptr_smem(__tm_addr)),
+         "n"(__new_val.value) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_tensormap_replace_fill_mode_is_not_supported_before_SM_90a__();));

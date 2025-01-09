@@ -20,7 +20,7 @@ template <cuda::std::size_t N>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test_to_ullong()
 {
   const cuda::std::size_t M = sizeof(unsigned long long) * CHAR_BIT < N ? sizeof(unsigned long long) * CHAR_BIT : N;
-  const bool is_M_zero      = cuda::std::integral_constant<bool, M == 0>::value; // avoid compiler warnings
+  const bool is_M_zero      = cuda::std::integral_constant < bool, M == 0 > ::value; // avoid compiler warnings
   const cuda::std::size_t X =
     is_M_zero ? sizeof(unsigned long long) * CHAR_BIT - 1 : sizeof(unsigned long long) * CHAR_BIT - M;
   const unsigned long long max = is_M_zero ? 0 : (unsigned long long) (-1) >> X;

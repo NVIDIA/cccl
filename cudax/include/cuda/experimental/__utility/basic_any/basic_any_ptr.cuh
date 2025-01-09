@@ -169,8 +169,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
   //!
   _CCCL_TEMPLATE(class _Tp, class _Up = _CUDA_VSTD::remove_pointer_t<_Tp>, class _Vp = _CUDA_VSTD::remove_const_t<_Up>)
   _CCCL_REQUIRES(__satisfies<_Vp, _Interface> _CCCL_AND(__is_const_ptr || !_CUDA_VSTD::is_const_v<_Up>))
-  _CUDAX_HOST_API auto
-  emplace(_CUDA_VSTD::type_identity_t<_Up>* __obj) noexcept -> _CUDA_VSTD::__maybe_const<__is_const_ptr, _Vp>*&
+  _CUDAX_HOST_API auto emplace(_CUDA_VSTD::type_identity_t<_Up>* __obj) noexcept
+    -> _CUDA_VSTD::__maybe_const<__is_const_ptr, _Vp>*&
   {
     __vptr_for<interface_type> __vptr = __cudax::__get_vtable_ptr_for<interface_type, _Vp>();
     __ref_.__set_ref(__obj ? __vptr : nullptr, __obj);
@@ -184,7 +184,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
     return *static_cast<__void_ptr_t>(__get_optr()) == *static_cast<__void_ptr_t>(__other.__get_optr());
   }
 #else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv _CCCL_NO_THREE_WAY_COMPARISON vvv
-  _CCCL_NODISCARD_FRIEND _CUDAX_HOST_API auto operator==(basic_any const& __lhs, basic_any const& __rhs) noexcept -> bool
+  _CCCL_NODISCARD_FRIEND _CUDAX_HOST_API auto operator==(basic_any const& __lhs, basic_any const& __rhs) noexcept
+    -> bool
   {
     using __void_ptr_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__maybe_const<__is_const_ptr, void>* const*;
     return *static_cast<__void_ptr_t>(__lhs.__get_optr()) == *static_cast<__void_ptr_t>(__rhs.__get_optr());
@@ -271,8 +272,8 @@ private:
     return &__ref_.__optr_;
   }
 
-  _CCCL_NODISCARD _CUDAX_HOST_API auto
-  __get_optr() const noexcept -> _CUDA_VSTD::__maybe_const<__is_const_ptr, void>* const*
+  _CCCL_NODISCARD _CUDAX_HOST_API auto __get_optr() const noexcept
+    -> _CUDA_VSTD::__maybe_const<__is_const_ptr, void>* const*
   {
     return &__ref_.__optr_;
   }

@@ -80,8 +80,8 @@ struct __with_property
   template <class...>
   struct __iproperty : interface<__iproperty>
   {
-    _CUDAX_HOST_API friend auto
-    get_property([[maybe_unused]] const __iproperty& __obj, _Property) -> __property_result_t<_Property>
+    _CUDAX_HOST_API friend auto get_property([[maybe_unused]] const __iproperty& __obj, _Property)
+      -> __property_result_t<_Property>
     {
       if constexpr (!_CUDA_VSTD::is_same_v<__property_result_t<_Property>, void>)
       {
@@ -268,8 +268,8 @@ template <class _Derived>
 struct __with_try_get_property
 {
   template <class _Property>
-  _CUDAX_HOST_API _CCCL_NODISCARD_FRIEND auto
-  try_get_property(const _Derived& __self, _Property) noexcept -> __try_property_result_t<_Property>
+  _CUDAX_HOST_API _CCCL_NODISCARD_FRIEND auto try_get_property(const _Derived& __self, _Property) noexcept
+    -> __try_property_result_t<_Property>
   {
     auto __prop = __cudax::dynamic_any_cast<const __iproperty<_Property>*>(&__self);
     if constexpr (_CUDA_VSTD::is_same_v<__property_result_t<_Property>, void>)

@@ -22,10 +22,8 @@ mbarrier_test_wait_parity(_CUDA_VSTD::uint64_t* __addr, const _CUDA_VSTD::uint32
      asm("{\n\t .reg .pred P_OUT; \n\t"
          "mbarrier.test_wait.parity.shared.b64 P_OUT, [%1], %2;                                     // 3. \n\t"
          "selp.b32 %0, 1, 0, P_OUT; \n"
-         "}"
-         : "=r"(__waitComplete)
-         : "r"(__as_ptr_smem(__addr)), "r"(__phaseParity)
-         : "memory");
+         "}" : "=r"(__waitComplete) : "r"(__as_ptr_smem(__addr)),
+         "r"(__phaseParity) : "memory");
      return static_cast<bool>(__waitComplete);),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message

@@ -157,8 +157,7 @@ public:
         int __inc              = __popc(__active) * __update;
 
         unsigned __laneid;
-        asm("mov.u32 %0, %%laneid;"
-            : "=r"(__laneid));
+        asm("mov.u32 %0, %%laneid;" : "=r"(__laneid));
         int __leader = __ffs(__active) - 1;
         // All threads in mask synchronize here, establishing cummulativity to the __leader:
         __syncwarp(__mask);
@@ -181,10 +180,8 @@ private:
                     ".reg .pred p;\n\t"
                     "mbarrier.test_wait.shared.b64 p, [%1], %2;\n\t"
                     "selp.b32 %0, 1, 0, p;\n\t"
-                    "}"
-                    : "=r"(__ready)
-                    : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(&__barrier))), "l"(__token)
-                    : "memory");))
+                    "}" : "=r"(__ready) : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(&__barrier))),
+                    "l"(__token) : "memory");))
     return __ready;
   }
 
@@ -203,10 +200,9 @@ private:
                        ".reg .pred p;\n\t"
                        "mbarrier.try_wait.shared.b64 p, [%1], %2;\n\t"
                        "selp.b32 %0, 1, 0, p;\n\t"
-                       "}"
-                       : "=r"(__ready)
-                       : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(&__barrier))), "l"(__token)
-                       : "memory");
+                       "}" : "=r"(__ready) : "r"(
+                         static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(&__barrier))),
+                       "l"(__token) : "memory");
         return __ready;),
       NV_PROVIDES_SM_80,
       (if (!__isShared(&__barrier)) {
@@ -278,15 +274,12 @@ private:
     uint16_t __ready = 0;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_80,
-      (asm volatile(
-         "{"
-         ".reg .pred %%p;"
-         "mbarrier.test_wait.parity.shared.b64 %%p, [%1], %2;"
-         "selp.u16 %0, 1, 0, %%p;"
-         "}"
-         : "=h"(__ready)
-         : "r"(static_cast<uint32_t>(__cvta_generic_to_shared(&__barrier))), "r"(static_cast<uint32_t>(__phase_parity))
-         : "memory");))
+      (asm volatile("{"
+                    ".reg .pred %%p;"
+                    "mbarrier.test_wait.parity.shared.b64 %%p, [%1], %2;"
+                    "selp.u16 %0, 1, 0, %%p;"
+                    "}" : "=h"(__ready) : "r"(static_cast<uint32_t>(__cvta_generic_to_shared(&__barrier))),
+                    "r"(static_cast<uint32_t>(__phase_parity)) : "memory");))
     return __ready;
   }
 
@@ -299,16 +292,12 @@ private:
           return _CUDA_VSTD::__call_try_wait_parity(__barrier, __phase_parity);
         } else if (!__isShared(&__barrier)) { __trap(); } int32_t __ready = 0;
 
-        asm volatile(
-          "{\n\t"
-          ".reg .pred p;\n\t"
-          "mbarrier.try_wait.parity.shared.b64 p, [%1], %2;\n\t"
-          "selp.b32 %0, 1, 0, p;\n\t"
-          "}"
-          : "=r"(__ready)
-          : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(&__barrier))),
-            "r"(static_cast<_CUDA_VSTD::uint32_t>(__phase_parity))
-          :);
+        asm volatile("{\n\t"
+                     ".reg .pred p;\n\t"
+                     "mbarrier.try_wait.parity.shared.b64 p, [%1], %2;\n\t"
+                     "selp.b32 %0, 1, 0, p;\n\t"
+                     "}" : "=r"(__ready) : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(&__barrier))),
+                     "r"(static_cast<_CUDA_VSTD::uint32_t>(__phase_parity)) :);
 
         return __ready;),
       NV_PROVIDES_SM_80,
@@ -402,9 +391,8 @@ public:
           __trap();
         }
 
-        asm volatile("mbarrier.arrive_drop.shared.b64 _, [%0];" ::"r"(static_cast<_CUDA_VSTD::uint32_t>(
-          __cvta_generic_to_shared(&__barrier)))
-                     : "memory");),
+        asm volatile("mbarrier.arrive_drop.shared.b64 _, [%0];" ::"r"(
+          static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(&__barrier))) : "memory");),
       NV_PROVIDES_SM_80,
       (
         // Fallback to slowpath on device
@@ -413,9 +401,8 @@ public:
           return;
         }
 
-        asm volatile("mbarrier.arrive_drop.shared.b64 _, [%0];" ::"r"(static_cast<_CUDA_VSTD::uint32_t>(
-          __cvta_generic_to_shared(&__barrier)))
-                     : "memory");),
+        asm volatile("mbarrier.arrive_drop.shared.b64 _, [%0];" ::"r"(
+          static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(&__barrier))) : "memory");),
       NV_ANY_TARGET,
       (
         // Fallback to slowpath on device

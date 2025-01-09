@@ -606,8 +606,7 @@ private:
     {
       volatile DigitCounterT warp_digit_counters[RADIX_DIGITS][PADDED_WARPS];
       DigitCounterT raking_grid[BLOCK_THREADS][PADDED_RAKING_SEGMENT];
-    }
-    aliasable;
+    } aliasable;
   };
 #endif // !_CCCL_DOXYGEN_INVOKED
 

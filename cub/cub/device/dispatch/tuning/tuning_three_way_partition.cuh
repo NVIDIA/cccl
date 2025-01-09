@@ -255,9 +255,8 @@ struct policy_hub
                                     typename Tuning::delay_constructor>;
 
   template <typename Tuning>
-  static auto select_agent_policy(long) ->
-    typename DefaultPolicy<
-      default_delay_constructor_t<typename accumulator_pack_t<OffsetT>::pack_t>>::ThreeWayPartitionPolicy;
+  static auto select_agent_policy(long) -> typename DefaultPolicy<
+    default_delay_constructor_t<typename accumulator_pack_t<OffsetT>::pack_t>>::ThreeWayPartitionPolicy;
 
   struct Policy800 : ChainedPolicy<800, Policy800, Policy350>
   {
