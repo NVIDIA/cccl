@@ -28,6 +28,8 @@
 #include <cuda/std/__type_traits/is_copy_constructible.h>
 #include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__type_traits/is_move_constructible.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_trivially_move_constructible.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__type_traits/void_t.h>
