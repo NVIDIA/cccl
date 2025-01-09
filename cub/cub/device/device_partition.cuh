@@ -445,7 +445,8 @@ private:
             typename UnselectedOutputIteratorT,
             typename NumSelectedIteratorT,
             typename SelectFirstPartOp,
-            typename SelectSecondPartOp>
+            typename SelectSecondPartOp,
+            typename NumItemsT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t IfNoNVTX(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
@@ -454,12 +455,13 @@ private:
     SecondOutputIteratorT d_second_part_out,
     UnselectedOutputIteratorT d_unselected_out,
     NumSelectedIteratorT d_num_selected_out,
-    int num_items,
+    NumItemsT num_items,
     SelectFirstPartOp select_first_part_op,
     SelectSecondPartOp select_second_part_op,
     cudaStream_t stream = 0)
   {
-    using OffsetT                      = int;
+    using ChooseOffsetT                = detail::choose_signed_offset<NumItemsT>;
+    using OffsetT                      = typename ChooseOffsetT::type;
     using DispatchThreeWayPartitionIfT = DispatchThreeWayPartitionIf<
       InputIteratorT,
       FirstOutputIteratorT,
@@ -469,6 +471,14 @@ private:
       SelectFirstPartOp,
       SelectSecondPartOp,
       OffsetT>;
+
+    // Signed integer type for global offsets
+    // Check if the number of items exceeds the range covered by the selected signed offset type
+    cudaError_t error = ChooseOffsetT::is_exceeding_offset_type(num_items);
+    if (error)
+    {
+      return error;
+    }
 
     return DispatchThreeWayPartitionIfT::Dispatch(
       d_temp_storage,
@@ -625,6 +635,9 @@ public:
   //! @tparam SelectSecondPartOp
   //!   **[inferred]** Selection functor type having member `bool operator()(const T &a)`
   //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
@@ -670,7 +683,8 @@ public:
             typename UnselectedOutputIteratorT,
             typename NumSelectedIteratorT,
             typename SelectFirstPartOp,
-            typename SelectSecondPartOp>
+            typename SelectSecondPartOp,
+            typename NumItemsT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   If(void* d_temp_storage,
      std::size_t& temp_storage_bytes,
@@ -679,7 +693,7 @@ public:
      SecondOutputIteratorT d_second_part_out,
      UnselectedOutputIteratorT d_unselected_out,
      NumSelectedIteratorT d_num_selected_out,
-     int num_items,
+     NumItemsT num_items,
      SelectFirstPartOp select_first_part_op,
      SelectSecondPartOp select_second_part_op,
      cudaStream_t stream = 0)
@@ -706,7 +720,8 @@ public:
             typename UnselectedOutputIteratorT,
             typename NumSelectedIteratorT,
             typename SelectFirstPartOp,
-            typename SelectSecondPartOp>
+            typename SelectSecondPartOp,
+            typename NumItemsT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   If(void* d_temp_storage,
      std::size_t& temp_storage_bytes,
@@ -715,7 +730,7 @@ public:
      SecondOutputIteratorT d_second_part_out,
      UnselectedOutputIteratorT d_unselected_out,
      NumSelectedIteratorT d_num_selected_out,
-     int num_items,
+     NumItemsT num_items,
      SelectFirstPartOp select_first_part_op,
      SelectSecondPartOp select_second_part_op,
      cudaStream_t stream,
@@ -729,7 +744,8 @@ public:
               UnselectedOutputIteratorT,
               NumSelectedIteratorT,
               SelectFirstPartOp,
-              SelectSecondPartOp>(
+              SelectSecondPartOp,
+              NumItemsT>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,

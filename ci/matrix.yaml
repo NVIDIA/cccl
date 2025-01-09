@@ -13,7 +13,8 @@ workflows:
     # Old CTK/compiler
     - {jobs: ['build'], std: 'minmax', ctk: '12.0', cxx: ['gcc7', 'gcc9', 'clang14', 'msvc2019']}
     # Current CTK build-only
-    - {jobs: ['build'], std: [11, 14], cxx: ['gcc7', 'clang14']}
+    - {jobs: ['build'], std: [11, 14], cxx: ['gcc7', 'clang14'], project: 'libcudacxx'}
+    - {jobs: ['build'], std: [17], cxx: ['gcc7', 'clang14']}
     - {jobs: ['build'], std: 'max', cxx: ['gcc8', 'gcc9', 'gcc10', 'gcc11', 'gcc12']}
     - {jobs: ['build'], std: 'max', cxx: ['clang14', 'clang15', 'clang16', 'clang17']}
     - {jobs: ['build'], std: 'max', cxx: ['msvc2019']}
@@ -239,11 +240,11 @@ projects:
     stds: [11, 14, 17, 20]
   cub:
     name: 'CUB'
-    stds: [11, 14, 17, 20]
+    stds: [17, 20]
     job_map: { test: ['test_nolid', 'test_lid0', 'test_lid1', 'test_lid2'] }
   thrust:
     name: 'Thrust'
-    stds: [11, 14, 17, 20]
+    stds: [17, 20]
     job_map: { test: ['test_cpu', 'test_gpu'] }
   cudax:
     stds: [17, 20]
