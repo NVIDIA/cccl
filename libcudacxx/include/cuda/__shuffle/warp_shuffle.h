@@ -1,3 +1,12 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+//
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
 
 #ifndef _CUDA_FUNCTIONAL_SHUFFLE_SAFETY_H
 #define _CUDA_FUNCTIONAL_SHUFFLE_SAFETY_H
@@ -12,13 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/type_traits>
 #include <cuda/std/bit>
-#include <cuda/std/memory>
+#include<cuda/std/array>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/__ptx/instructions/generated/get_sreg.h>
-#include <cuda/std/__cmath/nvfp16.h>
-#include <cuda/std/__cmath/nvbf16.h>
 #include <cuda/__cmath/ceil_div.h>
 
 
@@ -27,122 +33,125 @@
 #if _CCCL_HAS_CUDA_COMPILER
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
     template <typename T>
-    constexpr bool is_supported_type = cuda::std::is_trivially_copyable<T>::value;
+    constexpr bool __can_warp_shuffle_v = (_CUDA_VSTD::is_trivially_copyable_v<T>::value && sizeof(T) >= sizeof(CUDA_VSTD::uint32_t)) || 
+        _CUDA_VSTD::__is_extended_floating_point_v<T>;
+
     //Input validation for shuffle operations
-    void _CCCL_DEVICE validate_width_mask(cuda::std::int32_t width, cuda::std::uint32_t mask)
+    void _CCCL_DEVICE validate_width_mask(_CUDA_VSTD::int32_t __w, _CUDA_VSTD::uint32_t __m)
     {
-        _CCCL_ASSERT((width >= 0), "Width must be greater than or equal to zero"); // width must be greater than or equal to zero
-        _CCCL_ASSERT((width <= warpSize), "Width must not exceed warp size"); // width must not exceed warp size
-        _CCCL_ASSERT((mask & __activemask()) == mask, "Mask must be a subset of the active mask"); // mask must be a subset of __activemask()
-        _CCCL_ASSERT(cuda::std::has_single_bit(width), "Width must be a power of two"); // width must be a power of two
+        _CCCL_ASSERT((__w >= 0), "Width must be greater than or equal to zero"); 
+        _CCCL_ASSERT((__w <= warpSize), "Width must not exceed warp size"); 
+        _CCCL_ASSERT((__m & __activemask()) == __m, "Mask must be a subset of the active mask"); 
+        _CCCL_ASSERT(_CUDA_VSTD::has_single_bit(__w), "Width must be a power of two");
     }
 
-    template<typename T>
-    _CCCL_DEVICE void to_32bitBuffer(T& var, cuda::std::int32_t numElements)
+    template<typename Tw, _CUDA_VSTD::int32_t __num_Elements>
+    _CCCL_DEVICE _CUDA_VSTD::array<_CUDA_VSTD::uint32_t, __num_Elements> __to_32bitBuffer(Tw& __v)
     {
-        cuda::std::array<cuda::std::uint32_t, numElements> buffer;
-        std::memcpy(buffer.data(), &var, sizeof(T));
-        return buffer;
+        _CUDA_VSTD::array<_CUDA_VSTD::uint32_t, __num_Elements> __uint_buffer;
+        _CUDA_VSTD::memcpy(__uint_buffer.data(), &__v, sizeof(Tw));
+        return __uint_buffer;
     }
 
-    template<typename T>
-    _CCCL_DEVICE T from_32bitBuffer(cuda::std::uint32_t* inArray, cuda::std::int32_t numElements)
+    template<typename Tw>
+    _CCCL_DEVICE Tw __from_32bitBuffer(_CUDA_VSTD::uint32_t* __inA)
     {
-        T var;
-        std::memcpy(&var, inArray, sizeof(T));
-        return var;
+        Tw __v;
+        // var = _CUDA_VSTD::bit_cast<T>(inArray);
+        _CUDA_VSTD::memcpy(&__v, __inA, sizeof(Tw));
+        return __v;
     }
 
     template <typename T>
-    _CCCL_DEVICE T shfl(T var, cuda::std::int32_t srcLane, cuda::std::uint32_t mask = 0xFFFFFFFF, cuda::std::int32_t width = warpSize)
+    _CCCL_DEVICE T shfl(T __var, _CUDA_VSTD::int32_t __srcLane, _CUDA_VSTD::uint32_t __mask = 0xFFFFFFFF, _CUDA_VSTD::int32_t __width = warpSize)
     {
-        _CCCL_ASSERT(is_supported_type_v<T>, "T must be a supported type for warp shuffle operations"); // T must be a supported type for warp shuffle operations
-        validate_width_mask(width, mask); // validate inputs (width and mask)
-        _CCCL_ASSERT((srcLane >= 0 && srcLane < width), "srcLane must be in the range [0, width)"); // srcLane must be in the range [0, width)
-        //scrLane must be part of mask
-        _CCCL_ASSERT((mask >> srcLane) & 1, "srcLane must be part of the mask");
+        _CCCL_ASSERT(__can_warp_shuffle_v<T>, "T must be a supported type for warp shuffle operations");
+        validate_width_mask(__width, __mask);
+        _CCCL_ASSERT((__srcLane >= 0 && __srcLane < __width), "srcLane must be in the range [0, width)"); 
+        _CCCL_ASSERT((__mask >> __srcLane) & 1, "srcLane must be part of the mask");
 
-        cuda::std::int32_t numElements = cuda::ceil_div(sizeof(T), sizeof(cuda::std::uint32_t));
-        cuda::std::array<cuda::std::uint32_t, numElements> buffer;
-        buffer = to_32bitBuffer(var, numElements);
+        _CUDA_VSTD::int32_t __num_Elements = _CUDA_VSTD::bit_cast<_CUDA_VSTD::int32_t>
+            (cuda::ceil_div(sizeof(T), sizeof(_CUDA_VSTD::uint32_t)));
+        _CUDA_VSTD::array<_CUDA_VSTD::uint32_t, __num_Elements> __uint_buffer = {};
+        __uint_buffer = __to_32bitBuffer<T, __num_Elements>(__var);
         
         #pragma unroll
-        for(int i=0;i<numElements;i++)
+        for(int __i = 0; __i < __num_Elements; __i++)
         {
-            buffer[i] = __shfl_sync(mask, buffer[i], srcLane, width);
+            __uint_buffer[__i] = __shfl_sync(__mask, __uint_buffer[__i], __srcLane, __width);
         }    
-        return from_32bitBuffer<T>(buffer, numElements);
+        return __from_32bitBuffer<T>(__uint_buffer.data());
     }
 
     template <typename T>
-    _CCCL_DEVICE T shfl_up(T var, cuda::std::int32_t delta, cuda::std::uint32_t mask = 0xFFFFFFFF, cuda::std::int32_t width=warpSize)
+    _CCCL_DEVICE T shfl_up(T __var, _CUDA_VSTD::int32_t __delta, _CUDA_VSTD::uint32_t __mask = 0xFFFFFFFF, _CUDA_VSTD::int32_t __width = warpSize)
     {
-        _CCCL_ASSERT(is_supported_type_v<T>, "T must be a supported type for warp shuffle operations"); // T must be a supported type for warp shuffle operations
-        validate_width_mask(width, mask); // validate inputs (width and mask)
-        _CCCL_ASSERT((delta > 0 && delta < width), "delta must be in the range (0, width)"); // delta must be in the range (0, width)
+        _CCCL_ASSERT(__can_warp_shuffle_v<T>, "T must be a supported type for warp shuffle operations"); 
+        validate_width_mask(__width, __mask); 
+        _CCCL_ASSERT((__delta > 0 && __delta < __width), "delta must be in the range (0, width)");
 
-        auto laneid = cuda::ptx::get_sreg_laneid();
-        auto target_lane = (laneid - delta)>0? (laneid - delta):0;
-        _CCCL_ASSERT((mask >> target_lane) & 1, "TargetLane must be part of the mask");
+        auto __lid = cuda::ptx::get_sreg_laneid();
+        auto __tl = (__lid - __delta) > 0 ? (__lid - __delta) : 0;
+        _CCCL_ASSERT((__mask >> __tl) & 1, "TargetLane must be part of the mask");
 
-        //implement the logic for shfl_up
-        cuda::std::int32_t numElements = cuda::ceil_div(sizeof(T), sizeof(cuda::std::uint32_t));
-        cuda::std::array<cuda::std::uint32_t, numElements> buffer;
-        buffer = to_32bitBuffer(var, numElements);
+        _CUDA_VSTD::int32_t __num_Elements = _CUDA_VSTD::bit_cast<_CUDA_VSTD::int32_t>
+            (cuda::ceil_div(sizeof(T), sizeof(_CUDA_VSTD::uint32_t)));
+        _CUDA_VSTD::array<_CUDA_VSTD::uint32_t, __num_Elements> __uint_buffer = {};
+        __uint_buffer = __to_32bitBuffer<T, __num_Elements>(__v);
 
         #pragma unroll
-        for(int i=0;i<numElements;i++)
+        for(int __i = 0; __i < __num_Elements; __i++)
         {
-            buffer[i] = __shfl_up_sync(mask, buffer[i], delta, width);
+            __uint_buffer[__i] = __shfl_up_sync(__m, __uint_buffer[__i], __d, __w);
         }
-        return from_32bitBuffer<T>(buffer, numElements);
+        return __from_32bitBuffer<T>(__uint_buffer.data());
     }
 
     template <typename T>
-    _CCCL_DEVICE T shfl_down(T var, cuda::std::int32_t delta, cuda::std::uint32_t mask = 0xFFFFFFFF, cuda::std::int32_t width=warpSize)
+    _CCCL_DEVICE T shfl_down(T __var, _CUDA_VSTD::int32_t __delta, _CUDA_VSTD::uint32_t __mask = 0xFFFFFFFF, _CUDA_VSTD::int32_t __width = warpSize)
     {
-        _CCCL_ASSERT(is_supported_type_v<T>, "T must be a supported type for warp shuffle operations"); // T must be a supported type for warp shuffle operations
-        validate_width_mask(width, mask); // validate inputs (width and mask)
-        _CCCL_ASSERT((delta > 0 && delta < width), "delta must be in the range (0, width)"); // delta must be in the range (0, width)
+        _CCCL_ASSERT(__can_warp_shuffle_v<T>, "T must be a supported type for warp shuffle operations");
+        validate_width_mask(__width, __mask); 
+        _CCCL_ASSERT((__delta > 0 && __delta < __width), "delta must be in the range (0, width)"); 
     
-        auto laneid = cuda::ptx::get_sreg_laneid();
-        auto target_lane = (laneid + delta)<width? (laneid + delta):width;
-        _CCCL_ASSERT((mask >> target_lane) & 1, "TargetLane must be part of the mask");//Fix the error message - on demand
+        auto __lid = cuda::ptx::get_sreg_laneid();
+        auto __tl = (__lid + __delta) < __width ? (__lid + __delta) : __width;
+        _CCCL_ASSERT((__mask >> __tl) & 1, "TargetLane must be part of the mask");
 
-        //implement the logic for shfl_down
-        cuda::std::int32_t numElements = cuda::ceil_div(sizeof(T), sizeof(cuda::std::uint32_t));
-        cuda::std::array<cuda::std::uint32_t, numElements> buffer;
-        buffer = to_32bitBuffer(var, numElements);
+        _CUDA_VSTD::int32_t __num_Elements = _CUDA_VSTD::bit_cast<_CUDA_VSTD::int32_t>
+            (cuda::ceil_div(sizeof(T), sizeof(_CUDA_VSTD::uint32_t)));
+        _CUDA_VSTD::array<_CUDA_VSTD::uint32_t, __num_Elements> __uint_buffer = {};
+        __uint_buffer = __to_32bitBuffer<T, __num_Elements>(__var);
 
         #pragma unroll
-        for(int i=0;i<numElements;i++)
+        for(int __i = 0; __i < __num_Elements; __i++)
         {
-            buffer[i] = __shfl_down_sync(mask, buffer[i], delta, width);
+            __uint_buffer[__i] = __shfl_down_sync(__mask, __uint_buffer[__i], __delta, __width);
         }
-        return from_32bitBuffer<T>(buffer, numElements);
+        return __from_32bitBuffer<T>(__uint_buffer.data());
     }
 
     template <typename T>
-    _CCCL_DEVICE T shfl_xor(T var, cuda::std::int32_t lanemask, cuda::std::uint32_t mask = 0xFFFFFFFF, cuda::std::int32_t width=warpSize)
+    _CCCL_DEVICE T shfl_xor(T __var, _CUDA_VSTD::int32_t __lane_mask, _CUDA_VSTD::uint32_t __mask = 0xFFFFFFFF, _CUDA_VSTD::int32_t __width = warpSize)
     {
-        _CCCL_ASSERT(is_supported_type_v<T>, "T must be a supported type for warp shuffle operations"); // T must be a supported type for warp shuffle operations
-        validate_width_mask(width, mask); // validate inputs (width and mask)
-        _CCCL_ASSERT((delta > 0 && delta < width), "delta must be in the range (0, width)"); // delta must be in the range (0, width)
+        _CCCL_ASSERT(__can_warp_shuffle_v<T>, "T must be a supported type for warp shuffle operations"); 
+        validate_width_mask(__width, __mask);
         
-        auto laneid = cuda::ptx::get_sreg_laneid();
-        auto clamped_val = cuda::std::clamp(laneid ^ lanemask, 0, width);
-        _CCCL_ASSERT((mask >> clamped_val) & 1, "Clamped Value must be part of the mask"); //Fix: the error message- on demand
+        auto __lid = cuda::ptx::get_sreg_laneid();
+        auto __clamped_val = _CUDA_VSTD::clamp(__lid ^ __lm, 0, __w);
+        _CCCL_ASSERT((__mask >> __clamped_val) & 1, "Clamped Value must be part of the mask");
 
-        cuda::std::int32_t numElements = cuda::ceil_div(sizeof(T), sizeof(cuda::std::uint32_t));
-        cuda::std::array<cuda::std::uint32_t, numElements> buffer;
-        buffer = to_32bitBuffer(var, numElements);
+        _CUDA_VSTD::int32_t __num_Elements = _CUDA_VSTD::bit_cast<_CUDA_VSTD::int32_t>
+            (cuda::ceil_div(sizeof(T), sizeof(_CUDA_VSTD::uint32_t)));
+        _CUDA_VSTD::array<_CUDA_VSTD::uint32_t, __num_Elements> __uint_buffer = {};
+        __uint_buffer = __to_32bitBuffer<T, __num_Elements>(__var);
 
         #pragma unroll
-        for(int i=0;i<numElements;i++)
+        for(int __i = 0; __i < __num_Elements; __i++)
         {
-            buffer[i] = __shfl_xor_sync(mask, buffer[i], lanemask, width);
+            __uint_buffer[__i] = __shfl_xor_sync(__mask, __uint_buffer[__i], __lane_mask, __width);
         }
-        return from_32bitBuffer<T>(buffer, numElements);
+        return __from_32bitBuffer<T>(__uint_buffer.data());
     }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
