@@ -29,6 +29,9 @@
 
 #include <cub/config.cuh>
 
+#include "thrust/detail/config/namespace.h"
+#include "thrust/iterator/constant_iterator.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -751,9 +754,11 @@ struct DispatchSegmentedSort
   using global_segment_offset_t         = detail::segmented_sort::global_segment_offset_t;
 
   using StreamingBeginOffsetIteratorT =
-    detail::segmented_sort::OffsetIteratorT<BeginOffsetIteratorT, ConstantInputIterator<global_segment_offset_t>>;
+    detail::segmented_sort::OffsetIteratorT<BeginOffsetIteratorT,
+                                            THRUST_NS_QUALIFIER::constant_iterator<global_segment_offset_t>>;
   using StreamingEndOffsetIteratorT =
-    detail::segmented_sort::OffsetIteratorT<EndOffsetIteratorT, ConstantInputIterator<global_segment_offset_t>>;
+    detail::segmented_sort::OffsetIteratorT<EndOffsetIteratorT,
+                                            THRUST_NS_QUALIFIER::constant_iterator<global_segment_offset_t>>;
 
   static constexpr int KEYS_ONLY = std::is_same<ValueT, NullType>::value;
 
@@ -1221,9 +1226,9 @@ private:
       large_segments_selector.base_segment_offset = current_seg_offset;
       small_segments_selector.base_segment_offset = current_seg_offset;
       auto current_begin_offset                   = detail::segmented_sort::make_offset_iterator(
-        d_begin_offsets, ConstantInputIterator<global_segment_offset_t>{current_seg_offset});
+        d_begin_offsets, THRUST_NS_QUALIFIER::constant_iterator<global_segment_offset_t>{current_seg_offset});
       auto current_end_offset = detail::segmented_sort::make_offset_iterator(
-        d_end_offsets, ConstantInputIterator<global_segment_offset_t>{current_seg_offset});
+        d_end_offsets, THRUST_NS_QUALIFIER::constant_iterator<global_segment_offset_t>{current_seg_offset});
 
       auto medium_indices_iterator =
         THRUST_NS_QUALIFIER::make_reverse_iterator(large_and_medium_segments_indices.get() + current_num_segments);
