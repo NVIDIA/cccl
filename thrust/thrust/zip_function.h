@@ -16,14 +16,12 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/modern_gcc_required.h>
-#if !defined(THRUST_LEGACY_GCC)
 
-#  include <thrust/detail/type_deduction.h>
-#  include <thrust/tuple.h>
-#  include <thrust/type_traits/integer_sequence.h>
+#include <thrust/detail/type_deduction.h>
+#include <thrust/tuple.h>
+#include <thrust/type_traits/integer_sequence.h>
 
-#  include <cuda/functional>
+#include <cuda/functional>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -42,7 +40,7 @@ namespace zip_detail
 {
 
 // Add workaround for decltype(auto) on C++11-only compilers:
-#  if _CCCL_STD_VER >= 2014
+#if _CCCL_STD_VER >= 2014
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Function, typename Tuple, std::size_t... Is>
@@ -58,7 +56,7 @@ _CCCL_HOST_DEVICE decltype(auto) apply(Function&& func, Tuple&& args)
   return apply_impl(THRUST_FWD(func), THRUST_FWD(args), make_index_sequence<tuple_size>{});
 }
 
-#  else // _CCCL_STD_VER
+#else // _CCCL_STD_VER
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Function, typename Tuple, std::size_t... Is>
@@ -71,7 +69,7 @@ _CCCL_HOST_DEVICE auto apply_impl(Function&& func, Tuple&& args, index_sequence<
       THRUST_FWD(args),
       make_index_sequence<thrust::tuple_size<typename std::decay<Tuple>::type>::value>{}))
 
-#  endif // _CCCL_STD_VER
+#endif // _CCCL_STD_VER
 
 } // namespace zip_detail
 } // namespace detail
@@ -149,7 +147,7 @@ public:
   {}
 
 // Add workaround for decltype(auto) on C++11-only compilers:
-#  if _CCCL_STD_VER >= 2014
+#if _CCCL_STD_VER >= 2014
 
   template <typename Tuple>
   _CCCL_HOST_DEVICE decltype(auto) operator()(Tuple&& args) const
@@ -157,7 +155,7 @@ public:
     return detail::zip_detail::apply(func, THRUST_FWD(args));
   }
 
-#  else // _CCCL_STD_VER
+#else // _CCCL_STD_VER
 
   // Can't just use THRUST_DECLTYPE_RETURNS here since we need to use
   // std::declval for the signature components:
@@ -169,7 +167,7 @@ public:
     return detail::zip_detail::apply(func, THRUST_FWD(args));
   }
 
-#  endif // _CCCL_STD_VER
+#endif // _CCCL_STD_VER
 
   //! Returns a reference to the underlying function.
   _CCCL_HOST_DEVICE Function& underlying_function() const
@@ -208,5 +206,3 @@ template <typename F>
 struct proclaims_copyable_arguments<THRUST_NS_QUALIFIER::zip_function<F>> : proclaims_copyable_arguments<F>
 {};
 _LIBCUDACXX_END_NAMESPACE_CUDA
-
-#endif
