@@ -1232,22 +1232,22 @@ public:
   ///@{
   task_dep_untyped read(data_place dp = data_place::affine)
   {
-    return task_dep_untyped(*this, ::std::integral_constant<access_mode, access_mode::read>{}, mv(dp));
+    return task_dep_untyped(*this, access_mode::read, mv(dp));
   }
 
   task_dep_untyped write(data_place dp = data_place::affine)
   {
-    return task_dep_untyped(*this, ::std::integral_constant<access_mode, access_mode::write>{}, mv(dp));
+    return task_dep_untyped(*this, access_mode::write, mv(dp));
   }
 
   task_dep_untyped rw(data_place dp = data_place::affine)
   {
-    return task_dep_untyped(*this, ::std::integral_constant<access_mode, access_mode::write>{}, mv(dp));
+    return task_dep_untyped(*this, access_mode::rw, mv(dp));
   }
 
   task_dep_untyped relaxed(::std::shared_ptr<reduction_operator_base> op, data_place dp = data_place::affine)
   {
-    return task_dep_untyped(*this, ::std::integral_constant<access_mode, access_mode::relaxed>{}, mv(dp), op);
+    return task_dep_untyped(*this, access_mode::relaxed, mv(dp), op);
   }
 
   ///@}
@@ -1679,17 +1679,9 @@ public:
     return pimpl == other.pimpl;
   }
 
-  template <access_mode Mode>
   friend inline ::std::shared_ptr<void> pack_state(const logical_data_untyped& d)
   {
-    if constexpr (Mode == access_mode::read)
-    {
-      return const_cast<logical_data_untyped&>(d).pimpl;
-    }
-    else
-    {
-      return d.pimpl;
-    }
+    return d.pimpl;
   }
 
   friend inline logical_data_untyped unpack_state(const ::std::shared_ptr<void>& p)
@@ -2302,36 +2294,31 @@ public:
   auto read(Pack&&... pack) const
   {
     using U = readonly_type_of<T>;
-    return task_dep<U, ::std::monostate, false>(
-      *this, ::std::integral_constant<access_mode, access_mode::read>{}, ::std::forward<Pack>(pack)...);
+    return task_dep<U, ::std::monostate, false>(*this, access_mode::read, ::std::forward<Pack>(pack)...);
   }
 
   template <typename... Pack>
   auto write(Pack&&... pack)
   {
-    return task_dep<T, ::std::monostate, false>(
-      *this, ::std::integral_constant<access_mode, access_mode::write>{}, ::std::forward<Pack>(pack)...);
+    return task_dep<T, ::std::monostate, false>(*this, access_mode::write, ::std::forward<Pack>(pack)...);
   }
 
   template <typename... Pack>
   auto rw(Pack&&... pack)
   {
-    return task_dep<T, ::std::monostate, false>(
-      *this, ::std::integral_constant<access_mode, access_mode::rw>{}, ::std::forward<Pack>(pack)...);
+    return task_dep<T, ::std::monostate, false>(*this, access_mode::rw, ::std::forward<Pack>(pack)...);
   }
 
   template <typename... Pack>
   auto relaxed(Pack&&... pack)
   {
-    return task_dep<T, ::std::monostate, false>(
-      *this, ::std::integral_constant<access_mode, access_mode::relaxed>{}, ::std::forward<Pack>(pack)...);
+    return task_dep<T, ::std::monostate, false>(*this, access_mode::relaxed, ::std::forward<Pack>(pack)...);
   }
 
   template <typename Op, typename... Pack>
   auto reduce(Op, no_init, Pack&&... pack)
   {
-    return task_dep<T, Op, false>(
-      *this, ::std::integral_constant<access_mode, access_mode::reduce_no_init>{}, ::std::forward<Pack>(pack)...);
+    return task_dep<T, Op, false>(*this, access_mode::reduce_no_init, ::std::forward<Pack>(pack)...);
   }
 
   /* If we do not pass the no_init{} tag type there, this is going to
@@ -2339,8 +2326,7 @@ public:
   template <typename Op, typename... Pack>
   auto reduce(Op, Pack&&... pack)
   {
-    return task_dep<T, Op, true>(
-      *this, ::std::integral_constant<access_mode, access_mode::reduce>{}, ::std::forward<Pack>(pack)...);
+    return task_dep<T, Op, true>(*this, access_mode::reduce, ::std::forward<Pack>(pack)...);
   }
 
   ///@}
