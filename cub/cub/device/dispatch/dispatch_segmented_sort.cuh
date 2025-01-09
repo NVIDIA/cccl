@@ -73,8 +73,10 @@ namespace detail
 
 namespace segmented_sort
 {
+// Type used to index within segments within a single invocation
 using per_invocation_segment_offset_t = unsigned int;
-using global_segment_offset_t         = ::cuda::std::int64_t;
+// Type used for total number of segments and to index within segments globally
+using global_segment_offset_t = ::cuda::std::int64_t;
 
 template <typename Iterator, typename OffsetItT>
 class OffsetIteratorT : public thrust::iterator_adaptor<OffsetIteratorT<Iterator, OffsetItT>, Iterator>
@@ -742,7 +744,6 @@ template <bool IS_DESCENDING,
           typename OffsetT,
           typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
-          typename SegmentOffsetT,
           typename PolicyHub = detail::segmented_sort::policy_hub<KeyT, ValueT>>
 struct DispatchSegmentedSort
 {
