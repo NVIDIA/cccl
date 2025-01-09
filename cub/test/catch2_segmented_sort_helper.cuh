@@ -81,7 +81,7 @@ struct segment_index_to_offset_op
   OffsetT segment_size;
   OffsetT num_items;
 
-  _CCCL_HOST_DEVICE __forceinline__ OffsetT operator()(SegmentIndexT i)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE OffsetT operator()(SegmentIndexT i)
   {
     if (i < num_empty_segments)
     {
@@ -104,7 +104,7 @@ struct mod_n
   std::size_t mod;
 
   template <typename IndexT>
-  _CCCL_HOST_DEVICE __forceinline__ T operator()(IndexT x)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T operator()(IndexT x)
   {
     return static_cast<T>(x % mod);
   }
