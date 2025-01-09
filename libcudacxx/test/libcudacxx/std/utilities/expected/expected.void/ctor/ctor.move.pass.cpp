@@ -75,13 +75,11 @@ static_assert(!cuda::std::is_move_constructible_v<cuda::std::expected<void, NonM
 static_assert(cuda::std::is_trivially_move_constructible_v<cuda::std::expected<void, int>>, "");
 static_assert(!cuda::std::is_trivially_move_constructible_v<cuda::std::expected<void, MovableNonTrivial>>, "");
 
-#ifndef TEST_COMPILER_ICC
 // Test: noexcept(is_nothrow_move_constructible_v<E>)
 static_assert(cuda::std::is_nothrow_move_constructible_v<cuda::std::expected<int, int>>, "");
 static_assert(!cuda::std::is_nothrow_move_constructible_v<cuda::std::expected<MoveMayThrow, int>>, "");
 static_assert(!cuda::std::is_nothrow_move_constructible_v<cuda::std::expected<int, MoveMayThrow>>, "");
 static_assert(!cuda::std::is_nothrow_move_constructible_v<cuda::std::expected<MoveMayThrow, MoveMayThrow>>, "");
-#endif // TEST_COMPILER_ICC
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {

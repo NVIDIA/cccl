@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11
 
 // template<class I>
 // unspecified iter_swap;
@@ -44,17 +44,17 @@ struct HasIterSwap
 };
 
 #if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_MSVC_2017) // nvcc segfaults here
-static_assert(cuda::std::is_invocable_v<IterSwapT, HasIterSwap&, HasIterSwap&>);
-static_assert(cuda::std::is_invocable_v<IterSwapT, HasIterSwap&, int&>);
-static_assert(!cuda::std::is_invocable_v<IterSwapT, int&, HasIterSwap&>);
+static_assert(cuda::std::is_invocable_v<IterSwapT, HasIterSwap&, HasIterSwap&>, "");
+static_assert(cuda::std::is_invocable_v<IterSwapT, HasIterSwap&, int&>, "");
+static_assert(!cuda::std::is_invocable_v<IterSwapT, int&, HasIterSwap&>, "");
 
-static_assert(cuda::std::is_invocable_v<IterSwapT&, HasIterSwap&, HasIterSwap&>);
-static_assert(cuda::std::is_invocable_v<IterSwapT&, HasIterSwap&, int&>);
-static_assert(!cuda::std::is_invocable_v<IterSwapT&, int&, HasIterSwap&>);
+static_assert(cuda::std::is_invocable_v<IterSwapT&, HasIterSwap&, HasIterSwap&>, "");
+static_assert(cuda::std::is_invocable_v<IterSwapT&, HasIterSwap&, int&>, "");
+static_assert(!cuda::std::is_invocable_v<IterSwapT&, int&, HasIterSwap&>, "");
 
-static_assert(cuda::std::is_invocable_v<IterSwapT&&, HasIterSwap&, HasIterSwap&>);
-static_assert(cuda::std::is_invocable_v<IterSwapT&&, HasIterSwap&, int&>);
-static_assert(!cuda::std::is_invocable_v<IterSwapT&&, int&, HasIterSwap&>);
+static_assert(cuda::std::is_invocable_v<IterSwapT&&, HasIterSwap&, HasIterSwap&>, "");
+static_assert(cuda::std::is_invocable_v<IterSwapT&&, HasIterSwap&, int&>, "");
+static_assert(!cuda::std::is_invocable_v<IterSwapT&&, int&, HasIterSwap&>, "");
 #endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_MSVC_2017
 
 #if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_MSVC_2017)
@@ -109,10 +109,10 @@ struct HasRangesSwapWrapper
 };
 
 #if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_MSVC_2017) // nvcc segfaults here
-static_assert(cuda::std::is_invocable_v<IterSwapT, HasRangesSwapWrapper&, HasRangesSwapWrapper&>);
+static_assert(cuda::std::is_invocable_v<IterSwapT, HasRangesSwapWrapper&, HasRangesSwapWrapper&>, "");
 // Does not satisfy swappable_with, even though swap(X, Y) is valid.
-static_assert(!cuda::std::is_invocable_v<IterSwapT, HasRangesSwapWrapper&, int&>);
-static_assert(!cuda::std::is_invocable_v<IterSwapT, int&, HasRangesSwapWrapper&>);
+static_assert(!cuda::std::is_invocable_v<IterSwapT, HasRangesSwapWrapper&, int&>, "");
+static_assert(!cuda::std::is_invocable_v<IterSwapT, int&, HasRangesSwapWrapper&>, "");
 #endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_MSVC_2017
 
 struct B;
@@ -255,11 +255,11 @@ __host__ __device__ constexpr bool test()
 }
 
 #ifndef TEST_COMPILER_CUDACC_BELOW_11_3 // nvcc segfaults here
-static_assert(!cuda::std::is_invocable_v<IterSwapT, int*>); // too few arguments
-static_assert(!cuda::std::is_invocable_v<IterSwapT, int*, int*, int*>); // too many arguments
-static_assert(!cuda::std::is_invocable_v<IterSwapT, int, int*>);
-static_assert(!cuda::std::is_invocable_v<IterSwapT, int*, int>);
-static_assert(!cuda::std::is_invocable_v<IterSwapT, void*, void*>);
+static_assert(!cuda::std::is_invocable_v<IterSwapT, int*>, ""); // too few arguments
+static_assert(!cuda::std::is_invocable_v<IterSwapT, int*, int*, int*>, ""); // too many arguments
+static_assert(!cuda::std::is_invocable_v<IterSwapT, int, int*>, "");
+static_assert(!cuda::std::is_invocable_v<IterSwapT, int*, int>, "");
+static_assert(!cuda::std::is_invocable_v<IterSwapT, void*, void*>, "");
 #endif // TEST_COMPILER_CUDACC_BELOW_11_3
 
 #if TEST_STD_VER > 2017
@@ -270,16 +270,16 @@ struct Holder
 {
   T t;
 };
-static_assert(cuda::std::is_invocable_v<IterSwapT, Holder<Incomplete>**, Holder<Incomplete>**>);
-static_assert(cuda::std::is_invocable_v<IterSwapT, Holder<Incomplete>**, Holder<Incomplete>**&>);
-static_assert(cuda::std::is_invocable_v<IterSwapT, Holder<Incomplete>**&, Holder<Incomplete>**>);
-static_assert(cuda::std::is_invocable_v<IterSwapT, Holder<Incomplete>**&, Holder<Incomplete>**&>);
+static_assert(cuda::std::is_invocable_v<IterSwapT, Holder<Incomplete>**, Holder<Incomplete>**>, "");
+static_assert(cuda::std::is_invocable_v<IterSwapT, Holder<Incomplete>**, Holder<Incomplete>**&>, "");
+static_assert(cuda::std::is_invocable_v<IterSwapT, Holder<Incomplete>**&, Holder<Incomplete>**>, "");
+static_assert(cuda::std::is_invocable_v<IterSwapT, Holder<Incomplete>**&, Holder<Incomplete>**&>, "");
 #endif
 
 int main(int, char**)
 {
   test();
-  static_assert(test());
+  static_assert(test(), "");
 
   return 0;
 }

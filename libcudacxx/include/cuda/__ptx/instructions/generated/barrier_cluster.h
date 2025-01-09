@@ -16,10 +16,7 @@ _CCCL_DEVICE static inline void barrier_cluster_arrive()
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (asm volatile("barrier.cluster.arrive;"
-                  :
-                  :
-                  : "memory");),
+    (asm volatile("barrier.cluster.arrive;" : : : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_barrier_cluster_arrive_is_not_supported_before_SM_90__();));
@@ -39,10 +36,7 @@ _CCCL_DEVICE static inline void barrier_cluster_wait()
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (asm volatile("barrier.cluster.wait;"
-                  :
-                  :
-                  : "memory");),
+    (asm volatile("barrier.cluster.wait;" : : : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_barrier_cluster_wait_is_not_supported_before_SM_90__();));
@@ -65,10 +59,7 @@ _CCCL_DEVICE static inline void barrier_cluster_arrive(sem_release_t)
   // __sem == sem_release (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (asm volatile("barrier.cluster.arrive.release;"
-                  :
-                  :
-                  : "memory");),
+    (asm volatile("barrier.cluster.arrive.release;" : : : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_barrier_cluster_arrive_is_not_supported_before_SM_90__();));
@@ -91,10 +82,7 @@ _CCCL_DEVICE static inline void barrier_cluster_arrive(sem_relaxed_t)
   // __sem == sem_relaxed (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (asm volatile("barrier.cluster.arrive.relaxed;"
-                  :
-                  :
-                  :);),
+    (asm volatile("barrier.cluster.arrive.relaxed;" : : :);),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_barrier_cluster_arrive_is_not_supported_before_SM_90__();));
@@ -117,10 +105,7 @@ _CCCL_DEVICE static inline void barrier_cluster_wait(sem_acquire_t)
   // __sem == sem_acquire (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (asm volatile("barrier.cluster.wait.acquire;"
-                  :
-                  :
-                  : "memory");),
+    (asm volatile("barrier.cluster.wait.acquire;" : : : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_barrier_cluster_wait_is_not_supported_before_SM_90__();));

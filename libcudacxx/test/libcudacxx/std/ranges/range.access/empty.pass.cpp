@@ -95,7 +95,7 @@ struct BoolConvertibleReturnType
   }
 };
 // old GCC seems to fall over the chaining of the noexcept clauses here
-#if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 9) && !defined(TEST_COMPILER_MSVC) && !defined(TEST_COMPILER_ICC)
+#if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 9) && !defined(TEST_COMPILER_MSVC)
 static_assert(!noexcept(cuda::std::ranges::empty(BoolConvertibleReturnType())));
 #endif // (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 9)
 

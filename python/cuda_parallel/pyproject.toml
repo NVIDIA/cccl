@@ -16,3 +16,9 @@ module = [
 ]
 ignore_missing_imports = true
 follow_imports = "skip"
+
+[tool.ruff]
+extend = "../../pyproject.toml"
+
+[tool.ruff.lint.isort]
+known-first-party = ["cuda.parallel"]

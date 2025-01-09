@@ -19,10 +19,9 @@ mbarrier_arrive_no_complete(_CUDA_VSTD::uint64_t* __addr, const _CUDA_VSTD::uint
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_80,
     (_CUDA_VSTD::uint64_t __state;
-     asm("mbarrier.arrive.noComplete.shared.b64                       %0,  [%1], %2;    // 5. "
-         : "=l"(__state)
-         : "r"(__as_ptr_smem(__addr)), "r"(__count)
-         : "memory");
+     asm("mbarrier.arrive.noComplete.shared.b64                       %0,  [%1], %2;    "
+         "// 5. " : "=l"(__state) : "r"(__as_ptr_smem(__addr)),
+         "r"(__count) : "memory");
      return __state;),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message

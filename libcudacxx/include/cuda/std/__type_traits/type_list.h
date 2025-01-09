@@ -1020,8 +1020,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_value_list : __type_list<integral_co
 namespace __detail
 {
 template <class _Ty, _Ty _Start, _Ty _Stride, _Ty... _Is>
-_LIBCUDACXX_HIDE_FROM_ABI auto
-__type_iota_fn(integer_sequence<_Ty, _Is...>*) -> __type_value_list<_Ty, _Ty(_Start + (_Is * _Stride))...>;
+_LIBCUDACXX_HIDE_FROM_ABI auto __type_iota_fn(integer_sequence<_Ty, _Is...>*)
+  -> __type_value_list<_Ty, _Ty(_Start + (_Is * _Stride))...>;
 } // namespace __detail
 
 //! \brief Return an \c __type_value_list of size \c _Size starting at \c _Start

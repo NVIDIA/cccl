@@ -31,6 +31,7 @@
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh> // graph_task<> has-a backend_ctx_untyped
 #include <cuda/experimental/__stf/internal/frozen_logical_data.cuh>
 #include <cuda/experimental/__stf/internal/logical_data.cuh>
+#include <cuda/experimental/__stf/internal/void_interface.cuh>
 
 namespace cuda::experimental::stf
 {
@@ -508,8 +509,12 @@ public:
       dot.template add_vertex<task, logical_data_untyped>(*this);
     }
 
+    constexpr bool fun_invocable_stream_deps = ::std::is_invocable_v<Fun, cudaStream_t, Deps...>;
+    constexpr bool fun_invocable_stream_non_void_deps =
+      reserved::is_invocable_with_filtered<Fun, cudaStream_t, Deps...>::value;
+
     // Default for the first argument is a `cudaStream_t`.
-    if constexpr (::std::is_invocable_v<Fun, cudaStream_t, Deps...>)
+    if constexpr (fun_invocable_stream_deps || fun_invocable_stream_non_void_deps)
     {
       //
       // CAPTURE the lambda
@@ -522,7 +527,16 @@ public:
       cuda_safe_call(cudaStreamBeginCapture(capture_stream, cudaStreamCaptureModeThreadLocal));
 
       // Launch the user provided function
-      ::std::apply(f, tuple_prepend(mv(capture_stream), typed_deps()));
+      if constexpr (fun_invocable_stream_deps)
+      {
+        ::std::apply(f, tuple_prepend(mv(capture_stream), typed_deps()));
+      }
+      else if constexpr (fun_invocable_stream_non_void_deps)
+      {
+        // Remove void arguments
+        ::std::apply(::std::forward<Fun>(f),
+                     tuple_prepend(mv(capture_stream), reserved::remove_void_interface_types(typed_deps())));
+      }
 
       cuda_safe_call(cudaStreamEndCapture(capture_stream, &childGraph));
 
@@ -534,7 +548,12 @@ public:
     }
     else
     {
-      static_assert(::std::is_invocable_v<Fun, cudaGraph_t, Deps...>, "Incorrect lambda function signature.");
+      constexpr bool fun_invocable_graph_deps = ::std::is_invocable_v<Fun, cudaGraph_t, Deps...>;
+      constexpr bool fun_invocable_graph_non_void_deps =
+        reserved::is_invocable_with_filtered<Fun, cudaGraph_t, Deps...>::value;
+
+      static_assert(fun_invocable_graph_deps || fun_invocable_graph_non_void_deps,
+                    "Incorrect lambda function signature.");
       //
       // Give the lambda a child graph
       //

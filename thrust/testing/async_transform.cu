@@ -128,10 +128,8 @@ DEFINE_SYNC_TRANSFORM_UNARY_INVOKER(
 ///////////////////////////////////////////////////////////////////////////////
 
 template <template <typename> class AsyncTransformUnaryInvoker,
-          template <typename>
-          class SyncTransformUnaryInvoker,
-          template <typename>
-          class UnaryOperation>
+          template <typename> class SyncTransformUnaryInvoker,
+          template <typename> class UnaryOperation>
 struct test_async_transform_unary
 {
   template <typename T>
@@ -222,10 +220,8 @@ DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES_AND_NAME(
 ///////////////////////////////////////////////////////////////////////////////
 
 template <template <typename> class AsyncTransformUnaryInvoker,
-          template <typename>
-          class SyncTransformUnaryInvoker,
-          template <typename>
-          class UnaryOperation>
+          template <typename> class SyncTransformUnaryInvoker,
+          template <typename> class UnaryOperation>
 struct test_async_transform_unary_inplace
 {
   template <typename T>
@@ -305,10 +301,8 @@ DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES_AND_NAME(
 ///////////////////////////////////////////////////////////////////////////////
 
 template <template <typename> class AsyncTransformUnaryInvoker,
-          template <typename>
-          class SyncTransformUnaryInvoker,
-          template <typename>
-          class UnaryOperation>
+          template <typename> class SyncTransformUnaryInvoker,
+          template <typename> class UnaryOperation>
 struct test_async_transform_unary_counting_iterator
 {
   template <typename T>

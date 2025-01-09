@@ -630,8 +630,7 @@
 /// \def THRUST_CURRENT_FUNCTION
 /// \brief The name of the current function as a string.
 ///
-#if defined(__GNUC__) || (defined(__MWERKS__) && (__MWERKS__ >= 0x3000)) || (defined(__ICC) && (__ICC >= 600)) \
-  || defined(__ghs__)
+#if defined(__GNUC__) || (defined(__MWERKS__) && (__MWERKS__ >= 0x3000)) || defined(__ghs__)
 #  define THRUST_CURRENT_FUNCTION __PRETTY_FUNCTION__
 #elif defined(__DMC__) && (__DMC__ >= 0x810)
 #  define THRUST_CURRENT_FUNCTION __PRETTY_FUNCTION__

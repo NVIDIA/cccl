@@ -219,18 +219,16 @@ CCCL users are encouraged to capitalize on the latest enhancements and ["live at
 For a seamless experience, you can upgrade CCCL independently of the entire CUDA Toolkit.
 This is possible because CCCL maintains backward compatibility with the latest patch release of every minor CTK release from both the current and previous major version series.
 In some exceptional cases, the minimum supported minor version of the CUDA Toolkit release may need to be newer than the oldest release within its major version series.
-For instance, CCCL requires a minimum supported version of 11.1 from the 11.x series due to an unavoidable compiler issue present in CTK 11.0.
 
 When a new major CTK is released, we drop support for the oldest supported major version.
 
 | CCCL Version | Supports CUDA Toolkit Version                  |
 |--------------|------------------------------------------------|
 | 2.x          | 11.1 - 11.8, 12.x (only latest patch releases) |
-| 3.x (Future) | 12.x, 13.x  (only latest patch releases)       |
+| 3.x          | 12.x, 13.x  (only latest patch releases)       |
 
 [Well-behaved code](#compatibility-guidelines) using the latest CCCL should compile and run successfully with any supported CTK version.
 Exceptions may occur for new features that depend on new CTK features, so those features would not work on older versions of the CTK.
-For example, C++20 support was not added to `nvcc` until CUDA 12.0, so CCCL features that depend on C++20 would not work with CTK 11.x.
 
 Users can integrate a newer version of CCCL into an older CTK, but not the other way around.
 This means an older version of CCCL is not compatible with a newer CTK.
@@ -260,6 +258,8 @@ Unless otherwise specified, CCCL supports the same host compilers as the latest 
 - [Linux](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#host-compiler-support-policy)
 - [Windows](https://docs.nvidia.com/cuda/cuda-installation-guide-microsoft-windows/index.html#system-requirements)
 
+For GCC on Linux, at least 7.x is required.
+
 When using older CUDA Toolkits, we also only support the host compilers of the latest CUDA Toolkit,
 but at least the most recent host compiler of any supported older CUDA Toolkit.
 
@@ -269,8 +269,8 @@ But we will not invest significant time in triaging or fixing issues for older c
 In the spirit of "You only support what you test", see our [CI Overview](https://github.com/NVIDIA/cccl/blob/main/ci-overview.md) for more information on exactly what we test.
 
 ### C++ Dialects
-- C++11 (Deprecated in Thrust/CUB, to be removed in next major version)
-- C++14 (Deprecated in Thrust/CUB, to be removed in next major version)
+- C++11 (only libcu++)
+- C++14 (only libcu++)
 - C++17
 - C++20
 
@@ -285,7 +285,7 @@ Note that some features may only support certain architectures/Compute Capabilit
 CCCL's testing strategy strikes a balance between testing as many configurations as possible and maintaining reasonable CI times.
 
 For CUDA Toolkit versions, testing is done against both the oldest and the newest supported versions.
-For instance, if the latest version of the CUDA Toolkit is 12.3, tests are conducted against 11.1 and 12.3.
+For instance, if the latest version of the CUDA Toolkit is 12.6, tests are conducted against 11.1 and 12.6.
 For each CUDA version, builds are completed against all supported host compilers with all supported C++ dialects.
 
 The testing strategy and matrix are constantly evolving.

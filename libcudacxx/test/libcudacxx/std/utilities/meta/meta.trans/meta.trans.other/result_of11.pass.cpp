@@ -77,7 +77,7 @@ __host__ __device__ void test_result_of_imp()
 int main(int, char**)
 {
   {
-    typedef char F::*PMD;
+    typedef char F::* PMD;
     test_result_of_imp<PMD(F&), char&>();
     test_result_of_imp<PMD(F const&), char const&>();
     test_result_of_imp<PMD(F volatile&), char volatile&>();

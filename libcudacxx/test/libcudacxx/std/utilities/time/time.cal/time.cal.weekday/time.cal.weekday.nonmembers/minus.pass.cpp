@@ -69,9 +69,7 @@ int main(int, char**)
     {
       weekday wd = weekday{i} - days{j};
       assert(wd + days{j} == weekday{i});
-#ifndef TEST_COMPILER_ICC
       assert((wd.c_encoding() == euclidian_subtraction<unsigned, 0, 6>(i, j)));
-#endif // TEST_COMPILER_ICC
     }
   }
 

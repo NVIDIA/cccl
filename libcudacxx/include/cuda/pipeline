@@ -199,12 +199,9 @@ struct __pipeline_asm_helper
 {
   _CCCL_DEVICE static inline uint32_t __lane_id()
   {
-    NV_IF_ELSE_TARGET(
-      NV_IS_DEVICE,
-      (uint32_t __lane_id; asm volatile("mov.u32 %0, %%laneid;"
-                                        : "=r"(__lane_id));
-       return __lane_id;),
-      (return 0;))
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                      (uint32_t __lane_id; asm volatile("mov.u32 %0, %%laneid;" : "=r"(__lane_id)); return __lane_id;),
+                      (return 0;))
   }
 };
 
@@ -546,9 +543,7 @@ _CCCL_DEVICE void __pipeline_consumer_wait(pipeline<thread_scope_thread>& __pipe
   (void) __pipeline;
   NV_IF_TARGET(NV_PROVIDES_SM_80, constexpr uint8_t __max_prior = 8;
 
-               asm volatile("cp.async.wait_group %0;"
-                            :
-                            : "n"(_Prior < __max_prior ? _Prior : __max_prior));)
+               asm volatile("cp.async.wait_group %0;" : : "n"(_Prior < __max_prior ? _Prior : __max_prior));)
 }
 
 _CCCL_DEVICE inline void __pipeline_consumer_wait(pipeline<thread_scope_thread>& __pipeline, uint8_t __prior)

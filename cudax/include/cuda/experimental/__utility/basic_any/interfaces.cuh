@@ -318,22 +318,22 @@ template <template <class...> class _Interface>
 struct __interface_cast_fn<_Interface<>>
 {
   template <class _Super>
-  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API auto
-  operator()(_Interface<_Super>&& __self) const noexcept -> _Interface<_Super>&&
+  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API auto operator()(_Interface<_Super>&& __self) const noexcept
+    -> _Interface<_Super>&&
   {
     return _CUDA_VSTD::move(__self);
   }
 
   template <class _Super>
-  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API auto
-  operator()(_Interface<_Super>& __self) const noexcept -> _Interface<_Super>&
+  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API auto operator()(_Interface<_Super>& __self) const noexcept
+    -> _Interface<_Super>&
   {
     return __self;
   }
 
   template <class _Super>
-  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API auto
-  operator()(_Interface<_Super> const& __self) noexcept -> _Interface<_Super> const&
+  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API auto operator()(_Interface<_Super> const& __self) noexcept
+    -> _Interface<_Super> const&
   {
     return __self;
   }

@@ -15,6 +15,8 @@ social_media     = [
     [ "discord", "https://discord.com/channels/1019361803752456192/1161051667945508884" ],
 ]
 
+sphinx_version = "4.5.0.2-py3.10-${platform}"
+
 enhanced_search_enabled = true
 api_output_directory = "api"
 use_fast_doxygen_conversion = true
@@ -157,7 +159,6 @@ doxygen_predefined = [
     "_CCCL_DIAG_POP=",
     "_CCCL_DIAG_SUPPRESS_CLANG(x)=",
     "_CCCL_DIAG_SUPPRESS_GCC(x)=",
-    "_CCCL_DIAG_SUPPRESS_ICC(x)=",
     "_CCCL_DIAG_SUPPRESS_MSVC(x)=",
     "_CCCL_DIAG_SUPPRESS_NVHPC(x)=",
     "_CCCL_DOXYGEN_INVOKED",
@@ -270,7 +271,6 @@ doxygen_predefined = [
   "_CCCL_DIAG_POP=",
   "_CCCL_DIAG_SUPPRESS_CLANG(x)=",
   "_CCCL_DIAG_SUPPRESS_GCC(x)=",
-  "_CCCL_DIAG_SUPPRESS_ICC(x)=",
   "_CCCL_DIAG_SUPPRESS_MSVC(x)=",
   "_CCCL_DIAG_SUPPRESS_NVHPC(x)=",
   "CUDASTF_HOST=",
@@ -435,7 +435,6 @@ doxygen_predefined = [
   "_CCCL_DIAG_POP=",
   "_CCCL_DIAG_SUPPRESS_CLANG(x)=",
   "_CCCL_DIAG_SUPPRESS_GCC(x)=",
-  "_CCCL_DIAG_SUPPRESS_ICC(x)=",
   "_CCCL_DIAG_SUPPRESS_MSVC(x)=",
   "_CCCL_DIAG_SUPPRESS_NVHPC(x)=",
   "_CCCL_REQUIRES(x)= ::cuda::std::enable_if_t<x, int> = 0>",

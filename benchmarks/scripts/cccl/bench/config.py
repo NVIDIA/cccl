@@ -1,6 +1,6 @@
 import os
-import sys
 import random
+import sys
 
 
 def randomized_cartesian_product(list_of_lists):

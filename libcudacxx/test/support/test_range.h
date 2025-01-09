@@ -14,7 +14,7 @@
 
 #include "test_iterators.h"
 
-#if TEST_STD_VER < 2017
+#if TEST_STD_VER < 2014
 #  error "test/support/test_range.h" can only be included in builds supporting ranges
 #endif
 
@@ -89,17 +89,29 @@ struct BorrowedRange
   __host__ __device__ int* end() const;
   __host__ __device__ BorrowedRange(BorrowedRange&&) = delete;
 };
+
+namespace cuda
+{
+namespace std
+{
+namespace ranges
+{
 template <>
-inline constexpr bool cuda::std::ranges::enable_borrowed_range<BorrowedRange> = true;
+_CCCL_INLINE_VAR constexpr bool enable_borrowed_range<BorrowedRange> = true;
+} // namespace ranges
+} // namespace std
+} // namespace cuda
 
 static_assert(!cuda::std::ranges::view<BorrowedRange>, "");
 static_assert(cuda::std::ranges::borrowed_range<BorrowedRange>, "");
 
-#if _LIBCUDACXX_HAS_RANGES
+#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 using BorrowedView = cuda::std::ranges::empty_view<int>;
 static_assert(cuda::std::ranges::view<BorrowedView>, "");
 static_assert(cuda::std::ranges::borrowed_range<BorrowedView>, "");
+#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
+#if _LIBCUDACXX_HAS_RANGES
 using NonBorrowedView = cuda::std::ranges::single_view<int>;
 static_assert(cuda::std::ranges::view<NonBorrowedView>, "");
 static_assert(!cuda::std::ranges::borrowed_range<NonBorrowedView>, "");

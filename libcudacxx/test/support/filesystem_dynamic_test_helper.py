@@ -1,6 +1,6 @@
-import sys
 import os
 import socket
+import sys
 
 # Ensure that this is being run on a specific platform
 assert (
