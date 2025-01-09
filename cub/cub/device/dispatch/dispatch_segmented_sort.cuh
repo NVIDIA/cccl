@@ -79,10 +79,10 @@ using per_invocation_segment_offset_t = unsigned int;
 using global_segment_offset_t = ::cuda::std::int64_t;
 
 template <typename Iterator, typename OffsetItT>
-class OffsetIteratorT : public thrust::iterator_adaptor<OffsetIteratorT<Iterator, OffsetItT>, Iterator>
+class OffsetIteratorT : public THRUST_NS_QUALIFIER::iterator_adaptor<OffsetIteratorT<Iterator, OffsetItT>, Iterator>
 {
 public:
-  using super_t = thrust::iterator_adaptor<OffsetIteratorT<Iterator, OffsetItT>, Iterator>;
+  using super_t = THRUST_NS_QUALIFIER::iterator_adaptor<OffsetIteratorT<Iterator, OffsetItT>, Iterator>;
 
   _CCCL_HOST_DEVICE OffsetIteratorT() = default;
 
@@ -92,7 +92,7 @@ public:
   {}
 
   // befriend thrust::iterator_core_access to allow it access to the private interface below
-  friend class thrust::iterator_core_access;
+  friend class THRUST_NS_QUALIFIER::iterator_core_access;
 
 private:
   OffsetItT offset_it;
