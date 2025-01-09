@@ -461,7 +461,6 @@ public:
   _CCCL_DIAG_PUSH
   _CCCL_DIAG_SUPPRESS_CLANG("-Wreorder")
   _CCCL_DIAG_SUPPRESS_GCC("-Wreorder")
-  _CCCL_DIAG_SUPPRESS_ICC(2407)
   template <typename ComputeContent>
   _CCCL_HOST explicit async_addressable_value_with_keep_alives(
     unique_stream&& stream, keep_alives_type&& keep_alives, ComputeContent&& compute_content)

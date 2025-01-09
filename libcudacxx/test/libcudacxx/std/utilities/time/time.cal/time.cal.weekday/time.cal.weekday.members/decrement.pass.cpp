@@ -50,7 +50,6 @@ int main(int, char**)
 
   static_assert(testConstexpr<weekday>(), "");
 
-#ifndef TEST_COMPILER_ICC
   for (unsigned i = 0; i <= 6; ++i)
   {
     weekday wd(i);
@@ -58,7 +57,6 @@ int main(int, char**)
     assert(((wd--).c_encoding() == euclidian_subtraction<unsigned, 0, 6>(i, 1)));
     assert(((wd).c_encoding() == euclidian_subtraction<unsigned, 0, 6>(i, 2)));
   }
-#endif // TEST_COMPILER_ICC
 
   return 0;
 }

@@ -42,11 +42,10 @@
 
 // Determine the host compiler and its version
 #if defined(__INTEL_COMPILER)
-#  define _CCCL_COMPILER_ICC 1
-#  ifndef CCCL_SUPPRESS_ICC_DEPRECATION_WARNING
+#  ifndef CCCL_IGNORE_DEPRECATED_COMPILER
 #    warning \
-      "Support for the Intel C++ Compiler Classic is deprecated and will eventually be removed. Define CCCL_SUPPRESS_ICC_DEPRECATION_WARNING to suppress this warning"
-#  endif // CCCL_SUPPRESS_ICC_DEPRECATION_WARNING
+      "The Intel C++ Compiler Classic (icc/icpc) is not supported by CCCL. Define CCCL_IGNORE_DEPRECATED_COMPILER to suppress this message."
+#  endif // !CCCL_IGNORE_DEPRECATED_COMPILER
 #elif defined(__NVCOMPILER)
 #  define _CCCL_COMPILER_NVHPC _CCCL_COMPILER_MAKE_VERSION(__NVCOMPILER_MAJOR__, __NVCOMPILER_MINOR__)
 #elif defined(__clang__)
@@ -59,7 +58,7 @@
 #  if _CCCL_COMPILER_MSVC2017 && !defined(CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING)
 #    pragma message( \
       "Support for the Visual Studio 2017 (MSC_VER < 1920) is deprecated and will eventually be removed. Define CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING to suppress this warning")
-#  endif // CCCL_SUPPRESS_ICC_DEPRECATION_WARNING
+#  endif
 #  define _CCCL_COMPILER_MSVC2019                               \
     (_CCCL_COMPILER_MSVC >= _CCCL_COMPILER_MAKE_VERSION(19, 20) \
      && _CCCL_COMPILER_MSVC < _CCCL_COMPILER_MAKE_VERSION(19, 30))
