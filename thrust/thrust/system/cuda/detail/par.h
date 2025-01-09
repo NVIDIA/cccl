@@ -166,7 +166,7 @@ private:
   }
 };
 
-THRUST_INLINE_CONSTANT par_t par;
+_CCCL_GLOBAL_CONSTANT par_t par;
 
 /*! \p thrust::cuda::par_nosync is a parallel execution policy targeting Thrust's CUDA device backend.
  *  Similar to \p thrust::cuda::par it allows execution of Thrust algorithms in a specific CUDA stream.
@@ -215,7 +215,7 @@ THRUST_INLINE_CONSTANT par_t par;
  *  \endcode
  *
  */
-THRUST_INLINE_CONSTANT par_nosync_t par_nosync;
+_CCCL_GLOBAL_CONSTANT par_nosync_t par_nosync;
 } // namespace cuda_cub
 
 namespace system

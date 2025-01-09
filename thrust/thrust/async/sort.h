@@ -146,7 +146,7 @@ struct stable_sort_fn final
 
 } // namespace stable_sort_detail
 
-THRUST_INLINE_CONSTANT stable_sort_detail::stable_sort_fn stable_sort{};
+_CCCL_GLOBAL_CONSTANT stable_sort_detail::stable_sort_fn stable_sort{};
 
 namespace fallback
 {
@@ -259,7 +259,7 @@ struct sort_fn final
 
 } // namespace sort_detail
 
-THRUST_INLINE_CONSTANT sort_detail::sort_fn sort{};
+_CCCL_GLOBAL_CONSTANT sort_detail::sort_fn sort{};
 
 /*! \endcond
  */
