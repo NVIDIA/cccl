@@ -10,8 +10,8 @@ workflows:
   override:
 
   pull_request:
-    # Old CTK
-    - {jobs: ['build'], std: 'minmax', ctk: '11.1', cxx: ['gcc7', 'gcc9', 'clang9']}
+    # Old CTK/compiler
+    - {jobs: ['build'], std: 'minmax', ctk: '12.0', cxx: ['gcc7', 'gcc9', 'clang9', 'msvc2019']}
     # Current CTK build-only
     - {jobs: ['build'], std: [11, 14], cxx: ['gcc7', 'clang9']}
     - {jobs: ['build'], std: 'max', cxx: ['gcc8', 'gcc9', 'gcc10', 'gcc11', 'gcc12']}
@@ -41,7 +41,6 @@ workflows:
     # verify-codegen:
     - {jobs: ['verify_codegen'], project: 'libcudacxx'}
     # cudax has different CTK reqs:
-    - {jobs: ['build'], project: 'cudax', ctk: ['12.0'], std: 17,       cxx: ['gcc9', 'clang9']}
     - {jobs: ['build'], project: 'cudax', ctk: ['12.0'], std: 20,       cxx: ['msvc14.36']}
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,       cxx: ['gcc10', 'gcc11', 'gcc12']}
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,       cxx: ['clang10', 'clang11', 'clang12', 'clang13']}
@@ -55,7 +54,6 @@ workflows:
     # Python and c/parallel jobs:
     - {jobs: ['test'], project: ['cccl_c_parallel', 'python'], ctk: '12.6'}
     # cccl-infra:
-    - {jobs: ['infra'], project: 'cccl', ctk: '11.1', cxx: ['gcc7',  'clang9']}
     - {jobs: ['infra'], project: 'cccl', ctk: '12.0', cxx: ['gcc12', 'clang14']}
     - {jobs: ['infra'], project: 'cccl', ctk: 'curr', cxx: ['gcc',   'clang']}
 
@@ -64,9 +62,9 @@ workflows:
     - {jobs: ['limited'], project: 'cub', std: 17}
     - {jobs: ['test_gpu'],  project: 'thrust', cmake_options: '-DTHRUST_DISPATCH_TYPE=Force32bit'}
     - {jobs: ['test_gpu'],  project: 'thrust', cmake_options: '-DTHRUST_DISPATCH_TYPE=Force64bit'}
-    # Old CTK
-    - {jobs: ['build'], std: 'all', ctk: '11.1', cxx: ['gcc7', 'gcc8', 'gcc9', 'clang9']}
-    - {jobs: ['build'], std: 'all', ctk: '11.8', cxx: ['gcc11'], sm: '60;70;80;90'}
+    # Old CTK/compiler
+    - {jobs: ['build'], std: 'all', ctk: '12.0', cxx: ['gcc7', 'gcc8', 'gcc9', 'clang9', 'msvc2019']}
+    - {jobs: ['build'], std: 'all', ctk: '12.0', cxx: ['gcc11'], sm: '60;70;80;90'}
     # Current CTK build-only
     - {jobs: ['build'], std: 'all', cxx: ['gcc7', 'gcc8', 'gcc9', 'gcc10', 'gcc11', 'gcc12']}
     - {jobs: ['build'], std: 'all', cxx: ['clang9', 'clang10', 'clang11', 'clang12', 'clang13', 'clang14', 'clang15', 'clang16', 'clang17']}
@@ -116,9 +114,6 @@ workflows:
   exclude:
     # GPU runners are not available on Windows.
     - {jobs: ['test', 'test_gpu', 'test_nolid', 'test_lid0', 'test_lid1', 'test_lid2'], cxx: ['msvc2019', 'msvc14.36', 'msvc2022']}
-    # Ubuntu 18.04 is EOL and we only use it to get access to CTK 11.1 containers for CUDA testing.
-    # Disable non-CUDA tests on this platform.
-    - {jobs: ['test_cpu'], ctk: '11.1'}
 
 
 #############################################################################################
@@ -131,8 +126,6 @@ devcontainer_version: '25.02'
 all_stds: [11, 14, 17, 20]
 
 ctk_versions:
-  11.1: { stds: [11, 14, 17,   ] }
-  11.8: { stds: [11, 14, 17,   ] }
   12.0: { stds: [11, 14, 17, 20] }
   12.5: { stds: [11, 14, 17, 20] }
   12.6: { stds: [11, 14, 17, 20], aka: 'curr' }

@@ -1,6 +1,6 @@
 {
   "shutdownAction": "stopContainer",
-  "image": "rapidsai/devcontainers:25.02-cpp-gcc9-cuda11.1",
+  "image": "rapidsai/devcontainers:25.02-cpp-gcc8-cuda12.0",
   "hostRequirements": {
     "gpu": "optional"
   },
@@ -15,11 +15,11 @@
     "SCCACHE_BUCKET": "rapids-sccache-devs",
     "AWS_ROLE_ARN": "arn:aws:iam::279114543810:role/nv-gha-token-sccache-devs",
     "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
-    "DEVCONTAINER_NAME": "cuda11.1-gcc9",
-    "CCCL_CUDA_VERSION": "11.1",
+    "DEVCONTAINER_NAME": "cuda12.0-gcc8",
+    "CCCL_CUDA_VERSION": "12.0",
     "CCCL_HOST_COMPILER": "gcc",
-    "CCCL_HOST_COMPILER_VERSION": "9",
-    "CCCL_BUILD_INFIX": "cuda11.1-gcc9",
+    "CCCL_HOST_COMPILER_VERSION": "8",
+    "CCCL_BUILD_INFIX": "cuda12.0-gcc8",
     "CCCL_CUDA_EXTENDED": "false"
   },
   "workspaceFolder": "/home/coder/${localWorkspaceFolderBasename}",
@@ -50,5 +50,5 @@
       }
     }
   },
-  "name": "cuda11.1-gcc9"
+  "name": "cuda12.0-gcc8"
 }
