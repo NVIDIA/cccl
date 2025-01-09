@@ -89,7 +89,7 @@ struct segment_index_to_offset_op
     }
     else if (i < num_segments)
     {
-      return segment_size * (i - num_empty_segments);
+      return segment_size * static_cast<OffsetT>(i - num_empty_segments);
     }
     else
     {
@@ -176,7 +176,7 @@ private:
     std::size_t end_cycle = segment_end / sequence_length;
 
     // Number of full cycles repeating the sequence
-    std::size_t full_cycles = (end_cycle > start_cycle) ? end_cycle - start_cycle : 0;
+    int full_cycles = (end_cycle > start_cycle) ? static_cast<int>(end_cycle - start_cycle) : 0;
 
     // Add contributions from full cycles
     c2h::host_vector<int> histogram(sequence_length, full_cycles);

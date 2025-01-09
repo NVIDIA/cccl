@@ -236,9 +236,6 @@ try
     segment_iterator_t{num_empty_segments, num_segments, segment_size, num_items});
   auto offsets_plus_1 = offsets + 1;
 
-  auto out_keys_ptr   = thrust::raw_pointer_cast(out_keys.data());
-  auto out_values_ptr = thrust::raw_pointer_cast(out_values.data());
-
   stable_sort_pairs(
     thrust::raw_pointer_cast(in_keys.data()),
     thrust::raw_pointer_cast(out_keys.data()),
