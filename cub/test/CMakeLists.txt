@@ -227,10 +227,8 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
     endif() # CUB_SEPARATE_CATCH2
 
     if ("${test_target}" MATCHES "nvrtc")
-      target_compile_definitions(${test_target} PRIVATE NVRTC_CUB_PATH="-I${CMAKE_SOURCE_DIR}/cub")
-      target_compile_definitions(${test_target} PRIVATE NVRTC_THRUST_PATH="-I${CMAKE_SOURCE_DIR}/thrust")
-      target_compile_definitions(${test_target} PRIVATE NVRTC_LIBCUDACXX_PATH="-I${CMAKE_SOURCE_DIR}/libcudacxx/include")
-      target_compile_definitions(${test_target} PRIVATE NVRTC_CTK_PATH="-I${CUDAToolkit_INCLUDE_DIRS}")
+      configure_file("cmake/nvrtc_args.h.in" ${CMAKE_CURRENT_BINARY_DIR}/nvrtc_args.h)
+      target_include_directories(${test_target} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
     endif()
 
     if ("${test_target}" MATCHES "test.iterator")
