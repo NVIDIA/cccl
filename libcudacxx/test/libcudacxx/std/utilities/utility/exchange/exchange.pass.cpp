@@ -132,9 +132,7 @@ int main(int, char**)
   static_assert(test_constexpr(), "");
 #endif
 
-#ifndef TEST_COMPILER_ICC
   static_assert(test_noexcept(), "");
-#endif // TEST_COMPILER_ICC
 
   return 0;
 }

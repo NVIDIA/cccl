@@ -76,9 +76,7 @@ int main(int, char**)
   test_constexpr<optional<NonTrivialTypes::NoCtors>>();
   test_constexpr<optional<NonConstexprTypes::NoCtors>>();
 #endif
-#ifndef TEST_COMPILER_ICC
   test<optional<NonLiteralTypes::NoCtors>>();
-#endif // TEST_COMPILER_ICC
 
 #if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
   static_assert(test_constexpr<optional<int>>(), "");
