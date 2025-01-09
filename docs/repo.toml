@@ -271,6 +271,7 @@ doxygen_predefined = [
   "_CCCL_DIAG_SUPPRESS_GCC(x)=",
   "_CCCL_DIAG_SUPPRESS_MSVC(x)=",
   "_CCCL_DIAG_SUPPRESS_NVHPC(x)=",
+  "_CCCL_GLOBAL_CONSTANT=constexpr",
   "CUDASTF_HOST=",
   "CUDASTF_DEVICE=",
   "CUDASTF_HOST_DEVICE=",
