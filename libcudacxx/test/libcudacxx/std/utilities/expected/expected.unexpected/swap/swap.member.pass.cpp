@@ -42,9 +42,7 @@ constexpr bool
     noexcept(cuda::std::declval<T&>().swap(cuda::std::declval<T&>()));
 
 static_assert(MemberSwapNoexcept<cuda::std::unexpected<NoexceptSwap>>, "");
-#ifndef TEST_COMPILER_ICC
 static_assert(!MemberSwapNoexcept<cuda::std::unexpected<MayThrowSwap>>, "");
-#endif // TEST_COMPILER_ICC
 
 struct ADLSwap
 {

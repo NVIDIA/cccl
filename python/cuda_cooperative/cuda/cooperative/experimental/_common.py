@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-import tempfile
 import re
+import tempfile
 from collections import namedtuple
 
 version = namedtuple("version", ("major", "minor"))

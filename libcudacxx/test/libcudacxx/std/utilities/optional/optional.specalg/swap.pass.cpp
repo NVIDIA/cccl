@@ -340,9 +340,7 @@ int main(int, char**)
   {
     optional<Y> opt1;
     optional<Y> opt2;
-#ifndef TEST_COMPILER_ICC
     static_assert(noexcept(swap(opt1, opt2)) == false, "");
-#endif // TEST_COMPILER_ICC
     assert(static_cast<bool>(opt1) == false);
     assert(static_cast<bool>(opt2) == false);
     swap(opt1, opt2);
@@ -353,9 +351,7 @@ int main(int, char**)
   {
     optional<Y> opt1(1);
     optional<Y> opt2;
-#ifndef TEST_COMPILER_ICC
     static_assert(noexcept(swap(opt1, opt2)) == false, "");
-#endif // TEST_COMPILER_ICC
     assert(static_cast<bool>(opt1) == true);
     assert(*opt1 == 1);
     assert(static_cast<bool>(opt2) == false);
@@ -369,9 +365,7 @@ int main(int, char**)
   {
     optional<Y> opt1;
     optional<Y> opt2(2);
-#ifndef TEST_COMPILER_ICC
     static_assert(noexcept(swap(opt1, opt2)) == false, "");
-#endif // TEST_COMPILER_ICC
     assert(static_cast<bool>(opt1) == false);
     assert(static_cast<bool>(opt2) == true);
     assert(*opt2 == 2);
@@ -385,9 +379,7 @@ int main(int, char**)
   {
     optional<Y> opt1(1);
     optional<Y> opt2(2);
-#ifndef TEST_COMPILER_ICC
     static_assert(noexcept(swap(opt1, opt2)) == false, "");
-#endif // TEST_COMPILER_ICC
     assert(static_cast<bool>(opt1) == true);
     assert(*opt1 == 1);
     assert(static_cast<bool>(opt2) == true);
@@ -403,9 +395,7 @@ int main(int, char**)
   {
     optional<TerminatesOnMoveAssignmentAndSwap> opt1;
     optional<TerminatesOnMoveAssignmentAndSwap> opt2;
-#ifndef TEST_COMPILER_ICC
     static_assert(noexcept(swap(opt1, opt2)) == false, "");
-#endif // TEST_COMPILER_ICC
     assert(static_cast<bool>(opt1) == false);
     assert(static_cast<bool>(opt2) == false);
     swap(opt1, opt2);

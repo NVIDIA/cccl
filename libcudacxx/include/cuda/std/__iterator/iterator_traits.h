@@ -34,7 +34,6 @@
 #include <cuda/std/__type_traits/add_const.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_convertible.h>
-#include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_primary_template.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/void_t.h>
@@ -93,7 +92,7 @@ using iter_reference_t = decltype(*declval<_Tp&>());
 template <class>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
 
-#elif _CCCL_STD_VER > 2014 // ^^^ !_CCCL_NO_CONCEPTS ^^^
+#elif _CCCL_STD_VER >= 2014 // ^^^ !_CCCL_NO_CONCEPTS ^^^
 
 template <class _Tp>
 using __with_reference = _Tp&;
@@ -119,10 +118,10 @@ using iter_reference_t = enable_if_t<__dereferenceable<_Tp>, decltype(*declval<_
 
 template <class, class>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
-#else // ^^^ _CCCL_STD_VER > 2014 ^^^ / vvv _CCCL_STD_VER <= 2014 vvv
+#else // ^^^ _CCCL_STD_VER >= 2014 ^^^ / vvv _CCCL_STD_VER < 2014 vvv
 template <class>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
-#endif // _CCCL_STD_VER <= 2014
+#endif // _CCCL_STD_VER < 2014
 
 #if _CCCL_COMPILER(NVRTC)
 
@@ -530,7 +529,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits : __iterator_traits<_Ip>
   using __primary_template = iterator_traits;
 };
 
-#elif _CCCL_STD_VER > 2014 // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_STD_VER > 2014 vvv
+#elif _CCCL_STD_VER >= 2014 // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_STD_VER > 2014 vvv
 
 // The `cpp17-*-iterator` exposition-only concepts have very similar names to the `Cpp17*Iterator` named requirements
 // from `[iterator.cpp17]`. To avoid confusion between the two, the exposition-only concepts have been banished to
@@ -860,7 +859,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits<_Tp*>
   typedef _Tp* pointer;
   typedef typename add_lvalue_reference<_Tp>::type reference;
   typedef random_access_iterator_tag iterator_category;
-#if _CCCL_STD_VER > 2014
+#if _CCCL_STD_VER >= 2014
   typedef contiguous_iterator_tag iterator_concept;
 #endif
 };

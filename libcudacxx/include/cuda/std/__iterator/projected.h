@@ -27,7 +27,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2014
+#if _CCCL_STD_VER >= 2014
 
 template <class _It, class _Proj, class = void>
 struct __projected_impl
@@ -54,7 +54,7 @@ _CCCL_TEMPLATE(class _It, class _Proj)
 _CCCL_REQUIRES(indirectly_readable<_It> _CCCL_AND indirectly_regular_unary_invocable<_Proj, _It>)
 using projected = typename __projected_impl<_It, _Proj>::__type;
 
-#endif // _CCCL_STD_VER > 2014
+#endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

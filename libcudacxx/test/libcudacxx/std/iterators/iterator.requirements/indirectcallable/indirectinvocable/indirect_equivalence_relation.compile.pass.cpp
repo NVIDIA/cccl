@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11
 
 // template<class F, class I1, class I2 = I1>
 // concept indirect_equivalence_relation;
@@ -51,8 +51,8 @@ struct GoodRelation
 };
 
 // Should work when all constraints are satisfied
-static_assert(cuda::std::indirect_equivalence_relation<GoodRelation<It1, It2>, It1, It2>);
-static_assert(cuda::std::indirect_equivalence_relation<bool (*)(int, long), int*, long*>);
+static_assert(cuda::std::indirect_equivalence_relation<GoodRelation<It1, It2>, It1, It2>, "");
+static_assert(cuda::std::indirect_equivalence_relation<bool (*)(int, long), int*, long*>, "");
 
 #ifdef TEST_COMPILER_CLANG_CUDA
 #  pragma clang diagnostic ignored "-Wunneeded-internal-declaration"
@@ -61,7 +61,7 @@ static_assert(cuda::std::indirect_equivalence_relation<bool (*)(int, long), int*
 auto lambda = [](int i, long j) {
   return i == j;
 };
-static_assert(cuda::std::indirect_equivalence_relation<decltype(lambda), int*, long*>);
+static_assert(cuda::std::indirect_equivalence_relation<decltype(lambda), int*, long*>, "");
 #endif
 
 // Should fail when either of the iterators is not indirectly_readable
@@ -69,9 +69,9 @@ static_assert(cuda::std::indirect_equivalence_relation<decltype(lambda), int*, l
 struct NotIndirectlyReadable
 {};
 static_assert(
-  !cuda::std::indirect_equivalence_relation<GoodRelation<It1, NotIndirectlyReadable>, It1, NotIndirectlyReadable>);
+  !cuda::std::indirect_equivalence_relation<GoodRelation<It1, NotIndirectlyReadable>, It1, NotIndirectlyReadable>, "");
 static_assert(
-  !cuda::std::indirect_equivalence_relation<GoodRelation<NotIndirectlyReadable, It2>, NotIndirectlyReadable, It2>);
+  !cuda::std::indirect_equivalence_relation<GoodRelation<NotIndirectlyReadable, It2>, NotIndirectlyReadable, It2>, "");
 #endif
 
 // Should fail when the function is not copy constructible
@@ -81,7 +81,7 @@ struct BadRelation1
   template <class T, class U>
   __host__ __device__ bool operator()(T const&, U const&) const;
 };
-static_assert(!cuda::std::indirect_equivalence_relation<BadRelation1, It1, It2>);
+static_assert(!cuda::std::indirect_equivalence_relation<BadRelation1, It1, It2>, "");
 
 // Should fail when the function can't be called with (iter_value_t&, iter_value_t&)
 struct BadRelation2
@@ -90,7 +90,7 @@ struct BadRelation2
   __host__ __device__ bool operator()(T const&, U const&) const;
   bool operator()(cuda::std::iter_value_t<It1>&, cuda::std::iter_value_t<It2>&) const = delete;
 };
-static_assert(!cuda::std::indirect_equivalence_relation<BadRelation2, It1, It2>);
+static_assert(!cuda::std::indirect_equivalence_relation<BadRelation2, It1, It2>, "");
 
 // Should fail when the function can't be called with (iter_value_t&, iter_reference_t)
 struct BadRelation3
@@ -99,7 +99,7 @@ struct BadRelation3
   __host__ __device__ bool operator()(T const&, U const&) const;
   bool operator()(cuda::std::iter_value_t<It1>&, cuda::std::iter_reference_t<It2>) const = delete;
 };
-static_assert(!cuda::std::indirect_equivalence_relation<BadRelation3, It1, It2>);
+static_assert(!cuda::std::indirect_equivalence_relation<BadRelation3, It1, It2>, "");
 
 // Should fail when the function can't be called with (iter_reference_t, iter_value_t&)
 struct BadRelation4
@@ -108,7 +108,7 @@ struct BadRelation4
   __host__ __device__ bool operator()(T const&, U const&) const;
   bool operator()(cuda::std::iter_reference_t<It1>, cuda::std::iter_value_t<It2>&) const = delete;
 };
-static_assert(!cuda::std::indirect_equivalence_relation<BadRelation4, It1, It2>);
+static_assert(!cuda::std::indirect_equivalence_relation<BadRelation4, It1, It2>, "");
 
 // Should fail when the function can't be called with (iter_reference_t, iter_reference_t)
 struct BadRelation5
@@ -117,7 +117,7 @@ struct BadRelation5
   __host__ __device__ bool operator()(T const&, U const&) const;
   bool operator()(cuda::std::iter_reference_t<It1>, cuda::std::iter_reference_t<It2>) const = delete;
 };
-static_assert(!cuda::std::indirect_equivalence_relation<BadRelation5, It1, It2>);
+static_assert(!cuda::std::indirect_equivalence_relation<BadRelation5, It1, It2>, "");
 
 // Should fail when the function can't be called with (iter_common_reference_t, iter_common_reference_t)
 struct BadRelation6
@@ -126,7 +126,7 @@ struct BadRelation6
   __host__ __device__ bool operator()(T const&, U const&) const;
   bool operator()(cuda::std::iter_common_reference_t<It1>, cuda::std::iter_common_reference_t<It2>) const = delete;
 };
-static_assert(!cuda::std::indirect_equivalence_relation<BadRelation6, It1, It2>);
+static_assert(!cuda::std::indirect_equivalence_relation<BadRelation6, It1, It2>, "");
 
 int main(int, char**)
 {

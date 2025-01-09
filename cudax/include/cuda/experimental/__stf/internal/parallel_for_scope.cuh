@@ -916,7 +916,7 @@ public:
     const size_t n = shape.size();
 
     // Tuple <tuple<instances...>, size_t , fun, shape>
-    using args_t = ::std::tuple<deps_tup_t, size_t, Fun&&, sub_shape_t>;
+    using args_t = ::std::tuple<deps_tup_t, size_t, Fun, sub_shape_t>;
 
     // Create a tuple with all instances (eg. tuple<slice<double>, slice<int>>)
     deps_tup_t instances = ::std::apply(
@@ -940,7 +940,7 @@ public:
 
       auto& data               = ::std::get<0>(*p);
       const size_t n           = ::std::get<1>(*p);
-      Fun&& f                  = mv(::std::get<2>(*p));
+      Fun& f                   = ::std::get<2>(*p);
       const sub_shape_t& shape = ::std::get<3>(*p);
 
       // deps_ops_t are pairs of data instance type, and a reduction operator,

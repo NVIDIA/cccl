@@ -5,6 +5,7 @@
 
 import numba
 
+from cuda.cooperative.experimental._common import make_binary_tempfile
 from cuda.cooperative.experimental._types import (
     Algorithm,
     Dependency,
@@ -13,7 +14,6 @@ from cuda.cooperative.experimental._types import (
     Pointer,
     TemplateParameter,
 )
-from cuda.cooperative.experimental._common import make_binary_tempfile
 
 
 def exclusive_sum(dtype, threads_in_warp=32):

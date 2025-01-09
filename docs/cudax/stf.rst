@@ -1772,6 +1772,132 @@ all the benefits of statically available types):
 
    stream_task<> t = ctx.task(lX.read());
 
+Modular use of CUDASTF
+----------------------
+
+CUDASTF maintains data consistency throughout the system, and infers
+concurrency opportunities based on data accesses. Depending on the use cases,
+one may however already manage coherency or enforce dependencies.
+
+- The "logical data freezing" mechanism ensures data availability while letting
+  the application take care of synchronization.
+- Logical token makes it possible to enforce concurrent execution while
+  letting the application manage data allocations and data transfers.
+
+Freezing logical data
+^^^^^^^^^^^^^^^^^^^^^
+
+When a piece of data is used very often, it can be beneficial to avoid enforcing
+data dependencies every time it is accessed. A common example would be data that
+is written once and then read many times.
+
+CUDASTF provides a mechanism called logical data freeze that allows a
+logical data to be accessed outside of tasks—or within tasks—without
+enforcing data dependencies for every access, which reduces overhead to a minimum.
+
+
+By default, calling the ``freeze`` method returns a frozen logical data object
+that can be accessed in read-only mode without additional synchronization. The
+``get`` method of the frozen logical data returns a view of the underlying data
+on the specified data place. This view can be used asynchronously with respect
+to the stream passed to ``get`` until calling the non-blocking unfreeze
+method on the frozen logical data. It is possible to call ``get`` multiple times.
+Modifying these frozen read-only views results in undefined behavior.
+If necessary, implicit data transfers or allocations are performed asynchronously
+when calling ``get``.
+
+.. code:: cpp
+
+    auto frozen_ld = ctx.freeze(ld);
+    auto dX = frozen_ld.get(data_place::current_device(), stream);
+    kernel<<<..., stream>>>(dX);
+
+    // Get a read-only copy of the frozen data on other data places
+    auto dX1 = frozen_ld.get(data_place::device(1), stream);
+    auto hX = frozen_ld.get(data_place::host, stream);
+
+    fx.unfreeze(stream);
+
+While data are frozen, it is still possible to launch tasks which access
+them. CUDASTF will allow tasks with a read access modes to run
+concurrently before ``unfreeze`` is called, but it will defer write accesses
+until data is made is made modifiable again, after ``unfreeze``.
+
+.. code:: cpp
+
+    auto frozen_ld = ctx.freeze(ld, access_mode::rw, data_place::current_device());
+    auto dX = frozen_ld.get(data_place::current_device(), stream);
+    // kernel can modify dX
+    kernel<<<..., stream>>>(dX);
+    fx.unfreeze(stream);
+
+As shown above, it is also possible to create a modifiable frozen logical data,
+allowing an application to temporarily transfer ownership of the logical data
+to code that does not use tasks.  Because no further synchronization is
+performed to ensure the consistency of this logical data once it is frozen,
+users need to specify where the view of the data is needed.  Any tasks that
+access this modifiable frozen logical data will be deferred until ``unfreeze``
+is called.
+
+It is not possible to freeze the same logical data concurrently. Therefore, we
+need to call ``unfreeze`` before calling ``freeze`` again, and it is the
+programmer's responsibility to ensure that the stream passed to ``freeze``
+depends on the completions of all operations in the stream previously passed to
+``unfreeze``.
+
+It is possible to use different streams in the ``freeze``, ``get`` and
+``unfreeze`` methods. However it is also programmer's responsibility to ensure
+that the stream passed to ``get`` depends on the completion of the work in the
+stream passed to ``freeze`` (for example, by using a blocking call such as
+``cudaStreamSynchronize``). Similarly, the stream passed to ``unfreeze`` must
+depend on the completion of the work in the streams used for any preceding
+``freeze`` and ``get`` calls.
+
+Logical token
+^^^^^^^^^^^^^
+
+A logical token is a specific type of logical data whose only purpose is to
+automate synchronization, while letting the application manage the actual data.
+This can, for example, be useful with user-provided buffers on a single device,
+where no allocations or transfers are required, but where concurrent accesses
+may occur.
+
+A logical token internally relies on the ``void_interface`` data interface,
+which is specifically optimized to skip unnecessary stages in the cache
+coherency protocol (e.g., data allocations or copying data). When appropriate,
+using a logical token rather than a logical data with a full-fledged data
+interface therefore minimizes runtime overhead.
+
+.. code:: cpp
+
+    auto token = ctx.logical_token();
+
+    // A and B are assumed to be two other valid logical data
+    ctx.task(token.rw(), A.read(), B.rw())->*[](cudaStream_t stream, auto a, auto b)
+    {
+        ...
+    };
+
+The example above shows how to create a logical token and how to use it in a
+task.
+
+Since the logical token is only used for synchronization purposes, the
+corresponding argument may be omitted in the lambda function passed as the
+task’s implementation. Thus, the above task is equivalent to this code:
+
+.. code:: cpp
+
+    ctx.task(token.rw(), A.read(), B.rw())->*[](cudaStream_t stream, void_interface dummy, auto a, auto b)
+
+To avoid ambiguities, you must either consistently ignore every
+``void_interface`` data instance or include them all, even if they remain
+unused. Eliding these token arguments is possible in the ``ctx.task`` and
+``ctx.host_launch`` constructs.
+
+Note that the token created by the ``logical_token`` method of the context
+object is already valid, which means the first access can be either a ``read()``
+or an ``rw()`` access. There is no need to set any content in the token
+(unlike a logical data object created from a shape).
 
 Tools
 -----

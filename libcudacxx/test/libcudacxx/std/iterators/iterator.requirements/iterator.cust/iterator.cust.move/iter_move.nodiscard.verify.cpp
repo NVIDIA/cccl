@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: LIBCUDACXX-has-no-incomplete-ranges
 
 // Test the [[nodiscard]] extension in libc++.
