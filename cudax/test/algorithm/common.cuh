@@ -17,7 +17,7 @@
 #include <cuda/experimental/buffer.cuh>
 #include <cuda/experimental/memory_resource.cuh>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <utility.cuh>
 
 inline constexpr uint8_t fill_byte    = 1;

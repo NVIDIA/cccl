@@ -17,7 +17,8 @@
 #include <iostream>
 #include <sstream>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_template_test_macros.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <nv/target>
 
 namespace cuda::experimental::__async

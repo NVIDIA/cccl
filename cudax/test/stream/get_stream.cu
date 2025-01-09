@@ -10,7 +10,7 @@
 
 #include <cuda/experimental/stream.cuh>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <utility.cuh>
 
 TEST_CASE("Can call get_stream on a cudaStream_t", "[stream]")
