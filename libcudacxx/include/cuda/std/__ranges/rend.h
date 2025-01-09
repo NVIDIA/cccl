@@ -161,8 +161,9 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_rvalue_reference_v<_Tp&&>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(
-    _CUDA_VRANGES::rend(static_cast<const _Tp&&>(__t)))) -> decltype(_CUDA_VRANGES::rend(static_cast<const _Tp&&>(__t)))
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
+    noexcept(noexcept(_CUDA_VRANGES::rend(static_cast<const _Tp&&>(__t))))
+      -> decltype(_CUDA_VRANGES::rend(static_cast<const _Tp&&>(__t)))
   {
     return _CUDA_VRANGES::rend(static_cast<const _Tp&&>(__t));
   }

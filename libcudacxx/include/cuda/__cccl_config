@@ -11,6 +11,7 @@
 #ifndef _CUDA__CCCL_CONFIG
 #define _CUDA__CCCL_CONFIG
 
+#include <cuda/std/__cccl/architecture.h> // IWYU pragma: export
 #include <cuda/std/__cccl/assert.h> // IWYU pragma: export
 #include <cuda/std/__cccl/attributes.h> // IWYU pragma: export
 #include <cuda/std/__cccl/builtin.h> // IWYU pragma: export
@@ -21,6 +22,7 @@
 #include <cuda/std/__cccl/exceptions.h> // IWYU pragma: export
 #include <cuda/std/__cccl/execution_space.h> // IWYU pragma: export
 #include <cuda/std/__cccl/extended_floating_point.h> // IWYU pragma: export
+#include <cuda/std/__cccl/os.h> // IWYU pragma: export
 #include <cuda/std/__cccl/preprocessor.h> // IWYU pragma: export
 #include <cuda/std/__cccl/ptx_isa.h> // IWYU pragma: export
 #include <cuda/std/__cccl/rtti.h> // IWYU pragma: export

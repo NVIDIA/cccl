@@ -40,8 +40,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_compiler.cuh> // IWYU pragma: export
-
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 // Deprecation warnings may be silenced by defining the following macros. These
@@ -80,8 +78,8 @@
 #  ifndef CCCL_IGNORE_DEPRECATED_COMPILER
 
 // Compiler checks:
-#    if _CCCL_COMPILER(GCC, <, 5)
-CUB_COMPILER_DEPRECATION(GCC 5.0);
+#    if _CCCL_COMPILER(GCC, <, 7)
+CUB_COMPILER_DEPRECATION(GCC 7.0);
 #    elif _CCCL_COMPILER(CLANG, <, 7)
 CUB_COMPILER_DEPRECATION(Clang 7.0);
 #    elif _CCCL_COMPILER(MSVC, <, 19, 10)

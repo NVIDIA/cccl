@@ -125,7 +125,6 @@ function(thrust_add_header_test thrust_target label definitions)
     ${header_definitions}
     "THRUST_CPP11_REQUIRED_NO_ERROR"
     "THRUST_CPP14_REQUIRED_NO_ERROR"
-    "THRUST_MODERN_GCC_REQUIRED_NO_ERROR"
   )
   thrust_clone_target_properties(${headertest_target} ${thrust_target})
 

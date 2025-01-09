@@ -405,14 +405,12 @@ static_assert(noexcept(cuda::std::ranges::begin(ntab)), "");
 static_assert(noexcept(cuda::std::ranges::cbegin(ntab)), "");
 #endif // TEST_STD_VER > 2014 && !TEST_COMPILER_MSVC_2019
 
-#if !defined(TEST_COMPILER_ICC)
 _CCCL_GLOBAL_CONSTANT struct NoThrowMemberBeginReturnsRef
 {
   __host__ __device__ ThrowingIterator<int>& begin() const noexcept; // auto(t.begin()) may throw
 } ntmbrr;
 static_assert(!noexcept(cuda::std::ranges::begin(ntmbrr)), "");
 static_assert(!noexcept(cuda::std::ranges::cbegin(ntmbrr)), "");
-#endif // !TEST_COMPILER_ICC
 
 _CCCL_GLOBAL_CONSTANT struct BeginReturnsArrayRef
 {
@@ -454,9 +452,7 @@ int main(int, char**)
   unused(ntmb);
   unused(ntab);
 #endif // TEST_STD_VER > 2014 && !TEST_COMPILER_MSVC_2019
-#if !defined(TEST_COMPILER_ICC)
   unused(ntmbrr);
-#endif // !TEST_COMPILER_ICC
   unused(brar);
 
   return 0;

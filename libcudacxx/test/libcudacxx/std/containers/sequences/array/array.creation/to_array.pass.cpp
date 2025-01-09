@@ -94,7 +94,7 @@ __host__ __device__ constexpr bool tests()
 #if defined(TEST_COMPILER_NVRTC) && defined(TEST_COMPILER_MSVC)
   // Test C99 compound literal.
   {
-    auto arr = cuda::std::to_array((int[]){3, 4});
+    auto arr = cuda::std::to_array((int[]) {3, 4});
     ASSERT_SAME_TYPE(decltype(arr), cuda::std::array<int, 2>);
     assert(arr[0] == 3);
     assert(arr[1] == 4);

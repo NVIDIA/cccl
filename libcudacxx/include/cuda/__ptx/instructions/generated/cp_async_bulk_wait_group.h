@@ -16,10 +16,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_wait_group(n32_t<_N32> __N)
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (asm volatile("cp.async.bulk.wait_group %0;"
-                  :
-                  : "n"(__N.value)
-                  : "memory");),
+    (asm volatile("cp.async.bulk.wait_group %0;" : : "n"(__N.value) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_async_bulk_wait_group_is_not_supported_before_SM_90__();));
@@ -39,10 +36,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_wait_group_read(n32_t<_N32> __N)
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (asm volatile("cp.async.bulk.wait_group.read %0;"
-                  :
-                  : "n"(__N.value)
-                  : "memory");),
+    (asm volatile("cp.async.bulk.wait_group.read %0;" : : "n"(__N.value) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_async_bulk_wait_group_read_is_not_supported_before_SM_90__();));

@@ -53,7 +53,7 @@ public:
 };
 
 template <class _Rp, class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __mem_fn<_Rp _Tp::*> mem_fn(_Rp _Tp::*__pm) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __mem_fn<_Rp _Tp::*> mem_fn(_Rp _Tp::* __pm) noexcept
 {
   return __mem_fn<_Rp _Tp::*>(__pm);
 }

@@ -258,9 +258,7 @@ typedef unsigned int char32_t;
 // TODO: Support C11 Atomics?
 // #if _CCCL_HAS_FEATURE(cxx_atomic) || __has_extension(c_atomic) || _CCCL_HAS_KEYWORD(_Atomic)
 // #  define _LIBCUDACXX_HAS_C_ATOMIC_IMP
-#  if _CCCL_COMPILER(ICC)
-#    define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
-#  elif _CCCL_COMPILER(CLANG)
+#  if _CCCL_COMPILER(CLANG)
 #    define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
 #  elif _CCCL_COMPILER(GCC)
 #    define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
