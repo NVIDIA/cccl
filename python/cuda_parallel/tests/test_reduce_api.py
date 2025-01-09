@@ -53,10 +53,11 @@ def test_cache_modified_input_iterator():
     d_input = cp.array(values, dtype=np.int32)
     d_output = cp.empty(1, dtype=np.int32)
 
-    # Create the iterator
-    iterator = iterators.CacheModifiedInputIterator(d_input, modifier="stream")
-    h_init = np.array([0], dtype=np.int32)
-    d_output = cp.empty(1, dtype=np.int32)
+    iterator = iterators.CacheModifiedInputIterator(
+        d_input, modifier="stream"
+    )  # Input sequence
+    h_init = np.array([0], dtype=np.int32)  # Initial value for the reduction
+    d_output = cp.empty(1, dtype=np.int32)  # Storage for output
 
     # Instantiate reduction, determine storage requirements, and allocate storage
     reduce_into = algorithms.reduce_into(iterator, d_output, add_op, h_init)
@@ -87,10 +88,9 @@ def test_constant_iterator():
     value = 10
     num_items = 3
 
-    # Create the iterator
-    constant_it = iterators.ConstantIterator(np.int32(value))
-    h_init = np.array([0], dtype=np.int32)
-    d_output = cp.empty(1, dtype=np.int32)
+    constant_it = iterators.ConstantIterator(np.int32(value))  # Input sequence
+    h_init = np.array([0], dtype=np.int32)  # Initial value for the reduction
+    d_output = cp.empty(1, dtype=np.int32)  # Storage for output
 
     # Instantiate reduction, determine storage requirements, and allocate storage
     reduce_into = algorithms.reduce_into(constant_it, d_output, add_op, h_init)
@@ -121,10 +121,9 @@ def test_counting_iterator():
     first_item = 10
     num_items = 3
 
-    # Create the iterator
-    first_it = iterators.CountingIterator(np.int32(first_item))
-    h_init = np.array([0], dtype=np.int32)
-    d_output = cp.empty(1, dtype=np.int32)
+    first_it = iterators.CountingIterator(np.int32(first_item))  # Input sequence
+    h_init = np.array([0], dtype=np.int32)  # Initial value for the reduction
+    d_output = cp.empty(1, dtype=np.int32)  # Storage for output
 
     # Instantiate reduction, determine storage requirements, and allocate storage
     reduce_into = algorithms.reduce_into(first_it, d_output, add_op, h_init)
@@ -160,12 +159,11 @@ def test_transform_iterator():
     first_item = 10
     num_items = 3
 
-    # Creating the iterator by composing with a CountingIterator
     transform_it = iterators.TransformIterator(
         iterators.CountingIterator(np.int32(first_item)), square_op
-    )
-    h_init = np.array([0], dtype=np.int32)
-    d_output = cp.empty(1, dtype=np.int32)
+    )  # Input sequence
+    h_init = np.array([0], dtype=np.int32)  # Initial value for the reduction
+    d_output = cp.empty(1, dtype=np.int32)  # Storage for output
 
     # Instantiate reduction, determine storage requirements, and allocate storage
     reduce_into = algorithms.reduce_into(transform_it, d_output, add_op, h_init)
