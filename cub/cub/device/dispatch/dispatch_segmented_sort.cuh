@@ -50,7 +50,6 @@
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/device/device_partition.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_sort.cuh>
-#include <cub/iterator/constant_input_iterator.cuh>
 #include <cub/thread/thread_sort.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
@@ -87,7 +86,7 @@ class OffsetIteratorT : public THRUST_NS_QUALIFIER::iterator_adaptor<OffsetItera
 public:
   using super_t = THRUST_NS_QUALIFIER::iterator_adaptor<OffsetIteratorT<Iterator, OffsetItT>, Iterator>;
 
-  _CCCL_HOST_DEVICE OffsetIteratorT() = default;
+  OffsetIteratorT() = default;
 
   _CCCL_HOST_DEVICE OffsetIteratorT(const Iterator& it, OffsetItT offset_it)
       : super_t(it)
