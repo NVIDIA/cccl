@@ -69,20 +69,14 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t __shfl_sync_dst_lane(
   return (1 << __dst);
 }
 
-template <typename _Tp>
-struct shfl_return_values
-{
-  _Tp data;
-  bool pred;
-};
-
 template <typename _Tp, dot_shfl_mode _ShuffleMode>
-_CCCL_NODISCARD _CCCL_DEVICE static inline shfl_return_values<_Tp> shfl_sync(
+_CCCL_NODISCARD _CCCL_DEVICE static inline _Tp shfl_sync(
   shfl_mode_t<_ShuffleMode> __shfl_mode,
   _Tp __data,
   _CUDA_VSTD::uint32_t __lane_idx_offset,
   _CUDA_VSTD::uint32_t __clamp_segmask,
-  _CUDA_VSTD::uint32_t __lane_mask) noexcept
+  _CUDA_VSTD::uint32_t __lane_mask,
+  bool& __pred) noexcept
 {
   static_assert(sizeof(_Tp) == 4, "shfl.sync only accepts 4-byte data types");
   _CCCL_ASSERT(__lane_idx_offset < 32, "the lane index or offset must be less than the warp size");
@@ -92,7 +86,7 @@ _CCCL_NODISCARD _CCCL_DEVICE static inline shfl_return_values<_Tp> shfl_sync(
   _CCCL_ASSERT(__shfl_sync_dst_lane(__shfl_mode, __lane_idx_offset, __clamp_segmask, __lane_mask) & __lane_mask,
                "the destination lane must be a member of the lane mask");
   auto __data1 = _CUDA_VSTD::bit_cast<_CUDA_VSTD::uint32_t>(__data);
-  _CUDA_VSTD::int32_t __pred;
+  _CUDA_VSTD::int32_t __pred1;
   _CUDA_VSTD::uint32_t __ret;
   if constexpr (__shfl_mode == shfl_mode_idx)
   {
@@ -102,7 +96,7 @@ _CCCL_NODISCARD _CCCL_DEVICE static inline shfl_return_values<_Tp> shfl_sync(
       "shfl.sync.sync.idx.b32 %0|p, %2, %3, %4, %5;                \n\t\t"
       "selp.s32 %1, 1, 0, p;                                         \n\t"
       "}"
-      : "=r"(__ret), "=r"(__pred)
+      : "=r"(__ret), "=r"(__pred1)
       : "r"(__data1), "r"(__lane_idx_offset), "r"(__clamp_segmask), "r"(__lane_mask));
   }
   else if constexpr (__shfl_mode == shfl_mode_up)
@@ -113,7 +107,7 @@ _CCCL_NODISCARD _CCCL_DEVICE static inline shfl_return_values<_Tp> shfl_sync(
       "shfl.sync.sync.up.b32 %0|p, %2, %3, %4, %5;                 \n\t\t"
       "selp.s32 %1, 1, 0, p;                                         \n\t"
       "}"
-      : "=r"(__ret), "=r"(__pred)
+      : "=r"(__ret), "=r"(__pred1)
       : "r"(__data1), "r"(__lane_idx_offset), "r"(__clamp_segmask), "r"(__lane_mask));
   }
   else if constexpr (__shfl_mode == shfl_mode_down)
@@ -124,7 +118,7 @@ _CCCL_NODISCARD _CCCL_DEVICE static inline shfl_return_values<_Tp> shfl_sync(
       "shfl.sync.sync.down.b32 %0|p, %2, %3, %4, %5;               \n\t\t"
       "selp.s32 %1, 1, 0, p;                                         \n\t"
       "}"
-      : "=r"(__ret), "=r"(__pred)
+      : "=r"(__ret), "=r"(__pred1)
       : "r"(__data1), "r"(__lane_idx_offset), "r"(__clamp_segmask), "r"(__lane_mask));
   }
   else
@@ -135,11 +129,11 @@ _CCCL_NODISCARD _CCCL_DEVICE static inline shfl_return_values<_Tp> shfl_sync(
       "shfl.sync.sync.bfly.b32 %0|p, %2, %3, %4, %5;               \n\t\t"
       "selp.s32 %1, 1, 0, p;                                         \n\t"
       "}"
-      : "=r"(__ret), "=r"(__pred)
+      : "=r"(__ret), "=r"(__pred1)
       : "r"(__data1), "r"(__lane_idx_offset), "r"(__clamp_segmask), "r"(__lane_mask));
   }
-  auto __ret1 = _CUDA_VSTD::bit_cast<_CUDA_VSTD::uint32_t>(__ret);
-  return shfl_return_values<_Tp>{__ret1, static_cast<bool>(__pred)};
+  __pred = static_cast<bool>(__pred1);
+  return _CUDA_VSTD::bit_cast<_CUDA_VSTD::uint32_t>(__ret);
 }
 
 #  endif // __cccl_ptx_isa >= 600
