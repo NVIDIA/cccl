@@ -6,15 +6,20 @@
 .. code:: cuda
 
    template <typename T, typename = U>
-   [[nodiscard]] __host__ __device__ constexpr decltype(T{} / U{}) round_down(T a, U b) noexcept;
+   [[nodiscard]] __host__ __device__ inline
+   constexpr cuda::std::common_type_t<T, U> round_down(T a, U b) noexcept;
 
-- *Requires*: ``T`` and ``U`` are integral types or enumerators.
+- *Requires*: ``T`` and ``U`` are integral types (including 128-bit integers) or enumerators.
 - *Preconditions*: ``a >= 0`` is true and ``b > 0`` is true.
 - *Returns*: ``a`` rounded to the previous multiple of ``b``. If ``a`` is already a multiple of ``b``, return ``a``.
 
 .. note::
 
    The function requires C++17 onwards
+
+**Performance considerations**:
+
+- The function performs a truncation division followed by a multiplication. It provides better performance than ``a / b * b`` when the common type is a signed integer
 
 **Example**:
 
