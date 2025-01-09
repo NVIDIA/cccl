@@ -55,26 +55,24 @@ public:
   task_dep_untyped& operator=(task_dep_untyped&& other) noexcept = default;
 
   // dependency with an explicit data_place
-  template <typename access_mode_t>
+  template <access_mode mode>
   task_dep_untyped(const logical_data_untyped& d,
-                   access_mode_t,
+                   ::std::integral_constant<access_mode, mode>, // to get a compile-time value for mode
                    data_place dplace,
                    ::std::shared_ptr<reduction_operator_base> redux_op = nullptr)
-      : data(pack_state(access_mode_t{}, d))
-      , m(access_mode_tag::to_access_mode(access_mode_t{})) // get the runtime value access_mode based on type
+      : data(pack_state<mode>(d))
+      , m(mode) // get the runtime value access_mode based on type
       , dplace(mv(dplace))
       , redux_op(mv(redux_op))
   {}
 
   // dependency without an explicit data_place : using data_place::affine
-  template <typename access_mode_t>
-  task_dep_untyped(
-    const logical_data_untyped& d, access_mode_t, ::std::shared_ptr<reduction_operator_base> redux_op = nullptr)
-      : task_dep_untyped(d, access_mode_t{}, data_place::affine, mv(redux_op))
-  {
-    // Ensure we do have an access_mode_tag type
-    static_assert(is_access_mode_tag_v<access_mode_t>);
-  }
+  template <access_mode mode>
+  task_dep_untyped(const logical_data_untyped& d,
+                   ::std::integral_constant<access_mode, mode>,
+                   ::std::shared_ptr<reduction_operator_base> redux_op = nullptr)
+      : task_dep_untyped(d, ::std::integral_constant<access_mode, mode>{}, data_place::affine, mv(redux_op))
+  {}
 
   logical_data_untyped get_data() const;
 
