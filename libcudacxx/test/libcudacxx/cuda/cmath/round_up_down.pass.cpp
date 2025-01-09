@@ -27,7 +27,7 @@ template <class T, class U>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
 {
   constexpr auto maxv = cuda::std::numeric_limits<T>::max();
-  using CommonType    = decltype(T{} / U{});
+  using CommonType    = cuda::std::common_type_t<T, U>;
   // ensure that we return the right type
   static_assert(cuda::std::is_same<decltype(cuda::round_up(T(0), U(1))), CommonType>::value, "");
   static_assert(cuda::std::is_same<decltype(cuda::round_down(T(0), U(1))), CommonType>::value, "");
