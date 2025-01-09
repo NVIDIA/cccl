@@ -70,38 +70,17 @@ _LIBCUDACXX_HIDE_FROM_ABI int __runtime_ctz(uint32_t __x) noexcept
 #endif // _CCCL_COMPILER(MSVC)
 }
 
-#if _CCCL_COMPILER(MSVC) // _CCCL_COMPILER(MSVC) vvv
-
-_LIBCUDACXX_HIDE_FROM_ABI int __runtime_ctz_msvc(uint64_t __x) noexcept
-{
-  unsigned long __where = 0;
-#  if defined(_LIBCUDACXX_HAS_BITSCAN64) && (defined(_M_AMD64) || defined(__x86_64__))
-  if (::_BitScanForward64(&__where, __x))
-  {
-    return static_cast<int>(__where);
-  }
-#  else
-  // Win32 doesn't have _BitScanForward64 so emulate it with two 32 bit calls.
-  if (::_BitScanForward(&__where, static_cast<uint32_t>(__x)))
-  {
-    return static_cast<int>(__where);
-  }
-  if (::_BitScanForward(&__where, static_cast<uint32_t>(__x >> 32)))
-  {
-    return static_cast<int>(__where) + 32;
-  }
-#  endif
-  return 64;
-}
-
-#endif // _CCCL_COMPILER(MSVC)
-
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_ctz(uint64_t __x) noexcept
 {
 #if defined(__CUDA_ARCH__)
   return ::__clzll(__brevll(__x));
 #elif _CCCL_COMPILER(MSVC) // _CCCL_COMPILER(MSVC) vvv
-  return _CUDA_VSTD::__runtime_ctz_msvc(__x);
+  unsigned long __where = 0;
+  if (::_BitScanForward64(&__where, __x))
+  {
+    return static_cast<int>(__where);
+  }
+  return 64;
 #else // _CCCL_COMPILER(MSVC) ^^^ / !_CCCL_COMPILER(MSVC) vvv
   return ::__builtin_ctzll(__x);
 #endif // !_CCCL_COMPILER(MSVC) ^^^
@@ -109,20 +88,12 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_ctz(uint64_t __x) noexcept
 
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_ctz(uint32_t __x) noexcept
 {
-  if (!__cccl_default_is_constant_evaluated())
-  {
-    return _CUDA_VSTD::__runtime_ctz(__x);
-  }
-  return _CUDA_VSTD::__constexpr_ctz(__x);
+  return _CUDA_VSTD::is_constant_evaluated() ? _CUDA_VSTD::__constexpr_ctz(__x) : _CUDA_VSTD::__runtime_ctz(__x);
 }
 
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_ctz(uint64_t __x) noexcept
 {
-  if (!__cccl_default_is_constant_evaluated())
-  {
-    return _CUDA_VSTD::__runtime_ctz(__x);
-  }
-  return _CUDA_VSTD::__constexpr_ctz(__x);
+  return _CUDA_VSTD::is_constant_evaluated() ? _CUDA_VSTD::__constexpr_ctz(__x) : _CUDA_VSTD::__runtime_ctz(__x);
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD

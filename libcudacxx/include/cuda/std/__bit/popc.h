@@ -79,20 +79,12 @@ _LIBCUDACXX_HIDE_FROM_ABI int __runtime_popc(uint64_t __x) noexcept
 
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_popc(uint32_t __x) noexcept
 {
-  if (!__cccl_default_is_constant_evaluated())
-  {
-    return _CUDA_VSTD::__runtime_popc(__x);
-  }
-  return _CUDA_VSTD::__constexpr_popc(__x);
+  return _CUDA_VSTD::is_constant_evaluated() ? _CUDA_VSTD::__constexpr_popc(__x) : _CUDA_VSTD::__runtime_popc(__x);
 }
 
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_popc(uint64_t __x) noexcept
 {
-  if (!__cccl_default_is_constant_evaluated())
-  {
-    return _CUDA_VSTD::__runtime_popc(__x);
-  }
-  return _CUDA_VSTD::__constexpr_popc(__x);
+  return _CUDA_VSTD::is_constant_evaluated() ? _CUDA_VSTD::__constexpr_popc(__x) : _CUDA_VSTD::__runtime_popc(__x);
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
