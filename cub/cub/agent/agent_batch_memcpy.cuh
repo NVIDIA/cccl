@@ -424,12 +424,11 @@ public:
     for (uint32_t i = 0; i < NUM_TOTAL_UNITS; ++i)
     {
       // In case the bit-offset of the counter at <index> is larger than the bit range of the
-      // current unit, the bit_shift amount will be larger than the bits provided by this unit. As
-      // C++'s bit-shift has undefined behaviour if the bits being shifted exceed the operand width,
-      // we use the PTX instruction `shr` to make sure behaviour is well-defined.
-      // Negative bit-shift amounts wrap around in unsigned integer math and are ultimately clamped.
+      // current unit, the bit_shift amount will be larger than the bits provided by this unit.
+      // C++'s bit-shift has undefined behaviour if the bits being shifted exceed the operand width.
+      // The bit_shift is a run-time value, it is translated into SASS `shr` and the result behavior is well-defined.
       const uint32_t bit_shift = target_offset - i * USED_BITS_PER_UNIT;
-      val |= detail::LogicShiftRight(data[i], bit_shift) & ITEM_MASK;
+      val |= (data[i] >> bit_shift) & ITEM_MASK;
     }
     return val;
   }
@@ -442,12 +441,11 @@ public:
     for (uint32_t i = 0; i < NUM_TOTAL_UNITS; ++i)
     {
       // In case the bit-offset of the counter at <index> is larger than the bit range of the
-      // current unit, the bit_shift amount will be larger than the bits provided by this unit. As
-      // C++'s bit-shift has undefined behaviour if the bits being shifted exceed the operand width,
-      // we use the PTX instruction `shl` to make sure behaviour is well-defined.
-      // Negative bit-shift amounts wrap around in unsigned integer math and are ultimately clamped.
+      // current unit, the bit_shift amount will be larger than the bits provided by this unit.
+      // C++'s bit-shift has undefined behaviour if the bits being shifted exceed the operand width.
+      // The bit_shift is a run-time value, it is translated into SASS `shl` and the result behavior is well-defined.
       const uint32_t bit_shift = target_offset - i * USED_BITS_PER_UNIT;
-      data[i] += detail::LogicShiftLeft(value, bit_shift) & UNIT_MASK;
+      data[i] += (value << bit_shift) & UNIT_MASK;
     }
   }
 
