@@ -55,13 +55,15 @@ def gpu_struct(this: type) -> Type[GpuStruct]:
     # create CuPy/NumPy arrays of this type.
     setattr(this, "dtype", np.dtype(list(anns.items())))
 
-    # Define __post_init__ to create a ctypes object from the fields,
-    # and keep a reference to it in the `._data` attribute. This
-    # ctypes object is what is ultimately passed to the underlying C
-    # library and we need to make sure we keep it alive.
+    # Define __post_init__ to create a numpy struct from the fields,
+    # and keep a reference to it in the `._data` attribute. The data
+    # underlying this array is what is ultimately passed to the C
+    # library, and we need to keep a reference to it for the lifetime
+    # of the object.
     def __post_init__(self):
-        ctypes_typ = np.ctypeslib.as_ctypes_type(this.dtype)
-        self._data = ctypes_typ(*(getattr(self, name) for name in this.dtype.names))
+        self._data = np.array(
+            [tuple(getattr(self, name) for name in anns)], dtype=self.dtype
+        )
 
     setattr(this, "__post_init__", __post_init__)
 

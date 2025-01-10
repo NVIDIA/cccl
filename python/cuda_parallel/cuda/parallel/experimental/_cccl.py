@@ -13,7 +13,7 @@ from numba import cuda, types
 
 from ._utils.cai import get_dtype, is_contiguous
 from .iterators._iterators import IteratorBase
-from .typing import DeviceArrayLike, GpuStruct
+from .typing import DeviceArrayLike
 
 
 # MUST match `cccl_type_enum` in c/include/cccl/c/types.h
@@ -215,10 +215,7 @@ def to_cccl_iter(array_or_iterator) -> Iterator:
     return _device_array_to_cccl_iter(array_or_iterator)
 
 
-def to_cccl_value(array_or_struct: np.ndarray | GpuStruct) -> Value:
-    info = _numpy_type_to_info(array_or_struct.dtype)
-    if isinstance(array_or_struct, np.ndarray):
-        data = ctypes.cast(array_or_struct.ctypes.data, ctypes.c_void_p)
-    else:
-        data = ctypes.cast(ctypes.pointer(array_or_struct._data), ctypes.c_void_p)
+def to_cccl_value(array: np.ndarray) -> Value:
+    info = _numpy_type_to_info(array.dtype)
+    data = ctypes.cast(array.ctypes.data, ctypes.c_void_p)
     return Value(info, data)

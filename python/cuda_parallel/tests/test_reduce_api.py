@@ -181,9 +181,13 @@ def test_transform_iterator():
 
 
 def test_reduce_struct_type():
+    # example-begin reduce-struct
+    import cupy as cp
+    import numpy as np
+
+    from cuda.parallel.experimental import algorithms
     from cuda.parallel.experimental.struct import gpu_struct
 
-    # example-begin reduce-struct
     @gpu_struct
     class Pixel:
         r: np.int32
@@ -209,4 +213,3 @@ def test_reduce_struct_type():
 
     np.testing.assert_equal(expected["g"], d_out.get()["g"])
     # example-end reduce-struct
-
