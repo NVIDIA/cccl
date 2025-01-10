@@ -564,14 +564,14 @@ def test_reduce_struct_type():
         return x if x.g > y.g else y
 
     d_rgb = cp.random.randint(0, 256, (10, 3), dtype=np.int32).view(Pixel.dtype)
-    d_out = cp.zeros(1, Pixel.dtype)
+    d_out = cp.empty(1, Pixel.dtype)
 
     h_init = Pixel(0, 0, 0)
 
     reduce_into = algorithms.reduce_into(d_rgb, d_out, max_g_value, h_init)
     temp_storage_bytes = reduce_into(None, d_rgb, d_out, len(d_rgb), h_init)
 
-    d_temp_storage = cp.zeros(temp_storage_bytes, dtype=np.uint8)
+    d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
     _ = reduce_into(d_temp_storage, d_rgb, d_out, len(d_rgb), h_init)
 
     h_rgb = d_rgb.get()
