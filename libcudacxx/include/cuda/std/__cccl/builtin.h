@@ -104,11 +104,11 @@
 #if _CCCL_CHECK_BUILTIN(builtin_assume) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
 #  define _CCCL_BUILTIN_ASSUME(...) __builtin_assume(__VA_ARGS__)
 #elif _CCCL_COMPILER(GCC, >=, 13)
-#  define _CCCL_BUILTIN_ASSUME(...) __attribute__((__assume__(__VA_ARGS__)))
+#  define _CCCL_BUILTIN_ASSUME(...) \
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__builtin_assume(__VA_ARGS__);), (__attribute__((__assume__(__VA_ARGS__)));))
 #elif _CCCL_COMPILER(MSVC)
-#  define _CCCL_BUILTIN_ASSUME(...) __assume(__VA_ARGS__)
-#else
-#  define _CCCL_BUILTIN_ASSUME(...) NV_IF_TARGET(NV_IS_DEVICE, (__builtin_assume(__VA_ARGS__);))
+#  define _CCCL_BUILTIN_ASSUME(...) \
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__builtin_assume(__VA_ARGS__);), (__assume(__VA_ARGS__);))
 #endif // _CCCL_CHECK_BUILTIN(builtin_assume)
 
 // NVCC prior to 11.2 cannot handle __builtin_assume
