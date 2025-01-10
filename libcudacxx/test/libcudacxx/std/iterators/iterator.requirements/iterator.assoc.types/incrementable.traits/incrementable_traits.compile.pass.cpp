@@ -158,12 +158,12 @@ static_assert(!check_has_difference_type<int (*)() noexcept>, "");
 static_assert(!check_has_difference_type<int (&)()>, "");
 static_assert(!check_has_difference_type<int (&)() noexcept>, "");
 
-#define TEST_POINTER_TO_MEMBER_FUNCTION(type, cv)                               \
-  static_assert(!check_has_difference_type<int (type::*)() cv>, "");            \
-  static_assert(!check_has_difference_type<int (type::*)() cv noexcept>, "");   \
-  static_assert(!check_has_difference_type<int (type::*)() cv&>, "");           \
-  static_assert(!check_has_difference_type<int (type::*)() cv & noexcept>, ""); \
-  static_assert(!check_has_difference_type<int (type::*)() cv&&>, "");          \
+#define TEST_POINTER_TO_MEMBER_FUNCTION(type, cv)                                 \
+  static_assert(!check_has_difference_type<int (type::*)() cv>, "");              \
+  static_assert(!check_has_difference_type<int (type::*)() cv noexcept>, "");     \
+  static_assert(!check_has_difference_type<int (type::*)() cv&>, "");             \
+  static_assert(!check_has_difference_type < int(type::*)() cv & noexcept >, ""); \
+  static_assert(!check_has_difference_type<int (type::*)() cv&&>, "");            \
   static_assert(!check_has_difference_type < int(type::*)() cv && noexcept >, "");
 
 struct empty

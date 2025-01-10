@@ -525,14 +525,13 @@ void throws_in_constructor_test()
 
 __host__ __device__ void call_operator_sfinae_test()
 {
-#ifndef TEST_COMPILER_ICC
-#  if !defined(TEST_COMPILER_MSVC_2017)
+#if !defined(TEST_COMPILER_MSVC_2017)
   { // wrong number of arguments
     using T = decltype(cuda::std::not_fn(returns_true));
     static_assert(cuda::std::is_invocable<T>::value, ""); // callable only with no args
     static_assert(!cuda::std::is_invocable<T, bool>::value, "");
   }
-#  endif // !TEST_COMPILER_MSVC_2017
+#endif // !TEST_COMPILER_MSVC_2017
   { // violates const correctness (member function pointer)
     using T = decltype(cuda::std::not_fn(&MemFunCallable::return_value_nc));
     static_assert(cuda::std::is_invocable<T, MemFunCallable&>::value, "");
@@ -545,7 +544,6 @@ __host__ __device__ void call_operator_sfinae_test()
     static_assert(cuda::std::is_invocable<NCT>::value, "");
     static_assert(!cuda::std::is_invocable<CT>::value, "");
   }
-#endif // TEST_COMPILER_ICC
   // NVRTC appears to be unhappy about... the lambda?
   // but doesn't let me fix it with annotations
 #ifndef TEST_COMPILER_NVRTC

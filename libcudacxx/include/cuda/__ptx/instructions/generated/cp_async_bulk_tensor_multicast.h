@@ -35,14 +35,11 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   NV_IF_ELSE_TARGET(
     NV_HAS_FEATURE_SM_90a,
     (asm("cp.async.bulk.tensor.1d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [%0], "
-         "[%1, {%2}], [%3], %4; // 2a."
-         :
-         : "r"(__as_ptr_smem(__dstMem)),
-           "l"(__tensorMap),
-           "r"(__tensorCoords[0]),
-           "r"(__as_ptr_smem(__smem_bar)),
-           "h"(__ctaMask)
-         : "memory");),
+         "[%1, {%2}], [%3], %4; // 2a." : : "r"(__as_ptr_smem(__dstMem)),
+         "l"(__tensorMap),
+         "r"(__tensorCoords[0]),
+         "r"(__as_ptr_smem(__smem_bar)),
+         "h"(__ctaMask) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90a__();));
@@ -81,15 +78,12 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   NV_IF_ELSE_TARGET(
     NV_HAS_FEATURE_SM_90a,
     (asm("cp.async.bulk.tensor.2d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [%0], "
-         "[%1, {%2, %3}], [%4], %5; // 2b."
-         :
-         : "r"(__as_ptr_smem(__dstMem)),
-           "l"(__tensorMap),
-           "r"(__tensorCoords[0]),
-           "r"(__tensorCoords[1]),
-           "r"(__as_ptr_smem(__smem_bar)),
-           "h"(__ctaMask)
-         : "memory");),
+         "[%1, {%2, %3}], [%4], %5; // 2b." : : "r"(__as_ptr_smem(__dstMem)),
+         "l"(__tensorMap),
+         "r"(__tensorCoords[0]),
+         "r"(__tensorCoords[1]),
+         "r"(__as_ptr_smem(__smem_bar)),
+         "h"(__ctaMask) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90a__();));
@@ -128,16 +122,13 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   NV_IF_ELSE_TARGET(
     NV_HAS_FEATURE_SM_90a,
     (asm("cp.async.bulk.tensor.3d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [%0], "
-         "[%1, {%2, %3, %4}], [%5], %6; // 2c."
-         :
-         : "r"(__as_ptr_smem(__dstMem)),
-           "l"(__tensorMap),
-           "r"(__tensorCoords[0]),
-           "r"(__tensorCoords[1]),
-           "r"(__tensorCoords[2]),
-           "r"(__as_ptr_smem(__smem_bar)),
-           "h"(__ctaMask)
-         : "memory");),
+         "[%1, {%2, %3, %4}], [%5], %6; // 2c." : : "r"(__as_ptr_smem(__dstMem)),
+         "l"(__tensorMap),
+         "r"(__tensorCoords[0]),
+         "r"(__tensorCoords[1]),
+         "r"(__tensorCoords[2]),
+         "r"(__as_ptr_smem(__smem_bar)),
+         "h"(__ctaMask) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90a__();));
@@ -176,17 +167,14 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   NV_IF_ELSE_TARGET(
     NV_HAS_FEATURE_SM_90a,
     (asm("cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [%0], "
-         "[%1, {%2, %3, %4, %5}], [%6], %7; // 2d."
-         :
-         : "r"(__as_ptr_smem(__dstMem)),
-           "l"(__tensorMap),
-           "r"(__tensorCoords[0]),
-           "r"(__tensorCoords[1]),
-           "r"(__tensorCoords[2]),
-           "r"(__tensorCoords[3]),
-           "r"(__as_ptr_smem(__smem_bar)),
-           "h"(__ctaMask)
-         : "memory");),
+         "[%1, {%2, %3, %4, %5}], [%6], %7; // 2d." : : "r"(__as_ptr_smem(__dstMem)),
+         "l"(__tensorMap),
+         "r"(__tensorCoords[0]),
+         "r"(__tensorCoords[1]),
+         "r"(__tensorCoords[2]),
+         "r"(__tensorCoords[3]),
+         "r"(__as_ptr_smem(__smem_bar)),
+         "h"(__ctaMask) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90a__();));
@@ -225,18 +213,15 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   NV_IF_ELSE_TARGET(
     NV_HAS_FEATURE_SM_90a,
     (asm("cp.async.bulk.tensor.5d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [%0], "
-         "[%1, {%2, %3, %4, %5, %6}], [%7], %8; // 2e."
-         :
-         : "r"(__as_ptr_smem(__dstMem)),
-           "l"(__tensorMap),
-           "r"(__tensorCoords[0]),
-           "r"(__tensorCoords[1]),
-           "r"(__tensorCoords[2]),
-           "r"(__tensorCoords[3]),
-           "r"(__tensorCoords[4]),
-           "r"(__as_ptr_smem(__smem_bar)),
-           "h"(__ctaMask)
-         : "memory");),
+         "[%1, {%2, %3, %4, %5, %6}], [%7], %8; // 2e." : : "r"(__as_ptr_smem(__dstMem)),
+         "l"(__tensorMap),
+         "r"(__tensorCoords[0]),
+         "r"(__tensorCoords[1]),
+         "r"(__tensorCoords[2]),
+         "r"(__tensorCoords[3]),
+         "r"(__tensorCoords[4]),
+         "r"(__as_ptr_smem(__smem_bar)),
+         "h"(__ctaMask) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90a__();));

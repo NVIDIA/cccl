@@ -73,10 +73,9 @@ _CCCL_DEVICE static inline void mbarrier_arrive_expect_tx(
   // __space == space_cluster (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (asm("mbarrier.arrive.expect_tx.release.cluster.shared::cluster.b64   _, [%0], %1; // 9. "
-         :
-         : "r"(__as_ptr_remote_dsmem(__addr)), "r"(__tx_count)
-         : "memory");),
+    (asm("mbarrier.arrive.expect_tx.release.cluster.shared::cluster.b64   _, [%0], %1; // 9. " : : "r"(
+           __as_ptr_remote_dsmem(__addr)),
+         "r"(__tx_count) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_mbarrier_arrive_expect_tx_is_not_supported_before_SM_90__();));

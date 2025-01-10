@@ -17,7 +17,6 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/cpp14_required.h>
 
 #if _CCCL_STD_VER >= 2014
 
@@ -461,7 +460,6 @@ public:
   _CCCL_DIAG_PUSH
   _CCCL_DIAG_SUPPRESS_CLANG("-Wreorder")
   _CCCL_DIAG_SUPPRESS_GCC("-Wreorder")
-  _CCCL_DIAG_SUPPRESS_ICC(2407)
   template <typename ComputeContent>
   _CCCL_HOST explicit async_addressable_value_with_keep_alives(
     unique_stream&& stream, keep_alives_type&& keep_alives, ComputeContent&& compute_content)

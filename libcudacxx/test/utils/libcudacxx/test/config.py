@@ -423,10 +423,6 @@ class Configuration(object):
                     )
                 )
 
-            if "icc" in self.config.available_features:
-                self.cxx.link_flags += ["-lirc"]
-                self.cxx.compile_flags += ["-Xcompiler=-diag-disable=10441"]
-
     def _configure_clang_cl(self, clang_path):
         def _split_env_var(var):
             return [p.strip() for p in os.environ.get(var, "").split(";") if p.strip()]

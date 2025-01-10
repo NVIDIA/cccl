@@ -122,7 +122,7 @@ template <class Signature, class Expect, class Functor>
 __host__ __device__ void test_b12(Functor&& f)
 {
   // Create the callable object.
-  typedef Signature TestClass::*ClassFunc;
+  typedef Signature TestClass::* ClassFunc;
   ClassFunc func_ptr = &TestClass::operator();
 
   // Create the dummy arg.
@@ -145,7 +145,7 @@ template <class Expect, class Functor>
 __host__ __device__ void test_b34(Functor&& f)
 {
   // Create the callable object.
-  typedef int TestClass::*ClassFunc;
+  typedef int TestClass::* ClassFunc;
   ClassFunc func_ptr = &TestClass::data;
 
   // Check that the deduced return type of invoke is what is expected.

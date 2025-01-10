@@ -47,15 +47,15 @@ struct __fn
   }
 
   template <class _Cp>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 auto operator()(_Cp& __c) const
-    noexcept(noexcept(__c.rbegin())) -> decltype(__c.rbegin())
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 auto operator()(_Cp& __c) const noexcept(noexcept(__c.rbegin()))
+    -> decltype(__c.rbegin())
   {
     return __c.rbegin();
   }
 
   template <class _Cp>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 auto operator()(const _Cp& __c) const
-    noexcept(noexcept(__c.rbegin())) -> decltype(__c.rbegin())
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 auto operator()(const _Cp& __c) const noexcept(noexcept(__c.rbegin()))
+    -> decltype(__c.rbegin())
   {
     return __c.rbegin();
   }
@@ -85,15 +85,15 @@ struct __fn
   }
 
   template <class _Cp>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 auto operator()(_Cp& __c) const
-    noexcept(noexcept(__c.rend())) -> decltype(__c.rend())
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 auto operator()(_Cp& __c) const noexcept(noexcept(__c.rend()))
+    -> decltype(__c.rend())
   {
     return __c.rend();
   }
 
   template <class _Cp>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 auto operator()(const _Cp& __c) const
-    noexcept(noexcept(__c.rend())) -> decltype(__c.rend())
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 auto operator()(const _Cp& __c) const noexcept(noexcept(__c.rend()))
+    -> decltype(__c.rend())
   {
     return __c.rend();
   }

@@ -101,8 +101,9 @@ struct __fn
 
   _CCCL_TEMPLATE(class _Ip)
   _CCCL_REQUIRES(__move_deref<_Ip>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Ip&& __i) const noexcept(noexcept(
-    _CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i)))) -> decltype(_CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i)))
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Ip&& __i) const
+    noexcept(noexcept(_CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i))))
+      -> decltype(_CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i)))
   {
     return _CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i));
   }

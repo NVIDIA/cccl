@@ -404,7 +404,7 @@ int main(int, char**)
     test_result_of<PMS3CV(S&, int, long), const int&>();
   }
   { // pointer to member data
-    typedef char S::*PMD;
+    typedef char S::* PMD;
     test_result_of<PMD(S&), char&>();
     test_result_of<PMD(S*), char&>();
     test_result_of<PMD(S* const), char&>();

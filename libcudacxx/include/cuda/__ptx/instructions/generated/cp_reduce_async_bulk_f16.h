@@ -30,10 +30,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   // __op == op_min (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.min.f16  [%0], [%1], %2; // 4."
-         :
-         : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
-         : "memory");),
+    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.min.f16  [%0], [%1], %2; // 4." : : "l"(
+           __as_ptr_gmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
@@ -67,10 +67,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   // __op == op_max (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.max.f16  [%0], [%1], %2; // 4."
-         :
-         : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
-         : "memory");),
+    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.max.f16  [%0], [%1], %2; // 4." : : "l"(
+           __as_ptr_gmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
@@ -104,10 +104,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   // __op == op_add (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.add.noftz.f16  [%0], [%1], %2; // 5."
-         :
-         : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
-         : "memory");),
+    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.add.noftz.f16  [%0], [%1], %2; // 5." : : "l"(
+           __as_ptr_gmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
