@@ -52,7 +52,7 @@ namespace unimplemented
 {
 
 template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename T, typename BinaryOp>
-_CCCL_HOST future<DerivedPolicy, T>
+CCCL_DEPRECATED _CCCL_HOST future<DerivedPolicy, T>
 async_reduce(thrust::execution_policy<DerivedPolicy>&, ForwardIt, Sentinel, T, BinaryOp)
 {
   THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<ForwardIt, false>::value),
@@ -154,11 +154,15 @@ struct reduce_fn final
           thrust::plus<remove_cvref_t<typename iterator_traits<remove_cvref_t<ForwardIt>>::value_type>>{}))
 
           template <typename... Args>
-          _CCCL_NODISCARD _CCCL_HOST auto operator()(Args&&... args) const THRUST_RETURNS(call(THRUST_FWD(args)...))
+          CCCL_DEPRECATED _CCCL_NODISCARD _CCCL_HOST auto operator()(Args&&... args) const
+    THRUST_RETURNS(call(THRUST_FWD(args)...))
 };
 
 } // namespace reduce_detail
 
+// note: cannot add a CCCL_DEPRECATED here because the global variable is emitted into cudafe1.stub.c and we cannot
+// suppress the warning there
+//! deprecated [Since 2.8.0]
 _CCCL_GLOBAL_CONSTANT reduce_detail::reduce_fn reduce{};
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -167,7 +171,7 @@ namespace unimplemented
 {
 
 template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename OutputIt, typename T, typename BinaryOp>
-_CCCL_HOST event<DerivedPolicy>
+CCCL_DEPRECATED _CCCL_HOST event<DerivedPolicy>
 async_reduce_into(thrust::execution_policy<DerivedPolicy>&, ForwardIt, Sentinel, OutputIt, T, BinaryOp)
 {
   THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<ForwardIt, false>::value),
@@ -290,11 +294,15 @@ struct reduce_into_fn final
         thrust::is_execution_policy<thrust::remove_cvref_t<T1>>{}))
 
         template <typename... Args>
-        _CCCL_NODISCARD _CCCL_HOST auto operator()(Args&&... args) const THRUST_RETURNS(call(THRUST_FWD(args)...))
+        CCCL_DEPRECATED _CCCL_NODISCARD _CCCL_HOST auto operator()(Args&&... args) const
+    THRUST_RETURNS(call(THRUST_FWD(args)...))
 };
 
 } // namespace reduce_into_detail
 
+// note: cannot add a CCCL_DEPRECATED here because the global variable is emitted into cudafe1.stub.c and we cannot
+// suppress the warning there
+//! deprecated [Since 2.8.0]
 _CCCL_GLOBAL_CONSTANT reduce_into_detail::reduce_into_fn reduce_into{};
 
 /*! \endcond

@@ -50,7 +50,7 @@ namespace unimplemented
 {
 
 template <typename FromPolicy, typename ToPolicy, typename ForwardIt, typename Sentinel, typename OutputIt>
-_CCCL_HOST event<FromPolicy> async_copy(
+CCCL_DEPRECATED _CCCL_HOST event<FromPolicy> async_copy(
   thrust::execution_policy<FromPolicy>& from_exec,
   thrust::execution_policy<ToPolicy>& to_exec,
   ForwardIt first,
@@ -111,11 +111,15 @@ struct copy_fn final
               THRUST_FWD(output)))
 
               template <typename... Args>
-              _CCCL_NODISCARD _CCCL_HOST auto operator()(Args&&... args) const THRUST_RETURNS(call(THRUST_FWD(args)...))
+              CCCL_DEPRECATED _CCCL_NODISCARD _CCCL_HOST auto operator()(Args&&... args) const
+    THRUST_RETURNS(call(THRUST_FWD(args)...))
 };
 
 } // namespace copy_detail
 
+// note: cannot add a CCCL_DEPRECATED here because the global variable is emitted into cudafe1.stub.c and we cannot
+// suppress the warning there
+//! deprecated [Since 2.8.0]
 _CCCL_GLOBAL_CONSTANT copy_detail::copy_fn copy{};
 
 /*! \endcond

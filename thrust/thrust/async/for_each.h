@@ -50,7 +50,7 @@ namespace unimplemented
 {
 
 template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename UnaryFunction>
-_CCCL_HOST event<DerivedPolicy>
+CCCL_DEPRECATED _CCCL_HOST event<DerivedPolicy>
 async_for_each(thrust::execution_policy<DerivedPolicy>&, ForwardIt, Sentinel, UnaryFunction)
 {
   THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<ForwardIt, false>::value),
@@ -88,11 +88,15 @@ struct for_each_fn final
           THRUST_FWD(f)))
 
           template <typename... Args>
-          _CCCL_NODISCARD _CCCL_HOST auto operator()(Args&&... args) const THRUST_RETURNS(call(THRUST_FWD(args)...))
+          CCCL_DEPRECATED _CCCL_NODISCARD _CCCL_HOST auto operator()(Args&&... args) const
+    THRUST_RETURNS(call(THRUST_FWD(args)...))
 };
 
 } // namespace for_each_detail
 
+// note: cannot add a CCCL_DEPRECATED here because the global variable is emitted into cudafe1.stub.c and we cannot
+// suppress the warning there
+//! deprecated [Since 2.8.0]
 _CCCL_GLOBAL_CONSTANT for_each_detail::for_each_fn for_each{};
 
 /*! \endcond
