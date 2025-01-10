@@ -53,8 +53,6 @@
 
 #include <cuda/std/type_traits>
 
-#include <iterator>
-
 #include <nv/target>
 
 CUB_NAMESPACE_BEGIN
