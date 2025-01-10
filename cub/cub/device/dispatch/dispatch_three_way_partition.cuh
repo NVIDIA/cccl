@@ -551,39 +551,6 @@ struct DispatchThreeWayPartitionIf
 
     return error;
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
-    void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    FirstOutputIteratorT d_first_part_out,
-    SecondOutputIteratorT d_second_part_out,
-    UnselectedOutputIteratorT d_unselected_out,
-    NumSelectedIteratorT d_num_selected_out,
-    SelectFirstPartOp select_first_part_op,
-    SelectSecondPartOp select_second_part_op,
-    OffsetT num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_first_part_out,
-      d_second_part_out,
-      d_unselected_out,
-      d_num_selected_out,
-      select_first_part_op,
-      select_second_part_op,
-      num_items,
-      stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END
