@@ -61,7 +61,8 @@ THRUST_NAMESPACE_BEGIN
 #ifndef THRUST_MONOSTATE_INPLACE_MUTEX
 #  define THRUST_MONOSTATE_INPLACE_MUTEX
 /// \brief Used to represent an optional with no data; essentially a bool
-class CCCL_DEPRECATED monostate{};
+class CCCL_DEPRECATED_BECAUSE("Use cuda::std::monostate instead") monostate
+{};
 
 /// \brief A tag type to tell optional to construct its value in-place
 struct CCCL_DEPRECATED in_place_t
