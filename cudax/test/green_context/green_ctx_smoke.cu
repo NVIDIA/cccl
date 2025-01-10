@@ -11,7 +11,7 @@
 #include <cuda/experimental/green_context.cuh>
 #include <cuda/experimental/stream.cuh>
 
-#include <catch2/catch_test_macros.hpp>
+#include <testing.cuh>
 #include <utility.cuh>
 
 #if CUDART_VERSION >= 12050

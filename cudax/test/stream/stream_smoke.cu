@@ -11,7 +11,7 @@
 #include <cuda/experimental/launch.cuh>
 #include <cuda/experimental/stream.cuh>
 
-#include <catch2/catch_test_macros.hpp>
+#include <testing.cuh>
 #include <utility.cuh>
 
 TEST_CASE("Can create a stream and launch work into it", "[stream]")

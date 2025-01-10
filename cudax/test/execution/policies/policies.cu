@@ -12,7 +12,7 @@
 
 #include <cuda/experimental/execution.cuh>
 
-#include <catch2/catch_test_macros.hpp>
+#include <testing.cuh>
 
 namespace cudax = cuda::experimental;
 
