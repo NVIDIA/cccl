@@ -47,6 +47,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_scan.cuh>
 
+#include <cuda/ptx>
+
 CUB_NAMESPACE_BEGIN
 
 /**
@@ -127,7 +129,7 @@ struct BlockScanWarpScans
       : temp_storage(temp_storage.Alias())
       , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
       , warp_id((WARPS == 1) ? 0 : linear_tid / WARP_THREADS)
-      , lane_id(LaneId())
+      , lane_id(::cuda::ptx::get_sreg_tid_x())
   {}
 
   //---------------------------------------------------------------------

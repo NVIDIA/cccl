@@ -48,6 +48,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/ptx>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
@@ -716,7 +717,7 @@ public:
 
     volatile DigitCounterT* digit_counters[KEYS_PER_THREAD];
     uint32_t warp_id      = linear_tid >> LOG_WARP_THREADS;
-    uint32_t lane_mask_lt = LaneMaskLt();
+    uint32_t lane_mask_lt = ::cuda::ptx::get_sreg_lanemask_lt();
 
 #pragma unroll
     for (int ITEM = 0; ITEM < KEYS_PER_THREAD; ++ITEM)
@@ -1070,7 +1071,7 @@ struct BlockRadixRankMatchEarlyCounts
         int bin_mask    = *p_match_mask;
         int leader      = (WARP_THREADS - 1) - __clz(bin_mask);
         int warp_offset = 0;
-        int popc        = __popc(bin_mask & LaneMaskLe());
+        int popc        = __popc(bin_mask & ::cuda::ptx::get_sreg_lanemask_le());
         if (lane == leader)
         {
           // atomic is a bit faster
@@ -1099,7 +1100,7 @@ struct BlockRadixRankMatchEarlyCounts
           detail::warp_in_block_matcher_t<RADIX_BITS, PARTIAL_WARP_THREADS, BLOCK_WARPS - 1>::match_any(bin, warp);
         int leader      = (WARP_THREADS - 1) - __clz(bin_mask);
         int warp_offset = 0;
-        int popc        = __popc(bin_mask & LaneMaskLe());
+        int popc        = __popc(bin_mask & ::cuda::ptx::get_sreg_lanemask_le());
         if (lane == leader)
         {
           // atomic is a bit faster
@@ -1135,7 +1136,7 @@ struct BlockRadixRankMatchEarlyCounts
         , digit_extractor(digit_extractor)
         , callback(callback)
         , warp(threadIdx.x / WARP_THREADS)
-        , lane(LaneId())
+        , lane(::cuda::ptx::get_sreg_tid_x())
     {}
   };
 

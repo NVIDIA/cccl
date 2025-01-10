@@ -48,6 +48,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/ptx>
+
 CUB_NAMESPACE_BEGIN
 
 /**
@@ -116,7 +118,7 @@ struct WarpScanShfl
 
   /// Constructor
   explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpScanShfl(TempStorage& /*temp_storage*/)
-      : lane_id(LaneId())
+      : lane_id(::cuda::ptx::get_sreg_tid_x())
       , warp_id(IS_ARCH_WARP ? 0 : (lane_id / LOGICAL_WARP_THREADS))
       , member_mask(WarpMask<LOGICAL_WARP_THREADS>(warp_id))
   {
@@ -543,7 +545,7 @@ struct WarpScanShfl
     unsigned int ballot = WARP_BALLOT((pred_key != inclusive_output.key), member_mask);
 
     // Mask away all lanes greater than ours
-    ballot = ballot & LaneMaskLe();
+    ballot = ballot & ::cuda::ptx::get_sreg_lanemask_le();
 
     // Find index of first set bit
     int segment_first_lane = CUB_MAX(0, 31 - __clz(ballot));

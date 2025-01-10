@@ -49,6 +49,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/ptx>
 #include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
@@ -669,7 +670,7 @@ struct AgentRadixSortOnesweep
       , current_bit(current_bit)
       , num_bits(num_bits)
       , warp(threadIdx.x / WARP_THREADS)
-      , lane(LaneId())
+      , lane(::cuda::ptx::get_sreg_tid_x())
       , decomposer(decomposer)
   {
     // initialization

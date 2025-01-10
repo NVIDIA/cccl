@@ -49,6 +49,8 @@
 #include <cub/thread/thread_store.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/ptx>
+
 CUB_NAMESPACE_BEGIN
 
 /**
@@ -123,8 +125,8 @@ struct WarpReduceSmem
   /// Constructor
   explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduceSmem(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , lane_id(IS_ARCH_WARP ? LaneId() : LaneId() % LOGICAL_WARP_THREADS)
-      , member_mask(WarpMask<LOGICAL_WARP_THREADS>(LaneId() / LOGICAL_WARP_THREADS))
+      , lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_tid_x() : ::cuda::ptx::get_sreg_tid_x() % LOGICAL_WARP_THREADS)
+      , member_mask(WarpMask<LOGICAL_WARP_THREADS>(::cuda::ptx::get_sreg_tid_x() / LOGICAL_WARP_THREADS))
   {}
 
   /******************************************************************************
@@ -230,12 +232,12 @@ struct WarpReduceSmem
     }
 
     // Keep bits above the current thread.
-    warp_flags &= LaneMaskGt();
+    warp_flags &= ::cuda::ptx::get_sreg_lanemask_gt();
 
     // Accommodate packing of multiple logical warps in a single physical warp
     if (!IS_ARCH_WARP)
     {
-      warp_flags >>= (LaneId() / LOGICAL_WARP_THREADS) * LOGICAL_WARP_THREADS;
+      warp_flags >>= (::cuda::ptx::get_sreg_tid_x() / LOGICAL_WARP_THREADS) * LOGICAL_WARP_THREADS;
     }
 
     // Find next flag

@@ -54,6 +54,7 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/iterator/constant_input_iterator.cuh>
 
+#include <cuda/ptx>
 #include <cuda/std/type_traits>
 
 #include <iterator>
@@ -465,7 +466,7 @@ struct AgentRle
   {
     // Perform warpscans
     unsigned int warp_id = ((WARPS == 1) ? 0 : threadIdx.x / WARP_THREADS);
-    int lane_id          = LaneId();
+    int lane_id          = ::cuda::ptx::get_sreg_tid_x();
 
     LengthOffsetPair identity;
     identity.key   = 0;
@@ -551,7 +552,7 @@ struct AgentRle
     Int2Type<true> is_warp_time_slice)
   {
     unsigned int warp_id = ((WARPS == 1) ? 0 : threadIdx.x / WARP_THREADS);
-    int lane_id          = LaneId();
+    int lane_id          = ::cuda::ptx::get_sreg_tid_x();
 
     // Locally compact items within the warp (first warp)
     if (warp_id == 0)
@@ -608,7 +609,7 @@ struct AgentRle
     Int2Type<false> is_warp_time_slice)
   {
     unsigned int warp_id = ((WARPS == 1) ? 0 : threadIdx.x / WARP_THREADS);
-    int lane_id          = LaneId();
+    int lane_id          = ::cuda::ptx::get_sreg_tid_x();
 
     // Unzip
     OffsetT run_offsets[ITEMS_PER_THREAD];
