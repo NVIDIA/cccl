@@ -968,7 +968,7 @@ struct DispatchRadixSort
       }
 
 // Log single_tile_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking single_tile_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit "
               "%d, bit_grain %d\n",
               1,
@@ -1039,7 +1039,7 @@ struct DispatchRadixSort
       int pass_bits = CUB_MIN(pass_config.radix_bits, (end_bit - current_bit));
 
 // Log upsweep_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking upsweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit %d, "
               "bit_grain %d\n",
               pass_config.even_share.grid_size,
@@ -1081,7 +1081,7 @@ struct DispatchRadixSort
       }
 
 // Log scan_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking scan_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread\n",
               1,
               pass_config.scan_config.block_threads,
@@ -1108,7 +1108,7 @@ struct DispatchRadixSort
       }
 
 // Log downsweep_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking downsweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy\n",
               pass_config.even_share.grid_size,
               pass_config.downsweep_config.block_threads,
@@ -1308,7 +1308,7 @@ struct DispatchRadixSort
       }
 
 // log histogram_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking histogram_kernel<<<%d, %d, 0, %lld>>>(), %d items per iteration, "
               "%d SM occupancy, bit_grain %d\n",
               histo_blocks_per_sm * num_sms,
@@ -1338,7 +1338,7 @@ struct DispatchRadixSort
       constexpr int SCAN_BLOCK_THREADS = ActivePolicyT::ExclusiveSumPolicy::BLOCK_THREADS;
 
 // log exclusive_sum_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking exclusive_sum_kernel<<<%d, %d, 0, %lld>>>(), bit_grain %d\n",
               num_passes,
               SCAN_BLOCK_THREADS,
@@ -1386,7 +1386,7 @@ struct DispatchRadixSort
           }
 
 // log onesweep_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
           _CubLog("Invoking onesweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, "
                   "current bit %d, bit_grain %d, portion %d/%d\n",
                   num_blocks,
@@ -1675,7 +1675,7 @@ struct DispatchRadixSort
     }
 
 // Copy keys
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
     _CubLog("Invoking async copy of %lld keys on stream %lld\n", (long long) num_items, (long long) stream);
 #endif
     cudaError_t error = cudaSuccess;
@@ -1697,7 +1697,7 @@ struct DispatchRadixSort
     // Copy values if necessary
     if (!KEYS_ONLY)
     {
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking async copy of %lld values on stream %lld\n", (long long) num_items, (long long) stream);
 #endif
       error = CubDebug(cudaMemcpyAsync(
@@ -2004,7 +2004,7 @@ struct DispatchSegmentedRadixSort
       int pass_bits = CUB_MIN(pass_config.radix_bits, (end_bit - current_bit));
 
 // Log kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking segmented_kernels<<<%lld, %lld, 0, %lld>>>(), "
               "%lld items per thread, %lld SM occupancy, "
               "current bit %d, bit_grain %d\n",

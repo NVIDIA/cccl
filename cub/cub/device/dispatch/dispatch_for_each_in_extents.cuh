@@ -117,7 +117,7 @@ public:
     constexpr unsigned items_per_thread = ActivePolicyT::for_policy_t::items_per_thread;
     unsigned num_cta                    = ::cuda::ceil_div(_size, block_threads * items_per_thread);
 
-#  ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#  ifdef CUB_DEBUG_LOG
     _CubLog("Invoking detail::for_each_in_extents::static_kernel<<<%u, %u, 0, %p>>>(), items_per_thread: %u\n",
             num_cta,
             block_threads,
@@ -155,7 +155,7 @@ public:
     _CUB_RETURN_IF_ERROR(status)
     unsigned num_cta = ::cuda::ceil_div(_size, block_threads * items_per_thread);
 
-#  ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#  ifdef CUB_DEBUG_LOG
     _CubLog("Invoking detail::for_each_in_extents::dynamic_kernel<<<%u, %u, 0, %p>>>(), items_per_thread: %u\n",
             num_cta,
             block_threads,

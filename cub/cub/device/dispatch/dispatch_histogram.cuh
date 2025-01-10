@@ -434,12 +434,12 @@ struct dispatch_histogram
         (max_num_output_bins + histogram_init_block_threads - 1) / histogram_init_block_threads;
 
 // Log DeviceHistogramInitKernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking DeviceHistogramInitKernel<<<%d, %d, 0, %lld>>>()\n",
               histogram_init_grid_dims,
               histogram_init_block_threads,
               (long long) stream);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
       // Invoke histogram_init_kernel
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
@@ -453,7 +453,7 @@ struct dispatch_histogram
       }
 
 // Log histogram_sweep_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking histogram_sweep_kernel<<<{%d, %d, %d}, %d, 0, %lld>>>(), %d pixels "
               "per thread, %d SM occupancy\n",
               sweep_grid_dims.x,
@@ -463,7 +463,7 @@ struct dispatch_histogram
               (long long) stream,
               pixels_per_thread,
               histogram_sweep_sm_occupancy);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
       // Invoke histogram_sweep_kernel
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(sweep_grid_dims, block_threads, 0, stream)
