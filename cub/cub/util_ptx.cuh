@@ -65,6 +65,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int SHR_ADD(unsigned int x, unsigned int
 /**
  * \brief Shift-left then add.  Returns (\p x << \p shift) + \p addend.
  */
+CCCL_DEPRECATED_BECAUSE("will be removed in the next major release")
 _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int SHL_ADD(unsigned int x, unsigned int shift, unsigned int addend)
 {
   unsigned int ret;
@@ -125,6 +126,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int BFE(UnsignedBits source, unsigned in
 /**
  * \brief Bitfield insert.  Inserts the \p num_bits least significant bits of \p y into \p x at bit-offset \p bit_start.
  */
+CCCL_DEPRECATED_BECAUSE("will be removed in the next major release")
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 BFI(unsigned int& ret, unsigned int x, unsigned int y, unsigned int bit_start, unsigned int num_bits)
 {
@@ -134,6 +136,7 @@ BFI(unsigned int& ret, unsigned int x, unsigned int y, unsigned int bit_start, u
 /**
  * \brief Three-operand add.  Returns \p x + \p y + \p z.
  */
+CCCL_DEPRECATED_BECAUSE("will be removed in the next major release")
 _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int IADD3(unsigned int x, unsigned int y, unsigned int z)
 {
   asm("vadd.u32.u32.u32.add %0, %1, %2, %3;" : "=r"(x) : "r"(x), "r"(y), "r"(z));
@@ -167,6 +170,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int IADD3(unsigned int x, unsigned int y
  * \endcode
  *
  */
+CCCL_DEPRECATED_BECAUSE("will be removed in the next major release")
 _CCCL_DEVICE _CCCL_FORCEINLINE int PRMT(unsigned int a, unsigned int b, unsigned int index)
 {
   int ret;
@@ -179,6 +183,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE int PRMT(unsigned int a, unsigned int b, unsigned
 /**
  * Sync-threads barrier.
  */
+CCCL_DEPRECATED_BECAUSE("will be removed in the next major release")
 _CCCL_DEVICE _CCCL_FORCEINLINE void BAR(int count)
 {
   asm volatile("bar.sync 1, %0;" : : "r"(count));
@@ -287,6 +292,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int SHFL_IDX_SYNC(unsigned int word, int
 /**
  * Floating point multiply. (Mantissa LSB rounds towards zero.)
  */
+CCCL_DEPRECATED_BECAUSE("will be removed in the next major release")
 _CCCL_DEVICE _CCCL_FORCEINLINE float FMUL_RZ(float a, float b)
 {
   float d;
@@ -297,6 +303,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE float FMUL_RZ(float a, float b)
 /**
  * Floating point multiply-add. (Mantissa LSB rounds towards zero.)
  */
+CCCL_DEPRECATED_BECAUSE("will be removed in the next major release")
 _CCCL_DEVICE _CCCL_FORCEINLINE float FFMA_RZ(float a, float b, float c)
 {
   float d;
@@ -317,6 +324,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadExit()
 /**
  * \brief  Abort execution and generate an interrupt to the host CPU
  */
+CCCL_DEPRECATED_BECAUSE("will be removed in the next major release")
 _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadTrap()
 {
   asm volatile("trap;");
