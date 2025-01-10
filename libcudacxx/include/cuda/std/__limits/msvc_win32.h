@@ -1,14 +1,16 @@
 // -*- C++ -*-
-//===------------------ support/win32/limits_msvc_win32.h -----------------===//
+//===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX_SUPPORT_WIN32_LIMITS_MSVC_WIN32_H
-#define _LIBCUDACXX_SUPPORT_WIN32_LIMITS_MSVC_WIN32_H
+#ifndef _LIBCUDACXX___LIMITS_MSVC_WIN32_H
+#define _LIBCUDACXX___LIMITS_MSVC_WIN32_H
 
 #if defined(__MINGW32__)
 #  error "This header complements the Microsoft C Runtime library, and should not be included otherwise."
@@ -19,8 +21,6 @@
 
 #include <float.h> // limit constants
 #include <limits.h> // CHAR_BIT
-#include <math.h> // HUGE_VAL
-#include <ymath.h> // internal MSVC header providing the needed functionality
 
 #define __CHAR_BIT__ CHAR_BIT
 
@@ -63,15 +63,4 @@
 // predefined by MinGW GCC
 #define __LDBL_DENORM_MIN__ 3.64519953188247460253e-4951L
 
-// __builtin replacements/workarounds
-#if _MSC_VER < 1934
-#  define __builtin_huge_vall()    _LInf._Long_double
-#  define __builtin_nanl(__dummmy) _LNan._Long_double
-#  define __builtin_nansl(__dummy) _LSnan._Long_double
-#else
-#  define __builtin_huge_vall() __builtin_huge_val()
-#  define __builtin_nanl(__v)   __builtin_nan(__v)
-#  define __builtin_nansl(__v)  __builtin_nans(__v)
-#endif
-
-#endif // _LIBCUDACXX_SUPPORT_WIN32_LIMITS_MSVC_WIN32_H
+#endif // _LIBCUDACXX___LIMITS_MSVC_WIN32_H

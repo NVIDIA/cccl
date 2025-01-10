@@ -11,6 +11,7 @@
 
 #include <cuda/std/bit>
 #include <cuda/std/cstdint>
+#include <cuda/std/type_traits>
 
 #if (defined(__cplusplus) && __cplusplus >= 201703L) || (defined(_MSC_VER) && _MSVC_LANG >= 201703L)
 #  define CPP17_PERFORM_INVOCABLE_TEST
