@@ -359,6 +359,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE int RowMajorTid(int block_dim_x, int block_dim_y,
 /**
  * \brief Returns the warp lane ID of the calling thread
  */
+CCCL_DEPRECATED_BECAUSE("use cuda::ptx::get_sreg_laneid() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneId()
 {
   unsigned int ret;
@@ -370,6 +371,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneId()
  * \brief Returns the warp ID of the calling thread.  Warp ID is guaranteed to be unique among warps, but may not
  * correspond to a zero-based ranking within the thread block.
  */
+CCCL_DEPRECATED_BECAUSE("use cuda::ptx::get_sreg_warpid() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int WarpId()
 {
   unsigned int ret;
@@ -409,6 +411,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned int WarpMask(unsigned int warp_id)
 /**
  * \brief Returns the warp lane mask of all lanes less than the calling thread
  */
+CCCL_DEPRECATED_BECAUSE("use cuda::ptx::get_sreg_lanemask_lt() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneMaskLt()
 {
   unsigned int ret;
@@ -419,6 +422,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneMaskLt()
 /**
  * \brief Returns the warp lane mask of all lanes less than or equal to the calling thread
  */
+CCCL_DEPRECATED_BECAUSE("use cuda::ptx::get_sreg_lanemask_le() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneMaskLe()
 {
   unsigned int ret;
@@ -429,6 +433,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneMaskLe()
 /**
  * \brief Returns the warp lane mask of all lanes greater than the calling thread
  */
+CCCL_DEPRECATED_BECAUSE("use cuda::ptx::get_sreg_lanemask_gt() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneMaskGt()
 {
   unsigned int ret;
@@ -439,6 +444,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneMaskGt()
 /**
  * \brief Returns the warp lane mask of all lanes greater than or equal to the calling thread
  */
+CCCL_DEPRECATED_BECAUSE("use cuda::ptx::get_sreg_lanemask_ge() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneMaskGe()
 {
   unsigned int ret;
