@@ -293,6 +293,7 @@ public:
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    //
     return SortKeysNoNVTX(
       d_temp_storage,
       temp_storage_bytes,
@@ -320,7 +321,7 @@ public:
     bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
+    //
     return SortKeys<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage,
       temp_storage_bytes,
