@@ -752,6 +752,19 @@ public:
     }
   }
 
+  /**
+   * @brief Get a CUDA stream from the stream pool associated to the context
+   *
+   * This helper is intended to avoid creating CUDA streams manually. Using
+   * this stream after the context has been finalized is an undefined
+   * behaviour.
+   */
+  cudaStream_t pick_stream()
+  {
+     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+     return ::std::visit([](auto& self) { return self.pick_stream(); }, payload);
+  }
+
 private:
   template <typename Fun>
   auto visit(Fun&& fun)
