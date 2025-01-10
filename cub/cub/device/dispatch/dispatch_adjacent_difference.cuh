@@ -137,29 +137,6 @@ struct DispatchAdjacentDifference
       , stream(stream)
   {}
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CCCL_DEPRECATED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchAdjacentDifference(
-    void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
-    InputIteratorT d_input,
-    OutputIteratorT d_output,
-    OffsetT num_items,
-    DifferenceOpT difference_op,
-    cudaStream_t stream,
-    bool debug_synchronous)
-      : d_temp_storage(d_temp_storage)
-      , temp_storage_bytes(temp_storage_bytes)
-      , d_input(d_input)
-      , d_output(d_output)
-      , num_items(num_items)
-      , difference_op(difference_op)
-      , stream(stream)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
-
   /// Invocation
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
@@ -319,24 +296,6 @@ struct DispatchAdjacentDifference
 
     return error;
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t Dispatch(
-    void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
-    InputIteratorT d_input,
-    OutputIteratorT d_output,
-    OffsetT num_items,
-    DifferenceOpT difference_op,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Dispatch(d_temp_storage, temp_storage_bytes, d_input, d_output, num_items, difference_op, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

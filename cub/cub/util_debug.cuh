@@ -309,18 +309,4 @@ inline _CCCL_HOST_DEVICE void va_printf(char const*, Args const&...)
 #  endif
 #endif
 
-#define CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED             \
-  CCCL_DEPRECATED_BECAUSE(                                         \
-    "CUB no longer accepts `debug_synchronous` parameter. "        \
-    "Define CUB_DEBUG_SYNC instead, or silence this message with " \
-    "CCCL_IGNORE_DEPRECATED_API.")
-
-#define CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG                     \
-  if (debug_synchronous)                                            \
-  {                                                                 \
-    _CubLog("%s\n",                                                 \
-            "CUB no longer accepts `debug_synchronous` parameter. " \
-            "Define CUB_DEBUG_SYNC instead.");                      \
-  }
-
 CUB_NAMESPACE_END
