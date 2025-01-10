@@ -155,6 +155,7 @@ Usage example:
 
 * All target macros generate the code in a local scope, i.e. ``{ code }``.
 * ``NV_DISPATCH_TARGET`` is *NOT* a switch statement. It enables the code associated with the first condition satisfied.
+* The target macros take ``code`` as an argument, so it is *not* possible to use any conditional compilation, .e.g ``#if _CCCL_STD_VER >= 20`` within a target macro
 
 ----
 
