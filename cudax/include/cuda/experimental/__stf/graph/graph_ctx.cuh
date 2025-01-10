@@ -233,6 +233,13 @@ class graph_ctx : public backend_ctx<graph_ctx>
       return graph_epoch;
     }
 
+    // The completion of the CUDA graph implies the completion of all nodes in
+    // the graph
+    bool can_ignore_dangling_events() const override
+    {
+      return true;
+    }
+
     /* Store a vector of previously instantiated graphs, with the number of
      * nodes, number of edges, the executable graph, and the corresponding epoch.
      * */
