@@ -615,7 +615,7 @@ protected:
      * @brief Indicate if the backend needs to keep track of dangling events, or if these will be automatically
      * synchronized
      */
-    virtual bool can_ignore_dangling_events() const = 0;
+    virtual bool track_dangling_events() const = 0;
 
     auto& get_default_allocator()
     {
@@ -648,10 +648,10 @@ protected:
      */
     void detach_allocators(backend_ctx_untyped& bctx)
     {
-      bool no_dangling = bctx.can_ignore_dangling_events();
+      const bool track_dangling = bctx.track_dangling_events();
 
       // Deinitialize all attached allocators in reversed order
-      if (!no_dangling)
+      if (track_dangling)
       {
         for (auto it : each(attached_allocators.rbegin(), attached_allocators.rend()))
         {
@@ -662,7 +662,7 @@ protected:
       // Erase the vector of allocators now that they were deinitialized
       attached_allocators.clear();
 
-      if (!no_dangling)
+      if (track_dangling)
       {
         stack.add_dangling_events(composite_cache.deinit());
       }
@@ -916,9 +916,9 @@ public:
     return pimpl->epoch();
   }
 
-  bool can_ignore_dangling_events() const
+  bool track_dangling_events() const
   {
-    return pimpl->can_ignore_dangling_events();
+    return pimpl->track_dangling_events();
   }
 
   // protected:

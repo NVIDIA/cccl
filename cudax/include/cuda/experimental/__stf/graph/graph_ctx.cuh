@@ -235,9 +235,9 @@ class graph_ctx : public backend_ctx<graph_ctx>
 
     // The completion of the CUDA graph implies the completion of all nodes in
     // the graph
-    bool can_ignore_dangling_events() const override
+    bool track_dangling_events() const override
     {
-      return true;
+      return false;
     }
 
     /* Store a vector of previously instantiated graphs, with the number of

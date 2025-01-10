@@ -697,9 +697,9 @@ private:
 
     // We need to ensure all dangling events have been completed (eg. by having
     // the CUDA stream used in the finalization wait on these events)
-    bool can_ignore_dangling_events() const override
+    bool track_dangling_events() const override
     {
-      return false;
+      return true;
     }
 
     ::std::vector<int> deferred_tasks; // vector of mapping_ids

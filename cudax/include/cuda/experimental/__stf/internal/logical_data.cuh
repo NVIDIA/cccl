@@ -1740,7 +1740,7 @@ inline void reserved::logical_data_untyped_impl::erase()
   auto wb_prereqs = event_list();
   auto& h_state   = get_state();
 
-  const bool ignore_dangling_events = ctx.can_ignore_dangling_events();
+  const bool track_dangling_events = ctx.track_dangling_events();
 
   /* If there is a reference instance id, it needs to be updated with a
    * valid copy if that is not the case yet */
@@ -1787,7 +1787,7 @@ inline void reserved::logical_data_untyped_impl::erase()
       src_instance.add_write_prereq(reqs);
       dst_instance.set_read_prereq(reqs);
 
-      if (!ignore_dangling_events)
+      if (track_dangling_events)
       {
         // nobody waits for these events, so we put them in the list of dangling events
         cs.add_dangling_events(reqs);
@@ -1818,7 +1818,7 @@ inline void reserved::logical_data_untyped_impl::erase()
       // We now ask to deallocate that piece of data
       deallocate(inst_i.get_dplace(), i, inst_i.get_extra_args(), inst_prereqs);
 
-      if (!ignore_dangling_events)
+      if (track_dangling_events)
       {
         cs.add_dangling_events(inst_prereqs);
       }
@@ -1827,7 +1827,7 @@ inline void reserved::logical_data_untyped_impl::erase()
     inst_i.clear();
   }
 
-  if (!ignore_dangling_events)
+  if (track_dangling_events)
   {
     if (wb_prereqs.size() > 0)
     {
