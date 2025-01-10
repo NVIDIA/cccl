@@ -129,10 +129,10 @@ private:
     CompareOpT compare_op,
     cudaStream_t stream = 0)
   {
-    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
+    using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
 
     using DispatchMergeSortT =
-      DispatchMergeSort<KeyIteratorT, ValueIteratorT, KeyIteratorT, ValueIteratorT, PromotedOffsetT, CompareOpT>;
+      DispatchMergeSort<KeyIteratorT, ValueIteratorT, KeyIteratorT, ValueIteratorT, ChooseOffsetT, CompareOpT>;
 
     return DispatchMergeSortT::Dispatch(
       d_temp_storage, temp_storage_bytes, d_keys, d_items, d_keys, d_items, num_items, compare_op, stream);
@@ -393,10 +393,10 @@ public:
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
+    using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
 
     using DispatchMergeSortT =
-      DispatchMergeSort<KeyInputIteratorT, ValueInputIteratorT, KeyIteratorT, ValueIteratorT, PromotedOffsetT, CompareOpT>;
+      DispatchMergeSort<KeyInputIteratorT, ValueInputIteratorT, KeyIteratorT, ValueIteratorT, ChooseOffsetT, CompareOpT>;
 
     return DispatchMergeSortT::Dispatch(
       d_temp_storage,
@@ -455,10 +455,10 @@ private:
     CompareOpT compare_op,
     cudaStream_t stream = 0)
   {
-    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
+    using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
 
     using DispatchMergeSortT =
-      DispatchMergeSort<KeyIteratorT, NullType*, KeyIteratorT, NullType*, PromotedOffsetT, CompareOpT>;
+      DispatchMergeSort<KeyIteratorT, NullType*, KeyIteratorT, NullType*, ChooseOffsetT, CompareOpT>;
 
     return DispatchMergeSortT::Dispatch(
       d_temp_storage,
@@ -599,10 +599,10 @@ private:
     CompareOpT compare_op,
     cudaStream_t stream = 0)
   {
-    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
+    using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
 
     using DispatchMergeSortT =
-      DispatchMergeSort<KeyInputIteratorT, NullType*, KeyIteratorT, NullType*, PromotedOffsetT, CompareOpT>;
+      DispatchMergeSort<KeyInputIteratorT, NullType*, KeyIteratorT, NullType*, ChooseOffsetT, CompareOpT>;
 
     return DispatchMergeSortT::Dispatch(
       d_temp_storage,
@@ -850,9 +850,8 @@ public:
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
-    return SortPairsNoNVTX<KeyIteratorT, ValueIteratorT, PromotedOffsetT, CompareOpT>(
+    return SortPairsNoNVTX<KeyIteratorT, ValueIteratorT, OffsetT, CompareOpT>(
       d_temp_storage, temp_storage_bytes, d_keys, d_items, num_items, compare_op, stream);
   }
 
@@ -969,9 +968,8 @@ public:
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
-    return SortKeysNoNVTX<KeyIteratorT, PromotedOffsetT, CompareOpT>(
+    return SortKeysNoNVTX<KeyIteratorT, OffsetT, CompareOpT>(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, compare_op, stream);
   }
 
@@ -1101,8 +1099,7 @@ public:
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
-    return SortKeysCopyNoNVTX<KeyInputIteratorT, KeyIteratorT, PromotedOffsetT, CompareOpT>(
+    return SortKeysCopyNoNVTX<KeyInputIteratorT, KeyIteratorT, OffsetT, CompareOpT>(
       d_temp_storage, temp_storage_bytes, d_input_keys, d_output_keys, num_items, compare_op, stream);
   }
 };
