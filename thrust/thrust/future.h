@@ -164,7 +164,7 @@ using device_future = device_unique_eager_future<T>;
 struct new_stream_t final
 {};
 
-THRUST_INLINE_CONSTANT new_stream_t new_stream{};
+_CCCL_GLOBAL_CONSTANT new_stream_t new_stream{};
 
 ///////////////////////////////////////////////////////////////////////////////
 
