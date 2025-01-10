@@ -308,7 +308,9 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") AgentSpmv
   /// Reference to temp_storage
   _TempStorage& temp_storage;
 
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   SpmvParams<ValueT, OffsetT>& spmv_params;
+  _CCCL_SUPPRESS_DEPRECATED_POP
 
   /// Wrapped pointer to the array of \p num_nonzeros values of the corresponding nonzero elements
   /// of matrix <b>A</b>.
@@ -341,6 +343,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") AgentSpmv
    * @param spmv_params
    *   SpMV input parameter bundle
    */
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   _CCCL_DEVICE _CCCL_FORCEINLINE AgentSpmv(TempStorage& temp_storage, SpmvParams<ValueT, OffsetT>& spmv_params)
       : temp_storage(temp_storage.Alias())
       , spmv_params(spmv_params)
@@ -350,6 +353,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") AgentSpmv
       , wd_vector_x(spmv_params.d_vector_x)
       , wd_vector_y(spmv_params.d_vector_y)
   {}
+  _CCCL_SUPPRESS_DEPRECATED_POP
 
   /**
    * @brief Consume a merge tile, specialized for direct-load of nonzeros

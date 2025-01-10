@@ -83,9 +83,11 @@ CUB_NAMESPACE_BEGIN
  * @param[in] spmv_params
  *   SpMV input parameter bundle
  */
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename AgentSpmvPolicyT, typename ValueT, typename OffsetT>
 CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead")
-CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmv1ColKernel(SpmvParams<ValueT, OffsetT> spmv_params)
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmv1ColKernel(SpmvParams<ValueT, OffsetT> spmv_params) //
+  _CCCL_SUPPRESS_DEPRECATED_POP
 {
   using VectorValueIteratorT =
     CacheModifiedInputIterator<AgentSpmvPolicyT::VECTOR_VALUES_LOAD_MODIFIER, ValueT, OffsetT>;
