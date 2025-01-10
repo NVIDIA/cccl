@@ -1056,10 +1056,12 @@ create_dependencies_impl(acquired_stream& as, std::tuple<Dependencies...>& deps,
 {
   // We only need to wait on the current dependency if we didn't steal our
   // stream from it.
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   if (!as.acquired_from || *as.acquired_from != I0)
   {
     create_dependency(as.stream, std::get<I0>(deps));
   }
+  _CCCL_SUPPRESS_DEPRECATED_POP
 
   create_dependencies_impl(as, deps, index_sequence<Is...>{});
 }
