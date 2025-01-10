@@ -102,7 +102,7 @@ template <int _BLOCK_THREADS,
           CacheLoadModifier _VECTOR_VALUES_LOAD_MODIFIER,
           bool _DIRECT_LOAD_NONZEROS,
           BlockScanAlgorithm _SCAN_ALGORITHM>
-struct AgentSpmvPolicy
+struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") AgentSpmvPolicy
 {
   enum
   {
@@ -148,7 +148,7 @@ struct AgentSpmvPolicy
  *   Signed integer type for sequence offsets
  */
 template <typename ValueT, typename OffsetT>
-struct SpmvParams
+struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") SpmvParams
 {
   /// Pointer to the array of \p num_nonzeros values of the corresponding nonzero elements of matrix
   /// <b>A</b>.
@@ -211,7 +211,7 @@ template <typename AgentSpmvPolicyT,
           bool HAS_ALPHA,
           bool HAS_BETA,
           int LEGACY_PTX_ARCH = 0>
-struct AgentSpmv
+struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") AgentSpmv
 {
   //---------------------------------------------------------------------
   // Types and constants
