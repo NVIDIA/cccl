@@ -201,7 +201,7 @@ struct AgentRadixSortHistogram
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   AccumulateSharedHistograms(OffsetT tile_offset, bit_ordered_type (&keys)[ITEMS_PER_THREAD])
   {
-    int part = ::cuda::ptx::get_sreg_tid_x() % NUM_PARTS;
+    int part = ::cuda::ptx::get_sreg_laneid() % NUM_PARTS;
 #pragma unroll
     for (int current_bit = begin_bit, pass = 0; current_bit < end_bit; current_bit += RADIX_BITS, ++pass)
     {

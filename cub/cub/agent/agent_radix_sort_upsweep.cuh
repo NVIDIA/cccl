@@ -300,7 +300,7 @@ struct AgentRadixSortUpsweep
   _CCCL_DEVICE _CCCL_FORCEINLINE void UnpackDigitCounts()
   {
     unsigned int warp_id  = threadIdx.x >> LOG_WARP_THREADS;
-    unsigned int warp_tid = ::cuda::ptx::get_sreg_tid_x();
+    unsigned int warp_tid = ::cuda::ptx::get_sreg_laneid();
 
 #pragma unroll
     for (int LANE = 0; LANE < LANES_PER_WARP; LANE++)
@@ -421,7 +421,7 @@ struct AgentRadixSortUpsweep
   _CCCL_DEVICE _CCCL_FORCEINLINE void ExtractCounts(OffsetT* counters, int bin_stride = 1, int bin_offset = 0)
   {
     unsigned int warp_id  = threadIdx.x >> LOG_WARP_THREADS;
-    unsigned int warp_tid = ::cuda::ptx::get_sreg_tid_x();
+    unsigned int warp_tid = ::cuda::ptx::get_sreg_laneid();
 
 // Place unpacked digit counters in shared memory
 #pragma unroll
@@ -501,7 +501,7 @@ struct AgentRadixSortUpsweep
   _CCCL_DEVICE _CCCL_FORCEINLINE void ExtractCounts(OffsetT (&bin_count)[BINS_TRACKED_PER_THREAD])
   {
     unsigned int warp_id  = threadIdx.x >> LOG_WARP_THREADS;
-    unsigned int warp_tid = ::cuda::ptx::get_sreg_tid_x();
+    unsigned int warp_tid = ::cuda::ptx::get_sreg_laneid();
 
 // Place unpacked digit counters in shared memory
 #pragma unroll

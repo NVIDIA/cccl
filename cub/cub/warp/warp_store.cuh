@@ -381,7 +381,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE WarpStore()
       : temp_storage(PrivateStorage())
       , linear_tid(
-          IS_ARCH_WARP ? ::cuda::ptx::get_sreg_tid_x() : (::cuda::ptx::get_sreg_tid_x() % LOGICAL_WARP_THREADS))
+          IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS))
   {}
 
   //! @brief Collective constructor using the specified memory allocation as
@@ -389,7 +389,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE WarpStore(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
       , linear_tid(
-          IS_ARCH_WARP ? ::cuda::ptx::get_sreg_tid_x() : (::cuda::ptx::get_sreg_tid_x() % LOGICAL_WARP_THREADS))
+          IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS))
   {}
 
   //! @}  end member group

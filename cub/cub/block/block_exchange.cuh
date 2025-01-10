@@ -181,7 +181,7 @@ private:
 
   // TODO(bgruber): can we use signed int here? Only these variables are unsigned:
   unsigned int linear_tid  = RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z);
-  unsigned int lane_id     = ::cuda::ptx::get_sreg_tid_x();
+  unsigned int lane_id     = ::cuda::ptx::get_sreg_laneid();
   unsigned int warp_id     = WARPS == 1 ? 0 : linear_tid / WARP_THREADS;
   unsigned int warp_offset = warp_id * WARP_TIME_SLICED_ITEMS;
 

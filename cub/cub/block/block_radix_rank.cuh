@@ -1136,7 +1136,7 @@ struct BlockRadixRankMatchEarlyCounts
         , digit_extractor(digit_extractor)
         , callback(callback)
         , warp(threadIdx.x / WARP_THREADS)
-        , lane(::cuda::ptx::get_sreg_tid_x())
+        , lane(::cuda::ptx::get_sreg_laneid())
     {}
   };
 

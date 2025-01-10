@@ -156,7 +156,7 @@ struct WarpReduceShfl
 
   /// Constructor
   _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduceShfl(TempStorage& /*temp_storage*/)
-      : lane_id(static_cast<int>(::cuda::ptx::get_sreg_tid_x()))
+      : lane_id(static_cast<int>(::cuda::ptx::get_sreg_laneid()))
       , warp_id(IS_ARCH_WARP ? 0 : (lane_id / LOGICAL_WARP_THREADS))
       , member_mask(WarpMask<LOGICAL_WARP_THREADS>(warp_id))
   {
