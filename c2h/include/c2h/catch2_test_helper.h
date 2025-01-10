@@ -39,10 +39,6 @@
 #include <tuple>
 #include <type_traits>
 
-#if __CUDACC_VER_MAJOR__ == 11
-_CCCL_NV_DIAG_SUPPRESS(177) // catch2 may contain unused variables
-#endif // nvcc-11
-
 #include <c2h/catch2_main.h>
 #include <c2h/device_policy.h>
 #include <c2h/test_util_vec.h>
