@@ -99,8 +99,7 @@ setup(
     ],
     packages=find_namespace_packages(include=["cuda.*"]),
     python_requires=">=3.9",
-    # TODO: typing_extensions required for Python 3.7 docs env
-    install_requires=["numba>=0.60.0", "cuda-python", "jinja2", "typing_extensions"],
+    install_requires=["numba>=0.60.0", "cuda-python", "jinja2"],
     extras_require={
         "test": [
             "pytest",
