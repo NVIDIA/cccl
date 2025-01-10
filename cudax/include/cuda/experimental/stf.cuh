@@ -761,8 +761,12 @@ public:
    */
   cudaStream_t pick_stream()
   {
-     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-     return ::std::visit([](auto& self) { return self.pick_stream(); }, payload);
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return ::std::visit(
+      [](auto& self) {
+        return self.pick_stream();
+      },
+      payload);
   }
 
 private:
