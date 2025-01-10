@@ -116,7 +116,7 @@ struct copy_fn final
 
 } // namespace copy_detail
 
-THRUST_INLINE_CONSTANT copy_detail::copy_fn copy{};
+_CCCL_GLOBAL_CONSTANT copy_detail::copy_fn copy{};
 
 /*! \endcond
  */

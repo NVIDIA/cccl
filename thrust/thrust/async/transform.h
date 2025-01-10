@@ -124,7 +124,7 @@ struct transform_fn final
 
 } // namespace transform_detail
 
-THRUST_INLINE_CONSTANT transform_detail::transform_fn transform{};
+_CCCL_GLOBAL_CONSTANT transform_detail::transform_fn transform{};
 
 /*! \endcond
  */
