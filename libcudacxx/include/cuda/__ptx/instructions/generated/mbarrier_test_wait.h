@@ -21,10 +21,8 @@ _CCCL_DEVICE static inline bool mbarrier_test_wait(_CUDA_VSTD::uint64_t* __addr,
      asm("{\n\t .reg .pred P_OUT; \n\t"
          "mbarrier.test_wait.shared.b64 P_OUT, [%1], %2;                                                  // 1. \n\t"
          "selp.b32 %0, 1, 0, P_OUT; \n"
-         "}"
-         : "=r"(__waitComplete)
-         : "r"(__as_ptr_smem(__addr)), "l"(__state)
-         : "memory");
+         "}" : "=r"(__waitComplete) : "r"(__as_ptr_smem(__addr)),
+         "l"(__state) : "memory");
      return static_cast<bool>(__waitComplete);),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message

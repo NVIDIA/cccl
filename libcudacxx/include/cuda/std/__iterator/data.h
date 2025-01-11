@@ -30,16 +30,16 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Cont>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
-data(_Cont& __c) noexcept(noexcept(__c.data())) -> decltype(__c.data())
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto data(_Cont& __c) noexcept(noexcept(__c.data()))
+  -> decltype(__c.data())
 {
   return __c.data();
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Cont>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
-data(const _Cont& __c) noexcept(noexcept(__c.data())) -> decltype(__c.data())
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto data(const _Cont& __c) noexcept(noexcept(__c.data()))
+  -> decltype(__c.data())
 {
   return __c.data();
 }

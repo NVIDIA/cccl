@@ -29,7 +29,6 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/cpp14_required.h>
 
 #if _CCCL_STD_VER >= 2014
 
@@ -117,7 +116,7 @@ struct copy_fn final
 
 } // namespace copy_detail
 
-THRUST_INLINE_CONSTANT copy_detail::copy_fn copy{};
+_CCCL_GLOBAL_CONSTANT copy_detail::copy_fn copy{};
 
 /*! \endcond
  */

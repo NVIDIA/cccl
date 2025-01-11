@@ -88,7 +88,8 @@ template <class Tp>
 using always_bool = typename always_bool_imp<Tp>::type;
 
 template <class... Args>
-__host__ __device__ constexpr auto no_common_type_imp(int) -> always_bool<typename cuda::std::common_type<Args...>::type>
+__host__ __device__ constexpr auto no_common_type_imp(int)
+  -> always_bool<typename cuda::std::common_type<Args...>::type>
 {
   return false;
 }

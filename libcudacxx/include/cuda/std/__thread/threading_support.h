@@ -45,9 +45,9 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #  define _LIBCUDACXX_POLLING_COUNT 16
 
 #  if defined(__aarch64__)
-#    define __LIBCUDACXX_ASM_THREAD_YIELD (asm volatile("yield" :::);)
+#    define __LIBCUDACXX_ASM_THREAD_YIELD (asm volatile("yield" :: :);)
 #  elif defined(__x86_64__)
-#    define __LIBCUDACXX_ASM_THREAD_YIELD (asm volatile("pause" :::);)
+#    define __LIBCUDACXX_ASM_THREAD_YIELD (asm volatile("pause" :: :);)
 #  else // ^^^ __x86_64__ ^^^ / vvv !__x86_64__ vvv
 #    define __LIBCUDACXX_ASM_THREAD_YIELD (;)
 #  endif // !__x86_64__

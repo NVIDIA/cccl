@@ -60,8 +60,8 @@ struct receiver_defaults
   }
 
   template <class _Rcvr>
-  _CUDAX_TRIVIAL_API static auto
-  set_stopped(__ignore, _Rcvr& __rcvr) noexcept -> __async::completion_signatures<__async::set_stopped_t()>
+  _CUDAX_TRIVIAL_API static auto set_stopped(__ignore, _Rcvr& __rcvr) noexcept
+    -> __async::completion_signatures<__async::set_stopped_t()>
   {
     __async::set_stopped(static_cast<_Rcvr&&>(__rcvr));
     return {};
@@ -198,15 +198,15 @@ _CUDAX_TRIVIAL_API auto __make_opstate(_Sndr __sndr, _Rcvr __rcvr)
 }
 
 template <class _Data, class... _Sndrs>
-_CUDAX_TRIVIAL_API auto
-__get_attrs(int, const _Data& __data, const _Sndrs&... __sndrs) noexcept -> decltype(__data.get_attrs(__sndrs...))
+_CUDAX_TRIVIAL_API auto __get_attrs(int, const _Data& __data, const _Sndrs&... __sndrs) noexcept
+  -> decltype(__data.get_attrs(__sndrs...))
 {
   return __data.get_attrs(__sndrs...);
 }
 
 template <class _Data, class... _Sndrs>
-_CUDAX_TRIVIAL_API auto
-__get_attrs(long, const _Data&, const _Sndrs&... __sndrs) noexcept -> decltype(__async::get_env(__sndrs...))
+_CUDAX_TRIVIAL_API auto __get_attrs(long, const _Data&, const _Sndrs&... __sndrs) noexcept
+  -> decltype(__async::get_env(__sndrs...))
 {
   return __async::get_env(__sndrs...);
 }

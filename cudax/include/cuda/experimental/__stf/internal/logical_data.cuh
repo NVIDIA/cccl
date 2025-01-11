@@ -2294,13 +2294,7 @@ public:
   auto read(Pack&&... pack) const
   {
     using U = readonly_type_of<T>;
-    // The constness of *this implies that access mode is read
-    // Note that we do not provide an access mode, because this is how we
-    // dispatch statically between read-only and non read-only access modes in
-    // task_dep_untyped.
-    // TODO : we could make this cleaner if we had a tag type in addition to
-    // the access_mode enum class.
-    return task_dep<U, ::std::monostate, false>(*this, /* access_mode::read, */ ::std::forward<Pack>(pack)...);
+    return task_dep<U, ::std::monostate, false>(*this, access_mode::read, ::std::forward<Pack>(pack)...);
   }
 
   template <typename... Pack>

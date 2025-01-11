@@ -17,7 +17,6 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/cpp14_required.h>
 
 #if _CCCL_STD_VER >= 2014
 
@@ -58,7 +57,7 @@ namespace detail
 struct nonowning_t final
 {};
 
-THRUST_INLINE_CONSTANT nonowning_t nonowning{};
+_CCCL_GLOBAL_CONSTANT nonowning_t nonowning{};
 
 ///////////////////////////////////////////////////////////////////////////////
 

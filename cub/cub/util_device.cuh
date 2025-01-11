@@ -130,24 +130,6 @@ CUB_RUNTIME_FUNCTION inline int DeviceCountUncached()
   return count;
 }
 
-/**
- * \brief Cache for an arbitrary value produced by a nullary function.
- * deprecated [Since 2.6.0]
- */
-template <typename T, T (*Function)()>
-struct CCCL_DEPRECATED ValueCache
-{
-  T const value;
-
-  /**
-   * \brief Call the nullary function to produce the value and construct the
-   *        cache.
-   */
-  _CCCL_HOST inline ValueCache()
-      : value(Function())
-  {}
-};
-
 // Host code. This is a separate function to avoid defining a local static in a host/device function.
 _CCCL_HOST inline int DeviceCountCachedValue()
 {

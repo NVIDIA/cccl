@@ -105,11 +105,13 @@ _CCCL_INLINE_VAR constexpr bool enable_borrowed_range<BorrowedRange> = true;
 static_assert(!cuda::std::ranges::view<BorrowedRange>, "");
 static_assert(cuda::std::ranges::borrowed_range<BorrowedRange>, "");
 
-#if _LIBCUDACXX_HAS_RANGES
+#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 using BorrowedView = cuda::std::ranges::empty_view<int>;
 static_assert(cuda::std::ranges::view<BorrowedView>, "");
 static_assert(cuda::std::ranges::borrowed_range<BorrowedView>, "");
+#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
+#if _LIBCUDACXX_HAS_RANGES
 using NonBorrowedView = cuda::std::ranges::single_view<int>;
 static_assert(cuda::std::ranges::view<NonBorrowedView>, "");
 static_assert(!cuda::std::ranges::borrowed_range<NonBorrowedView>, "");

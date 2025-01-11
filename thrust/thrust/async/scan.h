@@ -29,7 +29,6 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/cpp14_required.h>
 
 #if _CCCL_STD_VER >= 2014
 
@@ -179,7 +178,7 @@ struct inclusive_scan_fn final
 
 } // namespace inclusive_scan_detail
 
-THRUST_INLINE_CONSTANT inclusive_scan_detail::inclusive_scan_fn inclusive_scan{};
+_CCCL_GLOBAL_CONSTANT inclusive_scan_detail::inclusive_scan_fn inclusive_scan{};
 
 namespace exclusive_scan_detail
 {
@@ -288,7 +287,7 @@ struct exclusive_scan_fn final
 
 } // namespace exclusive_scan_detail
 
-THRUST_INLINE_CONSTANT exclusive_scan_detail::exclusive_scan_fn exclusive_scan{};
+_CCCL_GLOBAL_CONSTANT exclusive_scan_detail::exclusive_scan_fn exclusive_scan{};
 
 } // namespace async
 
