@@ -232,7 +232,7 @@ struct WarpReduceSmem
     }
 
     // Keep bits above the current thread.
-    warp_flags &= ::cuda::ptx::get_sreg_lanemask_gt();
+    warp_flags &= ::cuda::ptx::get_sreg_lanemask_ge();
 
     // Accommodate packing of multiple logical warps in a single physical warp
     if (!IS_ARCH_WARP)

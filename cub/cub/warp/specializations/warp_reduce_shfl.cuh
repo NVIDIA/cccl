@@ -709,7 +709,7 @@ struct WarpReduceShfl
     }
 
     // Mask out the bits below the current thread
-    warp_flags &= ::cuda::ptx::get_sreg_lanemask_gt();
+    warp_flags &= ::cuda::ptx::get_sreg_lanemask_ge();
 
     // Mask of physical lanes outside the logical warp and convert to logical lanemask
     if (!IS_ARCH_WARP)
