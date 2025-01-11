@@ -78,7 +78,6 @@ struct type_tuple
 };
 using offset_types =
   c2h::type_list<type_tuple<std::int16_t>,
-                 type_tuple<std::int32_t>,
                  type_tuple<std::int32_t, std::uint32_t>,
                  type_tuple<std::uint32_t>,
                  type_tuple<std::uint64_t>>;
