@@ -43,25 +43,22 @@ endif()
 string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_ENABLE_ASSERTIONS")
 
 # Disable dialect deprecation
-string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DLIBCUDACXX_IGNORE_DEPRECATED_CPP_DIALECT")
+string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_IGNORE_DEPRECATED_CPP_DIALECT")
 
 if (NOT MSVC AND NOT ${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
   set(LIBCUDACXX_WARNING_LEVEL "--compiler-options=-Wall --compiler-options=-Wextra")
 endif()
 
-# sccache cannot handle the -Fd option generationg pdb files
 if (MSVC)
+  # sccache cannot handle the -Fd option generationg pdb files
   set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
+
+  # We want to use cudaLaunchKernelEx which is guarded by __cplusplus
+  if ("${CMAKE_CUDA_COMPILER_VERSION}" LESS "12.3.0")
+    string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -Xcompiler=/Zc:__cplusplus")
+  endif()
 endif()
 
-# Intel OneAPI compiler has fast math enabled by default which breaks almost all floating point tests
-if (${CMAKE_CXX_COMPILER_ID} STREQUAL "IntelLLVM" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
-  string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " --compiler-options=-fno-fast-math")
-endif()
-
-if (CCCL_SUPPRESS_ICC_DEPRECATION_WARNING)
-  string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_SUPPRESS_ICC_DEPRECATION_WARNING")
-endif()
 if (CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING)
   string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING")
 endif()

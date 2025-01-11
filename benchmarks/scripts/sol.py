@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
-import os
-import cccl
 import argparse
+import os
+
+import cccl
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import matplotlib.pyplot as plt
 
 
 def is_finite(x):

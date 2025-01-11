@@ -1,17 +1,18 @@
-import os
-import json
-import time
-import fpzip
-import signal
 import itertools
+import json
+import os
+import signal
 import subprocess
+import time
+
+import fpzip
 import numpy as np
 
 from .cmake import CMake
 from .config import BasePoint, Config
-from .storage import Storage, get_bench_table_name
-from .score import compute_axes_ids, compute_weight_matrices, get_workload_weight
 from .logger import Logger
+from .score import compute_axes_ids, compute_weight_matrices, get_workload_weight
+from .storage import Storage, get_bench_table_name
 
 
 def first_val(my_dict):

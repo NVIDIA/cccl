@@ -451,21 +451,17 @@ public:
     }
 
     size_t p_rank = 0;
-    if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+    for (auto p : e_place)
     {
-      for (auto p : e_place)
+      if constexpr (::std::is_same_v<Ctx, stream_ctx>)
       {
         reserved::launch_impl(interpreted_policy, p, f, args, t.get_stream(p_rank), p_rank);
-        p_rank++;
       }
-    }
-    else
-    {
-      for (auto p : e_place)
+      else
       {
         reserved::graph_launch_impl(t, interpreted_policy, p, f, args, p_rank);
-        p_rank++;
       }
+      p_rank++;
     }
   }
 

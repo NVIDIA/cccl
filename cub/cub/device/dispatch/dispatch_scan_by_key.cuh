@@ -48,7 +48,6 @@
 #include <cub/device/dispatch/tuning/tuning_scan_by_key.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_debug.cuh>
-#include <cub/util_deprecated.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 
@@ -342,37 +341,6 @@ struct DispatchScanByKey
       , ptx_version(ptx_version)
   {}
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchScanByKey(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    KeysInputIteratorT d_keys_in,
-    ValuesInputIteratorT d_values_in,
-    ValuesOutputIteratorT d_values_out,
-    EqualityOp equality_op,
-    ScanOpT scan_op,
-    InitValueT init_value,
-    OffsetT num_items,
-    cudaStream_t stream,
-    bool debug_synchronous,
-    int ptx_version)
-      : d_temp_storage(d_temp_storage)
-      , temp_storage_bytes(temp_storage_bytes)
-      , d_keys_in(d_keys_in)
-      , d_values_in(d_values_in)
-      , d_values_out(d_values_out)
-      , equality_op(equality_op)
-      , scan_op(scan_op)
-      , init_value(init_value)
-      , num_items(num_items)
-      , stream(stream)
-      , ptx_version(ptx_version)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
-
   template <typename ActivePolicyT, typename InitKernel, typename ScanKernel>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(InitKernel init_kernel, ScanKernel scan_kernel)
   {
@@ -617,37 +585,6 @@ struct DispatchScanByKey
 
     return error;
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    KeysInputIteratorT d_keys_in,
-    ValuesInputIteratorT d_values_in,
-    ValuesOutputIteratorT d_values_out,
-    EqualityOp equality_op,
-    ScanOpT scan_op,
-    InitValueT init_value,
-    OffsetT num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_values_in,
-      d_values_out,
-      equality_op,
-      scan_op,
-      init_value,
-      num_items,
-      stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

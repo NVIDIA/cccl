@@ -338,9 +338,8 @@ long double    truncl(long double x);
 #endif // _LIBCUDACXX_HAS_NVBF16
 
 #if _CCCL_COMPILER(NVRTC)
-#  include <cuda/std/climits>
-#  define INFINITY __builtin_huge_val()
-#  define NAN      __builtin_nan()
+#  define INFINITY _CUDA_VSTD::numeric_limits<float>::infinity()
+#  define NAN      _CUDA_VSTD::numeric_limits<float>::quiet_NaN()
 #endif // _CCCL_COMPILER(NVRTC)
 
 _CCCL_PUSH_MACROS
@@ -654,11 +653,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _A1 __constexpr_fmax(_A1 __x, _A1 __y) noexcept
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX float __constexpr_fmax(float __x, float __y) noexcept
 {
 #  if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
-#    if _CCCL_COMPILER(ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
-  if (false)
-#    else // _CCCL_COMPILER(ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
   if (_CCCL_BUILTIN_IS_CONSTANT_EVALUATED())
-#    endif // _CCCL_COMPILER(ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
   {
     if (_CUDA_VSTD::isnan(__x))
     {
@@ -677,11 +672,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX float __constexpr_fmax(f
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX double __constexpr_fmax(double __x, double __y) noexcept
 {
 #  if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
-#    if _CCCL_COMPILER(ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
-  if (false)
-#    else // _CCCL_COMPILER(ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
   if (_CCCL_BUILTIN_IS_CONSTANT_EVALUATED())
-#    endif // _CCCL_COMPILER(ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
   {
     if (_CUDA_VSTD::isnan(__x))
     {
@@ -702,11 +693,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX long double
 __constexpr_fmax(long double __x, long double __y) noexcept
 {
 #    if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
-#      if _CCCL_COMPILER(ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
-  if (false)
-#      else // _CCCL_COMPILER(ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
   if (_CCCL_BUILTIN_IS_CONSTANT_EVALUATED())
-#      endif // _CCCL_COMPILER(ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
   {
     if (_CUDA_VSTD::isnan(__x))
     {

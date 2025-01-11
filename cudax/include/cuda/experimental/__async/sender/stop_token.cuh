@@ -369,8 +369,8 @@ _CUDAX_API inline void inplace_stop_source::__unlock(uint8_t __old_state) const 
   (void) __state_.store(__old_state, _CUDA_VSTD::memory_order_release);
 }
 
-_CUDAX_API inline auto
-inplace_stop_source::__try_lock_unless_stop_requested(bool __set_stop_requested) const noexcept -> bool
+_CUDAX_API inline auto inplace_stop_source::__try_lock_unless_stop_requested(bool __set_stop_requested) const noexcept
+  -> bool
 {
   __stok::__spin_wait __spin;
   auto __old_state = __state_.load(_CUDA_VSTD::memory_order_relaxed);

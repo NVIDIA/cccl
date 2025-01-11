@@ -39,112 +39,6 @@
 
 THRUST_NAMESPACE_BEGIN
 
-/*! \addtogroup function_objects Function Objects
- */
-
-//! deprecated [Since 2.6]
-template <typename Operation>
-struct THRUST_DEPRECATED unary_traits;
-
-//! deprecated [Since 2.6]
-template <typename Operation>
-struct THRUST_DEPRECATED binary_traits;
-
-/*! \addtogroup function_object_adaptors Function Object Adaptors
- *  \ingroup function_objects
- *  \{
- */
-
-/*! \p unary_function is an empty base class: it contains no member functions
- *  or member variables, but only type information. The only reason it exists
- *  is to make it more convenient to define types that are models of the
- *  concept Adaptable Unary Function. Specifically, any model of Adaptable
- *  Unary Function must define nested aliases. Those are
- *  provided by the base class \p unary_function.
- *
- *  deprecated [Since 2.6]
- *
- *  The following code snippet demonstrates how to construct an
- *  Adaptable Unary Function using \p unary_function.
- *
- *  \code
- *  struct sine : public thrust::unary_function<float,float>
- *  {
- *    __host__ __device__
- *    float operator()(float x) { return sinf(x); }
- *  };
- *  \endcode
- *
- *  \note Because C++11 language support makes the functionality of
- *        \c unary_function obsolete, its use is optional if C++11 language
- *        features are enabled.
- *
- *  \see https://en.cppreference.com/w/cpp/utility/functional/unary_function
- *  \see binary_function
- */
-template <typename Argument, typename Result>
-struct THRUST_DEPRECATED unary_function
-{
-  /*! \typedef argument_type
-   *  \brief The type of the function object's argument.
-   */
-  using argument_type = Argument;
-
-  /*! \typedef result_type;
-   *  \brief The type of the function object's result.
-   */
-  using result_type = Result;
-}; // end unary_function
-
-/*! \p binary_function is an empty base class: it contains no member functions
- *  or member variables, but only type information. The only reason it exists
- *  is to make it more convenient to define types that are models of the
- *  concept Adaptable Binary Function. Specifically, any model of Adaptable
- *  Binary Function must define nested aliases. Those are
- *  provided by the base class \p binary_function.
- *
- *  deprecated [Since 2.6]
- *
- *  The following code snippet demonstrates how to construct an
- *  Adaptable Binary Function using \p binary_function.
- *
- *  \code
- *  struct exponentiate : public thrust::binary_function<float,float,float>
- *  {
- *    __host__ __device__
- *    float operator()(float x, float y) { return powf(x,y); }
- *  };
- *  \endcode
- *
- *  \note Because C++11 language support makes the functionality of
- *        \c binary_function obsolete, its use is optional if C++11 language
- *        features are enabled.
- *
- *  \see https://en.cppreference.com/w/cpp/utility/functional/binary_function
- *  \see unary_function
- */
-template <typename Argument1, typename Argument2, typename Result>
-struct THRUST_DEPRECATED binary_function
-{
-  /*! \typedef first_argument_type
-   *  \brief The type of the function object's first argument.
-   */
-  using first_argument_type = Argument1;
-
-  /*! \typedef second_argument_type
-   *  \brief The type of the function object's second argument.
-   */
-  using second_argument_type = Argument2;
-
-  /*! \typedef result_type
-   *  \brief The type of the function object's result;
-   */
-  using result_type = Result;
-}; // end binary_function
-
-/*! \}
- */
-
 /*! \addtogroup predefined_function_objects Predefined Function Objects
  *  \ingroup function_objects
  */
@@ -199,7 +93,6 @@ struct THRUST_DEPRECATED binary_function
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/plus
- *  \see binary_function
  */
 template <typename T = void>
 struct plus : public ::cuda::std::plus<T>
@@ -241,7 +134,6 @@ struct plus : public ::cuda::std::plus<T>
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/minus
- *  \see binary_function
  */
 template <typename T = void>
 struct minus : public ::cuda::std::minus<T>
@@ -283,7 +175,6 @@ struct minus : public ::cuda::std::minus<T>
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/multiplies
- *  \see binary_function
  */
 template <typename T = void>
 struct multiplies : public ::cuda::std::multiplies<T>
@@ -325,7 +216,6 @@ struct multiplies : public ::cuda::std::multiplies<T>
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/divides
- *  \see binary_function
  */
 template <typename T = void>
 struct divides : public ::cuda::std::divides<T>
@@ -367,7 +257,6 @@ struct divides : public ::cuda::std::divides<T>
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/modulus
- *  \see binary_function
  */
 template <typename T = void>
 struct modulus : public ::cuda::std::modulus<T>
@@ -406,7 +295,6 @@ struct modulus : public ::cuda::std::modulus<T>
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/negate
- *  \see unary_function
  */
 template <typename T = void>
 struct negate : ::cuda::std::negate<T>
@@ -442,8 +330,6 @@ struct negate : ::cuda::std::negate<T>
  *                    thrust::square<float>());
  *  // V2 is now {1, 4, 9, ..., 1000000}
  *  \endcode
- *
- *  \see unary_function
  */
 template <typename T = void>
 struct square
@@ -489,7 +375,6 @@ struct square<void>
  * Comparable</a>.
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/equal_to
- *  \see binary_function
  */
 template <typename T = void>
 struct equal_to : public ::cuda::std::equal_to<T>
@@ -509,7 +394,6 @@ struct equal_to : public ::cuda::std::equal_to<T>
  * Comparable</a>.
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/not_equal_to
- *  \see binary_function
  */
 template <typename T = void>
 struct not_equal_to : public ::cuda::std::not_equal_to<T>
@@ -529,7 +413,6 @@ struct not_equal_to : public ::cuda::std::not_equal_to<T>
  * Comparable</a>.
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/greater
- *  \see binary_function
  */
 template <typename T = void>
 struct greater : public ::cuda::std::greater<T>
@@ -549,7 +432,6 @@ struct greater : public ::cuda::std::greater<T>
  * Comparable</a>.
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/less
- *  \see binary_function
  */
 template <typename T = void>
 struct less : public ::cuda::std::less<T>
@@ -569,7 +451,6 @@ struct less : public ::cuda::std::less<T>
  * Comparable</a>.
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/greater_equal
- *  \see binary_function
  */
 template <typename T = void>
 struct greater_equal : public ::cuda::std::greater_equal<T>
@@ -589,7 +470,6 @@ struct greater_equal : public ::cuda::std::greater_equal<T>
  * Comparable</a>.
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/less_equal
- *  \see binary_function
  */
 template <typename T = void>
 struct less_equal : public ::cuda::std::less_equal<T>
@@ -616,7 +496,6 @@ struct less_equal : public ::cuda::std::less_equal<T>
  *  \tparam T must be convertible to \c bool.
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/logical_and
- *  \see binary_function
  */
 template <typename T = void>
 struct logical_and : public ::cuda::std::logical_and<T>
@@ -635,7 +514,6 @@ struct logical_and : public ::cuda::std::logical_and<T>
  *  \tparam T must be convertible to \c bool.
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/logical_or
- *  \see binary_function
  */
 template <typename T = void>
 struct logical_or : public ::cuda::std::logical_or<T>
@@ -668,7 +546,6 @@ struct logical_or : public ::cuda::std::logical_or<T>
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/logical_not
- *  \see unary_function
  */
 template <typename T = void>
 struct logical_not : public ::cuda::std::logical_not<T>
@@ -716,8 +593,6 @@ struct logical_not : public ::cuda::std::logical_not<T>
  *                    thrust::bit_and<int>());
  *  // V3 is now {1&13, 2&13, 3&13, ..., 1000%13}
  *  \endcode
- *
- *  \see binary_function
  */
 template <typename T = void>
 struct bit_and : public ::cuda::std::bit_and<T>
@@ -757,8 +632,6 @@ struct bit_and : public ::cuda::std::bit_and<T>
  *                    thrust::bit_or<int>());
  *  // V3 is now {1|13, 2|13, 3|13, ..., 1000|13}
  *  \endcode
- *
- *  \see binary_function
  */
 template <typename T = void>
 struct bit_or : public ::cuda::std::bit_or<T>
@@ -798,8 +671,6 @@ struct bit_or : public ::cuda::std::bit_or<T>
  *                    thrust::bit_xor<int>());
  *  // V3 is now {1^13, 2^13, 3^13, ..., 1000^13}
  *  \endcode
- *
- *  \see binary_function
  */
 template <typename T = void>
 struct bit_xor : public ::cuda::std::bit_xor<T>
@@ -835,7 +706,6 @@ struct bit_xor : public ::cuda::std::bit_xor<T>
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/identity
- *  \see unary_function
  */
 // TODO(bgruber): this version can also act as a functor casting to T making it not equivalent to ::cuda::std::identity
 template <typename T = void>
@@ -893,7 +763,6 @@ struct identity<void> : ::cuda::std::__identity
  *
  *  \see minimum
  *  \see min
- *  \see binary_function
  */
 template <typename T = void>
 struct maximum : ::cuda::maximum<T>
@@ -940,7 +809,6 @@ struct maximum : ::cuda::maximum<T>
  *
  *  \see maximum
  *  \see max
- *  \see binary_function
  */
 template <typename T = void>
 struct minimum : ::cuda::minimum<T>
@@ -949,19 +817,19 @@ struct minimum : ::cuda::minimum<T>
    *  \brief The type of the function object's first argument.
    *  deprecated [Since 2.6]
    */
-  using first_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T;
+  using first_argument_type _CCCL_ALIAS_ATTRIBUTE(CCCL_DEPRECATED) = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    *  deprecated [Since 2.6]
    */
-  using second_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T;
+  using second_argument_type _CCCL_ALIAS_ATTRIBUTE(CCCL_DEPRECATED) = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    *  deprecated [Since 2.6]
    */
-  using result_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T;
+  using result_type _CCCL_ALIAS_ATTRIBUTE(CCCL_DEPRECATED) = T;
 }; // end minimum
 
 /*! \p project1st is a function object that takes two arguments and returns
@@ -980,7 +848,6 @@ struct minimum : ::cuda::minimum<T>
  *
  *  \see identity
  *  \see project2nd
- *  \see binary_function
  */
 template <typename T1 = void, typename T2 = void>
 struct project1st
@@ -989,19 +856,19 @@ struct project1st
    *  \brief The type of the function object's first argument.
    *  deprecated [Since 2.6]
    */
-  using first_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T1;
+  using first_argument_type _CCCL_ALIAS_ATTRIBUTE(CCCL_DEPRECATED) = T1;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    *  deprecated [Since 2.6]
    */
-  using second_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T2;
+  using second_argument_type _CCCL_ALIAS_ATTRIBUTE(CCCL_DEPRECATED) = T2;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    *  deprecated [Since 2.6]
    */
-  using result_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T1;
+  using result_type _CCCL_ALIAS_ATTRIBUTE(CCCL_DEPRECATED) = T1;
 
   /*! Function call operator. The return value is <tt>lhs</tt>.
    */
@@ -1017,8 +884,8 @@ struct project1st<void, void>
   using is_transparent = void;
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&&) const
-    noexcept(noexcept(THRUST_FWD(t1))) -> decltype(THRUST_FWD(t1))
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&&) const noexcept(noexcept(THRUST_FWD(t1)))
+    -> decltype(THRUST_FWD(t1))
   {
     return THRUST_FWD(t1);
   }
@@ -1040,7 +907,6 @@ struct project1st<void, void>
  *
  *  \see identity
  *  \see project1st
- *  \see binary_function
  */
 template <typename T1 = void, typename T2 = void>
 struct project2nd
@@ -1049,19 +915,19 @@ struct project2nd
    *  \brief The type of the function object's first argument.
    *  deprecated [Since 2.6]
    */
-  using first_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T1;
+  using first_argument_type _CCCL_ALIAS_ATTRIBUTE(CCCL_DEPRECATED) = T1;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    *  deprecated [Since 2.6]
    */
-  using second_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T2;
+  using second_argument_type _CCCL_ALIAS_ATTRIBUTE(CCCL_DEPRECATED) = T2;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    *  deprecated [Since 2.6]
    */
-  using result_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T2;
+  using result_type _CCCL_ALIAS_ATTRIBUTE(CCCL_DEPRECATED) = T2;
 
   /*! Function call operator. The return value is <tt>rhs</tt>.
    */
@@ -1077,8 +943,8 @@ struct project2nd<void, void>
   using is_transparent = void;
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&&, T2&& t2) const
-    noexcept(noexcept(THRUST_FWD(t2))) -> decltype(THRUST_FWD(t2))
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&&, T2&& t2) const noexcept(noexcept(THRUST_FWD(t2)))
+    -> decltype(THRUST_FWD(t2))
   {
     return THRUST_FWD(t2);
   }
@@ -1093,133 +959,6 @@ struct project2nd<void, void>
  *  \{
  */
 
-/*! \p unary_negate is a function object adaptor: it is an Adaptable Predicate
- *  that represents the logical negation of some other Adaptable Predicate.
- *  That is: if \c f is an object of class <tt>unary_negate<AdaptablePredicate></tt>,
- *  then there exists an object \c pred of class \c AdaptablePredicate such
- *  that <tt>f(x)</tt> always returns the same value as <tt>!pred(x)</tt>.
- *  There is rarely any reason to construct a <tt>unary_negate</tt> directly;
- *  it is almost always easier to use the helper function not1.
- *
- *  deprecated [Since 2.6]
- *
- *  \see https://en.cppreference.com/w/cpp/utility/functional/unary_negate
- *  \see not1
- */
-template <typename Predicate>
-struct THRUST_DEPRECATED unary_negate
-{
-  using argument_type = typename Predicate::argument_type;
-  using result_type   = bool;
-
-  /*! Constructor takes a \p Predicate object to negate.
-   *  \param p The \p Predicate object to negate.
-   */
-  _CCCL_HOST_DEVICE explicit unary_negate(Predicate p)
-      : pred(p)
-  {}
-
-  /*! Function call operator. The return value is <tt>!pred(x)</tt>.
-   */
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE bool operator()(const typename Predicate::argument_type& x)
-  {
-    return !pred(x);
-  }
-
-  /*! \cond
-   */
-  Predicate pred;
-  /*! \endcond
-   */
-}; // end unary_negate
-
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-/*! \p not1 is a helper function to simplify the creation of Adaptable Predicates:
- *  it takes an Adaptable Predicate \p pred as an argument and returns a new Adaptable
- *  Predicate that represents the negation of \p pred. That is: if \c pred is an object
- *  of a type which models Adaptable Predicate, then the the type of the result
- *  \c npred of <tt>not1(pred)</tt> is also a model of Adaptable Predicate and
- *  <tt>npred(x)</tt> always returns the same value as <tt>!pred(x)</tt>.
- *
- *  deprecated [Since 2.6]
- *
- *  \param pred The Adaptable Predicate to negate.
- *  \return A new object, <tt>npred</tt> such that <tt>npred(x)</tt> always returns
- *          the same value as <tt>!pred(x)</tt>.
- *  \tparam Predicate is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/unary_negate">Adaptable Predicate</a>.
- *  \see unary_negate
- *  \see not2
- */
-template <typename Predicate>
-_CCCL_HOST_DEVICE
-THRUST_DEPRECATED_BECAUSE("Use thrust::not_fn instead") unary_negate<Predicate> not1(const Predicate& pred);
-_CCCL_SUPPRESS_DEPRECATED_POP
-
-/*! \p binary_negate is a function object adaptor: it is an Adaptable Binary
- *  Predicate that represents the logical negation of some other Adaptable
- *  Binary Predicate. That is: if \c f is an object of class <tt>binary_negate<AdaptablePredicate></tt>,
- *  then there exists an object \c pred of class \c AdaptableBinaryPredicate
- *  such that <tt>f(x,y)</tt> always returns the same value as <tt>!pred(x,y)</tt>.
- *  There is rarely any reason to construct a <tt>binary_negate</tt> directly;
- *  it is almost always easier to use the helper function not2.
- *
- *  deprecated [Since 2.6]
- *
- *  \see https://en.cppreference.com/w/cpp/utility/functional/binary_negate
- */
-template <typename Predicate>
-struct THRUST_DEPRECATED binary_negate
-{
-  using first_argument_type  = typename Predicate::first_argument_type;
-  using second_argument_type = typename Predicate::second_argument_type;
-  using result_type          = bool;
-
-  /*! Constructor takes a \p Predicate object to negate.
-   *  \param p The \p Predicate object to negate.
-   */
-  _CCCL_HOST_DEVICE explicit binary_negate(Predicate p)
-      : pred(p)
-  {}
-
-  /*! Function call operator. The return value is <tt>!pred(x,y)</tt>.
-   */
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE bool operator()(const first_argument_type& x, const second_argument_type& y)
-  {
-    return !pred(x, y);
-  }
-
-  /*! \cond
-   */
-  Predicate pred;
-  /*! \endcond
-   */
-}; // end binary_negate
-
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-/*! \p not2 is a helper function to simplify the creation of Adaptable Binary Predicates:
- *  it takes an Adaptable Binary Predicate \p pred as an argument and returns a new Adaptable
- *  Binary Predicate that represents the negation of \p pred. That is: if \c pred is an object
- *  of a type which models Adaptable Binary Predicate, then the the type of the result
- *  \c npred of <tt>not2(pred)</tt> is also a model of Adaptable Binary Predicate and
- *  <tt>npred(x,y)</tt> always returns the same value as <tt>!pred(x,y)</tt>.
- *
- *  deprecated [Since 2.6]
- *
- *  \param pred The Adaptable Binary Predicate to negate.
- *  \return A new object, <tt>npred</tt> such that <tt>npred(x,y)</tt> always returns
- *          the same value as <tt>!pred(x,y)</tt>.
- *  \tparam Binary Predicate is a model of an Adaptable Binary Predicate.
- *  \see binary_negate
- *  \see not1
- */
-template <typename BinaryPredicate>
-_CCCL_HOST_DEVICE THRUST_DEPRECATED_BECAUSE("Use thrust::not_fn instead")
-  binary_negate<BinaryPredicate> not2(const BinaryPredicate& pred);
-_CCCL_SUPPRESS_DEPRECATED_POP
-
 namespace detail
 {
 template <typename F>
@@ -1228,15 +967,15 @@ struct not_fun_t
   F f;
 
   template <typename... Ts>
-  _CCCL_HOST_DEVICE auto
-  operator()(Ts&&... args) noexcept(noexcept(!f(std::forward<Ts>(args)...))) -> decltype(!f(std::forward<Ts>(args)...))
+  _CCCL_HOST_DEVICE auto operator()(Ts&&... args) noexcept(noexcept(!f(std::forward<Ts>(args)...)))
+    -> decltype(!f(std::forward<Ts>(args)...))
   {
     return !f(std::forward<Ts>(args)...);
   }
 
   template <typename... Ts>
-  _CCCL_HOST_DEVICE auto operator()(Ts&&... args) const
-    noexcept(noexcept(!f(std::forward<Ts>(args)...))) -> decltype(!f(std::forward<Ts>(args)...))
+  _CCCL_HOST_DEVICE auto operator()(Ts&&... args) const noexcept(noexcept(!f(std::forward<Ts>(args)...)))
+    -> decltype(!f(std::forward<Ts>(args)...))
   {
     return !f(std::forward<Ts>(args)...);
   }
@@ -1307,43 +1046,43 @@ namespace placeholders
 
 /*! \p thrust::placeholders::_1 is the placeholder for the first function parameter.
  */
-THRUST_INLINE_CONSTANT thrust::detail::functional::placeholder<0>::type _1;
+_CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<0>::type _1;
 
 /*! \p thrust::placeholders::_2 is the placeholder for the second function parameter.
  */
-THRUST_INLINE_CONSTANT thrust::detail::functional::placeholder<1>::type _2;
+_CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<1>::type _2;
 
 /*! \p thrust::placeholders::_3 is the placeholder for the third function parameter.
  */
-THRUST_INLINE_CONSTANT thrust::detail::functional::placeholder<2>::type _3;
+_CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<2>::type _3;
 
 /*! \p thrust::placeholders::_4 is the placeholder for the fourth function parameter.
  */
-THRUST_INLINE_CONSTANT thrust::detail::functional::placeholder<3>::type _4;
+_CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<3>::type _4;
 
 /*! \p thrust::placeholders::_5 is the placeholder for the fifth function parameter.
  */
-THRUST_INLINE_CONSTANT thrust::detail::functional::placeholder<4>::type _5;
+_CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<4>::type _5;
 
 /*! \p thrust::placeholders::_6 is the placeholder for the sixth function parameter.
  */
-THRUST_INLINE_CONSTANT thrust::detail::functional::placeholder<5>::type _6;
+_CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<5>::type _6;
 
 /*! \p thrust::placeholders::_7 is the placeholder for the seventh function parameter.
  */
-THRUST_INLINE_CONSTANT thrust::detail::functional::placeholder<6>::type _7;
+_CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<6>::type _7;
 
 /*! \p thrust::placeholders::_8 is the placeholder for the eighth function parameter.
  */
-THRUST_INLINE_CONSTANT thrust::detail::functional::placeholder<7>::type _8;
+_CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<7>::type _8;
 
 /*! \p thrust::placeholders::_9 is the placeholder for the ninth function parameter.
  */
-THRUST_INLINE_CONSTANT thrust::detail::functional::placeholder<8>::type _9;
+_CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<8>::type _9;
 
 /*! \p thrust::placeholders::_10 is the placeholder for the tenth function parameter.
  */
-THRUST_INLINE_CONSTANT thrust::detail::functional::placeholder<9>::type _10;
+_CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<9>::type _10;
 
 } // namespace placeholders
 
@@ -1354,8 +1093,8 @@ THRUST_INLINE_CONSTANT thrust::detail::functional::placeholder<9>::type _10;
 
 THRUST_NAMESPACE_END
 
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
-
 _LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::plus);
 _LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::minus);
 _LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::multiplies);
@@ -1375,9 +1114,8 @@ _LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::greater);
 _LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::logical_and);
 _LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::logical_not);
 _LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::logical_or);
-
 _LIBCUDACXX_END_NAMESPACE_CUDA
+#endif // _CCCL_DOXYGEN_INVOKED
 
-#include <thrust/detail/functional.inl>
 #include <thrust/detail/functional/operators.h>
 #include <thrust/detail/type_traits/is_commutative.h>

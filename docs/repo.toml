@@ -15,6 +15,8 @@ social_media     = [
     [ "discord", "https://discord.com/channels/1019361803752456192/1161051667945508884" ],
 ]
 
+sphinx_version = "4.5.0.2-py3.10-${platform}"
+
 enhanced_search_enabled = true
 api_output_directory = "api"
 use_fast_doxygen_conversion = true
@@ -157,7 +159,6 @@ doxygen_predefined = [
     "_CCCL_DIAG_POP=",
     "_CCCL_DIAG_SUPPRESS_CLANG(x)=",
     "_CCCL_DIAG_SUPPRESS_GCC(x)=",
-    "_CCCL_DIAG_SUPPRESS_ICC(x)=",
     "_CCCL_DIAG_SUPPRESS_MSVC(x)=",
     "_CCCL_DIAG_SUPPRESS_NVHPC(x)=",
     "_CCCL_DOXYGEN_INVOKED",
@@ -169,16 +170,15 @@ doxygen_predefined = [
     "__forceinline__",
     "__declspec(x)=",
     "__align__(x)=",
+    "CCCL_IGNORE_DEPRECATED_CPP_DIALECT",
     "CUB_DISABLE_NAMESPACE_MAGIC",
     "CUB_IGNORE_NAMESPACE_MAGIC_ERROR",
     "CUB_NAMESPACE_BEGIN=namespace cub {",
     "CUB_NAMESPACE_END=}",
-    "CUB_DEPRECATED_BECAUSE(x)=",
-    "CUB_DEPRECATED=",
+    "CCCL_DEPRECATED_BECAUSE(x)=",
+    "CCCL_DEPRECATED=",
     "CUB_STATIC_ASSERT(cond,msg)=",
     "CUB_RUNTIME_FUNCTION",
-    "CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED",
-    "CUB_IGNORE_DEPRECATED_CPP_DIALECT",
     "CUDASTF_HOST",
     "CUDASTF_DEVICE",
     "CUDASTF_HOST_DEVICE"
@@ -270,9 +270,9 @@ doxygen_predefined = [
   "_CCCL_DIAG_POP=",
   "_CCCL_DIAG_SUPPRESS_CLANG(x)=",
   "_CCCL_DIAG_SUPPRESS_GCC(x)=",
-  "_CCCL_DIAG_SUPPRESS_ICC(x)=",
   "_CCCL_DIAG_SUPPRESS_MSVC(x)=",
   "_CCCL_DIAG_SUPPRESS_NVHPC(x)=",
+  "_CCCL_GLOBAL_CONSTANT=constexpr",
   "CUDASTF_HOST=",
   "CUDASTF_DEVICE=",
   "CUDASTF_HOST_DEVICE=",
@@ -288,8 +288,8 @@ doxygen_predefined = [
   "THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(x, y)=",
   "THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION(x, y)=",
   "THRUST_FWD(x)=x",
-  "THRUST_DEPRECATED_BECAUSE(x)=",
-  "THRUST_DEPRECATED="
+  "CCCL_DEPRECATED_BECAUSE(x)=",
+  "CCCL_DEPRECATED="
 ]
 
 # make sure to use ./fetch_imgs.sh
@@ -435,7 +435,6 @@ doxygen_predefined = [
   "_CCCL_DIAG_POP=",
   "_CCCL_DIAG_SUPPRESS_CLANG(x)=",
   "_CCCL_DIAG_SUPPRESS_GCC(x)=",
-  "_CCCL_DIAG_SUPPRESS_ICC(x)=",
   "_CCCL_DIAG_SUPPRESS_MSVC(x)=",
   "_CCCL_DIAG_SUPPRESS_NVHPC(x)=",
   "_CCCL_REQUIRES(x)= ::cuda::std::enable_if_t<x, int> = 0>",

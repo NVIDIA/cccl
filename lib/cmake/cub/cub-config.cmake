@@ -87,29 +87,16 @@ _cub_declare_interface_alias(CUB::CUB _CUB_CUB)
 target_include_directories(_CUB_CUB INTERFACE "${_CUB_INCLUDE_DIR}")
 target_link_libraries(_CUB_CUB INTERFACE CUB::libcudacxx)
 
-if (CUB_IGNORE_DEPRECATED_API OR THRUST_IGNORE_DEPRECATED_API)
-  target_compile_definitions(_CUB_CUB INTERFACE "CUB_IGNORE_DEPRECATED_API")
-endif()
-
-if (CUB_IGNORE_DEPRECATED_CPP_DIALECT OR
-    THRUST_IGNORE_DEPRECATED_CPP_DIALECT)
-  target_compile_definitions(_CUB_CUB INTERFACE "CUB_IGNORE_DEPRECATED_CPP_DIALECT")
-endif()
-
-if (CUB_IGNORE_DEPRECATED_CPP_11 OR
-    THRUST_IGNORE_DEPRECATED_CPP_11)
-  target_compile_definitions(_CUB_CUB INTERFACE "CUB_IGNORE_DEPRECATED_CPP_11")
-endif()
-
-if (CUB_IGNORE_DEPRECATED_CPP_14 OR
-    THRUST_IGNORE_DEPRECATED_CPP_14)
-  target_compile_definitions(_CUB_CUB INTERFACE "CUB_IGNORE_DEPRECATED_CPP_14")
-endif()
-
-if (CUB_IGNORE_DEPRECATED_COMPILER OR
-    THRUST_IGNORE_DEPRECATED_COMPILER)
-  target_compile_definitions(_CUB_CUB INTERFACE "CUB_IGNORE_DEPRECATED_COMPILER")
-endif()
+function(_cub_test_flag_option flag)
+  if (CCCL_${flag} OR CUB_${flag} OR THRUST_${flag})
+    target_compile_definitions(_CUB_CUB INTERFACE "CCCL_${flag}")
+  endif()
+endfunction()
+_cub_test_flag_option(IGNORE_DEPRECATED_API)
+_cub_test_flag_option(IGNORE_DEPRECATED_CPP_DIALECT)
+_cub_test_flag_option(IGNORE_DEPRECATED_CPP_11)
+_cub_test_flag_option(IGNORE_DEPRECATED_CPP_14)
+_cub_test_flag_option(IGNORE_DEPRECATED_COMPILER)
 
 #
 # Standardize version info

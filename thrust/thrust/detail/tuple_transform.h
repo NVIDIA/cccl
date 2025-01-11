@@ -35,8 +35,7 @@ namespace detail
 {
 
 template <typename Tuple,
-          template <typename>
-          class UnaryMetaFunction,
+          template <typename> class UnaryMetaFunction,
           typename UnaryFunction,
           typename IndexSequence = thrust::make_index_sequence<thrust::tuple_size<Tuple>::value>>
 struct tuple_transform_functor;

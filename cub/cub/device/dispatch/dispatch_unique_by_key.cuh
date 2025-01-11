@@ -45,7 +45,6 @@
 #include <cub/agent/agent_unique_by_key.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_unique_by_key.cuh>
-#include <cub/util_deprecated.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_vsmem.cuh>
@@ -323,35 +322,6 @@ struct DispatchUniqueByKey
       , stream(stream)
   {}
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchUniqueByKey(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    KeyInputIteratorT d_keys_in,
-    ValueInputIteratorT d_values_in,
-    KeyOutputIteratorT d_keys_out,
-    ValueOutputIteratorT d_values_out,
-    NumSelectedIteratorT d_num_selected_out,
-    EqualityOpT equality_op,
-    OffsetT num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-      : d_temp_storage(d_temp_storage)
-      , temp_storage_bytes(temp_storage_bytes)
-      , d_keys_in(d_keys_in)
-      , d_values_in(d_values_in)
-      , d_keys_out(d_keys_out)
-      , d_values_out(d_values_out)
-      , d_num_selected_out(d_num_selected_out)
-      , equality_op(equality_op)
-      , num_items(num_items)
-      , stream(stream)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
-
   /******************************************************************************
    * Dispatch entrypoints
    ******************************************************************************/
@@ -627,37 +597,6 @@ struct DispatchUniqueByKey
 
     return error;
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    KeyInputIteratorT d_keys_in,
-    ValueInputIteratorT d_values_in,
-    KeyOutputIteratorT d_keys_out,
-    ValueOutputIteratorT d_values_out,
-    NumSelectedIteratorT d_num_selected_out,
-    EqualityOpT equality_op,
-    OffsetT num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_values_in,
-      d_keys_out,
-      d_values_out,
-      d_num_selected_out,
-      equality_op,
-      num_items,
-      stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

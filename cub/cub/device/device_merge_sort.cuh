@@ -40,7 +40,6 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_merge_sort.cuh>
-#include <cub/util_deprecated.cuh>
 #include <cub/util_namespace.cuh>
 
 CUB_NAMESPACE_BEGIN
@@ -246,25 +245,6 @@ public:
     return SortPairsNoNVTX(d_temp_storage, temp_storage_bytes, d_keys, d_items, num_items, compare_op, stream);
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename KeyIteratorT, typename ValueIteratorT, typename OffsetT, typename CompareOpT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
-    void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
-    KeyIteratorT d_keys,
-    ValueIteratorT d_items,
-    OffsetT num_items,
-    CompareOpT compare_op,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return SortPairs<KeyIteratorT, ValueIteratorT, OffsetT, CompareOpT>(
-      d_temp_storage, temp_storage_bytes, d_keys, d_items, num_items, compare_op, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
-
   /**
    * @brief Sorts items using a merge sorting method.
    *
@@ -411,40 +391,6 @@ public:
       stream);
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename KeyInputIteratorT,
-            typename ValueInputIteratorT,
-            typename KeyIteratorT,
-            typename ValueIteratorT,
-            typename OffsetT,
-            typename CompareOpT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortPairsCopy(
-    void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
-    KeyInputIteratorT d_input_keys,
-    ValueInputIteratorT d_input_items,
-    KeyIteratorT d_output_keys,
-    ValueIteratorT d_output_items,
-    OffsetT num_items,
-    CompareOpT compare_op,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return SortPairsCopy<KeyInputIteratorT, ValueInputIteratorT, KeyIteratorT, ValueIteratorT, OffsetT, CompareOpT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_input_keys,
-      d_input_items,
-      d_output_keys,
-      d_output_items,
-      num_items,
-      compare_op,
-      stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
-
 private:
   // Internal version without NVTX range
   template <typename KeyIteratorT, typename OffsetT, typename CompareOpT>
@@ -569,24 +515,6 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return SortKeysNoNVTX(d_temp_storage, temp_storage_bytes, d_keys, num_items, compare_op, stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename KeyIteratorT, typename OffsetT, typename CompareOpT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
-    void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
-    KeyIteratorT d_keys,
-    OffsetT num_items,
-    CompareOpT compare_op,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return SortKeys<KeyIteratorT, OffsetT, CompareOpT>(
-      d_temp_storage, temp_storage_bytes, d_keys, num_items, compare_op, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
 private:
   // Internal version without NVTX range
@@ -729,25 +657,6 @@ public:
       d_temp_storage, temp_storage_bytes, d_input_keys, d_output_keys, num_items, compare_op, stream);
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename KeyInputIteratorT, typename KeyIteratorT, typename OffsetT, typename CompareOpT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortKeysCopy(
-    void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
-    KeyInputIteratorT d_input_keys,
-    KeyIteratorT d_output_keys,
-    OffsetT num_items,
-    CompareOpT compare_op,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return SortKeysCopy<KeyInputIteratorT, KeyIteratorT, OffsetT, CompareOpT>(
-      d_temp_storage, temp_storage_bytes, d_input_keys, d_output_keys, num_items, compare_op, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
-
   /**
    * @brief Sorts items using a merge sorting method.
    *
@@ -857,25 +766,6 @@ public:
       d_temp_storage, temp_storage_bytes, d_keys, d_items, num_items, compare_op, stream);
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename KeyIteratorT, typename ValueIteratorT, typename OffsetT, typename CompareOpT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t StableSortPairs(
-    void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
-    KeyIteratorT d_keys,
-    ValueIteratorT d_items,
-    OffsetT num_items,
-    CompareOpT compare_op,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return StableSortPairs<KeyIteratorT, ValueIteratorT, OffsetT, CompareOpT>(
-      d_temp_storage, temp_storage_bytes, d_keys, d_items, num_items, compare_op, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
-
   /**
    * @brief Sorts items using a merge sorting method.
    *
@@ -975,24 +865,6 @@ public:
     return SortKeysNoNVTX<KeyIteratorT, PromotedOffsetT, CompareOpT>(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, compare_op, stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename KeyIteratorT, typename OffsetT, typename CompareOpT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeys(
-    void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
-    KeyIteratorT d_keys,
-    OffsetT num_items,
-    CompareOpT compare_op,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return StableSortKeys<KeyIteratorT, OffsetT, CompareOpT>(
-      d_temp_storage, temp_storage_bytes, d_keys, num_items, compare_op, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   /**
    * @brief Sorts items using a merge sorting method.

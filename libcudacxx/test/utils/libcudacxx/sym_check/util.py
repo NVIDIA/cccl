@@ -8,10 +8,11 @@
 
 import ast
 import distutils.spawn
-import sys
 import re
-import libcudacxx.util
+import sys
 from pprint import pformat
+
+import libcudacxx.util
 
 
 def read_syms_from_list(slist):

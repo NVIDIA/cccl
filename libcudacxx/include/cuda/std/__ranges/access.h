@@ -33,7 +33,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-#if _CCCL_STD_VER > 2014 && !_CCCL_COMPILER(MSVC2017)
+#if _CCCL_STD_VER >= 2014
 
 template <class _Tp>
 _CCCL_CONCEPT __can_borrow = is_lvalue_reference_v<_Tp> || enable_borrowed_range<remove_cvref_t<_Tp>>;
@@ -120,6 +120,14 @@ struct __fn
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES((!__member_begin<_Tp>) _CCCL_AND(!__unqualified_begin<_Tp>))
   void operator()(_Tp&&) const = delete;
+
+#  if _CCCL_COMPILER(MSVC, <, 19, 23)
+  template <class _Tp>
+  void operator()(_Tp (&&)[]) const = delete;
+
+  template <class _Tp, size_t _Np>
+  void operator()(_Tp (&&)[_Np]) const = delete;
+#  endif // _CCCL_COMPILER(MSVC, <, 19, 23)
 };
 _LIBCUDACXX_END_NAMESPACE_CPO
 
@@ -209,6 +217,14 @@ struct __fn
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES((!__member_end<_Tp>) _CCCL_AND(!__unqualified_end<_Tp>))
   void operator()(_Tp&&) const = delete;
+
+#  if _CCCL_COMPILER(MSVC, <, 19, 23)
+  template <class _Tp>
+  void operator()(_Tp (&&)[]) const = delete;
+
+  template <class _Tp, size_t _Np>
+  void operator()(_Tp (&&)[_Np]) const = delete;
+#  endif // _CCCL_COMPILER(MSVC, <, 19, 23)
 };
 _LIBCUDACXX_END_NAMESPACE_CPO
 
@@ -267,8 +283,9 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_rvalue_reference_v<_Tp&&>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(
-    _CUDA_VRANGES::end(static_cast<const _Tp&&>(__t)))) -> decltype(_CUDA_VRANGES::end(static_cast<const _Tp&&>(__t)))
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
+    noexcept(noexcept(_CUDA_VRANGES::end(static_cast<const _Tp&&>(__t))))
+      -> decltype(_CUDA_VRANGES::end(static_cast<const _Tp&&>(__t)))
   {
     return _CUDA_VRANGES::end(static_cast<const _Tp&&>(__t));
   }
@@ -279,7 +296,7 @@ inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto cend = __cend::__fn{};
 } // namespace __cpo
-#endif // _CCCL_STD_VER > 2014 && !_CCCL_COMPILER(MSVC2017)
+#endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

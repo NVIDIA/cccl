@@ -5,10 +5,9 @@
 import os
 import shutil
 
-from setuptools import Command, setup, find_namespace_packages
+from setuptools import Command, find_namespace_packages, setup
 from setuptools.command.build_py import build_py
 from wheel.bdist_wheel import bdist_wheel
-
 
 project_path = os.path.abspath(os.path.dirname(__file__))
 cccl_path = os.path.abspath(os.path.join(project_path, "..", ".."))

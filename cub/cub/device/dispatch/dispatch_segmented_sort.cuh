@@ -49,7 +49,6 @@
 #include <cub/device/dispatch/tuning/tuning_segmented_sort.cuh>
 #include <cub/thread/thread_sort.cuh>
 #include <cub/util_debug.cuh>
-#include <cub/util_deprecated.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_namespace.cuh>
@@ -821,35 +820,6 @@ struct DispatchSegmentedSort
       , stream(stream)
   {}
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchSegmentedSort(
-    void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
-    DoubleBuffer<KeyT>& d_keys,
-    DoubleBuffer<ValueT>& d_values,
-    OffsetT num_items,
-    int num_segments,
-    BeginOffsetIteratorT d_begin_offsets,
-    EndOffsetIteratorT d_end_offsets,
-    bool is_overwrite_okay,
-    cudaStream_t stream,
-    bool debug_synchronous)
-      : d_temp_storage(d_temp_storage)
-      , temp_storage_bytes(temp_storage_bytes)
-      , d_keys(d_keys)
-      , d_values(d_values)
-      , num_items(num_items)
-      , num_segments(num_segments)
-      , d_begin_offsets(d_begin_offsets)
-      , d_end_offsets(d_end_offsets)
-      , is_overwrite_okay(is_overwrite_okay)
-      , stream(stream)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
-
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
@@ -1128,37 +1098,6 @@ struct DispatchSegmentedSort
 
     return error;
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
-    void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
-    DoubleBuffer<KeyT>& d_keys,
-    DoubleBuffer<ValueT>& d_values,
-    OffsetT num_items,
-    int num_segments,
-    BeginOffsetIteratorT d_begin_offsets,
-    EndOffsetIteratorT d_end_offsets,
-    bool is_overwrite_okay,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      num_items,
-      num_segments,
-      d_begin_offsets,
-      d_end_offsets,
-      is_overwrite_okay,
-      stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
 private:
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE int GetNumPasses(int radix_bits)

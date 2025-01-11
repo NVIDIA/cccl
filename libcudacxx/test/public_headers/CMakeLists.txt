@@ -46,13 +46,11 @@ function(libcudacxx_add_public_header_test header)
                          PRIVATE
                          ${headertest_warning_levels_device}
                          -DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
-  if (CCCL_SUPPRESS_ICC_DEPRECATION_WARNING)
-    target_compile_definitions(headertest_${header_name} PRIVATE CCCL_SUPPRESS_ICC_DEPRECATION_WARNING)
-  endif()
   if (CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING)
     target_compile_definitions(headertest_${header_name} PRIVATE CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING)
   endif()
   target_compile_definitions(headertest_${header_name} PRIVATE CCCL_ENABLE_ASSERTIONS)
+  target_compile_definitions(headertest_${header_name} PRIVATE CCCL_IGNORE_DEPRECATED_CPP_DIALECT)
 
   # Ensure that if this is an atomic header, we only include the right architectures
   string(REGEX MATCH "atomic|barrier|latch|semaphore|annotated_ptr|pipeline" match "${header}")

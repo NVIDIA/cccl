@@ -130,24 +130,6 @@ CUB_RUNTIME_FUNCTION inline int DeviceCountUncached()
   return count;
 }
 
-/**
- * \brief Cache for an arbitrary value produced by a nullary function.
- * deprecated [Since 2.6.0]
- */
-template <typename T, T (*Function)()>
-struct CUB_DEPRECATED ValueCache
-{
-  T const value;
-
-  /**
-   * \brief Call the nullary function to produce the value and construct the
-   *        cache.
-   */
-  _CCCL_HOST inline ValueCache()
-      : value(Function())
-  {}
-};
-
 // Host code. This is a separate function to avoid defining a local static in a host/device function.
 _CCCL_HOST inline int DeviceCountCachedValue()
 {
@@ -635,7 +617,10 @@ CUB_RUNTIME_FUNCTION PolicyWrapper<PolicyT> MakePolicyWrapper(PolicyT policy)
   return PolicyWrapper<PolicyT>{policy};
 }
 
+namespace detail
+{
 struct TripleChevronFactory;
+}
 
 /**
  * Kernel dispatch configuration
@@ -654,7 +639,7 @@ struct KernelConfig
       , sm_occupancy(0)
   {}
 
-  template <typename AgentPolicyT, typename KernelPtrT, typename LauncherFactory = TripleChevronFactory>
+  template <typename AgentPolicyT, typename KernelPtrT, typename LauncherFactory = detail::TripleChevronFactory>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   Init(KernelPtrT kernel_ptr, AgentPolicyT agent_policy = {}, LauncherFactory launcher_factory = {})
   {
@@ -784,4 +769,4 @@ private:
 
 CUB_NAMESPACE_END
 
-#include <cub/launcher/cuda_runtime.cuh> // to complete the definition of TripleChevronFactory
+#include <cub/detail/launcher/cuda_runtime.cuh> // to complete the definition of TripleChevronFactory

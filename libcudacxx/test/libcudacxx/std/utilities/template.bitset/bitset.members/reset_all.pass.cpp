@@ -22,11 +22,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_reset_all()
   cuda::std::bitset<N> v;
   v.set();
   v.reset();
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_ICC(186)
   for (cuda::std::size_t i = 0; i < v.size(); ++i)
   {
-    _CCCL_DIAG_POP
     {
       assert(!v[i]);
     }

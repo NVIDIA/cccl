@@ -46,8 +46,8 @@
 #include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
-#include <cub/iterator/arg_index_input_iterator.cuh>
-#include <cub/util_deprecated.cuh>
+#include <cub/device/dispatch/dispatch_streaming_reduce.cuh>
+#include <cub/util_type.cuh>
 
 #include <thrust/iterator/tabulate_output_iterator.h>
 
@@ -227,26 +227,6 @@ struct DeviceReduce
       d_temp_storage, temp_storage_bytes, d_in, d_out, static_cast<OffsetT>(num_items), reduction_op, init, stream);
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename InputIteratorT, typename OutputIteratorT, typename ReductionOpT, typename T>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t Reduce(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    int num_items,
-    ReductionOpT reduction_op,
-    T init,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Reduce<InputIteratorT, OutputIteratorT, ReductionOpT, T>(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, reduction_op, init, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
-
   //! @rst
   //! Computes a device-wide sum using the addition (``+``) operator.
   //!
@@ -351,23 +331,6 @@ struct DeviceReduce
       InitT{}, // zero-initialize
       stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename InputIteratorT, typename OutputIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t
-  Sum(void* d_temp_storage,
-      size_t& temp_storage_bytes,
-      InputIteratorT d_in,
-      OutputIteratorT d_out,
-      int num_items,
-      cudaStream_t stream,
-      bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Sum<InputIteratorT, OutputIteratorT>(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Computes a device-wide minimum using the less-than (``<``) operator.
@@ -478,23 +441,6 @@ struct DeviceReduce
       stream);
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename InputIteratorT, typename OutputIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t
-  Min(void* d_temp_storage,
-      size_t& temp_storage_bytes,
-      InputIteratorT d_in,
-      OutputIteratorT d_out,
-      int num_items,
-      cudaStream_t stream,
-      bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Min<InputIteratorT, OutputIteratorT>(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
-
   //! @rst
   //! Finds the first device-wide minimum using the less-than (``<``) operator and also returns the index of that item.
   //!
@@ -594,44 +540,43 @@ struct DeviceReduce
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMin");
 
-    // Signed integer type for global offsets
-    using OffsetT = ::cuda::std::int64_t;
-
     // The input type
     using InputValueT = cub::detail::value_t<InputIteratorT>;
 
+    // Offset type used within the kernel and to index within one partition
+    using PerPartitionOffsetT = int;
+
+    // Offset type used to index within the total input in the range [d_in, d_in + num_items)
+    using GlobalOffsetT = ::cuda::std::int64_t;
+
     // The value type used for the extremum
     using OutputExtremumT = detail::non_void_value_t<ExtremumOutIteratorT, InputValueT>;
+    using InitT           = OutputExtremumT;
 
-    // The (index, extremum)-tuple type
-    using OutputTupleT = KeyValuePair<OffsetT, OutputExtremumT>;
-
-    // Initial value type
-    using InitT = detail::reduce::empty_problem_init_t<OutputTupleT>;
-
-    // Accumulator type
-    using AccumT = OutputTupleT;
-
-    // Wrapped input iterator to produce index-value <OffsetT, InputT> tuples
-    using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OffsetT, OutputExtremumT>;
-    ArgIndexInputIteratorT d_indexed_in(d_in);
+    // Reduction operation
+    using ReduceOpT = cub::ArgMin;
 
     // Initial value
-    InitT initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::max())};
+    OutputExtremumT initial_value{::cuda::std::numeric_limits<InputValueT>::max()};
 
     // Tabulate output iterator that unzips the result and writes it to the user-provided output iterators
-    auto unzip_result_it = THRUST_NS_QUALIFIER::make_tabulate_output_iterator(
+    auto out_it = THRUST_NS_QUALIFIER::make_tabulate_output_iterator(
       detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_min_out, d_index_out});
 
-    return DispatchReduce<ArgIndexInputIteratorT, decltype(unzip_result_it), OffsetT, cub::ArgMin, InitT, AccumT>::
-      Dispatch(d_temp_storage,
-               temp_storage_bytes,
-               d_indexed_in,
-               unzip_result_it,
-               num_items,
-               cub::ArgMin{},
-               initial_value,
-               stream);
+    return detail::reduce::dispatch_streaming_arg_reduce_t<
+      InputIteratorT,
+      decltype(out_it),
+      PerPartitionOffsetT,
+      GlobalOffsetT,
+      ReduceOpT,
+      InitT>::Dispatch(d_temp_storage,
+                       temp_storage_bytes,
+                       d_in,
+                       out_it,
+                       static_cast<GlobalOffsetT>(num_items),
+                       ReduceOpT{},
+                       initial_value,
+                       stream);
   }
 
   //! @rst
@@ -713,9 +658,9 @@ struct DeviceReduce
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
   template <typename InputIteratorT, typename OutputIteratorT>
-  CUB_DEPRECATED_BECAUSE("CUB has superseded this interface in favor of the ArgMin interface that takes two separate "
-                         "iterators: one iterator to which the extremum is written and another iterator to which the "
-                         "index of the found extremum is written. ")
+  CCCL_DEPRECATED_BECAUSE("CUB has superseded this interface in favor of the ArgMin interface that takes two separate "
+                          "iterators: one iterator to which the extremum is written and another iterator to which the "
+                          "index of the found extremum is written. ")
   CUB_RUNTIME_FUNCTION static cudaError_t
     ArgMin(void* d_temp_storage,
            size_t& temp_storage_bytes,
@@ -754,23 +699,6 @@ struct DeviceReduce
     return DispatchReduce<ArgIndexInputIteratorT, OutputIteratorT, OffsetT, cub::ArgMin, InitT, AccumT>::Dispatch(
       d_temp_storage, temp_storage_bytes, d_indexed_in, d_out, num_items, cub::ArgMin(), initial_value, stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename InputIteratorT, typename OutputIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    int num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return ArgMin<InputIteratorT, OutputIteratorT>(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Computes a device-wide maximum using the greater-than (``>``) operator.
@@ -879,23 +807,6 @@ struct DeviceReduce
       stream);
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename InputIteratorT, typename OutputIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t
-  Max(void* d_temp_storage,
-      size_t& temp_storage_bytes,
-      InputIteratorT d_in,
-      OutputIteratorT d_out,
-      int num_items,
-      cudaStream_t stream,
-      bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Max<InputIteratorT, OutputIteratorT>(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
-
   //! @rst
   //! Finds the first device-wide maximum using the greater-than (``>``) operator and also returns the index of that
   //! item.
@@ -995,45 +906,43 @@ struct DeviceReduce
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMax");
 
-    // Signed integer type for global offsets
-    // TODO (elstehle): Temporary solution, will be moved to int64_t in https://github.com/NVIDIA/cccl/pull/2647
-    using OffsetT = ::cuda::std::int64_t;
-
     // The input type
     using InputValueT = cub::detail::value_t<InputIteratorT>;
 
+    // Offset type used within the kernel and to index within one partition
+    using PerPartitionOffsetT = int;
+
+    // Offset type used to index within the total input in the range [d_in, d_in + num_items)
+    using GlobalOffsetT = ::cuda::std::int64_t;
+
     // The value type used for the extremum
     using OutputExtremumT = detail::non_void_value_t<ExtremumOutIteratorT, InputValueT>;
+    using InitT           = OutputExtremumT;
 
-    // The (index, extremum)-tuple type
-    using OutputTupleT = KeyValuePair<OffsetT, OutputExtremumT>;
-
-    // Initial value type
-    using InitT = detail::reduce::empty_problem_init_t<OutputTupleT>;
-
-    // Accumulator type
-    using AccumT = OutputTupleT;
-
-    // Wrapped input iterator to produce index-value <OffsetT, InputT> tuples
-    using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OffsetT, OutputExtremumT>;
-    ArgIndexInputIteratorT d_indexed_in(d_in);
+    // Reduction operation
+    using ReduceOpT = cub::ArgMax;
 
     // Initial value
-    InitT initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::lowest())};
+    OutputExtremumT initial_value{::cuda::std::numeric_limits<InputValueT>::lowest()};
 
     // Tabulate output iterator that unzips the result and writes it to the user-provided output iterators
-    auto unzip_result_it = THRUST_NS_QUALIFIER::make_tabulate_output_iterator(
+    auto out_it = THRUST_NS_QUALIFIER::make_tabulate_output_iterator(
       detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_max_out, d_index_out});
 
-    return DispatchReduce<ArgIndexInputIteratorT, decltype(unzip_result_it), OffsetT, cub::ArgMax, InitT, AccumT>::
-      Dispatch(d_temp_storage,
-               temp_storage_bytes,
-               d_indexed_in,
-               unzip_result_it,
-               num_items,
-               cub::ArgMax{},
-               initial_value,
-               stream);
+    return detail::reduce::dispatch_streaming_arg_reduce_t<
+      InputIteratorT,
+      decltype(out_it),
+      PerPartitionOffsetT,
+      GlobalOffsetT,
+      ReduceOpT,
+      InitT>::Dispatch(d_temp_storage,
+                       temp_storage_bytes,
+                       d_in,
+                       out_it,
+                       static_cast<GlobalOffsetT>(num_items),
+                       ReduceOpT{},
+                       initial_value,
+                       stream);
   }
 
   //! @rst
@@ -1119,9 +1028,9 @@ struct DeviceReduce
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
   template <typename InputIteratorT, typename OutputIteratorT>
-  CUB_DEPRECATED_BECAUSE("CUB has superseded this interface in favor of the ArgMax interface that takes two separate "
-                         "iterators: one iterator to which the extremum is written and another iterator to which the "
-                         "index of the found extremum is written. ")
+  CCCL_DEPRECATED_BECAUSE("CUB has superseded this interface in favor of the ArgMax interface that takes two separate "
+                          "iterators: one iterator to which the extremum is written and another iterator to which the "
+                          "index of the found extremum is written. ")
   CUB_RUNTIME_FUNCTION static cudaError_t
     ArgMax(void* d_temp_storage,
            size_t& temp_storage_bytes,
@@ -1160,23 +1069,6 @@ struct DeviceReduce
     return DispatchReduce<ArgIndexInputIteratorT, OutputIteratorT, OffsetT, cub::ArgMax, InitT, AccumT>::Dispatch(
       d_temp_storage, temp_storage_bytes, d_indexed_in, d_out, num_items, cub::ArgMax(), initial_value, stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename InputIteratorT, typename OutputIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    int num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return ArgMax<InputIteratorT, OutputIteratorT>(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Fuses transform and reduce operations
@@ -1501,47 +1393,6 @@ struct DeviceReduce
                          static_cast<OffsetT>(num_items),
                          stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename KeysInputIteratorT,
-            typename UniqueOutputIteratorT,
-            typename ValuesInputIteratorT,
-            typename AggregatesOutputIteratorT,
-            typename NumRunsOutputIteratorT,
-            typename ReductionOpT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t ReduceByKey(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    KeysInputIteratorT d_keys_in,
-    UniqueOutputIteratorT d_unique_out,
-    ValuesInputIteratorT d_values_in,
-    AggregatesOutputIteratorT d_aggregates_out,
-    NumRunsOutputIteratorT d_num_runs_out,
-    ReductionOpT reduction_op,
-    int num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return ReduceByKey<KeysInputIteratorT,
-                       UniqueOutputIteratorT,
-                       ValuesInputIteratorT,
-                       AggregatesOutputIteratorT,
-                       NumRunsOutputIteratorT,
-                       ReductionOpT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_unique_out,
-      d_values_in,
-      d_aggregates_out,
-      d_num_runs_out,
-      reduction_op,
-      num_items,
-      stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

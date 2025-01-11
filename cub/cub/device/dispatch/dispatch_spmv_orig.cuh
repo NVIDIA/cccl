@@ -51,7 +51,6 @@
 #include <cub/grid/grid_queue.cuh>
 #include <cub/thread/thread_search.cuh>
 #include <cub/util_debug.cuh>
-#include <cub/util_deprecated.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
@@ -893,44 +892,6 @@ struct DispatchSpmv
     return error;
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename Spmv1ColKernelT,
-            typename SpmvSearchKernelT,
-            typename SpmvKernelT,
-            typename SegmentFixupKernelT,
-            typename SpmvEmptyMatrixKernelT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN
-  _CCCL_FORCEINLINE static cudaError_t
-  Dispatch(void* d_temp_storage,
-           size_t& temp_storage_bytes,
-           SpmvParamsT& spmv_params,
-           cudaStream_t stream,
-           bool debug_synchronous,
-           Spmv1ColKernelT spmv_1col_kernel,
-           SpmvSearchKernelT spmv_search_kernel,
-           SpmvKernelT spmv_kernel,
-           SegmentFixupKernelT segment_fixup_kernel,
-           SpmvEmptyMatrixKernelT spmv_empty_matrix_kernel,
-           KernelConfig spmv_config,
-           KernelConfig segment_fixup_config)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Dispatch<Spmv1ColKernelT, SpmvSearchKernelT, SpmvKernelT, SegmentFixupKernelT, SpmvEmptyMatrixKernelT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      spmv_params,
-      stream,
-      spmv_1col_kernel,
-      spmv_search_kernel,
-      spmv_kernel,
-      segment_fixup_kernel,
-      spmv_empty_matrix_kernel,
-      spmv_config,
-      segment_fixup_config);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
-
   /**
    * @brief Internal dispatch routine for computing a device-wide reduction
    *
@@ -989,21 +950,6 @@ struct DispatchSpmv
 
     return error;
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SpmvParamsT& spmv_params,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Dispatch(d_temp_storage, temp_storage_bytes, spmv_params, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

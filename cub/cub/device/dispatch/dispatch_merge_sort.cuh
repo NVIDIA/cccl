@@ -39,7 +39,6 @@
 
 #include <cub/agent/agent_merge_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_merge_sort.cuh>
-#include <cub/util_deprecated.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_namespace.cuh>
@@ -400,33 +399,6 @@ struct DispatchMergeSort
       , ptx_version(ptx_version)
   {}
 
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchMergeSort(
-    void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
-    KeyInputIteratorT d_input_keys,
-    ValueInputIteratorT d_input_items,
-    KeyIteratorT d_output_keys,
-    ValueIteratorT d_output_items,
-    OffsetT num_items,
-    CompareOpT compare_op,
-    cudaStream_t stream,
-    bool debug_synchronous,
-    int ptx_version)
-      : d_temp_storage(d_temp_storage)
-      , temp_storage_bytes(temp_storage_bytes)
-      , d_input_keys(d_input_keys)
-      , d_input_items(d_input_items)
-      , d_output_keys(d_output_keys)
-      , d_output_items(d_output_items)
-      , num_items(num_items)
-      , compare_op(compare_op)
-      , stream(stream)
-      , ptx_version(ptx_version)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-  }
-
   // Invocation
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
@@ -512,7 +484,7 @@ struct DispatchMergeSort
 
       // Invoke DeviceMergeSortBlockSortKernel
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
-        static_cast<int>(num_tiles), merge_sort_helper_t::policy_t::BLOCK_THREADS, 0, stream)
+        static_cast<int>(num_tiles), merge_sort_helper_t::policy_t::BLOCK_THREADS, 0, stream, true)
         .doit(
           DeviceMergeSortBlockSortKernel<
             typename PolicyHub::MaxPolicy,
@@ -682,33 +654,6 @@ struct DispatchMergeSort
     } while (0);
 
     return error;
-  }
-
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
-    void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
-    KeyInputIteratorT d_input_keys,
-    ValueInputIteratorT d_input_items,
-    KeyIteratorT d_output_keys,
-    ValueIteratorT d_output_items,
-    OffsetT num_items,
-    CompareOpT compare_op,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_input_keys,
-      d_input_items,
-      d_output_keys,
-      d_output_items,
-      num_items,
-      compare_op,
-      stream);
   }
 };
 

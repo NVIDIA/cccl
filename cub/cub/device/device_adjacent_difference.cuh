@@ -41,7 +41,6 @@
 #include <cub/detail/nvtx.cuh>
 #include <cub/detail/type_traits.cuh>
 #include <cub/device/dispatch/dispatch_adjacent_difference.cuh>
-#include <cub/util_deprecated.cuh>
 #include <cub/util_namespace.cuh>
 
 #include <thrust/detail/integer_traits.h>
@@ -267,24 +266,6 @@ public:
       d_temp_storage, temp_storage_bytes, d_input, d_output, num_items, difference_op, stream);
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename InputIteratorT, typename OutputIteratorT, typename DifferenceOpT, typename NumItemsT = std::uint32_t>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED static CUB_RUNTIME_FUNCTION cudaError_t SubtractLeftCopy(
-    void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
-    InputIteratorT d_input,
-    OutputIteratorT d_output,
-    NumItemsT num_items,
-    DifferenceOpT difference_op,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return SubtractLeftCopy(d_temp_storage, temp_storage_bytes, d_input, d_output, num_items, difference_op, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
-
   //! @rst
   //! Subtracts the left element of each adjacent pair of elements residing within device-accessible memory.
   //!
@@ -397,23 +378,6 @@ public:
     return AdjacentDifference<may_alias, read_left>(
       d_temp_storage, temp_storage_bytes, d_input, d_input, num_items, difference_op, stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename RandomAccessIteratorT, typename DifferenceOpT, typename NumItemsT = std::uint32_t>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED static CUB_RUNTIME_FUNCTION cudaError_t SubtractLeft(
-    void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
-    RandomAccessIteratorT d_input,
-    NumItemsT num_items,
-    DifferenceOpT difference_op,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return SubtractLeft(d_temp_storage, temp_storage_bytes, d_input, num_items, difference_op, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Subtracts the right element of each adjacent pair of elements residing within device-accessible memory.
@@ -545,24 +509,6 @@ public:
       d_temp_storage, temp_storage_bytes, d_input, d_output, num_items, difference_op, stream);
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename InputIteratorT, typename OutputIteratorT, typename DifferenceOpT, typename NumItemsT = std::uint32_t>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED static CUB_RUNTIME_FUNCTION cudaError_t SubtractRightCopy(
-    void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
-    InputIteratorT d_input,
-    OutputIteratorT d_output,
-    NumItemsT num_items,
-    DifferenceOpT difference_op,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return SubtractRightCopy(d_temp_storage, temp_storage_bytes, d_input, d_output, num_items, difference_op, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
-
   //! @rst
   //! Subtracts the right element of each adjacent pair of elements residing within device-accessible memory.
   //!
@@ -664,23 +610,6 @@ public:
     return AdjacentDifference<may_alias, read_left>(
       d_temp_storage, temp_storage_bytes, d_input, d_input, num_items, difference_op, stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename RandomAccessIteratorT, typename DifferenceOpT, typename NumItemsT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED static CUB_RUNTIME_FUNCTION cudaError_t SubtractRight(
-    void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
-    RandomAccessIteratorT d_input,
-    NumItemsT num_items,
-    DifferenceOpT difference_op,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return SubtractRight(d_temp_storage, temp_storage_bytes, d_input, num_items, difference_op, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

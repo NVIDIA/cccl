@@ -237,38 +237,12 @@ function(thrust_create_target target_name)
     target_compile_definitions(${target_name} INTERFACE "THRUST_FORCE_64_BIT_OFFSET_TYPE")
   endif()
 
-  # This would be nice to enforce, but breaks when using old cmake + new
-  # compiler, since cmake doesn't know what features the new compiler version
-  # supports.
-  # Leaving this here as a reminder not to add it back. Just let the
-  # compile-time checks in thrust/detail/config/cpp_dialect.h handle it.
-  #
-  #  if (NOT TCT_IGNORE_DEPRECATED_CPP_DIALECT)
-  #    if (TCT_IGNORE_DEPRECATED_CPP_11)
-  #      target_compile_features(${target_name} INTERFACE cxx_std_11)
-  #    else()
-  #      target_compile_features(${target_name} INTERFACE cxx_std_14)
-  #    endif()
-  #  endif()
-
-  if (TCT_IGNORE_DEPRECATED_CPP_DIALECT)
-    target_compile_definitions(${target_name} INTERFACE "THRUST_IGNORE_DEPRECATED_CPP_DIALECT")
+  if (TCT_IGNORE_DEPRECATED_API OR CCCL_IGNORE_DEPRECATED_API)
+    target_compile_definitions(${target_name} INTERFACE "CCCL_IGNORE_DEPRECATED_API")
   endif()
 
-  if (TCT_IGNORE_DEPRECATED_API)
-    target_compile_definitions(${target_name} INTERFACE "THRUST_IGNORE_DEPRECATED_API")
-  endif()
-
-  if (TCT_IGNORE_DEPRECATED_CPP_11)
-    target_compile_definitions(${target_name} INTERFACE "THRUST_IGNORE_DEPRECATED_CPP_11")
-  endif()
-
-  if (TCT_IGNORE_DEPRECATED_CPP_14)
-    target_compile_definitions(${target_name} INTERFACE "THRUST_IGNORE_DEPRECATED_CPP_14")
-  endif()
-
-  if (TCT_IGNORE_DEPRECATED_COMPILER)
-    target_compile_definitions(${target_name} INTERFACE "THRUST_IGNORE_DEPRECATED_COMPILER")
+  if (TCT_IGNORE_DEPRECATED_COMPILER OR CCCL_IGNORE_DEPRECATED_COMPILER)
+    target_compile_definitions(${target_name} INTERFACE "CCCL_IGNORE_DEPRECATED_COMPILER")
   endif()
 
   if (TCT_IGNORE_CUB_VERSION_CHECK)

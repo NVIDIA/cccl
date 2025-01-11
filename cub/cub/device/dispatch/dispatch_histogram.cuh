@@ -50,7 +50,6 @@
 #include <cub/grid/grid_queue.cuh>
 #include <cub/thread/thread_search.cuh>
 #include <cub/util_debug.cuh>
-#include <cub/util_deprecated.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_temporary_storage.cuh>
@@ -1032,39 +1031,6 @@ public:
     return error;
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t DispatchRange(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_output_histograms[NUM_ACTIVE_CHANNELS],
-    int num_output_levels[NUM_ACTIVE_CHANNELS],
-    const LevelT* const d_levels[NUM_ACTIVE_CHANNELS],
-    OffsetT num_row_pixels,
-    OffsetT num_rows,
-    OffsetT row_stride_samples,
-    cudaStream_t stream,
-    bool debug_synchronous,
-    Int2Type<false> is_byte_sample)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return DispatchRange(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_output_histograms,
-      num_output_levels,
-      d_levels,
-      num_row_pixels,
-      num_rows,
-      row_stride_samples,
-      stream,
-      is_byte_sample);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
-
   /**
    * Dispatch routine for HistogramRange, specialized for 8-bit sample types
    * (computes 256-bin privatized histograms and then reduces to user-specified levels)
@@ -1197,39 +1163,6 @@ public:
 
     return error;
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t DispatchRange(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_output_histograms[NUM_ACTIVE_CHANNELS],
-    const int num_output_levels[NUM_ACTIVE_CHANNELS],
-    const LevelT* const d_levels[NUM_ACTIVE_CHANNELS],
-    OffsetT num_row_pixels,
-    OffsetT num_rows,
-    OffsetT row_stride_samples,
-    cudaStream_t stream,
-    bool debug_synchronous,
-    Int2Type<true> is_byte_sample)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return DispatchRange(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_output_histograms,
-      num_output_levels,
-      d_levels,
-      num_row_pixels,
-      num_rows,
-      row_stride_samples,
-      stream,
-      is_byte_sample);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   /**
    * Dispatch routine for HistogramEven, specialized for sample types larger than 8-bit
@@ -1416,41 +1349,6 @@ public:
     return error;
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DispatchEven(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_output_histograms[NUM_ACTIVE_CHANNELS],
-    const int num_output_levels[NUM_ACTIVE_CHANNELS],
-    const LevelT lower_level[NUM_ACTIVE_CHANNELS],
-    const LevelT upper_level[NUM_ACTIVE_CHANNELS],
-    OffsetT num_row_pixels,
-    OffsetT num_rows,
-    OffsetT row_stride_samples,
-    cudaStream_t stream,
-    bool debug_synchronous,
-    Int2Type<false> is_byte_sample)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return DispatchEven(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_output_histograms,
-      num_output_levels,
-      lower_level,
-      upper_level,
-      num_row_pixels,
-      num_rows,
-      row_stride_samples,
-      stream,
-      is_byte_sample);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
-
   /**
    * Dispatch routine for HistogramEven, specialized for 8-bit sample types
    * (computes 256-bin privatized histograms and then reduces to user-specified levels)
@@ -1587,41 +1485,6 @@ public:
 
     return error;
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DispatchEven(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_output_histograms[NUM_ACTIVE_CHANNELS],
-    const int num_output_levels[NUM_ACTIVE_CHANNELS],
-    const LevelT lower_level[NUM_ACTIVE_CHANNELS],
-    const LevelT upper_level[NUM_ACTIVE_CHANNELS],
-    OffsetT num_row_pixels,
-    OffsetT num_rows,
-    OffsetT row_stride_samples,
-    cudaStream_t stream,
-    bool debug_synchronous,
-    Int2Type<true> is_byte_sample)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return DispatchEven(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_output_histograms,
-      num_output_levels,
-      lower_level,
-      upper_level,
-      num_row_pixels,
-      num_rows,
-      row_stride_samples,
-      stream,
-      is_byte_sample);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

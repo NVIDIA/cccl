@@ -7,14 +7,19 @@
 #include <cub/device/device_for.cuh>
 #include <cub/device/device_transform.cuh>
 
+#include <thrust/iterator/constant_iterator.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/transform_output_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/sequence.h>
 #include <thrust/zip_function.h>
 
+#include <cuda/std/__functional/identity.h>
+
 #include <sstream>
 
+#include "catch2_large_problem_helper.cuh"
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
 #include <c2h/custom_type.h>
@@ -115,7 +120,7 @@ C2H_TEST("DeviceTransform::Transform BabelStream add",
   constexpr auto alg = c2h::get<2, TestType>::value;
   FILTER_UNSUPPORTED_ALGS
   const int num_items = GENERATE(0, 1, 15, 16, 17, 127, 128, 129, 4095, 4096, 4097); // edge cases around 16 and 128
-  CAPTURE(c2h::demangle(typeid(type).name()), c2h::demangle(typeid(offset_t).name()), alg, num_items);
+  CAPTURE(c2h::type_name<type>(), c2h::type_name<offset_t>(), alg, num_items);
 
   c2h::device_vector<type> a(num_items);
   c2h::device_vector<type> b(num_items);
@@ -161,8 +166,8 @@ struct alignas(Alignment) overaligned_addable_t
     return a.value == b.value;
   }
 
-  _CCCL_HOST_DEVICE friend auto
-  operator+(const overaligned_addable_t& a, const overaligned_addable_t& b) -> overaligned_addable_t
+  _CCCL_HOST_DEVICE friend auto operator+(const overaligned_addable_t& a, const overaligned_addable_t& b)
+    -> overaligned_addable_t
   {
     check(a);
     check(b);
@@ -184,11 +189,62 @@ using overaligned_types =
 #endif // !_CCCL_COMPILER(MSVC)
                  >;
 
+C2H_TEST("DeviceTransform::Transform works for large number of items", "[device][device_transform]", offset_types)
+{
+  using offset_t = c2h::get<0, TestType>;
+  CAPTURE(c2h::type_name<offset_t>());
+
+  // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
+  const auto num_items_max_ull = ::cuda::std::clamp(
+    static_cast<std::size_t>(::cuda::std::numeric_limits<offset_t>::max()),
+    std::size_t{0},
+    ::cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
+  const offset_t num_items = static_cast<offset_t>(num_items_max_ull);
+
+  auto in_it              = thrust::make_counting_iterator(offset_t{0});
+  auto expected_result_it = in_it;
+
+  // Prepare helper to check results
+  auto check_result_helper = detail::large_problem_test_helper(num_items);
+  auto check_result_it     = check_result_helper.get_flagging_output_iterator(expected_result_it);
+
+  transform_many(in_it, check_result_it, num_items, ::cuda::std::__identity{});
+
+  check_result_helper.check_all_results_correct();
+}
+
+C2H_TEST("DeviceTransform::Transform with multiple inputs works for large number of items",
+         "[device][device_transform]",
+         offset_types)
+{
+  using offset_t = c2h::get<0, TestType>;
+  CAPTURE(c2h::type_name<offset_t>());
+
+  // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
+  const auto num_items_max_ull = ::cuda::std::clamp(
+    static_cast<std::size_t>(::cuda::std::numeric_limits<offset_t>::max()),
+    std::size_t{0},
+    ::cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
+  const offset_t num_items = static_cast<offset_t>(num_items_max_ull);
+
+  auto a_it               = thrust::make_counting_iterator(offset_t{0});
+  auto b_it               = thrust::make_constant_iterator(offset_t{42});
+  auto expected_result_it = thrust::make_counting_iterator(offset_t{42});
+
+  // Prepare helper to check results
+  auto check_result_helper = detail::large_problem_test_helper(num_items);
+  auto check_result_it     = check_result_helper.get_flagging_output_iterator(expected_result_it);
+
+  transform_many(::cuda::std::make_tuple(a_it, b_it), check_result_it, num_items, ::cuda::std::plus<offset_t>{});
+
+  check_result_helper.check_all_results_correct();
+}
+
 // test with types exceeding the memcpy_async and bulk copy alignments (16 and 128 bytes respectively)
 C2H_TEST("DeviceTransform::Transform overaligned type", "[device][device_transform]", overaligned_types)
 {
   using type = c2h::get<0, TestType>;
-  CAPTURE(c2h::demangle(typeid(type).name()));
+  CAPTURE(c2h::type_name<type>());
 
   const int num_items = GENERATE(0, 1, 100, 1000);
   c2h::device_vector<int> a(num_items, 3); // put some integers at the front, so SMEM has to handle different alignments
@@ -209,7 +265,7 @@ C2H_TEST("DeviceTransform::Transform huge type", "[device][device_transform]")
 {
   using huge_t = c2h::custom_type_t<c2h::equal_comparable_t, c2h::accumulateable_t, c2h::huge_data<666>::type>;
   static_assert(alignof(huge_t) == 8, "Need a large type with alignment < 16");
-  CAPTURE(c2h::demangle(typeid(huge_t).name()));
+  CAPTURE(c2h::type_name<huge_t>());
 
   const int num_items = GENERATE(0, 1, 100, 1000);
   c2h::device_vector<huge_t> a(num_items);
@@ -285,7 +341,7 @@ C2H_TEST("DeviceTransform::Transform BabelStream nstream",
   using offset_t     = typename c2h::get<1, TestType>;
   constexpr auto alg = c2h::get<2, TestType>::value;
   FILTER_UNSUPPORTED_ALGS
-  CAPTURE(c2h::demangle(typeid(type).name()), c2h::demangle(typeid(offset_t).name()), alg);
+  CAPTURE(c2h::type_name<type>(), c2h::type_name<offset_t>(), alg);
 
   const int num_items = GENERATE(0, 1, 100, 1000, 10000);
   c2h::device_vector<type> a(num_items);
@@ -510,7 +566,7 @@ C2H_TEST("DeviceTransform::Transform buffer start alignment",
 
   constexpr int num_items = 1000;
   const int offset        = GENERATE(1, 2, 4, 8, 16, 32, 64, 128); // global memory is always at least 256 byte aligned
-  CAPTURE(c2h::demangle(typeid(type).name()), offset);
+  CAPTURE(c2h::type_name<type>(), offset);
   c2h::device_vector<type> input(num_items);
   thrust::sequence(input.begin(), input.end());
   c2h::device_vector<type> result(num_items);

@@ -29,7 +29,6 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/cpp14_required.h>
 
 #if _CCCL_STD_VER >= 2014
 
@@ -94,7 +93,7 @@ struct for_each_fn final
 
 } // namespace for_each_detail
 
-THRUST_INLINE_CONSTANT for_each_detail::for_each_fn for_each{};
+_CCCL_GLOBAL_CONSTANT for_each_detail::for_each_fn for_each{};
 
 /*! \endcond
  */

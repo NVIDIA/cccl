@@ -1,8 +1,8 @@
 # Parse version information from version.h:
 include("${CMAKE_CURRENT_LIST_DIR}/thrust-header-search.cmake")
 
-set(THRUST_VERSION_MAJOR 2)
-set(THRUST_VERSION_MINOR 8)
+set(THRUST_VERSION_MAJOR 3)
+set(THRUST_VERSION_MINOR 0)
 set(THRUST_VERSION_PATCH 0) # Thrust: "subminor" CMake: "patch"
 set(THRUST_VERSION_TWEAK 0)
 set(THRUST_VERSION "${THRUST_VERSION_MAJOR}.${THRUST_VERSION_MINOR}.${THRUST_VERSION_PATCH}.${THRUST_VERSION_TWEAK}")

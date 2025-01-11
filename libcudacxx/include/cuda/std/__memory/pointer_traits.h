@@ -238,8 +238,8 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto to_address(_Tp* __p) noexcept
 }
 
 template <class _Pointer>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr auto
-to_address(const _Pointer& __p) noexcept -> decltype(_CUDA_VSTD::__to_address(__p))
+_LIBCUDACXX_HIDE_FROM_ABI constexpr auto to_address(const _Pointer& __p) noexcept
+  -> decltype(_CUDA_VSTD::__to_address(__p))
 {
   return _CUDA_VSTD::__to_address(__p);
 }

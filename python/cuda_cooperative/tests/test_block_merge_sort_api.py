@@ -2,11 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from pynvjitlink import patch
-import cuda.cooperative.experimental as cudax
-import numpy as np
 import numba
+import numpy as np
 from numba import cuda
+from pynvjitlink import patch
+
+import cuda.cooperative.experimental as cudax
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 

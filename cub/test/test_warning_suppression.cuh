@@ -27,7 +27,6 @@
 
 #pragma once
 
-#include <cub/util_compiler.cuh>
 #include <cub/util_cpp_dialect.cuh>
 
 // C4127: conditional expression is constant

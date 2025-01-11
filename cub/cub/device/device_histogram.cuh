@@ -44,7 +44,6 @@
 
 #include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_histogram.cuh>
-#include <cub/util_deprecated.cuh>
 
 #include <iterator>
 #include <limits>
@@ -206,35 +205,6 @@ struct DeviceHistogram
       stream);
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename SampleIteratorT, typename CounterT, typename LevelT, typename OffsetT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t HistogramEven(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_histogram,
-    int num_levels,
-    LevelT lower_level,
-    LevelT upper_level,
-    OffsetT num_samples,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return HistogramEven(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_histogram,
-      num_levels,
-      lower_level,
-      upper_level,
-      num_samples,
-      stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
-
   //! @rst
   //! Computes an intensity histogram from a sequence of data samples using equal-width bins.
   //!
@@ -385,39 +355,6 @@ struct DeviceHistogram
       row_stride_bytes,
       stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename SampleIteratorT, typename CounterT, typename LevelT, typename OffsetT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t HistogramEven(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_histogram,
-    int num_levels,
-    LevelT lower_level,
-    LevelT upper_level,
-    OffsetT num_row_samples,
-    OffsetT num_rows,
-    size_t row_stride_bytes,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return HistogramEven(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_histogram,
-      num_levels,
-      lower_level,
-      upper_level,
-      num_row_samples,
-      num_rows,
-      row_stride_bytes,
-      stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Computes per-channel intensity histograms from a sequence of multi-channel "pixel" data samples using
@@ -587,40 +524,6 @@ struct DeviceHistogram
       sizeof(SampleT) * NUM_CHANNELS * num_pixels,
       stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <int NUM_CHANNELS,
-            int NUM_ACTIVE_CHANNELS,
-            typename SampleIteratorT,
-            typename CounterT,
-            typename LevelT,
-            typename OffsetT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramEven(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
-    const int num_levels[NUM_ACTIVE_CHANNELS],
-    const LevelT lower_level[NUM_ACTIVE_CHANNELS],
-    const LevelT upper_level[NUM_ACTIVE_CHANNELS],
-    OffsetT num_pixels,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return MultiHistogramEven(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_histogram,
-      num_levels,
-      lower_level,
-      upper_level,
-      num_pixels,
-      stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Computes per-channel intensity histograms from a sequence of
@@ -836,44 +739,6 @@ struct DeviceHistogram
       is_byte_sample);
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <int NUM_CHANNELS,
-            int NUM_ACTIVE_CHANNELS,
-            typename SampleIteratorT,
-            typename CounterT,
-            typename LevelT,
-            typename OffsetT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramEven(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
-    const int num_levels[NUM_ACTIVE_CHANNELS],
-    const LevelT lower_level[NUM_ACTIVE_CHANNELS],
-    const LevelT upper_level[NUM_ACTIVE_CHANNELS],
-    OffsetT num_row_pixels,
-    OffsetT num_rows,
-    size_t row_stride_bytes,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return MultiHistogramEven(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_histogram,
-      num_levels,
-      lower_level,
-      upper_level,
-      num_row_pixels,
-      num_rows,
-      row_stride_bytes,
-      stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
-
   //! @}  end member group
   //! @name Custom bin ranges
   //! @{
@@ -998,26 +863,6 @@ struct DeviceHistogram
       (size_t) (sizeof(SampleT) * num_samples),
       stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename SampleIteratorT, typename CounterT, typename LevelT, typename OffsetT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t HistogramRange(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_histogram,
-    int num_levels,
-    const LevelT* d_levels,
-    OffsetT num_samples,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return HistogramRange(
-      d_temp_storage, temp_storage_bytes, d_samples, d_histogram, num_levels, d_levels, num_samples, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Computes an intensity histogram from a sequence of data samples using the specified bin boundary levels.
@@ -1156,37 +1001,6 @@ struct DeviceHistogram
       row_stride_bytes,
       stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename SampleIteratorT, typename CounterT, typename LevelT, typename OffsetT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t HistogramRange(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_histogram,
-    int num_levels,
-    const LevelT* d_levels,
-    OffsetT num_row_samples,
-    OffsetT num_rows,
-    size_t row_stride_bytes,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return HistogramRange(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_histogram,
-      num_levels,
-      d_levels,
-      num_row_samples,
-      num_rows,
-      row_stride_bytes,
-      stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Computes per-channel intensity histograms from a sequence of multi-channel "pixel" data samples
@@ -1345,31 +1159,6 @@ struct DeviceHistogram
       (size_t) (sizeof(SampleT) * NUM_CHANNELS * num_pixels),
       stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <int NUM_CHANNELS,
-            int NUM_ACTIVE_CHANNELS,
-            typename SampleIteratorT,
-            typename CounterT,
-            typename LevelT,
-            typename OffsetT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramRange(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
-    const int num_levels[NUM_ACTIVE_CHANNELS],
-    const LevelT* const d_levels[NUM_ACTIVE_CHANNELS],
-    OffsetT num_pixels,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return MultiHistogramRange(
-      d_temp_storage, temp_storage_bytes, d_samples, d_histogram, num_levels, d_levels, num_pixels, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Computes per-channel intensity histograms from a sequence of multi-channel "pixel" data samples using
@@ -1573,42 +1362,6 @@ struct DeviceHistogram
       stream,
       is_byte_sample);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <int NUM_CHANNELS,
-            int NUM_ACTIVE_CHANNELS,
-            typename SampleIteratorT,
-            typename CounterT,
-            typename LevelT,
-            typename OffsetT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramRange(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
-    const int num_levels[NUM_ACTIVE_CHANNELS],
-    const LevelT* const d_levels[NUM_ACTIVE_CHANNELS],
-    OffsetT num_row_pixels,
-    OffsetT num_rows,
-    size_t row_stride_bytes,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return MultiHistogramRange(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_histogram,
-      num_levels,
-      d_levels,
-      num_row_pixels,
-      num_rows,
-      row_stride_bytes,
-      stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   //@}  end member group
 };

@@ -34,7 +34,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
+#if _CCCL_STD_VER >= 2014
 
 // [range.prim.data]
 
@@ -115,8 +115,9 @@ struct __fn
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_rvalue_reference_v<_Tp&&>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(
-    _CUDA_VRANGES::data(static_cast<const _Tp&&>(__t)))) -> decltype(_CUDA_VRANGES::data(static_cast<const _Tp&&>(__t)))
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
+    noexcept(noexcept(_CUDA_VRANGES::data(static_cast<const _Tp&&>(__t))))
+      -> decltype(_CUDA_VRANGES::data(static_cast<const _Tp&&>(__t)))
   {
     return _CUDA_VRANGES::data(static_cast<const _Tp&&>(__t));
   }
@@ -128,7 +129,7 @@ inline namespace __cpo
 _CCCL_GLOBAL_CONSTANT auto cdata = __cdata::__fn{};
 } // namespace __cpo
 
-#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
+#endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

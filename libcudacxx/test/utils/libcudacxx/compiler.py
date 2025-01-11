@@ -6,8 +6,9 @@
 #
 # ===----------------------------------------------------------------------===##
 
-import platform
 import os
+import platform
+
 import libcudacxx.util
 
 
@@ -113,11 +114,6 @@ class CXXCompiler(object):
                 major_ver = macros["__NVCOMPILER_MAJOR__"].strip()
                 minor_ver = macros["__NVCOMPILER_MINOR__"].strip()
                 patchlevel = macros["__NVCOMPILER_PATCHLEVEL__"].strip()
-            elif "__INTEL_COMPILER" in macros.keys():
-                compiler_type = "icc"
-                major_ver = int(macros["__INTEL_COMPILER"]) / 100
-                minor_ver = (int(macros["__INTEL_COMPILER"]) % 100) / 10
-                patchlevel = int(macros["__INTEL_COMPILER"]) % 10
             elif "__clang__" in macros.keys():
                 compiler_type = "clang"
                 # Treat Apple's LLVM fork differently.

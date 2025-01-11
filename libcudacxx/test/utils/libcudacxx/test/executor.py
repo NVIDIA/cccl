@@ -6,8 +6,8 @@
 #
 # ===----------------------------------------------------------------------===##
 
-import platform
 import os
+import platform
 
 from libcudacxx.test import tracing
 from libcudacxx.util import executeCommand

@@ -30,7 +30,7 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
-#if _CCCL_STD_VER > 2014
+#if _CCCL_STD_VER >= 2014
 
 // [iter.cust.swap]
 
@@ -158,6 +158,6 @@ _CCCL_INLINE_VAR constexpr bool __noexcept_swappable<_I1, _I2, enable_if_t<indir
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _CCCL_STD_VER > 2014
+#endif // _CCCL_STD_VER >= 2014
 
 #endif // _LIBCUDACXX___ITERATOR_ITER_SWAP_H

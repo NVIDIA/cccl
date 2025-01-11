@@ -45,15 +45,14 @@
 #endif // no system header
 
 #include <cub/agent/agent_reduce.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/device/dispatch/kernels/reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/iterator/arg_index_input_iterator.cuh>
-#include <cub/launcher/cuda_runtime.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/thread/thread_store.cuh>
 #include <cub/util_debug.cuh>
-#include <cub/util_deprecated.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
 
@@ -273,7 +272,7 @@ template <typename InputIteratorT,
             InitT,
             AccumT,
             TransformOpT>,
-          typename KernelLauncherFactory = TripleChevronFactory>
+          typename KernelLauncherFactory = detail::TripleChevronFactory>
 struct DispatchReduce
 {
   //---------------------------------------------------------------------------
@@ -345,33 +344,6 @@ struct DispatchReduce
       , kernel_source(kernel_source)
       , launcher_factory(launcher_factory)
   {}
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchReduce(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    OffsetT num_items,
-    ReductionOpT reduction_op,
-    InitT init,
-    cudaStream_t stream,
-    bool debug_synchronous,
-    int ptx_version)
-      : d_temp_storage(d_temp_storage)
-      , temp_storage_bytes(temp_storage_bytes)
-      , d_in(d_in)
-      , d_out(d_out)
-      , num_items(num_items)
-      , reduction_op(reduction_op)
-      , init(init)
-      , stream(stream)
-      , ptx_version(ptx_version)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   //---------------------------------------------------------------------------
   // Small-problem (single tile) invocation
@@ -690,25 +662,6 @@ struct DispatchReduce
 
     return error;
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    OffsetT num_items,
-    ReductionOpT reduction_op,
-    InitT init,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Dispatch(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, reduction_op, init, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 /**
@@ -754,7 +707,7 @@ template <
     InitT,
     AccumT,
     TransformOpT>,
-  typename KernelLauncherFactory = TripleChevronFactory>
+  typename KernelLauncherFactory = detail::TripleChevronFactory>
 using DispatchTransformReduce =
   DispatchReduce<InputIteratorT,
                  OutputIteratorT,
@@ -884,37 +837,6 @@ struct DispatchSegmentedReduce
       , stream(stream)
       , ptx_version(ptx_version)
   {}
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchSegmentedReduce(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    int num_segments,
-    BeginOffsetIteratorT d_begin_offsets,
-    EndOffsetIteratorT d_end_offsets,
-    ReductionOpT reduction_op,
-    InitT init,
-    cudaStream_t stream,
-    bool debug_synchronous,
-    int ptx_version)
-      : d_temp_storage(d_temp_storage)
-      , temp_storage_bytes(temp_storage_bytes)
-      , d_in(d_in)
-      , d_out(d_out)
-      , num_segments(num_segments)
-      , d_begin_offsets(d_begin_offsets)
-      , d_end_offsets(d_end_offsets)
-      , reduction_op(reduction_op)
-      , init(init)
-      , stream(stream)
-      , ptx_version(ptx_version)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   //---------------------------------------------------------------------------
   // Chained policy invocation
@@ -1110,37 +1032,6 @@ struct DispatchSegmentedReduce
 
     return error;
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    int num_segments,
-    BeginOffsetIteratorT d_begin_offsets,
-    EndOffsetIteratorT d_end_offsets,
-    ReductionOpT reduction_op,
-    InitT init,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_out,
-      num_segments,
-      d_begin_offsets,
-      d_end_offsets,
-      reduction_op,
-      init,
-      stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

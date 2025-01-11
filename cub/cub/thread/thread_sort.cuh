@@ -45,6 +45,7 @@
 CUB_NAMESPACE_BEGIN
 
 template <typename T>
+CCCL_DEPRECATED_BECAUSE("Use cuda::std::swap")
 _CCCL_DEVICE _CCCL_FORCEINLINE void Swap(T& lhs, T& rhs)
 {
   T temp = lhs;
@@ -95,10 +96,11 @@ StableOddEvenSort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&items)[ITEMS_PER_THRE
     {
       if (compare_op(keys[j + 1], keys[j]))
       {
-        Swap(keys[j], keys[j + 1]);
+        using ::cuda::std::swap;
+        swap(keys[j], keys[j + 1]);
         if (!KEYS_ONLY)
         {
-          Swap(items[j], items[j + 1]);
+          swap(items[j], items[j + 1]);
         }
       }
     } // inner loop

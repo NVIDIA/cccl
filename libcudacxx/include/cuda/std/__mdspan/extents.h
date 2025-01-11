@@ -140,6 +140,7 @@ public:
   // internal typedefs which for technical reasons are public
   using __storage_t =
     __detail::__partially_static_sizes_tagged<__detail::__extents_tag, index_type, size_t, _Extents...>;
+  using __indices_t = _CUDA_VSTD::integer_sequence<size_t, _Extents...>;
 
 #  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
   _CCCL_NO_UNIQUE_ADDRESS __storage_t __storage_;
@@ -250,8 +251,9 @@ public:
   _CCCL_REQUIRES(
     /* multi-stage check to protect from invalid pack expansion when sizes don't match? */
     (decltype(__detail::__check_compatible_extents(
-      integral_constant<bool, sizeof...(_Extents) == sizeof...(_OtherExtents)>{},
-      _CUDA_VSTD::integer_sequence<size_t, _Extents...>{},
+      integral_constant < bool,
+      sizeof...(_Extents) == sizeof...(_OtherExtents) > {},
+      __indices_t{}, // _CUDA_VSTD::integer_sequence<size_t, _Extents...>{}
       _CUDA_VSTD::integer_sequence<size_t, _OtherExtents...>{}))::value))
   _LIBCUDACXX_HIDE_FROM_ABI __MDSPAN_CONDITIONAL_EXPLICIT(
     (((_Extents != dynamic_extent) && (_OtherExtents == dynamic_extent)) || ...)

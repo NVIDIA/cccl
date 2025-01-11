@@ -45,7 +45,6 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_radix_sort.cuh>
-#include <cub/util_deprecated.cuh>
 
 #include <cuda/std/type_traits>
 
@@ -362,37 +361,6 @@ public:
       is_overwrite_okay,
       stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename KeyT, typename ValueT, typename NumItemsT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    const KeyT* d_keys_in,
-    KeyT* d_keys_out,
-    const ValueT* d_values_in,
-    ValueT* d_values_out,
-    NumItemsT num_items,
-    int begin_bit,
-    int end_bit,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return SortPairs<KeyT, ValueT, NumItemsT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_keys_out,
-      d_values_in,
-      d_values_out,
-      num_items,
-      begin_bit,
-      end_bit,
-      stream);
-  }
-#endif
 
   //! @rst
   //! Sorts key-value pairs into ascending order using :math:`\approx 2N` auxiliary storage.
@@ -818,26 +786,6 @@ public:
       d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename KeyT, typename ValueT, typename NumItemsT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    DoubleBuffer<KeyT>& d_keys,
-    DoubleBuffer<ValueT>& d_values,
-    NumItemsT num_items,
-    int begin_bit,
-    int end_bit,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return SortPairs<KeyT, ValueT, NumItemsT>(
-      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, stream);
-  }
-#endif
-
   //! @rst
   //! Sorts key-value pairs into ascending order using :math:`\approx N` auxiliary storage.
   //!
@@ -1251,37 +1199,6 @@ public:
     return DispatchRadixSort<true, KeyT, ValueT, OffsetT>::Dispatch(
       d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename KeyT, typename ValueT, typename NumItemsT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    const KeyT* d_keys_in,
-    KeyT* d_keys_out,
-    const ValueT* d_values_in,
-    ValueT* d_values_out,
-    NumItemsT num_items,
-    int begin_bit,
-    int end_bit,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return SortPairsDescending<KeyT, ValueT, NumItemsT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_keys_out,
-      d_values_in,
-      d_values_out,
-      num_items,
-      begin_bit,
-      end_bit,
-      stream);
-  }
-#endif
 
   //! @rst
   //! Sorts key-value pairs into descending order using :math:`\approx 2N` auxiliary storage.
@@ -1705,26 +1622,6 @@ public:
     return DispatchRadixSort<true, KeyT, ValueT, OffsetT>::Dispatch(
       d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename KeyT, typename ValueT, typename NumItemsT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    DoubleBuffer<KeyT>& d_keys,
-    DoubleBuffer<ValueT>& d_values,
-    NumItemsT num_items,
-    int begin_bit,
-    int end_bit,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return SortPairsDescending<KeyT, ValueT, NumItemsT>(
-      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, stream);
-  }
-#endif
 
   //! @rst
   //! Sorts key-value pairs into descending order using :math:`\approx N` auxiliary storage.
@@ -2412,26 +2309,6 @@ public:
       stream);
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename KeyT, typename NumItemsT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    const KeyT* d_keys_in,
-    KeyT* d_keys_out,
-    NumItemsT num_items,
-    int begin_bit,
-    int end_bit,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return SortKeys<KeyT, NumItemsT>(
-      d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items, begin_bit, end_bit, stream);
-  }
-#endif
-
   //! @brief Sorts keys into ascending order. (`~N` auxiliary storage required).
   //!
   //! @par
@@ -2551,24 +2428,6 @@ public:
     return DispatchRadixSort<false, KeyT, NullType, OffsetT>::Dispatch(
       d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename KeyT, typename NumItemsT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    DoubleBuffer<KeyT>& d_keys,
-    NumItemsT num_items,
-    int begin_bit,
-    int end_bit,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return SortKeys<KeyT, NumItemsT>(d_temp_storage, temp_storage_bytes, d_keys, num_items, begin_bit, end_bit, stream);
-  }
-#endif
 
   //! @rst
   //! Sorts keys into ascending order using :math:`\approx N` auxiliary storage.
@@ -2944,26 +2803,6 @@ public:
     return DispatchRadixSort<true, KeyT, NullType, OffsetT>::Dispatch(
       d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename KeyT, typename NumItemsT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    const KeyT* d_keys_in,
-    KeyT* d_keys_out,
-    NumItemsT num_items,
-    int begin_bit,
-    int end_bit,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return SortKeysDescending<KeyT, NumItemsT>(
-      d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items, begin_bit, end_bit, stream);
-  }
-#endif
 
   //! @rst
   //! Sorts keys into descending order using :math:`\approx 2N` auxiliary storage.
@@ -3344,25 +3183,6 @@ public:
     return DispatchRadixSort<true, KeyT, NullType, OffsetT>::Dispatch(
       d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename KeyT, typename NumItemsT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    DoubleBuffer<KeyT>& d_keys,
-    NumItemsT num_items,
-    int begin_bit,
-    int end_bit,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return SortKeysDescending<KeyT, NumItemsT>(
-      d_temp_storage, temp_storage_bytes, d_keys, num_items, begin_bit, end_bit, stream);
-  }
-#endif
 
   //! @rst
   //! Sorts keys into descending order using :math:`\approx N` auxiliary storage.
