@@ -119,7 +119,12 @@ try
   printf("waiting for the stream to finish\n");
   stream.wait();
 
-  if (numBytesWritten != numBytes)
+  if (numBytes == -1)
+  {
+    perror("Error writing file: ");
+    exit(EXIT_FAILURE);
+  }
+  else if (numBytesWritten != numBytes)
   {
     fprintf(stderr, "Error: wrote %ld bytes, expected %ld\n", numBytesWritten, numBytes);
     exit(EXIT_FAILURE);
