@@ -65,6 +65,12 @@ int main(int, char**)
   test<long double>(LDBL_TRUE_MIN);
 #  endif
 #endif
+#if _CCCL_HAS_NVFP16
+  test<__half>(CUDART_MIN_DENORM_FP16);
+#endif // _CCCL_HAS_NVFP16
+#if _CCCL_HAS_NVBF16
+  test<__nv_bfloat16>(CUDART_MIN_DENORM_BF16);
+#endif // _CCCL_HAS_NVBF16
 #if !defined(__FLT_DENORM_MIN__) && !defined(FLT_TRUE_MIN)
 #  error Test has no expected values for floating point types
 #endif

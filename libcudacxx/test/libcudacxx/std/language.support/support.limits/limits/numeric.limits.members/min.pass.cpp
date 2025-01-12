@@ -65,6 +65,12 @@ int main(int, char**)
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
   test<long double>(LDBL_MIN);
 #endif
+#if _CCCL_HAS_NVFP16
+  test<__half>(6.103515625e-05);
+#endif // _CCCL_HAS_NVFP16
+#if _CCCL_HAS_NVBF16
+  test<__nv_bfloat16>(1.17549435082228750796873653722e-38);
+#endif // _CCCL_HAS_NVBF16
 
   return 0;
 }

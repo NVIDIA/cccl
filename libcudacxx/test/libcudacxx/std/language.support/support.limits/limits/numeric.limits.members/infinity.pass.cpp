@@ -62,6 +62,12 @@ int main(int, char**)
 #  ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
   test<long double>(1. / 0.);
 #  endif
+#  if _CCCL_HAS_NVFP16
+  test<__half>(1.0 / 0.0);
+#  endif // _CCCL_HAS_NVFP16
+#  if _CCCL_HAS_NVBF16
+  test<__nv_bfloat16>(1.0 / 0.0);
+#  endif // _CCCL_HAS_NVBF16
 // MSVC has issues with producing INF with divisions by zero.
 #else
   test<float>(INFINITY);
@@ -69,11 +75,13 @@ int main(int, char**)
 #  ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
   test<long double>(INFINITY);
 #  endif
+#  if _CCCL_HAS_NVFP16
+  test<__half>(INFINITY);
+#  endif // _CCCL_HAS_NVFP16
+#  if _CCCL_HAS_NVBF16
+  test<__nv_bfloat16>(INFINITY);
+#  endif // _CCCL_HAS_NVBF16
 #endif
 
   return 0;
 }
-
-#ifndef TEST_COMPILER_NVRTC
-float zero = 0;
-#endif

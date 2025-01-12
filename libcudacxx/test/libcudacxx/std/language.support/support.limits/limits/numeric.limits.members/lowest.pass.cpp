@@ -35,6 +35,7 @@ int main(int, char**)
 {
   test<bool>(false);
   test<char>(CHAR_MIN);
+
   test<signed char>(SCHAR_MIN);
   test<unsigned char>(0);
 #ifndef TEST_COMPILER_NVRTC
@@ -64,6 +65,12 @@ int main(int, char**)
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
   test<long double>(-LDBL_MAX);
 #endif
+#if _CCCL_HAS_NVFP16
+  test<__half>(-65504.0);
+#endif // _CCCL_HAS_NVFP16
+#if _CCCL_HAS_NVBF16
+  test<__nv_bfloat16>(-3.3895313892515355e+38);
+#endif // _CCCL_HAS_NVBF16
 
   return 0;
 }
