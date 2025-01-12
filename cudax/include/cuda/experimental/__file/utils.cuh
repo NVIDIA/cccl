@@ -25,7 +25,7 @@
 #include <cuda/std/__utility/to_underlying.h>
 
 #include <cuda/experimental/__file/cufile_api.cuh>
-#include <cuda/experimental/stream.cuh>
+#include <cuda/experimental/__stream/stream_ref.cuh>
 
 namespace cuda::experimental
 {
