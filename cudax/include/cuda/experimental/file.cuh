@@ -27,5 +27,6 @@
 
 #include <cuda/experimental/__file/file.cuh>
 #include <cuda/experimental/__file/file_driver.cuh>
+#include <cuda/experimental/__file/utils.cuh>
 
 #endif // __CUDAX_FILE___
