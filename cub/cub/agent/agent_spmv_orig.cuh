@@ -148,7 +148,12 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") AgentSpmvPoli
  *   Signed integer type for sequence offsets
  */
 template <typename ValueT, typename OffsetT>
-struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") SpmvParams
+struct
+// with NVHPC, we get a deprecation warning in the implementation of cudaLaunchKernelEx, which we cannot suppress :/
+#if !_CCCL_COMPILER(NVHPC)
+  CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead")
+#endif
+    SpmvParams
 {
   /// Pointer to the array of \p num_nonzeros values of the corresponding nonzero elements of matrix
   /// <b>A</b>.
