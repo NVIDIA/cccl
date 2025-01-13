@@ -25,5 +25,5 @@ benchmarks/ @nvidia/cccl-benchmark-codeowners
 **/benchmarks @nvidia/cccl-benchmark-codeowners
 
 # docs
-docs/ @cccl-docs-codeowners
-examples/ @cccl-docs-codeowners
+docs/ @nvidia/cccl-docs-codeowners
+examples/ @nvidia/cccl-docs-codeowners
