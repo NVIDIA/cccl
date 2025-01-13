@@ -1,14 +1,12 @@
 .. _thrust-module-api-function-objects-predefined:
 
-Predefined Function Objects
-----------------------------
+Function Objects
+----------------
 
-.. toctree::
-   :glob:
-   :maxdepth: 1
+Users are encouraged to use the standard C++ function objects available from `<cuda/std/functional>`.
+Thrust provides the following additional function objects:
 
-   predefined/arithmetic
-   predefined/bitwise
-   predefined/comparison
-   predefined/identity
-   predefined/logical
+  - :cpp:struct:`thrust::square <thrust::square>`
+  - :cpp:struct:`thrust::identity <thrust::identity>`
+  - :cpp:struct:`thrust::project1st <thrust::project1st>`
+  - :cpp:struct:`thrust::project2nd <thrust::project2nd>`
