@@ -320,7 +320,7 @@ thrust::pair<Iterator3, Iterator4> reduce_by_key(
   }
 
   // count the number of processors
-  const unsigned int p = thrust::max<unsigned int>(1u, std::thread::hardware_concurrency());
+  const unsigned int p = ::cuda::std::max<unsigned int>(1u, std::thread::hardware_concurrency());
 
   // generate O(P) intervals of sequential work
   // XXX oversubscribing is a tuning opportunity
