@@ -32,7 +32,6 @@
 #pragma once
 
 #include <cub/config.cuh>
-#include "thrust/iterator/constant_iterator.h"
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -46,8 +45,9 @@
 #include <cub/device/dispatch/dispatch_segmented_sort.cuh>
 #include <cub/util_namespace.cuh>
 
-CUB_NAMESPACE_BEGIN
+#include <thrust/iterator/constant_iterator.h>
 
+CUB_NAMESPACE_BEGIN
 
 template <typename Iterator, typename OffsetItT>
 class OffsetIteratorT : public THRUST_NS_QUALIFIER::iterator_adaptor<OffsetIteratorT<Iterator, OffsetItT>, Iterator>
@@ -157,6 +157,14 @@ _CCCL_HOST_DEVICE OffsetIteratorT<Iterator, OffsetItT> make_offset_iterator(cons
 //!    // d_values_out          <-- [1, 2, 0, 5, 4, 3, 6]
 //!
 //! @endrst
+
+template <typename EndOffsetIteratorT>
+__global__ void TestKernel(EndOffsetIteratorT m_iterator, int n)
+{
+  EndOffsetIteratorT m_iterator2 = static_cast<EndOffsetIteratorT>(m_iterator + n);
+  printf("Offset: %ld\n", static_cast<long>(*m_iterator2));
+}
+
 struct DeviceSegmentedSort
 {
 private:
@@ -171,35 +179,26 @@ private:
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysNoNVTX(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
-    const KeyT* d_keys_in,
-    KeyT* d_keys_out,
+    const KeyT*,
+    KeyT*,
     int num_items,
     int num_segments,
-    BeginOffsetIteratorT d_begin_offsets,
+    BeginOffsetIteratorT,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    using offset_it_t = OffsetIteratorT<EndOffsetIteratorT, thrust::constant_iterator<int>>;
+    if (d_temp_storage == nullptr)
+    {
+      temp_storage_bytes = 1;
+      return cudaSuccess;
+    }
+    if(num_items == 0 || num_segments == 0)
+    {
+      return cudaSuccess;
+    } 
 
-    constexpr bool is_descending     = false;
-    constexpr bool is_overwrite_okay = false;
-    using DispatchT =
-      DispatchSegmentedSort<is_descending, KeyT, cub::NullType, int, BeginOffsetIteratorT, offset_it_t>;
-
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-    DoubleBuffer<NullType> d_values;
-
-    return DispatchT::Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      num_items,
-      num_segments,
-      d_begin_offsets,
-      {d_end_offsets, thrust::make_constant_iterator(0)},
-      is_overwrite_okay,
-      stream);
+    TestKernel<<<1, 1, 0, stream>>>(d_end_offsets, 0);
+    return cudaSuccess;
   }
 
 public:
@@ -356,9 +355,8 @@ private:
   {
     constexpr bool is_descending     = true;
     constexpr bool is_overwrite_okay = false;
-    using offset_it_t = OffsetIteratorT<EndOffsetIteratorT, thrust::constant_iterator<int>>;
-    using DispatchT =
-      DispatchSegmentedSort<is_descending, KeyT, cub::NullType, int, BeginOffsetIteratorT, offset_it_t>;
+    using offset_it_t                = OffsetIteratorT<EndOffsetIteratorT, thrust::constant_iterator<int>>;
+    using DispatchT = DispatchSegmentedSort<is_descending, KeyT, cub::NullType, int, BeginOffsetIteratorT, offset_it_t>;
 
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
@@ -524,10 +522,9 @@ private:
   {
     constexpr bool is_descending     = false;
     constexpr bool is_overwrite_okay = true;
-    using offset_it_t = OffsetIteratorT<EndOffsetIteratorT, thrust::constant_iterator<int>>;
+    using offset_it_t                = OffsetIteratorT<EndOffsetIteratorT, thrust::constant_iterator<int>>;
 
-    using DispatchT =
-      DispatchSegmentedSort<is_descending, KeyT, cub::NullType, int, BeginOffsetIteratorT, offset_it_t>;
+    using DispatchT = DispatchSegmentedSort<is_descending, KeyT, cub::NullType, int, BeginOffsetIteratorT, offset_it_t>;
 
     DoubleBuffer<NullType> d_values;
 
@@ -695,10 +692,9 @@ private:
   {
     constexpr bool is_descending     = true;
     constexpr bool is_overwrite_okay = true;
-    using offset_it_t = OffsetIteratorT<EndOffsetIteratorT, thrust::constant_iterator<int>>;
+    using offset_it_t                = OffsetIteratorT<EndOffsetIteratorT, thrust::constant_iterator<int>>;
 
-    using DispatchT =
-      DispatchSegmentedSort<is_descending, KeyT, cub::NullType, int, BeginOffsetIteratorT, offset_it_t>;
+    using DispatchT = DispatchSegmentedSort<is_descending, KeyT, cub::NullType, int, BeginOffsetIteratorT, offset_it_t>;
 
     DoubleBuffer<NullType> d_values;
 
@@ -1417,7 +1413,7 @@ private:
   {
     constexpr bool is_descending     = false;
     constexpr bool is_overwrite_okay = false;
-    using offset_it_t = OffsetIteratorT<EndOffsetIteratorT, thrust::constant_iterator<int>>;
+    using offset_it_t                = OffsetIteratorT<EndOffsetIteratorT, thrust::constant_iterator<int>>;
     using DispatchT = DispatchSegmentedSort<is_descending, KeyT, ValueT, int, BeginOffsetIteratorT, offset_it_t>;
 
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
@@ -1617,7 +1613,7 @@ private:
   {
     constexpr bool is_descending     = true;
     constexpr bool is_overwrite_okay = false;
-    using offset_it_t = OffsetIteratorT<EndOffsetIteratorT, thrust::constant_iterator<int>>;
+    using offset_it_t                = OffsetIteratorT<EndOffsetIteratorT, thrust::constant_iterator<int>>;
     using DispatchT = DispatchSegmentedSort<is_descending, KeyT, ValueT, int, BeginOffsetIteratorT, offset_it_t>;
 
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
@@ -1811,7 +1807,7 @@ private:
   {
     constexpr bool is_descending     = false;
     constexpr bool is_overwrite_okay = true;
-    using offset_it_t = OffsetIteratorT<EndOffsetIteratorT, thrust::constant_iterator<int>>;
+    using offset_it_t                = OffsetIteratorT<EndOffsetIteratorT, thrust::constant_iterator<int>>;
     using DispatchT = DispatchSegmentedSort<is_descending, KeyT, ValueT, int, BeginOffsetIteratorT, offset_it_t>;
 
     return DispatchT::Dispatch(
@@ -2007,7 +2003,7 @@ private:
   {
     constexpr bool is_descending     = true;
     constexpr bool is_overwrite_okay = true;
-    using offset_it_t = OffsetIteratorT<EndOffsetIteratorT, thrust::constant_iterator<int>>;
+    using offset_it_t                = OffsetIteratorT<EndOffsetIteratorT, thrust::constant_iterator<int>>;
     using DispatchT = DispatchSegmentedSort<is_descending, KeyT, ValueT, int, BeginOffsetIteratorT, offset_it_t>;
 
     return DispatchT::Dispatch(
