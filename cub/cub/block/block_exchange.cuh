@@ -628,7 +628,7 @@ private:
       int item_offset = ranks[i];
       _CCCL_IF_CONSTEXPR (INSERT_PADDING)
       {
-        item_offset = SHR_ADD(item_offset, LOG_SMEM_BANKS, item_offset);
+        item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
       detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
@@ -641,7 +641,7 @@ private:
       int item_offset = linear_tid * ITEMS_PER_THREAD + i;
       _CCCL_IF_CONSTEXPR (INSERT_PADDING)
       {
-        item_offset = SHR_ADD(item_offset, LOG_SMEM_BANKS, item_offset);
+        item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
       output_items[i] = temp_storage.buff[item_offset];
     }
@@ -681,7 +681,7 @@ private:
         {
           _CCCL_IF_CONSTEXPR (INSERT_PADDING)
           {
-            item_offset = SHR_ADD(item_offset, LOG_SMEM_BANKS, item_offset);
+            item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
           }
           detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
         }
@@ -697,7 +697,7 @@ private:
           int item_offset = lane_id * ITEMS_PER_THREAD + i;
           _CCCL_IF_CONSTEXPR (INSERT_PADDING)
           {
-            item_offset = SHR_ADD(item_offset, LOG_SMEM_BANKS, item_offset);
+            item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
           }
           temp_items[i] = temp_storage.buff[item_offset];
         }
@@ -735,7 +735,7 @@ private:
       int item_offset = ranks[i];
       _CCCL_IF_CONSTEXPR (INSERT_PADDING)
       {
-        item_offset = SHR_ADD(item_offset, LOG_SMEM_BANKS, item_offset);
+        item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
       detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
@@ -748,7 +748,7 @@ private:
       int item_offset = i * BLOCK_THREADS + linear_tid;
       _CCCL_IF_CONSTEXPR (INSERT_PADDING)
       {
-        item_offset = SHR_ADD(item_offset, LOG_SMEM_BANKS, item_offset);
+        item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
       output_items[i] = temp_storage.buff[item_offset];
     }
@@ -789,7 +789,7 @@ private:
         {
           _CCCL_IF_CONSTEXPR (INSERT_PADDING)
           {
-            item_offset = SHR_ADD(item_offset, LOG_SMEM_BANKS, item_offset);
+            item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
           }
           detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
         }
@@ -1136,7 +1136,7 @@ public:
       int item_offset = ranks[i];
       _CCCL_IF_CONSTEXPR (INSERT_PADDING)
       {
-        item_offset = SHR_ADD(item_offset, LOG_SMEM_BANKS, item_offset);
+        item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
       if (ranks[i] >= 0)
       {
@@ -1152,7 +1152,7 @@ public:
       int item_offset = i * BLOCK_THREADS + linear_tid;
       _CCCL_IF_CONSTEXPR (INSERT_PADDING)
       {
-        item_offset = SHR_ADD(item_offset, LOG_SMEM_BANKS, item_offset);
+        item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
       output_items[i] = temp_storage.buff[item_offset];
     }
@@ -1195,7 +1195,7 @@ public:
       int item_offset = ranks[i];
       _CCCL_IF_CONSTEXPR (INSERT_PADDING)
       {
-        item_offset = SHR_ADD(item_offset, LOG_SMEM_BANKS, item_offset);
+        item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
       if (is_valid[i])
       {
@@ -1211,7 +1211,7 @@ public:
       int item_offset = i * BLOCK_THREADS + linear_tid;
       _CCCL_IF_CONSTEXPR (INSERT_PADDING)
       {
-        item_offset = SHR_ADD(item_offset, LOG_SMEM_BANKS, item_offset);
+        item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
       output_items[i] = temp_storage.buff[item_offset];
     }

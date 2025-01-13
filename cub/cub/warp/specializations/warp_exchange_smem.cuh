@@ -149,7 +149,7 @@ public:
     {
       if (INSERT_PADDING)
       {
-        ranks[ITEM] = SHR_ADD(ranks[ITEM], LOG_SMEM_BANKS, ranks[ITEM]);
+        ranks[ITEM] = (ranks[ITEM] >> LOG_SMEM_BANKS) + ranks[ITEM];
       }
 
       temp_storage.items_shared[ranks[ITEM]] = input_items[ITEM];
@@ -164,7 +164,7 @@ public:
 
       if (INSERT_PADDING)
       {
-        item_offset = SHR_ADD(item_offset, LOG_SMEM_BANKS, item_offset);
+        item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
 
       output_items[ITEM] = temp_storage.items_shared[item_offset];

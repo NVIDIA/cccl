@@ -55,6 +55,7 @@ CUB_NAMESPACE_BEGIN
 /**
  * \brief Shift-right then add.  Returns (\p x >> \p shift) + \p addend.
  */
+CCCL_DEPRECATED_BECAUSE("will be removed in the next major release")
 _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int SHR_ADD(unsigned int x, unsigned int shift, unsigned int addend)
 {
   unsigned int ret;
@@ -324,7 +325,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadExit()
 /**
  * \brief  Abort execution and generate an interrupt to the host CPU
  */
-CCCL_DEPRECATED_BECAUSE("will be removed in the next major release")
+CCCL_DEPRECATED_BECAUSE("use cuda::std::terminate() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadTrap()
 {
   asm volatile("trap;");
