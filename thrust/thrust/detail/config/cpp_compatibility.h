@@ -26,32 +26,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/config/cpp_dialect.h> // IWYU pragma: export
-
-#include <cuda/std/cstddef>
-
+// deprecated [Since 2.8.0]
 #define THRUST_NODISCARD _CCCL_NODISCARD
-
-// FIXME: Combine THRUST_INLINE_CONSTANT and
-// THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT into one macro when NVCC properly
-// supports `constexpr` globals in host and device code.
-#if defined(__CUDA_ARCH__) || defined(_NVHPC_CUDA)
-// FIXME: Add this when NVCC supports inline variables.
-// #  if   _CCCL_STD_VER >= 2017
-// #    define THRUST_INLINE_CONSTANT                 inline constexpr
-// #    define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT inline constexpr
-#  define THRUST_INLINE_CONSTANT                 static const _CCCL_DEVICE
-#  define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT static constexpr
-
-#else
-// FIXME: Add this when NVCC supports inline variables.
-// #  if   _CCCL_STD_VER >= 2017
-// #    define THRUST_INLINE_CONSTANT                 inline constexpr
-// #    define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT inline constexpr
-#  define THRUST_INLINE_CONSTANT                 static constexpr
-#  define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT static constexpr
-
-#endif
+// deprecated [Since 2.8.0]
+#define THRUST_INLINE_CONSTANT _CCCL_GLOBAL_CONSTANT
+// deprecated [Since 2.8.0]
+#define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT static constexpr
 
 // These definitions were intended for internal use only and are now obsolete.
 // If you relied on them, consider porting your code to use the functionality

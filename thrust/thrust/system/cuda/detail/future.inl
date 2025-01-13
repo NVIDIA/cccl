@@ -58,7 +58,7 @@ namespace detail
 struct nonowning_t final
 {};
 
-THRUST_INLINE_CONSTANT nonowning_t nonowning{};
+_CCCL_GLOBAL_CONSTANT nonowning_t nonowning{};
 
 ///////////////////////////////////////////////////////////////////////////////
 

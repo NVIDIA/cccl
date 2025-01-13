@@ -94,7 +94,7 @@ struct for_each_fn final
 
 } // namespace for_each_detail
 
-THRUST_INLINE_CONSTANT for_each_detail::for_each_fn for_each{};
+_CCCL_GLOBAL_CONSTANT for_each_detail::for_each_fn for_each{};
 
 /*! \endcond
  */
