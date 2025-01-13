@@ -2005,13 +2005,13 @@ template <class Opt,
           detail::enable_if_t<std::is_void<Ret>::value>* = nullptr>
 _CCCL_HOST_DEVICE auto optional_map_impl(Opt&& opt, F&& f)
 {
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   if (opt.has_value())
   {
     detail::invoke(std::forward<F>(f), *std::forward<Opt>(opt));
-    _CCCL_SUPPRESS_DEPRECATED_PUSH
     return make_optional(monostate{});
-    _CCCL_SUPPRESS_DEPRECATED_POP
   }
+  _CCCL_SUPPRESS_DEPRECATED_POP
 
   return optional<monostate>(nullopt);
 }
