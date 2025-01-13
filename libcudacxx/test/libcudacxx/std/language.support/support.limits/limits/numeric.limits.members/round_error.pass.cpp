@@ -14,15 +14,16 @@
 #include <cuda/std/cfloat>
 #include <cuda/std/limits>
 
+#include "common.h"
 #include "test_macros.h"
 
 template <class T>
 __host__ __device__ void test(T expected)
 {
-  assert(cuda::std::numeric_limits<T>::round_error() == expected);
-  assert(cuda::std::numeric_limits<const T>::round_error() == expected);
-  assert(cuda::std::numeric_limits<volatile T>::round_error() == expected);
-  assert(cuda::std::numeric_limits<const volatile T>::round_error() == expected);
+  assert(float_eq(cuda::std::numeric_limits<T>::round_error(), expected));
+  assert(float_eq(cuda::std::numeric_limits<const T>::round_error(), expected));
+  assert(float_eq(cuda::std::numeric_limits<volatile T>::round_error(), expected));
+  assert(float_eq(cuda::std::numeric_limits<const volatile T>::round_error(), expected));
 }
 
 int main(int, char**)
@@ -57,10 +58,10 @@ int main(int, char**)
   test<long double>(0.5);
 #endif
 #if defined(_LIBCUDACXX_HAS_NVFP16)
-  test<__half>(0.5);
+  test<__half>(__double2half(0.5));
 #endif // _LIBCUDACXX_HAS_NVFP16
 #if defined(_LIBCUDACXX_HAS_NVBF16)
-  test<__nv_bfloat16>(0.5);
+  test<__nv_bfloat16>(__double2bfloat16(0.5));
 #endif // _LIBCUDACXX_HAS_NVBF16
 
   return 0;
