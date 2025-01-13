@@ -34,6 +34,7 @@
 // * MSVC14.39: #3185-D: no '#pragma diagnostic push' was found to match this 'diagnostic pop'
 // * MSVC14.29: internal error: assertion failed: alloc_copy_of_pending_pragma: copied pragma has source sequence entry
 //              (pragma.c, line 526 in alloc_copy_of_pending_pragma)
+// see also upstream Catch2 issue: https://github.com/catchorg/Catch2/issues/2636
 #if _CCCL_COMPILER(MSVC)
 #  undef CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
 #  undef CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
