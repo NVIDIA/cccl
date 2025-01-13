@@ -651,20 +651,23 @@ protected:
       const bool track_dangling = bctx.track_dangling_events();
 
       // Deinitialize all attached allocators in reversed order
-      if (track_dangling)
+      for (auto it : each(attached_allocators.rbegin(), attached_allocators.rend()))
       {
-        for (auto it : each(attached_allocators.rbegin(), attached_allocators.rend()))
+        auto deinit_res = it->deinit(bctx);
+        if (track_dangling)
         {
-          stack.add_dangling_events(it->deinit(bctx));
+          stack.add_dangling_events(mv(deinit_res));
         }
       }
 
       // Erase the vector of allocators now that they were deinitialized
       attached_allocators.clear();
 
+      // We "duplicate" the code of the deinit to remove any storage and avoid a move
+      auto composite_deinit_res = composite_cache.deinit();
       if (track_dangling)
       {
-        stack.add_dangling_events(composite_cache.deinit());
+        stack.add_dangling_events(mv(composite_deinit_res));
       }
     }
 
