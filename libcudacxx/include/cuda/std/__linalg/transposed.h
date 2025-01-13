@@ -122,9 +122,7 @@ public:
     }
 
     _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type required_span_size() const
-#  if !_CCCL_COMPILER(GCC, <, 10) && !_CCCL_COMPILER(CLANG, <, 10)
-      noexcept(noexcept(__nested_mapping_.required_span_size()))
-#  endif
+      noexcept(__required_span_size_noexcept())
     {
       return __nested_mapping_.required_span_size();
     }
@@ -157,26 +155,17 @@ public:
       return __nested_mapping_type::is_always_strided();
     }
 
-    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_unique() const
-#  if !_CCCL_COMPILER(GCC, <, 10) && !_CCCL_COMPILER(CLANG, <, 10)
-      noexcept(noexcept(__nested_mapping_.is_unique()))
-#  endif
+    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_unique() const noexcept(__is_nested_unique_noexcept())
     {
       return __nested_mapping_.is_unique();
     }
 
-    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_exhaustive() const
-#  if !_CCCL_COMPILER(GCC, <, 10) && !_CCCL_COMPILER(CLANG, <, 10)
-      noexcept(noexcept(__nested_mapping_.is_exhaustive()))
-#  endif
+    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_exhaustive() const noexcept(__is_exhaustive_noexcept())
     {
       return __nested_mapping_.is_exhaustive();
     }
 
-    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_strided() const
-#  if !_CCCL_COMPILER(GCC, <, 10) && !_CCCL_COMPILER(CLANG, <, 10)
-      noexcept(noexcept(__nested_mapping_.is_strided()))
-#  endif
+    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_strided() const noexcept(__is_strided_noexcept())
     {
       return __nested_mapping_.is_strided();
     }
@@ -205,6 +194,26 @@ public:
   private:
     __nested_mapping_type __nested_mapping_;
     extents_type __extents_;
+
+    _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __required_span_size_noexcept()
+    {
+      return noexcept(__nested_mapping_.required_span_size());
+    }
+
+    _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __is_nested_unique_noexcept()
+    {
+      return noexcept(__nested_mapping_.is_unique());
+    }
+
+    _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __is_exhaustive_noexcept()
+    {
+      return noexcept(__nested_mapping_.is_exhaustive());
+    }
+
+    _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __is_strided_noexcept()
+    {
+      return noexcept(__nested_mapping_.is_strided());
+    }
   };
 };
 
