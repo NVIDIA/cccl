@@ -53,12 +53,12 @@
   }                               \
   /**/
 
-#define _THRUST_RETURNS_SUPPRESS_DEPRECATIONS(...) \
-  noexcept(noexcept(__VA_ARGS__))                  \
-  {                                                \
-    _CCCL_SUPPRESS_DEPRECATED_PUSH                 \
-    return (__VA_ARGS__);                          \
-    _CCCL_SUPPRESS_DEPRECATED_POP                  \
+#define _THRUST_RETURNS_SUPPRESS_DEPRECATIONS(...)                                             \
+  _CCCL_SUPPRESS_DEPRECATED_PUSH noexcept(noexcept(__VA_ARGS__)) _CCCL_SUPPRESS_DEPRECATED_POP \
+  {                                                                                            \
+    _CCCL_SUPPRESS_DEPRECATED_PUSH                                                             \
+    return (__VA_ARGS__);                                                                      \
+    _CCCL_SUPPRESS_DEPRECATED_POP                                                              \
   }
 
 /// \def THRUST_DECLTYPE_RETURNS(...)

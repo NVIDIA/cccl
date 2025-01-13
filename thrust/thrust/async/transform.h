@@ -114,8 +114,8 @@ struct transform_fn final
   )
 
   template <typename... Args>
-  _CCCL_NODISCARD _CCCL_HOST
- CCCL_DEPRECATED auto operator()(Args&&... args) const
+  CCCL_DEPRECATED _CCCL_NODISCARD _CCCL_HOST
+ auto operator()(Args&&... args) const
   THRUST_RETURNS(
     call(THRUST_FWD(args)...)
   )
