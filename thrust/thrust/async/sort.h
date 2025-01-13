@@ -81,7 +81,7 @@ struct stable_sort_fn final
   , StrictWeakOrdering&& comp
   )
   // ADL dispatch.
-  THRUST_RETURNS(
+  _THRUST_RETURNS_SUPPRESS_DEPRECATIONS(
     async_stable_sort(
       thrust::detail::derived_cast(thrust::detail::strip_const(exec))
     , THRUST_FWD(first), THRUST_FWD(last)
@@ -99,7 +99,7 @@ struct stable_sort_fn final
   , ForwardIt&& first, Sentinel&& last
   )
   // ADL dispatch.
-  THRUST_RETURNS(
+  _THRUST_RETURNS_SUPPRESS_DEPRECATIONS(
     async_stable_sort(
       thrust::detail::derived_cast(thrust::detail::strip_const(exec))
     , THRUST_FWD(first), THRUST_FWD(last)
@@ -181,7 +181,7 @@ struct sort_fn final
   , StrictWeakOrdering&& comp
   )
   // ADL dispatch.
-  THRUST_RETURNS(
+  _THRUST_RETURNS_SUPPRESS_DEPRECATIONS(
     async_sort(
       thrust::detail::derived_cast(thrust::detail::strip_const(exec))
     , THRUST_FWD(first), THRUST_FWD(last)

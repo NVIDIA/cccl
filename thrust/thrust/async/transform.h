@@ -82,7 +82,7 @@ struct transform_fn final
   , UnaryOperation&& op
   )
   // ADL dispatch.
-  THRUST_RETURNS(
+  _THRUST_RETURNS_SUPPRESS_DEPRECATIONS(
     async_transform(
       thrust::detail::derived_cast(thrust::detail::strip_const(exec))
     , THRUST_FWD(first), THRUST_FWD(last)

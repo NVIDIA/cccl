@@ -79,7 +79,7 @@ struct copy_fn final
        Sentinel&& last,
        OutputIt&& output)
     // ADL dispatch.
-    THRUST_RETURNS(async_copy(
+    _THRUST_RETURNS_SUPPRESS_DEPRECATIONS(async_copy(
       thrust::detail::derived_cast(thrust::detail::strip_const(from_exec)),
       thrust::detail::derived_cast(thrust::detail::strip_const(to_exec)),
       THRUST_FWD(first),

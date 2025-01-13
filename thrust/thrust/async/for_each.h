@@ -74,10 +74,11 @@ struct for_each_fn final
        Sentinel&& last,
        UnaryFunction&& f)
     // ADL dispatch.
-    THRUST_RETURNS(async_for_each(thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
-                                  THRUST_FWD(first),
-                                  THRUST_FWD(last),
-                                  THRUST_FWD(f)))
+    _THRUST_RETURNS_SUPPRESS_DEPRECATIONS(async_for_each(
+      thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
+      THRUST_FWD(first),
+      THRUST_FWD(last),
+      THRUST_FWD(f)))
 
       template <typename ForwardIt, typename Sentinel, typename UnaryFunction>
       _CCCL_HOST static auto call(ForwardIt&& first, Sentinel&& last, UnaryFunction&& f)

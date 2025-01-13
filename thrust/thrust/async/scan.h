@@ -92,7 +92,7 @@ struct inclusive_scan_fn final
     OutputIt&& out,
     BinaryOp&& op) const
     // ADL dispatch.
-    THRUST_RETURNS(async_inclusive_scan(
+    _THRUST_RETURNS_SUPPRESS_DEPRECATIONS(async_inclusive_scan(
       thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
       THRUST_FWD(first),
       THRUST_FWD(last),
@@ -106,7 +106,7 @@ struct inclusive_scan_fn final
                     Sentinel&& last,
                     OutputIt&& out) const
     // ADL dispatch.
-    THRUST_RETURNS(async_inclusive_scan(
+    _THRUST_RETURNS_SUPPRESS_DEPRECATIONS(async_inclusive_scan(
       thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
       THRUST_FWD(first),
       THRUST_FWD(last),
@@ -127,7 +127,7 @@ struct inclusive_scan_fn final
                     InitialValueType&& init,
                     BinaryOp&& op) const
     // ADL dispatch.
-    THRUST_RETURNS(async_inclusive_scan(
+    _THRUST_RETURNS_SUPPRESS_DEPRECATIONS(async_inclusive_scan(
       thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
       THRUST_FWD(first),
       THRUST_FWD(last),
@@ -142,7 +142,7 @@ struct inclusive_scan_fn final
                 typename = std::enable_if_t<!is_execution_policy_v<remove_cvref_t<ForwardIt>>>>
       CCCL_DEPRECATED auto operator()(ForwardIt&& first, Sentinel&& last, OutputIt&& out, BinaryOp&& op) const
     // ADL dispatch.
-    THRUST_RETURNS(async_inclusive_scan(
+    _THRUST_RETURNS_SUPPRESS_DEPRECATIONS(async_inclusive_scan(
       thrust::detail::select_system(iterator_system_t<remove_cvref_t<ForwardIt>>{},
                                     iterator_system_t<remove_cvref_t<OutputIt>>{}),
       THRUST_FWD(first),
@@ -153,7 +153,7 @@ struct inclusive_scan_fn final
       template <typename ForwardIt, typename Sentinel, typename OutputIt>
       CCCL_DEPRECATED auto operator()(ForwardIt&& first, Sentinel&& last, OutputIt&& out) const
     // ADL dispatch.
-    THRUST_RETURNS(async_inclusive_scan(
+    _THRUST_RETURNS_SUPPRESS_DEPRECATIONS(async_inclusive_scan(
       thrust::detail::select_system(iterator_system_t<remove_cvref_t<ForwardIt>>{},
                                     iterator_system_t<remove_cvref_t<OutputIt>>{}),
       THRUST_FWD(first),
@@ -170,7 +170,7 @@ struct inclusive_scan_fn final
       CCCL_DEPRECATED
     auto operator()(ForwardIt&& first, Sentinel&& last, OutputIt&& out, InitialValueType&& init, BinaryOp&& op) const
     // ADL dispatch.
-    THRUST_RETURNS(async_inclusive_scan(
+    _THRUST_RETURNS_SUPPRESS_DEPRECATIONS(async_inclusive_scan(
       thrust::detail::select_system(iterator_system_t<remove_cvref_t<ForwardIt>>{},
                                     iterator_system_t<remove_cvref_t<OutputIt>>{}),
       THRUST_FWD(first),
@@ -210,7 +210,7 @@ struct exclusive_scan_fn final
     InitialValueType&& init,
     BinaryOp&& op) const
     // ADL dispatch.
-    THRUST_RETURNS(async_exclusive_scan(
+    _THRUST_RETURNS_SUPPRESS_DEPRECATIONS(async_exclusive_scan(
       thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
       THRUST_FWD(first),
       THRUST_FWD(last),
@@ -226,7 +226,7 @@ struct exclusive_scan_fn final
                     OutputIt&& out,
                     InitialValueType&& init) const
     // ADL dispatch.
-    THRUST_RETURNS(async_exclusive_scan(
+    _THRUST_RETURNS_SUPPRESS_DEPRECATIONS(async_exclusive_scan(
       thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
       THRUST_FWD(first),
       THRUST_FWD(last),
@@ -241,7 +241,7 @@ struct exclusive_scan_fn final
                     Sentinel&& last,
                     OutputIt&& out) const
     // ADL dispatch.
-    THRUST_RETURNS(async_exclusive_scan(
+    _THRUST_RETURNS_SUPPRESS_DEPRECATIONS(async_exclusive_scan(
       thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
       THRUST_FWD(first),
       THRUST_FWD(last),
@@ -258,7 +258,7 @@ struct exclusive_scan_fn final
       CCCL_DEPRECATED
     auto operator()(ForwardIt&& first, Sentinel&& last, OutputIt&& out, InitialValueType&& init, BinaryOp&& op) const
     // ADL dispatch.
-    THRUST_RETURNS(async_exclusive_scan(
+    _THRUST_RETURNS_SUPPRESS_DEPRECATIONS(async_exclusive_scan(
       thrust::detail::select_system(iterator_system_t<remove_cvref_t<ForwardIt>>{},
                                     iterator_system_t<remove_cvref_t<OutputIt>>{}),
       THRUST_FWD(first),
@@ -274,7 +274,7 @@ struct exclusive_scan_fn final
                 typename = std::enable_if_t<!is_execution_policy_v<remove_cvref_t<ForwardIt>>>>
       CCCL_DEPRECATED auto operator()(ForwardIt&& first, Sentinel&& last, OutputIt&& out, InitialValueType&& init) const
     // ADL dispatch.
-    THRUST_RETURNS(async_exclusive_scan(
+    _THRUST_RETURNS_SUPPRESS_DEPRECATIONS(async_exclusive_scan(
       thrust::detail::select_system(iterator_system_t<remove_cvref_t<ForwardIt>>{},
                                     iterator_system_t<remove_cvref_t<OutputIt>>{}),
       THRUST_FWD(first),
@@ -286,7 +286,7 @@ struct exclusive_scan_fn final
       template <typename ForwardIt, typename Sentinel, typename OutputIt>
       CCCL_DEPRECATED auto operator()(ForwardIt&& first, Sentinel&& last, OutputIt&& out) const
     // ADL dispatch.
-    THRUST_RETURNS(async_exclusive_scan(
+    _THRUST_RETURNS_SUPPRESS_DEPRECATIONS(async_exclusive_scan(
       thrust::detail::select_system(iterator_system_t<remove_cvref_t<ForwardIt>>{},
                                     iterator_system_t<remove_cvref_t<OutputIt>>{}),
       THRUST_FWD(first),

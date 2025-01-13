@@ -77,7 +77,7 @@ struct reduce_fn final
        T&& init,
        BinaryOp&& op)
     // ADL dispatch.
-    THRUST_RETURNS(async_reduce(
+    _THRUST_RETURNS_SUPPRESS_DEPRECATIONS(async_reduce(
       thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
       THRUST_FWD(first),
       THRUST_FWD(last),
@@ -92,7 +92,7 @@ struct reduce_fn final
         T&& init,
         thrust::true_type)
     // ADL dispatch.
-    THRUST_RETURNS(async_reduce(
+    _THRUST_RETURNS_SUPPRESS_DEPRECATIONS(async_reduce(
       thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
       THRUST_FWD(first),
       THRUST_FWD(last),
@@ -105,7 +105,7 @@ struct reduce_fn final
                                    Sentinel&& last,
                                    thrust::true_type)
     // ADL dispatch.
-    THRUST_RETURNS(async_reduce(
+    _THRUST_RETURNS_SUPPRESS_DEPRECATIONS(async_reduce(
       thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
       THRUST_FWD(first),
       THRUST_FWD(last),
@@ -197,7 +197,7 @@ struct reduce_into_fn final
        T&& init,
        BinaryOp&& op)
     // ADL dispatch.
-    THRUST_RETURNS(async_reduce_into(
+    _THRUST_RETURNS_SUPPRESS_DEPRECATIONS(async_reduce_into(
       thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
       THRUST_FWD(first),
       THRUST_FWD(last),
@@ -214,7 +214,7 @@ struct reduce_into_fn final
         T&& init,
         thrust::true_type)
     // ADL dispatch.
-    THRUST_RETURNS(async_reduce_into(
+    _THRUST_RETURNS_SUPPRESS_DEPRECATIONS(async_reduce_into(
       thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
       THRUST_FWD(first),
       THRUST_FWD(last),
@@ -230,7 +230,7 @@ struct reduce_into_fn final
         OutputIt&& output,
         thrust::true_type)
     // ADL dispatch.
-    THRUST_RETURNS(async_reduce_into(
+    _THRUST_RETURNS_SUPPRESS_DEPRECATIONS(async_reduce_into(
       thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
       THRUST_FWD(first),
       THRUST_FWD(last),
