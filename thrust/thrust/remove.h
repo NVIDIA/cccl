@@ -281,7 +281,7 @@ OutputIterator remove_copy(InputIterator first, InputIterator last, OutputIterat
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
  * Iterator</a>, \p ForwardIterator is mutable, and \p ForwardIterator's \c value_type is convertible to \p Predicate's
- * \c argument_type. \tparam Predicate is a model of <a
+ * argument type. \tparam Predicate is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
  *  The following code snippet demonstrates how to use \p remove_if to remove
@@ -353,7 +353,7 @@ _CCCL_HOST_DEVICE ForwardIterator remove_if(
  *
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
  * Iterator</a>, \p ForwardIterator is mutable, and \p ForwardIterator's \c value_type is convertible to \p Predicate's
- * \c argument_type. \tparam Predicate is a model of <a
+ * argument type. \tparam Predicate is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
  *  The following code snippet demonstrates how to use \p remove_if to remove
@@ -422,7 +422,7 @@ ForwardIterator remove_if(ForwardIterator first, ForwardIterator last, Predicate
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
  * Iterator</a>, \p InputIterator's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types,
- *          and \p InputIterator's \c value_type is convertible to \p Predicate's \c argument_type.
+ *          and \p InputIterator's \c value_type is convertible to \p Predicate's argument type.
  *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  * Iterator</a>. \tparam Predicate is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
@@ -484,7 +484,7 @@ _CCCL_HOST_DEVICE OutputIterator remove_copy_if(
  *
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
  * Iterator</a>, \p InputIterator's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types,
- *          and \p InputIterator's \c value_type is convertible to \p Predicate's \c argument_type.
+ *          and \p InputIterator's \c value_type is convertible to \p Predicate's argument type.
  *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  * Iterator</a>. \tparam Predicate is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
@@ -546,7 +546,7 @@ OutputIterator remove_copy_if(InputIterator first, InputIterator last, OutputIte
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
  * Iterator</a> and \p ForwardIterator is mutable. \tparam InputIterator is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, and \p InputIterator's \c
- * value_type is convertible to \p Predicate's \c argument_type. \tparam Predicate is a model of <a
+ * value_type is convertible to \p Predicate's argument type. \tparam Predicate is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
  *  \pre The range <tt>[first, last)</tt> shall not overlap the range <tt>[result, result + (last - first))</tt>.
@@ -606,7 +606,7 @@ _CCCL_HOST_DEVICE ForwardIterator remove_if(
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
  * Iterator</a> and \p ForwardIterator is mutable. \tparam InputIterator is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, and \p InputIterator's \c
- * value_type is convertible to \p Predicate's \c argument_type. \tparam Predicate is a model of <a
+ * value_type is convertible to \p Predicate's argument type. \tparam Predicate is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
  *  \pre The range <tt>[first, last)</tt> shall not overlap the range <tt>[result, result + (last - first))</tt>.
@@ -664,7 +664,7 @@ ForwardIterator remove_if(ForwardIterator first, ForwardIterator last, InputIter
  * Iterator</a>, \p InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c
  * value_types. \tparam InputIterator2 is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, and \p InputIterator2's \c
- * value_type is convertible to \p Predicate's \c argument_type. \tparam OutputIterator is a model of <a
+ * value_type is convertible to \p Predicate's argument type. \tparam OutputIterator is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. \tparam Predicate is a model
  * of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
@@ -728,7 +728,7 @@ _CCCL_HOST_DEVICE OutputIterator remove_copy_if(
  * Iterator</a>, \p InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c
  * value_types. \tparam InputIterator2 is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, and \p InputIterator2's \c
- * value_type is convertible to \p Predicate's \c argument_type. \tparam OutputIterator is a model of <a
+ * value_type is convertible to \p Predicate's argument type. \tparam OutputIterator is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. \tparam Predicate is a model
  * of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *

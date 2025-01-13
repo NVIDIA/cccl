@@ -289,8 +289,8 @@ ForwardIterator min_element(ForwardIterator first, ForwardIterator last);
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
- * Iterator</a>, and \p ForwardIterator's \c value_type is convertible to both \p comp's \c first_argument_type and \c
- * second_argument_type. \tparam BinaryPredicate is a model of <a
+ * Iterator</a>, and \p ForwardIterator's \c value_type is convertible to both \p comp's first and second argument type.
+ *  \tparam BinaryPredicate is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>.
  *
  *  The following code snippet demonstrates how to use \p min_element to find the smallest element
@@ -353,9 +353,9 @@ _CCCL_HOST_DEVICE ForwardIterator min_element(
  *          if it is not an empty range; \p last, otherwise.
  *
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
- * Iterator</a>, and \p ForwardIterator's \c value_type is convertible to both \p comp's \c first_argument_type and \c
- * second_argument_type. \tparam BinaryPredicate is a model of <a
- * href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>.
+ * Iterator</a>, and \p ForwardIterator's \c value_type is convertible to both \p comp's first and second argument type.
+ *  \tparam BinaryPredicate is a model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary
+ * Predicate</a>.
  *
  *  The following code snippet demonstrates how to use \p min_element to find the smallest element
  *  of a collection of key-value pairs.
@@ -491,9 +491,9 @@ ForwardIterator max_element(ForwardIterator first, ForwardIterator last);
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
- * Iterator</a>, and \p ForwardIterator's \c value_type is convertible to both \p comp's \c first_argument_type and \c
- * second_argument_type. \tparam BinaryPredicate is a model of <a
- * href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>.
+ * Iterator</a>, and \p ForwardIterator's \c value_type is convertible to both \p comp's first and second argument type.
+ *  \tparam BinaryPredicate is a model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary
+ * Predicate</a>.
  *
  *  The following code snippet demonstrates how to use \p max_element to find the largest element
  *  of a collection of key-value pairs using the \p thrust::host execution policy for parallelization.
@@ -555,9 +555,9 @@ _CCCL_HOST_DEVICE ForwardIterator max_element(
  *          if it is not an empty range; \p last, otherwise.
  *
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
- * Iterator</a>, and \p ForwardIterator's \c value_type is convertible to both \p comp's \c first_argument_type and \c
- * second_argument_type. \tparam BinaryPredicate is a model of <a
- * href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>.
+ * Iterator</a>, and \p ForwardIterator's \c value_type is convertible to both \p comp's first and second argument type.
+ *  \tparam BinaryPredicate is a model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary
+ * Predicate</a>.
  *
  *  The following code snippet demonstrates how to use \p max_element to find the largest element
  *  of a collection of key-value pairs.
@@ -682,9 +682,9 @@ thrust::pair<ForwardIterator, ForwardIterator> minmax_element(ForwardIterator fi
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
- * Iterator</a>, and \p ForwardIterator's \c value_type is convertible to both \p comp's \c first_argument_type and \c
- * second_argument_type. \tparam BinaryPredicate is a model of <a
- * href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>.
+ * Iterator</a>, and \p ForwardIterator's \c value_type is convertible to both \p comp's first and second argument type.
+ *  \tparam BinaryPredicate is a model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary
+ * Predicate</a>.
  *
  *  The following code snippet demonstrates how to use \p minmax_element to find the smallest and largest elements
  *  of a collection of key-value pairs using the \p thrust::host execution policy for parallelization:
@@ -745,9 +745,9 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> minmax_element(
  *          if it is not an empty range; \p last, otherwise.
  *
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
- * Iterator</a>, and \p ForwardIterator's \c value_type is convertible to both \p comp's \c first_argument_type and \c
- * second_argument_type. \tparam BinaryPredicate is a model of <a
- * href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>.
+ * Iterator</a>, and \p ForwardIterator's \c value_type is convertible to both \p comp's first and second argument type.
+ *  \tparam BinaryPredicate is a model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary
+ * Predicate</a>.
  *
  *  The following code snippet demonstrates how to use \p minmax_element to find the smallest and largest elements
  *  of a collection of key-value pairs.

@@ -148,7 +148,7 @@ count(InputIterator first, InputIterator last, const EqualityComparable& value);
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam InputIterator must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator's \c value_type must be convertible to \c Predicate's \c argument_type. \tparam
+ * Iterator</a> and \c InputIterator's \c value_type must be convertible to \c Predicate's argument type. \tparam
  * Predicate must be a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
  *  The following code snippet demonstrates how to use \p count to
@@ -200,7 +200,7 @@ count_if(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \return The number of elements where \p pred is \c true.
  *
  *  \tparam InputIterator must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator's \c value_type must be convertible to \c Predicate's \c argument_type. \tparam
+ * Iterator</a> and \c InputIterator's \c value_type must be convertible to \c Predicate's argument type. \tparam
  * Predicate must be a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
  *  The following code snippet demonstrates how to use \p count to
