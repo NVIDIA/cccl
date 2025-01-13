@@ -17,6 +17,8 @@
 #include <cuda/std/mdspan>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <typename Layout, typename Map>
 __host__ __device__ void map_test(Map map)
 {
@@ -79,14 +81,10 @@ int main(int, char**)
   {
     using transposed_extents_t = cuda::std::extents<size_t, 3, 2>;
     cuda::std::layout_right::mapping<transposed_extents_t> map_right{};
-    [[maybe_unused]] cuda::std::linalg::layout_transpose<cuda::std::layout_right>::mapping<E> map_right_transposed{
-      map_right};
-    static_cast<void>(map_right_transposed);
+    unused(cuda::std::linalg::layout_transpose<cuda::std::layout_right>::mapping<E>{map_right});
 
     cuda::std::layout_left::mapping<transposed_extents_t> map_left{};
-    [[maybe_unused]] cuda::std::linalg::layout_transpose<cuda::std::layout_left>::mapping<E> map_left_transposed{
-      map_left};
-    static_cast<void>(map_left_transposed);
+    unused(cuda::std::linalg::layout_transpose<cuda::std::layout_left>::mapping<E>{map_left});
   }
   // operator==, operator!=
   {
