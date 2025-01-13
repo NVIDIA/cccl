@@ -56,12 +56,12 @@ int main(int, char**)
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
   test<long double>(0.5);
 #endif
-#if _CCCL_HAS_NVFP16
+#if defined(_LIBCUDACXX_HAS_NVFP16)
   test<__half>(0.5);
-#endif // _CCCL_HAS_NVFP16
-#if _CCCL_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16
+#if defined(_LIBCUDACXX_HAS_NVBF16)
   test<__nv_bfloat16>(0.5);
-#endif // _CCCL_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16
 
   return 0;
 }
