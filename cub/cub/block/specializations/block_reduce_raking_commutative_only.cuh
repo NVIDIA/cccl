@@ -167,7 +167,7 @@ struct BlockReduceRakingCommutativeOnly
           partial;
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Reduce parallelism to one warp
       if (linear_tid < RAKING_THREADS)
@@ -214,7 +214,7 @@ struct BlockReduceRakingCommutativeOnly
           partial;
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Reduce parallelism to one warp
       if (linear_tid < RAKING_THREADS)

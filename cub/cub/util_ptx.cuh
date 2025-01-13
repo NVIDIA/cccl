@@ -193,6 +193,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void BAR(int count)
 /**
  * CTA barrier
  */
+CCCL_DEPRECATED_BECAUSE("use __syncthreads() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE void CTA_SYNC()
 {
   __syncthreads();
@@ -201,6 +202,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void CTA_SYNC()
 /**
  * CTA barrier with predicate
  */
+CCCL_DEPRECATED_BECAUSE("use __syncthreads_and() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE int CTA_SYNC_AND(int p)
 {
   return __syncthreads_and(p);
@@ -209,6 +211,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE int CTA_SYNC_AND(int p)
 /**
  * CTA barrier with predicate
  */
+CCCL_DEPRECATED_BECAUSE("use __syncthreads_or() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE int CTA_SYNC_OR(int p)
 {
   return __syncthreads_or(p);

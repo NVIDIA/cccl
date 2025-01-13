@@ -154,13 +154,13 @@ struct AgentSegmentedRadixSort
     {
       BlockValueLoadT(temp_storage.values_load).Load(d_values_in, thread_values, num_items);
 
-      CTA_SYNC();
+      __syncthreads();
     }
 
     {
       BlockKeyLoadT(temp_storage.keys_load).Load(d_keys_in, thread_keys, num_items, oob_default);
 
-      CTA_SYNC();
+      __syncthreads();
     }
 
     BlockRadixSortT(temp_storage.sort)
@@ -187,13 +187,13 @@ struct AgentSegmentedRadixSort
     BlockUpsweepT upsweep(temp_storage.upsweep, d_keys_in, current_bit, pass_bits, decomposer);
     upsweep.ProcessRegion(OffsetT{}, num_items);
 
-    CTA_SYNC();
+    __syncthreads();
 
     // The count of each digit value in this pass (valid in the first RADIX_DIGITS threads)
     OffsetT bin_count[BINS_TRACKED_PER_THREAD];
     upsweep.ExtractCounts(bin_count);
 
-    CTA_SYNC();
+    __syncthreads();
 
     if (IS_DESCENDING)
     {
@@ -209,7 +209,7 @@ struct AgentSegmentedRadixSort
         }
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
 #pragma unroll
       for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
@@ -243,7 +243,7 @@ struct AgentSegmentedRadixSort
         }
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
 #pragma unroll
       for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
@@ -257,7 +257,7 @@ struct AgentSegmentedRadixSort
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Downsweep
     BlockDownsweepT downsweep(

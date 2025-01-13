@@ -217,7 +217,7 @@ private:
       detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
 #pragma unroll
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -251,7 +251,7 @@ private:
       const int slice_offset = slice * TIME_SLICED_ITEMS;
       const int slice_oob    = slice_offset + TIME_SLICED_ITEMS;
 
-      CTA_SYNC();
+      __syncthreads();
 
       if (warp_id == slice)
       {
@@ -267,7 +267,7 @@ private:
         }
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
 #pragma unroll
       for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -380,7 +380,7 @@ private:
 #pragma unroll
     for (int slice = 1; slice < TIME_SLICES; ++slice)
     {
-      CTA_SYNC();
+      __syncthreads();
 
       if (warp_id == slice)
       {
@@ -436,7 +436,7 @@ private:
       detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
 // No timeslicing
 #pragma unroll
@@ -472,7 +472,7 @@ private:
       const int slice_offset = slice * TIME_SLICED_ITEMS;
       const int slice_oob    = slice_offset + TIME_SLICED_ITEMS;
 
-      CTA_SYNC();
+      __syncthreads();
 
 #pragma unroll
       for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -495,7 +495,7 @@ private:
         }
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
       if (warp_id == slice)
       {
@@ -574,7 +574,7 @@ private:
 #pragma unroll
     for (int slice = 0; slice < TIME_SLICES; ++slice)
     {
-      CTA_SYNC();
+      __syncthreads();
 
       if (warp_id == slice)
       {
@@ -633,7 +633,7 @@ private:
       detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
 #pragma unroll
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -669,7 +669,7 @@ private:
 #pragma unroll
     for (int slice = 0; slice < TIME_SLICES; slice++)
     {
-      CTA_SYNC();
+      __syncthreads();
 
       const int slice_offset = TIME_SLICED_ITEMS * slice;
 
@@ -687,7 +687,7 @@ private:
         }
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
       if (warp_id == slice)
       {
@@ -740,7 +740,7 @@ private:
       detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
 #pragma unroll
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -779,7 +779,7 @@ private:
       const int slice_offset = slice * TIME_SLICED_ITEMS;
       const int slice_oob    = slice_offset + TIME_SLICED_ITEMS;
 
-      CTA_SYNC();
+      __syncthreads();
 
 #pragma unroll
       for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -795,7 +795,7 @@ private:
         }
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
 #pragma unroll
       for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -1144,7 +1144,7 @@ public:
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
 #pragma unroll
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -1203,7 +1203,7 @@ public:
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
 #pragma unroll
     for (int i = 0; i < ITEMS_PER_THREAD; i++)

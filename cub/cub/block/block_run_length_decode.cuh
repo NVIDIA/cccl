@@ -314,7 +314,7 @@ private:
     }
 
     // Ensure run offsets and run values have been written to shared memory
-    CTA_SYNC();
+    __syncthreads();
   }
 
   template <typename RunLengthT, typename TotalDecodedSizeT>
@@ -335,7 +335,7 @@ private:
     total_decoded_size = static_cast<TotalDecodedSizeT>(decoded_size_aggregate);
 
     // Ensure the prefix scan's temporary storage can be reused (may be superfluous, but depends on scan implementation)
-    CTA_SYNC();
+    __syncthreads();
 
     InitWithRunOffsets(run_values, run_offsets);
   }

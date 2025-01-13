@@ -186,7 +186,7 @@ struct BlockReduceWarpReductions
       detail::uninitialized_copy_single(temp_storage.warp_aggregates + warp_id, warp_aggregate);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Update total aggregate in warp 0, lane 0
     if (linear_tid == 0)

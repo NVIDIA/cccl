@@ -372,7 +372,7 @@ struct AgentSpmv
       s_tile_row_end_offsets[item] = wd_row_end_offsets[offset];
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Search for the thread's starting coordinate within the merge tile
     CountingInputIterator<OffsetT> tile_nonzero_indices(tile_start_coord.y);
@@ -386,7 +386,7 @@ struct AgentSpmv
       tile_num_nonzeros,
       thread_start_coord);
 
-    CTA_SYNC(); // Perf-sync
+    __syncthreads(); // Perf-sync
 
     // Compute the thread's merge path segment
     CoordinateT thread_current_coord = thread_start_coord;
@@ -425,7 +425,7 @@ struct AgentSpmv
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Block-wide reduce-value-by-segment
     KeyValuePairT tile_carry;
@@ -553,7 +553,7 @@ struct AgentSpmv
       s_tile_row_end_offsets[item] = wd_row_end_offsets[offset];
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Search for the thread's starting coordinate within the merge tile
     CountingInputIterator<OffsetT> tile_nonzero_indices(tile_start_coord.y);
@@ -567,7 +567,7 @@ struct AgentSpmv
       tile_num_nonzeros,
       thread_start_coord);
 
-    CTA_SYNC(); // Perf-sync
+    __syncthreads(); // Perf-sync
 
     // Compute the thread's merge path segment
     CoordinateT thread_current_coord = thread_start_coord;
@@ -600,7 +600,7 @@ struct AgentSpmv
       scan_segment[ITEM].key = thread_current_coord.x;
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Block-wide reduce-value-by-segment
     KeyValuePairT tile_carry;
@@ -620,7 +620,7 @@ struct AgentSpmv
 
     if (tile_num_rows > 0)
     {
-      CTA_SYNC();
+      __syncthreads();
 
       // Scan downsweep and scatter
       ValueT* s_partials = &temp_storage.aliasable.merge_items[0].nonzero;
@@ -647,7 +647,7 @@ struct AgentSpmv
         }
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
 #pragma unroll 1
       for (int item = threadIdx.x; item < tile_num_rows; item += BLOCK_THREADS)
@@ -709,7 +709,7 @@ struct AgentSpmv
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     CoordinateT tile_start_coord = temp_storage.tile_coords[0];
     CoordinateT tile_end_coord   = temp_storage.tile_coords[1];

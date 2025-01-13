@@ -350,7 +350,7 @@ struct AgentRadixSortOnesweep
         short_circuit = short_circuit || bins[u] == TILE_ITEMS;
       }
     }
-    short_circuit = CTA_SYNC_OR(short_circuit);
+    short_circuit = __syncthreads_or(short_circuit);
     if (!short_circuit)
     {
       return;
@@ -378,7 +378,7 @@ struct AgentRadixSortOnesweep
     LoadBinsToOffsetsGlobal(offsets);
     LookbackGlobal(bins);
     UpdateBinsGlobal(bins, offsets);
-    CTA_SYNC();
+    __syncthreads();
 
     // scatter the keys
     OffsetT global_offset = s.global_offsets[common_bin];
@@ -601,10 +601,10 @@ struct AgentRadixSortOnesweep
     LoadValues(block_idx * TILE_ITEMS, values);
 
     // scatter values
-    CTA_SYNC();
+    __syncthreads();
     ScatterValuesShared(values, ranks);
 
-    CTA_SYNC();
+    __syncthreads();
     ScatterValuesGlobal(digits);
   }
 
@@ -626,7 +626,7 @@ struct AgentRadixSortOnesweep
       .RankKeys(keys, ranks, digit_extractor(), exclusive_digit_prefix, CountsCallback(*this, bins, keys));
 
     // scatter keys in shared memory
-    CTA_SYNC();
+    __syncthreads();
     ScatterKeysShared(keys, ranks);
 
     // compute global offsets
@@ -635,7 +635,7 @@ struct AgentRadixSortOnesweep
     UpdateBinsGlobal(bins, exclusive_digit_prefix);
 
     // scatter keys in global memory
-    CTA_SYNC();
+    __syncthreads();
     ScatterKeysGlobal();
 
     // scatter values if necessary
@@ -678,7 +678,7 @@ struct AgentRadixSortOnesweep
     {
       s.block_idx = atomicAdd(d_ctrs, 1);
     }
-    CTA_SYNC();
+    __syncthreads();
     block_idx  = s.block_idx;
     full_block = (block_idx + 1) * TILE_ITEMS <= num_items;
   }

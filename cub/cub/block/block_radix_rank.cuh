@@ -478,12 +478,12 @@ public:
       *digit_counters[ITEM] = thread_prefixes[ITEM] + 1;
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Scan shared memory counters
     ScanCounters();
 
-    CTA_SYNC();
+    __syncthreads();
 
 // Extract the local ranks of each key
 #pragma unroll
@@ -711,7 +711,7 @@ public:
       temp_storage.aliasable.raking_grid[linear_tid][ITEM] = 0;
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Each warp will strip-mine its section of input, one strip at a time
 
@@ -762,7 +762,7 @@ public:
       ranks[ITEM] = warp_digit_prefix + DigitCounterT(peer_digit_prefix);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Scan warp counters
 
@@ -782,7 +782,7 @@ public:
       temp_storage.aliasable.raking_grid[linear_tid][ITEM] = scan_counters[ITEM];
     }
 
-    CTA_SYNC();
+    __syncthreads();
     if (!::cuda::std::is_same<CountsCallback, BlockRadixRankEmptyCallback<BINS_TRACKED_PER_THREAD>>::value)
     {
       CallBack<KEYS_PER_THREAD>(callback);
@@ -1002,7 +1002,7 @@ struct BlockRadixRankMatchEarlyCounts
           int bin = lane + u * WARP_THREADS;
           bins[u] = cub::ThreadReduce(warp_histograms[bin], ::cuda::std::plus<>{});
         }
-        CTA_SYNC();
+        __syncthreads();
 
         // store the resulting histogram in shared memory
         int* warp_offsets = &s.warp_offsets[warp][0];
@@ -1118,7 +1118,7 @@ struct BlockRadixRankMatchEarlyCounts
     {
       ComputeHistogramsWarp(keys);
 
-      CTA_SYNC();
+      __syncthreads();
       int bins[BINS_PER_THREAD];
       ComputeOffsetsWarpUpsweep(bins);
       callback(bins);
@@ -1126,7 +1126,7 @@ struct BlockRadixRankMatchEarlyCounts
       BlockScan(s.prefix_tmp).ExclusiveSum(bins, exclusive_digit_prefix);
 
       ComputeOffsetsWarpDownsweep(exclusive_digit_prefix);
-      CTA_SYNC();
+      __syncthreads();
       ComputeRanksItem(keys, ranks, Int2Type<MATCH_ALGORITHM>());
     }
 

@@ -104,7 +104,7 @@ private:
     BlockRunOffsetScanT(temp_storage.run_offsets_scan_storage).ExclusiveSum(run_lengths, run_offsets, decoded_size);
 
     // Ensure temporary shared memory can be repurposed
-    cub::CTA_SYNC();
+    __syncthreads();
 
     // Construct BlockRunLengthDecode and initialize with the run offsets
     return BlockRunLengthDecodeT(temp_storage.decode.run_length_decode_storage, unique_items, run_offsets);
@@ -137,7 +137,7 @@ private:
     }
 
     // Ensure BlockLoad's temporary shared memory can be repurposed
-    cub::CTA_SYNC();
+    __syncthreads();
 
     // Load this block's tile of run lengths
     if (num_valid_items < RUNS_PER_BLOCK)
@@ -151,7 +151,7 @@ private:
     }
 
     // Ensure temporary shared memory can be repurposed
-    cub::CTA_SYNC();
+    __syncthreads();
   }
 
 public:

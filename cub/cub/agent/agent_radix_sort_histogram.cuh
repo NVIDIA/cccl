@@ -174,7 +174,7 @@ struct AgentRadixSortHistogram
         }
       }
     }
-    CTA_SYNC();
+    __syncthreads();
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void LoadTileKeys(OffsetT tile_offset, bit_ordered_type (&keys)[ITEMS_PER_THREAD])
@@ -249,7 +249,7 @@ struct AgentRadixSortHistogram
     {
       // Reset the counters.
       Init();
-      CTA_SYNC();
+      __syncthreads();
 
       // Process the tiles.
       OffsetT portion_offset = portion * MAX_PORTION_SIZE;
@@ -261,11 +261,11 @@ struct AgentRadixSortHistogram
         LoadTileKeys(tile_offset, keys);
         AccumulateSharedHistograms(tile_offset, keys);
       }
-      CTA_SYNC();
+      __syncthreads();
 
       // Accumulate the result in global memory.
       AccumulateGlobalHistograms();
-      CTA_SYNC();
+      __syncthreads();
     }
   }
 

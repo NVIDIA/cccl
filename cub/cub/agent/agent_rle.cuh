@@ -502,7 +502,7 @@ struct AgentRle
       temp_storage.aliasable.scan_storage.warp_aggregates.Alias()[warp_id] = thread_inclusive;
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Accumulate total selected and the warp-wide prefix
 
@@ -532,7 +532,7 @@ struct AgentRle
 
     // Ensure all threads have read warp aggregates before temp_storage is repurposed in the
     // subsequent scatter stage
-    CTA_SYNC();
+    __syncthreads();
   }
 
   //---------------------------------------------------------------------
@@ -565,7 +565,7 @@ struct AgentRle
 #pragma unroll
     for (int SLICE = 1; SLICE < WARPS; ++SLICE)
     {
-      CTA_SYNC();
+      __syncthreads();
 
       if (warp_id == SLICE)
       {
@@ -763,7 +763,7 @@ struct AgentRle
 
       if (SYNC_AFTER_LOAD)
       {
-        CTA_SYNC();
+        __syncthreads();
       }
 
       // Set flags
@@ -849,7 +849,7 @@ struct AgentRle
 
       if (SYNC_AFTER_LOAD)
       {
-        CTA_SYNC();
+        __syncthreads();
       }
 
       // Set flags
@@ -879,7 +879,7 @@ struct AgentRle
         }
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
       LengthOffsetPair tile_exclusive_in_global = temp_storage.tile_exclusive;
 
