@@ -59,9 +59,7 @@ THRUST_NAMESPACE_BEGIN
  * #include <thrust/iterator/transform_output_iterator.h>
  * #include <thrust/device_vector.h>
  *
- * // note: functor inherits form unary function
- *  // note: functor inherits from unary_function
- *  struct square_root : public thrust::unary_function<float,float>
+ *  struct square_root
  *  {
  *    __host__ __device__
  *    float operator()(float x) const

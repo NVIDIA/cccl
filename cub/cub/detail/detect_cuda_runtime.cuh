@@ -85,12 +85,9 @@
 #  endif // CUB_RUNTIME_FUNCTION predefined
 
 #  ifdef CUB_RDC_ENABLED
-// Detect available version of CDP:
-#    if __CUDACC_VER_MAJOR__ < 12 || defined(CUDA_FORCE_CDP1_IF_SUPPORTED)
-#      define CUB_DETAIL_CDPv1
-#    else
-#      define CUB_DETAIL_CDPv2
-#    endif
+#    ifdef CUDA_FORCE_CDP1_IF_SUPPORTED
+#      error "CUDA Dynamic Parallelism 1 is no longer supported. Please undefine CUDA_FORCE_CDP1_IF_SUPPORTED."
+#    endif // CUDA_FORCE_CDP1_IF_SUPPORTED
 #  endif
 
 #endif // Do not document

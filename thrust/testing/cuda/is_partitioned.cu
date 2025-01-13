@@ -26,7 +26,7 @@ void TestIsPartitionedDevice(ExecutionPolicy exec)
 {
   size_t n = 1000;
 
-  n = thrust::max<size_t>(n, 2);
+  n = ::cuda::std::max<size_t>(n, 2);
 
   thrust::device_vector<int> v = unittest::random_integers<int>(n);
 

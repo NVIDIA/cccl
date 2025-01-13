@@ -52,8 +52,6 @@
 
 #include <cuda/std/type_traits>
 
-#include <iterator>
-
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -162,7 +160,7 @@ struct AgentScan
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
   using WrappedInputIteratorT =
-    ::cuda::std::_If<std::is_pointer<InputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer<InputIteratorT>::value,
                      CacheModifiedInputIterator<AgentScanPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
                      InputIteratorT>;
 
@@ -170,7 +168,7 @@ struct AgentScan
   enum
   {
     // Inclusive scan if no init_value type is provided
-    HAS_INIT     = !std::is_same<InitValueT, NullType>::value,
+    HAS_INIT     = !::cuda::std::is_same<InitValueT, NullType>::value,
     IS_INCLUSIVE = ForceInclusive || !HAS_INIT, // We are relying on either initial value not being `NullType`
                                                 // or the ForceInclusive tag to be true for inclusive scan
                                                 // to get picked up.

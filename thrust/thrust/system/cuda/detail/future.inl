@@ -36,6 +36,7 @@
 #  include <thrust/type_traits/integer_sequence.h>
 #  include <thrust/type_traits/remove_cvref.h>
 
+#  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__memory/unique_ptr.h>
 
 #  include <type_traits>
@@ -639,7 +640,7 @@ public:
   // For testing only.
   _CCCL_HOST_DEVICE raw_const_pointer data() const
   {
-    return addressof(value_);
+    return ::cuda::std::addressof(value_);
   }
 #  endif
 };

@@ -241,14 +241,6 @@ struct dispatch<thrust::detail::true_type, thrust::greater<KeyOrVoid>>
   }
 }; // struct dispatch -- sort pairs in descending order;
 
-template <class SORT_ITEMS, class KeyOrVoid>
-struct dispatch<SORT_ITEMS, ::cuda::std::less<KeyOrVoid>> : dispatch<SORT_ITEMS, thrust::less<KeyOrVoid>>
-{};
-
-template <class SORT_ITEMS, class KeyOrVoid>
-struct dispatch<SORT_ITEMS, ::cuda::std::greater<KeyOrVoid>> : dispatch<SORT_ITEMS, thrust::greater<KeyOrVoid>>
-{};
-
 template <typename SORT_ITEMS, typename Derived, typename Key, typename Item, typename Size, typename CompareOp>
 THRUST_RUNTIME_FUNCTION void radix_sort(execution_policy<Derived>& policy, Key* keys, Item* items, Size count, CompareOp)
 {
