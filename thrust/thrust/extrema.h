@@ -32,155 +32,13 @@
 #include <thrust/detail/execution_policy.h>
 #include <thrust/pair.h>
 
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+
 THRUST_NAMESPACE_BEGIN
 
-/*! This version of \p min returns the smaller of two values, given a comparison operation.
- *  \param lhs The first value to compare.
- *  \param rhs The second value to compare.
- *  \param comp A comparison operation.
- *  \return The smaller element.
- *
- *  \tparam T is convertible to \p BinaryPredicate's first argument type and to its second argument type.
- *  \tparam BinaryPredicate is a model of <a
- * href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">BinaryPredicate</a>.
- *
- *  The following code snippet demonstrates how to use \p min to compute the smaller of two
- *  key-value objects.
- *
- *  \code
- *  #include <thrust/extrema.h>
- *  ...
- *  struct key_value
- *  {
- *    int key;
- *    int value;
- *  };
- *
- *  struct compare_key_value
- *  {
- *    __host__ __device__
- *    bool operator()(key_value lhs, key_value rhs)
- *    {
- *      return lhs.key < rhs.key;
- *    }
- *  };
- *
- *  ...
- *  key_value a = {13, 0};
- *  key_value b = { 7, 1);
- *
- *  key_value smaller = thrust::min(a, b, compare_key_value());
- *
- *  // smaller is {7, 1}
- *  \endcode
- *
- *  \note Returns the first argument when the arguments are equivalent.
- *  \see max
- */
-template <typename T, typename BinaryPredicate>
-_CCCL_HOST_DEVICE T min THRUST_PREVENT_MACRO_SUBSTITUTION(const T& lhs, const T& rhs, BinaryPredicate comp);
-
-/*! This version of \p min returns the smaller of two values.
- *  \param lhs The first value to compare.
- *  \param rhs The second value to compare.
- *  \return The smaller element.
- *
- *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan
- * Comparable</a>.
- *
- *  The following code snippet demonstrates how to use \p min to compute the smaller of two
- *  integers.
- *
- *  \code
- *  #include <thrust/extrema.h>
- *  ...
- *  int a = 13;
- *  int b = 7;
- *
- *  int smaller = thrust::min(a, b);
- *
- *  // smaller is 7
- *  \endcode
- *
- *  \note Returns the first argument when the arguments are equivalent.
- *  \see max
- */
-template <typename T>
-_CCCL_HOST_DEVICE T min THRUST_PREVENT_MACRO_SUBSTITUTION(const T& lhs, const T& rhs);
-
-/*! This version of \p max returns the larger of two values, given a comparison operation.
- *  \param lhs The first value to compare.
- *  \param rhs The second value to compare.
- *  \param comp A comparison operation.
- *  \return The larger element.
- *
- *  \tparam T is convertible to \p BinaryPredicate's first argument type and to its second argument type.
- *  \tparam BinaryPredicate is a model of <a
- * href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">BinaryPredicate</a>.
- *
- *  The following code snippet demonstrates how to use \p max to compute the larger of two
- *  key-value objects.
- *
- *  \code
- *  #include <thrust/extrema.h>
- *  ...
- *  struct key_value
- *  {
- *    int key;
- *    int value;
- *  };
- *
- *  struct compare_key_value
- *  {
- *    __host__ __device__
- *    bool operator()(key_value lhs, key_value rhs)
- *    {
- *      return lhs.key < rhs.key;
- *    }
- *  };
- *
- *  ...
- *  key_value a = {13, 0};
- *  key_value b = { 7, 1);
- *
- *  key_value larger = thrust::max(a, b, compare_key_value());
- *
- *  // larger is {13, 0}
- *  \endcode
- *
- *  \note Returns the first argument when the arguments are equivalent.
- *  \see min
- */
-template <typename T, typename BinaryPredicate>
-_CCCL_HOST_DEVICE T max THRUST_PREVENT_MACRO_SUBSTITUTION(const T& lhs, const T& rhs, BinaryPredicate comp);
-
-/*! This version of \p max returns the larger of two values.
- *  \param lhs The first value to compare.
- *  \param rhs The second value to compare.
- *  \return The larger element.
- *
- *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan
- * Comparable</a>.
- *
- *  The following code snippet demonstrates how to use \p max to compute the larger of two
- *  integers.
- *
- *  \code
- *  #include <thrust/extrema.h>
- *  ...
- *  int a = 13;
- *  int b = 7;
- *
- *  int larger = thrust::min(a, b);
- *
- *  // larger is 13
- *  \endcode
- *
- *  \note Returns the first argument when the arguments are equivalent.
- *  \see min
- */
-template <typename T>
-_CCCL_HOST_DEVICE T max THRUST_PREVENT_MACRO_SUBSTITUTION(const T& lhs, const T& rhs);
+using ::cuda::std::max;
+using ::cuda::std::min;
 
 /*! \addtogroup reductions
  *  \{
@@ -797,4 +655,3 @@ minmax_element(ForwardIterator first, ForwardIterator last, BinaryPredicate comp
 THRUST_NAMESPACE_END
 
 #include <thrust/detail/extrema.inl>
-#include <thrust/detail/minmax.h>

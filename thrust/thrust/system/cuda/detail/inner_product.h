@@ -37,7 +37,6 @@
 #endif // no system header
 
 #if _CCCL_HAS_CUDA_COMPILER
-#  include <thrust/detail/minmax.h>
 #  include <thrust/distance.h>
 #  include <thrust/system/cuda/detail/reduce.h>
 
