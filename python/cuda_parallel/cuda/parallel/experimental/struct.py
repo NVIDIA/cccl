@@ -28,7 +28,8 @@ def gpu_struct(this: type) -> Type[GpuStruct]:
     to a dataclass). The type of each field must be a subclass of
     `np.number`, like `np.int32` or `np.float64`.
 
-    Arrays of GPUStruct objects can be used as inputs to algorithms.
+    Arrays of GPUStruct objects can be used as inputs to cuda.parallel
+    algorithms.
 
     Example:
         The code snippet below shows how to use `gpu_struct` to define
@@ -46,7 +47,7 @@ def gpu_struct(this: type) -> Type[GpuStruct]:
     # corresponding numba type to the given type, so that it can be
     # used within device functions (e.g., unary and binary operations)
     # The numba typing/lowering code is largely based on the example
-    # in https://github.com/gmarkall/numba-accelerated-udfs.
+    # in # https://github.com/gmarkall/numba-accelerated-udfs/blob/e78876c5d3ace9e1409d37029bd79b2a8b706c62/filigree/numba_extension.py
 
     anns = getattr(this, "__annotations__", {})
 
