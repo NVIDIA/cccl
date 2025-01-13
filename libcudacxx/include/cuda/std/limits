@@ -57,28 +57,38 @@ enum class __numeric_limits_type
   __other,
 };
 
-template <class _Tp, class = void>
-struct __numeric_limits_type_selector : integral_constant<__numeric_limits_type, __numeric_limits_type::__other>
-{};
-
 template <class _Tp>
-struct __numeric_limits_type_selector<_Tp, enable_if_t<_CCCL_TRAIT(is_integral, _Tp)>>
-    : integral_constant<__numeric_limits_type, __numeric_limits_type::__integral>
-{};
+constexpr __numeric_limits_type __make_numeric_limits_type()
+{
+#if !defined(_CCCL_NO_IF_CONSTEXPR)
+  _CCCL_IF_CONSTEXPR (_CCCL_TRAIT(is_same, _Tp, bool))
+  {
+    return __numeric_limits_type::__bool;
+  }
+  else _CCCL_IF_CONSTEXPR (_CCCL_TRAIT(is_integral, _Tp))
+  {
+    return __numeric_limits_type::__integral;
+  }
+  else _CCCL_IF_CONSTEXPR (_CCCL_TRAIT(is_floating_point, _Tp) || _CCCL_TRAIT(__is_extended_floating_point, _Tp))
+  {
+    return __numeric_limits_type::__floating_point;
+  }
+  else
+  {
+    return __numeric_limits_type::__other;
+  }
+#else // ^^^ !_CCCL_NO_IF_CONSTEXPR ^^^ // vvv _CCCL_NO_IF_CONSTEXPR vvv
+  return _CCCL_TRAIT(is_same, _Tp, bool)
+         ? __numeric_limits_type::__bool
+         : (_CCCL_TRAIT(is_integral, _Tp)
+              ? __numeric_limits_type::__integral
+              : (_CCCL_TRAIT(is_floating_point, _Tp) || _CCCL_TRAIT(__is_extended_floating_point, _Tp)
+                   ? __numeric_limits_type::__floating_point
+                   : __numeric_limits_type::__other));
+#endif // _CCCL_NO_IF_CONSTEXPR
+}
 
-template <>
-struct __numeric_limits_type_selector<bool, void>
-    : integral_constant<__numeric_limits_type, __numeric_limits_type::__bool>
-{};
-
-template <class _Tp>
-struct __numeric_limits_type_selector<
-  _Tp,
-  enable_if_t<(_CCCL_TRAIT(is_floating_point, _Tp) || _CCCL_TRAIT(__is_extended_floating_point, _Tp))>>
-    : integral_constant<__numeric_limits_type, __numeric_limits_type::__floating_point>
-{};
-
-template <class _Tp, __numeric_limits_type = __numeric_limits_type_selector<_Tp>::value>
+template <class _Tp, __numeric_limits_type = __make_numeric_limits_type<_Tp>()>
 class __numeric_limits_impl
 {
 public:
