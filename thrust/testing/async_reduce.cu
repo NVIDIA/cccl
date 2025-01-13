@@ -541,12 +541,16 @@ struct test_async_reduce_using
     // When you import the customization points into the global namespace,
     // they should be selected instead of the synchronous algorithms.
     {
+      _CCCL_SUPPRESS_DEPRECATED_PUSH
       using namespace thrust::async;
       f0a = reduce(d0a.begin(), d0a.end());
+      _CCCL_SUPPRESS_DEPRECATED_POP
     }
     {
+      _CCCL_SUPPRESS_DEPRECATED_PUSH
       using thrust::async::reduce;
       f0b = reduce(d0b.begin(), d0b.end());
+      _CCCL_SUPPRESS_DEPRECATED_POP
     }
 
     // ADL should find the synchronous algorithms.
