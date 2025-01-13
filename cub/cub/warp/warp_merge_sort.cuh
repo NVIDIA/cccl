@@ -167,7 +167,7 @@ public:
 private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void SyncImplementation() const
   {
-    WARP_SYNC(member_mask);
+    __syncwarp(member_mask);
   }
 
   friend BlockMergeSortStrategyT;

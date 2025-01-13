@@ -542,7 +542,7 @@ struct WarpScanShfl
 
     KeyT pred_key = ShuffleUp<LOGICAL_WARP_THREADS>(inclusive_output.key, 1, 0, member_mask);
 
-    unsigned int ballot = WARP_BALLOT((pred_key != inclusive_output.key), member_mask);
+    unsigned int ballot = __ballot_sync(member_mask, (pred_key != inclusive_output.key));
 
     // Mask away all lanes greater than ours
     ballot = ballot & ::cuda::ptx::get_sreg_lanemask_le();

@@ -161,7 +161,7 @@ struct WarpReduceSmem
     // Share input through buffer
     ThreadStore<STORE_VOLATILE>(&temp_storage.reduce[lane_id], input);
 
-    WARP_SYNC(member_mask);
+    __syncwarp(member_mask);
 
     // Update input if peer_addend is in range
     if ((ALL_LANES_VALID && IS_POW_OF_TWO) || ((lane_id + OFFSET) < valid_items))
@@ -170,7 +170,7 @@ struct WarpReduceSmem
       input         = reduction_op(input, peer_addend);
     }
 
-    WARP_SYNC(member_mask);
+    __syncwarp(member_mask);
 
     return ReduceStep<ALL_LANES_VALID>(input, valid_items, reduction_op, Int2Type<STEP + 1>());
   }
@@ -224,7 +224,7 @@ struct WarpReduceSmem
   SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op, Int2Type<true> /*has_ballot*/)
   {
     // Get the start flags for each thread in the warp.
-    int warp_flags = WARP_BALLOT(flag, member_mask);
+    int warp_flags = __ballot_sync(member_mask, flag);
 
     if (!HEAD_SEGMENTED)
     {
@@ -257,7 +257,7 @@ struct WarpReduceSmem
       // Share input into buffer
       ThreadStore<STORE_VOLATILE>(&temp_storage.reduce[lane_id], input);
 
-      WARP_SYNC(member_mask);
+      __syncwarp(member_mask);
 
       // Update input if peer_addend is in range
       if (OFFSET + lane_id < next_flag)
@@ -266,7 +266,7 @@ struct WarpReduceSmem
         input         = reduction_op(input, peer_addend);
       }
 
-      WARP_SYNC(member_mask);
+      __syncwarp(member_mask);
     }
 
     return input;
@@ -313,12 +313,12 @@ struct WarpReduceSmem
       // Share input through buffer
       ThreadStore<STORE_VOLATILE>(&temp_storage.reduce[lane_id], input);
 
-      WARP_SYNC(member_mask);
+      __syncwarp(member_mask);
 
       // Get peer from buffer
       T peer_addend = ThreadLoad<LOAD_VOLATILE>(&temp_storage.reduce[lane_id + OFFSET]);
 
-      WARP_SYNC(member_mask);
+      __syncwarp(member_mask);
 
       // Share flag through buffer
       flag_storage[lane_id] = flag_status;

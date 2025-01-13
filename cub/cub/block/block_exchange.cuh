@@ -324,7 +324,7 @@ private:
       detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
-    WARP_SYNC(0xffffffff);
+    __syncwarp(0xffffffff);
 
 #pragma unroll
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -363,7 +363,7 @@ private:
         detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
       }
 
-      WARP_SYNC(0xffffffff);
+      __syncwarp(0xffffffff);
 
 #pragma unroll
       for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -395,7 +395,7 @@ private:
           detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
         }
 
-        WARP_SYNC(0xffffffff);
+        __syncwarp(0xffffffff);
 
 #pragma unroll
         for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -545,7 +545,7 @@ private:
       detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
-    WARP_SYNC(0xffffffff);
+    __syncwarp(0xffffffff);
 
 #pragma unroll
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -589,7 +589,7 @@ private:
           detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
         }
 
-        WARP_SYNC(0xffffffff);
+        __syncwarp(0xffffffff);
 
 #pragma unroll
         for (int i = 0; i < ITEMS_PER_THREAD; i++)

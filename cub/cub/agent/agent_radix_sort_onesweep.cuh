@@ -280,7 +280,7 @@ struct AgentRadixSortOnesweep
           } while (value_j == 0);
 
           inc_sum += value_j & LOOKBACK_VALUE_MASK;
-          want_mask = WARP_BALLOT((value_j & LOOKBACK_GLOBAL_MASK) == 0, want_mask);
+          want_mask = __ballot_sync(want_mask, (value_j & LOOKBACK_GLOBAL_MASK) == 0);
           if (value_j & LOOKBACK_GLOBAL_MASK)
           {
             break;
@@ -484,7 +484,7 @@ struct AgentRadixSortOnesweep
       {
         d_keys_out[global_idx] = Twiddle::Out(key, decomposer);
       }
-      WARP_SYNC(WARP_MASK);
+      __syncwarp(WARP_MASK);
     }
   }
 
@@ -502,7 +502,7 @@ struct AgentRadixSortOnesweep
       {
         d_values_out[global_idx] = value;
       }
-      WARP_SYNC(WARP_MASK);
+      __syncwarp(WARP_MASK);
     }
   }
 

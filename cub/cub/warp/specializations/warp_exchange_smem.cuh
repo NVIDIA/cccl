@@ -104,7 +104,7 @@ public:
       const int idx                  = ITEMS_PER_THREAD * lane_id + item;
       temp_storage.items_shared[idx] = input_items[item];
     }
-    WARP_SYNC(member_mask);
+    __syncwarp(member_mask);
 
     for (int item = 0; item < ITEMS_PER_THREAD; item++)
     {
@@ -122,7 +122,7 @@ public:
       const int idx                  = LOGICAL_WARP_THREADS * item + lane_id;
       temp_storage.items_shared[idx] = input_items[item];
     }
-    WARP_SYNC(member_mask);
+    __syncwarp(member_mask);
 
     for (int item = 0; item < ITEMS_PER_THREAD; item++)
     {
@@ -155,7 +155,7 @@ public:
       temp_storage.items_shared[ranks[ITEM]] = input_items[ITEM];
     }
 
-    WARP_SYNC(member_mask);
+    __syncwarp(member_mask);
 
 #pragma unroll
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)

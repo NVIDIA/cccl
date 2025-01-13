@@ -134,7 +134,7 @@ struct WarpScanSmem
     // Share partial into buffer
     ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], (CellT) partial);
 
-    WARP_SYNC(member_mask);
+    __syncwarp(member_mask);
 
     // Update partial if addend is in range
     if (HAS_IDENTITY || (lane_id >= OFFSET))
@@ -142,7 +142,7 @@ struct WarpScanSmem
       T addend = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - OFFSET]);
       partial  = scan_op(addend, partial);
     }
-    WARP_SYNC(member_mask);
+    __syncwarp(member_mask);
 
     ScanStep<HAS_IDENTITY>(partial, scan_op, Int2Type<STEP + 1>());
   }
@@ -173,7 +173,7 @@ struct WarpScanSmem
     T identity = 0;
     ThreadStore<STORE_VOLATILE>(&temp_storage[lane_id], (CellT) identity);
 
-    WARP_SYNC(member_mask);
+    __syncwarp(member_mask);
 
     // Iterate scan steps
     output = input;
@@ -228,7 +228,7 @@ struct WarpScanSmem
       ThreadStore<STORE_VOLATILE>(temp_storage, (CellT) input);
     }
 
-    WARP_SYNC(member_mask);
+    __syncwarp(member_mask);
 
     return (T) ThreadLoad<LOAD_VOLATILE>(temp_storage);
   }
@@ -278,11 +278,11 @@ struct WarpScanSmem
     // Retrieve aggregate
     ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], (CellT) inclusive_output);
 
-    WARP_SYNC(member_mask);
+    __syncwarp(member_mask);
 
     warp_aggregate = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[WARP_SMEM_ELEMENTS - 1]);
 
-    WARP_SYNC(member_mask);
+    __syncwarp(member_mask);
   }
 
   //---------------------------------------------------------------------
@@ -309,7 +309,7 @@ struct WarpScanSmem
     // initial value unknown
     ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], (CellT) inclusive);
 
-    WARP_SYNC(member_mask);
+    __syncwarp(member_mask);
 
     exclusive = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 1]);
   }
@@ -336,7 +336,7 @@ struct WarpScanSmem
     inclusive = scan_op(initial_value, inclusive);
     ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], (CellT) inclusive);
 
-    WARP_SYNC(member_mask);
+    __syncwarp(member_mask);
 
     exclusive = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 1]);
     if (lane_id == 0)
@@ -366,7 +366,7 @@ struct WarpScanSmem
     // Initial value presumed to be unknown or identity (either way our padding is correct)
     ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], (CellT) inclusive);
 
-    WARP_SYNC(member_mask);
+    __syncwarp(member_mask);
 
     exclusive      = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 1]);
     warp_aggregate = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[WARP_SMEM_ELEMENTS - 1]);
@@ -387,7 +387,7 @@ struct WarpScanSmem
     // Initial value presumed to be unknown or identity (either way our padding is correct)
     ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], (CellT) inclusive);
 
-    WARP_SYNC(member_mask);
+    __syncwarp(member_mask);
 
     warp_aggregate = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[WARP_SMEM_ELEMENTS - 1]);
     exclusive      = inclusive - input;
@@ -410,11 +410,11 @@ struct WarpScanSmem
     // Broadcast warp aggregate
     ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], (CellT) inclusive);
 
-    WARP_SYNC(member_mask);
+    __syncwarp(member_mask);
 
     warp_aggregate = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[WARP_SMEM_ELEMENTS - 1]);
 
-    WARP_SYNC(member_mask);
+    __syncwarp(member_mask);
 
     // Update inclusive with initial value
     inclusive = scan_op(initial_value, inclusive);
@@ -422,7 +422,7 @@ struct WarpScanSmem
     // Get exclusive from exclusive
     ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 1], (CellT) inclusive);
 
-    WARP_SYNC(member_mask);
+    __syncwarp(member_mask);
 
     exclusive = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 2]);
 

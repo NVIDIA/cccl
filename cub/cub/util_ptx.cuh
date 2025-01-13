@@ -217,6 +217,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE int CTA_SYNC_OR(int p)
 /**
  * Warp barrier
  */
+CCCL_DEPRECATED_BECAUSE("use __syncwarp() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE void WARP_SYNC(unsigned int member_mask)
 {
   __syncwarp(member_mask);
@@ -225,6 +226,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void WARP_SYNC(unsigned int member_mask)
 /**
  * Warp any
  */
+CCCL_DEPRECATED_BECAUSE("use __any_sync() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE int WARP_ANY(int predicate, unsigned int member_mask)
 {
   return __any_sync(member_mask, predicate);
@@ -233,6 +235,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE int WARP_ANY(int predicate, unsigned int member_m
 /**
  * Warp any
  */
+CCCL_DEPRECATED_BECAUSE("use __all_sync() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE int WARP_ALL(int predicate, unsigned int member_mask)
 {
   return __all_sync(member_mask, predicate);
@@ -241,6 +244,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE int WARP_ALL(int predicate, unsigned int member_m
 /**
  * Warp ballot
  */
+CCCL_DEPRECATED_BECAUSE("use __ballot_sync() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE int WARP_BALLOT(int predicate, unsigned int member_mask)
 {
   return __ballot_sync(member_mask, predicate);

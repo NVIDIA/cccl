@@ -700,7 +700,7 @@ struct WarpReduceShfl
   _CCCL_DEVICE _CCCL_FORCEINLINE T SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op)
   {
     // Get the start flags for each thread in the warp.
-    int warp_flags = WARP_BALLOT(flag, member_mask);
+    int warp_flags = __ballot_sync(member_mask, flag);
 
     // Convert to tail-segmented
     if (HEAD_SEGMENTED)

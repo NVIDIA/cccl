@@ -741,7 +741,7 @@ public:
       DigitCounterT warp_digit_prefix = *digit_counters[ITEM];
 
       // Warp-sync
-      WARP_SYNC(0xFFFFFFFF);
+      __syncwarp(0xFFFFFFFF);
 
       // Number of peers having same digit as me
       int32_t digit_count = __popc(peer_mask);
@@ -756,7 +756,7 @@ public:
       }
 
       // Warp-sync
-      WARP_SYNC(0xFFFFFFFF);
+      __syncwarp(0xFFFFFFFF);
 
       // Number of prior keys having same digit
       ranks[ITEM] = warp_digit_prefix + DigitCounterT(peer_digit_prefix);
@@ -978,7 +978,7 @@ struct BlockRadixRankMatchEarlyCounts
           match_masks[bin] = 0;
         }
       }
-      WARP_SYNC(WARP_MASK);
+      __syncwarp(WARP_MASK);
 
       // compute private per-part histograms
       int part = lane % NUM_PARTS;
@@ -992,7 +992,7 @@ struct BlockRadixRankMatchEarlyCounts
       // no extra work is necessary if NUM_PARTS == 1
       if (NUM_PARTS > 1)
       {
-        WARP_SYNC(WARP_MASK);
+        __syncwarp(WARP_MASK);
         // TODO: handle RADIX_DIGITS % WARP_THREADS != 0 if it becomes necessary
         constexpr int WARP_BINS_PER_THREAD = RADIX_DIGITS / WARP_THREADS;
         int bins[WARP_BINS_PER_THREAD];
@@ -1067,7 +1067,7 @@ struct BlockRadixRankMatchEarlyCounts
         ::cuda::std::uint32_t bin = Digit(keys[u]);
         int* p_match_mask         = &match_masks[bin];
         atomicOr(p_match_mask, lane_mask);
-        WARP_SYNC(WARP_MASK);
+        __syncwarp(WARP_MASK);
         int bin_mask    = *p_match_mask;
         int leader      = (WARP_THREADS - 1) - __clz(bin_mask);
         int warp_offset = 0;
@@ -1082,7 +1082,7 @@ struct BlockRadixRankMatchEarlyCounts
         {
           *p_match_mask = 0;
         }
-        WARP_SYNC(WARP_MASK);
+        __syncwarp(WARP_MASK);
         ranks[u] = warp_offset + popc - 1;
       }
     }
