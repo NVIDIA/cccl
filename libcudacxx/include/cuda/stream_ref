@@ -164,7 +164,11 @@ public:
         break;
       default:
         ::cudaGetLastError(); // Clear CUDA error state
+#ifdef _CCCL_HAS_CUDA_COMPILER
         ::cuda::__throw_cuda_error(__result, "Failed to query stream.");
+#else
+        throw ::std::runtime_error("Failed to query stream.");
+#endif
     }
     return true;
   }
