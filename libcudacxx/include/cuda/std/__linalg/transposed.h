@@ -104,6 +104,26 @@ public:
   private:
     using __nested_mapping_type = typename _Layout::template mapping<__detail::__transpose_extents_t<_Extents>>;
 
+    _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __required_span_size_noexcept()
+    {
+      return noexcept(__nested_mapping_.required_span_size());
+    }
+
+    _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __is_nested_unique_noexcept()
+    {
+      return noexcept(__nested_mapping_.is_unique());
+    }
+
+    _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __is_exhaustive_noexcept()
+    {
+      return noexcept(__nested_mapping_.is_exhaustive());
+    }
+
+    _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __is_strided_noexcept()
+    {
+      return noexcept(__nested_mapping_.is_strided());
+    }
+
   public:
     using extents_type = _Extents;
     using index_type   = typename extents_type::index_type;
@@ -194,26 +214,6 @@ public:
   private:
     __nested_mapping_type __nested_mapping_;
     extents_type __extents_;
-
-    _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __required_span_size_noexcept()
-    {
-      return noexcept(__nested_mapping_.required_span_size());
-    }
-
-    _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __is_nested_unique_noexcept()
-    {
-      return noexcept(__nested_mapping_.is_unique());
-    }
-
-    _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __is_exhaustive_noexcept()
-    {
-      return noexcept(__nested_mapping_.is_exhaustive());
-    }
-
-    _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __is_strided_noexcept()
-    {
-      return noexcept(__nested_mapping_.is_strided());
-    }
   };
 };
 
