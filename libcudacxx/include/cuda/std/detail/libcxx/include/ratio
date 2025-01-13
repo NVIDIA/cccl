@@ -456,7 +456,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT ratio_greater_equal : public bool_constant<
 template <class _R1, class _R2>
 struct __ratio_gcd
 {
-  typedef ratio<__static_gcd<_R1::num, _R2::num>::value, __static_lcm<_R1::den, _R2::den>::value> type;
+  using type = ratio<__static_gcd<_R1::num, _R2::num>::value, __static_lcm<_R1::den, _R2::den>::value>;
 };
 
 #if !defined(_CCCL_NO_VARIABLE_TEMPLATES)

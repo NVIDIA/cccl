@@ -34,14 +34,14 @@ template <class _Iter>
 class __wrap_iter
 {
 public:
-  typedef _Iter iterator_type;
-  typedef typename iterator_traits<iterator_type>::value_type value_type;
-  typedef typename iterator_traits<iterator_type>::difference_type difference_type;
-  typedef typename iterator_traits<iterator_type>::pointer pointer;
-  typedef typename iterator_traits<iterator_type>::reference reference;
-  typedef typename iterator_traits<iterator_type>::iterator_category iterator_category;
+  using iterator_type     = _Iter;
+  using value_type        = typename iterator_traits<iterator_type>::value_type;
+  using difference_type   = typename iterator_traits<iterator_type>::difference_type;
+  using pointer           = typename iterator_traits<iterator_type>::pointer;
+  using reference         = typename iterator_traits<iterator_type>::reference;
+  using iterator_category = typename iterator_traits<iterator_type>::iterator_category;
 #if _CCCL_STD_VER > 2011
-  typedef contiguous_iterator_tag iterator_concept;
+  using iterator_concept = contiguous_iterator_tag;
 #endif
 
 private:
@@ -241,9 +241,9 @@ struct __is_cpp17_contiguous_iterator<__wrap_iter<_It>> : true_type
 template <class _It>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT pointer_traits<__wrap_iter<_It>>
 {
-  typedef __wrap_iter<_It> pointer;
-  typedef typename pointer_traits<_It>::element_type element_type;
-  typedef typename pointer_traits<_It>::difference_type difference_type;
+  using pointer         = __wrap_iter<_It>;
+  using element_type    = typename pointer_traits<_It>::element_type;
+  using difference_type = typename pointer_traits<_It>::difference_type;
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr static element_type* to_address(pointer __w) noexcept
   {
