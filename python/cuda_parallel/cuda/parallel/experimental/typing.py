@@ -14,6 +14,8 @@ class DeviceArrayLike(Protocol):
     __cuda_array_interface__: dict
 
 
+# TODO: type GpuStruct appropriately. It should be any type that has
+# been decorated with `@gpu_struct`.
 GpuStruct = Any
 GpuStruct.__doc__ = """\
     Type of instances of classes decorated with @gpu_struct.
