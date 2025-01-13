@@ -14,7 +14,7 @@ ci/ @nvidia/cccl-infra-codeowners
 .clang-format @nvidia/cccl-infra-codeowners
 .clangd @nvidia/cccl-infra-codeowners
 c2h/ @nvidia/cccl-infra-codeowners
-.vscode @nvidia/cccl-infra-codeowners 
+.vscode @nvidia/cccl-infra-codeowners
 
 # cmake
 **/CMakeLists.txt @nvidia/cccl-cmake-codeowners
