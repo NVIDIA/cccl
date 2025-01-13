@@ -2008,7 +2008,9 @@ _CCCL_HOST_DEVICE auto optional_map_impl(Opt&& opt, F&& f)
   if (opt.has_value())
   {
     detail::invoke(std::forward<F>(f), *std::forward<Opt>(opt));
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     return make_optional(monostate{});
+    _CCCL_SUPPRESS_DEPRECATED_POP
   }
 
   return optional<monostate>(nullopt);
