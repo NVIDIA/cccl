@@ -102,12 +102,14 @@ struct using_cpo
     // this call to the CPO, as opposed to resolving to the thrust:: algorithm
     // via ADL. This is verified by checking that an event is returned.
     using thrust::async::exclusive_scan;
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     thrust::device_event e = exclusive_scan(
       std::get<PrefixArgIndices>(THRUST_FWD(prefix_tuple))...,
       input.cbegin(),
       input.cend(),
       output.begin(),
       std::get<PostfixArgIndices>(THRUST_FWD(postfix_tuple))...);
+    _CCCL_SUPPRESS_DEPRECATED_POP
     return e;
   }
 };
