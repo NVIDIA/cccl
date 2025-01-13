@@ -123,11 +123,11 @@ public:
     //   shall meet the Cpp17Swappable requirements and the allocators of a and b shall also be exchanged by calling
     //   swap as described in [swappable.requirements]. Otherwise, the allocators shall not be swapped, and the behavior
     //   is undefined unless a.get_allocator() == b.get_allocator().
-    _CCCL_IF_CONSTEXPR (allocator_traits<Alloc>::propagate_on_container_swap::value)
+    if constexpr (allocator_traits<Alloc>::propagate_on_container_swap::value)
     {
       swap(m_allocator, x.m_allocator);
     }
-    else _CCCL_IF_CONSTEXPR (!allocator_traits<Alloc>::is_always_equal::value)
+    else if constexpr (!allocator_traits<Alloc>::is_always_equal::value)
     {
       NV_IF_TARGET(NV_IS_DEVICE, (assert(m_allocator == other);), (if (m_allocator != x.m_allocator) {
                      throw allocator_mismatch_on_swap();
@@ -155,19 +155,29 @@ public:
 
   _CCCL_HOST_DEVICE void destroy(iterator first, iterator last) noexcept;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE void deallocate_on_allocator_mismatch(const contiguous_storage& other) noexcept
   {
-    // TODO(bgruber): replace dispatch by if constexpr in C++17
-    integral_constant<bool, allocator_traits<Alloc>::propagate_on_container_copy_assignment::value> c;
-    deallocate_on_allocator_mismatch_dispatch(c, other);
+    if constexpr (allocator_traits<Alloc>::propagate_on_container_copy_assignment::value)
+    {
+      if (m_allocator != other.m_allocator)
+      {
+        deallocate();
+      }
+    }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE void
   destroy_on_allocator_mismatch(const contiguous_storage& other, iterator first, iterator last) noexcept
   {
-    // TODO(bgruber): replace dispatch by if constexpr in C++17
-    integral_constant<bool, allocator_traits<Alloc>::propagate_on_container_copy_assignment::value> c;
-    destroy_on_allocator_mismatch_dispatch(c, other, first, last);
+    if constexpr (allocator_traits<Alloc>::propagate_on_container_copy_assignment::value)
+    {
+      if (m_allocator != other.m_allocator)
+      {
+        destroy(first, last);
+      }
+    }
   }
 
   _CCCL_HOST_DEVICE void set_allocator(const allocator_type& alloc);
@@ -175,7 +185,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE void propagate_allocator(const contiguous_storage& other)
   {
-    _CCCL_IF_CONSTEXPR (allocator_traits<Alloc>::propagate_on_container_copy_assignment::value)
+    if constexpr (allocator_traits<Alloc>::propagate_on_container_copy_assignment::value)
     {
       m_allocator = other.m_allocator;
     }
@@ -184,7 +194,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE void propagate_allocator(contiguous_storage& other)
   {
-    _CCCL_IF_CONSTEXPR (allocator_traits<Alloc>::propagate_on_container_move_assignment::value)
+    if constexpr (allocator_traits<Alloc>::propagate_on_container_move_assignment::value)
     {
       m_allocator = ::cuda::std::move(other.m_allocator);
     }
@@ -202,32 +212,6 @@ private:
   iterator m_begin;
 
   size_type m_size;
-
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE void deallocate_on_allocator_mismatch_dispatch(true_type, const contiguous_storage& other) noexcept
-  {
-    if (m_allocator != other.m_allocator)
-    {
-      deallocate();
-    }
-  }
-
-  _CCCL_HOST_DEVICE static void deallocate_on_allocator_mismatch_dispatch(false_type, const contiguous_storage&) noexcept
-  {}
-
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE void destroy_on_allocator_mismatch_dispatch(
-    true_type, const contiguous_storage& other, iterator first, iterator last) noexcept
-  {
-    if (m_allocator != other.m_allocator)
-    {
-      destroy(first, last);
-    }
-  } // end contiguous_storage::destroy_on_allocator_mismatch()
-
-  _CCCL_HOST_DEVICE static void destroy_on_allocator_mismatch_dispatch(
-    false_type, const contiguous_storage& other, iterator first, iterator last) noexcept
-  {}
 
   friend _CCCL_HOST_DEVICE void swap(contiguous_storage& lhs, contiguous_storage& rhs) noexcept(noexcept(lhs.swap(rhs)))
   {
