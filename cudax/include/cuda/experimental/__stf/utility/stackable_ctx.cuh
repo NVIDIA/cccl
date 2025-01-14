@@ -35,7 +35,21 @@ template <typename T>
 class stackable_logical_data;
 
 /**
- * @brief This class defines a context that behaves as a context which can have nested subcontexts (implemented as local CUDA graphs)
+ * @brief Base class with a virtual pop method to enable type erasure
+ *
+ * This is used to implement the automatic call to pop() on logical data when a
+ * context level is popped.
+ */
+class stackable_logical_data_impl_base
+{
+public:
+  virtual ~stackable_logical_data_impl_base() = default;
+  virtual void pop()                          = 0;
+};
+
+/**
+ * @brief This class defines a context that behaves as a context which can have nested subcontexts (implemented as local
+ * CUDA graphs)
  */
 class stackable_ctx
 {
@@ -46,18 +60,28 @@ public:
     /*
      * State of each nested context
      */
-    struct per_level {
-        per_level(context ctx, cudaStream_t support_stream, ::std::optional<stream_adapter> alloc_adapters) : ctx(mv(ctx)), support_stream(mv(support_stream)), alloc_adapters(mv(alloc_adapters)) {}
+    struct per_level
+    {
+      per_level(context ctx, cudaStream_t support_stream, ::std::optional<stream_adapter> alloc_adapters)
+          : ctx(mv(ctx))
+          , support_stream(mv(support_stream))
+          , alloc_adapters(mv(alloc_adapters))
+      {}
 
-        context ctx;
-        cudaStream_t support_stream;
-        // A wrapper to forward allocations from a level to the previous one (none is used at the root level)
-        ::std::optional<stream_adapter> alloc_adapters;
+      context ctx;
+      cudaStream_t support_stream;
+      // A wrapper to forward allocations from a level to the previous one (none is used at the root level)
+      ::std::optional<stream_adapter> alloc_adapters;
+
+      // This map keeps track of the logical data that were pushed in this level
+      // key: logical data's unique id
+      ::std::unordered_map<int, ::std::shared_ptr<stackable_logical_data_impl_base>> pushed_data;
     };
 
   public:
     impl()
     {
+      // Create the root level
       push();
     }
 
@@ -74,20 +98,22 @@ public:
         async_handles.emplace_back();
       }
 
-      if (levels.size() == 0) {
-          levels.emplace_back(stream_ctx(), nullptr, ::std::nullopt);
+      if (levels.size() == 0)
+      {
+        levels.emplace_back(stream_ctx(), nullptr, ::std::nullopt);
       }
-      else {
-          // Get a stream from previous context (we haven't pushed the new one yet)
-          cudaStream_t stream = levels[depth()].ctx.pick_stream();
+      else
+      {
+        // Get a stream from previous context (we haven't pushed the new one yet)
+        cudaStream_t stream = levels[depth()].ctx.pick_stream();
 
-          auto gctx = graph_ctx(stream, async_handles.back());
+        auto gctx = graph_ctx(stream, async_handles.back());
 
-          auto wrapper = stream_adapter(gctx, stream);
-          // FIXME : issue with the deinit phase
-          //   gctx.update_uncached_allocator(wrapper.allocator());
+        auto wrapper = stream_adapter(gctx, stream);
+        // FIXME : issue with the deinit phase
+        //   gctx.update_uncached_allocator(wrapper.allocator());
 
-          levels.emplace_back(gctx, stream, wrapper);
+        levels.emplace_back(gctx, stream, wrapper);
       }
     }
 
@@ -98,7 +124,13 @@ public:
     {
       _CCCL_ASSERT(levels.size() > 0, "Calling pop while no context was pushed");
 
-      auto &current_level = levels.back();
+      auto& current_level = levels.back();
+
+      // Automatically pop data if needed
+      for (auto& [key, d_impl] : current_level.pushed_data)
+      {
+        d_impl->pop();
+      }
 
       // Ensure everything is finished in the context
       current_level.ctx.finalize();
@@ -106,7 +138,7 @@ public:
       // Destroy the resources used in the wrapper allocator (if any)
       if (current_level.alloc_adapters.has_value())
       {
-          current_level.alloc_adapters.value().clear();
+        current_level.alloc_adapters.value().clear();
       }
 
       // Destroy the current level state
@@ -140,6 +172,19 @@ public:
     cudaStream_t get_stream(size_t level) const
     {
       return levels[level].support_stream;
+    }
+
+    void track_pushed_data(int data_id, ::std::shared_ptr<stackable_logical_data_impl_base> data_impl)
+    {
+      levels[depth()].pushed_data[data_id] = mv(data_impl);
+    }
+
+    void untrack_pushed_data(int data_id)
+    {
+      size_t erased = levels[depth()].pushed_data.erase(data_id);
+      // We must have erased exactly one value (at least one otherwise it was already removed, and it must be pushed
+      // only once (TODO check))
+      _CCCL_ASSERT(erased == 1, "invalid value");
     }
 
   private:
@@ -219,6 +264,16 @@ public:
     return get_ctx(depth()).host_launch(::std::forward<Pack>(pack)...);
   }
 
+  void track_pushed_data(int data_id, ::std::shared_ptr<stackable_logical_data_impl_base> data_impl)
+  {
+    pimpl->track_pushed_data(data_id, mv(data_impl));
+  }
+
+  void untrack_pushed_data(int data_id)
+  {
+    pimpl->untrack_pushed_data(data_id);
+  }
+
   void finalize()
   {
     // There must be only one level left
@@ -234,7 +289,7 @@ public:
 template <typename T>
 class stackable_logical_data
 {
-  class impl
+  class impl : public stackable_logical_data_impl_base
   {
   public:
     impl() = default;
@@ -258,7 +313,8 @@ class stackable_logical_data
 
     void push(access_mode m, data_place where = data_place::invalid)
     {
-      // We have not pushed yet, so the current depth is the one before pushing
+      // We have not pushed yet, so the current depth of the logical data is
+      // the one before pushing
       context& from_ctx = sctx.get_ctx(depth());
       context& to_ctx   = sctx.get_ctx(depth() + 1);
 
@@ -294,7 +350,7 @@ class stackable_logical_data
       s.push_back(mv(ld));
     }
 
-    void pop()
+    virtual void pop() override
     {
       // We are going to unfreeze the data, which is currently being used
       // in a (graph) ctx that uses this stream to launch the graph
@@ -318,6 +374,11 @@ class stackable_logical_data
     {
       symbol = mv(symbol_);
       s.back().set_symbol(symbol + "." + ::std::to_string(depth()));
+    }
+
+    auto& get_sctx()
+    {
+      return sctx;
     }
 
   private:
@@ -369,10 +430,19 @@ public:
   void push(access_mode m, data_place where = data_place::invalid)
   {
     pimpl->push(m, mv(where));
+
+    // Keep track of data that were pushed in this context. Note that the ID
+    // used is the ID of the logical data at this level.
+    pimpl->get_sctx().track_pushed_data(get_ld().get_unique_id(), pimpl);
   }
 
   void pop()
   {
+    // We remove the data from the map before popping it to have the id of the
+    // logical data. Doing so will prevent the automatic call to pop() when the
+    // context level gets popped.
+    pimpl->get_sctx().untrack_pushed_data(get_ld().get_unique_id());
+
     pimpl->pop();
   }
 
