@@ -263,7 +263,9 @@ __host__ __device__ bool tests()
 #if !defined(TEST_COMPILER_NVRTC) && !defined(TEST_COMPILER_CLANG_CUDA)
         cuda::std::nanf(""),
 #endif // !TEST_COMPILER_NVRTC && !TEST_COMPILER_CLANG_CUDA
-        __builtin_nanf("0x55550001"), // NaN with a payload
+#if defined(_CCCL_BUILTIN_NANF)
+        _CCCL_BUILTIN_NANF("0x55550001"), // NaN with a payload
+#endif // _CCCL_BUILTIN_NANF
         cuda::std::numeric_limits<float>::signaling_NaN(),
         cuda::std::numeric_limits<float>::quiet_NaN(),
         cuda::std::numeric_limits<float>::infinity()})

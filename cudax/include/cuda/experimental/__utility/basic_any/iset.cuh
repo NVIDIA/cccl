@@ -102,8 +102,8 @@ struct __iset_vptr : __base_vptr
   }
 
   template <class _Interface>
-  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API constexpr auto
-  __query_interface(_Interface) const noexcept -> __vptr_for<_Interface>
+  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API constexpr auto __query_interface(_Interface) const noexcept
+    -> __vptr_for<_Interface>
   {
     if (__vptr_->__kind_ == __vtable_kind::__normal)
     {

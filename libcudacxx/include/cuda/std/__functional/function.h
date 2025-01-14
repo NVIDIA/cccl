@@ -99,7 +99,7 @@ _LIBCUDACXX_HIDE_FROM_ABI bool __not_null(_Fp* __ptr)
 }
 
 template <class _Ret, class _Class>
-_LIBCUDACXX_HIDE_FROM_ABI bool __not_null(_Ret _Class::*__ptr)
+_LIBCUDACXX_HIDE_FROM_ABI bool __not_null(_Ret _Class::* __ptr)
 {
   return __ptr;
 }

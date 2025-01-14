@@ -53,45 +53,20 @@
  * \endcode
  */
 
-#if defined(CUB_DETAIL_CDPv1)
-
 // Special case for NVCC -- need to inform the device path about the kernels
 // that are launched from the host path.
-#  if defined(__CUDACC__) && defined(__CUDA_ARCH__)
-
-// seq_impl only used on platforms that do not support device synchronization.
-#    define THRUST_CDP_DISPATCH(par_impl, seq_impl)                    \
-      if (false)                                                       \
-      { /* Without this, the device pass won't compile any kernels. */ \
-        NV_IF_TARGET(NV_ANY_TARGET, par_impl);                         \
-      }                                                                \
-      NV_IF_TARGET(NV_PROVIDES_SM_90, seq_impl, par_impl)
-
-#  else // NVCC device pass
-
-// seq_impl only used on platforms that do not support device synchronization.
-#    define THRUST_CDP_DISPATCH(par_impl, seq_impl) NV_IF_TARGET(NV_PROVIDES_SM_90, seq_impl, par_impl)
-
-#  endif // NVCC device pass
-
-#else // CDPv1 unavailable. Always fallback to serial on device:
-
-// Special case for NVCC -- need to inform the device path about the kernels
-// that are launched from the host path.
-#  if defined(__CUDACC__) && defined(__CUDA_ARCH__)
+#if defined(__CUDACC__) && defined(__CUDA_ARCH__)
 
 // Device-side launch not supported, fallback to sequential in device code.
-#    define THRUST_CDP_DISPATCH(par_impl, seq_impl)                    \
-      if (false)                                                       \
-      { /* Without this, the device pass won't compile any kernels. */ \
-        NV_IF_TARGET(NV_ANY_TARGET, par_impl);                         \
-      }                                                                \
-      NV_IF_TARGET(NV_IS_HOST, par_impl, seq_impl)
+#  define THRUST_CDP_DISPATCH(par_impl, seq_impl)                    \
+    if (false)                                                       \
+    { /* Without this, the device pass won't compile any kernels. */ \
+      NV_IF_TARGET(NV_ANY_TARGET, par_impl);                         \
+    }                                                                \
+    NV_IF_TARGET(NV_IS_HOST, par_impl, seq_impl)
 
-#  else // !(NVCC device pass):
+#else // !(NVCC device pass):
 
-#    define THRUST_CDP_DISPATCH(par_impl, seq_impl) NV_IF_TARGET(NV_IS_HOST, par_impl, seq_impl)
+#  define THRUST_CDP_DISPATCH(par_impl, seq_impl) NV_IF_TARGET(NV_IS_HOST, par_impl, seq_impl)
 
-#  endif // NVCC device pass
-
-#endif // CDP version
+#endif // NVCC device pass

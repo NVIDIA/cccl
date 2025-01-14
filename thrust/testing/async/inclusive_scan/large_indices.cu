@@ -191,17 +191,17 @@ namespace
 {
 
 //------------------------------------------------------------------------------
-// Generate the output sequence using counting iterators and thrust::max<> for
+// Generate the output sequence using counting iterators and ::cuda::maximum<> for
 // custom operator overloads.
 struct custom_bin_op_overloads
 {
   using postfix_args_type = std::tuple< // List any extra arg overloads:
-    std::tuple<thrust::maximum<>> // - custom binary op
+    std::tuple<::cuda::maximum<>> // - custom binary op
     >;
 
   static postfix_args_type generate_postfix_args()
   {
-    return postfix_args_type{std::make_tuple(thrust::maximum<>{})};
+    return postfix_args_type{std::make_tuple(::cuda::maximum<>{})};
   }
 };
 

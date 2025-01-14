@@ -22,10 +22,10 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/addressof.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/swap.h>
 
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/void_t.h>
 
 #define THRUST_OPTIONAL_VERSION_MAJOR 0
@@ -154,16 +154,18 @@ template <
 #  endif
   typename = enable_if_t<std::is_member_pointer<decay_t<Fn>>::value>,
   int      = 0>
-_CCCL_HOST_DEVICE constexpr auto invoke(Fn&& f, Args&&... args) noexcept(
-  noexcept(std::mem_fn(f)(std::forward<Args>(args)...))) -> decltype(std::mem_fn(f)(std::forward<Args>(args)...))
+_CCCL_HOST_DEVICE constexpr auto
+invoke(Fn&& f, Args&&... args) noexcept(noexcept(std::mem_fn(f)(std::forward<Args>(args)...)))
+  -> decltype(std::mem_fn(f)(std::forward<Args>(args)...))
 {
   return std::mem_fn(f)(std::forward<Args>(args)...);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Fn, typename... Args, typename = enable_if_t<!std::is_member_pointer<decay_t<Fn>>::value>>
-_CCCL_HOST_DEVICE constexpr auto invoke(Fn&& f, Args&&... args) noexcept(noexcept(
-  std::forward<Fn>(f)(std::forward<Args>(args)...))) -> decltype(std::forward<Fn>(f)(std::forward<Args>(args)...))
+_CCCL_HOST_DEVICE constexpr auto
+invoke(Fn&& f, Args&&... args) noexcept(noexcept(std::forward<Fn>(f)(std::forward<Args>(args)...)))
+  -> decltype(std::forward<Fn>(f)(std::forward<Args>(args)...))
 {
   return std::forward<Fn>(f)(std::forward<Args>(args)...);
 }
@@ -396,7 +398,7 @@ struct optional_operations_base : optional_storage_base<T>
   template <class... Args>
   _CCCL_HOST_DEVICE void construct(Args&&... args) noexcept
   {
-    new (thrust::addressof(this->m_value)) T(std::forward<Args>(args)...);
+    new (::cuda::std::addressof(this->m_value)) T(std::forward<Args>(args)...);
     this->m_has_value = true;
   }
 
@@ -1553,13 +1555,13 @@ public:
       }
       else
       {
-        new (thrust::addressof(rhs.m_value)) T(std::move(this->m_value));
+        new (::cuda::std::addressof(rhs.m_value)) T(std::move(this->m_value));
         this->m_value.T::~T();
       }
     }
     else if (rhs.has_value())
     {
-      new (thrust::addressof(this->m_value)) T(std::move(rhs.m_value));
+      new (::cuda::std::addressof(this->m_value)) T(std::move(rhs.m_value));
       rhs.m_value.T::~T();
     }
   }
@@ -1571,7 +1573,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE constexpr const T* operator->() const
   {
-    return thrust::addressof(this->m_value);
+    return ::cuda::std::addressof(this->m_value);
   }
 
   /// \group pointer
@@ -1579,7 +1581,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR T* operator->()
   {
-    return thrust::addressof(this->m_value);
+    return ::cuda::std::addressof(this->m_value);
   }
 
   /// \return the stored value
@@ -2612,7 +2614,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <class U = T, detail::enable_if_t<!detail::is_optional<detail::decay_t<U>>::value>* = nullptr>
   _CCCL_HOST_DEVICE constexpr optional(U&& u)
-      : m_value(thrust::addressof(u))
+      : m_value(::cuda::std::addressof(u))
   {
     static_assert(std::is_lvalue_reference<U>::value, "U must be an lvalue");
   }
@@ -2654,7 +2656,7 @@ public:
   _CCCL_HOST_DEVICE optional& operator=(U&& u)
   {
     static_assert(std::is_lvalue_reference<U>::value, "U must be an lvalue");
-    m_value = thrust::addressof(u);
+    m_value = ::cuda::std::addressof(u);
     return *this;
   }
 
@@ -2666,7 +2668,7 @@ public:
   template <class U>
   _CCCL_HOST_DEVICE optional& operator=(const optional<U>& rhs)
   {
-    m_value = thrust::addressof(rhs.value());
+    m_value = ::cuda::std::addressof(rhs.value());
     return *this;
   }
 
@@ -2678,7 +2680,7 @@ public:
   template <class U>
   _CCCL_HOST_DEVICE T& emplace(U& u) noexcept
   {
-    m_value = thrust::addressof(u);
+    m_value = ::cuda::std::addressof(u);
     return *m_value;
   }
 

@@ -135,8 +135,8 @@ using dimensions =
                  cuda::std::index_sequence<3, 2, 5, 4>>;
 
 template <typename IndexType, size_t... Dimensions>
-auto build_static_extents(IndexType,
-                          cuda::std::index_sequence<Dimensions...>) -> cuda::std::extents<IndexType, Dimensions...>
+auto build_static_extents(IndexType, cuda::std::index_sequence<Dimensions...>)
+  -> cuda::std::extents<IndexType, Dimensions...>
 {
   return {};
 }

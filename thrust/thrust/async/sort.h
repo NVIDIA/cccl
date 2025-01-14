@@ -29,7 +29,6 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/cpp14_required.h>
 
 #if _CCCL_STD_VER >= 2014
 
@@ -146,7 +145,7 @@ struct stable_sort_fn final
 
 } // namespace stable_sort_detail
 
-THRUST_INLINE_CONSTANT stable_sort_detail::stable_sort_fn stable_sort{};
+_CCCL_GLOBAL_CONSTANT stable_sort_detail::stable_sort_fn stable_sort{};
 
 namespace fallback
 {
@@ -259,7 +258,7 @@ struct sort_fn final
 
 } // namespace sort_detail
 
-THRUST_INLINE_CONSTANT sort_detail::sort_fn sort{};
+_CCCL_GLOBAL_CONSTANT sort_detail::sort_fn sort{};
 
 /*! \endcond
  */

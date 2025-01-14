@@ -12,21 +12,21 @@ Compiler Macros
 
 **Host compiler macros**:
 
-+-----------------------------+--------------------------------+
-| ``_CCCL_COMPILER(CLANG)``   | Clang                          |
-+-----------------------------+--------------------------------+
-| ``_CCCL_COMPILER(GCC)``     | GCC                            |
-+-----------------------------+--------------------------------+
-| ``_CCCL_COMPILER(NVHPC)``   | Nvidia HPC compiler            |
-+-----------------------------+--------------------------------+
-| ``_CCCL_COMPILER(MSVC)``    | Microsoft Visual Studio        |
-+-----------------------------+--------------------------------+
-| ``_CCCL_COMPILER(MSVC2017)`` | Microsoft Visual Studio 2017  |
-+-----------------------------+--------------------------------+
-| ``_CCCL_COMPILER(MSVC2019)`` | Microsoft Visual Studio 2019  |
-+-----------------------------+--------------------------------+
-| ``_CCCL_COMPILER(MSVC2022)`` | Microsoft Visual Studio 2022  |
-+-----------------------------+--------------------------------+
++------------------------------+--------------------------------+
+| ``_CCCL_COMPILER(CLANG)``    | Clang                          |
++------------------------------+--------------------------------+
+| ``_CCCL_COMPILER(GCC)``      | GCC                            |
++------------------------------+--------------------------------+
+| ``_CCCL_COMPILER(NVHPC)``    | Nvidia HPC compiler            |
++------------------------------+--------------------------------+
+| ``_CCCL_COMPILER(MSVC)``     | Microsoft Visual Studio        |
++------------------------------+--------------------------------+
+| ``_CCCL_COMPILER(MSVC2017)`` | Microsoft Visual Studio 2017   |
++------------------------------+--------------------------------+
+| ``_CCCL_COMPILER(MSVC2019)`` | Microsoft Visual Studio 2019   |
++------------------------------+--------------------------------+
+| ``_CCCL_COMPILER(MSVC2022)`` | Microsoft Visual Studio 2022   |
++------------------------------+--------------------------------+
 
 The ``_CCCL_COMPILER`` function-like macro can also be used to check the version of a compiler.
 
@@ -104,10 +104,10 @@ OS Macros
 
 ----
 
-CUDA Extension Macros
----------------------
+Execution Space
+---------------
 
-**Execution space**:
+**Functions**
 
 +-----------------------+-----------------------+
 | ``_CCCL_HOST``        | Host function         |
@@ -117,14 +117,57 @@ CUDA Extension Macros
 | ``_CCCL_HOST_DEVICE`` | Host/Device function  |
 +-----------------------+-----------------------+
 
-**Other CUDA attributes**:
+In addition, ``_CCCL_EXEC_CHECK_DISABLE`` disables the execution space check for the NVHPC compiler
+
+**Target Macros**
+
++---------------------------------------------------------------------------------+--------------------------------------------------------------------------+
+| ``NV_IF_TARGET(TARGET, (CODE))``                                                | Enable ``CODE`` only if ``TARGET`` is satisfied.                         |
++---------------------------------------------------------------------------------+--------------------------------------------------------------------------+
+| ``NV_IF_ELSE_TARGET(TARGET, (IF_CODE), (ELSE_CODE))``                           | Enable ``CODE_IF`` if ``TARGET`` is satisfied, ``CODE_ELSE`` otherwise.  |
++---------------------------------------------------------------------------------+--------------------------------------------------------------------------+
+| ``NV_DISPATCH_TARGET(TARGET1, (TARGET1_CODE), ..., TARGET_N, (TARGET_N_CODE))`` | Enable a single code block if any of ``TARGET_i`` is satisfied.          |
++---------------------------------------------------------------------------------+--------------------------------------------------------------------------+
+
+Possible ``TARGET`` values:
+
++---------------------------+-------------------------------------------------------------------+
+| ``NV_IS_HOST``            | Host-code target                                                  |
++---------------------------+-------------------------------------------------------------------+
+| ``NV_IS_DEVICE``          | Device-code target                                                |
++---------------------------+-------------------------------------------------------------------+
+| ``NV_PROVIDES_SM_<VER>``  | SM architecture is at least ``VER``, e.g. ``NV_PROVIDES_SM_80``   |
++---------------------------+-------------------------------------------------------------------+
+| ``NV_IS_EXACTLY_SM_<NN>`` | SM architecture is exactly ``VER``, e.g. ``NV_IS_EXACTLY_SM_80``  |
++---------------------------+-------------------------------------------------------------------+
+
+Usage example:
+
+.. code-block:: c++
+
+    NV_IF_TARGET(NV_IS_DEVICE,    (auto x = threadIdx.x; return x;));
+    NV_IF_ELSE_TARGET(NV_IS_HOST, (return 0;), (auto x = threadIdx.x; return x;));
+    NV_DISPATCH_TARGET(NV_PROVIDES_SM_90,   (return "Hopper+";),
+                       NV_IS_EXACTLY_SM_75, (return "Turing";),
+                       NV_IS_HOST,          (return "Host";))
+
+*Pitfalls*:
+
+* All target macros generate the code in a local scope, i.e. ``{ code }``.
+* ``NV_DISPATCH_TARGET`` is *NOT* a switch statement. It enables the code associated with the first condition satisfied.
+* The target macros take ``code`` as an argument, so it is *not* possible to use any conditional compilation, .e.g ``#if _CCCL_STD_VER >= 20`` within a target macro
+
+----
+
+CUDA Extension Macros
+---------------------
+
+**CUDA attributes**:
 
 +------------------------------+----------------------------------------------------------+
 | ``_CCCL_GRID_CONSTANT``      | Grid constant kernel parameter                           |
 +------------------------------+----------------------------------------------------------+
 | ``_CCCL_GLOBAL_CONSTANT``    | Host/device global scope constant (``inline constexpr``) |
-+------------------------------+----------------------------------------------------------+
-| ``_CCCL_EXEC_CHECK_DISABLE`` | Disable execution space check for the NVHPC compiler     |
 +------------------------------+----------------------------------------------------------+
 
 **Extended floating-point types**:
@@ -140,7 +183,6 @@ CUDA Extension Macros
 +------------------------------+----------------------------------------------------------------+
 | ``_LIBCUDACXX_HAS_NVBF16``   | `__nv_bfloat16/__nv_bfloat162` host/device support (CUDA 12.2) |
 +------------------------------+----------------------------------------------------------------+
-
 
 ----
 

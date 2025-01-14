@@ -91,16 +91,16 @@ public:
   {}
 
   template <class... Args>
-  __host__ __device__ TEST_CONSTEXPR_CXX14 auto
-  operator()(Args&&... args) -> decltype(pred_(cuda::std::forward<Args>(args)...))
+  __host__ __device__ TEST_CONSTEXPR_CXX14 auto operator()(Args&&... args)
+    -> decltype(pred_(cuda::std::forward<Args>(args)...))
   {
     ++(*count_);
     return pred_(cuda::std::forward<Args>(args)...);
   }
 
   template <class... Args>
-  __host__ __device__ TEST_CONSTEXPR_CXX14 auto
-  operator()(Args&&... args) const -> decltype(pred_(cuda::std::forward<Args>(args)...))
+  __host__ __device__ TEST_CONSTEXPR_CXX14 auto operator()(Args&&... args) const
+    -> decltype(pred_(cuda::std::forward<Args>(args)...))
   {
     ++(*count_);
     return pred_(cuda::std::forward<Args>(args)...);

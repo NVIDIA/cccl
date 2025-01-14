@@ -52,6 +52,9 @@
 #  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/__algorithm/max.h>
+#  include <cuda/std/__algorithm/min.h>
+
 #  include <cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -127,8 +130,8 @@ THRUST_DEVICE_FUNCTION Size merge_path(It1 a, Size aCount, It2 b, Size bCount, S
 {
   using T = typename thrust::iterator_traits<It1>::value_type;
 
-  Size begin = thrust::max<Size>(0, diag - bCount);
-  Size end   = thrust::min<Size>(diag, aCount);
+  Size begin = ::cuda::std::max<Size>(0, diag - bCount);
+  Size end   = ::cuda::std::min<Size>(diag, aCount);
 
   while (begin < end)
   {

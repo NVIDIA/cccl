@@ -45,7 +45,7 @@ namespace detail
 template <typename, bool x>
 struct depend_on_instantiation
 {
-  THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT bool value = x;
+  static constexpr bool value = x;
 };
 
 #if _CCCL_STD_VER >= 2017

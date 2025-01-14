@@ -65,8 +65,8 @@ struct __tupl<_CUDA_VSTD::index_sequence<_Idx...>, _Ts...> : __box<_Idx, _Ts>...
 
   template <class _Fn, class _Self, class... _Us>
   _CUDAX_TRIVIAL_API static auto __for_each(_Fn&& __fn, _Self&& __self, _Us&&... __us) //
-    noexcept((__nothrow_callable<_Fn, _Us..., __copy_cvref_t<_Self, _Ts>>
-              && ...)) -> _CUDA_VSTD::enable_if_t<(__callable<_Fn, _Us..., __copy_cvref_t<_Self, _Ts>> && ...)>
+    noexcept((__nothrow_callable<_Fn, _Us..., __copy_cvref_t<_Self, _Ts>> && ...))
+      -> _CUDA_VSTD::enable_if_t<(__callable<_Fn, _Us..., __copy_cvref_t<_Self, _Ts>> && ...)>
   {
     return (
       static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)..., static_cast<_Self&&>(__self).__box<_Idx, _Ts>::__value_),

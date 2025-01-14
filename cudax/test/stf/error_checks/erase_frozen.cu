@@ -43,8 +43,7 @@ int main()
 #if _CCCL_COMPILER(MSVC)
   signal(SIGABRT, &cleanupRoutine);
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC)
-  struct sigaction sigabrt_action
-  {};
+  struct sigaction sigabrt_action{};
   memset(&sigabrt_action, 0, sizeof(sigabrt_action));
   sigabrt_action.sa_handler = &cleanupRoutine;
 
