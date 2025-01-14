@@ -16,18 +16,19 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
+#include "common.h"
 #include "test_macros.h"
 
 template <class T>
 __host__ __device__ void test(T expected)
 {
-  assert(cuda::std::numeric_limits<T>::min() == expected);
+  assert(float_eq(cuda::std::numeric_limits<T>::min(), expected));
   assert(cuda::std::numeric_limits<T>::is_bounded || !cuda::std::numeric_limits<T>::is_signed);
-  assert(cuda::std::numeric_limits<const T>::min() == expected);
+  assert(float_eq(cuda::std::numeric_limits<const T>::min(), expected));
   assert(cuda::std::numeric_limits<const T>::is_bounded || !cuda::std::numeric_limits<const T>::is_signed);
-  assert(cuda::std::numeric_limits<volatile T>::min() == expected);
+  assert(float_eq(cuda::std::numeric_limits<volatile T>::min(), expected));
   assert(cuda::std::numeric_limits<volatile T>::is_bounded || !cuda::std::numeric_limits<volatile T>::is_signed);
-  assert(cuda::std::numeric_limits<const volatile T>::min() == expected);
+  assert(float_eq(cuda::std::numeric_limits<const volatile T>::min(), expected));
   assert(cuda::std::numeric_limits<const volatile T>::is_bounded
          || !cuda::std::numeric_limits<const volatile T>::is_signed);
 }
@@ -65,6 +66,12 @@ int main(int, char**)
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
   test<long double>(LDBL_MIN);
 #endif
+#if defined(_LIBCUDACXX_HAS_NVFP16)
+  test<__half>(__double2half(6.103515625e-05));
+#endif // _LIBCUDACXX_HAS_NVFP16
+#if defined(_LIBCUDACXX_HAS_NVBF16)
+  test<__nv_bfloat16>(__double2bfloat16(1.17549435082228750796873653722e-38));
+#endif // _LIBCUDACXX_HAS_NVBF16
 
   return 0;
 }
