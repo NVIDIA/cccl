@@ -135,11 +135,6 @@ _LIBCUDACXX_HIDE_FROM_ABI __half atan2(__half __x, __half __y)
   return __float2half(::atan2f(__half2float(__x), __half2float(__y)));
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI __half sqrt(__half __x)
-{
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::hsqrt(__x);), (return __float2half(::sqrtf(__half2float(__x)));))
-}
-
 // floating point helper
 _LIBCUDACXX_HIDE_FROM_ABI __half __constexpr_copysign(__half __x, __half __y) noexcept
 {

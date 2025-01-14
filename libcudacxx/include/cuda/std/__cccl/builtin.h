@@ -150,6 +150,20 @@
 #  undef _CCCL_BUILTIN_BSWAP128
 #endif // _CCCL_CUDA_COMPILER(NVCC)
 
+#if _CCCL_CHECK_BUILTIN(builtin_cbrt) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_CBRTF(...) __builtin_cbrtf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_CBRT(...)  __builtin_cbrt(__VA_ARGS__)
+#  define _CCCL_BUILTIN_CBRTL(...) __builtin_cbrtl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_cbrt)
+
+// Below 11.7 nvcc treats the builtin as a host only function
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "cbrt"
+#if _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_CBRTF
+#  undef _CCCL_BUILTIN_CBRT
+#  undef _CCCL_BUILTIN_CBRTL
+#endif // _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
+
 #if _CCCL_CHECK_BUILTIN(builtin_ceil) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_CEILF(...) __builtin_ceilf(__VA_ARGS__)
 #  define _CCCL_BUILTIN_CEIL(...)  __builtin_ceil(__VA_ARGS__)
@@ -574,6 +588,19 @@
 // Below 11.7 nvcc treats the builtin as a host only function
 #if _CCCL_CUDACC_BELOW(11, 7)
 #  undef _CCCL_BUILTIN_SIGNBIT
+#endif // _CCCL_CUDACC_BELOW(11, 7)
+
+#if _CCCL_CHECK_BUILTIN(builtin_sqrt) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_SQRTF(...) __builtin_sqrtf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_SQRT(...)  __builtin_sqrt(__VA_ARGS__)
+#  define _CCCL_BUILTIN_SQRTL(...) __builtin_sqrtl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_sqrt)
+
+// Below 11.7 nvcc treats the builtin as a host only function
+#if _CCCL_CUDACC_BELOW(11, 7)
+#  undef _CCCL_BUILTIN_SQRTF
+#  undef _CCCL_BUILTIN_SQRT
+#  undef _CCCL_BUILTIN_SQRTL
 #endif // _CCCL_CUDACC_BELOW(11, 7)
 
 #if _CCCL_CHECK_BUILTIN(builtin_trunc) || _CCCL_COMPILER(GCC)
