@@ -159,7 +159,7 @@ struct reduce_fn final
 
 } // namespace reduce_detail
 
-THRUST_INLINE_CONSTANT reduce_detail::reduce_fn reduce{};
+_CCCL_GLOBAL_CONSTANT reduce_detail::reduce_fn reduce{};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -295,7 +295,7 @@ struct reduce_into_fn final
 
 } // namespace reduce_into_detail
 
-THRUST_INLINE_CONSTANT reduce_into_detail::reduce_into_fn reduce_into{};
+_CCCL_GLOBAL_CONSTANT reduce_into_detail::reduce_into_fn reduce_into{};
 
 /*! \endcond
  */

@@ -54,6 +54,12 @@ int main(int, char**)
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
   test<long double, true>();
 #endif
+#if defined(_LIBCUDACXX_HAS_NVFP16)
+  test<__half, true>();
+#endif // _LIBCUDACXX_HAS_NVFP16
+#if defined(_LIBCUDACXX_HAS_NVBF16)
+  test<__nv_bfloat16, true>();
+#endif // _LIBCUDACXX_HAS_NVBF16
 
   return 0;
 }

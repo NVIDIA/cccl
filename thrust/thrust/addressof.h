@@ -15,20 +15,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/memory_wrapper.h>
+#include <cuda/std/__memory/addressof.h>
 
 THRUST_NAMESPACE_BEGIN
-
-///////////////////////////////////////////////////////////////////////////////
-
-/*! Obtains the actual address of the object or function arg, even in presence of overloaded operator&.
- */
-template <typename T>
-_CCCL_HOST_DEVICE T* addressof(T& arg)
-{
-  return reinterpret_cast<T*>(&const_cast<char&>(reinterpret_cast<const volatile char&>(arg)));
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
+using ::cuda::std::addressof;
 THRUST_NAMESPACE_END

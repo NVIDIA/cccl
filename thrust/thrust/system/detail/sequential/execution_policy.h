@@ -70,7 +70,7 @@ struct execution_policy : thrust::execution_policy<Derived>
   }
 };
 
-THRUST_INLINE_CONSTANT tag seq;
+_CCCL_GLOBAL_CONSTANT tag seq;
 
 } // namespace sequential
 } // namespace detail
