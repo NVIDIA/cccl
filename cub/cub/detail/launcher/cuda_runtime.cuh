@@ -10,9 +10,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_device.cuh>
+#if _CCCL_HAS_CUDA_COMPILER
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+#  include <cub/util_device.cuh>
+
+#  include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -56,3 +58,5 @@ struct TripleChevronFactory
 } // namespace detail
 
 CUB_NAMESPACE_END
+
+#endif // _CCCL_CUDA_COMPILER
