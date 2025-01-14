@@ -74,9 +74,7 @@ int main()
     c(i) += b(i);
   };
 
-  lA.pop();
-  lA2.pop();
-  lC.pop();
+  // lA, lA2 and lC are automatically popped
 
   sctx.pop();
 
@@ -96,6 +94,7 @@ int main()
       EXPECT(a2(i) == 5 * i + 4);
     }
   };
+  // explicit pop
   lA2.pop();
   sctx.pop();
 
