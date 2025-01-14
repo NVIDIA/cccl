@@ -116,7 +116,7 @@ class short_key_verification_helper
 private:
   using key_t = KeyT;
   // The histogram size of the keys being sorted for later verification
-  static constexpr auto max_histo_size = 1ULL << (8 * sizeof(key_t));
+  const std::int64_t max_histo_size = std::int64_t{1} << ::cuda::std::numeric_limits<key_t>::digits;
 
   // Holding the histogram of the keys being sorted for verification
   c2h::host_vector<std::size_t> keys_histogram{};
@@ -170,13 +170,13 @@ private:
   c2h::host_vector<int> compute_histogram_of_series(std::size_t segment_offset, std::size_t segment_end) const
   {
     // The i-th full cycle begins after segment_offset
-    std::size_t start_cycle = cuda::ceil_div(segment_offset, sequence_length);
+    const auto start_cycle = cuda::ceil_div(segment_offset, sequence_length);
 
     // The last full cycle ending before segment_end
-    std::size_t end_cycle = segment_end / sequence_length;
+    const auto end_cycle = segment_end / sequence_length;
 
     // Number of full cycles repeating the sequence
-    int full_cycles = (end_cycle > start_cycle) ? static_cast<int>(end_cycle - start_cycle) : 0;
+    const int full_cycles = (end_cycle > start_cycle) ? static_cast<int>(end_cycle - start_cycle) : 0;
 
     // Add contributions from full cycles
     c2h::host_vector<int> histogram(sequence_length, full_cycles);
@@ -184,14 +184,14 @@ private:
     // Partial cycles preceding the first full cycle
     for (std::size_t j = segment_offset; j < start_cycle * sequence_length; ++j)
     {
-      std::size_t value = j % sequence_length;
+      const auto value = j % sequence_length;
       histogram[value]++;
     }
 
     // Partial cycles following the last full cycle
     for (std::size_t j = end_cycle * sequence_length; j < segment_end; ++j)
     {
-      std::size_t value = j % sequence_length;
+      const auto value = j % sequence_length;
       histogram[value]++;
     }
     return histogram;

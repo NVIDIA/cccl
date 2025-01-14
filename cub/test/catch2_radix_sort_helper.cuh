@@ -60,7 +60,7 @@ using all_offset_types =
 template <typename OffsetT, OffsetT Step>
 struct segment_iterator
 {
-  std::int64_t last = 0;
+  OffsetT last = 0;
 
   segment_iterator(std::int64_t last1)
       : last{last1}
@@ -68,7 +68,7 @@ struct segment_iterator
 
   __host__ __device__ OffsetT operator()(std::int64_t x) const
   {
-    return x * Step > last ? last : x * Step;
+    return ::cuda::std::min(last, x * Step);
   }
 };
 
