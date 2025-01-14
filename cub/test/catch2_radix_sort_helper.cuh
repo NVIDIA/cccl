@@ -61,7 +61,7 @@ using all_offset_types =
 template <typename OffsetT, OffsetT Step>
 struct segment_iterator
 {
-  std::int64_t last = 0;
+  OffsetT last = 0;
 
   segment_iterator(std::int64_t last1)
       : last{last1}
