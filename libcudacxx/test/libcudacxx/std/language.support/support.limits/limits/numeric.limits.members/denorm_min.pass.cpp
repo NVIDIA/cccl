@@ -14,15 +14,16 @@
 #include <cuda/std/cfloat>
 #include <cuda/std/limits>
 
+#include "common.h"
 #include "test_macros.h"
 
 template <class T>
 __host__ __device__ void test(T expected)
 {
-  assert(cuda::std::numeric_limits<T>::denorm_min() == expected);
-  assert(cuda::std::numeric_limits<const T>::denorm_min() == expected);
-  assert(cuda::std::numeric_limits<volatile T>::denorm_min() == expected);
-  assert(cuda::std::numeric_limits<const volatile T>::denorm_min() == expected);
+  assert(float_eq(cuda::std::numeric_limits<T>::denorm_min(), expected));
+  assert(float_eq(cuda::std::numeric_limits<const T>::denorm_min(), expected));
+  assert(float_eq(cuda::std::numeric_limits<volatile T>::denorm_min(), expected));
+  assert(float_eq(cuda::std::numeric_limits<const volatile T>::denorm_min(), expected));
 }
 
 int main(int, char**)
@@ -65,6 +66,12 @@ int main(int, char**)
   test<long double>(LDBL_TRUE_MIN);
 #  endif
 #endif
+#if defined(_LIBCUDACXX_HAS_NVFP16)
+  test<__half>(__double2half(5.9604644775390625e-08));
+#endif // _LIBCUDACXX_HAS_NVFP16
+#if defined(_LIBCUDACXX_HAS_NVBF16)
+  test<__nv_bfloat16>(__double2bfloat16(9.18354961579912115600575419705e-41));
+#endif // _LIBCUDACXX_HAS_NVBF16
 #if !defined(__FLT_DENORM_MIN__) && !defined(FLT_TRUE_MIN)
 #  error Test has no expected values for floating point types
 #endif

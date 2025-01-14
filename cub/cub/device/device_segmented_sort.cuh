@@ -41,9 +41,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/choose_offset.cuh>
 #include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_segmented_sort.cuh>
 #include <cub/util_namespace.cuh>
+
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -140,16 +143,19 @@ private:
     std::size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
     constexpr bool is_descending     = false;
     constexpr bool is_overwrite_okay = false;
+
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
     using DispatchT =
-      DispatchSegmentedSort<is_descending, KeyT, cub::NullType, int, BeginOffsetIteratorT, EndOffsetIteratorT>;
+      DispatchSegmentedSort<is_descending, KeyT, cub::NullType, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
@@ -286,8 +292,8 @@ public:
     std::size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
@@ -313,16 +319,19 @@ private:
     std::size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
     constexpr bool is_descending     = true;
     constexpr bool is_overwrite_okay = false;
+
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
     using DispatchT =
-      DispatchSegmentedSort<is_descending, KeyT, cub::NullType, int, BeginOffsetIteratorT, EndOffsetIteratorT>;
+      DispatchSegmentedSort<is_descending, KeyT, cub::NullType, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
@@ -454,8 +463,8 @@ public:
     std::size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
@@ -480,17 +489,18 @@ private:
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
     constexpr bool is_descending     = false;
     constexpr bool is_overwrite_okay = true;
-
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
     using DispatchT =
-      DispatchSegmentedSort<is_descending, KeyT, cub::NullType, int, BeginOffsetIteratorT, EndOffsetIteratorT>;
+      DispatchSegmentedSort<is_descending, KeyT, cub::NullType, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     DoubleBuffer<NullType> d_values;
 
@@ -632,8 +642,8 @@ public:
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
@@ -650,17 +660,18 @@ private:
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
     constexpr bool is_descending     = true;
     constexpr bool is_overwrite_okay = true;
-
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
     using DispatchT =
-      DispatchSegmentedSort<is_descending, KeyT, cub::NullType, int, BeginOffsetIteratorT, EndOffsetIteratorT>;
+      DispatchSegmentedSort<is_descending, KeyT, cub::NullType, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     DoubleBuffer<NullType> d_values;
 
@@ -803,8 +814,8 @@ public:
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
@@ -931,8 +942,8 @@ public:
     std::size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
@@ -1067,8 +1078,8 @@ public:
     std::size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
@@ -1213,8 +1224,8 @@ public:
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
@@ -1350,8 +1361,8 @@ public:
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
@@ -1371,15 +1382,19 @@ private:
     KeyT* d_keys_out,
     const ValueT* d_values_in,
     ValueT* d_values_out,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
     constexpr bool is_descending     = false;
     constexpr bool is_overwrite_okay = false;
-    using DispatchT = DispatchSegmentedSort<is_descending, KeyT, ValueT, int, BeginOffsetIteratorT, EndOffsetIteratorT>;
+
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
+    using DispatchT =
+      DispatchSegmentedSort<is_descending, KeyT, ValueT, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
@@ -1539,8 +1554,8 @@ public:
     KeyT* d_keys_out,
     const ValueT* d_values_in,
     ValueT* d_values_out,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
@@ -1570,15 +1585,19 @@ private:
     KeyT* d_keys_out,
     const ValueT* d_values_in,
     ValueT* d_values_out,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
     constexpr bool is_descending     = true;
     constexpr bool is_overwrite_okay = false;
-    using DispatchT = DispatchSegmentedSort<is_descending, KeyT, ValueT, int, BeginOffsetIteratorT, EndOffsetIteratorT>;
+
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
+    using DispatchT =
+      DispatchSegmentedSort<is_descending, KeyT, ValueT, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
@@ -1734,8 +1753,8 @@ public:
     KeyT* d_keys_out,
     const ValueT* d_values_in,
     ValueT* d_values_out,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
@@ -1763,15 +1782,19 @@ private:
     std::size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
     constexpr bool is_descending     = false;
     constexpr bool is_overwrite_okay = true;
-    using DispatchT = DispatchSegmentedSort<is_descending, KeyT, ValueT, int, BeginOffsetIteratorT, EndOffsetIteratorT>;
+
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
+    using DispatchT =
+      DispatchSegmentedSort<is_descending, KeyT, ValueT, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     return DispatchT::Dispatch(
       d_temp_storage,
@@ -1931,8 +1954,8 @@ public:
     std::size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
@@ -1958,15 +1981,19 @@ private:
     std::size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
     constexpr bool is_descending     = true;
     constexpr bool is_overwrite_okay = true;
-    using DispatchT = DispatchSegmentedSort<is_descending, KeyT, ValueT, int, BeginOffsetIteratorT, EndOffsetIteratorT>;
+
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
+    using DispatchT =
+      DispatchSegmentedSort<is_descending, KeyT, ValueT, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     return DispatchT::Dispatch(
       d_temp_storage,
@@ -2125,8 +2152,8 @@ public:
     std::size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
@@ -2281,8 +2308,8 @@ public:
     KeyT* d_keys_out,
     const ValueT* d_values_in,
     ValueT* d_values_out,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
@@ -2439,8 +2466,8 @@ public:
     KeyT* d_keys_out,
     const ValueT* d_values_in,
     ValueT* d_values_out,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
@@ -2605,8 +2632,8 @@ public:
     std::size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
@@ -2768,8 +2795,8 @@ public:
     std::size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)

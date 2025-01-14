@@ -83,8 +83,11 @@ CUB_NAMESPACE_BEGIN
  * @param[in] spmv_params
  *   SpMV input parameter bundle
  */
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename AgentSpmvPolicyT, typename ValueT, typename OffsetT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmv1ColKernel(SpmvParams<ValueT, OffsetT> spmv_params)
+CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead")
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmv1ColKernel(SpmvParams<ValueT, OffsetT> spmv_params) //
+  _CCCL_SUPPRESS_DEPRECATED_POP
 {
   using VectorValueIteratorT =
     CacheModifiedInputIterator<AgentSpmvPolicyT::VECTOR_VALUES_LOAD_MODIFIER, ValueT, OffsetT>;
@@ -132,8 +135,9 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmv1ColKernel(SpmvParams<ValueT, Offset
  *   SpMV input parameter bundle
  */
 template <typename SpmvPolicyT, typename OffsetT, typename CoordinateT, typename SpmvParamsT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void
-DeviceSpmvSearchKernel(int num_merge_tiles, CoordinateT* d_tile_coordinates, SpmvParamsT spmv_params)
+CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead")
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmvSearchKernel(
+  int num_merge_tiles, CoordinateT* d_tile_coordinates, SpmvParamsT spmv_params)
 {
   /// Constants
   enum
@@ -217,6 +221,7 @@ template <typename SpmvPolicyT,
           typename CoordinateT,
           bool HAS_ALPHA,
           bool HAS_BETA>
+CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead")
 __launch_bounds__(int(SpmvPolicyT::BLOCK_THREADS)) CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmvKernel(
   SpmvParams<ValueT, OffsetT> spmv_params,
   CoordinateT* d_tile_coordinates,
@@ -226,7 +231,9 @@ __launch_bounds__(int(SpmvPolicyT::BLOCK_THREADS)) CUB_DETAIL_KERNEL_ATTRIBUTES 
   int num_segment_fixup_tiles)
 {
   // Spmv agent type specialization
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   using AgentSpmvT = AgentSpmv<SpmvPolicyT, ValueT, OffsetT, HAS_ALPHA, HAS_BETA>;
+  _CCCL_SUPPRESS_DEPRECATED_POP
 
   // Shared memory for AgentSpmv
   __shared__ typename AgentSpmvT::TempStorage temp_storage;
@@ -248,6 +255,7 @@ __launch_bounds__(int(SpmvPolicyT::BLOCK_THREADS)) CUB_DETAIL_KERNEL_ATTRIBUTES 
  *   Whether the input parameter Beta is 0
  */
 template <typename ValueT, typename OffsetT, bool HAS_BETA>
+CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead")
 CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmvEmptyMatrixKernel(SpmvParams<ValueT, OffsetT> spmv_params)
 {
   const int row = static_cast<int>(threadIdx.x + blockIdx.x * blockDim.x);
@@ -298,18 +306,21 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmvEmptyMatrixKernel(SpmvParams<ValueT,
  * @param[in] tile_state
  *   Tile status interface
  */
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename AgentSegmentFixupPolicyT,
           typename PairsInputIteratorT,
           typename AggregatesOutputIteratorT,
           typename OffsetT,
           typename ScanTileStateT>
+CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead")
 __launch_bounds__(int(AgentSegmentFixupPolicyT::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentFixupKernel(
     PairsInputIteratorT d_pairs_in,
     AggregatesOutputIteratorT d_aggregates_out,
     OffsetT num_items,
     int num_tiles,
-    ScanTileStateT tile_state)
+    ScanTileStateT tile_state) //
+  _CCCL_SUPPRESS_DEPRECATED_POP
 {
   // Thread block type for reducing tiles of value segments
   using AgentSegmentFixupT =
@@ -342,7 +353,7 @@ __launch_bounds__(int(AgentSegmentFixupPolicyT::BLOCK_THREADS))
  *   Signed integer type for global offsets
  */
 template <typename ValueT, typename OffsetT>
-struct DispatchSpmv
+struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DispatchSpmv
 {
   //---------------------------------------------------------------------
   // Constants and Types
