@@ -21,13 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDA_COMPILER(CLANG)
-#  include <cuda_runtime_api.h>
-#endif // _CCCL_CUDA_COMPILER(CLANG)
-
-#include <cuda/std/__exception/cuda_error.h>
-
 #if _CCCL_HAS_CUDA_COMPILER
+#  include <cuda_runtime_api.h>
+
+#  include <cuda/std/__exception/cuda_error.h>
+
 #  define _CCCL_TRY_CUDA_API(_NAME, _MSG, ...)           \
     {                                                    \
       const ::cudaError_t __status = _NAME(__VA_ARGS__); \
