@@ -50,8 +50,7 @@ __host__ __device__ void concurrent_agents_launch(Fs... fs)
      __syncthreads();),
     (std::thread threads[]{std::thread{std::forward<Fs>(fs)}...};
 
-     for (auto&& thread
-          : threads) { thread.join(); }))
+     for (auto&& thread : threads) { thread.join(); }))
 }
 
 #endif // _CONCURRENT_AGENTS_H

@@ -23,7 +23,9 @@
 
 _CCCL_PUSH_MACROS
 
-#include <cuda/std/detail/libcxx/include/cstddef>
+#include <cuda/std/__cstddef/byte.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/version>
 
 _CCCL_POP_MACROS
 

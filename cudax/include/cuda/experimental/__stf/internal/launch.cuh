@@ -31,7 +31,7 @@ namespace cuda::experimental::stf
 {
 
 // This feature requires a CUDA compiler
-#ifdef __CUDACC__
+#if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 
 class stream_ctx;
 template <typename...>
@@ -277,13 +277,12 @@ public:
    * @param deps Dependencies for the task to be launched.
    */
   launch_scope(Ctx& ctx, thread_hierarchy_spec_t spec, exec_place e_place, task_dep<Deps>... deps)
-      : deps(deps...)
+      : dump_hooks(reserved::get_dump_hooks(&ctx, deps...))
+      , deps(mv(deps)...)
       , ctx(ctx)
       , e_place(mv(e_place))
       , spec(mv(spec))
-  {
-    dump_hooks = reserved::get_dump_hooks(&ctx, deps...);
-  }
+  {}
 
   /// Deleted copy constructor and copy assignment operator.
   launch_scope(const launch_scope&)            = delete;
@@ -452,21 +451,17 @@ public:
     }
 
     size_t p_rank = 0;
-    if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+    for (auto p : e_place)
     {
-      for (auto p : e_place)
+      if constexpr (::std::is_same_v<Ctx, stream_ctx>)
       {
         reserved::launch_impl(interpreted_policy, p, f, args, t.get_stream(p_rank), p_rank);
-        p_rank++;
       }
-    }
-    else
-    {
-      for (auto p : e_place)
+      else
       {
         reserved::graph_launch_impl(t, interpreted_policy, p, f, args, p_rank);
-        p_rank++;
       }
+      p_rank++;
     }
   }
 
@@ -494,16 +489,15 @@ private:
     }
   }
 
+  ::std::vector<::std::function<void()>> dump_hooks;
   task_dep_vector<Deps...> deps;
   Ctx& ctx;
   exec_place e_place;
   ::std::string symbol;
   thread_hierarchy_spec_t spec;
-
-  ::std::vector<::std::function<void()>> dump_hooks;
 };
 
 } // namespace reserved
 
-#endif // __CUDACC__
+#endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 } // end namespace cuda::experimental::stf

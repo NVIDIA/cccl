@@ -1217,7 +1217,7 @@ public:
 
   //! @}  end member group
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
   /// @param[in-out] items
   ///   Items to exchange, converting between **striped** and **blocked** arrangements.
@@ -1292,7 +1292,7 @@ public:
     ScatterToStriped(items, items, ranks, is_valid);
   }
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

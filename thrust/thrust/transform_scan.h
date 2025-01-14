@@ -48,8 +48,8 @@ THRUST_NAMESPACE_BEGIN
 
 /*! \p transform_inclusive_scan fuses the \p transform and \p inclusive_scan
  *  operations.  \p transform_inclusive_scan is equivalent to performing a
- *  tranformation defined by \p unary_op into a temporary sequence and then
- *  performing an \p inclusive_scan on the tranformed sequence.  In most
+ *  transformation defined by \p unary_op into a temporary sequence and then
+ *  performing an \p inclusive_scan on the transformed sequence.  In most
  *  cases, fusing these two operations together is more efficient, since
  *  fewer memory reads and writes are required. In \p transform_inclusive_scan,
  *  <tt>unary_op(\*first)</tt> is assigned to <tt>\*result</tt> and the result
@@ -63,19 +63,18 @@ THRUST_NAMESPACE_BEGIN
  *  \param first The beginning of the input sequence.
  *  \param last The end of the input sequence.
  *  \param result The beginning of the output sequence.
- *  \param unary_op The function used to tranform the input sequence.
- *  \param binary_op The associatve operator used to 'sum' transformed values.
+ *  \param unary_op The function used to transform the input sequence.
+ *  \param binary_op The associative operator used to 'sum' transformed values.
  *  \return The end of the output sequence.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
  * Iterator</a> and \c InputIterator's \c value_type is convertible to \c unary_op's input type. \tparam OutputIterator
- * is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. \tparam
- * UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary
- * Function</a> and accepts inputs of \c InputIterator's \c value_type.  \c UnaryFunction's result_type is convertable
- * to \c OutputIterator's \c value_type. \tparam AssociativeOperator is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and \c
- * AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
+ * is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>.
+ *  \tparam UnaryFunction accepts inputs of \c InputIterator's \c value_type. The functions return type must be
+ *  convertible to \c OutputIterator's \c value_type.
+ *  \tparam AssociativeOperator is a binary function and the function's return type must be convertible to \c
+ * OutputIterator's \c value_type.
  *
  *  \pre \p first may equal \p result, but the range <tt>[first, last)</tt> and the range <tt>[result, result + (last -
  * first))</tt> shall not overlap otherwise.
@@ -117,8 +116,8 @@ _CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
 
 /*! \p transform_inclusive_scan fuses the \p transform and \p inclusive_scan
  *  operations.  \p transform_inclusive_scan is equivalent to performing a
- *  tranformation defined by \p unary_op into a temporary sequence and then
- *  performing an \p inclusive_scan on the tranformed sequence.  In most
+ *  transformation defined by \p unary_op into a temporary sequence and then
+ *  performing an \p inclusive_scan on the transformed sequence.  In most
  *  cases, fusing these two operations together is more efficient, since
  *  fewer memory reads and writes are required. In \p transform_inclusive_scan,
  *  <tt>unary_op(\*first)</tt> is assigned to <tt>\*result</tt> and the result
@@ -129,18 +128,17 @@ _CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
  *  \param first The beginning of the input sequence.
  *  \param last The end of the input sequence.
  *  \param result The beginning of the output sequence.
- *  \param unary_op The function used to tranform the input sequence.
- *  \param binary_op The associatve operator used to 'sum' transformed values.
+ *  \param unary_op The function used to transform the input sequence.
+ *  \param binary_op The associative operator used to 'sum' transformed values.
  *  \return The end of the output sequence.
  *
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
  * Iterator</a> and \c InputIterator's \c value_type is convertible to \c unary_op's input type. \tparam OutputIterator
- * is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. \tparam
- * UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary
- * Function</a> and accepts inputs of \c InputIterator's \c value_type.  \c UnaryFunction's result_type is convertable
- * to \c OutputIterator's \c value_type. \tparam AssociativeOperator is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and \c
- * AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
+ * is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>.
+ *  \tparam UnaryFunction accepts inputs of \c InputIterator's \c value_type. The function's return type is convertible
+ * to \c OutputIterator's \c value_type.
+ * \tparam AssociativeOperator is a binary function and the function's return type must be convertible to \c
+ * OutputIterator's \c value_type.
  *
  *  \pre \p first may equal \p result, but the range <tt>[first, last)</tt> and the range <tt>[result, result + (last -
  * first))</tt> shall not overlap otherwise.
@@ -170,8 +168,8 @@ OutputIterator transform_inclusive_scan(
 
 /*! \p transform_inclusive_scan fuses the \p transform and \p inclusive_scan
  *  operations.  \p transform_inclusive_scan is equivalent to performing a
- *  tranformation defined by \p unary_op into a temporary sequence and then
- *  performing an \p inclusive_scan on the tranformed sequence.  In most
+ *  transformation defined by \p unary_op into a temporary sequence and then
+ *  performing an \p inclusive_scan on the transformed sequence.  In most
  *  cases, fusing these two operations together is more efficient, since
  *  fewer memory reads and writes are required. In \p transform_inclusive_scan,
  *  if <tt>binary_op(init, unary_op(\*first))</tt> is <tt>accum</tt>, it is assigned to
@@ -185,9 +183,9 @@ OutputIterator transform_inclusive_scan(
  *  \param first The beginning of the input sequence.
  *  \param last The end of the input sequence.
  *  \param result The beginning of the output sequence.
- *  \param unary_op The function used to tranform the input sequence.
+ *  \param unary_op The function used to transform the input sequence.
  *  \param init The initial value of the \p transform_inclusive_scan
- *  \param binary_op The associatve operator used to 'sum' transformed values.
+ *  \param binary_op The associative operator used to 'sum' transformed values.
  *  \return The end of the output sequence.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
@@ -195,13 +193,11 @@ OutputIterator transform_inclusive_scan(
  *  Iterator</a> and \c InputIterator's \c value_type is convertible to \c unary_op's input type.
  *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  *  Iterator</a>.
- *  \tparam UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">
- *  Unary Function</a> and accepts inputs of \c InputIterator's \c value_type.  \c UnaryFunction's result_type is
- *  convertable to \c OutputIterator's \c value_type.
+ *  \tparam UnaryFunction accepts inputs of \c InputIterator's \c value_type. The function's return type is
+ *  convertible to \c OutputIterator's \c value_type.
  *  \tparam T is convertible to \c OutputIterator's \c value_type.
- *  \tparam AssociativeOperator is a model of
- *  <ahref="https://en.cppreference.com/w/cpp/utility/functional/binary_function"> Binary Function</a> and \c
- *  AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
+ *  \tparam AssociativeOperator is a binary function and the function's return type must be convertible to \c
+ * OutputIterator's \c value_type.
  *
  *  \pre \p first may equal \p result, but the range <tt>[first, last)</tt> and the range <tt>[result, result + (last -
  *  first))</tt> shall not overlap otherwise.
@@ -245,8 +241,8 @@ _CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
 
 /*! \p transform_inclusive_scan fuses the \p transform and \p inclusive_scan
  *  operations.  \p transform_inclusive_scan is equivalent to performing a
- *  tranformation defined by \p unary_op into a temporary sequence and then
- *  performing an \p inclusive_scan on the tranformed sequence.  In most
+ *  transformation defined by \p unary_op into a temporary sequence and then
+ *  performing an \p inclusive_scan on the transformed sequence.  In most
  *  cases, fusing these two operations together is more efficient, since
  *  fewer memory reads and writes are required.In \p transform_inclusive_scan,
  *  if <tt>binary_op(init, unary_op(\*first))</tt> is <tt>accum</tt>, it is assigned to
@@ -257,22 +253,20 @@ _CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
  *  \param first The beginning of the input sequence.
  *  \param last The end of the input sequence.
  *  \param result The beginning of the output sequence.
- *  \param unary_op The function used to tranform the input sequence.
+ *  \param unary_op The function used to transform the input sequence.
  *  \param init The initial value of the \p transform_inclusive_scan
- *  \param binary_op The associatve operator used to 'sum' transformed values.
+ *  \param binary_op The associative operator used to 'sum' transformed values.
  *  \return The end of the output sequence.
  *
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
  *  Iterator</a> and \c InputIterator's \c value_type is convertible to \c unary_op's input type.
  *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  *  Iterator</a>.
- *  \tparam UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">
- *  Unary Function</a> and accepts inputs of \c InputIterator's \c value_type.  \c UnaryFunction's result_type is
- * convertable to \c OutputIterator's \c value_type.
+ *  \tparam UnaryFunction accepts inputs of \c InputIterator's \c value_type. The function's return type is
+ * convertible to \c OutputIterator's \c value_type.
  *  \tparam T is convertible to \c OutputIterator's \c value_type.
- *  \tparam AssociativeOperator is a model of
- * <ahref="https://en.cppreference.com/w/cpp/utility/functional/binary_function"> Binary Function</a> and \c
- * AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
+ *  \tparam AssociativeOperator is a binary function and the function's return type must be convertible to \c
+ * OutputIterator's \c value_type.
  *
  *  \pre \p first may equal \p result, but the range <tt>[first, last)</tt> and the range <tt>[result, result + (last -
  * first))</tt> shall not overlap otherwise.
@@ -308,8 +302,8 @@ OutputIterator transform_inclusive_scan(
 
 /*! \p transform_exclusive_scan fuses the \p transform and \p exclusive_scan
  *  operations.  \p transform_exclusive_scan is equivalent to performing a
- *  tranformation defined by \p unary_op into a temporary sequence and then
- *  performing an \p exclusive_scan on the tranformed sequence.  In most
+ *  transformation defined by \p unary_op into a temporary sequence and then
+ *  performing an \p exclusive_scan on the transformed sequence.  In most
  *  cases, fusing these two operations together is more efficient, since
  *  fewer memory reads and writes are required. In
  *  \p transform_exclusive_scan, \p init is assigned to <tt>\*result</tt>
@@ -323,21 +317,20 @@ OutputIterator transform_inclusive_scan(
  *  \param first The beginning of the input sequence.
  *  \param last The end of the input sequence.
  *  \param result The beginning of the output sequence.
- *  \param unary_op The function used to tranform the input sequence.
+ *  \param unary_op The function used to transform the input sequence.
  *  \param init The initial value of the \p exclusive_scan
- *  \param binary_op The associatve operator used to 'sum' transformed values.
+ *  \param binary_op The associative operator used to 'sum' transformed values.
  *  \return The end of the output sequence.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
  * Iterator</a> and \c InputIterator's \c value_type is convertible to \c unary_op's input type. \tparam OutputIterator
- * is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. \tparam
- * UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary
- * Function</a> and accepts inputs of \c InputIterator's \c value_type.  \c UnaryFunction's result_type is convertable
- * to \c OutputIterator's \c value_type. \tparam T is convertible to \c OutputIterator's \c value_type. \tparam
- * AssociativeOperator is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and \c
- * AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
+ * is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>.
+ *  \tparam UnaryFunction accepts inputs of \c InputIterator's \c value_type. The function's return type must be
+ * convertible to \c OutputIterator's \c value_type.
+ *  \tparam T is convertible to \c OutputIterator's \c value_type.
+ *  \tparam AssociativeOperator is a binary function and the function's return type must be convertible to \c
+ * OutputIterator's \c value_type.
  *
  *  \pre \p first may equal \p result, but the range <tt>[first, last)</tt> and the range <tt>[result, result + (last -
  * first))</tt> shall not overlap otherwise.
@@ -381,8 +374,8 @@ _CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
 
 /*! \p transform_exclusive_scan fuses the \p transform and \p exclusive_scan
  *  operations.  \p transform_exclusive_scan is equivalent to performing a
- *  tranformation defined by \p unary_op into a temporary sequence and then
- *  performing an \p exclusive_scan on the tranformed sequence.  In most
+ *  transformation defined by \p unary_op into a temporary sequence and then
+ *  performing an \p exclusive_scan on the transformed sequence.  In most
  *  cases, fusing these two operations together is more efficient, since
  *  fewer memory reads and writes are required. In
  *  \p transform_exclusive_scan, \p init is assigned to <tt>\*result</tt>
@@ -393,20 +386,19 @@ _CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
  *  \param first The beginning of the input sequence.
  *  \param last The end of the input sequence.
  *  \param result The beginning of the output sequence.
- *  \param unary_op The function used to tranform the input sequence.
+ *  \param unary_op The function used to transform the input sequence.
  *  \param init The initial value of the \p exclusive_scan
- *  \param binary_op The associatve operator used to 'sum' transformed values.
+ *  \param binary_op The associative operator used to 'sum' transformed values.
  *  \return The end of the output sequence.
  *
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
  * Iterator</a> and \c InputIterator's \c value_type is convertible to \c unary_op's input type. \tparam OutputIterator
- * is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. \tparam
- * UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary
- * Function</a> and accepts inputs of \c InputIterator's \c value_type.  \c UnaryFunction's result_type is convertable
- * to \c OutputIterator's \c value_type. \tparam T is convertible to \c OutputIterator's \c value_type. \tparam
- * AssociativeOperator is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and \c
- * AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
+ * is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>.
+ *  \tparam UnaryFunction accepts inputs of \c InputIterator's \c value_type. The function's return type must be
+ * convertible to \c OutputIterator's \c value_type.
+ *  \tparam T is convertible to \c OutputIterator's \c value_type.
+ *  \tparam AssociativeOperator is a binary function and the function's return type must be convertible to \c
+ * OutputIterator's \c value_type.
  *
  *  \pre \p first may equal \p result, but the range <tt>[first, last)</tt> and the range <tt>[result, result + (last -
  * first))</tt> shall not overlap otherwise.

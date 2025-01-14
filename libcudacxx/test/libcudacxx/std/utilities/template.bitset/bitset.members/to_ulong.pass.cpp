@@ -21,7 +21,7 @@ template <cuda::std::size_t N>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test_to_ulong()
 {
   const cuda::std::size_t M   = sizeof(unsigned long) * CHAR_BIT < N ? sizeof(unsigned long) * CHAR_BIT : N;
-  const bool is_M_zero        = cuda::std::integral_constant<bool, M == 0>::value; // avoid compiler warnings
+  const bool is_M_zero        = cuda::std::integral_constant < bool, M == 0 > ::value; // avoid compiler warnings
   const cuda::std::size_t X   = is_M_zero ? sizeof(unsigned long) * CHAR_BIT - 1 : sizeof(unsigned long) * CHAR_BIT - M;
   const cuda::std::size_t max = is_M_zero ? 0 : cuda::std::size_t(cuda::std::numeric_limits<unsigned long>::max()) >> X;
   cuda::std::size_t tests[]   = {
@@ -66,7 +66,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2014 && (!defined(_CCCL_CUDACC_BELOW_11_8) || !defined(_CCCL_COMPILER_MSVC))
+#if TEST_STD_VER >= 2014 && (_CCCL_CUDACC_AT_LEAST(11, 8) || !_CCCL_COMPILER(MSVC))
   static_assert(test(), "");
 #endif // TEST_STD_VER >= 2014
 

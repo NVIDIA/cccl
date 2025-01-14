@@ -36,11 +36,10 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/cpp14_required.h>
 
 #if _CCCL_STD_VER >= 2014
 
-#  ifdef _CCCL_CUDA_COMPILER
+#  if _CCCL_HAS_CUDA_COMPILER
 
 #    include <thrust/system/cuda/config.h>
 
@@ -54,9 +53,6 @@
 #    include <type_traits>
 
 // TODO specialize for thrust::plus to use e.g. ExclusiveSum instead of ExcScan
-//  - Note that thrust::plus<> is transparent, cub::Sum is not. This should be
-//    fixed in CUB first).
-//  - Need to check if CUB actually optimizes for sums before putting in effort
 
 THRUST_NAMESPACE_BEGIN
 namespace system

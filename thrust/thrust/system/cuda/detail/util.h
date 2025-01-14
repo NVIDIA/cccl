@@ -174,7 +174,7 @@ trivial_copy_device_to_device(Policy& policy, Type* dst, Type const* src, size_t
   cudaStream_t stream = cuda_cub::stream(policy);
   //
   status = ::cudaMemcpyAsync(dst, src, sizeof(Type) * count, cudaMemcpyDeviceToDevice, stream);
-  cuda_cub::synchronize(policy);
+  cuda_cub::synchronize_optional(policy);
   return status;
 }
 
@@ -473,7 +473,7 @@ struct transform_pair_of_input_iterators_t
 }; // struct transform_pair_of_input_iterators_t
 
 // deprecated [Since 2.8]
-struct THRUST_DEPRECATED_BECAUSE("Use cuda::std::identity") identity
+struct CCCL_DEPRECATED_BECAUSE("Use cuda::std::identity") identity
 {
   template <class T>
   _CCCL_HOST_DEVICE T const& operator()(T const& t) const

@@ -89,15 +89,17 @@
 
 #  define _NV_TRIGGER_PARENTHESIS_(...) ,
 
-#  define _NV_ISEMPTY(...)                                                                                            \
-    _NV_ISEMPTY0(/* test if there is just one argument, eventually an empty                                           \
-                    one */                                                                                            \
-                 _NV_EVAL(_NV_HAS_COMMA(__VA_ARGS__)), /* test if _TRIGGER_PARENTHESIS_ together with the argument    \
-                                                          adds a comma */                                             \
-                 _NV_EVAL(_NV_HAS_COMMA(_NV_TRIGGER_PARENTHESIS_ __VA_ARGS__)), /* test if the argument together with \
-                                                                                   a parenthesis adds a comma */      \
-                 _NV_EVAL(_NV_HAS_COMMA(__VA_ARGS__(/*empty*/))), /* test if placing it between _TRIGGER_PARENTHESIS_ \
-                                                                     and the parenthesis adds a comma */              \
+/*
+This tests a variety of conditions for determining what the incoming statement is.
+1. test if there is just one argument
+2. test if _TRIGGER_PARENTHESIS_ together with the argument adds a comma
+3. test if the argument together with a parenthesis adds a comma
+4. test if placing it between _TRIGGER_PARENTHESIS_ and the parenthesis adds a comma
+*/
+#  define _NV_ISEMPTY(...)                                                      \
+    _NV_ISEMPTY0(_NV_EVAL(_NV_HAS_COMMA(__VA_ARGS__)),                          \
+                 _NV_EVAL(_NV_HAS_COMMA(_NV_TRIGGER_PARENTHESIS_ __VA_ARGS__)), \
+                 _NV_EVAL(_NV_HAS_COMMA(__VA_ARGS__(/*empty*/))),               \
                  _NV_EVAL(_NV_HAS_COMMA(_NV_TRIGGER_PARENTHESIS_ __VA_ARGS__(/*empty*/))))
 
 #  define _NV_PASTE5(_0, _1, _2, _3, _4) _0##_1##_2##_3##_4

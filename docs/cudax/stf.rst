@@ -141,7 +141,7 @@ A simple example
 
 The following example illustrates the use of CUDASTF to implement the
 well-known AXPY kernel, which computes ``Y = Y + alpha * X`` where ``X``
-and ``Y`` are two vectors, and ``alpha`` is a scalar value.
+and ``Y`` are two vectors, and ``alpha`` is a scalar_view value.
 
 .. code:: cpp
 
@@ -433,7 +433,7 @@ A slice is a partial specialization of C++’s
    using slice = mdspan<T, dextents<size_t, dimensions>, layout_stride>;
 
 When creating a ``logical_data`` from a C++ array, CUDASTF automatically
-describes it as a slice instantiated with the scalar element type and
+describes it as a slice instantiated with the scalar_view element type and
 the dimensionality of the array. Here is an example with an 1D array of
 ``double``.
 
@@ -444,7 +444,7 @@ the dimensionality of the array. Here is an example with an 1D array of
    auto lA = ctx.logical_data(A);
 
 Internally, all instances of ``A`` are described as ``slice<double, 1>``
-where ``double`` is the scalar element type, and ``1`` is the
+where ``double`` is the scalar_view element type, and ``1`` is the
 dimensionality of the array. The default dimension corresponds to ``1``,
 so ``slice<double>`` is equivalent with ``slice<double, 1>``.
 
@@ -558,8 +558,12 @@ write-only access (using the ``write()`` member of ``lX``). A write-only
 access will indeed allocate ``lX`` at the appropriate location, but it
 will not try to load a valid copy of it prior to executing the task.
 
-Using other access modes such as ``read()``, ``redux()`` or ``rw()``
-that attempt to provide a valid instance will result in an error.
+Using other access modes such as ``read()``, ``relaxed()`` or ``rw()``
+that attempt to provide a valid instance will result in an error.  The
+``reduce()`` access mode can be used only if the reduction is not accumulating
+its result with an existing value, so we can for example use
+``reduce(reducer::sum<double>{})`` but not ``reduce(reducer::sum<double>{}, no_init{})``
+on a logical data which has valid data instance.
 
 Similarly, it is possible to define a logical data from a slice shapes
 with multiple dimensions.
@@ -577,8 +581,8 @@ an optional argument that specifies the execution location of the task.
 If none is provided, the current CUDA device will be used, which is
 equivalent to passing ``exec_place::current_device()``. Data accesses
 are specified using a list of data dependencies. Each dependency is
-described by calling the ``read()``, ``rw()``, or ``write()`` method of
-the logical data object.
+described by calling the ``read()``, ``rw()``, ``write()`` or ``reduce()``
+method of the logical data object.
 
 In the example below, ``X`` is accessed in read-only mode and ``Y``
 needs to be updated so it uses a read-write access mode.
@@ -775,6 +779,18 @@ an asynchronous fence mechanism is available :
     cudaStream_t stream = ctx.task_fence();
     cudaStreamSynchronize(stream);
 
+Another synchronization mechanism is the ``wait`` method of the
+context object. It is typically used in combination with the ``reduce()``
+access mode for dynamic control flow. ``auto val = ctx.wait(ld)`` is a
+blocking call that returns the content of the ``ld`` logical data. The type of
+the returned value is defined by the ``owning_container_of<interface>`` trait
+class where ``interface`` is the data interface of the logical data. The
+``wait`` method therefore cannot be called on a logical data with an
+interface that does not overload this trait class.
+
+This mechanism is illustrated in the dot product example of the
+:ref:`reduce_access_mode` section.
+
 Places
 ------
 
@@ -963,12 +979,12 @@ Creating grids of places
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 Grid of execution places are described with the ``exec_place_grid``
-class. This class is templated by two parameters : a scalar execution
+class. This class is templated by two parameters : a scalar_view execution
 place type which represents the type of each individual element, and a
 partitioning class which defines how data and indexes are spread across
 the different places of the grid.
 
-The scalar execution place can be for example be ``exec_place_device``
+The scalar_view execution place can be for example be ``exec_place_device``
 if all entries are devices, or it can be the base ``exec_place`` class
 if the type of the places is not homogeneous in the grid, or if the type
 is not known statically, for example.
@@ -1096,7 +1112,7 @@ There are currently two policies readily available in CUDASTF : -
 *tiled* layout. For multi-dimensional shapes, the outermost dimension is
 dispatched into contiguous tiles of size ``TILE_SIZE``. -
 ``blocked_partition`` dispatches entries of the shape using a *blocked*
-layout, where each entry of the grid of places receive approximatively
+layout, where each entry of the grid of places receive approximately
 the same contiguous portion of the shape, dispatched along the outermost
 dimension.
 
@@ -1312,6 +1328,116 @@ and member function ``index_to_coords`` as follows:
 
 The dimensionality of this ``coord_t`` tuple type determines the number
 of arguments passed to the lambda function in ``parallel_for``.
+
+.. _reduce_access_mode:
+
+Reduce access mode
+^^^^^^^^^^^^^^^^^^
+
+The `parallel_for` construct supports the ``reduce()`` access mode. This mode
+implements reductions within the compute kernel generated by the `parallel_for`
+construct.
+
+``reduce()`` accepts different arguments which define its behavior:
+- The first argument must be the reduction operator which defines how multiple values are combined, and how to initialize a value (for example a sum   reduction will add two values, and initialize values to 0).
+- An optional ``no_init{}`` value indicate that the result of the reduction should be accumulated to the existing value stored in the logical data, similarly to a ``rw()`` access mode. By default, if this value is not passed to ``reduce()``, the content of the logical data would be overwritten as with a ``write()`` access mode. Using ``no_init{}`` with a logical data which has no valid instance is an error (for example when the logical data is just defined from its shape and that no previous write access was made).
+- Other arguments are the same passed to other access modes such as the data place.
+
+We can only apply the ``reduce()`` access mode on logical data which data
+interface have defined the ``owning_container_of`` trait class. This is the
+case of the ``scalar_view<T>`` data interface, which sets ``owning_container_of`` to
+be ``T``. The argument passed to the ``parallel_for`` construct is a reference
+to object of this type. The following piece of code for example computes the
+dot product of two vectors of double elements (``slice<double>``) using a
+reduction, and a ``scalar_view<double>``. Reductions are typically used in
+combination with the ``wait`` mechanism which synchronously returns
+the content of the logical data in a variable.
+
+.. code-block:: cpp
+  :caption: dot product using a reduction operation
+
+  auto lsum = ctx.logical_data(shape_of<scalar_view<double>>());
+
+  /* Compute sum(x_i * y_i)*/
+  ctx.parallel_for(lY.shape(), lX.read(), lY.read(), lsum.reduce(reducer::sum<double>{}))
+      ->*[] __device__(size_t i, auto dX, auto dY, double& sum) {
+            sum += dX(i) * dY(i);
+          };
+
+  double res = ctx.wait(lsum);
+
+Note that if we had put a ``no_init{}`` argument after
+``reducer::sum<double>{}`` we would have an error because ``lsum`` was not
+initialized.
+
+Multiple reductions can be used with different operators in the same
+`parallel_for` construct.
+
+.. list-table:: Predefined Reduction Operators and Neutral Elements
+   :header-rows: 1
+
+   * - Operator Name
+     - Purpose
+     - Neutral Element
+   * - ``sum``
+     - Computes the summation of elements.
+     - ``0``
+   * - ``product``
+     - Computes the product of elements.
+     - ``1``
+   * - ``maxval``
+     - Finds the maximum value.
+     - Smallest representable value (e.g., ``-inf`` for floats).
+   * - ``minval``
+     - Finds the minimum value.
+     - Largest representable value (e.g., ``+inf`` for floats).
+   * - ``logical_and``
+     - Performs logical AND reduction.
+     - ``true``
+   * - ``logical_or``
+     - Performs logical OR reduction.
+     - ``false``
+   * - ``bitwise_and``
+     - Performs bitwise AND reduction.
+     - All bits set (e.g., ``~0`` or ``-1`` for integers).
+   * - ``bitwise_or``
+     - Performs bitwise OR reduction.
+     - ``0``
+   * - ``bitwise_xor``
+     - Performs bitwise XOR reduction.
+     - ``0``
+
+A set of predefined reduction operators are defined, but users may easily
+define their own operators. These operators are defined in the
+``cuda::experimental::stf::reducer`` namespace. The following piece of code
+for example illustrates how to implement the ``sum`` reduction operator.
+
+.. code-block:: cpp
+   :caption: Defining the sum reduction operator
+
+   template <typename T>
+   class sum
+   {
+   public:
+     static __host__ __device__ void init_op(T& dst)
+     {
+       dst = static_cast<T>(0);
+     }
+
+     static __host__ __device__ void apply_op(T& dst, const T& src)
+     {
+       dst += src;
+     }
+   };
+
+Every reduction operator should therefore define both the ``ìnit_op`` method
+that sets the neutral element, and the ``apply_op`` method which combines two
+elements. Appropriate ``__host__`` and/or ``__device__`` annotations are
+required depending where the operation may occur. The type of the arguments are
+references to ``owning_container_of<interface>::type`` where ``interface`` is
+the data interface type of the logical data.
+
+
 
 .. _launch_construct:
 
@@ -1646,6 +1772,132 @@ all the benefits of statically available types):
 
    stream_task<> t = ctx.task(lX.read());
 
+Modular use of CUDASTF
+----------------------
+
+CUDASTF maintains data consistency throughout the system, and infers
+concurrency opportunities based on data accesses. Depending on the use cases,
+one may however already manage coherency or enforce dependencies.
+
+- The "logical data freezing" mechanism ensures data availability while letting
+  the application take care of synchronization.
+- Logical token makes it possible to enforce concurrent execution while
+  letting the application manage data allocations and data transfers.
+
+Freezing logical data
+^^^^^^^^^^^^^^^^^^^^^
+
+When a piece of data is used very often, it can be beneficial to avoid enforcing
+data dependencies every time it is accessed. A common example would be data that
+is written once and then read many times.
+
+CUDASTF provides a mechanism called logical data freeze that allows a
+logical data to be accessed outside of tasks—or within tasks—without
+enforcing data dependencies for every access, which reduces overhead to a minimum.
+
+
+By default, calling the ``freeze`` method returns a frozen logical data object
+that can be accessed in read-only mode without additional synchronization. The
+``get`` method of the frozen logical data returns a view of the underlying data
+on the specified data place. This view can be used asynchronously with respect
+to the stream passed to ``get`` until calling the non-blocking unfreeze
+method on the frozen logical data. It is possible to call ``get`` multiple times.
+Modifying these frozen read-only views results in undefined behavior.
+If necessary, implicit data transfers or allocations are performed asynchronously
+when calling ``get``.
+
+.. code:: cpp
+
+    auto frozen_ld = ctx.freeze(ld);
+    auto dX = frozen_ld.get(data_place::current_device(), stream);
+    kernel<<<..., stream>>>(dX);
+
+    // Get a read-only copy of the frozen data on other data places
+    auto dX1 = frozen_ld.get(data_place::device(1), stream);
+    auto hX = frozen_ld.get(data_place::host, stream);
+
+    fx.unfreeze(stream);
+
+While data are frozen, it is still possible to launch tasks which access
+them. CUDASTF will allow tasks with a read access modes to run
+concurrently before ``unfreeze`` is called, but it will defer write accesses
+until data is made is made modifiable again, after ``unfreeze``.
+
+.. code:: cpp
+
+    auto frozen_ld = ctx.freeze(ld, access_mode::rw, data_place::current_device());
+    auto dX = frozen_ld.get(data_place::current_device(), stream);
+    // kernel can modify dX
+    kernel<<<..., stream>>>(dX);
+    fx.unfreeze(stream);
+
+As shown above, it is also possible to create a modifiable frozen logical data,
+allowing an application to temporarily transfer ownership of the logical data
+to code that does not use tasks.  Because no further synchronization is
+performed to ensure the consistency of this logical data once it is frozen,
+users need to specify where the view of the data is needed.  Any tasks that
+access this modifiable frozen logical data will be deferred until ``unfreeze``
+is called.
+
+It is not possible to freeze the same logical data concurrently. Therefore, we
+need to call ``unfreeze`` before calling ``freeze`` again, and it is the
+programmer's responsibility to ensure that the stream passed to ``freeze``
+depends on the completions of all operations in the stream previously passed to
+``unfreeze``.
+
+It is possible to use different streams in the ``freeze``, ``get`` and
+``unfreeze`` methods. However it is also programmer's responsibility to ensure
+that the stream passed to ``get`` depends on the completion of the work in the
+stream passed to ``freeze`` (for example, by using a blocking call such as
+``cudaStreamSynchronize``). Similarly, the stream passed to ``unfreeze`` must
+depend on the completion of the work in the streams used for any preceding
+``freeze`` and ``get`` calls.
+
+Logical token
+^^^^^^^^^^^^^
+
+A logical token is a specific type of logical data whose only purpose is to
+automate synchronization, while letting the application manage the actual data.
+This can, for example, be useful with user-provided buffers on a single device,
+where no allocations or transfers are required, but where concurrent accesses
+may occur.
+
+A logical token internally relies on the ``void_interface`` data interface,
+which is specifically optimized to skip unnecessary stages in the cache
+coherency protocol (e.g., data allocations or copying data). When appropriate,
+using a logical token rather than a logical data with a full-fledged data
+interface therefore minimizes runtime overhead.
+
+.. code:: cpp
+
+    auto token = ctx.logical_token();
+
+    // A and B are assumed to be two other valid logical data
+    ctx.task(token.rw(), A.read(), B.rw())->*[](cudaStream_t stream, auto a, auto b)
+    {
+        ...
+    };
+
+The example above shows how to create a logical token and how to use it in a
+task.
+
+Since the logical token is only used for synchronization purposes, the
+corresponding argument may be omitted in the lambda function passed as the
+task’s implementation. Thus, the above task is equivalent to this code:
+
+.. code:: cpp
+
+    ctx.task(token.rw(), A.read(), B.rw())->*[](cudaStream_t stream, void_interface dummy, auto a, auto b)
+
+To avoid ambiguities, you must either consistently ignore every
+``void_interface`` data instance or include them all, even if they remain
+unused. Eliding these token arguments is possible in the ``ctx.task`` and
+``ctx.host_launch`` constructs.
+
+Note that the token created by the ``logical_token`` method of the context
+object is already valid, which means the first access can be either a ``read()``
+or an ``rw()`` access. There is no need to set any content in the token
+(unlike a logical data object created from a shape).
 
 Tools
 -----

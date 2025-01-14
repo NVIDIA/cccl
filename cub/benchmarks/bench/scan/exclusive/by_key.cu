@@ -36,7 +36,7 @@
 // %RANGE% TUNE_DELAY_CONSTRUCTOR_ID dcid 0:7:1
 // %RANGE% TUNE_L2_WRITE_LATENCY_NS l2w 0:1200:5
 // %RANGE% TUNE_TRANSPOSE trp 0:1:1
-// %RANGE% TUNE_LOAD ld 0:2:1
+// %RANGE% TUNE_LOAD ld 0:1:1
 
 #if !TUNE_BASE
 #  if TUNE_TRANSPOSE == 0
@@ -49,7 +49,7 @@
 
 #  if TUNE_LOAD == 0
 #    define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
-#  else // TUNE_LOAD == 1
+#  elif TUNE_LOAD == 1
 #    define TUNE_LOAD_MODIFIER cub::LOAD_CA
 #  endif // TUNE_LOAD
 
@@ -76,12 +76,12 @@ template <typename KeyT, typename ValueT, typename OffsetT>
 static void scan(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
 {
   using init_value_t    = ValueT;
-  using op_t            = cub::Sum;
+  using op_t            = ::cuda::std::plus<>;
   using accum_t         = ::cuda::std::__accumulator_t<op_t, ValueT, init_value_t>;
   using key_input_it_t  = const KeyT*;
   using val_input_it_t  = const ValueT*;
   using val_output_it_t = ValueT*;
-  using equality_op_t   = cub::Equality;
+  using equality_op_t   = ::cuda::std::equal_to<>;
   using offset_t        = OffsetT;
 
 #if !TUNE_BASE

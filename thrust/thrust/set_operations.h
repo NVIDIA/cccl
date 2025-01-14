@@ -70,14 +70,14 @@ THRUST_NAMESPACE_BEGIN
  * is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the
  * ordering on \p InputIterator1's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          \p InputIterator2 and \p InputIterator1 have the same \c value_type,
  *          \p InputIterator2's \c value_type is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on \p
  * InputIterator2's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  * Iterator</a>.
  *
@@ -145,14 +145,14 @@ _CCCL_HOST_DEVICE OutputIterator set_difference(
  * is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the
  * ordering on \p InputIterator1's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          \p InputIterator2 and \p InputIterator1 have the same \c value_type,
  *          \p InputIterator2's \c value_type is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on \p
  * InputIterator2's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  * Iterator</a>.
  *
@@ -214,11 +214,11 @@ OutputIterator set_difference(
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a>, \p InputIterator1's \c value_type is convertable to \p StrictWeakCompare's \c first_argument_type. and
- * \p InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * Iterator</a>, \p InputIterator1's \c value_type is convertible to \p StrictWeakCompare's first argument type. and
+ * \p InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *          \p InputIterator2's \c value_type is convertable to \p StrictWeakCompare's \c second_argument_type.
- *          and \p InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types.
+ *          \p InputIterator2's \c value_type is convertible to \p StrictWeakCompare's second argument type.
+ *          and \p InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types.
  *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  * Iterator</a>. \tparam StrictWeakCompare is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/strict_weak_order">Strict Weak Ordering</a>.
@@ -290,11 +290,11 @@ _CCCL_HOST_DEVICE OutputIterator set_difference(
  *  \return The end of the output range.
  *
  *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a>, \p InputIterator1's \c value_type is convertable to \p StrictWeakCompare's \c first_argument_type. and
- * \p InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * Iterator</a>, \p InputIterator1's \c value_type is convertible to \p StrictWeakCompare's first argument type. and
+ * \p InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *          \p InputIterator2's \c value_type is convertable to \p StrictWeakCompare's \c second_argument_type.
- *          and \p InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types.
+ *          \p InputIterator2's \c value_type is convertible to \p StrictWeakCompare's second argument type.
+ *          and \p InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types.
  *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  * Iterator</a>. \tparam StrictWeakCompare is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/strict_weak_order">Strict Weak Ordering</a>.
@@ -373,14 +373,14 @@ OutputIterator set_difference(
  * is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the
  * ordering on \p InputIterator1's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          \p InputIterator2 and \p InputIterator1 have the same \c value_type,
  *          \p InputIterator2's \c value_type is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on \p
  * InputIterator2's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  * Iterator</a>.
  *
@@ -455,14 +455,14 @@ _CCCL_HOST_DEVICE OutputIterator set_intersection(
  * is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the
  * ordering on \p InputIterator1's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          \p InputIterator2 and \p InputIterator1 have the same \c value_type,
  *          \p InputIterator2's \c value_type is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on \p
  * InputIterator2's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  * Iterator</a>.
  *
@@ -537,14 +537,14 @@ OutputIterator set_intersection(
  * is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the
  * ordering on \p InputIterator1's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          \p InputIterator2 and \p InputIterator1 have the same \c value_type,
  *          \p InputIterator2's \c value_type is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on \p
  * InputIterator2's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  * Iterator</a>.
  *
@@ -624,14 +624,14 @@ _CCCL_HOST_DEVICE OutputIterator set_intersection(
  * is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the
  * ordering on \p InputIterator1's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          \p InputIterator2 and \p InputIterator1 have the same \c value_type,
  *          \p InputIterator2's \c value_type is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on \p
  * InputIterator2's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  * Iterator</a>.
  *
@@ -701,14 +701,14 @@ OutputIterator set_intersection(
  * is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the
  * ordering on \p InputIterator1's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          \p InputIterator2 and \p InputIterator1 have the same \c value_type,
  *          \p InputIterator2's \c value_type is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on \p
  * InputIterator2's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  * Iterator</a>.
  *
@@ -780,14 +780,14 @@ _CCCL_HOST_DEVICE OutputIterator set_symmetric_difference(
  * is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the
  * ordering on \p InputIterator1's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          \p InputIterator2 and \p InputIterator1 have the same \c value_type,
  *          \p InputIterator2's \c value_type is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on \p
  * InputIterator2's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  * Iterator</a>.
  *
@@ -857,14 +857,14 @@ OutputIterator set_symmetric_difference(
  * is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the
  * ordering on \p InputIterator1's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          \p InputIterator2 and \p InputIterator1 have the same \c value_type,
  *          \p InputIterator2's \c value_type is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on \p
  * InputIterator2's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  * Iterator</a>.
  *
@@ -942,14 +942,14 @@ _CCCL_HOST_DEVICE OutputIterator set_symmetric_difference(
  * is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the
  * ordering on \p InputIterator1's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          \p InputIterator2 and \p InputIterator1 have the same \c value_type,
  *          \p InputIterator2's \c value_type is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on \p
  * InputIterator2's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  * Iterator</a>.
  *
@@ -1021,14 +1021,14 @@ OutputIterator set_symmetric_difference(
  * is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the
  * ordering on \p InputIterator1's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          \p InputIterator2 and \p InputIterator1 have the same \c value_type,
  *          \p InputIterator2's \c value_type is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on \p
  * InputIterator2's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  * Iterator</a>.
  *
@@ -1098,14 +1098,14 @@ _CCCL_HOST_DEVICE OutputIterator set_union(
  * is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the
  * ordering on \p InputIterator1's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          \p InputIterator2 and \p InputIterator1 have the same \c value_type,
  *          \p InputIterator2's \c value_type is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on \p
  * InputIterator2's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  * Iterator</a>.
  *
@@ -1169,11 +1169,11 @@ OutputIterator set_union(
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a>, \p InputIterator1's \c value_type is convertable to \p StrictWeakCompare's \c first_argument_type. and
- * \p InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * Iterator</a>, \p InputIterator1's \c value_type is convertible to \p StrictWeakCompare's first argument type. and
+ * \p InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *          \p InputIterator2's \c value_type is convertable to \p StrictWeakCompare's \c second_argument_type.
- *          and \p InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types.
+ *          \p InputIterator2's \c value_type is convertible to \p StrictWeakCompare's second argument type.
+ *          and \p InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types.
  *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  * Iterator</a>. \tparam StrictWeakCompare is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/strict_weak_order">Strict Weak Ordering</a>.
@@ -1247,11 +1247,11 @@ _CCCL_HOST_DEVICE OutputIterator set_union(
  *  \return The end of the output range.
  *
  *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a>, \p InputIterator1's \c value_type is convertable to \p StrictWeakCompare's \c first_argument_type. and
- * \p InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * Iterator</a>, \p InputIterator1's \c value_type is convertible to \p StrictWeakCompare's first argument type. and
+ * \p InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *          \p InputIterator2's \c value_type is convertable to \p StrictWeakCompare's \c second_argument_type.
- *          and \p InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types.
+ *          \p InputIterator2's \c value_type is convertible to \p StrictWeakCompare's second argument type.
+ *          and \p InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types.
  *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  * Iterator</a>. \tparam StrictWeakCompare is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/strict_weak_order">Strict Weak Ordering</a>.
@@ -1335,14 +1335,14 @@ OutputIterator set_union(
  * is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the
  * ordering on \p InputIterator1's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          \p InputIterator2 and \p InputIterator1 have the same \c value_type,
  *          \p InputIterator2's \c value_type is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on \p
  * InputIterator2's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator3 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          and \p InputIterator3's \c value_type is convertible to a type in \p OutputIterator2's set of \c
  * value_types. \tparam InputIterator4 is a model of <a
@@ -1439,14 +1439,14 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_difference_
  * is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the
  * ordering on \p InputIterator1's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          \p InputIterator2 and \p InputIterator1 have the same \c value_type,
  *          \p InputIterator2's \c value_type is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on \p
  * InputIterator2's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator3 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          and \p InputIterator3's \c value_type is convertible to a type in \p OutputIterator2's set of \c
  * value_types. \tparam InputIterator4 is a model of <a
@@ -1544,14 +1544,14 @@ thrust::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
  * is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the
  * ordering on \p InputIterator1's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          \p InputIterator2 and \p InputIterator1 have the same \c value_type,
  *          \p InputIterator2's \c value_type is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on \p
  * InputIterator2's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator3 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          and \p InputIterator3's \c value_type is convertible to a type in \p OutputIterator2's set of \c
  * value_types. \tparam InputIterator4 is a model of <a
@@ -1654,14 +1654,14 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_difference_
  * is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the
  * ordering on \p InputIterator1's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          \p InputIterator2 and \p InputIterator1 have the same \c value_type,
  *          \p InputIterator2's \c value_type is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on \p
  * InputIterator2's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator3 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          and \p InputIterator3's \c value_type is convertible to a type in \p OutputIterator2's set of \c
  * value_types. \tparam InputIterator4 is a model of <a
@@ -1766,14 +1766,14 @@ thrust::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
  * is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the
  * ordering on \p InputIterator1's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          \p InputIterator2 and \p InputIterator1 have the same \c value_type,
  *          \p InputIterator2's \c value_type is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on \p
  * InputIterator2's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator3 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          and \p InputIterator3's \c value_type is convertible to a type in \p OutputIterator2's set of \c
  * value_types. \tparam OutputIterator1 is a model of <a
@@ -1869,14 +1869,14 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_intersectio
  * is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the
  * ordering on \p InputIterator1's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          \p InputIterator2 and \p InputIterator1 have the same \c value_type,
  *          \p InputIterator2's \c value_type is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on \p
  * InputIterator2's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator3 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          and \p InputIterator3's \c value_type is convertible to a type in \p OutputIterator2's set of \c
  * value_types. \tparam OutputIterator1 is a model of <a
@@ -1973,14 +1973,14 @@ thrust::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
  * is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the
  * ordering on \p InputIterator1's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          \p InputIterator2 and \p InputIterator1 have the same \c value_type,
  *          \p InputIterator2's \c value_type is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on \p
  * InputIterator2's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator3 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          and \p InputIterator3's \c value_type is convertible to a type in \p OutputIterator2's set of \c
  * value_types. \tparam OutputIterator1 is a model of <a
@@ -2082,14 +2082,14 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_intersectio
  * is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the
  * ordering on \p InputIterator1's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          \p InputIterator2 and \p InputIterator1 have the same \c value_type,
  *          \p InputIterator2's \c value_type is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on \p
  * InputIterator2's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator3 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          and \p InputIterator3's \c value_type is convertible to a type in \p OutputIterator2's set of \c
  * value_types. \tparam OutputIterator1 is a model of <a
@@ -2190,14 +2190,14 @@ thrust::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
  * is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the
  * ordering on \p InputIterator1's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          \p InputIterator2 and \p InputIterator1 have the same \c value_type,
  *          \p InputIterator2's \c value_type is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on \p
  * InputIterator2's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator3 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          and \p InputIterator3's \c value_type is convertible to a type in \p OutputIterator2's set of \c
  * value_types. \tparam InputIterator4 is a model of <a
@@ -2297,14 +2297,14 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_symmetric_d
  * is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the
  * ordering on \p InputIterator1's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          \p InputIterator2 and \p InputIterator1 have the same \c value_type,
  *          \p InputIterator2's \c value_type is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on \p
  * InputIterator2's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator3 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          and \p InputIterator3's \c value_type is convertible to a type in \p OutputIterator2's set of \c
  * value_types. \tparam InputIterator4 is a model of <a
@@ -2405,14 +2405,14 @@ thrust::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
  * is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the
  * ordering on \p InputIterator1's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          \p InputIterator2 and \p InputIterator1 have the same \c value_type,
  *          \p InputIterator2's \c value_type is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on \p
  * InputIterator2's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator3 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          and \p InputIterator3's \c value_type is convertible to a type in \p OutputIterator2's set of \c
  * value_types. \tparam InputIterator4 is a model of <a
@@ -2518,14 +2518,14 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_symmetric_d
  * is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the
  * ordering on \p InputIterator1's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          \p InputIterator2 and \p InputIterator1 have the same \c value_type,
  *          \p InputIterator2's \c value_type is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on \p
  * InputIterator2's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator3 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          and \p InputIterator3's \c value_type is convertible to a type in \p OutputIterator2's set of \c
  * value_types. \tparam InputIterator4 is a model of <a
@@ -2628,14 +2628,14 @@ thrust::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
  * is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the
  * ordering on \p InputIterator1's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          \p InputIterator2 and \p InputIterator1 have the same \c value_type,
  *          \p InputIterator2's \c value_type is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on \p
  * InputIterator2's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator3 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          and \p InputIterator3's \c value_type is convertible to a type in \p OutputIterator2's set of \c
  * value_types. \tparam InputIterator4 is a model of <a
@@ -2733,14 +2733,14 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_union_by_ke
  * is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the
  * ordering on \p InputIterator1's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          \p InputIterator2 and \p InputIterator1 have the same \c value_type,
  *          \p InputIterator2's \c value_type is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on \p
  * InputIterator2's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator3 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          and \p InputIterator3's \c value_type is convertible to a type in \p OutputIterator2's set of \c
  * value_types. \tparam InputIterator4 is a model of <a
@@ -2839,14 +2839,14 @@ thrust::pair<OutputIterator1, OutputIterator2> set_union_by_key(
  * is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the
  * ordering on \p InputIterator1's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          \p InputIterator2 and \p InputIterator1 have the same \c value_type,
  *          \p InputIterator2's \c value_type is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on \p
  * InputIterator2's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator3 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          and \p InputIterator3's \c value_type is convertible to a type in \p OutputIterator2's set of \c
  * value_types. \tparam InputIterator4 is a model of <a
@@ -2950,14 +2950,14 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_union_by_ke
  * is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the
  * ordering on \p InputIterator1's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          \p InputIterator2 and \p InputIterator1 have the same \c value_type,
  *          \p InputIterator2's \c value_type is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on \p
  * InputIterator2's \c value_type is a strict weak ordering, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
- * InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types. \tparam
+ * InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator3 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          and \p InputIterator3's \c value_type is convertible to a type in \p OutputIterator2's set of \c
  * value_types. \tparam InputIterator4 is a model of <a

@@ -587,14 +587,12 @@ static_assert(noexcept(cuda::std::ranges::rbegin(ntab)));
 static_assert(noexcept(cuda::std::ranges::crbegin(ntab)));
 #endif // !TEST_COMPILER_MSVC_2019
 
-#if !defined(TEST_COMPILER_ICC)
 _CCCL_GLOBAL_CONSTANT struct NoThrowMemberRBeginReturnsRef
 {
   __host__ __device__ ThrowingIterator<int>& rbegin() const noexcept; // auto(t.rbegin()) may throw
 } ntmbrr;
 static_assert(!noexcept(cuda::std::ranges::rbegin(ntmbrr)));
 static_assert(!noexcept(cuda::std::ranges::crbegin(ntmbrr)));
-#endif // !TEST_COMPILER_ICC
 
 _CCCL_GLOBAL_CONSTANT struct RBeginReturnsArrayRef
 {
@@ -603,7 +601,6 @@ _CCCL_GLOBAL_CONSTANT struct RBeginReturnsArrayRef
 static_assert(noexcept(cuda::std::ranges::rbegin(brar)));
 static_assert(noexcept(cuda::std::ranges::crbegin(brar)));
 
-#if !defined(TEST_COMPILER_ICC)
 _CCCL_GLOBAL_CONSTANT struct NoThrowBeginThrowingEnd
 {
   __host__ __device__ int* begin() const noexcept;
@@ -611,7 +608,6 @@ _CCCL_GLOBAL_CONSTANT struct NoThrowBeginThrowingEnd
 } ntbte;
 static_assert(!noexcept(cuda::std::ranges::rbegin(ntbte)));
 static_assert(!noexcept(cuda::std::ranges::crbegin(ntbte)));
-#endif // !TEST_COMPILER_ICC
 
 _CCCL_GLOBAL_CONSTANT struct NoThrowEndThrowingBegin
 {
@@ -657,13 +653,9 @@ int main(int, char**)
   unused(ntmb);
   unused(ntab);
 #endif // !TEST_COMPILER_MSVC_2019
-#if !defined(TEST_COMPILER_ICC)
   unused(ntmbrr);
-#endif // !TEST_COMPILER_ICC
   unused(brar);
-#if !defined(TEST_COMPILER_ICC)
   unused(ntbte);
-#endif // !TEST_COMPILER_ICC
   unused(ntetb);
 
   return 0;

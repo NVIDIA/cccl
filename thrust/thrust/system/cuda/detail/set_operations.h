@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#ifdef _CCCL_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER
 
 #  include <thrust/detail/alignment.h>
 #  include <thrust/detail/mpl/math.h>
@@ -51,6 +51,9 @@
 #  include <thrust/system/cuda/detail/get_value.h>
 #  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
+
+#  include <cuda/std/__algorithm/max.h>
+#  include <cuda/std/__algorithm/min.h>
 
 #  include <cstdint>
 
@@ -127,8 +130,8 @@ THRUST_DEVICE_FUNCTION Size merge_path(It1 a, Size aCount, It2 b, Size bCount, S
 {
   using T = typename thrust::iterator_traits<It1>::value_type;
 
-  Size begin = thrust::max<Size>(0, diag - bCount);
-  Size end   = thrust::min<Size>(diag, aCount);
+  Size begin = ::cuda::std::max<Size>(0, diag - bCount);
+  Size end   = ::cuda::std::min<Size>(diag, aCount);
 
   while (begin < end)
   {
@@ -318,7 +321,7 @@ struct SetOpAgent
     using BlockLoadValues1 = typename core::BlockLoad<PtxPlan, ValuesLoadIt1>::type;
     using BlockLoadValues2 = typename core::BlockLoad<PtxPlan, ValuesLoadIt2>::type;
 
-    using TilePrefixCallback = cub::TilePrefixCallbackOp<Size, cub::Sum, ScanTileState, Arch::ver>;
+    using TilePrefixCallback = cub::TilePrefixCallbackOp<Size, ::cuda::std::plus<>, ScanTileState, Arch::ver>;
 
     using BlockScan = cub::BlockScan<Size, PtxPlan::BLOCK_THREADS, PtxPlan::SCAN_ALGORITHM, 1, 1, Arch::ver>;
 
@@ -343,7 +346,7 @@ struct SetOpAgent
           typename BlockLoadValues1::TempStorage load_values1;
           typename BlockLoadValues2::TempStorage load_values2;
 
-          // Allocate extra shmem than truely neccessary
+          // Allocate extra shmem than truly necessary
           // This will permit to avoid range checks in
           // serial set operations, e.g. serial_set_difference
           core::uninitialized_array<key_type, PtxPlan::ITEMS_PER_TILE + PtxPlan::BLOCK_THREADS> keys_shared;
@@ -599,7 +602,7 @@ struct SetOpAgent
       }
       else
       {
-        TilePrefixCallback prefix_cb(tile_state, storage.scan_storage.prefix, cub::Sum(), tile_idx);
+        TilePrefixCallback prefix_cb(tile_state, storage.scan_storage.prefix, ::cuda::std::plus<>{}, tile_idx);
 
         BlockScan(storage.scan_storage.scan).ExclusiveSum(thread_output_count, thread_output_prefix, prefix_cb);
         tile_output_count  = prefix_cb.GetBlockAggregate();
@@ -834,7 +837,7 @@ struct serial_set_intersection
       bool pA = compare_op(aKey, bKey);
       bool pB = compare_op(bKey, aKey);
 
-      // The outputs must come from A by definition of set interection.
+      // The outputs must come from A by definition of set intersection.
       output[i]  = aKey;
       indices[i] = aBegin;
 

@@ -44,26 +44,34 @@
 #endif // no system header
 
 #include <cub/detail/uninitialized_copy.cuh>
-#include <cub/util_deprecated.cuh>
 
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
+#if defined(_CCCL_HAS_NVFP16)
+#  include <cuda_fp16.h>
+#endif // _CCCL_HAS_NVFP16
+
 #if defined(_CCCL_HAS_NVBF16)
-#  if !defined(_CCCL_CUDACC_BELOW_11_8)
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
+#  include <cuda_bf16.h>
+_CCCL_DIAG_POP
+
+#  if _CCCL_CUDACC_AT_LEAST(11, 8)
 // cuda_fp8.h resets default for C4127, so we have to guard the inclusion
 _CCCL_DIAG_PUSH
 #    include <cuda_fp8.h>
 _CCCL_DIAG_POP
-#  endif // !_CCCL_CUDACC_BELOW_11_8
+#  endif // _CCCL_CUDACC_AT_LEAST(11, 8)
 #endif // _CCCL_HAS_NV_BF16
 
-#ifdef _CCCL_COMPILER_NVRTC
+#if _CCCL_COMPILER(NVRTC)
 #  include <cuda/std/iterator>
-#else // !defined(_CCCL_COMPILER_NVRTC)
+#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ // vvv !_CCCL_COMPILER(NVRTC) vvv
 #  include <iterator>
-#endif // defined(_CCCL_COMPILER_NVRTC)
+#endif // _CCCL_COMPILER(NVRTC)
 
 CUB_NAMESPACE_BEGIN
 
@@ -73,12 +81,11 @@ CUB_NAMESPACE_BEGIN
 #      define CUB_IS_INT128_ENABLED 1
 #    endif // !defined(__CUDACC_RTC_INT128__)
 #  else // !defined(__CUDACC_RTC__)
-#    if _CCCL_CUDACC_VER >= 1105000
-#      if defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_CLANG) || defined(_CCCL_COMPILER_ICC) \
-        || defined(_CCCL_COMPILER_NVHPC)
+#    if _CCCL_CUDACC_AT_LEAST(11, 5)
+#      if _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
 #        define CUB_IS_INT128_ENABLED 1
-#      endif // GCC || CLANG || ICC || NVHPC
-#    endif // CTK >= 11.5
+#      endif // GCC || CLANG || NVHPC
+#    endif // _CCCL_CUDACC_AT_LEAST(11, 5)
 #  endif // !defined(__CUDACC_RTC__)
 #endif // !defined(CUB_IS_INT128_ENABLED)
 
@@ -86,7 +93,7 @@ CUB_NAMESPACE_BEGIN
  * Conditional types
  ******************************************************************************/
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 namespace detail
 {
 //! Alias to the given iterator's value_type.
@@ -94,13 +101,13 @@ namespace detail
 // only defer to the libcu++ implementation for NVRTC.
 template <typename Iterator>
 using value_t =
-#  ifdef _CCCL_COMPILER_NVRTC
+#  if _CCCL_COMPILER(NVRTC)
   typename ::cuda::std::iterator_traits<Iterator>::value_type;
-#  else // !defined(_CCCL_COMPILER_NVRTC)
+#  else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ // vvv !_CCCL_COMPILER(NVRTC) vvv
   typename std::iterator_traits<Iterator>::value_type;
-#  endif // defined(_CCCL_COMPILER_NVRTC)
+#  endif // !_CCCL_COMPILER(NVRTC)
 
-template <typename It, typename FallbackT, bool = ::cuda::std::is_void<::cuda::std::__remove_pointer_t<It>>::value>
+template <typename It, typename FallbackT, bool = ::cuda::std::is_void<::cuda::std::remove_pointer_t<It>>::value>
 struct non_void_value_impl
 {
   using type = FallbackT;
@@ -143,7 +150,7 @@ struct Log2
   }; // Inductive case
 };
 
-#  ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 template <int N, int COUNT>
 struct Log2<N, 0, COUNT>
@@ -156,7 +163,7 @@ struct Log2<N, 0, COUNT>
   };
 };
 
-#  endif // DOXYGEN_SHOULD_SKIP_THIS
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 /**
  * \brief Statically determine if N is a power-of-two
@@ -170,13 +177,13 @@ struct PowerOfTwo
   };
 };
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 /******************************************************************************
  * Marker types
  ******************************************************************************/
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 /**
  * \brief A simple "null" marker type
@@ -240,7 +247,7 @@ struct Int2Type
  *     temp_storage_bytes,
  *     d_in,
  *     d_out,
- *     cub::Sum(),
+ *     cuda::std::plus<>{},
  *     init_value,
  *     num_items);
  * allocator.DeviceFree(d_intermediate_result);
@@ -687,7 +694,7 @@ struct KeyValuePair
  * deprecated [Since 2.5.0] The `cub::ArrayWrapper` is deprecated. Use `cuda::std::array` instead.
  */
 template <typename T, int COUNT>
-struct CUB_DEPRECATED_BECAUSE("Use cuda::std::array instead.") ArrayWrapper
+struct CCCL_DEPRECATED_BECAUSE("Use cuda::std::array instead.") ArrayWrapper
 {
   /// Statically-sized array of type \p T
   T array[COUNT];
@@ -749,12 +756,12 @@ struct DoubleBuffer
     template <typename T, typename = void>                                                              \
     struct detector_name : ::cuda::std::false_type                                                      \
     {                                                                                                   \
-      CUB_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool VALUE = false;                \
+      CCCL_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool VALUE = false;               \
     };                                                                                                  \
     template <typename T>                                                                               \
     struct detector_name<T, ::cuda::std::void_t<typename T::nested_type_name>> : ::cuda::std::true_type \
     {                                                                                                   \
-      CUB_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool VALUE = true;                 \
+      CCCL_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool VALUE = true;                \
     };
 
 /******************************************************************************
@@ -768,7 +775,7 @@ struct DoubleBuffer
 template <typename T, typename BinaryOp, typename = void>
 struct BinaryOpHasIdxParam : ::cuda::std::false_type
 {
-  CUB_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool HAS_PARAM = false;
+  CCCL_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool HAS_PARAM = false;
 };
 
 template <typename T, typename BinaryOp>
@@ -777,7 +784,7 @@ struct BinaryOpHasIdxParam<T,
                            ::cuda::std::void_t<decltype(::cuda::std::declval<BinaryOp>()(
                              ::cuda::std::declval<T>(), ::cuda::std::declval<T>(), int{}))>> : ::cuda::std::true_type
 {
-  CUB_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool HAS_PARAM = true;
+  CCCL_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool HAS_PARAM = true;
 };
 
 /******************************************************************************
@@ -1157,6 +1164,6 @@ template <typename T>
 struct Traits : NumericTraits<typename ::cuda::std::remove_cv<T>::type>
 {};
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 CUB_NAMESPACE_END

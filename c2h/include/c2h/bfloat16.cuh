@@ -98,7 +98,7 @@ struct bfloat16_t
   /// Constructor from float
   __host__ __device__ __forceinline__ explicit bfloat16_t(float a)
   {
-    // Refrence:
+    // Reference:
     // https://github.com/pytorch/pytorch/blob/44cc873fba5e5ffc4d4d4eef3bd370b653ce1ce1/c10/util/BFloat16.h#L51
     uint16_t ir;
     if (a != a)

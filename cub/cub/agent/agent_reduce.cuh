@@ -253,8 +253,8 @@ struct AgentReduce
       threadIdx.x, d_wrapped_in + block_offset, items, transform_op);
 
     // Reduce items within each thread stripe
-    thread_aggregate = (IS_FIRST_TILE) ? internal::ThreadReduce(items, reduction_op)
-                                       : internal::ThreadReduce(items, reduction_op, thread_aggregate);
+    thread_aggregate = (IS_FIRST_TILE) ? cub::ThreadReduce(items, reduction_op)
+                                       : cub::ThreadReduce(items, reduction_op, thread_aggregate);
   }
 
   /**
@@ -301,8 +301,8 @@ struct AgentReduce
     }
 
     // Reduce items within each thread stripe
-    thread_aggregate = (IS_FIRST_TILE) ? internal::ThreadReduce(items, reduction_op)
-                                       : internal::ThreadReduce(items, reduction_op, thread_aggregate);
+    thread_aggregate = (IS_FIRST_TILE) ? cub::ThreadReduce(items, reduction_op)
+                                       : cub::ThreadReduce(items, reduction_op, thread_aggregate);
   }
 
   /**
@@ -382,8 +382,8 @@ struct AgentReduce
     even_share.template BlockInit<TILE_ITEMS>(block_offset, block_end);
 
     return (IsAligned(d_in + block_offset, Int2Type<ATTEMPT_VECTORIZATION>()))
-           ? ConsumeRange(even_share, Int2Type < true && ATTEMPT_VECTORIZATION > ())
-           : ConsumeRange(even_share, Int2Type < false && ATTEMPT_VECTORIZATION > ());
+           ? ConsumeRange(even_share, Int2Type<true && ATTEMPT_VECTORIZATION>())
+           : ConsumeRange(even_share, Int2Type<false && ATTEMPT_VECTORIZATION>());
   }
 
   /**
@@ -396,8 +396,8 @@ struct AgentReduce
     even_share.template BlockInit<TILE_ITEMS, GRID_MAPPING_STRIP_MINE>();
 
     return (IsAligned(d_in, Int2Type<ATTEMPT_VECTORIZATION>()))
-           ? ConsumeRange(even_share, Int2Type < true && ATTEMPT_VECTORIZATION > ())
-           : ConsumeRange(even_share, Int2Type < false && ATTEMPT_VECTORIZATION > ());
+           ? ConsumeRange(even_share, Int2Type<true && ATTEMPT_VECTORIZATION>())
+           : ConsumeRange(even_share, Int2Type<false && ATTEMPT_VECTORIZATION>());
   }
 
 private:

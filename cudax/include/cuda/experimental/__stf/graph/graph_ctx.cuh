@@ -27,6 +27,7 @@
 
 #include <cuda/experimental/__stf/graph/graph_task.cuh>
 #include <cuda/experimental/__stf/graph/interfaces/slice.cuh>
+#include <cuda/experimental/__stf/graph/interfaces/void_interface.cuh>
 #include <cuda/experimental/__stf/internal/acquire_release.cuh>
 #include <cuda/experimental/__stf/internal/backend_allocator_setup.cuh>
 #include <cuda/experimental/__stf/internal/launch.cuh>
@@ -232,6 +233,13 @@ class graph_ctx : public backend_ctx<graph_ctx>
       return graph_epoch;
     }
 
+    // The completion of the CUDA graph implies the completion of all nodes in
+    // the graph
+    bool track_dangling_events() const override
+    {
+      return false;
+    }
+
     /* Store a vector of previously instantiated graphs, with the number of
      * nodes, number of edges, the executable graph, and the corresponding epoch.
      * */
@@ -259,7 +267,7 @@ public:
   template <typename T>
   using data_interface = typename graphed_interface_of<T>::type;
 
-  /// @brief This type is copyable, assignable, and movable. Howeever, copies have reference semantics.
+  /// @brief This type is copyable, assignable, and movable. However, copies have reference semantics.
   ///@{
   graph_ctx(async_resources_handle handle = async_resources_handle(nullptr))
       : backend_ctx<graph_ctx>(::std::make_shared<impl>(mv(handle)))
@@ -296,9 +304,9 @@ public:
   auto task(exec_place e_place, task_dep<Deps>... deps)
   {
     auto dump_hooks = reserved::get_dump_hooks(this, deps...);
-    auto res        = graph_task<Deps...>(*this, get_graph(), get_graph_epoch(), mv(e_place), mv(deps)...);
-    res.add_post_submission_hook(dump_hooks);
-    return res;
+    auto result     = graph_task<Deps...>(*this, get_graph(), get_graph_epoch(), mv(e_place), mv(deps)...);
+    result.add_post_submission_hook(dump_hooks);
+    return result;
   }
 
   // submit a new epoch : this will submit a graph in a stream that we return
@@ -515,6 +523,22 @@ public:
   void print_to_dot(const ::std::string& filename, enum cudaGraphDebugDotFlags flags = cudaGraphDebugDotFlags(0))
   {
     cudaGraphDebugDotPrint(get_graph(), filename.c_str(), flags);
+  }
+
+  template <typename T>
+  auto wait(cuda::experimental::stf::logical_data<T>& ldata)
+  {
+    typename owning_container_of<T>::type out;
+
+    host_launch(ldata.read()).set_symbol("wait")->*[&](auto data) {
+      out = owning_container_of<T>::get_value(data);
+    };
+
+    /* This forces the completion of the host callback, so that the host
+     * thread can use the content for dynamic control flow */
+    cuda_safe_call(cudaStreamSynchronize(task_fence()));
+
+    return out;
   }
 
 private:
@@ -763,7 +787,7 @@ UNITTEST("set_symbol on graph_task and graph_task<>")
   ctx.finalize();
 };
 
-#  ifdef __CUDACC__
+#  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 namespace reserved
 {
 
@@ -1006,7 +1030,7 @@ UNITTEST("basic launch test (graph_ctx)")
 
 inline void unit_test_launch_many_graph_ctx()
 {
-  // Stress the allocators and all ressources !
+  // Stress the allocators and all resources !
   for (size_t i = 0; i < 256; i++)
   {
     graph_ctx ctx;
@@ -1028,7 +1052,7 @@ UNITTEST("create many graph ctxs")
 
 } // end namespace reserved
 
-#  endif // __CUDACC__
+#  endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 
 #endif // UNITTESTED_FILE
 } // end namespace cuda::experimental::stf

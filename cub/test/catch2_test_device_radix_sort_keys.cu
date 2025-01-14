@@ -47,7 +47,7 @@
 #include "catch2_large_array_sort_helper.cuh"
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -319,7 +319,7 @@ C2H_TEST("DeviceRadixSort::SortKeys: entropy reduction", "[keys][radix][sort][de
   const int num_key_seeds = 1;
   c2h::gen(C2H_SEED(num_key_seeds), in_keys);
 
-  // Repeatedly bitwise-and random keys together. This increases the likelyhood
+  // Repeatedly bitwise-and random keys together. This increases the likelihood
   // of duplicate keys.
   const int entropy_reduction = GENERATE(1, 3, 9, 15);
   {

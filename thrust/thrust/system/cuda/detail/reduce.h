@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#ifdef _CCCL_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER
 
 #  include <thrust/system/cuda/config.h>
 
@@ -44,7 +44,6 @@
 #  include <cub/util_math.cuh>
 
 #  include <thrust/detail/alignment.h>
-#  include <thrust/detail/minmax.h>
 #  include <thrust/detail/raw_reference_cast.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/detail/type_traits/iterator/is_output_iterator.h>
@@ -150,7 +149,7 @@ struct Tuning<sm35, T> : Tuning<sm30, T>
               cub::LOAD_LDG,
               cub::GRID_MAPPING_DYNAMIC>;
 
-  using type = ::cuda::std::__conditional_t<(sizeof(T) < 4), ReducePolicy1B, ReducePolicy4B>;
+  using type = ::cuda::std::conditional_t<(sizeof(T) < 4), ReducePolicy1B, ReducePolicy4B>;
 }; // Tuning sm35
 
 template <class InputIt, class OutputIt, class T, class Size, class ReductionOp>
@@ -289,8 +288,8 @@ struct ReduceAgent
       cub::LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, load_it + block_offset, items);
 
       // Reduce items within each thread stripe
-      thread_aggregate = (IS_FIRST_TILE) ? cub::internal::ThreadReduce(items, reduction_op)
-                                         : cub::internal::ThreadReduce(items, reduction_op, thread_aggregate);
+      thread_aggregate = (IS_FIRST_TILE) ? cub::ThreadReduce(items, reduction_op)
+                                         : cub::ThreadReduce(items, reduction_op, thread_aggregate);
     }
 
     // Consume a full tile of input (vectorized)
@@ -324,8 +323,8 @@ struct ReduceAgent
       }
 
       // Reduce items within each thread stripe
-      thread_aggregate = (IS_FIRST_TILE) ? cub::internal::ThreadReduce(items, reduction_op)
-                                         : cub::internal::ThreadReduce(items, reduction_op, thread_aggregate);
+      thread_aggregate = (IS_FIRST_TILE) ? cub::ThreadReduce(items, reduction_op)
+                                         : cub::ThreadReduce(items, reduction_op, thread_aggregate);
     }
 
     // Consume a partial tile of input
@@ -647,7 +646,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
     // small, single tile size
     if (d_temp_storage == nullptr)
     {
-      temp_storage_bytes = max<size_t>(1, vshmem_size);
+      temp_storage_bytes = ::cuda::std::max<size_t>(1, vshmem_size);
       return status;
     }
     char* vshmem_ptr = vshmem_size > 0 ? (char*) d_temp_storage : nullptr;
@@ -717,7 +716,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
 
       // if not enough to fill the device with threadblocks
       // then fill the device with threadblocks
-      reduce_grid_size = static_cast<int>((min) (num_tiles, static_cast<size_t>(reduce_device_occupancy)));
+      reduce_grid_size = static_cast<int>((::cuda::std::min)(num_tiles, static_cast<size_t>(reduce_device_occupancy)));
 
       using drain_agent    = AgentLauncher<DrainAgent<Size>>;
       AgentPlan drain_plan = drain_agent::get_plan();

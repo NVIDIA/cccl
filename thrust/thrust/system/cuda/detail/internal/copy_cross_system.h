@@ -137,7 +137,7 @@ OutputIt _CCCL_HOST cross_system_copy_n(
   return ret;
 }
 
-#ifdef _CCCL_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER
 // non-trivial copy D->H, only supported with NVCC compiler
 // because copy ctor must have  __device__ annotations, which is nvcc-only
 // feature

@@ -53,8 +53,6 @@
 
 #include <cuda/std/type_traits>
 
-#include <iterator>
-
 #include <nv/target>
 
 CUB_NAMESPACE_BEGIN
@@ -926,7 +924,7 @@ struct ScanTileState<T, false>
     {
       value = ThreadLoad<LOAD_CG>(d_tile_partial + TILE_STATUS_PADDING + tile_idx);
     }
-    else
+    else if (status == StatusWord(SCAN_TILE_INCLUSIVE))
     {
       value = ThreadLoad<LOAD_CG>(d_tile_inclusive + TILE_STATUS_PADDING + tile_idx);
     }

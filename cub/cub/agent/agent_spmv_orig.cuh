@@ -102,7 +102,7 @@ template <int _BLOCK_THREADS,
           CacheLoadModifier _VECTOR_VALUES_LOAD_MODIFIER,
           bool _DIRECT_LOAD_NONZEROS,
           BlockScanAlgorithm _SCAN_ALGORITHM>
-struct AgentSpmvPolicy
+struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") AgentSpmvPolicy
 {
   enum
   {
@@ -148,7 +148,12 @@ struct AgentSpmvPolicy
  *   Signed integer type for sequence offsets
  */
 template <typename ValueT, typename OffsetT>
-struct SpmvParams
+struct
+// with NVHPC, we get a deprecation warning in the implementation of cudaLaunchKernelEx, which we cannot suppress :/
+#if !_CCCL_COMPILER(NVHPC)
+  CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead")
+#endif
+    SpmvParams
 {
   /// Pointer to the array of \p num_nonzeros values of the corresponding nonzero elements of matrix
   /// <b>A</b>.
@@ -211,7 +216,7 @@ template <typename AgentSpmvPolicyT,
           bool HAS_ALPHA,
           bool HAS_BETA,
           int LEGACY_PTX_ARCH = 0>
-struct AgentSpmv
+struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") AgentSpmv
 {
   //---------------------------------------------------------------------
   // Types and constants
@@ -247,7 +252,7 @@ struct AgentSpmv
   using KeyValuePairT = KeyValuePair<OffsetT, ValueT>;
 
   // Reduce-value-by-segment scan operator
-  using ReduceBySegmentOpT = ReduceByKeyOp<cub::Sum>;
+  using ReduceBySegmentOpT = ReduceByKeyOp<::cuda::std::plus<>>;
 
   // BlockReduce specialization
   using BlockReduceT = BlockReduce<ValueT, BLOCK_THREADS, BLOCK_REDUCE_WARP_REDUCTIONS>;
@@ -308,7 +313,9 @@ struct AgentSpmv
   /// Reference to temp_storage
   _TempStorage& temp_storage;
 
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   SpmvParams<ValueT, OffsetT>& spmv_params;
+  _CCCL_SUPPRESS_DEPRECATED_POP
 
   /// Wrapped pointer to the array of \p num_nonzeros values of the corresponding nonzero elements
   /// of matrix <b>A</b>.
@@ -341,6 +348,7 @@ struct AgentSpmv
    * @param spmv_params
    *   SpMV input parameter bundle
    */
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   _CCCL_DEVICE _CCCL_FORCEINLINE AgentSpmv(TempStorage& temp_storage, SpmvParams<ValueT, OffsetT>& spmv_params)
       : temp_storage(temp_storage.Alias())
       , spmv_params(spmv_params)
@@ -350,6 +358,7 @@ struct AgentSpmv
       , wd_vector_x(spmv_params.d_vector_x)
       , wd_vector_y(spmv_params.d_vector_y)
   {}
+  _CCCL_SUPPRESS_DEPRECATED_POP
 
   /**
    * @brief Consume a merge tile, specialized for direct-load of nonzeros

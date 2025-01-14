@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#ifdef _CCCL_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER
 
 #  include <thrust/system/cuda/config.h>
 
@@ -45,7 +45,6 @@
 
 #  include <thrust/advance.h>
 #  include <thrust/count.h>
-#  include <thrust/detail/minmax.h>
 #  include <thrust/distance.h>
 #  include <thrust/functional.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
@@ -186,7 +185,7 @@ struct UniqueAgent
 
     using BlockDiscontinuityItems = cub::BlockDiscontinuity<item_type, PtxPlan::BLOCK_THREADS, 1, 1, Arch::ver>;
 
-    using TilePrefixCallback = cub::TilePrefixCallbackOp<Size, cub::Sum, ScanTileState, Arch::ver>;
+    using TilePrefixCallback = cub::TilePrefixCallbackOp<Size, ::cuda::std::plus<>, ScanTileState, Arch::ver>;
     using BlockScan          = cub::BlockScan<Size, PtxPlan::BLOCK_THREADS, PtxPlan::SCAN_ALGORITHM, 1, 1, Arch::ver>;
 
     using shared_items_t = core::uninitialized_array<item_type, PtxPlan::ITEMS_PER_TILE>;
@@ -353,7 +352,7 @@ struct UniqueAgent
       }
       else
       {
-        TilePrefixCallback prefix_cb(tile_state, temp_storage.scan_storage.prefix, cub::Sum(), tile_idx);
+        TilePrefixCallback prefix_cb(tile_state, temp_storage.scan_storage.prefix, ::cuda::std::plus<>{}, tile_idx);
         BlockScan(temp_storage.scan_storage.scan).ExclusiveSum(selection_flags, selection_idx, prefix_cb);
 
         num_selections        = prefix_cb.GetInclusivePrefix();
@@ -532,7 +531,7 @@ static cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   status = tile_status.Init(static_cast<int>(num_tiles), allocations[0], allocation_sizes[0]);
   CUDA_CUB_RET_IF_FAIL(status);
 
-  num_tiles = max<size_t>(1, num_tiles);
+  num_tiles = ::cuda::std::max<size_t>(1, num_tiles);
   init_agent ia(init_plan, num_tiles, stream, "unique_by_key::init_agent");
   ia.launch(tile_status, num_tiles, num_selected_out);
   CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());

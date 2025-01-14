@@ -156,7 +156,7 @@ typename thrust::iterator_traits<InputIterator>::value_type reduce(InputIterator
  * is convertible to \p T. \tparam T is convertible to \p InputIterator's \c value_type.
  *
  *  The following code snippet demonstrates how to use \p reduce to compute
- *  the sum of a sequence of integers including an intialization value using the \p thrust::host
+ *  the sum of a sequence of integers including an initialization value using the \p thrust::host
  *  execution policy for parallelization:
  *
  *  \code
@@ -200,7 +200,7 @@ _CCCL_HOST_DEVICE T reduce(
  * is convertible to \p T. \tparam T is convertible to \p InputIterator's \c value_type.
  *
  *  The following code snippet demonstrates how to use \p reduce to compute
- *  the sum of a sequence of integers including an intialization value.
+ *  the sum of a sequence of integers including an initialization value.
  *
  *  \code
  *  #include <thrust/reduce.h>
@@ -242,11 +242,10 @@ T reduce(InputIterator first, InputIterator last, T init);
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator's \c value_type is convertible to \c T. \tparam T is a model of <a
- * href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>, and is convertible to \p
- * BinaryFunction's \c first_argument_type and \c second_argument_type. \tparam BinaryFunction is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>, and \p
- * BinaryFunction's \c result_type is convertible to \p OutputType.
+ * Iterator</a> and \c InputIterator's \c value_type is convertible to \c T.
+ *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>, and is
+ * convertible to \p BinaryFunction's first and second argument type.
+ *  \tparam BinaryFunction The function's return type must be convertible to \p OutputType.
  *
  *  The following code snippet demonstrates how to use \p reduce to
  *  compute the maximum value of a sequence of integers using the \p thrust::host execution policy
@@ -298,11 +297,10 @@ _CCCL_HOST_DEVICE T reduce(
  *  \return The result of the reduction.
  *
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator's \c value_type is convertible to \c T. \tparam T is a model of <a
- * href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>, and is convertible to \p
- * BinaryFunction's \c first_argument_type and \c second_argument_type. \tparam BinaryFunction is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>, and \p
- * BinaryFunction's \c result_type is convertible to \p OutputType.
+ * Iterator</a> and \c InputIterator's \c value_type is convertible to \c T.
+ *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>, and is
+ * convertible to \p BinaryFunction's first and second argument type.
+ *  \tparam BinaryFunction The function's return type must be convertible to \p OutputType.
  *
  *  The following code snippet demonstrates how to use \p reduce to
  *  compute the maximum value of a sequence of integers.
@@ -628,9 +626,8 @@ thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
  * InputIterator1's \c value_type is convertible to \c OutputIterator1's \c value_type. \tparam OutputIterator2 is a
  * model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a> and and \p
  * InputIterator2's \c value_type is convertible to \c OutputIterator2's \c value_type. \tparam BinaryPredicate is a
- * model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>. \tparam
- * BinaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary
- * Function</a> and \c BinaryFunction's \c result_type is convertible to \c OutputIterator2's \c value_type.
+ * model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>.
+ *  \tparam BinaryFunction The function's return type must be convertible to \c OutputIterator2's \c value_type.
  *
  *  \pre The input ranges shall not overlap either output range.
  *
@@ -708,9 +705,8 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
  * InputIterator1's \c value_type is convertible to \c OutputIterator1's \c value_type. \tparam OutputIterator2 is a
  * model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a> and and \p
  * InputIterator2's \c value_type is convertible to \c OutputIterator2's \c value_type. \tparam BinaryPredicate is a
- * model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>. \tparam
- * BinaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary
- * Function</a> and \c BinaryFunction's \c result_type is convertible to \c OutputIterator2's \c value_type.
+ * model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>.
+ * \tparam BinaryFunction The function's return type must be convertible to \c OutputIterator2's \c value_type.
  *
  *  \pre The input ranges shall not overlap either output range.
  *

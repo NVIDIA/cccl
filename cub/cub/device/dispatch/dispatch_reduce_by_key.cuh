@@ -48,7 +48,6 @@
 #include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/thread/thread_operators.cuh>
-#include <cub/util_deprecated.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 
@@ -209,7 +208,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT::BLOCK_TH
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
- * @tparam SelectedPolicy
+ * @tparam PolicyHub
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
@@ -221,17 +220,13 @@ template <typename KeysInputIteratorT,
           typename EqualityOpT,
           typename ReductionOpT,
           typename OffsetT,
-          typename AccumT = //
-          ::cuda::std::__accumulator_t<ReductionOpT,
-                                       cub::detail::value_t<ValuesInputIteratorT>,
-                                       cub::detail::value_t<ValuesInputIteratorT>>,
-          typename SelectedPolicy = //
-          detail::device_reduce_by_key_policy_hub< //
-            ReductionOpT, //
-            AccumT, //
-            cub::detail::non_void_value_t< //
-              UniqueOutputIteratorT, //
-              cub::detail::value_t<KeysInputIteratorT>>>>
+          typename AccumT    = ::cuda::std::__accumulator_t<ReductionOpT,
+                                                            cub::detail::value_t<ValuesInputIteratorT>,
+                                                            cub::detail::value_t<ValuesInputIteratorT>>,
+          typename PolicyHub = detail::reduce_by_key::policy_hub<
+            ReductionOpT,
+            AccumT,
+            cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::value_t<KeysInputIteratorT>>>>
 struct DispatchReduceByKey
 {
   //-------------------------------------------------------------------------
@@ -443,11 +438,10 @@ struct DispatchReduceByKey
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
-    using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
     return Invoke<ActivePolicyT>(
       DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
       DeviceReduceByKeyKernel<
-        MaxPolicyT,
+        typename PolicyHub::MaxPolicy,
         KeysInputIteratorT,
         UniqueOutputIteratorT,
         ValuesInputIteratorT,
@@ -512,8 +506,6 @@ struct DispatchReduceByKey
     OffsetT num_items,
     cudaStream_t stream)
   {
-    using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
-
     cudaError error = cudaSuccess;
 
     do
@@ -540,7 +532,7 @@ struct DispatchReduceByKey
         stream);
 
       // Dispatch
-      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+      error = CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
       if (cudaSuccess != error)
       {
         break;
@@ -549,39 +541,6 @@ struct DispatchReduceByKey
 
     return error;
   }
-
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    KeysInputIteratorT d_keys_in,
-    UniqueOutputIteratorT d_unique_out,
-    ValuesInputIteratorT d_values_in,
-    AggregatesOutputIteratorT d_aggregates_out,
-    NumRunsOutputIteratorT d_num_runs_out,
-    EqualityOpT equality_op,
-    ReductionOpT reduction_op,
-    OffsetT num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_unique_out,
-      d_values_in,
-      d_aggregates_out,
-      d_num_runs_out,
-      equality_op,
-      reduction_op,
-      num_items,
-      stream);
-  }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
 };
 
 CUB_NAMESPACE_END

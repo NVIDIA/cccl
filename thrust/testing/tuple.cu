@@ -471,7 +471,8 @@ void TestTupleSwap()
   thrust::tuple<int, int, int> t1(a, b, c);
   thrust::tuple<int, int, int> t2(x, y, z);
 
-  thrust::swap(t1, t2);
+  using ::cuda::std::swap;
+  swap(t1, t2);
 
   ASSERT_EQUAL(x, thrust::get<0>(t1));
   ASSERT_EQUAL(y, thrust::get<1>(t1));
@@ -528,6 +529,7 @@ DECLARE_UNITTEST(TestTupleCTAD);
 #endif // _CCCL_STD_VER >= 2017
 
 // Ensure that we are backwards compatible with the old thrust::tuple implementation
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 static_assert(
   thrust::tuple_size<thrust::tuple<thrust::null_type,
                                    thrust::null_type,
@@ -624,3 +626,4 @@ static_assert(
 static_assert(
   thrust::tuple_size<thrust::tuple<int, int, int, int, int, int, int, int, int, thrust::null_type>>::value == 9, "");
 static_assert(thrust::tuple_size<thrust::tuple<int, int, int, int, int, int, int, int, int, int>>::value == 10, "");
+_CCCL_SUPPRESS_DEPRECATED_POP

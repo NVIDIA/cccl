@@ -28,11 +28,11 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp>
 struct remove_all_extents
 {
-  using type _LIBCUDACXX_NODEBUG_TYPE = _CCCL_BUILTIN_REMOVE_ALL_EXTENTS(_Tp);
+  using type _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_ALL_EXTENTS(_Tp);
 };
 
 template <class _Tp>
-using __remove_all_extents_t = _CCCL_BUILTIN_REMOVE_ALL_EXTENTS(_Tp);
+using remove_all_extents_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_ALL_EXTENTS(_Tp);
 
 #else
 
@@ -53,14 +53,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_all_extents<_Tp[_Np]>
 };
 
 template <class _Tp>
-using __remove_all_extents_t = typename remove_all_extents<_Tp>::type;
+using remove_all_extents_t _CCCL_NODEBUG_ALIAS = typename remove_all_extents<_Tp>::type;
 
 #endif // defined(_CCCL_BUILTIN_REMOVE_ALL_EXTENTS) && !defined(_LIBCUDACXX_USE_REMOVE_ALL_EXTENTS_FALLBACK)
-
-#if _CCCL_STD_VER > 2011
-template <class _Tp>
-using remove_all_extents_t = __remove_all_extents_t<_Tp>;
-#endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -49,7 +49,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 #  define CUB_PREVENT_MACRO_SUBSTITUTION
 template <typename T, typename U>
 constexpr _CCCL_HOST_DEVICE auto min CUB_PREVENT_MACRO_SUBSTITUTION(T&& t, U&& u)
@@ -109,22 +109,16 @@ constexpr _CCCL_HOST_DEVICE auto max CUB_PREVENT_MACRO_SUBSTITUTION(T&& t, U&& u
 #if !defined(CUB_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION)
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wattributes")
-#  if !defined(_CCCL_CUDA_COMPILER_NVHPC)
+#  if !_CCCL_CUDA_COMPILER(NVHPC)
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
-#  endif // !_CCCL_CUDA_COMPILER_NVHPC
-#  if defined(_CCCL_COMPILER_ICC)
-#    pragma nv_diag_suppress 1407 // the "__visibility__" attribute can only appear on functions and
-                                  // variables with external linkage'
-#    pragma warning(disable : 1890) // the "__visibility__" attribute can only appear on functions and
-                                    // variables with external linkage'
-#  endif // _CCCL_COMPILER_ICC
+#  endif // !_CCCL_CUDA_COMPILER(NVHPC)
 #endif // !CUB_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION
 
 #ifndef CUB_DEFINE_KERNEL_GETTER
-#  define CUB_DEFINE_KERNEL_GETTER(name, ...)                           \
-    CUB_RUNTIME_FUNCTION static constexpr decltype(&__VA_ARGS__) name() \
-    {                                                                   \
-      return &__VA_ARGS__;                                              \
+#  define CUB_DEFINE_KERNEL_GETTER(name, ...)                                               \
+    _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr decltype(&__VA_ARGS__) name() \
+    {                                                                                       \
+      return &__VA_ARGS__;                                                                  \
     }
 #endif
 

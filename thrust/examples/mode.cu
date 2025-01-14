@@ -70,10 +70,10 @@ int main()
   thrust::device_vector<int>::iterator mode_iter;
   mode_iter = thrust::max_element(d_output_counts.begin(), d_output_counts.end());
 
-  int mode       = d_output_keys[mode_iter - d_output_counts.begin()];
-  int occurances = *mode_iter;
+  int mode        = d_output_keys[mode_iter - d_output_counts.begin()];
+  int occurrences = *mode_iter;
 
-  std::cout << "Modal value " << mode << " occurs " << occurances << " times " << std::endl;
+  std::cout << "Modal value " << mode << " occurs " << occurrences << " times " << std::endl;
 
   return 0;
 }

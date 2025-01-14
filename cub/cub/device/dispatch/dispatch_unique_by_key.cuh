@@ -45,7 +45,6 @@
 #include <cub/agent/agent_unique_by_key.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_unique_by_key.cuh>
-#include <cub/util_deprecated.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_vsmem.cuh>
@@ -213,8 +212,9 @@ template <typename KeyInputIteratorT,
           typename NumSelectedIteratorT,
           typename EqualityOpT,
           typename OffsetT,
-          typename SelectedPolicy = DeviceUniqueByKeyPolicy<KeyInputIteratorT, ValueInputIteratorT>>
-struct DispatchUniqueByKey : SelectedPolicy
+          typename PolicyHub =
+            detail::unique_by_key::policy_hub<detail::value_t<KeyInputIteratorT>, detail::value_t<ValueInputIteratorT>>>
+struct DispatchUniqueByKey
 {
   /******************************************************************************
    * Types and constants
@@ -321,35 +321,6 @@ struct DispatchUniqueByKey : SelectedPolicy
       , num_items(num_items)
       , stream(stream)
   {}
-
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchUniqueByKey(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    KeyInputIteratorT d_keys_in,
-    ValueInputIteratorT d_values_in,
-    KeyOutputIteratorT d_keys_out,
-    ValueOutputIteratorT d_values_out,
-    NumSelectedIteratorT d_num_selected_out,
-    EqualityOpT equality_op,
-    OffsetT num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-      : d_temp_storage(d_temp_storage)
-      , temp_storage_bytes(temp_storage_bytes)
-      , d_keys_in(d_keys_in)
-      , d_values_in(d_values_in)
-      , d_keys_out(d_keys_out)
-      , d_values_out(d_values_out)
-      , d_num_selected_out(d_num_selected_out)
-      , equality_op(equality_op)
-      , num_items(num_items)
-      , stream(stream)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-  }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   /******************************************************************************
    * Dispatch entrypoints
@@ -528,13 +499,11 @@ struct DispatchUniqueByKey : SelectedPolicy
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke()
   {
-    using MaxPolicyT = typename DispatchUniqueByKey::MaxPolicy;
-
     // Ensure kernels are instantiated.
     return Invoke<ActivePolicyT>(
       DeviceCompactInitKernel<ScanTileStateT, NumSelectedIteratorT>,
       DeviceUniqueByKeySweepKernel<
-        MaxPolicyT,
+        typename PolicyHub::MaxPolicy,
         KeyInputIteratorT,
         ValueInputIteratorT,
         KeyOutputIteratorT,
@@ -594,8 +563,6 @@ struct DispatchUniqueByKey : SelectedPolicy
     OffsetT num_items,
     cudaStream_t stream)
   {
-    using MaxPolicyT = typename DispatchUniqueByKey::MaxPolicy;
-
     cudaError_t error;
     do
     {
@@ -621,7 +588,7 @@ struct DispatchUniqueByKey : SelectedPolicy
         stream);
 
       // Dispatch to chained policy
-      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+      error = CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
       if (cudaSuccess != error)
       {
         break;
@@ -630,37 +597,6 @@ struct DispatchUniqueByKey : SelectedPolicy
 
     return error;
   }
-
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    KeyInputIteratorT d_keys_in,
-    ValueInputIteratorT d_values_in,
-    KeyOutputIteratorT d_keys_out,
-    ValueOutputIteratorT d_values_out,
-    NumSelectedIteratorT d_num_selected_out,
-    EqualityOpT equality_op,
-    OffsetT num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_values_in,
-      d_keys_out,
-      d_values_out,
-      d_num_selected_out,
-      equality_op,
-      num_items,
-      stream);
-  }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
 };
 
 CUB_NAMESPACE_END

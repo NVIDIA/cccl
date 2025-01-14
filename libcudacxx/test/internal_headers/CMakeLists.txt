@@ -26,6 +26,14 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" AND NOT "${CMAKE_CXX_STANDARD}" M
   list(FILTER internal_headers EXCLUDE REGEX "mdspan")
 endif()
 
+# Exclude __limits/msvc_win32.h on non-MSVC compilers
+if (NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+  list(FILTER internal_headers EXCLUDE REGEX "__limits/msvc_win32.h")
+endif()
+
+# generated cuda::ptx headers are not standalone
+list(FILTER internal_headers EXCLUDE REGEX "__ptx/instructions/generated")
+
 function(libcudacxx_create_internal_header_test header_name, headertest_src, fallback)
   if(fallback)
     set(header_name "${header_name}_fallback")
@@ -55,8 +63,8 @@ function(libcudacxx_create_internal_header_test header_name, headertest_src, fal
     target_compile_definitions(headertest_${header_name} PRIVATE "-D${fallback}")
   endif()
   target_compile_definitions(headertest_${header_name} PRIVATE "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE")
-  if (CCCL_SUPPRESS_ICC_DEPRECATION_WARNING)
-    target_compile_definitions(headertest_${header_name} PRIVATE CCCL_SUPPRESS_ICC_DEPRECATION_WARNING)
+  if (CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING)
+    target_compile_definitions(headertest_${header_name} PRIVATE CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING)
   endif()
 
   add_dependencies(libcudacxx.test.internal_headers headertest_${header_name})
@@ -82,7 +90,7 @@ function(libcudacxx_add_internal_header_test header)
     endif()
   endif()
 
-  # Seach the file for a fallback definition
+  # Search the file for a fallback definition
   file(READ ${libcudacxx_SOURCE_DIR}/include/cuda/${header} header_file)
   string(REGEX MATCH "_LIBCUDACXX_[A-Z_]*_FALLBACK" fallback "${header_file}")
   if(fallback)

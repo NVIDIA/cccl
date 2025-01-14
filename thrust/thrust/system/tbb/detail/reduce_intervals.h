@@ -25,12 +25,13 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/minmax.h>
 #include <thrust/detail/seq.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/reduce.h>
 #include <thrust/system/cpp/memory.h>
 #include <thrust/system/tbb/detail/execution_policy.h>
+
+#include <cuda/std/__algorithm/min.h>
 
 #include <cassert>
 #include <type_traits>
@@ -76,7 +77,7 @@ struct body
     Size interval_idx = r.begin();
 
     Size offset_to_first = interval_size * interval_idx;
-    Size offset_to_last  = (thrust::min)(n, offset_to_first + interval_size);
+    Size offset_to_last  = (::cuda::std::min)(n, offset_to_first + interval_size);
 
     RandomAccessIterator1 my_first = first + offset_to_first;
     RandomAccessIterator1 my_last  = first + offset_to_last;

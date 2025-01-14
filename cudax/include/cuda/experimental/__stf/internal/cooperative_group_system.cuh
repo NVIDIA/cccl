@@ -33,7 +33,7 @@ namespace cuda::experimental::stf::reserved
  * multi-device cooperative kernels.
  *
  * The sync() method, in particular, assumes that all kernels are running at
- * the same time. It is the responsability of the caller to ensure this is
+ * the same time. It is the responsibility of the caller to ensure this is
  * enforced.
  */
 class cooperative_group_system

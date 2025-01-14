@@ -29,7 +29,7 @@
 
 #include <cuda/std/type_traits>
 
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 C2H_TEST("Tests safe_add_bound_to_max", "[util][math]")
 {

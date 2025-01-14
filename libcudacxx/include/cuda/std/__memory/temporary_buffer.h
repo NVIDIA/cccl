@@ -26,10 +26,11 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__new_>
+#include <cuda/std/__type_traits/alignment_of.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/detail/libcxx/include/limits>
+#include <cuda/std/limits>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -80,7 +81,7 @@ get_temporary_buffer(ptrdiff_t __n) noexcept
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI void return_temporary_buffer(_Tp* __p) noexcept
 {
-  _CUDA_VSTD::__libcpp_deallocate_unsized((void*) __p, _LIBCUDACXX_ALIGNOF(_Tp));
+  _CUDA_VSTD::__cccl_deallocate_unsized((void*) __p, _LIBCUDACXX_ALIGNOF(_Tp));
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD

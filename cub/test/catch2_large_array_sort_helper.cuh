@@ -46,11 +46,11 @@
 #include <cstdint>
 #include <numeric>
 
-#include <c2h/catch2_test_helper.cuh>
-#include <c2h/cpu_timer.cuh>
-#include <c2h/device_policy.cuh>
-#include <c2h/generators.cuh> // seed_t
-#include <c2h/vector.cuh>
+#include <c2h/catch2_test_helper.h>
+#include <c2h/cpu_timer.h>
+#include <c2h/device_policy.h>
+#include <c2h/generators.h> // seed_t
+#include <c2h/vector.h>
 
 // #define DEBUG_TIMING
 
@@ -140,7 +140,7 @@ public:
   _CCCL_HOST_DEVICE KeyType operator()(std::size_t idx) const
   {
     // The final summary may be padded, so truncate the summary_idx at the last valid idx:
-    const std::size_t summary_idx = thrust::min(m_num_summaries - 1, idx / m_unpadded_run_size);
+    const std::size_t summary_idx = cuda::std::min(m_num_summaries - 1, idx / m_unpadded_run_size);
     const KeyType key = m_is_descending ? static_cast<KeyType>((m_num_summaries - 1 - summary_idx) * m_key_conversion)
                                         : static_cast<KeyType>(summary_idx * m_key_conversion);
 

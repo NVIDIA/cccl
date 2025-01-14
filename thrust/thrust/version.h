@@ -22,7 +22,7 @@
  *
  *         It is also the only header that does not cause THRUST_HOST_SYSTEM
  *         and THRUST_DEVICE_SYSTEM to be defined. This way, a user may include
- *         this header and inspect THRUST_VERSION before programatically defining
+ *         this header and inspect THRUST_VERSION before programmatically defining
  *         either of these macros herself.
  */
 
@@ -61,7 +61,7 @@
  *         <tt>THRUST_VERSION / 100 % 1000</tt> is the minor version.
  *         <tt>THRUST_VERSION / 100000</tt> is the major version.
  */
-#define THRUST_VERSION 200800 // macro expansion with ## requires this to be a single value
+#define THRUST_VERSION 300000 // macro expansion with ## requires this to be a single value
 
 /*! \def THRUST_MAJOR_VERSION
  *  \brief The preprocessor macro \p THRUST_MAJOR_VERSION encodes the

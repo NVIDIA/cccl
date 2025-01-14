@@ -131,7 +131,7 @@ THRUST_NAMESPACE_BEGIN
  *  \see get
  */
 template <typename IteratorTuple>
-class zip_iterator : public detail::zip_iterator_base<IteratorTuple>::type
+class _CCCL_DECLSPEC_EMPTY_BASES zip_iterator : public detail::zip_iterator_base<IteratorTuple>::type
 {
 public:
   /*! The underlying iterator tuple type. Alias to zip_iterator's first template argument.
@@ -140,11 +140,11 @@ public:
 
   /*! Default constructor does nothing.
    */
-#if defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_COMPILER(MSVC2017)
   inline _CCCL_HOST_DEVICE zip_iterator() {}
-#else // ^^^ _CCCL_COMPILER_MSVC_2017 ^^^ / vvv !_CCCL_COMPILER_MSVC_2017 vvv
+#else // ^^^ _CCCL_COMPILER(MSVC2017) ^^^ / vvv !_CCCL_COMPILER(MSVC2017) vvv
   zip_iterator() = default;
-#endif // !_CCCL_COMPILER_MSVC_2017
+#endif // !_CCCL_COMPILER(MSVC2017)
 
   /*! This constructor creates a new \p zip_iterator from a
    *  \p tuple of iterators.

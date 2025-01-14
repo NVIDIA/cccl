@@ -48,7 +48,7 @@
 
 #include <nv/target>
 
-#ifdef DOXYGEN_SHOULD_SKIP_THIS // Only parse this during doxygen passes:
+#ifdef _CCCL_DOXYGEN_INVOKED // Only parse this during doxygen passes:
 
 /**
  * @def CUB_DEBUG_LOG
@@ -92,7 +92,7 @@
  */
 #  define CUB_DEBUG_ALL
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 // `CUB_DETAIL_DEBUG_LEVEL_*`: Implementation details, internal use only:
 
@@ -278,7 +278,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t Debug(cudaError_t error, const c
 #  else // Clang:
 
 // XXX shameless hack for clang around variadic printf...
-//     Compilies w/o supplying -std=c++11 but shows warning,
+//     Compiles w/o supplying -std=c++11 but shows warning,
 //     so we silence them :)
 #    pragma clang diagnostic ignored "-Wc++11-extensions"
 #    pragma clang diagnostic ignored "-Wunnamed-type-template-args"

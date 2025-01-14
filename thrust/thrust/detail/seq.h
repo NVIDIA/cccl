@@ -49,6 +49,6 @@ struct seq_t
 
 } // namespace detail
 
-THRUST_INLINE_CONSTANT detail::seq_t seq;
+_CCCL_GLOBAL_CONSTANT detail::seq_t seq;
 
 THRUST_NAMESPACE_END

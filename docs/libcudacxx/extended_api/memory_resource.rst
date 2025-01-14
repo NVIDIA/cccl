@@ -36,7 +36,7 @@ At a high level, the header provides:
      - Concepts that provide proper constraints for arbitrary memory resources.
      - CCCL 2.2.0 / CUDA 12.3
    * - :ref:`cuda::mr::{async}_resource_ref <libcudacxx-extended-api-memory-resources-resource-ref>`
-     - A type-erased memory resource wrapper that enables consumers to specify properties of resources that they expect.
+     - A non-owning type-erased memory resource wrapper that enables consumers to specify properties of resources that they expect.
      - CCCL 2.2.0 / CUDA 12.3
 
 These features are an evolution of `std::pmr::memory_resource <https://en.cppreference.com/w/cpp/header/memory_resource>`__

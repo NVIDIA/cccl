@@ -46,7 +46,7 @@
 #include "catch2_large_array_sort_helper.cuh"
 #include "catch2_test_device_merge_sort_common.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -78,7 +78,6 @@ struct type_tuple
 };
 using offset_types =
   c2h::type_list<type_tuple<std::int16_t>,
-                 type_tuple<std::int32_t>,
                  type_tuple<std::int32_t, std::uint32_t>,
                  type_tuple<std::uint32_t>,
                  type_tuple<std::uint64_t>>;

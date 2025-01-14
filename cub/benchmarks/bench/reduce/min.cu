@@ -24,8 +24,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  ******************************************************************************/
-// NOTE: this benchmark is intented to cover DPX instructions on Hopper+ architectures.
-//       It specifically uses cub::Min instead of a user-defined operator.
+// NOTE: this benchmark is intended to cover DPX instructions on Hopper+ architectures.
+//       It specifically uses cuda::minimum<> instead of a user-defined operator.
 #define TUNE_T int16_t
 #include <nvbench_helper.cuh>
 
@@ -33,5 +33,5 @@
 // %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
 // %RANGE% TUNE_ITEMS_PER_VEC_LOAD_POW2 ipv 1:2:1
 
-using op_t = cub::Min;
+using op_t = ::cuda::minimum<>;
 #include "base.cuh"

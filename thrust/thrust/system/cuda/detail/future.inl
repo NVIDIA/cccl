@@ -17,7 +17,6 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/cpp14_required.h>
 
 #if _CCCL_STD_VER >= 2014
 
@@ -37,6 +36,7 @@
 #  include <thrust/type_traits/integer_sequence.h>
 #  include <thrust/type_traits/remove_cvref.h>
 
+#  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__memory/unique_ptr.h>
 
 #  include <type_traits>
@@ -58,7 +58,7 @@ namespace detail
 struct nonowning_t final
 {};
 
-THRUST_INLINE_CONSTANT nonowning_t nonowning{};
+_CCCL_GLOBAL_CONSTANT nonowning_t nonowning{};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -461,7 +461,6 @@ public:
   _CCCL_DIAG_PUSH
   _CCCL_DIAG_SUPPRESS_CLANG("-Wreorder")
   _CCCL_DIAG_SUPPRESS_GCC("-Wreorder")
-  _CCCL_DIAG_SUPPRESS_ICC(2407)
   template <typename ComputeContent>
   _CCCL_HOST explicit async_addressable_value_with_keep_alives(
     unique_stream&& stream, keep_alives_type&& keep_alives, ComputeContent&& compute_content)
@@ -641,7 +640,7 @@ public:
   // For testing only.
   _CCCL_HOST_DEVICE raw_const_pointer data() const
   {
-    return addressof(value_);
+    return ::cuda::std::addressof(value_);
   }
 #  endif
 };

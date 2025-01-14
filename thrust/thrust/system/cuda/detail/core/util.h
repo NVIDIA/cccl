@@ -254,7 +254,7 @@ struct has_enough_shmem_impl<V, A, S, typelist<>>
   {
     value = V
   };
-  using type = ::cuda::std::__conditional_t<value, thrust::detail::true_type, thrust::detail::false_type>;
+  using type = ::cuda::std::conditional_t<value, thrust::detail::true_type, thrust::detail::false_type>;
 };
 
 template <class Agent, size_t MAX_SHMEM>
@@ -402,7 +402,7 @@ THRUST_RUNTIME_FUNCTION typename get_plan<Agent>::type get_agent_plan(int ptx_ve
 #  ifdef __CUDA_ARCH__
     plan = get_agent_plan_dev<Agent>();
 #  else
-    static cub::Mutex mutex;
+    static std::mutex mutex;
     bool lock = false;
     if (d_ptr == 0)
     {
@@ -410,7 +410,7 @@ THRUST_RUNTIME_FUNCTION typename get_plan<Agent>::type get_agent_plan(int ptx_ve
       cudaGetSymbolAddress(&d_ptr, agent_plan_device);
     }
     if (lock)
-      mutex.Lock();
+      mutex.lock();
     f<<<1,1,0,s>>>((AgentPlan*)d_ptr);
     cudaMemcpyAsync((void*)&plan,
                     d_ptr,
@@ -418,7 +418,7 @@ THRUST_RUNTIME_FUNCTION typename get_plan<Agent>::type get_agent_plan(int ptx_ve
                     cudaMemcpyDeviceToHost,
                     s);
     if (lock)
-      mutex.Unlock();
+      mutex.unlock();
     cudaStreamSynchronize(s);
 #  endif
     return plan;
@@ -514,9 +514,9 @@ struct LoadIterator
   using size_type  = typename iterator_traits<It>::difference_type;
 
   using type =
-    ::cuda::std::__conditional_t<is_contiguous_iterator<It>::value,
-                                 cub::CacheModifiedInputIterator<PtxPlan::LOAD_MODIFIER, value_type, size_type>,
-                                 It>;
+    ::cuda::std::conditional_t<is_contiguous_iterator<It>::value,
+                               cub::CacheModifiedInputIterator<PtxPlan::LOAD_MODIFIER, value_type, size_type>,
+                               It>;
 }; // struct Iterator
 
 template <class PtxPlan, class It>

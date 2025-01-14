@@ -32,7 +32,7 @@
 #include <memory>
 
 #include "cub/detail/temporary_storage.cuh"
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 using num_storage_slots = c2h::enum_type_list<int, 1, 4, 42>;
 

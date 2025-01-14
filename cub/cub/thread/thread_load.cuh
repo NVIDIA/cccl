@@ -110,7 +110,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE cub::detail::value_t<RandomAccessIterator> Thread
 
 //@}  end member group
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 /// Helper structure for templated load iteration (inductive case)
 /// \deprecated [Since 2.6.0] Use UnrolledThreadLoad() or UnrolledCopy() instead.
@@ -118,7 +118,7 @@ template <int COUNT, int MAX>
 struct IterateThreadLoad
 {
   template <CacheLoadModifier MODIFIER, typename T>
-  CUB_DEPRECATED_BECAUSE("Use UnrolledThreadLoad() instead")
+  CCCL_DEPRECATED_BECAUSE("Use UnrolledThreadLoad() instead")
   static _CCCL_DEVICE _CCCL_FORCEINLINE void Load(T const* ptr, T* vals)
   {
     vals[COUNT] = ThreadLoad<MODIFIER>(ptr + COUNT);
@@ -126,7 +126,7 @@ struct IterateThreadLoad
   }
 
   template <typename RandomAccessIterator, typename T>
-  CUB_DEPRECATED_BECAUSE("Use UnrolledCopy() instead")
+  CCCL_DEPRECATED_BECAUSE("Use UnrolledCopy() instead")
   static _CCCL_DEVICE _CCCL_FORCEINLINE void Dereference(RandomAccessIterator itr, T* vals)
   {
     vals[COUNT] = itr[COUNT];
@@ -378,6 +378,6 @@ _CCCL_DEVICE _CCCL_FORCEINLINE cub::detail::value_t<RandomAccessIterator> Thread
   return ThreadLoad(itr, Int2Type<MODIFIER>(), Int2Type<::cuda::std::is_pointer<RandomAccessIterator>::value>());
 }
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 CUB_NAMESPACE_END

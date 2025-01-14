@@ -44,8 +44,10 @@
 #include <typeinfo>
 
 #include "test_util.h"
-#include <c2h/device_policy.cuh>
-#include <c2h/vector.cuh>
+#include <c2h/device_policy.h>
+#include <c2h/vector.h>
+
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 
 bool g_verbose = false;
 
@@ -605,3 +607,5 @@ int main(int argc, char** argv)
 
   test_types();
 }
+
+_CCCL_SUPPRESS_DEPRECATED_POP

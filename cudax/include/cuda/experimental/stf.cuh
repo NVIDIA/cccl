@@ -21,6 +21,8 @@
 #include <cuda/experimental/__stf/allocators/pooled_allocator.cuh>
 #include <cuda/experimental/__stf/allocators/uncached_allocator.cuh>
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
+#include <cuda/experimental/__stf/internal/reducer.cuh>
+#include <cuda/experimental/__stf/internal/scalar_interface.cuh>
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
 #include <cuda/experimental/__stf/places/exec/cuda_stream.cuh>
@@ -35,7 +37,7 @@ namespace cuda::experimental::stf
 {
 
 /**
- * @brief A context is an enviroment for executing cudastf tasks.
+ * @brief A context is an environment for executing cudastf tasks.
  *
  */
 class context
@@ -306,6 +308,16 @@ public:
     }
   }
 
+  auto logical_token()
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return ::std::visit(
+      [&](auto& self) {
+        return self.logical_token();
+      },
+      payload);
+  }
+
   template <typename T>
   frozen_logical_data<T> freeze(::cuda::experimental::stf::logical_data<T> d,
                                 access_mode m    = access_mode::read,
@@ -357,18 +369,13 @@ public:
     return task(default_exec_place(), mv(deps)...);
   }
 
+#if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
   /*
    * parallel_for : apply an operation over a shaped index space
    */
   template <typename S, typename... Deps>
-  auto parallel_for(exec_place e_place, S shape, task_dep<Deps>... deps)
+  auto parallel_for(exec_place e_place, S shape, Deps... deps)
   {
-#ifndef __CUDACC__
-    // We want a test that always fail, but is only triggered when the
-    // function is instantiated so the test relies on actual templated
-    // types.
-    static_assert(::std::is_same_v<S, ::std::false_type>, "parallel_for is only supported with CUDA compilers.");
-#endif
     EXPECT(payload.index() != ::std::variant_npos, "Context is not initialized.");
     using result_t = unified_scope<reserved::parallel_for_scope<stream_ctx, S, null_partition, Deps...>,
                                    reserved::parallel_for_scope<graph_ctx, S, null_partition, Deps...>>;
@@ -380,14 +387,8 @@ public:
   }
 
   template <typename partitioner_t, typename S, typename... Deps>
-  auto parallel_for(partitioner_t p, exec_place e_place, S shape, task_dep<Deps>... deps)
+  auto parallel_for(partitioner_t p, exec_place e_place, S shape, Deps... deps)
   {
-#ifndef __CUDACC__
-    // We want a test that always fail, but is only triggered when the
-    // function is instantiated so the test relies on actual templated
-    // types.
-    static_assert(::std::is_same_v<S, ::std::false_type>, "parallel_for is only supported with CUDA compilers.");
-#endif
     EXPECT(payload.index() != ::std::variant_npos, "Context is not initialized.");
     using result_t = unified_scope<reserved::parallel_for_scope<stream_ctx, S, partitioner_t, Deps...>,
                                    reserved::parallel_for_scope<graph_ctx, S, partitioner_t, Deps...>>;
@@ -398,11 +399,12 @@ public:
       payload);
   }
 
-  template <typename S, typename... Deps>
-  auto parallel_for(S shape, task_dep<Deps>... deps)
+  template <typename S, typename... Deps, typename... Ops, bool... flags>
+  auto parallel_for(S shape, task_dep<Deps, Ops, flags>... deps)
   {
     return parallel_for(default_exec_place(), mv(shape), mv(deps)...);
   }
+#endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 
   template <typename... Deps>
   auto host_launch(task_dep<Deps>... deps)
@@ -473,17 +475,10 @@ public:
       payload);
   }
 
+#if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
   template <typename thread_hierarchy_spec_t, typename... Deps>
   auto launch(thread_hierarchy_spec_t spec, exec_place e_place, task_dep<Deps>... deps)
   {
-#ifndef __CUDACC__
-    // We want a test that always fail, but is only triggered when the
-    // function is instantiated so the test relies on actual templated
-    // types.
-    static_assert(::std::is_same_v<thread_hierarchy_spec_t, ::std::false_type>,
-                  "launch is only supported with CUDA compilers.");
-#endif
-
     using result_t = unified_scope<reserved::launch_scope<stream_ctx, thread_hierarchy_spec_t, Deps...>,
                                    reserved::launch_scope<graph_ctx, thread_hierarchy_spec_t, Deps...>>;
     return ::std::visit(
@@ -514,6 +509,7 @@ public:
   {
     return launch(mv(ths), default_exec_place(), mv(deps)...);
   }
+#endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 
   auto repeat(size_t count)
   {
@@ -616,6 +612,17 @@ public:
       payload);
   }
 
+  template <typename T>
+  auto wait(::cuda::experimental::stf::logical_data<T>& ldata)
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return ::std::visit(
+      [&ldata](auto& self) {
+        return self.wait(ldata);
+      },
+      payload);
+  }
+
   template <typename parent_ctx_t>
   void set_parent_ctx(parent_ctx_t& parent_ctx)
   {
@@ -624,6 +631,45 @@ public:
     ::std::visit(
       [&](auto& self) {
         self.set_parent_ctx(parent_ctx.get_dot());
+      },
+      payload);
+  }
+
+  /**
+   * @brief Start a new section in the DOT file identified by its symbol
+   */
+  void dot_push_section(::std::string symbol) const
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    ::std::visit(
+      [symbol = mv(symbol)](auto& self) {
+        self.dot_push_section(symbol);
+      },
+      payload);
+  }
+
+  /**
+   * @brief Ends current dot section
+   */
+  void dot_pop_section() const
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    ::std::visit(
+      [](auto& self) {
+        self.dot_pop_section();
+      },
+      payload);
+  }
+
+  /**
+   * @brief RAII-style description of a new section in the DOT file identified by its symbol
+   */
+  auto dot_section(::std::string symbol) const
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return ::std::visit(
+      [symbol = mv(symbol)](auto& self) {
+        return self.dot_section(symbol);
       },
       payload);
   }
@@ -706,6 +752,12 @@ public:
     }
   }
 
+  /**
+   * @brief Get a stream from the stream pool(s) of the context
+   *
+   * This is a helper routine which can be used to launch graphs, for example. Using the stream after finalize()
+   * results in undefined behavior.
+   */
   auto pick_dstream()
   {
     return ::std::visit(
@@ -716,14 +768,20 @@ public:
   }
 
   /**
-   * @brief Get a stream from the stream pool(s) of the context
+   * @brief Get a CUDA stream from the stream pool associated to the context
    *
-   * This is a helper routine which can be used to launch graphs, for example. Using the stream after finalize()
-   * results in undefined behavior.
+   * This helper is intended to avoid creating CUDA streams manually. Using
+   * this stream after the context has been finalized is an undefined
+   * behaviour.
    */
   cudaStream_t pick_stream()
   {
-    return pick_dstream().stream;
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return ::std::visit(
+      [](auto& self) {
+        return self.pick_stream();
+      },
+      payload);
   }
 
 private:
@@ -822,7 +880,7 @@ UNITTEST("context with arguments")
   cuda_safe_call(cudaStreamDestroy(stream));
 };
 
-#  ifdef __CUDACC__
+#  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 namespace reserved
 {
 inline void unit_test_context_pfor()
@@ -1271,7 +1329,7 @@ UNITTEST("unit_test_partitioner_product")
 };
 
 } // namespace reserved
-#  endif // __CUDACC__
+#  endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 
 UNITTEST("make_tuple_indexwise")
 {
@@ -1367,6 +1425,32 @@ UNITTEST("cuda stream place multi-gpu")
 
   // Make sure we restored the device
   EXPECT(0 == cuda_try<cudaGetDevice>());
+
+  ctx.finalize();
+};
+
+// Ensure we can skip logical tokens
+UNITTEST("logical token elision")
+{
+  context ctx;
+
+  int buf[1024];
+
+  auto lA = ctx.logical_token();
+  auto lB = ctx.logical_token();
+  auto lC = ctx.logical_data(buf);
+
+  // with all arguments
+  ctx.task(lA.read(), lB.read(), lC.write())->*[](cudaStream_t, void_interface, void_interface, slice<int>) {};
+
+  // with argument elision
+  ctx.task(lA.read(), lB.read(), lC.write())->*[](cudaStream_t, slice<int>) {};
+
+  // with all arguments
+  ctx.host_launch(lA.read(), lB.read(), lC.write())->*[](void_interface, void_interface, slice<int>) {};
+
+  // with argument elision
+  ctx.host_launch(lA.read(), lB.read(), lC.write())->*[](slice<int>) {};
 
   ctx.finalize();
 };

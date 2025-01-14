@@ -26,18 +26,10 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr typename underlying_type<_Tp>::type __to_underlying(_Tp __val) noexcept
-{
-  return static_cast<typename underlying_type<_Tp>::type>(__val);
-}
-
-#if _CCCL_STD_VER > 2020
-template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr underlying_type_t<_Tp> to_underlying(_Tp __val) noexcept
 {
-  return _CUDA_VSTD::__to_underlying(__val);
+  return static_cast<underlying_type_t<_Tp>>(__val);
 }
-#endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

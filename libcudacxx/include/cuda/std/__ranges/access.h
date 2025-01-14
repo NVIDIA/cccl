@@ -33,10 +33,10 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-#if _CCCL_STD_VER > 2014 && !defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER >= 2014
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __can_borrow = is_lvalue_reference_v<_Tp> || enable_borrowed_range<remove_cvref_t<_Tp>>;
+_CCCL_CONCEPT __can_borrow = is_lvalue_reference_v<_Tp> || enable_borrowed_range<remove_cvref_t<_Tp>>;
 
 // [range.access.begin]
 
@@ -46,7 +46,7 @@ void begin(_Tp&) = delete;
 template <class _Tp>
 void begin(const _Tp&) = delete;
 
-#  if _CCCL_STD_VER > 2017
+#  if !defined(_CCCL_NO_CONCEPTS)
 template <class _Tp>
 concept __member_begin = __can_borrow<_Tp> && __workaround_52970<_Tp> && requires(_Tp&& __t) {
   { _LIBCUDACXX_AUTO_CAST(__t.begin()) } -> input_or_output_iterator;
@@ -57,19 +57,19 @@ concept __unqualified_begin =
   !__member_begin<_Tp> && __can_borrow<_Tp> && __class_or_enum<remove_cvref_t<_Tp>> && requires(_Tp&& __t) {
     { _LIBCUDACXX_AUTO_CAST(begin(__t)) } -> input_or_output_iterator;
   };
-#  else // ^^^ CXX20 ^^^ / vvv CXX17 vvv
+#  else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __member_begin_,
   requires(_Tp&& __t)(requires(__can_borrow<_Tp>),
                       requires(__workaround_52970<_Tp>),
                       requires(input_or_output_iterator<decltype(_LIBCUDACXX_AUTO_CAST(__t.begin()))>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __member_begin = _LIBCUDACXX_FRAGMENT(__member_begin_, _Tp);
+_CCCL_CONCEPT __member_begin = _CCCL_FRAGMENT(__member_begin_, _Tp);
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __unqualified_begin_,
   requires(_Tp&& __t)(requires(!__member_begin<_Tp>),
                       requires(__can_borrow<_Tp>),
@@ -77,31 +77,31 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
                       requires(input_or_output_iterator<decltype(_LIBCUDACXX_AUTO_CAST(begin(__t)))>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __unqualified_begin = _LIBCUDACXX_FRAGMENT(__unqualified_begin_, _Tp);
-#  endif // _CCCL_STD_VER < 2020
+_CCCL_CONCEPT __unqualified_begin = _CCCL_FRAGMENT(__unqualified_begin_, _Tp);
+#  endif // _CCCL_NO_CONCEPTS
 
 struct __fn
 {
   // This has been made valid as a defect report for C++17 onwards, however gcc below 11.0 does not implement it
-#  if (!defined(_CCCL_COMPILER_GCC) || __GNUC__ >= 11)
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES((sizeof(_Tp) >= 0)) // Disallow incomplete element types.
+#  if (!_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 11))
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES((sizeof(_Tp) >= 0)) // Disallow incomplete element types.
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp (&__t)[]) const noexcept
   {
     return __t + 0;
   }
-#  endif // (!defined(__GNUC__) || __GNUC__ >= 11)
+#  endif // (!_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 11))
 
-  _LIBCUDACXX_TEMPLATE(class _Tp, size_t _Np)
-  _LIBCUDACXX_REQUIRES((sizeof(_Tp) >= 0)) // Disallow incomplete element types.
+  _CCCL_TEMPLATE(class _Tp, size_t _Np)
+  _CCCL_REQUIRES((sizeof(_Tp) >= 0)) // Disallow incomplete element types.
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp (&__t)[_Np]) const noexcept
   {
     return __t + 0;
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(__member_begin<_Tp>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(__member_begin<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(__t.begin())))
   {
@@ -109,17 +109,25 @@ struct __fn
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(__unqualified_begin<_Tp>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(__unqualified_begin<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(begin(__t))))
   {
     return _LIBCUDACXX_AUTO_CAST(begin(__t));
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES((!__member_begin<_Tp>) _LIBCUDACXX_AND(!__unqualified_begin<_Tp>))
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES((!__member_begin<_Tp>) _CCCL_AND(!__unqualified_begin<_Tp>))
   void operator()(_Tp&&) const = delete;
+
+#  if _CCCL_COMPILER(MSVC, <, 19, 23)
+  template <class _Tp>
+  void operator()(_Tp (&&)[]) const = delete;
+
+  template <class _Tp, size_t _Np>
+  void operator()(_Tp (&&)[_Np]) const = delete;
+#  endif // _CCCL_COMPILER(MSVC, <, 19, 23)
 };
 _LIBCUDACXX_END_NAMESPACE_CPO
 
@@ -141,7 +149,7 @@ void end(_Tp&) = delete;
 template <class _Tp>
 void end(const _Tp&) = delete;
 
-#  if _CCCL_STD_VER > 2017
+#  if !defined(_CCCL_NO_CONCEPTS)
 template <class _Tp>
 concept __member_end = __can_borrow<_Tp> && __workaround_52970<_Tp> && requires(_Tp&& __t) {
   typename iterator_t<_Tp>;
@@ -154,9 +162,9 @@ concept __unqualified_end =
     typename iterator_t<_Tp>;
     { _LIBCUDACXX_AUTO_CAST(end(__t)) } -> sentinel_for<iterator_t<_Tp>>;
   };
-#  else // ^^^ CXX20 ^^^ / vvv CXX17 vvv
+#  else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __member_end_,
   requires(_Tp&& __t)(requires(__can_borrow<_Tp>),
                       requires(__workaround_52970<_Tp>),
@@ -164,10 +172,10 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
                       requires(sentinel_for<decltype(_LIBCUDACXX_AUTO_CAST(__t.end())), iterator_t<_Tp>>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __member_end = _LIBCUDACXX_FRAGMENT(__member_end_, _Tp);
+_CCCL_CONCEPT __member_end = _CCCL_FRAGMENT(__member_end_, _Tp);
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __unqualified_end_,
   requires(_Tp&& __t)(requires(!__member_end<_Tp>),
                       requires(__can_borrow<_Tp>),
@@ -176,21 +184,21 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
                       requires(sentinel_for<decltype(_LIBCUDACXX_AUTO_CAST(end(__t))), iterator_t<_Tp>>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __unqualified_end = _LIBCUDACXX_FRAGMENT(__unqualified_end_, _Tp);
-#  endif // _CCCL_STD_VER < 2020
+_CCCL_CONCEPT __unqualified_end = _CCCL_FRAGMENT(__unqualified_end_, _Tp);
+#  endif // _CCCL_NO_CONCEPTS
 
 struct __fn
 {
-  _LIBCUDACXX_TEMPLATE(class _Tp, size_t _Np)
-  _LIBCUDACXX_REQUIRES((sizeof(_Tp) >= 0)) // Disallow incomplete element types.
+  _CCCL_TEMPLATE(class _Tp, size_t _Np)
+  _CCCL_REQUIRES((sizeof(_Tp) >= 0)) // Disallow incomplete element types.
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp (&__t)[_Np]) const noexcept
   {
     return __t + _Np;
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(__member_end<_Tp>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(__member_end<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(__t.end())))
   {
@@ -198,17 +206,25 @@ struct __fn
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(__unqualified_end<_Tp>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(__unqualified_end<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(end(__t))))
   {
     return _LIBCUDACXX_AUTO_CAST(end(__t));
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES((!__member_end<_Tp>) _LIBCUDACXX_AND(!__unqualified_end<_Tp>))
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES((!__member_end<_Tp>) _CCCL_AND(!__unqualified_end<_Tp>))
   void operator()(_Tp&&) const = delete;
+
+#  if _CCCL_COMPILER(MSVC, <, 19, 23)
+  template <class _Tp>
+  void operator()(_Tp (&&)[]) const = delete;
+
+  template <class _Tp, size_t _Np>
+  void operator()(_Tp (&&)[_Np]) const = delete;
+#  endif // _CCCL_COMPILER(MSVC, <, 19, 23)
 };
 _LIBCUDACXX_END_NAMESPACE_CPO
 
@@ -223,8 +239,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__cbegin)
 struct __fn
 {
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(is_lvalue_reference_v<_Tp&&>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(is_lvalue_reference_v<_Tp&&>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_CUDA_VRANGES::begin(static_cast<const remove_reference_t<_Tp>&>(__t))))
       -> decltype(_CUDA_VRANGES::begin(static_cast<const remove_reference_t<_Tp>&>(__t)))
@@ -233,8 +249,8 @@ struct __fn
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(is_rvalue_reference_v<_Tp&&>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(is_rvalue_reference_v<_Tp&&>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_CUDA_VRANGES::begin(static_cast<const _Tp&&>(__t))))
       -> decltype(_CUDA_VRANGES::begin(static_cast<const _Tp&&>(__t)))
@@ -255,8 +271,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__cend)
 struct __fn
 {
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(is_lvalue_reference_v<_Tp&&>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(is_lvalue_reference_v<_Tp&&>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_CUDA_VRANGES::end(static_cast<const remove_reference_t<_Tp>&>(__t))))
       -> decltype(_CUDA_VRANGES::end(static_cast<const remove_reference_t<_Tp>&>(__t)))
@@ -265,10 +281,11 @@ struct __fn
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(is_rvalue_reference_v<_Tp&&>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(
-    _CUDA_VRANGES::end(static_cast<const _Tp&&>(__t)))) -> decltype(_CUDA_VRANGES::end(static_cast<const _Tp&&>(__t)))
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(is_rvalue_reference_v<_Tp&&>)
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
+    noexcept(noexcept(_CUDA_VRANGES::end(static_cast<const _Tp&&>(__t))))
+      -> decltype(_CUDA_VRANGES::end(static_cast<const _Tp&&>(__t)))
   {
     return _CUDA_VRANGES::end(static_cast<const _Tp&&>(__t));
   }
@@ -279,7 +296,7 @@ inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto cend = __cend::__fn{};
 } // namespace __cpo
-#endif // _CCCL_STD_VER > 2014 && !_CCCL_COMPILER_MSVC_2017
+#endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

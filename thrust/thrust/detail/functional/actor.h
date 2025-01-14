@@ -82,8 +82,8 @@ template <unsigned int Pos>
 struct argument
 {
   template <typename... Ts>
-  _CCCL_HOST_DEVICE auto
-  eval(Ts&&... args) const -> decltype(thrust::get<Pos>(thrust::tuple<Ts&&...>{THRUST_FWD(args)...}))
+  _CCCL_HOST_DEVICE auto eval(Ts&&... args) const
+    -> decltype(thrust::get<Pos>(thrust::tuple<Ts&&...>{THRUST_FWD(args)...}))
   {
     return thrust::get<Pos>(thrust::tuple<Ts&&...>{THRUST_FWD(args)...});
   }
@@ -182,7 +182,7 @@ struct value
 };
 
 template <typename T>
-_CCCL_HOST_DEVICE auto make_actor(T&& x) -> actor<value<::cuda::std::__decay_t<T>>>
+_CCCL_HOST_DEVICE auto make_actor(T&& x) -> actor<value<::cuda::std::decay_t<T>>>
 {
   return {{THRUST_FWD(x)}};
 }

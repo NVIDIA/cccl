@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if !defined(_CCCL_COMPILER_MSVC_2017) && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
+#if !_CCCL_COMPILER(MSVC2017) && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
 #  include <cuda/std/__concepts/same_as.h>
 #  include <cuda/std/__type_traits/remove_const_ref.h>
@@ -41,32 +41,9 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 //!    get_property(const Resource& res, Property prop);
 //!
 //! @endrst
-template <class _Resource, class _Property, class = void>
-_CCCL_INLINE_VAR constexpr bool has_property = false;
-
 template <class _Resource, class _Property>
-_CCCL_INLINE_VAR constexpr bool has_property<
-  _Resource,
-  _Property,
-  _CUDA_VSTD::void_t<decltype(get_property(_CUDA_VSTD::declval<const _Resource&>(), _CUDA_VSTD::declval<_Property>()))>> =
-  true;
-
-#    if defined(_CCCL_COMPILER_NVHPC) // NVHPC has issues accepting this at compile time if it is in a variable template
-template <class _Resource, class _Property, class = void>
-struct __has_property_impl
-{
-  static constexpr bool value = false;
-};
-
-template <class _Resource, class _Property>
-struct __has_property_impl<
-  _Resource,
-  _Property,
-  _CUDA_VSTD::void_t<decltype(get_property(_CUDA_VSTD::declval<const _Resource&>(), _CUDA_VSTD::declval<_Property>()))>>
-{
-  static constexpr bool value = true;
-};
-#    endif // _CCCL_COMPILER_NVHPC
+_CCCL_CONCEPT has_property = _CCCL_REQUIRES_EXPR((_Resource, _Property), const _Resource& __res, _Property __prop)(
+  ((void) get_property(__res, __prop)));
 
 template <class _Property>
 using __property_value_t = typename _Property::value_type;
@@ -83,12 +60,8 @@ using __property_value_t = typename _Property::value_type;
 //!    static_assert(!cuda::property_with_value<stateful_property>);
 //!
 //! @endrst
-template <class _Property, class = void>
-_CCCL_INLINE_VAR constexpr bool property_with_value = false;
-
 template <class _Property>
-_CCCL_INLINE_VAR constexpr bool property_with_value<_Property, _CUDA_VSTD::void_t<__property_value_t<_Property>>> =
-  true;
+_CCCL_CONCEPT property_with_value = _CCCL_REQUIRES_EXPR((_Property))(typename(__property_value_t<_Property>));
 
 //! @brief The \c has_property_with concept verifies that a Resource satisfies a given stateful Property
 //! @rst
@@ -119,35 +92,35 @@ _CCCL_INLINE_VAR constexpr bool property_with_value<_Property, _CUDA_VSTD::void_
 //!
 //! @endrst
 template <class _Resource, class _Property, class _Return>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __has_property_with_,
   requires(const _Resource& __res)(requires(property_with_value<_Property>),
                                    requires(_CUDA_VSTD::same_as<_Return, decltype(get_property(__res, _Property{}))>)));
 template <class _Resource, class _Property, class _Return>
-_LIBCUDACXX_CONCEPT has_property_with = _LIBCUDACXX_FRAGMENT(__has_property_with_, _Resource, _Property, _Return);
+_CCCL_CONCEPT has_property_with = _CCCL_FRAGMENT(__has_property_with_, _Resource, _Property, _Return);
 
 template <class _Resource, class _Upstream>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __has_upstream_resource_,
   requires(const _Resource& __res)(
     requires(_CUDA_VSTD::same_as<_CUDA_VSTD::__remove_const_ref_t<decltype(__res.upstream_resource())>, _Upstream>)));
 template <class _Resource, class _Upstream>
-_LIBCUDACXX_CONCEPT __has_upstream_resource = _LIBCUDACXX_FRAGMENT(__has_upstream_resource_, _Resource, _Upstream);
+_CCCL_CONCEPT __has_upstream_resource = _CCCL_FRAGMENT(__has_upstream_resource_, _Resource, _Upstream);
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__forward_property)
 template <class _Derived, class _Upstream>
 struct __fn
 {
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_TEMPLATE(class _Property)
-  _LIBCUDACXX_REQUIRES((!property_with_value<_Property>) _LIBCUDACXX_AND has_property<_Upstream, _Property>)
+  _CCCL_TEMPLATE(class _Property)
+  _CCCL_REQUIRES((!property_with_value<_Property>) _CCCL_AND has_property<_Upstream, _Property>)
   _LIBCUDACXX_HIDE_FROM_ABI friend constexpr void get_property(const _Derived&, _Property) noexcept {}
 
   // The indirection is needed, otherwise the compiler might believe that _Derived is an incomplete type
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_TEMPLATE(class _Property, class _Derived2 = _Derived)
-  _LIBCUDACXX_REQUIRES(property_with_value<_Property> _LIBCUDACXX_AND has_property<_Upstream, _Property> _LIBCUDACXX_AND
-                         __has_upstream_resource<_Derived2, _Upstream>)
+  _CCCL_TEMPLATE(class _Property, class _Derived2 = _Derived)
+  _CCCL_REQUIRES(property_with_value<_Property> _CCCL_AND has_property<_Upstream, _Property> _CCCL_AND
+                   __has_upstream_resource<_Derived2, _Upstream>)
   _LIBCUDACXX_HIDE_FROM_ABI friend constexpr __property_value_t<_Property>
   get_property(const _Derived& __res, _Property __prop)
   {
@@ -180,6 +153,6 @@ _LIBCUDACXX_END_NAMESPACE_CUDA
 
 #  endif // _CCCL_STD_VER >= 2014
 
-#endif // !_CCCL_COMPILER_MSVC_2017 && LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+#endif // !_CCCL_COMPILER(MSVC2017) && LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #endif //_CUDA__MEMORY_RESOURCE_GET_PROPERTY_H

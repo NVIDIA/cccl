@@ -73,8 +73,7 @@ THRUST_NAMESPACE_BEGIN
  *  #include <thrust/iterator/transform_iterator.h>
  *  #include <thrust/device_vector.h>
  *
- *  // note: functor inherits from unary_function
- *  struct square_root : public thrust::unary_function<float,float>
+ *  struct square_root
  *  {
  *    __host__ __device__
  *    float operator()(float x) const
@@ -116,8 +115,7 @@ THRUST_NAMESPACE_BEGIN
  *  #include <thrust/reduce.h>
  *  #include <iostream>
  *
- *  // note: functor inherits from unary_function
- *  struct square : public thrust::unary_function<float,float>
+ *  struct square
  *  {
  *    __host__ __device__
  *    float operator()(float x) const
@@ -144,20 +142,13 @@ THRUST_NAMESPACE_BEGIN
  *  }
  *  \endcode
  *
- *  Note that in the previous two examples the transform functor (namely \c square_root
- *  and \c square) inherits from \c thrust::unary_function.  Inheriting from
- *  \c thrust::unary_function ensures that a functor is a valid \c AdaptableUnaryFunction
- *  and provides all the necessary nested alias.  The \p transform_iterator
- *  can also be applied to a \c UnaryFunction that does not inherit from
- *  \c thrust::unary_function using an optional template argument.  The following example
- *  illustrates how to use the third template argument to specify the \c result_type of
+ *  The following example illustrates how to use the third template argument to explicitly specify the return type of
  *  the function.
  *
  *  \code
  *  #include <thrust/iterator/transform_iterator.h>
  *  #include <thrust/device_vector.h>
  *
- *  // note: functor *does not* inherit from unary_function
  *  struct square_root
  *  {
  *    __host__ __device__
@@ -297,24 +288,40 @@ private:
 // MSVC 2013 and 2015 incorrectly warning about returning a reference to
 // a local/temporary here.
 // See goo.gl/LELTNp
-#if defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_COMPILER(MSVC2017)
   _CCCL_DIAG_PUSH
   _CCCL_DIAG_SUPPRESS_MSVC(4172)
-#endif // _CCCL_COMPILER_MSVC_2017
+#endif // _CCCL_COMPILER(MSVC2017)
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE typename super_t::reference dereference() const
   {
-    // Create a temporary to allow iterators with wrapped references to
-    // convert to their value type before calling m_f. Note that this
-    // disallows non-constant operations through m_f.
-    typename thrust::iterator_value<Iterator>::type const& x = *this->base();
+    // TODO(bgruber): we should ideally do as `std::ranges::transform_view::iterator` does:
+    // `return std::invoke(m_f, *this->base());` and return `decltype(auto)`. However, `*this->base()` may return a
+    // wrapped reference (`device_reference<T>`), which is a temporary value. If `m_f` forwards this value, e.g. as a
+    // `device_reference<T>&&` if `m_f` is `identity<void>`, (and `super_t::reference` is thus deduced as
+    // `device_reference<T>&&` as well), we return a dangling reference. So we cannot do as
+    // `std::ranges::transform_view::iterator` does.
+
+    // Interestingly, C++20 ranges have the same bug. The following program crashes because the transform iterator also
+    // returns a reference to an expired temporary (given by the iota iterator upon dereferencing)
+    //   for (auto e : std::views::iota(10) | std::views::transform(std::identity{}))
+    //     std::cout << e << '\n';
+    // See: https://godbolt.org/z/jrKcnMqhK
+
+    // The workaround is to create a temporary to allow iterators with wrapped/proxy references to convert to their
+    // value type before calling m_f. This also loads values from a different memory space (cf. `device_reference`).
+    // Note that this disallows mutable operations through m_f.
+    iterator_value_t<Iterator> const& x = *this->base();
+    // FIXME(bgruber): x may be a reference to a temporary (e.g. if the base iterator is a counting_iterator). If `m_f`
+    // does not produce an independent copy and super_t::reference is a reference, we return a dangling reference (e.g.
+    // for any `[thrust|::cuda::std]::identity` functor).
     return m_f(x);
   }
 
-#if defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_COMPILER(MSVC2017)
   _CCCL_DIAG_POP
-#endif // _CCCL_COMPILER_MSVC_2017
+#endif // _CCCL_COMPILER(MSVC2017)
 
   // tag this as mutable per Dave Abrahams in this thread:
   // http://lists.boost.org/Archives/boost/2004/05/65332.php

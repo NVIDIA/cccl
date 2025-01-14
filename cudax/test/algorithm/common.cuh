@@ -43,21 +43,37 @@ void check_result_and_erase(cudax::stream_ref stream, Result&& result, uint8_t p
   }
 }
 
+template <typename Layout = cuda::std::layout_right, typename Extents>
+auto make_buffer_for_mdspan(Extents extents, char value = 0)
+{
+  cudax::pinned_memory_resource host_resource;
+  auto mapping = typename Layout::template mapping<decltype(extents)>{extents};
+
+  cudax::uninitialized_buffer<int, cuda::mr::host_accessible> buffer(host_resource, mapping.required_span_size());
+
+  memset(buffer.data(), value, buffer.size_bytes());
+
+  return buffer;
+}
+
 namespace cuda::experimental
 {
 
 // Need a type that goes through all launch_transform steps, but is not a contiguous_range
+template <typename AsKernelArg = cuda::std::span<int>>
 struct weird_buffer
 {
-  const cuda::mr::pinned_memory_resource& resource;
+  const pinned_memory_resource& resource;
   int* data;
   std::size_t size;
 
-  weird_buffer(const cuda::mr::pinned_memory_resource& res, std::size_t s)
+  weird_buffer(const pinned_memory_resource& res, std::size_t s)
       : resource(res)
       , data((int*) res.allocate(s * sizeof(int)))
       , size(s)
-  {}
+  {
+    memset(data, 0, size);
+  }
 
   ~weird_buffer()
   {
@@ -72,11 +88,17 @@ struct weird_buffer
     int* data;
     std::size_t size;
 
-    using __as_kernel_arg = cuda::std::span<int>;
+    using __as_kernel_arg = AsKernelArg;
 
     operator cuda::std::span<int>()
     {
       return {data, size};
+    }
+
+    template <typename Extents>
+    operator cuda::std::mdspan<int, Extents>()
+    {
+      return cuda::std::mdspan<int, Extents>{data};
     }
   };
 
@@ -85,9 +107,6 @@ struct weird_buffer
     return {self.data, self.size};
   }
 };
-
-static_assert(std::is_same_v<cudax::as_kernel_arg_t<cudax::weird_buffer>, cuda::std::span<int>>);
-
 } // namespace cuda::experimental
 
 #endif // __ALGORITHM_COMMON__

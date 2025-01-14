@@ -29,7 +29,6 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/cpp14_required.h>
 
 #if _CCCL_STD_VER >= 2014
 
@@ -125,7 +124,7 @@ struct transform_fn final
 
 } // namespace transform_detail
 
-THRUST_INLINE_CONSTANT transform_detail::transform_fn transform{};
+_CCCL_GLOBAL_CONSTANT transform_detail::transform_fn transform{};
 
 /*! \endcond
  */

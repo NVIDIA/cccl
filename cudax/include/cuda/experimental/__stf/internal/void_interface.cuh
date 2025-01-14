@@ -11,7 +11,7 @@
 /**
  * @file
  *
- * @brief This implements a void data interface useful to implement STF
+ * @brief This defines a void data interface useful to implement STF
  * dependencies without actual data (e.g. to enforce task dependencies)
  */
 
@@ -27,8 +27,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/graph/graph_data_interface.cuh>
-#include <cuda/experimental/__stf/stream/stream_data_interface.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 
 namespace cuda::experimental::stf
@@ -36,12 +34,6 @@ namespace cuda::experimental::stf
 
 template <typename T>
 class shape_of;
-
-template <typename T>
-struct streamed_interface_of;
-
-template <typename T>
-struct graphed_interface_of;
 
 class void_interface
 {};
@@ -71,127 +63,6 @@ public:
 };
 
 /**
- * @brief Data interface to manipulate the void interface in the CUDA stream backend
- */
-class void_stream_interface : public stream_data_interface_simple<void_interface>
-{
-public:
-  using base = stream_data_interface_simple<void_interface>;
-  using base::shape_t;
-
-  void_stream_interface(void_interface m)
-      : base(::std::move(m))
-  {}
-  void_stream_interface(typename base::shape_t s)
-      : base(s)
-  {}
-
-  /// Copy the content of an instance to another instance : this is a no-op
-  void stream_data_copy(const data_place&, instance_id_t, const data_place&, instance_id_t, cudaStream_t) override {}
-
-  /// Pretend we allocate an instance on a specific data place : we do not do any allocation here
-  void stream_data_allocate(
-    backend_ctx_untyped&, const data_place&, instance_id_t, ::std::ptrdiff_t& s, void**, cudaStream_t) override
-  {
-    // By filling a non negative number, we notify that the allocation was succesful
-    s = 0;
-  }
-
-  /// Pretend we deallocate an instance (no-op)
-  void stream_data_deallocate(backend_ctx_untyped&, const data_place&, instance_id_t, void*, cudaStream_t) override {}
-
-  bool pin_host_memory(instance_id_t) override
-  {
-    // no-op
-    return false;
-  }
-
-  void unpin_host_memory(instance_id_t) override {}
-};
-
-/**
- * @brief Define how the CUDA stream backend must manipulate this void interface
- *
- * Note that we specialize cuda::experimental::stf::shape_of to avoid ambiguous specialization
- *
- * @extends streamed_interface_of
- */
-template <>
-struct streamed_interface_of<void_interface>
-{
-  using type = void_stream_interface;
-};
-
-/**
- * @brief Data interface to manipulate the void interface in the CUDA graph backend
- */
-class void_graph_interface : public graph_data_interface<void_interface>
-{
-public:
-  /// @brief Alias for the base class
-  using base = graph_data_interface<void_interface>;
-  /// @brief Alias for the shape type
-  using base::shape_t;
-
-  void_graph_interface(void_interface s)
-      : base(mv(s))
-  {}
-  void_graph_interface(shape_of<void_interface> s)
-      : base(mv(s))
-  {}
-
-  void data_allocate(
-    backend_ctx_untyped&,
-    block_allocator_untyped&,
-    const data_place&,
-    instance_id_t,
-    ::std::ptrdiff_t& s,
-    void**,
-    event_list&) override
-  {
-    s = 0;
-  }
-
-  void data_deallocate(
-    backend_ctx_untyped&, block_allocator_untyped&, const data_place&, instance_id_t, void*, event_list&) final
-  {}
-
-  cudaGraphNode_t graph_data_copy(
-    cudaMemcpyKind,
-    instance_id_t,
-    instance_id_t,
-    cudaGraph_t graph,
-    const cudaGraphNode_t* input_nodes,
-    size_t input_cnt) override
-  {
-    cudaGraphNode_t dummy;
-    cuda_safe_call(cudaGraphAddEmptyNode(&dummy, graph, input_nodes, input_cnt));
-    return dummy;
-  }
-
-  bool pin_host_memory(instance_id_t) override
-  {
-    // no-op
-    return false;
-  }
-
-  void unpin_host_memory(instance_id_t) override {}
-};
-
-/**
- * @brief Define how the CUDA stream backend must manipulate this void interface
- *
- * Note that we specialize cuda::experimental::stf::shape_of to avoid ambiguous specialization
- *
- * @extends graphed_interface_of
- */
-template <>
-struct graphed_interface_of<void_interface>
-{
-  using type = void_graph_interface;
-};
-
-/**
  * @brief A hash of the matrix
  */
 template <>
@@ -202,5 +73,113 @@ struct hash<void_interface>
     return 42;
   }
 };
+
+namespace reserved
+{
+
+template <typename... Ts>
+struct remove_void_interface
+{
+  using type = ::std::tuple<>;
+};
+
+template <typename T, typename... Ts>
+struct remove_void_interface<T, Ts...>
+{
+private:
+  using tail = typename remove_void_interface<Ts...>::type;
+
+  // If T is void_interface, skip it, otherwise prepend it to tail
+  using filtered =
+    std::conditional_t<::std::is_same_v<T, void_interface>,
+                       tail,
+                       decltype(::std::tuple_cat(::std::declval<::std::tuple<T>>(), ::std::declval<tail>()))>;
+
+public:
+  using type = filtered;
+};
+
+template <typename... Ts>
+using remove_void_interface_t = typename remove_void_interface<Ts...>::type;
+
+template <typename T>
+struct remove_void_interface_from_tuple
+{
+  // By default, if T is not a std::tuple, do nothing special
+  using type = T;
+};
+
+template <typename... Ts>
+struct remove_void_interface_from_tuple<::std::tuple<Ts...>>
+{
+  using type = remove_void_interface_t<Ts...>;
+};
+
+template <typename T>
+using remove_void_interface_from_tuple_t = typename remove_void_interface_from_tuple<T>::type;
+
+/**
+ * @brief Check if a function can be invoked while eliding arguments with a void_interface type.
+ */
+template <typename Fun, typename... Data>
+struct is_invocable_with_filtered
+{
+private:
+  template <typename F, typename... Args>
+  static auto test(int) -> ::std::bool_constant<::std::is_invocable_v<F, Args...>>
+  {
+    return {};
+  }
+
+  template <typename F>
+  static auto test(...) -> ::std::false_type
+  {
+    return {};
+  }
+
+  template <::std::size_t... Idx>
+  static auto check(::std::index_sequence<Idx...>)
+  {
+    using filtered = remove_void_interface_t<Data...>;
+    return test<Fun, ::std::tuple_element_t<Idx, filtered>...>(0);
+  }
+
+public:
+  static constexpr bool value =
+    decltype(check(::std::make_index_sequence<::std::tuple_size_v<remove_void_interface_t<Data...>>>{}))::value;
+};
+
+/**
+ * @brief Check if a function can be invoked using std::apply while eliding tuple arguments with a void_interface type.
+ */
+template <typename F, typename Tuple>
+struct is_tuple_invocable_with_filtered : is_tuple_invocable<F, remove_void_interface_from_tuple_t<Tuple>>
+{};
+
+/**
+ * @brief Strip tuple entries with a "void_interface" type
+ */
+template <typename... Ts>
+auto remove_void_interface_types(const ::std::tuple<Ts...>& tpl)
+{
+  return ::std::apply(
+    [](auto&&... args) {
+      auto filter_one = [](auto&& arg) {
+        using T = ::std::decay_t<decltype(arg)>;
+        if constexpr (::std::is_same_v<T, void_interface>)
+        {
+          return ::std::tuple<>{};
+        }
+        else
+        {
+          return ::std::tuple<T>(::std::forward<decltype(arg)>(arg));
+        }
+      };
+      return ::std::tuple_cat(filter_one(::std::forward<decltype(args)>(args))...);
+    },
+    tpl);
+}
+
+} // end namespace reserved
 
 } // end namespace cuda::experimental::stf

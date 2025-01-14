@@ -213,11 +213,11 @@ struct bit_rshift
   }
 };
 
-#define MAKE_BINARY_COMPOSITE(op, functor)                                                                         \
-  template <typename A, typename B, ::cuda::std::__enable_if_t<is_actor<A>::value || is_actor<B>::value, int> = 0> \
-  _CCCL_HOST_DEVICE auto operator op(const A& a, const B& b)->decltype(compose(functor{}, a, b))                   \
-  {                                                                                                                \
-    return compose(functor{}, a, b);                                                                               \
+#define MAKE_BINARY_COMPOSITE(op, functor)                                                                       \
+  template <typename A, typename B, ::cuda::std::enable_if_t<is_actor<A>::value || is_actor<B>::value, int> = 0> \
+  _CCCL_HOST_DEVICE auto operator op(const A& a, const B& b)->decltype(compose(functor{}, a, b))                 \
+  {                                                                                                              \
+    return compose(functor{}, a, b);                                                                             \
   }
 
 MAKE_BINARY_COMPOSITE(==, thrust::equal_to<>)
@@ -263,8 +263,8 @@ struct unary_plus
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const
-    noexcept(noexcept(+THRUST_FWD(t1))) -> decltype(+THRUST_FWD(t1))
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const noexcept(noexcept(+THRUST_FWD(t1)))
+    -> decltype(+THRUST_FWD(t1))
   {
     return +THRUST_FWD(t1);
   }
@@ -277,8 +277,8 @@ struct prefix_increment
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const
-    noexcept(noexcept(++THRUST_FWD(t1))) -> decltype(++THRUST_FWD(t1))
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const noexcept(noexcept(++THRUST_FWD(t1)))
+    -> decltype(++THRUST_FWD(t1))
   {
     return ++THRUST_FWD(t1);
   }
@@ -291,8 +291,8 @@ struct postfix_increment
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const
-    noexcept(noexcept(THRUST_FWD(t1)++)) -> decltype(THRUST_FWD(t1)++)
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const noexcept(noexcept(THRUST_FWD(t1)++))
+    -> decltype(THRUST_FWD(t1)++)
   {
     return THRUST_FWD(t1)++;
   }
@@ -305,8 +305,8 @@ struct prefix_decrement
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const
-    noexcept(noexcept(--THRUST_FWD(t1))) -> decltype(--THRUST_FWD(t1))
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const noexcept(noexcept(--THRUST_FWD(t1)))
+    -> decltype(--THRUST_FWD(t1))
   {
     return --THRUST_FWD(t1);
   }
@@ -319,8 +319,8 @@ struct postfix_decrement
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const
-    noexcept(noexcept(THRUST_FWD(t1)--)) -> decltype(THRUST_FWD(t1)--)
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const noexcept(noexcept(THRUST_FWD(t1)--))
+    -> decltype(THRUST_FWD(t1)--)
   {
     return THRUST_FWD(t1)--;
   }
@@ -333,15 +333,15 @@ struct bit_not
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const
-    noexcept(noexcept(~THRUST_FWD(t1))) -> decltype(~THRUST_FWD(t1))
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const noexcept(noexcept(~THRUST_FWD(t1)))
+    -> decltype(~THRUST_FWD(t1))
   {
     return ~THRUST_FWD(t1);
   }
 }; // end prefix_increment
 
 #define MAKE_UNARY_COMPOSITE(op, functor)                                         \
-  template <typename A, ::cuda::std::__enable_if_t<is_actor<A>::value, int> = 0>  \
+  template <typename A, ::cuda::std::enable_if_t<is_actor<A>::value, int> = 0>    \
   _CCCL_HOST_DEVICE auto operator op(const A& a)->decltype(compose(functor{}, a)) \
   {                                                                               \
     return compose(functor{}, a);                                                 \
@@ -357,7 +357,7 @@ MAKE_UNARY_COMPOSITE(~, bit_not)
 #undef MAKE_UNARY_COMPOSITE
 
 #define MAKE_UNARY_COMPOSITE_POSTFIX(op, functor)                                      \
-  template <typename A, ::cuda::std::__enable_if_t<is_actor<A>::value, int> = 0>       \
+  template <typename A, ::cuda::std::enable_if_t<is_actor<A>::value, int> = 0>         \
   _CCCL_HOST_DEVICE auto operator op(const A& a, int)->decltype(compose(functor{}, a)) \
   {                                                                                    \
     return compose(functor{}, a);                                                      \

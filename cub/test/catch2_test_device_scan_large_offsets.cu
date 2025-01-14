@@ -33,7 +33,7 @@
 #include <cstdint>
 
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScan, device_exclusive_scan);
 
@@ -73,7 +73,7 @@ struct mod_op
 C2H_TEST("DeviceScan works for very large number of items", "[scan][device]", offset_types)
 try
 {
-  using op_t     = cub::Sum;
+  using op_t     = ::cuda::std::plus<>;
   using item_t   = std::uint32_t;
   using index_t  = std::uint64_t;
   using offset_t = typename c2h::get<0, TestType>;

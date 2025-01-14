@@ -331,7 +331,7 @@ private:
 public:
   /*! The type of element pointed to by \p iterator_facade.
    */
-  using value_type = ::cuda::std::__remove_const_t<Value>;
+  using value_type = ::cuda::std::remove_const_t<Value>;
 
   /*! The return type of \p iterator_facade::operator*().
    */
@@ -429,7 +429,7 @@ public:
   }
 
   /*! \p operator-= decrements this \p iterator_facade to refer to an element a given distance before its current
-   * postition. \param n The quantity to decrement. \return <tt>*this</tt>
+   * position. \param n The quantity to decrement. \return <tt>*this</tt>
    */
   _CCCL_HOST_DEVICE Derived& operator-=(difference_type n)
   {

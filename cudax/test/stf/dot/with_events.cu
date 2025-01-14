@@ -20,7 +20,7 @@ using namespace cuda::experimental::stf;
 int main()
 {
 // TODO (miscco): Make it work for windows
-#if !defined(_CCCL_COMPILER_MSVC)
+#if !_CCCL_COMPILER(MSVC)
   // Generate a random filename
   int r = rand();
 
@@ -37,7 +37,7 @@ int main()
   ctx.task(lA.rw())->*[](cudaStream_t, auto) {};
   ctx.finalize();
 
-  // Call this explicitely for the purpose of the test
+  // Call this explicitly for the purpose of the test
   reserved::dot::instance().finish();
 
   // Make sure the file exists, and erase it
@@ -45,5 +45,5 @@ int main()
   EXPECT(access(filename, F_OK) != -1);
 
   EXPECT(unlink(filename) == 0);
-#endif // !_CCCL_COMPILER_MSVC
+#endif // !_CCCL_COMPILER(MSVC)
 }

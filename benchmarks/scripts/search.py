@@ -2,7 +2,6 @@
 
 import cccl.bench as bench
 
-
 # TODO:
 # - driver version
 # - host compiler + version

@@ -40,7 +40,7 @@ __global__ void init_kernel(ScanTileStateT tile_state, int blocks_in_grid)
 template <class MessageT>
 __global__ void decoupled_look_back_kernel(cub::ScanTileState<MessageT> tile_state)
 {
-  using scan_op_t         = cub::Sum;
+  using scan_op_t         = ::cuda::std::plus<>;
   using scan_tile_state_t = cub::ScanTileState<MessageT>;
   using tile_prefix_op    = cub::TilePrefixCallbackOp<MessageT, scan_op_t, scan_tile_state_t>;
   using temp_storage_t    = typename tile_prefix_op::TempStorage;

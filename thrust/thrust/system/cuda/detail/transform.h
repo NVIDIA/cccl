@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#ifdef _CCCL_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER
 #  include <thrust/system/cuda/config.h>
 
 #  include <cub/device/device_transform.cuh>
@@ -276,8 +276,8 @@ OutputIt THRUST_FUNCTION cub_transform_many(
 }
 
 template <typename... Ts, std::size_t... Is>
-THRUST_FUNCTION auto
-convert_to_std_tuple(tuple<Ts...> t, ::cuda::std::index_sequence<Is...>) -> ::cuda::std::tuple<Ts...>
+THRUST_FUNCTION auto convert_to_std_tuple(tuple<Ts...> t, ::cuda::std::index_sequence<Is...>)
+  -> ::cuda::std::tuple<Ts...>
 {
   return ::cuda::std::tuple<Ts...>{get<Is>(t)...};
 }

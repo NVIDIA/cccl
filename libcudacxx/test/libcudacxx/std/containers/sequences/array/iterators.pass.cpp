@@ -56,7 +56,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void check_noexcept(T& c)
   ASSERT_NOEXCEPT(cc.rend());
 }
 
-// gcc-7 and gcc-8 are really helpfull here
+// gcc-7 and gcc-8 are really helpful here
 __host__ __device__
 #if TEST_STD_VER >= 2014 && (!defined(TEST_COMPILER_GCC) || __GNUC__ > 8)
   TEST_CONSTEXPR_CXX14
@@ -78,7 +78,7 @@ __host__ __device__
     check_noexcept(array);
     typename C::iterator i       = array.begin();
     typename C::const_iterator j = array.cbegin();
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_ICC) // seems there are different nullptr's
+#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) // seems there are different nullptr's
     assert(i == j);
 #else // ^^^ !TEST_COMPILER_CUDACC_BELOW_11_3 ^^^ / vvv TEST_COMPILER_CUDACC_BELOW_11_3 vvv
     assert(i == nullptr);
@@ -147,8 +147,7 @@ __host__ __device__
       assert(ii1 == ii4);
       static_assert(cuda::std::is_same_v<decltype(ii1), int*>, "");
       static_assert(cuda::std::is_same_v<decltype(cii), const int*>, "");
-#  if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_ICC) // old NVCC has issues comparing int*
-                                                                               // with const int*
+#  if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) // old NVCC has issues comparing int* with const int*
       assert(ii1 == cii);
 #  else // ^^^ !TEST_COMPILER_CUDACC_BELOW_11_3 ^^^ / vvv TEST_COMPILER_CUDACC_BELOW_11_3 vvv
       assert(ii1 == nullptr);
@@ -156,8 +155,7 @@ __host__ __device__
 #  endif // TEST_COMPILER_CUDACC_BELOW_11_3
 
       assert(!(ii1 != ii2));
-#  if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_ICC) // old NVCC has issues comparing int*
-                                                                               // with const int*
+#  if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) // old NVCC has issues comparing int* with const int*
       assert(!(ii1 != cii));
 #  endif // TEST_COMPILER_CUDACC_BELOW_11_3
 
@@ -265,11 +263,9 @@ __host__ __device__
 int main(int, char**)
 {
   tests();
-#ifndef TEST_COMPILER_ICC
-#  if TEST_STD_VER >= 2014 && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) \
-    && (!defined(TEST_COMPILER_GCC) || __GNUC__ > 8)
+#if TEST_STD_VER >= 2014 && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) \
+  && (!defined(TEST_COMPILER_GCC) || __GNUC__ > 8)
   static_assert(tests(), "");
-#  endif // TEST_STD_VER >= 2014 && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-#endif // TEST_COMPILER_ICC
+#endif // TEST_STD_VER >= 2014 && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   return 0;
 }

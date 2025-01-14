@@ -53,10 +53,11 @@ inline void FormatHeader(std::ostream& out)
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/functions/common.h>
 #include <cuda/std/__atomic/functions/cuda_ptx_generated_helper.h>
+#include <cuda/std/__atomic/functions/cuda_local.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_CCCL_CUDA_COMPILER)
+#if _CCCL_HAS_CUDA_COMPILER
 )XXX";
 
   out << header;
@@ -65,7 +66,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 inline void FormatTail(std::ostream& out)
 {
   std::string tail = R"XXX(
-#endif // defined(_CCCL_CUDA_COMPILER)
+#endif // _CCCL_HAS_CUDA_COMPILER
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

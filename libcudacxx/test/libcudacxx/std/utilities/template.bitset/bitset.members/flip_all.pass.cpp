@@ -26,11 +26,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_flip_all()
     cuda::std::bitset<N> v1(cases[c]);
     cuda::std::bitset<N> v2 = v1;
     v2.flip();
-    _CCCL_DIAG_PUSH
-    _CCCL_DIAG_SUPPRESS_ICC(186)
     for (cuda::std::size_t i = 0; i < v1.size(); ++i)
     {
-      _CCCL_DIAG_POP
       {
         assert(v2[i] == ~v1[i]);
       }
@@ -57,7 +54,7 @@ int main(int, char**)
   test();
   test_flip_all<1000>(); // not in constexpr because of constexpr evaluation step limits
 // 11.4 added support for constexpr device vars needed here
-#if TEST_STD_VER >= 2014 && !defined(_CCCL_CUDACC_BELOW_11_4)
+#if TEST_STD_VER >= 2014 && _CCCL_CUDACC_AT_LEAST(11, 4)
   static_assert(test(), "");
 #endif // TEST_STD_VER >= 2014
 

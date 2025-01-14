@@ -7,8 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
-// UNSUPPORTED: msvc-19.16
+// UNSUPPORTED: c++03, c++11
 
 // cuda::std::ranges::size
 
@@ -20,24 +19,24 @@
 
 using RangeSizeT = decltype(cuda::std::ranges::size);
 
-static_assert(!cuda::std::is_invocable_v<RangeSizeT, int[]>);
-static_assert(cuda::std::is_invocable_v<RangeSizeT, int[1]>);
-static_assert(cuda::std::is_invocable_v<RangeSizeT, int (&&)[1]>);
-static_assert(cuda::std::is_invocable_v<RangeSizeT, int (&)[1]>);
+static_assert(!cuda::std::is_invocable_v<RangeSizeT, int[]>, "");
+static_assert(cuda::std::is_invocable_v<RangeSizeT, int[1]>, "");
+static_assert(cuda::std::is_invocable_v<RangeSizeT, int (&&)[1]>, "");
+static_assert(cuda::std::is_invocable_v<RangeSizeT, int (&)[1]>, "");
 
 struct Incomplete;
-static_assert(!cuda::std::is_invocable_v<RangeSizeT, Incomplete[]>);
-static_assert(!cuda::std::is_invocable_v<RangeSizeT, Incomplete (&)[]>);
-static_assert(!cuda::std::is_invocable_v<RangeSizeT, Incomplete (&&)[]>);
+static_assert(!cuda::std::is_invocable_v<RangeSizeT, Incomplete[]>, "");
+static_assert(!cuda::std::is_invocable_v<RangeSizeT, Incomplete (&)[]>, "");
+static_assert(!cuda::std::is_invocable_v<RangeSizeT, Incomplete (&&)[]>, "");
 
 #ifndef TEST_COMPILER_NVRTC
 extern Incomplete array_of_incomplete[42];
-static_assert(cuda::std::ranges::size(array_of_incomplete) == 42);
-static_assert(cuda::std::ranges::size(cuda::std::move(array_of_incomplete)) == 42);
+static_assert(cuda::std::ranges::size(array_of_incomplete) == 42, "");
+static_assert(cuda::std::ranges::size(cuda::std::move(array_of_incomplete)) == 42, "");
 
 extern const Incomplete const_array_of_incomplete[42];
-static_assert(cuda::std::ranges::size(const_array_of_incomplete) == 42);
-static_assert(cuda::std::ranges::size(static_cast<const Incomplete (&&)[42]>(array_of_incomplete)) == 42);
+static_assert(cuda::std::ranges::size(const_array_of_incomplete) == 42, "");
+static_assert(cuda::std::ranges::size(static_cast<const Incomplete (&&)[42]>(array_of_incomplete)) == 42, "");
 #endif // !TEST_COMPILER_NVRTC
 
 struct SizeMember
@@ -56,7 +55,7 @@ struct StaticSizeMember
   }
 };
 
-static_assert(!cuda::std::is_invocable_v<RangeSizeT, const SizeMember>);
+static_assert(!cuda::std::is_invocable_v<RangeSizeT, const SizeMember>, "");
 
 struct SizeFunction
 {
@@ -192,7 +191,7 @@ __host__ __device__ bool constexpr testHasSizeFunction()
 {
   assert(cuda::std::ranges::size(SizeFunction()) == 42);
   ASSERT_SAME_TYPE(decltype(cuda::std::ranges::size(SizeFunction())), size_t);
-  static_assert(!cuda::std::is_invocable_v<RangeSizeT, MoveOnlySizeFunction>);
+  static_assert(!cuda::std::is_invocable_v<RangeSizeT, MoveOnlySizeFunction>, "");
   assert(cuda::std::ranges::size(EnumSizeFunction()) == 42);
   assert(cuda::std::ranges::size(SizeFunctionConst()) == 42);
 
@@ -210,7 +209,7 @@ __host__ __device__ bool constexpr testHasSizeFunction()
 
 struct Empty
 {};
-static_assert(!cuda::std::is_invocable_v<RangeSizeT, Empty>);
+static_assert(!cuda::std::is_invocable_v<RangeSizeT, Empty>, "");
 
 struct InvalidReturnTypeMember
 {
@@ -247,14 +246,14 @@ struct BoolReturnTypeFunction
   __host__ __device__ friend bool size(BoolReturnTypeFunction const&);
 };
 
-static_assert(!cuda::std::is_invocable_v<RangeSizeT, InvalidReturnTypeMember>);
-static_assert(!cuda::std::is_invocable_v<RangeSizeT, InvalidReturnTypeFunction>);
-static_assert(cuda::std::is_invocable_v<RangeSizeT, InvalidReturnTypeMember (&)[4]>);
-static_assert(cuda::std::is_invocable_v<RangeSizeT, InvalidReturnTypeFunction (&)[4]>);
-static_assert(!cuda::std::is_invocable_v<RangeSizeT, ConvertibleReturnTypeMember>);
-static_assert(!cuda::std::is_invocable_v<RangeSizeT, ConvertibleReturnTypeFunction>);
-static_assert(!cuda::std::is_invocable_v<RangeSizeT, BoolReturnTypeMember const&>);
-static_assert(!cuda::std::is_invocable_v<RangeSizeT, BoolReturnTypeFunction const&>);
+static_assert(!cuda::std::is_invocable_v<RangeSizeT, InvalidReturnTypeMember>, "");
+static_assert(!cuda::std::is_invocable_v<RangeSizeT, InvalidReturnTypeFunction>, "");
+static_assert(cuda::std::is_invocable_v<RangeSizeT, InvalidReturnTypeMember (&)[4]>, "");
+static_assert(cuda::std::is_invocable_v<RangeSizeT, InvalidReturnTypeFunction (&)[4]>, "");
+static_assert(!cuda::std::is_invocable_v<RangeSizeT, ConvertibleReturnTypeMember>, "");
+static_assert(!cuda::std::is_invocable_v<RangeSizeT, ConvertibleReturnTypeFunction>, "");
+static_assert(!cuda::std::is_invocable_v<RangeSizeT, BoolReturnTypeMember const&>, "");
+static_assert(!cuda::std::is_invocable_v<RangeSizeT, BoolReturnTypeFunction const&>, "");
 
 struct SizeMemberDisabled
 {
@@ -275,6 +274,7 @@ _CCCL_INLINE_VAR constexpr bool disable_sized_range<SizeMemberDisabled> = true;
 }
 } // namespace std
 } // namespace cuda
+
 struct ImproperlyDisabledMember
 {
   __host__ __device__ size_t size() const
@@ -337,10 +337,10 @@ _CCCL_INLINE_VAR constexpr bool disable_sized_range<const ImproperlyDisabledFunc
 } // namespace std
 } // namespace cuda
 
-static_assert(cuda::std::is_invocable_v<RangeSizeT, ImproperlyDisabledMember&>);
-static_assert(cuda::std::is_invocable_v<RangeSizeT, const ImproperlyDisabledMember&>);
-static_assert(!cuda::std::is_invocable_v<RangeSizeT, ImproperlyDisabledFunction&>);
-static_assert(cuda::std::is_invocable_v<RangeSizeT, const ImproperlyDisabledFunction&>);
+static_assert(cuda::std::is_invocable_v<RangeSizeT, ImproperlyDisabledMember&>, "");
+static_assert(cuda::std::is_invocable_v<RangeSizeT, const ImproperlyDisabledMember&>, "");
+static_assert(!cuda::std::is_invocable_v<RangeSizeT, ImproperlyDisabledFunction&>, "");
+static_assert(cuda::std::is_invocable_v<RangeSizeT, const ImproperlyDisabledFunction&>, "");
 
 // No begin end.
 struct HasMinusOperator
@@ -350,7 +350,7 @@ struct HasMinusOperator
     return 2;
   }
 };
-static_assert(!cuda::std::is_invocable_v<RangeSizeT, HasMinusOperator>);
+static_assert(!cuda::std::is_invocable_v<RangeSizeT, HasMinusOperator>, "");
 
 struct HasMinusBeginEnd
 {
@@ -416,8 +416,8 @@ struct InvalidMinusBeginEnd
 };
 
 // short is integer-like, but it is not other_forward_iterator's difference_type.
-static_assert(!cuda::std::same_as<other_forward_iterator::difference_type, short>);
-static_assert(!cuda::std::is_invocable_v<RangeSizeT, InvalidMinusBeginEnd>);
+static_assert(!cuda::std::same_as<other_forward_iterator::difference_type, short>, "");
+static_assert(!cuda::std::is_invocable_v<RangeSizeT, InvalidMinusBeginEnd>, "");
 
 struct RandomAccessRange
 {
@@ -481,8 +481,17 @@ struct DisabledSizeRangeWithBeginEnd
   }
 };
 
+namespace cuda
+{
+namespace std
+{
+namespace ranges
+{
 template <>
-inline constexpr bool cuda::std::ranges::disable_sized_range<DisabledSizeRangeWithBeginEnd> = true;
+_CCCL_INLINE_VAR constexpr bool disable_sized_range<DisabledSizeRangeWithBeginEnd> = true;
+}
+} // namespace std
+} // namespace cuda
 
 struct SizeBeginAndEndMembers
 {
@@ -532,23 +541,23 @@ struct Holder
 {
   T t;
 };
-static_assert(!cuda::std::is_invocable_v<RangeSizeT, Holder<Incomplete>*>);
-static_assert(!cuda::std::is_invocable_v<RangeSizeT, Holder<Incomplete>*&>);
+static_assert(!cuda::std::is_invocable_v<RangeSizeT, Holder<Incomplete>*>, "");
+static_assert(!cuda::std::is_invocable_v<RangeSizeT, Holder<Incomplete>*&>, "");
 #endif // TEST_STD_VER > 2017
 
 int main(int, char**)
 {
   testArrayType();
-  static_assert(testArrayType());
+  static_assert(testArrayType(), "");
 
   testHasSizeMember();
-  static_assert(testHasSizeMember());
+  static_assert(testHasSizeMember(), "");
 
   testHasSizeFunction();
-  static_assert(testHasSizeFunction());
+  static_assert(testHasSizeFunction(), "");
 
   testRanges();
-  static_assert(testRanges());
+  static_assert(testRanges(), "");
 
   return 0;
 }

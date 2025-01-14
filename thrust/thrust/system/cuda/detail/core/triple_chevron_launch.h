@@ -39,6 +39,7 @@
 #include <thrust/system/cuda/config.h>
 
 #include <cuda/cmath>
+#include <cuda/std/__cccl/cuda_capabilities.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -53,19 +54,63 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
   dim3 const grid;
   dim3 const block;
   Size const shared_mem;
+  bool const dependent_launch;
   cudaStream_t const stream;
 
-  THRUST_RUNTIME_FUNCTION triple_chevron(dim3 grid_, dim3 block_, Size shared_mem_ = 0, cudaStream_t stream_ = nullptr)
+  /// @param dependent_launch Launches the kernel using programmatic dependent launch if available.
+  THRUST_RUNTIME_FUNCTION triple_chevron(
+    dim3 grid_, dim3 block_, Size shared_mem_ = 0, cudaStream_t stream_ = nullptr, bool dependent_launch = false)
       : grid(grid_)
       , block(block_)
       , shared_mem(shared_mem_)
+      , dependent_launch(dependent_launch)
       , stream(stream_)
   {}
+
+  // cudaLaunchKernelEx requires C++11, but unfortunately <cuda_runtime.h> checks this using the __cplusplus macro,
+  // which is reported wrongly for MSVC. CTK 12.3 fixed this by additionally detecting _MSV_VER. As a workaround, we
+  // provide our own copy of cudaLaunchKernelEx when it is not available from the CTK.
+#if _CCCL_COMPILER(MSVC) && _CCCL_CUDACC_BELOW(12, 3)
+  // Copied from <cuda_runtime.h>
+  template <typename... ExpTypes, typename... ActTypes>
+  static cudaError_t _CCCL_HOST
+  cudaLaunchKernelEx_MSVC_workaround(const cudaLaunchConfig_t* config, void (*kernel)(ExpTypes...), ActTypes&&... args)
+  {
+    return [&](ExpTypes... coercedArgs) {
+      void* pArgs[] = {&coercedArgs...};
+      return ::cudaLaunchKernelExC(config, (const void*) kernel, pArgs);
+    }(std::forward<ActTypes>(args)...);
+  }
+#endif
 
   template <class K, class... Args>
   cudaError_t _CCCL_HOST doit_host(K k, Args const&... args) const
   {
-    k<<<grid, block, shared_mem, stream>>>(args...);
+#if _CCCL_HAS_PDL
+    if (dependent_launch)
+    {
+      cudaLaunchAttribute attribute[1];
+      attribute[0].id                                         = cudaLaunchAttributeProgrammaticStreamSerialization;
+      attribute[0].val.programmaticStreamSerializationAllowed = 1;
+
+      cudaLaunchConfig_t config{};
+      config.gridDim          = grid;
+      config.blockDim         = block;
+      config.dynamicSmemBytes = shared_mem;
+      config.stream           = stream;
+      config.attrs            = attribute;
+      config.numAttrs         = 1;
+#  if _CCCL_COMPILER(MSVC) && _CCCL_CUDACC_BELOW(12, 3)
+      cudaLaunchKernelEx_MSVC_workaround(&config, k, args...);
+#  else
+      cudaLaunchKernelEx(&config, k, args...);
+#  endif
+    }
+    else
+#endif // _CCCL_HAS_PDL
+    {
+      k<<<grid, block, shared_mem, stream>>>(args...);
+    }
     return cudaPeekAtLastError();
   }
 

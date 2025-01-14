@@ -54,15 +54,19 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__algorithm/all_of.h>
+#include <cuda/std/__functional/identity.h>
 #include <cuda/std/__mdspan/compressed_pair.h>
 #include <cuda/std/__mdspan/default_accessor.h>
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/__mdspan/layout_right.h>
 #include <cuda/std/__type_traits/extent.h>
+#include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
+#include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/rank.h>
 #include <cuda/std/__type_traits/remove_all_extents.h>
 #include <cuda/std/__type_traits/remove_cv.h>
@@ -76,7 +80,9 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2011
+#if _CCCL_STD_VER >= 2014
+
+_CCCL_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
 
 template <class _ElementType,
           class _Extents,
@@ -95,27 +101,58 @@ private:
   template <size_t... _Idxs>
   struct __deduction_workaround<_CUDA_VSTD::index_sequence<_Idxs...>>
   {
-    __MDSPAN_FORCE_INLINE_FUNCTION static constexpr size_t __size(mdspan const& __self) noexcept
+    using index_type = typename _Extents::index_type;
+
+    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __size(mdspan const& __self) noexcept
     {
       return __MDSPAN_FOLD_TIMES_RIGHT(
         (__self.__mapping_ref().extents().template __extent<_Idxs>()), /* * ... * */ size_t(1));
     }
-    __MDSPAN_FORCE_INLINE_FUNCTION static constexpr bool __empty(mdspan const& __self) noexcept
+    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __empty(mdspan const& __self) noexcept
     {
       return (__self.rank() > 0)
           && __MDSPAN_FOLD_OR((__self.__mapping_ref().extents().template __extent<_Idxs>() == index_type(0)));
     }
-    template <class _ReferenceType, class _SizeType, size_t _Np>
-    __MDSPAN_FORCE_INLINE_FUNCTION static constexpr _ReferenceType
-    __callop(mdspan const& __self, const _CUDA_VSTD::array<_SizeType, _Np>& __indices) noexcept
+
+    template <class... _SizeTypes>
+    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
+    __check_index(_Extents const& exts, _SizeTypes... __indices)
     {
-      return __self.__accessor_ref().access(__self.__ptr_ref(), __self.__mapping_ref()(__indices[_Idxs]...));
+#  if _CCCL_STD_VER >= 2017
+      return (((is_unsigned_v<index_type> ? true : static_cast<index_type>(__indices) >= 0)
+               && static_cast<index_type>(__indices) < exts.extent(_Idxs))
+              && ...);
+#  else
+      return true;
+#  endif // _CCCL_STD_VER >= 2017
     }
-    template <class _ReferenceType, class _SizeType, size_t _Np>
-    __MDSPAN_FORCE_INLINE_FUNCTION static constexpr _ReferenceType
-    __callop(mdspan const& __self, const _CUDA_VSTD::span<_SizeType, _Np>& __indices) noexcept
+
+    template <class... _SizeTypes>
+    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr index_type
+    __index(mdspan const& __self, _SizeTypes... __indices) noexcept
     {
-      return __self.__accessor_ref().access(__self.__ptr_ref(), __self.__mapping_ref()(__indices[_Idxs]...));
+      _CCCL_ASSERT(__check_index(__self.__mapping_ref().extents(), __indices...),
+                   "cuda::std::mdspan subscript out of range!");
+      const index_type __res = __self.__mapping_ref()(index_type(__indices)...);
+      return __res;
+    }
+    template <class _SizeType, size_t _Np>
+    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr index_type
+    __index(mdspan const& __self, const _CUDA_VSTD::array<_SizeType, _Np>& __indices) noexcept
+    {
+      _CCCL_ASSERT(__check_index(__self.__mapping_ref().extents(), __indices[_Idxs]...),
+                   "cuda::std::mdspan subscript out of range!");
+      const index_type __res = __self.__mapping_ref()(__indices[_Idxs]...);
+      return __res;
+    }
+    template <class _SizeType, size_t _Np>
+    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr index_type
+    __index(mdspan const& __self, const _CUDA_VSTD::span<_SizeType, _Np>& __indices) noexcept
+    {
+      _CCCL_ASSERT(__check_index(__self.__mapping_ref().extents(), __indices[_Idxs]...),
+                   "cuda::std::mdspan subscript out of range!");
+      const index_type __res = __self.__mapping_ref()(__indices[_Idxs]...);
+      return __res;
     }
   };
 
@@ -135,19 +172,19 @@ public:
   using data_handle_type = typename accessor_type::data_handle_type;
   using reference        = typename accessor_type::reference;
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t rank() noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t rank() noexcept
   {
     return extents_type::rank();
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t rank_dynamic() noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t rank_dynamic() noexcept
   {
     return extents_type::rank_dynamic();
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t static_extent(size_t __r) noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t static_extent(size_t __r) noexcept
   {
     return extents_type::static_extent(__r);
   }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type extent(size_t __r) const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type extent(size_t __r) const noexcept
   {
     return __mapping_ref().extents().extent(__r);
   };
@@ -162,9 +199,9 @@ public:
   //--------------------------------------------------------------------------------
   // [mdspan.basic.cons], mdspan constructors, assignment, and destructor
 
-#  if !__MDSPAN_HAS_CXX_20
+#  if _CCCL_STD_VER <= 2020
   _CCCL_HIDE_FROM_ABI constexpr mdspan() = default;
-#  else
+#  else // ^^^ C++17 ^^^ / vvv C++20 vvv
   _CCCL_HIDE_FROM_ABI constexpr mdspan()
     requires(
               // Directly using rank_dynamic()>0 here doesn't work for nvcc
@@ -172,17 +209,16 @@ public:
               && _CCCL_TRAIT(is_default_constructible, mapping_type)
               && _CCCL_TRAIT(is_default_constructible, accessor_type))
   = default;
-#  endif
+#  endif // _CCCL_STD_VER >= 2020
   _CCCL_HIDE_FROM_ABI constexpr mdspan(const mdspan&) = default;
   _CCCL_HIDE_FROM_ABI constexpr mdspan(mdspan&&)      = default;
 
-  _LIBCUDACXX_TEMPLATE(class... _SizeTypes)
-  _LIBCUDACXX_REQUIRES(
-    __MDSPAN_FOLD_AND(_CCCL_TRAIT(is_convertible, _SizeTypes, index_type) /* && ... */)
-      _LIBCUDACXX_AND __MDSPAN_FOLD_AND(_CCCL_TRAIT(is_nothrow_constructible, index_type, _SizeTypes) /* && ... */)
-        _LIBCUDACXX_AND((sizeof...(_SizeTypes) == rank()) || (sizeof...(_SizeTypes) == rank_dynamic()))
-          _LIBCUDACXX_AND _CCCL_TRAIT(is_constructible, mapping_type, extents_type)
-            _LIBCUDACXX_AND _CCCL_TRAIT(is_default_constructible, accessor_type))
+  _CCCL_TEMPLATE(class... _SizeTypes)
+  _CCCL_REQUIRES(__fold_and_v<_CCCL_TRAIT(is_convertible, _SizeTypes, index_type)...> _CCCL_AND
+                   __fold_and_v<_CCCL_TRAIT(is_nothrow_constructible, index_type, _SizeTypes)...> _CCCL_AND(
+                     (sizeof...(_SizeTypes) == rank()) || (sizeof...(_SizeTypes) == rank_dynamic()))
+                     _CCCL_AND _CCCL_TRAIT(is_constructible, mapping_type, extents_type)
+                       _CCCL_AND _CCCL_TRAIT(is_default_constructible, accessor_type))
   _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr mdspan(data_handle_type __p, _SizeTypes... __dynamic_extents)
       // TODO @proposal-bug shouldn't I be allowed to do `move(__p)` here?
       : __members(
@@ -191,11 +227,12 @@ public:
                            accessor_type()))
   {}
 
-  _LIBCUDACXX_TEMPLATE(class _SizeType, size_t _Np)
-  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_convertible, _SizeType, index_type) _LIBCUDACXX_AND _CCCL_TRAIT(
-    is_nothrow_constructible, index_type, _SizeType) _LIBCUDACXX_AND((_Np == rank()) || (_Np == rank_dynamic()))
-                         _LIBCUDACXX_AND _CCCL_TRAIT(is_constructible, mapping_type, extents_type)
-                           _LIBCUDACXX_AND _CCCL_TRAIT(is_default_constructible, accessor_type))
+  _CCCL_TEMPLATE(class _SizeType, size_t _Np)
+  _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _SizeType, index_type)
+                   _CCCL_AND _CCCL_TRAIT(is_nothrow_constructible, index_type, _SizeType)
+                     _CCCL_AND((_Np == rank()) || (_Np == rank_dynamic()))
+                       _CCCL_AND _CCCL_TRAIT(is_constructible, mapping_type, extents_type)
+                         _CCCL_AND _CCCL_TRAIT(is_default_constructible, accessor_type))
   __MDSPAN_CONDITIONAL_EXPLICIT(_Np != rank_dynamic())
   _LIBCUDACXX_HIDE_FROM_ABI constexpr mdspan(data_handle_type __p,
                                              const _CUDA_VSTD::array<_SizeType, _Np>& __dynamic_extents)
@@ -203,26 +240,26 @@ public:
                   __map_acc_pair_t(mapping_type(extents_type(__dynamic_extents)), accessor_type()))
   {}
 
-  _LIBCUDACXX_TEMPLATE(class _SizeType, size_t _Np)
-  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_convertible, _SizeType, index_type) _LIBCUDACXX_AND _CCCL_TRAIT(
-    is_nothrow_constructible, index_type, _SizeType) _LIBCUDACXX_AND((_Np == rank()) || (_Np == rank_dynamic()))
-                         _LIBCUDACXX_AND _CCCL_TRAIT(is_constructible, mapping_type, extents_type)
-                           _LIBCUDACXX_AND _CCCL_TRAIT(is_default_constructible, accessor_type))
+  _CCCL_TEMPLATE(class _SizeType, size_t _Np)
+  _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _SizeType, index_type)
+                   _CCCL_AND _CCCL_TRAIT(is_nothrow_constructible, index_type, _SizeType)
+                     _CCCL_AND((_Np == rank()) || (_Np == rank_dynamic()))
+                       _CCCL_AND _CCCL_TRAIT(is_constructible, mapping_type, extents_type)
+                         _CCCL_AND _CCCL_TRAIT(is_default_constructible, accessor_type))
   __MDSPAN_CONDITIONAL_EXPLICIT(_Np != rank_dynamic())
   _LIBCUDACXX_HIDE_FROM_ABI constexpr mdspan(data_handle_type __p, _CUDA_VSTD::span<_SizeType, _Np> __dynamic_extents)
       : __members(_CUDA_VSTD::move(__p),
                   __map_acc_pair_t(mapping_type(extents_type(_CUDA_VSTD::as_const(__dynamic_extents))), accessor_type()))
   {}
 
-  _LIBCUDACXX_TEMPLATE(bool _Is_default_constructible = _CCCL_TRAIT(is_default_constructible, accessor_type))
-  _LIBCUDACXX_REQUIRES(
-    _Is_default_constructible _LIBCUDACXX_AND _CCCL_TRAIT(is_constructible, mapping_type, extents_type))
+  _CCCL_TEMPLATE(bool _Is_default_constructible = _CCCL_TRAIT(is_default_constructible, accessor_type))
+  _CCCL_REQUIRES(_Is_default_constructible _CCCL_AND _CCCL_TRAIT(is_constructible, mapping_type, extents_type))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr mdspan(data_handle_type __p, const extents_type& __exts)
       : __members(_CUDA_VSTD::move(__p), __map_acc_pair_t(mapping_type(__exts), accessor_type()))
   {}
 
-  _LIBCUDACXX_TEMPLATE(bool _Is_default_constructible = _CCCL_TRAIT(is_default_constructible, accessor_type))
-  _LIBCUDACXX_REQUIRES(_Is_default_constructible)
+  _CCCL_TEMPLATE(bool _Is_default_constructible = _CCCL_TRAIT(is_default_constructible, accessor_type))
+  _CCCL_REQUIRES(_Is_default_constructible)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr mdspan(data_handle_type __p, const mapping_type& __m)
       : __members(_CUDA_VSTD::move(__p), __map_acc_pair_t(__m, accessor_type()))
   {}
@@ -231,10 +268,10 @@ public:
       : __members(_CUDA_VSTD::move(__p), __map_acc_pair_t(__m, __a))
   {}
 
-  _LIBCUDACXX_TEMPLATE(class _OtherElementType, class _OtherExtents, class _OtherLayoutPolicy, class _OtherAccessor)
-  _LIBCUDACXX_REQUIRES(
+  _CCCL_TEMPLATE(class _OtherElementType, class _OtherExtents, class _OtherLayoutPolicy, class _OtherAccessor)
+  _CCCL_REQUIRES(
     _CCCL_TRAIT(is_constructible, mapping_type, typename _OtherLayoutPolicy::template mapping<_OtherExtents>)
-      _LIBCUDACXX_AND _CCCL_TRAIT(is_constructible, accessor_type, _OtherAccessor))
+      _CCCL_AND _CCCL_TRAIT(is_constructible, accessor_type, _OtherAccessor))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr mdspan(
     const mdspan<_OtherElementType, _OtherExtents, _OtherLayoutPolicy, _OtherAccessor>& __other)
       : __members(__other.__ptr_ref(), __map_acc_pair_t(__other.__mapping_ref(), __other.__accessor_ref()))
@@ -262,84 +299,80 @@ public:
   // [mdspan.basic.mapping], mdspan mapping domain multidimensional index to access codomain element
 
 #  if __MDSPAN_USE_BRACKET_OPERATOR
-  _LIBCUDACXX_TEMPLATE(class... _SizeTypes)
-  _LIBCUDACXX_REQUIRES(
-    __MDSPAN_FOLD_AND(_CCCL_TRAIT(is_convertible, _SizeTypes, index_type) /* && ... */)
-      _LIBCUDACXX_AND __MDSPAN_FOLD_AND(_CCCL_TRAIT(is_nothrow_constructible, index_type, _SizeTypes) /* && ... */)
-        _LIBCUDACXX_AND(rank() == sizeof...(_SizeTypes)))
-  __MDSPAN_FORCE_INLINE_FUNCTION
-  constexpr reference operator[](_SizeTypes... __indices) const
+  _CCCL_TEMPLATE(class... _SizeTypes)
+  _CCCL_REQUIRES(__fold_and_v<_CCCL_TRAIT(is_convertible, _SizeTypes, index_type)...> _CCCL_AND
+                   __fold_and_v<_CCCL_TRAIT(is_nothrow_constructible, index_type, _SizeTypes)...> _CCCL_AND(
+                     rank() == sizeof...(_SizeTypes)))
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator[](_SizeTypes... __indices) const
   {
-    return __accessor_ref().access(__ptr_ref(), __mapping_ref()(index_type(__indices)...));
+    return __accessor_ref().access(__ptr_ref(), __impl::__index(*this, __indices...));
   }
-#  endif
+#  endif // __MDSPAN_USE_BRACKET_OPERATOR
 
-  _LIBCUDACXX_TEMPLATE(class _SizeType)
-  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_convertible, _SizeType, index_type)
-                         _LIBCUDACXX_AND _CCCL_TRAIT(is_nothrow_constructible, index_type, _SizeType))
-  __MDSPAN_FORCE_INLINE_FUNCTION
-  constexpr reference operator[](const _CUDA_VSTD::array<_SizeType, rank()>& __indices) const
+  _CCCL_TEMPLATE(class _SizeType)
+  _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _SizeType, index_type)
+                   _CCCL_AND _CCCL_TRAIT(is_nothrow_constructible, index_type, _SizeType))
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference
+  operator[](const _CUDA_VSTD::array<_SizeType, rank()>& __indices) const
   {
-    return __impl::template __callop<reference>(*this, __indices);
+    return __accessor_ref().access(__ptr_ref(), __impl::__index(*this, __indices));
   }
 
-  _LIBCUDACXX_TEMPLATE(class _SizeType)
-  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_convertible, _SizeType, index_type)
-                         _LIBCUDACXX_AND _CCCL_TRAIT(is_nothrow_constructible, index_type, _SizeType))
-  __MDSPAN_FORCE_INLINE_FUNCTION
-  constexpr reference operator[](_CUDA_VSTD::span<_SizeType, rank()> __indices) const
+  _CCCL_TEMPLATE(class _SizeType)
+  _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _SizeType, index_type)
+                   _CCCL_AND _CCCL_TRAIT(is_nothrow_constructible, index_type, _SizeType))
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference
+  operator[](_CUDA_VSTD::span<_SizeType, rank()> __indices) const
   {
-    return __impl::template __callop<reference>(*this, __indices);
+    return __accessor_ref().access(__ptr_ref(), __impl::__index(*this, __indices));
   }
 
 #  if !__MDSPAN_USE_BRACKET_OPERATOR
-  _LIBCUDACXX_TEMPLATE(class _Index)
-  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_convertible, _Index, index_type) _LIBCUDACXX_AND _CCCL_TRAIT(
-    is_nothrow_constructible, index_type, _Index) _LIBCUDACXX_AND(extents_type::rank() == 1))
-  __MDSPAN_FORCE_INLINE_FUNCTION
-  constexpr reference operator[](_Index __idx) const
+  _CCCL_TEMPLATE(class _Index)
+  _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _Index, index_type)
+                   _CCCL_AND _CCCL_TRAIT(is_nothrow_constructible, index_type, _Index)
+                     _CCCL_AND(extents_type::rank() == 1))
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator[](_Index __idx) const
   {
-    return __accessor_ref().access(__ptr_ref(), __mapping_ref()(index_type(__idx)));
+    return __accessor_ref().access(__ptr_ref(), __impl::__index(*this, __idx));
   }
-#  endif
+#  endif // !__MDSPAN_USE_BRACKET_OPERATOR
 
 #  if __MDSPAN_USE_PAREN_OPERATOR
-  _LIBCUDACXX_TEMPLATE(class... _SizeTypes)
-  _LIBCUDACXX_REQUIRES(
-    __MDSPAN_FOLD_AND(_CCCL_TRAIT(is_convertible, _SizeTypes, index_type) /* && ... */)
-      _LIBCUDACXX_AND __MDSPAN_FOLD_AND(_CCCL_TRAIT(is_nothrow_constructible, index_type, _SizeTypes) /* && ... */)
-        _LIBCUDACXX_AND(extents_type::rank() == sizeof...(_SizeTypes)))
-  __MDSPAN_FORCE_INLINE_FUNCTION
-  constexpr reference operator()(_SizeTypes... __indices) const
+  _CCCL_TEMPLATE(class... _SizeTypes)
+  _CCCL_REQUIRES(__fold_and_v<_CCCL_TRAIT(is_convertible, _SizeTypes, index_type)...> _CCCL_AND
+                   __fold_and_v<_CCCL_TRAIT(is_nothrow_constructible, index_type, _SizeTypes)...> _CCCL_AND(
+                     extents_type::rank() == sizeof...(_SizeTypes)))
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator()(_SizeTypes... __indices) const
   {
-    return __accessor_ref().access(__ptr_ref(), __mapping_ref()(__indices...));
+    return __accessor_ref().access(__ptr_ref(), __impl::__index(*this, __indices...));
   }
 
-  _LIBCUDACXX_TEMPLATE(class _SizeType)
-  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_convertible, _SizeType, index_type)
-                         _LIBCUDACXX_AND _CCCL_TRAIT(is_nothrow_constructible, index_type, _SizeType))
-  __MDSPAN_FORCE_INLINE_FUNCTION
-  constexpr reference operator()(const _CUDA_VSTD::array<_SizeType, rank()>& __indices) const
+  _CCCL_TEMPLATE(class _SizeType)
+  _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _SizeType, index_type)
+                   _CCCL_AND _CCCL_TRAIT(is_nothrow_constructible, index_type, _SizeType))
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference
+  operator()(const _CUDA_VSTD::array<_SizeType, rank()>& __indices) const
   {
-    return __impl::template __callop<reference>(*this, __indices);
+    return __accessor_ref().access(__ptr_ref(), __impl::__index(*this, __indices));
   }
 
-  _LIBCUDACXX_TEMPLATE(class _SizeType)
-  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_convertible, _SizeType, index_type)
-                         _LIBCUDACXX_AND _CCCL_TRAIT(is_nothrow_constructible, index_type, _SizeType))
-  __MDSPAN_FORCE_INLINE_FUNCTION
-  constexpr reference operator()(_CUDA_VSTD::span<_SizeType, rank()> __indices) const
+  _CCCL_TEMPLATE(class _SizeType)
+  _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _SizeType, index_type)
+                   _CCCL_AND _CCCL_TRAIT(is_nothrow_constructible, index_type, _SizeType))
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference
+  operator()(_CUDA_VSTD::span<_SizeType, rank()> __indices) const
   {
-    return __impl::template __callop<reference>(*this, __indices);
+    return __accessor_ref().access(__ptr_ref(), __impl::__index(*this, __indices));
   }
 #  endif // __MDSPAN_USE_PAREN_OPERATOR
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t size() const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t size() const noexcept
   {
     return __impl::__size(*this);
   };
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const noexcept
   {
     return __impl::__empty(*this);
   };
@@ -354,19 +387,19 @@ public:
   //--------------------------------------------------------------------------------
   // [mdspan.basic.domobs], mdspan observers of the domain multidimensional index space
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr const extents_type& extents() const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const extents_type& extents() const noexcept
   {
     return __mapping_ref().extents();
   };
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr const data_handle_type& data_handle() const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const data_handle_type& data_handle() const noexcept
   {
     return __ptr_ref();
   };
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr const mapping_type& mapping() const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const mapping_type& mapping() const noexcept
   {
     return __mapping_ref();
   };
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr const accessor_type& accessor() const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const accessor_type& accessor() const noexcept
   {
     return __accessor_ref();
   };
@@ -374,32 +407,32 @@ public:
   //--------------------------------------------------------------------------------
   // [mdspan.basic.obs], mdspan observers of the mapping
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_unique() noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_unique() noexcept
   {
     return mapping_type::is_always_unique();
   };
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_exhaustive() noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_exhaustive() noexcept
   {
     return mapping_type::is_always_exhaustive();
   };
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_strided() noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_strided() noexcept
   {
     return mapping_type::is_always_strided();
   };
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_unique() const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_unique() const noexcept
   {
     return __mapping_ref().is_unique();
   };
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_exhaustive() const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_exhaustive() const noexcept
   {
     return __mapping_ref().is_exhaustive();
   };
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_strided() const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_strided() const noexcept
   {
     return __mapping_ref().is_strided();
   };
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type stride(size_t __r) const
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type stride(size_t __r) const
   {
     return __mapping_ref().stride(__r);
   };
@@ -407,27 +440,27 @@ public:
 private:
   __detail::__compressed_pair<data_handle_type, __map_acc_pair_t> __members{};
 
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr data_handle_type& __ptr_ref() noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr data_handle_type& __ptr_ref() noexcept
   {
     return __members.__first();
   }
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr data_handle_type const& __ptr_ref() const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr data_handle_type const& __ptr_ref() const noexcept
   {
     return __members.__first();
   }
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr mapping_type& __mapping_ref() noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping_type& __mapping_ref() noexcept
   {
     return __members.__second().__first();
   }
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr mapping_type const& __mapping_ref() const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping_type const& __mapping_ref() const noexcept
   {
     return __members.__second().__first();
   }
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr accessor_type& __accessor_ref() noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr accessor_type& __accessor_ref() noexcept
   {
     return __members.__second().__second();
   }
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr accessor_type const& __accessor_ref() const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr accessor_type const& __accessor_ref() const noexcept
   {
     return __members.__second().__second();
   }
@@ -437,27 +470,27 @@ private:
 };
 
 #  if defined(__MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION)
-_LIBCUDACXX_TEMPLATE(class _ElementType, class... _SizeTypes)
-_LIBCUDACXX_REQUIRES(__MDSPAN_FOLD_AND(_CCCL_TRAIT(is_integral, _SizeTypes) /* && ... */)
-                       _LIBCUDACXX_AND(sizeof...(_SizeTypes) > 0))
-_CCCL_HOST_DEVICE explicit mdspan(_ElementType*,
-                                  _SizeTypes...) -> mdspan<_ElementType, dextents<size_t, sizeof...(_SizeTypes)>>;
+_CCCL_TEMPLATE(class _ElementType, class... _SizeTypes)
+_CCCL_REQUIRES(__fold_and_v<_CCCL_TRAIT(is_integral, _SizeTypes)...> _CCCL_AND(sizeof...(_SizeTypes) > 0))
+_CCCL_HOST_DEVICE explicit mdspan(_ElementType*, _SizeTypes...)
+  -> mdspan<_ElementType, dextents<size_t, sizeof...(_SizeTypes)>>;
 
-_LIBCUDACXX_TEMPLATE(class _Pointer)
-_LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_pointer, _CUDA_VSTD::remove_reference_t<_Pointer>))
-_CCCL_HOST_DEVICE
-mdspan(_Pointer&&) -> mdspan<_CUDA_VSTD::remove_pointer_t<_CUDA_VSTD::remove_reference_t<_Pointer>>, extents<size_t>>;
-_LIBCUDACXX_TEMPLATE(class _CArray)
-_LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_array, _CArray) _LIBCUDACXX_AND(rank_v<_CArray> == 1))
+_CCCL_TEMPLATE(class _Pointer)
+_CCCL_REQUIRES(_CCCL_TRAIT(is_pointer, _CUDA_VSTD::remove_reference_t<_Pointer>))
+_CCCL_HOST_DEVICE mdspan(_Pointer&&)
+  -> mdspan<_CUDA_VSTD::remove_pointer_t<_CUDA_VSTD::remove_reference_t<_Pointer>>, extents<size_t>>;
+_CCCL_TEMPLATE(class _CArray)
+_CCCL_REQUIRES(_CCCL_TRAIT(is_array, _CArray) _CCCL_AND(rank_v<_CArray> == 1))
 _CCCL_HOST_DEVICE mdspan(_CArray&)
   -> mdspan<_CUDA_VSTD::remove_all_extents_t<_CArray>, extents<size_t, _CUDA_VSTD::extent_v<_CArray, 0>>>;
 
 template <class _ElementType, class _SizeType, size_t _Np>
-_CCCL_HOST_DEVICE mdspan(_ElementType*,
-                         const _CUDA_VSTD::array<_SizeType, _Np>&) -> mdspan<_ElementType, dextents<size_t, _Np>>;
+_CCCL_HOST_DEVICE mdspan(_ElementType*, const _CUDA_VSTD::array<_SizeType, _Np>&)
+  -> mdspan<_ElementType, dextents<size_t, _Np>>;
 
 template <class _ElementType, class _SizeType, size_t _Np>
-_CCCL_HOST_DEVICE mdspan(_ElementType*, _CUDA_VSTD::span<_SizeType, _Np>) -> mdspan<_ElementType, dextents<size_t, _Np>>;
+_CCCL_HOST_DEVICE mdspan(_ElementType*, _CUDA_VSTD::span<_SizeType, _Np>)
+  -> mdspan<_ElementType, dextents<size_t, _Np>>;
 
 // This one is necessary because all the constructors take `data_handle_type`s, not
 // `_ElementType*`s, and `data_handle_type` is taken from `accessor_type::data_handle_type`, which
@@ -476,9 +509,11 @@ _CCCL_HOST_DEVICE mdspan(const typename _AccessorType::data_handle_type, const _
             typename _MappingType::extents_type,
             typename _MappingType::layout_type,
             _AccessorType>;
-#  endif
+#  endif // __MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION
 
-#endif // _CCCL_STD_VER > 2011
+_CCCL_NV_DIAG_DEFAULT(186)
+
+#endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

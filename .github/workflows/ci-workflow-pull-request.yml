@@ -202,6 +202,15 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/build-rapids.yml
 
+  build-matx:
+    name: Build MatX
+    if: ${{ !contains(github.event.head_commit.message, '[skip-matx]') }}
+    secrets: inherit
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/build-matx.yml
+
   # Check all other job statuses. This job gates branch protection checks.
   ci:
     name: CI

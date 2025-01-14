@@ -66,7 +66,7 @@ THRUST_NAMESPACE_BEGIN
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
- * Iterator</a>, and \p ForwardIterator's \c value_type is convertible to \p Predicate's \c argument_type, and \p
+ * Iterator</a>, and \p ForwardIterator's \c value_type is convertible to \p Predicate's argument type, and \p
  * ForwardIterator is mutable. \tparam Predicate is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
@@ -125,7 +125,7 @@ _CCCL_HOST_DEVICE ForwardIterator partition(
  *          the sequence of the elements which do not satisfy \p pred.
  *
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
- * Iterator</a>, and \p ForwardIterator's \c value_type is convertible to \p Predicate's \c argument_type, and \p
+ * Iterator</a>, and \p ForwardIterator's \c value_type is convertible to \p Predicate's argument type, and \p
  * ForwardIterator is mutable. \tparam Predicate is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
@@ -186,7 +186,7 @@ ForwardIterator partition(ForwardIterator first, ForwardIterator last, Predicate
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
  * Iterator</a>, and \p ForwardIterator is mutable. \tparam InputIterator is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, and \p InputIterator's \c
- * value_type is convertible to \p Predicate's \c argument_type. \tparam Predicate is a model of <a
+ * value_type is convertible to \p Predicate's argument type. \tparam Predicate is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
  *  \pre The ranges <tt>[first,last)</tt> and <tt>[stencil, stencil + (last - first))</tt> shall not overlap.
@@ -251,7 +251,7 @@ _CCCL_HOST_DEVICE ForwardIterator partition(
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
  * Iterator</a>, and \p ForwardIterator is mutable. \tparam InputIterator is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, and \p InputIterator's \c
- * value_type is convertible to \p Predicate's \c argument_type. \tparam Predicate is a model of <a
+ * value_type is convertible to \p Predicate's argument type. \tparam Predicate is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
  *  \pre The ranges <tt>[first,last)</tt> and <tt>[stencil, stencil + (last - first))</tt> shall not overlap.
@@ -287,7 +287,7 @@ template <typename ForwardIterator, typename InputIterator, typename Predicate>
 ForwardIterator partition(ForwardIterator first, ForwardIterator last, InputIterator stencil, Predicate pred);
 
 /*! \p partition_copy differs from \p partition only in that the reordered
- *  sequence is written to difference output sequences, rather than in place.
+ *  sequence is written to different output sequences, rather than in place.
  *
  *  \p partition_copy copies the elements <tt>[first, last)</tt> based on the
  *  function object \p pred. All of the elements that satisfy \p pred are copied
@@ -309,7 +309,7 @@ ForwardIterator partition(ForwardIterator first, ForwardIterator last, InputIter
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a>, and \p InputIterator's \c value_type is convertible to \p Predicate's \c argument_type and \p
+ * Iterator</a>, and \p InputIterator's \c value_type is convertible to \p Predicate's argument type and \p
  * InputIterator's \c value_type is convertible to \p OutputIterator1 and \p OutputIterator2's \c value_types. \tparam
  * OutputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  * Iterator</a>. \tparam OutputIterator2 is a model of <a
@@ -369,7 +369,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> partition_copy(
   Predicate pred);
 
 /*! \p partition_copy differs from \p partition only in that the reordered
- *  sequence is written to difference output sequences, rather than in place.
+ *  sequence is written to different output sequences, rather than in place.
  *
  *  \p partition_copy copies the elements <tt>[first, last)</tt> based on the
  *  function object \p pred. All of the elements that satisfy \p pred are copied
@@ -387,7 +387,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> partition_copy(
  *          \p out_false.
  *
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a>, and \p InputIterator's \c value_type is convertible to \p Predicate's \c argument_type and \p
+ * Iterator</a>, and \p InputIterator's \c value_type is convertible to \p Predicate's argument type and \p
  * InputIterator's \c value_type is convertible to \p OutputIterator1 and \p OutputIterator2's \c value_types. \tparam
  * OutputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  * Iterator</a>. \tparam OutputIterator2 is a model of <a
@@ -436,7 +436,7 @@ thrust::pair<OutputIterator1, OutputIterator2> partition_copy(
   InputIterator first, InputIterator last, OutputIterator1 out_true, OutputIterator2 out_false, Predicate pred);
 
 /*! \p partition_copy differs from \p partition only in that the reordered
- *  sequence is written to difference output sequences, rather than in place.
+ *  sequence is written to different output sequences, rather than in place.
  *
  *  \p partition_copy copies the elements <tt>[first, last)</tt> based on the
  *  function object \p pred which is applied to a range of stencil elements. All of the elements
@@ -463,7 +463,7 @@ thrust::pair<OutputIterator1, OutputIterator2> partition_copy(
  * Iterator</a>, and \p InputIterator's \c value_type is convertible to \p OutputIterator1 and \p OutputIterator2's \c
  * value_types. \tparam InputIterator2 is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, and \p InputIterator2's \c
- * value_type is convertible to \p Predicate's \c argument_type. \tparam OutputIterator1 is a model of <a
+ * value_type is convertible to \p Predicate's argument type. \tparam OutputIterator1 is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. \tparam OutputIterator2 is a
  * model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. \tparam Predicate
  * is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
@@ -517,7 +517,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> partition_copy(
   Predicate pred);
 
 /*! \p partition_copy differs from \p partition only in that the reordered
- *  sequence is written to difference output sequences, rather than in place.
+ *  sequence is written to different output sequences, rather than in place.
  *
  *  \p partition_copy copies the elements <tt>[first, last)</tt> based on the
  *  function object \p pred which is applied to a range of stencil elements. All of the elements
@@ -540,7 +540,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> partition_copy(
  * Iterator</a>, and \p InputIterator's \c value_type is convertible to \p OutputIterator1 and \p OutputIterator2's \c
  * value_types. \tparam InputIterator2 is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, and \p InputIterator2's \c
- * value_type is convertible to \p Predicate's \c argument_type. \tparam OutputIterator1 is a model of <a
+ * value_type is convertible to \p Predicate's argument type. \tparam OutputIterator1 is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. \tparam OutputIterator2 is a
  * model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. \tparam Predicate
  * is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
@@ -616,7 +616,7 @@ thrust::pair<OutputIterator1, OutputIterator2> partition_copy(
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
- * Iterator</a>, and \p ForwardIterator's \c value_type is convertible to \p Predicate's \c argument_type, and \p
+ * Iterator</a>, and \p ForwardIterator's \c value_type is convertible to \p Predicate's argument type, and \p
  * ForwardIterator is mutable. \tparam Predicate is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
@@ -678,7 +678,7 @@ _CCCL_HOST_DEVICE ForwardIterator stable_partition(
  *          the sequence of the elements which do not satisfy pred.
  *
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
- * Iterator</a>, and \p ForwardIterator's \c value_type is convertible to \p Predicate's \c argument_type, and \p
+ * Iterator</a>, and \p ForwardIterator's \c value_type is convertible to \p Predicate's argument type, and \p
  * ForwardIterator is mutable. \tparam Predicate is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
@@ -741,7 +741,7 @@ ForwardIterator stable_partition(ForwardIterator first, ForwardIterator last, Pr
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
  * Iterator</a>, and \p ForwardIterator is mutable. \tparam InputIterator is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, and \p InputIterator's \c
- * value_type is convertible to \p Predicate's \c argument_type. \tparam Predicate is a model of <a
+ * value_type is convertible to \p Predicate's argument type. \tparam Predicate is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
  *  \pre The range <tt>[first, last)</tt> shall not overlap with the range <tt>[stencil, stencil + (last - first))</tt>.
@@ -808,7 +808,7 @@ _CCCL_HOST_DEVICE ForwardIterator stable_partition(
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
  * Iterator</a>, and \p ForwardIterator is mutable. \tparam InputIterator is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, and \p InputIterator's \c
- * value_type is convertible to \p Predicate's \c argument_type. \tparam Predicate is a model of <a
+ * value_type is convertible to \p Predicate's argument type. \tparam Predicate is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
  *  \pre The range <tt>[first, last)</tt> shall not overlap with the range <tt>[stencil, stencil + (last - first))</tt>.
@@ -872,7 +872,7 @@ ForwardIterator stable_partition(ForwardIterator first, ForwardIterator last, In
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a>, and \p InputIterator's \c value_type is convertible to \p Predicate's \c argument_type and \p
+ * Iterator</a>, and \p InputIterator's \c value_type is convertible to \p Predicate's argument type and \p
  * InputIterator's \c value_type is convertible to \p OutputIterator1 and \p OutputIterator2's \c value_types. \tparam
  * OutputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  * Iterator</a>. \tparam OutputIterator2 is a model of <a
@@ -952,7 +952,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> stable_partitio
  *          \p out_false.
  *
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a>, and \p InputIterator's \c value_type is convertible to \p Predicate's \c argument_type and \p
+ * Iterator</a>, and \p InputIterator's \c value_type is convertible to \p Predicate's argument type and \p
  * InputIterator's \c value_type is convertible to \p OutputIterator1 and \p OutputIterator2's \c value_types. \tparam
  * OutputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  * Iterator</a>. \tparam OutputIterator2 is a model of <a
@@ -1030,7 +1030,7 @@ thrust::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
  * Iterator</a>, and \p InputIterator's \c value_type is convertible to \p OutputIterator1 and \p OutputIterator2's \c
  * value_types. \tparam InputIterator2 is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, and \p InputIterator2's \c
- * value_type is convertible to \p Predicate's \c argument_type. \tparam OutputIterator1 is a model of <a
+ * value_type is convertible to \p Predicate's argument type. \tparam OutputIterator1 is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. \tparam OutputIterator2 is a
  * model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. \tparam Predicate
  * is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
@@ -1109,7 +1109,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> stable_partitio
  * Iterator</a>, and \p InputIterator's \c value_type is convertible to \p OutputIterator1 and \p OutputIterator2's \c
  * value_types. \tparam InputIterator2 is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, and \p InputIterator2's \c
- * value_type is convertible to \p Predicate's \c argument_type. \tparam OutputIterator1 is a model of <a
+ * value_type is convertible to \p Predicate's argument type. \tparam OutputIterator1 is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. \tparam OutputIterator2 is a
  * model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. \tparam Predicate
  * is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
@@ -1181,14 +1181,14 @@ thrust::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
- * Iterator</a>, and \p ForwardIterator's \c value_type is convertible to \p Predicate's \c argument_type. \tparam
+ * Iterator</a>, and \p ForwardIterator's \c value_type is convertible to \p Predicate's argument type. \tparam
  * Predicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
  *  \pre The range <tt>[first, last)</tt> shall be partitioned by \p pred.
  *
  *  \note Though similar, \p partition_point is not redundant with \p find_if_not.
  *        \p partition_point's precondition provides an opportunity for a
- *        faster implemention.
+ *        faster implementation.
  *
  *  \code
  *  #include <thrust/partition.h>
@@ -1233,14 +1233,14 @@ _CCCL_HOST_DEVICE ForwardIterator partition_point(
  *          and <tt>none_of(mid, last, pred)</tt> are both true.
  *
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
- * Iterator</a>, and \p ForwardIterator's \c value_type is convertible to \p Predicate's \c argument_type. \tparam
+ * Iterator</a>, and \p ForwardIterator's \c value_type is convertible to \p Predicate's argument type. \tparam
  * Predicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
  *  \pre The range <tt>[first, last)</tt> shall be partitioned by \p pred.
  *
  *  \note Though similar, \p partition_point is not redundant with \p find_if_not.
  *        \p partition_point's precondition provides an opportunity for a
- *        faster implemention.
+ *        faster implementation.
  *
  *  \code
  *  #include <thrust/partition.h>
@@ -1296,7 +1296,7 @@ ForwardIterator partition_point(ForwardIterator first, ForwardIterator last, Pre
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Input
- * Iterator</a>, and \p InputIterator's \c value_type is convertible to \p Predicate's \c argument_type. \tparam
+ * Iterator</a>, and \p InputIterator's \c value_type is convertible to \p Predicate's argument type. \tparam
  * Predicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
  *  \code
@@ -1345,7 +1345,7 @@ _CCCL_HOST_DEVICE bool is_partitioned(
  *          to \p pred, or if <tt>[first, last)</tt> is empty. \c false, otherwise.
  *
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Input
- * Iterator</a>, and \p InputIterator's \c value_type is convertible to \p Predicate's \c argument_type. \tparam
+ * Iterator</a>, and \p InputIterator's \c value_type is convertible to \p Predicate's argument type. \tparam
  * Predicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
  *  \code

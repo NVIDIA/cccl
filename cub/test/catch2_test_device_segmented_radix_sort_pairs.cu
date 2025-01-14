@@ -41,7 +41,7 @@
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_test_launch_helper.h"
 #include "thrust/detail/raw_pointer_cast.h"
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 // TODO replace with DeviceSegmentedRadixSort::SortPairs interface once https://github.com/NVIDIA/cccl/issues/50 is
 // addressed Temporary wrapper that allows specializing the DeviceSegmentedRadixSort algorithm for different offset
@@ -428,7 +428,7 @@ try
 }
 catch (std::bad_alloc& e)
 {
-  std::cerr << "Skipping segmented radix sort test, unsufficient GPU memory. " << e.what() << "\n";
+  std::cerr << "Skipping segmented radix sort test, insufficient GPU memory. " << e.what() << "\n";
 }
 
 C2H_TEST("DeviceSegmentedRadixSort::SortPairs: very large segments",
@@ -522,7 +522,7 @@ try
 }
 catch (std::bad_alloc& e)
 {
-  std::cerr << "Skipping segmented radix sort test, unsufficient GPU memory. " << e.what() << "\n";
+  std::cerr << "Skipping segmented radix sort test, insufficient GPU memory. " << e.what() << "\n";
 }
 
 #endif // defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)

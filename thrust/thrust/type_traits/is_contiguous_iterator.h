@@ -15,7 +15,7 @@
  */
 
 /*! \file
- *  \brief An extensible type trait for determining if an iterator satisifies the
+ *  \brief An extensible type trait for determining if an iterator satisfies the
  *  <a href="https://en.cppreference.com/w/cpp/named_req/ContiguousIterator">ContiguousIterator</a>
  *  requirements (aka is pointer-like).
  */
@@ -39,7 +39,7 @@
 #include <type_traits>
 #include <utility>
 
-#if defined(_CCCL_COMPILER_MSVC) && _MSC_VER < 1916 // MSVC 2017 version 15.9
+#if _CCCL_COMPILER(MSVC, <, 19, 16) // MSVC 2017 version 15.9
 #  include <array>
 #  include <string>
 #  include <vector>
@@ -159,11 +159,11 @@ struct is_libstdcxx_normal_iterator<::__gnu_cxx::__normal_iterator<Iterator, Con
 {};
 #endif
 
-#if _MSC_VER >= 1916 // MSVC 2017 version 15.9.
+#if _CCCL_COMPILER(MSVC, >=, 19, 16) // MSVC 2017 version 15.9.
 template <typename Iterator>
 struct is_msvc_contiguous_iterator : ::cuda::std::is_pointer<::std::_Unwrapped_t<Iterator>>
 {};
-#elif _MSC_VER >= 1700 // MSVC 2012.
+#elif _CCCL_COMPILER(MSVC, >=, 17) // MSVC 2012.
 template <typename Iterator>
 struct is_msvc_contiguous_iterator : false_type
 {};
@@ -229,8 +229,8 @@ using unwrap_contiguous_iterator_t = typename detail::contiguous_iterator_traits
 
 //! Converts a contiguous iterator to its underlying raw pointer.
 template <typename ContiguousIterator>
-_CCCL_HOST_DEVICE auto
-unwrap_contiguous_iterator(ContiguousIterator it) -> unwrap_contiguous_iterator_t<ContiguousIterator>
+_CCCL_HOST_DEVICE auto unwrap_contiguous_iterator(ContiguousIterator it)
+  -> unwrap_contiguous_iterator_t<ContiguousIterator>
 {
   static_assert(thrust::is_contiguous_iterator<ContiguousIterator>::value,
                 "unwrap_contiguous_iterator called with non-contiguous iterator.");

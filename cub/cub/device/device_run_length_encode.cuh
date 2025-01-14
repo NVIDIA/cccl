@@ -48,7 +48,6 @@
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/device/dispatch/dispatch_rle.cuh>
 #include <cub/device/dispatch/tuning/tuning_run_length_encode.cuh>
-#include <cub/util_deprecated.cuh>
 
 #include <iterator>
 
@@ -193,8 +192,8 @@ struct DeviceRunLengthEncode
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceRunLengthEncode::Encode");
 
     using offset_t     = int; // Signed integer type for global offsets
-    using equality_op  = Equality; // Default == operator
-    using reduction_op = cub::Sum; // Value reduction operator
+    using equality_op  = ::cuda::std::equal_to<>; // Default == operator
+    using reduction_op = ::cuda::std::plus<>; // Value reduction operator
 
     // The lengths output value type
     using length_t = cub::detail::non_void_value_t<LengthsOutputIteratorT, offset_t>;
@@ -206,7 +205,7 @@ struct DeviceRunLengthEncode
 
     using key_t = cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::value_t<InputIteratorT>>;
 
-    using policy_t = detail::device_run_length_encode_policy_hub<accum_t, key_t>;
+    using policy_t = detail::rle::encode::policy_hub<accum_t, key_t>;
 
     return DispatchReduceByKey<
       InputIteratorT,
@@ -230,29 +229,6 @@ struct DeviceRunLengthEncode
                           num_items,
                           stream);
   }
-
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-  template <typename InputIteratorT,
-            typename UniqueOutputIteratorT,
-            typename LengthsOutputIteratorT,
-            typename NumRunsOutputIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Encode(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    UniqueOutputIteratorT d_unique_out,
-    LengthsOutputIteratorT d_counts_out,
-    NumRunsOutputIteratorT d_num_runs_out,
-    int num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Encode<InputIteratorT, UniqueOutputIteratorT, LengthsOutputIteratorT, NumRunsOutputIteratorT>(
-      d_temp_storage, temp_storage_bytes, d_in, d_unique_out, d_counts_out, d_num_runs_out, num_items, stream);
-  }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Enumerates the starting offsets and lengths of all non-trivial runs
@@ -367,7 +343,7 @@ struct DeviceRunLengthEncode
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceRunLengthEncode::NonTrivialRuns");
 
     using OffsetT    = int; // Signed integer type for global offsets
-    using EqualityOp = Equality; // Default == operator
+    using EqualityOp = ::cuda::std::equal_to<>; // Default == operator
 
     return DeviceRleDispatch<
       InputIteratorT,
@@ -385,30 +361,6 @@ struct DeviceRunLengthEncode
                          num_items,
                          stream);
   }
-
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-  template <typename InputIteratorT,
-            typename OffsetsOutputIteratorT,
-            typename LengthsOutputIteratorT,
-            typename NumRunsOutputIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  NonTrivialRuns(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OffsetsOutputIteratorT d_offsets_out,
-    LengthsOutputIteratorT d_lengths_out,
-    NumRunsOutputIteratorT d_num_runs_out,
-    int num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return NonTrivialRuns<InputIteratorT, OffsetsOutputIteratorT, LengthsOutputIteratorT, NumRunsOutputIteratorT>(
-      d_temp_storage, temp_storage_bytes, d_in, d_offsets_out, d_lengths_out, d_num_runs_out, num_items, stream);
-  }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
 };
 
 CUB_NAMESPACE_END

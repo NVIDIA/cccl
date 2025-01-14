@@ -143,11 +143,11 @@ public:
 
   /*! The smallest value this \p linear_congruential_engine may potentially produce.
    */
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Doxygen breaks on the ternary :shrug:
+#ifndef _CCCL_DOXYGEN_INVOKED // Doxygen breaks on the ternary :shrug:
   static const result_type min = c == 0u ? 1u : 0u;
 #else
   static const result_type min = 0u;
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   /*! The largest value this \p linear_congruential_engine may potentially produce.
    */
@@ -162,7 +162,7 @@ public:
   /*! This constructor, which optionally accepts a seed, initializes a new
    *  \p linear_congruential_engine.
    *
-   *  \param s The seed used to intialize this \p linear_congruential_engine's state.
+   *  \param s The seed used to initialize this \p linear_congruential_engine's state.
    */
   _CCCL_HOST_DEVICE explicit linear_congruential_engine(result_type s = default_seed);
 

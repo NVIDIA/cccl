@@ -172,7 +172,7 @@ public:
    * @brief Constructor with variadic parameters (usually no needed; use `par` and `con` below instead)
    *
    * Parameters are used for initializing `this` depending on their types as follows:
-   * - If type is `thread_hierarchy_spec<lower_levels...>`, parameter is used to initalize the inner part
+   * - If type is `thread_hierarchy_spec<lower_levels...>`, parameter is used to initialize the inner part
    * - If type is `size_t`, parameter is used to initialize the width of the object
    * - If type is `mem`, parameter is used to initialize the memory (bytes) attribute of the object
    * - If type is `hw_scope`, parameter is used to initialize the scope attribute of the object
@@ -301,7 +301,7 @@ public:
    *
    * @tparam level The level in the hierarchy to check for the `sync` property. Level starts from 0 (top-level).
    */
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen fails to parse this
+#ifndef _CCCL_DOXYGEN_INVOKED // doxygen fails to parse this
   template <size_t level>
   static inline constexpr bool is_synchronizable = [] {
     if constexpr (level > 0)
@@ -395,12 +395,12 @@ private:
   mem mem_bytes = mem(0);
 };
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen fails to parse this
+#ifndef _CCCL_DOXYGEN_INVOKED // doxygen fails to parse this
 /**
  * @brief Creates and returns a `thread_hierarchy_spec` object with no synchronization and dynamic width.
  *
  * Parameters are used for initializing the result depending on their types as follows:
- * - If type is `thread_hierarchy_spec<lower_levels...>`, parameter is used to initalize the inner part
+ * - If type is `thread_hierarchy_spec<lower_levels...>`, parameter is used to initialize the inner part
  * - If type is `size_t`, parameter is used to initialize the width of the object
  * - If type is `mem`, parameter is used to initialize the memory (bytes) attribute of the object
  * - If type is `hw_scope`, parameter is used to initialize the scope attribute of the object
@@ -422,7 +422,7 @@ constexpr auto par(const P&... p)
  * @overload
  *
  * Parameters are used for initializing the result depending on their types as follows:
- * - If type is `thread_hierarchy_spec<lower_levels...>`, parameter is used to initalize the inner part
+ * - If type is `thread_hierarchy_spec<lower_levels...>`, parameter is used to initialize the inner part
  * - If type is `mem`, parameter is used to initialize the memory (bytes) attribute of the object
  * - If type is `hw_scope`, parameter is used to initialize the scope attribute of the object
  *
@@ -443,7 +443,7 @@ constexpr auto par(const P&... p)
  * @brief Creates and returns a `thread_hierarchy_spec` object with synchronization and dynamic width.
  *
  * Parameters are used for initializing the result depending on their types as follows:
- * - If type is `thread_hierarchy_spec<lower_levels...>`, parameter is used to initalize the inner part
+ * - If type is `thread_hierarchy_spec<lower_levels...>`, parameter is used to initialize the inner part
  * - If type is `size_t`, parameter is used to initialize the width of the object
  * - If type is `mem`, parameter is used to initialize the memory (bytes) attribute of the object
  * - If type is `hw_scope`, parameter is used to initialize the scope attribute of the object
@@ -465,7 +465,7 @@ constexpr auto con(const P&... p)
  * @overload
  *
  * Parameters are used for initializing the result depending on their types as follows:
- * - If type is `thread_hierarchy_spec<lower_levels...>`, parameter is used to initalize the inner part
+ * - If type is `thread_hierarchy_spec<lower_levels...>`, parameter is used to initialize the inner part
  * - If type is `mem`, parameter is used to initialize the memory (bytes) attribute of the object
  * - If type is `hw_scope`, parameter is used to initialize the scope attribute of the object
  *
@@ -480,7 +480,7 @@ constexpr auto con(const P&... p)
   return R(p...);
 }
 /// @}
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 #ifdef UNITTESTED_FILE
 

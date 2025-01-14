@@ -39,6 +39,7 @@
 #include <cuda/experimental/__stf/internal/slice.cuh> // backend_ctx<T> uses shape_of
 #include <cuda/experimental/__stf/internal/task_state.cuh> // backend_ctx_untyped::impl has-a ctx_stack
 #include <cuda/experimental/__stf/internal/thread_hierarchy.cuh>
+#include <cuda/experimental/__stf/internal/void_interface.cuh>
 #include <cuda/experimental/__stf/localization/composite_slice.cuh>
 
 // XXX there is currently a dependency on this header for places.h
@@ -64,10 +65,12 @@ class graph_ctx;
 
 class null_partition;
 
+class stream_ctx;
+
 namespace reserved
 {
 
-template <typename Ctx, typename shape_t, typename partitioner_t, typename... Deps>
+template <typename Ctx, typename shape_t, typename partitioner_t, typename... DepsAndOps>
 class parallel_for_scope;
 
 template <typename Ctx, typename thread_hierarchy_spec_t, typename... Deps>
@@ -118,6 +121,9 @@ public:
   template <typename Fun>
   void operator->*(Fun&& f)
   {
+    auto& dot        = *ctx.get_dot();
+    auto& statistics = reserved::task_statistics::instance();
+
     auto t = ctx.task(exec_place::host);
     t.add_deps(deps);
     if (!symbol.empty())
@@ -125,13 +131,48 @@ public:
       t.set_symbol(symbol);
     }
 
+    cudaEvent_t start_event, end_event;
+    const bool record_time = t.schedule_task() || statistics.is_calibrating_to_file();
+
     t.start();
+
+    if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+    {
+      if (record_time)
+      {
+        cuda_safe_call(cudaEventCreate(&start_event));
+        cuda_safe_call(cudaEventCreate(&end_event));
+        cuda_safe_call(cudaEventRecord(start_event, t.get_stream()));
+      }
+    }
+
     SCOPE(exit)
     {
-      t.end();
+      t.end_uncleared();
+      if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+      {
+        if (record_time)
+        {
+          cuda_safe_call(cudaEventRecord(end_event, t.get_stream()));
+          cuda_safe_call(cudaEventSynchronize(end_event));
+
+          float milliseconds = 0;
+          cuda_safe_call(cudaEventElapsedTime(&milliseconds, start_event, end_event));
+
+          if (dot.is_tracing())
+          {
+            dot.template add_vertex_timing<typename Ctx::task_type>(t, milliseconds, -1);
+          }
+
+          if (statistics.is_calibrating())
+          {
+            statistics.log_task_time(t, milliseconds);
+          }
+        }
+      }
+      t.clear();
     };
 
-    auto& dot = *ctx.get_dot();
     if (dot.is_tracing())
     {
       dot.template add_vertex<typename Ctx::task_type, logical_data_untyped>(t);
@@ -155,7 +196,22 @@ public:
       {
         delete w;
       };
-      ::std::apply(::std::forward<Fun>(w->first), mv(w->second));
+
+      constexpr bool fun_invocable_task_deps = reserved::is_tuple_invocable_v<Fun, decltype(payload)>;
+      constexpr bool fun_invocable_task_non_void_deps =
+        reserved::is_tuple_invocable_with_filtered<Fun, decltype(payload)>::value;
+
+      static_assert(fun_invocable_task_deps || fun_invocable_task_non_void_deps,
+                    "Incorrect lambda function signature in host_launch.");
+
+      if constexpr (fun_invocable_task_deps)
+      {
+        ::std::apply(::std::forward<Fun>(w->first), mv(w->second));
+      }
+      else if constexpr (fun_invocable_task_non_void_deps)
+      {
+        ::std::apply(::std::forward<Fun>(w->first), reserved::remove_void_interface_types(mv(w->second)));
+      }
     };
 
     if constexpr (::std::is_same_v<Ctx, graph_ctx>)
@@ -290,13 +346,57 @@ public:
       t.set_symbol(symbol);
     }
 
+    auto& dot        = *ctx.get_dot();
+    auto& statistics = reserved::task_statistics::instance();
+
+    cudaEvent_t start_event, end_event;
+    const bool record_time = t.schedule_task() || statistics.is_calibrating_to_file();
+
     t.start();
+
+    int device = -1;
+
     SCOPE(exit)
     {
-      t.end();
+      t.end_uncleared();
+
+      if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+      {
+        if (record_time)
+        {
+          cuda_safe_call(cudaEventRecord(end_event, t.get_stream()));
+          cuda_safe_call(cudaEventSynchronize(end_event));
+
+          float milliseconds = 0;
+          cuda_safe_call(cudaEventElapsedTime(&milliseconds, start_event, end_event));
+
+          if (dot.is_tracing())
+          {
+            dot.template add_vertex_timing<typename Ctx::task_type>(t, milliseconds, device);
+          }
+
+          if (statistics.is_calibrating())
+          {
+            statistics.log_task_time(t, milliseconds);
+          }
+        }
+      }
+
+      t.clear();
     };
 
-    auto& dot = *ctx.get_dot();
+    if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+    {
+      if (record_time)
+      {
+        cuda_safe_call(cudaGetDevice(&device)); // We will use this to force it during the next run
+        // Events must be created here to avoid issues with multi-gpu
+        cuda_safe_call(cudaEventCreate(&start_event));
+        cuda_safe_call(cudaEventCreate(&end_event));
+        cuda_safe_call(cudaEventRecord(start_event, t.get_stream()));
+      }
+    }
+
     if (dot.is_tracing())
     {
       dot.template add_vertex<typename Ctx::task_type, logical_data_untyped>(t);
@@ -492,24 +592,30 @@ protected:
       return nullptr;
     }
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
     _CCCL_DIAG_PUSH
     _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
-#endif // _CCCL_COMPILER_MSVC
+#endif // _CCCL_COMPILER(MSVC)
     virtual event_list stream_to_event_list(cudaStream_t, ::std::string) const
     {
       fprintf(stderr, "Internal error.\n");
       abort();
       return event_list();
     }
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
     _CCCL_DIAG_POP
-#endif // _CCCL_COMPILER_MSVC
+#endif // _CCCL_COMPILER(MSVC)
 
     virtual size_t epoch() const
     {
       return size_t(-1);
     }
+
+    /**
+     * @brief Indicate if the backend needs to keep track of dangling events, or if these will be automatically
+     * synchronized
+     */
+    virtual bool track_dangling_events() const = 0;
 
     auto& get_default_allocator()
     {
@@ -538,20 +644,31 @@ protected:
 
     /**
      * @brief Detach all allocators previously attached in this context to
-     * release ressources that might have been cached
+     * release resources that might have been cached
      */
     void detach_allocators(backend_ctx_untyped& bctx)
     {
+      const bool track_dangling = bctx.track_dangling_events();
+
       // Deinitialize all attached allocators in reversed order
       for (auto it : each(attached_allocators.rbegin(), attached_allocators.rend()))
       {
-        stack.add_dangling_events(it->deinit(bctx));
+        auto deinit_res = it->deinit(bctx);
+        if (track_dangling)
+        {
+          stack.add_dangling_events(mv(deinit_res));
+        }
       }
 
       // Erase the vector of allocators now that they were deinitialized
       attached_allocators.clear();
 
-      stack.add_dangling_events(composite_cache.deinit());
+      // We "duplicate" the code of the deinit to remove any storage and avoid a move
+      auto composite_deinit_res = composite_cache.deinit();
+      if (track_dangling)
+      {
+        stack.add_dangling_events(mv(composite_deinit_res));
+      }
     }
 
     void display_transfers() const
@@ -802,6 +919,11 @@ public:
     return pimpl->epoch();
   }
 
+  bool track_dangling_events() const
+  {
+    return pimpl->track_dangling_events();
+  }
+
   // protected:
   impl& get_state()
   {
@@ -831,6 +953,21 @@ public:
   void set_parent_ctx(parent_ctx_t& parent_ctx)
   {
     reserved::per_ctx_dot::set_parent_ctx(parent_ctx.get_dot(), get_dot());
+  }
+
+  void dot_push_section(::std::string symbol) const
+  {
+    reserved::dot::section::push(mv(symbol));
+  }
+
+  void dot_pop_section() const
+  {
+    reserved::dot::section::pop();
+  }
+
+  auto dot_section(::std::string symbol) const
+  {
+    return reserved::dot::section::guard(mv(symbol));
   }
 
   auto get_phase() const
@@ -968,6 +1105,16 @@ public:
     return logical_data(make_slice(p, n), mv(dplace));
   }
 
+  auto logical_token()
+  {
+    // We do not use a shape because we want the first rw() access to succeed
+    // without an initial write()
+    //
+    // Note that we do not disable write back as the write-back mechanism is
+    // handling void_interface specifically to ignore it anyway.
+    return logical_data(void_interface{});
+  }
+
   template <typename T>
   frozen_logical_data<T> freeze(cuda::experimental::stf::logical_data<T> d,
                                 access_mode m    = access_mode::read,
@@ -1053,28 +1200,28 @@ public:
    * parallel_for : apply an operation over a shaped index space
    */
   template <typename S, typename... Deps>
-  auto parallel_for(exec_place e_place, S shape, task_dep<Deps>... deps)
+  auto parallel_for(exec_place e_place, S shape, Deps... deps)
   {
     return reserved::parallel_for_scope<Engine, S, null_partition, Deps...>(self(), mv(e_place), mv(shape), mv(deps)...);
   }
 
   template <typename partitioner_t, typename S, typename... Deps>
-  auto parallel_for(partitioner_t, exec_place e_place, S shape, task_dep<Deps>... deps)
+  auto parallel_for(partitioner_t, exec_place e_place, S shape, Deps... deps)
   {
     return reserved::parallel_for_scope<Engine, S, partitioner_t, Deps...>(self(), mv(e_place), mv(shape), mv(deps)...);
   }
 
   template <typename S, typename... Deps>
-  auto parallel_for(exec_place_grid e_place, S shape, task_dep<Deps>... deps) = delete;
+  auto parallel_for(exec_place_grid e_place, S shape, Deps... deps) = delete;
 
   template <typename partitioner_t, typename S, typename... Deps>
-  auto parallel_for(partitioner_t p, exec_place_grid e_place, S shape, task_dep<Deps>... deps)
+  auto parallel_for(partitioner_t p, exec_place_grid e_place, S shape, Deps... deps)
   {
     return parallel_for(mv(p), exec_place(mv(e_place)), mv(shape), mv(deps)...);
   }
 
-  template <typename S, typename... Deps>
-  auto parallel_for(S shape, task_dep<Deps>... deps)
+  template <typename S, typename... Deps, typename... Ops, bool... flags>
+  auto parallel_for(S shape, task_dep<Deps, Ops, flags>... deps)
   {
     return parallel_for(self().default_exec_place(), mv(shape), mv(deps)...);
   }

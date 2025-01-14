@@ -34,6 +34,7 @@
 #include <cuda/experimental/__stf/internal/reorderer.cuh>
 #include <cuda/experimental/__stf/places/blocked_partition.cuh> // for unit test!
 #include <cuda/experimental/__stf/stream/interfaces/slice.cuh> // For implicit logical_data_untyped constructors
+#include <cuda/experimental/__stf/stream/interfaces/void_interface.cuh>
 #include <cuda/experimental/__stf/stream/stream_task.cuh>
 
 namespace cuda::experimental::stf
@@ -237,9 +238,9 @@ public:
 
     auto dump_hooks = reserved::get_dump_hooks(this, deps...);
 
-    auto res = stream_task<Deps...>(*this, mv(e_place), mv(deps)...);
-    res.add_post_submission_hook(dump_hooks);
-    return res;
+    auto result = stream_task<Deps...>(*this, mv(e_place), mv(deps)...);
+    result.add_post_submission_hook(dump_hooks);
+    return result;
   }
 
   template <typename... Deps>
@@ -647,6 +648,19 @@ public:
     return deferred_parallel_for(exec_place::current_device(), mv(shape), mv(deps)...);
   }
 
+  template <typename T>
+  auto wait(cuda::experimental::stf::logical_data<T>& ldata)
+  {
+    typename owning_container_of<T>::type out;
+
+    task(exec_place::host, ldata.read()).set_symbol("wait")->*[&](cudaStream_t stream, auto data) {
+      cuda_safe_call(cudaStreamSynchronize(stream));
+      out = owning_container_of<T>::get_value(data);
+    };
+
+    return out;
+  }
+
 private:
   /* This class contains all the state associated to a stream_ctx, and all states associated to every contexts (in
    * `impl`) */
@@ -679,6 +693,13 @@ private:
       auto e = reserved::record_event_in_stream(decorated_stream(stream));
       /// e->set_symbol(mv(event_symbol));
       return event_list(mv(e));
+    }
+
+    // We need to ensure all dangling events have been completed (eg. by having
+    // the CUDA stream used in the finalization wait on these events)
+    bool track_dangling_events() const override
+    {
+      return true;
     }
 
     ::std::vector<int> deferred_tasks; // vector of mapping_ids
@@ -809,7 +830,7 @@ UNITTEST("movable stream_task")
 
 // FIXME : This test is causing some compiler errors with MSVC, so we disable
 // it on MSVC for now
-#  if !defined(_CCCL_COMPILER_MSVC)
+#  if !_CCCL_COMPILER(MSVC)
 UNITTEST("logical_data_untyped moveable")
 {
   using namespace cuda::experimental::stf;
@@ -839,7 +860,7 @@ UNITTEST("logical_data_untyped moveable")
 
   for (int bid = 0; bid < 2; bid++)
   {
-    // This variable is likely to have the same address accross loop
+    // This variable is likely to have the same address across loop
     // iterations, which can stress the logical data management
     scalar res(ctx);
     auto t = ctx.task();
@@ -852,7 +873,7 @@ UNITTEST("logical_data_untyped moveable")
 
   ctx.finalize();
 };
-#  endif // !_CCCL_COMPILER_MSVC
+#  endif // !_CCCL_COMPILER(MSVC)
 
 #  ifdef __CUDACC__
 namespace reserved
@@ -957,7 +978,7 @@ UNITTEST("non contiguous slice")
 
   int X[32 * 32];
 
-  // Pinning non contiguous memory is extremelly expensive, so we do it now
+  // Pinning non contiguous memory is extremely expensive, so we do it now
   cuda_safe_call(cudaHostRegister(&X[0], 32 * 32 * sizeof(int), cudaHostRegisterPortable));
 
   for (size_t i = 0; i < 32 * 32; i++)
@@ -1125,7 +1146,7 @@ UNITTEST("get logical_data from a task_dep")
   ctx.finalize();
 };
 
-#  ifdef __CUDACC__
+#  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 namespace reserved
 {
 inline void unit_test_pfor()
@@ -1313,8 +1334,8 @@ UNITTEST("basic launch test")
 };
 
 } // end namespace reserved
-#  endif // UNITTESTED_FILE
+#  endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 
-#endif // __CUDACC__
+#endif // UNITTESTED_FILE
 
 } // namespace cuda::experimental::stf

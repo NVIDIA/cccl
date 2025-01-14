@@ -347,15 +347,15 @@ DECLARE_UNITTEST(TestTransformBinaryCudaStreams);
 
 struct sum_five
 {
-  _CCCL_HOST_DEVICE auto
-  operator()(std::int8_t a, std::int16_t b, std::int32_t c, std::int64_t d, float e) const -> double
+  _CCCL_HOST_DEVICE auto operator()(std::int8_t a, std::int16_t b, std::int32_t c, std::int64_t d, float e) const
+    -> double
   {
     return a + b + c + d + e;
   }
 };
 
 // The following test cannot be compiled because of a bug in the conversion of thrust::tuple on MSVC 2017
-#ifndef _CCCL_COMPILER_MSVC_2017
+#if !_CCCL_COMPILER(MSVC2017)
 // we specialize zip_function for sum_five, but do nothing in the call operator so the test below would fail if the
 // zip_function is actually called (and not unwrapped)
 THRUST_NAMESPACE_BEGIN
@@ -373,8 +373,8 @@ public:
   }
 
   template <typename Tuple>
-  _CCCL_HOST_DEVICE auto
-  operator()(Tuple&& t) const -> decltype(detail::zip_detail::apply(std::declval<sum_five>(), THRUST_FWD(t)))
+  _CCCL_HOST_DEVICE auto operator()(Tuple&& t) const
+    -> decltype(detail::zip_detail::apply(std::declval<sum_five>(), THRUST_FWD(t)))
   {
     // not calling func, so we would get a wrong result if we were called
     return {};
@@ -420,4 +420,4 @@ void TestTransformZipIteratorUnwrapping()
   }
 }
 DECLARE_UNITTEST(TestTransformZipIteratorUnwrapping);
-#endif // !_CCCL_COMPILER_MSVC_2017
+#endif // !_CCCL_COMPILER(MSVC2017)

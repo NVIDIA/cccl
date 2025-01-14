@@ -32,19 +32,18 @@ template <class _Iterator>
 concept permutable = forward_iterator<_Iterator> && indirectly_movable_storable<_Iterator, _Iterator>
                   && indirectly_swappable<_Iterator, _Iterator>;
 
-#elif _CCCL_STD_VER > 2014
+#elif _CCCL_STD_VER >= 2014
 
 template <class _Iterator>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
-  __permutable_,
-  requires()(requires(forward_iterator<_Iterator>),
-             requires(indirectly_movable_storable<_Iterator, _Iterator>),
-             requires(indirectly_swappable<_Iterator, _Iterator>)));
+_CCCL_CONCEPT_FRAGMENT(__permutable_,
+                       requires()(requires(forward_iterator<_Iterator>),
+                                  requires(indirectly_movable_storable<_Iterator, _Iterator>),
+                                  requires(indirectly_swappable<_Iterator, _Iterator>)));
 
 template <class _Iterator>
-_LIBCUDACXX_CONCEPT permutable = _LIBCUDACXX_FRAGMENT(__permutable_, _Iterator);
+_CCCL_CONCEPT permutable = _CCCL_FRAGMENT(__permutable_, _Iterator);
 
-#endif // _CCCL_STD_VER > 2014
+#endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
