@@ -1,4 +1,4 @@
-# Copyright (c) 2024, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -15,7 +15,14 @@ from ..typing import DeviceArrayLike
 
 
 def get_dtype(arr: DeviceArrayLike) -> np.dtype:
-    return np.dtype(arr.__cuda_array_interface__["typestr"])
+    typestr = arr.__cuda_array_interface__["typestr"]
+
+    if typestr.startswith("|V"):
+        # it's a structured dtype, use the descr field:
+        return np.dtype(arr.__cuda_array_interface__["descr"])
+    else:
+        # a simple dtype, use the typestr field:
+        return np.dtype(typestr)
 
 
 def get_strides(arr: DeviceArrayLike) -> Optional[Tuple]:
