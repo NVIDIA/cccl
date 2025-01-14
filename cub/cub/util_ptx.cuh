@@ -748,6 +748,28 @@ struct warp_matcher_t<LABEL_BITS, CUB_PTX_WARP_THREADS>
   }
 };
 
+/**
+ * @brief Shifts @p val left by the amount specified by unsigned 32-bit value in @p num_bits. If @p
+ * num_bits is larger than 32 bits, @p num_bits is clamped to 32.
+ */
+_CCCL_DEVICE _CCCL_FORCEINLINE uint32_t LogicShiftLeft(uint32_t val, uint32_t num_bits)
+{
+  uint32_t ret{};
+  asm("shl.b32 %0, %1, %2;" : "=r"(ret) : "r"(val), "r"(num_bits));
+  return ret;
+}
+
+/**
+ * @brief Shifts @p val right by the amount specified by unsigned 32-bit value in @p num_bits. If @p
+ * num_bits is larger than 32 bits, @p num_bits is clamped to 32.
+ */
+_CCCL_DEVICE _CCCL_FORCEINLINE uint32_t LogicShiftRight(uint32_t val, uint32_t num_bits)
+{
+  uint32_t ret{};
+  asm("shr.b32 %0, %1, %2;" : "=r"(ret) : "r"(val), "r"(num_bits));
+  return ret;
+}
+
 } // namespace detail
 #endif // _CCCL_DOXYGEN_INVOKED
 
