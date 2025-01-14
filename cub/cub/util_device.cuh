@@ -47,27 +47,25 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER
-
-#  include <cub/detail/device_synchronize.cuh> // IWYU pragma: export
-#  include <cub/util_debug.cuh>
-#  include <cub/util_type.cuh>
+#include <cub/detail/device_synchronize.cuh> // IWYU pragma: export
+#include <cub/util_debug.cuh>
+#include <cub/util_type.cuh>
 // for backward compatibility
-#  include <cub/util_temporary_storage.cuh>
+#include <cub/util_temporary_storage.cuh>
 
-#  include <cuda/std/__cuda/ensure_current_device.h> // IWYU pragma: export
-#  include <cuda/std/type_traits>
-#  include <cuda/std/utility>
+#include <cuda/std/__cuda/ensure_current_device.h> // IWYU pragma: export
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
-#  include <array>
-#  include <atomic>
-#  include <cassert>
+#include <array>
+#include <atomic>
+#include <cassert>
 
-#  include <nv/target>
+#include <nv/target>
 
 CUB_NAMESPACE_BEGIN
 
-#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 namespace detail
 {
@@ -92,7 +90,7 @@ template <typename T>
 CUB_DETAIL_KERNEL_ATTRIBUTES void EmptyKernel()
 {}
 
-#  endif // _CCCL_DOXYGEN_INVOKED
+#endif // _CCCL_DOXYGEN_INVOKED
 
 /**
  * \brief Returns the current device or -1 if an error occurred.
@@ -107,13 +105,13 @@ CUB_RUNTIME_FUNCTION inline int CurrentDevice()
   return device;
 }
 
-#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 //! @brief RAII helper which saves the current device and switches to the specified device on construction and switches
 //! to the saved device on destruction.
 using SwitchDevice = ::cuda::__ensure_current_device;
 
-#  endif // _CCCL_DOXYGEN_INVOKED
+#endif // _CCCL_DOXYGEN_INVOKED
 
 /**
  * \brief Returns the number of CUDA devices available or -1 if an error
@@ -155,7 +153,7 @@ CUB_RUNTIME_FUNCTION inline int DeviceCount()
   return result;
 }
 
-#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 /**
  * \brief Per-device cache for a CUDA attribute value; the attribute is queried
  *        and stored for each device upon construction.
@@ -270,7 +268,7 @@ public:
     return entry.payload;
   }
 };
-#  endif // _CCCL_DOXYGEN_INVOKED
+#endif // _CCCL_DOXYGEN_INVOKED
 
 /**
  * \brief Retrieves the PTX version that will be used on the current device (major * 100 + minor * 10).
@@ -290,11 +288,11 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersionUncached(int& ptx_version)
   // in device code.
   // <nv/target> may provide an abstraction for this eventually. For now,
   // we have to keep this usage of __CUDA_ARCH__.
-#  if defined(_NVHPC_CUDA)
-#    define CUB_TEMP_GET_PTX __builtin_current_device_sm()
-#  else
-#    define CUB_TEMP_GET_PTX __CUDA_ARCH__
-#  endif
+#if defined(_NVHPC_CUDA)
+#  define CUB_TEMP_GET_PTX __builtin_current_device_sm()
+#else
+#  define CUB_TEMP_GET_PTX __CUDA_ARCH__
+#endif
 
   cudaError_t result = cudaSuccess;
   NV_IF_TARGET(
@@ -314,7 +312,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersionUncached(int& ptx_version)
 
       ptx_version = CUB_TEMP_GET_PTX;));
 
-#  undef CUB_TEMP_GET_PTX
+#undef CUB_TEMP_GET_PTX
 
   return result;
 }
@@ -472,29 +470,29 @@ namespace detail
  */
 CUB_RUNTIME_FUNCTION inline cudaError_t DebugSyncStream(cudaStream_t stream)
 {
-#  ifndef CUB_DETAIL_DEBUG_ENABLE_SYNC
+#ifndef CUB_DETAIL_DEBUG_ENABLE_SYNC
 
   (void) stream;
   return cudaSuccess;
 
-#  else // CUB_DETAIL_DEBUG_ENABLE_SYNC:
+#else // CUB_DETAIL_DEBUG_ENABLE_SYNC:
 
-#    define CUB_TMP_SYNC_AVAILABLE         \
-      _CubLog("%s\n", "Synchronizing..."); \
-      return SyncStream(stream)
+#  define CUB_TMP_SYNC_AVAILABLE         \
+    _CubLog("%s\n", "Synchronizing..."); \
+    return SyncStream(stream)
 
-#    define CUB_TMP_DEVICE_SYNC_UNAVAILABLE                                        \
-      (void) stream;                                                               \
-      _CubLog("WARNING: Skipping CUB `debug_synchronous` synchronization (%s).\n", \
-              "device-side sync requires <sm_90, RDC, and CDPv1");                 \
-      return cudaSuccess
+#  define CUB_TMP_DEVICE_SYNC_UNAVAILABLE                                        \
+    (void) stream;                                                               \
+    _CubLog("WARNING: Skipping CUB `debug_synchronous` synchronization (%s).\n", \
+            "device-side sync requires <sm_90, RDC, and CDPv1");                 \
+    return cudaSuccess
 
   NV_IF_TARGET(NV_IS_HOST, (CUB_TMP_SYNC_AVAILABLE;), (CUB_TMP_DEVICE_SYNC_UNAVAILABLE;));
 
-#    undef CUB_TMP_DEVICE_SYNC_UNAVAILABLE
-#    undef CUB_TMP_SYNC_AVAILABLE
+#  undef CUB_TMP_DEVICE_SYNC_UNAVAILABLE
+#  undef CUB_TMP_SYNC_AVAILABLE
 
-#  endif // CUB_DETAIL_DEBUG_ENABLE_SYNC
+#endif // CUB_DETAIL_DEBUG_ENABLE_SYNC
 }
 
 /** \brief Gets whether the current device supports unified addressing */
@@ -609,6 +607,7 @@ CUB_RUNTIME_FUNCTION PolicyWrapper<PolicyT> MakePolicyWrapper(PolicyT policy)
   return PolicyWrapper<PolicyT>{policy};
 }
 
+#if _CCCL_HAS_CUDA_COMPILER
 namespace detail
 {
 struct TripleChevronFactory;
@@ -641,6 +640,7 @@ struct KernelConfig
     return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, block_threads);
   }
 };
+#endif // _CCCL_HAS_CUDA_COMPILER
 
 /// Helper for dispatching into a policy chain
 template <int PolicyPtxVersion, typename PolicyT, typename PrevPolicyT>
@@ -654,19 +654,19 @@ struct ChainedPolicy
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Invoke(int device_ptx_version, FunctorT& op)
   {
     // __CUDA_ARCH_LIST__ is only available from CTK 11.5 onwards
-#  ifdef __CUDA_ARCH_LIST__
+#ifdef __CUDA_ARCH_LIST__
     return runtime_to_compiletime<1, __CUDA_ARCH_LIST__>(device_ptx_version, op);
     // NV_TARGET_SM_INTEGER_LIST is defined by NVHPC. The values need to be multiplied by 10 to match
     // __CUDA_ARCH_LIST__. E.g. arch 860 from __CUDA_ARCH_LIST__ corresponds to arch 86 from NV_TARGET_SM_INTEGER_LIST.
-#  elif defined(NV_TARGET_SM_INTEGER_LIST)
+#elif defined(NV_TARGET_SM_INTEGER_LIST)
     return runtime_to_compiletime<10, NV_TARGET_SM_INTEGER_LIST>(device_ptx_version, op);
-#  else
+#else
     if (device_ptx_version < PolicyPtxVersion)
     {
       return PrevPolicyT::Invoke(device_ptx_version, op);
     }
     return op.template Invoke<PolicyT>();
-#  endif
+#endif
   }
 
 private:
@@ -761,6 +761,6 @@ private:
 
 CUB_NAMESPACE_END
 
+#if _CCCL_HAS_CUDA_COMPILER
 #  include <cub/detail/launcher/cuda_runtime.cuh> // to complete the definition of TripleChevronFactory
-
 #endif // _CCCL_HAS_CUDA_COMPILER
