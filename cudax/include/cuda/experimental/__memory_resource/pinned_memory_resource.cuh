@@ -34,6 +34,8 @@
 #include <cuda/std/detail/libcxx/include/stdexcept>
 
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
+#include <cuda/experimental/__memory_resource/memory_resource_base.cuh>
+#include <cuda/experimental/__memory_resource/pinned_memory_pool.cuh>
 #include <cuda/experimental/__memory_resource/properties.cuh>
 
 //! @file
@@ -43,6 +45,61 @@ namespace cuda::experimental
 
 #if !_CCCL_COMPILER(MSVC2017) && _CCCL_CUDACC_AT_LEAST(12, 2)
 
+//! @rst
+//! .. _cudax-memory-resource-async:
+//!
+//! Stream ordered memory resource
+//! ------------------------------
+//!
+//! ``pinned_memory_resource`` uses `cudaMallocFromPoolAsync / cudaFreeAsync
+//! <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html>`__ for allocation/deallocation. A
+//! ``pinned_memory_resource`` is a thin wrapper around a \c cudaMemPool_t.
+//!
+//! .. warning::
+//!
+//!    ``pinned_memory_resource`` does not own the pool and it is the responsibility of the user to ensure that the
+//!    lifetime of the pool exceeds the lifetime of the ``pinned_memory_resource``.
+//!
+//! @endrst
+class pinned_memory_resource : public __memory_resource_base
+{
+private:
+  //! @brief  Returns the default ``cudaMemPool_t`` from the specified device.
+  //! @throws cuda_error if retrieving the default ``cudaMemPool_t`` fails.
+  //! @returns The default memory pool of the specified device.
+  _CCCL_NODISCARD static ::cudaMemPool_t __get_default_sysmem_pool()
+  {
+    static pinned_memory_pool __default_pool;
+
+    return __default_pool.get();
+  }
+
+public:
+  //! @brief Default constructs the pinned_memory_resource using the default \c cudaMemPool_t of the default device.
+  //! @throws cuda_error if retrieving the default \c cudaMemPool_t fails.
+  pinned_memory_resource(unsigned int = 0)
+      : __memory_resource_base(__get_default_sysmem_pool())
+  {}
+
+  //! @brief  Constructs the pinned_memory_resource from a \c cudaMemPool_t.
+  //! @param __pool The \c cudaMemPool_t used to allocate memory.
+  explicit pinned_memory_resource(::cudaMemPool_t __pool) noexcept
+      : __memory_resource_base(__pool)
+  {}
+
+  //! @brief  Constructs the pinned_memory_resource from a \c pinned_memory_pool by calling get().
+  //! @param __pool The \c pinned_memory_pool used to allocate memory.
+  explicit pinned_memory_resource(pinned_memory_pool& __pool) noexcept
+      : __memory_resource_base(__pool.get())
+  {}
+
+#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+  //! @brief Enables the \c device_accessible property
+  friend constexpr void get_property(pinned_memory_resource const&, device_accessible) noexcept {}
+  //! @brief Enables the \c host_accessible property
+  friend constexpr void get_property(pinned_memory_resource const&, host_accessible) noexcept {}
+#  endif // _CCCL_DOXYGEN_INVOKED
+};
 #else
 
 //! @brief pinned_memory_resource uses `cudaMallocHost` / `cudaFreeHost` for allocation / deallocation.

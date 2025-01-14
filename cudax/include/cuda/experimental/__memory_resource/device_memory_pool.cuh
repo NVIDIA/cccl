@@ -45,12 +45,12 @@ namespace cuda::experimental
 //! <a href="https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html">cudaMemPool_t</a>.
 //!
 //! It handles creation and destruction of the underlying pool utilizing the provided \c memory_pool_properties.
-class device_memory_pool : public __mempool_base
+class device_memory_pool : public __memory_pool_base
 {
   //! @brief Constructs a \c device_memory_pool from a handle taking ownership of the pool
   //! @param __handle The handle to the existing pool
-  explicit device_memory_pool(__mempool_base::__from_handle_t, ::cudaMemPool_t __handle) noexcept
-      : __mempool_base(__mempool_base::__from_handle_t{}, __handle)
+  explicit device_memory_pool(__memory_pool_base::__from_handle_t, ::cudaMemPool_t __handle) noexcept
+      : __memory_pool_base(__memory_pool_base::__from_handle_t{}, __handle)
   {}
 
 public:
@@ -62,7 +62,7 @@ public:
   //! @param __pool_properties Optional, additional properties of the pool to be created.
   explicit device_memory_pool(const ::cuda::experimental::device_ref __device_id,
                               memory_pool_properties __properties = {})
-      : __mempool_base(__memory_location_type::__device, __properties, __device_id.get())
+      : __memory_pool_base(__memory_location_type::__device, __properties, __device_id.get())
   {}
 
   //! @brief Disables construction from a plain `cudaMemPool_t`. We want to ensure clean ownership semantics.
@@ -82,7 +82,7 @@ public:
   //! @note The constructed `device_memory_pool` object takes ownership of the native handle.
   _CCCL_NODISCARD static device_memory_pool from_native_handle(::cudaMemPool_t __handle) noexcept
   {
-    return device_memory_pool(__mempool_base::__from_handle_t{}, __handle);
+    return device_memory_pool(__memory_pool_base::__from_handle_t{}, __handle);
   }
 
   // Disallow construction from an `int`, e.g., `0`.

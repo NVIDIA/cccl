@@ -43,12 +43,12 @@ namespace cuda::experimental
 //! <a href="https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html">cudaMemPool_t</a>.
 //!
 //! It handles creation and destruction of the underlying pool utilizing the provided \c memory_pool_properties.
-class pinned_memory_pool : public __mempool_base
+class pinned_memory_pool : public __memory_pool_base
 {
   //! @brief Constructs a \c pinned_memory_pool from a handle taking ownership of the pool
   //! @param __handle The handle to the existing pool
-  explicit pinned_memory_pool(__mempool_base::__from_handle_t, ::cudaMemPool_t __handle) noexcept
-      : __mempool_base(__mempool_base::__from_handle_t{}, __handle)
+  explicit pinned_memory_pool(__memory_pool_base::__from_handle_t, ::cudaMemPool_t __handle) noexcept
+      : __memory_pool_base(__memory_pool_base::__from_handle_t{}, __handle)
   {}
 
 public:
@@ -59,7 +59,7 @@ public:
   //! @param __device_id The device id of the device the stream pool is constructed on.
   //! @param __pool_properties Optional, additional properties of the pool to be created.
   explicit pinned_memory_pool(memory_pool_properties __properties = {})
-      : __mempool_base(__memory_pool_kind::__host_pinned, __properties)
+      : __memory_pool_base(__memory_location_type::__host, __properties)
   {}
 
   //! @brief Disables construction from a plain `cudaMemPool_t`. We want to ensure clean ownership semantics.
@@ -79,7 +79,7 @@ public:
   //! @note The constructed `pinned_memory_pool` object takes ownership of the native handle.
   _CCCL_NODISCARD static pinned_memory_pool from_native_handle(::cudaMemPool_t __handle) noexcept
   {
-    return pinned_memory_pool(__mempool_base::__from_handle_t{}, __handle);
+    return pinned_memory_pool(__memory_pool_base::__from_handle_t{}, __handle);
   }
 
   // Disallow construction from an `int`, e.g., `0`.

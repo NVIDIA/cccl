@@ -45,7 +45,7 @@
 #  if _CCCL_STD_VER >= 2014
 
 //! @file
-//! The \c __mempool_base class provides a wrapper around a `cudaMempool_t`.
+//! The \c __memory_pool_base class provides a wrapper around a `cudaMempool_t`.
 namespace cuda::experimental
 {
 
@@ -114,7 +114,7 @@ enum class cudaMemAllocationHandleType
   cudaMemHandleTypeFabric = 0x8, ///< Allows a fabric handle to be used for exporting. (cudaMemFabricHandle_t)
 };
 
-//! @brief \c memory_pool_properties is a wrapper around properties passed to \c __mempool_base to create a
+//! @brief \c memory_pool_properties is a wrapper around properties passed to \c __memory_pool_base to create a
 //! <a href="https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html">cudaMemPool_t</a>.
 struct memory_pool_properties
 {
@@ -123,11 +123,11 @@ struct memory_pool_properties
   cudaMemAllocationHandleType allocation_handle_type = cudaMemAllocationHandleType::cudaMemHandleTypeNone;
 };
 
-//! @brief \c __mempool_base is an owning wrapper around a
+//! @brief \c __memory_pool_base is an owning wrapper around a
 //! <a href="https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html">cudaMemPool_t</a>.
 //!
 //! It handles creation and destruction of the underlying pool utilizing the provided \c memory_pool_properties.
-class __mempool_base
+class __memory_pool_base
 {
 private:
   ::cudaMemPool_t __pool_handle_ = nullptr;
@@ -175,8 +175,11 @@ private:
   _CCCL_NODISCARD static cudaMemPool_t
   __create_cuda_mempool(__memory_location_type __kind, memory_pool_properties __properties, int __device_id) noexcept
   {
-    ::cuda::experimental::__device_supports_stream_ordered_allocations(__device_id);
-    __mempool_base ::__cuda_supports_export_handle_type(__device_id, __properties.allocation_handle_type);
+    if (__kind == __memory_location_type::__device)
+    {
+      ::cuda::experimental::__device_supports_stream_ordered_allocations(__device_id);
+      __memory_pool_base::__cuda_supports_export_handle_type(__device_id, __properties.allocation_handle_type);
+    }
 
     ::cudaMemPoolProps __pool_properties{};
     __pool_properties.allocType   = ::cudaMemAllocationTypePinned;
@@ -232,14 +235,14 @@ private:
       void* __ptr{nullptr};
       _CCCL_TRY_CUDA_API(
         ::cudaMallocAsync,
-        "__mempool_base failed to allocate the initial pool size",
+        "__memory_pool_base failed to allocate the initial pool size",
         &__ptr,
         __properties.initial_pool_size,
         __allocation_stream().get());
 
       _CCCL_ASSERT_CUDA_API(
         ::cudaFreeAsync,
-        "__mempool_base failed to free the initial pool allocation",
+        "__memory_pool_base failed to free the initial pool allocation",
         __ptr,
         __allocation_stream().get());
     }
@@ -250,26 +253,31 @@ protected:
   struct __from_handle_t
   {};
 
-  //! @brief Constructs a \c device_memory_pool from a handle taking ownership of the pool
+  //! @brief Constructs a \c __memory_pool_base from a handle taking ownership of the pool
   //! @param __handle The handle to the existing pool
-  explicit __mempool_base(__from_handle_t, ::cudaMemPool_t __handle) noexcept
+  explicit __memory_pool_base(__from_handle_t, ::cudaMemPool_t __handle) noexcept
       : __pool_handle_(__handle)
   {}
 
 public:
-  //! @brief Constructs a \c __mempool_base with the optionally specified initial pool size and release threshold.
+  //! @brief Constructs a \c __memory_pool_base with the optionally specified initial pool size and release threshold.
   //! If the pool size grows beyond the release threshold, unused memory held by the pool will be released at the next
   //! synchronization event.
   //! @throws cuda_error if the CUDA version does not support ``cudaMallocAsync``.
   //! @param __device_id The device id of the device the stream pool is constructed on.
   //! @param __pool_properties Optional, additional properties of the pool to be created.
-  explicit __mempool_base(__memory_location_type __kind, memory_pool_properties __properties, int __device_id = -1)
+  explicit __memory_pool_base(__memory_location_type __kind, memory_pool_properties __properties, int __device_id = -1)
       : __pool_handle_(__create_cuda_mempool(__kind, __properties, __device_id))
   {}
 
-  ~__mempool_base() noexcept
+  __memory_pool_base(__memory_pool_base const&)            = delete;
+  __memory_pool_base(__memory_pool_base&&)                 = delete;
+  __memory_pool_base& operator=(__memory_pool_base const&) = delete;
+  __memory_pool_base& operator=(__memory_pool_base&&)      = delete;
+
+  ~__memory_pool_base() noexcept
   {
-    _CCCL_ASSERT_CUDA_API(::cudaMemPoolDestroy, "~__mempool_base() failed to destroy pool", __pool_handle_);
+    _CCCL_ASSERT_CUDA_API(::cudaMemPoolDestroy, "~__memory_pool_base() failed to destroy pool", __pool_handle_);
   }
 
   //! @brief Tries to release memory.
@@ -279,7 +287,7 @@ public:
   void trim_to(const size_t __min_bytes_to_keep)
   {
     _CCCL_TRY_CUDA_API(::cudaMemPoolTrimTo,
-                       "Failed to call cudaMemPoolTrimTo in __mempool_base::trim_to ",
+                       "Failed to call cudaMemPoolTrimTo in __memory_pool_base::trim_to ",
                        __pool_handle_,
                        __min_bytes_to_keep);
   }
@@ -292,7 +300,7 @@ public:
     size_t __value = 0;
     _CCCL_TRY_CUDA_API(
       ::cudaMemPoolGetAttribute,
-      "Failed to call cudaMemPoolSetAttribute in __mempool_base::get_attribute ",
+      "Failed to call cudaMemPoolSetAttribute in __memory_pool_base::get_attribute ",
       __pool_handle_,
       __attr,
       static_cast<void*>(&__value));
@@ -307,18 +315,18 @@ public:
   {
     if (__attr == ::cudaMemPoolAttrReservedMemCurrent || __attr == cudaMemPoolAttrUsedMemCurrent)
     {
-      _CUDA_VSTD_NOVERSION::__throw_invalid_argument("Invalid attribute passed to __mempool_base::set_attribute.");
+      _CUDA_VSTD_NOVERSION::__throw_invalid_argument("Invalid attribute passed to __memory_pool_base::set_attribute.");
     }
     else if ((__attr == ::cudaMemPoolAttrReservedMemHigh || __attr == cudaMemPoolAttrUsedMemHigh) && __value != 0)
     {
       _CUDA_VSTD_NOVERSION::__throw_invalid_argument(
-        "__mempool_base::set_attribute: It is illegal to set this "
+        "__memory_pool_base::set_attribute: It is illegal to set this "
         "attribute to a non-zero value.");
     }
 
     _CCCL_TRY_CUDA_API(
       ::cudaMemPoolSetAttribute,
-      "Failed to call cudaMemPoolSetAttribute in __mempool_base::set_attribute ",
+      "Failed to call cudaMemPoolSetAttribute in __memory_pool_base::set_attribute ",
       __pool_handle_,
       __attr,
       static_cast<void*>(&__value));
@@ -370,17 +378,17 @@ public:
     return ::cuda::experimental::__mempool_get_access(__pool_handle_, __device);
   }
 
-  //! @brief Equality comparison with another \c __mempool_base.
+  //! @brief Equality comparison with another \c __memory_pool_base.
   //! @returns true if the stored ``cudaMemPool_t`` are equal.
-  _CCCL_NODISCARD constexpr bool operator==(__mempool_base const& __rhs) const noexcept
+  _CCCL_NODISCARD constexpr bool operator==(__memory_pool_base const& __rhs) const noexcept
   {
     return __pool_handle_ == __rhs.__pool_handle_;
   }
 
 #    if _CCCL_STD_VER <= 2017
-  //! @brief Inequality comparison with another \c __mempool_base.
+  //! @brief Inequality comparison with another \c __memory_pool_base.
   //! @returns true if the stored ``cudaMemPool_t`` are not equal.
-  _CCCL_NODISCARD constexpr bool operator!=(__mempool_base const& __rhs) const noexcept
+  _CCCL_NODISCARD constexpr bool operator!=(__memory_pool_base const& __rhs) const noexcept
   {
     return __pool_handle_ != __rhs.__pool_handle_;
   }
@@ -389,26 +397,26 @@ public:
   //! @brief Equality comparison with a \c cudaMemPool_t.
   //! @param __rhs A \c cudaMemPool_t.
   //! @returns true if the stored ``cudaMemPool_t`` is equal to \p __rhs.
-  _CCCL_NODISCARD_FRIEND constexpr bool operator==(__mempool_base const& __lhs, ::cudaMemPool_t __rhs) noexcept
+  _CCCL_NODISCARD_FRIEND constexpr bool operator==(__memory_pool_base const& __lhs, ::cudaMemPool_t __rhs) noexcept
   {
     return __lhs.__pool_handle_ == __rhs;
   }
 
 #    if _CCCL_STD_VER <= 2017
-  //! @copydoc __mempool_base::operator==(__mempool_base const&, ::cudaMemPool_t)
-  _CCCL_NODISCARD_FRIEND constexpr bool operator==(::cudaMemPool_t __lhs, __mempool_base const& __rhs) noexcept
+  //! @copydoc __memory_pool_base::operator==(__memory_pool_base const&, ::cudaMemPool_t)
+  _CCCL_NODISCARD_FRIEND constexpr bool operator==(::cudaMemPool_t __lhs, __memory_pool_base const& __rhs) noexcept
   {
     return __rhs.__pool_handle_ == __lhs;
   }
 
-  //! @copydoc __mempool_base::operator==(__mempool_base const&, ::cudaMemPool_t)
-  _CCCL_NODISCARD_FRIEND constexpr bool operator!=(__mempool_base const& __lhs, ::cudaMemPool_t __rhs) noexcept
+  //! @copydoc __memory_pool_base::operator==(__memory_pool_base const&, ::cudaMemPool_t)
+  _CCCL_NODISCARD_FRIEND constexpr bool operator!=(__memory_pool_base const& __lhs, ::cudaMemPool_t __rhs) noexcept
   {
     return __lhs.__pool_handle_ != __rhs;
   }
 
-  //! @copydoc __mempool_base::operator==(__mempool_base const&, ::cudaMemPool_t)
-  _CCCL_NODISCARD_FRIEND constexpr bool operator!=(::cudaMemPool_t __lhs, __mempool_base const& __rhs) noexcept
+  //! @copydoc __memory_pool_base::operator==(__memory_pool_base const&, ::cudaMemPool_t)
+  _CCCL_NODISCARD_FRIEND constexpr bool operator!=(::cudaMemPool_t __lhs, __memory_pool_base const& __rhs) noexcept
   {
     return __rhs.__pool_handle_ != __lhs;
   }

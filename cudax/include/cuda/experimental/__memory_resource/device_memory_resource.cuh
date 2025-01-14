@@ -78,7 +78,7 @@ private:
   //! @brief  Returns the default ``cudaMemPool_t`` from the specified device.
   //! @throws cuda_error if retrieving the default ``cudaMemPool_t`` fails.
   //! @returns The default memory pool of the specified device.
-  _CCCL_NODISCARD static ::cudaMemPool_t __get_default_mem_pool(const int __device_id)
+  _CCCL_NODISCARD static ::cudaMemPool_t __get_default_device_mem_pool(const int __device_id)
   {
     ::cuda::experimental::__device_supports_stream_ordered_allocations(__device_id);
 
@@ -92,13 +92,13 @@ public:
   //! @brief Default constructs the device_memory_resource using the default \c cudaMemPool_t of the default device.
   //! @throws cuda_error if retrieving the default \c cudaMemPool_t fails.
   device_memory_resource()
-      : __memory_resource_base(__get_default_mem_pool(0))
+      : __memory_resource_base(__get_default_device_mem_pool(0))
   {}
 
   //! @brief Constructs a device_memory_resource using the default \c cudaMemPool_t of a given device.
   //! @throws cuda_error if retrieving the default \c cudaMemPool_t fails.
   explicit device_memory_resource(::cuda::experimental::device_ref __device)
-      : __memory_resource_base(__get_default_mem_pool(__device.get()))
+      : __memory_resource_base(__get_default_device_mem_pool(__device.get()))
   {}
 
   device_memory_resource(int)                   = delete;

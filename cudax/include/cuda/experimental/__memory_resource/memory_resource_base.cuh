@@ -300,7 +300,7 @@ public:
   //! @returns If the underlying types are equality comparable, returns the result of equality comparison of both
   //! resources. Otherwise, returns false.
   template <class _Resource>
-    requires _CUDA_VMR::__different_resource<__memory_resource_base, _Resource>
+    requires _CUDA_VMR::__different_resource<__memory_resource_base, _Resource> && __non_polymorphic<_Resource>
   _CCCL_NODISCARD bool operator==(_Resource const& __rhs) const noexcept
   {
     return this->__equal_to(__rhs);
@@ -308,28 +308,32 @@ public:
 #    else // ^^^ C++20 ^^^ / vvv C++17
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator==(__memory_resource_base const& __lhs, _Resource const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<__memory_resource_base, _Resource>)
+    _CCCL_TRAILING_REQUIRES(bool)(
+      _CUDA_VMR::__different_resource<__memory_resource_base, _Resource>&& __non_polymorphic<_Resource>)
   {
     return __lhs.__equal_to(__rhs);
   }
 
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator==(_Resource const& __lhs, __memory_resource_base const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<__memory_resource_base, _Resource>)
+    _CCCL_TRAILING_REQUIRES(bool)(
+      _CUDA_VMR::__different_resource<__memory_resource_base, _Resource>&& __non_polymorphic<_Resource>)
   {
     return __rhs.__equal_to(__lhs);
   }
 
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator!=(__memory_resource_base const& __lhs, _Resource const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<__memory_resource_base, _Resource>)
+    _CCCL_TRAILING_REQUIRES(bool)(
+      _CUDA_VMR::__different_resource<__memory_resource_base, _Resource>&& __non_polymorphic<_Resource>)
   {
     return !__lhs.__equal_to(__rhs);
   }
 
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator!=(_Resource const& __lhs, __memory_resource_base const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<__memory_resource_base, _Resource>)
+    _CCCL_TRAILING_REQUIRES(bool)(
+      _CUDA_VMR::__different_resource<__memory_resource_base, _Resource>&& __non_polymorphic<_Resource>)
   {
     return !__rhs.__equal_to(__lhs);
   }

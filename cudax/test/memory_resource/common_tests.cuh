@@ -12,7 +12,6 @@
 
 #include <cuda/experimental/memory_resource.cuh>
 
-#include <catch2/catch.hpp>
 #include <utility.cuh>
 
 template <typename ResourceType>

@@ -415,6 +415,7 @@ TEST_CASE("device_memory_pool accessors", "[memory_resource]")
   SECTION("device_memory_pool::trim_to")
   {
     cudax::device_memory_pool pool{current_device};
+
     // prime the pool to a given size
     cudax::device_memory_resource resource{pool};
     cudax::stream stream{};
