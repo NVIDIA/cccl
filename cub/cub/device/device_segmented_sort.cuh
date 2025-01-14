@@ -46,6 +46,8 @@
 #include <cub/device/dispatch/dispatch_segmented_sort.cuh>
 #include <cub/util_namespace.cuh>
 
+#include <cuda/std/cstdint>
+
 CUB_NAMESPACE_BEGIN
 
 //! @rst
@@ -135,13 +137,13 @@ private:
   }
 
   // Internal version without NVTX range
-  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysNoNVTX(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
@@ -150,7 +152,8 @@ private:
     constexpr bool is_descending     = false;
     constexpr bool is_overwrite_okay = false;
 
-    using OffsetT = detail::choose_signed_offset_t<NumItemsT>;
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
     using DispatchT =
       DispatchSegmentedSort<is_descending, KeyT, cub::NullType, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
@@ -283,13 +286,13 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
@@ -310,13 +313,13 @@ public:
 
 private:
   // Internal version without NVTX range
-  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescendingNoNVTX(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
@@ -325,7 +328,8 @@ private:
     constexpr bool is_descending     = true;
     constexpr bool is_overwrite_okay = false;
 
-    using OffsetT = detail::choose_signed_offset_t<NumItemsT>;
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
     using DispatchT =
       DispatchSegmentedSort<is_descending, KeyT, cub::NullType, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
@@ -453,13 +457,13 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
@@ -480,12 +484,12 @@ public:
 
 private:
   // Internal version without NVTX range
-  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysNoNVTX(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
@@ -493,7 +497,8 @@ private:
   {
     constexpr bool is_descending     = false;
     constexpr bool is_overwrite_okay = true;
-    using OffsetT                    = detail::choose_signed_offset_t<NumItemsT>;
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
     using DispatchT =
       DispatchSegmentedSort<is_descending, KeyT, cub::NullType, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
@@ -632,12 +637,12 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
@@ -650,12 +655,12 @@ public:
 
 private:
   // Internal version without NVTX range
-  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescendingNoNVTX(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
@@ -663,7 +668,8 @@ private:
   {
     constexpr bool is_descending     = true;
     constexpr bool is_overwrite_okay = true;
-    using OffsetT                    = detail::choose_signed_offset_t<NumItemsT>;
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
     using DispatchT =
       DispatchSegmentedSort<is_descending, KeyT, cub::NullType, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
@@ -803,12 +809,12 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
@@ -930,20 +936,20 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeys(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortKeysNoNVTX<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT, NumItemsT>(
+    return SortKeysNoNVTX<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -1066,20 +1072,20 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeysDescending(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortKeysDescendingNoNVTX<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT, NumItemsT>(
+    return SortKeysDescendingNoNVTX<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -1213,19 +1219,19 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeys(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortKeysNoNVTX<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT, NumItemsT>(
+    return SortKeysNoNVTX<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
 
@@ -1350,25 +1356,25 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeysDescending(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortKeysDescendingNoNVTX<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT, NumItemsT>(
+    return SortKeysDescendingNoNVTX<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
 
 private:
   // Internal version without NVTX range
-  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairsNoNVTX(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
@@ -1376,7 +1382,7 @@ private:
     KeyT* d_keys_out,
     const ValueT* d_values_in,
     ValueT* d_values_out,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
@@ -1385,7 +1391,8 @@ private:
     constexpr bool is_descending     = false;
     constexpr bool is_overwrite_okay = false;
 
-    using OffsetT = detail::choose_signed_offset_t<NumItemsT>;
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
     using DispatchT =
       DispatchSegmentedSort<is_descending, KeyT, ValueT, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
@@ -1539,7 +1546,7 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
@@ -1547,7 +1554,7 @@ public:
     KeyT* d_keys_out,
     const ValueT* d_values_in,
     ValueT* d_values_out,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
@@ -1570,7 +1577,7 @@ public:
 
 private:
   // Internal version without NVTX range
-  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescendingNoNVTX(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
@@ -1578,7 +1585,7 @@ private:
     KeyT* d_keys_out,
     const ValueT* d_values_in,
     ValueT* d_values_out,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
@@ -1587,7 +1594,8 @@ private:
     constexpr bool is_descending     = true;
     constexpr bool is_overwrite_okay = false;
 
-    using OffsetT = detail::choose_signed_offset_t<NumItemsT>;
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
     using DispatchT =
       DispatchSegmentedSort<is_descending, KeyT, ValueT, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
@@ -1737,7 +1745,7 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
@@ -1745,7 +1753,7 @@ public:
     KeyT* d_keys_out,
     const ValueT* d_values_in,
     ValueT* d_values_out,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
@@ -1768,13 +1776,13 @@ public:
 
 private:
   // Internal version without NVTX range
-  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairsNoNVTX(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
@@ -1783,7 +1791,8 @@ private:
     constexpr bool is_descending     = false;
     constexpr bool is_overwrite_okay = true;
 
-    using OffsetT = detail::choose_signed_offset_t<NumItemsT>;
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
     using DispatchT =
       DispatchSegmentedSort<is_descending, KeyT, ValueT, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
@@ -1939,13 +1948,13 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
@@ -1966,13 +1975,13 @@ public:
 
 private:
   // Internal version without NVTX range
-  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescendingNoNVTX(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
@@ -1981,7 +1990,8 @@ private:
     constexpr bool is_descending     = true;
     constexpr bool is_overwrite_okay = true;
 
-    using OffsetT = detail::choose_signed_offset_t<NumItemsT>;
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
     using DispatchT =
       DispatchSegmentedSort<is_descending, KeyT, ValueT, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
@@ -2136,13 +2146,13 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
@@ -2290,7 +2300,7 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortPairs(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
@@ -2298,14 +2308,14 @@ public:
     KeyT* d_keys_out,
     const ValueT* d_values_in,
     ValueT* d_values_out,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortPairsNoNVTX<KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT, NumItemsT>(
+    return SortPairsNoNVTX<KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -2448,7 +2458,7 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortPairsDescending(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
@@ -2456,14 +2466,14 @@ public:
     KeyT* d_keys_out,
     const ValueT* d_values_in,
     ValueT* d_values_out,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortPairsDescendingNoNVTX<KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT, NumItemsT>(
+    return SortPairsDescendingNoNVTX<KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -2616,20 +2626,20 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortPairs(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortPairsNoNVTX<KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT, NumItemsT>(
+    return SortPairsNoNVTX<KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -2779,20 +2789,20 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortPairsDescending(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortPairsDescendingNoNVTX<KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT, NumItemsT>(
+    return SortPairsDescendingNoNVTX<KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,

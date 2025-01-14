@@ -585,8 +585,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t DeviceSegmentedSortCont
   cudaStream_t stream)
 {
   using local_segment_index_t = detail::segmented_sort::local_segment_index_t;
-  
-  cudaError error             = cudaSuccess;
+
+  cudaError error = cudaSuccess;
 
   const local_segment_index_t large_segments = group_sizes[0];
 
@@ -839,7 +839,7 @@ struct DispatchSegmentedSort
   DoubleBuffer<ValueT>& d_values;
 
   /// Number of items to sort
-  OffsetT num_items;
+  ::cuda::std::int64_t num_items;
 
   /// The number of segments that comprise the sorting data
   global_segment_offset_t num_segments;
@@ -871,7 +871,7 @@ struct DispatchSegmentedSort
     std::size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
-    OffsetT num_items,
+    ::cuda::std::int64_t num_items,
     global_segment_offset_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
@@ -1131,7 +1131,7 @@ struct DispatchSegmentedSort
     std::size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
-    OffsetT num_items,
+    ::cuda::std::int64_t num_items,
     global_segment_offset_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
