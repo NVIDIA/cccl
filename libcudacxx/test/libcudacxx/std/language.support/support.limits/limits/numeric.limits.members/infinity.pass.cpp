@@ -14,6 +14,8 @@
 #include <cuda/std/cfloat>
 #include <cuda/std/limits>
 
+#include "common.h"
+
 // MSVC has issues with producing INF with divisions by zero.
 #if defined(_MSC_VER)
 #  include <cmath>
@@ -24,10 +26,10 @@
 template <class T>
 __host__ __device__ void test(T expected)
 {
-  assert(cuda::std::numeric_limits<T>::infinity() == expected);
-  assert(cuda::std::numeric_limits<const T>::infinity() == expected);
-  assert(cuda::std::numeric_limits<volatile T>::infinity() == expected);
-  assert(cuda::std::numeric_limits<const volatile T>::infinity() == expected);
+  assert(float_eq(cuda::std::numeric_limits<T>::infinity(), expected));
+  assert(float_eq(cuda::std::numeric_limits<const T>::infinity(), expected));
+  assert(float_eq(cuda::std::numeric_limits<volatile T>::infinity(), expected));
+  assert(float_eq(cuda::std::numeric_limits<const volatile T>::infinity(), expected));
 }
 
 int main(int, char**)
@@ -62,6 +64,12 @@ int main(int, char**)
 #  ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
   test<long double>(1. / 0.);
 #  endif
+#  if defined(_LIBCUDACXX_HAS_NVFP16)
+  test<__half>(__double2half(1.0 / 0.0));
+#  endif // _LIBCUDACXX_HAS_NVFP16
+#  if defined(_LIBCUDACXX_HAS_NVBF16)
+  test<__nv_bfloat16>(__double2bfloat16(1.0 / 0.0));
+#  endif // _LIBCUDACXX_HAS_NVBF16
 // MSVC has issues with producing INF with divisions by zero.
 #else
   test<float>(INFINITY);
@@ -69,11 +77,13 @@ int main(int, char**)
 #  ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
   test<long double>(INFINITY);
 #  endif
+#  if defined(_LIBCUDACXX_HAS_NVFP16)
+  test<__half>(__double2half(INFINITY));
+#  endif // _LIBCUDACXX_HAS_NVFP16
+#  if defined(_LIBCUDACXX_HAS_NVBF16)
+  test<__nv_bfloat16>(__double2bfloat16(INFINITY));
+#  endif // _LIBCUDACXX_HAS_NVBF16
 #endif
 
   return 0;
 }
-
-#ifndef TEST_COMPILER_NVRTC
-float zero = 0;
-#endif
