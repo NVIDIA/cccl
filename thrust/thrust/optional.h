@@ -1998,7 +1998,6 @@ _CCCL_HOST_DEVICE constexpr auto optional_map_impl(Opt&& opt, F&& f)
   return opt.has_value() ? detail::invoke(std::forward<F>(f), *std::forward<Opt>(opt)) : optional<Ret>(nullopt);
 }
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
 _CCCL_EXEC_CHECK_DISABLE
 template <class Opt,
           class F,
@@ -2009,12 +2008,20 @@ _CCCL_HOST_DEVICE auto optional_map_impl(Opt&& opt, F&& f)
   if (opt.has_value())
   {
     detail::invoke(std::forward<F>(f), *std::forward<Opt>(opt));
+#    if _CCCL_COMPILER(MSVC)
+    // MSVC fails to suppress the warning on make_optional
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
+    return optional<monostate>(monostate{});
+    _CCCL_SUPPRESS_DEPRECATED_POP
+#    else
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     return make_optional(monostate{});
+    _CCCL_SUPPRESS_DEPRECATED_POP
+#    endif
   }
 
   return optional<monostate>(nullopt);
 }
-_CCCL_SUPPRESS_DEPRECATED_POP
 #  else
 _CCCL_EXEC_CHECK_DISABLE
 template <class Opt,
