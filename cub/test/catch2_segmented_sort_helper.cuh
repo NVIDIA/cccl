@@ -123,7 +123,7 @@ public:
   void prepare_verification_data(const c2h::device_vector<key_t>& in_keys)
   {
     c2h::host_vector<key_t> h_in{in_keys};
-    keys_histogram = c2h::host_vector<std::size_t>(short_key_verification_helper<KeyT>::max_histo_size, 0);
+    keys_histogram = c2h::host_vector<std::size_t>(max_histo_size, 0);
     for (const auto& key : h_in)
     {
       keys_histogram[key]++;
@@ -134,7 +134,7 @@ public:
   {
     // Verify keys are sorted next to each other
     auto count = thrust::unique_count(c2h::device_policy, out_keys.cbegin(), out_keys.cend(), thrust::equal_to<int>());
-    REQUIRE(count <= short_key_verification_helper<KeyT>::max_histo_size);
+    REQUIRE(count <= max_histo_size);
 
     // Verify keys are sorted using prior histogram computation
     auto index_it = thrust::make_counting_iterator(std::size_t{0});
