@@ -139,7 +139,10 @@ struct stable_sort_fn final
   )
 
   template <typename... Args>
+  #if !_CCCL_CUDA_COMPILER(CLANG)
+  // clang in CUDA mode can only handle one attribute
   _CCCL_NODISCARD _CCCL_HOST
+  #endif
  CCCL_DEPRECATED auto operator()(Args&&... args) const
   THRUST_RETURNS(
     call(THRUST_FWD(args)...)
@@ -257,7 +260,10 @@ struct sort_fn final
   )
 
   template <typename... Args>
+  #if !_CCCL_CUDA_COMPILER(CLANG)
+  // clang in CUDA mode can only handle one attribute
   _CCCL_NODISCARD _CCCL_HOST
+  #endif
  CCCL_DEPRECATED auto operator()(Args&&... args) const
   THRUST_RETURNS(
     call(THRUST_FWD(args)...)
