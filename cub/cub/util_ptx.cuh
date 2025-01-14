@@ -292,6 +292,7 @@ SHFL_IDX_SYNC(unsigned int word, int src_lane, int flags, unsigned int member_ma
 /**
  * Warp synchronous shfl_idx
  */
+CCCL_DEPRECATED_BECAUSE("use __shfl_sync() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int SHFL_IDX_SYNC(unsigned int word, int src_lane, unsigned int member_mask)
 {
   return __shfl_sync(member_mask, word, src_lane);

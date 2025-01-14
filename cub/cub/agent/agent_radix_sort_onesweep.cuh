@@ -528,7 +528,7 @@ struct AgentRadixSortOnesweep
       {
         num_writes -= int(global_idx + 1) % ALIGN;
       }
-      num_writes = SHFL_IDX_SYNC(num_writes, last_lane, WARP_MASK);
+      num_writes = __shfl_sync(WARP_MASK, num_writes, last_lane);
       if (lane < num_writes)
       {
         ThreadStore<CACHE_MODIFIER>(&d_keys_out[global_idx], key_out);
