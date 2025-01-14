@@ -26,7 +26,6 @@
  ******************************************************************************/
 #pragma once
 
-// #define CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT
 #include <cub/device/device_segmented_sort.cuh>
 
 #include <thrust/device_ptr.h>
@@ -81,7 +80,7 @@ struct segment_index_to_offset_op
   OffsetT segment_size;
   OffsetT num_items;
 
-  _CCCL_HOST_DEVICE __forceinline__ OffsetT operator()(SegmentIndexT i)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE OffsetT operator()(SegmentIndexT i)
   {
     if (i < num_empty_segments)
     {
@@ -104,16 +103,15 @@ struct mod_n
   std::size_t mod;
 
   template <typename IndexT>
-  _CCCL_HOST_DEVICE __forceinline__ T operator()(IndexT x)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T operator()(IndexT x)
   {
     return static_cast<T>(x % mod);
   }
 };
 
 template <typename KeyT>
-class short_key_verification_helper
+struct short_key_verification_helper
 {
-private:
   using key_t = KeyT;
   // The histogram size of the keys being sorted for later verification
   const std::int64_t max_histo_size = std::int64_t{1} << ::cuda::std::numeric_limits<key_t>::digits;
