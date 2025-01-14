@@ -41,6 +41,7 @@
 #include <thrust/sequence.h>
 
 #include <cuda/std/bit>
+#include <cuda/std/functional>
 
 #include <array>
 #include <climits>

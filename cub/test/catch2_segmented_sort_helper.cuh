@@ -47,11 +47,11 @@
 
 #include <cstdio>
 
+#include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
 #include <c2h/cpu_timer.h>
 #include <c2h/extended_types.h>
 #include <c2h/utility.h>
-#include <catch2_test_launch_helper.h>
 #include <nv/target>
 
 #define MAKE_SEED_MOD_FUNCTION(name, xor_mask)                  \
