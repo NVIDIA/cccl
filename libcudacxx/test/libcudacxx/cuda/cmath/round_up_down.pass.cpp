@@ -190,6 +190,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int arg, char** argv)
 {
   test();
-  // static_assert(test(), "");
+  static_assert(test(), "");
   return 0;
 }
