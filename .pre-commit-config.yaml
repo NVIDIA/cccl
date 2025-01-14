@@ -45,8 +45,8 @@ repos:
     - id: ruff-format  # formatter
 
   # TOML lint & format
-  - repo: https://github.com/nikaro/taplo-pre-commit
-    rev: 0.1.1
+  - repo: https://github.com/ComPWA/taplo-pre-commit
+    rev: v0.9.3
     hooks:
       - id: taplo-lint
         exclude: "^docs/"
