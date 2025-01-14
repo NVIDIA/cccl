@@ -74,9 +74,7 @@ class _Reduce:
             d_in_cccl,
             d_out_cccl,
             self.op_wrapper.handle(),
-            cccl.to_cccl_value(
-                h_init if isinstance(h_init, np.ndarray) else h_init._data
-            ),
+            cccl.to_cccl_value(h_init),
             cc_major,
             cc_minor,
             ctypes.c_char_p(cub_path),
@@ -123,9 +121,7 @@ class _Reduce:
             d_out_cccl,
             ctypes.c_ulonglong(num_items),
             self.op_wrapper.handle(),
-            cccl.to_cccl_value(
-                h_init if isinstance(h_init, np.ndarray) else h_init._data
-            ),
+            cccl.to_cccl_value(h_init),
             None,
         )
         if error != enums.CUDA_SUCCESS:
