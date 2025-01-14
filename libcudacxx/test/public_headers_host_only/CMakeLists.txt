@@ -2,6 +2,12 @@
 # without anything else but also pretents to be a std header
 add_custom_target(libcudacxx.test.public_headers_host_only)
 
+if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  find_package(NVHPC)
+else()
+  find_package(CUDAToolkit)
+endif()
+
 # Grep all public headers
 file(GLOB public_headers_host_only
   LIST_DIRECTORIES false
@@ -9,6 +15,9 @@ file(GLOB public_headers_host_only
   CONFIGURE_DEPENDS
   "${libcudacxx_SOURCE_DIR}/include/cuda/std/*"
 )
+
+# We also want to test cuda/stream_ref with the host compiler only
+list(APPEND public_headers_host_only "${libcudacxx_SOURCE_DIR}/include/cuda/stream_ref")
 
 # mdspan is currently not supported on msvc outside of C++20
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" AND NOT "${CMAKE_CXX_STANDARD}" MATCHES "20")
@@ -33,6 +42,15 @@ function(libcudacxx_add_std_header_test header)
     target_compile_definitions(headertest_std_${header_name} PRIVATE CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING)
   endif()
   target_compile_definitions(headertest_std_${header_name} PRIVATE CCCL_IGNORE_DEPRECATED_CPP_DIALECT)
+
+  # We want to ensure that we can build stream_ref with a host compiler but we need cuda_runtime_api
+  if (${header_name} MATCHES "stream_ref")
+    if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+      target_link_libraries(headertest_std_${header_name} NVHPC::CUDART)
+    else()
+      target_link_libraries(headertest_std_${header_name} CUDA::cudart)
+    endif()
+  endif()
 
   add_dependencies(libcudacxx.test.public_headers_host_only headertest_std_${header_name})
 endfunction()
