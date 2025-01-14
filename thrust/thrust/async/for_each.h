@@ -68,28 +68,26 @@ using thrust::async::unimplemented::async_for_each;
 struct for_each_fn final
 {
   template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename UnaryFunction>
-  _CCCL_HOST static auto
+  _CCCL_HOST _CCCL_SUPPRESS_DEPRECATED_PUSH static auto
   call(thrust::detail::execution_policy_base<DerivedPolicy> const& exec,
        ForwardIt&& first,
        Sentinel&& last,
        UnaryFunction&& f)
     // ADL dispatch.
-    _THRUST_RETURNS_SUPPRESS_DEPRECATIONS(async_for_each(
-      thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
+    THRUST_RETURNS(async_for_each(thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
+                                  THRUST_FWD(first),
+                                  THRUST_FWD(last),
+                                  THRUST_FWD(f))) _CCCL_SUPPRESS_DEPRECATED_POP
+
+    template <typename ForwardIt, typename Sentinel, typename UnaryFunction>
+    _CCCL_HOST static auto call(ForwardIt&& first, Sentinel&& last, UnaryFunction&& f) THRUST_RETURNS(for_each_fn::call(
+      thrust::detail::select_system(typename iterator_system<remove_cvref_t<ForwardIt>>::type{}),
       THRUST_FWD(first),
       THRUST_FWD(last),
       THRUST_FWD(f)))
 
-      template <typename ForwardIt, typename Sentinel, typename UnaryFunction>
-      _CCCL_HOST static auto call(ForwardIt&& first, Sentinel&& last, UnaryFunction&& f)
-        THRUST_RETURNS(for_each_fn::call(
-          thrust::detail::select_system(typename iterator_system<remove_cvref_t<ForwardIt>>::type{}),
-          THRUST_FWD(first),
-          THRUST_FWD(last),
-          THRUST_FWD(f)))
-
-          template <typename... Args>
-          CCCL_DEPRECATED _CCCL_NODISCARD _CCCL_HOST auto operator()(Args&&... args) const
+      template <typename... Args>
+      CCCL_DEPRECATED _CCCL_NODISCARD _CCCL_HOST auto operator()(Args&&... args) const
     THRUST_RETURNS(call(THRUST_FWD(args)...))
 };
 

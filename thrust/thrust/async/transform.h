@@ -74,6 +74,7 @@ struct transform_fn final
   , typename UnaryOperation
   >
   _CCCL_HOST
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   static auto
   call(
     thrust::detail::execution_policy_base<DerivedPolicy> const& exec
@@ -82,7 +83,7 @@ struct transform_fn final
   , UnaryOperation&& op
   )
   // ADL dispatch.
-  _THRUST_RETURNS_SUPPRESS_DEPRECATIONS(
+  THRUST_RETURNS(
     async_transform(
       thrust::detail::derived_cast(thrust::detail::strip_const(exec))
     , THRUST_FWD(first), THRUST_FWD(last)
@@ -90,6 +91,7 @@ struct transform_fn final
     , THRUST_FWD(op)
     )
   )
+  _CCCL_SUPPRESS_DEPRECATED_POP
 
   template <
     typename ForwardIt, typename Sentinel, typename OutputIt

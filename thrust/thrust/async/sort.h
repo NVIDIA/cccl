@@ -75,31 +75,34 @@ struct stable_sort_fn final
   , typename ForwardIt, typename Sentinel, typename StrictWeakOrdering
   >
   _CCCL_HOST
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   static auto call(
     thrust::detail::execution_policy_base<DerivedPolicy> const& exec
   , ForwardIt&& first, Sentinel&& last
   , StrictWeakOrdering&& comp
   )
   // ADL dispatch.
-  _THRUST_RETURNS_SUPPRESS_DEPRECATIONS(
+  THRUST_RETURNS(
     async_stable_sort(
       thrust::detail::derived_cast(thrust::detail::strip_const(exec))
     , THRUST_FWD(first), THRUST_FWD(last)
     , THRUST_FWD(comp)
     )
   )
+  _CCCL_SUPPRESS_DEPRECATED_POP
 
   template <
     typename DerivedPolicy
   , typename ForwardIt, typename Sentinel
   >
   _CCCL_HOST
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   static auto call(
     thrust::detail::execution_policy_base<DerivedPolicy> const& exec
   , ForwardIt&& first, Sentinel&& last
   )
   // ADL dispatch.
-  _THRUST_RETURNS_SUPPRESS_DEPRECATIONS(
+  THRUST_RETURNS(
     async_stable_sort(
       thrust::detail::derived_cast(thrust::detail::strip_const(exec))
     , THRUST_FWD(first), THRUST_FWD(last)
@@ -108,6 +111,7 @@ struct stable_sort_fn final
       >{}
     )
   )
+  _CCCL_SUPPRESS_DEPRECATED_POP
 
   template <typename ForwardIt, typename Sentinel, typename StrictWeakOrdering>
   _CCCL_HOST
@@ -170,6 +174,7 @@ using thrust::async::fallback::async_sort;
 // clang-format off
 struct sort_fn final
 {
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   template <
     typename DerivedPolicy
   , typename ForwardIt, typename Sentinel, typename StrictWeakOrdering
@@ -181,13 +186,14 @@ struct sort_fn final
   , StrictWeakOrdering&& comp
   )
   // ADL dispatch.
-  _THRUST_RETURNS_SUPPRESS_DEPRECATIONS(
+  THRUST_RETURNS(
     async_sort(
       thrust::detail::derived_cast(thrust::detail::strip_const(exec))
     , THRUST_FWD(first), THRUST_FWD(last)
     , THRUST_FWD(comp)
     )
   )
+  _CCCL_SUPPRESS_DEPRECATED_POP
 
   template <
     typename DerivedPolicy
