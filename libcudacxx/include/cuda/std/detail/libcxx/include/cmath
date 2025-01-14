@@ -323,6 +323,7 @@ long double    truncl(long double x);
 #include <cuda/std/__cmath/lerp.h>
 #include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__cmath/min_max.h>
+#include <cuda/std/__cmath/rounding_functions.h>
 #include <cuda/std/__cmath/traits.h>
 #include <cuda/std/__cstdlib/abs.h>
 #include <cuda/std/limits>
@@ -354,8 +355,6 @@ using ::atan;
 using ::atan2;
 using ::atan2f;
 using ::atanf;
-using ::ceil;
-using ::ceilf;
 using ::cos;
 using ::cosf;
 using ::cosh;
@@ -394,9 +393,6 @@ using ::hypotf;
 
 using ::double_t;
 using ::float_t;
-
-using ::floor;
-using ::floorf;
 
 using ::fmod;
 using ::fmodf;
@@ -451,50 +447,28 @@ using ::fma;
 using ::fmaf;
 using ::lgamma;
 using ::lgammaf;
-using ::llrint;
-using ::llrintf;
-using ::llround;
-using ::llroundf;
-using ::lrint;
-using ::lrintf;
-using ::lround;
-using ::lroundf;
 
 using ::nan;
 using ::nanf;
 
-using ::nearbyint;
-using ::nearbyintf;
-using ::nextafter;
-using ::nextafterf;
-using ::nexttoward;
-using ::nexttowardf;
 using ::remainder;
 using ::remainderf;
 using ::remquo;
 using ::remquof;
-using ::rint;
-using ::rintf;
-using ::round;
-using ::roundf;
 using ::scalbln;
 using ::scalblnf;
 using ::scalbn;
 using ::scalbnf;
 using ::tgamma;
 using ::tgammaf;
-using ::trunc;
-using ::truncf;
 
 using ::acosl;
 using ::asinl;
 using ::atan2l;
 using ::atanl;
-using ::ceill;
 using ::coshl;
 using ::cosl;
 using ::expl;
-using ::floorl;
 using ::fmodl;
 using ::frexpl;
 using ::ldexpl;
@@ -521,22 +495,12 @@ using ::fdiml;
 using ::fmal;
 using ::hypotl;
 using ::lgammal;
-using ::llrintl;
-using ::llroundl;
-using ::lrintl;
-using ::lroundl;
 using ::nanl;
-using ::nearbyintl;
-using ::nextafterl;
-using ::nexttowardl;
 using ::remainderl;
 using ::remquol;
-using ::rintl;
-using ::roundl;
 using ::scalblnl;
 using ::scalbnl;
 using ::tgammal;
-using ::truncl;
 
 #endif // _CCCL_COMPILER(NVRTC)
 
