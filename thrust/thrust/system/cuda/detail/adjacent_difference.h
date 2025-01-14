@@ -43,7 +43,6 @@
 #  include <cub/device/device_adjacent_difference.cuh>
 #  include <cub/util_math.cuh>
 
-#  include <thrust/detail/minmax.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/detail/type_traits.h>
 #  include <thrust/functional.h>
