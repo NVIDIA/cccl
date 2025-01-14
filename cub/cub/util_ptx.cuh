@@ -280,6 +280,7 @@ SHFL_DOWN_SYNC(unsigned int word, int src_offset, int flags, unsigned int member
 /**
  * Warp synchronous shfl_idx
  */
+CCCL_DEPRECATED_BECAUSE("use __shfl_sync() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int
 SHFL_IDX_SYNC(unsigned int word, int src_lane, int flags, unsigned int member_mask)
 {
@@ -657,12 +658,6 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleDown(T input, int src_offset, int last_t
 template <int LOGICAL_WARP_THREADS, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleIndex(T input, int src_lane, unsigned int member_mask)
 {
-  /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
-  enum
-  {
-    SHFL_C = ((32 - LOGICAL_WARP_THREADS) << 8) | (LOGICAL_WARP_THREADS - 1)
-  };
-
   using ShuffleWord = typename UnitWord<T>::ShuffleWord;
 
   constexpr int WORDS = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
@@ -672,18 +667,14 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleIndex(T input, int src_lane, unsigned in
   ShuffleWord* input_alias  = reinterpret_cast<ShuffleWord*>(&input);
 
   unsigned int shuffle_word;
-  shuffle_word = SHFL_IDX_SYNC((unsigned int) input_alias[0], src_lane, SHFL_C, member_mask);
-
+  shuffle_word    = __shfl_sync(member_mask, (unsigned int) input_alias[0], src_lane, LOGICAL_WARP_THREADS);
   output_alias[0] = shuffle_word;
-
 #pragma unroll
   for (int WORD = 1; WORD < WORDS; ++WORD)
   {
-    shuffle_word = SHFL_IDX_SYNC((unsigned int) input_alias[WORD], src_lane, SHFL_C, member_mask);
-
+    shuffle_word       = __shfl_sync(member_mask, (unsigned int) input_alias[WORD], src_lane, LOGICAL_WARP_THREADS);
     output_alias[WORD] = shuffle_word;
   }
-
   return output;
 }
 
