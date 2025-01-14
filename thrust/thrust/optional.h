@@ -2013,6 +2013,12 @@ _CCCL_HOST_DEVICE auto optional_map_impl(Opt&& opt, F&& f)
     _CCCL_SUPPRESS_DEPRECATED_PUSH
     return optional<monostate>(monostate{});
     _CCCL_SUPPRESS_DEPRECATED_POP
+#    elif _CCCL_COMPILER(NVHPC)
+    // NVHPC cannot have a diagnostic pop after a return statement
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
+    auto o = optional<monostate>(monostate{});
+    _CCCL_SUPPRESS_DEPRECATED_POP
+    return ::cuda::std::move(o);
 #    else
     _CCCL_SUPPRESS_DEPRECATED_PUSH
     return make_optional(monostate{});
