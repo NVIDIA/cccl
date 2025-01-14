@@ -21,7 +21,7 @@
 
 **Performance considerations**:
 
-- The function performs a ceiling division (``cuda::ceil()``) followed by a multiplication
+- The function performs a ceiling division (``cuda::ceil_div()``) followed by a multiplication
 
 **Example**:
 
