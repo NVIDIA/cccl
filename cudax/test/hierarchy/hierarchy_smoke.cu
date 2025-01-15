@@ -10,6 +10,7 @@
 
 #include <iostream>
 
+#include "testing.cuh"
 #include <cooperative_groups.h>
 #include <host_device.cuh>
 

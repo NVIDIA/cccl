@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cub/thread/thread_operators.cuh>
+
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 
