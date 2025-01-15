@@ -104,7 +104,7 @@ conjugated(mdspan<_ElementType, _Extents, _Layout, _Accessor> __a)
 {
   using __value_type = typename decltype(__a)::value_type;
   // Current status of [linalg] only optimizes if _Accessor is conjugated_accessor<_Accessor> for some _Accessor.
-  // There's __a separate specialization for that case below.
+  // There's a separate specialization for that case below.
 
   // P3050 optimizes conjugated's accessor type for when we know that it can't be complex: arithmetic types,
   // and types for which `conj` is not ADL-findable.
