@@ -257,7 +257,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
     {
       pass_bits = (cub::min)(int{LargeSegmentPolicyT::RADIX_BITS}, (end_bit - current_bit));
 
-      CTA_SYNC();
+      __syncthreads();
       agent.ProcessIterative(
         current_bit,
         pass_bits,
@@ -535,7 +535,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
     {
       pass_bits = (cub::min)(int{LargeSegmentPolicyT::RADIX_BITS}, (end_bit - current_bit));
 
-      CTA_SYNC();
+      __syncthreads();
       agent.ProcessIterative(
         current_bit,
         pass_bits,

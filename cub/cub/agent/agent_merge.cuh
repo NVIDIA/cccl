@@ -132,7 +132,7 @@ struct agent_t
     gmem_to_reg<threads_per_block, IsFullTile>(
       keys_loc, keys1_in + keys1_beg, keys2_in + keys2_beg, num_keys1, num_keys2);
     reg_to_shared<threads_per_block>(&storage.keys_shared[0], keys_loc);
-    CTA_SYNC();
+    __syncthreads();
 
     // use binary search in shared memory to find merge path for each of thread.
     // we can use int type here, because the number of items in shared memory is limited
@@ -158,7 +158,7 @@ struct agent_t
       keys_loc,
       indices,
       compare_op);
-    CTA_SYNC();
+    __syncthreads();
 
     // write keys
     if (IsFullTile)
@@ -182,9 +182,10 @@ struct agent_t
       item_type items_loc[items_per_thread];
       gmem_to_reg<threads_per_block, IsFullTile>(
         items_loc, items1_in + keys1_beg, items2_in + keys2_beg, num_keys1, num_keys2);
-      CTA_SYNC(); // block_store_keys above uses shared memory, so make sure all threads are done before we write to it
+      __syncthreads(); // block_store_keys above uses shared memory, so make sure all threads are done before we write
+                       // to it
       reg_to_shared<threads_per_block>(&storage.items_shared[0], items_loc);
-      CTA_SYNC();
+      __syncthreads();
 
       // gather items from shared mem
 #pragma unroll
@@ -192,7 +193,7 @@ struct agent_t
       {
         items_loc[i] = storage.items_shared[indices[i]];
       }
-      CTA_SYNC();
+      __syncthreads();
 
       // write from reg to gmem
       if (IsFullTile)

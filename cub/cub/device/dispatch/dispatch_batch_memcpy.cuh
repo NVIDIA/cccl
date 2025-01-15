@@ -131,7 +131,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT::BLO
 
     // Make sure thread 0 does not overwrite the buffer id before other threads have finished with
     // the prior iteration of the loop
-    CTA_SYNC();
+    __syncthreads();
 
     // Binary search the buffer that this tile belongs to
     if (threadIdx.x == 0)
@@ -140,7 +140,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT::BLO
     }
 
     // Make sure thread 0 has written the buffer this thread block is assigned to
-    CTA_SYNC();
+    __syncthreads();
 
     const BufferOffsetT buffer_id = block_buffer_id;
 

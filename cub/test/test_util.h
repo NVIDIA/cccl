@@ -614,7 +614,7 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, T& value, s
         case RANDOM_BIT:
         case RANDOM_MINUS_PLUS_ZERO:
           _CubLog("%s\n", "cub::InitValue cannot generate random numbers on device.");
-          CUB_NS_QUALIFIER::ThreadTrap();
+          cuda::std::terminate();
           break;
         case UNIFORM:
           value = 2;
@@ -656,7 +656,7 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, bool& value
         case RANDOM_BIT:
         case RANDOM_MINUS_PLUS_ZERO:
           _CubLog("%s\n", "cub::InitValue cannot generate random numbers on device.");
-          CUB_NS_QUALIFIER::ThreadTrap();
+          cuda::std::terminate();
           break;
         case UNIFORM:
           value = true;
@@ -697,7 +697,7 @@ InitValue(GenMode gen_mode, CUB_NS_QUALIFIER::KeyValuePair<KeyT, ValueT>& value,
       ), ( // NV_IS_DEVICE
         _CubLog("%s\n",
                 "cub::InitValue cannot generate random numbers on device.");
-        CUB_NS_QUALIFIER::ThreadTrap();
+        cuda::std::terminate();
       ));
   // clang-format on
 }

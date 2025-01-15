@@ -233,23 +233,23 @@ public:
       KeyT oob_default = AgentSubWarpSort::get_oob_default(Int2Type<std::is_same<bool, KeyT>::value>{});
 
       WarpLoadKeysT(storage.load_keys).Load(keys_input, keys, segment_size, oob_default);
-      WARP_SYNC(warp_merge_sort.get_member_mask());
+      __syncwarp(warp_merge_sort.get_member_mask());
 
       if (!KEYS_ONLY)
       {
         WarpLoadItemsT(storage.load_items).Load(values_input, values, segment_size);
 
-        WARP_SYNC(warp_merge_sort.get_member_mask());
+        __syncwarp(warp_merge_sort.get_member_mask());
       }
 
       warp_merge_sort.Sort(keys, values, BinaryOpT{}, segment_size, oob_default);
-      WARP_SYNC(warp_merge_sort.get_member_mask());
+      __syncwarp(warp_merge_sort.get_member_mask());
 
       WarpStoreKeysT(storage.store_keys).Store(keys_output, keys, segment_size);
 
       if (!KEYS_ONLY)
       {
-        WARP_SYNC(warp_merge_sort.get_member_mask());
+        __syncwarp(warp_merge_sort.get_member_mask());
         WarpStoreItemsT(storage.store_items).Store(values_output, values, segment_size);
       }
     }

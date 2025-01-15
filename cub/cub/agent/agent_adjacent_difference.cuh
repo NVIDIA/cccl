@@ -138,7 +138,7 @@ struct AgentDifference
       BlockLoad(temp_storage.load).Load(load_it + tile_base, input);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     if (ReadLeft)
     {
@@ -186,7 +186,7 @@ struct AgentDifference
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     if (IS_LAST_TILE)
     {

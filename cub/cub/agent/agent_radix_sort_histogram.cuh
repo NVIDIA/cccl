@@ -50,6 +50,8 @@
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/ptx>
+
 CUB_NAMESPACE_BEGIN
 
 template <int _BLOCK_THREADS, int _ITEMS_PER_THREAD, int NOMINAL_4B_NUM_PARTS, typename ComputeT, int _RADIX_BITS>
@@ -172,7 +174,7 @@ struct AgentRadixSortHistogram
         }
       }
     }
-    CTA_SYNC();
+    __syncthreads();
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void LoadTileKeys(OffsetT tile_offset, bit_ordered_type (&keys)[ITEMS_PER_THREAD])
@@ -199,7 +201,7 @@ struct AgentRadixSortHistogram
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   AccumulateSharedHistograms(OffsetT tile_offset, bit_ordered_type (&keys)[ITEMS_PER_THREAD])
   {
-    int part = LaneId() % NUM_PARTS;
+    int part = ::cuda::ptx::get_sreg_laneid() % NUM_PARTS;
 #pragma unroll
     for (int current_bit = begin_bit, pass = 0; current_bit < end_bit; current_bit += RADIX_BITS, ++pass)
     {
@@ -247,7 +249,7 @@ struct AgentRadixSortHistogram
     {
       // Reset the counters.
       Init();
-      CTA_SYNC();
+      __syncthreads();
 
       // Process the tiles.
       OffsetT portion_offset = portion * MAX_PORTION_SIZE;
@@ -259,11 +261,11 @@ struct AgentRadixSortHistogram
         LoadTileKeys(tile_offset, keys);
         AccumulateSharedHistograms(tile_offset, keys);
       }
-      CTA_SYNC();
+      __syncthreads();
 
       // Accumulate the result in global memory.
       AccumulateGlobalHistograms();
-      CTA_SYNC();
+      __syncthreads();
     }
   }
 

@@ -760,7 +760,7 @@ public:
 private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void SyncImplementation() const
   {
-    CTA_SYNC();
+    __syncthreads();
   }
 
   friend BlockMergeSortStrategyT;

@@ -408,7 +408,7 @@ struct AgentSelectIf
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
     Int2Type<USE_STENCIL_WITH_OP> /*select_method*/)
   {
-    CTA_SYNC();
+    __syncthreads();
 
     FlagT flags[ITEMS_PER_THREAD];
     if (IS_LAST_TILE)
@@ -450,7 +450,7 @@ struct AgentSelectIf
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
     Int2Type<USE_SELECT_FLAGS> /*select_method*/)
   {
-    CTA_SYNC();
+    __syncthreads();
 
     FlagT flags[ITEMS_PER_THREAD];
 
@@ -486,7 +486,7 @@ struct AgentSelectIf
   {
     if (IS_FIRST_TILE && streaming_context.is_first_partition())
     {
-      CTA_SYNC();
+      __syncthreads();
 
       // Set head selection_flags.  First tile sets the first flag for the first item
       BlockDiscontinuityT(temp_storage.scan_storage.discontinuity).FlagHeads(selection_flags, items, inequality_op);
@@ -499,7 +499,7 @@ struct AgentSelectIf
         tile_predecessor = d_in[tile_offset + streaming_context.input_offset() - 1];
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
       BlockDiscontinuityT(temp_storage.scan_storage.discontinuity)
         .FlagHeads(selection_flags, items, inequality_op, tile_predecessor);
@@ -571,7 +571,7 @@ struct AgentSelectIf
     int num_tile_selections,
     OffsetT num_selections_prefix)
   {
-    CTA_SYNC();
+    __syncthreads();
 
 // Compact and scatter items
 #pragma unroll
@@ -584,7 +584,7 @@ struct AgentSelectIf
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     for (int item = threadIdx.x; item < num_tile_selections; item += BLOCK_THREADS)
     {
@@ -667,7 +667,7 @@ struct AgentSelectIf
     OffsetT num_selections,
     Int2Type<true> /*is_keep_rejects*/)
   {
-    CTA_SYNC();
+    __syncthreads();
 
     int tile_num_rejections = num_tile_items - num_tile_selections;
 
@@ -685,7 +685,7 @@ struct AgentSelectIf
     }
 
     // Ensure all threads finished scattering to shared memory
-    CTA_SYNC();
+    __syncthreads();
 
     // Gather items from shared memory and scatter to global
     ScatterPartitionsToGlobal<IS_LAST_TILE>(
@@ -814,7 +814,7 @@ struct AgentSelectIf
     // Ensure temporary storage used during block load can be reused
     // Also, in case of in-place stream compaction, this is needed to order the loads of
     // *all threads of this thread block* before the st.release of the thread writing this thread block's tile state
-    CTA_SYNC();
+    __syncthreads();
 
     // Exclusive scan of selection_flags
     OffsetT num_tile_selections;
@@ -894,7 +894,7 @@ struct AgentSelectIf
     // Ensure temporary storage used during block load can be reused
     // Also, in case of in-place stream compaction, this is needed to order the loads of
     // *all threads of this thread block* before the st.release of the thread writing this thread block's tile state
-    CTA_SYNC();
+    __syncthreads();
 
     // Exclusive scan of values and selection_flags
     TilePrefixCallbackOpT prefix_op(
