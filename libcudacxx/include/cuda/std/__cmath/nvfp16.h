@@ -97,34 +97,6 @@ _LIBCUDACXX_HIDE_FROM_ABI __half cosh(__half __v)
   return __float2half(::coshf(__half2float(__v)));
 }
 
-// clang-format off
-_LIBCUDACXX_HIDE_FROM_ABI  __half exp(__half __v)
-{
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (
-    return ::hexp(__v);
-  ), (
-    {
-      float __vf            = __half2float(__v);
-      __vf                  = ::expf(__vf);
-      __half_raw __ret_repr = ::__float2half_rn(__vf);
-
-      uint16_t __repr = __half_raw(__v).x;
-      switch (__repr)
-      {
-        case 8057:
-        case 9679:
-          __ret_repr.x -= 1;
-          break;
-
-        default:;
-      }
-
-      return __ret_repr;
-    }
-  ))
-}
-// clang-format on
-
 _LIBCUDACXX_HIDE_FROM_ABI __half hypot(__half __x, __half __y)
 {
   return __float2half(::hypotf(__half2float(__x), __half2float(__y)));

@@ -319,6 +319,7 @@ long double    truncl(long double x);
 #endif // _CCCL_COMPILER(NVHPC)
 
 #include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__cmath/exponential_functions.h>
 #include <cuda/std/__cmath/fpclassify.h>
 #include <cuda/std/__cmath/lerp.h>
 #include <cuda/std/__cmath/logarithms.h>
@@ -361,12 +362,6 @@ using ::cosf;
 using ::cosh;
 using ::coshf;
 
-using ::exp;
-using ::expf;
-
-using ::pow;
-using ::powf;
-
 using ::sin;
 using ::sinf;
 using ::sinh;
@@ -396,16 +391,8 @@ using ::float_t;
 using ::fmod;
 using ::fmodf;
 
-using ::frexp;
-using ::frexpf;
-using ::ldexp;
-using ::ldexpf;
-
 using ::modf;
 using ::modff;
-
-using ::pow;
-using ::powf;
 
 using ::sin;
 using ::sinf;
@@ -432,10 +419,6 @@ using ::erf;
 using ::erfc;
 using ::erfcf;
 using ::erff;
-using ::exp2;
-using ::exp2f;
-using ::expm1;
-using ::expm1f;
 using ::fdim;
 using ::fdimf;
 using ::fma;
@@ -450,10 +433,6 @@ using ::remainder;
 using ::remainderf;
 using ::remquo;
 using ::remquof;
-using ::scalbln;
-using ::scalblnf;
-using ::scalbn;
-using ::scalbnf;
 using ::tgamma;
 using ::tgammaf;
 
@@ -463,12 +442,8 @@ using ::atan2l;
 using ::atanl;
 using ::coshl;
 using ::cosl;
-using ::expl;
 using ::fmodl;
-using ::frexpl;
-using ::ldexpl;
 using ::modfl;
-using ::powl;
 using ::sinhl;
 using ::sinl;
 using ::tanl;
@@ -482,8 +457,6 @@ using ::copysignl;
 
 using ::erfcl;
 using ::erfl;
-using ::exp2l;
-using ::expm1l;
 using ::fdiml;
 using ::fmal;
 using ::hypotl;
@@ -491,8 +464,6 @@ using ::lgammal;
 using ::nanl;
 using ::remainderl;
 using ::remquol;
-using ::scalblnl;
-using ::scalbnl;
 using ::tgammal;
 
 #endif // _CCCL_COMPILER(NVRTC)
