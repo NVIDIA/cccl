@@ -51,11 +51,11 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t __shfl_sync_dst_lane(
   _CUDA_VSTD::uint32_t __clamp_segmask,
   _CUDA_VSTD::uint32_t __lane_mask)
 {
-  auto __lane     = get_sreg_laneid();
-  auto __clamp    = __clamp_segmask & 0b11111;
-  auto __segmask  = __clamp_segmask >> 8;
-  auto __max_lane = (__lane & __segmask) | (__clamp & ~__segmask);
-  auto __j        = 0;
+  auto __lane              = get_sreg_laneid();
+  auto __clamp             = __clamp_segmask & 0b11111;
+  auto __segmask           = __clamp_segmask >> 8;
+  auto __max_lane          = (__lane & __segmask) | (__clamp & ~__segmask);
+  _CUDA_VSTD::uint32_t __j = 0;
   if (__shuffle_mode == __dot_shfl_mode::__idx)
   {
     auto __min_lane = (__lane & __clamp);
