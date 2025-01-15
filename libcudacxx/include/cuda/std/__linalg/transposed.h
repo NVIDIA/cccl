@@ -61,7 +61,7 @@ _CCCL_REQUIRES((_Extents::rank() == 2))
 _LIBCUDACXX_HIDE_FROM_ABI constexpr __transpose_extents_t<_Extents> __transpose_extents(const _Extents& __e)
 {
   static_assert(is_same_v<typename __transpose_extents_t<_Extents>::index_type, typename _Extents::index_type>,
-                "Please fix __transpose_extents_t to account  for P2553, which adds __a template parameter SizeType to "
+                "Please fix __transpose_extents_t to account for P2553, which adds a template parameter SizeType to "
                 "extents.");
   constexpr size_t __ext0 = _Extents::static_extent(0);
   constexpr size_t __ext1 = _Extents::static_extent(1);
