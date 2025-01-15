@@ -320,7 +320,7 @@ struct AgentHistogram
     }
 
     // Barrier to make sure all threads are done updating counters
-    CTA_SYNC();
+    __syncthreads();
   }
 
   // Initialize privatized bin counters.  Specialized for privatized shared-memory counters
@@ -350,7 +350,7 @@ struct AgentHistogram
   _CCCL_DEVICE _CCCL_FORCEINLINE void StoreOutput(CounterT* privatized_histograms[NUM_ACTIVE_CHANNELS])
   {
     // Barrier to make sure all threads are done updating counters
-    CTA_SYNC();
+    __syncthreads();
 
 // Apply privatized bin counts to output bin counts
 #pragma unroll
@@ -690,7 +690,7 @@ struct AgentHistogram
         ConsumeTile<IS_ALIGNED, true>(tile_offset, TILE_SAMPLES);
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Get next tile
       if (threadIdx.x == 0)
@@ -698,7 +698,7 @@ struct AgentHistogram
         temp_storage.tile_idx = tile_queue.Drain(1) + num_even_share_tiles;
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
       tile_idx = temp_storage.tile_idx;
     }

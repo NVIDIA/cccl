@@ -48,6 +48,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/ptx>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
 
@@ -155,7 +156,7 @@ struct WarpReduceShfl
 
   /// Constructor
   _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduceShfl(TempStorage& /*temp_storage*/)
-      : lane_id(static_cast<int>(LaneId()))
+      : lane_id(static_cast<int>(::cuda::ptx::get_sreg_laneid()))
       , warp_id(IS_ARCH_WARP ? 0 : (lane_id / LOGICAL_WARP_THREADS))
       , member_mask(WarpMask<LOGICAL_WARP_THREADS>(warp_id))
   {
@@ -699,7 +700,7 @@ struct WarpReduceShfl
   _CCCL_DEVICE _CCCL_FORCEINLINE T SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op)
   {
     // Get the start flags for each thread in the warp.
-    int warp_flags = WARP_BALLOT(flag, member_mask);
+    int warp_flags = __ballot_sync(member_mask, flag);
 
     // Convert to tail-segmented
     if (HEAD_SEGMENTED)
@@ -708,7 +709,7 @@ struct WarpReduceShfl
     }
 
     // Mask out the bits below the current thread
-    warp_flags &= LaneMaskGe();
+    warp_flags &= ::cuda::ptx::get_sreg_lanemask_ge();
 
     // Mask of physical lanes outside the logical warp and convert to logical lanemask
     if (!IS_ARCH_WARP)

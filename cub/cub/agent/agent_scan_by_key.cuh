@@ -333,7 +333,7 @@ struct AgentScanByKey
       BlockLoadKeysT(storage.load_keys).Load(d_keys_in + tile_base, keys);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     if (IS_LAST_TILE)
     {
@@ -347,7 +347,7 @@ struct AgentScanByKey
       BlockLoadValuesT(storage.load_values).Load(d_values_in + tile_base, values);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // first tile
     if (tile_idx == 0)
@@ -386,7 +386,7 @@ struct AgentScanByKey
       ScanTile(scan_items, tile_aggregate, prefix_op, Int2Type<IS_INCLUSIVE>());
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     UnzipValues(values, scan_items);
 
