@@ -558,7 +558,6 @@ def test_reduce_with_stream():
         def __init__(self, cp_stream):
             self.cp_stream = cp_stream
 
-        @property
         def __cuda_stream__(self):
             return (0, self.cp_stream.ptr)
 
@@ -588,7 +587,8 @@ def test_reduce_with_stream():
     d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
 
     reduce_into(d_temp_storage, d_in, d_out, d_in.size, h_init, stream=stream_wrapper)
-    np.testing.assert_allclose(d_in.sum().get(), d_out.get())
+    with stream:
+        cp.testing.assert_allclose(d_in.sum().get(), d_out.get())
 
 
 def test_reduce_invalid_stream():
@@ -602,9 +602,16 @@ def test_reduce_invalid_stream():
         def __init__(self):
             pass
 
-        @property
         def __cuda_stream__(self):
             return None
+
+    # Invalid stream that returns an invalid handle
+    class Stream3:
+        def __init__(self):
+            pass
+
+        def __cuda_stream__(self):
+            return (0, None)
 
     def add_op(x, y):
         return x + y
@@ -626,7 +633,9 @@ def test_reduce_invalid_stream():
             stream=Stream1(),
         )
 
-    with pytest.raises(TypeError, match="must return a 'Tuple\\[int, int\\]';"):
+    with pytest.raises(
+        TypeError, match="could not obtain __cuda_stream__ protocol version and handle"
+    ):
         _ = reduce_into(
             None,
             d_in=d_in,
@@ -634,4 +643,14 @@ def test_reduce_invalid_stream():
             num_items=d_in.size,
             h_init=h_init,
             stream=Stream2(),
+        )
+
+    with pytest.raises(TypeError, match="invalid stream handle"):
+        _ = reduce_into(
+            None,
+            d_in=d_in,
+            d_out=d_out,
+            num_items=d_in.size,
+            h_init=h_init,
+            stream=Stream3(),
         )
