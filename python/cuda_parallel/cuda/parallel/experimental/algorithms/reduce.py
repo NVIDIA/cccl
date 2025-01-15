@@ -6,7 +6,7 @@
 from __future__ import annotations  # TODO: required for Python 3.7 docs env
 
 import ctypes
-from typing import Callable, Optional
+from typing import Callable
 
 import numba
 import numpy as np
@@ -16,7 +16,7 @@ from numba.cuda.cudadrv import enums
 from .. import _cccl as cccl
 from .._bindings import get_bindings, get_paths
 from .._caching import CachableFunction, cache_with_key
-from .._utils import cai
+from .._utils import protocols
 from ..iterators._iterators import IteratorBase
 from ..typing import DeviceArrayLike, GpuStruct
 
@@ -47,30 +47,6 @@ def _dtype_validation(dt1, dt2):
         raise TypeError(f"dtype mismatch: __init__={dt1}, __call__={dt2}")
 
 
-def _validate_and_get_stream(stream) -> Optional[int]:
-    # null stream is allowed
-    if stream is None:
-        return None
-
-    if not hasattr(stream, "__cuda_stream__"):
-        raise TypeError(
-            f"stream argument {stream} does not implement the '__cuda_stream__' protocol"
-        )
-
-    stream_property = stream.__cuda_stream__
-    if (
-        isinstance(stream_property, tuple)
-        and len(stream_property) == 2
-        and all(isinstance(i, int) for i in stream_property)
-    ):
-        version, handle = stream_property
-        return handle
-
-    raise TypeError(
-        f"__cuda_stream__ property of '{stream}' must return a 'Tuple[int, int]'; got {stream_property} instead"
-    )
-
-
 class _Reduce:
     # TODO: constructor shouldn't require concrete `d_in`, `d_out`:
     def __init__(
@@ -84,7 +60,7 @@ class _Reduce:
         self._ctor_d_in_cccl_type_enum_name = cccl.type_enum_as_name(
             d_in_cccl.value_type.type.value
         )
-        self._ctor_d_out_dtype = cai.get_dtype(d_out)
+        self._ctor_d_out_dtype = protocols.get_dtype(d_out)
         self._ctor_init_dtype = h_init.dtype
         cc_major, cc_minor = cuda.get_current_device().compute_capability
         cub_path, thrust_path, libcudacxx_path, cuda_include_path = get_paths()
@@ -127,7 +103,7 @@ class _Reduce:
         )
         _dtype_validation(self._ctor_d_out_dtype, cai.get_dtype(d_out))
         _dtype_validation(self._ctor_init_dtype, h_init.dtype)
-        stream_handle = _validate_and_get_stream(stream)
+        stream_handle = protocols._validate_and_get_stream(stream)
         bindings = get_bindings()
         if temp_storage is None:
             temp_storage_bytes = ctypes.c_size_t()
@@ -165,8 +141,10 @@ def make_cache_key(
     op: Callable,
     h_init: np.ndarray,
 ):
-    d_in_key = d_in.kind if isinstance(d_in, IteratorBase) else cai.get_dtype(d_in)
-    d_out_key = cai.get_dtype(d_out)
+    d_in_key = (
+        d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
+    )
+    d_out_key = protocols.get_dtype(d_out)
     op_key = CachableFunction(op)
     h_init_key = h_init.dtype
     return (d_in_key, d_out_key, op_key, h_init_key)

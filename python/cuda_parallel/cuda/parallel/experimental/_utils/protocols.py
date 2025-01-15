@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 """
-Utilities for extracting information from `__cuda_array_interface__`.
+Utilities for extracting information from protocols such as `__cuda_array_interface__` and `__cuda_stream__`.
 """
 
 from typing import Optional, Tuple
@@ -68,3 +68,31 @@ def is_contiguous(arr: DeviceArrayLike) -> bool:
     else:
         # not contiguous
         return False
+
+
+def _validate_and_get_stream(stream) -> Optional[int]:
+    # null stream is allowed
+    if stream is None:
+        return None
+
+    try:
+        stream_property = stream.__cuda_stream__()
+    except AttributeError as e:
+        raise TypeError(
+            f"stream argument {stream} does not implement the '__cuda_stream__' protocol"
+        ) from e
+
+    try:
+        version = stream_property[0]
+        handle = stream_property[1]
+    except (TypeError, IndexError) as e:
+        raise TypeError(
+            f"could not obtain __cuda_stream__ protocol version and handle from {stream_property}"
+        ) from e
+
+    if version == 0:
+        if not isinstance(handle, int):
+            raise TypeError(f"invalid stream handle {handle}")
+        return handle
+
+    raise TypeError(f"unsupported __cuda_stream__ version {version}")
