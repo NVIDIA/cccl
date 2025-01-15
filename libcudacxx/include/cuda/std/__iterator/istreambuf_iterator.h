@@ -38,16 +38,16 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT istreambuf_iterator
   _CCCL_SUPPRESS_DEPRECATED_POP
 
 public:
-  typedef input_iterator_tag iterator_category;
-  typedef _CharT value_type;
-  typedef typename _Traits::off_type difference_type;
-  typedef _CharT* pointer;
-  typedef _CharT reference;
-  typedef _CharT char_type;
-  typedef _Traits traits_type;
-  typedef typename _Traits::int_type int_type;
-  typedef basic_streambuf<_CharT, _Traits> streambuf_type;
-  typedef basic_istream<_CharT, _Traits> istream_type;
+  using iterator_category = input_iterator_tag;
+  using value_type        = _CharT;
+  using difference_type   = typename _Traits::off_type;
+  using pointer           = _CharT*;
+  using reference         = _CharT;
+  using char_type         = _CharT;
+  using traits_type       = _Traits;
+  using int_type          = typename _Traits::int_type;
+  using streambuf_type    = basic_streambuf<_CharT, _Traits>;
+  using istream_type      = basic_istream<_CharT, _Traits>;
 
 private:
   mutable streambuf_type* __sbuf_;

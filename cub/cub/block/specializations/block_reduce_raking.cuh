@@ -212,7 +212,7 @@ struct BlockReduceRaking
       // Place partial into shared memory grid.
       *BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid) = partial;
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Reduce parallelism to one warp
       if (linear_tid < RAKING_THREADS)
@@ -228,7 +228,7 @@ struct BlockReduceRaking
         // sync before re-using shmem (warp_storage/raking_grid are aliased)
         static_assert(RAKING_THREADS <= CUB_PTX_WARP_THREADS, "RAKING_THREADS must be <= warp size.");
         unsigned int mask = static_cast<unsigned int>((1ull << RAKING_THREADS) - 1);
-        WARP_SYNC(mask);
+        __syncwarp(mask);
 
         partial = WarpReduce(temp_storage.warp_storage)
                     .template Reduce<(IS_FULL_TILE && RAKING_UNGUARDED)>(partial, valid_raking_threads, reduction_op);

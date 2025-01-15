@@ -28,14 +28,14 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _CharT, class _Traits = char_traits<_CharT>>
 class _CCCL_TYPE_VISIBILITY_DEFAULT basic_string_view;
 
-typedef basic_string_view<char> string_view;
+using string_view = basic_string_view<char>;
 #ifndef _LIBCUDACXX_HAS_NO_CHAR8_T
-typedef basic_string_view<char8_t> u8string_view;
+using u8string_view = basic_string_view<char8_t>;
 #endif
-typedef basic_string_view<char16_t> u16string_view;
-typedef basic_string_view<char32_t> u32string_view;
+using u16string_view = basic_string_view<char16_t>;
+using u32string_view = basic_string_view<char32_t>;
 #ifndef _LIBCUDACXX_HAS_NO_WIDE_CHARACTERS
-typedef basic_string_view<wchar_t> wstring_view;
+using wstring_view = basic_string_view<wchar_t>;
 #endif
 
 // clang-format off

@@ -187,7 +187,7 @@ struct AgentBlockSort
         BlockLoadItems(storage.load_items).Load(items_in + tile_base, items_local);
       }
 
-      CTA_SYNC();
+      __syncthreads();
     }
 
     KeyT keys_local[ITEMS_PER_THREAD];
@@ -200,7 +200,7 @@ struct AgentBlockSort
       BlockLoadKeys(storage.load_keys).Load(keys_in + tile_base, keys_local);
     }
 
-    CTA_SYNC();
+    __syncthreads();
     _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 
     _CCCL_IF_CONSTEXPR (IS_LAST_TILE)
@@ -212,7 +212,7 @@ struct AgentBlockSort
       BlockMergeSortT(storage.block_merge).Sort(keys_local, items_local, compare_op);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     if (ping)
     {
@@ -227,7 +227,7 @@ struct AgentBlockSort
 
       _CCCL_IF_CONSTEXPR (!KEYS_ONLY)
       {
-        CTA_SYNC();
+        __syncthreads();
 
         _CCCL_IF_CONSTEXPR (IS_LAST_TILE)
         {
@@ -252,7 +252,7 @@ struct AgentBlockSort
 
       _CCCL_IF_CONSTEXPR (!KEYS_ONLY)
       {
-        CTA_SYNC();
+        __syncthreads();
 
         _CCCL_IF_CONSTEXPR (IS_LAST_TILE)
         {
@@ -583,7 +583,7 @@ struct AgentMerge
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
     _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 
     // use binary search in shared memory
@@ -616,7 +616,7 @@ struct AgentMerge
       indices,
       compare_op);
 
-    CTA_SYNC();
+    __syncthreads();
 
     // write keys
     if (ping)
@@ -650,11 +650,11 @@ struct AgentMerge
     _CCCL_IF_CONSTEXPR (!KEYS_ONLY)
 #endif // _CCCL_CUDACC_AT_LEAST(11, 8)
     {
-      CTA_SYNC();
+      __syncthreads();
 
       detail::reg_to_shared<BLOCK_THREADS>(&storage.items_shared[0], items_local);
 
-      CTA_SYNC();
+      __syncthreads();
 
       // gather items from shared mem
       //
@@ -664,7 +664,7 @@ struct AgentMerge
         items_local[item] = storage.items_shared[indices[item]];
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
       // write from reg to gmem
       //

@@ -313,7 +313,7 @@ struct AgentThreeWayPartition
     AccumPackT num_tile_selected_prefix,
     OffsetT num_rejected_prefix)
   {
-    CTA_SYNC();
+    __syncthreads();
 
     const OffsetT num_first_selections_prefix  = AccumPackHelperT::first(num_tile_selected_prefix);
     const OffsetT num_second_selections_prefix = AccumPackHelperT::second(num_tile_selected_prefix);
@@ -353,7 +353,7 @@ struct AgentThreeWayPartition
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Gather items from shared memory and scatter to global
     auto first_base =
@@ -421,7 +421,7 @@ struct AgentThreeWayPartition
 
     // Initialize selection_flags
     Initialize<IS_LAST_TILE>(num_tile_items, items, items_selection_flags);
-    CTA_SYNC();
+    __syncthreads();
 
     // Exclusive scan of selection_flags
     BlockScanT(temp_storage.scan_storage.scan)
@@ -486,7 +486,7 @@ struct AgentThreeWayPartition
 
     // Initialize selection_flags
     Initialize<IS_LAST_TILE>(num_tile_items, items, items_selected_flags);
-    CTA_SYNC();
+    __syncthreads();
 
     // Exclusive scan of values and selection_flags
     TilePrefixCallbackOpT prefix_op(tile_state, temp_storage.scan_storage.prefix, ::cuda::std::plus<>{}, tile_idx);
@@ -497,7 +497,7 @@ struct AgentThreeWayPartition
     AccumPackT num_items_in_tile_selected = prefix_op.GetBlockAggregate();
     AccumPackT num_items_selected_prefix  = prefix_op.GetExclusivePrefix();
 
-    CTA_SYNC();
+    __syncthreads();
 
     OffsetT num_rejected_prefix = (tile_idx * TILE_ITEMS) - AccumPackHelperT::sum(num_items_selected_prefix);
 

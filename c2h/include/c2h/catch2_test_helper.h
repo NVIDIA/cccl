@@ -39,15 +39,37 @@
 #include <tuple>
 #include <type_traits>
 
-#if __CUDACC_VER_MAJOR__ == 11
-_CCCL_NV_DIAG_SUPPRESS(177) // catch2 may contain unused variables
-#endif // nvcc-11
-
 #include <c2h/catch2_main.h>
 #include <c2h/device_policy.h>
 #include <c2h/test_util_vec.h>
 #include <c2h/utility.h>
 #include <c2h/vector.h>
+#include <catch2/catch_template_test_macros.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators_all.hpp>
+#include <catch2/matchers/catch_matchers.hpp>
+#include <catch2/matchers/catch_matchers_vector.hpp>
+
+// workaround for error #3185-D: no '#pragma diagnostic push' was found to match this 'diagnostic pop'
+#if _CCCL_COMPILER(NVHPC)
+#  undef CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
+#  undef CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
+#  define CATCH_INTERNAL_START_WARNINGS_SUPPRESSION _Pragma("diag push")
+#  define CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION  _Pragma("diag pop")
+#endif
+// workaround for error
+// * MSVC14.39: #3185-D: no '#pragma diagnostic push' was found to match this 'diagnostic pop'
+// * MSVC14.29: internal error: assertion failed: alloc_copy_of_pending_pragma: copied pragma has source sequence entry
+//              (pragma.c, line 526 in alloc_copy_of_pending_pragma)
+// see also upstream Catch2 issue: https://github.com/catchorg/Catch2/issues/2636
+#if _CCCL_COMPILER(MSVC)
+#  undef CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
+#  undef CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
+#  undef CATCH_INTERNAL_SUPPRESS_UNUSED_VARIABLE_WARNINGS
+#  define CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
+#  define CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
+#  define CATCH_INTERNAL_SUPPRESS_UNUSED_VARIABLE_WARNINGS
+#endif
 
 #ifndef VAR_IDX
 #  define VAR_IDX 0
@@ -110,11 +132,11 @@ std::vector<T> to_vec(std::vector<T> const& vec)
 }
 } // namespace detail
 
-#define REQUIRE_APPROX_EQ(ref, out)                \
-  {                                                \
-    auto vec_ref = detail::to_vec(ref);            \
-    auto vec_out = detail::to_vec(out);            \
-    REQUIRE_THAT(vec_ref, Catch::Approx(vec_out)); \
+#define REQUIRE_APPROX_EQ(ref, out)                          \
+  {                                                          \
+    auto vec_ref = detail::to_vec(ref);                      \
+    auto vec_out = detail::to_vec(out);                      \
+    REQUIRE_THAT(vec_ref, Catch::Matchers::Approx(vec_out)); \
   }
 
 namespace detail
@@ -140,7 +162,7 @@ struct bitwise_equal
 
 // Catch2 Matcher that calls `std::equal` with a default-constructable custom predicate
 template <typename Range, typename Pred>
-struct CustomEqualsRangeMatcher : Catch::MatcherBase<Range>
+struct CustomEqualsRangeMatcher : Catch::Matchers::MatcherBase<Range>
 {
   CustomEqualsRangeMatcher(Range const& range)
       : range{range}

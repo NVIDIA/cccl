@@ -364,7 +364,7 @@ private:
     Int2Type<false> /*is_keys_only*/,
     Int2Type<true> /*is_blocked*/)
   {
-    CTA_SYNC();
+    __syncthreads();
 
     // Exchange values through shared memory in blocked arrangement
     BlockExchangeValues(temp_storage.exchange_values).ScatterToBlocked(values, ranks);
@@ -377,7 +377,7 @@ private:
     Int2Type<false> /*is_keys_only*/,
     Int2Type<false> /*is_blocked*/)
   {
-    CTA_SYNC();
+    __syncthreads();
 
     // Exchange values through shared memory in blocked arrangement
     BlockExchangeValues(temp_storage.exchange_values).ScatterToStriped(values, ranks);
@@ -443,7 +443,7 @@ private:
       RankKeys(unsigned_keys, ranks, digit_extractor, is_descending);
       begin_bit += RADIX_BITS;
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Exchange keys through shared memory in blocked arrangement
       BlockExchangeKeys(temp_storage.exchange_keys).ScatterToBlocked(keys, ranks);
@@ -457,7 +457,7 @@ private:
         break;
       }
 
-      CTA_SYNC();
+      __syncthreads();
     }
 
 // Untwiddle bits if necessary
@@ -522,7 +522,7 @@ public:
       RankKeys(unsigned_keys, ranks, digit_extractor, is_descending);
       begin_bit += RADIX_BITS;
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Check if this is the last pass
       if (begin_bit >= end_bit)
@@ -543,7 +543,7 @@ public:
       // Exchange values through shared memory in blocked arrangement
       ExchangeValues(values, ranks, is_keys_only, Int2Type<true>());
 
-      CTA_SYNC();
+      __syncthreads();
     }
 
 // Untwiddle bits if necessary

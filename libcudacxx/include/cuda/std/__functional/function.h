@@ -136,8 +136,8 @@ class __alloc_func<_Fp, _Ap, _Rp(_ArgTypes...)>
   __compressed_pair<_Fp, _Ap> __f_;
 
 public:
-  typedef _CCCL_NODEBUG_ALIAS _Fp _Target;
-  typedef _CCCL_NODEBUG_ALIAS _Ap _Alloc;
+  using _Target _CCCL_NODEBUG_ALIAS = _Fp;
+  using _Alloc _CCCL_NODEBUG_ALIAS  = _Ap;
 
   _LIBCUDACXX_HIDE_FROM_ABI const _Target& __target() const
   {
@@ -170,16 +170,16 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI _Rp operator()(_ArgTypes&&... __arg)
   {
-    typedef __invoke_void_return_wrapper<_Rp> _Invoker;
+    using _Invoker = __invoke_void_return_wrapper<_Rp>;
     return _Invoker::__call(__f_.first(), _CUDA_VSTD::forward<_ArgTypes>(__arg)...);
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI __alloc_func* __clone() const
   {
-    typedef allocator_traits<_Alloc> __alloc_traits;
-    typedef typename __rebind_alloc_helper<__alloc_traits, __alloc_func>::type _AA;
+    using __alloc_traits = allocator_traits<_Alloc>;
+    using _AA            = typename __rebind_alloc_helper<__alloc_traits, __alloc_func>::type;
     _AA __a(__f_.second());
-    typedef __allocator_destructor<_AA> _Dp;
+    using _Dp = __allocator_destructor<_AA>;
     unique_ptr<__alloc_func, _Dp> __hold(__a.allocate(1), _Dp(__a, 1));
     ::new ((void*) __hold.get()) __alloc_func(__f_.first(), _Alloc(__a));
     return __hold.release();
@@ -192,8 +192,8 @@ public:
 
   static void __destroy_and_delete(__alloc_func* __f)
   {
-    typedef allocator_traits<_Alloc> __alloc_traits;
-    typedef typename __rebind_alloc_helper<__alloc_traits, __alloc_func>::type _FunAlloc;
+    using __alloc_traits = allocator_traits<_Alloc>;
+    using _FunAlloc      = typename __rebind_alloc_helper<__alloc_traits, __alloc_func>::type;
     _FunAlloc __a(__f->__get_allocator());
     __f->destroy();
     __a.deallocate(__f, 1);
@@ -206,7 +206,7 @@ class __default_alloc_func<_Fp, _Rp(_ArgTypes...)>
   _Fp __f_;
 
 public:
-  typedef _CCCL_NODEBUG_ALIAS _Fp _Target;
+  using _Target _CCCL_NODEBUG_ALIAS = _Fp;
 
   _LIBCUDACXX_HIDE_FROM_ABI const _Target& __target() const
   {
@@ -223,7 +223,7 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI _Rp operator()(_ArgTypes&&... __arg)
   {
-    typedef __invoke_void_return_wrapper<_Rp> _Invoker;
+    using _Invoker = __invoke_void_return_wrapper<_Rp>;
     return _Invoker::__call(__f_, _CUDA_VSTD::forward<_ArgTypes>(__arg)...);
   }
 
@@ -313,10 +313,10 @@ public:
 template <class _Fp, class _Alloc, class _Rp, class... _ArgTypes>
 __base<_Rp(_ArgTypes...)>* __func<_Fp, _Alloc, _Rp(_ArgTypes...)>::__clone() const
 {
-  typedef allocator_traits<_Alloc> __alloc_traits;
-  typedef typename __rebind_alloc_helper<__alloc_traits, __func>::type _Ap;
+  using __alloc_traits = allocator_traits<_Alloc>;
+  using _Ap            = typename __rebind_alloc_helper<__alloc_traits, __func>::type;
   _Ap __a(__f_.__get_allocator());
-  typedef __allocator_destructor<_Ap> _Dp;
+  using _Dp = __allocator_destructor<_Ap>;
   unique_ptr<__func, _Dp> __hold(__a.allocate(1), _Dp(__a, 1));
   ::new ((void*) __hold.get()) __func(__f_.__target(), _Alloc(__a));
   return __hold.release();
@@ -337,8 +337,8 @@ void __func<_Fp, _Alloc, _Rp(_ArgTypes...)>::destroy() noexcept
 template <class _Fp, class _Alloc, class _Rp, class... _ArgTypes>
 void __func<_Fp, _Alloc, _Rp(_ArgTypes...)>::destroy_deallocate() noexcept
 {
-  typedef allocator_traits<_Alloc> __alloc_traits;
-  typedef typename __rebind_alloc_helper<__alloc_traits, __func>::type _Ap;
+  using __alloc_traits = allocator_traits<_Alloc>;
+  using _Ap            = typename __rebind_alloc_helper<__alloc_traits, __func>::type;
   _Ap __a(__f_.__get_allocator());
   __f_.destroy();
   __a.deallocate(this, 1);
@@ -380,7 +380,7 @@ class __value_func<_Rp(_ArgTypes...)>
 {
   typename aligned_storage<3 * sizeof(void*)>::type __buf_;
 
-  typedef __base<_Rp(_ArgTypes...)> __func;
+  using __func = __base<_Rp(_ArgTypes...)>;
   __func* __f_;
 
   _LIBCUDACXX_NO_CFI static __func* __as_base(void* __p)
@@ -397,9 +397,9 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI __value_func(_Fp&& __f, const _Alloc& __a)
       : __f_(nullptr)
   {
-    typedef allocator_traits<_Alloc> __alloc_traits;
-    typedef __function::__func<_Fp, _Alloc, _Rp(_ArgTypes...)> _Fun;
-    typedef typename __rebind_alloc_helper<__alloc_traits, _Fun>::type _FunAlloc;
+    using __alloc_traits = allocator_traits<_Alloc>;
+    using _Fun           = __function::__func<_Fp, _Alloc, _Rp(_ArgTypes...)>;
+    using _FunAlloc      = typename __rebind_alloc_helper<__alloc_traits, _Fun>::type;
 
     if (__function::__not_null(__f))
     {
@@ -411,7 +411,7 @@ public:
       }
       else
       {
-        typedef __allocator_destructor<_FunAlloc> _Dp;
+        using _Dp = __allocator_destructor<_FunAlloc>;
         unique_ptr<__func, _Dp> __hold(__af.allocate(1), _Dp(__af, 1));
         ::new ((void*) __hold.get()) _Fun(_CUDA_VSTD::move(__f), _Alloc(__a));
         __f_ = __hold.release();
@@ -697,7 +697,7 @@ struct __policy_invoker;
 template <class _Rp, class... _ArgTypes>
 struct __policy_invoker<_Rp(_ArgTypes...)>
 {
-  typedef _Rp (*__Call)(const __policy_storage*, __fast_forward<_ArgTypes>...);
+  using __Call = _Rp (*)(const __policy_storage*, __fast_forward<_ArgTypes>...);
 
   __Call __call_;
 
@@ -746,7 +746,7 @@ class __policy_func<_Rp(_ArgTypes...)>
   // Calls the value stored in __buf_. This could technically be part of
   // policy, but storing it here eliminates a level of indirection inside
   // operator().
-  typedef __function::__policy_invoker<_Rp(_ArgTypes...)> __invoker;
+  using __invoker = __function::__policy_invoker<_Rp(_ArgTypes...)>;
   __invoker __invoker_;
 
   // The policy that describes how to move / copy / destroy __buf_. Never
@@ -762,9 +762,9 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI __policy_func(_Fp&& __f, const _Alloc& __a)
       : __policy_(__policy::__create_empty())
   {
-    typedef __alloc_func<_Fp, _Alloc, _Rp(_ArgTypes...)> _Fun;
-    typedef allocator_traits<_Alloc> __alloc_traits;
-    typedef typename __rebind_alloc_helper<__alloc_traits, _Fun>::type _FunAlloc;
+    using _Fun           = __alloc_func<_Fp, _Alloc, _Rp(_ArgTypes...)>;
+    using __alloc_traits = allocator_traits<_Alloc>;
+    using _FunAlloc      = typename __rebind_alloc_helper<__alloc_traits, _Fun>::type;
 
     if (__function::__not_null(__f))
     {
@@ -778,7 +778,7 @@ public:
       }
       else
       {
-        typedef __allocator_destructor<_FunAlloc> _Dp;
+        using _Dp = __allocator_destructor<_FunAlloc>;
         unique_ptr<_Fun, _Dp> __hold(__af.allocate(1), _Dp(__af, 1));
         ::new ((void*) __hold.get()) _Fun(_CUDA_VSTD::move(__f), _Alloc(__af));
         __buf_.__large = __hold.release();
@@ -790,7 +790,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI explicit __policy_func(_Fp&& __f)
       : __policy_(__policy::__create_empty())
   {
-    typedef __default_alloc_func<_Fp, _Rp(_ArgTypes...)> _Fun;
+    using _Fun = __default_alloc_func<_Fp, _Rp(_ArgTypes...)>;
 
     if (__function::__not_null(__f))
     {
@@ -913,7 +913,7 @@ extern "C" void _Block_release(const void*);
 template <class _Rp1, class... _ArgTypes1, class _Alloc, class _Rp, class... _ArgTypes>
 class __func<_Rp1 (^)(_ArgTypes1...), _Alloc, _Rp(_ArgTypes...)> : public __base<_Rp(_ArgTypes...)>
 {
-  typedef _Rp1 (^__block_type)(_ArgTypes1...);
+  using ...); = _Rp1 (^__block_type)(_ArgTypes1
   __block_type __f_;
 
 public:
@@ -989,7 +989,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT function<_Rp(_ArgTypes...)>
     : public __function::__maybe_derive_from_unary_function<_Rp(_ArgTypes...)>
     , public __function::__maybe_derive_from_binary_function<_Rp(_ArgTypes...)>
 {
-  typedef __function::__policy_func<_Rp(_ArgTypes...)> __func;
+  using __func = __function::__policy_func<_Rp(_ArgTypes...)>;
 
   __func __f_;
 
@@ -1011,7 +1011,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT function<_Rp(_ArgTypes...)>
   using _EnableIfLValueCallable = enable_if_t<__callable<_Fp&>::value>;
 
 public:
-  typedef _Rp result_type;
+  using result_type = _Rp;
 
   // construct/copy/destroy:
   _LIBCUDACXX_HIDE_FROM_ABI function() noexcept {}

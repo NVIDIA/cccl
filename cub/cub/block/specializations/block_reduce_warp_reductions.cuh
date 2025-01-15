@@ -48,6 +48,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
+#include <cuda/ptx>
+
 CUB_NAMESPACE_BEGIN
 
 /**
@@ -121,7 +123,7 @@ struct BlockReduceWarpReductions
       : temp_storage(temp_storage.Alias())
       , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
       , warp_id((WARPS == 1) ? 0 : linear_tid / WARP_THREADS)
-      , lane_id(LaneId())
+      , lane_id(::cuda::ptx::get_sreg_laneid())
   {}
 
   /**
@@ -184,7 +186,7 @@ struct BlockReduceWarpReductions
       detail::uninitialized_copy_single(temp_storage.warp_aggregates + warp_id, warp_aggregate);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Update total aggregate in warp 0, lane 0
     if (linear_tid == 0)

@@ -47,6 +47,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_scan.cuh>
 
+#include <cuda/ptx>
+
 CUB_NAMESPACE_BEGIN
 
 /**
@@ -127,7 +129,7 @@ struct BlockScanWarpScans
       : temp_storage(temp_storage.Alias())
       , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
       , warp_id((WARPS == 1) ? 0 : linear_tid / WARP_THREADS)
-      , lane_id(LaneId())
+      , lane_id(::cuda::ptx::get_sreg_laneid())
   {}
 
   //---------------------------------------------------------------------
@@ -197,7 +199,7 @@ struct BlockScanWarpScans
       detail::uninitialized_copy_single(temp_storage.warp_aggregates + warp_id, warp_aggregate);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Accumulate block aggregates and save the one that is our warp's prefix
     T warp_prefix;
@@ -423,7 +425,7 @@ struct BlockScanWarpScans
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Incorporate thread block prefix into outputs
     T block_prefix = temp_storage.block_prefix;
@@ -528,7 +530,7 @@ struct BlockScanWarpScans
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Incorporate thread block prefix into outputs
     T block_prefix   = temp_storage.block_prefix;
