@@ -83,9 +83,8 @@ def validate_and_get_stream(stream) -> Optional[int]:
         ) from e
 
     try:
-        version = stream_property[0]
-        handle = stream_property[1]
-    except (TypeError, IndexError) as e:
+        version, handle, *_ = stream_property
+    except ValueError as e:
         raise TypeError(
             f"could not obtain __cuda_stream__ protocol version and handle from {stream_property}"
         ) from e
