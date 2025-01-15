@@ -308,6 +308,16 @@ class stackable_logical_data
       s.push_back(ld);
     }
 
+    ~impl() = default;
+
+    // Delete copy constructor and copy assignment operator
+    impl(const impl&)            = delete;
+    impl& operator=(const impl&) = delete;
+
+    // Define move constructor and move assignment operator
+    impl(impl&&) noexcept            = default;
+    impl& operator=(impl&&) noexcept = default;
+
     const auto& get_ld() const
     {
       check_level_mismatch();
