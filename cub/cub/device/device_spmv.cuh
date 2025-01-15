@@ -193,7 +193,9 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DeviceSpmv
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSpmv::CsrMV");
 
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     SpmvParams<ValueT, int> spmv_params;
+    _CCCL_SUPPRESS_DEPRECATED_POP
     spmv_params.d_values          = d_values;
     spmv_params.d_row_end_offsets = d_row_offsets + 1;
     spmv_params.d_column_indices  = d_column_indices;

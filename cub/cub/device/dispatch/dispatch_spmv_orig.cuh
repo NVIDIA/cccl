@@ -214,6 +214,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmvSearchKernel(
  * @param[in] num_segment_fixup_tiles
  *   Number of reduce-by-key tiles (fixup grid size)
  */
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename SpmvPolicyT,
           typename ScanTileStateT,
           typename ValueT,
@@ -243,6 +244,7 @@ __launch_bounds__(int(SpmvPolicyT::BLOCK_THREADS)) CUB_DETAIL_KERNEL_ATTRIBUTES 
   // Initialize fixup tile status
   tile_state.InitializeStatus(num_segment_fixup_tiles);
 }
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 /**
  * @tparam ValueT
@@ -254,6 +256,7 @@ __launch_bounds__(int(SpmvPolicyT::BLOCK_THREADS)) CUB_DETAIL_KERNEL_ATTRIBUTES 
  * @tparam HAS_BETA
  *   Whether the input parameter Beta is 0
  */
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename ValueT, typename OffsetT, bool HAS_BETA>
 CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead")
 CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmvEmptyMatrixKernel(SpmvParams<ValueT, OffsetT> spmv_params)
@@ -272,6 +275,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmvEmptyMatrixKernel(SpmvParams<ValueT,
     spmv_params.d_vector_y[row] = result;
   }
 }
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 /**
  * @brief Multi-block reduce-by-key sweep kernel entry point
@@ -366,7 +370,9 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DispatchSpmv
   };
 
   // SpmvParams bundle type
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   using SpmvParamsT = SpmvParams<ValueT, OffsetT>;
+  _CCCL_SUPPRESS_DEPRECATED_POP
 
   // 2D merge path coordinate type
   using CoordinateT = typename CubVector<OffsetT, 2>::Type;
@@ -384,6 +390,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DispatchSpmv
   /// SM35
   struct Policy350
   {
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     using SpmvPolicyT =
       AgentSpmvPolicy<(sizeof(ValueT) > 4) ? 96 : 128,
                       (sizeof(ValueT) > 4) ? 4 : 7,
@@ -394,6 +401,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DispatchSpmv
                       LOAD_LDG,
                       (sizeof(ValueT) > 4) ? true : false,
                       BLOCK_SCAN_WARP_SCANS>;
+    _CCCL_SUPPRESS_DEPRECATED_POP
 
     using SegmentFixupPolicyT = AgentSegmentFixupPolicy<128, 3, BLOCK_LOAD_VECTORIZE, LOAD_LDG, BLOCK_SCAN_WARP_SCANS>;
   };
@@ -401,6 +409,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DispatchSpmv
   /// SM37
   struct Policy370
   {
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     using SpmvPolicyT =
       AgentSpmvPolicy<(sizeof(ValueT) > 4) ? 128 : 128,
                       (sizeof(ValueT) > 4) ? 9 : 14,
@@ -411,6 +420,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DispatchSpmv
                       LOAD_LDG,
                       false,
                       BLOCK_SCAN_WARP_SCANS>;
+    _CCCL_SUPPRESS_DEPRECATED_POP
 
     using SegmentFixupPolicyT = AgentSegmentFixupPolicy<128, 3, BLOCK_LOAD_VECTORIZE, LOAD_LDG, BLOCK_SCAN_WARP_SCANS>;
   };
@@ -418,6 +428,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DispatchSpmv
   /// SM50
   struct Policy500
   {
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     using SpmvPolicyT =
       AgentSpmvPolicy<(sizeof(ValueT) > 4) ? 64 : 128,
                       (sizeof(ValueT) > 4) ? 6 : 7,
@@ -428,6 +439,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DispatchSpmv
                       LOAD_LDG,
                       (sizeof(ValueT) > 4) ? true : false,
                       (sizeof(ValueT) > 4) ? BLOCK_SCAN_WARP_SCANS : BLOCK_SCAN_RAKING_MEMOIZE>;
+    _CCCL_SUPPRESS_DEPRECATED_POP
 
     using SegmentFixupPolicyT =
       AgentSegmentFixupPolicy<128, 3, BLOCK_LOAD_VECTORIZE, LOAD_LDG, BLOCK_SCAN_RAKING_MEMOIZE>;
@@ -436,6 +448,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DispatchSpmv
   /// SM60
   struct Policy600
   {
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     using SpmvPolicyT =
       AgentSpmvPolicy<(sizeof(ValueT) > 4) ? 64 : 128,
                       (sizeof(ValueT) > 4) ? 5 : 7,
@@ -446,6 +459,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DispatchSpmv
                       LOAD_DEFAULT,
                       false,
                       BLOCK_SCAN_WARP_SCANS>;
+    _CCCL_SUPPRESS_DEPRECATED_POP
 
     using SegmentFixupPolicyT = AgentSegmentFixupPolicy<128, 3, BLOCK_LOAD_DIRECT, LOAD_LDG, BLOCK_SCAN_WARP_SCANS>;
   };
