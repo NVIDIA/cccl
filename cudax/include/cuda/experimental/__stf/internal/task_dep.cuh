@@ -242,7 +242,7 @@ public:
 
   template <typename... Args>
   task_dep(Args&&... args)
-      : base(std::forward<Args>(args)...)
+      : base(::std::forward<Args>(args)...)
   {}
 };
 
