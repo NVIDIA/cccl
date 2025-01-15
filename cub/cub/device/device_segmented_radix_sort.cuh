@@ -42,6 +42,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/choose_offset.cuh>
 #include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_radix_sort.cuh>
 
@@ -233,8 +234,8 @@ public:
     KeyT* d_keys_out,
     const ValueT* d_values_in,
     ValueT* d_values_out,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     int begin_bit       = 0,
@@ -244,7 +245,8 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Signed integer type for global offsets
-    using OffsetT = int;
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
 
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
@@ -410,8 +412,8 @@ public:
     size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     int begin_bit       = 0,
@@ -421,7 +423,8 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Signed integer type for global offsets
-    using OffsetT = int;
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
 
     return DispatchSegmentedRadixSort<false, KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT, OffsetT>::Dispatch(
       d_temp_storage,
@@ -581,8 +584,8 @@ public:
     KeyT* d_keys_out,
     const ValueT* d_values_in,
     ValueT* d_values_out,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     int begin_bit       = 0,
@@ -592,7 +595,8 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Signed integer type for global offsets
-    using OffsetT = int;
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
 
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
@@ -762,8 +766,8 @@ public:
     size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     int begin_bit       = 0,
@@ -773,7 +777,8 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Signed integer type for global offsets
-    using OffsetT = int;
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
 
     return DispatchSegmentedRadixSort<true, KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT, OffsetT>::Dispatch(
       d_temp_storage,
@@ -919,8 +924,8 @@ public:
     size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     int begin_bit       = 0,
@@ -930,7 +935,8 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Signed integer type for global offsets
-    using OffsetT = int;
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
 
     // Null value type
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
@@ -1086,8 +1092,8 @@ public:
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     int begin_bit       = 0,
@@ -1097,7 +1103,8 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Signed integer type for global offsets
-    using OffsetT = int;
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
 
     // Null value type
     DoubleBuffer<NullType> d_values;
@@ -1243,8 +1250,8 @@ public:
     size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     int begin_bit       = 0,
@@ -1254,7 +1261,8 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Signed integer type for global offsets
-    using OffsetT = int;
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
 
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
@@ -1407,8 +1415,8 @@ public:
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     int begin_bit       = 0,
@@ -1418,7 +1426,8 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Signed integer type for global offsets
-    using OffsetT = int;
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
 
     // Null value type
     DoubleBuffer<NullType> d_values;

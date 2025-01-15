@@ -549,7 +549,6 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
     ValueT* d_values_out,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    int /*num_segments*/,
     int current_bit,
     int pass_bits,
     DecomposerT decomposer = {})
@@ -607,8 +606,11 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
 
   } temp_storage;
 
-  OffsetT segment_begin = d_begin_offsets[blockIdx.x];
-  OffsetT segment_end   = d_end_offsets[blockIdx.x];
+  const ::cuda::std::int64_t segment_id =
+    blockIdx.x + (blockIdx.y * static_cast<::cuda::std::int64_t>(gridDim.x))
+    + (blockIdx.z * static_cast<::cuda::std::int64_t>(gridDim.x * gridDim.y));
+  OffsetT segment_begin = d_begin_offsets[segment_id];
+  OffsetT segment_end   = d_end_offsets[segment_id];
   OffsetT num_items     = segment_end - segment_begin;
 
   // Check if empty segment
@@ -1924,10 +1926,10 @@ struct DispatchSegmentedRadixSort
   DoubleBuffer<ValueT>& d_values;
 
   /// Number of items to sort
-  OffsetT num_items;
+  ::cuda::std::int64_t num_items;
 
   /// The number of segments that comprise the sorting data
-  OffsetT num_segments;
+  ::cuda::std::int64_t num_segments;
 
   /// Random-access input iterator to the sequence of beginning offsets of length `num_segments`,
   /// such that <tt>d_begin_offsets[i]</tt> is the first element of the <em>i</em><sup>th</sup>
@@ -1967,8 +1969,8 @@ struct DispatchSegmentedRadixSort
     size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
-    OffsetT num_items,
-    OffsetT num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     int begin_bit,
@@ -2012,6 +2014,32 @@ struct DispatchSegmentedRadixSort
     {
       int pass_bits = CUB_MIN(pass_config.radix_bits, (end_bit - current_bit));
 
+      int device_ordinal{};
+      error = CubDebug(cudaGetDevice(&device_ordinal));
+      if (cudaSuccess != error)
+      {
+        break;
+      }
+
+      int max_grid_dim_x{};
+      int max_grid_dim_y{};
+      error = CubDebug(cudaDeviceGetAttribute(&max_grid_dim_x, cudaDevAttrMaxGridDimX, device_ordinal));
+      if (cudaSuccess != error)
+      {
+        break;
+      }
+      error = CubDebug(cudaDeviceGetAttribute(&max_grid_dim_y, cudaDevAttrMaxGridDimY, device_ordinal));
+      if (cudaSuccess != error)
+      {
+        break;
+      }
+
+      // Calculate grid dimensions
+      const auto grid_dim_x = ::cuda::std::min(num_segments, static_cast<::cuda::std::int64_t>(max_grid_dim_x));
+      const auto grid_dim_y = ::cuda::std::min(
+        ((num_segments + max_grid_dim_x - 1) / max_grid_dim_x), static_cast<::cuda::std::int64_t>(max_grid_dim_y));
+      const auto grid_dim_z = (num_segments + max_grid_dim_x * max_grid_dim_y - 1) / (max_grid_dim_x * max_grid_dim_y);
+
 // Log kernel configuration
 #ifdef CUB_DEBUG_LOG
       _CubLog("Invoking segmented_kernels<<<%lld, %lld, 0, %lld>>>(), "
@@ -2025,9 +2053,11 @@ struct DispatchSegmentedRadixSort
               current_bit,
               pass_bits);
 #endif
-
+      dim3 grid_dim = dim3(static_cast<unsigned int>(grid_dim_x),
+                           static_cast<unsigned int>(grid_dim_y),
+                           static_cast<unsigned int>(grid_dim_z));
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
-        num_segments, pass_config.segmented_config.block_threads, 0, stream)
+        grid_dim, pass_config.segmented_config.block_threads, 0, stream)
         .doit(pass_config.segmented_kernel,
               d_keys_in,
               d_keys_out,
@@ -2035,7 +2065,6 @@ struct DispatchSegmentedRadixSort
               d_values_out,
               d_begin_offsets,
               d_end_offsets,
-              num_segments,
               current_bit,
               pass_bits,
               decomposer);
@@ -2314,8 +2343,8 @@ struct DispatchSegmentedRadixSort
     size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     int begin_bit,
