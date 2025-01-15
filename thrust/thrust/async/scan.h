@@ -86,8 +86,9 @@ using thrust::async::unimplemented::async_inclusive_scan;
 // Implementation of the thrust::async::inclusive_scan CPO.
 struct inclusive_scan_fn final
 {
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename OutputIt, typename BinaryOp>
-  CCCL_DEPRECATED _CCCL_SUPPRESS_DEPRECATED_PUSH auto operator()(
+  CCCL_DEPRECATED auto operator()(
     thrust::detail::execution_policy_base<DerivedPolicy> const& exec,
     ForwardIt&& first,
     Sentinel&& last,
@@ -101,8 +102,9 @@ struct inclusive_scan_fn final
       THRUST_FWD(out),
       THRUST_FWD(op))) _CCCL_SUPPRESS_DEPRECATED_POP
 
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename OutputIt>
-    CCCL_DEPRECATED _CCCL_SUPPRESS_DEPRECATED_PUSH
+    CCCL_DEPRECATED
     auto operator()(thrust::detail::execution_policy_base<DerivedPolicy> const& exec,
                     ForwardIt&& first,
                     Sentinel&& last,
@@ -113,15 +115,16 @@ struct inclusive_scan_fn final
       THRUST_FWD(first),
       THRUST_FWD(last),
       THRUST_FWD(out),
-      thrust::plus<>{})) _CCCL_SUPPRESS_DEPRECATED_PUSH
+      thrust::plus<>{})) _CCCL_SUPPRESS_DEPRECATED_POP
 
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     template <typename DerivedPolicy,
               typename ForwardIt,
               typename Sentinel,
               typename OutputIt,
               typename InitialValueType,
               typename BinaryOp>
-    CCCL_DEPRECATED _CCCL_SUPPRESS_DEPRECATED_PUSH auto operator()(
+    CCCL_DEPRECATED auto operator()(
       thrust::detail::execution_policy_base<DerivedPolicy> const& exec,
       ForwardIt&& first,
       Sentinel&& last,
@@ -137,13 +140,13 @@ struct inclusive_scan_fn final
       THRUST_FWD(init),
       THRUST_FWD(op))) _CCCL_SUPPRESS_DEPRECATED_POP
 
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     template <typename ForwardIt,
               typename Sentinel,
               typename OutputIt,
               typename BinaryOp,
               typename = std::enable_if_t<!is_execution_policy_v<::cuda::std::remove_cvref_t<ForwardIt>>>>
-    CCCL_DEPRECATED _CCCL_SUPPRESS_DEPRECATED_PUSH
-    auto operator()(ForwardIt&& first, Sentinel&& last, OutputIt&& out, BinaryOp&& op) const
+    CCCL_DEPRECATED auto operator()(ForwardIt&& first, Sentinel&& last, OutputIt&& out, BinaryOp&& op) const
     // ADL dispatch.
     THRUST_RETURNS(async_inclusive_scan(
       thrust::detail::select_system(iterator_system_t<::cuda::std::remove_cvref_t<ForwardIt>>{},
@@ -153,9 +156,8 @@ struct inclusive_scan_fn final
       THRUST_FWD(out),
       THRUST_FWD(op))) _CCCL_SUPPRESS_DEPRECATED_POP
 
-    template <typename ForwardIt, typename Sentinel, typename OutputIt>
-    CCCL_DEPRECATED _CCCL_SUPPRESS_DEPRECATED_PUSH
-    auto operator()(ForwardIt&& first, Sentinel&& last, OutputIt&& out) const
+    _CCCL_SUPPRESS_DEPRECATED_PUSH template <typename ForwardIt, typename Sentinel, typename OutputIt>
+    CCCL_DEPRECATED auto operator()(ForwardIt&& first, Sentinel&& last, OutputIt&& out) const
     // ADL dispatch.
     THRUST_RETURNS(async_inclusive_scan(
       thrust::detail::select_system(iterator_system_t<::cuda::std::remove_cvref_t<ForwardIt>>{},
@@ -165,13 +167,14 @@ struct inclusive_scan_fn final
       THRUST_FWD(out),
       thrust::plus<>{})) _CCCL_SUPPRESS_DEPRECATED_POP
 
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     template <typename ForwardIt,
               typename Sentinel,
               typename OutputIt,
               typename InitialValueType,
               typename BinaryOp,
               typename = std::enable_if_t<!is_execution_policy_v<::cuda::std::remove_cvref_t<ForwardIt>>>>
-    CCCL_DEPRECATED _CCCL_SUPPRESS_DEPRECATED_PUSH
+    CCCL_DEPRECATED
     auto operator()(ForwardIt&& first, Sentinel&& last, OutputIt&& out, InitialValueType&& init, BinaryOp&& op) const
     // ADL dispatch.
     THRUST_RETURNS(async_inclusive_scan(
@@ -200,13 +203,14 @@ using thrust::async::unimplemented::async_exclusive_scan;
 // Implementation of the thrust::async::exclusive_scan CPO.
 struct exclusive_scan_fn final
 {
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   template <typename DerivedPolicy,
             typename ForwardIt,
             typename Sentinel,
             typename OutputIt,
             typename InitialValueType,
             typename BinaryOp>
-  CCCL_DEPRECATED _CCCL_SUPPRESS_DEPRECATED_PUSH auto operator()(
+  CCCL_DEPRECATED auto operator()(
     thrust::detail::execution_policy_base<DerivedPolicy> const& exec,
     ForwardIt&& first,
     Sentinel&& last,
@@ -222,8 +226,9 @@ struct exclusive_scan_fn final
       THRUST_FWD(init),
       THRUST_FWD(op))) _CCCL_SUPPRESS_DEPRECATED_POP
 
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename OutputIt, typename InitialValueType>
-    CCCL_DEPRECATED _CCCL_SUPPRESS_DEPRECATED_PUSH
+    CCCL_DEPRECATED
     auto operator()(thrust::detail::execution_policy_base<DerivedPolicy> const& exec,
                     ForwardIt&& first,
                     Sentinel&& last,
@@ -238,8 +243,9 @@ struct exclusive_scan_fn final
       THRUST_FWD(init),
       thrust::plus<>{})) _CCCL_SUPPRESS_DEPRECATED_POP
 
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename OutputIt>
-    CCCL_DEPRECATED _CCCL_SUPPRESS_DEPRECATED_PUSH
+    CCCL_DEPRECATED
     auto operator()(thrust::detail::execution_policy_base<DerivedPolicy> const& exec,
                     ForwardIt&& first,
                     Sentinel&& last,
@@ -253,13 +259,14 @@ struct exclusive_scan_fn final
       iterator_value_t<::cuda::std::remove_cvref_t<ForwardIt>>{},
       thrust::plus<>{})) _CCCL_SUPPRESS_DEPRECATED_POP
 
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     template <typename ForwardIt,
               typename Sentinel,
               typename OutputIt,
               typename InitialValueType,
               typename BinaryOp,
               typename = std::enable_if_t<!is_execution_policy_v<::cuda::std::remove_cvref_t<ForwardIt>>>>
-    CCCL_DEPRECATED _CCCL_SUPPRESS_DEPRECATED_PUSH
+    CCCL_DEPRECATED
     auto operator()(ForwardIt&& first, Sentinel&& last, OutputIt&& out, InitialValueType&& init, BinaryOp&& op) const
     // ADL dispatch.
     THRUST_RETURNS(async_exclusive_scan(
@@ -271,13 +278,13 @@ struct exclusive_scan_fn final
       THRUST_FWD(init),
       THRUST_FWD(op))) _CCCL_SUPPRESS_DEPRECATED_POP
 
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     template <typename ForwardIt,
               typename Sentinel,
               typename OutputIt,
               typename InitialValueType,
               typename = std::enable_if_t<!is_execution_policy_v<::cuda::std::remove_cvref_t<ForwardIt>>>>
-    CCCL_DEPRECATED _CCCL_SUPPRESS_DEPRECATED_PUSH
-    auto operator()(ForwardIt&& first, Sentinel&& last, OutputIt&& out, InitialValueType&& init) const
+    CCCL_DEPRECATED auto operator()(ForwardIt&& first, Sentinel&& last, OutputIt&& out, InitialValueType&& init) const
     // ADL dispatch.
     THRUST_RETURNS(async_exclusive_scan(
       thrust::detail::select_system(iterator_system_t<::cuda::std::remove_cvref_t<ForwardIt>>{},
@@ -288,9 +295,8 @@ struct exclusive_scan_fn final
       THRUST_FWD(init),
       thrust::plus<>{})) _CCCL_SUPPRESS_DEPRECATED_POP
 
-    template <typename ForwardIt, typename Sentinel, typename OutputIt>
-    CCCL_DEPRECATED _CCCL_SUPPRESS_DEPRECATED_PUSH
-    auto operator()(ForwardIt&& first, Sentinel&& last, OutputIt&& out) const
+    _CCCL_SUPPRESS_DEPRECATED_PUSH template <typename ForwardIt, typename Sentinel, typename OutputIt>
+    CCCL_DEPRECATED auto operator()(ForwardIt&& first, Sentinel&& last, OutputIt&& out) const
     // ADL dispatch.
     THRUST_RETURNS(async_exclusive_scan(
       thrust::detail::select_system(iterator_system_t<::cuda::std::remove_cvref_t<ForwardIt>>{},

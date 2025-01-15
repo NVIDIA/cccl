@@ -70,13 +70,13 @@ using thrust::async::unimplemented::async_transform;
 // clang-format off
 struct transform_fn final
 {
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   template <
     typename DerivedPolicy
   , typename ForwardIt, typename Sentinel, typename OutputIt
   , typename UnaryOperation
   >
   _CCCL_HOST
-  _CCCL_SUPPRESS_DEPRECATED_PUSH
   static auto
   call(
     thrust::detail::execution_policy_base<DerivedPolicy> const& exec

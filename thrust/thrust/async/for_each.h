@@ -69,8 +69,9 @@ using thrust::async::unimplemented::async_for_each;
 
 struct for_each_fn final
 {
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename UnaryFunction>
-  _CCCL_HOST _CCCL_SUPPRESS_DEPRECATED_PUSH static auto
+  _CCCL_HOST static auto
   call(thrust::detail::execution_policy_base<DerivedPolicy> const& exec,
        ForwardIt&& first,
        Sentinel&& last,

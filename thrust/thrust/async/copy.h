@@ -73,8 +73,9 @@ using thrust::async::unimplemented::async_copy;
 
 struct copy_fn final
 {
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   template <typename FromPolicy, typename ToPolicy, typename ForwardIt, typename Sentinel, typename OutputIt>
-  _CCCL_HOST _CCCL_SUPPRESS_DEPRECATED_PUSH static auto
+  _CCCL_HOST static auto
   call(thrust::detail::execution_policy_base<FromPolicy> const& from_exec,
        thrust::detail::execution_policy_base<ToPolicy> const& to_exec,
        ForwardIt&& first,

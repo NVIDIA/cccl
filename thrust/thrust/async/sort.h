@@ -72,12 +72,13 @@ using thrust::async::unimplemented::async_stable_sort;
 // clang-format off
 struct stable_sort_fn final
 {
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   template <
     typename DerivedPolicy
   , typename ForwardIt, typename Sentinel, typename StrictWeakOrdering
   >
   _CCCL_HOST
-  _CCCL_SUPPRESS_DEPRECATED_PUSH
+
   static auto call(
     thrust::detail::execution_policy_base<DerivedPolicy> const& exec
   , ForwardIt&& first, Sentinel&& last
@@ -93,12 +94,13 @@ struct stable_sort_fn final
   )
   _CCCL_SUPPRESS_DEPRECATED_POP
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
   template <
     typename DerivedPolicy
   , typename ForwardIt, typename Sentinel
   >
   _CCCL_HOST
-  _CCCL_SUPPRESS_DEPRECATED_PUSH
+
   static auto call(
     thrust::detail::execution_policy_base<DerivedPolicy> const& exec
   , ForwardIt&& first, Sentinel&& last
