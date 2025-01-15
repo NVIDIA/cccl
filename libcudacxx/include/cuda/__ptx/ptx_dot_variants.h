@@ -97,26 +97,6 @@ enum class dot_scope
   sys
 };
 
-enum class dot_shfl_mode
-{
-  up,
-  down,
-  bfly,
-  idx
-};
-
-template <dot_shfl_mode __mode>
-using shfl_mode_t      = _CUDA_VSTD::integral_constant<dot_shfl_mode, __mode>;
-using shfl_mode_up_t   = shfl_mode_t<dot_shfl_mode::up>;
-using shfl_mode_down_t = shfl_mode_t<dot_shfl_mode::down>;
-using shfl_mode_bfly_t = shfl_mode_t<dot_shfl_mode::bfly>;
-using shfl_mode_idx_t  = shfl_mode_t<dot_shfl_mode::idx>;
-
-static constexpr shfl_mode_up_t shfl_mode_up{};
-static constexpr shfl_mode_down_t shfl_mode_down{};
-static constexpr shfl_mode_bfly_t shfl_mode_bfly{};
-static constexpr shfl_mode_idx_t shfl_mode_idx{};
-
 enum class dot_op
 {
   add,
