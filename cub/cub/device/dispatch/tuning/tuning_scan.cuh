@@ -29,8 +29,6 @@
 
 #include <cub/config.cuh>
 
-#include "cub/detail/detect_cuda_runtime.cuh"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -241,9 +239,9 @@ struct ScanPolicyWrapper : PolicyT
 };
 
 template <typename StaticPolicyT>
-struct ScanPolicyWrapper<StaticPolicyT,
-                         cuda::std::void_t<typename StaticPolicyT::ScanPolicy>,
-                         decltype(StaticPolicyT::ScanPolicy::LOAD_MODIFIER, void())> : StaticPolicyT
+struct ScanPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<decltype(StaticPolicyT::ScanPolicy::LOAD_MODIFIER)>>
+    : StaticPolicyT
+
 {
   CUB_RUNTIME_FUNCTION ScanPolicyWrapper(StaticPolicyT base)
       : StaticPolicyT(base)

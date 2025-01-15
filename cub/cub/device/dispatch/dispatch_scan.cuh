@@ -39,8 +39,6 @@
 
 #include <cub/util_namespace.cuh>
 
-#include "cub/agent/single_pass_scan_operators.cuh"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
