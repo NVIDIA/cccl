@@ -87,6 +87,14 @@ The following macros are used to check the target architecture. They comply with
 | ``_CCCL_ARCH(X86_64)``  |  X86 64-bit                         |
 +-------------------------+-------------------------------------+
 
+**128-bit Types Macros**:
+
++--------------------------+-------------------------------------+
+| ``_CCCL_HAS_INT128()``   |  Support for 128-bit integer        |
++--------------------------+-------------------------------------+
+| ``_CCCL_HAS_FLOAT128()`` |  Support for 128-bit floating-point |
++--------------------------+-------------------------------------+
+
 ----
 
 OS Macros
