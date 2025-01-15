@@ -87,14 +87,9 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::uint32_t __bit_log2(_Tp __t) noe
 {
   if (!_CUDA_VSTD::is_constant_evaluated() && sizeof(_Tp) <= 8)
   {
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                      (return ::cuda::ptx::bfind(__t);), //
-                      (return numeric_limits<_Tp>::digits - 1 - _CUDA_VSTD::countl_zero(__t);))
+    NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::ptx::bfind(__t);))
   }
-  else
-  {
-    return numeric_limits<_Tp>::digits - 1 - _CUDA_VSTD::countl_zero(__t);
-  }
+  return numeric_limits<_Tp>::digits - 1 - _CUDA_VSTD::countl_zero(__t);
 }
 
 _CCCL_TEMPLATE(class _Tp)
