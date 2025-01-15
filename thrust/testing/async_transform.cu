@@ -10,6 +10,8 @@
 #  include <unittest/unittest.h>
 #  include <unittest/util_async.h>
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 template <typename T>
 struct divide_by_2
 {
@@ -395,12 +397,16 @@ struct test_async_transform_using
       // When you import the customization points into the global namespace,
       // they should be selected instead of the synchronous algorithms.
       {
+        _CCCL_SUPPRESS_DEPRECATED_PUSH
         using namespace thrust::async;
         f0a = transform(d0a.begin(), d0a.end(), d1a.begin(), op);
+        _CCCL_SUPPRESS_DEPRECATED_POP
       }
       {
+        _CCCL_SUPPRESS_DEPRECATED_PUSH
         using thrust::async::transform;
         f0b = transform(d0b.begin(), d0b.end(), d1b.begin(), op);
+        _CCCL_SUPPRESS_DEPRECATED_POP
       }
 
       // ADL should find the synchronous algorithms.

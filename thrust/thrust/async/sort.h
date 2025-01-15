@@ -52,7 +52,7 @@ namespace unimplemented
 {
 
 template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename StrictWeakOrdering>
-_CCCL_HOST event<DerivedPolicy>
+CCCL_DEPRECATED _CCCL_HOST event<DerivedPolicy>
 async_stable_sort(thrust::execution_policy<DerivedPolicy>&, ForwardIt, Sentinel, StrictWeakOrdering)
 {
   THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<ForwardIt, false>::value),
@@ -75,6 +75,7 @@ struct stable_sort_fn final
   , typename ForwardIt, typename Sentinel, typename StrictWeakOrdering
   >
   _CCCL_HOST
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   static auto call(
     thrust::detail::execution_policy_base<DerivedPolicy> const& exec
   , ForwardIt&& first, Sentinel&& last
@@ -88,12 +89,14 @@ struct stable_sort_fn final
     , THRUST_FWD(comp)
     )
   )
+  _CCCL_SUPPRESS_DEPRECATED_POP
 
   template <
     typename DerivedPolicy
   , typename ForwardIt, typename Sentinel
   >
   _CCCL_HOST
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   static auto call(
     thrust::detail::execution_policy_base<DerivedPolicy> const& exec
   , ForwardIt&& first, Sentinel&& last
@@ -108,6 +111,7 @@ struct stable_sort_fn final
       >{}
     )
   )
+  _CCCL_SUPPRESS_DEPRECATED_POP
 
   template <typename ForwardIt, typename Sentinel, typename StrictWeakOrdering>
   _CCCL_HOST
@@ -135,8 +139,11 @@ struct stable_sort_fn final
   )
 
   template <typename... Args>
+  #if !_CCCL_CUDA_COMPILER(CLANG)
+  // clang in CUDA mode can only handle one attribute
   _CCCL_NODISCARD _CCCL_HOST
-  auto operator()(Args&&... args) const
+  #endif
+ CCCL_DEPRECATED auto operator()(Args&&... args) const
   THRUST_RETURNS(
     call(THRUST_FWD(args)...)
   )
@@ -145,13 +152,16 @@ struct stable_sort_fn final
 
 } // namespace stable_sort_detail
 
+// note: cannot add a CCCL_DEPRECATED here because the global variable is emitted into cudafe1.stub.c and we cannot
+// suppress the warning there
+//! deprecated [Since 2.8.0]
 _CCCL_GLOBAL_CONSTANT stable_sort_detail::stable_sort_fn stable_sort{};
 
 namespace fallback
 {
 
 template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename StrictWeakOrdering>
-_CCCL_HOST event<DerivedPolicy>
+CCCL_DEPRECATED _CCCL_HOST event<DerivedPolicy>
 async_sort(thrust::execution_policy<DerivedPolicy>& exec, ForwardIt&& first, Sentinel&& last, StrictWeakOrdering&& comp)
 {
   return async_stable_sort(thrust::detail::derived_cast(exec), THRUST_FWD(first), THRUST_FWD(last), THRUST_FWD(comp));
@@ -167,6 +177,7 @@ using thrust::async::fallback::async_sort;
 // clang-format off
 struct sort_fn final
 {
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   template <
     typename DerivedPolicy
   , typename ForwardIt, typename Sentinel, typename StrictWeakOrdering
@@ -185,6 +196,7 @@ struct sort_fn final
     , THRUST_FWD(comp)
     )
   )
+  _CCCL_SUPPRESS_DEPRECATED_POP
 
   template <
     typename DerivedPolicy
@@ -248,8 +260,11 @@ struct sort_fn final
   )
 
   template <typename... Args>
+  #if !_CCCL_CUDA_COMPILER(CLANG)
+  // clang in CUDA mode can only handle one attribute
   _CCCL_NODISCARD _CCCL_HOST
-  auto operator()(Args&&... args) const
+  #endif
+ CCCL_DEPRECATED auto operator()(Args&&... args) const
   THRUST_RETURNS(
     call(THRUST_FWD(args)...)
   )
@@ -258,6 +273,9 @@ struct sort_fn final
 
 } // namespace sort_detail
 
+// note: cannot add a CCCL_DEPRECATED here because the global variable is emitted into cudafe1.stub.c and we cannot
+// suppress the warning there
+//! deprecated [Since 2.8.0]
 _CCCL_GLOBAL_CONSTANT sort_detail::sort_fn sort{};
 
 /*! \endcond
