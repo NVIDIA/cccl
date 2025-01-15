@@ -224,8 +224,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
 {
   using __base = __pair_base<_T1, _T2>;
 
-  typedef _T1 first_type;
-  typedef _T2 second_type;
+  using first_type  = _T1;
+  using second_type = _T2;
 
   template <class _Constraints                                               = __pair_constraints<_T1, _T2>,
             enable_if_t<_Constraints::__explicit_default_constructible, int> = 0>
@@ -645,13 +645,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, pair<_T1, _T2>>
 template <class _T1, class _T2>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<0, pair<_T1, _T2>>
 {
-  typedef _CCCL_NODEBUG_ALIAS _T1 type;
+  using type _CCCL_NODEBUG_ALIAS = _T1;
 };
 
 template <class _T1, class _T2>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<1, pair<_T1, _T2>>
 {
-  typedef _CCCL_NODEBUG_ALIAS _T2 type;
+  using type _CCCL_NODEBUG_ALIAS = _T2;
 };
 
 template <size_t _Ip>

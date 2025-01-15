@@ -45,12 +45,12 @@ using _If _CCCL_NODEBUG_ALIAS = typename _IfImpl<_Cond>::template _Select<_IfRes
 template <bool _Bp, class _If, class _Then>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional
 {
-  typedef _If type;
+  using type = _If;
 };
 template <class _If, class _Then>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional<false, _If, _Then>
 {
-  typedef _Then type;
+  using type = _Then;
 };
 
 template <bool _Bp, class _If, class _Then>

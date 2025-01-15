@@ -32,38 +32,38 @@ _CCCL_PUSH_MACROS
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // Mutex
-typedef void* __cccl_mutex_t;
+using __cccl_mutex_t = void*;
 #  define _LIBCUDACXX_MUTEX_INITIALIZER 0
 
 #  if defined(_M_IX86) || defined(__i386__) || defined(_M_ARM) || defined(__arm__)
-typedef void* __cccl_recursive_mutex_t[6];
+using __cccl_recursive_mutex_t = void* [6];
 #  elif defined(_M_AMD64) || defined(__x86_64__) || defined(_M_ARM64) || defined(__aarch64__)
-typedef void* __cccl_recursive_mutex_t[5];
+using __cccl_recursive_mutex_t = void* [5];
 #  else
 #    error Unsupported architecture
 #  endif
 
 // Condition Variable
-typedef void* __cccl_condvar_t;
+using __cccl_condvar_t = void*;
 #  define _LIBCUDACXX_CONDVAR_INITIALIZER 0
 
 // Semaphore
-typedef void* __cccl_semaphore_t;
+using __cccl_semaphore_t = void*;
 
 // Execute Once
-typedef void* __cccl_exec_once_flag;
+using __cccl_exec_once_flag = void*;
 #  define _LIBCUDACXX_EXEC_ONCE_INITIALIZER 0
 
 // Thread ID
-typedef long __cccl_thread_id;
+using __cccl_thread_id = long;
 
 // Thread
 #  define _LIBCUDACXX_NULL_THREAD 0U
 
-typedef void* __cccl_thread_t;
+using __cccl_thread_t = void*;
 
 // Thread Local Storage
-typedef long __cccl_tls_key;
+using __cccl_tls_key = long;
 
 #  define _LIBCUDACXX_TLS_DESTRUCTOR_CC __stdcall
 

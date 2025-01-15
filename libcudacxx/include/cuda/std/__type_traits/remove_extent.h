@@ -38,17 +38,17 @@ using remove_extent_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_EXTENT(_Tp);
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_extent
 {
-  typedef _Tp type;
+  using type = _Tp;
 };
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_extent<_Tp[]>
 {
-  typedef _Tp type;
+  using type = _Tp;
 };
 template <class _Tp, size_t _Np>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_extent<_Tp[_Np]>
 {
-  typedef _Tp type;
+  using type = _Tp;
 };
 
 template <class _Tp>

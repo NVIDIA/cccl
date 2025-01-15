@@ -74,8 +74,8 @@ template <class _InputIter,
           class                   = enable_if_t<is_integral<_IntegralDistance>::value>>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void advance(_InputIter& __i, _Distance __orig_n)
 {
-  typedef typename iterator_traits<_InputIter>::difference_type _Difference;
-  _Difference __n = static_cast<_Difference>(_CUDA_VSTD::__convert_to_integral(__orig_n));
+  using _Difference = typename iterator_traits<_InputIter>::difference_type;
+  _Difference __n   = static_cast<_Difference>(_CUDA_VSTD::__convert_to_integral(__orig_n));
   _CCCL_ASSERT(__n >= 0 || __is_cpp17_bidirectional_iterator<_InputIter>::value,
                "Attempt to advance(it, n) with negative n on a non-bidirectional iterator");
   _CUDA_VSTD::__advance(__i, __n, typename iterator_traits<_InputIter>::iterator_category());
