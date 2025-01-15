@@ -250,7 +250,7 @@ public:
           auto const next_end =
             (uniques_index == count - 1) ? out_keys.size() : h_unique_indexes_out[uniques_index + 1];
           REQUIRE(h_unique_keys_out[uniques_index] == i);
-          REQUIRE(next_end - h_unique_indexes_out[uniques_index] == segment_histogram[i]);
+          REQUIRE(next_end - h_unique_indexes_out[uniques_index] == static_cast<std::size_t>(segment_histogram[i]));
           current_offset += segment_histogram[i];
           uniques_index++;
         }
