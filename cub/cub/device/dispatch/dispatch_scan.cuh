@@ -248,7 +248,7 @@ struct DispatchScan
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t
   Invoke(InitKernelT init_kernel, ScanKernelT scan_kernel, ActivePolicyT policy = {})
   {
-    using ScanTileStateT = typename cub::ScanTileState<AccumT>;
+    using ScanTileStateT = typename KernelSource::ScanTileStateT;
 
     // TODO(ashwin): Don't know how to handle this.
     // `LOAD_LDG` makes in-place execution UB and doesn't lead to better
@@ -396,7 +396,7 @@ struct DispatchScan
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT active_policy = {})
   {
-    using ScanTileStateT = typename cub::ScanTileState<AccumT>;
+    using ScanTileStateT = typename KernelSource::ScanTileStateT;
     auto wrapped_policy  = MakeScanPolicyWrapper(active_policy);
     // Ensure kernels are instantiated.
     return Invoke(kernel_source.ScanInitKernel(), kernel_source.ScanKernel(), wrapped_policy);
