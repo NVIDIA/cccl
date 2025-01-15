@@ -34,6 +34,9 @@ namespace cuda::experimental::stf
 template <typename T>
 class stackable_logical_data;
 
+template <typename T>
+class stackable_task_dep;
+
 /**
  * @brief Base class with a virtual pop method to enable type erasure
  *
@@ -272,6 +275,11 @@ public:
     return get_ctx(depth()).host_launch(::std::forward<Pack>(pack)...);
   }
 
+  auto task_fence()
+  {
+    return get_ctx(depth()).task_fence();
+  }
+
   void track_pushed_data(int data_id, ::std::shared_ptr<stackable_logical_data_impl_base> data_impl)
   {
     pimpl->track_pushed_data(data_id, mv(data_impl));
@@ -494,8 +502,91 @@ public:
     return *this;
   }
 
+  auto get_impl()
+  {
+    return pimpl;
+  }
+
 private:
   ::std::shared_ptr<impl> pimpl;
 };
+
+template <typename T>
+class stackable_task_dep : public task_dep<T, ::std::monostate, false>
+{
+public:
+  stackable_task_dep(stackable_logical_data<T> _d, access_mode m, data_place _dplace)
+      : task_dep<T, ::std::monostate, false>(d.get_ld(), m, _dplace)
+      , d(mv(_d))
+      , dplace(mv(_dplace))
+  {}
+
+private:
+  stackable_logical_data<T> d;
+  data_place dplace;
+};
+
+#ifdef UNITTESTED_FILE
+#  ifdef __CUDACC__
+namespace reserved
+{
+
+template <typename T>
+static __global__ void kernel_set(T *addr, T val) {printf("SETTING ADDR %p at %d\n",addr, val); *addr = val; }
+
+template <typename T>
+static __global__ void kernel_add(T *addr, T val) {*addr += val; }
+
+template <typename T>
+static __global__ void kernel_check_value(T *addr, T val) { printf("CHECK %d EXPECTED %d\n", *addr, val); if (*addr != val) ::cuda::std::terminate();  }
+
+} // namespace reserved
+
+UNITTEST("stackable task_fence")
+{
+  stackable_ctx ctx;
+  auto lA = ctx.logical_data(shape_of<slice<int>>(1024));
+  ctx.push();
+  lA.push(access_mode::write, data_place::current_device());
+  ctx.task(lA.write())->*[](cudaStream_t stream, auto a) { reserved::kernel_set<<<1, 1, 0, stream>>>(a.data_handle(), 42); };
+  ctx.task_fence();
+  ctx.task(lA.read())->*[](cudaStream_t stream, auto a) { reserved::kernel_check_value<<<1, 1, 0, stream>>>(a.data_handle(), 44); };
+  ctx.pop();
+  ctx.finalize();
+};
+
+UNITTEST("stackable host_launch")
+{
+  stackable_ctx ctx;
+  auto lA = ctx.logical_data(shape_of<slice<int>>(1024));
+  ctx.push();
+  lA.push(access_mode::write, data_place::current_device());
+  ctx.task(lA.write())->*[](cudaStream_t stream, auto a) { reserved::kernel_set<<<1, 1, 0, stream>>>(a.data_handle(), 42); };
+  ctx.host_launch(lA.read())->*[](auto a){ _CCCL_ASSERT(a(0) == 42, "invalid value"); };
+  ctx.pop();
+  ctx.finalize();
+};
+
+UNITTEST("stackable promote mode")
+{
+  int A[1024];
+  stackable_ctx ctx;
+  auto lA = ctx.logical_data(A);
+  ctx.push();
+
+  lA.push(access_mode::read, data_place::current_device());
+  ctx.task(lA.read())->*[](cudaStream_t, auto) {};
+  lA.pop();
+
+  lA.push(access_mode::rw, data_place::current_device());
+  ctx.task(lA.rw())->*[](cudaStream_t, auto) {};
+  lA.pop();
+
+  ctx.pop();
+  ctx.finalize();
+};
+
+#endif // __CUDACC__
+#endif // UNITTESTED_FILE
 
 } // end namespace cuda::experimental::stf
