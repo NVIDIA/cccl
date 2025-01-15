@@ -105,25 +105,13 @@ public:
   private:
     using __nested_mapping_type = typename _Layout::template mapping<__detail::__transpose_extents_t<_Extents>>;
 
-    _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __required_span_size_noexcept()
-    {
-      return noexcept(__nested_mapping_.required_span_size());
-    }
+    static constexpr bool __required_span_size_noexcept = noexcept(nested_layout_type{}.required_span_size());
 
-    _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __is_nested_unique_noexcept()
-    {
-      return noexcept(__nested_mapping_.is_unique());
-    }
+    static constexpr bool __is_nested_unique_noexcept = noexcept(nested_layout_type{}.is_unique());
 
-    _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __is_exhaustive_noexcept()
-    {
-      return noexcept(__nested_mapping_.is_exhaustive());
-    }
+    static constexpr bool __is_exhaustive_noexcept = noexcept(nested_layout_type{}.is_exhaustive());
 
-    _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __is_strided_noexcept()
-    {
-      return noexcept(__nested_mapping_.is_strided());
-    }
+    static constexpr bool __is_strided_noexcept = noexcept(nested_layout_type{}.is_strided());
 
   public:
     using extents_type = _Extents;
@@ -143,7 +131,7 @@ public:
     }
 
     _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type required_span_size() const
-      noexcept(__required_span_size_noexcept())
+      noexcept(__required_span_size_noexcept)
     {
       return __nested_mapping_.required_span_size();
     }
@@ -176,17 +164,17 @@ public:
       return __nested_mapping_type::is_always_strided();
     }
 
-    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_unique() const noexcept(__is_nested_unique_noexcept())
+    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_unique() const noexcept(__is_nested_unique_noexcept)
     {
       return __nested_mapping_.is_unique();
     }
 
-    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_exhaustive() const noexcept(__is_exhaustive_noexcept())
+    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_exhaustive() const noexcept(__is_exhaustive_noexcept)
     {
       return __nested_mapping_.is_exhaustive();
     }
 
-    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_strided() const noexcept(__is_strided_noexcept())
+    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_strided() const noexcept(__is_strided_noexcept)
     {
       return __nested_mapping_.is_strided();
     }
