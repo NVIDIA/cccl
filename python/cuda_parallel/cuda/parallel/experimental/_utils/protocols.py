@@ -70,7 +70,7 @@ def is_contiguous(arr: DeviceArrayLike) -> bool:
         return False
 
 
-def _validate_and_get_stream(stream) -> Optional[int]:
+def validate_and_get_stream(stream) -> Optional[int]:
     # null stream is allowed
     if stream is None:
         return None

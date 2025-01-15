@@ -103,7 +103,7 @@ class _Reduce:
         )
         _dtype_validation(self._ctor_d_out_dtype, cai.get_dtype(d_out))
         _dtype_validation(self._ctor_init_dtype, h_init.dtype)
-        stream_handle = protocols._validate_and_get_stream(stream)
+        stream_handle = protocols.validate_and_get_stream(stream)
         bindings = get_bindings()
         if temp_storage is None:
             temp_storage_bytes = ctypes.c_size_t()
