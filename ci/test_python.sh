@@ -19,6 +19,9 @@ python -m venv /tmp/cuda_cooperative_venv
 . /tmp/cuda_cooperative_venv/bin/activate
 echo 'cuda-cccl @ file:///home/coder/cccl/python/cuda_cccl' > /tmp/cuda-cccl_constraints.txt
 run_command "⚙️  Pip install cuda_cooperative" pip install -c /tmp/cuda-cccl_constraints.txt .[test]
+begin_group "⚙️ cuda-cooperative site-packages"
+pip freeze
+end_group "⚙️ cuda-cooperative site-packages"
 run_command "🚀  Pytest cuda_cooperative" python -m pytest -v ./tests
 deactivate
 
@@ -31,6 +34,9 @@ python -m venv /tmp/cuda_parallel_venv
 . /tmp/cuda_parallel_venv/bin/activate
 echo 'cuda-cccl @ file:///home/coder/cccl/python/cuda_cccl' > /tmp/cuda-cccl_constraints.txt
 run_command "⚙️  Pip install cuda_parallel" pip install -c /tmp/cuda-cccl_constraints.txt .[test]
+begin_group "⚙️ cuda-parallel site-packages"
+pip freeze
+end_group "⚙️ cuda-parallel site-packages"
 run_command "🚀  Pytest cuda_parallel" python -m pytest -v ./tests
 deactivate
 
