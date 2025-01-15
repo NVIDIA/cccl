@@ -7,42 +7,43 @@
 //
 //===----------------------------------------------------------------------===//
 
+// Disable CCCL assertions in this test to test the erroneous behavior
+#undef CCCL_ENABLE_ASSERTIONS
+
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 #include <cuda/std/cstdlib>
 #include <cuda/std/limits>
+#include <cuda/std/type_traits>
 
 #include "test_macros.h"
+#include <nv/target>
 
 template <class T>
-_LIBCUDACXX_ALIGNED_ALLOC_EXSPACE void
-test_aligned_alloc_success(cuda::std::size_t n, cuda::std::size_t align = TEST_ALIGNOF(T))
+__host__ __device__ void
+test_aligned_alloc(bool expect_success, cuda::std::size_t n, cuda::std::size_t align = TEST_ALIGNOF(T))
 {
-#if (TEST_STD_VER >= 17 && !_CCCL_COMPILER(MSVC)) || (_CCCL_HAS_CUDA_COMPILER && !_CCCL_CUDA_COMPILER(CLANG))
-  static_assert(noexcept(cuda::std::aligned_alloc(n * sizeof(T), align)), "");
+  if (expect_success)
+  {
+    static_assert(noexcept(cuda::std::aligned_alloc(n * sizeof(T), align)), "");
 
-  T* ptr = static_cast<T*>(cuda::std::aligned_alloc(n * sizeof(T), align));
+    T* ptr = static_cast<T*>(cuda::std::aligned_alloc(n * sizeof(T), align));
 
-  // check that the memory was allocated
-  assert(ptr != nullptr);
+    // check that the memory was allocated
+    assert(ptr != nullptr);
 
-  // check memory alignment
-  assert(((align - 1) & reinterpret_cast<cuda::std::uintptr_t>(ptr)) == 0);
+    // check memory alignment
+    assert(((align - 1) & reinterpret_cast<cuda::std::uintptr_t>(ptr)) == 0);
 
-  cuda::std::free(ptr);
-#endif // (TEST_STD_VER >= 17 && !_CCCL_COMPILER(MSVC)) || (_CCCL_HAS_CUDA_COMPILER && !_CCCL_CUDA_COMPILER(CLANG))
-}
+    cuda::std::free(ptr);
+  }
+  else
+  {
+    T* ptr = static_cast<T*>(cuda::std::aligned_alloc(n * sizeof(T), align));
 
-template <class T>
-_LIBCUDACXX_ALIGNED_ALLOC_EXSPACE void
-test_aligned_alloc_fail(cuda::std::size_t n, cuda::std::size_t align = TEST_ALIGNOF(T))
-{
-#if (TEST_STD_VER >= 17 && !_CCCL_COMPILER(MSVC)) || (_CCCL_HAS_CUDA_COMPILER && !_CCCL_CUDA_COMPILER(CLANG))
-  T* ptr = static_cast<T*>(cuda::std::aligned_alloc(n * sizeof(T), align));
-
-  // check that the memory allocation failed
-  assert(ptr == nullptr);
-#endif // (TEST_STD_VER >= 17 && !_CCCL_COMPILER(MSVC)) || (_CCCL_HAS_CUDA_COMPILER && !_CCCL_CUDA_COMPILER(C
+    // check that the memory allocation failed
+    assert(ptr == nullptr);
+  }
 }
 
 struct BigStruct
@@ -60,27 +61,40 @@ struct TEST_ALIGNAS(128) OverAlignedStruct
   char data[32];
 };
 
-_LIBCUDACXX_ALIGNED_ALLOC_EXSPACE void test()
+__host__ __device__ bool should_expect_success()
 {
-  test_aligned_alloc_success<int>(10, 4);
-  test_aligned_alloc_success<char>(128, 8);
-  test_aligned_alloc_success<double>(8, 32);
-  test_aligned_alloc_success<BigStruct>(4, 128);
-  test_aligned_alloc_success<AlignedStruct>(16);
-  test_aligned_alloc_success<OverAlignedStruct>(1);
-  test_aligned_alloc_success<OverAlignedStruct>(1, 256);
+  bool host_has_aligned_alloc = false;
+#if TEST_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC)
+  host_has_aligned_alloc = true;
+#endif // ^^^ TEST_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC) ^^^
 
-  test_aligned_alloc_fail<int>(10, 3);
+  bool device_has_aligned_alloc = false;
+#if !_CCCL_CUDA_COMPILER(CLANG)
+  device_has_aligned_alloc = true;
+#endif // ^^^ !_CCCL_CUDA_COMPILER(CLANG) ^^^
+
+  unused(host_has_aligned_alloc, device_has_aligned_alloc);
+
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (return host_has_aligned_alloc;), (return device_has_aligned_alloc;))
+}
+
+__host__ __device__ void test()
+{
+  const bool expect_success = should_expect_success();
+
+  test_aligned_alloc<int>(expect_success, 10, 4);
+  test_aligned_alloc<char>(expect_success, 128, 8);
+  test_aligned_alloc<double>(expect_success, 8, 32);
+  test_aligned_alloc<BigStruct>(expect_success, 4, 128);
+  test_aligned_alloc<AlignedStruct>(expect_success, 16);
+  test_aligned_alloc<OverAlignedStruct>(expect_success, 1);
+  test_aligned_alloc<OverAlignedStruct>(expect_success, 1, 256);
+
+  test_aligned_alloc<int>(false, 10, 3);
 }
 
 int main(int, char**)
 {
-#if _LIBCUDACXX_HAS_ALIGNED_ALLOC_HOST
-  NV_IF_TARGET(NV_IS_HOST, test();)
-#endif // _LIBCUDACXX_HAS_ALIGNED_ALLOC_HOST
-#if _LIBCUDACXX_HAS_ALIGNED_ALLOC_DEVICE
-  NV_IF_TARGET(NV_IS_DEVICE, test();)
-#endif // _LIBCUDACXX_HAS_ALIGNED_ALLOC_DEVICE
-
+  test();
   return 0;
 }
