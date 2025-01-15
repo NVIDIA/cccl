@@ -897,7 +897,7 @@ private:
         // subsequent loads
         temp_storage.valid_items = valid_items;
       }
-      CTA_SYNC();
+      __syncthreads();
       StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items, temp_storage.valid_items);
     }
   };
@@ -980,7 +980,7 @@ private:
         // subsequent loads
         temp_storage.valid_items = valid_items;
       }
-      CTA_SYNC();
+      __syncthreads();
       StoreDirectWarpStriped(linear_tid, block_itr, items, temp_storage.valid_items);
     }
   };
@@ -1063,7 +1063,7 @@ private:
         // subsequent loads
         temp_storage.valid_items = valid_items;
       }
-      CTA_SYNC();
+      __syncthreads();
       StoreDirectWarpStriped(linear_tid, block_itr, items, temp_storage.valid_items);
     }
   };

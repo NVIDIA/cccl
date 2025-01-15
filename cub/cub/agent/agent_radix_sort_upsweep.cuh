@@ -52,6 +52,8 @@
 #include <cub/util_type.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
+#include <cuda/ptx>
+
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -298,7 +300,7 @@ struct AgentRadixSortUpsweep
   _CCCL_DEVICE _CCCL_FORCEINLINE void UnpackDigitCounts()
   {
     unsigned int warp_id  = threadIdx.x >> LOG_WARP_THREADS;
-    unsigned int warp_tid = LaneId();
+    unsigned int warp_tid = ::cuda::ptx::get_sreg_laneid();
 
 #pragma unroll
     for (int LANE = 0; LANE < LANES_PER_WARP; LANE++)
@@ -331,7 +333,7 @@ struct AgentRadixSortUpsweep
     LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_keys_in + block_offset, keys);
 
     // Prevent hoisting
-    CTA_SYNC();
+    __syncthreads();
 
     // Bucket tile of keys
     Iterate<0, KEYS_PER_THREAD>::BucketKeys(*this, keys);
@@ -385,12 +387,12 @@ struct AgentRadixSortUpsweep
         block_offset += TILE_ITEMS;
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Aggregate back into local_count registers to prevent overflow
       UnpackDigitCounts();
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Reset composite counters in lanes
       ResetDigitCounters();
@@ -406,7 +408,7 @@ struct AgentRadixSortUpsweep
     // Process partial tile if necessary
     ProcessPartialTile(block_offset, block_end);
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Aggregate back into local_count registers
     UnpackDigitCounts();
@@ -419,7 +421,7 @@ struct AgentRadixSortUpsweep
   _CCCL_DEVICE _CCCL_FORCEINLINE void ExtractCounts(OffsetT* counters, int bin_stride = 1, int bin_offset = 0)
   {
     unsigned int warp_id  = threadIdx.x >> LOG_WARP_THREADS;
-    unsigned int warp_tid = LaneId();
+    unsigned int warp_tid = ::cuda::ptx::get_sreg_laneid();
 
 // Place unpacked digit counters in shared memory
 #pragma unroll
@@ -440,7 +442,7 @@ struct AgentRadixSortUpsweep
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
 // Rake-reduce bin_count reductions
 
@@ -499,7 +501,7 @@ struct AgentRadixSortUpsweep
   _CCCL_DEVICE _CCCL_FORCEINLINE void ExtractCounts(OffsetT (&bin_count)[BINS_TRACKED_PER_THREAD])
   {
     unsigned int warp_id  = threadIdx.x >> LOG_WARP_THREADS;
-    unsigned int warp_tid = LaneId();
+    unsigned int warp_tid = ::cuda::ptx::get_sreg_laneid();
 
 // Place unpacked digit counters in shared memory
 #pragma unroll
@@ -520,7 +522,7 @@ struct AgentRadixSortUpsweep
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
 // Rake-reduce bin_count reductions
 #pragma unroll

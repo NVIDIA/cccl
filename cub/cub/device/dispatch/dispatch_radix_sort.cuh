@@ -161,7 +161,7 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltUp
 
   upsweep.ProcessRegion(even_share.block_offset, even_share.block_end);
 
-  CTA_SYNC();
+  __syncthreads();
 
   // Write out digit counts (striped)
   upsweep.template ExtractCounts<IS_DESCENDING>(d_spine, gridDim.x, blockIdx.x);
@@ -432,7 +432,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THRE
   // Load keys
   BlockLoadKeys(temp_storage.load_keys).Load(d_keys_in, keys, num_items, default_key);
 
-  CTA_SYNC();
+  __syncthreads();
 
   // Load values
   if (!KEYS_ONLY)
@@ -443,7 +443,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THRE
 
     BlockLoadValues(temp_storage.load_values).Load(d_values_in, values, num_items);
 
-    CTA_SYNC();
+    __syncthreads();
   }
 
   // Sort tile
@@ -616,13 +616,13 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
   BlockUpsweepT upsweep(temp_storage.upsweep, d_keys_in, current_bit, pass_bits, decomposer);
   upsweep.ProcessRegion(segment_begin, segment_end);
 
-  CTA_SYNC();
+  __syncthreads();
 
   // The count of each digit value in this pass (valid in the first RADIX_DIGITS threads)
   OffsetT bin_count[BINS_TRACKED_PER_THREAD];
   upsweep.ExtractCounts(bin_count);
 
-  CTA_SYNC();
+  __syncthreads();
 
   if (IS_DESCENDING)
   {
@@ -638,7 +638,7 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
 #pragma unroll
     for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
@@ -677,7 +677,7 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
 #pragma unroll
     for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
@@ -691,7 +691,7 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
     }
   }
 
-  CTA_SYNC();
+  __syncthreads();
 
   // Downsweep
   BlockDownsweepT downsweep(

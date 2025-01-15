@@ -54,6 +54,7 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/iterator/constant_input_iterator.cuh>
 
+#include <cuda/ptx>
 #include <cuda/std/type_traits>
 
 #include <iterator>
@@ -465,7 +466,7 @@ struct AgentRle
   {
     // Perform warpscans
     unsigned int warp_id = ((WARPS == 1) ? 0 : threadIdx.x / WARP_THREADS);
-    int lane_id          = LaneId();
+    int lane_id          = ::cuda::ptx::get_sreg_laneid();
 
     LengthOffsetPair identity;
     identity.key   = 0;
@@ -501,7 +502,7 @@ struct AgentRle
       temp_storage.aliasable.scan_storage.warp_aggregates.Alias()[warp_id] = thread_inclusive;
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Accumulate total selected and the warp-wide prefix
 
@@ -531,7 +532,7 @@ struct AgentRle
 
     // Ensure all threads have read warp aggregates before temp_storage is repurposed in the
     // subsequent scatter stage
-    CTA_SYNC();
+    __syncthreads();
   }
 
   //---------------------------------------------------------------------
@@ -551,7 +552,7 @@ struct AgentRle
     Int2Type<true> is_warp_time_slice)
   {
     unsigned int warp_id = ((WARPS == 1) ? 0 : threadIdx.x / WARP_THREADS);
-    int lane_id          = LaneId();
+    int lane_id          = ::cuda::ptx::get_sreg_laneid();
 
     // Locally compact items within the warp (first warp)
     if (warp_id == 0)
@@ -564,7 +565,7 @@ struct AgentRle
 #pragma unroll
     for (int SLICE = 1; SLICE < WARPS; ++SLICE)
     {
-      CTA_SYNC();
+      __syncthreads();
 
       if (warp_id == SLICE)
       {
@@ -608,7 +609,7 @@ struct AgentRle
     Int2Type<false> is_warp_time_slice)
   {
     unsigned int warp_id = ((WARPS == 1) ? 0 : threadIdx.x / WARP_THREADS);
-    int lane_id          = LaneId();
+    int lane_id          = ::cuda::ptx::get_sreg_laneid();
 
     // Unzip
     OffsetT run_offsets[ITEMS_PER_THREAD];
@@ -624,7 +625,7 @@ struct AgentRle
     WarpExchangeOffsets(temp_storage.aliasable.scatter_aliasable.exchange_offsets[warp_id])
       .ScatterToStriped(run_offsets, thread_num_runs_exclusive_in_warp);
 
-    WARP_SYNC(0xffffffff);
+    __syncwarp(0xffffffff);
 
     WarpExchangeLengths(temp_storage.aliasable.scatter_aliasable.exchange_lengths[warp_id])
       .ScatterToStriped(run_lengths, thread_num_runs_exclusive_in_warp);
@@ -762,7 +763,7 @@ struct AgentRle
 
       if (SYNC_AFTER_LOAD)
       {
-        CTA_SYNC();
+        __syncthreads();
       }
 
       // Set flags
@@ -848,7 +849,7 @@ struct AgentRle
 
       if (SYNC_AFTER_LOAD)
       {
-        CTA_SYNC();
+        __syncthreads();
       }
 
       // Set flags
@@ -878,7 +879,7 @@ struct AgentRle
         }
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
       LengthOffsetPair tile_exclusive_in_global = temp_storage.tile_exclusive;
 

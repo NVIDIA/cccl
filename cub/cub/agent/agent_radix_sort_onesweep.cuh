@@ -49,6 +49,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/ptx>
 #include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
@@ -279,7 +280,7 @@ struct AgentRadixSortOnesweep
           } while (value_j == 0);
 
           inc_sum += value_j & LOOKBACK_VALUE_MASK;
-          want_mask = WARP_BALLOT((value_j & LOOKBACK_GLOBAL_MASK) == 0, want_mask);
+          want_mask = __ballot_sync(want_mask, (value_j & LOOKBACK_GLOBAL_MASK) == 0);
           if (value_j & LOOKBACK_GLOBAL_MASK)
           {
             break;
@@ -349,7 +350,7 @@ struct AgentRadixSortOnesweep
         short_circuit = short_circuit || bins[u] == TILE_ITEMS;
       }
     }
-    short_circuit = CTA_SYNC_OR(short_circuit);
+    short_circuit = __syncthreads_or(short_circuit);
     if (!short_circuit)
     {
       return;
@@ -377,7 +378,7 @@ struct AgentRadixSortOnesweep
     LoadBinsToOffsetsGlobal(offsets);
     LookbackGlobal(bins);
     UpdateBinsGlobal(bins, offsets);
-    CTA_SYNC();
+    __syncthreads();
 
     // scatter the keys
     OffsetT global_offset = s.global_offsets[common_bin];
@@ -483,7 +484,7 @@ struct AgentRadixSortOnesweep
       {
         d_keys_out[global_idx] = Twiddle::Out(key, decomposer);
       }
-      WARP_SYNC(WARP_MASK);
+      __syncwarp(WARP_MASK);
     }
   }
 
@@ -501,7 +502,7 @@ struct AgentRadixSortOnesweep
       {
         d_values_out[global_idx] = value;
       }
-      WARP_SYNC(WARP_MASK);
+      __syncwarp(WARP_MASK);
     }
   }
 
@@ -527,7 +528,7 @@ struct AgentRadixSortOnesweep
       {
         num_writes -= int(global_idx + 1) % ALIGN;
       }
-      num_writes = SHFL_IDX_SYNC(num_writes, last_lane, WARP_MASK);
+      num_writes = __shfl_sync(WARP_MASK, num_writes, last_lane);
       if (lane < num_writes)
       {
         ThreadStore<CACHE_MODIFIER>(&d_keys_out[global_idx], key_out);
@@ -600,10 +601,10 @@ struct AgentRadixSortOnesweep
     LoadValues(block_idx * TILE_ITEMS, values);
 
     // scatter values
-    CTA_SYNC();
+    __syncthreads();
     ScatterValuesShared(values, ranks);
 
-    CTA_SYNC();
+    __syncthreads();
     ScatterValuesGlobal(digits);
   }
 
@@ -625,7 +626,7 @@ struct AgentRadixSortOnesweep
       .RankKeys(keys, ranks, digit_extractor(), exclusive_digit_prefix, CountsCallback(*this, bins, keys));
 
     // scatter keys in shared memory
-    CTA_SYNC();
+    __syncthreads();
     ScatterKeysShared(keys, ranks);
 
     // compute global offsets
@@ -634,7 +635,7 @@ struct AgentRadixSortOnesweep
     UpdateBinsGlobal(bins, exclusive_digit_prefix);
 
     // scatter keys in global memory
-    CTA_SYNC();
+    __syncthreads();
     ScatterKeysGlobal();
 
     // scatter values if necessary
@@ -669,7 +670,7 @@ struct AgentRadixSortOnesweep
       , current_bit(current_bit)
       , num_bits(num_bits)
       , warp(threadIdx.x / WARP_THREADS)
-      , lane(LaneId())
+      , lane(::cuda::ptx::get_sreg_laneid())
       , decomposer(decomposer)
   {
     // initialization
@@ -677,7 +678,7 @@ struct AgentRadixSortOnesweep
     {
       s.block_idx = atomicAdd(d_ctrs, 1);
     }
-    CTA_SYNC();
+    __syncthreads();
     block_idx  = s.block_idx;
     full_block = (block_idx + 1) * TILE_ITEMS <= num_items;
   }

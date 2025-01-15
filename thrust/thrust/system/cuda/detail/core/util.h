@@ -681,7 +681,7 @@ THRUST_RUNTIME_FUNCTION inline cudaError_t sync_stream(cudaStream_t stream)
 
 inline void _CCCL_DEVICE sync_threadblock()
 {
-  cub::CTA_SYNC();
+  __syncthreads();
 }
 
 #define CUDA_CUB_RET_IF_FAIL(e)                \
