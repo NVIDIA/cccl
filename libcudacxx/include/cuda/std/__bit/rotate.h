@@ -53,7 +53,7 @@ template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer<_Tp>::value, _Tp>
 rotl(_Tp __t, unsigned int __cnt) noexcept
 {
-  return _CUDA_VSTD::__rotl(__t, __cnt);
+  return __rotl(__t, __cnt);
 }
 
 // rotr
@@ -61,7 +61,7 @@ template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer<_Tp>::value, _Tp>
 rotr(_Tp __t, unsigned int __cnt) noexcept
 {
-  return _CUDA_VSTD::__rotr(__t, __cnt);
+  return __rotr(__t, __cnt);
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
