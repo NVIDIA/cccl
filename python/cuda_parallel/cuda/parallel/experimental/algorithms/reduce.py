@@ -86,7 +86,13 @@ class _Reduce:
             raise ValueError("Error building reduce")
 
     def __call__(
-        self, temp_storage, d_in, d_out, num_items: int, h_init: np.ndarray | GpuStruct, stream=None
+        self,
+        temp_storage,
+        d_in,
+        d_out,
+        num_items: int,
+        h_init: np.ndarray | GpuStruct,
+        stream=None,
     ):
         d_in_cccl = cccl.to_cccl_iter(d_in)
         if d_in_cccl.type.value == cccl.IteratorKind.ITERATOR:
@@ -101,7 +107,7 @@ class _Reduce:
             self._ctor_d_in_cccl_type_enum_name,
             cccl.type_enum_as_name(d_in_cccl.value_type.type.value),
         )
-        _dtype_validation(self._ctor_d_out_dtype, cai.get_dtype(d_out))
+        _dtype_validation(self._ctor_d_out_dtype, protocols.get_dtype(d_out))
         _dtype_validation(self._ctor_init_dtype, h_init.dtype)
         stream_handle = protocols.validate_and_get_stream(stream)
         bindings = get_bindings()
