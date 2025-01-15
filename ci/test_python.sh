@@ -8,26 +8,31 @@ print_environment_details
 
 fail_if_no_gpu
 
-readonly prefix="${BUILD_DIR}/python/"
-export PYTHONPATH="${prefix}:${PYTHONPATH:-}"
-
-pushd ../python/cuda_cccl >/dev/null
-
-run_command "⚙️  Pip install cuda_cccl" pip install --force-reinstall --upgrade --target "${prefix}" .
-
-popd >/dev/null
+begin_group "⚙️ Existing site-packages"
+pip freeze
+end_group "⚙️ Existing site-packages"
 
 pushd ../python/cuda_cooperative >/dev/null
 
-run_command "⚙️  Pip install cuda_cooperative" pip install --constraint constraints.txt --force-reinstall --upgrade --target "${prefix}" .[test]
+rm -rf /tmp/cuda_cooperative_venv
+python -m venv /tmp/cuda_cooperative_venv
+. /tmp/cuda_cooperative_venv/bin/activate
+echo 'cuda-cccl @ file:///home/coder/cccl/python/cuda_cccl' > /tmp/cuda-cccl_constraints.txt
+run_command "⚙️  Pip install cuda_cooperative" pip install -c /tmp/cuda-cccl_constraints.txt .[test]
 run_command "🚀  Pytest cuda_cooperative" python -m pytest -v ./tests
+deactivate
 
 popd >/dev/null
 
 pushd ../python/cuda_parallel >/dev/null
 
-run_command "⚙️  Pip install cuda_parallel" pip install --constraint constraints.txt --force-reinstall --upgrade --target "${prefix}" .[test]
+rm -rf /tmp/cuda_parallel_venv
+python -m venv /tmp/cuda_parallel_venv
+. /tmp/cuda_parallel_venv/bin/activate
+echo 'cuda-cccl @ file:///home/coder/cccl/python/cuda_cccl' > /tmp/cuda-cccl_constraints.txt
+run_command "⚙️  Pip install cuda_parallel" pip install -c /tmp/cuda-cccl_constraints.txt .[test]
 run_command "🚀  Pytest cuda_parallel" python -m pytest -v ./tests
+deactivate
 
 popd >/dev/null
 
