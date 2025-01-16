@@ -490,12 +490,15 @@ try
     thrust::make_counting_iterator(std::size_t{0}),
     segment_iterator_t{num_empty_segments, num_segments, segment_size, num_items});
 
-  sort_keys(thrust::raw_pointer_cast(in_keys.data()),
-            thrust::raw_pointer_cast(out_keys.data()),
-            static_cast<offset_t>(num_items),
-            static_cast<segment_offset_t>(num_segments),
-            offsets,
-            offsets + 1);
+  sort_keys(
+    thrust::raw_pointer_cast(in_keys.data()),
+    thrust::raw_pointer_cast(out_keys.data()),
+    static_cast<offset_t>(num_items),
+    static_cast<segment_offset_t>(num_segments),
+    offsets,
+    offsets + 1,
+    begin_bit<key_t>(),
+    end_bit<key_t>());
 
   // Verify the keys are sorted correctly
   verification_helper.verify_sorted(out_keys, offsets + num_empty_segments, num_segments - num_empty_segments);
@@ -535,12 +538,15 @@ try
   short_key_verification_helper<key_t> verification_helper{};
   verification_helper.prepare_verification_data(in_keys);
 
-  sort_keys(thrust::raw_pointer_cast(in_keys.data()),
-            thrust::raw_pointer_cast(out_keys.data()),
-            static_cast<offset_t>(num_items),
-            static_cast<segment_offset_t>(num_segments),
-            thrust::raw_pointer_cast(offsets.data()),
-            offsets.cbegin() + 1);
+  sort_keys(
+    thrust::raw_pointer_cast(in_keys.data()),
+    thrust::raw_pointer_cast(out_keys.data()),
+    static_cast<offset_t>(num_items),
+    static_cast<segment_offset_t>(num_segments),
+    thrust::raw_pointer_cast(offsets.data()),
+    offsets.cbegin() + 1,
+    begin_bit<key_t>(),
+    end_bit<key_t>());
 
   // Verify the keys are sorted correctly
   verification_helper.verify_sorted(out_keys);

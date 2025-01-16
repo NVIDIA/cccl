@@ -320,7 +320,9 @@ try
     static_cast<offset_t>(num_items),
     static_cast<segment_offset_t>(num_segments),
     offsets,
-    offsets_plus_1);
+    offsets_plus_1,
+    begin_bit<key_t>(),
+    end_bit<key_t>());
 
   // Verify the keys are sorted correctly
   verification_helper.verify_sorted(out_keys, offsets + num_empty_segments, num_segments - num_empty_segments);
@@ -372,7 +374,9 @@ try
     static_cast<offset_t>(num_items),
     static_cast<segment_offset_t>(num_segments),
     thrust::raw_pointer_cast(offsets.data()),
-    offsets.cbegin() + 1);
+    offsets.cbegin() + 1,
+    begin_bit<key_t>(),
+    end_bit<key_t>());
 
   // Verify the keys are sorted correctly
   verification_helper.verify_sorted(out_keys);
