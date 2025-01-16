@@ -37,7 +37,7 @@
 
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__memory/unique_ptr.h>
-#  include <cuda/std/type_traits/__remove_cvref.h>
+#  include <cuda/std/type_traits>
 
 #  include <type_traits>
 
