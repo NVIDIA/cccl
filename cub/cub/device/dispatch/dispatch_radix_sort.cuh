@@ -538,7 +538,7 @@ template <typename ChainedPolicyT,
           typename ValueT,
           typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
-          typename OffsetT,
+          typename SegmentSizeT,
           typename DecomposerT = detail::identity_decomposer_t>
 __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmentedPolicy::BLOCK_THREADS
                                        : ChainedPolicyT::ActivePolicy::SegmentedPolicy::BLOCK_THREADS))
@@ -576,7 +576,7 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
   using BlockUpsweepT = detail::radix_sort::AgentRadixSortUpsweep<SegmentedPolicyT, KeyT, OffsetT, DecomposerT>;
 
   // Digit-scan type
-  using DigitScanT = BlockScan<OffsetT, BLOCK_THREADS>;
+  using DigitScanT = BlockScan<SegmentSizeT, BLOCK_THREADS>;
 
   // Downsweep type
   using BlockDownsweepT =
@@ -599,8 +599,8 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
     typename BlockDownsweepT::TempStorage downsweep;
     struct
     {
-      volatile OffsetT reverse_counts_in[RADIX_DIGITS];
-      volatile OffsetT reverse_counts_out[RADIX_DIGITS];
+      volatile SegmentSizeT reverse_counts_in[RADIX_DIGITS];
+      volatile SegmentSizeT reverse_counts_out[RADIX_DIGITS];
       typename DigitScanT::TempStorage scan;
     };
 
@@ -609,9 +609,13 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
   const ::cuda::std::int64_t segment_id =
     blockIdx.x + (blockIdx.y * static_cast<::cuda::std::int64_t>(gridDim.x))
     + (blockIdx.z * static_cast<::cuda::std::int64_t>(gridDim.x * gridDim.y));
-  OffsetT segment_begin = d_begin_offsets[segment_id];
-  OffsetT segment_end   = d_end_offsets[segment_id];
-  OffsetT num_items     = segment_end - segment_begin;
+
+  // Ensure the size of the current segment does not overflow SegmentSizeT
+  _CCCL_ASSERT(static_cast<decltype(d_end_offsets[segment_id] - d_begin_offsets[segment_id])>(
+                 ::cuda::std::numeric_limits<SegmentSizeT>::max())
+                 > (d_end_offsets[segment_id] - d_begin_offsets[segment_id]),
+               "A single segment size is limited to the maximum value representable by SegmentSizeT");
+  const auto num_items = static_cast<SegmentSizeT>(d_end_offsets[segment_id] - d_begin_offsets[segment_id]);
 
   // Check if empty segment
   if (num_items <= 0)
@@ -620,13 +624,14 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
   }
 
   // Upsweep
-  BlockUpsweepT upsweep(temp_storage.upsweep, d_keys_in, current_bit, pass_bits, decomposer);
-  upsweep.ProcessRegion(segment_begin, segment_end);
+  BlockUpsweepT upsweep(
+    temp_storage.upsweep, d_keys_in + d_begin_offsets[segment_id], current_bit, pass_bits, decomposer);
+  upsweep.ProcessRegion(SegmentSizeT{0}, num_items);
 
   __syncthreads();
 
   // The count of each digit value in this pass (valid in the first RADIX_DIGITS threads)
-  OffsetT bin_count[BINS_TRACKED_PER_THREAD];
+  SegmentSizeT bin_count[BINS_TRACKED_PER_THREAD];
   upsweep.ExtractCounts(bin_count);
 
   __syncthreads();
@@ -660,15 +665,9 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
   }
 
   // Scan
-  OffsetT bin_offset[BINS_TRACKED_PER_THREAD]; // The global scatter base offset for each digit value in this pass
-                                               // (valid in the first RADIX_DIGITS threads)
+  SegmentSizeT bin_offset[BINS_TRACKED_PER_THREAD]; // The scatter base offset within the segment for each digit value
+                                                    // in this pass (valid in the first RADIX_DIGITS threads)
   DigitScanT(temp_storage.scan).ExclusiveSum(bin_count, bin_offset);
-
-#pragma unroll
-  for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
-  {
-    bin_offset[track] += segment_begin;
-  }
 
   if (IS_DESCENDING)
   {
@@ -705,14 +704,14 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
     temp_storage.downsweep,
     bin_offset,
     num_items,
-    d_keys_in,
-    d_keys_out,
-    d_values_in,
-    d_values_out,
+    d_keys_in + d_begin_offsets[segment_id],
+    d_keys_out + d_begin_offsets[segment_id],
+    d_values_in + d_begin_offsets[segment_id],
+    d_values_out + d_begin_offsets[segment_id],
     current_bit,
     pass_bits,
     decomposer);
-  downsweep.ProcessRegion(segment_begin, segment_end);
+  downsweep.ProcessRegion(SegmentSizeT{0}, num_items);
 }
 
 /******************************************************************************
@@ -1884,16 +1883,16 @@ struct DispatchRadixSort
  * @tparam EndOffsetIteratorT
  *   Random-access input iterator type for reading segment ending offsets @iterator
  *
- * @tparam OffsetT
- *   Signed integer type for global offsets
+ * @tparam SegmentSizeT
+ *   Integer type to index items within a segment
  */
 template <bool IS_DESCENDING,
           typename KeyT,
           typename ValueT,
           typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
-          typename OffsetT,
-          typename PolicyHub   = detail::radix::policy_hub<KeyT, ValueT, OffsetT>,
+          typename SegmentSizeT,
+          typename PolicyHub   = detail::radix::policy_hub<KeyT, ValueT, SegmentSizeT>,
           typename DecomposerT = detail::identity_decomposer_t>
 struct DispatchSegmentedRadixSort
 {
@@ -2272,7 +2271,7 @@ struct DispatchSegmentedRadixSort
         ValueT,
         BeginOffsetIteratorT,
         EndOffsetIteratorT,
-        OffsetT,
+        SegmentSizeT,
         DecomposerT>,
       detail::radix_sort::DeviceSegmentedRadixSortKernel<
         max_policy_t,
@@ -2282,7 +2281,7 @@ struct DispatchSegmentedRadixSort
         ValueT,
         BeginOffsetIteratorT,
         EndOffsetIteratorT,
-        OffsetT,
+        SegmentSizeT,
         DecomposerT>);
   }
 
