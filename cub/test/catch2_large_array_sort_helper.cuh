@@ -67,7 +67,7 @@ template <typename KeyType>
 class key_sort_ref_key_transform
 {
   static constexpr double max_key = static_cast<double>(::cuda::std::numeric_limits<KeyType>::max());
-  const double m_conversion;
+  double m_conversion;
   std::size_t m_num_items;
   bool m_is_descending;
 
