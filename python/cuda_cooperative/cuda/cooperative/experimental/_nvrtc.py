@@ -34,7 +34,7 @@ def compile_impl(cpp, cc, rdc, code, nvrtc_path, nvrtc_version):
     from cuda.cccl import get_include_paths
 
     for path in get_include_paths().as_tuple():
-        if path:
+        if path is not None:
             opts += [f"--include-path={path}".encode("ascii")]
     opts += [f"--gpu-architecture=compute_{cc}".encode("ascii")]
     if rdc:

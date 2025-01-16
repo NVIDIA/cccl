@@ -21,7 +21,7 @@ dependencies = [
   "numpy",
   "numba>=0.60.0",
   "pynvjitlink-cu12>=0.2.4",
-  "cuda-python",
+  "cuda-python==12.*",
   "jinja2",
 ]
 dynamic = ["version", "readme"]
