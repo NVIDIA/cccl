@@ -43,8 +43,6 @@
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/system/cuda/detail/core/util.h>
-
 CUB_NAMESPACE_BEGIN
 
 template <int _BLOCK_THREADS,
@@ -79,7 +77,7 @@ struct AgentBlockSort
   // Types and constants
   //---------------------------------------------------------------------
 
-  static constexpr bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
+  static constexpr bool KEYS_ONLY = ::cuda::std::is_same<ValueT, NullType>::value;
 
   using BlockMergeSortT = BlockMergeSort<KeyT, Policy::BLOCK_THREADS, Policy::ITEMS_PER_THREAD, ValueT>;
 
@@ -465,7 +463,7 @@ struct AgentMerge
   struct TempStorage : Uninitialized<_TempStorage>
   {};
 
-  static constexpr bool KEYS_ONLY       = std::is_same<ValueT, NullType>::value;
+  static constexpr bool KEYS_ONLY       = ::cuda::std::is_same<ValueT, NullType>::value;
   static constexpr int BLOCK_THREADS    = Policy::BLOCK_THREADS;
   static constexpr int ITEMS_PER_THREAD = Policy::ITEMS_PER_THREAD;
   static constexpr int ITEMS_PER_TILE   = Policy::ITEMS_PER_TILE;
