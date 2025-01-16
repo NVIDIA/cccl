@@ -63,9 +63,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace scan
+namespace detail::scan
 {
 
 template <typename MaxPolicyT,
@@ -100,8 +98,7 @@ struct DeviceScanKernelSource
   }
 };
 
-} // namespace scan
-} // namespace detail
+} // namespace detail::scan
 
 /******************************************************************************
  * Dispatch
