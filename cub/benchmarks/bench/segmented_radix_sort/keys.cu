@@ -1,157 +1,15 @@
-/******************************************************************************
- * Copyright (c) 2011-2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
 
 #include <cub/device/device_segmented_radix_sort.cuh>
 
 #include <nvbench_helper.cuh>
 
-// %RANGE% TUNE_L_ITEMS ipt 7:24:1
-// %RANGE% TUNE_M_ITEMS ipmw 1:17:1
-// %RANGE% TUNE_S_ITEMS ipsw 1:17:1
-// %RANGE% TUNE_THREADS tpb 128:1024:32
-// %RANGE% TUNE_SW_THREADS_POW2 tpsw 1:4:1
-// %RANGE% TUNE_MW_THREADS_POW2 tpmw 1:5:1
-// %RANGE% TUNE_RADIX_BITS bits 4:8:1
-// %RANGE% TUNE_PARTITIONING_THRESHOLD pt 100:800:50
-// %RANGE% TUNE_RANK_ALGORITHM ra 0:4:1
-// %RANGE% TUNE_LOAD ld 0:2:1
-// %RANGE% TUNE_TRANSPOSE trp 0:1:1
-// %RANGE% TUNE_S_LOAD sld 0:2:1
-// %RANGE% TUNE_S_TRANSPOSE strp 0:1:1
-// %RANGE% TUNE_M_LOAD mld 0:2:1
-// %RANGE% TUNE_M_TRANSPOSE mtrp 0:1:1
-
-#if !TUNE_BASE
-
-#  define TUNE_SW_THREADS (1 << TUNE_SW_THREADS_POW2)
-#  define TUNE_MW_THREADS (1 << TUNE_MW_THREADS_POW2)
-
-#  define SMALL_SEGMENT_SIZE  TUNE_S_ITEMS* TUNE_SW_THREADS
-#  define MEDIUM_SEGMENT_SIZE TUNE_M_ITEMS* TUNE_MW_THREADS
-#  define LARGE_SEGMENT_SIZE  TUNE_L_ITEMS* TUNE_THREADS
-
-#  if (LARGE_SEGMENT_SIZE <= SMALL_SEGMENT_SIZE) || (LARGE_SEGMENT_SIZE <= MEDIUM_SEGMENT_SIZE)
-#    error Large segment size must be larger than small and medium segment sizes
-#  endif
-
-#  if (MEDIUM_SEGMENT_SIZE <= SMALL_SEGMENT_SIZE)
-#    error Medium segment size must be larger than small one
-#  endif
-
-#  if TUNE_LOAD == 0
-#    define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
-#  elif TUNE_LOAD == 1
-#    define TUNE_LOAD_MODIFIER cub::LOAD_LDG
-#  else // TUNE_LOAD == 2
-#    define TUNE_LOAD_MODIFIER cub::LOAD_CA
-#  endif // TUNE_LOAD
-
-#  if TUNE_S_LOAD == 0
-#    define TUNE_S_LOAD_MODIFIER cub::LOAD_DEFAULT
-#  elif TUNE_S_LOAD == 1
-#    define TUNE_S_LOAD_MODIFIER cub::LOAD_LDG
-#  else // TUNE_S_LOAD == 2
-#    define TUNE_S_LOAD_MODIFIER cub::LOAD_CA
-#  endif // TUNE_S_LOAD
-
-#  if TUNE_M_LOAD == 0
-#    define TUNE_M_LOAD_MODIFIER cub::LOAD_DEFAULT
-#  elif TUNE_M_LOAD == 1
-#    define TUNE_M_LOAD_MODIFIER cub::LOAD_LDG
-#  else // TUNE_M_LOAD == 2
-#    define TUNE_M_LOAD_MODIFIER cub::LOAD_CA
-#  endif // TUNE_M_LOAD
-
-#  if TUNE_TRANSPOSE == 0
-#    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_DIRECT
-#  else // TUNE_TRANSPOSE == 1
-#    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_WARP_TRANSPOSE
-#  endif // TUNE_TRANSPOSE
-
-#  if TUNE_S_TRANSPOSE == 0
-#    define TUNE_S_LOAD_ALGORITHM cub::WarpLoadAlgorithm::WARP_LOAD_DIRECT
-#  else // TUNE_S_TRANSPOSE == 1
-#    define TUNE_S_LOAD_ALGORITHM cub::WarpLoadAlgorithm::WARP_LOAD_TRANSPOSE
-#  endif // TUNE_S_TRANSPOSE
-
-#  if TUNE_M_TRANSPOSE == 0
-#    define TUNE_M_LOAD_ALGORITHM cub::WarpLoadAlgorithm::WARP_LOAD_DIRECT
-#  else // TUNE_M_TRANSPOSE == 1
-#    define TUNE_M_LOAD_ALGORITHM cub::WarpLoadAlgorithm::WARP_LOAD_TRANSPOSE
-#  endif // TUNE_M_TRANSPOSE
-
-template <class KeyT>
-struct device_seg_radix_sort_policy_hub
-{
-  using DominantT = KeyT;
-
-  struct Policy350 : cub::ChainedPolicy<350, Policy350, Policy350>
-  {
-    static constexpr int BLOCK_THREADS          = TUNE_THREADS;
-    static constexpr int RADIX_BITS             = TUNE_RADIX_BITS;
-    static constexpr int PARTITIONING_THRESHOLD = TUNE_PARTITIONING_THRESHOLD;
-
-    using LargeSegmentPolicy = cub::AgentRadixSortDownsweepPolicy<
-      BLOCK_THREADS,
-      TUNE_L_ITEMS,
-      DominantT,
-      TUNE_LOAD_ALGORITHM,
-      TUNE_LOAD_MODIFIER,
-      static_cast<cub::RadixRankAlgorithm>(TUNE_RANK_ALGORITHM),
-      cub::BLOCK_SCAN_WARP_SCANS,
-      RADIX_BITS>;
-
-    static constexpr int ITEMS_PER_SMALL_THREAD  = TUNE_S_ITEMS;
-    static constexpr int ITEMS_PER_MEDIUM_THREAD = TUNE_M_ITEMS;
-
-    using SmallAndMediumSegmentedSortPolicyT = cub::AgentSmallAndMediumSegmentedSortPolicy<
-
-      BLOCK_THREADS,
-
-      // Small policy
-      cub::
-        AgentSubWarpMergeSortPolicy<TUNE_SW_THREADS, ITEMS_PER_SMALL_THREAD, TUNE_S_LOAD_ALGORITHM, TUNE_S_LOAD_MODIFIER>,
-
-      // Medium policy
-      cub::AgentSubWarpMergeSortPolicy<TUNE_MW_THREADS,
-                                       ITEMS_PER_MEDIUM_THREAD,
-                                       TUNE_M_LOAD_ALGORITHM,
-                                       TUNE_M_LOAD_MODIFIER>>;
-  };
-
-  using MaxPolicy = Policy350;
-};
-#endif // !TUNE_BASE
-
 template <class T, typename OffsetT>
 void seg_radix_sort(nvbench::state& state,
-              nvbench::type_list<T, OffsetT> ts,
-              const thrust::device_vector<OffsetT>& offsets,
-              bit_entropy entropy)
+                    nvbench::type_list<T, OffsetT> ts,
+                    const thrust::device_vector<OffsetT>& offsets,
+                    bit_entropy entropy)
 {
   constexpr bool is_descending   = false;
   constexpr bool is_overwrite_ok = false;
@@ -161,15 +19,8 @@ void seg_radix_sort(nvbench::state& state,
   using end_offset_it_t   = const offset_t*;
   using key_t             = T;
   using value_t           = cub::NullType;
-
-#if !TUNE_BASE
-  using policy_t   = device_seg_radix_sort_policy_hub<key_t>;
-  using dispatch_t = //
-    cub::DispatchSegmentedSort<is_descending, key_t, value_t, begin_offset_it_t, end_offset_it_t, offset_t, policy_t>;
-#else
-  using dispatch_t = //
+  using dispatch_t =
     cub::DispatchSegmentedRadixSort<is_descending, key_t, value_t, begin_offset_it_t, end_offset_it_t, offset_t>;
-#endif
 
   constexpr int begin_bit = 0;
   constexpr int end_bit   = sizeof(key_t) * 8;
@@ -226,9 +77,9 @@ void seg_radix_sort(nvbench::state& state,
       segments,
       d_begin_offsets,
       d_end_offsets,
-    begin_bit,
-    end_bit,
-    is_overwrite_ok,
+      begin_bit,
+      end_bit,
+      is_overwrite_ok,
       launch.get_stream());
   });
 }
