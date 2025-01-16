@@ -53,16 +53,16 @@ struct type_count_if
 };
 
 template <class... Ts>
-using count_eviction = ::cuda::std::__type_call<type_count_if<is_eviction_policy>, Ts...>;
+constexpr auto count_eviction_v = ::cuda::std::__type_call<type_count_if<is_eviction_policy>, Ts...>::value;
 
 template <class... Ts>
-using count_prefetch = ::cuda::std::__type_call<type_count_if<is_prefetch>, Ts...>;
+constexpr auto count_prefetch_v = ::cuda::std::__type_call<type_count_if<is_prefetch>, Ts...>::value;
 
 template <class... Ts>
-using count_alignment = ::cuda::std::__type_call<type_count_if<is_alignment>, Ts...>;
+constexpr auto count_alignment_v = ::cuda::std::__type_call<type_count_if<is_alignment>, Ts...>::value;
 
 template <class... Ts>
-using count_aliasing = ::cuda::std::__type_call<type_count_if<is_ptr_aliasing_policy>, Ts...>;
+constexpr auto count_aliasing_v = ::cuda::std::__type_call<type_count_if<is_ptr_aliasing_policy>, Ts...>::value;
 
 /***********************************************************************************************************************
  * Find Property Utilities
@@ -84,17 +84,20 @@ struct find_property
 };
 
 template <typename... UserProperties>
-using find_eviction_policy =
-  find_property<::cuda::experimental::is_eviction_policy, eviction_none_t, UserProperties...>;
+using find_eviction_policy_t =
+  typename find_property<::cuda::experimental::is_eviction_policy, eviction_none_t, UserProperties...>::type;
 
 template <typename... UserProperties>
-using find_prefetch_size = find_property<::cuda::experimental::is_prefetch, no_prefetch_t, UserProperties...>;
+using find_prefetch_size_t =
+  typename find_property<::cuda::experimental::is_prefetch, no_prefetch_t, UserProperties...>::type;
 
 template <size_t _DefaultAlignment, typename... UserProperties>
-using find_alignment = find_property<is_alignment, aligned_size_t<_DefaultAlignment>, UserProperties...>;
+using find_alignment_t =
+  typename find_property<is_alignment, aligned_size_t<_DefaultAlignment>, UserProperties...>::type;
 
 template <typename... UserProperties>
-using find_aliasing_policy = find_property<is_ptr_aliasing_policy, ptr_no_aliasing_t, UserProperties...>;
+using find_aliasing_policy_t =
+  typename find_property<is_ptr_aliasing_policy, ptr_no_aliasing_t, UserProperties...>::type;
 
 } // namespace detail
 
@@ -184,8 +187,10 @@ class accessor_with_properties
 public:
   using offset_policy = accessor_with_properties;
   using element_type  = ElementType;
-  using reference     = ::cuda::std::
-    conditional_t<_is_const_elem, ElementType, accessor_reference<ElementType, Restrict, Alignment, Eviction, Prefetch>>;
+  using reference =
+    ::cuda::std::conditional_t<_is_const_elem,
+                               ElementType, //
+                               accessor_reference<ElementType, Restrict, Alignment, Eviction, Prefetch>>;
   using data_handle_type = ::cuda::std::conditional_t<_is_restrict, ElementType * _CCCL_RESTRICT, ElementType*>;
 
   explicit accessor_with_properties() noexcept = default;
@@ -229,22 +234,22 @@ public:
  **********************************************************************************************************************/
 
 template <typename ElementType, typename... UserProperties>
-_CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto make_accessor_with_properties(UserProperties...) noexcept
+_CCCL_NODISCARD _CCCL_HOST_DEVICE auto make_accessor_with_properties(UserProperties...) noexcept
 {
   using namespace detail;
-  using Restrict  = typename find_aliasing_policy<UserProperties...>::type;
-  using Alignment = typename find_alignment<alignof(ElementType), UserProperties...>::type;
-  using Eviction  = typename find_eviction_policy<UserProperties...>::type;
-  using Prefetch  = typename find_prefetch_size<UserProperties...>::type;
-  static_assert(count_aliasing<UserProperties...>::value <= 1, "Duplicate aliasing policy found");
-  static_assert(count_alignment<UserProperties...>::value <= 1, "Duplicate alignment found");
-  static_assert(count_eviction<UserProperties...>::value <= 1, "Duplicate eviction policy found");
-  static_assert(count_prefetch<UserProperties...>::value <= 1, "Duplicate prefetch policy found");
+  using Restrict  = find_aliasing_policy_t<UserProperties...>;
+  using Alignment = find_alignment_t<alignof(ElementType), UserProperties...>;
+  using Eviction  = find_eviction_policy_t<UserProperties...>;
+  using Prefetch  = find_prefetch_size_t<UserProperties...>;
+  static_assert(count_aliasing_v<UserProperties...> <= 1, "Duplicate aliasing policy found");
+  static_assert(count_alignment_v<UserProperties...> <= 1, "Duplicate alignment found");
+  static_assert(count_eviction_v<UserProperties...> <= 1, "Duplicate eviction policy found");
+  static_assert(count_prefetch_v<UserProperties...> <= 1, "Duplicate prefetch policy found");
   return accessor_with_properties<ElementType, Restrict, Alignment, Eviction, Prefetch>();
 }
 
 template <typename E, typename T, typename L, typename A, typename... UserProperties>
-_CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto
+_CCCL_NODISCARD _CCCL_HOST_DEVICE auto
 add_properties(::cuda::std::mdspan<T, E, L, A> mdspan, UserProperties... properties) noexcept
 {
   static_assert(::cuda::std::is_same_v<A, ::cuda::std::default_accessor<T>>, "requires default_accessor");
