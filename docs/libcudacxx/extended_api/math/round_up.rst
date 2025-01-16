@@ -11,7 +11,7 @@
 
 - *Requires*: ``T`` and ``U`` are integral types (including 128-bit integers) or enumerators.
 - *Preconditions*: ``a >= 0`` is true and ``b > 0`` is true.
-- *Returns*: ``a`` rounded to the next multiple of ``b``. If ``a`` is already a multiple of ``b``, return ``a``.
+- *Returns*: ``a`` rounded up to the smallest multiple of ``b`` greater than or equal to ``a``. If ``a`` is already a multiple of ``b``, return ``a``.
 - *Note*: the result can overflow if ``ceil(a / b) * b`` exceeds the maximum value of the common type of
           ``a`` and ``b``. The condition is checked in debug mode.
 
