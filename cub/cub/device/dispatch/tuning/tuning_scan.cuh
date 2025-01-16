@@ -239,19 +239,21 @@ struct ScanPolicyWrapper : PolicyT
 };
 
 template <typename StaticPolicyT>
-struct ScanPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<decltype(StaticPolicyT::ScanPolicy::LOAD_MODIFIER)>>
+struct ScanPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<decltype(StaticPolicyT::ScanPolicyT::LOAD_MODIFIER)>>
     : StaticPolicyT
-
 {
   CUB_RUNTIME_FUNCTION ScanPolicyWrapper(StaticPolicyT base)
       : StaticPolicyT(base)
   {}
 
-  CUB_DEFINE_SUB_POLICY_GETTER(Scan)
+  CUB_RUNTIME_FUNCTION static constexpr PolicyWrapper<typename StaticPolicyT::ScanPolicyT> Scan()
+  {
+    return MakePolicyWrapper(typename StaticPolicyT::ScanPolicyT());
+  }
 
   CUB_RUNTIME_FUNCTION constexpr CacheLoadModifier LoadModifier()
   {
-    return StaticPolicyT::ScanPolicy::LOAD_MODIFIER;
+    return StaticPolicyT::ScanPolicyT::LOAD_MODIFIER;
   }
 };
 
@@ -274,19 +276,19 @@ struct policy_hub
   struct Policy350 : ChainedPolicy<350, Policy350, Policy350>
   {
     // GTX Titan: 29.5B items/s (232.4 GB/s) @ 48M 32-bit T
-    using ScanPolicy =
+    using ScanPolicyT =
       AgentScanPolicy<128, 12, AccumT, BLOCK_LOAD_DIRECT, LOAD_CA, BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED, BLOCK_SCAN_RAKING>;
   };
   struct Policy520 : ChainedPolicy<520, Policy520, Policy350>
   {
     // Titan X: 32.47B items/s @ 48M 32-bit T
-    using ScanPolicy =
+    using ScanPolicyT =
       AgentScanPolicy<128, 12, AccumT, BLOCK_LOAD_DIRECT, LOAD_CA, scan_transposed_store, BLOCK_SCAN_WARP_SCANS>;
   };
 
   struct DefaultPolicy
   {
-    using ScanPolicy =
+    using ScanPolicyT =
       AgentScanPolicy<128, 15, AccumT, scan_transposed_load, LOAD_DEFAULT, scan_transposed_store, BLOCK_SCAN_WARP_SCANS>;
   };
 
@@ -308,11 +310,11 @@ struct policy_hub
                        MemBoundScaling<Tuning::threads, Tuning::items, AccumT>,
                        typename Tuning::delay_constructor>;
   template <typename Tuning>
-  static auto select_agent_policy(long) -> typename DefaultPolicy::ScanPolicy;
+  static auto select_agent_policy(long) -> typename DefaultPolicy::ScanPolicyT;
 
   struct Policy800 : ChainedPolicy<800, Policy800, Policy600>
   {
-    using ScanPolicy = decltype(select_agent_policy<sm80_tuning<AccumT, is_primitive_op<ScanOpT>()>>(0));
+    using ScanPolicyT = decltype(select_agent_policy<sm80_tuning<AccumT, is_primitive_op<ScanOpT>()>>(0));
   };
 
   struct Policy860
@@ -322,7 +324,7 @@ struct policy_hub
 
   struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
   {
-    using ScanPolicy = decltype(select_agent_policy<sm90_tuning<AccumT, is_primitive_op<ScanOpT>()>>(0));
+    using ScanPolicyT = decltype(select_agent_policy<sm90_tuning<AccumT, is_primitive_op<ScanOpT>()>>(0));
   };
 
   using MaxPolicy = Policy900;

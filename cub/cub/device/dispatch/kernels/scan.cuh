@@ -155,7 +155,7 @@ template <typename ChainedPolicyT,
           typename OffsetT,
           typename AccumT,
           bool ForceInclusive>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicy::BLOCK_THREADS))
+__launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanKernel(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -166,7 +166,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicy::BLOCK_THREADS))
     OffsetT num_items)
 {
   using RealInitValueT = typename InitValueT::value_type;
-  using ScanPolicyT    = typename ChainedPolicyT::ActivePolicy::ScanPolicy;
+  using ScanPolicyT    = typename ChainedPolicyT::ActivePolicy::ScanPolicyT;
 
   // Thread block type for scanning input tiles
   using AgentScanT = detail::scan::
