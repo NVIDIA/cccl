@@ -7,7 +7,7 @@
 
    template <typename T, typename = U>
    [[nodiscard]] __host__ __device__ inline
-   constexpr cuda::std::common_type_t<T, U> round_up(T a, U b) noexcept;
+   constexpr cuda::std::common_type_t<T, U> round_up(T value, U base_multiple) noexcept;
 
 ``value``: The value to be rounded up.
 ``base_multiple``:  The base multiple to which the value rounds up.

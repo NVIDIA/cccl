@@ -6,7 +6,10 @@
 .. code:: cuda
 
    template <typename T, typename = U>
-   [[nodiscard]] __host__ __device__ constexpr T ceil_div(T a, U b) noexcept;
+   [[nodiscard]] __host__ __device__ constexpr T ceil_div(T value, U divisor) noexcept;
+
+``value``: The value to be divided.
+``divisor``:  The divisor.
 
 - *Requires*: ``is_integral_v<T>`` is true and ``is_integral_v<U>`` is true.
 - *Preconditions*: ``a >= 0`` is true and ``b > 0`` is true.
