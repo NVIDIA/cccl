@@ -354,7 +354,7 @@ struct DispatchScan
       // TODO(ashwin): should this come from the launcher factory instead?
       // Get max x-dimension of grid
       int max_dim_x;
-      error = CubDebug(cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal));
+      error = CubDebug(launcher_factory.MaxGridDimX(max_dim_x));
       if (cudaSuccess != error)
       {
         break;
