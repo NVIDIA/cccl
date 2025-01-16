@@ -9,6 +9,9 @@
    [[nodiscard]] __host__ __device__ inline
    constexpr cuda::std::common_type_t<T, U> round_down(T a, U b) noexcept;
 
+``value``: The value to be rounded down.
+``base_multiple``:  The base multiple to which the value rounds down.
+
 - *Requires*: ``T`` and ``U`` are integral types (including 128-bit integers) or enumerators.
 - *Preconditions*: ``a >= 0`` is true and ``b > 0`` is true.
 - *Returns*: ``a`` rounded down to the largest multiple of ``b`` less than or equal to ``a``. If ``a`` is already a multiple of ``b``, return ``a``.
