@@ -28,13 +28,17 @@
 #include "cuda/experimental/__stf/allocators/adapters.cuh"
 #include "cuda/experimental/stf.cuh"
 
+/**
+ * TODO insert a big comment explaining the design and how to reason about this !
+ */
+
 namespace cuda::experimental::stf
 {
 
 template <typename T>
 class stackable_logical_data;
 
-template <typename T>
+template <typename T, typename reduce_op, bool initialize>
 class stackable_task_dep;
 
 /**
@@ -257,21 +261,44 @@ public:
     return stackable_logical_data(*this, depth(), get_ctx(depth()).logical_data(::std::forward<Pack>(pack)...));
   }
 
+  // Helper function to process a single argument
+  template <typename T1>
+  void process_argument(const T1&) const {
+      // Do nothing for non-stackable_task_dep
+      fprintf(stderr, "NOTHING ... \n");
+  }
+  
+  template <typename T1, typename reduce_op, bool initialize>
+  void process_argument(const stackable_task_dep<T1, reduce_op, initialize>& dep) const {
+      // Call doo() on the `d` member
+      dep.get_d().doo();
+  }
+  
+  // Process the parameter pack
+  template <typename... Pack>
+  void process_pack(const Pack&... pack) const {
+      (process_argument(pack), ...);
+  }
+
+
   template <typename... Pack>
   auto task(Pack&&... pack)
   {
+    process_pack(pack...);
     return get_ctx(depth()).task(::std::forward<Pack>(pack)...);
   }
 
   template <typename... Pack>
   auto parallel_for(Pack&&... pack)
   {
+    process_pack(pack...);
     return get_ctx(depth()).parallel_for(::std::forward<Pack>(pack)...);
   }
 
   template <typename... Pack>
   auto host_launch(Pack&&... pack)
   {
+    process_pack(pack...);
     return get_ctx(depth()).host_launch(::std::forward<Pack>(pack)...);
   }
 
@@ -472,23 +499,25 @@ public:
     pimpl->pop();
   }
 
+
   // Helpers
   template <typename... Pack>
   auto read(Pack&&... pack) const
   {
-    return get_ld().read(::std::forward<Pack>(pack)...);
+    using U = rw_type_of<T>;
+    return stackable_task_dep<U, ::std::monostate, false>(*this, get_ld().read(::std::forward<Pack>(pack)...));
   }
 
   template <typename... Pack>
   auto write(Pack&&... pack)
   {
-    return get_ld().write(::std::forward<Pack>(pack)...);
+    return stackable_task_dep(*this, get_ld().write(::std::forward<Pack>(pack)...));
   }
 
   template <typename... Pack>
   auto rw(Pack&&... pack)
   {
-    return get_ld().rw(::std::forward<Pack>(pack)...);
+    return stackable_task_dep(*this, get_ld().rw(::std::forward<Pack>(pack)...));
   }
 
   auto shape() const
@@ -507,19 +536,24 @@ public:
     return pimpl;
   }
 
+    void doo() const {
+        ::std::cout << "Calling doo() on stackable_logical_data\n";
+    }
+
 private:
   ::std::shared_ptr<impl> pimpl;
 };
 
-template <typename T>
-class stackable_task_dep : public task_dep<T, ::std::monostate, false>
+template <typename T, typename reduce_op, bool initialize>
+class stackable_task_dep : public task_dep<T, reduce_op, initialize>
 {
 public:
-  stackable_task_dep(stackable_logical_data<T> _d, access_mode m, data_place _dplace)
-      : task_dep<T, ::std::monostate, false>(d.get_ld(), m, _dplace)
+  stackable_task_dep(stackable_logical_data<T> _d, task_dep<T, reduce_op, initialize> dep)
+      : task_dep<T, reduce_op, initialize>(mv(dep))
       , d(mv(_d))
-      , dplace(mv(_dplace))
   {}
+
+  const stackable_logical_data<T>& get_d() const { return d; }
 
 private:
   stackable_logical_data<T> d;
