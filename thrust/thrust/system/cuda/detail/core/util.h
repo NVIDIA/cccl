@@ -782,8 +782,6 @@ THRUST_RUNTIME_FUNCTION cudaError_t alias_storage(
 }
 
 } // namespace core
-using core::sm30;
-using core::sm35;
 using core::sm52;
 using core::sm60;
 } // namespace cuda_cub

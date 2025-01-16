@@ -460,12 +460,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DispatchSpmv
 #elif (CUB_PTX_ARCH >= 500)
   using PtxPolicy = Policy500;
 
-#elif (CUB_PTX_ARCH >= 370)
-  using PtxPolicy = Policy370;
-
 #else
-  using PtxPolicy = Policy350;
-
+  using PtxPolicy = Policy370;
 #endif
 
   // "Opaque" policies (whose parameterizations aren't reflected in the type signature)
