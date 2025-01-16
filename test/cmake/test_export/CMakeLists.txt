@@ -81,6 +81,7 @@ foreach (component IN LISTS COMPONENTS)
   set(test_target version_check.${component})
   set(component_target "${component}::${component}")
   add_executable(${test_target} version_check.cxx)
+  target_compile_features(${test_target} PUBLIC cxx_std_17)
   target_link_libraries(${test_target} PRIVATE ${component_target})
   add_test(NAME ${test_target} COMMAND ${test_target})
 
