@@ -11,7 +11,7 @@
 
 - *Requires*: ``T`` and ``U`` are integral types (including 128-bit integers) or enumerators.
 - *Preconditions*: ``a >= 0`` is true and ``b > 0`` is true.
-- *Returns*: ``a`` rounded to the previous multiple of ``b``. If ``a`` is already a multiple of ``b``, return ``a``.
+- *Returns*: ``a`` rounded down to the largest multiple of ``b`` less than or equal to ``a``. If ``a`` is already a multiple of ``b``, return ``a``.
 
 .. note::
 
