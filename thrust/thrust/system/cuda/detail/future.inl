@@ -34,10 +34,10 @@
 #  include <thrust/system/cuda/future.h>
 #  include <thrust/system/cuda/memory.h>
 #  include <thrust/type_traits/integer_sequence.h>
-#  include <thrust/type_traits/remove_cvref.h>
 
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__memory/unique_ptr.h>
+#  include <cuda/std/type_traits/__remove_cvref.h>
 
 #  include <type_traits>
 
@@ -760,7 +760,7 @@ public:
 template <typename T>
 struct unique_eager_future final
 {
-  THRUST_STATIC_ASSERT_MSG((!std::is_same<T, remove_cvref_t<void>>::value),
+  THRUST_STATIC_ASSERT_MSG((!std::is_same<T, ::cuda::std::remove_cvref_t<void>>::value),
                            "`thrust::event` should be used to express valueless futures");
 
   using value_type        = typename detail::async_value<T>::value_type;

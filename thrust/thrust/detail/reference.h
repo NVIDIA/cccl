@@ -61,7 +61,7 @@ private:
 
 public:
   using pointer    = Pointer;
-  using value_type = typename ::cuda::std::remove_cvref<Element>::type;
+  using value_type = ::cuda::std::remove_cvref_t<Element>;
 
   reference(reference const&) = default;
 
