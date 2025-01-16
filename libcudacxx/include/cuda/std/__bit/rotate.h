@@ -45,7 +45,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotl(_Tp __t, uint32_t
 {
   static_assert(__cccl_is_unsigned_integer<_Tp>::value, "__rotl requires unsigned types");
   using __nlt = numeric_limits<_Tp>;
-  if (!_CUDA_VSTD::is_constant_evaluated() && sizeof(_Tp) <= sizeof(uint32_t))
+  if (!is_constant_evaluated() && sizeof(_Tp) <= sizeof(uint32_t))
   {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
                       (return ::__funnelshift_l(__t, __t, __cnt);), //
@@ -59,7 +59,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotr(_Tp __t, uint32_t
 {
   static_assert(__cccl_is_unsigned_integer<_Tp>::value, "__rotr requires unsigned types");
   using __nlt = numeric_limits<_Tp>;
-  if (!_CUDA_VSTD::is_constant_evaluated() && sizeof(_Tp) <= sizeof(uint32_t))
+  if (!is_constant_evaluated() && sizeof(_Tp) <= sizeof(uint32_t))
   {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
                       (return ::__funnelshift_r(__t, __t, __cnt);), //
