@@ -52,6 +52,7 @@ CUB_NAMESPACE_BEGIN
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 #  define CUB_PREVENT_MACRO_SUBSTITUTION
 template <typename T, typename U>
+CCCL_DEPRECATED_BECAUSE("Use cuda::std::min from <cuda/std/functional> instead")
 constexpr _CCCL_HOST_DEVICE auto min CUB_PREVENT_MACRO_SUBSTITUTION(T&& t, U&& u)
   -> decltype(t < u ? ::cuda::std::forward<T>(t) : ::cuda::std::forward<U>(u))
 {
@@ -59,6 +60,7 @@ constexpr _CCCL_HOST_DEVICE auto min CUB_PREVENT_MACRO_SUBSTITUTION(T&& t, U&& u
 }
 
 template <typename T, typename U>
+CCCL_DEPRECATED_BECAUSE("Use cuda::std::max from <cuda/std/functional> instead")
 constexpr _CCCL_HOST_DEVICE auto max CUB_PREVENT_MACRO_SUBSTITUTION(T&& t, U&& u)
   -> decltype(t < u ? ::cuda::std::forward<U>(u) : ::cuda::std::forward<T>(t))
 {
