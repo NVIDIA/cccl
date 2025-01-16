@@ -25,6 +25,7 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__bit/countl.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
@@ -36,7 +37,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::uint32_t __bit_log2(_Tp __t) noexcept
 {
-  if (!_CUDA_VSTD::is_constant_evaluated() && sizeof(_Tp) <= 8)
+  if (!is_constant_evaluated() && sizeof(_Tp) <= 8)
   {
     NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::ptx::bfind(__t);))
   }
@@ -59,7 +60,7 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp bit_ceil(_Tp __t) noexcept
 {
   _CCCL_ASSERT(__t <= numeric_limits<_Tp>::max() / 2, "bit_ceil overflow");
-  if (_CUDA_VSTD::is_constant_evaluated() && __t <= 1)
+  if (is_constant_evaluated() && __t <= 1)
   {
     return 1;
   }
@@ -68,20 +69,23 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp bit_ceil(_Tp __t) noexce
   // The result is computed as max(1, bit_width(__t - 1)) because max() requires less instructions than ternary operator
   using _Up    = conditional_t<sizeof(_Tp) <= 4, uint32_t, _Tp>;
   auto __width = _CUDA_VSTD::bit_width(static_cast<_Up>(__t - 1)); // type of __ret is _Up
-  // clang-format off
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                   (auto __ret = static_cast<_Tp>(_CUDA_VSTD::max(_Up{1}, _Up{1} << __width));
-                    _CCCL_BUILTIN_ASSUME(__ret >= __t);
-                    return __ret;),
-                   (return static_cast<_Tp>(__t <= 1 ? 1 : _Up{1} << __width);))
-  // clang-format on
+  if (!is_constant_evaluated() && sizeof(_Tp) <= 8)
+  {
+    NV_IF_TARGET(NV_IS_DEVICE, //
+                 (auto __ret = static_cast<_Tp>(::max(1u, ::cuda::ptx::shl(1u, __width))); //
+                  _CCCL_BUILTIN_ASSUME(__ret >= __t);
+                  return __ret;))
+  }
+  auto __ret = static_cast<_Tp>(__t <= 1 ? 1 : _Up{1} << __width);
+  _CCCL_BUILTIN_ASSUME(__ret >= __t);
+  return __ret;
 }
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp bit_floor(_Tp __t) noexcept
 {
-  if (_CUDA_VSTD::is_constant_evaluated() && __t == 0)
+  if (is_constant_evaluated() && __t == 0)
   {
     return 0;
   }
@@ -90,13 +94,16 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp bit_floor(_Tp __t) noexc
   // __bit_log2 returns 0xFFFFFFFF if __t == 0
   // (CUDA) shift returns 0 if the right operand is larger than the number of bits of the type
   // -> the result is 0 is __t == 0
-  // clang-format off
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                    (auto __ret = _Tp{1} << __log2;
-                     _CCCL_BUILTIN_ASSUME(__ret <= __t);
-                     return __ret;),
-                    (return __t == 0 ? 0 : _Tp{1} << __log2;))
-  // clang-format on
+  if (!is_constant_evaluated() && sizeof(_Tp) <= 8)
+  {
+    NV_IF_TARGET(NV_IS_DEVICE, //
+                 (auto __ret = static_cast<_Tp>(::cuda::ptx::shl(1u, __log2))); //
+                 _CCCL_BUILTIN_ASSUME(__ret <= __t);
+                 return __ret;)
+  }
+  auto __ret = __t == 0 ? 0 : _Tp{1} << __log2;
+  _CCCL_BUILTIN_ASSUME(__ret <= __t);
+  return __ret;
 }
 
 #undef _CCCL_BUILTIN_ASSUME
