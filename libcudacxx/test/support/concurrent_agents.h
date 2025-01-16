@@ -13,10 +13,6 @@
 
 #ifndef __CUDA_ARCH__
 #  include <thread>
-#else
-#  if __CUDA_ARCH__ < 350
-#    error "This test requires CUDA dynamic parallelism to work."
-#  endif
 #endif
 
 #include <cuda/std/cassert>
