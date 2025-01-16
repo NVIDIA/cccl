@@ -28,6 +28,8 @@
 
 #include <thrust/detail/config.h>
 
+#include "thrust/iterator/transform_iterator.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -66,7 +68,7 @@ OutputIt _CCCL_HOST_DEVICE transform_inclusive_scan(
 
   using size_type              = typename iterator_traits<InputIt>::difference_type;
   size_type num_items          = static_cast<size_type>(thrust::distance(first, last));
-  using transformed_iterator_t = transform_input_iterator_t<value_type, InputIt, TransformOp>;
+  using transformed_iterator_t = transform_iterator<TransformOp, InputIt, value_type, value_type>;
 
   return cuda_cub::inclusive_scan_n(policy, transformed_iterator_t(first, transform_op), num_items, result, scan_op);
 }
@@ -87,7 +89,7 @@ OutputIt _CCCL_HOST_DEVICE transform_inclusive_scan(
 
   using size_type              = typename iterator_traits<InputIt>::difference_type;
   size_type num_items          = static_cast<size_type>(thrust::distance(first, last));
-  using transformed_iterator_t = transform_input_iterator_t<value_type, InputIt, TransformOp>;
+  using transformed_iterator_t = transform_iterator<TransformOp, InputIt, value_type, value_type>;
 
   return cuda_cub::inclusive_scan_n(
     policy, transformed_iterator_t(first, transform_op), num_items, result, init, scan_op);
@@ -108,7 +110,7 @@ OutputIt _CCCL_HOST_DEVICE transform_exclusive_scan(
 
   using size_type              = typename iterator_traits<InputIt>::difference_type;
   size_type num_items          = static_cast<size_type>(thrust::distance(first, last));
-  using transformed_iterator_t = transform_input_iterator_t<result_type, InputIt, TransformOp>;
+  using transformed_iterator_t = transform_iterator<TransformOp, InputIt, result_type, result_type>;
 
   return cuda_cub::exclusive_scan_n(
     policy, transformed_iterator_t(first, transform_op), num_items, result, init, scan_op);
