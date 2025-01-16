@@ -88,12 +88,12 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_clz(uint64_t __x) noexcept
 
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_clz(uint32_t __x) noexcept
 {
-  return _CUDA_VSTD::is_constant_evaluated() ? _CUDA_VSTD::__constexpr_clz(__x) : _CUDA_VSTD::__runtime_clz(__x);
+  return is_constant_evaluated() ? _CUDA_VSTD::__constexpr_clz(__x) : _CUDA_VSTD::__runtime_clz(__x);
 }
 
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_clz(uint64_t __x) noexcept
 {
-  return _CUDA_VSTD::is_constant_evaluated() ? _CUDA_VSTD::__constexpr_clz(__x) : _CUDA_VSTD::__runtime_clz(__x);
+  return is_constant_evaluated() ? _CUDA_VSTD::__constexpr_clz(__x) : _CUDA_VSTD::__runtime_clz(__x);
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD

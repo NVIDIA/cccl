@@ -38,7 +38,7 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp)
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<sizeof(_Tp) == sizeof(uint32_t) || sizeof(_Tp) == sizeof(uint64_t), int>
 __countl_zero(_Tp __t) noexcept
 {
-  if (_CUDA_VSTD::is_constant_evaluated() && __t == 0)
+  if (is_constant_evaluated() && __t == 0)
   {
     return numeric_limits<_Tp>::digits;
   }
