@@ -31,55 +31,6 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
-#include "cuda/std/__type_traits/conditional.h"
-
-// the following section will be removed when the ptx bfind is added
-namespace cuda::ptx
-{
-
-_LIBCUDACXX_HIDE_FROM_ABI uint32_t bfind(unsigned a)
-{
-  uint32_t d;
-  asm volatile(
-    "{                                                   \n\t\t"
-    "bfind.u32 %0, %1;                      \n\t\t"
-    "}"
-    : "=r"(d)
-    : "r"(a));
-  return d;
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI uint32_t bfind(uint64_t a)
-{
-  uint32_t d;
-  asm volatile(
-    "{                                                   \n\t\t"
-    "bfind.u64 %0, %1;                      \n\t\t"
-    "}"
-    : "=r"(d)
-    : "l"(a));
-  return d;
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI uint32_t bfind(unsigned long long a)
-{
-  uint32_t d;
-  asm volatile(
-    "{                                                   \n\t\t"
-    "bfind.u64 %0, %1;                      \n\t\t"
-    "}"
-    : "=r"(d)
-    : "l"(a));
-  return d;
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI uint32_t bfind(__uint128_t a)
-{
-  return 0;
-}
-
-} // namespace cuda::ptx
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
