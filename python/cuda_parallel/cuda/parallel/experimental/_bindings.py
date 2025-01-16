@@ -7,7 +7,7 @@ import ctypes
 from functools import lru_cache
 from typing import List
 
-from cuda.cccl.include_paths import get_include_paths  # type: ignore[import-not-found]
+from cuda.cccl import get_include_paths  # type: ignore[import-not-found]
 
 from . import _cccl as cccl
 
