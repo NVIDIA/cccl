@@ -25,5 +25,18 @@
  *
  ******************************************************************************/
 
-#define CATCH_CONFIG_MAIN
-#include <catch2/catch.hpp>
+// This benchmark uses a custom reduction operation, max_t, which is not known to CUB, so no operator specific
+// optimizations (e.g. using redux or DPX instructions) are performed. This benchmark covers the unoptimized code path.
+
+// Because CUB cannot detect this operator, we cannot add any tunings based on the results of this benchmark. Its main
+// use is to detect regressions.
+
+#include <nvbench_helper.cuh>
+
+// %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
+// %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
+// %RANGE% TUNE_ITEMS_PER_VEC_LOAD_POW2 ipv 1:2:1
+
+using value_types = all_types;
+using op_t        = max_t;
+#include "base.cuh"

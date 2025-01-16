@@ -49,19 +49,19 @@ struct __pointer_traits_element_type;
 template <class _Ptr>
 struct __pointer_traits_element_type<_Ptr, true>
 {
-  typedef _CCCL_NODEBUG_ALIAS typename _Ptr::element_type type;
+  using type _CCCL_NODEBUG_ALIAS = typename _Ptr::element_type;
 };
 
 template <template <class, class...> class _Sp, class _Tp, class... _Args>
 struct __pointer_traits_element_type<_Sp<_Tp, _Args...>, true>
 {
-  typedef _CCCL_NODEBUG_ALIAS typename _Sp<_Tp, _Args...>::element_type type;
+  using type _CCCL_NODEBUG_ALIAS = typename _Sp<_Tp, _Args...>::element_type;
 };
 
 template <template <class, class...> class _Sp, class _Tp, class... _Args>
 struct __pointer_traits_element_type<_Sp<_Tp, _Args...>, false>
 {
-  typedef _CCCL_NODEBUG_ALIAS _Tp type;
+  using type _CCCL_NODEBUG_ALIAS = _Tp;
 };
 
 template <class _Tp, class = void>
@@ -75,13 +75,13 @@ struct __has_difference_type<_Tp, void_t<typename _Tp::difference_type>> : true_
 template <class _Ptr, bool = __has_difference_type<_Ptr>::value>
 struct __pointer_traits_difference_type
 {
-  typedef _CCCL_NODEBUG_ALIAS ptrdiff_t type;
+  using type _CCCL_NODEBUG_ALIAS = ptrdiff_t;
 };
 
 template <class _Ptr>
 struct __pointer_traits_difference_type<_Ptr, true>
 {
-  typedef _CCCL_NODEBUG_ALIAS typename _Ptr::difference_type type;
+  using type _CCCL_NODEBUG_ALIAS = typename _Ptr::difference_type;
 };
 
 template <class _Tp, class _Up>
@@ -102,27 +102,27 @@ public:
 template <class _Tp, class _Up, bool = __has_rebind<_Tp, _Up>::value>
 struct __pointer_traits_rebind
 {
-  typedef _CCCL_NODEBUG_ALIAS typename _Tp::template rebind<_Up> type;
+  using type _CCCL_NODEBUG_ALIAS = typename _Tp::template rebind<_Up>;
 };
 
 template <template <class, class...> class _Sp, class _Tp, class... _Args, class _Up>
 struct __pointer_traits_rebind<_Sp<_Tp, _Args...>, _Up, true>
 {
-  typedef _CCCL_NODEBUG_ALIAS typename _Sp<_Tp, _Args...>::template rebind<_Up> type;
+  using type _CCCL_NODEBUG_ALIAS = typename _Sp<_Tp, _Args...>::template rebind<_Up>;
 };
 
 template <template <class, class...> class _Sp, class _Tp, class... _Args, class _Up>
 struct __pointer_traits_rebind<_Sp<_Tp, _Args...>, _Up, false>
 {
-  typedef _Sp<_Up, _Args...> type;
+  using type = _Sp<_Up, _Args...>;
 };
 
 template <class _Ptr>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT pointer_traits
 {
-  typedef _Ptr pointer;
-  typedef typename __pointer_traits_element_type<pointer>::type element_type;
-  typedef typename __pointer_traits_difference_type<pointer>::type difference_type;
+  using pointer         = _Ptr;
+  using element_type    = typename __pointer_traits_element_type<pointer>::type;
+  using difference_type = typename __pointer_traits_difference_type<pointer>::type;
 
   template <class _Up>
   using rebind = typename __pointer_traits_rebind<pointer, _Up>::type;
@@ -142,9 +142,9 @@ public:
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT pointer_traits<_Tp*>
 {
-  typedef _Tp* pointer;
-  typedef _Tp element_type;
-  typedef ptrdiff_t difference_type;
+  using pointer         = _Tp*;
+  using element_type    = _Tp;
+  using difference_type = ptrdiff_t;
 
   template <class _Up>
   using rebind = _Up*;
@@ -164,7 +164,7 @@ public:
 template <class _From, class _To>
 struct __rebind_pointer
 {
-  typedef typename pointer_traits<_From>::template rebind<_To> type;
+  using type = typename pointer_traits<_From>::template rebind<_To>;
 };
 
 // to_address

@@ -48,7 +48,8 @@
 #    include <thrust/system/cuda/detail/async/customization.h>
 #    include <thrust/system/cuda/detail/util.h>
 #    include <thrust/system/cuda/future.h>
-#    include <thrust/type_traits/remove_cvref.h>
+
+#    include <cuda/std/type_traits>
 
 #    include <type_traits>
 

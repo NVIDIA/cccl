@@ -42,16 +42,16 @@ protected:
   _Container* container;
 
 public:
-  typedef output_iterator_tag iterator_category;
-  typedef void value_type;
+  using iterator_category = output_iterator_tag;
+  using value_type        = void;
 #if _CCCL_STD_VER > 2017
-  typedef ptrdiff_t difference_type;
+  using difference_type = ptrdiff_t;
 #else
-  typedef void difference_type;
+  using difference_type = void;
 #endif
-  typedef void pointer;
-  typedef void reference;
-  typedef _Container container_type;
+  using pointer        = void;
+  using reference      = void;
+  using container_type = _Container;
 
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 explicit front_insert_iterator(_Container& __x)
       : container(_CUDA_VSTD::addressof(__x))

@@ -34,10 +34,10 @@
 #  include <thrust/system/cuda/future.h>
 #  include <thrust/system/cuda/memory.h>
 #  include <thrust/type_traits/integer_sequence.h>
-#  include <thrust/type_traits/remove_cvref.h>
 
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__memory/unique_ptr.h>
+#  include <cuda/std/type_traits>
 
 #  include <type_traits>
 
@@ -310,7 +310,9 @@ struct unique_eager_future_promise_pair final
   weak_promise<X, XPointer> promise;
 };
 
-struct acquired_stream final
+_CCCL_SUPPRESS_DEPRECATED_PUSH // for thrust::optional
+
+  struct acquired_stream final
 {
   unique_stream stream;
   optional<std::size_t> const acquired_from;
@@ -339,6 +341,8 @@ inline _CCCL_HOST optional<unique_stream> try_acquire_stream(int device, unique_
 // Precondition: `device` is the current CUDA device.
 template <typename X>
 _CCCL_HOST optional<unique_stream> try_acquire_stream(int device, unique_eager_future<X>& parent) noexcept;
+
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 template <typename... Dependencies>
 _CCCL_HOST acquired_stream acquire_stream(int device, Dependencies&... deps) noexcept;
@@ -743,8 +747,10 @@ public:
     stream().wait();
   }
 
-  friend _CCCL_HOST optional<detail::unique_stream>
-  thrust::system::cuda::detail::try_acquire_stream(int device_id, unique_eager_event& parent) noexcept;
+  _CCCL_SUPPRESS_DEPRECATED_PUSH // for thrust::optional
+    friend _CCCL_HOST optional<detail::unique_stream>
+    thrust::system::cuda::detail::try_acquire_stream(int device_id, unique_eager_event& parent) noexcept;
+  _CCCL_SUPPRESS_DEPRECATED_POP
 
   template <typename... Dependencies>
   friend _CCCL_HOST unique_eager_event
@@ -754,7 +760,7 @@ public:
 template <typename T>
 struct unique_eager_future final
 {
-  THRUST_STATIC_ASSERT_MSG((!std::is_same<T, remove_cvref_t<void>>::value),
+  THRUST_STATIC_ASSERT_MSG((!std::is_same<T, ::cuda::std::remove_cvref_t<void>>::value),
                            "`thrust::event` should be used to express valueless futures");
 
   using value_type        = typename detail::async_value<T>::value_type;
@@ -901,9 +907,11 @@ public:
   }
 #  endif
 
-  template <typename X>
-  friend _CCCL_HOST optional<detail::unique_stream>
-  thrust::system::cuda::detail::try_acquire_stream(int device_id, unique_eager_future<X>& parent) noexcept;
+  _CCCL_SUPPRESS_DEPRECATED_PUSH // for thrust::optional
+    template <typename X>
+    friend _CCCL_HOST optional<detail::unique_stream>
+    thrust::system::cuda::detail::try_acquire_stream(int device_id, unique_eager_future<X>& parent) noexcept;
+  _CCCL_SUPPRESS_DEPRECATED_POP
 
   template <typename X, typename XPointer, typename ComputeContent, typename... Dependencies>
   friend _CCCL_HOST detail::unique_eager_future_promise_pair<X, XPointer>
@@ -916,9 +924,10 @@ public:
 
 namespace detail
 {
+_CCCL_SUPPRESS_DEPRECATED_PUSH // for thrust::optional
 
-template <typename X, typename Deleter>
-_CCCL_HOST optional<unique_stream> try_acquire_stream(int, std::unique_ptr<X, Deleter>&) noexcept
+  template <typename X, typename Deleter>
+  _CCCL_HOST optional<unique_stream> try_acquire_stream(int, std::unique_ptr<X, Deleter>&) noexcept
 {
   // There's no stream to acquire!
   return {};
@@ -973,6 +982,8 @@ _CCCL_HOST optional<unique_stream> try_acquire_stream(int device_id, unique_eage
   return {};
 }
 
+_CCCL_SUPPRESS_DEPRECATED_POP
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename... Dependencies>
@@ -987,7 +998,8 @@ template <typename... Dependencies, std::size_t I0, std::size_t... Is>
 _CCCL_HOST acquired_stream
 acquire_stream_impl(int device_id, std::tuple<Dependencies...>& deps, index_sequence<I0, Is...>) noexcept
 {
-  auto tr = try_acquire_stream(device_id, std::get<I0>(deps));
+  _CCCL_SUPPRESS_DEPRECATED_PUSH // for thrust::optional (MSVC warnings here)
+    auto tr = try_acquire_stream(device_id, std::get<I0>(deps));
 
   if (tr)
   {
@@ -997,6 +1009,7 @@ acquire_stream_impl(int device_id, std::tuple<Dependencies...>& deps, index_sequ
   {
     return acquire_stream_impl(device_id, deps, index_sequence<Is...>{});
   }
+  _CCCL_SUPPRESS_DEPRECATED_POP
 }
 
 template <typename... Dependencies>
@@ -1043,10 +1056,12 @@ create_dependencies_impl(acquired_stream& as, std::tuple<Dependencies...>& deps,
 {
   // We only need to wait on the current dependency if we didn't steal our
   // stream from it.
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   if (!as.acquired_from || *as.acquired_from != I0)
   {
     create_dependency(as.stream, std::get<I0>(deps));
   }
+  _CCCL_SUPPRESS_DEPRECATED_POP
 
   create_dependencies_impl(as, deps, index_sequence<Is...>{});
 }
