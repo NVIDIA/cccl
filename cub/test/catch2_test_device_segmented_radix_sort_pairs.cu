@@ -27,7 +27,7 @@
 #include "insert_nested_NVTX_range_guard.h"
 // above header needs to be included first
 
-#include <cub/device/device_segmented_radix_sort.cuh>DispatchSegmentedRadixSort
+#include <cub/device/device_segmented_radix_sort.cuh>
 #include <cub/util_type.cuh>
 
 #include <thrust/iterator/constant_iterator.h>
@@ -333,6 +333,8 @@ catch (std::bad_alloc& e)
   std::cerr << "Skipping segmented sort test, insufficient GPU memory. " << e.what() << "\n";
 }
 
+// Currently, size of a single segment in DeviceRadixSort is limited to INT_MAX
+#if defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
 C2H_TEST("DeviceSegmentedSort::SortPairs: very large segments", "[pairs][segmented][sort][device]", all_offset_types)
 try
 {
@@ -382,3 +384,4 @@ catch (std::bad_alloc& e)
 {
   std::cerr << "Skipping segmented sort test, insufficient GPU memory. " << e.what() << "\n";
 }
+#endif

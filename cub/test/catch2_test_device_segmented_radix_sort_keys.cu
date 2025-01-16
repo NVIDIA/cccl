@@ -473,7 +473,7 @@ try
   constexpr std::size_t segment_size = 1000000;
   constexpr std::size_t uint32_max   = ::cuda::std::numeric_limits<std::uint32_t>::max();
   constexpr std::size_t num_items =
-    (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : ::cuda::std::numeric_limits<offset_t>::max();
+    (sizeof(offset_t) == 8) ? uint32_max + (1 << 22) : ::cuda::std::numeric_limits<offset_t>::max();
   constexpr segment_offset_t num_empty_segments = uint32_max - 5U;
   const segment_offset_t num_segments           = num_empty_segments + ::cuda::ceil_div(num_items, segment_size);
   CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments);
@@ -490,13 +490,12 @@ try
     thrust::make_counting_iterator(std::size_t{0}),
     segment_iterator_t{num_empty_segments, num_segments, segment_size, num_items});
 
-  sort_keys(
-    thrust::raw_pointer_cast(in_keys.data()),
-    thrust::raw_pointer_cast(out_keys.data()),
-    static_cast<offset_t>(num_items),
-    static_cast<segment_offset_t>(num_segments),
-    offsets,
-    offsets + 1);
+  sort_keys(thrust::raw_pointer_cast(in_keys.data()),
+            thrust::raw_pointer_cast(out_keys.data()),
+            static_cast<offset_t>(num_items),
+            static_cast<segment_offset_t>(num_segments),
+            offsets,
+            offsets + 1);
 
   // Verify the keys are sorted correctly
   verification_helper.verify_sorted(out_keys, offsets + num_empty_segments, num_segments - num_empty_segments);
@@ -506,9 +505,12 @@ catch (std::bad_alloc& e)
   std::cerr << "Skipping segmented radix sort test, insufficient GPU memory. " << e.what() << "\n";
 }
 
+// Currently, size of a single segment in DeviceRadixSort is limited to INT_MAX
+#  if defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
 C2H_TEST("DeviceSegmentedRadixSort::SortKeys: very large segments",
          "[keys][segmented][radix][sort][device]",
          all_offset_types)
+
 try
 {
   using key_t                      = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
@@ -533,13 +535,12 @@ try
   short_key_verification_helper<key_t> verification_helper{};
   verification_helper.prepare_verification_data(in_keys);
 
-  sort_keys(
-    thrust::raw_pointer_cast(in_keys.data()),
-    thrust::raw_pointer_cast(out_keys.data()),
-    static_cast<offset_t>(num_items),
-    static_cast<segment_offset_t>(num_segments),
-    thrust::raw_pointer_cast(offsets.data()),
-    offsets.cbegin() + 1);
+  sort_keys(thrust::raw_pointer_cast(in_keys.data()),
+            thrust::raw_pointer_cast(out_keys.data()),
+            static_cast<offset_t>(num_items),
+            static_cast<segment_offset_t>(num_segments),
+            thrust::raw_pointer_cast(offsets.data()),
+            offsets.cbegin() + 1);
 
   // Verify the keys are sorted correctly
   verification_helper.verify_sorted(out_keys);
@@ -548,5 +549,5 @@ catch (std::bad_alloc& e)
 {
   std::cerr << "Skipping segmented radix sort test, insufficient GPU memory. " << e.what() << "\n";
 }
-
+#  endif
 #endif // defined(SINGLE_TEST_CASE_INSTANTIATION)
