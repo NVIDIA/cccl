@@ -63,6 +63,11 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail
+{
+namespace scan
+{
+
 template <typename MaxPolicyT,
           typename InputIteratorT,
           typename OutputIteratorT,
@@ -94,6 +99,9 @@ struct DeviceScanKernelSource
     return sizeof(AccumT);
   }
 };
+
+} // namespace scan
+} // namespace detail
 
 /******************************************************************************
  * Dispatch
@@ -128,21 +136,22 @@ template <typename InputIteratorT,
           typename ScanOpT,
           typename InitValueT,
           typename OffsetT,
-          typename AccumT                = ::cuda::std::__accumulator_t<ScanOpT,
-                                                                        cub::detail::value_t<InputIteratorT>,
-                                                                        ::cuda::std::_If<std::is_same<InitValueT, NullType>::value,
-                                                                                         cub::detail::value_t<InputIteratorT>,
-                                                                                         typename InitValueT::value_type>>,
-          typename PolicyHub             = detail::scan::policy_hub<AccumT, ScanOpT>,
-          bool ForceInclusive            = false,
-          typename KernelSource          = DeviceScanKernelSource<typename PolicyHub::MaxPolicy,
-                                                                  InputIteratorT,
-                                                                  OutputIteratorT,
-                                                                  ScanOpT,
-                                                                  InitValueT,
-                                                                  OffsetT,
-                                                                  AccumT,
-                                                                  ForceInclusive>,
+          typename AccumT       = ::cuda::std::__accumulator_t<ScanOpT,
+                                                               cub::detail::value_t<InputIteratorT>,
+                                                               ::cuda::std::_If<std::is_same<InitValueT, NullType>::value,
+                                                                                cub::detail::value_t<InputIteratorT>,
+                                                                                typename InitValueT::value_type>>,
+          typename PolicyHub    = detail::scan::policy_hub<AccumT, ScanOpT>,
+          bool ForceInclusive   = false,
+          typename KernelSource = detail::scan::DeviceScanKernelSource<
+            typename PolicyHub::MaxPolicy,
+            InputIteratorT,
+            OutputIteratorT,
+            ScanOpT,
+            InitValueT,
+            OffsetT,
+            AccumT,
+            ForceInclusive>,
           typename KernelLauncherFactory = detail::TripleChevronFactory>
 
 struct DispatchScan
@@ -248,7 +257,6 @@ struct DispatchScan
   {
     using ScanTileStateT = typename KernelSource::ScanTileStateT;
 
-    // TODO(ashwin): Don't know how to handle this.
     // `LOAD_LDG` makes in-place execution UB and doesn't lead to better
     // performance.
     static_assert(policy.LoadModifier() != CacheLoadModifier::LOAD_LDG,
