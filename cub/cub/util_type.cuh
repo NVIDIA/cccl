@@ -76,17 +76,8 @@ _CCCL_DIAG_POP
 CUB_NAMESPACE_BEGIN
 
 #ifndef CUB_IS_INT128_ENABLED
-#  if defined(__CUDACC_RTC__)
-#    if defined(__CUDACC_RTC_INT128__)
-#      define CUB_IS_INT128_ENABLED 1
-#    endif // !defined(__CUDACC_RTC_INT128__)
-#  else // !defined(__CUDACC_RTC__)
-#    if _CCCL_CUDACC_AT_LEAST(11, 5)
-#      if _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
-#        define CUB_IS_INT128_ENABLED 1
-#      endif // GCC || CLANG || NVHPC
-#    endif // _CCCL_CUDACC_AT_LEAST(11, 5)
-#  endif // !defined(__CUDACC_RTC__)
+#  define CUB_IS_INT128_ENABLED \
+    LIBCUDACXX_COMP_DEPR_IMPL(CUB_IS_INT128_ENABLED is deprecated in favor of _CCCL_HAS_INT128()) _CCCL_HAS_INT128()
 #endif // !defined(CUB_IS_INT128_ENABLED)
 
 /******************************************************************************

@@ -174,7 +174,7 @@ struct sm80_tuning<double, primitive_op::yes, primitive_accum::yes, accum_size::
   static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <>
 struct sm80_tuning<__int128_t, primitive_op::yes, primitive_accum::no, accum_size::_16>
 {
@@ -220,7 +220,7 @@ template <class T> struct sm90_tuning<T, primitive_op::yes, primitive_accum::yes
 template <> struct sm90_tuning<float,  primitive_op::yes, primitive_accum::yes, accum_size::_4> : sm90_tuning_vals<float,  128, 24, 688, 1140> {};
 template <> struct sm90_tuning<double, primitive_op::yes, primitive_accum::yes, accum_size::_8> : sm90_tuning_vals<double, 224, 24, 576, 1215> {};
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <> struct sm90_tuning<__int128_t, primitive_op::yes, primitive_accum::no, accum_size::_16> : sm90_tuning_vals<__int128_t, 576, 21, 860, 630> {};
 template <>
 struct sm90_tuning<__uint128_t, primitive_op::yes, primitive_accum::no, accum_size::_16>

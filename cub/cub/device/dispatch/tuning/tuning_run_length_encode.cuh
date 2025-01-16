@@ -156,7 +156,7 @@ struct sm80_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, len
   using delay_constructor                            = detail::no_delay_constructor_t<1075>;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <class LengthT>
 struct sm80_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
 {
@@ -216,7 +216,7 @@ struct sm90_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, len
   using delay_constructor                            = detail::no_delay_constructor_t<515>;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <class LengthT>
 struct sm90_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
 {
@@ -349,7 +349,7 @@ struct sm80_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, len
   using delay_constructor                            = detail::no_delay_constructor_t<1065>;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <class LengthT>
 struct sm80_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
 {
@@ -414,7 +414,7 @@ struct sm90_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, len
   using delay_constructor                            = detail::no_delay_constructor_t<840>;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <class LengthT>
 struct sm90_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
 {

@@ -99,7 +99,7 @@ BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits, Int2Type
   return (source >> bit_start) & MASK;
 }
 
-#  if CUB_IS_INT128_ENABLED
+#  if _CCCL_HAS_INT128()
 /**
  * Bitfield-extract for 128-bit types.
  */
