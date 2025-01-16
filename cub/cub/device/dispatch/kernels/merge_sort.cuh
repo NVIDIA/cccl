@@ -38,8 +38,6 @@
 #endif // no system header
 
 #include <cub/agent/agent_merge_sort.cuh>
-#include <cub/util_device.cuh>
-#include <cub/util_namespace.cuh>
 #include <cub/util_vsmem.cuh>
 
 CUB_NAMESPACE_BEGIN
