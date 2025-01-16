@@ -147,7 +147,7 @@ private:
   {
     // Sink the prefix tuple into a const local so it can be safely passed to
     // multiple invocations without worrying about potential modifications.
-    using prefix_tuple_type              = thrust::remove_cvref_t<PrefixArgTuple>;
+    using prefix_tuple_type              = cuda::std::remove_cvref_t<PrefixArgTuple>;
     prefix_tuple_type const prefix_tuple = THRUST_FWD(prefix_tuple_ref);
 
     using postfix_tuple_type               = std::tuple_element_t<PostfixIdx, postfix_args_type>;
