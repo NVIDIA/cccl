@@ -43,6 +43,10 @@
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
 
+#include <thrust/system/cuda/detail/core/load_iterator.h>
+
+#include <cuda/std/__cccl/cuda_capabilities.h>
+
 CUB_NAMESPACE_BEGIN
 
 template <int _BLOCK_THREADS,
