@@ -45,7 +45,7 @@ __countl_zero(_Tp __t) noexcept
   using _Sp         = _If<sizeof(_Tp) == sizeof(uint32_t), uint32_t, uint64_t>;
   auto __clz_result = _CUDA_VSTD::__cccl_clz(static_cast<_Sp>(__t));
   NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                    (return __clz_result;), //
+                    (return __clz_result;), // if __t == 0 __clz_result is already equal to numeric_limits<_Tp>::digits
                     (return __t ? __clz_result : numeric_limits<_Tp>::digits;))
 }
 
