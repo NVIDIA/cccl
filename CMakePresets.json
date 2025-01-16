@@ -283,6 +283,8 @@
       "displayName": "CCCL Infrastructure",
       "inherits": "base",
       "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "17",
+        "CMAKE_CUDA_STANDARD": "17",
         "CMAKE_CUDA_COMPILER": "nvcc",
         "CCCL_ENABLE_EXAMPLES": true,
         "CCCL_ENABLE_TESTING": true
