@@ -22,7 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__bit/bit_cast.h>
-#include <cuda/std/__bit/clz.h>
+#include <cuda/std/__bit/ctz.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
