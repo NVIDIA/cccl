@@ -20,7 +20,7 @@ int main(int, char**)
 #else
   static_assert(false);
 #endif
-#if !_CCCL_HAS_FLOAT128()
+#if !_CCCL_HAS_FLOAT128() && !_CCCL_COMPILER(NVRTC)
   auto z = __float128(3.14) + __float128(3.14);
   unused(z);
 #else
