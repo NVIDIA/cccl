@@ -15,9 +15,6 @@
 
 #include <cuda/experimental/accessor.cuh>
 
-#include <tuple>
-
-#include "cuda/__barrier/aligned_size.h"
 #include <testing.cuh>
 
 template <typename T, typename E, typename L, typename A>
@@ -28,15 +25,29 @@ __global__ void mdspan_accessor_kernel(cuda::std::mdspan<T, E, L, A> md)
 
 using namespace cuda::experimental;
 
-using TypeLists = std::tuple<std::tuple<eviction_none_t, cuda::aligned_size_t<4>, no_prefetch_t, ptr_no_aliasing_t>,
-                             std::tuple<eviction_normal_t, cuda::aligned_size_t<8>, prefetch_64B_t, ptr_no_aliasing_t>>;
+template <typename... Ts>
+using type_list = ::cuda::std::__type_list<Ts...>;
+
+template <typename... Ts>
+using __type_cartesian_product = ::cuda::std::__type_cartesian_product<Ts...>;
+
+using eviction_list =
+  type_list<eviction_none_t, eviction_normal_t, eviction_first_t, eviction_last_t, eviction_last_use_t, eviction_no_alloc_t>;
+
+using alignment_list = type_list<cuda::aligned_size_t<4>, cuda::aligned_size_t<8>>;
+
+using prefetch_list = type_list<prefetch_default_t, prefetch_64B_t, prefetch_128B_t, prefetch_256B_t>;
+
+using aliasing_list = type_list<ptr_may_alias_t, ptr_no_aliasing_t>;
+
+using TypeLists = ::cuda::std::__type_cartesian_product<eviction_list, alignment_list, prefetch_list, aliasing_list>;
 
 TEMPLATE_LIST_TEST_CASE("Accessor", "[device]", TypeLists)
 {
-  using EvictionPolicy = std::tuple_element_t<0, TestType>;
-  using Alignment      = std::tuple_element_t<1, TestType>;
-  using Prefetch       = std::tuple_element_t<2, TestType>;
-  using Restrict       = std::tuple_element_t<3, TestType>;
+  using EvictionPolicy = ::cuda::std::__type_at_c<0, TestType>;
+  using Alignment      = ::cuda::std::__type_at_c<1, TestType>;
+  using Prefetch       = ::cuda::std::__type_at_c<2, TestType>;
+  using Restrict       = ::cuda::std::__type_at_c<3, TestType>;
 
   thrust::host_vector<int> h_vector(32);
   std::iota(h_vector.begin(), h_vector.end(), 0);
