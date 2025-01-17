@@ -38,7 +38,21 @@
 #endif // no system header
 
 #include <cub/agent/agent_merge_sort.cuh>
+#include <cub/util_policy_wrapper_t.cuh>
 #include <cub/util_vsmem.cuh>
+
+THRUST_NAMESPACE_BEGIN
+
+namespace cuda_cub
+{
+namespace core
+{
+template <class PtxPlan, class It>
+typename LoadIterator<PtxPlan, It>::type _CCCL_DEVICE _CCCL_FORCEINLINE make_load_iterator(PtxPlan const&, It it);
+}
+} // namespace cuda_cub
+
+THRUST_NAMESPACE_END
 
 CUB_NAMESPACE_BEGIN
 
