@@ -16,9 +16,9 @@
 
 #ifndef _CCCL_DISABLE_INT128
 #  if defined(__SIZEOF_INT128__) // defined(__SIZEOF_INT128__) vvvv
-#    if _CCCL_COMPILER(NVRTC) && defined(__CUDACC_RTC_INT128__) && !_CCCL_OS(WINDOWS)
+#    if _CCCL_COMPILER(NVRTC) && defined(__CUDACC_RTC_INT128__) && _CCCL_OS(LINUX)
 #      define _CCCL_HAS_INT128() 1
-#    elif (_CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)) && !_CCCL_OS(WINDOWS)
+#    elif (_CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)) && _CCCL_OS(LINUX)
 #      define _CCCL_HAS_INT128() 1
 #    else
 #      define _CCCL_HAS_INT128() 0
@@ -31,14 +31,15 @@
 #endif // #ifndef _CCCL_DISABLE_INT128
 
 #ifndef _CCCL_DISABLE_FLOAT128
-#  if (defined(__SIZEOF_FLOAT128__) || defined(__FLOAT128__)) && _CCCL_OS(LINUX) \
-    && (_CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)) && !defined(__CUDA_ARCH__)
+#  if (defined(__SIZEOF_FLOAT128__) || defined(__FLOAT128__)) && _CCCL_OS(LINUX)                          \
+    && (_CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)) && !defined(__CUDA_ARCH__) \
+    && !_CCCL_COMPILER(NVRTC)
 #    define _CCCL_HAS_FLOAT128() 1
 #  else
 #    define _CCCL_HAS_FLOAT128() 0
 #  endif
 #else
-#  define _CCCL_HAS_INT128() 0
+#  define _CCCL_HAS_FLOAT128() 0
 #endif // #ifndef _CCCL_DISABLE_FLOAT128
 
 #endif // __CCCL_128BIT_TYPES_H
