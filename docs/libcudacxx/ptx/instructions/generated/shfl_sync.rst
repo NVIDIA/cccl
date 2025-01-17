@@ -9,17 +9,69 @@ shfl.sync
    //   .mode = { .up, .down, .bfly, .idx };
 
    template<typename T>
-   struct shfl_return_values {
-       T    data;
-       bool pred;
-   };
+   [[nodiscard]] __device__ static inline
+   T shfl_sync_idx(T        data,
+                   uint32_t lane_idx_offset,
+                   uint32_t clamp_segmask,
+                   uint32_t lane_mask) noexcept;
 
    template<typename T>
    [[nodiscard]] __device__ static inline
-   shfl_return_values<T> shfl_sync(shfl_mode_t shfl_mode,
-                                   T           data,
-                                   uint32_t    lane_idx_offset,
-                                   uint32_t    clamp_segmask,
-                                   uint32_t    lane_mask) noexcept;
+   T shfl_sync_idx(T        data,
+                   bool&    pred,
+                   uint32_t lane_idx_offset,
+                   uint32_t clamp_segmask,
+                   uint32_t lane_mask) noexcept;
 
-- ``shfl_mode`` is ``shfl_mode_up`` or ``shfl_mode_down`` or ``shfl_mode_bfly`` or ``shfl_mode_idx``
+   template<typename T>
+   [[nodiscard]] __device__ static inline
+   T shfl_sync_up(T        data,
+                  uint32_t lane_idx_offset,
+                  uint32_t clamp_segmask,
+                  uint32_t lane_mask) noexcept;
+
+   template<typename T>
+   [[nodiscard]] __device__ static inline
+   T shfl_sync_up(T        data,
+                  bool&    pred,
+                  uint32_t lane_idx_offset,
+                  uint32_t clamp_segmask,
+                  uint32_t lane_mask) noexcept;
+
+   template<typename T>
+   [[nodiscard]] __device__ static inline
+   T shfl_sync_down(T        data,
+                    uint32_t lane_idx_offset,
+                    uint32_t clamp_segmask,
+                    uint32_t lane_mask) noexcept;
+
+   template<typename T>
+   [[nodiscard]] __device__ static inline
+   T shfl_sync_down(T        data,
+                    bool&    pred,
+                    uint32_t lane_idx_offset,
+                    uint32_t clamp_segmask,
+                    uint32_t lane_mask) noexcept;
+
+   template<typename T>
+   [[nodiscard]] __device__ static inline
+   T shfl_sync_bfly(T        data,
+                    uint32_t lane_idx_offset,
+                    uint32_t clamp_segmask,
+                    uint32_t lane_mask) noexcept;
+
+   template<typename T>
+   [[nodiscard]] __device__ static inline
+   T shfl_sync_bfly(T        data,
+                    bool&    pred,
+                    uint32_t lane_idx_offset,
+                    uint32_t clamp_segmask,
+                    uint32_t lane_mask) noexcept;
+
+**Constrains and checks**
+
+- ``T`` must have 32-bit size (compile-time)
+- ``lane_idx_offset`` must be less than the warp size (debug mode)
+- ``clamp_segmask`` must use the bit positions [0:4] and [8:12] (debug mode)
+- ``lane_mask`` must be a subset of the active mask (debug mode)
+- The destination lane must be a member of the ``lane_mask`` (debug mode)
