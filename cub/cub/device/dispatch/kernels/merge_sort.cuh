@@ -47,9 +47,10 @@ namespace cuda_cub
 {
 namespace core
 {
+// We must forward declare here because make_load_iterator.h pulls in non NVRTC compilable code
 template <class PtxPlan, class It>
 typename LoadIterator<PtxPlan, It>::type _CCCL_DEVICE _CCCL_FORCEINLINE make_load_iterator(PtxPlan const&, It it);
-}
+} // namespace core
 } // namespace cuda_cub
 
 THRUST_NAMESPACE_END
