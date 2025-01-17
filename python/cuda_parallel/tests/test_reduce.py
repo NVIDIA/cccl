@@ -584,7 +584,8 @@ def test_reduce_with_stream():
         h_init=h_init,
         stream=stream_wrapper,
     )
-    d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
+    with stream:
+        d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
 
     reduce_into(d_temp_storage, d_in, d_out, d_in.size, h_init, stream=stream_wrapper)
     with stream:
