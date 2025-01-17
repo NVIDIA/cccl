@@ -31,6 +31,7 @@ _CCCL_NV_DIAG_SUPPRESS(186)
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
+#include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/cmath>
 #include <cuda/ptx>
