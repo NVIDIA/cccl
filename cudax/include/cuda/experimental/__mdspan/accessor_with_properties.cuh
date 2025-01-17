@@ -59,7 +59,7 @@ template <class... Ts>
 constexpr auto count_eviction_v = ::cuda::std::__type_call<type_count_if<is_eviction_policy>, Ts...>::value;
 
 template <class... Ts>
-constexpr auto count_prefetch_v = ::cuda::std::__type_call<type_count_if<is_prefetch>, Ts...>::value;
+constexpr auto count_prefetch_v = ::cuda::std::__type_call<type_count_if<is_prefetch_spatial>, Ts...>::value;
 
 template <class... Ts>
 constexpr auto count_alignment_v = ::cuda::std::__type_call<type_count_if<is_alignment>, Ts...>::value;
@@ -96,11 +96,10 @@ using find_eviction_policy_t =
 
 template <typename... UserProperties>
 using find_prefetch_size_t =
-  typename find_property<::cuda::experimental::is_prefetch, no_prefetch_t, UserProperties...>::type;
+  typename find_property<::cuda::experimental::is_prefetch_spatial, no_prefetch_spatial_t, UserProperties...>::type;
 
 template <size_t _DefaultAlignment, typename... UserProperties>
-using find_alignment_t =
-  typename find_property<is_alignment, aligned_size_t<_DefaultAlignment>, UserProperties...>::type;
+using find_alignment_t = typename find_property<is_alignment, alignment_t<_DefaultAlignment>, UserProperties...>::type;
 
 template <typename... UserProperties>
 using find_aliasing_policy_t =
@@ -163,7 +162,7 @@ public:
     NV_IF_ELSE_TARGET(
       NV_IS_HOST,
       (static_assert(
-         ::cuda::std::is_same_v<Eviction, eviction_none_t> && ::cuda::std::is_same_v<Prefetch, no_prefetch_t>);
+         ::cuda::std::is_same_v<Eviction, eviction_none_t> && ::cuda::std::is_same_v<Prefetch, no_prefetch_spatial_t>);
        *_ptr = value;),
       (::cuda::experimental::store(value, _ptr, Eviction{});));
     return *this;
@@ -174,7 +173,7 @@ public:
     NV_IF_ELSE_TARGET(
       NV_IS_HOST,
       (static_assert(
-         ::cuda::std::is_same_v<Eviction, eviction_none_t> && ::cuda::std::is_same_v<Prefetch, no_prefetch_t>);
+         ::cuda::std::is_same_v<Eviction, eviction_none_t> && ::cuda::std::is_same_v<Prefetch, no_prefetch_spatial_t>);
        return *_ptr;),
       (return ::cuda::experimental::load(_ptr, MemoryBehavior{}, Eviction{}, Prefetch{});));
   }
@@ -200,7 +199,7 @@ class accessor_with_properties
   static_assert(is_memory_behavior_v<MemoryBehavior>, "Restrict must be a memory behavior");
   static_assert(is_ptr_aliasing_policy_v<Restrict>, "Restrict must be a pointer aliasing policy");
   static_assert(is_eviction_policy_v<Eviction>, "Eviction must be an eviction policy");
-  static_assert(is_prefetch_v<Prefetch>, "Restrict must be a prefetch policy");
+  static_assert(is_prefetch_spatial_v<Prefetch>, "Restrict must be a prefetch policy");
   static_assert(is_alignment_v<Alignment>, "Alignment must be an alignment policy");
 
   static constexpr bool _is_const     = ::cuda::std::is_const_v<ElementType>;
@@ -222,13 +221,13 @@ public:
 
   _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference access(data_handle_type ptr, size_t i) const noexcept
   {
-    auto ptr1 = ::cuda::std::assume_aligned<Alignment::align>(ptr);
+    auto ptr1 = ::cuda::std::assume_aligned<Alignment{}>(ptr);
     if constexpr (_is_const)
     {
       NV_IF_ELSE_TARGET(
         NV_IS_HOST,
-        (static_assert(
-           ::cuda::std::is_same_v<Eviction, eviction_none_t> && ::cuda::std::is_same_v<Prefetch, no_prefetch_t>);
+        (static_assert(::cuda::std::is_same_v<Eviction, eviction_none_t>
+                       && ::cuda::std::is_same_v<Prefetch, no_prefetch_spatial_t>);
          return ptr1[i];),
         (return ::cuda::experimental::load(ptr1 + i, MemoryBehavior{}, Eviction{}, Prefetch{});));
     }
@@ -241,7 +240,7 @@ public:
   _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE data_handle_type
   offset(data_handle_type ptr, size_t i) const noexcept
   {
-    return ::cuda::std::assume_aligned<Alignment::align>(ptr) + i;
+    return ::cuda::std::assume_aligned<Alignment{}>(ptr) + i;
   }
 };
 

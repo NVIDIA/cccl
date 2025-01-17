@@ -57,28 +57,34 @@
 namespace cuda::experimental
 {
 
-template <typename T, MemoryBehavior B, EvictionPolicyEnum E, PrefetchSizeEnum P>
+template <typename T, MemoryBehavior B, EvictionPolicyEnum E, PrefetchSpatialEnum P>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE T
 load(const T* ptr,
      memory_behavior_t<B> load_behavior   = read_write,
      eviction_policy_t<E> eviction_policy = eviction_normal,
-     prefetch_t<P> prefetch               = no_prefetch) noexcept
+     prefetch_spatial_t<P> prefetch       = no_prefetch_spatial) noexcept
 {
 #if _CCCL_PTX_LD_ENABLED
-  if constexpr (eviction_policy == eviction_none && prefetch == no_prefetch)
+  if constexpr (eviction_policy == eviction_none && prefetch == no_prefetch_spatial)
   {
     return *ptr; // do not skip NVVM
   }
   else
   {
-    if constexpr (load_behavior == read_write)
-    {
-      _CUDAX_LOAD_ADD_EVICTION_POLICY(, eviction_policy, prefetch);
-    }
-    else
-    {
-      _CUDAX_LOAD_ADD_EVICTION_POLICY(nc, eviction_policy, prefetch);
-    }
+    // clang-format off
+    NV_IF_ELSE_TARGET(
+      NV_PROVIDES_SM_70,
+      (
+        if constexpr (load_behavior == read_write)
+        {
+          _CUDAX_LOAD_ADD_EVICTION_POLICY(, eviction_policy, prefetch);
+        }
+        else
+        {
+            _CUDAX_LOAD_ADD_EVICTION_POLICY(nc, eviction_policy, prefetch);
+        }),
+      (_CCCL_ASSERT(false, "eviction policy and prefetch require SM 7.0 or higher");));
+    // clang-format on
   }
 #else
   return *ptr;
@@ -91,18 +97,29 @@ store(T value, T* ptr, eviction_policy_t<E> eviction_policy = eviction_normal) n
 {
   static_assert(!::cuda::std::is_const_v<T>);
 #if _CCCL_PTX_ST_ENABLED
-  switch (eviction_policy)
+  if (eviction_policy == eviction_none)
   {
-    case eviction_none:
-      *ptr = value;
-    case eviction_first:
-      ::cuda::ptx::st_global_eviction_first(ptr, value);
-    case eviction_last:
-      ::cuda::ptx::st_global_eviction_last(ptr, value);
-    case eviction_last_use:
-      ::cuda::ptx::st_global_eviction_last_use(ptr, value);
-    case eviction_no_alloc:
-      ::cuda::ptx::st_global_eviction_no_alloc(ptr, value);
+    *ptr = value;
+  }
+  else
+  {
+    // clang-format off
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70,
+        (switch (eviction_policy)
+         {
+           case eviction_first:
+             ::cuda::ptx::st_global_eviction_first(ptr, value);
+           case eviction_last:
+             ::cuda::ptx::st_global_eviction_last(ptr, value);
+           case eviction_last_use:
+             ::cuda::ptx::st_global_eviction_last_use(ptr, value);
+           case eviction_no_alloc:
+             ::cuda::ptx::st_global_eviction_no_alloc(ptr, value);
+           default:
+             _CCCL_UNREACHABLE();
+         }),
+        (_CCCL_ASSERT(false, "eviction policy requires SM 7.0 or higher");));
+    // clang-format on
   }
 #else
   *ptr = value;

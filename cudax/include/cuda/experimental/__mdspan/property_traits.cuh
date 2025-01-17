@@ -21,7 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/barrier> // cuda::aligned_size_t
 #include <cuda/std/__type_traits/integral_constant.h>
 
 #include <cuda/experimental/__mdspan/properties.cuh>
@@ -60,19 +59,34 @@ template <typename T>
 constexpr bool is_eviction_policy_v = is_eviction_policy<T>::value;
 
 /***********************************************************************************************************************
- * Cache Hint
+ * Spatial Prefetch
  **********************************************************************************************************************/
 
 template <typename>
-struct is_prefetch : ::cuda::std::false_type
+struct is_prefetch_spatial : ::cuda::std::false_type
 {};
 
-template <PrefetchSizeEnum Value>
-struct is_prefetch<prefetch_t<Value>> : ::cuda::std::true_type
+template <PrefetchSpatialEnum Value>
+struct is_prefetch_spatial<prefetch_spatial_t<Value>> : ::cuda::std::true_type
 {};
 
 template <typename T>
-constexpr bool is_prefetch_v = is_prefetch<T>::value;
+constexpr bool is_prefetch_spatial_v = is_prefetch_spatial<T>::value;
+
+/***********************************************************************************************************************
+ * Temporal Prefetch
+ **********************************************************************************************************************/
+
+template <typename>
+struct is_prefetch_temporal : ::cuda::std::false_type
+{};
+
+template <PrefetchSpatialEnum Value>
+struct is_prefetch_temporal<prefetch_spatial_t<Value>> : ::cuda::std::true_type
+{};
+
+template <typename T>
+constexpr bool is_prefetch_temporal_v = is_prefetch_temporal<T>::value;
 
 /***********************************************************************************************************************
  * Aliasing Policies
@@ -98,7 +112,7 @@ struct is_alignment : ::cuda::std::false_type
 {};
 
 template <size_t AlignBytes>
-struct is_alignment<cuda::aligned_size_t<AlignBytes>> : ::cuda::std::true_type
+struct is_alignment<alignment_t<AlignBytes>> : ::cuda::std::true_type
 {};
 
 template <typename T>

@@ -44,9 +44,9 @@ using eviction_list =
             eviction_last_use_t,
             eviction_no_alloc_t>;
 
-using alignment_list = type_list<cuda::aligned_size_t<4>, cuda::aligned_size_t<8>>;
+using alignment_list = type_list<alignment_t<4>, alignment_t<8>>;
 
-using prefetch_list = type_list<prefetch_default_t, prefetch_64B_t, prefetch_128B_t, prefetch_256B_t>;
+using prefetch_list = type_list<no_prefetch_spatial_t, prefetch_64B_t, prefetch_128B_t, prefetch_256B_t>;
 
 using aliasing_list = type_list<ptr_may_alias_t, ptr_no_aliasing_t>;
 
@@ -55,12 +55,11 @@ using TypeLists = ::cuda::std::
 
 TEMPLATE_LIST_TEST_CASE("Accessor", "[device]", TypeLists)
 {
-  using MemoryBehavior     = ::cuda::std::__type_at_c<0, TestType>;
-  using EvictionPolicy     = ::cuda::std::__type_at_c<1, TestType>;
-  using Alignment          = ::cuda::std::__type_at_c<2, TestType>;
-  using Prefetch           = ::cuda::std::__type_at_c<3, TestType>;
-  using Aliasing           = ::cuda::std::__type_at_c<4, TestType>;
-  constexpr auto alignment = Alignment{Alignment::align};
+  using MemoryBehavior = ::cuda::std::__type_at_c<0, TestType>;
+  using EvictionPolicy = ::cuda::std::__type_at_c<1, TestType>;
+  using Alignment      = ::cuda::std::__type_at_c<2, TestType>;
+  using Prefetch       = ::cuda::std::__type_at_c<3, TestType>;
+  using Aliasing       = ::cuda::std::__type_at_c<4, TestType>;
 
   thrust::host_vector<int> h_vector(32);
   std::iota(h_vector.begin(), h_vector.end(), 0);
@@ -68,7 +67,7 @@ TEMPLATE_LIST_TEST_CASE("Accessor", "[device]", TypeLists)
 
   auto md = cuda::std::mdspan(thrust::raw_pointer_cast(d_vector.data()), d_vector.size());
   auto md_with_props =
-    cuda::experimental::add_properties(md, MemoryBehavior{}, EvictionPolicy{}, alignment, Prefetch{}, Aliasing{});
+    cuda::experimental::add_properties(md, MemoryBehavior{}, EvictionPolicy{}, Alignment{}, Prefetch{}, Aliasing{});
   mdspan_accessor_kernel<<<1, 32>>>(md_with_props);
   cudaDeviceSynchronize();
   CUDAX_REQUIRE(cudaGetLastError() == cudaSuccess);
