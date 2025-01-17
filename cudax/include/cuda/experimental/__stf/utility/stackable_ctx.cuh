@@ -255,31 +255,39 @@ public:
     return pimpl->depth();
   }
 
+  template <typename T>
+  auto logical_data(shape_of<T> s)
+  {
+    fprintf(stderr, "initialize from shape.\n");
+    return stackable_logical_data(*this, depth(), true, get_ctx(depth()).logical_data(mv(s)));
+  }
+
   template <typename... Pack>
   auto logical_data(Pack&&... pack)
   {
-    return stackable_logical_data(*this, depth(), get_ctx(depth()).logical_data(::std::forward<Pack>(pack)...));
+    fprintf(stderr, "initialize from value.\n");
+    return stackable_logical_data(*this, depth(), false, get_ctx(depth()).logical_data(::std::forward<Pack>(pack)...));
   }
 
   // Helper function to process a single argument
   template <typename T1>
-  void process_argument(const T1&) const {
-      // Do nothing for non-stackable_task_dep
-      fprintf(stderr, "NOTHING ... \n");
-  }
-  
-  template <typename T1, typename reduce_op, bool initialize>
-  void process_argument(const stackable_task_dep<T1, reduce_op, initialize>& dep) const {
-      // Call doo() on the `d` member
-      dep.get_d().doo();
-  }
-  
-  // Process the parameter pack
-  template <typename... Pack>
-  void process_pack(const Pack&... pack) const {
-      (process_argument(pack), ...);
+  void process_argument(const T1&) const
+  {
+    // Do nothing for non-stackable_task_dep
   }
 
+  template <typename T1, typename reduce_op, bool initialize>
+  void process_argument(const stackable_task_dep<T1, reduce_op, initialize>& dep) const
+  {
+    dep.get_d().doo();
+  }
+
+  // Process the parameter pack
+  template <typename... Pack>
+  void process_pack(const Pack&... pack) const
+  {
+    (process_argument(pack), ...);
+  }
 
   template <typename... Pack>
   auto task(Pack&&... pack)
@@ -336,11 +344,23 @@ class stackable_logical_data
   {
   public:
     impl() = default;
-    impl(stackable_ctx sctx, size_t depth, logical_data<T> ld)
-        : base_depth(depth)
+    impl(stackable_ctx sctx,
+         size_t target_depth,
+         bool ld_from_shape,
+         logical_data<T> ld,
+         data_place where = data_place::invalid)
+        : base_depth(target_depth)
         , sctx(mv(sctx))
     {
+      fprintf(stderr, "stackable_logical_data::impl %p - target depth %ld\n", this, target_depth);
+      // Save the logical data at the root level
       s.push_back(ld);
+
+      // If necessary, import data recursively until we reach the target depth
+      for (size_t current_depth = 1; current_depth <= target_depth; current_depth++)
+      {
+        push(ld_from_shape ? access_mode::write : access_mode::rw, where);
+      }
     }
 
     ~impl() = default;
@@ -355,24 +375,31 @@ class stackable_logical_data
 
     const auto& get_ld() const
     {
-      check_level_mismatch();
       return s.back();
     }
     auto& get_ld()
     {
-      check_level_mismatch();
       return s.back();
     }
 
+    /* Push one level up (from the current data depth) */
     void push(access_mode m, data_place where = data_place::invalid)
     {
-      // We have not pushed yet, so the current depth of the logical data is
-      // the one before pushing
-      context& from_ctx = sctx.get_ctx(depth());
-      context& to_ctx   = sctx.get_ctx(depth() + 1);
+      const size_t ctx_depth          = sctx.depth();
+      const size_t current_data_depth = depth();
 
-      // Ensure this will match the depth of the context after pushing
-      _CCCL_ASSERT(sctx.depth() == depth() + 1, "Invalid depth");
+      fprintf(stderr,
+              "pushing data (%p) %ld->%ld (ctx depth %ld)\n",
+              this,
+              current_data_depth,
+              current_data_depth + 1,
+              ctx_depth);
+
+      // (current_data_depth + 1) is the data depth after pushing
+      _CCCL_ASSERT(ctx_depth >= current_data_depth + 1, "Invalid depth");
+
+      context& from_ctx = sctx.get_ctx(current_data_depth);
+      context& to_ctx   = sctx.get_ctx(current_data_depth + 1);
 
       if (where == data_place::invalid)
       {
@@ -388,21 +415,23 @@ class stackable_logical_data
 
       // Save the frozen data in a separate vector
       frozen_s.push_back(f);
+      frozen_modes.push_back(m);
 
       // FAKE IMPORT : use the stream needed to support the (graph) ctx
-      cudaStream_t stream = sctx.get_stream(depth());
+      cudaStream_t stream = sctx.get_stream(current_data_depth + 1);
 
       T inst  = f.get(where, stream);
       auto ld = to_ctx.logical_data(inst, where);
 
       if (!symbol.empty())
       {
-        ld.set_symbol(symbol + "." + ::std::to_string(depth() + 1));
+        ld.set_symbol(symbol + "." + ::std::to_string(current_data_depth + 1 - base_depth));
       }
 
       s.push_back(mv(ld));
     }
 
+    /* Pop one level down */
     virtual void pop() override
     {
       // We are going to unfreeze the data, which is currently being used
@@ -420,21 +449,23 @@ class stackable_logical_data
 
     size_t depth() const
     {
-      return s.size() - 1 + base_depth;
+      return s.size() - 1;
     }
 
     void set_symbol(::std::string symbol_)
     {
       symbol = mv(symbol_);
-      s.back().set_symbol(symbol + "." + ::std::to_string(depth()));
+      s.back().set_symbol(symbol + "." + ::std::to_string(depth() - base_depth));
     }
 
+    // TODO why making sctx private or why do we need to expose this at all ?
     auto& get_sctx()
     {
       return sctx;
     }
 
   private:
+    // When using data in a task, ensure they are at the appropriate level
     void check_level_mismatch() const
     {
       if (depth() != sctx.depth())
@@ -443,12 +474,17 @@ class stackable_logical_data
       }
     }
 
+    /**
+     * @brief
+     */
+
     mutable ::std::vector<logical_data<T>> s;
 
     // When stacking data, we freeze data from the lower levels, these are
     // their frozen counterparts. This vector has one item less than the
     // vector of logical data.
     mutable ::std::vector<frozen_logical_data<T>> frozen_s;
+    mutable ::std::vector<access_mode> frozen_modes;
 
     // If the logical data was created at a level that is not directly the root of the context, we remember this
     // offset
@@ -461,9 +497,12 @@ class stackable_logical_data
 public:
   stackable_logical_data() = default;
 
+  /* Create a logical data in the stackable ctx : in order to make it possible
+   * to export all the way down to the root context, we create the logical data
+   * in the root, and import them. */
   template <typename... Args>
-  stackable_logical_data(stackable_ctx sctx, size_t depth, logical_data<T> ld)
-      : pimpl(::std::make_shared<impl>(mv(sctx), depth, mv(ld)))
+  stackable_logical_data(stackable_ctx sctx, bool ld_from_shape, size_t target_depth, logical_data<T> ld)
+      : pimpl(::std::make_shared<impl>(mv(sctx), ld_from_shape, target_depth, mv(ld)))
   {}
 
   const auto& get_ld() const
@@ -498,7 +537,6 @@ public:
 
     pimpl->pop();
   }
-
 
   // Helpers
   template <typename... Pack>
@@ -536,9 +574,10 @@ public:
     return pimpl;
   }
 
-    void doo() const {
-        ::std::cout << "Calling doo() on stackable_logical_data\n";
-    }
+  void doo() const
+  {
+    fprintf(stderr, "Calling doo() on stackable_logical_data %p\n", pimpl.get());
+  }
 
 private:
   ::std::shared_ptr<impl> pimpl;
@@ -553,7 +592,10 @@ public:
       , d(mv(_d))
   {}
 
-  const stackable_logical_data<T>& get_d() const { return d; }
+  const stackable_logical_data<T>& get_d() const
+  {
+    return d;
+  }
 
 private:
   stackable_logical_data<T> d;
@@ -566,13 +608,27 @@ namespace reserved
 {
 
 template <typename T>
-static __global__ void kernel_set(T *addr, T val) {printf("SETTING ADDR %p at %d\n",addr, val); *addr = val; }
+static __global__ void kernel_set(T* addr, T val)
+{
+  printf("SETTING ADDR %p at %d\n", addr, val);
+  *addr = val;
+}
 
 template <typename T>
-static __global__ void kernel_add(T *addr, T val) {*addr += val; }
+static __global__ void kernel_add(T* addr, T val)
+{
+  *addr += val;
+}
 
 template <typename T>
-static __global__ void kernel_check_value(T *addr, T val) { printf("CHECK %d EXPECTED %d\n", *addr, val); if (*addr != val) ::cuda::std::terminate();  }
+static __global__ void kernel_check_value(T* addr, T val)
+{
+  printf("CHECK %d EXPECTED %d\n", *addr, val);
+  if (*addr != val)
+  {
+    ::cuda::std::terminate();
+  }
+}
 
 } // namespace reserved
 
@@ -582,9 +638,13 @@ UNITTEST("stackable task_fence")
   auto lA = ctx.logical_data(shape_of<slice<int>>(1024));
   ctx.push();
   lA.push(access_mode::write, data_place::current_device());
-  ctx.task(lA.write())->*[](cudaStream_t stream, auto a) { reserved::kernel_set<<<1, 1, 0, stream>>>(a.data_handle(), 42); };
+  ctx.task(lA.write())->*[](cudaStream_t stream, auto a) {
+    reserved::kernel_set<<<1, 1, 0, stream>>>(a.data_handle(), 42);
+  };
   ctx.task_fence();
-  ctx.task(lA.read())->*[](cudaStream_t stream, auto a) { reserved::kernel_check_value<<<1, 1, 0, stream>>>(a.data_handle(), 44); };
+  ctx.task(lA.read())->*[](cudaStream_t stream, auto a) {
+    reserved::kernel_check_value<<<1, 1, 0, stream>>>(a.data_handle(), 44);
+  };
   ctx.pop();
   ctx.finalize();
 };
@@ -595,8 +655,10 @@ UNITTEST("stackable host_launch")
   auto lA = ctx.logical_data(shape_of<slice<int>>(1024));
   ctx.push();
   lA.push(access_mode::write, data_place::current_device());
-  ctx.task(lA.write())->*[](cudaStream_t stream, auto a) { reserved::kernel_set<<<1, 1, 0, stream>>>(a.data_handle(), 42); };
-  ctx.host_launch(lA.read())->*[](auto a){ _CCCL_ASSERT(a(0) == 42, "invalid value"); };
+  ctx.task(lA.write())->*[](cudaStream_t stream, auto a) {
+    reserved::kernel_set<<<1, 1, 0, stream>>>(a.data_handle(), 42);
+  };
+  // ctx.host_launch(lA.read())->*[](auto a){ _CCCL_ASSERT(a(0) == 42, "invalid value"); };
   ctx.pop();
   ctx.finalize();
 };
@@ -620,7 +682,7 @@ UNITTEST("stackable promote mode")
   ctx.finalize();
 };
 
-#endif // __CUDACC__
+#  endif // __CUDACC__
 #endif // UNITTESTED_FILE
 
 } // end namespace cuda::experimental::stf

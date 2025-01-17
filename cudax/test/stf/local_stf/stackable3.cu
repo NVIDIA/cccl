@@ -22,13 +22,27 @@
 using namespace cuda::experimental::stf;
 
 template <typename T>
-static __global__ void kernel_set(T *addr, T val) {printf("SETTING ADDR %p at %d\n",addr, val); *addr = val; }
+static __global__ void kernel_set(T* addr, T val)
+{
+  printf("SETTING ADDR %p at %d\n", addr, val);
+  *addr = val;
+}
 
 template <typename T>
-static __global__ void kernel_add(T *addr, T val) {*addr += val; }
+static __global__ void kernel_add(T* addr, T val)
+{
+  *addr += val;
+}
 
 template <typename T>
-static __global__ void kernel_check_value(T *addr, T val) { printf("CHECK %d EXPECTED %d\n", *addr, val); if (*addr != val) ::cuda::std::terminate();  }
+static __global__ void kernel_check_value(T* addr, T val)
+{
+  printf("CHECK %d EXPECTED %d\n", *addr, val);
+  if (*addr != val)
+  {
+    ::cuda::std::terminate();
+  }
+}
 
 int X0(int i)
 {
@@ -45,22 +59,21 @@ int main()
     array[i] = 1 + i * i;
   }
 
-//  int A[1024];
-//  stackable_ctx ctx;
-//  auto lA = ctx.logical_data(A);
-//  ctx.push();
-//
-//  lA.push(access_mode::read, data_place::current_device());
-//  ctx.task(lA.read())->*[](cudaStream_t, auto) {};
-//  lA.pop();
-//
-//  lA.push(access_mode::rw, data_place::current_device());
-//  ctx.task(lA.rw())->*[](cudaStream_t, auto) {};
-//  lA.pop();
-//
-//  ctx.pop();
-//  ctx.finalize();
-
+  //  int A[1024];
+  //  stackable_ctx ctx;
+  //  auto lA = ctx.logical_data(A);
+  //  ctx.push();
+  //
+  //  lA.push(access_mode::read, data_place::current_device());
+  //  ctx.task(lA.read())->*[](cudaStream_t, auto) {};
+  //  lA.pop();
+  //
+  //  lA.push(access_mode::rw, data_place::current_device());
+  //  ctx.task(lA.rw())->*[](cudaStream_t, auto) {};
+  //  lA.pop();
+  //
+  //  ctx.pop();
+  //  ctx.finalize();
 
   auto lC = sctx.logical_data(array);
 
@@ -104,7 +117,7 @@ int main()
 
   lA.push(access_mode::rw, data_place::current_device());
   sctx.parallel_for(lA.shape(), lA.rw())->*[] __device__(size_t i, auto a) {
-     a(i) += 42;
+    a(i) += 42;
   };
   lA.pop();
 
@@ -122,7 +135,7 @@ int main()
   sctx.host_launch(lA.read())->*[](auto a) {
     for (size_t i = 0; i < a.size(); i++)
     {
-       EXPECT(a(i) == 42 + 2*i + 42);
+      EXPECT(a(i) == 42 + 2 * i + 42);
     }
   };
 

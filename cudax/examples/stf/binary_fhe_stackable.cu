@@ -235,9 +235,6 @@ int main()
   std::vector<char> v_out;
   out.decrypt().convert_to_vector(v_out);
 
-  eA.pop();
-  eB.pop();
-
   ctx.pop();
 
   ctx.finalize();

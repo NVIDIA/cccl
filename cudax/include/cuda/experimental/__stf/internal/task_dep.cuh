@@ -190,7 +190,7 @@ template <typename T>
 class task_dep<T, void, false> : public task_dep_untyped
 {
 public:
-  using data_t = T;
+  using data_t      = T;
   using dep_type    = T;
   using op_and_init = ::std::pair<::std::monostate, ::std::bool_constant<false>>;
   using op_type     = ::std::monostate;
