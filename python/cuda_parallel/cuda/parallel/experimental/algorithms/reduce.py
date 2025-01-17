@@ -56,6 +56,9 @@ class _Reduce:
         op: Callable,
         h_init: np.ndarray | GpuStruct,
     ):
+        # Referenced from __del__:
+        self.build_result = None
+
         d_in_cccl = cccl.to_cccl_iter(d_in)
         self._ctor_d_in_cccl_type_enum_name = cccl.type_enum_as_name(
             d_in_cccl.value_type.type.value
@@ -130,6 +133,8 @@ class _Reduce:
         return temp_storage_bytes.value
 
     def __del__(self):
+        if self.build_result is None:
+            return
         bindings = get_bindings()
         bindings.cccl_device_reduce_cleanup(ctypes.byref(self.build_result))
 
