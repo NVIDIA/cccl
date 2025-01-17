@@ -190,7 +190,8 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
 
   using WarpReduceT = cub::WarpReduce<KeyT>;
 
-  using AgentWarpMergeSortT = AgentSubWarpSort<IS_DESCENDING, MediumPolicyT, KeyT, ValueT, OffsetT>;
+  using AgentWarpMergeSortT =
+    detail::sub_warp_merge_sort::AgentSubWarpSort<IS_DESCENDING, MediumPolicyT, KeyT, ValueT, OffsetT>;
 
   __shared__ union
   {
@@ -363,9 +364,11 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::SmallAndMediumSegmentedSortPolic
   constexpr auto threads_per_medium_segment = static_cast<local_segment_index_t>(MediumPolicyT::WARP_THREADS);
   constexpr auto threads_per_small_segment  = static_cast<local_segment_index_t>(SmallPolicyT::WARP_THREADS);
 
-  using MediumAgentWarpMergeSortT = AgentSubWarpSort<IS_DESCENDING, MediumPolicyT, KeyT, ValueT, OffsetT>;
+  using MediumAgentWarpMergeSortT =
+    detail::sub_warp_merge_sort::AgentSubWarpSort<IS_DESCENDING, MediumPolicyT, KeyT, ValueT, OffsetT>;
 
-  using SmallAgentWarpMergeSortT = AgentSubWarpSort<IS_DESCENDING, SmallPolicyT, KeyT, ValueT, OffsetT>;
+  using SmallAgentWarpMergeSortT =
+    detail::sub_warp_merge_sort::AgentSubWarpSort<IS_DESCENDING, SmallPolicyT, KeyT, ValueT, OffsetT>;
 
   constexpr auto segments_per_medium_block =
     static_cast<local_segment_index_t>(SmallAndMediumPolicyT::SEGMENTS_PER_MEDIUM_BLOCK);

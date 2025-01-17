@@ -191,13 +191,13 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicy::BLOCK_THREADS), 
 {
   // Parameterize the AgentScan type for the current configuration
   using AgentScanT =
-    AgentScan<typename ChainedPolicyT::ActivePolicy::ScanPolicy,
-              OffsetT*,
-              OffsetT*,
-              ::cuda::std::plus<>,
-              OffsetT,
-              OffsetT,
-              OffsetT>;
+    detail::scan::AgentScan<typename ChainedPolicyT::ActivePolicy::ScanPolicy,
+                            OffsetT*,
+                            OffsetT*,
+                            ::cuda::std::plus<>,
+                            OffsetT,
+                            OffsetT,
+                            OffsetT>;
 
   // Shared memory storage
   __shared__ typename AgentScanT::TempStorage temp_storage;
