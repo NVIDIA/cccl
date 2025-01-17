@@ -33,6 +33,8 @@
 #endif // no system header
 #include <thrust/detail/type_traits/is_thrust_pointer.h>
 
+#include <cuda/std/iterator> // Needed for __gnu_cxx::__normal_iterator
+
 #if _CCCL_COMPILER(MSVC, <, 19, 16) // MSVC 2017 version 15.9
 #  include <array>
 #  include <string>
