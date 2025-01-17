@@ -26,6 +26,8 @@
  ******************************************************************************/
 #pragma once
 
+#include <thrust/detail/config.h>
+
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>

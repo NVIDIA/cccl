@@ -26,6 +26,8 @@
  ******************************************************************************/
 #pragma once
 
+#include <thrust/detail/config.h>
+
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/system/cuda/detail/core/load_iterator.h>
 
