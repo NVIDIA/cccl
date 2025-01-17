@@ -24,7 +24,7 @@
 #include <cuda/std/__atomic/api/common.h>
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/scopes.h>
-#include <cuda/std/__atomic/types/reference.h>
+#include <cuda/std/__atomic/types.h>
 #include <cuda/std/__atomic/wait/notify_wait.h>
 #include <cuda/std/__atomic/wait/polling.h>
 #include <cuda/std/__type_traits/conditional.h>

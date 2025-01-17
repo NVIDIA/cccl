@@ -157,16 +157,24 @@ using __atomic_cuda_deduce_minmax = _If<
                     __type_default<__atomic_cuda_operand_deduction<uint64_t, __atomic_cuda_operand_u64>>>>>;
 
 template <class _Type>
-using __atomic_enable_if_native_bitwise = bool;
+using __atomic_enable_if_native_bitwise = enable_if_t<(sizeof(_Type) < 16), bool>;
 
 template <class _Type>
-using __atomic_enable_if_native_arithmetic = enable_if_t<_CCCL_TRAIT(is_scalar, _Type), bool>;
+using __atomic_enable_if_native_arithmetic = enable_if_t<_CCCL_TRAIT(is_scalar, _Type) && (sizeof(_Type) < 16), bool>;
 
 template <class _Type>
-using __atomic_enable_if_native_minmax = enable_if_t<_CCCL_TRAIT(is_integral, _Type), bool>;
+using __atomic_enable_if_native_minmax = enable_if_t<_CCCL_TRAIT(is_integral, _Type) && (sizeof(_Type) < 16), bool>;
 
 template <class _Type>
-using __atomic_enable_if_not_native_minmax = enable_if_t<!_CCCL_TRAIT(is_integral, _Type), bool>;
+using __atomic_enable_if_not_native_bitwise = enable_if_t<(sizeof(_Type) == 16), bool>;
+
+template <class _Type>
+using __atomic_enable_if_not_native_arithmetic =
+  enable_if_t<_CCCL_TRAIT(is_scalar, _Type) && (sizeof(_Type) == 16), bool>;
+
+template <class _Type>
+using __atomic_enable_if_not_native_minmax =
+  enable_if_t<!_CCCL_TRAIT(is_integral, _Type) || (_CCCL_TRAIT(is_scalar, _Type) && (sizeof(_Type) == 16)), bool>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
