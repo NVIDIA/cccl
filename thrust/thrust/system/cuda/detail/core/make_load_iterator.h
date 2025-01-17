@@ -26,9 +26,8 @@
  ******************************************************************************/
 #pragma once
 
-#include <cub/iterator/cache_modified_input_iterator.cuh>
-
-#include <thrust/type_traits/is_contiguous_iterator.h>
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/system/cuda/detail/core/load_iterator.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -36,22 +35,26 @@ namespace cuda_cub
 {
 namespace core
 {
-
-// LoadIterator
-// ------------
-// if trivial iterator is passed, wrap loads into LDG
-//
 template <class PtxPlan, class It>
-struct LoadIterator
+typename LoadIterator<PtxPlan, It>::type _CCCL_DEVICE _CCCL_FORCEINLINE
+make_load_iterator_impl(It it, thrust::detail::true_type /* is_trivial */)
 {
-  using value_type = typename ::cuda::std::iterator_traits<It>::value_type;
-  using size_type  = typename ::cuda::std::iterator_traits<It>::difference_type;
+  return raw_pointer_cast(&*it);
+}
 
-  using type =
-    ::cuda::std::conditional_t<is_contiguous_iterator<It>::value,
-                               cub::CacheModifiedInputIterator<PtxPlan::LOAD_MODIFIER, value_type, size_type>,
-                               It>;
-}; // struct Iterator
+template <class PtxPlan, class It>
+typename LoadIterator<PtxPlan, It>::type _CCCL_DEVICE _CCCL_FORCEINLINE
+make_load_iterator_impl(It it, thrust::detail::false_type /* is_trivial */)
+{
+  return it;
+}
+
+template <class PtxPlan, class It>
+typename LoadIterator<PtxPlan, It>::type _CCCL_DEVICE _CCCL_FORCEINLINE make_load_iterator(PtxPlan const&, It it)
+{
+  return make_load_iterator_impl<PtxPlan>(it, typename is_contiguous_iterator<It>::type());
+}
+
 } // namespace core
 } // namespace cuda_cub
 
