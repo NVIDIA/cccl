@@ -97,7 +97,7 @@ private:
   using block_sort_helper_t = dual_policy_agent_helper_t<
     DefaultPolicyT,
     fallback_policy_t,
-    AgentBlockSort,
+    merge_sort::AgentBlockSort,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyIteratorT,
@@ -114,7 +114,7 @@ private:
   using merge_helper_t = dual_policy_agent_helper_t<
     DefaultPolicyT,
     fallback_policy_t,
-    AgentMerge,
+    merge_sort::AgentMerge,
     KeyIteratorT,
     ValueIteratorT,
     OffsetT,
@@ -233,7 +233,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortPartitionKernel(
 
   if (partition_idx < num_partitions)
   {
-    AgentPartition<KeyIteratorT, OffsetT, CompareOpT, KeyT> agent(
+    detail::merge_sort::AgentPartition<KeyIteratorT, OffsetT, CompareOpT, KeyT> agent(
       ping,
       keys_ping,
       keys_pong,
