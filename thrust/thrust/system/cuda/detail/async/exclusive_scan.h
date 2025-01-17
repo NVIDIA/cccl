@@ -73,8 +73,8 @@ unique_eager_event async_exclusive_scan_n(
   execution_policy<DerivedPolicy>& policy, ForwardIt first, Size n, OutputIt out, InitialValueType init, BinaryOp op)
 {
   using InputValueT = cub::detail::InputValue<InitialValueType>;
-  using Dispatch32  = cub::DispatchScan<ForwardIt, OutputIt, BinaryOp, InputValueT, std::int32_t, InitialValueType>;
-  using Dispatch64  = cub::DispatchScan<ForwardIt, OutputIt, BinaryOp, InputValueT, std::int64_t, InitialValueType>;
+  using Dispatch32  = cub::DispatchScan<ForwardIt, OutputIt, BinaryOp, InputValueT, std::uint32_t, InitialValueType>;
+  using Dispatch64  = cub::DispatchScan<ForwardIt, OutputIt, BinaryOp, InputValueT, std::uint64_t, InitialValueType>;
 
   InputValueT init_value(init);
 
@@ -85,7 +85,7 @@ unique_eager_event async_exclusive_scan_n(
   cudaError_t status;
   size_t tmp_size = 0;
   {
-    THRUST_INDEX_TYPE_DISPATCH2(
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
       status,
       Dispatch32::Dispatch,
       Dispatch64::Dispatch,
