@@ -19,11 +19,12 @@
 #include <cuda/std/variant>
 
 #include <format>
-#include <iostream>
 #include <memory>
 
-#include "kernels/iterators.h"
-#include "kernels/operators.h"
+#include "jit_templates/templates/input_iterator.h"
+#include "jit_templates/templates/operation.h"
+#include "jit_templates/templates/output_iterator.h"
+#include "jit_templates/traits.h"
 #include "util/context.h"
 #include "util/errors.h"
 #include "util/indirect_arg.h"
@@ -31,7 +32,8 @@
 #include <cccl/c/reduce.h>
 #include <nvrtc/command_list.h>
 
-struct op_wrapper;
+extern const char* jit_template_header_contents;
+
 struct device_reduce_policy;
 using TransformOpT = ::cuda::std::__identity;
 using OffsetT      = unsigned long long;
@@ -107,40 +109,17 @@ static cccl_type_info get_accumulator_type(cccl_op_t /*op*/, cccl_iterator_t /*i
   return init.type;
 }
 
-struct input_iterator_state_t;
-struct output_iterator_t;
-
-std::string get_input_iterator_name()
-{
-  std::string iterator_t;
-  check(nvrtcGetTypeName<input_iterator_state_t>(&iterator_t));
-  return iterator_t;
-}
-
-std::string get_output_iterator_name()
-{
-  std::string iterator_t;
-  check(nvrtcGetTypeName<output_iterator_t>(&iterator_t));
-  return iterator_t;
-}
-
 std::string get_single_tile_kernel_name(
-  cccl_iterator_t input_it, cccl_iterator_t output_it, cccl_op_t op, cccl_value_t init, bool is_second_kernel)
+  std::string_view input_iterator_t,
+  std::string_view output_iterator_t,
+  std::string_view reduction_op_t,
+  cccl_value_t init,
+  std::string_view accum_cpp_t,
+  bool is_second_kernel)
 {
   std::string chained_policy_t;
   check(nvrtcGetTypeName<device_reduce_policy>(&chained_policy_t));
 
-  const cccl_type_info accum_t  = get_accumulator_type(op, input_it, init);
-  const std::string accum_cpp_t = cccl_type_enum_to_name(accum_t.type);
-  const std::string input_iterator_t =
-    is_second_kernel ? cccl_type_enum_to_name(accum_t.type, true)
-    : input_it.type == cccl_iterator_kind_t::pointer //
-      ? cccl_type_enum_to_name(input_it.value_type.type, true) //
-      : get_input_iterator_name();
-  const std::string output_iterator_t =
-    output_it.type == cccl_iterator_kind_t::pointer //
-      ? cccl_type_enum_to_name(output_it.value_type.type, true) //
-      : get_output_iterator_name();
   const std::string init_t = cccl_type_enum_to_name(init.type.type);
 
   std::string offset_t;
@@ -156,9 +135,6 @@ std::string get_single_tile_kernel_name(
     check(nvrtcGetTypeName<OffsetT>(&offset_t));
   }
 
-  std::string reduction_op_t;
-  check(nvrtcGetTypeName<op_wrapper>(&reduction_op_t));
-
   return std::format(
     "cub::DeviceReduceSingleTileKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}>",
     chained_policy_t,
@@ -170,23 +146,14 @@ std::string get_single_tile_kernel_name(
     accum_cpp_t);
 }
 
-std::string get_device_reduce_kernel_name(cccl_op_t op, cccl_iterator_t input_it, cccl_value_t init)
+std::string get_device_reduce_kernel_name(
+  std::string_view reduction_op_t, std::string_view input_iterator_t, std::string_view accum_t)
 {
   std::string chained_policy_t;
   check(nvrtcGetTypeName<device_reduce_policy>(&chained_policy_t));
 
-  const std::string input_iterator_t =
-    input_it.type == cccl_iterator_kind_t::pointer //
-      ? cccl_type_enum_to_name(input_it.value_type.type, true) //
-      : get_input_iterator_name();
-
-  const std::string accum_t = cccl_type_enum_to_name(get_accumulator_type(op, input_it, init).type);
-
   std::string offset_t;
   check(nvrtcGetTypeName<OffsetT>(&offset_t));
-
-  std::string reduction_op_t;
-  check(nvrtcGetTypeName<op_wrapper>(&reduction_op_t));
 
   std::string transform_op_t;
   check(nvrtcGetTypeName<cuda::std::__identity>(&transform_op_t));
@@ -200,6 +167,9 @@ std::string get_device_reduce_kernel_name(cccl_op_t op, cccl_iterator_t input_it
     accum_t,
     transform_op_t);
 }
+
+struct reduce_output_iterator_tag;
+struct reduction_operation_tag;
 
 extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
   cccl_device_reduce_build_result_t* build,
@@ -224,44 +194,47 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
     const cccl_type_info accum_t              = get_accumulator_type(op, input_it, init);
     const reduce_runtime_tuning_policy policy = get_policy(cc, accum_t);
     const auto accum_cpp                      = cccl_type_enum_to_string(accum_t.type);
-    const auto input_it_value_t               = cccl_type_enum_to_string(input_it.value_type.type);
-    const auto offset_t                       = cccl_type_enum_to_string(cccl_type_enum::UINT64);
 
-    const std::string input_iterator_src  = make_kernel_input_iterator(offset_t, input_it_value_t, input_it);
-    const std::string output_iterator_src = make_kernel_output_iterator(offset_t, accum_cpp, output_it);
+    const auto [input_iterator_name, input_iterator_src] =
+      get_specialization<reduce_output_iterator_tag>(template_id<input_iterator_traits>(), input_it);
+    const auto [output_iterator_name, output_iterator_src] =
+      get_specialization<reduce_output_iterator_tag>(template_id<output_iterator_traits>(), output_it, accum_t);
 
-    const std::string op_src = make_kernel_user_binary_operator(accum_cpp, op);
+    const auto [op_name, op_src] =
+      get_specialization<reduction_operation_tag>(template_id<binary_user_operation_traits>(), op, accum_t);
 
-    const std::string src = std::format(
-      "#include <cub/block/block_reduce.cuh>\n"
-      "#include <cub/device/dispatch/kernels/reduce.cuh>\n"
-      "struct __align__({1}) storage_t {{\n"
-      "  char data[{0}];\n"
-      "}};\n"
-      "{4}\n"
-      "{5}\n"
-      "struct agent_policy_t {{\n"
-      "  static constexpr int ITEMS_PER_THREAD = {2};\n"
-      "  static constexpr int BLOCK_THREADS = {3};\n"
-      "  static constexpr int VECTOR_LOAD_LENGTH = {7};\n"
-      "  static constexpr cub::BlockReduceAlgorithm BLOCK_ALGORITHM = cub::BLOCK_REDUCE_WARP_REDUCTIONS;\n"
-      "  static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_LDG;\n"
-      "}};\n"
-      "struct device_reduce_policy {{\n"
-      "  struct ActivePolicy {{\n"
-      "    using ReducePolicy = agent_policy_t;\n"
-      "    using SingleTilePolicy = agent_policy_t;\n"
-      "  }};\n"
-      "}};\n"
-      "{6};\n",
-      input_it.value_type.size, // 0
-      input_it.value_type.alignment, // 1
-      policy.items_per_thread, // 2
-      policy.block_size, // 3
-      input_iterator_src, // 4
-      output_iterator_src, // 5
-      op_src, // 6
-      policy.vector_load_length); // 7
+    const std::string src =
+      std::string("#include <cub/block/block_reduce.cuh>\n"
+                  "#include <cub/device/dispatch/kernels/reduce.cuh>\n")
+      + jit_template_header_contents
+      + std::format(
+        "struct __align__({1}) storage_t {{\n"
+        "  char data[{0}];\n"
+        "}};\n"
+        "{4}\n"
+        "{5}\n"
+        "struct agent_policy_t {{\n"
+        "  static constexpr int ITEMS_PER_THREAD = {2};\n"
+        "  static constexpr int BLOCK_THREADS = {3};\n"
+        "  static constexpr int VECTOR_LOAD_LENGTH = {7};\n"
+        "  static constexpr cub::BlockReduceAlgorithm BLOCK_ALGORITHM = cub::BLOCK_REDUCE_WARP_REDUCTIONS;\n"
+        "  static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_LDG;\n"
+        "}};\n"
+        "struct device_reduce_policy {{\n"
+        "  struct ActivePolicy {{\n"
+        "    using ReducePolicy = agent_policy_t;\n"
+        "    using SingleTilePolicy = agent_policy_t;\n"
+        "  }};\n"
+        "}};\n"
+        "{6};\n",
+        input_it.value_type.size, // 0
+        input_it.value_type.alignment, // 1
+        policy.items_per_thread, // 2
+        policy.block_size, // 3
+        input_iterator_src, // 4
+        output_iterator_src, // 5
+        op_src, // 6
+        policy.vector_load_length); // 7
 
 #if false // CCCL_DEBUGGING_SWITCH
     fflush(stderr);
@@ -269,17 +242,20 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
     fflush(stdout);
 #endif
 
-    std::string single_tile_kernel_name        = get_single_tile_kernel_name(input_it, output_it, op, init, false);
-    std::string single_tile_second_kernel_name = get_single_tile_kernel_name(input_it, output_it, op, init, true);
-    std::string reduction_kernel_name          = get_device_reduce_kernel_name(op, input_it, init);
+    std::string single_tile_kernel_name =
+      get_single_tile_kernel_name(input_iterator_name, output_iterator_name, op_name, init, accum_cpp, false);
+    std::string single_tile_second_kernel_name = get_single_tile_kernel_name(
+      cccl_type_enum_to_name(accum_t.type, true), output_iterator_name, op_name, init, accum_cpp, true);
+    std::string reduction_kernel_name = get_device_reduce_kernel_name(op_name, input_iterator_name, accum_cpp);
     std::string single_tile_kernel_lowered_name;
     std::string single_tile_second_kernel_lowered_name;
     std::string reduction_kernel_lowered_name;
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    constexpr size_t num_args  = 7;
-    const char* args[num_args] = {arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto"};
+    constexpr size_t num_args  = 8;
+    const char* args[num_args] = {
+      arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-std=c++20"};
 
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
