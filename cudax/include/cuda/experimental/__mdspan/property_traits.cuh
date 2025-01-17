@@ -34,15 +34,15 @@ namespace cuda::experimental
  **********************************************************************************************************************/
 
 template <typename>
-struct is_load_behavior : ::cuda::std::false_type
+struct is_memory_behavior : ::cuda::std::false_type
 {};
 
-template <LoadBehavior Value>
-struct is_load_behavior<load_behavior_t<Value>> : ::cuda::std::true_type
+template <MemoryBehavior Value>
+struct is_memory_behavior<memory_behavior_t<Value>> : ::cuda::std::true_type
 {};
 
 template <typename T>
-constexpr bool is_load_behavior_v = is_load_behavior<T>::value;
+constexpr bool is_memory_behavior_v = is_memory_behavior<T>::value;
 
 /***********************************************************************************************************************
  * Cache Hint

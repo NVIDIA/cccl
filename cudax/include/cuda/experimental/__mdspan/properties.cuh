@@ -30,17 +30,17 @@ namespace cuda::experimental
  * Load Behavior
  **********************************************************************************************************************/
 
-enum class LoadBehavior
+enum class MemoryBehavior
 {
   ReadOnly,
   ReadWrite,
 };
 
-template <LoadBehavior Value>
-using load_behavior_t = ::cuda::std::integral_constant<LoadBehavior, Value>;
+template <MemoryBehavior Value>
+using memory_behavior_t = ::cuda::std::integral_constant<MemoryBehavior, Value>;
 
-using read_only_t  = load_behavior_t<LoadBehavior::ReadOnly>;
-using read_write_t = load_behavior_t<LoadBehavior::ReadWrite>;
+using read_only_t  = memory_behavior_t<MemoryBehavior::ReadOnly>;
+using read_write_t = memory_behavior_t<MemoryBehavior::ReadWrite>;
 
 inline constexpr auto read_only  = read_only_t{};
 inline constexpr auto read_write = read_write_t{};

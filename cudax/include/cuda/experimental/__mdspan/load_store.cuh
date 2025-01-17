@@ -57,15 +57,14 @@
 namespace cuda::experimental
 {
 
-template <typename T, LoadBehavior B, EvictionPolicyEnum E, PrefetchSizeEnum P>
+template <typename T, MemoryBehavior B, EvictionPolicyEnum E, PrefetchSizeEnum P>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE T
 load(const T* ptr,
-     load_behavior_t<B> load_behavior     = read_write,
+     memory_behavior_t<B> load_behavior   = read_write,
      eviction_policy_t<E> eviction_policy = eviction_normal,
      prefetch_t<P> prefetch               = no_prefetch) noexcept
 {
 #if _CCCL_PTX_LD_ENABLED
-
   if constexpr (eviction_policy == eviction_none && prefetch == no_prefetch)
   {
     return *ptr; // do not skip NVVM
@@ -86,7 +85,7 @@ load(const T* ptr,
 #endif
 }
 
-template <typename T, LoadBehavior B, EvictionPolicyEnum E, PrefetchSizeEnum P>
+template <typename T, EvictionPolicyEnum E>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 store(T value, T* ptr, eviction_policy_t<E> eviction_policy = eviction_normal) noexcept
 {

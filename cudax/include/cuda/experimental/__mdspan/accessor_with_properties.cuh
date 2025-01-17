@@ -53,6 +53,9 @@ struct type_count_if
 };
 
 template <class... Ts>
+constexpr auto count_memory_behavior_v = ::cuda::std::__type_call<type_count_if<is_memory_behavior>, Ts...>::value;
+
+template <class... Ts>
 constexpr auto count_eviction_v = ::cuda::std::__type_call<type_count_if<is_eviction_policy>, Ts...>::value;
 
 template <class... Ts>
@@ -84,6 +87,10 @@ struct find_property
 };
 
 template <typename... UserProperties>
+using find_memory_behavior_t =
+  typename find_property<::cuda::experimental::is_memory_behavior, eviction_none_t, UserProperties...>::type;
+
+template <typename... UserProperties>
 using find_eviction_policy_t =
   typename find_property<::cuda::experimental::is_eviction_policy, eviction_none_t, UserProperties...>::type;
 
@@ -105,23 +112,37 @@ using find_aliasing_policy_t =
  * accessor_with_properties Forward Declaration
  **********************************************************************************************************************/
 
-template <typename ElementType, typename Restrict, typename Alignment, typename Eviction, typename Prefetch>
+template <typename ElementType,
+          typename MemoryBehavior,
+          typename Restrict,
+          typename Alignment,
+          typename Eviction,
+          typename Prefetch>
 struct accessor_with_properties;
 
 /***********************************************************************************************************************
  * accessor_reference
  **********************************************************************************************************************/
 
-template <typename ElementType, typename Restrict, typename Alignment, typename Eviction, typename Prefetch>
+template <typename ElementType,
+          typename MemoryBehavior,
+          typename Restrict,
+          typename Alignment,
+          typename Eviction,
+          typename Prefetch>
 class accessor_reference
 {
+  friend class accessor_with_properties<ElementType, MemoryBehavior, Restrict, Alignment, Eviction, Prefetch>;
+
   static constexpr bool _is_restrict = ::cuda::std::is_same_v<Restrict, ptr_no_aliasing_t>;
 
   using pointer_type = ::cuda::std::conditional_t<_is_restrict, ElementType * _CCCL_RESTRICT, ElementType*>;
 
-  pointer_type _ptr;
+  _CCCL_HOST_DEVICE explicit accessor_reference(pointer_type ptr) noexcept
+      : _ptr{ptr}
+  {}
 
-  friend class accessor_with_properties<ElementType, Restrict, Alignment, Eviction, Prefetch>;
+  pointer_type _ptr;
 
 public:
   explicit accessor_reference() noexcept = default;
@@ -143,8 +164,8 @@ public:
       NV_IS_HOST,
       (static_assert(
          ::cuda::std::is_same_v<Eviction, eviction_none_t> && ::cuda::std::is_same_v<Prefetch, no_prefetch_t>);
-       return * _ptr = value;),
-      (::cuda::experimental::store(value, _ptr, Eviction{})));
+       *_ptr = value;),
+      (::cuda::experimental::store(value, _ptr, Eviction{});));
     return *this;
   }
 
@@ -155,20 +176,20 @@ public:
       (static_assert(
          ::cuda::std::is_same_v<Eviction, eviction_none_t> && ::cuda::std::is_same_v<Prefetch, no_prefetch_t>);
        return *_ptr;),
-      (return ::cuda::experimental::load(_ptr, read_write, Eviction{}, Prefetch{});));
+      (return ::cuda::experimental::load(_ptr, MemoryBehavior{}, Eviction{}, Prefetch{});));
   }
-
-private:
-  _CCCL_HOST_DEVICE explicit accessor_reference(pointer_type ptr) noexcept
-      : _ptr{ptr}
-  {}
 };
 
 /***********************************************************************************************************************
  * accessor_with_properties Definition
  **********************************************************************************************************************/
 
-template <typename ElementType, typename Restrict, typename Alignment, typename Eviction, typename Prefetch>
+template <typename ElementType,
+          typename MemoryBehavior,
+          typename Restrict,
+          typename Alignment,
+          typename Eviction,
+          typename Prefetch>
 class accessor_with_properties
 {
   static_assert(!::cuda::std::is_array_v<ElementType>,
@@ -176,45 +197,40 @@ class accessor_with_properties
   static_assert(!::cuda::std::is_abstract_v<ElementType>,
                 "accessor_with_properties: template argument may not be an abstract class");
 
+  static_assert(is_memory_behavior_v<MemoryBehavior>, "Restrict must be a memory behavior");
   static_assert(is_ptr_aliasing_policy_v<Restrict>, "Restrict must be a pointer aliasing policy");
   static_assert(is_eviction_policy_v<Eviction>, "Eviction must be an eviction policy");
   static_assert(is_prefetch_v<Prefetch>, "Restrict must be a prefetch policy");
   static_assert(is_alignment_v<Alignment>, "Alignment must be an alignment policy");
 
-  static constexpr bool _is_const_elem = ::cuda::std::is_const_v<ElementType>;
-  static constexpr bool _is_restrict   = ::cuda::std::is_same_v<Restrict, ptr_no_aliasing_t>;
+  static constexpr bool _is_const     = ::cuda::std::is_const_v<ElementType>;
+  static constexpr bool _is_read_only = ::cuda::std::is_same_v<MemoryBehavior, read_only_t>;
+  static constexpr bool _is_restrict  = ::cuda::std::is_same_v<Restrict, ptr_no_aliasing_t>;
 
 public:
   using offset_policy = accessor_with_properties;
   using element_type  = ElementType;
   using reference =
-    ::cuda::std::conditional_t<_is_const_elem,
+    ::cuda::std::conditional_t<_is_const,
                                ElementType, //
-                               accessor_reference<ElementType, Restrict, Alignment, Eviction, Prefetch>>;
+                               accessor_reference<ElementType, MemoryBehavior, Restrict, Alignment, Eviction, Prefetch>>;
   using data_handle_type = ::cuda::std::conditional_t<_is_restrict, ElementType * _CCCL_RESTRICT, ElementType*>;
 
   explicit accessor_with_properties() noexcept = default;
-
-  // template <typename _OtherElementType,
-  //           typename... _OtherProperties,
-  //           ::cuda::std::enable_if_t<::cuda::std::is_convertible_v<_OtherElementType (*)[], ElementType (*)[]>>>
-  //_CCCL_HOST_DEVICE constexpr accessor_with_properties(
-  //   accessor_with_properties<_OtherElementType, _OtherProperties...>) noexcept
-  //{}
 
   accessor_with_properties(const accessor_with_properties&) noexcept = default;
 
   _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference access(data_handle_type ptr, size_t i) const noexcept
   {
     auto ptr1 = ::cuda::std::assume_aligned<Alignment::align>(ptr);
-    if constexpr (_is_const_elem)
+    if constexpr (_is_const)
     {
       NV_IF_ELSE_TARGET(
         NV_IS_HOST,
         (static_assert(
            ::cuda::std::is_same_v<Eviction, eviction_none_t> && ::cuda::std::is_same_v<Prefetch, no_prefetch_t>);
          return ptr1[i];),
-        (return ::cuda::experimental::load(ptr1 + i, read_only, Eviction{}, Prefetch{});));
+        (return ::cuda::experimental::load(ptr1 + i, MemoryBehavior{}, Eviction{}, Prefetch{});));
     }
     else
     {
@@ -237,15 +253,18 @@ template <typename ElementType, typename... UserProperties>
 _CCCL_NODISCARD _CCCL_HOST_DEVICE auto make_accessor_with_properties(UserProperties...) noexcept
 {
   using namespace detail;
-  using Restrict  = find_aliasing_policy_t<UserProperties...>;
-  using Alignment = find_alignment_t<alignof(ElementType), UserProperties...>;
-  using Eviction  = find_eviction_policy_t<UserProperties...>;
-  using Prefetch  = find_prefetch_size_t<UserProperties...>;
+  using MemoryBehavior = find_memory_behavior_t<UserProperties...>;
+  using Restrict       = find_aliasing_policy_t<UserProperties...>;
+  using Alignment      = find_alignment_t<alignof(ElementType), UserProperties...>;
+  using Eviction       = find_eviction_policy_t<UserProperties...>;
+  using Prefetch       = find_prefetch_size_t<UserProperties...>;
+  static_assert(count_memory_behavior_v<UserProperties...> <= 1, "Duplicate memory behavior found");
+  static_assert(count_aliasing_v<UserProperties...> <= 1, "Duplicate memory attribute found");
   static_assert(count_aliasing_v<UserProperties...> <= 1, "Duplicate aliasing policy found");
   static_assert(count_alignment_v<UserProperties...> <= 1, "Duplicate alignment found");
   static_assert(count_eviction_v<UserProperties...> <= 1, "Duplicate eviction policy found");
   static_assert(count_prefetch_v<UserProperties...> <= 1, "Duplicate prefetch policy found");
-  return accessor_with_properties<ElementType, Restrict, Alignment, Eviction, Prefetch>();
+  return accessor_with_properties<ElementType, MemoryBehavior, Restrict, Alignment, Eviction, Prefetch>();
 }
 
 template <typename E, typename T, typename L, typename A, typename... UserProperties>
