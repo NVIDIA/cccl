@@ -6,7 +6,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-
 #include <cuda/std/__cccl/128bit_types.h>
 
 #include "test_macros.h"

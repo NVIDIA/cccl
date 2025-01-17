@@ -6,7 +6,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#define _CCCL_DISABLE_FLOAT128
 #include <cuda/std/__cccl/128bit_types.h>
 
 #include "test_macros.h"
@@ -18,13 +17,14 @@ int main(int, char**)
   auto y = __uint128_t(123456789123) + __uint128_t(123456789123);
   unused(x);
   unused(y);
+#else
+  static_assert(false);
 #endif
 #if !_CCCL_HAS_FLOAT128()
-#  if defined(__CUDA_ARCH__)
-  static_assert(false); // nvcc raises a warning in device code but doesn't fail
-#  endif
   auto z = __float128(3.14) + __float128(3.14);
   unused(z);
+#else
+  static_assert(false);
 #endif
   return 0;
 }
