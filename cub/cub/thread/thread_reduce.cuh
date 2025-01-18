@@ -273,20 +273,16 @@ _CCCL_NODISCARD _CCCL_DEVICE constexpr bool enable_generic_simd_reduction()
 }
 
 template <typename T, typename ReductionOp, int Length>
-_CCCL_NODISCARD _CCCL_DEVICE constexpr bool enable_sm90_simd_reduction()
-{
-  using cub::detail::is_one_of_v;
-  // ::cuda::std::plus<> not handled: IADD3 always produces less instructions than VIADD2
-  return is_one_of_v<T, int16_t, uint16_t> && //
-         is_one_of_v<ReductionOp, ::cuda::minimum<>, ::cuda::minimum<T>, ::cuda::maximum<>, ::cuda::maximum<T>>
-      && Length >= 10;
-}
+inline constexpr bool enable_sm90_simd_reduction_v =
+  cub::detail::is_one_of_v<T, int16_t, uint16_t>
+  && cub::detail::is_one_of_v<ReductionOp, ::cuda::minimum<>, ::cuda::minimum<T>, ::cuda::maximum<>, ::cuda::maximum<T>>
+  && Length >= 10;
 
 template <typename T, typename ReductionOp, int Length>
 _CCCL_NODISCARD _CCCL_DEVICE constexpr bool enable_sm80_simd_reduction()
 {
   using cub::detail::is_one_of_v;
-  using ::cuda::std::is_same;
+  using ::cuda::std::is_same_v;
   return is_one_of_v<ReductionOp,
                      ::cuda::minimum<>,
                      ::cuda::minimum<T>,
@@ -298,39 +294,39 @@ _CCCL_NODISCARD _CCCL_DEVICE constexpr bool enable_sm80_simd_reduction()
                      ::cuda::std::multiplies<T>>
       && Length >= 4
 #  if defined(_CCCL_HAS_NVFP16) && defined(_CCCL_HAS_NVBF16)
-      && (is_same<T, __half>::value || is_same<T, __nv_bfloat16>::value)
+      && (is_same_v<T, __half> || is_same_v<T, __nv_bfloat16>)
 #  elif defined(_CCCL_HAS_NVFP16)
-      && is_same<T, __half>::value
+      && is_same_v<T, __half>
 #  elif defined(_CCCL_HAS_NVBF16)
-      && is_same<T, __nv_bfloat16>::value
+      && is_same_v<T, __nv_bfloat16>
 #  endif
     ;
 }
 
-template <typename T, typename ReductionOp, int Length>
-_CCCL_NODISCARD _CCCL_DEVICE constexpr bool enable_sm70_simd_reduction()
-{
-  using cub::detail::is_one_of_v;
-  using ::cuda::std::is_same;
 #  if defined(_CCCL_HAS_NVFP16)
-  return is_same<T, __half>::value
-      && is_one_of_v<ReductionOp,
-                     ::cuda::std::plus<>,
-                     ::cuda::std::plus<T>,
-                     ::cuda::std::multiplies<>,
-                     ::cuda::std::multiplies<T>>
-      && Length >= 4;
-#  else
-  return false;
-#  endif
-}
+
+template <typename T, typename ReductionOp, int Length>
+inline constexpr bool enable_sm70_simd_reduction_v =
+  ::cuda::std::is_same_v<T, __half>
+  && cub::detail::is_one_of_v<ReductionOp,
+                              ::cuda::std::plus<>,
+                              ::cuda::std::plus<T>,
+                              ::cuda::std::multiplies<>,
+                              ::cuda::std::multiplies<T>>
+  && Length >= 4;
+
+#  else // defined(_CCCL_HAS_NVFP16) ^^^^ /!defined(_CCCL_HAS_NVFP16) vvvv
+
+template <typename T, typename ReductionOp, int Length>
+inline constexpr bool enable_sm70_simd_reduction_v = false;
+
+#  endif // !defined(_CCCL_HAS_NVFP16) ^^^^
 
 template <typename Input, typename ReductionOp, typename AccumT>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE _CCCL_CONSTEXPR_CXX14 bool enable_simd_reduction()
 {
-  using ::cuda::std::is_same;
-  using T = ::cuda::std::remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>;
-  _CCCL_IF_CONSTEXPR (!is_same<T, AccumT>::value)
+  using T = detail::random_access_range_elem_t<Input>;
+  if constexpr (!::cuda::std::is_same_v<T, AccumT>)
   {
     return false;
   }
@@ -340,14 +336,14 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE _CCCL_CONSTEXPR_CXX14 bool enable
     // clang-format off
     _NV_TARGET_DISPATCH(
       NV_PROVIDES_SM_90,
-        (return enable_sm90_simd_reduction<T, ReductionOp, length>() ||
+        (return enable_sm90_simd_reduction_v<T, ReductionOp, length> ||
                 enable_sm80_simd_reduction<T, ReductionOp, length>() ||
-                enable_sm70_simd_reduction<T, ReductionOp, length>();),
+                enable_sm70_simd_reduction_v<T, ReductionOp, length>;),
       NV_PROVIDES_SM_80,
         (return enable_sm80_simd_reduction<T, ReductionOp, length>() ||
-                enable_sm70_simd_reduction<T, ReductionOp, length>();),
+                enable_sm70_simd_reduction_v<T, ReductionOp, length>;),
       NV_PROVIDES_SM_70,
-        (return enable_sm70_simd_reduction<T, ReductionOp, length>();),
+        (return enable_sm70_simd_reduction_v<T, ReductionOp, length>;),
       NV_IS_DEVICE,
         (static_cast<void>(length); // maybe unused
          return false;)
@@ -363,77 +359,67 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE _CCCL_CONSTEXPR_CXX14 bool enable
  **********************************************************************************************************************/
 
 template <typename T, typename ReductionOp>
-struct enable_ternary_reduction_sm90
-{
-  static constexpr bool value =
-    cub::detail::is_one_of_v<T, ::cuda::std::int32_t, ::cuda::std::uint32_t>
-    && cub::detail::is_one_of_v<
-      ReductionOp,
-      ::cuda::minimum<>,
-      ::cuda::minimum<T>,
-      ::cuda::maximum<>,
-      ::cuda::maximum<T>,
-      ::cuda::std::plus<>,
-      ::cuda::std::plus<T>,
-      ::cuda::std::bit_and<>,
-      ::cuda::std::bit_and<T>,
-      ::cuda::std::bit_or<>,
-      ::cuda::std::bit_or<T>,
-      ::cuda::std::bit_xor<>,
-      ::cuda::std::bit_xor<T>>;
-};
+inline constexpr bool enable_ternary_reduction_sm90_v =
+  cub::detail::is_one_of_v<T, ::cuda::std::int32_t, ::cuda::std::uint32_t>
+  && cub::detail::is_one_of_v<
+    ReductionOp,
+    ::cuda::minimum<>,
+    ::cuda::minimum<T>,
+    ::cuda::maximum<>,
+    ::cuda::maximum<T>,
+    ::cuda::std::plus<>,
+    ::cuda::std::plus<T>,
+    ::cuda::std::bit_and<>,
+    ::cuda::std::bit_and<T>,
+    ::cuda::std::bit_or<>,
+    ::cuda::std::bit_or<T>,
+    ::cuda::std::bit_xor<>,
+    ::cuda::std::bit_xor<T>>;
 
 #  if defined(_CCCL_HAS_NVFP16)
 
 template <typename ReductionOp>
-struct enable_ternary_reduction_sm90<__half2, ReductionOp>
-{
-  static constexpr bool value =
-    cub::detail::is_one_of_v<ReductionOp,
-                             ::cuda::minimum<>,
-                             ::cuda::minimum<__half2>,
-                             ::cuda::maximum<>,
-                             ::cuda::maximum<__half2>,
-                             SimdMin<__half>,
-                             SimdMax<__half>>;
-};
+inline constexpr bool enable_ternary_reduction_sm90_v<__half2, ReductionOp> =
+  cub::detail::is_one_of_v<ReductionOp,
+                           ::cuda::minimum<>,
+                           ::cuda::minimum<__half2>,
+                           ::cuda::maximum<>,
+                           ::cuda::maximum<__half2>,
+                           SimdMin<__half>,
+                           SimdMax<__half>>;
 
 #  endif // defined(_CCCL_HAS_NVFP16)
 
 #  if defined(_CCCL_HAS_NVBF16)
 
 template <typename ReductionOp>
-struct enable_ternary_reduction_sm90<__nv_bfloat162, ReductionOp>
-{
-  static constexpr bool value =
-    cub::detail::is_one_of_v<ReductionOp,
-                             ::cuda::minimum<>,
-                             ::cuda::minimum<__nv_bfloat162>,
-                             ::cuda::maximum<>,
-                             ::cuda::maximum<__nv_bfloat162>,
-                             SimdMin<__nv_bfloat16>,
-                             SimdMax<__nv_bfloat16>>;
-};
+inline constexpr bool enable_ternary_reduction_sm90_v<__nv_bfloat162, ReductionOp> =
+  cub::detail::is_one_of_v<ReductionOp,
+                           ::cuda::minimum<>,
+                           ::cuda::minimum<__nv_bfloat162>,
+                           ::cuda::maximum<>,
+                           ::cuda::maximum<__nv_bfloat162>,
+                           SimdMin<__nv_bfloat16>,
+                           SimdMax<__nv_bfloat16>>;
 
 #  endif // defined(_CCCL_HAS_NVBF16)
 
 template <typename Input, typename ReductionOp, typename AccumT>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE _CCCL_CONSTEXPR_CXX14 bool enable_ternary_reduction()
 {
-  using cub::detail::is_one_of_v;
-  using ::cuda::std::is_same;
-  using T               = ::cuda::std::remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>;
   constexpr auto length = cub::detail::static_size_v<Input>;
-  _CCCL_IF_CONSTEXPR (length < 6)
+  if constexpr (length < 6)
   {
     return false;
   }
   else
   {
+    using T = detail::random_access_range_elem_t<Input>;
+    using cub::detail::is_one_of_v;
     // clang-format off
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
-        (return enable_ternary_reduction_sm90<T, ReductionOp>::value;),
+        (return enable_ternary_reduction_sm90_v<T, ReductionOp>;),
       NV_PROVIDES_SM_50,
         (return is_one_of_v<AccumT, ::cuda::std::int32_t, ::cuda::std::uint32_t>
              && is_one_of_v<ReductionOp, ::cuda::std::plus<>,    ::cuda::std::plus<T>,
@@ -448,29 +434,25 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE _CCCL_CONSTEXPR_CXX14 bool enable
   return false; // nvcc 11.x warning workaround
 }
 
-template <typename Input, typename ReductionOp, typename AccumT>
-_CCCL_NODISCARD _CCCL_DEVICE constexpr bool enable_promotion()
-{
-  using cub::detail::is_one_of_v;
-  using ::cuda::std::is_same;
-  using T = ::cuda::std::remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>;
-  return ::cuda::std::is_integral<T>::value && sizeof(T) <= 2
-      && is_one_of_v<ReductionOp,
-                     ::cuda::std::plus<>,
-                     ::cuda::std::plus<T>,
-                     ::cuda::std::multiplies<>,
-                     ::cuda::std::multiplies<T>,
-                     ::cuda::std::bit_and<>,
-                     ::cuda::std::bit_and<T>,
-                     ::cuda::std::bit_or<>,
-                     ::cuda::std::bit_or<T>,
-                     ::cuda::std::bit_xor<>,
-                     ::cuda::std::bit_xor<T>,
-                     ::cuda::maximum<>,
-                     ::cuda::maximum<T>,
-                     ::cuda::minimum<>,
-                     ::cuda::minimum<T>>;
-}
+template <typename Input, typename ReductionOp, typename AccumT, typename T = detail::random_access_range_elem_t<Input>>
+inline constexpr bool enable_promotion_v =
+  ::cuda::std::is_integral_v<T> && sizeof(T) <= 2
+  && cub::detail::is_one_of_v<
+    ReductionOp,
+    ::cuda::std::plus<>,
+    ::cuda::std::plus<T>,
+    ::cuda::std::multiplies<>,
+    ::cuda::std::multiplies<T>,
+    ::cuda::std::bit_and<>,
+    ::cuda::std::bit_and<T>,
+    ::cuda::std::bit_or<>,
+    ::cuda::std::bit_or<T>,
+    ::cuda::std::bit_xor<>,
+    ::cuda::std::bit_xor<T>,
+    ::cuda::maximum<>,
+    ::cuda::maximum<T>,
+    ::cuda::minimum<>,
+    ::cuda::minimum<T>>;
 
 /***********************************************************************************************************************
  * Internal Reduction Algorithms: Sequential, Binary, Ternary
@@ -480,7 +462,7 @@ template <typename AccumT, typename Input, typename ReductionOp>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
 ThreadReduceSequential(const Input& input, ReductionOp reduction_op)
 {
-  AccumT retval = input[0];
+  auto retval = static_cast<AccumT>(input[0]);
 #  pragma unroll
   for (int i = 1; i < cub::detail::static_size_v<Input>; ++i)
   {
@@ -530,20 +512,8 @@ ThreadReduceTernaryTree(const Input& input, ReductionOp reduction_op)
  * SIMD Reduction
  **********************************************************************************************************************/
 
-// never reached. Protect instantion of ThreadReduceSimd with arbitrary types and operators
-_CCCL_TEMPLATE(typename Input, typename ReductionOp)
-_CCCL_REQUIRES((!cub::internal::enable_generic_simd_reduction<Input, ReductionOp>()))
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input& input, ReductionOp)
-  -> ::cuda::std::remove_cvref_t<decltype(input[0])>
-{
-  assert(false);
-  return input[0];
-}
-
-_CCCL_TEMPLATE(typename Input, typename ReductionOp)
-_CCCL_REQUIRES((cub::internal::enable_generic_simd_reduction<Input, ReductionOp>()))
+template <typename Input, typename ReductionOp>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input& input, ReductionOp reduction_op)
-  -> ::cuda::std::remove_cvref_t<decltype(input[0])>
 {
   using cub::detail::unsafe_bitcast;
   using T                       = ::cuda::std::remove_cvref_t<decltype(input[0])>;
@@ -560,7 +530,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input
   auto simd_input         = unsafe_bitcast<SimdArray>(local_array);
   SimdType simd_reduction = cub::ThreadReduce(simd_input, SimdReduceOp{});
   auto unpacked_values    = unsafe_bitcast<UnpackedType>(simd_reduction);
-  _CCCL_IF_CONSTEXPR (simd_ratio == 1)
+  if constexpr (simd_ratio == 1)
   {
     return unpacked_values[0];
   }
@@ -572,7 +542,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input
     auto simd_reduction_rev = unsafe_bitcast<SimdType>(unpacked_values_rev);
     SimdType result         = SimdReduceOp{}(simd_reduction, simd_reduction_rev);
     // repeat the same optimization for the last element
-    _CCCL_IF_CONSTEXPR (length % simd_ratio == 1)
+    if constexpr (length % simd_ratio == 1)
     {
       T tail[]       = {input[length - 1], T{}};
       auto tail_simd = unsafe_bitcast<SimdType>(tail);
@@ -600,10 +570,10 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& 
   {
     return static_cast<AccumT>(input[0]);
   }
-  using cub::internal::enable_promotion;
+  using cub::internal::enable_promotion_v;
   using cub::internal::enable_simd_reduction;
   using cub::internal::enable_ternary_reduction;
-  using PromT = ::cuda::std::_If<enable_promotion<Input, ReductionOp, AccumT>(), int, AccumT>;
+  using PromT = ::cuda::std::_If<enable_promotion_v<Input, ReductionOp, AccumT>, int, AccumT>;
   if constexpr (!cub::detail::is_one_of_v<
                   ReductionOp,
                   ::cuda::std::plus<>,
@@ -633,11 +603,11 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& 
                  (return cub::internal::ThreadReduceSequential<AccumT>(input, reduction_op);),
                  (return cub::internal::ThreadReduceTernaryTree<PromT>(input, reduction_op);));
   }
-  if (enable_simd_reduction<Input, ReductionOp, AccumT>())
+  if constexpr (enable_simd_reduction<Input, ReductionOp, AccumT>())
   {
     return cub::internal::ThreadReduceSimd(input, reduction_op);
   }
-  if (enable_ternary_reduction<Input, ReductionOp, PromT>())
+  if constexpr (enable_ternary_reduction<Input, ReductionOp, PromT>())
   {
     return cub::internal::ThreadReduceTernaryTree<PromT>(input, reduction_op);
   }

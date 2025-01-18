@@ -114,6 +114,9 @@ struct is_fixed_size_random_access_range<
 template <typename T>
 using is_fixed_size_random_access_range_t = typename is_fixed_size_random_access_range<T>::type;
 
+template <typename T>
+using random_access_range_elem_t = ::cuda::std::remove_cvref_t<decltype(::cuda::std::declval<T>()[0])>;
+
 /***********************************************************************************************************************
  * static_size: a type trait that returns the number of elements in an Array-like type
  **********************************************************************************************************************/
