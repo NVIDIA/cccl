@@ -596,41 +596,42 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& 
                 "Input must support the subscript operator[] and have a compile-time size");
   static_assert(cub::detail::has_binary_call_operator<ReductionOp, ValueT>::value,
                 "ReductionOp must have the binary call operator: operator(ValueT, ValueT)");
+  if constexpr (cub::detail::static_size_v<Input> == 1)
+  {
+    return static_cast<AccumT>(input[0]);
+  }
   using cub::internal::enable_promotion;
   using cub::internal::enable_simd_reduction;
   using cub::internal::enable_ternary_reduction;
   using PromT = ::cuda::std::_If<enable_promotion<Input, ReductionOp, AccumT>(), int, AccumT>;
-  _CCCL_IF_CONSTEXPR (!cub::detail::is_one_of_v<
-                        ReductionOp,
-                        ::cuda::std::plus<>,
-                        ::cuda::std::plus<ValueT>,
-                        ::cuda::std::multiplies<>,
-                        ::cuda::std::multiplies<ValueT>,
-                        ::cuda::std::bit_and<>,
-                        ::cuda::std::bit_and<ValueT>,
-                        ::cuda::std::bit_or<>,
-                        ::cuda::std::bit_or<ValueT>,
-                        ::cuda::std::bit_xor<>,
-                        ::cuda::std::bit_xor<ValueT>,
-                        ::cuda::maximum<>,
-                        ::cuda::maximum<ValueT>,
-                        ::cuda::minimum<>,
-                        ::cuda::minimum<ValueT>,
-                        cub::internal::SimdMin<ValueT>,
-                        cub::internal::SimdMax<ValueT>>
-                      || sizeof(ValueT) >= 8)
+  if constexpr (!cub::detail::is_one_of_v<
+                  ReductionOp,
+                  ::cuda::std::plus<>,
+                  ::cuda::std::plus<ValueT>,
+                  ::cuda::std::multiplies<>,
+                  ::cuda::std::multiplies<ValueT>,
+                  ::cuda::std::bit_and<>,
+                  ::cuda::std::bit_and<ValueT>,
+                  ::cuda::std::bit_or<>,
+                  ::cuda::std::bit_or<ValueT>,
+                  ::cuda::std::bit_xor<>,
+                  ::cuda::std::bit_xor<ValueT>,
+                  ::cuda::maximum<>,
+                  ::cuda::maximum<ValueT>,
+                  ::cuda::minimum<>,
+                  ::cuda::minimum<ValueT>,
+                  cub::internal::SimdMin<ValueT>,
+                  cub::internal::SimdMax<ValueT>>
+                || sizeof(ValueT) >= 8)
   {
     return cub::internal::ThreadReduceSequential<AccumT>(input, reduction_op);
   }
-  _CCCL_IF_CONSTEXPR (cub::detail::is_one_of_v<ReductionOp, ::cuda::std::plus<>, ::cuda::std::plus<ValueT>>
-                      && cub::detail::is_one_of_v<ValueT, int, ::cuda::std::uint32_t>)
+  if constexpr (cub::detail::is_one_of_v<ReductionOp, ::cuda::std::plus<>, ::cuda::std::plus<ValueT>>
+                && cub::detail::is_one_of_v<ValueT, int, ::cuda::std::uint32_t>)
   {
-    // clang-format off
-    NV_IF_TARGET(NV_PROVIDES_SM_90,
-      (return cub::internal::ThreadReduceSequential<AccumT>(input, reduction_op);),
-      (return cub::internal::ThreadReduceTernaryTree<PromT>(input, reduction_op);)
-    );
-    // clang-format on
+    NV_IF_TARGET(NV_PROVIDES_SM_90, //
+                 (return cub::internal::ThreadReduceSequential<AccumT>(input, reduction_op);),
+                 (return cub::internal::ThreadReduceTernaryTree<PromT>(input, reduction_op);));
   }
   if (enable_simd_reduction<Input, ReductionOp, AccumT>())
   {
@@ -690,101 +691,6 @@ ThreadReduce(const Input& input, ReductionOp reduction_op, PrefixT prefix)
   }
   return cub::ThreadReduce<decltype(array), ReductionOp, AccumT, AccumT>(array, reduction_op);
 }
-
-/***********************************************************************************************************************
- * Pointer Interfaces with explicit Length (internal use only)
- **********************************************************************************************************************/
-
-/// Internal namespace (to prevent ADL mishaps between static functions when mixing different CUB installations)
-namespace internal
-{
-
-/**
- * @remark The pointer interface adds little value and requires Length to be explicit.
- *         Prefer using the array-like interface
- *
- * @brief Perform a sequential reduction over @p length elements of the @p input pointer. The aggregate is returned.
- *
- * @tparam T
- *   <b>[inferred]</b> The data type to be reduced
- *
- * @tparam ReductionOp
- *   <b>[inferred]</b> Binary reduction operator type having member
- *   <tt>T operator()(const T &a, const T &b)</tt>
- *
- * @param[in] input
- *   Input pointer
- *
- * @param[in] reduction_op
- *   Binary reduction operator
- *
- * @return Aggregate of type <tt>cuda::std::__accumulator_t<ReductionOp, T></tt>
- */
-template <int Length, typename T, typename ReductionOp, typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, T>>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const T* input, ReductionOp reduction_op)
-{
-  static_assert(Length > 0, "Length must be greater than 0");
-  static_assert(cub::detail::has_binary_call_operator<ReductionOp, T>::value,
-                "ReductionOp must have the binary call operator: operator(V1, V2)");
-  using ArrayT = T[Length];
-  auto array   = reinterpret_cast<const T(*)[Length]>(input);
-  return cub::ThreadReduce(*array, reduction_op);
-}
-
-/**
- * @remark The pointer interface adds little value and requires Length to be explicit.
- *         Prefer using the array-like interface
- *
- * @brief Perform a sequential reduction over @p length elements of the @p input pointer, seeded with the specified @p
- *        prefix. The aggregate is returned.
- *
- * @tparam length
- *   Length of input pointer
- *
- * @tparam T
- *   <b>[inferred]</b> The data type to be reduced
- *
- * @tparam ReductionOp
- *   <b>[inferred]</b> Binary reduction operator type having member
- *   <tt>T operator()(const T &a, const T &b)</tt>
- *
- * @tparam PrefixT
- *   <b>[inferred]</b> The prefix type
- *
- * @param[in] input
- *   Input pointer
- *
- * @param[in] reduction_op
- *   Binary reduction operator
- *
- * @param[in] prefix
- *   Prefix to seed reduction with
- *
- * @return Aggregate of type <tt>cuda::std::__accumulator_t<ReductionOp, T, PrefixT></tt>
- */
-_CCCL_TEMPLATE(int Length,
-               typename T,
-               typename ReductionOp,
-               typename PrefixT,
-               typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, T, PrefixT>)
-_CCCL_REQUIRES((Length > 0))
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
-ThreadReduce(const T* input, ReductionOp reduction_op, PrefixT prefix)
-{
-  static_assert(detail::has_binary_call_operator<ReductionOp, T>::value,
-                "ReductionOp must have the binary call operator: operator(V1, V2)");
-  auto array = reinterpret_cast<const T(*)[Length]>(input);
-  return cub::ThreadReduce(*array, reduction_op, prefix);
-}
-
-_CCCL_TEMPLATE(int Length, typename T, typename ReductionOp, typename PrefixT)
-_CCCL_REQUIRES((Length == 0))
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadReduce(const T*, ReductionOp, PrefixT prefix)
-{
-  return prefix;
-}
-
-} // namespace internal
 
 #endif // !_CCCL_DOXYGEN_INVOKED
 
