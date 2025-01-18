@@ -47,7 +47,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/type_traits.cuh> // always_false
+#include <cub/detail/type_traits.cuh> // always_false_v
 #include <cub/util_type.cuh>
 
 #include <cuda/functional> // cuda::maximum, cuda::minimum
@@ -388,7 +388,7 @@ namespace internal
 template <typename T>
 struct SimdMin
 {
-  static_assert(cub::detail::always_false<T>(), "Unsupported specialization");
+  static_assert(cub::detail::always_false_v<T>, "Unsupported specialization");
 };
 
 template <>
@@ -479,7 +479,7 @@ struct SimdMin<__nv_bfloat16>
 template <typename T>
 struct SimdMax
 {
-  static_assert(cub::detail::always_false<T>(), "Unsupported specialization");
+  static_assert(cub::detail::always_false_v<T>, "Unsupported specialization");
 };
 
 template <>
@@ -558,7 +558,7 @@ struct SimdMax<__nv_bfloat16>
 template <typename T>
 struct SimdSum
 {
-  static_assert(cub::detail::always_false<T>(), "Unsupported specialization");
+  static_assert(cub::detail::always_false_v<T>, "Unsupported specialization");
 };
 
 #  if defined(_CCCL_HAS_NVFP16)
@@ -612,7 +612,7 @@ struct SimdSum<__nv_bfloat16>
 template <typename T>
 struct SimdMul
 {
-  static_assert(cub::detail::always_false<T>(), "Unsupported specialization");
+  static_assert(cub::detail::always_false_v<T>, "Unsupported specialization");
 };
 
 #  if defined(_CCCL_HAS_NVFP16)
@@ -665,7 +665,7 @@ struct SimdMul<__nv_bfloat16>
 template <typename ReduceOp, typename T>
 struct CubOperatorToSimdOperator
 {
-  static_assert(cub::detail::always_false<T>(), "Unsupported specialization");
+  static_assert(cub::detail::always_false_v<T>, "Unsupported specialization");
 };
 
 template <typename T>
