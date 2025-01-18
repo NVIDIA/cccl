@@ -187,7 +187,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
   {
     // Sort by a CTA with multiple reads from global memory
     int current_bit = begin_bit;
-    int pass_bits   = (cub::min)(int{LargeSegmentPolicyT::RADIX_BITS}, (end_bit - current_bit));
+    int pass_bits   = (::cuda::std::min)(int{LargeSegmentPolicyT::RADIX_BITS}, (end_bit - current_bit));
 
     d_keys_double_buffer = cub::detail::device_double_buffer<KeyT>(
       d_keys_double_buffer.current() + segment_begin, d_keys_double_buffer.alternate() + segment_begin);
@@ -210,7 +210,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
 #pragma unroll 1
     while (current_bit < end_bit)
     {
-      pass_bits = (cub::min)(int{LargeSegmentPolicyT::RADIX_BITS}, (end_bit - current_bit));
+      pass_bits = (::cuda::std::min)(int{LargeSegmentPolicyT::RADIX_BITS}, (end_bit - current_bit));
 
       __syncthreads();
       agent.ProcessIterative(
@@ -461,7 +461,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
   {
     // Sort reading global memory multiple times
     int current_bit = begin_bit;
-    int pass_bits   = (cub::min)(int{LargeSegmentPolicyT::RADIX_BITS}, (end_bit - current_bit));
+    int pass_bits   = (::cuda::std::min)(int{LargeSegmentPolicyT::RADIX_BITS}, (end_bit - current_bit));
 
     d_keys_double_buffer = cub::detail::device_double_buffer<KeyT>(
       d_keys_double_buffer.current() + segment_begin, d_keys_double_buffer.alternate() + segment_begin);
@@ -484,7 +484,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
 #pragma unroll 1
     while (current_bit < end_bit)
     {
-      pass_bits = (cub::min)(int{LargeSegmentPolicyT::RADIX_BITS}, (end_bit - current_bit));
+      pass_bits = (::cuda::std::min)(int{LargeSegmentPolicyT::RADIX_BITS}, (end_bit - current_bit));
 
       __syncthreads();
       agent.ProcessIterative(
