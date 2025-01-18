@@ -39,7 +39,7 @@ struct __atomic_traits
     NV_DISPATCH_TARGET(
       NV_IS_HOST,
       (return 8;), // TODO: determine host maximum host atomic size
-      NV_PROVIDES_SM100,
+      NV_PROVIDES_SM_90,
       (return 16;), // Hopper+ for 128b CAS
       NV_ANY_TARGET,
       (return 8;) // Everything else 64b max
