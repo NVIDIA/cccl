@@ -305,6 +305,22 @@ void unpin_memory(T* p)
   }
 }
 
+// Overload pin_memory for arrays
+template <typename T, size_t N>
+cudaError_t pin_memory(T (&array)[N]) {
+  return pin_memory(array, N);
+}
+
+template <typename T>
+cudaError_t pin_memory(::std::vector<T> &v) {
+  return pin_memory(v.data(), v.size());
+}
+
+template <typename T>
+void unpin_memory(::std::vector<T> &v) {
+  unpin_memory(v.data());
+}
+
 #ifdef UNITTESTED_FILE
 UNITTEST("pin_memory")
 {
