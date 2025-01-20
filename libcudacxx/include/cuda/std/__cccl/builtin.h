@@ -195,9 +195,9 @@
 #  define _CCCL_BUILTIN_COLUMN() 0
 #endif // _CCCL_CUDACC_BELOW(11, 3)
 
-#if _CCCL_CHECK_BUILTIN(builtin_contant_p) || _CCCL_COMPILER(GCC)
+#if _CCCL_CHECK_BUILTIN(builtin_constant_p) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_CONSTANT_P(...) __builtin_constant_p(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_contant_p)
+#endif // _CCCL_CHECK_BUILTIN(builtin_constant_p)
 
 #if _CCCL_CHECK_BUILTIN(builtin_exp) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_EXPF(...) __builtin_expf(__VA_ARGS__)
