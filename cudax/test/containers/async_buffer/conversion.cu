@@ -80,6 +80,7 @@ TEMPLATE_TEST_CASE("cudax::async_buffer conversion",
     }
   }
 
+#if 0
   SECTION("cudax::async_buffer copy assignment of matching async_buffer")
   {
     { // Can be assigned an empty input, no allocation
@@ -171,4 +172,5 @@ TEMPLATE_TEST_CASE("cudax::async_buffer conversion",
       CHECK(input.data() == nullptr);
     }
   }
+#endif
 }

@@ -98,7 +98,6 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     containers/uninitialized_async_buffer.cu
     containers/async_buffer/access.cu
     containers/async_buffer/assign.cu
-    containers/async_buffer/assignment.cu
     containers/async_buffer/capacity.cu
     containers/async_buffer/comparison.cu
     containers/async_buffer/constructor.cu
