@@ -54,6 +54,8 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/type_traits>
 
 #include <cstdint>
@@ -173,7 +175,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT::BLO
       copy_items<IsMemcpy, BLOCK_THREADS, InputBufferT, OutputBufferT, BufferSizeT>(
         input_buffer_it[buffer_id],
         output_buffer_it[buffer_id],
-        (cub::min)(buffer_sizes[buffer_id] - tile_offset_within_buffer, TILE_SIZE),
+        (::cuda::std::min)(buffer_sizes[buffer_id] - tile_offset_within_buffer, TILE_SIZE),
         tile_offset_within_buffer);
     }
 

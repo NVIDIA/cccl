@@ -319,10 +319,13 @@ long double    truncl(long double x);
 #endif // _CCCL_COMPILER(NVHPC)
 
 #include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__cmath/exponential_functions.h>
 #include <cuda/std/__cmath/fpclassify.h>
 #include <cuda/std/__cmath/lerp.h>
 #include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__cmath/min_max.h>
+#include <cuda/std/__cmath/roots.h>
+#include <cuda/std/__cmath/rounding_functions.h>
 #include <cuda/std/__cmath/traits.h>
 #include <cuda/std/__cstdlib/abs.h>
 #include <cuda/std/limits>
@@ -354,26 +357,16 @@ using ::atan;
 using ::atan2;
 using ::atan2f;
 using ::atanf;
-using ::ceil;
-using ::ceilf;
 using ::cos;
 using ::cosf;
 using ::cosh;
 using ::coshf;
-
-using ::exp;
-using ::expf;
-
-using ::pow;
-using ::powf;
 
 using ::sin;
 using ::sinf;
 using ::sinh;
 using ::sinhf;
 
-using ::sqrt;
-using ::sqrtf;
 using ::tan;
 using ::tanf;
 
@@ -395,30 +388,17 @@ using ::hypotf;
 using ::double_t;
 using ::float_t;
 
-using ::floor;
-using ::floorf;
-
 using ::fmod;
 using ::fmodf;
 
-using ::frexp;
-using ::frexpf;
-using ::ldexp;
-using ::ldexpf;
-
 using ::modf;
 using ::modff;
-
-using ::pow;
-using ::powf;
 
 using ::sin;
 using ::sinf;
 using ::sinh;
 using ::sinhf;
 
-using ::sqrt;
-using ::sqrtf;
 using ::tan;
 using ::tanf;
 
@@ -431,8 +411,6 @@ using ::asinh;
 using ::asinhf;
 using ::atanh;
 using ::atanhf;
-using ::cbrt;
-using ::cbrtf;
 
 using ::copysign;
 using ::copysignf;
@@ -441,102 +419,52 @@ using ::erf;
 using ::erfc;
 using ::erfcf;
 using ::erff;
-using ::exp2;
-using ::exp2f;
-using ::expm1;
-using ::expm1f;
 using ::fdim;
 using ::fdimf;
 using ::fma;
 using ::fmaf;
 using ::lgamma;
 using ::lgammaf;
-using ::llrint;
-using ::llrintf;
-using ::llround;
-using ::llroundf;
-using ::lrint;
-using ::lrintf;
-using ::lround;
-using ::lroundf;
 
 using ::nan;
 using ::nanf;
 
-using ::nearbyint;
-using ::nearbyintf;
-using ::nextafter;
-using ::nextafterf;
-using ::nexttoward;
-using ::nexttowardf;
 using ::remainder;
 using ::remainderf;
 using ::remquo;
 using ::remquof;
-using ::rint;
-using ::rintf;
-using ::round;
-using ::roundf;
-using ::scalbln;
-using ::scalblnf;
-using ::scalbn;
-using ::scalbnf;
 using ::tgamma;
 using ::tgammaf;
-using ::trunc;
-using ::truncf;
 
 using ::acosl;
 using ::asinl;
 using ::atan2l;
 using ::atanl;
-using ::ceill;
 using ::coshl;
 using ::cosl;
-using ::expl;
-using ::floorl;
 using ::fmodl;
-using ::frexpl;
-using ::ldexpl;
 using ::modfl;
-using ::powl;
 using ::sinhl;
 using ::sinl;
-using ::sqrtl;
 using ::tanl;
 
 using ::acoshl;
 using ::asinhl;
 using ::atanhl;
-using ::cbrtl;
 using ::tanhl;
 
 using ::copysignl;
 
 using ::erfcl;
 using ::erfl;
-using ::exp2l;
-using ::expm1l;
 using ::fdiml;
 using ::fmal;
 using ::hypotl;
 using ::lgammal;
-using ::llrintl;
-using ::llroundl;
-using ::lrintl;
-using ::lroundl;
 using ::nanl;
-using ::nearbyintl;
-using ::nextafterl;
-using ::nexttowardl;
 using ::remainderl;
 using ::remquol;
-using ::rintl;
-using ::roundl;
-using ::scalblnl;
-using ::scalbnl;
 using ::tgammal;
-using ::truncl;
 
 #endif // _CCCL_COMPILER(NVRTC)
 

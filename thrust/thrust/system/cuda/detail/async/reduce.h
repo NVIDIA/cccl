@@ -52,7 +52,8 @@
 #    include <thrust/system/cuda/detail/async/customization.h>
 #    include <thrust/system/cuda/detail/reduce.h>
 #    include <thrust/system/cuda/future.h>
-#    include <thrust/type_traits/remove_cvref.h>
+
+#    include <cuda/std/type_traits>
 
 #    include <type_traits>
 
@@ -66,10 +67,10 @@ namespace detail
 {
 
 template <typename DerivedPolicy, typename ForwardIt, typename Size, typename T, typename BinaryOp>
-unique_eager_future<remove_cvref_t<T>>
+unique_eager_future<::cuda::std::remove_cvref_t<T>>
 async_reduce_n(execution_policy<DerivedPolicy>& policy, ForwardIt first, Size n, T init, BinaryOp op)
 {
-  using U = remove_cvref_t<T>;
+  using U = ::cuda::std::remove_cvref_t<T>;
 
   auto const device_alloc = get_async_device_allocator(policy);
 
@@ -157,7 +158,7 @@ template <typename DerivedPolicy, typename ForwardIt, typename Size, typename Ou
 unique_eager_event async_reduce_into_n(
   execution_policy<DerivedPolicy>& policy, ForwardIt first, Size n, OutputIt output, T init, BinaryOp op)
 {
-  using U = remove_cvref_t<T>;
+  using U = ::cuda::std::remove_cvref_t<T>;
 
   auto const device_alloc = get_async_device_allocator(policy);
 

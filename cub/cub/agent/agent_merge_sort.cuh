@@ -45,6 +45,9 @@
 
 #include <thrust/system/cuda/detail/core/util.h>
 
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+
 CUB_NAMESPACE_BEGIN
 
 template <int _BLOCK_THREADS,
@@ -156,7 +159,7 @@ struct AgentBlockSort
     auto tile_idx     = static_cast<OffsetT>(blockIdx.x);
     auto num_tiles    = static_cast<OffsetT>(gridDim.x);
     auto tile_base    = tile_idx * ITEMS_PER_TILE;
-    int items_in_tile = (cub::min)(keys_count - tile_base, int{ITEMS_PER_TILE});
+    int items_in_tile = (::cuda::std::min)(static_cast<int>(keys_count - tile_base), int{ITEMS_PER_TILE});
 
     if (tile_idx < num_tiles - 1)
     {
@@ -335,10 +338,10 @@ struct AgentPartition
     // partition_idx / target_merged_tiles_number
     const OffsetT local_tile_idx = mask & partition_idx;
 
-    const OffsetT keys1_beg = (cub::min)(keys_count, start);
-    const OffsetT keys1_end = (cub::min)(keys_count, detail::safe_add_bound_to_max(start, size));
+    const OffsetT keys1_beg = (::cuda::std::min)(keys_count, start);
+    const OffsetT keys1_end = (::cuda::std::min)(keys_count, detail::safe_add_bound_to_max(start, size));
     const OffsetT keys2_beg = keys1_end;
-    const OffsetT keys2_end = (cub::min)(keys_count, detail::safe_add_bound_to_max(keys2_beg, size));
+    const OffsetT keys2_end = (::cuda::std::min)(keys_count, detail::safe_add_bound_to_max(keys2_beg, size));
 
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
@@ -349,7 +352,7 @@ struct AgentPartition
     }
     else
     {
-      const OffsetT partition_at = (cub::min)(keys2_end - keys1_beg, items_per_tile * local_tile_idx);
+      const OffsetT partition_at = (::cuda::std::min)(keys2_end - keys1_beg, items_per_tile * local_tile_idx);
 
       OffsetT partition_diag =
         ping
@@ -526,15 +529,15 @@ struct AgentMerge
     // diag >= keys1_beg, because diag is the distance of the total merge path so far (keys1 + keys2)
     // diag+ITEMS_PER_TILE >= keys1_end, because diag+ITEMS_PER_TILE is the distance of the merge path for the next tile
     // and keys1_end is key1's component of that path
-    const OffsetT keys2_beg = (cub::min)(max_keys2, diag - keys1_beg);
-    OffsetT keys2_end =
-      (cub::min)(max_keys2, detail::safe_add_bound_to_max(diag, static_cast<OffsetT>(ITEMS_PER_TILE)) - keys1_end);
+    const OffsetT keys2_beg = (::cuda::std::min)(max_keys2, diag - keys1_beg);
+    OffsetT keys2_end       = (::cuda::std::min)(
+      max_keys2, detail::safe_add_bound_to_max(diag, static_cast<OffsetT>(ITEMS_PER_TILE)) - keys1_end);
 
     // Check if it's the last tile in the tile group being merged
     if (mask == (mask & tile_idx))
     {
-      keys1_end = (cub::min)(keys_count - start, size);
-      keys2_end = (cub::min)(max_keys2, size);
+      keys1_end = (::cuda::std::min)(keys_count - start, size);
+      keys2_end = (::cuda::std::min)(max_keys2, size);
     }
 
     // number of keys per tile
@@ -591,7 +594,7 @@ struct AgentMerge
     // we can use int type here, because the number of
     // items in shared memory is limited
     //
-    const int diag0_local = (cub::min)(num_keys1 + num_keys2, ITEMS_PER_THREAD * tid);
+    const int diag0_local = (::cuda::std::min)(num_keys1 + num_keys2, ITEMS_PER_THREAD * tid);
 
     const int keys1_beg_local = MergePath(
       &storage.keys_shared[0], &storage.keys_shared[num_keys1], num_keys1, num_keys2, diag0_local, compare_op);
@@ -731,7 +734,7 @@ struct AgentMerge
     const OffsetT tile_base = OffsetT(tile_idx) * ITEMS_PER_TILE;
     const int tid           = static_cast<int>(threadIdx.x);
     const int items_in_tile =
-      static_cast<int>((cub::min)(static_cast<OffsetT>(ITEMS_PER_TILE), keys_count - tile_base));
+      static_cast<int>((::cuda::std::min)(static_cast<OffsetT>(ITEMS_PER_TILE), keys_count - tile_base));
 
     if (tile_idx < num_tiles - 1)
     {
