@@ -40,6 +40,44 @@ TEMPLATE_TEST_CASE("cudax::async_buffer access",
   cudax::stream stream{};
   Env env{Resource{}, stream};
 
+  SECTION("cudax::async_buffer::get")
+  {
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<Buffer&>().get(1ull)), reference>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const Buffer&>().get(1ull)), const_reference>);
+
+    {
+      Buffer buf{env, {T(1), T(42), T(1337), T(0)}};
+      auto& res = buf.get(2);
+      CHECK(compare_value<Buffer::__is_host_only>(res, T(1337)));
+      CHECK(static_cast<size_t>(cuda::std::addressof(res) - buf.data()) == 2);
+      assign_value<Buffer::__is_host_only>(res, T(4));
+
+      auto& const_res = cuda::std::as_const(buf).get(2);
+      CHECK(compare_value<Buffer::__is_host_only>(const_res, T(4)));
+      CHECK(static_cast<size_t>(cuda::std::addressof(const_res) - buf.data()) == 2);
+    }
+  }
+
+  SECTION("cudax::async_buffer::get_unsynchronized")
+  {
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<Buffer&>().get_unsynchronized(1ull)), reference>);
+    static_assert(
+      cuda::std::is_same_v<decltype(cuda::std::declval<const Buffer&>().get_unsynchronized(1ull)), const_reference>);
+
+    {
+      Buffer buf{env, {T(1), T(42), T(1337), T(0)}};
+      buf.wait();
+      auto& res = buf.get_unsynchronized(2);
+      CHECK(compare_value<Buffer::__is_host_only>(res, T(1337)));
+      CHECK(static_cast<size_t>(cuda::std::addressof(res) - buf.data()) == 2);
+      assign_value<Buffer::__is_host_only>(res, T(4));
+
+      auto& const_res = cuda::std::as_const(buf).get_unsynchronized(2);
+      CHECK(compare_value<Buffer::__is_host_only>(const_res, T(4)));
+      CHECK(static_cast<size_t>(cuda::std::addressof(const_res) - buf.data()) == 2);
+    }
+  }
+
   SECTION("cudax::async_buffer::data")
   {
     static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<Buffer&>().data()), pointer>);

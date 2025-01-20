@@ -604,6 +604,48 @@ public:
 
   //! @}
 
+  //! @addtogroup access
+  //! @{
+  //! @brief Returns a reference to the \p __n 'th element of the async_vector
+  //! @param __n The index of the element we want to access
+  //! @note Always synchronizes with the stored stream
+  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI reference get(const size_type __n) noexcept
+  {
+    _CCCL_ASSERT(__n < __size_, "cuda::experimental::async_vector::get out of range!");
+    this->wait();
+    return begin()[__n];
+  }
+
+  //! @brief Returns a reference to the \p __n 'th element of the async_vector
+  //! @param __n The index of the element we want to access
+  //! @note Always synchronizes with the stored stream
+  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI const_reference get(const size_type __n) const noexcept
+  {
+    _CCCL_ASSERT(__n < __size_, "cuda::experimental::async_vector::get out of range!");
+    this->wait();
+    return begin()[__n];
+  }
+
+  //! @brief Returns a reference to the \p __n 'th element of the async_vector
+  //! @param __n The index of the element we want to access
+  //! @note Does not synchronize with the stored stream
+  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI reference get_unsynchronized(const size_type __n) noexcept
+  {
+    _CCCL_ASSERT(__n < __size_, "cuda::experimental::async_vector::get_unsynchronized out of range!");
+    return begin()[__n];
+  }
+
+  //! @brief Returns a reference to the \p __n 'th element of the async_vector
+  //! @param __n The index of the element we want to access
+  //! @note Does not synchronize with the stored stream
+  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI const_reference get_unsynchronized(const size_type __n) const noexcept
+  {
+    _CCCL_ASSERT(__n < __size_, "cuda::experimental::async_vector::get_unsynchronized out of range!");
+    return begin()[__n];
+  }
+
+  //! @}
+
   //! @addtogroup size
   //! @{
   //! @brief Returns the current number of elements stored in the async_buffer.
