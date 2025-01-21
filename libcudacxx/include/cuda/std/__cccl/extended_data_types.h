@@ -4,12 +4,12 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CCCL_EXTENDED_FLOATING_POINT_H
-#define __CCCL_EXTENDED_FLOATING_POINT_H
+#ifndef __CCCL_EXTENDED_DATA_TYPES_H
+#define __CCCL_EXTENDED_DATA_TYPES_H
 
 #include <cuda/std/__cccl/compiler.h>
 #include <cuda/std/__cccl/system_header.h>
@@ -23,6 +23,7 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/diagnostic.h>
+#include <cuda/std/__cccl/os.h>
 #include <cuda/std/__cccl/preprocessor.h>
 
 #if !defined(_CCCL_HAS_NVFP16)
@@ -39,4 +40,32 @@
 #  endif
 #endif // !_CCCL_HAS_NVBF16
 
-#endif // __CCCL_EXTENDED_FLOATING_POINT_H
+#if !defined(_CCCL_DISABLE_INT128)
+#  if defined(__SIZEOF_INT128__) // defined(__SIZEOF_INT128__) vvvv
+#    if _CCCL_COMPILER(NVRTC) && defined(__CUDACC_RTC_INT128__) && _CCCL_OS(LINUX)
+#      define _CCCL_HAS_INT128() 1
+#    elif (_CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)) && _CCCL_OS(LINUX)
+#      define _CCCL_HAS_INT128() 1
+#    else
+#      define _CCCL_HAS_INT128() 0
+#    endif
+#  else // defined(__SIZEOF_INT128__) ^^^^ / !defined(__SIZEOF_INT128__) vvvv
+#    define _CCCL_HAS_INT128() 0
+#  endif // !defined(__SIZEOF_INT128__) ^^^^
+#else
+#  define _CCCL_HAS_INT128() 0
+#endif // #if !defined(_CCCL_DISABLE_INT128)
+
+#if !defined(_CCCL_DISABLE_FLOAT128)
+#  if (defined(__SIZEOF_FLOAT128__) || defined(__FLOAT128__)) && _CCCL_OS(LINUX)                          \
+    && (_CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)) && !defined(__CUDA_ARCH__) \
+    && !_CCCL_COMPILER(NVRTC)
+#    define _CCCL_HAS_FLOAT128() 1
+#  else
+#    define _CCCL_HAS_FLOAT128() 0
+#  endif
+#else
+#  define _CCCL_HAS_FLOAT128() 0
+#endif // #if !defined(_CCCL_DISABLE_FLOAT128)
+
+#endif // __CCCL_EXTENDED_DATA_TYPES_H
