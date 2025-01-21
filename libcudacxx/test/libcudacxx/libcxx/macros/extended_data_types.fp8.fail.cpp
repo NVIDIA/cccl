@@ -13,44 +13,12 @@
 #if !_CCCL_HAS_NVFP8()
 #  include <cuda_fp8.h>
 #endif
-#if !defined(_CCCL_HAS_NVFP16)
-#  include <cuda_fp16.h>
-#endif
-#if !defined(_CCCL_HAS_NVBF16)
-#  include <cuda_bf16.h>
-#endif
 
 int main(int, char**)
 {
-#if !_CCCL_HAS_INT128()
-  auto x = __int128(123456789123) + __int128(123456789123);
-  auto y = __uint128_t(123456789123) + __uint128_t(123456789123);
-  unused(x);
-  unused(y);
-#else
-  static_assert(false);
-#endif
 #if !_CCCL_HAS_NVFP8()
   auto x1 = __nv_fp8_e4m3(1.0f);
   unused(x1);
-#else
-  static_assert(false);
-#endif
-#if !defined(_CCCL_HAS_NVFP16)
-  auto x2 = __half(1.0f);
-  unused(x2);
-#else
-  static_assert(false);
-#endif
-#if !defined(_CCCL_HAS_NVBF16)
-  auto x3 = __nv_bfloat16(1.0f);
-  unused(x3);
-#else
-  static_assert(false);
-#endif
-#if !_CCCL_HAS_FLOAT128() && !_CCCL_COMPILER(NVRTC)
-  auto x4 = __float128(3.14) + __float128(3.14);
-  unused(x4);
 #else
   static_assert(false);
 #endif
