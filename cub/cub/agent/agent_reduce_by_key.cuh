@@ -116,6 +116,11 @@ struct AgentReduceByKeyPolicy
  * Thread block abstractions
  ******************************************************************************/
 
+namespace detail
+{
+namespace reduce
+{
+
 /**
  * @brief AgentReduceByKey implements a stateful abstraction of CUDA thread
  *        blocks for participating in device-wide reduce-value-by-key
@@ -167,13 +172,13 @@ struct AgentReduceByKey
   //---------------------------------------------------------------------
 
   // The input keys type
-  using KeyInputT = cub::detail::value_t<KeysInputIteratorT>;
+  using KeyInputT = value_t<KeysInputIteratorT>;
 
   // The output keys type
-  using KeyOutputT = cub::detail::non_void_value_t<UniqueOutputIteratorT, KeyInputT>;
+  using KeyOutputT = non_void_value_t<UniqueOutputIteratorT, KeyInputT>;
 
   // The input values type
-  using ValueInputT = cub::detail::value_t<ValuesInputIteratorT>;
+  using ValueInputT = value_t<ValuesInputIteratorT>;
 
   // Tuple type for scanning (pairs accumulated segment-value with
   // segment-index)
@@ -693,5 +698,32 @@ struct AgentReduceByKey
     }
   }
 };
+
+} // namespace reduce
+} // namespace detail
+
+template <typename AgentReduceByKeyPolicyT,
+          typename KeysInputIteratorT,
+          typename UniqueOutputIteratorT,
+          typename ValuesInputIteratorT,
+          typename AggregatesOutputIteratorT,
+          typename NumRunsOutputIteratorT,
+          typename EqualityOpT,
+          typename ReductionOpT,
+          typename OffsetT,
+          typename AccumT>
+using AgentReduceByKey CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
+                                               "interface will be removed.") =
+  detail::reduce::AgentReduceByKey<
+    AgentReduceByKeyPolicyT,
+    KeysInputIteratorT,
+    UniqueOutputIteratorT,
+    ValuesInputIteratorT,
+    AggregatesOutputIteratorT,
+    NumRunsOutputIteratorT,
+    EqualityOpT,
+    ReductionOpT,
+    OffsetT,
+    AccumT>;
 
 CUB_NAMESPACE_END
