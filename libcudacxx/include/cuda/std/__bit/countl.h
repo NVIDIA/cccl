@@ -34,7 +34,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp)
-                 _CCCL_AND(sizeof(_Tp) >= sizeof(uint32_t) && sizeof(_Tp) <= sizeof(uint64_t)))
+                 _CCCL_AND(sizeof(_Tp) == sizeof(uint32_t) || sizeof(_Tp) == sizeof(uint64_t)))
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<sizeof(_Tp) == sizeof(uint32_t) || sizeof(_Tp) == sizeof(uint64_t), int>
 __countl_zero(_Tp __t) noexcept
 {

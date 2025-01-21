@@ -32,7 +32,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr uint32_t __bit_log2(_Tp __t) noexcept
 {
-  static_assert(__cccl_is_unsigned_integer<_Tp>::value, "__bit_log2 requires unsigned");
+  static_assert(__cccl_is_unsigned_integer_v<_Tp>, "__bit_log2 requires unsigned");
   return numeric_limits<_Tp>::digits - 1 - __countl_zero(__t);
 }
 
@@ -51,19 +51,19 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<sizeof(_Tp) < sizeof(uint32_t), 
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer<_Tp>::value, _Tp> bit_floor(_Tp __t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer_v<_Tp>, _Tp> bit_floor(_Tp __t) noexcept
 {
   return __t == 0 ? 0 : static_cast<_Tp>(_Tp{1} << __bit_log2(__t));
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer<_Tp>::value, _Tp> bit_ceil(_Tp __t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer_v<_Tp>, _Tp> bit_ceil(_Tp __t) noexcept
 {
   return (__t < 2) ? 1 : static_cast<_Tp>(__ceil2(__t));
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer<_Tp>::value, int> bit_width(_Tp __t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer_v<_Tp>, int> bit_width(_Tp __t) noexcept
 {
   return __t == 0 ? 0 : static_cast<int>(__bit_log2(__t) + 1);
 }
