@@ -25,8 +25,8 @@
  *
  ******************************************************************************/
 
-#include <cub/device/device_merge_sort.cuh>
 #include <cub/detail/choose_offset.cuh>
+#include <cub/device/device_merge_sort.cuh>
 
 #include <nvbench_helper.cuh>
 

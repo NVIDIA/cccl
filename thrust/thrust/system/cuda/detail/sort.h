@@ -104,7 +104,7 @@ THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
     keys_count,
     (d_temp_storage, temp_storage_bytes, keys, items, keys, items, keys_count_fixed, compare_op, stream));
 
-    return status;
+  return status;
 }
 
 template <class KeysIt, class ItemsIt, class Size, class CompareOp>
@@ -130,7 +130,7 @@ THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
     keys_count,
     (d_temp_storage, temp_storage_bytes, keys, items, keys, items, keys_count_fixed, compare_op, stream));
 
-    return status;
+  return status;
 }
 
 template <class SORT_ITEMS, class /* STABLE */, class KeysIt, class ItemsIt, class Size, class CompareOp>
