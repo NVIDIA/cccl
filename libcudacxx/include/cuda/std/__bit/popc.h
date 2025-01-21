@@ -51,7 +51,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_popc(uint64_t __x) noexcept
   return __count;
 }
 
-// constexpr is required for GCC8
+// constexpr is required for GCC <= 9
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_popc(uint32_t __x) noexcept
 {
 #if _CCCL_COMPILER(MSVC) && !defined(_M_ARM64) // _CCCL_COMPILER(MSVC) + X86 vvv
@@ -63,7 +63,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_popc(uint32_t __x) noexcept
 #endif // !_CCCL_COMPILER(MSVC) ^^^
 }
 
-// constexpr is required for GCC8
+// constexpr is required for GCC <= 9
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_popc(uint64_t __x) noexcept
 {
 #if _CCCL_COMPILER(MSVC) && !defined(_M_ARM64) // _CCCL_COMPILER(MSVC) + X86 vvv

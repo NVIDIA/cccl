@@ -54,7 +54,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_ctz(uint64_t __x) noexcept
   return 64;
 }
 
-// constexpr is required for GCC8
+// constexpr is required for GCC <= 9
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_ctz(uint32_t __x) noexcept
 {
 #if defined(__CUDA_ARCH__)
@@ -71,7 +71,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_ctz(uint32_t __x) noexcept
 #endif // _CCCL_COMPILER(MSVC)
 }
 
-// constexpr is required for GCC8
+// constexpr is required for GCC <= 9
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_ctz(uint64_t __x) noexcept
 {
 #if defined(__CUDA_ARCH__)
@@ -90,12 +90,12 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_ctz(uint64_t __x) noexcept
 
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_ctz(uint32_t __x) noexcept
 {
-  return is_constant_evaluated() ? _CUDA_VSTD::__constexpr_ctz(__x) : _CUDA_VSTD::__runtime_ctz(__x);
+  return __cccl_default_is_constant_evaluated() ? _CUDA_VSTD::__constexpr_ctz(__x) : _CUDA_VSTD::__runtime_ctz(__x);
 }
 
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_ctz(uint64_t __x) noexcept
 {
-  return is_constant_evaluated() ? _CUDA_VSTD::__constexpr_ctz(__x) : _CUDA_VSTD::__runtime_ctz(__x);
+  return __cccl_default_is_constant_evaluated() ? _CUDA_VSTD::__constexpr_ctz(__x) : _CUDA_VSTD::__runtime_ctz(__x);
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
