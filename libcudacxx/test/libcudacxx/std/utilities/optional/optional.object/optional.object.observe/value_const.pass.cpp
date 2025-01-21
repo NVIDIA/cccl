@@ -67,9 +67,7 @@ int main(int, char**)
   {
     const optional<X> opt;
     unused(opt);
-#ifndef TEST_COMPILER_ICC
     ASSERT_NOT_NOEXCEPT(opt.value());
-#endif // TEST_COMPILER_ICC
     ASSERT_SAME_TYPE(decltype(opt.value()), X const&);
   }
 #if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))

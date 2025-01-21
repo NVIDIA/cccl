@@ -59,7 +59,7 @@ struct __numeric_type
   _LIBCUDACXX_HIDE_FROM_ABI static double __test(double);
   _LIBCUDACXX_HIDE_FROM_ABI static long double __test(long double);
 
-  typedef decltype(__test(declval<_Tp>())) type;
+  using type              = decltype(__test(declval<_Tp>()));
   static const bool value = _IsNotSame<type, void>::value;
 };
 
@@ -128,12 +128,12 @@ template <class _A1, class _A2, class _A3>
 class __promote_imp<_A1, _A2, _A3, true>
 {
 private:
-  typedef typename __promote_imp<_A1>::type __type1;
-  typedef typename __promote_imp<_A2>::type __type2;
-  typedef typename __promote_imp<_A3>::type __type3;
+  using __type1 = typename __promote_imp<_A1>::type;
+  using __type2 = typename __promote_imp<_A2>::type;
+  using __type3 = typename __promote_imp<_A3>::type;
 
 public:
-  typedef decltype(__type1() + __type2() + __type3()) type;
+  using type              = decltype(__type1() + __type2() + __type3());
   static const bool value = true;
 };
 
@@ -145,7 +145,7 @@ private:
   using __type2 = typename __promote_imp<_A2>::type;
 
 public:
-  typedef decltype(__type1() + __type2()) type;
+  using type              = decltype(__type1() + __type2());
   static const bool value = true;
 };
 
@@ -153,7 +153,7 @@ template <class _A1>
 class __promote_imp<_A1, void, void, true>
 {
 public:
-  typedef typename __numeric_type<_A1>::type type;
+  using type              = typename __numeric_type<_A1>::type;
   static const bool value = true;
 };
 

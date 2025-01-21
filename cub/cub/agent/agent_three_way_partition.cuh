@@ -175,7 +175,8 @@ template <typename PolicyT,
           typename UnselectedOutputIteratorT,
           typename SelectFirstPartOp,
           typename SelectSecondPartOp,
-          typename OffsetT>
+          typename OffsetT,
+          typename StreamingContextT>
 struct AgentThreeWayPartition
 {
   //---------------------------------------------------------------------
@@ -251,6 +252,9 @@ struct AgentThreeWayPartition
   SelectSecondPartOp select_second_part_op;
   OffsetT num_items; ///< Total number of input items
 
+  // Note: This is a const reference because we have seen double-digit percentage perf regressions otherwise
+  const StreamingContextT& streaming_context; ///< Context for the current partition
+
   //---------------------------------------------------------------------
   // Constructor
   //---------------------------------------------------------------------
@@ -264,7 +268,8 @@ struct AgentThreeWayPartition
     UnselectedOutputIteratorT d_unselected_out,
     SelectFirstPartOp select_first_part_op,
     SelectSecondPartOp select_second_part_op,
-    OffsetT num_items)
+    OffsetT num_items,
+    const StreamingContextT& streaming_context)
       : temp_storage(temp_storage.Alias())
       , d_in(d_in)
       , d_first_part_out(d_first_part_out)
@@ -273,6 +278,7 @@ struct AgentThreeWayPartition
       , select_first_part_op(select_first_part_op)
       , select_second_part_op(select_second_part_op)
       , num_items(num_items)
+      , streaming_context(streaming_context)
   {}
 
   //---------------------------------------------------------------------
@@ -307,7 +313,7 @@ struct AgentThreeWayPartition
     AccumPackT num_tile_selected_prefix,
     OffsetT num_rejected_prefix)
   {
-    CTA_SYNC();
+    __syncthreads();
 
     const OffsetT num_first_selections_prefix  = AccumPackHelperT::first(num_tile_selected_prefix);
     const OffsetT num_second_selections_prefix = AccumPackHelperT::second(num_tile_selected_prefix);
@@ -347,9 +353,14 @@ struct AgentThreeWayPartition
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Gather items from shared memory and scatter to global
+    auto first_base =
+      d_first_part_out + (streaming_context.num_previously_selected_first() + num_first_selections_prefix);
+    auto second_base =
+      d_second_part_out + (streaming_context.num_previously_selected_second() + num_second_selections_prefix);
+    auto unselected_base = d_unselected_out + (streaming_context.num_previously_rejected() + num_rejected_prefix);
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       int item_idx = (ITEM * BLOCK_THREADS) + threadIdx.x;
@@ -360,16 +371,16 @@ struct AgentThreeWayPartition
 
         if (item_idx < first_item_end)
         {
-          d_first_part_out[num_first_selections_prefix + item_idx] = item;
+          first_base[item_idx] = item;
         }
         else if (item_idx < second_item_end)
         {
-          d_second_part_out[num_second_selections_prefix + item_idx - first_item_end] = item;
+          second_base[item_idx - first_item_end] = item;
         }
         else
         {
-          int rejection_idx                                     = item_idx - second_item_end;
-          d_unselected_out[num_rejected_prefix + rejection_idx] = item;
+          int rejection_idx              = item_idx - second_item_end;
+          unselected_base[rejection_idx] = item;
         }
       }
     }
@@ -400,16 +411,17 @@ struct AgentThreeWayPartition
     // Load items
     if (IS_LAST_TILE)
     {
-      BlockLoadT(temp_storage.load_items).Load(d_in + tile_offset, items, num_tile_items);
+      BlockLoadT(temp_storage.load_items)
+        .Load(d_in + streaming_context.input_offset() + tile_offset, items, num_tile_items);
     }
     else
     {
-      BlockLoadT(temp_storage.load_items).Load(d_in + tile_offset, items);
+      BlockLoadT(temp_storage.load_items).Load(d_in + streaming_context.input_offset() + tile_offset, items);
     }
 
     // Initialize selection_flags
     Initialize<IS_LAST_TILE>(num_tile_items, items, items_selection_flags);
-    CTA_SYNC();
+    __syncthreads();
 
     // Exclusive scan of selection_flags
     BlockScanT(temp_storage.scan_storage.scan)
@@ -464,16 +476,17 @@ struct AgentThreeWayPartition
     // Load items
     if (IS_LAST_TILE)
     {
-      BlockLoadT(temp_storage.load_items).Load(d_in + tile_offset, items, num_tile_items);
+      BlockLoadT(temp_storage.load_items)
+        .Load(d_in + streaming_context.input_offset() + tile_offset, items, num_tile_items);
     }
     else
     {
-      BlockLoadT(temp_storage.load_items).Load(d_in + tile_offset, items);
+      BlockLoadT(temp_storage.load_items).Load(d_in + streaming_context.input_offset() + tile_offset, items);
     }
 
     // Initialize selection_flags
     Initialize<IS_LAST_TILE>(num_tile_items, items, items_selected_flags);
-    CTA_SYNC();
+    __syncthreads();
 
     // Exclusive scan of values and selection_flags
     TilePrefixCallbackOpT prefix_op(tile_state, temp_storage.scan_storage.prefix, ::cuda::std::plus<>{}, tile_idx);
@@ -484,7 +497,7 @@ struct AgentThreeWayPartition
     AccumPackT num_items_in_tile_selected = prefix_op.GetBlockAggregate();
     AccumPackT num_items_selected_prefix  = prefix_op.GetExclusivePrefix();
 
-    CTA_SYNC();
+    __syncthreads();
 
     OffsetT num_rejected_prefix = (tile_idx * TILE_ITEMS) - AccumPackHelperT::sum(num_items_selected_prefix);
 
@@ -551,7 +564,7 @@ struct AgentThreeWayPartition
   {
     // Blocks are launched in increasing order, so just assign one tile per block
     // Current tile index
-    const int tile_idx = static_cast<int>((blockIdx.x * gridDim.y) + blockIdx.y);
+    const int tile_idx = blockIdx.x;
 
     // Global offset for the current tile
     const OffsetT tile_offset = tile_idx * TILE_ITEMS;
@@ -572,9 +585,9 @@ struct AgentThreeWayPartition
 
       if (threadIdx.x == 0)
       {
-        // Output the total number of items selection_flags
-        d_num_selected_out[0] = AccumPackHelperT::first(accum);
-        d_num_selected_out[1] = AccumPackHelperT::second(accum);
+        // Update the number of selected items with this partition's selections
+        streaming_context.update_num_selected(
+          d_num_selected_out, AccumPackHelperT::first(accum), AccumPackHelperT::second(accum), num_items);
       }
     }
   }

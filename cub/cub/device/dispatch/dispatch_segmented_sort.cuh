@@ -54,10 +54,14 @@
 #include <cub/util_namespace.cuh>
 #include <cub/warp/warp_merge_sort.cuh>
 
+#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/reverse_iterator.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/cmath>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/type_traits>
 
 #include <type_traits>
@@ -65,6 +69,49 @@
 #include <nv/target>
 
 CUB_NAMESPACE_BEGIN
+
+namespace detail
+{
+
+namespace segmented_sort
+{
+// Type used to index within segments within a single invocation
+using local_segment_index_t = ::cuda::std::uint32_t;
+// Type used for total number of segments and to index within segments globally
+using global_segment_offset_t = ::cuda::std::int64_t;
+
+template <typename Iterator, typename OffsetItT>
+class OffsetIteratorT : public THRUST_NS_QUALIFIER::iterator_adaptor<OffsetIteratorT<Iterator, OffsetItT>, Iterator>
+{
+public:
+  using super_t = THRUST_NS_QUALIFIER::iterator_adaptor<OffsetIteratorT<Iterator, OffsetItT>, Iterator>;
+
+  OffsetIteratorT() = default;
+
+  _CCCL_HOST_DEVICE OffsetIteratorT(const Iterator& it, OffsetItT offset_it)
+      : super_t(it)
+      , offset_it(offset_it)
+  {}
+
+  // befriend thrust::iterator_core_access to allow it access to the private interface below
+  friend class THRUST_NS_QUALIFIER::iterator_core_access;
+
+private:
+  OffsetItT offset_it;
+
+  _CCCL_HOST_DEVICE typename super_t::reference dereference() const
+  {
+    return *(this->base() + (*offset_it));
+  }
+};
+
+template <typename Iterator, typename OffsetItT>
+_CCCL_HOST_DEVICE OffsetIteratorT<Iterator, OffsetItT> make_offset_iterator(const Iterator& it, OffsetItT offset_it)
+{
+  return OffsetIteratorT<Iterator, OffsetItT>{it, offset_it};
+}
+} // namespace segmented_sort
+} // namespace detail
 
 /**
  * @brief Fallback kernel, in case there's not enough segments to
@@ -128,10 +175,10 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
   using LargeSegmentPolicyT = typename ActivePolicyT::LargeSegmentPolicy;
   using MediumPolicyT       = typename ActivePolicyT::SmallAndMediumSegmentedSortPolicyT::MediumPolicyT;
 
-  const unsigned int segment_id = blockIdx.x;
-  OffsetT segment_begin         = d_begin_offsets[segment_id];
-  OffsetT segment_end           = d_end_offsets[segment_id];
-  OffsetT num_items             = segment_end - segment_begin;
+  const auto segment_id = static_cast<detail::segmented_sort::local_segment_index_t>(blockIdx.x);
+  OffsetT segment_begin = d_begin_offsets[segment_id];
+  OffsetT segment_end   = d_end_offsets[segment_id];
+  OffsetT num_items     = segment_end - segment_begin;
 
   if (num_items <= 0)
   {
@@ -139,11 +186,12 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
   }
 
   using AgentSegmentedRadixSortT =
-    cub::AgentSegmentedRadixSort<IS_DESCENDING, LargeSegmentPolicyT, KeyT, ValueT, OffsetT>;
+    detail::radix_sort::AgentSegmentedRadixSort<IS_DESCENDING, LargeSegmentPolicyT, KeyT, ValueT, OffsetT>;
 
   using WarpReduceT = cub::WarpReduce<KeyT>;
 
-  using AgentWarpMergeSortT = AgentSubWarpSort<IS_DESCENDING, MediumPolicyT, KeyT, ValueT, OffsetT>;
+  using AgentWarpMergeSortT =
+    detail::sub_warp_merge_sort::AgentSubWarpSort<IS_DESCENDING, MediumPolicyT, KeyT, ValueT, OffsetT>;
 
   __shared__ union
   {
@@ -187,7 +235,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
   {
     // Sort by a CTA with multiple reads from global memory
     int current_bit = begin_bit;
-    int pass_bits   = (cub::min)(int{LargeSegmentPolicyT::RADIX_BITS}, (end_bit - current_bit));
+    int pass_bits   = (::cuda::std::min)(int{LargeSegmentPolicyT::RADIX_BITS}, (end_bit - current_bit));
 
     d_keys_double_buffer = cub::detail::device_double_buffer<KeyT>(
       d_keys_double_buffer.current() + segment_begin, d_keys_double_buffer.alternate() + segment_begin);
@@ -210,9 +258,9 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
 #pragma unroll 1
     while (current_bit < end_bit)
     {
-      pass_bits = (cub::min)(int{LargeSegmentPolicyT::RADIX_BITS}, (end_bit - current_bit));
+      pass_bits = (::cuda::std::min)(int{LargeSegmentPolicyT::RADIX_BITS}, (end_bit - current_bit));
 
-      CTA_SYNC();
+      __syncthreads();
       agent.ProcessIterative(
         current_bit,
         pass_bits,
@@ -291,11 +339,11 @@ template <bool IS_DESCENDING,
           typename OffsetT>
 __launch_bounds__(ChainedPolicyT::ActivePolicy::SmallAndMediumSegmentedSortPolicyT::BLOCK_THREADS)
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortKernelSmall(
-    unsigned int small_segments,
-    unsigned int medium_segments,
-    unsigned int medium_blocks,
-    const unsigned int* d_small_segments_indices,
-    const unsigned int* d_medium_segments_indices,
+    detail::segmented_sort::local_segment_index_t small_segments,
+    detail::segmented_sort::local_segment_index_t medium_segments,
+    detail::segmented_sort::local_segment_index_t medium_blocks,
+    const detail::segmented_sort::local_segment_index_t* d_small_segments_indices,
+    const detail::segmented_sort::local_segment_index_t* d_medium_segments_indices,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     const ValueT* d_values_in,
@@ -303,25 +351,30 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::SmallAndMediumSegmentedSortPolic
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets)
 {
-  const unsigned int tid = threadIdx.x;
-  const unsigned int bid = blockIdx.x;
+  using local_segment_index_t = detail::segmented_sort::local_segment_index_t;
+
+  const local_segment_index_t tid = threadIdx.x;
+  const local_segment_index_t bid = blockIdx.x;
 
   using ActivePolicyT         = typename ChainedPolicyT::ActivePolicy;
   using SmallAndMediumPolicyT = typename ActivePolicyT::SmallAndMediumSegmentedSortPolicyT;
   using MediumPolicyT         = typename SmallAndMediumPolicyT::MediumPolicyT;
   using SmallPolicyT          = typename SmallAndMediumPolicyT::SmallPolicyT;
 
-  constexpr int threads_per_medium_segment = MediumPolicyT::WARP_THREADS;
-  constexpr int threads_per_small_segment  = SmallPolicyT::WARP_THREADS;
+  constexpr auto threads_per_medium_segment = static_cast<local_segment_index_t>(MediumPolicyT::WARP_THREADS);
+  constexpr auto threads_per_small_segment  = static_cast<local_segment_index_t>(SmallPolicyT::WARP_THREADS);
 
-  using MediumAgentWarpMergeSortT = AgentSubWarpSort<IS_DESCENDING, MediumPolicyT, KeyT, ValueT, OffsetT>;
+  using MediumAgentWarpMergeSortT =
+    detail::sub_warp_merge_sort::AgentSubWarpSort<IS_DESCENDING, MediumPolicyT, KeyT, ValueT, OffsetT>;
 
-  using SmallAgentWarpMergeSortT = AgentSubWarpSort<IS_DESCENDING, SmallPolicyT, KeyT, ValueT, OffsetT>;
+  using SmallAgentWarpMergeSortT =
+    detail::sub_warp_merge_sort::AgentSubWarpSort<IS_DESCENDING, SmallPolicyT, KeyT, ValueT, OffsetT>;
 
   constexpr auto segments_per_medium_block =
-    static_cast<unsigned int>(SmallAndMediumPolicyT::SEGMENTS_PER_MEDIUM_BLOCK);
+    static_cast<local_segment_index_t>(SmallAndMediumPolicyT::SEGMENTS_PER_MEDIUM_BLOCK);
 
-  constexpr auto segments_per_small_block = static_cast<unsigned int>(SmallAndMediumPolicyT::SEGMENTS_PER_SMALL_BLOCK);
+  constexpr auto segments_per_small_block =
+    static_cast<local_segment_index_t>(SmallAndMediumPolicyT::SEGMENTS_PER_SMALL_BLOCK);
 
   __shared__ union
   {
@@ -332,12 +385,12 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::SmallAndMediumSegmentedSortPolic
 
   if (bid < medium_blocks)
   {
-    const unsigned int sid_within_block  = tid / threads_per_medium_segment;
-    const unsigned int medium_segment_id = bid * segments_per_medium_block + sid_within_block;
+    const local_segment_index_t sid_within_block  = tid / threads_per_medium_segment;
+    const local_segment_index_t medium_segment_id = bid * segments_per_medium_block + sid_within_block;
 
     if (medium_segment_id < medium_segments)
     {
-      const unsigned int global_segment_id = d_medium_segments_indices[medium_segment_id];
+      const local_segment_index_t global_segment_id = d_medium_segments_indices[medium_segment_id];
 
       const OffsetT segment_begin = d_begin_offsets[global_segment_id];
       const OffsetT segment_end   = d_end_offsets[global_segment_id];
@@ -353,12 +406,12 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::SmallAndMediumSegmentedSortPolic
   }
   else
   {
-    const unsigned int sid_within_block = tid / threads_per_small_segment;
-    const unsigned int small_segment_id = (bid - medium_blocks) * segments_per_small_block + sid_within_block;
+    const local_segment_index_t sid_within_block = tid / threads_per_small_segment;
+    const local_segment_index_t small_segment_id = (bid - medium_blocks) * segments_per_small_block + sid_within_block;
 
     if (small_segment_id < small_segments)
     {
-      const unsigned int global_segment_id = d_small_segments_indices[small_segment_id];
+      const local_segment_index_t global_segment_id = d_small_segments_indices[small_segment_id];
 
       const OffsetT segment_begin = d_begin_offsets[global_segment_id];
       const OffsetT segment_end   = d_end_offsets[global_segment_id];
@@ -410,7 +463,7 @@ template <bool IS_DESCENDING,
           typename OffsetT>
 __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREADS)
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortKernelLarge(
-    const unsigned int* d_segments_indices,
+    const detail::segmented_sort::local_segment_index_t* d_segments_indices,
     const KeyT* d_keys_in_orig,
     KeyT* d_keys_out_orig,
     cub::detail::device_double_buffer<KeyT> d_keys_double_buffer,
@@ -420,25 +473,26 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets)
 {
-  using ActivePolicyT       = typename ChainedPolicyT::ActivePolicy;
-  using LargeSegmentPolicyT = typename ActivePolicyT::LargeSegmentPolicy;
+  using ActivePolicyT         = typename ChainedPolicyT::ActivePolicy;
+  using LargeSegmentPolicyT   = typename ActivePolicyT::LargeSegmentPolicy;
+  using local_segment_index_t = detail::segmented_sort::local_segment_index_t;
 
   constexpr int small_tile_size = LargeSegmentPolicyT::BLOCK_THREADS * LargeSegmentPolicyT::ITEMS_PER_THREAD;
 
   using AgentSegmentedRadixSortT =
-    cub::AgentSegmentedRadixSort<IS_DESCENDING, LargeSegmentPolicyT, KeyT, ValueT, OffsetT>;
+    detail::radix_sort::AgentSegmentedRadixSort<IS_DESCENDING, LargeSegmentPolicyT, KeyT, ValueT, OffsetT>;
 
   __shared__ typename AgentSegmentedRadixSortT::TempStorage storage;
 
-  const unsigned int bid = blockIdx.x;
+  const local_segment_index_t bid = blockIdx.x;
 
   constexpr int begin_bit = 0;
   constexpr int end_bit   = sizeof(KeyT) * 8;
 
-  const unsigned int global_segment_id = d_segments_indices[bid];
-  const OffsetT segment_begin          = d_begin_offsets[global_segment_id];
-  const OffsetT segment_end            = d_end_offsets[global_segment_id];
-  const OffsetT num_items              = segment_end - segment_begin;
+  const local_segment_index_t global_segment_id = d_segments_indices[bid];
+  const OffsetT segment_begin                   = d_begin_offsets[global_segment_id];
+  const OffsetT segment_end                     = d_end_offsets[global_segment_id];
+  const OffsetT num_items                       = segment_end - segment_begin;
 
   constexpr bool keys_only = std::is_same<ValueT, NullType>::value;
   AgentSegmentedRadixSortT agent(num_items, storage);
@@ -461,7 +515,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
   {
     // Sort reading global memory multiple times
     int current_bit = begin_bit;
-    int pass_bits   = (cub::min)(int{LargeSegmentPolicyT::RADIX_BITS}, (end_bit - current_bit));
+    int pass_bits   = (::cuda::std::min)(int{LargeSegmentPolicyT::RADIX_BITS}, (end_bit - current_bit));
 
     d_keys_double_buffer = cub::detail::device_double_buffer<KeyT>(
       d_keys_double_buffer.current() + segment_begin, d_keys_double_buffer.alternate() + segment_begin);
@@ -484,9 +538,9 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
 #pragma unroll 1
     while (current_bit < end_bit)
     {
-      pass_bits = (cub::min)(int{LargeSegmentPolicyT::RADIX_BITS}, (end_bit - current_bit));
+      pass_bits = (::cuda::std::min)(int{LargeSegmentPolicyT::RADIX_BITS}, (end_bit - current_bit));
 
-      CTA_SYNC();
+      __syncthreads();
       agent.ProcessIterative(
         current_bit,
         pass_bits,
@@ -528,19 +582,21 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t DeviceSegmentedSortCont
   detail::device_double_buffer<ValueT> d_values_double_buffer,
   BeginOffsetIteratorT d_begin_offsets,
   EndOffsetIteratorT d_end_offsets,
-  unsigned int* group_sizes,
-  unsigned int* large_and_medium_segments_indices,
-  unsigned int* small_segments_indices,
+  detail::segmented_sort::local_segment_index_t* group_sizes,
+  detail::segmented_sort::local_segment_index_t* large_and_medium_segments_indices,
+  detail::segmented_sort::local_segment_index_t* small_segments_indices,
   cudaStream_t stream)
 {
+  using local_segment_index_t = detail::segmented_sort::local_segment_index_t;
+
   cudaError error = cudaSuccess;
 
-  const unsigned int large_segments = group_sizes[0];
+  const local_segment_index_t large_segments = group_sizes[0];
 
   if (large_segments > 0)
   {
     // One CTA per segment
-    const unsigned int blocks_in_grid = large_segments;
+    const local_segment_index_t blocks_in_grid = large_segments;
 
 #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
     _CubLog("Invoking "
@@ -578,15 +634,17 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t DeviceSegmentedSortCont
     }
   }
 
-  const unsigned int small_segments  = group_sizes[1];
-  const unsigned int medium_segments = static_cast<unsigned int>(num_segments) - (large_segments + small_segments);
+  const local_segment_index_t small_segments = group_sizes[1];
+  const local_segment_index_t medium_segments =
+    static_cast<local_segment_index_t>(num_segments) - (large_segments + small_segments);
 
-  const unsigned int small_blocks = ::cuda::ceil_div(small_segments, SmallAndMediumPolicyT::SEGMENTS_PER_SMALL_BLOCK);
+  const local_segment_index_t small_blocks =
+    ::cuda::ceil_div(small_segments, SmallAndMediumPolicyT::SEGMENTS_PER_SMALL_BLOCK);
 
-  const unsigned int medium_blocks =
+  const local_segment_index_t medium_blocks =
     ::cuda::ceil_div(medium_segments, SmallAndMediumPolicyT::SEGMENTS_PER_MEDIUM_BLOCK);
 
-  const unsigned int small_and_medium_blocks_in_grid = small_blocks + medium_blocks;
+  const local_segment_index_t small_and_medium_blocks_in_grid = small_blocks + medium_blocks;
 
   if (small_and_medium_blocks_in_grid)
   {
@@ -646,7 +704,7 @@ template <typename ChainedPolicyT,
 __launch_bounds__(1) CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortContinuationKernel(
   LargeKernelT large_kernel,
   SmallKernelT small_kernel,
-  int num_segments,
+  detail::segmented_sort::local_segment_index_t num_segments,
   KeyT* d_current_keys,
   KeyT* d_final_keys,
   detail::device_double_buffer<KeyT> d_keys_double_buffer,
@@ -655,9 +713,9 @@ __launch_bounds__(1) CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortContin
   detail::device_double_buffer<ValueT> d_values_double_buffer,
   BeginOffsetIteratorT d_begin_offsets,
   EndOffsetIteratorT d_end_offsets,
-  unsigned int* group_sizes,
-  unsigned int* large_and_medium_segments_indices,
-  unsigned int* small_segments_indices)
+  detail::segmented_sort::local_segment_index_t* group_sizes,
+  detail::segmented_sort::local_segment_index_t* large_and_medium_segments_indices,
+  detail::segmented_sort::local_segment_index_t* small_segments_indices)
 {
   using ActivePolicyT         = typename ChainedPolicyT::ActivePolicy;
   using LargeSegmentPolicyT   = typename ActivePolicyT::LargeSegmentPolicy;
@@ -702,6 +760,16 @@ template <bool IS_DESCENDING,
           typename PolicyHub = detail::segmented_sort::policy_hub<KeyT, ValueT>>
 struct DispatchSegmentedSort
 {
+  using local_segment_index_t   = detail::segmented_sort::local_segment_index_t;
+  using global_segment_offset_t = detail::segmented_sort::global_segment_offset_t;
+
+  using StreamingBeginOffsetIteratorT =
+    detail::segmented_sort::OffsetIteratorT<BeginOffsetIteratorT,
+                                            THRUST_NS_QUALIFIER::constant_iterator<global_segment_offset_t>>;
+  using StreamingEndOffsetIteratorT =
+    detail::segmented_sort::OffsetIteratorT<EndOffsetIteratorT,
+                                            THRUST_NS_QUALIFIER::constant_iterator<global_segment_offset_t>>;
+
   static constexpr int KEYS_ONLY = std::is_same<ValueT, NullType>::value;
 
   struct LargeSegmentsSelectorT
@@ -709,6 +777,7 @@ struct DispatchSegmentedSort
     OffsetT value{};
     BeginOffsetIteratorT d_offset_begin{};
     EndOffsetIteratorT d_offset_end{};
+    global_segment_offset_t base_segment_offset{};
 
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
     LargeSegmentsSelectorT(OffsetT value, BeginOffsetIteratorT d_offset_begin, EndOffsetIteratorT d_offset_end)
@@ -717,9 +786,10 @@ struct DispatchSegmentedSort
         , d_offset_end(d_offset_end)
     {}
 
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(unsigned int segment_id) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(local_segment_index_t segment_id) const
     {
-      const OffsetT segment_size = d_offset_end[segment_id] - d_offset_begin[segment_id];
+      const OffsetT segment_size =
+        d_offset_end[base_segment_offset + segment_id] - d_offset_begin[base_segment_offset + segment_id];
       return segment_size > value;
     }
   };
@@ -729,6 +799,7 @@ struct DispatchSegmentedSort
     OffsetT value{};
     BeginOffsetIteratorT d_offset_begin{};
     EndOffsetIteratorT d_offset_end{};
+    global_segment_offset_t base_segment_offset{};
 
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
     SmallSegmentsSelectorT(OffsetT value, BeginOffsetIteratorT d_offset_begin, EndOffsetIteratorT d_offset_end)
@@ -737,9 +808,10 @@ struct DispatchSegmentedSort
         , d_offset_end(d_offset_end)
     {}
 
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(unsigned int segment_id) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(local_segment_index_t segment_id) const
     {
-      const OffsetT segment_size = d_offset_end[segment_id] - d_offset_begin[segment_id];
+      const OffsetT segment_size =
+        d_offset_end[base_segment_offset + segment_id] - d_offset_begin[base_segment_offset + segment_id];
       return segment_size < value;
     }
   };
@@ -770,10 +842,10 @@ struct DispatchSegmentedSort
   DoubleBuffer<ValueT>& d_values;
 
   /// Number of items to sort
-  OffsetT num_items;
+  ::cuda::std::int64_t num_items;
 
   /// The number of segments that comprise the sorting data
-  int num_segments;
+  global_segment_offset_t num_segments;
 
   /**
    * Random-access input iterator to the sequence of beginning offsets of length
@@ -802,8 +874,8 @@ struct DispatchSegmentedSort
     std::size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
-    OffsetT num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    global_segment_offset_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     bool is_overwrite_okay,
@@ -819,35 +891,6 @@ struct DispatchSegmentedSort
       , is_overwrite_okay(is_overwrite_okay)
       , stream(stream)
   {}
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchSegmentedSort(
-    void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
-    DoubleBuffer<KeyT>& d_keys,
-    DoubleBuffer<ValueT>& d_values,
-    OffsetT num_items,
-    int num_segments,
-    BeginOffsetIteratorT d_begin_offsets,
-    EndOffsetIteratorT d_end_offsets,
-    bool is_overwrite_okay,
-    cudaStream_t stream,
-    bool debug_synchronous)
-      : d_temp_storage(d_temp_storage)
-      , temp_storage_bytes(temp_storage_bytes)
-      , d_keys(d_keys)
-      , d_values(d_values)
-      , num_items(num_items)
-      , num_segments(num_segments)
-      , d_begin_offsets(d_begin_offsets)
-      , d_end_offsets(d_end_offsets)
-      , is_overwrite_okay(is_overwrite_okay)
-      , stream(stream)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
@@ -900,9 +943,10 @@ struct DispatchSegmentedSort
         }
       }
 
-      auto large_and_medium_segments_indices = large_and_medium_partitioning_slot->create_alias<unsigned int>();
-      auto small_segments_indices            = small_partitioning_slot->create_alias<unsigned int>();
-      auto group_sizes                       = group_sizes_slot->create_alias<unsigned int>();
+      auto large_and_medium_segments_indices =
+        large_and_medium_partitioning_slot->create_alias<local_segment_index_t>();
+      auto small_segments_indices = small_partitioning_slot->create_alias<local_segment_index_t>();
+      auto group_sizes            = group_sizes_slot->create_alias<local_segment_index_t>();
 
       std::size_t three_way_partition_temp_storage_bytes{};
 
@@ -916,8 +960,13 @@ struct DispatchSegmentedSort
 
       if (partition_segments)
       {
-        large_and_medium_segments_indices.grow(num_segments);
-        small_segments_indices.grow(num_segments);
+        constexpr auto num_segments_per_invocation_limit =
+          static_cast<global_segment_offset_t>(::cuda::std::numeric_limits<int>::max());
+        auto const max_num_segments_per_invocation = static_cast<global_segment_offset_t>(
+          (::cuda::std::min)(static_cast<global_segment_offset_t>(num_segments), num_segments_per_invocation_limit));
+
+        large_and_medium_segments_indices.grow(max_num_segments_per_invocation);
+        small_segments_indices.grow(max_num_segments_per_invocation);
         group_sizes.grow(num_selected_groups);
 
         auto medium_indices_iterator =
@@ -926,12 +975,12 @@ struct DispatchSegmentedSort
         cub::DevicePartition::IfNoNVTX(
           nullptr,
           three_way_partition_temp_storage_bytes,
-          THRUST_NS_QUALIFIER::counting_iterator<OffsetT>(0),
+          THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>(0),
           large_and_medium_segments_indices.get(),
           small_segments_indices.get(),
           medium_indices_iterator,
           group_sizes.get(),
-          num_segments,
+          max_num_segments_per_invocation,
           large_segments_selector,
           small_segments_selector,
           stream);
@@ -1035,15 +1084,15 @@ struct DispatchSegmentedSort
                                          MaxPolicyT,
                                          KeyT,
                                          ValueT,
-                                         BeginOffsetIteratorT,
-                                         EndOffsetIteratorT,
+                                         StreamingBeginOffsetIteratorT,
+                                         StreamingEndOffsetIteratorT,
                                          OffsetT>,
           DeviceSegmentedSortKernelSmall<IS_DESCENDING,
                                          MaxPolicyT,
                                          KeyT,
                                          ValueT,
-                                         BeginOffsetIteratorT,
-                                         EndOffsetIteratorT,
+                                         StreamingBeginOffsetIteratorT,
+                                         StreamingEndOffsetIteratorT,
                                          OffsetT>,
           three_way_partition_temp_storage_bytes,
           d_keys_double_buffer,
@@ -1085,8 +1134,8 @@ struct DispatchSegmentedSort
     std::size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
-    OffsetT num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    global_segment_offset_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     bool is_overwrite_okay,
@@ -1128,37 +1177,6 @@ struct DispatchSegmentedSort
     return error;
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
-    void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
-    DoubleBuffer<KeyT>& d_keys,
-    DoubleBuffer<ValueT>& d_values,
-    OffsetT num_items,
-    int num_segments,
-    BeginOffsetIteratorT d_begin_offsets,
-    EndOffsetIteratorT d_end_offsets,
-    bool is_overwrite_okay,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      num_items,
-      num_segments,
-      d_begin_offsets,
-      d_end_offsets,
-      is_overwrite_okay,
-      stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
-
 private:
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE int GetNumPasses(int radix_bits)
   {
@@ -1196,35 +1214,56 @@ private:
     LargeSegmentsSelectorT& large_segments_selector,
     SmallSegmentsSelectorT& small_segments_selector,
     cub::detail::temporary_storage::alias<std::uint8_t>& device_partition_temp_storage,
-    cub::detail::temporary_storage::alias<unsigned int>& large_and_medium_segments_indices,
-    cub::detail::temporary_storage::alias<unsigned int>& small_segments_indices,
-    cub::detail::temporary_storage::alias<unsigned int>& group_sizes)
+    cub::detail::temporary_storage::alias<local_segment_index_t>& large_and_medium_segments_indices,
+    cub::detail::temporary_storage::alias<local_segment_index_t>& small_segments_indices,
+    cub::detail::temporary_storage::alias<local_segment_index_t>& group_sizes)
   {
     cudaError_t error = cudaSuccess;
 
-    auto medium_indices_iterator =
-      THRUST_NS_QUALIFIER::make_reverse_iterator(large_and_medium_segments_indices.get() + num_segments);
+    constexpr global_segment_offset_t num_segments_per_invocation_limit =
+      static_cast<global_segment_offset_t>(::cuda::std::numeric_limits<int>::max());
 
-    error = CubDebug(cub::DevicePartition::IfNoNVTX(
-      device_partition_temp_storage.get(),
-      three_way_partition_temp_storage_bytes,
-      THRUST_NS_QUALIFIER::counting_iterator<OffsetT>(0),
-      large_and_medium_segments_indices.get(),
-      small_segments_indices.get(),
-      medium_indices_iterator,
-      group_sizes.get(),
-      num_segments,
-      large_segments_selector,
-      small_segments_selector,
-      stream));
-    if (cudaSuccess != error)
+    // We repeatedly invoke the partitioning and sorting kernels until all segments are processed.
+    const global_segment_offset_t num_invocations =
+      ::cuda::ceil_div(static_cast<global_segment_offset_t>(num_segments), num_segments_per_invocation_limit);
+    for (global_segment_offset_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
     {
-      return error;
-    }
+      const global_segment_offset_t current_seg_offset = invocation_index * num_segments_per_invocation_limit;
+      const local_segment_index_t current_num_segments =
+        (invocation_index == (num_invocations - 1))
+          ? static_cast<local_segment_index_t>(num_segments - current_seg_offset)
+          : num_segments_per_invocation_limit;
 
-    // The device path is only used (and only compiles) when CDP is enabled.
-    // It's defined in a macro since we can't put `#ifdef`s inside of
-    // `NV_IF_TARGET`.
+      large_segments_selector.base_segment_offset = current_seg_offset;
+      small_segments_selector.base_segment_offset = current_seg_offset;
+      auto current_begin_offset                   = detail::segmented_sort::make_offset_iterator(
+        d_begin_offsets, THRUST_NS_QUALIFIER::constant_iterator<global_segment_offset_t>{current_seg_offset});
+      auto current_end_offset = detail::segmented_sort::make_offset_iterator(
+        d_end_offsets, THRUST_NS_QUALIFIER::constant_iterator<global_segment_offset_t>{current_seg_offset});
+
+      auto medium_indices_iterator =
+        THRUST_NS_QUALIFIER::make_reverse_iterator(large_and_medium_segments_indices.get() + current_num_segments);
+
+      error = CubDebug(cub::DevicePartition::IfNoNVTX(
+        device_partition_temp_storage.get(),
+        three_way_partition_temp_storage_bytes,
+        THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>(0),
+        large_and_medium_segments_indices.get(),
+        small_segments_indices.get(),
+        medium_indices_iterator,
+        group_sizes.get(),
+        current_num_segments,
+        large_segments_selector,
+        small_segments_selector,
+        stream));
+      if (cudaSuccess != error)
+      {
+        return error;
+      }
+
+      // The device path is only used (and only compiles) when CDP is enabled.
+      // It's defined in a macro since we can't put `#ifdef`s inside of
+      // `NV_IF_TARGET`.
 #ifndef CUB_RDC_ENABLED
 
 #  define CUB_TEMP_DEVICE_CODE
@@ -1241,19 +1280,19 @@ private:
             SmallKernelT,                                                      \
             KeyT,                                                              \
             ValueT,                                                            \
-            BeginOffsetIteratorT,                                              \
-            EndOffsetIteratorT>,                                               \
+            StreamingBeginOffsetIteratorT,                                     \
+            StreamingEndOffsetIteratorT>,                                      \
           large_kernel,                                                        \
           small_kernel,                                                        \
-          num_segments,                                                        \
+          current_num_segments,                                                \
           d_keys.Current(),                                                    \
           GetFinalOutput<KeyT>(LargeSegmentPolicyT::RADIX_BITS, d_keys),       \
           d_keys_double_buffer,                                                \
           d_values.Current(),                                                  \
           GetFinalOutput<ValueT>(LargeSegmentPolicyT::RADIX_BITS, d_values),   \
           d_values_double_buffer,                                              \
-          d_begin_offsets,                                                     \
-          d_end_offsets,                                                       \
+          current_begin_offset,                                                \
+          current_end_offset,                                                  \
           group_sizes.get(),                                                   \
           large_and_medium_segments_indices.get(),                             \
           small_segments_indices.get());                                       \
@@ -1272,16 +1311,16 @@ private:
 
 #endif // CUB_RDC_ENABLED
 
-    // Clang format mangles some of this NV_IF_TARGET block
-    // clang-format off
+      // Clang format mangles some of this NV_IF_TARGET block
+      // clang-format off
     NV_IF_TARGET(
       NV_IS_HOST,
       (
-        unsigned int h_group_sizes[num_selected_groups];
+        local_segment_index_t h_group_sizes[num_selected_groups];
         error = CubDebug(cudaMemcpyAsync(h_group_sizes,
                                              group_sizes.get(),
                                              num_selected_groups *
-                                               sizeof(unsigned int),
+                                               sizeof(local_segment_index_t),
                                              cudaMemcpyDeviceToHost,
                                              stream));
 
@@ -1300,23 +1339,23 @@ private:
                                                 SmallAndMediumPolicyT>(
           large_kernel,
           small_kernel,
-          num_segments,
+          current_num_segments,
           d_keys.Current(),
           GetFinalOutput<KeyT>(LargeSegmentPolicyT::RADIX_BITS, d_keys),
           d_keys_double_buffer,
           d_values.Current(),
           GetFinalOutput<ValueT>(LargeSegmentPolicyT::RADIX_BITS, d_values),
           d_values_double_buffer,
-          d_begin_offsets,
-          d_end_offsets,
+          current_begin_offset,
+          current_end_offset,
           h_group_sizes,
           large_and_medium_segments_indices.get(),
           small_segments_indices.get(),
           stream);),
       // NV_IS_DEVICE:
       (CUB_TEMP_DEVICE_CODE));
-    // clang-format on
-
+      // clang-format on
+    }
 #undef CUB_TEMP_DEVICE_CODE
 
     return error;
@@ -1330,7 +1369,7 @@ private:
   {
     cudaError_t error = cudaSuccess;
 
-    const auto blocks_in_grid       = static_cast<unsigned int>(num_segments);
+    const auto blocks_in_grid       = static_cast<local_segment_index_t>(num_segments);
     constexpr auto threads_in_block = static_cast<unsigned int>(LargeSegmentPolicyT::BLOCK_THREADS);
 
 // Log kernel configuration

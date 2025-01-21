@@ -402,7 +402,7 @@ THRUST_RUNTIME_FUNCTION typename get_plan<Agent>::type get_agent_plan(int ptx_ve
 #  ifdef __CUDA_ARCH__
     plan = get_agent_plan_dev<Agent>();
 #  else
-    static cub::Mutex mutex;
+    static std::mutex mutex;
     bool lock = false;
     if (d_ptr == 0)
     {
@@ -410,7 +410,7 @@ THRUST_RUNTIME_FUNCTION typename get_plan<Agent>::type get_agent_plan(int ptx_ve
       cudaGetSymbolAddress(&d_ptr, agent_plan_device);
     }
     if (lock)
-      mutex.Lock();
+      mutex.lock();
     f<<<1,1,0,s>>>((AgentPlan*)d_ptr);
     cudaMemcpyAsync((void*)&plan,
                     d_ptr,
@@ -418,7 +418,7 @@ THRUST_RUNTIME_FUNCTION typename get_plan<Agent>::type get_agent_plan(int ptx_ve
                     cudaMemcpyDeviceToHost,
                     s);
     if (lock)
-      mutex.Unlock();
+      mutex.unlock();
     cudaStreamSynchronize(s);
 #  endif
     return plan;
@@ -681,7 +681,7 @@ THRUST_RUNTIME_FUNCTION inline cudaError_t sync_stream(cudaStream_t stream)
 
 inline void _CCCL_DEVICE sync_threadblock()
 {
-  cub::CTA_SYNC();
+  __syncthreads();
 }
 
 #define CUDA_CUB_RET_IF_FAIL(e)                \

@@ -58,7 +58,7 @@ int timespec_get( struct timespec *ts, int base); // C++17
 #if !_CCCL_COMPILER(NVRTC)
 #  include <time.h>
 #else
-typedef long long int time_t;
+using time_t = long long int;
 #endif // _CCCL_COMPILER(NVRTC)
 
 _CCCL_PUSH_MACROS

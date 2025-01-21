@@ -10,6 +10,8 @@
 #  include <unittest/unittest.h>
 #  include <unittest/util_async.h>
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 #  define DEFINE_ASYNC_COPY_CALLABLE(name, ...)                                               \
     struct THRUST_PP_CAT2(name, _fn)                                                          \
     {                                                                                         \
@@ -207,11 +209,6 @@ struct test_async_copy_counting_iterator_input_to_host_vector
       f0.wait();
 
       ASSERT_EQUAL(d0, d1);
-
-#  if _CCCL_COMPILER(ICC)
-      // ICC fails this for some unknown reason - see #1468.
-      KNOWN_FAILURE;
-#  endif // _CCCL_COMPILER(ICC)
     }
   };
 };

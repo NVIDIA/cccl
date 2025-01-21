@@ -29,7 +29,6 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/cpp14_required.h>
 
 #if _CCCL_STD_VER >= 2014
 
@@ -164,7 +163,7 @@ using device_future = device_unique_eager_future<T>;
 struct new_stream_t final
 {};
 
-THRUST_INLINE_CONSTANT new_stream_t new_stream{};
+_CCCL_GLOBAL_CONSTANT new_stream_t new_stream{};
 
 ///////////////////////////////////////////////////////////////////////////////
 

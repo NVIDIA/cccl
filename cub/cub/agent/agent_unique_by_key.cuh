@@ -92,6 +92,11 @@ struct AgentUniqueByKeyPolicy
  * Thread block abstractions
  ******************************************************************************/
 
+namespace detail
+{
+namespace unique_by_key
+{
+
 /**
  * @brief AgentUniqueByKey implements a stateful abstraction of CUDA thread blocks for participating
  * in device-wide unique-by-key
@@ -286,7 +291,7 @@ struct AgentUniqueByKey
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
 // Preventing loop unrolling helps avoid perf degradation when switching from signed to unsigned 32-bit offset
 // types
@@ -296,7 +301,7 @@ struct AgentUniqueByKey
       items_out[num_selections_prefix + item] = GetShared(tag)[item];
     }
 
-    CTA_SYNC();
+    __syncthreads();
   }
 
   //---------------------------------------------------------------------
@@ -337,7 +342,7 @@ struct AgentUniqueByKey
       BlockLoadKeys(temp_storage.load_keys).Load(d_keys_in + tile_offset, keys);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     ValueT values[ITEMS_PER_THREAD];
     if (IS_LAST_TILE)
@@ -352,7 +357,7 @@ struct AgentUniqueByKey
       BlockLoadValues(temp_storage.load_values).Load(d_values_in + tile_offset, values);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     BlockDiscontinuityKeys(temp_storage.scan_storage.discontinuity).FlagHeads(selection_flags, keys, inequality_op);
 #pragma unroll
@@ -365,7 +370,7 @@ struct AgentUniqueByKey
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     OffsetT num_tile_selections   = 0;
     OffsetT num_selections        = 0;
@@ -390,7 +395,7 @@ struct AgentUniqueByKey
     }
     num_selections = num_tile_selections;
 
-    CTA_SYNC();
+    __syncthreads();
 
     Scatter(KeyTagT(),
             d_keys_out,
@@ -402,7 +407,7 @@ struct AgentUniqueByKey
             num_selections_prefix,
             num_selections);
 
-    CTA_SYNC();
+    __syncthreads();
 
     Scatter(ValueTagT(),
             d_values_out,
@@ -454,7 +459,7 @@ struct AgentUniqueByKey
       BlockLoadKeys(temp_storage.load_keys).Load(d_keys_in + tile_offset, keys);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     ValueT values[ITEMS_PER_THREAD];
     if (IS_LAST_TILE)
@@ -469,7 +474,7 @@ struct AgentUniqueByKey
       BlockLoadValues(temp_storage.load_values).Load(d_values_in + tile_offset, values);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     KeyT tile_predecessor = d_keys_in[tile_offset - 1];
     BlockDiscontinuityKeys(temp_storage.scan_storage.discontinuity)
@@ -485,7 +490,7 @@ struct AgentUniqueByKey
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     OffsetT num_tile_selections   = 0;
     OffsetT num_selections        = 0;
@@ -505,7 +510,7 @@ struct AgentUniqueByKey
       num_selections -= num_discount;
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     Scatter(KeyTagT(),
             d_keys_out,
@@ -517,7 +522,7 @@ struct AgentUniqueByKey
             num_selections_prefix,
             num_selections);
 
-    CTA_SYNC();
+    __syncthreads();
 
     Scatter(ValueTagT(),
             d_values_out,
@@ -605,5 +610,26 @@ struct AgentUniqueByKey
     }
   }
 };
+
+} // namespace unique_by_key
+} // namespace detail
+
+template <typename AgentUniqueByKeyPolicyT,
+          typename KeyInputIteratorT,
+          typename ValueInputIteratorT,
+          typename KeyOutputIteratorT,
+          typename ValueOutputIteratorT,
+          typename EqualityOpT,
+          typename OffsetT>
+using AgentUniqueByKey CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
+                                               "interface will be removed.") =
+  detail::unique_by_key::AgentUniqueByKey<
+    AgentUniqueByKeyPolicyT,
+    KeyInputIteratorT,
+    ValueInputIteratorT,
+    KeyOutputIteratorT,
+    ValueOutputIteratorT,
+    EqualityOpT,
+    OffsetT>;
 
 CUB_NAMESPACE_END

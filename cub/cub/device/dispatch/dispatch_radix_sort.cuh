@@ -149,7 +149,8 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltUp
   };
 
   // Parameterize AgentRadixSortUpsweep type for the current configuration
-  using AgentRadixSortUpsweepT = AgentRadixSortUpsweep<ActiveUpsweepPolicyT, KeyT, OffsetT, DecomposerT>;
+  using AgentRadixSortUpsweepT =
+    detail::radix_sort::AgentRadixSortUpsweep<ActiveUpsweepPolicyT, KeyT, OffsetT, DecomposerT>;
 
   // Shared memory storage
   __shared__ typename AgentRadixSortUpsweepT::TempStorage temp_storage;
@@ -161,7 +162,7 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltUp
 
   upsweep.ProcessRegion(even_share.block_offset, even_share.block_end);
 
-  CTA_SYNC();
+  __syncthreads();
 
   // Write out digit counts (striped)
   upsweep.template ExtractCounts<IS_DESCENDING>(d_spine, gridDim.x, blockIdx.x);
@@ -190,13 +191,13 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicy::BLOCK_THREADS), 
 {
   // Parameterize the AgentScan type for the current configuration
   using AgentScanT =
-    AgentScan<typename ChainedPolicyT::ActivePolicy::ScanPolicy,
-              OffsetT*,
-              OffsetT*,
-              ::cuda::std::plus<>,
-              OffsetT,
-              OffsetT,
-              OffsetT>;
+    detail::scan::AgentScan<typename ChainedPolicyT::ActivePolicy::ScanPolicy,
+                            OffsetT*,
+                            OffsetT*,
+                            ::cuda::std::plus<>,
+                            OffsetT,
+                            OffsetT,
+                            OffsetT>;
 
   // Shared memory storage
   __shared__ typename AgentScanT::TempStorage temp_storage;
@@ -308,7 +309,7 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltDo
   };
 
   // Parameterize AgentRadixSortDownsweep type for the current configuration
-  using AgentRadixSortDownsweepT =
+  using AgentRadixSortDownsweepT = detail::radix_sort::
     AgentRadixSortDownsweep<ActiveDownsweepPolicyT, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>;
 
   // Shared memory storage
@@ -432,7 +433,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THRE
   // Load keys
   BlockLoadKeys(temp_storage.load_keys).Load(d_keys_in, keys, num_items, default_key);
 
-  CTA_SYNC();
+  __syncthreads();
 
   // Load values
   if (!KEYS_ONLY)
@@ -443,7 +444,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THRE
 
     BlockLoadValues(temp_storage.load_values).Load(d_values_in, values, num_items);
 
-    CTA_SYNC();
+    __syncthreads();
   }
 
   // Sort tile
@@ -570,13 +571,14 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
   };
 
   // Upsweep type
-  using BlockUpsweepT = AgentRadixSortUpsweep<SegmentedPolicyT, KeyT, OffsetT, DecomposerT>;
+  using BlockUpsweepT = detail::radix_sort::AgentRadixSortUpsweep<SegmentedPolicyT, KeyT, OffsetT, DecomposerT>;
 
   // Digit-scan type
   using DigitScanT = BlockScan<OffsetT, BLOCK_THREADS>;
 
   // Downsweep type
-  using BlockDownsweepT = AgentRadixSortDownsweep<SegmentedPolicyT, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>;
+  using BlockDownsweepT =
+    detail::radix_sort::AgentRadixSortDownsweep<SegmentedPolicyT, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>;
 
   enum
   {
@@ -616,13 +618,13 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
   BlockUpsweepT upsweep(temp_storage.upsweep, d_keys_in, current_bit, pass_bits, decomposer);
   upsweep.ProcessRegion(segment_begin, segment_end);
 
-  CTA_SYNC();
+  __syncthreads();
 
   // The count of each digit value in this pass (valid in the first RADIX_DIGITS threads)
   OffsetT bin_count[BINS_TRACKED_PER_THREAD];
   upsweep.ExtractCounts(bin_count);
 
-  CTA_SYNC();
+  __syncthreads();
 
   if (IS_DESCENDING)
   {
@@ -638,7 +640,7 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
 #pragma unroll
     for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
@@ -677,7 +679,7 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
 #pragma unroll
     for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
@@ -691,7 +693,7 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
     }
   }
 
-  CTA_SYNC();
+  __syncthreads();
 
   // Downsweep
   BlockDownsweepT downsweep(
@@ -729,7 +731,8 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::HistogramPolicy::BLOCK_THREADS) 
   OffsetT* d_bins_out, const KeyT* d_keys_in, OffsetT num_items, int start_bit, int end_bit, DecomposerT decomposer = {})
 {
   using HistogramPolicyT = typename ChainedPolicyT::ActivePolicy::HistogramPolicy;
-  using AgentT           = AgentRadixSortHistogram<HistogramPolicyT, IS_DESCENDING, KeyT, OffsetT, DecomposerT>;
+  using AgentT =
+    detail::radix_sort::AgentRadixSortHistogram<HistogramPolicyT, IS_DESCENDING, KeyT, OffsetT, DecomposerT>;
   __shared__ typename AgentT::TempStorage temp_storage;
   AgentT agent(temp_storage, d_bins_out, d_keys_in, num_items, start_bit, end_bit, decomposer);
   agent.Process();
@@ -759,7 +762,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void __launch_bounds__(ChainedPolicyT::ActivePolicy
     DecomposerT decomposer = {})
 {
   using OnesweepPolicyT = typename ChainedPolicyT::ActivePolicy::OnesweepPolicy;
-  using AgentT =
+  using AgentT          = detail::radix_sort::
     AgentRadixSortOnesweep<OnesweepPolicyT, IS_DESCENDING, KeyT, ValueT, OffsetT, PortionOffsetT, DecomposerT>;
   __shared__ typename AgentT::TempStorage s;
 
@@ -933,33 +936,6 @@ struct DispatchRadixSort
       , is_overwrite_okay(is_overwrite_okay)
       , decomposer(decomposer)
   {}
-
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchRadixSort(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    DoubleBuffer<KeyT>& d_keys,
-    DoubleBuffer<ValueT>& d_values,
-    OffsetT num_items,
-    int begin_bit,
-    int end_bit,
-    bool is_overwrite_okay,
-    cudaStream_t stream,
-    bool debug_synchronous,
-    int ptx_version)
-      : d_temp_storage(d_temp_storage)
-      , temp_storage_bytes(temp_storage_bytes)
-      , d_keys(d_keys)
-      , d_values(d_values)
-      , num_items(num_items)
-      , begin_bit(begin_bit)
-      , end_bit(end_bit)
-      , stream(stream)
-      , ptx_version(ptx_version)
-      , is_overwrite_okay(is_overwrite_okay)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-  }
 
   //------------------------------------------------------------------------------
   // Small-problem (single tile) invocation
@@ -1872,25 +1848,6 @@ struct DispatchRadixSort
 
     return error;
   }
-
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    DoubleBuffer<KeyT>& d_keys,
-    DoubleBuffer<ValueT>& d_values,
-    OffsetT num_items,
-    int begin_bit,
-    int end_bit,
-    bool is_overwrite_okay,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Dispatch(
-      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
-  }
 };
 
 /******************************************************************************
@@ -2026,39 +1983,6 @@ struct DispatchSegmentedRadixSort
       , is_overwrite_okay(is_overwrite_okay)
       , decomposer(decomposer)
   {}
-
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchSegmentedRadixSort(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    DoubleBuffer<KeyT>& d_keys,
-    DoubleBuffer<ValueT>& d_values,
-    OffsetT num_items,
-    OffsetT num_segments,
-    BeginOffsetIteratorT d_begin_offsets,
-    EndOffsetIteratorT d_end_offsets,
-    int begin_bit,
-    int end_bit,
-    bool is_overwrite_okay,
-    cudaStream_t stream,
-    bool debug_synchronous,
-    int ptx_version)
-      : d_temp_storage(d_temp_storage)
-      , temp_storage_bytes(temp_storage_bytes)
-      , d_keys(d_keys)
-      , d_values(d_values)
-      , num_items(num_items)
-      , num_segments(num_segments)
-      , d_begin_offsets(d_begin_offsets)
-      , d_end_offsets(d_end_offsets)
-      , begin_bit(begin_bit)
-      , end_bit(end_bit)
-      , stream(stream)
-      , ptx_version(ptx_version)
-      , is_overwrite_okay(is_overwrite_okay)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-  }
 
   //------------------------------------------------------------------------------
   // Multi-segment invocation
@@ -2427,39 +2351,6 @@ struct DispatchSegmentedRadixSort
     } while (0);
 
     return error;
-  }
-
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    DoubleBuffer<KeyT>& d_keys,
-    DoubleBuffer<ValueT>& d_values,
-    int num_items,
-    int num_segments,
-    BeginOffsetIteratorT d_begin_offsets,
-    EndOffsetIteratorT d_end_offsets,
-    int begin_bit,
-    int end_bit,
-    bool is_overwrite_okay,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      num_items,
-      num_segments,
-      d_begin_offsets,
-      d_end_offsets,
-      begin_bit,
-      end_bit,
-      is_overwrite_okay,
-      stream);
   }
 };
 

@@ -54,11 +54,8 @@ barrier_expect_tx(barrier<thread_scope_block>& __b, _CUDA_VSTD::ptrdiff_t __tran
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
     (auto __bh = __cvta_generic_to_shared(barrier_native_handle(__b));
-     asm("mbarrier.expect_tx.relaxed.cta.shared::cta.b64 [%0], %1;"
-         :
-         : "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh)),
-           "r"(static_cast<_CUDA_VSTD::uint32_t>(__transaction_count_update))
-         : "memory");),
+     asm("mbarrier.expect_tx.relaxed.cta.shared::cta.b64 [%0], %1;" : : "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh)),
+         "r"(static_cast<_CUDA_VSTD::uint32_t>(__transaction_count_update)) : "memory");),
     (__cuda_ptx_barrier_expect_tx_is_not_supported_before_SM_90__();));
 }
 

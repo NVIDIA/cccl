@@ -27,6 +27,7 @@
 
 #include <cuda/experimental/__stf/graph/graph_task.cuh>
 #include <cuda/experimental/__stf/graph/interfaces/slice.cuh>
+#include <cuda/experimental/__stf/graph/interfaces/void_interface.cuh>
 #include <cuda/experimental/__stf/internal/acquire_release.cuh>
 #include <cuda/experimental/__stf/internal/backend_allocator_setup.cuh>
 #include <cuda/experimental/__stf/internal/launch.cuh>
@@ -230,6 +231,13 @@ class graph_ctx : public backend_ctx<graph_ctx>
     size_t epoch() const override
     {
       return graph_epoch;
+    }
+
+    // The completion of the CUDA graph implies the completion of all nodes in
+    // the graph
+    bool track_dangling_events() const override
+    {
+      return false;
     }
 
     /* Store a vector of previously instantiated graphs, with the number of

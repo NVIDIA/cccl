@@ -97,15 +97,13 @@ _CCCL_DEVICE static inline void st_async(_B32* __addr, const _B32 (&__value)[4],
   static_assert(sizeof(_B32) == 4, "");
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (asm("st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.v4.b32 [%0], {%1, %2, %3, %4}, [%5];    // 3. "
-         :
-         : "r"(__as_ptr_remote_dsmem(__addr)),
-           "r"(__as_b32(__value[0])),
-           "r"(__as_b32(__value[1])),
-           "r"(__as_b32(__value[2])),
-           "r"(__as_b32(__value[3])),
-           "r"(__as_ptr_remote_dsmem(__remote_bar))
-         : "memory");),
+    (asm("st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.v4.b32 [%0], {%1, %2, %3, %4}, [%5];    // "
+         "3. " : : "r"(__as_ptr_remote_dsmem(__addr)),
+         "r"(__as_b32(__value[0])),
+         "r"(__as_b32(__value[1])),
+         "r"(__as_b32(__value[2])),
+         "r"(__as_b32(__value[3])),
+         "r"(__as_ptr_remote_dsmem(__remote_bar)) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_st_async_is_not_supported_before_SM_90__();));

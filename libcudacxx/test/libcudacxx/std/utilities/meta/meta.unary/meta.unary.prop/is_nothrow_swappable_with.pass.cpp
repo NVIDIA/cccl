@@ -61,19 +61,15 @@ int main(int, char**)
     static_assert(!cuda::std::is_nothrow_swappable_with<int, int>::value, "");
     static_assert(cuda::std::is_nothrow_swappable_with<int&, int&>::value, "");
     static_assert(cuda::std::is_nothrow_swappable_with<M, M>::value, "");
-#ifndef TEST_COMPILER_ICC
     static_assert(cuda::std::is_swappable_with<A&, A&>::value && !cuda::std::is_nothrow_swappable_with<A&, A&>::value,
                   "");
-#endif // TEST_COMPILER_ICC
   }
   {
     // test that heterogeneous swap is allowed only if both 'swap(A, B)' and
     // 'swap(B, A)' are valid.
     static_assert(cuda::std::is_nothrow_swappable_with<A&, B&>::value, "");
-#ifndef TEST_COMPILER_ICC
     static_assert(!cuda::std::is_nothrow_swappable_with<A&, C&>::value && cuda::std::is_swappable_with<A&, C&>::value,
                   "");
-#endif // TEST_COMPILER_ICC
     static_assert(!cuda::std::is_nothrow_swappable_with<D&, C&>::value, "");
   }
   {

@@ -13,20 +13,22 @@
 #include <cuda/std/cassert>
 #include <cuda/std/cfloat>
 #include <cuda/std/climits>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
+#include "common.h"
 #include "test_macros.h"
 
 template <class T>
 __host__ __device__ void test(T expected)
 {
-  assert(cuda::std::numeric_limits<T>::lowest() == expected);
+  assert(float_eq(cuda::std::numeric_limits<T>::lowest(), expected));
   assert(cuda::std::numeric_limits<T>::is_bounded);
-  assert(cuda::std::numeric_limits<const T>::lowest() == expected);
+  assert(float_eq(cuda::std::numeric_limits<const T>::lowest(), expected));
   assert(cuda::std::numeric_limits<const T>::is_bounded);
-  assert(cuda::std::numeric_limits<volatile T>::lowest() == expected);
+  assert(float_eq(cuda::std::numeric_limits<volatile T>::lowest(), expected));
   assert(cuda::std::numeric_limits<volatile T>::is_bounded);
-  assert(cuda::std::numeric_limits<const volatile T>::lowest() == expected);
+  assert(float_eq(cuda::std::numeric_limits<const volatile T>::lowest(), expected));
   assert(cuda::std::numeric_limits<const volatile T>::is_bounded);
 }
 
@@ -34,6 +36,7 @@ int main(int, char**)
 {
   test<bool>(false);
   test<char>(CHAR_MIN);
+
   test<signed char>(SCHAR_MIN);
   test<unsigned char>(0);
 #ifndef TEST_COMPILER_NVRTC
@@ -63,6 +66,12 @@ int main(int, char**)
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
   test<long double>(-LDBL_MAX);
 #endif
+#if defined(_LIBCUDACXX_HAS_NVFP16)
+  test<__half>(__double2half(-65504.0));
+#endif // _LIBCUDACXX_HAS_NVFP16
+#if defined(_LIBCUDACXX_HAS_NVBF16)
+  test<__nv_bfloat16>(__double2bfloat16(-3.3895313892515355e+38));
+#endif // _LIBCUDACXX_HAS_NVBF16
 
   return 0;
 }

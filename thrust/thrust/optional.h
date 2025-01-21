@@ -22,10 +22,10 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/addressof.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/swap.h>
 
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/void_t.h>
 
 #define THRUST_OPTIONAL_VERSION_MAJOR 0
@@ -36,6 +36,8 @@
 #include <new>
 #include <type_traits>
 #include <utility>
+
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 
 #if _CCCL_COMPILER(MSVC, ==, 19, 00)
 #  define THRUST_OPTIONAL_MSVC2015
@@ -59,11 +61,11 @@ THRUST_NAMESPACE_BEGIN
 #ifndef THRUST_MONOSTATE_INPLACE_MUTEX
 #  define THRUST_MONOSTATE_INPLACE_MUTEX
 /// \brief Used to represent an optional with no data; essentially a bool
-class monostate
+class CCCL_DEPRECATED_BECAUSE("Use cuda::std::monostate instead") monostate
 {};
 
 /// \brief A tag type to tell optional to construct its value in-place
-struct in_place_t
+struct CCCL_DEPRECATED in_place_t
 {
   explicit in_place_t() = default;
 };
@@ -72,7 +74,7 @@ static constexpr in_place_t in_place{};
 #endif
 
 template <class T>
-class optional;
+class CCCL_DEPRECATED_BECAUSE("Use cuda::std::optional") optional;
 
 /// \exclude
 namespace detail
@@ -154,16 +156,18 @@ template <
 #  endif
   typename = enable_if_t<std::is_member_pointer<decay_t<Fn>>::value>,
   int      = 0>
-_CCCL_HOST_DEVICE constexpr auto invoke(Fn&& f, Args&&... args) noexcept(
-  noexcept(std::mem_fn(f)(std::forward<Args>(args)...))) -> decltype(std::mem_fn(f)(std::forward<Args>(args)...))
+_CCCL_HOST_DEVICE constexpr auto
+invoke(Fn&& f, Args&&... args) noexcept(noexcept(std::mem_fn(f)(std::forward<Args>(args)...)))
+  -> decltype(std::mem_fn(f)(std::forward<Args>(args)...))
 {
   return std::mem_fn(f)(std::forward<Args>(args)...);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Fn, typename... Args, typename = enable_if_t<!std::is_member_pointer<decay_t<Fn>>::value>>
-_CCCL_HOST_DEVICE constexpr auto invoke(Fn&& f, Args&&... args) noexcept(noexcept(
-  std::forward<Fn>(f)(std::forward<Args>(args)...))) -> decltype(std::forward<Fn>(f)(std::forward<Args>(args)...))
+_CCCL_HOST_DEVICE constexpr auto
+invoke(Fn&& f, Args&&... args) noexcept(noexcept(std::forward<Fn>(f)(std::forward<Args>(args)...)))
+  -> decltype(std::forward<Fn>(f)(std::forward<Args>(args)...))
 {
   return std::forward<Fn>(f)(std::forward<Args>(args)...);
 }
@@ -396,7 +400,7 @@ struct optional_operations_base : optional_storage_base<T>
   template <class... Args>
   _CCCL_HOST_DEVICE void construct(Args&&... args) noexcept
   {
-    new (thrust::addressof(this->m_value)) T(std::forward<Args>(args)...);
+    new (::cuda::std::addressof(this->m_value)) T(std::forward<Args>(args)...);
     this->m_has_value = true;
   }
 
@@ -720,7 +724,7 @@ struct optional_delete_assign_base<T, false, false>
 } // namespace detail
 
 /// \brief A tag type to represent an empty optional
-struct nullopt_t
+struct CCCL_DEPRECATED nullopt_t
 {
   struct do_not_use
   {};
@@ -742,7 +746,7 @@ static constexpr
 #endif // __CUDA_ARCH__
   nullopt_t nullopt{nullopt_t::do_not_use{}, nullopt_t::do_not_use{}};
 
-class bad_optional_access : public std::exception
+class CCCL_DEPRECATED bad_optional_access : public std::exception
 {
 public:
   bad_optional_access() = default;
@@ -1553,13 +1557,13 @@ public:
       }
       else
       {
-        new (thrust::addressof(rhs.m_value)) T(std::move(this->m_value));
+        new (::cuda::std::addressof(rhs.m_value)) T(std::move(this->m_value));
         this->m_value.T::~T();
       }
     }
     else if (rhs.has_value())
     {
-      new (thrust::addressof(this->m_value)) T(std::move(rhs.m_value));
+      new (::cuda::std::addressof(this->m_value)) T(std::move(rhs.m_value));
       rhs.m_value.T::~T();
     }
   }
@@ -1571,7 +1575,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE constexpr const T* operator->() const
   {
-    return thrust::addressof(this->m_value);
+    return ::cuda::std::addressof(this->m_value);
   }
 
   /// \group pointer
@@ -1579,7 +1583,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR T* operator->()
   {
-    return thrust::addressof(this->m_value);
+    return ::cuda::std::addressof(this->m_value);
   }
 
   /// \return the stored value
@@ -1952,6 +1956,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class T = detail::i_am_secret,
           class U,
           class Ret = detail::conditional_t<std::is_same<T, detail::i_am_secret>::value, detail::decay_t<U>, T>>
+CCCL_DEPRECATED_BECAUSE("Use cuda::std::make_optional")
 _CCCL_HOST_DEVICE inline constexpr optional<Ret> make_optional(U&& v)
 {
   return optional<Ret>(std::forward<U>(v));
@@ -1959,12 +1964,14 @@ _CCCL_HOST_DEVICE inline constexpr optional<Ret> make_optional(U&& v)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class T, class... Args>
+CCCL_DEPRECATED_BECAUSE("Use cuda::std::make_optional")
 _CCCL_HOST_DEVICE inline constexpr optional<T> make_optional(Args&&... args)
 {
   return optional<T>(in_place, std::forward<Args>(args)...);
 }
 _CCCL_EXEC_CHECK_DISABLE
 template <class T, class U, class... Args>
+CCCL_DEPRECATED_BECAUSE("Use cuda::std::make_optional")
 _CCCL_HOST_DEVICE inline constexpr optional<T> make_optional(std::initializer_list<U> il, Args&&... args)
 {
   return optional<T>(in_place, il, std::forward<Args>(args)...);
@@ -2001,7 +2008,22 @@ _CCCL_HOST_DEVICE auto optional_map_impl(Opt&& opt, F&& f)
   if (opt.has_value())
   {
     detail::invoke(std::forward<F>(f), *std::forward<Opt>(opt));
+#    if _CCCL_COMPILER(MSVC)
+    // MSVC fails to suppress the warning on make_optional
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
+    return optional<monostate>(monostate{});
+    _CCCL_SUPPRESS_DEPRECATED_POP
+#    elif _CCCL_COMPILER(NVHPC)
+    // NVHPC cannot have a diagnostic pop after a return statement
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
+    auto o = optional<monostate>(monostate{});
+    _CCCL_SUPPRESS_DEPRECATED_POP
+    return ::cuda::std::move(o);
+#    else
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     return make_optional(monostate{});
+    _CCCL_SUPPRESS_DEPRECATED_POP
+#    endif
   }
 
   return optional<monostate>(nullopt);
@@ -2612,7 +2634,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <class U = T, detail::enable_if_t<!detail::is_optional<detail::decay_t<U>>::value>* = nullptr>
   _CCCL_HOST_DEVICE constexpr optional(U&& u)
-      : m_value(thrust::addressof(u))
+      : m_value(::cuda::std::addressof(u))
   {
     static_assert(std::is_lvalue_reference<U>::value, "U must be an lvalue");
   }
@@ -2654,7 +2676,7 @@ public:
   _CCCL_HOST_DEVICE optional& operator=(U&& u)
   {
     static_assert(std::is_lvalue_reference<U>::value, "U must be an lvalue");
-    m_value = thrust::addressof(u);
+    m_value = ::cuda::std::addressof(u);
     return *this;
   }
 
@@ -2666,7 +2688,7 @@ public:
   template <class U>
   _CCCL_HOST_DEVICE optional& operator=(const optional<U>& rhs)
   {
-    m_value = thrust::addressof(rhs.value());
+    m_value = ::cuda::std::addressof(rhs.value());
     return *this;
   }
 
@@ -2678,7 +2700,7 @@ public:
   template <class U>
   _CCCL_HOST_DEVICE T& emplace(U& u) noexcept
   {
-    m_value = thrust::addressof(u);
+    m_value = ::cuda::std::addressof(u);
     return *m_value;
   }
 
@@ -2820,3 +2842,5 @@ struct hash<THRUST_NS_QUALIFIER::optional<T>>
   }
 };
 } // namespace std
+
+_CCCL_SUPPRESS_DEPRECATED_POP

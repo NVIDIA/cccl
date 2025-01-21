@@ -144,8 +144,7 @@ __host__ __device__ __noinline__ void test()
 
 template <template <typename, cuda::thread_scope> class Atomic,
           cuda::thread_scope Scope,
-          template <typename, typename>
-          class Selector>
+          template <typename, typename> class Selector>
 __host__ __device__ void test_for_all_types()
 {
   test<Atomic<float, Scope>, float, Selector>();

@@ -17,8 +17,8 @@
 struct transparent_less
 {
   template <class T, class U>
-  constexpr auto operator()(T&& t, U&& u) const
-    noexcept(noexcept(std::forward<T>(t) < std::forward<U>(u))) -> decltype(std::forward<T>(t) < std::forward<U>(u))
+  constexpr auto operator()(T&& t, U&& u) const noexcept(noexcept(std::forward<T>(t) < std::forward<U>(u)))
+    -> decltype(std::forward<T>(t) < std::forward<U>(u))
   {
     return std::forward<T>(t) < std::forward<U>(u);
   }
@@ -28,8 +28,8 @@ struct transparent_less
 struct transparent_less_not_referenceable
 {
   template <class T, class U>
-  constexpr auto operator()(T&& t, U&& u) const
-    noexcept(noexcept(std::forward<T>(t) < std::forward<U>(u))) -> decltype(std::forward<T>(t) < std::forward<U>(u))
+  constexpr auto operator()(T&& t, U&& u) const noexcept(noexcept(std::forward<T>(t) < std::forward<U>(u)))
+    -> decltype(std::forward<T>(t) < std::forward<U>(u))
   {
     return std::forward<T>(t) < std::forward<U>(u);
   }
@@ -39,8 +39,8 @@ struct transparent_less_not_referenceable
 struct transparent_less_no_type
 {
   template <class T, class U>
-  constexpr auto operator()(T&& t, U&& u) const
-    noexcept(noexcept(std::forward<T>(t) < std::forward<U>(u))) -> decltype(std::forward<T>(t) < std::forward<U>(u))
+  constexpr auto operator()(T&& t, U&& u) const noexcept(noexcept(std::forward<T>(t) < std::forward<U>(u)))
+    -> decltype(std::forward<T>(t) < std::forward<U>(u))
   {
     return std::forward<T>(t) < std::forward<U>(u);
   }
@@ -52,8 +52,8 @@ private:
 struct transparent_less_private
 {
   template <class T, class U>
-  constexpr auto operator()(T&& t, U&& u) const
-    noexcept(noexcept(std::forward<T>(t) < std::forward<U>(u))) -> decltype(std::forward<T>(t) < std::forward<U>(u))
+  constexpr auto operator()(T&& t, U&& u) const noexcept(noexcept(std::forward<T>(t) < std::forward<U>(u)))
+    -> decltype(std::forward<T>(t) < std::forward<U>(u))
   {
     return std::forward<T>(t) < std::forward<U>(u);
   }
@@ -65,8 +65,8 @@ private:
 struct transparent_less_not_a_type
 {
   template <class T, class U>
-  constexpr auto operator()(T&& t, U&& u) const
-    noexcept(noexcept(std::forward<T>(t) < std::forward<U>(u))) -> decltype(std::forward<T>(t) < std::forward<U>(u))
+  constexpr auto operator()(T&& t, U&& u) const noexcept(noexcept(std::forward<T>(t) < std::forward<U>(u)))
+    -> decltype(std::forward<T>(t) < std::forward<U>(u))
   {
     return std::forward<T>(t) < std::forward<U>(u);
   }

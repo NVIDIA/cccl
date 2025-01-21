@@ -45,6 +45,11 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail
+{
+namespace radix_sort
+{
+
 /**
  * This agent will be implementing the `DeviceSegmentedRadixSort` when the
  * https://github.com/NVIDIA/cub/issues/383 is addressed.
@@ -69,7 +74,7 @@ template <bool IS_DESCENDING,
           typename KeyT,
           typename ValueT,
           typename OffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
+          typename DecomposerT = identity_decomposer_t>
 struct AgentSegmentedRadixSort
 {
   OffsetT num_items;
@@ -80,7 +85,7 @@ struct AgentSegmentedRadixSort
   static constexpr int RADIX_DIGITS     = 1 << RADIX_BITS;
   static constexpr int KEYS_ONLY        = std::is_same<ValueT, NullType>::value;
 
-  using traits           = detail::radix::traits_t<KeyT>;
+  using traits           = radix::traits_t<KeyT>;
   using bit_ordered_type = typename traits::bit_ordered_type;
 
   // Huge segment handlers
@@ -154,13 +159,13 @@ struct AgentSegmentedRadixSort
     {
       BlockValueLoadT(temp_storage.values_load).Load(d_values_in, thread_values, num_items);
 
-      CTA_SYNC();
+      __syncthreads();
     }
 
     {
       BlockKeyLoadT(temp_storage.keys_load).Load(d_keys_in, thread_keys, num_items, oob_default);
 
-      CTA_SYNC();
+      __syncthreads();
     }
 
     BlockRadixSortT(temp_storage.sort)
@@ -187,13 +192,13 @@ struct AgentSegmentedRadixSort
     BlockUpsweepT upsweep(temp_storage.upsweep, d_keys_in, current_bit, pass_bits, decomposer);
     upsweep.ProcessRegion(OffsetT{}, num_items);
 
-    CTA_SYNC();
+    __syncthreads();
 
     // The count of each digit value in this pass (valid in the first RADIX_DIGITS threads)
     OffsetT bin_count[BINS_TRACKED_PER_THREAD];
     upsweep.ExtractCounts(bin_count);
 
-    CTA_SYNC();
+    __syncthreads();
 
     if (IS_DESCENDING)
     {
@@ -209,7 +214,7 @@ struct AgentSegmentedRadixSort
         }
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
 #pragma unroll
       for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
@@ -243,7 +248,7 @@ struct AgentSegmentedRadixSort
         }
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
 #pragma unroll
       for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
@@ -257,7 +262,7 @@ struct AgentSegmentedRadixSort
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Downsweep
     BlockDownsweepT downsweep(
@@ -274,5 +279,19 @@ struct AgentSegmentedRadixSort
     downsweep.ProcessRegion(OffsetT{}, num_items);
   }
 };
+
+} // namespace radix_sort
+} // namespace detail
+
+template <bool IS_DESCENDING,
+          typename SegmentedPolicyT,
+          typename KeyT,
+          typename ValueT,
+          typename OffsetT,
+          typename DecomposerT = detail::identity_decomposer_t>
+using AgentSegmentedRadixSort CCCL_DEPRECATED_BECAUSE(
+  "This class is considered an implementation detail and the public "
+  "interface will be removed.") =
+  detail::radix_sort::AgentSegmentedRadixSort<IS_DESCENDING, SegmentedPolicyT, KeyT, ValueT, OffsetT, DecomposerT>;
 
 CUB_NAMESPACE_END

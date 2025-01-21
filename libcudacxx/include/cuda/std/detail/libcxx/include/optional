@@ -272,7 +272,7 @@ struct __optional_destruct_base;
 template <class _Tp>
 struct __optional_destruct_base<_Tp, false>
 {
-  typedef _Tp value_type;
+  using value_type = _Tp;
   static_assert(_CCCL_TRAIT(is_object, value_type),
                 "instantiation of optional with a non-object type is undefined behavior");
   union
@@ -323,7 +323,7 @@ struct __optional_destruct_base<_Tp, false>
 template <class _Tp>
 struct __optional_destruct_base<_Tp, true>
 {
-  typedef _Tp value_type;
+  using value_type = _Tp;
   static_assert(_CCCL_TRAIT(is_object, value_type),
                 "instantiation of optional with a non-object type is undefined behavior");
   union
@@ -1404,8 +1404,8 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__enable_hash_helper<optional<_Tp>, remove_const_t<_Tp>>>
 {
 #    if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef optional<_Tp> argument_type;
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef size_t result_type;
+  using argument_type _LIBCUDACXX_DEPRECATED_IN_CXX17 = optional<_Tp>;
+  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX17   = size_t;
 #    endif
 
   _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(const optional<_Tp>& __opt) const

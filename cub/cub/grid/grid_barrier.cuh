@@ -50,8 +50,10 @@ CUB_NAMESPACE_BEGIN
 
 /**
  * \brief GridBarrier implements a software global barrier among thread blocks within a CUDA grid
+ *
+ * deprecated [Since 2.9.0]
  */
-class GridBarrier
+class CCCL_DEPRECATED_BECAUSE("Use the APIs from cooperative groups instead") GridBarrier
 {
 protected:
   using SyncFlag = unsigned int;
@@ -77,7 +79,7 @@ public:
     // Threadfence and syncthreads to make sure global writes are visible before
     // thread-0 reports in with its sync counter
     __threadfence();
-    CTA_SYNC();
+    __syncthreads();
 
     if (blockIdx.x == 0)
     {
@@ -87,7 +89,7 @@ public:
         d_vol_sync[blockIdx.x] = 1;
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Wait for everyone else to report in
       for (int peer_block = threadIdx.x; peer_block < gridDim.x; peer_block += blockDim.x)
@@ -98,7 +100,7 @@ public:
         }
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Let everyone know it's safe to proceed
       for (int peer_block = threadIdx.x; peer_block < gridDim.x; peer_block += blockDim.x)
@@ -120,7 +122,7 @@ public:
         }
       }
 
-      CTA_SYNC();
+      __syncthreads();
     }
   }
 };
@@ -131,8 +133,11 @@ public:
  *
  * Uses RAII for lifetime, i.e., device resources are reclaimed when
  * the destructor is called.
+ *
+ * deprecated [Since 2.9.0]
  */
-class GridBarrierLifetime : public GridBarrier
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+class CCCL_DEPRECATED_BECAUSE("Use the APIs from cooperative groups instead") GridBarrierLifetime : public GridBarrier
 {
 protected:
   // Number of bytes backed by d_sync
@@ -211,5 +216,6 @@ public:
     return retval;
   }
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 CUB_NAMESPACE_END

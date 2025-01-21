@@ -118,7 +118,7 @@ _CCCL_DEVICE void transform_kernel_impl(
   constexpr int block_dim = PrefetchPolicy::block_threads;
   const int tile_stride   = block_dim * num_elem_per_thread;
   const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_stride;
-  const int tile_size     = static_cast<int>(::cuda::std::min(num_items - offset, Offset{tile_stride}));
+  const int tile_size     = static_cast<int>((::cuda::std::min)(num_items - offset, Offset{tile_stride}));
 
   // move index and iterator domain to the block/thread index, to reduce arithmetic in the loops below
   {
@@ -169,11 +169,10 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto poor_apply_impl(F&& f, Tuple&& t, ::cuda::st
 }
 
 template <class F, class Tuple>
-_CCCL_DEVICE _CCCL_FORCEINLINE auto poor_apply(F&& f, Tuple&& t)
-  -> decltype(poor_apply_impl(
-    ::cuda::std::forward<F>(f),
-    ::cuda::std::forward<Tuple>(t),
-    ::cuda::std::make_index_sequence<::cuda::std::tuple_size<::cuda::std::remove_reference_t<Tuple>>::value>{}))
+_CCCL_DEVICE _CCCL_FORCEINLINE auto poor_apply(F&& f, Tuple&& t) -> decltype(poor_apply_impl(
+  ::cuda::std::forward<F>(f),
+  ::cuda::std::forward<Tuple>(t),
+  ::cuda::std::make_index_sequence<::cuda::std::tuple_size<::cuda::std::remove_reference_t<Tuple>>::value>{}))
 {
   return poor_apply_impl(
     ::cuda::std::forward<F>(f),
@@ -330,7 +329,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   constexpr int block_dim = BulkCopyPolicy::block_threads;
   const int tile_stride   = block_dim * num_elem_per_thread;
   const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_stride;
-  const int tile_size     = ::cuda::std::min(num_items - offset, Offset{tile_stride});
+  const int tile_size     = (::cuda::std::min)(num_items - offset, Offset{tile_stride});
 
   const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
   if (inner_blocks)
@@ -473,8 +472,9 @@ using needs_aligned_ptr_t =
 
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
 template <Algorithm Alg, typename It, ::cuda::std::enable_if_t<needs_aligned_ptr_t<Alg>::value, int> = 0>
-_CCCL_DEVICE _CCCL_FORCEINLINE auto select_kernel_arg(
-  ::cuda::std::integral_constant<Algorithm, Alg>, kernel_arg<It>&& arg) -> aligned_base_ptr<value_t<It>>&&
+_CCCL_DEVICE _CCCL_FORCEINLINE auto
+select_kernel_arg(::cuda::std::integral_constant<Algorithm, Alg>, kernel_arg<It>&& arg)
+  -> aligned_base_ptr<value_t<It>>&&
 {
   return ::cuda::std::move(arg.aligned_ptr);
 }
@@ -660,10 +660,9 @@ struct dispatch_t<RequiresStableAddress,
   // TODO(bgruber): I want to write tests for this but those are highly depending on the architecture we are running
   // on?
   template <typename ActivePolicy>
-  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_ublkcp_kernel()
-    -> PoorExpected<
-      ::cuda::std::
-        tuple<THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron, decltype(CUB_DETAIL_TRANSFORM_KERNEL_PTR), int>>
+  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_ublkcp_kernel() -> PoorExpected<
+    ::cuda::std::
+      tuple<THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron, decltype(CUB_DETAIL_TRANSFORM_KERNEL_PTR), int>>
   {
     using policy_t          = typename ActivePolicy::algo_policy;
     constexpr int block_dim = policy_t::block_threads;
@@ -813,7 +812,7 @@ struct dispatch_t<RequiresStableAddress,
 
     // but also generate enough blocks for full occupancy to optimize small problem sizes, e.g., 2^16 or 2^20 elements
     const int items_per_thread_evenly_spread = static_cast<int>(
-      ::cuda::std::min(Offset{items_per_thread}, num_items / (config->sm_count * block_dim * config->max_occupancy)));
+      (::cuda::std::min)(Offset{items_per_thread}, num_items / (config->sm_count * block_dim * config->max_occupancy)));
 
     const int items_per_thread_clamped = ::cuda::std::clamp(
       items_per_thread_evenly_spread, +policy_t::min_items_per_thread, +policy_t::max_items_per_thread);

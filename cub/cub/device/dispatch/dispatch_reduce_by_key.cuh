@@ -155,17 +155,17 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT::BLOCK_TH
   using AgentReduceByKeyPolicyT = typename ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT;
 
   // Thread block type for reducing tiles of value segments
-  using AgentReduceByKeyT =
-    AgentReduceByKey<AgentReduceByKeyPolicyT,
-                     KeysInputIteratorT,
-                     UniqueOutputIteratorT,
-                     ValuesInputIteratorT,
-                     AggregatesOutputIteratorT,
-                     NumRunsOutputIteratorT,
-                     EqualityOpT,
-                     ReductionOpT,
-                     OffsetT,
-                     AccumT>;
+  using AgentReduceByKeyT = detail::reduce::AgentReduceByKey<
+    AgentReduceByKeyPolicyT,
+    KeysInputIteratorT,
+    UniqueOutputIteratorT,
+    ValuesInputIteratorT,
+    AggregatesOutputIteratorT,
+    NumRunsOutputIteratorT,
+    EqualityOpT,
+    ReductionOpT,
+    OffsetT,
+    AccumT>;
 
   // Shared memory for AgentReduceByKey
   __shared__ typename AgentReduceByKeyT::TempStorage temp_storage;
@@ -541,39 +541,6 @@ struct DispatchReduceByKey
 
     return error;
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    KeysInputIteratorT d_keys_in,
-    UniqueOutputIteratorT d_unique_out,
-    ValuesInputIteratorT d_values_in,
-    AggregatesOutputIteratorT d_aggregates_out,
-    NumRunsOutputIteratorT d_num_runs_out,
-    EqualityOpT equality_op,
-    ReductionOpT reduction_op,
-    OffsetT num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_unique_out,
-      d_values_in,
-      d_aggregates_out,
-      d_num_runs_out,
-      equality_op,
-      reduction_op,
-      num_items,
-      stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

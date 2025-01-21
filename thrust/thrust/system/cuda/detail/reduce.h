@@ -44,7 +44,6 @@
 #  include <cub/util_math.cuh>
 
 #  include <thrust/detail/alignment.h>
-#  include <thrust/detail/minmax.h>
 #  include <thrust/detail/raw_reference_cast.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/detail/type_traits/iterator/is_output_iterator.h>
@@ -647,7 +646,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
     // small, single tile size
     if (d_temp_storage == nullptr)
     {
-      temp_storage_bytes = max<size_t>(1, vshmem_size);
+      temp_storage_bytes = ::cuda::std::max<size_t>(1, vshmem_size);
       return status;
     }
     char* vshmem_ptr = vshmem_size > 0 ? (char*) d_temp_storage : nullptr;
@@ -717,7 +716,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
 
       // if not enough to fill the device with threadblocks
       // then fill the device with threadblocks
-      reduce_grid_size = static_cast<int>((min) (num_tiles, static_cast<size_t>(reduce_device_occupancy)));
+      reduce_grid_size = static_cast<int>((::cuda::std::min)(num_tiles, static_cast<size_t>(reduce_device_occupancy)));
 
       using drain_agent    = AgentLauncher<DrainAgent<Size>>;
       AgentPlan drain_plan = drain_agent::get_plan();

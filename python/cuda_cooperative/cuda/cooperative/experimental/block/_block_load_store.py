@@ -5,6 +5,7 @@
 
 import numba
 
+from cuda.cooperative.experimental._common import make_binary_tempfile
 from cuda.cooperative.experimental._types import (
     Algorithm,
     Dependency,
@@ -14,7 +15,6 @@ from cuda.cooperative.experimental._types import (
     Pointer,
     TemplateParameter,
 )
-from cuda.cooperative.experimental._common import make_binary_tempfile
 
 CUB_BLOCK_LOAD_ALGOS = {
     "direct": "::cub::BLOCK_LOAD_DIRECT",

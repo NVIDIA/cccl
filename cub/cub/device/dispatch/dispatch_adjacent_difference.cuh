@@ -80,16 +80,16 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceDifferenceKernel(
   // `operator()` function of `__device__` extended lambda within device code.
   using OutputT = detail::invoke_result_t<DifferenceOpT, InputT, InputT>;
 
-  using Agent =
-    AgentDifference<ActivePolicyT,
-                    InputIteratorT,
-                    OutputIteratorT,
-                    DifferenceOpT,
-                    OffsetT,
-                    InputT,
-                    OutputT,
-                    MayAlias,
-                    ReadLeft>;
+  using Agent = detail::adjacent_difference::AgentDifference<
+    ActivePolicyT,
+    InputIteratorT,
+    OutputIteratorT,
+    DifferenceOpT,
+    OffsetT,
+    InputT,
+    OutputT,
+    MayAlias,
+    ReadLeft>;
 
   __shared__ typename Agent::TempStorage storage;
 
@@ -136,29 +136,6 @@ struct DispatchAdjacentDifference
       , difference_op(difference_op)
       , stream(stream)
   {}
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CCCL_DEPRECATED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchAdjacentDifference(
-    void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
-    InputIteratorT d_input,
-    OutputIteratorT d_output,
-    OffsetT num_items,
-    DifferenceOpT difference_op,
-    cudaStream_t stream,
-    bool debug_synchronous)
-      : d_temp_storage(d_temp_storage)
-      , temp_storage_bytes(temp_storage_bytes)
-      , d_input(d_input)
-      , d_output(d_output)
-      , num_items(num_items)
-      , difference_op(difference_op)
-      , stream(stream)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   /// Invocation
   template <typename ActivePolicyT>
@@ -207,7 +184,8 @@ struct DispatchAdjacentDifference
 
       if (MayAlias)
       {
-        using AgentDifferenceInitT = AgentDifferenceInit<InputIteratorT, InputT, OffsetT, ReadLeft>;
+        using AgentDifferenceInitT =
+          detail::adjacent_difference::AgentDifferenceInit<InputIteratorT, InputT, OffsetT, ReadLeft>;
 
         constexpr int init_block_size = AgentDifferenceInitT::BLOCK_THREADS;
         const int init_grid_size      = ::cuda::ceil_div(num_tiles, init_block_size);
@@ -319,24 +297,6 @@ struct DispatchAdjacentDifference
 
     return error;
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t Dispatch(
-    void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
-    InputIteratorT d_input,
-    OutputIteratorT d_output,
-    OffsetT num_items,
-    DifferenceOpT difference_op,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Dispatch(d_temp_storage, temp_storage_bytes, d_input, d_output, num_items, difference_op, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
-import os
-import cccl
 import argparse
+import os
+
+import cccl
 import numpy as np
 import pandas as pd
-
 from colorama import Fore
 
 

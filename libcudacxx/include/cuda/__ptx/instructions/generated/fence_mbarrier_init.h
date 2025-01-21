@@ -21,10 +21,7 @@ _CCCL_DEVICE static inline void fence_mbarrier_init(sem_release_t, scope_cluster
   // __scope == scope_cluster (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (asm volatile("fence.mbarrier_init.release.cluster; // 3."
-                  :
-                  :
-                  : "memory");),
+    (asm volatile("fence.mbarrier_init.release.cluster; // 3." : : : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_fence_mbarrier_init_is_not_supported_before_SM_90__();));

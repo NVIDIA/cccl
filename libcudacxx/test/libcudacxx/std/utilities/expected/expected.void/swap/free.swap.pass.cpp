@@ -51,7 +51,6 @@ struct MoveMayThrow
 };
 static_assert(cuda::std::is_nothrow_swappable_v<cuda::std::expected<void, int>>, "");
 
-#ifndef TEST_COMPILER_ICC
 // !is_nothrow_move_constructible_v<E>
 static_assert(!cuda::std::is_nothrow_swappable_v<cuda::std::expected<void, MoveMayThrow>>, "");
 
@@ -60,7 +59,6 @@ struct SwapMayThrow
   __host__ __device__ friend void swap(SwapMayThrow&, SwapMayThrow&) noexcept(false) {}
 };
 static_assert(!cuda::std::is_nothrow_swappable_v<cuda::std::expected<void, SwapMayThrow>>, "");
-#endif // TEST_COMPILER_ICC
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {

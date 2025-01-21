@@ -459,7 +459,6 @@ static_assert(noexcept(cuda::std::ranges::end(ntae)), "");
 static_assert(noexcept(cuda::std::ranges::cend(ntae)), "");
 #endif // TEST_STD_VER > 2014 && !TEST_COMPILER_MSVC_2019
 
-#if !defined(TEST_COMPILER_ICC)
 _CCCL_GLOBAL_CONSTANT struct NoThrowMemberEndReturnsRef
 {
   __host__ __device__ ThrowingIterator<int> begin() const;
@@ -467,7 +466,6 @@ _CCCL_GLOBAL_CONSTANT struct NoThrowMemberEndReturnsRef
 } ntmerr;
 static_assert(!noexcept(cuda::std::ranges::end(ntmerr)), "");
 static_assert(!noexcept(cuda::std::ranges::cend(ntmerr)), "");
-#endif // !TEST_COMPILER_ICC
 
 _CCCL_GLOBAL_CONSTANT struct EndReturnsArrayRef
 {
@@ -510,9 +508,7 @@ int main(int, char**)
   unused(ntme);
   unused(ntae);
 #endif // TEST_STD_VER > 2014 && !TEST_COMPILER_MSVC_2019
-#if !defined(TEST_COMPILER_ICC)
   unused(ntmerr);
-#endif // !TEST_COMPILER_ICC
   unused(erar);
 
   return 0;

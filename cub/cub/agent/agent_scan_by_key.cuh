@@ -94,6 +94,11 @@ struct AgentScanByKeyPolicy
  * Thread block abstractions
  ******************************************************************************/
 
+namespace detail
+{
+namespace scan_by_key
+{
+
 /**
  * @brief AgentScanByKey implements a stateful abstraction of CUDA thread
  *        blocks for participating in device-wide prefix scan by key.
@@ -140,10 +145,10 @@ struct AgentScanByKey
   // Types and constants
   //---------------------------------------------------------------------
 
-  using KeyT               = cub::detail::value_t<KeysInputIteratorT>;
-  using InputT             = cub::detail::value_t<ValuesInputIteratorT>;
+  using KeyT               = value_t<KeysInputIteratorT>;
+  using InputT             = value_t<ValuesInputIteratorT>;
   using FlagValuePairT     = KeyValuePair<int, AccumT>;
-  using ReduceBySegmentOpT = detail::ScanBySegmentOp<ScanOpT>;
+  using ReduceBySegmentOpT = ScanBySegmentOp<ScanOpT>;
 
   using ScanTileStateT = ReduceByKeyScanTileState<AccumT, int>;
 
@@ -333,7 +338,7 @@ struct AgentScanByKey
       BlockLoadKeysT(storage.load_keys).Load(d_keys_in + tile_base, keys);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     if (IS_LAST_TILE)
     {
@@ -347,7 +352,7 @@ struct AgentScanByKey
       BlockLoadValuesT(storage.load_values).Load(d_values_in + tile_base, values);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // first tile
     if (tile_idx == 0)
@@ -386,7 +391,7 @@ struct AgentScanByKey
       ScanTile(scan_items, tile_aggregate, prefix_op, Int2Type<IS_INCLUSIVE>());
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     UnzipValues(values, scan_items);
 
@@ -459,5 +464,30 @@ struct AgentScanByKey
     }
   }
 };
+
+} // namespace scan_by_key
+} // namespace detail
+
+template <typename AgentScanByKeyPolicyT,
+          typename KeysInputIteratorT,
+          typename ValuesInputIteratorT,
+          typename ValuesOutputIteratorT,
+          typename EqualityOp,
+          typename ScanOpT,
+          typename InitValueT,
+          typename OffsetT,
+          typename AccumT>
+using AgentScanByKey CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
+                                             "interface will be removed.") =
+  detail::scan_by_key::AgentScanByKey<
+    AgentScanByKeyPolicyT,
+    KeysInputIteratorT,
+    ValuesInputIteratorT,
+    ValuesOutputIteratorT,
+    EqualityOp,
+    ScanOpT,
+    InitValueT,
+    OffsetT,
+    AccumT>;
 
 CUB_NAMESPACE_END

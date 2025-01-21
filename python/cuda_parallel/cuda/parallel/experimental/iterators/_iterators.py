@@ -2,18 +2,17 @@ import ctypes
 import operator
 import uuid
 from functools import lru_cache
-from typing import Dict, Callable
+from typing import Callable, Dict
 
+import numba
+import numpy as np
 from llvmlite import ir
+from numba import cuda, types
 from numba.core.extending import intrinsic, overload
 from numba.core.typing.ctypes_utils import to_ctypes
 from numba.cuda.dispatcher import CUDADispatcher
-from numba import cuda, types
-import numba
-import numpy as np
 
 from .._caching import CachableFunction
-
 
 _DEVICE_POINTER_SIZE = 8
 _DEVICE_POINTER_BITWIDTH = _DEVICE_POINTER_SIZE * 8
@@ -156,12 +155,12 @@ def pointer_add(ptr, offset):
     return impl
 
 
-class RawPointerType(IteratorKind):
+class RawPointerKind(IteratorKind):
     pass
 
 
 class RawPointer(IteratorBase):
-    iterator_kind_type = RawPointerType
+    iterator_kind_type = RawPointerKind
 
     def __init__(self, ptr: int, value_type: types.Type):
         cvalue = ctypes.c_void_p(ptr)
@@ -206,12 +205,12 @@ def load_cs(typingctx, base):
     return base.dtype(base), codegen
 
 
-class CacheModifiedPointerType(IteratorKind):
+class CacheModifiedPointerKind(IteratorKind):
     pass
 
 
 class CacheModifiedPointer(IteratorBase):
-    iterator_kind_type = CacheModifiedPointerType
+    iterator_kind_type = CacheModifiedPointerKind
 
     def __init__(self, ptr: int, ntype: types.Type):
         cvalue = ctypes.c_void_p(ptr)

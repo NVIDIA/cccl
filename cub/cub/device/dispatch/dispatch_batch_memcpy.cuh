@@ -54,6 +54,8 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/type_traits>
 
 #include <cstdint>
@@ -131,7 +133,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT::BLO
 
     // Make sure thread 0 does not overwrite the buffer id before other threads have finished with
     // the prior iteration of the loop
-    CTA_SYNC();
+    __syncthreads();
 
     // Binary search the buffer that this tile belongs to
     if (threadIdx.x == 0)
@@ -140,7 +142,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT::BLO
     }
 
     // Make sure thread 0 has written the buffer this thread block is assigned to
-    CTA_SYNC();
+    __syncthreads();
 
     const BufferOffsetT buffer_id = block_buffer_id;
 
@@ -162,18 +164,19 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT::BLO
       {
         if (thread_offset < buffer_sizes[buffer_id])
         {
-          const auto value = read_item<IsMemcpy, AliasT, InputBufferT>(input_buffer_it[buffer_id], thread_offset);
-          write_item<IsMemcpy, AliasT, OutputBufferT>(output_buffer_it[buffer_id], thread_offset, value);
+          const auto value =
+            batch_memcpy::read_item<IsMemcpy, AliasT, InputBufferT>(input_buffer_it[buffer_id], thread_offset);
+          batch_memcpy::write_item<IsMemcpy, AliasT, OutputBufferT>(output_buffer_it[buffer_id], thread_offset, value);
         }
         thread_offset += BLOCK_THREADS;
       }
     }
     else
     {
-      copy_items<IsMemcpy, BLOCK_THREADS, InputBufferT, OutputBufferT, BufferSizeT>(
+      batch_memcpy::copy_items<IsMemcpy, BLOCK_THREADS, InputBufferT, OutputBufferT, BufferSizeT>(
         input_buffer_it[buffer_id],
         output_buffer_it[buffer_id],
-        (cub::min)(buffer_sizes[buffer_id] - tile_offset_within_buffer, TILE_SIZE),
+        (::cuda::std::min)(buffer_sizes[buffer_id] - tile_offset_within_buffer, TILE_SIZE),
         tile_offset_within_buffer);
     }
 
@@ -235,7 +238,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentSmallBufferPolicyT::BLO
   using AgentBatchMemcpyPolicyT = typename ChainedPolicyT::ActivePolicy::AgentSmallBufferPolicyT;
 
   // Block-level specialization
-  using AgentBatchMemcpyT = AgentBatchMemcpy<
+  using AgentBatchMemcpyT = batch_memcpy::AgentBatchMemcpy<
     AgentBatchMemcpyPolicyT,
     InputBufferIt,
     OutputBufferIt,

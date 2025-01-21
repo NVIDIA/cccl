@@ -29,7 +29,7 @@ template <size_t _Ep, size_t _Sp = 0>
 struct __make_tuple_indices
 {
   static_assert(_Sp <= _Ep, "__make_tuple_indices input error");
-  typedef __make_indices_imp<_Ep, _Sp> type;
+  using type = __make_indices_imp<_Ep, _Sp>;
 };
 
 template <size_t _Ep, size_t _Sp = 0>

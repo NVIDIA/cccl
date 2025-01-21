@@ -31,7 +31,7 @@ template <class _ForwardIterator, class _Predicate>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
 partition_point(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred)
 {
-  typedef typename iterator_traits<_ForwardIterator>::difference_type difference_type;
+  using difference_type = typename iterator_traits<_ForwardIterator>::difference_type;
   difference_type __len = _CUDA_VSTD::distance(__first, __last);
   while (__len != 0)
   {

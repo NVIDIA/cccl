@@ -47,15 +47,16 @@
 #include <cub/util_macro.cuh>
 #include <cub/util_namespace.cuh>
 
+#include <cuda/cmath>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+
 // Legacy include; this functionality used to be defined in here.
 #include <cub/detail/detect_cuda_runtime.cuh>
 
 CUB_NAMESPACE_BEGIN
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-
-// \deprecated [Since 2.1.0]
-#  define CUB_USE_COOPERATIVE_GROUPS
 
 /// In device code, CUB_PTX_ARCH expands to the PTX version for which we are
 /// compiling. In host code, CUB_PTX_ARCH's value is implementation defined.
@@ -71,33 +72,6 @@ CUB_NAMESPACE_BEGIN
 #      define CUB_PTX_ARCH __CUDA_ARCH__
 #    endif
 #  endif
-
-// These definitions were intended for internal use only and are now obsolete.
-// If you relied on them, consider porting your code to use the functionality
-// in libcu++'s <nv/target> header.
-// For a temporary workaround, define CUB_PROVIDE_LEGACY_ARCH_MACROS to make
-// them available again. These should be considered deprecated and will be
-// fully removed in a future version.
-#  ifdef CUB_PROVIDE_LEGACY_ARCH_MACROS
-#    ifndef CUB_IS_DEVICE_CODE
-#      if defined(_NVHPC_CUDA)
-#        define CUB_IS_DEVICE_CODE      __builtin_is_device_code()
-#        define CUB_IS_HOST_CODE        (!__builtin_is_device_code())
-#        define CUB_INCLUDE_DEVICE_CODE 1
-#        define CUB_INCLUDE_HOST_CODE   1
-#      elif CUB_PTX_ARCH > 0
-#        define CUB_IS_DEVICE_CODE      1
-#        define CUB_IS_HOST_CODE        0
-#        define CUB_INCLUDE_DEVICE_CODE 1
-#        define CUB_INCLUDE_HOST_CODE   0
-#      else
-#        define CUB_IS_DEVICE_CODE      0
-#        define CUB_IS_HOST_CODE        1
-#        define CUB_INCLUDE_DEVICE_CODE 0
-#        define CUB_INCLUDE_HOST_CODE   1
-#      endif
-#    endif
-#  endif // CUB_PROVIDE_LEGACY_ARCH_MACROS
 
 /// Maximum number of devices supported.
 #  ifndef CUB_MAX_DEVICES
@@ -143,27 +117,24 @@ namespace detail
 static constexpr ::cuda::std::size_t max_smem_per_block = 48 * 1024;
 } // namespace detail
 
-template <int NOMINAL_4B_BLOCK_THREADS, int NOMINAL_4B_ITEMS_PER_THREAD, typename T>
+template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename T>
 struct RegBoundScaling
 {
-  enum
-  {
-    ITEMS_PER_THREAD = CUB_MAX(1, NOMINAL_4B_ITEMS_PER_THREAD * 4 / CUB_MAX(4, sizeof(T))),
-    BLOCK_THREADS    = CUB_MIN(NOMINAL_4B_BLOCK_THREADS,
-                            ((cub::detail::max_smem_per_block / (sizeof(T) * ITEMS_PER_THREAD)) + 31) / 32 * 32),
-  };
+  static constexpr int ITEMS_PER_THREAD =
+    (::cuda::std::max)(1, Nominal4ByteItemsPerThread * 4 / (::cuda::std::max)(4, int{sizeof(T)}));
+  static constexpr int BLOCK_THREADS = (::cuda::std::min)(
+    Nominal4ByteBlockThreads,
+    ::cuda::ceil_div(int{detail::max_smem_per_block} / (int{sizeof(T)} * ITEMS_PER_THREAD), 32) * 32);
 };
 
-template <int NOMINAL_4B_BLOCK_THREADS, int NOMINAL_4B_ITEMS_PER_THREAD, typename T>
+template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename T>
 struct MemBoundScaling
 {
-  enum
-  {
-    ITEMS_PER_THREAD =
-      CUB_MAX(1, CUB_MIN(NOMINAL_4B_ITEMS_PER_THREAD * 4 / sizeof(T), NOMINAL_4B_ITEMS_PER_THREAD * 2)),
-    BLOCK_THREADS = CUB_MIN(NOMINAL_4B_BLOCK_THREADS,
-                            ((cub::detail::max_smem_per_block / (sizeof(T) * ITEMS_PER_THREAD)) + 31) / 32 * 32),
-  };
+  static constexpr int ITEMS_PER_THREAD = (::cuda::std::max)(
+    1, (::cuda::std::min)(Nominal4ByteItemsPerThread * 4 / int{sizeof(T)}, Nominal4ByteItemsPerThread * 2));
+  static constexpr int BLOCK_THREADS = (::cuda::std::min)(
+    Nominal4ByteBlockThreads,
+    ::cuda::ceil_div(int{detail::max_smem_per_block} / (int{sizeof(T)} * ITEMS_PER_THREAD), 32) * 32);
 };
 
 #endif // Do not document

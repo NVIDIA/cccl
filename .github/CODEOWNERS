@@ -1,20 +1,29 @@
-# general codeowners for all files
-# (Order matters. This needs to be at the top)
-* @nvidia/cccl-codeowners
-
 # Libraries
-thrust/ @nvidia/cccl-thrust-codeowners @nvidia/cccl-codeowners
-cub/ @nvidia/cccl-cub-codeowners @nvidia/cccl-codeowners
-libcudacxx/ @nvidia/cccl-libcudacxx-codeowners @nvidia/cccl-codeowners
+thrust/ @nvidia/cccl-thrust-codeowners
+cub/ @nvidia/cccl-cub-codeowners
+libcudacxx/ @nvidia/cccl-libcudacxx-codeowners
 cudax/ @nvidia/cccl-cudax-codeowners
 c/ @nvidia/cccl-c-codeowners
 python/ @nvidia/cccl-python-codeowners
 
 # Infrastructure
-.github/ @nvidia/cccl-infra-codeowners @nvidia/cccl-codeowners
-ci/ @nvidia/cccl-infra-codeowners @nvidia/cccl-codeowners
-.devcontainer/ @nvidia/cccl-infra-codeowners @nvidia/cccl-codeowners
+.github/ @nvidia/cccl-infra-codeowners
+ci/ @nvidia/cccl-infra-codeowners
+.devcontainer/ @nvidia/cccl-infra-codeowners
+.pre-commit-config.yaml @nvidia/cccl-infra-codeowners
+.clang-format @nvidia/cccl-infra-codeowners
+.clangd @nvidia/cccl-infra-codeowners
+c2h/ @nvidia/cccl-infra-codeowners
+.vscode @nvidia/cccl-infra-codeowners
 
 # cmake
-**/CMakeLists.txt @nvidia/cccl-cmake-codeowners @nvidia/cccl-codeowners
-**/cmake/ @nvidia/cccl-cmake-codeowners  @nvidia/cccl-codeowners
+**/CMakeLists.txt @nvidia/cccl-cmake-codeowners
+**/cmake/ @nvidia/cccl-cmake-codeowners
+
+# benchmarks
+benchmarks/ @nvidia/cccl-benchmark-codeowners
+**/benchmarks @nvidia/cccl-benchmark-codeowners
+
+# docs
+docs/ @nvidia/cccl-docs-codeowners
+examples/ @nvidia/cccl-docs-codeowners
