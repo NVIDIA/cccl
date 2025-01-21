@@ -26,20 +26,6 @@
 #include <cuda/std/__cccl/os.h>
 #include <cuda/std/__cccl/preprocessor.h>
 
-#if !defined(_CCCL_HAS_NVFP16)
-#  if _CCCL_HAS_INCLUDE(<cuda_fp16.h>) && (_CCCL_HAS_CUDA_COMPILER || defined(LIBCUDACXX_ENABLE_HOST_NVFP16)) \
-                        && !defined(CCCL_DISABLE_FP16_SUPPORT)
-#    define _CCCL_HAS_NVFP16 1
-#  endif
-#endif // !_CCCL_HAS_NVFP16
-
-#if !defined(_CCCL_HAS_NVBF16)
-#  if _CCCL_HAS_INCLUDE(<cuda_bf16.h>) && defined(_CCCL_HAS_NVFP16) && !defined(CCCL_DISABLE_BF16_SUPPORT) \
-                        && !defined(CUB_DISABLE_BF16_SUPPORT)
-#    define _CCCL_HAS_NVBF16 1
-#  endif
-#endif // !_CCCL_HAS_NVBF16
-
 #if !defined(_CCCL_DISABLE_INT128)
 #  if defined(__SIZEOF_INT128__) // defined(__SIZEOF_INT128__) vvvv
 #    if _CCCL_COMPILER(NVRTC) && defined(__CUDACC_RTC_INT128__) && _CCCL_OS(LINUX)
@@ -55,6 +41,30 @@
 #else
 #  define _CCCL_HAS_INT128() 0
 #endif // #if !defined(_CCCL_DISABLE_INT128)
+
+#if !defined(_CCCL_DISABLE_NVFP8_SUPPORT)
+#  if _CCCL_HAS_INCLUDE(<cuda_fp8.h>)
+#    define _CCCL_HAS_NVFP8() 1
+#  else
+#    define _CCCL_HAS_NVFP8() 0
+#  endif // _CCCL_CUDACC_AT_LEAST(11, 8) && _CCCL_HAS_INCLUDE(<cuda_fp8.h>)
+#else
+#  define _CCCL_HAS_NVFP8() 0
+#endif // !defined(_CCCL_DISABLE_NVFP8_SUPPORT)
+
+#if !defined(_CCCL_HAS_NVFP16)
+#  if _CCCL_HAS_INCLUDE(<cuda_fp16.h>) && (_CCCL_HAS_CUDA_COMPILER || defined(LIBCUDACXX_ENABLE_HOST_NVFP16)) \
+                        && !defined(CCCL_DISABLE_FP16_SUPPORT)
+#    define _CCCL_HAS_NVFP16 1
+#  endif
+#endif // !_CCCL_HAS_NVFP16
+
+#if !defined(_CCCL_HAS_NVBF16)
+#  if _CCCL_HAS_INCLUDE(<cuda_bf16.h>) && defined(_CCCL_HAS_NVFP16) && !defined(CCCL_DISABLE_BF16_SUPPORT) \
+                        && !defined(CUB_DISABLE_BF16_SUPPORT)
+#    define _CCCL_HAS_NVBF16 1
+#  endif
+#endif // !_CCCL_HAS_NVBF16
 
 #if !defined(_CCCL_DISABLE_FLOAT128)
 #  if (defined(__SIZEOF_FLOAT128__) || defined(__FLOAT128__)) && _CCCL_OS(LINUX)                          \
