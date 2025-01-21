@@ -47,6 +47,8 @@
 #include <c2h/device_policy.h>
 #include <c2h/vector.h>
 
+// note: there is no matching _CCCL_SUPPRESS_DEPRECATED_POP at the end of the file so warnings coming from
+// cudafe1.stub.c file are suppressed as well
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 bool g_verbose = false;
@@ -607,5 +609,3 @@ int main(int argc, char** argv)
 
   test_types();
 }
-
-_CCCL_SUPPRESS_DEPRECATED_POP

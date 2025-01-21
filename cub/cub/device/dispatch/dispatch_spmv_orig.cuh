@@ -62,6 +62,7 @@
 
 #include <nv/target>
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -1030,4 +1031,5 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DispatchSpmv
 #endif // _CCCL_DOXYGEN_INVOKED
 };
 
+_CCCL_SUPPRESS_DEPRECATED_POP
 CUB_NAMESPACE_END
