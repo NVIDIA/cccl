@@ -32,6 +32,8 @@
 
 #include <cuda/std/utility>
 
+#include <stdexcept>
+
 THRUST_NAMESPACE_BEGIN
 
 namespace detail
@@ -112,11 +114,11 @@ public:
   _CCCL_HOST_DEVICE void deallocate() noexcept;
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE void swap(contiguous_storage& x)
+  _CCCL_HOST_DEVICE void swap(contiguous_storage& other)
   {
     using ::cuda::std::swap;
-    swap(m_begin, x.m_begin);
-    swap(m_size, x.m_size);
+    swap(m_begin, other.m_begin);
+    swap(m_size, other.m_size);
 
     // From C++ standard [container.reqmts]
     //   If allocator_traits<allocator_type>::propagate_on_container_swap::value is true, then allocator_type
@@ -125,11 +127,11 @@ public:
     //   is undefined unless a.get_allocator() == b.get_allocator().
     if constexpr (allocator_traits<Alloc>::propagate_on_container_swap::value)
     {
-      swap(m_allocator, x.m_allocator);
+      swap(m_allocator, other.m_allocator);
     }
     else if constexpr (!allocator_traits<Alloc>::is_always_equal::value)
     {
-      NV_IF_TARGET(NV_IS_DEVICE, (assert(m_allocator == other);), (if (m_allocator != x.m_allocator) {
+      NV_IF_TARGET(NV_IS_DEVICE, (assert(m_allocator == other);), (if (m_allocator != other.m_allocator) {
                      throw allocator_mismatch_on_swap();
                    }));
     }
@@ -178,6 +180,10 @@ public:
         destroy(first, last);
       }
     }
+#if _CCCL_COMPILER(GCC, <, 10)
+    (void) first;
+    (void) last;
+#endif
   }
 
   _CCCL_HOST_DEVICE void set_allocator(const allocator_type& alloc);
