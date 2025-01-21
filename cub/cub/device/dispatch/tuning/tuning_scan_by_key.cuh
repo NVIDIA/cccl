@@ -714,7 +714,7 @@ template <typename KeysInputIteratorT, typename AccumT, typename ValueT, typenam
 struct policy_hub
 {
   using key_t                               = value_t<KeysInputIteratorT>;
-  static constexpr int max_input_bytes      = static_cast<int>(::cuda::std::max(sizeof(key_t), sizeof(AccumT)));
+  static constexpr int max_input_bytes      = static_cast<int>((::cuda::std::max)(sizeof(key_t), sizeof(AccumT)));
   static constexpr int combined_input_bytes = static_cast<int>(sizeof(key_t) + sizeof(AccumT));
 
   struct Policy350 : ChainedPolicy<350, Policy350, Policy350>

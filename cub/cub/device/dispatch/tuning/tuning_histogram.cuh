@@ -133,7 +133,7 @@ struct policy_hub
 
   static constexpr int t_scale(int nominalItemsPerThread)
   {
-    return ::cuda::std::max(nominalItemsPerThread / NumActiveChannels / v_scale, 1);
+    return (::cuda::std::max)(nominalItemsPerThread / NumActiveChannels / v_scale, 1);
   }
 
   // SM35

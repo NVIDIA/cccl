@@ -118,7 +118,7 @@ _CCCL_DEVICE void transform_kernel_impl(
   constexpr int block_dim = PrefetchPolicy::block_threads;
   const int tile_stride   = block_dim * num_elem_per_thread;
   const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_stride;
-  const int tile_size     = static_cast<int>(::cuda::std::min(num_items - offset, Offset{tile_stride}));
+  const int tile_size     = static_cast<int>((::cuda::std::min)(num_items - offset, Offset{tile_stride}));
 
   // move index and iterator domain to the block/thread index, to reduce arithmetic in the loops below
   {
@@ -329,7 +329,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   constexpr int block_dim = BulkCopyPolicy::block_threads;
   const int tile_stride   = block_dim * num_elem_per_thread;
   const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_stride;
-  const int tile_size     = ::cuda::std::min(num_items - offset, Offset{tile_stride});
+  const int tile_size     = (::cuda::std::min)(num_items - offset, Offset{tile_stride});
 
   const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
   if (inner_blocks)
@@ -812,7 +812,7 @@ struct dispatch_t<RequiresStableAddress,
 
     // but also generate enough blocks for full occupancy to optimize small problem sizes, e.g., 2^16 or 2^20 elements
     const int items_per_thread_evenly_spread = static_cast<int>(
-      ::cuda::std::min(Offset{items_per_thread}, num_items / (config->sm_count * block_dim * config->max_occupancy)));
+      (::cuda::std::min)(Offset{items_per_thread}, num_items / (config->sm_count * block_dim * config->max_occupancy)));
 
     const int items_per_thread_clamped = ::cuda::std::clamp(
       items_per_thread_evenly_spread, +policy_t::min_items_per_thread, +policy_t::max_items_per_thread);

@@ -69,7 +69,7 @@ struct segment_iterator
 
   __host__ __device__ OffsetT operator()(std::int64_t x) const
   {
-    return ::cuda::std::min(last, x * Step);
+    return (::cuda::std::min)(last, x * Step);
   }
 };
 
