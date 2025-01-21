@@ -51,7 +51,8 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_popc(uint64_t __x) noexcept
   return __count;
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI int __runtime_popc(uint32_t __x) noexcept
+// constexpr is required for GCC8
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_popc(uint32_t __x) noexcept
 {
 #if defined(__CUDA_ARCH__)
   return ::__popc(__x);
@@ -64,7 +65,8 @@ _LIBCUDACXX_HIDE_FROM_ABI int __runtime_popc(uint32_t __x) noexcept
 #endif // !_CCCL_COMPILER(MSVC) ^^^
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI int __runtime_popc(uint64_t __x) noexcept
+// constexpr is required for GCC8
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_popc(uint64_t __x) noexcept
 {
 #if defined(__CUDA_ARCH__)
   return ::__popcll(__x);

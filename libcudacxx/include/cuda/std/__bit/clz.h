@@ -54,6 +54,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_clz(uint64_t __x) noexcept
   return 64;
 }
 
+// constexpr is required for GCC8
 _LIBCUDACXX_HIDE_FROM_ABI int __runtime_clz(uint32_t __x) noexcept
 {
 #if defined(__CUDA_ARCH__)
@@ -70,6 +71,7 @@ _LIBCUDACXX_HIDE_FROM_ABI int __runtime_clz(uint32_t __x) noexcept
 #endif // _CCCL_COMPILER(MSVC)
 }
 
+// constexpr is required for GCC8
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_clz(uint64_t __x) noexcept
 {
 #if defined(__CUDA_ARCH__)
