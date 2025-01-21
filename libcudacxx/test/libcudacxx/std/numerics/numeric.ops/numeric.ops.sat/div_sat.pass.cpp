@@ -87,7 +87,7 @@ __host__ __device__ constexpr bool test_signed(int zero_value)
 }
 
 template <class I>
-__host__ __device__ constexpr bool test_unsigned(I zero_value)
+__host__ __device__ constexpr bool test_unsigned(int zero_value)
 {
   constexpr auto minVal = cuda::std::numeric_limits<I>::min();
   constexpr auto maxVal = cuda::std::numeric_limits<I>::max();
