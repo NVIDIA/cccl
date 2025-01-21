@@ -220,16 +220,16 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT::BLOCK
 {
   // Thread block type for compositing input tiles
   using AgentHistogramPolicyT = typename ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT;
-  using AgentHistogramT =
-    AgentHistogram<AgentHistogramPolicyT,
-                   PRIVATIZED_SMEM_BINS,
-                   NUM_CHANNELS,
-                   NUM_ACTIVE_CHANNELS,
-                   SampleIteratorT,
-                   CounterT,
-                   PrivatizedDecodeOpT,
-                   OutputDecodeOpT,
-                   OffsetT>;
+  using AgentHistogramT       = detail::histogram::AgentHistogram<
+          AgentHistogramPolicyT,
+          PRIVATIZED_SMEM_BINS,
+          NUM_CHANNELS,
+          NUM_ACTIVE_CHANNELS,
+          SampleIteratorT,
+          CounterT,
+          PrivatizedDecodeOpT,
+          OutputDecodeOpT,
+          OffsetT>;
 
   // Shared memory for AgentHistogram
   __shared__ typename AgentHistogramT::TempStorage temp_storage;
