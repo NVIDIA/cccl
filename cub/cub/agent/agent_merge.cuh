@@ -22,7 +22,8 @@
 
 #include <thrust/system/cuda/detail/core/util.h>
 
-#include <cuda/std/__cccl/dialect.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
@@ -116,7 +117,7 @@ struct agent_t
     const Offset partition_end = merge_partitions[tile_idx + 1];
 
     const Offset diag0 = items_per_tile * tile_idx;
-    const Offset diag1 = (cub::min)(keys1_count + keys2_count, diag0 + items_per_tile);
+    const Offset diag1 = (::cuda::std::min)(keys1_count + keys2_count, diag0 + items_per_tile);
 
     // compute bounding box for keys1 & keys2
     const Offset keys1_beg = partition_beg;
@@ -136,7 +137,7 @@ struct agent_t
 
     // use binary search in shared memory to find merge path for each of thread.
     // we can use int type here, because the number of items in shared memory is limited
-    const int diag0_loc = min<int>(num_keys1 + num_keys2, items_per_thread * threadIdx.x);
+    const int diag0_loc = (::cuda::std::min)(num_keys1 + num_keys2, static_cast<int>(items_per_thread * threadIdx.x));
 
     const int keys1_beg_loc =
       MergePath(&storage.keys_shared[0], &storage.keys_shared[num_keys1], num_keys1, num_keys2, diag0_loc, compare_op);
@@ -215,7 +216,7 @@ struct agent_t
     const Offset tile_base = tile_idx * items_per_tile;
     // TODO(bgruber): random mixing of int and Offset
     const int items_in_tile =
-      static_cast<int>(cub::min(static_cast<Offset>(items_per_tile), keys1_count + keys2_count - tile_base));
+      static_cast<int>((::cuda::std::min)(static_cast<Offset>(items_per_tile), keys1_count + keys2_count - tile_base));
     if (items_in_tile == items_per_tile)
     {
       consume_tile<true>(tile_idx, tile_base, items_per_tile); // full tile
