@@ -83,8 +83,6 @@ template <class T>
 struct reduce_max_exists<T, decltype(__reduce_max_sync(0xFFFFFFFF, T{}))> : ::cuda::std::true_type
 {};
 
-} // namespace detail
-
 /**
  * @brief WarpReduceShfl provides SHFL-based variants of parallel reduction of items partitioned
  *        across a CUDA thread warp.
@@ -739,5 +737,11 @@ struct WarpReduceShfl
     return output;
   }
 };
+} // namespace detail
+
+template <typename T, int LOGICAL_WARP_THREADS, int LEGACY_PTX_ARCH = 0>
+using WarpReduceShfl CCCL_DEPRECATED_BECAUSE(
+  "This class is considered an implementation detail and the public interface will be "
+  "removed.") = detail::WarpReduceShfl<T, LOGICAL_WARP_THREADS, LEGACY_PTX_ARCH>;
 
 CUB_NAMESPACE_END
