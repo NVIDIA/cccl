@@ -11,6 +11,8 @@
 #  include <thrust/system/cuda/detail/par.h>
 #endif
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 template <typename T>
 struct test_allocator_t
 {};
@@ -113,3 +115,5 @@ SimpleUnitTest<TestDependencyAttachment,
 #endif
                  >>
   TestDependencyAttachmentInstance;
+
+_CCCL_SUPPRESS_DEPRECATED_POP

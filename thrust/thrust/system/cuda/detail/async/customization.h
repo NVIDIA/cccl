@@ -86,9 +86,9 @@ auto get_async_device_allocator(thrust::detail::execution_policy_base<DerivedPol
       THRUST_RETURNS(exec.get_allocator())
 
         template <typename Allocator, template <typename> class BaseSystem>
-        auto get_async_device_allocator(
-          thrust::detail::execute_with_allocator_and_dependencies<Allocator, BaseSystem>& exec)
-          THRUST_RETURNS(exec.get_allocator())
+        CCCL_DEPRECATED
+  auto get_async_device_allocator(thrust::detail::execute_with_allocator_and_dependencies<Allocator, BaseSystem>& exec)
+    THRUST_RETURNS(exec.get_allocator())
 
   ///////////////////////////////////////////////////////////////////////////////
 
