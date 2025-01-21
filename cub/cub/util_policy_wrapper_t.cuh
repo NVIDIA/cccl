@@ -50,6 +50,6 @@ struct policy_wrapper_t : PolicyT
 };
 } // namespace detail
 
-#endif
+#endif // _CCCL_DOXYGEN_INVOKED
 
 CUB_NAMESPACE_END
