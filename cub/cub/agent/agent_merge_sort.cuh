@@ -45,10 +45,9 @@
 
 #include <thrust/system/cuda/detail/core/load_iterator.h>
 
-#include <cuda/std/__cccl/cuda_capabilities.h>
-
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cccl/cuda_capabilities.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -88,7 +87,7 @@ struct AgentBlockSort
   // Types and constants
   //---------------------------------------------------------------------
 
-  static constexpr bool KEYS_ONLY = ::cuda::std::is_same<ValueT, NullType>::value;
+  static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
   using BlockMergeSortT = BlockMergeSort<KeyT, Policy::BLOCK_THREADS, Policy::ITEMS_PER_THREAD, ValueT>;
 
@@ -471,7 +470,7 @@ struct AgentMerge
   struct TempStorage : Uninitialized<_TempStorage>
   {};
 
-  static constexpr bool KEYS_ONLY       = ::cuda::std::is_same<ValueT, NullType>::value;
+  static constexpr bool KEYS_ONLY       = ::cuda::std::is_same_v<ValueT, NullType>;
   static constexpr int BLOCK_THREADS    = Policy::BLOCK_THREADS;
   static constexpr int ITEMS_PER_THREAD = Policy::ITEMS_PER_THREAD;
   static constexpr int ITEMS_PER_TILE   = Policy::ITEMS_PER_TILE;
