@@ -115,7 +115,7 @@
 #  define _CCCL_BUILTIN_PREFETCH(...) NV_IF_TARGET(NV_IS_HOST, __builtin_prefetch(__VA_ARGS__);)
 #else
 #  define _CCCL_BUILTIN_PREFETCH(...)
-#endif // _CCCL_CHECK_BUILTIN(builtin_assume)
+#endif // _CCCL_CHECK_BUILTIN(builtin_prefetch)
 
 // NVCC prior to 11.2 cannot handle __builtin_assume
 #if _CCCL_CUDACC_BELOW(11, 2)
