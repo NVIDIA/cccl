@@ -58,6 +58,7 @@ public:
     return alloc;
   }
 
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   template <typename... Dependencies>
   CCCL_DEPRECATED _CCCL_HOST execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>
   after(Dependencies&&... dependencies) const
@@ -97,6 +98,7 @@ public:
   {
     return {alloc, capture_as_dependency(std::move(dependencies))};
   }
+  _CCCL_SUPPRESS_DEPRECATED_POP
 };
 
 } // namespace detail

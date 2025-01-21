@@ -32,6 +32,7 @@
 #include <tuple>
 #include <type_traits>
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 THRUST_NAMESPACE_BEGIN
 
 namespace detail
@@ -220,4 +221,5 @@ CCCL_DEPRECATED _CCCL_HOST std::tuple<> extract_dependencies(System&&)
 
 } // namespace detail
 
+_CCCL_SUPPRESS_DEPRECATED_POP
 THRUST_NAMESPACE_END

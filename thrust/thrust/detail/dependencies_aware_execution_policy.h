@@ -29,6 +29,7 @@
 
 #include <tuple>
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 THRUST_NAMESPACE_BEGIN
 
 namespace detail
@@ -78,4 +79,5 @@ rebind_after(std::tuple<Dependencies...>&& dependencies) const
 
 } // namespace detail
 
+_CCCL_SUPPRESS_DEPRECATED_POP
 THRUST_NAMESPACE_END
