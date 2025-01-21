@@ -282,7 +282,7 @@ struct reduce_into_fn final
                 THRUST_FWD(output),
                 typename iterator_traits<::cuda::std::remove_cvref_t<ForwardIt>>::value_type{},
                 thrust::plus<::cuda::std::remove_cvref_t<
-                    typename iterator_traits<::cuda::std::remove_cvref_t<ForwardIt>>::value_type>>{}))
+                  typename iterator_traits<::cuda::std::remove_cvref_t<ForwardIt>>::value_type>>{}))
 
     // MSVC WAR: MSVC gets angsty and eats all available RAM when we try to detect
     // if T1 is an execution_policy by using SFINAE. Switching to a static

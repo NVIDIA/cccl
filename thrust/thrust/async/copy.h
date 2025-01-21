@@ -100,7 +100,7 @@ struct copy_fn final
         // try and extract twice from the one we were passed.
         ,
         typename ::cuda::std::remove_cvref_t<
-            decltype(thrust::detail::derived_cast(thrust::detail::strip_const(exec)))>::tag_type{},
+          decltype(thrust::detail::derived_cast(thrust::detail::strip_const(exec)))>::tag_type{},
         THRUST_FWD(first),
         THRUST_FWD(last),
         THRUST_FWD(output)))
@@ -108,9 +108,8 @@ struct copy_fn final
         template <typename ForwardIt, typename Sentinel, typename OutputIt>
         _CCCL_HOST static auto call(ForwardIt&& first, Sentinel&& last, OutputIt&& output) THRUST_RETURNS(copy_fn::call(
           thrust::detail::select_system(
-                typename thrust::iterator_system<::cuda::std::remove_cvref_t<ForwardIt>>::type{}),
-          thrust::detail::select_system(
-                typename thrust::iterator_system<::cuda::std::remove_cvref_t<OutputIt>>::type{}),
+            typename thrust::iterator_system<::cuda::std::remove_cvref_t<ForwardIt>>::type{}),
+          thrust::detail::select_system(typename thrust::iterator_system<::cuda::std::remove_cvref_t<OutputIt>>::type{}),
           THRUST_FWD(first),
           THRUST_FWD(last),
           THRUST_FWD(output)))
