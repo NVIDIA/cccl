@@ -80,16 +80,16 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceDifferenceKernel(
   // `operator()` function of `__device__` extended lambda within device code.
   using OutputT = detail::invoke_result_t<DifferenceOpT, InputT, InputT>;
 
-  using Agent =
-    AgentDifference<ActivePolicyT,
-                    InputIteratorT,
-                    OutputIteratorT,
-                    DifferenceOpT,
-                    OffsetT,
-                    InputT,
-                    OutputT,
-                    MayAlias,
-                    ReadLeft>;
+  using Agent = detail::adjacent_difference::AgentDifference<
+    ActivePolicyT,
+    InputIteratorT,
+    OutputIteratorT,
+    DifferenceOpT,
+    OffsetT,
+    InputT,
+    OutputT,
+    MayAlias,
+    ReadLeft>;
 
   __shared__ typename Agent::TempStorage storage;
 
@@ -184,7 +184,8 @@ struct DispatchAdjacentDifference
 
       if (MayAlias)
       {
-        using AgentDifferenceInitT = AgentDifferenceInit<InputIteratorT, InputT, OffsetT, ReadLeft>;
+        using AgentDifferenceInitT =
+          detail::adjacent_difference::AgentDifferenceInit<InputIteratorT, InputT, OffsetT, ReadLeft>;
 
         constexpr int init_block_size = AgentDifferenceInitT::BLOCK_THREADS;
         const int init_grid_size      = ::cuda::ceil_div(num_tiles, init_block_size);

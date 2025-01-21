@@ -92,6 +92,11 @@ struct AgentUniqueByKeyPolicy
  * Thread block abstractions
  ******************************************************************************/
 
+namespace detail
+{
+namespace unique_by_key
+{
+
 /**
  * @brief AgentUniqueByKey implements a stateful abstraction of CUDA thread blocks for participating
  * in device-wide unique-by-key
@@ -605,5 +610,26 @@ struct AgentUniqueByKey
     }
   }
 };
+
+} // namespace unique_by_key
+} // namespace detail
+
+template <typename AgentUniqueByKeyPolicyT,
+          typename KeyInputIteratorT,
+          typename ValueInputIteratorT,
+          typename KeyOutputIteratorT,
+          typename ValueOutputIteratorT,
+          typename EqualityOpT,
+          typename OffsetT>
+using AgentUniqueByKey CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
+                                               "interface will be removed.") =
+  detail::unique_by_key::AgentUniqueByKey<
+    AgentUniqueByKeyPolicyT,
+    KeyInputIteratorT,
+    ValueInputIteratorT,
+    KeyOutputIteratorT,
+    ValueOutputIteratorT,
+    EqualityOpT,
+    OffsetT>;
 
 CUB_NAMESPACE_END

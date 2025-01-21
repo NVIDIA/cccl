@@ -49,24 +49,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-#  define CUB_PREVENT_MACRO_SUBSTITUTION
-template <typename T, typename U>
-constexpr _CCCL_HOST_DEVICE auto min CUB_PREVENT_MACRO_SUBSTITUTION(T&& t, U&& u)
-  -> decltype(t < u ? ::cuda::std::forward<T>(t) : ::cuda::std::forward<U>(u))
-{
-  return t < u ? ::cuda::std::forward<T>(t) : ::cuda::std::forward<U>(u);
-}
-
-template <typename T, typename U>
-constexpr _CCCL_HOST_DEVICE auto max CUB_PREVENT_MACRO_SUBSTITUTION(T&& t, U&& u)
-  -> decltype(t < u ? ::cuda::std::forward<U>(u) : ::cuda::std::forward<T>(t))
-{
-  return t < u ? ::cuda::std::forward<U>(u) : ::cuda::std::forward<T>(t);
-}
-#  undef CUB_PREVENT_MACRO_SUBSTITUTION
-#endif
-
 #ifndef CUB_MAX
 /// Select maximum(a, b)
 #  define CUB_MAX(a, b) (((b) > (a)) ? (b) : (a))

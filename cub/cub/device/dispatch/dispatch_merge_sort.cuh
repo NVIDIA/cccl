@@ -48,6 +48,8 @@
 #include <thrust/detail/integer_math.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
@@ -174,7 +176,7 @@ struct DispatchMergeSort
        */
       const std::size_t block_sort_smem_size       = num_tiles * BlockSortVSmemHelperT::vsmem_per_block;
       const std::size_t merge_smem_size            = num_tiles * MergeAgentVSmemHelperT::vsmem_per_block;
-      const std::size_t virtual_shared_memory_size = (cub::max)(block_sort_smem_size, merge_smem_size);
+      const std::size_t virtual_shared_memory_size = (::cuda::std::max)(block_sort_smem_size, merge_smem_size);
 
       void* allocations[4]            = {nullptr, nullptr, nullptr, nullptr};
       std::size_t allocation_sizes[4] = {

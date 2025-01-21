@@ -68,8 +68,8 @@ unique_eager_event
 async_inclusive_scan_n(execution_policy<DerivedPolicy>& policy, ForwardIt first, Size n, OutputIt out, BinaryOp op)
 {
   using AccumT     = typename thrust::iterator_traits<ForwardIt>::value_type;
-  using Dispatch32 = cub::DispatchScan<ForwardIt, OutputIt, BinaryOp, cub::NullType, std::int32_t, AccumT>;
-  using Dispatch64 = cub::DispatchScan<ForwardIt, OutputIt, BinaryOp, cub::NullType, std::int64_t, AccumT>;
+  using Dispatch32 = cub::DispatchScan<ForwardIt, OutputIt, BinaryOp, cub::NullType, std::uint32_t, AccumT>;
+  using Dispatch64 = cub::DispatchScan<ForwardIt, OutputIt, BinaryOp, cub::NullType, std::uint64_t, AccumT>;
 
   auto const device_alloc = get_async_device_allocator(policy);
   unique_eager_event ev;
@@ -78,7 +78,7 @@ async_inclusive_scan_n(execution_policy<DerivedPolicy>& policy, ForwardIt first,
   cudaError_t status;
   size_t tmp_size = 0;
   {
-    THRUST_INDEX_TYPE_DISPATCH2(
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
       status,
       Dispatch32::Dispatch,
       Dispatch64::Dispatch,
