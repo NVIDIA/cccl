@@ -150,16 +150,16 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanByKeyPolicyT::BLOCK_THRE
   using ScanByKeyPolicyT = typename ChainedPolicyT::ActivePolicy::ScanByKeyPolicyT;
 
   // Thread block type for scanning input tiles
-  using AgentScanByKeyT =
-    AgentScanByKey<ScanByKeyPolicyT,
-                   KeysInputIteratorT,
-                   ValuesInputIteratorT,
-                   ValuesOutputIteratorT,
-                   EqualityOp,
-                   ScanOpT,
-                   InitValueT,
-                   OffsetT,
-                   AccumT>;
+  using AgentScanByKeyT = detail::scan_by_key::AgentScanByKey<
+    ScanByKeyPolicyT,
+    KeysInputIteratorT,
+    ValuesInputIteratorT,
+    ValuesOutputIteratorT,
+    EqualityOp,
+    ScanOpT,
+    InitValueT,
+    OffsetT,
+    AccumT>;
 
   // Shared memory for AgentScanByKey
   __shared__ typename AgentScanByKeyT::TempStorage temp_storage;

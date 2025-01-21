@@ -94,6 +94,11 @@ struct AgentScanByKeyPolicy
  * Thread block abstractions
  ******************************************************************************/
 
+namespace detail
+{
+namespace scan_by_key
+{
+
 /**
  * @brief AgentScanByKey implements a stateful abstraction of CUDA thread
  *        blocks for participating in device-wide prefix scan by key.
@@ -140,10 +145,10 @@ struct AgentScanByKey
   // Types and constants
   //---------------------------------------------------------------------
 
-  using KeyT               = cub::detail::value_t<KeysInputIteratorT>;
-  using InputT             = cub::detail::value_t<ValuesInputIteratorT>;
+  using KeyT               = value_t<KeysInputIteratorT>;
+  using InputT             = value_t<ValuesInputIteratorT>;
   using FlagValuePairT     = KeyValuePair<int, AccumT>;
-  using ReduceBySegmentOpT = detail::ScanBySegmentOp<ScanOpT>;
+  using ReduceBySegmentOpT = ScanBySegmentOp<ScanOpT>;
 
   using ScanTileStateT = ReduceByKeyScanTileState<AccumT, int>;
 
@@ -459,5 +464,30 @@ struct AgentScanByKey
     }
   }
 };
+
+} // namespace scan_by_key
+} // namespace detail
+
+template <typename AgentScanByKeyPolicyT,
+          typename KeysInputIteratorT,
+          typename ValuesInputIteratorT,
+          typename ValuesOutputIteratorT,
+          typename EqualityOp,
+          typename ScanOpT,
+          typename InitValueT,
+          typename OffsetT,
+          typename AccumT>
+using AgentScanByKey CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
+                                             "interface will be removed.") =
+  detail::scan_by_key::AgentScanByKey<
+    AgentScanByKeyPolicyT,
+    KeysInputIteratorT,
+    ValuesInputIteratorT,
+    ValuesOutputIteratorT,
+    EqualityOp,
+    ScanOpT,
+    InitValueT,
+    OffsetT,
+    AccumT>;
 
 CUB_NAMESPACE_END

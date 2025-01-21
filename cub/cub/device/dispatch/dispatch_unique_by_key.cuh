@@ -128,7 +128,7 @@ template <typename ChainedPolicyT,
 __launch_bounds__(int(
   cub::detail::vsmem_helper_default_fallback_policy_t<
     typename ChainedPolicyT::ActivePolicy::UniqueByKeyPolicyT,
-    AgentUniqueByKey,
+    detail::unique_by_key::AgentUniqueByKey,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyOutputIteratorT,
@@ -149,7 +149,7 @@ __launch_bounds__(int(
 {
   using VsmemHelperT = cub::detail::vsmem_helper_default_fallback_policy_t<
     typename ChainedPolicyT::ActivePolicy::UniqueByKeyPolicyT,
-    AgentUniqueByKey,
+    detail::unique_by_key::AgentUniqueByKey,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyOutputIteratorT,
@@ -333,7 +333,7 @@ struct DispatchUniqueByKey
 
     using VsmemHelperT = cub::detail::vsmem_helper_default_fallback_policy_t<
       Policy,
-      AgentUniqueByKey,
+      detail::unique_by_key::AgentUniqueByKey,
       KeyInputIteratorT,
       ValueInputIteratorT,
       KeyOutputIteratorT,
