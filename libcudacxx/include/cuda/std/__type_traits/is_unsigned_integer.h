@@ -23,27 +23,27 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <typename>
-inline constexpr bool __cccl_is_unsigned_integer_v = false;
+_CCCL_INLINE_VAR constexpr bool __cccl_is_unsigned_integer_v = false;
 
 template <>
-inline constexpr bool __cccl_is_unsigned_integer_v<unsigned char> = true;
+_CCCL_INLINE_VAR constexpr bool __cccl_is_unsigned_integer_v<unsigned char> = true;
 
 template <>
-inline constexpr bool __cccl_is_unsigned_integer_v<unsigned short> = true;
+_CCCL_INLINE_VAR constexpr bool __cccl_is_unsigned_integer_v<unsigned short> = true;
 
 template <>
-inline constexpr bool __cccl_is_unsigned_integer_v<unsigned int> = true;
+_CCCL_INLINE_VAR constexpr bool __cccl_is_unsigned_integer_v<unsigned int> = true;
 
 template <>
-inline constexpr bool __cccl_is_unsigned_integer_v<unsigned long> = true;
+_CCCL_INLINE_VAR constexpr bool __cccl_is_unsigned_integer_v<unsigned long> = true;
 
 template <>
-inline constexpr bool __cccl_is_unsigned_integer_v<unsigned long long> = true;
+_CCCL_INLINE_VAR constexpr bool __cccl_is_unsigned_integer_v<unsigned long long> = true;
 
 #ifndef _LIBCUDACXX_HAS_NO_INT128
 
 template <>
-inline constexpr bool __cccl_is_unsigned_integer_v<__uint128_t> = true;
+_CCCL_INLINE_VAR constexpr bool __cccl_is_unsigned_integer_v<__uint128_t> = true;
 
 #endif
 
