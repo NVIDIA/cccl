@@ -54,7 +54,7 @@ namespace unimplemented
 {
 
 template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename T, typename BinaryOp>
-_CCCL_HOST future<DerivedPolicy, T>
+CCCL_DEPRECATED _CCCL_HOST future<DerivedPolicy, T>
 async_reduce(thrust::execution_policy<DerivedPolicy>&, ForwardIt, Sentinel, T, BinaryOp)
 {
   THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<ForwardIt, false>::value),
@@ -71,6 +71,7 @@ using thrust::async::unimplemented::async_reduce;
 
 struct reduce_fn final
 {
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename T, typename BinaryOp>
   _CCCL_HOST static auto
   call(thrust::detail::execution_policy_base<DerivedPolicy> const& exec,
@@ -84,28 +85,28 @@ struct reduce_fn final
       THRUST_FWD(first),
       THRUST_FWD(last),
       THRUST_FWD(init),
-      THRUST_FWD(op)))
+      THRUST_FWD(op))) _CCCL_SUPPRESS_DEPRECATED_POP
 
-      template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename T>
-      _CCCL_HOST static auto call4(
-        thrust::detail::execution_policy_base<DerivedPolicy> const& exec,
-        ForwardIt&& first,
-        Sentinel&& last,
-        T&& init,
-        thrust::true_type)
+    _CCCL_SUPPRESS_DEPRECATED_PUSH template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename T>
+    _CCCL_HOST static auto call4(
+      thrust::detail::execution_policy_base<DerivedPolicy> const& exec,
+      ForwardIt&& first,
+      Sentinel&& last,
+      T&& init,
+      thrust::true_type)
     // ADL dispatch.
     THRUST_RETURNS(async_reduce(
       thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
       THRUST_FWD(first),
       THRUST_FWD(last),
       THRUST_FWD(init),
-      thrust::plus<::cuda::std::remove_cvref_t<T>>{}))
+      thrust::plus<::cuda::std::remove_cvref_t<T>>{})) _CCCL_SUPPRESS_DEPRECATED_POP
 
-      template <typename DerivedPolicy, typename ForwardIt, typename Sentinel>
-      _CCCL_HOST static auto call3(thrust::detail::execution_policy_base<DerivedPolicy> const& exec,
-                                   ForwardIt&& first,
-                                   Sentinel&& last,
-                                   thrust::true_type)
+    _CCCL_SUPPRESS_DEPRECATED_PUSH template <typename DerivedPolicy, typename ForwardIt, typename Sentinel>
+    _CCCL_HOST static auto call3(thrust::detail::execution_policy_base<DerivedPolicy> const& exec,
+                                 ForwardIt&& first,
+                                 Sentinel&& last,
+                                 thrust::true_type)
     // ADL dispatch.
     THRUST_RETURNS(async_reduce(
       thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
@@ -114,24 +115,25 @@ struct reduce_fn final
       typename iterator_traits<::cuda::std::remove_cvref_t<ForwardIt>>::value_type{},
       thrust::plus<
         ::cuda::std::remove_cvref_t<typename iterator_traits<::cuda::std::remove_cvref_t<ForwardIt>>::value_type>>{}))
+      _CCCL_SUPPRESS_DEPRECATED_POP
 
-      template <typename ForwardIt, typename Sentinel, typename T, typename BinaryOp>
-      _CCCL_HOST static auto call4(ForwardIt&& first, Sentinel&& last, T&& init, BinaryOp&& op, thrust::false_type)
-        THRUST_RETURNS(reduce_fn::call(
-          thrust::detail::select_system(typename iterator_system<::cuda::std::remove_cvref_t<ForwardIt>>::type{}),
-          THRUST_FWD(first),
-          THRUST_FWD(last),
-          THRUST_FWD(init),
-          THRUST_FWD(op)))
+    template <typename ForwardIt, typename Sentinel, typename T, typename BinaryOp>
+    _CCCL_HOST static auto call4(ForwardIt&& first, Sentinel&& last, T&& init, BinaryOp&& op, thrust::false_type)
+      THRUST_RETURNS(reduce_fn::call(
+        thrust::detail::select_system(typename iterator_system<::cuda::std::remove_cvref_t<ForwardIt>>::type{}),
+        THRUST_FWD(first),
+        THRUST_FWD(last),
+        THRUST_FWD(init),
+        THRUST_FWD(op)))
 
-          template <typename ForwardIt, typename Sentinel, typename T>
-          _CCCL_HOST static auto call3(ForwardIt&& first, Sentinel&& last, T&& init, thrust::false_type)
-            THRUST_RETURNS(reduce_fn::call(
-              thrust::detail::select_system(typename iterator_system<::cuda::std::remove_cvref_t<ForwardIt>>::type{}),
-              THRUST_FWD(first),
-              THRUST_FWD(last),
-              THRUST_FWD(init),
-              thrust::plus<::cuda::std::remove_cvref_t<T>>{}))
+        template <typename ForwardIt, typename Sentinel, typename T>
+        _CCCL_HOST static auto call3(ForwardIt&& first, Sentinel&& last, T&& init, thrust::false_type)
+          THRUST_RETURNS(reduce_fn::call(
+            thrust::detail::select_system(typename iterator_system<::cuda::std::remove_cvref_t<ForwardIt>>::type{}),
+            THRUST_FWD(first),
+            THRUST_FWD(last),
+            THRUST_FWD(init),
+            thrust::plus<::cuda::std::remove_cvref_t<T>>{}))
 
     // MSVC WAR: MSVC gets angsty and eats all available RAM when we try to detect
     // if T1 is an execution_policy by using SFINAE. Switching to a static
@@ -158,11 +160,15 @@ struct reduce_fn final
             typename iterator_traits<::cuda::std::remove_cvref_t<ForwardIt>>::value_type>>{}))
 
           template <typename... Args>
-          _CCCL_NODISCARD _CCCL_HOST auto operator()(Args&&... args) const THRUST_RETURNS(call(THRUST_FWD(args)...))
+          CCCL_DEPRECATED _CCCL_NODISCARD _CCCL_HOST auto operator()(Args&&... args) const
+    THRUST_RETURNS(call(THRUST_FWD(args)...))
 };
 
 } // namespace reduce_detail
 
+// note: cannot add a CCCL_DEPRECATED here because the global variable is emitted into cudafe1.stub.c and we cannot
+// suppress the warning there
+//! deprecated [Since 2.8.0]
 _CCCL_GLOBAL_CONSTANT reduce_detail::reduce_fn reduce{};
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -171,7 +177,7 @@ namespace unimplemented
 {
 
 template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename OutputIt, typename T, typename BinaryOp>
-_CCCL_HOST event<DerivedPolicy>
+CCCL_DEPRECATED _CCCL_HOST event<DerivedPolicy>
 async_reduce_into(thrust::execution_policy<DerivedPolicy>&, ForwardIt, Sentinel, OutputIt, T, BinaryOp)
 {
   THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<ForwardIt, false>::value),
@@ -188,6 +194,7 @@ using thrust::async::unimplemented::async_reduce_into;
 
 struct reduce_into_fn final
 {
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename OutputIt, typename T, typename BinaryOp>
   _CCCL_HOST static auto
   call(thrust::detail::execution_policy_base<DerivedPolicy> const& exec,
@@ -203,16 +210,17 @@ struct reduce_into_fn final
       THRUST_FWD(last),
       THRUST_FWD(output),
       THRUST_FWD(init),
-      THRUST_FWD(op)))
+      THRUST_FWD(op))) _CCCL_SUPPRESS_DEPRECATED_POP
 
-      template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename OutputIt, typename T>
-      _CCCL_HOST static auto call5(
-        thrust::detail::execution_policy_base<DerivedPolicy> const& exec,
-        ForwardIt&& first,
-        Sentinel&& last,
-        OutputIt&& output,
-        T&& init,
-        thrust::true_type)
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
+    template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename OutputIt, typename T>
+    _CCCL_HOST static auto call5(
+      thrust::detail::execution_policy_base<DerivedPolicy> const& exec,
+      ForwardIt&& first,
+      Sentinel&& last,
+      OutputIt&& output,
+      T&& init,
+      thrust::true_type)
     // ADL dispatch.
     THRUST_RETURNS(async_reduce_into(
       thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
@@ -220,15 +228,16 @@ struct reduce_into_fn final
       THRUST_FWD(last),
       THRUST_FWD(output),
       THRUST_FWD(init),
-      thrust::plus<::cuda::std::remove_cvref_t<T>>{}))
+      thrust::plus<::cuda::std::remove_cvref_t<T>>{})) _CCCL_SUPPRESS_DEPRECATED_POP
 
-      template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename OutputIt>
-      _CCCL_HOST static auto call4(
-        thrust::detail::execution_policy_base<DerivedPolicy> const& exec,
-        ForwardIt&& first,
-        Sentinel&& last,
-        OutputIt&& output,
-        thrust::true_type)
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
+    template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename OutputIt>
+    _CCCL_HOST static auto call4(
+      thrust::detail::execution_policy_base<DerivedPolicy> const& exec,
+      ForwardIt&& first,
+      Sentinel&& last,
+      OutputIt&& output,
+      thrust::true_type)
     // ADL dispatch.
     THRUST_RETURNS(async_reduce_into(
       thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
@@ -238,43 +247,42 @@ struct reduce_into_fn final
       typename iterator_traits<::cuda::std::remove_cvref_t<ForwardIt>>::value_type{},
       thrust::plus<
         ::cuda::std::remove_cvref_t<typename iterator_traits<::cuda::std::remove_cvref_t<ForwardIt>>::value_type>>{}))
+      _CCCL_SUPPRESS_DEPRECATED_POP
 
-      template <typename ForwardIt, typename Sentinel, typename OutputIt, typename T, typename BinaryOp>
-      _CCCL_HOST static auto call5(
-        ForwardIt&& first, Sentinel&& last, OutputIt&& output, T&& init, BinaryOp&& op, thrust::false_type)
-        THRUST_RETURNS(reduce_into_fn::call(
-          thrust::detail::select_system(typename iterator_system<::cuda::std::remove_cvref_t<ForwardIt>>::type{},
-                                        typename iterator_system<::cuda::std::remove_cvref_t<OutputIt>>::type{}),
-          THRUST_FWD(first),
-          THRUST_FWD(last),
-          THRUST_FWD(output),
-          THRUST_FWD(init),
-          THRUST_FWD(op)))
+    template <typename ForwardIt, typename Sentinel, typename OutputIt, typename T, typename BinaryOp>
+    _CCCL_HOST static auto call5(
+      ForwardIt&& first, Sentinel&& last, OutputIt&& output, T&& init, BinaryOp&& op, thrust::false_type)
+      THRUST_RETURNS(reduce_into_fn::call(
+        thrust::detail::select_system(typename iterator_system<::cuda::std::remove_cvref_t<ForwardIt>>::type{},
+                                      typename iterator_system<::cuda::std::remove_cvref_t<OutputIt>>::type{}),
+        THRUST_FWD(first),
+        THRUST_FWD(last),
+        THRUST_FWD(output),
+        THRUST_FWD(init),
+        THRUST_FWD(op)))
 
-          template <typename ForwardIt, typename Sentinel, typename OutputIt, typename T>
-          _CCCL_HOST static auto call4(
-            ForwardIt&& first, Sentinel&& last, OutputIt&& output, T&& init, thrust::false_type)
-            THRUST_RETURNS(reduce_into_fn::call(
-              thrust::detail::select_system(typename iterator_system<::cuda::std::remove_cvref_t<ForwardIt>>::type{},
-                                            typename iterator_system<::cuda::std::remove_cvref_t<OutputIt>>::type{}),
-              THRUST_FWD(first),
-              THRUST_FWD(last),
-              THRUST_FWD(output),
-              THRUST_FWD(init),
-              thrust::plus<::cuda::std::remove_cvref_t<T>>{}))
+        template <typename ForwardIt, typename Sentinel, typename OutputIt, typename T>
+        _CCCL_HOST static auto call4(ForwardIt&& first, Sentinel&& last, OutputIt&& output, T&& init, thrust::false_type)
+          THRUST_RETURNS(reduce_into_fn::call(
+            thrust::detail::select_system(typename iterator_system<::cuda::std::remove_cvref_t<ForwardIt>>::type{},
+                                          typename iterator_system<::cuda::std::remove_cvref_t<OutputIt>>::type{}),
+            THRUST_FWD(first),
+            THRUST_FWD(last),
+            THRUST_FWD(output),
+            THRUST_FWD(init),
+            thrust::plus<::cuda::std::remove_cvref_t<T>>{}))
 
-              template <typename ForwardIt, typename Sentinel, typename OutputIt>
-              _CCCL_HOST static auto call(ForwardIt&& first, Sentinel&& last, OutputIt&& output)
-                THRUST_RETURNS(reduce_into_fn::call(
-                  thrust::detail::select_system(
-                    typename iterator_system<::cuda::std::remove_cvref_t<ForwardIt>>::type{},
-                    typename iterator_system<::cuda::std::remove_cvref_t<OutputIt>>::type{}),
-                  THRUST_FWD(first),
-                  THRUST_FWD(last),
-                  THRUST_FWD(output),
-                  typename iterator_traits<::cuda::std::remove_cvref_t<ForwardIt>>::value_type{},
-                  thrust::plus<::cuda::std::remove_cvref_t<
-                    typename iterator_traits<::cuda::std::remove_cvref_t<ForwardIt>>::value_type>>{}))
+            template <typename ForwardIt, typename Sentinel, typename OutputIt>
+            _CCCL_HOST static auto call(ForwardIt&& first, Sentinel&& last, OutputIt&& output)
+              THRUST_RETURNS(reduce_into_fn::call(
+                thrust::detail::select_system(typename iterator_system<::cuda::std::remove_cvref_t<ForwardIt>>::type{},
+                                              typename iterator_system<::cuda::std::remove_cvref_t<OutputIt>>::type{}),
+                THRUST_FWD(first),
+                THRUST_FWD(last),
+                THRUST_FWD(output),
+                typename iterator_traits<::cuda::std::remove_cvref_t<ForwardIt>>::value_type{},
+                thrust::plus<::cuda::std::remove_cvref_t<
+                  typename iterator_traits<::cuda::std::remove_cvref_t<ForwardIt>>::value_type>>{}))
 
     // MSVC WAR: MSVC gets angsty and eats all available RAM when we try to detect
     // if T1 is an execution_policy by using SFINAE. Switching to a static
@@ -297,11 +305,15 @@ struct reduce_into_fn final
         thrust::is_execution_policy<::cuda::std::remove_cvref_t<T1>>{}))
 
         template <typename... Args>
-        _CCCL_NODISCARD _CCCL_HOST auto operator()(Args&&... args) const THRUST_RETURNS(call(THRUST_FWD(args)...))
+        CCCL_DEPRECATED _CCCL_NODISCARD _CCCL_HOST auto operator()(Args&&... args) const
+    THRUST_RETURNS(call(THRUST_FWD(args)...))
 };
 
 } // namespace reduce_into_detail
 
+// note: cannot add a CCCL_DEPRECATED here because the global variable is emitted into cudafe1.stub.c and we cannot
+// suppress the warning there
+//! deprecated [Since 2.8.0]
 _CCCL_GLOBAL_CONSTANT reduce_into_detail::reduce_into_fn reduce_into{};
 
 /*! \endcond
