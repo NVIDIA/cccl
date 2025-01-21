@@ -25,6 +25,16 @@
 #include <cuda/std/__cccl/diagnostic.h>
 #include <cuda/std/__cccl/preprocessor.h>
 
+#if !defined(_CCCL_DISABLE_NVFP8_SUPPORT)
+#  if _CCCL_HAS_INCLUDE(<cuda_fp8.h>)
+#    define _CCCL_HAS_NVFP8() 1
+#  else
+#    define _CCCL_HAS_NVFP8() 0
+#  endif // _CCCL_CUDACC_AT_LEAST(11, 8) && _CCCL_HAS_INCLUDE(<cuda_fp8.h>)
+#else
+#  define _CCCL_HAS_NVFP8() 0
+#endif // !defined(_CCCL_DISABLE_NVFP8_SUPPORT)
+
 #if !defined(_CCCL_HAS_NVFP16)
 #  if _CCCL_HAS_INCLUDE(<cuda_fp16.h>) && (_CCCL_HAS_CUDA_COMPILER || defined(LIBCUDACXX_ENABLE_HOST_NVFP16)) \
                         && !defined(CCCL_DISABLE_FP16_SUPPORT)
