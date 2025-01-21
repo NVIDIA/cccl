@@ -134,6 +134,11 @@ struct AgentHistogramPolicy
  * Thread block abstractions
  ******************************************************************************/
 
+namespace detail
+{
+namespace histogram
+{
+
 /**
  * @brief AgentHistogram implements a stateful abstraction of CUDA thread blocks for participating
  * in device-wide histogram .
@@ -913,5 +918,32 @@ struct AgentHistogram
     }
   }
 };
+
+} // namespace histogram
+} // namespace detail
+
+template <typename AgentHistogramPolicyT,
+          int PRIVATIZED_SMEM_BINS,
+          int NUM_CHANNELS,
+          int NUM_ACTIVE_CHANNELS,
+          typename SampleIteratorT,
+          typename CounterT,
+          typename PrivatizedDecodeOpT,
+          typename OutputDecodeOpT,
+          typename OffsetT,
+          int LEGACY_PTX_ARCH = 0>
+using AgentHistogram CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
+                                             "interface will be removed.") =
+  detail::histogram::AgentHistogram<
+    AgentHistogramPolicyT,
+    PRIVATIZED_SMEM_BINS,
+    NUM_CHANNELS,
+    NUM_ACTIVE_CHANNELS,
+    SampleIteratorT,
+    CounterT,
+    PrivatizedDecodeOpT,
+    OutputDecodeOpT,
+    OffsetT,
+    LEGACY_PTX_ARCH>;
 
 CUB_NAMESPACE_END

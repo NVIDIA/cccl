@@ -208,27 +208,29 @@ struct agent_select_if_wrapper_t
             typename OffsetT,
             typename StreamingContextT>
   struct agent_t
-      : public AgentSelectIf<AgentSelectIfPolicyT,
-                             InputIteratorT,
-                             FlagsInputIteratorT,
-                             SelectedOutputIteratorT,
-                             SelectOpT,
-                             EqualityOpT,
-                             OffsetT,
-                             StreamingContextT,
-                             KeepRejects,
-                             MayAlias>
+      : public detail::select::AgentSelectIf<
+          AgentSelectIfPolicyT,
+          InputIteratorT,
+          FlagsInputIteratorT,
+          SelectedOutputIteratorT,
+          SelectOpT,
+          EqualityOpT,
+          OffsetT,
+          StreamingContextT,
+          KeepRejects,
+          MayAlias>
   {
-    using AgentSelectIf<AgentSelectIfPolicyT,
-                        InputIteratorT,
-                        FlagsInputIteratorT,
-                        SelectedOutputIteratorT,
-                        SelectOpT,
-                        EqualityOpT,
-                        OffsetT,
-                        StreamingContextT,
-                        KeepRejects,
-                        MayAlias>::AgentSelectIf;
+    using detail::select::AgentSelectIf<
+      AgentSelectIfPolicyT,
+      InputIteratorT,
+      FlagsInputIteratorT,
+      SelectedOutputIteratorT,
+      SelectOpT,
+      EqualityOpT,
+      OffsetT,
+      StreamingContextT,
+      KeepRejects,
+      MayAlias>::AgentSelectIf;
   };
 };
 } // namespace select

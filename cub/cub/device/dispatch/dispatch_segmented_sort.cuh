@@ -139,11 +139,12 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
   }
 
   using AgentSegmentedRadixSortT =
-    cub::AgentSegmentedRadixSort<IS_DESCENDING, LargeSegmentPolicyT, KeyT, ValueT, OffsetT>;
+    detail::radix_sort::AgentSegmentedRadixSort<IS_DESCENDING, LargeSegmentPolicyT, KeyT, ValueT, OffsetT>;
 
   using WarpReduceT = cub::WarpReduce<KeyT>;
 
-  using AgentWarpMergeSortT = AgentSubWarpSort<IS_DESCENDING, MediumPolicyT, KeyT, ValueT, OffsetT>;
+  using AgentWarpMergeSortT =
+    detail::sub_warp_merge_sort::AgentSubWarpSort<IS_DESCENDING, MediumPolicyT, KeyT, ValueT, OffsetT>;
 
   __shared__ union
   {
@@ -314,9 +315,11 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::SmallAndMediumSegmentedSortPolic
   constexpr int threads_per_medium_segment = MediumPolicyT::WARP_THREADS;
   constexpr int threads_per_small_segment  = SmallPolicyT::WARP_THREADS;
 
-  using MediumAgentWarpMergeSortT = AgentSubWarpSort<IS_DESCENDING, MediumPolicyT, KeyT, ValueT, OffsetT>;
+  using MediumAgentWarpMergeSortT =
+    detail::sub_warp_merge_sort::AgentSubWarpSort<IS_DESCENDING, MediumPolicyT, KeyT, ValueT, OffsetT>;
 
-  using SmallAgentWarpMergeSortT = AgentSubWarpSort<IS_DESCENDING, SmallPolicyT, KeyT, ValueT, OffsetT>;
+  using SmallAgentWarpMergeSortT =
+    detail::sub_warp_merge_sort::AgentSubWarpSort<IS_DESCENDING, SmallPolicyT, KeyT, ValueT, OffsetT>;
 
   constexpr auto segments_per_medium_block =
     static_cast<unsigned int>(SmallAndMediumPolicyT::SEGMENTS_PER_MEDIUM_BLOCK);
@@ -426,7 +429,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
   constexpr int small_tile_size = LargeSegmentPolicyT::BLOCK_THREADS * LargeSegmentPolicyT::ITEMS_PER_THREAD;
 
   using AgentSegmentedRadixSortT =
-    cub::AgentSegmentedRadixSort<IS_DESCENDING, LargeSegmentPolicyT, KeyT, ValueT, OffsetT>;
+    detail::radix_sort::AgentSegmentedRadixSort<IS_DESCENDING, LargeSegmentPolicyT, KeyT, ValueT, OffsetT>;
 
   __shared__ typename AgentSegmentedRadixSortT::TempStorage storage;
 

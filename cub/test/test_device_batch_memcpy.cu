@@ -348,7 +348,7 @@ void RunTest(BufferOffsetT num_buffers,
 template <int LOGICAL_WARP_SIZE, typename VectorT, typename ByteOffsetT>
 __global__ void TestVectorizedCopyKernel(const void* d_in, void* d_out, ByteOffsetT copy_size)
 {
-  cub::detail::VectorizedCopy<LOGICAL_WARP_SIZE, VectorT>(threadIdx.x, d_out, copy_size, d_in);
+  cub::detail::batch_memcpy::VectorizedCopy<LOGICAL_WARP_SIZE, VectorT>(threadIdx.x, d_out, copy_size, d_in);
 }
 
 struct TupleMemberEqualityOp
@@ -409,7 +409,7 @@ template <uint32_t NUM_ITEMS, uint32_t MAX_ITEM_VALUE, bool PREFER_POW2_BITS>
 __global__ void
 TestBitPackedCounterKernel(uint32_t* bins, uint32_t* increments, uint32_t* counts_out, uint32_t num_items)
 {
-  using BitPackedCounterT = cub::detail::BitPackedCounter<NUM_ITEMS, MAX_ITEM_VALUE, PREFER_POW2_BITS>;
+  using BitPackedCounterT = cub::detail::batch_memcpy::BitPackedCounter<NUM_ITEMS, MAX_ITEM_VALUE, PREFER_POW2_BITS>;
   BitPackedCounterT counter{};
   for (uint32_t i = 0; i < num_items; i++)
   {
