@@ -305,19 +305,27 @@ void unpin_memory(T* p)
   }
 }
 
-// Overload pin_memory for arrays
+/**
+ * @brief Pins arrays in host memory
+ */
 template <typename T, size_t N>
 cudaError_t pin_memory(T (&array)[N])
 {
   return pin_memory(array, N);
 }
 
+/**
+ * @brief Pins vectors in host memory
+ */
 template <typename T>
 cudaError_t pin_memory(::std::vector<T>& v)
 {
   return pin_memory(v.data(), v.size());
 }
 
+/**
+ * @brief Unpin vectors in host memory
+ */
 template <typename T>
 void unpin_memory(::std::vector<T>& v)
 {
