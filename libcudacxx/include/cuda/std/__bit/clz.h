@@ -55,11 +55,9 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_clz(uint64_t __x) noexcept
 }
 
 // constexpr is required for GCC8
-_LIBCUDACXX_HIDE_FROM_ABI int __runtime_clz(uint32_t __x) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_clz(uint32_t __x) noexcept
 {
-#if defined(__CUDA_ARCH__)
-  return ::__clz(__x);
-#elif _CCCL_COMPILER(MSVC) // _CCCL_COMPILER(MSVC) vvv
+#if _CCCL_COMPILER(MSVC) // _CCCL_COMPILER(MSVC) vvv
   unsigned long __where = 0;
   if (::_BitScanReverse32(&__where, __x))
   {
@@ -74,9 +72,7 @@ _LIBCUDACXX_HIDE_FROM_ABI int __runtime_clz(uint32_t __x) noexcept
 // constexpr is required for GCC8
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_clz(uint64_t __x) noexcept
 {
-#if defined(__CUDA_ARCH__)
-  return ::__clzll(__x);
-#elif _CCCL_COMPILER(MSVC) // _CCCL_COMPILER(MSVC) vvv
+#if _CCCL_COMPILER(MSVC) // _CCCL_COMPILER(MSVC) vvv
   unsigned long __where = 0;
   if (::_BitScanReverse64(&__where, __x))
   {
