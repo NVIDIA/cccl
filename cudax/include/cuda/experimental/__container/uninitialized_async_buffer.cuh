@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__memory_resource/properties.h>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/align.h>
 #include <cuda/std/__new/launder.h>
 #include <cuda/std/__type_traits/type_set.h>
@@ -134,6 +135,48 @@ private:
     // TODO add auto synchronization
     return {__self.__get_data(), __self.size()};
   }
+
+#  ifndef _CCCL_DOXYGEN_INVOKED
+  // This is needed to ensure that we do not do a deep copy in __replace_allocation
+  struct __fake_resource_ref
+  {
+    __async_resource* __resource_;
+
+    void* allocate(std::size_t __size, std::size_t __alignment)
+    {
+      return __resource_->allocate(__size, __alignment);
+    }
+
+    void deallocate(void* __ptr, std::size_t __size, std::size_t __alignment) noexcept
+    {
+      __resource_->deallocate(__ptr, __size, __alignment);
+    }
+
+    void* allocate_async(std::size_t __size, std::size_t __alignment, ::cuda::stream_ref __stream)
+    {
+      return __resource_->allocate_async(__size, __alignment, __stream);
+    }
+
+    void deallocate_async(void* __ptr, std::size_t __size, std::size_t __alignment, ::cuda::stream_ref __stream) noexcept
+    {
+      __resource_->deallocate_async(__ptr, __size, __alignment, __stream);
+    }
+
+    friend bool operator==(const __fake_resource_ref& __lhs, const __fake_resource_ref& __rhs) noexcept
+    {
+      return *__lhs.__resource_ == *__rhs.__resource_;
+    }
+    friend bool operator!=(const __fake_resource_ref& __lhs, const __fake_resource_ref& __rhs) noexcept
+    {
+      return *__lhs.__resource_ != *__rhs.__resource_;
+    }
+
+    //! @brief Forwards the passed properties
+    _CCCL_TEMPLATE(class _Property)
+    _CCCL_REQUIRES(_CUDA_VSTD::__is_included_in_v<_Property, _Properties...>)
+    _CCCL_HIDE_FROM_ABI friend constexpr void get_property(const __fake_resource_ref&, _Property) noexcept {}
+  };
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 public:
   using value_type      = _Tp;
@@ -315,7 +358,7 @@ public:
   _CCCL_HIDE_FROM_ABI uninitialized_async_buffer __replace_allocation(const size_t __count)
   {
     // Create a new buffer with a reference to the stored memory resource and swap allocation information
-    uninitialized_async_buffer __ret{async_resource_ref<_Properties...>{__mr_}, __stream_, __count};
+    uninitialized_async_buffer __ret{__fake_resource_ref{_CUDA_VSTD::addressof(__mr_)}, __stream_, __count};
     _CUDA_VSTD::swap(__count_, __ret.__count_);
     _CUDA_VSTD::swap(__buf_, __ret.__buf_);
     return __ret;
