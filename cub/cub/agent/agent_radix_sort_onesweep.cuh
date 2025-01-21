@@ -97,13 +97,18 @@ struct AgentRadixSortOnesweepPolicy : ScalingType
   static constexpr RadixSortStoreAlgorithm STORE_ALGORITHM = _STORE_ALGORITHM;
 };
 
+namespace detail
+{
+namespace radix_sort
+{
+
 template <typename AgentRadixSortOnesweepPolicy,
           bool IS_DESCENDING,
           typename KeyT,
           typename ValueT,
           typename OffsetT,
           typename PortionOffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
+          typename DecomposerT = identity_decomposer_t>
 struct AgentRadixSortOnesweep
 {
   // constants
@@ -127,7 +132,7 @@ struct AgentRadixSortOnesweep
     LOOKBACK_VALUE_MASK   = ~LOOKBACK_KIND_MASK,
   };
 
-  using traits                 = detail::radix::traits_t<KeyT>;
+  using traits                 = radix::traits_t<KeyT>;
   using bit_ordered_type       = typename traits::bit_ordered_type;
   using bit_ordered_conversion = typename traits::bit_ordered_conversion_policy;
 
@@ -683,5 +688,19 @@ struct AgentRadixSortOnesweep
     full_block = (block_idx + 1) * TILE_ITEMS <= num_items;
   }
 };
+
+} // namespace radix_sort
+} // namespace detail
+
+template <typename AgentRadixSortOnesweepPolicy,
+          bool IS_DESCENDING,
+          typename KeyT,
+          typename ValueT,
+          typename OffsetT,
+          typename PortionOffsetT,
+          typename DecomposerT = detail::identity_decomposer_t>
+using AgentRadixSortOnesweep CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
+                                                     "interface will be removed.") = detail::radix_sort::
+  AgentRadixSortOnesweep<AgentRadixSortOnesweepPolicy, IS_DESCENDING, KeyT, ValueT, OffsetT, PortionOffsetT, DecomposerT>;
 
 CUB_NAMESPACE_END
