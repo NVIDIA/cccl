@@ -27,7 +27,8 @@
 #endif // no system header
 #include <thrust/detail/type_deduction.h>
 #include <thrust/system/detail/generic/select_system.h>
-#include <thrust/type_traits/remove_cvref.h>
+
+#include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 

@@ -198,7 +198,6 @@ public:
   /*! \endcond
    */
 
-public:
   /*! Null constructor does nothing.
    */
   transform_iterator() = default;
@@ -239,20 +238,7 @@ public:
       , m_f(other.functor())
   {}
 
-  /*! Copy assignment operator copies from another \p transform_iterator.
-   *  \p other The other \p transform_iterator to copy
-   *  \return <tt>*this</tt>
-   *
-   *  \note If the type of this \p transform_iterator's functor is not copy assignable
-   *        (for example, if it is a lambda) it is not an error to call this function.
-   *        In this case, however, the functor will not be modified.
-   *
-   *        In any case, this \p transform_iterator's underlying iterator will be copy assigned.
-   */
-  _CCCL_HOST_DEVICE transform_iterator& operator=(const transform_iterator& other)
-  {
-    return do_assign(other, ::cuda::std::is_copy_assignable<AdaptableUnaryFunction>());
-  }
+  transform_iterator& operator=(const transform_iterator&) = default;
 
   /*! This method returns a copy of this \p transform_iterator's \c AdaptableUnaryFunction.
    *  \return A copy of this \p transform_iterator's \c AdaptableUnaryFunction.
@@ -266,25 +252,6 @@ public:
    */
 
 private:
-  _CCCL_HOST_DEVICE transform_iterator& do_assign(const transform_iterator& other, thrust::detail::true_type)
-  {
-    super_t::operator=(other);
-
-    // do assign to m_f
-    m_f = other.functor();
-
-    return *this;
-  }
-
-  _CCCL_HOST_DEVICE transform_iterator& do_assign(const transform_iterator& other, thrust::detail::false_type)
-  {
-    super_t::operator=(other);
-
-    // don't assign to m_f
-
-    return *this;
-  }
-
 // MSVC 2013 and 2015 incorrectly warning about returning a reference to
 // a local/temporary here.
 // See goo.gl/LELTNp
