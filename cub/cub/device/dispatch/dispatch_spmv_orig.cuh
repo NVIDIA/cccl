@@ -86,8 +86,7 @@ CUB_NAMESPACE_BEGIN
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename AgentSpmvPolicyT, typename ValueT, typename OffsetT>
 CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead")
-CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmv1ColKernel(SpmvParams<ValueT, OffsetT> spmv_params) //
-  _CCCL_SUPPRESS_DEPRECATED_POP
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmv1ColKernel(SpmvParams<ValueT, OffsetT> spmv_params)
 {
   using VectorValueIteratorT =
     CacheModifiedInputIterator<AgentSpmvPolicyT::VECTOR_VALUES_LOAD_MODIFIER, ValueT, OffsetT>;
@@ -109,6 +108,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmv1ColKernel(SpmvParams<ValueT, Offset
     spmv_params.d_vector_y[row_idx] = value;
   }
 }
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 /**
  * @brief Spmv search kernel. Identifies merge path starting coordinates for each tile.
@@ -323,8 +323,7 @@ __launch_bounds__(int(AgentSegmentFixupPolicyT::BLOCK_THREADS))
     AggregatesOutputIteratorT d_aggregates_out,
     OffsetT num_items,
     int num_tiles,
-    ScanTileStateT tile_state) //
-  _CCCL_SUPPRESS_DEPRECATED_POP
+    ScanTileStateT tile_state)
 {
   // Thread block type for reducing tiles of value segments
   using AgentSegmentFixupT =
@@ -342,6 +341,7 @@ __launch_bounds__(int(AgentSegmentFixupPolicyT::BLOCK_THREADS))
   AgentSegmentFixupT(temp_storage, d_pairs_in, d_aggregates_out, ::cuda::std::equal_to<>{}, ::cuda::std::plus<>{})
     .ConsumeRange(num_items, num_tiles, tile_state);
 }
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 /******************************************************************************
  * Dispatch
