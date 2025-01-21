@@ -36,7 +36,8 @@
 #  include <thrust/detail/static_assert.h>
 #  include <thrust/event.h>
 #  include <thrust/system/detail/adl/async/copy.h>
-#  include <thrust/type_traits/remove_cvref.h>
+
+#  include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -96,15 +97,17 @@ struct copy_fn final
         // Synthesize a suitable new execution policy, because we don't want to
         // try and extract twice from the one we were passed.
         ,
-        typename remove_cvref_t<decltype(thrust::detail::derived_cast(thrust::detail::strip_const(exec)))>::tag_type{},
+        typename ::cuda::std::remove_cvref_t<
+          decltype(thrust::detail::derived_cast(thrust::detail::strip_const(exec)))>::tag_type{},
         THRUST_FWD(first),
         THRUST_FWD(last),
         THRUST_FWD(output)))
 
         template <typename ForwardIt, typename Sentinel, typename OutputIt>
         _CCCL_HOST static auto call(ForwardIt&& first, Sentinel&& last, OutputIt&& output) THRUST_RETURNS(copy_fn::call(
-          thrust::detail::select_system(typename thrust::iterator_system<remove_cvref_t<ForwardIt>>::type{}),
-          thrust::detail::select_system(typename thrust::iterator_system<remove_cvref_t<OutputIt>>::type{}),
+          thrust::detail::select_system(
+            typename thrust::iterator_system<::cuda::std::remove_cvref_t<ForwardIt>>::type{}),
+          thrust::detail::select_system(typename thrust::iterator_system<::cuda::std::remove_cvref_t<OutputIt>>::type{}),
           THRUST_FWD(first),
           THRUST_FWD(last),
           THRUST_FWD(output)))
