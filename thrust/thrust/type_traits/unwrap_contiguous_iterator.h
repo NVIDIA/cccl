@@ -29,7 +29,7 @@ namespace detail
 template <typename Iterator>
 struct contiguous_iterator_traits
 {
-  static_assert(thrust::is_contiguous_iterator<Iterator>::value,
+  static_assert(thrust::is_contiguous_iterator_v<Iterator>,
                 "contiguous_iterator_traits requires a contiguous iterator.");
 
   using raw_pointer = typename thrust::detail::pointer_traits<decltype(&*std::declval<Iterator>())>::raw_pointer;
@@ -45,7 +45,7 @@ template <typename ContiguousIterator>
 _CCCL_HOST_DEVICE auto unwrap_contiguous_iterator(ContiguousIterator it)
   -> unwrap_contiguous_iterator_t<ContiguousIterator>
 {
-  static_assert(thrust::is_contiguous_iterator<ContiguousIterator>::value,
+  static_assert(thrust::is_contiguous_iterator_v<ContiguousIterator>,
                 "unwrap_contiguous_iterator called with non-contiguous iterator.");
   return thrust::raw_pointer_cast(&*it);
 }
@@ -53,7 +53,7 @@ _CCCL_HOST_DEVICE auto unwrap_contiguous_iterator(ContiguousIterator it)
 namespace detail
 {
 // Implementation for non-contiguous iterators -- passthrough.
-template <typename Iterator, bool IsContiguous = thrust::is_contiguous_iterator<Iterator>::value>
+template <typename Iterator, bool IsContiguous = thrust::is_contiguous_iterator_v<Iterator>>
 struct try_unwrap_contiguous_iterator_impl
 {
   using type = Iterator;

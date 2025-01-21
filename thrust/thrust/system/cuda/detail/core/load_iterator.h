@@ -34,9 +34,7 @@
 
 THRUST_NAMESPACE_BEGIN
 
-namespace cuda_cub
-{
-namespace core
+namespace cuda_cub::core
 {
 
 // LoadIterator
@@ -50,11 +48,10 @@ struct LoadIterator
   using size_type  = typename ::cuda::std::iterator_traits<It>::difference_type;
 
   using type =
-    ::cuda::std::conditional_t<is_contiguous_iterator<It>::value,
+    ::cuda::std::conditional_t<is_contiguous_iterator_v<It>,
                                cub::CacheModifiedInputIterator<PtxPlan::LOAD_MODIFIER, value_type, size_type>,
                                It>;
 }; // struct Iterator
-} // namespace core
-} // namespace cuda_cub
+} // namespace cuda_cub::core
 
 THRUST_NAMESPACE_END
