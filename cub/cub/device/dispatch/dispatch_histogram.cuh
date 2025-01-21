@@ -1,4 +1,3 @@
-
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
@@ -98,6 +97,9 @@ CUB_NAMESPACE_BEGIN
  * @param tile_queue
  *   Drain queue descriptor for dynamically mapping tile data onto thread blocks
  */
+namespace detail {
+namespace histogram {
+
 template <int NUM_ACTIVE_CHANNELS, typename CounterT, typename OffsetT>
 CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
   ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_bins_wrapper,
@@ -220,7 +222,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT::BLOCK
 {
   // Thread block type for compositing input tiles
   using AgentHistogramPolicyT = typename ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT;
-  using AgentHistogramT       = detail::histogram::AgentHistogram<
+  using AgentHistogramT       = AgentHistogram<
           AgentHistogramPolicyT,
           PRIVATIZED_SMEM_BINS,
           NUM_CHANNELS,
@@ -253,6 +255,9 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT::BLOCK
   // Store output to global (if necessary)
   agent.StoreOutput();
 }
+
+} // namespace histogram
+} // namespace detail
 
 namespace detail
 {
@@ -503,8 +508,8 @@ struct dispatch_histogram
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     return Invoke<ActivePolicyT>(
-      DeviceHistogramInitKernel<NUM_ACTIVE_CHANNELS, CounterT, OffsetT>,
-      DeviceHistogramSweepKernel<MaxPolicyT,
+      detail::histogram::DeviceHistogramInitKernel<NUM_ACTIVE_CHANNELS, CounterT, OffsetT>,
+      detail::histogram::DeviceHistogramSweepKernel<MaxPolicyT,
                                  PRIVATIZED_SMEM_BINS,
                                  NUM_CHANNELS,
                                  NUM_ACTIVE_CHANNELS,
