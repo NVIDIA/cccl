@@ -62,16 +62,12 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp) _CCCL_AN
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __countl_zero(_Tp __t) noexcept
 {
   constexpr int _Ratio = sizeof(_Tp) / sizeof(uint64_t);
-  struct _Array
-  {
-    uint64_t __array[_Ratio];
-  };
-  auto __a = _CUDA_VSTD::bit_cast<_Array>(__t);
   for (int __i = _Ratio - 1; __i >= 0; --__i)
   {
-    if (__a.__array[__i])
+    auto __value64 = static_cast<uint64_t>(__t >> (__i * numeric_limits<uint64_t>::digits));
+    if (static_cast<uint64_t>(__value64))
     {
-      return _CUDA_VSTD::__countl_zero(__a.__array[__i]) + (_Ratio - 1 - __i) * numeric_limits<uint64_t>::digits;
+      return _CUDA_VSTD::__countl_zero(__value64) + (_Ratio - 1 - __i) * numeric_limits<uint64_t>::digits;
     }
   }
   return numeric_limits<_Tp>::digits;
