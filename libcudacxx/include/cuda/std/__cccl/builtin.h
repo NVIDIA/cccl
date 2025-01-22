@@ -111,6 +111,12 @@
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__builtin_assume(__VA_ARGS__);), (__assume(__VA_ARGS__);))
 #endif // _CCCL_CHECK_BUILTIN(builtin_assume)
 
+#if _CCCL_CHECK_BUILTIN(builtin_prefetch) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_PREFETCH(...) NV_IF_TARGET(NV_IS_HOST, __builtin_prefetch(__VA_ARGS__);)
+#else
+#  define _CCCL_BUILTIN_PREFETCH(...)
+#endif // _CCCL_CHECK_BUILTIN(builtin_prefetch)
+
 // NVCC prior to 11.2 cannot handle __builtin_assume
 #if _CCCL_CUDACC_BELOW(11, 2)
 #  undef _CCCL_BUILTIN_ASSUME
