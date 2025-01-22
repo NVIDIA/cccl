@@ -67,8 +67,6 @@ __host__ __device__ void test()
     (static_assert(arch_val >= 500, "cuda arch expected 500");),
     NV_PROVIDES_SM_37,
     (static_assert(arch_val >= 370, "cuda arch expected 370");),
-    NV_PROVIDES_SM_35,
-    (static_assert(arch_val >= 350, "cuda arch expected 350");),
     NV_IS_HOST,
     (static_assert(arch_val == 0, "cuda arch expected 0");))
 
@@ -100,8 +98,6 @@ __host__ __device__ void test()
     (static_assert(arch_val == 500, "cuda arch expected 500");),
     NV_IS_EXACTLY_SM_37,
     (static_assert(arch_val == 370, "cuda arch expected 370");),
-    NV_IS_EXACTLY_SM_35,
-    (static_assert(arch_val == 350, "cuda arch expected 350");),
     NV_IS_HOST,
     (static_assert(arch_val == 0, "cuda arch expected 0");))
 
@@ -160,7 +156,7 @@ __host__ __device__ void test()
     (invoke_count += 1; invoke_count += threadIdx.x;),
     NV_PROVIDES_SM_37,
     (invoke_count += 1; invoke_count += threadIdx.x;),
-    NV_PROVIDES_SM_35,
+    NV_PROVIDES_SM_37,
     (invoke_count += 1; invoke_count += threadIdx.x;),
     NV_IS_HOST,
     (invoke_count += 1;))
@@ -189,8 +185,6 @@ __host__ __device__ void test()
     NV_IS_EXACTLY_SM_50,
     (invoke_count += 1; invoke_count += threadIdx.x;),
     NV_IS_EXACTLY_SM_37,
-    (invoke_count += 1; invoke_count += threadIdx.x;),
-    NV_IS_EXACTLY_SM_35,
     (invoke_count += 1; invoke_count += threadIdx.x;),
     NV_IS_HOST,
     (invoke_count += 1;))
@@ -254,8 +248,6 @@ void test()
     (static_assert(arch_val == 500, "cuda arch expected 500");),
     NV_PROVIDES_SM_37,
     (static_assert(arch_val == 370, "cuda arch expected 370");),
-    NV_PROVIDES_SM_35,
-    (static_assert(arch_val == 350, "cuda arch expected 350");),
     NV_IS_HOST,
     (static_assert(arch_val == 0, "cuda arch expected 0");))
 
@@ -283,8 +275,6 @@ void test()
     (static_assert(arch_val == 500, "cuda arch expected 500");),
     NV_IS_EXACTLY_SM_37,
     (static_assert(arch_val == 370, "cuda arch expected 370");),
-    NV_IS_EXACTLY_SM_35,
-    (static_assert(arch_val == 350, "cuda arch expected 350");),
     NV_IS_HOST,
     (static_assert(arch_val == 0, "cuda arch expected 0");))
 
