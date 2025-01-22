@@ -199,7 +199,9 @@ struct DeviceRunLengthEncode
     using length_t = cub::detail::non_void_value_t<LengthsOutputIteratorT, offset_t>;
 
     // Generator type for providing 1s values for run-length reduction
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     using lengths_input_iterator_t = ConstantInputIterator<length_t, offset_t>;
+    _CCCL_SUPPRESS_DEPRECATED_POP
 
     using accum_t = ::cuda::std::__accumulator_t<reduction_op, length_t, length_t>;
 

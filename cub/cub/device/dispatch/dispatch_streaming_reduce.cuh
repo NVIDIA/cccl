@@ -229,7 +229,9 @@ struct dispatch_streaming_arg_reduce_t
     cudaStream_t stream)
   {
     // Constant iterator to provide the offset of the current partition for the user-provided input iterator
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     using constant_offset_it_t = ConstantInputIterator<GlobalOffsetT>;
+    _CCCL_SUPPRESS_DEPRECATED_POP
 
     // Wrapped input iterator to produce index-value tuples, i.e., <PerPartitionOffsetT, InputT>-tuples
     // We make sure to offset the user-provided input iterator by the current partition's offset

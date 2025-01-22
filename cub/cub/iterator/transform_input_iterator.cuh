@@ -110,7 +110,7 @@ CUB_NAMESPACE_BEGIN
  *   The difference type of this iterator (Default: @p ptrdiff_t)
  */
 template <typename ValueType, typename ConversionOp, typename InputIteratorT, typename OffsetT = ptrdiff_t>
-class TransformInputIterator
+class CCCL_DEPRECATED_BECAUSE("Use thrust::transform_iterator instead") TransformInputIterator
 {
 public:
   // Required iterator traits
@@ -233,10 +233,12 @@ public:
   }
 
   /// ostream operator
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   friend std::ostream& operator<<(std::ostream& os, const self_type& /* itr */)
   {
     return os;
   }
+  _CCCL_SUPPRESS_DEPRECATED_POP
 };
 
 CUB_NAMESPACE_END
