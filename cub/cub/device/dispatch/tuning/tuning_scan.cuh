@@ -336,7 +336,4 @@ struct policy_hub
 template <typename AccumT, typename ScanOpT = ::cuda::std::plus<>>
 using DeviceScanPolicy = detail::scan::policy_hub<AccumT, ScanOpT>;
 
-using detail::scan::MakeScanPolicyWrapper;
-using detail::scan::ScanPolicyWrapper;
-
 CUB_NAMESPACE_END

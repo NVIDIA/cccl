@@ -135,7 +135,7 @@ template <typename InputIteratorT,
           typename OffsetT,
           typename AccumT       = ::cuda::std::__accumulator_t<ScanOpT,
                                                                cub::detail::value_t<InputIteratorT>,
-                                                               ::cuda::std::_If<std::is_same<InitValueT, NullType>::value,
+                                                               ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
                                                                                 cub::detail::value_t<InputIteratorT>,
                                                                                 typename InitValueT::value_type>>,
           typename PolicyHub    = detail::scan::policy_hub<AccumT, ScanOpT>,
@@ -399,7 +399,7 @@ struct DispatchScan
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT active_policy = {})
   {
     using ScanTileStateT = typename KernelSource::ScanTileStateT;
-    auto wrapped_policy  = MakeScanPolicyWrapper(active_policy);
+    auto wrapped_policy  = detail::scan::MakeScanPolicyWrapper(active_policy);
     // Ensure kernels are instantiated.
     return Invoke(kernel_source.ScanInitKernel(), kernel_source.ScanKernel(), wrapped_policy);
   }
