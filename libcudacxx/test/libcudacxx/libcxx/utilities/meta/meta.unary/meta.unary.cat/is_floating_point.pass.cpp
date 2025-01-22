@@ -89,7 +89,7 @@ int main(int, char**)
 #if _CCCL_HAS_NVFP8()
   test_is_floating_point<__nv_fp8_e4m3>();
   test_is_floating_point<__nv_fp8_e5m2>();
-#endif // _CCCL_HAS_NVFP8
+#endif // ())
 
   test_is_not_floating_point<short>();
   test_is_not_floating_point<unsigned short>();

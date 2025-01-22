@@ -75,7 +75,7 @@ _CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v<__nv_bfloat16> = 
 #  endif // !_CCCL_NO_INLINE_VARIABLES
 #endif // _LIBCUDACXX_HAS_NVBF16
 
-#if defined(_CCCL_HAS_NVFP8)
+#if _CCCL_HAS_NVFP8()
 template <>
 struct __is_extended_floating_point<__nv_fp8_e4m3> : true_type
 {};
@@ -89,7 +89,7 @@ _CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v<__nv_fp8_e4m3> = 
 template <>
 _CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v<__nv_fp8_e5m2> = true;
 #  endif // !_CCCL_NO_INLINE_VARIABLES
-#endif // _CCCL_HAS_NVFP8
+#endif // _CCCL_HAS_NVFP8()
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
