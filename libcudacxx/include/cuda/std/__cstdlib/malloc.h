@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/detail/libcxx/include/cstring>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <cstdlib>
@@ -34,47 +35,52 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 using ::free;
 using ::malloc;
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI void* calloc(size_t __n, size_t __size) noexcept
+_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __calloc_device(size_t __n, size_t __size) noexcept
 {
   void* __ptr{};
 
-  NV_IF_ELSE_TARGET(
-    NV_IS_HOST, (__ptr = ::calloc(__n, __size);), (size_t __nbytes = __n * __size; if (::__umul64hi(__n, __size) == 0) {
-      __ptr = _CUDA_VSTD::malloc(__nbytes);
-      if (__ptr != nullptr)
-      {
-        ::memset(__ptr, 0, __nbytes);
-      }
-    }))
+  const size_t __nbytes = __n * __size;
+
+  if (::__umul64hi(__n, __size) == 0)
+  {
+    __ptr = _CUDA_VSTD::malloc(__nbytes);
+    if (__ptr != nullptr)
+    {
+      _CUDA_VSTD::memset(__ptr, 0, __nbytes);
+    }
+  }
 
   return __ptr;
 }
 
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI void* calloc(size_t __n, size_t __size) noexcept
+{
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (return ::std::calloc(__n, __size);), (return _CUDA_VSTD::__calloc_device(__n, __size);))
+}
+
+#if !_CCCL_COMPILER(NVRTC)
 _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_HOST void* __aligned_alloc_host(size_t __nbytes, size_t __align) noexcept
 {
   void* __ptr{};
-#if _CCCL_STD_VER < 2017
-  _CCCL_ASSERT(false, "Use of aligned_alloc in host code is only available in C++17 and later");
-#elif _CCCL_COMPILER(MSVC)
+#  if _CCCL_COMPILER(MSVC)
   _CCCL_ASSERT(false, "Use of aligned_alloc in host code is not supported with MSVC");
-#else
-  __ptr = ::aligned_alloc(__align, __nbytes);
-#endif
+#  else
+  __ptr = ::std::aligned_alloc(__align, __nbytes);
+#  endif
   return __ptr;
 }
+#endif // !_CCCL_COMPILER(NVRTC)
 
-#if _CCCL_HAS_CUDA_COMPILER
 _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __aligned_alloc_device(size_t __nbytes, size_t __align) noexcept
 {
   void* __ptr{};
-#  if _CCCL_CUDA_COMPILER(CLANG)
+#if _CCCL_CUDA_COMPILER(CLANG)
   _CCCL_ASSERT(false, "Use of aligned_alloc in device code is not supported with clang-cuda");
-#  else // ^^^ _CCCL_CUDA_COMPILER(CLANG) ^^^ / vvv !_CCCL_CUDA_COMPILER(CLANG)
-  __ptr = ::__nv_aligned_device_malloc(__nbytes, __align);
-#  endif // ^^^ !_CCCL_CUDA_COMPILER(CLANG) ^^^
+#else // ^^^ _CCCL_CUDA_COMPILER(CLANG) ^^^ / vvv !_CCCL_CUDA_COMPILER(CLANG)
+  NV_IF_TARGET(NV_IS_DEVICE, (__ptr = ::__nv_aligned_device_malloc(__nbytes, __align);))
+#endif // ^^^ !_CCCL_CUDA_COMPILER(CLANG) ^^^
   return __ptr;
 }
-#endif // _CCCL_HAS_CUDA_COMPILER
 
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI void* aligned_alloc(size_t __nbytes, size_t __align) noexcept
 {
