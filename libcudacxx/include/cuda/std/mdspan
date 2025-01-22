@@ -31,6 +31,8 @@ _CCCL_PUSH_MACROS
 #include <cuda/std/__mdspan/layout_right.h>
 #include <cuda/std/__mdspan/layout_stride.h>
 #include <cuda/std/__mdspan/mdspan.h>
+#include <cuda/std/__mdspan/submdspan_extents.h>
+#include <cuda/std/__mdspan/submdspan_helper.h>
 #include <cuda/std/version>
 
 _CCCL_POP_MACROS
