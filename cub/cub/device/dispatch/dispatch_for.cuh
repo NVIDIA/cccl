@@ -51,10 +51,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-
-namespace for_each
+namespace detail::for_each
 {
 
 // The dispatch layer is in the detail namespace until we figure out tuning API
@@ -195,8 +192,6 @@ struct dispatch_t
   }
 };
 
-} // namespace for_each
-
-} // namespace detail
+} // namespace detail::for_each
 
 CUB_NAMESPACE_END

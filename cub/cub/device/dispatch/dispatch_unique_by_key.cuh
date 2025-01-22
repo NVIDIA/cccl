@@ -57,6 +57,8 @@ CUB_NAMESPACE_BEGIN
  * Kernel entry points
  *****************************************************************************/
 
+namespace detail::unique_by_key
+{
 /**
  * @brief Unique by key kernel entry point (multi-block)
  *
@@ -126,9 +128,9 @@ template <typename ChainedPolicyT,
           typename EqualityOpT,
           typename OffsetT>
 __launch_bounds__(int(
-  cub::detail::vsmem_helper_default_fallback_policy_t<
+  vsmem_helper_default_fallback_policy_t<
     typename ChainedPolicyT::ActivePolicy::UniqueByKeyPolicyT,
-    detail::unique_by_key::AgentUniqueByKey,
+    AgentUniqueByKey,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyOutputIteratorT,
@@ -145,11 +147,11 @@ __launch_bounds__(int(
     EqualityOpT equality_op,
     OffsetT num_items,
     int num_tiles,
-    cub::detail::vsmem_t vsmem)
+    vsmem_t vsmem)
 {
-  using VsmemHelperT = cub::detail::vsmem_helper_default_fallback_policy_t<
+  using VsmemHelperT = vsmem_helper_default_fallback_policy_t<
     typename ChainedPolicyT::ActivePolicy::UniqueByKeyPolicyT,
-    detail::unique_by_key::AgentUniqueByKey,
+    AgentUniqueByKey,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyOutputIteratorT,
@@ -176,7 +178,7 @@ __launch_bounds__(int(
   // If applicable, hints to discard modified cache lines for vsmem
   VsmemHelperT::discard_temp_storage(temp_storage);
 }
-
+} // namespace detail::unique_by_key
 /******************************************************************************
  * Dispatch
  ******************************************************************************/
@@ -501,8 +503,8 @@ struct DispatchUniqueByKey
   {
     // Ensure kernels are instantiated.
     return Invoke<ActivePolicyT>(
-      DeviceCompactInitKernel<ScanTileStateT, NumSelectedIteratorT>,
-      DeviceUniqueByKeySweepKernel<
+      detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumSelectedIteratorT>,
+      detail::unique_by_key::DeviceUniqueByKeySweepKernel<
         typename PolicyHub::MaxPolicy,
         KeyInputIteratorT,
         ValueInputIteratorT,

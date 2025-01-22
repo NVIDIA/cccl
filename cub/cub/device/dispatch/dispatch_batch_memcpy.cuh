@@ -64,6 +64,8 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
+namespace batch_memcpy
+{
 /**
  * Initialization kernel for tile status initialization (multi-block)
  */
@@ -102,15 +104,13 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT::BLO
 {
   using StatusWord    = typename TileT::StatusWord;
   using ActivePolicyT = typename ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT;
-  using BufferSizeT   = cub::detail::value_t<BufferSizeIteratorT>;
+  using BufferSizeT   = value_t<BufferSizeIteratorT>;
   /// Internal load/store type. For byte-wise memcpy, a single-byte type
-  using AliasT =
-    typename ::cuda::std::conditional<IsMemcpy,
-                                      std::iterator_traits<char*>,
-                                      std::iterator_traits<cub::detail::value_t<InputBufferIt>>>::type::value_type;
+  using AliasT = typename ::cuda::std::
+    conditional<IsMemcpy, std::iterator_traits<char*>, std::iterator_traits<value_t<InputBufferIt>>>::type::value_type;
   /// Types of the input and output buffers
-  using InputBufferT  = cub::detail::value_t<InputBufferIt>;
-  using OutputBufferT = cub::detail::value_t<OutputBufferIt>;
+  using InputBufferT  = value_t<InputBufferIt>;
+  using OutputBufferT = value_t<OutputBufferIt>;
 
   constexpr uint32_t BLOCK_THREADS    = ActivePolicyT::BLOCK_THREADS;
   constexpr uint32_t ITEMS_PER_THREAD = ActivePolicyT::BYTES_PER_THREAD;
@@ -164,16 +164,15 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT::BLO
       {
         if (thread_offset < buffer_sizes[buffer_id])
         {
-          const auto value =
-            batch_memcpy::read_item<IsMemcpy, AliasT, InputBufferT>(input_buffer_it[buffer_id], thread_offset);
-          batch_memcpy::write_item<IsMemcpy, AliasT, OutputBufferT>(output_buffer_it[buffer_id], thread_offset, value);
+          const auto value = read_item<IsMemcpy, AliasT, InputBufferT>(input_buffer_it[buffer_id], thread_offset);
+          write_item<IsMemcpy, AliasT, OutputBufferT>(output_buffer_it[buffer_id], thread_offset, value);
         }
         thread_offset += BLOCK_THREADS;
       }
     }
     else
     {
-      batch_memcpy::copy_items<IsMemcpy, BLOCK_THREADS, InputBufferT, OutputBufferT, BufferSizeT>(
+      copy_items<IsMemcpy, BLOCK_THREADS, InputBufferT, OutputBufferT, BufferSizeT>(
         input_buffer_it[buffer_id],
         output_buffer_it[buffer_id],
         (::cuda::std::min)(buffer_sizes[buffer_id] - tile_offset_within_buffer, TILE_SIZE),
@@ -232,13 +231,13 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentSmallBufferPolicyT::BLO
     BLevBlockOffsetTileState blev_block_scan_state)
 {
   // Internal type used for storing a buffer's size
-  using BufferSizeT = cub::detail::value_t<BufferSizeIteratorT>;
+  using BufferSizeT = value_t<BufferSizeIteratorT>;
 
   // Alias the correct tuning policy for the current compilation pass' architecture
   using AgentBatchMemcpyPolicyT = typename ChainedPolicyT::ActivePolicy::AgentSmallBufferPolicyT;
 
   // Block-level specialization
-  using AgentBatchMemcpyT = batch_memcpy::AgentBatchMemcpy<
+  using AgentBatchMemcpyT = AgentBatchMemcpy<
     AgentBatchMemcpyPolicyT,
     InputBufferIt,
     OutputBufferIt,
@@ -271,6 +270,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentSmallBufferPolicyT::BLO
     blev_block_scan_state)
     .ConsumeTile(blockIdx.x);
 }
+} // namespace batch_memcpy
 
 /**
  * @tparam InputBufferIt **[inferred]** Random-access input iterator type providing the pointers
@@ -465,8 +465,8 @@ struct DispatchBatchMemcpy
 
     // Kernels
     auto init_scan_states_kernel =
-      InitTileStateKernel<BLevBufferOffsetTileState, BLevBlockOffsetTileState, BlockOffsetT>;
-    auto batch_memcpy_non_blev_kernel = BatchMemcpyKernel<
+      detail::batch_memcpy::InitTileStateKernel<BLevBufferOffsetTileState, BLevBlockOffsetTileState, BlockOffsetT>;
+    auto batch_memcpy_non_blev_kernel = detail::batch_memcpy::BatchMemcpyKernel<
       typename PolicyHub::MaxPolicy,
       InputBufferIt,
       OutputBufferIt,
@@ -481,7 +481,7 @@ struct DispatchBatchMemcpy
       BLevBlockOffsetTileState,
       IsMemcpy>;
 
-    auto multi_block_memcpy_kernel = MultiBlockBatchMemcpyKernel<
+    auto multi_block_memcpy_kernel = detail::batch_memcpy::MultiBlockBatchMemcpyKernel<
       typename PolicyHub::MaxPolicy,
       BufferOffsetT,
       BlevBufferSrcsOutItT,

@@ -68,12 +68,16 @@ CUB_NAMESPACE_BEGIN
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
+namespace detail
+{
 /**
  * \brief Empty kernel for querying PTX manifest metadata (e.g., version) for the current device
  */
 template <typename T>
 CUB_DETAIL_KERNEL_ATTRIBUTES void EmptyKernel()
 {}
+
+} // namespace detail
 
 #endif // _CCCL_DOXYGEN_INVOKED
 
@@ -263,7 +267,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersionUncached(int& ptx_version)
   // Instantiate `EmptyKernel<void>` in both host and device code to ensure
   // it can be called.
   using EmptyKernelPtr        = void (*)();
-  EmptyKernelPtr empty_kernel = EmptyKernel<void>;
+  EmptyKernelPtr empty_kernel = detail::EmptyKernel<void>;
 
   // This is necessary for unused variable warnings in host compilers. The
   // usual syntax of (void)empty_kernel; was not sufficient on MSVC2015.

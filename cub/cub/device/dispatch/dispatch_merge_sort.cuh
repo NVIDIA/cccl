@@ -136,7 +136,7 @@ struct DispatchMergeSort
   {
     using MergePolicyT = typename ActivePolicyT::MergeSortPolicy;
 
-    using merge_sort_helper_t = cub::detail::merge_sort_vsmem_helper_t<
+    using merge_sort_helper_t = detail::merge_sort::merge_sort_vsmem_helper_t<
       MergePolicyT,
       KeyInputIteratorT,
       ValueInputIteratorT,
@@ -147,8 +147,8 @@ struct DispatchMergeSort
       KeyT,
       ValueT>;
 
-    using BlockSortVSmemHelperT  = cub::detail::vsmem_helper_impl<typename merge_sort_helper_t::block_sort_agent_t>;
-    using MergeAgentVSmemHelperT = cub::detail::vsmem_helper_impl<typename merge_sort_helper_t::merge_agent_t>;
+    using BlockSortVSmemHelperT  = detail::vsmem_helper_impl<typename merge_sort_helper_t::block_sort_agent_t>;
+    using MergeAgentVSmemHelperT = detail::vsmem_helper_impl<typename merge_sort_helper_t::merge_agent_t>;
 
     cudaError error = cudaSuccess;
 
@@ -217,7 +217,7 @@ struct DispatchMergeSort
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
         static_cast<int>(num_tiles), merge_sort_helper_t::policy_t::BLOCK_THREADS, 0, stream, true)
         .doit(
-          DeviceMergeSortBlockSortKernel<
+          detail::merge_sort::DeviceMergeSortBlockSortKernel<
             typename PolicyHub::MaxPolicy,
             KeyInputIteratorT,
             ValueInputIteratorT,
@@ -275,7 +275,7 @@ struct DispatchMergeSort
         // Partition
         THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
           partition_grid_size, threads_per_partition_block, 0, stream, true)
-          .doit(DeviceMergeSortPartitionKernel<KeyIteratorT, OffsetT, CompareOpT, KeyT>,
+          .doit(detail::merge_sort::DeviceMergeSortPartitionKernel<KeyIteratorT, OffsetT, CompareOpT, KeyT>,
                 ping,
                 d_output_keys,
                 keys_buffer,
@@ -303,15 +303,16 @@ struct DispatchMergeSort
         THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
           static_cast<int>(num_tiles), static_cast<int>(merge_sort_helper_t::policy_t::BLOCK_THREADS), 0, stream, true)
           .doit(
-            DeviceMergeSortMergeKernel<typename PolicyHub::MaxPolicy,
-                                       KeyInputIteratorT,
-                                       ValueInputIteratorT,
-                                       KeyIteratorT,
-                                       ValueIteratorT,
-                                       OffsetT,
-                                       CompareOpT,
-                                       KeyT,
-                                       ValueT>,
+            detail::merge_sort::DeviceMergeSortMergeKernel<
+              typename PolicyHub::MaxPolicy,
+              KeyInputIteratorT,
+              ValueInputIteratorT,
+              KeyIteratorT,
+              ValueIteratorT,
+              OffsetT,
+              CompareOpT,
+              KeyT,
+              ValueT>,
             ping,
             d_output_keys,
             d_output_items,

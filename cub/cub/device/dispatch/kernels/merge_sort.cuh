@@ -30,7 +30,7 @@ THRUST_NAMESPACE_END
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace detail::merge_sort
 {
 
 /**
@@ -117,8 +117,6 @@ public:
     ::cuda::std::_If<uses_fallback_policy, fallback_block_sort_agent_t, default_block_sort_agent_t>;
   using merge_agent_t = ::cuda::std::_If<uses_fallback_policy, fallback_merge_agent_t, default_merge_agent_t>;
 };
-} // namespace detail
-
 template <typename ChainedPolicyT,
           typename KeyInputIteratorT,
           typename ValueInputIteratorT,
@@ -129,16 +127,15 @@ template <typename ChainedPolicyT,
           typename KeyT,
           typename ValueT>
 __launch_bounds__(
-  cub::detail::merge_sort_vsmem_helper_t<
-    typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
-    KeyInputIteratorT,
-    ValueInputIteratorT,
-    KeyIteratorT,
-    ValueIteratorT,
-    OffsetT,
-    CompareOpT,
-    KeyT,
-    ValueT>::policy_t::BLOCK_THREADS)
+  merge_sort_vsmem_helper_t<typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
+                            KeyInputIteratorT,
+                            ValueInputIteratorT,
+                            KeyIteratorT,
+                            ValueIteratorT,
+                            OffsetT,
+                            CompareOpT,
+                            KeyT,
+                            ValueT>::policy_t::BLOCK_THREADS)
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortBlockSortKernel(
     bool ping,
     KeyInputIteratorT keys_in,
@@ -149,9 +146,9 @@ __launch_bounds__(
     KeyT* tmp_keys_out,
     ValueT* tmp_items_out,
     CompareOpT compare_op,
-    cub::detail::vsmem_t vsmem)
+    vsmem_t vsmem)
 {
-  using MergeSortHelperT = cub::detail::merge_sort_vsmem_helper_t<
+  using MergeSortHelperT = merge_sort_vsmem_helper_t<
     typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
     KeyInputIteratorT,
     ValueInputIteratorT,
@@ -166,7 +163,7 @@ __launch_bounds__(
 
   using AgentBlockSortT = typename MergeSortHelperT::block_sort_agent_t;
 
-  using VSmemHelperT = cub::detail::vsmem_helper_impl<AgentBlockSortT>;
+  using VSmemHelperT = vsmem_helper_impl<AgentBlockSortT>;
 
   // Static shared memory allocation
   __shared__ typename VSmemHelperT::static_temp_storage_t static_temp_storage;
@@ -210,7 +207,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortPartitionKernel(
 
   if (partition_idx < num_partitions)
   {
-    detail::merge_sort::AgentPartition<KeyIteratorT, OffsetT, CompareOpT, KeyT> agent(
+    AgentPartition<KeyIteratorT, OffsetT, CompareOpT, KeyT> agent(
       ping,
       keys_ping,
       keys_pong,
@@ -236,16 +233,15 @@ template <typename ChainedPolicyT,
           typename KeyT,
           typename ValueT>
 __launch_bounds__(
-  cub::detail::merge_sort_vsmem_helper_t<
-    typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
-    KeyInputIteratorT,
-    ValueInputIteratorT,
-    KeyIteratorT,
-    ValueIteratorT,
-    OffsetT,
-    CompareOpT,
-    KeyT,
-    ValueT>::policy_t::BLOCK_THREADS)
+  merge_sort_vsmem_helper_t<typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
+                            KeyInputIteratorT,
+                            ValueInputIteratorT,
+                            KeyIteratorT,
+                            ValueIteratorT,
+                            OffsetT,
+                            CompareOpT,
+                            KeyT,
+                            ValueT>::policy_t::BLOCK_THREADS)
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortMergeKernel(
     bool ping,
     KeyIteratorT keys_ping,
@@ -256,9 +252,9 @@ __launch_bounds__(
     CompareOpT compare_op,
     OffsetT* merge_partitions,
     OffsetT target_merged_tiles_number,
-    cub::detail::vsmem_t vsmem)
+    vsmem_t vsmem)
 {
-  using MergeSortHelperT = cub::detail::merge_sort_vsmem_helper_t<
+  using MergeSortHelperT = merge_sort_vsmem_helper_t<
     typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
     KeyInputIteratorT,
     ValueInputIteratorT,
@@ -273,7 +269,7 @@ __launch_bounds__(
 
   using AgentMergeT = typename MergeSortHelperT::merge_agent_t;
 
-  using VSmemHelperT = cub::detail::vsmem_helper_impl<AgentMergeT>;
+  using VSmemHelperT = vsmem_helper_impl<AgentMergeT>;
 
   // Static shared memory allocation
   __shared__ typename VSmemHelperT::static_temp_storage_t static_temp_storage;
@@ -302,5 +298,7 @@ __launch_bounds__(
   // If applicable, hints to discard modified cache lines for vsmem
   VSmemHelperT::discard_temp_storage(temp_storage);
 }
+
+} // namespace detail::merge_sort
 
 CUB_NAMESPACE_END

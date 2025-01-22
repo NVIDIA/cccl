@@ -52,10 +52,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-
-namespace three_way_partition
+namespace detail::three_way_partition
 {
 // Offset type used to instantiate the stream three-way-partition-kernel and agent to index the items within one
 // partition
@@ -131,8 +128,6 @@ public:
     }
   }
 };
-} // namespace three_way_partition
-} // namespace detail
 
 /******************************************************************************
  * Kernel entry points
@@ -231,6 +226,7 @@ DeviceThreeWayPartitionInitKernel(ScanTileStateT tile_state, int num_tiles, NumS
     }
   }
 }
+} // namespace detail::three_way_partition
 
 /******************************************************************************
  * Dispatch
@@ -483,8 +479,8 @@ struct DispatchThreeWayPartitionIf
   {
     using MaxPolicyT = typename PolicyHub::MaxPolicy;
     return Invoke<ActivePolicyT>(
-      DeviceThreeWayPartitionInitKernel<ScanTileStateT, NumSelectedIteratorT>,
-      DeviceThreeWayPartitionKernel<
+      detail::three_way_partition::DeviceThreeWayPartitionInitKernel<ScanTileStateT, NumSelectedIteratorT>,
+      detail::three_way_partition::DeviceThreeWayPartitionKernel<
         MaxPolicyT,
         InputIteratorT,
         FirstOutputIteratorT,
