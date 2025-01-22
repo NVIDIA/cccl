@@ -129,6 +129,8 @@
  * (v. August 20, 2021)
  */
 
+#include <cuda_runtime_api.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 namespace __detail_ap
