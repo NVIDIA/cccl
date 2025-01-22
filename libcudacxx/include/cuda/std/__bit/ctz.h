@@ -67,7 +67,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_ctz(_Tp __x) noex
 #if defined(__CUDA_ARCH__)
   if (is_constant_evaluated())
   {
-    return __constexpr_ctz(__x);
+    return _CUDA_VSTD::__constexpr_ctz(__x);
   }
   else
   {
@@ -76,7 +76,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_ctz(_Tp __x) noex
            : __clzll(__brevll(static_cast<uint64_t>(__x)));
   }
 #elif _CCCL_COMPILER(MSVC)
-  return is_constant_evaluated() ? __constexpr_ctz(__x) : __msvc_runtime_ctz(__x);
+  return is_constant_evaluated() ? _CUDA_VSTD::__constexpr_ctz(__x) : _CUDA_VSTD::__msvc_runtime_ctz(__x);
 #else // _CCCL_COMPILER(MSVC) ^^^ / !_CCCL_COMPILER(MSVC) vvv
   return sizeof(_Tp) == sizeof(uint32_t)
          ? _CCCL_BUILTIN_CTZ(static_cast<uint32_t>(__x))
