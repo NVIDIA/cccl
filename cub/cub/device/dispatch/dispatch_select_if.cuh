@@ -656,7 +656,7 @@ struct DispatchSelectIf
         // Log scan_init_kernel configuration
         int init_grid_size = CUB_MAX(1, ::cuda::ceil_div(current_num_tiles, INIT_KERNEL_THREADS));
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
         _CubLog("Invoking scan_init_kernel<<<%d, %d, 0, %lld>>>()\n",
                 init_grid_size,
                 INIT_KERNEL_THREADS,
@@ -689,7 +689,7 @@ struct DispatchSelectIf
         }
 
 // Log select_if_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
         {
           // Get SM occupancy for select_if_kernel
           int range_select_sm_occupancy;

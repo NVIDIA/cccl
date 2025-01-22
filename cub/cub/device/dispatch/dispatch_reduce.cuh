@@ -382,13 +382,13 @@ struct DispatchReduce
       }
 
 // Log single_reduce_sweep_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
               "%d items per thread\n",
               policy.SingleTile().BlockThreads(),
               (long long) stream,
               policy.SingleTile().ItemsPerThread());
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
       // Invoke single_reduce_sweep_kernel
       launcher_factory(1, policy.SingleTile().BlockThreads(), 0, stream)
@@ -494,7 +494,7 @@ struct DispatchReduce
       int reduce_grid_size = even_share.grid_size;
 
 // Log device_reduce_sweep_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking DeviceReduceKernel<<<%lu, %d, 0, %lld>>>(), %d items "
               "per thread, %d SM occupancy\n",
               (unsigned long) reduce_grid_size,
@@ -502,7 +502,7 @@ struct DispatchReduce
               (long long) stream,
               active_policy.Reduce().ItemsPerThread(),
               reduce_config.sm_occupancy);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
       // Invoke DeviceReduceKernel
       launcher_factory(reduce_grid_size, active_policy.Reduce().BlockThreads(), 0, stream)
@@ -523,13 +523,13 @@ struct DispatchReduce
       }
 
 // Log single_reduce_sweep_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
               "%d items per thread\n",
               active_policy.SingleTile().BlockThreads(),
               (long long) stream,
               active_policy.SingleTile().ItemsPerThread());
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
       // Invoke DeviceReduceSingleTileKernel
       launcher_factory(1, active_policy.SingleTile().BlockThreads(), 0, stream)
@@ -885,7 +885,7 @@ struct DispatchSegmentedReduce
       }
 
 // Log device_reduce_sweep_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking SegmentedDeviceReduceKernel<<<%d, %d, 0, %lld>>>(), "
               "%d items per thread, %d SM occupancy\n",
               num_segments,
@@ -893,7 +893,7 @@ struct DispatchSegmentedReduce
               (long long) stream,
               ActivePolicyT::SegmentedReducePolicy::ITEMS_PER_THREAD,
               segmented_reduce_config.sm_occupancy);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
       // Invoke DeviceReduceKernel
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(

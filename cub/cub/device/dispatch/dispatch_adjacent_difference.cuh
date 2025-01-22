@@ -195,13 +195,13 @@ struct DispatchAdjacentDifference
         constexpr int init_block_size = AgentDifferenceInitT::BLOCK_THREADS;
         const int init_grid_size      = ::cuda::ceil_div(num_tiles, init_block_size);
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
         _CubLog("Invoking DeviceAdjacentDifferenceInitKernel"
                 "<<<%d, %d, 0, %lld>>>()\n",
                 init_grid_size,
                 init_block_size,
                 reinterpret_cast<long long>(stream));
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
         THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size, init_block_size, 0, stream)
           .doit(detail::adjacent_difference::
@@ -226,13 +226,13 @@ struct DispatchAdjacentDifference
         }
       }
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking DeviceAdjacentDifferenceDifferenceKernel"
               "<<<%d, %d, 0, %lld>>>()\n",
               num_tiles,
               AdjacentDifferencePolicyT::BLOCK_THREADS,
               reinterpret_cast<long long>(stream));
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
         num_tiles, AdjacentDifferencePolicyT::BLOCK_THREADS, 0, stream)
