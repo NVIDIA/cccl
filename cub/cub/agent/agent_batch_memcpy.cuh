@@ -60,6 +60,8 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
+namespace batch_memcpy
+{
 template <bool PTR_IS_FOUR_BYTE_ALIGNED>
 _CCCL_FORCEINLINE _CCCL_DEVICE void
 LoadVectorAndFunnelShiftR(uint32_t const* aligned_ptr, uint32_t bit_shift, uint4& data_out)
@@ -1172,7 +1174,7 @@ private:
   // buffers
   BLevBlockOffsetTileState blev_block_scan_state;
 };
-
+} // namespace batch_memcpy
 } // namespace detail
 
 CUB_NAMESPACE_END

@@ -327,13 +327,13 @@ __launch_bounds__(int(AgentSegmentFixupPolicyT::BLOCK_THREADS))
     ScanTileStateT tile_state)
 {
   // Thread block type for reducing tiles of value segments
-  using AgentSegmentFixupT =
-    AgentSegmentFixup<AgentSegmentFixupPolicyT,
-                      PairsInputIteratorT,
-                      AggregatesOutputIteratorT,
-                      ::cuda::std::equal_to<>,
-                      ::cuda::std::plus<>,
-                      OffsetT>;
+  using AgentSegmentFixupT = detail::segment_fixup::AgentSegmentFixup<
+    AgentSegmentFixupPolicyT,
+    PairsInputIteratorT,
+    AggregatesOutputIteratorT,
+    ::cuda::std::equal_to<>,
+    ::cuda::std::plus<>,
+    OffsetT>;
 
   // Shared memory for AgentSegmentFixup
   __shared__ typename AgentSegmentFixupT::TempStorage temp_storage;
