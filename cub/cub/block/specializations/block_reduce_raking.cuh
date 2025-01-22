@@ -50,7 +50,8 @@
 #include <cub/warp/warp_reduce.cuh>
 
 CUB_NAMESPACE_BEGIN
-
+namespace detail
+{
 /**
  * @brief BlockReduceRaking provides raking-based methods of parallel reduction across a CUDA thread
  *        block. Supports non-commutative reduction operators.
@@ -257,5 +258,11 @@ struct BlockReduceRaking
     return Reduce<IS_FULL_TILE>(partial, num_valid, reduction_op);
   }
 };
+} // namespace detail
+
+template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z, int LEGACY_PTX_ARCH = 0>
+using BlockReduceRaking CCCL_DEPRECATED_BECAUSE(
+  "This class is considered an implementation detail and the public interface will be "
+  "removed.") = detail::BlockReduceRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z, LEGACY_PTX_ARCH>;
 
 CUB_NAMESPACE_END
