@@ -11,8 +11,8 @@
 
 int main(int, char**)
 {
-#if !defined(_CCCL_BUILTIN_CLZ)
-  auto x = _CCCL_BUILTIN_CLZ(0b10101010);
+#if !defined(_CCCL_BUILTIN_CLZLL)
+  auto x = _CCCL_BUILTIN_CLZLL(0b10101010);
   unused(x);
 #else
   static_assert(false);
