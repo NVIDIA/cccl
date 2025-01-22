@@ -38,7 +38,9 @@ __host__ __device__ void test_imp(cuda::std::false_type)
 template <class T>
 __host__ __device__ inline void test()
 {
-  test_imp<T>(cuda::std::is_floating_point<T>());
+  constexpr bool is_float = cuda::std::is_floating_point<T>::value || cuda::std::__is_extended_floating_point<T>::value;
+
+  test_imp<T>(cuda::std::integral_constant<bool, is_float>{});
 }
 
 int main(int, char**)
@@ -72,6 +74,12 @@ int main(int, char**)
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
   test<long double>();
 #endif
+#if defined(_LIBCUDACXX_HAS_NVFP16)
+  test<__half>();
+#endif // _LIBCUDACXX_HAS_NVFP16
+#if defined(_LIBCUDACXX_HAS_NVBF16)
+  test<__nv_bfloat16>();
+#endif // _LIBCUDACXX_HAS_NVBF16
 
   return 0;
 }

@@ -52,7 +52,8 @@
 #include <cub/warp/warp_scan.cuh>
 
 CUB_NAMESPACE_BEGIN
-
+namespace detail
+{
 /**
  * @brief BlockScanRaking provides variants of raking-based parallel prefix scan across a CUDA
  * thread block.
@@ -302,7 +303,7 @@ struct BlockScanRaking
       T* placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
       detail::uninitialized_copy_single(placement_ptr, input);
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Reduce parallelism down to just raking threads
       if (linear_tid < RAKING_THREADS)
@@ -318,7 +319,7 @@ struct BlockScanRaking
         ExclusiveDownsweep(scan_op, exclusive_partial, (linear_tid != 0));
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Grab thread prefix from shared memory
       exclusive_output = *placement_ptr;
@@ -355,7 +356,7 @@ struct BlockScanRaking
       T* placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
       detail::uninitialized_copy_single(placement_ptr, input);
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Reduce parallelism down to just raking threads
       if (linear_tid < RAKING_THREADS)
@@ -371,7 +372,7 @@ struct BlockScanRaking
         ExclusiveDownsweep(scan_op, exclusive_partial);
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Grab exclusive partial from shared memory
       output = *placement_ptr;
@@ -410,7 +411,7 @@ struct BlockScanRaking
       T* placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
       detail::uninitialized_copy_single(placement_ptr, input);
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Reduce parallelism down to just raking threads
       if (linear_tid < RAKING_THREADS)
@@ -433,7 +434,7 @@ struct BlockScanRaking
         }
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Grab thread prefix from shared memory
       output = *placement_ptr;
@@ -478,7 +479,7 @@ struct BlockScanRaking
       T* placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
       detail::uninitialized_copy_single(placement_ptr, input);
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Reduce parallelism down to just raking threads
       if (linear_tid < RAKING_THREADS)
@@ -501,7 +502,7 @@ struct BlockScanRaking
         }
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Grab exclusive partial from shared memory
       output = *placement_ptr;
@@ -559,7 +560,7 @@ struct BlockScanRaking
       T* placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
       detail::uninitialized_copy_single(placement_ptr, input);
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Reduce parallelism down to just raking threads
       if (linear_tid < RAKING_THREADS)
@@ -588,7 +589,7 @@ struct BlockScanRaking
         ExclusiveDownsweep(scan_op, downsweep_prefix);
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Grab thread prefix from shared memory
       output = *placement_ptr;
@@ -626,7 +627,7 @@ struct BlockScanRaking
       T* placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
       detail::uninitialized_copy_single(placement_ptr, input);
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Reduce parallelism down to just raking threads
       if (linear_tid < RAKING_THREADS)
@@ -642,7 +643,7 @@ struct BlockScanRaking
         InclusiveDownsweep(scan_op, exclusive_partial, (linear_tid != 0));
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Grab thread prefix from shared memory
       output = *placement_ptr;
@@ -680,7 +681,7 @@ struct BlockScanRaking
       T* placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
       detail::uninitialized_copy_single(placement_ptr, input);
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Reduce parallelism down to just raking threads
       if (linear_tid < RAKING_THREADS)
@@ -703,7 +704,7 @@ struct BlockScanRaking
         }
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Grab thread prefix from shared memory
       output = *placement_ptr;
@@ -758,7 +759,7 @@ struct BlockScanRaking
       T* placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
       detail::uninitialized_copy_single(placement_ptr, input);
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Reduce parallelism down to just raking threads
       if (linear_tid < RAKING_THREADS)
@@ -787,12 +788,18 @@ struct BlockScanRaking
         InclusiveDownsweep(scan_op, downsweep_prefix);
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Grab thread prefix from shared memory
       output = *placement_ptr;
     }
   }
 };
+} // namespace detail
+
+template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z, bool MEMOIZE, int LEGACY_PTX_ARCH = 0>
+using BlockScanRaking CCCL_DEPRECATED_BECAUSE(
+  "This class is considered an implementation detail and the public interface will be "
+  "removed.") = detail::BlockScanRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z, MEMOIZE, LEGACY_PTX_ARCH>;
 
 CUB_NAMESPACE_END

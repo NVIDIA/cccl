@@ -26,7 +26,6 @@
  ******************************************************************************/
 #pragma once
 
-// #define CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT
 #include <cub/device/device_segmented_sort.cuh>
 
 #include <thrust/device_ptr.h>
@@ -38,6 +37,7 @@
 #include <thrust/scan.h>
 #include <thrust/sequence.h>
 #include <thrust/sort.h>
+#include <thrust/unique.h>
 
 #include <cuda/std/limits>
 #include <cuda/std/tuple>
@@ -46,11 +46,11 @@
 
 #include <cstdio>
 
+#include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
 #include <c2h/cpu_timer.h>
 #include <c2h/extended_types.h>
 #include <c2h/utility.h>
-#include <catch2_test_launch_helper.h>
 #include <nv/target>
 
 #define MAKE_SEED_MOD_FUNCTION(name, xor_mask)                  \
@@ -70,6 +70,194 @@ MAKE_SEED_MOD_FUNCTION(offset, 0x5555555555555555)
 MAKE_SEED_MOD_FUNCTION(offset_eraser, 0x3333333333333333)
 
 #undef MAKE_SEED_MOD_FUNCTION
+
+// Helper to generate a certain number of empty segments followed by equi-sized segments.
+template <typename OffsetT, typename SegmentIndexT>
+struct segment_index_to_offset_op
+{
+  SegmentIndexT num_empty_segments;
+  SegmentIndexT num_segments;
+  OffsetT segment_size;
+  OffsetT num_items;
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE OffsetT operator()(SegmentIndexT i)
+  {
+    if (i < num_empty_segments)
+    {
+      return 0;
+    }
+    else if (i < num_segments)
+    {
+      return segment_size * static_cast<OffsetT>(i - num_empty_segments);
+    }
+    else
+    {
+      return num_items;
+    }
+  }
+};
+
+template <typename T>
+struct mod_n
+{
+  std::size_t mod;
+
+  template <typename IndexT>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T operator()(IndexT x)
+  {
+    return static_cast<T>(x % mod);
+  }
+};
+
+template <typename KeyT>
+struct short_key_verification_helper
+{
+  using key_t = KeyT;
+  // The histogram size of the keys being sorted for later verification
+  const std::int64_t max_histo_size = std::int64_t{1} << ::cuda::std::numeric_limits<key_t>::digits;
+
+  // Holding the histogram of the keys being sorted for verification
+  c2h::host_vector<std::size_t> keys_histogram{};
+
+public:
+  void prepare_verification_data(const c2h::device_vector<key_t>& in_keys)
+  {
+    c2h::host_vector<key_t> h_in{in_keys};
+    keys_histogram = c2h::host_vector<std::size_t>(max_histo_size, 0);
+    for (const auto& key : h_in)
+    {
+      keys_histogram[key]++;
+    }
+  }
+
+  void verify_sorted(const c2h::device_vector<key_t>& out_keys) const
+  {
+    // Verify keys are sorted next to each other
+    auto count = thrust::unique_count(c2h::device_policy, out_keys.cbegin(), out_keys.cend(), thrust::equal_to<int>());
+    REQUIRE(count <= max_histo_size);
+
+    // Verify keys are sorted using prior histogram computation
+    auto index_it = thrust::make_counting_iterator(std::size_t{0});
+    c2h::device_vector<key_t> unique_keys_out(count);
+    c2h::device_vector<std::size_t> unique_indexes_out(count);
+    thrust::unique_by_key_copy(
+      c2h::device_policy,
+      out_keys.cbegin(),
+      out_keys.cend(),
+      index_it,
+      unique_keys_out.begin(),
+      unique_indexes_out.begin());
+
+    for (int i = 0; i < count; i++)
+    {
+      auto const next_end = (i == count - 1) ? out_keys.size() : unique_indexes_out[i + 1];
+      REQUIRE(keys_histogram[unique_keys_out[i]] == next_end - unique_indexes_out[i]);
+    }
+  }
+};
+
+template <typename KeyT>
+class segmented_verification_helper
+{
+private:
+  using key_t = KeyT;
+  const std::size_t sequence_length{};
+
+  // Analytically computes the histogram for a segment of a series of keys: [0, 1, 2, ..., mod_n - 1, 0, 1, 2, ...].
+  // `segment_end` is one-past-the-end of the segment to compute the histogram for.
+  c2h::host_vector<int> compute_histogram_of_series(std::size_t segment_offset, std::size_t segment_end) const
+  {
+    // The i-th full cycle begins after segment_offset
+    const auto start_cycle = cuda::ceil_div(segment_offset, sequence_length);
+
+    // The last full cycle ending before segment_end
+    const auto end_cycle = segment_end / sequence_length;
+
+    // Number of full cycles repeating the sequence
+    const int full_cycles = (end_cycle > start_cycle) ? static_cast<int>(end_cycle - start_cycle) : 0;
+
+    // Add contributions from full cycles
+    c2h::host_vector<int> histogram(sequence_length, full_cycles);
+
+    // Partial cycles preceding the first full cycle
+    for (std::size_t j = segment_offset; j < start_cycle * sequence_length; ++j)
+    {
+      const auto value = j % sequence_length;
+      histogram[value]++;
+    }
+
+    // Partial cycles following the last full cycle
+    for (std::size_t j = end_cycle * sequence_length; j < segment_end; ++j)
+    {
+      const auto value = j % sequence_length;
+      histogram[value]++;
+    }
+    return histogram;
+  }
+
+public:
+  segmented_verification_helper(int sequence_length)
+      : sequence_length(sequence_length)
+  {}
+
+  void prepare_input_data(c2h::device_vector<key_t>& in_keys) const
+  {
+    auto data_gen_it =
+      thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{0}), mod_n<key_t>{sequence_length});
+    thrust::copy_n(data_gen_it, in_keys.size(), in_keys.begin());
+  }
+
+  template <typename SegmentOffsetItT>
+  void verify_sorted(c2h::device_vector<key_t>& out_keys, SegmentOffsetItT offsets, std::size_t num_segments) const
+  {
+    // The segments' end-offsets are provided by the segments' begin-offset iterator
+    auto offsets_plus_1 = offsets + 1;
+
+    // Verify keys are sorted next to each other
+    const auto count = static_cast<std::size_t>(
+      thrust::unique_count(c2h::device_policy, out_keys.cbegin(), out_keys.cend(), thrust::equal_to<int>()));
+    REQUIRE(count <= sequence_length * num_segments);
+
+    // // Verify keys are sorted using prior histogram computation
+    auto index_it = thrust::make_counting_iterator(std::size_t{0});
+    c2h::device_vector<key_t> unique_keys_out(count);
+    c2h::device_vector<std::size_t> unique_indexes_out(count);
+    thrust::unique_by_key_copy(
+      c2h::device_policy,
+      out_keys.cbegin(),
+      out_keys.cend(),
+      index_it,
+      unique_keys_out.begin(),
+      unique_indexes_out.begin());
+
+    // Copy the unique keys and indexes to host memory
+    c2h::host_vector<key_t> h_unique_keys_out{unique_keys_out};
+    c2h::host_vector<std::size_t> h_unique_indexes_out{unique_indexes_out};
+
+    // Verify keys are sorted using prior histogram computation
+    std::size_t uniques_index  = 0;
+    std::size_t current_offset = 0;
+    for (std::size_t seg_index = 0; seg_index < num_segments; ++seg_index)
+    {
+      const auto segment_offset    = offsets[seg_index];
+      const auto segment_end       = offsets_plus_1[seg_index];
+      const auto segment_histogram = compute_histogram_of_series(segment_offset, segment_end);
+      for (std::size_t i = 0; i < sequence_length; i++)
+      {
+        if (segment_histogram[i] != 0)
+        {
+          CAPTURE(seg_index, i, uniques_index, current_offset, count);
+          auto const next_end =
+            (uniques_index == count - 1) ? out_keys.size() : h_unique_indexes_out[uniques_index + 1];
+          REQUIRE(h_unique_keys_out[uniques_index] == i);
+          REQUIRE(next_end - h_unique_indexes_out[uniques_index] == static_cast<std::size_t>(segment_histogram[i]));
+          current_offset += segment_histogram[i];
+          uniques_index++;
+        }
+      }
+    }
+  }
+};
 
 template <typename T>
 struct unwrap_value_t_impl

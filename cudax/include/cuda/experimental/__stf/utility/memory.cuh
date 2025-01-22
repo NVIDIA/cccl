@@ -29,6 +29,7 @@
 
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 
+#include <algorithm>
 #include <cstdint>
 
 namespace cuda::experimental::stf

@@ -36,7 +36,8 @@
 #  include <thrust/detail/static_assert.h>
 #  include <thrust/event.h>
 #  include <thrust/system/detail/adl/async/transform.h>
-#  include <thrust/type_traits/remove_cvref.h>
+
+#  include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -50,7 +51,7 @@ namespace unimplemented
 {
 
 template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename OutputIt, typename UnaryOperation>
-_CCCL_HOST event<DerivedPolicy> async_transform(
+CCCL_DEPRECATED _CCCL_HOST event<DerivedPolicy> async_transform(
   thrust::execution_policy<DerivedPolicy>& exec, ForwardIt first, Sentinel last, OutputIt output, UnaryOperation op)
 {
   THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<ForwardIt, false>::value),
@@ -74,6 +75,7 @@ struct transform_fn final
   , typename UnaryOperation
   >
   _CCCL_HOST
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   static auto
   call(
     thrust::detail::execution_policy_base<DerivedPolicy> const& exec
@@ -90,6 +92,7 @@ struct transform_fn final
     , THRUST_FWD(op)
     )
   )
+  _CCCL_SUPPRESS_DEPRECATED_POP
 
   template <
     typename ForwardIt, typename Sentinel, typename OutputIt
@@ -104,8 +107,8 @@ struct transform_fn final
   THRUST_RETURNS(
     transform_fn::call(
       thrust::detail::select_system(
-        typename iterator_system<remove_cvref_t<ForwardIt>>::type{}
-      , typename iterator_system<remove_cvref_t<OutputIt>>::type{}
+        typename iterator_system<::cuda::std::remove_cvref_t<ForwardIt>>::type{}
+      , typename iterator_system<::cuda::std::remove_cvref_t<OutputIt>>::type{}
       )
     , THRUST_FWD(first), THRUST_FWD(last)
     , THRUST_FWD(output)
@@ -114,8 +117,8 @@ struct transform_fn final
   )
 
   template <typename... Args>
-  _CCCL_NODISCARD _CCCL_HOST
-  auto operator()(Args&&... args) const
+  CCCL_DEPRECATED _CCCL_NODISCARD _CCCL_HOST
+ auto operator()(Args&&... args) const
   THRUST_RETURNS(
     call(THRUST_FWD(args)...)
   )
@@ -124,6 +127,9 @@ struct transform_fn final
 
 } // namespace transform_detail
 
+// note: cannot add a CCCL_DEPRECATED here because the global variable is emitted into cudafe1.stub.c and we cannot
+// suppress the warning there
+//! deprecated [Since 2.8.0]
 _CCCL_GLOBAL_CONSTANT transform_detail::transform_fn transform{};
 
 /*! \endcond

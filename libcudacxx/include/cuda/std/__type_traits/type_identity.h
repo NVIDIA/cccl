@@ -25,7 +25,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp>
 struct type_identity
 {
-  typedef _Tp type;
+  using type = _Tp;
 };
 
 template <class _Tp>

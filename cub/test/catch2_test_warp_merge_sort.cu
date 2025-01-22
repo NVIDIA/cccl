@@ -88,7 +88,7 @@ __global__ void warp_merge_sort_kernel(T* in, T* out, SegmentSizeItT segment_siz
     const int idx     = thread_offset + item;
     thread_data[item] = in[idx];
   }
-  cub::WARP_SYNC(warp_sort.get_member_mask());
+  __syncwarp(warp_sort.get_member_mask());
 
   // Run merge sort test
   action(warp_sort, thread_data, valid_items, oob_default);
@@ -153,7 +153,7 @@ __global__ void warp_merge_sort_kernel(
     keys[item]    = keys_in[idx];
     values[item]  = values_in[idx];
   }
-  cub::WARP_SYNC(warp_sort.get_member_mask());
+  __syncwarp(warp_sort.get_member_mask());
 
   // Run merge sort test
   action(warp_sort, keys, values, valid_items, oob_default);

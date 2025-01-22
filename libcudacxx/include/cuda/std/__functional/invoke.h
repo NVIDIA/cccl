@@ -56,200 +56,200 @@ struct __member_pointer_traits_imp
 template <class _Rp, class _Class, class... _Param>
 struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param...), true, false>
 {
-  typedef _Class _ClassType;
-  typedef _Rp _ReturnType;
-  typedef _Rp(_FnType)(_Param...);
+  using _ClassType  = _Class;
+  using _ReturnType = _Rp;
+  using _FnType     = _Rp (*)(_Param...);
 };
 
 template <class _Rp, class _Class, class... _Param>
 struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...), true, false>
 {
-  typedef _Class _ClassType;
-  typedef _Rp _ReturnType;
-  typedef _Rp(_FnType)(_Param..., ...);
+  using _ClassType  = _Class;
+  using _ReturnType = _Rp;
+  using _FnType     = _Rp (*)(_Param..., ...);
 };
 
 template <class _Rp, class _Class, class... _Param>
 struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param...) const, true, false>
 {
-  typedef _Class const _ClassType;
-  typedef _Rp _ReturnType;
-  typedef _Rp(_FnType)(_Param...);
+  using _ClassType  = _Class const;
+  using _ReturnType = _Rp;
+  using _FnType     = _Rp (*)(_Param...);
 };
 
 template <class _Rp, class _Class, class... _Param>
 struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...) const, true, false>
 {
-  typedef _Class const _ClassType;
-  typedef _Rp _ReturnType;
-  typedef _Rp(_FnType)(_Param..., ...);
+  using _ClassType  = _Class const;
+  using _ReturnType = _Rp;
+  using _FnType     = _Rp (*)(_Param..., ...);
 };
 
 template <class _Rp, class _Class, class... _Param>
 struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param...) volatile, true, false>
 {
-  typedef _Class volatile _ClassType;
-  typedef _Rp _ReturnType;
-  typedef _Rp(_FnType)(_Param...);
+  using _ClassType  = _Class volatile;
+  using _ReturnType = _Rp;
+  using _FnType     = _Rp (*)(_Param...);
 };
 
 template <class _Rp, class _Class, class... _Param>
 struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...) volatile, true, false>
 {
-  typedef _Class volatile _ClassType;
-  typedef _Rp _ReturnType;
-  typedef _Rp(_FnType)(_Param..., ...);
+  using _ClassType  = _Class volatile;
+  using _ReturnType = _Rp;
+  using _FnType     = _Rp (*)(_Param..., ...);
 };
 
 template <class _Rp, class _Class, class... _Param>
 struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param...) const volatile, true, false>
 {
-  typedef _Class const volatile _ClassType;
-  typedef _Rp _ReturnType;
-  typedef _Rp(_FnType)(_Param...);
+  using _ClassType  = _Class const volatile;
+  using _ReturnType = _Rp;
+  using _FnType     = _Rp (*)(_Param...);
 };
 
 template <class _Rp, class _Class, class... _Param>
 struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...) const volatile, true, false>
 {
-  typedef _Class const volatile _ClassType;
-  typedef _Rp _ReturnType;
-  typedef _Rp(_FnType)(_Param..., ...);
+  using _ClassType  = _Class const volatile;
+  using _ReturnType = _Rp;
+  using _FnType     = _Rp (*)(_Param..., ...);
 };
 
 template <class _Rp, class _Class, class... _Param>
 struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param...)&, true, false>
 {
-  typedef _Class& _ClassType;
-  typedef _Rp _ReturnType;
-  typedef _Rp(_FnType)(_Param...);
+  using _ClassType  = _Class&;
+  using _ReturnType = _Rp;
+  using _FnType     = _Rp (*)(_Param...);
 };
 
 template <class _Rp, class _Class, class... _Param>
 struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...)&, true, false>
 {
-  typedef _Class& _ClassType;
-  typedef _Rp _ReturnType;
-  typedef _Rp(_FnType)(_Param..., ...);
+  using _ClassType  = _Class&;
+  using _ReturnType = _Rp;
+  using _FnType     = _Rp (*)(_Param..., ...);
 };
 
 template <class _Rp, class _Class, class... _Param>
 struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param...) const&, true, false>
 {
-  typedef _Class const& _ClassType;
-  typedef _Rp _ReturnType;
-  typedef _Rp(_FnType)(_Param...);
+  using _ClassType  = _Class const&;
+  using _ReturnType = _Rp;
+  using _FnType     = _Rp (*)(_Param...);
 };
 
 template <class _Rp, class _Class, class... _Param>
 struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...) const&, true, false>
 {
-  typedef _Class const& _ClassType;
-  typedef _Rp _ReturnType;
-  typedef _Rp(_FnType)(_Param..., ...);
+  using _ClassType  = _Class const&;
+  using _ReturnType = _Rp;
+  using _FnType     = _Rp (*)(_Param..., ...);
 };
 
 template <class _Rp, class _Class, class... _Param>
 struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param...) volatile&, true, false>
 {
-  typedef _Class volatile& _ClassType;
-  typedef _Rp _ReturnType;
-  typedef _Rp(_FnType)(_Param...);
+  using _ClassType  = _Class volatile&;
+  using _ReturnType = _Rp;
+  using _FnType     = _Rp (*)(_Param...);
 };
 
 template <class _Rp, class _Class, class... _Param>
 struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...) volatile&, true, false>
 {
-  typedef _Class volatile& _ClassType;
-  typedef _Rp _ReturnType;
-  typedef _Rp(_FnType)(_Param..., ...);
+  using _ClassType  = _Class volatile&;
+  using _ReturnType = _Rp;
+  using _FnType     = _Rp (*)(_Param..., ...);
 };
 
 template <class _Rp, class _Class, class... _Param>
 struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param...) const volatile&, true, false>
 {
-  typedef _Class const volatile& _ClassType;
-  typedef _Rp _ReturnType;
-  typedef _Rp(_FnType)(_Param...);
+  using _ClassType  = _Class const volatile&;
+  using _ReturnType = _Rp;
+  using _FnType     = _Rp (*)(_Param...);
 };
 
 template <class _Rp, class _Class, class... _Param>
 struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...) const volatile&, true, false>
 {
-  typedef _Class const volatile& _ClassType;
-  typedef _Rp _ReturnType;
-  typedef _Rp(_FnType)(_Param..., ...);
+  using _ClassType  = _Class const volatile&;
+  using _ReturnType = _Rp;
+  using _FnType     = _Rp (*)(_Param..., ...);
 };
 
 template <class _Rp, class _Class, class... _Param>
 struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param...)&&, true, false>
 {
-  typedef _Class&& _ClassType;
-  typedef _Rp _ReturnType;
-  typedef _Rp(_FnType)(_Param...);
+  using _ClassType  = _Class&&;
+  using _ReturnType = _Rp;
+  using _FnType     = _Rp (*)(_Param...);
 };
 
 template <class _Rp, class _Class, class... _Param>
 struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...)&&, true, false>
 {
-  typedef _Class&& _ClassType;
-  typedef _Rp _ReturnType;
-  typedef _Rp(_FnType)(_Param..., ...);
+  using _ClassType  = _Class&&;
+  using _ReturnType = _Rp;
+  using _FnType     = _Rp (*)(_Param..., ...);
 };
 
 template <class _Rp, class _Class, class... _Param>
 struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param...) const&&, true, false>
 {
-  typedef _Class const&& _ClassType;
-  typedef _Rp _ReturnType;
-  typedef _Rp(_FnType)(_Param...);
+  using _ClassType  = _Class const&&;
+  using _ReturnType = _Rp;
+  using _FnType     = _Rp (*)(_Param...);
 };
 
 template <class _Rp, class _Class, class... _Param>
 struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...) const&&, true, false>
 {
-  typedef _Class const&& _ClassType;
-  typedef _Rp _ReturnType;
-  typedef _Rp(_FnType)(_Param..., ...);
+  using _ClassType  = _Class const&&;
+  using _ReturnType = _Rp;
+  using _FnType     = _Rp (*)(_Param..., ...);
 };
 
 template <class _Rp, class _Class, class... _Param>
 struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param...) volatile&&, true, false>
 {
-  typedef _Class volatile&& _ClassType;
-  typedef _Rp _ReturnType;
-  typedef _Rp(_FnType)(_Param...);
+  using _ClassType  = _Class volatile&&;
+  using _ReturnType = _Rp;
+  using _FnType     = _Rp (*)(_Param...);
 };
 
 template <class _Rp, class _Class, class... _Param>
 struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...) volatile&&, true, false>
 {
-  typedef _Class volatile&& _ClassType;
-  typedef _Rp _ReturnType;
-  typedef _Rp(_FnType)(_Param..., ...);
+  using _ClassType  = _Class volatile&&;
+  using _ReturnType = _Rp;
+  using _FnType     = _Rp (*)(_Param..., ...);
 };
 
 template <class _Rp, class _Class, class... _Param>
 struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param...) const volatile&&, true, false>
 {
-  typedef _Class const volatile&& _ClassType;
-  typedef _Rp _ReturnType;
-  typedef _Rp(_FnType)(_Param...);
+  using _ClassType  = _Class const volatile&&;
+  using _ReturnType = _Rp;
+  using _FnType     = _Rp (*)(_Param...);
 };
 
 template <class _Rp, class _Class, class... _Param>
 struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...) const volatile&&, true, false>
 {
-  typedef _Class const volatile&& _ClassType;
-  typedef _Rp _ReturnType;
-  typedef _Rp(_FnType)(_Param..., ...);
+  using _ClassType  = _Class const volatile&&;
+  using _ReturnType = _Rp;
+  using _FnType     = _Rp (*)(_Param..., ...);
 };
 
 template <class _Rp, class _Class>
 struct __member_pointer_traits_imp<_Rp _Class::*, false, true>
 {
-  typedef _Class _ClassType;
-  typedef _Rp _ReturnType;
+  using _ClassType  = _Class;
+  using _ReturnType = _Rp;
 };
 
 template <class _MP>
@@ -270,7 +270,7 @@ struct __member_pointer_class_type
 template <class _Ret, class _ClassType>
 struct __member_pointer_class_type<_Ret _ClassType::*>
 {
-  typedef _ClassType type;
+  using type = _ClassType;
 };
 
 template <class _Fp,
@@ -424,7 +424,7 @@ struct __nothrow_invokable_r_imp
 template <class _Ret, class _Fp, class... _Args>
 struct __nothrow_invokable_r_imp<true, false, _Ret, _Fp, _Args...>
 {
-  typedef __nothrow_invokable_r_imp _ThisT;
+  using _ThisT = __nothrow_invokable_r_imp;
 
   template <class _Tp>
   _LIBCUDACXX_HIDE_FROM_ABI static void __test_noexcept(_Tp) noexcept;

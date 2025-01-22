@@ -127,8 +127,8 @@ struct __swappable_with
   _LIBCUDACXX_HIDE_FROM_ABI static __nat __test_swap(long);
 
   // Extra parens are needed for the C++03 definition of decltype.
-  typedef decltype((__test_swap<_Tp, _Up>(0))) __swap1;
-  typedef decltype((__test_swap<_Up, _Tp>(0))) __swap2;
+  using __swap1 = decltype((__test_swap<_Tp, _Up>(0)));
+  using __swap2 = decltype((__test_swap<_Up, _Tp>(0)));
 
   static const bool value = _IsNotSame<__swap1, __nat>::value && _IsNotSame<__swap2, __nat>::value;
 };

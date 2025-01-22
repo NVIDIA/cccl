@@ -15,6 +15,8 @@
 
 #  include <unittest/unittest.h>
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 enum wait_policy
 {
   wait_for_futures,

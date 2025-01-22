@@ -43,7 +43,6 @@
 #  include <cub/device/device_adjacent_difference.cuh>
 #  include <cub/util_math.cuh>
 
-#  include <thrust/detail/minmax.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/detail/type_traits.h>
 #  include <thrust/functional.h>
@@ -52,7 +51,8 @@
 #  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
 #  include <thrust/type_traits/is_contiguous_iterator.h>
-#  include <thrust/type_traits/remove_cvref.h>
+
+#  include <cuda/std/type_traits>
 
 #  include <cstdint>
 

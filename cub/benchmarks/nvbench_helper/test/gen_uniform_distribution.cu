@@ -34,7 +34,9 @@
 #include <map>
 
 #include <boost/math/distributions/chi_squared.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/catch_template_test_macros.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators_all.hpp>
 #include <nvbench_helper.cuh>
 
 template <typename T>

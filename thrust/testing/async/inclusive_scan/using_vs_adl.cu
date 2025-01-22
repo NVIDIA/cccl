@@ -29,7 +29,7 @@ struct adl_host_synchronous
     thrust::host_vector<input_value_type> host_input(input.cbegin(), input.cend());
     thrust::host_vector<output_value_type> host_output(host_input.size());
 
-    using OutIter = thrust::remove_cvref_t<decltype(host_output.begin())>;
+    using OutIter = cuda::std::remove_cvref_t<decltype(host_output.begin())>;
 
     // ADL should resolve this to the synchronous `thrust::` algorithm.
     // This is checked by ensuring that the call returns an output iterator.
@@ -69,6 +69,7 @@ struct using_namespace
     // Importing the CPO into the current namespace should unambiguously resolve
     // this call to the CPO, as opposed to resolving to the thrust:: algorithm
     // via ADL. This is verified by checking that an event is returned.
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     using namespace thrust::async;
     thrust::device_event e = inclusive_scan(
       std::get<PrefixArgIndices>(THRUST_FWD(prefix_tuple))...,
@@ -76,6 +77,7 @@ struct using_namespace
       input.cend(),
       output.begin(),
       std::get<PostfixArgIndices>(THRUST_FWD(postfix_tuple))...);
+    _CCCL_SUPPRESS_DEPRECATED_POP
     return e;
   }
 };
@@ -100,12 +102,14 @@ struct using_cpo
     // this call to the CPO, as opposed to resolving to the thrust:: algorithm
     // via ADL. This is verified by checking that an event is returned.
     using thrust::async::inclusive_scan;
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     thrust::device_event e = inclusive_scan(
       std::get<PrefixArgIndices>(THRUST_FWD(prefix_tuple))...,
       input.cbegin(),
       input.cend(),
       output.begin(),
       std::get<PostfixArgIndices>(THRUST_FWD(postfix_tuple))...);
+    _CCCL_SUPPRESS_DEPRECATED_POP
     return e;
   }
 };

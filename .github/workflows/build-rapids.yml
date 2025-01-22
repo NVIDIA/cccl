@@ -134,6 +134,12 @@ jobs:
               sccache --show-adv-stats
             done
           done
+
+          # Exit with error if any failures occurred
+          if test ${#failures[@]} -ne 0; then
+            exit 1
+          fi
+
           EOF
 
           chmod +x "$RUNNER_TEMP"/ci{,-entrypoint}.sh

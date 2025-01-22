@@ -45,7 +45,6 @@
 
 #  include <thrust/advance.h>
 #  include <thrust/count.h>
-#  include <thrust/detail/minmax.h>
 #  include <thrust/distance.h>
 #  include <thrust/functional.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
@@ -532,7 +531,7 @@ static cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   status = tile_status.Init(static_cast<int>(num_tiles), allocations[0], allocation_sizes[0]);
   CUDA_CUB_RET_IF_FAIL(status);
 
-  num_tiles = max<size_t>(1, num_tiles);
+  num_tiles = ::cuda::std::max<size_t>(1, num_tiles);
   init_agent ia(init_plan, num_tiles, stream, "unique_by_key::init_agent");
   ia.launch(tile_status, num_tiles, num_selected_out);
   CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());

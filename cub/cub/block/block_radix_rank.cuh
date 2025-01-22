@@ -48,6 +48,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/ptx>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
@@ -477,12 +478,12 @@ public:
       *digit_counters[ITEM] = thread_prefixes[ITEM] + 1;
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Scan shared memory counters
     ScanCounters();
 
-    CTA_SYNC();
+    __syncthreads();
 
 // Extract the local ranks of each key
 #pragma unroll
@@ -710,13 +711,13 @@ public:
       temp_storage.aliasable.raking_grid[linear_tid][ITEM] = 0;
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Each warp will strip-mine its section of input, one strip at a time
 
     volatile DigitCounterT* digit_counters[KEYS_PER_THREAD];
     uint32_t warp_id      = linear_tid >> LOG_WARP_THREADS;
-    uint32_t lane_mask_lt = LaneMaskLt();
+    uint32_t lane_mask_lt = ::cuda::ptx::get_sreg_lanemask_lt();
 
 #pragma unroll
     for (int ITEM = 0; ITEM < KEYS_PER_THREAD; ++ITEM)
@@ -740,7 +741,7 @@ public:
       DigitCounterT warp_digit_prefix = *digit_counters[ITEM];
 
       // Warp-sync
-      WARP_SYNC(0xFFFFFFFF);
+      __syncwarp(0xFFFFFFFF);
 
       // Number of peers having same digit as me
       int32_t digit_count = __popc(peer_mask);
@@ -755,13 +756,13 @@ public:
       }
 
       // Warp-sync
-      WARP_SYNC(0xFFFFFFFF);
+      __syncwarp(0xFFFFFFFF);
 
       // Number of prior keys having same digit
       ranks[ITEM] = warp_digit_prefix + DigitCounterT(peer_digit_prefix);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Scan warp counters
 
@@ -781,7 +782,7 @@ public:
       temp_storage.aliasable.raking_grid[linear_tid][ITEM] = scan_counters[ITEM];
     }
 
-    CTA_SYNC();
+    __syncthreads();
     if (!::cuda::std::is_same<CountsCallback, BlockRadixRankEmptyCallback<BINS_TRACKED_PER_THREAD>>::value)
     {
       CallBack<KEYS_PER_THREAD>(callback);
@@ -977,7 +978,7 @@ struct BlockRadixRankMatchEarlyCounts
           match_masks[bin] = 0;
         }
       }
-      WARP_SYNC(WARP_MASK);
+      __syncwarp(WARP_MASK);
 
       // compute private per-part histograms
       int part = lane % NUM_PARTS;
@@ -991,7 +992,7 @@ struct BlockRadixRankMatchEarlyCounts
       // no extra work is necessary if NUM_PARTS == 1
       if (NUM_PARTS > 1)
       {
-        WARP_SYNC(WARP_MASK);
+        __syncwarp(WARP_MASK);
         // TODO: handle RADIX_DIGITS % WARP_THREADS != 0 if it becomes necessary
         constexpr int WARP_BINS_PER_THREAD = RADIX_DIGITS / WARP_THREADS;
         int bins[WARP_BINS_PER_THREAD];
@@ -1001,7 +1002,7 @@ struct BlockRadixRankMatchEarlyCounts
           int bin = lane + u * WARP_THREADS;
           bins[u] = cub::ThreadReduce(warp_histograms[bin], ::cuda::std::plus<>{});
         }
-        CTA_SYNC();
+        __syncthreads();
 
         // store the resulting histogram in shared memory
         int* warp_offsets = &s.warp_offsets[warp][0];
@@ -1066,22 +1067,22 @@ struct BlockRadixRankMatchEarlyCounts
         ::cuda::std::uint32_t bin = Digit(keys[u]);
         int* p_match_mask         = &match_masks[bin];
         atomicOr(p_match_mask, lane_mask);
-        WARP_SYNC(WARP_MASK);
+        __syncwarp(WARP_MASK);
         int bin_mask    = *p_match_mask;
         int leader      = (WARP_THREADS - 1) - __clz(bin_mask);
         int warp_offset = 0;
-        int popc        = __popc(bin_mask & LaneMaskLe());
+        int popc        = __popc(bin_mask & ::cuda::ptx::get_sreg_lanemask_le());
         if (lane == leader)
         {
           // atomic is a bit faster
           warp_offset = atomicAdd(&warp_offsets[bin], popc);
         }
-        warp_offset = SHFL_IDX_SYNC(warp_offset, leader, WARP_MASK);
+        warp_offset = __shfl_sync(WARP_MASK, warp_offset, leader);
         if (lane == leader)
         {
           *p_match_mask = 0;
         }
-        WARP_SYNC(WARP_MASK);
+        __syncwarp(WARP_MASK);
         ranks[u] = warp_offset + popc - 1;
       }
     }
@@ -1099,13 +1100,13 @@ struct BlockRadixRankMatchEarlyCounts
           detail::warp_in_block_matcher_t<RADIX_BITS, PARTIAL_WARP_THREADS, BLOCK_WARPS - 1>::match_any(bin, warp);
         int leader      = (WARP_THREADS - 1) - __clz(bin_mask);
         int warp_offset = 0;
-        int popc        = __popc(bin_mask & LaneMaskLe());
+        int popc        = __popc(bin_mask & ::cuda::ptx::get_sreg_lanemask_le());
         if (lane == leader)
         {
           // atomic is a bit faster
           warp_offset = atomicAdd(&warp_offsets[bin], popc);
         }
-        warp_offset = SHFL_IDX_SYNC(warp_offset, leader, WARP_MASK);
+        warp_offset = __shfl_sync(WARP_MASK, warp_offset, leader);
         ranks[u]    = warp_offset + popc - 1;
       }
     }
@@ -1117,7 +1118,7 @@ struct BlockRadixRankMatchEarlyCounts
     {
       ComputeHistogramsWarp(keys);
 
-      CTA_SYNC();
+      __syncthreads();
       int bins[BINS_PER_THREAD];
       ComputeOffsetsWarpUpsweep(bins);
       callback(bins);
@@ -1125,7 +1126,7 @@ struct BlockRadixRankMatchEarlyCounts
       BlockScan(s.prefix_tmp).ExclusiveSum(bins, exclusive_digit_prefix);
 
       ComputeOffsetsWarpDownsweep(exclusive_digit_prefix);
-      CTA_SYNC();
+      __syncthreads();
       ComputeRanksItem(keys, ranks, Int2Type<MATCH_ALGORITHM>());
     }
 
@@ -1135,7 +1136,7 @@ struct BlockRadixRankMatchEarlyCounts
         , digit_extractor(digit_extractor)
         , callback(callback)
         , warp(threadIdx.x / WARP_THREADS)
-        , lane(LaneId())
+        , lane(::cuda::ptx::get_sreg_laneid())
     {}
   };
 

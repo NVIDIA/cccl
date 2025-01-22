@@ -611,6 +611,12 @@ protected:
       return size_t(-1);
     }
 
+    /**
+     * @brief Indicate if the backend needs to keep track of dangling events, or if these will be automatically
+     * synchronized
+     */
+    virtual bool track_dangling_events() const = 0;
+
     auto& get_default_allocator()
     {
       return default_allocator;
@@ -642,16 +648,27 @@ protected:
      */
     void detach_allocators(backend_ctx_untyped& bctx)
     {
+      const bool track_dangling = bctx.track_dangling_events();
+
       // Deinitialize all attached allocators in reversed order
       for (auto it : each(attached_allocators.rbegin(), attached_allocators.rend()))
       {
-        stack.add_dangling_events(it->deinit(bctx));
+        auto deinit_res = it->deinit(bctx);
+        if (track_dangling)
+        {
+          stack.add_dangling_events(mv(deinit_res));
+        }
       }
 
       // Erase the vector of allocators now that they were deinitialized
       attached_allocators.clear();
 
-      stack.add_dangling_events(composite_cache.deinit());
+      // We "duplicate" the code of the deinit to remove any storage and avoid a move
+      auto composite_deinit_res = composite_cache.deinit();
+      if (track_dangling)
+      {
+        stack.add_dangling_events(mv(composite_deinit_res));
+      }
     }
 
     void display_transfers() const
@@ -900,6 +917,11 @@ public:
   size_t epoch() const
   {
     return pimpl->epoch();
+  }
+
+  bool track_dangling_events() const
+  {
+    return pimpl->track_dangling_events();
   }
 
   // protected:
