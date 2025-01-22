@@ -33,28 +33,19 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp)
-                 _CCCL_AND(sizeof(_Tp) == sizeof(uint32_t) || sizeof(_Tp) == sizeof(uint64_t)))
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<sizeof(_Tp) == sizeof(uint32_t) || sizeof(_Tp) == sizeof(uint64_t), int>
-__countl_zero(_Tp __t) noexcept
+_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp) _CCCL_AND(sizeof(_Tp) <= sizeof(uint64_t)))
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __countl_zero(_Tp __t) noexcept
 {
   if (is_constant_evaluated() && __t == 0)
   {
     return numeric_limits<_Tp>::digits;
   }
-  using _Sp         = _If<sizeof(_Tp) == sizeof(uint32_t), uint32_t, uint64_t>;
+  using _Sp         = _If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
   auto __clz_result = _CUDA_VSTD::__cccl_clz(static_cast<_Sp>(__t));
+  __clz_result -= numeric_limits<_Sp>::digits - numeric_limits<_Tp>::digits;
   NV_IF_ELSE_TARGET(NV_IS_DEVICE,
                     (return __clz_result;), // if __t == 0 __clz_result is already equal to numeric_limits<_Tp>::digits
                     (return __t ? __clz_result : numeric_limits<_Tp>::digits;))
-}
-
-_CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp) _CCCL_AND(sizeof(_Tp) < sizeof(uint32_t)))
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __countl_zero(_Tp __t) noexcept
-{
-  return _CUDA_VSTD::__countl_zero(static_cast<uint32_t>(__t))
-       - (numeric_limits<uint32_t>::digits - numeric_limits<_Tp>::digits);
 }
 
 _CCCL_TEMPLATE(class _Tp)
@@ -86,7 +77,7 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int countl_one(_Tp __t) noexcept
 {
-  auto __ret = _CUDA_VSTD::__countl_zero(static_cast<_Tp>(~__t));
+  auto __ret = _CUDA_VSTD::countl_zero(static_cast<_Tp>(~__t));
   _CCCL_ASSUME(__ret >= 0 && __ret <= numeric_limits<_Tp>::digits);
   return __ret;
 }

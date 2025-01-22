@@ -33,8 +33,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp)
-                 _CCCL_AND(sizeof(_Tp) == sizeof(uint32_t) || sizeof(_Tp) == sizeof(uint64_t)))
+_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp) _CCCL_AND(sizeof(_Tp) <= sizeof(uint64_t)))
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __countr_zero(_Tp __t) noexcept
 {
   if (is_constant_evaluated() && __t == 0)
@@ -46,13 +45,6 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __countr_zero(_Tp __t) noexcept
   NV_IF_ELSE_TARGET(NV_IS_DEVICE,
                     (return __ctz_result;), // if __t == 0 __ctz_result is already equal to numeric_limits<_Tp>::digits
                     (return __t ? __ctz_result : numeric_limits<_Tp>::digits;))
-}
-
-_CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp) _CCCL_AND(sizeof(_Tp) < sizeof(uint32_t)))
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __countr_zero(_Tp __t) noexcept
-{
-  return __t ? __countr_zero(static_cast<uint32_t>(__t)) : numeric_limits<_Tp>::digits;
 }
 
 _CCCL_TEMPLATE(class _Tp)
@@ -84,7 +76,7 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int countr_one(_Tp __t) noexcept
 {
-  auto __ret = _CUDA_VSTD::__countr_zero(static_cast<_Tp>(~__t));
+  auto __ret = _CUDA_VSTD::countr_zero(static_cast<_Tp>(~__t));
   _CCCL_ASSUME(__ret >= 0 && __ret <= numeric_limits<_Tp>::digits);
   return __ret;
 }

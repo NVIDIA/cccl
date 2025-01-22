@@ -88,7 +88,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_clz(uint64_t __x) noexcept
   }
   return 64; // Undefined Behavior.
 #else // _CCCL_COMPILER(MSVC) ^^^ / !_CCCL_COMPILER(MSVC) vvv
-  return _CUDA_VSTD::__constexpr_clz(__x);
+  return _CCCL_BUILTIN_CLZ(__x);
 #endif // !_CCCL_COMPILER(MSVC) ^^^
 }
 
