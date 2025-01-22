@@ -18,29 +18,63 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_imp(cuda::std::true_type)
+__host__ __device__ bool is_nan(T x)
 {
-  assert(cuda::std::isnan(cuda::std::numeric_limits<T>::signaling_NaN()));
-  assert(cuda::std::isnan(cuda::std::numeric_limits<const T>::signaling_NaN()));
-  assert(cuda::std::isnan(cuda::std::numeric_limits<volatile T>::signaling_NaN()));
-  assert(cuda::std::isnan(cuda::std::numeric_limits<const volatile T>::signaling_NaN()));
+  return cuda::std::isnan(x);
+}
+
+#if _CCCL_HAS_NVFP8()
+__host__ __device__ bool is_nan(__nv_fp8_e4m3 x)
+{
+  return is_nan(__half{__nv_cvt_fp8_to_halfraw(x.__x, __NV_E4M3)});
+}
+
+__host__ __device__ bool is_nan(__nv_fp8_e5m2 x)
+{
+  return is_nan(__half{__nv_cvt_fp8_to_halfraw(x.__x, __NV_E5M2)});
+}
+#endif // _CCCL_HAS_NVFP8()
+
+template <class T>
+__host__ __device__ void test_impl(cuda::std::true_type)
+{
+  assert(is_nan(cuda::std::numeric_limits<T>::signaling_NaN()));
+  assert(is_nan(cuda::std::numeric_limits<const T>::signaling_NaN()));
+  assert(is_nan(cuda::std::numeric_limits<volatile T>::signaling_NaN()));
+  assert(is_nan(cuda::std::numeric_limits<const volatile T>::signaling_NaN()));
 }
 
 template <class T>
-__host__ __device__ void test_imp(cuda::std::false_type)
+__host__ __device__ bool equal_to(T x, T y)
 {
-  assert(cuda::std::numeric_limits<T>::signaling_NaN() == T());
-  assert(cuda::std::numeric_limits<const T>::signaling_NaN() == T());
-  assert(cuda::std::numeric_limits<volatile T>::signaling_NaN() == T());
-  assert(cuda::std::numeric_limits<const volatile T>::signaling_NaN() == T());
+  return x == y;
+}
+
+#if _CCCL_HAS_NVFP8()
+__host__ __device__ bool equal_to(__nv_fp8_e4m3 x, __nv_fp8_e4m3 y)
+{
+  return x.__x == y.__x;
+}
+
+__host__ __device__ bool equal_to(__nv_fp8_e5m2 x, __nv_fp8_e5m2 y)
+{
+  return x.__x == y.__x;
+}
+#endif // _CCCL_HAS_NVFP8()
+
+template <class T>
+__host__ __device__ void test_impl(cuda::std::false_type)
+{
+  assert(equal_to(cuda::std::numeric_limits<T>::signaling_NaN(), T()));
+  assert(equal_to(cuda::std::numeric_limits<const T>::signaling_NaN(), T()));
+  assert(equal_to(cuda::std::numeric_limits<volatile T>::signaling_NaN(), T()));
+  assert(equal_to(cuda::std::numeric_limits<const volatile T>::signaling_NaN(), T()));
 }
 
 template <class T>
 __host__ __device__ inline void test()
 {
-  constexpr bool is_float = cuda::std::is_floating_point<T>::value || cuda::std::__is_extended_floating_point<T>::value;
-
-  test_imp<T>(cuda::std::integral_constant<bool, is_float>{});
+  test_impl<T>(cuda::std::integral_constant<bool, cuda::std::numeric_limits<T>::has_signaling_NaN>{});
 }
 
 int main(int, char**)
@@ -80,6 +114,10 @@ int main(int, char**)
 #if defined(_LIBCUDACXX_HAS_NVBF16)
   test<__nv_bfloat16>();
 #endif // _LIBCUDACXX_HAS_NVBF16
+#if _CCCL_HAS_NVFP8()
+  test<__nv_fp8_e4m3>();
+  test<__nv_fp8_e5m2>();
+#endif // _CCCL_HAS_NVFP8()
 
   return 0;
 }
