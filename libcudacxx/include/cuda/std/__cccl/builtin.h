@@ -136,6 +136,22 @@
 #  define _CCCL_BUILTIN_BSWAP16(...) __builtin_bswap16(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_bswap16)
 
+#if _CCCL_CHECK_BUILTIN(builtin_popcount) || _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(CLANG) \
+  || _CCCL_COMPILER(NVHPC)
+#  define _CCCL_BUILTIN_POPCOUNT(...)   ::__builtin_popcount(__VA_ARGS__)
+#  define _CCCL_BUILTIN_POPCOUNTLL(...) ::__builtin_popcountll(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_popcount)
+
+#if _CCCL_CHECK_BUILTIN(builtin_clz) || _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
+#  define _CCCL_BUILTIN_CLZ(...)   ::__builtin_clz(__VA_ARGS__)
+#  define _CCCL_BUILTIN_CLZLL(...) ::__builtin_clzll(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_clz)
+
+#if _CCCL_CHECK_BUILTIN(builtin_ctz) || _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
+#  define _CCCL_BUILTIN_CTZ(...)   ::__builtin_ctz(__VA_ARGS__)
+#  define _CCCL_BUILTIN_CTZLL(...) ::__builtin_ctzll(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_ctz)
+
 #if _CCCL_CHECK_BUILTIN(builtin_bswap32)
 #  define _CCCL_BUILTIN_BSWAP32(...) __builtin_bswap32(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_bswap32)
