@@ -32,9 +32,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_clz(uint32_t __x) noexcept
 {
-#if !_CCCL_COMPILER(MSVC) // workaround for GCC <= 9
-  return ::__builtin_clz(__x);
-#else // !_CCCL_COMPILER(MSVC) ^^^ / _CCCL_COMPILER(MSVC) vvv
+#if _CCCL_COMPILER(MSVC)
   for (int __i = 31; __i >= 0; --__i)
   {
     if (__x & (uint32_t{1} << __i))
@@ -43,14 +41,14 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_clz(uint32_t __x) noexcept
     }
   }
   return 32;
-#endif // _CCCL_COMPILER(MSVC) ^^^
+#else
+  return _CCCL_BUILTIN_CLZ(__x);
+#endif
 }
 
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_clz(uint64_t __x) noexcept
 {
-#if !_CCCL_COMPILER(MSVC) // workaround for GCC <= 9
-  return ::__builtin_clzll(__x);
-#else // !_CCCL_COMPILER(MSVC) ^^^ / _CCCL_COMPILER(MSVC) vvv
+#if _CCCL_COMPILER(MSVC)
   for (int __i = 63; __i >= 0; --__i)
   {
     if (__x & (uint64_t{1} << __i))
@@ -59,6 +57,8 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_clz(uint64_t __x) noexcept
     }
   }
   return 64;
+#else
+  return _CCCL_BUILTIN_CLZLL(__x);
 #endif // _CCCL_COMPILER(MSVC) ^^^
 }
 
