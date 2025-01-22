@@ -131,8 +131,6 @@ public:
     }
   }
 };
-} // namespace three_way_partition
-} // namespace detail
 
 /******************************************************************************
  * Kernel entry points
@@ -231,6 +229,8 @@ DeviceThreeWayPartitionInitKernel(ScanTileStateT tile_state, int num_tiles, NumS
     }
   }
 }
+} // namespace three_way_partition
+} // namespace detail
 
 /******************************************************************************
  * Dispatch
@@ -483,8 +483,8 @@ struct DispatchThreeWayPartitionIf
   {
     using MaxPolicyT = typename PolicyHub::MaxPolicy;
     return Invoke<ActivePolicyT>(
-      DeviceThreeWayPartitionInitKernel<ScanTileStateT, NumSelectedIteratorT>,
-      DeviceThreeWayPartitionKernel<
+      detail::three_way_partition::DeviceThreeWayPartitionInitKernel<ScanTileStateT, NumSelectedIteratorT>,
+      detail::three_way_partition::DeviceThreeWayPartitionKernel<
         MaxPolicyT,
         InputIteratorT,
         FirstOutputIteratorT,

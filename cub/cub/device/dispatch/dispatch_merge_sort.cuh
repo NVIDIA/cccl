@@ -56,8 +56,8 @@ CUB_NAMESPACE_BEGIN
 namespace detail
 {
 
-namespace merge_sort {
-
+namespace merge_sort
+{
 
 /**
  * @brief Helper class template that provides two agent template instantiations: one instantiated with the default
@@ -153,16 +153,15 @@ template <typename ChainedPolicyT,
           typename KeyT,
           typename ValueT>
 __launch_bounds__(
-  merge_sort_vsmem_helper_t<
-    typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
-    KeyInputIteratorT,
-    ValueInputIteratorT,
-    KeyIteratorT,
-    ValueIteratorT,
-    OffsetT,
-    CompareOpT,
-    KeyT,
-    ValueT>::policy_t::BLOCK_THREADS)
+  merge_sort_vsmem_helper_t<typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
+                            KeyInputIteratorT,
+                            ValueInputIteratorT,
+                            KeyIteratorT,
+                            ValueIteratorT,
+                            OffsetT,
+                            CompareOpT,
+                            KeyT,
+                            ValueT>::policy_t::BLOCK_THREADS)
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortBlockSortKernel(
     bool ping,
     KeyInputIteratorT keys_in,
@@ -260,16 +259,15 @@ template <typename ChainedPolicyT,
           typename KeyT,
           typename ValueT>
 __launch_bounds__(
-  merge_sort_vsmem_helper_t<
-    typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
-    KeyInputIteratorT,
-    ValueInputIteratorT,
-    KeyIteratorT,
-    ValueIteratorT,
-    OffsetT,
-    CompareOpT,
-    KeyT,
-    ValueT>::policy_t::BLOCK_THREADS)
+  merge_sort_vsmem_helper_t<typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
+                            KeyInputIteratorT,
+                            ValueInputIteratorT,
+                            KeyIteratorT,
+                            ValueIteratorT,
+                            OffsetT,
+                            CompareOpT,
+                            KeyT,
+                            ValueT>::policy_t::BLOCK_THREADS)
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortMergeKernel(
     bool ping,
     KeyIteratorT keys_ping,
@@ -579,15 +577,16 @@ struct DispatchMergeSort
         THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
           static_cast<int>(num_tiles), static_cast<int>(merge_sort_helper_t::policy_t::BLOCK_THREADS), 0, stream, true)
           .doit(
-            detail::merge_sort::DeviceMergeSortMergeKernel<typename PolicyHub::MaxPolicy,
-                                                           KeyInputIteratorT,
-                                                           ValueInputIteratorT,
-                                                           KeyIteratorT,
-                                                           ValueIteratorT,
-                                                           OffsetT,
-                                                           CompareOpT,
-                                                           KeyT,
-                                                           ValueT>,
+            detail::merge_sort::DeviceMergeSortMergeKernel<
+              typename PolicyHub::MaxPolicy,
+              KeyInputIteratorT,
+              ValueInputIteratorT,
+              KeyIteratorT,
+              ValueIteratorT,
+              OffsetT,
+              CompareOpT,
+              KeyT,
+              ValueT>,
             ping,
             d_output_keys,
             d_output_items,

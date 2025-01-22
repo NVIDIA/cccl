@@ -65,6 +65,11 @@ CUB_NAMESPACE_BEGIN
  * Kernel entry points
  *****************************************************************************/
 
+namespace detail
+{
+namespace rle
+{
+
 /**
  * Select kernel entry point (multi-block)
  *
@@ -142,7 +147,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::RleSweepPolicyT::BLOCK_THREA
   using AgentRlePolicyT = typename ChainedPolicyT::ActivePolicy::RleSweepPolicyT;
 
   // Thread block type for selecting data from input tiles
-  using AgentRleT = detail::rle::
+  using AgentRleT =
     AgentRle<AgentRlePolicyT, InputIteratorT, OffsetsOutputIteratorT, LengthsOutputIteratorT, EqualityOpT, OffsetT>;
 
   // Shared memory for AgentRle
@@ -152,6 +157,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::RleSweepPolicyT::BLOCK_THREA
   AgentRleT(temp_storage, d_in, d_offsets_out, d_lengths_out, equality_op, num_items)
     .ConsumeRange(num_tiles, tile_status, d_num_runs_out);
 }
+} // namespace rle
+} // namespace detail
 
 /******************************************************************************
  * Dispatch
@@ -451,15 +458,16 @@ struct DeviceRleDispatch
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     return Invoke<ActivePolicyT>(
-      DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
-      DeviceRleSweepKernel<typename PolicyHub::MaxPolicy,
-                           InputIteratorT,
-                           OffsetsOutputIteratorT,
-                           LengthsOutputIteratorT,
-                           NumRunsOutputIteratorT,
-                           ScanTileStateT,
-                           EqualityOpT,
-                           OffsetT>);
+      detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
+      detail::rle::DeviceRleSweepKernel<
+        typename PolicyHub::MaxPolicy,
+        InputIteratorT,
+        OffsetsOutputIteratorT,
+        LengthsOutputIteratorT,
+        NumRunsOutputIteratorT,
+        ScanTileStateT,
+        EqualityOpT,
+        OffsetT>);
   }
 
   /**

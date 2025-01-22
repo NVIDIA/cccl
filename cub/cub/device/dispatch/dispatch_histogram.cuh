@@ -97,8 +97,10 @@ CUB_NAMESPACE_BEGIN
  * @param tile_queue
  *   Drain queue descriptor for dynamically mapping tile data onto thread blocks
  */
-namespace detail {
-namespace histogram {
+namespace detail
+{
+namespace histogram
+{
 
 template <int NUM_ACTIVE_CHANNELS, typename CounterT, typename OffsetT>
 CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
@@ -222,16 +224,16 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT::BLOCK
 {
   // Thread block type for compositing input tiles
   using AgentHistogramPolicyT = typename ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT;
-  using AgentHistogramT       = AgentHistogram<
-          AgentHistogramPolicyT,
-          PRIVATIZED_SMEM_BINS,
-          NUM_CHANNELS,
-          NUM_ACTIVE_CHANNELS,
-          SampleIteratorT,
-          CounterT,
-          PrivatizedDecodeOpT,
-          OutputDecodeOpT,
-          OffsetT>;
+  using AgentHistogramT =
+    AgentHistogram<AgentHistogramPolicyT,
+                   PRIVATIZED_SMEM_BINS,
+                   NUM_CHANNELS,
+                   NUM_ACTIVE_CHANNELS,
+                   SampleIteratorT,
+                   CounterT,
+                   PrivatizedDecodeOpT,
+                   OutputDecodeOpT,
+                   OffsetT>;
 
   // Shared memory for AgentHistogram
   __shared__ typename AgentHistogramT::TempStorage temp_storage;
@@ -255,12 +257,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT::BLOCK
   // Store output to global (if necessary)
   agent.StoreOutput();
 }
-
-} // namespace histogram
-} // namespace detail
-
-namespace detail
-{
 
 template <int NUM_CHANNELS,
           int NUM_ACTIVE_CHANNELS,
@@ -509,18 +505,20 @@ struct dispatch_histogram
   {
     return Invoke<ActivePolicyT>(
       detail::histogram::DeviceHistogramInitKernel<NUM_ACTIVE_CHANNELS, CounterT, OffsetT>,
-      detail::histogram::DeviceHistogramSweepKernel<MaxPolicyT,
-                                 PRIVATIZED_SMEM_BINS,
-                                 NUM_CHANNELS,
-                                 NUM_ACTIVE_CHANNELS,
-                                 SampleIteratorT,
-                                 CounterT,
-                                 PrivatizedDecodeOpT,
-                                 OutputDecodeOpT,
-                                 OffsetT>);
+      detail::histogram::DeviceHistogramSweepKernel<
+        MaxPolicyT,
+        PRIVATIZED_SMEM_BINS,
+        NUM_CHANNELS,
+        NUM_ACTIVE_CHANNELS,
+        SampleIteratorT,
+        CounterT,
+        PrivatizedDecodeOpT,
+        OutputDecodeOpT,
+        OffsetT>);
   }
 };
 
+} // namespace histogram
 } // namespace detail
 
 /******************************************************************************
@@ -964,7 +962,7 @@ public:
         // Too many bins to keep in shared memory.
         constexpr int PRIVATIZED_SMEM_BINS = 0;
 
-        detail::dispatch_histogram<
+        detail::histogram::dispatch_histogram<
           NUM_CHANNELS,
           NUM_ACTIVE_CHANNELS,
           PRIVATIZED_SMEM_BINS,
@@ -1000,7 +998,7 @@ public:
         // Dispatch shared-privatized approach
         constexpr int PRIVATIZED_SMEM_BINS = MAX_PRIVATIZED_SMEM_BINS;
 
-        detail::dispatch_histogram<
+        detail::histogram::dispatch_histogram<
           NUM_CHANNELS,
           NUM_ACTIVE_CHANNELS,
           PRIVATIZED_SMEM_BINS,
@@ -1134,7 +1132,7 @@ public:
 
       constexpr int PRIVATIZED_SMEM_BINS = 256;
 
-      detail::dispatch_histogram<
+      detail::histogram::dispatch_histogram<
         NUM_CHANNELS,
         NUM_ACTIVE_CHANNELS,
         PRIVATIZED_SMEM_BINS,
@@ -1282,7 +1280,7 @@ public:
         // Dispatch shared-privatized approach
         constexpr int PRIVATIZED_SMEM_BINS = 0;
 
-        detail::dispatch_histogram<
+        detail::histogram::dispatch_histogram<
           NUM_CHANNELS,
           NUM_ACTIVE_CHANNELS,
           PRIVATIZED_SMEM_BINS,
@@ -1318,7 +1316,7 @@ public:
         // Dispatch shared-privatized approach
         constexpr int PRIVATIZED_SMEM_BINS = MAX_PRIVATIZED_SMEM_BINS;
 
-        detail::dispatch_histogram<
+        detail::histogram::dispatch_histogram<
           NUM_CHANNELS,
           NUM_ACTIVE_CHANNELS,
           PRIVATIZED_SMEM_BINS,
@@ -1456,7 +1454,7 @@ public:
 
       constexpr int PRIVATIZED_SMEM_BINS = 256;
 
-      detail::dispatch_histogram<
+      detail::histogram::dispatch_histogram<
         NUM_CHANNELS,
         NUM_ACTIVE_CHANNELS,
         PRIVATIZED_SMEM_BINS,

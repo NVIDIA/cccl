@@ -63,6 +63,12 @@ CUB_NAMESPACE_BEGIN
  * Kernel entry points
  *****************************************************************************/
 
+namespace detail
+{
+
+namespace scan_by_key
+{
+
 /**
  * @brief Scan by key kernel entry point (multi-block)
  *
@@ -188,6 +194,8 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanByKeyInitKernel(
     d_keys_prev_in[tid] = d_keys_in[tile_base - 1];
   }
 }
+} // namespace scan_by_key
+} // namespace detail
 
 /******************************************************************************
  * Dispatch
@@ -489,17 +497,18 @@ struct DispatchScanByKey
   {
     // Ensure kernels are instantiated.
     return Invoke<ActivePolicyT>(
-      DeviceScanByKeyInitKernel<ScanByKeyTileStateT, KeysInputIteratorT, OffsetT>,
-      DeviceScanByKeyKernel<typename PolicyHub::MaxPolicy,
-                            KeysInputIteratorT,
-                            ValuesInputIteratorT,
-                            ValuesOutputIteratorT,
-                            ScanByKeyTileStateT,
-                            EqualityOp,
-                            ScanOpT,
-                            InitValueT,
-                            OffsetT,
-                            AccumT>);
+      detail::scan_by_key::DeviceScanByKeyInitKernel<ScanByKeyTileStateT, KeysInputIteratorT, OffsetT>,
+      detail::scan_by_key::DeviceScanByKeyKernel<
+        typename PolicyHub::MaxPolicy,
+        KeysInputIteratorT,
+        ValuesInputIteratorT,
+        ValuesOutputIteratorT,
+        ScanByKeyTileStateT,
+        EqualityOp,
+        ScanOpT,
+        InitValueT,
+        OffsetT,
+        AccumT>);
   }
 
   /**

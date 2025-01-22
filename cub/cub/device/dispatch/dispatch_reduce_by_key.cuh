@@ -447,7 +447,7 @@ struct DispatchReduceByKey
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     return Invoke<ActivePolicyT>(
-      DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
+      detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
       detail::reduce::DeviceReduceByKeyKernel<
         typename PolicyHub::MaxPolicy,
         KeysInputIteratorT,

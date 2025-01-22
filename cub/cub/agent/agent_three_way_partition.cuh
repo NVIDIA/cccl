@@ -56,6 +56,26 @@ CUB_NAMESPACE_BEGIN
  * Tuning policy types
  ******************************************************************************/
 
+template <int _BLOCK_THREADS,
+          int _ITEMS_PER_THREAD,
+          BlockLoadAlgorithm _LOAD_ALGORITHM,
+          CacheLoadModifier _LOAD_MODIFIER,
+          BlockScanAlgorithm _SCAN_ALGORITHM,
+          class DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
+struct AgentThreeWayPartitionPolicy
+{
+  static constexpr int BLOCK_THREADS                 = _BLOCK_THREADS;
+  static constexpr int ITEMS_PER_THREAD              = _ITEMS_PER_THREAD;
+  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
+  static constexpr CacheLoadModifier LOAD_MODIFIER   = _LOAD_MODIFIER;
+  static constexpr BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
+
+  struct detail
+  {
+    using delay_constructor_t = DelayConstructorT;
+  };
+};
+
 namespace detail
 {
 
@@ -135,30 +155,6 @@ struct accumulator_pack_t : accumulator_pack_base_t<OffsetT>
   }
 };
 
-} // namespace three_way_partition
-
-} // namespace detail
-
-template <int _BLOCK_THREADS,
-          int _ITEMS_PER_THREAD,
-          BlockLoadAlgorithm _LOAD_ALGORITHM,
-          CacheLoadModifier _LOAD_MODIFIER,
-          BlockScanAlgorithm _SCAN_ALGORITHM,
-          class DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
-struct AgentThreeWayPartitionPolicy
-{
-  static constexpr int BLOCK_THREADS                 = _BLOCK_THREADS;
-  static constexpr int ITEMS_PER_THREAD              = _ITEMS_PER_THREAD;
-  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
-  static constexpr CacheLoadModifier LOAD_MODIFIER   = _LOAD_MODIFIER;
-  static constexpr BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
-
-  struct detail
-  {
-    using delay_constructor_t = DelayConstructorT;
-  };
-};
-
 /**
  * \brief Implements a device-wide three-way partitioning
  *
@@ -184,9 +180,9 @@ struct AgentThreeWayPartition
   //---------------------------------------------------------------------
 
   // The input value type
-  using InputT = cub::detail::value_t<InputIteratorT>;
+  using InputT = value_t<InputIteratorT>;
 
-  using AccumPackHelperT = detail::three_way_partition::accumulator_pack_t<OffsetT>;
+  using AccumPackHelperT = accumulator_pack_t<OffsetT>;
   using AccumPackT       = typename AccumPackHelperT::pack_t;
 
   // Tile status descriptor interface type
@@ -592,5 +588,8 @@ struct AgentThreeWayPartition
     }
   }
 };
+
+} // namespace three_way_partition
+} // namespace detail
 
 CUB_NAMESPACE_END

@@ -110,8 +110,6 @@ _CCCL_HOST_DEVICE OffsetIteratorT<Iterator, OffsetItT> make_offset_iterator(cons
 {
   return OffsetIteratorT<Iterator, OffsetItT>{it, offset_it};
 }
-} // namespace segmented_sort
-} // namespace detail
 
 /**
  * @brief Fallback kernel, in case there's not enough segments to
@@ -164,10 +162,10 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortFallbackKernel(
     const KeyT* d_keys_in_orig,
     KeyT* d_keys_out_orig,
-    cub::detail::device_double_buffer<KeyT> d_keys_double_buffer,
+    device_double_buffer<KeyT> d_keys_double_buffer,
     const ValueT* d_values_in_orig,
     ValueT* d_values_out_orig,
-    cub::detail::device_double_buffer<ValueT> d_values_double_buffer,
+    device_double_buffer<ValueT> d_values_double_buffer,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets)
 {
@@ -175,7 +173,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
   using LargeSegmentPolicyT = typename ActivePolicyT::LargeSegmentPolicy;
   using MediumPolicyT       = typename ActivePolicyT::SmallAndMediumSegmentedSortPolicyT::MediumPolicyT;
 
-  const auto segment_id = static_cast<detail::segmented_sort::local_segment_index_t>(blockIdx.x);
+  const auto segment_id = static_cast<local_segment_index_t>(blockIdx.x);
   OffsetT segment_begin = d_begin_offsets[segment_id];
   OffsetT segment_end   = d_end_offsets[segment_id];
   OffsetT num_items     = segment_end - segment_begin;
@@ -186,12 +184,12 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
   }
 
   using AgentSegmentedRadixSortT =
-    detail::radix_sort::AgentSegmentedRadixSort<IS_DESCENDING, LargeSegmentPolicyT, KeyT, ValueT, OffsetT>;
+    radix_sort::AgentSegmentedRadixSort<IS_DESCENDING, LargeSegmentPolicyT, KeyT, ValueT, OffsetT>;
 
   using WarpReduceT = cub::WarpReduce<KeyT>;
 
   using AgentWarpMergeSortT =
-    detail::sub_warp_merge_sort::AgentSubWarpSort<IS_DESCENDING, MediumPolicyT, KeyT, ValueT, OffsetT>;
+    sub_warp_merge_sort::AgentSubWarpSort<IS_DESCENDING, MediumPolicyT, KeyT, ValueT, OffsetT>;
 
   __shared__ union
   {
@@ -237,12 +235,12 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
     int current_bit = begin_bit;
     int pass_bits   = (::cuda::std::min)(int{LargeSegmentPolicyT::RADIX_BITS}, (end_bit - current_bit));
 
-    d_keys_double_buffer = cub::detail::device_double_buffer<KeyT>(
+    d_keys_double_buffer = device_double_buffer<KeyT>(
       d_keys_double_buffer.current() + segment_begin, d_keys_double_buffer.alternate() + segment_begin);
 
     if (!keys_only)
     {
-      d_values_double_buffer = cub::detail::device_double_buffer<ValueT>(
+      d_values_double_buffer = device_double_buffer<ValueT>(
         d_values_double_buffer.current() + segment_begin, d_values_double_buffer.alternate() + segment_begin);
     }
 
@@ -339,11 +337,11 @@ template <bool IS_DESCENDING,
           typename OffsetT>
 __launch_bounds__(ChainedPolicyT::ActivePolicy::SmallAndMediumSegmentedSortPolicyT::BLOCK_THREADS)
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortKernelSmall(
-    detail::segmented_sort::local_segment_index_t small_segments,
-    detail::segmented_sort::local_segment_index_t medium_segments,
-    detail::segmented_sort::local_segment_index_t medium_blocks,
-    const detail::segmented_sort::local_segment_index_t* d_small_segments_indices,
-    const detail::segmented_sort::local_segment_index_t* d_medium_segments_indices,
+    local_segment_index_t small_segments,
+    local_segment_index_t medium_segments,
+    local_segment_index_t medium_blocks,
+    const local_segment_index_t* d_small_segments_indices,
+    const local_segment_index_t* d_medium_segments_indices,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     const ValueT* d_values_in,
@@ -351,7 +349,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::SmallAndMediumSegmentedSortPolic
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets)
 {
-  using local_segment_index_t = detail::segmented_sort::local_segment_index_t;
+  using local_segment_index_t = local_segment_index_t;
 
   const local_segment_index_t tid = threadIdx.x;
   const local_segment_index_t bid = blockIdx.x;
@@ -365,10 +363,10 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::SmallAndMediumSegmentedSortPolic
   constexpr auto threads_per_small_segment  = static_cast<local_segment_index_t>(SmallPolicyT::WARP_THREADS);
 
   using MediumAgentWarpMergeSortT =
-    detail::sub_warp_merge_sort::AgentSubWarpSort<IS_DESCENDING, MediumPolicyT, KeyT, ValueT, OffsetT>;
+    sub_warp_merge_sort::AgentSubWarpSort<IS_DESCENDING, MediumPolicyT, KeyT, ValueT, OffsetT>;
 
   using SmallAgentWarpMergeSortT =
-    detail::sub_warp_merge_sort::AgentSubWarpSort<IS_DESCENDING, SmallPolicyT, KeyT, ValueT, OffsetT>;
+    sub_warp_merge_sort::AgentSubWarpSort<IS_DESCENDING, SmallPolicyT, KeyT, ValueT, OffsetT>;
 
   constexpr auto segments_per_medium_block =
     static_cast<local_segment_index_t>(SmallAndMediumPolicyT::SEGMENTS_PER_MEDIUM_BLOCK);
@@ -463,24 +461,24 @@ template <bool IS_DESCENDING,
           typename OffsetT>
 __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREADS)
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortKernelLarge(
-    const detail::segmented_sort::local_segment_index_t* d_segments_indices,
+    const local_segment_index_t* d_segments_indices,
     const KeyT* d_keys_in_orig,
     KeyT* d_keys_out_orig,
-    cub::detail::device_double_buffer<KeyT> d_keys_double_buffer,
+    device_double_buffer<KeyT> d_keys_double_buffer,
     const ValueT* d_values_in_orig,
     ValueT* d_values_out_orig,
-    cub::detail::device_double_buffer<ValueT> d_values_double_buffer,
+    device_double_buffer<ValueT> d_values_double_buffer,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets)
 {
   using ActivePolicyT         = typename ChainedPolicyT::ActivePolicy;
   using LargeSegmentPolicyT   = typename ActivePolicyT::LargeSegmentPolicy;
-  using local_segment_index_t = detail::segmented_sort::local_segment_index_t;
+  using local_segment_index_t = local_segment_index_t;
 
   constexpr int small_tile_size = LargeSegmentPolicyT::BLOCK_THREADS * LargeSegmentPolicyT::ITEMS_PER_THREAD;
 
   using AgentSegmentedRadixSortT =
-    detail::radix_sort::AgentSegmentedRadixSort<IS_DESCENDING, LargeSegmentPolicyT, KeyT, ValueT, OffsetT>;
+    radix_sort::AgentSegmentedRadixSort<IS_DESCENDING, LargeSegmentPolicyT, KeyT, ValueT, OffsetT>;
 
   __shared__ typename AgentSegmentedRadixSortT::TempStorage storage;
 
@@ -517,12 +515,12 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
     int current_bit = begin_bit;
     int pass_bits   = (::cuda::std::min)(int{LargeSegmentPolicyT::RADIX_BITS}, (end_bit - current_bit));
 
-    d_keys_double_buffer = cub::detail::device_double_buffer<KeyT>(
+    d_keys_double_buffer = device_double_buffer<KeyT>(
       d_keys_double_buffer.current() + segment_begin, d_keys_double_buffer.alternate() + segment_begin);
 
     if (!keys_only)
     {
-      d_values_double_buffer = cub::detail::device_double_buffer<ValueT>(
+      d_values_double_buffer = device_double_buffer<ValueT>(
         d_values_double_buffer.current() + segment_begin, d_values_double_buffer.alternate() + segment_begin);
     }
 
@@ -576,18 +574,18 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t DeviceSegmentedSortCont
   int num_segments,
   KeyT* d_current_keys,
   KeyT* d_final_keys,
-  detail::device_double_buffer<KeyT> d_keys_double_buffer,
+  device_double_buffer<KeyT> d_keys_double_buffer,
   ValueT* d_current_values,
   ValueT* d_final_values,
-  detail::device_double_buffer<ValueT> d_values_double_buffer,
+  device_double_buffer<ValueT> d_values_double_buffer,
   BeginOffsetIteratorT d_begin_offsets,
   EndOffsetIteratorT d_end_offsets,
-  detail::segmented_sort::local_segment_index_t* group_sizes,
-  detail::segmented_sort::local_segment_index_t* large_and_medium_segments_indices,
-  detail::segmented_sort::local_segment_index_t* small_segments_indices,
+  local_segment_index_t* group_sizes,
+  local_segment_index_t* large_and_medium_segments_indices,
+  local_segment_index_t* small_segments_indices,
   cudaStream_t stream)
 {
-  using local_segment_index_t = detail::segmented_sort::local_segment_index_t;
+  using local_segment_index_t = local_segment_index_t;
 
   cudaError error = cudaSuccess;
 
@@ -627,7 +625,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t DeviceSegmentedSortCont
     }
 
     // Sync the stream if specified to flush runtime errors
-    error = CubDebug(detail::DebugSyncStream(stream));
+    error = CubDebug(DebugSyncStream(stream));
     if (cudaSuccess != error)
     {
       return error;
@@ -679,7 +677,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t DeviceSegmentedSortCont
     }
 
     // Sync the stream if specified to flush runtime errors
-    error = CubDebug(detail::DebugSyncStream(stream));
+    error = CubDebug(DebugSyncStream(stream));
     if (cudaSuccess != error)
     {
       return error;
@@ -704,18 +702,18 @@ template <typename ChainedPolicyT,
 __launch_bounds__(1) CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortContinuationKernel(
   LargeKernelT large_kernel,
   SmallKernelT small_kernel,
-  detail::segmented_sort::local_segment_index_t num_segments,
+  local_segment_index_t num_segments,
   KeyT* d_current_keys,
   KeyT* d_final_keys,
-  detail::device_double_buffer<KeyT> d_keys_double_buffer,
+  device_double_buffer<KeyT> d_keys_double_buffer,
   ValueT* d_current_values,
   ValueT* d_final_values,
-  detail::device_double_buffer<ValueT> d_values_double_buffer,
+  device_double_buffer<ValueT> d_values_double_buffer,
   BeginOffsetIteratorT d_begin_offsets,
   EndOffsetIteratorT d_end_offsets,
-  detail::segmented_sort::local_segment_index_t* group_sizes,
-  detail::segmented_sort::local_segment_index_t* large_and_medium_segments_indices,
-  detail::segmented_sort::local_segment_index_t* small_segments_indices)
+  local_segment_index_t* group_sizes,
+  local_segment_index_t* large_and_medium_segments_indices,
+  local_segment_index_t* small_segments_indices)
 {
   using ActivePolicyT         = typename ChainedPolicyT::ActivePolicy;
   using LargeSegmentPolicyT   = typename ActivePolicyT::LargeSegmentPolicy;
@@ -730,26 +728,30 @@ __launch_bounds__(1) CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortContin
   //
   // Due to (4, 5), we can't pass the user-provided stream in the continuation.
   // Due to (1, 2, 3) it's safe to pass the main stream.
-  cudaError_t error = DeviceSegmentedSortContinuation<LargeSegmentPolicyT, SmallAndMediumPolicyT>(
-    large_kernel,
-    small_kernel,
-    num_segments,
-    d_current_keys,
-    d_final_keys,
-    d_keys_double_buffer,
-    d_current_values,
-    d_final_values,
-    d_values_double_buffer,
-    d_begin_offsets,
-    d_end_offsets,
-    group_sizes,
-    large_and_medium_segments_indices,
-    small_segments_indices,
-    0); // always launching on the main stream (see motivation above)
+  cudaError_t error =
+    detail::segmented_sort::DeviceSegmentedSortContinuation<LargeSegmentPolicyT, SmallAndMediumPolicyT>(
+      large_kernel,
+      small_kernel,
+      num_segments,
+      d_current_keys,
+      d_final_keys,
+      d_keys_double_buffer,
+      d_current_values,
+      d_final_values,
+      d_values_double_buffer,
+      d_begin_offsets,
+      d_end_offsets,
+      group_sizes,
+      large_and_medium_segments_indices,
+      small_segments_indices,
+      0); // always launching on the main stream (see motivation above)
 
   error = CubDebug(error);
 }
 #endif // CUB_RDC_ENABLED
+
+} // namespace segmented_sort
+} // namespace detail
 
 template <bool IS_DESCENDING,
           typename KeyT,
@@ -1080,20 +1082,22 @@ struct DispatchSegmentedSort
         // Partition input segments into size groups and assign specialized
         // kernels for each of them.
         error = SortWithPartitioning<LargeSegmentPolicyT, SmallAndMediumPolicyT>(
-          DeviceSegmentedSortKernelLarge<IS_DESCENDING,
-                                         MaxPolicyT,
-                                         KeyT,
-                                         ValueT,
-                                         StreamingBeginOffsetIteratorT,
-                                         StreamingEndOffsetIteratorT,
-                                         OffsetT>,
-          DeviceSegmentedSortKernelSmall<IS_DESCENDING,
-                                         MaxPolicyT,
-                                         KeyT,
-                                         ValueT,
-                                         StreamingBeginOffsetIteratorT,
-                                         StreamingEndOffsetIteratorT,
-                                         OffsetT>,
+          detail::segmented_sort::DeviceSegmentedSortKernelLarge<
+            IS_DESCENDING,
+            MaxPolicyT,
+            KeyT,
+            ValueT,
+            StreamingBeginOffsetIteratorT,
+            StreamingEndOffsetIteratorT,
+            OffsetT>,
+          detail::segmented_sort::DeviceSegmentedSortKernelSmall<
+            IS_DESCENDING,
+            MaxPolicyT,
+            KeyT,
+            ValueT,
+            StreamingBeginOffsetIteratorT,
+            StreamingEndOffsetIteratorT,
+            OffsetT>,
           three_way_partition_temp_storage_bytes,
           d_keys_double_buffer,
           d_values_double_buffer,
@@ -1110,13 +1114,14 @@ struct DispatchSegmentedSort
         // on extra partitioning steps.
 
         error = SortWithoutPartitioning<LargeSegmentPolicyT>(
-          DeviceSegmentedSortFallbackKernel<IS_DESCENDING,
-                                            MaxPolicyT,
-                                            KeyT,
-                                            ValueT,
-                                            BeginOffsetIteratorT,
-                                            EndOffsetIteratorT,
-                                            OffsetT>,
+          detail::segmented_sort::DeviceSegmentedSortFallbackKernel<
+            IS_DESCENDING,
+            MaxPolicyT,
+            KeyT,
+            ValueT,
+            BeginOffsetIteratorT,
+            EndOffsetIteratorT,
+            OffsetT>,
           d_keys_double_buffer,
           d_values_double_buffer);
       }
@@ -1274,7 +1279,7 @@ private:
     error =                                                                    \
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(1, 1, 0, stream) \
         .doit(                                                                 \
-          DeviceSegmentedSortContinuationKernel<                               \
+          detail::segmented_sort::DeviceSegmentedSortContinuationKernel<       \
             typename PolicyHub::MaxPolicy,                                     \
             LargeKernelT,                                                      \
             SmallKernelT,                                                      \
@@ -1335,7 +1340,7 @@ private:
           return error;
         }
 
-        error = DeviceSegmentedSortContinuation<LargeSegmentPolicyT,
+        error = detail::segmented_sort::DeviceSegmentedSortContinuation<LargeSegmentPolicyT,
                                                 SmallAndMediumPolicyT>(
           large_kernel,
           small_kernel,

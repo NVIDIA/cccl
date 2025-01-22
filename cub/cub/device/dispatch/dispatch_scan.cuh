@@ -345,16 +345,17 @@ struct DispatchScan
     using ScanTileStateT = typename cub::ScanTileState<AccumT>;
     // Ensure kernels are instantiated.
     return Invoke<ActivePolicyT>(
-      DeviceScanInitKernel<ScanTileStateT>,
-      DeviceScanKernel<typename PolicyHub::MaxPolicy,
-                       InputIteratorT,
-                       OutputIteratorT,
-                       ScanTileStateT,
-                       ScanOpT,
-                       InitValueT,
-                       OffsetT,
-                       AccumT,
-                       ForceInclusive>);
+      detail::scan::DeviceScanInitKernel<ScanTileStateT>,
+      detail::scan::DeviceScanKernel<
+        typename PolicyHub::MaxPolicy,
+        InputIteratorT,
+        OutputIteratorT,
+        ScanTileStateT,
+        ScanOpT,
+        InitValueT,
+        OffsetT,
+        AccumT,
+        ForceInclusive>);
   }
 
   /**

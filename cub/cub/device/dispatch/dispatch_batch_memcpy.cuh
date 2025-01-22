@@ -237,7 +237,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentSmallBufferPolicyT::BLO
   using AgentBatchMemcpyPolicyT = typename ChainedPolicyT::ActivePolicy::AgentSmallBufferPolicyT;
 
   // Block-level specialization
-  using AgentBatchMemcpyT = batch_memcpy::AgentBatchMemcpy<
+  using AgentBatchMemcpyT = AgentBatchMemcpy<
     AgentBatchMemcpyPolicyT,
     InputBufferIt,
     OutputBufferIt,

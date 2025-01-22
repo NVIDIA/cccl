@@ -506,8 +506,8 @@ struct DispatchUniqueByKey
   {
     // Ensure kernels are instantiated.
     return Invoke<ActivePolicyT>(
-      scan::detail::DeviceCompactInitKernel<ScanTileStateT, NumSelectedIteratorT>,
-      DeviceUniqueByKeySweepKernel<
+      detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumSelectedIteratorT>,
+      detail::unique_by_key::DeviceUniqueByKeySweepKernel<
         typename PolicyHub::MaxPolicy,
         KeyInputIteratorT,
         ValueInputIteratorT,
