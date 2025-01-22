@@ -765,7 +765,6 @@ public:
 #endif // _LIBCUDACXX_HAS_NVBF16
 
 #if _CCCL_HAS_NVFP8()
-
 #  if _CCCL_STD_VER >= 2014
 #    define _LIBCUDACXX_CONSTEXPR_FP8_LIMITS constexpr
 #  else // ^^^ _CCCL_STD_VER >= 2014 ^^^ // vvv _CCCL_STD_VER < 2014 vvv
