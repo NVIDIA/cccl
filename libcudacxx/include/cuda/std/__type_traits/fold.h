@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/negation.h>
@@ -63,6 +64,11 @@ _CCCL_INLINE_VAR constexpr bool __fold_or_v = __fold_or<_Preds...>::value;
 #  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #endif // _CCCL_NO_FOLD_EXPRESSIONS
+
+#define _CCCL_FOLD_AND(__pred)           (__pred && ... && true)
+#define _CCCL_FOLD_OR(__pred)            (__pred || ...)
+#define _CCCL_FOLD_PLUS(__init, __args)  (__args + ... + __init)
+#define _CCCL_FOLD_TIMES(__init, __args) (__args * ... * __init)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
