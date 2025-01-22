@@ -500,7 +500,7 @@ struct __type_index_large_size_fn<index_sequence<_Is...>>
     decltype(__detail::__type_index_get<_Ip>(__type_tuple<_Ts...>{}));
 
   template <class _Ip, class... _Ts>
-  using __call _CCCL_NODEBUG_ALIAS = __type<__type_index_get_result_t<_Ip, _Ts...>>;
+  using __call _CCCL_NODEBUG_ALIAS = __type<__type_index_get_result_t<_Ip::value, _Ts...>>;
 };
 
 template <size_t _Ip>
