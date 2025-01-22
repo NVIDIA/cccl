@@ -239,8 +239,8 @@ For example, :cpp:struct:`cub::WarpReduce` dispatches to two different implement
 
     using InternalWarpReduce = cuda::std::conditional_t<
       IS_POW_OF_TWO,
-      WarpReduceShfl<T, LOGICAL_WARP_THREADS>,  // shuffle-based implementation
-      WarpReduceSmem<T, LOGICAL_WARP_THREADS>>; // smem-based implementation
+      detail::WarpReduceShfl<T, LOGICAL_WARP_THREADS>,  // shuffle-based implementation
+      detail::WarpReduceSmem<T, LOGICAL_WARP_THREADS>>; // smem-based implementation
 
 Specializations provide different shared memory requirements,
 so the actual ``_TempStorage`` type is defined as:
