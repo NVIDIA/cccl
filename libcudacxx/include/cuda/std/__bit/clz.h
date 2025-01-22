@@ -67,7 +67,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_clz(uint32_t __x) noexcept
 {
 #if _CCCL_COMPILER(MSVC) // _CCCL_COMPILER(MSVC) vvv
   unsigned long __where = 0;
-  if (::_BitScanReverse32(&__where, __x))
+  if (_BitScanReverse32(&__where, __x))
   {
     return 31 - static_cast<int>(__where);
   }
@@ -82,7 +82,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_clz(uint64_t __x) noexcept
 {
 #if _CCCL_COMPILER(MSVC) // _CCCL_COMPILER(MSVC) vvv
   unsigned long __where = 0;
-  if (::_BitScanReverse64(&__where, __x))
+  if (_BitScanReverse64(&__where, __x))
   {
     return 63 - static_cast<int>(__where);
   }

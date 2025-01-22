@@ -55,9 +55,9 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_popc(uint64_t __x) noexcept
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_popc(uint32_t __x) noexcept
 {
 #if _CCCL_COMPILER(MSVC) && !defined(_M_ARM64) // _CCCL_COMPILER(MSVC) + X86 vvv
-  return static_cast<int>(::__popcnt(__x));
+  return static_cast<int>(__popcnt(__x));
 #elif _CCCL_COMPILER(MSVC) && defined(_M_ARM64) // _CCCL_COMPILER(MSVC) + X86 vvv
-  return static_cast<int>(::_CountOneBits(__x));
+  return static_cast<int>(_CountOneBits(__x));
 #else // _CCCL_COMPILER(MSVC) ^^^ / !_CCCL_COMPILER(MSVC) vvv
   return ::__builtin_popcount(__x);
 #endif // !_CCCL_COMPILER(MSVC) ^^^
@@ -67,9 +67,9 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_popc(uint32_t __x) noexcept
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_popc(uint64_t __x) noexcept
 {
 #if _CCCL_COMPILER(MSVC) && !defined(_M_ARM64) // _CCCL_COMPILER(MSVC) + X86 vvv
-  return static_cast<int>(::__popcnt64(__x));
+  return static_cast<int>(__popcnt64(__x));
 #elif _CCCL_COMPILER(MSVC) && defined(_M_ARM64) // _CCCL_COMPILER(MSVC) + ARM64 vvv
-  return static_cast<int>(::_CountOneBits64(__x));
+  return static_cast<int>(_CountOneBits64(__x));
 #else // _CCCL_COMPILER(MSVC) ^^^ / !_CCCL_COMPILER(MSVC) vvv
   return ::__builtin_popcountll(__x);
 #endif // !_CCCL_COMPILER(MSVC) ^^^
