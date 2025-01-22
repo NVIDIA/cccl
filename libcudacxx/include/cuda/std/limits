@@ -765,24 +765,25 @@ public:
 #endif // _LIBCUDACXX_HAS_NVBF16
 
 #if _CCCL_HAS_NVFP8()
-#  if _CCCL_STD_VER >= 2014
+#  if defined(_CCCL_BUILTIN_BIT_CAST) || _CCCL_STD_VER >= 2014
 #    define _LIBCUDACXX_CONSTEXPR_FP8_LIMITS constexpr
-#  else // ^^^ _CCCL_STD_VER >= 2014 ^^^ // vvv _CCCL_STD_VER < 2014 vvv
-#    define _LIBCUDACXX_CONSTEXPR_FP8_LIMITS _LIBCUDACXX_CONSTEXPR_BIT_CAST
-#  endif // _CCCL_STD_VER < 2014
+#  else // ^^^ _CCCL_BUILTIN_BIT_CAST || _CCCL_STD_VER >= 2014 ^^^ // vvv !_CCCL_BUILTIN_BIT_CAST && _CCCL_STD_VER <
+        // 2014 vvv
+#    define _LIBCUDACXX_CONSTEXPR_FP8_LIMITS
+#  endif // ^^^ !_CCCL_BUILTIN_BIT_CAST && _CCCL_STD_VER < 2014 ^^^
 
 template <>
 class __numeric_limits_impl<__nv_fp8_e4m3, __numeric_limits_type::__floating_point>
 {
   _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_FP8_LIMITS __nv_fp8_e4m3 __make_value(__nv_fp8_storage_t __val)
   {
-#  if _CCCL_STD_VER >= 2014
+#  if defined(_CCCL_BUILTIN_BIT_CAST)
+    return _CUDA_VSTD::bit_cast<__nv_fp8_e4m3>(__val);
+#  else // ^^^ _CCCL_BUILTIN_BIT_CAST ^^^ // vvv !_CCCL_BUILTIN_BIT_CAST vvv
     __nv_fp8_e4m3 __ret{};
     __ret.__x = __val;
     return __ret;
-#  else // ^^^ _CCCL_STD_VER >= 2014 ^^^ // vvv _CCCL_STD_VER < 2014 vvv
-    return _CUDA_VSTD::bit_cast<__nv_fp8_e4m3>(__val);
-#  endif // _CCCL_STD_VER < 2014
+#  endif // ^^^ !_CCCL_BUILTIN_BIT_CAST ^^^
   }
 
 public:
@@ -860,13 +861,13 @@ class __numeric_limits_impl<__nv_fp8_e5m2, __numeric_limits_type::__floating_poi
 {
   _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_FP8_LIMITS __nv_fp8_e5m2 __make_value(__nv_fp8_storage_t __val)
   {
-#  if _CCCL_STD_VER >= 2014
+#  if defined(_CCCL_BUILTIN_BIT_CAST)
+    return _CUDA_VSTD::bit_cast<__nv_fp8_e5m2>(__val);
+#  else // ^^^ _CCCL_BUILTIN_BIT_CAST ^^^ // vvv !_CCCL_BUILTIN_BIT_CAST vvv
     __nv_fp8_e5m2 __ret{};
     __ret.__x = __val;
     return __ret;
-#  else // ^^^ _CCCL_STD_VER >= 2014 ^^^ // vvv _CCCL_STD_VER < 2014 vvv
-    return _CUDA_VSTD::bit_cast<__nv_fp8_e5m2>(__val);
-#  endif // _CCCL_STD_VER < 2014
+#  endif // ^^^ !_CCCL_BUILTIN_BIT_CAST ^^^
   }
 
 public:
