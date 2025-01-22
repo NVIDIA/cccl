@@ -61,13 +61,13 @@ namespace core
 #ifdef _NVHPC_CUDA
 #  if (__NVCOMPILER_CUDA_ARCH__ >= 600)
 #    define THRUST_TUNING_ARCH sm60
-#  elif (__NVCOMPILER_CUDA_ARCH__ >= 520)
+#  else
 #    define THRUST_TUNING_ARCH sm52
 #  endif
 #else
 #  if (__CUDA_ARCH__ >= 600)
 #    define THRUST_TUNING_ARCH sm60
-#  elif (__CUDA_ARCH__ >= 520)
+#  elif !defined(__CUDA_ARCH__)
 #    define THRUST_TUNING_ARCH sm52
 #  endif
 #endif
