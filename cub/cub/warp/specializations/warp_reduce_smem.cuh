@@ -52,7 +52,8 @@
 #include <cuda/ptx>
 
 CUB_NAMESPACE_BEGIN
-
+namespace detail
+{
 /**
  * @brief WarpReduceSmem provides smem-based variants of parallel reduction of items partitioned
  *        across a CUDA thread warp.
@@ -411,5 +412,10 @@ struct WarpReduceSmem
     return SegmentedReduce<HEAD_SEGMENTED>(input, flag, reduction_op, Int2Type<true>());
   }
 };
+} // namespace detail
 
+template <typename T, int LOGICAL_WARP_THREADS, int LEGACY_PTX_ARCH = 0>
+using WarpReduceSmem CCCL_DEPRECATED_BECAUSE(
+  "This class is considered an implementation detail and the public interface will be "
+  "removed.") = detail::WarpReduceSmem<T, LOGICAL_WARP_THREADS, LEGACY_PTX_ARCH>;
 CUB_NAMESPACE_END
