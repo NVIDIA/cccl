@@ -162,7 +162,11 @@ using device_future CCCL_DEPRECATED = device_unique_eager_future<T>;
 struct CCCL_DEPRECATED new_stream_t final
 {};
 
-CCCL_DEPRECATED _CCCL_GLOBAL_CONSTANT new_stream_t new_stream{};
+#  ifndef CCCL_HEADER_MACRO_CHECK
+// when building header tests, we get a deprecation warning from cudafe1.stub.c if we deprecate a global variable
+CCCL_DEPRECATED
+#  endif
+_CCCL_GLOBAL_CONSTANT new_stream_t new_stream{};
 
 ///////////////////////////////////////////////////////////////////////////////
 
