@@ -33,9 +33,9 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
 _CCCL_DIAG_POP
 #endif // _LIBCUDACXX_HAS_NVBF16
 
-#if defined(_CCCL_HAS_NVFP8)
+#if _CCCL_HAS_NVFP8()
 #  include <cuda_fp8.h>
-#endif // _CCCL_HAS_NVFP8
+#endif // _CCCL_HAS_NVFP8()
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
