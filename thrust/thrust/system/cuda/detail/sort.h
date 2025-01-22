@@ -92,10 +92,19 @@ THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
   using ItemsInputIt = cub::NullType*;
   ItemsInputIt items = nullptr;
 
-  using DispatchMergeSortT = cub::DispatchMergeSort<KeysIt, ItemsInputIt, KeysIt, ItemsInputIt, Size, CompareOp>;
+  cudaError_t status = cudaSuccess;
 
-  return DispatchMergeSortT::Dispatch(
-    d_temp_storage, temp_storage_bytes, keys, items, keys, items, keys_count, compare_op, stream);
+  using dispatch32_t = cub::DispatchMergeSort<KeysIt, ItemsInputIt, KeysIt, ItemsInputIt, std::uint32_t, CompareOp>;
+  using dispatch64_t = cub::DispatchMergeSort<KeysIt, ItemsInputIt, KeysIt, ItemsInputIt, std::uint64_t, CompareOp>;
+
+  THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
+    status,
+    dispatch32_t::Dispatch,
+    dispatch64_t::Dispatch,
+    keys_count,
+    (d_temp_storage, temp_storage_bytes, keys, items, keys, items, keys_count_fixed, compare_op, stream));
+
+  return status;
 }
 
 template <class KeysIt, class ItemsIt, class Size, class CompareOp>
@@ -109,10 +118,19 @@ THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
   cudaStream_t stream,
   thrust::detail::integral_constant<bool, true> /* sort_items */)
 {
-  using DispatchMergeSortT = cub::DispatchMergeSort<KeysIt, ItemsIt, KeysIt, ItemsIt, Size, CompareOp>;
+  cudaError_t status = cudaSuccess;
 
-  return DispatchMergeSortT::Dispatch(
-    d_temp_storage, temp_storage_bytes, keys, items, keys, items, keys_count, compare_op, stream);
+  using dispatch32_t = cub::DispatchMergeSort<KeysIt, ItemsIt, KeysIt, ItemsIt, std::uint32_t, CompareOp>;
+  using dispatch64_t = cub::DispatchMergeSort<KeysIt, ItemsIt, KeysIt, ItemsIt, std::uint64_t, CompareOp>;
+
+  THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
+    status,
+    dispatch32_t::Dispatch,
+    dispatch64_t::Dispatch,
+    keys_count,
+    (d_temp_storage, temp_storage_bytes, keys, items, keys, items, keys_count_fixed, compare_op, stream));
+
+  return status;
 }
 
 template <class SORT_ITEMS, class /* STABLE */, class KeysIt, class ItemsIt, class Size, class CompareOp>
@@ -240,14 +258,6 @@ struct dispatch<thrust::detail::true_type, thrust::greater<KeyOrVoid>>
       d_temp_storage, temp_storage_bytes, keys_buffer, items_buffer, count, 0, static_cast<int>(sizeof(Key) * 8), stream);
   }
 }; // struct dispatch -- sort pairs in descending order;
-
-template <class SORT_ITEMS, class KeyOrVoid>
-struct dispatch<SORT_ITEMS, ::cuda::std::less<KeyOrVoid>> : dispatch<SORT_ITEMS, thrust::less<KeyOrVoid>>
-{};
-
-template <class SORT_ITEMS, class KeyOrVoid>
-struct dispatch<SORT_ITEMS, ::cuda::std::greater<KeyOrVoid>> : dispatch<SORT_ITEMS, thrust::greater<KeyOrVoid>>
-{};
 
 template <typename SORT_ITEMS, typename Derived, typename Key, typename Item, typename Size, typename CompareOp>
 THRUST_RUNTIME_FUNCTION void radix_sort(execution_policy<Derived>& policy, Key* keys, Item* items, Size count, CompareOp)

@@ -116,28 +116,30 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStore(OutputIteratorT itr, T val);
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
+namespace detail
+{
 /// Helper structure for templated store iteration (inductive case)
 template <int COUNT, int MAX>
-struct IterateThreadStore
+struct iterate_thread_store
 {
   template <CacheStoreModifier MODIFIER, typename T>
   static _CCCL_DEVICE _CCCL_FORCEINLINE void Store(T* ptr, T* vals)
   {
     ThreadStore<MODIFIER>(ptr + COUNT, vals[COUNT]);
-    IterateThreadStore<COUNT + 1, MAX>::template Store<MODIFIER>(ptr, vals);
+    iterate_thread_store<COUNT + 1, MAX>::template Store<MODIFIER>(ptr, vals);
   }
 
   template <typename OutputIteratorT, typename T>
   static _CCCL_DEVICE _CCCL_FORCEINLINE void Dereference(OutputIteratorT ptr, T* vals)
   {
     ptr[COUNT] = vals[COUNT];
-    IterateThreadStore<COUNT + 1, MAX>::Dereference(ptr, vals);
+    iterate_thread_store<COUNT + 1, MAX>::Dereference(ptr, vals);
   }
 };
 
 /// Helper structure for templated store iteration (termination case)
 template <int MAX>
-struct IterateThreadStore<MAX, MAX>
+struct iterate_thread_store<MAX, MAX>
 {
   template <CacheStoreModifier MODIFIER, typename T>
   static _CCCL_DEVICE _CCCL_FORCEINLINE void Store(T* /*ptr*/, T* /*vals*/)
@@ -147,6 +149,10 @@ struct IterateThreadStore<MAX, MAX>
   static _CCCL_DEVICE _CCCL_FORCEINLINE void Dereference(OutputIteratorT /*ptr*/, T* /*vals*/)
   {}
 };
+} // namespace detail
+
+template <int COUNT, int MAX>
+using IterateThreadStore CCCL_DEPRECATED = detail::iterate_thread_store<COUNT, MAX>;
 
 /**
  * Define a uint4 (16B) ThreadStore specialization for the given Cache load modifier
@@ -305,7 +311,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStoreVolatilePtr(T* ptr, T val, Int2Ty
     reinterpret_cast<ShuffleWord*>(words)[i] = reinterpret_cast<ShuffleWord*>(&val)[i];
   }
 
-  IterateThreadStore<0, VOLATILE_MULTIPLE>::Dereference(reinterpret_cast<volatile VolatileWord*>(ptr), words);
+  detail::iterate_thread_store<0, VOLATILE_MULTIPLE>::Dereference(reinterpret_cast<volatile VolatileWord*>(ptr), words);
 }
 
 /**
@@ -340,7 +346,7 @@ ThreadStore(T* ptr, T val, Int2Type<MODIFIER> /*modifier*/, Int2Type<true> /*is_
     reinterpret_cast<ShuffleWord*>(words)[i] = reinterpret_cast<ShuffleWord*>(&val)[i];
   }
 
-  IterateThreadStore<0, DEVICE_MULTIPLE>::template Store<CacheStoreModifier(MODIFIER)>(
+  detail::iterate_thread_store<0, DEVICE_MULTIPLE>::template Store<CacheStoreModifier(MODIFIER)>(
     reinterpret_cast<DeviceWord*>(ptr), words);
 }
 

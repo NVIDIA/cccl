@@ -310,7 +310,7 @@ void Test()
   Test<cub::RadixRankAlgorithm::RADIX_RANK_BASIC, BlockThreads>();
   Test<cub::RadixRankAlgorithm::RADIX_RANK_MEMOIZE, BlockThreads>();
 
-  Test<BlockThreads>(cub::Int2Type<(BlockThreads % 32) == 0>{});
+  Test<BlockThreads>(cub::Int2Type < (BlockThreads % 32) == 0 > {});
 }
 
 int main(int argc, char** argv)

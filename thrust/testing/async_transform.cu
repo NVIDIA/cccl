@@ -10,6 +10,8 @@
 #  include <unittest/unittest.h>
 #  include <unittest/util_async.h>
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 template <typename T>
 struct divide_by_2
 {
@@ -128,10 +130,8 @@ DEFINE_SYNC_TRANSFORM_UNARY_INVOKER(
 ///////////////////////////////////////////////////////////////////////////////
 
 template <template <typename> class AsyncTransformUnaryInvoker,
-          template <typename>
-          class SyncTransformUnaryInvoker,
-          template <typename>
-          class UnaryOperation>
+          template <typename> class SyncTransformUnaryInvoker,
+          template <typename> class UnaryOperation>
 struct test_async_transform_unary
 {
   template <typename T>
@@ -222,10 +222,8 @@ DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES_AND_NAME(
 ///////////////////////////////////////////////////////////////////////////////
 
 template <template <typename> class AsyncTransformUnaryInvoker,
-          template <typename>
-          class SyncTransformUnaryInvoker,
-          template <typename>
-          class UnaryOperation>
+          template <typename> class SyncTransformUnaryInvoker,
+          template <typename> class UnaryOperation>
 struct test_async_transform_unary_inplace
 {
   template <typename T>
@@ -305,10 +303,8 @@ DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES_AND_NAME(
 ///////////////////////////////////////////////////////////////////////////////
 
 template <template <typename> class AsyncTransformUnaryInvoker,
-          template <typename>
-          class SyncTransformUnaryInvoker,
-          template <typename>
-          class UnaryOperation>
+          template <typename> class SyncTransformUnaryInvoker,
+          template <typename> class UnaryOperation>
 struct test_async_transform_unary_counting_iterator
 {
   template <typename T>
@@ -401,12 +397,16 @@ struct test_async_transform_using
       // When you import the customization points into the global namespace,
       // they should be selected instead of the synchronous algorithms.
       {
+        _CCCL_SUPPRESS_DEPRECATED_PUSH
         using namespace thrust::async;
         f0a = transform(d0a.begin(), d0a.end(), d1a.begin(), op);
+        _CCCL_SUPPRESS_DEPRECATED_POP
       }
       {
+        _CCCL_SUPPRESS_DEPRECATED_PUSH
         using thrust::async::transform;
         f0b = transform(d0b.begin(), d0b.end(), d1b.begin(), op);
+        _CCCL_SUPPRESS_DEPRECATED_POP
       }
 
       // ADL should find the synchronous algorithms.

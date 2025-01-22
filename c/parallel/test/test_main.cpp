@@ -12,8 +12,7 @@
 
 #include <iostream>
 
-#define CATCH_CONFIG_RUNNER
-#include <catch2/catch.hpp>
+#include <catch2/catch_session.hpp>
 
 int device_guard(int device_id)
 {
@@ -40,7 +39,7 @@ int main(int argc, char* argv[])
   int device_id{};
 
   // Build a new parser on top of Catch's
-  using namespace Catch::clara;
+  using namespace Catch::Clara;
   auto cli = session.cli() | Opt(device_id, "device")["-d"]["--device"]("device id to use");
   session.cli(cli);
 

@@ -124,6 +124,11 @@ struct AgentRadixSortDownsweepPolicy : ScalingType
  * Thread block abstractions
  ******************************************************************************/
 
+namespace detail
+{
+namespace radix_sort
+{
+
 /**
  * @brief AgentRadixSortDownsweep implements a stateful abstraction of CUDA thread blocks for participating in
  *        device-wide radix sort downsweep .
@@ -148,14 +153,14 @@ template <typename AgentRadixSortDownsweepPolicy,
           typename KeyT,
           typename ValueT,
           typename OffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
+          typename DecomposerT = identity_decomposer_t>
 struct AgentRadixSortDownsweep
 {
   //---------------------------------------------------------------------
   // Type definitions and constants
   //---------------------------------------------------------------------
 
-  using traits                 = detail::radix::traits_t<KeyT>;
+  using traits                 = radix::traits_t<KeyT>;
   using bit_ordered_type       = typename traits::bit_ordered_type;
   using bit_ordered_conversion = typename traits::bit_ordered_conversion_policy;
 
@@ -182,8 +187,7 @@ struct AgentRadixSortDownsweep
   using ValuesItr = CacheModifiedInputIterator<LOAD_MODIFIER, ValueT, OffsetT>;
 
   // Radix ranking type to use
-  using BlockRadixRankT =
-    cub::detail::block_radix_rank_t<RANK_ALGORITHM, BLOCK_THREADS, RADIX_BITS, IS_DESCENDING, SCAN_ALGORITHM>;
+  using BlockRadixRankT = block_radix_rank_t<RANK_ALGORITHM, BLOCK_THREADS, RADIX_BITS, IS_DESCENDING, SCAN_ALGORITHM>;
 
   // Digit extractor type
   using fundamental_digit_extractor_t = BFEDigitExtractor<KeyT>;
@@ -277,7 +281,7 @@ struct AgentRadixSortDownsweep
       temp_storage.keys_and_offsets.exchange_keys[ranks[ITEM]] = twiddled_keys[ITEM];
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
 #pragma unroll
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
@@ -305,7 +309,7 @@ struct AgentRadixSortDownsweep
     int (&ranks)[ITEMS_PER_THREAD],
     OffsetT valid_items)
   {
-    CTA_SYNC();
+    __syncthreads();
 
     ValueExchangeT& exchange_values = temp_storage.exchange_values.Alias();
 
@@ -315,7 +319,7 @@ struct AgentRadixSortDownsweep
       exchange_values[ranks[ITEM]] = values[ITEM];
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
 #pragma unroll
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
@@ -342,7 +346,7 @@ struct AgentRadixSortDownsweep
   {
     BlockLoadKeysT(temp_storage.load_keys).Load(d_keys_in + block_offset, keys);
 
-    CTA_SYNC();
+    __syncthreads();
   }
 
   /**
@@ -362,7 +366,7 @@ struct AgentRadixSortDownsweep
 
     BlockLoadKeysT(temp_storage.load_keys).Load(d_keys_in + block_offset, keys, valid_items, oob_item);
 
-    CTA_SYNC();
+    __syncthreads();
   }
 
   /**
@@ -409,7 +413,7 @@ struct AgentRadixSortDownsweep
   {
     BlockLoadValuesT(temp_storage.load_values).Load(d_values_in + block_offset, values);
 
-    CTA_SYNC();
+    __syncthreads();
   }
 
   /**
@@ -428,7 +432,7 @@ struct AgentRadixSortDownsweep
 
     BlockLoadValuesT(temp_storage.load_values).Load(d_values_in + block_offset, values, valid_items);
 
-    CTA_SYNC();
+    __syncthreads();
   }
 
   /**
@@ -474,7 +478,7 @@ struct AgentRadixSortDownsweep
   {
     ValueT values[ITEMS_PER_THREAD];
 
-    CTA_SYNC();
+    __syncthreads();
 
     LoadValues(values, block_offset, valid_items, Int2Type<FULL_TILE>(), Int2Type<LOAD_WARP_STRIPED>());
 
@@ -520,7 +524,7 @@ struct AgentRadixSortDownsweep
     int exclusive_digit_prefix[BINS_TRACKED_PER_THREAD];
     BlockRadixRankT(temp_storage.radix_rank).RankKeys(keys, ranks, digit_extractor(), exclusive_digit_prefix);
 
-    CTA_SYNC();
+    __syncthreads();
 
 // Share exclusive digit prefix
 #pragma unroll
@@ -534,7 +538,7 @@ struct AgentRadixSortDownsweep
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Get inclusive digit prefix
     int inclusive_digit_prefix[BINS_TRACKED_PER_THREAD];
@@ -562,7 +566,7 @@ struct AgentRadixSortDownsweep
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
 // Update global scatter base offsets for each digit
 #pragma unroll
@@ -577,7 +581,7 @@ struct AgentRadixSortDownsweep
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Scatter keys
     ScatterKeys<FULL_TILE>(keys, relative_bin_offsets, ranks, valid_items);
@@ -602,7 +606,7 @@ struct AgentRadixSortDownsweep
       T items[ITEMS_PER_THREAD];
 
       LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_in + block_offset, items);
-      CTA_SYNC();
+      __syncthreads();
       StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_out + block_offset, items);
 
       block_offset += TILE_ITEMS;
@@ -616,7 +620,7 @@ struct AgentRadixSortDownsweep
       T items[ITEMS_PER_THREAD];
 
       LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_in + block_offset, items, valid_items);
-      CTA_SYNC();
+      __syncthreads();
       StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_out + block_offset, items, valid_items);
     }
   }
@@ -670,7 +674,7 @@ struct AgentRadixSortDownsweep
       }
     }
 
-    short_circuit = CTA_SYNC_AND(short_circuit);
+    short_circuit = __syncthreads_and(short_circuit);
   }
 
   /**
@@ -719,7 +723,7 @@ struct AgentRadixSortDownsweep
       }
     }
 
-    short_circuit = CTA_SYNC_AND(short_circuit);
+    short_circuit = __syncthreads_and(short_circuit);
   }
 
   /**
@@ -744,7 +748,7 @@ struct AgentRadixSortDownsweep
         ProcessTile<true>(block_offset);
         block_offset += TILE_ITEMS;
 
-        CTA_SYNC();
+        __syncthreads();
       }
 
       // Clean up last partial tile with guarded-I/O
@@ -755,5 +759,19 @@ struct AgentRadixSortDownsweep
     }
   }
 };
+
+} // namespace radix_sort
+} // namespace detail
+
+template <typename AgentRadixSortDownsweepPolicy,
+          bool IS_DESCENDING,
+          typename KeyT,
+          typename ValueT,
+          typename OffsetT,
+          typename DecomposerT = detail::identity_decomposer_t>
+using AgentRadixSortDownsweep CCCL_DEPRECATED_BECAUSE(
+  "This class is considered an implementation detail and the public "
+  "interface will be removed.") = detail::radix_sort::
+  AgentRadixSortDownsweep<AgentRadixSortDownsweepPolicy, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>;
 
 CUB_NAMESPACE_END

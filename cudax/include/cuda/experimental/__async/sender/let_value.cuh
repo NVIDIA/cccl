@@ -243,8 +243,9 @@ private:
     _Sndr __sndr_;
 
     template <class _Rcvr>
-    _CUDAX_API auto connect(_Rcvr __rcvr) && noexcept(
-      __nothrow_constructible<__opstate_t<_Rcvr, _Sndr, _Fn>, _Sndr, _Fn, _Rcvr>) -> __opstate_t<_Rcvr, _Sndr, _Fn>
+    _CUDAX_API auto
+    connect(_Rcvr __rcvr) && noexcept(__nothrow_constructible<__opstate_t<_Rcvr, _Sndr, _Fn>, _Sndr, _Fn, _Rcvr>)
+      -> __opstate_t<_Rcvr, _Sndr, _Fn>
     {
       return __opstate_t<_Rcvr, _Sndr, _Fn>(
         static_cast<_Sndr&&>(__sndr_), static_cast<_Fn&&>(__fn_), static_cast<_Rcvr&&>(__rcvr));

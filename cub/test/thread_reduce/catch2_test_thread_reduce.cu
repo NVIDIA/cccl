@@ -48,6 +48,7 @@
 #include "c2h/custom_type.h"
 #include "c2h/extended_types.h"
 #include "c2h/generators.h"
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 /***********************************************************************************************************************
  * Thread Reduce Wrapper Kernels
@@ -285,7 +286,7 @@ _CCCL_TEMPLATE(typename T)
 _CCCL_REQUIRES((::cuda::std::is_floating_point<T>::value))
 void verify_results(const T& expected_data, const T& test_results)
 {
-  REQUIRE(expected_data == Approx(test_results).epsilon(0.05));
+  REQUIRE_THAT(expected_data, Catch::Matchers::WithinRel(test_results, T{0.05}));
 }
 
 _CCCL_TEMPLATE(typename T)

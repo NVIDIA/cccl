@@ -44,8 +44,10 @@
 THRUST_NAMESPACE_BEGIN
 
 // define null_type for backwards compatibility
-struct null_type
+struct CCCL_DEPRECATED_BECAUSE("Please remove null_type from parameters to tuple<...>") null_type
 {};
+
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 
 _CCCL_HOST_DEVICE inline bool operator==(const null_type&, const null_type&)
 {
@@ -76,6 +78,8 @@ _CCCL_HOST_DEVICE inline bool operator>(const null_type&, const null_type&)
 {
   return false;
 }
+
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 /*! \addtogroup utility
  *  \{
@@ -176,6 +180,7 @@ using _CUDA_VSTD::tie;
 THRUST_NAMESPACE_END
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 
 template <>
 struct tuple_size<tuple<THRUST_NS_QUALIFIER::null_type,
@@ -284,4 +289,5 @@ struct tuple_size<tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, THRUST_NS_QUALIFIER:
     : tuple_size<tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8>>
 {};
 
+_CCCL_SUPPRESS_DEPRECATED_POP
 _LIBCUDACXX_END_NAMESPACE_STD

@@ -5,7 +5,7 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #if defined(__cpp_inline_variables)
 inline thread_local bool entered = false;

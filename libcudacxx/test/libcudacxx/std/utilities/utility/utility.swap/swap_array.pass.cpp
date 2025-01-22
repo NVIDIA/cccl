@@ -59,8 +59,8 @@ private:
 };
 
 template <class Tp>
-__host__ __device__ auto
-can_swap_test(int) -> decltype(cuda::std::swap(cuda::std::declval<Tp>(), cuda::std::declval<Tp>()));
+__host__ __device__ auto can_swap_test(int)
+  -> decltype(cuda::std::swap(cuda::std::declval<Tp>(), cuda::std::declval<Tp>()));
 
 template <class Tp>
 __host__ __device__ auto can_swap_test(...) -> cuda::std::false_type;

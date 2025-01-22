@@ -50,8 +50,8 @@ _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API auto basic_any_from(_Interface<_Super>& 
 }
 
 template <template <class...> class _Interface, class _Super>
-_CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API auto
-basic_any_from(_Interface<_Super> const& __self) noexcept -> basic_any<_Super> const&
+_CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API auto basic_any_from(_Interface<_Super> const& __self) noexcept
+  -> basic_any<_Super> const&
 {
   return static_cast<basic_any<_Super> const&>(__self);
 }
@@ -72,8 +72,8 @@ _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API auto basic_any_from(_Interface<_Super>* 
 }
 
 template <template <class...> class _Interface, class _Super>
-_CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API auto
-basic_any_from(_Interface<_Super> const* __self) noexcept -> basic_any<_Super> const*
+_CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API auto basic_any_from(_Interface<_Super> const* __self) noexcept
+  -> basic_any<_Super> const*
 {
   return static_cast<basic_any<_Super> const*>(__self);
 }

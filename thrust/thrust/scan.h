@@ -180,11 +180,8 @@ OutputIterator inclusive_scan(InputIterator first, InputIterator last, OutputIte
  * Iterator</a> and \c InputIterator's \c value_type is convertible to \c OutputIterator's \c value_type. \tparam
  * OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>
  *                         and \c OutputIterator's \c value_type is convertible to
- *                         both \c AssociativeOperator's \c first_argument_type and
- *                         \c second_argument_type.
- *  \tparam AssociativeOperator is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and \c
- * AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
+ *                         both \c AssociativeOperator's first and second argument type.
+ *  \tparam AssociativeOperator The function's return type must be convertible to \c OutputIterator's \c value_type.
  *
  *  \pre \p first may equal \p result but the range <tt>[first, last)</tt> and the range
  *  <tt>[result, result + (last - first))</tt> shall not overlap otherwise.
@@ -236,11 +233,8 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
  * Iterator</a> and \c InputIterator's \c value_type is convertible to \c OutputIterator's \c value_type. \tparam
  * OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>
  *                         and \c OutputIterator's \c value_type is convertible to
- *                         both \c AssociativeOperator's \c first_argument_type and
- *                         \c second_argument_type.
- *  \tparam AssociativeOperator is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and \c
- * AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
+ *                         both \c AssociativeOperator's first and second argument type.
+ *  \tparam AssociativeOperator The function's return type must be convertible to \c OutputIterator's \c value_type.
  *
  *  \pre \p first may equal \p result but the range <tt>[first, last)</tt> and the range
  *  <tt>[result, result + (last - first))</tt> shall not overlap otherwise.
@@ -289,12 +283,9 @@ inclusive_scan(InputIterator first, InputIterator last, OutputIterator result, A
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
  * Iterator</a> and \c InputIterator's \c value_type is convertible to \c OutputIterator's \c value_type. \tparam
  * OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>
- * and \c OutputIterator's \c value_type is convertible to both \c AssociativeOperator's \c first_argument_type and
- * \c second_argument_type.
+ * and \c OutputIterator's \c value_type is convertible to both \c AssociativeOperator's first and second argument type.
  *  \tparam T is convertible to \c OutputIterator's \c value_type.
- *  \tparam AssociativeOperator is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and \c
- * AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
+ *  \tparam AssociativeOperator The function's return type must be convertible to \c OutputIterator's \c value_type.
  *
  *  \pre \p first may equal \p result but the range <tt>[first, last)</tt> and the range <tt>[result, result + (last -
  * first))</tt> shall not overlap otherwise.
@@ -341,12 +332,9 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
  * Iterator</a> and \c InputIterator's \c value_type is convertible to \c OutputIterator's \c value_type. \tparam
  * OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>
- * and \c OutputIterator's \c value_type is convertible to both \c AssociativeOperator's \c first_argument_type and
- * \c second_argument_type.
+ * and \c OutputIterator's \c value_type is convertible to both \c AssociativeOperator's first and second argument type.
  *  \tparam T is convertible to \c OutputIterator's \c value_type.
- *  \tparam AssociativeOperator is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and \c
- * AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
+ *  \tparam AssociativeOperator The function's return type must be convertible to \c OutputIterator's \c value_type.
  *
  *  \pre \p first may equal \p result but the range <tt>[first, last)</tt> and the range <tt>[result, result + (last -
  * first))</tt> shall not overlap otherwise.
@@ -594,12 +582,9 @@ OutputIterator exclusive_scan(InputIterator first, InputIterator last, OutputIte
  * Iterator</a> and \c InputIterator's \c value_type is convertible to \c OutputIterator's \c value_type. \tparam
  * OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>
  *                         and \c OutputIterator's \c value_type is convertible to
- *                         both \c AssociativeOperator's \c first_argument_type and
- *                         \c second_argument_type.
+ *                         both \c AssociativeOperator's first and second argument type.
  *  \tparam T is convertible to \c OutputIterator's \c value_type.
- *  \tparam AssociativeOperator is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and \c
- * AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
+ *  \tparam AssociativeOperator The function's return type must be convertible to \c OutputIterator's \c value_type.
  *
  *  \pre \p first may equal \p result but the range <tt>[first, last)</tt> and the range
  *  <tt>[result, result + (last - first))</tt> shall not overlap otherwise.
@@ -657,12 +642,9 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
  * Iterator</a> and \c InputIterator's \c value_type is convertible to \c OutputIterator's \c value_type. \tparam
  * OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>
  *                         and \c OutputIterator's \c value_type is convertible to
- *                         both \c AssociativeOperator's \c first_argument_type and
- *                         \c second_argument_type.
+ *                         both \c AssociativeOperator's first and second argument type.
  *  \tparam T is convertible to \c OutputIterator's \c value_type.
- *  \tparam AssociativeOperator is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and \c
- * AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
+ *  \tparam AssociativeOperator The function's return type must be convertible to \c OutputIterator's \c value_type.
  *
  *  \pre \p first may equal \p result but the range <tt>[first, last)</tt> and the range
  *  <tt>[result, result + (last - first))</tt> shall not overlap otherwise.
@@ -1014,9 +996,7 @@ OutputIterator inclusive_scan_by_key(
  * href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>, and if \c x and \c y are
  * objects of \c OutputIterator's \c value_type, then <tt>binary_op(x,y)</tt> is defined. \tparam BinaryPredicate is a
  * model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>. \tparam
- * AssociativeOperator is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and \c
- * AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
+ * AssociativeOperator The function's return type must be convertible to \c OutputIterator's \c value_type.
  *
  *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range
  *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
@@ -1098,9 +1078,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
  * href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>, and if \c x and \c y are
  * objects of \c OutputIterator's \c value_type, then <tt>binary_op(x,y)</tt> is defined. \tparam BinaryPredicate is a
  * model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>. \tparam
- * AssociativeOperator is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and \c
- * AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
+ * AssociativeOperator The function's return type must be convertible to \c OutputIterator's \c value_type.
  *
  *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range
  *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
@@ -1545,9 +1523,8 @@ OutputIterator exclusive_scan_by_key(
  * href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>, and if \c x and \c y are
  * objects of \c OutputIterator's \c value_type, then <tt>binary_op(x,y)</tt> is defined. \tparam T is convertible to \c
  * OutputIterator's \c value_type. \tparam BinaryPredicate is a model of <a
- * href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>. \tparam AssociativeOperator
- * is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and
- * \c AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
+ * href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>.
+ *  \tparam AssociativeOperator The function's return type must be convertible to \c OutputIterator's \c value_type.
  *
  *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range
  *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
@@ -1637,9 +1614,8 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
  * href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>, and if \c x and \c y are
  * objects of \c OutputIterator's \c value_type, then <tt>binary_op(x,y)</tt> is defined. \tparam T is convertible to \c
  * OutputIterator's \c value_type. \tparam BinaryPredicate is a model of <a
- * href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>. \tparam AssociativeOperator
- * is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and
- * \c AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
+ * href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>.
+ *  \tparam AssociativeOperator The function's return type must be convertible to \c OutputIterator's \c value_type.
  *
  *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range
  *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.

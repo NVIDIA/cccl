@@ -28,8 +28,8 @@ template <class _InputIterator, class _Size, class _Function>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _InputIterator
 for_each_n(_InputIterator __first, _Size __orig_n, _Function __f)
 {
-  typedef decltype(_CUDA_VSTD::__convert_to_integral(__orig_n)) _IntegralSize;
-  _IntegralSize __n = __orig_n;
+  using _IntegralSize = decltype(_CUDA_VSTD::__convert_to_integral(__orig_n));
+  _IntegralSize __n   = __orig_n;
   while (__n > 0)
   {
     __f(*__first);

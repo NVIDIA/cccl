@@ -1,7 +1,8 @@
-# Copyright (c) 2024, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+from __future__ import annotations
 
 import ctypes
 import functools
@@ -10,8 +11,9 @@ import numba
 import numpy as np
 from numba import cuda, types
 
-from ._utils.cai import DeviceArrayLike, get_dtype, is_contiguous
+from ._utils.protocols import get_dtype, is_contiguous
 from .iterators._iterators import IteratorBase
+from .typing import DeviceArrayLike, GpuStruct
 
 
 # MUST match `cccl_type_enum` in c/include/cccl/c/types.h
@@ -121,6 +123,10 @@ def _type_to_enum(numba_type: types.Type) -> TypeEnum:
 def _numba_type_to_info(numba_type: types.Type) -> TypeInfo:
     context = cuda.descriptor.cuda_target.target_context
     value_type = context.get_value_type(numba_type)
+    if isinstance(numba_type, types.Record):
+        # then `value_type` is a pointer and we need the
+        # alignment of the pointee.
+        value_type = value_type.pointee
     size = value_type.get_abi_size(context.target_data)
     alignment = value_type.get_abi_alignment(context.target_data)
     return TypeInfo(size, alignment, _type_to_enum(numba_type))
@@ -209,6 +215,11 @@ def to_cccl_iter(array_or_iterator) -> Iterator:
     return _device_array_to_cccl_iter(array_or_iterator)
 
 
-def host_array_to_value(array: np.ndarray) -> Value:
-    info = _numpy_type_to_info(array.dtype)
-    return Value(info, array.ctypes.data)
+def to_cccl_value(array_or_struct: np.ndarray | GpuStruct) -> Value:
+    if isinstance(array_or_struct, np.ndarray):
+        info = _numpy_type_to_info(array_or_struct.dtype)
+        data = ctypes.cast(array_or_struct.ctypes.data, ctypes.c_void_p)
+        return Value(info, data)
+    else:
+        # it's a GpuStruct, use the array underlying it
+        return to_cccl_value(array_or_struct._data)
