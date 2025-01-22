@@ -958,14 +958,14 @@ inline void unit_test_graph_epoch_3()
     if ((k % 2) == 0)
     {
       ctx.parallel_for(blocked_partition(), exec_place::current_device(), lA.shape(), lA.rw(), lB.read())
-          ->*[] _CCCL_HOST_DEVICE(size_t i, slice<double> A, slice<double> B) {
+          ->*[] _CCCL_HOST_DEVICE(size_t i, slice<double> A, slice<const double> B) {
                 A(i) = cos(B(i));
               };
     }
     else
     {
       ctx.parallel_for(blocked_partition(), exec_place::current_device(), lA.shape(), lA.read(), lB.rw())
-          ->*[] _CCCL_HOST_DEVICE(size_t i, slice<double> A, slice<double> B) {
+          ->*[] _CCCL_HOST_DEVICE(size_t i, slice<const double> A, slice<double> B) {
                 B(i) = sin(A(i));
               };
     }
