@@ -64,7 +64,7 @@ struct readonly_type_of
 template <typename T, typename Extents, typename Layout, template <typename> class Accessor>
 struct readonly_type_of<mdspan<T, Extents, Layout, Accessor<T>>>
 {
-  using type = mdspan<const T, Extents, Layout, Accessor<const T>>;
+  using type = mdspan<::cuda::std::add_const_t<T>, Extents, Layout, Accessor<::cuda::std::add_const_t<T>>>;
 };
 
 // Helper struct to deduce read-write types.
