@@ -29,9 +29,23 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__concepts/convertible_to.h>
+#include <cuda/std/__concepts/copyable.h>
+#include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__tuple_dir/tuple_element.h>
+#include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
+#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_signed.h>
+#include <cuda/std/__type_traits/is_swappable.h>
+#include <cuda/std/__type_traits/is_unsigned.h>
+#include <cuda/std/__type_traits/remove_const.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/span>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -50,6 +64,50 @@ _CCCL_INLINE_VAR constexpr bool __is_extents_v = __is_extents<_Tp>::value;
 template <class _Layout, class _Mapping>
 _CCCL_INLINE_VAR constexpr bool __is_mapping_of =
   _CCCL_TRAIT(is_same, typename _Layout::template mapping<typename _Mapping::extents_type>, _Mapping);
+
+// [mdspan.layout.reqmts]/1
+#  if _CCCL_STD_VER >= 2020
+template <class _Mapping>
+concept __layout_mapping_req_type =
+  copyable<_Mapping> && equality_comparable<_Mapping> && //
+  is_nothrow_move_constructible_v<_Mapping> && is_move_assignable_v<_Mapping> && is_nothrow_swappable_v<_Mapping>;
+#  else // ^^^ _CCCL_STD_VER >= 2020 ^^^ / vvv _CCCL_STD_VER <= 2017 vvv
+template <class _Mapping>
+_CCCL_CONCEPT_FRAGMENT(
+  __layout_mapping_req_type_,
+  requires()( //
+    requires(copyable<_Mapping>),
+    requires(equality_comparable<_Mapping>),
+    requires(_CCCL_TRAIT(is_nothrow_move_constructible, _Mapping)),
+    requires(_CCCL_TRAIT(is_move_assignable, _Mapping)),
+    requires(_CCCL_TRAIT(is_nothrow_swappable, _Mapping))));
+
+template <class _Mapping>
+_CCCL_CONCEPT __layout_mapping_req_type = _CCCL_FRAGMENT(__layout_mapping_req_type_, _Mapping);
+#  endif // _CCCL_STD_VER <= 2017
+
+// [mdspan.layout.reqmts]/2-4
+#  if _CCCL_STD_VER >= 2020
+template <class _Mapping>
+concept __layout_mapping_req_types = requires {
+  requires __is_extents_v<typename _Mapping::extents_type>;
+  requires same_as<typename _Mapping::index_type, typename _Mapping::extents_type::index_type>;
+  requires same_as<typename _Mapping::rank_type, typename _Mapping::extents_type::rank_type>;
+  requires __is_mapping_of<typename _Mapping::layout_type, _Mapping>;
+};
+#  else // ^^^ _CCCL_STD_VER >= 2020 ^^^ / vvv _CCCL_STD_VER <= 2017 vvv
+template <class _Mapping>
+_CCCL_CONCEPT_FRAGMENT(
+  __layout_mapping_req_types_,
+  requires()( //
+    requires(__is_extents_v<typename _Mapping::extents_type>),
+    requires(same_as<typename _Mapping::index_type, typename _Mapping::extents_type::index_type>),
+    requires(same_as<typename _Mapping::rank_type, typename _Mapping::extents_type::rank_type>),
+    requires(__is_mapping_of<typename _Mapping::layout_type, _Mapping>)));
+
+template <class _Mapping>
+_CCCL_CONCEPT __layout_mapping_req_types = _CCCL_FRAGMENT(__layout_mapping_req_types_, _Mapping);
+#  endif // _CCCL_STD_VER <= 2017
 
 // [mdspan.layout.stride.expo]/4
 #if _CCCL_STD_VER >= 2020
@@ -93,6 +151,35 @@ _CCCL_CONCEPT __layout_mapping_alike = _CCCL_FRAGMENT(__layout_mapping_alike_, _
 #endif // _CCCL_STD_VER <= 2017
 
 } // namespace __mdspan_detail
+
+#  if _CCCL_STD_VER >= 2020
+
+template <class _Tp, class _IndexType>
+concept __index_pair_like =
+  __pair_like<_Tp> //
+  && convertible_to<tuple_element_t<0, _Tp>, _IndexType> //
+  && convertible_to<tuple_element_t<1, _Tp>, _IndexType>;
+
+#  else // ^^^ _CCCL_STD_VER >= 2020 ^^^ / vvv _CCCL_STD_VER <= 2017 vvv
+
+template <class _Tp, class _IndexType>
+_CCCL_CONCEPT_FRAGMENT(
+  __index_pair_like_,
+  requires()( //
+    requires(__pair_like<_Tp>),
+    requires(convertible_to<tuple_element_t<0, _Tp>, _IndexType>),
+    requires(convertible_to<tuple_element_t<1, _Tp>, _IndexType>) //
+    ));
+template <class _Tp, class _IndexType>
+_CCCL_CONCEPT __index_pair_like = _CCCL_FRAGMENT(__index_pair_like_, _Tp, _IndexType);
+
+#  endif // _CCCL_STD_VER <= 2017
+
+// [mdspan.submdspan.strided.slice]/3
+
+template <class _Tp>
+_CCCL_CONCEPT __index_like =
+  _CCCL_TRAIT(is_signed, _Tp) || _CCCL_TRAIT(is_unsigned, _Tp) || __integral_constant_like<_Tp>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
