@@ -21,17 +21,18 @@
 #  pragma system_header
 #endif // no system header
 
+_CCCL_PUSH_MACROS
+
+#include <cuda/std/__fwd/mdspan.h>
+#include <cuda/std/__mdspan/concepts.h>
 #include <cuda/std/__mdspan/default_accessor.h>
-#include <cuda/std/__mdspan/dynamic_extent.h>
 #include <cuda/std/__mdspan/extents.h>
-#include <cuda/std/__mdspan/full_extent_t.h>
 #include <cuda/std/__mdspan/layout_left.h>
 #include <cuda/std/__mdspan/layout_right.h>
 #include <cuda/std/__mdspan/layout_stride.h>
-#include <cuda/std/__mdspan/macros.h>
 #include <cuda/std/__mdspan/mdspan.h>
-#include <cuda/std/__mdspan/static_array.h>
-#include <cuda/std/__mdspan/submdspan.h>
 #include <cuda/std/version>
+
+_CCCL_POP_MACROS
 
 #endif // _CUDA_STD_MDSPAN
