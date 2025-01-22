@@ -97,9 +97,7 @@ CUB_NAMESPACE_BEGIN
  * @param tile_queue
  *   Drain queue descriptor for dynamically mapping tile data onto thread blocks
  */
-namespace detail
-{
-namespace histogram
+namespace detail::histogram
 {
 
 template <int NUM_ACTIVE_CHANNELS, typename CounterT, typename OffsetT>
@@ -518,8 +516,7 @@ struct dispatch_histogram
   }
 };
 
-} // namespace histogram
-} // namespace detail
+} // namespace detail::histogram
 
 /******************************************************************************
  * Dispatch

@@ -70,10 +70,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-
-namespace segmented_sort
+namespace detail::segmented_sort
 {
 // Type used to index within segments within a single invocation
 using local_segment_index_t = ::cuda::std::uint32_t;
@@ -750,8 +747,7 @@ __launch_bounds__(1) CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortContin
 }
 #endif // CUB_RDC_ENABLED
 
-} // namespace segmented_sort
-} // namespace detail
+} // namespace detail::segmented_sort
 
 template <bool IS_DESCENDING,
           typename KeyT,

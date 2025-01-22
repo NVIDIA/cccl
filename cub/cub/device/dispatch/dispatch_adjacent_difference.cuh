@@ -51,9 +51,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace adjacent_difference
+namespace detail::adjacent_difference
 {
 
 template <typename AgentDifferenceInitT, typename InputIteratorT, typename InputT, typename OffsetT>
@@ -106,8 +104,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceDifferenceKernel(
   agent.Process(tile_idx, tile_base);
 }
 
-} // namespace adjacent_difference
-} // namespace detail
+} // namespace detail::adjacent_difference
 
 template <typename InputIteratorT,
           typename OutputIteratorT,

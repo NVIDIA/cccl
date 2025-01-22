@@ -73,9 +73,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace for_each_in_extents
+namespace detail::for_each_in_extents
 {
 
 // The dispatch layer is in the detail namespace until we figure out the tuning API
@@ -203,8 +201,7 @@ private:
   unsigned_index_type _size;
 };
 
-} // namespace for_each_in_extents
-} // namespace detail
+} // namespace detail::for_each_in_extents
 
 CUB_NAMESPACE_END
 

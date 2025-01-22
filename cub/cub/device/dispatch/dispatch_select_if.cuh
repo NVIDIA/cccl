@@ -62,10 +62,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-
-namespace select
+namespace detail::select
 {
 // Offset type used to instantiate the stream compaction-kernel and agent to index the items within one partition
 using per_partition_offset_t = ::cuda::std::int32_t;
@@ -379,8 +376,7 @@ __launch_bounds__(int(
   // If applicable, hints to discard modified cache lines for vsmem
   VsmemHelperT::discard_temp_storage(temp_storage);
 }
-} // namespace select
-} // namespace detail
+} // namespace detail::select
 
 /******************************************************************************
  * Dispatch

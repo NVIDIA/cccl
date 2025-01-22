@@ -65,9 +65,7 @@ CUB_NAMESPACE_BEGIN
  * Kernel entry points
  *****************************************************************************/
 
-namespace detail
-{
-namespace rle
+namespace detail::rle
 {
 
 /**
@@ -157,8 +155,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::RleSweepPolicyT::BLOCK_THREA
   AgentRleT(temp_storage, d_in, d_offsets_out, d_lengths_out, equality_op, num_items)
     .ConsumeRange(num_tiles, tile_status, d_num_runs_out);
 }
-} // namespace rle
-} // namespace detail
+} // namespace detail::rle
 
 /******************************************************************************
  * Dispatch

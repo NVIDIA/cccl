@@ -53,9 +53,7 @@ _CCCL_NV_DIAG_SUPPRESS(186)
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace transform
+namespace detail::transform
 {
 template <typename T>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE const char* round_down_ptr(const T* ptr, unsigned alignment)
@@ -862,6 +860,5 @@ struct dispatch_t<RequiresStableAddress,
 
 #undef CUB_DETAIL_TRANSFORM_KERNEL_PTR
 };
-} // namespace transform
-} // namespace detail
+} // namespace detail::transform
 CUB_NAMESPACE_END

@@ -64,9 +64,7 @@ CUB_NAMESPACE_BEGIN
  * Kernel entry points
  *****************************************************************************/
 
-namespace detail
-{
-namespace reduce
+namespace detail::reduce
 {
 
 /**
@@ -181,8 +179,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT::BLOCK_TH
     .ConsumeRange(num_items, tile_state, start_tile);
 }
 
-} // namespace reduce
-} // namespace detail
+} // namespace detail::reduce
 
 /******************************************************************************
  * Dispatch

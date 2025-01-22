@@ -66,9 +66,7 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace reduce
+namespace detail::reduce
 {
 
 /// Normalize input iterator to segment offset
@@ -235,8 +233,7 @@ struct DeviceReduceKernelSource
     return sizeof(AccumT);
   }
 };
-} // namespace reduce
-} // namespace detail
+} // namespace detail::reduce
 
 /******************************************************************************
  * Single-problem dispatch

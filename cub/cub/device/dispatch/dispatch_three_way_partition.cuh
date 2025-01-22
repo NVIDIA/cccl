@@ -52,10 +52,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-
-namespace three_way_partition
+namespace detail::three_way_partition
 {
 // Offset type used to instantiate the stream three-way-partition-kernel and agent to index the items within one
 // partition
@@ -229,8 +226,7 @@ DeviceThreeWayPartitionInitKernel(ScanTileStateT tile_state, int num_tiles, NumS
     }
   }
 }
-} // namespace three_way_partition
-} // namespace detail
+} // namespace detail::three_way_partition
 
 /******************************************************************************
  * Dispatch

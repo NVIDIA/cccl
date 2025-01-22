@@ -30,9 +30,7 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace reduce
+namespace detail::reduce
 {
 
 template <typename GlobalAccumT, typename PromoteToGlobalOpT, typename GlobalReductionOpT, typename FinalResultOutIteratorT>
@@ -374,8 +372,7 @@ struct dispatch_streaming_arg_reduce_t
   }
 };
 
-} // namespace reduce
-} // namespace detail
+} // namespace detail::reduce
 
 CUB_NAMESPACE_END
 

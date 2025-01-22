@@ -63,10 +63,7 @@ CUB_NAMESPACE_BEGIN
  * Kernel entry points
  *****************************************************************************/
 
-namespace detail
-{
-
-namespace scan_by_key
+namespace detail::scan_by_key
 {
 
 /**
@@ -194,8 +191,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanByKeyInitKernel(
     d_keys_prev_in[tid] = d_keys_in[tile_base - 1];
   }
 }
-} // namespace scan_by_key
-} // namespace detail
+} // namespace detail::scan_by_key
 
 /******************************************************************************
  * Dispatch

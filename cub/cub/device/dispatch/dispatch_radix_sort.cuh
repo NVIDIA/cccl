@@ -77,9 +77,7 @@ CUB_NAMESPACE_BEGIN
  * Kernel entry points
  *****************************************************************************/
 
-namespace detail
-{
-namespace radix_sort
+namespace detail::radix_sort
 {
 
 /**
@@ -832,8 +830,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(OffsetT* d_b
   }
 }
 
-} // namespace radix_sort
-} // namespace detail
+} // namespace detail::radix_sort
 
 /******************************************************************************
  * Single-problem dispatch

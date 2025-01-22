@@ -57,9 +57,7 @@ CUB_NAMESPACE_BEGIN
  * Kernel entry points
  *****************************************************************************/
 
-namespace detail
-{
-namespace unique_by_key
+namespace detail::unique_by_key
 {
 /**
  * @brief Unique by key kernel entry point (multi-block)
@@ -180,8 +178,7 @@ __launch_bounds__(int(
   // If applicable, hints to discard modified cache lines for vsmem
   VsmemHelperT::discard_temp_storage(temp_storage);
 }
-} // namespace unique_by_key
-} // namespace detail
+} // namespace detail::unique_by_key
 /******************************************************************************
  * Dispatch
  ******************************************************************************/

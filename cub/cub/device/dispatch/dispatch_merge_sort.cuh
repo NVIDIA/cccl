@@ -53,10 +53,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-
-namespace merge_sort
+namespace detail::merge_sort
 {
 
 /**
@@ -325,8 +322,7 @@ __launch_bounds__(
   VSmemHelperT::discard_temp_storage(temp_storage);
 }
 
-} // namespace merge_sort
-} // namespace detail
+} // namespace detail::merge_sort
 
 /*******************************************************************************
  * Policy
