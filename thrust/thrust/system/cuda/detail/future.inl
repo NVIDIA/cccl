@@ -1222,13 +1222,13 @@ CCCL_DEPRECATED _CCCL_HOST unique_eager_event when_all(Events&&... evs)
 }
 
 // ADL hook for transparent `.after` move support.
-_CCCL_HOST CCCL_DEPRECATED inline auto capture_as_dependency(unique_eager_event& dependency)
+CCCL_DEPRECATED _CCCL_HOST inline auto capture_as_dependency(unique_eager_event& dependency)
   THRUST_DECLTYPE_RETURNS(std::move(dependency))
 
   // ADL hook for transparent `.after` move support.
   template <typename X>
-  _CCCL_HOST CCCL_DEPRECATED
-  auto capture_as_dependency(unique_eager_future<X>& dependency) THRUST_DECLTYPE_RETURNS(std::move(dependency))
+  CCCL_DEPRECATED _CCCL_HOST auto capture_as_dependency(unique_eager_future<X>& dependency)
+    THRUST_DECLTYPE_RETURNS(std::move(dependency))
 
 } // namespace cuda
 } // namespace system
