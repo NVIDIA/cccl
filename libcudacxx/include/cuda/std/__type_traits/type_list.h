@@ -480,11 +480,11 @@ struct __inherit_flat : _Ts...
 template <size_t _Ip, class _Ty>
 struct __type_index_leaf
 {
-  using type = _Ty;
+  using type _CCCL_NODEBUG_ALIAS = _Ty;
 };
 
 template <size_t _Ip, class _Ty>
-_LIBCUDACXX_HIDE_FROM_ABI __type_index_leaf<_Ip, _Ty> __type_index_get(__type_index_leaf<_Ip, _Ty>*);
+_LIBCUDACXX_HIDE_FROM_ABI __type_index_leaf<_Ip, _Ty> __type_index_get(__type_index_leaf<_Ip, _Ty>);
 
 template <class _Is>
 struct __type_index_large_size_fn;
@@ -492,10 +492,15 @@ struct __type_index_large_size_fn;
 template <size_t... _Is>
 struct __type_index_large_size_fn<index_sequence<_Is...>>
 {
+  template <class... _Ts>
+  using __type_tuple _CCCL_NODEBUG_ALIAS = __inherit_flat<__type_index_leaf<_Is, _Ts>...>;
+
+  template <size_t _Ip, class... _Ts>
+  using __type_index_get_result_t _CCCL_NODEBUG_ALIAS =
+    decltype(__detail::__type_index_get<_Ip::value>(__type_tuple<_Ts...>{}));
+
   template <class _Ip, class... _Ts>
-  using __call _CCCL_NODEBUG_ALIAS = //
-    __type<decltype(__detail::__type_index_get<_Ip::value>(
-      static_cast<__inherit_flat<__type_index_leaf<_Is, _Ts>...>*>(nullptr)))>;
+  using __call _CCCL_NODEBUG_ALIAS = __type<__type_index_get_result_t<_Ip, _Ts...>>;
 };
 
 template <size_t _Ip>
@@ -531,8 +536,19 @@ struct __type_index_select_fn<true> // Fast implementation for smaller indices
 };
 } // namespace __detail
 
+#    if !_CCCL_COMPILER(MSVC)
+
 template <class _Ip, class... _Ts>
 using __type_index = __type_call<__detail::__type_index_select_fn<(_Ip::value < _CCCL_META_UNROLL_LIMIT)>, _Ip, _Ts...>;
+
+#    else // ^^^ !_CCCL_COMPILER(MSVC) ^^^ / vvv _CCCL_COMPILER(MSVC) vvv
+
+// Simplify the implementation for MSVC, which has trouble with the above
+template <class _Ip, class... _Ts>
+using __type_index =
+  typename __type_index_large_size_fn<make_index_sequence<sizeof...(_Ts)>>::template __call<_Ip, _Ts...>;
+
+#    endif // !_CCCL_COMPILER(MSVC)
 
 template <size_t _Ip, class... _Ts>
 using __type_index_c = __type_index<integral_constant<size_t, _Ip>, _Ts...>;
