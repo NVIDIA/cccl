@@ -12,6 +12,7 @@
 
 #include <cuda/std/cfloat>
 #include <cuda/std/limits>
+#include <cuda/std/type_traits>
 
 #include "test_macros.h"
 
