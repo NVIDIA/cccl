@@ -348,7 +348,6 @@ struct DispatchScan
         break;
       }
 
-      // TODO(ashwin): should this come from the launcher factory instead?
       // Get max x-dimension of grid
       int max_dim_x;
       error = CubDebug(launcher_factory.MaxGridDimX(max_dim_x));
