@@ -29,6 +29,21 @@
 #include <cuda/std/climits>
 #include <cuda/std/version>
 
+#if defined(_LIBCUDACXX_HAS_NVFP16)
+#  include <cuda_fp16.h>
+#endif // _LIBCUDACXX_HAS_NVFP16
+
+#if defined(_LIBCUDACXX_HAS_NVBF16)
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
+#  include <cuda_bf16.h>
+_CCCL_DIAG_POP
+#endif // _LIBCUDACXX_HAS_NVBF16
+
+#if _CCCL_HAS_NVFP8()
+#  include <cuda_fp8.h>
+#endif // _CCCL_HAS_NVFP8()
+
 _CCCL_PUSH_MACROS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -742,6 +757,183 @@ public:
   static constexpr float_round_style round_style = round_to_nearest;
 };
 #endif // _LIBCUDACXX_HAS_NVBF16
+
+#if _CCCL_HAS_NVFP8()
+#  if defined(_CCCL_BUILTIN_BIT_CAST) || _CCCL_STD_VER >= 2014
+#    define _LIBCUDACXX_CONSTEXPR_FP8_LIMITS constexpr
+#  else // ^^^ _CCCL_BUILTIN_BIT_CAST || _CCCL_STD_VER >= 2014 ^^^ // vvv !_CCCL_BUILTIN_BIT_CAST && _CCCL_STD_VER <
+        // 2014 vvv
+#    define _LIBCUDACXX_CONSTEXPR_FP8_LIMITS
+#  endif // ^^^ !_CCCL_BUILTIN_BIT_CAST && _CCCL_STD_VER < 2014 ^^^
+
+template <>
+class __numeric_limits_impl<__nv_fp8_e4m3, __numeric_limits_type::__floating_point>
+{
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_FP8_LIMITS __nv_fp8_e4m3 __make_value(__nv_fp8_storage_t __val)
+  {
+#  if defined(_CCCL_BUILTIN_BIT_CAST)
+    return _CUDA_VSTD::bit_cast<__nv_fp8_e4m3>(__val);
+#  else // ^^^ _CCCL_BUILTIN_BIT_CAST ^^^ // vvv !_CCCL_BUILTIN_BIT_CAST vvv
+    __nv_fp8_e4m3 __ret{};
+    __ret.__x = __val;
+    return __ret;
+#  endif // ^^^ !_CCCL_BUILTIN_BIT_CAST ^^^
+  }
+
+public:
+  using type = __nv_fp8_e4m3;
+
+  static constexpr bool is_specialized = true;
+
+  static constexpr bool is_signed   = true;
+  static constexpr int digits       = 3;
+  static constexpr int digits10     = 0;
+  static constexpr int max_digits10 = 2;
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_FP8_LIMITS type min() noexcept
+  {
+    return __make_value(static_cast<__nv_fp8_storage_t>(0x08u));
+  }
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_FP8_LIMITS type max() noexcept
+  {
+    return __make_value(static_cast<__nv_fp8_storage_t>(0x7eu));
+  }
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_FP8_LIMITS type lowest() noexcept
+  {
+    return __make_value(static_cast<__nv_fp8_storage_t>(0xfeu));
+  }
+
+  static constexpr bool is_integer = false;
+  static constexpr bool is_exact   = false;
+  static constexpr int radix       = __FLT_RADIX__;
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_FP8_LIMITS type epsilon() noexcept
+  {
+    return __make_value(static_cast<__nv_fp8_storage_t>(0x20u));
+  }
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_FP8_LIMITS type round_error() noexcept
+  {
+    return __make_value(static_cast<__nv_fp8_storage_t>(0x30u));
+  }
+
+  static constexpr int min_exponent   = -6;
+  static constexpr int min_exponent10 = -2;
+  static constexpr int max_exponent   = 8;
+  static constexpr int max_exponent10 = 2;
+
+  static constexpr bool has_infinity             = false;
+  static constexpr bool has_quiet_NaN            = true;
+  static constexpr bool has_signaling_NaN        = false;
+  static constexpr float_denorm_style has_denorm = denorm_present;
+  static constexpr bool has_denorm_loss          = false;
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_FP8_LIMITS type infinity() noexcept
+  {
+    return type{};
+  }
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_FP8_LIMITS type quiet_NaN() noexcept
+  {
+    return __make_value(static_cast<__nv_fp8_storage_t>(0x7fu));
+  }
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_FP8_LIMITS type signaling_NaN() noexcept
+  {
+    return type{};
+  }
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_FP8_LIMITS type denorm_min() noexcept
+  {
+    return __make_value(static_cast<__nv_fp8_storage_t>(0x01u));
+  }
+
+  static constexpr bool is_iec559  = false;
+  static constexpr bool is_bounded = true;
+  static constexpr bool is_modulo  = false;
+
+  static constexpr bool traps                    = false;
+  static constexpr bool tinyness_before          = false;
+  static constexpr float_round_style round_style = round_to_nearest;
+};
+
+template <>
+class __numeric_limits_impl<__nv_fp8_e5m2, __numeric_limits_type::__floating_point>
+{
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_FP8_LIMITS __nv_fp8_e5m2 __make_value(__nv_fp8_storage_t __val)
+  {
+#  if defined(_CCCL_BUILTIN_BIT_CAST)
+    return _CUDA_VSTD::bit_cast<__nv_fp8_e5m2>(__val);
+#  else // ^^^ _CCCL_BUILTIN_BIT_CAST ^^^ // vvv !_CCCL_BUILTIN_BIT_CAST vvv
+    __nv_fp8_e5m2 __ret{};
+    __ret.__x = __val;
+    return __ret;
+#  endif // ^^^ !_CCCL_BUILTIN_BIT_CAST ^^^
+  }
+
+public:
+  using type = __nv_fp8_e5m2;
+
+  static constexpr bool is_specialized = true;
+
+  static constexpr bool is_signed   = true;
+  static constexpr int digits       = 2;
+  static constexpr int digits10     = 0;
+  static constexpr int max_digits10 = 2;
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_FP8_LIMITS type min() noexcept
+  {
+    return __make_value(static_cast<__nv_fp8_storage_t>(0x04u));
+  }
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_FP8_LIMITS type max() noexcept
+  {
+    return __make_value(static_cast<__nv_fp8_storage_t>(0x7bu));
+  }
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_FP8_LIMITS type lowest() noexcept
+  {
+    return __make_value(static_cast<__nv_fp8_storage_t>(0xfbu));
+  }
+
+  static constexpr bool is_integer = false;
+  static constexpr bool is_exact   = false;
+  static constexpr int radix       = __FLT_RADIX__;
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_FP8_LIMITS type epsilon() noexcept
+  {
+    return __make_value(static_cast<__nv_fp8_storage_t>(0x34u));
+  }
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_FP8_LIMITS type round_error() noexcept
+  {
+    return __make_value(static_cast<__nv_fp8_storage_t>(0x38u));
+  }
+
+  static constexpr int min_exponent   = -15;
+  static constexpr int min_exponent10 = -5;
+  static constexpr int max_exponent   = 15;
+  static constexpr int max_exponent10 = 4;
+
+  static constexpr bool has_infinity             = true;
+  static constexpr bool has_quiet_NaN            = true;
+  static constexpr bool has_signaling_NaN        = true;
+  static constexpr float_denorm_style has_denorm = denorm_present;
+  static constexpr bool has_denorm_loss          = false;
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_FP8_LIMITS type infinity() noexcept
+  {
+    return __make_value(static_cast<__nv_fp8_storage_t>(0x7cu));
+  }
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_FP8_LIMITS type quiet_NaN() noexcept
+  {
+    return __make_value(static_cast<__nv_fp8_storage_t>(0x7eu));
+  }
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_FP8_LIMITS type signaling_NaN() noexcept
+  {
+    return __make_value(static_cast<__nv_fp8_storage_t>(0x7du));
+  }
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_FP8_LIMITS type denorm_min() noexcept
+  {
+    return __make_value(static_cast<__nv_fp8_storage_t>(0x01u));
+  }
+
+  static constexpr bool is_iec559  = false;
+  static constexpr bool is_bounded = true;
+  static constexpr bool is_modulo  = false;
+
+  static constexpr bool traps                    = false;
+  static constexpr bool tinyness_before          = false;
+  static constexpr float_round_style round_style = round_to_nearest;
+};
+#endif // _CCCL_HAS_NVFP8()
 
 template <class _Tp>
 class numeric_limits : public __numeric_limits_impl<_Tp>
