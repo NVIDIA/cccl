@@ -88,12 +88,6 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __numeric_limits_type __make_numeric_limits_
   {
     return __numeric_limits_type::__floating_point;
   }
-#  if _CCCL_HAS_NVFP8()
-  else _CCCL_IF_CONSTEXPR (_CCCL_TRAIT(is_same, _Tp, __nv_fp8_e4m3) || _CCCL_TRAIT(is_same, _Tp, __nv_fp8_e5m2))
-  {
-    return __numeric_limits_type::__floating_point;
-  }
-#  endif // _CCCL_HAS_NVFP8()
   else
   {
     return __numeric_limits_type::__other;
