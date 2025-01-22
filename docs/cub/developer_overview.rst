@@ -626,7 +626,7 @@ Finally, the tuning policy hub looks like:
       // TuningRelevantParams... could be used for decision making, like element types used, iterator category, etc.
 
       // for SM60
-      struct Policy600 : ChainedPolicy<600, Policy600, Policy350> {
+      struct Policy600 : ChainedPolicy<600, Policy600, Policy370> {
         using AlgorithmPolicy = AgentAlgorithmPolicy<256, 16, BLOCK_LOAD_DIRECT, LOAD_LDG>;
       };
 
