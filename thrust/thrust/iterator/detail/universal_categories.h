@@ -33,27 +33,32 @@ THRUST_NAMESPACE_BEGIN
 // define these types without inheritance to avoid ambiguous conversion to base classes
 
 // deprecated [Since 2.8]
-struct CCCL_DEPRECATED input_universal_iterator_tag{operator input_host_iterator_tag(){return input_host_iterator_tag();
-}
-
-operator input_device_iterator_tag()
+struct CCCL_DEPRECATED input_universal_iterator_tag
 {
-  return input_device_iterator_tag();
-}
-}
-;
+  operator input_host_iterator_tag()
+  {
+    return input_host_iterator_tag();
+  }
+
+  operator input_device_iterator_tag()
+  {
+    return input_device_iterator_tag();
+  }
+};
 
 // deprecated [Since 2.8]
-struct CCCL_DEPRECATED output_universal_iterator_tag{operator output_host_iterator_tag(){
-  return output_host_iterator_tag();
-}
-
-operator output_device_iterator_tag()
+struct CCCL_DEPRECATED output_universal_iterator_tag
 {
-  return output_device_iterator_tag();
-}
-}
-;
+  operator output_host_iterator_tag()
+  {
+    return output_host_iterator_tag();
+  }
+
+  operator output_device_iterator_tag()
+  {
+    return output_device_iterator_tag();
+  }
+};
 
 // deprecated [Since 2.8]
 struct CCCL_DEPRECATED forward_universal_iterator_tag : input_universal_iterator_tag
