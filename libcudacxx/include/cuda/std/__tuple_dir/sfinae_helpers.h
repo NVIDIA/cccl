@@ -40,8 +40,12 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+template <bool... _Preds>
+struct __all_dummy;
+
 template <bool... _Pred>
-using __all = integral_constant<bool, (_Pred && ... && true)>;
+using __all = is_same<__all_dummy<_Pred...>, __all_dummy<((void) _Pred, true)...>>;
+
 struct __tuple_sfinae_base
 {
   template <class, class>
