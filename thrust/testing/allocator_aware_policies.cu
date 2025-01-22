@@ -70,7 +70,9 @@ struct TestAllocatorAttachment
   {
     using thrust::detail::get_temporary_buffer;
 
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     return_temporary_buffer(policy, get_temporary_buffer<int>(policy, 123).first, 123);
+    _CCCL_SUPPRESS_DEPRECATED_POP
   }
 
   void operator()()
@@ -94,9 +96,11 @@ struct TestAllocatorAttachment
     test_temporary_allocation_valid(policy(const_alloc));
     test_temporary_allocation_valid(policy(&test_memory_resource));
 
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     test_temporary_allocation_valid(policy(std::allocator<int>()).after(1));
     test_temporary_allocation_valid(policy(alloc).after(1));
     test_temporary_allocation_valid(policy(const_alloc).after(1));
+    _CCCL_SUPPRESS_DEPRECATED_POP
   }
 };
 
