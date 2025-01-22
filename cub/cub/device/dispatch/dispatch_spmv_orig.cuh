@@ -62,6 +62,7 @@
 
 #include <nv/target>
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -83,7 +84,9 @@ CUB_NAMESPACE_BEGIN
  * @param[in] spmv_params
  *   SpMV input parameter bundle
  */
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename AgentSpmvPolicyT, typename ValueT, typename OffsetT>
+CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead")
 CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmv1ColKernel(SpmvParams<ValueT, OffsetT> spmv_params)
 {
   using VectorValueIteratorT =
@@ -106,6 +109,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmv1ColKernel(SpmvParams<ValueT, Offset
     spmv_params.d_vector_y[row_idx] = value;
   }
 }
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 /**
  * @brief Spmv search kernel. Identifies merge path starting coordinates for each tile.
@@ -132,8 +136,9 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmv1ColKernel(SpmvParams<ValueT, Offset
  *   SpMV input parameter bundle
  */
 template <typename SpmvPolicyT, typename OffsetT, typename CoordinateT, typename SpmvParamsT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void
-DeviceSpmvSearchKernel(int num_merge_tiles, CoordinateT* d_tile_coordinates, SpmvParamsT spmv_params)
+CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead")
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmvSearchKernel(
+  int num_merge_tiles, CoordinateT* d_tile_coordinates, SpmvParamsT spmv_params)
 {
   /// Constants
   enum
@@ -210,6 +215,7 @@ DeviceSpmvSearchKernel(int num_merge_tiles, CoordinateT* d_tile_coordinates, Spm
  * @param[in] num_segment_fixup_tiles
  *   Number of reduce-by-key tiles (fixup grid size)
  */
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename SpmvPolicyT,
           typename ScanTileStateT,
           typename ValueT,
@@ -217,6 +223,7 @@ template <typename SpmvPolicyT,
           typename CoordinateT,
           bool HAS_ALPHA,
           bool HAS_BETA>
+CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead")
 __launch_bounds__(int(SpmvPolicyT::BLOCK_THREADS)) CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmvKernel(
   SpmvParams<ValueT, OffsetT> spmv_params,
   CoordinateT* d_tile_coordinates,
@@ -226,7 +233,9 @@ __launch_bounds__(int(SpmvPolicyT::BLOCK_THREADS)) CUB_DETAIL_KERNEL_ATTRIBUTES 
   int num_segment_fixup_tiles)
 {
   // Spmv agent type specialization
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   using AgentSpmvT = AgentSpmv<SpmvPolicyT, ValueT, OffsetT, HAS_ALPHA, HAS_BETA>;
+  _CCCL_SUPPRESS_DEPRECATED_POP
 
   // Shared memory for AgentSpmv
   __shared__ typename AgentSpmvT::TempStorage temp_storage;
@@ -236,6 +245,7 @@ __launch_bounds__(int(SpmvPolicyT::BLOCK_THREADS)) CUB_DETAIL_KERNEL_ATTRIBUTES 
   // Initialize fixup tile status
   tile_state.InitializeStatus(num_segment_fixup_tiles);
 }
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 /**
  * @tparam ValueT
@@ -247,7 +257,9 @@ __launch_bounds__(int(SpmvPolicyT::BLOCK_THREADS)) CUB_DETAIL_KERNEL_ATTRIBUTES 
  * @tparam HAS_BETA
  *   Whether the input parameter Beta is 0
  */
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename ValueT, typename OffsetT, bool HAS_BETA>
+CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead")
 CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmvEmptyMatrixKernel(SpmvParams<ValueT, OffsetT> spmv_params)
 {
   const int row = static_cast<int>(threadIdx.x + blockIdx.x * blockDim.x);
@@ -264,6 +276,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmvEmptyMatrixKernel(SpmvParams<ValueT,
     spmv_params.d_vector_y[row] = result;
   }
 }
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 /**
  * @brief Multi-block reduce-by-key sweep kernel entry point
@@ -298,11 +311,13 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmvEmptyMatrixKernel(SpmvParams<ValueT,
  * @param[in] tile_state
  *   Tile status interface
  */
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename AgentSegmentFixupPolicyT,
           typename PairsInputIteratorT,
           typename AggregatesOutputIteratorT,
           typename OffsetT,
           typename ScanTileStateT>
+CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead")
 __launch_bounds__(int(AgentSegmentFixupPolicyT::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentFixupKernel(
     PairsInputIteratorT d_pairs_in,
@@ -327,6 +342,7 @@ __launch_bounds__(int(AgentSegmentFixupPolicyT::BLOCK_THREADS))
   AgentSegmentFixupT(temp_storage, d_pairs_in, d_aggregates_out, ::cuda::std::equal_to<>{}, ::cuda::std::plus<>{})
     .ConsumeRange(num_items, num_tiles, tile_state);
 }
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 /******************************************************************************
  * Dispatch
@@ -342,7 +358,7 @@ __launch_bounds__(int(AgentSegmentFixupPolicyT::BLOCK_THREADS))
  *   Signed integer type for global offsets
  */
 template <typename ValueT, typename OffsetT>
-struct DispatchSpmv
+struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DispatchSpmv
 {
   //---------------------------------------------------------------------
   // Constants and Types
@@ -355,7 +371,9 @@ struct DispatchSpmv
   };
 
   // SpmvParams bundle type
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   using SpmvParamsT = SpmvParams<ValueT, OffsetT>;
+  _CCCL_SUPPRESS_DEPRECATED_POP
 
   // 2D merge path coordinate type
   using CoordinateT = typename CubVector<OffsetT, 2>::Type;
@@ -373,6 +391,7 @@ struct DispatchSpmv
   /// SM35
   struct Policy350
   {
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     using SpmvPolicyT =
       AgentSpmvPolicy<(sizeof(ValueT) > 4) ? 96 : 128,
                       (sizeof(ValueT) > 4) ? 4 : 7,
@@ -383,6 +402,7 @@ struct DispatchSpmv
                       LOAD_LDG,
                       (sizeof(ValueT) > 4) ? true : false,
                       BLOCK_SCAN_WARP_SCANS>;
+    _CCCL_SUPPRESS_DEPRECATED_POP
 
     using SegmentFixupPolicyT = AgentSegmentFixupPolicy<128, 3, BLOCK_LOAD_VECTORIZE, LOAD_LDG, BLOCK_SCAN_WARP_SCANS>;
   };
@@ -390,6 +410,7 @@ struct DispatchSpmv
   /// SM37
   struct Policy370
   {
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     using SpmvPolicyT =
       AgentSpmvPolicy<(sizeof(ValueT) > 4) ? 128 : 128,
                       (sizeof(ValueT) > 4) ? 9 : 14,
@@ -400,6 +421,7 @@ struct DispatchSpmv
                       LOAD_LDG,
                       false,
                       BLOCK_SCAN_WARP_SCANS>;
+    _CCCL_SUPPRESS_DEPRECATED_POP
 
     using SegmentFixupPolicyT = AgentSegmentFixupPolicy<128, 3, BLOCK_LOAD_VECTORIZE, LOAD_LDG, BLOCK_SCAN_WARP_SCANS>;
   };
@@ -407,6 +429,7 @@ struct DispatchSpmv
   /// SM50
   struct Policy500
   {
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     using SpmvPolicyT =
       AgentSpmvPolicy<(sizeof(ValueT) > 4) ? 64 : 128,
                       (sizeof(ValueT) > 4) ? 6 : 7,
@@ -417,6 +440,7 @@ struct DispatchSpmv
                       LOAD_LDG,
                       (sizeof(ValueT) > 4) ? true : false,
                       (sizeof(ValueT) > 4) ? BLOCK_SCAN_WARP_SCANS : BLOCK_SCAN_RAKING_MEMOIZE>;
+    _CCCL_SUPPRESS_DEPRECATED_POP
 
     using SegmentFixupPolicyT =
       AgentSegmentFixupPolicy<128, 3, BLOCK_LOAD_VECTORIZE, LOAD_LDG, BLOCK_SCAN_RAKING_MEMOIZE>;
@@ -425,6 +449,7 @@ struct DispatchSpmv
   /// SM60
   struct Policy600
   {
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     using SpmvPolicyT =
       AgentSpmvPolicy<(sizeof(ValueT) > 4) ? 64 : 128,
                       (sizeof(ValueT) > 4) ? 5 : 7,
@@ -435,6 +460,7 @@ struct DispatchSpmv
                       LOAD_DEFAULT,
                       false,
                       BLOCK_SCAN_WARP_SCANS>;
+    _CCCL_SUPPRESS_DEPRECATED_POP
 
     using SegmentFixupPolicyT = AgentSegmentFixupPolicy<128, 3, BLOCK_LOAD_DIRECT, LOAD_LDG, BLOCK_SCAN_WARP_SCANS>;
   };
@@ -1005,4 +1031,5 @@ struct DispatchSpmv
 #endif // _CCCL_DOXYGEN_INVOKED
 };
 
+_CCCL_SUPPRESS_DEPRECATED_POP
 CUB_NAMESPACE_END
