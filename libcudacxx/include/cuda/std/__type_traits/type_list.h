@@ -546,7 +546,7 @@ using __type_index = __type_call<__detail::__type_index_select_fn<(_Ip::value < 
 // Simplify the implementation for MSVC, which has trouble with the above
 template <class _Ip, class... _Ts>
 using __type_index =
-  typename __type_index_large_size_fn<make_index_sequence<sizeof...(_Ts)>>::template __call<_Ip, _Ts...>;
+  typename __detail::__type_index_large_size_fn<make_index_sequence<sizeof...(_Ts)>>::template __call<_Ip, _Ts...>;
 
 #    endif // !_CCCL_COMPILER(MSVC)
 
