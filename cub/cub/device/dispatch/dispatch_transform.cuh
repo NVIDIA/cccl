@@ -686,10 +686,8 @@ struct dispatch_t<RequiresStableAddress,
         const int smem_size = bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>(tile_size);
         if (smem_size > *max_smem)
         {
-#  ifdef CUB_DETAIL_DEBUG_ENABLE_HOST_ASSERTIONS
           // assert should be prevented by smem check in policy
-          assert(last_counts.elem_per_thread > 0 && "min_items_per_thread exceeds available shared memory");
-#  endif // CUB_DETAIL_DEBUG_ENABLE_HOST_ASSERTIONS
+          _CCCL_ASSERT_HOST(last_counts.elem_per_thread > 0, "min_items_per_thread exceeds available shared memory");
           return last_counts;
         }
 
@@ -727,12 +725,10 @@ struct dispatch_t<RequiresStableAddress,
     {
       return config.error;
     }
-#  ifdef CUB_DETAIL_DEBUG_ENABLE_HOST_ASSERTIONS
-    assert(config->elem_per_thread > 0);
-    assert(config->tile_size > 0);
-    assert(config->tile_size % bulk_copy_alignment == 0);
-    assert((sizeof...(RandomAccessIteratorsIn) == 0) != (config->smem_size != 0)); // logical xor
-#  endif // CUB_DETAIL_DEBUG_ENABLE_HOST_ASSERTIONS
+    _CCCL_ASSERT_HOST(config->elem_per_thread > 0, "");
+    _CCCL_ASSERT_HOST(config->tile_size > 0, "");
+    _CCCL_ASSERT_HOST(config->tile_size % bulk_copy_alignment == 0, "");
+    _CCCL_ASSERT_HOST((sizeof...(RandomAccessIteratorsIn) == 0) != (config->smem_size != 0), ""); // logical xor
 
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{config->tile_size}));
     return ::cuda::std::make_tuple(
