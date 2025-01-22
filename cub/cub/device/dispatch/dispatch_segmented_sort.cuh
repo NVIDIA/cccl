@@ -593,13 +593,13 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t DeviceSegmentedSortCont
     // One CTA per segment
     const local_segment_index_t blocks_in_grid = large_segments;
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
     _CubLog("Invoking "
             "DeviceSegmentedSortKernelLarge<<<%d, %d, 0, %lld>>>()\n",
             static_cast<int>(blocks_in_grid),
             LargeSegmentPolicyT::BLOCK_THREADS,
             (long long) stream);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
     THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
       blocks_in_grid, LargeSegmentPolicyT::BLOCK_THREADS, 0, stream)
@@ -643,13 +643,13 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t DeviceSegmentedSortCont
 
   if (small_and_medium_blocks_in_grid)
   {
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
     _CubLog("Invoking "
             "DeviceSegmentedSortKernelSmall<<<%d, %d, 0, %lld>>>()\n",
             static_cast<int>(small_and_medium_blocks_in_grid),
             SmallAndMediumPolicyT::BLOCK_THREADS,
             (long long) stream);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
     THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
       small_and_medium_blocks_in_grid, SmallAndMediumPolicyT::BLOCK_THREADS, 0, stream)
@@ -1374,7 +1374,7 @@ private:
     constexpr auto threads_in_block = static_cast<unsigned int>(LargeSegmentPolicyT::BLOCK_THREADS);
 
 // Log kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
     _CubLog("Invoking DeviceSegmentedSortFallbackKernel<<<%d, %d, "
             "0, %lld>>>(), %d items per thread, bit_grain %d\n",
             blocks_in_grid,
@@ -1382,7 +1382,7 @@ private:
             (long long) stream,
             LargeSegmentPolicyT::ITEMS_PER_THREAD,
             LargeSegmentPolicyT::RADIX_BITS);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
     // Invoke fallback kernel
     THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(blocks_in_grid, threads_in_block, 0, stream)

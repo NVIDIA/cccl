@@ -260,7 +260,7 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
     )
     cub_clone_target_properties(${test_target} ${cub_target})
     target_include_directories(${test_target} PRIVATE "${CUB_SOURCE_DIR}/test")
-    target_compile_definitions(${test_target} PRIVATE CUB_DETAIL_DEBUG_ENABLE_SYNC)
+    target_compile_definitions(${test_target} PRIVATE CUB_DEBUG_SYNC)
 
     if ("${test_target}" MATCHES "nvtx_in_usercode")
       target_link_libraries(${test_target} PRIVATE nvtx3-cpp)

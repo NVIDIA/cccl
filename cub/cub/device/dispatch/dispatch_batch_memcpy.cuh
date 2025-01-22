@@ -539,7 +539,7 @@ struct DispatchBatchMemcpy
       return error;
     }
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
     _CubLog("Invoking "
             "InitTileStateKernel<<<%d, %d, 0, %lld>>>()\n",
             static_cast<int>(init_grid_size),
@@ -567,7 +567,7 @@ struct DispatchBatchMemcpy
       return error;
     }
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
     _CubLog("Invoking "
             "BatchMemcpyKernel<<<%d, %d, 0, %lld>>>()\n",
             static_cast<int>(batch_memcpy_grid_size),
@@ -606,7 +606,7 @@ struct DispatchBatchMemcpy
       return error;
     }
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
     _CubLog("Invoking "
             "MultiBlockBatchMemcpyKernel<<<%d, %d, 0, %lld>>>()\n",
             static_cast<int>(batch_memcpy_blev_grid_size),
