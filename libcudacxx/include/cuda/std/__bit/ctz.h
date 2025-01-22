@@ -22,7 +22,9 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
 #if _CCCL_COMPILER(MSVC)
 #  include <intrin.h>
@@ -30,72 +32,56 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_ctz(uint32_t __x) noexcept
+template <typename _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_ctz(_Tp __x) noexcept
 {
-  for (int __i = 0; __i < 32; ++__i)
+  static_assert(is_same_v<_Tp, uint32_t> || is_same_v<_Tp, uint64_t>);
+  for (int __i = 0; __i < numeric_limits<_Tp>::digits; ++__i)
   {
-    if (__x & (uint32_t{1} << __i))
+    if (__x & (_Tp{1} << __i))
     {
       return __i;
     }
   }
-  return 32;
+  return numeric_limits<_Tp>::digits;
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_ctz(uint64_t __x) noexcept
+#if _CCCL_COMPILER(MSVC)
+
+template <typename _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI int __msvc_runtime_ctz(_Tp __x) noexcept
 {
-  for (int __i = 0; __i < 64; ++__i)
-  {
-    if (__x & (uint64_t{1} << __i))
-    {
-      return __i;
-    }
-  }
-  return 64;
+  unsigned long __where;
+  auto __res = sizeof(_Tp) == sizeof(uint32_t)
+               ? _BitScanForward(&__where, static_cast<uint32_t>(__x))
+               : _BitScanForward64(&__where, static_cast<uint64_t>(__x));
+  return (__res) ? static_cast<int>(__where) : numeric_limits<_Tp>::digits;
 }
 
-// constexpr is required for GCC <= 9
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_ctz(uint32_t __x) noexcept
-{
-#if defined(__CUDA_ARCH__)
-  return ::__clz(__brev(__x));
-#elif _CCCL_COMPILER(MSVC) // _CCCL_COMPILER(MSVC) vvv
-  unsigned long __where = 0;
-  if (_BitScanForward(&__where, __x))
-  {
-    return static_cast<int>(__where);
-  }
-  return 32;
-#else // _CCCL_COMPILER(MSVC) ^^^ / !_CCCL_COMPILER(MSVC) vvv
-  return ::__builtin_ctz(__x);
 #endif // _CCCL_COMPILER(MSVC)
-}
 
-// constexpr is required for GCC <= 9
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_ctz(uint64_t __x) noexcept
+template <typename _Tp>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_ctz(_Tp __x) noexcept
 {
+  static_assert(is_same_v<_Tp, uint32_t> || is_same_v<_Tp, uint64_t>);
 #if defined(__CUDA_ARCH__)
-  return ::__clzll(__brevll(__x));
-#elif _CCCL_COMPILER(MSVC) // _CCCL_COMPILER(MSVC) vvv
-  unsigned long __where = 0;
-  if (_BitScanForward64(&__where, __x))
+  if (is_constant_evaluated())
   {
-    return static_cast<int>(__where);
+    return __constexpr_ctz(__x);
   }
-  return 64;
+  else
+  {
+    return sizeof(_Tp) == sizeof(uint32_t)
+           ? __clz(__brev(static_cast<uint32_t>(__x)))
+           : __clzll(__brevll(static_cast<uint64_t>(__x)));
+  }
+#elif _CCCL_COMPILER(MSVC)
+  return is_constant_evaluated() ? __constexpr_ctz(__x) : __msvc_runtime_ctz(__x);
 #else // _CCCL_COMPILER(MSVC) ^^^ / !_CCCL_COMPILER(MSVC) vvv
-  return ::__builtin_ctzll(__x);
-#endif // !_CCCL_COMPILER(MSVC) ^^^
-}
-
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_ctz(uint32_t __x) noexcept
-{
-  return __cccl_default_is_constant_evaluated() ? _CUDA_VSTD::__constexpr_ctz(__x) : _CUDA_VSTD::__runtime_ctz(__x);
-}
-
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_ctz(uint64_t __x) noexcept
-{
-  return __cccl_default_is_constant_evaluated() ? _CUDA_VSTD::__constexpr_ctz(__x) : _CUDA_VSTD::__runtime_ctz(__x);
+  return sizeof(_Tp) == sizeof(uint32_t)
+         ? _CCCL_BUILTIN_CTZ(static_cast<uint32_t>(__x))
+         : _CCCL_BUILTIN_CTZLL(static_cast<uint64_t>(__x));
+#endif
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD

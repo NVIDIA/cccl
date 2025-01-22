@@ -22,7 +22,9 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
 #if _CCCL_COMPILER(MSVC)
 #  include <intrin.h>
@@ -30,59 +32,47 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_popc(uint32_t __x) noexcept
+#if _CCCL_COMPILER(MSVC)
+
+template <typename _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __msvc_constexpr_popc(_Tp __x) noexcept
 {
-  // no device constexpr builtins
   int __count = 0;
-  for (int __i = 0; __i < 32; ++__i)
+  for (int __i = 0; __i < numeric_limits<_Tp>::digits; ++__i)
   {
-    __count += (__x & (uint32_t{1} << __i)) ? 1 : 0;
+    __count += (__x & (_Tp{1} << __i)) ? 1 : 0;
   }
   return __count;
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_popc(uint64_t __x) noexcept
+template <typename _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI int __msvc_runtime_popc(_Tp __x) noexcept
 {
-  int __count = 0;
-  for (int __i = 0; __i < 64; ++__i)
-  {
-    __count += (__x & (uint64_t{1} << __i)) ? 1 : 0;
-  }
-  return __count;
+#  if !defined(_M_ARM64)
+  auto __ret = sizeof(_Tp) == sizeof(uint32_t) //
+               ? __popcnt(static_cast<uint32_t>(__x))
+               : __popcnt64(static_cast<uint64_t>(__x));
+#  else
+  auto __ret = sizeof(_Tp) == sizeof(uint32_t) //
+               ? _CountOneBits(static_cast<uint32_t>(__x))
+               : _CountOneBits64(static_cast<uint64_t>(__x));
+#  endif
+  return static_cast<int>(__ret);
 }
 
-// constexpr is required for GCC <= 9
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_popc(uint32_t __x) noexcept
-{
-#if _CCCL_COMPILER(MSVC) && !defined(_M_ARM64) // _CCCL_COMPILER(MSVC) + X86 vvv
-  return static_cast<int>(__popcnt(__x));
-#elif _CCCL_COMPILER(MSVC) && defined(_M_ARM64) // _CCCL_COMPILER(MSVC) + X86 vvv
-  return static_cast<int>(_CountOneBits(__x));
-#else // _CCCL_COMPILER(MSVC) ^^^ / !_CCCL_COMPILER(MSVC) vvv
-  return ::__builtin_popcount(__x);
 #endif // !_CCCL_COMPILER(MSVC) ^^^
-}
 
-// constexpr is required for GCC <= 9
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_popc(uint64_t __x) noexcept
+template <class _Tp>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_popc(_Tp __x) noexcept
 {
-#if _CCCL_COMPILER(MSVC) && !defined(_M_ARM64) // _CCCL_COMPILER(MSVC) + X86 vvv
-  return static_cast<int>(__popcnt64(__x));
-#elif _CCCL_COMPILER(MSVC) && defined(_M_ARM64) // _CCCL_COMPILER(MSVC) + ARM64 vvv
-  return static_cast<int>(_CountOneBits64(__x));
+  static_assert(is_same_v<_Tp, uint32_t> || is_same_v<_Tp, uint64_t>);
+#if _CCCL_COMPILER(MSVC) && !defined(__CUDA_ARCH__)
+  return is_constant_evaluated() ? __msvc_constexpr_popc(__x) : __msvc_runtime_popc(__x);
 #else // _CCCL_COMPILER(MSVC) ^^^ / !_CCCL_COMPILER(MSVC) vvv
-  return ::__builtin_popcountll(__x);
+  return sizeof(_Tp) == sizeof(uint32_t)
+         ? _CCCL_BUILTIN_POPCOUNT(static_cast<uint32_t>(__x))
+         : _CCCL_BUILTIN_POPCOUNTLL(static_cast<uint64_t>(__x));
 #endif // !_CCCL_COMPILER(MSVC) ^^^
-}
-
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_popc(uint32_t __x) noexcept
-{
-  return is_constant_evaluated() ? _CUDA_VSTD::__constexpr_popc(__x) : _CUDA_VSTD::__runtime_popc(__x);
-}
-
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_popc(uint64_t __x) noexcept
-{
-  return is_constant_evaluated() ? _CUDA_VSTD::__constexpr_popc(__x) : _CUDA_VSTD::__runtime_popc(__x);
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
