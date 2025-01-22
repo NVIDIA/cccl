@@ -120,8 +120,8 @@ struct policy_hub
   // Architecture-specific tuning policies
   //------------------------------------------------------------------------------
 
-  /// SM35
-  struct Policy350 : ChainedPolicy<350, Policy350, Policy350>
+  /// SM37
+  struct Policy370 : ChainedPolicy<370, Policy370, Policy370>
   {
     enum
     {
@@ -202,7 +202,7 @@ struct policy_hub
   };
 
   /// SM50
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy350>
+  struct Policy500 : ChainedPolicy<500, Policy500, Policy370>
   {
     enum
     {

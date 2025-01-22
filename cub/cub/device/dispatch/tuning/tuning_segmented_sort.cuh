@@ -53,7 +53,7 @@ struct policy_hub
   using DominantT                = ::cuda::std::_If<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
   static constexpr int KEYS_ONLY = ::cuda::std::is_same<ValueT, NullType>::value;
 
-  struct Policy350 : ChainedPolicy<350, Policy350, Policy350>
+  struct Policy370 : ChainedPolicy<370, Policy370, Policy370>
   {
     static constexpr int BLOCK_THREADS          = 128;
     static constexpr int RADIX_BITS             = sizeof(KeyT) > 1 ? 6 : 4;
@@ -79,7 +79,7 @@ struct policy_hub
           AgentSubWarpMergeSortPolicy<32, ITEMS_PER_MEDIUM_THREAD, WARP_LOAD_DIRECT, LOAD_DEFAULT>>;
   };
 
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy350>
+  struct Policy500 : ChainedPolicy<500, Policy500, Policy370>
   {
     static constexpr int BLOCK_THREADS          = 256;
     static constexpr int RADIX_BITS             = sizeof(KeyT) > 1 ? 6 : 4;

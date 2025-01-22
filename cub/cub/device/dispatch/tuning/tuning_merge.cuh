@@ -63,7 +63,7 @@ struct policy_hub
                      BLOCK_STORE_WARP_TRANSPOSE>;
   };
 
-  struct policy350 : ChainedPolicy<350, policy350, policy300>
+  struct policy370 : ChainedPolicy<370, policy370, policy300>
   {
     using merge_policy =
       agent_policy_t<256,
@@ -73,7 +73,7 @@ struct policy_hub
                      BLOCK_STORE_WARP_TRANSPOSE>;
   };
 
-  struct policy520 : ChainedPolicy<520, policy520, policy350>
+  struct policy520 : ChainedPolicy<520, policy520, policy370>
   {
     using merge_policy =
       agent_policy_t<512,

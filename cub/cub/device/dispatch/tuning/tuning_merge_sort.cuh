@@ -51,7 +51,7 @@ struct policy_hub
 {
   using KeyT = value_t<KeyIteratorT>;
 
-  struct Policy350 : ChainedPolicy<350, Policy350, Policy350>
+  struct Policy370 : ChainedPolicy<370, Policy370, Policy370>
   {
     using MergeSortPolicy =
       AgentMergeSortPolicy<256,
@@ -63,9 +63,9 @@ struct policy_hub
 
   // NVBug 3384810
 #if defined(_NVHPC_CUDA)
-  using Policy520 = Policy350;
+  using Policy520 = Policy370;
 #else
-  struct Policy520 : ChainedPolicy<520, Policy520, Policy350>
+  struct Policy520 : ChainedPolicy<520, Policy520, Policy370>
   {
     using MergeSortPolicy =
       AgentMergeSortPolicy<512,

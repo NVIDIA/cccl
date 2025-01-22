@@ -566,12 +566,12 @@ struct policy_hub
                           detail::fixed_delay_constructor_t<350, 450>>;
   };
 
-  struct Policy350
+  struct Policy370
       : DefaultPolicy<MayAlias ? LOAD_CA : LOAD_LDG>
-      , ChainedPolicy<350, Policy350, Policy350>
+      , ChainedPolicy<370, Policy370, Policy370>
   {};
 
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy350>
+  struct Policy800 : ChainedPolicy<800, Policy800, Policy370>
   {
     // Use values from tuning if a specialization exists, otherwise pick the default
     template <typename Tuning>

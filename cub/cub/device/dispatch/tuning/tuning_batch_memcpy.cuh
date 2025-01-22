@@ -75,8 +75,8 @@ struct policy_hub
   using buff_delay_constructor_t  = detail::default_delay_constructor_t<BufferOffsetT>;
   using block_delay_constructor_t = detail::default_delay_constructor_t<BlockOffsetT>;
 
-  /// SM35
-  struct Policy350 : ChainedPolicy<350, Policy350, Policy350>
+  /// SM37
+  struct Policy370 : ChainedPolicy<370, Policy370, Policy370>
   {
     static constexpr bool PREFER_POW2_BITS = true;
     using AgentSmallBufferPolicyT          = AgentBatchMemcpyPolicy<
@@ -95,7 +95,7 @@ struct policy_hub
   };
 
   /// SM70
-  struct Policy700 : ChainedPolicy<700, Policy700, Policy350>
+  struct Policy700 : ChainedPolicy<700, Policy700, Policy370>
   {
     static constexpr bool PREFER_POW2_BITS = false;
     using AgentSmallBufferPolicyT          = AgentBatchMemcpyPolicy<

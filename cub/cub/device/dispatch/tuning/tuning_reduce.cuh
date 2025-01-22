@@ -79,26 +79,7 @@ CUB_RUNTIME_FUNCTION ReducePolicyWrapper<PolicyT> MakeReducePolicyWrapper(Policy
 template <typename AccumT, typename OffsetT, typename ReductionOpT>
 struct policy_hub
 {
-  struct Policy300 : ChainedPolicy<300, Policy300, Policy300>
-  {
-    static constexpr int threads_per_block  = 256;
-    static constexpr int items_per_thread   = 20;
-    static constexpr int items_per_vec_load = 2;
-
-    // ReducePolicy (GTX670: 154.0 @ 48M 4B items)
-    using ReducePolicy =
-      AgentReducePolicy<threads_per_block,
-                        items_per_thread,
-                        AccumT,
-                        items_per_vec_load,
-                        BLOCK_REDUCE_WARP_REDUCTIONS,
-                        LOAD_DEFAULT>;
-
-    using SingleTilePolicy      = ReducePolicy;
-    using SegmentedReducePolicy = ReducePolicy;
-  };
-
-  struct Policy350 : ChainedPolicy<350, Policy350, Policy300>
+  struct Policy370 : ChainedPolicy<370, Policy370, Policy370>
   {
     static constexpr int threads_per_block  = 256;
     static constexpr int items_per_thread   = 20;
@@ -117,7 +98,7 @@ struct policy_hub
     using SegmentedReducePolicy = ReducePolicy;
   };
 
-  struct Policy600 : ChainedPolicy<600, Policy600, Policy350>
+  struct Policy600 : ChainedPolicy<600, Policy600, Policy370>
   {
     static constexpr int threads_per_block  = 256;
     static constexpr int items_per_thread   = 16;

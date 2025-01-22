@@ -633,9 +633,9 @@ struct policy_hub
                              default_reduce_by_key_delay_constructor_t<AccumT, int>>;
   };
 
-  struct Policy350
+  struct Policy370
       : DefaultPolicy<LOAD_LDG>
-      , ChainedPolicy<350, Policy350, Policy350>
+      , ChainedPolicy<370, Policy370, Policy370>
   {};
 
   // Use values from tuning if a specialization exists, otherwise pick DefaultPolicy
@@ -651,7 +651,7 @@ struct policy_hub
   template <typename Tuning>
   static auto select_agent_policy(long) -> typename DefaultPolicy<LOAD_DEFAULT>::ReduceByKeyPolicyT;
 
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy350>
+  struct Policy800 : ChainedPolicy<800, Policy800, Policy370>
   {
     using ReduceByKeyPolicyT =
       decltype(select_agent_policy<sm80_tuning<KeyT, AccumT, is_primitive_op<ReductionOpT>()>>(0));

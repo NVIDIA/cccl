@@ -381,23 +381,6 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DispatchSpmv
   // Tuning policies
   //---------------------------------------------------------------------
 
-  /// SM35
-  struct Policy350
-  {
-    using SpmvPolicyT =
-      AgentSpmvPolicy<(sizeof(ValueT) > 4) ? 96 : 128,
-                      (sizeof(ValueT) > 4) ? 4 : 7,
-                      LOAD_LDG,
-                      LOAD_CA,
-                      LOAD_LDG,
-                      LOAD_LDG,
-                      LOAD_LDG,
-                      (sizeof(ValueT) > 4) ? true : false,
-                      BLOCK_SCAN_WARP_SCANS>;
-
-    using SegmentFixupPolicyT = AgentSegmentFixupPolicy<128, 3, BLOCK_LOAD_VECTORIZE, LOAD_LDG, BLOCK_SCAN_WARP_SCANS>;
-  };
-
   /// SM37
   struct Policy370
   {
@@ -496,12 +479,9 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DispatchSpmv
         } else if (ptx_version >= 500) {
           spmv_config.template Init<typename Policy500::SpmvPolicyT>();
           segment_fixup_config.template Init<typename Policy500::SegmentFixupPolicyT>();
-        } else if (ptx_version >= 370) {
+        } else {
           spmv_config.template Init<typename Policy370::SpmvPolicyT>();
           segment_fixup_config.template Init<typename Policy370::SegmentFixupPolicyT>();
-        } else {
-          spmv_config.template Init<typename Policy350::SpmvPolicyT>();
-          segment_fixup_config.template Init<typename Policy350::SegmentFixupPolicyT>();
         }));
   }
 
