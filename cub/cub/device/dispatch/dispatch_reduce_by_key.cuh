@@ -64,6 +64,11 @@ CUB_NAMESPACE_BEGIN
  * Kernel entry points
  *****************************************************************************/
 
+namespace detail
+{
+namespace reduce
+{
+
 /**
  * @brief Multi-block reduce-by-key sweep kernel entry point
  *
@@ -155,17 +160,17 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT::BLOCK_TH
   using AgentReduceByKeyPolicyT = typename ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT;
 
   // Thread block type for reducing tiles of value segments
-  using AgentReduceByKeyT = detail::reduce::AgentReduceByKey<
-    AgentReduceByKeyPolicyT,
-    KeysInputIteratorT,
-    UniqueOutputIteratorT,
-    ValuesInputIteratorT,
-    AggregatesOutputIteratorT,
-    NumRunsOutputIteratorT,
-    EqualityOpT,
-    ReductionOpT,
-    OffsetT,
-    AccumT>;
+  using AgentReduceByKeyT =
+    AgentReduceByKey<AgentReduceByKeyPolicyT,
+                     KeysInputIteratorT,
+                     UniqueOutputIteratorT,
+                     ValuesInputIteratorT,
+                     AggregatesOutputIteratorT,
+                     NumRunsOutputIteratorT,
+                     EqualityOpT,
+                     ReductionOpT,
+                     OffsetT,
+                     AccumT>;
 
   // Shared memory for AgentReduceByKey
   __shared__ typename AgentReduceByKeyT::TempStorage temp_storage;
@@ -175,6 +180,9 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT::BLOCK_TH
     temp_storage, d_keys_in, d_unique_out, d_values_in, d_aggregates_out, d_num_runs_out, equality_op, reduction_op)
     .ConsumeRange(num_items, tile_state, start_tile);
 }
+
+} // namespace reduce
+} // namespace detail
 
 /******************************************************************************
  * Dispatch
@@ -440,7 +448,7 @@ struct DispatchReduceByKey
   {
     return Invoke<ActivePolicyT>(
       DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
-      DeviceReduceByKeyKernel<
+      detail::reduce::DeviceReduceByKeyKernel<
         typename PolicyHub::MaxPolicy,
         KeysInputIteratorT,
         UniqueOutputIteratorT,

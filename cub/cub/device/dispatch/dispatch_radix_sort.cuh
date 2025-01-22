@@ -77,6 +77,11 @@ CUB_NAMESPACE_BEGIN
  * Kernel entry points
  *****************************************************************************/
 
+namespace detail
+{
+namespace radix_sort
+{
+
 /**
  * @brief Upsweep digit-counting kernel entry point (multi-block).
  *        Computes privatized digit histograms, one per block.
@@ -827,6 +832,9 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(OffsetT* d_b
   }
 }
 
+} // namespace radix_sort
+} // namespace detail
+
 /******************************************************************************
  * Single-problem dispatch
  ******************************************************************************/
@@ -1298,7 +1306,8 @@ struct DispatchRadixSort
 
       constexpr int HISTO_BLOCK_THREADS = ActivePolicyT::HistogramPolicy::BLOCK_THREADS;
       int histo_blocks_per_sm           = 1;
-      auto histogram_kernel = DeviceRadixSortHistogramKernel<max_policy_t, IS_DESCENDING, KeyT, OffsetT, DecomposerT>;
+      auto histogram_kernel =
+        detail::radix_sort::DeviceRadixSortHistogramKernel<max_policy_t, IS_DESCENDING, KeyT, OffsetT, DecomposerT>;
 
       error = CubDebug(
         cudaOccupancyMaxActiveBlocksPerMultiprocessor(&histo_blocks_per_sm, histogram_kernel, HISTO_BLOCK_THREADS, 0));
@@ -1347,7 +1356,7 @@ struct DispatchRadixSort
 #endif
 
       error = THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(num_passes, SCAN_BLOCK_THREADS, 0, stream)
-                .doit(DeviceRadixSortExclusiveSumKernel<max_policy_t, OffsetT>, d_bins);
+                .doit(detail::radix_sort::DeviceRadixSortExclusiveSumKernel<max_policy_t, OffsetT>, d_bins);
       error = CubDebug(error);
       if (cudaSuccess != error)
       {
@@ -1399,7 +1408,7 @@ struct DispatchRadixSort
                   static_cast<int>(num_portions));
 #endif
 
-          auto onesweep_kernel = DeviceRadixSortOnesweepKernel<
+          auto onesweep_kernel = detail::radix_sort::DeviceRadixSortOnesweepKernel<
             max_policy_t,
             IS_DESCENDING,
             KeyT,
@@ -1650,11 +1659,13 @@ struct DispatchRadixSort
   {
     // Invoke upsweep-downsweep
     return InvokePasses<ActivePolicyT>(
-      DeviceRadixSortUpsweepKernel<max_policy_t, false, IS_DESCENDING, KeyT, OffsetT, DecomposerT>,
-      DeviceRadixSortUpsweepKernel<max_policy_t, true, IS_DESCENDING, KeyT, OffsetT, DecomposerT>,
-      RadixSortScanBinsKernel<max_policy_t, OffsetT>,
-      DeviceRadixSortDownsweepKernel<max_policy_t, false, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>,
-      DeviceRadixSortDownsweepKernel<max_policy_t, true, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>);
+      detail::radix_sort::DeviceRadixSortUpsweepKernel<max_policy_t, false, IS_DESCENDING, KeyT, OffsetT, DecomposerT>,
+      detail::radix_sort::DeviceRadixSortUpsweepKernel<max_policy_t, true, IS_DESCENDING, KeyT, OffsetT, DecomposerT>,
+      detail::radix_sort::RadixSortScanBinsKernel<max_policy_t, OffsetT>,
+      detail::radix_sort::
+        DeviceRadixSortDownsweepKernel<max_policy_t, false, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>,
+      detail::radix_sort::
+        DeviceRadixSortDownsweepKernel<max_policy_t, true, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>);
   }
 
   template <typename ActivePolicyT>
@@ -1754,7 +1765,8 @@ struct DispatchRadixSort
     {
       // Small, single tile size
       return InvokeSingleTile<ActivePolicyT>(
-        DeviceRadixSortSingleTileKernel<max_policy_t, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>);
+        detail::radix_sort::
+          DeviceRadixSortSingleTileKernel<max_policy_t, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>);
     }
     else
     {
@@ -2226,7 +2238,7 @@ struct DispatchSegmentedRadixSort
 
     // Force kernel code-generation in all compiler passes
     return InvokePasses<ActivePolicyT>(
-      DeviceSegmentedRadixSortKernel<
+      detail::radix_sort::DeviceSegmentedRadixSortKernel<
         max_policy_t,
         false,
         IS_DESCENDING,
@@ -2236,7 +2248,7 @@ struct DispatchSegmentedRadixSort
         EndOffsetIteratorT,
         OffsetT,
         DecomposerT>,
-      DeviceSegmentedRadixSortKernel<
+      detail::radix_sort::DeviceSegmentedRadixSortKernel<
         max_policy_t,
         true,
         IS_DESCENDING,

@@ -66,6 +66,11 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail
+{
+namespace reduce
+{
+
 /// Normalize input iterator to segment offset
 template <typename T, typename OffsetT, typename IteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void NormalizeReductionOutput(T& /*val*/, OffsetT /*base_offset*/, IteratorT /*itr*/)
@@ -156,12 +161,12 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
 {
   // Thread block type for reducing input tiles
   using AgentReduceT =
-    detail::reduce::AgentReduce<typename ChainedPolicyT::ActivePolicy::ReducePolicy,
-                                InputIteratorT,
-                                OutputIteratorT,
-                                OffsetT,
-                                ReductionOpT,
-                                AccumT>;
+    AgentReduce<typename ChainedPolicyT::ActivePolicy::ReducePolicy,
+                InputIteratorT,
+                OutputIteratorT,
+                OffsetT,
+                ReductionOpT,
+                AccumT>;
 
   // Shared memory storage
   __shared__ typename AgentReduceT::TempStorage temp_storage;
@@ -187,7 +192,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
 
   if (threadIdx.x == 0)
   {
-    detail::reduce::finalize_and_store_aggregate(d_out + blockIdx.x, reduction_op, init, block_aggregate);
+    finalize_and_store_aggregate(d_out + blockIdx.x, reduction_op, init, block_aggregate);
   }
 }
 
@@ -230,6 +235,8 @@ struct DeviceReduceKernelSource
     return sizeof(AccumT);
   }
 };
+} // namespace reduce
+} // namespace detail
 
 /******************************************************************************
  * Single-problem dispatch
@@ -263,7 +270,7 @@ template <typename InputIteratorT,
           typename AccumT    = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::value_t<InputIteratorT>, InitT>,
           typename PolicyHub = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
           typename TransformOpT = ::cuda::std::__identity,
-          typename KernelSource = DeviceReduceKernelSource<
+          typename KernelSource = detail::reduce::DeviceReduceKernelSource<
             typename PolicyHub::MaxPolicy,
             InputIteratorT,
             OutputIteratorT,
@@ -698,7 +705,7 @@ template <
   typename AccumT = ::cuda::std::
     __accumulator_t<ReductionOpT, cub::detail::invoke_result_t<TransformOpT, cub::detail::value_t<InputIteratorT>>, InitT>,
   typename PolicyHub    = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
-  typename KernelSource = DeviceReduceKernelSource<
+  typename KernelSource = detail::reduce::DeviceReduceKernelSource<
     typename PolicyHub::MaxPolicy,
     InputIteratorT,
     OutputIteratorT,
@@ -920,7 +927,7 @@ struct DispatchSegmentedReduce
   {
     // Force kernel code-generation in all compiler passes
     return InvokePasses<ActivePolicyT>(
-      DeviceSegmentedReduceKernel<
+      detail::reduce::DeviceSegmentedReduceKernel<
         typename PolicyHub::MaxPolicy,
         InputIteratorT,
         OutputIteratorT,
