@@ -1,3 +1,8 @@
+#include <cuda/__cccl_config>
+
+// need to suppress deprecation warnings inside a lot of thrust headers
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 #include <thrust/detail/config.h>
 
 #if _CCCL_STD_VER >= 2014
@@ -9,8 +14,6 @@
 
 #  include <unittest/unittest.h>
 #  include <unittest/util_async.h>
-
-_CCCL_SUPPRESS_DEPRECATED_PUSH
 
 #  define DEFINE_ASYNC_COPY_CALLABLE(name, ...)                                               \
     struct THRUST_PP_CAT2(name, _fn)                                                          \
@@ -321,3 +324,5 @@ DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(test_async_copy_after, BuiltinNumericT
 // Can't do this today because we can't do cross-system with explicit policies.
 
 #endif
+
+_CCCL_SUPPRESS_DEPRECATED_POP

@@ -52,6 +52,7 @@ namespace async
 namespace unimplemented
 {
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename OutputIt, typename BinaryOp>
 CCCL_DEPRECATED event<DerivedPolicy>
 async_inclusive_scan(thrust::execution_policy<DerivedPolicy>&, ForwardIt, Sentinel, OutputIt, BinaryOp)
@@ -74,6 +75,7 @@ CCCL_DEPRECATED event<DerivedPolicy> async_exclusive_scan(
                            "this algorithm is not implemented for the specified system");
   return {};
 }
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 } // namespace unimplemented
 

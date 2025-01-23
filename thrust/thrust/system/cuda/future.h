@@ -62,6 +62,7 @@ using thrust::system::cuda::when_all;
 
 } // namespace cuda
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename DerivedPolicy>
 _CCCL_HOST thrust::cuda::unique_eager_event
 unique_eager_event_type(thrust::cuda::execution_policy<DerivedPolicy> const&) noexcept;
@@ -69,6 +70,7 @@ unique_eager_event_type(thrust::cuda::execution_policy<DerivedPolicy> const&) no
 template <typename T, typename DerivedPolicy>
 _CCCL_HOST thrust::cuda::unique_eager_future<T>
 unique_eager_future_type(thrust::cuda::execution_policy<DerivedPolicy> const&) noexcept;
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 THRUST_NAMESPACE_END
 

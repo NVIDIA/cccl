@@ -29,13 +29,14 @@
 
 #include <tuple>
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
 
 template <template <typename> class ExecutionPolicyCRTPBase>
-struct dependencies_aware_execution_policy
+struct CCCL_DEPRECATED dependencies_aware_execution_policy
 {
   template <typename... Dependencies>
   _CCCL_HOST thrust::detail::execute_with_dependencies<ExecutionPolicyCRTPBase, Dependencies...>
@@ -80,4 +81,5 @@ struct dependencies_aware_execution_policy
 
 } // namespace detail
 
+_CCCL_SUPPRESS_DEPRECATED_POP
 THRUST_NAMESPACE_END
