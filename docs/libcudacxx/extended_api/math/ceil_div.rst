@@ -1,4 +1,4 @@
-.. _libcudacxx-extended-api-math:
+.. _libcudacxx-extended-api-math-ceil-div:
 
 Math
 =====
