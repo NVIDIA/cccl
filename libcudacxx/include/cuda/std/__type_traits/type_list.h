@@ -479,15 +479,15 @@ struct __type_tuple_elem
   using type _CCCL_NODEBUG_ALIAS = _Ty;
 };
 
-template <auto _Is, class... _Ts>
+template <class _Is, class... _Ts>
 struct __type_tupl;
 
-template <size_t... _Is, index_sequence<_Is...>* _ISeq, class... _Ts>
-struct __type_tupl<_ISeq, _Ts...> : __type_tuple_elem<_Is, _Ts>...
+template <size_t... _Is, class... _Ts>
+struct __type_tupl<index_sequence<_Is...>, _Ts...> : __type_tuple_elem<_Is, _Ts>...
 {};
 
 template <class... _Ts>
-using __type_tuple = __type_tupl<static_cast<make_index_sequence<sizeof...(_Ts)>*>(nullptr), _Ts...>;
+using __type_tuple = __type_tupl<make_index_sequence<sizeof...(_Ts)>, _Ts...>;
 
 template <size_t _Ip, class _Ty>
 _LIBCUDACXX_HIDE_FROM_ABI __type_tuple_elem<_Ip, _Ty> __type_tuple_get(__type_tuple_elem<_Ip, _Ty>);
