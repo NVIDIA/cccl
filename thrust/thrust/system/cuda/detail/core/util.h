@@ -60,24 +60,33 @@ namespace core
 
 #ifdef _NVHPC_CUDA
 #  if (__NVCOMPILER_CUDA_ARCH__ >= 600)
+// deprecated [since 2.8]
 #    define THRUST_TUNING_ARCH sm60
 #  elif (__NVCOMPILER_CUDA_ARCH__ >= 520)
+// deprecated [since 2.8]
 #    define THRUST_TUNING_ARCH sm52
 #  elif (__NVCOMPILER_CUDA_ARCH__ >= 350)
+// deprecated [since 2.8]
 #    define THRUST_TUNING_ARCH sm35
 #  else
+// deprecated [since 2.8]
 #    define THRUST_TUNING_ARCH sm30
 #  endif
 #else
 #  if (__CUDA_ARCH__ >= 600)
+// deprecated [since 2.8]
 #    define THRUST_TUNING_ARCH sm60
 #  elif (__CUDA_ARCH__ >= 520)
+// deprecated [since 2.8]
 #    define THRUST_TUNING_ARCH sm52
 #  elif (__CUDA_ARCH__ >= 350)
+// deprecated [since 2.8]
 #    define THRUST_TUNING_ARCH sm35
 #  elif (__CUDA_ARCH__ >= 300)
+// deprecated [since 2.8]
 #    define THRUST_TUNING_ARCH sm30
 #  elif !defined(__CUDA_ARCH__)
+// deprecated [since 2.8]
 #    define THRUST_TUNING_ARCH sm30
 #  endif
 #endif
@@ -684,6 +693,7 @@ inline void _CCCL_DEVICE sync_threadblock()
   __syncthreads();
 }
 
+// Deprecated [Since 2.8]
 #define CUDA_CUB_RET_IF_FAIL(e)                \
   {                                            \
     auto const error = (e);                    \
