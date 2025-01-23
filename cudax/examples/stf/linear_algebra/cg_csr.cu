@@ -111,7 +111,7 @@ public:
   scalar& operator=(scalar&& a)
   {
     handle = mv(a.handle);
-    ctx = mv(a.ctx);
+    ctx    = mv(a.ctx);
     return *this;
   }
 

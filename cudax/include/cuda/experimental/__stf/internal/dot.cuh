@@ -357,13 +357,15 @@ public:
     class guard
     {
       bool active = true;
+
     public:
       guard(::std::string symbol)
       {
         section::push(mv(symbol));
       }
 
-      void end() {
+      void end()
+      {
         assert(active && "Attempting to end the same section twice.");
         section::pop();
         active = false;
@@ -371,7 +373,10 @@ public:
 
       ~guard()
       {
-        if (active) section::pop();
+        if (active)
+        {
+          section::pop();
+        }
       }
     };
 

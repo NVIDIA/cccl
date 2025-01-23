@@ -25,7 +25,7 @@ int main()
   auto lA = ctx.logical_token().set_symbol("A");
   auto lB = ctx.logical_token().set_symbol("B");
   auto lC = ctx.logical_token().set_symbol("C");
-  auto s = ctx.dot_section("foo");
+  auto s  = ctx.dot_section("foo");
   for (size_t i = 0; i < 2; i++)
   {
     auto guard = ctx.dot_section("bar");
