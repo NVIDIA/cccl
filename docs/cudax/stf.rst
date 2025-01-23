@@ -2017,7 +2017,7 @@ The following example illustrates how to add nested sections, either using RAII
 or with explicit push and pop annotations.
 
 .. code:: c++
- 
+
     context ctx;
     auto lA = ctx.logical_token();
     auto lB = ctx.logical_token();
@@ -2036,11 +2036,33 @@ or with explicit push and pop annotations.
     ctx.dot_pop_section();
     ctx.finalize();
 
-TODO resulting DAG and how to generate it
+When running this with the `CUDASTF_DOT_FILE` environment variable for example
+set to `dag.dot`, we observe that the graph produced by `dot -Tpdf dag.dot -o
+dag.pdf` depicts these sections as dashed boxes.
 
-TODO CUDASTF_DOT_MAX_DEPTH
+.. image:: stf/images/dag-sections.png
 
-TODO interaction with timing
+Adding sections also makes it possible to define a maximum depth for the
+generated graphs by setting the `CUDASTF_DOT_MAX_DEPTH` environment variable.
+When it is undefined, CUDASTF will display all tasks. Otherwise, if
+`CUDASTF_DOT_MAX_DEPTH` is an integer value of `i` any sections and tasks which
+nesting level is deeper than `i` will be collapsed.
+
+When setting `CUDASTF_DOT_MAX_DEPTH=2`, the previous graph becomes:
+
+.. image:: stf/images/dag-sections-2.png
+
+When setting `CUDASTF_DOT_MAX_DEPTH=1`, one additional level is collapsed:
+
+.. image:: stf/images/dag-sections-1.png
+
+An we only have top-most tasks and sections when setting `CUDASTF_DOT_MAX_DEPTH=0`:
+
+.. image:: stf/images/dag-sections-0.png
+
+Note that `CUDASTF_DOT_MAX_DEPTH` and `CUDASTF_DOT_TIMING` can be used in
+combination, and that the duration of section corresponds to the duration of
+all tasks in this sections.
 
 Kernel tuning with ncu
 ^^^^^^^^^^^^^^^^^^^^^^
