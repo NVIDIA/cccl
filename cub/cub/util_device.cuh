@@ -713,4 +713,6 @@ private:
 
 CUB_NAMESPACE_END
 
+#if _CCCL_HAS_CUDA_COMPILER
 #include <cub/detail/launcher/cuda_runtime.cuh> // to complete the definition of TripleChevronFactory
+#endif // _CCCL_HAS_CUDA_COMPILER
