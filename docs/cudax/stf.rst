@@ -1999,6 +1999,49 @@ It is also possible to include timing information in this graph by setting the
 color the graph nodes according to their relative duration, and the measured
 duration will be included in task labels.
 
+Condensed and structured graphs visualization
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Realistic workloads are typically made of thousands or millions of tasks which
+cannot be easily visualized using graphviz (dot). To simplify the generated
+graphs we can further
+annotate the application using dot sections.
+Dot sections can also be nested to better structure the visualization.
+
+This is achieved by creating `dot_section` objects in the application, for
+example by using an RAII idiom with the `ctx.dot_section` method which returns
+an object which lifetime defines a dot section valid until it is destroyed.
+Users may also specify where sections begin and end using
+`ctx.dot_push_section` and `ctx.dot_pop_section`.
+The following example illustrates how to add nested sections, either using RAII
+or with explicit push and pop annotations.
+
+.. code:: c++
+ 
+    context ctx;
+    auto lA = ctx.logical_token();
+    auto lB = ctx.logical_token();
+    auto lC = ctx.logical_token();
+    ctx.dot_push_section("foo");
+    for (size_t i = 0; i < 2; i++)
+    {
+      auto guard = ctx.dot_section("bar");
+      ctx.task(lA.read(), lB.rw()).set_symbol("t1")->*[](cudaStream_t, auto, auto) {};
+      for (size_t j = 0; j < 3; j++) {
+         auto inner_guard = ctx.dot_section("baz");
+         ctx.task(lA.read(), lC.rw()).set_symbol("t2")->*[](cudaStream_t, auto, auto) {};
+         ctx.task(lB.read(), lC.read(), lA.rw()).set_symbol("t3")->*[](cudaStream_t, auto, auto, auto) {};
+      }
+    }
+    ctx.dot_pop_section();
+    ctx.finalize();
+
+TODO resulting DAG and how to generate it
+
+TODO CUDASTF_DOT_MAX_DEPTH
+
+TODO interaction with timing
+
 Kernel tuning with ncu
 ^^^^^^^^^^^^^^^^^^^^^^
 
