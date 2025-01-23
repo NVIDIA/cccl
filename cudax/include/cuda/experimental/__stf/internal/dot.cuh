@@ -792,14 +792,19 @@ public:
       }
 
       // Update node properties such as labels and colors now that we have all information
+      size_t vertex_cnt = 0;
       for (const auto& pc : per_ctx)
       {
         for (const auto& p : pc->metadata)
         {
           outFile << "\"NODE_" << p.first << "\" [style=\"filled\" fillcolor=\"" << p.second.color << "\" label=\""
                   << p.second.label << "\"]\n";
+          vertex_cnt++;
         }
       }
+
+      outFile << "// Edge   count : " << existing_edges.size() << "\n";
+      outFile << "// Vertex count : " << vertex_cnt << "\n";
 
       outFile << "}\n";
 
