@@ -1,3 +1,8 @@
+#include <cuda/__cccl_config>
+
+// need to suppress deprecation warnings for execute_with_allocator_and_dependencies inside type traits
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 #include <thrust/detail/config.h>
 
 #include <thrust/detail/seq.h>
@@ -10,8 +15,6 @@
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 #  include <thrust/system/cuda/detail/par.h>
 #endif
-
-_CCCL_SUPPRESS_DEPRECATED_PUSH
 
 template <typename T>
 struct test_allocator_t

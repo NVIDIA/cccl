@@ -33,9 +33,9 @@ THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-
-template <typename Allocator, template <typename> class BaseSystem>
-struct execute_with_allocator : BaseSystem<execute_with_allocator<Allocator, BaseSystem>>
+_CCCL_SUPPRESS_DEPRECATED_PUSH // because of execute_with_allocator_and_dependencies
+  template <typename Allocator, template <typename> class BaseSystem>
+  struct execute_with_allocator : BaseSystem<execute_with_allocator<Allocator, BaseSystem>>
 {
 private:
   using super_t = BaseSystem<execute_with_allocator<Allocator, BaseSystem>>;
@@ -58,7 +58,6 @@ public:
     return alloc;
   }
 
-  _CCCL_SUPPRESS_DEPRECATED_PUSH
   template <typename... Dependencies>
   CCCL_DEPRECATED _CCCL_HOST execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>
   after(Dependencies&&... dependencies) const
@@ -98,9 +97,9 @@ public:
   {
     return {alloc, capture_as_dependency(std::move(dependencies))};
   }
-  _CCCL_SUPPRESS_DEPRECATED_POP
 };
 
+_CCCL_SUPPRESS_DEPRECATED_POP
 } // namespace detail
 
 THRUST_NAMESPACE_END
