@@ -37,7 +37,7 @@
 #  endif
 #else
 #  define _CCCL_HAS_INT128() 0
-#endif // #if !defined(_CCCL_DISABLE_INT128)
+#endif // !_CCCL_DISABLE_INT128
 
 #if !defined(_CCCL_DISABLE_NVFP8_SUPPORT)
 #  if _CCCL_HAS_INCLUDE(<cuda_fp8.h>)
