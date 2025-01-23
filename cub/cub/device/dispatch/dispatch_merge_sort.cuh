@@ -53,7 +53,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace detail::merge_sort
 {
 
 /**
@@ -97,7 +97,7 @@ private:
   using block_sort_helper_t = dual_policy_agent_helper_t<
     DefaultPolicyT,
     fallback_policy_t,
-    AgentBlockSort,
+    merge_sort::AgentBlockSort,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyIteratorT,
@@ -114,7 +114,7 @@ private:
   using merge_helper_t = dual_policy_agent_helper_t<
     DefaultPolicyT,
     fallback_policy_t,
-    AgentMerge,
+    merge_sort::AgentMerge,
     KeyIteratorT,
     ValueIteratorT,
     OffsetT,
@@ -140,8 +140,6 @@ public:
     ::cuda::std::_If<uses_fallback_policy, fallback_block_sort_agent_t, default_block_sort_agent_t>;
   using merge_agent_t = ::cuda::std::_If<uses_fallback_policy, fallback_merge_agent_t, default_merge_agent_t>;
 };
-} // namespace detail
-
 template <typename ChainedPolicyT,
           typename KeyInputIteratorT,
           typename ValueInputIteratorT,
@@ -152,16 +150,15 @@ template <typename ChainedPolicyT,
           typename KeyT,
           typename ValueT>
 __launch_bounds__(
-  cub::detail::merge_sort_vsmem_helper_t<
-    typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
-    KeyInputIteratorT,
-    ValueInputIteratorT,
-    KeyIteratorT,
-    ValueIteratorT,
-    OffsetT,
-    CompareOpT,
-    KeyT,
-    ValueT>::policy_t::BLOCK_THREADS)
+  merge_sort_vsmem_helper_t<typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
+                            KeyInputIteratorT,
+                            ValueInputIteratorT,
+                            KeyIteratorT,
+                            ValueIteratorT,
+                            OffsetT,
+                            CompareOpT,
+                            KeyT,
+                            ValueT>::policy_t::BLOCK_THREADS)
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortBlockSortKernel(
     bool ping,
     KeyInputIteratorT keys_in,
@@ -172,9 +169,9 @@ __launch_bounds__(
     KeyT* tmp_keys_out,
     ValueT* tmp_items_out,
     CompareOpT compare_op,
-    cub::detail::vsmem_t vsmem)
+    vsmem_t vsmem)
 {
-  using MergeSortHelperT = cub::detail::merge_sort_vsmem_helper_t<
+  using MergeSortHelperT = merge_sort_vsmem_helper_t<
     typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
     KeyInputIteratorT,
     ValueInputIteratorT,
@@ -189,7 +186,7 @@ __launch_bounds__(
 
   using AgentBlockSortT = typename MergeSortHelperT::block_sort_agent_t;
 
-  using VSmemHelperT = cub::detail::vsmem_helper_impl<AgentBlockSortT>;
+  using VSmemHelperT = vsmem_helper_impl<AgentBlockSortT>;
 
   // Static shared memory allocation
   __shared__ typename VSmemHelperT::static_temp_storage_t static_temp_storage;
@@ -259,16 +256,15 @@ template <typename ChainedPolicyT,
           typename KeyT,
           typename ValueT>
 __launch_bounds__(
-  cub::detail::merge_sort_vsmem_helper_t<
-    typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
-    KeyInputIteratorT,
-    ValueInputIteratorT,
-    KeyIteratorT,
-    ValueIteratorT,
-    OffsetT,
-    CompareOpT,
-    KeyT,
-    ValueT>::policy_t::BLOCK_THREADS)
+  merge_sort_vsmem_helper_t<typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
+                            KeyInputIteratorT,
+                            ValueInputIteratorT,
+                            KeyIteratorT,
+                            ValueIteratorT,
+                            OffsetT,
+                            CompareOpT,
+                            KeyT,
+                            ValueT>::policy_t::BLOCK_THREADS)
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortMergeKernel(
     bool ping,
     KeyIteratorT keys_ping,
@@ -279,9 +275,9 @@ __launch_bounds__(
     CompareOpT compare_op,
     OffsetT* merge_partitions,
     OffsetT target_merged_tiles_number,
-    cub::detail::vsmem_t vsmem)
+    vsmem_t vsmem)
 {
-  using MergeSortHelperT = cub::detail::merge_sort_vsmem_helper_t<
+  using MergeSortHelperT = merge_sort_vsmem_helper_t<
     typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
     KeyInputIteratorT,
     ValueInputIteratorT,
@@ -296,7 +292,7 @@ __launch_bounds__(
 
   using AgentMergeT = typename MergeSortHelperT::merge_agent_t;
 
-  using VSmemHelperT = cub::detail::vsmem_helper_impl<AgentMergeT>;
+  using VSmemHelperT = vsmem_helper_impl<AgentMergeT>;
 
   // Static shared memory allocation
   __shared__ typename VSmemHelperT::static_temp_storage_t static_temp_storage;
@@ -325,6 +321,8 @@ __launch_bounds__(
   // If applicable, hints to discard modified cache lines for vsmem
   VSmemHelperT::discard_temp_storage(temp_storage);
 }
+
+} // namespace detail::merge_sort
 
 /*******************************************************************************
  * Policy
@@ -408,7 +406,7 @@ struct DispatchMergeSort
   {
     using MergePolicyT = typename ActivePolicyT::MergeSortPolicy;
 
-    using merge_sort_helper_t = cub::detail::merge_sort_vsmem_helper_t<
+    using merge_sort_helper_t = detail::merge_sort::merge_sort_vsmem_helper_t<
       MergePolicyT,
       KeyInputIteratorT,
       ValueInputIteratorT,
@@ -419,8 +417,8 @@ struct DispatchMergeSort
       KeyT,
       ValueT>;
 
-    using BlockSortVSmemHelperT  = cub::detail::vsmem_helper_impl<typename merge_sort_helper_t::block_sort_agent_t>;
-    using MergeAgentVSmemHelperT = cub::detail::vsmem_helper_impl<typename merge_sort_helper_t::merge_agent_t>;
+    using BlockSortVSmemHelperT  = detail::vsmem_helper_impl<typename merge_sort_helper_t::block_sort_agent_t>;
+    using MergeAgentVSmemHelperT = detail::vsmem_helper_impl<typename merge_sort_helper_t::merge_agent_t>;
 
     cudaError error = cudaSuccess;
 
@@ -489,7 +487,7 @@ struct DispatchMergeSort
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
         static_cast<int>(num_tiles), merge_sort_helper_t::policy_t::BLOCK_THREADS, 0, stream, true)
         .doit(
-          DeviceMergeSortBlockSortKernel<
+          detail::merge_sort::DeviceMergeSortBlockSortKernel<
             typename PolicyHub::MaxPolicy,
             KeyInputIteratorT,
             ValueInputIteratorT,
@@ -547,7 +545,7 @@ struct DispatchMergeSort
         // Partition
         THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
           partition_grid_size, threads_per_partition_block, 0, stream, true)
-          .doit(DeviceMergeSortPartitionKernel<KeyIteratorT, OffsetT, CompareOpT, KeyT>,
+          .doit(detail::merge_sort::DeviceMergeSortPartitionKernel<KeyIteratorT, OffsetT, CompareOpT, KeyT>,
                 ping,
                 d_output_keys,
                 keys_buffer,
@@ -575,15 +573,16 @@ struct DispatchMergeSort
         THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
           static_cast<int>(num_tiles), static_cast<int>(merge_sort_helper_t::policy_t::BLOCK_THREADS), 0, stream, true)
           .doit(
-            DeviceMergeSortMergeKernel<typename PolicyHub::MaxPolicy,
-                                       KeyInputIteratorT,
-                                       ValueInputIteratorT,
-                                       KeyIteratorT,
-                                       ValueIteratorT,
-                                       OffsetT,
-                                       CompareOpT,
-                                       KeyT,
-                                       ValueT>,
+            detail::merge_sort::DeviceMergeSortMergeKernel<
+              typename PolicyHub::MaxPolicy,
+              KeyInputIteratorT,
+              ValueInputIteratorT,
+              KeyIteratorT,
+              ValueIteratorT,
+              OffsetT,
+              CompareOpT,
+              KeyT,
+              ValueT>,
             ping,
             d_output_keys,
             d_output_items,

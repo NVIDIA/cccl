@@ -123,6 +123,9 @@ struct AgentSelectIfPolicy
 
 namespace detail
 {
+namespace select
+{
+
 template <typename SelectedOutputItT, typename RejectedOutputItT>
 struct partition_distinct_output_t
 {
@@ -132,7 +135,6 @@ struct partition_distinct_output_t
   selected_iterator_t selected_it;
   rejected_iterator_t rejected_it;
 };
-} // namespace detail
 
 /**
  * @brief AgentSelectIf implements a stateful abstraction of CUDA thread blocks for participating in
@@ -210,13 +212,13 @@ struct AgentSelectIf
 
   // If we need to enforce memory order for in-place stream compaction, wrap the default decoupled look-back tile
   // state in a helper class that enforces memory order on reads and writes
-  using MemoryOrderedTileStateT = detail::tile_state_with_memory_order<ScanTileStateT, memory_order>;
+  using MemoryOrderedTileStateT = tile_state_with_memory_order<ScanTileStateT, memory_order>;
 
   // The input value type
-  using InputT = cub::detail::value_t<InputIteratorT>;
+  using InputT = value_t<InputIteratorT>;
 
   // The flag value type
-  using FlagT = cub::detail::value_t<FlagsInputIteratorT>;
+  using FlagT = value_t<FlagsInputIteratorT>;
 
   // Constants
   enum
@@ -702,7 +704,7 @@ struct AgentSelectIf
     int tile_num_rejections,
     OffsetT num_selections_prefix,
     OffsetT num_rejected_prefix,
-    detail::partition_distinct_output_t<SelectedItT, RejectedItT> partitioned_out_wrapper)
+    partition_distinct_output_t<SelectedItT, RejectedItT> partitioned_out_wrapper)
   {
     auto selected_out_it = partitioned_out_wrapper.selected_it + streaming_context.num_previously_selected();
     auto rejected_out_it = partitioned_out_wrapper.rejected_it + streaming_context.num_previously_rejected();
@@ -1013,5 +1015,37 @@ struct AgentSelectIf
     }
   }
 };
+
+} // namespace select
+} // namespace detail
+
+template <typename SelectedOutputItT, typename RejectedOutputItT>
+using partition_distinct_output_t CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the "
+                                                          "public interface will be removed.") =
+  detail::select::partition_distinct_output_t<SelectedOutputItT, RejectedOutputItT>;
+
+template <typename AgentSelectIfPolicyT,
+          typename InputIteratorT,
+          typename FlagsInputIteratorT,
+          typename OutputIteratorWrapperT,
+          typename SelectOpT,
+          typename EqualityOpT,
+          typename OffsetT,
+          typename StreamingContextT,
+          bool KeepRejects,
+          bool MayAlias>
+using AgentSelectIf CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
+                                            "interface will be removed.") =
+  detail::select::AgentSelectIf<
+    AgentSelectIfPolicyT,
+    InputIteratorT,
+    FlagsInputIteratorT,
+    OutputIteratorWrapperT,
+    SelectOpT,
+    EqualityOpT,
+    OffsetT,
+    StreamingContextT,
+    KeepRejects,
+    MayAlias>;
 
 CUB_NAMESPACE_END

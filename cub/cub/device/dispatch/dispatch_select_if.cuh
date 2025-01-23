@@ -62,10 +62,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-
-namespace select
+namespace detail::select
 {
 // Offset type used to instantiate the stream compaction-kernel and agent to index the items within one partition
 using per_partition_offset_t = ::cuda::std::int32_t;
@@ -231,8 +228,6 @@ struct agent_select_if_wrapper_t
                         MayAlias>::AgentSelectIf;
   };
 };
-} // namespace select
-} // namespace detail
 
 /******************************************************************************
  * Kernel entry points
@@ -329,9 +324,9 @@ template <typename ChainedPolicyT,
           bool KeepRejects,
           bool MayAlias>
 __launch_bounds__(int(
-  cub::detail::vsmem_helper_default_fallback_policy_t<
+  vsmem_helper_default_fallback_policy_t<
     typename ChainedPolicyT::ActivePolicy::SelectIfPolicyT,
-    detail::select::agent_select_if_wrapper_t<KeepRejects, MayAlias>::template agent_t,
+    agent_select_if_wrapper_t<KeepRejects, MayAlias>::template agent_t,
     InputIteratorT,
     FlagsInputIteratorT,
     SelectedOutputIteratorT,
@@ -350,11 +345,11 @@ __launch_bounds__(int(
     OffsetT num_items,
     int num_tiles,
     _CCCL_GRID_CONSTANT const StreamingContextT streaming_context,
-    cub::detail::vsmem_t vsmem)
+    vsmem_t vsmem)
 {
-  using VsmemHelperT = cub::detail::vsmem_helper_default_fallback_policy_t<
+  using VsmemHelperT = vsmem_helper_default_fallback_policy_t<
     typename ChainedPolicyT::ActivePolicy::SelectIfPolicyT,
-    detail::select::agent_select_if_wrapper_t<KeepRejects, MayAlias>::template agent_t,
+    agent_select_if_wrapper_t<KeepRejects, MayAlias>::template agent_t,
     InputIteratorT,
     FlagsInputIteratorT,
     SelectedOutputIteratorT,
@@ -381,6 +376,7 @@ __launch_bounds__(int(
   // If applicable, hints to discard modified cache lines for vsmem
   VsmemHelperT::discard_temp_storage(temp_storage);
 }
+} // namespace detail::select
 
 /******************************************************************************
  * Dispatch
@@ -660,7 +656,7 @@ struct DispatchSelectIf
         // Log scan_init_kernel configuration
         int init_grid_size = CUB_MAX(1, ::cuda::ceil_div(current_num_tiles, INIT_KERNEL_THREADS));
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
         _CubLog("Invoking scan_init_kernel<<<%d, %d, 0, %lld>>>()\n",
                 init_grid_size,
                 INIT_KERNEL_THREADS,
@@ -693,7 +689,7 @@ struct DispatchSelectIf
         }
 
 // Log select_if_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
         {
           // Get SM occupancy for select_if_kernel
           int range_select_sm_occupancy;
@@ -756,8 +752,8 @@ struct DispatchSelectIf
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     return Invoke<ActivePolicyT>(
-      DeviceCompactInitKernel<ScanTileStateT, NumSelectedIteratorT>,
-      DeviceSelectSweepKernel<
+      detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumSelectedIteratorT>,
+      detail::select::DeviceSelectSweepKernel<
         typename PolicyHub::MaxPolicy,
         InputIteratorT,
         FlagsInputIteratorT,

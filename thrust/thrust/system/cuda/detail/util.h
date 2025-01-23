@@ -38,7 +38,6 @@
 
 #include <cub/config.cuh>
 
-#include <cub/detail/device_synchronize.cuh>
 #include <cub/util_device.cuh>
 
 #include <thrust/iterator/iterator_traits.h>

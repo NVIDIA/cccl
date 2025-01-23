@@ -72,6 +72,10 @@ int main(int, char**)
 #if defined(_LIBCUDACXX_HAS_NVBF16)
   test<__nv_bfloat16>(__double2bfloat16(9.18354961579912115600575419705e-41));
 #endif // _LIBCUDACXX_HAS_NVBF16
+#if _CCCL_HAS_NVFP8()
+  test<__nv_fp8_e4m3>(make_fp8_e4m3(0.001953125));
+  test<__nv_fp8_e5m2>(make_fp8_e5m2(0.0000152587890625));
+#endif // _CCCL_HAS_NVFP8()
 #if !defined(__FLT_DENORM_MIN__) && !defined(FLT_TRUE_MIN)
 #  error Test has no expected values for floating point types
 #endif

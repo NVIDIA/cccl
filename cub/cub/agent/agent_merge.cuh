@@ -130,9 +130,9 @@ struct agent_t
     const int num_keys2 = static_cast<int>(keys2_end - keys2_beg);
 
     key_type keys_loc[items_per_thread];
-    gmem_to_reg<threads_per_block, IsFullTile>(
+    merge_sort::gmem_to_reg<threads_per_block, IsFullTile>(
       keys_loc, keys1_in + keys1_beg, keys2_in + keys2_beg, num_keys1, num_keys2);
-    reg_to_shared<threads_per_block>(&storage.keys_shared[0], keys_loc);
+    merge_sort::reg_to_shared<threads_per_block>(&storage.keys_shared[0], keys_loc);
     __syncthreads();
 
     // use binary search in shared memory to find merge path for each of thread.
@@ -181,11 +181,11 @@ struct agent_t
 #endif // _CCCL_CUDACC_AT_LEAST(11, 8)
     {
       item_type items_loc[items_per_thread];
-      gmem_to_reg<threads_per_block, IsFullTile>(
+      merge_sort::gmem_to_reg<threads_per_block, IsFullTile>(
         items_loc, items1_in + keys1_beg, items2_in + keys2_beg, num_keys1, num_keys2);
       __syncthreads(); // block_store_keys above uses shared memory, so make sure all threads are done before we write
                        // to it
-      reg_to_shared<threads_per_block>(&storage.items_shared[0], items_loc);
+      merge_sort::reg_to_shared<threads_per_block>(&storage.items_shared[0], items_loc);
       __syncthreads();
 
       // gather items from shared mem

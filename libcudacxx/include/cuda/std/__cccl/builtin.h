@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -111,6 +111,12 @@
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__builtin_assume(__VA_ARGS__);), (__assume(__VA_ARGS__);))
 #endif // _CCCL_CHECK_BUILTIN(builtin_assume)
 
+#if _CCCL_CHECK_BUILTIN(builtin_prefetch) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_PREFETCH(...) NV_IF_TARGET(NV_IS_HOST, __builtin_prefetch(__VA_ARGS__);)
+#else
+#  define _CCCL_BUILTIN_PREFETCH(...)
+#endif // _CCCL_CHECK_BUILTIN(builtin_prefetch)
+
 // NVCC prior to 11.2 cannot handle __builtin_assume
 #if _CCCL_CUDACC_BELOW(11, 2)
 #  undef _CCCL_BUILTIN_ASSUME
@@ -131,6 +137,22 @@
 #if _CCCL_COMPILER(CLANG, <, 10) || _CCCL_CUDACC_BELOW(11, 7)
 #  undef _CCCL_BUILTIN_BIT_CAST
 #endif // clang < 10 || nvcc < 11.7
+
+#if _CCCL_CHECK_BUILTIN(builtin_popcount) || _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(CLANG) \
+  || _CCCL_COMPILER(NVHPC)
+#  define _CCCL_BUILTIN_POPCOUNT(...)   ::__builtin_popcount(__VA_ARGS__)
+#  define _CCCL_BUILTIN_POPCOUNTLL(...) ::__builtin_popcountll(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_popcount)
+
+#if _CCCL_CHECK_BUILTIN(builtin_clz) || _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
+#  define _CCCL_BUILTIN_CLZ(...)   ::__builtin_clz(__VA_ARGS__)
+#  define _CCCL_BUILTIN_CLZLL(...) ::__builtin_clzll(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_clz)
+
+#if _CCCL_CHECK_BUILTIN(builtin_ctz) || _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
+#  define _CCCL_BUILTIN_CTZ(...)   ::__builtin_ctz(__VA_ARGS__)
+#  define _CCCL_BUILTIN_CTZLL(...) ::__builtin_ctzll(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_ctz)
 
 #if _CCCL_CHECK_BUILTIN(builtin_bswap16)
 #  define _CCCL_BUILTIN_BSWAP16(...) __builtin_bswap16(__VA_ARGS__)
@@ -195,9 +217,9 @@
 #  define _CCCL_BUILTIN_COLUMN() 0
 #endif // _CCCL_CUDACC_BELOW(11, 3)
 
-#if _CCCL_CHECK_BUILTIN(builtin_contant_p) || _CCCL_COMPILER(GCC)
+#if _CCCL_CHECK_BUILTIN(builtin_constant_p) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_CONSTANT_P(...) __builtin_constant_p(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_contant_p)
+#endif // _CCCL_CHECK_BUILTIN(builtin_constant_p)
 
 #if _CCCL_CHECK_BUILTIN(builtin_exp) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_EXPF(...) __builtin_expf(__VA_ARGS__)

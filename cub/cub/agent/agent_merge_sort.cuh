@@ -66,7 +66,11 @@ struct AgentMergeSortPolicy
   static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = _STORE_ALGORITHM;
 };
 
-/// \brief This agent is responsible for the initial in-tile sorting.
+namespace detail
+{
+namespace merge_sort
+{
+
 template <typename Policy,
           typename KeyInputIteratorT,
           typename ValueInputIteratorT,
@@ -374,8 +378,6 @@ struct AgentPartition
   }
 };
 
-namespace detail
-{
 /**
  * \brief Concatenates up to ITEMS_PER_THREAD elements from input{1,2} into output array
  *
@@ -421,7 +423,6 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void reg_to_shared(It output, T (&input)[ITEMS_PE
     output[idx]   = input[item];
   }
 }
-} // namespace detail
 
 /// \brief The agent is responsible for merging N consecutive sorted arrays into N/2 sorted arrays.
 template <typename Policy,
@@ -550,15 +551,15 @@ struct AgentMerge
     KeyT keys_local[ITEMS_PER_THREAD];
     if (ping)
     {
-      detail::gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
+      gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
         keys_local, keys_in_ping + start + keys1_beg, keys_in_ping + start + size + keys2_beg, num_keys1, num_keys2);
     }
     else
     {
-      detail::gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
+      gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
         keys_local, keys_in_pong + start + keys1_beg, keys_in_pong + start + size + keys2_beg, num_keys1, num_keys2);
     }
-    detail::reg_to_shared<BLOCK_THREADS>(&storage.keys_shared[0], keys_local);
+    reg_to_shared<BLOCK_THREADS>(&storage.keys_shared[0], keys_local);
 
     // preload items into registers already
     //
@@ -568,7 +569,7 @@ struct AgentMerge
     {
       if (ping)
       {
-        detail::gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
+        gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
           items_local,
           items_in_ping + start + keys1_beg,
           items_in_ping + start + size + keys2_beg,
@@ -577,7 +578,7 @@ struct AgentMerge
       }
       else
       {
-        detail::gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
+        gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
           items_local,
           items_in_pong + start + keys1_beg,
           items_in_pong + start + size + keys2_beg,
@@ -655,7 +656,7 @@ struct AgentMerge
     {
       __syncthreads();
 
-      detail::reg_to_shared<BLOCK_THREADS>(&storage.items_shared[0], items_local);
+      reg_to_shared<BLOCK_THREADS>(&storage.items_shared[0], items_local);
 
       __syncthreads();
 
@@ -746,5 +747,46 @@ struct AgentMerge
     }
   }
 };
+
+} // namespace merge_sort
+} // namespace detail
+
+template <typename Policy,
+          typename KeyInputIteratorT,
+          typename ValueInputIteratorT,
+          typename KeyIteratorT,
+          typename ValueIteratorT,
+          typename OffsetT,
+          typename CompareOpT,
+          typename KeyT,
+          typename ValueT>
+using AgentBlockSort CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
+                                             "interface will be removed.") =
+  detail::merge_sort::AgentBlockSort<
+    Policy,
+    KeyInputIteratorT,
+    ValueInputIteratorT,
+    KeyIteratorT,
+    ValueIteratorT,
+    OffsetT,
+    CompareOpT,
+    KeyT,
+    ValueT>;
+
+template <typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename KeyT>
+using AgentPartition CCCL_DEPRECATED_BECAUSE(
+  "This class is considered an implementation detail and the public interface will be "
+  "removed.") = detail::merge_sort::AgentPartition<KeyIteratorT, OffsetT, CompareOpT, KeyT>;
+
+template <typename Policy,
+          typename KeyIteratorT,
+          typename ValueIteratorT,
+          typename OffsetT,
+          typename CompareOpT,
+          typename KeyT,
+          typename ValueT>
+using AgentMerge CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public interface "
+                                         "will be removed.") =
+  detail::merge_sort::AgentMerge<Policy, KeyIteratorT, ValueIteratorT, OffsetT, CompareOpT, KeyT, ValueT>;
 
 CUB_NAMESPACE_END

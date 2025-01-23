@@ -35,12 +35,10 @@
       future release. Define CCCL_IGNORE_DEPRECATED_CPP_DIALECT to suppress this message.)
 // clang-format on
 
-#if _CCCL_STD_VER < 2011
-#  error libcu++ requires C++11 or later.
-#elif _CCCL_STD_VER == 2011 && !defined(CCCL_IGNORE_DEPRECATED_CPP_11)
-LIBCUDACXX_DIALECT_DEPRECATION(C++ 17, C++ 11)
-#elif _CCCL_STD_VER == 2014 && !defined(CCCL_IGNORE_DEPRECATED_CPP_14)
-LIBCUDACXX_DIALECT_DEPRECATION(C++ 17, C++ 14)
-#endif // _CCCL_STD_VER >= 2017
+#ifndef CCCL_IGNORE_DEPRECATED_CPP_DIALECT
+#  if _CCCL_STD_VER < 2017
+#    error libcu++ requires at least C++ 17. Define CCCL_IGNORE_DEPRECATED_CPP_DIALECT to suppress this message.
+#  endif // _CCCL_STD_VER >= 2017
+#endif // CCCL_IGNORE_DEPRECATED_CPP_DIALECT
 
 #endif // _LIBCUDACXX___INTERNAL_CPP_DIALECT_H
