@@ -72,29 +72,6 @@ __atomic_assign_volatile(_Tp volatile* __a_value, _Tv volatile const& __val)
   }
 }
 
-_CCCL_HOST_DEVICE inline int __atomic_memcmp(void const* __lhs, void const* __rhs, size_t __count)
-{
-  NV_DISPATCH_TARGET(
-    NV_IS_DEVICE,
-    (unsigned char const* __lhs_c; unsigned char const* __rhs_c;
-     // NVCC recommended laundering through inline asm to compare padding bytes.
-     asm("mov.b64 %0, %2;\n mov.b64 %1, %3;" : "=l"(__lhs_c), "=l"(__rhs_c) : "l"(__lhs), "l"(__rhs));
-     while (__count--) {
-       auto const __lhs_v = *__lhs_c++;
-       auto const __rhs_v = *__rhs_c++;
-       if (__lhs_v < __rhs_v)
-       {
-         return -1;
-       }
-       if (__lhs_v > __rhs_v)
-       {
-         return 1;
-       }
-     } return 0;),
-    NV_IS_HOST,
-    (return _CUDA_VSTD::memcmp(__lhs, __rhs, __count);))
-}
-
 _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif // _LIBCUDACXX___ATOMIC_TYPES_COMMON_H

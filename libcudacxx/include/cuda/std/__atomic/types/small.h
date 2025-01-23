@@ -124,7 +124,7 @@ _CCCL_HOST_DEVICE inline bool __atomic_compare_exchange_weak_dispatch(
   constexpr auto __mask = static_cast<decltype(__temp_expected)>((1u << (8 * sizeof(_Tp))) - 1);
   if (!__ret)
   {
-    if (0 == __atomic_memcmp(&__actual, __expected, sizeof(_Tp)))
+    if (0 == _CUDA_VSTD::memcmp(&__actual, __expected, sizeof(_Tp)))
     {
       __atomic_fetch_and_dispatch(&__a->__a_value, __mask, memory_order_relaxed, _Sco{});
     }
@@ -148,7 +148,7 @@ _CCCL_HOST_DEVICE inline bool __atomic_compare_exchange_strong_dispatch(
     {
       return true;
     }
-    if (0 != __atomic_memcmp(&__old, __expected, sizeof(_Tp)))
+    if (0 != _CUDA_VSTD::memcmp(&__old, __expected, sizeof(_Tp)))
     {
       return false;
     }
