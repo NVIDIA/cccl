@@ -64,8 +64,8 @@ template <typename _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_ctz(_Tp __x) noexcept
 {
   static_assert(is_same_v<_Tp, uint32_t> || is_same_v<_Tp, uint64_t>);
-#if defined(__CUDA_ARCH__)
-  if (is_constant_evaluated())
+#if defined(__CUDA_ARCH__) || _CCCL_COMPILER(NVRTC)
+  if (is_constant_evaluated() || _CCCL_BUILTIN_CONSTANT_P(__x))
   {
     return _CUDA_VSTD::__constexpr_ctz(__x);
   }

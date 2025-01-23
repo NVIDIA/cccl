@@ -65,7 +65,7 @@ template <typename _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_clz(_Tp __x) noexcept
 {
   static_assert(is_same_v<_Tp, uint32_t> || is_same_v<_Tp, uint64_t>);
-#if _CCCL_COMPILER(MSVC) && !defined(__CUDA_ARCH__)
+#if _CCCL_COMPILER(MSVC) && !defined(__CUDA_ARCH__) && !_CCCL_COMPILER(NVRTC)
   return is_constant_evaluated() ? _CUDA_VSTD::__msvc_constexpr_clz(__x) : _CUDA_VSTD::__msvc_runtime_clz(__x);
 #else // _CCCL_COMPILER(MSVC) ^^^ / !_CCCL_COMPILER(MSVC) vvv
   return sizeof(_Tp) == sizeof(uint32_t)
