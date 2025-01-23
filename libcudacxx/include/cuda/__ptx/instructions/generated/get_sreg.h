@@ -134,7 +134,7 @@ template <typename = void>
 _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nwarpid()
 {
   NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_37,
+    NV_PROVIDES_SM_50,
     (_CUDA_VSTD::uint32_t __sreg_value; asm volatile("mov.u32 %0, %%nwarpid;" : "=r"(__sreg_value) : :);
      return __sreg_value;),
     (
@@ -259,7 +259,7 @@ template <typename = void>
 _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nsmid()
 {
   NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_37,
+    NV_PROVIDES_SM_50,
     (_CUDA_VSTD::uint32_t __sreg_value; asm volatile("mov.u32 %0, %%nsmid;" : "=r"(__sreg_value) : :);
      return __sreg_value;),
     (
@@ -598,7 +598,7 @@ template <typename = void>
 _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_eq()
 {
   NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_37,
+    NV_PROVIDES_SM_50,
     (_CUDA_VSTD::uint32_t __sreg_value; asm("mov.u32 %0, %%lanemask_eq;" : "=r"(__sreg_value) : :);
      return __sreg_value;),
     (
@@ -618,7 +618,7 @@ template <typename = void>
 _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_le()
 {
   NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_37,
+    NV_PROVIDES_SM_50,
     (_CUDA_VSTD::uint32_t __sreg_value; asm("mov.u32 %0, %%lanemask_le;" : "=r"(__sreg_value) : :);
      return __sreg_value;),
     (
@@ -638,7 +638,7 @@ template <typename = void>
 _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_lt()
 {
   NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_37,
+    NV_PROVIDES_SM_50,
     (_CUDA_VSTD::uint32_t __sreg_value; asm("mov.u32 %0, %%lanemask_lt;" : "=r"(__sreg_value) : :);
      return __sreg_value;),
     (
@@ -658,7 +658,7 @@ template <typename = void>
 _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_ge()
 {
   NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_37,
+    NV_PROVIDES_SM_50,
     (_CUDA_VSTD::uint32_t __sreg_value; asm("mov.u32 %0, %%lanemask_ge;" : "=r"(__sreg_value) : :);
      return __sreg_value;),
     (
@@ -678,7 +678,7 @@ template <typename = void>
 _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_gt()
 {
   NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_37,
+    NV_PROVIDES_SM_50,
     (_CUDA_VSTD::uint32_t __sreg_value; asm("mov.u32 %0, %%lanemask_gt;" : "=r"(__sreg_value) : :);
      return __sreg_value;),
     (
@@ -713,7 +713,7 @@ template <typename = void>
 _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_clock_hi()
 {
   NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_37,
+    NV_PROVIDES_SM_50,
     (_CUDA_VSTD::uint32_t __sreg_value; asm volatile("mov.u32 %0, %%clock_hi;" : "=r"(__sreg_value) : :);
      return __sreg_value;),
     (
@@ -733,7 +733,7 @@ template <typename = void>
 _CCCL_DEVICE static inline _CUDA_VSTD::uint64_t get_sreg_clock64()
 {
   NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_37,
+    NV_PROVIDES_SM_50,
     (_CUDA_VSTD::uint64_t __sreg_value; asm volatile("mov.u64 %0, %%clock64;" : "=l"(__sreg_value) : :);
      return __sreg_value;),
     (
@@ -753,7 +753,7 @@ template <typename = void>
 _CCCL_DEVICE static inline _CUDA_VSTD::uint64_t get_sreg_globaltimer()
 {
   NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_37,
+    NV_PROVIDES_SM_50,
     (_CUDA_VSTD::uint64_t __sreg_value; asm volatile("mov.u64 %0, %%globaltimer;" : "=l"(__sreg_value) : :);
      return __sreg_value;),
     (
@@ -773,7 +773,7 @@ template <typename = void>
 _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_globaltimer_lo()
 {
   NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_37,
+    NV_PROVIDES_SM_50,
     (_CUDA_VSTD::uint32_t __sreg_value; asm volatile("mov.u32 %0, %%globaltimer_lo;" : "=r"(__sreg_value) : :);
      return __sreg_value;),
     (
@@ -793,7 +793,7 @@ template <typename = void>
 _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_globaltimer_hi()
 {
   NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_37,
+    NV_PROVIDES_SM_50,
     (_CUDA_VSTD::uint32_t __sreg_value; asm volatile("mov.u32 %0, %%globaltimer_hi;" : "=r"(__sreg_value) : :);
      return __sreg_value;),
     (
@@ -813,7 +813,7 @@ template <typename = void>
 _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_total_smem_size()
 {
   NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_37,
+    NV_PROVIDES_SM_50,
     (_CUDA_VSTD::uint32_t __sreg_value; asm("mov.u32 %0, %%total_smem_size;" : "=r"(__sreg_value) : :);
      return __sreg_value;),
     (
@@ -853,7 +853,7 @@ template <typename = void>
 _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_dynamic_smem_size()
 {
   NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_37,
+    NV_PROVIDES_SM_50,
     (_CUDA_VSTD::uint32_t __sreg_value; asm("mov.u32 %0, %%dynamic_smem_size;" : "=r"(__sreg_value) : :);
      return __sreg_value;),
     (

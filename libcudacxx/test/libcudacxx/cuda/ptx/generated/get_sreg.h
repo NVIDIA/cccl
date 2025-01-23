@@ -57,7 +57,7 @@ __global__ void test_get_sreg(void** fn_ptr)
 #endif // __cccl_ptx_isa >= 130
 
 #if __cccl_ptx_isa >= 200
-  NV_IF_TARGET(NV_PROVIDES_SM_37,
+  NV_IF_TARGET(NV_PROVIDES_SM_50,
                (
                    // mov.u32 sreg_value, %%nwarpid;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<uint32_t (*)()>(cuda::ptx::get_sreg_nwarpid));));
@@ -99,7 +99,7 @@ __global__ void test_get_sreg(void** fn_ptr)
 #endif // __cccl_ptx_isa >= 130
 
 #if __cccl_ptx_isa >= 200
-  NV_IF_TARGET(NV_PROVIDES_SM_37,
+  NV_IF_TARGET(NV_PROVIDES_SM_50,
                (
                    // mov.u32 sreg_value, %%nsmid;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<uint32_t (*)()>(cuda::ptx::get_sreg_nsmid));));
@@ -232,7 +232,7 @@ __global__ void test_get_sreg(void** fn_ptr)
 
 #if __cccl_ptx_isa >= 200
   NV_IF_TARGET(
-    NV_PROVIDES_SM_37,
+    NV_PROVIDES_SM_50,
     (
         // mov.u32 sreg_value, %%lanemask_eq;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<uint32_t (*)()>(cuda::ptx::get_sreg_lanemask_eq));));
@@ -240,7 +240,7 @@ __global__ void test_get_sreg(void** fn_ptr)
 
 #if __cccl_ptx_isa >= 200
   NV_IF_TARGET(
-    NV_PROVIDES_SM_37,
+    NV_PROVIDES_SM_50,
     (
         // mov.u32 sreg_value, %%lanemask_le;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<uint32_t (*)()>(cuda::ptx::get_sreg_lanemask_le));));
@@ -248,7 +248,7 @@ __global__ void test_get_sreg(void** fn_ptr)
 
 #if __cccl_ptx_isa >= 200
   NV_IF_TARGET(
-    NV_PROVIDES_SM_37,
+    NV_PROVIDES_SM_50,
     (
         // mov.u32 sreg_value, %%lanemask_lt;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<uint32_t (*)()>(cuda::ptx::get_sreg_lanemask_lt));));
@@ -256,7 +256,7 @@ __global__ void test_get_sreg(void** fn_ptr)
 
 #if __cccl_ptx_isa >= 200
   NV_IF_TARGET(
-    NV_PROVIDES_SM_37,
+    NV_PROVIDES_SM_50,
     (
         // mov.u32 sreg_value, %%lanemask_ge;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<uint32_t (*)()>(cuda::ptx::get_sreg_lanemask_ge));));
@@ -264,7 +264,7 @@ __global__ void test_get_sreg(void** fn_ptr)
 
 #if __cccl_ptx_isa >= 200
   NV_IF_TARGET(
-    NV_PROVIDES_SM_37,
+    NV_PROVIDES_SM_50,
     (
         // mov.u32 sreg_value, %%lanemask_gt;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<uint32_t (*)()>(cuda::ptx::get_sreg_lanemask_gt));));
@@ -276,14 +276,14 @@ __global__ void test_get_sreg(void** fn_ptr)
 #endif // __cccl_ptx_isa >= 100
 
 #if __cccl_ptx_isa >= 500
-  NV_IF_TARGET(NV_PROVIDES_SM_37,
+  NV_IF_TARGET(NV_PROVIDES_SM_50,
                (
                    // mov.u32 sreg_value, %%clock_hi;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<uint32_t (*)()>(cuda::ptx::get_sreg_clock_hi));));
 #endif // __cccl_ptx_isa >= 500
 
 #if __cccl_ptx_isa >= 200
-  NV_IF_TARGET(NV_PROVIDES_SM_37,
+  NV_IF_TARGET(NV_PROVIDES_SM_50,
                (
                    // mov.u64 sreg_value, %%clock64;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<uint64_t (*)()>(cuda::ptx::get_sreg_clock64));));
@@ -291,7 +291,7 @@ __global__ void test_get_sreg(void** fn_ptr)
 
 #if __cccl_ptx_isa >= 310
   NV_IF_TARGET(
-    NV_PROVIDES_SM_37,
+    NV_PROVIDES_SM_50,
     (
         // mov.u64 sreg_value, %%globaltimer;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<uint64_t (*)()>(cuda::ptx::get_sreg_globaltimer));));
@@ -299,7 +299,7 @@ __global__ void test_get_sreg(void** fn_ptr)
 
 #if __cccl_ptx_isa >= 310
   NV_IF_TARGET(
-    NV_PROVIDES_SM_37,
+    NV_PROVIDES_SM_50,
     (
         // mov.u32 sreg_value, %%globaltimer_lo;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<uint32_t (*)()>(cuda::ptx::get_sreg_globaltimer_lo));));
@@ -307,7 +307,7 @@ __global__ void test_get_sreg(void** fn_ptr)
 
 #if __cccl_ptx_isa >= 310
   NV_IF_TARGET(
-    NV_PROVIDES_SM_37,
+    NV_PROVIDES_SM_50,
     (
         // mov.u32 sreg_value, %%globaltimer_hi;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<uint32_t (*)()>(cuda::ptx::get_sreg_globaltimer_hi));));
@@ -315,7 +315,7 @@ __global__ void test_get_sreg(void** fn_ptr)
 
 #if __cccl_ptx_isa >= 410
   NV_IF_TARGET(
-    NV_PROVIDES_SM_37,
+    NV_PROVIDES_SM_50,
     (
         // mov.u32 sreg_value, %%total_smem_size;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<uint32_t (*)()>(cuda::ptx::get_sreg_total_smem_size));));
@@ -331,7 +331,7 @@ __global__ void test_get_sreg(void** fn_ptr)
 
 #if __cccl_ptx_isa >= 410
   NV_IF_TARGET(
-    NV_PROVIDES_SM_37,
+    NV_PROVIDES_SM_50,
     (
         // mov.u32 sreg_value, %%dynamic_smem_size;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<uint32_t (*)()>(cuda::ptx::get_sreg_dynamic_smem_size));));
