@@ -1911,6 +1911,9 @@ helps to better understand the application, and can be helpful to
 optimize the algorithms as it sometimes allow to identify inefficient
 patterns.
 
+Generating visualizations of task graphs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Let us consider the ``examples/01-axpy.cu`` example which we compile as
 usual with ``make build/examples/01-axpy``.
 
@@ -2019,15 +2022,19 @@ or with explicit push and pop annotations.
 .. code:: c++
 
     context ctx;
-    auto lA = ctx.logical_token();
-    auto lB = ctx.logical_token();
-    auto lC = ctx.logical_token();
+    auto lA = ctx.logical_token().set_symbol("A");
+    auto lB = ctx.logical_token().set_symbol("B");
+    auto lC = ctx.logical_token().set_symbol("C");
+
+    // Begin a top-level section named "foo"
     ctx.dot_push_section("foo");
     for (size_t i = 0; i < 2; i++)
     {
+      // Section named "bar" using RAII
       auto guard = ctx.dot_section("bar");
       ctx.task(lA.read(), lB.rw()).set_symbol("t1")->*[](cudaStream_t, auto, auto) {};
-      for (size_t j = 0; j < 3; j++) {
+      for (size_t j = 0; j < 2; j++) {
+         // Section named "baz" using RAII
          auto inner_guard = ctx.dot_section("baz");
          ctx.task(lA.read(), lC.rw()).set_symbol("t2")->*[](cudaStream_t, auto, auto) {};
          ctx.task(lB.read(), lC.read(), lA.rw()).set_symbol("t3")->*[](cudaStream_t, auto, auto, auto) {};
@@ -2056,12 +2063,12 @@ When setting `CUDASTF_DOT_MAX_DEPTH=1`, one additional level is collapsed:
 
 .. image:: stf/images/dag-sections-1.png
 
-An we only have top-most tasks and sections when setting `CUDASTF_DOT_MAX_DEPTH=0`:
+With `CUDASTF_DOT_MAX_DEPTH=0`, only the top-most tasks and sections are displayed:
 
 .. image:: stf/images/dag-sections-0.png
 
 Note that `CUDASTF_DOT_MAX_DEPTH` and `CUDASTF_DOT_TIMING` can be used in
-combination, and that the duration of section corresponds to the duration of
+combination, and that the duration of a section corresponds to the duration of
 all tasks in this sections.
 
 Kernel tuning with ncu
