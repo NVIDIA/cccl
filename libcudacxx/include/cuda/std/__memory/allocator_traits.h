@@ -28,6 +28,8 @@
 #include <cuda/std/__type_traits/is_copy_constructible.h>
 #include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__type_traits/is_move_constructible.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_trivially_move_constructible.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__type_traits/void_t.h>
@@ -289,8 +291,8 @@ _LIBCUDACXX_HIDE_FROM_ABI typename pointer_traits<_Pointer>::element_type* __to_
 }
 #else // ^^^ C++17 ^^^ / vvv C++20 vvv
 template <class _Pointer>
-_LIBCUDACXX_HIDE_FROM_ABI auto
-__to_raw_pointer(const _Pointer& __p) noexcept -> decltype(pointer_traits<_Pointer>::to_address(__p))
+_LIBCUDACXX_HIDE_FROM_ABI auto __to_raw_pointer(const _Pointer& __p) noexcept
+  -> decltype(pointer_traits<_Pointer>::to_address(__p))
 {
   return pointer_traits<_Pointer>::to_address(__p);
 }
@@ -565,7 +567,7 @@ using __rebind_alloc _CCCL_NODEBUG_ALIAS = typename _Traits::template rebind_all
 template <class _Traits, class _Tp>
 struct __rebind_alloc_helper
 {
-  typedef _CCCL_NODEBUG_ALIAS typename _Traits::template rebind_alloc<_Tp> type;
+  using type _CCCL_NODEBUG_ALIAS = typename _Traits::template rebind_alloc<_Tp>;
 };
 
 #undef _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX

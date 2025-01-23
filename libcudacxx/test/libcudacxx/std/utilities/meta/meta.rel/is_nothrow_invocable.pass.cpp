@@ -171,9 +171,7 @@ int main(int, char**)
     static_assert(cuda::std::is_nothrow_invocable_r<Implicit, Fn>::value, "");
     static_assert(cuda::std::is_nothrow_invocable_r<double, Fn>::value, "");
     static_assert(cuda::std::is_nothrow_invocable_r<const volatile void, Fn>::value, "");
-#ifndef TEST_COMPILER_ICC
     static_assert(throws_invocable_r<ThrowsImplicit, Fn>(), "");
-#endif // TEST_COMPILER_ICC
     static_assert(!cuda::std::is_nothrow_invocable<Fn(), Explicit>(), "");
   }
   {
@@ -181,9 +179,7 @@ int main(int, char**)
     using Fn = CallObject<true, void, const Implicit&, const ThrowsImplicit&>;
     static_assert(cuda::std::is_nothrow_invocable<Fn, Implicit&, ThrowsImplicit&>::value, "");
     static_assert(cuda::std::is_nothrow_invocable<Fn, int, ThrowsImplicit&>::value, "");
-#ifndef TEST_COMPILER_ICC
     static_assert(throws_invocable<Fn, int, int>(), "");
-#endif // TEST_COMPILER_ICC
     static_assert(!cuda::std::is_nothrow_invocable<Fn>::value, "");
   }
   {
@@ -191,18 +187,14 @@ int main(int, char**)
     using Fn  = CallObject<true, void>;
     using Fn2 = CallObject<false, void>;
     static_assert(cuda::std::is_nothrow_invocable<Fn>::value, "");
-#ifndef TEST_COMPILER_ICC
     static_assert(throws_invocable<Fn2>(), "");
-#endif // TEST_COMPILER_ICC
   }
   {
     // Check that PMD derefs are noexcept
     using Fn = int(Tag::*);
     static_assert(cuda::std::is_nothrow_invocable<Fn, Tag&>::value, "");
     static_assert(cuda::std::is_nothrow_invocable_r<Implicit, Fn, Tag&>::value, "");
-#ifndef TEST_COMPILER_ICC
     static_assert(throws_invocable_r<ThrowsImplicit, Fn, Tag&>(), "");
-#endif // TEST_COMPILER_ICC
   }
 #if TEST_STD_VER >= 2017
   {

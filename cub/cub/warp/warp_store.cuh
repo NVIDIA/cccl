@@ -45,6 +45,8 @@
 #include <cub/util_type.cuh>
 #include <cub/warp/warp_exchange.cuh>
 
+#include <cuda/ptx>
+
 CUB_NAMESPACE_BEGIN
 
 //! @rst
@@ -378,14 +380,16 @@ public:
   //!        memory as temporary storage.
   _CCCL_DEVICE _CCCL_FORCEINLINE WarpStore()
       : temp_storage(PrivateStorage())
-      , linear_tid(IS_ARCH_WARP ? LaneId() : (LaneId() % LOGICAL_WARP_THREADS))
+      , linear_tid(
+          IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS))
   {}
 
   //! @brief Collective constructor using the specified memory allocation as
   //!        temporary storage.
   _CCCL_DEVICE _CCCL_FORCEINLINE WarpStore(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(IS_ARCH_WARP ? LaneId() : (LaneId() % LOGICAL_WARP_THREADS))
+      , linear_tid(
+          IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS))
   {}
 
   //! @}  end member group

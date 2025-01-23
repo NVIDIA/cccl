@@ -20,10 +20,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t getctarank(space_cluster_t, cons
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
     (_CUDA_VSTD::uint32_t __dest;
-     asm("getctarank.shared::cluster.u32 %0, %1;"
-         : "=r"(__dest)
-         : "r"(__as_ptr_smem(__addr))
-         :);
+     asm("getctarank.shared::cluster.u32 %0, %1;" : "=r"(__dest) : "r"(__as_ptr_smem(__addr)) :);
      return __dest;),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message

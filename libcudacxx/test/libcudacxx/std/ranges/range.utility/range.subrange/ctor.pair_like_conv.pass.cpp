@@ -7,9 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11, c++14, c++17
 // UNSUPPORTED: msvc-19.16
-// UNSUPPORTED: gcc-7, gcc-8
 
 // class cuda::std::ranges::subrange;
 

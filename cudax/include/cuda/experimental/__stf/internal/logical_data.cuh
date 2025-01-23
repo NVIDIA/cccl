@@ -467,6 +467,12 @@ public:
     return dinterface != nullptr;
   }
 
+  bool is_void_interface() const
+  {
+    _CCCL_ASSERT(has_interface(), "uninitialized logical data");
+    return dinterface->is_void_interface();
+  }
+
   bool has_ref() const
   {
     assert(refcnt.load() >= 0);
@@ -1255,6 +1261,15 @@ public:
     return pimpl->dinterface != nullptr;
   }
 
+  /**
+   * @brief Returns true if the data is a void data interface
+   */
+  bool is_void_interface() const
+  {
+    assert(pimpl);
+    return pimpl->is_void_interface();
+  }
+
   // This function applies the reduction operator over 2 instances, the one
   // identified by "in_instance_id" is not modified, the one identified as
   // "inout_instance_id" is where the result is put.
@@ -1725,9 +1740,11 @@ inline void reserved::logical_data_untyped_impl::erase()
   auto wb_prereqs = event_list();
   auto& h_state   = get_state();
 
+  const bool track_dangling_events = ctx.track_dangling_events();
+
   /* If there is a reference instance id, it needs to be updated with a
    * valid copy if that is not the case yet */
-  if (enable_write_back)
+  if (enable_write_back && !is_void_interface())
   {
     instance_id_t ref_id = reference_instance_id;
     assert(ref_id != instance_id_t::invalid);
@@ -1770,8 +1787,11 @@ inline void reserved::logical_data_untyped_impl::erase()
       src_instance.add_write_prereq(reqs);
       dst_instance.set_read_prereq(reqs);
 
-      // nobody waits for these events, so we put them in the list of dangling events
-      cs.add_dangling_events(reqs);
+      if (track_dangling_events)
+      {
+        // nobody waits for these events, so we put them in the list of dangling events
+        cs.add_dangling_events(reqs);
+      }
     }
   }
 
@@ -1797,16 +1817,23 @@ inline void reserved::logical_data_untyped_impl::erase()
 
       // We now ask to deallocate that piece of data
       deallocate(inst_i.get_dplace(), i, inst_i.get_extra_args(), inst_prereqs);
-      cs.add_dangling_events(inst_prereqs);
+
+      if (track_dangling_events)
+      {
+        cs.add_dangling_events(inst_prereqs);
+      }
     }
 
     inst_i.clear();
   }
 
-  if (wb_prereqs.size() > 0)
+  if (track_dangling_events)
   {
-    // nobody waits for these events, so we put them in the list of dangling events
-    cs.add_dangling_events(wb_prereqs);
+    if (wb_prereqs.size() > 0)
+    {
+      // nobody waits for these events, so we put them in the list of dangling events
+      cs.add_dangling_events(wb_prereqs);
+    }
   }
 
   // Clear the state which may contain references (eg. shared_ptr) to other
@@ -2032,7 +2059,7 @@ inline void fetch_data(
 {
   event_list stf_prereq = reserved::enforce_stf_deps_before(ctx, d, instance_id, t, mode, eplace);
 
-  if (d.has_interface())
+  if (d.has_interface() && !d.is_void_interface())
   {
     // Allocate data if needed (and possibly reclaim memory to do so)
     reserved::dep_allocate(ctx, d, mode, dplace, eplace, instance_id, stf_prereq);
@@ -2279,13 +2306,7 @@ public:
   auto read(Pack&&... pack) const
   {
     using U = readonly_type_of<T>;
-    // The constness of *this implies that access mode is read
-    // Note that we do not provide an access mode, because this is how we
-    // dispatch statically between read-only and non read-only access modes in
-    // task_dep_untyped.
-    // TODO : we could make this cleaner if we had a tag type in addition to
-    // the access_mode enum class.
-    return task_dep<U, ::std::monostate, false>(*this, /* access_mode::read, */ ::std::forward<Pack>(pack)...);
+    return task_dep<U, ::std::monostate, false>(*this, access_mode::read, ::std::forward<Pack>(pack)...);
   }
 
   template <typename... Pack>

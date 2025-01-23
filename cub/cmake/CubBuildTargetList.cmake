@@ -150,21 +150,14 @@ function(cub_build_target_list)
     cmake_minimum_required(VERSION 3.18.3)
   endif()
 
-  # Supported versions of MSVC do not distinguish between C++11 and C++14.
-  # Warn the user that they may be generating a ton of redundant targets.
-  if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}" AND
-      CUB_ENABLE_DIALECT_CPP11)
-    message(WARNING
-      "Supported versions of MSVC (2017+) do not distinguish between C++11 "
-      "and C++14. The requested C++11 targets will be built with C++14."
-    )
-  endif()
-
   # Generic config flags:
   macro(add_flag_option flag docstring default)
-    set(cub_opt "CUB_${flag}")
-    option(${cub_opt} "${docstring}" "${default}")
-    mark_as_advanced(${cub_opt})
+    set(opt "CCCL_${flag}")
+    option(${opt} "${docstring}" "${default}")
+    mark_as_advanced(${opt})
+    if(DEFINED CUB_${flag})
+      message(WARNING "The CUB_${flag} cmake option is deprecated. Use ${opt} instead.")
+    endif()
   endmacro()
   add_flag_option(IGNORE_DEPRECATED_CPP_DIALECT "Don't warn about any deprecated C++ standards and compilers." OFF)
   add_flag_option(IGNORE_DEPRECATED_CPP_11 "Don't warn about deprecated C++11." OFF)

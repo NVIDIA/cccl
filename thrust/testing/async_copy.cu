@@ -1,3 +1,8 @@
+#include <cuda/__cccl_config>
+
+// need to suppress deprecation warnings inside a lot of thrust headers
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 #include <thrust/detail/config.h>
 
 #if _CCCL_STD_VER >= 2014
@@ -207,11 +212,6 @@ struct test_async_copy_counting_iterator_input_to_host_vector
       f0.wait();
 
       ASSERT_EQUAL(d0, d1);
-
-#  if _CCCL_COMPILER(ICC)
-      // ICC fails this for some unknown reason - see #1468.
-      KNOWN_FAILURE;
-#  endif // _CCCL_COMPILER(ICC)
     }
   };
 };
@@ -319,3 +319,5 @@ DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(test_async_copy_after, BuiltinNumericT
 // Can't do this today because we can't do cross-system with explicit policies.
 
 #endif
+
+_CCCL_SUPPRESS_DEPRECATED_POP

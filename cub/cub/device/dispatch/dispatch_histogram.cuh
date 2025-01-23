@@ -1,4 +1,3 @@
-
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
@@ -50,7 +49,6 @@
 #include <cub/grid/grid_queue.cuh>
 #include <cub/thread/thread_search.cuh>
 #include <cub/util_debug.cuh>
-#include <cub/util_deprecated.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_temporary_storage.cuh>
@@ -99,6 +97,9 @@ CUB_NAMESPACE_BEGIN
  * @param tile_queue
  *   Drain queue descriptor for dynamically mapping tile data onto thread blocks
  */
+namespace detail::histogram
+{
+
 template <int NUM_ACTIVE_CHANNELS, typename CounterT, typename OffsetT>
 CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
   ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_bins_wrapper,
@@ -254,9 +255,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT::BLOCK
   // Store output to global (if necessary)
   agent.StoreOutput();
 }
-
-namespace detail
-{
 
 template <int NUM_CHANNELS,
           int NUM_ACTIVE_CHANNELS,
@@ -435,12 +433,12 @@ struct dispatch_histogram
         (max_num_output_bins + histogram_init_block_threads - 1) / histogram_init_block_threads;
 
 // Log DeviceHistogramInitKernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking DeviceHistogramInitKernel<<<%d, %d, 0, %lld>>>()\n",
               histogram_init_grid_dims,
               histogram_init_block_threads,
               (long long) stream);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
       // Invoke histogram_init_kernel
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
@@ -454,7 +452,7 @@ struct dispatch_histogram
       }
 
 // Log histogram_sweep_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking histogram_sweep_kernel<<<{%d, %d, %d}, %d, 0, %lld>>>(), %d pixels "
               "per thread, %d SM occupancy\n",
               sweep_grid_dims.x,
@@ -464,7 +462,7 @@ struct dispatch_histogram
               (long long) stream,
               pixels_per_thread,
               histogram_sweep_sm_occupancy);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
       // Invoke histogram_sweep_kernel
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(sweep_grid_dims, block_threads, 0, stream)
@@ -504,20 +502,21 @@ struct dispatch_histogram
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     return Invoke<ActivePolicyT>(
-      DeviceHistogramInitKernel<NUM_ACTIVE_CHANNELS, CounterT, OffsetT>,
-      DeviceHistogramSweepKernel<MaxPolicyT,
-                                 PRIVATIZED_SMEM_BINS,
-                                 NUM_CHANNELS,
-                                 NUM_ACTIVE_CHANNELS,
-                                 SampleIteratorT,
-                                 CounterT,
-                                 PrivatizedDecodeOpT,
-                                 OutputDecodeOpT,
-                                 OffsetT>);
+      detail::histogram::DeviceHistogramInitKernel<NUM_ACTIVE_CHANNELS, CounterT, OffsetT>,
+      detail::histogram::DeviceHistogramSweepKernel<
+        MaxPolicyT,
+        PRIVATIZED_SMEM_BINS,
+        NUM_CHANNELS,
+        NUM_ACTIVE_CHANNELS,
+        SampleIteratorT,
+        CounterT,
+        PrivatizedDecodeOpT,
+        OutputDecodeOpT,
+        OffsetT>);
   }
 };
 
-} // namespace detail
+} // namespace detail::histogram
 
 /******************************************************************************
  * Dispatch
@@ -960,7 +959,7 @@ public:
         // Too many bins to keep in shared memory.
         constexpr int PRIVATIZED_SMEM_BINS = 0;
 
-        detail::dispatch_histogram<
+        detail::histogram::dispatch_histogram<
           NUM_CHANNELS,
           NUM_ACTIVE_CHANNELS,
           PRIVATIZED_SMEM_BINS,
@@ -996,7 +995,7 @@ public:
         // Dispatch shared-privatized approach
         constexpr int PRIVATIZED_SMEM_BINS = MAX_PRIVATIZED_SMEM_BINS;
 
-        detail::dispatch_histogram<
+        detail::histogram::dispatch_histogram<
           NUM_CHANNELS,
           NUM_ACTIVE_CHANNELS,
           PRIVATIZED_SMEM_BINS,
@@ -1031,39 +1030,6 @@ public:
 
     return error;
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t DispatchRange(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_output_histograms[NUM_ACTIVE_CHANNELS],
-    int num_output_levels[NUM_ACTIVE_CHANNELS],
-    const LevelT* const d_levels[NUM_ACTIVE_CHANNELS],
-    OffsetT num_row_pixels,
-    OffsetT num_rows,
-    OffsetT row_stride_samples,
-    cudaStream_t stream,
-    bool debug_synchronous,
-    Int2Type<false> is_byte_sample)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return DispatchRange(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_output_histograms,
-      num_output_levels,
-      d_levels,
-      num_row_pixels,
-      num_rows,
-      row_stride_samples,
-      stream,
-      is_byte_sample);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   /**
    * Dispatch routine for HistogramRange, specialized for 8-bit sample types
@@ -1163,7 +1129,7 @@ public:
 
       constexpr int PRIVATIZED_SMEM_BINS = 256;
 
-      detail::dispatch_histogram<
+      detail::histogram::dispatch_histogram<
         NUM_CHANNELS,
         NUM_ACTIVE_CHANNELS,
         PRIVATIZED_SMEM_BINS,
@@ -1197,39 +1163,6 @@ public:
 
     return error;
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t DispatchRange(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_output_histograms[NUM_ACTIVE_CHANNELS],
-    const int num_output_levels[NUM_ACTIVE_CHANNELS],
-    const LevelT* const d_levels[NUM_ACTIVE_CHANNELS],
-    OffsetT num_row_pixels,
-    OffsetT num_rows,
-    OffsetT row_stride_samples,
-    cudaStream_t stream,
-    bool debug_synchronous,
-    Int2Type<true> is_byte_sample)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return DispatchRange(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_output_histograms,
-      num_output_levels,
-      d_levels,
-      num_row_pixels,
-      num_rows,
-      row_stride_samples,
-      stream,
-      is_byte_sample);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   /**
    * Dispatch routine for HistogramEven, specialized for sample types larger than 8-bit
@@ -1344,7 +1277,7 @@ public:
         // Dispatch shared-privatized approach
         constexpr int PRIVATIZED_SMEM_BINS = 0;
 
-        detail::dispatch_histogram<
+        detail::histogram::dispatch_histogram<
           NUM_CHANNELS,
           NUM_ACTIVE_CHANNELS,
           PRIVATIZED_SMEM_BINS,
@@ -1380,7 +1313,7 @@ public:
         // Dispatch shared-privatized approach
         constexpr int PRIVATIZED_SMEM_BINS = MAX_PRIVATIZED_SMEM_BINS;
 
-        detail::dispatch_histogram<
+        detail::histogram::dispatch_histogram<
           NUM_CHANNELS,
           NUM_ACTIVE_CHANNELS,
           PRIVATIZED_SMEM_BINS,
@@ -1415,41 +1348,6 @@ public:
 
     return error;
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DispatchEven(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_output_histograms[NUM_ACTIVE_CHANNELS],
-    const int num_output_levels[NUM_ACTIVE_CHANNELS],
-    const LevelT lower_level[NUM_ACTIVE_CHANNELS],
-    const LevelT upper_level[NUM_ACTIVE_CHANNELS],
-    OffsetT num_row_pixels,
-    OffsetT num_rows,
-    OffsetT row_stride_samples,
-    cudaStream_t stream,
-    bool debug_synchronous,
-    Int2Type<false> is_byte_sample)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return DispatchEven(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_output_histograms,
-      num_output_levels,
-      lower_level,
-      upper_level,
-      num_row_pixels,
-      num_rows,
-      row_stride_samples,
-      stream,
-      is_byte_sample);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   /**
    * Dispatch routine for HistogramEven, specialized for 8-bit sample types
@@ -1553,7 +1451,7 @@ public:
 
       constexpr int PRIVATIZED_SMEM_BINS = 256;
 
-      detail::dispatch_histogram<
+      detail::histogram::dispatch_histogram<
         NUM_CHANNELS,
         NUM_ACTIVE_CHANNELS,
         PRIVATIZED_SMEM_BINS,
@@ -1587,41 +1485,6 @@ public:
 
     return error;
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DispatchEven(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_output_histograms[NUM_ACTIVE_CHANNELS],
-    const int num_output_levels[NUM_ACTIVE_CHANNELS],
-    const LevelT lower_level[NUM_ACTIVE_CHANNELS],
-    const LevelT upper_level[NUM_ACTIVE_CHANNELS],
-    OffsetT num_row_pixels,
-    OffsetT num_rows,
-    OffsetT row_stride_samples,
-    cudaStream_t stream,
-    bool debug_synchronous,
-    Int2Type<true> is_byte_sample)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return DispatchEven(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_output_histograms,
-      num_output_levels,
-      lower_level,
-      upper_level,
-      num_row_pixels,
-      num_rows,
-      row_stride_samples,
-      stream,
-      is_byte_sample);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

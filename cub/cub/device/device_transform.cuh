@@ -46,7 +46,9 @@ struct DeviceTransform
   //!
   //! @param inputs A tuple of iterators to the input sequences where num_items elements are read from each. The
   //! iterators' value types must be trivially relocatable.
-  //! @param output An iterator to the output sequence where num_items results are written to.
+  //! @param output An iterator to the output sequence where num_items results are written to. May point to the
+  //! beginning of one of the input sequences, performing the transformation inplace. The output sequence must not
+  //! overlap with any of the input sequence in any other way.
   //! @param num_items The number of elements in each input sequence.
   //! @param transform_op An n-ary function object, where n is the number of input sequences. The input iterators' value
   //! types must be convertible to the parameters of the function object's call operator. The return type of the call
@@ -110,7 +112,9 @@ struct DeviceTransform
   //!
   //! @param input An iterator to the input sequence where num_items elements are read from. The iterator's value type
   //! must be trivially relocatable.
-  //! @param output An iterator to the output sequence where num_items results are written to.
+  //! @param output An iterator to the output sequence where num_items results are written to. May point to the
+  //! beginning of one of the input sequences, performing the transformation inplace. The output sequence must not
+  //! overlap with any of the input sequence in any other way.
   //! @param num_items The number of elements in each input sequence.
   //! @param transform_op An n-ary function object, where n is the number of input sequences. The input iterators' value
   //! types must be convertible to the parameters of the function object's call operator. The return type of the call
@@ -180,7 +184,9 @@ struct DeviceTransform
   //!
   //! @param inputs A tuple of iterators to the input sequences where num_items elements are read from each. The
   //! iterators' value types must be trivially relocatable.
-  //! @param output An iterator to the output sequence where num_items results are written to.
+  //! @param output An iterator to the output sequence where num_items results are written to. May point to the
+  //! beginning of one of the input sequences, performing the transformation inplace. The output sequence must not
+  //! overlap with any of the input sequence in any other way.
   //! @param num_items The number of elements in each input sequence.
   //! @param transform_op An n-ary function object, where n is the number of input sequences. The input iterators' value
   //! types must be convertible to the parameters of the function object's call operator. The return type of the call
@@ -242,7 +248,9 @@ struct DeviceTransform
   //!
   //! @param input An iterator to the input sequence where num_items elements are read from. The iterator's value type
   //! must be trivially relocatable.
-  //! @param output An iterator to the output sequence where num_items results are written to.
+  //! @param output An iterator to the output sequence where num_items results are written to. May point to the
+  //! beginning of one of the input sequences, performing the transformation inplace. The output sequence must not
+  //! overlap with any of the input sequence in any other way.
   //! @param num_items The number of elements in each input sequence.
   //! @param transform_op An n-ary function object, where n is the number of input sequences. The input iterators' value
   //! types must be convertible to the parameters of the function object's call operator. The return type of the call

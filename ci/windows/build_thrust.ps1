@@ -20,7 +20,7 @@ $PRESET = "thrust-cpp$CXX_STANDARD"
 $CMAKE_OPTIONS = ""
 
 if ($CL_VERSION -lt [version]"19.20") {
-    $CMAKE_OPTIONS += "-DTHRUST_IGNORE_DEPRECATED_COMPILER=ON "
+    $CMAKE_OPTIONS += "-DCCCL_IGNORE_DEPRECATED_COMPILER=ON "
 }
 
 configure_and_build_preset "Thrust" "$PRESET" "$CMAKE_OPTIONS"

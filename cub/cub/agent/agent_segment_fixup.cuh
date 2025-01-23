@@ -110,6 +110,11 @@ struct AgentSegmentFixupPolicy
  * Thread block abstractions
  ******************************************************************************/
 
+namespace detail
+{
+namespace segment_fixup
+{
+
 /**
  * @brief AgentSegmentFixup implements a stateful abstraction of CUDA thread blocks for
  * participating in device-wide reduce-value-by-key
@@ -145,7 +150,7 @@ struct AgentSegmentFixup
   //---------------------------------------------------------------------
 
   // Data type of key-value input iterator
-  using KeyValuePairT = cub::detail::value_t<PairsInputIteratorT>;
+  using KeyValuePairT = value_t<PairsInputIteratorT>;
 
   // Value type
   using ValueT = typename KeyValuePairT::Value;
@@ -376,7 +381,7 @@ struct AgentSegmentFixup
       BlockLoadPairs(temp_storage.load_pairs).Load(d_pairs_in + tile_offset, pairs);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     KeyValuePairT tile_aggregate;
     if (tile_idx == 0)
@@ -467,5 +472,24 @@ struct AgentSegmentFixup
     }
   }
 };
+
+} // namespace segment_fixup
+} // namespace detail
+
+template <typename AgentSegmentFixupPolicyT,
+          typename PairsInputIteratorT,
+          typename AggregatesOutputIteratorT,
+          typename EqualityOpT,
+          typename ReductionOpT,
+          typename OffsetT>
+using AgentSegmentFixup CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
+                                                "interface will be removed.") =
+  detail::segment_fixup::AgentSegmentFixup<
+    AgentSegmentFixupPolicyT,
+    PairsInputIteratorT,
+    AggregatesOutputIteratorT,
+    EqualityOpT,
+    ReductionOpT,
+    OffsetT>;
 
 CUB_NAMESPACE_END

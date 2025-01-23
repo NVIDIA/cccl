@@ -90,13 +90,13 @@ struct InequalityWrapper
   }
 };
 
-using Equality CUB_DEPRECATED_BECAUSE("use cuda::std::equal_to instead")       = ::cuda::std::equal_to<>;
-using Inequality CUB_DEPRECATED_BECAUSE("use cuda::std::not_equal_to instead") = ::cuda::std::not_equal_to<>;
-using Sum CUB_DEPRECATED_BECAUSE("use cuda::std::plus instead")                = ::cuda::std::plus<>;
-using Difference CUB_DEPRECATED_BECAUSE("use cuda::std::minus instead")        = ::cuda::std::minus<>;
-using Division CUB_DEPRECATED_BECAUSE("use cuda::std::divides instead")        = ::cuda::std::divides<>;
-using Max CUB_DEPRECATED_BECAUSE("use cuda::maximum instead")                  = ::cuda::maximum<>;
-using Min CUB_DEPRECATED_BECAUSE("use cuda::minimum instead")                  = ::cuda::minimum<>;
+using Equality CCCL_DEPRECATED_BECAUSE("use cuda::std::equal_to instead")       = ::cuda::std::equal_to<>;
+using Inequality CCCL_DEPRECATED_BECAUSE("use cuda::std::not_equal_to instead") = ::cuda::std::not_equal_to<>;
+using Sum CCCL_DEPRECATED_BECAUSE("use cuda::std::plus instead")                = ::cuda::std::plus<>;
+using Difference CCCL_DEPRECATED_BECAUSE("use cuda::std::minus instead")        = ::cuda::std::minus<>;
+using Division CCCL_DEPRECATED_BECAUSE("use cuda::std::divides instead")        = ::cuda::std::divides<>;
+using Max CCCL_DEPRECATED_BECAUSE("use cuda::maximum instead")                  = ::cuda::maximum<>;
+using Min CCCL_DEPRECATED_BECAUSE("use cuda::minimum instead")                  = ::cuda::minimum<>;
 
 /// @brief Arg max functor (keeps the value and offset of the first occurrence
 ///        of the larger item)
@@ -379,33 +379,6 @@ struct ReduceByKeyOp
     return retval;
   }
 };
-
-//! Deprecated [Since 2.8]
-template <typename BinaryOpT>
-struct CUB_DEPRECATED BinaryFlip
-{
-  BinaryOpT binary_op;
-
-  _CCCL_HOST_DEVICE explicit BinaryFlip(BinaryOpT binary_op)
-      : binary_op(binary_op)
-  {}
-
-  template <typename T, typename U>
-  _CCCL_DEVICE auto
-  operator()(T&& t, U&& u) -> decltype(binary_op(::cuda::std::forward<U>(u), ::cuda::std::forward<T>(t)))
-  {
-    return binary_op(::cuda::std::forward<U>(u), ::cuda::std::forward<T>(t));
-  }
-};
-
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-//! Deprecated [Since 2.8]
-template <typename BinaryOpT>
-CUB_DEPRECATED _CCCL_HOST_DEVICE BinaryFlip<BinaryOpT> MakeBinaryFlip(BinaryOpT binary_op)
-{
-  return BinaryFlip<BinaryOpT>(binary_op);
-}
-_CCCL_SUPPRESS_DEPRECATED_POP
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 

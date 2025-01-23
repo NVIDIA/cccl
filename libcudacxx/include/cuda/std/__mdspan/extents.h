@@ -251,7 +251,8 @@ public:
   _CCCL_REQUIRES(
     /* multi-stage check to protect from invalid pack expansion when sizes don't match? */
     (decltype(__detail::__check_compatible_extents(
-      integral_constant<bool, sizeof...(_Extents) == sizeof...(_OtherExtents)>{},
+      integral_constant < bool,
+      sizeof...(_Extents) == sizeof...(_OtherExtents) > {},
       __indices_t{}, // _CUDA_VSTD::integer_sequence<size_t, _Extents...>{}
       _CUDA_VSTD::integer_sequence<size_t, _OtherExtents...>{}))::value))
   _LIBCUDACXX_HIDE_FROM_ABI __MDSPAN_CONDITIONAL_EXPLICIT(

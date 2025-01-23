@@ -36,7 +36,6 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/cpp14_required.h>
 
 #if _CCCL_STD_VER >= 2014
 
@@ -49,12 +48,14 @@
 #    include <thrust/system/cuda/detail/async/customization.h>
 #    include <thrust/system/cuda/detail/util.h>
 #    include <thrust/system/cuda/future.h>
-#    include <thrust/type_traits/remove_cvref.h>
+
+#    include <cuda/std/type_traits>
 
 #    include <type_traits>
 
 // TODO specialize for thrust::plus to use e.g. ExclusiveSum instead of ExcScan
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 THRUST_NAMESPACE_BEGIN
 namespace system
 {
@@ -73,8 +74,8 @@ unique_eager_event async_exclusive_scan_n(
   execution_policy<DerivedPolicy>& policy, ForwardIt first, Size n, OutputIt out, InitialValueType init, BinaryOp op)
 {
   using InputValueT = cub::detail::InputValue<InitialValueType>;
-  using Dispatch32  = cub::DispatchScan<ForwardIt, OutputIt, BinaryOp, InputValueT, std::int32_t, InitialValueType>;
-  using Dispatch64  = cub::DispatchScan<ForwardIt, OutputIt, BinaryOp, InputValueT, std::int64_t, InitialValueType>;
+  using Dispatch32  = cub::DispatchScan<ForwardIt, OutputIt, BinaryOp, InputValueT, std::uint32_t, InitialValueType>;
+  using Dispatch64  = cub::DispatchScan<ForwardIt, OutputIt, BinaryOp, InputValueT, std::uint64_t, InitialValueType>;
 
   InputValueT init_value(init);
 
@@ -85,7 +86,7 @@ unique_eager_event async_exclusive_scan_n(
   cudaError_t status;
   size_t tmp_size = 0;
   {
-    THRUST_INDEX_TYPE_DISPATCH2(
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
       status,
       Dispatch32::Dispatch,
       Dispatch64::Dispatch,
@@ -156,6 +157,7 @@ auto async_exclusive_scan(
 
 } // namespace cuda_cub
 
+_CCCL_SUPPRESS_DEPRECATED_POP
 THRUST_NAMESPACE_END
 
 #  endif // _CCCL_CUDA_COMPILER

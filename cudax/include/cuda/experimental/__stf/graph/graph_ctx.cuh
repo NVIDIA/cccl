@@ -27,6 +27,7 @@
 
 #include <cuda/experimental/__stf/graph/graph_task.cuh>
 #include <cuda/experimental/__stf/graph/interfaces/slice.cuh>
+#include <cuda/experimental/__stf/graph/interfaces/void_interface.cuh>
 #include <cuda/experimental/__stf/internal/acquire_release.cuh>
 #include <cuda/experimental/__stf/internal/backend_allocator_setup.cuh>
 #include <cuda/experimental/__stf/internal/launch.cuh>
@@ -230,6 +231,13 @@ class graph_ctx : public backend_ctx<graph_ctx>
     size_t epoch() const override
     {
       return graph_epoch;
+    }
+
+    // The completion of the CUDA graph implies the completion of all nodes in
+    // the graph
+    bool track_dangling_events() const override
+    {
+      return false;
     }
 
     /* Store a vector of previously instantiated graphs, with the number of
@@ -761,6 +769,9 @@ UNITTEST("set_symbol on graph_task and graph_task<>")
   auto lX = ctx.logical_data(X);
   auto lY = ctx.logical_data(Y);
 
+  pin_memory(X);
+  pin_memory(Y);
+
   graph_task<> t = ctx.task();
   t.add_deps(lX.rw(), lY.rw());
   t.set_symbol("graph_task<>");
@@ -777,6 +788,9 @@ UNITTEST("set_symbol on graph_task and graph_task<>")
   t2.end();
 
   ctx.finalize();
+
+  unpin_memory(X);
+  unpin_memory(Y);
 };
 
 #  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
@@ -790,13 +804,15 @@ inline void unit_test_graph_epoch()
   const size_t N     = 8;
   const size_t NITER = 10;
 
-  double A[N];
+  ::std::vector<double> A(N);
   for (size_t i = 0; i < N; i++)
   {
     A[i] = 1.0 * i;
   }
 
-  auto lA = ctx.logical_data(A);
+  pin_memory(A);
+
+  auto lA = ctx.logical_data(make_slice(A.data(), N));
 
   for (size_t k = 0; k < NITER; k++)
   {
@@ -820,6 +836,8 @@ inline void unit_test_graph_epoch()
 
     EXPECT(fabs(A[i] - Ai_ref) < 0.01);
   }
+
+  unpin_memory(A);
 }
 
 UNITTEST("graph with epoch")
@@ -839,6 +857,8 @@ inline void unit_test_graph_empty_epoch()
   {
     A[i] = 1.0 * i;
   }
+
+  pin_memory(A);
 
   auto lA = ctx.logical_data(A);
 
@@ -866,6 +886,8 @@ inline void unit_test_graph_empty_epoch()
 
     EXPECT(fabs(A[i] - Ai_ref) < 0.01);
   }
+
+  unpin_memory(A);
 }
 
 UNITTEST("graph with empty epoch")
@@ -885,6 +907,8 @@ inline void unit_test_graph_epoch_2()
   {
     A[i] = 1.0 * i;
   }
+
+  pin_memory(A);
 
   auto lA = ctx.logical_data(A);
 
@@ -920,6 +944,8 @@ inline void unit_test_graph_epoch_2()
 
     EXPECT(fabs(A[i] - Ai_ref) < 0.01);
   }
+
+  unpin_memory(A);
 }
 
 UNITTEST("graph with epoch 2")
@@ -941,6 +967,9 @@ inline void unit_test_graph_epoch_3()
     A[i] = 1.0 * i;
     B[i] = -1.0 * i;
   }
+
+  pin_memory(A);
+  pin_memory(B);
 
   auto lA = ctx.logical_data(A);
   auto lB = ctx.logical_data(B);
@@ -986,6 +1015,9 @@ inline void unit_test_graph_epoch_3()
     EXPECT(fabs(A[i] - Ai_ref) < 0.01);
     EXPECT(fabs(B[i] - Bi_ref) < 0.01);
   }
+
+  unpin_memory(A);
+  unpin_memory(B);
 }
 
 UNITTEST("graph with epoch 3")

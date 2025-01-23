@@ -11,7 +11,7 @@
 #include <cuda/experimental/green_context.cuh>
 #include <cuda/experimental/stream.cuh>
 
-#include <catch2/catch.hpp>
+#include <testing.cuh>
 #include <utility.cuh>
 
 #if CUDART_VERSION >= 12050
@@ -23,7 +23,7 @@ TEST_CASE("Green context", "[green_context]")
   }
   else
   {
-    INFO("Can create a green context")
+    INFO("Can create a green context");
     {
       {
         [[maybe_unused]] cudax::green_context ctx(cudax::devices[0]);
@@ -35,7 +35,7 @@ TEST_CASE("Green context", "[green_context]")
       }
     }
 
-    INFO("Can create streams under green context")
+    INFO("Can create streams under green context");
     {
       cudax::green_context green_ctx_dev0(cudax::devices[0]);
       cudax::stream stream_under_green_ctx(green_ctx_dev0);
@@ -47,7 +47,7 @@ TEST_CASE("Green context", "[green_context]")
         CUDAX_REQUIRE(stream_dev1.device() == 1);
       }
 
-      INFO("Can create a side stream")
+      INFO("Can create a side stream");
       {
         auto ldev1 = stream_under_green_ctx.logical_device();
         CUDAX_REQUIRE(ldev1.get_kind() == cudax::logical_device::kinds::green_context);
@@ -59,5 +59,11 @@ TEST_CASE("Green context", "[green_context]")
       }
     }
   }
+}
+#else
+// For some reason CI fails with empty test, add a dummy test case
+TEST_CASE("Dummy test case")
+{
+  CUDAX_REQUIRE(1 == 1);
 }
 #endif // CUDART_VERSION >= 12050

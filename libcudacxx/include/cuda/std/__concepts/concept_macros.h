@@ -86,11 +86,10 @@ _CCCL_INLINE_VAR constexpr int __cccl_requires = 0;
 #  endif // !_CCCL_COMPILER(MSVC)
 
 template <class _Tp, class... _Args>
-_LIBCUDACXX_HIDE_FROM_ABI auto __cccl_make_dependent(_Tp*, __cccl_tag<_Args...>*) -> _Tp;
+extern _Tp __cccl_make_dependent;
 
 template <class _Impl, class... _Args>
-using __cccl_requires_expr_impl =
-  decltype(__cccl_make_dependent(static_cast<_Impl*>(nullptr), static_cast<__cccl_tag<void, _Args...>*>(nullptr)));
+using __cccl_requires_expr_impl = decltype(__cccl_make_dependent<_Impl, _Args...>);
 
 // So that we can refer to the ::cuda::std namespace below
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -159,7 +158,7 @@ namespace __cccl_unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-
       {                                               \
         _CCCL_PP_CAT4(_CCCL_PP_EAT_SAME_AS_, _REQ)    \
       } -> _CCCL_CONCEPT_VSTD::same_as<_CCCL_PP_EVAL( \
-          _CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS_AUX, _CCCL_PP_CAT4(_CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS_, _REQ))>
+        _CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS_AUX, _CCCL_PP_CAT4(_CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS_, _REQ))>
 #    define _CCCL_PP_EAT_SAME_AS__Same_as(...)
 #    define _CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS_AUX(_TYPE, ...) _CCCL_PP_EXPAND _TYPE
 #    define _CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS__Same_as(...)   (__VA_ARGS__),
@@ -171,8 +170,7 @@ namespace __cccl_unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-
 #    define _CCCL_CONCEPT _CCCL_INLINE_VAR constexpr bool
 
 #    define _CCCL_CONCEPT_FRAGMENT(_NAME, ...)                                                                         \
-      _LIBCUDACXX_HIDE_FROM_ABI auto _NAME##_CCCL_CONCEPT_FRAGMENT_impl_ _CCCL_CONCEPT_FRAGMENT_REQS_##__VA_ARGS__ > { \
-      }                                                                                                                \
+      _LIBCUDACXX_HIDE_FROM_ABI auto _NAME##_CCCL_CONCEPT_FRAGMENT_impl_ _CCCL_CONCEPT_FRAGMENT_REQS_##__VA_ARGS__> {} \
       template <class... _As>                                                                                          \
       _LIBCUDACXX_HIDE_FROM_ABI char _NAME##_CCCL_CONCEPT_FRAGMENT_(                                                   \
         ::__cccl_tag<_As...>*, decltype(&_NAME##_CCCL_CONCEPT_FRAGMENT_impl_<_As...>));                                \
@@ -186,9 +184,8 @@ namespace __cccl_unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-
 #    endif
 #    define _CCCL_CONCEPT_FRAGMENT_REQS_requires(...) (__VA_ARGS__)->__cccl_enable_if_t < _CCCL_CONCEPT_FRAGMENT_REQS_2_
 #    define _CCCL_CONCEPT_FRAGMENT_REQS_2_(...)       _CCCL_CONCEPT_FRAGMENT_TRUE(__VA_ARGS__)
-#    define _CCCL_CONCEPT_FRAGMENT_REQS_M(_REQ)                             \
-      _CCCL_PP_CAT2(_CCCL_CONCEPT_FRAGMENT_REQS_M, _CCCL_PP_IS_PAREN(_REQ)) \
-      (_REQ),
+#    define _CCCL_CONCEPT_FRAGMENT_REQS_M(_REQ) \
+      void(), _CCCL_PP_CAT2(_CCCL_CONCEPT_FRAGMENT_REQS_M, _CCCL_PP_IS_PAREN(_REQ))(_REQ),
 #    define _CCCL_CONCEPT_FRAGMENT_REQS_REQUIRES_requires(...) ::__cccl_requires<__VA_ARGS__>
 #    define _CCCL_CONCEPT_FRAGMENT_REQS_REQUIRES_typename(...) static_cast<::__cccl_tag<__VA_ARGS__>*>(nullptr)
 #    if _CCCL_COMPILER(GCC, <, 14)
@@ -243,30 +240,27 @@ namespace __cccl_unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-
 #    define _CCCL_REQUIRES_EXPR_EXPAND_TPARAMS(...) _CCCL_PP_FOR_EACH(_CCCL_REQUIRES_EXPR_EXPAND_TPARAM, __VA_ARGS__)
 
 #    define _CCCL_REQUIRES_EXPR(_TY, ...) _CCCL_REQUIRES_EXPR_IMPL(_TY, _CCCL_COUNTER(), __VA_ARGS__)
-#    define _CCCL_REQUIRES_EXPR_IMPL(_TY, _ID, ...)                                                                   \
-      ::__cccl_requires_expr_impl<                                                                                    \
-        struct _CCCL_PP_CAT(__cccl_requires_expr_detail_, _ID) _CCCL_REQUIRES_EXPR_EXPAND_TPARAMS                     \
-          _TY>::__cccl_is_satisfied(static_cast<::__cccl_tag<void _CCCL_REQUIRES_EXPR_EXPAND_TPARAMS _TY>*>(nullptr), \
-                                    static_cast<void (*)(__VA_ARGS__)>(nullptr));                                     \
-      struct _CCCL_PP_CAT(__cccl_requires_expr_detail_, _ID)                                                          \
-      {                                                                                                               \
-        using __cccl_self_t = _CCCL_PP_CAT(__cccl_requires_expr_detail_, _ID);                                        \
-        template <class _CCCL_REQUIRES_EXPR_TPARAMS _TY>                                                              \
+#    define _CCCL_REQUIRES_EXPR_IMPL(_TY, _ID, ...)                                                               \
+      ::__cccl_requires_expr_impl<struct _CCCL_PP_CAT(__cccl_requires_expr_detail_, _ID)                          \
+                                    _CCCL_REQUIRES_EXPR_EXPAND_TPARAMS _TY>::                                     \
+        __cccl_is_satisfied(static_cast<::__cccl_tag<void _CCCL_REQUIRES_EXPR_EXPAND_TPARAMS _TY>*>(nullptr), 0); \
+      struct _CCCL_PP_CAT(__cccl_requires_expr_detail_, _ID)                                                      \
+      {                                                                                                           \
+        using __cccl_self_t = _CCCL_PP_CAT(__cccl_requires_expr_detail_, _ID);                                    \
+        template <class _CCCL_REQUIRES_EXPR_TPARAMS _TY>                                                          \
         _LIBCUDACXX_HIDE_FROM_ABI static auto __cccl_well_formed(__VA_ARGS__) _CCCL_REQUIRES_EXPR_2
 
-#    define _CCCL_REQUIRES_EXPR_2(...)                                                                    \
-      ->decltype(_CCCL_PP_FOR_EACH(_CCCL_CONCEPT_FRAGMENT_REQS_M, __VA_ARGS__) void()) {}                 \
-      template <class... _Args,                                                                           \
-                class _Sig,                                                                               \
-                class = decltype(static_cast<_Sig*>(&__cccl_self_t::__cccl_well_formed<_Args...>))>       \
-      _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __cccl_is_satisfied(::__cccl_tag<_Args...>*, _Sig*) \
-      {                                                                                                   \
-        return true;                                                                                      \
-      }                                                                                                   \
-      _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __cccl_is_satisfied(void*, ...)                     \
-      {                                                                                                   \
-        return false;                                                                                     \
-      }                                                                                                   \
+#    define _CCCL_REQUIRES_EXPR_2(...)                                                                  \
+      ->decltype(_CCCL_PP_FOR_EACH(_CCCL_CONCEPT_FRAGMENT_REQS_M, __VA_ARGS__) void()) {}               \
+      template <class... _Args, class = decltype(&__cccl_self_t::__cccl_well_formed<_Args...>)>         \
+      _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __cccl_is_satisfied(::__cccl_tag<_Args...>*, int) \
+      {                                                                                                 \
+        return true;                                                                                    \
+      }                                                                                                 \
+      _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __cccl_is_satisfied(void*, long)                  \
+      {                                                                                                 \
+        return false;                                                                                   \
+      }                                                                                                 \
       }
 #  endif // ^^^ _CCCL_NO_CONCEPTS ^^^
 

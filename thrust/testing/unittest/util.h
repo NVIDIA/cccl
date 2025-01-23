@@ -26,7 +26,7 @@ typename THRUST_NS_QUALIFIER::detail::disable_if<::cuda::std::is_floating_point<
 truncate_to_max_representable(std::size_t n)
 {
   return static_cast<T>(
-    THRUST_NS_QUALIFIER::min<std::size_t>(n, static_cast<std::size_t>(THRUST_NS_QUALIFIER::numeric_limits<T>::max())));
+    THRUST_NS_QUALIFIER::min<std::size_t>(n, static_cast<std::size_t>(::cuda::std::numeric_limits<T>::max())));
 }
 
 // TODO: This probably won't work for `half`.
@@ -34,7 +34,7 @@ template <typename T>
 typename ::cuda::std::enable_if_t<::cuda::std::is_floating_point<T>::value, T>
 truncate_to_max_representable(std::size_t n)
 {
-  return THRUST_NS_QUALIFIER::min<T>(static_cast<T>(n), THRUST_NS_QUALIFIER::numeric_limits<T>::max());
+  return THRUST_NS_QUALIFIER::min<T>(static_cast<T>(n), ::cuda::std::numeric_limits<T>::max());
 }
 
 } // namespace unittest

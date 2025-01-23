@@ -8,35 +8,15 @@
 #include <thrust/iterator/retag.h>
 #include <thrust/scan.h>
 
+#include <cuda/functional>
 #include <cuda/std/array>
 
 #include <unittest/unittest.h>
-
-template <typename T>
-struct max_functor
-{
-  _CCCL_HOST_DEVICE T operator()(T rhs, T lhs) const
-  {
-    return thrust::max(rhs, lhs);
-  }
-};
 
 template <class Vector>
 void TestScanSimple()
 {
   using T = typename Vector::value_type;
-
-  // icc miscompiles the intermediate sum updates for custom_numeric.
-  // The issue doesn't happen with opts disabled, or on other compilers.
-  // Printing the intermediate sum each iteration "fixes" the issue,
-  // so likely a bad optimization.
-#if _CCCL_COMPILER(ICC)
-  if (std::is_same<T, custom_numeric>::value)
-  {
-    return;
-  }
-#endif
-
   typename Vector::iterator iter;
 
   Vector input(5);
@@ -301,12 +281,12 @@ struct TestScanWithOperator
     thrust::host_vector<T> h_output(n);
     thrust::device_vector<T> d_output(n);
 
-    thrust::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), max_functor<T>());
-    thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), max_functor<T>());
+    thrust::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), cuda::maximum<T>{});
+    thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), cuda::maximum<T>{});
     ASSERT_EQUAL(d_output, h_output);
 
-    thrust::exclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), T(13), max_functor<T>());
-    thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), T(13), max_functor<T>());
+    thrust::exclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), T(13), cuda::maximum<T>{});
+    thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), T(13), cuda::maximum<T>{});
     ASSERT_EQUAL(d_output, h_output);
   }
 };
@@ -323,19 +303,19 @@ struct TestScanWithOperatorToDiscardIterator
     thrust::discard_iterator<> reference(n);
 
     thrust::discard_iterator<> h_result =
-      thrust::inclusive_scan(h_input.begin(), h_input.end(), thrust::make_discard_iterator(), max_functor<T>());
+      thrust::inclusive_scan(h_input.begin(), h_input.end(), thrust::make_discard_iterator(), cuda::maximum<T>{});
 
     thrust::discard_iterator<> d_result =
-      thrust::inclusive_scan(d_input.begin(), d_input.end(), thrust::make_discard_iterator(), max_functor<T>());
+      thrust::inclusive_scan(d_input.begin(), d_input.end(), thrust::make_discard_iterator(), cuda::maximum<T>{});
 
     ASSERT_EQUAL_QUIET(reference, h_result);
     ASSERT_EQUAL_QUIET(reference, d_result);
 
-    h_result =
-      thrust::exclusive_scan(h_input.begin(), h_input.end(), thrust::make_discard_iterator(), T(13), max_functor<T>());
+    h_result = thrust::exclusive_scan(
+      h_input.begin(), h_input.end(), thrust::make_discard_iterator(), T(13), cuda::maximum<T>{});
 
-    d_result =
-      thrust::exclusive_scan(d_input.begin(), d_input.end(), thrust::make_discard_iterator(), T(13), max_functor<T>());
+    d_result = thrust::exclusive_scan(
+      d_input.begin(), d_input.end(), thrust::make_discard_iterator(), T(13), cuda::maximum<T>{});
 
     ASSERT_EQUAL_QUIET(reference, h_result);
     ASSERT_EQUAL_QUIET(reference, d_result);

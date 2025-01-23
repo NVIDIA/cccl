@@ -308,6 +308,16 @@ public:
     }
   }
 
+  auto logical_token()
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return ::std::visit(
+      [&](auto& self) {
+        return self.logical_token();
+      },
+      payload);
+  }
+
   template <typename T>
   frozen_logical_data<T> freeze(::cuda::experimental::stf::logical_data<T> d,
                                 access_mode m    = access_mode::read,
@@ -740,6 +750,23 @@ public:
     {
       throw ::std::runtime_error("Payload does not hold graph_ctx");
     }
+  }
+
+  /**
+   * @brief Get a CUDA stream from the stream pool associated to the context
+   *
+   * This helper is intended to avoid creating CUDA streams manually. Using
+   * this stream after the context has been finalized is an undefined
+   * behaviour.
+   */
+  cudaStream_t pick_stream()
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return ::std::visit(
+      [](auto& self) {
+        return self.pick_stream();
+      },
+      payload);
   }
 
 private:
@@ -1383,6 +1410,32 @@ UNITTEST("cuda stream place multi-gpu")
 
   // Make sure we restored the device
   EXPECT(0 == cuda_try<cudaGetDevice>());
+
+  ctx.finalize();
+};
+
+// Ensure we can skip logical tokens
+UNITTEST("logical token elision")
+{
+  context ctx;
+
+  int buf[1024];
+
+  auto lA = ctx.logical_token();
+  auto lB = ctx.logical_token();
+  auto lC = ctx.logical_data(buf);
+
+  // with all arguments
+  ctx.task(lA.read(), lB.read(), lC.write())->*[](cudaStream_t, void_interface, void_interface, slice<int>) {};
+
+  // with argument elision
+  ctx.task(lA.read(), lB.read(), lC.write())->*[](cudaStream_t, slice<int>) {};
+
+  // with all arguments
+  ctx.host_launch(lA.read(), lB.read(), lC.write())->*[](void_interface, void_interface, slice<int>) {};
+
+  // with argument elision
+  ctx.host_launch(lA.read(), lB.read(), lC.write())->*[](slice<int>) {};
 
   ctx.finalize();
 };

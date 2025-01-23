@@ -47,7 +47,6 @@
 
 #include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_spmv_orig.cuh>
-#include <cub/util_deprecated.cuh>
 
 #include <iterator>
 #include <limits>
@@ -79,7 +78,7 @@ CUB_NAMESPACE_BEGIN
 //! @cdp_class{DeviceSpmv}
 //!
 //! @endrst
-struct DeviceSpmv
+struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DeviceSpmv
 {
   //! @name CSR matrix operations
   //! @{
@@ -178,18 +177,19 @@ struct DeviceSpmv
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
   template <typename ValueT>
-  CUB_RUNTIME_FUNCTION static cudaError_t CsrMV(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    const ValueT* d_values,
-    const int* d_row_offsets,
-    const int* d_column_indices,
-    const ValueT* d_vector_x,
-    ValueT* d_vector_y,
-    int num_rows,
-    int num_cols,
-    int num_nonzeros,
-    cudaStream_t stream = 0)
+  CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead")
+  CUB_RUNTIME_FUNCTION static cudaError_t
+    CsrMV(void* d_temp_storage,
+          size_t& temp_storage_bytes,
+          const ValueT* d_values,
+          const int* d_row_offsets,
+          const int* d_column_indices,
+          const ValueT* d_vector_x,
+          ValueT* d_vector_y,
+          int num_rows,
+          int num_cols,
+          int num_nonzeros,
+          cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSpmv::CsrMV");
 
@@ -205,41 +205,10 @@ struct DeviceSpmv
     spmv_params.alpha             = ValueT{1};
     spmv_params.beta              = ValueT{0};
 
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     return DispatchSpmv<ValueT, int>::Dispatch(d_temp_storage, temp_storage_bytes, spmv_params, stream);
+    _CCCL_SUPPRESS_DEPRECATED_POP
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename ValueT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t CsrMV(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    const ValueT* d_values,
-    const int* d_row_offsets,
-    const int* d_column_indices,
-    const ValueT* d_vector_x,
-    ValueT* d_vector_y,
-    int num_rows,
-    int num_cols,
-    int num_nonzeros,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return CsrMV<ValueT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_values,
-      d_row_offsets,
-      d_column_indices,
-      d_vector_x,
-      d_vector_y,
-      num_rows,
-      num_cols,
-      num_nonzeros,
-      stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @}  end member group
 };

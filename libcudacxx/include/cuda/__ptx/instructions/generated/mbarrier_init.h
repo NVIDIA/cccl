@@ -17,10 +17,7 @@ _CCCL_DEVICE static inline void mbarrier_init(_CUDA_VSTD::uint64_t* __addr, cons
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_80,
-    (asm("mbarrier.init.shared.b64 [%0], %1;"
-         :
-         : "r"(__as_ptr_smem(__addr)), "r"(__count)
-         : "memory");),
+    (asm("mbarrier.init.shared.b64 [%0], %1;" : : "r"(__as_ptr_smem(__addr)), "r"(__count) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_mbarrier_init_is_not_supported_before_SM_80__();));

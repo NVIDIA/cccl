@@ -27,66 +27,14 @@
 #include "catch2_radix_sort_helper.cuh"
 // above header needs to be included first
 
+#include "catch2_segmented_sort_helper.cuh"
 #include <c2h/catch2_test_helper.h>
-#include <catch2_segmented_sort_helper.cuh>
 
 // FIXME: Graph launch disabled, algorithm syncs internally. WAR exists for device-launch, figure out how to enable for
 // graph launch.
-
-// TODO replace with DeviceSegmentedSort::SortPairs interface once https://github.com/NVIDIA/cccl/issues/50 is addressed
-// Temporary wrapper that allows specializing the DeviceSegmentedSort algorithm for different offset types
-template <bool IS_DESCENDING,
-          typename KeyT,
-          typename ValueT,
-          typename BeginOffsetIteratorT,
-          typename EndOffsetIteratorT,
-          typename NumItemsT>
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_sort_pairs_wrapper(
-  void* d_temp_storage,
-  size_t& temp_storage_bytes,
-  const KeyT* d_keys_in,
-  KeyT* d_keys_out,
-  const ValueT* d_values_in,
-  ValueT* d_values_out,
-  NumItemsT num_items,
-  NumItemsT num_segments,
-  BeginOffsetIteratorT d_begin_offsets,
-  EndOffsetIteratorT d_end_offsets,
-  bool* selector,
-  bool is_overwrite   = false,
-  cudaStream_t stream = 0)
-{
-  cub::DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-  cub::DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
-
-  auto status = cub::
-    DispatchSegmentedSort<IS_DESCENDING, KeyT, ValueT, NumItemsT, BeginOffsetIteratorT, EndOffsetIteratorT>::Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      num_items,
-      num_segments,
-      d_begin_offsets,
-      d_end_offsets,
-      is_overwrite,
-      stream);
-  if (status != cudaSuccess)
-  {
-    return status;
-  }
-  if (is_overwrite)
-  {
-    // Only write to selector in the DoubleBuffer invocation
-    *selector = d_keys.Current() != d_keys_out;
-  }
-  return cudaSuccess;
-}
-
 // %PARAM% TEST_LAUNCH lid 0:1
 
-DECLARE_LAUNCH_WRAPPER(dispatch_segmented_sort_pairs_wrapper<true>, dispatch_segmented_sort_pairs_descending);
-DECLARE_LAUNCH_WRAPPER(dispatch_segmented_sort_pairs_wrapper<false>, dispatch_segmented_sort_pairs);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::StableSortPairs, stable_sort_pairs);
 
 using pair_types =
   c2h::type_list<c2h::type_list<bool, std::uint8_t>,
@@ -251,90 +199,56 @@ C2H_TEST("DeviceSegmentedSortPairs: Unspecified segments, random key/values",
   test_unspecified_segments_random<KeyT, ValueT>(C2H_SEED(4));
 }
 
-#if defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
-
-// we can reuse the same structure of DeviceSegmentedRadixSortPairs for simplicity
 C2H_TEST("DeviceSegmentedSortPairs: very large num. items and num. segments",
          "[pairs][segmented][sort][device]",
          all_offset_types)
 try
 {
-  using key_t                      = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
-  using value_t                    = cuda::std::uint8_t;
-  using offset_t                   = c2h::get<0, TestType>;
-  constexpr std::size_t Step       = 500;
-  using segment_iterator_t         = segment_iterator<offset_t, Step>;
-  constexpr std::size_t uint32_max = ::cuda::std::numeric_limits<std::uint32_t>::max();
-  constexpr int num_key_seeds      = 1;
-  constexpr int num_value_seeds    = 1;
-  const bool is_descending         = GENERATE(false, true);
-  const bool is_overwrite          = GENERATE(false, true);
+  using key_t                        = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
+  using value_t                      = cuda::std::uint8_t;
+  using segment_offset_t             = std::int64_t;
+  using offset_t                     = c2h::get<0, TestType>;
+  using segment_iterator_t           = segment_index_to_offset_op<offset_t, segment_offset_t>;
+  constexpr std::size_t segment_size = 1000000;
+  constexpr std::size_t uint32_max   = ::cuda::std::numeric_limits<std::uint32_t>::max();
   constexpr std::size_t num_items =
     (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : ::cuda::std::numeric_limits<offset_t>::max();
-  const std::size_t num_segments = ::cuda::ceil_div(num_items, Step);
-  CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments, is_descending, is_overwrite);
+  constexpr segment_offset_t num_empty_segments = uint32_max;
+  const segment_offset_t num_segments           = num_empty_segments + ::cuda::ceil_div(num_items, segment_size);
+  CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments);
 
+  // Generate input
   c2h::device_vector<key_t> in_keys(num_items);
   c2h::device_vector<value_t> in_values(num_items);
-  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
-  c2h::gen(C2H_SEED(num_value_seeds), in_values);
+  constexpr auto max_histo_size = 250;
+  segmented_verification_helper<key_t> verification_helper{max_histo_size};
+  verification_helper.prepare_input_data(in_keys);
+  thrust::copy(in_keys.cbegin(), in_keys.cend(), in_values.begin());
 
   // Initialize the output vectors by copying the inputs since not all items may belong to a segment.
   c2h::device_vector<key_t> out_keys(num_items);
   c2h::device_vector<value_t> out_values(num_items);
-  auto offsets =
-    thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{0}), segment_iterator_t{num_items});
-  auto offsets_plus_1 = offsets + 1;
-  bool* selector_ptr  = nullptr;
-  if (is_overwrite)
-  {
-    REQUIRE(cudaSuccess == cudaMallocHost(&selector_ptr, sizeof(*selector_ptr)));
-  }
 
-  auto refs = segmented_radix_sort_reference(in_keys, in_values, is_descending, num_segments, offsets, offsets_plus_1);
-  auto& ref_keys      = refs.first;
-  auto& ref_values    = refs.second;
-  auto out_keys_ptr   = thrust::raw_pointer_cast(out_keys.data());
-  auto out_values_ptr = thrust::raw_pointer_cast(out_values.data());
-  if (is_descending)
-  {
-    dispatch_segmented_sort_pairs_descending(
-      thrust::raw_pointer_cast(in_keys.data()),
-      out_keys_ptr,
-      thrust::raw_pointer_cast(in_values.data()),
-      out_values_ptr,
-      static_cast<offset_t>(num_items),
-      static_cast<offset_t>(num_segments),
-      offsets,
-      offsets_plus_1,
-      selector_ptr,
-      is_overwrite);
-  }
-  else
-  {
-    dispatch_segmented_sort_pairs(
-      thrust::raw_pointer_cast(in_keys.data()),
-      out_keys_ptr,
-      thrust::raw_pointer_cast(in_values.data()),
-      out_values_ptr,
-      static_cast<offset_t>(num_items),
-      static_cast<offset_t>(num_segments),
-      offsets,
-      offsets_plus_1,
-      selector_ptr,
-      is_overwrite);
-  }
-  if (is_overwrite)
-  {
-    if (*selector_ptr)
-    {
-      std::swap(out_keys, in_keys);
-      std::swap(out_values, in_values);
-    }
-    REQUIRE(cudaFreeHost(selector_ptr) == cudaSuccess);
-  }
-  REQUIRE(ref_keys == out_keys);
-  REQUIRE(ref_values == out_values);
+  auto offsets = thrust::make_transform_iterator(
+    thrust::make_counting_iterator(std::size_t{0}),
+    segment_iterator_t{num_empty_segments, num_segments, segment_size, num_items});
+  auto offsets_plus_1 = offsets + 1;
+
+  stable_sort_pairs(
+    thrust::raw_pointer_cast(in_keys.data()),
+    thrust::raw_pointer_cast(out_keys.data()),
+    thrust::raw_pointer_cast(in_values.data()),
+    thrust::raw_pointer_cast(out_values.data()),
+    static_cast<offset_t>(num_items),
+    static_cast<segment_offset_t>(num_segments),
+    offsets,
+    offsets_plus_1);
+
+  // Verify the keys are sorted correctly
+  verification_helper.verify_sorted(out_keys, offsets + num_empty_segments, num_segments - num_empty_segments);
+
+  // Verify values were sorted along with the keys
+  REQUIRE(thrust::equal(out_keys.cbegin(), out_keys.cend(), out_values.cbegin()));
 }
 catch (std::bad_alloc& e)
 {
@@ -346,82 +260,47 @@ try
 {
   using key_t                      = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
   using value_t                    = cuda::std::uint8_t;
+  using segment_offset_t           = std::int32_t;
   using offset_t                   = c2h::get<0, TestType>;
   constexpr std::size_t uint32_max = ::cuda::std::numeric_limits<std::uint32_t>::max();
   constexpr int num_key_seeds      = 1;
-  constexpr int num_value_seeds    = 1;
-  const bool is_descending         = GENERATE(false, true);
-  const bool is_overwrite          = GENERATE(false, true);
   constexpr std::size_t num_items =
     (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : ::cuda::std::numeric_limits<offset_t>::max();
-  constexpr std::size_t num_segments = 2;
-  CAPTURE(c2h::type_name<offset_t>(), num_items, is_descending, is_overwrite);
+  constexpr segment_offset_t num_segments = 2;
+  CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments);
 
   c2h::device_vector<key_t> in_keys(num_items);
   c2h::device_vector<value_t> in_values(num_items);
   c2h::device_vector<key_t> out_keys(num_items);
   c2h::gen(C2H_SEED(num_key_seeds), in_keys);
-  c2h::gen(C2H_SEED(num_value_seeds), in_values);
+  thrust::copy(in_keys.cbegin(), in_keys.cend(), in_values.begin());
   c2h::device_vector<value_t> out_values(num_items);
   c2h::device_vector<offset_t> offsets(num_segments + 1);
-  offsets[0]         = 0;
-  offsets[1]         = static_cast<offset_t>(num_items);
-  offsets[2]         = static_cast<offset_t>(num_items);
-  bool* selector_ptr = nullptr;
-  if (is_overwrite)
-  {
-    REQUIRE(cudaSuccess == cudaMallocHost(&selector_ptr, sizeof(*selector_ptr)));
-  }
+  offsets[0] = 0;
+  offsets[1] = static_cast<offset_t>(num_items);
+  offsets[2] = static_cast<offset_t>(num_items);
 
-  auto refs = segmented_radix_sort_reference(
-    in_keys, in_values, is_descending, num_segments, offsets.cbegin(), offsets.cbegin() + 1);
-  auto& ref_keys      = refs.first;
-  auto& ref_values    = refs.second;
-  auto out_keys_ptr   = thrust::raw_pointer_cast(out_keys.data());
-  auto out_values_ptr = thrust::raw_pointer_cast(out_values.data());
-  if (is_descending)
-  {
-    dispatch_segmented_sort_pairs_descending(
-      thrust::raw_pointer_cast(in_keys.data()),
-      out_keys_ptr,
-      thrust::raw_pointer_cast(in_values.data()),
-      out_values_ptr,
-      static_cast<offset_t>(num_items),
-      static_cast<offset_t>(num_segments),
-      thrust::raw_pointer_cast(offsets.data()),
-      offsets.cbegin() + 1,
-      selector_ptr,
-      is_overwrite);
-  }
-  else
-  {
-    dispatch_segmented_sort_pairs(
-      thrust::raw_pointer_cast(in_keys.data()),
-      out_keys_ptr,
-      thrust::raw_pointer_cast(in_values.data()),
-      out_values_ptr,
-      static_cast<offset_t>(num_items),
-      static_cast<offset_t>(num_segments),
-      thrust::raw_pointer_cast(offsets.data()),
-      offsets.cbegin() + 1,
-      selector_ptr,
-      is_overwrite);
-  }
-  if (is_overwrite)
-  {
-    if (*selector_ptr)
-    {
-      std::swap(out_keys, in_keys);
-      std::swap(out_values, in_values);
-    }
-    REQUIRE(cudaFreeHost(selector_ptr) == cudaSuccess);
-  }
-  REQUIRE(ref_keys == out_keys);
-  REQUIRE(ref_values == out_values);
+  // Prepare information for later verification
+  short_key_verification_helper<key_t> verification_helper{};
+  verification_helper.prepare_verification_data(in_keys);
+
+  stable_sort_pairs(
+    thrust::raw_pointer_cast(in_keys.data()),
+    thrust::raw_pointer_cast(out_keys.data()),
+    thrust::raw_pointer_cast(in_values.data()),
+    thrust::raw_pointer_cast(out_values.data()),
+    static_cast<offset_t>(num_items),
+    static_cast<segment_offset_t>(num_segments),
+    thrust::raw_pointer_cast(offsets.data()),
+    offsets.cbegin() + 1);
+
+  // Verify the keys are sorted correctly
+  verification_helper.verify_sorted(out_keys);
+
+  // Verify values were sorted along with the keys
+  REQUIRE(thrust::equal(out_keys.cbegin(), out_keys.cend(), out_values.cbegin()));
 }
 catch (std::bad_alloc& e)
 {
   std::cerr << "Skipping segmented sort test, insufficient GPU memory. " << e.what() << "\n";
 }
-
-#endif // defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)

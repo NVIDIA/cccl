@@ -38,13 +38,6 @@ option(CUB_ENABLE_CPP_DIALECT_IN_NAMES
 )
 mark_as_advanced(CUB_ENABLE_CPP_DIALECT_IN_NAMES)
 
-# This option is only used when CUB is built stand-alone; otherwise the Thrust
-# option has the same effect.
-option(CUB_IGNORE_DEPRECATED_API
-  "Suppress warnings about deprecated Thrust/CUB API."
-  OFF
-)
-
 # Check if we're actually building anything before continuing. If not, no need
 # to search for deps, etc. This is a common approach for packagers that just
 # need the install rules. See GH issue NVIDIA/thrust#1211.

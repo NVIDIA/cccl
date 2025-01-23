@@ -47,6 +47,8 @@
 #include <cub/util_type.cuh>
 #include <cub/warp/warp_exchange.cuh>
 
+#include <cuda/ptx>
+
 CUB_NAMESPACE_BEGIN
 
 //! @rst
@@ -179,7 +181,7 @@ private:
 
   // TODO(bgruber): can we use signed int here? Only these variables are unsigned:
   unsigned int linear_tid  = RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z);
-  unsigned int lane_id     = LaneId();
+  unsigned int lane_id     = ::cuda::ptx::get_sreg_laneid();
   unsigned int warp_id     = WARPS == 1 ? 0 : linear_tid / WARP_THREADS;
   unsigned int warp_offset = warp_id * WARP_TIME_SLICED_ITEMS;
 
@@ -215,7 +217,7 @@ private:
       detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
 #pragma unroll
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -249,7 +251,7 @@ private:
       const int slice_offset = slice * TIME_SLICED_ITEMS;
       const int slice_oob    = slice_offset + TIME_SLICED_ITEMS;
 
-      CTA_SYNC();
+      __syncthreads();
 
       if (warp_id == slice)
       {
@@ -265,7 +267,7 @@ private:
         }
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
 #pragma unroll
       for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -322,7 +324,7 @@ private:
       detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
-    WARP_SYNC(0xffffffff);
+    __syncwarp(0xffffffff);
 
 #pragma unroll
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -361,7 +363,7 @@ private:
         detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
       }
 
-      WARP_SYNC(0xffffffff);
+      __syncwarp(0xffffffff);
 
 #pragma unroll
       for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -378,7 +380,7 @@ private:
 #pragma unroll
     for (int slice = 1; slice < TIME_SLICES; ++slice)
     {
-      CTA_SYNC();
+      __syncthreads();
 
       if (warp_id == slice)
       {
@@ -393,7 +395,7 @@ private:
           detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
         }
 
-        WARP_SYNC(0xffffffff);
+        __syncwarp(0xffffffff);
 
 #pragma unroll
         for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -434,7 +436,7 @@ private:
       detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
 // No timeslicing
 #pragma unroll
@@ -470,7 +472,7 @@ private:
       const int slice_offset = slice * TIME_SLICED_ITEMS;
       const int slice_oob    = slice_offset + TIME_SLICED_ITEMS;
 
-      CTA_SYNC();
+      __syncthreads();
 
 #pragma unroll
       for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -493,7 +495,7 @@ private:
         }
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
       if (warp_id == slice)
       {
@@ -543,7 +545,7 @@ private:
       detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
-    WARP_SYNC(0xffffffff);
+    __syncwarp(0xffffffff);
 
 #pragma unroll
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -572,7 +574,7 @@ private:
 #pragma unroll
     for (int slice = 0; slice < TIME_SLICES; ++slice)
     {
-      CTA_SYNC();
+      __syncthreads();
 
       if (warp_id == slice)
       {
@@ -587,7 +589,7 @@ private:
           detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
         }
 
-        WARP_SYNC(0xffffffff);
+        __syncwarp(0xffffffff);
 
 #pragma unroll
         for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -626,12 +628,12 @@ private:
       int item_offset = ranks[i];
       _CCCL_IF_CONSTEXPR (INSERT_PADDING)
       {
-        item_offset = SHR_ADD(item_offset, LOG_SMEM_BANKS, item_offset);
+        item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
       detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
 #pragma unroll
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -639,7 +641,7 @@ private:
       int item_offset = linear_tid * ITEMS_PER_THREAD + i;
       _CCCL_IF_CONSTEXPR (INSERT_PADDING)
       {
-        item_offset = SHR_ADD(item_offset, LOG_SMEM_BANKS, item_offset);
+        item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
       output_items[i] = temp_storage.buff[item_offset];
     }
@@ -667,7 +669,7 @@ private:
 #pragma unroll
     for (int slice = 0; slice < TIME_SLICES; slice++)
     {
-      CTA_SYNC();
+      __syncthreads();
 
       const int slice_offset = TIME_SLICED_ITEMS * slice;
 
@@ -679,13 +681,13 @@ private:
         {
           _CCCL_IF_CONSTEXPR (INSERT_PADDING)
           {
-            item_offset = SHR_ADD(item_offset, LOG_SMEM_BANKS, item_offset);
+            item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
           }
           detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
         }
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
       if (warp_id == slice)
       {
@@ -695,7 +697,7 @@ private:
           int item_offset = lane_id * ITEMS_PER_THREAD + i;
           _CCCL_IF_CONSTEXPR (INSERT_PADDING)
           {
-            item_offset = SHR_ADD(item_offset, LOG_SMEM_BANKS, item_offset);
+            item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
           }
           temp_items[i] = temp_storage.buff[item_offset];
         }
@@ -733,12 +735,12 @@ private:
       int item_offset = ranks[i];
       _CCCL_IF_CONSTEXPR (INSERT_PADDING)
       {
-        item_offset = SHR_ADD(item_offset, LOG_SMEM_BANKS, item_offset);
+        item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
       detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
 #pragma unroll
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -746,7 +748,7 @@ private:
       int item_offset = i * BLOCK_THREADS + linear_tid;
       _CCCL_IF_CONSTEXPR (INSERT_PADDING)
       {
-        item_offset = SHR_ADD(item_offset, LOG_SMEM_BANKS, item_offset);
+        item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
       output_items[i] = temp_storage.buff[item_offset];
     }
@@ -777,7 +779,7 @@ private:
       const int slice_offset = slice * TIME_SLICED_ITEMS;
       const int slice_oob    = slice_offset + TIME_SLICED_ITEMS;
 
-      CTA_SYNC();
+      __syncthreads();
 
 #pragma unroll
       for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -787,13 +789,13 @@ private:
         {
           _CCCL_IF_CONSTEXPR (INSERT_PADDING)
           {
-            item_offset = SHR_ADD(item_offset, LOG_SMEM_BANKS, item_offset);
+            item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
           }
           detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
         }
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
 #pragma unroll
       for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -1134,7 +1136,7 @@ public:
       int item_offset = ranks[i];
       _CCCL_IF_CONSTEXPR (INSERT_PADDING)
       {
-        item_offset = SHR_ADD(item_offset, LOG_SMEM_BANKS, item_offset);
+        item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
       if (ranks[i] >= 0)
       {
@@ -1142,7 +1144,7 @@ public:
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
 #pragma unroll
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -1150,7 +1152,7 @@ public:
       int item_offset = i * BLOCK_THREADS + linear_tid;
       _CCCL_IF_CONSTEXPR (INSERT_PADDING)
       {
-        item_offset = SHR_ADD(item_offset, LOG_SMEM_BANKS, item_offset);
+        item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
       output_items[i] = temp_storage.buff[item_offset];
     }
@@ -1193,7 +1195,7 @@ public:
       int item_offset = ranks[i];
       _CCCL_IF_CONSTEXPR (INSERT_PADDING)
       {
-        item_offset = SHR_ADD(item_offset, LOG_SMEM_BANKS, item_offset);
+        item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
       if (is_valid[i])
       {
@@ -1201,7 +1203,7 @@ public:
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
 #pragma unroll
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -1209,7 +1211,7 @@ public:
       int item_offset = i * BLOCK_THREADS + linear_tid;
       _CCCL_IF_CONSTEXPR (INSERT_PADDING)
       {
-        item_offset = SHR_ADD(item_offset, LOG_SMEM_BANKS, item_offset);
+        item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
       output_items[i] = temp_storage.buff[item_offset];
     }

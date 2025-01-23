@@ -82,7 +82,7 @@ could be aliased to global memory allocations).
 
 CUB is regularly tested using the specified versions of the following
 compilers. Unsupported versions may emit deprecation warnings, which can be
-silenced by defining CUB_IGNORE_DEPRECATED_COMPILER during compilation.
+silenced by defining CCCL_IGNORE_DEPRECATED_COMPILER during compilation.
 
 - NVCC 11.0+
 - GCC 5+

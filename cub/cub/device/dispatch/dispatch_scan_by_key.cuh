@@ -48,7 +48,6 @@
 #include <cub/device/dispatch/tuning/tuning_scan_by_key.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_debug.cuh>
-#include <cub/util_deprecated.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 
@@ -63,6 +62,9 @@ CUB_NAMESPACE_BEGIN
 /******************************************************************************
  * Kernel entry points
  *****************************************************************************/
+
+namespace detail::scan_by_key
+{
 
 /**
  * @brief Scan by key kernel entry point (multi-block)
@@ -151,16 +153,16 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanByKeyPolicyT::BLOCK_THRE
   using ScanByKeyPolicyT = typename ChainedPolicyT::ActivePolicy::ScanByKeyPolicyT;
 
   // Thread block type for scanning input tiles
-  using AgentScanByKeyT =
-    AgentScanByKey<ScanByKeyPolicyT,
-                   KeysInputIteratorT,
-                   ValuesInputIteratorT,
-                   ValuesOutputIteratorT,
-                   EqualityOp,
-                   ScanOpT,
-                   InitValueT,
-                   OffsetT,
-                   AccumT>;
+  using AgentScanByKeyT = detail::scan_by_key::AgentScanByKey<
+    ScanByKeyPolicyT,
+    KeysInputIteratorT,
+    ValuesInputIteratorT,
+    ValuesOutputIteratorT,
+    EqualityOp,
+    ScanOpT,
+    InitValueT,
+    OffsetT,
+    AccumT>;
 
   // Shared memory for AgentScanByKey
   __shared__ typename AgentScanByKeyT::TempStorage temp_storage;
@@ -189,6 +191,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanByKeyInitKernel(
     d_keys_prev_in[tid] = d_keys_in[tile_base - 1];
   }
 }
+} // namespace detail::scan_by_key
 
 /******************************************************************************
  * Dispatch
@@ -342,37 +345,6 @@ struct DispatchScanByKey
       , ptx_version(ptx_version)
   {}
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchScanByKey(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    KeysInputIteratorT d_keys_in,
-    ValuesInputIteratorT d_values_in,
-    ValuesOutputIteratorT d_values_out,
-    EqualityOp equality_op,
-    ScanOpT scan_op,
-    InitValueT init_value,
-    OffsetT num_items,
-    cudaStream_t stream,
-    bool debug_synchronous,
-    int ptx_version)
-      : d_temp_storage(d_temp_storage)
-      , temp_storage_bytes(temp_storage_bytes)
-      , d_keys_in(d_keys_in)
-      , d_values_in(d_values_in)
-      , d_values_out(d_values_out)
-      , equality_op(equality_op)
-      , scan_op(scan_op)
-      , init_value(init_value)
-      , num_items(num_items)
-      , stream(stream)
-      , ptx_version(ptx_version)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
-
   template <typename ActivePolicyT, typename InitKernel, typename ScanKernel>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(InitKernel init_kernel, ScanKernel scan_kernel)
   {
@@ -438,9 +410,9 @@ struct DispatchScanByKey
 
       // Log init_kernel configuration
       int init_grid_size = ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS);
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
       // Invoke init_kernel to initialize tile descriptors
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
@@ -473,7 +445,7 @@ struct DispatchScanByKey
       for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
       {
 // Log scan_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
         _CubLog("Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
                 "per thread\n",
                 start_tile,
@@ -481,7 +453,7 @@ struct DispatchScanByKey
                 Policy::BLOCK_THREADS,
                 (long long) stream,
                 Policy::ITEMS_PER_THREAD);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
         // Invoke scan_kernel
         THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(scan_grid_size, Policy::BLOCK_THREADS, 0, stream)
@@ -521,17 +493,18 @@ struct DispatchScanByKey
   {
     // Ensure kernels are instantiated.
     return Invoke<ActivePolicyT>(
-      DeviceScanByKeyInitKernel<ScanByKeyTileStateT, KeysInputIteratorT, OffsetT>,
-      DeviceScanByKeyKernel<typename PolicyHub::MaxPolicy,
-                            KeysInputIteratorT,
-                            ValuesInputIteratorT,
-                            ValuesOutputIteratorT,
-                            ScanByKeyTileStateT,
-                            EqualityOp,
-                            ScanOpT,
-                            InitValueT,
-                            OffsetT,
-                            AccumT>);
+      detail::scan_by_key::DeviceScanByKeyInitKernel<ScanByKeyTileStateT, KeysInputIteratorT, OffsetT>,
+      detail::scan_by_key::DeviceScanByKeyKernel<
+        typename PolicyHub::MaxPolicy,
+        KeysInputIteratorT,
+        ValuesInputIteratorT,
+        ValuesOutputIteratorT,
+        ScanByKeyTileStateT,
+        EqualityOp,
+        ScanOpT,
+        InitValueT,
+        OffsetT,
+        AccumT>);
   }
 
   /**
@@ -617,37 +590,6 @@ struct DispatchScanByKey
 
     return error;
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    KeysInputIteratorT d_keys_in,
-    ValuesInputIteratorT d_values_in,
-    ValuesOutputIteratorT d_values_out,
-    EqualityOp equality_op,
-    ScanOpT scan_op,
-    InitValueT init_value,
-    OffsetT num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_values_in,
-      d_values_out,
-      equality_op,
-      scan_op,
-      init_value,
-      num_items,
-      stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

@@ -76,9 +76,8 @@ struct __memcpy_completion_impl
             // have completed writing to shared memory.
             _CUDA_VSTD::uint64_t* __bh = __try_get_barrier_handle(__barrier);
 
-            asm volatile("cp.async.mbarrier.arrive.shared.b64 [%0];" ::"r"(static_cast<_CUDA_VSTD::uint32_t>(
-              __cvta_generic_to_shared(__bh)))
-                         : "memory");));
+            asm volatile("cp.async.mbarrier.arrive.shared.b64 [%0];" ::"r"(
+              static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__bh))) : "memory");));
         return async_contract_fulfillment::async;
       case __completion_mechanism::__async_bulk_group:
         // This completion mechanism should not be used with a shared
@@ -124,8 +123,7 @@ struct __memcpy_completion_impl
                      (
                        // Blocking: wait for all thread-local cp.async instructions to have
                        // completed writing to shared memory.
-                       asm volatile("cp.async.wait_all;" ::
-                                      : "memory");));
+                       asm volatile("cp.async.wait_all;" :: : "memory");));
         return async_contract_fulfillment::async;
       case __completion_mechanism::__mbarrier_complete_tx:
         // Non-smem barriers do not have an mbarrier_complete_tx mechanism..

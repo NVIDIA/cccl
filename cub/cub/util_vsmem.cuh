@@ -168,7 +168,7 @@ public:
   static _CCCL_DEVICE _CCCL_FORCEINLINE bool discard_temp_storage(typename AgentT::TempStorage& temp_storage)
   {
     // Ensure all threads finished using temporary storage
-    CTA_SYNC();
+    __syncthreads();
 
     const std::size_t linear_tid   = threadIdx.x;
     const std::size_t block_stride = line_size * blockDim.x;

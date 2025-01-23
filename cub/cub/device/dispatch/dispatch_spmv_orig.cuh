@@ -51,7 +51,6 @@
 #include <cub/grid/grid_queue.cuh>
 #include <cub/thread/thread_search.cuh>
 #include <cub/util_debug.cuh>
-#include <cub/util_deprecated.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
@@ -84,8 +83,11 @@ CUB_NAMESPACE_BEGIN
  * @param[in] spmv_params
  *   SpMV input parameter bundle
  */
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename AgentSpmvPolicyT, typename ValueT, typename OffsetT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmv1ColKernel(SpmvParams<ValueT, OffsetT> spmv_params)
+CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead")
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmv1ColKernel(SpmvParams<ValueT, OffsetT> spmv_params) //
+  _CCCL_SUPPRESS_DEPRECATED_POP
 {
   using VectorValueIteratorT =
     CacheModifiedInputIterator<AgentSpmvPolicyT::VECTOR_VALUES_LOAD_MODIFIER, ValueT, OffsetT>;
@@ -133,8 +135,9 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmv1ColKernel(SpmvParams<ValueT, Offset
  *   SpMV input parameter bundle
  */
 template <typename SpmvPolicyT, typename OffsetT, typename CoordinateT, typename SpmvParamsT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void
-DeviceSpmvSearchKernel(int num_merge_tiles, CoordinateT* d_tile_coordinates, SpmvParamsT spmv_params)
+CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead")
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmvSearchKernel(
+  int num_merge_tiles, CoordinateT* d_tile_coordinates, SpmvParamsT spmv_params)
 {
   /// Constants
   enum
@@ -218,6 +221,7 @@ template <typename SpmvPolicyT,
           typename CoordinateT,
           bool HAS_ALPHA,
           bool HAS_BETA>
+CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead")
 __launch_bounds__(int(SpmvPolicyT::BLOCK_THREADS)) CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmvKernel(
   SpmvParams<ValueT, OffsetT> spmv_params,
   CoordinateT* d_tile_coordinates,
@@ -227,7 +231,9 @@ __launch_bounds__(int(SpmvPolicyT::BLOCK_THREADS)) CUB_DETAIL_KERNEL_ATTRIBUTES 
   int num_segment_fixup_tiles)
 {
   // Spmv agent type specialization
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   using AgentSpmvT = AgentSpmv<SpmvPolicyT, ValueT, OffsetT, HAS_ALPHA, HAS_BETA>;
+  _CCCL_SUPPRESS_DEPRECATED_POP
 
   // Shared memory for AgentSpmv
   __shared__ typename AgentSpmvT::TempStorage temp_storage;
@@ -249,6 +255,7 @@ __launch_bounds__(int(SpmvPolicyT::BLOCK_THREADS)) CUB_DETAIL_KERNEL_ATTRIBUTES 
  *   Whether the input parameter Beta is 0
  */
 template <typename ValueT, typename OffsetT, bool HAS_BETA>
+CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead")
 CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmvEmptyMatrixKernel(SpmvParams<ValueT, OffsetT> spmv_params)
 {
   const int row = static_cast<int>(threadIdx.x + blockIdx.x * blockDim.x);
@@ -299,18 +306,21 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmvEmptyMatrixKernel(SpmvParams<ValueT,
  * @param[in] tile_state
  *   Tile status interface
  */
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename AgentSegmentFixupPolicyT,
           typename PairsInputIteratorT,
           typename AggregatesOutputIteratorT,
           typename OffsetT,
           typename ScanTileStateT>
+CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead")
 __launch_bounds__(int(AgentSegmentFixupPolicyT::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentFixupKernel(
     PairsInputIteratorT d_pairs_in,
     AggregatesOutputIteratorT d_aggregates_out,
     OffsetT num_items,
     int num_tiles,
-    ScanTileStateT tile_state)
+    ScanTileStateT tile_state) //
+  _CCCL_SUPPRESS_DEPRECATED_POP
 {
   // Thread block type for reducing tiles of value segments
   using AgentSegmentFixupT =
@@ -343,7 +353,7 @@ __launch_bounds__(int(AgentSegmentFixupPolicyT::BLOCK_THREADS))
  *   Signed integer type for global offsets
  */
 template <typename ValueT, typename OffsetT>
-struct DispatchSpmv
+struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DispatchSpmv
 {
   //---------------------------------------------------------------------
   // Constants and Types
@@ -626,12 +636,12 @@ struct DispatchSpmv
         constexpr int threads_in_block = EMPTY_MATRIX_KERNEL_THREADS;
         const int blocks_in_grid       = ::cuda::ceil_div(spmv_params.num_rows, threads_in_block);
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
         _CubLog("Invoking spmv_empty_matrix_kernel<<<%d, %d, 0, %lld>>>()\n",
                 blocks_in_grid,
                 threads_in_block,
                 (long long) stream);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
         error = THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(blocks_in_grid, threads_in_block, 0, stream)
                   .doit(spmv_empty_matrix_kernel, spmv_params);
 
@@ -663,12 +673,12 @@ struct DispatchSpmv
         int degen_col_kernel_block_size = INIT_KERNEL_THREADS;
         int degen_col_kernel_grid_size  = ::cuda::ceil_div(spmv_params.num_rows, degen_col_kernel_block_size);
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
         _CubLog("Invoking spmv_1col_kernel<<<%d, %d, 0, %lld>>>()\n",
                 degen_col_kernel_grid_size,
                 degen_col_kernel_block_size,
                 (long long) stream);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
         // Invoke spmv_search_kernel
         THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
@@ -790,12 +800,12 @@ struct DispatchSpmv
 // Use separate search kernel if we have enough spmv tiles to saturate the device
 
 // Log spmv_search_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
         _CubLog("Invoking spmv_search_kernel<<<%d, %d, 0, %lld>>>()\n",
                 search_grid_size,
                 search_block_size,
                 (long long) stream);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
         // Invoke spmv_search_kernel
         THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(search_grid_size, search_block_size, 0, stream)
@@ -816,7 +826,7 @@ struct DispatchSpmv
       }
 
 // Log spmv_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking spmv_kernel<<<{%d,%d,%d}, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy\n",
               spmv_grid_size.x,
               spmv_grid_size.y,
@@ -825,7 +835,7 @@ struct DispatchSpmv
               (long long) stream,
               spmv_config.items_per_thread,
               spmv_sm_occupancy);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
       // Invoke spmv_kernel
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(spmv_grid_size, spmv_config.block_threads, 0, stream)
@@ -854,7 +864,7 @@ struct DispatchSpmv
       if (num_merge_tiles > 1)
       {
 // Log segment_fixup_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
         _CubLog("Invoking segment_fixup_kernel<<<{%d,%d,%d}, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy\n",
                 segment_fixup_grid_size.x,
                 segment_fixup_grid_size.y,
@@ -863,7 +873,7 @@ struct DispatchSpmv
                 (long long) stream,
                 segment_fixup_config.items_per_thread,
                 segment_fixup_sm_occupancy);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
         // Invoke segment_fixup_kernel
         THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
@@ -892,44 +902,6 @@ struct DispatchSpmv
 
     return error;
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename Spmv1ColKernelT,
-            typename SpmvSearchKernelT,
-            typename SpmvKernelT,
-            typename SegmentFixupKernelT,
-            typename SpmvEmptyMatrixKernelT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN
-  _CCCL_FORCEINLINE static cudaError_t
-  Dispatch(void* d_temp_storage,
-           size_t& temp_storage_bytes,
-           SpmvParamsT& spmv_params,
-           cudaStream_t stream,
-           bool debug_synchronous,
-           Spmv1ColKernelT spmv_1col_kernel,
-           SpmvSearchKernelT spmv_search_kernel,
-           SpmvKernelT spmv_kernel,
-           SegmentFixupKernelT segment_fixup_kernel,
-           SpmvEmptyMatrixKernelT spmv_empty_matrix_kernel,
-           KernelConfig spmv_config,
-           KernelConfig segment_fixup_config)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Dispatch<Spmv1ColKernelT, SpmvSearchKernelT, SpmvKernelT, SegmentFixupKernelT, SpmvEmptyMatrixKernelT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      spmv_params,
-      stream,
-      spmv_1col_kernel,
-      spmv_search_kernel,
-      spmv_kernel,
-      segment_fixup_kernel,
-      spmv_empty_matrix_kernel,
-      spmv_config,
-      segment_fixup_config);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   /**
    * @brief Internal dispatch routine for computing a device-wide reduction
@@ -989,21 +961,6 @@ struct DispatchSpmv
 
     return error;
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SpmvParamsT& spmv_params,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Dispatch(d_temp_storage, temp_storage_bytes, spmv_params, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

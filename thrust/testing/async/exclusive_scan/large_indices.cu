@@ -1,3 +1,7 @@
+#include <cuda/__cccl_config>
+
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 #include <thrust/detail/config.h>
 
 #if _CCCL_STD_VER >= 2014
@@ -196,17 +200,17 @@ namespace
 {
 
 //------------------------------------------------------------------------------
-// Generate the output sequence using counting iterators and thrust::max<> for
+// Generate the output sequence using counting iterators and ::cuda::maximum<> for
 // custom operator overloads.
 struct custom_bin_op_overloads
 {
   using postfix_args_type = std::tuple< // List any extra arg overloads:
-    std::tuple<uint64_t, thrust::maximum<>> // - initial_value, binop
+    std::tuple<uint64_t, ::cuda::maximum<>> // - initial_value, binop
     >;
 
   static postfix_args_type generate_postfix_args()
   {
-    return postfix_args_type{std::make_tuple(0, thrust::maximum<>{})};
+    return postfix_args_type{std::make_tuple(0, ::cuda::maximum<>{})};
   }
 };
 
@@ -237,3 +241,5 @@ void test_large_indices_custom_scan_op()
 DECLARE_UNITTEST(test_large_indices_custom_scan_op);
 
 #endif // C++14
+
+_CCCL_SUPPRESS_DEPRECATED_POP

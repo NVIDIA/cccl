@@ -33,7 +33,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wvoid-ptr-dereference")
 
-#if _CCCL_STD_VER > 2014
+#if _CCCL_STD_VER >= 2014
 
 // [iterator.cust.move]
 
@@ -101,8 +101,9 @@ struct __fn
 
   _CCCL_TEMPLATE(class _Ip)
   _CCCL_REQUIRES(__move_deref<_Ip>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Ip&& __i) const noexcept(noexcept(
-    _CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i)))) -> decltype(_CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i)))
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Ip&& __i) const
+    noexcept(noexcept(_CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i))))
+      -> decltype(_CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i)))
   {
     return _CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i));
   }

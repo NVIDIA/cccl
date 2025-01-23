@@ -122,6 +122,7 @@ set(stf_test_codegen_sources
   parallel_for/test2_parallel_for_context.cu
   parallel_for/test_parallel_for.cu
   parallel_for/tiled_loops.cu
+  parallel_for/parallel_for_host.cu
   places/cuda_stream_place.cu
   places/managed_from_shape.cu
   reductions/reduce_sum.cu
@@ -237,6 +238,10 @@ function(cudax_add_stf_unittest_header target_name_var source cn_target)
   string(REPLACE "cuda/experimental/" "" test_label "${relative_path}/${filename}")
   string(REPLACE "/" "." test_label "${test_label}")
   set(test_target "${config_prefix}.test.stf.unittest_headers.${test_label}")
+
+  # Pass the full path to configure_file (this is configured from cudax/tests/stf/
+  get_filename_component(source_full_path ../../../cudax/include/${source} ABSOLUTE)
+  set(source ${source_full_path})
 
   set(ut_template "${cudax_SOURCE_DIR}/cmake/stf_header_unittest.in.cu")
   set(ut_source "${cudax_BINARY_DIR}/unittest_headers/${test_target}.cu")

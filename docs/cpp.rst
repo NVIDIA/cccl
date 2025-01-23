@@ -11,6 +11,7 @@ CUDA C++ Core Libraries
    CUB <https://nvidia.github.io/cccl/cub/>
    Thrust <https://nvidia.github.io/cccl/thrust/>
    Cuda Experimental <https://nvidia.github.io/cccl/cudax/>
+   CCCL development <cccl_development/index>
 
 Welcome to the CUDA Core Compute Libraries (CCCL) libraries for C++.
 

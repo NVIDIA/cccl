@@ -39,6 +39,7 @@
 #include <cuda/experimental/__stf/internal/slice.cuh> // backend_ctx<T> uses shape_of
 #include <cuda/experimental/__stf/internal/task_state.cuh> // backend_ctx_untyped::impl has-a ctx_stack
 #include <cuda/experimental/__stf/internal/thread_hierarchy.cuh>
+#include <cuda/experimental/__stf/internal/void_interface.cuh>
 #include <cuda/experimental/__stf/localization/composite_slice.cuh>
 
 // XXX there is currently a dependency on this header for places.h
@@ -195,7 +196,22 @@ public:
       {
         delete w;
       };
-      ::std::apply(::std::forward<Fun>(w->first), mv(w->second));
+
+      constexpr bool fun_invocable_task_deps = reserved::is_tuple_invocable_v<Fun, decltype(payload)>;
+      constexpr bool fun_invocable_task_non_void_deps =
+        reserved::is_tuple_invocable_with_filtered<Fun, decltype(payload)>::value;
+
+      static_assert(fun_invocable_task_deps || fun_invocable_task_non_void_deps,
+                    "Incorrect lambda function signature in host_launch.");
+
+      if constexpr (fun_invocable_task_deps)
+      {
+        ::std::apply(::std::forward<Fun>(w->first), mv(w->second));
+      }
+      else if constexpr (fun_invocable_task_non_void_deps)
+      {
+        ::std::apply(::std::forward<Fun>(w->first), reserved::remove_void_interface_types(mv(w->second)));
+      }
     };
 
     if constexpr (::std::is_same_v<Ctx, graph_ctx>)
@@ -595,6 +611,12 @@ protected:
       return size_t(-1);
     }
 
+    /**
+     * @brief Indicate if the backend needs to keep track of dangling events, or if these will be automatically
+     * synchronized
+     */
+    virtual bool track_dangling_events() const = 0;
+
     auto& get_default_allocator()
     {
       return default_allocator;
@@ -626,16 +648,27 @@ protected:
      */
     void detach_allocators(backend_ctx_untyped& bctx)
     {
+      const bool track_dangling = bctx.track_dangling_events();
+
       // Deinitialize all attached allocators in reversed order
       for (auto it : each(attached_allocators.rbegin(), attached_allocators.rend()))
       {
-        stack.add_dangling_events(it->deinit(bctx));
+        auto deinit_res = it->deinit(bctx);
+        if (track_dangling)
+        {
+          stack.add_dangling_events(mv(deinit_res));
+        }
       }
 
       // Erase the vector of allocators now that they were deinitialized
       attached_allocators.clear();
 
-      stack.add_dangling_events(composite_cache.deinit());
+      // We "duplicate" the code of the deinit to remove any storage and avoid a move
+      auto composite_deinit_res = composite_cache.deinit();
+      if (track_dangling)
+      {
+        stack.add_dangling_events(mv(composite_deinit_res));
+      }
     }
 
     void display_transfers() const
@@ -886,6 +919,11 @@ public:
     return pimpl->epoch();
   }
 
+  bool track_dangling_events() const
+  {
+    return pimpl->track_dangling_events();
+  }
+
   // protected:
   impl& get_state()
   {
@@ -1065,6 +1103,16 @@ public:
   {
     EXPECT(dplace != data_place::invalid);
     return logical_data(make_slice(p, n), mv(dplace));
+  }
+
+  auto logical_token()
+  {
+    // We do not use a shape because we want the first rw() access to succeed
+    // without an initial write()
+    //
+    // Note that we do not disable write back as the write-back mechanism is
+    // handling void_interface specifically to ignore it anyway.
+    return logical_data(void_interface{});
   }
 
   template <typename T>

@@ -39,7 +39,6 @@ struct SpecialMemberTest
 {
   using O = cuda::std::optional<T>;
 
-#ifndef TEST_COMPILER_ICC
   static_assert(implies(cuda::std::is_trivially_copy_constructible_v<T>,
                         cuda::std::is_trivially_copy_constructible_v<O>),
                 "optional<T> is trivially copy constructible if T is trivially copy constructible.");
@@ -47,7 +46,6 @@ struct SpecialMemberTest
   static_assert(implies(cuda::std::is_trivially_move_constructible_v<T>,
                         cuda::std::is_trivially_move_constructible_v<O>),
                 "optional<T> is trivially move constructible if T is trivially move constructible");
-#endif // TEST_COMPILER_ICC
 
   static_assert(implies(cuda::std::is_trivially_copy_constructible_v<T> && cuda::std::is_trivially_copy_assignable_v<T>
                           && cuda::std::is_trivially_destructible_v<T>,

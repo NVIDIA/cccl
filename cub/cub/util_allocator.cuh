@@ -44,7 +44,6 @@
 #endif // no system header
 
 #include <cub/util_debug.cuh>
-#include <cub/util_deprecated.cuh>
 #include <cub/util_namespace.cuh>
 
 #include <map>
@@ -367,9 +366,9 @@ struct CachingDeviceAllocator
    * @param debug
    *   Whether or not to print (de)allocation events to stdout (default is no stderr output)
    */
-  CUB_DEPRECATED_BECAUSE("CUB no longer accepts `debug` parameter. "
-                         "Define CUB_DEBUG_LOG instead, or silence this message with "
-                         "CUB_IGNORE_DEPRECATED_API.")
+  CCCL_DEPRECATED_BECAUSE("CUB no longer accepts `debug` parameter. "
+                          "Define CUB_DEBUG_LOG instead, or silence this message with "
+                          "CCCL_IGNORE_DEPRECATED_API.")
   CachingDeviceAllocator(
     unsigned int bin_growth,
     unsigned int min_bin,
@@ -417,7 +416,7 @@ struct CachingDeviceAllocator
     // Lock
     mutex.lock();
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
     _CubLog(
       "Changing max_cached_bytes (%lld -> %lld)\n", (long long) this->max_cached_bytes, (long long) max_cached_bytes_);
 #endif
@@ -528,7 +527,7 @@ struct CachingDeviceAllocator
           cached_bytes[device].free -= search_key.bytes;
           cached_bytes[device].live += search_key.bytes;
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
           _CubLog("\tDevice %d reused cached block at %p (%lld bytes) for stream %lld (previously associated with "
                   "stream %lld).\n",
                   device,
@@ -573,7 +572,7 @@ struct CachingDeviceAllocator
       if (error == cudaErrorMemoryAllocation)
       {
         // The allocation attempt failed: free all cached blocks on device and retry
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
         _CubLog("\tDevice %d failed to allocate %lld bytes for stream %lld, retrying after freeing cached allocations",
                 device,
                 (long long) search_key.bytes,
@@ -612,7 +611,7 @@ struct CachingDeviceAllocator
           // Reduce balance and erase entry
           cached_bytes[device].free -= block_itr->bytes;
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
           _CubLog("\tDevice %d freed %lld bytes.\n\t\t  %lld available blocks cached (%lld bytes), %lld live blocks "
                   "(%lld bytes) outstanding.\n",
                   device,
@@ -657,7 +656,7 @@ struct CachingDeviceAllocator
       cached_bytes[device].live += search_key.bytes;
       mutex.unlock();
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("\tDevice %d allocated new device block at %p (%lld bytes associated with stream %lld).\n",
               device,
               search_key.d_ptr,
@@ -679,7 +678,7 @@ struct CachingDeviceAllocator
     // Copy device pointer to output parameter
     *d_ptr = search_key.d_ptr;
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
     if (debug)
     {
       _CubLog("\t\t%lld available blocks cached (%lld bytes), %lld live blocks outstanding(%lld bytes).\n",
@@ -762,7 +761,7 @@ struct CachingDeviceAllocator
         cached_blocks.insert(search_key);
         cached_bytes[device].free += search_key.bytes;
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
         _CubLog("\tDevice %d returned %lld bytes from associated stream %lld.\n\t\t %lld available blocks cached (%lld "
                 "bytes), %lld live blocks outstanding. (%lld bytes)\n",
                 device,
@@ -820,7 +819,7 @@ struct CachingDeviceAllocator
         return error;
       }
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("\tDevice %d freed %lld bytes from associated stream %lld.\n\t\t  %lld available blocks cached (%lld "
               "bytes), %lld live blocks (%lld bytes) outstanding.\n",
               device,
@@ -915,7 +914,7 @@ struct CachingDeviceAllocator
       cached_bytes[current_device].free -= block_bytes;
       cached_blocks.erase(begin);
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("\tDevice %d freed %lld bytes.\n\t\t  %lld available blocks cached (%lld bytes), %lld live blocks (%lld "
               "bytes) outstanding.\n",
               current_device,

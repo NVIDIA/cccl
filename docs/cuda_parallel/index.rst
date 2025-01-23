@@ -22,3 +22,9 @@ Iterators
   :members:
   :undoc-members:
   :imported-members:
+
+Utilities
+---------
+
+.. automodule:: cuda.parallel.experimental.struct
+   :members:

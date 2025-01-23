@@ -1,0 +1,29 @@
+# Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+[build-system]
+requires = ["setuptools>=61.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cuda-cccl"
+description = "Experimental Package with CCCL headers to support JIT compilation"
+authors = [{ name = "NVIDIA Corporation" }]
+classifiers = [
+  "Programming Language :: Python :: 3 :: Only",
+  "Environment :: GPU :: NVIDIA CUDA",
+  "License :: OSI Approved :: Apache Software License",
+]
+requires-python = ">=3.9"
+dynamic = ["version", "readme"]
+
+[project.urls]
+Homepage = "https://github.com/NVIDIA/cccl"
+
+[tool.setuptools.dynamic]
+version = { attr = "cuda.cccl._version.__version__" }
+readme = { file = ["README.md"], content-type = "text/markdown" }
+
+[tool.setuptools.package-data]
+cuda = ["cccl/include/**/*"]

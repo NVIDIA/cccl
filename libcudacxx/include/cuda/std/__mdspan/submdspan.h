@@ -287,12 +287,11 @@ struct __assign_op_slice_handler<
   __MDSPAN_FORCE_INLINE_FUNCTION // NOLINT (misc-unconventional-assign-operator)
     constexpr auto
     operator=(__slice_wrap<_OldStaticExtent, _OldStaticStride, size_t>&& __slice) noexcept
-    -> __assign_op_slice_handler<
-      _IndexT,
-      typename _PreserveLayoutAnalysis::encounter_scalar,
-      __partially_static_sizes<_IndexT, size_t, _Offsets..., dynamic_extent>,
-      __partially_static_sizes<_IndexT, size_t, _Exts...>,
-      __partially_static_sizes<_IndexT, size_t, _Strides...> /* intentional space here to work around ICC bug*/>
+    -> __assign_op_slice_handler<_IndexT,
+                                 typename _PreserveLayoutAnalysis::encounter_scalar,
+                                 __partially_static_sizes<_IndexT, size_t, _Offsets..., dynamic_extent>,
+                                 __partially_static_sizes<_IndexT, size_t, _Exts...>,
+                                 __partially_static_sizes<_IndexT, size_t, _Strides...>>
   {
     return {__partially_static_sizes<_IndexT, size_t, _Offsets..., dynamic_extent>(
               __construct_psa_from_all_exts_values_tag, __offsets.template __get_n<_OffsetIdxs>()..., __slice.slice),
@@ -307,12 +306,11 @@ struct __assign_op_slice_handler<
   __MDSPAN_FORCE_INLINE_FUNCTION // NOLINT (misc-unconventional-assign-operator)
     constexpr auto
     operator=(__slice_wrap<_OldStaticExtent, _OldStaticStride, integral_constant<_IntegerType, _Value0>>&&) noexcept
-    -> __assign_op_slice_handler<
-      _IndexT,
-      typename _PreserveLayoutAnalysis::encounter_scalar,
-      __partially_static_sizes<_IndexT, size_t, _Offsets..., _Value0>,
-      __partially_static_sizes<_IndexT, size_t, _Exts...>,
-      __partially_static_sizes<_IndexT, size_t, _Strides...> /* intentional space here to work around ICC bug*/>
+    -> __assign_op_slice_handler<_IndexT,
+                                 typename _PreserveLayoutAnalysis::encounter_scalar,
+                                 __partially_static_sizes<_IndexT, size_t, _Offsets..., _Value0>,
+                                 __partially_static_sizes<_IndexT, size_t, _Exts...>,
+                                 __partially_static_sizes<_IndexT, size_t, _Strides...>>
   {
 #  if __MDSPAN_HAS_CXX_17
     if constexpr (_CUDA_VSTD::is_signed_v<_IntegerType>)
@@ -331,15 +329,11 @@ struct __assign_op_slice_handler<
   __MDSPAN_FORCE_INLINE_FUNCTION // NOLINT (misc-unconventional-assign-operator)
     constexpr auto
     operator=(__slice_wrap<_OldStaticExtent, _OldStaticStride, full_extent_t>&& __slice) noexcept
-    -> __assign_op_slice_handler<
-      _IndexT,
-      typename _PreserveLayoutAnalysis::encounter_all,
-      __partially_static_sizes<_IndexT, size_t, _Offsets..., 0>,
-      __partially_static_sizes<_IndexT, size_t, _Exts..., _OldStaticExtent>,
-      __partially_static_sizes<_IndexT,
-                               size_t,
-                               _Strides...,
-                               _OldStaticStride> /* intentional space here to work around ICC bug*/>
+    -> __assign_op_slice_handler<_IndexT,
+                                 typename _PreserveLayoutAnalysis::encounter_all,
+                                 __partially_static_sizes<_IndexT, size_t, _Offsets..., 0>,
+                                 __partially_static_sizes<_IndexT, size_t, _Exts..., _OldStaticExtent>,
+                                 __partially_static_sizes<_IndexT, size_t, _Strides..., _OldStaticStride>>
   {
     return {
       __partially_static_sizes<_IndexT, size_t, _Offsets..., 0>(
@@ -355,15 +349,11 @@ struct __assign_op_slice_handler<
   __MDSPAN_FORCE_INLINE_FUNCTION // NOLINT (misc-unconventional-assign-operator)
     constexpr auto
     operator=(__slice_wrap<_OldStaticExtent, _OldStaticStride, tuple<size_t, size_t>>&& __slice) noexcept
-    -> __assign_op_slice_handler<
-      _IndexT,
-      typename _PreserveLayoutAnalysis::encounter_pair,
-      __partially_static_sizes<_IndexT, size_t, _Offsets..., dynamic_extent>,
-      __partially_static_sizes<_IndexT, size_t, _Exts..., dynamic_extent>,
-      __partially_static_sizes<_IndexT,
-                               size_t,
-                               _Strides...,
-                               _OldStaticStride> /* intentional space here to work around ICC bug*/>
+    -> __assign_op_slice_handler<_IndexT,
+                                 typename _PreserveLayoutAnalysis::encounter_pair,
+                                 __partially_static_sizes<_IndexT, size_t, _Offsets..., dynamic_extent>,
+                                 __partially_static_sizes<_IndexT, size_t, _Exts..., dynamic_extent>,
+                                 __partially_static_sizes<_IndexT, size_t, _Strides..., _OldStaticStride>>
   {
     return {
       __partially_static_sizes<_IndexT, size_t, _Offsets..., dynamic_extent>(
@@ -393,15 +383,11 @@ struct __assign_op_slice_handler<
                            _OldStaticStride,
                            tuple<integral_constant<_IntegerType0, _Value0>, integral_constant<_IntegerType1, _Value1>>>&&
                 __slice) noexcept
-    -> __assign_op_slice_handler<
-      _IndexT,
-      typename _PreserveLayoutAnalysis::encounter_pair,
-      __partially_static_sizes<_IndexT, size_t, _Offsets..., size_t(_Value0)>,
-      __partially_static_sizes<_IndexT, size_t, _Exts..., size_t(_Value1 - _Value0)>,
-      __partially_static_sizes<_IndexT,
-                               size_t,
-                               _Strides...,
-                               _OldStaticStride> /* intentional space here to work around ICC bug*/>
+    -> __assign_op_slice_handler<_IndexT,
+                                 typename _PreserveLayoutAnalysis::encounter_pair,
+                                 __partially_static_sizes<_IndexT, size_t, _Offsets..., size_t(_Value0)>,
+                                 __partially_static_sizes<_IndexT, size_t, _Exts..., size_t(_Value1 - _Value0)>,
+                                 __partially_static_sizes<_IndexT, size_t, _Strides..., _OldStaticStride>>
   {
     static_assert(_Value1 >= _Value0, "Invalid slice specifier");
     return {
