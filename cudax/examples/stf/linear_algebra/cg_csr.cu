@@ -108,6 +108,13 @@ public:
     copy_scalar(a, *this);
   }
 
+  scalar& operator=(scalar&& a)
+  {
+    handle = mv(a.handle);
+    ctx = mv(a.ctx);
+    return *this;
+  }
+
   scalar operator/(scalar const& rhs) const
   {
     // Submit a task that computes this/rhs

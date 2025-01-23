@@ -25,7 +25,7 @@ int main()
   auto lA = ctx.logical_token().set_symbol("A");
   auto lB = ctx.logical_token().set_symbol("B");
   auto lC = ctx.logical_token().set_symbol("C");
-  ctx.dot_push_section("foo");
+  auto s = ctx.dot_section("foo");
   for (size_t i = 0; i < 2; i++)
   {
     auto guard = ctx.dot_section("bar");
@@ -37,7 +37,7 @@ int main()
       ctx.task(lB.read(), lC.read(), lA.rw()).set_symbol("t3")->*[](cudaStream_t, auto, auto, auto) {};
     }
   }
-  ctx.dot_pop_section();
+  s.end();
   ctx.finalize();
 #endif // !_CCCL_COMPILER(MSVC)
 }

@@ -286,7 +286,7 @@ public:
   ::std::shared_ptr<per_ctx_dot> parent;
   ::std::vector<::std::shared_ptr<per_ctx_dot>> children;
 
-  const ::std::string get_ctx_symbol() const
+  const ::std::string& get_ctx_symbol() const
   {
     return ctx_symbol;
   }
@@ -356,15 +356,22 @@ public:
 
     class guard
     {
+      bool active = true;
     public:
       guard(::std::string symbol)
       {
         section::push(mv(symbol));
       }
 
+      void end() {
+        assert(active && "Attempting to end the same section twice.");
+        section::pop();
+        active = false;
+      }
+
       ~guard()
       {
-        section::pop();
+        if (active) section::pop();
       }
     };
 
@@ -416,7 +423,7 @@ public:
       return 1 + int(id);
     }
 
-    const ::std::string get_symbol() const
+    const ::std::string& get_symbol() const
     {
       return symbol;
     }
@@ -433,11 +440,11 @@ public:
   private:
     int depth;
 
-    ::std::string symbol;
+    const ::std::string symbol;
 
     // An identifier for that section. This is movable, but non
     // copyable, but we manipulate section by the means of shared_ptr.
-    unique_id<section> id;
+    const unique_id<section> id;
   };
 
 protected:
