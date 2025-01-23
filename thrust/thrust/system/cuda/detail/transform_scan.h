@@ -28,8 +28,6 @@
 
 #include <thrust/detail/config.h>
 
-#include "thrust/iterator/transform_iterator.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -41,6 +39,7 @@
 #if _CCCL_HAS_CUDA_COMPILER
 #  include <thrust/detail/type_traits.h>
 #  include <thrust/distance.h>
+#  include <thrust/iterator/transform_iterator.h>
 #  include <thrust/system/cuda/detail/scan.h>
 
 #  include <cuda/std/type_traits>
