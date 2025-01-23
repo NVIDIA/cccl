@@ -13,12 +13,11 @@ workflows:
     # Old CTK/compiler
     - {jobs: ['build'], std: 'minmax', ctk: '12.0', cxx: ['gcc7', 'gcc9', 'clang14', 'msvc2019']}
     # Current CTK build-only
-    - {jobs: ['build'], std: [11, 14], cxx: ['gcc7', 'clang14'], project: 'libcudacxx'}
-    - {jobs: ['build'], std: [17], cxx: ['gcc7', 'clang14']}
+    - {jobs: ['build'], std: 17,    cxx: ['gcc7', 'clang14']}
     - {jobs: ['build'], std: 'max', cxx: ['gcc8', 'gcc9', 'gcc10', 'gcc11', 'gcc12']}
     - {jobs: ['build'], std: 'max', cxx: ['clang14', 'clang15', 'clang16', 'clang17']}
     - {jobs: ['build'], std: 'max', cxx: ['msvc2019']}
-    - {jobs: ['build'], std: [17, 20], cxx: ['gcc', 'clang', 'msvc']}
+    - {jobs: ['build'], std: 'all', cxx: ['gcc', 'clang', 'msvc']}
     # Current CTK testing:
     - {jobs: ['test'],  project: ['libcudacxx', 'thrust'], std: 'max', cxx: ['gcc']}
     - {jobs: ['test'],  project: ['libcudacxx', 'thrust'], std: 'max', cxx: ['clang', 'msvc']}
@@ -28,13 +27,13 @@ workflows:
     - {jobs: ['test_nolid', 'test_lid0'], project: ['cub'], std: 'max', cxx: ['clang', 'msvc']}
     - {jobs: ['test_lid0'],               project: ['cub'], std: 'max', cxx: 'gcc12', gpu: 'h100',  sm: 'gpu' }
     # Modded builds:
-    - {jobs: ['build'], std: [17, 20], ctk: '12.5', cxx: 'nvhpc'}
+    - {jobs: ['build'], std: 'all', ctk: '12.5', cxx: 'nvhpc'}
     - {jobs: ['build'], std: 'max', cxx: ['gcc', 'clang'], cpu: 'arm64'}
     - {jobs: ['build'], std: 'max', cxx: ['gcc'], sm: '90a'}
     # Test Thrust 32-bit-only dispatch here, since it's most likely to break. 64-bit-only is tested in nightly.
     - {jobs: ['test_gpu'],  project: 'thrust', cmake_options: '-DTHRUST_DISPATCH_TYPE=Force32bit'}
     # default_projects: clang-cuda
-    - {jobs: ['build'], std: [17, 20], cudacxx: 'clang', cxx: 'clang'}
+    - {jobs: ['build'], std: 'all', cudacxx: 'clang', cxx: 'clang'}
     - {jobs: ['build'], project: 'libcudacxx', std: 'max', cudacxx: 'clang', cxx: 'clang', sm: '90'}
     - {jobs: ['build'], project: 'libcudacxx', std: 'max', cudacxx: 'clang', cxx: 'clang', sm: '90a'}
     # nvrtc:
@@ -45,11 +44,11 @@ workflows:
     - {jobs: ['build'], project: 'cudax', ctk: ['12.0'], std: 20,       cxx: ['msvc14.36']}
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,       cxx: ['gcc10', 'gcc11', 'gcc12']}
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,       cxx: ['clang14', 'clang15', 'clang16', 'clang17']}
-    - {jobs: ['build'], project: 'cudax', ctk: ['12.5'], std: [17, 20], cxx: ['nvhpc']}
+    - {jobs: ['build'], project: 'cudax', ctk: ['12.5'], std: 'all', cxx: ['nvhpc']}
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,       cxx: ['msvc2022']}
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 17,       cxx: ['gcc'], sm: "90"}
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,       cxx: ['gcc'], sm: "90a"}
-    - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: [17, 20], cxx: ['gcc', 'clang'], cpu: 'arm64'}
+    - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 'all', cxx: ['gcc', 'clang'], cpu: 'arm64'}
     - {jobs: ['test'],  project: 'cudax', ctk: ['curr'], std: 20,       cxx: ['gcc12', 'clang', 'msvc']}
     # Python and c/parallel jobs:
     - {jobs: ['test'], project: ['cccl_c_parallel', 'python'], ctk: '12.6'}
@@ -122,12 +121,12 @@ workflows:
 devcontainer_version: '25.02'
 
 # All supported C++ standards:
-all_stds: [11, 14, 17, 20]
+all_stds: [17, 20]
 
 ctk_versions:
-  12.0: { stds: [11, 14, 17, 20] }
-  12.5: { stds: [11, 14, 17, 20] }
-  12.6: { stds: [11, 14, 17, 20], aka: 'curr' }
+  12.0: { stds: [17, 20] }
+  12.5: { stds: [17, 20] }
+  12.6: { stds: [17, 20], aka: 'curr' }
 
 device_compilers:
   nvcc: # Version / stds are taken from CTK
@@ -143,37 +142,37 @@ host_compilers:
     container_tag: 'gcc'
     exe: 'g++'
     versions:
-      7:  { stds: [11, 14, 17,   ] }
-      8:  { stds: [11, 14, 17,   ] }
-      9:  { stds: [11, 14, 17,   ] }
-      10: { stds: [11, 14, 17, 20] }
-      11: { stds: [11, 14, 17, 20] }
-      12: { stds: [11, 14, 17, 20] }
-      13: { stds: [11, 14, 17, 20] }
+      7:  { stds: [17,   ] }
+      8:  { stds: [17,   ] }
+      9:  { stds: [17,   ] }
+      10: { stds: [17, 20] }
+      11: { stds: [17, 20] }
+      12: { stds: [17, 20] }
+      13: { stds: [17, 20] }
   clang:
     name: 'Clang'
     container_tag: 'llvm'
     exe: 'clang++'
     versions:
-      14: { stds: [11, 14, 17, 20] }
-      15: { stds: [11, 14, 17, 20] }
-      16: { stds: [11, 14, 17, 20] }
-      17: { stds: [11, 14, 17, 20] }
-      18: { stds: [11, 14, 17, 20] }
+      14: { stds: [17, 20] }
+      15: { stds: [17, 20] }
+      16: { stds: [17, 20] }
+      17: { stds: [17, 20] }
+      18: { stds: [17, 20] }
   msvc:
     name: 'MSVC'
     container_tag: 'cl'
     exe: cl
     versions:
-      14.29: { stds: [    14, 17,   ], aka: '2019' }
-      14.36: { stds: [    14, 17, 20]              }
-      14.39: { stds: [    14, 17, 20], aka: '2022' }
+      14.29: { stds: [ 17,   ], aka: '2019' }
+      14.36: { stds: [ 17, 20]              }
+      14.39: { stds: [ 17, 20], aka: '2022' }
   nvhpc:
     name: 'NVHPC'
     container_tag: 'nvhpc'
     exe: nvc++
     versions:
-      24.7: { stds: [11, 14, 17, 20 ] }
+      24.7: { stds: [17, 20 ] }
 
 # Jobs support the following properties:
 #
@@ -234,10 +233,10 @@ jobs:
 projects:
   cccl:
     name: 'CCCL'
-    stds: [11, 14, 17, 20]
+    stds: [17, 20]
   libcudacxx:
     name: 'libcu++'
-    stds: [11, 14, 17, 20]
+    stds: [17, 20]
   cub:
     name: 'CUB'
     stds: [17, 20]

@@ -47,7 +47,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/device_synchronize.cuh> // IWYU pragma: export
 #include <cub/util_debug.cuh>
 #include <cub/util_type.cuh>
 // for backward compatibility
@@ -81,7 +80,6 @@ struct policy_wrapper_t : PolicyT
   static constexpr int BLOCK_THREADS    = BLOCK_THREADS_;
   static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
 };
-} // namespace detail
 
 /**
  * \brief Empty kernel for querying PTX manifest metadata (e.g., version) for the current device
@@ -89,6 +87,8 @@ struct policy_wrapper_t : PolicyT
 template <typename T>
 CUB_DETAIL_KERNEL_ATTRIBUTES void EmptyKernel()
 {}
+
+} // namespace detail
 
 #endif // _CCCL_DOXYGEN_INVOKED
 
@@ -278,7 +278,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersionUncached(int& ptx_version)
   // Instantiate `EmptyKernel<void>` in both host and device code to ensure
   // it can be called.
   using EmptyKernelPtr        = void (*)();
-  EmptyKernelPtr empty_kernel = EmptyKernel<void>;
+  EmptyKernelPtr empty_kernel = detail::EmptyKernel<void>;
 
   // This is necessary for unused variable warnings in host compilers. The
   // usual syntax of (void)empty_kernel; was not sufficient on MSVC2015.
@@ -437,62 +437,28 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersion(int& sm_version, int device = 
   return result;
 }
 
-/**
- * Synchronize the specified \p stream.
- */
+//! Synchronize the specified \p stream when called in host code. Otherwise, does nothing.
 CUB_RUNTIME_FUNCTION inline cudaError_t SyncStream(cudaStream_t stream)
 {
-  cudaError_t result = cudaErrorNotSupported;
-
-  NV_IF_TARGET(NV_IS_HOST,
-               (result = CubDebug(cudaStreamSynchronize(stream));),
-               ((void) stream; result = CubDebug(cub::detail::device_synchronize());));
-
-  return result;
+  NV_IF_TARGET(
+    NV_IS_HOST, (return CubDebug(cudaStreamSynchronize(stream));), ((void) stream; return cudaErrorNotSupported;));
 }
 
 namespace detail
 {
-
-/**
- * Same as SyncStream, but intended for use with the debug_synchronous flags
- * in device algorithms. This should not be used if synchronization is required
- * for correctness.
- *
- * If `debug_synchronous` is false, this function will immediately return
- * cudaSuccess. If true, one of the following will occur:
- *
- * If synchronization is supported by the current compilation target and
- * settings, the sync is performed and the sync result is returned.
- *
- * If syncs are not supported then no sync is performed, but a message is logged
- * via _CubLog and cudaSuccess is returned.
- */
+//! If CUB_DEBUG_SYNC is defined and this function is called from host code, a sync is performed and the
+//! sync result is returned. Otherwise, does nothing.
 CUB_RUNTIME_FUNCTION inline cudaError_t DebugSyncStream(cudaStream_t stream)
 {
-#ifndef CUB_DETAIL_DEBUG_ENABLE_SYNC
-
+#ifndef CUB_DEBUG_SYNC
   (void) stream;
   return cudaSuccess;
-
-#else // CUB_DETAIL_DEBUG_ENABLE_SYNC:
-
-#  define CUB_TMP_SYNC_AVAILABLE         \
-    _CubLog("%s\n", "Synchronizing..."); \
-    return SyncStream(stream)
-
-#  define CUB_TMP_DEVICE_SYNC_UNAVAILABLE                                        \
-    (void) stream;                                                               \
-    _CubLog("WARNING: Skipping CUB `debug_synchronous` synchronization (%s).\n", \
-            "device-side sync requires <sm_90, RDC, and CDPv1");                 \
-    return cudaSuccess
-
-  NV_IF_TARGET(NV_IS_HOST, (CUB_TMP_SYNC_AVAILABLE;), (CUB_TMP_DEVICE_SYNC_UNAVAILABLE;));
-
-#  undef CUB_TMP_DEVICE_SYNC_UNAVAILABLE
-#  undef CUB_TMP_SYNC_AVAILABLE
-
-#endif // CUB_DETAIL_DEBUG_ENABLE_SYNC
+#else // CUB_DEBUG_SYNC
+  NV_IF_TARGET(
+    NV_IS_HOST,
+    (_CubLog("%s", "Synchronizing...\n"); return SyncStream(stream);),
+    ((void) stream; _CubLog("%s", "WARNING: Skipping CUB debug synchronization in device code"); return cudaSuccess;));
+#endif // CUB_DEBUG_SYNC
 }
 
 /** \brief Gets whether the current device supports unified addressing */

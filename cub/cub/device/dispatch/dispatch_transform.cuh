@@ -53,9 +53,7 @@ _CCCL_NV_DIAG_SUPPRESS(186)
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace transform
+namespace detail::transform
 {
 template <typename T>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE const char* round_down_ptr(const T* ptr, unsigned alignment)
@@ -118,7 +116,7 @@ _CCCL_DEVICE void transform_kernel_impl(
   constexpr int block_dim = PrefetchPolicy::block_threads;
   const int tile_stride   = block_dim * num_elem_per_thread;
   const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_stride;
-  const int tile_size     = static_cast<int>(::cuda::std::min(num_items - offset, Offset{tile_stride}));
+  const int tile_size     = static_cast<int>((::cuda::std::min)(num_items - offset, Offset{tile_stride}));
 
   // move index and iterator domain to the block/thread index, to reduce arithmetic in the loops below
   {
@@ -329,7 +327,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   constexpr int block_dim = BulkCopyPolicy::block_threads;
   const int tile_stride   = block_dim * num_elem_per_thread;
   const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_stride;
-  const int tile_size     = ::cuda::std::min(num_items - offset, Offset{tile_stride});
+  const int tile_size     = (::cuda::std::min)(num_items - offset, Offset{tile_stride});
 
   const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
   if (inner_blocks)
@@ -688,10 +686,8 @@ struct dispatch_t<RequiresStableAddress,
         const int smem_size = bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>(tile_size);
         if (smem_size > *max_smem)
         {
-#  ifdef CUB_DETAIL_DEBUG_ENABLE_HOST_ASSERTIONS
           // assert should be prevented by smem check in policy
-          assert(last_counts.elem_per_thread > 0 && "min_items_per_thread exceeds available shared memory");
-#  endif // CUB_DETAIL_DEBUG_ENABLE_HOST_ASSERTIONS
+          _CCCL_ASSERT_HOST(last_counts.elem_per_thread > 0, "min_items_per_thread exceeds available shared memory");
           return last_counts;
         }
 
@@ -729,12 +725,10 @@ struct dispatch_t<RequiresStableAddress,
     {
       return config.error;
     }
-#  ifdef CUB_DETAIL_DEBUG_ENABLE_HOST_ASSERTIONS
-    assert(config->elem_per_thread > 0);
-    assert(config->tile_size > 0);
-    assert(config->tile_size % bulk_copy_alignment == 0);
-    assert((sizeof...(RandomAccessIteratorsIn) == 0) != (config->smem_size != 0)); // logical xor
-#  endif // CUB_DETAIL_DEBUG_ENABLE_HOST_ASSERTIONS
+    _CCCL_ASSERT_HOST(config->elem_per_thread > 0, "");
+    _CCCL_ASSERT_HOST(config->tile_size > 0, "");
+    _CCCL_ASSERT_HOST(config->tile_size % bulk_copy_alignment == 0, "");
+    _CCCL_ASSERT_HOST((sizeof...(RandomAccessIteratorsIn) == 0) != (config->smem_size != 0), ""); // logical xor
 
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{config->tile_size}));
     return ::cuda::std::make_tuple(
@@ -812,7 +806,7 @@ struct dispatch_t<RequiresStableAddress,
 
     // but also generate enough blocks for full occupancy to optimize small problem sizes, e.g., 2^16 or 2^20 elements
     const int items_per_thread_evenly_spread = static_cast<int>(
-      ::cuda::std::min(Offset{items_per_thread}, num_items / (config->sm_count * block_dim * config->max_occupancy)));
+      (::cuda::std::min)(Offset{items_per_thread}, num_items / (config->sm_count * block_dim * config->max_occupancy)));
 
     const int items_per_thread_clamped = ::cuda::std::clamp(
       items_per_thread_evenly_spread, +policy_t::min_items_per_thread, +policy_t::max_items_per_thread);
@@ -862,6 +856,5 @@ struct dispatch_t<RequiresStableAddress,
 
 #undef CUB_DETAIL_TRANSFORM_KERNEL_PTR
 };
-} // namespace transform
-} // namespace detail
+} // namespace detail::transform
 CUB_NAMESPACE_END

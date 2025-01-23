@@ -52,6 +52,8 @@
 #include <cub/thread/thread_search.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/type_traits>
 
 #include <iterator>
@@ -376,8 +378,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") AgentSpmv
     // Gather the row end-offsets for the merge tile into shared memory
     for (int item = threadIdx.x; item < tile_num_rows + ITEMS_PER_THREAD; item += BLOCK_THREADS)
     {
-      const OffsetT offset =
-        (cub::min)(static_cast<OffsetT>(tile_start_coord.x + item), static_cast<OffsetT>(spmv_params.num_rows - 1));
+      const OffsetT offset = (::cuda::std::min)(
+        static_cast<OffsetT>(tile_start_coord.x + item), static_cast<OffsetT>(spmv_params.num_rows - 1));
       s_tile_row_end_offsets[item] = wd_row_end_offsets[offset];
     }
 
@@ -557,8 +559,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") AgentSpmv
 #pragma unroll 1
     for (int item = threadIdx.x; item < tile_num_rows + ITEMS_PER_THREAD; item += BLOCK_THREADS)
     {
-      const OffsetT offset =
-        (cub::min)(static_cast<OffsetT>(tile_start_coord.x + item), static_cast<OffsetT>(spmv_params.num_rows - 1));
+      const OffsetT offset = (::cuda::std::min)(
+        static_cast<OffsetT>(tile_start_coord.x + item), static_cast<OffsetT>(spmv_params.num_rows - 1));
       s_tile_row_end_offsets[item] = wd_row_end_offsets[offset];
     }
 
