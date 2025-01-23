@@ -258,10 +258,10 @@ struct policy_hub
                              default_reduce_by_key_delay_constructor_t<LengthT, int>>;
   };
 
-  // SM37
-  struct Policy370
+  // SM50
+  struct Policy500
       : DefaultPolicy<LOAD_LDG>
-      , ChainedPolicy<370, Policy370, Policy370>
+      , ChainedPolicy<500, Policy500, Policy500>
   {};
 
   // Use values from tuning if a specialization exists, otherwise pick the default
@@ -451,10 +451,10 @@ struct policy_hub
                      default_reduce_by_key_delay_constructor_t<DelayConstructorKey, int>>;
   };
 
-  // SM37
-  struct Policy370
+  // SM50
+  struct Policy500
       : DefaultPolicy<BLOCK_LOAD_DIRECT, int, LOAD_LDG> // TODO(bgruber): I think we want `LengthT` instead of `int`
-      , ChainedPolicy<370, Policy370, Policy370>
+      , ChainedPolicy<500, Policy500, Policy500>
   {};
 
   // Use values from tuning if a specialization exists, otherwise pick the default

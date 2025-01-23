@@ -136,15 +136,8 @@ struct policy_hub
     return ::cuda::std::max(nominalItemsPerThread / NumActiveChannels / v_scale, 1);
   }
 
-  // SM37
-  struct Policy370 : ChainedPolicy<370, Policy370, Policy370>
-  {
-    // TODO This might be worth it to separate usual histogram and the multi one
-    using AgentHistogramPolicyT = AgentHistogramPolicy<128, t_scale(8), BLOCK_LOAD_DIRECT, LOAD_LDG, true, BLEND, true>;
-  };
-
   // SM50
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy370>
+  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
   {
     // TODO This might be worth it to separate usual histogram and the multi one
     using AgentHistogramPolicyT =

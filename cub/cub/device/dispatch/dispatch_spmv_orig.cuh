@@ -381,41 +381,6 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DispatchSpmv
   // Tuning policies
   //---------------------------------------------------------------------
 
-  /// SM37
-  struct Policy370
-  {
-    using SpmvPolicyT =
-      AgentSpmvPolicy<(sizeof(ValueT) > 4) ? 128 : 128,
-                      (sizeof(ValueT) > 4) ? 9 : 14,
-                      LOAD_LDG,
-                      LOAD_CA,
-                      LOAD_LDG,
-                      LOAD_LDG,
-                      LOAD_LDG,
-                      false,
-                      BLOCK_SCAN_WARP_SCANS>;
-
-    using SegmentFixupPolicyT = AgentSegmentFixupPolicy<128, 3, BLOCK_LOAD_VECTORIZE, LOAD_LDG, BLOCK_SCAN_WARP_SCANS>;
-  };
-
-  /// SM50
-  struct Policy500
-  {
-    using SpmvPolicyT =
-      AgentSpmvPolicy<(sizeof(ValueT) > 4) ? 64 : 128,
-                      (sizeof(ValueT) > 4) ? 6 : 7,
-                      LOAD_LDG,
-                      LOAD_DEFAULT,
-                      (sizeof(ValueT) > 4) ? LOAD_LDG : LOAD_DEFAULT,
-                      (sizeof(ValueT) > 4) ? LOAD_LDG : LOAD_DEFAULT,
-                      LOAD_LDG,
-                      (sizeof(ValueT) > 4) ? true : false,
-                      (sizeof(ValueT) > 4) ? BLOCK_SCAN_WARP_SCANS : BLOCK_SCAN_RAKING_MEMOIZE>;
-
-    using SegmentFixupPolicyT =
-      AgentSegmentFixupPolicy<128, 3, BLOCK_LOAD_VECTORIZE, LOAD_LDG, BLOCK_SCAN_RAKING_MEMOIZE>;
-  };
-
   /// SM60
   struct Policy600
   {
