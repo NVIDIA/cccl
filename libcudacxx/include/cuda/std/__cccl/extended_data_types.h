@@ -73,6 +73,6 @@
 #  endif
 #else
 #  define _CCCL_HAS_FLOAT128() 0
-#endif // #if !defined(_CCCL_DISABLE_FLOAT128)
+#endif // !_CCCL_DISABLE_FLOAT128
 
 #endif // __CCCL_EXTENDED_DATA_TYPES_H
