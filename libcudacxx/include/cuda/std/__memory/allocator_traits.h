@@ -35,7 +35,7 @@
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
-#include <cuda/std/detail/libcxx/include/cstring>
+#include <cuda/std/cstring>
 #include <cuda/std/limits>
 
 _CCCL_PUSH_MACROS

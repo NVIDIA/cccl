@@ -1,0 +1,103 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA_STD_CSTRING
+#define _CUDA_STD_CSTRING
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/std/__cstddef/types.h>
+
+#if !_CCCL_COMPILER(NVRTC)
+#  include <cstring>
+#endif // !_CCCL_COMPILER(NVRTC)
+
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
+
+using ::memcpy;
+using ::memset;
+using ::size_t;
+
+_LIBCUDACXX_HIDE_FROM_ABI const void* memchr(const void* __ptr, int __c, size_t __n) noexcept
+{
+  NV_IF_ELSE_TARGET(
+    NV_IS_HOST,
+    (return ::std::memchr(__ptr, __c, __n);),
+    (auto __p = static_cast<const unsigned char*>(__ptr); const auto __p_end = __p + __n;
+
+     while (__p != __p_end) {
+       if (*__p == static_cast<unsigned char>(__c))
+       {
+         return __p;
+       }
+       ++__p;
+     }
+
+     return nullptr;))
+}
+
+_LIBCUDACXX_HIDE_FROM_ABI void* memchr(void* __ptr, int __c, size_t __n) noexcept
+{
+  NV_IF_ELSE_TARGET(NV_IS_HOST,
+                    (return ::std::memchr(__ptr, __c, __n);),
+                    (return const_cast<void*>(_CUDA_VSTD::memchr(const_cast<const void*>(__ptr), __c, __n));))
+}
+
+_LIBCUDACXX_HIDE_FROM_ABI void* memmove(void* __dst, const void* __src, size_t __n) noexcept
+{
+  NV_IF_ELSE_TARGET(
+    NV_IS_HOST,
+    (return ::std::memmove(__dst, __src, __n);),
+    (auto __d = (__dst <= __src) ? static_cast<unsigned char*>(__dst) : (static_cast<unsigned char*>(__dst) + __n - 1);
+     auto __s = (__dst <= __src) ? static_cast<const unsigned char*>(__src)
+                                 : (static_cast<const unsigned char*>(__src) + __n - 1);
+     const auto __inc   = (__dst <= __src) ? 1 : -1;
+     const auto __d_end = (__dst <= __src) ? (__d + __n) : (static_cast<unsigned char*>(__dst) - 1);
+
+     while (__d != __d_end) {
+       *__d = *__s;
+       __d += __inc;
+       __s += __inc;
+     }
+
+     return __dst;))
+}
+
+_LIBCUDACXX_HIDE_FROM_ABI int memcmp(const void* __lhs, const void* __rhs, size_t __n) noexcept
+{
+  NV_IF_ELSE_TARGET(
+    NV_IS_HOST,
+    (return ::std::memcmp(__lhs, __rhs, __n);),
+    (auto __l = static_cast<const unsigned char*>(__lhs); auto __r = static_cast<const unsigned char*>(__rhs);
+     const auto __l_end                                            = __l + __n;
+
+     while (__l != __l_end) {
+       if (*__l != *__r)
+       {
+         return *__l < *__r ? -1 : 1;
+       }
+       ++__l;
+       ++__r;
+     }
+
+     return 0;))
+}
+
+_LIBCUDACXX_END_NAMESPACE_STD
+
+#endif // _CUDA_STD_CSTRING

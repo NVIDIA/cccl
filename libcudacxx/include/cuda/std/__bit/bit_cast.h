@@ -25,7 +25,7 @@
 #include <cuda/std/__type_traits/is_extended_floating_point.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__type_traits/is_trivially_default_constructible.h>
-#include <cuda/std/detail/libcxx/include/cstring>
+#include <cuda/std/cstring>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

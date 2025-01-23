@@ -28,7 +28,7 @@
 #include <cuda/__memcpy_async/cp_async_shared_global.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
-#include <cuda/std/detail/libcxx/include/cstring>
+#include <cuda/std/cstring>
 
 #include <nv/target>
 
@@ -135,7 +135,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __completion_mechanism __dispatch_memc
     (
       // Host code path:
       if (__group.thread_rank() == 0) {
-        memcpy(__dest_char, __src_char, __size);
+        _CUDA_VSTD::memcpy(__dest_char, __src_char, __size);
       } return __completion_mechanism::__sync;));
 }
 

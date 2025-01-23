@@ -25,7 +25,7 @@
 #include <cuda/std/__type_traits/is_assignable.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/std/detail/libcxx/include/cstring>
+#include <cuda/std/cstring>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -92,7 +92,7 @@ _CCCL_HOST_DEVICE inline int __atomic_memcmp(void const* __lhs, void const* __rh
        }
      } return 0;),
     NV_IS_HOST,
-    (return memcmp(__lhs, __rhs, __count);))
+    (return _CUDA_VSTD::memcmp(__lhs, __rhs, __count);))
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD

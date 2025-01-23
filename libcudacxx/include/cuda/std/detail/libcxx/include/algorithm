@@ -751,7 +751,6 @@ template <class BidirectionalIterator, class Compare>
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/bit>
 #include <cuda/std/cstddef>
-#include <cuda/std/detail/libcxx/include/cstring>
 #include <cuda/std/functional>
 #include <cuda/std/initializer_list>
 #include <cuda/std/type_traits>

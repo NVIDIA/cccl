@@ -30,3 +30,6 @@ Any Standard C++ header not listed below is omitted.
    * - `\<cuda/std/cstdlib\> <https://en.cppreference.com/w/cpp/header/cstdlib>`_
      - Common utilities
      - libcu++ 2.2.0 / CCCL 2.2.0 / CUDA 12.3
+   * - `\<cuda/std/cstring\> <https://en.cppreference.com/w/cpp/header/cstring>`_
+     - Provides array manipulation functions such as ``memcpy``, ``memset`` and ``memcmp``
+     - CCCL 3.0.0
