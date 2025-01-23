@@ -15,6 +15,7 @@
 //              is_nothrow_swappable<T>::value)
 
 #include <cuda/std/cassert>
+#include <cuda/std/exception>
 #include <cuda/std/optional>
 #include <cuda/std/type_traits>
 

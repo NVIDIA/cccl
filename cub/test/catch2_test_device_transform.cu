@@ -15,6 +15,7 @@
 #include <thrust/sequence.h>
 #include <thrust/zip_function.h>
 
+#include <cuda/std/__exception/terminate.h>
 #include <cuda/std/__functional/identity.h>
 
 #include <sstream>

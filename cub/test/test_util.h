@@ -44,6 +44,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/exception>
+
 #include <cfloat>
 #include <cmath>
 #include <cstddef>

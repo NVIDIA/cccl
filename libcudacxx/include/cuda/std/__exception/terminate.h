@@ -22,16 +22,15 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/cstdlib> // ::exit
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
+#if !_CCCL_COMPILER(NVRTC)
+#  include <exception>
+#endif // !_CCCL_COMPILER(NVRTC)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION // purposefully not using versioning namespace
 
 _CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void __cccl_terminate() noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (::exit(-1);), (__trap();))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (::std::terminate();), (::__trap();))
   _CCCL_UNREACHABLE();
 }
 
@@ -58,12 +57,9 @@ _LIBCUDACXX_HIDE_FROM_ABI  terminate_handler get_terminate() noexcept
 
 _CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void terminate() noexcept
 {
-  __cccl_terminate();
-  _CCCL_UNREACHABLE();
+  _CUDA_VSTD_NOVERSION::__cccl_terminate();
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
-
-_CCCL_DIAG_POP
 
 #endif // _LIBCUDACXX___EXCEPTION_TERMINATE_H

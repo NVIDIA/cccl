@@ -14,6 +14,7 @@
 //   optional(const optional<U>& rhs);
 
 #include <cuda/std/cassert>
+#include <cuda/std/exception>
 #include <cuda/std/optional>
 #include <cuda/std/type_traits>
 

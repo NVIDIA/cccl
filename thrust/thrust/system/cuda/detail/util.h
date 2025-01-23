@@ -45,8 +45,9 @@
 #include <thrust/system/cuda/error.h>
 #include <thrust/system_error.h>
 
+#include <cuda/std/__exception/terminate.h>
+
 #include <cstdio>
-#include <exception>
 
 #include <nv/target>
 
@@ -179,7 +180,7 @@ trivial_copy_device_to_device(Policy& policy, Type* dst, Type const* src, size_t
 
 CCCL_DEPRECATED_BECAUSE("Use cuda::std::terminate() instead") inline void _CCCL_HOST_DEVICE terminate()
 {
-  NV_IF_TARGET(NV_IS_HOST, (std::terminate();), (asm("trap;");));
+  ::cuda::std::terminate();
 }
 
 _CCCL_HOST_DEVICE inline void throw_on_error(cudaError_t status)

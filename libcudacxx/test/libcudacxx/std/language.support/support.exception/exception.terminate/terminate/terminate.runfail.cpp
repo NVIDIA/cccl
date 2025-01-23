@@ -11,8 +11,8 @@
 // UNSUPPORTED: no_execute
 // UNSUPPORTED: nvrtc
 
-#include <cuda/std/__exception/terminate.h>
 #include <cuda/std/cassert>
+#include <cuda/std/exception>
 
 #include "test_macros.h"
 

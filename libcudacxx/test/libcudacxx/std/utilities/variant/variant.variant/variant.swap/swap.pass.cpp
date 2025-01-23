@@ -18,6 +18,7 @@
 
 #include <cuda/std/cassert>
 // #include <cuda/std/string>
+#include <cuda/std/exception>
 #include <cuda/std/type_traits>
 #include <cuda/std/variant>
 

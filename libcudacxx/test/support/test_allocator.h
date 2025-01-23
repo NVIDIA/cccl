@@ -14,6 +14,7 @@
 #include <climits>
 #include <cstddef>
 #include <cstdlib>
+#include <exception>
 #include <memory>
 #include <new>
 #include <type_traits>
