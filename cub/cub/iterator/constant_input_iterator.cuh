@@ -87,7 +87,13 @@ CUB_NAMESPACE_BEGIN
  *   The difference type of this iterator (Default: @p ptrdiff_t)
  */
 template <typename ValueType, typename OffsetT = ptrdiff_t>
-class CCCL_DEPRECATED_BECAUSE("Use thrust::constant_iterator instead") ConstantInputIterator
+class
+#ifndef __CUDA_ARCH__
+  // Avoid generating a deprecation warning from length_encode.compute_xx.cpp1.ii, which is compiled by cicc for which
+  // we cannot suppress the warning
+  CCCL_DEPRECATED_BECAUSE("Use thrust::constant_iterator instead")
+#endif
+    ConstantInputIterator
 {
 public:
   // Required iterator traits

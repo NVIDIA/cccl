@@ -25,8 +25,10 @@
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
+#  if _CCCL_COMPILER(NVHPC)
 // suppress deprecation warnings for ConstantInputIterator. NVHPC makes them appear more widely than necessary
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+#  endif // _CCCL_COMPILER(NVHPC)
 CUB_NAMESPACE_BEGIN
 
 namespace detail::reduce
@@ -190,7 +192,8 @@ template <typename InputIteratorT,
 struct dispatch_streaming_arg_reduce_t
 {
 #  if _CCCL_COMPILER(NVHPC)
-  // NVHPC fails to suppress a deprecation when the alias is inside the function below
+  // NVHPC fails to suppress a deprecation when the alias is inside the function below, so we put it here and span a
+  // deprecation suppression region across the entire file as well
   using constant_offset_it_t = ConstantInputIterator<GlobalOffsetT>;
 #  endif // _CCCL_COMPILER(NVHPC)
 
@@ -234,7 +237,9 @@ struct dispatch_streaming_arg_reduce_t
   {
     // Constant iterator to provide the offset of the current partition for the user-provided input iterator
 #  if !_CCCL_COMPILER(NVHPC)
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     using constant_offset_it_t = ConstantInputIterator<GlobalOffsetT>;
+    _CCCL_SUPPRESS_DEPRECATED_POP
 #  endif
 
     // Wrapped input iterator to produce index-value tuples, i.e., <PerPartitionOffsetT, InputT>-tuples
@@ -379,7 +384,9 @@ struct dispatch_streaming_arg_reduce_t
 };
 
 } // namespace detail::reduce
+#  if _CCCL_COMPILER(NVHPC)
 _CCCL_SUPPRESS_DEPRECATED_POP
+#  endif // _CCCL_COMPILER(NVHPC)
 CUB_NAMESPACE_END
 
 #endif // !_CCCL_DOXYGEN_INVOKED
