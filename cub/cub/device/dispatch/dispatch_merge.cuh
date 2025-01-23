@@ -25,9 +25,7 @@
 #include <cuda/std/__algorithm/min.h>
 
 CUB_NAMESPACE_BEGIN
-namespace detail
-{
-namespace merge
+namespace detail::merge
 {
 _CCCL_INLINE_VAR constexpr int fallback_BLOCK_THREADS    = 64;
 _CCCL_INLINE_VAR constexpr int fallback_ITEMS_PER_THREAD = 1;
@@ -303,6 +301,5 @@ struct dispatch_t
     return cudaSuccess;
   }
 };
-} // namespace merge
-} // namespace detail
+} // namespace detail::merge
 CUB_NAMESPACE_END

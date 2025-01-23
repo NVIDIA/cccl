@@ -42,6 +42,7 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
@@ -228,6 +229,39 @@ struct sm90_tuning<__uint128_t, primitive_op::yes, primitive_accum::no, accum_si
 {};
 #endif
 // clang-format on
+
+template <typename PolicyT, typename = void, typename = void>
+struct ScanPolicyWrapper : PolicyT
+{
+  CUB_RUNTIME_FUNCTION ScanPolicyWrapper(PolicyT base)
+      : PolicyT(base)
+  {}
+};
+
+template <typename StaticPolicyT>
+struct ScanPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<decltype(StaticPolicyT::ScanPolicyT::LOAD_MODIFIER)>>
+    : StaticPolicyT
+{
+  CUB_RUNTIME_FUNCTION ScanPolicyWrapper(StaticPolicyT base)
+      : StaticPolicyT(base)
+  {}
+
+  CUB_RUNTIME_FUNCTION static constexpr PolicyWrapper<typename StaticPolicyT::ScanPolicyT> Scan()
+  {
+    return MakePolicyWrapper(typename StaticPolicyT::ScanPolicyT());
+  }
+
+  CUB_RUNTIME_FUNCTION constexpr CacheLoadModifier LoadModifier()
+  {
+    return StaticPolicyT::ScanPolicyT::LOAD_MODIFIER;
+  }
+};
+
+template <typename PolicyT>
+CUB_RUNTIME_FUNCTION ScanPolicyWrapper<PolicyT> MakeScanPolicyWrapper(PolicyT policy)
+{
+  return ScanPolicyWrapper<PolicyT>{policy};
+}
 
 template <typename AccumT, typename ScanOpT>
 struct policy_hub

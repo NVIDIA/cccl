@@ -103,8 +103,6 @@ finalize_and_store_aggregate(OutputIteratorT d_out, ReductionOpT, empty_problem_
 {
   *d_out = block_aggregate;
 }
-} // namespace reduce
-} // namespace detail
 
 /**
  * @brief Reduce region kernel entry point (multi-block). Computes privatized
@@ -276,5 +274,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
     detail::reduce::finalize_and_store_aggregate(d_out, reduction_op, init, block_aggregate);
   }
 }
+} // namespace reduce
+} // namespace detail
 
 CUB_NAMESPACE_END
