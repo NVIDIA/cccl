@@ -32,55 +32,76 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+// It is not possible to understand if we are in constant evaluation context in GCC < 9. For this reason, we provide an
+// optimized version of runtime ctz that is used in device code.
 template <typename _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_ctz(_Tp __x) noexcept
 {
   static_assert(is_same_v<_Tp, uint32_t> || is_same_v<_Tp, uint64_t>);
-  for (int __i = 0; __i < numeric_limits<_Tp>::digits; ++__i)
+  if (__x & 0x1)
   {
-    if (__x & (_Tp{1} << __i))
+    return 0;
+  }
+  int __pos = 1;
+  for (int __i = numeric_limits<_Tp>::digits / 2; __i >= 2; __i /= 2)
+  {
+    const auto __mark = ~_Tp{0} >> (numeric_limits<_Tp>::digits - __i);
+    if ((__x & __mark) == 0)
     {
-      return __i;
+      __x >>= __i;
+      __pos += __i;
     }
   }
-  return numeric_limits<_Tp>::digits;
+  return (__pos - (__x & 0x1));
 }
 
-#if _CCCL_COMPILER(MSVC)
+template <typename _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __host_constexpr_ctz(_Tp __x) noexcept
+{
+#if defined(_CCCL_BUILTIN_CTZ)
+  return sizeof(_Tp) == sizeof(uint32_t)
+         ? _CCCL_BUILTIN_CTZ(static_cast<uint32_t>(__x))
+         : _CCCL_BUILTIN_CTZLL(static_cast<uint64_t>(__x));
+#else
+  return _CUDA_VSTD::__constexpr_ctz(__x);
+#endif
+}
 
 template <typename _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI int __msvc_runtime_ctz(_Tp __x) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI int __host_runtime_ctz(_Tp __x) noexcept
 {
+#if _CCCL_COMPILER(MSVC)
   unsigned long __where;
   auto __res = sizeof(_Tp) == sizeof(uint32_t)
                ? _BitScanForward(&__where, static_cast<uint32_t>(__x))
                : _BitScanForward64(&__where, static_cast<uint64_t>(__x));
   return (__res) ? static_cast<int>(__where) : numeric_limits<_Tp>::digits;
+#else
+  return sizeof(_Tp) == sizeof(uint32_t)
+         ? _CCCL_BUILTIN_CTZ(static_cast<uint32_t>(__x))
+         : _CCCL_BUILTIN_CTZLL(static_cast<uint64_t>(__x));
+#endif // _CCCL_COMPILER(MSVC)
 }
 
-#endif // _CCCL_COMPILER(MSVC)
+template <typename _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI int __runtime_ctz(_Tp __x) noexcept
+{
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                    (return sizeof(_Tp) == sizeof(uint32_t) ? __clz(__brev(static_cast<uint32_t>(__x)))
+                                                            : __clzll(__brevll(static_cast<uint64_t>(__x)));),
+                    (return _CUDA_VSTD::__host_runtime_ctz(__x);))
+}
 
 template <typename _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_ctz(_Tp __x) noexcept
 {
   static_assert(is_same_v<_Tp, uint32_t> || is_same_v<_Tp, uint64_t>);
-#if defined(__CUDA_ARCH__) || _CCCL_COMPILER(NVRTC)
-  if (is_constant_evaluated() || _CCCL_BUILTIN_CONSTANT_P(__x))
-  {
-    return _CUDA_VSTD::__constexpr_ctz(__x);
-  }
-  else
-  {
-    return sizeof(_Tp) == sizeof(uint32_t)
-           ? __clz(__brev(static_cast<uint32_t>(__x)))
-           : __clzll(__brevll(static_cast<uint64_t>(__x)));
-  }
-#elif _CCCL_COMPILER(MSVC)
-  return is_constant_evaluated() ? _CUDA_VSTD::__constexpr_ctz(__x) : _CUDA_VSTD::__msvc_runtime_ctz(__x);
-#else // _CCCL_COMPILER(MSVC) ^^^ / !_CCCL_COMPILER(MSVC) vvv
-  return sizeof(_Tp) == sizeof(uint32_t)
-         ? _CCCL_BUILTIN_CTZ(static_cast<uint32_t>(__x))
-         : _CCCL_BUILTIN_CTZLL(static_cast<uint64_t>(__x));
+#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+  return is_constant_evaluated() ? _CUDA_VSTD::__constexpr_ctz(__x) : _CUDA_VSTD::__runtime_ctz(__x);
+#else
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, //
+                    (return _CUDA_VSTD::__constexpr_ctz(__x);),
+                    (return _CUDA_VSTD::__host_constexpr_ctz(__x);))
 #endif
 }
 

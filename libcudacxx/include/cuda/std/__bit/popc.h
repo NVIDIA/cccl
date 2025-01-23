@@ -32,22 +32,38 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_COMPILER(MSVC)
-
-template <typename _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __msvc_constexpr_popc(_Tp __x) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_popc_32bit(uint32_t __x) noexcept
 {
-  int __count = 0;
-  for (int __i = 0; __i < numeric_limits<_Tp>::digits; ++__i)
-  {
-    __count += (__x & (_Tp{1} << __i)) ? 1 : 0;
-  }
-  return __count;
+  __x = __x - ((__x >> 1) & 0x55555555);
+  __x = (__x & 0x33333333) + ((__x >> 2) & 0x33333333);
+  return ((__x + (__x >> 4) & 0xF0F0F0F) * 0x1010101) >> 24;
 }
 
 template <typename _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI int __msvc_runtime_popc(_Tp __x) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_popc(_Tp __x) noexcept
 {
+  static_assert(is_same_v<_Tp, uint32_t> || is_same_v<_Tp, uint64_t>);
+#if defined(_CCCL_BUILTIN_POPC)
+  return sizeof(_Tp) == sizeof(uint32_t)
+         ? _CCCL_BUILTIN_POPC(static_cast<uint32_t>(__x))
+         : _CCCL_BUILTIN_POPCLL(static_cast<uint64_t>(__x));
+#else
+  if constexpr (is_same_v<_Tp, uint32_t>)
+  {
+    return __constexpr_popc_32bit(__x);
+  }
+  else
+  {
+    return __constexpr_popc_32bit(static_cast<uint32_t>(__x))
+         + __constexpr_popc_32bit(static_cast<uint32_t>(__x >> 32));
+  }
+#endif
+}
+
+template <typename _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI int __host_runtime_popc(_Tp __x) noexcept
+{
+#if _CCCL_COMPILER(MSVC)
 #  if !defined(_M_ARM64)
   auto __ret = sizeof(_Tp) == sizeof(uint32_t) //
                ? __popcnt(static_cast<uint32_t>(__x))
@@ -56,23 +72,33 @@ _LIBCUDACXX_HIDE_FROM_ABI int __msvc_runtime_popc(_Tp __x) noexcept
   auto __ret = sizeof(_Tp) == sizeof(uint32_t) //
                ? _CountOneBits(static_cast<uint32_t>(__x))
                : _CountOneBits64(static_cast<uint64_t>(__x));
-#  endif
+#  endif // !defined(_M_ARM64)
   return static_cast<int>(__ret);
+#else
+  return sizeof(_Tp) == sizeof(uint32_t)
+         ? _CCCL_BUILTIN_POPCOUNT(static_cast<uint32_t>(__x))
+         : _CCCL_BUILTIN_POPCOUNTLL(static_cast<uint64_t>(__x));
+#endif
 }
 
-#endif // !_CCCL_COMPILER(MSVC) ^^^
+template <typename _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI int __runtime_popc(_Tp __x) noexcept
+{
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                    (return sizeof(_Tp) == sizeof(uint32_t) ? __popc(static_cast<uint32_t>(__x)) //
+                                                            : __popcll(static_cast<uint64_t>(__x));),
+                    (return _CUDA_VSTD::__host_runtime_popc(__x);))
+}
 
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_popc(_Tp __x) noexcept
 {
   static_assert(is_same_v<_Tp, uint32_t> || is_same_v<_Tp, uint64_t>);
-#if _CCCL_COMPILER(MSVC) && !defined(__CUDA_ARCH__) && !_CCCL_COMPILER(NVRTC)
-  return is_constant_evaluated() ? _CUDA_VSTD::__msvc_constexpr_popc(__x) : _CUDA_VSTD::__msvc_runtime_popc(__x);
-#else // _CCCL_COMPILER(MSVC) ^^^ / !_CCCL_COMPILER(MSVC) vvv
-  return sizeof(_Tp) == sizeof(uint32_t)
-         ? _CCCL_BUILTIN_POPCOUNT(static_cast<uint32_t>(__x))
-         : _CCCL_BUILTIN_POPCOUNTLL(static_cast<uint64_t>(__x));
-#endif // !_CCCL_COMPILER(MSVC) ^^^
+#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+  return is_constant_evaluated() ? _CUDA_VSTD::__constexpr_popc(__x) : _CUDA_VSTD::__runtime_popc(__x);
+#else
+  return _CUDA_VSTD::__constexpr_popc(__x);
+#endif
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
