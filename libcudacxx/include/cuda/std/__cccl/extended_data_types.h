@@ -29,8 +29,7 @@
 #if !defined(_CCCL_DISABLE_INT128)
 #  if _CCCL_COMPILER(NVRTC) && defined(__CUDACC_RTC_INT128__) && _CCCL_OS(LINUX)
 #    define _CCCL_HAS_INT128() 1
-#  elif defined(__SIZEOF_INT128__) && (_CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)) \
-    && _CCCL_OS(LINUX)
+#  elif defined(__SIZEOF_INT128__) && _CCCL_OS(LINUX)
 #    define _CCCL_HAS_INT128() 1
 #  else
 #    define _CCCL_HAS_INT128() 0
