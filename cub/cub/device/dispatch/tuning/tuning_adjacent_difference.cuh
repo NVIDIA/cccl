@@ -52,7 +52,7 @@ struct policy_hub
 {
   using ValueT = typename std::iterator_traits<InputIteratorT>::value_type;
 
-  struct Policy370 : ChainedPolicy<370, Policy370, Policy370>
+  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
   {
     using AdjacentDifferencePolicy =
       AgentAdjacentDifferencePolicy<128,
@@ -62,7 +62,7 @@ struct policy_hub
                                     BLOCK_STORE_WARP_TRANSPOSE>;
   };
 
-  using MaxPolicy = Policy370;
+  using MaxPolicy = Policy500;
 };
 } // namespace adjacent_difference
 } // namespace detail

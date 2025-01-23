@@ -381,6 +381,24 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DispatchSpmv
   // Tuning policies
   //---------------------------------------------------------------------
 
+  /// SM50
+  struct Policy500
+  {
+    using SpmvPolicyT =
+      AgentSpmvPolicy<(sizeof(ValueT) > 4) ? 64 : 128,
+                      (sizeof(ValueT) > 4) ? 6 : 7,
+                      LOAD_LDG,
+                      LOAD_DEFAULT,
+                      (sizeof(ValueT) > 4) ? LOAD_LDG : LOAD_DEFAULT,
+                      (sizeof(ValueT) > 4) ? LOAD_LDG : LOAD_DEFAULT,
+                      LOAD_LDG,
+                      (sizeof(ValueT) > 4) ? true : false,
+                      (sizeof(ValueT) > 4) ? BLOCK_SCAN_WARP_SCANS : BLOCK_SCAN_RAKING_MEMOIZE>;
+
+    using SegmentFixupPolicyT =
+      AgentSegmentFixupPolicy<128, 3, BLOCK_LOAD_VECTORIZE, LOAD_LDG, BLOCK_SCAN_RAKING_MEMOIZE>;
+  };
+
   /// SM60
   struct Policy600
   {
@@ -405,11 +423,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DispatchSpmv
 #if (CUB_PTX_ARCH >= 600)
   using PtxPolicy = Policy600;
 
-#elif (CUB_PTX_ARCH >= 500)
-  using PtxPolicy = Policy500;
-
 #else
-  using PtxPolicy = Policy370;
+  using PtxPolicy = Policy500;
 #endif
 
   // "Opaque" policies (whose parameterizations aren't reflected in the type signature)
@@ -445,8 +460,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DispatchSpmv
           spmv_config.template Init<typename Policy500::SpmvPolicyT>();
           segment_fixup_config.template Init<typename Policy500::SegmentFixupPolicyT>();
         } else {
-          spmv_config.template Init<typename Policy370::SpmvPolicyT>();
-          segment_fixup_config.template Init<typename Policy370::SegmentFixupPolicyT>();
+          spmv_config.template Init<typename Policy500::SpmvPolicyT>();
+          segment_fixup_config.template Init<typename Policy500::SegmentFixupPolicyT>();
         }));
   }
 

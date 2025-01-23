@@ -54,7 +54,7 @@
 
 struct device_rle_policy_hub
 {
-  struct Policy370 : cub::ChainedPolicy<370, Policy370, Policy370>
+  struct Policy500 : cub::ChainedPolicy<500, Policy500, Policy500>
   {
     using RleSweepPolicyT =
       cub::AgentRlePolicy<TUNE_THREADS,
@@ -66,7 +66,7 @@ struct device_rle_policy_hub
                           delay_constructor_t>;
   };
 
-  using MaxPolicy = Policy370;
+  using MaxPolicy = Policy500;
 };
 #endif // !TUNE_BASE
 

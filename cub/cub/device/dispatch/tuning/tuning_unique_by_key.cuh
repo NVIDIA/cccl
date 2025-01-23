@@ -538,9 +538,9 @@ struct policy_hub
                              detail::default_delay_constructor_t<int>>;
   };
 
-  struct Policy370
+  struct Policy500
       : DefaultPolicy<9, 128>
-      , ChainedPolicy<370, Policy370, Policy370>
+      , ChainedPolicy<500, Policy500, Policy500>
   {};
 
   // Use values from tuning if a specialization exists, otherwise pick the default
@@ -557,7 +557,7 @@ struct policy_hub
 
   struct Policy520
       : DefaultPolicy<11, 64>
-      , ChainedPolicy<520, Policy520, Policy370>
+      , ChainedPolicy<520, Policy520, Policy500>
   {};
 
   struct Policy800 : ChainedPolicy<800, Policy800, Policy520>

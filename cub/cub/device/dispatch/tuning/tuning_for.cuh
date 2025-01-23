@@ -49,12 +49,12 @@ namespace for_each
 
 struct policy_hub_t
 {
-  struct policy_370_t : ChainedPolicy<370, policy_370_t, policy_370_t>
+  struct policy_500_t : ChainedPolicy<500, policy_500_t, policy_500_t>
   {
     using for_policy_t = policy_t<256, 2>;
   };
 
-  using MaxPolicy = policy_370_t;
+  using MaxPolicy = policy_500_t;
 };
 
 } // namespace for_each

@@ -75,8 +75,27 @@ struct policy_hub
   using buff_delay_constructor_t  = detail::default_delay_constructor_t<BufferOffsetT>;
   using block_delay_constructor_t = detail::default_delay_constructor_t<BlockOffsetT>;
 
+  /// SM50
+  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
+  {
+    static constexpr bool PREFER_POW2_BITS = true;
+    using AgentSmallBufferPolicyT          = AgentBatchMemcpyPolicy<
+               BLOCK_THREADS,
+               BUFFERS_PER_THREAD,
+               TLEV_BYTES_PER_THREAD,
+               PREFER_POW2_BITS,
+               LARGE_BUFFER_BLOCK_THREADS * LARGE_BUFFER_BYTES_PER_THREAD,
+               WARP_LEVEL_THRESHOLD,
+               BLOCK_LEVEL_THRESHOLD,
+               buff_delay_constructor_t,
+               block_delay_constructor_t>;
+
+    using AgentLargeBufferPolicyT =
+      agent_large_buffer_policy<LARGE_BUFFER_BLOCK_THREADS, LARGE_BUFFER_BYTES_PER_THREAD>;
+  };
+
   /// SM70
-  struct Policy700 : ChainedPolicy<700, Policy700, Policy700>
+  struct Policy700 : ChainedPolicy<700, Policy700, Policy500>
   {
     static constexpr bool PREFER_POW2_BITS = false;
     using AgentSmallBufferPolicyT          = AgentBatchMemcpyPolicy<

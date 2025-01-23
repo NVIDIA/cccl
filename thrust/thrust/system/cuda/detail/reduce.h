@@ -109,24 +109,28 @@ template <class, class>
 struct Tuning;
 
 template <class T>
-struct Tuning<sm52, T>
+struct Tuning<sm50, T>
 {
-  enum
-  {
-    // Relative size of T type to a 4-byte word
-    SCALE_FACTOR_4B = (sizeof(T) + 3) / 4,
-    // Relative size of T type to a 1-byte word
-    SCALE_FACTOR_1B = sizeof(T),
-  };
-
-  using type =
-    PtxPolicy<256,
-              (((20 / SCALE_FACTOR_4B) > (1)) ? (20 / SCALE_FACTOR_4B) : (1)),
-              2,
+  // ReducePolicy1B (GTX Titan: 228.7 GB/s @ 192M 1B items)
+  using ReducePolicy1B =
+    PtxPolicy<128,
+              (((24 / Tuning::SCALE_FACTOR_1B) > (1)) ? (24 / Tuning::SCALE_FACTOR_1B) : (1)),
+              4,
               cub::BLOCK_REDUCE_WARP_REDUCTIONS,
-              cub::LOAD_DEFAULT,
-              cub::GRID_MAPPING_RAKE>;
-}; // Tuning sm52
+              cub::LOAD_LDG,
+              cub::GRID_MAPPING_DYNAMIC>;
+
+  // ReducePolicy4B types (GTX Titan: 255.1 GB/s @ 48M 4B items)
+  using ReducePolicy4B =
+    PtxPolicy<256,
+              (((20 / Tuning::SCALE_FACTOR_4B) > (1)) ? (20 / Tuning::SCALE_FACTOR_4B) : (1)),
+              4,
+              cub::BLOCK_REDUCE_WARP_REDUCTIONS,
+              cub::LOAD_LDG,
+              cub::GRID_MAPPING_DYNAMIC>;
+
+  using type = ::cuda::std::conditional_t<(sizeof(T) < 4), ReducePolicy1B, ReducePolicy4B>;
+}; // Tuning sm50
 
 template <class InputIt, class OutputIt, class T, class Size, class ReductionOp>
 struct ReduceAgent
