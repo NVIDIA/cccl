@@ -63,15 +63,15 @@
 #endif // !_CCCL_HAS_NVBF16
 
 #if !defined(_CCCL_DISABLE_FLOAT128)
-#  if (defined(__SIZEOF_FLOAT128__) || defined(__FLOAT128__)) && _CCCL_OS(LINUX)                          \
-    && (_CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)) && !defined(__CUDA_ARCH__) \
-    && !_CCCL_COMPILER(NVRTC)
-#    define _CCCL_HAS_FLOAT128() 1
+#  if (defined(__SIZEOF_FLOAT128__) || defined(__FLOAT128__)) && _CCCL_OS(LINUX) && !_CCCL_COMPILER(NVRTC)
+#    if !defined(__CUDA_ARCH__) || (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 1000)
+#      define _CCCL_HAS_FLOAT128() 1
+#    else
+#      define _CCCL_HAS_FLOAT128() 0
+#    endif
 #  else
 #    define _CCCL_HAS_FLOAT128() 0
 #  endif
-#else
-#  define _CCCL_HAS_FLOAT128() 0
-#endif // !_CCCL_DISABLE_FLOAT128
+#endif // !defined(_CCCL_DISABLE_FLOAT128)
 
 #endif // __CCCL_EXTENDED_DATA_TYPES_H
