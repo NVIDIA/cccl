@@ -222,27 +222,6 @@ struct Tuning;
 namespace mpl = thrust::detail::mpl::math;
 
 template <class T, class U>
-struct Tuning<sm50, T, U>
-{
-  enum
-  {
-    MAX_INPUT_BYTES             = mpl::max<size_t, sizeof(T), sizeof(U)>::value,
-    COMBINED_INPUT_BYTES        = sizeof(T), // + sizeof(Value),
-    NOMINAL_4B_ITEMS_PER_THREAD = 7,
-    ITEMS_PER_THREAD =
-      mpl::min<int,
-               NOMINAL_4B_ITEMS_PER_THREAD,
-               mpl::max<int,
-                        1,
-                        static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1)
-                                         / COMBINED_INPUT_BYTES)>::value>::value,
-  };
-
-  using type =
-    PtxPolicy<128, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS>;
-}; // tuning sm50
-
-template <class T, class U>
 struct Tuning<sm52, T, U>
 {
   enum

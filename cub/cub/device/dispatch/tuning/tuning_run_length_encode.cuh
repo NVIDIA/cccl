@@ -277,7 +277,7 @@ struct policy_hub
   static auto select_agent_policy(long) -> typename DefaultPolicy<LOAD_DEFAULT>::ReduceByKeyPolicyT;
 
   // SM80
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy370>
+  struct Policy800 : ChainedPolicy<800, Policy800, Policy500>
   {
     using ReduceByKeyPolicyT = decltype(select_agent_policy<encode::sm80_tuning<LengthT, KeyT>>(0));
   };
@@ -472,7 +472,7 @@ struct policy_hub
     typename DefaultPolicy<BLOCK_LOAD_WARP_TRANSPOSE, LengthT, LOAD_DEFAULT>::RleSweepPolicyT;
 
   // SM80
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy370>
+  struct Policy800 : ChainedPolicy<800, Policy800, Policy500>
   {
     using RleSweepPolicyT = decltype(select_agent_policy<non_trivial_runs::sm80_tuning<LengthT, KeyT>>(0));
   };

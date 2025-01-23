@@ -115,31 +115,7 @@ template <class Arch, class Key, class Value>
 struct Tuning;
 
 template <class Key, class Value>
-struct Tuning<sm50, Key, Value>
-{
-  enum
-  {
-    MAX_INPUT_BYTES      = mpl::max<size_t, sizeof(Key), sizeof(Value)>::value,
-    COMBINED_INPUT_BYTES = sizeof(Key) + sizeof(Value),
-
-    NOMINAL_4B_ITEMS_PER_THREAD = 6,
-
-    ITEMS_PER_THREAD =
-      (MAX_INPUT_BYTES <= 8)
-        ? 6
-        : mpl::min<
-            int,
-            NOMINAL_4B_ITEMS_PER_THREAD,
-            mpl::max<int, 1, ((NOMINAL_4B_ITEMS_PER_THREAD * 8) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES>::
-              value>::value,
-  };
-
-  using type =
-    PtxPolicy<128, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_LDG, cub::BLOCK_SCAN_WARP_SCANS>;
-}; // Tuning sm50
-
-template <class Key, class Value>
-struct Tuning<sm52, Key, Value> : Tuning<sm50, Key, Value>
+struct Tuning<sm52, Key, Value>
 {
   enum
   {

@@ -53,7 +53,7 @@ struct policy_hub
 
   using tune_type = char[has_values ? sizeof(KeyT) + sizeof(ValueT) : sizeof(KeyT)];
 
-  struct policy500 : ChainedPolicy<500, policy500, policy300>
+  struct policy500 : ChainedPolicy<500, policy500, policy500>
   {
     using merge_policy =
       agent_policy_t<256,
