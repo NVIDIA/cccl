@@ -48,7 +48,8 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __msvc_constexpr_clz(_Tp __x) noexcept
   return __digits;
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI int __msvc_runtime_clz(uint32_t __x) noexcept
+template <typename _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI int __msvc_runtime_clz(_Tp __x) noexcept
 {
   constexpr auto __digits = numeric_limits<_Tp>::digits;
   unsigned long __where;
