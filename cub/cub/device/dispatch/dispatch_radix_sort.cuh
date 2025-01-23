@@ -153,7 +153,7 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltUp
 
   // Parameterize AgentRadixSortUpsweep type for the current configuration
   using AgentRadixSortUpsweepT =
-    detail::radix_sort::AgentRadixSortUpsweep<ActiveUpsweepPolicyT, KeyT, OffsetT, DecomposerT>;
+    AgentRadixSortUpsweep<ActiveUpsweepPolicyT, KeyT, OffsetT, DecomposerT>;
 
   // Shared memory storage
   __shared__ typename AgentRadixSortUpsweepT::TempStorage temp_storage;
@@ -194,7 +194,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicy::BLOCK_THREADS), 
 {
   // Parameterize the AgentScan type for the current configuration
   using AgentScanT =
-    detail::scan::AgentScan<typename ChainedPolicyT::ActivePolicy::ScanPolicy,
+    scan::AgentScan<typename ChainedPolicyT::ActivePolicy::ScanPolicy,
                             OffsetT*,
                             OffsetT*,
                             ::cuda::std::plus<>,
@@ -280,7 +280,7 @@ template <typename ChainedPolicyT,
           typename KeyT,
           typename ValueT,
           typename OffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
+          typename DecomposerT = identity_decomposer_t>
 __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltDownsweepPolicy::BLOCK_THREADS)
                                        : int(ChainedPolicyT::ActivePolicy::DownsweepPolicy::BLOCK_THREADS)))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortDownsweepKernel(
@@ -312,7 +312,7 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltDo
   };
 
   // Parameterize AgentRadixSortDownsweep type for the current configuration
-  using AgentRadixSortDownsweepT = detail::radix_sort::
+  using AgentRadixSortDownsweepT = 
     AgentRadixSortDownsweep<ActiveDownsweepPolicyT, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>;
 
   // Shared memory storage
@@ -372,7 +372,7 @@ template <typename ChainedPolicyT,
           typename KeyT,
           typename ValueT,
           typename OffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
+          typename DecomposerT = identity_decomposer_t>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS), 1)
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortSingleTileKernel(
     const KeyT* d_keys_in,
@@ -411,7 +411,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THRE
     BlockLoad<ValueT, BLOCK_THREADS, ITEMS_PER_THREAD, ChainedPolicyT::ActivePolicy::SingleTilePolicy::LOAD_ALGORITHM>;
 
   // Unsigned word for key bits
-  using traits           = detail::radix::traits_t<KeyT>;
+  using traits           = radix::traits_t<KeyT>;
   using bit_ordered_type = typename traits::bit_ordered_type;
 
   // Shared memory storage
@@ -539,7 +539,7 @@ template <typename ChainedPolicyT,
           typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
           typename SegmentSizeT,
-          typename DecomposerT = detail::identity_decomposer_t>
+          typename DecomposerT = identity_decomposer_t>
 __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmentedPolicy::BLOCK_THREADS
                                        : ChainedPolicyT::ActivePolicy::SegmentedPolicy::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedRadixSortKernel(
@@ -573,14 +573,14 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
   };
 
   // Upsweep type
-  using BlockUpsweepT = detail::radix_sort::AgentRadixSortUpsweep<SegmentedPolicyT, KeyT, OffsetT, DecomposerT>;
+  using BlockUpsweepT = AgentRadixSortUpsweep<SegmentedPolicyT, KeyT, SegmentSizeT, DecomposerT>;
 
   // Digit-scan type
   using DigitScanT = BlockScan<SegmentSizeT, BLOCK_THREADS>;
 
   // Downsweep type
   using BlockDownsweepT =
-    detail::radix_sort::AgentRadixSortDownsweep<SegmentedPolicyT, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>;
+    AgentRadixSortDownsweep<SegmentedPolicyT, IS_DESCENDING, KeyT, ValueT, SegmentSizeT, DecomposerT>;
 
   enum
   {
@@ -729,14 +729,14 @@ template <typename ChainedPolicyT,
           bool IS_DESCENDING,
           typename KeyT,
           typename OffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
+          typename DecomposerT = identity_decomposer_t>
 CUB_DETAIL_KERNEL_ATTRIBUTES
 __launch_bounds__(ChainedPolicyT::ActivePolicy::HistogramPolicy::BLOCK_THREADS) void DeviceRadixSortHistogramKernel(
   OffsetT* d_bins_out, const KeyT* d_keys_in, OffsetT num_items, int start_bit, int end_bit, DecomposerT decomposer = {})
 {
   using HistogramPolicyT = typename ChainedPolicyT::ActivePolicy::HistogramPolicy;
   using AgentT =
-    detail::radix_sort::AgentRadixSortHistogram<HistogramPolicyT, IS_DESCENDING, KeyT, OffsetT, DecomposerT>;
+    AgentRadixSortHistogram<HistogramPolicyT, IS_DESCENDING, KeyT, OffsetT, DecomposerT>;
   __shared__ typename AgentT::TempStorage temp_storage;
   AgentT agent(temp_storage, d_bins_out, d_keys_in, num_items, start_bit, end_bit, decomposer);
   agent.Process();
@@ -749,7 +749,7 @@ template <typename ChainedPolicyT,
           typename OffsetT,
           typename PortionOffsetT,
           typename AtomicOffsetT = PortionOffsetT,
-          typename DecomposerT   = detail::identity_decomposer_t>
+          typename DecomposerT   = identity_decomposer_t>
 CUB_DETAIL_KERNEL_ATTRIBUTES void __launch_bounds__(ChainedPolicyT::ActivePolicy::OnesweepPolicy::BLOCK_THREADS)
   DeviceRadixSortOnesweepKernel(
     AtomicOffsetT* d_lookback,
@@ -766,7 +766,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void __launch_bounds__(ChainedPolicyT::ActivePolicy
     DecomposerT decomposer = {})
 {
   using OnesweepPolicyT = typename ChainedPolicyT::ActivePolicy::OnesweepPolicy;
-  using AgentT          = detail::radix_sort::
+  using AgentT          = 
     AgentRadixSortOnesweep<OnesweepPolicyT, IS_DESCENDING, KeyT, ValueT, OffsetT, PortionOffsetT, DecomposerT>;
   __shared__ typename AgentT::TempStorage s;
 
