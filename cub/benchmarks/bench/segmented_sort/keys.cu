@@ -109,7 +109,7 @@ struct device_seg_sort_policy_hub
 {
   using DominantT = KeyT;
 
-  struct Policy500 : cub::ChainedPolicy<370, Policy500, Policy500>
+  struct Policy500 : cub::ChainedPolicy<500, Policy500, Policy500>
   {
     static constexpr int BLOCK_THREADS          = TUNE_THREADS;
     static constexpr int RADIX_BITS             = TUNE_RADIX_BITS;
