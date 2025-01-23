@@ -141,17 +141,19 @@
 #endif // clang < 10 || nvcc < 11.7
 
 #if _CCCL_CHECK_BUILTIN(builtin_popcount) || _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(CLANG) \
-  || _CCCL_COMPILER(NVHPC)
+  || _CCCL_COMPILER(NVHPC) || defined(__CUDA_ARCH__) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_POPCOUNT(...)   ::__builtin_popcount(__VA_ARGS__)
 #  define _CCCL_BUILTIN_POPCOUNTLL(...) ::__builtin_popcountll(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_popcount)
 
-#if _CCCL_CHECK_BUILTIN(builtin_clz) || _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
+#if _CCCL_CHECK_BUILTIN(builtin_clz) || _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC) \
+  || defined(__CUDA_ARCH__) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_CLZ(...)   ::__builtin_clz(__VA_ARGS__)
 #  define _CCCL_BUILTIN_CLZLL(...) ::__builtin_clzll(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_clz)
 
-#if _CCCL_CHECK_BUILTIN(builtin_ctz) || _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
+#if _CCCL_CHECK_BUILTIN(builtin_ctz) || _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC) \
+  || defined(__CUDA_ARCH__) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_CTZ(...)   ::__builtin_ctz(__VA_ARGS__)
 #  define _CCCL_BUILTIN_CTZLL(...) ::__builtin_ctzll(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_ctz)
