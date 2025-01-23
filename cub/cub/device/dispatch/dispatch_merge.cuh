@@ -138,7 +138,7 @@ __launch_bounds__(
     CompareOp>::type;
   using MergePolicy = typename MergeAgent::policy;
 
-  using THRUST_NS_QUALIFIER::cuda_cub::core::make_load_iterator;
+  using THRUST_NS_QUALIFIER::cuda_cub::core::detail::make_load_iterator;
   using vsmem_helper_t = vsmem_helper_impl<MergeAgent>;
   __shared__ typename vsmem_helper_t::static_temp_storage_t shared_temp_storage;
   auto& temp_storage = vsmem_helper_t::get_temp_storage(shared_temp_storage, global_temp_storage);
