@@ -48,6 +48,7 @@
 #endif // no system header
 
 #include <cub/util_debug.cuh>
+#include <cub/util_policy_wrapper_t.cuh>
 #include <cub/util_type.cuh>
 // for backward compatibility
 #include <cub/util_temporary_storage.cuh>
@@ -68,19 +69,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-/**
- * @brief Helper class template that allows overwriting the `BLOCK_THREAD` and `ITEMS_PER_THREAD`
- * configurations of a given policy.
- */
-// TODO(bgruber): this should be called something like "override_policy"
-template <typename PolicyT, int BLOCK_THREADS_, int ITEMS_PER_THREAD_ = PolicyT::ITEMS_PER_THREAD>
-struct policy_wrapper_t : PolicyT
-{
-  static constexpr int ITEMS_PER_THREAD = ITEMS_PER_THREAD_;
-  static constexpr int BLOCK_THREADS    = BLOCK_THREADS_;
-  static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
-};
-
 /**
  * \brief Empty kernel for querying PTX manifest metadata (e.g., version) for the current device
  */
