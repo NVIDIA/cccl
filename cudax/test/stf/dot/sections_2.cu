@@ -21,22 +21,23 @@ int main()
 {
 // TODO (miscco): Make it work for windows
 #if !_CCCL_COMPILER(MSVC)
-    context ctx;
-    auto lA = ctx.logical_token().set_symbol("A");
-    auto lB = ctx.logical_token().set_symbol("B");
-    auto lC = ctx.logical_token().set_symbol("C");
-    ctx.dot_push_section("foo");
-    for (size_t i = 0; i < 2; i++)
+  context ctx;
+  auto lA = ctx.logical_token().set_symbol("A");
+  auto lB = ctx.logical_token().set_symbol("B");
+  auto lC = ctx.logical_token().set_symbol("C");
+  ctx.dot_push_section("foo");
+  for (size_t i = 0; i < 2; i++)
+  {
+    auto guard = ctx.dot_section("bar");
+    ctx.task(lA.read(), lB.rw()).set_symbol("t1")->*[](cudaStream_t, auto, auto) {};
+    for (size_t j = 0; j < 2; j++)
     {
-      auto guard = ctx.dot_section("bar");
-      ctx.task(lA.read(), lB.rw()).set_symbol("t1")->*[](cudaStream_t, auto, auto) {};
-      for (size_t j = 0; j < 2; j++) {
-         auto inner_guard = ctx.dot_section("baz");
-         ctx.task(lA.read(), lC.rw()).set_symbol("t2")->*[](cudaStream_t, auto, auto) {};
-         ctx.task(lB.read(), lC.read(), lA.rw()).set_symbol("t3")->*[](cudaStream_t, auto, auto, auto) {};
-      }
+      auto inner_guard = ctx.dot_section("baz");
+      ctx.task(lA.read(), lC.rw()).set_symbol("t2")->*[](cudaStream_t, auto, auto) {};
+      ctx.task(lB.read(), lC.read(), lA.rw()).set_symbol("t3")->*[](cudaStream_t, auto, auto, auto) {};
     }
-    ctx.dot_pop_section();
-    ctx.finalize();
+  }
+  ctx.dot_pop_section();
+  ctx.finalize();
 #endif // !_CCCL_COMPILER(MSVC)
 }
