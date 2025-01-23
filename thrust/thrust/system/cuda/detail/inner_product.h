@@ -39,15 +39,15 @@
 #if _CCCL_HAS_CUDA_COMPILER
 #  include <thrust/detail/minmax.h>
 #  include <thrust/distance.h>
+#  include <thrust/iterator/transform_iterator.h>
+#  include <thrust/iterator/zip_iterator.h>
 #  include <thrust/system/cuda/detail/reduce.h>
-
-#  include <iterator>
+#  include <thrust/zip_function.h>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace cuda_cub
 {
-
 template <class Derived, class InputIt1, class InputIt2, class T, class ReduceOp, class ProductOp>
 T _CCCL_HOST_DEVICE inner_product(
   execution_policy<Derived>& policy,
@@ -58,11 +58,9 @@ T _CCCL_HOST_DEVICE inner_product(
   ReduceOp reduce_op,
   ProductOp product_op)
 {
-  using size_type        = typename iterator_traits<InputIt1>::difference_type;
-  size_type num_items    = static_cast<size_type>(thrust::distance(first1, last1));
-  using binop_iterator_t = transform_pair_of_input_iterators_t<T, InputIt1, InputIt2, ProductOp>;
-
-  return cuda_cub::reduce_n(policy, binop_iterator_t(first1, first2, product_op), num_items, init, reduce_op);
+  const auto n     = thrust::distance(first1, last1);
+  const auto first = make_transform_iterator(make_zip_iterator(first1, first2), make_zip_function(product_op));
+  return cuda_cub::reduce_n(policy, first, n, init, reduce_op);
 }
 
 template <class Derived, class InputIt1, class InputIt2, class T>
@@ -71,7 +69,6 @@ inner_product(execution_policy<Derived>& policy, InputIt1 first1, InputIt1 last1
 {
   return cuda_cub::inner_product(policy, first1, last1, first2, init, plus<T>(), multiplies<T>());
 }
-
 } // namespace cuda_cub
 
 THRUST_NAMESPACE_END
