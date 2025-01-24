@@ -24,6 +24,7 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -31,21 +32,20 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotl_impl(_Tp __t, uint32_t __cnt_mod) noexcept
 {
-  return (__t << __cnt_mod) | (__t >> (numeric_limits<_Tp>::digits - __cnt_mod));
+  return __cnt_mod == 0 ? __t : (__t << __cnt_mod) | (__t >> (numeric_limits<_Tp>::digits - __cnt_mod));
 }
 
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotr_impl(_Tp __t, uint32_t __cnt_mod) noexcept
 {
-  return (__t >> __cnt_mod) | (__t << (numeric_limits<_Tp>::digits - __cnt_mod));
+  return __cnt_mod == 0 ? __t : (__t >> __cnt_mod) | (__t << (numeric_limits<_Tp>::digits - __cnt_mod));
 }
 
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotl(_Tp __t, uint32_t __cnt) noexcept
 {
-  static_assert(__cccl_is_unsigned_integer<_Tp>::value, "__rotl requires unsigned types");
   using __nlt = numeric_limits<_Tp>;
-  if (!is_constant_evaluated() && sizeof(_Tp) <= sizeof(uint32_t))
+  if (!is_constant_evaluated() && sizeof(_Tp) == sizeof(uint32_t))
   {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
                       (return ::__funnelshift_l(__t, __t, __cnt);), //
@@ -57,9 +57,8 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotl(_Tp __t, uint32_t
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotr(_Tp __t, uint32_t __cnt) noexcept
 {
-  static_assert(__cccl_is_unsigned_integer<_Tp>::value, "__rotr requires unsigned types");
   using __nlt = numeric_limits<_Tp>;
-  if (!is_constant_evaluated() && sizeof(_Tp) <= sizeof(uint32_t))
+  if (!is_constant_evaluated() && sizeof(_Tp) == sizeof(uint32_t))
   {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
                       (return ::__funnelshift_r(__t, __t, __cnt);), //
