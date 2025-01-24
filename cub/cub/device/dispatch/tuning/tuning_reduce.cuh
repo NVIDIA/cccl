@@ -141,7 +141,6 @@ struct policy_hub
 } // namespace reduce
 } // namespace detail
 
-// TODO(bgruber): deprecate at some point when we have a better API for users to supply tunings
 /// @tparam AccumT
 ///   Accumulator data type
 ///
@@ -152,10 +151,20 @@ struct policy_hub
 ///   Binary reduction functor type having member
 ///   `auto operator()(const T &a, const U &b)`
 template <typename AccumT, typename OffsetT, typename ReductionOpT>
-using DeviceReducePolicy = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>;
+using DeviceReducePolicy CCCL_DEPRECATED_BECAUSE(
+  "This class is considered an implementation detail and it will be "
+  "removed.") = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>;
 
-// TODO(bgruber): deprecate those
-using detail::reduce::MakeReducePolicyWrapper;
-using detail::reduce::ReducePolicyWrapper;
+template <typename PolicyT, typename Enable = void>
+using ReducePolicyWrapper CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and it will be "
+                                                  "removed.") = detail::reduce::ReducePolicyWrapper<PolicyT, Enable>;
+
+template <typename PolicyT>
+CCCL_DEPRECATED_BECAUSE("This function is considered an implementation detail and it will "
+                        "be removed.")
+CUB_RUNTIME_FUNCTION detail::reduce::ReducePolicyWrapper<PolicyT> MakeReducePolicyWrapper(PolicyT policy)
+{
+  return detail::reduce::ReducePolicyWrapper<PolicyT>{policy};
+}
 
 CUB_NAMESPACE_END
