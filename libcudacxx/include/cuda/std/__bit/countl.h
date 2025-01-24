@@ -21,9 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/clz.h>
-#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__bit/rotate.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/cstdint>
@@ -31,63 +30,88 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-namespace __detail
-{
+// Forward decl for recursive use in split word operations
+template <class _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __countl_zero(_Tp __t) noexcept;
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<sizeof(_Tp) == sizeof(uint32_t) || sizeof(_Tp) == sizeof(uint64_t), int>
-__countl_zero(_Tp __t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<sizeof(_Tp) <= sizeof(uint32_t), int>
+__countl_zero_dispatch(_Tp __t) noexcept
 {
-  using _Sp         = _If<sizeof(_Tp) == sizeof(uint32_t), uint32_t, uint64_t>;
-  auto __clz_result = _CUDA_VSTD::__cccl_clz(static_cast<_Sp>(__t));
-  if (!__cccl_default_is_constant_evaluated())
+  return __cccl_clz(static_cast<uint32_t>(__t)) - (numeric_limits<uint32_t>::digits - numeric_limits<_Tp>::digits);
+}
+
+template <class _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<sizeof(_Tp) == sizeof(uint64_t), int>
+__countl_zero_dispatch(_Tp __t) noexcept
+{
+  return __cccl_clz(static_cast<uint64_t>(__t)) - (numeric_limits<uint64_t>::digits - numeric_limits<_Tp>::digits);
+}
+
+template <typename _Tp, int _St = sizeof(_Tp) / sizeof(uint64_t)>
+struct __countl_zero_rotl_impl
+{
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr int __short_circuit(_Tp __t, int __cur)
   {
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __clz_result;), (return __t ? __clz_result : numeric_limits<_Sp>::digits;))
+    // This stops processing early if the current word is not empty
+    return (__cur == numeric_limits<uint64_t>::digits)
+           ? __cur + __countl_zero_rotl_impl<_Tp, _St - 1>::__count(__t)
+           : __cur;
   }
-  return __t ? __clz_result : numeric_limits<_Sp>::digits;
-}
 
-template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<sizeof(_Tp) < sizeof(uint32_t), int> __countl_zero(_Tp __t) noexcept
-{
-  return _CUDA_VSTD::__detail::__countl_zero(static_cast<uint32_t>(__t))
-       - (numeric_limits<uint32_t>::digits - numeric_limits<_Tp>::digits);
-}
-
-template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<(sizeof(_Tp) > sizeof(uint64_t)), int> __countl_zero(_Tp __t) noexcept
-{
-  constexpr int _Ratio = sizeof(_Tp) / sizeof(uint64_t);
-  struct _Array
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr int __countl_iter(_Tp __t)
   {
-    uint64_t __array[_Ratio];
-  };
-  auto __a = _CUDA_VSTD::bit_cast<_Array>(__t);
-  for (int __i = _Ratio - 1; __i >= 0; --__i)
-  {
-    if (__a.__array[__i])
-    {
-      return _CUDA_VSTD::__detail::__countl_zero(__a.__array[__i])
-           + (_Ratio - 1 - __i) * numeric_limits<uint64_t>::digits;
-    }
+    // After rotating pass result of clz to another step for processing
+    return __short_circuit(__t, __countl_zero(static_cast<uint64_t>(__t)));
   }
-  return numeric_limits<_Tp>::digits;
-}
 
-} // namespace __detail
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr int __count(_Tp __t)
+  {
+    return __countl_iter(__rotl(__t, numeric_limits<uint64_t>::digits));
+  }
+};
+
+template <typename _Tp>
+struct __countl_zero_rotl_impl<_Tp, 1>
+{
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr int __count(_Tp __t)
+  {
+    return __countl_zero(static_cast<uint64_t>(__rotl(__t, numeric_limits<uint64_t>::digits)));
+  }
+};
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer<_Tp>::value, int>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<(sizeof(_Tp) > sizeof(uint64_t)), int>
+__countl_zero_dispatch(_Tp __t) noexcept
+{
+  return __countl_zero_rotl_impl<_Tp>::__count(__t);
+}
+
+template <class _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __countl_zero(_Tp __t) noexcept
+{
+  static_assert(__cccl_is_unsigned_integer<_Tp>::value, "__countl_zero requires unsigned");
+  return __t ? __countl_zero_dispatch(__t) : numeric_limits<_Tp>::digits;
+}
+
+template <class _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __countl_one(_Tp __t) noexcept
+{
+  static_assert(__cccl_is_unsigned_integer<_Tp>::value, "__countl_one requires unsigned");
+  return __t != numeric_limits<_Tp>::max() ? __countl_zero(static_cast<_Tp>(~__t)) : numeric_limits<_Tp>::digits;
+}
+
+template <class _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer<_Tp>::value, int>
 countl_zero(_Tp __t) noexcept
 {
-  return _CUDA_VSTD::__detail::__countl_zero(__t);
+  return __countl_zero(__t);
 }
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer<_Tp>::value, int>
-countl_one(_Tp __t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer<_Tp>::value, int> countl_one(_Tp __t) noexcept
 {
-  return _CUDA_VSTD::__detail::__countl_zero(static_cast<_Tp>(~__t));
+  return __countl_one(__t);
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
