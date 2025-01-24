@@ -31,7 +31,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr remove_reference_t<_Tp>&& move(_Tp&& __t) noexcept
 {
-  typedef _CCCL_NODEBUG_ALIAS remove_reference_t<_Tp> _Up;
+  using _Up _CCCL_NODEBUG_ALIAS = remove_reference_t<_Tp>;
   return static_cast<_Up&&>(__t);
 }
 

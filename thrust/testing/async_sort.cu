@@ -1,3 +1,8 @@
+#include <cuda/__cccl_config>
+
+// need to suppress deprecation warnings inside a lot of thrust headers
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 #include <thrust/detail/config.h>
 
 // Disabled on MSVC && NVCC < 11.1 for GH issue #1098.
@@ -175,3 +180,5 @@ DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES_AND_NAME(
 // TODO: Test future return type.
 
 #endif
+
+_CCCL_SUPPRESS_DEPRECATED_POP

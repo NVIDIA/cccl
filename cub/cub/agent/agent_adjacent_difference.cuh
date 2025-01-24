@@ -63,6 +63,11 @@ struct AgentAdjacentDifferencePolicy
   static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = _STORE_ALGORITHM;
 };
 
+namespace detail
+{
+namespace adjacent_difference
+{
+
 template <typename Policy,
           typename InputIteratorT,
           typename OutputIteratorT,
@@ -138,7 +143,7 @@ struct AgentDifference
       BlockLoad(temp_storage.load).Load(load_it + tile_base, input);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     if (ReadLeft)
     {
@@ -186,7 +191,7 @@ struct AgentDifference
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     if (IS_LAST_TILE)
     {
@@ -249,5 +254,26 @@ struct AgentDifferenceInit
     }
   }
 };
+
+} // namespace adjacent_difference
+} // namespace detail
+
+template <typename Policy,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename DifferenceOpT,
+          typename OffsetT,
+          typename InputT,
+          typename OutputT,
+          bool MayAlias,
+          bool ReadLeft>
+using AgentDifference CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
+                                              "interface will be removed.") = detail::adjacent_difference::
+  AgentDifference<Policy, InputIteratorT, OutputIteratorT, DifferenceOpT, OffsetT, InputT, OutputT, MayAlias, ReadLeft>;
+
+template <typename InputIteratorT, typename InputT, typename OffsetT, bool ReadLeft>
+using AgentDifferenceInit CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
+                                                  "interface will be removed.") =
+  detail::adjacent_difference::AgentDifferenceInit<InputIteratorT, InputT, OffsetT, ReadLeft>;
 
 CUB_NAMESPACE_END

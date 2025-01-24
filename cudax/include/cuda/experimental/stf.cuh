@@ -1204,7 +1204,7 @@ UNITTEST("context task")
 
   ctx.task(la.read(), lb.write())->*[](auto s, auto a, auto b) {
     // no-op
-    cudaMemcpyAsync(&a(0), &b(0), sizeof(int), cudaMemcpyDeviceToDevice, s);
+    cudaMemcpyAsync(&b(0), &a(0), sizeof(int), cudaMemcpyDeviceToDevice, s);
   };
 
   ctx.finalize();
@@ -1527,7 +1527,7 @@ public:
         // Our infrastructure currently does not like to work with
         // constant types for the data interface so we pretend this is
         // a modifiable data if necessary
-        return gctx.logical_data(rw_type_of<decltype(x)>(x), current_place.affine_data_place());
+        return gctx.logical_data(to_rw_type_of(x), current_place.affine_data_place());
       };
 
       // Transform the tuple of instances into a tuple of logical data
@@ -1688,7 +1688,7 @@ public:
       // Our infrastructure currently does not like to work with constant
       // types for the data interface so we pretend this is a modifiable
       // data if necessary
-      return gctx.logical_data(rw_type_of<decltype(x)>(x), current_place.affine_data_place());
+      return gctx.logical_data(to_rw_type_of(x), current_place.affine_data_place());
     };
 
     // Transform the tuple of instances into a tuple of logical data
@@ -1849,7 +1849,7 @@ public:
       (void) data_per_iteration;
 
       auto logify = [](auto& dest_ctx, auto x) {
-        return dest_ctx.logical_data(rw_type_of<decltype(x)>(x), exec_place::current_device().affine_data_place());
+        return dest_ctx.logical_data(to_rw_type_of(x), exec_place::current_device().affine_data_place());
       };
 
       for (size_t i = start; i < end; i++)

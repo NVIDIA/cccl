@@ -151,18 +151,22 @@ private:
     int end_bit,
     cudaStream_t stream)
   {
-    return DispatchRadixSort<IsDescending, KeyT, ValueT, OffsetT, DeviceRadixSortPolicy<KeyT, ValueT, OffsetT>, DecomposerT>::
-      Dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_keys,
-        d_values,
-        static_cast<OffsetT>(num_items),
-        begin_bit,
-        end_bit,
-        is_overwrite_okay,
-        stream,
-        decomposer);
+    return DispatchRadixSort<
+      IsDescending,
+      KeyT,
+      ValueT,
+      OffsetT,
+      detail::radix::policy_hub<KeyT, ValueT, OffsetT>,
+      DecomposerT>::Dispatch(d_temp_storage,
+                             temp_storage_bytes,
+                             d_keys,
+                             d_values,
+                             static_cast<OffsetT>(num_items),
+                             begin_bit,
+                             end_bit,
+                             is_overwrite_okay,
+                             stream,
+                             decomposer);
   }
 
   template <bool IsDescending, typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>

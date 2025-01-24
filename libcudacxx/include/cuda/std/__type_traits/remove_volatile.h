@@ -36,12 +36,12 @@ using remove_volatile_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_VOLATILE(_Tp)
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_volatile
 {
-  typedef _Tp type;
+  using type = _Tp;
 };
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_volatile<volatile _Tp>
 {
-  typedef _Tp type;
+  using type = _Tp;
 };
 
 template <class _Tp>

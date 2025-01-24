@@ -50,7 +50,8 @@
 #include <cub/warp/warp_reduce.cuh>
 
 CUB_NAMESPACE_BEGIN
-
+namespace detail
+{
 /**
  * @brief BlockReduceRakingCommutativeOnly provides raking-based methods of parallel reduction
  *        across a CUDA thread block. Does not support non-commutative reduction operators. Does not
@@ -83,7 +84,7 @@ struct BlockReduceRakingCommutativeOnly
 
   // The fall-back implementation to use when BLOCK_THREADS is not a multiple of the warp size or not all threads have
   // valid values
-  using FallBack = BlockReduceRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+  using FallBack = detail::BlockReduceRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
   /// Constants
   enum
@@ -167,7 +168,7 @@ struct BlockReduceRakingCommutativeOnly
           partial;
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Reduce parallelism to one warp
       if (linear_tid < RAKING_THREADS)
@@ -214,7 +215,7 @@ struct BlockReduceRakingCommutativeOnly
           partial;
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Reduce parallelism to one warp
       if (linear_tid < RAKING_THREADS)
@@ -231,5 +232,11 @@ struct BlockReduceRakingCommutativeOnly
     return partial;
   }
 };
+} // namespace detail
+
+template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z, int LEGACY_PTX_ARCH = 0>
+using BlockReduceRakingCommutativeOnly CCCL_DEPRECATED_BECAUSE(
+  "This class is considered an implementation detail and the public interface will be "
+  "removed.") = detail::BlockReduceRakingCommutativeOnly<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z, LEGACY_PTX_ARCH>;
 
 CUB_NAMESPACE_END

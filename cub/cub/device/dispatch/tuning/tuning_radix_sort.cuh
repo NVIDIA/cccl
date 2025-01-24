@@ -887,7 +887,6 @@ struct policy_hub
 } // namespace radix
 } // namespace detail
 
-// TODO(bgruber): deprecate this alias. Users should not access policy_hubs directly.
 /**
  * @brief Tuning policy for kernel specialization
  *
@@ -901,6 +900,7 @@ struct policy_hub
  *   Signed integer type for global offsets
  */
 template <typename KeyT, typename ValueT, typename OffsetT>
-using DeviceRadixSortPolicy = detail::radix::policy_hub<KeyT, ValueT, OffsetT>;
+using DeviceRadixSortPolicy CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and it will be "
+                                                    "removed.") = detail::radix::policy_hub<KeyT, ValueT, OffsetT>;
 
 CUB_NAMESPACE_END

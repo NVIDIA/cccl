@@ -16,7 +16,7 @@
 
 #include <stdexcept>
 
-#include <catch2/catch.hpp>
+#include <testing.cuh>
 #include <utility.cuh>
 
 namespace cudax = cuda::experimental;

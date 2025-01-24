@@ -56,6 +56,26 @@ CUB_NAMESPACE_BEGIN
  * Tuning policy types
  ******************************************************************************/
 
+template <int _BLOCK_THREADS,
+          int _ITEMS_PER_THREAD,
+          BlockLoadAlgorithm _LOAD_ALGORITHM,
+          CacheLoadModifier _LOAD_MODIFIER,
+          BlockScanAlgorithm _SCAN_ALGORITHM,
+          class DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
+struct AgentThreeWayPartitionPolicy
+{
+  static constexpr int BLOCK_THREADS                 = _BLOCK_THREADS;
+  static constexpr int ITEMS_PER_THREAD              = _ITEMS_PER_THREAD;
+  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
+  static constexpr CacheLoadModifier LOAD_MODIFIER   = _LOAD_MODIFIER;
+  static constexpr BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
+
+  struct detail
+  {
+    using delay_constructor_t = DelayConstructorT;
+  };
+};
+
 namespace detail
 {
 
@@ -135,30 +155,6 @@ struct accumulator_pack_t : accumulator_pack_base_t<OffsetT>
   }
 };
 
-} // namespace three_way_partition
-
-} // namespace detail
-
-template <int _BLOCK_THREADS,
-          int _ITEMS_PER_THREAD,
-          BlockLoadAlgorithm _LOAD_ALGORITHM,
-          CacheLoadModifier _LOAD_MODIFIER,
-          BlockScanAlgorithm _SCAN_ALGORITHM,
-          class DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
-struct AgentThreeWayPartitionPolicy
-{
-  static constexpr int BLOCK_THREADS                 = _BLOCK_THREADS;
-  static constexpr int ITEMS_PER_THREAD              = _ITEMS_PER_THREAD;
-  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
-  static constexpr CacheLoadModifier LOAD_MODIFIER   = _LOAD_MODIFIER;
-  static constexpr BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
-
-  struct detail
-  {
-    using delay_constructor_t = DelayConstructorT;
-  };
-};
-
 /**
  * \brief Implements a device-wide three-way partitioning
  *
@@ -184,9 +180,9 @@ struct AgentThreeWayPartition
   //---------------------------------------------------------------------
 
   // The input value type
-  using InputT = cub::detail::value_t<InputIteratorT>;
+  using InputT = value_t<InputIteratorT>;
 
-  using AccumPackHelperT = detail::three_way_partition::accumulator_pack_t<OffsetT>;
+  using AccumPackHelperT = accumulator_pack_t<OffsetT>;
   using AccumPackT       = typename AccumPackHelperT::pack_t;
 
   // Tile status descriptor interface type
@@ -313,7 +309,7 @@ struct AgentThreeWayPartition
     AccumPackT num_tile_selected_prefix,
     OffsetT num_rejected_prefix)
   {
-    CTA_SYNC();
+    __syncthreads();
 
     const OffsetT num_first_selections_prefix  = AccumPackHelperT::first(num_tile_selected_prefix);
     const OffsetT num_second_selections_prefix = AccumPackHelperT::second(num_tile_selected_prefix);
@@ -353,7 +349,7 @@ struct AgentThreeWayPartition
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Gather items from shared memory and scatter to global
     auto first_base =
@@ -421,7 +417,7 @@ struct AgentThreeWayPartition
 
     // Initialize selection_flags
     Initialize<IS_LAST_TILE>(num_tile_items, items, items_selection_flags);
-    CTA_SYNC();
+    __syncthreads();
 
     // Exclusive scan of selection_flags
     BlockScanT(temp_storage.scan_storage.scan)
@@ -486,7 +482,7 @@ struct AgentThreeWayPartition
 
     // Initialize selection_flags
     Initialize<IS_LAST_TILE>(num_tile_items, items, items_selected_flags);
-    CTA_SYNC();
+    __syncthreads();
 
     // Exclusive scan of values and selection_flags
     TilePrefixCallbackOpT prefix_op(tile_state, temp_storage.scan_storage.prefix, ::cuda::std::plus<>{}, tile_idx);
@@ -497,7 +493,7 @@ struct AgentThreeWayPartition
     AccumPackT num_items_in_tile_selected = prefix_op.GetBlockAggregate();
     AccumPackT num_items_selected_prefix  = prefix_op.GetExclusivePrefix();
 
-    CTA_SYNC();
+    __syncthreads();
 
     OffsetT num_rejected_prefix = (tile_idx * TILE_ITEMS) - AccumPackHelperT::sum(num_items_selected_prefix);
 
@@ -592,5 +588,8 @@ struct AgentThreeWayPartition
     }
   }
 };
+
+} // namespace three_way_partition
+} // namespace detail
 
 CUB_NAMESPACE_END

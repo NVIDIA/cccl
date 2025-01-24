@@ -292,7 +292,7 @@ public:
     // Share last item
     temp_storage.last_items[linear_tid] = input[ITEMS_PER_THREAD - 1];
 
-    CTA_SYNC();
+    __syncthreads();
 
     if (linear_tid == 0)
     {
@@ -337,7 +337,7 @@ public:
     // Share last item
     temp_storage.last_items[linear_tid] = input[ITEMS_PER_THREAD - 1];
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Set flag for first thread-item
     preds[0] = (linear_tid == 0) ? tile_predecessor_item : // First thread
@@ -586,7 +586,7 @@ public:
     // Share first item
     temp_storage.first_items[linear_tid] = input[0];
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Set flag for last thread-item
     tail_flags[ITEMS_PER_THREAD - 1] =
@@ -686,7 +686,7 @@ public:
     // Share first item
     temp_storage.first_items[linear_tid] = input[0];
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Set flag for last thread-item
     T successor_item = (linear_tid == BLOCK_THREADS - 1) ? tile_successor_item : // Last thread
@@ -790,7 +790,7 @@ public:
     temp_storage.first_items[linear_tid] = input[0];
     temp_storage.last_items[linear_tid]  = input[ITEMS_PER_THREAD - 1];
 
-    CTA_SYNC();
+    __syncthreads();
 
     T preds[ITEMS_PER_THREAD];
 
@@ -920,7 +920,7 @@ public:
     temp_storage.first_items[linear_tid] = input[0];
     temp_storage.last_items[linear_tid]  = input[ITEMS_PER_THREAD - 1];
 
-    CTA_SYNC();
+    __syncthreads();
 
     T preds[ITEMS_PER_THREAD];
 
@@ -1052,7 +1052,7 @@ public:
     temp_storage.first_items[linear_tid] = input[0];
     temp_storage.last_items[linear_tid]  = input[ITEMS_PER_THREAD - 1];
 
-    CTA_SYNC();
+    __syncthreads();
 
     T preds[ITEMS_PER_THREAD];
 
@@ -1189,7 +1189,7 @@ public:
     temp_storage.first_items[linear_tid] = input[0];
     temp_storage.last_items[linear_tid]  = input[ITEMS_PER_THREAD - 1];
 
-    CTA_SYNC();
+    __syncthreads();
 
     T preds[ITEMS_PER_THREAD];
 

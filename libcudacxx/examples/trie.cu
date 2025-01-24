@@ -149,19 +149,19 @@ inline void assert_(cudaError_t code, const char* file, int line)
 template <class T>
 struct managed_allocator
 {
-  typedef cuda::std::size_t size_type;
-  typedef cuda::std::ptrdiff_t difference_type;
+  using size_type       = cuda::std::size_t;
+  using difference_type = cuda::std::ptrdiff_t;
 
-  typedef T value_type;
-  typedef T* pointer; // (deprecated in C++17)(removed in C++20) T*
-  typedef const T* const_pointer; // (deprecated in C++17)(removed in C++20) const T*
-  typedef T& reference; // (deprecated in C++17)(removed in C++20) T&
-  typedef const T& const_reference; // (deprecated in C++17)(removed in C++20) const T&
+  using value_type      = T;
+  using pointer         = T*; // (deprecated in C++17)(removed in C++20) T*
+  using const_pointer   = const T*; // (deprecated in C++17)(removed in C++20) const T*
+  using reference       = T&; // (deprecated in C++17)(removed in C++20) T&
+  using const_reference = const T&; // (deprecated in C++17)(removed in C++20) const T&
 
   template <class U>
   struct rebind
   {
-    typedef managed_allocator<U> other;
+    using other = managed_allocator<U>;
   };
   managed_allocator() = default;
   template <class U>
