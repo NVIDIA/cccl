@@ -286,7 +286,7 @@ public:
   ::std::shared_ptr<per_ctx_dot> parent;
   ::std::vector<::std::shared_ptr<per_ctx_dot>> children;
 
-  const ::std::string& get_ctx_symbol() const
+  const ::std::string get_ctx_symbol() const
   {
     return ctx_symbol;
   }
@@ -357,15 +357,13 @@ public:
     class guard
     {
       bool active = true;
-
     public:
       guard(::std::string symbol)
       {
         section::push(mv(symbol));
       }
 
-      void end()
-      {
+      void end() {
         assert(active && "Attempting to end the same section twice.");
         section::pop();
         active = false;
@@ -373,10 +371,7 @@ public:
 
       ~guard()
       {
-        if (active)
-        {
-          section::pop();
-        }
+        if (active) section::pop();
       }
     };
 
