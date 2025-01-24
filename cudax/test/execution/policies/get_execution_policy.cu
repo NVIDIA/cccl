@@ -12,7 +12,7 @@
 
 #include <cuda/experimental/execution.cuh>
 
-#include <catch2/catch.hpp>
+#include <testing.cuh>
 
 using cuda::experimental::execution::execution_policy;
 

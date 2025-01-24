@@ -134,4 +134,10 @@
 #  define _CCCL_RESTRICT __restrict__
 #endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 
+#if _CCCL_HAS_CPP_ATTRIBUTE(assume)
+#  define _CCCL_ASSUME(...) [[assume(__VA_ARGS__)]]
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
+#  define _CCCL_ASSUME(...) _CCCL_BUILTIN_ASSUME(__VA_ARGS__)
+#endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
+
 #endif // __CCCL_ATTRIBUTES_H

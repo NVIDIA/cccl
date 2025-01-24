@@ -30,7 +30,7 @@ template <class _Compare, class _RandomAccessIterator>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator
 __is_heap_until(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare&& __comp)
 {
-  typedef typename iterator_traits<_RandomAccessIterator>::difference_type difference_type;
+  using difference_type      = typename iterator_traits<_RandomAccessIterator>::difference_type;
   difference_type __len      = __last - __first;
   difference_type __p        = 0;
   difference_type __c        = 1;

@@ -36,27 +36,27 @@ using remove_pointer_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_POINTER(_Tp);
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_pointer
 {
-  typedef _CCCL_NODEBUG_ALIAS _Tp type;
+  using type _CCCL_NODEBUG_ALIAS = _Tp;
 };
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_pointer<_Tp*>
 {
-  typedef _CCCL_NODEBUG_ALIAS _Tp type;
+  using type _CCCL_NODEBUG_ALIAS = _Tp;
 };
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_pointer<_Tp* const>
 {
-  typedef _CCCL_NODEBUG_ALIAS _Tp type;
+  using type _CCCL_NODEBUG_ALIAS = _Tp;
 };
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_pointer<_Tp* volatile>
 {
-  typedef _CCCL_NODEBUG_ALIAS _Tp type;
+  using type _CCCL_NODEBUG_ALIAS = _Tp;
 };
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_pointer<_Tp* const volatile>
 {
-  typedef _CCCL_NODEBUG_ALIAS _Tp type;
+  using type _CCCL_NODEBUG_ALIAS = _Tp;
 };
 
 template <class _Tp>

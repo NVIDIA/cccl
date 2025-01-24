@@ -57,6 +57,8 @@ CUB_NAMESPACE_BEGIN
  * Kernel entry points
  *****************************************************************************/
 
+namespace detail::unique_by_key
+{
 /**
  * @brief Unique by key kernel entry point (multi-block)
  *
@@ -126,7 +128,7 @@ template <typename ChainedPolicyT,
           typename EqualityOpT,
           typename OffsetT>
 __launch_bounds__(int(
-  cub::detail::vsmem_helper_default_fallback_policy_t<
+  vsmem_helper_default_fallback_policy_t<
     typename ChainedPolicyT::ActivePolicy::UniqueByKeyPolicyT,
     AgentUniqueByKey,
     KeyInputIteratorT,
@@ -145,9 +147,9 @@ __launch_bounds__(int(
     EqualityOpT equality_op,
     OffsetT num_items,
     int num_tiles,
-    cub::detail::vsmem_t vsmem)
+    vsmem_t vsmem)
 {
-  using VsmemHelperT = cub::detail::vsmem_helper_default_fallback_policy_t<
+  using VsmemHelperT = vsmem_helper_default_fallback_policy_t<
     typename ChainedPolicyT::ActivePolicy::UniqueByKeyPolicyT,
     AgentUniqueByKey,
     KeyInputIteratorT,
@@ -176,7 +178,7 @@ __launch_bounds__(int(
   // If applicable, hints to discard modified cache lines for vsmem
   VsmemHelperT::discard_temp_storage(temp_storage);
 }
-
+} // namespace detail::unique_by_key
 /******************************************************************************
  * Dispatch
  ******************************************************************************/
@@ -333,7 +335,7 @@ struct DispatchUniqueByKey
 
     using VsmemHelperT = cub::detail::vsmem_helper_default_fallback_policy_t<
       Policy,
-      AgentUniqueByKey,
+      detail::unique_by_key::AgentUniqueByKey,
       KeyInputIteratorT,
       ValueInputIteratorT,
       KeyOutputIteratorT,
@@ -396,9 +398,9 @@ struct DispatchUniqueByKey
       num_tiles          = CUB_MAX(1, num_tiles);
       int init_grid_size = ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS);
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
       // Invoke init_kernel to initialize tile descriptors
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
@@ -439,7 +441,7 @@ struct DispatchUniqueByKey
       scan_grid_size.x = CUB_MIN(num_tiles, max_dim_x);
 
 // Log select_if_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       {
         // Get SM occupancy for unique_by_key_kernel
         int scan_sm_occupancy;
@@ -461,7 +463,7 @@ struct DispatchUniqueByKey
                 items_per_thread,
                 scan_sm_occupancy);
       }
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
       // Invoke select_if_kernel
       error =
@@ -501,8 +503,8 @@ struct DispatchUniqueByKey
   {
     // Ensure kernels are instantiated.
     return Invoke<ActivePolicyT>(
-      DeviceCompactInitKernel<ScanTileStateT, NumSelectedIteratorT>,
-      DeviceUniqueByKeySweepKernel<
+      detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumSelectedIteratorT>,
+      detail::unique_by_key::DeviceUniqueByKeySweepKernel<
         typename PolicyHub::MaxPolicy,
         KeyInputIteratorT,
         ValueInputIteratorT,

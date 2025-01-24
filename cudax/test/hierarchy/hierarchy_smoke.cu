@@ -10,6 +10,7 @@
 
 #include <iostream>
 
+#include "testing.cuh"
 #include <cooperative_groups.h>
 #include <host_device.cuh>
 
@@ -380,11 +381,11 @@ TEST_CASE("On device rank calculation", "[hierarchy]")
   CUDART(cudaMalloc((void**) &ptr, 2 * 1024 * sizeof(unsigned int)));
 
   const auto config_static = cudax::block_dims<256>() & cudax::grid_dims(dim3(2, 2, 2));
-  rank_kernel<<<256, dim3(2, 2, 2)>>>(config_static, ptr);
+  rank_kernel<<<dim3(2, 2, 2), 256>>>(config_static, ptr);
   CUDART(cudaDeviceSynchronize());
-  rank_kernel_cg<<<256, dim3(2, 2, 2)>>>(config_static, ptr);
+  rank_kernel_cg<<<dim3(2, 2, 2), 256>>>(config_static, ptr);
   CUDART(cudaDeviceSynchronize());
-  rank_kernel_optimized<<<256, dim3(2, 2, 2)>>>(config_static, ptr);
+  rank_kernel_optimized<<<dim3(2, 2, 2), 256>>>(config_static, ptr);
   CUDART(cudaDeviceSynchronize());
   CUDART(cudaFree(ptr));
 }

@@ -11,7 +11,7 @@
 #include <cuda/experimental/event.cuh>
 #include <cuda/experimental/stream.cuh>
 
-#include <catch2/catch.hpp>
+#include <testing.cuh>
 #include <utility.cuh>
 
 namespace

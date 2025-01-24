@@ -151,16 +151,16 @@ public:
   using pointer         = _Iter;
   using reference       = iter_rvalue_reference_t<_Iter>;
 #else // ^^^ _CCCL_STD_VER > 2014 ^^^ / vvv _CCCL_STD_VER < 2017 vvv
-  typedef _Iter iterator_type;
-  typedef _If<__is_cpp17_random_access_iterator<_Iter>::value,
-              random_access_iterator_tag,
-              typename iterator_traits<_Iter>::iterator_category>
-    iterator_category;
-  typedef typename iterator_traits<iterator_type>::value_type value_type;
-  typedef typename iterator_traits<iterator_type>::difference_type difference_type;
-  typedef iterator_type pointer;
-  typedef typename iterator_traits<iterator_type>::reference __reference;
-  typedef conditional_t<is_reference<__reference>::value, remove_reference_t<__reference>&&, __reference> reference;
+  using iterator_type = _Iter;
+  using iterator_category =
+    _If<__is_cpp17_random_access_iterator<_Iter>::value,
+        random_access_iterator_tag,
+        typename iterator_traits<_Iter>::iterator_category>;
+  using value_type      = typename iterator_traits<iterator_type>::value_type;
+  using difference_type = typename iterator_traits<iterator_type>::difference_type;
+  using pointer         = iterator_type;
+  using __reference     = typename iterator_traits<iterator_type>::reference;
+  using reference = conditional_t<is_reference<__reference>::value, remove_reference_t<__reference>&&, __reference>;
 #endif // _CCCL_STD_VER < 2017
 
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 explicit move_iterator(_Iter __i)

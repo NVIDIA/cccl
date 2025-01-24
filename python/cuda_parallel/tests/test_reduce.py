@@ -550,3 +550,108 @@ def test_reduce_non_contiguous():
     d_in = cp.zeros(size)[::2]
     with pytest.raises(ValueError, match="Non-contiguous arrays are not supported."):
         _ = algorithms.reduce_into(d_in, d_out, binary_op, h_init)
+
+
+def test_reduce_with_stream():
+    # Simple cupy stream wrapper that implements the __cuda_stream__ protocol for the purposes of this test
+    class Stream:
+        def __init__(self, cp_stream):
+            self.cp_stream = cp_stream
+
+        def __cuda_stream__(self):
+            return (0, self.cp_stream.ptr)
+
+    def add_op(x, y):
+        return x + y
+
+    h_init = np.asarray([0], dtype=np.int32)
+    h_in = random_int(5, np.int32)
+
+    stream = cp.cuda.Stream()
+    with stream:
+        d_in = cp.asarray(h_in)
+        d_out = cp.empty(1, dtype=np.int32)
+
+    stream_wrapper = Stream(stream)
+    reduce_into = algorithms.reduce_into(
+        d_in=d_in, d_out=d_out, op=add_op, h_init=h_init
+    )
+    temp_storage_size = reduce_into(
+        None,
+        d_in=d_in,
+        d_out=d_out,
+        num_items=d_in.size,
+        h_init=h_init,
+        stream=stream_wrapper,
+    )
+    with stream:
+        d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
+
+    reduce_into(d_temp_storage, d_in, d_out, d_in.size, h_init, stream=stream_wrapper)
+    with stream:
+        cp.testing.assert_allclose(d_in.sum().get(), d_out.get())
+
+
+def test_reduce_invalid_stream():
+    # Invalid stream that doesn't implement __cuda_stream__
+    class Stream1:
+        def __init__(self):
+            pass
+
+    # Invalid stream that implements __cuda_stream__ but returns the wrong type
+    class Stream2:
+        def __init__(self):
+            pass
+
+        def __cuda_stream__(self):
+            return None
+
+    # Invalid stream that returns an invalid handle
+    class Stream3:
+        def __init__(self):
+            pass
+
+        def __cuda_stream__(self):
+            return (0, None)
+
+    def add_op(x, y):
+        return x + y
+
+    d_out = cp.empty(1)
+    h_init = np.empty(1)
+    d_in = cp.empty(1)
+    reduce_into = algorithms.reduce_into(d_in, d_out, add_op, h_init)
+
+    with pytest.raises(
+        TypeError, match="does not implement the '__cuda_stream__' protocol"
+    ):
+        _ = reduce_into(
+            None,
+            d_in=d_in,
+            d_out=d_out,
+            num_items=d_in.size,
+            h_init=h_init,
+            stream=Stream1(),
+        )
+
+    with pytest.raises(
+        TypeError, match="could not obtain __cuda_stream__ protocol version and handle"
+    ):
+        _ = reduce_into(
+            None,
+            d_in=d_in,
+            d_out=d_out,
+            num_items=d_in.size,
+            h_init=h_init,
+            stream=Stream2(),
+        )
+
+    with pytest.raises(TypeError, match="invalid stream handle"):
+        _ = reduce_into(
+            None,
+            d_in=d_in,
+            d_out=d_out,
+            num_items=d_in.size,
+            h_init=h_init,
+            stream=Stream3(),
+        )

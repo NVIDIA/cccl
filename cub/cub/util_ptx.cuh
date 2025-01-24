@@ -52,34 +52,10 @@ CUB_NAMESPACE_BEGIN
  * Inlined PTX intrinsics
  ******************************************************************************/
 
-namespace detail
-{
-/**
- * @brief Shifts @p val left by the amount specified by unsigned 32-bit value in @p num_bits. If @p
- * num_bits is larger than 32 bits, @p num_bits is clamped to 32.
- */
-_CCCL_DEVICE _CCCL_FORCEINLINE uint32_t LogicShiftLeft(uint32_t val, uint32_t num_bits)
-{
-  uint32_t ret{};
-  asm("shl.b32 %0, %1, %2;" : "=r"(ret) : "r"(val), "r"(num_bits));
-  return ret;
-}
-
-/**
- * @brief Shifts @p val right by the amount specified by unsigned 32-bit value in @p num_bits. If @p
- * num_bits is larger than 32 bits, @p num_bits is clamped to 32.
- */
-_CCCL_DEVICE _CCCL_FORCEINLINE uint32_t LogicShiftRight(uint32_t val, uint32_t num_bits)
-{
-  uint32_t ret{};
-  asm("shr.b32 %0, %1, %2;" : "=r"(ret) : "r"(val), "r"(num_bits));
-  return ret;
-}
-} // namespace detail
-
 /**
  * \brief Shift-right then add.  Returns (\p x >> \p shift) + \p addend.
  */
+CCCL_DEPRECATED_BECAUSE("will be removed in the next major release")
 _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int SHR_ADD(unsigned int x, unsigned int shift, unsigned int addend)
 {
   unsigned int ret;
@@ -90,6 +66,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int SHR_ADD(unsigned int x, unsigned int
 /**
  * \brief Shift-left then add.  Returns (\p x << \p shift) + \p addend.
  */
+CCCL_DEPRECATED_BECAUSE("will be removed in the next major release")
 _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int SHL_ADD(unsigned int x, unsigned int shift, unsigned int addend)
 {
   unsigned int ret;
@@ -150,6 +127,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int BFE(UnsignedBits source, unsigned in
 /**
  * \brief Bitfield insert.  Inserts the \p num_bits least significant bits of \p y into \p x at bit-offset \p bit_start.
  */
+CCCL_DEPRECATED_BECAUSE("will be removed in the next major release")
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 BFI(unsigned int& ret, unsigned int x, unsigned int y, unsigned int bit_start, unsigned int num_bits)
 {
@@ -159,6 +137,7 @@ BFI(unsigned int& ret, unsigned int x, unsigned int y, unsigned int bit_start, u
 /**
  * \brief Three-operand add.  Returns \p x + \p y + \p z.
  */
+CCCL_DEPRECATED_BECAUSE("will be removed in the next major release")
 _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int IADD3(unsigned int x, unsigned int y, unsigned int z)
 {
   asm("vadd.u32.u32.u32.add %0, %1, %2, %3;" : "=r"(x) : "r"(x), "r"(y), "r"(z));
@@ -192,6 +171,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int IADD3(unsigned int x, unsigned int y
  * \endcode
  *
  */
+CCCL_DEPRECATED_BECAUSE("will be removed in the next major release")
 _CCCL_DEVICE _CCCL_FORCEINLINE int PRMT(unsigned int a, unsigned int b, unsigned int index)
 {
   int ret;
@@ -204,6 +184,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE int PRMT(unsigned int a, unsigned int b, unsigned
 /**
  * Sync-threads barrier.
  */
+CCCL_DEPRECATED_BECAUSE("will be removed in the next major release")
 _CCCL_DEVICE _CCCL_FORCEINLINE void BAR(int count)
 {
   asm volatile("bar.sync 1, %0;" : : "r"(count));
@@ -212,6 +193,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void BAR(int count)
 /**
  * CTA barrier
  */
+CCCL_DEPRECATED_BECAUSE("use __syncthreads() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE void CTA_SYNC()
 {
   __syncthreads();
@@ -220,6 +202,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void CTA_SYNC()
 /**
  * CTA barrier with predicate
  */
+CCCL_DEPRECATED_BECAUSE("use __syncthreads_and() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE int CTA_SYNC_AND(int p)
 {
   return __syncthreads_and(p);
@@ -228,6 +211,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE int CTA_SYNC_AND(int p)
 /**
  * CTA barrier with predicate
  */
+CCCL_DEPRECATED_BECAUSE("use __syncthreads_or() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE int CTA_SYNC_OR(int p)
 {
   return __syncthreads_or(p);
@@ -236,6 +220,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE int CTA_SYNC_OR(int p)
 /**
  * Warp barrier
  */
+CCCL_DEPRECATED_BECAUSE("use __syncwarp() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE void WARP_SYNC(unsigned int member_mask)
 {
   __syncwarp(member_mask);
@@ -244,6 +229,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void WARP_SYNC(unsigned int member_mask)
 /**
  * Warp any
  */
+CCCL_DEPRECATED_BECAUSE("use __any_sync() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE int WARP_ANY(int predicate, unsigned int member_mask)
 {
   return __any_sync(member_mask, predicate);
@@ -252,6 +238,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE int WARP_ANY(int predicate, unsigned int member_m
 /**
  * Warp any
  */
+CCCL_DEPRECATED_BECAUSE("use __all_sync() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE int WARP_ALL(int predicate, unsigned int member_mask)
 {
   return __all_sync(member_mask, predicate);
@@ -260,6 +247,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE int WARP_ALL(int predicate, unsigned int member_m
 /**
  * Warp ballot
  */
+CCCL_DEPRECATED_BECAUSE("use __ballot_sync() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE int WARP_BALLOT(int predicate, unsigned int member_mask)
 {
   return __ballot_sync(member_mask, predicate);
@@ -292,6 +280,7 @@ SHFL_DOWN_SYNC(unsigned int word, int src_offset, int flags, unsigned int member
 /**
  * Warp synchronous shfl_idx
  */
+CCCL_DEPRECATED_BECAUSE("use __shfl_sync() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int
 SHFL_IDX_SYNC(unsigned int word, int src_lane, int flags, unsigned int member_mask)
 {
@@ -304,6 +293,7 @@ SHFL_IDX_SYNC(unsigned int word, int src_lane, int flags, unsigned int member_ma
 /**
  * Warp synchronous shfl_idx
  */
+CCCL_DEPRECATED_BECAUSE("use __shfl_sync() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int SHFL_IDX_SYNC(unsigned int word, int src_lane, unsigned int member_mask)
 {
   return __shfl_sync(member_mask, word, src_lane);
@@ -312,6 +302,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int SHFL_IDX_SYNC(unsigned int word, int
 /**
  * Floating point multiply. (Mantissa LSB rounds towards zero.)
  */
+CCCL_DEPRECATED_BECAUSE("will be removed in the next major release")
 _CCCL_DEVICE _CCCL_FORCEINLINE float FMUL_RZ(float a, float b)
 {
   float d;
@@ -322,6 +313,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE float FMUL_RZ(float a, float b)
 /**
  * Floating point multiply-add. (Mantissa LSB rounds towards zero.)
  */
+CCCL_DEPRECATED_BECAUSE("will be removed in the next major release")
 _CCCL_DEVICE _CCCL_FORCEINLINE float FFMA_RZ(float a, float b, float c)
 {
   float d;
@@ -342,6 +334,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadExit()
 /**
  * \brief  Abort execution and generate an interrupt to the host CPU
  */
+CCCL_DEPRECATED_BECAUSE("use cuda::std::terminate() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadTrap()
 {
   asm volatile("trap;");
@@ -359,6 +352,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE int RowMajorTid(int block_dim_x, int block_dim_y,
 /**
  * \brief Returns the warp lane ID of the calling thread
  */
+CCCL_DEPRECATED_BECAUSE("use cuda::ptx::get_sreg_laneid() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneId()
 {
   unsigned int ret;
@@ -370,6 +364,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneId()
  * \brief Returns the warp ID of the calling thread.  Warp ID is guaranteed to be unique among warps, but may not
  * correspond to a zero-based ranking within the thread block.
  */
+CCCL_DEPRECATED_BECAUSE("use cuda::ptx::get_sreg_warpid() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int WarpId()
 {
   unsigned int ret;
@@ -409,6 +404,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned int WarpMask(unsigned int warp_id)
 /**
  * \brief Returns the warp lane mask of all lanes less than the calling thread
  */
+CCCL_DEPRECATED_BECAUSE("use cuda::ptx::get_sreg_lanemask_lt() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneMaskLt()
 {
   unsigned int ret;
@@ -419,6 +415,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneMaskLt()
 /**
  * \brief Returns the warp lane mask of all lanes less than or equal to the calling thread
  */
+CCCL_DEPRECATED_BECAUSE("use cuda::ptx::get_sreg_lanemask_le() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneMaskLe()
 {
   unsigned int ret;
@@ -429,6 +426,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneMaskLe()
 /**
  * \brief Returns the warp lane mask of all lanes greater than the calling thread
  */
+CCCL_DEPRECATED_BECAUSE("use cuda::ptx::get_sreg_lanemask_gt() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneMaskGt()
 {
   unsigned int ret;
@@ -439,6 +437,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneMaskGt()
 /**
  * \brief Returns the warp lane mask of all lanes greater than or equal to the calling thread
  */
+CCCL_DEPRECATED_BECAUSE("use cuda::ptx::get_sreg_lanemask_ge() instead")
 _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneMaskGe()
 {
   unsigned int ret;
@@ -659,12 +658,6 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleDown(T input, int src_offset, int last_t
 template <int LOGICAL_WARP_THREADS, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleIndex(T input, int src_lane, unsigned int member_mask)
 {
-  /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
-  enum
-  {
-    SHFL_C = ((32 - LOGICAL_WARP_THREADS) << 8) | (LOGICAL_WARP_THREADS - 1)
-  };
-
   using ShuffleWord = typename UnitWord<T>::ShuffleWord;
 
   constexpr int WORDS = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
@@ -674,18 +667,14 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleIndex(T input, int src_lane, unsigned in
   ShuffleWord* input_alias  = reinterpret_cast<ShuffleWord*>(&input);
 
   unsigned int shuffle_word;
-  shuffle_word = SHFL_IDX_SYNC((unsigned int) input_alias[0], src_lane, SHFL_C, member_mask);
-
+  shuffle_word    = __shfl_sync(member_mask, (unsigned int) input_alias[0], src_lane, LOGICAL_WARP_THREADS);
   output_alias[0] = shuffle_word;
-
 #pragma unroll
   for (int WORD = 1; WORD < WORDS; ++WORD)
   {
-    shuffle_word = SHFL_IDX_SYNC((unsigned int) input_alias[WORD], src_lane, SHFL_C, member_mask);
-
+    shuffle_word       = __shfl_sync(member_mask, (unsigned int) input_alias[WORD], src_lane, LOGICAL_WARP_THREADS);
     output_alias[WORD] = shuffle_word;
   }
-
   return output;
 }
 
@@ -749,6 +738,28 @@ struct warp_matcher_t<LABEL_BITS, CUB_PTX_WARP_THREADS>
     return retval;
   }
 };
+
+/**
+ * @brief Shifts @p val left by the amount specified by unsigned 32-bit value in @p num_bits. If @p
+ * num_bits is larger than 32 bits, @p num_bits is clamped to 32.
+ */
+_CCCL_DEVICE _CCCL_FORCEINLINE uint32_t LogicShiftLeft(uint32_t val, uint32_t num_bits)
+{
+  uint32_t ret{};
+  asm("shl.b32 %0, %1, %2;" : "=r"(ret) : "r"(val), "r"(num_bits));
+  return ret;
+}
+
+/**
+ * @brief Shifts @p val right by the amount specified by unsigned 32-bit value in @p num_bits. If @p
+ * num_bits is larger than 32 bits, @p num_bits is clamped to 32.
+ */
+_CCCL_DEVICE _CCCL_FORCEINLINE uint32_t LogicShiftRight(uint32_t val, uint32_t num_bits)
+{
+  uint32_t ret{};
+  asm("shr.b32 %0, %1, %2;" : "=r"(ret) : "r"(val), "r"(num_bits));
+  return ret;
+}
 
 } // namespace detail
 #endif // _CCCL_DOXYGEN_INVOKED

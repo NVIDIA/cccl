@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cub/thread/thread_operators.cuh>
+
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 
@@ -50,20 +52,20 @@ struct nvbench::type_strings<::cuda::std::integral_constant<T, I>>
 namespace detail
 {
 
-template <class T, class List>
+template <class List, class... Ts>
 struct push_back
 {};
 
-template <class T, class... As>
-struct push_back<T, nvbench::type_list<As...>>
+template <class... As, class... Ts>
+struct push_back<nvbench::type_list<As...>, Ts...>
 {
-  using type = nvbench::type_list<As..., T>;
+  using type = nvbench::type_list<As..., Ts...>;
 };
 
 } // namespace detail
 
-template <class T, class List>
-using push_back_t = typename detail::push_back<T, List>::type;
+template <class List, class... Ts>
+using push_back_t = typename detail::push_back<List, Ts...>::type;
 
 #ifdef TUNE_OffsetT
 using offset_types = nvbench::type_list<TUNE_OffsetT>;

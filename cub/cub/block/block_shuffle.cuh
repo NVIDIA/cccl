@@ -164,7 +164,7 @@ public:
   {
     temp_storage[linear_tid] = input;
 
-    CTA_SYNC();
+    __syncthreads();
 
     const int offset_tid = static_cast<int>(linear_tid) + distance;
     if ((offset_tid >= 0) && (offset_tid < BLOCK_THREADS))
@@ -196,7 +196,7 @@ public:
   {
     temp_storage[linear_tid] = input;
 
-    CTA_SYNC();
+    __syncthreads();
 
     unsigned int offset = linear_tid + distance;
     if (offset >= BLOCK_THREADS)
@@ -230,7 +230,7 @@ public:
   {
     temp_storage[linear_tid] = input[ITEMS_PER_THREAD - 1];
 
-    CTA_SYNC();
+    __syncthreads();
 
 #pragma unroll
     for (int ITEM = ITEMS_PER_THREAD - 1; ITEM > 0; --ITEM)
@@ -298,7 +298,7 @@ public:
   {
     temp_storage[linear_tid] = input[0];
 
-    CTA_SYNC();
+    __syncthreads();
 
 #pragma unroll
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD - 1; ITEM++)

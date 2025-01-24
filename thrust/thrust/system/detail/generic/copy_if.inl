@@ -26,7 +26,6 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/copy_if.h>
-#include <thrust/detail/integer_traits.h>
 #include <thrust/detail/internal_functional.h>
 #include <thrust/detail/temporary_array.h>
 #include <thrust/detail/type_traits.h>
@@ -38,6 +37,8 @@
 #include <thrust/scatter.h>
 #include <thrust/system/detail/generic/copy_if.h>
 #include <thrust/transform.h>
+
+#include <cuda/std/limits>
 
 #include <limits>
 
@@ -137,8 +138,7 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
   ::cuda::std::make_unsigned_t<difference_type> unsigned_n(n);
 
   // use 32-bit indices when possible (almost always)
-  if (sizeof(difference_type) > sizeof(unsigned int)
-      && unsigned_n > thrust::detail::integer_traits<unsigned int>::const_max)
+  if (sizeof(difference_type) > sizeof(unsigned int) && unsigned_n > ::cuda::std::numeric_limits<unsigned int>::max())
   {
     result = detail::copy_if<difference_type>(exec, first, last, stencil, result, pred);
   } // end if

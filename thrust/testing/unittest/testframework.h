@@ -2,15 +2,17 @@
 
 #include <thrust/detail/config.h>
 
-#include <thrust/detail/integer_traits.h>
 #include <thrust/limits.h>
 #include <thrust/mr/allocator.h>
 #include <thrust/mr/device_memory_resource.h>
 #include <thrust/mr/host_memory_resource.h>
 #include <thrust/mr/universal_memory_resource.h>
 
+#include <cuda/std/limits>
+
 #include <cstdio>
 #include <iostream>
+#include <limits>
 #include <map>
 #include <set>
 #include <string>
@@ -199,23 +201,18 @@ private:
   }
 };
 
-THRUST_NAMESPACE_BEGIN
-
+namespace std
+{
 template <>
 struct numeric_limits<custom_numeric> : numeric_limits<int>
 {};
+} // namespace std
 
-namespace detail
-{
-
-// For random number generation
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <>
-class integer_traits<custom_numeric> : public integer_traits_base<int, INT_MIN, INT_MAX>
+struct numeric_limits<custom_numeric> : numeric_limits<int>
 {};
-
-} // namespace detail
-
-THRUST_NAMESPACE_END
+_LIBCUDACXX_END_NAMESPACE_STD
 
 using NumericTypes = unittest::type_list<
   char,
