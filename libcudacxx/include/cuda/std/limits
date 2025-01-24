@@ -77,6 +77,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __numeric_limits_type __make_numeric_limits_
   {
     return __numeric_limits_type::__other;
   }
+  _CCCL_UNREACHABLE();
 #else // ^^^ !_CCCL_NO_IF_CONSTEXPR ^^^ // vvv _CCCL_NO_IF_CONSTEXPR vvv
   return _CCCL_TRAIT(is_same, _Tp, bool)
          ? __numeric_limits_type::__bool
@@ -86,7 +87,6 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __numeric_limits_type __make_numeric_limits_
                    ? __numeric_limits_type::__floating_point
                    : __numeric_limits_type::__other));
 #endif // _CCCL_NO_IF_CONSTEXPR
-    _CCCL_UNREACHABLE();
 }
 
 template <class _Tp, __numeric_limits_type = __make_numeric_limits_type<_Tp>()>
