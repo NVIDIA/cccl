@@ -38,16 +38,6 @@
 #  define _CCCL_HAS_INT128() 0
 #endif // !_CCCL_DISABLE_INT128
 
-#if !defined(_CCCL_DISABLE_NVFP8_SUPPORT)
-#  if _CCCL_HAS_INCLUDE(<cuda_fp8.h>) && defined(_CCCL_HAS_NVFP16) && defined(_CCCL_HAS_NVBF16)
-#    define _CCCL_HAS_NVFP8() 1
-#  else
-#    define _CCCL_HAS_NVFP8() 0
-#  endif // _CCCL_CUDACC_AT_LEAST(11, 8) && _CCCL_HAS_INCLUDE(<cuda_fp8.h>)
-#else
-#  define _CCCL_HAS_NVFP8() 0
-#endif // !defined(_CCCL_DISABLE_NVFP8_SUPPORT)
-
 #if !defined(_CCCL_HAS_NVFP16)
 #  if _CCCL_HAS_INCLUDE(<cuda_fp16.h>) && (_CCCL_HAS_CUDA_COMPILER || defined(LIBCUDACXX_ENABLE_HOST_NVFP16)) \
                         && !defined(CCCL_DISABLE_FP16_SUPPORT)
@@ -62,8 +52,24 @@
 #  endif
 #endif // !_CCCL_HAS_NVBF16
 
+#if !defined(_CCCL_DISABLE_NVFP8_SUPPORT)
+#  if _CCCL_HAS_INCLUDE(<cuda_fp8.h>) && defined(_CCCL_HAS_NVFP16) && defined(_CCCL_HAS_NVBF16)
+#    define _CCCL_HAS_NVFP8() 1
+#  else
+#    define _CCCL_HAS_NVFP8() 0
+#  endif // _CCCL_CUDACC_AT_LEAST(11, 8) && _CCCL_HAS_INCLUDE(<cuda_fp8.h>)
+#else
+#  define _CCCL_HAS_NVFP8() 0
+#endif // !defined(_CCCL_DISABLE_NVFP8_SUPPORT)
+
 #if !defined(_CCCL_DISABLE_FLOAT128)
-#  if (defined(__SIZEOF_FLOAT128__) || defined(__FLOAT128__)) && _CCCL_OS(LINUX) && !_CCCL_COMPILER(NVRTC)
+#  if _CCCL_COMPILER(NVRTC) && defined(__CUDACC_RTC_FLOAT128__) && _CCCL_OS(LINUX)
+#    if !defined(__CUDA_ARCH__) || (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 1000)
+#      define _CCCL_HAS_FLOAT128() 1
+#    else
+#      define _CCCL_HAS_FLOAT128() 0
+#    endif
+#  elif (defined(__SIZEOF_FLOAT128__) || defined(__FLOAT128__)) && _CCCL_OS(LINUX)
 #    if !defined(__CUDA_ARCH__) || (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 1000)
 #      define _CCCL_HAS_FLOAT128() 1
 #    else

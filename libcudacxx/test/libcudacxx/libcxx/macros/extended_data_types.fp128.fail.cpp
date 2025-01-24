@@ -13,8 +13,8 @@
 
 int main(int, char**)
 {
-#if !_CCCL_HAS_FLOAT128() && !_CCCL_COMPILER(NVRTC)
-  auto x4 = __float128(3.14) + __float128(3.14);
+#if !_CCCL_HAS_FLOAT128()
+  __float128 x4 = __float128(3.14) + __float128(3.14);
   unused(x4);
 #else
   static_assert(false);
