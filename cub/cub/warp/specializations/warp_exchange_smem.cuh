@@ -46,6 +46,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/ptx>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail
@@ -88,8 +90,8 @@ public:
 
   explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpExchangeSmem(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , lane_id(IS_ARCH_WARP ? LaneId() : (LaneId() % LOGICAL_WARP_THREADS))
-      , warp_id(IS_ARCH_WARP ? 0 : (LaneId() / LOGICAL_WARP_THREADS))
+      , lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS))
+      , warp_id(IS_ARCH_WARP ? 0 : (::cuda::ptx::get_sreg_laneid() / LOGICAL_WARP_THREADS))
       , member_mask(WarpMask<LOGICAL_WARP_THREADS>(warp_id))
   {}
 
@@ -102,7 +104,7 @@ public:
       const int idx                  = ITEMS_PER_THREAD * lane_id + item;
       temp_storage.items_shared[idx] = input_items[item];
     }
-    WARP_SYNC(member_mask);
+    __syncwarp(member_mask);
 
     for (int item = 0; item < ITEMS_PER_THREAD; item++)
     {
@@ -120,7 +122,7 @@ public:
       const int idx                  = LOGICAL_WARP_THREADS * item + lane_id;
       temp_storage.items_shared[idx] = input_items[item];
     }
-    WARP_SYNC(member_mask);
+    __syncwarp(member_mask);
 
     for (int item = 0; item < ITEMS_PER_THREAD; item++)
     {
@@ -147,13 +149,13 @@ public:
     {
       if (INSERT_PADDING)
       {
-        ranks[ITEM] = SHR_ADD(ranks[ITEM], LOG_SMEM_BANKS, ranks[ITEM]);
+        ranks[ITEM] = (ranks[ITEM] >> LOG_SMEM_BANKS) + ranks[ITEM];
       }
 
       temp_storage.items_shared[ranks[ITEM]] = input_items[ITEM];
     }
 
-    WARP_SYNC(member_mask);
+    __syncwarp(member_mask);
 
 #pragma unroll
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
@@ -162,7 +164,7 @@ public:
 
       if (INSERT_PADDING)
       {
-        item_offset = SHR_ADD(item_offset, LOG_SMEM_BANKS, item_offset);
+        item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
 
       output_items[ITEM] = temp_storage.items_shared[item_offset];

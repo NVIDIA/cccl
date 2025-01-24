@@ -40,14 +40,14 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT istream_iterator
   _CCCL_SUPPRESS_DEPRECATED_POP
 
 public:
-  typedef input_iterator_tag iterator_category;
-  typedef _Tp value_type;
-  typedef _Distance difference_type;
-  typedef const _Tp* pointer;
-  typedef const _Tp& reference;
-  typedef _CharT char_type;
-  typedef _Traits traits_type;
-  typedef basic_istream<_CharT, _Traits> istream_type;
+  using iterator_category = input_iterator_tag;
+  using value_type        = _Tp;
+  using difference_type   = _Distance;
+  using pointer           = const _Tp*;
+  using reference         = const _Tp&;
+  using char_type         = _CharT;
+  using traits_type       = _Traits;
+  using istream_type      = basic_istream<_CharT, _Traits>;
 
 private:
   istream_type* __in_stream_;

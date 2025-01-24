@@ -48,8 +48,11 @@
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
-CUB_NAMESPACE_BEGIN
+#include <cuda/ptx>
 
+CUB_NAMESPACE_BEGIN
+namespace detail
+{
 /**
  * @brief BlockReduceWarpReductions provides variants of warp-reduction-based parallel reduction
  *        across a CUDA thread block. Supports non-commutative reduction operators.
@@ -121,7 +124,7 @@ struct BlockReduceWarpReductions
       : temp_storage(temp_storage.Alias())
       , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
       , warp_id((WARPS == 1) ? 0 : linear_tid / WARP_THREADS)
-      , lane_id(LaneId())
+      , lane_id(::cuda::ptx::get_sreg_laneid())
   {}
 
   /**
@@ -184,7 +187,7 @@ struct BlockReduceWarpReductions
       detail::uninitialized_copy_single(temp_storage.warp_aggregates + warp_id, warp_aggregate);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Update total aggregate in warp 0, lane 0
     if (linear_tid == 0)
@@ -254,5 +257,11 @@ struct BlockReduceWarpReductions
     return ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid);
   }
 };
+} // namespace detail
+
+template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z, int LEGACY_PTX_ARCH = 0>
+using BlockReduceWarpReductions CCCL_DEPRECATED_BECAUSE(
+  "This class is considered an implementation detail and the public interface will be "
+  "removed.") = detail::BlockReduceWarpReductions<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z, LEGACY_PTX_ARCH>;
 
 CUB_NAMESPACE_END

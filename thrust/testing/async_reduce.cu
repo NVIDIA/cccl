@@ -1,5 +1,10 @@
 #define THRUST_ENABLE_FUTURE_RAW_DATA_MEMBER
 
+#include <cuda/__cccl_config>
+
+// need to suppress deprecation warnings inside several thrust headers
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 #include <thrust/detail/config.h>
 
 #if _CCCL_STD_VER >= 2014
@@ -878,3 +883,5 @@ struct test_async_reduce_bug1886
 DECLARE_UNITTEST(test_async_reduce_bug1886);
 
 #endif
+
+_CCCL_SUPPRESS_DEPRECATED_POP

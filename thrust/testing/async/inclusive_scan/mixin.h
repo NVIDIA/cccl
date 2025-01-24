@@ -109,12 +109,14 @@ struct simple
     PostfixArgTuple&& postfix_tuple,
     std::index_sequence<PostfixArgIndices...>)
   {
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     auto e = thrust::async::inclusive_scan(
       std::get<PrefixArgIndices>(THRUST_FWD(prefix_tuple))...,
       input.cbegin(),
       input.cend(),
       output.begin(),
       std::get<PostfixArgIndices>(THRUST_FWD(postfix_tuple))...);
+    _CCCL_SUPPRESS_DEPRECATED_POP
     return e;
   }
 };

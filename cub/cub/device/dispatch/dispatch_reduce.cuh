@@ -66,6 +66,9 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail::reduce
+{
+
 /// Normalize input iterator to segment offset
 template <typename T, typename OffsetT, typename IteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void NormalizeReductionOutput(T& /*val*/, OffsetT /*base_offset*/, IteratorT /*itr*/)
@@ -187,7 +190,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
 
   if (threadIdx.x == 0)
   {
-    detail::reduce::finalize_and_store_aggregate(d_out + blockIdx.x, reduction_op, init, block_aggregate);
+    finalize_and_store_aggregate(d_out + blockIdx.x, reduction_op, init, block_aggregate);
   }
 }
 
@@ -230,6 +233,7 @@ struct DeviceReduceKernelSource
     return sizeof(AccumT);
   }
 };
+} // namespace detail::reduce
 
 /******************************************************************************
  * Single-problem dispatch
@@ -263,7 +267,7 @@ template <typename InputIteratorT,
           typename AccumT    = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::value_t<InputIteratorT>, InitT>,
           typename PolicyHub = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
           typename TransformOpT = ::cuda::std::__identity,
-          typename KernelSource = DeviceReduceKernelSource<
+          typename KernelSource = detail::reduce::DeviceReduceKernelSource<
             typename PolicyHub::MaxPolicy,
             InputIteratorT,
             OutputIteratorT,
@@ -345,33 +349,6 @@ struct DispatchReduce
       , launcher_factory(launcher_factory)
   {}
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchReduce(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    OffsetT num_items,
-    ReductionOpT reduction_op,
-    InitT init,
-    cudaStream_t stream,
-    bool debug_synchronous,
-    int ptx_version)
-      : d_temp_storage(d_temp_storage)
-      , temp_storage_bytes(temp_storage_bytes)
-      , d_in(d_in)
-      , d_out(d_out)
-      , num_items(num_items)
-      , reduction_op(reduction_op)
-      , init(init)
-      , stream(stream)
-      , ptx_version(ptx_version)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
-
   //---------------------------------------------------------------------------
   // Small-problem (single tile) invocation
   //---------------------------------------------------------------------------
@@ -405,13 +382,13 @@ struct DispatchReduce
       }
 
 // Log single_reduce_sweep_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
               "%d items per thread\n",
               policy.SingleTile().BlockThreads(),
               (long long) stream,
               policy.SingleTile().ItemsPerThread());
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
       // Invoke single_reduce_sweep_kernel
       launcher_factory(1, policy.SingleTile().BlockThreads(), 0, stream)
@@ -517,7 +494,7 @@ struct DispatchReduce
       int reduce_grid_size = even_share.grid_size;
 
 // Log device_reduce_sweep_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking DeviceReduceKernel<<<%lu, %d, 0, %lld>>>(), %d items "
               "per thread, %d SM occupancy\n",
               (unsigned long) reduce_grid_size,
@@ -525,7 +502,7 @@ struct DispatchReduce
               (long long) stream,
               active_policy.Reduce().ItemsPerThread(),
               reduce_config.sm_occupancy);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
       // Invoke DeviceReduceKernel
       launcher_factory(reduce_grid_size, active_policy.Reduce().BlockThreads(), 0, stream)
@@ -546,13 +523,13 @@ struct DispatchReduce
       }
 
 // Log single_reduce_sweep_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
               "%d items per thread\n",
               active_policy.SingleTile().BlockThreads(),
               (long long) stream,
               active_policy.SingleTile().ItemsPerThread());
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
       // Invoke DeviceReduceSingleTileKernel
       launcher_factory(1, active_policy.SingleTile().BlockThreads(), 0, stream)
@@ -590,7 +567,7 @@ struct DispatchReduce
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT active_policy = {})
   {
-    auto wrapped_policy = MakeReducePolicyWrapper(active_policy);
+    auto wrapped_policy = detail::reduce::MakeReducePolicyWrapper(active_policy);
     if (num_items <= static_cast<OffsetT>(
           wrapped_policy.SingleTile().BlockThreads() * wrapped_policy.SingleTile().ItemsPerThread()))
     {
@@ -689,25 +666,6 @@ struct DispatchReduce
 
     return error;
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    OffsetT num_items,
-    ReductionOpT reduction_op,
-    InitT init,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Dispatch(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, reduction_op, init, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 /**
@@ -744,7 +702,7 @@ template <
   typename AccumT = ::cuda::std::
     __accumulator_t<ReductionOpT, cub::detail::invoke_result_t<TransformOpT, cub::detail::value_t<InputIteratorT>>, InitT>,
   typename PolicyHub    = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
-  typename KernelSource = DeviceReduceKernelSource<
+  typename KernelSource = detail::reduce::DeviceReduceKernelSource<
     typename PolicyHub::MaxPolicy,
     InputIteratorT,
     OutputIteratorT,
@@ -884,37 +842,6 @@ struct DispatchSegmentedReduce
       , ptx_version(ptx_version)
   {}
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchSegmentedReduce(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    int num_segments,
-    BeginOffsetIteratorT d_begin_offsets,
-    EndOffsetIteratorT d_end_offsets,
-    ReductionOpT reduction_op,
-    InitT init,
-    cudaStream_t stream,
-    bool debug_synchronous,
-    int ptx_version)
-      : d_temp_storage(d_temp_storage)
-      , temp_storage_bytes(temp_storage_bytes)
-      , d_in(d_in)
-      , d_out(d_out)
-      , num_segments(num_segments)
-      , d_begin_offsets(d_begin_offsets)
-      , d_end_offsets(d_end_offsets)
-      , reduction_op(reduction_op)
-      , init(init)
-      , stream(stream)
-      , ptx_version(ptx_version)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
-
   //---------------------------------------------------------------------------
   // Chained policy invocation
   //---------------------------------------------------------------------------
@@ -958,7 +885,7 @@ struct DispatchSegmentedReduce
       }
 
 // Log device_reduce_sweep_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking SegmentedDeviceReduceKernel<<<%d, %d, 0, %lld>>>(), "
               "%d items per thread, %d SM occupancy\n",
               num_segments,
@@ -966,7 +893,7 @@ struct DispatchSegmentedReduce
               (long long) stream,
               ActivePolicyT::SegmentedReducePolicy::ITEMS_PER_THREAD,
               segmented_reduce_config.sm_occupancy);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
       // Invoke DeviceReduceKernel
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
@@ -997,7 +924,7 @@ struct DispatchSegmentedReduce
   {
     // Force kernel code-generation in all compiler passes
     return InvokePasses<ActivePolicyT>(
-      DeviceSegmentedReduceKernel<
+      detail::reduce::DeviceSegmentedReduceKernel<
         typename PolicyHub::MaxPolicy,
         InputIteratorT,
         OutputIteratorT,
@@ -1109,37 +1036,6 @@ struct DispatchSegmentedReduce
 
     return error;
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    int num_segments,
-    BeginOffsetIteratorT d_begin_offsets,
-    EndOffsetIteratorT d_end_offsets,
-    ReductionOpT reduction_op,
-    InitT init,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_out,
-      num_segments,
-      d_begin_offsets,
-      d_end_offsets,
-      reduction_op,
-      init,
-      stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

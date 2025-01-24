@@ -380,33 +380,6 @@ struct ReduceByKeyOp
   }
 };
 
-//! Deprecated [Since 2.8]
-template <typename BinaryOpT>
-struct CCCL_DEPRECATED BinaryFlip
-{
-  BinaryOpT binary_op;
-
-  _CCCL_HOST_DEVICE explicit BinaryFlip(BinaryOpT binary_op)
-      : binary_op(binary_op)
-  {}
-
-  template <typename T, typename U>
-  _CCCL_DEVICE auto operator()(T&& t, U&& u)
-    -> decltype(binary_op(::cuda::std::forward<U>(u), ::cuda::std::forward<T>(t)))
-  {
-    return binary_op(::cuda::std::forward<U>(u), ::cuda::std::forward<T>(t));
-  }
-};
-
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-//! Deprecated [Since 2.8]
-template <typename BinaryOpT>
-CCCL_DEPRECATED _CCCL_HOST_DEVICE BinaryFlip<BinaryOpT> MakeBinaryFlip(BinaryOpT binary_op)
-{
-  return BinaryFlip<BinaryOpT>(binary_op);
-}
-_CCCL_SUPPRESS_DEPRECATED_POP
-
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 namespace internal

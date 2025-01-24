@@ -12,7 +12,7 @@
 
 using namespace cuda::experimental::stf;
 
-__global__ void swap(slice<double> dst, const slice<double> src)
+__global__ void swap_kernel(slice<double> dst, slice<double> src)
 {
   size_t tid      = threadIdx.x + blockIdx.x * blockDim.x;
   size_t nthreads = blockDim.x * gridDim.x;
@@ -57,11 +57,11 @@ int main(int argc, char** argv)
   start = std::chrono::steady_clock::now();
   for (size_t iter = 0; iter < iter_cnt; iter++)
   {
-    ctx.task(lX.read(), lY.rw())->*[&](cudaStream_t s, auto dX, auto dY) {
-      swap<<<4, 16, 0, s>>>(dY, dX);
+    ctx.task(lX.rw(), lY.rw())->*[&](cudaStream_t s, auto dX, auto dY) {
+      swap_kernel<<<4, 16, 0, s>>>(dY, dX);
     };
-    ctx.task(lY.read(), lX.rw())->*[&](cudaStream_t s, auto dY, auto dX) {
-      swap<<<4, 16, 0, s>>>(dX, dY);
+    ctx.task(lY.rw(), lX.rw())->*[&](cudaStream_t s, auto dY, auto dX) {
+      swap_kernel<<<4, 16, 0, s>>>(dX, dY);
     };
   }
   stop = std::chrono::steady_clock::now();

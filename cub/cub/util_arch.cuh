@@ -47,6 +47,10 @@
 #include <cub/util_macro.cuh>
 #include <cub/util_namespace.cuh>
 
+#include <cuda/cmath>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+
 // Legacy include; this functionality used to be defined in here.
 #include <cub/detail/detect_cuda_runtime.cuh>
 
@@ -113,27 +117,24 @@ namespace detail
 static constexpr ::cuda::std::size_t max_smem_per_block = 48 * 1024;
 } // namespace detail
 
-template <int NOMINAL_4B_BLOCK_THREADS, int NOMINAL_4B_ITEMS_PER_THREAD, typename T>
+template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename T>
 struct RegBoundScaling
 {
-  enum
-  {
-    ITEMS_PER_THREAD = CUB_MAX(1, NOMINAL_4B_ITEMS_PER_THREAD * 4 / CUB_MAX(4, sizeof(T))),
-    BLOCK_THREADS    = CUB_MIN(NOMINAL_4B_BLOCK_THREADS,
-                            ((cub::detail::max_smem_per_block / (sizeof(T) * ITEMS_PER_THREAD)) + 31) / 32 * 32),
-  };
+  static constexpr int ITEMS_PER_THREAD =
+    (::cuda::std::max)(1, Nominal4ByteItemsPerThread * 4 / (::cuda::std::max)(4, int{sizeof(T)}));
+  static constexpr int BLOCK_THREADS = (::cuda::std::min)(
+    Nominal4ByteBlockThreads,
+    ::cuda::ceil_div(int{detail::max_smem_per_block} / (int{sizeof(T)} * ITEMS_PER_THREAD), 32) * 32);
 };
 
-template <int NOMINAL_4B_BLOCK_THREADS, int NOMINAL_4B_ITEMS_PER_THREAD, typename T>
+template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename T>
 struct MemBoundScaling
 {
-  enum
-  {
-    ITEMS_PER_THREAD =
-      CUB_MAX(1, CUB_MIN(NOMINAL_4B_ITEMS_PER_THREAD * 4 / sizeof(T), NOMINAL_4B_ITEMS_PER_THREAD * 2)),
-    BLOCK_THREADS = CUB_MIN(NOMINAL_4B_BLOCK_THREADS,
-                            ((cub::detail::max_smem_per_block / (sizeof(T) * ITEMS_PER_THREAD)) + 31) / 32 * 32),
-  };
+  static constexpr int ITEMS_PER_THREAD = (::cuda::std::max)(
+    1, (::cuda::std::min)(Nominal4ByteItemsPerThread * 4 / int{sizeof(T)}, Nominal4ByteItemsPerThread * 2));
+  static constexpr int BLOCK_THREADS = (::cuda::std::min)(
+    Nominal4ByteBlockThreads,
+    ::cuda::ceil_div(int{detail::max_smem_per_block} / (int{sizeof(T)} * ITEMS_PER_THREAD), 32) * 32);
 };
 
 #endif // Do not document

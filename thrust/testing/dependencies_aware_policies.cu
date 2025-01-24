@@ -1,3 +1,8 @@
+#include <cuda/__cccl_config>
+
+// need to suppress deprecation warnings for execute_with_allocator_and_dependencies inside type traits
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 #include <thrust/detail/config.h>
 
 #include <thrust/detail/seq.h>
@@ -113,3 +118,5 @@ SimpleUnitTest<TestDependencyAttachment,
 #endif
                  >>
   TestDependencyAttachmentInstance;
+
+_CCCL_SUPPRESS_DEPRECATED_POP

@@ -68,6 +68,13 @@ int main(int, char**)
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
   test<long double>();
 #endif
+#if defined(_LIBCUDACXX_HAS_NVFP16)
+  test<__half>();
+#endif // _LIBCUDACXX_HAS_NVFP16
+#if defined(_LIBCUDACXX_HAS_NVBF16)
+  test<__nv_bfloat16>();
+#endif // _LIBCUDACXX_HAS_NVBF16
+
   static_assert(!cuda::std::numeric_limits<cuda::std::complex<double>>::is_specialized,
                 "!cuda::std::numeric_limits<cuda::std::complex<double> >::is_specialized");
 
