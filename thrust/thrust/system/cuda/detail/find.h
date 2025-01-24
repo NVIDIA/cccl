@@ -39,8 +39,9 @@
 #if _CCCL_HAS_CUDA_COMPILER
 #  include <thrust/system/cuda/config.h>
 
-#  include <thrust/detail/minmax.h>
 #  include <thrust/distance.h>
+#  include <thrust/iterator/counting_iterator.h>
+#  include <thrust/iterator/transform_iterator.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -79,7 +80,7 @@ struct functor
     // select the smallest index among true results
     if (thrust::get<0>(lhs) && thrust::get<0>(rhs))
     {
-      return TupleType(true, (thrust::min)(thrust::get<1>(lhs), thrust::get<1>(rhs)));
+      return TupleType(true, (::cuda::std::min)(thrust::get<1>(lhs), thrust::get<1>(rhs)));
     }
     else if (thrust::get<0>(lhs))
     {
@@ -113,14 +114,14 @@ find_if_n(execution_policy<Derived>& policy, InputIt first, Size num_items, Pred
 
   // TODO incorporate sizeof(InputType) into interval_threshold and round to multiple of 32
   const Size interval_threshold = 1 << 20;
-  const Size interval_size      = (thrust::min)(interval_threshold, num_items);
+  const Size interval_size      = (::cuda::std::min)(interval_threshold, num_items);
 
   // force transform_iterator output to bool
-  using XfrmIterator  = transform_input_iterator_t<bool, InputIt, Predicate>;
-  using IteratorTuple = thrust::tuple<XfrmIterator, counting_iterator_t<Size>>;
+  using XfrmIterator  = transform_iterator<Predicate, InputIt, bool, bool>;
+  using IteratorTuple = thrust::tuple<XfrmIterator, counting_iterator<Size>>;
   using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
-  IteratorTuple iter_tuple = thrust::make_tuple(XfrmIterator(first, predicate), counting_iterator_t<Size>(0));
+  IteratorTuple iter_tuple = thrust::make_tuple(XfrmIterator(first, predicate), counting_iterator<Size>(0));
 
   ZipIterator begin = thrust::make_zip_iterator(iter_tuple);
   ZipIterator end   = begin + num_items;

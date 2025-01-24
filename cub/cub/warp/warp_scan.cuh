@@ -49,6 +49,7 @@
 #include <cub/warp/specializations/warp_scan_shfl.cuh>
 #include <cub/warp/specializations/warp_scan_smem.cuh>
 
+#include <cuda/ptx>
 #include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
@@ -179,8 +180,8 @@ private:
 
   /// Internal specialization.
   /// Use SHFL-based scan if LOGICAL_WARP_THREADS is a power-of-two
-  using InternalWarpScan =
-    ::cuda::std::_If<IS_POW_OF_TWO, WarpScanShfl<T, LOGICAL_WARP_THREADS>, WarpScanSmem<T, LOGICAL_WARP_THREADS>>;
+  using InternalWarpScan = ::cuda::std::
+    _If<IS_POW_OF_TWO, detail::WarpScanShfl<T, LOGICAL_WARP_THREADS>, detail::WarpScanSmem<T, LOGICAL_WARP_THREADS>>;
 
   /// Shared memory storage layout type for WarpScan
   using _TempStorage = typename InternalWarpScan::TempStorage;
@@ -212,7 +213,7 @@ public:
   //!   Reference to memory allocation having layout type TempStorage
   _CCCL_DEVICE _CCCL_FORCEINLINE WarpScan(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , lane_id(IS_ARCH_WARP ? LaneId() : LaneId() % LOGICAL_WARP_THREADS)
+      , lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : ::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS)
   {}
 
   //! @}  end member group

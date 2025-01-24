@@ -1740,6 +1740,8 @@ inline void reserved::logical_data_untyped_impl::erase()
   auto wb_prereqs = event_list();
   auto& h_state   = get_state();
 
+  const bool track_dangling_events = ctx.track_dangling_events();
+
   /* If there is a reference instance id, it needs to be updated with a
    * valid copy if that is not the case yet */
   if (enable_write_back && !is_void_interface())
@@ -1785,8 +1787,11 @@ inline void reserved::logical_data_untyped_impl::erase()
       src_instance.add_write_prereq(reqs);
       dst_instance.set_read_prereq(reqs);
 
-      // nobody waits for these events, so we put them in the list of dangling events
-      cs.add_dangling_events(reqs);
+      if (track_dangling_events)
+      {
+        // nobody waits for these events, so we put them in the list of dangling events
+        cs.add_dangling_events(reqs);
+      }
     }
   }
 
@@ -1812,16 +1817,23 @@ inline void reserved::logical_data_untyped_impl::erase()
 
       // We now ask to deallocate that piece of data
       deallocate(inst_i.get_dplace(), i, inst_i.get_extra_args(), inst_prereqs);
-      cs.add_dangling_events(inst_prereqs);
+
+      if (track_dangling_events)
+      {
+        cs.add_dangling_events(inst_prereqs);
+      }
     }
 
     inst_i.clear();
   }
 
-  if (wb_prereqs.size() > 0)
+  if (track_dangling_events)
   {
-    // nobody waits for these events, so we put them in the list of dangling events
-    cs.add_dangling_events(wb_prereqs);
+    if (wb_prereqs.size() > 0)
+    {
+      // nobody waits for these events, so we put them in the list of dangling events
+      cs.add_dangling_events(wb_prereqs);
+    }
   }
 
   // Clear the state which may contain references (eg. shared_ptr) to other
@@ -2294,13 +2306,7 @@ public:
   auto read(Pack&&... pack) const
   {
     using U = readonly_type_of<T>;
-    // The constness of *this implies that access mode is read
-    // Note that we do not provide an access mode, because this is how we
-    // dispatch statically between read-only and non read-only access modes in
-    // task_dep_untyped.
-    // TODO : we could make this cleaner if we had a tag type in addition to
-    // the access_mode enum class.
-    return task_dep<U, ::std::monostate, false>(*this, /* access_mode::read, */ ::std::forward<Pack>(pack)...);
+    return task_dep<U, ::std::monostate, false>(*this, access_mode::read, ::std::forward<Pack>(pack)...);
   }
 
   template <typename... Pack>

@@ -94,28 +94,28 @@ int main()
       case 3:
         // This works because it dynamically selects the dual function to run on the host
         ctx.parallel_for(exec_place::host, ly.shape(), lx.read(), ly.rw())
-            ->*[=] __host__ __device__(size_t pos, slice<double> sx, slice<double> sy) {
+            ->*[=] __host__ __device__(size_t pos, slice<const double> sx, slice<double> sy) {
                   sy(pos) += 0.5 * (sx(2 * pos) + sx(2 * pos + 1));
                 };
         break;
       case 4:
         // This works because it dynamically selects the dual function to run on the device
         ctx.parallel_for(exec_place::current_device(), ly.shape(), lx.read(), ly.rw())
-            ->*[=] __host__ __device__(size_t pos, slice<double> sx, slice<double> sy) {
+            ->*[=] __host__ __device__(size_t pos, slice<const double> sx, slice<double> sy) {
                   sy(pos) += 0.5 * (sx(2 * pos) + sx(2 * pos + 1));
                 };
         break;
       case 5:
         // This works because it dynamically selects the dual function to run on the current device
         ctx.parallel_for(ly.shape(), lx.read(), ly.rw())
-            ->*[=] __host__ __device__(size_t pos, slice<double> sx, slice<double> sy) {
+            ->*[=] __host__ __device__(size_t pos, slice<const double> sx, slice<double> sy) {
                   sy(pos) += 0.5 * (sx(2 * pos) + sx(2 * pos + 1));
                 };
         break;
       case 6:
         // This works because it dispatches on all devices
         ctx.parallel_for(blocked_partition(), exec_place::all_devices(), ly.shape(), lx.read(), ly.rw())
-            ->*[=] __host__ __device__(size_t pos, slice<double> sx, slice<double> sy) {
+            ->*[=] __host__ __device__(size_t pos, slice<const double> sx, slice<double> sy) {
                   sy(pos) += 0.5 * (sx(2 * pos) + sx(2 * pos + 1));
                 };
         break;

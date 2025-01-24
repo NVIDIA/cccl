@@ -154,7 +154,7 @@ void replace(ForwardIterator first, ForwardIterator last, const T& old_value, co
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
  * Iterator</a>, \p ForwardIterator is mutable, and \p ForwardIterator's \c value_type is convertible to \p Predicate's
- * \c argument_type. \tparam Predicate is a model of <a
+ * argument type. \tparam Predicate is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>. \tparam T is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>, and \p T is convertible to \p
  * ForwardIterator's \c value_type.
@@ -217,7 +217,7 @@ _CCCL_HOST_DEVICE void replace_if(
  *
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
  * Iterator</a>, \p ForwardIterator is mutable, and \p ForwardIterator's \c value_type is convertible to \p Predicate's
- * \c argument_type. \tparam Predicate is a model of <a
+ * argument type. \tparam Predicate is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>. \tparam T is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>, and \p T is convertible to \p
  * ForwardIterator's \c value_type.
@@ -280,7 +280,7 @@ void replace_if(ForwardIterator first, ForwardIterator last, Predicate pred, con
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
  * Iterator</a>, and \p ForwardIterator is mutable. \tparam InputIterator is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, and \p InputIterator's \c
- * value_type is convertible to \p Predicate's \c argument_type. \tparam Predicate is a model of <a
+ * value_type is convertible to \p Predicate's argument type. \tparam Predicate is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>. \tparam T is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>, and \p T is convertible to \p
  * ForwardIterator's \c value_type.
@@ -352,7 +352,7 @@ _CCCL_HOST_DEVICE void replace_if(
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
  * Iterator</a>, and \p ForwardIterator is mutable. \tparam InputIterator is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, and \p InputIterator's \c
- * value_type is convertible to \p Predicate's \c argument_type. \tparam Predicate is a model of <a
+ * value_type is convertible to \p Predicate's argument type. \tparam Predicate is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>. \tparam T is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>, and \p T is convertible to \p
  * ForwardIterator's \c value_type.
@@ -536,7 +536,7 @@ replace_copy(InputIterator first, InputIterator last, OutputIterator result, con
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
  Iterator</a>,
- *          and \p InputIterator's \c value_type is convertible to \p Predicate's \c argument_type.
+ *          and \p InputIterator's \c value_type is convertible to \p Predicate's argument type.
  *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  Iterator</a>.
  *  \tparam Predicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
@@ -607,7 +607,7 @@ _CCCL_HOST_DEVICE OutputIterator replace_copy_if(
  *
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
  Iterator</a>,
- *          and \p InputIterator's \c value_type is convertible to \p Predicate's \c argument_type.
+ *          and \p InputIterator's \c value_type is convertible to \p Predicate's argument type.
  *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  Iterator</a>.
  *  \tparam Predicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
@@ -678,7 +678,7 @@ replace_copy_if(InputIterator first, InputIterator last, OutputIterator result, 
  *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
  * Iterator</a>. \tparam InputIterator2 is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a> and \p InputIterator2's \c
- * value_type is convertible to \p Predicate's \c argument_type. \tparam OutputIterator is a model of <a
+ * value_type is convertible to \p Predicate's argument type. \tparam OutputIterator is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. \tparam Predicate is a model
  * of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>. \tparam T is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>, and \p T is convertible to \p
@@ -761,7 +761,7 @@ _CCCL_HOST_DEVICE OutputIterator replace_copy_if(
  *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
  * Iterator</a>. \tparam InputIterator2 is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a> and \p InputIterator2's \c
- * value_type is convertible to \p Predicate's \c argument_type. \tparam OutputIterator is a model of <a
+ * value_type is convertible to \p Predicate's argument type. \tparam OutputIterator is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. \tparam Predicate is a model
  * of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>. \tparam T is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>, and \p T is convertible to \p

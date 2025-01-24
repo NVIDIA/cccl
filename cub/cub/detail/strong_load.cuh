@@ -45,8 +45,6 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#include <iterator>
-
 CUB_NAMESPACE_BEGIN
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document

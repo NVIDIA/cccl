@@ -41,6 +41,7 @@
 #include <thrust/sequence.h>
 
 #include <cuda/std/bit>
+#include <cuda/std/functional>
 
 #include <array>
 #include <climits>
@@ -54,7 +55,7 @@
 // Index types used for OffsetsT testing
 using offset_types = c2h::type_list<cuda::std::int32_t, cuda::std::uint64_t>;
 using all_offset_types =
-  c2h::type_list<cuda::std::int32_t, cuda::std::uint32_t, cuda::std::int64_t, cuda::std::uint64_t>;
+  c2h::type_list<cuda::std::int64_t, cuda::std::uint64_t, cuda::std::int32_t, cuda::std::uint32_t>;
 
 // Create a segment iterator that returns the next multiple of Step except for a few cases. This allows to save memory
 template <typename OffsetT, OffsetT Step>
@@ -62,35 +63,13 @@ struct segment_iterator
 {
   OffsetT last = 0;
 
-  segment_iterator(OffsetT last1)
+  segment_iterator(std::int64_t last1)
       : last{last1}
   {}
 
-  __host__ __device__ OffsetT operator()(OffsetT x) const
+  __host__ __device__ OffsetT operator()(std::int64_t x) const
   {
-    switch (x)
-    {
-      case Step * 100:
-        return Step * 100 + Step / 2;
-      case Step * 200:
-        return Step * 200 + Step / 2;
-      case Step * 300:
-        return Step * 300 + Step / 2;
-      case Step * 400:
-        return Step * 400 + Step / 2;
-      case Step * 500:
-        return Step * 500 + Step / 2;
-      case Step * 600:
-        return Step * 600 + Step / 2;
-      case Step * 700:
-        return Step * 700 + Step / 2;
-      case Step * 800:
-        return Step * 800 + Step / 2;
-      case Step * 900:
-        return Step * 900 + Step / 2;
-      default:
-        return (x >= last) ? last : x * Step;
-    }
+    return (::cuda::std::min)(last, x * Step);
   }
 };
 

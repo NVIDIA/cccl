@@ -86,10 +86,10 @@ void init_output_partition_buffer(
   FlagsItT d_flags,
   OffsetT num_items,
   T* d_out,
-  cub::detail::partition_distinct_output_t<T*, T*>& d_partition_out_buffer)
+  cub::detail::select::partition_distinct_output_t<T*, T*>& d_partition_out_buffer)
 {
   const auto selected_elements = thrust::count(d_flags, d_flags + num_items, true);
-  d_partition_out_buffer       = cub::detail::partition_distinct_output_t<T*, T*>{d_out, d_out + selected_elements};
+  d_partition_out_buffer = cub::detail::select::partition_distinct_output_t<T*, T*>{d_out, d_out + selected_elements};
 }
 
 template <typename FlagsItT, typename T, typename OffsetT>
@@ -109,7 +109,7 @@ void flagged(nvbench::state& state, nvbench::type_list<T, OffsetT, UseDistinctPa
   using offset_t                             = OffsetT;
   constexpr bool use_distinct_out_partitions = UseDistinctPartitionT::value;
   using output_it_t                          = typename ::cuda::std::
-    conditional<use_distinct_out_partitions, cub::detail::partition_distinct_output_t<T*, T*>, T*>::type;
+    conditional<use_distinct_out_partitions, cub::detail::select::partition_distinct_output_t<T*, T*>, T*>::type;
 
 #if !TUNE_BASE
   using policy_t   = policy_hub_t<T>;

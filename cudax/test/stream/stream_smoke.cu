@@ -11,7 +11,7 @@
 #include <cuda/experimental/launch.cuh>
 #include <cuda/experimental/stream.cuh>
 
-#include <catch2/catch.hpp>
+#include <testing.cuh>
 #include <utility.cuh>
 
 TEST_CASE("Can create a stream and launch work into it", "[stream]")
@@ -122,7 +122,7 @@ TEST_CASE("Stream get device", "[stream]")
   auto stream_ref_cudart = cudax::stream_ref(stream_handle);
   CUDAX_REQUIRE(stream_ref_cudart.device() == *std::prev(cudax::devices.end()));
 
-  INFO("Can create a side stream using logical device")
+  INFO("Can create a side stream using logical device");
   {
     if (test::cuda_driver_version() >= 12050)
     {

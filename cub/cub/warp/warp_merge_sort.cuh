@@ -41,6 +41,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/ptx>
 #include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
@@ -151,8 +152,10 @@ public:
   WarpMergeSort() = delete;
 
   _CCCL_DEVICE _CCCL_FORCEINLINE WarpMergeSort(typename BlockMergeSortStrategyT::TempStorage& temp_storage)
-      : BlockMergeSortStrategyT(temp_storage, IS_ARCH_WARP ? LaneId() : (LaneId() % LOGICAL_WARP_THREADS))
-      , warp_id(IS_ARCH_WARP ? 0 : (LaneId() / LOGICAL_WARP_THREADS))
+      : BlockMergeSortStrategyT(
+          temp_storage,
+          IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS))
+      , warp_id(IS_ARCH_WARP ? 0 : (::cuda::ptx::get_sreg_laneid() / LOGICAL_WARP_THREADS))
       , member_mask(WarpMask<LOGICAL_WARP_THREADS>(warp_id))
   {}
 
@@ -164,7 +167,7 @@ public:
 private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void SyncImplementation() const
   {
-    WARP_SYNC(member_mask);
+    __syncwarp(member_mask);
   }
 
   friend BlockMergeSortStrategyT;

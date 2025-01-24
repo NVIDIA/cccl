@@ -43,6 +43,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
@@ -58,7 +60,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
 MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, OffsetT diag, BinaryPred binary_pred)
 {
   OffsetT keys1_begin = diag < keys2_count ? 0 : diag - keys2_count;
-  OffsetT keys1_end   = (cub::min)(diag, keys1_count);
+  OffsetT keys1_end   = (::cuda::std::min)(diag, keys1_count);
 
   while (keys1_begin < keys1_end)
   {
@@ -425,12 +427,12 @@ public:
 
       int thread_idx_in_thread_group_being_merged = mask & linear_tid;
 
-      int diag = (cub::min)(valid_items, ITEMS_PER_THREAD * thread_idx_in_thread_group_being_merged);
+      int diag = (::cuda::std::min)(valid_items, ITEMS_PER_THREAD * thread_idx_in_thread_group_being_merged);
 
-      int keys1_beg = (cub::min)(valid_items, start);
-      int keys1_end = (cub::min)(valid_items, keys1_beg + size);
+      int keys1_beg = (::cuda::std::min)(valid_items, start);
+      int keys1_end = (::cuda::std::min)(valid_items, keys1_beg + size);
       int keys2_beg = keys1_end;
-      int keys2_end = (cub::min)(valid_items, keys2_beg + size);
+      int keys2_end = (::cuda::std::min)(valid_items, keys2_beg + size);
 
       int keys1_count = keys1_end - keys1_beg;
       int keys2_count = keys2_end - keys2_beg;
@@ -760,7 +762,7 @@ public:
 private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void SyncImplementation() const
   {
-    CTA_SYNC();
+    __syncthreads();
   }
 
   friend BlockMergeSortStrategyT;

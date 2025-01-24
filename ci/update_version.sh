@@ -37,6 +37,7 @@ CUB_CMAKE_VERSION_FILE="lib/cmake/cub/cub-config-version.cmake"
 LIBCUDACXX_CMAKE_VERSION_FILE="lib/cmake/libcudacxx/libcudacxx-config-version.cmake"
 THRUST_CMAKE_VERSION_FILE="lib/cmake/thrust/thrust-config-version.cmake"
 CUDAX_CMAKE_VERSION_FILE="lib/cmake/cudax/cudax-config-version.cmake"
+CUDA_CCCL_VERSION_FILE="python/cuda_cccl/cuda/cccl/_version.py"
 CUDA_COOPERATIVE_VERSION_FILE="python/cuda_cooperative/cuda/cooperative/_version.py"
 CUDA_PARALLEL_VERSION_FILE="python/cuda_parallel/cuda/parallel/_version.py"
 
@@ -110,6 +111,7 @@ update_file "$CUDAX_CMAKE_VERSION_FILE" "set(cudax_VERSION_MAJOR \([0-9]\+\))" "
 update_file "$CUDAX_CMAKE_VERSION_FILE" "set(cudax_VERSION_MINOR \([0-9]\+\))" "set(cudax_VERSION_MINOR $minor)"
 update_file "$CUDAX_CMAKE_VERSION_FILE" "set(cudax_VERSION_PATCH \([0-9]\+\))" "set(cudax_VERSION_PATCH $patch)"
 
+update_file "$CUDA_CCCL_VERSION_FILE" "^__version__ = \"\([0-9.]\+\)\"" "__version__ = \"$major.$minor.$patch\""
 update_file "$CUDA_COOPERATIVE_VERSION_FILE" "^__version__ = \"\([0-9.]\+\)\"" "__version__ = \"$pymajor.$pyminor.$major.$minor.$patch\""
 update_file "$CUDA_PARALLEL_VERSION_FILE" "^__version__ = \"\([0-9.]\+\)\"" "__version__ = \"$pymajor.$pyminor.$major.$minor.$patch\""
 

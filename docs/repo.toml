@@ -179,7 +179,6 @@ doxygen_predefined = [
     "CCCL_DEPRECATED=",
     "CUB_STATIC_ASSERT(cond,msg)=",
     "CUB_RUNTIME_FUNCTION",
-    "CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED",
     "CUDASTF_HOST",
     "CUDASTF_DEVICE",
     "CUDASTF_HOST_DEVICE"
@@ -273,6 +272,7 @@ doxygen_predefined = [
   "_CCCL_DIAG_SUPPRESS_GCC(x)=",
   "_CCCL_DIAG_SUPPRESS_MSVC(x)=",
   "_CCCL_DIAG_SUPPRESS_NVHPC(x)=",
+  "_CCCL_GLOBAL_CONSTANT=constexpr",
   "CUDASTF_HOST=",
   "CUDASTF_DEVICE=",
   "CUDASTF_HOST_DEVICE=",
@@ -347,6 +347,7 @@ autodoc.mock_imports = [
     "numba",
     "pynvjitlink",
     "cuda.bindings",
+    "cuda.cccl",
     "llvmlite",
     "numpy",
 ]

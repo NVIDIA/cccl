@@ -35,7 +35,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT reference_wrapper : public __weak_result_typ
 {
 public:
   // types
-  typedef _Tp type;
+  using type = _Tp;
 
 private:
   type* __f_;

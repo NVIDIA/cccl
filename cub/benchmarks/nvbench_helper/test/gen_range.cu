@@ -30,7 +30,8 @@
 
 #include <limits>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_template_test_macros.hpp>
+#include <catch2/generators/catch_generators_all.hpp>
 #include <nvbench_helper.cuh>
 
 using types =
