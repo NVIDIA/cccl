@@ -14,7 +14,7 @@
 
 #include "test_macros.h"
 
-#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
+#ifdef _CCCL_BUILTIN_REFERENCE_CONVERTS_FROM_TEMPORARY
 
 struct SimpleClass
 {
@@ -91,7 +91,7 @@ static_assert(cuda::std::reference_converts_from_temporary<int&&, int[]>::value 
 static_assert(cuda::std::reference_converts_from_temporary<int&&, ConvertsToRvalue>::value == true, "");
 static_assert(cuda::std::reference_converts_from_temporary<const int&, ConvertsToConstReference>::value == true, "");
 
-#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
+#endif // _CCCL_BUILTIN_REFERENCE_CONVERTS_FROM_TEMPORARY
 
 int main(int, char**)
 {
