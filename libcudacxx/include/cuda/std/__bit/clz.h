@@ -32,6 +32,28 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+// It is not possible to understand if we are in constant evaluation context in GCC < 9. For this reason, we provide an
+// optimized version of runtime clz that is used in device code.
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_clz_32bit(uint32_t __x) noexcept
+{
+  constexpr auto __digits = numeric_limits<uint32_t>::digits;
+  if (__x == 0)
+  {
+    return __digits;
+  }
+  unsigned __res = 0;
+  for (unsigned __i = __digits / 2; __i >= 1; __i /= 2)
+  {
+    const auto __mark = (~uint32_t{0} >> (__digits - __i)) << __i;
+    if (__x & __mark)
+    {
+      __x >>= __i;
+      __res |= __i;
+    }
+  }
+  return __digits - 1 - __res;
+}
+
 template <typename _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_clz(_Tp __x) noexcept
 {
@@ -41,18 +63,17 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_clz(_Tp __x) noexcept
          ? _CCCL_BUILTIN_CLZ(static_cast<uint32_t>(__x))
          : _CCCL_BUILTIN_CLZLL(static_cast<uint64_t>(__x));
 #else
-  constexpr auto __digits = numeric_limits<_Tp>::digits;
-  unsigned __res          = 0;
-  for (unsigned __i = __digits / 2; __i >= 1; __i /= 2)
+  if constexpr (sizeof(_Tp) == sizeof(uint32_t))
   {
-    const auto __mark = (~_Tp{0} >> (__digits - __i)) << __i;
-    if (__x & __mark)
-    {
-      __x >>= __i;
-      __res |= __i;
-    }
+    return __constexpr_clz_32bit(__x);
   }
-  return __digits - 1 - __res;
+  else
+  {
+    auto __higher = __constexpr_clz_32bit(static_cast<uint32_t>(__x >> 32));
+    return __higher != numeric_limits<uint32_t>::digits
+           ? __higher
+           : numeric_limits<uint32_t>::digits + __constexpr_clz_32bit(static_cast<uint32_t>(__x));
+  }
 #endif // defined(_CCCL_BUILTIN_CLZ)
 }
 

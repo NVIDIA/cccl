@@ -32,6 +32,8 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+// It is not possible to understand if we are in constant evaluation context in GCC < 9. For this reason, we provide an
+// optimized version of runtime popc that is used in device code.
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_popc_32bit(uint32_t __x) noexcept
 {
   __x = __x - ((__x >> 1) & 0x55555555);
