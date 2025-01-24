@@ -25,10 +25,8 @@
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
-#  if _CCCL_COMPILER(NVHPC)
-// suppress deprecation warnings for ConstantInputIterator. NVHPC makes them appear more widely than necessary
+// suppress deprecation warnings for ConstantInputIterator
 _CCCL_SUPPRESS_DEPRECATED_PUSH
-#  endif // _CCCL_COMPILER(NVHPC)
 CUB_NAMESPACE_BEGIN
 
 namespace detail::reduce
@@ -384,9 +382,7 @@ struct dispatch_streaming_arg_reduce_t
 };
 
 } // namespace detail::reduce
-#  if _CCCL_COMPILER(NVHPC)
 _CCCL_SUPPRESS_DEPRECATED_POP
-#  endif // _CCCL_COMPILER(NVHPC)
 CUB_NAMESPACE_END
 
 #endif // !_CCCL_DOXYGEN_INVOKED
