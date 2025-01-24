@@ -43,7 +43,8 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __countr_zero(_Tp __t) noexcept
   using _Sp         = _If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
   auto __ctz_result = _CUDA_VSTD::__cccl_ctz(static_cast<_Sp>(__t));
   NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                    (return __ctz_result;), // if __t == 0 __ctz_result is already equal to numeric_limits<_Tp>::digits
+                    // if __t == 0 __ctz_result is already equal to numeric_limits<_Tp>::digits
+                    (return sizeof(_Tp) < sizeof(uint32_t) && __t == 0 ? numeric_limits<_Tp>::digits : __ctz_result;),
                     (return __t ? __ctz_result : numeric_limits<_Tp>::digits;))
 }
 

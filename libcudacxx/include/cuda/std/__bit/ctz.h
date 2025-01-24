@@ -36,18 +36,19 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // optimized version of runtime ctz that is used in device code.
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_ctz_32bit(uint32_t __x) noexcept
 {
+  constexpr auto __digits = numeric_limits<uint32_t>::digits;
   if (__x == 0)
   {
-    return numeric_limits<uint32_t>::digits;
+    return __digits;
   }
   if (__x & 0x1)
   {
     return 0;
   }
   int __pos = 1;
-  for (int __i = numeric_limits<uint32_t>::digits / 2; __i >= 2; __i /= 2)
+  for (int __i = __digits / 2; __i >= 2; __i /= 2)
   {
-    const auto __mark = ~uint32_t{0} >> (numeric_limits<uint32_t>::digits - __i);
+    const auto __mark = ~uint32_t{0} >> (__digits - __i);
     if ((__x & __mark) == 0)
     {
       __x >>= __i;
