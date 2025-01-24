@@ -18,7 +18,8 @@
 
 /* Queryable properties defined by <nv/target>
 Can be imagined as __CUDA_ARCH__ >= SM_XX
-
+  NV_PROVIDES_SM_35
+  NV_PROVIDES_SM_37
   NV_PROVIDES_SM_50
   NV_PROVIDES_SM_52
   NV_PROVIDES_SM_53
@@ -33,6 +34,8 @@ Can be imagined as __CUDA_ARCH__ >= SM_XX
   NV_PROVIDES_SM_87
 
 Similar to above, but instead __CUDA_ARCH__ == SM_XX
+  NV_IS_EXACTLY_SM_35
+  NV_IS_EXACTLY_SM_37
   NV_IS_EXACTLY_SM_50
   NV_IS_EXACTLY_SM_52
   NV_IS_EXACTLY_SM_53
