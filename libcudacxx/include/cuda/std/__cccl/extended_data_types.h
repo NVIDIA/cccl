@@ -39,7 +39,7 @@
 #endif // !_CCCL_DISABLE_INT128
 
 #if !defined(_CCCL_DISABLE_NVFP8_SUPPORT)
-#  if _CCCL_HAS_INCLUDE(<cuda_fp8.h>)
+#  if _CCCL_HAS_INCLUDE(<cuda_fp8.h>) && defined(_CCCL_HAS_NVFP16) && defined(_CCCL_HAS_NVBF16)
 #    define _CCCL_HAS_NVFP8() 1
 #  else
 #    define _CCCL_HAS_NVFP8() 0
