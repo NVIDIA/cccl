@@ -58,6 +58,7 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
     #include <cub/device/dispatch/kernels/reduce.cuh>
     #include <cub/device/dispatch/kernels/for_each.cuh>
     #include <cub/device/dispatch/kernels/scan.cuh>
+    #include <cub/device/dispatch/kernels/merge_sort.cuh>
 
     extern "C" __global__ void kernel(int *ptr, int *errors)
     {
