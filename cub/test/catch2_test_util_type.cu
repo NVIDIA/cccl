@@ -25,10 +25,9 @@
  *
  ******************************************************************************/
 
+#include <cub/iterator/counting_input_iterator.cuh>
+#include <cub/iterator/discard_output_iterator.cuh>
 #include <cub/util_type.cuh>
-
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/discard_iterator.h>
 
 #include <cuda/std/type_traits>
 
@@ -36,9 +35,10 @@
 
 C2H_TEST("Tests non_void_value_t", "[util][type]")
 {
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   using fallback_t        = float;
-  using void_fancy_it     = thrust::discard_iterator<std::size_t>;
-  using non_void_fancy_it = thrust::counting_iterator<int>;
+  using void_fancy_it     = cub::DiscardOutputIterator<std::size_t>;
+  using non_void_fancy_it = cub::CountingInputIterator<int>;
 
   // falls back for const void*
   STATIC_REQUIRE(::cuda::std::is_same<fallback_t, //
@@ -61,6 +61,7 @@ C2H_TEST("Tests non_void_value_t", "[util][type]")
   // works for a fancy iterator that has int as value type
   STATIC_REQUIRE(::cuda::std::is_same<int, //
                                       cub::detail::non_void_value_t<non_void_fancy_it, fallback_t>>::value);
+  _CCCL_SUPPRESS_DEPRECATED_POP
 }
 
 CUB_DEFINE_DETECT_NESTED_TYPE(cat_detect, cat);

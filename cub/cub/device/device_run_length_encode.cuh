@@ -210,6 +210,7 @@ struct DeviceRunLengthEncode
 
     using policy_t = detail::rle::encode::policy_hub<accum_t, key_t>;
 
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     return DispatchReduceByKey<
       InputIteratorT,
       UniqueOutputIteratorT,
@@ -231,6 +232,7 @@ struct DeviceRunLengthEncode
                           reduction_op(),
                           num_items,
                           stream);
+    _CCCL_SUPPRESS_DEPRECATED_POP
   }
 
   //! @rst
