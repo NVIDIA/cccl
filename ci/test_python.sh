@@ -14,7 +14,7 @@ export PYTHONPATH="${prefix}:${PYTHONPATH:-}"
 pushd ../python/cuda_cooperative >/dev/null
 
 run_command "⚙️  Pip install cuda_cooperative" pip install --force-reinstall --upgrade --target "${prefix}" .[test]
-run_command "🚀  Pytest cuda_cooperative" python -m pytest -v ./tests
+run_command "🚀  Pytest cuda_cooperative" pytest -v ./tests
 
 popd >/dev/null
 
