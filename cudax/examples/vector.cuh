@@ -109,9 +109,7 @@ private:
       __v_.sync_device_to_host(__str_, _Kind);
     }
 
-    using __as_kernel_arg = ::cuda::std::span<_Ty>;
-
-    operator ::cuda::std::span<_Ty>()
+    ::cuda::std::span<_Ty> kernel_transform() const
     {
       return {__v_.__d_.data().get(), __v_.__d_.size()};
     }

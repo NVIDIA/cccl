@@ -88,7 +88,10 @@ struct weird_buffer
     int* data;
     std::size_t size;
 
-    using __as_kernel_arg = AsKernelArg;
+    AsKernelArg kernel_transform()
+    {
+      return *this;
+    };
 
     operator cuda::std::span<int>()
     {

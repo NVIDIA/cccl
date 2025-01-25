@@ -126,27 +126,23 @@ void launch(
   __ensure_current_device __dev_setter(stream);
   cudaError_t status;
   auto combined = conf.combine_with_default(kernel);
-  if constexpr (::cuda::std::is_invocable_v<Kernel, kernel_config<Dimensions, Config...>, as_kernel_arg_t<Args>...>)
+  if constexpr (::cuda::std::is_invocable_v<Kernel, kernel_config<Dimensions, Config...>, kernel_arg_t<Args>...>)
   {
-    auto launcher = detail::kernel_launcher<decltype(combined), Kernel, as_kernel_arg_t<Args>...>;
+    auto launcher = detail::kernel_launcher<decltype(combined), Kernel, kernel_arg_t<Args>...>;
     status        = detail::launch_impl(
       stream,
       combined,
       launcher,
       combined,
       kernel,
-      static_cast<as_kernel_arg_t<Args>>(detail::__launch_transform(stream, std::forward<Args>(args)))...);
+      __kernel_transform(__launch_transform(stream, std::forward<Args>(args)))...);
   }
   else
   {
-    static_assert(::cuda::std::is_invocable_v<Kernel, as_kernel_arg_t<Args>...>);
-    auto launcher = detail::kernel_launcher_no_config<Kernel, as_kernel_arg_t<Args>...>;
+    static_assert(::cuda::std::is_invocable_v<Kernel, kernel_arg_t<Args>...>);
+    auto launcher = detail::kernel_launcher_no_config<Kernel, kernel_arg_t<Args>...>;
     status        = detail::launch_impl(
-      stream,
-      combined,
-      launcher,
-      kernel,
-      static_cast<as_kernel_arg_t<Args>>(detail::__launch_transform(stream, std::forward<Args>(args)))...);
+      stream, combined, launcher, kernel, __kernel_transform(__launch_transform(stream, std::forward<Args>(args)))...);
   }
   if (status != cudaSuccess)
   {
@@ -206,7 +202,7 @@ void launch(::cuda::stream_ref stream,
     conf,
     kernel,
     conf,
-    static_cast<as_kernel_arg_t<ActArgs>>(detail::__launch_transform(stream, std::forward<ActArgs>(args)))...);
+    __kernel_transform(__launch_transform(stream, std::forward<ActArgs>(args)))...);
 
   if (status != cudaSuccess)
   {
@@ -264,7 +260,7 @@ void launch(::cuda::stream_ref stream,
     stream, //
     conf,
     kernel,
-    static_cast<as_kernel_arg_t<ActArgs>>(detail::__launch_transform(stream, std::forward<ActArgs>(args)))...);
+    __kernel_transform(__launch_transform(stream, std::forward<ActArgs>(args)))...);
 
   if (status != cudaSuccess)
   {
