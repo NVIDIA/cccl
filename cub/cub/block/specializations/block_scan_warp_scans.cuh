@@ -50,7 +50,8 @@
 #include <cuda/ptx>
 
 CUB_NAMESPACE_BEGIN
-
+namespace detail
+{
 /**
  * @brief BlockScanWarpScans provides warpscan-based variants of parallel prefix scan across a CUDA
  *        thread block.
@@ -537,5 +538,10 @@ struct BlockScanWarpScans
     exclusive_output = scan_op(block_prefix, exclusive_output);
   }
 };
+} // namespace detail
+template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z, int LEGACY_PTX_ARCH = 0>
+using BlockScanWarpScans CCCL_DEPRECATED_BECAUSE(
+  "This class is considered an implementation detail and the public interface will be "
+  "removed.") = detail::BlockScanWarpScans<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z, LEGACY_PTX_ARCH>;
 
 CUB_NAMESPACE_END

@@ -51,7 +51,8 @@
 #include <cuda/ptx>
 
 CUB_NAMESPACE_BEGIN
-
+namespace detail
+{
 /**
  * @brief WarpScanShfl provides SHFL-based variants of parallel prefix scan of items partitioned
  *        across a CUDA thread warp.
@@ -513,7 +514,7 @@ struct WarpScanShfl
     // Iterate scan steps
     int segment_first_lane = 0;
 
-// Iterate scan steps
+    // Iterate scan steps
 #pragma unroll
     for (int STEP = 0; STEP < STEPS; STEP++)
     {
@@ -550,7 +551,7 @@ struct WarpScanShfl
     // Find index of first set bit
     int segment_first_lane = CUB_MAX(0, 31 - __clz(ballot));
 
-// Iterate scan steps
+    // Iterate scan steps
 #pragma unroll
     for (int STEP = 0; STEP < STEPS; STEP++)
     {
@@ -674,5 +675,11 @@ struct WarpScanShfl
     Update(input, inclusive, exclusive, scan_op, initial_value, is_integer);
   }
 };
+} // namespace detail
+
+template <typename T, int LOGICAL_WARP_THREADS, int LEGACY_PTX_ARCH = 0>
+using WarpScanShfl CCCL_DEPRECATED_BECAUSE(
+  "This class is considered an implementation detail and the public interface will be "
+  "removed.") = detail::WarpScanShfl<T, LOGICAL_WARP_THREADS, LEGACY_PTX_ARCH>;
 
 CUB_NAMESPACE_END

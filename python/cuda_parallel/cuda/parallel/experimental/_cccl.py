@@ -11,7 +11,7 @@ import numba
 import numpy as np
 from numba import cuda, types
 
-from ._utils.cai import get_dtype, is_contiguous
+from ._utils.protocols import get_dtype, is_contiguous
 from .iterators._iterators import IteratorBase
 from .typing import DeviceArrayLike, GpuStruct
 

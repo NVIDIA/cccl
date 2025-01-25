@@ -77,8 +77,9 @@ struct policy_hub
 } // namespace adjacent_difference
 } // namespace detail
 
-// TODO(bgruber): deprecate this alias. Users should not access policy_hubs directly.
 template <typename InputIteratorT, bool MayAlias = true>
-using DeviceAdjacentDifferencePolicy = detail::adjacent_difference::policy_hub<InputIteratorT, MayAlias>;
+using DeviceAdjacentDifferencePolicy CCCL_DEPRECATED_BECAUSE(
+  "This class is considered an implementation detail and it "
+  "will be removed.") = detail::adjacent_difference::policy_hub<InputIteratorT, MayAlias>;
 
 CUB_NAMESPACE_END
