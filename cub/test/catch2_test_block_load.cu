@@ -135,6 +135,9 @@ using odd_load_algorithm =
                       cub::BlockLoadAlgorithm::BLOCK_LOAD_VECTORIZE,
                       cub::BlockLoadAlgorithm::BLOCK_LOAD_TRANSPOSE>;
 
+using is_const_or_not      = c2h::enum_type_list<bool, true, false>;
+using offsets_for_elements = c2h::enum_type_list<int, 0, 1, 2, 4>;
+
 template <class TestType>
 struct params_t
 {
@@ -217,4 +220,29 @@ C2H_TEST("Block load works with caching iterators", "[load][block]", items_per_t
   cub::CacheModifiedInputIterator<cub::CacheLoadModifier::LOAD_DEFAULT, type> in(
     thrust::raw_pointer_cast(d_input.data()));
   test_block_load<items_per_thread, threads_in_block, load_algorithm>(d_input, in);
+}
+
+C2H_TEST("Vectorized block load with const and non-const datatype and different alignment cases",
+         "[load][block]",
+         is_const_or_not,
+         offsets_for_elements)
+{
+  constexpr bool is_const_input_ptr = c2h::get<0, TestType>::value;
+  using type                        = int;
+  using input_ptr_type              = std::conditional_t<is_const_input_ptr, const int*, int*>;
+
+  constexpr int offset_for_elements                       = c2h::get<1, TestType>::value;
+  constexpr int items_per_thread                          = 4;
+  constexpr int threads_in_block                          = 64;
+  constexpr int tile_size                                 = items_per_thread * threads_in_block;
+  static constexpr cub::BlockLoadAlgorithm load_algorithm = cub::BlockLoadAlgorithm::BLOCK_LOAD_VECTORIZE;
+
+  c2h::device_vector<type> d_input_ref(tile_size);
+  c2h::gen(C2H_SEED(10), d_input_ref);
+
+  c2h::device_vector<type> d_input(tile_size + offset_for_elements);
+  thrust::copy_n(d_input_ref.begin(), tile_size, d_input.begin() + offset_for_elements);
+
+  test_block_load<items_per_thread, threads_in_block, load_algorithm, type, input_ptr_type>(
+    d_input_ref, thrust::raw_pointer_cast(d_input.data()) + offset_for_elements);
 }

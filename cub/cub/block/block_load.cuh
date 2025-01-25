@@ -211,7 +211,7 @@ InternalLoadDirectBlockedVectorized(int linear_tid, const T* block_src_ptr, T (&
   using vector_t = typename CubVector<device_word_t, vector_size>::Type;
 
   // Add the alignment check to ensure the vectorized loading can proceed.
-  if (reinterpret_cast<uintptr_t>(block_src_ptr) % (sizeof(vector_t)) == 0)
+  if (reinterpret_cast<uintptr_t>(block_src_ptr) % (alignof(vector_t)) == 0)
   {
     vector_t vec_items[vectors_per_thread];
     // Load into an array of vectors in thread-blocked order
