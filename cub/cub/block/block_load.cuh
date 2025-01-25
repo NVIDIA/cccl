@@ -207,12 +207,12 @@ InternalLoadDirectBlockedVectorized(int linear_tid, const T* block_src_ptr, T (&
   constexpr int vector_size        = (total_words % 4 == 0) ? 4 : (total_words % 2 == 0) ? 2 : 1;
   constexpr int vectors_per_thread = total_words / vector_size;
 
-  // Add the alignment check to ensure the vectorized loading can proceed.
-  if (reinterpret_cast<uintptr_t>(block_src_ptr) % (vector_size << 2) == 0)
-  {
-    // Load into an array of vectors in thread-blocked order
-    using vector_t = typename CubVector<device_word_t, vector_size>::Type;
+  // Load into an array of vectors in thread-blocked order
+  using vector_t = typename CubVector<device_word_t, vector_size>::Type;
 
+  // Add the alignment check to ensure the vectorized loading can proceed.
+  if (reinterpret_cast<uintptr_t>(block_src_ptr) % (sizeof(vector_t)) == 0)
+  {
     vector_t vec_items[vectors_per_thread];
     // Load into an array of vectors in thread-blocked order
     const vector_t* vec_ptr = reinterpret_cast<const vector_t*>(block_src_ptr) + linear_tid * vectors_per_thread;
