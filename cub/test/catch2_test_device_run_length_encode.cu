@@ -50,6 +50,9 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRunLengthEncode::Encode, run_length_encode);
 
+// suppress deprecation of ConstantInputIterator in cudafe1.stub.c file
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
 using all_types =
