@@ -1750,6 +1750,11 @@ public:
     gctx.get_dot()->set_ctx_symbol("algo: " + symbol);
 
     gctx.set_allocator(block_allocator<pooled_allocator>(gctx));
+    // This creates an adapter which "redirects" allocations to the CUDA stream API
+    auto wrapper = stream_adapter(gctx, stream);
+
+    gctx.update_uncached_allocator(wrapper.allocator());
+
 
     auto current_place = gctx.default_exec_place();
 
