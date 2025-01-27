@@ -1,7 +1,7 @@
-// SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
-#include <cub/device/device_merge_sort.cuh>
+#include <cub/device/device_merge.cuh>
 
 #include <thrust/copy.h>
 #include <thrust/count.h>
@@ -35,8 +35,8 @@ void keys(nvbench::state& state, nvbench::type_list<KeyT, OffsetT>)
 
 #if !TUNE_BASE
   using policy_t   = policy_hub_t<key_t>;
-  using dispatch_t = cub::
-    DispatchMergeSort<key_it_t, value_it_t, key_it_t, value_it_t, key_it_t, value_it_t, offset_t, compare_op_t, policy_t>;
+  using dispatch_t = cub::cub::detail::merge::
+    dispatch_t<key_it_t, value_it_t, key_it_t, value_it_t, key_it_t, value_it_t, offset_t, compare_op_t, policy_t>;
 #else // TUNE_BASE
   using dispatch_t = cub::detail::merge::
     dispatch_t<key_it_t, value_it_t, key_it_t, value_it_t, key_it_t, value_it_t, offset_t, compare_op_t>;
@@ -46,7 +46,7 @@ void keys(nvbench::state& state, nvbench::type_list<KeyT, OffsetT>)
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   const bit_entropy entropy = str_to_entropy(state.get_string("Entropy"));
 
-  // We generate data distributions in the range [0, 255] that, with lower entropy, get skewed towards 0.
+  // We generate data distributions in the range [0, 255], which, with lower entropy, get skewed towards 0.
   // We use this to generate increasingly large *consecutive* segments of data that are getting selected from the lhs
   thrust::device_vector<uint8_t> rnd_selector_val = generate(elements, entropy);
   uint8_t threshold                               = 128;
