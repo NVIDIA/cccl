@@ -22,7 +22,7 @@
 template <typename KeyT>
 struct policy_hub_t
 {
-  struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
+  struct policy_t : cub::ChainedPolicy<500, policy_t, policy_t>
   {
     using merge_policy =
       cub::agent_policy_t<TUNE_THREADS_PER_BLOCK,
