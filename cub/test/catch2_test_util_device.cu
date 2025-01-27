@@ -281,7 +281,7 @@ C2H_TEST("ChainedPolicy invokes correct policy", "[util][dispatch]")
 {
   SECTION("policy_hub_some")
   {
-    check_wrapper_some<policy_hub_some, 5>(::cuda::std::array<int, 5>{500, 700, 900, 2000});
+    check_wrapper_some<policy_hub_some, 4>(::cuda::std::array<int, 4>{500, 700, 900, 2000});
   }
   SECTION("policy_hub_few")
   {
