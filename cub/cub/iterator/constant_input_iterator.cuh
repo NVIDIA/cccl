@@ -87,7 +87,13 @@ CUB_NAMESPACE_BEGIN
  *   The difference type of this iterator (Default: @p ptrdiff_t)
  */
 template <typename ValueType, typename OffsetT = ptrdiff_t>
-class ConstantInputIterator
+class
+#ifndef __CUDA_ARCH__
+  // Avoid generating a deprecation warning from length_encode.compute_xx.cpp1.ii, which is compiled by cicc for which
+  // we cannot suppress the warning
+  CCCL_DEPRECATED_BECAUSE("Use thrust::constant_iterator instead")
+#endif
+    ConstantInputIterator
 {
 public:
   // Required iterator traits
@@ -216,11 +222,13 @@ public:
   }
 
   /// ostream operator
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   friend std::ostream& operator<<(std::ostream& os, const self_type& itr)
   {
     os << "[" << itr.val << "," << itr.offset << "]";
     return os;
   }
+  _CCCL_SUPPRESS_DEPRECATED_POP
 };
 
 CUB_NAMESPACE_END
