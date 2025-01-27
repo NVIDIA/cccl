@@ -92,6 +92,7 @@ struct policy_hub
 } // namespace detail
 
 template <typename KeyIteratorT>
-using DeviceMergeSortPolicy = detail::merge_sort::policy_hub<KeyIteratorT>;
+using DeviceMergeSortPolicy CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and it will be "
+                                                    "removed.") = detail::merge_sort::policy_hub<KeyIteratorT>;
 
 CUB_NAMESPACE_END

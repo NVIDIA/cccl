@@ -51,7 +51,8 @@
 #include <cuda/ptx>
 
 CUB_NAMESPACE_BEGIN
-
+namespace detail
+{
 /**
  * @brief BlockReduceWarpReductions provides variants of warp-reduction-based parallel reduction
  *        across a CUDA thread block. Supports non-commutative reduction operators.
@@ -256,5 +257,11 @@ struct BlockReduceWarpReductions
     return ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid);
   }
 };
+} // namespace detail
+
+template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z, int LEGACY_PTX_ARCH = 0>
+using BlockReduceWarpReductions CCCL_DEPRECATED_BECAUSE(
+  "This class is considered an implementation detail and the public interface will be "
+  "removed.") = detail::BlockReduceWarpReductions<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z, LEGACY_PTX_ARCH>;
 
 CUB_NAMESPACE_END

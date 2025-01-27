@@ -6,6 +6,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+// UNSUPPORTED: c++03, c++11, c++14
 
 #include <cuda/cmath>
 #include <cuda/std/cassert>
@@ -25,15 +26,15 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
   constexpr T maxv = cuda::std::numeric_limits<T>::max();
 
   // ensure that we return the right type
-  static_assert(cuda::std::is_same<decltype(cuda::ceil_div(T(0), U(1))), T>::value, "");
-
-  assert(cuda::ceil_div(T(0), U(1)) == T(0));
-  assert(cuda::ceil_div(T(1), U(1)) == T(1));
-  assert(cuda::ceil_div(T(126), U(64)) == T(2));
+  using Common = _CUDA_VSTD::common_type_t<T, U>;
+  static_assert(cuda::std::is_same<decltype(cuda::ceil_div(T(0), U(1))), Common>::value);
+  assert(cuda::ceil_div(T(0), U(1)) == Common(0));
+  assert(cuda::ceil_div(T(1), U(1)) == Common(1));
+  assert(cuda::ceil_div(T(126), U(64)) == Common(2));
 
   // ensure that we are resilient against overflow
   assert(cuda::ceil_div(maxv, U(1)) == maxv);
-  assert(cuda::ceil_div(maxv, maxv) == T(1));
+  assert(cuda::ceil_div(maxv, maxv) == Common(1));
 }
 
 template <class T>

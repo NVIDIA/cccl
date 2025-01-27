@@ -42,6 +42,7 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
@@ -229,6 +230,39 @@ struct sm90_tuning<__uint128_t, primitive_op::yes, primitive_accum::no, accum_si
 #endif
 // clang-format on
 
+template <typename PolicyT, typename = void, typename = void>
+struct ScanPolicyWrapper : PolicyT
+{
+  CUB_RUNTIME_FUNCTION ScanPolicyWrapper(PolicyT base)
+      : PolicyT(base)
+  {}
+};
+
+template <typename StaticPolicyT>
+struct ScanPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<decltype(StaticPolicyT::ScanPolicyT::LOAD_MODIFIER)>>
+    : StaticPolicyT
+{
+  CUB_RUNTIME_FUNCTION ScanPolicyWrapper(StaticPolicyT base)
+      : StaticPolicyT(base)
+  {}
+
+  CUB_RUNTIME_FUNCTION static constexpr PolicyWrapper<typename StaticPolicyT::ScanPolicyT> Scan()
+  {
+    return MakePolicyWrapper(typename StaticPolicyT::ScanPolicyT());
+  }
+
+  CUB_RUNTIME_FUNCTION constexpr CacheLoadModifier LoadModifier()
+  {
+    return StaticPolicyT::ScanPolicyT::LOAD_MODIFIER;
+  }
+};
+
+template <typename PolicyT>
+CUB_RUNTIME_FUNCTION ScanPolicyWrapper<PolicyT> MakeScanPolicyWrapper(PolicyT policy)
+{
+  return ScanPolicyWrapper<PolicyT>{policy};
+}
+
 template <typename AccumT, typename ScanOpT>
 struct policy_hub
 {
@@ -298,8 +332,8 @@ struct policy_hub
 } // namespace scan
 } // namespace detail
 
-// TODO(bgruber): deprecate this at some point when we have a better way to allow users to supply tunings
 template <typename AccumT, typename ScanOpT = ::cuda::std::plus<>>
-using DeviceScanPolicy = detail::scan::policy_hub<AccumT, ScanOpT>;
+using DeviceScanPolicy CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and it will be "
+                                               "removed.") = detail::scan::policy_hub<AccumT, ScanOpT>;
 
 CUB_NAMESPACE_END

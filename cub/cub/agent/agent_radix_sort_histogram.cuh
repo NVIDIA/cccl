@@ -81,11 +81,16 @@ struct AgentRadixSortExclusiveSumPolicy
   };
 };
 
+namespace detail
+{
+namespace radix_sort
+{
+
 template <typename AgentRadixSortHistogramPolicy,
           bool IS_DESCENDING,
           typename KeyT,
           typename OffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
+          typename DecomposerT = identity_decomposer_t>
 struct AgentRadixSortHistogram
 {
   // constants
@@ -100,7 +105,7 @@ struct AgentRadixSortHistogram
     NUM_PARTS        = AgentRadixSortHistogramPolicy::NUM_PARTS,
   };
 
-  using traits                 = detail::radix::traits_t<KeyT>;
+  using traits                 = radix::traits_t<KeyT>;
   using bit_ordered_type       = typename traits::bit_ordered_type;
   using bit_ordered_conversion = typename traits::bit_ordered_conversion_policy;
 
@@ -274,5 +279,18 @@ struct AgentRadixSortHistogram
     return traits::template digit_extractor<fundamental_digit_extractor_t>(current_bit, num_bits, decomposer);
   }
 };
+
+} // namespace radix_sort
+} // namespace detail
+
+template <typename AgentRadixSortHistogramPolicy,
+          bool IS_DESCENDING,
+          typename KeyT,
+          typename OffsetT,
+          typename DecomposerT = detail::identity_decomposer_t>
+using AgentRadixSortHistogram CCCL_DEPRECATED_BECAUSE(
+  "This class is considered an implementation detail and the public "
+  "interface will be removed.") =
+  detail::radix_sort::AgentRadixSortHistogram<AgentRadixSortHistogramPolicy, IS_DESCENDING, KeyT, OffsetT, DecomposerT>;
 
 CUB_NAMESPACE_END

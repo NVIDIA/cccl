@@ -610,7 +610,7 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive
 template <class ReductionOpT, class AccumT, class KeyT>
 struct policy_hub
 {
-  static constexpr int max_input_bytes      = static_cast<int>(::cuda::std::max(sizeof(KeyT), sizeof(AccumT)));
+  static constexpr int max_input_bytes      = static_cast<int>((::cuda::std::max)(sizeof(KeyT), sizeof(AccumT)));
   static constexpr int combined_input_bytes = sizeof(KeyT) + sizeof(AccumT);
 
   template <CacheLoadModifier LoadModifier>

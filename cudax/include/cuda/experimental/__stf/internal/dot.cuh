@@ -792,14 +792,21 @@ public:
       }
 
       // Update node properties such as labels and colors now that we have all information
+      vertex_count = 0;
       for (const auto& pc : per_ctx)
       {
         for (const auto& p : pc->metadata)
         {
           outFile << "\"NODE_" << p.first << "\" [style=\"filled\" fillcolor=\"" << p.second.color << "\" label=\""
                   << p.second.label << "\"]\n";
+          vertex_count++;
         }
       }
+
+      edge_count = existing_edges.size();
+
+      outFile << "// Edge   count : " << edge_count << "\n";
+      outFile << "// Vertex count : " << vertex_count << "\n";
 
       outFile << "}\n";
 
@@ -808,6 +815,31 @@ public:
     else
     {
       ::std::cerr << "Unable to open file: " << dot_filename << ::std::endl;
+    }
+
+    const char* stats_filename_str = getenv("CUDASTF_DOT_STATS_FILE");
+    if (stats_filename_str)
+    {
+      ::std::string stats_filename = stats_filename_str;
+      ::std::ofstream statsFile(stats_filename);
+      if (statsFile.is_open())
+      {
+        statsFile << "#nedges,nvertices,total_work,critical_path\n";
+
+        // to display an optional value or NA
+        auto formatOptional = [](const ::std::optional<float>& opt) -> ::std::string {
+          return opt ? ::std::to_string(*opt) : "NA";
+        };
+
+        statsFile << edge_count << "," << vertex_count << "," << formatOptional(total_work) << ","
+                  << formatOptional(critical_path) << "\n";
+
+        statsFile.close();
+      }
+      else
+      {
+        ::std::cerr << "Unable to open file: " << stats_filename << ::std::endl;
+      }
     }
 
     dot_filename.clear();
@@ -1049,6 +1081,9 @@ private:
 
     outFile << "// T1 = " << t1 << ::std::endl;
     outFile << "// Tinf = " << max_dist << ::std::endl;
+
+    critical_path = max_dist;
+    total_work    = t1;
   }
 
   // Are we tracing asynchronous events in addition to tasks ? (eg. copies, allocations, ...)
@@ -1068,6 +1103,12 @@ private:
 
   // Map to get dot sections from their ID
   ::std::unordered_map<int, ::std::shared_ptr<section>> map;
+
+  // Stats
+  ::std::optional<float> critical_path; // Tinf
+  ::std::optional<float> total_work; // T1
+  size_t edge_count;
+  size_t vertex_count;
 };
 
 inline int per_ctx_dot::get_current_section_id()
