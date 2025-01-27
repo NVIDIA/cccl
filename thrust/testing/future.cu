@@ -7,6 +7,10 @@
 #  include <unittest/unittest.h>
 #  include <unittest/util_async.h>
 
+// note: there is no matching _CCCL_SUPPRESS_DEPRECATED_POP, so the warning suppression leaks into more content of the
+// generated cudafe1.stub.c file.
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 struct mock
 {};
 

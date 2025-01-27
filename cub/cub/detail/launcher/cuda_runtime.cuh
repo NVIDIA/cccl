@@ -51,6 +51,19 @@ struct TripleChevronFactory
   {
     return cudaOccupancyMaxActiveBlocksPerMultiprocessor(&sm_occupancy, kernel_ptr, block_size, dynamic_smem_bytes);
   }
+
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION cudaError_t MaxGridDimX(int& max_grid_dim_x) const
+  {
+    int device_ordinal;
+    cudaError_t error = CubDebug(cudaGetDevice(&device_ordinal));
+    if (cudaSuccess != error)
+    {
+      return error;
+    }
+
+    // Get max grid dimension
+    return cudaDeviceGetAttribute(&max_grid_dim_x, cudaDevAttrMaxGridDimX, device_ordinal);
+  }
 };
 
 } // namespace detail

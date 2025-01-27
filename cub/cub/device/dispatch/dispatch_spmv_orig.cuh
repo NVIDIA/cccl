@@ -156,7 +156,9 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmvSearchKernel(
   {
     OffsetT diagonal = (tile_idx * TILE_ITEMS);
     CoordinateT tile_coordinate;
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     CountingInputIterator<OffsetT> nonzero_indices(0);
+    _CCCL_SUPPRESS_DEPRECATED_POP
 
     // Search the merge path
     MergePathSearch(
