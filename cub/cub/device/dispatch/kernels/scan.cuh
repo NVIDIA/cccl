@@ -40,6 +40,8 @@
 #include <cub/agent/agent_scan.cuh>
 #include <cub/util_macro.cuh>
 
+#include <cuda/std/type_traits>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail
@@ -159,7 +161,9 @@ template <typename ChainedPolicyT,
           typename InitValueT,
           typename OffsetT,
           typename AccumT,
-          bool ForceInclusive>
+          bool ForceInclusive,
+          typename RealInitValueT = ::cuda::std::
+            _If<::cuda::std::is_void_v<typename InitValueT::value_type>, InitValueT, typename InitValueT::value_type>>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanKernel(
     InputIteratorT d_in,
@@ -170,8 +174,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS))
     InitValueT init_value,
     OffsetT num_items)
 {
-  using RealInitValueT = typename InitValueT::value_type;
-  using ScanPolicyT    = typename ChainedPolicyT::ActivePolicy::ScanPolicyT;
+  using ScanPolicyT = typename ChainedPolicyT::ActivePolicy::ScanPolicyT;
 
   // Thread block type for scanning input tiles
   using AgentScanT = detail::scan::
