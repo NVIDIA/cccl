@@ -70,6 +70,7 @@
  */
 
 #include <cuda/__ptx/instructions/barrier_cluster.h>
+#include <cuda/__ptx/instructions/bfind.h>
 #include <cuda/__ptx/instructions/cp_async_bulk.h>
 #include <cuda/__ptx/instructions/cp_async_bulk_commit_group.h>
 #include <cuda/__ptx/instructions/cp_async_bulk_tensor.h>
