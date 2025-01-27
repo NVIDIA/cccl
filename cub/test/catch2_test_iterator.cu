@@ -26,6 +26,14 @@
  *
  ******************************************************************************/
 
+#include <cuda/__cccl_config>
+
+// with NVHPC we get deprecation warnings originating from instantiations from cudafe1.stub.c, so we have to bulk
+// suppress all deprecation warnings in this file (without a matching pop)
+#if _CCCL_COMPILER(NVHPC)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+#endif
+
 #include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/iterator/constant_input_iterator.cuh>
@@ -91,8 +99,10 @@ __global__ void test_iterator_kernel(InputIteratorT d_in, T* d_out, InputIterato
   d_itrs[1] = d_in; // Iterator at offset 0
 }
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename InputIteratorT, typename T>
-void test_iterator(InputIteratorT d_in, const c2h::host_vector<T>& h_reference)
+void test_iterator(InputIteratorT d_in, const c2h::host_vector<T>& h_reference) //
+  _CCCL_SUPPRESS_DEPRECATED_POP
 {
   c2h::device_vector<T> d_out(h_reference.size());
   c2h::device_vector<InputIteratorT> d_itrs(2, d_in); // TODO(bgruber): using a raw allocation halves the compile time
@@ -113,7 +123,9 @@ C2H_TEST("Test constant iterator", "[iterator]", scalar_types)
   using T                = c2h::get<0, TestType>;
   const T base           = static_cast<T>(GENERATE(0, 99));
   const auto h_reference = c2h::host_vector<T>{base, base, base, base, base, base, base, base};
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   test_iterator(cub::ConstantInputIterator<T>(base), h_reference);
+  _CCCL_SUPPRESS_DEPRECATED_POP
 }
 
 C2H_TEST("Test counting iterator", "[iterator]", scalar_types)
@@ -129,7 +141,9 @@ C2H_TEST("Test counting iterator", "[iterator]", scalar_types)
     static_cast<T>(base + 21),
     static_cast<T>(base + 11),
     static_cast<T>(base + 0)};
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   test_iterator(cub::CountingInputIterator<T>(base), h_reference);
+  _CCCL_SUPPRESS_DEPRECATED_POP
 }
 
 using cache_modifiers =
@@ -187,9 +201,11 @@ C2H_TEST("Test transform iterator", "[iterator]", types)
     op(h_data[21]),
     op(h_data[11]),
     op(h_data[0])};
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   test_iterator(cub::TransformInputIterator<T, transform_op_t<T>, const T*>(
                   const_cast<const T*>(const_cast<const T*>(thrust::raw_pointer_cast(d_data.data()))), op),
                 h_reference);
+  _CCCL_SUPPRESS_DEPRECATED_POP
 }
 
 C2H_TEST("Test tex-obj texture iterator", "[iterator]", types)
@@ -233,7 +249,9 @@ C2H_TEST("Test texture transform iterator", "[iterator]", types)
   TextureIterator d_tex_itr;
   CubDebugExit(
     d_tex_itr.BindTexture(const_cast<const T*>(thrust::raw_pointer_cast(d_data.data())), sizeof(T) * TEST_VALUES));
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   cub::TransformInputIterator<T, transform_op_t<T>, TextureIterator> xform_itr(d_tex_itr, op);
+  _CCCL_SUPPRESS_DEPRECATED_POP
   test_iterator(xform_itr, h_reference);
   CubDebugExit(d_tex_itr.UnbindTexture());
 }
