@@ -608,7 +608,7 @@ public:
 #endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
 };
 
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#if defined(_CCCL_HAS_NVFP16)
 template <>
 class __numeric_limits_impl<__half, __numeric_limits_type::__floating_point>
 {
@@ -681,9 +681,9 @@ public:
   static constexpr bool tinyness_before          = false;
   static constexpr float_round_style round_style = round_to_nearest;
 };
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _CCCL_HAS_NVFP16
 
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#if defined(_CCCL_HAS_NVBF16)
 template <>
 class __numeric_limits_impl<__nv_bfloat16, __numeric_limits_type::__floating_point>
 {
@@ -756,7 +756,7 @@ public:
   static constexpr bool tinyness_before          = false;
   static constexpr float_round_style round_style = round_to_nearest;
 };
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _CCCL_HAS_NVBF16
 
 #if _CCCL_HAS_NVFP8()
 #  if defined(_CCCL_BUILTIN_BIT_CAST) || _CCCL_STD_VER >= 2014

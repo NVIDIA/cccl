@@ -51,18 +51,18 @@ __host__ __device__ inline bool float_eq(__nv_fp8_e5m2 x, __nv_fp8_e5m2 y)
 }
 #endif // _CCCL_HAS_NVFP8
 
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#if defined(_CCCL_HAS_NVFP16)
 __host__ __device__ inline bool float_eq(__half x, __half y)
 {
   return __heq(x, y);
 }
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _CCCL_HAS_NVFP16
 
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#if defined(_CCCL_HAS_NVBF16)
 __host__ __device__ inline bool float_eq(__nv_bfloat16 x, __nv_bfloat16 y)
 {
   return __heq(x, y);
 }
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _CCCL_HAS_NVBF16
 
 #endif // NUMERIC_LIMITS_MEMBERS_COMMON_H
