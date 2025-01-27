@@ -36,6 +36,9 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // optimized version of runtime clz that is used in device code.
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_clz_32bit(uint32_t __x) noexcept
 {
+#if defined(_CCCL_BUILTIN_CLZ)
+  return _CCCL_BUILTIN_CLZ(__x);
+#else
   constexpr auto __digits = numeric_limits<uint32_t>::digits;
   if (__x == 0)
   {
@@ -52,29 +55,28 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_clz_32bit(uint32_t __x) noex
     }
   }
   return __digits - 1 - __res;
+#endif // defined(_CCCL_BUILTIN_CLZ)
 }
 
 template <typename _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_clz(_Tp __x) noexcept
 {
   static_assert(is_same_v<_Tp, uint32_t> || is_same_v<_Tp, uint64_t>);
-#if defined(_CCCL_BUILTIN_CLZ)
-  return sizeof(_Tp) == sizeof(uint32_t)
-         ? _CCCL_BUILTIN_CLZ(static_cast<uint32_t>(__x))
-         : _CCCL_BUILTIN_CLZLL(static_cast<uint64_t>(__x));
-#else
   if constexpr (sizeof(_Tp) == sizeof(uint32_t))
   {
     return __constexpr_clz_32bit(__x);
   }
   else
   {
+#if defined(_CCCL_BUILTIN_CLZLL)
+    return _CCCL_BUILTIN_CLZLL(__x);
+#else
     auto __higher = __constexpr_clz_32bit(static_cast<uint32_t>(__x >> 32));
     return __higher != numeric_limits<uint32_t>::digits
            ? __higher
            : numeric_limits<uint32_t>::digits + __constexpr_clz_32bit(static_cast<uint32_t>(__x));
+#endif // defined(_CCCL_BUILTIN_CLZLL)
   }
-#endif // defined(_CCCL_BUILTIN_CLZ)
 }
 
 template <typename _Tp>
@@ -88,9 +90,7 @@ _LIBCUDACXX_HIDE_FROM_ABI int __host_runtime_clz(_Tp __x) noexcept
                : _BitScanReverse64(&__where, static_cast<uint64_t>(__x));
   return (__res) ? __digits - 1 - static_cast<int>(__where) : __digits;
 #else
-  return sizeof(_Tp) == sizeof(uint32_t)
-         ? _CCCL_BUILTIN_CLZ(static_cast<uint32_t>(__x))
-         : _CCCL_BUILTIN_CLZLL(static_cast<uint64_t>(__x));
+  return __constexpr_clz(__x);
 #endif // _CCCL_COMPILER(MSVC)
 }
 
