@@ -28,7 +28,6 @@
 
 //! @file
 //! Thread reduction over statically-sized array-like types
-
 #pragma once
 
 #include <cub/config.cuh>
@@ -226,92 +225,38 @@ namespace internal
 
 // TODO: add Blackwell support
 
-using cub::detail::is_one_of_v;
-
-template <typename ReductionOp, typename T>
-inline constexpr bool is_predefined_comparison_v =
-  is_one_of_v<ReductionOp, ::cuda::minimum<>, ::cuda::minimum<T>, ::cuda::maximum<>, ::cuda::maximum<T>>;
-
-template <typename ReductionOp, typename T>
-inline constexpr bool is_predefined_arithmetic_v =
-  is_one_of_v<ReductionOp,
-              ::cuda::std::plus<>,
-              ::cuda::std::plus<T>,
-              ::cuda::std::multiplies<>,
-              ::cuda::std::multiplies<T>>;
-
-template <typename ReductionOp, typename T>
-inline constexpr bool is_predefined_bitwise_v =
-  is_one_of_v<ReductionOp,
-              ::cuda::std::bit_and<>,
-              ::cuda::std::bit_and<T>,
-              ::cuda::std::bit_or<>,
-              ::cuda::std::bit_or<T>,
-              ::cuda::std::bit_xor<>,
-              ::cuda::std::bit_xor<T>>;
-
-template <typename ReductionOp, typename T>
-inline constexpr bool is_predefined_operator_v =
-  is_predefined_comparison_v<ReductionOp, T> || //
-  is_predefined_arithmetic_v<ReductionOp, T> || //
-  is_predefined_bitwise_v<ReductionOp, T>;
-
-// template <typename T, typename ReductionOp>
-// inline constexpr bool enable_generic_simd_reduction_traits_v =
-//   is_predefined_comparison_v<ReductionOp, int16_t> && is_predefined_comparison_v<ReductionOp, uint16_t>;
-//
-// #  if defined(_CCCL_HAS_NVFP16)
-//
-// template <typename ReductionOp>
-// inline constexpr bool enable_generic_simd_reduction_traits_v<__half, ReductionOp> =
-//   is_predefined_comparison_v<ReductionOp, __half> || is_predefined_arithmetic_v<ReductionOp, __half>;
-//
-// #  endif // defined(_CCCL_HAS_NVFP16)
-//
-// #  if defined(_CCCL_HAS_NVBF16)
-//
-// template <typename ReductionOp>
-// inline constexpr bool enable_generic_simd_reduction_traits_v<__nv_bfloat16, ReductionOp> =
-//   is_predefined_comparison_v<ReductionOp, __nv_bfloat16> || is_predefined_arithmetic_v<ReductionOp, __nv_bfloat16>;
-//
-// #  endif // defined(_CCCL_HAS_NVBF16)
-
-// template <typename Input, typename ReductionOp>
-//_CCCL_NODISCARD _CCCL_DEVICE constexpr bool enable_generic_simd_reduction()
-//{
-//   using T = ::cuda::std::remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>;
-//   return enable_generic_simd_reduction_traits_v<T, ReductionOp> && cub::detail::static_size_v<Input> >= 4;
-// }
+//----------------------------------------------------------------------------------------------------------------------
+// SM90 SIMD
 
 template <typename T, typename ReductionOp, int Length>
 inline constexpr bool enable_sm90_simd_reduction_v =
   is_one_of_v<T, int16_t, uint16_t> && is_predefined_comparison_v<ReductionOp, T> && Length >= 10;
 
+//----------------------------------------------------------------------------------------------------------------------
+// SM80 SIMD
+
 template <typename T, typename ReductionOp, int Length>
-_CCCL_NODISCARD _CCCL_DEVICE constexpr bool enable_sm80_simd_reduction()
-{
-  using ::cuda::std::is_same_v;
-  return is_one_of_v<ReductionOp,
-                     ::cuda::minimum<>,
-                     ::cuda::minimum<T>,
-                     ::cuda::maximum<>,
-                     ::cuda::maximum<T>,
-                     ::cuda::std::plus<>,
-                     ::cuda::std::plus<T>,
-                     ::cuda::std::multiplies<>,
-                     ::cuda::std::multiplies<T>>
-      && Length >= 4
-#  if defined(_CCCL_HAS_NVFP16) && defined(_CCCL_HAS_NVBF16)
-      && (is_same_v<T, __half> || is_same_v<T, __nv_bfloat16>)
-#  elif defined(_CCCL_HAS_NVFP16)
-      && is_same_v<T, __half>
-#  elif defined(_CCCL_HAS_NVBF16)
-      && is_same_v<T, __nv_bfloat16>
-#  else
-      && false
-#  endif
-    ;
-}
+inline constexpr bool enable_sm80_simd_reduction_v = false;
+
+#  if defined(_CCCL_HAS_NVFP16)
+
+template <typename ReductionOp, int Length>
+inline constexpr bool enable_sm80_simd_reduction_v<__half, ReductionOp, Length> =
+  (is_predefined_comparison_v<ReductionOp, __half> || is_predefined_arithmetic_v<ReductionOp, __half>) && Length >= 4;
+
+#  endif // defined(_CCCL_HAS_NVFP16)
+
+#  if defined(_CCCL_HAS_NVBF16)
+
+template <typename ReductionOp, int Length>
+inline constexpr bool enable_sm80_simd_reduction_v<__nv_bfloat16, ReductionOp, Length> =
+  (is_predefined_comparison_v<ReductionOp, __nv_bfloat16> || is_predefined_arithmetic_v<ReductionOp, __nv_bfloat16>)
+  && Length >= 4;
+
+#  endif // defined(_CCCL_HAS_NVBF16)
+
+//----------------------------------------------------------------------------------------------------------------------
+// SM70 SIMD
 
 #  if defined(_CCCL_HAS_NVFP16)
 
@@ -325,6 +270,9 @@ template <typename T, typename ReductionOp, int Length>
 inline constexpr bool enable_sm70_simd_reduction_v = false;
 
 #  endif // !defined(_CCCL_HAS_NVFP16) ^^^^
+
+//----------------------------------------------------------------------------------------------------------------------
+// All architectures SIMD
 
 template <typename Input, typename ReductionOp, typename AccumT>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_simd_reduction()
@@ -341,10 +289,10 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_simd_reduct
     _NV_TARGET_DISPATCH(
       NV_PROVIDES_SM_90,
         (return enable_sm90_simd_reduction_v<T, ReductionOp, length> ||
-                enable_sm80_simd_reduction<T, ReductionOp, length>() ||
+                enable_sm80_simd_reduction_v<T, ReductionOp, length> ||
                 enable_sm70_simd_reduction_v<T, ReductionOp, length>;),
       NV_PROVIDES_SM_80,
-        (return enable_sm80_simd_reduction<T, ReductionOp, length>() ||
+        (return enable_sm80_simd_reduction_v<T, ReductionOp, length> ||
                 enable_sm70_simd_reduction_v<T, ReductionOp, length>;),
       NV_PROVIDES_SM_70,
         (return enable_sm70_simd_reduction_v<T, ReductionOp, length>;),
