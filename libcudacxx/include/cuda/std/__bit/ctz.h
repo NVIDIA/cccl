@@ -32,6 +32,9 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+// Contrary to __builtin_clz, __builtin_ctz is not available on device code. We cannot use __builtin_ctz for constexpr
+// function because it is used in both host and device code.
+
 // It is not possible to understand if we are in constant evaluation context in GCC < 9. For this reason, we provide an
 // optimized version of runtime ctz that is used in device code.
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_ctz_32bit(uint32_t __x) noexcept
@@ -97,9 +100,7 @@ _LIBCUDACXX_HIDE_FROM_ABI int __host_runtime_ctz(_Tp __x) noexcept
                : _BitScanForward64(&__where, static_cast<uint64_t>(__x));
   return (__res) ? static_cast<int>(__where) : numeric_limits<_Tp>::digits;
 #else
-  return sizeof(_Tp) == sizeof(uint32_t)
-         ? _CCCL_BUILTIN_CTZ(static_cast<uint32_t>(__x))
-         : _CCCL_BUILTIN_CTZLL(static_cast<uint64_t>(__x));
+  return __host_constexpr_ctz(__x);
 #endif // _CCCL_COMPILER(MSVC)
 }
 
