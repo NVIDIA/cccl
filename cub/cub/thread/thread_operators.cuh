@@ -603,11 +603,11 @@ struct SimdMul<__nv_bfloat16>
 using cub::detail::is_one_of_v;
 
 template <typename ReductionOp, typename T>
-inline constexpr bool is_predefined_comparison_v =
+inline constexpr bool is_predefined_min_max_v =
   is_one_of_v<ReductionOp, ::cuda::minimum<>, ::cuda::minimum<T>, ::cuda::maximum<>, ::cuda::maximum<T>>;
 
 template <typename ReductionOp, typename T>
-inline constexpr bool is_predefined_arithmetic_v =
+inline constexpr bool is_predefined_sum_mul_v =
   is_one_of_v<ReductionOp,
               ::cuda::std::plus<>,
               ::cuda::std::plus<T>,
@@ -626,8 +626,8 @@ inline constexpr bool is_predefined_bitwise_v =
 
 template <typename ReductionOp, typename T>
 inline constexpr bool is_predefined_operator_v =
-  is_predefined_comparison_v<ReductionOp, T> || //
-  is_predefined_arithmetic_v<ReductionOp, T> || //
+  is_predefined_min_max_v<ReductionOp, T> || //
+  is_predefined_sum_mul_v<ReductionOp, T> || //
   is_predefined_bitwise_v<ReductionOp, T>;
 
 //----------------------------------------------------------------------------------------------------------------------
