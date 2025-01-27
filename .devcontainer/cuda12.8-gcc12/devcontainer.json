@@ -33,12 +33,12 @@
     "vscode": {
       "extensions": [
         "llvm-vs-code-extensions.vscode-clangd",
-        "xaver.clang-format",
+        "seaube.clangformat",
         "nvidia.nsight-vscode-edition",
         "ms-vscode.cmake-tools"
       ],
       "settings": {
-        "editor.defaultFormatter": "xaver.clang-format",
+        "editor.defaultFormatter": "seaube.clangformat",
         "editor.formatOnSave": true,
         "clang-format.executable": "/usr/bin/clang-format",
         "clangd.arguments": [
