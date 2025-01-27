@@ -216,12 +216,10 @@ struct ReduceByKeyAgent
     using BlockLoadKeys   = typename core::BlockLoad<PtxPlan, KeysLoadIt>::type;
     using BlockLoadValues = typename core::BlockLoad<PtxPlan, ValuesLoadIt>::type;
 
-    using BlockDiscontinuityKeys = cub::BlockDiscontinuity<key_type, PtxPlan::BLOCK_THREADS, 1, 1, Arch::ver>;
+    using BlockDiscontinuityKeys = cub::BlockDiscontinuity<key_type, PtxPlan::BLOCK_THREADS, 1, 1>;
 
-    using TilePrefixCallback =
-      cub::TilePrefixCallbackOp<size_value_pair_t, ReduceBySegmentOp, ScanTileState, Arch::ver>;
-    using BlockScan =
-      cub::BlockScan<size_value_pair_t, PtxPlan::BLOCK_THREADS, PtxPlan::SCAN_ALGORITHM, 1, 1, Arch::ver>;
+    using TilePrefixCallback = cub::TilePrefixCallbackOp<size_value_pair_t, ReduceBySegmentOp, ScanTileState>;
+    using BlockScan          = cub::BlockScan<size_value_pair_t, PtxPlan::BLOCK_THREADS, PtxPlan::SCAN_ALGORITHM, 1, 1>;
 
     union TempStorage
     {

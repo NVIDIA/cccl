@@ -384,7 +384,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int WarpId()
  *                              hardware warp threads).
  * @param warp_id Id of virtual warp within architectural warp
  */
-template <int LOGICAL_WARP_THREADS, int LEGACY_PTX_ARCH = 0>
+template <int LOGICAL_WARP_THREADS>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned int WarpMask(unsigned int warp_id)
 {
   constexpr bool is_pow_of_two = PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE;
