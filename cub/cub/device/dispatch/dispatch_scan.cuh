@@ -349,9 +349,10 @@ struct DispatchScan
 
       // Get SM occupancy for scan_kernel
       int scan_sm_occupancy;
-      error = CubDebug(MaxSmOccupancy(scan_sm_occupancy, // out
-                                      scan_kernel,
-                                      policy.Scan().BlockThreads()));
+      error = CubDebug(launcher_factory.MaxSmOccupancy(
+        scan_sm_occupancy, // out
+        scan_kernel,
+        policy.Scan().BlockThreads()));
       if (cudaSuccess != error)
       {
         break;
@@ -452,20 +453,20 @@ struct DispatchScan
     InitValueT init_value,
     OffsetT num_items,
     cudaStream_t stream,
-    KernelSource kernel_source = {},
-    MaxPolicyT max_policy      = {})
+    KernelSource kernel_source             = {},
+    KernelLauncherFactory launcher_factory = {},
+    MaxPolicyT max_policy                  = {})
   {
     cudaError_t error;
     do
     {
       // Get PTX version
       int ptx_version = 0;
-      error           = CubDebug(PtxVersion(ptx_version));
+      error           = CubDebug(launcher_factory.PtxVersion(ptx_version));
       if (cudaSuccess != error)
       {
         break;
       }
-
       // Create dispatch functor
       DispatchScan dispatch(
         d_temp_storage,
@@ -477,7 +478,8 @@ struct DispatchScan
         init_value,
         stream,
         ptx_version,
-        kernel_source);
+        kernel_source,
+        launcher_factory);
 
       // Dispatch to chained policy
       error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
