@@ -69,7 +69,8 @@
 #    else
 #      define _CCCL_HAS_FLOAT128() 0
 #    endif
-#  elif (defined(__SIZEOF_FLOAT128__) || defined(__FLOAT128__)) && _CCCL_OS(LINUX) && !_CCCL_COMPILER(NVHPC)
+// NVC++ support float128 only in host code
+#  elif (defined(__SIZEOF_FLOAT128__) || defined(__FLOAT128__)) && _CCCL_OS(LINUX) && !_CCCL_CUDA_COMPILER(NVHPC)
 #    if !defined(__CUDA_ARCH__) || (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 1000)
 #      define _CCCL_HAS_FLOAT128() 1
 #    else
