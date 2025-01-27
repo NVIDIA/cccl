@@ -1069,7 +1069,7 @@ void PDTRTRI(matrix<double>& A, cublasFillMode_t uplo, cublasDiagType_t diag)
       cuda_try(cudaSetDevice(A.get_preferred_devid(m, k)));
       DTRSM(CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_N, diag, -1.0, A, k, k, A, m, k);
     }
-    for (size_t  m = k + 1; m < A.mt; m++)
+    for (size_t m = k + 1; m < A.mt; m++)
     {
       for (size_t n = 0; n < k; n++)
       {

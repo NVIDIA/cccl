@@ -103,7 +103,7 @@ public:
   // Assign constructor
   scalar& operator=(scalar const& rhs)
   {
-    ctx = rhs.ctx;
+    ctx    = rhs.ctx;
     handle = ctx.logical_data(rhs.handle.shape());
     return *this;
   }
