@@ -7,8 +7,7 @@
   "initializeCommand": [
     "/bin/bash",
     "-c",
-    "mkdir -m 0755 -p ${localWorkspaceFolder}/.{aws,cache,config}; mkdir -m 0755 -p ${localWorkspaceFolder}/build;",
-    "if [[ -n ${WSLENV+set} ]]; then docker volume create cccl-build; else docker volume create --driver local --opt type=none --opt device=${localWorkspaceFolder}/build --opt o=bind cccl-build fi;"
+    "mkdir -m 0755 -p ${localWorkspaceFolder}/.{aws,cache,config}; mkdir -m 0755 -p ${localWorkspaceFolder}/build; if test -z ${localEnv:WSLENV}; then docker volume create --driver local --opt type=none --opt device=${localWorkspaceFolder}/build --opt o=bind cccl-build; else docker volume create cccl-build; fi;"
   ],
   "containerEnv": {
     "SCCACHE_REGION": "us-east-2",
