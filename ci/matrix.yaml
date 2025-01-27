@@ -55,7 +55,7 @@ workflows:
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 'all', cxx: ['gcc', 'clang'], cpu: 'arm64'}
     - {jobs: ['test'],  project: 'cudax', ctk: ['curr'], std: 20,    cxx: ['gcc12', 'clang', 'msvc'], gpu: 'rtx2080'}
     # Python and c/parallel jobs:
-    - {jobs: ['test'], project: ['cccl_c_parallel', 'python'], ctk: '12.6', gpu: 'rtx2080'}
+    - {jobs: ['test'], project: ['cccl_c_parallel', 'python'], gpu: 'rtx2080'}
     # cccl-infra:
     - {jobs: ['infra'], project: 'cccl', ctk: '12.0', cxx: ['gcc12', 'clang14'], gpu: 'rtx2080'}
     - {jobs: ['infra'], project: 'cccl', ctk: 'curr', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
@@ -270,7 +270,7 @@ tags:
   # CPU architecture
   cpu: { default: 'amd64' }
   # GPU model
-  gpu: { default: 'v100' }
+  gpu: { default: 'rtx2080' }
   # Host compiler {name, version, exe}
   # See the `host_compilers` map.
   cxx: { default: 'gcc' }
