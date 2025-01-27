@@ -57,21 +57,21 @@ namespace detail
  * Generic Array-like to Array Conversion
  **********************************************************************************************************************/
 
-template <typename CastType, typename Input, ::cuda::std::size_t... i>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::array<CastType, cub::detail::static_size_v<Input>>
+template <typename CastType, typename Input, size_t... i>
+_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::array<CastType, static_size_v<Input>>
 to_array_impl(const Input& input, ::cuda::std::index_sequence<i...>)
 {
-  using ArrayType = ::cuda::std::array<CastType, detail::static_size_v<Input>>;
+  using ArrayType = ::cuda::std::array<CastType, static_size_v<Input>>;
   return ArrayType{static_cast<CastType>(input[i])...};
 }
 
 template <typename CastType = void, typename Input>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::array<CastType, cub::detail::static_size_v<Input>>
+_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::array<CastType, static_size_v<Input>>
 to_array(const Input& input)
 {
-  using InputType = ::cuda::std::remove_cvref_t<decltype(input[0])>;
-  using CastType1 = ::cuda::std::_If<::cuda::std::is_same<CastType, void>::value, InputType, CastType>;
-  return to_array_impl<CastType1>(input, ::cuda::std::make_index_sequence<cub::detail::static_size_v<Input>>{});
+  using InputType = random_access_range_elem_t<Input>;
+  using CastType1 = ::cuda::std::_If<::cuda::std::is_same_v<CastType, void>, InputType, CastType>;
+  return to_array_impl<CastType1>(input, ::cuda::std::make_index_sequence<static_size_v<Input>>{});
 }
 
 #endif // !_CCCL_DOXYGEN_INVOKED
