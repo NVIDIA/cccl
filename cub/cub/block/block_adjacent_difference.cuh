@@ -309,7 +309,7 @@ public:
     // Share last item
     temp_storage.last_items[linear_tid] = input[ITEMS_PER_THREAD - 1];
 
-    CTA_SYNC();
+    __syncthreads();
 
 #pragma unroll
     for (int item = ITEMS_PER_THREAD - 1; item > 0; item--)
@@ -408,7 +408,7 @@ public:
     // Share last item
     temp_storage.last_items[linear_tid] = input[ITEMS_PER_THREAD - 1];
 
-    CTA_SYNC();
+    __syncthreads();
 
 #pragma unroll
     for (int item = ITEMS_PER_THREAD - 1; item > 0; item--)
@@ -499,7 +499,7 @@ public:
     // Share last item
     temp_storage.last_items[linear_tid] = input[ITEMS_PER_THREAD - 1];
 
-    CTA_SYNC();
+    __syncthreads();
 
     if ((linear_tid + 1) * ITEMS_PER_THREAD <= valid_items)
     {
@@ -622,7 +622,7 @@ public:
     // Share last item
     temp_storage.last_items[linear_tid] = input[ITEMS_PER_THREAD - 1];
 
-    CTA_SYNC();
+    __syncthreads();
 
     if ((linear_tid + 1) * ITEMS_PER_THREAD <= valid_items)
     {
@@ -736,7 +736,7 @@ public:
     // Share first item
     temp_storage.first_items[linear_tid] = input[0];
 
-    CTA_SYNC();
+    __syncthreads();
 
 #pragma unroll
     for (int item = 0; item < ITEMS_PER_THREAD - 1; item++)
@@ -837,7 +837,7 @@ public:
     // Share first item
     temp_storage.first_items[linear_tid] = input[0];
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Set flag for last thread-item
     T successor_item = (linear_tid == BLOCK_THREADS - 1)
@@ -926,7 +926,7 @@ public:
     // Share first item
     temp_storage.first_items[linear_tid] = input[0];
 
-    CTA_SYNC();
+    __syncthreads();
 
     if ((linear_tid + 1) * ITEMS_PER_THREAD < valid_items)
     {

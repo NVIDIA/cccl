@@ -21,10 +21,11 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+
 CUB_NAMESPACE_BEGIN
-namespace detail
-{
-namespace merge
+namespace detail::merge
 {
 _CCCL_INLINE_VAR constexpr int fallback_BLOCK_THREADS    = 64;
 _CCCL_INLINE_VAR constexpr int fallback_ITEMS_PER_THREAD = 1;
@@ -80,7 +81,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void device_partition_merge_path_kernel(
   const Offset partition_idx = blockDim.x * blockIdx.x + threadIdx.x;
   if (partition_idx < num_partitions)
   {
-    const Offset partition_at       = (cub::min)(partition_idx * items_per_tile, keys1_count + keys2_count);
+    const Offset partition_at       = (::cuda::std::min)(partition_idx * items_per_tile, keys1_count + keys2_count);
     merge_partitions[partition_idx] = cub::MergePath(keys1, keys2, keys1_count, keys2_count, partition_at, compare_op);
   }
 }
@@ -300,6 +301,5 @@ struct dispatch_t
     return cudaSuccess;
   }
 };
-} // namespace merge
-} // namespace detail
+} // namespace detail::merge
 CUB_NAMESPACE_END

@@ -269,7 +269,7 @@ public:
   static constexpr intmax_t num = __s * __na / __gcd;
   static constexpr intmax_t den = __da / __gcd;
 
-  typedef ratio<num, den> type;
+  using type = ratio<num, den>;
 };
 
 template <intmax_t _Num, intmax_t _Den>
@@ -285,22 +285,22 @@ template <intmax_t _Num, intmax_t _Den>
 struct __is_ratio<ratio<_Num, _Den>> : true_type
 {};
 
-typedef ratio<1LL, 1000000000000000000LL> atto;
-typedef ratio<1LL, 1000000000000000LL> femto;
-typedef ratio<1LL, 1000000000000LL> pico;
-typedef ratio<1LL, 1000000000LL> nano;
-typedef ratio<1LL, 1000000LL> micro;
-typedef ratio<1LL, 1000LL> milli;
-typedef ratio<1LL, 100LL> centi;
-typedef ratio<1LL, 10LL> deci;
-typedef ratio<10LL, 1LL> deca;
-typedef ratio<100LL, 1LL> hecto;
-typedef ratio<1000LL, 1LL> kilo;
-typedef ratio<1000000LL, 1LL> mega;
-typedef ratio<1000000000LL, 1LL> giga;
-typedef ratio<1000000000000LL, 1LL> tera;
-typedef ratio<1000000000000000LL, 1LL> peta;
-typedef ratio<1000000000000000000LL, 1LL> exa;
+using atto  = ratio<1LL, 1000000000000000000LL>;
+using femto = ratio<1LL, 1000000000000000LL>;
+using pico  = ratio<1LL, 1000000000000LL>;
+using nano  = ratio<1LL, 1000000000LL>;
+using micro = ratio<1LL, 1000000LL>;
+using milli = ratio<1LL, 1000LL>;
+using centi = ratio<1LL, 100LL>;
+using deci  = ratio<1LL, 10LL>;
+using deca  = ratio<10LL, 1LL>;
+using hecto = ratio<100LL, 1LL>;
+using kilo  = ratio<1000LL, 1LL>;
+using mega  = ratio<1000000LL, 1LL>;
+using giga  = ratio<1000000000LL, 1LL>;
+using tera  = ratio<1000000000000LL, 1LL>;
+using peta  = ratio<1000000000000000LL, 1LL>;
+using exa   = ratio<1000000000000000000LL, 1LL>;
 
 template <class _R1, class _R2>
 struct __ratio_multiply
@@ -310,8 +310,8 @@ struct __ratio_multiply
   static const intmax_t __gcd_d1_n2 = __static_gcd<_R1::den, _R2::num>::value;
 
 public:
-  typedef typename ratio<__ll_mul<_R1::num / __gcd_n1_d2, _R2::num / __gcd_d1_n2>::value,
-                         __ll_mul<_R2::den / __gcd_n1_d2, _R1::den / __gcd_d1_n2>::value>::type type;
+  using type = typename ratio<__ll_mul<_R1::num / __gcd_n1_d2, _R2::num / __gcd_d1_n2>::value,
+                              __ll_mul<_R2::den / __gcd_n1_d2, _R1::den / __gcd_d1_n2>::value>::type;
 };
 
 template <class _R1, class _R2>
@@ -325,8 +325,8 @@ struct __ratio_divide
   static const intmax_t __gcd_d1_d2 = __static_gcd<_R1::den, _R2::den>::value;
 
 public:
-  typedef typename ratio<__ll_mul<_R1::num / __gcd_n1_n2, _R2::den / __gcd_d1_d2>::value,
-                         __ll_mul<_R2::num / __gcd_n1_n2, _R1::den / __gcd_d1_d2>::value>::type type;
+  using type = typename ratio<__ll_mul<_R1::num / __gcd_n1_n2, _R2::den / __gcd_d1_d2>::value,
+                              __ll_mul<_R2::num / __gcd_n1_n2, _R1::den / __gcd_d1_d2>::value>::type;
 };
 
 template <class _R1, class _R2>
@@ -340,11 +340,11 @@ struct __ratio_add
   static const intmax_t __gcd_d1_d2 = __static_gcd<_R1::den, _R2::den>::value;
 
 public:
-  typedef
+  using type =
     typename ratio_multiply<ratio<__gcd_n1_n2, _R1::den / __gcd_d1_d2>,
                             ratio<__ll_add<__ll_mul<_R1::num / __gcd_n1_n2, _R2::den / __gcd_d1_d2>::value,
                                            __ll_mul<_R2::num / __gcd_n1_n2, _R1::den / __gcd_d1_d2>::value>::value,
-                                  _R2::den>>::type type;
+                                  _R2::den>>::type;
 };
 
 template <class _R1, class _R2>
@@ -358,11 +358,11 @@ struct __ratio_subtract
   static const intmax_t __gcd_d1_d2 = __static_gcd<_R1::den, _R2::den>::value;
 
 public:
-  typedef
+  using type =
     typename ratio_multiply<ratio<__gcd_n1_n2, _R1::den / __gcd_d1_d2>,
                             ratio<__ll_sub<__ll_mul<_R1::num / __gcd_n1_n2, _R2::den / __gcd_d1_d2>::value,
                                            __ll_mul<_R2::num / __gcd_n1_n2, _R1::den / __gcd_d1_d2>::value>::value,
-                                  _R2::den>>::type type;
+                                  _R2::den>>::type;
 };
 
 template <class _R1, class _R2>
@@ -456,7 +456,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT ratio_greater_equal : public bool_constant<
 template <class _R1, class _R2>
 struct __ratio_gcd
 {
-  typedef ratio<__static_gcd<_R1::num, _R2::num>::value, __static_lcm<_R1::den, _R2::den>::value> type;
+  using type = ratio<__static_gcd<_R1::num, _R2::num>::value, __static_lcm<_R1::den, _R2::den>::value>;
 };
 
 #if !defined(_CCCL_NO_VARIABLE_TEMPLATES)

@@ -33,7 +33,7 @@ class __mem_fn : public __weak_result_type<_Tp>
 {
 public:
   // types
-  typedef _Tp type;
+  using type = _Tp;
 
 private:
   type __f_;

@@ -29,9 +29,10 @@
 #include <cub/block/block_run_length_decode.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/device/device_scan.cuh>
-#include <cub/iterator/counting_input_iterator.cuh>
 #include <cub/iterator/transform_input_iterator.cuh>
 #include <cub/util_allocator.cuh>
+
+#include <thrust/iterator/counting_iterator.h>
 
 #include <cuda/std/type_traits>
 
@@ -104,7 +105,7 @@ private:
     BlockRunOffsetScanT(temp_storage.run_offsets_scan_storage).ExclusiveSum(run_lengths, run_offsets, decoded_size);
 
     // Ensure temporary shared memory can be repurposed
-    cub::CTA_SYNC();
+    __syncthreads();
 
     // Construct BlockRunLengthDecode and initialize with the run offsets
     return BlockRunLengthDecodeT(temp_storage.decode.run_length_decode_storage, unique_items, run_offsets);
@@ -137,7 +138,7 @@ private:
     }
 
     // Ensure BlockLoad's temporary shared memory can be repurposed
-    cub::CTA_SYNC();
+    __syncthreads();
 
     // Load this block's tile of run lengths
     if (num_valid_items < RUNS_PER_BLOCK)
@@ -151,7 +152,7 @@ private:
     }
 
     // Ensure temporary shared memory can be repurposed
-    cub::CTA_SYNC();
+    __syncthreads();
   }
 
 public:
@@ -332,11 +333,11 @@ void TestAlgorithmSpecialisation()
 
   using RunItemT      = float;
   using RunLengthT    = uint32_t;
-  using ItemItT       = cub::CountingInputIterator<RunItemT>;
-  using RunLengthsItT = cub::TransformInputIterator<RunLengthT, ModOp, cub::CountingInputIterator<RunLengthT>>;
+  using ItemItT       = thrust::counting_iterator<RunItemT>;
+  using RunLengthsItT = thrust::transform_iterator<ModOp, thrust::counting_iterator<RunLengthT>>;
 
   ItemItT d_unique_items(1000U);
-  RunLengthsItT d_run_lengths(cub::CountingInputIterator<RunLengthT>(0), ModOp{});
+  RunLengthsItT d_run_lengths(thrust::counting_iterator<RunLengthT>(0), ModOp{});
 
   constexpr uint32_t num_runs   = 10000;
   constexpr uint32_t num_blocks = (num_runs + (RUNS_PER_BLOCK - 1U)) / RUNS_PER_BLOCK;

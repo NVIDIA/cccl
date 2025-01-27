@@ -823,11 +823,11 @@ struct __iterator_traits_impl
 template <class _Iter>
 struct __iterator_traits_impl<_Iter, true>
 {
-  typedef typename _Iter::difference_type difference_type;
-  typedef typename _Iter::value_type value_type;
-  typedef typename _Iter::pointer pointer;
-  typedef typename _Iter::reference reference;
-  typedef typename _Iter::iterator_category iterator_category;
+  using difference_type   = typename _Iter::difference_type;
+  using value_type        = typename _Iter::value_type;
+  using pointer           = typename _Iter::pointer;
+  using reference         = typename _Iter::reference;
+  using iterator_category = typename _Iter::iterator_category;
 };
 
 template <class _Iter>
@@ -855,13 +855,13 @@ template <class _Tp>
 #endif
 struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits<_Tp*>
 {
-  typedef ptrdiff_t difference_type;
-  typedef remove_cv_t<_Tp> value_type;
-  typedef _Tp* pointer;
-  typedef typename add_lvalue_reference<_Tp>::type reference;
-  typedef random_access_iterator_tag iterator_category;
+  using difference_type   = ptrdiff_t;
+  using value_type        = remove_cv_t<_Tp>;
+  using pointer           = _Tp*;
+  using reference         = typename add_lvalue_reference<_Tp>::type;
+  using iterator_category = random_access_iterator_tag;
 #if _CCCL_STD_VER >= 2014
-  typedef contiguous_iterator_tag iterator_concept;
+  using iterator_concept = contiguous_iterator_tag;
 #endif
 };
 

@@ -64,6 +64,9 @@ CUB_NAMESPACE_BEGIN
  * Kernel entry points
  *****************************************************************************/
 
+namespace detail::reduce
+{
+
 /**
  * @brief Multi-block reduce-by-key sweep kernel entry point
  *
@@ -175,6 +178,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT::BLOCK_TH
     temp_storage, d_keys_in, d_unique_out, d_values_in, d_aggregates_out, d_num_runs_out, equality_op, reduction_op)
     .ConsumeRange(num_items, tile_state, start_tile);
 }
+
+} // namespace detail::reduce
 
 /******************************************************************************
  * Dispatch
@@ -341,9 +346,9 @@ struct DispatchReduceByKey
       // Log init_kernel configuration
       int init_grid_size = CUB_MAX(1, ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS));
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
       // Invoke init_kernel to initialize tile descriptors
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
@@ -391,7 +396,7 @@ struct DispatchReduceByKey
       for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
       {
 // Log reduce_by_key_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
         _CubLog("Invoking %d reduce_by_key_kernel<<<%d, %d, 0, %lld>>>(), %d "
                 "items per thread, %d SM occupancy\n",
                 start_tile,
@@ -400,7 +405,7 @@ struct DispatchReduceByKey
                 (long long) stream,
                 items_per_thread,
                 reduce_by_key_sm_occupancy);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
         // Invoke reduce_by_key_kernel
         THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(scan_grid_size, block_threads, 0, stream)
@@ -439,8 +444,8 @@ struct DispatchReduceByKey
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     return Invoke<ActivePolicyT>(
-      DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
-      DeviceReduceByKeyKernel<
+      detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
+      detail::reduce::DeviceReduceByKeyKernel<
         typename PolicyHub::MaxPolicy,
         KeysInputIteratorT,
         UniqueOutputIteratorT,

@@ -101,7 +101,7 @@ using __msvc_declval_workaround =
 template <class _Tp, class _Up>
 struct __common_type2_imp<_Tp, _Up, void_t<__cond_type<_Tp, _Up>, __msvc_declval_workaround<_Tp, _Up>>>
 {
-  typedef _CCCL_NODEBUG_ALIAS decay_t<__cond_type<_Tp, _Up>> type;
+  using type _CCCL_NODEBUG_ALIAS = decay_t<__cond_type<_Tp, _Up>>;
 };
 
 template <class, class = void>
@@ -114,7 +114,7 @@ struct __common_types;
 template <class _Tp, class _Up>
 struct __common_type_impl<__common_types<_Tp, _Up>, void_t<common_type_t<_Tp, _Up>>>
 {
-  typedef common_type_t<_Tp, _Up> type;
+  using type = common_type_t<_Tp, _Up>;
 };
 
 template <class _Tp, class _Up, class _Vp, class... _Rest>

@@ -112,6 +112,11 @@ struct AgentScanPolicy : ScalingType
  * Thread block abstractions
  ******************************************************************************/
 
+namespace detail
+{
+namespace scan
+{
+
 /**
  * @brief AgentScan implements a stateful abstraction of CUDA thread blocks for
  *        participating in device-wide prefix scan.
@@ -376,7 +381,7 @@ struct AgentScan
       BlockLoadT(temp_storage.load).Load(d_in + tile_offset, items);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Perform tile scan
     if (tile_idx == 0)
@@ -397,7 +402,7 @@ struct AgentScan
       ScanTile(items, scan_op, prefix_op, Int2Type<IS_INCLUSIVE>());
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Store items
     if (IS_LAST_TILE)
@@ -482,7 +487,7 @@ struct AgentScan
       BlockLoadT(temp_storage.load).Load(d_in + tile_offset, items);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Block scan
     if (IS_FIRST_TILE)
@@ -496,7 +501,7 @@ struct AgentScan
       ScanTile(items, scan_op, prefix_op, Int2Type<IS_INCLUSIVE>());
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Store items
     if (IS_LAST_TILE)
@@ -581,5 +586,20 @@ struct AgentScan
     }
   }
 };
+
+} // namespace scan
+} // namespace detail
+
+template <typename AgentScanPolicyT,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename ScanOpT,
+          typename InitValueT,
+          typename OffsetT,
+          typename AccumT,
+          bool ForceInclusive = false>
+using AgentScan CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public interface "
+                                        "will be removed.") = detail::scan::
+  AgentScan<AgentScanPolicyT, InputIteratorT, OutputIteratorT, ScanOpT, InitValueT, OffsetT, AccumT, ForceInclusive>;
 
 CUB_NAMESPACE_END

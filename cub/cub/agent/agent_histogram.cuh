@@ -134,6 +134,11 @@ struct AgentHistogramPolicy
  * Thread block abstractions
  ******************************************************************************/
 
+namespace detail
+{
+namespace histogram
+{
+
 /**
  * @brief AgentHistogram implements a stateful abstraction of CUDA thread blocks for participating
  * in device-wide histogram .
@@ -320,7 +325,7 @@ struct AgentHistogram
     }
 
     // Barrier to make sure all threads are done updating counters
-    CTA_SYNC();
+    __syncthreads();
   }
 
   // Initialize privatized bin counters.  Specialized for privatized shared-memory counters
@@ -350,7 +355,7 @@ struct AgentHistogram
   _CCCL_DEVICE _CCCL_FORCEINLINE void StoreOutput(CounterT* privatized_histograms[NUM_ACTIVE_CHANNELS])
   {
     // Barrier to make sure all threads are done updating counters
-    CTA_SYNC();
+    __syncthreads();
 
 // Apply privatized bin counts to output bin counts
 #pragma unroll
@@ -690,7 +695,7 @@ struct AgentHistogram
         ConsumeTile<IS_ALIGNED, true>(tile_offset, TILE_SAMPLES);
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Get next tile
       if (threadIdx.x == 0)
@@ -698,7 +703,7 @@ struct AgentHistogram
         temp_storage.tile_idx = tile_queue.Drain(1) + num_even_share_tiles;
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
       tile_idx = temp_storage.tile_idx;
     }
@@ -913,5 +918,32 @@ struct AgentHistogram
     }
   }
 };
+
+} // namespace histogram
+} // namespace detail
+
+template <typename AgentHistogramPolicyT,
+          int PRIVATIZED_SMEM_BINS,
+          int NUM_CHANNELS,
+          int NUM_ACTIVE_CHANNELS,
+          typename SampleIteratorT,
+          typename CounterT,
+          typename PrivatizedDecodeOpT,
+          typename OutputDecodeOpT,
+          typename OffsetT,
+          int LEGACY_PTX_ARCH = 0>
+using AgentHistogram CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
+                                             "interface will be removed.") =
+  detail::histogram::AgentHistogram<
+    AgentHistogramPolicyT,
+    PRIVATIZED_SMEM_BINS,
+    NUM_CHANNELS,
+    NUM_ACTIVE_CHANNELS,
+    SampleIteratorT,
+    CounterT,
+    PrivatizedDecodeOpT,
+    OutputDecodeOpT,
+    OffsetT,
+    LEGACY_PTX_ARCH>;
 
 CUB_NAMESPACE_END

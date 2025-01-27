@@ -36,17 +36,17 @@ template <class _Tp>
 using make_signed_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_MAKE_SIGNED(_Tp);
 
 #else
-typedef __type_list<signed char,
-                    signed short,
-                    signed int,
-                    signed long,
-                    signed long long
+using __signed_types =
+  __type_list<signed char,
+              signed short,
+              signed int,
+              signed long,
+              signed long long
 #  ifndef _LIBCUDACXX_HAS_NO_INT128
-                    ,
-                    __int128_t
+              ,
+              __int128_t
 #  endif
-                    >
-  __signed_types;
+              >;
 
 template <class _Tp, bool = is_integral<_Tp>::value || is_enum<_Tp>::value>
 struct __make_signed_impl
@@ -70,53 +70,53 @@ struct __make_signed_impl<bool, true>
 template <>
 struct __make_signed_impl<signed short, true>
 {
-  typedef short type;
+  using type = short;
 };
 template <>
 struct __make_signed_impl<unsigned short, true>
 {
-  typedef short type;
+  using type = short;
 };
 template <>
 struct __make_signed_impl<signed int, true>
 {
-  typedef int type;
+  using type = int;
 };
 template <>
 struct __make_signed_impl<unsigned int, true>
 {
-  typedef int type;
+  using type = int;
 };
 template <>
 struct __make_signed_impl<signed long, true>
 {
-  typedef long type;
+  using type = long;
 };
 template <>
 struct __make_signed_impl<unsigned long, true>
 {
-  typedef long type;
+  using type = long;
 };
 template <>
 struct __make_signed_impl<signed long long, true>
 {
-  typedef long long type;
+  using type = long long;
 };
 template <>
 struct __make_signed_impl<unsigned long long, true>
 {
-  typedef long long type;
+  using type = long long;
 };
 #  ifndef _LIBCUDACXX_HAS_NO_INT128
 template <>
 struct __make_signed_impl<__int128_t, true>
 {
-  typedef __int128_t type;
+  using type = __int128_t;
 };
 template <>
 struct __make_signed_impl<__uint128_t, true>
 {
-  typedef __int128_t type;
+  using type = __int128_t;
 };
 #  endif // !_LIBCUDACXX_HAS_NO_INT128
 

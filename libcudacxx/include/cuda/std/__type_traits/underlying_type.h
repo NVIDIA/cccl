@@ -36,7 +36,7 @@ struct __underlying_type_impl<_Tp, false>
 template <class _Tp>
 struct __underlying_type_impl<_Tp, true>
 {
-  typedef _CCCL_BUILTIN_UNDERLYING_TYPE(_Tp) type;
+  using type = _CCCL_BUILTIN_UNDERLYING_TYPE(_Tp);
 };
 
 template <class _Tp>

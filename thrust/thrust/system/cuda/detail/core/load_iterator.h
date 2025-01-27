@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (c) 2011-2023, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -12,10 +12,10 @@
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
  * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
  * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
@@ -24,12 +24,34 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  ******************************************************************************/
+#pragma once
 
-#include <nvbench_helper.cuh>
+#include <thrust/detail/config.h>
 
-// %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
-// %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
-// %RANGE% TUNE_ITEMS_PER_VEC_LOAD_POW2 ipv 1:2:1
+#include <cub/iterator/cache_modified_input_iterator.cuh>
 
-using op_t = max_t;
-#include "base.cuh"
+#include <thrust/type_traits/is_contiguous_iterator.h>
+
+THRUST_NAMESPACE_BEGIN
+
+namespace cuda_cub::core
+{
+
+// LoadIterator
+// ------------
+// if trivial iterator is passed, wrap loads into LDG
+//
+template <class PtxPlan, class It>
+struct LoadIterator
+{
+  using value_type = typename ::cuda::std::iterator_traits<It>::value_type;
+  using size_type  = typename ::cuda::std::iterator_traits<It>::difference_type;
+
+  using type =
+    ::cuda::std::conditional_t<is_contiguous_iterator_v<It>,
+                               cub::CacheModifiedInputIterator<PtxPlan::LOAD_MODIFIER, value_type, size_type>,
+                               It>;
+}; // struct Iterator
+} // namespace cuda_cub::core
+
+THRUST_NAMESPACE_END

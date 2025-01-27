@@ -40,43 +40,43 @@
 
 _CCCL_PUSH_MACROS
 
-typedef ::timespec __cccl_timespec_t;
+using __cccl_timespec_t = ::timespec;
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // Mutex
-typedef pthread_mutex_t __cccl_mutex_t;
+using __cccl_mutex_t = pthread_mutex_t;
 #  define _LIBCUDACXX_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
 
-typedef pthread_mutex_t __cccl_recursive_mutex_t;
+using __cccl_recursive_mutex_t = pthread_mutex_t;
 
 // Condition Variable
-typedef pthread_cond_t __cccl_condvar_t;
+using __cccl_condvar_t = pthread_cond_t;
 #  define _LIBCUDACXX_CONDVAR_INITIALIZER PTHREAD_COND_INITIALIZER
 
 // Semaphore
 #  if defined(__APPLE__)
-typedef dispatch_semaphore_t __cccl_semaphore_t;
+using __cccl_semaphore_t = dispatch_semaphore_t;
 #    define _LIBCUDACXX_SEMAPHORE_MAX numeric_limits<long>::max()
 #  else // ^^^ __APPLE__ ^^^ / vvv !__APPLE__ vvv
-typedef sem_t __cccl_semaphore_t;
+using __cccl_semaphore_t = sem_t;
 #    define _LIBCUDACXX_SEMAPHORE_MAX SEM_VALUE_MAX
 #  endif // !__APPLE__
 
 // Execute once
-typedef pthread_once_t __cccl_exec_once_flag;
+using __cccl_exec_once_flag = pthread_once_t;
 #  define _LIBCUDACXX_EXEC_ONCE_INITIALIZER PTHREAD_ONCE_INIT
 
 // Thread id
-typedef pthread_t __cccl_thread_id;
+using __cccl_thread_id = pthread_t;
 
 // Thread
 #  define _LIBCUDACXX_NULL_THREAD 0U
 
-typedef pthread_t __cccl_thread_t;
+using __cccl_thread_t = pthread_t;
 
 // Thread Local Storage
-typedef pthread_key_t __cccl_tls_key;
+using __cccl_tls_key = pthread_key_t;
 
 #  define _LIBCUDACXX_TLS_DESTRUCTOR_CC
 
@@ -85,7 +85,7 @@ _LIBCUDACXX_HIDE_FROM_ABI __cccl_timespec_t __cccl_to_timespec(const _CUDA_VSTD:
   using namespace chrono;
   seconds __s = duration_cast<seconds>(__ns);
   __cccl_timespec_t __ts;
-  typedef decltype(__ts.tv_sec) ts_sec;
+  using ts_sec                  = decltype(__ts.tv_sec);
   constexpr ts_sec __ts_sec_max = numeric_limits<ts_sec>::max();
 
   if (__s.count() < __ts_sec_max)

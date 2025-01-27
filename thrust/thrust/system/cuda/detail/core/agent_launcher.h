@@ -36,8 +36,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/device_synchronize.cuh>
-
 #if _CCCL_HAS_CUDA_COMPILER
 #  include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 #  include <thrust/system/cuda/detail/core/util.h>

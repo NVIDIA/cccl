@@ -77,6 +77,11 @@ struct AgentSmallAndMediumSegmentedSortPolicy
   static constexpr int SEGMENTS_PER_SMALL_BLOCK = BLOCK_THREADS / SmallPolicyT::WARP_THREADS;
 };
 
+namespace detail
+{
+namespace sub_warp_merge_sort
+{
+
 /**
  * @brief AgentSubWarpSort implements a sub-warp merge sort.
  *
@@ -168,8 +173,8 @@ class AgentSubWarpSort
     // LOWEST   -> -nan          = 11...11b -> TwiddleIn ->  0 = 00...00b
 
     // Segmented sort doesn't support custom types at the moment.
-    bit_ordered_type default_key_bits = IS_DESCENDING ? traits::min_raw_binary_key(detail::identity_decomposer_t{})
-                                                      : traits::max_raw_binary_key(detail::identity_decomposer_t{});
+    bit_ordered_type default_key_bits = IS_DESCENDING ? traits::min_raw_binary_key(identity_decomposer_t{})
+                                                      : traits::max_raw_binary_key(identity_decomposer_t{});
     return reinterpret_cast<KeyT&>(default_key_bits);
   }
 
@@ -233,23 +238,23 @@ public:
       KeyT oob_default = AgentSubWarpSort::get_oob_default(Int2Type<std::is_same<bool, KeyT>::value>{});
 
       WarpLoadKeysT(storage.load_keys).Load(keys_input, keys, segment_size, oob_default);
-      WARP_SYNC(warp_merge_sort.get_member_mask());
+      __syncwarp(warp_merge_sort.get_member_mask());
 
       if (!KEYS_ONLY)
       {
         WarpLoadItemsT(storage.load_items).Load(values_input, values, segment_size);
 
-        WARP_SYNC(warp_merge_sort.get_member_mask());
+        __syncwarp(warp_merge_sort.get_member_mask());
       }
 
       warp_merge_sort.Sort(keys, values, BinaryOpT{}, segment_size, oob_default);
-      WARP_SYNC(warp_merge_sort.get_member_mask());
+      __syncwarp(warp_merge_sort.get_member_mask());
 
       WarpStoreKeysT(storage.store_keys).Store(keys_output, keys, segment_size);
 
       if (!KEYS_ONLY)
       {
-        WARP_SYNC(warp_merge_sort.get_member_mask());
+        __syncwarp(warp_merge_sort.get_member_mask());
         WarpStoreItemsT(storage.store_items).Store(values_output, values, segment_size);
       }
     }
@@ -330,5 +335,13 @@ private:
     }
   }
 };
+
+} // namespace sub_warp_merge_sort
+} // namespace detail
+
+template <bool IS_DESCENDING, typename PolicyT, typename KeyT, typename ValueT, typename OffsetT>
+using AgentSubWarpSort CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
+                                               "interface will be removed.") =
+  detail::sub_warp_merge_sort::AgentSubWarpSort<IS_DESCENDING, PolicyT, KeyT, ValueT, OffsetT>;
 
 CUB_NAMESPACE_END
