@@ -61,14 +61,24 @@ namespace core
 #ifdef _NVHPC_CUDA
 #  if (__NVCOMPILER_CUDA_ARCH__ >= 600)
 #    define THRUST_TUNING_ARCH sm60
-#  else
+#  elif (__NVCOMPILER_CUDA_ARCH__ >= 520)
 #    define THRUST_TUNING_ARCH sm52
+#  elif (__NVCOMPILER_CUDA_ARCH__ >= 350)
+#    define THRUST_TUNING_ARCH sm35
+#  else
+#    define THRUST_TUNING_ARCH sm30
 #  endif
 #else
 #  if (__CUDA_ARCH__ >= 600)
 #    define THRUST_TUNING_ARCH sm60
-#  elif !defined(__CUDA_ARCH__)
+#  elif (__CUDA_ARCH__ >= 520)
 #    define THRUST_TUNING_ARCH sm52
+#  elif (__CUDA_ARCH__ >= 350)
+#    define THRUST_TUNING_ARCH sm35
+#  elif (__CUDA_ARCH__ >= 300)
+#    define THRUST_TUNING_ARCH sm30
+#  elif !defined(__CUDA_ARCH__)
+#    define THRUST_TUNING_ARCH sm30
 #  endif
 #endif
 
@@ -80,6 +90,22 @@ struct typelist;
 
 // supported SM arch
 // ---------------------
+struct sm30
+{
+  enum
+  {
+    ver      = 300,
+    warpSize = 32
+  };
+};
+struct sm35
+{
+  enum
+  {
+    ver      = 350,
+    warpSize = 32
+  };
+};
 struct sm52
 {
   enum
@@ -100,7 +126,7 @@ struct sm60
 // list of sm, checked from left to right order
 // the rightmost is the lowest sm arch supported
 // --------------------------------------------
-using sm_list = typelist<sm60, sm52>;
+using sm_list = typelist<sm60, sm52, sm35, sm30>;
 
 // lowest supported SM arch
 // --------------------------------------------------------------------------
@@ -782,6 +808,8 @@ THRUST_RUNTIME_FUNCTION cudaError_t alias_storage(
 }
 
 } // namespace core
+using core::sm30;
+using core::sm35;
 using core::sm52;
 using core::sm60;
 } // namespace cuda_cub
