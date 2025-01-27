@@ -64,12 +64,12 @@ using full_type_list = c2h::type_list<type_pair<uchar3>, type_pair<ulonglong4>>;
 // clang-format off
 using full_type_list = c2h::type_list<
 type_pair<custom_t>
-#if TEST_HALF_T
+#if TEST_HALF_T()
 , type_pair<half_t> // testing half
-#endif
-#if TEST_BF_T
+#endif // TEST_HALF_T()
+#if TEST_BF_T()
 , type_pair<bfloat16_t> // testing bf16
-#endif
+#endif // TEST_BF_T()
 >;
 // clang-format on
 #endif

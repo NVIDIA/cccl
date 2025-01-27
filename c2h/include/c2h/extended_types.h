@@ -30,21 +30,29 @@
 #include <cuda/__cccl_config>
 
 #ifndef TEST_HALF_T
-#  define TEST_HALF_T _CCCL_HAS_NVFP16
-#endif
+#  if defined(_CCCL_HAS_NVFP16) && defined(_LIBCUDACXX_HAS_NVFP16)
+#    define TEST_HALF_T() 1
+#  else // defined(_CCCL_HAS_NVFP16) && defined(_LIBCUDACXX_HAS_NVFP16)
+#    define TEST_HALF_T() 0
+#  endif // defined(_CCCL_HAS_NVFP16) && defined(_LIBCUDACXX_HAS_NVFP16)
+#endif // TEST_HALF_T
 
 #ifndef TEST_BF_T
-#  define TEST_BF_T _CCCL_HAS_NVBF16
-#endif
+#  if defined(_CCCL_HAS_NVBF16) && defined(_LIBCUDACXX_HAS_NVBF16)
+#    define TEST_BF_T() 1
+#  else // defined(_CCCL_HAS_NVBF16) && defined(_LIBCUDACXX_HAS_NVBF16)
+#    define TEST_BF_T() 0
+#  endif // defined(_CCCL_HAS_NVBF16) && defined(_LIBCUDACXX_HAS_NVBF16)
+#endif // TEST_BF_T
 
-#ifdef TEST_HALF_T
+#if TEST_HALF_T()
 #  include <cuda_fp16.h>
 
 #  include <c2h/half.cuh>
-#endif
+#endif // TEST_HALF_T()
 
-#ifdef TEST_BF_T
+#if TEST_BF_T()
 #  include <cuda_bf16.h>
 
 #  include <c2h/bfloat16.cuh>
-#endif
+#endif // TEST_BF_T()
