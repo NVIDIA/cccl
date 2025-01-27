@@ -128,7 +128,7 @@ C2H_TEST("DeviceMerge::MergeKeys large key types", "[merge][device]", c2h::type_
     });
 }
 
-C2H_TEST("DeviceMerge::MergeKeys offset types", "[merge][device]")
+C2H_TEST("DeviceMerge::MergeKeys works for large number of items", "[merge][device]")
 
 try
 {
