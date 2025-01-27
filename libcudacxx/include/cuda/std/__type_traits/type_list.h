@@ -473,29 +473,33 @@ using __type_index = __type_call<__detail::__type_index_fn<_Ip::value>, _Ts...>;
 
 namespace __detail
 {
-template <class... _Ts>
-struct __inherit_flat : _Ts...
-{};
-
 template <size_t _Ip, class _Ty>
-struct __type_index_leaf
+struct __type_tuple_elem
 {
-  using type = _Ty;
+  using type _CCCL_NODEBUG_ALIAS = _Ty;
 };
 
+template <class _Is, class... _Ts>
+struct __type_tupl;
+
+template <size_t... _Is, class... _Ts>
+struct __type_tupl<index_sequence<_Is...>, _Ts...> : __type_tuple_elem<_Is, _Ts>...
+{};
+
+template <class... _Ts>
+using __type_tuple = __type_tupl<make_index_sequence<sizeof...(_Ts)>, _Ts...>;
+
 template <size_t _Ip, class _Ty>
-_LIBCUDACXX_HIDE_FROM_ABI __type_index_leaf<_Ip, _Ty> __type_index_get(__type_index_leaf<_Ip, _Ty>*);
+_LIBCUDACXX_HIDE_FROM_ABI __type_tuple_elem<_Ip, _Ty> __type_tuple_get(__type_tuple_elem<_Ip, _Ty>);
 
-template <class _Is>
-struct __type_index_large_size_fn;
+template <size_t _Ip, class... _Ts>
+using __type_tuple_element_t _CCCL_NODEBUG_ALIAS =
+  __type<decltype(__detail::__type_tuple_get<_Ip>(__type_tuple<_Ts...>{}))>;
 
-template <size_t... _Is>
-struct __type_index_large_size_fn<index_sequence<_Is...>>
+struct __type_index_large_size_fn
 {
   template <class _Ip, class... _Ts>
-  using __call _CCCL_NODEBUG_ALIAS = //
-    __type<decltype(__detail::__type_index_get<_Ip::value>(
-      static_cast<__inherit_flat<__type_index_leaf<_Is, _Ts>...>*>(nullptr)))>;
+  using __call _CCCL_NODEBUG_ALIAS = __type_tuple_element_t<_Ip::value, _Ts...>;
 };
 
 template <size_t _Ip>
@@ -516,12 +520,8 @@ _CCCL_PP_REPEAT_REVERSE(_CCCL_META_UNROLL_LIMIT, _M1)
 #    undef _M1
 
 template <bool _IsSmall>
-struct __type_index_select_fn // Default for larger indices
-{
-  template <class _Ip, class... _Ts>
-  using __call _CCCL_NODEBUG_ALIAS =
-    __type_call<__type_index_large_size_fn<make_index_sequence<sizeof...(_Ts)>>, _Ip, _Ts...>;
-};
+struct __type_index_select_fn : __type_index_large_size_fn // Default for larger indices
+{};
 
 template <>
 struct __type_index_select_fn<true> // Fast implementation for smaller indices
@@ -531,8 +531,18 @@ struct __type_index_select_fn<true> // Fast implementation for smaller indices
 };
 } // namespace __detail
 
+#    if !_CCCL_COMPILER(MSVC)
+
 template <class _Ip, class... _Ts>
 using __type_index = __type_call<__detail::__type_index_select_fn<(_Ip::value < _CCCL_META_UNROLL_LIMIT)>, _Ip, _Ts...>;
+
+#    else // ^^^ !_CCCL_COMPILER(MSVC) ^^^ / vvv _CCCL_COMPILER(MSVC) vvv
+
+// Simplify the implementation for MSVC, which has trouble with the above
+template <class _Ip, class... _Ts>
+using __type_index = __detail::__type_index_large_size_fn::__call<_Ip, _Ts...>;
+
+#    endif // !_CCCL_COMPILER(MSVC)
 
 template <size_t _Ip, class... _Ts>
 using __type_index_c = __type_index<integral_constant<size_t, _Ip>, _Ts...>;
