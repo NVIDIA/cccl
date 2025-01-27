@@ -430,7 +430,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input
   using cub::detail::unsafe_bitcast;
   using T                       = ::cuda::std::remove_cvref_t<decltype(input[0])>;
   using SimdReduceOp            = cub::internal::cub_operator_to_simd_operator_t<ReductionOp, T>;
-  using SimdType                = simd_type_t<ReductionOp, T>;
+  using SimdType                = simd_type_t<T>;
   constexpr auto length         = cub::detail::static_size_v<Input>;
   constexpr auto simd_ratio     = sizeof(SimdType) / sizeof(T);
   constexpr auto length_rounded = ::cuda::round_down(length, simd_ratio);

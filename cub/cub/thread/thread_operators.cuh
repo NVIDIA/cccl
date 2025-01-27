@@ -39,6 +39,12 @@
 
 #include <cub/config.cuh>
 
+#include <cstdint>
+
+#include "cuda/std/__type_traits/conditional.h"
+#include "cuda/std/__type_traits/integral_constant.h"
+#include "cuda/std/__type_traits/is_same.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -398,22 +404,22 @@ struct SimdMin
 template <>
 struct SimdMin<int16_t>
 {
-  using simd_type = uint32_t;
-
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t operator()(uint32_t a, uint32_t b) const
   {
-    return __vmins2(a, b);
+    NV_IF_TARGET(NV_PROVIDES_SM_90,
+                 (return __vmins2(a, b);), //
+                 (_CCCL_ASSERT(false, "Not supported on SM < 90"); return uint32_t{};));
   }
 };
 
 template <>
 struct SimdMin<uint16_t>
 {
-  using simd_type = uint32_t;
-
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t operator()(uint32_t a, uint32_t b) const
   {
-    return __vminu2(a, b);
+    NV_IF_TARGET(NV_PROVIDES_SM_90,
+                 (return __vminu2(a, b);), //
+                 (_CCCL_ASSERT(false, "Not supported on SM < 90"); return uint32_t{};));
   }
 };
 
@@ -422,9 +428,8 @@ struct SimdMin<uint16_t>
 template <>
 struct SimdMin<__half>
 {
-  using simd_type = __half2;
-
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2
+  operator()([[maybe_unused]] __half2 a, [[maybe_unused]] __half2 b) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmin2(a, b);), //
@@ -439,9 +444,8 @@ struct SimdMin<__half>
 template <>
 struct SimdMin<__nv_bfloat16>
 {
-  using simd_type = __nv_bfloat162;
-
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162
+  operator()([[maybe_unused]] __nv_bfloat162 a, [[maybe_unused]] __nv_bfloat162 b) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmin2(a, b);),
@@ -462,22 +466,22 @@ struct SimdMax
 template <>
 struct SimdMax<int16_t>
 {
-  using simd_type = uint32_t;
-
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t operator()(uint32_t a, uint32_t b) const
   {
-    return __vmaxs2(a, b);
+    NV_IF_TARGET(NV_PROVIDES_SM_90,
+                 (return __vmaxs2(a, b);), //
+                 (_CCCL_ASSERT(false, "Not supported on SM < 90"); return uint32_t{};));
   }
 };
 
 template <>
 struct SimdMax<uint16_t>
 {
-  using simd_type = uint32_t;
-
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t operator()(uint32_t a, uint32_t b) const
   {
-    return __vmaxu2(a, b);
+    NV_IF_TARGET(NV_PROVIDES_SM_90,
+                 (return __vmaxu2(a, b);), //
+                 (_CCCL_ASSERT(false, "Not supported on SM < 90"); return uint32_t{};));
   }
 };
 
@@ -486,9 +490,8 @@ struct SimdMax<uint16_t>
 template <>
 struct SimdMax<__half>
 {
-  using simd_type = __half2;
-
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2
+  operator()([[maybe_unused]] __half2 a, [[maybe_unused]] __half2 b) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmax2(a, b);), //
@@ -503,9 +506,8 @@ struct SimdMax<__half>
 template <>
 struct SimdMax<__nv_bfloat16>
 {
-  using simd_type = __nv_bfloat162;
-
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162
+  operator()([[maybe_unused]] __nv_bfloat162 a, [[maybe_unused]] __nv_bfloat162 b) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmax2(a, b);), //
@@ -528,9 +530,8 @@ struct SimdSum
 template <>
 struct SimdSum<__half>
 {
-  using simd_type = __half2;
-
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2
+  operator()([[maybe_unused]] __half2 a, [[maybe_unused]] __half2 b) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_53,
                  (return __hadd2(a, b);), //
@@ -545,9 +546,8 @@ struct SimdSum<__half>
 template <>
 struct SimdSum<__nv_bfloat16>
 {
-  using simd_type = __nv_bfloat162;
-
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162
+  operator()([[maybe_unused]] __nv_bfloat162 a, [[maybe_unused]] __nv_bfloat162 b) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hadd2(a, b);), //
@@ -570,9 +570,8 @@ struct SimdMul
 template <>
 struct SimdMul<__half>
 {
-  using simd_type = __half2;
-
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2
+  operator()([[maybe_unused]] __half2 a, [[maybe_unused]] __half2 b) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_53,
                  (return __hmul2(a, b);), //
@@ -587,9 +586,8 @@ struct SimdMul<__half>
 template <>
 struct SimdMul<__nv_bfloat16>
 {
-  using simd_type = __nv_bfloat162;
-
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162
+  operator()([[maybe_unused]] __nv_bfloat162 a, [[maybe_unused]] __nv_bfloat162 b) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmul2(a, b);), //
@@ -644,8 +642,7 @@ struct CudaOperatorToSimd
 template <typename T>
 struct CudaOperatorToSimd<::cuda::minimum<>, T>
 {
-  using type      = SimdMin<T>;
-  using simd_type = typename type::simd_type;
+  using type = SimdMin<T>;
 };
 
 template <typename T>
@@ -655,8 +652,7 @@ struct CudaOperatorToSimd<::cuda::minimum<T>, T> : CudaOperatorToSimd<::cuda::mi
 template <typename T>
 struct CudaOperatorToSimd<::cuda::maximum<>, T>
 {
-  using type      = SimdMax<T>;
-  using simd_type = typename type::simd_type;
+  using type = SimdMax<T>;
 };
 
 template <typename T>
@@ -666,8 +662,7 @@ struct CudaOperatorToSimd<::cuda::maximum<T>, T> : CudaOperatorToSimd<::cuda::ma
 template <typename T>
 struct CudaOperatorToSimd<::cuda::std::plus<>, T>
 {
-  using type      = SimdSum<T>;
-  using simd_type = typename type::simd_type;
+  using type = SimdSum<T>;
 };
 
 template <typename T>
@@ -677,8 +672,7 @@ struct CudaOperatorToSimd<::cuda::std::plus<T>, T> : CudaOperatorToSimd<::cuda::
 template <typename T>
 struct CudaOperatorToSimd<::cuda::std::multiplies<>, T>
 {
-  using type      = SimdMul<T>;
-  using simd_type = typename type::simd_type;
+  using type = SimdMul<T>;
 };
 
 template <typename T>
@@ -688,8 +682,49 @@ struct CudaOperatorToSimd<::cuda::std::multiplies<T>, T> : CudaOperatorToSimd<::
 template <typename ReduceOp, typename T>
 using cub_operator_to_simd_operator_t = typename CudaOperatorToSimd<ReduceOp, T>::type;
 
-template <typename ReduceOp, typename T>
-using simd_type_t = typename CudaOperatorToSimd<ReduceOp, T>::simd_type;
+//----------------------------------------------------------------------------------------------------------------------
+// SIMD type
+
+template <typename T>
+struct SimdType
+{
+  static_assert(cub::detail::always_false_v<T>, "Unsupported specialization");
+};
+
+template <>
+struct SimdType<int16_t>
+{
+  using type = uint32_t;
+};
+
+template <>
+struct SimdType<uint16_t>
+{
+  using type = uint32_t;
+};
+
+#  if defined(_CCCL_HAS_NVFP16)
+
+template <>
+struct SimdType<__half>
+{
+  using type = __half2;
+};
+
+#  endif // defined(_CCCL_HAS_NVFP16)
+
+#  if defined(_CCCL_HAS_NVBF16)
+
+template <>
+struct SimdType<__nv_bfloat16>
+{
+  using type = __nv_bfloat162;
+};
+
+#  endif // defined(_CCCL_HAS_NVBF16)
+
+template <typename T>
+using simd_type_t = typename SimdType<T>::type;
 
 } // namespace internal
 
