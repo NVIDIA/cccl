@@ -69,7 +69,7 @@ public:
      */
     struct per_level
     {
-      per_level(context ctx, cudaStream_t support_stream, ::std::optional<stream_adapter> alloc_adapters)
+      per_level(context ctx, cudaStream_t support_stream, ::std::shared_ptr<stream_adapter> alloc_adapters)
           : ctx(mv(ctx))
           , support_stream(mv(support_stream))
           , alloc_adapters(mv(alloc_adapters))
@@ -78,11 +78,11 @@ public:
       context ctx;
       cudaStream_t support_stream;
       // A wrapper to forward allocations from a level to the previous one (none is used at the root level)
-      ::std::optional<stream_adapter> alloc_adapters;
+      ::std::shared_ptr<stream_adapter> alloc_adapters;
 
       // This map keeps track of the logical data that were pushed in this level
       // key: logical data's unique id
-      ::std::unordered_map<int, ::std::shared_ptr<stackable_logical_data_impl_base>> pushed_data;
+      ::std::unordered_map<int, stackable_logical_data_impl_base*> pushed_data;
     };
 
   public:
@@ -115,7 +115,7 @@ public:
 
       if (levels.size() == 0)
       {
-        levels.emplace_back(stream_ctx(), nullptr, ::std::nullopt);
+        levels.emplace_back(stream_ctx(), nullptr, nullptr);
       }
       else
       {
@@ -124,7 +124,7 @@ public:
 
         auto gctx = graph_ctx(stream, async_handles.back());
 
-        auto wrapper = stream_adapter(gctx, stream);
+        auto wrapper = ::std::make_shared<stream_adapter>(gctx, stream);
         // FIXME : issue with the deinit phase
         //   gctx.update_uncached_allocator(wrapper.allocator());
 
@@ -151,9 +151,9 @@ public:
       current_level.ctx.finalize();
 
       // Destroy the resources used in the wrapper allocator (if any)
-      if (current_level.alloc_adapters.has_value())
+      if (current_level.alloc_adapters)
       {
-        current_level.alloc_adapters.value().clear();
+        current_level.alloc_adapters->clear();
       }
 
       // Destroy the current level state
@@ -189,9 +189,10 @@ public:
       return levels[level].support_stream;
     }
 
-    void track_pushed_data(int data_id, ::std::shared_ptr<stackable_logical_data_impl_base> data_impl)
+    // void track_pushed_data(int data_id, ::std::shared_ptr<stackable_logical_data_impl_base> data_impl)
+    void track_pushed_data(int data_id, stackable_logical_data_impl_base* data_impl)
     {
-      levels[depth()].pushed_data[data_id] = mv(data_impl);
+      levels[depth()].pushed_data[data_id] = data_impl;
     }
 
     void untrack_pushed_data(int data_id)
@@ -259,7 +260,7 @@ public:
   auto logical_data(shape_of<T> s)
   {
     fprintf(stderr, "initialize from shape.\n");
-    return stackable_logical_data(*this, depth(), true, get_ctx(depth()).logical_data(mv(s)));
+    return stackable_logical_data(*this, depth(), true, get_ctx(0).logical_data(mv(s)));
   }
 
   template <typename... Pack>
@@ -315,9 +316,10 @@ public:
     return get_ctx(depth()).task_fence();
   }
 
-  void track_pushed_data(int data_id, ::std::shared_ptr<stackable_logical_data_impl_base> data_impl)
+  // void track_pushed_data(int data_id, ::std::shared_ptr<stackable_logical_data_impl_base> data_impl)
+  void track_pushed_data(int data_id, stackable_logical_data_impl_base* data_impl)
   {
-    pimpl->track_pushed_data(data_id, mv(data_impl));
+    pimpl->track_pushed_data(data_id, data_impl);
   }
 
   void untrack_pushed_data(int data_id)
@@ -344,13 +346,13 @@ class stackable_logical_data
   {
   public:
     impl() = default;
-    impl(stackable_ctx sctx,
+    impl(stackable_ctx sctx_,
          size_t target_depth,
          bool ld_from_shape,
          logical_data<T> ld,
          data_place where = data_place::invalid)
         : base_depth(target_depth)
-        , sctx(mv(sctx))
+        , sctx(mv(sctx_))
     {
       fprintf(stderr, "stackable_logical_data::impl %p - target depth %ld\n", this, target_depth);
       // Save the logical data at the root level
@@ -360,10 +362,19 @@ class stackable_logical_data
       for (size_t current_depth = 1; current_depth <= target_depth; current_depth++)
       {
         push(ld_from_shape ? access_mode::write : access_mode::rw, where);
+
+        // Keep track of data that were pushed in this context. Note that the ID
+        // used is the ID of the logical data at this level.
+        sctx.track_pushed_data(ld.get_unique_id(), this);
       }
     }
 
-    ~impl() = default;
+    ~impl()
+    {
+      fprintf(stderr, "stackable_logical_data::~impl symbol=%s\n", symbol.c_str());
+
+      frozen_s.clear();
+    }
 
     // Delete copy constructor and copy assignment operator
     impl(const impl&)            = delete;
@@ -385,21 +396,27 @@ class stackable_logical_data
     /* Push one level up (from the current data depth) */
     void push(access_mode m, data_place where = data_place::invalid)
     {
+      fprintf(stderr, "stackable_logical_data::push() %s\n", symbol.c_str());
+
       const size_t ctx_depth          = sctx.depth();
       const size_t current_data_depth = depth();
-
-      fprintf(stderr,
-              "pushing data (%p) %ld->%ld (ctx depth %ld)\n",
-              this,
-              current_data_depth,
-              current_data_depth + 1,
-              ctx_depth);
 
       // (current_data_depth + 1) is the data depth after pushing
       _CCCL_ASSERT(ctx_depth >= current_data_depth + 1, "Invalid depth");
 
       context& from_ctx = sctx.get_ctx(current_data_depth);
       context& to_ctx   = sctx.get_ctx(current_data_depth + 1);
+
+      fprintf(stderr,
+              "pushing data (%p) %ld[%s,%p]->%ld[%s,%p] (ctx depth %ld)\n",
+              this,
+              current_data_depth,
+              from_ctx.to_string().c_str(),
+              &from_ctx,
+              current_data_depth + 1,
+              to_ctx.to_string().c_str(),
+              &to_ctx,
+              ctx_depth);
 
       if (where == data_place::invalid)
       {
@@ -412,6 +429,7 @@ class stackable_logical_data
       // Freeze the logical data at the top
       logical_data<T>& from_data = s.back();
       frozen_logical_data<T> f   = from_ctx.freeze(from_data, m, mv(where));
+      f.set_automatic_unfreeze(true);
 
       // Save the frozen data in a separate vector
       frozen_s.push_back(f);
@@ -465,19 +483,6 @@ class stackable_logical_data
     }
 
   private:
-    // When using data in a task, ensure they are at the appropriate level
-    void check_level_mismatch() const
-    {
-      if (depth() != sctx.depth())
-      {
-        fprintf(stderr, "Warning: mismatch between ctx level %ld and data level %ld\n", sctx.depth(), depth());
-      }
-    }
-
-    /**
-     * @brief
-     */
-
     mutable ::std::vector<logical_data<T>> s;
 
     // When stacking data, we freeze data from the lower levels, these are
@@ -525,7 +530,7 @@ public:
 
     // Keep track of data that were pushed in this context. Note that the ID
     // used is the ID of the logical data at this level.
-    pimpl->get_sctx().track_pushed_data(get_ld().get_unique_id(), pimpl);
+    pimpl->get_sctx().track_pushed_data(get_ld().get_unique_id(), pimpl.get());
   }
 
   void pop()

@@ -216,6 +216,11 @@ class graph_ctx : public backend_ctx<graph_ctx>
 
     ~impl() override {}
 
+    ::std::string to_string() const override
+    {
+      return "graph backend context";
+    }
+
     // Due to circular dependencies, we need to define it here, and not in backend_ctx_untyped
     void update_uncached_allocator(block_allocator_untyped custom) override
     {
@@ -289,11 +294,6 @@ public:
       : backend_ctx<graph_ctx>(::std::make_shared<impl>(g))
   {}
   ///@}
-
-  ::std::string to_string() const
-  {
-    return "graph backend context";
-  }
 
   using backend_ctx<graph_ctx>::task;
 
