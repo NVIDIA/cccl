@@ -19,14 +19,14 @@
 
 struct NoDefault
 {
-  __host__ __device__ TEST_CONSTEXPR_CXX14 NoDefault(int) {}
+  __host__ __device__ constexpr NoDefault(int) {}
 };
 
 struct NonTrivialCopy
 {
-  __host__ __device__ TEST_CONSTEXPR_CXX14 NonTrivialCopy() {}
-  __host__ __device__ TEST_CONSTEXPR_CXX14 NonTrivialCopy(NonTrivialCopy const&) {}
-  __host__ __device__ TEST_CONSTEXPR_CXX14 NonTrivialCopy& operator=(NonTrivialCopy const&)
+  __host__ __device__ constexpr NonTrivialCopy() {}
+  __host__ __device__ constexpr NonTrivialCopy(NonTrivialCopy const&) {}
+  __host__ __device__ constexpr NonTrivialCopy& operator=(NonTrivialCopy const&)
   {
     return *this;
   }
@@ -129,6 +129,8 @@ __host__ __device__ constexpr bool tests()
 int main(int, char**)
 {
   tests();
+#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   static_assert(tests(), "");
+#endif
   return 0;
 }
