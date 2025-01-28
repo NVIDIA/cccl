@@ -46,8 +46,8 @@ TEMPLATE_TEST_CASE("cudax::async_buffer capacity",
 
     { // Works without allocation
       Buffer buf{env, 0};
-      CHECK(buf.empty());
-      CHECK(cuda::std::as_const(buf).empty());
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(cuda::std::as_const(buf).empty());
     }
   }
 
@@ -60,8 +60,8 @@ TEMPLATE_TEST_CASE("cudax::async_buffer capacity",
 
     { // Works without allocation
       Buffer buf{env, 0};
-      CHECK(buf.size() == 0);
-      CHECK(cuda::std::as_const(buf).size() == 0);
+      CUDAX_CHECK(buf.size() == 0);
+      CUDAX_CHECK(cuda::std::as_const(buf).size() == 0);
     }
   }
 }

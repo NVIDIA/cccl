@@ -47,23 +47,23 @@ TEMPLATE_TEST_CASE("cudax::async_buffer conversion",
     { // can be copy constructed from empty input
       const MatchingBuffer input{matching_env, 0};
       Buffer buf(input);
-      CHECK(buf.empty());
-      CHECK(input.empty());
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(input.empty());
     }
 
     { // can be copy constructed from non-empty input
       const MatchingBuffer input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       Buffer buf(input);
-      CHECK(!buf.empty());
-      CHECK(equal_range(buf));
-      CHECK(equal_range(input));
+      CUDAX_CHECK(!buf.empty());
+      CUDAX_CHECK(equal_range(buf));
+      CUDAX_CHECK(equal_range(input));
     }
 
     { // can be move constructed with empty input
       MatchingBuffer input{matching_env, 0};
       Buffer buf(cuda::std::move(input));
-      CHECK(buf.empty());
-      CHECK(input.empty());
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(input.empty());
     }
 
     { // can be move constructed from non-empty input
@@ -72,11 +72,11 @@ TEMPLATE_TEST_CASE("cudax::async_buffer conversion",
       // ensure that we steal the data
       const auto* allocation = input.data();
       Buffer buf(cuda::std::move(input));
-      CHECK(buf.size() == 6);
-      CHECK(buf.data() == allocation);
-      CHECK(input.size() == 0);
-      CHECK(input.data() == nullptr);
-      CHECK(equal_range(buf));
+      CUDAX_CHECK(buf.size() == 6);
+      CUDAX_CHECK(buf.data() == allocation);
+      CUDAX_CHECK(input.size() == 0);
+      CUDAX_CHECK(input.data() == nullptr);
+      CUDAX_CHECK(equal_range(buf));
     }
   }
 
@@ -87,40 +87,40 @@ TEMPLATE_TEST_CASE("cudax::async_buffer conversion",
       const MatchingBuffer input{matching_env};
       Buffer buf{env};
       buf = input;
-      CHECK(buf.empty());
-      CHECK(buf.data() == nullptr);
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() == nullptr);
     }
 
     { // Can be assigned an empty input, shrinking
       const MatchingBuffer input{matching_env};
       Buffer buf{env, 4, T(-2)};
       buf = input;
-      CHECK(buf.empty());
-      CHECK(buf.data() == nullptr);
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() == nullptr);
     }
 
     { // Can be assigned a non-empty input, shrinking
       const MatchingBuffer input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       Buffer buf{env, 42, T(-2)};
       buf = input;
-      CHECK(!buf.empty());
-      CHECK(equal_range(buf));
+      CUDAX_CHECK(!buf.empty());
+      CUDAX_CHECK(equal_range(buf));
     }
 
     { // Can be assigned a non-empty input, growing from empty with reallocation
       const MatchingBuffer input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       Buffer buf{env};
       buf = input;
-      CHECK(buf.size() == 6);
-      CHECK(equal_range(buf));
+      CUDAX_CHECK(buf.size() == 6);
+      CUDAX_CHECK(equal_range(buf));
     }
 
     { // Can be assigned a non-empty input, growing with reallocation
       const MatchingBuffer input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       Buffer buf{env, 4, T(-2)};
       buf = input;
-      CHECK(buf.size() == 6);
-      CHECK(equal_range(buf));
+      CUDAX_CHECK(buf.size() == 6);
+      CUDAX_CHECK(equal_range(buf));
     }
   }
 
@@ -128,48 +128,48 @@ TEMPLATE_TEST_CASE("cudax::async_buffer conversion",
   {
     { // Can be move-assigned an empty input
       MatchingBuffer input{matching_env};
-      CHECK(input.empty());
-      CHECK(input.data() == nullptr);
+      CUDAX_CHECK(input.empty());
+      CUDAX_CHECK(input.data() == nullptr);
 
       Buffer buf{env};
       buf = cuda::std::move(input);
-      CHECK(buf.empty());
-      CHECK(buf.data() == nullptr);
-      CHECK(input.empty());
-      CHECK(input.data() == nullptr);
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() == nullptr);
+      CUDAX_CHECK(input.empty());
+      CUDAX_CHECK(input.data() == nullptr);
     }
 
     { // Can be move-assigned an empty input, shrinking
       MatchingBuffer input{matching_env};
-      CHECK(input.empty());
-      CHECK(input.data() == nullptr);
+      CUDAX_CHECK(input.empty());
+      CUDAX_CHECK(input.data() == nullptr);
 
       Buffer buf{env, 4};
       buf = cuda::std::move(input);
-      CHECK(buf.empty());
-      CHECK(buf.data() == nullptr);
-      CHECK(input.empty());
-      CHECK(input.data() == nullptr);
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() == nullptr);
+      CUDAX_CHECK(input.empty());
+      CUDAX_CHECK(input.data() == nullptr);
     }
 
     { // Can be move-assigned a non-empty input, shrinking
       MatchingBuffer input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       Buffer buf{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       buf = cuda::std::move(input);
-      CHECK(buf.size() == 6);
-      CHECK(equal_range(buf));
-      CHECK(input.empty());
-      CHECK(input.data() == nullptr);
+      CUDAX_CHECK(buf.size() == 6);
+      CUDAX_CHECK(equal_range(buf));
+      CUDAX_CHECK(input.empty());
+      CUDAX_CHECK(input.data() == nullptr);
     }
 
     { // Can be move-assigned an non-empty input growing from empty
       MatchingBuffer input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       Buffer buf{env};
       buf = cuda::std::move(input);
-      CHECK(buf.size() == 6);
-      CHECK(equal_range(buf));
-      CHECK(input.empty());
-      CHECK(input.data() == nullptr);
+      CUDAX_CHECK(buf.size() == 6);
+      CUDAX_CHECK(equal_range(buf));
+      CUDAX_CHECK(input.empty());
+      CUDAX_CHECK(input.data() == nullptr);
     }
   }
 #endif

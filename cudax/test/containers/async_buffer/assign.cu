@@ -42,29 +42,29 @@ TEMPLATE_TEST_CASE("cudax::async_buffer assign",
     { // cudax::async_buffer::assign_range with an empty input
       Buffer buf{env};
       buf.assign_range(uncommon_range<T, 0>{});
-      CHECK(buf.empty());
-      CHECK(buf.data() == nullptr);
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() == nullptr);
     }
 
     { // cudax::async_buffer::assign_range with an empty input, shrinking
       Buffer buf{env, 10, T(-2)};
       buf.assign_range(uncommon_range<T, 0>{});
-      CHECK(buf.empty());
-      CHECK(buf.data() != nullptr);
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() != nullptr);
     }
 
     { // cudax::async_buffer::assign_range with a non-empty input, shrinking
       Buffer buf{env, 10, T(-2)};
       buf.assign_range(uncommon_range<T, 6>{{T(1), T(42), T(1337), T(0), T(12), T(-1)}});
-      CHECK(!buf.empty());
-      CHECK(equal_range(buf));
+      CUDAX_CHECK(!buf.empty());
+      CUDAX_CHECK(equal_range(buf));
     }
 
     { // cudax::async_buffer::assign_range with a non-empty input, growing
       Buffer buf{env, 4, T(-2)};
       buf.assign_range(uncommon_range<T, 6>{{T(1), T(42), T(1337), T(0), T(12), T(-1)}});
-      CHECK(!buf.empty());
-      CHECK(equal_range(buf));
+      CUDAX_CHECK(!buf.empty());
+      CUDAX_CHECK(equal_range(buf));
     }
   }
 
@@ -73,29 +73,29 @@ TEMPLATE_TEST_CASE("cudax::async_buffer assign",
     { // cudax::async_buffer::assign_range with an empty input
       Buffer buf{env};
       buf.assign_range(sized_uncommon_range<T, 0>{});
-      CHECK(buf.empty());
-      CHECK(buf.data() == nullptr);
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() == nullptr);
     }
 
     { // cudax::async_buffer::assign_range with an empty input, shrinking
       Buffer buf{env, 10, T(-2)};
       buf.assign_range(sized_uncommon_range<T, 0>{});
-      CHECK(buf.empty());
-      CHECK(buf.data() != nullptr);
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() != nullptr);
     }
 
     { // cudax::async_buffer::assign_range with a non-empty input, shrinking
       Buffer buf{env, 10, T(-2)};
       buf.assign_range(sized_uncommon_range<T, 6>{{T(1), T(42), T(1337), T(0), T(12), T(-1)}});
-      CHECK(!buf.empty());
-      CHECK(equal_range(buf));
+      CUDAX_CHECK(!buf.empty());
+      CUDAX_CHECK(equal_range(buf));
     }
 
     { // cudax::async_buffer::assign_range with a non-empty input, growing
       Buffer buf{env, 4, T(-2)};
       buf.assign_range(sized_uncommon_range<T, 6>{{T(1), T(42), T(1337), T(0), T(12), T(-1)}});
-      CHECK(!buf.empty());
-      CHECK(equal_range(buf));
+      CUDAX_CHECK(!buf.empty());
+      CUDAX_CHECK(equal_range(buf));
     }
   }
 
@@ -104,29 +104,29 @@ TEMPLATE_TEST_CASE("cudax::async_buffer assign",
     { // cudax::async_buffer::assign_range with an empty input
       Buffer buf{env};
       buf.assign_range(cuda::std::array<T, 0>{});
-      CHECK(buf.empty());
-      CHECK(buf.data() == nullptr);
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() == nullptr);
     }
 
     { // cudax::async_buffer::assign_range with an empty input, shrinking
       Buffer buf{env, 10, T(-2)};
       buf.assign_range(cuda::std::array<T, 0>{});
-      CHECK(buf.empty());
-      CHECK(buf.data() != nullptr);
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() != nullptr);
     }
 
     { // cudax::async_buffer::assign_range with a non-empty input, shrinking
       Buffer buf{env, 10, T(-2)};
       buf.assign_range(cuda::std::array<T, 6>{T(1), T(42), T(1337), T(0), T(12), T(-1)});
-      CHECK(!buf.empty());
-      CHECK(equal_range(buf));
+      CUDAX_CHECK(!buf.empty());
+      CUDAX_CHECK(equal_range(buf));
     }
 
     { // cudax::async_buffer::assign_range with a non-empty input, growing
       Buffer buf{env, 4, T(-2)};
       buf.assign_range(cuda::std::array<T, 6>{T(1), T(42), T(1337), T(0), T(12), T(-1)});
-      CHECK(!buf.empty());
-      CHECK(equal_range(buf));
+      CUDAX_CHECK(!buf.empty());
+      CUDAX_CHECK(equal_range(buf));
     }
   }
 
@@ -135,29 +135,29 @@ TEMPLATE_TEST_CASE("cudax::async_buffer assign",
     { // cudax::async_buffer::assign(count, const T&), zero count from empty
       Buffer buf{env};
       buf.assign(0, T(42));
-      CHECK(buf.empty());
-      CHECK(buf.data() == nullptr);
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() == nullptr);
     }
 
     { // cudax::async_buffer::assign(count, const T&), shrinking to empty
       Buffer buf{env, 10, T(-2)};
       buf.assign(0, T(42));
-      CHECK(buf.empty());
-      CHECK(buf.data() != nullptr);
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() != nullptr);
     }
 
     { // cudax::async_buffer::assign(count, const T&), shrinking
       Buffer buf{env, 10, T(-2)};
       buf.assign(2, T(42));
-      CHECK(!buf.empty());
-      CHECK(equal_size_value(buf, 2, T(42)));
+      CUDAX_CHECK(!buf.empty());
+      CUDAX_CHECK(equal_size_value(buf, 2, T(42)));
     }
 
     { // cudax::async_buffer::assign(count, const T&), growing
       Buffer buf{env, 4, T(-2)};
       buf.assign(6, T(42));
-      CHECK(!buf.empty());
-      CHECK(equal_size_value(buf, 6, T{42}));
+      CUDAX_CHECK(!buf.empty());
+      CUDAX_CHECK(equal_size_value(buf, 6, T{42}));
     }
   }
 
@@ -167,29 +167,29 @@ TEMPLATE_TEST_CASE("cudax::async_buffer assign",
     { // cudax::async_buffer::assign(iter, iter), with forward iterators empty range
       Buffer buf{env};
       buf.assign(input.begin(), input.begin());
-      CHECK(buf.empty());
-      CHECK(buf.data() == nullptr);
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() == nullptr);
     }
 
     { // cudax::async_buffer::assign(iter, iter), with forward iterators shrinking to empty
       Buffer buf{env, 10, T(-2)};
       buf.assign(input.begin(), input.begin());
-      CHECK(buf.empty());
-      CHECK(buf.data() != nullptr);
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() != nullptr);
     }
 
     { // cudax::async_buffer::assign(iter, iter), with forward iterators shrinking
       Buffer buf{env, 10, T(-2)};
       buf.assign(input.begin(), input.end());
-      CHECK(!buf.empty());
-      CHECK(equal_range(buf));
+      CUDAX_CHECK(!buf.empty());
+      CUDAX_CHECK(equal_range(buf));
     }
 
     { // cudax::async_buffer::assign(iter, iter), with forward iterators growing
       Buffer buf{env, 4, T(-2)};
       buf.assign(input.begin(), input.end());
-      CHECK(!buf.empty());
-      CHECK(equal_range(buf));
+      CUDAX_CHECK(!buf.empty());
+      CUDAX_CHECK(equal_range(buf));
     }
   }
 
@@ -198,29 +198,29 @@ TEMPLATE_TEST_CASE("cudax::async_buffer assign",
     { // cudax::async_buffer::assign(initializer_list), empty range
       Buffer buf{env};
       buf.assign(cuda::std::initializer_list<T>{});
-      CHECK(buf.empty());
-      CHECK(buf.data() == nullptr);
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() == nullptr);
     }
 
     { // cudax::async_buffer::assign(initializer_list), shrinking to empty
       Buffer buf{env, 10, T(-2)};
       buf.assign(cuda::std::initializer_list<T>{});
-      CHECK(buf.empty());
-      CHECK(buf.data() != nullptr);
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() != nullptr);
     }
 
     { // cudax::async_buffer::assign(initializer_list), shrinking
       Buffer buf{env, 10, T(-2)};
       buf.assign(cuda::std::initializer_list<T>{T(1), T(42), T(1337), T(0), T(12), T(-1)});
-      CHECK(!buf.empty());
-      CHECK(equal_range(buf));
+      CUDAX_CHECK(!buf.empty());
+      CUDAX_CHECK(equal_range(buf));
     }
 
     { // cudax::async_buffer::assign(initializer_list), growing
       Buffer buf{env, 4, T(-2)};
       buf.assign(cuda::std::initializer_list<T>{T(1), T(42), T(1337), T(0), T(12), T(-1)});
-      CHECK(!buf.empty());
-      CHECK(equal_range(buf));
+      CUDAX_CHECK(!buf.empty());
+      CUDAX_CHECK(equal_range(buf));
     }
   }
 
@@ -236,7 +236,7 @@ TEMPLATE_TEST_CASE("cudax::async_buffer assign",
     {}
     catch (...)
     {
-      CHECK(false);
+      CUDAX_CHECK(false);
     }
 
     try
@@ -247,7 +247,7 @@ TEMPLATE_TEST_CASE("cudax::async_buffer assign",
     {}
     catch (...)
     {
-      CHECK(false);
+      CUDAX_CHECK(false);
     }
 
     try
@@ -258,7 +258,7 @@ TEMPLATE_TEST_CASE("cudax::async_buffer assign",
     {}
     catch (...)
     {
-      CHECK(false);
+      CUDAX_CHECK(false);
     }
   }
 #  endif // TEST_HAS_NO_EXCEPTIONS

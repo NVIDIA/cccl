@@ -62,36 +62,36 @@ TEMPLATE_TEST_CASE("cudax::async_buffer iterators",
   SECTION("cudax::async_buffer::begin/end no allocation")
   {
     Buffer buf{env, 0};
-    CHECK(buf.begin() == iterator{nullptr});
-    CHECK(cuda::std::as_const(buf).begin() == const_iterator{nullptr});
-    CHECK(buf.cbegin() == const_iterator{nullptr});
+    CUDAX_CHECK(buf.begin() == iterator{nullptr});
+    CUDAX_CHECK(cuda::std::as_const(buf).begin() == const_iterator{nullptr});
+    CUDAX_CHECK(buf.cbegin() == const_iterator{nullptr});
 
-    CHECK(buf.end() == iterator{nullptr});
-    CHECK(cuda::std::as_const(buf).end() == const_iterator{nullptr});
-    CHECK(buf.cend() == const_iterator{nullptr});
+    CUDAX_CHECK(buf.end() == iterator{nullptr});
+    CUDAX_CHECK(cuda::std::as_const(buf).end() == const_iterator{nullptr});
+    CUDAX_CHECK(buf.cend() == const_iterator{nullptr});
 
-    CHECK(buf.begin() == buf.end());
-    CHECK(cuda::std::as_const(buf).begin() == cuda::std::as_const(buf).end());
-    CHECK(buf.cbegin() == buf.cend());
+    CUDAX_CHECK(buf.begin() == buf.end());
+    CUDAX_CHECK(cuda::std::as_const(buf).begin() == cuda::std::as_const(buf).end());
+    CUDAX_CHECK(buf.cbegin() == buf.cend());
   }
 
   SECTION("cudax::async_buffer::begin/end with allocation")
   {
     Buffer buf{env, 42, cudax::uninit}; // Note we do not care about the elements just the sizes
     // begin points to the element at data()
-    CHECK(buf.begin() == iterator{buf.data()});
-    CHECK(cuda::std::as_const(buf).begin() == const_iterator{buf.data()});
-    CHECK(buf.cbegin() == const_iterator{buf.data()});
+    CUDAX_CHECK(buf.begin() == iterator{buf.data()});
+    CUDAX_CHECK(cuda::std::as_const(buf).begin() == const_iterator{buf.data()});
+    CUDAX_CHECK(buf.cbegin() == const_iterator{buf.data()});
 
     // end points to the element at data() + 42
-    CHECK(buf.end() == iterator{buf.data() + 42});
-    CHECK(cuda::std::as_const(buf).end() == const_iterator{buf.data() + 42});
-    CHECK(buf.cend() == const_iterator{buf.data() + 42});
+    CUDAX_CHECK(buf.end() == iterator{buf.data() + 42});
+    CUDAX_CHECK(cuda::std::as_const(buf).end() == const_iterator{buf.data() + 42});
+    CUDAX_CHECK(buf.cend() == const_iterator{buf.data() + 42});
 
     // begin and end are not equal
-    CHECK(buf.begin() != buf.end());
-    CHECK(cuda::std::as_const(buf).begin() != cuda::std::as_const(buf).end());
-    CHECK(buf.cbegin() != buf.cend());
+    CUDAX_CHECK(buf.begin() != buf.end());
+    CUDAX_CHECK(cuda::std::as_const(buf).begin() != cuda::std::as_const(buf).end());
+    CUDAX_CHECK(buf.cbegin() != buf.cend());
   }
 
   SECTION("cudax::async_buffer::rbegin/rend properties")
@@ -115,35 +115,35 @@ TEMPLATE_TEST_CASE("cudax::async_buffer iterators",
   SECTION("cudax::async_buffer::rbegin/rend no allocation")
   {
     Buffer buf{env, 0};
-    CHECK(buf.rbegin() == reverse_iterator{iterator{nullptr}});
-    CHECK(cuda::std::as_const(buf).rbegin() == const_reverse_iterator{const_iterator{nullptr}});
-    CHECK(buf.crbegin() == const_reverse_iterator{const_iterator{nullptr}});
+    CUDAX_CHECK(buf.rbegin() == reverse_iterator{iterator{nullptr}});
+    CUDAX_CHECK(cuda::std::as_const(buf).rbegin() == const_reverse_iterator{const_iterator{nullptr}});
+    CUDAX_CHECK(buf.crbegin() == const_reverse_iterator{const_iterator{nullptr}});
 
-    CHECK(buf.rend() == reverse_iterator{iterator{nullptr}});
-    CHECK(cuda::std::as_const(buf).rend() == const_reverse_iterator{const_iterator{nullptr}});
-    CHECK(buf.crend() == const_reverse_iterator{const_iterator{nullptr}});
+    CUDAX_CHECK(buf.rend() == reverse_iterator{iterator{nullptr}});
+    CUDAX_CHECK(cuda::std::as_const(buf).rend() == const_reverse_iterator{const_iterator{nullptr}});
+    CUDAX_CHECK(buf.crend() == const_reverse_iterator{const_iterator{nullptr}});
 
-    CHECK(buf.rbegin() == buf.rend());
-    CHECK(cuda::std::as_const(buf).rbegin() == cuda::std::as_const(buf).rend());
-    CHECK(buf.crbegin() == buf.crend());
+    CUDAX_CHECK(buf.rbegin() == buf.rend());
+    CUDAX_CHECK(cuda::std::as_const(buf).rbegin() == cuda::std::as_const(buf).rend());
+    CUDAX_CHECK(buf.crbegin() == buf.crend());
   }
 
   SECTION("cudax::async_buffer::rbegin/rend with allocation")
   {
     Buffer buf{env, 42, cudax::uninit}; // Note we do not care about the elements just the sizes
     // rbegin points to the element at data() + 42
-    CHECK(buf.rbegin() == reverse_iterator{iterator{buf.data() + 42}});
-    CHECK(cuda::std::as_const(buf).rbegin() == const_reverse_iterator{const_iterator{buf.data() + 42}});
-    CHECK(buf.crbegin() == const_reverse_iterator{const_iterator{buf.data() + 42}});
+    CUDAX_CHECK(buf.rbegin() == reverse_iterator{iterator{buf.data() + 42}});
+    CUDAX_CHECK(cuda::std::as_const(buf).rbegin() == const_reverse_iterator{const_iterator{buf.data() + 42}});
+    CUDAX_CHECK(buf.crbegin() == const_reverse_iterator{const_iterator{buf.data() + 42}});
 
     // rend points to the element at data()
-    CHECK(buf.rend() == reverse_iterator{iterator{buf.data()}});
-    CHECK(cuda::std::as_const(buf).rend() == const_reverse_iterator{const_iterator{buf.data()}});
-    CHECK(buf.crend() == const_reverse_iterator{const_iterator{buf.data()}});
+    CUDAX_CHECK(buf.rend() == reverse_iterator{iterator{buf.data()}});
+    CUDAX_CHECK(cuda::std::as_const(buf).rend() == const_reverse_iterator{const_iterator{buf.data()}});
+    CUDAX_CHECK(buf.crend() == const_reverse_iterator{const_iterator{buf.data()}});
 
     // begin and end are not equal
-    CHECK(buf.rbegin() != buf.rend());
-    CHECK(cuda::std::as_const(buf).rbegin() != cuda::std::as_const(buf).rend());
-    CHECK(buf.crbegin() != buf.crend());
+    CUDAX_CHECK(buf.rbegin() != buf.rend());
+    CUDAX_CHECK(cuda::std::as_const(buf).rbegin() != cuda::std::as_const(buf).rend());
+    CUDAX_CHECK(buf.crbegin() != buf.crend());
   }
 }
