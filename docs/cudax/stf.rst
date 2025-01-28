@@ -2011,13 +2011,10 @@ graphs we can further
 annotate the application using dot sections.
 Dot sections can also be nested to better structure the visualization.
 
-This is achieved by creating `dot_section` objects in the application, for
-example by using an RAII idiom with the `ctx.dot_section` method which returns
-an object which lifetime defines a dot section valid until it is destroyed.
-Users may also specify where sections begin and end using
-`ctx.dot_push_section` and `ctx.dot_pop_section`.
-The following example illustrates how to add nested sections, either using RAII
-or with explicit push and pop annotations.
+This is achieved by creating `dot_section` objects in the application. `ctx.dot_section` returns
+an object which lifetime defines a dot section valid until it is destroyed, or
+when calling the `end()` method on this object. The following example
+illustrates how to add nested sections:
 
 .. code:: c++
 
@@ -2027,20 +2024,22 @@ or with explicit push and pop annotations.
     auto lC = ctx.logical_token().set_symbol("C");
 
     // Begin a top-level section named "foo"
-    ctx.dot_push_section("foo");
+    auto s_foo = ctx.dot_push_section("foo");
     for (size_t i = 0; i < 2; i++)
     {
       // Section named "bar" using RAII
-      auto guard = ctx.dot_section("bar");
+      auto s_bar = ctx.dot_section("bar");
       ctx.task(lA.read(), lB.rw()).set_symbol("t1")->*[](cudaStream_t, auto, auto) {};
       for (size_t j = 0; j < 2; j++) {
          // Section named "baz" using RAII
-         auto inner_guard = ctx.dot_section("baz");
+         auto s_bar = ctx.dot_section("baz");
          ctx.task(lA.read(), lC.rw()).set_symbol("t2")->*[](cudaStream_t, auto, auto) {};
          ctx.task(lB.read(), lC.read(), lA.rw()).set_symbol("t3")->*[](cudaStream_t, auto, auto, auto) {};
+         // Implicit end of section "baz"
       }
+      // Implicit end of section "bar"
     }
-    ctx.dot_pop_section();
+    s_foo.end(); // Explicit end of section "foo"
     ctx.finalize();
 
 When running this with the `CUDASTF_DOT_FILE` environment variable for example
