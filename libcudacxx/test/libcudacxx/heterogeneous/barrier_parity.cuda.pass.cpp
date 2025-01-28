@@ -73,7 +73,6 @@ struct clear_token
   }
 };
 
-// older CTK together with MSVC 2017 cannot handle the full list
 using aw_aw_pw1 =
   performer_list<barrier_parity_wait<false>,
                  barrier_arrive_and_wait,

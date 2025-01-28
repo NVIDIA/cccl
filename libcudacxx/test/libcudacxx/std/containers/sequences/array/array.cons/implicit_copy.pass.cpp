@@ -17,8 +17,6 @@
 
 #include "test_macros.h"
 
-#define TEST_CONSTEXPR_CXX14_NOT_MSVC_2017 TEST_CONSTEXPR_CXX14
-
 struct NoDefault
 {
   __host__ __device__ TEST_CONSTEXPR_CXX14 NoDefault(int) {}
@@ -34,7 +32,7 @@ struct NonTrivialCopy
   }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14_NOT_MSVC_2017 bool tests()
+__host__ __device__ constexpr bool tests()
 {
   {
     typedef cuda::std::array<double, 3> Array;
