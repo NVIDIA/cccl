@@ -51,7 +51,7 @@ public:
   static void copy_vector(const vector& from, vector& to)
   {
     to.ctx.parallel_for(to.handle.shape(), to.handle.write(), from.handle.read()).set_symbol("copy_vector")
-        ->*[] _CCCL_DEVICE(size_t i, slice<double> dto, slice<double> dfrom) {
+        ->*[] _CCCL_DEVICE(size_t i, slice<double> dto, slice<const double> dfrom) {
               dto(i) = dfrom(i);
             };
   }

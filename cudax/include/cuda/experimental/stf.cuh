@@ -642,8 +642,8 @@ public:
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     return ::std::visit(
-      [symbol = mv(symbol)](auto& self) {
-        return self.dot_section(mv(symbol));
+      [&symbol](auto& self) {
+        return self.dot_section(symbol);
       },
       payload);
   }
