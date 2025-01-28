@@ -117,8 +117,12 @@ struct __pointer_traits_rebind<_Sp<_Tp, _Args...>, _Up, false>
   using type = _Sp<_Up, _Args...>;
 };
 
+template <class _Ptr, class = void>
+struct __pointer_traits_impl
+{};
+
 template <class _Ptr>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT pointer_traits
+struct __pointer_traits_impl<_Ptr, void_t<typename __pointer_traits_element_type<_Ptr>::type>>
 {
   using pointer         = _Ptr;
   using element_type    = typename __pointer_traits_element_type<pointer>::type;
@@ -138,6 +142,10 @@ public:
     return pointer::pointer_to(__r);
   }
 };
+
+template <class _Ptr>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT pointer_traits : __pointer_traits_impl<_Ptr>
+{};
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT pointer_traits<_Tp*>
