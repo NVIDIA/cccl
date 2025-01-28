@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__functional/reference_wrapper.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/tuple>
@@ -28,46 +29,71 @@
 namespace cuda::experimental
 {
 
-template <typename _Fn>
-void __stream_callback_caller(cudaStream_t, cudaError_t __status, void* __fn_ptr)
+template <typename _CallablePtr>
+void __stream_callback_caller(cudaStream_t, cudaError_t __status, void* __callable_ptr)
 {
-  auto __casted_fn = static_cast<_Fn>(__fn_ptr);
+  auto __casted_callable = static_cast<_CallablePtr>(__callable_ptr);
   if (__status == cudaSuccess)
   {
-    (*__casted_fn)();
+    (*__casted_callable)();
   }
-  delete __casted_fn;
+  delete __casted_callable;
 }
 
-template <typename _Fn, typename... _Args>
-void host_launch(stream_ref __stream, _Fn __fn, _Args... __args)
+//! @brief Launches a host callable to be executed in stream order on the provided stream
+//!
+//! Callable and arguments are copied into an internal dynamic allocation to preserve them
+//! until it is asynchronously called.
+//!
+//! @param __stream Stream to launch the host function on
+//! @param __callable Host function or callable object to call in stream order
+//! @param __args Arguments to call the supplied callable with
+template <typename _Callable, typename... _Args>
+void host_launch(stream_ref __stream, _Callable __callable, _Args... __args)
 {
-  auto __fn_lambda =
-    new auto([__fn = _CUDA_VSTD::move(__fn), __args_tuple = _CUDA_VSTD::make_tuple(_CUDA_VSTD::move(__args)...)]() {
-      _CUDA_VSTD::apply(__fn, __args_tuple);
-    });
+  static_assert(_CUDA_VSTD::is_invocable_v<_Callable, _Args...>,
+                "Callable can't be called with the supplied arguments");
+  auto __lambda_ptr = new auto([__callable   = _CUDA_VSTD::move(__callable),
+                                __args_tuple = _CUDA_VSTD::make_tuple(_CUDA_VSTD::move(__args)...)]() mutable {
+    _CUDA_VSTD::apply(__callable, __args_tuple);
+  });
 
   _CCCL_TRY_CUDA_API(
     cudaStreamAddCallback,
     "Failed to launch host function",
     __stream.get(),
-    __stream_callback_caller<decltype(__fn_lambda)>,
-    static_cast<void*>(__fn_lambda),
+    __stream_callback_caller<decltype(__lambda_ptr)>,
+    static_cast<void*>(__lambda_ptr),
     0);
 }
 
-template <typename _Fn>
-void __host_func_launcher(void* __fn_ptr)
+template <typename _CallablePtr>
+void __host_func_launcher(void* __callable_ptr)
 {
-  auto __casted_fn = static_cast<_Fn>(__fn_ptr);
-  (*__casted_fn)();
+  auto __casted_callable = static_cast<_CallablePtr>(__callable_ptr);
+  (*__casted_callable)();
 }
 
-template <typename _Fn, typename... _Args>
-void host_launch_by_reference(stream_ref __stream, _Fn& __fn)
+//! @brief Launches a host callable to be executed in stream order on the provided stream
+//!
+//! Callable will be called using the supplied reference. If the callable was destroyed
+//! or moved by the time it is asynchronously called the behavior is undefined.
+//!
+//! Callable can't take any arguments, if some additional state is required a lambda can be used
+//! to capture it.
+//!
+//! @param __stream Stream to launch the host function on
+//! @param __callable A reference to a host function or callable object to call in stream order
+template <typename _Callable, typename... _Args>
+void host_launch(stream_ref __stream, ::cuda::std::reference_wrapper<_Callable> __callable)
 {
+  static_assert(_CUDA_VSTD::is_invocable_v<_Callable>, "Callable in reference_wrapper can't take any arguments");
   _CCCL_TRY_CUDA_API(
-    cudaLaunchHostFunc, "Failed to launch host function", __stream.get(), __host_func_launcher<decltype(&__fn)>, &__fn);
+    cudaLaunchHostFunc,
+    "Failed to launch host function",
+    __stream.get(),
+    __host_func_launcher<_Callable*>,
+    &__callable.get());
 }
 
 } // namespace cuda::experimental

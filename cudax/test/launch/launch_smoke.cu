@@ -337,6 +337,37 @@ void launch_local_lambda(cudax::stream_ref stream, int& set, int set_to)
   cudax::host_launch(stream, lambda);
 }
 
+template <typename Lambda>
+struct lambda_wrapper
+{
+  Lambda lambda;
+
+  lambda_wrapper(const Lambda& lambda)
+      : lambda(lambda)
+  {}
+
+  lambda_wrapper(lambda_wrapper&&)      = default;
+  lambda_wrapper(const lambda_wrapper&) = default;
+
+  void operator()()
+  {
+    if constexpr (cuda::std::is_same_v<cuda::std::invoke_result_t<Lambda>, void*>)
+    {
+      // If lambda returns the address it captured, confirm this object wasn't moved
+      CUDAX_REQUIRE(lambda() == this);
+    }
+    else
+    {
+      lambda();
+    }
+  }
+
+  void operator()() const
+  {
+    CUDAX_REQUIRE(false);
+  }
+};
+
 TEST_CASE("Host launch")
 {
   cuda::atomic<int> atomic = 0;
@@ -372,6 +403,30 @@ TEST_CASE("Host launch")
     CUDAX_REQUIRE(i == 5);
   }
 
+  SECTION("Non trivially copyable")
+  {
+    std::string s = "hello";
+
+    cudax::host_launch(
+      stream,
+      [&](auto str_arg) {
+        CUDAX_REQUIRE(s == str_arg);
+      },
+      s);
+    stream.wait();
+  }
+
+  SECTION("Confirm no const added to the callable")
+  {
+    lambda_wrapper wrapped_lambda([&]() {
+      i = 21;
+    });
+
+    cudax::host_launch(stream, wrapped_lambda);
+    stream.wait();
+    CUDAX_REQUIRE(i == 21)
+  }
+
   SECTION("Can launch a local function and return")
   {
     block_stream(stream, atomic);
@@ -382,12 +437,16 @@ TEST_CASE("Host launch")
 
   SECTION("Launch by reference")
   {
-    auto another_lambda_setter = [&]() {
+    // Grab the pointer to confirm callable was not moved
+    void* wrapper_ptr = nullptr;
+    lambda_wrapper another_lambda_setter([&]() {
       i = 84;
-    };
+      return wrapper_ptr;
+    });
+    wrapper_ptr = static_cast<void*>(&another_lambda_setter);
 
     block_stream(stream, atomic);
-    host_launch_by_reference(stream, another_lambda_setter);
+    host_launch(stream, cuda::std::ref(another_lambda_setter));
     unblock_and_wait_stream(stream, atomic);
     CUDAX_REQUIRE(i == 84);
   }
