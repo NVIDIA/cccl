@@ -46,9 +46,7 @@ using NoexceptBase = MaybeNoexceptSwap<true>;
 static_assert(cuda::std::input_iterator<ThrowingBase>);
 ASSERT_NOT_NOEXCEPT(
   cuda::std::ranges::iter_swap(cuda::std::declval<ThrowingBase>(), cuda::std::declval<ThrowingBase>()));
-#if !defined(TEST_COMPILER_MSVC_2017) // MSVC2017 gets confused by the two friends and only considers the first
 ASSERT_NOEXCEPT(cuda::std::ranges::iter_swap(cuda::std::declval<NoexceptBase>(), cuda::std::declval<NoexceptBase>()));
-#endif // !TEST_COMPILER_MSVC_2017
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
@@ -84,10 +82,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
   {
     using ThrowingIter = cuda::std::move_iterator<ThrowingBase>;
     ASSERT_NOT_NOEXCEPT(iter_swap(cuda::std::declval<ThrowingIter>(), cuda::std::declval<ThrowingIter>()));
-#if !defined(TEST_COMPILER_MSVC_2017) // MSVC2017 gets confused by the two friends and only considers the first
     using NoexceptIter = cuda::std::move_iterator<NoexceptBase>;
     ASSERT_NOEXCEPT(iter_swap(cuda::std::declval<NoexceptIter>(), cuda::std::declval<NoexceptIter>()));
-#endif // !TEST_COMPILER_MSVC_2017
   }
 
   return true;

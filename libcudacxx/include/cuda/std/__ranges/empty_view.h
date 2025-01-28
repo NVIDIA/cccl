@@ -24,7 +24,7 @@
 #include <cuda/std/__ranges/view_interface.h>
 #include <cuda/std/__type_traits/is_object.h>
 
-#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
+#if _CCCL_STD_VER >= 2017
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI

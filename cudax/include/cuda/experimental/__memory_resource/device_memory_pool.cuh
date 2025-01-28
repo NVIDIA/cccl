@@ -22,7 +22,7 @@
 #endif // no system header
 
 // cudaMallocAsync was introduced in CTK 11.2
-#if !_CCCL_COMPILER(MSVC2017) && _CCCL_CUDACC_AT_LEAST(11, 2)
+#if _CCCL_CUDACC_AT_LEAST(11, 2)
 
 #  if _CCCL_CUDA_COMPILER(CLANG)
 #    include <cuda_runtime.h>
@@ -427,6 +427,6 @@ public:
 
 #  endif // _CCCL_STD_VER >= 2014
 
-#endif // !_CCCL_COMPILER(MSVC2017) && _CCCL_CUDACC_AT_LEAST(11, 2)
+#endif // _CCCL_CUDACC_AT_LEAST(11, 2)
 
 #endif // _CUDAX__MEMORY_RESOURCE_DEVICE_MEMORY_POOL

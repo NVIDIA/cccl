@@ -163,11 +163,7 @@ private:
 public:
   /*! Default constructor does nothing.
    */
-#if _CCCL_COMPILER(MSVC2017)
-  _CCCL_HOST_DEVICE reverse_iterator() {}
-#else // ^^^ _CCCL_COMPILER(MSVC2017) ^^^ / vvv !_CCCL_COMPILER(MSVC2017) vvv
   reverse_iterator() = default;
-#endif // !_CCCL_COMPILER(MSVC2017)
 
   /*! \p Constructor accepts a \c BidirectionalIterator pointing to a range
    *  for this \p reverse_iterator to reverse.

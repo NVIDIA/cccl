@@ -27,11 +27,6 @@
 #  error "To use the experimental memory resource, define LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
 #endif
 
-// cuda::mr is unavable on MSVC 2017
-#if _CCCL_COMPILER(MSVC2017)
-#  error "The any_resource header is not supported on MSVC 2017"
-#endif // _CCCL_COMPILER(MSVC2017)
-
 #if !defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 #  define LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 #endif

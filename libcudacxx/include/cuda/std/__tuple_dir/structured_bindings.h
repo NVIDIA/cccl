@@ -166,7 +166,6 @@ struct tuple_element<_Ip, const volatile _CUDA_VSTD::tuple<_Tp...>>
     : _CUDA_VSTD::tuple_element<_Ip, const volatile _CUDA_VSTD::tuple<_Tp...>>
 {};
 
-#  if !_CCCL_COMPILER(MSVC2017)
 template <class _Ip, class _Sp, _CUDA_VRANGES::subrange_kind _Kp>
 struct tuple_size<_CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
     : _CUDA_VSTD::tuple_size<_CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
@@ -206,7 +205,6 @@ template <size_t _Idx, class _Ip, class _Sp, _CUDA_VRANGES::subrange_kind _Kp>
 struct tuple_element<_Idx, const volatile _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
     : _CUDA_VSTD::tuple_element<_Idx, const volatile _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
 {};
-#  endif // !_CCCL_COMPILER(MSVC2017)
 } // namespace std
 #endif // _CCCL_STD_VER >= 2017
 
