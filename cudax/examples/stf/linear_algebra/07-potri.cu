@@ -95,7 +95,7 @@ public:
 
     for (size_t colb = 0; colb < nt; colb++)
     {
-      int low_rowb = sym_matrix ? colb : 0;
+      size_t low_rowb = sym_matrix ? colb : 0;
       for (size_t rowb = low_rowb; rowb < mt; rowb++)
       {
         T* addr_h = get_block_h(rowb, colb);
