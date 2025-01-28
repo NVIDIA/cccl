@@ -29,10 +29,10 @@
 // above header needs to be included first
 
 #include <cub/device/device_for.cuh>
-#include <cub/iterator/counting_input_iterator.cuh>
 
 #include <thrust/count.h>
 #include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/sequence.h>
 
 #include "catch2_test_launch_helper.h"
@@ -200,7 +200,7 @@ C2H_TEST("Device for each works with counting iterator", "[for][device]")
       max_items,
     }));
 
-  const auto it = cub::CountingInputIterator<int>{0};
+  const auto it = thrust::counting_iterator<int>{0};
   c2h::device_vector<int> counts(num_items);
   device_for_each_copy(it, it + num_items, incrementer_t{thrust::raw_pointer_cast(counts.data())});
 
