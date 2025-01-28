@@ -21,7 +21,7 @@ void test_iterator_traits()
                                                                                thrust::any_system_tag,
                                                                                thrust::random_access_traversal_tag>;
 
-  static_assert(cuda::std::is_same<It::difference_type, ptrdiff_t>::value, "");
+  static_assert(cuda::std::is_same<It::difference_type, int>::value, "");
   static_assert(cuda::std::is_same<It::value_type, int>::value, "");
   static_assert(cuda::std::is_same<It::pointer, void>::value, "");
   static_assert(cuda::std::is_same<It::reference, signed int>::value, "");
