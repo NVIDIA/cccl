@@ -67,6 +67,28 @@ struct DeviceMergeSortKernelSource
   using KeyT   = cub::detail::value_t<KeyIteratorT>;
   using ValueT = cub::detail::value_t<ValueIteratorT>;
 
+  using merge_sort_helper_t = detail::merge_sort::merge_sort_vsmem_helper_t<
+    typename MaxPolicyT::MergeSortPolicy,
+    KeyInputIteratorT,
+    ValueInputIteratorT,
+    KeyIteratorT,
+    ValueIteratorT,
+    OffsetT,
+    CompareOpT,
+    KeyT,
+    ValueT>;
+
+  using BlockSortVSmemHelperT  = detail::vsmem_helper_impl<typename merge_sort_helper_t::block_sort_agent_t>;
+  using MergeAgentVSmemHelperT = detail::vsmem_helper_impl<typename merge_sort_helper_t::merge_agent_t>;
+
+  static constexpr std::size_t block_sort_vsmem_per_block = BlockSortVSmemHelperT::vsmem_per_block;
+  static constexpr std::size_t merge_vsmem_per_block      = MergeAgentVSmemHelperT::vsmem_per_block;
+
+  CUB_RUNTIME_FUNCTION static constexpr int BlockThreads(typename MaxPolicyT::MergeSortPolicy /*policy*/)
+  {
+    return merge_sort_helper_t::policy_t::BLOCK_THREADS;
+  }
+
   CUB_DEFINE_KERNEL_GETTER(
     MergeSortBlockSortKernel,
     DeviceMergeSortBlockSortKernel<
@@ -195,22 +217,6 @@ struct DispatchMergeSort
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT policy = {})
   {
-    using MergePolicyT = typename ActivePolicyT::MergeSortPolicy;
-
-    using merge_sort_helper_t = detail::merge_sort::merge_sort_vsmem_helper_t<
-      MergePolicyT,
-      KeyInputIteratorT,
-      ValueInputIteratorT,
-      KeyIteratorT,
-      ValueIteratorT,
-      OffsetT,
-      CompareOpT,
-      KeyT,
-      ValueT>;
-
-    using BlockSortVSmemHelperT  = detail::vsmem_helper_impl<typename merge_sort_helper_t::block_sort_agent_t>;
-    using MergeAgentVSmemHelperT = detail::vsmem_helper_impl<typename merge_sort_helper_t::merge_agent_t>;
-
     cudaError error = cudaSuccess;
 
     if (num_items == 0)
@@ -236,8 +242,8 @@ struct DispatchMergeSort
        * Merge sort supports large types, which can lead to excessive shared memory size requirements. In these cases,
        * merge sort allocates virtual shared memory that resides in global memory.
        */
-      const std::size_t block_sort_smem_size       = num_tiles * BlockSortVSmemHelperT::vsmem_per_block;
-      const std::size_t merge_smem_size            = num_tiles * MergeAgentVSmemHelperT::vsmem_per_block;
+      const std::size_t block_sort_smem_size       = num_tiles * KernelSource::block_sort_vsmem_per_block;
+      const std::size_t merge_smem_size            = num_tiles * KernelSource::merge_vsmem_per_block;
       const std::size_t virtual_shared_memory_size = (::cuda::std::max)(block_sort_smem_size, merge_smem_size);
 
       void* allocations[4]            = {nullptr, nullptr, nullptr, nullptr};
@@ -276,7 +282,8 @@ struct DispatchMergeSort
       auto items_buffer     = static_cast<ValueT*>(allocations[2]);
 
       // Invoke DeviceMergeSortBlockSortKernel
-      launcher_factory(static_cast<int>(num_tiles), wrapped_policy.MergeSort().BlockThreads(), 0, stream, true)
+      launcher_factory(
+        static_cast<int>(num_tiles), kernel_source.BlockThreads(wrapped_policy.MergeSort()), 0, stream, true)
         .doit(kernel_source.MergeSortBlockSortKernel(),
               ping,
               d_input_keys,
@@ -351,7 +358,7 @@ struct DispatchMergeSort
 
         // Merge
         launcher_factory(
-          static_cast<int>(num_tiles), static_cast<int>(wrapped_policy.MergeSort().BlockThreads()), 0, stream, true)
+          static_cast<int>(num_tiles), kernel_source.BlockThreads(wrapped_policy.MergeSort()), 0, stream, true)
           .doit(kernel_source.MergeSortMergeKernel(),
                 ping,
                 d_output_keys,
