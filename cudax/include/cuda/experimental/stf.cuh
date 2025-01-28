@@ -1664,22 +1664,42 @@ public:
     return runner_impl(ctx, *this, mv(deps)...);
   }
 
+  auto setup_allocator(graph_ctx& gctx, cudaStream_t stream)
+  {
+    // Use a pooled allocator: this avoids calling the underlying "uncached"
+    // allocator too often by making larger allocations which can be used for
+    // multiple small allocations
+    gctx.set_allocator(block_allocator<pooled_allocator>(gctx));
+
+    // The uncached allocator allocates the (large) blocks of memory required
+    // by the allocator. Within CUDA graphs, using memory nodes is expensive,
+    // and caching a graph with memory nodes may appear as "leaking" memory.
+    // We thus use the stream_adapter allocator which relies stream-based
+    // asynchronous allocator API (cudaMallocAsync, cudaFreeAsync)
+    // The resources reserved by this allocator can be released asynchronously
+    // after the submission of the CUDA graph.
+    auto wrapper = stream_adapter(gctx, stream);
+
+    gctx.update_uncached_allocator(wrapper.allocator());
+
+    return wrapper;
+  }
+
   /* Execute the algorithm as a CUDA graph and launch this graph in a CUDA
    * stream */
   template <typename Fun, typename parent_ctx_t, typename... Args>
   void run(Fun fun, parent_ctx_t& parent_ctx, cudaStream_t stream, Args... args)
   {
-    auto argsTuple = ::std::make_tuple(args...);
     graph_ctx gctx(parent_ctx.async_resources());
 
     // Useful for tools
     gctx.set_parent_ctx(parent_ctx);
     gctx.get_dot()->set_ctx_symbol("algo: " + symbol);
 
-    // This creates an adapter which "redirects" allocations to the CUDA stream API
-    auto wrapper = stream_adapter(gctx, stream);
-
-    gctx.update_uncached_allocator(wrapper.allocator());
+    // This will setup allocators to avoid created CUDA graph memory nodes, and
+    // defer the allocations and deallocations to the cudaMallocAsync API
+    // instead. These resources need to be released later with .clear()
+    auto adapter = setup_allocator(gctx, stream);
 
     auto current_place = gctx.default_exec_place();
 
@@ -1692,6 +1712,7 @@ public:
     };
 
     // Transform the tuple of instances into a tuple of logical data
+    auto argsTuple        = ::std::make_tuple(args...);
     auto logicalArgsTuple = ::std::apply(
       [&](auto&&... args) {
         return ::std::tuple(logify(::std::forward<decltype(args)>(args))...);
@@ -1735,7 +1756,7 @@ public:
     cuda_safe_call(cudaGraphLaunch(*eg, stream));
 
     // Free resources allocated through the adapter
-    wrapper.clear();
+    adapter.clear();
   }
 
   /* Contrary to `run`, we here have a dynamic set of dependencies for the
@@ -1749,12 +1770,10 @@ public:
     gctx.set_parent_ctx(parent_ctx);
     gctx.get_dot()->set_ctx_symbol("algo: " + symbol);
 
-    gctx.set_allocator(block_allocator<pooled_allocator>(gctx));
-    // This creates an adapter which "redirects" allocations to the CUDA stream API
-    auto wrapper = stream_adapter(gctx, stream);
-
-    gctx.update_uncached_allocator(wrapper.allocator());
-
+    // This will setup allocators to avoid created CUDA graph memory nodes, and
+    // defer the allocations and deallocations to the cudaMallocAsync API
+    // instead. These resources need to be released later with .clear()
+    auto adapter = setup_allocator(gctx, stream);
 
     auto current_place = gctx.default_exec_place();
 
@@ -1792,6 +1811,9 @@ public:
     }
 
     cuda_safe_call(cudaGraphLaunch(*eg, stream));
+
+    // Free resources allocated through the adapter
+    adapter.clear();
   }
 
 private:
