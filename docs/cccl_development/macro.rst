@@ -81,11 +81,11 @@ Architecture Macros
 
 The following macros are used to check the target architecture. They comply with the compiler supported by the CUDA toolkit. Compilers outside the CUDA toolkit may define such macros in a different way.
 
-+-------------------------+-------------------------------------+
-| ``_CCCL_ARCH(ARM64)``   |  ARM 64-bit                         |
-+-------------------------+-------------------------------------+
-| ``_CCCL_ARCH(X86_64)``  |  X86 64-bit                         |
-+-------------------------+-------------------------------------+
++-------------------------+---------------------------------------------------+
+| ``_CCCL_ARCH(ARM64)``   |  ARM 64-bit, including MSVC emulation             |
++-------------------------+---------------------------------------------------+
+| ``_CCCL_ARCH(X86_64)``  |  X86 64-bit. False on ARM 64-bit MSVC emulation   |
++-------------------------+---------------------------------------------------+
 
 ----
 
