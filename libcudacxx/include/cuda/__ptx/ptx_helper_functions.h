@@ -22,6 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
@@ -29,9 +30,6 @@
 #if _CCCL_HAS_CUDA_COMPILER
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
-
-template <int __n>
-using n32_t = _CUDA_VSTD::integral_constant<int, __n>;
 
 /*************************************************************
  *
