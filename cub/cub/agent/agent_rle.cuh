@@ -52,7 +52,6 @@
 #include <cub/block/block_store.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/iterator/constant_input_iterator.cuh>
 
 #include <cuda/ptx>
 #include <cuda/std/type_traits>

@@ -13,14 +13,15 @@ workflows:
     # Old CTK/compiler
     - {jobs: ['build'], std: 'minmax', ctk: '12.0', cxx: ['gcc7', 'gcc9', 'clang14', 'msvc2019']}
     # Current CTK build-only
-    - {jobs: ['build'], std: 17,    cxx: ['gcc7', 'clang14']}
-    - {jobs: ['build'], std: 'max', cxx: ['gcc8', 'gcc9', 'gcc10', 'gcc11', 'gcc12']}
-    - {jobs: ['build'], std: 'max', cxx: ['clang14', 'clang15', 'clang16', 'clang17']}
+    - {jobs: ['build'], std: 'max', cxx: ['gcc7', 'gcc8', 'gcc9']}
+    - {jobs: ['build'], std: 'all', cxx: ['gcc10', 'gcc11', 'gcc12']}
+    - {jobs: ['build'], std: 'all', cxx: ['clang14', 'clang15', 'clang16', 'clang17']}
     - {jobs: ['build'], std: 'max', cxx: ['msvc2019']}
     - {jobs: ['build'], std: 'all', cxx: ['gcc', 'clang', 'msvc']}
     # Current CTK testing:
-    - {jobs: ['test'],  project: ['libcudacxx', 'thrust'], std: 'max', cxx: ['gcc']}
-    - {jobs: ['test'],  project: ['libcudacxx', 'thrust'], std: 'max', cxx: ['clang', 'msvc']}
+    - {jobs: ['test'],  project: ['libcudacxx', 'thrust'], std: 'max', cxx: ['gcc', 'clang']}
+    # Disabled until we figure out the issue with the TBB dll
+    #- {jobs: ['test'],  project: ['libcudacxx', 'thrust'], std: 'max', cxx: ['msvc']}
     # Split up cub tests:
     - {jobs: ['test_nolid', 'test_lid0'], project: ['cub'], std: 'max', cxx: ['gcc']}
     - {jobs: ['test_lid1',  'test_lid2'], project: ['cub'], std: 'max', cxx: ['gcc']}
