@@ -48,24 +48,6 @@ struct dual_policy_agent_helper_t
   static constexpr auto fallback_size = sizeof(typename fallback_agent_t::TempStorage);
 };
 
-template <typename PolicyT, typename = void>
-struct merge_sort_vsmem_block_threads_t
-{
-  CUB_RUNTIME_FUNCTION static int BlockThreads()
-  {
-    return PolicyT::BlockThreads();
-  }
-};
-
-template <typename StaticPolicyT>
-struct merge_sort_vsmem_block_threads_t<StaticPolicyT, _CUDA_VSTD::void_t<decltype(StaticPolicyT::BLOCK_THREADS)>>
-{
-  CUB_RUNTIME_FUNCTION static constexpr int BlockThreads()
-  {
-    return StaticPolicyT::BLOCK_THREADS;
-  }
-};
-
 /**
  * @brief Helper class template for merge sort-specific virtual shared memory handling. The merge sort algorithm in its
  * current implementation relies on the fact that both the sorting as well as the merging kernels use the same tile
@@ -133,8 +115,7 @@ public:
   using policy_t = ::cuda::std::_If<uses_fallback_policy, fallback_policy_t, DefaultPolicyT>;
   using block_sort_agent_t =
     ::cuda::std::_If<uses_fallback_policy, fallback_block_sort_agent_t, default_block_sort_agent_t>;
-  using merge_agent_t          = ::cuda::std::_If<uses_fallback_policy, fallback_merge_agent_t, default_merge_agent_t>;
-  using block_threads_helper_t = merge_sort_vsmem_block_threads_t<policy_t>;
+  using merge_agent_t = ::cuda::std::_If<uses_fallback_policy, fallback_merge_agent_t, default_merge_agent_t>;
 };
 template <typename ChainedPolicyT,
           typename KeyInputIteratorT,
