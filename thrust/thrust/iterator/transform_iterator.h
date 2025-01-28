@@ -47,6 +47,9 @@
 #include <thrust/iterator/iterator_facade.h>
 #include <thrust/iterator/iterator_traits.h>
 
+#include <cuda/std/__memory/construct_at.h>
+#include <cuda/std/type_traits>
+
 THRUST_NAMESPACE_BEGIN
 
 /*! \addtogroup iterators
@@ -238,7 +241,26 @@ public:
       , m_f(other.functor())
   {}
 
-  transform_iterator& operator=(const transform_iterator&) = default;
+  _CCCL_HOST_DEVICE transform_iterator& operator=(transform_iterator const& other)
+  {
+    super_t::operator=(other);
+    if constexpr (_CCCL_TRAIT(::cuda::std::is_copy_assignable, AdaptableUnaryFunction))
+    {
+      m_f = other.m_f;
+    }
+    else if constexpr (_CCCL_TRAIT(::cuda::std::is_copy_constructible, AdaptableUnaryFunction))
+    {
+      ::cuda::std::__destroy_at(&m_f);
+      ::cuda::std::__construct_at(&m_f, other.m_f);
+    }
+    else
+    {
+      static_assert(_CCCL_TRAIT(::cuda::std::is_copy_constructible, AdaptableUnaryFunction),
+                    "Cannot use thrust::transform_iterator with a functor that is neither copy constructible nor "
+                    "copy assignable");
+    }
+    return *this;
+  }
 
   /*! This method returns a copy of this \p transform_iterator's \c AdaptableUnaryFunction.
    *  \return A copy of this \p transform_iterator's \c AdaptableUnaryFunction.
