@@ -112,24 +112,24 @@ TEST_CASE("Stream priority", "[stream]")
 TEST_CASE("Stream get device", "[stream]")
 {
   cudax::stream dev0_stream(cudax::device_ref{0});
-  CUDAX_REQUIRE(dev0_stream.device() == 0);
+  CUDAX_REQUIRE(dev0_stream.get_device() == 0);
 
   cudaSetDevice(static_cast<int>(cudax::devices.size() - 1));
   cudaStream_t stream_handle;
   CUDART(cudaStreamCreate(&stream_handle));
   auto stream_cudart = cudax::stream::from_native_handle(stream_handle);
-  CUDAX_REQUIRE(stream_cudart.device() == *std::prev(cudax::devices.end()));
+  CUDAX_REQUIRE(stream_cudart.get_device() == *std::prev(cudax::devices.end()));
   auto stream_ref_cudart = cudax::stream_ref(stream_handle);
-  CUDAX_REQUIRE(stream_ref_cudart.device() == *std::prev(cudax::devices.end()));
+  CUDAX_REQUIRE(stream_ref_cudart.get_device() == *std::prev(cudax::devices.end()));
 
   INFO("Can create a side stream using logical device");
   {
     if (test::cuda_driver_version() >= 12050)
     {
-      auto ldev = dev0_stream.logical_device();
+      auto ldev = dev0_stream.get_logical_device();
       CUDAX_REQUIRE(ldev.get_kind() == cudax::logical_device::kinds::device);
       cudax::stream side_stream(ldev);
-      CUDAX_REQUIRE(side_stream.device() == dev0_stream.device());
+      CUDAX_REQUIRE(side_stream.get_device() == dev0_stream.get_device());
     }
   }
 }
