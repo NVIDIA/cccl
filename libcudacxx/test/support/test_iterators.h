@@ -79,9 +79,7 @@ public:
   template <class T>
   void operator,(T const&) = delete;
 };
-#if TEST_STD_VER >= 2014
 static_assert(cuda::std::output_iterator<cpp17_output_iterator<int*>, int>, "");
-#endif
 
 // This iterator meets C++20's Cpp17InputIterator requirements, as described
 // in Table 89 ([input.iterators]).
@@ -149,11 +147,9 @@ public:
   template <class T>
   void operator,(T const&) = delete;
 };
-#if TEST_STD_VER >= 2014
 static_assert(cuda::std::input_or_output_iterator<cpp17_input_iterator<int*>>, "");
 static_assert(cuda::std::indirectly_readable<cpp17_input_iterator<int*>>, "");
 static_assert(cuda::std::input_iterator<cpp17_input_iterator<int*>>, "");
-#endif
 
 template <class It>
 class forward_iterator
@@ -221,9 +217,7 @@ public:
   template <class T>
   void operator,(T const&) = delete;
 };
-#if TEST_STD_VER >= 2014
 static_assert(cuda::std::forward_iterator<forward_iterator<int*>>, "");
-#endif
 
 template <class It>
 class bidirectional_iterator
@@ -302,9 +296,7 @@ public:
   template <class T>
   void operator,(T const&) = delete;
 };
-#if TEST_STD_VER >= 2014
 static_assert(cuda::std::bidirectional_iterator<bidirectional_iterator<int*>>, "");
-#endif
 
 template <class It>
 class random_access_iterator
@@ -1080,6 +1072,8 @@ private:
   const T* current_;
 };
 
+#if TEST_STD_VER >= 2014
+
 template <class It>
 class cpp20_input_iterator
 {
@@ -1150,8 +1144,10 @@ public:
       : it_(it)
   {}
 
+#  ifndef TEST_COMPILER_MSVC_2017 // MSVC2017 has issues determining common_reference
   cpp20_output_iterator(cpp20_output_iterator&&)            = default;
   cpp20_output_iterator& operator=(cpp20_output_iterator&&) = default;
+#  endif // !TEST_COMPILER_MSVC_2017
 
   __host__ __device__ constexpr decltype(auto) operator*() const
   {
@@ -1205,14 +1201,14 @@ public:
                                                           cuda::std::input_iterator_tag,
                                                           /* else */ cuda::std::output_iterator_tag>>>>>;
 
-#if TEST_STD_VER > 2017
+#  if TEST_STD_VER > 2017
   stride_counting_iterator()
     requires cuda::std::default_initializable<It>
   = default;
-#else
+#  else
   template <class It2 = It, cuda::std::enable_if_t<cuda::std::default_initializable<It2>, int> = 0>
   __host__ __device__ constexpr stride_counting_iterator() noexcept {};
-#endif
+#  endif
 
   __host__ __device__ constexpr explicit stride_counting_iterator(It const& it)
       : base_(base(it))
@@ -1336,13 +1332,13 @@ public:
     return It(base_) == It(other.base_);
   }
 
-#if TEST_STD_VER < 2020
+#  if TEST_STD_VER < 2020
   template <class It2 = It, cuda::std::enable_if_t<cuda::std::sentinel_for<It2, It2>, int> = 0>
   __host__ __device__ constexpr bool operator!=(stride_counting_iterator const& other) const
   {
     return It(base_) != It(other.base_);
   }
-#endif
+#  endif
 
   template <class It2 = It, cuda::std::enable_if_t<cuda::std::random_access_iterator<It2>, int> = 0>
   __host__ __device__ friend constexpr bool
@@ -1393,7 +1389,7 @@ public:
   {
     return s.base_ == base(i);
   }
-#if TEST_STD_VER < 2020
+#  if TEST_STD_VER < 2020
   __host__ __device__ friend constexpr bool operator==(const It& i, const sentinel_wrapper& s)
   {
     return s.base_ == base(i);
@@ -1406,7 +1402,7 @@ public:
   {
     return s.base_ != base(i);
   }
-#endif
+#  endif
   __host__ __device__ friend constexpr It base(const sentinel_wrapper& s)
   {
     return It(s.base_);
@@ -1428,7 +1424,7 @@ public:
   {
     return s.base_ == base(i);
   }
-#if TEST_STD_VER < 2020
+#  if TEST_STD_VER < 2020
   __host__ __device__ friend constexpr bool operator==(const It& i, const sized_sentinel& s)
   {
     return s.base_ == base(i);
@@ -1441,7 +1437,7 @@ public:
   {
     return s.base_ != base(i);
   }
-#endif
+#  endif
   __host__ __device__ friend constexpr auto operator-(const sized_sentinel& s, const It& i)
   {
     return s.base_ - base(i);
@@ -1588,12 +1584,12 @@ public:
   {
     return lhs.ptr_ == rhs.ptr_;
   }
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#  ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
   __host__ __device__ constexpr friend auto operator<=>(const Iterator& lhs, const Iterator& rhs)
   {
     return lhs.ptr_ <=> rhs.ptr_;
   }
-#else
+#  else
   __host__ __device__ constexpr friend bool operator!=(const Iterator& lhs, const Iterator& rhs)
   {
     return lhs.ptr_ != rhs.ptr_;
@@ -1614,7 +1610,7 @@ public:
   {
     return lhs.ptr_ >= rhs.ptr_;
   }
-#endif // TEST_STD_VER < 2020
+#  endif // TEST_STD_VER < 2020
 };
 
 } // namespace adl
@@ -1690,9 +1686,9 @@ struct Proxy
     return *this;
   }
 
-#if defined(TEST_COMPILER_MSVC)
+#  if defined(TEST_COMPILER_MSVC)
   TEST_NV_DIAG_SUPPRESS(1805) // MSVC complains that if we pass a pointer type, adding const is useless
-#endif // TEST_COMPILER_MSVC
+#  endif // TEST_COMPILER_MSVC
 
   // const assignment required to make ProxyIterator model cuda::std::indirectly_writable
   _CCCL_TEMPLATE(class Other)
@@ -1717,18 +1713,18 @@ struct Proxy
   // Calling swap(Proxy<T>{}, Proxy<T>{}) would fail (pass prvalues)
 
   // Compare operators are defined for the convenience of the tests
-#if TEST_STD_VER > 2017
+#  if TEST_STD_VER > 2017
   __host__ __device__ friend constexpr bool operator==(const Proxy&, const Proxy&)
     requires(cuda::std::equality_comparable<T> && !cuda::std::is_reference_v<T>)
   = default;
-#else
+#  else
   _CCCL_TEMPLATE(class T2 = T)
   _CCCL_REQUIRES((cuda::std::equality_comparable<T2> && !cuda::std::is_reference_v<T2>) )
   __host__ __device__ friend constexpr bool operator==(const Proxy& lhs, const Proxy& rhs)
   {
     return lhs.data == rhs.data;
   }
-#endif // TEST_STD_VER > 2017
+#  endif // TEST_STD_VER > 2017
 
   // Helps compare e.g. `Proxy<int>` and `Proxy<int&>`. Note that the default equality comparison operator is deleted
   // when `T` is a reference type.
@@ -1739,7 +1735,7 @@ struct Proxy
     return lhs.data == rhs.data;
   }
 
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#  ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
   __host__ __device__ friend constexpr auto operator<=>(const Proxy&, const Proxy&)
     requires(cuda::std::three_way_comparable<T> && !cuda::std::is_reference_v<T>)
   = default;
@@ -1752,7 +1748,7 @@ struct Proxy
   {
     return lhs.data <=> rhs.data;
   }
-#endif // TEST_HAS_NO_SPACESHIP_OPERATOR
+#  endif // TEST_HAS_NO_SPACESHIP_OPERATOR
 };
 
 namespace cuda
@@ -1824,14 +1820,14 @@ struct ProxyIterator : ProxyIteratorBase<Base>
   using value_type       = Proxy<cuda::std::iter_value_t<Base>>;
   using difference_type  = cuda::std::iter_difference_t<Base>;
 
-#if TEST_STD_VER > 2017
+#  if TEST_STD_VER > 2017
   ProxyIterator()
     requires cuda::std::default_initializable<Base>
   = default;
-#else
+#  else
   template <class B2 = Base, cuda::std::enable_if_t<cuda::std::default_initializable<B2>, int> = 0>
   __host__ __device__ constexpr ProxyIterator() noexcept {};
-#endif // TEST_STD_VER > 2017
+#  endif // TEST_STD_VER > 2017
 
   __host__ __device__ constexpr ProxyIterator(Base base)
       : base_{cuda::std::move(base)}
@@ -1970,14 +1966,14 @@ struct ProxyIterator : ProxyIteratorBase<Base>
     return x.base_ >= y.base_;
   }
 
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#  ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
   _CCCL_TEMPLATE(class B2 = Base)
   _CCCL_REQUIRES(cuda::std::random_access_iterator<B2>&& cuda::std::three_way_comparable<B2>)
   __host__ __device__ friend constexpr auto operator<=>(const ProxyIterator& x, const ProxyIterator& y)
   {
     return x.base_ <=> y.base_;
   }
-#endif // TEST_HAS_NO_SPACESHIP_OPERATOR
+#  endif // TEST_HAS_NO_SPACESHIP_OPERATOR
 
   _CCCL_TEMPLATE(class B2 = Base)
   _CCCL_REQUIRES(cuda::std::random_access_iterator<B2>)
@@ -2030,7 +2026,7 @@ struct ProxySentinel
   }
 };
 
-#if !defined(_LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES)
+#  if !defined(_LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES)
 template <cuda::std::ranges::input_range Base>
   requires cuda::std::ranges::view<Base>
 struct ProxyRange
@@ -2063,19 +2059,14 @@ struct ProxyRange
 template <cuda::std::ranges::input_range R>
   requires cuda::std::ranges::viewable_range<R&&>
 ProxyRange(R&&) -> ProxyRange<cuda::std::views::all_t<R&&>>;
-#endif // !defined(_LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES)
+#  endif // !defined(_LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES)
 
 #endif // TEST_STD_VER > 2014
 
 namespace types
 {
 template <class Ptr>
-using random_access_iterator_list =
-  type_list<Ptr,
-#if TEST_STD_VER >= 2017
-            contiguous_iterator<Ptr>,
-#endif
-            random_access_iterator<Ptr>>;
+using random_access_iterator_list = type_list<Ptr, contiguous_iterator<Ptr>, random_access_iterator<Ptr>>;
 
 template <class Ptr>
 using bidirectional_iterator_list =
