@@ -163,7 +163,7 @@ public:
   static int get_current_section_id();
 
   template <typename task_type, typename data_type>
-  void add_vertex(task_type t)
+  void add_vertex(const task_type& t)
   {
     // Do this work outside the critical section
     const auto remove_deps = getenv("CUDASTF_DOT_REMOVE_DATA_DEPS");
@@ -208,7 +208,7 @@ public:
   }
 
   template <typename task_type>
-  void add_vertex_timing(task_type t, float time_ms, int device = -1)
+  void add_vertex_timing(const task_type& t, float time_ms, int device = -1)
   {
     ::std::lock_guard<::std::mutex> guard(mtx);
 
@@ -286,7 +286,7 @@ public:
   ::std::shared_ptr<per_ctx_dot> parent;
   ::std::vector<::std::shared_ptr<per_ctx_dot>> children;
 
-  const ::std::string get_ctx_symbol() const
+  const ::std::string& get_ctx_symbol() const
   {
     return ctx_symbol;
   }
@@ -352,7 +352,10 @@ public:
     // Constructor to initialize symbol and children
     section(::std::string sym)
         : symbol(mv(sym))
-    {}
+    {
+      static_assert(::std::is_move_constructible_v<section>, "section must be move constructible");
+      static_assert(::std::is_move_assignable_v<section>, "section must be move assignable");
+    }
 
     class guard
     {
@@ -394,7 +397,7 @@ public:
       auto sec = ::std::make_shared<section>(mv(symbol));
       int id   = sec->get_id();
 
-      int parent_id  = current().size() == 0 ? 0 : current().top();
+      int parent_id  = current().empty() ? 0 : current().top();
       sec->parent_id = parent_id;
 
       // Save the section in the map
@@ -445,13 +448,13 @@ public:
     ::std::vector<int> children_ids;
 
   private:
-    int depth;
+    int depth = ::std::numeric_limits<int>::min();
 
-    const ::std::string symbol;
+    ::std::string symbol;
 
     // An identifier for that section. This is movable, but non
     // copyable, but we manipulate section by the means of shared_ptr.
-    const unique_id<section> id;
+    unique_id<section> id;
   };
 
 protected:
