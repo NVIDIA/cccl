@@ -5,6 +5,10 @@ Param(
     [ValidateSet(11, 14, 17, 20)]
     [int]$CXX_STANDARD = 17,
     [Parameter(Mandatory = $false)]
+    [ValidateNotNullOrEmpty()]
+    [Alias("arch")]
+    [int]$CUDA_ARCH = 0,
+    [Parameter(Mandatory = $false)]
     [Alias("cpu-only")]
     [switch]$CPU_ONLY = $false
 )
@@ -24,11 +28,11 @@ If($CURRENT_PATH -ne "ci") {
 }
 
 # Execute the build script:
-$build_command = "$PSScriptRoot/build_thrust.ps1 -std $CXX_STANDARD"
+$build_command = "$PSScriptRoot/build_thrust.ps1 -std $CXX_STANDARD -arch $CUDA_ARCH"
 Write-Host "Executing: $build_command"
 Invoke-Expression $build_command
 
-Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList $CXX_STANDARD
+Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList $CXX_STANDARD, $CUDA_ARCH
 
 $PRESET = "thrust-cpu-cpp$CXX_STANDARD"
 
