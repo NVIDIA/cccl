@@ -273,6 +273,7 @@ public:
   template <class _Tp>
   using __can_forward = _And<_IsNotSame<__remove_cvref_t<_Tp>, __tuple_leaf>, is_constructible<_Hp, _Tp>>;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, __enable_if_t<__can_forward<_Tp>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI
   _CCCL_CONSTEXPR_CXX14 explicit __tuple_leaf(_Tp&& __t) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Hp, _Tp))
@@ -347,6 +348,7 @@ public:
   template <class _Tp>
   using __can_forward = _And<_IsNotSame<__remove_cvref_t<_Tp>, __tuple_leaf>, is_constructible<_Hp, _Tp>>;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, __enable_if_t<__can_forward<_Tp>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI
   _CCCL_CONSTEXPR_CXX14 explicit __tuple_leaf(_Tp&& __t) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Hp, _Tp))
@@ -442,6 +444,7 @@ public:
   template <class _Tp>
   using __can_forward = _And<_IsNotSame<__remove_cvref_t<_Tp>, __tuple_leaf>, is_constructible<_Hp, _Tp>>;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, __enable_if_t<__can_forward<_Tp>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI
   _CCCL_CONSTEXPR_CXX14 explicit __tuple_leaf(_Tp&& __t) noexcept((is_nothrow_constructible<_Hp, _Tp>::value))
@@ -466,6 +469,7 @@ public:
       : _Hp(_CUDA_VSTD::forward<_Tp>(__t), __a)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, __enable_if_t<_CCCL_TRAIT(is_assignable, _Hp&, const _Tp&), int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI __tuple_leaf&
   operator=(const _Tp& __t) noexcept(_CCCL_TRAIT(is_nothrow_assignable, _Hp&, const _Tp&))
@@ -474,6 +478,7 @@ public:
     return *this;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, __enable_if_t<_CCCL_TRAIT(is_assignable, _Hp&, _Tp), int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI __tuple_leaf& operator=(_Tp&& __t) noexcept(_CCCL_TRAIT(is_nothrow_assignable, _Hp&, _Tp))
   {
