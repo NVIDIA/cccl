@@ -102,6 +102,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     containers/async_buffer/comparison.cu
     containers/async_buffer/constructor.cu
     containers/async_buffer/conversion.cu
+    containers/async_buffer/copy.cu
     containers/async_buffer/iterators.cu
     containers/async_buffer/properties.cu
     containers/async_buffer/swap.cu

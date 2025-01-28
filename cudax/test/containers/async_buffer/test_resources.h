@@ -22,6 +22,7 @@
 
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <testing.cuh>
 
 struct other_property
 {};
@@ -48,7 +49,7 @@ public:
   {}
   caching_resource& operator=(const caching_resource& other)
   {
-    CHECK(used_allocations_.empty());
+    CUDAX_CHECK(used_allocations_.empty());
     resource_ = other.resource_;
   }
   caching_resource(caching_resource&& other)
@@ -58,7 +59,7 @@ public:
   {}
   caching_resource& operator=(caching_resource&& other)
   {
-    CHECK(used_allocations_.empty());
+    CUDAX_CHECK(used_allocations_.empty());
     resource_              = cuda::std::move(other.resource_);
     available_allocations_ = cuda::std::move(other.available_allocations_);
     used_allocations_      = cuda::std::move(other.used_allocations_);
@@ -66,7 +67,7 @@ public:
 
   ~caching_resource()
   {
-    CHECK(used_allocations_.empty());
+    CUDAX_CHECK(used_allocations_.empty());
     for (const auto& elem : available_allocations_)
     {
       resource_.deallocate(elem.second, elem.first, alignof(int));
@@ -99,7 +100,7 @@ public:
 
   void deallocate(void* ptr, std::size_t size, std::size_t)
   {
-    CHECK(used_allocations_.count(size) != 0);
+    CUDAX_CHECK(used_allocations_.count(size) != 0);
     auto range = used_allocations_.equal_range(size);
     for (auto curr = range.first; curr != range.second; ++curr)
     {
@@ -109,7 +110,7 @@ public:
         return;
       }
     }
-    CHECK(false);
+    CUDAX_CHECK(false);
   }
 
   void deallocate_async(void* ptr, std::size_t size, std::size_t alignment, ::cuda::stream_ref)

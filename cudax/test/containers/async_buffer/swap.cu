@@ -49,43 +49,43 @@ TEMPLATE_TEST_CASE("cudax::async_buffer swap",
   {
     Buffer vec_large{env, 42, cudax::uninit};
 
-    CHECK(vec_large.size() == 42);
-    CHECK(vec_small.size() == 5);
-    CHECK(vec_large.size() == 42);
-    CHECK(vec_small.size() == 5);
+    CUDAX_CHECK(vec_large.size() == 42);
+    CUDAX_CHECK(vec_small.size() == 5);
+    CUDAX_CHECK(vec_large.size() == 42);
+    CUDAX_CHECK(vec_small.size() == 5);
 
     vec_large.swap(vec_small);
-    CHECK(vec_small.size() == 42);
-    CHECK(vec_large.size() == 5);
-    CHECK(vec_small.size() == 42);
-    CHECK(vec_large.size() == 5);
+    CUDAX_CHECK(vec_small.size() == 42);
+    CUDAX_CHECK(vec_large.size() == 5);
+    CUDAX_CHECK(vec_small.size() == 42);
+    CUDAX_CHECK(vec_large.size() == 5);
 
     swap(vec_large, vec_small);
-    CHECK(vec_large.size() == 42);
-    CHECK(vec_small.size() == 5);
-    CHECK(vec_large.size() == 42);
-    CHECK(vec_small.size() == 5);
+    CUDAX_CHECK(vec_large.size() == 42);
+    CUDAX_CHECK(vec_small.size() == 5);
+    CUDAX_CHECK(vec_large.size() == 42);
+    CUDAX_CHECK(vec_small.size() == 5);
   }
 
   SECTION("Can swap async_buffer without allocation")
   {
     Buffer vec_no_allocation{env, 0, cudax::uninit};
 
-    CHECK(vec_no_allocation.size() == 0);
-    CHECK(vec_small.size() == 5);
-    CHECK(vec_no_allocation.size() == 0);
-    CHECK(vec_small.size() == 5);
+    CUDAX_CHECK(vec_no_allocation.size() == 0);
+    CUDAX_CHECK(vec_small.size() == 5);
+    CUDAX_CHECK(vec_no_allocation.size() == 0);
+    CUDAX_CHECK(vec_small.size() == 5);
 
     vec_no_allocation.swap(vec_small);
-    CHECK(vec_small.size() == 0);
-    CHECK(vec_no_allocation.size() == 5);
-    CHECK(vec_small.size() == 0);
-    CHECK(vec_no_allocation.size() == 5);
+    CUDAX_CHECK(vec_small.size() == 0);
+    CUDAX_CHECK(vec_no_allocation.size() == 5);
+    CUDAX_CHECK(vec_small.size() == 0);
+    CUDAX_CHECK(vec_no_allocation.size() == 5);
 
     swap(vec_no_allocation, vec_small);
-    CHECK(vec_no_allocation.size() == 0);
-    CHECK(vec_small.size() == 5);
-    CHECK(vec_no_allocation.size() == 0);
-    CHECK(vec_small.size() == 5);
+    CUDAX_CHECK(vec_no_allocation.size() == 0);
+    CUDAX_CHECK(vec_small.size() == 5);
+    CUDAX_CHECK(vec_no_allocation.size() == 0);
+    CUDAX_CHECK(vec_small.size() == 5);
   }
 }

@@ -40,34 +40,34 @@ TEMPLATE_TEST_CASE("cudax::async_buffer comparison",
       Buffer other{env, {T(0), T(1), T(2), T(3), T(4)}};
 
       static_assert(cuda::std::is_same<decltype(buf == buf), bool>::value, "");
-      CHECK(buf == buf);
+      CUDAX_CHECK(buf == buf);
 
       static_assert(cuda::std::is_same<decltype(buf != other), bool>::value, "");
-      CHECK(buf != other);
+      CUDAX_CHECK(buf != other);
     }
 
     Buffer lhs{env, {T(1), T(42), T(1337), T(0)}};
     { // Compare equal vectors equal
-      CHECK(lhs == lhs);
-      CHECK(!(lhs != lhs));
+      CUDAX_CHECK(lhs == lhs);
+      CUDAX_CHECK(!(lhs != lhs));
     }
 
     { // lhs is shorter
       Buffer rhs{env, {T(1), T(42), T(1337), T(0), T(-1)}};
-      CHECK(!(lhs == rhs));
-      CHECK(lhs != rhs);
+      CUDAX_CHECK(!(lhs == rhs));
+      CUDAX_CHECK(lhs != rhs);
     }
 
     { // rhs is shorter
       Buffer rhs{env, {T(1), T(42), T(1337)}};
-      CHECK(!(lhs == rhs));
-      CHECK(lhs != rhs);
+      CUDAX_CHECK(!(lhs == rhs));
+      CUDAX_CHECK(lhs != rhs);
     }
 
     { // rhs is different
       Buffer rhs{env, {T(1), T(42), T(1337), T(-1)}};
-      CHECK(!(lhs == rhs));
-      CHECK(lhs != rhs);
+      CUDAX_CHECK(!(lhs == rhs));
+      CUDAX_CHECK(lhs != rhs);
     }
   }
 }

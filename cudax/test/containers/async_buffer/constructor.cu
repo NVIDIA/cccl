@@ -41,32 +41,32 @@ TEMPLATE_TEST_CASE("cudax::async_buffer constructors",
   {
     { // from env, no alllocation
       const Buffer buf{env};
-      CHECK(buf.empty());
-      CHECK(buf.data() == nullptr);
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() == nullptr);
     }
 
     { // from env and size, no alllocation
       const Buffer buf{env, 0};
-      CHECK(buf.empty());
-      CHECK(buf.data() == nullptr);
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() == nullptr);
     }
 
     { // from env, size and value, no alllocation
       const Buffer buf{env, 0, T{42}};
-      CHECK(buf.empty());
-      CHECK(buf.data() == nullptr);
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() == nullptr);
     }
 
     { // from env and size
       const Buffer buf{env, 5};
-      CHECK(buf.size() == 5);
-      CHECK(equal_size_value(buf, 5, T(0)));
+      CUDAX_CHECK(buf.size() == 5);
+      CUDAX_CHECK(equal_size_value(buf, 5, T(0)));
     }
 
     { // from env, size and value
       const Buffer buf{env, 5, T{42}};
-      CHECK(buf.size() == 5);
-      CHECK(equal_size_value(buf, 5, T(42)));
+      CUDAX_CHECK(buf.size() == 5);
+      CUDAX_CHECK(equal_size_value(buf, 5, T(42)));
     }
   }
 
@@ -76,21 +76,21 @@ TEMPLATE_TEST_CASE("cudax::async_buffer constructors",
     { // can be constructed from two equal forward iterators
       using iter = forward_iterator<const T*>;
       Buffer buf(env, iter{input.begin()}, iter{input.begin()});
-      CHECK(buf.empty());
-      CHECK(buf.data() == nullptr);
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() == nullptr);
     }
 
     { // can be constructed from two forward iterators
       using iter = forward_iterator<const T*>;
       Buffer buf(env, iter{input.begin()}, iter{input.end()});
-      CHECK(buf.size() == 6);
-      CHECK(equal_range(buf));
+      CUDAX_CHECK(buf.size() == 6);
+      CUDAX_CHECK(equal_range(buf));
     }
 
     { // can be constructed from two input iterators
       Buffer buf(env, input.begin(), input.end());
-      CHECK(buf.size() == 6);
-      CHECK(equal_range(buf));
+      CUDAX_CHECK(buf.size() == 6);
+      CUDAX_CHECK(equal_range(buf));
     }
   }
 
@@ -98,38 +98,38 @@ TEMPLATE_TEST_CASE("cudax::async_buffer constructors",
   {
     { // can be constructed from an empty uncommon forward range
       Buffer buf(env, uncommon_range<T, 0>{});
-      CHECK(buf.empty());
-      CHECK(buf.data() == nullptr);
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() == nullptr);
     }
 
     { // can be constructed from a non-empty uncommon forward range
       Buffer buf(env, uncommon_range<T, 6>{{T(1), T(42), T(1337), T(0), T(12), T(-1)}});
-      CHECK(!buf.empty());
-      CHECK(equal_range(buf));
+      CUDAX_CHECK(!buf.empty());
+      CUDAX_CHECK(equal_range(buf));
     }
 
     { // can be constructed from an empty sized uncommon forward range
       Buffer buf(env, sized_uncommon_range<T, 0>{});
-      CHECK(buf.empty());
-      CHECK(buf.data() == nullptr);
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() == nullptr);
     }
 
     { // can be constructed from a non-empty sized uncommon forward range
       Buffer buf(env, sized_uncommon_range<T, 6>{{T(1), T(42), T(1337), T(0), T(12), T(-1)}});
-      CHECK(!buf.empty());
-      CHECK(equal_range(buf));
+      CUDAX_CHECK(!buf.empty());
+      CUDAX_CHECK(equal_range(buf));
     }
 
     { // can be constructed from an empty random access range
       Buffer buf(env, cuda::std::array<T, 0>{});
-      CHECK(buf.empty());
-      CHECK(buf.data() == nullptr);
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() == nullptr);
     }
 
     { // can be constructed from a non-empty random access range
       Buffer buf(env, cuda::std::array<T, 6>{T(1), T(42), T(1337), T(0), T(12), T(-1)});
-      CHECK(!buf.empty());
-      CHECK(equal_range(buf));
+      CUDAX_CHECK(!buf.empty());
+      CUDAX_CHECK(equal_range(buf));
     }
   }
 
@@ -138,15 +138,15 @@ TEMPLATE_TEST_CASE("cudax::async_buffer constructors",
     { // can be constructed from an empty initializer_list
       const cuda::std::initializer_list<T> input{};
       Buffer buf(env, input);
-      CHECK(buf.empty());
-      CHECK(buf.data() == nullptr);
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() == nullptr);
     }
 
     { // can be constructed from a non-empty initializer_list
       const cuda::std::initializer_list<T> input{T(1), T(42), T(1337), T(0), T(12), T(-1)};
       Buffer buf(env, input);
-      CHECK(buf.size() == 6);
-      CHECK(equal_range(buf));
+      CUDAX_CHECK(buf.size() == 6);
+      CUDAX_CHECK(equal_range(buf));
     }
   }
 
@@ -156,14 +156,14 @@ TEMPLATE_TEST_CASE("cudax::async_buffer constructors",
     { // can be copy constructed from empty input
       const Buffer input{env, 0};
       Buffer buf(input);
-      CHECK(buf.empty());
+      CUDAX_CHECK(buf.empty());
     }
 
     { // can be copy constructed from non-empty input
       const Buffer input{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       Buffer buf(input);
-      CHECK(!buf.empty());
-      CHECK(equal_range(buf));
+      CUDAX_CHECK(!buf.empty());
+      CUDAX_CHECK(equal_range(buf));
     }
   }
 
@@ -174,8 +174,8 @@ TEMPLATE_TEST_CASE("cudax::async_buffer constructors",
     { // can be move constructed with empty input
       Buffer input{env, 0};
       Buffer buf(cuda::std::move(input));
-      CHECK(buf.empty());
-      CHECK(input.empty());
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(input.empty());
     }
 
     { // can be move constructed from non-empty input
@@ -184,11 +184,11 @@ TEMPLATE_TEST_CASE("cudax::async_buffer constructors",
       // ensure that we steal the data
       const auto* allocation = input.data();
       Buffer buf(cuda::std::move(input));
-      CHECK(buf.size() == 6);
-      CHECK(buf.data() == allocation);
-      CHECK(input.size() == 0);
-      CHECK(input.data() == nullptr);
-      CHECK(equal_range(buf));
+      CUDAX_CHECK(buf.size() == 6);
+      CUDAX_CHECK(buf.data() == allocation);
+      CUDAX_CHECK(input.size() == 0);
+      CUDAX_CHECK(input.data() == nullptr);
+      CUDAX_CHECK(equal_range(buf));
     }
   }
 
@@ -206,7 +206,7 @@ TEMPLATE_TEST_CASE("cudax::async_buffer constructors",
     {}
     catch (...)
     {
-      CHECK(false);
+      CUDAX_CHECK(false);
     }
 
     try
@@ -217,7 +217,7 @@ TEMPLATE_TEST_CASE("cudax::async_buffer constructors",
     {}
     catch (...)
     {
-      CHECK(false);
+      CUDAX_CHECK(false);
     }
 
     try
@@ -229,7 +229,7 @@ TEMPLATE_TEST_CASE("cudax::async_buffer constructors",
     {}
     catch (...)
     {
-      CHECK(false);
+      CUDAX_CHECK(false);
     }
 
     try
@@ -241,7 +241,7 @@ TEMPLATE_TEST_CASE("cudax::async_buffer constructors",
     {}
     catch (...)
     {
-      CHECK(false);
+      CUDAX_CHECK(false);
     }
 
     try
@@ -253,7 +253,7 @@ TEMPLATE_TEST_CASE("cudax::async_buffer constructors",
     {}
     catch (...)
     {
-      CHECK(false);
+      CUDAX_CHECK(false);
     }
 
     try
@@ -265,7 +265,7 @@ TEMPLATE_TEST_CASE("cudax::async_buffer constructors",
     {}
     catch (...)
     {
-      CHECK(false);
+      CUDAX_CHECK(false);
     }
 
     try
@@ -277,7 +277,7 @@ TEMPLATE_TEST_CASE("cudax::async_buffer constructors",
     {}
     catch (...)
     {
-      CHECK(false);
+      CUDAX_CHECK(false);
     }
   }
 #  endif // !TEST_HAS_NO_EXCEPTIONS
