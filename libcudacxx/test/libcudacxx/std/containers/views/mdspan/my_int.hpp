@@ -1,6 +1,9 @@
 #ifndef _MY_INT_HPP
 #define _MY_INT_HPP
 
+#include <cuda/std/limits>
+#include <cuda/std/type_traits>
+
 #include "test_macros.h"
 
 struct my_int_non_convertible;
@@ -20,6 +23,10 @@ struct my_int
 
 template <>
 struct cuda::std::is_integral<my_int> : cuda::std::true_type
+{};
+
+template <>
+class cuda::std::numeric_limits<my_int> : public cuda::std::numeric_limits<int>
 {};
 
 // Wrapper type that's not implicitly convertible
@@ -43,6 +50,10 @@ template <>
 struct cuda::std::is_integral<my_int_non_convertible> : cuda::std::true_type
 {};
 
+template <>
+class cuda::std::numeric_limits<my_int_non_convertible> : public cuda::std::numeric_limits<int>
+{};
+
 // Wrapper type that's not nothrow-constructible
 
 struct my_int_non_nothrow_constructible
@@ -60,6 +71,10 @@ struct my_int_non_nothrow_constructible
 
 template <>
 struct cuda::std::is_integral<my_int_non_nothrow_constructible> : cuda::std::true_type
+{};
+
+template <>
+class cuda::std::numeric_limits<my_int_non_nothrow_constructible> : public cuda::std::numeric_limits<int>
 {};
 
 #endif
