@@ -104,8 +104,8 @@ void benchmark_cross_device_ping_pong_copy(
   dev1_stream.wait();
   cuda::std::chrono::duration<double> duration(end_event - start_event);
   printf("Peer copy between GPU%d and GPU%d: %.2fGB/s\n",
-         dev0_stream.device().get(),
-         dev1_stream.device().get(),
+         dev0_stream.get_device().get(),
+         dev1_stream.get_device().get(),
          (static_cast<float>(cpy_count * dev0_buffer.size_bytes()) / (1024 * 1024 * 1024) / duration.count()));
 }
 
@@ -113,8 +113,8 @@ template <typename BufferType>
 void test_cross_device_access_from_kernel(
   cudax::stream_ref dev0_stream, cudax::stream_ref dev1_stream, BufferType& dev0_buffer, BufferType& dev1_buffer)
 {
-  cudax::device_ref dev0 = dev0_stream.device().get();
-  cudax::device_ref dev1 = dev1_stream.device().get();
+  cudax::device_ref dev0 = dev0_stream.get_device();
+  cudax::device_ref dev1 = dev1_stream.get_device();
 
   // Prepare host buffer and copy to GPU 0
   printf("Preparing host buffer and copy to GPU%d...\n", dev0.get());

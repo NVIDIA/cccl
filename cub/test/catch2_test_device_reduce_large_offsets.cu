@@ -24,6 +24,9 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Max, device_max);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 
+// suppress deprecation of ConstantInputIterator in cudafe1.stub.c file
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
 // List of offset types to test
