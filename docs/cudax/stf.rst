@@ -2024,7 +2024,7 @@ illustrates how to add nested sections:
     auto lC = ctx.logical_token().set_symbol("C");
 
     // Begin a top-level section named "foo"
-    auto s_foo = ctx.dot_push_section("foo");
+    auto s_foo = ctx.dot_section("foo");
     for (size_t i = 0; i < 2; i++)
     {
       // Section named "bar" using RAII

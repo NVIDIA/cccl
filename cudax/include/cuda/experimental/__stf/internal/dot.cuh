@@ -356,8 +356,6 @@ public:
 
     class guard
     {
-      bool active = true;
-
     public:
       guard(::std::string symbol)
       {
@@ -366,7 +364,7 @@ public:
 
       void end()
       {
-        assert(active && "Attempting to end the same section twice.");
+        _CCCL_ASSERT(active, "Attempting to end the same section twice.");
         section::pop();
         active = false;
       }
@@ -378,6 +376,10 @@ public:
           section::pop();
         }
       }
+
+    private:
+      // Have we called end() ?
+      bool active = true;
     };
 
     static auto& current()
