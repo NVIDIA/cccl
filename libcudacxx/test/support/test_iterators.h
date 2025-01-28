@@ -1080,8 +1080,6 @@ private:
   const T* current_;
 };
 
-#if TEST_STD_VER >= 2014
-
 template <class It>
 class cpp20_input_iterator
 {
@@ -1098,7 +1096,6 @@ public:
 
   cpp20_input_iterator(cpp20_input_iterator&&)            = default;
   cpp20_input_iterator& operator=(cpp20_input_iterator&&) = default;
-#endif // !TEST_COMPILER_MSVC_2017
 
   __host__ __device__ constexpr decltype(auto) operator*() const
   {

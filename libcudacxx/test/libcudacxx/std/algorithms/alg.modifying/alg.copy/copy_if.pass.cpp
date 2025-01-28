@@ -118,10 +118,6 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ bool test()
 int main(int, char**)
 {
   test();
-
-#if TEST_STD_VER >= 2014 && !defined(TEST_COMPILER_MSVC_2017)
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014 && !TEST_COMPILER_MSVC_2017
-
   return 0;
 }

@@ -88,12 +88,10 @@ static_assert(!movable<DerivedFromNonMovable>, "");
 static_assert(!movable<HasANonMovable>, "");
 
 static_assert(movable<cpp03_friendly>, "");
-#ifndef TEST_COMPILER_MSVC_2017
 static_assert(movable<const_move_ctor>, "");
 static_assert(movable<volatile_move_ctor>, "");
 static_assert(movable<cv_move_ctor>, "");
 static_assert(movable<multi_param_move_ctor>, "");
-#endif // !TEST_COMPILER_MSVC_2017
 static_assert(!movable<not_quite_multi_param_move_ctor>, "");
 
 #if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC chokes on multiple definitions of SMF

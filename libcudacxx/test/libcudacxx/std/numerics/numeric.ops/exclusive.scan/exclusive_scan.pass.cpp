@@ -24,10 +24,6 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-#if defined(TEST_COMPILER_MSVC_2017)
-#  pragma warning(disable : 4307) // '+': integral constant overflow
-#endif // TEST_COMPILER_MSVC_2017
-
 template <class Iter1, class T>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test(Iter1 first, Iter1 last, T init, const T* rFirst, const T* rLast)
 {

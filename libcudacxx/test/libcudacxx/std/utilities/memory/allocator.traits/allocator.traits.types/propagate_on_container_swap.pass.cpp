@@ -35,7 +35,6 @@ struct B
   typedef T value_type;
 };
 
-#if !defined(TEST_COMPILER_MSVC_2017) // propagate_on_container_swap is inaccessible
 template <class T>
 struct C
 {
@@ -44,7 +43,6 @@ struct C
 private:
   typedef cuda::std::true_type propagate_on_container_swap;
 };
-#endif // !TEST_COMPILER_MSVC_2017
 
 int main(int, char**)
 {
@@ -54,11 +52,9 @@ int main(int, char**)
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<B<char>>::propagate_on_container_swap,
                                     cuda::std::false_type>::value),
                 "");
-#if !defined(TEST_COMPILER_MSVC_2017) // propagate_on_container_swap is inaccessible
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char>>::propagate_on_container_swap,
                                     cuda::std::false_type>::value),
                 "");
-#endif // !TEST_COMPILER_MSVC_2017
 
   return 0;
 }

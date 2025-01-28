@@ -210,15 +210,11 @@ int main(int, char**)
 
     using Fn = CantMove() noexcept;
 
-#  if !defined(TEST_COMPILER_MSVC_2017)
     static_assert(cuda::std::is_nothrow_invocable_r<CantMove, Fn>::value, "");
-#  endif // !TEST_COMPILER_MSVC_2017
     static_assert(!cuda::std::is_nothrow_invocable_r<CantMove, Fn, int>::value, "");
 
-#  ifndef TEST_COMPILER_MSVC_2017
     static_assert(cuda::std::is_nothrow_invocable_r_v<CantMove, Fn>, "");
     static_assert(!cuda::std::is_nothrow_invocable_r_v<CantMove, Fn, int>, "");
-#  endif // TEST_COMPILER_MSVC_2017
   }
 #endif // TEST_STD_VER >= 2017
   {

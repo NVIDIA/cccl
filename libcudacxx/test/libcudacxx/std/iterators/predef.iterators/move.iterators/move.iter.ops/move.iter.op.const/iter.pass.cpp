@@ -46,9 +46,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 template <class It>
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool test_moveonly()
 {
-#if !defined(TEST_COMPILER_MSVC_2017)
   static_assert(!cuda::std::is_constructible<cuda::std::move_iterator<It>, const It&>::value, "");
-#endif // !TEST_COMPILER_MSVC_2017
   static_assert(cuda::std::is_constructible<cuda::std::move_iterator<It>, It&&>::value, "");
   static_assert(!cuda::std::is_convertible<const It&, cuda::std::move_iterator<It>>::value, "");
   static_assert(!cuda::std::is_convertible<It&&, cuda::std::move_iterator<It>>::value, "");

@@ -63,7 +63,6 @@ struct MoveMayThrow
 // Test constraints
 static_assert(cuda::std::is_assignable_v<cuda::std::expected<int, int>&, const cuda::std::unexpected<int>&>, "");
 
-#ifndef TEST_COMPILER_MSVC_2017
 // !is_constructible_v<E, GF>
 static_assert(!cuda::std::is_assignable_v<cuda::std::expected<int, NotCopyConstructible>&,
                                           const cuda::std::unexpected<NotCopyConstructible>&>,
@@ -73,7 +72,6 @@ static_assert(!cuda::std::is_assignable_v<cuda::std::expected<int, NotCopyConstr
 static_assert(!cuda::std::is_assignable_v<cuda::std::expected<int, NotCopyAssignable>&,
                                           const cuda::std::unexpected<NotCopyAssignable>&>,
               "");
-#endif // TEST_COMPILER_MSVC_2017
 
 template <bool moveNoexcept, bool convertNoexcept>
 struct MaybeNoexcept
@@ -102,13 +100,11 @@ static_assert(cuda::std::is_assignable_v<cuda::std::expected<MaybeNoexcept<true,
                                          const cuda::std::unexpected<int>&>,
               "");
 
-#ifndef TEST_COMPILER_MSVC_2017
 // !is_nothrow_constructible_v<E, GF> && !is_nothrow_move_constructible_v<T> &&
 // !is_nothrow_move_constructible_v<E>
 static_assert(!cuda::std::is_assignable_v<cuda::std::expected<MaybeNoexcept<false, false>, MaybeNoexcept<false, false>>&,
                                           const cuda::std::unexpected<int>&>,
               "");
-#endif // TEST_COMPILER_MSVC_2017
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
