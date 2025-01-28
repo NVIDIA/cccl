@@ -93,10 +93,10 @@ public:
 
     handles.resize(mt * nt);
 
-    for (int colb = 0; colb < nt; colb++)
+    for (size_t colb = 0; colb < nt; colb++)
     {
-      int low_rowb = sym_matrix ? colb : 0;
-      for (int rowb = low_rowb; rowb < mt; rowb++)
+      size_t low_rowb = sym_matrix ? colb : 0;
+      for (size_t rowb = low_rowb; rowb < mt; rowb++)
       {
         T* addr_h = get_block_h(rowb, colb);
         auto& h   = get_handle(rowb, colb);
@@ -173,10 +173,10 @@ public:
   {
     nvtxRangePushA("FILL");
     // Fill blocks by blocks
-    for (int colb = 0; colb < nt; colb++)
+    for (size_t colb = 0; colb < nt; colb++)
     {
       int low_rowb = sym_matrix ? colb : 0;
-      for (int rowb = low_rowb; rowb < mt; rowb++)
+      for (size_t rowb = low_rowb; rowb < mt; rowb++)
       {
         // Each task fills a block
         auto& h   = get_handle(rowb, colb);
@@ -804,9 +804,9 @@ void PDNRM2_HOST(matrix<double>* A, double* result)
   ctx.get_dot()->set_current_color("red");
 #endif
 
-  for (int rowb = 0; rowb < A->mt; rowb++)
+  for (size_t rowb = 0; rowb < A->mt; rowb++)
   {
-    for (int colb = 0; colb < A->nt; colb++)
+    for (size_t colb = 0; colb < A->nt; colb++)
     {
       ctx.host_launch(A->get_handle(rowb, colb).read())->*[=](auto sA) {
         double res2 = 0.0;
@@ -888,17 +888,17 @@ void PDTRSM(cublasSideMode_t side,
       //===========================================
       if (trans == CUBLAS_OP_N)
       {
-        for (int k = 0; k < B.mt; k++)
+        for (size_t k = 0; k < B.mt; k++)
         {
           double lalpha = k == 0 ? alpha : 1.0;
-          for (int n = 0; n < B.nt; n++)
+          for (size_t n = 0; n < B.nt; n++)
           {
             cuda_try(cudaSetDevice(A.get_preferred_devid(k, k)));
             DTRSM(side, uplo, trans, diag, lalpha, A, k, k, B, k, n);
           }
-          for (int m = k + 1; m < B.mt; m++)
+          for (size_t m = k + 1; m < B.mt; m++)
           {
-            for (int n = 0; n < B.nt; n++)
+            for (size_t n = 0; n < B.nt; n++)
             {
               cuda_try(cudaSetDevice(A.get_preferred_devid(m, k)));
               DGEMM(CUBLAS_OP_N, CUBLAS_OP_N, -1.0, A, m, k, B, k, n, lalpha, B, m, n);
@@ -911,17 +911,17 @@ void PDTRSM(cublasSideMode_t side,
       //================================================
       else
       {
-        for (int k = 0; k < B.mt; k++)
+        for (size_t k = 0; k < B.mt; k++)
         {
           double lalpha = k == 0 ? alpha : 1.0;
-          for (int n = 0; n < B.nt; n++)
+          for (size_t n = 0; n < B.nt; n++)
           {
             cuda_try(cudaSetDevice(A.get_preferred_devid(B.mt - k - 1, B.mt - k - 1)));
             DTRSM(side, uplo, trans, diag, lalpha, A, B.mt - k - 1, B.mt - k - 1, B, B.mt - k - 1, n);
           }
-          for (int m = k + 1; m < B.mt; m++)
+          for (size_t m = k + 1; m < B.mt; m++)
           {
-            for (int n = 0; n < B.nt; n++)
+            for (size_t n = 0; n < B.nt; n++)
             {
               cuda_try(cudaSetDevice(A.get_preferred_devid(B.mt - k - 1, B.mt - 1 - m)));
               DGEMM(
@@ -983,9 +983,9 @@ void PDGEMM(cublasOperation_t transa,
   reserved::dot::set_current_color("blue");
 #endif
 
-  for (int m = 0; m < C.mt; m++)
+  for (size_t m = 0; m < C.mt; m++)
   {
-    for (int n = 0; n < C.nt; n++)
+    for (size_t n = 0; n < C.nt; n++)
     {
       cuda_try(cudaSetDevice(C.get_preferred_devid(m, n)));
 
@@ -1005,7 +1005,7 @@ void PDGEMM(cublasOperation_t transa,
         if (transb == CUBLAS_OP_N)
         {
           assert(A.nt == B.mt);
-          for (int k = 0; k < A.nt; k++)
+          for (size_t k = 0; k < A.nt; k++)
           {
             double zbeta = k == 0 ? beta : 1.0;
             DGEMM(transa, transb, alpha, A, m, k, B, k, n, zbeta, C, m, n);
@@ -1016,7 +1016,7 @@ void PDGEMM(cublasOperation_t transa,
         //=====================================
         else
         {
-          for (int k = 0; k < A.nt; k++)
+          for (size_t k = 0; k < A.nt; k++)
           {
             double zbeta = k == 0 ? beta : 1.0;
             DGEMM(transa, transb, alpha, A, m, k, B, n, k, zbeta, C, m, n);
@@ -1030,7 +1030,7 @@ void PDGEMM(cublasOperation_t transa,
         //=====================================
         if (transb == CUBLAS_OP_N)
         {
-          for (int k = 0; k < A.mt; k++)
+          for (size_t k = 0; k < A.mt; k++)
           {
             double zbeta = k == 0 ? beta : 1.0;
             DGEMM(transa, transb, alpha, A, k, m, B, k, n, zbeta, C, m, n);
@@ -1041,7 +1041,7 @@ void PDGEMM(cublasOperation_t transa,
         //==========================================
         else
         {
-          for (int k = 0; k < A.mt; k++)
+          for (size_t k = 0; k < A.mt; k++)
           {
             double zbeta = k == 0 ? beta : 1.0;
             DGEMM(transa, transb, alpha, A, k, m, B, n, k, zbeta, C, m, n);
@@ -1062,22 +1062,22 @@ void PDTRTRI(matrix<double>& A, cublasFillMode_t uplo, cublasDiagType_t diag)
 
   nvtxRangePushA("SUBMIT_PDTRTRI");
 
-  for (int k = 0; k < A.nt; k++)
+  for (size_t k = 0; k < A.nt; k++)
   {
-    for (int m = k + 1; m < A.mt; m++)
+    for (size_t m = k + 1; m < A.mt; m++)
     {
       cuda_try(cudaSetDevice(A.get_preferred_devid(m, k)));
       DTRSM(CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_N, diag, -1.0, A, k, k, A, m, k);
     }
-    for (int m = k + 1; m < A.mt; m++)
+    for (size_t m = k + 1; m < A.mt; m++)
     {
-      for (int n = 0; n < k; n++)
+      for (size_t n = 0; n < k; n++)
       {
         cuda_try(cudaSetDevice(A.get_preferred_devid(m, n)));
         DGEMM(CUBLAS_OP_N, CUBLAS_OP_N, 1.0, A, m, k, A, k, n, 1.0, A, m, n);
       }
     }
-    for (int n = 0; n < k; n++)
+    for (size_t n = 0; n < k; n++)
     {
       cuda_try(cudaSetDevice(A.get_preferred_devid(k, n)));
       DTRSM(CUBLAS_SIDE_LEFT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_N, diag, 1.0, A, k, k, A, k, n);
@@ -1101,20 +1101,20 @@ void PDLAUUM(matrix<double>& A, cublasFillMode_t uplo)
 
   nvtxRangePushA("SUBMIT_PDLAUUM");
 
-  for (int k = 0; k < A.mt; k++)
+  for (size_t k = 0; k < A.mt; k++)
   {
-    for (int n = 0; n < k; n++)
+    for (size_t n = 0; n < k; n++)
     {
       cuda_try(cudaSetDevice(A.get_preferred_devid(n, n)));
       DSYRK(CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_T, 1.0, A, k, n, 1.0, A, n, n);
 
-      for (int m = n + 1; m < k; m++)
+      for (size_t m = n + 1; m < k; m++)
       {
         cuda_try(cudaSetDevice(A.get_preferred_devid(m, n)));
         DGEMM(CUBLAS_OP_T, CUBLAS_OP_N, 1.0, A, k, m, A, k, n, 1.0, A, m, n);
       }
     }
-    for (int n = 0; n < k; n++)
+    for (size_t n = 0; n < k; n++)
     {
       cuda_try(cudaSetDevice(A.get_preferred_devid(k, n)));
       DTRMM(CUBLAS_SIDE_LEFT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_T, CUBLAS_DIAG_NON_UNIT, 1.0, A, k, k, A, k, n);
@@ -1136,7 +1136,7 @@ void PDSYMM(cublasSideMode_t side,
             double beta,
             matrix<double>& C)
 {
-  int k, m, n;
+  size_t k, m, n;
   double zbeta;
   double zone = (double) 1.0;
 
@@ -1272,15 +1272,15 @@ void PDTRMM(cublasSideMode_t side,
       //===========================================
       if (trans == CUBLAS_OP_N)
       {
-        for (int m = 0; m < B.mt; m++)
+        for (size_t m = 0; m < B.mt; m++)
         {
-          for (int n = 0; n < B.nt; n++)
+          for (size_t n = 0; n < B.nt; n++)
           {
             cuda_try(cudaSetDevice(B.get_preferred_devid(m, n)));
 
             DTRMM(side, uplo, trans, diag, alpha, A, m, m, B, m, n);
 
-            for (int k = m + 1; k < A.mt; k++)
+            for (size_t k = m + 1; k < A.mt; k++)
             {
               DGEMM(trans, CUBLAS_OP_N, alpha, A, m, k, B, k, n, 1.0, B, m, n);
             }
@@ -1294,7 +1294,7 @@ void PDTRMM(cublasSideMode_t side,
       {
         for (int m = B.mt - 1; m > -1; m--)
         {
-          for (int n = 0; n < B.nt; n++)
+          for (size_t n = 0; n < B.nt; n++)
           {
             cuda_try(cudaSetDevice(B.get_preferred_devid(m, n)));
 
@@ -1317,7 +1317,7 @@ void PDTRMM(cublasSideMode_t side,
       {
         for (int m = B.mt - 1; m > -1; m--)
         {
-          for (int n = 0; n < B.nt; n++)
+          for (size_t n = 0; n < B.nt; n++)
           {
             cuda_try(cudaSetDevice(B.get_preferred_devid(m, n)));
 
@@ -1335,13 +1335,13 @@ void PDTRMM(cublasSideMode_t side,
       //================================================
       else
       {
-        for (int m = 0; m < B.mt; m++)
+        for (size_t m = 0; m < B.mt; m++)
         {
-          for (int n = 0; n < B.nt; n++)
+          for (size_t n = 0; n < B.nt; n++)
           {
             DTRMM(side, uplo, trans, diag, alpha, A, m, m, B, m, n);
 
-            for (int k = m + 1; k < A.mt; k++)
+            for (size_t k = m + 1; k < A.mt; k++)
             {
               DGEMM(trans, CUBLAS_OP_N, alpha, A, k, m, B, k, n, 1.0, B, m, n);
             }
@@ -1361,7 +1361,7 @@ void PDTRMM(cublasSideMode_t side,
       {
         for (int n = B.nt - 1; n > -1; n--)
         {
-          for (int m = 0; m < B.mt; m++)
+          for (size_t m = 0; m < B.mt; m++)
           {
             cuda_try(cudaSetDevice(B.get_preferred_devid(m, n)));
 
@@ -1379,15 +1379,15 @@ void PDTRMM(cublasSideMode_t side,
       //=================================================
       else
       {
-        for (int n = 0; n < B.nt; n++)
+        for (size_t n = 0; n < B.nt; n++)
         {
-          for (int m = 0; m < B.mt; m++)
+          for (size_t m = 0; m < B.mt; m++)
           {
             cuda_try(cudaSetDevice(B.get_preferred_devid(m, n)));
 
             DTRMM(side, uplo, trans, diag, alpha, A, n, n, B, m, n);
 
-            for (int k = n + 1; k < A.mt; k++)
+            for (size_t k = n + 1; k < A.mt; k++)
             {
               DGEMM(CUBLAS_OP_N, trans, alpha, B, m, k, A, n, k, 1.0, B, m, n);
             }
@@ -1402,15 +1402,15 @@ void PDTRMM(cublasSideMode_t side,
       //============================================
       if (trans == CUBLAS_OP_N)
       {
-        for (int n = 0; n < B.nt; n++)
+        for (size_t n = 0; n < B.nt; n++)
         {
-          for (int m = 0; m < B.mt; m++)
+          for (size_t m = 0; m < B.mt; m++)
           {
             cuda_try(cudaSetDevice(B.get_preferred_devid(m, n)));
 
             DTRMM(side, uplo, trans, diag, alpha, A, n, n, B, m, n);
 
-            for (int k = n + 1; k < A.mt; k++)
+            for (size_t k = n + 1; k < A.mt; k++)
             {
               DGEMM(CUBLAS_OP_N, trans, alpha, B, m, k, A, k, n, 1.0, B, m, n);
             }
@@ -1424,7 +1424,7 @@ void PDTRMM(cublasSideMode_t side,
       {
         for (int n = B.nt - 1; n > -1; n--)
         {
-          for (int m = 0; m < B.mt; m++)
+          for (size_t m = 0; m < B.mt; m++)
           {
             cuda_try(cudaSetDevice(B.get_preferred_devid(m, n)));
 
@@ -1462,7 +1462,7 @@ void run(int N, int NB)
   int ndevs;
   cuda_try(cudaGetDeviceCount(&ndevs));
 
-  for (size_t d = 0; d < ndevs; d++)
+  for (int d = 0; d < ndevs; d++)
   {
     auto ldummy = ctx.logical_data(shape_of<slice<char>>(1));
     ctx.task(exec_place::device(d), ldummy.write())->*[](cudaStream_t, auto) {
