@@ -485,7 +485,7 @@ struct get_arch<Plan<Arch>>
 // BlockLoad
 // -----------
 // a helper metaprogram that returns type of a block loader
-template <class PtxPlan, class It, class T = typename iterator_traits<It>::value_type>
+template <class PtxPlan, class It, class T = thrust::detail::it_value_t<It>>
 struct BlockLoad
 {
   using type = cub::BlockLoad<T, PtxPlan::BLOCK_THREADS, PtxPlan::ITEMS_PER_THREAD, PtxPlan::LOAD_ALGORITHM, 1, 1>;

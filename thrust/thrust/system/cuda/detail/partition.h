@@ -166,7 +166,7 @@ THRUST_RUNTIME_FUNCTION std::size_t partition(
   OutputIt output,
   Predicate predicate)
 {
-  using size_type = typename iterator_traits<InputIt>::difference_type;
+  using size_type = thrust::detail::it_difference_t<InputIt>;
 
   size_type num_items = thrust::distance(first, last);
   std::size_t num_selected{};
@@ -241,7 +241,7 @@ THRUST_RUNTIME_FUNCTION InputIt inplace_partition(
   }
 
   // Element type of the input iterator
-  using value_t         = typename iterator_traits<InputIt>::value_type;
+  using value_t         = thrust::detail::it_value_t<InputIt>;
   std::size_t num_items = static_cast<std::size_t>(thrust::distance(first, last));
 
   // Allocate temporary storage, which will serve as the input to the partition

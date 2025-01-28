@@ -46,7 +46,6 @@
 #  include <thrust/detail/alignment.h>
 #  include <thrust/detail/raw_reference_cast.h>
 #  include <thrust/detail/temporary_array.h>
-#  include <thrust/detail/type_traits/iterator/is_output_iterator.h>
 #  include <thrust/distance.h>
 #  include <thrust/functional.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
@@ -857,7 +856,7 @@ reduce_n(execution_policy<Derived>& policy, InputIt first, Size num_items, T ini
 template <class Derived, class InputIt, class T, class BinaryOp>
 _CCCL_HOST_DEVICE T reduce(execution_policy<Derived>& policy, InputIt first, InputIt last, T init, BinaryOp binary_op)
 {
-  using size_type = typename iterator_traits<InputIt>::difference_type;
+  using size_type = thrust::detail::it_difference_t<InputIt>;
   // FIXME: Check for RA iterator.
   size_type num_items = static_cast<size_type>(thrust::distance(first, last));
   return cuda_cub::reduce_n(policy, first, num_items, init, binary_op);
@@ -870,10 +869,10 @@ _CCCL_HOST_DEVICE T reduce(execution_policy<Derived>& policy, InputIt first, Inp
 }
 
 template <class Derived, class InputIt>
-_CCCL_HOST_DEVICE typename iterator_traits<InputIt>::value_type
+_CCCL_HOST_DEVICE thrust::detail::it_value_t<InputIt>
 reduce(execution_policy<Derived>& policy, InputIt first, InputIt last)
 {
-  using value_type = typename iterator_traits<InputIt>::value_type;
+  using value_type = thrust::detail::it_value_t<InputIt>;
   return cuda_cub::reduce(policy, first, last, value_type(0));
 }
 
