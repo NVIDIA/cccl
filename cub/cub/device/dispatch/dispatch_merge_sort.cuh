@@ -276,7 +276,8 @@ struct DispatchMergeSort
       auto items_buffer     = static_cast<ValueT*>(allocations[2]);
 
       // Invoke DeviceMergeSortBlockSortKernel
-      launcher_factory(static_cast<int>(num_tiles), wrapped_policy.MergeSort().BlockThreads(), 0, stream, true)
+      launcher_factory(
+        static_cast<int>(num_tiles), merge_sort_helper_t::block_threads_helper_t::BlockThreads(), 0, stream, true)
         .doit(kernel_source.MergeSortBlockSortKernel(),
               ping,
               d_input_keys,
@@ -351,7 +352,11 @@ struct DispatchMergeSort
 
         // Merge
         launcher_factory(
-          static_cast<int>(num_tiles), static_cast<int>(wrapped_policy.MergeSort().BlockThreads()), 0, stream, true)
+          static_cast<int>(num_tiles),
+          static_cast<int>(merge_sort_helper_t::block_threads_helper_t::BlockThreads()),
+          0,
+          stream,
+          true)
           .doit(kernel_source.MergeSortMergeKernel(),
                 ping,
                 d_output_keys,
