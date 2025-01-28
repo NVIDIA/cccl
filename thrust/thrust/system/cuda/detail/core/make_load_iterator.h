@@ -28,47 +28,33 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
-
-#if _CCCL_HAS_CUDA_COMPILER
-#  include <thrust/distance.h>
-#  include <thrust/iterator/transform_iterator.h>
-#  include <thrust/iterator/zip_iterator.h>
-#  include <thrust/system/cuda/detail/reduce.h>
-#  include <thrust/zip_function.h>
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/system/cuda/detail/core/load_iterator.h>
 
 THRUST_NAMESPACE_BEGIN
 
-namespace cuda_cub
+namespace cuda_cub::core
 {
-template <class Derived, class InputIt1, class InputIt2, class T, class ReduceOp, class ProductOp>
-T _CCCL_HOST_DEVICE inner_product(
-  execution_policy<Derived>& policy,
-  InputIt1 first1,
-  InputIt1 last1,
-  InputIt2 first2,
-  T init,
-  ReduceOp reduce_op,
-  ProductOp product_op)
+template <class PtxPlan, class It>
+typename LoadIterator<PtxPlan, It>::type _CCCL_DEVICE _CCCL_FORCEINLINE
+make_load_iterator_impl(It it, thrust::detail::true_type /* is_trivial */)
 {
-  const auto n     = thrust::distance(first1, last1);
-  const auto first = make_transform_iterator(make_zip_iterator(first1, first2), make_zip_function(product_op));
-  return cuda_cub::reduce_n(policy, first, n, init, reduce_op);
+  return raw_pointer_cast(&*it);
 }
 
-template <class Derived, class InputIt1, class InputIt2, class T>
-T _CCCL_HOST_DEVICE
-inner_product(execution_policy<Derived>& policy, InputIt1 first1, InputIt1 last1, InputIt2 first2, T init)
+template <class PtxPlan, class It>
+typename LoadIterator<PtxPlan, It>::type _CCCL_DEVICE _CCCL_FORCEINLINE
+make_load_iterator_impl(It it, thrust::detail::false_type /* is_trivial */)
 {
-  return cuda_cub::inner_product(policy, first1, last1, first2, init, plus<T>(), multiplies<T>());
+  return it;
 }
-} // namespace cuda_cub
+
+template <class PtxPlan, class It>
+typename LoadIterator<PtxPlan, It>::type _CCCL_DEVICE _CCCL_FORCEINLINE make_load_iterator(PtxPlan const&, It it)
+{
+  return make_load_iterator_impl<PtxPlan>(it, typename is_contiguous_iterator<It>::type());
+}
+
+} // namespace cuda_cub::core
 
 THRUST_NAMESPACE_END
-#endif
