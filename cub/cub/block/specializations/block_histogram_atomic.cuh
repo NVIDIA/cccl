@@ -45,7 +45,8 @@
 #endif // no system header
 
 CUB_NAMESPACE_BEGIN
-
+namespace detail
+{
 /**
  * @brief The BlockHistogramAtomic class provides atomic-based methods for constructing block-wide
  *        histograms from data samples partitioned across a CUDA thread block.
@@ -72,7 +73,7 @@ struct BlockHistogramAtomic
   template <typename T, typename CounterT, int ITEMS_PER_THREAD>
   _CCCL_DEVICE _CCCL_FORCEINLINE void Composite(T (&items)[ITEMS_PER_THREAD], CounterT histogram[BINS])
   {
-// Update histogram
+    // Update histogram
 #pragma unroll
     for (int i = 0; i < ITEMS_PER_THREAD; ++i)
     {
@@ -80,5 +81,11 @@ struct BlockHistogramAtomic
     }
   }
 };
+} // namespace detail
+
+template <int BINS>
+using BlockHistogramAtomic CCCL_DEPRECATED_BECAUSE(
+  "This class is considered an implementation detail and the public interface will be "
+  "removed.") = detail::BlockHistogramAtomic<BINS>;
 
 CUB_NAMESPACE_END

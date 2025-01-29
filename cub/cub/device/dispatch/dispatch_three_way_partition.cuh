@@ -52,10 +52,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-
-namespace three_way_partition
+namespace detail::three_way_partition
 {
 // Offset type used to instantiate the stream three-way-partition-kernel and agent to index the items within one
 // partition
@@ -131,8 +128,6 @@ public:
     }
   }
 };
-} // namespace three_way_partition
-} // namespace detail
 
 /******************************************************************************
  * Kernel entry points
@@ -231,6 +226,7 @@ DeviceThreeWayPartitionInitKernel(ScanTileStateT tile_state, int num_tiles, NumS
     }
   }
 }
+} // namespace detail::three_way_partition
 
 /******************************************************************************
  * Dispatch
@@ -319,7 +315,7 @@ struct DispatchThreeWayPartitionIf
 
     // The maximum number of items for which we will ever invoke the kernel (i.e. largest partition size)
     auto const max_partition_size =
-      static_cast<OffsetT>(::cuda::std::min(static_cast<uint64_t>(num_items), static_cast<uint64_t>(partition_size)));
+      static_cast<OffsetT>((::cuda::std::min)(static_cast<uint64_t>(num_items), static_cast<uint64_t>(partition_size)));
 
     // The number of partitions required to "iterate" over the total input
     auto const num_partitions =
@@ -387,12 +383,12 @@ struct DispatchThreeWayPartitionIf
       // Log three_way_partition_init_kernel configuration
       int init_grid_size = CUB_MAX(1, ::cuda::ceil_div(current_num_tiles, INIT_KERNEL_THREADS));
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking three_way_partition_init_kernel<<<%d, %d, 0, %lld>>>()\n",
               init_grid_size,
               INIT_KERNEL_THREADS,
               reinterpret_cast<long long>(stream));
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
       // Invoke three_way_partition_init_kernel to initialize tile descriptors
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
@@ -420,7 +416,7 @@ struct DispatchThreeWayPartitionIf
       }
 
 // Log select_if_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       {
         // Get SM occupancy for select_if_kernel
         int range_select_sm_occupancy;
@@ -440,7 +436,7 @@ struct DispatchThreeWayPartitionIf
                 items_per_thread,
                 range_select_sm_occupancy);
       }
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
       // Invoke select_if_kernel
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(current_num_tiles, block_threads, 0, stream)
@@ -483,8 +479,8 @@ struct DispatchThreeWayPartitionIf
   {
     using MaxPolicyT = typename PolicyHub::MaxPolicy;
     return Invoke<ActivePolicyT>(
-      DeviceThreeWayPartitionInitKernel<ScanTileStateT, NumSelectedIteratorT>,
-      DeviceThreeWayPartitionKernel<
+      detail::three_way_partition::DeviceThreeWayPartitionInitKernel<ScanTileStateT, NumSelectedIteratorT>,
+      detail::three_way_partition::DeviceThreeWayPartitionKernel<
         MaxPolicyT,
         InputIteratorT,
         FirstOutputIteratorT,

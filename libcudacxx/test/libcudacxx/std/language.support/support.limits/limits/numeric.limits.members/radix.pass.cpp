@@ -61,6 +61,10 @@ int main(int, char**)
 #if defined(_LIBCUDACXX_HAS_NVBF16)
   test<__nv_bfloat16, FLT_RADIX>();
 #endif // _LIBCUDACXX_HAS_NVBF16
+#if _CCCL_HAS_NVFP8()
+  test<__nv_fp8_e4m3, FLT_RADIX>();
+  test<__nv_fp8_e5m2, FLT_RADIX>();
+#endif // _CCCL_HAS_NVFP8()
 
   return 0;
 }

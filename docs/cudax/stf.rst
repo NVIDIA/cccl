@@ -1911,6 +1911,9 @@ helps to better understand the application, and can be helpful to
 optimize the algorithms as it sometimes allow to identify inefficient
 patterns.
 
+Generating visualizations of task graphs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Let us consider the ``examples/01-axpy.cu`` example which we compile as
 usual with ``make build/examples/01-axpy``.
 
@@ -1998,6 +2001,74 @@ It is also possible to include timing information in this graph by setting the
 ``CUDASTF_DOT_TIMING`` environment variable to a non-null value. This will
 color the graph nodes according to their relative duration, and the measured
 duration will be included in task labels.
+
+Condensed and structured graphs visualization
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Realistic workloads are typically made of thousands or millions of tasks which
+cannot be easily visualized using graphviz (dot). To simplify the generated
+graphs we can further
+annotate the application using dot sections.
+Dot sections can also be nested to better structure the visualization.
+
+This is achieved by creating `dot_section` objects in the application. `ctx.dot_section` returns
+an object whose lifetime defines a dot section valid until it is destroyed, or
+when calling the `end()` method on this object. The following example
+illustrates how to add nested sections:
+
+.. code:: c++
+
+    context ctx;
+    auto lA = ctx.logical_token().set_symbol("A");
+    auto lB = ctx.logical_token().set_symbol("B");
+    auto lC = ctx.logical_token().set_symbol("C");
+
+    // Begin a top-level section named "foo"
+    auto s_foo = ctx.dot_section("foo");
+    for (size_t i = 0; i < 2; i++)
+    {
+      // Section named "bar" using RAII
+      auto s_bar = ctx.dot_section("bar");
+      ctx.task(lA.read(), lB.rw()).set_symbol("t1")->*[](cudaStream_t, auto, auto) {};
+      for (size_t j = 0; j < 2; j++) {
+         // Section named "baz" using RAII
+         auto s_bar = ctx.dot_section("baz");
+         ctx.task(lA.read(), lC.rw()).set_symbol("t2")->*[](cudaStream_t, auto, auto) {};
+         ctx.task(lB.read(), lC.read(), lA.rw()).set_symbol("t3")->*[](cudaStream_t, auto, auto, auto) {};
+         // Implicit end of section "baz"
+      }
+      // Implicit end of section "bar"
+    }
+    s_foo.end(); // Explicit end of section "foo"
+    ctx.finalize();
+
+When running this with the `CUDASTF_DOT_FILE` environment variable for example
+set to `dag.dot`, we observe that the graph produced by `dot -Tpdf dag.dot -o
+dag.pdf` depicts these sections as dashed boxes.
+
+.. image:: stf/images/dag-sections.png
+
+Adding sections also makes it possible to define a maximum depth for the
+generated graphs by setting the `CUDASTF_DOT_MAX_DEPTH` environment variable.
+When it is undefined, CUDASTF will display all tasks. Otherwise, if
+`CUDASTF_DOT_MAX_DEPTH` is an integer value of `i` any sections and tasks which
+nesting level is deeper than `i` will be collapsed.
+
+When setting `CUDASTF_DOT_MAX_DEPTH=2`, the previous graph becomes:
+
+.. image:: stf/images/dag-sections-2.png
+
+When setting `CUDASTF_DOT_MAX_DEPTH=1`, one additional level is collapsed:
+
+.. image:: stf/images/dag-sections-1.png
+
+With `CUDASTF_DOT_MAX_DEPTH=0`, only the top-most tasks and sections are displayed:
+
+.. image:: stf/images/dag-sections-0.png
+
+Note that `CUDASTF_DOT_MAX_DEPTH` and `CUDASTF_DOT_TIMING` can be used in
+combination, and that the duration of a section corresponds to the duration of
+all tasks in this sections.
 
 Kernel tuning with ncu
 ^^^^^^^^^^^^^^^^^^^^^^

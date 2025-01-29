@@ -52,7 +52,6 @@
 #include <cub/block/block_store.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/iterator/constant_input_iterator.cuh>
 
 #include <cuda/ptx>
 #include <cuda/std/type_traits>
@@ -133,6 +132,11 @@ struct AgentRlePolicy
 /******************************************************************************
  * Thread block abstractions
  ******************************************************************************/
+
+namespace detail
+{
+namespace rle
+{
 
 /**
  * @brief AgentRle implements a stateful abstraction of CUDA thread blocks for participating in device-wide
@@ -989,5 +993,18 @@ struct AgentRle
     }
   }
 };
+
+} // namespace rle
+} // namespace detail
+
+template <typename AgentRlePolicyT,
+          typename InputIteratorT,
+          typename OffsetsOutputIteratorT,
+          typename LengthsOutputIteratorT,
+          typename EqualityOpT,
+          typename OffsetT>
+using AgentRle CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public interface "
+                                       "will be removed.") = detail::rle::
+  AgentRle<AgentRlePolicyT, InputIteratorT, OffsetsOutputIteratorT, LengthsOutputIteratorT, EqualityOpT, OffsetT>;
 
 CUB_NAMESPACE_END

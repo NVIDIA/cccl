@@ -35,7 +35,6 @@
 #  include <sys/resource.h>
 #endif
 
-#include <cub/iterator/discard_output_iterator.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_macro.cuh>
@@ -43,6 +42,8 @@
 #include <cub/util_namespace.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
+
+#include <thrust/iterator/discard_iterator.h>
 
 #include <cfloat>
 #include <cmath>
@@ -1234,7 +1235,7 @@ inline int CompareDeviceResults(
 template <typename S, typename OffsetT>
 int CompareDeviceResults(
   S* /*h_reference*/,
-  CUB_NS_QUALIFIER::DiscardOutputIterator<OffsetT> /*d_data*/,
+  THRUST_NS_QUALIFIER::discard_iterator<OffsetT> /*d_data*/,
   std::size_t /*num_items*/,
   bool /*verbose*/      = true,
   bool /*display_data*/ = false)

@@ -8,6 +8,7 @@ set(stf_test_sources
   dot/basic.cu
   dot/graph_print_to_dot.cu
   dot/sections.cu
+  dot/sections_2.cu
   dot/with_events.cu
   error_checks/ctx_mismatch.cu
   error_checks/data_interface_mismatch.cu
@@ -238,6 +239,10 @@ function(cudax_add_stf_unittest_header target_name_var source cn_target)
   string(REPLACE "cuda/experimental/" "" test_label "${relative_path}/${filename}")
   string(REPLACE "/" "." test_label "${test_label}")
   set(test_target "${config_prefix}.test.stf.unittest_headers.${test_label}")
+
+  # Pass the full path to configure_file (this is configured from cudax/tests/stf/
+  get_filename_component(source_full_path ../../../cudax/include/${source} ABSOLUTE)
+  set(source ${source_full_path})
 
   set(ut_template "${cudax_SOURCE_DIR}/cmake/stf_header_unittest.in.cu")
   set(ut_source "${cudax_BINARY_DIR}/unittest_headers/${test_target}.cu")

@@ -156,7 +156,9 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmvSearchKernel(
   {
     OffsetT diagonal = (tile_idx * TILE_ITEMS);
     CoordinateT tile_coordinate;
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     CountingInputIterator<OffsetT> nonzero_indices(0);
+    _CCCL_SUPPRESS_DEPRECATED_POP
 
     // Search the merge path
     MergePathSearch(
@@ -636,12 +638,12 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DispatchSpmv
         constexpr int threads_in_block = EMPTY_MATRIX_KERNEL_THREADS;
         const int blocks_in_grid       = ::cuda::ceil_div(spmv_params.num_rows, threads_in_block);
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
         _CubLog("Invoking spmv_empty_matrix_kernel<<<%d, %d, 0, %lld>>>()\n",
                 blocks_in_grid,
                 threads_in_block,
                 (long long) stream);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
         error = THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(blocks_in_grid, threads_in_block, 0, stream)
                   .doit(spmv_empty_matrix_kernel, spmv_params);
 
@@ -673,12 +675,12 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DispatchSpmv
         int degen_col_kernel_block_size = INIT_KERNEL_THREADS;
         int degen_col_kernel_grid_size  = ::cuda::ceil_div(spmv_params.num_rows, degen_col_kernel_block_size);
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
         _CubLog("Invoking spmv_1col_kernel<<<%d, %d, 0, %lld>>>()\n",
                 degen_col_kernel_grid_size,
                 degen_col_kernel_block_size,
                 (long long) stream);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
         // Invoke spmv_search_kernel
         THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
@@ -800,12 +802,12 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DispatchSpmv
 // Use separate search kernel if we have enough spmv tiles to saturate the device
 
 // Log spmv_search_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
         _CubLog("Invoking spmv_search_kernel<<<%d, %d, 0, %lld>>>()\n",
                 search_grid_size,
                 search_block_size,
                 (long long) stream);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
         // Invoke spmv_search_kernel
         THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(search_grid_size, search_block_size, 0, stream)
@@ -826,7 +828,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DispatchSpmv
       }
 
 // Log spmv_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking spmv_kernel<<<{%d,%d,%d}, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy\n",
               spmv_grid_size.x,
               spmv_grid_size.y,
@@ -835,7 +837,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DispatchSpmv
               (long long) stream,
               spmv_config.items_per_thread,
               spmv_sm_occupancy);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
       // Invoke spmv_kernel
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(spmv_grid_size, spmv_config.block_threads, 0, stream)
@@ -864,7 +866,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DispatchSpmv
       if (num_merge_tiles > 1)
       {
 // Log segment_fixup_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
         _CubLog("Invoking segment_fixup_kernel<<<{%d,%d,%d}, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy\n",
                 segment_fixup_grid_size.x,
                 segment_fixup_grid_size.y,
@@ -873,7 +875,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DispatchSpmv
                 (long long) stream,
                 segment_fixup_config.items_per_thread,
                 segment_fixup_sm_occupancy);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
         // Invoke segment_fixup_kernel
         THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(

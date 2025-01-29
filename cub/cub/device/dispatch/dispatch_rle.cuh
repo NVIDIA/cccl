@@ -65,6 +65,9 @@ CUB_NAMESPACE_BEGIN
  * Kernel entry points
  *****************************************************************************/
 
+namespace detail::rle
+{
+
 /**
  * Select kernel entry point (multi-block)
  *
@@ -152,6 +155,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::RleSweepPolicyT::BLOCK_THREA
   AgentRleT(temp_storage, d_in, d_offsets_out, d_lengths_out, equality_op, num_items)
     .ConsumeRange(num_tiles, tile_status, d_num_runs_out);
 }
+} // namespace detail::rle
 
 /******************************************************************************
  * Dispatch
@@ -349,12 +353,12 @@ struct DeviceRleDispatch
       // Log device_scan_init_kernel configuration
       int init_grid_size = CUB_MAX(1, ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS));
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking device_scan_init_kernel<<<%d, %d, 0, %lld>>>()\n",
               init_grid_size,
               INIT_KERNEL_THREADS,
               (long long) stream);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
       // Invoke device_scan_init_kernel to initialize tile descriptors and queue descriptors
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
@@ -405,7 +409,7 @@ struct DeviceRleDispatch
       scan_grid_size.x = CUB_MIN(num_tiles, max_dim_x);
 
 // Log device_rle_sweep_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking device_rle_sweep_kernel<<<{%d,%d,%d}, %d, 0, %lld>>>(), %d items per "
               "thread, %d SM occupancy\n",
               scan_grid_size.x,
@@ -415,7 +419,7 @@ struct DeviceRleDispatch
               (long long) stream,
               items_per_thread,
               device_rle_kernel_sm_occupancy);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
       // Invoke device_rle_sweep_kernel
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(scan_grid_size, block_threads, 0, stream)
@@ -451,15 +455,16 @@ struct DeviceRleDispatch
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     return Invoke<ActivePolicyT>(
-      DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
-      DeviceRleSweepKernel<typename PolicyHub::MaxPolicy,
-                           InputIteratorT,
-                           OffsetsOutputIteratorT,
-                           LengthsOutputIteratorT,
-                           NumRunsOutputIteratorT,
-                           ScanTileStateT,
-                           EqualityOpT,
-                           OffsetT>);
+      detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
+      detail::rle::DeviceRleSweepKernel<
+        typename PolicyHub::MaxPolicy,
+        InputIteratorT,
+        OffsetsOutputIteratorT,
+        LengthsOutputIteratorT,
+        NumRunsOutputIteratorT,
+        ScanTileStateT,
+        EqualityOpT,
+        OffsetT>);
   }
 
   /**

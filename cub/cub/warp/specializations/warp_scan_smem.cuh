@@ -52,7 +52,8 @@
 #include <cuda/ptx>
 
 CUB_NAMESPACE_BEGIN
-
+namespace detail
+{
 /**
  * @brief WarpScanSmem provides smem-based variants of parallel prefix scan of items partitioned
  *        across a CUDA thread warp.
@@ -432,5 +433,11 @@ struct WarpScanSmem
     }
   }
 };
+} // namespace detail
+
+template <typename T, int LOGICAL_WARP_THREADS, int LEGACY_PTX_ARCH = 0>
+using WarpScanSmem CCCL_DEPRECATED_BECAUSE(
+  "This class is considered an implementation detail and the public interface will be "
+  "removed.") = detail::WarpScanSmem<T, LOGICAL_WARP_THREADS, LEGACY_PTX_ARCH>;
 
 CUB_NAMESPACE_END
