@@ -20,7 +20,9 @@ workflows:
     - {jobs: ['build'], std: 'all', cxx: ['gcc', 'clang', 'msvc']}
     # Current CTK testing:
     - {jobs: ['test'],  project: ['thrust'],     std: 'max', cxx: ['gcc', 'clang'], gpu: 't4',      sm: 'gpu'}
-    - {jobs: ['test'],  project: ['libcudacxx'], std: 'max', cxx: ['gcc', 'clang'], gpu: 'rtx2080', sm: 'gpu'}
+    # Switching to t4 temporarily while investigating a bug in heterogeneous/barrier_abi_v2.pass.cpp
+    # - {jobs: ['test'],  project: ['libcudacxx'], std: 'max', cxx: ['gcc', 'clang'], gpu: 'rtx2080', sm: 'gpu'}
+    - {jobs: ['test'],  project: ['libcudacxx'], std: 'max', cxx: ['gcc', 'clang'], gpu: 't4',      sm: 'gpu'}
     # Disabled until we figure out the issue with the TBB dll
     #- {jobs: ['test'],  project: ['libcudacxx', 'thrust'], std: 'max', cxx: ['msvc'], gpu: 't4', sm: 'gpu'}
     # Split up cub tests:
@@ -74,7 +76,9 @@ workflows:
     - {jobs: ['test_lid0'],                             project: 'cub',        std: 'all', cxx: ['gcc13', 'clang18', 'msvc2022'], gpu: 'v100',    sm: 'gpu'}
     - {jobs: ['test_nolid', 'test_lid1', 'test_lid2'],  project: 'cub',        std: 'all', cxx: ['gcc13', 'clang18', 'msvc2022'], gpu: 't4',      sm: 'gpu'}
     - {jobs: ['test'],                                  project: 'thrust',     std: 'all', cxx: ['gcc13', 'clang18', 'msvc2022'], gpu: 't4',      sm: 'gpu'}
-    - {jobs: ['test'],                                  project: 'libcudacxx', std: 'all', cxx: ['gcc13', 'clang18', 'msvc2022'], gpu: 'rtx2080', sm: 'gpu'}
+    # Switching to t4 temporarily while investigating a bug in heterogeneous/barrier_abi_v2.pass.cpp
+    # - {jobs: ['test'],                                  project: 'libcudacxx', std: 'all', cxx: ['gcc13', 'clang18', 'msvc2022'], gpu: 'rtx2080', sm: 'gpu'}
+    - {jobs: ['test'],                                  project: 'libcudacxx', std: 'all', cxx: ['gcc13', 'clang18', 'msvc2022'], gpu: 't4',      sm: 'gpu'}
     # Modded builds:
     - {jobs: ['build'], std: 'all', ctk: '12.5', cxx: 'nvhpc'}
     - {jobs: ['build'], std: 'all', cxx: ['gcc', 'clang'], cpu: 'arm64'}
