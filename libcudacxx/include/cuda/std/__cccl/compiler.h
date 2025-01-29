@@ -55,7 +55,9 @@
 #elif defined(_MSC_VER)
 #  define _CCCL_COMPILER_MSVC _CCCL_COMPILER_MAKE_VERSION(_MSC_VER / 100, _MSC_VER % 100)
 #  if (_CCCL_COMPILER_MSVC < _CCCL_COMPILER_MAKE_VERSION(19, 20))
-#    error "Visual Studio 2017 (MSC_VER < 1920) and older are not supported by CCCL.")
+#ifndef CCCL_IGNORE_DEPRECATED_COMPILER
+#    error "Visual Studio 2017 (MSC_VER < 1920) and older are not supported by CCCL. Define CCCL_IGNORE_DEPRECATED_COMPILER to suppress this error."
+#endif
 #  endif
 #  define _CCCL_COMPILER_MSVC2019                               \
     (_CCCL_COMPILER_MSVC >= _CCCL_COMPILER_MAKE_VERSION(19, 20) \
