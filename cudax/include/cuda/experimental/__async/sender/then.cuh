@@ -126,7 +126,7 @@ private:
                                    __type_try_quote<__concat_completion_signatures>::__call>;
 
   template <class _Rcvr, class _CvSndr, class _Fn>
-  struct __opstate_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
     _CUDAX_API friend env_of_t<_Rcvr> get_env(const __opstate_t* __self) noexcept
     {
@@ -213,7 +213,7 @@ private:
   };
 
   template <class _Fn, class _Sndr>
-  struct __sndr_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t
   {
     using sender_concept = sender_t;
     _CCCL_NO_UNIQUE_ADDRESS _UponTag __tag_;
