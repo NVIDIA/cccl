@@ -273,13 +273,13 @@ struct policy_hub
   static constexpr BlockStoreAlgorithm scan_transposed_store =
     large_values ? BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : BLOCK_STORE_WARP_TRANSPOSE;
 
-  struct Policy350 : ChainedPolicy<350, Policy350, Policy350>
+  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
   {
     // GTX Titan: 29.5B items/s (232.4 GB/s) @ 48M 32-bit T
     using ScanPolicyT =
       AgentScanPolicy<128, 12, AccumT, BLOCK_LOAD_DIRECT, LOAD_CA, BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED, BLOCK_SCAN_RAKING>;
   };
-  struct Policy520 : ChainedPolicy<520, Policy520, Policy350>
+  struct Policy520 : ChainedPolicy<520, Policy520, Policy500>
   {
     // Titan X: 32.47B items/s @ 48M 32-bit T
     using ScanPolicyT =

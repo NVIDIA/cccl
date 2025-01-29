@@ -258,10 +258,10 @@ struct policy_hub
                              default_reduce_by_key_delay_constructor_t<LengthT, int>>;
   };
 
-  // SM35
-  struct Policy350
+  // SM50
+  struct Policy500
       : DefaultPolicy<LOAD_LDG>
-      , ChainedPolicy<350, Policy350, Policy350>
+      , ChainedPolicy<500, Policy500, Policy500>
   {};
 
   // Use values from tuning if a specialization exists, otherwise pick the default
@@ -277,7 +277,7 @@ struct policy_hub
   static auto select_agent_policy(long) -> typename DefaultPolicy<LOAD_DEFAULT>::ReduceByKeyPolicyT;
 
   // SM80
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy350>
+  struct Policy800 : ChainedPolicy<800, Policy800, Policy500>
   {
     using ReduceByKeyPolicyT = decltype(select_agent_policy<encode::sm80_tuning<LengthT, KeyT>>(0));
   };
@@ -451,10 +451,10 @@ struct policy_hub
                      default_reduce_by_key_delay_constructor_t<DelayConstructorKey, int>>;
   };
 
-  // SM35
-  struct Policy350
+  // SM50
+  struct Policy500
       : DefaultPolicy<BLOCK_LOAD_DIRECT, int, LOAD_LDG> // TODO(bgruber): I think we want `LengthT` instead of `int`
-      , ChainedPolicy<350, Policy350, Policy350>
+      , ChainedPolicy<500, Policy500, Policy500>
   {};
 
   // Use values from tuning if a specialization exists, otherwise pick the default
@@ -472,7 +472,7 @@ struct policy_hub
     typename DefaultPolicy<BLOCK_LOAD_WARP_TRANSPOSE, LengthT, LOAD_DEFAULT>::RleSweepPolicyT;
 
   // SM80
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy350>
+  struct Policy800 : ChainedPolicy<800, Policy800, Policy500>
   {
     using RleSweepPolicyT = decltype(select_agent_policy<non_trivial_runs::sm80_tuning<LengthT, KeyT>>(0));
   };
