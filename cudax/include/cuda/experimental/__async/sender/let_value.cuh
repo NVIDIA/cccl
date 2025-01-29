@@ -146,7 +146,7 @@ private:
   /// @tparam _Rcvr The receiver connected to the `let_(value|error|stopped)`
   /// sender.
   template <class _Rcvr, class _CvSndr, class _Fn>
-  struct __opstate_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
     _CUDAX_API friend env_of_t<_Rcvr> get_env(const __opstate_t* __self) noexcept
     {
@@ -235,7 +235,7 @@ private:
   /// @tparam _Fn The function to be called when the predecessor sender
   /// completes.
   template <class _Sndr, class _Fn>
-  struct __sndr_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t
   {
     using sender_concept = sender_t;
     _CCCL_NO_UNIQUE_ADDRESS _LetTag __tag_;
