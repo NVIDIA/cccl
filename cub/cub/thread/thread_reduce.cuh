@@ -65,6 +65,7 @@ _CCCL_DIAG_POP
 
 CUB_NAMESPACE_BEGIN
 
+// clang-format off
 //! @rst
 //! The ``ThreadReduce`` function computes a reduction of items assigned to a single CUDA thread.
 //!
@@ -76,8 +77,8 @@ CUB_NAMESPACE_BEGIN
 //! - Supports array-like types that are statically-sized and can be indexed with the ``[] operator``:
 //!   raw arrays, ``std::array``, ``std::span``,  ``std::mdspan`` (C++23)
 //!
-//! Overloading
-//! ++++++++++++++++++++++++++
+//! Main Function and Overloading
+//! +++++++++++++++++++++++++++++
 //!
 //! Reduction over statically-sized array-like types, seeded with the specified prefix
 //!
@@ -85,38 +86,49 @@ CUB_NAMESPACE_BEGIN
 //!
 //!    template <typename Input,
 //!              typename ReductionOp,
+//!              typename ValueT = ..., // type of a single input element
+//!              typename AccumT = ...> // accumulator type
+//!    [[nodiscard]] __device__ __forceinline__ AccumT
+//!    ThreadReduce(const Input& input, ReductionOp reduction_op)
+//!
+//! .. code-block:: c++
+//!
+//!    template <typename Input,
+//!              typename ReductionOp,
 //!              typename PrefixT,
-//!              typename ValueT = random_access_range_elem_t<Input>,
-//!              typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, ValueT, PrefixT>>
-//!    _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
+//!              typename ValueT = ..., // type of a single input element
+//!              typename AccumT = ...> // accumulator type
+//!    [[nodiscard]] __device__ __forceinline__ AccumT
 //!    ThreadReduce(const Input& input, ReductionOp reduction_op, PrefixT prefix)
 //!
 //! Performance Considerations
 //! ++++++++++++++++++++++++++
 //!
-//! The function provides the following optimizations
+//! The function provides the following optimizations:
 //!
-//! - Vectorization/SIMD for
+//! - *Vectorization/SIMD* for:
 //!
-//!   - Sum (``cuda::std::plus<>``) and Multiplication (``cuda::std::multiplies<>``) on SM70+ for ``__half`` data type
+//!   - Minimum (``cuda::minimum<>``) and Maximum (``cuda::maximum<>``) on SM90+ for ``int16_t/uint16_t``
+//!     data types (Hopper DPX instructions)
 //!   - Sum (``cuda::std::plus<>``) and Multiplication (``cuda::std::multiplies<>``) on SM80+ for ``__nv_bfloat16``
 //!     data type
-//!   - Minimum (``cuda::minimum<>``) and Maximum (``cuda::maximum<>``) on SM80+ for ``__half`` and ``__nv_bfloat16``
+//!   - Minimum (``cuda::minimum<>``) and Maximum (``cuda::maximum<>``) on SM80+ for ``__half/__nv_bfloat16``
 //!     data types
-//!   - Minimum (``cuda::minimum<>``) and Maximum (``cuda::maximum<>``) on SM90+ for ``int16_t`` and ``uint16_t``
-//!     data types (Hopper DPX instructions)
+//!   - Sum (``cuda::std::plus<>``) and Multiplication (``cuda::std::multiplies<>``) on SM70+ for ``__half`` data type
 //!
-//! - Instruction-Level Parallelism (ILP) by exploiting a ternary tree reduction for
+//! - *Instruction-Level Parallelism (ILP)* by exploiting a *ternary tree reduction* for:
 //!
-//!   - Sum (``cuda::std::plus<>``), Bitwise AND (``cuda::std::bit_and<>``), OR (``cuda::std::bit_or<>``), XOR
-//!     (``cuda::std::bit_xor<>``) on SM50+ for integer data types
+//!   - Minimum (``cuda::minimum<>``) and Maximum (``cuda::maximum<>``) on SM90+ for ``int32_t/uint32_t`` data types
+//!     (Hopper DPX instructions)
 //!   - Minimum (``cuda::minimum<>``) and Maximum (``cuda::maximum<>``) on SM80+ for integer data types (Hopper DPX
 //!     instructions), ``__half2``, ``__nv_bfloat162``, ``__half`` (after vectorization), and ``__nv_bfloat16``
 //!     (after vectorization) data types
-//!   - Minimum (``cuda::minimum<>``) and Maximum (``cuda::maximum<>``) on SM90+ for integer data types (Hopper DPX
-//!     instructions)
+//!   - Sum (``cuda::std::plus<>``), Bitwise AND (``cuda::std::bit_and<>``), OR (``cuda::std::bit_or<>``), XOR
+//!     (``cuda::std::bit_xor<>``) on SM50+ for integer data types
 //!
-//! - Instruction-Level Parallelism (ILP) by exploiting a binary tree reduction for all other cases
+//! - *Instruction-Level Parallelism (ILP)* by exploiting a *binary tree reduction* for
+//!
+//!   - All other cases that maps to predefined operators
 //!
 //! Simple Example
 //! ++++++++++++++++++++++++++
@@ -150,15 +162,14 @@ CUB_NAMESPACE_BEGIN
 //! @param[in] reduction_op
 //!   Binary reduction operator
 //!
-//! @return Aggregate of type <tt>cuda::std::__accumulator_t<ReductionOp, ValueT, PrefixT></tt>
+//! @return Accumulation of type (simplified) ``decltype(reduction_op(a, b))`` see
+//! <a href="https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2322r6.html#return-the-result-of-the-initial-invocation">P2322</a>
 //!
+// clang-format on
+
 template <typename Input,
           typename ReductionOp,
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
           typename ValueT = cub::detail::random_access_range_elem_t<Input>,
-#else
-          typename ValueT = random_access_range_elem_t<Input>,
-#endif // !_CCCL_DOXYGEN_INVOKED
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, ValueT>>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& input, ReductionOp reduction_op);
 // forward declaration
@@ -166,7 +177,6 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& 
 /***********************************************************************************************************************
  * Internal Reduction Implementations
  **********************************************************************************************************************/
-
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 /// Internal namespace (to prevent ADL mishaps between static functions when mixing different CUB installations)
