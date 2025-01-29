@@ -2,6 +2,7 @@
 #include <thrust/functional.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
+#include <thrust/logical.h>
 #include <thrust/reduce.h>
 #include <thrust/sequence.h>
 
