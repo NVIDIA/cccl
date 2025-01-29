@@ -362,6 +362,7 @@ struct lambda_wrapper
     }
   }
 
+  // Make sure we fail if const is added to this wrapper anywhere
   void operator()() const
   {
     CUDAX_REQUIRE(false);

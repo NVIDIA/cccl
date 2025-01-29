@@ -43,7 +43,8 @@ void __stream_callback_caller(cudaStream_t, cudaError_t __status, void* __callab
 //! @brief Launches a host callable to be executed in stream order on the provided stream
 //!
 //! Callable and arguments are copied into an internal dynamic allocation to preserve them
-//! until it is asynchronously called.
+//! until the asynchronous call happens. Lambda capture or reference_wrapper can be used if
+//! there is a need to pass something by reference.
 //!
 //! @param __stream Stream to launch the host function on
 //! @param __callable Host function or callable object to call in stream order
