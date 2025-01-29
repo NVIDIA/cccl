@@ -4,12 +4,12 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CCCL_EXTENDED_FLOATING_POINT_H
-#define __CCCL_EXTENDED_FLOATING_POINT_H
+#ifndef __CCCL_EXTENDED_DATA_TYPES_H
+#define __CCCL_EXTENDED_DATA_TYPES_H
 
 #include <cuda/std/__cccl/compiler.h>
 #include <cuda/std/__cccl/system_header.h>
@@ -24,6 +24,18 @@
 
 #include <cuda/std/__cccl/diagnostic.h>
 #include <cuda/std/__cccl/preprocessor.h>
+
+#if !defined(_CCCL_DISABLE_INT128)
+#  if _CCCL_COMPILER(NVRTC) && defined(__CUDACC_RTC_INT128__) && (defined(__linux__) || defined(__LP64__))
+#    define _CCCL_HAS_INT128() 1
+#  elif defined(__SIZEOF_INT128__) && (defined(__linux__) || defined(__LP64__))
+#    define _CCCL_HAS_INT128() 1
+#  else
+#    define _CCCL_HAS_INT128() 0
+#  endif
+#else
+#  define _CCCL_HAS_INT128() 0
+#endif // !_CCCL_DISABLE_INT128
 
 #if !defined(_CCCL_HAS_NVFP16)
 #  if _CCCL_HAS_INCLUDE(<cuda_fp16.h>) && (_CCCL_HAS_CUDA_COMPILER || defined(LIBCUDACXX_ENABLE_HOST_NVFP16)) \
@@ -44,9 +56,9 @@
 #    define _CCCL_HAS_NVFP8() 1
 #  else
 #    define _CCCL_HAS_NVFP8() 0
-#  endif // _CCCL_HAS_INCLUDE(<cuda_fp8.h>)
+#  endif // _CCCL_HAS_INCLUDE(<cuda_fp8.h>) && defined(_CCCL_HAS_NVFP16) && defined(_CCCL_HAS_NVBF16)
 #else
 #  define _CCCL_HAS_NVFP8() 0
 #endif // !defined(_CCCL_DISABLE_NVFP8_SUPPORT)
 
-#endif // __CCCL_EXTENDED_FLOATING_POINT_H
+#endif // __CCCL_EXTENDED_DATA_TYPES_H
