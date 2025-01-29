@@ -42,6 +42,7 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/util_device.cuh>
+#include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
 CUB_NAMESPACE_BEGIN
@@ -527,7 +528,7 @@ struct sm100_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primi
 {
   // trp_0.ld_0.ipt_22.tpb_384.ns_0.dcid_2.l2w_915 1.099232  0.980183  1.096778  1.545455
   static constexpr int threads                       = 384;
-  static constexpr int items                         = 22;
+  static constexpr int nominal_4b_items              = 22;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
   using delay_constructor                            = detail::exponential_backoff_constructor_t<0, 915>;
@@ -538,7 +539,7 @@ struct sm100_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primi
 {
   // trp_1.ld_0.ipt_20.tpb_448.ns_596.dcid_6.l2w_295  1.214635  1.001421  1.207023  1.307692
   static constexpr int threads                       = 448;
-  static constexpr int items                         = 20;
+  static constexpr int nominal_4b_items              = 20;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
   using delay_constructor                            = detail::exponential_backon_jitter_constructor_t<596, 295>;
@@ -549,7 +550,7 @@ struct sm100_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primi
 {
   // trp_1.ld_0.ipt_20.tpb_256.ns_516.dcid_7.l2w_685 1.065598  0.937984  1.067343  1.452153
   static constexpr int threads                       = 256;
-  static constexpr int items                         = 20;
+  static constexpr int nominal_4b_items              = 20;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
   using delay_constructor                            = detail::exponential_backon_constructor_t<516, 685>;
@@ -560,7 +561,7 @@ struct sm100_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primi
 {
   // trp_1.ld_0.ipt_20.tpb_384.ns_1060.dcid_5.l2w_375 1.109871  0.973142  1.105415  1.459135
   static constexpr int threads                       = 384;
-  static constexpr int items                         = 20;
+  static constexpr int nominal_4b_items              = 20;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
   using delay_constructor = detail::exponential_backon_jitter_window_constructor_t<1060, 375>;
@@ -571,7 +572,7 @@ struct sm100_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primi
 {
   // trp_1.ld_0.ipt_15.tpb_384.ns_1508.dcid_5.l2w_585 1.201993  0.920103  1.185134  1.441805
   static constexpr int threads                       = 384;
-  static constexpr int items                         = 15;
+  static constexpr int nominal_4b_items              = 15;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
   using delay_constructor = detail::exponential_backon_jitter_window_constructor_t<1508, 585>;
@@ -582,24 +583,24 @@ struct sm100_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primi
 {
   // trp_1.ld_0.ipt_19.tpb_512.ns_928.dcid_7.l2w_770 1.258815  1.000000  1.235251  1.444884
   static constexpr int threads                       = 512;
-  static constexpr int items                         = 19;
+  static constexpr int nominal_4b_items              = 19;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
   using delay_constructor                            = detail::exponential_backon_constructor_t<928, 770>;
 };
 
-template <class Input>
-struct sm100_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primitive::yes, input_size::_8, may_alias::no>
-    // baseline remained the fastest
-    : sm90_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primitive::yes, input_size::_8>
-{};
+// baseline remained the fastest, so fall back to previous tuning
+// template <class Input>
+// struct sm100_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primitive::yes, input_size::_8,
+// may_alias::no>
+// {};
 
 template <class Input>
 struct sm100_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primitive::yes, input_size::_8, may_alias::yes>
 {
   // trp_1.ld_0.ipt_23.tpb_384.ns_1140.dcid_7.l2w_520 1.081506  0.955298  1.088848  1.248971
   static constexpr int threads                       = 384;
-  static constexpr int items                         = 23;
+  static constexpr int nominal_4b_items              = 23;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
   using delay_constructor                            = detail::exponential_backon_constructor_t<1140, 520>;
@@ -611,7 +612,7 @@ struct sm100_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primi
 // struct sm100_tuning<__int128_t, flagged::no, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
 // {
 // // static constexpr int threads = 512;
-// // static constexpr int items   = 5;
+// // static constexpr int nominal_4b_items   = 5;
 
 // // static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
 
@@ -622,7 +623,7 @@ struct sm100_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primi
 // struct sm100_tuning<__uint128_t, flagged::no, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
 // {
 // // static constexpr int threads = 512;
-// // static constexpr int items   = 5;
+// // static constexpr int nominal_4b_items   = 5;
 
 // // static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
 
@@ -636,7 +637,7 @@ struct sm100_tuning<Input, flagged::yes, keep_rejects::no, offset_size::_4, prim
 {
   // trp_0.ld_0.ipt_20.tpb_896.ns_84.dcid_7.l2w_480 1.254262  0.846154  1.222437  1.462665
   static constexpr int threads                       = 896;
-  static constexpr int items                         = 20;
+  static constexpr int nominal_4b_items              = 20;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
   using delay_constructor                            = detail::exponential_backon_constructor_t<84, 480>;
@@ -647,7 +648,7 @@ struct sm100_tuning<Input, flagged::yes, keep_rejects::no, offset_size::_4, prim
 {
   // trp_0.ld_0.ipt_20.tpb_1024.ns_360.dcid_6.l2w_380 1.274174  0.748441  1.227123  1.610039
   static constexpr int threads                       = 1024;
-  static constexpr int items                         = 20;
+  static constexpr int nominal_4b_items              = 20;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
   using delay_constructor                            = detail::exponential_backon_jitter_constructor_t<360, 380>;
@@ -658,7 +659,7 @@ struct sm100_tuning<Input, flagged::yes, keep_rejects::no, offset_size::_4, prim
 {
   // trp_0.ld_0.ipt_22.tpb_256.ns_1292.dcid_5.l2w_750 1.283400  1.002841  1.267822  1.445913
   static constexpr int threads                       = 256;
-  static constexpr int items                         = 22;
+  static constexpr int nominal_4b_items              = 22;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
   using delay_constructor = detail::exponential_backon_jitter_window_constructor_t<1292, 750>;
@@ -669,7 +670,7 @@ struct sm100_tuning<Input, flagged::yes, keep_rejects::no, offset_size::_4, prim
 {
   // trp_1.ld_0.ipt_20.tpb_448.ns_136.dcid_2.l2w_760 1.318819  0.994090  1.289173  1.551415
   static constexpr int threads                       = 448;
-  static constexpr int items                         = 20;
+  static constexpr int nominal_4b_items              = 20;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
   using delay_constructor                            = detail::exponential_backoff_constructor_t<136, 760>;
@@ -680,7 +681,7 @@ struct sm100_tuning<Input, flagged::yes, keep_rejects::no, offset_size::_4, prim
 {
   // trp_0.ld_0.ipt_14.tpb_512.ns_844.dcid_6.l2w_675 1.207911  1.068001  1.208890  1.455636
   static constexpr int threads                       = 512;
-  static constexpr int items                         = 14;
+  static constexpr int nominal_4b_items              = 14;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
   using delay_constructor                            = detail::exponential_backon_jitter_constructor_t<844, 675>;
@@ -691,7 +692,7 @@ struct sm100_tuning<Input, flagged::yes, keep_rejects::no, offset_size::_4, prim
 {
   // trp_1.ld_0.ipt_14.tpb_384.ns_524.dcid_7.l2w_635 1.256212  1.004808  1.241086  1.373337
   static constexpr int threads                       = 384;
-  static constexpr int items                         = 14;
+  static constexpr int nominal_4b_items              = 14;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
   using delay_constructor                            = detail::exponential_backon_constructor_t<524, 635>;
@@ -702,7 +703,7 @@ struct sm100_tuning<Input, flagged::yes, keep_rejects::no, offset_size::_4, prim
 {
   // trp_0.ld_1.ipt_22.tpb_320.ns_660.dcid_7.l2w_1030 1.162087  0.997167  1.154955  1.395010
   static constexpr int threads                       = 320;
-  static constexpr int items                         = 22;
+  static constexpr int nominal_4b_items              = 22;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
   static constexpr CacheLoadModifier load_modifier   = LOAD_CA;
   using delay_constructor                            = detail::exponential_backon_constructor_t<660, 1030>;
@@ -713,7 +714,7 @@ struct sm100_tuning<Input, flagged::yes, keep_rejects::no, offset_size::_4, prim
 {
   // trp_1.ld_1.ipt_21.tpb_384.ns_1316.dcid_5.l2w_990 1.221365  1.019231  1.213141  1.372951
   static constexpr int threads                       = 384;
-  static constexpr int items                         = 21;
+  static constexpr int nominal_4b_items              = 21;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
   static constexpr CacheLoadModifier load_modifier   = LOAD_CA;
   using delay_constructor = detail::exponential_backon_jitter_window_constructor_t<1316, 990>;
@@ -725,7 +726,7 @@ struct sm100_tuning<Input, flagged::yes, keep_rejects::no, offset_size::_4, prim
 // struct sm100_tuning<__int128_t, flagged::yes, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
 // {
 // static constexpr int threads = 512;
-// static constexpr int items   = 3;
+// static constexpr int nominal_4b_items   = 3;
 
 // static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
 
@@ -736,7 +737,7 @@ struct sm100_tuning<Input, flagged::yes, keep_rejects::no, offset_size::_4, prim
 // struct sm100_tuning<__uint128_t, flagged::yes, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
 // {
 // static constexpr int threads = 512;
-// static constexpr int items   = 3;
+// static constexpr int nominal_4b_items   = 3;
 
 // static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
 
@@ -855,7 +856,7 @@ struct policy_hub
     template <typename Tuning>
     static auto select_agent_policy100(int)
       -> AgentSelectIfPolicy<Tuning::threads,
-                             Tuning::items,
+                             Nominal4BItemsToItems<InputT>(Tuning::nominal_4b_items),
                              Tuning::load_algorithm,
                              Tuning::load_modifier,
                              BLOCK_SCAN_WARP_SCANS,
