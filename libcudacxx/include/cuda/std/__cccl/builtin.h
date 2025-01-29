@@ -283,7 +283,7 @@
 #  define _CCCL_BUILTIN_HUGE_VALL() static_cast<long double>(__builtin_huge_val())
 #endif // _CCCL_CHECK_BUILTIN(builtin_huge_vall)
 
-#if _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated) || _CCCL_COMPILER(GCC, >=, 9) || (_CCCL_COMPILER(MSVC, >, 19, 24)
+#if _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated) || _CCCL_COMPILER(GCC, >=, 9) || _CCCL_COMPILER(MSVC, >, 19, 24)
 #  define _CCCL_BUILTIN_IS_CONSTANT_EVALUATED(...) __builtin_is_constant_evaluated(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated)
 
