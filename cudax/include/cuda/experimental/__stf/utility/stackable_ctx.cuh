@@ -368,9 +368,11 @@ class stackable_logical_data
       {
         push(ld_from_shape ? access_mode::write : access_mode::rw, where);
 
+#if 0
         // Keep track of data that were pushed in this context. Note that the ID
         // used is the ID of the logical data at this level.
         sctx.track_pushed_data(ld.get_unique_id(), this);
+#endif
       }
     }
 
@@ -452,11 +454,20 @@ class stackable_logical_data
       }
 
       s.push_back(mv(ld));
+
+      // Keep track of data that were pushed in this context. Note that the ID
+      // used is the ID of the logical data at this level. This will be used to
+      // pop data automatically when nested contexts are popped.
+      sctx.track_pushed_data(ld.get_unique_id(), this);
     }
 
     /* Pop one level down */
     virtual void pop() override
     {
+      // Prevent the automatic call to pop() when the context level gets
+      // popped.
+      sctx.untrack_pushed_data(ld.get_unique_id());
+
       // We are going to unfreeze the data, which is currently being used
       // in a (graph) ctx that uses this stream to launch the graph
       cudaStream_t stream = sctx.get_stream(depth());
@@ -533,17 +544,21 @@ public:
   {
     pimpl->push(m, mv(where));
 
+#if 0
     // Keep track of data that were pushed in this context. Note that the ID
     // used is the ID of the logical data at this level.
     pimpl->get_sctx().track_pushed_data(get_ld().get_unique_id(), pimpl.get());
+#endif
   }
 
   void pop()
   {
+#if 0
     // We remove the data from the map before popping it to have the id of the
     // logical data. Doing so will prevent the automatic call to pop() when the
     // context level gets popped.
     pimpl->get_sctx().untrack_pushed_data(get_ld().get_unique_id());
+#endif
 
     pimpl->pop();
   }
@@ -593,6 +608,9 @@ private:
   ::std::shared_ptr<impl> pimpl;
 };
 
+/**
+ * @brief Task dependency for a stackable logical data
+ */
 template <typename T, typename reduce_op, bool initialize>
 class stackable_task_dep : public task_dep<T, reduce_op, initialize>
 {
