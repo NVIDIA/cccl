@@ -339,11 +339,7 @@ public:
   }
 
 private:
-#if _CCCL_CUDA_COMPILER(NVCC, <, 11, 7)
-  struct __align__(sizeof(T) * 2) storage
-#else // _CCCL_CUDA_COMPILER(NVCC, <, 11, 7))
   struct alignas(sizeof(T) * 2) storage
-#endif //  _CCCL_CUDA_COMPILER(NVCC, <, 11, 7))
   {
     T x;
     T y;
