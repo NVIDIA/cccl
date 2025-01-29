@@ -659,14 +659,14 @@ int main(int argc, char** argv)
     return 1.0 / (col + row + 1.0) + 2.0 * N * (col == row);
   };
 
-  ctx.dot_push_section("fillA");
+  auto s = ctx.dot_section("fillA");
   if (check_result)
   {
     Aref.fill(hilbert);
   }
 
   A.fill(hilbert);
-  ctx.dot_pop_section();
+  s.end();
 
   /* Right-hand side */
   matrix<double> B_potrs(N, 1, NB, 1, false, "B");
@@ -693,9 +693,9 @@ int main(int argc, char** argv)
   cudaEvent_t startEvent_pdpotrf, stopEvent_pdpotrf;
   float milliseconds_pdpotrf = 0;
 
-  //    for (int row = 0; row < A.mt; row++)
+  //    for (size_t row = 0; row < A.mt; row++)
   //    {
-  //        for (int col = 0; col <= row; col++)
+  //        for (size_t col = 0; col <= row; col++)
   //        {
   //            cuda_safe_call(cudaSetDevice(A.get_preferred_devid(row, col)));
   //            NOOP(A, row, col);

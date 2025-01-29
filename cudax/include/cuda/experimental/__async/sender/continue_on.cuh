@@ -65,7 +65,7 @@ private:
                               completion_signatures<set_error_t(__decay_t<_Error>), set_error_t(::std::exception_ptr)>>;
 
   template <class _Rcvr, class _Result>
-  struct __rcvr_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
   {
     using receiver_concept = receiver_t;
     _Rcvr __rcvr_;
@@ -127,7 +127,7 @@ private:
   };
 
   template <class _Rcvr, class _CvSndr, class _Sch>
-  struct __opstate_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
     _CUDAX_API friend auto get_env(const __opstate_t* __self) noexcept -> env_of_t<_Rcvr>
     {
@@ -197,7 +197,7 @@ private:
   };
 
   template <class _Sndr, class _Sch>
-  struct __sndr_t;
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
   template <class _Sch>
   struct __closure_t;
@@ -211,7 +211,7 @@ public:
 };
 
 template <class _Sch>
-struct continue_on_t::__closure_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT continue_on_t::__closure_t
 {
   _Sch __sch;
 
@@ -223,7 +223,7 @@ struct continue_on_t::__closure_t
 };
 
 template <class _Sndr, class _Sch>
-struct continue_on_t::__sndr_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT continue_on_t::__sndr_t
 {
   using sender_concept = sender_t;
   _CCCL_NO_UNIQUE_ADDRESS continue_on_t __tag;
