@@ -57,7 +57,6 @@
 // PTX ISA 8.0 is available from CUDA 12.0, driver r525
 #elif _CCCL_CUDACC_AT_LEAST(12, 0)
 #  define __cccl_ptx_isa 800ULL
-// PTX ISA 7.8 is available from CUDA 11.8, driver r520
 #else
 #  define __cccl_ptx_isa 0ULL
 #endif
