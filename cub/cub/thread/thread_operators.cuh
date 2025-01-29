@@ -630,6 +630,29 @@ inline constexpr bool is_predefined_operator_v =
   is_predefined_sum_mul_v<ReductionOp, T> || //
   is_predefined_bitwise_v<ReductionOp, T>;
 
+template <typename ReductionOp>
+struct is_simd_operator : ::cuda::std::false_type
+{};
+
+template <typename T>
+struct is_simd_operator<SimdSum<T>> : ::cuda::std::true_type
+{};
+
+template <typename T>
+struct is_simd_operator<SimdMul<T>> : ::cuda::std::true_type
+{};
+
+template <typename T>
+struct is_simd_operator<SimdMin<T>> : ::cuda::std::true_type
+{};
+
+template <typename T>
+struct is_simd_operator<SimdMax<T>> : ::cuda::std::true_type
+{};
+
+template <typename ReductionOp>
+inline constexpr bool is_simd_operator_v = is_simd_operator<ReductionOp>::value;
+
 //----------------------------------------------------------------------------------------------------------------------
 // Predefined CUDA operators to SIMD
 

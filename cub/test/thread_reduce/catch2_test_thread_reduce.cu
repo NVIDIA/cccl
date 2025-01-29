@@ -54,7 +54,7 @@
  * Thread Reduce Wrapper Kernels
  **********************************************************************************************************************/
 
-// #define CCCL_CHECK_SASS // instantiate only the kernels useful for SASS inspection
+#define CCCL_CHECK_SASS // instantiate only the kernels useful for SASS inspection
 
 template <int NUM_ITEMS, typename T, typename ReduceOperator>
 __global__ void thread_reduce_kernel(const T* __restrict__ d_in, T* __restrict__ d_out, ReduceOperator reduce_operator)
@@ -255,16 +255,23 @@ using narrow_precision_type_list = c2h::type_list<
 #endif
   >;
 
-using fp_type_list =
-  c2h::type_list<float
-#if !defined(CCCL_CHECK_SASS)
-                 ,
-                 double
-#endif
-                 >;
+#if defined(CCCL_CHECK_SASS)
+
+using fp_type_list = c2h::type_list<float>;
+
+using integral_type_list = c2h::type_list<::cuda::std::int8_t, ::cuda::std::int16_t, ::cuda::std::int32_t>;
+
+using cub_operator_integral_list =
+  c2h::type_list<cuda::std::plus<>, cuda::std::multiplies<>, cuda::std::bit_xor<>, cuda::minimum<>>;
+
+using cub_operator_fp_list = c2h::type_list<cuda::std::plus<>, cuda::minimum<>>;
+
+#else // !defined(CCCL_CHECK_SASS)
 
 using integral_type_list = c2h::
   type_list<::cuda::std::int8_t, ::cuda::std::int16_t, ::cuda::std::uint16_t, ::cuda::std::int32_t, ::cuda::std::int64_t>;
+
+using fp_type_list = c2h::type_list<float, double>;
 
 using cub_operator_integral_list =
   c2h::type_list<cuda::std::plus<>,
@@ -277,6 +284,8 @@ using cub_operator_integral_list =
 
 using cub_operator_fp_list =
   c2h::type_list<cuda::std::plus<>, cuda::std::multiplies<>, cuda::minimum<>, cuda::maximum<>>;
+
+#endif // defined(CCCL_CHECK_SASS)
 
 /***********************************************************************************************************************
  * Verify results and kernel launch
