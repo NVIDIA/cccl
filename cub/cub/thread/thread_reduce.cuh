@@ -319,7 +319,7 @@ inline constexpr bool enable_ternary_reduction_sm50_v =
   ::cuda::std::is_integral_v<T> && sizeof(T) <= 4
   && (is_one_of_v<ReductionOp, ::cuda::std::plus<>, ::cuda::std::plus<T>> || is_predefined_bitwise_v<ReductionOp, T>);
 
-template <typename Input, typename ReductionOp, typename Prom>
+template <typename Input, typename ReductionOp>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_ternary_reduction()
 {
   constexpr auto length = cub::detail::static_size_v<Input>;
@@ -334,9 +334,9 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_ternary_red
     // clang-format off
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
-        (return enable_ternary_reduction_sm90_v<T, ReductionOp> || enable_ternary_reduction_sm50_v<Prom, ReductionOp>;),
+        (return enable_ternary_reduction_sm90_v<T, ReductionOp> || enable_ternary_reduction_sm50_v<T, ReductionOp>;),
       NV_PROVIDES_SM_50,
-        (return enable_ternary_reduction_sm50_v<Prom, ReductionOp>;),
+        (return enable_ternary_reduction_sm50_v<T, ReductionOp>;),
       NV_ANY_TARGET,
         (return false;)
     );
@@ -478,7 +478,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& 
   {
     return cub::internal::ThreadReduceSimd(input, reduction_op);
   }
-  else if constexpr (enable_ternary_reduction<Input, ReductionOp, PromT>())
+  else if constexpr (enable_ternary_reduction<Input, ReductionOp>())
   {
     // with the current tuning policies, SM90/int32/+ uses too many registers (TODO: fix tuning policy)
     if constexpr ((is_one_of_v<ReductionOp, ::cuda::std::plus<>, ::cuda::std::plus<PromT>>
