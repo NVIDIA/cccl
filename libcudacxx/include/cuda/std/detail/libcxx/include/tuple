@@ -1124,6 +1124,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 tuple<_Tp&&...> forward_as_tuple
 template <size_t _Ip>
 struct __tuple_equal
 {
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Up>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator()(const _Tp& __x, const _Up& __y)
   {
@@ -1157,6 +1158,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator!=(const tuple<_Tp.
 template <size_t _Ip>
 struct __tuple_less
 {
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Up>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator()(const _Tp& __x, const _Up& __y)
   {
