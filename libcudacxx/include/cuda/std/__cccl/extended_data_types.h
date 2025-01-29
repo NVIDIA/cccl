@@ -23,12 +23,13 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/diagnostic.h>
+#include <cuda/std/__cccl/os.h>
 #include <cuda/std/__cccl/preprocessor.h>
 
 #if !defined(_CCCL_DISABLE_INT128)
-#  if _CCCL_COMPILER(NVRTC) && defined(__CUDACC_RTC_INT128__) && (defined(__linux__) || defined(__LP64__))
+#  if _CCCL_COMPILER(NVRTC) && defined(__CUDACC_RTC_INT128__) && _CCCL_OS(LINUX)
 #    define _CCCL_HAS_INT128() 1
-#  elif defined(__SIZEOF_INT128__) && (defined(__linux__) || defined(__LP64__))
+#  elif defined(__SIZEOF_INT128__) && _CCCL_OS(LINUX)
 #    define _CCCL_HAS_INT128() 1
 #  else
 #    define _CCCL_HAS_INT128() 0
@@ -60,5 +61,24 @@
 #else
 #  define _CCCL_HAS_NVFP8() 0
 #endif // !defined(_CCCL_DISABLE_NVFP8_SUPPORT)
+
+#if !defined(_CCCL_DISABLE_FLOAT128)
+#  if _CCCL_COMPILER(NVRTC) && defined(__CUDACC_RTC_FLOAT128__) && _CCCL_OS(LINUX)
+#    if !defined(__CUDA_ARCH__) || (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 1000)
+#      define _CCCL_HAS_FLOAT128() 1
+#    else
+#      define _CCCL_HAS_FLOAT128() 0
+#    endif
+// NVC++ support float128 only in host code
+#  elif (defined(__SIZEOF_FLOAT128__) || defined(__FLOAT128__)) && _CCCL_OS(LINUX) && !_CCCL_CUDA_COMPILER(NVHPC)
+#    if !defined(__CUDA_ARCH__) || (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 1000)
+#      define _CCCL_HAS_FLOAT128() 1
+#    else
+#      define _CCCL_HAS_FLOAT128() 0
+#    endif
+#  else
+#    define _CCCL_HAS_FLOAT128() 0
+#  endif
+#endif // !defined(_CCCL_DISABLE_FLOAT128)
 
 #endif // __CCCL_EXTENDED_DATA_TYPES_H

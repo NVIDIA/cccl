@@ -40,5 +40,9 @@ int main(int, char**)
   auto x4 = __nv_bfloat16(1.0f);
   unused(x4);
 #endif
+#if _CCCL_HAS_FLOAT128()
+  __float128 x5 = __float128(3.14) + __float128(3.14);
+  unused(x5);
+#endif
   return 0;
 }
