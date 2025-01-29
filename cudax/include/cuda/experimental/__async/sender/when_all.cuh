@@ -53,10 +53,10 @@ template <class>
 struct __env_t;
 
 template <class, size_t>
-struct __rcvr_t;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t;
 
 template <class, class, class>
-struct __opstate_t;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t;
 
 using __tombstone = _ERROR<_WHERE(_IN_ALGORITHM, when_all_t), _WHAT(_SENDER_HAS_TOO_MANY_SUCCESS_COMPLETIONS)>;
 
@@ -322,7 +322,7 @@ struct __env_t
 };
 
 template <class _StateZip, size_t _Index>
-struct __rcvr_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
 {
   using receiver_concept = receiver_t;
   using __state_t        = __unzip<_StateZip>;
@@ -524,7 +524,7 @@ struct __state_t<_Rcvr, _CvFn, __tupl<_CUDA_VSTD::index_sequence<_Idx...>, _Sndr
 
 /// The operation state for when_all
 template <class _Rcvr, class _CvFn, size_t... _Idx, class... _Sndrs>
-struct __opstate_t<_Rcvr, _CvFn, __tupl<_CUDA_VSTD::index_sequence<_Idx...>, _Sndrs...>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t<_Rcvr, _CvFn, __tupl<_CUDA_VSTD::index_sequence<_Idx...>, _Sndrs...>>
 {
   using operation_state_concept = operation_state_t;
   using __sndrs_t               = _CUDA_VSTD::__type_call<_CvFn, __tuple<_Sndrs...>>;
@@ -605,7 +605,7 @@ struct __opstate_t<_Rcvr, _CvFn, __tupl<_CUDA_VSTD::index_sequence<_Idx...>, _Sn
 };
 
 template <class... _Sndrs>
-struct __sndr_t;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 } // namespace __when_all
 
 struct when_all_t
@@ -616,7 +616,7 @@ struct when_all_t
 
 // The sender for when_all
 template <class... _Sndrs>
-struct __when_all::__sndr_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __when_all::__sndr_t
 {
   using sender_concept = sender_t;
   using __sndrs_t      = __tuple<_Sndrs...>;
