@@ -35,11 +35,11 @@
 #include <c2h/vector.h>
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-#  if defined(_CCCL_HAS_NVFP16)
+#  if _CCCL_HAS_NVFP16()
 #    include <cuda_fp16.h>
 #  endif // _CCCL_HAS_NVFP16
 
-#  if defined(_CCCL_HAS_NVBF16)
+#  if _CCCL_HAS_NVBF16()
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
 #    include <cuda_bf16.h>
@@ -51,7 +51,7 @@ _CCCL_DIAG_PUSH
 #      include <cuda_fp8.h>
 _CCCL_DIAG_POP
 #    endif // _CCCL_CUDACC_AT_LEAST(11, 8)
-#  endif // _CCCL_HAS_NVBF16
+#  endif // _CCCL_HAS_NVBF16()
 
 #  if defined(__CUDA_FP8_TYPES_EXIST__)
 namespace std

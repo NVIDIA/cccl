@@ -10,13 +10,13 @@
 
 #include "test_macros.h"
 
-#if !defined(_CCCL_HAS_NVBF16)
+#if !_CCCL_HAS_NVBF16()
 #  include <cuda_bf16.h>
 #endif
 
 int main(int, char**)
 {
-#if !defined(_CCCL_HAS_NVBF16)
+#if !_CCCL_HAS_NVBF16()
   auto x3 = __nv_bfloat16(1.0f);
   unused(x3);
 #else

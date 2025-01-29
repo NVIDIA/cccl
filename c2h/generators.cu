@@ -122,16 +122,16 @@ private:
 template <typename T>
 struct is_floating_point : ::cuda::std::is_floating_point<T>
 {};
-#ifdef _CCCL_HAS_NVFP16
+#if _CCCL_HAS_NVFP16()
 template <>
 struct is_floating_point<__half> : ::cuda::std::true_type
 {};
-#endif // _CCCL_HAS_NVFP16
-#ifdef _CCCL_HAS_NVBF16
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
 template <>
 struct is_floating_point<__nv_bfloat16> : ::cuda::std::true_type
 {};
-#endif // _CCCL_HAS_NVBF16
+#endif // _CCCL_HAS_NVBF16()
 #ifdef __CUDA_FP8_TYPES_EXIST__
 template <>
 struct is_floating_point<__nv_fp8_e4m3> : ::cuda::std::true_type
@@ -478,15 +478,15 @@ template void
 init_key_segments(const c2h::device_vector<std::uint32_t>& segment_offsets, float* out, std::size_t element_size);
 template void init_key_segments(
   const c2h::device_vector<std::uint32_t>& segment_offsets, custom_type_state_t* out, std::size_t element_size);
-#ifdef _CCCL_HAS_NVFP16
+#if _CCCL_HAS_NVFP16()
 template void
 init_key_segments(const c2h::device_vector<std::uint32_t>& segment_offsets, half_t* out, std::size_t element_size);
-#endif // _CCCL_HAS_NVFP16
+#endif // _CCCL_HAS_NVFP16()
 
-#ifdef _CCCL_HAS_NVBF16
+#if _CCCL_HAS_NVBF16()
 template void
 init_key_segments(const c2h::device_vector<std::uint32_t>& segment_offsets, bfloat16_t* out, std::size_t element_size);
-#endif // _CCCL_HAS_NVBF16
+#endif // _CCCL_HAS_NVBF16()
 } // namespace detail
 
 template <typename T>
@@ -557,10 +557,10 @@ INSTANTIATE(half_t);
 INSTANTIATE(__half);
 #endif // _CCCL_HAS_NVFP16
 
-#ifdef _CCCL_HAS_NVBF16
+#if _CCCL_HAS_NVBF16()
 INSTANTIATE(bfloat16_t);
 INSTANTIATE(__nv_bfloat16);
-#endif // _CCCL_HAS_NVBF16
+#endif // _CCCL_HAS_NVBF16()
 
 #undef INSTANTIATE_RND
 #undef INSTANTIATE_MOD

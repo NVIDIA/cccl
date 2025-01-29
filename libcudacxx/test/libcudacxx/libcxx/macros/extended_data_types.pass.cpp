@@ -13,10 +13,10 @@
 #if _CCCL_HAS_NVFP8()
 #  include <cuda_fp8.h>
 #endif
-#if defined(_CCCL_HAS_NVFP16)
+#if _CCCL_HAS_NVFP16()
 #  include <cuda_fp16.h>
 #endif
-#if defined(_CCCL_HAS_NVBF16)
+#if _CCCL_HAS_NVBF16()
 #  include <cuda_bf16.h>
 #endif
 
@@ -32,11 +32,11 @@ int main(int, char**)
   auto x2 = __nv_fp8_e4m3(1.0f);
   unused(x2);
 #endif
-#if defined(_CCCL_HAS_NVFP16)
+#if _CCCL_HAS_NVFP16()
   auto x3 = __half(1.0f);
   unused(x3);
 #endif
-#if defined(_CCCL_HAS_NVBF16)
+#if _CCCL_HAS_NVBF16()
   auto x4 = __nv_bfloat16(1.0f);
   unused(x4);
 #endif

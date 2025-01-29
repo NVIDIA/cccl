@@ -49,11 +49,11 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
-#if defined(_CCCL_HAS_NVFP16)
+#if _CCCL_HAS_NVFP16()
 #  include <cuda_fp16.h>
-#endif // _CCCL_HAS_NVFP16
+#endif // _CCCL_HAS_NVFP16()
 
-#if defined(_CCCL_HAS_NVBF16)
+#if _CCCL_HAS_NVBF16()
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
 #  include <cuda_bf16.h>
@@ -930,7 +930,7 @@ struct FpLimits<double>
   }
 };
 
-#  if defined(_CCCL_HAS_NVFP16)
+#  if _CCCL_HAS_NVFP16()
 template <>
 struct FpLimits<__half>
 {
@@ -946,9 +946,9 @@ struct FpLimits<__half>
     return reinterpret_cast<__half&>(lowest_word);
   }
 };
-#  endif // _CCCL_HAS_NVFP16
+#  endif // _CCCL_HAS_NVFP16()
 
-#  if defined(_CCCL_HAS_NVBF16)
+#  if _CCCL_HAS_NVBF16()
 template <>
 struct FpLimits<__nv_bfloat16>
 {
@@ -1142,10 +1142,10 @@ struct NumericTraits<__int128_t>
 
 template <> struct NumericTraits<float> :               BaseTraits<FLOATING_POINT, true, false, unsigned int, float> {};
 template <> struct NumericTraits<double> :              BaseTraits<FLOATING_POINT, true, false, unsigned long long, double> {};
-#  if defined(_CCCL_HAS_NVFP16)
+#  if _CCCL_HAS_NVFP16()
     template <> struct NumericTraits<__half> :          BaseTraits<FLOATING_POINT, true, false, unsigned short, __half> {};
-#  endif // _CCCL_HAS_NVFP16
-#  if defined(_CCCL_HAS_NVBF16)
+#  endif // _CCCL_HAS_NVFP16()
+#  if _CCCL_HAS_NVBF16()
     template <> struct NumericTraits<__nv_bfloat16> :   BaseTraits<FLOATING_POINT, true, false, unsigned short, __nv_bfloat16> {};
 #  endif // _CCCL_HAS_NVBF16
 
