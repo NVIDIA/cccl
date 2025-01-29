@@ -2012,7 +2012,7 @@ annotate the application using dot sections.
 Dot sections can also be nested to better structure the visualization.
 
 This is achieved by creating `dot_section` objects in the application. `ctx.dot_section` returns
-an object which lifetime defines a dot section valid until it is destroyed, or
+an object whose lifetime defines a dot section valid until it is destroyed, or
 when calling the `end()` method on this object. The following example
 illustrates how to add nested sections:
 
