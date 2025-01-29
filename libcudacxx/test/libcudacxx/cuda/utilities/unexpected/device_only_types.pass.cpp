@@ -10,55 +10,8 @@
 #include <cuda/std/cassert>
 #include <cuda/std/expected>
 
+#include "host_device_types.h"
 #include "test_macros.h"
-
-struct device_only_type
-{
-  int val_;
-
-  __device__ device_only_type(const int val = 0) noexcept
-      : val_(val)
-  {}
-  __device__ device_only_type(cuda::std::initializer_list<int>, const int val) noexcept
-      : val_(val)
-  {}
-
-  __device__ device_only_type(const device_only_type& other) noexcept
-      : val_(other.val_)
-  {}
-  __device__ device_only_type(device_only_type&& other) noexcept
-      : val_(cuda::std::exchange(other.val_, -1))
-  {}
-
-  __device__ device_only_type& operator=(const device_only_type& other) noexcept
-  {
-    val_ = other.val_;
-    return *this;
-  }
-
-  __device__ device_only_type& operator=(device_only_type&& other) noexcept
-
-  {
-    val_ = cuda::std::exchange(other.val_, -1);
-    return *this;
-  }
-
-  __device__ ~device_only_type() noexcept {}
-
-  __device__ friend bool operator==(const device_only_type& lhs, const device_only_type& rhs) noexcept
-  {
-    return lhs.val_ == rhs.val_;
-  }
-  __device__ friend bool operator!=(const device_only_type& lhs, const device_only_type& rhs) noexcept
-  {
-    return lhs.val_ != rhs.val_;
-  }
-
-  __device__ void swap(device_only_type& other) noexcept
-  {
-    cuda::std::swap(val_, other.val_);
-  }
-};
 
 __device__ void test()
 {

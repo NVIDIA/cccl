@@ -12,68 +12,8 @@
 #include <cuda/std/cassert>
 #include <cuda/std/optional>
 
+#include "host_device_types.h"
 #include "test_macros.h"
-
-struct host_only_type
-{
-  int val_;
-
-  host_only_type(const int val = 0) noexcept
-      : val_(val)
-  {}
-
-  host_only_type(const host_only_type& other) noexcept
-      : val_(other.val_)
-  {}
-  host_only_type(host_only_type&& other) noexcept
-      : val_(cuda::std::exchange(other.val_, -1))
-  {}
-
-  host_only_type& operator=(const host_only_type& other) noexcept
-  {
-    val_ = other.val_;
-    return *this;
-  }
-
-  host_only_type& operator=(host_only_type&& other) noexcept
-
-  {
-    val_ = cuda::std::exchange(other.val_, -1);
-    return *this;
-  }
-
-  ~host_only_type() noexcept {}
-
-  friend bool operator==(const host_only_type& lhs, const host_only_type& rhs) noexcept
-  {
-    return lhs.val_ == rhs.val_;
-  }
-  friend bool operator!=(const host_only_type& lhs, const host_only_type& rhs) noexcept
-  {
-    return lhs.val_ != rhs.val_;
-  }
-  friend bool operator<(const host_only_type& lhs, const host_only_type& rhs) noexcept
-  {
-    return lhs.val_ < rhs.val_;
-  }
-  friend bool operator<=(const host_only_type& lhs, const host_only_type& rhs) noexcept
-  {
-    return lhs.val_ <= rhs.val_;
-  }
-  friend bool operator>(const host_only_type& lhs, const host_only_type& rhs) noexcept
-  {
-    return lhs.val_ > rhs.val_;
-  }
-  friend bool operator>=(const host_only_type& lhs, const host_only_type& rhs) noexcept
-  {
-    return lhs.val_ >= rhs.val_;
-  }
-
-  void swap(host_only_type& other) noexcept
-  {
-    cuda::std::swap(val_, other.val_);
-  }
-};
 
 void test()
 {
