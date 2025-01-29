@@ -66,7 +66,7 @@ template <class _Err>
 class bad_expected_access : public bad_expected_access<void>
 {
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI explicit bad_expected_access(_Err __e)
+  _CCCL_HIDE_FROM_ABI explicit bad_expected_access(_Err __e)
       : __unex_(_CUDA_VSTD::move(__e))
   {}
 
