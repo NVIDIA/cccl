@@ -72,7 +72,6 @@ struct is_contiguous_iterator_impl;
 template <typename Iterator>
 using is_contiguous_iterator = detail::is_contiguous_iterator_impl<Iterator>;
 
-#if _CCCL_STD_VER >= 2014
 /*! \brief <tt>constexpr bool</tt> that is \c true if \c Iterator satisfies
  *  <a href="https://en.cppreference.com/w/cpp/named_req/ContiguousIterator">ContiguousIterator</a>,
  *  aka it points to elements that are contiguous in memory, and \c false
@@ -84,7 +83,6 @@ using is_contiguous_iterator = detail::is_contiguous_iterator_impl<Iterator>;
  */
 template <typename Iterator>
 constexpr bool is_contiguous_iterator_v = is_contiguous_iterator<Iterator>::value;
-#endif
 
 /*! \brief Customization point that can be customized to indicate that an
  *  iterator type \c Iterator satisfies
@@ -145,9 +143,19 @@ struct is_libstdcxx_normal_iterator<::__gnu_cxx::__normal_iterator<Iterator, Con
 {};
 #endif
 
+#if _CCCL_COMPILER(MSVC)
+
+template <typename Iterator>
+struct is_msvc_contiguous_iterator : ::cuda::std::is_pointer<::std::_Unwrapped_t<Iterator>>
+{};
+
+#else
+
 template <typename Iterator>
 struct is_msvc_contiguous_iterator : false_type
 {};
+
+#endif
 
 template <typename Iterator>
 struct is_contiguous_iterator_impl
