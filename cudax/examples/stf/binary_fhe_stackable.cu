@@ -229,13 +229,12 @@ int main()
   eA.push(access_mode::read);
   eB.push(access_mode::read);
 
-  // TODO find a way to get "out" outside of this scope to do decryption in the main ctx
   auto out = circuit(eA, eB);
+
+  ctx.pop();
 
   std::vector<char> v_out;
   out.decrypt().convert_to_vector(v_out);
-
-  ctx.pop();
 
   ctx.finalize();
 
