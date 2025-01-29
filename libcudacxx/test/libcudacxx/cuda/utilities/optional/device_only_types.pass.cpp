@@ -8,7 +8,8 @@
 //===----------------------------------------------------------------------===//
 
 // We cannot suppress execution checks in cuda::std::construct_at
-// XFAIL: c++20
+// XFAIL: c++20 && !nvrtc
+// UNSUPPORTED: clang-14
 
 #include <cuda/std/cassert>
 #include <cuda/std/optional>
