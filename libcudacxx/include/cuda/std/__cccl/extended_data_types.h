@@ -57,7 +57,7 @@
 #    define _CCCL_HAS_NVFP8() 1
 #  else
 #    define _CCCL_HAS_NVFP8() 0
-#  endif // _CCCL_CUDACC_AT_LEAST(11, 8) && _CCCL_HAS_INCLUDE(<cuda_fp8.h>)
+#  endif // _CCCL_HAS_INCLUDE(<cuda_fp8.h>) && defined(_CCCL_HAS_NVFP16) && defined(_CCCL_HAS_NVBF16)
 #else
 #  define _CCCL_HAS_NVFP8() 0
 #endif // !defined(_CCCL_DISABLE_NVFP8_SUPPORT)
