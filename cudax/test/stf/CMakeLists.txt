@@ -34,6 +34,7 @@ set(stf_test_sources
   local_stf/stackable.cu
   local_stf/stackable2.cu
   local_stf/stackable3.cu
+  local_stf/stackable_export.cu
   places/managed.cu
   places/managed_from_user.cu
   places/non_current_device.cu
