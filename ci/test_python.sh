@@ -8,25 +8,28 @@ print_environment_details
 
 fail_if_no_gpu
 
-readonly prefix="${BUILD_DIR}/python/"
-export PYTHONPATH="${prefix}:${PYTHONPATH:-}"
+begin_group "⚙️ Existing site-packages"
+pip freeze
+end_group "⚙️ Existing site-packages"
 
-pushd ../python/cuda_cooperative >/dev/null
+for module in cuda_parallel cuda_cooperative; do
 
-run_command "⚙️  Pip install cuda_cooperative" pip install --force-reinstall --upgrade --target "${prefix}" .[test]
-run_command "🚀  Pytest cuda_cooperative" python -m pytest -v ./tests
+  pushd "../python/${module}" >/dev/null
 
-popd >/dev/null
+  TEMP_VENV_DIR="/tmp/${module}_venv"
+  rm -rf "${TEMP_VENV_DIR}"
+  python -m venv "${TEMP_VENV_DIR}"
+  . "${TEMP_VENV_DIR}/bin/activate"
+  echo 'cuda-cccl @ file:///home/coder/cccl/python/cuda_cccl' > /tmp/cuda-cccl_constraints.txt
+  run_command "⚙️  Pip install ${module}" pip install -c /tmp/cuda-cccl_constraints.txt .[test]
+  begin_group "⚙️ ${module} site-packages"
+  pip freeze
+  end_group "⚙️ ${module} site-packages"
+  run_command "🚀  Pytest ${module}" python -m pytest -v ./tests
+  deactivate
 
-pushd ../python/cuda_parallel >/dev/null
+  popd >/dev/null
 
-# Temporarily install the package twice to populate include directory as part of the first installation
-# and to let manifest discover these includes during the second installation. Do not forget to remove the
-# second installation after https://github.com/NVIDIA/cccl/issues/2281 is addressed.
-run_command "⚙️  Pip install cuda_parallel once" pip install --force-reinstall --upgrade --target "${prefix}" .[test]
-run_command "⚙️  Pip install cuda_parallel twice" pip install --force-reinstall --upgrade --target "${prefix}" .[test]
-run_command "🚀  Pytest cuda_parallel" python -m pytest -v ./tests
-
-popd >/dev/null
+done
 
 print_time_summary

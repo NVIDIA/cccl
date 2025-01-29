@@ -19,8 +19,9 @@ workflows:
     - {jobs: ['build'], std: 'max', cxx: ['intel', 'msvc2019']}
     - {jobs: ['build'], std: [17, 20], cxx: ['gcc', 'clang', 'msvc']}
     # Current CTK testing:
-    - {jobs: ['test'],  project: ['libcudacxx', 'thrust'], std: 'max', cxx: ['gcc']}
-    - {jobs: ['test'],  project: ['libcudacxx', 'thrust'], std: 'max', cxx: ['clang', 'msvc']}
+    - {jobs: ['test'],  project: ['libcudacxx', 'thrust'], std: 'max', cxx: ['gcc', 'clang']}
+    # Disabled until we figure out the issue with the TBB dll
+    #- {jobs: ['test'],  project: ['libcudacxx', 'thrust'], std: 'max', cxx: ['msvc']}
     # Split up cub tests:
     - {jobs: ['test_nolid', 'test_lid0'], project: ['cub'], std: 'max', cxx: ['gcc']}
     - {jobs: ['test_lid1',  'test_lid2'], project: ['cub'], std: 'max', cxx: ['gcc']}
@@ -278,13 +279,13 @@ projects:
 
 # testing -> Runner with GPU is in a nv-gh-runners testing pool
 gpus:
-  v100:     { sm: 70 }                # 32 GB,  40 runners
-  t4:       { sm: 75, testing: true } # 16 GB,   8 runners
-  rtx2080:  { sm: 75, testing: true } #  8 GB,   8 runners
-  rtxa6000: { sm: 86, testing: true } # 48 GB,  12 runners
-  l4:       { sm: 89, testing: true } # 24 GB,  48 runners
-  rtx4090:  { sm: 89, testing: true } # 24 GB,  10 runners
-  h100:     { sm: 90, testing: true } # 80 GB,  16 runners
+  v100:     { sm: 70 } # 32 GB,  40 runners
+  t4:       { sm: 75 } # 16 GB,  10 runners
+  rtx2080:  { sm: 75 } #  8 GB,  12 runners
+  rtxa6000: { sm: 86 } # 48 GB,  12 runners
+  l4:       { sm: 89 } # 24 GB,  48 runners
+  rtx4090:  { sm: 89 } # 24 GB,  10 runners
+  h100:     { sm: 90 } # 80 GB,  16 runners
 
 # Tags are used to define a `matrix job` in the workflow section.
 #
