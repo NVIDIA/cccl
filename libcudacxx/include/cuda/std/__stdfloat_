@@ -1,0 +1,57 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA_STD_STDFLOAT
+#define _CUDA_STD_STDFLOAT
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#if _CCCL_STD_VER >= 2017
+
+#  if _CCCL_HAS_INCLUDE(<stdfloat>)
+#    include <stdfloat>
+#  endif // _CCCL_HAS_INCLUDE(<stdfloat>)
+#  include <cuda/__floating_point_>
+
+_CCCL_PUSH_MACROS
+
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
+
+#  if LIBCUDACXX_FLOAT16_T == 1
+using float16_t = ::cuda::fp16;
+#  endif // LIBCUDACXX_FLOAT16_T == 1
+#  if LIBCUDACXX_FLOAT32_T == 1
+using float32_t = ::cuda::fp32;
+#  endif // LIBCUDACXX_FLOAT32_T == 1
+#  if LIBCUDACXX_FLOAT64_T == 1
+using float64_t = ::cuda::fp64;
+#  endif // LIBCUDACXX_FLOAT64_T == 1
+// #  if LIBCUDACXX_FLOAT128_T == 1
+// using float128_t = ::cuda::fp128;
+// #  endif // LIBCUDACXX_FLOAT128_T == 1
+#  if LIBCUDACXX_BFLOAT16_T == 1
+using bfloat16_t = ::cuda::bf16;
+#  endif // LIBCUDACXX_BFLOAT16_T == 1
+
+_LIBCUDACXX_END_NAMESPACE_STD
+
+_CCCL_POP_MACROS
+
+#endif // _CCCL_STD_VER >= 2017
+
+#endif // _CUDA_STD_STDFLOAT
