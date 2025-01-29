@@ -1,0 +1,69 @@
+digraph {
+"NODE_23" [style="filled" fillcolor="red" label="task fence"]
+subgraph cluster_section_1 {
+ subgraph cluster_section_2 {
+ subgraph cluster_section_3 {
+     color=black;
+    style=dashed
+    label="baz"
+    "NODE_7"
+    "NODE_5"
+} // end subgraph cluster_section_3
+ subgraph cluster_section_4 {
+     color=black;
+    style=dashed
+    label="baz"
+    "NODE_11"
+    "NODE_9"
+} // end subgraph cluster_section_4
+     color=black;
+    style=dashed
+    label="bar"
+    "NODE_3"
+} // end subgraph cluster_section_2
+ subgraph cluster_section_5 {
+ subgraph cluster_section_6 {
+     color=black;
+    style=dashed
+    label="baz"
+    "NODE_17"
+    "NODE_15"
+} // end subgraph cluster_section_6
+ subgraph cluster_section_7 {
+     color=black;
+    style=dashed
+    label="baz"
+    "NODE_21"
+    "NODE_19"
+} // end subgraph cluster_section_7
+     color=black;
+    style=dashed
+    label="bar"
+    "NODE_13"
+} // end subgraph cluster_section_5
+     color=black;
+    style=dashed
+    label="foo"
+} // end subgraph cluster_section_1
+ "NODE_15" -> "NODE_17"
+"NODE_9" -> "NODE_11"
+"NODE_11" -> "NODE_15"
+"NODE_13" -> "NODE_17"
+"NODE_19" -> "NODE_21"
+"NODE_11" -> "NODE_13"
+"NODE_7" -> "NODE_9"
+"NODE_5" -> "NODE_7"
+"NODE_17" -> "NODE_19"
+"NODE_3" -> "NODE_7"
+"NODE_21" -> "NODE_23"
+"NODE_21" [style="filled" fillcolor="white" label="t3\nA(rw)(0) \nB(read)(0) \nC(read)(0) "]
+"NODE_19" [style="filled" fillcolor="white" label="t2\nA(read)(0) \nC(rw)(0) "]
+"NODE_17" [style="filled" fillcolor="white" label="t3\nA(rw)(0) \nB(read)(0) \nC(read)(0) "]
+"NODE_15" [style="filled" fillcolor="white" label="t2\nA(read)(0) \nC(rw)(0) "]
+"NODE_13" [style="filled" fillcolor="white" label="t1\nA(read)(0) \nB(rw)(0) "]
+"NODE_11" [style="filled" fillcolor="white" label="t3\nA(rw)(0) \nB(read)(0) \nC(read)(0) "]
+"NODE_9" [style="filled" fillcolor="white" label="t2\nA(read)(0) \nC(rw)(0) "]
+"NODE_7" [style="filled" fillcolor="white" label="t3\nA(rw)(0) \nB(read)(0) \nC(read)(0) "]
+"NODE_5" [style="filled" fillcolor="white" label="t2\nA(read)(0) \nC(rw)(0) "]
+"NODE_3" [style="filled" fillcolor="white" label="t1\nA(read)(0) \nB(rw)(0) "]
+}
