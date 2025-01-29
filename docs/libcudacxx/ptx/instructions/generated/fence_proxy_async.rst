@@ -13,7 +13,7 @@ fence.proxy.async.global
 ^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // fence.proxy.async{.space}; // 6. PTX ISA 80, SM_90
+   // fence.proxy.async.space; // 6. PTX ISA 80, SM_90
    // .space     = { .global, .shared::cluster, .shared::cta }
    template <cuda::ptx::dot_space Space>
    __device__ static inline void fence_proxy_async(
@@ -23,7 +23,7 @@ fence.proxy.async.shared::cluster
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // fence.proxy.async{.space}; // 6. PTX ISA 80, SM_90
+   // fence.proxy.async.space; // 6. PTX ISA 80, SM_90
    // .space     = { .global, .shared::cluster, .shared::cta }
    template <cuda::ptx::dot_space Space>
    __device__ static inline void fence_proxy_async(
@@ -33,7 +33,7 @@ fence.proxy.async.shared::cta
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // fence.proxy.async{.space}; // 6. PTX ISA 80, SM_90
+   // fence.proxy.async.space; // 6. PTX ISA 80, SM_90
    // .space     = { .global, .shared::cluster, .shared::cta }
    template <cuda::ptx::dot_space Space>
    __device__ static inline void fence_proxy_async(
