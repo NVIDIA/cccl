@@ -84,7 +84,8 @@ struct DeviceMergeSortKernelSource
   static constexpr std::size_t block_sort_vsmem_per_block = BlockSortVSmemHelperT::vsmem_per_block;
   static constexpr std::size_t merge_vsmem_per_block      = MergeAgentVSmemHelperT::vsmem_per_block;
 
-  CUB_RUNTIME_FUNCTION static constexpr int BlockThreads(typename MaxPolicyT::MergeSortPolicy /*policy*/)
+  template <typename PolicyT>
+  CUB_RUNTIME_FUNCTION static constexpr int BlockThreads(PolicyT /*policy*/)
   {
     return merge_sort_helper_t::policy_t::BLOCK_THREADS;
   }
