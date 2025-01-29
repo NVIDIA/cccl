@@ -90,6 +90,12 @@ struct DeviceMergeSortKernelSource
     return merge_sort_helper_t::policy_t::BLOCK_THREADS;
   }
 
+  template <typename PolicyT>
+  CUB_RUNTIME_FUNCTION static constexpr int ItemsPerTile(PolicyT /*policy*/)
+  {
+    return merge_sort_helper_t::policy_t::ITEMS_PER_TILE;
+  }
+
   CUB_DEFINE_KERNEL_GETTER(
     MergeSortBlockSortKernel,
     DeviceMergeSortBlockSortKernel<
@@ -232,7 +238,7 @@ struct DispatchMergeSort
     do
     {
       auto wrapped_policy  = detail::merge_sort::MakeMergeSortPolicyWrapper(policy);
-      const auto tile_size = wrapped_policy.MergeSort().ItemsPerTile();
+      const auto tile_size = kernel_source.ItemsPerTile(wrapped_policy.MergeSort());
       const auto num_tiles = ::cuda::ceil_div(num_items, tile_size);
 
       const auto merge_partitions_size         = static_cast<std::size_t>(1 + num_tiles) * sizeof(OffsetT);
