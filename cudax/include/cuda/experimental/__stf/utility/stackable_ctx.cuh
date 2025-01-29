@@ -124,9 +124,14 @@ public:
 
         auto gctx = graph_ctx(stream, async_handles.back());
 
+        // Useful for tools
+        gctx.set_parent_ctx(levels[depth()].ctx);
+        gctx.get_dot()->set_ctx_symbol("stacked_ctx_" + ::std::to_string(levels.size()));
+
         auto wrapper = ::std::make_shared<stream_adapter>(gctx, stream);
+
         // FIXME : issue with the deinit phase
-        //   gctx.update_uncached_allocator(wrapper.allocator());
+        gctx.update_uncached_allocator(wrapper->allocator());
 
         levels.emplace_back(gctx, stream, wrapper);
       }
