@@ -744,10 +744,22 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __alt
 {
   using __value_type = _Tp;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr __alt(in_place_t, _Args&&... __args)
       : __value(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
+  _CCCL_EXEC_CHECK_DISABLE
+  constexpr __alt(const __alt&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  constexpr __alt(__alt&&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  constexpr __alt& operator=(const __alt&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  constexpr __alt& operator=(__alt&&) = default;
+
+  _CCCL_EXEC_CHECK_DISABLE
+  ~__alt() = default;
 
   __value_type __value;
 };
@@ -906,6 +918,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __dtor<__traits<_Types...>, _Trait::_Availab
 {
   struct __visitor
   {
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _Alt>
     _LIBCUDACXX_HIDE_FROM_ABI void operator()(_Alt& __alt) const noexcept
     {
@@ -1148,6 +1161,7 @@ public:
   }
 
 protected:
+  _CCCL_EXEC_CHECK_DISABLE
   template <
     size_t _Ip,
     class _Tp,
@@ -1166,6 +1180,7 @@ protected:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <
     size_t _Ip,
     class _Tp,
