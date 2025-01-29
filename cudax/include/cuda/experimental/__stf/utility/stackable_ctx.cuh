@@ -51,7 +51,7 @@ class stackable_logical_data_impl_base
 {
 public:
   virtual ~stackable_logical_data_impl_base() = default;
-  virtual void pop()                          = 0;
+  virtual void pop(bool need_untrack)         = 0;
 };
 
 /**
@@ -149,7 +149,11 @@ public:
       // Automatically pop data if needed
       for (auto& [key, d_impl] : current_level.pushed_data)
       {
-        d_impl->pop();
+        _CCCL_ASSERT(d_impl, "invalid value");
+        // false indicates there is no need to update the pushed_data map to
+        // automatically pop data when the context is popped because we are
+        // already doing this now.
+        d_impl->pop(false);
       }
 
       // Ensure everything is finished in the context
@@ -380,7 +384,12 @@ class stackable_logical_data
     {
       fprintf(stderr, "stackable_logical_data::~impl symbol=%s\n", symbol.c_str());
 
+      // Note the destruction is elements in a vector is done in reversed
+      // order, so this is appropriate.
       frozen_s.clear();
+
+      // Destroy the vector of logical data in reversed order
+      s.clear();
     }
 
     // Delete copy constructor and copy assignment operator
@@ -453,20 +462,26 @@ class stackable_logical_data
         ld.set_symbol(symbol + "." + ::std::to_string(current_data_depth + 1 - base_depth));
       }
 
-      s.push_back(mv(ld));
-
       // Keep track of data that were pushed in this context. Note that the ID
       // used is the ID of the logical data at this level. This will be used to
       // pop data automatically when nested contexts are popped.
       sctx.track_pushed_data(ld.get_unique_id(), this);
+
+      s.push_back(mv(ld));
     }
 
-    /* Pop one level down */
-    virtual void pop() override
+    /* Pop one level down : we do not untrack data if we are already popping
+     * the context */
+    virtual void pop(bool need_untrack) override
     {
-      // Prevent the automatic call to pop() when the context level gets
-      // popped.
-      sctx.untrack_pushed_data(ld.get_unique_id());
+      if (need_untrack)
+      {
+        // Prevent the automatic call to pop() when the context level gets
+        // popped.
+        sctx.untrack_pushed_data(s.back().get_unique_id());
+      }
+
+      fprintf(stderr, "stackable_logical_data::pop() %s\n", symbol.c_str());
 
       // We are going to unfreeze the data, which is currently being used
       // in a (graph) ctx that uses this stream to launch the graph
@@ -524,7 +539,10 @@ public:
   template <typename... Args>
   stackable_logical_data(stackable_ctx sctx, bool ld_from_shape, size_t target_depth, logical_data<T> ld)
       : pimpl(::std::make_shared<impl>(mv(sctx), ld_from_shape, target_depth, mv(ld)))
-  {}
+  {
+    static_assert(::std::is_move_constructible_v<stackable_logical_data>, "");
+    static_assert(::std::is_move_assignable_v<stackable_logical_data>, "");
+  }
 
   const auto& get_ld() const
   {
@@ -553,14 +571,10 @@ public:
 
   void pop()
   {
-#if 0
-    // We remove the data from the map before popping it to have the id of the
-    // logical data. Doing so will prevent the automatic call to pop() when the
-    // context level gets popped.
-    pimpl->get_sctx().untrack_pushed_data(get_ld().get_unique_id());
-#endif
-
-    pimpl->pop();
+    // This is called by the user: we are not currently popping the context so
+    // we need to untrack the data from the map of data previously pushed in
+    // the context (need_untrack=true).
+    pimpl->pop(true);
   }
 
   // Helpers
