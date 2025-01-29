@@ -53,7 +53,7 @@ template <typename BinaryFunction, typename System, typename DifferenceT>
 using tabulate_output_iterator_base =
   thrust::iterator_adaptor<tabulate_output_iterator<BinaryFunction, System, DifferenceT>,
                            counting_iterator<DifferenceT>,
-                           thrust::use_default,
+                           void,
                            System,
                            thrust::use_default,
                            tabulate_output_iterator_proxy<BinaryFunction, DifferenceT>>;
