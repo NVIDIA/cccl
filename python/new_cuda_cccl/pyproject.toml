@@ -1,0 +1,46 @@
+# Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+[build-system]
+requires = ["scikit-build-core>=0.10", "setuptools"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "cuda-cccl"
+description = "Experimental Package with CCCL headers to support JIT compilation"
+authors = [{ name = "NVIDIA Corporation" }]
+classifiers = [
+  "Programming Language :: Python :: 3 :: Only",
+  "Environment :: GPU :: NVIDIA CUDA",
+  "License :: OSI Approved :: Apache Software License",
+]
+license-files = ["LICENSE"]
+requires-python = ">=3.9"
+version = "3.0.0"
+# dynamic = ["version", "readme"]
+
+[project.urls]
+Homepage = "https://github.com/NVIDIA/cccl"
+
+[tool.scikit-build]
+minimum-version = "build-system.requires"
+build-dir = "build/{wheel_tag}"
+
+[tool.scikit-build.cmake]
+version = ">=3.21"
+args = []
+build-type = "Release"
+source-dir = "."
+
+[tool.scikit-build.ninja]
+version = ">=1.11"
+make-fallback = true
+
+[tool.scikit-build.wheel]
+py-api = "py3"
+platlib = ""
+
+[tool.scikit-build.wheel.packages]
+"cuda" = "cuda"
+"cuda/cccl" = "cuda/cccl"
