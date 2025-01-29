@@ -383,40 +383,6 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DispatchSpmv
   // Tuning policies
   //---------------------------------------------------------------------
 
-  /// SM35
-  struct Policy350
-  {
-    using SpmvPolicyT =
-      AgentSpmvPolicy<(sizeof(ValueT) > 4) ? 96 : 128,
-                      (sizeof(ValueT) > 4) ? 4 : 7,
-                      LOAD_LDG,
-                      LOAD_CA,
-                      LOAD_LDG,
-                      LOAD_LDG,
-                      LOAD_LDG,
-                      (sizeof(ValueT) > 4) ? true : false,
-                      BLOCK_SCAN_WARP_SCANS>;
-
-    using SegmentFixupPolicyT = AgentSegmentFixupPolicy<128, 3, BLOCK_LOAD_VECTORIZE, LOAD_LDG, BLOCK_SCAN_WARP_SCANS>;
-  };
-
-  /// SM37
-  struct Policy370
-  {
-    using SpmvPolicyT =
-      AgentSpmvPolicy<(sizeof(ValueT) > 4) ? 128 : 128,
-                      (sizeof(ValueT) > 4) ? 9 : 14,
-                      LOAD_LDG,
-                      LOAD_CA,
-                      LOAD_LDG,
-                      LOAD_LDG,
-                      LOAD_LDG,
-                      false,
-                      BLOCK_SCAN_WARP_SCANS>;
-
-    using SegmentFixupPolicyT = AgentSegmentFixupPolicy<128, 3, BLOCK_LOAD_VECTORIZE, LOAD_LDG, BLOCK_SCAN_WARP_SCANS>;
-  };
-
   /// SM50
   struct Policy500
   {
@@ -459,15 +425,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DispatchSpmv
 #if (CUB_PTX_ARCH >= 600)
   using PtxPolicy = Policy600;
 
-#elif (CUB_PTX_ARCH >= 500)
-  using PtxPolicy = Policy500;
-
-#elif (CUB_PTX_ARCH >= 370)
-  using PtxPolicy = Policy370;
-
 #else
-  using PtxPolicy = Policy350;
-
+  using PtxPolicy = Policy500;
 #endif
 
   // "Opaque" policies (whose parameterizations aren't reflected in the type signature)
@@ -502,12 +461,9 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") DispatchSpmv
         } else if (ptx_version >= 500) {
           spmv_config.template Init<typename Policy500::SpmvPolicyT>();
           segment_fixup_config.template Init<typename Policy500::SegmentFixupPolicyT>();
-        } else if (ptx_version >= 370) {
-          spmv_config.template Init<typename Policy370::SpmvPolicyT>();
-          segment_fixup_config.template Init<typename Policy370::SegmentFixupPolicyT>();
         } else {
-          spmv_config.template Init<typename Policy350::SpmvPolicyT>();
-          segment_fixup_config.template Init<typename Policy350::SegmentFixupPolicyT>();
+          spmv_config.template Init<typename Policy500::SpmvPolicyT>();
+          segment_fixup_config.template Init<typename Policy500::SegmentFixupPolicyT>();
         }));
   }
 
