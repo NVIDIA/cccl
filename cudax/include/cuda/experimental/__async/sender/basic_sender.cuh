@@ -75,7 +75,7 @@ struct receiver_defaults
 };
 
 template <class _Data, class _Rcvr>
-struct basic_receiver
+struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_receiver
 {
   using receiver_concept = __async::receiver_t;
   using __rcvr_t         = typename _Data::receiver_tag;
@@ -212,10 +212,10 @@ _CUDAX_TRIVIAL_API auto __get_attrs(long, const _Data&, const _Sndrs&... __sndrs
 }
 
 template <class _Data, class... _Sndrs>
-struct basic_sender;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_sender;
 
 template <class _Data, class _Sndr>
-struct basic_sender<_Data, _Sndr>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_sender<_Data, _Sndr>
 {
   using sender_concept = __async::sender_t;
   using __tag_t        = typename _Data::sender_tag;

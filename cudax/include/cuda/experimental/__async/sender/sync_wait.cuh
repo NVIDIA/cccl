@@ -67,7 +67,7 @@ private:
   template <class _Sndr>
   struct __state_t
   {
-    struct __rcvr_t
+    struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
     {
       using receiver_concept = receiver_t;
       __state_t* __state_;
