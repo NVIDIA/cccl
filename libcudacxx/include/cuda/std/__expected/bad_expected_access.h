@@ -66,10 +66,16 @@ template <class _Err>
 class bad_expected_access : public bad_expected_access<void>
 {
 public:
+#      if _CCCL_CUDA_COMPILER(CLANG) // Clang needs this or it breaks with device only types
+  _CCCL_HOST_DEVICE
+#      endif // _CCCL_CUDA_COMPILER(CLANG)
   _CCCL_HIDE_FROM_ABI explicit bad_expected_access(_Err __e)
       : __unex_(_CUDA_VSTD::move(__e))
   {}
 
+#      if _CCCL_CUDA_COMPILER(CLANG) // Clang needs this or it breaks with device only types
+  _CCCL_HOST_DEVICE
+#      endif // _CCCL_CUDA_COMPILER(CLANG)
   _CCCL_HIDE_FROM_ABI ~bad_expected_access() noexcept
   {
     __unex_.~_Err();
