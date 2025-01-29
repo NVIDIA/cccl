@@ -61,7 +61,7 @@ private:
   };
 
   template <class _Rcvr, class _Query>
-  struct __opstate_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
     using operation_state_concept = operation_state_t;
     using completion_signatures   = //
@@ -107,7 +107,7 @@ private:
 
   // This makes read_env a dependent sender:
   template <class _Query>
-  struct __opstate_t<receiver_archetype, _Query>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t<receiver_archetype, _Query>
   {
     using operation_state_concept = operation_state_t;
     using completion_signatures   = dependent_completions;
@@ -116,7 +116,7 @@ private:
   };
 
   template <class _Query>
-  struct __sndr_t;
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
 public:
   /// @brief Returns a sender that, when connected to a receiver and started,
@@ -127,7 +127,7 @@ public:
 };
 
 template <class _Query>
-struct read_env_t::__sndr_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t::__sndr_t
 {
   using sender_concept = sender_t;
   _CCCL_NO_UNIQUE_ADDRESS read_env_t __tag;
