@@ -201,6 +201,7 @@ public:
     // void track_pushed_data(int data_id, ::std::shared_ptr<stackable_logical_data_impl_base> data_impl)
     void track_pushed_data(int data_id, stackable_logical_data_impl_base* data_impl)
     {
+      _CCCL_ASSERT(data_impl, "invalid value");
       levels[depth()].pushed_data[data_id] = data_impl;
     }
 
