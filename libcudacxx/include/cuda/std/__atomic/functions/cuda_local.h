@@ -39,7 +39,7 @@ _CCCL_DEVICE inline bool __cuda_is_local(const volatile void* __ptr)
 #  if defined(_LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE)
   return false;
 // Only NVCC+NVRTC define __isLocal, so drop to PTX
-#  elif _CCCL_CUDACC_BELOW(12, 3) || _CCCL_CUDA_COMPILER(NVHPC)
+#  elif _CCCL_CUDA_COMPILER(NVHPC)
   int __tmp = 0;
   asm("{\n\t"
       "  .reg .pred p;\n\t"
@@ -49,7 +49,7 @@ _CCCL_DEVICE inline bool __cuda_is_local(const volatile void* __ptr)
       : "=r"(__tmp)
       : "l"(const_cast<const void*>(__ptr)));
   return __tmp == 1;
-#  else // ^^^ _CCCL_CUDACC_BELOW(12, 3) || _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv other compiler vvv
+#  else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv other compiler vvv
   return __isLocal(const_cast<const void*>(__ptr));
 #  endif // _CCCL_CUDACC_AT_LEAST(12, 3) && !_CCCL_CUDA_COMPILER(NVHPC)
 }

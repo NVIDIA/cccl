@@ -340,9 +340,6 @@ public:
     {
       return _CUDA_VSTD::__to_unsigned_like(__end_ - __begin_);
     }
-#  if _CCCL_CUDACC_BELOW(11, 3)
-    _CCCL_UNREACHABLE();
-#  endif // _CCCL_CUDACC_BELOW(11, 3)
   }
 
   _CCCL_TEMPLATE(class _It = _Iter)

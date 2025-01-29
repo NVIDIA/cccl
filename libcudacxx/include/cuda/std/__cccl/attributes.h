@@ -83,7 +83,7 @@
 // However, MSVC implements [[msvc::no_unique_address]] which does what
 // [[no_unique_address]] is supposed to do, in general.
 #  define _CCCL_NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
-#elif _CCCL_CUDACC_BELOW(11, 3) || (_CCCL_HAS_CPP_ATTRIBUTE(no_unique_address) < 201803L)
+#elif _CCCL_HAS_CPP_ATTRIBUTE(no_unique_address) < 201803L
 #  define _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 #  define _CCCL_NO_UNIQUE_ADDRESS
 #elif _CCCL_HAS_CPP_ATTRIBUTE(no_unique_address)
@@ -107,18 +107,13 @@
 
 // NVCC below 11.3 does not support nodiscard on friend operators
 // It always fails with clang
-#if _CCCL_CUDACC_BELOW(11, 3) || _CCCL_COMPILER(CLANG)
+#if _CCCL_COMPILER(CLANG)
 #  define _CCCL_NODISCARD_FRIEND friend
-#else // ^^^ _CCCL_CUDACC_BELOW(11, 3) ^^^ / vvv _CCCL_CUDACC_AT_LEAST(11, 3) vvv
+#else
 #  define _CCCL_NODISCARD_FRIEND _CCCL_NODISCARD friend
-#endif // _CCCL_CUDACC_AT_LEAST(11, 3) && !_CCCL_COMPILER(CLANG)
+#endif
 
-// NVCC below 11.3 does not support attributes on alias declarations
-#if _CCCL_CUDACC_BELOW(11, 3)
-#  define _CCCL_ALIAS_ATTRIBUTE(...)
-#else // ^^^ _CCCL_CUDACC_BELOW(11, 3) ^^^ / vvv _CCCL_CUDACC_AT_LEAST(11, 3) vvv
-#  define _CCCL_ALIAS_ATTRIBUTE(...) __VA_ARGS__
-#endif // _CCCL_CUDACC_AT_LEAST(11, 3)
+#define _CCCL_ALIAS_ATTRIBUTE(...) __VA_ARGS__
 
 #if _CCCL_COMPILER(MSVC)
 #  define _CCCL_NORETURN __declspec(noreturn)

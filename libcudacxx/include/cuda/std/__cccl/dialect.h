@@ -163,12 +163,7 @@
 #  define _CCCL_TRAIT(__TRAIT, ...) __TRAIT##_v<__VA_ARGS__>
 #endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
-// In nvcc prior to 11.3 global variables could not be marked constexpr
-#if _CCCL_CUDACC_BELOW(11, 3)
-#  define _CCCL_CONSTEXPR_GLOBAL const
-#else // ^^^ _CCCL_CUDACC_BELOW(11, 3) ^^^ / vvv _CCCL_CUDACC_AT_LEAST(11, 3) vvv
-#  define _CCCL_CONSTEXPR_GLOBAL constexpr
-#endif // _CCCL_CUDACC_AT_LEAST(11, 3)
+#define _CCCL_CONSTEXPR_GLOBAL constexpr
 
 // We need to treat host and device separately
 #if defined(__CUDA_ARCH__)

@@ -21,25 +21,22 @@
 #  pragma system_header
 #endif // no system header
 
-// cudaMallocAsync was introduced in CTK 11.2
-#if !_CCCL_COMPILER(MSVC2017) && _CCCL_CUDACC_AT_LEAST(11, 2)
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  include <cuda_runtime.h>
+#  include <cuda_runtime_api.h>
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
-#  if _CCCL_CUDA_COMPILER(CLANG)
-#    include <cuda_runtime.h>
-#    include <cuda_runtime_api.h>
-#  endif // _CCCL_CUDA_COMPILER(CLANG)
+#include <cuda/__memory_resource/get_property.h>
+#include <cuda/__memory_resource/properties.h>
+#include <cuda/std/__cuda/api_wrapper.h>
+#include <cuda/std/__new_>
+#include <cuda/std/span>
+#include <cuda/stream_ref>
 
-#  include <cuda/__memory_resource/get_property.h>
-#  include <cuda/__memory_resource/properties.h>
-#  include <cuda/std/__cuda/api_wrapper.h>
-#  include <cuda/std/__new_>
-#  include <cuda/std/span>
-#  include <cuda/stream_ref>
+#include <cuda/experimental/__memory_resource/any_resource.cuh>
+#include <cuda/experimental/__stream/stream.cuh>
 
-#  include <cuda/experimental/__memory_resource/any_resource.cuh>
-#  include <cuda/experimental/__stream/stream.cuh>
-
-#  if _CCCL_STD_VER >= 2014
+#if _CCCL_STD_VER >= 2014
 
 //! @file
 //! The \c device_memory_pool class provides a wrapper around a `cudaMempool_t`.
@@ -133,7 +130,6 @@ private:
   static void __cuda_supports_export_handle_type(const int __device_id, cudaMemAllocationHandleType __handle_type)
   {
     int __supported_handles = static_cast<int>(cudaMemAllocationHandleType::cudaMemHandleTypeNone);
-#    if _CCCL_CUDACC_AT_LEAST(11, 3)
     if (__handle_type != cudaMemAllocationHandleType::cudaMemHandleTypeNone)
     {
       const ::cudaError_t __status =
@@ -152,7 +148,6 @@ private:
           ::cuda::__throw_cuda_error(__status, "Failed to call cudaDeviceGetAttribute");
       }
     }
-#    endif // _CCCL_CUDACC_BELOW(11, 3)
     if ((static_cast<int>(__handle_type) & __supported_handles) != static_cast<int>(__handle_type))
     {
       ::cuda::__throw_cuda_error(
@@ -361,14 +356,14 @@ public:
     return __pool_handle_ == __rhs.__pool_handle_;
   }
 
-#    if _CCCL_STD_VER <= 2017
+#  if _CCCL_STD_VER <= 2017
   //! @brief Inequality comparison with another \c device_memory_pool.
   //! @returns true if the stored ``cudaMemPool_t`` are not equal.
   _CCCL_NODISCARD constexpr bool operator!=(device_memory_pool const& __rhs) const noexcept
   {
     return __pool_handle_ != __rhs.__pool_handle_;
   }
-#    endif // _CCCL_STD_VER <= 2017
+#  endif // _CCCL_STD_VER <= 2017
 
   //! @brief Equality comparison with a \c cudaMemPool_t.
   //! @param __rhs A \c cudaMemPool_t.
@@ -378,7 +373,7 @@ public:
     return __lhs.__pool_handle_ == __rhs;
   }
 
-#    if _CCCL_STD_VER <= 2017
+#  if _CCCL_STD_VER <= 2017
   //! @copydoc device_memory_pool::operator==(device_memory_pool const&, ::cudaMemPool_t)
   _CCCL_NODISCARD_FRIEND constexpr bool operator==(::cudaMemPool_t __lhs, device_memory_pool const& __rhs) noexcept
   {
@@ -396,7 +391,7 @@ public:
   {
     return __rhs.__pool_handle_ != __lhs;
   }
-#    endif // _CCCL_STD_VER <= 2017
+#  endif // _CCCL_STD_VER <= 2017
 
   //! @brief Returns the underlying handle to the CUDA memory pool.
   _CCCL_NODISCARD constexpr cudaMemPool_t get() const noexcept
@@ -425,8 +420,6 @@ public:
 
 } // namespace cuda::experimental
 
-#  endif // _CCCL_STD_VER >= 2014
-
-#endif // !_CCCL_COMPILER(MSVC2017) && _CCCL_CUDACC_AT_LEAST(11, 2)
+#endif // _CCCL_STD_VER >= 2014
 
 #endif // _CUDAX__MEMORY_RESOURCE_DEVICE_MEMORY_POOL
