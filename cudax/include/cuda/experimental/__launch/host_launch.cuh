@@ -59,6 +59,7 @@ void host_launch(stream_ref __stream, _Callable __callable, _Args... __args)
     _CUDA_VSTD::apply(__callable, __args_tuple);
   });
 
+  // We use the callback here to have it execute even on stream error, because it needs to free the above allocation
   _CCCL_TRY_CUDA_API(
     cudaStreamAddCallback,
     "Failed to launch host function",
