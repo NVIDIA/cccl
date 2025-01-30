@@ -33,12 +33,12 @@ public:
       : values(mv(v))
       , ctx(ctx)
   {
-    ld = ::std::make_unique<stackable_logical_data<slice<char>>>(ctx.logical_data(values.data(), values.size()));
+    ld = ctx.logical_data(values.data(), values.size());
   }
 
   void set_symbol(std::string s)
   {
-    ld->set_symbol(s);
+    ld.set_symbol(s);
     symbol = s;
   }
 
@@ -64,7 +64,7 @@ public:
   // This will asynchronously fill string s
   void convert_to_vector(std::vector<char>& v)
   {
-    ctx.host_launch(ld->read()).set_symbol("to_vector")->*[&](auto dl) {
+    ctx.host_launch(ld.read()).set_symbol("to_vector")->*[&](auto dl) {
       v.resize(dl.size());
       for (size_t i = 0; i < dl.size(); i++)
       {
@@ -75,18 +75,18 @@ public:
 
   ciphertext encrypt() const;
 
-  mutable ::std::unique_ptr<stackable_logical_data<slice<char>>> ld;
+  mutable stackable_logical_data<slice<char>> ld;
 
   template <typename... Pack>
   void push(Pack&&... pack)
   {
-    ld->push(::std::forward<Pack>(pack)...);
+    ld.push(::std::forward<Pack>(pack)...);
   }
 
 #if 0
   void pop()
   {
-    ld->pop();
+    ld.pop();
   }
 #endif
 
@@ -116,8 +116,8 @@ public:
 
   static void copy_content(stackable_ctx& ctx, const ciphertext& src, ciphertext& dst)
   {
-    dst.ld = ::std::make_unique<stackable_logical_data<slice<uint64_t>>>(ctx.logical_data(src.ld->shape()));
-    ctx.parallel_for(src.ld->shape(), src.ld->read(), dst.ld->write()).set_symbol("copy")->*
+    dst.ld = stackable_logical_data<slice<uint64_t>>(ctx.logical_data(src.ld.shape()));
+    ctx.parallel_for(src.ld.shape(), src.ld.read(), dst.ld.write()).set_symbol("copy")->*
       [] __device__(size_t i, auto src, auto dst) {
         dst(i) = src(i);
       };
@@ -125,16 +125,15 @@ public:
 
   void set_symbol(std::string s)
   {
-    ld->set_symbol(s);
+    ld.set_symbol(s);
     symbol = s;
   }
 
   plaintext decrypt() const
   {
     plaintext p(ctx);
-    p.ld = ::std::make_unique<stackable_logical_data<slice<char>>>(
-      ctx.logical_data(shape_of<slice<char>>(ld->shape().size())));
-    ctx.parallel_for(ld->shape(), ld->read(), p.ld->write()).set_symbol("decrypt")->*
+    p.ld = ctx.logical_data(shape_of<slice<char>>(ld.shape().size()));
+    ctx.parallel_for(ld.shape(), ld.read(), p.ld.write()).set_symbol("decrypt")->*
       [] __device__(size_t i, auto dctxt, auto dptxt) {
         dptxt(i) = char((dctxt(i) >> 32));
       };
@@ -156,9 +155,9 @@ public:
   ciphertext operator|(const ciphertext& other) const
   {
     ciphertext result(ctx);
-    result.ld = ::std::make_unique<stackable_logical_data<slice<uint64_t>>>(ctx.logical_data(ld->shape()));
+    result.ld = ctx.logical_data(ld.shape());
 
-    ctx.parallel_for(ld->shape(), ld->read(), other.ld->read(), result.ld->write()).set_symbol("OR")->*
+    ctx.parallel_for(ld.shape(), ld.read(), other.ld.read(), result.ld.write()).set_symbol("OR")->*
       [] __device__(size_t i, auto d_c1, auto d_c2, auto d_res) {
         d_res(i) = d_c1(i) | d_c2(i);
       };
@@ -169,9 +168,9 @@ public:
   ciphertext operator&(const ciphertext& other) const
   {
     ciphertext result(ctx);
-    result.ld = ::std::make_unique<stackable_logical_data<slice<uint64_t>>>(ctx.logical_data(ld->shape()));
+    result.ld = ctx.logical_data(ld.shape());
 
-    ctx.parallel_for(ld->shape(), ld->read(), other.ld->read(), result.ld->write()).set_symbol("AND")->*
+    ctx.parallel_for(ld.shape(), ld.read(), other.ld.read(), result.ld.write()).set_symbol("AND")->*
       [] __device__(size_t i, auto d_c1, auto d_c2, auto d_res) {
         d_res(i) = d_c1(i) & d_c2(i);
       };
@@ -182,9 +181,9 @@ public:
   ciphertext operator~() const
   {
     ciphertext result(ctx);
-    result.ld = ::std::make_unique<stackable_logical_data<slice<uint64_t>>>(ctx.logical_data(ld->shape()));
+    result.ld = ctx.logical_data(ld.shape());
 
-    ctx.parallel_for(ld->shape(), ld->read(), result.ld->write()).set_symbol("NOT")->*
+    ctx.parallel_for(ld.shape(), ld.read(), result.ld.write()).set_symbol("NOT")->*
       [] __device__(size_t i, auto d_c, auto d_res) {
         d_res(i) = ~d_c(i);
       };
@@ -195,17 +194,17 @@ public:
   template <typename... Pack>
   void push(Pack&&... pack)
   {
-    ld->push(::std::forward<Pack>(pack)...);
+    ld.push(::std::forward<Pack>(pack)...);
   }
 
 #if 0
   void pop()
   {
-    ld->pop();
+    ld.pop();
   }
 #endif
 
-  mutable ::std::unique_ptr<stackable_logical_data<slice<uint64_t>>> ld;
+  mutable stackable_logical_data<slice<uint64_t>> ld;
 
 private:
   mutable stackable_ctx ctx;
@@ -215,10 +214,9 @@ private:
 ciphertext plaintext::encrypt() const
 {
   ciphertext c(ctx);
-  c.ld = ::std::make_unique<stackable_logical_data<slice<uint64_t>>>(
-    ctx.logical_data(shape_of<slice<uint64_t>>(ld->shape().size())));
+  c.ld = ctx.logical_data(shape_of<slice<uint64_t>>(ld.shape().size()));
 
-  ctx.parallel_for(ld->shape(), ld->read(), c.ld->write()).set_symbol("encrypt")->*
+  ctx.parallel_for(ld.shape(), ld.read(), c.ld.write()).set_symbol("encrypt")->*
     [] __device__(size_t i, auto dptxt, auto dctxt) {
       // A super safe encryption !
       dctxt(i) = ((uint64_t) (dptxt(i)) << 32 | 0x4);
