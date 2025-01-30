@@ -129,6 +129,10 @@
 #  define _CCCL_NO_VARIABLE_TEMPLATES
 #endif // _CCCL_STD_VER <= 2011 || __cpp_variable_templates < 201304L
 
+#if !(__cpp_conditional_explicit >= 201806L)
+#  define _CCCL_NO_CONDITIONAL_EXPLICIT
+#endif // !(__cpp_conditional_explicit >= 201806L)
+
 ///////////////////////////////////////////////////////////////////////////////
 // Conditionally use certain language features depending on availability
 ///////////////////////////////////////////////////////////////////////////////

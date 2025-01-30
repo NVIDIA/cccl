@@ -4,12 +4,12 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD_LIMITS
-#define _CUDA_STD_LIMITS
+#ifndef _CUDA___FWD_FP_H
+#define _CUDA___FWD_FP_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,11 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
-_CCCL_PUSH_MACROS
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-#include <cuda/std/__limits/extended_floating_point.h>
-#include <cuda/std/__limits/limits.h>
+template <class _Config>
+class __fp;
 
-_CCCL_POP_MACROS
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
-#endif // _CUDA_STD_LIMITS
+#endif // _CUDA___FWD_FP_H

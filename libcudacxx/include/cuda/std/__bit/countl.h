@@ -23,10 +23,10 @@
 
 #include <cuda/std/__bit/clz.h>
 #include <cuda/std/__bit/rotate.h>
+#include <cuda/std/__limits/limits.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

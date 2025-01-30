@@ -4,12 +4,12 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD_LIMITS
-#define _CUDA_STD_LIMITS
+#ifndef _CUDA_FLOATING_POINT_
+#define _CUDA_FLOATING_POINT_
 
 #include <cuda/std/detail/__config>
 
@@ -21,11 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
-_CCCL_PUSH_MACROS
+#include <cuda/__floating_point/cast.h>
+#include <cuda/__floating_point/config.h>
+#include <cuda/__floating_point/conv_rank_order.h>
+#include <cuda/__floating_point/fp.h>
+#include <cuda/__floating_point/literals.h>
+#include <cuda/__floating_point/operators.h>
+#include <cuda/__floating_point/storage.h>
+#include <cuda/__floating_point/type_traits.h>
 
-#include <cuda/std/__limits/extended_floating_point.h>
-#include <cuda/std/__limits/limits.h>
-
-_CCCL_POP_MACROS
-
-#endif // _CUDA_STD_LIMITS
+#endif // _CUDA_FLOATING_POINT_
