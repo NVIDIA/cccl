@@ -44,7 +44,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_ctz_32bit(uint32_t __x) noex
   {
     return __digits;
   }
-  if (__x & 0x1)
+  if (__x & 1)
   {
     return 0;
   }
@@ -58,7 +58,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_ctz_32bit(uint32_t __x) noex
       __pos += __i;
     }
   }
-  return (__pos - (__x & 0x1));
+  return (__pos - (__x & 1));
 }
 
 template <typename _Tp>
