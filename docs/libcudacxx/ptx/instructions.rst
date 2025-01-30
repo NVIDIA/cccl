@@ -29,6 +29,16 @@ PTX Instructions
    instructions/red_async
    instructions/st_async
    instructions/st_bulk
+   instructions/tcgen05_alloc
+   instructions/tcgen05_commit
+   instructions/tcgen05_cp
+   instructions/tcgen05_fence
+   instructions/tcgen05_ld
+   instructions/tcgen05_mma
+   instructions/tcgen05_mma_ws
+   instructions/tcgen05_shift
+   instructions/tcgen05_st
+   instructions/tcgen05_wait
    instructions/tensormap_replace
    instructions/tensormap_cp_fenceproxy
    instructions/special_registers
