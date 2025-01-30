@@ -43,6 +43,7 @@
         "editor.formatOnSave": true,
         "clang-format.executable": "/usr/bin/clang-format",
         "clangd.arguments": [
+          "--header-insertion=never",
           "--compile-commands-dir=${workspaceFolder}"
         ],
         "files.eol": "\n",
