@@ -239,9 +239,9 @@ struct policy_hub
                                    DelayConstructor>;
   };
 
-  struct Policy350
+  struct Policy500
       : DefaultPolicy<fixed_delay_constructor_t<350, 450>>
-      , ChainedPolicy<350, Policy350, Policy350>
+      , ChainedPolicy<500, Policy500, Policy500>
   {};
 
   // Use values from tuning if a specialization exists, otherwise pick DefaultPolicy
@@ -258,7 +258,7 @@ struct policy_hub
   static auto select_agent_policy(long) -> typename DefaultPolicy<
     default_delay_constructor_t<typename accumulator_pack_t<OffsetT>::pack_t>>::ThreeWayPartitionPolicy;
 
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy350>
+  struct Policy800 : ChainedPolicy<800, Policy800, Policy500>
   {
     using ThreeWayPartitionPolicy = decltype(select_agent_policy<sm80_tuning<InputT, OffsetT>>(0));
   };
