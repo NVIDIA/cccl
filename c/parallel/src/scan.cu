@@ -78,8 +78,10 @@ Tuning find_tuning(int cc, const Tuning (&tunings)[N])
 
 scan_runtime_tuning_policy get_policy(int /*cc*/, cccl_type_info /*accumulator_type*/)
 {
-  // TODO(ashwin): returning some default for now:
-  return {128, 15, cub::LOAD_CA};
+  // TODO: we should update this once we figure out a way to reuse
+  // tuning logic from C++. Alternately, we should implement
+  // something better than a hardcoded default:
+  return {128, 4, cub::LOAD_DEFAULT};
 }
 
 static cccl_type_info get_accumulator_type(cccl_op_t /*op*/, cccl_iterator_t /*input_it*/, cccl_value_t init)

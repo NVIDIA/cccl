@@ -33,9 +33,9 @@ void scan(cccl_iterator_t input, cccl_iterator_t output, unsigned long long num_
             &build, input, output, op, init, cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, ctk_path));
 
   const std::string sass = inspect_sass(build.cubin, build.cubin_size);
-  // TODO(ashwin): do we need the below?
-  // REQUIRE(sass.find("LDL") == std::string::npos);
-  // REQUIRE(sass.find("STL") == std::string::npos);
+
+  REQUIRE(sass.find("LDL") == std::string::npos);
+  REQUIRE(sass.find("STL") == std::string::npos);
 
   size_t temp_storage_bytes = 0;
   REQUIRE(CUDA_SUCCESS == cccl_device_scan(build, nullptr, &temp_storage_bytes, input, output, num_items, op, init, 0));
