@@ -60,6 +60,15 @@ struct scan_runtime_tuning_policy
   {
     return load_modifier;
   }
+
+  void CheckLoadModifier() const
+  {
+    if (LoadModifier() == cub::CacheLoadModifier::LOAD_LDG)
+    {
+      throw std::runtime_error("The memory consistency model does not apply to texture "
+                               "accesses");
+    }
+  }
 };
 
 template <typename Tuning, int N>

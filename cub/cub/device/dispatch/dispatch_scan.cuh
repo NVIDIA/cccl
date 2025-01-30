@@ -260,12 +260,9 @@ struct DispatchScan
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t
   Invoke(InitKernelT init_kernel, ScanKernelT scan_kernel, ActivePolicyT policy = {})
   {
-    // TODO(ashwin): Does this now need to be a runtime check?
     // `LOAD_LDG` makes in-place execution UB and doesn't lead to better
     // performance.
-    // static_assert(policy.LoadModifier() != CacheLoadModifier::LOAD_LDG,
-    //               "The memory consistency model does not apply to texture "
-    //               "accesses");
+    policy.CheckLoadModifier();
 
     cudaError error = cudaSuccess;
     do
