@@ -41,6 +41,8 @@
 
 #  include <thrust/detail/minmax.h>
 #  include <thrust/distance.h>
+#  include <thrust/iterator/counting_iterator.h>
+#  include <thrust/iterator/transform_iterator.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -116,11 +118,11 @@ find_if_n(execution_policy<Derived>& policy, InputIt first, Size num_items, Pred
   const Size interval_size      = (thrust::min)(interval_threshold, num_items);
 
   // force transform_iterator output to bool
-  using XfrmIterator  = transform_input_iterator_t<bool, InputIt, Predicate>;
-  using IteratorTuple = thrust::tuple<XfrmIterator, counting_iterator_t<Size>>;
+  using XfrmIterator  = transform_iterator<Predicate, InputIt, bool, bool>;
+  using IteratorTuple = thrust::tuple<XfrmIterator, counting_iterator<Size>>;
   using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
-  IteratorTuple iter_tuple = thrust::make_tuple(XfrmIterator(first, predicate), counting_iterator_t<Size>(0));
+  IteratorTuple iter_tuple = thrust::make_tuple(XfrmIterator(first, predicate), counting_iterator<Size>(0));
 
   ZipIterator begin = thrust::make_zip_iterator(iter_tuple);
   ZipIterator end   = begin + num_items;
