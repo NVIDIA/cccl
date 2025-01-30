@@ -123,7 +123,7 @@ struct items_per_thread
 };
 
 template <class T>
-struct Tuning<sm52, T>
+struct Tuning<core::detail::sm52, T>
 {
   const static int INPUT_SIZE = sizeof(T);
   enum
@@ -149,16 +149,16 @@ struct UniqueAgent
   {
     using tuning = Tuning<Arch, item_type>;
 
-    using ItemsLoadIt = typename core::LoadIterator<PtxPlan, ItemsIt>::type;
+    using ItemsLoadIt = typename core::detail::LoadIterator<PtxPlan, ItemsIt>::type;
 
-    using BlockLoadItems = typename core::BlockLoad<PtxPlan, ItemsLoadIt>::type;
+    using BlockLoadItems = typename core::detail::BlockLoad<PtxPlan, ItemsLoadIt>::type;
 
     using BlockDiscontinuityItems = cub::BlockDiscontinuity<item_type, PtxPlan::BLOCK_THREADS, 1, 1, Arch::ver>;
 
     using TilePrefixCallback = cub::TilePrefixCallbackOp<Size, ::cuda::std::plus<>, ScanTileState, Arch::ver>;
     using BlockScan          = cub::BlockScan<Size, PtxPlan::BLOCK_THREADS, PtxPlan::SCAN_ALGORITHM, 1, 1, Arch::ver>;
 
-    using shared_items_t = core::uninitialized_array<item_type, PtxPlan::ITEMS_PER_TILE>;
+    using shared_items_t = core::detail::uninitialized_array<item_type, PtxPlan::ITEMS_PER_TILE>;
 
     union TempStorage
     {
@@ -175,7 +175,7 @@ struct UniqueAgent
     }; // union TempStorage
   }; // struct PtxPlan
 
-  using ptx_plan = typename core::specialize_plan_msvc10_war<PtxPlan>::type::type;
+  using ptx_plan = typename core::detail::specialize_plan_msvc10_war<PtxPlan>::type::type;
 
   using ItemsLoadIt             = typename ptx_plan::ItemsLoadIt;
   using BlockLoadItems          = typename ptx_plan::BlockLoadItems;
@@ -224,8 +224,6 @@ struct UniqueAgent
       Size num_selections_prefix,
       Size /*num_selections*/)
     {
-      using core::sync_threadblock;
-
 #  pragma unroll
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
@@ -236,14 +234,14 @@ struct UniqueAgent
         }
       }
 
-      sync_threadblock();
+      __syncthreads();
 
       for (int item = threadIdx.x; item < num_tile_selections; item += BLOCK_THREADS)
       {
         items_out[num_selections_prefix + item] = get_shared()[item];
       }
 
-      sync_threadblock();
+      __syncthreads();
     }
 
     //---------------------------------------------------------------------
@@ -253,8 +251,7 @@ struct UniqueAgent
     template <bool IS_LAST_TILE, bool IS_FIRST_TILE>
     Size THRUST_DEVICE_FUNCTION consume_tile_impl(int num_tile_items, int tile_idx, Size tile_base)
     {
-      using core::sync_threadblock;
-      using core::uninitialized_array;
+      using core::detail::uninitialized_array;
 
       item_type items_loc[ITEMS_PER_THREAD];
       Size selection_flags[ITEMS_PER_THREAD];
@@ -270,7 +267,7 @@ struct UniqueAgent
         BlockLoadItems(temp_storage.load_items).Load(items_in + tile_base, items_loc);
       }
 
-      sync_threadblock();
+      __syncthreads();
 
       if (IS_FIRST_TILE)
       {
@@ -294,7 +291,7 @@ struct UniqueAgent
         }
       }
 
-      sync_threadblock();
+      __syncthreads();
 
       Size num_tile_selections   = 0;
       Size num_selections        = 0;
@@ -337,7 +334,7 @@ struct UniqueAgent
         }
       }
 
-      sync_threadblock();
+      __syncthreads();
 
       scatter(items_loc,
               selection_flags,
@@ -420,7 +417,7 @@ struct UniqueAgent
 
     impl(storage,
          tile_state,
-         core::make_load_iterator(ptx_plan(), items_in),
+         core::detail::make_load_iterator(ptx_plan(), items_in),
          items_out,
          binary_pred,
          num_items,
@@ -435,7 +432,7 @@ struct InitAgent
   template <class Arch>
   struct PtxPlan : PtxPolicy<128>
   {};
-  using ptx_plan = core::specialize_plan<PtxPlan>;
+  using ptx_plan = core::detail::specialize_plan<PtxPlan>;
 
   //---------------------------------------------------------------------
   // Agent entry point
@@ -463,9 +460,9 @@ static cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   Size num_items,
   cudaStream_t stream)
 {
-  using core::AgentLauncher;
-  using core::AgentPlan;
-  using core::get_agent_plan;
+  using core::detail::AgentLauncher;
+  using core::detail::AgentPlan;
+  using core::detail::get_agent_plan;
 
   using unique_agent = AgentLauncher<UniqueAgent<ItemsInputIt, ItemsOutputIt, BinaryPred, Size, NumSelectedOutIt>>;
 
@@ -473,14 +470,14 @@ static cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
 
   using init_agent = AgentLauncher<InitAgent<ScanTileState, NumSelectedOutIt, Size>>;
 
-  using core::get_plan;
+  using core::detail::get_plan;
   typename get_plan<init_agent>::type init_plan     = init_agent::get_plan();
   typename get_plan<unique_agent>::type unique_plan = unique_agent::get_plan(stream);
 
   int tile_size    = unique_plan.items_per_tile;
   size_t num_tiles = ::cuda::ceil_div(num_items, tile_size);
 
-  size_t vshmem_size = core::vshmem_size(unique_plan.shared_memory_size, num_tiles);
+  size_t vshmem_size = core::detail::vshmem_size(unique_plan.shared_memory_size, num_tiles);
 
   cudaError_t status         = cudaSuccess;
   size_t allocation_sizes[2] = {0, vshmem_size};
@@ -550,14 +547,14 @@ THRUST_RUNTIME_FUNCTION ItemsOutputIt unique(
   void* allocations[2]       = {nullptr, nullptr};
 
   size_t storage_size = 0;
-  status              = core::alias_storage(nullptr, storage_size, allocations, allocation_sizes);
+  status              = core::detail::alias_storage(nullptr, storage_size, allocations, allocation_sizes);
   cuda_cub::throw_on_error(status, "unique: failed on 1st step");
 
   // Allocate temporary storage.
   thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, storage_size);
   void* ptr = static_cast<void*>(tmp.data().get());
 
-  status = core::alias_storage(ptr, storage_size, allocations, allocation_sizes);
+  status = core::detail::alias_storage(ptr, storage_size, allocations, allocation_sizes);
   cuda_cub::throw_on_error(status, "unique: failed on 2nd step");
 
   size_type* d_num_selected_out = thrust::detail::aligned_reinterpret_cast<size_type*>(allocations[0]);
