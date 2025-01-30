@@ -102,7 +102,7 @@
 #endif
 
 #if defined(_CCCL_HAS_CUDA_COMPILER) && _CCCL_CUDACC_BELOW(12) && !defined(CCCL_IGNORE_DEPRECATED_CUDA_BELOW_12)
-#  error "Support for CUDA versions below 12 is not supported." \
+#  error "CUDA versions below 12 are not supported." \
 "Define CCCL_IGNORE_DEPRECATED_CUDA_BELOW_12 to suppress this message."
 #endif
 
