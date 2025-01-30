@@ -1,10 +1,9 @@
-# Copyright (c) 2024, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-import os
-import shutil
 import subprocess
+from pathlib import Path
 
 from setuptools import Command, Extension, setup, find_packages, find_namespace_packages
 from setuptools.command.build_py import build_py
@@ -84,8 +83,8 @@ class BuildCMakeExtension(build_ext):
             '-DCMAKE_BUILD_TYPE=Release',
         ]
 
-        if not os.path.exists(self.build_temp):
-            os.makedirs(self.build_temp)
+        build_temp_path = Path(self.build_temp)
+        build_temp_path.mkdir(parents=True, exist_ok=True)
 
         subprocess.check_call(['cmake', cccl_path] +
                               cmake_args, cwd=self.build_temp)

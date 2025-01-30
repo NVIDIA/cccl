@@ -1385,19 +1385,19 @@ class Configuration(object):
 
     def configure_substitutions(self):
         sub = self.config.substitutions
-        cxx_path = pipes.quote(self.cxx.path)
+        cxx_path = shlex.quote(self.cxx.path)
         # Configure compiler substitutions
         sub.append(('%cxx', cxx_path))
         sub.append(('%libcxx_src_root', self.libcudacxx_src_root))
         # Configure flags substitutions
-        flags_str = ' '.join([pipes.quote(f) for f in self.cxx.flags])
-        compile_flags_str = ' '.join([pipes.quote(f) for f in self.cxx.compile_flags])
-        link_flags_str = ' '.join([pipes.quote(f) for f in self.cxx.link_flags])
-        all_flags = '%s %s %s' % (flags_str, compile_flags_str, link_flags_str)
-        sub.append(('%flags', flags_str))
-        sub.append(('%compile_flags', compile_flags_str))
-        sub.append(('%link_flags', link_flags_str))
-        sub.append(('%all_flags', all_flags))
+        flags_str = " ".join([shlex.quote(f) for f in self.cxx.flags])
+        compile_flags_str = " ".join([shlex.quote(f) for f in self.cxx.compile_flags])
+        link_flags_str = " ".join([shlex.quote(f) for f in self.cxx.link_flags])
+        all_flags = "%s %s %s" % (flags_str, compile_flags_str, link_flags_str)
+        sub.append(("%flags", flags_str))
+        sub.append(("%compile_flags", compile_flags_str))
+        sub.append(("%link_flags", link_flags_str))
+        sub.append(("%all_flags", all_flags))
         if self.cxx.isVerifySupported():
             verify_str = ' ' + ' '.join(self.cxx.verify_flags) + ' '
             sub.append(('%verify', verify_str))
@@ -1422,11 +1422,11 @@ class Configuration(object):
         # Configure run env substitution.
         sub.append(('%run', '%t.exe'))
         # Configure not program substitutions
-        not_py = os.path.join(self.libcudacxx_src_root, 'test', 'utils', 'not.py')
-        not_str = '%s %s ' % (pipes.quote(sys.executable), pipes.quote(not_py))
-        sub.append(('not ', not_str))
-        if self.get_lit_conf('libcudacxx_gdb'):
-            sub.append(('%libcxx_gdb', self.get_lit_conf('libcudacxx_gdb')))
+        not_py = os.path.join(self.libcudacxx_src_root, "test", "utils", "not.py")
+        not_str = "%s %s " % (shlex.quote(sys.executable), shlex.quote(not_py))
+        sub.append(("not ", not_str))
+        if self.get_lit_conf("libcudacxx_gdb"):
+            sub.append(("%libcxx_gdb", self.get_lit_conf("libcudacxx_gdb")))
 
     def can_use_deployment(self):
         # Check if the host is on an Apple platform using clang.
