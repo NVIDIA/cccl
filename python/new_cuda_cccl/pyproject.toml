@@ -8,6 +8,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "cuda-cccl"
+dynamic = ["version"]
 description = "Experimental Package with CCCL headers to support JIT compilation"
 authors = [{ name = "NVIDIA Corporation" }]
 classifiers = [
@@ -17,8 +18,7 @@ classifiers = [
 ]
 license-files = ["LICENSE"]
 requires-python = ">=3.9"
-version = "3.0.0"
-# dynamic = ["version", "readme"]
+readme = { file = "README.md", content-type = "text/markdown" }
 
 [project.urls]
 Homepage = "https://github.com/NVIDIA/cccl"
@@ -44,3 +44,8 @@ platlib = ""
 [tool.scikit-build.wheel.packages]
 "cuda" = "cuda"
 "cuda/cccl" = "cuda/cccl"
+
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.regex"
+input = "cuda/cccl/_version.py"
+# use default regex
