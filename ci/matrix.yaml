@@ -14,10 +14,13 @@ workflows:
     - {jobs: ['build'], std: 'all', ctk: '11.1', cxx: ['gcc6', 'gcc7', 'gcc8', 'gcc9', 'clang9', 'msvc2017']}
     - {jobs: ['build'], std: 'all', ctk: '11.8', cxx: ['gcc11'], sm: '60;70;80;90'}
     # Current CTK
-    - {jobs: ['build'], std: 'all', cxx: ['gcc7', 'gcc8', 'gcc9', 'gcc10', 'gcc11', 'gcc12']}
-    - {jobs: ['build'], std: 'all', cxx: ['clang9', 'clang10', 'clang11', 'clang12', 'clang13', 'clang14', 'clang15', 'clang16']}
-    - {jobs: ['build'], std: 'all', cxx: ['intel', 'msvc2019']}
-    - {jobs: ['test'],  std: 'all', cxx: ['gcc13', 'clang17', 'msvc2022']}
+    - {jobs: ['build'], std: [11, 17], cxx: ['gcc7', 'gcc8', 'gcc9']}
+    - {jobs: ['build'], std: [14, 20], cxx: ['gcc10', 'gcc11', 'gcc12']}
+    - {jobs: ['build'], std: [11, 14], cxx: ['clang10', 'clang11']}
+    - {jobs: ['build'], std: [17],  cxx: ['clang12', 'clang13', 'clang14', 'clang15']}
+    - {jobs: ['build'], std: 'all', cxx: ['clang9', 'clang16']}
+    - {jobs: ['build'], std: 'max', cxx: ['intel', 'msvc2019']}
+    - {jobs: ['test'],  std: 'all', cxx: ['gcc', 'clang', 'msvc2022']}
     # Modded builds:
     - {jobs: ['build'], std: 'all', cxx: ['gcc', 'clang'], cpu: 'arm64'}
     - {jobs: ['build'], std: 'all', cxx: ['gcc'], sm: '90a'}
