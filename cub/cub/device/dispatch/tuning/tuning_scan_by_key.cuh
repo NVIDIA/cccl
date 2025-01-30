@@ -717,7 +717,7 @@ struct policy_hub
   static constexpr int max_input_bytes      = static_cast<int>((::cuda::std::max)(sizeof(key_t), sizeof(AccumT)));
   static constexpr int combined_input_bytes = static_cast<int>(sizeof(key_t) + sizeof(AccumT));
 
-  struct Policy350 : ChainedPolicy<350, Policy350, Policy350>
+  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
   {
     static constexpr int nominal_4b_items_per_thread = 6;
     static constexpr int items_per_thread =
@@ -752,7 +752,7 @@ struct policy_hub
 
   struct Policy520
       : DefaultPolicy<LOAD_CA, AccumT>
-      , ChainedPolicy<520, Policy520, Policy350>
+      , ChainedPolicy<520, Policy520, Policy500>
   {};
 
   // Use values from tuning if a specialization exists, otherwise pick the default

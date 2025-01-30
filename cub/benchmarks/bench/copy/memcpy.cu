@@ -118,7 +118,7 @@ using block_delay_constructor_t =
 
 struct policy_hub_t
 {
-  struct policy_t : cub::ChainedPolicy<350, policy_t, policy_t>
+  struct policy_t : cub::ChainedPolicy<500, policy_t, policy_t>
   {
     using AgentSmallBufferPolicyT = cub::detail::AgentBatchMemcpyPolicy<
       TUNE_THREADS,
