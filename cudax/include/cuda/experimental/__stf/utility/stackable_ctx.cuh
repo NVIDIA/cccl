@@ -54,7 +54,6 @@ decltype(auto) to_task_dep(U&& u)
 template <typename T, typename reduce_op, bool initialize>
 task_dep<T, reduce_op, initialize>& to_task_dep(stackable_task_dep<T, reduce_op, initialize>& sdep)
 {
-  // Suppose stackable_task_dep has a method to retrieve the underlying task_dep
   return sdep.underlying_dep();
 }
 
@@ -64,6 +63,14 @@ const task_dep<T, reduce_op, initialize>& to_task_dep(const stackable_task_dep<T
 {
   return sdep.underlying_dep();
 }
+
+template <typename T, typename reduce_op, bool initialize>
+task_dep<T, reduce_op, initialize> to_task_dep(stackable_task_dep<T, reduce_op, initialize>&& sdep)
+{
+  // Return by value or whatever makes sense:
+  return ::std::move(sdep.underlying_dep());
+}
+
 } // end namespace reserved
 
 /**
@@ -714,12 +721,12 @@ private:
  * @brief Task dependency for a stackable logical data
  */
 template <typename T, typename reduce_op, bool initialize>
-class stackable_task_dep : public task_dep<T, reduce_op, initialize>
+class stackable_task_dep
 {
 public:
-  stackable_task_dep(stackable_logical_data<T> _d, task_dep<T, reduce_op, initialize> dep)
-      : task_dep<T, reduce_op, initialize>(mv(dep))
-      , d(mv(_d))
+  stackable_task_dep(stackable_logical_data<T> _d, task_dep<T, reduce_op, initialize> _dep)
+      : d(mv(_d))
+      , dep(mv(_dep))
   {}
 
   const stackable_logical_data<T>& get_d() const
@@ -728,20 +735,21 @@ public:
   }
 
   // Provide non-const and const accessors.
-  task_dep<T, reduce_op, initialize>& underlying_dep()
+  auto& underlying_dep()
   {
     // `*this` is a stackable_task_dep. Upcast to the base subobject.
-    return static_cast<task_dep<T, reduce_op, initialize>&>(*this);
+    return dep;
   }
 
-  const task_dep<T, reduce_op, initialize>& underlying_dep() const
+  const auto& underlying_dep() const
   {
-    return static_cast<const task_dep<T, reduce_op, initialize>&>(*this);
+    return dep;
   }
 
 private:
   stackable_logical_data<T> d;
   data_place dplace;
+  mutable task_dep<T, reduce_op, initialize> dep;
 };
 
 #ifdef UNITTESTED_FILE
