@@ -87,13 +87,16 @@ runs:
         ln -s "$(pwd)" "${{github.workspace}}"
         cd "${{github.workspace}}"
 
-        cat <<"EOF" > ci.sh
+        mkdir artifacts
+
+        cat <<'EOF' > ci.sh
         #! /usr/bin/env bash
-        set -eo pipefail
+        set -euo pipefail
         echo -e "\e[1;34mRunning as '$(whoami)' user in $(pwd):\e[0m"
         echo -e "\e[1;34m${COMMAND}\e[0m"
-        eval "${COMMAND}" || exit_code=$?
-        if [ ! -z "$exit_code" ]; then
+        eval "${COMMAND}"
+        exit_code=$?
+        if [[ "$exit_code" -ne 0 ]]; then
           echo -e "::group::️❗ \e[1;31mInstructions to Reproduce CI Failure Locally\e[0m"
           echo "::error:: To replicate this failure locally, follow the steps below:"
           echo "1. Clone the repository, and navigate to the correct branch and commit:"
@@ -107,7 +110,31 @@ runs:
           echo "   - Continuous Integration (CI) Overview: https://github.com/NVIDIA/cccl/blob/main/ci-overview.md"
           exit $exit_code
         fi
+
+        # Copy any artifacts we want to preserve out of the container:
+        set -x
+
+        results_dir=/artifacts
+
+        # Finds a matching file in the repo directory and copies it to the results directory.
+        find_and_copy() {
+          filename="$1"
+          filepath="$(find . -name "${filename}" -print -quit)"
+          if [[ -z "$filepath" ]]; then
+            echo "${filename} does not exist in repo directory."
+            return 1
+          fi
+          cp -v "$filepath" "$results_dir"
+        }
+
+        find_and_copy "sccache_stats.json" || :
+
+        ls -l "$results_dir"
         EOF
+
+        echo "::group::ci.sh"
+        cat ci.sh
+        echo "::endgroup::"
 
         chmod +x ci.sh
 
@@ -167,6 +194,7 @@ runs:
           --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
           --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
           --volume "${{github.workspace}}/ci.sh:/ci.sh" \
+          --volume "${{github.workspace}}/artifacts:/artifacts" \
           --volume "$(host_path "$RUNNER_TEMP")/.aws:/root/.aws" \
           --volume "$(dirname "$(dirname "${{github.workspace}}")"):/__w" \
           -- /ci.sh
@@ -179,19 +207,8 @@ runs:
         mkdir -p "$result_dir"
 
         touch "$result_dir/success"
-
-        # Finds a matching file in the repo directory and copies it to the results directory.
-        find_and_copy() {
-          filename="$1"
-          filepath="$(find ${{github.event.repository.name}} -name "${filename}" -print -quit)"
-          if [[ -z "$filepath" ]]; then
-            echo "${filename} does not exist in repo directory."
-            return 1
-          fi
-          cp -v "$filepath" "$result_dir"
-        }
-
-        find_and_copy "sccache_stats.json" || true # Ignore failures
+        echo "ls artifacts:" && ls -l artifacts
+        cp -rv artifacts/* "$result_dir"
 
         echo "::group::Job artifacts"
         tree "$result_dir"
