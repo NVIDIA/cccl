@@ -42,9 +42,9 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp) _CCCL_AND(sizeof(_Tp) > sizeof(uint64_t)))
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __popcount(_Tp __t) noexcept
 {
-  constexpr int _Ratio = sizeof(_Tp) / sizeof(uint64_t);
-  int __count          = 0;
-  for (int __i = 0; __i < _Ratio; ++__i)
+  constexpr size_t _Ratio = sizeof(_Tp) / sizeof(uint64_t);
+  int __count             = 0;
+  for (size_t __i = 0; __i < _Ratio; ++__i)
   {
     __count += _CUDA_VSTD::__cccl_popc(static_cast<uint64_t>(__t));
     __t >>= numeric_limits<uint64_t>::digits;
