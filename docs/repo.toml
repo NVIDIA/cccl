@@ -54,7 +54,7 @@ api_output_directory = "api"
 use_fast_doxygen_conversion = true
 sphinx_generate_doxygen_groups = true
 sphinx_generate_doxygen_pages = true
-sphinx_exclude_patterns = []
+sphinx_exclude_patterns = ['ptx/instructions/generated']
 
 [repo_docs.projects.cub]
 name = "CUB"

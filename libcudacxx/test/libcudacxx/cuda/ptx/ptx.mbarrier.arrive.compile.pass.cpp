@@ -14,6 +14,8 @@
 #include <cuda/ptx>
 #include <cuda/std/utility>
 
+#include "nvrtc_workaround.h"
+// above header needs to be included before the generated test header
 #include "generated/mbarrier_arrive.h"
 #include "generated/mbarrier_arrive_expect_tx.h"
 #include "generated/mbarrier_arrive_no_complete.h"
