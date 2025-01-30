@@ -67,11 +67,8 @@ namespace detail
  *
  * @tparam BLOCK_DIM_Z
  *   The thread block length in threads along the Z dimension
- *
- * @tparam LEGACY_PTX_ARCH
- *   The PTX compute capability for which to to specialize this collective
  */
-template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z, int LEGACY_PTX_ARCH = 0>
+template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z>
 struct BlockReduceWarpReductions
 {
   /// Constants
@@ -259,9 +256,9 @@ struct BlockReduceWarpReductions
 };
 } // namespace detail
 
-template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z, int LEGACY_PTX_ARCH = 0>
+template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z>
 using BlockReduceWarpReductions CCCL_DEPRECATED_BECAUSE(
   "This class is considered an implementation detail and the public interface will be "
-  "removed.") = detail::BlockReduceWarpReductions<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z, LEGACY_PTX_ARCH>;
+  "removed.") = detail::BlockReduceWarpReductions<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
 CUB_NAMESPACE_END

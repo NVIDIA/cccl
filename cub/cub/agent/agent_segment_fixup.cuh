@@ -84,7 +84,8 @@ template <int _BLOCK_THREADS,
           BlockLoadAlgorithm _LOAD_ALGORITHM,
           CacheLoadModifier _LOAD_MODIFIER,
           BlockScanAlgorithm _SCAN_ALGORITHM>
-struct AgentSegmentFixupPolicy
+struct CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
+                               "interface will be removed.") AgentSegmentFixupPolicy
 {
   enum
   {

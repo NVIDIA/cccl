@@ -258,7 +258,7 @@ struct AgentRle
   // Callback type for obtaining tile prefix during block scan
   using DelayConstructorT = typename AgentRlePolicyT::detail::delay_constructor_t;
   using TilePrefixCallbackOpT =
-    TilePrefixCallbackOp<LengthOffsetPair, ReduceBySegmentOpT, ScanTileStateT, 0, DelayConstructorT>;
+    TilePrefixCallbackOp<LengthOffsetPair, ReduceBySegmentOpT, ScanTileStateT, DelayConstructorT>;
 
   // Warp exchange types
   using WarpExchangePairs = WarpExchange<LengthOffsetPair, ITEMS_PER_THREAD>;
