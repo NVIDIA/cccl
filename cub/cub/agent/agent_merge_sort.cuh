@@ -91,8 +91,10 @@ struct AgentBlockSort
 
   using BlockMergeSortT = BlockMergeSort<KeyT, Policy::BLOCK_THREADS, Policy::ITEMS_PER_THREAD, ValueT>;
 
-  using KeysLoadIt  = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, KeyInputIteratorT>::type;
-  using ItemsLoadIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, ValueInputIteratorT>::type;
+  using KeysLoadIt =
+    typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeyInputIteratorT>::type;
+  using ItemsLoadIt =
+    typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ValueInputIteratorT>::type;
 
   using BlockLoadKeys  = typename cub::BlockLoadType<Policy, KeysLoadIt>::type;
   using BlockLoadItems = typename cub::BlockLoadType<Policy, ItemsLoadIt>::type;
@@ -438,10 +440,11 @@ struct AgentMerge
   //---------------------------------------------------------------------
   // Types and constants
   //---------------------------------------------------------------------
-  using KeysLoadPingIt  = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, KeyIteratorT>::type;
-  using ItemsLoadPingIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, ValueIteratorT>::type;
-  using KeysLoadPongIt  = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, KeyT*>::type;
-  using ItemsLoadPongIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, ValueT*>::type;
+  using KeysLoadPingIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeyIteratorT>::type;
+  using ItemsLoadPingIt =
+    typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ValueIteratorT>::type;
+  using KeysLoadPongIt  = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeyT*>::type;
+  using ItemsLoadPongIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ValueT*>::type;
 
   using KeysOutputPongIt  = KeyIteratorT;
   using ItemsOutputPongIt = ValueIteratorT;

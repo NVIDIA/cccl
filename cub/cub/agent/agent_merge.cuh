@@ -64,10 +64,10 @@ struct agent_t
   using key_type  = typename ::cuda::std::iterator_traits<KeysIt1>::value_type;
   using item_type = typename ::cuda::std::iterator_traits<ItemsIt1>::value_type;
 
-  using keys_load_it1  = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, KeysIt1>::type;
-  using keys_load_it2  = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, KeysIt2>::type;
-  using items_load_it1 = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, ItemsIt1>::type;
-  using items_load_it2 = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, ItemsIt2>::type;
+  using keys_load_it1  = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeysIt1>::type;
+  using keys_load_it2  = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeysIt2>::type;
+  using items_load_it1 = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ItemsIt1>::type;
+  using items_load_it2 = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ItemsIt2>::type;
 
   using block_load_keys1  = typename BlockLoadType<Policy, keys_load_it1>::type;
   using block_load_keys2  = typename BlockLoadType<Policy, keys_load_it2>::type;

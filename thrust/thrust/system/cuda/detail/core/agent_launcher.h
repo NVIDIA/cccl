@@ -62,7 +62,8 @@ namespace cuda_cub
 {
 namespace core
 {
-
+namespace detail
+{
 #  ifndef THRUST_DETAIL_KERNEL_ATTRIBUTES
 #    define THRUST_DETAIL_KERNEL_ATTRIBUTES CCCL_DETAIL_KERNEL_ATTRIBUTES
 #  endif
@@ -97,7 +98,7 @@ THRUST_DETAIL_KERNEL_ATTRIBUTES void _kernel_agent_vshmem(char*, Args... args)
 template <class Agent>
 struct AgentLauncher : Agent
 {
-  core::AgentPlan plan;
+  AgentPlan plan;
   size_t count;
   cudaStream_t stream;
   char const* name;
@@ -121,7 +122,7 @@ struct AgentLauncher : Agent
       , name(name_)
       , grid(static_cast<unsigned int>((count + plan.items_per_tile - 1) / plan.items_per_tile))
       , vshmem(nullptr)
-      , has_shmem((size_t) core::get_max_shared_memory_per_block() >= (size_t) plan.shared_memory_size)
+      , has_shmem((size_t) get_max_shared_memory_per_block() >= (size_t) plan.shared_memory_size)
       , shmem_size(has_shmem ? plan.shared_memory_size : 0)
   {
     assert(count > 0);
@@ -136,7 +137,7 @@ struct AgentLauncher : Agent
       , name(name_)
       , grid(static_cast<unsigned int>((count + plan.items_per_tile - 1) / plan.items_per_tile))
       , vshmem(vshmem)
-      , has_shmem((size_t) core::get_max_shared_memory_per_block() >= (size_t) plan.shared_memory_size)
+      , has_shmem((size_t) get_max_shared_memory_per_block() >= (size_t) plan.shared_memory_size)
       , shmem_size(has_shmem ? plan.shared_memory_size : 0)
   {
     assert(count > 0);
@@ -149,7 +150,7 @@ struct AgentLauncher : Agent
       , name(name_)
       , grid(plan.grid_size)
       , vshmem(nullptr)
-      , has_shmem((size_t) core::get_max_shared_memory_per_block() >= (size_t) plan.shared_memory_size)
+      , has_shmem((size_t) get_max_shared_memory_per_block() >= (size_t) plan.shared_memory_size)
       , shmem_size(has_shmem ? plan.shared_memory_size : 0)
   {
     assert(plan.grid_size > 0);
@@ -162,43 +163,19 @@ struct AgentLauncher : Agent
       , name(name_)
       , grid(plan.grid_size)
       , vshmem(vshmem)
-      , has_shmem((size_t) core::get_max_shared_memory_per_block() >= (size_t) plan.shared_memory_size)
+      , has_shmem((size_t) get_max_shared_memory_per_block() >= (size_t) plan.shared_memory_size)
       , shmem_size(has_shmem ? plan.shared_memory_size : 0)
   {
     assert(plan.grid_size > 0);
   }
 
-#  if 0
-    THRUST_RUNTIME_FUNCTION
-    AgentPlan static get_plan(cudaStream_t s, void* d_ptr = 0)
-    {
-      // in separable compilation mode, we have no choice
-      // but to call kernel to get agent_plan
-      // otherwise the risk is something may fail
-      // if user mix & match ptx versions in a separably compiled function
-      // http://nvbugs/1772071
-      // XXX may be it is too string of a requirements, consider relaxing it in
-      // the future
-#    ifdef __CUDACC_RDC__
-      return core::get_agent_plan<Agent>(s, d_ptr);
-#    else
-      return get_agent_plan<Agent>(core::get_ptx_version());
-#    endif
-    }
-    THRUST_RUNTIME_FUNCTION
-    AgentPlan static get_plan_default()
-    {
-      return get_agent_plan<Agent>(sm_arch<0>::type::ver);
-    }
-#  endif
-
-  THRUST_RUNTIME_FUNCTION typename core::get_plan<Agent>::type static get_plan(cudaStream_t, void* d_ptr = 0)
+  THRUST_RUNTIME_FUNCTION typename get_plan<Agent>::type static get_plan(cudaStream_t, void* d_ptr = 0)
   {
     THRUST_UNUSED_VAR(d_ptr);
-    return get_agent_plan<Agent>(core::get_ptx_version());
+    return get_agent_plan<Agent>(get_ptx_version());
   }
 
-  THRUST_RUNTIME_FUNCTION typename core::get_plan<Agent>::type static get_plan()
+  THRUST_RUNTIME_FUNCTION typename detail::get_plan<Agent>::type static get_plan()
   {
     return get_agent_plan<Agent>(lowest_supported_sm_arch::ver);
   }
@@ -227,7 +204,7 @@ struct AgentLauncher : Agent
   {
 #  if THRUST_DEBUG_SYNC_FLAG
     cuda_optional<int> occ = max_sm_occupancy(k);
-    const int ptx_version  = core::get_ptx_version();
+    const int ptx_version  = get_ptx_version();
     if (count > 0)
     {
       _CubLog(
@@ -305,6 +282,7 @@ struct AgentLauncher : Agent
   }
 };
 
+} // namespace detail
 } // namespace core
 } // namespace cuda_cub
 
