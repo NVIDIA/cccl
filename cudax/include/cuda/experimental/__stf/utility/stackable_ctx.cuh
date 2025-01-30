@@ -167,6 +167,11 @@ public:
 
       // Destroy the current level state
       levels.pop_back();
+
+      if (levels.size() <= 1)
+      {
+        retained_data.clear();
+      }
     }
 
     /**
@@ -182,6 +187,7 @@ public:
      */
     auto& get_ctx(size_t level)
     {
+      _CCCL_ASSERT(level < levels.size(), "invalid value");
       return levels[level].ctx;
     }
 
@@ -190,11 +196,13 @@ public:
      */
     const auto& get_ctx(size_t level) const
     {
+      _CCCL_ASSERT(level < levels.size(), "invalid value");
       return levels[level].ctx;
     }
 
     cudaStream_t get_stream(size_t level) const
     {
+      _CCCL_ASSERT(level < levels.size(), "invalid value");
       return levels[level].support_stream;
     }
 
@@ -213,6 +221,11 @@ public:
       _CCCL_ASSERT(erased == 1, "invalid value");
     }
 
+    void retain_data(::std::shared_ptr<stackable_logical_data_impl_base> data_impl)
+    {
+      retained_data.push_back(mv(data_impl));
+    }
+
   private:
     // State for each nested level
     ::std::vector<per_level> levels;
@@ -220,6 +233,8 @@ public:
     // Handles to retain some asynchronous states, we maintain it separately
     // from levels because we keep its entries even when we pop a level
     ::std::vector<async_resources_handle> async_handles;
+
+    ::std::vector<::std::shared_ptr<stackable_logical_data_impl_base>> retained_data;
   };
 
   stackable_ctx()
@@ -278,6 +293,26 @@ public:
   {
     fprintf(stderr, "initialize from value.\n");
     return stackable_logical_data(*this, depth(), false, get_ctx(depth()).logical_data(::std::forward<Pack>(pack)...));
+  }
+
+  // To avoid prematurely destroying data created in a nested context, we need to hold a reference to them
+  //
+  // This happens for example in this case where we want to defer the release
+  // of the resources of "a" until we call pop() because this is when we would
+  // have submitted the CUDA graph where "a" is used. Destroying it earlier
+  // would mean we destroy that memory before the graph is even launched.
+  //
+  // ctx.push()
+  // {
+  //    auto a = ctx.logical_data(...);
+  //    ... use a ...
+  // }
+  // ctx.pop()
+  void retain_data(::std::shared_ptr<stackable_logical_data_impl_base> data_impl)
+  {
+    _CCCL_ASSERT(pimpl, "uninitialized context");
+    _CCCL_ASSERT(data_impl, "invalid value");
+    pimpl->retain_data(mv(data_impl));
   }
 
   // Helper function to process a single argument
@@ -383,13 +418,33 @@ class stackable_logical_data
 
     ~impl()
     {
-      fprintf(stderr, "stackable_logical_data::~impl symbol=%s\n", symbol.c_str());
+      fprintf(stderr,
+              "stackable_logical_data::~impl symbol=%s => frozen.s.size() %ld s.size() %ld\n",
+              symbol.c_str(),
+              frozen_s.size(),
+              s.size());
 
-      // Note the destruction is elements in a vector is done in reversed
-      // order, so this is appropriate.
-      frozen_s.clear();
+      // How many frozen logical data do we need to destroy ?
+      size_t data_depth = frozen_s.size();
+      while (data_depth > 0)
+      {
+        // Destroy the last logical data which uses a frozen data for its
+        // reference instance (this may writeback)
+        s.pop_back();
 
-      // Destroy the vector of logical data in reversed order
+        // Unfreeze data
+        auto stream = sctx.get_stream(data_depth);
+        frozen_s.back().unfreeze(stream);
+        frozen_s.pop_back();
+
+        data_depth--;
+      }
+
+      // It could be 0 if the stackable data was not initialized yet (eg. we
+      // simply called the default ctor)
+      _CCCL_ASSERT(s.size() <= 1, "Internal error");
+
+      // Destroy the last logical data, if any
       s.clear();
     }
 
@@ -446,7 +501,7 @@ class stackable_logical_data
       // Freeze the logical data at the top
       logical_data<T>& from_data = s.back();
       frozen_logical_data<T> f   = from_ctx.freeze(from_data, m, mv(where));
-      f.set_automatic_unfreeze(true);
+      ////      f.set_automatic_unfreeze(true);
 
       // Save the frozen data in a separate vector
       frozen_s.push_back(f);
@@ -539,10 +594,17 @@ public:
    * in the root, and import them. */
   template <typename... Args>
   stackable_logical_data(stackable_ctx sctx, bool ld_from_shape, size_t target_depth, logical_data<T> ld)
-      : pimpl(::std::make_shared<impl>(mv(sctx), ld_from_shape, target_depth, mv(ld)))
+      : pimpl(::std::make_shared<impl>(sctx, ld_from_shape, target_depth, mv(ld)))
   {
     static_assert(::std::is_move_constructible_v<stackable_logical_data>, "");
     static_assert(::std::is_move_assignable_v<stackable_logical_data>, "");
+
+    // If we are creating a logical data at a non null depth, we need to
+    // ensure it's only destroyed once contexts are popped. By holding a reference to it
+    if (target_depth > 0)
+    {
+      sctx.retain_data(pimpl);
+    }
   }
 
   const auto& get_ld() const
