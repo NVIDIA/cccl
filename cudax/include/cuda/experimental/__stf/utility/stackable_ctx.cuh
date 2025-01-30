@@ -41,6 +41,31 @@ class stackable_logical_data;
 template <typename T, typename reduce_op, bool initialize>
 class stackable_task_dep;
 
+namespace reserved
+{
+// By default, return the argument as-is (perfect forwarding)
+template <typename U>
+decltype(auto) to_task_dep(U&& u)
+{
+  return ::std::forward<U>(u);
+}
+
+// Overload for stackable_task_dep (non-const version)
+template <typename T, typename reduce_op, bool initialize>
+task_dep<T, reduce_op, initialize>& to_task_dep(stackable_task_dep<T, reduce_op, initialize>& sdep)
+{
+  // Suppose stackable_task_dep has a method to retrieve the underlying task_dep
+  return sdep.underlying_dep();
+}
+
+// Overload for stackable_task_dep (const version)
+template <typename T, typename reduce_op, bool initialize>
+const task_dep<T, reduce_op, initialize>& to_task_dep(const stackable_task_dep<T, reduce_op, initialize>& sdep)
+{
+  return sdep.underlying_dep();
+}
+} // end namespace reserved
+
 /**
  * @brief Base class with a virtual pop method to enable type erasure
  *
@@ -339,21 +364,21 @@ public:
   auto task(Pack&&... pack)
   {
     process_pack(pack...);
-    return get_ctx(depth()).task(::std::forward<Pack>(pack)...);
+    return get_ctx(depth()).task(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 
   template <typename... Pack>
   auto parallel_for(Pack&&... pack)
   {
     process_pack(pack...);
-    return get_ctx(depth()).parallel_for(::std::forward<Pack>(pack)...);
+    return get_ctx(depth()).parallel_for(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 
   template <typename... Pack>
   auto host_launch(Pack&&... pack)
   {
     process_pack(pack...);
-    return get_ctx(depth()).host_launch(::std::forward<Pack>(pack)...);
+    return get_ctx(depth()).host_launch(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 
   auto task_fence()
@@ -700,6 +725,18 @@ public:
   const stackable_logical_data<T>& get_d() const
   {
     return d;
+  }
+
+  // Provide non-const and const accessors.
+  task_dep<T, reduce_op, initialize>& underlying_dep()
+  {
+    // `*this` is a stackable_task_dep. Upcast to the base subobject.
+    return static_cast<task_dep<T, reduce_op, initialize>&>(*this);
+  }
+
+  const task_dep<T, reduce_op, initialize>& underlying_dep() const
+  {
+    return static_cast<const task_dep<T, reduce_op, initialize>&>(*this);
   }
 
 private:
