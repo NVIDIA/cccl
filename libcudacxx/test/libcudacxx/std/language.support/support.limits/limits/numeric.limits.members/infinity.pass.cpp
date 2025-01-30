@@ -70,6 +70,10 @@ int main(int, char**)
 #  if defined(_LIBCUDACXX_HAS_NVBF16)
   test<__nv_bfloat16>(__double2bfloat16(1.0 / 0.0));
 #  endif // _LIBCUDACXX_HAS_NVBF16
+#  if _CCCL_HAS_NVFP8()
+  test<__nv_fp8_e4m3>(__nv_fp8_e4m3{});
+  test<__nv_fp8_e5m2>(make_fp8_e5m2(1.0 / 0.0));
+#  endif // _CCCL_HAS_NVFP8()
 // MSVC has issues with producing INF with divisions by zero.
 #else
   test<float>(INFINITY);
@@ -83,6 +87,10 @@ int main(int, char**)
 #  if defined(_LIBCUDACXX_HAS_NVBF16)
   test<__nv_bfloat16>(__double2bfloat16(INFINITY));
 #  endif // _LIBCUDACXX_HAS_NVBF16
+#  if _CCCL_HAS_NVFP8()
+  test<__nv_fp8_e4m3>(__nv_fp8_e4m3{});
+  test<__nv_fp8_e5m2>(make_fp8_e5m2(INFINITY));
+#  endif // _CCCL_HAS_NVFP8()
 #endif
 
   return 0;
