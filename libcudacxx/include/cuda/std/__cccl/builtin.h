@@ -192,6 +192,13 @@
 #  define _CCCL_BUILTIN_EXPL(...) __builtin_expl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_exp)
 
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "expf"
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_EXPF
+#  undef _CCCL_BUILTIN_EXP
+#  undef _CCCL_BUILTIN_EXPL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
 #if _CCCL_CHECK_BUILTIN(builtin_exp2) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_EXP2F(...) __builtin_exp2f(__VA_ARGS__)
 #  define _CCCL_BUILTIN_EXP2(...)  __builtin_exp2(__VA_ARGS__)
