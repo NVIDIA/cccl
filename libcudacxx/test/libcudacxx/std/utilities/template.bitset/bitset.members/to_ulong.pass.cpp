@@ -66,9 +66,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if !_CCCL_COMPILER(MSVC)
   static_assert(test(), "");
-#endif
 
   return 0;
 }

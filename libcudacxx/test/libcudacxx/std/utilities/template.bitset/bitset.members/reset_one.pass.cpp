@@ -52,7 +52,6 @@ int main(int, char**)
   test_reset_one<64>();
   test_reset_one<65>();
   test_reset_one<1000>(); // not in constexpr because of constexpr evaluation step limits
-  // 11.4 added support for constexpr device vars needed here
   static_assert(test_reset_one<0>(), "");
   static_assert(test_reset_one<1>(), "");
   static_assert(test_reset_one<31>(), "");

@@ -61,7 +61,6 @@ int main(int, char**)
   test_left_shift<64>();
   test_left_shift<65>();
   test_left_shift<1000>(); // not in constexpr because of constexpr evaluation step limits
-  // 11.4 added support for constexpr device vars needed here
   static_assert(test_left_shift<0>(), "");
   static_assert(test_left_shift<1>(), "");
   static_assert(test_left_shift<31>(), "");

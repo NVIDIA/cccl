@@ -53,7 +53,6 @@ int main(int, char**)
 {
   test();
   test_equality<1000>(); // not in constexpr because of constexpr evaluation step limits
-  // 11.4 added support for constexpr device vars needed here
   static_assert(test(), "");
 
   return 0;
