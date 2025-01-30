@@ -966,7 +966,7 @@ struct FpLimits<__nv_bfloat16>
 };
 #  endif // _CCCL_HAS_NVBF16
 
-#  if defined(__CUDA_FP8_TYPES_EXIST__)
+#  if _CCCL_HAS_NVFP8()
 template <>
 struct FpLimits<__nv_fp8_e4m3>
 {
@@ -1007,7 +1007,7 @@ struct FpLimits<__nv_fp8_e5m2>
   }
 };
 
-#  endif // __CUDA_FP8_TYPES_EXIST__
+#  endif // _CCCL_HAS_NVFP8()
 
 /**
  * Basic type traits (fp primitive specialization)
@@ -1147,12 +1147,12 @@ template <> struct NumericTraits<double> :              BaseTraits<FLOATING_POIN
 #  endif // _CCCL_HAS_NVFP16()
 #  if _CCCL_HAS_NVBF16()
     template <> struct NumericTraits<__nv_bfloat16> :   BaseTraits<FLOATING_POINT, true, false, unsigned short, __nv_bfloat16> {};
-#  endif // _CCCL_HAS_NVBF16
+#  endif // _CCCL_HAS_NVBF16()
 
-#if defined(__CUDA_FP8_TYPES_EXIST__)
+#if _CCCL_HAS_NVFP8()
     template <> struct NumericTraits<__nv_fp8_e4m3> :   BaseTraits<FLOATING_POINT, true, false, __nv_fp8_storage_t, __nv_fp8_e4m3> {};
     template <> struct NumericTraits<__nv_fp8_e5m2> :   BaseTraits<FLOATING_POINT, true, false, __nv_fp8_storage_t, __nv_fp8_e5m2> {};
-#endif // __CUDA_FP8_TYPES_EXIST__
+#endif // _CCCL_HAS_NVFP8()
 
 template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTEGER, true, false, typename UnitWord<bool>::VolatileWord, bool> {};
 // clang-format on

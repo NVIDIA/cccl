@@ -53,7 +53,7 @@ _CCCL_DIAG_POP
 #    endif // _CCCL_CUDACC_AT_LEAST(11, 8)
 #  endif // _CCCL_HAS_NVBF16()
 
-#  if defined(__CUDA_FP8_TYPES_EXIST__)
+#  if _CCCL_HAS_NVFP8()
 namespace std
 {
 template <>
@@ -86,7 +86,7 @@ public:
   }
 };
 } // namespace std
-#  endif // defined(__CUDA_FP8_TYPES_EXIST__)
+#  endif // _CCCL_HAS_NVFP8()
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 
 namespace c2h

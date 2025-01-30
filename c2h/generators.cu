@@ -132,14 +132,14 @@ template <>
 struct is_floating_point<__nv_bfloat16> : ::cuda::std::true_type
 {};
 #endif // _CCCL_HAS_NVBF16()
-#ifdef __CUDA_FP8_TYPES_EXIST__
+#if _CCCL_HAS_NVFP8()
 template <>
 struct is_floating_point<__nv_fp8_e4m3> : ::cuda::std::true_type
 {};
 template <>
 struct is_floating_point<__nv_fp8_e5m2> : ::cuda::std::true_type
 {};
-#endif // __CUDA_FP8_TYPES_EXIST__
+#endif // _CCCL_HAS_NVFP8()
 
 template <typename T, bool = is_floating_point<T>::value>
 struct random_to_item_t
@@ -542,10 +542,10 @@ INSTANTIATE(std::int16_t);
 INSTANTIATE(std::int32_t);
 INSTANTIATE(std::int64_t);
 
-#if defined(__CUDA_FP8_TYPES_EXIST__)
+#if _CCCL_HAS_NVFP8()
 INSTANTIATE(__nv_fp8_e5m2);
 INSTANTIATE(__nv_fp8_e4m3);
-#endif // defined(__CUDA_FP8_TYPES_EXIST__)
+#endif // _CCCL_HAS_NVFP8()
 INSTANTIATE(float);
 INSTANTIATE(double);
 
