@@ -10,6 +10,9 @@ Param(
     [int]$CUDA_ARCH = 0
 )
 
+Write-Host "TBB_ROOT: $env:TBB_ROOT"
+Write-Host "PATH: $env:PATH"
+
 $ErrorActionPreference = "Stop"
 
 $CURRENT_PATH = Split-Path $pwd -leaf
