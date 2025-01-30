@@ -7,6 +7,7 @@ PTX Instructions
    :maxdepth: 1
 
    instructions/barrier_cluster
+   instructions/clusterlaunchcontrol
    instructions/cp_async_bulk
    instructions/cp_async_bulk_commit_group
    instructions/cp_async_bulk_wait_group
