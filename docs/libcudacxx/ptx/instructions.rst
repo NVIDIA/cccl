@@ -22,6 +22,9 @@ PTX Instructions
    instructions/mbarrier_expect_tx
    instructions/mbarrier_test_wait
    instructions/mbarrier_try_wait
+   instructions/multimem_ld_reduce
+   instructions/multimem_red
+   instructions/multimem_st
    instructions/red_async
    instructions/st_async
    instructions/st_bulk
