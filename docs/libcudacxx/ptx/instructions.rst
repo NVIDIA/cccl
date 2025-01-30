@@ -28,6 +28,7 @@ PTX Instructions
    instructions/multimem_st
    instructions/red_async
    instructions/st_async
+   instructions/st_bulk
    instructions/tensormap_replace
    instructions/tensormap_cp_fenceproxy
    instructions/special_registers
