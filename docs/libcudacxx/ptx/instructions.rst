@@ -12,6 +12,7 @@ PTX Instructions
    instructions/cp_async_bulk_commit_group
    instructions/cp_async_bulk_wait_group
    instructions/cp_async_bulk_tensor
+   instructions/cp_async_mbarrier_arrive
    instructions/cp_reduce_async_bulk
    instructions/cp_reduce_async_bulk_tensor
    instructions/fence
