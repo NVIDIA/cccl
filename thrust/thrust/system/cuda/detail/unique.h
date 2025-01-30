@@ -137,36 +137,6 @@ struct Tuning<sm52, T>
     PtxPolicy<64, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_LDG, cub::BLOCK_SCAN_WARP_SCANS>;
 }; // Tuning for sm52
 
-template <class T>
-struct Tuning<sm35, T>
-{
-  const static int INPUT_SIZE = sizeof(T);
-  enum
-  {
-    NOMINAL_4B_ITEMS_PER_THREAD = 9,
-    //
-    ITEMS_PER_THREAD = items_per_thread<T, NOMINAL_4B_ITEMS_PER_THREAD>::value
-  };
-
-  using type =
-    PtxPolicy<128, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_LDG, cub::BLOCK_SCAN_WARP_SCANS>;
-}; // Tuning for sm35
-
-template <class T>
-struct Tuning<sm30, T>
-{
-  const static int INPUT_SIZE = sizeof(T);
-  enum
-  {
-    NOMINAL_4B_ITEMS_PER_THREAD = 7,
-    //
-    ITEMS_PER_THREAD = items_per_thread<T, NOMINAL_4B_ITEMS_PER_THREAD>::value
-  };
-
-  using type =
-    PtxPolicy<128, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS>;
-}; // Tuning for sm30
-
 template <class ItemsIt, class ItemsOutputIt, class BinaryPred, class Size, class NumSelectedOutIt>
 struct UniqueAgent
 {
