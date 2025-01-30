@@ -45,7 +45,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __countl_zero(_Tp __t) noexcept
   __clz_result -= numeric_limits<_Sp>::digits - numeric_limits<_Tp>::digits;
   NV_IF_ELSE_TARGET(NV_IS_DEVICE,
                     (return __clz_result;), // if __t == 0 __clz_result is already equal to numeric_limits<_Tp>::digits
-                    (return __t ? __clz_result : numeric_limits<_Tp>::digits;))
+                    (return __t == 0 ? numeric_limits<_Tp>::digits : __clz_result;))
 }
 
 _CCCL_TEMPLATE(class _Tp)
