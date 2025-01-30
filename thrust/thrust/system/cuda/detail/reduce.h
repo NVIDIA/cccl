@@ -109,7 +109,7 @@ template <class, class>
 struct Tuning;
 
 template <class T>
-struct Tuning<sm30, T>
+struct Tuning<sm52, T>
 {
   enum
   {
@@ -119,18 +119,6 @@ struct Tuning<sm30, T>
     SCALE_FACTOR_1B = sizeof(T),
   };
 
-  using type =
-    PtxPolicy<256,
-              (((20 / SCALE_FACTOR_4B) > (1)) ? (20 / SCALE_FACTOR_4B) : (1)),
-              2,
-              cub::BLOCK_REDUCE_WARP_REDUCTIONS,
-              cub::LOAD_DEFAULT,
-              cub::GRID_MAPPING_RAKE>;
-}; // Tuning sm30
-
-template <class T>
-struct Tuning<sm35, T> : Tuning<sm30, T>
-{
   // ReducePolicy1B (GTX Titan: 228.7 GB/s @ 192M 1B items)
   using ReducePolicy1B =
     PtxPolicy<128,
@@ -150,7 +138,7 @@ struct Tuning<sm35, T> : Tuning<sm30, T>
               cub::GRID_MAPPING_DYNAMIC>;
 
   using type = ::cuda::std::conditional_t<(sizeof(T) < 4), ReducePolicy1B, ReducePolicy4B>;
-}; // Tuning sm35
+}; // Tuning sm52
 
 template <class InputIt, class OutputIt, class T, class Size, class ReductionOp>
 struct ReduceAgent

@@ -35,7 +35,7 @@
 #if !TUNE_BASE
 struct policy_hub_t
 {
-  struct Policy350 : cub::ChainedPolicy<350, Policy350, Policy350>
+  struct Policy500 : cub::ChainedPolicy<500, Policy500, Policy500>
   {
     using AdjacentDifferencePolicy =
       cub::AgentAdjacentDifferencePolicy<TUNE_THREADS_PER_BLOCK,
@@ -45,7 +45,7 @@ struct policy_hub_t
                                          cub::BLOCK_STORE_WARP_TRANSPOSE>;
   };
 
-  using MaxPolicy = Policy350;
+  using MaxPolicy = Policy500;
 };
 #endif // !TUNE_BASE
 

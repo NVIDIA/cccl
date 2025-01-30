@@ -64,32 +64,17 @@ namespace core
 #  if (__NVCOMPILER_CUDA_ARCH__ >= 600)
 // deprecated [since 2.8]
 #    define THRUST_TUNING_ARCH sm60
-#  elif (__NVCOMPILER_CUDA_ARCH__ >= 520)
-// deprecated [since 2.8]
-#    define THRUST_TUNING_ARCH sm52
-#  elif (__NVCOMPILER_CUDA_ARCH__ >= 350)
-// deprecated [since 2.8]
-#    define THRUST_TUNING_ARCH sm35
 #  else
 // deprecated [since 2.8]
-#    define THRUST_TUNING_ARCH sm30
+#    define THRUST_TUNING_ARCH sm52
 #  endif
 #else
 #  if (__CUDA_ARCH__ >= 600)
 // deprecated [since 2.8]
 #    define THRUST_TUNING_ARCH sm60
-#  elif (__CUDA_ARCH__ >= 520)
+#  else
 // deprecated [since 2.8]
 #    define THRUST_TUNING_ARCH sm52
-#  elif (__CUDA_ARCH__ >= 350)
-// deprecated [since 2.8]
-#    define THRUST_TUNING_ARCH sm35
-#  elif (__CUDA_ARCH__ >= 300)
-// deprecated [since 2.8]
-#    define THRUST_TUNING_ARCH sm30
-#  elif !defined(__CUDA_ARCH__)
-// deprecated [since 2.8]
-#    define THRUST_TUNING_ARCH sm30
 #  endif
 #endif
 
@@ -101,22 +86,7 @@ struct typelist;
 
 // supported SM arch
 // ---------------------
-struct sm30
-{
-  enum
-  {
-    ver      = 300,
-    warpSize = 32
-  };
-};
-struct sm35
-{
-  enum
-  {
-    ver      = 350,
-    warpSize = 32
-  };
-};
+
 struct sm52
 {
   enum
@@ -137,7 +107,7 @@ struct sm60
 // list of sm, checked from left to right order
 // the rightmost is the lowest sm arch supported
 // --------------------------------------------
-using sm_list = typelist<sm60, sm52, sm35, sm30>;
+using sm_list = typelist<sm60, sm52>;
 
 // lowest supported SM arch
 // --------------------------------------------------------------------------
@@ -784,8 +754,6 @@ THRUST_RUNTIME_FUNCTION cudaError_t alias_storage(
 }
 
 } // namespace core
-using core::sm30;
-using core::sm35;
 using core::sm52;
 using core::sm60;
 } // namespace cuda_cub
