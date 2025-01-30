@@ -27,6 +27,7 @@ struct CudaDriverLauncher
   dim3 block;
   std::size_t shared_mem;
   CUstream stream;
+  bool dependent_launch; // TODO: this is not being used currently
 
   template <typename... Args>
   _CCCL_HIDE_FROM_ABI cudaError_t doit(CUkernel kernel, Args const&... args) const
@@ -47,9 +48,10 @@ struct CudaDriverLauncher
 
 struct CudaDriverLauncherFactory
 {
-  CudaDriverLauncher operator()(dim3 grid, dim3 block, _CUDA_VSTD::size_t shared_mem, CUstream stream) const
+  CudaDriverLauncher
+  operator()(dim3 grid, dim3 block, _CUDA_VSTD::size_t shared_mem, CUstream stream, bool dependent_launch = false) const
   {
-    return CudaDriverLauncher{grid, block, shared_mem, stream};
+    return CudaDriverLauncher{grid, block, shared_mem, stream, dependent_launch};
   }
 
   cudaError_t PtxVersion(int& version) const
