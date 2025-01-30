@@ -79,20 +79,24 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_clz(_Tp __x) noexcept
   }
 }
 
+#if !_CCCL_COMPILER(NVRTC)
+
 template <typename _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI int __host_runtime_clz(_Tp __x) noexcept
+_CCCL_HIDE_FROM_ABI int __host_runtime_clz(_Tp __x) noexcept
 {
-#if _CCCL_COMPILER(MSVC)
+#  if _CCCL_COMPILER(MSVC)
   constexpr auto __digits = numeric_limits<_Tp>::digits;
   unsigned long __where;
   auto __res = sizeof(_Tp) == sizeof(uint32_t)
                ? _BitScanReverse(&__where, static_cast<uint32_t>(__x))
                : _BitScanReverse64(&__where, static_cast<uint64_t>(__x));
   return (__res) ? __digits - 1 - static_cast<int>(__where) : __digits;
-#else
+#  else
   return __constexpr_clz(__x);
-#endif // _CCCL_COMPILER(MSVC)
+#  endif // _CCCL_COMPILER(MSVC)
 }
+
+#endif // !_CCCL_COMPILER(NVRTC)
 
 template <typename _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI int __runtime_clz(_Tp __x) noexcept

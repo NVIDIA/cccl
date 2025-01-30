@@ -90,19 +90,23 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __host_constexpr_ctz(_Tp __x) noexcept
 #endif
 }
 
+#if !_CCCL_COMPILER(NVRTC)
+
 template <typename _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI int __host_runtime_ctz(_Tp __x) noexcept
+_CCCL_HIDE_FROM_ABI int __host_runtime_ctz(_Tp __x) noexcept
 {
-#if _CCCL_COMPILER(MSVC)
+#  if _CCCL_COMPILER(MSVC)
   unsigned long __where;
   auto __res = sizeof(_Tp) == sizeof(uint32_t)
                ? _BitScanForward(&__where, static_cast<uint32_t>(__x))
                : _BitScanForward64(&__where, static_cast<uint64_t>(__x));
   return (__res) ? static_cast<int>(__where) : numeric_limits<_Tp>::digits;
-#else
+#  else
   return __host_constexpr_ctz(__x);
-#endif // _CCCL_COMPILER(MSVC)
+#  endif // _CCCL_COMPILER(MSVC)
 }
+
+#endif // !_CCCL_COMPILER(NVRTC)
 
 template <typename _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI int __runtime_ctz(_Tp __x) noexcept

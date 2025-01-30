@@ -64,24 +64,28 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_popc(_Tp __x) noexcept
   }
 }
 
+#if !_CCCL_COMPILER(NVRTC)
+
 template <typename _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI int __host_runtime_popc(_Tp __x) noexcept
+_CCCL_HIDE_FROM_ABI int __host_runtime_popc(_Tp __x) noexcept
 {
-#if _CCCL_COMPILER(MSVC)
-#  if !defined(_M_ARM64)
+#  if _CCCL_COMPILER(MSVC)
+#    if !defined(_M_ARM64)
   auto __ret = sizeof(_Tp) == sizeof(uint32_t) //
                ? __popcnt(static_cast<uint32_t>(__x))
                : __popcnt64(static_cast<uint64_t>(__x));
-#  else
+#    else
   auto __ret = sizeof(_Tp) == sizeof(uint32_t) //
                ? _CountOneBits(static_cast<uint32_t>(__x))
                : _CountOneBits64(static_cast<uint64_t>(__x));
-#  endif // !defined(_M_ARM64)
+#    endif // !defined(_M_ARM64)
   return static_cast<int>(__ret);
-#else
+#  else
   return __constexpr_popc(__x);
-#endif
+#  endif
 }
+
+#endif // !_CCCL_COMPILER(NVRTC)
 
 template <typename _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI int __runtime_popc(_Tp __x) noexcept
