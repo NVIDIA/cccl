@@ -36,7 +36,9 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 #include <cuda/__ptx/instructions/generated/fence_mbarrier_init.h>
 #include <cuda/__ptx/instructions/generated/fence_proxy_alias.h>
 #include <cuda/__ptx/instructions/generated/fence_proxy_async.h>
+#include <cuda/__ptx/instructions/generated/fence_proxy_async_generic_sync_restrict.h>
 #include <cuda/__ptx/instructions/generated/fence_proxy_tensormap_generic.h>
+#include <cuda/__ptx/instructions/generated/fence_sync_restrict.h>
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
 

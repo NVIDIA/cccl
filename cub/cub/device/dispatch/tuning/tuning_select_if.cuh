@@ -121,7 +121,7 @@ struct sm80_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primit
   using delay_constructor                            = detail::fixed_delay_constructor_t<832, 1165>;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <>
 struct sm80_tuning<__int128_t, flagged::no, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
 {
@@ -174,7 +174,7 @@ struct sm80_tuning<Input, flagged::yes, keep_rejects::no, offset_size::_4, primi
   using delay_constructor                            = detail::no_delay_constructor_t<1130>;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <>
 struct sm80_tuning<__int128_t, flagged::yes, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
 {
@@ -227,7 +227,7 @@ struct sm80_tuning<Input, flagged::no, keep_rejects::yes, offset_size::_4, primi
   using delay_constructor                            = detail::fixed_delay_constructor_t<68, 1160>;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <>
 struct sm80_tuning<__int128_t, flagged::no, keep_rejects::yes, offset_size::_4, primitive::no, input_size::_16>
 {
@@ -280,7 +280,7 @@ struct sm80_tuning<Input, flagged::yes, keep_rejects::yes, offset_size::_4, prim
   using delay_constructor                            = detail::fixed_delay_constructor_t<884, 1130>;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <>
 struct sm80_tuning<__int128_t, flagged::yes, keep_rejects::yes, offset_size::_4, primitive::no, input_size::_16>
 {
@@ -336,7 +336,7 @@ struct sm90_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primit
   using delay_constructor                            = detail::fixed_delay_constructor_t<380, 1140>;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <>
 struct sm90_tuning<__int128_t, flagged::no, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
 {
@@ -389,7 +389,7 @@ struct sm90_tuning<Input, flagged::yes, keep_rejects::no, offset_size::_4, primi
   using delay_constructor                            = detail::fixed_delay_constructor_t<360, 1170>;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <>
 struct sm90_tuning<__int128_t, flagged::yes, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
 {
@@ -442,7 +442,7 @@ struct sm90_tuning<Input, flagged::no, keep_rejects::yes, offset_size::_4, primi
   using delay_constructor                            = detail::fixed_delay_constructor_t<512, 1075>;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <>
 struct sm90_tuning<__int128_t, flagged::no, keep_rejects::yes, offset_size::_4, primitive::no, input_size::_16>
 {
@@ -495,7 +495,7 @@ struct sm90_tuning<Input, flagged::yes, keep_rejects::yes, offset_size::_4, prim
   using delay_constructor                            = detail::fixed_delay_constructor_t<532, 1180>;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <>
 struct sm90_tuning<__int128_t, flagged::yes, keep_rejects::yes, offset_size::_4, primitive::no, input_size::_16>
 {
@@ -566,12 +566,12 @@ struct policy_hub
                           detail::fixed_delay_constructor_t<350, 450>>;
   };
 
-  struct Policy350
+  struct Policy500
       : DefaultPolicy<MayAlias ? LOAD_CA : LOAD_LDG>
-      , ChainedPolicy<350, Policy350, Policy350>
+      , ChainedPolicy<500, Policy500, Policy500>
   {};
 
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy350>
+  struct Policy800 : ChainedPolicy<800, Policy800, Policy500>
   {
     // Use values from tuning if a specialization exists, otherwise pick the default
     template <typename Tuning>

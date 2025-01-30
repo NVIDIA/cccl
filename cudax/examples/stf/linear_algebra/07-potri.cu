@@ -197,17 +197,17 @@ public:
   void print()
   {
     // print blocks by blocks
-    for (int colb = 0; colb < nt; colb++)
+    for (size_t colb = 0; colb < nt; colb++)
     {
       int low_rowb = sym_matrix ? colb : 0;
-      for (int rowb = low_rowb; rowb < mt; rowb++)
+      for (size_t rowb = low_rowb; rowb < mt; rowb++)
       {
         // Each task fills a block
         ctx.host_launch(get_handle(rowb, colb).read())->*[=](auto sA) {
-          for (int lcol = 0; lcol < sA.extent(1); lcol++)
+          for (size_t lcol = 0; lcol < sA.extent(1); lcol++)
           {
             size_t col = lcol + colb * sA.extent(1);
-            for (int lrow = 0; lrow < sA.extent(0); lrow++)
+            for (size_t lrow = 0; lrow < sA.extent(0); lrow++)
             {
               size_t row = lrow + rowb * sA.extent(0);
 

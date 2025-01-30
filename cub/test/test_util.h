@@ -717,7 +717,7 @@ std::ostream& operator<<(std::ostream& os, const CUB_NS_QUALIFIER::KeyValuePair<
   return os;
 }
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 inline std::ostream& operator<<(std::ostream& os, __uint128_t val)
 {
   constexpr int max_digits      = 40;

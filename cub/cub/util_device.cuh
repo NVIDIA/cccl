@@ -553,6 +553,11 @@ struct PolicyWrapper<
   {
     return StaticPolicyT::ITEMS_PER_THREAD;
   }
+
+  CUB_RUNTIME_FUNCTION static constexpr int ItemsPerTile()
+  {
+    return StaticPolicyT::ITEMS_PER_TILE;
+  }
 };
 
 template <typename PolicyT>
@@ -713,4 +718,6 @@ private:
 
 CUB_NAMESPACE_END
 
-#include <cub/detail/launcher/cuda_runtime.cuh> // to complete the definition of TripleChevronFactory
+#if _CCCL_HAS_CUDA_COMPILER
+#  include <cub/detail/launcher/cuda_runtime.cuh> // to complete the definition of TripleChevronFactory
+#endif // _CCCL_HAS_CUDA_COMPILER

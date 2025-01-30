@@ -7,10 +7,12 @@ PTX Instructions
    :maxdepth: 1
 
    instructions/barrier_cluster
+   instructions/clusterlaunchcontrol
    instructions/cp_async_bulk
    instructions/cp_async_bulk_commit_group
    instructions/cp_async_bulk_wait_group
    instructions/cp_async_bulk_tensor
+   instructions/cp_async_mbarrier_arrive
    instructions/cp_reduce_async_bulk
    instructions/cp_reduce_async_bulk_tensor
    instructions/fence
@@ -21,8 +23,12 @@ PTX Instructions
    instructions/mbarrier_expect_tx
    instructions/mbarrier_test_wait
    instructions/mbarrier_try_wait
+   instructions/multimem_ld_reduce
+   instructions/multimem_red
+   instructions/multimem_st
    instructions/red_async
    instructions/st_async
+   instructions/st_bulk
    instructions/tensormap_replace
    instructions/tensormap_cp_fenceproxy
    instructions/special_registers

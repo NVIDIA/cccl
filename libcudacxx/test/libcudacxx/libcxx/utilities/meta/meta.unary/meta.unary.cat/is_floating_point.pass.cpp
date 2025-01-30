@@ -80,12 +80,12 @@ int main(int, char**)
   test_is_floating_point<float>();
   test_is_floating_point<double>();
   test_is_floating_point<long double>();
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#ifdef _CCCL_HAS_NVFP16
   test_is_floating_point<__half>();
-#endif // _LIBCUDACXX_HAS_NVFP16
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#endif // _CCCL_HAS_NVFP16
+#ifdef _CCCL_HAS_NVBF16
   test_is_floating_point<__nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _CCCL_HAS_NVBF16
 #if _CCCL_HAS_NVFP8()
   test_is_floating_point<__nv_fp8_e4m3>();
   test_is_floating_point<__nv_fp8_e5m2>();

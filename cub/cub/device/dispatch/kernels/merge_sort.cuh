@@ -19,12 +19,13 @@
 
 THRUST_NAMESPACE_BEGIN
 
-namespace cuda_cub::core
+namespace cuda_cub::core::detail
 {
 // We must forward declare here because make_load_iterator.h pulls in non NVRTC compilable code
 template <class PtxPlan, class It>
-typename LoadIterator<PtxPlan, It>::type _CCCL_DEVICE _CCCL_FORCEINLINE make_load_iterator(PtxPlan const&, It it);
-} // namespace cuda_cub::core
+typename detail::LoadIterator<PtxPlan, It>::type _CCCL_DEVICE _CCCL_FORCEINLINE
+make_load_iterator(PtxPlan const&, It it);
+} // namespace cuda_cub::core::detail
 
 THRUST_NAMESPACE_END
 
@@ -116,6 +117,28 @@ public:
   using block_sort_agent_t =
     ::cuda::std::_If<uses_fallback_policy, fallback_block_sort_agent_t, default_block_sort_agent_t>;
   using merge_agent_t = ::cuda::std::_If<uses_fallback_policy, fallback_merge_agent_t, default_merge_agent_t>;
+
+  _CCCL_HOST_DEVICE static constexpr ::cuda::std::size_t block_sort_vsmem_per_block()
+  {
+    return detail::vsmem_helper_impl<block_sort_agent_t>::vsmem_per_block;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr ::cuda::std::size_t merge_vsmem_per_block()
+  {
+    return detail::vsmem_helper_impl<merge_agent_t>::vsmem_per_block;
+  }
+
+  template <typename PolicyT>
+  _CCCL_HOST_DEVICE static constexpr int BlockThreads(PolicyT /*policy*/)
+  {
+    return policy_t::BLOCK_THREADS;
+  }
+
+  template <typename PolicyT>
+  _CCCL_HOST_DEVICE static constexpr int ItemsPerTile(PolicyT /*policy*/)
+  {
+    return policy_t::ITEMS_PER_TILE;
+  }
 };
 template <typename ChainedPolicyT,
           typename KeyInputIteratorT,
@@ -174,8 +197,8 @@ __launch_bounds__(
   AgentBlockSortT agent(
     ping,
     temp_storage,
-    THRUST_NS_QUALIFIER::cuda_cub::core::make_load_iterator(ActivePolicyT(), keys_in),
-    THRUST_NS_QUALIFIER::cuda_cub::core::make_load_iterator(ActivePolicyT(), items_in),
+    THRUST_NS_QUALIFIER::cuda_cub::core::detail::make_load_iterator(ActivePolicyT(), keys_in),
+    THRUST_NS_QUALIFIER::cuda_cub::core::detail::make_load_iterator(ActivePolicyT(), items_in),
     keys_count,
     keys_out,
     items_out,
@@ -280,10 +303,10 @@ __launch_bounds__(
   AgentMergeT agent(
     ping,
     temp_storage,
-    THRUST_NS_QUALIFIER::cuda_cub::core::make_load_iterator(ActivePolicyT(), keys_ping),
-    THRUST_NS_QUALIFIER::cuda_cub::core::make_load_iterator(ActivePolicyT(), items_ping),
-    THRUST_NS_QUALIFIER::cuda_cub::core::make_load_iterator(ActivePolicyT(), keys_pong),
-    THRUST_NS_QUALIFIER::cuda_cub::core::make_load_iterator(ActivePolicyT(), items_pong),
+    THRUST_NS_QUALIFIER::cuda_cub::core::detail::make_load_iterator(ActivePolicyT(), keys_ping),
+    THRUST_NS_QUALIFIER::cuda_cub::core::detail::make_load_iterator(ActivePolicyT(), items_ping),
+    THRUST_NS_QUALIFIER::cuda_cub::core::detail::make_load_iterator(ActivePolicyT(), keys_pong),
+    THRUST_NS_QUALIFIER::cuda_cub::core::detail::make_load_iterator(ActivePolicyT(), items_pong),
     keys_count,
     keys_pong,
     items_pong,
