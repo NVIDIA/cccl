@@ -83,6 +83,18 @@ TEMPLATE_TEST_CASE(
 
   cudax::device_memory_resource resource{};
 
+  if (false)
+  {
+    uninitialized_buffer buf{resource, 42};
+    uninitialized_buffer const& cbuf = buf;
+    static_assert(cuda::std::is_same<decltype(buf.begin()), TestType*>::value, "");
+    static_assert(cuda::std::is_same<decltype(cbuf.begin()), TestType const*>::value, "");
+    static_assert(cuda::std::is_same<decltype(buf.end()), TestType*>::value, "");
+    static_assert(cuda::std::is_same<decltype(cbuf.end()), TestType const*>::value, "");
+    static_assert(cuda::std::is_same<decltype(buf.data()), TestType*>::value, "");
+    static_assert(cuda::std::is_same<decltype(cbuf.data()), TestType const*>::value, "");
+  }
+
   SECTION("construction")
   {
     static_assert(!cuda::std::is_copy_constructible<uninitialized_buffer>::value, "");

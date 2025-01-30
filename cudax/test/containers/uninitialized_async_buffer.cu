@@ -58,6 +58,18 @@ TEMPLATE_TEST_CASE(
   cuda::experimental::device_memory_resource resource{};
   cuda::experimental::stream stream{};
 
+  if (false)
+  {
+    uninitialized_async_buffer buf{resource, stream, 42};
+    uninitialized_async_buffer const& cbuf = buf;
+    static_assert(cuda::std::is_same<decltype(buf.begin()), TestType*>::value, "");
+    static_assert(cuda::std::is_same<decltype(cbuf.begin()), TestType const*>::value, "");
+    static_assert(cuda::std::is_same<decltype(buf.end()), TestType*>::value, "");
+    static_assert(cuda::std::is_same<decltype(cbuf.end()), TestType const*>::value, "");
+    static_assert(cuda::std::is_same<decltype(buf.data()), TestType*>::value, "");
+    static_assert(cuda::std::is_same<decltype(cbuf.data()), TestType const*>::value, "");
+  }
+
   SECTION("construction")
   {
     {
