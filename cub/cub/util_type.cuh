@@ -964,7 +964,7 @@ struct FpLimits<__nv_bfloat16>
     return reinterpret_cast<__nv_bfloat16&>(lowest_word);
   }
 };
-#  endif // _CCCL_HAS_NVBF16
+#  endif // _CCCL_HAS_NVBF16()
 
 #  if _CCCL_HAS_NVFP8()
 template <>

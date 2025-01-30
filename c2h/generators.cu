@@ -552,10 +552,10 @@ INSTANTIATE(double);
 INSTANTIATE(bool);
 INSTANTIATE(char);
 
-#ifdef _CCCL_HAS_NVFP16
+#if _CCCL_HAS_NVFP16()
 INSTANTIATE(half_t);
 INSTANTIATE(__half);
-#endif // _CCCL_HAS_NVFP16
+#endif // _CCCL_HAS_NVFP16()
 
 #if _CCCL_HAS_NVBF16()
 INSTANTIATE(bfloat16_t);

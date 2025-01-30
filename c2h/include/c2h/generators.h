@@ -37,7 +37,7 @@
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 #  if _CCCL_HAS_NVFP16()
 #    include <cuda_fp16.h>
-#  endif // _CCCL_HAS_NVFP16
+#  endif // _CCCL_HAS_NVFP16()
 
 #  if _CCCL_HAS_NVBF16()
 _CCCL_DIAG_PUSH

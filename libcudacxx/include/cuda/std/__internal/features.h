@@ -99,7 +99,7 @@
 #ifndef _LIBCUDACXX_HAS_NVBF16
 #  if _CCCL_HAS_NVBF16() && _CCCL_CUDACC_AT_LEAST(12, 2)
 #    define _LIBCUDACXX_HAS_NVBF16
-#  endif // _CCCL_HAS_NVBF16 && _CCCL_CUDACC_AT_LEAST(12, 2)
+#  endif // _CCCL_HAS_NVBF16() && _CCCL_CUDACC_AT_LEAST(12, 2)
 #endif // !_LIBCUDACXX_HAS_NVBF16
 
 // NVCC does not have a way of silencing non '_' prefixed UDLs
