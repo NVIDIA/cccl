@@ -128,7 +128,7 @@ class AgentSubWarpSort
       _CCCL_UNREACHABLE();
     }
 
-#if defined(__CUDA_FP16_TYPES_EXIST__)
+#if _CCCL_HAS_NVFP16()
     _CCCL_DEVICE bool operator()(__half lhs, __half rhs) const noexcept
     {
       // Need to explicitly cast to float for SM <= 52.
@@ -142,16 +142,16 @@ class AgentSubWarpSort
       }
       _CCCL_UNREACHABLE();
     }
-#endif // __CUDA_FP16_TYPES_EXIST__
+#endif // _CCCL_HAS_NVFP16()
   };
 
-#if defined(__CUDA_FP16_TYPES_EXIST__)
+#if _CCCL_HAS_NVFP16()
   _CCCL_DEVICE static bool equal(__half lhs, __half rhs)
   {
     // Need to explicitly cast to float for SM <= 52.
     NV_IF_TARGET(NV_PROVIDES_SM_53, (return __heq(lhs, rhs);), (return __half2float(lhs) == __half2float(rhs);));
   }
-#endif // __CUDA_FP16_TYPES_EXIST__
+#endif // _CCCL_HAS_NVFP16()
 
   template <typename T>
   _CCCL_DEVICE static bool equal(T lhs, T rhs)
