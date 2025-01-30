@@ -128,12 +128,11 @@ template <
        OffsetT,
        CompareOpT,
        cub::detail::value_t<KeyIteratorT>,
-       cub::detail::value_t<ValueIteratorT>>>
+       cub::detail::value_t<ValueIteratorT>>,
+  typename KeyT   = cub::detail::value_t<KeyIteratorT>,
+  typename ValueT = cub::detail::value_t<ValueIteratorT>>
 struct DispatchMergeSort
 {
-  using KeyT   = cub::detail::value_t<KeyIteratorT>;
-  using ValueT = cub::detail::value_t<ValueIteratorT>;
-
   /// Whether or not there are values to be trucked along with keys
   static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
