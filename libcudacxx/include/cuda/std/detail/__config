@@ -30,6 +30,10 @@
 #  define _LIBCUDACXX_CUDA_ABI_VERSION _LIBCUDACXX_CUDA_ABI_VERSION_LATEST
 #endif
 
+#if (_LIBCUDACXX_CUDA_ABI_VERSION < 4) && !defined(LIBCUDACXX_IGNORE_DEPRECATED_ABI)
+#  error "libcu++ ABIs older than version 4 are deprecated, define LIBCUDACXX_IGNORE_DEPRECATED_ABI to ignore"
+#endif
+
 #ifdef _LIBCUDACXX_PIPELINE_ASSUMED_ABI_VERSION
 #  if _LIBCUDACXX_PIPELINE_ASSUMED_ABI_VERSION != _LIBCUDACXX_CUDA_ABI_VERSION
 #    error cuda_pipeline.h has assumed a different libcu++ ABI version than provided by this library. To fix this, please include a libcu++ header before including cuda_pipeline.h, or upgrade to a version of the toolkit this version of libcu++ shipped in.
