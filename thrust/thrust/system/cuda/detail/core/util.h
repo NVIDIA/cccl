@@ -488,14 +488,7 @@ struct get_arch<Plan<Arch>>
 template <class PtxPlan, class It, class T = typename iterator_traits<It>::value_type>
 struct BlockLoad
 {
-  using type =
-    cub::BlockLoad<T,
-                   PtxPlan::BLOCK_THREADS,
-                   PtxPlan::ITEMS_PER_THREAD,
-                   PtxPlan::LOAD_ALGORITHM,
-                   1,
-                   1,
-                   get_arch<PtxPlan>::type::ver>;
+  using type = cub::BlockLoad<T, PtxPlan::BLOCK_THREADS, PtxPlan::ITEMS_PER_THREAD, PtxPlan::LOAD_ALGORITHM, 1, 1>;
 };
 
 // cuda_optional

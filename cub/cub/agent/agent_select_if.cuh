@@ -274,7 +274,7 @@ struct AgentSelectIf
   // Callback type for obtaining tile prefix during block scan
   using DelayConstructorT = typename AgentSelectIfPolicyT::detail::delay_constructor_t;
   using TilePrefixCallbackOpT =
-    TilePrefixCallbackOp<OffsetT, ::cuda::std::plus<>, MemoryOrderedTileStateT, 0, DelayConstructorT>;
+    TilePrefixCallbackOp<OffsetT, ::cuda::std::plus<>, MemoryOrderedTileStateT, DelayConstructorT>;
 
   // Item exchange type
   using ItemExchangeT = InputT[TILE_ITEMS];

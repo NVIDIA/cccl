@@ -68,9 +68,7 @@ CUB_NAMESPACE_BEGIN
 //! @tparam BLOCK_THREADS
 //!   The thread block size in threads.
 //!
-//! @tparam LEGACY_PTX_ARCH
-//!   **[optional]** Unused.
-template <typename T, int BLOCK_THREADS, int LEGACY_PTX_ARCH = 0>
+template <typename T, int BLOCK_THREADS>
 struct BlockRakingLayout
 {
   //---------------------------------------------------------------------

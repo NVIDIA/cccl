@@ -642,14 +642,12 @@ private:
     TilePrefixCallbackOp<BufferOffsetT,
                          ::cuda::std::plus<>,
                          BLevBufferOffsetTileState,
-                         0,
                          typename AgentMemcpySmallBuffersPolicyT::buff_delay_constructor>;
 
   using BLevBlockScanPrefixCallbackOpT =
     TilePrefixCallbackOp<BlockOffsetT,
                          ::cuda::std::plus<>,
                          BLevBlockOffsetTileState,
-                         0,
                          typename AgentMemcpySmallBuffersPolicyT::block_delay_constructor>;
 
   //-----------------------------------------------------------------------------

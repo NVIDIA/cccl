@@ -300,9 +300,9 @@ struct SetOpAgent
     using BlockLoadValues1 = typename core::detail::BlockLoad<PtxPlan, ValuesLoadIt1>::type;
     using BlockLoadValues2 = typename core::detail::BlockLoad<PtxPlan, ValuesLoadIt2>::type;
 
-    using TilePrefixCallback = cub::TilePrefixCallbackOp<Size, ::cuda::std::plus<>, ScanTileState, Arch::ver>;
+    using TilePrefixCallback = cub::TilePrefixCallbackOp<Size, ::cuda::std::plus<>, ScanTileState>;
 
-    using BlockScan = cub::BlockScan<Size, PtxPlan::BLOCK_THREADS, PtxPlan::SCAN_ALGORITHM, 1, 1, Arch::ver>;
+    using BlockScan = cub::BlockScan<Size, PtxPlan::BLOCK_THREADS, PtxPlan::SCAN_ALGORITHM, 1, 1>;
 
     // gather required temporary storage in a union
     //

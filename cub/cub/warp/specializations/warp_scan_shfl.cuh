@@ -62,11 +62,8 @@ namespace detail
  *
  * @tparam LOGICAL_WARP_THREADS
  *   Number of threads per logical warp (must be a power-of-two)
- *
- * @tparam LEGACY_PTX_ARCH
- *   The PTX compute capability for which to to specialize this collective
  */
-template <typename T, int LOGICAL_WARP_THREADS, int LEGACY_PTX_ARCH = 0>
+template <typename T, int LOGICAL_WARP_THREADS>
 struct WarpScanShfl
 {
   //---------------------------------------------------------------------
@@ -677,9 +674,9 @@ struct WarpScanShfl
 };
 } // namespace detail
 
-template <typename T, int LOGICAL_WARP_THREADS, int LEGACY_PTX_ARCH = 0>
+template <typename T, int LOGICAL_WARP_THREADS>
 using WarpScanShfl CCCL_DEPRECATED_BECAUSE(
   "This class is considered an implementation detail and the public interface will be "
-  "removed.") = detail::WarpScanShfl<T, LOGICAL_WARP_THREADS, LEGACY_PTX_ARCH>;
+  "removed.") = detail::WarpScanShfl<T, LOGICAL_WARP_THREADS>;
 
 CUB_NAMESPACE_END
