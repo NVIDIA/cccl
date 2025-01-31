@@ -617,6 +617,9 @@ class stackable_logical_data
 
       fprintf(stderr, "stackable_logical_data::pop() %s\n", symbol.c_str());
 
+      // Remove aliased logical data
+      s.pop_back();
+
       // We are going to unfreeze the data, which is currently being used
       // in a (graph) ctx that uses this stream to launch the graph
       cudaStream_t stream = sctx.get_stream(depth());
@@ -626,8 +629,6 @@ class stackable_logical_data
 
       // Remove frozen logical data
       frozen_s.pop_back();
-      // Remove aliased logical data
-      s.pop_back();
     }
 
     size_t depth() const
