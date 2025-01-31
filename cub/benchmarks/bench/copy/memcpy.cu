@@ -25,7 +25,7 @@
  *
  ******************************************************************************/
 
-#include <cub/device/device_copy.cuh>
+#include <cub/device/device_memcpy.cuh>
 
 // %RANGE% TUNE_THREADS tpb 128:1024:32
 // %RANGE% TUNE_BUFFERS_PER_THREAD bpt 1:18:1
@@ -184,7 +184,7 @@ void copy(nvbench::state& state,
   using buffer_offset_t    = std::uint32_t;
   using block_offset_t     = std::uint32_t;
 
-  constexpr bool is_memcpy = true;
+  constexpr cub::MemcpyOption is_memcpy = cub::MemcpyOption::MemCopy;
 
 #if !TUNE_BASE
   using policy_t = policy_hub_t;
