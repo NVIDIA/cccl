@@ -34,8 +34,9 @@ workflows:
     - {jobs: ['test_gpu'],  project: 'thrust', cmake_options: '-DTHRUST_DISPATCH_TYPE=Force32bit', gpu: 'rtx4090'}
     # default_projects: clang-cuda
     - {jobs: ['build'], std: 'all', cudacxx: 'clang', cxx: 'clang'}
-    - {jobs: ['build'], project: 'libcudacxx', std: 'max', cudacxx: 'clang', cxx: 'clang', sm: '90'}
-    - {jobs: ['build'], project: 'libcudacxx', std: 'max', cudacxx: 'clang', cxx: 'clang', sm: '90a'}
+    # Disabled; see discussion on #3633. Should be fixed in clang-20.
+#    - {jobs: ['build'], project: 'libcudacxx', std: 'max', cudacxx: 'clang', cxx: 'clang', sm: '90'}
+#    - {jobs: ['build'], project: 'libcudacxx', std: 'max', cudacxx: 'clang', cxx: 'clang', sm: '90a'}
     # nvrtc:
     - {jobs: ['nvrtc'], project: 'libcudacxx', std: 'all', gpu: 'rtx2080', sm: 'gpu'}
     # verify-codegen:
@@ -79,8 +80,9 @@ workflows:
     - {jobs: ['test_lid0'], project: 'cub', std: 'max', cxx: 'gcc', gpu: ['v100', 't4', 'l4', 'h100'], sm: '70;75;89;90;100'}
     # default_projects: clang-cuda
     - {jobs: ['build'], std: 'all', cudacxx: 'clang', cxx: 'clang'}
-    - {jobs: ['build'], project: 'libcudacxx', std: 'all', cudacxx: 'clang', cxx: 'clang', sm: '90'}
-    - {jobs: ['build'], project: 'libcudacxx', std: 'all', cudacxx: 'clang', cxx: 'clang', sm: '90a'}
+    # Disabled; see discussion on #3633. Should be fixed in clang-20.
+    # - {jobs: ['build'], project: 'libcudacxx', std: 'all', cudacxx: 'clang', cxx: 'clang', sm: '90'}
+    # - {jobs: ['build'], project: 'libcudacxx', std: 'all', cudacxx: 'clang', cxx: 'clang', sm: '90a'}
     # cudax
     - {jobs: ['build'], project: 'cudax', ctk: ['12.0', 'curr'], std: 'all', cxx: ['gcc9', 'gcc10', 'gcc11']}
     - {jobs: ['build'], project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['clang14', 'clang15', 'clang16', 'clang17']}
