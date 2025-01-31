@@ -54,7 +54,7 @@ CUB_NAMESPACE_BEGIN
  * @brief A discard iterator
  */
 template <typename OffsetT = ptrdiff_t>
-class DiscardOutputIterator
+class CCCL_DEPRECATED_BECAUSE("Use thrust::discard_iterator instead") DiscardOutputIterator
 {
 public:
   // Required iterator traits
@@ -191,11 +191,13 @@ public:
   }
 
   /// ostream operator
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   friend std::ostream& operator<<(std::ostream& os, const self_type& itr)
   {
     os << "[" << itr.offset << "]";
     return os;
   }
+  _CCCL_SUPPRESS_DEPRECATED_POP
 };
 
 CUB_NAMESPACE_END

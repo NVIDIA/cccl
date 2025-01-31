@@ -53,6 +53,7 @@ namespace async
 namespace unimplemented
 {
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename T, typename BinaryOp>
 CCCL_DEPRECATED _CCCL_HOST future<DerivedPolicy, T>
 async_reduce(thrust::execution_policy<DerivedPolicy>&, ForwardIt, Sentinel, T, BinaryOp)
@@ -61,6 +62,7 @@ async_reduce(thrust::execution_policy<DerivedPolicy>&, ForwardIt, Sentinel, T, B
                            "this algorithm is not implemented for the specified system");
   return {};
 }
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 } // namespace unimplemented
 
@@ -176,6 +178,7 @@ _CCCL_GLOBAL_CONSTANT reduce_detail::reduce_fn reduce{};
 namespace unimplemented
 {
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename OutputIt, typename T, typename BinaryOp>
 CCCL_DEPRECATED _CCCL_HOST event<DerivedPolicy>
 async_reduce_into(thrust::execution_policy<DerivedPolicy>&, ForwardIt, Sentinel, OutputIt, T, BinaryOp)
@@ -184,6 +187,7 @@ async_reduce_into(thrust::execution_policy<DerivedPolicy>&, ForwardIt, Sentinel,
                            "this algorithm is not implemented for the specified system");
   return {};
 }
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 } // namespace unimplemented
 
