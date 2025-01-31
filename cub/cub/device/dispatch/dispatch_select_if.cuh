@@ -422,7 +422,7 @@ template <typename InputIteratorT,
           typename PolicyHub =
             detail::select::policy_hub<detail::value_t<InputIteratorT>,
                                        detail::value_t<FlagsInputIteratorT>,
-                                       detail::select::per_partition_offset_t,
+                                       OffsetT,
                                        detail::select::is_partition_distinct_output_t<SelectedOutputIteratorT>::value,
                                        (SelectionOpt == SelectImpl::SelectPotentiallyInPlace),
                                        (SelectionOpt == SelectImpl::Partition)>>
