@@ -325,4 +325,7 @@ DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(test_async_copy_after, BuiltinNumericT
 
 #endif
 
+// we need to leak the suppression on clang to suppresses warnings from the cudafe1.stub.c file
+#if !_CCCL_COMPILER(CLANG)
 _CCCL_SUPPRESS_DEPRECATED_POP
+#endif
