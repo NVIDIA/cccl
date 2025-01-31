@@ -243,7 +243,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor_tile_gather4(
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// cp.async.bulk.tensor.2d.dst.src.tile::scatter4.bulk_group [tensorMap, tensorCoords], [srcMem]; // PTX ISA 80,
+// cp.async.bulk.tensor.2d.dst.src.tile::scatter4.bulk_group [tensorMap, tensorCoords], [srcMem]; // PTX ISA 86,
 SM_100a, SM_101a
 // .dst       = { .global }
 // .src       = { .shared::cta }
@@ -255,7 +255,7 @@ __device__ static inline void cp_async_bulk_tensor_tile_scatter4(
   const int32_t (&tensorCoords)[5],
   const void* srcMem);
 */
-#if __cccl_ptx_isa >= 800
+#if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_tile_scatter4_is_not_supported_before_SM_100a_SM_101a__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor_tile_scatter4(
@@ -283,6 +283,6 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor_tile_scatter4(
   __cuda_ptx_cp_async_bulk_tensor_tile_scatter4_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
-#endif // __cccl_ptx_isa >= 800
+#endif // __cccl_ptx_isa >= 860
 
 #endif // _CUDA_PTX_GENERATED_CP_ASYNC_BULK_TENSOR_GATHER_SCATTER_H_

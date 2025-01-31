@@ -36,6 +36,8 @@
 
 #include <cub/config.cuh>
 
+#include <cuda/std/__type_traits/is_void.h>
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -554,8 +556,7 @@ template <int NUM_CHANNELS,
           typename CounterT,
           typename LevelT,
           typename OffsetT,
-          typename PolicyHub =
-            detail::histogram::policy_hub<detail::value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS>>
+          typename PolicyHub = void> // if user passes a custom Policy this should not be void
 struct DispatchHistogram
 {
   static_assert(NUM_CHANNELS <= 4, "Histograms only support up to 4 channels");
@@ -920,8 +921,14 @@ public:
     cudaStream_t stream,
     Int2Type<false> /*is_byte_sample*/)
   {
-    using MaxPolicyT = typename PolicyHub::MaxPolicy;
-    cudaError error  = cudaSuccess;
+    // Should we call DispatchHistogram<....., PolicyHub=void> in DeviceHistogram?
+    static constexpr bool isEven = 0;
+    using fallback_policy_hub    = detail::histogram::
+      policy_hub<detail::value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
+
+    using MaxPolicyT =
+      typename cuda::std::_If<cuda::std::is_void<PolicyHub>::value, fallback_policy_hub, PolicyHub>::MaxPolicy;
+    cudaError error = cudaSuccess;
 
     do
     {
@@ -1091,8 +1098,13 @@ public:
     cudaStream_t stream,
     Int2Type<true> /*is_byte_sample*/)
   {
-    using MaxPolicyT = typename PolicyHub::MaxPolicy;
-    cudaError error  = cudaSuccess;
+    static constexpr bool isEven = 0;
+    using fallback_policy_hub    = detail::histogram::
+      policy_hub<detail::value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
+
+    using MaxPolicyT =
+      typename cuda::std::_If<cuda::std::is_void<PolicyHub>::value, fallback_policy_hub, PolicyHub>::MaxPolicy;
+    cudaError error = cudaSuccess;
 
     do
     {
@@ -1226,8 +1238,13 @@ public:
     cudaStream_t stream,
     Int2Type<false> /*is_byte_sample*/)
   {
-    using MaxPolicyT = typename PolicyHub::MaxPolicy;
-    cudaError error  = cudaSuccess;
+    static constexpr bool isEven = 1;
+    using fallback_policy_hub    = detail::histogram::
+      policy_hub<detail::value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
+
+    using MaxPolicyT =
+      typename cuda::std::_If<cuda::std::is_void<PolicyHub>::value, fallback_policy_hub, PolicyHub>::MaxPolicy;
+    cudaError error = cudaSuccess;
 
     do
     {
@@ -1412,8 +1429,13 @@ public:
     cudaStream_t stream,
     Int2Type<true> /*is_byte_sample*/)
   {
-    using MaxPolicyT = typename PolicyHub::MaxPolicy;
-    cudaError error  = cudaSuccess;
+    static constexpr bool isEven = 1;
+    using fallback_policy_hub    = detail::histogram::
+      policy_hub<detail::value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
+
+    using MaxPolicyT =
+      typename cuda::std::_If<cuda::std::is_void<PolicyHub>::value, fallback_policy_hub, PolicyHub>::MaxPolicy;
+    cudaError error = cudaSuccess;
 
     do
     {
