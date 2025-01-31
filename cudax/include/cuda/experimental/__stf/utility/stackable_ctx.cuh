@@ -442,7 +442,6 @@ public:
     return get_ctx(depth()).dot_section(mv(symbol));
   }
 
-
   void finalize()
   {
     // There must be only one level left

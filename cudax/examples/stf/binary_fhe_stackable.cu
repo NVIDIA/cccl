@@ -36,7 +36,7 @@ public:
     ld = ctx.logical_data(values.data(), values.size());
   }
 
-  auto &set_symbol(std::string s)
+  auto& set_symbol(std::string s)
   {
     ld.set_symbol(s);
     symbol = s;
@@ -114,7 +114,7 @@ public:
       };
   }
 
-  auto &set_symbol(std::string s)
+  auto& set_symbol(std::string s)
   {
     ld.set_symbol(s);
     symbol = s;

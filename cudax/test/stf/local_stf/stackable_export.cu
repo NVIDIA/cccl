@@ -16,6 +16,7 @@
  */
 
 #include <cuda/experimental/stf.cuh>
+
 #include "cuda/experimental/__stf/utility/stackable_ctx.cuh"
 
 using namespace cuda::experimental::stf;
@@ -55,7 +56,7 @@ int main()
   sctx.host_launch(lB.read())->*[](auto b) {
     for (size_t i = 0; i < b.size(); i++)
     {
-      EXPECT(b(i) == 2*(17 - 3 * (42 + 2 * i)));
+      EXPECT(b(i) == 2 * (17 - 3 * (42 + 2 * i)));
     }
   };
 
