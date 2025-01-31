@@ -56,7 +56,7 @@
 #  define _CCCL_HAS_NVFP8() 1
 #else
 #  define _CCCL_HAS_NVFP8() 0
-#endif // _CCCL_HAS_INCLUDE(<cuda_fp8.h>) && _CCCL_HAS_NVFP16() && _CCCL_HAS_NVBF16()
+#endif // _CCCL_HAS_INCLUDE(<cuda_fp8.h>) && _CCCL_HAS_NVFP16() && _CCCL_HAS_NVBF16() && !defined(CCCL_DISABLE_NVFP8_SUPPORT)
 
 #if !defined(CCCL_DISABLE_FLOAT128_SUPPORT)
 #  if _CCCL_COMPILER(NVRTC) && defined(__CUDACC_RTC_FLOAT128__) && _CCCL_OS(LINUX)
