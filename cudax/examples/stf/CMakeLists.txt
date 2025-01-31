@@ -50,6 +50,7 @@ set(stf_example_codegen_sources
 # Examples using CUBLAS, CUSOLVER...
 set(stf_example_mathlib_sources
   linear_algebra/06-pdgemm.cu
+  linear_algebra/06-pdgemm-stackable.cu
   linear_algebra/07-cholesky.cu
   linear_algebra/07-potri.cu
   linear_algebra/cg_csr.cu
