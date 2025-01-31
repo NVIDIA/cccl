@@ -110,8 +110,8 @@ CUB_NAMESPACE_BEGIN
 struct DeviceAdjacentDifference
 {
 private:
-  template <bool may_alias,
-            bool read_left,
+  template <AliasOption AliasOpt,
+            ReadOption ReadOpt,
             typename NumItemsT,
             typename InputIteratorT,
             typename OutputIteratorT,
@@ -128,7 +128,7 @@ private:
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     using DispatchT =
-      DispatchAdjacentDifference<InputIteratorT, OutputIteratorT, DifferenceOpT, OffsetT, may_alias, read_left>;
+      DispatchAdjacentDifference<InputIteratorT, OutputIteratorT, DifferenceOpT, OffsetT, AliasOpt, ReadOpt>;
 
     return DispatchT::Dispatch(
       d_temp_storage, temp_storage_bytes, d_input, d_output, static_cast<OffsetT>(num_items), difference_op, stream);
@@ -257,8 +257,8 @@ public:
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractLeftCopy");
 
-    constexpr bool may_alias = false;
-    constexpr bool read_left = true;
+    constexpr AliasOption may_alias = AliasOption::NoAlias;
+    constexpr ReadOption read_left  = ReadOption::ReadLeft;
 
     return AdjacentDifference<may_alias, read_left>(
       d_temp_storage, temp_storage_bytes, d_input, d_output, num_items, difference_op, stream);
@@ -370,8 +370,8 @@ public:
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractLeft");
 
-    constexpr bool may_alias = true;
-    constexpr bool read_left = true;
+    constexpr AliasOption may_alias = AliasOption::MayAlias;
+    constexpr ReadOption read_left  = ReadOption::ReadLeft;
 
     return AdjacentDifference<may_alias, read_left>(
       d_temp_storage, temp_storage_bytes, d_input, d_input, num_items, difference_op, stream);
@@ -500,8 +500,8 @@ public:
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractRightCopy");
 
-    constexpr bool may_alias = false;
-    constexpr bool read_left = false;
+    constexpr AliasOption may_alias = AliasOption::NoAlias;
+    constexpr ReadOption read_left  = ReadOption::ReadRight;
 
     return AdjacentDifference<may_alias, read_left>(
       d_temp_storage, temp_storage_bytes, d_input, d_output, num_items, difference_op, stream);
@@ -602,8 +602,8 @@ public:
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractRight");
 
-    constexpr bool may_alias = true;
-    constexpr bool read_left = false;
+    constexpr AliasOption may_alias = AliasOption::MayAlias;
+    constexpr ReadOption read_left  = ReadOption::ReadRight;
 
     return AdjacentDifference<may_alias, read_left>(
       d_temp_storage, temp_storage_bytes, d_input, d_input, num_items, difference_op, stream);
