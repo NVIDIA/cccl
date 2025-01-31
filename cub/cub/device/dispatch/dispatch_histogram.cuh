@@ -646,27 +646,27 @@ public:
     using IntArithmeticT = ::cuda::std::_If< //
       sizeof(SampleT) + sizeof(CommonT) <= sizeof(uint32_t), //
       uint32_t, //
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
       ::cuda::std::_If< //
         (::cuda::std::is_same<CommonT, __int128_t>::value || //
          ::cuda::std::is_same<CommonT, __uint128_t>::value), //
         CommonT, //
         uint64_t> //
-#else // ^^^ CUB_IS_INT128_ENABLED ^^^ / vvv !CUB_IS_INT128_ENABLED vvv
+#else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
       uint64_t
-#endif // !CUB_IS_INT128_ENABLED
+#endif // !_CCCL_HAS_INT128()
       >;
 
     // Alias template that excludes __[u]int128 from the integral types
     template <typename T>
     using is_integral_excl_int128 =
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
       ::cuda::std::_If<::cuda::std::is_same<T, __int128_t>::value&& ::cuda::std::is_same<T, __uint128_t>::value,
                        ::cuda::std::false_type,
                        ::cuda::std::is_integral<T>>;
-#else // ^^^ CUB_IS_INT128_ENABLED ^^^ / vvv !CUB_IS_INT128_ENABLED vvv
+#else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
       ::cuda::std::is_integral<T>;
-#endif // !CUB_IS_INT128_ENABLED
+#endif // !_CCCL_HAS_INT128()
 
     union ScaleT
     {
