@@ -39,8 +39,8 @@
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
 // %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
 
-constexpr bool is_descending   = false;
-constexpr bool is_overwrite_ok = false;
+constexpr cub::SortOrder is_descending = cub::SortOrder::Ascending;
+constexpr bool is_overwrite_ok         = false;
 
 #if !TUNE_BASE
 template <typename KeyT, typename ValueT, typename OffsetT>

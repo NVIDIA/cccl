@@ -41,8 +41,8 @@
 
 using value_t = cub::NullType;
 
-constexpr bool is_descending   = false;
-constexpr bool is_overwrite_ok = false;
+constexpr cub::SortOrder is_descending = cub::SortOrder::Ascending;
+constexpr bool is_overwrite_ok         = false;
 
 #if !TUNE_BASE
 template <typename KeyT, typename ValueT, typename OffsetT>
