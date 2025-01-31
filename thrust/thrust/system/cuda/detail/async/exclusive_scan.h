@@ -56,6 +56,7 @@
 
 // TODO specialize for thrust::plus to use e.g. ExclusiveSum instead of ExcScan
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 THRUST_NAMESPACE_BEGIN
 namespace system
 {
@@ -157,6 +158,7 @@ auto async_exclusive_scan(
 
 } // namespace cuda_cub
 
+_CCCL_SUPPRESS_DEPRECATED_POP
 THRUST_NAMESPACE_END
 
 #  endif // _CCCL_CUDA_COMPILER

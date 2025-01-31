@@ -41,10 +41,11 @@
 
 #  include <type_traits>
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 THRUST_NAMESPACE_BEGIN
 
 // Forward declaration.
-struct new_stream_t;
+struct CCCL_DEPRECATED new_stream_t;
 
 namespace system
 {
@@ -326,17 +327,17 @@ template <typename X, typename Y, typename Deleter>
 _CCCL_HOST optional<unique_stream> try_acquire_stream(int device, std::unique_ptr<Y, Deleter>&) noexcept;
 
 // Precondition: `device` is the current CUDA device.
-inline _CCCL_HOST optional<unique_stream> try_acquire_stream(int, unique_stream& stream) noexcept;
+_CCCL_HOST inline optional<unique_stream> try_acquire_stream(int, unique_stream& stream) noexcept;
 
 // Precondition: `device` is the current CUDA device.
-inline _CCCL_HOST optional<unique_stream> try_acquire_stream(int device, ready_event&) noexcept;
+_CCCL_HOST inline optional<unique_stream> try_acquire_stream(int device, ready_event&) noexcept;
 
 // Precondition: `device` is the current CUDA device.
 template <typename X>
-inline _CCCL_HOST optional<unique_stream> try_acquire_stream(int device, ready_future<X>&) noexcept;
+_CCCL_HOST inline optional<unique_stream> try_acquire_stream(int device, ready_future<X>&) noexcept;
 
 // Precondition: `device` is the current CUDA device.
-inline _CCCL_HOST optional<unique_stream> try_acquire_stream(int device, unique_eager_event& parent) noexcept;
+_CCCL_HOST inline optional<unique_stream> try_acquire_stream(int device, unique_eager_event& parent) noexcept;
 
 // Precondition: `device` is the current CUDA device.
 template <typename X>
@@ -578,7 +579,7 @@ public:
 
 } // namespace detail
 
-struct ready_event final
+struct CCCL_DEPRECATED ready_event final
 {
   ready_event() = default;
 
@@ -598,7 +599,7 @@ struct ready_event final
 };
 
 template <typename T>
-struct ready_future final
+struct CCCL_DEPRECATED ready_future final
 {
   using value_type        = T;
   using raw_const_pointer = T const*;
@@ -650,7 +651,7 @@ public:
 #  endif
 };
 
-struct unique_eager_event final
+struct CCCL_DEPRECATED unique_eager_event final
 {
 protected:
   int device_ = 0;
@@ -759,7 +760,7 @@ public:
 };
 
 template <typename T>
-struct unique_eager_future final
+struct CCCL_DEPRECATED unique_eager_future final
 {
   THRUST_STATIC_ASSERT_MSG((!std::is_same<T, ::cuda::std::remove_cvref_t<void>>::value),
                            "`thrust::event` should be used to express valueless futures");
@@ -934,12 +935,12 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH // for thrust::optional
   return {};
 }
 
-inline _CCCL_HOST optional<unique_stream> try_acquire_stream(int, unique_stream& stream) noexcept
+_CCCL_HOST inline optional<unique_stream> try_acquire_stream(int, unique_stream& stream) noexcept
 {
   return {std::move(stream)};
 }
 
-inline _CCCL_HOST optional<unique_stream> try_acquire_stream(int, ready_event&) noexcept
+_CCCL_HOST inline optional<unique_stream> try_acquire_stream(int, ready_event&) noexcept
 {
   // There's no stream to acquire!
   return {};
@@ -1025,18 +1026,18 @@ template <typename X, typename Deleter>
 _CCCL_HOST void create_dependency(unique_stream&, std::unique_ptr<X, Deleter>&) noexcept
 {}
 
-inline _CCCL_HOST void create_dependency(unique_stream&, ready_event&) noexcept {}
+_CCCL_HOST inline void create_dependency(unique_stream&, ready_event&) noexcept {}
 
 template <typename T>
 _CCCL_HOST void create_dependency(unique_stream&, ready_future<T>&) noexcept
 {}
 
-inline _CCCL_HOST void create_dependency(unique_stream& child, unique_stream& parent)
+_CCCL_HOST inline void create_dependency(unique_stream& child, unique_stream& parent)
 {
   child.depend_on(parent);
 }
 
-inline _CCCL_HOST void create_dependency(unique_stream& child, unique_eager_event& parent)
+_CCCL_HOST inline void create_dependency(unique_stream& child, unique_eager_event& parent)
 {
   child.depend_on(parent.stream());
 }
@@ -1209,7 +1210,7 @@ make_dependent_future(ComputeContent&& cc, std::tuple<Dependencies...>&& deps)
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename... Events>
-_CCCL_HOST unique_eager_event when_all(Events&&... evs)
+CCCL_DEPRECATED _CCCL_HOST unique_eager_event when_all(Events&&... evs)
 // TODO: Constrain to events, futures, and maybe streams (currently allows keep
 // alives).
 {
@@ -1217,17 +1218,18 @@ _CCCL_HOST unique_eager_event when_all(Events&&... evs)
 }
 
 // ADL hook for transparent `.after` move support.
-inline _CCCL_HOST auto capture_as_dependency(unique_eager_event& dependency)
+CCCL_DEPRECATED _CCCL_HOST inline auto capture_as_dependency(unique_eager_event& dependency)
   THRUST_DECLTYPE_RETURNS(std::move(dependency))
 
   // ADL hook for transparent `.after` move support.
   template <typename X>
-  _CCCL_HOST auto capture_as_dependency(unique_eager_future<X>& dependency)
+  CCCL_DEPRECATED _CCCL_HOST auto capture_as_dependency(unique_eager_future<X>& dependency)
     THRUST_DECLTYPE_RETURNS(std::move(dependency))
 
 } // namespace cuda
 } // namespace system
 
+_CCCL_SUPPRESS_DEPRECATED_POP
 THRUST_NAMESPACE_END
 
 #endif // C++14

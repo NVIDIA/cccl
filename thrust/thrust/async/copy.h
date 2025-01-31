@@ -51,6 +51,7 @@ namespace async
 namespace unimplemented
 {
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename FromPolicy, typename ToPolicy, typename ForwardIt, typename Sentinel, typename OutputIt>
 CCCL_DEPRECATED _CCCL_HOST event<FromPolicy> async_copy(
   thrust::execution_policy<FromPolicy>& from_exec,
@@ -63,6 +64,7 @@ CCCL_DEPRECATED _CCCL_HOST event<FromPolicy> async_copy(
                            "this algorithm is not implemented for the specified system");
   return {};
 }
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 } // namespace unimplemented
 

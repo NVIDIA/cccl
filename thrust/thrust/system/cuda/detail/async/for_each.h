@@ -56,6 +56,7 @@
 
 #    include <type_traits>
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 THRUST_NAMESPACE_BEGIN
 
 namespace system
@@ -127,6 +128,7 @@ auto async_for_each(execution_policy<DerivedPolicy>& policy, ForwardIt first, Se
 
 } // namespace cuda_cub
 
+_CCCL_SUPPRESS_DEPRECATED_POP
 THRUST_NAMESPACE_END
 
 #  endif // _CCCL_CUDA_COMPILER
