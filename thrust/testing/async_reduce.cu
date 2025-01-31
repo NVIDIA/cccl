@@ -884,7 +884,7 @@ DECLARE_UNITTEST(test_async_reduce_bug1886);
 
 #endif
 
-// we need to leak the suppression on clang to suppresses warnings from the cudafe1.stub.c file
-#if !_CCCL_COMPILER(CLANG)
+// we need to leak the suppression on clang/MSVC to suppresses warnings from the cudafe1.stub.c file
+#if !_CCCL_COMPILER(CLANG) || !_CCCL_COMPILER(MSVC)
 _CCCL_SUPPRESS_DEPRECATED_POP
-#endif
+#endif // !_CCCL_COMPILER(CLANG) || !_CCCL_COMPILER(MSVC)

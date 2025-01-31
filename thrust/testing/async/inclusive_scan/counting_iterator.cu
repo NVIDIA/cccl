@@ -44,7 +44,7 @@ DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(test_counting_iterator, UnsignedIntegr
 
 #endif // C++14
 
-// we need to leak the suppression on clang to suppresses warnings from the cudafe1.stub.c file
-#if !_CCCL_COMPILER(CLANG)
+// we need to leak the suppression on clang/MSVC to suppresses warnings from the cudafe1.stub.c file
+#if !_CCCL_COMPILER(CLANG) || !_CCCL_COMPILER(MSVC)
 _CCCL_SUPPRESS_DEPRECATED_POP
-#endif
+#endif // !_CCCL_COMPILER(CLANG) || !_CCCL_COMPILER(MSVC)
