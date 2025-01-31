@@ -75,7 +75,6 @@
 #include <cub/device/device_segmented_reduce.cuh>
 #include <cub/device/device_segmented_sort.cuh>
 #include <cub/device/device_select.cuh>
-#include <cub/device/device_spmv.cuh>
 #include <cub/device/device_transform.cuh>
 
 // Grid

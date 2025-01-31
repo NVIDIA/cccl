@@ -608,7 +608,13 @@ public:
 #endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
 };
 
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#if defined(_CCCL_HAS_NVFP16)
+#  ifdef _LIBCUDACXX_HAS_NVFP16
+#    define _LIBCUDACXX_FP16_CONSTEXPR constexpr
+#  else //_LIBCUDACXX_HAS_NVFP16
+#    define _LIBCUDACXX_FP16_CONSTEXPR
+#  endif //_LIBCUDACXX_HAS_NVFP16
+
 template <>
 class __numeric_limits_impl<__half, __numeric_limits_type::__floating_point>
 {
@@ -621,15 +627,15 @@ public:
   static constexpr int digits       = 11;
   static constexpr int digits10     = 3;
   static constexpr int max_digits10 = 5;
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_FP16_CONSTEXPR type min() noexcept
   {
     return type(__half_raw{0x0400u});
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type max() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_FP16_CONSTEXPR type max() noexcept
   {
     return type(__half_raw{0x7bffu});
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type lowest() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_FP16_CONSTEXPR type lowest() noexcept
   {
     return type(__half_raw{0xfbffu});
   }
@@ -637,11 +643,11 @@ public:
   static constexpr bool is_integer = false;
   static constexpr bool is_exact   = false;
   static constexpr int radix       = __FLT_RADIX__;
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type epsilon() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_FP16_CONSTEXPR type epsilon() noexcept
   {
     return type(__half_raw{0x1400u});
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type round_error() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_FP16_CONSTEXPR type round_error() noexcept
   {
     return type(__half_raw{0x3800u});
   }
@@ -656,19 +662,19 @@ public:
   static constexpr bool has_signaling_NaN        = true;
   static constexpr float_denorm_style has_denorm = denorm_present;
   static constexpr bool has_denorm_loss          = false;
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type infinity() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_FP16_CONSTEXPR type infinity() noexcept
   {
     return type(__half_raw{0x7c00u});
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type quiet_NaN() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_FP16_CONSTEXPR type quiet_NaN() noexcept
   {
     return type(__half_raw{0x7e00u});
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type signaling_NaN() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_FP16_CONSTEXPR type signaling_NaN() noexcept
   {
     return type(__half_raw{0x7d00u});
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type denorm_min() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_FP16_CONSTEXPR type denorm_min() noexcept
   {
     return type(__half_raw{0x0001u});
   }
@@ -681,9 +687,16 @@ public:
   static constexpr bool tinyness_before          = false;
   static constexpr float_round_style round_style = round_to_nearest;
 };
-#endif // _LIBCUDACXX_HAS_NVFP16
+#  undef _LIBCUDACXX_FP16_CONSTEXPR
+#endif // _CCCL_HAS_NVFP16
 
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#if defined(_CCCL_HAS_NVBF16)
+#  ifdef _LIBCUDACXX_HAS_NVBF16
+#    define _LIBCUDACXX_BF16_CONSTEXPR constexpr
+#  else //_LIBCUDACXX_HAS_NVBF16
+#    define _LIBCUDACXX_BF16_CONSTEXPR
+#  endif //_LIBCUDACXX_HAS_NVBF16
+
 template <>
 class __numeric_limits_impl<__nv_bfloat16, __numeric_limits_type::__floating_point>
 {
@@ -696,15 +709,15 @@ public:
   static constexpr int digits       = 8;
   static constexpr int digits10     = 2;
   static constexpr int max_digits10 = 4;
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_BF16_CONSTEXPR type min() noexcept
   {
     return type(__nv_bfloat16_raw{0x0080u});
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type max() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_BF16_CONSTEXPR type max() noexcept
   {
     return type(__nv_bfloat16_raw{0x7f7fu});
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type lowest() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_BF16_CONSTEXPR type lowest() noexcept
   {
     return type(__nv_bfloat16_raw{0xff7fu});
   }
@@ -712,11 +725,11 @@ public:
   static constexpr bool is_integer = false;
   static constexpr bool is_exact   = false;
   static constexpr int radix       = __FLT_RADIX__;
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type epsilon() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_BF16_CONSTEXPR type epsilon() noexcept
   {
     return type(__nv_bfloat16_raw{0x3c00u});
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type round_error() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_BF16_CONSTEXPR type round_error() noexcept
   {
     return type(__nv_bfloat16_raw{0x3f00u});
   }
@@ -731,19 +744,19 @@ public:
   static constexpr bool has_signaling_NaN        = true;
   static constexpr float_denorm_style has_denorm = denorm_present;
   static constexpr bool has_denorm_loss          = false;
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type infinity() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_BF16_CONSTEXPR type infinity() noexcept
   {
     return type(__nv_bfloat16_raw{0x7f80u});
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type quiet_NaN() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_BF16_CONSTEXPR type quiet_NaN() noexcept
   {
     return type(__nv_bfloat16_raw{0x7fc0u});
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type signaling_NaN() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_BF16_CONSTEXPR type signaling_NaN() noexcept
   {
     return type(__nv_bfloat16_raw{0x7fa0u});
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type denorm_min() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_BF16_CONSTEXPR type denorm_min() noexcept
   {
     return type(__nv_bfloat16_raw{0x0001u});
   }
@@ -756,7 +769,8 @@ public:
   static constexpr bool tinyness_before          = false;
   static constexpr float_round_style round_style = round_to_nearest;
 };
-#endif // _LIBCUDACXX_HAS_NVBF16
+#  undef _LIBCUDACXX_BF16_CONSTEXPR
+#endif // _CCCL_HAS_NVBF16
 
 #if _CCCL_HAS_NVFP8()
 #  if defined(_CCCL_BUILTIN_BIT_CAST) || _CCCL_STD_VER >= 2014

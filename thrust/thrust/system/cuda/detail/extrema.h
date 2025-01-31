@@ -184,10 +184,10 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   OutputIt output_it,
   cudaStream_t stream)
 {
-  using core::AgentLauncher;
-  using core::AgentPlan;
-  using core::cuda_optional;
-  using core::get_agent_plan;
+  using core::detail::AgentLauncher;
+  using core::detail::AgentPlan;
+  using core::detail::cuda_optional;
+  using core::detail::get_agent_plan;
 
   using UnsignedSize = typename detail::make_unsigned_special<Size>::type;
 
@@ -204,7 +204,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
 
   if (num_items <= reduce_plan.items_per_tile)
   {
-    size_t vshmem_size = core::vshmem_size(reduce_plan.shared_memory_size, 1);
+    size_t vshmem_size = core::detail::vshmem_size(reduce_plan.shared_memory_size, 1);
 
     // small, single tile size
     if (d_temp_storage == nullptr)
@@ -221,7 +221,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   else
   {
     // regular size
-    cuda_optional<int> sm_count = core::get_sm_count();
+    cuda_optional<int> sm_count = core::detail::get_sm_count();
     CUDA_CUB_RET_IF_FAIL(sm_count.status());
 
     // reduction will not use more cta counts than requested
@@ -245,7 +245,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
     // we will launch at most "max_blocks" blocks in a grid
     // so preallocate virtual shared memory storage for this if required
     //
-    size_t vshmem_size = core::vshmem_size(reduce_plan.shared_memory_size, max_blocks);
+    size_t vshmem_size = core::detail::vshmem_size(reduce_plan.shared_memory_size, max_blocks);
 
     // Temporary storage allocation requirements
     void* allocations[3]       = {nullptr, nullptr, nullptr};
@@ -331,14 +331,14 @@ extrema(execution_policy<Derived>& policy, InputIt first, Size num_items, Binary
   void* allocations[2]       = {nullptr, nullptr};
 
   size_t storage_size = 0;
-  status              = core::alias_storage(nullptr, storage_size, allocations, allocation_sizes);
+  status              = core::detail::alias_storage(nullptr, storage_size, allocations, allocation_sizes);
   cuda_cub::throw_on_error(status, "extrema failed on 1st alias storage");
 
   // Allocate temporary storage.
   thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, storage_size);
   void* ptr = static_cast<void*>(tmp.data().get());
 
-  status = core::alias_storage(ptr, storage_size, allocations, allocation_sizes);
+  status = core::detail::alias_storage(ptr, storage_size, allocations, allocation_sizes);
   cuda_cub::throw_on_error(status, "extrema failed on 2nd alias storage");
 
   T* d_result = thrust::detail::aligned_reinterpret_cast<T*>(allocations[0]);

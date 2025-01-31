@@ -53,33 +53,7 @@ struct policy_hub
   using DominantT                = ::cuda::std::_If<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
   static constexpr int KEYS_ONLY = ::cuda::std::is_same<ValueT, NullType>::value;
 
-  struct Policy350 : ChainedPolicy<350, Policy350, Policy350>
-  {
-    static constexpr int BLOCK_THREADS          = 128;
-    static constexpr int RADIX_BITS             = sizeof(KeyT) > 1 ? 6 : 4;
-    static constexpr int PARTITIONING_THRESHOLD = 300;
-
-    using LargeSegmentPolicy = AgentRadixSortDownsweepPolicy<
-      BLOCK_THREADS,
-      9,
-      DominantT,
-      BLOCK_LOAD_WARP_TRANSPOSE,
-      LOAD_DEFAULT,
-      RADIX_RANK_MATCH,
-      BLOCK_SCAN_WARP_SCANS,
-      RADIX_BITS>;
-
-    static constexpr int ITEMS_PER_SMALL_THREAD  = Nominal4BItemsToItems<DominantT>(5);
-    static constexpr int ITEMS_PER_MEDIUM_THREAD = Nominal4BItemsToItems<DominantT>(5);
-    using SmallAndMediumSegmentedSortPolicyT     = AgentSmallAndMediumSegmentedSortPolicy<
-          BLOCK_THREADS,
-          // Small policy
-          AgentSubWarpMergeSortPolicy<4, ITEMS_PER_SMALL_THREAD, WARP_LOAD_DIRECT, LOAD_DEFAULT>,
-          // Medium policy
-          AgentSubWarpMergeSortPolicy<32, ITEMS_PER_MEDIUM_THREAD, WARP_LOAD_DIRECT, LOAD_DEFAULT>>;
-  };
-
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy350>
+  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
   {
     static constexpr int BLOCK_THREADS          = 256;
     static constexpr int RADIX_BITS             = sizeof(KeyT) > 1 ? 6 : 4;
