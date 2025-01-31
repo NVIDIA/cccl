@@ -16,6 +16,7 @@
  */
 
 #include <cuda/experimental/stf.cuh>
+
 #include "cuda/experimental/__stf/utility/stackable_ctx.cuh"
 
 using namespace cuda::experimental::stf;
@@ -53,7 +54,7 @@ int main()
   };
 
   sctx.parallel_for(lA_moved.shape(), lA_moved.rw())->*[] __device__(size_t i, auto a) {
-     a(i) *= 3;
+    a(i) *= 3;
   };
 
   sctx.pop();
@@ -63,14 +64,14 @@ int main()
   sctx.host_launch(lC.read())->*[](auto b) {
     for (size_t i = 0; i < b.size(); i++)
     {
-      EXPECT(b(i) == 2*(17 - 3 * (42 + 2 * i)));
+      EXPECT(b(i) == 2 * (17 - 3 * (42 + 2 * i)));
     }
   };
 
   sctx.host_launch(lA_moved.read())->*[](auto a) {
     for (size_t i = 0; i < a.size(); i++)
     {
-      EXPECT(a(i) == 3*(42 + 2 * i));
+      EXPECT(a(i) == 3 * (42 + 2 * i));
     }
   };
 
