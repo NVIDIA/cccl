@@ -200,6 +200,28 @@ static std::string get_for_op(cccl_type_enum t)
   return "";
 }
 
+static std::string get_merge_sort_op(cccl_type_enum t)
+{
+  switch (t)
+  {
+    case cccl_type_enum::INT8:
+      return "extern \"C\" __device__ char op(char lhs, char rhs) { return lhs < rhs; }";
+    case cccl_type_enum::INT32:
+      return "extern \"C\" __device__ int op(int lhs, int rhs) { return lhs < rhs; }";
+    case cccl_type_enum::UINT32:
+      return "extern \"C\" __device__ unsigned int op(unsigned int lhs, unsigned int rhs) { return lhs < rhs; }";
+    case cccl_type_enum::INT64:
+      return "extern \"C\" __device__ long long op(long long lhs, long long rhs) { return lhs < rhs; }";
+    case cccl_type_enum::UINT64:
+      return "extern \"C\" __device__ unsigned long long op(unsigned long long lhs, unsigned long long rhs) { "
+             " return lhs < rhs; "
+             "}";
+    default:
+      throw std::runtime_error("Unsupported type");
+  }
+  return "";
+}
+
 template <class T>
 struct pointer_t
 {
