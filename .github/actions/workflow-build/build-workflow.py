@@ -931,7 +931,11 @@ def validate_tags(matrix_job, ignore_required=False):
             )
 
     if "gpu" in matrix_job:
-        gpus = matrix_job["gpu"] if isinstance(matrix_job["gpu"], list) else [matrix_job["gpu"]]
+        gpus = (
+            matrix_job["gpu"]
+            if isinstance(matrix_job["gpu"], list)
+            else [matrix_job["gpu"]]
+        )
         for gpu in gpus:
             if gpu not in matrix_yaml["gpus"].keys():
                 raise Exception(
