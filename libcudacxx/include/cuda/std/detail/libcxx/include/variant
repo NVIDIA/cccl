@@ -1927,11 +1927,11 @@ private:
       return __op(_CUDA_VSTD::get<0>(__lhs), _CUDA_VSTD::get<0>(__rhs));
     }
     // We already checked that every variant has a value, so we should never reach this line
-#  if _CCCL_COMPILER(MSVC) // MSVC needs this to be wrapped in a function or it will error
+#  if defined(_CCCL_COMPILER_MSVC) // MSVC needs this to be wrapped in a function or it will error
     _CUDA_VSTD::unreachable();
-#  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
+#  else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
     _LIBCUDACXX_UNREACHABLE();
-#  endif // !_CCCL_COMPILER(MSVC)
+#  endif // !_CCCL_COMPILER_MSVC
   }
 };
 

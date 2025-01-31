@@ -13,7 +13,7 @@
 #include <cuda/std/initializer_list>
 #include <cuda/std/utility>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if !defined(_CCCL_COMPILER_NVRTC)
 struct host_only_type
 {
   int val_;
@@ -77,7 +77,7 @@ struct host_only_type
     cuda::std::swap(val_, other.val_);
   }
 };
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // !_CCCL_COMPILER_NVRTC
 
 #if _CCCL_HAS_CUDA_COMPILER
 struct device_only_type
