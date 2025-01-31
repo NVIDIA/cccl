@@ -222,28 +222,7 @@ struct Tuning;
 namespace mpl = thrust::detail::mpl::math;
 
 template <class T, class U>
-struct Tuning<sm30, T, U>
-{
-  enum
-  {
-    MAX_INPUT_BYTES             = mpl::max<size_t, sizeof(T), sizeof(U)>::value,
-    COMBINED_INPUT_BYTES        = sizeof(T), // + sizeof(Value),
-    NOMINAL_4B_ITEMS_PER_THREAD = 7,
-    ITEMS_PER_THREAD =
-      mpl::min<int,
-               NOMINAL_4B_ITEMS_PER_THREAD,
-               mpl::max<int,
-                        1,
-                        static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1)
-                                         / COMBINED_INPUT_BYTES)>::value>::value,
-  };
-
-  using type =
-    PtxPolicy<128, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS>;
-}; // tuning sm30
-
-template <class T, class U>
-struct Tuning<sm52, T, U>
+struct Tuning<core::detail::sm52, T, U>
 {
   enum
   {
@@ -264,7 +243,7 @@ struct Tuning<sm52, T, U>
 }; // tuning sm52
 
 template <class T, class U>
-struct Tuning<sm60, T, U>
+struct Tuning<core::detail::sm60, T, U>
 {
   enum
   {
@@ -311,19 +290,19 @@ struct SetOpAgent
   {
     using tuning = Tuning<Arch, key_type, value_type>;
 
-    using KeysLoadIt1   = typename core::LoadIterator<PtxPlan, KeysIt1>::type;
-    using KeysLoadIt2   = typename core::LoadIterator<PtxPlan, KeysIt2>::type;
-    using ValuesLoadIt1 = typename core::LoadIterator<PtxPlan, ValuesIt1>::type;
-    using ValuesLoadIt2 = typename core::LoadIterator<PtxPlan, ValuesIt2>::type;
+    using KeysLoadIt1   = typename core::detail::LoadIterator<PtxPlan, KeysIt1>::type;
+    using KeysLoadIt2   = typename core::detail::LoadIterator<PtxPlan, KeysIt2>::type;
+    using ValuesLoadIt1 = typename core::detail::LoadIterator<PtxPlan, ValuesIt1>::type;
+    using ValuesLoadIt2 = typename core::detail::LoadIterator<PtxPlan, ValuesIt2>::type;
 
-    using BlockLoadKeys1   = typename core::BlockLoad<PtxPlan, KeysLoadIt1>::type;
-    using BlockLoadKeys2   = typename core::BlockLoad<PtxPlan, KeysLoadIt2>::type;
-    using BlockLoadValues1 = typename core::BlockLoad<PtxPlan, ValuesLoadIt1>::type;
-    using BlockLoadValues2 = typename core::BlockLoad<PtxPlan, ValuesLoadIt2>::type;
+    using BlockLoadKeys1   = typename core::detail::BlockLoad<PtxPlan, KeysLoadIt1>::type;
+    using BlockLoadKeys2   = typename core::detail::BlockLoad<PtxPlan, KeysLoadIt2>::type;
+    using BlockLoadValues1 = typename core::detail::BlockLoad<PtxPlan, ValuesLoadIt1>::type;
+    using BlockLoadValues2 = typename core::detail::BlockLoad<PtxPlan, ValuesLoadIt2>::type;
 
-    using TilePrefixCallback = cub::TilePrefixCallbackOp<Size, ::cuda::std::plus<>, ScanTileState, Arch::ver>;
+    using TilePrefixCallback = cub::TilePrefixCallbackOp<Size, ::cuda::std::plus<>, ScanTileState>;
 
-    using BlockScan = cub::BlockScan<Size, PtxPlan::BLOCK_THREADS, PtxPlan::SCAN_ALGORITHM, 1, 1, Arch::ver>;
+    using BlockScan = cub::BlockScan<Size, PtxPlan::BLOCK_THREADS, PtxPlan::SCAN_ALGORITHM, 1, 1>;
 
     // gather required temporary storage in a union
     //
@@ -337,7 +316,7 @@ struct SetOpAgent
 
       struct LoadStorage
       {
-        core::uninitialized_array<int, PtxPlan::BLOCK_THREADS> offset;
+        core::detail::uninitialized_array<int, PtxPlan::BLOCK_THREADS> offset;
         union
         {
           // FIXME These don't appear to be used anywhere?
@@ -349,15 +328,15 @@ struct SetOpAgent
           // Allocate extra shmem than truly necessary
           // This will permit to avoid range checks in
           // serial set operations, e.g. serial_set_difference
-          core::uninitialized_array<key_type, PtxPlan::ITEMS_PER_TILE + PtxPlan::BLOCK_THREADS> keys_shared;
+          core::detail::uninitialized_array<key_type, PtxPlan::ITEMS_PER_TILE + PtxPlan::BLOCK_THREADS> keys_shared;
 
-          core::uninitialized_array<value_type, PtxPlan::ITEMS_PER_TILE + PtxPlan::BLOCK_THREADS> values_shared;
+          core::detail::uninitialized_array<value_type, PtxPlan::ITEMS_PER_TILE + PtxPlan::BLOCK_THREADS> values_shared;
         }; // anon union
       } load_storage; // struct LoadStorage
     }; // union TempStorage
   }; // struct PtxPlan
 
-  using ptx_plan = typename core::specialize_plan_msvc10_war<PtxPlan>::type::type;
+  using ptx_plan = typename core::detail::specialize_plan_msvc10_war<PtxPlan>::type::type;
 
   using KeysLoadIt1   = typename ptx_plan::KeysLoadIt1;
   using KeysLoadIt2   = typename ptx_plan::KeysLoadIt2;
@@ -462,8 +441,6 @@ struct SetOpAgent
       Size tile_output_prefix,
       int tile_output_count)
     {
-      using core::sync_threadblock;
-
       int local_scatter_idx = thread_output_prefix - tile_output_prefix;
 #  pragma unroll
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
@@ -473,7 +450,7 @@ struct SetOpAgent
           shared[local_scatter_idx++] = input[ITEM];
         }
       }
-      sync_threadblock();
+      __syncthreads();
 
       for (int item = threadIdx.x; item < tile_output_count; item += BLOCK_THREADS)
       {
@@ -504,8 +481,7 @@ struct SetOpAgent
     template <bool IS_LAST_TILE>
     void THRUST_DEVICE_FUNCTION consume_tile(Size tile_idx)
     {
-      using core::sync_threadblock;
-      using core::uninitialized_array;
+      using core::detail::uninitialized_array;
 
       pair<Size, Size> partition_beg = partitions[tile_idx + 0];
       pair<Size, Size> partition_end = partitions[tile_idx + 1];
@@ -527,7 +503,7 @@ struct SetOpAgent
 
       reg_to_shared(&storage.load_storage.keys_shared[0], keys_loc);
 
-      sync_threadblock();
+      __syncthreads();
 
       int diag_loc = min<int>(ITEMS_PER_THREAD * threadIdx.x, num_keys1 + num_keys2);
 
@@ -550,7 +526,7 @@ struct SetOpAgent
       int dst                          = threadIdx.x == 0 ? BLOCK_THREADS - 1 : threadIdx.x - 1;
       storage.load_storage.offset[dst] = value;
 
-      core::sync_threadblock();
+      __syncthreads();
 
       pair<int, int> partition1_loc = thrust::make_pair(
         storage.load_storage.offset[threadIdx.x] >> 16, storage.load_storage.offset[threadIdx.x] & 0xFFFF);
@@ -575,7 +551,7 @@ struct SetOpAgent
         indices,
         compare_op,
         set_op);
-      sync_threadblock();
+      __syncthreads();
 #  if 0
         if (ITEMS_PER_THREAD*threadIdx.x >= num_keys1 + num_keys2)
           active_mask = 0;
@@ -609,7 +585,7 @@ struct SetOpAgent
         tile_output_prefix = prefix_cb.GetExclusivePrefix();
       }
 
-      sync_threadblock();
+      __syncthreads();
 
       // scatter results
       //
@@ -626,11 +602,11 @@ struct SetOpAgent
         value_type values_loc[ITEMS_PER_THREAD];
         gmem_to_reg<!IS_LAST_TILE>(values_loc, values1_in + keys1_beg, values2_in + keys2_beg, num_keys1, num_keys2);
 
-        sync_threadblock();
+        __syncthreads();
 
         reg_to_shared(&storage.load_storage.values_shared[0], values_loc);
 
-        sync_threadblock();
+        __syncthreads();
 
         // gather items from shared mem
         //
@@ -643,7 +619,7 @@ struct SetOpAgent
           }
         }
 
-        sync_threadblock();
+        __syncthreads();
 
         scatter(values_out,
                 values_loc,
@@ -681,10 +657,10 @@ struct SetOpAgent
          std::size_t* output_count_)
         : storage(storage_)
         , tile_state(tile_state_)
-        , keys1_in(core::make_load_iterator(ptx_plan(), keys1_))
-        , keys2_in(core::make_load_iterator(ptx_plan(), keys2_))
-        , values1_in(core::make_load_iterator(ptx_plan(), values1_))
-        , values2_in(core::make_load_iterator(ptx_plan(), values2_))
+        , keys1_in(core::detail::make_load_iterator(ptx_plan(), keys1_))
+        , keys2_in(core::detail::make_load_iterator(ptx_plan(), keys2_))
+        , values1_in(core::detail::make_load_iterator(ptx_plan(), values1_))
+        , values2_in(core::detail::make_load_iterator(ptx_plan(), values2_))
         , keys1_count(keys1_count_)
         , keys2_count(keys2_count_)
         , keys_out(keys_out_)
@@ -754,7 +730,7 @@ struct PartitionAgent
   struct PtxPlan : PtxPolicy<256>
   {};
 
-  using ptx_plan = core::specialize_plan<PtxPlan>;
+  using ptx_plan = core::detail::specialize_plan<PtxPlan>;
 
   //---------------------------------------------------------------------
   // Agent entry point
@@ -788,7 +764,7 @@ struct InitAgent
   struct PtxPlan : PtxPolicy<128>
   {};
 
-  using ptx_plan = core::specialize_plan<PtxPlan>;
+  using ptx_plan = core::detail::specialize_plan<PtxPlan>;
 
   //---------------------------------------------------------------------
   // Agent entry point
@@ -1079,8 +1055,8 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
 
   cudaError_t status = cudaSuccess;
 
-  using core::AgentLauncher;
-  using core::AgentPlan;
+  using core::detail::AgentLauncher;
+  using core::detail::AgentPlan;
 
   using set_op_agent = AgentLauncher<
     SetOpAgent<KeysIt1, KeysIt2, ValuesIt1, ValuesIt2, KeysOutputIt, ValuesOutputIt, Size, CompareOp, SetOp, HAS_VALUES>>;
@@ -1101,13 +1077,13 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   status = ScanTileState::AllocationSize(static_cast<int>(num_tiles), tile_agent_storage);
   CUDA_CUB_RET_IF_FAIL(status);
 
-  size_t vshmem_storage          = core::vshmem_size(set_op_plan.shared_memory_size, num_tiles);
+  size_t vshmem_storage          = core::detail::vshmem_size(set_op_plan.shared_memory_size, num_tiles);
   size_t partition_agent_storage = (num_tiles + 1) * sizeof(Size) * 2;
 
   void* allocations[3]       = {nullptr, nullptr, nullptr};
   size_t allocation_sizes[3] = {tile_agent_storage, partition_agent_storage, vshmem_storage};
 
-  status = core::alias_storage(d_temp_storage, temp_storage_size, allocations, allocation_sizes);
+  status = core::detail::alias_storage(d_temp_storage, temp_storage_size, allocations, allocation_sizes);
   CUDA_CUB_RET_IF_FAIL(status);
 
   if (d_temp_storage == nullptr)
@@ -1213,14 +1189,14 @@ THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> set_operations(
 
   size_t storage_size = 0;
 
-  status = core::alias_storage(nullptr, storage_size, allocations, allocation_sizes);
+  status = core::detail::alias_storage(nullptr, storage_size, allocations, allocation_sizes);
   cuda_cub::throw_on_error(status, "set_operations failed on 1st alias_storage");
 
   // Allocate temporary storage.
   thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, storage_size);
   void* ptr = static_cast<void*>(tmp.data().get());
 
-  status = core::alias_storage(ptr, storage_size, allocations, allocation_sizes);
+  status = core::detail::alias_storage(ptr, storage_size, allocations, allocation_sizes);
   cuda_cub::throw_on_error(status, "set_operations failed on 2nd alias_storage");
 
   std::size_t* d_output_count = thrust::detail::aligned_reinterpret_cast<std::size_t*>(allocations[0]);

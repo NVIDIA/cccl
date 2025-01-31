@@ -79,7 +79,7 @@ template <typename Policy,
           bool ReadLeft>
 struct AgentDifference
 {
-  using LoadIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, InputIteratorT>::type;
+  using LoadIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, InputIteratorT>::type;
 
   using BlockLoad  = typename cub::BlockLoadType<Policy, LoadIt>::type;
   using BlockStore = typename cub::BlockStoreType<Policy, OutputIteratorT, OutputT>::type;
@@ -119,7 +119,7 @@ struct AgentDifference
     OffsetT num_items)
       : temp_storage(temp_storage.Alias())
       , input_it(input_it)
-      , load_it(THRUST_NS_QUALIFIER::cuda_cub::core::make_load_iterator(Policy(), input_it))
+      , load_it(THRUST_NS_QUALIFIER::cuda_cub::core::detail::make_load_iterator(Policy(), input_it))
       , first_tile_previous(first_tile_previous)
       , result(result)
       , difference_op(difference_op)

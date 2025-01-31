@@ -603,7 +603,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_default
   using type _CCCL_NODEBUG_ALIAS = _Value;
 };
 
-#  if _CCCL_CUDACC_AT_LEAST(12) || defined(_CCCL_DOXYGEN_INVOKED)
+#  if defined(_CCCL_DOXYGEN_INVOKED)
 
 //! \see __type_switch
 template <_CCCL_NTTP_AUTO _Label, class _Value>
@@ -615,7 +615,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_case
   using type = _Value;
 };
 
-#  else // ^^^ CUDACC >= 12.0 || DOXYGEN ^^^ / vvv CUDACC < 12.0 && !DOXYGEN vvv
+#  else // ^^^ DOXYGEN ^^^ / vvv !DOXYGEN vvv
 
 template <class _Label, class _Value>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_case_
@@ -629,7 +629,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_case_
 template <_CCCL_NTTP_AUTO _Label, class _Value>
 using __type_case _CCCL_NODEBUG_ALIAS = __type_case_<integral_constant<decltype(_Label), _Label>, _Value>;
 
-#  endif // CUDACC < 12.0 && !DOXYGEN
+#  endif // !DOXYGEN
 
 namespace __detail
 {

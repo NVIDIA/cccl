@@ -198,7 +198,7 @@ struct device_dummy_algorithm_policy_t
 
   static constexpr int FALLBACK_BLOCK_THREADS = 64;
 
-  struct policy_350 : cub::ChainedPolicy<350, policy_350, policy_350>
+  struct policy_500 : cub::ChainedPolicy<500, policy_500, policy_500>
   {
     using DummyAlgorithmPolicy = agent_dummy_algorithm_policy_t<256, cub::Nominal4BItemsToItems<item_t>(17)>;
 
@@ -208,7 +208,7 @@ struct device_dummy_algorithm_policy_t
   };
 
   /// MaxPolicy
-  using max_policy_t = policy_350;
+  using max_policy_t = policy_500;
 };
 
 //----------------------------------------------------------------------------
@@ -422,9 +422,9 @@ C2H_TEST("Virtual shared memory works within algorithms", "[util][vsmem]", type_
   c2h::gen(C2H_SEED(1), in);
 
   // Query default and fallback policies and agents so we can confirm vsmem
-  using default_policy_t  = typename device_dummy_algorithm_policy_t<item_t*>::policy_350::DummyAlgorithmPolicy;
+  using default_policy_t  = typename device_dummy_algorithm_policy_t<item_t*>::policy_500::DummyAlgorithmPolicy;
   using default_agent_t   = agent_dummy_algorithm_t<default_policy_t, item_t*, item_t*, offset_t>;
-  using fallback_policy_t = typename device_dummy_algorithm_policy_t<item_t*>::policy_350::FallbackDummyAlgorithmPolicy;
+  using fallback_policy_t = typename device_dummy_algorithm_policy_t<item_t*>::policy_500::FallbackDummyAlgorithmPolicy;
   using fallback_agent_t  = agent_dummy_algorithm_t<fallback_policy_t, item_t*, item_t*, offset_t>;
 
   // Get the information as it is expected from the vsmem helper to work as expected

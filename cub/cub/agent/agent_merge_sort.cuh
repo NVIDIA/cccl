@@ -91,8 +91,10 @@ struct AgentBlockSort
 
   using BlockMergeSortT = BlockMergeSort<KeyT, Policy::BLOCK_THREADS, Policy::ITEMS_PER_THREAD, ValueT>;
 
-  using KeysLoadIt  = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, KeyInputIteratorT>::type;
-  using ItemsLoadIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, ValueInputIteratorT>::type;
+  using KeysLoadIt =
+    typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeyInputIteratorT>::type;
+  using ItemsLoadIt =
+    typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ValueInputIteratorT>::type;
 
   using BlockLoadKeys  = typename cub::BlockLoadType<Policy, KeysLoadIt>::type;
   using BlockLoadItems = typename cub::BlockLoadType<Policy, ItemsLoadIt>::type;
@@ -438,10 +440,11 @@ struct AgentMerge
   //---------------------------------------------------------------------
   // Types and constants
   //---------------------------------------------------------------------
-  using KeysLoadPingIt  = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, KeyIteratorT>::type;
-  using ItemsLoadPingIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, ValueIteratorT>::type;
-  using KeysLoadPongIt  = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, KeyT*>::type;
-  using ItemsLoadPongIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, ValueT*>::type;
+  using KeysLoadPingIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeyIteratorT>::type;
+  using ItemsLoadPingIt =
+    typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ValueIteratorT>::type;
+  using KeysLoadPongIt  = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeyT*>::type;
+  using ItemsLoadPongIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ValueT*>::type;
 
   using KeysOutputPongIt  = KeyIteratorT;
   using ItemsOutputPongIt = ValueIteratorT;
@@ -648,12 +651,7 @@ struct AgentMerge
     }
 
     // if items are provided, merge them
-#if _CCCL_CUDACC_BELOW(11, 8)
-    if (!KEYS_ONLY) // nvcc 11.1 cannot handle #pragma unroll inside if constexpr but 11.8 can.
-                    // nvcc versions between may work
-#else // ^^^ _CCCL_CUDACC_BELOW(11, 8) ^^^ / vvv _CCCL_CUDACC_AT_LEAST(11, 8)
     _CCCL_IF_CONSTEXPR (!KEYS_ONLY)
-#endif // _CCCL_CUDACC_AT_LEAST(11, 8)
     {
       __syncthreads();
 
