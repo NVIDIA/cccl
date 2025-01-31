@@ -348,6 +348,7 @@ autodoc.mock_imports = [
     "numba",
     "pynvjitlink",
     "cuda.bindings",
+    "cuda.cccl",
     "llvmlite",
     "numpy",
 ]
