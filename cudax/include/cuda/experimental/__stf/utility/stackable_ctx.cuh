@@ -320,6 +320,14 @@ public:
     return stackable_logical_data(*this, depth(), true, get_ctx(0).logical_data(mv(s)));
   }
 
+  template <typename T, typename... Sizes>
+  auto logical_data(size_t elements, Sizes... more_sizes)
+  {
+    return stackable_logical_data(*this, depth(), true, get_ctx(0).template logical_data<T>(elements, more_sizes...));
+  }
+
+  stackable_logical_data<void_interface> logical_token();
+
   template <typename... Pack>
   auto logical_data(Pack&&... pack)
   {
@@ -764,6 +772,11 @@ public:
 private:
   ::std::shared_ptr<impl> pimpl;
 };
+
+stackable_logical_data<void_interface> stackable_ctx::logical_token()
+{
+  return stackable_logical_data<void_interface>(*this, depth(), true, get_ctx(0).logical_token());
+}
 
 /**
  * @brief Task dependency for a stackable logical data
