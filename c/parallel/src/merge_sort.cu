@@ -32,6 +32,7 @@ namespace merge_sort
 struct merge_sort_runtime_tuning_policy
 {
   int block_size;
+  int items_per_thread;
   int items_per_tile;
   merge_sort_runtime_tuning_policy MergeSort() const
   {
@@ -43,7 +44,7 @@ struct merge_sort_tuning_t
 {
   int cc;
   int block_size;
-  int items_per_tile;
+  int items_per_thread;
 };
 
 template <typename Tuning, int N>
@@ -79,10 +80,10 @@ std::string get_output_iterator_name()
 
 merge_sort_runtime_tuning_policy get_policy(int cc)
 {
-  merge_sort_tuning_t chain[]          = {{60, 256, 17}, {35, 256, 11}};
-  auto [_, block_size, items_per_tile] = find_tuning(cc, chain);
+  merge_sort_tuning_t chain[]            = {{60, 256, 17}, {35, 256, 11}};
+  auto [_, block_size, items_per_thread] = find_tuning(cc, chain);
 
-  return {block_size, items_per_tile};
+  return {block_size, items_per_thread, block_size * items_per_thread};
 }
 
 std::string get_merge_sort_kernel_name(
@@ -218,7 +219,7 @@ struct dynamic_vsmem_helper_t
   }
 
 private:
-  merge_sort_runtime_tuning_policy fallback_policy = {64, 64};
+  merge_sort_runtime_tuning_policy fallback_policy = {64, 1, 64};
   bool uses_fallback_policy() const
   {
     return false;
@@ -273,12 +274,13 @@ extern "C" CCCL_C_API CUresult cccl_device_merge_sort_build(
       "struct __align__({3}) items_storage_t {{\n"
       "  char data[{2}];\n"
       "}};\n"
-      "{6}\n"
       "{7}\n"
       "{8}\n"
       "{9}\n"
+      "{10}\n"
       "struct agent_policy_t {{\n"
-      "  static constexpr int ITEMS_PER_TILE = {5};\n"
+      "  static constexpr int ITEMS_PER_TILE = {6};\n"
+      "  static constexpr int ITEMS_PER_THREAD = {5};\n"
       "  static constexpr int BLOCK_THREADS = {4};\n"
       "}};\n"
       "struct device_merge_sort_policy {{\n"
@@ -286,18 +288,19 @@ extern "C" CCCL_C_API CUresult cccl_device_merge_sort_build(
       "    using MergeSortPolicy = agent_policy_t;\n"
       "  }};\n"
       "}};\n"
-      "{10};\n",
+      "{11};\n",
       input_keys_it.value_type.size, // 0
       input_keys_it.value_type.alignment, // 1
       input_items_it.value_type.size, // 2
       input_items_it.value_type.alignment, // 3
       policy.block_size, // 4
-      policy.items_per_tile, // 5
-      input_keys_iterator_src, // 6
-      input_items_iterator_src, // 7
-      output_keys_iterator_src, // 8
-      output_items_iterator_src, // 9
-      op_src); // 10
+      policy.items_per_thread, // 5
+      policy.items_per_tile, // 6
+      input_keys_iterator_src, // 7
+      input_items_iterator_src, // 8
+      output_keys_iterator_src, // 9
+      output_items_iterator_src, // 10
+      op_src); // 11
 
 #if false // CCCL_DEBUGGING_SWITCH
     fflush(stderr);
