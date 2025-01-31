@@ -172,9 +172,6 @@ namespace histogram
  *
  * @tparam OffsetT
  *   Signed integer type for global offsets
- *
- * @tparam LEGACY_PTX_ARCH
- *   PTX compute capability (unused)
  */
 template <typename AgentHistogramPolicyT,
           int PRIVATIZED_SMEM_BINS,
@@ -184,8 +181,7 @@ template <typename AgentHistogramPolicyT,
           typename CounterT,
           typename PrivatizedDecodeOpT,
           typename OutputDecodeOpT,
-          typename OffsetT,
-          int LEGACY_PTX_ARCH = 0>
+          typename OffsetT>
 struct AgentHistogram
 {
   //---------------------------------------------------------------------
@@ -930,8 +926,7 @@ template <typename AgentHistogramPolicyT,
           typename CounterT,
           typename PrivatizedDecodeOpT,
           typename OutputDecodeOpT,
-          typename OffsetT,
-          int LEGACY_PTX_ARCH = 0>
+          typename OffsetT>
 using AgentHistogram CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
                                              "interface will be removed.") =
   detail::histogram::AgentHistogram<
@@ -943,7 +938,6 @@ using AgentHistogram CCCL_DEPRECATED_BECAUSE("This class is considered an implem
     CounterT,
     PrivatizedDecodeOpT,
     OutputDecodeOpT,
-    OffsetT,
-    LEGACY_PTX_ARCH>;
+    OffsetT>;
 
 CUB_NAMESPACE_END

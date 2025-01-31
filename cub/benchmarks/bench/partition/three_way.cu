@@ -47,7 +47,7 @@
 template <typename InputT>
 struct policy_hub_t
 {
-  struct policy_t : cub::ChainedPolicy<350, policy_t, policy_t>
+  struct policy_t : cub::ChainedPolicy<500, policy_t, policy_t>
   {
     using ThreeWayPartitionPolicy = //
       cub::AgentThreeWayPartitionPolicy<TUNE_THREADS_PER_BLOCK,

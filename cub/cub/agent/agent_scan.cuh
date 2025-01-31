@@ -201,7 +201,7 @@ struct AgentScan
 
   // Callback type for obtaining tile prefix during block scan
   using DelayConstructorT     = typename AgentScanPolicyT::detail::delay_constructor_t;
-  using TilePrefixCallbackOpT = TilePrefixCallbackOp<AccumT, ScanOpT, ScanTileStateT, 0 /* PTX */, DelayConstructorT>;
+  using TilePrefixCallbackOpT = TilePrefixCallbackOp<AccumT, ScanOpT, ScanTileStateT, DelayConstructorT>;
 
   // Stateful BlockScan prefix callback type for managing a running total while
   // scanning consecutive tiles

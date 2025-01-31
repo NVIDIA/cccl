@@ -276,7 +276,7 @@ struct AgentReduceByKey
   // Callback type for obtaining tile prefix during block scan
   using DelayConstructorT = typename AgentReduceByKeyPolicyT::detail::delay_constructor_t;
   using TilePrefixCallbackOpT =
-    TilePrefixCallbackOp<OffsetValuePairT, ReduceBySegmentOpT, ScanTileStateT, 0, DelayConstructorT>;
+    TilePrefixCallbackOp<OffsetValuePairT, ReduceBySegmentOpT, ScanTileStateT, DelayConstructorT>;
 
   // Key and value exchange types
   using KeyExchangeT   = KeyOutputT[TILE_ITEMS + 1];

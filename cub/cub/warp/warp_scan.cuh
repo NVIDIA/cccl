@@ -156,9 +156,7 @@ CUB_NAMESPACE_BEGIN
 //!   hardware warp threads). Default is the warp size associated with the CUDA Compute Capability
 //!   targeted by the compiler (e.g., 32 threads for SM20).
 //!
-//! @tparam LEGACY_PTX_ARCH
-//!   **[optional]** Unused.
-template <typename T, int LOGICAL_WARP_THREADS = CUB_PTX_WARP_THREADS, int LEGACY_PTX_ARCH = 0>
+template <typename T, int LOGICAL_WARP_THREADS = CUB_PTX_WARP_THREADS>
 class WarpScan
 {
 private:

@@ -64,35 +64,22 @@ namespace core
 #  if (__NVCOMPILER_CUDA_ARCH__ >= 600)
 // deprecated [since 2.8]
 #    define THRUST_TUNING_ARCH sm60
-#  elif (__NVCOMPILER_CUDA_ARCH__ >= 520)
-// deprecated [since 2.8]
-#    define THRUST_TUNING_ARCH sm52
-#  elif (__NVCOMPILER_CUDA_ARCH__ >= 350)
-// deprecated [since 2.8]
-#    define THRUST_TUNING_ARCH sm35
 #  else
 // deprecated [since 2.8]
-#    define THRUST_TUNING_ARCH sm30
+#    define THRUST_TUNING_ARCH sm52
 #  endif
 #else
 #  if (__CUDA_ARCH__ >= 600)
 // deprecated [since 2.8]
 #    define THRUST_TUNING_ARCH sm60
-#  elif (__CUDA_ARCH__ >= 520)
+#  else
 // deprecated [since 2.8]
 #    define THRUST_TUNING_ARCH sm52
-#  elif (__CUDA_ARCH__ >= 350)
-// deprecated [since 2.8]
-#    define THRUST_TUNING_ARCH sm35
-#  elif (__CUDA_ARCH__ >= 300)
-// deprecated [since 2.8]
-#    define THRUST_TUNING_ARCH sm30
-#  elif !defined(__CUDA_ARCH__)
-// deprecated [since 2.8]
-#    define THRUST_TUNING_ARCH sm30
 #  endif
 #endif
 
+namespace detail
+{
 /// Typelist - a container of types
 template <typename...>
 struct typelist;
@@ -101,22 +88,7 @@ struct typelist;
 
 // supported SM arch
 // ---------------------
-struct sm30
-{
-  enum
-  {
-    ver      = 300,
-    warpSize = 32
-  };
-};
-struct sm35
-{
-  enum
-  {
-    ver      = 350,
-    warpSize = 32
-  };
-};
+
 struct sm52
 {
   enum
@@ -137,7 +109,7 @@ struct sm60
 // list of sm, checked from left to right order
 // the rightmost is the lowest sm arch supported
 // --------------------------------------------
-using sm_list = typelist<sm60, sm52, sm35, sm30>;
+using sm_list = typelist<sm60, sm52>;
 
 // lowest supported SM arch
 // --------------------------------------------------------------------------
@@ -488,22 +460,9 @@ THRUST_RUNTIME_FUNCTION inline size_t get_max_shared_memory_per_block()
   return static_cast<size_t>(i32value);
 }
 
-THRUST_RUNTIME_FUNCTION inline size_t virtual_shmem_size(size_t shmem_per_block)
-{
-  size_t max_shmem_per_block = core::get_max_shared_memory_per_block();
-  if (shmem_per_block > max_shmem_per_block)
-  {
-    return shmem_per_block;
-  }
-  else
-  {
-    return 0;
-  }
-}
-
 THRUST_RUNTIME_FUNCTION inline size_t vshmem_size(size_t shmem_per_block, size_t num_blocks)
 {
-  size_t max_shmem_per_block = core::get_max_shared_memory_per_block();
+  size_t max_shmem_per_block = get_max_shared_memory_per_block();
   if (shmem_per_block > max_shmem_per_block)
   {
     return shmem_per_block * num_blocks;
@@ -529,30 +488,7 @@ struct get_arch<Plan<Arch>>
 template <class PtxPlan, class It, class T = typename iterator_traits<It>::value_type>
 struct BlockLoad
 {
-  using type =
-    cub::BlockLoad<T,
-                   PtxPlan::BLOCK_THREADS,
-                   PtxPlan::ITEMS_PER_THREAD,
-                   PtxPlan::LOAD_ALGORITHM,
-                   1,
-                   1,
-                   get_arch<PtxPlan>::type::ver>;
-};
-
-// BlockStore
-// -----------
-// a helper metaprogram that returns type of a block loader
-template <class PtxPlan, class It, class T = typename iterator_traits<It>::value_type>
-struct BlockStore
-{
-  using type =
-    cub::BlockStore<T,
-                    PtxPlan::BLOCK_THREADS,
-                    PtxPlan::ITEMS_PER_THREAD,
-                    PtxPlan::STORE_ALGORITHM,
-                    1,
-                    1,
-                    get_arch<PtxPlan>::type::ver>;
+  using type = cub::BlockLoad<T, PtxPlan::BLOCK_THREADS, PtxPlan::ITEMS_PER_THREAD, PtxPlan::LOAD_ALGORITHM, 1, 1>;
 };
 
 // cuda_optional
@@ -649,16 +585,6 @@ THRUST_RUNTIME_FUNCTION inline int get_ptx_version()
   return ptx_version;
 }
 
-THRUST_RUNTIME_FUNCTION inline cudaError_t sync_stream(cudaStream_t stream)
-{
-  return cub::SyncStream(stream);
-}
-
-inline void _CCCL_DEVICE sync_threadblock()
-{
-  __syncthreads();
-}
-
 // Deprecated [Since 2.8]
 #define CUDA_CUB_RET_IF_FAIL(e)                \
   {                                            \
@@ -749,11 +675,6 @@ public:
   }
 };
 
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE size_t align_to(size_t n, size_t align)
-{
-  return ((n + align - 1) / align) * align;
-}
-
 namespace host
 {
 inline cuda_optional<size_t> get_max_shared_memory_per_block()
@@ -783,11 +704,8 @@ THRUST_RUNTIME_FUNCTION cudaError_t alias_storage(
   return cub::AliasTemporaries(storage_ptr, storage_size, allocations, allocation_sizes);
 }
 
+} // namespace detail
 } // namespace core
-using core::sm30;
-using core::sm35;
-using core::sm52;
-using core::sm60;
 } // namespace cuda_cub
 
 THRUST_NAMESPACE_END

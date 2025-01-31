@@ -109,7 +109,7 @@ template <class, class>
 struct Tuning;
 
 template <class T>
-struct Tuning<sm30, T>
+struct Tuning<core::detail::sm52, T>
 {
   enum
   {
@@ -119,18 +119,6 @@ struct Tuning<sm30, T>
     SCALE_FACTOR_1B = sizeof(T),
   };
 
-  using type =
-    PtxPolicy<256,
-              (((20 / SCALE_FACTOR_4B) > (1)) ? (20 / SCALE_FACTOR_4B) : (1)),
-              2,
-              cub::BLOCK_REDUCE_WARP_REDUCTIONS,
-              cub::LOAD_DEFAULT,
-              cub::GRID_MAPPING_RAKE>;
-}; // Tuning sm30
-
-template <class T>
-struct Tuning<sm35, T> : Tuning<sm30, T>
-{
   // ReducePolicy1B (GTX Titan: 228.7 GB/s @ 192M 1B items)
   using ReducePolicy1B =
     PtxPolicy<128,
@@ -150,7 +138,7 @@ struct Tuning<sm35, T> : Tuning<sm30, T>
               cub::GRID_MAPPING_DYNAMIC>;
 
   using type = ::cuda::std::conditional_t<(sizeof(T) < 4), ReducePolicy1B, ReducePolicy4B>;
-}; // Tuning sm35
+}; // Tuning sm52
 
 template <class InputIt, class OutputIt, class T, class Size, class ReductionOp>
 struct ReduceAgent
@@ -167,8 +155,8 @@ struct ReduceAgent
     using tuning = Tuning<Arch, T>;
 
     using Vector      = typename cub::CubVector<T, PtxPlan::VECTOR_LOAD_LENGTH>;
-    using LoadIt      = typename core::LoadIterator<PtxPlan, InputIt>::type;
-    using BlockReduce = cub::BlockReduce<T, PtxPlan::BLOCK_THREADS, PtxPlan::BLOCK_ALGORITHM, 1, 1, Arch::ver>;
+    using LoadIt      = typename core::detail::LoadIterator<PtxPlan, InputIt>::type;
+    using BlockReduce = cub::BlockReduce<T, PtxPlan::BLOCK_THREADS, PtxPlan::BLOCK_ALGORITHM, 1, 1>;
 
     using VectorLoadIt = cub::CacheModifiedInputIterator<PtxPlan::LOAD_MODIFIER, Vector, Size>;
 
@@ -187,7 +175,7 @@ struct ReduceAgent
   // Other algorithms, e.g. merge, may not need additional information,
   // and may use AgentPlan directly, instead of defining their own Plan type.
   //
-  struct Plan : core::AgentPlan
+  struct Plan : core::detail::AgentPlan
   {
     cub::GridMappingStrategy grid_mapping;
 
@@ -195,7 +183,7 @@ struct ReduceAgent
 
     template <class P>
     THRUST_RUNTIME_FUNCTION Plan(P)
-        : core::AgentPlan(P())
+        : core::detail::AgentPlan(P())
         , grid_mapping(P::GRID_MAPPING)
     {}
   };
@@ -204,7 +192,7 @@ struct ReduceAgent
   // ptx_plan type *must* only be used from device code
   // Its use from host code will result in *undefined behaviour*
   //
-  using ptx_plan = typename core::specialize_plan_msvc10_war<PtxPlan>::type::type;
+  using ptx_plan = typename core::detail::specialize_plan_msvc10_war<PtxPlan>::type::type;
 
   using TempStorage  = typename ptx_plan::TempStorage;
   using Vector       = typename ptx_plan::Vector;
@@ -242,7 +230,7 @@ struct ReduceAgent
     THRUST_DEVICE_FUNCTION impl(TempStorage& storage_, InputIt input_it_, ReductionOp reduction_op_)
         : storage(storage_)
         , input_it(input_it_)
-        , load_it(core::make_load_iterator(ptx_plan(), input_it))
+        , load_it(core::detail::make_load_iterator(ptx_plan(), input_it))
         , reduction_op(reduction_op_)
     {}
 
@@ -440,8 +428,6 @@ struct ReduceAgent
     THRUST_DEVICE_FUNCTION T
     consume_tiles_impl(Size num_items, cub::GridQueue<UnsignedSize> queue, CAN_VECTORIZE can_vectorize)
     {
-      using core::sync_threadblock;
-
       // We give each thread block at least one tile of input.
       T thread_aggregate;
       Size block_offset    = blockIdx.x * ITEMS_PER_TILE;
@@ -466,7 +452,7 @@ struct ReduceAgent
           storage.dequeue_offset = queue.Drain(ITEMS_PER_TILE) + even_share_base;
         }
 
-        sync_threadblock();
+        __syncthreads();
 
         // Grab tile offset and check if we're done with full tiles
         block_offset = storage.dequeue_offset;
@@ -477,7 +463,7 @@ struct ReduceAgent
           consume_tile<false>(
             thread_aggregate, block_offset, ITEMS_PER_TILE, thrust::detail::true_type(), can_vectorize);
 
-          sync_threadblock();
+          __syncthreads();
 
           // Dequeue a tile of items
           if (threadIdx.x == 0)
@@ -485,7 +471,7 @@ struct ReduceAgent
             storage.dequeue_offset = queue.Drain(ITEMS_PER_TILE) + even_share_base;
           }
 
-          sync_threadblock();
+          __syncthreads();
 
           // Grab tile offset and check if we're done with full tiles
           block_offset = storage.dequeue_offset;
@@ -598,7 +584,7 @@ struct DrainAgent
   template <class Arch>
   struct PtxPlan : PtxPolicy<1>
   {};
-  using ptx_plan = core::specialize_plan<PtxPlan>;
+  using ptx_plan = core::detail::specialize_plan<PtxPlan>;
 
   //---------------------------------------------------------------------
   // Agent entry point
@@ -621,10 +607,10 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   OutputIt output_it,
   cudaStream_t stream)
 {
-  using core::AgentLauncher;
-  using core::AgentPlan;
-  using core::cuda_optional;
-  using core::get_agent_plan;
+  using core::detail::AgentLauncher;
+  using core::detail::AgentPlan;
+  using core::detail::cuda_optional;
+  using core::detail::get_agent_plan;
 
   using UnsignedSize = typename detail::make_unsigned_special<Size>::type;
 
@@ -641,7 +627,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
 
   if (num_items <= reduce_plan.items_per_tile)
   {
-    size_t vshmem_size = core::vshmem_size(reduce_plan.shared_memory_size, 1);
+    size_t vshmem_size = core::detail::vshmem_size(reduce_plan.shared_memory_size, 1);
 
     // small, single tile size
     if (d_temp_storage == nullptr)
@@ -658,7 +644,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   else
   {
     // regular size
-    cuda_optional<int> sm_count = core::get_sm_count();
+    cuda_optional<int> sm_count = core::detail::get_sm_count();
     CUDA_CUB_RET_IF_FAIL(sm_count.status());
 
     // reduction will not use more cta counts than requested
@@ -682,7 +668,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
     // we will launch at most "max_blocks" blocks in a grid
     // so preallocate virtual shared memory storage for this if required
     //
-    size_t vshmem_size = core::vshmem_size(reduce_plan.shared_memory_size, max_blocks);
+    size_t vshmem_size = core::detail::vshmem_size(reduce_plan.shared_memory_size, max_blocks);
 
     // Temporary storage allocation requirements
     void* allocations[3]       = {nullptr, nullptr, nullptr};
@@ -767,14 +753,14 @@ reduce(execution_policy<Derived>& policy, InputIt first, Size num_items, T init,
   void* allocations[2]       = {nullptr, nullptr};
 
   size_t storage_size = 0;
-  status              = core::alias_storage(nullptr, storage_size, allocations, allocation_sizes);
+  status              = core::detail::alias_storage(nullptr, storage_size, allocations, allocation_sizes);
   cuda_cub::throw_on_error(status, "reduce failed on 1st alias_storage");
 
   // Allocate temporary storage.
   thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, storage_size);
   void* ptr = static_cast<void*>(tmp.data().get());
 
-  status = core::alias_storage(ptr, storage_size, allocations, allocation_sizes);
+  status = core::detail::alias_storage(ptr, storage_size, allocations, allocation_sizes);
   cuda_cub::throw_on_error(status, "reduce failed on 2nd alias_storage");
 
   T* d_result = thrust::detail::aligned_reinterpret_cast<T*>(allocations[0]);

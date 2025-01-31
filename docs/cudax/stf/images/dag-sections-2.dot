@@ -1,0 +1,36 @@
+digraph {
+"NODE_23" [style="filled" fillcolor="red" label="task fence"]
+subgraph cluster_section_1 {
+ subgraph cluster_section_2 {
+     color=black;
+    style=dashed
+    label="bar"
+    "NODE_9"
+    "NODE_5"
+    "NODE_3"
+} // end subgraph cluster_section_2
+ subgraph cluster_section_5 {
+     color=black;
+    style=dashed
+    label="bar"
+    "NODE_19"
+    "NODE_15"
+    "NODE_13"
+} // end subgraph cluster_section_5
+     color=black;
+    style=dashed
+    label="foo"
+} // end subgraph cluster_section_1
+ "NODE_19" -> "NODE_23"
+"NODE_3" -> "NODE_5"
+"NODE_5" -> "NODE_9"
+"NODE_15" -> "NODE_19"
+"NODE_9" -> "NODE_13"
+"NODE_13" -> "NODE_15"
+"NODE_19" [style="filled" fillcolor="white" label="baz"]
+"NODE_15" [style="filled" fillcolor="white" label="baz"]
+"NODE_13" [style="filled" fillcolor="white" label="t1\nA(read)(0) \nB(rw)(0) "]
+"NODE_9" [style="filled" fillcolor="white" label="baz"]
+"NODE_5" [style="filled" fillcolor="white" label="baz"]
+"NODE_3" [style="filled" fillcolor="white" label="t1\nA(read)(0) \nB(rw)(0) "]
+}

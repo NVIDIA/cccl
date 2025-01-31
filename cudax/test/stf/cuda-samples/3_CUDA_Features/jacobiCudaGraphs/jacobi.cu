@@ -228,7 +228,7 @@ static __global__ void finalError(double* x, double* g_sum)
 double JacobiMethodGpuCudaGraphExecKernelSetParams(
   const float* A,
   const double* b,
-  const float conv_threshold,
+  float conv_threshold,
   const int max_iter,
   double* x,
   double* x_new,

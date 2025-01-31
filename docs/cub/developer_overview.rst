@@ -157,8 +157,7 @@ For example, :cpp:struct:`cub::WarpReduce` is a class template:
 .. code-block:: c++
 
     template <typename T,
-              int LOGICAL_WARP_THREADS = 32,
-              int LEGACY_PTX_ARCH = 0>
+              int      LOGICAL_WARP_THREADS = 32>
     class WarpReduce {
       // ...
       // (1)   define `_TempStorage` type
@@ -192,10 +191,6 @@ There is a vital difference in the behavior of warp-level algorithms that depend
   That is, only the first logical warp executes algorithm.
 
 .. TODO: Add diagram showing non-power of two logical warps.
-
-It's important to note that ``LEGACY_PTX_ARCH`` has been recently deprecated.
-This parameter used to affect specialization selection (see below).
-It was conflicting with the PTX dispatch refactoring and limited NVHPC support.
 
 Temporary storage usage
 ====================================
@@ -258,13 +253,15 @@ and algorithm implementation look like:
           .Reduce(input, valid_items, ::cuda::std::plus<>{});
     }
 
-Due to ``LEGACY_PTX_ARCH`` issues described above,
-we can't specialize on the PTX version.
+
+
+``__CUDA_ARCH__`` cannot be used because it is conflicting with the PTX dispatch refactoring and limited NVHPC support.
+Due to  this limitation, we can't specialize on the PTX version.
 ``NV_IF_TARGET`` shall be used by specializations instead:
 
 .. code-block:: c++
 
-    template <typename T, int LOGICAL_WARP_THREADS, int LEGACY_PTX_ARCH = 0>
+    template <typename T, int LOGICAL_WARP_THREADS>
     struct WarpReduceShfl
     {
 
@@ -314,8 +311,7 @@ Block-scope algorithms are provided by structures as well:
               int BLOCK_DIM_X,
               BlockReduceAlgorithm ALGORITHM = BLOCK_REDUCE_WARP_REDUCTIONS,
               int BLOCK_DIM_Y = 1,
-              int BLOCK_DIM_Z = 1,
-              int LEGACY_PTX_ARCH = 0>
+              int BLOCK_DIM_Z = 1>
     class BlockReduce {
     public:
       struct TempStorage : Uninitialized<_TempStorage> {};
@@ -625,14 +621,14 @@ Finally, the tuning policy hub looks like:
     struct policy_hub {
       // TuningRelevantParams... could be used for decision making, like element types used, iterator category, etc.
 
-      // for SM35
-      struct Policy350 : ChainedPolicy<350, Policy350, Policy300> {
+      // for SM50
+      struct Policy500 : ChainedPolicy<500, Policy500, Policy500> {
         using AlgorithmPolicy = AgentAlgorithmPolicy<256, 20, BLOCK_LOAD_DIRECT, LOAD_LDG>;
         // ... additional policies may exist, often one per agent
       };
 
       // for SM60
-      struct Policy600 : ChainedPolicy<600, Policy600, Policy350> {
+      struct Policy600 : ChainedPolicy<600, Policy600, Policy500> {
         using AlgorithmPolicy = AgentAlgorithmPolicy<256, 16, BLOCK_LOAD_DIRECT, LOAD_LDG>;
       };
 
