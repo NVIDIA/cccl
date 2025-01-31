@@ -39,7 +39,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <iterator>
+#include <cuda/std/iterator>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -47,7 +47,7 @@ THRUST_NAMESPACE_BEGIN
  *  interface for querying the properties of iterators at compile-time.
  */
 template <typename T>
-struct iterator_traits : std::iterator_traits<T>
+struct iterator_traits : ::cuda::std::iterator_traits<T>
 {};
 
 template <typename Iterator>
@@ -70,8 +70,10 @@ struct iterator_system;
 
 THRUST_NAMESPACE_END
 
-#include <thrust/iterator/detail/any_system_tag.h>
-#include <thrust/iterator/detail/device_system_tag.h>
-#include <thrust/iterator/detail/host_system_tag.h>
-#include <thrust/iterator/detail/iterator_traits.inl>
-#include <thrust/iterator/detail/iterator_traversal_tags.h>
+#if !_CCCL_COMPILER(NVRTC)
+#  include <thrust/iterator/detail/any_system_tag.h>
+#  include <thrust/iterator/detail/device_system_tag.h>
+#  include <thrust/iterator/detail/host_system_tag.h>
+#  include <thrust/iterator/detail/iterator_traits.inl>
+#  include <thrust/iterator/detail/iterator_traversal_tags.h>
+#endif

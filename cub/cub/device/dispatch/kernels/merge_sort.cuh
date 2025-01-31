@@ -17,17 +17,7 @@
 #include <cub/util_policy_wrapper_t.cuh>
 #include <cub/util_vsmem.cuh>
 
-THRUST_NAMESPACE_BEGIN
-
-namespace cuda_cub::core::detail
-{
-// We must forward declare here because make_load_iterator.h pulls in non NVRTC compilable code
-template <class PtxPlan, class It>
-typename detail::LoadIterator<PtxPlan, It>::type _CCCL_DEVICE _CCCL_FORCEINLINE
-make_load_iterator(PtxPlan const&, It it);
-} // namespace cuda_cub::core::detail
-
-THRUST_NAMESPACE_END
+#include <thrust/system/cuda/detail/core/make_load_iterator.h>
 
 CUB_NAMESPACE_BEGIN
 
