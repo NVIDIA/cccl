@@ -1,3 +1,7 @@
+#include <cuda/__cccl_config>
+
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 #include <thrust/detail/config.h>
 
 #if _CCCL_STD_VER >= 2014
@@ -52,3 +56,8 @@ struct test_large_types
 DECLARE_UNITTEST(test_large_types);
 
 #endif // C++14
+
+// we need to leak the suppression on clang/MSVC to suppresses warnings from the cudafe1.stub.c file
+#if !_CCCL_COMPILER(CLANG) && !_CCCL_COMPILER(MSVC)
+_CCCL_SUPPRESS_DEPRECATED_POP
+#endif // !_CCCL_COMPILER(CLANG) && !_CCCL_COMPILER(MSVC)
