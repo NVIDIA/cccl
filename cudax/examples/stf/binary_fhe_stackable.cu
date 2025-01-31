@@ -36,10 +36,12 @@ public:
     ld = ctx.logical_data(values.data(), values.size());
   }
 
-  void set_symbol(std::string s)
+  auto &set_symbol(std::string s)
   {
     ld.set_symbol(s);
     symbol = s;
+
+    return *this;
   }
 
   std::string get_symbol() const
@@ -48,18 +50,6 @@ public:
   }
 
   ::std::string symbol;
-
-#if 0
-  const stackable_logical_data<slice<char>>& data() const
-  {
-    return ld;
-  }
-
-  stackable_logical_data<slice<char>>& data()
-  {
-    return ld;
-  }
-#endif
 
   // This will asynchronously fill string s
   void convert_to_vector(std::vector<char>& v)
@@ -100,6 +90,7 @@ class ciphertext
 public:
   ciphertext() = default;
 
+  // We need a deep-copy semantic
   ciphertext(const ciphertext& other)
       : ctx(other.ctx)
   {
@@ -123,10 +114,12 @@ public:
       };
   }
 
-  void set_symbol(std::string s)
+  auto &set_symbol(std::string s)
   {
     ld.set_symbol(s);
     symbol = s;
+
+    return *this;
   }
 
   plaintext decrypt() const
@@ -141,6 +134,7 @@ public:
   }
 
   // Copy assignment operator
+  // We need a deep-copy semantic
   ciphertext& operator=(const ciphertext& other)
   {
     if (this != &other)
@@ -235,6 +229,8 @@ int main()
 {
   stackable_ctx ctx;
 
+  auto g2 = ctx.dot_section("all");
+
   std::vector<char> vA{3, 3, 2, 2, 17};
   plaintext pA(ctx, vA);
   pA.set_symbol("A");
@@ -243,12 +239,10 @@ int main()
   plaintext pB(ctx, vB);
   pB.set_symbol("B");
 
-  auto eA = pA.encrypt();
-  auto eB = pB.encrypt();
+  auto eA = pA.encrypt().set_symbol("A");
+  auto eB = pB.encrypt().set_symbol("B");
 
-  eA.set_symbol("A");
-  eB.set_symbol("B");
-
+  auto g = ctx.dot_section("circuit");
   ctx.push();
 
   eA.push(access_mode::read);
@@ -257,6 +251,7 @@ int main()
   auto out = circuit(eA, eB);
 
   ctx.pop();
+  g.end();
 
   std::vector<char> v_out;
   out.decrypt().convert_to_vector(v_out);

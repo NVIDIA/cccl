@@ -437,6 +437,12 @@ public:
     pimpl->untrack_pushed_data(data_id);
   }
 
+  auto dot_section(::std::string symbol) const
+  {
+    return get_ctx(depth()).dot_section(mv(symbol));
+  }
+
+
   void finalize()
   {
     // There must be only one level left

@@ -16,15 +16,9 @@
  */
 
 #include <cuda/experimental/stf.cuh>
-
 #include "cuda/experimental/__stf/utility/stackable_ctx.cuh"
 
 using namespace cuda::experimental::stf;
-
-int X0(int i)
-{
-  return 17 * i + 45;
-}
 
 int main()
 {
@@ -38,6 +32,7 @@ int main()
   };
 
   /* Start to use a graph */
+  auto g = sctx.dot_section("foo");
   sctx.push();
 
   lA.push(access_mode::read);
@@ -49,13 +44,18 @@ int main()
     b(i) = 17 - 3 * a(i);
   };
 
+  sctx.parallel_for(lB.shape(), lB.rw())->*[] __device__(size_t i, auto b) {
+    b(i) *= 2;
+  };
+
   sctx.pop();
+  g.end();
 
   /* Access B in a context below the context where it was created */
   sctx.host_launch(lB.read())->*[](auto b) {
     for (size_t i = 0; i < b.size(); i++)
     {
-      EXPECT(b(i) == (17 - 3 * (42 + 2 * i)));
+      EXPECT(b(i) == 2*(17 - 3 * (42 + 2 * i)));
     }
   };
 
