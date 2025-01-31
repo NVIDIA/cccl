@@ -7,6 +7,10 @@ import json
 import os
 import re
 
+# sccache started reporting PTX/CUBIN hits.
+# We filter these out as they are not included in the `compile_requests` counter.
+sccache_languages = ["C/C++", "CUDA"]
+
 
 def job_succeeded(job):
     # The job was successful if the success file exists:
@@ -91,7 +95,8 @@ def update_summary_entry(entry, job, job_times=None):
             if "counts" in cache_hits:
                 counts = cache_hits["counts"]
                 for lang, lang_hits in counts.items():
-                    hits += lang_hits
+                    if lang in sccache_languages:
+                        hits += lang_hits
         if "sccache" not in entry:
             entry["sccache"] = {"requests": requests, "hits": hits}
         else:
