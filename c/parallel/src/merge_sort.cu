@@ -281,7 +281,7 @@ extern "C" CCCL_C_API CUresult cccl_device_merge_sort_build(
       "  static constexpr int ITEMS_PER_TILE = {5};\n"
       "  static constexpr int BLOCK_THREADS = {4};\n"
       "}};\n"
-      "struct merge_sort_policy {{\n"
+      "struct device_merge_sort_policy {{\n"
       "  struct ActivePolicy {{\n"
       "    using MergeSortPolicy = agent_policy_t;\n"
       "  }};\n"
