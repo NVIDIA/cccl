@@ -70,6 +70,7 @@
  */
 
 #include <cuda/__ptx/instructions/barrier_cluster.h>
+#include <cuda/__ptx/instructions/bfind.h>
 #include <cuda/__ptx/instructions/clusterlaunchcontrol.h>
 #include <cuda/__ptx/instructions/cp_async_bulk.h>
 #include <cuda/__ptx/instructions/cp_async_bulk_commit_group.h>
@@ -78,6 +79,7 @@
 #include <cuda/__ptx/instructions/cp_async_mbarrier_arrive.h>
 #include <cuda/__ptx/instructions/cp_reduce_async_bulk.h>
 #include <cuda/__ptx/instructions/cp_reduce_async_bulk_tensor.h>
+#include <cuda/__ptx/instructions/exit.h>
 #include <cuda/__ptx/instructions/fence.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__ptx/instructions/getctarank.h>
@@ -103,5 +105,5 @@
 #include <cuda/__ptx/instructions/tcgen05_wait.h>
 #include <cuda/__ptx/instructions/tensormap_cp_fenceproxy.h>
 #include <cuda/__ptx/instructions/tensormap_replace.h>
-
+#include <cuda/__ptx/instructions/trap.h>
 #endif // _CUDA_PTX
