@@ -22,17 +22,27 @@
 
 int main(int, char**)
 {
+#if _CCCL_HAS_INT128()
+  auto x1 = __int128(123456789123) + __int128(123456789123);
+  auto y1 = __uint128_t(123456789123) + __uint128_t(123456789123);
+  unused(x1);
+  unused(y1);
+#endif
 #if _CCCL_HAS_NVFP8()
-  auto x = __nv_fp8_e4m3(1.0f);
-  unused(x);
+  auto x2 = __nv_fp8_e4m3(1.0f);
+  unused(x2);
 #endif
 #if defined(_CCCL_HAS_NVFP16)
-  auto y = __half(1.0f);
-  unused(y);
+  auto x3 = __half(1.0f);
+  unused(x3);
 #endif
 #if defined(_CCCL_HAS_NVBF16)
-  auto z = __nv_bfloat16(1.0f);
-  unused(z);
+  auto x4 = __nv_bfloat16(1.0f);
+  unused(x4);
+#endif
+#if _CCCL_HAS_FLOAT128()
+  __float128 x5 = __float128(3.14) + __float128(3.14);
+  unused(x5);
 #endif
   return 0;
 }

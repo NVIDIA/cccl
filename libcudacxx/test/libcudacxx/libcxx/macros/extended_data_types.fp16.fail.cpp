@@ -10,29 +10,17 @@
 
 #include "test_macros.h"
 
-#if _CCCL_HAS_NVFP8()
-#  include <cuda_fp8.h>
-#endif
-#if defined(_CCCL_HAS_NVFP16)
+#if !defined(_CCCL_HAS_NVFP16)
 #  include <cuda_fp16.h>
-#endif
-#if defined(_CCCL_HAS_NVBF16)
-#  include <cuda_bf16.h>
 #endif
 
 int main(int, char**)
 {
-#if _CCCL_HAS_NVFP8()
-  auto x = __nv_fp8_e4m3(1.0f);
-  unused(x);
-#endif
-#if defined(_CCCL_HAS_NVFP16)
-  auto y = __half(1.0f);
-  unused(y);
-#endif
-#if defined(_CCCL_HAS_NVBF16)
-  auto z = __nv_bfloat16(1.0f);
-  unused(z);
+#if !defined(_CCCL_HAS_NVFP16)
+  auto x2 = __half(1.0f);
+  unused(x2);
+#else
+  static_assert(false);
 #endif
   return 0;
 }
