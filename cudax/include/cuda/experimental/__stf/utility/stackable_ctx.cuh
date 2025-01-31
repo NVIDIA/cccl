@@ -374,12 +374,28 @@ public:
     return get_ctx(depth()).task(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 
+#if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
   template <typename... Pack>
   auto parallel_for(Pack&&... pack)
   {
     process_pack(pack...);
     return get_ctx(depth()).parallel_for(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
+
+  template <typename... Pack>
+  auto cuda_kernel(Pack&&... pack)
+  {
+    process_pack(pack...);
+    return get_ctx(depth()).cuda_kernel(reserved::to_task_dep(::std::forward<Pack>(pack))...);
+  }
+
+  template <typename... Pack>
+  auto cuda_kernel_chain(Pack&&... pack)
+  {
+    process_pack(pack...);
+    return get_ctx(depth()).cuda_kernel_chain(reserved::to_task_dep(::std::forward<Pack>(pack))...);
+  }
+#endif
 
   template <typename... Pack>
   auto host_launch(Pack&&... pack)
@@ -391,6 +407,23 @@ public:
   auto task_fence()
   {
     return get_ctx(depth()).task_fence();
+  }
+
+  template <typename... Pack>
+  void push_affinity(Pack&&... pack) const
+  {
+    process_pack(pack...);
+    get_ctx(depth()).push_affinity(reserved::to_task_dep(::std::forward<Pack>(pack))...);
+  }
+
+  void pop_affinity() const
+  {
+    get_ctx(depth()).pop_affinity();
+  }
+
+  auto& async_resources() const
+  {
+    return get_ctx(depth()).async_resources();
   }
 
   // void track_pushed_data(int data_id, ::std::shared_ptr<stackable_logical_data_impl_base> data_impl)
@@ -595,6 +628,11 @@ class stackable_logical_data
       s.back().set_symbol(symbol + "." + ::std::to_string(depth() - base_depth));
     }
 
+    auto get_symbol() const
+    {
+      return symbol;
+    }
+
     // TODO why making sctx private or why do we need to expose this at all ?
     auto& get_sctx()
     {
@@ -701,6 +739,11 @@ public:
   {
     pimpl->set_symbol(mv(symbol));
     return *this;
+  }
+
+  auto get_symbol() const
+  {
+    return pimpl->get_symbol();
   }
 
   auto get_impl()
