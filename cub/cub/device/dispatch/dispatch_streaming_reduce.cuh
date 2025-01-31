@@ -189,7 +189,7 @@ template <typename InputIteratorT,
           typename ReductionOpT,
           typename InitT,
           typename PolicyChainT =
-            DeviceReducePolicy<KeyValuePair<PerPartitionOffsetT, InitT>, PerPartitionOffsetT, ReductionOpT>>
+            detail::reduce::policy_hub<KeyValuePair<PerPartitionOffsetT, InitT>, PerPartitionOffsetT, ReductionOpT>>
 struct dispatch_streaming_arg_reduce_t
 {
   // Internal dispatch routine for computing a device-wide argument extremum, like `ArgMin` and `ArgMax`
