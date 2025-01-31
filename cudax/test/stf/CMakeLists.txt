@@ -37,6 +37,7 @@ set(stf_test_sources
   local_stf/stackable3.cu
   local_stf/stackable_export.cu
   local_stf/stackable_move.cu
+  local_stf/stackable_token.cu
   places/managed.cu
   places/managed_from_user.cu
   places/non_current_device.cu
@@ -89,6 +90,7 @@ set(stf_test_codegen_sources
   freeze/freeze.cu
   freeze/freeze_rw.cu
   freeze/task_fence.cu
+  freeze/freeze_token.cu
   graph/epoch.cu
   graph/for_each_batched.cu
   graph/for_each_batched_allocator.cu
