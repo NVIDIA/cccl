@@ -37,7 +37,8 @@
 #endif // no system header
 
 // True, when programmatic dependent launch is available, otherwise false.
-#define _CCCL_HAS_PDL _CCCL_CUDACC_AT_LEAST(12, 0)
+#define _CCCL_HAS_PDL 1
+
 #if _CCCL_HAS_PDL
 // Waits for the previous kernel to complete (when it reaches its final membar). Should be put before the first global
 // memory access in a kernel.
