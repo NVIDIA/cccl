@@ -243,6 +243,6 @@ DECLARE_UNITTEST(test_large_indices_custom_scan_op);
 #endif // C++14
 
 // we need to leak the suppression on clang/MSVC to suppresses warnings from the cudafe1.stub.c file
-#if !_CCCL_COMPILER(CLANG) || !_CCCL_COMPILER(MSVC)
+#if !_CCCL_COMPILER(CLANG) && !_CCCL_COMPILER(MSVC)
 _CCCL_SUPPRESS_DEPRECATED_POP
-#endif // !_CCCL_COMPILER(CLANG) || !_CCCL_COMPILER(MSVC)
+#endif // !_CCCL_COMPILER(CLANG) && !_CCCL_COMPILER(MSVC)
