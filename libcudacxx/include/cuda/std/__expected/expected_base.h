@@ -71,30 +71,35 @@ union __expected_union_t
   struct __empty_t
   {};
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_default_constructible, _Tp2))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __expected_union_t() noexcept(_CCCL_TRAIT(is_nothrow_default_constructible, _Tp2))
       : __val_()
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
   _CCCL_REQUIRES((!_CCCL_TRAIT(is_default_constructible, _Tp2)))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __expected_union_t() noexcept
       : __empty_()
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __expected_union_t(in_place_t, _Args&&... __args) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _Tp, _Args...))
       : __val_(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __expected_union_t(unexpect_t, _Args&&... __args) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _Err, _Args...))
       : __unex_(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fun, class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __expected_union_t(
     __expected_construct_from_invoke_tag,
@@ -104,6 +109,7 @@ union __expected_union_t
       : __val_(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::forward<_Args>(__args)...))
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fun, class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __expected_union_t(
     __expected_construct_from_invoke_tag,
@@ -128,18 +134,21 @@ union __expected_union_t<_Tp, _Err, true>
   struct __empty_t
   {};
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_default_constructible, _Tp2))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __expected_union_t() noexcept(_CCCL_TRAIT(is_nothrow_default_constructible, _Tp2))
       : __val_()
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
   _CCCL_REQUIRES((!_CCCL_TRAIT(is_default_constructible, _Tp2)))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __expected_union_t() noexcept
       : __empty_()
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __expected_union_t(in_place_t, _Args&&... __args) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _Tp, _Args...))
@@ -152,6 +161,7 @@ union __expected_union_t<_Tp, _Err, true>
       : __unex_(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fun, class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __expected_union_t(
     __expected_construct_from_invoke_tag,
@@ -161,6 +171,7 @@ union __expected_union_t<_Tp, _Err, true>
       : __val_(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::forward<_Args>(__args)...))
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fun, class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __expected_union_t(
     __expected_construct_from_invoke_tag,
@@ -436,6 +447,7 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_storage, __expected_destruct, _Tp, _Err);
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T1, class _T2, class... _Args)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_nothrow_constructible, _T1, _Args...))
   static _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void
@@ -445,6 +457,7 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
     _LIBCUDACXX_CONSTRUCT_AT(__newval, _CUDA_VSTD::forward<_Args>(__args)...);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T1, class _T2, class... _Args)
   _CCCL_REQUIRES(
     (!_CCCL_TRAIT(is_nothrow_constructible, _T1, _Args...)) _CCCL_AND _CCCL_TRAIT(is_nothrow_move_constructible, _T1))
@@ -456,6 +469,7 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
     _LIBCUDACXX_CONSTRUCT_AT(__newval, _CUDA_VSTD::move(__tmp));
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T1, class _T2, class... _Args)
   _CCCL_REQUIRES(
     (!_CCCL_TRAIT(is_nothrow_constructible, _T1, _Args...)) _CCCL_AND(!_CCCL_TRAIT(is_nothrow_move_constructible, _T1)))
@@ -475,6 +489,7 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
     __trans.__complete();
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Err2 = _Err)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_nothrow_move_constructible, _Err2))
   static _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void
@@ -493,6 +508,7 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
     __with_err.__has_val_ = true;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Err2 = _Err)
   _CCCL_REQUIRES((!_CCCL_TRAIT(is_nothrow_move_constructible, _Err2)))
   static _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void
@@ -653,6 +669,7 @@ struct __expected_copy_assign<_Tp, _Err, __smf_availability::__available> : __ex
   _CCCL_HIDE_FROM_ABI __expected_copy_assign(const __expected_copy_assign&) = default;
   _CCCL_HIDE_FROM_ABI __expected_copy_assign(__expected_copy_assign&&)      = default;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __expected_copy_assign&
   operator=(const __expected_copy_assign& __other) noexcept(
     _CCCL_TRAIT(is_nothrow_copy_assignable, _Tp) && _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp)
@@ -917,6 +934,7 @@ struct __expected_storage<void, _Err> : __expected_destruct<void, _Err>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_storage, __expected_destruct, void, _Err);
 
+  _CCCL_EXEC_CHECK_DISABLE
   static _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void __swap_val_unex_impl(
     __expected_storage& __with_val,
     __expected_storage& __with_err) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Err))
