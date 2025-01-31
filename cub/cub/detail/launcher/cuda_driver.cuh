@@ -27,7 +27,7 @@ struct CudaDriverLauncher
   dim3 block;
   std::size_t shared_mem;
   CUstream stream;
-  bool dependent_launch; // TODO: this is not being used currently
+  bool dependent_launch;
 
   template <typename... Args>
   _CCCL_HIDE_FROM_ABI cudaError_t doit(CUkernel kernel, Args const&... args) const
@@ -41,8 +41,30 @@ struct CudaDriverLauncher
       return status;
     }
 
-    return static_cast<cudaError_t>(
-      cuLaunchKernel(kernel_fn, grid.x, grid.y, grid.z, block.x, block.y, block.z, shared_mem, stream, kernel_args, 0));
+#  if _CCCL_HAS_PDL
+    if (dependent_launch)
+    {
+      CUlaunchAttribute attribute[1];
+      attribute[0].id                                         = cudaLaunchAttributeProgrammaticStreamSerialization;
+      attribute[0].val.programmaticStreamSerializationAllowed = 1;
+
+      CUlaunchConfig_t config{};
+      config.gridDim          = grid;
+      config.blockDim         = block;
+      config.dynamicSmemBytes = shared_mem;
+      config.stream           = stream;
+      config.attrs            = attribute;
+      config.numAttrs         = 1;
+
+      return static_cast<cudaError_t>(cuLaunchKernelEx(
+        &config, kernel_fn, grid.x, grid.y, grid.z, block.x, block.y, block.z, shared_mem, stream, kernel_args, 0));
+    }
+    else
+#  endif
+    {
+      return static_cast<cudaError_t>(cuLaunchKernel(
+        kernel_fn, grid.x, grid.y, grid.z, block.x, block.y, block.z, shared_mem, stream, kernel_args, 0));
+    }
   }
 };
 
