@@ -774,7 +774,7 @@ private:
   ::std::shared_ptr<impl> pimpl;
 };
 
-stackable_logical_data<void_interface> stackable_ctx::logical_token()
+inline stackable_logical_data<void_interface> stackable_ctx::logical_token()
 {
   return stackable_logical_data<void_interface>(*this, depth(), true, get_ctx(0).logical_token());
 }
