@@ -111,31 +111,21 @@ void flagged(nvbench::state& state, nvbench::type_list<T, OffsetT, UseDistinctPa
   using output_it_t                          = typename ::cuda::std::
     conditional<use_distinct_out_partitions, cub::detail::select::partition_distinct_output_t<T*, T*>, T*>::type;
 
+  using dispatch_t = cub::DispatchSelectIf<
+    input_it_t,
+    flag_it_t,
+    output_it_t,
+    num_selected_it_t,
+    select_op_t,
+    equality_op_t,
+    offset_t,
+    keep_rejects,
+    may_alias
 #if !TUNE_BASE
-  using policy_t   = policy_hub_t<T>;
-  using dispatch_t = cub::DispatchSelectIf<
-    input_it_t,
-    flag_it_t,
-    output_it_t,
-    num_selected_it_t,
-    select_op_t,
-    equality_op_t,
-    offset_t,
-    keep_rejects,
-    may_alias,
-    policy_t>;
-#else // TUNE_BASE
-  using dispatch_t = cub::DispatchSelectIf<
-    input_it_t,
-    flag_it_t,
-    output_it_t,
-    num_selected_it_t,
-    select_op_t,
-    equality_op_t,
-    offset_t,
-    keep_rejects,
-    may_alias>;
+    ,
+    policy_hub_t<T>
 #endif // TUNE_BASE
+    >;
 
   // Retrieve axis parameters
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements{io}"));
