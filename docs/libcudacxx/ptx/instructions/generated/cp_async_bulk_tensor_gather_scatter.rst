@@ -112,7 +112,7 @@ cp.async.bulk.tensor.2d.global.shared::cta.tile::scatter4.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // cp.async.bulk.tensor.2d.dst.src.tile::scatter4.bulk_group [tensorMap, tensorCoords], [srcMem]; // PTX ISA 80, SM_100a, SM_101a
+   // cp.async.bulk.tensor.2d.dst.src.tile::scatter4.bulk_group [tensorMap, tensorCoords], [srcMem]; // PTX ISA 86, SM_100a, SM_101a
    // .dst       = { .global }
    // .src       = { .shared::cta }
    template <typename = void>

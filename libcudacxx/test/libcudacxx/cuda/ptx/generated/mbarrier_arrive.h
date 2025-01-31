@@ -95,13 +95,13 @@ __global__ void test_mbarrier_arrive(void** fn_ptr)
         // mbarrier.arrive.relaxed.cta.shared::cta.b64 state, [addr], count;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<uint64_t (*)(
-            cuda::ptx::space_shared_t, cuda::ptx::sem_relaxed_t, cuda::ptx::scope_cta_t, uint64_t*, const uint32_t&)>(
+            cuda::ptx::sem_relaxed_t, cuda::ptx::scope_cta_t, cuda::ptx::space_shared_t, uint64_t*, const uint32_t&)>(
             cuda::ptx::mbarrier_arrive));
           // mbarrier.arrive.relaxed.cluster.shared::cta.b64 state, [addr], count;
             * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<uint64_t (*)(cuda::ptx::space_shared_t,
-                                       cuda::ptx::sem_relaxed_t,
+              static_cast<uint64_t (*)(cuda::ptx::sem_relaxed_t,
                                        cuda::ptx::scope_cluster_t,
+                                       cuda::ptx::space_shared_t,
                                        uint64_t*,
                                        const uint32_t&)>(cuda::ptx::mbarrier_arrive));));
 #endif // __cccl_ptx_isa >= 860
@@ -113,12 +113,12 @@ __global__ void test_mbarrier_arrive(void** fn_ptr)
         // mbarrier.arrive.relaxed.cta.shared::cta.b64 state, [addr];
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<uint64_t (*)(
-            cuda::ptx::space_shared_t, cuda::ptx::sem_relaxed_t, cuda::ptx::scope_cta_t, uint64_t*)>(
+            cuda::ptx::sem_relaxed_t, cuda::ptx::scope_cta_t, cuda::ptx::space_shared_t, uint64_t*)>(
             cuda::ptx::mbarrier_arrive));
           // mbarrier.arrive.relaxed.cluster.shared::cta.b64 state, [addr];
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<uint64_t (*)(
-                cuda::ptx::space_shared_t, cuda::ptx::sem_relaxed_t, cuda::ptx::scope_cluster_t, uint64_t*)>(
+                cuda::ptx::sem_relaxed_t, cuda::ptx::scope_cluster_t, cuda::ptx::space_shared_t, uint64_t*)>(
                 cuda::ptx::mbarrier_arrive));));
 #endif // __cccl_ptx_isa >= 860
 
@@ -129,7 +129,7 @@ __global__ void test_mbarrier_arrive(void** fn_ptr)
         // mbarrier.arrive.relaxed.cluster.shared::cluster.b64 _, [addr], count;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(
-            cuda::ptx::space_cluster_t, cuda::ptx::sem_relaxed_t, cuda::ptx::scope_cluster_t, uint64_t*, const uint32_t&)>(
+            cuda::ptx::sem_relaxed_t, cuda::ptx::scope_cluster_t, cuda::ptx::space_cluster_t, uint64_t*, const uint32_t&)>(
             cuda::ptx::mbarrier_arrive));));
 #endif // __cccl_ptx_isa >= 860
 
@@ -140,7 +140,7 @@ __global__ void test_mbarrier_arrive(void** fn_ptr)
         // mbarrier.arrive.relaxed.cluster.shared::cluster.b64 _, [addr];
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(
-            cuda::ptx::space_cluster_t, cuda::ptx::sem_relaxed_t, cuda::ptx::scope_cluster_t, uint64_t*)>(
+            cuda::ptx::sem_relaxed_t, cuda::ptx::scope_cluster_t, cuda::ptx::space_cluster_t, uint64_t*)>(
             cuda::ptx::mbarrier_arrive));));
 #endif // __cccl_ptx_isa >= 860
 }
