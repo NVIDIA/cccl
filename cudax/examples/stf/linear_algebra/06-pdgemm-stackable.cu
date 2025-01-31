@@ -15,7 +15,6 @@
 
 #include "cuda/experimental/__stf/utility/stackable_ctx.cuh"
 #include "cuda/experimental/stf.cuh"
-
 #include <nvtx3/nvToolsExt.h>
 
 #define TILED
