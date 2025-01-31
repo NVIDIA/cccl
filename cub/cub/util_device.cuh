@@ -553,6 +553,11 @@ struct PolicyWrapper<
   {
     return StaticPolicyT::ITEMS_PER_THREAD;
   }
+
+  CUB_RUNTIME_FUNCTION static constexpr int ItemsPerTile()
+  {
+    return StaticPolicyT::ITEMS_PER_TILE;
+  }
 };
 
 template <typename PolicyT>

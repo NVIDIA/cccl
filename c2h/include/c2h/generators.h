@@ -45,13 +45,11 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
 #    include <cuda_bf16.h>
 _CCCL_DIAG_POP
 
-#    if _CCCL_CUDACC_AT_LEAST(11, 8)
 // cuda_fp8.h resets default for C4127, so we have to guard the inclusion
 _CCCL_DIAG_PUSH
-#      include <cuda_fp8.h>
+#    include <cuda_fp8.h>
 _CCCL_DIAG_POP
-#    endif // _CCCL_CUDACC_AT_LEAST(11, 8)
-#  endif // _CCCL_HAS_NVBF16()
+#  endif // _CCCL_HAS_NVBF16
 
 #  if _CCCL_HAS_NVFP8()
 namespace std
