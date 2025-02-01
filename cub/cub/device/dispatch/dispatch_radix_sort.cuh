@@ -453,7 +453,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THRE
   // Sort tile
   BlockRadixSortT(temp_storage.sort)
     .SortBlockedToStriped(
-      keys, values, current_bit, end_bit, Int2Type<IS_DESCENDING>(), Int2Type<KEYS_ONLY>(), decomposer);
+      keys, values, current_bit, end_bit, bool_constant_v<IS_DESCENDING>, bool_constant_v<KEYS_ONLY>, decomposer);
 
 // Store keys and values
 #pragma unroll
@@ -1652,7 +1652,7 @@ struct DispatchRadixSort
   //------------------------------------------------------------------------------
 
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokeManyTiles(Int2Type<false>)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokeManyTiles(::cuda::std::false_type)
   {
     // Invoke upsweep-downsweep
     return InvokePasses<ActivePolicyT>(
@@ -1666,7 +1666,7 @@ struct DispatchRadixSort
   }
 
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokeManyTiles(Int2Type<true>)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokeManyTiles(::cuda::std::true_type)
   {
     // Invoke onesweep
     return InvokeOnesweep<ActivePolicyT>();
@@ -1768,7 +1768,7 @@ struct DispatchRadixSort
     else
     {
       // Regular size
-      return InvokeManyTiles<ActivePolicyT>(Int2Type<ActivePolicyT::ONESWEEP>());
+      return InvokeManyTiles<ActivePolicyT>(bool_constant_v<ActivePolicyT::ONESWEEP>);
     }
   }
 

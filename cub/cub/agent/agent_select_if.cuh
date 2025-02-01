@@ -384,7 +384,7 @@ struct AgentSelectIf
     OffsetT num_tile_items,
     InputT (&items)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
-    Int2Type<USE_SELECT_OP> /*select_method*/)
+    int_constant_t<USE_SELECT_OP> /*select_method*/)
   {
 #pragma unroll
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
@@ -408,7 +408,7 @@ struct AgentSelectIf
     OffsetT num_tile_items,
     InputT (& /*items*/)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
-    Int2Type<USE_STENCIL_WITH_OP> /*select_method*/)
+    int_constant_t<USE_STENCIL_WITH_OP> /*select_method*/)
   {
     __syncthreads();
 
@@ -450,7 +450,7 @@ struct AgentSelectIf
     OffsetT num_tile_items,
     InputT (& /*items*/)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
-    Int2Type<USE_SELECT_FLAGS> /*select_method*/)
+    int_constant_t<USE_SELECT_FLAGS> /*select_method*/)
   {
     __syncthreads();
 
@@ -484,7 +484,7 @@ struct AgentSelectIf
     OffsetT num_tile_items,
     InputT (&items)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
-    Int2Type<USE_DISCONTINUITY> /*select_method*/)
+    int_constant_t<USE_DISCONTINUITY> /*select_method*/)
   {
     if (IS_FIRST_TILE && streaming_context.is_first_partition())
     {
@@ -623,7 +623,7 @@ struct AgentSelectIf
     OffsetT num_selections_prefix,
     OffsetT num_rejected_prefix,
     OffsetT num_selections,
-    Int2Type<false> /*is_keep_rejects*/)
+    ::cuda::std::false_type /*is_keep_rejects*/)
   {
     // Do a two-phase scatter if two-phase is enabled and the average number of selection_flags items per thread is
     // greater than one
@@ -667,7 +667,7 @@ struct AgentSelectIf
     OffsetT num_selections_prefix,
     OffsetT num_rejected_prefix,
     OffsetT num_selections,
-    Int2Type<true> /*is_keep_rejects*/)
+    ::cuda::std::true_type /*is_keep_rejects*/)
   {
     __syncthreads();
 
@@ -811,7 +811,7 @@ struct AgentSelectIf
 
     // Initialize selection_flags
     InitializeSelections<true, IS_LAST_TILE>(
-      tile_offset, num_tile_items, items, selection_flags, Int2Type<SELECT_METHOD>());
+      tile_offset, num_tile_items, items, selection_flags, int_constant_v<SELECT_METHOD>);
 
     // Ensure temporary storage used during block load can be reused
     // Also, in case of in-place stream compaction, this is needed to order the loads of
@@ -847,7 +847,7 @@ struct AgentSelectIf
       0,
       0,
       num_tile_selections,
-      cub::Int2Type<KeepRejects>{});
+      bool_constant_v<KeepRejects>);
 
     return num_tile_selections;
   }
@@ -891,7 +891,7 @@ struct AgentSelectIf
 
     // Initialize selection_flags
     InitializeSelections<false, IS_LAST_TILE>(
-      tile_offset, num_tile_items, items, selection_flags, Int2Type<SELECT_METHOD>());
+      tile_offset, num_tile_items, items, selection_flags, int_constant_v<SELECT_METHOD>);
 
     // Ensure temporary storage used during block load can be reused
     // Also, in case of in-place stream compaction, this is needed to order the loads of
@@ -930,7 +930,7 @@ struct AgentSelectIf
       num_selections_prefix,
       num_rejected_prefix,
       num_selections,
-      cub::Int2Type<KeepRejects>{});
+      bool_constant_v<KeepRejects>);
 
     return num_selections;
   }

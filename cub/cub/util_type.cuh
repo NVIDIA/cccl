@@ -209,13 +209,22 @@ struct NullType
  * dispatch based on constant integral values)
  */
 template <int A>
-struct Int2Type
+struct CCCL_DEPRECATED_BECAUSE("Use ::cuda::std::integral_constant instead") Int2Type
 {
   enum
   {
     VALUE = A
   };
 };
+
+template <int Value>
+using int_constant_t = ::cuda::std::integral_constant<int, Value>;
+
+template <auto Value>
+inline constexpr auto int_constant_v = int_constant_t<Value>{};
+
+template <bool Value>
+inline constexpr auto bool_constant_v = ::cuda::std::bool_constant<Value>{};
 
 /**
  * \brief Allows algorithms that take a value as input to take a future value that is not computed yet at launch time.

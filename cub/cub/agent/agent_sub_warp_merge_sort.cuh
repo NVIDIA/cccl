@@ -159,14 +159,14 @@ class AgentSubWarpSort
     return lhs == rhs;
   }
 
-  _CCCL_DEVICE static bool get_oob_default(Int2Type<true> /* is bool */)
+  _CCCL_DEVICE static bool get_oob_default(::cuda::std::true_type /* is bool */)
   {
     // Traits<KeyT>::MAX_KEY for `bool` is 0xFF which is different from `true` and makes
     // comparison with oob unreliable.
     return !IS_DESCENDING;
   }
 
-  _CCCL_DEVICE static KeyT get_oob_default(Int2Type<false> /* is bool */)
+  _CCCL_DEVICE static KeyT get_oob_default(::cuda::std::false_type /* is bool */)
   {
     // For FP64 the difference is:
     // Lowest() -> -1.79769e+308 = 00...00b -> TwiddleIn -> -0 = 10...00b
@@ -235,7 +235,7 @@ public:
       KeyT keys[PolicyT::ITEMS_PER_THREAD];
       ValueT values[PolicyT::ITEMS_PER_THREAD];
 
-      KeyT oob_default = AgentSubWarpSort::get_oob_default(Int2Type<std::is_same<bool, KeyT>::value>{});
+      KeyT oob_default = AgentSubWarpSort::get_oob_default(bool_constant_v<::cuda::std::is_same_v<bool, KeyT>>);
 
       WarpLoadKeysT(storage.load_keys).Load(keys_input, keys, segment_size, oob_default);
       __syncwarp(warp_merge_sort.get_member_mask());

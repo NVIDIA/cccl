@@ -151,7 +151,7 @@ struct BlockReduceRaking
    */
   template <bool IS_FULL_TILE, typename ReductionOp, int ITERATION>
   _CCCL_DEVICE _CCCL_FORCEINLINE T RakingReduction(
-    ReductionOp reduction_op, T* raking_segment, T partial, int num_valid, Int2Type<ITERATION> /*iteration*/)
+    ReductionOp reduction_op, T* raking_segment, T partial, int num_valid, int_constant_t<ITERATION> /*iteration*/)
   {
     // Update partial if addend is in range
     if ((IS_FULL_TILE && RAKING_UNGUARDED) || ((linear_tid * SEGMENT_LENGTH) + ITERATION < num_valid))
@@ -159,7 +159,8 @@ struct BlockReduceRaking
       T addend = raking_segment[ITERATION];
       partial  = reduction_op(partial, addend);
     }
-    return RakingReduction<IS_FULL_TILE>(reduction_op, raking_segment, partial, num_valid, Int2Type<ITERATION + 1>());
+    return RakingReduction<IS_FULL_TILE>(
+      reduction_op, raking_segment, partial, num_valid, int_constant_t<ITERATION + 1>());
   }
 
   /**
@@ -178,7 +179,7 @@ struct BlockReduceRaking
     T* /*raking_segment*/,
     T partial,
     int /*num_valid*/,
-    Int2Type<SEGMENT_LENGTH> /*iteration*/)
+    int_constant_t<SEGMENT_LENGTH> /*iteration*/)
   {
     return partial;
   }
@@ -219,7 +220,7 @@ struct BlockReduceRaking
         T* raking_segment = BlockRakingLayout::RakingPtr(temp_storage.raking_grid, linear_tid);
         partial           = raking_segment[0];
 
-        partial = RakingReduction<IS_FULL_TILE>(reduction_op, raking_segment, partial, num_valid, Int2Type<1>());
+        partial = RakingReduction<IS_FULL_TILE>(reduction_op, raking_segment, partial, num_valid, int_constant_v<1>);
 
         int valid_raking_threads = (IS_FULL_TILE) ? RAKING_THREADS : (num_valid + SEGMENT_LENGTH - 1) / SEGMENT_LENGTH;
 

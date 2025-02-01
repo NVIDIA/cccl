@@ -338,7 +338,7 @@ private:
   RankKeys(bit_ordered_type (&unsigned_keys)[ITEMS_PER_THREAD],
            int (&ranks)[ITEMS_PER_THREAD],
            DigitExtractorT digit_extractor,
-           Int2Type<false> /*is_descending*/)
+           ::cuda::std::false_type /*is_descending*/)
   {
     AscendingBlockRadixRank(temp_storage.asending_ranking_storage).RankKeys(unsigned_keys, ranks, digit_extractor);
   }
@@ -349,7 +349,7 @@ private:
   RankKeys(bit_ordered_type (&unsigned_keys)[ITEMS_PER_THREAD],
            int (&ranks)[ITEMS_PER_THREAD],
            DigitExtractorT digit_extractor,
-           Int2Type<true> /*is_descending*/)
+           ::cuda::std::true_type /*is_descending*/)
   {
     DescendingBlockRadixRank(temp_storage.descending_ranking_storage).RankKeys(unsigned_keys, ranks, digit_extractor);
   }
@@ -358,8 +358,8 @@ private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void ExchangeValues(
     ValueT (&values)[ITEMS_PER_THREAD],
     int (&ranks)[ITEMS_PER_THREAD],
-    Int2Type<false> /*is_keys_only*/,
-    Int2Type<true> /*is_blocked*/)
+    ::cuda::std::false_type /*is_keys_only*/,
+    ::cuda::std::true_type /*is_blocked*/)
   {
     __syncthreads();
 
@@ -371,8 +371,8 @@ private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void ExchangeValues(
     ValueT (&values)[ITEMS_PER_THREAD],
     int (&ranks)[ITEMS_PER_THREAD],
-    Int2Type<false> /*is_keys_only*/,
-    Int2Type<false> /*is_blocked*/)
+    ::cuda::std::false_type /*is_keys_only*/,
+    ::cuda::std::false_type /*is_blocked*/)
   {
     __syncthreads();
 
@@ -381,12 +381,12 @@ private:
   }
 
   /// ExchangeValues (specialized for keys-only sort)
-  template <int IS_BLOCKED>
+  template <bool IS_BLOCKED>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ExchangeValues(
     ValueT (& /*values*/)[ITEMS_PER_THREAD],
     int (& /*ranks*/)[ITEMS_PER_THREAD],
-    Int2Type<true> /*is_keys_only*/,
-    Int2Type<IS_BLOCKED> /*is_blocked*/)
+    ::cuda::std::true_type /*is_keys_only*/,
+    ::cuda::std::bool_constant<IS_BLOCKED> /*is_blocked*/)
   {}
 
   /**
@@ -410,14 +410,14 @@ private:
    * @param is_keys_only
    *   Tag whether is keys-only sort
    */
-  template <int DESCENDING, int KEYS_ONLY, class DecomposerT = detail::identity_decomposer_t>
+  template <bool DESCENDING, bool KEYS_ONLY, class DecomposerT = detail::identity_decomposer_t>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SortBlocked(
     KeyT (&keys)[ITEMS_PER_THREAD],
     ValueT (&values)[ITEMS_PER_THREAD],
     int begin_bit,
     int end_bit,
-    Int2Type<DESCENDING> is_descending,
-    Int2Type<KEYS_ONLY> is_keys_only,
+    ::cuda::std::bool_constant<DESCENDING> is_descending,
+    ::cuda::std::bool_constant<KEYS_ONLY> is_keys_only,
     DecomposerT decomposer = {})
   {
     bit_ordered_type(&unsigned_keys)[ITEMS_PER_THREAD] = reinterpret_cast<bit_ordered_type(&)[ITEMS_PER_THREAD]>(keys);
@@ -446,7 +446,7 @@ private:
       BlockExchangeKeys(temp_storage.exchange_keys).ScatterToBlocked(keys, ranks);
 
       // Exchange values through shared memory in blocked arrangement
-      ExchangeValues(values, ranks, is_keys_only, Int2Type<true>());
+      ExchangeValues(values, ranks, is_keys_only, ::cuda::std::true_type());
 
       // Quit if done
       if (begin_bit >= end_bit)
@@ -489,14 +489,14 @@ public:
    * @param is_keys_only
    *   Tag whether is keys-only sort
    */
-  template <int DESCENDING, int KEYS_ONLY, class DecomposerT = detail::identity_decomposer_t>
+  template <bool DESCENDING, bool KEYS_ONLY, class DecomposerT = detail::identity_decomposer_t>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SortBlockedToStriped(
     KeyT (&keys)[ITEMS_PER_THREAD],
     ValueT (&values)[ITEMS_PER_THREAD],
     int begin_bit,
     int end_bit,
-    Int2Type<DESCENDING> is_descending,
-    Int2Type<KEYS_ONLY> is_keys_only,
+    ::cuda::std::bool_constant<DESCENDING> is_descending,
+    ::cuda::std::bool_constant<KEYS_ONLY> is_keys_only,
     DecomposerT decomposer = {})
   {
     bit_ordered_type(&unsigned_keys)[ITEMS_PER_THREAD] = reinterpret_cast<bit_ordered_type(&)[ITEMS_PER_THREAD]>(keys);
@@ -528,7 +528,7 @@ public:
         BlockExchangeKeys(temp_storage.exchange_keys).ScatterToStriped(keys, ranks);
 
         // Last pass exchanges through shared memory in striped arrangement
-        ExchangeValues(values, ranks, is_keys_only, Int2Type<false>());
+        ExchangeValues(values, ranks, is_keys_only, ::cuda::std::false_type());
 
         // Quit
         break;
@@ -538,7 +538,7 @@ public:
       BlockExchangeKeys(temp_storage.exchange_keys).ScatterToBlocked(keys, ranks);
 
       // Exchange values through shared memory in blocked arrangement
-      ExchangeValues(values, ranks, is_keys_only, Int2Type<true>());
+      ExchangeValues(values, ranks, is_keys_only, ::cuda::std::true_type());
 
       __syncthreads();
     }
@@ -633,7 +633,7 @@ public:
   {
     NullType values[ITEMS_PER_THREAD];
 
-    SortBlocked(keys, values, begin_bit, end_bit, Int2Type<false>(), Int2Type<KEYS_ONLY>());
+    SortBlocked(keys, values, begin_bit, end_bit, ::cuda::std::false_type(), bool_constant_v<KEYS_ONLY>);
   }
 
   //! @rst
@@ -700,7 +700,7 @@ public:
   {
     NullType values[ITEMS_PER_THREAD];
 
-    SortBlocked(keys, values, begin_bit, end_bit, Int2Type<false>(), Int2Type<KEYS_ONLY>(), decomposer);
+    SortBlocked(keys, values, begin_bit, end_bit, ::cuda::std::false_type(), bool_constant_v<KEYS_ONLY>, decomposer);
   }
 
   //! @rst
@@ -825,7 +825,7 @@ public:
        int begin_bit = 0,
        int end_bit   = sizeof(KeyT) * 8)
   {
-    SortBlocked(keys, values, begin_bit, end_bit, Int2Type<false>(), Int2Type<KEYS_ONLY>());
+    SortBlocked(keys, values, begin_bit, end_bit, ::cuda::std::false_type(), bool_constant_v<KEYS_ONLY>);
   }
 
   //! @rst
@@ -902,7 +902,7 @@ public:
        int begin_bit,
        int end_bit)
   {
-    SortBlocked(keys, values, begin_bit, end_bit, Int2Type<false>(), Int2Type<KEYS_ONLY>(), decomposer);
+    SortBlocked(keys, values, begin_bit, end_bit, ::cuda::std::false_type(), bool_constant_v<KEYS_ONLY>, decomposer);
   }
 
   //! @rst
@@ -1023,7 +1023,7 @@ public:
   {
     NullType values[ITEMS_PER_THREAD];
 
-    SortBlocked(keys, values, begin_bit, end_bit, Int2Type<true>(), Int2Type<KEYS_ONLY>());
+    SortBlocked(keys, values, begin_bit, end_bit, ::cuda::std::true_type(), bool_constant_v<KEYS_ONLY>);
   }
 
   //! @rst
@@ -1090,7 +1090,7 @@ public:
   {
     NullType values[ITEMS_PER_THREAD];
 
-    SortBlocked(keys, values, begin_bit, end_bit, Int2Type<true>(), Int2Type<KEYS_ONLY>(), decomposer);
+    SortBlocked(keys, values, begin_bit, end_bit, ::cuda::std::true_type(), bool_constant_v<KEYS_ONLY>, decomposer);
   }
 
   //! @rst
@@ -1154,8 +1154,8 @@ public:
       values,
       0,
       detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
-      Int2Type<true>(),
-      Int2Type<KEYS_ONLY>(),
+      ::cuda::std::true_type(),
+      bool_constant_v<KEYS_ONLY>,
       decomposer);
   }
 
@@ -1222,7 +1222,7 @@ public:
     int begin_bit = 0,
     int end_bit   = sizeof(KeyT) * 8)
   {
-    SortBlocked(keys, values, begin_bit, end_bit, Int2Type<true>(), Int2Type<KEYS_ONLY>());
+    SortBlocked(keys, values, begin_bit, end_bit, ::cuda::std::true_type(), bool_constant_v<KEYS_ONLY>);
   }
 
   //! @rst
@@ -1299,7 +1299,7 @@ public:
                  int begin_bit,
                  int end_bit)
   {
-    SortBlocked(keys, values, begin_bit, end_bit, Int2Type<true>(), Int2Type<KEYS_ONLY>(), decomposer);
+    SortBlocked(keys, values, begin_bit, end_bit, ::cuda::std::true_type(), bool_constant_v<KEYS_ONLY>, decomposer);
   }
 
   //! @rst
@@ -1369,8 +1369,8 @@ public:
       values,
       0,
       detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
-      Int2Type<true>(),
-      Int2Type<KEYS_ONLY>(),
+      ::cuda::std::true_type(),
+      bool_constant_v<KEYS_ONLY>,
       decomposer);
   }
 
@@ -1431,7 +1431,7 @@ public:
   {
     NullType values[ITEMS_PER_THREAD];
 
-    SortBlockedToStriped(keys, values, begin_bit, end_bit, Int2Type<false>(), Int2Type<KEYS_ONLY>());
+    SortBlockedToStriped(keys, values, begin_bit, end_bit, ::cuda::std::false_type(), bool_constant_v<KEYS_ONLY>);
   }
 
   //! @rst
@@ -1499,7 +1499,8 @@ public:
   {
     NullType values[ITEMS_PER_THREAD];
 
-    SortBlockedToStriped(keys, values, begin_bit, end_bit, Int2Type<false>(), Int2Type<KEYS_ONLY>(), decomposer);
+    SortBlockedToStriped(
+      keys, values, begin_bit, end_bit, ::cuda::std::false_type(), bool_constant_v<KEYS_ONLY>, decomposer);
   }
 
   //! @rst
@@ -1564,8 +1565,8 @@ public:
       values,
       0,
       detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
-      Int2Type<false>(),
-      Int2Type<KEYS_ONLY>(),
+      ::cuda::std::false_type(),
+      bool_constant_v<KEYS_ONLY>,
       decomposer);
   }
 
@@ -1632,7 +1633,7 @@ public:
     int begin_bit = 0,
     int end_bit   = sizeof(KeyT) * 8)
   {
-    SortBlockedToStriped(keys, values, begin_bit, end_bit, Int2Type<false>(), Int2Type<KEYS_ONLY>());
+    SortBlockedToStriped(keys, values, begin_bit, end_bit, ::cuda::std::false_type(), bool_constant_v<KEYS_ONLY>);
   }
 
   //! @rst
@@ -1705,7 +1706,8 @@ public:
                        int begin_bit,
                        int end_bit)
   {
-    SortBlockedToStriped(keys, values, begin_bit, end_bit, Int2Type<false>(), Int2Type<KEYS_ONLY>(), decomposer);
+    SortBlockedToStriped(
+      keys, values, begin_bit, end_bit, ::cuda::std::false_type(), bool_constant_v<KEYS_ONLY>, decomposer);
   }
 
   //! @rst
@@ -1771,8 +1773,8 @@ public:
       values,
       0,
       detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
-      Int2Type<false>(),
-      Int2Type<KEYS_ONLY>(),
+      ::cuda::std::false_type(),
+      bool_constant_v<KEYS_ONLY>,
       decomposer);
   }
 
@@ -1829,7 +1831,7 @@ public:
   {
     NullType values[ITEMS_PER_THREAD];
 
-    SortBlockedToStriped(keys, values, begin_bit, end_bit, Int2Type<true>(), Int2Type<KEYS_ONLY>());
+    SortBlockedToStriped(keys, values, begin_bit, end_bit, ::cuda::std::true_type(), bool_constant_v<KEYS_ONLY>);
   }
 
   //! @rst
@@ -1897,7 +1899,8 @@ public:
   {
     NullType values[ITEMS_PER_THREAD];
 
-    SortBlockedToStriped(keys, values, begin_bit, end_bit, Int2Type<true>(), Int2Type<KEYS_ONLY>(), decomposer);
+    SortBlockedToStriped(
+      keys, values, begin_bit, end_bit, ::cuda::std::true_type(), bool_constant_v<KEYS_ONLY>, decomposer);
   }
 
   //! @rst
@@ -1962,8 +1965,8 @@ public:
       values,
       0,
       detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
-      Int2Type<true>(),
-      Int2Type<KEYS_ONLY>(),
+      ::cuda::std::true_type(),
+      bool_constant_v<KEYS_ONLY>,
       decomposer);
   }
 
@@ -2030,7 +2033,7 @@ public:
     int begin_bit = 0,
     int end_bit   = sizeof(KeyT) * 8)
   {
-    SortBlockedToStriped(keys, values, begin_bit, end_bit, Int2Type<true>(), Int2Type<KEYS_ONLY>());
+    SortBlockedToStriped(keys, values, begin_bit, end_bit, ::cuda::std::true_type(), bool_constant_v<KEYS_ONLY>);
   }
 
   //! @rst
@@ -2104,7 +2107,8 @@ public:
     int begin_bit,
     int end_bit)
   {
-    SortBlockedToStriped(keys, values, begin_bit, end_bit, Int2Type<true>(), Int2Type<KEYS_ONLY>(), decomposer);
+    SortBlockedToStriped(
+      keys, values, begin_bit, end_bit, ::cuda::std::true_type(), bool_constant_v<KEYS_ONLY>, decomposer);
   }
 
   //! @rst
@@ -2171,8 +2175,8 @@ public:
       values,
       0,
       detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
-      Int2Type<true>(),
-      Int2Type<KEYS_ONLY>(),
+      ::cuda::std::true_type(),
+      bool_constant_v<KEYS_ONLY>,
       decomposer);
   }
 

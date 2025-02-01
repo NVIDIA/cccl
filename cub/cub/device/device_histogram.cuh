@@ -34,6 +34,8 @@
 
 #include <cub/config.cuh>
 
+#include "cuda/std/__type_traits/integral_constant.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -701,7 +703,7 @@ struct DeviceHistogram
 
     /// The sample value type of the input iterator
     using SampleT = cub::detail::value_t<SampleIteratorT>;
-    Int2Type<sizeof(SampleT) == 1> is_byte_sample;
+    ::cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
 
     _CCCL_IF_CONSTEXPR (sizeof(OffsetT) > sizeof(int))
     {
@@ -1327,7 +1329,7 @@ struct DeviceHistogram
 
     /// The sample value type of the input iterator
     using SampleT = cub::detail::value_t<SampleIteratorT>;
-    Int2Type<sizeof(SampleT) == 1> is_byte_sample;
+    ::cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
 
     _CCCL_IF_CONSTEXPR (sizeof(OffsetT) > sizeof(int))
     {

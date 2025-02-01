@@ -146,7 +146,7 @@ public:
    *        consecutive sequence of input tiles.
    */
   template <int TILE_ITEMS>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit(int block_id, Int2Type<GRID_MAPPING_RAKE> /*strategy_tag*/)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit(int block_id, int_constant_t<GRID_MAPPING_RAKE> /*strategy_tag*/)
   {
     block_stride = TILE_ITEMS;
     if (block_id < big_shares)
@@ -171,7 +171,7 @@ public:
    *        of input tiles.
    */
   template <int TILE_ITEMS>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit(int block_id, Int2Type<GRID_MAPPING_STRIP_MINE> /*strategy_tag*/)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit(int block_id, int_constant_t<GRID_MAPPING_STRIP_MINE> /*strategy_tag*/)
   {
     block_stride = grid_size * TILE_ITEMS;
     block_offset = (block_id * TILE_ITEMS);
@@ -186,7 +186,7 @@ public:
   template <int TILE_ITEMS, GridMappingStrategy STRATEGY>
   _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit()
   {
-    BlockInit<TILE_ITEMS>(blockIdx.x, Int2Type<STRATEGY>());
+    BlockInit<TILE_ITEMS>(blockIdx.x, int_constant_v<STRATEGY>);
   }
 
   /**

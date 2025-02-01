@@ -299,7 +299,7 @@ struct AgentSegmentFixup
     int tile_idx,
     OffsetT tile_offset,
     ScanTileStateT& tile_state,
-    Int2Type<true> use_atomic_fixup)
+    ::cuda::std::true_type use_atomic_fixup)
   {
     KeyValuePairT pairs[ITEMS_PER_THREAD];
 
@@ -363,7 +363,7 @@ struct AgentSegmentFixup
     int tile_idx,
     OffsetT tile_offset,
     ScanTileStateT& tile_state,
-    Int2Type<false> use_atomic_fixup)
+    ::cuda::std::false_type use_atomic_fixup)
   {
     KeyValuePairT pairs[ITEMS_PER_THREAD];
     KeyValuePairT scatter_pairs[ITEMS_PER_THREAD];
@@ -463,12 +463,12 @@ struct AgentSegmentFixup
     if (num_remaining > TILE_ITEMS)
     {
       // Not the last tile (full)
-      ConsumeTile<false>(num_remaining, tile_idx, tile_offset, tile_state, Int2Type<USE_ATOMIC_FIXUP>());
+      ConsumeTile<false>(num_remaining, tile_idx, tile_offset, tile_state, bool_constant_v<USE_ATOMIC_FIXUP>);
     }
     else if (num_remaining > 0)
     {
       // The last tile (possibly partially-full)
-      ConsumeTile<true>(num_remaining, tile_idx, tile_offset, tile_state, Int2Type<USE_ATOMIC_FIXUP>());
+      ConsumeTile<true>(num_remaining, tile_idx, tile_offset, tile_state, bool_constant_v<USE_ATOMIC_FIXUP>);
     }
   }
 };

@@ -146,7 +146,7 @@ struct BlockScanWarpScans
    */
   template <typename ScanOp, int WARP>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ApplyWarpAggregates(T& warp_prefix, ScanOp scan_op, T& block_aggregate, Int2Type<WARP> /*addend_warp*/)
+  ApplyWarpAggregates(T& warp_prefix, ScanOp scan_op, T& block_aggregate, int_constant_t<WARP> /*addend_warp*/)
   {
     if (warp_id == WARP)
     {
@@ -156,7 +156,7 @@ struct BlockScanWarpScans
     T addend        = temp_storage.warp_aggregates[WARP];
     block_aggregate = scan_op(block_aggregate, addend);
 
-    ApplyWarpAggregates(warp_prefix, scan_op, block_aggregate, Int2Type<WARP + 1>());
+    ApplyWarpAggregates(warp_prefix, scan_op, block_aggregate, int_constant_v<WARP + 1>);
   }
 
   /**
@@ -170,8 +170,8 @@ struct BlockScanWarpScans
    *   Threadblock-wide aggregate reduction of input items
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ApplyWarpAggregates(T& /*warp_prefix*/, ScanOp /*scan_op*/, T& /*block_aggregate*/, Int2Type<WARPS> /*addend_warp*/)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ApplyWarpAggregates(
+    T& /*warp_prefix*/, ScanOp /*scan_op*/, T& /*block_aggregate*/, int_constant_t<WARPS> /*addend_warp*/)
   {}
 
   /**
@@ -205,7 +205,7 @@ struct BlockScanWarpScans
 
     // Use template unrolling (since the PTX backend can't handle unrolling it for SM1x)
     // TODO(bgruber): does that still hold today? This is creating a lot of template instantiations
-    ApplyWarpAggregates(warp_prefix, scan_op, block_aggregate, Int2Type<1>());
+    ApplyWarpAggregates(warp_prefix, scan_op, block_aggregate, int_constant_v<1>);
     /*
             #pragma unroll
             for (int WARP = 1; WARP < WARPS; ++WARP)
