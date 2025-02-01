@@ -139,6 +139,8 @@ public:
      */
     void push()
     {
+      // fprintf(stderr, "stackable_ctx::push() depth() was %ld\n", depth());
+
       // These resources are not destroyed when we pop, so we create it only if needed
       if (async_handles.size() < levels.size())
       {
@@ -174,6 +176,7 @@ public:
      */
     void pop()
     {
+      // fprintf(stderr, "stackable_ctx::pop() depth() was %ld\n", depth());
       _CCCL_ASSERT(levels.size() > 0, "Calling pop while no context was pushed");
 
       auto& current_level = levels.back();
@@ -316,7 +319,7 @@ public:
   template <typename T>
   auto logical_data(shape_of<T> s)
   {
-    fprintf(stderr, "initialize from shape.\n");
+    // fprintf(stderr, "initialize from shape.\n");
     return stackable_logical_data(*this, depth(), true, get_ctx(0).logical_data(mv(s)));
   }
 
@@ -331,7 +334,7 @@ public:
   template <typename... Pack>
   auto logical_data(Pack&&... pack)
   {
-    fprintf(stderr, "initialize from value.\n");
+    // fprintf(stderr, "initialize from value.\n");
     return stackable_logical_data(*this, depth(), false, get_ctx(depth()).logical_data(::std::forward<Pack>(pack)...));
   }
 
@@ -379,7 +382,9 @@ public:
   template <typename... Pack>
   void process_pack(const Pack&... pack) const
   {
+    // fprintf(stderr, "process_pack begin.\n");
     (process_argument(pack), ...);
+    //  fprintf(stderr, "process_pack end.\n");
   }
 
   template <typename... Pack>
@@ -484,7 +489,7 @@ class stackable_logical_data
         : base_depth(target_depth)
         , sctx(mv(sctx_))
     {
-      fprintf(stderr, "stackable_logical_data::impl %p - target depth %ld\n", this, target_depth);
+      // fprintf(stderr, "stackable_logical_data::impl %p - target depth %ld\n", this, target_depth);
       // Save the logical data at the root level
       s.push_back(ld);
 
@@ -504,11 +509,11 @@ class stackable_logical_data
     // stackable_logical_data::impl::~impl
     ~impl()
     {
-      fprintf(stderr,
-              "stackable_logical_data::~impl symbol=%s => frozen.s.size() %ld s.size() %ld\n",
-              symbol.c_str(),
-              frozen_s.size(),
-              s.size());
+      // fprintf(stderr,
+      //         "stackable_logical_data::~impl symbol=%s => frozen.s.size() %ld s.size() %ld\n",
+      //         symbol.c_str(),
+      //         frozen_s.size(),
+      //         s.size());
 
       // How many frozen logical data do we need to destroy ?
       size_t data_depth = frozen_s.size();
@@ -554,7 +559,7 @@ class stackable_logical_data
     /* Push one level up (from the current data depth) */
     void push(access_mode m, data_place where = data_place::invalid) const
     {
-      fprintf(stderr, "stackable_logical_data::push() %s mode = %s\n", symbol.c_str(), access_mode_string(m));
+      // fprintf(stderr, "stackable_logical_data::push() %s mode = %s\n", symbol.c_str(), access_mode_string(m));
 
       const size_t ctx_depth          = sctx.depth();
       const size_t current_data_depth = depth();
@@ -565,16 +570,16 @@ class stackable_logical_data
       context& from_ctx = sctx.get_ctx(current_data_depth);
       context& to_ctx   = sctx.get_ctx(current_data_depth + 1);
 
-      fprintf(stderr,
-              "pushing data (%p) %ld[%s,%p]->%ld[%s,%p] (ctx depth %ld)\n",
-              this,
-              current_data_depth,
-              from_ctx.to_string().c_str(),
-              &from_ctx,
-              current_data_depth + 1,
-              to_ctx.to_string().c_str(),
-              &to_ctx,
-              ctx_depth);
+      // fprintf(stderr,
+      //         "pushing data (%p) %ld[%s,%p]->%ld[%s,%p] (ctx depth %ld)\n",
+      //         this,
+      //         current_data_depth,
+      //         from_ctx.to_string().c_str(),
+      //         &from_ctx,
+      //         current_data_depth + 1,
+      //         to_ctx.to_string().c_str(),
+      //         &to_ctx,
+      //         ctx_depth);
 
       if (where == data_place::invalid)
       {
@@ -623,7 +628,7 @@ class stackable_logical_data
         sctx.untrack_pushed_data(s.back().get_unique_id());
       }
 
-      fprintf(stderr, "stackable_logical_data::pop() %s\n", symbol.c_str());
+      // fprintf(stderr, "stackable_logical_data::pop() %s\n", symbol.c_str());
 
       // Remove aliased logical data
       s.pop_back();
@@ -782,11 +787,11 @@ public:
   // Returns true if the task_dep needs an update
   bool doo(const stackable_ctx& sctx, access_mode m) const
   {
-    fprintf(stderr,
-            "Calling doo() on stackable_logical_data %p - symbol=%s - requested mode %s\n",
-            pimpl.get(),
-            get_symbol().c_str(),
-            access_mode_string(m));
+    // fprintf(stderr,
+    //         "Calling doo() on stackable_logical_data %p - symbol=%s - requested mode %s\n",
+    //         pimpl.get(),
+    //         get_symbol().c_str(),
+    //         access_mode_string(m));
 
     // Fast path : do nothing if we are not in a stacked ctx
     if (sctx.depth() == 0)
@@ -811,7 +816,8 @@ public:
     {
       _CCCL_ASSERT(d > 0, "data must have already been pushed");
       _CCCL_ASSERT(access_mode_is_compatible(pimpl->get_frozen_mode(d - 1), m), "Invalid access mode");
-      fprintf(stderr, "VALIDATED ACCESS ON stackable_logical_data %p - symbol=%s\n", pimpl.get(), get_symbol().c_str());
+      // fprintf(stderr, "VALIDATED ACCESS ON stackable_logical_data %p - symbol=%s\n", pimpl.get(),
+      // get_symbol().c_str());
       return false;
     }
 
@@ -822,12 +828,12 @@ public:
 
     while (sctx.depth() > d)
     {
-      fprintf(stderr,
-              "AUTOMATIC PUSH of data %p (symbol=%s) with mode %s at depth %d\n",
-              pimpl.get(),
-              get_symbol().c_str(),
-              access_mode_string(push_mode),
-              d);
+      // fprintf(stderr,
+      //         "AUTOMATIC PUSH of data %p (symbol=%s) with mode %s at depth %d\n",
+      //         pimpl.get(),
+      //         get_symbol().c_str(),
+      //         access_mode_string(push_mode),
+      //         d);
       pimpl->push(push_mode, data_place::current_device());
       d++;
     }
