@@ -623,9 +623,7 @@ class stackable_logical_data
       // We are going to unfreeze the data, which is currently being used
       // in a (graph) ctx that uses this stream to launch the graph
       cudaStream_t stream = sctx.get_stream(depth());
-
-      frozen_logical_data<T>& f = frozen_s.back();
-      f.unfreeze(stream);
+      frozen_s.back().unfreeze(stream);
 
       // Remove frozen logical data
       frozen_s.pop_back();
