@@ -83,7 +83,7 @@ class stackable_logical_data_impl_base
 {
 public:
   virtual ~stackable_logical_data_impl_base() = default;
-  virtual void pop(bool need_untrack)         = 0;
+  virtual void pop(bool need_untrack) const   = 0;
 };
 
 /**
@@ -114,7 +114,7 @@ public:
 
       // This map keeps track of the logical data that were pushed in this level
       // key: logical data's unique id
-      ::std::unordered_map<int, stackable_logical_data_impl_base*> pushed_data;
+      ::std::unordered_map<int, const stackable_logical_data_impl_base*> pushed_data;
     };
 
   public:
@@ -239,7 +239,7 @@ public:
     }
 
     // void track_pushed_data(int data_id, ::std::shared_ptr<stackable_logical_data_impl_base> data_impl)
-    void track_pushed_data(int data_id, stackable_logical_data_impl_base* data_impl)
+    void track_pushed_data(int data_id, const stackable_logical_data_impl_base* data_impl)
     {
       _CCCL_ASSERT(data_impl, "invalid value");
       levels[depth()].pushed_data[data_id] = data_impl;
@@ -365,7 +365,14 @@ public:
   template <typename T1, typename reduce_op, bool initialize>
   void process_argument(const stackable_task_dep<T1, reduce_op, initialize>& dep) const
   {
-    dep.get_d().doo();
+    // If the logical data was not at the appropriate level, we may
+    // automatically push it. In this case, we need to update the logical data
+    // refered stored in the task_dep object.
+    bool need_update = dep.get_d().doo(*this, dep.get_access_mode());
+    if (need_update)
+    {
+      dep.underlying_dep().update_data(dep.get_d().get_ld());
+    }
   }
 
   // Process the parameter pack
@@ -435,7 +442,7 @@ public:
   }
 
   // void track_pushed_data(int data_id, ::std::shared_ptr<stackable_logical_data_impl_base> data_impl)
-  void track_pushed_data(int data_id, stackable_logical_data_impl_base* data_impl)
+  void track_pushed_data(int data_id, const stackable_logical_data_impl_base* data_impl)
   {
     pimpl->track_pushed_data(data_id, data_impl);
   }
@@ -494,6 +501,7 @@ class stackable_logical_data
       }
     }
 
+    // stackable_logical_data::impl::~impl
     ~impl()
     {
       fprintf(stderr,
@@ -544,9 +552,9 @@ class stackable_logical_data
     }
 
     /* Push one level up (from the current data depth) */
-    void push(access_mode m, data_place where = data_place::invalid)
+    void push(access_mode m, data_place where = data_place::invalid) const
     {
-      fprintf(stderr, "stackable_logical_data::push() %s\n", symbol.c_str());
+      fprintf(stderr, "stackable_logical_data::push() %s mode = %s\n", symbol.c_str(), access_mode_string(m));
 
       const size_t ctx_depth          = sctx.depth();
       const size_t current_data_depth = depth();
@@ -606,7 +614,7 @@ class stackable_logical_data
 
     /* Pop one level down : we do not untrack data if we are already popping
      * the context */
-    virtual void pop(bool need_untrack) override
+    virtual void pop(bool need_untrack) const override
     {
       if (need_untrack)
       {
@@ -651,6 +659,13 @@ class stackable_logical_data
       return sctx;
     }
 
+    // Get the access mode used to freeze at depth d
+    access_mode get_frozen_mode(size_t d) const
+    {
+      _CCCL_ASSERT(d < frozen_modes.size(), "invalid value");
+      return frozen_modes[d];
+    }
+
   private:
     mutable ::std::vector<logical_data<T>> s;
 
@@ -663,7 +678,8 @@ class stackable_logical_data
     // If the logical data was created at a level that is not directly the root of the context, we remember this
     // offset
     size_t base_depth = 0;
-    stackable_ctx sctx; // in which stackable context was this created ?
+    // TODO replace this mutable by a const ...
+    mutable stackable_ctx sctx; // in which stackable context was this created ?
 
     ::std::string symbol;
   };
@@ -703,7 +719,7 @@ public:
     return pimpl->depth();
   }
 
-  void push(access_mode m, data_place where = data_place::invalid)
+  void push(access_mode m, data_place where = data_place::invalid) const
   {
     pimpl->push(m, mv(where));
 
@@ -714,7 +730,7 @@ public:
 #endif
   }
 
-  void pop()
+  void pop() const
   {
     // This is called by the user: we are not currently popping the context so
     // we need to untrack the data from the map of data previously pushed in
@@ -763,9 +779,60 @@ public:
     return pimpl;
   }
 
-  void doo() const
+  // Returns true if the task_dep needs an update
+  bool doo(const stackable_ctx& sctx, access_mode m) const
   {
-    fprintf(stderr, "Calling doo() on stackable_logical_data %p\n", pimpl.get());
+    fprintf(stderr,
+            "Calling doo() on stackable_logical_data %p - symbol=%s - requested mode %s\n",
+            pimpl.get(),
+            get_symbol().c_str(),
+            access_mode_string(m));
+
+    // Fast path : do nothing if we are not in a stacked ctx
+    if (sctx.depth() == 0)
+    {
+      return false;
+    }
+
+    // TODO assert sctx == this->sctx
+
+    _CCCL_ASSERT(m == access_mode::read || m == access_mode::rw || m == access_mode::write,
+                 "Unsupported access mode in nested context");
+
+    // If the stackable logical data is already at the appropriate depth, we
+    // simply need to ensure we don't make an illegal access (eg. writing a
+    // read only variable)
+    size_t d = depth();
+
+    // Data depth cannot be higher than context depth
+    _CCCL_ASSERT(sctx.depth() >= d, "Invalid value");
+
+    if (sctx.depth() == d)
+    {
+      _CCCL_ASSERT(d > 0, "data must have already been pushed");
+      _CCCL_ASSERT(access_mode_is_compatible(pimpl->get_frozen_mode(d - 1), m), "Invalid access mode");
+      fprintf(stderr, "VALIDATED ACCESS ON stackable_logical_data %p - symbol=%s\n", pimpl.get(), get_symbol().c_str());
+      return false;
+    }
+
+    // If we reach this point, this means we need to automatically push data
+
+    // The access mode will be very conservative for these implicit accesses
+    access_mode push_mode = (m == access_mode::write) ? access_mode::write : access_mode::rw;
+
+    while (sctx.depth() > d)
+    {
+      fprintf(stderr,
+              "AUTOMATIC PUSH of data %p (symbol=%s) with mode %s at depth %d\n",
+              pimpl.get(),
+              get_symbol().c_str(),
+              access_mode_string(push_mode),
+              d);
+      pimpl->push(push_mode, data_place::current_device());
+      d++;
+    }
+
+    return true;
   }
 
 private:
@@ -804,6 +871,11 @@ public:
   const auto& underlying_dep() const
   {
     return dep;
+  }
+
+  access_mode get_access_mode() const
+  {
+    return dep.get_access_mode();
   }
 
 private:
