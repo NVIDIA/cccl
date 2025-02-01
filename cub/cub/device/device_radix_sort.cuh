@@ -497,11 +497,11 @@ public:
     // create a new double-buffer internally when the `is_overwrite_ok` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
-    constexpr bool is_descending     = false;
+    constexpr SortOrder sort_order   = SortOrder::Ascending;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<sort_order>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,
@@ -636,11 +636,11 @@ public:
     // create a new double-buffer internally when the `is_overwrite_ok` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
-    constexpr bool is_descending     = false;
+    constexpr SortOrder sort_order   = SortOrder::Ascending;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<sort_order>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,
@@ -907,9 +907,9 @@ public:
                   "arithmetic types");
 
     constexpr bool is_overwrite_okay = true;
-    constexpr bool is_descending     = false;
+    constexpr SortOrder sort_order   = SortOrder::Ascending;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<sort_order>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,
@@ -1053,9 +1053,9 @@ public:
                   "arithmetic types");
 
     constexpr bool is_overwrite_okay = true;
-    constexpr bool is_descending     = false;
+    constexpr SortOrder sort_order   = SortOrder::Ascending;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<sort_order>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,
@@ -1339,11 +1339,11 @@ public:
     // create a new double-buffer internally when the `is_overwrite_ok` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
-    constexpr bool is_descending     = true;
+    constexpr SortOrder sort_order   = SortOrder::Descending;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<sort_order>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,
@@ -1480,11 +1480,11 @@ public:
     // create a new double-buffer internally when the `is_overwrite_ok` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
-    constexpr bool is_descending     = true;
+    constexpr SortOrder sort_order   = SortOrder::Descending;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<sort_order>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,
@@ -1747,9 +1747,9 @@ public:
                   "arithmetic types");
 
     constexpr bool is_overwrite_okay = true;
-    constexpr bool is_descending     = true;
+    constexpr SortOrder sort_order   = SortOrder::Descending;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<sort_order>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,
@@ -1894,9 +1894,9 @@ public:
                   "arithmetic types");
 
     constexpr bool is_overwrite_okay = true;
-    constexpr bool is_descending     = true;
+    constexpr SortOrder sort_order   = SortOrder::Descending;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<sort_order>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,
@@ -2169,11 +2169,11 @@ public:
     // create a new double-buffer internally when the `is_overwrite_ok` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
-    constexpr bool is_descending     = false;
+    constexpr SortOrder sort_order   = SortOrder::Ascending;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<sort_order>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,
@@ -2298,11 +2298,11 @@ public:
     // create a new double-buffer internally when the `is_overwrite_ok` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
-    constexpr bool is_descending     = false;
+    constexpr SortOrder sort_order   = SortOrder::Ascending;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<sort_order>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,
@@ -2541,10 +2541,10 @@ public:
                   "arithmetic types");
 
     constexpr bool is_overwrite_okay = true;
-    constexpr bool is_descending     = false;
+    constexpr SortOrder sort_order   = SortOrder::Ascending;
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<sort_order>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,
@@ -2675,10 +2675,10 @@ public:
                   "arithmetic types");
 
     constexpr bool is_overwrite_okay = true;
-    constexpr bool is_descending     = false;
+    constexpr SortOrder sort_order   = SortOrder::Ascending;
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<sort_order>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,
@@ -2933,11 +2933,11 @@ public:
     // create a new double-buffer internally when the `is_overwrite_ok` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
-    constexpr bool is_descending     = true;
+    constexpr SortOrder sort_order   = SortOrder::Descending;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<sort_order>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,
@@ -3060,11 +3060,11 @@ public:
     // create a new double-buffer internally when the `is_overwrite_ok` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
-    constexpr bool is_descending     = true;
+    constexpr SortOrder sort_order   = SortOrder::Descending;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<sort_order>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,
@@ -3183,11 +3183,12 @@ public:
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     constexpr bool is_overwrite_okay = true;
+    constexpr SortOrder sort_order   = SortOrder::Descending;
 
     // Null value type
     DoubleBuffer<NullType> d_values;
 
-    return DispatchRadixSort<true, KeyT, NullType, OffsetT>::Dispatch(
+    return DispatchRadixSort<sort_order, KeyT, NullType, OffsetT>::Dispatch(
       d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
   }
 
@@ -3298,10 +3299,10 @@ public:
                   "arithmetic types");
 
     constexpr bool is_overwrite_okay = true;
-    constexpr bool is_descending     = true;
+    constexpr SortOrder sort_order   = SortOrder::Descending;
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<sort_order>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,
@@ -3433,10 +3434,10 @@ public:
                   "arithmetic types");
 
     constexpr bool is_overwrite_okay = true;
-    constexpr bool is_descending     = true;
+    constexpr SortOrder sort_order   = SortOrder::Descending;
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(
+    return DeviceRadixSort::custom_radix_sort<sort_order>(
       decomposer_check_t{},
       d_temp_storage,
       temp_storage_bytes,

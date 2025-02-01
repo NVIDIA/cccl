@@ -1157,7 +1157,7 @@ struct DeviceScan
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
     using AccumT  = ::cuda::std::__accumulator_t<ScanOpT, cub::detail::value_t<InputIteratorT>, InitValueT>;
-    constexpr bool ForceInclusive = true;
+    constexpr ForceInclusive force_inlcusive = ForceInclusive::Yes;
 
     return DispatchScan<
       InputIteratorT,
@@ -1167,7 +1167,7 @@ struct DeviceScan
       OffsetT,
       AccumT,
       detail::scan::policy_hub<AccumT, ScanOpT>,
-      ForceInclusive>::Dispatch(d_temp_storage,
+      force_inlcusive>::Dispatch(d_temp_storage,
                                 temp_storage_bytes,
                                 d_in,
                                 d_out,

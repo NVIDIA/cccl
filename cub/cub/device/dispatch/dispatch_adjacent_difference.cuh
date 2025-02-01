@@ -39,6 +39,7 @@
 
 #include <cub/agent/agent_adjacent_difference.cuh>
 #include <cub/detail/type_traits.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_adjacent_difference.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
@@ -106,16 +107,20 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceDifferenceKernel(
 
 } // namespace detail::adjacent_difference
 
-enum class AliasOption { MayAlias, NoAlias };
-enum class ReadOption { ReadLeft, ReadRight };
+enum class ReadOption
+{
+  ReadLeft,
+  ReadRight
+};
 
-template <typename InputIteratorT,
-          typename OutputIteratorT,
-          typename DifferenceOpT,
-          typename OffsetT,
-          AliasOption AliasOpt,
-          ReadOption ReadOpt,
-          typename PolicyHub = detail::adjacent_difference::policy_hub<InputIteratorT, AliasOpt == AliasOption::MayAlias>>
+template <
+  typename InputIteratorT,
+  typename OutputIteratorT,
+  typename DifferenceOpT,
+  typename OffsetT,
+  AliasOption AliasOpt,
+  ReadOption ReadOpt,
+  typename PolicyHub = detail::adjacent_difference::policy_hub<InputIteratorT, AliasOpt == AliasOption::MayAlias>>
 struct DispatchAdjacentDifference
 {
   using InputT = typename std::iterator_traits<InputIteratorT>::value_type;
@@ -192,8 +197,8 @@ struct DispatchAdjacentDifference
 
       if (AliasOpt == AliasOption::MayAlias)
       {
-        using AgentDifferenceInitT =
-          detail::adjacent_difference::AgentDifferenceInit<InputIteratorT, InputT, OffsetT, ReadOpt == ReadOption::ReadLeft>;
+        using AgentDifferenceInitT = detail::adjacent_difference::
+          AgentDifferenceInit<InputIteratorT, InputT, OffsetT, ReadOpt == ReadOption::ReadLeft>;
 
         constexpr int init_block_size = AgentDifferenceInitT::BLOCK_THREADS;
         const int init_grid_size      = ::cuda::ceil_div(num_tiles, init_block_size);

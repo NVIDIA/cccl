@@ -50,6 +50,7 @@
 #include <cub/agent/agent_radix_sort_upsweep.cuh>
 #include <cub/agent/agent_scan.cuh>
 #include <cub/block/block_radix_sort.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/util_debug.cuh>
@@ -72,12 +73,6 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wpass-failed")
 
 CUB_NAMESPACE_BEGIN
-
-enum class SortOrder
-{
-  Ascending,
-  Descending
-};
 
 /******************************************************************************
  * Kernel entry points
@@ -586,8 +581,8 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
   using DigitScanT = BlockScan<OffsetT, BLOCK_THREADS>;
 
   // Downsweep type
-  using BlockDownsweepT =
-    detail::radix_sort::AgentRadixSortDownsweep<SegmentedPolicyT, Order == SortOrder::Descending, KeyT, ValueT, OffsetT, DecomposerT>;
+  using BlockDownsweepT = detail::radix_sort::
+    AgentRadixSortDownsweep<SegmentedPolicyT, Order == SortOrder::Descending, KeyT, ValueT, OffsetT, DecomposerT>;
 
   enum
   {
@@ -740,8 +735,8 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::HistogramPolicy::BLOCK_THREADS) 
   OffsetT* d_bins_out, const KeyT* d_keys_in, OffsetT num_items, int start_bit, int end_bit, DecomposerT decomposer = {})
 {
   using HistogramPolicyT = typename ChainedPolicyT::ActivePolicy::HistogramPolicy;
-  using AgentT =
-    detail::radix_sort::AgentRadixSortHistogram<HistogramPolicyT, Order == SortOrder::Descending, KeyT, OffsetT, DecomposerT>;
+  using AgentT           = detail::radix_sort::
+    AgentRadixSortHistogram<HistogramPolicyT, Order == SortOrder::Descending, KeyT, OffsetT, DecomposerT>;
   __shared__ typename AgentT::TempStorage temp_storage;
   AgentT agent(temp_storage, d_bins_out, d_keys_in, num_items, start_bit, end_bit, decomposer);
   agent.Process();
@@ -771,8 +766,14 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void __launch_bounds__(ChainedPolicyT::ActivePolicy
     DecomposerT decomposer = {})
 {
   using OnesweepPolicyT = typename ChainedPolicyT::ActivePolicy::OnesweepPolicy;
-  using AgentT          = detail::radix_sort::
-    AgentRadixSortOnesweep<OnesweepPolicyT, Order == SortOrder::Descending, KeyT, ValueT, OffsetT, PortionOffsetT, DecomposerT>;
+  using AgentT          = detail::radix_sort::AgentRadixSortOnesweep<
+             OnesweepPolicyT,
+             Order == SortOrder::Descending,
+             KeyT,
+             ValueT,
+             OffsetT,
+             PortionOffsetT,
+             DecomposerT>;
   __shared__ typename AgentT::TempStorage s;
 
   AgentT agent(
@@ -1665,10 +1666,8 @@ struct DispatchRadixSort
       detail::radix_sort::DeviceRadixSortUpsweepKernel<max_policy_t, false, Order, KeyT, OffsetT, DecomposerT>,
       detail::radix_sort::DeviceRadixSortUpsweepKernel<max_policy_t, true, Order, KeyT, OffsetT, DecomposerT>,
       detail::radix_sort::RadixSortScanBinsKernel<max_policy_t, OffsetT>,
-      detail::radix_sort::
-        DeviceRadixSortDownsweepKernel<max_policy_t, false, Order, KeyT, ValueT, OffsetT, DecomposerT>,
-      detail::radix_sort::
-        DeviceRadixSortDownsweepKernel<max_policy_t, true, Order, KeyT, ValueT, OffsetT, DecomposerT>);
+      detail::radix_sort::DeviceRadixSortDownsweepKernel<max_policy_t, false, Order, KeyT, ValueT, OffsetT, DecomposerT>,
+      detail::radix_sort::DeviceRadixSortDownsweepKernel<max_policy_t, true, Order, KeyT, ValueT, OffsetT, DecomposerT>);
   }
 
   template <typename ActivePolicyT>
@@ -1768,8 +1767,7 @@ struct DispatchRadixSort
     {
       // Small, single tile size
       return InvokeSingleTile<ActivePolicyT>(
-        detail::radix_sort::
-          DeviceRadixSortSingleTileKernel<max_policy_t, Order, KeyT, ValueT, OffsetT, DecomposerT>);
+        detail::radix_sort::DeviceRadixSortSingleTileKernel<max_policy_t, Order, KeyT, ValueT, OffsetT, DecomposerT>);
     }
     else
     {

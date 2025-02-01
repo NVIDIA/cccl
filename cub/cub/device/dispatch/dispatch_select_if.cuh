@@ -45,6 +45,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_select_if.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_select_if.cuh>
 #include <cub/grid/grid_queue.cuh>
