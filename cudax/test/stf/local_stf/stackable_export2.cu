@@ -30,19 +30,19 @@ __global__ void kernel(slice<int> b, long long int clock_cnt)
     clock_offset = clock64() - start_clock;
   }
 
-    size_t n = b.size();
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-    int stride = blockDim.x * gridDim.x;
+  size_t n   = b.size();
+  int i      = blockIdx.x * blockDim.x + threadIdx.x;
+  int stride = blockDim.x * gridDim.x;
 
-    while (i < n) {
-        b(i) = 17-3*i;
-        i += stride;
-    }
+  while (i < n)
+  {
+    b(i) = 17 - 3 * i;
+    i += stride;
+  }
 }
 
 int main()
 {
-  double ms = 500;
   int device;
   cudaGetDevice(&device);
 
@@ -50,17 +50,19 @@ int main()
   int clock_rate;
   cudaDeviceGetAttribute(&clock_rate, cudaDevAttrClockRate, device);
 
+  double ms               = 500;
   long long int clock_cnt = (long long int) (ms * clock_rate);
 
   stackable_ctx sctx;
 
-  sctx.push();
-
   auto lB = sctx.logical_data(shape_of<slice<int>>(1024));
+  sctx.push();
+  lB.push(access_mode::write);
+
   lB.set_symbol("B");
 
   sctx.task(lB.write())->*[clock_cnt](cudaStream_t stream, auto b) {
-      kernel<<<32, 4, 0, stream>>>(b, clock_cnt);
+    kernel<<<32, 4, 0, stream>>>(b, clock_cnt);
   };
 
   sctx.pop();
