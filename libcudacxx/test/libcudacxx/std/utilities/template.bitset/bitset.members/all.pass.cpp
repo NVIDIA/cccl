@@ -47,7 +47,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2014
+// this test spuriously fails for nvcc 11.1
+#if TEST_STD_VER >= 2014 && !_CCCL_CUDA_COMPILER(NVCC, <, 12)
   static_assert(test(), "");
 #endif // TEST_STD_VER >= 2014
 
