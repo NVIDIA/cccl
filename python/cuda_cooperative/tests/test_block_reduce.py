@@ -216,6 +216,130 @@ def test_block_reduction_of_integral_type(T, threads_in_block):
 
 @pytest.mark.parametrize("T", [types.uint32, types.uint64])
 @pytest.mark.parametrize("threads_in_block", [32, 64, 128, 256, 512, 1024])
+def test_block_reduction_valid(T, threads_in_block):
+    def op(a, b):
+        return a if a < b else b
+
+    block_reduce = cudax.block.reduce(
+        dtype=T, binary_op=op, threads_in_block=threads_in_block
+    )
+    temp_storage_bytes = block_reduce.temp_storage_bytes
+
+    @cuda.jit(link=block_reduce.files)
+    def kernel(input, output):
+        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
+        block_output = block_reduce(temp_storage, input[cuda.threadIdx.x], threads_in_block / 2)
+
+        if cuda.threadIdx.x == 0:
+            output[0] = block_output
+
+    dtype = NUMBA_TYPES_TO_NP[T]
+    h_input = random_int(threads_in_block, dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(1, dtype=dtype)
+    kernel[1, threads_in_block](d_input, d_output)
+    cuda.synchronize()
+    h_output = d_output.copy_to_host()
+    h_expected = np.min(h_input[: threads_in_block // 2])
+
+    assert h_output[0] == h_expected
+
+    sig = (T[::1], T[::1])
+    sass = kernel.inspect_sass(sig)
+
+    assert "LDL" not in sass
+    assert "STL" not in sass
+
+
+@pytest.mark.parametrize("T", [types.uint32, types.uint64])
+@pytest.mark.parametrize("threads_in_block", [32, 128, 512, 1024])
+@pytest.mark.parametrize("items_per_thread", [1, 2, 4])
+def test_block_reduction_array_local(T, threads_in_block, items_per_thread):
+    def op(a, b):
+        return a if a < b else b
+
+    block_reduce = cudax.block.reduce(
+        dtype=T, binary_op=op, threads_in_block=threads_in_block, items_per_thread=items_per_thread
+    )
+    temp_storage_bytes = block_reduce.temp_storage_bytes
+
+    @cuda.jit(link=block_reduce.files)
+    def kernel(input, output):
+        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
+        thread_items = cuda.local.array(shape=items_per_thread, dtype=T)
+
+        for i in range(items_per_thread):
+            thread_items[i] = input[i * threads_in_block + cuda.threadIdx.x]
+
+        block_output = block_reduce(temp_storage, thread_items)
+
+        if cuda.threadIdx.x == 0:
+            output[0] = block_output
+
+    dtype = NUMBA_TYPES_TO_NP[T]
+    h_input = random_int(items_per_thread * threads_in_block, dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(1, dtype=dtype)
+    kernel[1, threads_in_block](d_input, d_output)
+    cuda.synchronize()
+    h_output = d_output.copy_to_host()
+    h_expected = np.min(h_input)
+
+    assert h_output[0] == h_expected
+
+    sig = (T[::1], T[::1])
+    sass = kernel.inspect_sass(sig)
+
+    assert "LDL" not in sass
+    assert "STL" not in sass
+
+@pytest.mark.parametrize("T", [types.uint32, types.uint64])
+@pytest.mark.parametrize("threads_in_block", [32, 128, 512, 1024])
+@pytest.mark.parametrize("items_per_thread", [1, 2, 4])
+def test_block_reduction_array_global(T, threads_in_block, items_per_thread):
+    def op(a, b):
+        return a if a < b else b
+
+    block_reduce = cudax.block.reduce(
+        dtype=T, binary_op=op, threads_in_block=threads_in_block, items_per_thread=items_per_thread
+    )
+    temp_storage_bytes = block_reduce.temp_storage_bytes
+
+    @cuda.jit(link=block_reduce.files)
+    def kernel(input, output):
+        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
+
+        # If a scalar (e.g. input[x]) is passed here, the reference overload
+        # will be selected and only one element will be loaded, instead of the
+        # statically sized array overload. This is very subtle and should be
+        # fixed.
+        block_output = block_reduce(
+            temp_storage, input[items_per_thread * cuda.threadIdx.x:]
+        )
+
+        if cuda.threadIdx.x == 0:
+            output[0] = block_output
+
+    dtype = NUMBA_TYPES_TO_NP[T]
+    h_input = random_int(items_per_thread * threads_in_block, dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(1, dtype=dtype)
+    kernel[1, threads_in_block](d_input, d_output)
+    cuda.synchronize()
+    h_output = d_output.copy_to_host()
+    h_expected = np.min(h_input)
+
+    assert h_output[0] == h_expected
+
+    sig = (T[::1], T[::1])
+    sass = kernel.inspect_sass(sig)
+
+    assert "LDL" not in sass
+    assert "STL" not in sass
+
+
+@pytest.mark.parametrize("T", [types.uint32, types.uint64])
+@pytest.mark.parametrize("threads_in_block", [32, 64, 128, 256, 512, 1024])
 def test_block_sum(T, threads_in_block):
     block_reduce = cudax.block.sum(dtype=T, threads_in_block=threads_in_block)
     temp_storage_bytes = block_reduce.temp_storage_bytes
@@ -248,7 +372,7 @@ def test_block_sum(T, threads_in_block):
 
 @pytest.mark.parametrize("T", [types.uint32, types.uint64])
 @pytest.mark.parametrize("threads_in_block", [32, 64, 128, 256, 512, 1024])
-def test_block_valid_sum(T, threads_in_block):
+def test_block_sum_valid(T, threads_in_block):
     block_reduce = cudax.block.sum(dtype=T, threads_in_block=threads_in_block)
     temp_storage_bytes = block_reduce.temp_storage_bytes
 
@@ -270,6 +394,84 @@ def test_block_valid_sum(T, threads_in_block):
     cuda.synchronize()
     h_output = d_output.copy_to_host()
     h_expected = np.sum(h_input[: threads_in_block // 2])
+
+    assert h_output[0] == h_expected
+
+    sig = (T[::1], T[::1])
+    sass = kernel.inspect_sass(sig)
+
+    assert "LDL" not in sass
+    assert "STL" not in sass
+
+
+@pytest.mark.parametrize("T", [types.uint32, types.uint64])
+@pytest.mark.parametrize("threads_in_block", [32, 128, 512, 1024])
+@pytest.mark.parametrize("items_per_thread", [1, 2, 4])
+def test_block_sum_array_local(T, threads_in_block, items_per_thread):
+    block_reduce = cudax.block.sum(dtype=T, threads_in_block=threads_in_block, items_per_thread=items_per_thread)
+    temp_storage_bytes = block_reduce.temp_storage_bytes
+
+    @cuda.jit(link=block_reduce.files)
+    def kernel(input, output):
+        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
+        thread_items = cuda.local.array(shape=items_per_thread, dtype=T)
+
+        for i in range(items_per_thread):
+            thread_items[i] = input[i * threads_in_block + cuda.threadIdx.x]
+
+        block_output = block_reduce(temp_storage, thread_items)
+
+        if cuda.threadIdx.x == 0:
+            output[0] = block_output
+
+    dtype = NUMBA_TYPES_TO_NP[T]
+    h_input = random_int(items_per_thread * threads_in_block, dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(1, dtype=dtype)
+    kernel[1, threads_in_block](d_input, d_output)
+    cuda.synchronize()
+    h_output = d_output.copy_to_host()
+    h_expected = np.sum(h_input)
+
+    assert h_output[0] == h_expected
+
+    sig = (T[::1], T[::1])
+    sass = kernel.inspect_sass(sig)
+
+    assert "LDL" not in sass
+    assert "STL" not in sass
+
+
+@pytest.mark.parametrize("T", [types.uint32, types.uint64])
+@pytest.mark.parametrize("threads_in_block", [32, 128, 512, 1024])
+@pytest.mark.parametrize("items_per_thread", [1, 2, 4])
+def test_block_sum_array_global(T, threads_in_block, items_per_thread):
+    block_reduce = cudax.block.sum(dtype=T, threads_in_block=threads_in_block, items_per_thread=items_per_thread)
+    temp_storage_bytes = block_reduce.temp_storage_bytes
+
+    @cuda.jit(link=block_reduce.files)
+    def kernel(input, output):
+        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
+
+        # If a scalar (e.g. input[x]) is passed here, the reference overload
+        # will be selected and only one element will be loaded, instead of the
+        # statically sized array overload. This is very subtle and should be
+        # fixed.
+        block_output = block_reduce(
+            temp_storage, input[items_per_thread * cuda.threadIdx.x:]
+        )
+
+        if cuda.threadIdx.x == 0:
+            output[0] = block_output
+
+    dtype = NUMBA_TYPES_TO_NP[T]
+    h_input = random_int(items_per_thread * threads_in_block, dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(1, dtype=dtype)
+    kernel[1, threads_in_block](d_input, d_output)
+    cuda.synchronize()
+    h_output = d_output.copy_to_host()
+    h_expected = np.sum(h_input)
 
     assert h_output[0] == h_expected
 
