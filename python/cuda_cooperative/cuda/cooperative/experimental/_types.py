@@ -206,7 +206,9 @@ class Array(Pointer):
         super().__init__(value_dtype, is_output)
 
     def __repr__(self) -> str:
-        return f"Array(dtype={self.value_dtype}, size={self.size}, out={self.is_output})"
+        return (
+            f"Array(dtype={self.value_dtype}, size={self.size}, out={self.is_output})"
+        )
 
     def cpp_decl(self, name):
         return f"{numba_type_to_cpp(self.value_dtype)} (&{name})[{self.size}]"

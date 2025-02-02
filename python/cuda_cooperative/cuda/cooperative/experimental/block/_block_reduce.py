@@ -76,9 +76,9 @@ def reduce(dtype, threads_in_block, binary_op, items_per_thread=1, methods=None)
                 DependentOperator(
                     Dependency("T"),
                     [Dependency("T"), Dependency("T")],
-                    Dependency("Op")
+                    Dependency("Op"),
                 ),
-                DependentReference(Dependency("T"), True)
+                DependentReference(Dependency("T"), True),
             ],
             # T Reduce(T&, Op);
             [
@@ -98,16 +98,21 @@ def reduce(dtype, threads_in_block, binary_op, items_per_thread=1, methods=None)
                 DependentOperator(
                     Dependency("T"),
                     [Dependency("T"), Dependency("T")],
-                    Dependency("Op")
+                    Dependency("Op"),
                 ),
                 Value(numba.int32),
-                DependentReference(Dependency("T"), True)
-            ]
+                DependentReference(Dependency("T"), True),
+            ],
         ],
         type_definitions=[numba_type_to_wrapper(dtype, methods=methods)],
     )
     specialization = template.specialize(
-        {"T": dtype, "BLOCK_DIM_X": threads_in_block, "ITEMS_PER_THREAD": items_per_thread, "Op": binary_op}
+        {
+            "T": dtype,
+            "BLOCK_DIM_X": threads_in_block,
+            "ITEMS_PER_THREAD": items_per_thread,
+            "Op": binary_op,
+        }
     )
 
     return Invocable(
@@ -173,7 +178,7 @@ def sum(dtype, threads_in_block, items_per_thread=1, methods=None):
             [
                 Pointer(numba.uint8),
                 DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                DependentReference(Dependency("T"), True)
+                DependentReference(Dependency("T"), True),
             ],
             # T Sum(T&);
             [
@@ -187,11 +192,17 @@ def sum(dtype, threads_in_block, items_per_thread=1, methods=None):
                 DependentReference(Dependency("T")),
                 Value(numba.int32),
                 DependentReference(Dependency("T"), True),
-            ]
+            ],
         ],
         type_definitions=[numba_type_to_wrapper(dtype, methods=methods)],
     )
-    specialization = template.specialize({"T": dtype, "BLOCK_DIM_X": threads_in_block, "ITEMS_PER_THREAD": items_per_thread})
+    specialization = template.specialize(
+        {
+            "T": dtype,
+            "BLOCK_DIM_X": threads_in_block,
+            "ITEMS_PER_THREAD": items_per_thread,
+        }
+    )
     return Invocable(
         temp_files=[
             make_binary_tempfile(ltoir, ".ltoir")

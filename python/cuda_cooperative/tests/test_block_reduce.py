@@ -228,7 +228,9 @@ def test_block_reduction_valid(T, threads_in_block):
     @cuda.jit(link=block_reduce.files)
     def kernel(input, output):
         temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
-        block_output = block_reduce(temp_storage, input[cuda.threadIdx.x], threads_in_block / 2)
+        block_output = block_reduce(
+            temp_storage, input[cuda.threadIdx.x], threads_in_block / 2
+        )
 
         if cuda.threadIdx.x == 0:
             output[0] = block_output
@@ -259,7 +261,10 @@ def test_block_reduction_array_local(T, threads_in_block, items_per_thread):
         return a if a < b else b
 
     block_reduce = cudax.block.reduce(
-        dtype=T, binary_op=op, threads_in_block=threads_in_block, items_per_thread=items_per_thread
+        dtype=T,
+        binary_op=op,
+        threads_in_block=threads_in_block,
+        items_per_thread=items_per_thread,
     )
     temp_storage_bytes = block_reduce.temp_storage_bytes
 
@@ -293,6 +298,7 @@ def test_block_reduction_array_local(T, threads_in_block, items_per_thread):
     assert "LDL" not in sass
     assert "STL" not in sass
 
+
 @pytest.mark.parametrize("T", [types.uint32, types.uint64])
 @pytest.mark.parametrize("threads_in_block", [32, 128, 512, 1024])
 @pytest.mark.parametrize("items_per_thread", [1, 2, 4])
@@ -301,7 +307,10 @@ def test_block_reduction_array_global(T, threads_in_block, items_per_thread):
         return a if a < b else b
 
     block_reduce = cudax.block.reduce(
-        dtype=T, binary_op=op, threads_in_block=threads_in_block, items_per_thread=items_per_thread
+        dtype=T,
+        binary_op=op,
+        threads_in_block=threads_in_block,
+        items_per_thread=items_per_thread,
     )
     temp_storage_bytes = block_reduce.temp_storage_bytes
 
@@ -314,7 +323,7 @@ def test_block_reduction_array_global(T, threads_in_block, items_per_thread):
         # statically sized array overload. This is very subtle and should be
         # fixed.
         block_output = block_reduce(
-            temp_storage, input[items_per_thread * cuda.threadIdx.x:]
+            temp_storage, input[items_per_thread * cuda.threadIdx.x :]
         )
 
         if cuda.threadIdx.x == 0:
@@ -408,7 +417,9 @@ def test_block_sum_valid(T, threads_in_block):
 @pytest.mark.parametrize("threads_in_block", [32, 128, 512, 1024])
 @pytest.mark.parametrize("items_per_thread", [1, 2, 4])
 def test_block_sum_array_local(T, threads_in_block, items_per_thread):
-    block_reduce = cudax.block.sum(dtype=T, threads_in_block=threads_in_block, items_per_thread=items_per_thread)
+    block_reduce = cudax.block.sum(
+        dtype=T, threads_in_block=threads_in_block, items_per_thread=items_per_thread
+    )
     temp_storage_bytes = block_reduce.temp_storage_bytes
 
     @cuda.jit(link=block_reduce.files)
@@ -446,7 +457,9 @@ def test_block_sum_array_local(T, threads_in_block, items_per_thread):
 @pytest.mark.parametrize("threads_in_block", [32, 128, 512, 1024])
 @pytest.mark.parametrize("items_per_thread", [1, 2, 4])
 def test_block_sum_array_global(T, threads_in_block, items_per_thread):
-    block_reduce = cudax.block.sum(dtype=T, threads_in_block=threads_in_block, items_per_thread=items_per_thread)
+    block_reduce = cudax.block.sum(
+        dtype=T, threads_in_block=threads_in_block, items_per_thread=items_per_thread
+    )
     temp_storage_bytes = block_reduce.temp_storage_bytes
 
     @cuda.jit(link=block_reduce.files)
@@ -458,7 +471,7 @@ def test_block_sum_array_global(T, threads_in_block, items_per_thread):
         # statically sized array overload. This is very subtle and should be
         # fixed.
         block_output = block_reduce(
-            temp_storage, input[items_per_thread * cuda.threadIdx.x:]
+            temp_storage, input[items_per_thread * cuda.threadIdx.x :]
         )
 
         if cuda.threadIdx.x == 0:
