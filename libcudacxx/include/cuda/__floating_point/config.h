@@ -281,12 +281,12 @@ struct __fp16_config : __fp_iec559_config_base
 
 #  if __STDCPP_FLOAT16_T__ == 1
   using __host_native_type = ::std::float16_t;
-#  elif _CCCL_COMPILER(GCC, >=, 7) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC, >=, 24, 9)
+#  elif _CCCL_COMPILER(GCC, >=, 12) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC, >=, 24, 9)
   using __host_native_type = _Float16;
 #  else
   using __host_native_type = __fp_no_native_type_tag;
 #  endif
-#  if _CCCL_CUDA_COMPILER(CLANG, >=, 19) || _CCCL_CUDA_COMPILER(NVHPC, >=, 24, 9)
+#  if _CCCL_CUDA_COMPILER(CLANG, >=, 19) || _CCCL_CUDA_COMPILER(NVHPC, >=, 25, 1)
   using __device_native_type = _Float16;
 #  else
   using __device_native_type = __fp_no_native_type_tag;
