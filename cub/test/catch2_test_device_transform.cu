@@ -63,8 +63,8 @@ CUB_RUNTIME_FUNCTION static cudaError_t transform_many_with_alg_entry_point(
     return cudaSuccess;
   }
 
-  constexpr bool RequiresStableAddress = false;
-  return cub::detail::transform::dispatch_t<RequiresStableAddress,
+  constexpr auto stable_address = cub::detail::transform::requires_stable_address::no;
+  return cub::detail::transform::dispatch_t<stable_address,
                                             Offset,
                                             ::cuda::std::tuple<RandomAccessIteratorsIn...>,
                                             RandomAccessIteratorOut,
@@ -166,8 +166,8 @@ struct alignas(Alignment) overaligned_addable_t
     return a.value == b.value;
   }
 
-  _CCCL_HOST_DEVICE friend auto operator+(const overaligned_addable_t& a, const overaligned_addable_t& b)
-    -> overaligned_addable_t
+  _CCCL_HOST_DEVICE friend auto
+  operator+(const overaligned_addable_t& a, const overaligned_addable_t& b) -> overaligned_addable_t
   {
     check(a);
     check(b);

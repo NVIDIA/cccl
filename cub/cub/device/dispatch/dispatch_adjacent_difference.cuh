@@ -244,15 +244,14 @@ struct DispatchAdjacentDifference
 
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
         num_tiles, AdjacentDifferencePolicyT::BLOCK_THREADS, 0, stream)
-        .doit(detail::adjacent_difference::DeviceAdjacentDifferenceDifferenceKernel<
-                typename PolicyHub::MaxPolicy,
-                InputIteratorT,
-                OutputIteratorT,
-                DifferenceOpT,
-                OffsetT,
-                InputT,
-                AliasOpt == AliasOption::MayAlias,
-                ReadOpt == ReadOption::ReadLeft>,
+        .doit(detail::adjacent_difference::DeviceAdjacentDifferenceDifferenceKernel < typename PolicyHub::MaxPolicy,
+              InputIteratorT,
+              OutputIteratorT,
+              DifferenceOpT,
+              OffsetT,
+              InputT,
+              AliasOpt == AliasOption::MayAlias,
+              ReadOpt == ReadOption::ReadLeft >,
               d_input,
               first_tile_previous,
               d_output,

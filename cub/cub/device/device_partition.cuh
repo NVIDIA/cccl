@@ -381,7 +381,7 @@ struct DevicePartition
   }
 
 private:
-  template <bool IS_DESCENDING,
+  template <SortOrder Order,
             typename KeyT,
             typename ValueT,
             typename OffsetT,

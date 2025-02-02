@@ -200,12 +200,12 @@ struct DeviceMemcpy
       BlockOffsetT,
       detail::batch_memcpy::policy_hub<BufferOffsetT, BlockOffsetT>,
       memcpy_option>::Dispatch(d_temp_storage,
-                      temp_storage_bytes,
-                      input_buffer_it,
-                      output_buffer_it,
-                      buffer_sizes,
-                      num_buffers,
-                      stream);
+                               temp_storage_bytes,
+                               input_buffer_it,
+                               output_buffer_it,
+                               buffer_sizes,
+                               num_buffers,
+                               stream);
   }
 };
 

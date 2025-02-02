@@ -13,11 +13,18 @@
 #  pragma system_header
 #endif // no system header
 
+CUB_NAMESPACE_BEGIN
 
-enum class AliasOption { MayAlias, NoAlias };
+enum class AliasOption
+{
+  MayAlias,
+  NoAlias
+};
 
 enum class SortOrder
 {
   Ascending,
   Descending
 };
+
+CUB_NAMESPACE_END

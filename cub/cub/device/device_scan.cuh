@@ -1168,13 +1168,13 @@ struct DeviceScan
       AccumT,
       detail::scan::policy_hub<AccumT, ScanOpT>,
       force_inlcusive>::Dispatch(d_temp_storage,
-                                temp_storage_bytes,
-                                d_in,
-                                d_out,
-                                scan_op,
-                                detail::InputValue<InitValueT>(init_value),
-                                num_items,
-                                stream);
+                                 temp_storage_bytes,
+                                 d_in,
+                                 d_out,
+                                 scan_op,
+                                 detail::InputValue<InitValueT>(init_value),
+                                 num_items,
+                                 stream);
   }
 
   //! @rst
