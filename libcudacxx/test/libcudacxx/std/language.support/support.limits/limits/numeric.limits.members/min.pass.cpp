@@ -66,12 +66,12 @@ int main(int, char**)
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
   test<long double>(LDBL_MIN);
 #endif
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#if defined(_CCCL_HAS_NVFP16)
   test<__half>(__double2half(6.103515625e-05));
-#endif // _LIBCUDACXX_HAS_NVFP16
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#endif // _CCCL_HAS_NVFP16
+#if defined(_CCCL_HAS_NVBF16)
   test<__nv_bfloat16>(__double2bfloat16(1.17549435082228750796873653722e-38));
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _CCCL_HAS_NVBF16
 #if _CCCL_HAS_NVFP8()
   test<__nv_fp8_e4m3>(make_fp8_e4m3(0.015625));
   test<__nv_fp8_e5m2>(make_fp8_e5m2(0.000061035));
