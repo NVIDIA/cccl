@@ -153,7 +153,7 @@ void seg_sort(nvbench::state& state,
               const thrust::device_vector<OffsetT>& offsets,
               bit_entropy entropy)
 {
-  constexpr bool is_descending   = false;
+  constexpr cub::SortOrder sort_order = cub::SortOrder::Ascending;
   constexpr bool is_overwrite_ok = false;
 
   using offset_t          = OffsetT;
@@ -165,10 +165,10 @@ void seg_sort(nvbench::state& state,
 #if !TUNE_BASE
   using policy_t   = device_seg_sort_policy_hub<key_t>;
   using dispatch_t = //
-    cub::DispatchSegmentedSort<is_descending, key_t, value_t, offset_t, begin_offset_it_t, end_offset_it_t, policy_t>;
+    cub::DispatchSegmentedSort<sort_order, key_t, value_t, offset_t, begin_offset_it_t, end_offset_it_t, policy_t>;
 #else
   using dispatch_t = //
-    cub::DispatchSegmentedSort<is_descending, key_t, value_t, offset_t, begin_offset_it_t, end_offset_it_t>;
+    cub::DispatchSegmentedSort<sort_order, key_t, value_t, offset_t, begin_offset_it_t, end_offset_it_t>;
 #endif
 
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));

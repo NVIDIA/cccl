@@ -63,7 +63,7 @@ static void unique(nvbench::state& state, nvbench::type_list<T, OffsetT, MayAlia
   using equality_op_t     = ::cuda::std::equal_to<>;
   using offset_t          = OffsetT;
   constexpr cub::SelectionOption selection_option =
-    MayAlias::value ? cub::SelectionOption::SelectPotentiallyInplace : SelectionOption::Select;
+    MayAlias::value ? cub::SelectionOption::SelectPotentiallyInPlace : cub::SelectionOption::Select;
 
 #if !TUNE_BASE
   using policy_t   = policy_hub_t<T>;
