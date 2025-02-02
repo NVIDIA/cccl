@@ -121,7 +121,7 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
 {
   using InputValueT = cub::detail::InputValue<InitValueT>;
   using AccumT      = typename ::cuda::std::__accumulator_t<ScanOp, cub::detail::value_t<InputIt>, InitValueT>;
-  constexpr cub::ForceInclusive EnforceInclusive = cub::ForceInclusive::Yes;
+  constexpr cub::ForceInclusive force_inclusive = cub::ForceInclusive::Yes;
 
   using Dispatch32 =
     cub::DispatchScan<InputIt,
@@ -131,7 +131,7 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
                       std::uint32_t,
                       AccumT,
                       cub::detail::scan::policy_hub<AccumT, ScanOp>,
-                      EnforceInclusive>;
+                      force_inclusive>;
   using Dispatch64 =
     cub::DispatchScan<InputIt,
                       OutputIt,
@@ -140,7 +140,7 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
                       std::uint64_t,
                       AccumT,
                       cub::detail::scan::policy_hub<AccumT, ScanOp>,
-                      EnforceInclusive>;
+                      force_inclusive>;
 
   cudaStream_t stream = thrust::cuda_cub::stream(policy);
   cudaError_t status;
