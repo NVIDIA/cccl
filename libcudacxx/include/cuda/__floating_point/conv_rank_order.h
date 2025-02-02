@@ -37,45 +37,47 @@ enum class __fp_conv_rank_order
   __less,
 };
 
-template <class _To, class _From>
+template <class _Lhs, class _Rhs>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_conv_rank_order __fp_make_conv_rank_order()
 {
-  using _FromConfig = __fp_make_config_from_t<_From>;
-  using _ToConfig   = __fp_make_config_from_t<_To>;
+  using _LhsConfig = __fp_make_config_from_t<_Lhs>;
+  using _RhsConfig = __fp_make_config_from_t<_Rhs>;
 
-  if constexpr (!_CUDA_VSTD::is_same_v<_FromConfig, __fp_invalid_config>
-                && !_CUDA_VSTD::is_same_v<_ToConfig, __fp_invalid_config>)
+  if constexpr (_CUDA_VSTD::is_same_v<_RhsConfig, __fp_invalid_config>
+                || _CUDA_VSTD::is_same_v<_LhsConfig, __fp_invalid_config>)
   {
-    if constexpr (_ToConfig::__is_signed == _FromConfig::__is_signed)
+    return __fp_conv_rank_order::__unordered;
+  }
+
+  if constexpr (_LhsConfig::__is_signed == _RhsConfig::__is_signed)
+  {
+    if constexpr (_LhsConfig::__exp_nbits == _RhsConfig::__exp_nbits
+                  && _LhsConfig::__mant_nbits == _RhsConfig::__mant_nbits)
     {
-      if constexpr (_ToConfig::__exp_nbits == _FromConfig::__exp_nbits
-                    && _ToConfig::__mant_nbits == _FromConfig::__mant_nbits)
-      {
 #  if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-        // If the representations are the same, long double always has the higher subrank
-        if constexpr (_CUDA_VSTD::is_same_v<_ToConfig, __fp_long_double_config>
-                      && !_CUDA_VSTD::is_same_v<_FromConfig, __fp_long_double_config>)
-        {
-          return __fp_conv_rank_order::__greater;
-        }
-        else if constexpr (!_CUDA_VSTD::is_same_v<_ToConfig, __fp_long_double_config>
-                           && _CUDA_VSTD::is_same_v<_FromConfig, __fp_long_double_config>)
-        {
-          return __fp_conv_rank_order::__less;
-        }
-#  endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
-        return __fp_conv_rank_order::__equal;
-      }
-      else if constexpr (_ToConfig::__exp_nbits >= _FromConfig::__exp_nbits
-                         && _ToConfig::__mant_nbits >= _FromConfig::__mant_nbits)
+      // If fp64 and long double have the same properties, long double has the higher subrank
+      if constexpr (_CUDA_VSTD::is_same_v<_LhsConfig, __fp_long_double_config>
+                    && _CUDA_VSTD::is_same_v<_RhsConfig, __fp64_config>)
       {
         return __fp_conv_rank_order::__greater;
       }
-      else if constexpr (_ToConfig::__exp_nbits <= _FromConfig::__exp_nbits
-                         && _ToConfig::__mant_nbits <= _FromConfig::__mant_nbits)
+      else if constexpr (_CUDA_VSTD::is_same_v<_LhsConfig, __fp64_config>
+                         && _CUDA_VSTD::is_same_v<_RhsConfig, __fp_long_double_config>)
       {
         return __fp_conv_rank_order::__less;
       }
+#  endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+      return __fp_conv_rank_order::__equal;
+    }
+    else if constexpr (_LhsConfig::__exp_nbits >= _RhsConfig::__exp_nbits
+                       && _LhsConfig::__mant_nbits >= _RhsConfig::__mant_nbits)
+    {
+      return __fp_conv_rank_order::__greater;
+    }
+    else if constexpr (_LhsConfig::__exp_nbits <= _RhsConfig::__exp_nbits
+                       && _LhsConfig::__mant_nbits <= _RhsConfig::__mant_nbits)
+    {
+      return __fp_conv_rank_order::__less;
     }
   }
 
