@@ -497,7 +497,9 @@ class stackable_logical_data
     class state : public stackable_logical_data_impl_state_base
     {
     public:
-      state(stackable_ctx _sctx) : sctx(mv(_sctx)) {}
+      state(stackable_ctx _sctx)
+          : sctx(mv(_sctx))
+      {}
 
       virtual void pop_before_finalize(bool need_untrack) const override
       {
@@ -514,9 +516,10 @@ class stackable_logical_data
         // logical data was destroyed before ctx pop, and that the data state
         // was retained. In this case, we don't remove an entry from the vector
         // of logical data.
-        if (s.size() == sctx.depth() + 1) {
-            // Remove aliased logical data because this wasn't done yet
-            s.pop_back();
+        if (s.size() == sctx.depth() + 1)
+        {
+          // Remove aliased logical data because this wasn't done yet
+          s.pop_back();
         }
       }
 
