@@ -497,6 +497,8 @@ class stackable_logical_data
     class state : public stackable_logical_data_impl_state_base
     {
     public:
+      state(stackable_ctx _sctx) : sctx(mv(_sctx)) {}
+
       virtual void pop_before_finalize(bool need_untrack) const override
       {
         if (need_untrack)
@@ -552,10 +554,7 @@ class stackable_logical_data
          data_place where = data_place::invalid)
         : sctx(mv(sctx_))
     {
-      impl_state = ::std::make_shared<state>();
-
-      // duplicated ... XXX ... move to ctor above ?
-      impl_state->sctx = sctx;
+      impl_state = ::std::make_shared<state>(sctx);
 
       impl_state->base_depth = target_depth;
       // fprintf(stderr, "stackable_logical_data::impl %p - target depth %ld\n", this, target_depth);
