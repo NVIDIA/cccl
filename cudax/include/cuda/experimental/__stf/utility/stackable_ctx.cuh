@@ -514,10 +514,8 @@ class stackable_logical_data
         // logical data was destroyed before ctx pop, and that the data state
         // was retained. In this case, we don't remove an entry from the vector
         // of logical data.
-        fprintf(stderr, "state::pop_before_finalize => s.size() %ld sctx.depths %ld (=levels.size -1)\n", s.size(), sctx.depth());
-
-        // Remove aliased logical data if this wasn't done before
         if (s.size() == sctx.depth() + 1) {
+            // Remove aliased logical data because this wasn't done yet
             s.pop_back();
         }
       }
