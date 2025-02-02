@@ -16,8 +16,6 @@
 // %RANGE% TUNE_DELAY_CONSTRUCTOR_ID dcid 0:7:1
 // %RANGE% TUNE_L2_WRITE_LATENCY_NS l2w 0:1200:5
 
-constexpr bool keep_rejects = false;
-
 #if !TUNE_BASE
 #  if TUNE_TRANSPOSE == 0
 #    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_DIRECT
@@ -57,14 +55,15 @@ struct policy_hub_t
 template <typename T, typename OffsetT, typename MayAlias>
 static void unique(nvbench::state& state, nvbench::type_list<T, OffsetT, MayAlias>)
 {
-  using input_it_t         = const T*;
-  using flag_it_t          = cub::NullType*;
-  using output_it_t        = T*;
-  using num_selected_it_t  = OffsetT*;
-  using select_op_t        = cub::NullType;
-  using equality_op_t      = ::cuda::std::equal_to<>;
-  using offset_t           = OffsetT;
-  constexpr bool may_alias = MayAlias::value;
+  using input_it_t        = const T*;
+  using flag_it_t         = cub::NullType*;
+  using output_it_t       = T*;
+  using num_selected_it_t = OffsetT*;
+  using select_op_t       = cub::NullType;
+  using equality_op_t     = ::cuda::std::equal_to<>;
+  using offset_t          = OffsetT;
+  constexpr cub::SelectionOption selection_option =
+    MayAlias::value ? cub::SelectionOption::SelectPotentiallyInplace : SelectionOption::Select;
 
 #if !TUNE_BASE
   using policy_t   = policy_hub_t<T>;
@@ -76,20 +75,18 @@ static void unique(nvbench::state& state, nvbench::type_list<T, OffsetT, MayAlia
     select_op_t,
     equality_op_t,
     offset_t,
-    keep_rejects,
-    may_alias,
+    selection_option,
     policy_t>;
 #else // TUNE_BASE
-  using dispatch_t = cub::DispatchSelectIf<
-    input_it_t,
-    flag_it_t,
-    output_it_t,
-    num_selected_it_t,
-    select_op_t,
-    equality_op_t,
-    offset_t,
-    keep_rejects,
-    may_alias>;
+  using dispatch_t =
+    cub::DispatchSelectIf<input_it_t,
+                          flag_it_t,
+                          output_it_t,
+                          num_selected_it_t,
+                          select_op_t,
+                          equality_op_t,
+                          offset_t,
+                          selection_option>;
 #endif // TUNE_BASE
 
   // Retrieve axis parameters

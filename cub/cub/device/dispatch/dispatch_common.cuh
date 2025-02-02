@@ -27,4 +27,14 @@ enum class SortOrder
   Descending
 };
 
+enum class SelectionOption
+{
+  // KeepRejects: no, MayAlias: no
+  Select,
+  // KeepRejects: no, MayAlias: yes
+  SelectPotentiallyInPlace,
+  // KeepRejects: yes, MayAlias: no
+  Partition
+};
+
 CUB_NAMESPACE_END
