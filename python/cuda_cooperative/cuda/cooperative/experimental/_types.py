@@ -206,7 +206,7 @@ class Array(Pointer):
         super().__init__(value_dtype, is_output)
 
     def __repr__(self) -> str:
-        return f"Array(dtype={self.value_dtype}, out={self.is_output})"
+        return f"Array(dtype={self.value_dtype}, size={self.size}, out={self.is_output})"
 
     def cpp_decl(self, name):
         return f"{numba_type_to_cpp(self.value_dtype)} (&{name})[{self.size}]"
@@ -780,7 +780,7 @@ class Algorithm:
                             )
                             types.append(ir.PointerType(ir.IntType(8)))
                             arguments.append(void_ptr)
-                        if isinstance(param, Reference):
+                        elif isinstance(param, Reference):
                             if param.is_output:
                                 ptr = cgutils.alloca_once(
                                     builder, context.get_value_type(dtype)
