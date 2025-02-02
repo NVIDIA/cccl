@@ -508,8 +508,18 @@ class stackable_logical_data
           sctx.untrack_pushed_data(s.back().get_unique_id());
         }
 
-        // Remove aliased logical data
-        s.pop_back();
+        _CCCL_ASSERT(s.size() == sctx.depth() || s.size() == sctx.depth() + 1, "internal error");
+
+        // Maybe the logical data was already destroyed if the stackable
+        // logical data was destroyed before ctx pop, and that the data state
+        // was retained. In this case, we don't remove an entry from the vector
+        // of logical data.
+        fprintf(stderr, "state::pop_before_finalize => s.size() %ld sctx.depths %ld (=levels.size -1)\n", s.size(), sctx.depth());
+
+        // Remove aliased logical data if this wasn't done before
+        if (s.size() == sctx.depth() + 1) {
+            s.pop_back();
+        }
       }
 
       virtual void pop_after_finalize() const override
@@ -744,15 +754,6 @@ public:
   {
     static_assert(::std::is_move_constructible_v<stackable_logical_data>, "");
     static_assert(::std::is_move_assignable_v<stackable_logical_data>, "");
-
-#if 0
-    // If we are creating a logical data at a non null depth, we need to
-    // ensure it's only destroyed once contexts are popped. By holding a reference to it
-    if (target_depth > 0)
-    {
-      sctx.retain_data(pimpl);
-    }
-#endif
   }
 
   const auto& get_ld() const
@@ -780,6 +781,7 @@ public:
 #endif
   }
 
+#if 0
   void pop() const
   {
     // This is called by the user: we are not currently popping the context so
@@ -787,6 +789,7 @@ public:
     // the context (need_untrack=true).
     pimpl->pop_before_finalize(true);
   }
+#endif
 
   // Helpers
   template <typename... Pack>
