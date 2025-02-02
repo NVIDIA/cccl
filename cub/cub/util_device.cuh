@@ -566,6 +566,7 @@ CUB_RUNTIME_FUNCTION PolicyWrapper<PolicyT> MakePolicyWrapper(PolicyT policy)
   return PolicyWrapper<PolicyT>{policy};
 }
 
+#if _CCCL_HAS_CUDA_COMPILER
 namespace detail
 {
 struct TripleChevronFactory;
@@ -598,6 +599,7 @@ struct KernelConfig
     return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, block_threads);
   }
 };
+#endif // _CCCL_HAS_CUDA_COMPILER
 
 /// Helper for dispatching into a policy chain
 template <int PolicyPtxVersion, typename PolicyT, typename PrevPolicyT>
