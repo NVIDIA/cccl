@@ -97,10 +97,6 @@ int main()
     b(i) = 17 - 3 * i;
   };
 
-  lC.push(access_mode::rw);
-  lA.push(access_mode::read);
-  lA2.push(access_mode::write, data_place::current_device());
-
   sctx.parallel_for(lA2.shape(), lA2.write())->*[] __device__(size_t i, auto a2) {
     a2(i) = 5 * i + 4;
   };
@@ -113,15 +109,9 @@ int main()
     c(i) += b(i);
   };
 
-  lA.pop();
-
-  lA.push(access_mode::rw, data_place::current_device());
   sctx.parallel_for(lA.shape(), lA.rw())->*[] __device__(size_t i, auto a) {
     a(i) += 42;
   };
-  lA.pop();
-
-  // lA2 and lC are automatically popped
 
   sctx.pop();
 
@@ -148,8 +138,6 @@ int main()
       EXPECT(a2(i) == 5 * i + 4);
     }
   };
-  // explicit pop
-  lA2.pop();
   sctx.pop();
 
   sctx.finalize();

@@ -245,8 +245,8 @@ int main()
   auto g = ctx.dot_section("circuit");
   ctx.push();
 
-  eA.push(access_mode::read);
-  eB.push(access_mode::read);
+  //  eA.push(access_mode::read);
+  //  eB.push(access_mode::read);
 
   auto out = circuit(eA, eB);
 

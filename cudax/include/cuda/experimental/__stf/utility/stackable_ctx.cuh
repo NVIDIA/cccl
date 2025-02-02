@@ -79,11 +79,12 @@ task_dep<T, reduce_op, initialize> to_task_dep(stackable_task_dep<T, reduce_op, 
  * This is used to implement the automatic call to pop() on logical data when a
  * context level is popped.
  */
-class stackable_logical_data_impl_base
+class stackable_logical_data_impl_state_base
 {
 public:
-  virtual ~stackable_logical_data_impl_base() = default;
-  virtual void pop(bool need_untrack) const   = 0;
+  virtual ~stackable_logical_data_impl_state_base()         = default;
+  virtual void pop_before_finalize(bool need_untrack) const = 0;
+  virtual void pop_after_finalize() const                   = 0;
 };
 
 /**
@@ -114,7 +115,7 @@ public:
 
       // This map keeps track of the logical data that were pushed in this level
       // key: logical data's unique id
-      ::std::unordered_map<int, const stackable_logical_data_impl_base*> pushed_data;
+      ::std::unordered_map<int, ::std::shared_ptr<stackable_logical_data_impl_state_base>> pushed_data;
     };
 
   public:
@@ -188,11 +189,22 @@ public:
         // false indicates there is no need to update the pushed_data map to
         // automatically pop data when the context is popped because we are
         // already doing this now.
-        d_impl->pop(false);
+        d_impl->pop_before_finalize(false);
       }
 
       // Ensure everything is finished in the context
       current_level.ctx.finalize();
+
+      for (auto& [key, d_impl] : current_level.pushed_data)
+      {
+        _CCCL_ASSERT(d_impl, "invalid value");
+        // false indicates there is no need to update the pushed_data map to
+        // automatically pop data when the context is popped because we are
+        // already doing this now.
+        d_impl->pop_after_finalize();
+      }
+
+      // TODO deal with pending unfreeze for destroyed data
 
       // Destroy the resources used in the wrapper allocator (if any)
       if (current_level.alloc_adapters)
@@ -242,7 +254,7 @@ public:
     }
 
     // void track_pushed_data(int data_id, ::std::shared_ptr<stackable_logical_data_impl_base> data_impl)
-    void track_pushed_data(int data_id, const stackable_logical_data_impl_base* data_impl)
+    void track_pushed_data(int data_id, const ::std::shared_ptr<stackable_logical_data_impl_state_base> data_impl)
     {
       _CCCL_ASSERT(data_impl, "invalid value");
       levels[depth()].pushed_data[data_id] = data_impl;
@@ -256,7 +268,7 @@ public:
       _CCCL_ASSERT(erased == 1, "invalid value");
     }
 
-    void retain_data(::std::shared_ptr<stackable_logical_data_impl_base> data_impl)
+    void retain_data(::std::shared_ptr<stackable_logical_data_impl_state_base> data_impl)
     {
       retained_data.push_back(mv(data_impl));
     }
@@ -269,7 +281,7 @@ public:
     // from levels because we keep its entries even when we pop a level
     ::std::vector<async_resources_handle> async_handles;
 
-    ::std::vector<::std::shared_ptr<stackable_logical_data_impl_base>> retained_data;
+    ::std::vector<::std::shared_ptr<stackable_logical_data_impl_state_base>> retained_data;
   };
 
   stackable_ctx()
@@ -351,7 +363,7 @@ public:
   //    ... use a ...
   // }
   // ctx.pop()
-  void retain_data(::std::shared_ptr<stackable_logical_data_impl_base> data_impl)
+  void retain_data(::std::shared_ptr<stackable_logical_data_impl_state_base> data_impl)
   {
     _CCCL_ASSERT(pimpl, "uninitialized context");
     _CCCL_ASSERT(data_impl, "invalid value");
@@ -370,8 +382,8 @@ public:
   {
     // If the logical data was not at the appropriate level, we may
     // automatically push it. In this case, we need to update the logical data
-    // refered stored in the task_dep object.
-    bool need_update = dep.get_d().doo(*this, dep.get_access_mode());
+    // referred stored in the task_dep object.
+    bool need_update = dep.get_d().validate_access(*this, dep.get_access_mode());
     if (need_update)
     {
       dep.underlying_dep().update_data(dep.get_d().get_ld());
@@ -447,7 +459,7 @@ public:
   }
 
   // void track_pushed_data(int data_id, ::std::shared_ptr<stackable_logical_data_impl_base> data_impl)
-  void track_pushed_data(int data_id, const stackable_logical_data_impl_base* data_impl)
+  void track_pushed_data(int data_id, const ::std::shared_ptr<stackable_logical_data_impl_state_base> data_impl)
   {
     pimpl->track_pushed_data(data_id, data_impl);
   }
@@ -477,8 +489,60 @@ public:
 template <typename T>
 class stackable_logical_data
 {
-  class impl : public stackable_logical_data_impl_base
+  class impl
   {
+    // We separate the impl and the state so that if the stackable logical data
+    // gets destroyed before the stackable context gets destroyed, we can save
+    // this state in the context, in a vector of retained states
+    class state : public stackable_logical_data_impl_state_base
+    {
+    public:
+      virtual void pop_before_finalize(bool need_untrack) const override
+      {
+        if (need_untrack)
+        {
+          // Prevent the automatic call to pop() when the context level gets
+          // popped.
+          sctx.untrack_pushed_data(s.back().get_unique_id());
+        }
+
+        // Remove aliased logical data
+        s.pop_back();
+      }
+
+      virtual void pop_after_finalize() const override
+      {
+        // We are going to unfreeze the data, which is currently being used
+        // in a (graph) ctx that uses this stream to launch the graph
+        cudaStream_t stream = sctx.get_stream(depth());
+
+        frozen_s.back().unfreeze(stream);
+
+        // Remove frozen logical data
+        frozen_s.pop_back();
+      }
+
+      size_t depth() const
+      {
+        return s.size() - 1;
+      }
+
+      mutable stackable_ctx sctx;
+      mutable ::std::vector<logical_data<T>> s;
+
+      // When stacking data, we freeze data from the lower levels, these are
+      // their frozen counterparts. This vector has one item less than the
+      // vector of logical data.
+      mutable ::std::vector<frozen_logical_data<T>> frozen_s;
+      mutable ::std::vector<access_mode> frozen_modes;
+
+      // If the logical data was created at a level that is not directly the root of the context, we remember this
+      // offset
+      size_t base_depth = 0;
+
+      ::std::string symbol;
+    };
+
   public:
     impl() = default;
     impl(stackable_ctx sctx_,
@@ -486,12 +550,18 @@ class stackable_logical_data
          bool ld_from_shape,
          logical_data<T> ld,
          data_place where = data_place::invalid)
-        : base_depth(target_depth)
-        , sctx(mv(sctx_))
+        : sctx(mv(sctx_))
     {
+      impl_state = ::std::make_shared<state>();
+
+      // duplicated ... XXX ... move to ctor above ?
+      impl_state->sctx = sctx;
+
+      impl_state->base_depth = target_depth;
       // fprintf(stderr, "stackable_logical_data::impl %p - target depth %ld\n", this, target_depth);
+
       // Save the logical data at the root level
-      s.push_back(ld);
+      impl_state->s.push_back(ld);
 
       // If necessary, import data recursively until we reach the target depth
       for (size_t current_depth = 1; current_depth <= target_depth; current_depth++)
@@ -509,34 +579,25 @@ class stackable_logical_data
     // stackable_logical_data::impl::~impl
     ~impl()
     {
-      // fprintf(stderr,
-      //         "stackable_logical_data::~impl symbol=%s => frozen.s.size() %ld s.size() %ld\n",
-      //         symbol.c_str(),
-      //         frozen_s.size(),
-      //         s.size());
-
-      // How many frozen logical data do we need to destroy ?
-      size_t data_depth = frozen_s.size();
-      while (data_depth > 0)
+      if (!impl_state)
       {
-        // Destroy the last logical data which uses a frozen data for its
-        // reference instance (this may writeback)
-        s.pop_back();
-
-        // Unfreeze data
-        auto stream = sctx.get_stream(data_depth);
-        frozen_s.back().unfreeze(stream);
-        frozen_s.pop_back();
-
-        data_depth--;
+        return;
       }
 
-      // It could be 0 if the stackable data was not initialized yet (eg. we
-      // simply called the default ctor)
-      _CCCL_ASSERT(s.size() <= 1, "Internal error");
+      auto& s       = impl_state->s;
+      size_t s_size = s.size();
 
-      // Destroy the last logical data, if any
-      s.clear();
+      // There is at least the logical data passed when we created the stackable_logical_data
+      _CCCL_ASSERT(s_size > 0, "internal error");
+
+      s.pop_back();
+
+      if (s_size > 1)
+      {
+        sctx.retain_data(mv(impl_state));
+      }
+
+      impl_state = nullptr;
     }
 
     // Delete copy constructor and copy assignment operator
@@ -549,11 +610,11 @@ class stackable_logical_data
 
     const auto& get_ld() const
     {
-      return s.back();
+      return impl_state->s.back();
     }
     auto& get_ld()
     {
-      return s.back();
+      return impl_state->s.back();
     }
 
     /* Push one level up (from the current data depth) */
@@ -569,6 +630,10 @@ class stackable_logical_data
 
       context& from_ctx = sctx.get_ctx(current_data_depth);
       context& to_ctx   = sctx.get_ctx(current_data_depth + 1);
+
+      auto& s            = impl_state->s;
+      auto& frozen_s     = impl_state->frozen_s;
+      auto& frozen_modes = impl_state->frozen_modes;
 
       // fprintf(stderr,
       //         "pushing data (%p) %ld[%s,%p]->%ld[%s,%p] (ctx depth %ld)\n",
@@ -604,58 +669,47 @@ class stackable_logical_data
       T inst  = f.get(where, stream);
       auto ld = to_ctx.logical_data(inst, where);
 
-      if (!symbol.empty())
+      if (!impl_state->symbol.empty())
       {
-        ld.set_symbol(symbol + "." + ::std::to_string(current_data_depth + 1 - base_depth));
+        ld.set_symbol(impl_state->symbol + "." + ::std::to_string(current_data_depth + 1 - impl_state->base_depth));
       }
 
       // Keep track of data that were pushed in this context. Note that the ID
       // used is the ID of the logical data at this level. This will be used to
       // pop data automatically when nested contexts are popped.
-      sctx.track_pushed_data(ld.get_unique_id(), this);
+      sctx.track_pushed_data(ld.get_unique_id(), impl_state);
 
       s.push_back(mv(ld));
     }
 
     /* Pop one level down : we do not untrack data if we are already popping
-     * the context */
-    virtual void pop(bool need_untrack) const override
+     * the context (this would be an unnecessary overhead since we are going to
+     * destroy the map anyway) */
+    void pop_before_finalize(bool need_untrack) const
     {
-      if (need_untrack)
-      {
-        // Prevent the automatic call to pop() when the context level gets
-        // popped.
-        sctx.untrack_pushed_data(s.back().get_unique_id());
-      }
+      impl_state->pop_before_finalize(need_untrack);
+    }
 
-      // fprintf(stderr, "stackable_logical_data::pop() %s\n", symbol.c_str());
-
-      // Remove aliased logical data
-      s.pop_back();
-
-      // We are going to unfreeze the data, which is currently being used
-      // in a (graph) ctx that uses this stream to launch the graph
-      cudaStream_t stream = sctx.get_stream(depth());
-      frozen_s.back().unfreeze(stream);
-
-      // Remove frozen logical data
-      frozen_s.pop_back();
+    void pop_after_finalize() const
+    {
+      impl_state->pop_after_finalize();
     }
 
     size_t depth() const
     {
-      return s.size() - 1;
+      return impl_state->depth();
     }
 
+    // TODO move to state
     void set_symbol(::std::string symbol_)
     {
-      symbol = mv(symbol_);
-      s.back().set_symbol(symbol + "." + ::std::to_string(depth() - base_depth));
+      impl_state->symbol = mv(symbol_);
+      impl_state->s.back().set_symbol(impl_state->symbol + "." + ::std::to_string(depth() - impl_state->base_depth));
     }
 
     auto get_symbol() const
     {
-      return symbol;
+      return impl_state->symbol;
     }
 
     // TODO why making sctx private or why do we need to expose this at all ?
@@ -665,28 +719,18 @@ class stackable_logical_data
     }
 
     // Get the access mode used to freeze at depth d
+    // TODO move to state
     access_mode get_frozen_mode(size_t d) const
     {
-      _CCCL_ASSERT(d < frozen_modes.size(), "invalid value");
-      return frozen_modes[d];
+      _CCCL_ASSERT(d < impl_state->frozen_modes.size(), "invalid value");
+      return impl_state->frozen_modes[d];
     }
 
   private:
-    mutable ::std::vector<logical_data<T>> s;
-
-    // When stacking data, we freeze data from the lower levels, these are
-    // their frozen counterparts. This vector has one item less than the
-    // vector of logical data.
-    mutable ::std::vector<frozen_logical_data<T>> frozen_s;
-    mutable ::std::vector<access_mode> frozen_modes;
-
-    // If the logical data was created at a level that is not directly the root of the context, we remember this
-    // offset
-    size_t base_depth = 0;
     // TODO replace this mutable by a const ...
     mutable stackable_ctx sctx; // in which stackable context was this created ?
 
-    ::std::string symbol;
+    ::std::shared_ptr<state> impl_state;
   };
 
 public:
@@ -702,12 +746,14 @@ public:
     static_assert(::std::is_move_constructible_v<stackable_logical_data>, "");
     static_assert(::std::is_move_assignable_v<stackable_logical_data>, "");
 
+#if 0
     // If we are creating a logical data at a non null depth, we need to
     // ensure it's only destroyed once contexts are popped. By holding a reference to it
     if (target_depth > 0)
     {
       sctx.retain_data(pimpl);
     }
+#endif
   }
 
   const auto& get_ld() const
@@ -740,7 +786,7 @@ public:
     // This is called by the user: we are not currently popping the context so
     // we need to untrack the data from the map of data previously pushed in
     // the context (need_untrack=true).
-    pimpl->pop(true);
+    pimpl->pop_before_finalize(true);
   }
 
   // Helpers
@@ -784,11 +830,15 @@ public:
     return pimpl;
   }
 
+  // Test whether it is valid to access this stackable_logical_data with a
+  // given access mode, and automatically push data at the proper context depth
+  // if necessary.
+  //
   // Returns true if the task_dep needs an update
-  bool doo(const stackable_ctx& sctx, access_mode m) const
+  bool validate_access(const stackable_ctx& sctx, access_mode m) const
   {
     // fprintf(stderr,
-    //         "Calling doo() on stackable_logical_data %p - symbol=%s - requested mode %s\n",
+    //         "Calling validate_access() on stackable_logical_data %p - symbol=%s - requested mode %s\n",
     //         pimpl.get(),
     //         get_symbol().c_str(),
     //         access_mode_string(m));

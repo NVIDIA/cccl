@@ -43,8 +43,6 @@ int main()
   {
     ctx.push();
 
-    lA.push(access_mode::rw);
-
     auto tmp = ctx.logical_data(lA.shape()).set_symbol("tmp");
 
     ctx.parallel_for(tmp.shape(), tmp.write(), lA.read())->*[] __device__(size_t i, auto tmp, auto a) {
@@ -62,8 +60,6 @@ int main()
     ctx.parallel_for(lA.shape(), tmp.read(), lA.rw())->*[] __device__(size_t i, auto tmp, auto a) {
       a(i) += tmp(i);
     };
-
-    lA.pop();
 
     ctx.pop();
   }

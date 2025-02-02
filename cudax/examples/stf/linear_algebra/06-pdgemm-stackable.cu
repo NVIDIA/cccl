@@ -90,7 +90,7 @@ public:
         std::ignore = ld; // avoid warning #177-D: variable "ld" was declared but never referenced
         auto s      = make_slice(addr_h, std::tuple{mb, nb}, ld);
         auto tile   = ctx.logical_data(s);
-//        tile.set_write_back(false);
+        //        tile.set_write_back(false);
 
         tile.set_symbol(std::string(symbol) + "_" + std::to_string(rowb) + "_" + std::to_string(colb));
 
@@ -114,10 +114,12 @@ public:
     //           << "p=" << grid_p << " q=" << grid_q << std::endl;
   }
 
-  void push(/*stackable_ctx& ctx, */access_mode mode) {
-      for (auto &h : handles) {
-          h.push(mode);
-      }
+  void push(/*stackable_ctx& ctx, */ access_mode mode)
+  {
+    for (auto& h : handles)
+    {
+      h.push(mode);
+    }
   }
 
   int get_preferred_devid(int row, int col)
@@ -323,8 +325,8 @@ void PDGEMM(stackable_ctx& ctx,
 
 void run(stackable_ctx& ctx, size_t N, size_t NB)
 {
-  ///auto fixed_alloc = block_allocator<fixed_size_allocator>(ctx, NB * NB * sizeof(double));
-  //ctx.set_allocator(fixed_alloc);
+  /// auto fixed_alloc = block_allocator<fixed_size_allocator>(ctx, NB * NB * sizeof(double));
+  // ctx.set_allocator(fixed_alloc);
 
   // Set up CUBLAS and CUSOLVER
   int ndevs;
