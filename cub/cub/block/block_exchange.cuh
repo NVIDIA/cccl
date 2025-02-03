@@ -895,7 +895,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   StripedToBlocked(const T (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD])
   {
-    StripedToBlocked(input_items, output_items, bool_constant_v<WARP_TIME_SLICING>);
+    StripedToBlocked(input_items, output_items, detail::bool_constant_v<WARP_TIME_SLICING>);
   }
 
   //! @rst
@@ -946,7 +946,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   BlockedToStriped(const T (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD])
   {
-    BlockedToStriped(input_items, output_items, bool_constant_v<WARP_TIME_SLICING>);
+    BlockedToStriped(input_items, output_items, detail::bool_constant_v<WARP_TIME_SLICING>);
   }
 
   //! @rst
@@ -997,7 +997,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   WarpStripedToBlocked(const T (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD])
   {
-    WarpStripedToBlocked(input_items, output_items, bool_constant_v<WARP_TIME_SLICING>);
+    WarpStripedToBlocked(input_items, output_items, detail::bool_constant_v<WARP_TIME_SLICING>);
   }
 
   //! @rst
@@ -1051,7 +1051,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   BlockedToWarpStriped(const T (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD])
   {
-    BlockedToWarpStriped(input_items, output_items, bool_constant_v<WARP_TIME_SLICING>);
+    BlockedToWarpStriped(input_items, output_items, detail::bool_constant_v<WARP_TIME_SLICING>);
   }
 
   //! @}  end member group
@@ -1081,7 +1081,7 @@ public:
     OutputT (&output_items)[ITEMS_PER_THREAD],
     OffsetT (&ranks)[ITEMS_PER_THREAD])
   {
-    ScatterToBlocked(input_items, output_items, ranks, bool_constant_v<WARP_TIME_SLICING>);
+    ScatterToBlocked(input_items, output_items, ranks, detail::bool_constant_v<WARP_TIME_SLICING>);
   }
 
   //! @rst
@@ -1108,7 +1108,7 @@ public:
     OutputT (&output_items)[ITEMS_PER_THREAD],
     OffsetT (&ranks)[ITEMS_PER_THREAD])
   {
-    ScatterToStriped(input_items, output_items, ranks, bool_constant_v<WARP_TIME_SLICING>);
+    ScatterToStriped(input_items, output_items, ranks, detail::bool_constant_v<WARP_TIME_SLICING>);
   }
 
   //! @rst

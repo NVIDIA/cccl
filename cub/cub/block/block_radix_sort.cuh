@@ -633,7 +633,7 @@ public:
   {
     NullType values[ITEMS_PER_THREAD];
 
-    SortBlocked(keys, values, begin_bit, end_bit, ::cuda::std::false_type(), bool_constant_v<KEYS_ONLY>);
+    SortBlocked(keys, values, begin_bit, end_bit, ::cuda::std::false_type(), detail::bool_constant_v<KEYS_ONLY>);
   }
 
   //! @rst
@@ -700,7 +700,8 @@ public:
   {
     NullType values[ITEMS_PER_THREAD];
 
-    SortBlocked(keys, values, begin_bit, end_bit, ::cuda::std::false_type(), bool_constant_v<KEYS_ONLY>, decomposer);
+    SortBlocked(
+      keys, values, begin_bit, end_bit, ::cuda::std::false_type(), detail::bool_constant_v<KEYS_ONLY>, decomposer);
   }
 
   //! @rst
@@ -825,7 +826,7 @@ public:
        int begin_bit = 0,
        int end_bit   = sizeof(KeyT) * 8)
   {
-    SortBlocked(keys, values, begin_bit, end_bit, ::cuda::std::false_type(), bool_constant_v<KEYS_ONLY>);
+    SortBlocked(keys, values, begin_bit, end_bit, ::cuda::std::false_type(), detail::bool_constant_v<KEYS_ONLY>);
   }
 
   //! @rst
@@ -902,7 +903,8 @@ public:
        int begin_bit,
        int end_bit)
   {
-    SortBlocked(keys, values, begin_bit, end_bit, ::cuda::std::false_type(), bool_constant_v<KEYS_ONLY>, decomposer);
+    SortBlocked(
+      keys, values, begin_bit, end_bit, ::cuda::std::false_type(), detail::bool_constant_v<KEYS_ONLY>, decomposer);
   }
 
   //! @rst
@@ -1023,7 +1025,7 @@ public:
   {
     NullType values[ITEMS_PER_THREAD];
 
-    SortBlocked(keys, values, begin_bit, end_bit, ::cuda::std::true_type(), bool_constant_v<KEYS_ONLY>);
+    SortBlocked(keys, values, begin_bit, end_bit, ::cuda::std::true_type(), detail::bool_constant_v<KEYS_ONLY>);
   }
 
   //! @rst
@@ -1090,7 +1092,8 @@ public:
   {
     NullType values[ITEMS_PER_THREAD];
 
-    SortBlocked(keys, values, begin_bit, end_bit, ::cuda::std::true_type(), bool_constant_v<KEYS_ONLY>, decomposer);
+    SortBlocked(
+      keys, values, begin_bit, end_bit, ::cuda::std::true_type(), detail::bool_constant_v<KEYS_ONLY>, decomposer);
   }
 
   //! @rst
@@ -1155,7 +1158,7 @@ public:
       0,
       detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
       ::cuda::std::true_type(),
-      bool_constant_v<KEYS_ONLY>,
+      detail::bool_constant_v<KEYS_ONLY>,
       decomposer);
   }
 
@@ -1222,7 +1225,7 @@ public:
     int begin_bit = 0,
     int end_bit   = sizeof(KeyT) * 8)
   {
-    SortBlocked(keys, values, begin_bit, end_bit, ::cuda::std::true_type(), bool_constant_v<KEYS_ONLY>);
+    SortBlocked(keys, values, begin_bit, end_bit, ::cuda::std::true_type(), detail::bool_constant_v<KEYS_ONLY>);
   }
 
   //! @rst
@@ -1299,7 +1302,8 @@ public:
                  int begin_bit,
                  int end_bit)
   {
-    SortBlocked(keys, values, begin_bit, end_bit, ::cuda::std::true_type(), bool_constant_v<KEYS_ONLY>, decomposer);
+    SortBlocked(
+      keys, values, begin_bit, end_bit, ::cuda::std::true_type(), detail::bool_constant_v<KEYS_ONLY>, decomposer);
   }
 
   //! @rst
@@ -1370,7 +1374,7 @@ public:
       0,
       detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
       ::cuda::std::true_type(),
-      bool_constant_v<KEYS_ONLY>,
+      detail::bool_constant_v<KEYS_ONLY>,
       decomposer);
   }
 
@@ -1431,7 +1435,8 @@ public:
   {
     NullType values[ITEMS_PER_THREAD];
 
-    SortBlockedToStriped(keys, values, begin_bit, end_bit, ::cuda::std::false_type(), bool_constant_v<KEYS_ONLY>);
+    SortBlockedToStriped(
+      keys, values, begin_bit, end_bit, ::cuda::std::false_type(), detail::bool_constant_v<KEYS_ONLY>);
   }
 
   //! @rst
@@ -1500,7 +1505,7 @@ public:
     NullType values[ITEMS_PER_THREAD];
 
     SortBlockedToStriped(
-      keys, values, begin_bit, end_bit, ::cuda::std::false_type(), bool_constant_v<KEYS_ONLY>, decomposer);
+      keys, values, begin_bit, end_bit, ::cuda::std::false_type(), detail::bool_constant_v<KEYS_ONLY>, decomposer);
   }
 
   //! @rst
@@ -1566,7 +1571,7 @@ public:
       0,
       detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
       ::cuda::std::false_type(),
-      bool_constant_v<KEYS_ONLY>,
+      detail::bool_constant_v<KEYS_ONLY>,
       decomposer);
   }
 
@@ -1633,7 +1638,8 @@ public:
     int begin_bit = 0,
     int end_bit   = sizeof(KeyT) * 8)
   {
-    SortBlockedToStriped(keys, values, begin_bit, end_bit, ::cuda::std::false_type(), bool_constant_v<KEYS_ONLY>);
+    SortBlockedToStriped(
+      keys, values, begin_bit, end_bit, ::cuda::std::false_type(), detail::bool_constant_v<KEYS_ONLY>);
   }
 
   //! @rst
@@ -1707,7 +1713,7 @@ public:
                        int end_bit)
   {
     SortBlockedToStriped(
-      keys, values, begin_bit, end_bit, ::cuda::std::false_type(), bool_constant_v<KEYS_ONLY>, decomposer);
+      keys, values, begin_bit, end_bit, ::cuda::std::false_type(), detail::bool_constant_v<KEYS_ONLY>, decomposer);
   }
 
   //! @rst
@@ -1774,7 +1780,7 @@ public:
       0,
       detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
       ::cuda::std::false_type(),
-      bool_constant_v<KEYS_ONLY>,
+      detail::bool_constant_v<KEYS_ONLY>,
       decomposer);
   }
 
@@ -1831,7 +1837,7 @@ public:
   {
     NullType values[ITEMS_PER_THREAD];
 
-    SortBlockedToStriped(keys, values, begin_bit, end_bit, ::cuda::std::true_type(), bool_constant_v<KEYS_ONLY>);
+    SortBlockedToStriped(keys, values, begin_bit, end_bit, ::cuda::std::true_type(), detail::bool_constant_v<KEYS_ONLY>);
   }
 
   //! @rst
@@ -1900,7 +1906,7 @@ public:
     NullType values[ITEMS_PER_THREAD];
 
     SortBlockedToStriped(
-      keys, values, begin_bit, end_bit, ::cuda::std::true_type(), bool_constant_v<KEYS_ONLY>, decomposer);
+      keys, values, begin_bit, end_bit, ::cuda::std::true_type(), detail::bool_constant_v<KEYS_ONLY>, decomposer);
   }
 
   //! @rst
@@ -1966,7 +1972,7 @@ public:
       0,
       detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
       ::cuda::std::true_type(),
-      bool_constant_v<KEYS_ONLY>,
+      detail::bool_constant_v<KEYS_ONLY>,
       decomposer);
   }
 
@@ -2033,7 +2039,7 @@ public:
     int begin_bit = 0,
     int end_bit   = sizeof(KeyT) * 8)
   {
-    SortBlockedToStriped(keys, values, begin_bit, end_bit, ::cuda::std::true_type(), bool_constant_v<KEYS_ONLY>);
+    SortBlockedToStriped(keys, values, begin_bit, end_bit, ::cuda::std::true_type(), detail::bool_constant_v<KEYS_ONLY>);
   }
 
   //! @rst
@@ -2108,7 +2114,7 @@ public:
     int end_bit)
   {
     SortBlockedToStriped(
-      keys, values, begin_bit, end_bit, ::cuda::std::true_type(), bool_constant_v<KEYS_ONLY>, decomposer);
+      keys, values, begin_bit, end_bit, ::cuda::std::true_type(), detail::bool_constant_v<KEYS_ONLY>, decomposer);
   }
 
   //! @rst
@@ -2176,7 +2182,7 @@ public:
       0,
       detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
       ::cuda::std::true_type(),
-      bool_constant_v<KEYS_ONLY>,
+      detail::bool_constant_v<KEYS_ONLY>,
       decomposer);
   }
 
