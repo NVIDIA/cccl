@@ -553,8 +553,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t DeviceSegmentedSortCont
             (long long) stream);
 #endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
-    THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
-      blocks_in_grid, LargeSegmentPolicyT::BLOCK_THREADS, 0, stream)
+    THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(blocks_in_grid, LargeSegmentPolicyT::BLOCK_THREADS, 0, stream)
       .doit(large_kernel,
             large_and_medium_segments_indices,
             d_current_keys,
@@ -601,7 +600,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t DeviceSegmentedSortCont
             (long long) stream);
 #endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
-    THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+    THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
       small_and_medium_blocks_in_grid, SmallAndMediumPolicyT::BLOCK_THREADS, 0, stream)
       .doit(small_kernel,
             small_segments,
@@ -1234,43 +1233,43 @@ private:
 
 #else // CUB_RDC_ENABLED
 
-#  define CUB_TEMP_DEVICE_CODE                                                 \
-    error =                                                                    \
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(1, 1, 0, stream) \
-        .doit(                                                                 \
-          DeviceSegmentedSortContinuationKernel<                               \
-            typename PolicyHub::MaxPolicy,                                     \
-            LargeKernelT,                                                      \
-            SmallKernelT,                                                      \
-            KeyT,                                                              \
-            ValueT,                                                            \
-            BeginOffsetIteratorT,                                              \
-            EndOffsetIteratorT>,                                               \
-          large_kernel,                                                        \
-          small_kernel,                                                        \
-          num_segments,                                                        \
-          d_keys.Current(),                                                    \
-          GetFinalOutput<KeyT>(LargeSegmentPolicyT::RADIX_BITS, d_keys),       \
-          d_keys_double_buffer,                                                \
-          d_values.Current(),                                                  \
-          GetFinalOutput<ValueT>(LargeSegmentPolicyT::RADIX_BITS, d_values),   \
-          d_values_double_buffer,                                              \
-          d_begin_offsets,                                                     \
-          d_end_offsets,                                                       \
-          group_sizes.get(),                                                   \
-          large_and_medium_segments_indices.get(),                             \
-          small_segments_indices.get());                                       \
-    error = CubDebug(error);                                                   \
-                                                                               \
-    if (cudaSuccess != error)                                                  \
-    {                                                                          \
-      return error;                                                            \
-    }                                                                          \
-                                                                               \
-    error = CubDebug(detail::DebugSyncStream(stream));                         \
-    if (cudaSuccess != error)                                                  \
-    {                                                                          \
-      return error;                                                            \
+#  define CUB_TEMP_DEVICE_CODE                                               \
+    error =                                                                  \
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, 1, 0, stream) \
+        .doit(                                                               \
+          DeviceSegmentedSortContinuationKernel<                             \
+            typename PolicyHub::MaxPolicy,                                   \
+            LargeKernelT,                                                    \
+            SmallKernelT,                                                    \
+            KeyT,                                                            \
+            ValueT,                                                          \
+            BeginOffsetIteratorT,                                            \
+            EndOffsetIteratorT>,                                             \
+          large_kernel,                                                      \
+          small_kernel,                                                      \
+          num_segments,                                                      \
+          d_keys.Current(),                                                  \
+          GetFinalOutput<KeyT>(LargeSegmentPolicyT::RADIX_BITS, d_keys),     \
+          d_keys_double_buffer,                                              \
+          d_values.Current(),                                                \
+          GetFinalOutput<ValueT>(LargeSegmentPolicyT::RADIX_BITS, d_values), \
+          d_values_double_buffer,                                            \
+          d_begin_offsets,                                                   \
+          d_end_offsets,                                                     \
+          group_sizes.get(),                                                 \
+          large_and_medium_segments_indices.get(),                           \
+          small_segments_indices.get());                                     \
+    error = CubDebug(error);                                                 \
+                                                                             \
+    if (cudaSuccess != error)                                                \
+    {                                                                        \
+      return error;                                                          \
+    }                                                                        \
+                                                                             \
+    error = CubDebug(detail::DebugSyncStream(stream));                       \
+    if (cudaSuccess != error)                                                \
+    {                                                                        \
+      return error;                                                          \
     }
 
 #endif // CUB_RDC_ENABLED
@@ -1348,7 +1347,7 @@ private:
 #endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
     // Invoke fallback kernel
-    THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(blocks_in_grid, threads_in_block, 0, stream)
+    THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(blocks_in_grid, threads_in_block, 0, stream)
       .doit(fallback_kernel,
             d_keys.Current(),
             GetFinalOutput(LargeSegmentPolicyT::RADIX_BITS, d_keys),
