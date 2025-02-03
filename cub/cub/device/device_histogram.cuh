@@ -34,8 +34,6 @@
 
 #include <cub/config.cuh>
 
-#include "cuda/std/__type_traits/integral_constant.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
