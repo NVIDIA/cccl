@@ -184,8 +184,6 @@ void copy(nvbench::state& state,
   using buffer_offset_t    = std::uint32_t;
   using block_offset_t     = std::uint32_t;
 
-  constexpr cub::CopyAlg is_memcpy = cub::CopyAlg::Memcpy;
-
 #if !TUNE_BASE
   using policy_t = policy_hub_t;
 #else
@@ -199,7 +197,7 @@ void copy(nvbench::state& state,
     buffer_offset_t,
     block_offset_t,
     policy_t,
-    is_memcpy>;
+    cub::CopyAlg::Memcpy>;
 
   thrust::device_vector<T> input_buffer = generate(elements);
   thrust::device_vector<T> output_buffer(elements);
