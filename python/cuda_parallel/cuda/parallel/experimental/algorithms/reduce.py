@@ -99,14 +99,14 @@ class _Reduce:
 
         error = self.bindings.cccl_device_reduce(
             self.build_result,
-            d_temp_storage,
+            ctypes.c_void_p(d_temp_storage),
             ctypes.byref(temp_storage_bytes),
             self.d_in_cccl,
             self.d_out_cccl,
             ctypes.c_ulonglong(num_items),
             self.op_wrapper,
             self.h_init_cccl,
-            stream_handle,
+            ctypes.c_void_p(stream_handle),
         )
 
         if error != enums.CUDA_SUCCESS:
