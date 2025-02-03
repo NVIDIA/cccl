@@ -195,7 +195,7 @@ struct DispatchAdjacentDifference
 
       auto first_tile_previous = reinterpret_cast<InputT*>(allocations[0]);
 
-      if (AliasOpt == AliasOption::MayAlias)
+      _CCCL_IF_CONSTEXPR (AliasOpt == AliasOption::MayAlias)
       {
         using AgentDifferenceInitT = detail::adjacent_difference::
           AgentDifferenceInit<InputIteratorT, InputT, OffsetT, ReadOpt == ReadOption::ReadLeft>;
@@ -244,14 +244,15 @@ struct DispatchAdjacentDifference
 
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
         num_tiles, AdjacentDifferencePolicyT::BLOCK_THREADS, 0, stream)
-        .doit(detail::adjacent_difference::DeviceAdjacentDifferenceDifferenceKernel < typename PolicyHub::MaxPolicy,
-              InputIteratorT,
-              OutputIteratorT,
-              DifferenceOpT,
-              OffsetT,
-              InputT,
-              AliasOpt == AliasOption::MayAlias,
-              ReadOpt == ReadOption::ReadLeft >,
+        .doit(detail::adjacent_difference::DeviceAdjacentDifferenceDifferenceKernel<
+                typename PolicyHub::MaxPolicy,
+                InputIteratorT,
+                OutputIteratorT,
+                DifferenceOpT,
+                OffsetT,
+                InputT,
+                AliasOpt == AliasOption::MayAlias,
+                ReadOpt == ReadOption::ReadLeft>,
               d_input,
               first_tile_previous,
               d_output,
