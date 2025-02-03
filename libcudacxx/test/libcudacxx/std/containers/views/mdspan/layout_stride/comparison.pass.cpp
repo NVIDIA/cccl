@@ -44,7 +44,7 @@ _CCCL_CONCEPT layout_mapping_comparable = _CCCL_FRAGMENT(layout_mapping_comparab
 template <class T1, class T2>
 __host__ __device__ constexpr void test_comparison_different_rank()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
   // sanity check same rank
   static_assert(layout_mapping_comparable<cuda::std::extents<T1, D>, cuda::std::extents<T2, D>>);
@@ -83,7 +83,7 @@ __host__ __device__ constexpr void test_comparison(
 template <class T1, class T2>
 __host__ __device__ constexpr void test_comparison_same_rank()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
   test_comparison(
     true, cuda::std::extents<T1>(), cuda::std::extents<T2>(), cuda::std::array<int, 0>{}, cuda::std::array<int, 0>{});
@@ -217,7 +217,7 @@ template <class OtherLayout,
           cuda::std::enable_if_t<cuda::std::is_same<OtherLayout, always_convertible_layout>::value, int> = 0>
 __host__ __device__ constexpr void test_comparison_with_always_convertible()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   // test layout with strides not equal to product of extents
   test_comparison_with<OtherLayout>(
     true,
@@ -244,8 +244,8 @@ __host__ __device__ constexpr void test_comparison_with_always_convertible()
 template <class OtherLayout>
 __host__ __device__ constexpr void test_comparison_with()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
-  bool is_left_based = cuda::std::is_same_v<OtherLayout, cuda::std::layout_left>
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
+  bool is_left_based                  = cuda::std::is_same_v<OtherLayout, cuda::std::layout_left>
                     || cuda::std::is_same_v<OtherLayout, always_convertible_layout>;
   test_comparison_with<OtherLayout>(
     true, cuda::std::extents<int>(), cuda::std::array<int, 0>{}, cuda::std::extents<unsigned>());

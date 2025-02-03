@@ -57,7 +57,7 @@ template <class M, class... Args, size_t... Pos>
 __host__ __device__ constexpr size_t get_strides(
   const cuda::std::array<int, M::extents_type::rank()>& strides, cuda::std::index_sequence<Pos...>, Args... args)
 {
-  return _CCCL_FOLD_PLUS(size_t{0}, (args * strides[Pos]));
+  return (size_t{0} + ... + (args * strides[Pos]));
 }
 
 template <class M, class... Args, cuda::std::enable_if_t<(M::extents_type::rank() == sizeof...(Args)), int> = 0>
@@ -92,7 +92,7 @@ __host__ __device__ constexpr void test_iteration(cuda::std::array<int, E::rank(
 
 __host__ __device__ constexpr bool test()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_iteration<cuda::std::extents<int>>(cuda::std::array<int, 0>{});
   test_iteration<cuda::std::extents<unsigned, D>>(cuda::std::array<int, 1>{2}, 1);
   test_iteration<cuda::std::extents<unsigned, D>>(cuda::std::array<int, 1>{3}, 7);
@@ -132,7 +132,7 @@ __host__ __device__ constexpr bool test()
 
 __host__ __device__ constexpr bool test_large()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_iteration<cuda::std::extents<int64_t, D, 8, D, D>>(cuda::std::array<int, 4>{2000, 2, 20, 200}, 7, 9, 10);
   test_iteration<cuda::std::extents<int64_t, D, 8, 1, D>>(cuda::std::array<int, 4>{2000, 20, 20, 200}, 7, 10);
   return true;

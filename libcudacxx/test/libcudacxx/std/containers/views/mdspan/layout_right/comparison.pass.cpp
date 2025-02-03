@@ -62,7 +62,7 @@ __host__ __device__ constexpr auto compare_layout_mappings(E1, E2)
 template <class T1, class T2>
 __host__ __device__ constexpr void test_comparison_different_rank()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
   // sanity check same rank
   static_assert(compare_layout_mappings(cuda::std::extents<T1, D>(5), cuda::std::extents<T2, D>(5)), "");
@@ -95,7 +95,7 @@ __host__ __device__ constexpr void test_comparison_different_rank()
 template <class T1, class T2>
 __host__ __device__ constexpr void test_comparison_same_rank()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
   test_comparison(true, cuda::std::extents<T1>(), cuda::std::extents<T2>());
 

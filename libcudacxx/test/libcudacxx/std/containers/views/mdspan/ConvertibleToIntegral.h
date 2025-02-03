@@ -36,11 +36,11 @@ struct IntType
   }
   __host__ __device__ constexpr operator unsigned char() const
   {
-    return val;
+    return static_cast<unsigned char>(val);
   }
   __host__ __device__ constexpr operator char() const noexcept
   {
-    return val;
+    return static_cast<char>(val);
   }
 };
 
@@ -68,11 +68,11 @@ struct IntTypeNC
   }
   __host__ __device__ constexpr operator unsigned()
   {
-    return val;
+    return static_cast<unsigned>(val);
   }
   __host__ __device__ constexpr operator char() noexcept
   {
-    return val;
+    return static_cast<char>(val);
   }
 };
 

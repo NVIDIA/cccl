@@ -34,6 +34,9 @@
 #include <cuda/std/array>
 #include <cuda/std/tuple>
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4848) // [[no_unique_address]] prior to C++20 as a vendor extension
+
 #if _CCCL_STD_VER >= 2017
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -119,36 +122,6 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) __get_slice_a
   return _CUDA_VSTD::get<_Index>(_CUDA_VSTD::forward_as_tuple(_CUDA_VSTD::forward<_Slices>(__slices)...));
 }
 
-struct __first_extent_from_slice_impl
-{
-  _CCCL_TEMPLATE(class _IndexType, class _SliceType)
-  _CCCL_REQUIRES(convertible_to<_SliceType, _IndexType>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr _IndexType __get(_SliceType& __slice) noexcept
-  {
-    return _CUDA_VSTD::__index_cast<_IndexType>(__slice);
-  }
-  _CCCL_TEMPLATE(class _IndexType, class _SliceType)
-  _CCCL_REQUIRES((!convertible_to<_SliceType, _IndexType>) _CCCL_AND __index_pair_like<_SliceType, _IndexType>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr _IndexType __get(_SliceType& __slice) noexcept
-  {
-    return _CUDA_VSTD::__index_cast<_IndexType>(_CUDA_VSTD::get<0>(__slice));
-  }
-  _CCCL_TEMPLATE(class _IndexType, class _SliceType)
-  _CCCL_REQUIRES((!convertible_to<_SliceType, _IndexType>) _CCCL_AND(!__index_pair_like<_SliceType, _IndexType>)
-                   _CCCL_AND __is_strided_slice<_SliceType>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr _IndexType __get(_SliceType& __slice) noexcept
-  {
-    return _CUDA_VSTD::__index_cast<_IndexType>(_CUDA_VSTD::__de_ice(__slice.offset));
-  }
-  _CCCL_TEMPLATE(class _IndexType, class _SliceType)
-  _CCCL_REQUIRES((!convertible_to<_SliceType, _IndexType>) _CCCL_AND(!__index_pair_like<_SliceType, _IndexType>)
-                   _CCCL_AND(!__is_strided_slice<_SliceType>))
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr _IndexType __get(_SliceType&) noexcept
-  {
-    return 0;
-  }
-};
-
 template <size_t _Index, class... _Slices>
 using __get_slice_type = __tuple_element_t<_Index, __tuple_types<_Slices...>>;
 
@@ -159,44 +132,28 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _IndexType __first_extent_fr
                 "[mdspan.sub.helpers] mandates IndexType to be a signed or unsigned integral");
   using _SliceType    = __get_slice_type<_Index, _Slices...>;
   _SliceType& __slice = _CUDA_VSTD::__get_slice_at<_Index>(__slices...);
-  return __first_extent_from_slice_impl::template __get<_IndexType>(__slice);
+  if constexpr (convertible_to<_SliceType, _IndexType>)
+  {
+    return _CUDA_VSTD::__index_cast<_IndexType>(__slice);
+  }
+  else
+  {
+    if constexpr (__index_pair_like<_SliceType, _IndexType>)
+    {
+      return _CUDA_VSTD::__index_cast<_IndexType>(_CUDA_VSTD::get<0>(__slice));
+    }
+    else if constexpr (__is_strided_slice<_SliceType>)
+    {
+      return _CUDA_VSTD::__index_cast<_IndexType>(_CUDA_VSTD::__de_ice(__slice.offset));
+    }
+    else
+    {
+      (void) __slice;
+      return 0;
+    }
+  }
+  _CCCL_UNREACHABLE();
 }
-
-template <size_t _Index>
-struct __last_extent_from_slice_impl
-{
-  _CCCL_TEMPLATE(class _IndexType, class _SliceType, class _Extents)
-  _CCCL_REQUIRES(convertible_to<_SliceType, _IndexType>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr _IndexType
-  __get(_SliceType& __slice, const _Extents&) noexcept
-  {
-    return _CUDA_VSTD::__index_cast<_IndexType>(_CUDA_VSTD::__de_ice(__slice) + 1);
-  }
-  _CCCL_TEMPLATE(class _IndexType, class _SliceType, class _Extents)
-  _CCCL_REQUIRES((!convertible_to<_SliceType, _IndexType>) _CCCL_AND __index_pair_like<_SliceType, _IndexType>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr _IndexType
-  __get(_SliceType& __slice, const _Extents&) noexcept
-  {
-    return _CUDA_VSTD::__index_cast<_IndexType>(_CUDA_VSTD::get<1>(__slice));
-  }
-  _CCCL_TEMPLATE(class _IndexType, class _SliceType, class _Extents)
-  _CCCL_REQUIRES((!convertible_to<_SliceType, _IndexType>) _CCCL_AND(!__index_pair_like<_SliceType, _IndexType>)
-                   _CCCL_AND __is_strided_slice<_SliceType>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr _IndexType
-  __get(_SliceType& __slice, const _Extents&) noexcept
-  {
-    return _CUDA_VSTD::__index_cast<_IndexType>(
-      _CUDA_VSTD::__de_ice(__slice.offset) * _CUDA_VSTD::__de_ice(__slice.extent));
-  }
-  _CCCL_TEMPLATE(class _IndexType, class _SliceType, class _Extents)
-  _CCCL_REQUIRES((!convertible_to<_SliceType, _IndexType>) _CCCL_AND(!__index_pair_like<_SliceType, _IndexType>)
-                   _CCCL_AND(!__is_strided_slice<_SliceType>))
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr _IndexType
-  __get(_SliceType&, const _Extents& __src) noexcept
-  {
-    return _CUDA_VSTD::__index_cast<_IndexType>(__src.extent(_Index));
-  }
-};
 
 template <size_t _Index, class _Extents, class... _Slices>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr typename _Extents::index_type
@@ -207,36 +164,34 @@ __last_extent_from_slice(const _Extents& __src, _Slices... __slices) noexcept
   using _IndexType    = typename _Extents::index_type;
   using _SliceType    = __get_slice_type<_Index, _Slices...>;
   _SliceType& __slice = _CUDA_VSTD::__get_slice_at<_Index>(__slices...);
-  return __last_extent_from_slice_impl<_Index>::template __get<_IndexType>(__slice, __src);
-}
-
-template <class _IndexType, class... _Slices, size_t... _SliceIndexes>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr array<_IndexType, sizeof...(_Slices)> __src_indices(
-  index_sequence<_SliceIndexes...>, const array<_IndexType, sizeof...(_Slices)>& __indices, _Slices... __slices) noexcept
-{
-  constexpr array<size_t, sizeof...(_Slices)> __ranks = _CUDA_VSTD::__map_rank<_IndexType, _Slices...>();
-  array<_IndexType, sizeof...(_Slices)> __arr         = {
-    _CUDA_VSTD::__first_extent_from_slice<_IndexType, _SliceIndexes>(__slices)...};
-
-  for (size_t __index = 0; __index < sizeof...(_Slices); ++__index)
+  if constexpr (convertible_to<_SliceType, _IndexType>)
   {
-    if (__ranks[__index] != dynamic_extent)
+    return _CUDA_VSTD::__index_cast<_IndexType>(_CUDA_VSTD::__de_ice(__slice) + 1);
+  }
+  else
+  {
+    if constexpr (__index_pair_like<_SliceType, _IndexType>)
     {
-      __arr += __indices[__ranks[__index]];
+      return _CUDA_VSTD::__index_cast<_IndexType>(_CUDA_VSTD::get<1>(__slice));
+    }
+    else if constexpr (__is_strided_slice<_SliceType>)
+    {
+      return _CUDA_VSTD::__index_cast<_IndexType>(
+        _CUDA_VSTD::__de_ice(__slice.offset) * _CUDA_VSTD::__de_ice(__slice.extent));
+    }
+    else
+    {
+      (void) __slice;
+      return _CUDA_VSTD::__index_cast<_IndexType>(__src.extent(_Index));
     }
   }
-  return __arr;
-}
-
-template <class _IndexType, class... _Slices>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr array<_IndexType, sizeof...(_Slices)>
-__src_indices(const array<_IndexType, sizeof...(_Slices)>& __indices, _Slices... __slices) noexcept
-{
-  return _CUDA_VSTD::__src_indices(index_sequence_for<_Slices...>(), __indices, __slices...);
+  _CCCL_UNREACHABLE();
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif // _CCCL_STD_VER >= 2017
+
+_CCCL_DIAG_POP
 
 #endif // _LIBCUDACXX___MDSPAN_SUBMDSPAN_HELPER_H

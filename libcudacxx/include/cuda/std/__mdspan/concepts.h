@@ -36,7 +36,9 @@
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -149,6 +151,11 @@ _CCCL_CONCEPT_FRAGMENT(
 template <class _Mapping>
 _CCCL_CONCEPT __layout_mapping_alike = _CCCL_FRAGMENT(__layout_mapping_alike_, _Mapping);
 #endif // _CCCL_STD_VER <= 2017
+
+template <class _IndexType, class... _Indices>
+_CCCL_CONCEPT __all_convertible_to_index_type =
+  (_CCCL_TRAIT(is_convertible, _Indices, _IndexType) && ... && true)
+  && (_CCCL_TRAIT(is_nothrow_constructible, _IndexType, _Indices) && ... && true);
 
 } // namespace __mdspan_detail
 

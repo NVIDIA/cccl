@@ -8,6 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++11, c++14
+// UNSUPPORTED: nvcc-12.0 && clang
 
 #include <cuda/std/cassert>
 #include <cuda/std/mdspan>

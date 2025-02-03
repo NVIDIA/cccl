@@ -101,7 +101,9 @@ template <class L,
                                  int> = 0>
 __host__ __device__ constexpr void test_mdspan_no_unique_address()
 {
+#if !defined(_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS)
   static_assert(sizeof(MDS) == expected_size<MDS>(), "");
+#endif // !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 }
 
 template <class L,
@@ -156,7 +158,7 @@ __host__ __device__ constexpr void test_mdspan_types()
 template <class T, class L, class A>
 __host__ __device__ constexpr void mixin_extents()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_mdspan_types<T, cuda::std::extents<int>, L, A>();
   test_mdspan_types<T, cuda::std::extents<char, D>, L, A>();
   test_mdspan_types<T, cuda::std::dextents<char, 7>, L, A>();

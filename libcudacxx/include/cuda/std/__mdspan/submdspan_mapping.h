@@ -36,6 +36,9 @@
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/array>
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4848) // [[no_unique_address]] prior to C++20 as a vendor extension
+
 #if _CCCL_STD_VER >= 2017
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -324,5 +327,7 @@ submdspan(const mdspan<_Tp, _Extents, _Layout, _Accessor>& __src, _Slices... __s
 _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif // _CCCL_STD_VER >= 2017
+
+_CCCL_DIAG_POP
 
 #endif // _LIBCUDACXX___MDSPAN_SUBMDSPAN_MAPPING_H

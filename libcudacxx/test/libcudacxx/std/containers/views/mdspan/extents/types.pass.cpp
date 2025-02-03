@@ -54,10 +54,7 @@ __host__ __device__ void testExtents()
   static_assert(cuda::std::regular<E>, "");
   static_assert(cuda::std::is_trivially_copyable<E>::value, "");
 
-// Did never find a way to make this true on windows
-#ifndef TEST_COMPILER_MSVC
   static_assert(cuda::std::is_empty<E>::value == (E::rank_dynamic() == 0), "");
-#endif
 }
 
 template <class IndexType, size_t... Extents>
@@ -69,7 +66,7 @@ __host__ __device__ void testExtents()
 template <class T>
 __host__ __device__ void test()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   testExtents<T, D>();
   testExtents<T, 3>();
   testExtents<T, 3, 3>();

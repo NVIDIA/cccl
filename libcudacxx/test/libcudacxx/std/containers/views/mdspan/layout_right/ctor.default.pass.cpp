@@ -55,7 +55,7 @@ __host__ __device__ constexpr void test_construction()
 
 __host__ __device__ constexpr bool test()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_construction<cuda::std::extents<int>>();
   test_construction<cuda::std::extents<unsigned, D>>();
   test_construction<cuda::std::extents<unsigned, 7>>();

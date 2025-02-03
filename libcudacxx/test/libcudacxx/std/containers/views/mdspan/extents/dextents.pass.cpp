@@ -24,7 +24,7 @@
 template <class IndexType>
 __host__ __device__ void test_alias_template_dextents()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   ASSERT_SAME_TYPE(cuda::std::dextents<IndexType, 0>, cuda::std::extents<IndexType>);
   ASSERT_SAME_TYPE(cuda::std::dextents<IndexType, 1>, cuda::std::extents<IndexType, D>);
   ASSERT_SAME_TYPE(cuda::std::dextents<IndexType, 2>, cuda::std::extents<IndexType, D, D>);

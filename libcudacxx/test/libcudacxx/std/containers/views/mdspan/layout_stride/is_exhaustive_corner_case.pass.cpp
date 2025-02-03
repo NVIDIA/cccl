@@ -36,7 +36,7 @@ test_layout_mapping_stride(E ext, cuda::std::array<typename E::index_type, E::ra
 
 __host__ __device__ constexpr bool test()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_layout_mapping_stride(cuda::std::extents<int, 0>(), cuda::std::array<int, 1>{1}, true);
   test_layout_mapping_stride(cuda::std::extents<unsigned, D>(0), cuda::std::array<unsigned, 1>{3}, false);
   test_layout_mapping_stride(cuda::std::extents<int, 0, 3>(), cuda::std::array<int, 2>{6, 2}, true);
