@@ -32,6 +32,7 @@
 #include <cuda/std/type_traits>
 
 #include <c2h/catch2_test_helper.h>
+#include <c2h/extended_types.h>
 
 C2H_TEST("Tests non_void_value_t", "[util][type]")
 {
@@ -79,4 +80,45 @@ C2H_TEST("Test CUB_DEFINE_DETECT_NESTED_TYPE", "[util][type]")
 {
   STATIC_REQUIRE(cat_detect<HasCat>::value);
   STATIC_REQUIRE(!cat_detect<HasDog>::value);
+}
+
+using types = c2h::type_list<
+  char,
+  signed char,
+  unsigned char,
+  short,
+  unsigned short,
+  int,
+  unsigned int,
+  long,
+  unsigned long,
+  long long,
+  unsigned long long,
+#if TEST_HALF_T()
+  __half,
+  half_t,
+#endif // TEST_HALF_T()
+#if TEST_BF_T()
+  __nv_bfloat16,
+  bfloat16_t,
+#endif // TEST_BF_T()
+  float,
+  double
+#ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+  ,
+  long double
+#endif // _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+  >;
+
+C2H_TEST("Test FpLimits agrees with numeric_limits", "[util][type]", types)
+{
+  using T = c2h::get<0, TestType>;
+  CAPTURE(c2h::type_name<T>());
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
+  CHECK(cub::FpLimits<T>::Max() == cuda::std::numeric_limits<T>::max());
+  CHECK(cub::FpLimits<T>::Lowest() == cuda::std::numeric_limits<T>::lowest());
+
+  CHECK(cub::FpLimits<const T>::Max() == cuda::std::numeric_limits<const T>::max());
+  CHECK(cub::FpLimits<const T>::Lowest() == cuda::std::numeric_limits<const T>::lowest());
+  _CCCL_SUPPRESS_DEPRECATED_POP
 }

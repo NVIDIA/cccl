@@ -136,6 +136,11 @@ private:
       ld.set_automatic_unfreeze(fake_task, flag);
     }
 
+    access_mode get_access_mode() const
+    {
+      return m;
+    }
+
   private:
     logical_data<T> ld;
     access_mode m;
@@ -197,6 +202,12 @@ public:
     assert(pimpl);
     pimpl->set_automatic_unfreeze(flag);
     return *this;
+  }
+
+  access_mode get_access_mode() const
+  {
+    assert(pimpl);
+    return pimpl->get_access_mode();
   }
 
 private:
