@@ -56,6 +56,9 @@ int main()
   for (int k = 0; k < 4; k++)
   {
     auto fx = ctx.freeze(lX, access_mode::rw, data_place::current_device());
+
+    _CCCL_ASSERT(fx.get_access_mode() == access_mode::rw, "invalid access mode");
+
     auto dX = fx.get(data_place::current_device(), stream);
     mult<<<8, 4, 0, stream>>>(dX, 4);
     fx.unfreeze(stream);

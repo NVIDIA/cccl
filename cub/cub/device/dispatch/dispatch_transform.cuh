@@ -661,7 +661,7 @@ struct dispatch_t<StableAddress,
   template <typename ActivePolicy>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_ublkcp_kernel() -> PoorExpected<
     ::cuda::std::
-      tuple<THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron, decltype(CUB_DETAIL_TRANSFORM_KERNEL_PTR), int>>
+      tuple<THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron, decltype(CUB_DETAIL_TRANSFORM_KERNEL_PTR), int>>
   {
     using policy_t          = typename ActivePolicy::algo_policy;
     constexpr int block_dim = policy_t::block_threads;
@@ -733,7 +733,7 @@ struct dispatch_t<StableAddress,
 
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{config->tile_size}));
     return ::cuda::std::make_tuple(
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(grid_dim, block_dim, config->smem_size, stream),
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid_dim, block_dim, config->smem_size, stream),
       CUB_DETAIL_TRANSFORM_KERNEL_PTR,
       config->elem_per_thread);
   }
@@ -814,7 +814,7 @@ struct dispatch_t<StableAddress,
     const int tile_size = block_dim * items_per_thread_clamped;
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{tile_size}));
     return CubDebug(
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(grid_dim, block_dim, 0, stream)
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid_dim, block_dim, 0, stream)
         .doit(
           CUB_DETAIL_TRANSFORM_KERNEL_PTR,
           num_items,

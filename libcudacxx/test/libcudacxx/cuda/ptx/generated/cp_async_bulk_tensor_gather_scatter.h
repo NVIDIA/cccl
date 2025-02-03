@@ -159,7 +159,7 @@ __global__ void test_cp_async_bulk_tensor_gather_scatter(void** fn_ptr)
                                    const uint16_t&)>(cuda::ptx::cp_async_bulk_tensor_tile_gather4));));
 #endif // __cccl_ptx_isa >= 860
 
-#if __cccl_ptx_isa >= 800
+#if __cccl_ptx_isa >= 860
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100a,
     (
@@ -176,5 +176,5 @@ __global__ void test_cp_async_bulk_tensor_gather_scatter(void** fn_ptr)
           static_cast<void (*)(
             cuda::ptx::space_global_t, cuda::ptx::space_shared_t, const void*, const int32_t(&)[5], const void*)>(
             cuda::ptx::cp_async_bulk_tensor_tile_scatter4));));
-#endif // __cccl_ptx_isa >= 800
+#endif // __cccl_ptx_isa >= 860
 }

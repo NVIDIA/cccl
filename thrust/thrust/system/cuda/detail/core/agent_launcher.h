@@ -254,7 +254,8 @@ struct AgentLauncher : Agent
   {
     assert(has_shmem && vshmem == nullptr);
     print_info(_kernel_agent<Agent, Args...>);
-    launcher::triple_chevron(grid, plan.block_threads, shmem_size, stream).doit(_kernel_agent<Agent, Args...>, args...);
+    cuda_cub::detail::triple_chevron(grid, plan.block_threads, shmem_size, stream)
+      .doit(_kernel_agent<Agent, Args...>, args...);
   }
 
   // If there is a risk of not having enough shared memory
@@ -270,7 +271,7 @@ struct AgentLauncher : Agent
   {
     assert((has_shmem && vshmem == nullptr) || (!has_shmem && vshmem != nullptr && shmem_size == 0));
     print_info(_kernel_agent_vshmem<Agent, Args...>);
-    launcher::triple_chevron(grid, plan.block_threads, shmem_size, stream)
+    cuda_cub::detail::triple_chevron(grid, plan.block_threads, shmem_size, stream)
       .doit(_kernel_agent_vshmem<Agent, Args...>, vshmem, args...);
   }
 
