@@ -8,6 +8,8 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: nvrtc
+// UNSUPPORTED: c++11
+// UNSUPPORTED: msvc-19.16
 
 #include <cuda/std/cassert>
 #include <cuda/std/variant>

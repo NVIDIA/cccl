@@ -13,6 +13,14 @@
 #include <cuda/std/initializer_list>
 #include <cuda/std/utility>
 
+template <class _T1, class _T2 = _T1>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _T1 exchange(_T1& __obj, _T2&& __new_value) noexcept
+{
+  _T1 __old_value = _CUDA_VSTD::move(__obj);
+  __obj           = _CUDA_VSTD::forward<_T2>(__new_value);
+  return __old_value;
+}
+
 #if !defined(_CCCL_COMPILER_NVRTC)
 struct host_only_type
 {
@@ -29,7 +37,7 @@ struct host_only_type
       : val_(other.val_)
   {}
   host_only_type(host_only_type&& other) noexcept
-      : val_(cuda::std::exchange(other.val_, -1))
+      : val_(::exchange(other.val_, -1))
   {}
 
   host_only_type& operator=(const host_only_type& other) noexcept
@@ -41,7 +49,7 @@ struct host_only_type
   host_only_type& operator=(host_only_type&& other) noexcept
 
   {
-    val_ = cuda::std::exchange(other.val_, -1);
+    val_ = ::exchange(other.val_, -1);
     return *this;
   }
 
@@ -95,7 +103,7 @@ struct device_only_type
       : val_(other.val_)
   {}
   __device__ device_only_type(device_only_type&& other) noexcept
-      : val_(cuda::std::exchange(other.val_, -1))
+      : val_(::exchange(other.val_, -1))
   {}
 
   __device__ device_only_type& operator=(const device_only_type& other) noexcept
@@ -107,7 +115,7 @@ struct device_only_type
   __device__ device_only_type& operator=(device_only_type&& other) noexcept
 
   {
-    val_ = cuda::std::exchange(other.val_, -1);
+    val_ = ::exchange(other.val_, -1);
     return *this;
   }
 
