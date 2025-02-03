@@ -283,7 +283,9 @@ red_async(op_and_op_t, _B32* __dest, const _B32& __value, _CUDA_VSTD::uint64_t* 
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.and.b32  [%0], %1, [%2]; "
       :
-      : "r"(__as_ptr_remote_dsmem(__dest)), "r"(__as_b32(__value)), "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "r"(__as_ptr_remote_dsmem(__dest)),
+        "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__value)),
+        "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -316,7 +318,9 @@ red_async(op_or_op_t, _B32* __dest, const _B32& __value, _CUDA_VSTD::uint64_t* _
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.or.b32  [%0], %1, [%2]; "
       :
-      : "r"(__as_ptr_remote_dsmem(__dest)), "r"(__as_b32(__value)), "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "r"(__as_ptr_remote_dsmem(__dest)),
+        "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__value)),
+        "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -349,7 +353,9 @@ red_async(op_xor_op_t, _B32* __dest, const _B32& __value, _CUDA_VSTD::uint64_t* 
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.xor.b32  [%0], %1, [%2]; "
       :
-      : "r"(__as_ptr_remote_dsmem(__dest)), "r"(__as_b32(__value)), "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "r"(__as_ptr_remote_dsmem(__dest)),
+        "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__value)),
+        "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
