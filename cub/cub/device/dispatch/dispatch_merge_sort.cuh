@@ -513,7 +513,7 @@ struct DispatchMergeSort
       auto items_buffer     = static_cast<ValueT*>(allocations[2]);
 
       // Invoke DeviceMergeSortBlockSortKernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
         static_cast<int>(num_tiles), merge_sort_helper_t::policy_t::BLOCK_THREADS, 0, stream, true)
         .doit(
           DeviceMergeSortBlockSortKernel<
@@ -572,7 +572,7 @@ struct DispatchMergeSort
         const OffsetT target_merged_tiles_number = OffsetT(2) << pass;
 
         // Partition
-        THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
           partition_grid_size, threads_per_partition_block, 0, stream, true)
           .doit(DeviceMergeSortPartitionKernel<KeyIteratorT, OffsetT, CompareOpT, KeyT>,
                 ping,
@@ -599,7 +599,7 @@ struct DispatchMergeSort
         }
 
         // Merge
-        THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
           static_cast<int>(num_tiles), static_cast<int>(merge_sort_helper_t::policy_t::BLOCK_THREADS), 0, stream, true)
           .doit(
             DeviceMergeSortMergeKernel<typename PolicyHub::MaxPolicy,

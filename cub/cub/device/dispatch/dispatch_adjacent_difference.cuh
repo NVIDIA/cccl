@@ -221,7 +221,7 @@ struct DispatchAdjacentDifference
                 reinterpret_cast<long long>(stream));
 #endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
-        THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size, init_block_size, 0, stream)
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_block_size, 0, stream)
           .doit(DeviceAdjacentDifferenceInitKernel<AgentDifferenceInitT, InputIteratorT, InputT, OffsetT>,
                 d_input,
                 first_tile_previous,
@@ -251,7 +251,7 @@ struct DispatchAdjacentDifference
               reinterpret_cast<long long>(stream));
 #endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
         num_tiles, AdjacentDifferencePolicyT::BLOCK_THREADS, 0, stream)
         .doit(DeviceAdjacentDifferenceDifferenceKernel<
                 typename PolicyHub::MaxPolicy,

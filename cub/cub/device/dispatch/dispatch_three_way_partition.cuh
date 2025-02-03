@@ -289,7 +289,7 @@ struct DispatchThreeWayPartitionIf
 #endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
       // Invoke three_way_partition_init_kernel to initialize tile descriptors
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
         .doit(three_way_partition_init_kernel, tile_status, num_tiles, d_num_selected_out);
 
       // Check for failure to launch
@@ -346,7 +346,7 @@ struct DispatchThreeWayPartitionIf
 #endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
       // Invoke select_if_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(scan_grid_size, block_threads, 0, stream)
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(scan_grid_size, block_threads, 0, stream)
         .doit(three_way_partition_kernel,
               d_in,
               d_first_part_out,
