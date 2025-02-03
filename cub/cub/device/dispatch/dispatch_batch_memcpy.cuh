@@ -548,7 +548,7 @@ struct DispatchBatchMemcpy
 #endif
 
     // Invoke init_kernel to initialize buffer prefix sum-tile descriptors
-    error = THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
+    error = THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
               .doit(init_scan_states_kernel, buffer_scan_tile_state, block_scan_tile_state, num_tiles);
 
     // Check for failure to launch
@@ -578,7 +578,7 @@ struct DispatchBatchMemcpy
     // Invoke kernel to copy small buffers and put the larger ones into a queue that will get picked
     // up by next kernel
     error =
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
         batch_memcpy_grid_size, ActivePolicyT::AgentSmallBufferPolicyT::BLOCK_THREADS, 0, stream)
         .doit(batch_memcpy_non_blev_kernel,
               input_buffer_it,
@@ -615,7 +615,7 @@ struct DispatchBatchMemcpy
 #endif
 
     error =
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(batch_memcpy_blev_grid_size, BLEV_BLOCK_THREADS, 0, stream)
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(batch_memcpy_blev_grid_size, BLEV_BLOCK_THREADS, 0, stream)
         .doit(multi_block_memcpy_kernel,
               d_blev_src_buffers,
               d_blev_dst_buffers,

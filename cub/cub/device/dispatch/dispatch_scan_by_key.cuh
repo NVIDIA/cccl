@@ -442,7 +442,7 @@ struct DispatchScanByKey
 #endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
       // Invoke init_kernel to initialize tile descriptors
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
         .doit(init_kernel, tile_state, d_keys_in, d_keys_prev_in, static_cast<OffsetT>(tile_size), num_tiles);
 
       // Check for failure to launch
@@ -483,7 +483,7 @@ struct DispatchScanByKey
 #endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
         // Invoke scan_kernel
-        THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(scan_grid_size, Policy::BLOCK_THREADS, 0, stream)
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(scan_grid_size, Policy::BLOCK_THREADS, 0, stream)
           .doit(scan_kernel,
                 d_keys_in,
                 d_keys_prev_in,
