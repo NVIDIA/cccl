@@ -44,8 +44,7 @@
 #  define _CCCL_HAS_NVFP16() 1
 #endif
 
-#if _CCCL_HAS_INCLUDE(<cuda_bf16.h>) && _CCCL_HAS_NVFP16() && !defined(CCCL_DISABLE_BF16_SUPPORT) \
-                      && !defined(CCCL_DISABLE_BF16_SUPPORT)
+#if _CCCL_HAS_INCLUDE(<cuda_bf16.h>) && _CCCL_HAS_NVFP16() && !defined(CCCL_DISABLE_BF16_SUPPORT)
 #  undef _CCCL_HAS_NVBF16
 #  define _CCCL_HAS_NVBF16() 1
 #endif
