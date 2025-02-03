@@ -669,15 +669,18 @@ struct sm100_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_si
   using delay_constructor                            = exponential_backon_constructor_t<656, 825>;
 };
 
+// todo(gonidelis): tuning performs very well for medium input size, regresses for large input sizes.
+// find better tuning.
 template <class KeyT, class ValueT>
 struct sm100_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_size::_4, val_size::_4>
+    : sm90_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_size::_4, val_size::_4>
 {
-  // ipt_14.tpb_512.trp_0.ld_0.ns_408.dcid_7.l2w_960 1.136333  0.995833  1.144371  1.448687
-  static constexpr int threads                       = 512;
-  static constexpr int items                         = 14;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  using delay_constructor                            = exponential_backon_constructor_t<408, 960>;
+  // // ipt_14.tpb_512.trp_0.ld_0.ns_408.dcid_7.l2w_960 1.136333  0.995833  1.144371  1.448687
+  // static constexpr int threads                       = 512;
+  // static constexpr int items                         = 14;
+  // static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  // static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  // using delay_constructor                            = exponential_backon_constructor_t<408, 960>;
 };
 
 template <class KeyT, class ValueT>
@@ -705,15 +708,18 @@ struct sm100_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_si
 #endif
 
 // 64-bit key
+
+// todo(gonidelis): tuning regresses for large input sizes. find better tuning.
 template <class KeyT, class ValueT>
 struct sm100_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_size::_8, val_size::_1>
+    : sm90_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_size::_8, val_size::_1>
 {
-  // ipt_9.tpb_384.trp_0.ld_0.ns_1064.dcid_7.l2w_600 1.085831  0.972452  1.080521  1.397089
-  static constexpr int threads                       = 384;
-  static constexpr int items                         = 9;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  using delay_constructor                            = exponential_backon_constructor_t<1064, 600>;
+  // // ipt_9.tpb_384.trp_0.ld_0.ns_1064.dcid_7.l2w_600 1.085831  0.972452  1.080521  1.397089
+  // static constexpr int threads                       = 384;
+  // static constexpr int items                         = 9;
+  // static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  // static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  // using delay_constructor                            = exponential_backon_constructor_t<1064, 600>;
 };
 
 template <class KeyT, class ValueT>
@@ -738,15 +744,17 @@ struct sm100_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_si
   using delay_constructor                            = exponential_backon_jitter_window_constructor_t<772, 665>;
 };
 
+// todo(gonidelis): tuning regresses for large input sizes. find better tuning.
 template <class KeyT, class ValueT>
 struct sm100_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_size::_8, val_size::_8>
+    : sm90_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_size::_8, val_size::_8>
 {
-  // ipt_7.tpb_576.trp_0.ld_0.ns_1132.dcid_5.l2w_1115 1.120721  0.977642  1.131594  1.449407
-  static constexpr int threads                       = 576;
-  static constexpr int items                         = 7;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  using delay_constructor                            = exponential_backon_jitter_window_constructor_t<1132, 1115>;
+  // // ipt_7.tpb_576.trp_0.ld_0.ns_1132.dcid_5.l2w_1115 1.120721  0.977642  1.131594  1.449407
+  // static constexpr int threads                       = 576;
+  // static constexpr int items                         = 7;
+  // static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  // static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  // using delay_constructor                            = exponential_backon_jitter_window_constructor_t<1132, 1115>;
 };
 
 // TODO(gonidelis): Tune for I128.
