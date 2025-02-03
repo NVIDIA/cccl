@@ -82,13 +82,24 @@ The implementation may assume that any **host** thread will eventually do one of
 
     .. code:: cuda
         // Example: Execution.Model.Device.0
+        // Outcome: grid eventually terminates per device.threads.4 because the atomic object does not have automatic storage duration.
+        __global__ void ii(cuda::atomic_ref<int, cuda::thread_scope_device> atom) {
+            if (threadIdx.x == 0) {
+                while(atom.load(cuda::memory_order_relaxed) == 0);
+            } else if (threadIdx.x == 1) {
+                atom.store(1, cuda::memory_order_relaxed);
+            }
+        }
+
+    .. code:: cuda
+        // Example: Execution.Model.Device.1
         // Allowed outcome: No thread makes progress because device threads don't support host.threads.2.
         __global__ void ii() {
             while(true) std::this_thread::yield();
         }
 
     .. code:: cuda
-        // Example: Execution.Model.Device.1
+        // Example: Execution.Model.Device.2
         // Allowed outcome: No thread makes progress because device threads don't support host.threads.4
         // for objects with automatic storage duration (see exception in device.threads.3).
         __global__ void iv() {
@@ -97,7 +108,7 @@ The implementation may assume that any **host** thread will eventually do one of
         }
 
     .. code:: cuda
-        // Example: Execution.Model.Device.2
+        // Example: Execution.Model.Device.3
         // Allowed outcome: No thread makes progress because device threads don't support host.threads.5
         // for objects with automatic storage duration (see exception in device.threads.4).
         __global__ void v_atomic_automatic() {
@@ -106,7 +117,7 @@ The implementation may assume that any **host** thread will eventually do one of
         }
 
     .. code:: cuda
-        // Example: Execution.Model.Device.3
+        // Example: Execution.Model.Device.4
         // Allowed outcome: No thread makes progress because device threads don't support host.thread.6.
         __global void vi() {
             while(true) { /* empty */ }
