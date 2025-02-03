@@ -664,7 +664,7 @@ struct DispatchSelectIf
 #endif
 
         // Invoke scan_init_kernel to initialize tile descriptors
-        THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
           .doit(scan_init_kernel, tile_status, current_num_tiles, d_num_selected_out);
 
         // Check for failure to launch
@@ -712,7 +712,7 @@ struct DispatchSelectIf
 #endif
 
         // Invoke select_if_kernel
-        THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(current_num_tiles, block_threads, 0, stream)
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(current_num_tiles, block_threads, 0, stream)
           .doit(select_if_kernel,
                 d_in,
                 d_flags,

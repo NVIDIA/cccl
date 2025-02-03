@@ -403,7 +403,7 @@ struct DispatchUniqueByKey
 #endif // CUB_DEBUG_LOG
 
       // Invoke init_kernel to initialize tile descriptors
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
         .doit(init_kernel, tile_state, num_tiles, d_num_selected_out);
 
       // Check for failure to launch
@@ -467,7 +467,7 @@ struct DispatchUniqueByKey
 
       // Invoke select_if_kernel
       error =
-        THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(scan_grid_size, block_threads, 0, stream)
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(scan_grid_size, block_threads, 0, stream)
           .doit(scan_kernel,
                 d_keys_in,
                 d_values_in,

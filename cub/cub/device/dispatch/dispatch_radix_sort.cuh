@@ -986,8 +986,7 @@ struct DispatchRadixSort
 #endif
 
       // Invoke upsweep_kernel with same grid size as downsweep_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
-        1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
         .doit(single_tile_kernel,
               d_keys.Current(),
               d_keys.Alternate(),
@@ -1060,7 +1059,7 @@ struct DispatchRadixSort
       int pass_spine_length = pass_config.even_share.grid_size * pass_config.radix_digits;
 
       // Invoke upsweep_kernel with same grid size as downsweep_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
         pass_config.even_share.grid_size, pass_config.upsweep_config.block_threads, 0, stream)
         .doit(pass_config.upsweep_kernel,
               d_keys_in,
@@ -1095,7 +1094,7 @@ struct DispatchRadixSort
 #endif
 
       // Invoke scan_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(1, pass_config.scan_config.block_threads, 0, stream)
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, pass_config.scan_config.block_threads, 0, stream)
         .doit(pass_config.scan_kernel, d_spine, pass_spine_length);
 
       // Check for failure to launch
@@ -1123,7 +1122,7 @@ struct DispatchRadixSort
 #endif
 
       // Invoke downsweep_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
         pass_config.even_share.grid_size, pass_config.downsweep_config.block_threads, 0, stream)
         .doit(pass_config.downsweep_kernel,
               d_keys_in,
@@ -1325,7 +1324,7 @@ struct DispatchRadixSort
               ActivePolicyT::HistogramPolicy::RADIX_BITS);
 #endif
 
-      error = THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+      error = THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
                 histo_blocks_per_sm * num_sms, HISTO_BLOCK_THREADS, 0, stream)
                 .doit(histogram_kernel, d_bins, d_keys.Current(), num_items, begin_bit, end_bit, decomposer);
       error = CubDebug(error);
@@ -1352,7 +1351,7 @@ struct DispatchRadixSort
               ActivePolicyT::ExclusiveSumPolicy::RADIX_BITS);
 #endif
 
-      error = THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(num_passes, SCAN_BLOCK_THREADS, 0, stream)
+      error = THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_passes, SCAN_BLOCK_THREADS, 0, stream)
                 .doit(detail::radix_sort::DeviceRadixSortExclusiveSumKernel<max_policy_t, OffsetT>, d_bins);
       error = CubDebug(error);
       if (cudaSuccess != error)
@@ -1416,7 +1415,7 @@ struct DispatchRadixSort
             DecomposerT>;
 
           error =
-            THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(num_blocks, ONESWEEP_BLOCK_THREADS, 0, stream)
+            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_blocks, ONESWEEP_BLOCK_THREADS, 0, stream)
               .doit(onesweep_kernel,
                     d_lookback,
                     d_ctrs + portion * num_passes + pass,
@@ -2026,7 +2025,7 @@ struct DispatchSegmentedRadixSort
               pass_bits);
 #endif
 
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
         num_segments, pass_config.segmented_config.block_threads, 0, stream)
         .doit(pass_config.segmented_kernel,
               d_keys_in,
