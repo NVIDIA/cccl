@@ -145,10 +145,10 @@ def reduce_into(
     op: Callable,
     h_init: np.ndarray,
 ):
-    """Computes a device-wide reduction using the specified binary ``op`` functor and initial value ``init``.
+    """Computes a device-wide reduction using the specified binary ``op`` and initial value ``init``.
 
     Example:
-        The code snippet below demonstrates the usage of the ``reduce_into`` API:
+        Below, ``reduce_into`` is used to compute the minimum value of a sequence of integers.
 
         .. literalinclude:: ../../python/cuda_parallel/tests/test_reduce_api.py
             :language: python
@@ -157,9 +157,9 @@ def reduce_into(
             :end-before: example-end reduce-min
 
     Args:
-        d_in: CUDA device array storing the input sequence of data items
-        d_out: CUDA device array storing the output aggregate
-        op: Binary reduction
+        d_in: Device array or iterator containing the input sequence of data items
+        d_out: Device array (of size 1) that will store the result of the reduction
+        op: Callable representing the binary operator to apply
         init: Numpy array storing initial value of the reduction
 
     Returns:

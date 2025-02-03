@@ -142,4 +142,24 @@ def scan(
     op: Callable,
     h_init: np.ndarray,
 ):
+    """Computes a device-wide scan using the specified binary ``op`` and initial value ``init``.
+
+    Example:
+        Below, ``scan`` is used to compute an exclusive scan of a sequence of integers.
+
+        .. literalinclude:: ../../python/cuda_parallel/tests/test_scan_api.py
+          :language: python
+          :dedent:
+          :start-after: example-begin scan-max
+          :end-before: example-end scan-max
+
+    Args:
+        d_in: Device array or iterator containing the input sequence of data items
+        d_out: Device array that will store the result of the scan
+        op: Callable representing the binary operator to apply
+        init: Numpy array storing initial value of the scan
+
+    Returns:
+        A callable object that can be used to perform the scan
+    """
     return _Scan(d_in, d_out, op, h_init)
