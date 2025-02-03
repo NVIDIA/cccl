@@ -547,7 +547,6 @@ class stackable_logical_data
       // their frozen counterparts. This vector has one item less than the
       // vector of logical data.
       mutable ::std::vector<frozen_logical_data<T>> frozen_s;
-      mutable ::std::vector<access_mode> frozen_modes;
 
       // If the logical data was created at a level that is not directly the root of the context, we remember this
       // offset
@@ -641,9 +640,8 @@ class stackable_logical_data
       context& from_ctx = sctx.get_ctx(current_data_depth);
       context& to_ctx   = sctx.get_ctx(current_data_depth + 1);
 
-      auto& s            = impl_state->s;
-      auto& frozen_s     = impl_state->frozen_s;
-      auto& frozen_modes = impl_state->frozen_modes;
+      auto& s        = impl_state->s;
+      auto& frozen_s = impl_state->frozen_s;
 
       // fprintf(stderr,
       //         "pushing data (%p) %ld[%s,%p]->%ld[%s,%p] (ctx depth %ld)\n",
@@ -671,7 +669,6 @@ class stackable_logical_data
 
       // Save the frozen data in a separate vector
       frozen_s.push_back(f);
-      frozen_modes.push_back(m);
 
       // FAKE IMPORT : use the stream needed to support the (graph) ctx
       cudaStream_t stream = sctx.get_stream(current_data_depth + 1);
@@ -732,8 +729,8 @@ class stackable_logical_data
     // TODO move to state
     access_mode get_frozen_mode(size_t d) const
     {
-      _CCCL_ASSERT(d < impl_state->frozen_modes.size(), "invalid value");
-      return impl_state->frozen_modes[d];
+      _CCCL_ASSERT(d < impl_state->frozen_s.size(), "invalid value");
+      return impl_state->frozen_s[d].get_access_mode();
     }
 
   private:
