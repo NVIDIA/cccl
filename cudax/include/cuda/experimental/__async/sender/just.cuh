@@ -61,7 +61,7 @@ private:
   using _SetTag  = decltype(__detail::__set_tag<_Disposition>());
 
   template <class _Rcvr, class... _Ts>
-  struct __opstate_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
     using operation_state_concept = operation_state_t;
     using completion_signatures   = __async::completion_signatures<_SetTag(_Ts...)>;
@@ -85,7 +85,7 @@ private:
   };
 
   template <class... _Ts>
-  struct __sndr_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t
   {
     using sender_concept        = sender_t;
     using completion_signatures = __async::completion_signatures<_SetTag(_Ts...)>;

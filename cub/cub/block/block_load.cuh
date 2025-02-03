@@ -790,15 +790,12 @@ enum BlockLoadAlgorithm
 //! @tparam BLOCK_DIM_Z
 //!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
-//! @tparam LEGACY_PTX_ARCH
-//!   **[optional]** Unused.
 template <typename T,
           int BLOCK_DIM_X,
           int ITEMS_PER_THREAD,
           BlockLoadAlgorithm ALGORITHM = BLOCK_LOAD_DIRECT,
           int BLOCK_DIM_Y              = 1,
-          int BLOCK_DIM_Z              = 1,
-          int LEGACY_PTX_ARCH          = 0>
+          int BLOCK_DIM_Z              = 1>
 class BlockLoad
 {
   static constexpr int BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z; // total threads in the block

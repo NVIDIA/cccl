@@ -83,9 +83,6 @@ using InternalWarpExchangeImpl =
  *   targeted CUDA compute-capability (e.g., 32 threads for SM86). Must be a
  *   power of two.
  *
- * @tparam LEGACY_PTX_ARCH
- *   Unused.
- *
  * @par Overview
  * - It is commonplace for a warp of threads to rearrange data items between
  *   threads. For example, the global memory accesses prefer patterns where
@@ -139,7 +136,6 @@ using InternalWarpExchangeImpl =
 template <typename InputT,
           int ITEMS_PER_THREAD,
           int LOGICAL_WARP_THREADS                      = CUB_PTX_WARP_THREADS,
-          int LEGACY_PTX_ARCH                           = 0,
           WarpExchangeAlgorithm WARP_EXCHANGE_ALGORITHM = WARP_EXCHANGE_SMEM>
 class WarpExchange
     : private detail::InternalWarpExchangeImpl<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, WARP_EXCHANGE_ALGORITHM>

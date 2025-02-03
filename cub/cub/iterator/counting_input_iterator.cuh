@@ -90,7 +90,7 @@ CUB_NAMESPACE_BEGIN
  *   The difference type of this iterator (Default: @p ptrdiff_t)
  */
 template <typename ValueType, typename OffsetT = ptrdiff_t>
-class CountingInputIterator
+class CCCL_DEPRECATED_BECAUSE("Use thrust::counting_iterator instead") CountingInputIterator
 {
 public:
   // Required iterator traits
@@ -218,11 +218,13 @@ public:
 
   /// ostream operator
 #if !_CCCL_COMPILER(NVRTC)
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   friend std::ostream& operator<<(std::ostream& os, const self_type& itr)
   {
     os << "[" << itr.val << "]";
     return os;
   }
+  _CCCL_SUPPRESS_DEPRECATED_POP
 #endif // !_CCCL_COMPILER(NVRTC)
 };
 

@@ -52,7 +52,6 @@
 #include <cub/block/block_store.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/iterator/constant_input_iterator.cuh>
 
 #include <cuda/ptx>
 #include <cuda/std/type_traits>
@@ -259,7 +258,7 @@ struct AgentRle
   // Callback type for obtaining tile prefix during block scan
   using DelayConstructorT = typename AgentRlePolicyT::detail::delay_constructor_t;
   using TilePrefixCallbackOpT =
-    TilePrefixCallbackOp<LengthOffsetPair, ReduceBySegmentOpT, ScanTileStateT, 0, DelayConstructorT>;
+    TilePrefixCallbackOp<LengthOffsetPair, ReduceBySegmentOpT, ScanTileStateT, DelayConstructorT>;
 
   // Warp exchange types
   using WarpExchangePairs = WarpExchange<LengthOffsetPair, ITEMS_PER_THREAD>;
