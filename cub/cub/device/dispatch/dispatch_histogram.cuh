@@ -442,7 +442,7 @@ struct dispatch_histogram
 #endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
       // Invoke histogram_init_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
         histogram_init_grid_dims, histogram_init_block_threads, 0, stream)
         .doit(histogram_init_kernel, num_output_bins_wrapper, d_output_histograms_wrapper, tile_queue);
 
@@ -466,7 +466,7 @@ struct dispatch_histogram
 #endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
       // Invoke histogram_sweep_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(sweep_grid_dims, block_threads, 0, stream)
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(sweep_grid_dims, block_threads, 0, stream)
         .doit(histogram_sweep_kernel,
               d_samples,
               num_output_bins_wrapper,
