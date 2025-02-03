@@ -25,11 +25,11 @@ void TestPartitionPointSimple()
 
   Iterator last = v.begin() + 4;
   Iterator ref  = first + 3;
-  ASSERT_EQUAL_QUIET(ref, thrust::partition_point(first, last, thrust::identity<T>()));
+  ASSERT_EQUAL_QUIET(ref, thrust::partition_point(first, last, ::cuda::std::identity{}));
 
   last = v.begin() + 3;
   ref  = last;
-  ASSERT_EQUAL_QUIET(ref, thrust::partition_point(first, last, thrust::identity<T>()));
+  ASSERT_EQUAL_QUIET(ref, thrust::partition_point(first, last, ::cuda::std::identity{}));
 }
 DECLARE_VECTOR_UNITTEST(TestPartitionPointSimple);
 

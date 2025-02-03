@@ -193,6 +193,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestIdentityFunctional()
   int i    = 42;
   double d = 3.14;
 
+  // TODO
   // pass through
   ASSERT_EQUAL(thrust::identity<int>{}(i), 42);
   ASSERT_EQUAL(thrust::identity<int>{}(d), 3);
@@ -228,7 +229,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestIdentityFunctionalVector()
   using T = typename Vector::value_type;
   Vector input{0, 1, 2, 3};
   Vector output(4);
-  thrust::transform(input.begin(), input.end(), output.begin(), thrust::identity<T>());
+  thrust::transform(input.begin(), input.end(), output.begin(), ::cuda::std::identity{});
   ASSERT_EQUAL(input, output);
 }
 DECLARE_VECTOR_UNITTEST(TestIdentityFunctionalVector);
@@ -308,7 +309,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestNot1()
 
   Vector output(5);
 
-  thrust::transform(input.begin(), input.end(), output.begin(), thrust::not_fn(thrust::identity<T>()));
+  thrust::transform(input.begin(), input.end(), output.begin(), thrust::not_fn(::cuda::std::identity{}));
 
   Vector ref{0, 1, 0, 0, 1};
   ASSERT_EQUAL(output, ref);

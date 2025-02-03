@@ -146,7 +146,7 @@ void TestStablePartitionStencilSimple()
 
   Vector stencil{0, 1, 0, 0, 1};
 
-  Iterator iter = thrust::stable_partition(data.begin(), data.end(), stencil.begin(), thrust::identity<T>());
+  Iterator iter = thrust::stable_partition(data.begin(), data.end(), stencil.begin(), ::cuda::std::identity{});
 
   Vector ref{2, 2, 1, 1, 3};
 
@@ -192,7 +192,7 @@ void TestStablePartitionCopyStencilSimple()
   Vector false_results(3);
 
   thrust::pair<typename Vector::iterator, typename Vector::iterator> ends = thrust::stable_partition_copy(
-    data.begin(), data.end(), stencil.begin(), true_results.begin(), false_results.begin(), thrust::identity<T>());
+    data.begin(), data.end(), stencil.begin(), true_results.begin(), false_results.begin(), ::cuda::std::identity{});
 
   Vector true_ref(2, 2);
 

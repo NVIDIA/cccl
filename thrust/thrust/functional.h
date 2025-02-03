@@ -174,7 +174,7 @@ using ::cuda::std::bit_xor;
  */
 // TODO(bgruber): this version can also act as a functor casting to T making it not equivalent to ::cuda::std::identity
 template <typename T = void>
-struct identity
+struct CCCL_DEPRECATED_BECAUSE("use cuda::std::identity instead") identity
 {
   using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
 
@@ -200,9 +200,11 @@ struct identity
   }
 };
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <>
-struct identity<void> : ::cuda::std::__identity
+struct CCCL_DEPRECATED_BECAUSE("use cuda::std::identity instead") identity<void> : ::cuda::std::__identity
 {};
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 using ::cuda::maximum;
 using ::cuda::minimum;

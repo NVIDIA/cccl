@@ -16,7 +16,7 @@ void TestTabulateDispatchExplicit()
   thrust::device_vector<int> vec(1);
 
   my_system sys(0);
-  thrust::tabulate(sys, vec.begin(), vec.end(), thrust::identity<int>());
+  thrust::tabulate(sys, vec.begin(), vec.end(), ::cuda::std::identity{});
 
   ASSERT_EQUAL(true, sys.is_valid());
 }
@@ -32,7 +32,7 @@ void TestTabulateDispatchImplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  thrust::tabulate(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), thrust::identity<int>());
+  thrust::tabulate(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), ::cuda::std::identity{});
 
   ASSERT_EQUAL(13, vec.front());
 }
@@ -46,7 +46,7 @@ void TestTabulateSimple()
 
   Vector v(5);
 
-  thrust::tabulate(v.begin(), v.end(), thrust::identity<T>());
+  thrust::tabulate(v.begin(), v.end(), ::cuda::std::identity{});
 
   Vector ref{0, 1, 2, 3, 4};
   ASSERT_EQUAL(v, ref);
@@ -88,7 +88,7 @@ void TestTabulateToDiscardIterator(size_t n)
 {
   thrust::tabulate(thrust::discard_iterator<thrust::device_system_tag>(),
                    thrust::discard_iterator<thrust::device_system_tag>(n),
-                   thrust::identity<int>());
+                   ::cuda::std::identity{});
 
   // nothing to check -- just make sure it compiles
 }

@@ -21,24 +21,24 @@ void TestIsPartitionedSimple()
   Vector v{1, 1, 1, 0};
 
   // empty partition
-  ASSERT_EQUAL_QUIET(true, thrust::is_partitioned(v.begin(), v.begin(), thrust::identity<T>()));
+  ASSERT_EQUAL_QUIET(true, thrust::is_partitioned(v.begin(), v.begin(), ::cuda::std::identity{}));
 
   // one element true partition
-  ASSERT_EQUAL_QUIET(true, thrust::is_partitioned(v.begin(), v.begin() + 1, thrust::identity<T>()));
+  ASSERT_EQUAL_QUIET(true, thrust::is_partitioned(v.begin(), v.begin() + 1, ::cuda::std::identity{}));
 
   // just true partition
-  ASSERT_EQUAL_QUIET(true, thrust::is_partitioned(v.begin(), v.begin() + 2, thrust::identity<T>()));
+  ASSERT_EQUAL_QUIET(true, thrust::is_partitioned(v.begin(), v.begin() + 2, ::cuda::std::identity{}));
 
   // both true & false partitions
-  ASSERT_EQUAL_QUIET(true, thrust::is_partitioned(v.begin(), v.end(), thrust::identity<T>()));
+  ASSERT_EQUAL_QUIET(true, thrust::is_partitioned(v.begin(), v.end(), ::cuda::std::identity{}));
 
   // one element false partition
-  ASSERT_EQUAL_QUIET(true, thrust::is_partitioned(v.begin() + 3, v.end(), thrust::identity<T>()));
+  ASSERT_EQUAL_QUIET(true, thrust::is_partitioned(v.begin() + 3, v.end(), ::cuda::std::identity{}));
 
   v = {1, 0, 1, 1};
 
   // not partitioned
-  ASSERT_EQUAL_QUIET(false, thrust::is_partitioned(v.begin(), v.end(), thrust::identity<T>()));
+  ASSERT_EQUAL_QUIET(false, thrust::is_partitioned(v.begin(), v.end(), ::cuda::std::identity{}));
 }
 DECLARE_VECTOR_UNITTEST(TestIsPartitionedSimple);
 

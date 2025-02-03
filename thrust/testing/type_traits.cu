@@ -38,7 +38,7 @@ void TestIsContiguousIterator()
 
   using ConstantIterator  = thrust::constant_iterator<int>;
   using CountingIterator  = thrust::counting_iterator<int>;
-  using TransformIterator = thrust::transform_iterator<thrust::identity<int>, HostVector::iterator>;
+  using TransformIterator = thrust::transform_iterator<thrust::identity<int>, HostVector::iterator>; // TODO
   using ZipIterator       = thrust::zip_iterator<HostIteratorTuple>;
 
   ASSERT_EQUAL((bool) thrust::is_contiguous_iterator<ConstantIterator>::value, false);
