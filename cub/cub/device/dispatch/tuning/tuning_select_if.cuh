@@ -556,15 +556,18 @@ struct sm100_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primi
   using delay_constructor                            = detail::exponential_backon_constructor_t<516, 685>;
 };
 
+// todo(gonidelis): for large input size select.unique regresses a lot and select.if regresses a bit.
+// find better tuning.
 template <class Input>
 struct sm100_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primitive::yes, input_size::_2, may_alias::yes>
+    : sm90_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primitive::yes, input_size::_2>
 {
-  // trp_1.ld_0.ipt_20.tpb_384.ns_1060.dcid_5.l2w_375 1.109871  0.973142  1.105415  1.459135
-  static constexpr int threads                       = 384;
-  static constexpr int nominal_4b_items              = 20;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  using delay_constructor = detail::exponential_backon_jitter_window_constructor_t<1060, 375>;
+  // // trp_1.ld_0.ipt_20.tpb_384.ns_1060.dcid_5.l2w_375 1.109871  0.973142  1.105415  1.459135
+  // static constexpr int threads                       = 384;
+  // static constexpr int nominal_4b_items              = 20;
+  // static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+  // static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  // using delay_constructor = detail::exponential_backon_jitter_window_constructor_t<1060, 375>;
 };
 
 template <class Input>
@@ -605,6 +608,13 @@ struct sm100_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primi
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
   using delay_constructor                            = detail::exponential_backon_constructor_t<1140, 520>;
 };
+
+// todo(gonidelis): select.unique regresses for F32, I64, true workload. Investigate why you
+// need to default it explicitly and doesn't fall back if just no tuning exists.
+template <>
+struct sm100_tuning<float, flagged::no, keep_rejects::no, offset_size::_4, primitive::yes, input_size::_4, may_alias::yes>
+    : sm90_tuning<float, flagged::no, keep_rejects::no, offset_size::_4, primitive::yes, input_size::_4>
+{};
 
 // TODO(gonidelis): Tune for I128.
 #if CUB_IS_INT128_ENABLED
