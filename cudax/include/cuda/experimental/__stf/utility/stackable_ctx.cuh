@@ -332,13 +332,20 @@ public:
   auto logical_data(shape_of<T> s)
   {
     // fprintf(stderr, "initialize from shape.\n");
-    return stackable_logical_data(*this, depth(), true, get_ctx(0).logical_data(mv(s)));
+    return stackable_logical_data(*this, depth(), true, get_ctx(0).logical_data(mv(s)), true);
+  }
+
+  template <typename T>
+  auto logical_data_no_export(shape_of<T> s)
+  {
+    // fprintf(stderr, "initialize from shape.\n");
+    return stackable_logical_data(*this, depth(), true, get_ctx(depth()).logical_data(mv(s)), false);
   }
 
   template <typename T, typename... Sizes>
   auto logical_data(size_t elements, Sizes... more_sizes)
   {
-    return stackable_logical_data(*this, depth(), true, get_ctx(0).template logical_data<T>(elements, more_sizes...));
+    return stackable_logical_data(*this, depth(), true, get_ctx(0).template logical_data<T>(elements, more_sizes...), true);
   }
 
   stackable_logical_data<void_interface> logical_token();
@@ -347,7 +354,7 @@ public:
   auto logical_data(Pack&&... pack)
   {
     // fprintf(stderr, "initialize from value.\n");
-    return stackable_logical_data(*this, depth(), false, get_ctx(depth()).logical_data(::std::forward<Pack>(pack)...));
+    return stackable_logical_data(*this, depth(), false, get_ctx(depth()).logical_data(::std::forward<Pack>(pack)...), true);
   }
 
   // To avoid prematurely destroying data created in a nested context, we need to hold a reference to them
@@ -386,6 +393,10 @@ public:
     bool need_update = dep.get_d().validate_access(*this, dep.get_access_mode());
     if (need_update)
     {
+      // The underlying dep eg. obtained when calling l.read() was resulting in
+      // an task_dep_untyped where the logical data was the one at the "top of
+      // the stack". Since a push method was done automatically, the logical
+      // data that needs to be used was incorrect, and we update it.
       dep.underlying_dep().update_data(dep.get_d().get_ld());
     }
   }
@@ -537,7 +548,7 @@ class stackable_logical_data
 
       size_t depth() const
       {
-        return s.size() - 1;
+        return s.size() - 1 + offset_depth;
       }
 
       mutable stackable_ctx sctx;
@@ -551,6 +562,7 @@ class stackable_logical_data
       // If the logical data was created at a level that is not directly the root of the context, we remember this
       // offset
       size_t base_depth = 0;
+      size_t offset_depth = 0;
 
       ::std::string symbol;
     };
@@ -561,27 +573,26 @@ class stackable_logical_data
          size_t target_depth,
          bool ld_from_shape,
          logical_data<T> ld,
+         bool can_export,
          data_place where = data_place::invalid)
         : sctx(mv(sctx_))
     {
       impl_state = ::std::make_shared<state>(sctx);
 
       impl_state->base_depth = target_depth;
-      // fprintf(stderr, "stackable_logical_data::impl %p - target depth %ld\n", this, target_depth);
 
-      // Save the logical data at the root level
+      // TODO pass this offset directly rather than a boolean for more flexibility ? (e.g. creating a ctx of depth 2, export at depth 1, not 0 ...)
+      impl_state->offset_depth = can_export?0:target_depth;
+
+      // fprintf(stderr, "stackable_logical_data::impl %p - base depth %ld offset depth %ld can export ? %d\n", this, impl_state->base_depth, impl_state->offset_depth, can_export);
+
+      // Save the logical data at the base level
       impl_state->s.push_back(ld);
 
       // If necessary, import data recursively until we reach the target depth
-      for (size_t current_depth = 1; current_depth <= target_depth; current_depth++)
+      for (size_t current_depth = impl_state->offset_depth + 1; current_depth <= target_depth; current_depth++)
       {
         push(ld_from_shape ? access_mode::write : access_mode::rw, where);
-
-#if 0
-        // Keep track of data that were pushed in this context. Note that the ID
-        // used is the ID of the logical data at this level.
-        sctx.track_pushed_data(ld.get_unique_id(), this);
-#endif
       }
     }
 
@@ -601,8 +612,11 @@ class stackable_logical_data
 
       s.pop_back();
 
+      // If there were at least 2 logical data before pop_back, there remains
+      // at least one logical data, so we need to retain the impl.
       if (s_size > 1)
       {
+        // XXX TODO this should be retained at a specific depth (= offset depth - 1 ?)
         sctx.retain_data(mv(impl_state));
       }
 
@@ -665,7 +679,6 @@ class stackable_logical_data
       // Freeze the logical data at the top
       logical_data<T>& from_data = s.back();
       frozen_logical_data<T> f   = from_ctx.freeze(from_data, m, mv(where));
-      ////      f.set_automatic_unfreeze(true);
 
       // Save the frozen data in a separate vector
       frozen_s.push_back(f);
@@ -678,6 +691,7 @@ class stackable_logical_data
 
       if (!impl_state->symbol.empty())
       {
+        // TODO reflect base/offset depths
         ld.set_symbol(impl_state->symbol + "." + ::std::to_string(current_data_depth + 1 - impl_state->base_depth));
       }
 
@@ -686,6 +700,8 @@ class stackable_logical_data
       // pop data automatically when nested contexts are popped.
       sctx.track_pushed_data(ld.get_unique_id(), impl_state);
 
+      // Save the logical data created to keep track of the data instance
+      // obtained with the get method of the frozen_logical_data object.
       s.push_back(mv(ld));
     }
 
@@ -711,6 +727,7 @@ class stackable_logical_data
     void set_symbol(::std::string symbol_)
     {
       impl_state->symbol = mv(symbol_);
+      // TODO reflect base/offset depths
       impl_state->s.back().set_symbol(impl_state->symbol + "." + ::std::to_string(depth() - impl_state->base_depth));
     }
 
@@ -725,12 +742,18 @@ class stackable_logical_data
       return sctx;
     }
 
+    size_t get_offset_depth() const {
+        return impl_state->offset_depth;
+    }
+
     // Get the access mode used to freeze at depth d
     // TODO move to state
     access_mode get_frozen_mode(size_t d) const
     {
-      _CCCL_ASSERT(d < impl_state->frozen_s.size(), "invalid value");
-      return impl_state->frozen_s[d].get_access_mode();
+      // fprintf(stderr, "get_frozen_mode d = %ld impl_state->offset_depth %ld, impl_state->frozen_s.size() %ld\n", d, impl_state->offset_depth, impl_state->frozen_s.size());
+      _CCCL_ASSERT(d >= impl_state->offset_depth, "invalid value");
+      _CCCL_ASSERT(d - impl_state->offset_depth < impl_state->frozen_s.size(), "invalid value");
+      return impl_state->frozen_s[d - impl_state->offset_depth].get_access_mode();
     }
 
   private:
@@ -747,8 +770,8 @@ public:
    * to export all the way down to the root context, we create the logical data
    * in the root, and import them. */
   template <typename... Args>
-  stackable_logical_data(stackable_ctx sctx, bool ld_from_shape, size_t target_depth, logical_data<T> ld)
-      : pimpl(::std::make_shared<impl>(sctx, ld_from_shape, target_depth, mv(ld)))
+  stackable_logical_data(stackable_ctx sctx, bool ld_from_shape, size_t target_depth, logical_data<T> ld, bool can_export)
+      : pimpl(::std::make_shared<impl>(sctx, ld_from_shape, target_depth, mv(ld), can_export))
   {
     static_assert(::std::is_move_constructible_v<stackable_logical_data>, "");
     static_assert(::std::is_move_assignable_v<stackable_logical_data>, "");
@@ -843,9 +866,15 @@ public:
     //         get_symbol().c_str(),
     //         access_mode_string(m));
 
+    size_t offset_depth = pimpl->get_offset_depth();
+
+    // Are we trying to access a logical data that cannot be "exported" at this level ?
+    _CCCL_ASSERT(sctx.depth() >= offset_depth, "Invalid value");
+
     // Fast path : do nothing if we are not in a stacked ctx
-    if (sctx.depth() == 0)
+    if (sctx.depth() == offset_depth)
     {
+      // fprintf(stderr, "validate : FAST PATH %s : sctx.depth() == offset_depth == %ld\n", get_symbol().c_str(), offset_depth);
       return false;
     }
 
@@ -867,7 +896,7 @@ public:
       _CCCL_ASSERT(d > 0, "data must have already been pushed");
       _CCCL_ASSERT(access_mode_is_compatible(pimpl->get_frozen_mode(d - 1), m), "Invalid access mode");
       // fprintf(stderr, "VALIDATED ACCESS ON stackable_logical_data %p - symbol=%s\n", pimpl.get(),
-      // get_symbol().c_str());
+      //  get_symbol().c_str());
       return false;
     }
 
@@ -897,7 +926,7 @@ private:
 
 inline stackable_logical_data<void_interface> stackable_ctx::logical_token()
 {
-  return stackable_logical_data<void_interface>(*this, depth(), true, get_ctx(0).logical_token());
+  return stackable_logical_data<void_interface>(*this, depth(), true, get_ctx(0).logical_token(), true);
 }
 
 /**

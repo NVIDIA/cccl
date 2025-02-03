@@ -41,8 +41,13 @@ int main()
   auto lB = sctx.logical_data(lA.shape());
   lB.set_symbol("B");
 
-  sctx.parallel_for(lB.shape(), lB.write(), lA.read())->*[] __device__(size_t i, auto b, auto a) {
+  auto lC = sctx.logical_data_no_export(lA.shape());
+  //auto lC = sctx.logical_data(lA.shape());
+  lC.set_symbol("C");
+
+  sctx.parallel_for(lB.shape(), lB.write(), lA.read(), lC.write())->*[] __device__(size_t i, auto b, auto a, auto c) {
     b(i) = 17 - 3 * a(i);
+    c(i) = b(i);
   };
 
   sctx.parallel_for(lB.shape(), lB.rw())->*[] __device__(size_t i, auto b) {
