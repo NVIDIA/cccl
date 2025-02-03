@@ -176,6 +176,7 @@ _CCCL_DEVICE void* __associate_descriptor(void* __ptr, __Prop __prop)
 template <>
 inline _CCCL_DEVICE void* __associate_descriptor(void* __ptr, std::uint64_t __prop)
 {
+  (void) __prop;
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80, (return __nv_associate_access_property(__ptr, __prop);), (return __ptr;))
 }
 
