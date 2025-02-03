@@ -169,11 +169,11 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
   };
 
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
-  // H100 and H200
-  struct policy900 : ChainedPolicy<900, policy900, policy300>
+  template <int BlockSize, int PtxVersion>
+  struct bulkcopy_policy
   {
-    static constexpr int min_bif = arch_to_min_bytes_in_flight(900);
-    using async_policy           = async_copy_policy_t<256>;
+    static constexpr int min_bif = arch_to_min_bytes_in_flight(PtxVersion);
+    using async_policy           = async_copy_policy_t<BlockSize>;
     static constexpr bool exhaust_smem =
       bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>(
         async_policy::block_threads * async_policy::min_items_per_thread)
@@ -188,10 +188,20 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
     static constexpr bool use_fallback =
       RequiresStableAddress || !can_memcpy || no_input_streams || exhaust_smem || any_type_is_overalinged;
     static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Algorithm::ublkcp;
-    using algo_policy               = ::cuda::std::_If<use_fallback, prefetch_policy_t<256>, async_policy>;
+    using algo_policy               = ::cuda::std::_If<use_fallback, prefetch_policy_t<BlockSize>, async_policy>;
   };
 
-  using max_policy = policy900;
+  struct policy900
+      : bulkcopy_policy<256, 900>
+      , ChainedPolicy<900, policy900, policy300>
+  {};
+
+  struct policy1000
+      : bulkcopy_policy<128, 1000>
+      , ChainedPolicy<1000, policy1000, policy900>
+  {};
+
+  using max_policy = policy1000;
 #else // _CUB_HAS_TRANSFORM_UBLKCP
   using max_policy = policy300;
 #endif // _CUB_HAS_TRANSFORM_UBLKCP

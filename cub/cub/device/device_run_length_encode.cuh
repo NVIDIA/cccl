@@ -48,6 +48,7 @@
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/device/dispatch/dispatch_rle.cuh>
 #include <cub/device/dispatch/tuning/tuning_run_length_encode.cuh>
+#include <cub/iterator/constant_input_iterator.cuh>
 
 #include <iterator>
 
@@ -199,7 +200,9 @@ struct DeviceRunLengthEncode
     using length_t = cub::detail::non_void_value_t<LengthsOutputIteratorT, offset_t>;
 
     // Generator type for providing 1s values for run-length reduction
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     using lengths_input_iterator_t = ConstantInputIterator<length_t, offset_t>;
+    _CCCL_SUPPRESS_DEPRECATED_POP
 
     using accum_t = ::cuda::std::__accumulator_t<reduction_op, length_t, length_t>;
 
@@ -207,6 +210,7 @@ struct DeviceRunLengthEncode
 
     using policy_t = detail::rle::encode::policy_hub<accum_t, key_t>;
 
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     return DispatchReduceByKey<
       InputIteratorT,
       UniqueOutputIteratorT,
@@ -228,6 +232,7 @@ struct DeviceRunLengthEncode
                           reduction_op(),
                           num_items,
                           stream);
+    _CCCL_SUPPRESS_DEPRECATED_POP
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document

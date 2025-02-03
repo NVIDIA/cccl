@@ -386,7 +386,9 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") AgentSpmv
     __syncthreads();
 
     // Search for the thread's starting coordinate within the merge tile
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     CountingInputIterator<OffsetT> tile_nonzero_indices(tile_start_coord.y);
+    _CCCL_SUPPRESS_DEPRECATED_POP
     CoordinateT thread_start_coord;
 
     MergePathSearch(
@@ -567,7 +569,9 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") AgentSpmv
     __syncthreads();
 
     // Search for the thread's starting coordinate within the merge tile
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     CountingInputIterator<OffsetT> tile_nonzero_indices(tile_start_coord.y);
+    _CCCL_SUPPRESS_DEPRECATED_POP
     CoordinateT thread_start_coord;
 
     MergePathSearch(
@@ -701,7 +705,9 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") AgentSpmv
         // Search our starting coordinates
         OffsetT diagonal = (tile_idx + threadIdx.x) * TILE_ITEMS;
         CoordinateT tile_coord;
+        _CCCL_SUPPRESS_DEPRECATED_PUSH
         CountingInputIterator<OffsetT> nonzero_indices(0);
+        _CCCL_SUPPRESS_DEPRECATED_POP
 
         // Search the merge path
         MergePathSearch(

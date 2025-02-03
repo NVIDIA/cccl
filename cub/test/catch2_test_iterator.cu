@@ -26,6 +26,11 @@
  *
  ******************************************************************************/
 
+#include <cuda/__cccl_config>
+
+// we get deprecation warnings from all kinds of places (including  cudafe1.stub.c)), so just bulk suppress them
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 #include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/iterator/constant_input_iterator.cuh>
