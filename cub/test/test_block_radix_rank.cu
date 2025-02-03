@@ -27,7 +27,6 @@
 
 // Ensure printing of CUDA runtime errors to console
 #include "cub/util_type.cuh"
-#include "cuda/std/__type_traits/integral_constant.h"
 #define CUB_STDERR
 
 #include <cub/block/block_load.cuh>
