@@ -18,12 +18,11 @@
 #if defined(_MSC_VER) // MSVC
 
 // Fake up an error for MSVC
-#  define CCCL_HEADER_MACRO_CHECK_IMPL(msg)                                                                           \
-    /* Print message that looks like an error: */                                                                     \
-    __pragma(message(__FILE__ ":" CCCL_HEADER_MACRO_CHECK_IMPL0(__LINE__) ": error: " #msg)) /* abort compilation due \
-                                                                                                to static_assert or   \
-                                                                                                syntax error: */      \
-      static_assert(false, #msg);
+#  define CCCL_HEADER_MACRO_CHECK_IMPL(msg)                                                  \
+    /* Print message that looks like an error: */                                            \
+    __pragma(message(__FILE__ ":" CCCL_HEADER_MACRO_CHECK_IMPL0(__LINE__) ": error: " #msg)) \
+                                                                                             \
+      static_assert(false, #msg); /* abort compilation due to static_assert or syntax error */
 #  define CCCL_HEADER_MACRO_CHECK_IMPL0(x) CCCL_HEADER_MACRO_CHECK_IMPL1(x)
 #  define CCCL_HEADER_MACRO_CHECK_IMPL1(x) #x
 
