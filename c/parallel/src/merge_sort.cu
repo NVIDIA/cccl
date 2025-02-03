@@ -135,7 +135,7 @@ std::string get_merge_sort_kernel_name(
   const std::string input_keys_iterator_t   = get_iterator_name(input_keys_it, merge_sort_iterator_t::input_keys);
   const std::string input_items_iterator_t  = get_iterator_name(input_items_it, merge_sort_iterator_t::input_items);
   const std::string output_keys_iterator_t  = get_iterator_name(output_keys_it, merge_sort_iterator_t::output_keys);
-  const std::string output_items_iterator_t = get_iterator_name(output_items_it, merge_sort_iterator_t::output_keys);
+  const std::string output_items_iterator_t = get_iterator_name(output_items_it, merge_sort_iterator_t::output_items);
 
   std::string offset_t;
   check(nvrtcGetTypeName<OffsetT>(&offset_t));
