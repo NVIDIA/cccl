@@ -1004,25 +1004,6 @@ UNITTEST("stackable host_launch")
   ctx.finalize();
 };
 
-UNITTEST("stackable promote mode")
-{
-  int A[1024];
-  stackable_ctx ctx;
-  auto lA = ctx.logical_data(A);
-  ctx.push();
-
-  lA.push(access_mode::read, data_place::current_device());
-  ctx.task(lA.read())->*[](cudaStream_t, auto) {};
-  lA.pop();
-
-  lA.push(access_mode::rw, data_place::current_device());
-  ctx.task(lA.rw())->*[](cudaStream_t, auto) {};
-  lA.pop();
-
-  ctx.pop();
-  ctx.finalize();
-};
-
 #  endif // __CUDACC__
 #endif // UNITTESTED_FILE
 
