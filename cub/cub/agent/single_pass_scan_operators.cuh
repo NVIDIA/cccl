@@ -549,20 +549,14 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int num_tiles_to_num_tile_states(i
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE size_t
 tile_state_allocation_size(int bytes_per_description, int bytes_per_payload, int num_tiles)
 {
-  // Specify storage allocation requirements
-  size_t allocation_sizes[3];
-
   int num_tile_states = num_tiles_to_num_tile_states(num_tiles);
-
-  // bytes needed for tile status descriptors
-  allocation_sizes[0] = num_tile_states * bytes_per_description;
-
-  // bytes needed for partials
-  allocation_sizes[1] = num_tile_states * bytes_per_payload;
-
-  // bytes needed for inclusives
-  allocation_sizes[2] = num_tile_states * bytes_per_payload;
-
+  size_t allocation_sizes[]{
+    // bytes needed for tile status descriptors
+    static_cast<size_t>(num_tile_states * bytes_per_description),
+    // bytes needed for partials
+    static_cast<size_t>(num_tile_states * bytes_per_payload),
+    // bytes needed for inclusives
+    static_cast<size_t>(num_tile_states * bytes_per_payload)};
   // Set the necessary size of the blob
   size_t temp_storage_bytes = 0;
   void* allocations[3]      = {};
@@ -579,19 +573,14 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t tile_state_init(
   size_t temp_storage_bytes,
   void* (&allocations)[3])
 {
-  // Specify storage allocation requirements
-  size_t allocation_sizes[3];
-
   int num_tile_states = num_tiles_to_num_tile_states(num_tiles);
-
-  // bytes needed for tile status descriptors
-  allocation_sizes[0] = num_tile_states * bytes_per_description;
-
-  // bytes needed for partials
-  allocation_sizes[1] = num_tile_states * bytes_per_payload;
-
-  // bytes needed for inclusives
-  allocation_sizes[2] = num_tile_states * bytes_per_payload;
+  size_t allocation_sizes[]{
+    // bytes needed for tile status descriptors
+    static_cast<size_t>(num_tile_states * bytes_per_description),
+    // bytes needed for partials
+    static_cast<size_t>(num_tile_states * bytes_per_payload),
+    // bytes needed for inclusives
+    static_cast<size_t>(num_tile_states * bytes_per_payload)};
 
   // Set the necessary size of the blob
   AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
