@@ -36,7 +36,6 @@
 
 #include <cuda/std/type_traits>
 
-#include "cuda/std/__type_traits/integral_constant.h"
 #include <c2h/catch2_test_helper.h>
 
 /******************************************************************************
