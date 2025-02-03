@@ -39,12 +39,6 @@
 
 #include <cub/config.cuh>
 
-#include <cstdint>
-
-#include "cuda/std/__type_traits/conditional.h"
-#include "cuda/std/__type_traits/integral_constant.h"
-#include "cuda/std/__type_traits/is_same.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -58,6 +52,7 @@
 
 #include <cuda/functional> // cuda::maximum, cuda::minimum
 #include <cuda/std/bit> // cuda::std::bit_cast
+#include <cuda/std/cstdint> // cuda::std::uint32_t
 #include <cuda/std/functional> // cuda::std::plus
 #include <cuda/std/type_traits> // cuda::std::common_type
 #include <cuda/std/utility> // cuda::std::forward
