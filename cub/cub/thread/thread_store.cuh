@@ -265,8 +265,8 @@ _CUB_STORE_ALL(STORE_WT, wt)
  * ThreadStore definition for STORE_DEFAULT modifier on iterator types
  */
 template <typename OutputIteratorT, typename T>
-_CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStore(
-  OutputIteratorT itr, T val, int_constant_t<STORE_DEFAULT> /*modifier*/, ::cuda::std::false_type /*is_pointer*/)
+_CCCL_DEVICE _CCCL_FORCEINLINE void
+ThreadStore(OutputIteratorT itr, T val, constant_t<STORE_DEFAULT> /*modifier*/, ::cuda::std::false_type /*is_pointer*/)
 {
   *itr = val;
 }
@@ -276,7 +276,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStore(
  */
 template <typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
-ThreadStore(T* ptr, T val, int_constant_t<STORE_DEFAULT> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
+ThreadStore(T* ptr, T val, constant_t<STORE_DEFAULT> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
 {
   *ptr = val;
 }
@@ -319,7 +319,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStoreVolatilePtr(T* ptr, T val, ::cuda
  */
 template <typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
-ThreadStore(T* ptr, T val, int_constant_t<STORE_VOLATILE> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
+ThreadStore(T* ptr, T val, constant_t<STORE_VOLATILE> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
 {
   ThreadStoreVolatilePtr(ptr, val, bool_constant_v<Traits<T>::PRIMITIVE>);
 }
@@ -327,9 +327,9 @@ ThreadStore(T* ptr, T val, int_constant_t<STORE_VOLATILE> /*modifier*/, ::cuda::
 /**
  * ThreadStore definition for generic modifiers on pointer types
  */
-template <typename T, int MODIFIER>
+template <typename T, CacheStoreModifier MODIFIER>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
-ThreadStore(T* ptr, T val, int_constant_t<MODIFIER> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
+ThreadStore(T* ptr, T val, constant_t<MODIFIER> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
 {
   // Create a temporary using shuffle-words, then store using device-words
   using DeviceWord  = typename UnitWord<T>::DeviceWord;
@@ -356,7 +356,7 @@ ThreadStore(T* ptr, T val, int_constant_t<MODIFIER> /*modifier*/, ::cuda::std::t
 template <CacheStoreModifier MODIFIER, typename OutputIteratorT, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStore(OutputIteratorT itr, T val)
 {
-  ThreadStore(itr, val, int_constant_v<MODIFIER>, bool_constant_v<::cuda::std::is_pointer_v<OutputIteratorT>>);
+  ThreadStore(itr, val, constant_v<MODIFIER>, bool_constant_v<::cuda::std::is_pointer_v<OutputIteratorT>>);
 }
 
 #endif // _CCCL_DOXYGEN_INVOKED

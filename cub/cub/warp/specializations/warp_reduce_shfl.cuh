@@ -102,21 +102,17 @@ struct WarpReduceShfl
   // Constants and type definitions
   //---------------------------------------------------------------------
 
-  enum
-  {
-    /// Whether the logical warp size and the PTX warp size coincide
-    IS_ARCH_WARP = (LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0)),
+  /// Whether the logical warp size and the PTX warp size coincide
+  static constexpr bool IS_ARCH_WARP = (LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0));
 
-    /// The number of warp reduction steps
-    STEPS = Log2<LOGICAL_WARP_THREADS>::VALUE,
+  /// The number of warp reduction steps
+  static constexpr int STEPS = Log2<LOGICAL_WARP_THREADS>::VALUE;
 
-    /// Number of logical warps in a PTX warp
-    LOGICAL_WARPS = CUB_WARP_THREADS(0) / LOGICAL_WARP_THREADS,
+  /// Number of logical warps in a PTX warp
+  static constexpr int LOGICAL_WARPS = CUB_WARP_THREADS(0) / LOGICAL_WARP_THREADS;
 
-    /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
-    SHFL_C = (CUB_WARP_THREADS(0) - LOGICAL_WARP_THREADS) << 8
-
-  };
+  /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
+  static constexpr unsigned SHFL_C = (CUB_WARP_THREADS(0) - LOGICAL_WARP_THREADS) << 8;
 
   template <typename S>
   struct IsInteger
@@ -530,11 +526,11 @@ struct WarpReduceShfl
    */
   template <typename ReductionOp, int STEP>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ReduceStep(T& input, ReductionOp reduction_op, int last_lane, int_constant_t<STEP> /*step*/)
+  ReduceStep(T& input, ReductionOp reduction_op, int last_lane, constant_t<STEP> /*step*/)
   {
     input = ReduceStep(input, reduction_op, last_lane, 1 << STEP, bool_constant_v<IsInteger<T>::IS_SMALL_UNSIGNED>);
 
-    ReduceStep(input, reduction_op, last_lane, int_constant_v<STEP + 1>);
+    ReduceStep(input, reduction_op, last_lane, constant_v<STEP + 1>);
   }
 
   /**
@@ -549,7 +545,7 @@ struct WarpReduceShfl
    */
   template <typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ReduceStep(T& /*input*/, ReductionOp /*reduction_op*/, int /*last_lane*/, int_constant_t<STEPS> /*step*/)
+  ReduceStep(T& /*input*/, ReductionOp /*reduction_op*/, int /*last_lane*/, constant_t<STEPS> /*step*/)
   {}
 
   //---------------------------------------------------------------------
@@ -575,7 +571,7 @@ struct WarpReduceShfl
     T output = input;
 
     // Template-iterate reduction steps
-    ReduceStep(output, reduction_op, last_lane, int_constant_v<0>);
+    ReduceStep(output, reduction_op, last_lane, constant_v<0>);
 
     return output;
   }
@@ -599,7 +595,7 @@ struct WarpReduceShfl
     T output = input;
 
     // Template-iterate reduction steps
-    ReduceStep(output, reduction_op, last_lane, int_constant_v<0>);
+    ReduceStep(output, reduction_op, last_lane, constant_v<0>);
 
     return output;
   }
@@ -725,7 +721,7 @@ struct WarpReduceShfl
 
     T output = input;
     // Template-iterate reduction steps
-    ReduceStep(output, reduction_op, last_lane, int_constant_v<0>);
+    ReduceStep(output, reduction_op, last_lane, constant_v<0>);
 
     return output;
   }

@@ -500,7 +500,7 @@ struct AgentHistogram
     OffsetT block_offset,
     int valid_samples,
     SampleT (&samples)[PIXELS_PER_THREAD][NUM_CHANNELS],
-    int_constant_t<_NUM_ACTIVE_CHANNELS> num_active_channels)
+    constant_t<_NUM_ACTIVE_CHANNELS> num_active_channels)
   {
     using AliasedPixels = PixelT[PIXELS_PER_THREAD];
 
@@ -515,7 +515,7 @@ struct AgentHistogram
     OffsetT block_offset,
     int valid_samples,
     SampleT (&samples)[PIXELS_PER_THREAD][NUM_CHANNELS],
-    int_constant_t<1> num_active_channels)
+    constant_t<1> num_active_channels)
   {
     using AliasedVecs = VecT[VECS_PER_THREAD];
 
@@ -533,7 +533,7 @@ struct AgentHistogram
     ::cuda::std::true_type is_full_tile,
     ::cuda::std::true_type is_aligned)
   {
-    LoadFullAlignedTile(block_offset, valid_samples, samples, int_constant_v<NUM_ACTIVE_CHANNELS>);
+    LoadFullAlignedTile(block_offset, valid_samples, samples, constant_v<NUM_ACTIVE_CHANNELS>);
   }
 
   // Load full, mis-aligned tile using sample iterator
