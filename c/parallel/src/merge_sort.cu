@@ -114,9 +114,15 @@ std::string get_iterator_name(cccl_iterator_t iterator, merge_sort_iterator_t wh
   }
 }
 
-merge_sort_runtime_tuning_policy get_policy(int cc)
+int nominal_4b_items_to_items(int nominal_4b_items_per_thread, int key_size)
 {
-  merge_sort_tuning_t chain[]            = {{60, 256, 17}, {35, 256, 11}};
+  return std::min(nominal_4b_items_per_thread, std::max(1, nominal_4b_items_per_thread * 4 / key_size));
+}
+
+merge_sort_runtime_tuning_policy get_policy(int cc, int key_size)
+{
+  merge_sort_tuning_t chain[] = {
+    {60, 256, nominal_4b_items_to_items(17, key_size)}, {35, 256, nominal_4b_items_to_items(11, key_size)}};
   auto [_, block_size, items_per_thread] = find_tuning(cc, chain);
 
   return {block_size, items_per_thread, block_size * items_per_thread};
@@ -191,8 +197,10 @@ struct dynamic_merge_sort_policy_t
   template <typename F>
   cudaError_t Invoke(int device_ptx_version, F& op)
   {
-    return op.template Invoke<merge_sort_runtime_tuning_policy>(GetPolicy(device_ptx_version));
+    return op.template Invoke<merge_sort_runtime_tuning_policy>(GetPolicy(device_ptx_version, key_size));
   }
+
+  int key_size;
 };
 
 struct merge_sort_kernel_source
@@ -271,7 +279,7 @@ extern "C" CCCL_C_API CUresult cccl_device_merge_sort_build(
     const char* name = "test";
 
     const int cc      = cc_major * 10 + cc_minor;
-    const auto policy = merge_sort::get_policy(cc);
+    const auto policy = merge_sort::get_policy(cc, output_keys_it.value_type.size);
 
     const auto input_keys_it_value_t   = cccl_type_enum_to_string(input_keys_it.value_type.type);
     const auto input_items_it_value_t  = cccl_type_enum_to_string(input_keys_it.value_type.type);
@@ -461,7 +469,7 @@ extern "C" CCCL_C_API CUresult cccl_device_merge_sort(
                                 stream,
                                 {build},
                                 cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
-                                {},
+                                {d_out_keys.value_type.size},
                                 {});
   }
   catch (const std::exception& exc)
