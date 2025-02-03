@@ -55,7 +55,7 @@
 
 struct reduce_by_key_policy_hub
 {
-  struct Policy350 : cub::ChainedPolicy<350, Policy350, Policy350>
+  struct Policy500 : cub::ChainedPolicy<500, Policy500, Policy500>
   {
     using ReduceByKeyPolicyT =
       cub::AgentReduceByKeyPolicy<TUNE_THREADS,
@@ -66,7 +66,7 @@ struct reduce_by_key_policy_hub
                                   delay_constructor_t>;
   };
 
-  using MaxPolicy = Policy350;
+  using MaxPolicy = Policy500;
 };
 #endif // !TUNE_BASE
 

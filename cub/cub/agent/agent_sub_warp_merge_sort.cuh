@@ -183,8 +183,8 @@ public:
 
   using WarpMergeSortT = WarpMergeSort<KeyT, PolicyT::ITEMS_PER_THREAD, PolicyT::WARP_THREADS, ValueT>;
 
-  using KeysLoadItT  = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<PolicyT, const KeyT*>::type;
-  using ItemsLoadItT = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<PolicyT, const ValueT*>::type;
+  using KeysLoadItT  = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<PolicyT, const KeyT*>::type;
+  using ItemsLoadItT = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<PolicyT, const ValueT*>::type;
 
   using WarpLoadKeysT = cub::WarpLoad<KeyT, PolicyT::ITEMS_PER_THREAD, PolicyT::LOAD_ALGORITHM, PolicyT::WARP_THREADS>;
   using WarpLoadItemsT =

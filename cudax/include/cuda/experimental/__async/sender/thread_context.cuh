@@ -33,7 +33,7 @@
 
 namespace cuda::experimental::__async
 {
-struct thread_context
+struct _CCCL_TYPE_VISIBILITY_DEFAULT thread_context
 {
   thread_context() noexcept
       : __thrd_{[this] {

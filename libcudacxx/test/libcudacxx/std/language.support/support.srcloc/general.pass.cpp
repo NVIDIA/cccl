@@ -51,12 +51,10 @@ static_assert(cuda::std::is_same<const char*, decltype(empty.file_name())>::valu
 static_assert(cuda::std::is_same<const char*, decltype(empty.function_name())>::value, "");
 
 __device__ _CCCL_CONSTEXPR_GLOBAL cuda::std::source_location device_empty{};
-#if _CCCL_CUDACC_AT_LEAST(11, 3)
 static_assert(device_empty.line() == 0, "");
 static_assert(device_empty.column() == 0, "");
 static_assert(device_empty.file_name()[0] == '\0', "");
 static_assert(device_empty.function_name()[0] == '\0', "");
-#endif // _CCCL_CUDACC_BELOW(11, 3)
 
 ASSERT_NOEXCEPT(device_empty.line());
 ASSERT_NOEXCEPT(device_empty.column());

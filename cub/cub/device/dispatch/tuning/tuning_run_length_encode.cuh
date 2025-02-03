@@ -156,7 +156,7 @@ struct sm80_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, len
   using delay_constructor                            = detail::no_delay_constructor_t<1075>;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <class LengthT>
 struct sm80_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
 {
@@ -216,7 +216,7 @@ struct sm90_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, len
   using delay_constructor                            = detail::no_delay_constructor_t<515>;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <class LengthT>
 struct sm90_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
 {
@@ -258,10 +258,10 @@ struct policy_hub
                              default_reduce_by_key_delay_constructor_t<LengthT, int>>;
   };
 
-  // SM35
-  struct Policy350
+  // SM50
+  struct Policy500
       : DefaultPolicy<LOAD_LDG>
-      , ChainedPolicy<350, Policy350, Policy350>
+      , ChainedPolicy<500, Policy500, Policy500>
   {};
 
   // Use values from tuning if a specialization exists, otherwise pick the default
@@ -277,7 +277,7 @@ struct policy_hub
   static auto select_agent_policy(long) -> typename DefaultPolicy<LOAD_DEFAULT>::ReduceByKeyPolicyT;
 
   // SM80
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy350>
+  struct Policy800 : ChainedPolicy<800, Policy800, Policy500>
   {
     using ReduceByKeyPolicyT = decltype(select_agent_policy<encode::sm80_tuning<LengthT, KeyT>>(0));
   };
@@ -349,7 +349,7 @@ struct sm80_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, len
   using delay_constructor                            = detail::no_delay_constructor_t<1065>;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <class LengthT>
 struct sm80_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
 {
@@ -414,7 +414,7 @@ struct sm90_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, len
   using delay_constructor                            = detail::no_delay_constructor_t<840>;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <class LengthT>
 struct sm90_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
 {
@@ -451,10 +451,10 @@ struct policy_hub
                      default_reduce_by_key_delay_constructor_t<DelayConstructorKey, int>>;
   };
 
-  // SM35
-  struct Policy350
+  // SM50
+  struct Policy500
       : DefaultPolicy<BLOCK_LOAD_DIRECT, int, LOAD_LDG> // TODO(bgruber): I think we want `LengthT` instead of `int`
-      , ChainedPolicy<350, Policy350, Policy350>
+      , ChainedPolicy<500, Policy500, Policy500>
   {};
 
   // Use values from tuning if a specialization exists, otherwise pick the default
@@ -472,7 +472,7 @@ struct policy_hub
     typename DefaultPolicy<BLOCK_LOAD_WARP_TRANSPOSE, LengthT, LOAD_DEFAULT>::RleSweepPolicyT;
 
   // SM80
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy350>
+  struct Policy800 : ChainedPolicy<800, Policy800, Policy500>
   {
     using RleSweepPolicyT = decltype(select_agent_policy<non_trivial_runs::sm80_tuning<LengthT, KeyT>>(0));
   };

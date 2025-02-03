@@ -78,6 +78,7 @@ class Configuration(object):
         self.link_shared = self.get_lit_bool("enable_shared", default=True)
         self.debug_build = self.get_lit_bool("debug_build", default=False)
         self.exec_env = dict(os.environ)
+        self.exec_env["CUDA_MODULE_LOADING"] = "EAGER"
         self.use_target = False
         self.use_system_cxx_lib = False
         self.use_clang_verify = False
@@ -201,7 +202,8 @@ class Configuration(object):
     def make_static_lib_name(self, name):
         """Return the full filename for the specified library name"""
         if self.is_windows:
-            assert name == "c++"  # Only allow libc++ to use this function for now.
+            # Only allow libc++ to use this function for now.
+            assert name == "c++"
             return "lib" + name + ".lib"
         else:
             return "lib" + name + ".a"
@@ -308,7 +310,7 @@ class Configuration(object):
             cxx is not None and os.path.basename(cxx) == "clang-cl.exe"
         )
 
-        ## Build CXXCompiler manually for NVRTCC
+        # Build CXXCompiler manually for NVRTCC
         if nvrtc is True:
             cxx_type = "nvrtcc"
             self.cxx = CXXCompiler(
@@ -751,7 +753,7 @@ class Configuration(object):
             if compute_archs == "native":
                 compute_archs = self.get_compute_capabilities()
 
-            compute_archs = set(sorted(re.split("\s|;|,", compute_archs)))
+            compute_archs = set(sorted(re.split("\\s|;|,", compute_archs)))
             for s in compute_archs:
                 # Split arch and mode i.e. 80-virtual -> 80, virtual
                 arch, *mode = re.split("-", s)

@@ -99,7 +99,7 @@ BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits, Int2Type
   return (source >> bit_start) & MASK;
 }
 
-#  if CUB_IS_INT128_ENABLED
+#  if _CCCL_HAS_INT128()
 /**
  * Bitfield-extract for 128-bit types.
  */
@@ -384,7 +384,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int WarpId()
  *                              hardware warp threads).
  * @param warp_id Id of virtual warp within architectural warp
  */
-template <int LOGICAL_WARP_THREADS, int LEGACY_PTX_ARCH = 0>
+template <int LOGICAL_WARP_THREADS>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned int WarpMask(unsigned int warp_id)
 {
   constexpr bool is_pow_of_two = PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE;

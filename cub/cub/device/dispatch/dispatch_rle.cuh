@@ -361,7 +361,7 @@ struct DeviceRleDispatch
 #endif // CUB_DEBUG_LOG
 
       // Invoke device_scan_init_kernel to initialize tile descriptors and queue descriptors
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
         .doit(device_scan_init_kernel, tile_status, num_tiles, d_num_runs_out);
 
       // Check for failure to launch
@@ -422,7 +422,7 @@ struct DeviceRleDispatch
 #endif // CUB_DEBUG_LOG
 
       // Invoke device_rle_sweep_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(scan_grid_size, block_threads, 0, stream)
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(scan_grid_size, block_threads, 0, stream)
         .doit(device_rle_sweep_kernel,
               d_in,
               d_offsets_out,

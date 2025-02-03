@@ -13,13 +13,6 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDACC_BELOW(11, 5)
-_CCCL_NV_DIAG_SUPPRESS(186)
-#  include <cuda_pipeline_primitives.h>
-// we cannot re-enable the warning here, because it is triggered outside the translation unit
-// see also: https://godbolt.org/z/1x8b4hn3G
-#endif // _CCCL_CUDACC_BELOW(11, 5)
-
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/device/dispatch/tuning/tuning_transform.cuh>
 #include <cub/util_arch.cuh>
@@ -661,7 +654,7 @@ struct dispatch_t<RequiresStableAddress,
   template <typename ActivePolicy>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_ublkcp_kernel() -> PoorExpected<
     ::cuda::std::
-      tuple<THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron, decltype(CUB_DETAIL_TRANSFORM_KERNEL_PTR), int>>
+      tuple<THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron, decltype(CUB_DETAIL_TRANSFORM_KERNEL_PTR), int>>
   {
     using policy_t          = typename ActivePolicy::algo_policy;
     constexpr int block_dim = policy_t::block_threads;
@@ -733,7 +726,7 @@ struct dispatch_t<RequiresStableAddress,
 
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{config->tile_size}));
     return ::cuda::std::make_tuple(
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(grid_dim, block_dim, config->smem_size, stream),
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid_dim, block_dim, config->smem_size, stream),
       CUB_DETAIL_TRANSFORM_KERNEL_PTR,
       config->elem_per_thread);
   }
@@ -814,7 +807,7 @@ struct dispatch_t<RequiresStableAddress,
     const int tile_size = block_dim * items_per_thread_clamped;
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{tile_size}));
     return CubDebug(
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(grid_dim, block_dim, 0, stream)
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid_dim, block_dim, 0, stream)
         .doit(
           CUB_DETAIL_TRANSFORM_KERNEL_PTR,
           num_items,

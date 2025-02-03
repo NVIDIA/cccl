@@ -45,6 +45,7 @@
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
+#include <c2h/extended_types.h>
 
 // TODO replace with DeviceSegmentedRadixSort::SortKeys interface once https://github.com/NVIDIA/cccl/issues/50 is
 // addressed Temporary wrapper that allows specializing the DeviceSegmentedRadixSort algorithm for different offset
@@ -120,12 +121,12 @@ using bit_window_key_types = c2h::type_list<cuda::std::uint8_t, cuda::std::int8_
 using key_types = c2h::type_list<
     cuda::std::uint16_t
   , cuda::std::int16_t
-#ifdef TEST_HALF_T
+#if TEST_HALF_T()
   , half_t
-#endif
-#ifdef TEST_BF_T
+#endif // TEST_HALF_T()
+#if TEST_BF_T()
   , bfloat16_t
-#endif
+#endif // TEST_BF_T()
   >;
 // clang-format on
 using bit_window_key_types = c2h::type_list<cuda::std::uint16_t, cuda::std::int16_t>;
