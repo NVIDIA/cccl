@@ -129,6 +129,8 @@
  * (v. August 20, 2021)
  */
 
+#include <cuda_runtime_api.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 namespace __detail_ap
@@ -136,12 +138,12 @@ namespace __detail_ap
 
 _CCCL_HOST_DEVICE constexpr uint32_t __ap_floor_log2(uint32_t __x)
 {
-  return (__x == 1 | __x == 0) ? 0 : 1 + __ap_floor_log2(__x >> 1);
+  return ((__x == 1) || (__x == 0)) ? 0 : 1 + __ap_floor_log2(__x >> 1);
 }
 
 _CCCL_HOST_DEVICE constexpr uint32_t __ap_ceil_log2(uint32_t __x)
 {
-  return (__x == 1 | __x == 0) ? 0 : __ap_floor_log2(__x - 1) + 1;
+  return ((__x == 1) || (__x == 0)) ? 0 : __ap_floor_log2(__x - 1) + 1;
 }
 
 _CCCL_HOST_DEVICE constexpr uint32_t __ap_min(uint32_t __a, uint32_t __b) noexcept
@@ -429,7 +431,7 @@ _CCCL_HOST_DEVICE constexpr std::uint64_t __block(
   cudaAccessProperty __hit_prop,
   cudaAccessProperty __miss_prop = cudaAccessPropertyNormal)
 {
-  return (__total_bytes <= (size_t{0xFFFFFFFF}) & __total_bytes != 0 & __hit_bytes <= __total_bytes)
+  return (__total_bytes <= (size_t{0xFFFFFFFF}) && __total_bytes != 0 && __hit_bytes <= __total_bytes)
          ? __sm_80::__block_descriptor_builder(
              reinterpret_cast<std::uintptr_t>(__ptr),
              __hit_bytes,
