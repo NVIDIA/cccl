@@ -31,6 +31,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __swap_result_t<_Tp> swap(_Tp& __x, _Tp& __y) noexcept(
   _CCCL_TRAIT(is_nothrow_move_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
