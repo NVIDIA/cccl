@@ -434,7 +434,7 @@ inline bool IsNaN<double4>(double4 val)
   return (IsNaN(val.y) || IsNaN(val.x) || IsNaN(val.w) || IsNaN(val.z));
 }
 
-#ifdef TEST_HALF_T
+#if TEST_HALF_T()
 template <>
 inline bool IsNaN<half_t>(half_t val)
 {
@@ -443,9 +443,9 @@ inline bool IsNaN<half_t>(half_t val)
   // commented bit is always true, leaving for documentation:
   return (((bits >= 0x7C01) && (bits <= 0x7FFF)) || ((bits >= 0xFC01) /*&& (bits <= 0xFFFFFFFF)*/));
 }
-#endif
+#endif // TEST_HALF_T()
 
-#ifdef TEST_BF_T
+#if TEST_BF_T()
 template <>
 inline bool IsNaN<bfloat16_t>(bfloat16_t val)
 {
@@ -454,7 +454,7 @@ inline bool IsNaN<bfloat16_t>(bfloat16_t val)
   // commented bit is always true, leaving for documentation:
   return (((bits >= 0x7F81) && (bits <= 0x7FFF)) || ((bits >= 0xFF81) /*&& (bits <= 0xFFFFFFFF)*/));
 }
-#endif
+#endif // TEST_BF_T()
 
 /**
  * Generates random keys.
