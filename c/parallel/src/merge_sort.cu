@@ -61,21 +61,57 @@ Tuning find_tuning(int cc, const Tuning (&tunings)[N])
   return tunings[N - 1];
 }
 
-struct input_iterator_state_t;
-struct output_iterator_t;
+struct input_keys_iterator_state_t;
+struct input_items_iterator_state_t;
+struct output_keys_iterator_t;
+struct output_items_iterator_t;
 
-std::string get_input_iterator_name()
+enum class merge_sort_iterator_t
 {
-  std::string iterator_t;
-  check(nvrtcGetTypeName<input_iterator_state_t>(&iterator_t));
-  return iterator_t;
-}
+  input_keys   = 0,
+  input_items  = 1,
+  output_keys  = 2,
+  output_items = 3
+};
 
-std::string get_output_iterator_name()
+std::string get_iterator_name(cccl_iterator_t iterator, merge_sort_iterator_t which_iterator)
 {
-  std::string iterator_t;
-  check(nvrtcGetTypeName<output_iterator_t>(&iterator_t));
-  return iterator_t;
+  if (iterator.type == cccl_iterator_kind_t::pointer)
+  {
+    if (iterator.state == nullptr)
+    {
+      return "cub::NullType*";
+    }
+    else
+    {
+      return cccl_type_enum_to_name(iterator.value_type.type, true);
+    }
+  }
+  else
+  {
+    std::string iterator_t;
+    switch (which_iterator)
+    {
+      case merge_sort_iterator_t::input_keys: {
+        check(nvrtcGetTypeName<input_keys_iterator_state_t>(&iterator_t));
+        break;
+      }
+      case merge_sort_iterator_t::input_items: {
+        check(nvrtcGetTypeName<input_items_iterator_state_t>(&iterator_t));
+        break;
+      }
+      case merge_sort_iterator_t::output_keys: {
+        check(nvrtcGetTypeName<output_keys_iterator_t>(&iterator_t));
+        break;
+      }
+      case merge_sort_iterator_t::output_items: {
+        check(nvrtcGetTypeName<output_items_iterator_t>(&iterator_t));
+        break;
+      }
+    }
+
+    return iterator_t;
+  }
 }
 
 merge_sort_runtime_tuning_policy get_policy(int cc)
@@ -96,22 +132,10 @@ std::string get_merge_sort_kernel_name(
   std::string chained_policy_t;
   check(nvrtcGetTypeName<device_merge_sort_policy>(&chained_policy_t));
 
-  const std::string input_keys_iterator_t =
-    input_keys_it.type == cccl_iterator_kind_t::pointer
-      ? cccl_type_enum_to_name(input_keys_it.value_type.type, true)
-      : get_input_iterator_name();
-  const std::string input_items_iterator_t =
-    input_items_it.type == cccl_iterator_kind_t::pointer
-      ? cccl_type_enum_to_name(input_items_it.value_type.type, true)
-      : get_input_iterator_name();
-  const std::string output_keys_iterator_t =
-    output_keys_it.type == cccl_iterator_kind_t::pointer
-      ? cccl_type_enum_to_name(output_keys_it.value_type.type, true)
-      : get_output_iterator_name();
-  const std::string output_items_iterator_t =
-    output_items_it.type == cccl_iterator_kind_t::pointer
-      ? cccl_type_enum_to_name(output_items_it.value_type.type, true)
-      : get_output_iterator_name();
+  const std::string input_keys_iterator_t   = get_iterator_name(input_keys_it, merge_sort_iterator_t::input_keys);
+  const std::string input_items_iterator_t  = get_iterator_name(input_items_it, merge_sort_iterator_t::input_items);
+  const std::string output_keys_iterator_t  = get_iterator_name(output_keys_it, merge_sort_iterator_t::output_keys);
+  const std::string output_items_iterator_t = get_iterator_name(output_items_it, merge_sort_iterator_t::output_keys);
 
   std::string offset_t;
   check(nvrtcGetTypeName<OffsetT>(&offset_t));
@@ -119,8 +143,11 @@ std::string get_merge_sort_kernel_name(
   std::string compare_op_t;
   check(nvrtcGetTypeName<op_wrapper>(&compare_op_t));
 
-  std::string key_t   = cccl_type_enum_to_name(output_keys_it.value_type.type);
-  std::string value_t = cccl_type_enum_to_name(output_items_it.value_type.type);
+  const std::string key_t = cccl_type_enum_to_name(output_keys_it.value_type.type);
+  const std::string value_t =
+    output_items_it.type == cccl_iterator_kind_t::pointer && output_items_it.state == nullptr
+      ? "cub::NullType"
+      : cccl_type_enum_to_name(output_items_it.value_type.type);
 
   return std::format(
     "cub::detail::merge_sort::{0}<{1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}>",
@@ -138,10 +165,7 @@ std::string get_merge_sort_kernel_name(
 
 std::string get_partition_kernel_name(cccl_iterator_t output_keys_it)
 {
-  const std::string output_keys_iterator_t =
-    output_keys_it.type == cccl_iterator_kind_t::pointer
-      ? cccl_type_enum_to_name(output_keys_it.value_type.type, true)
-      : get_output_iterator_name();
+  const std::string output_keys_iterator_t = get_iterator_name(output_keys_it, merge_sort_iterator_t::output_keys);
 
   std::string offset_t;
   check(nvrtcGetTypeName<OffsetT>(&offset_t));
@@ -268,6 +292,7 @@ extern "C" CCCL_C_API CUresult cccl_device_merge_sort_build(
 
     const std::string src = std::format(
       "#include <cub/device/dispatch/kernels/merge_sort.cuh>\n"
+      "#include <cub/util_type.cuh>\n" // needed for cub::NullType
       "struct __align__({1}) keys_storage_t {{\n"
       "  char data[{0}];\n"
       "}};\n"
