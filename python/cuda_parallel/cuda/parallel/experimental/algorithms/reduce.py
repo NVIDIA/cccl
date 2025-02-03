@@ -21,28 +21,6 @@ from ..iterators._iterators import IteratorBase
 from ..typing import DeviceArrayLike, GpuStruct
 
 
-class _Op:
-    def __init__(self, h_init: np.ndarray | GpuStruct, op: Callable):
-        if isinstance(h_init, np.ndarray):
-            value_type = numba.from_dtype(h_init.dtype)
-        else:
-            value_type = numba.typeof(h_init)
-        self.ltoir, _ = cuda.compile(op, sig=(value_type, value_type), output="ltoir")
-        self.name = op.__name__.encode("utf-8")
-
-    @cached_property
-    def handle(self) -> cccl.Op:
-        return cccl.Op(
-            cccl.OpKind.STATELESS,
-            self.name,
-            ctypes.c_char_p(self.ltoir),
-            len(self.ltoir),
-            1,
-            1,
-            None,
-        )
-
-
 def _dtype_validation(dt1, dt2):
     if dt1 != dt2:
         raise TypeError(f"dtype mismatch: __init__={dt1}, __call__={dt2}")
@@ -77,7 +55,7 @@ class _Reduce:
             ctypes.byref(self.build_result),
             self.d_in_cccl,
             self.d_out_cccl,
-            self.op_wrapper.handle,
+            self.op_wrapper,
             cccl.to_cccl_value(h_init),
             cc_major,
             cc_minor,
@@ -126,7 +104,7 @@ class _Reduce:
             self.d_in_cccl,
             self.d_out_cccl,
             ctypes.c_ulonglong(num_items),
-            self.op_wrapper.handle,
+            self.op_wrapper,
             self.h_init_cccl,
             stream_handle,
         )

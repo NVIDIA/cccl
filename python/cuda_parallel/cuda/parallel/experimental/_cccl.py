@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import ctypes
 import functools
+from typing import Callable
 
 import numba
 import numpy as np
@@ -223,3 +224,18 @@ def to_cccl_value(array_or_struct: np.ndarray | GpuStruct) -> Value:
     else:
         # it's a GpuStruct, use the array underlying it
         return to_cccl_value(array_or_struct._data)
+
+
+def to_cccl_op(op: Callable, sig) -> Op:
+    ltoir, _ = cuda.compile(op, sig=sig, output="ltoir")
+    name = op.__name__.encode("utf-8")
+    return Op(
+        OpKind.STATELESS,
+        name,
+        ctypes.c_char_p(ltoir),
+        len(ltoir),
+        1,
+        1,
+        None,
+        _data=(ltoir, name),  # keep a reference to these in a _data attribute
+    )
