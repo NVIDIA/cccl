@@ -1,3 +1,7 @@
+#include <cuda/__cccl_config>
+
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 #include <thrust/detail/config.h>
 
 #if _CCCL_STD_VER >= 2014
@@ -115,3 +119,5 @@ void test_scan_mixed_types(size_t num_values)
 DECLARE_SIZED_UNITTEST(test_scan_mixed_types);
 
 #endif // C++14
+
+_CCCL_SUPPRESS_DEPRECATED_POP

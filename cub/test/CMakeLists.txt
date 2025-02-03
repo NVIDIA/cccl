@@ -370,6 +370,15 @@ foreach (test_src IN LISTS test_srcs)
         set(launcher 0)
       endif()
 
+      # FIXME: There are a few remaining device algorithm tests that have not been ported to
+      # use Catch2 and lid variants. Mark these as `lid_0/1` so they'll run in the appropriate
+      # CI configs:
+      string(REGEX MATCH "^device_" is_device_test "${test_name}")
+      _cub_is_fail_test(is_fail_test "%{test_name}")
+      if (is_device_test AND NOT is_fail_test)
+        string(APPEND test_name ".lid_${launcher}")
+      endif()
+
       # Only one version of this test.
       cub_add_test(test_target ${test_name} "${test_src}" ${cub_target} ${launcher})
       cub_configure_cuda_target(${test_target} RDC ${CUB_FORCE_RDC})

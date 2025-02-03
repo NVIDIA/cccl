@@ -34,6 +34,7 @@
 #endif // no system header
 #include <thrust/detail/static_assert.h>
 #include <thrust/detail/type_traits.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
 #include <cuda/std/__fwd/pair.h>

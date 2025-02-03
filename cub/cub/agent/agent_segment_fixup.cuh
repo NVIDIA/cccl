@@ -50,7 +50,6 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/iterator/constant_input_iterator.cuh>
 
 #include <cuda/std/type_traits>
 
@@ -85,7 +84,8 @@ template <int _BLOCK_THREADS,
           BlockLoadAlgorithm _LOAD_ALGORITHM,
           CacheLoadModifier _LOAD_MODIFIER,
           BlockScanAlgorithm _SCAN_ALGORITHM>
-struct AgentSegmentFixupPolicy
+struct CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
+                               "interface will be removed.") AgentSegmentFixupPolicy
 {
   enum
   {

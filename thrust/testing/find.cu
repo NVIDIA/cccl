@@ -2,6 +2,8 @@
 #include <thrust/iterator/retag.h>
 #include <thrust/sequence.h>
 
+#include <cuda/std/cstdint>
+
 #include <unittest/unittest.h>
 
 template <typename T>
@@ -284,9 +286,9 @@ void TestFindWithBigIndexesHelper(int magnitude)
   thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
   ASSERT_EQUAL(thrust::distance(begin, end), 1ll << magnitude);
 
-  thrust::detail::intmax_t distance_low_value = thrust::distance(begin, thrust::find(thrust::device, begin, end, 17));
+  cuda::std::intmax_t distance_low_value = thrust::distance(begin, thrust::find(thrust::device, begin, end, 17));
 
-  thrust::detail::intmax_t distance_high_value =
+  cuda::std::intmax_t distance_high_value =
     thrust::distance(begin, thrust::find(thrust::device, begin, end, (1ll << magnitude) - 17));
 
   ASSERT_EQUAL(distance_low_value, 16);

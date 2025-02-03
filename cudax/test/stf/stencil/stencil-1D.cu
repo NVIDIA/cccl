@@ -63,7 +63,7 @@ public:
 };
 
 template <typename T>
-__global__ void copy_kernel(size_t cnt, T* dst, T* src)
+__global__ void copy_kernel(size_t cnt, T* dst, const T* src)
 {
   for (int idx = threadIdx.x + blockIdx.x * blockDim.x; idx < cnt; idx += blockDim.x * gridDim.x)
   {
@@ -72,7 +72,7 @@ __global__ void copy_kernel(size_t cnt, T* dst, T* src)
 }
 
 template <typename T>
-__global__ void stencil_kernel(size_t cnt, size_t ghost_size, T* array, T* array1)
+__global__ void stencil_kernel(size_t cnt, size_t ghost_size, T* array, const T* array1)
 {
   for (int idx = threadIdx.x + blockIdx.x * blockDim.x; idx < cnt; idx += blockDim.x * gridDim.x)
   {

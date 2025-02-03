@@ -146,8 +146,8 @@ template <class T, class A0>
 __host__ __device__ void test_is_not_constructible()
 {
   static_assert((!cuda::std::is_constructible<T, A0>::value), "");
-#if !defined(TEST_COMPILER_MSVC) && !(defined(TEST_COMPILER_CLANG) && __clang_major__ >= 16)
-  // The fallback SFINAE version doesn't work reliable with MSVC, and we don't
+#if !defined(TEST_COMPILER_MSVC) && !defined(TEST_COMPILER_CLANG) && !defined(TEST_COMPILER_NVRTC)
+  // The fallback SFINAE version doesn't work reliable with Clang/MSVC/NVRTC, and we don't
   // use it, so waive it.
   static_assert((!cuda::std::__cccl_is_constructible<T, A0>::type::value), "");
 #endif

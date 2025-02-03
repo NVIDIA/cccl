@@ -13,13 +13,6 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDACC_BELOW(11, 5)
-_CCCL_NV_DIAG_SUPPRESS(186)
-#  include <cuda_pipeline_primitives.h>
-// we cannot re-enable the warning here, because it is triggered outside the translation unit
-// see also: https://godbolt.org/z/1x8b4hn3G
-#endif // _CCCL_CUDACC_BELOW(11, 5)
-
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/device/dispatch/tuning/tuning_transform.cuh>
 #include <cub/util_arch.cuh>
@@ -31,6 +24,7 @@ _CCCL_NV_DIAG_SUPPRESS(186)
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
+#include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/cmath>
 #include <cuda/ptx>
