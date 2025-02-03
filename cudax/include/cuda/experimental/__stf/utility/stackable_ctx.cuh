@@ -116,6 +116,9 @@ public:
       // This map keeps track of the logical data that were pushed in this level
       // key: logical data's unique id
       ::std::unordered_map<int, ::std::shared_ptr<stackable_logical_data_impl_state_base>> pushed_data;
+
+      // If we want to keep the state of some logical data implementations until this level is popped
+      ::std::vector<::std::shared_ptr<stackable_logical_data_impl_state_base>> retained_data;
     };
 
   public:
@@ -214,11 +217,6 @@ public:
 
       // Destroy the current level state
       levels.pop_back();
-
-      if (levels.size() <= 1)
-      {
-        retained_data.clear();
-      }
     }
 
     /**
@@ -268,9 +266,10 @@ public:
       _CCCL_ASSERT(erased == 1, "invalid value");
     }
 
-    void retain_data(::std::shared_ptr<stackable_logical_data_impl_state_base> data_impl)
+    void retain_data(size_t level, ::std::shared_ptr<stackable_logical_data_impl_state_base> data_impl)
     {
-      retained_data.push_back(mv(data_impl));
+      _CCCL_ASSERT(level < levels.size(), "invalid value");
+      levels[level].retained_data.push_back(mv(data_impl));
     }
 
   private:
@@ -280,8 +279,6 @@ public:
     // Handles to retain some asynchronous states, we maintain it separately
     // from levels because we keep its entries even when we pop a level
     ::std::vector<async_resources_handle> async_handles;
-
-    ::std::vector<::std::shared_ptr<stackable_logical_data_impl_state_base>> retained_data;
   };
 
   stackable_ctx()
@@ -370,11 +367,11 @@ public:
   //    ... use a ...
   // }
   // ctx.pop()
-  void retain_data(::std::shared_ptr<stackable_logical_data_impl_state_base> data_impl)
+  void retain_data(size_t level, ::std::shared_ptr<stackable_logical_data_impl_state_base> data_impl)
   {
     _CCCL_ASSERT(pimpl, "uninitialized context");
     _CCCL_ASSERT(data_impl, "invalid value");
-    pimpl->retain_data(mv(data_impl));
+    pimpl->retain_data(level, mv(data_impl));
   }
 
   // Helper function to process a single argument
@@ -616,8 +613,8 @@ class stackable_logical_data
       // at least one logical data, so we need to retain the impl.
       if (s_size > 1)
       {
-        // XXX TODO this should be retained at a specific depth (= offset depth - 1 ?)
-        sctx.retain_data(mv(impl_state));
+        // This state will be retained until we pop the ctx enough times
+        sctx.retain_data(impl_state->offset_depth, mv(impl_state));
       }
 
       impl_state = nullptr;
