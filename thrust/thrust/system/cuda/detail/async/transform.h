@@ -57,6 +57,7 @@
 
 #    include <type_traits>
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 THRUST_NAMESPACE_BEGIN
 
 namespace system
@@ -132,6 +133,7 @@ auto async_transform(
 
 } // namespace cuda_cub
 
+_CCCL_SUPPRESS_DEPRECATED_POP
 THRUST_NAMESPACE_END
 
 #  endif // _CCCL_CUDA_COMPILER

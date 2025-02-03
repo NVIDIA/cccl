@@ -56,6 +56,7 @@
 
 // TODO specialize for thrust::plus to use e.g. InclusiveSum instead of IncScan
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 THRUST_NAMESPACE_BEGIN
 namespace system
 {
@@ -244,6 +245,7 @@ auto async_inclusive_scan(
 
 } // namespace cuda_cub
 
+_CCCL_SUPPRESS_DEPRECATED_POP
 THRUST_NAMESPACE_END
 
 #  endif // _CCCL_CUDA_COMPILER
