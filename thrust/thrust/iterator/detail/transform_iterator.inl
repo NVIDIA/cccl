@@ -25,10 +25,12 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/type_traits/result_of_adaptable_function.h>
+#include <thrust/detail/functional/actor.h>
+#include <thrust/functional.h>
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_traits.h>
 
+#include <cuda/std/functional>
 #include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
@@ -39,19 +41,43 @@ class transform_iterator;
 namespace detail
 {
 
+template <class UnaryFunc, class Iterator>
+struct transform_iterator_reference
+{
+  // by default, dereferencing the iterator yields the same as the function.
+  using type = decltype(::cuda::std::declval<UnaryFunc>()(::cuda::std::declval<iterator_value_t<Iterator>>()));
+};
+
+// for certain function objects, we need to tweak the reference type. Notably, identity functions must decay to values.
+// See the implementation of transform_iterator<...>::dereference() for several comments on why this is necessary.
+template <typename T, class Iterator>
+struct transform_iterator_reference<identity<T>, Iterator>
+{
+  using type = T;
+};
+template <class Iterator>
+struct transform_iterator_reference<identity<>, Iterator>
+{
+  using type = iterator_value_t<Iterator>;
+};
+template <class Iterator>
+struct transform_iterator_reference<::cuda::std::identity, Iterator>
+{
+  using type = iterator_value_t<Iterator>;
+};
+template <typename Eval, class Iterator>
+struct transform_iterator_reference<functional::actor<Eval>, Iterator>
+{
+  using type = ::cuda::std::remove_reference_t<decltype(::cuda::std::declval<functional::actor<Eval>>()(
+    ::cuda::std::declval<iterator_value_t<Iterator>>()))>;
+};
+
 // Type function to compute the iterator_adaptor instantiation to be used for transform_iterator
 template <class UnaryFunc, class Iterator, class Reference, class Value>
 struct make_transform_iterator_base
 {
 private:
-  // FIXME(bgruber): the next line should be correct, but thrust::identity<T> lies and advertises a ::return_type of T,
-  // while its operator() returns const T& (which __invoke_of correctly detects), which causes transform_iterator to
-  // crash (or cause UB) during dereferencing. Check the test `thrust.test.dereference` for the OMP and TBB backends.
-  // using wrapped_func_ret_t = ::cuda::std::__invoke_of<UnaryFunc, iterator_value_t<Iterator>>;
-  using wrapped_func_ret_t = result_of_adaptable_function<UnaryFunc(iterator_value_t<Iterator>)>;
-
-  // By default, dereferencing the iterator yields the same as the function.
-  using reference  = typename ia_dflt_help<Reference, wrapped_func_ret_t>::type;
+  using reference  = typename ia_dflt_help<Reference, transform_iterator_reference<UnaryFunc, Iterator>>::type;
   using value_type = typename ia_dflt_help<Value, ::cuda::std::remove_cvref<reference>>::type;
 
 public:
