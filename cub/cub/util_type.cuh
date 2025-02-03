@@ -60,10 +60,12 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
 _CCCL_DIAG_POP
 
 // cuda_fp8.h resets default for C4127, so we have to guard the inclusion
+#  if _CCCL_HAS_NVFP8()
 _CCCL_DIAG_PUSH
-#  include <cuda_fp8.h>
+#    include <cuda_fp8.h>
 _CCCL_DIAG_POP
-#endif // _CCCL_HAS_NV_BF16
+#  endif // _CCCL_HAS_NVFP8()
+#endif // _CCCL_HAS_NVBF16()
 
 #if _CCCL_COMPILER(NVRTC)
 #  include <cuda/std/iterator>
