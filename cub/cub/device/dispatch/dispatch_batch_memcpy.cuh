@@ -62,7 +62,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-enum class MemcpyOption
+enum class CopyAlg
 {
   Memcpy,
   Copy
@@ -98,7 +98,7 @@ template <typename ChainedPolicyT,
           typename BufferTileOffsetItT,
           typename TileT,
           typename TileOffsetT,
-          MemcpyOption MemcpyOpt>
+          CopyAlg MemcpyOpt>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void MultiBlockBatchMemcpyKernel(
     InputBufferIt input_buffer_it,
@@ -112,7 +112,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT::BLO
   using ActivePolicyT = typename ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT;
   using BufferSizeT   = value_t<BufferSizeIteratorT>;
   /// Internal load/store type. For byte-wise memcpy, a single-byte type
-  using AliasT = typename ::cuda::std::conditional<MemcpyOpt == MemcpyOption::Memcpy,
+  using AliasT = typename ::cuda::std::conditional<MemcpyOpt == CopyAlg::Memcpy,
                                                    std::iterator_traits<char*>,
                                                    std::iterator_traits<value_t<InputBufferIt>>>::type::value_type;
   /// Types of the input and output buffers
@@ -171,9 +171,9 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT::BLO
       {
         if (thread_offset < buffer_sizes[buffer_id])
         {
-          const auto value = read_item < MemcpyOpt == MemcpyOption::Memcpy, AliasT,
+          const auto value = read_item < MemcpyOpt == CopyAlg::Memcpy, AliasT,
                      InputBufferT > (input_buffer_it[buffer_id], thread_offset);
-          write_item<MemcpyOpt == MemcpyOption::Memcpy, AliasT, OutputBufferT>(
+          write_item<MemcpyOpt == CopyAlg::Memcpy, AliasT, OutputBufferT>(
             output_buffer_it[buffer_id], thread_offset, value);
         }
         thread_offset += BLOCK_THREADS;
@@ -181,7 +181,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT::BLO
     }
     else
     {
-      copy_items<MemcpyOpt == MemcpyOption::Memcpy, BLOCK_THREADS, InputBufferT, OutputBufferT, BufferSizeT>(
+      copy_items<MemcpyOpt == CopyAlg::Memcpy, BLOCK_THREADS, InputBufferT, OutputBufferT, BufferSizeT>(
         input_buffer_it[buffer_id],
         output_buffer_it[buffer_id],
         (::cuda::std::min)(buffer_sizes[buffer_id] - tile_offset_within_buffer, TILE_SIZE),
@@ -225,7 +225,7 @@ template <typename ChainedPolicyT,
           typename BlockOffsetT,
           typename BLevBufferOffsetTileState,
           typename BLevBlockOffsetTileState,
-          MemcpyOption MemcpyOpt>
+          CopyAlg MemcpyOpt>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentSmallBufferPolicyT::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void BatchMemcpyKernel(
     InputBufferIt input_buffer_it,
@@ -259,7 +259,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentSmallBufferPolicyT::BLO
     BlockOffsetT,
     BLevBufferOffsetTileState,
     BLevBlockOffsetTileState,
-    MemcpyOpt == MemcpyOption::Memcpy>;
+    MemcpyOpt == CopyAlg::Memcpy>;
 
   // Shared memory for AgentBatchMemcpy
   __shared__ typename AgentBatchMemcpyT::TempStorage temp_storage;
@@ -297,8 +297,8 @@ template <typename InputBufferIt,
           typename BufferSizeIteratorT,
           typename BufferOffsetT,
           typename BlockOffsetT,
-          typename PolicyHub     = batch_memcpy::policy_hub<BufferOffsetT, BlockOffsetT>,
-          MemcpyOption MemcpyOpt = MemcpyOption::Memcpy>
+          typename PolicyHub = batch_memcpy::policy_hub<BufferOffsetT, BlockOffsetT>,
+          CopyAlg MemcpyOpt  = CopyAlg::Memcpy>
 struct DispatchBatchMemcpy
 {
   //------------------------------------------------------------------------------
@@ -397,9 +397,9 @@ struct DispatchBatchMemcpy
     BlockOffsetT num_tiles = ::cuda::ceil_div(num_buffers, TILE_SIZE);
 
     using BlevBufferSrcsOutT =
-      ::cuda::std::_If<MemcpyOpt == MemcpyOption::Memcpy, const void*, cub::detail::value_t<InputBufferIt>>;
+      ::cuda::std::_If<MemcpyOpt == CopyAlg::Memcpy, const void*, cub::detail::value_t<InputBufferIt>>;
     using BlevBufferDstOutT =
-      ::cuda::std::_If<MemcpyOpt == MemcpyOption::Memcpy, void*, cub::detail::value_t<OutputBufferIt>>;
+      ::cuda::std::_If<MemcpyOpt == CopyAlg::Memcpy, void*, cub::detail::value_t<OutputBufferIt>>;
     using BlevBufferSrcsOutItT        = BlevBufferSrcsOutT*;
     using BlevBufferDstsOutItT        = BlevBufferDstOutT*;
     using BlevBufferSizesOutItT       = BufferSizeT*;

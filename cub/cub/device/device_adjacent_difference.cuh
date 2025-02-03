@@ -110,7 +110,7 @@ CUB_NAMESPACE_BEGIN
 struct DeviceAdjacentDifference
 {
 private:
-  template <AliasOption AliasOpt,
+  template <MayAlias AliasOpt,
             ReadOption ReadOpt,
             typename NumItemsT,
             typename InputIteratorT,
@@ -257,10 +257,7 @@ public:
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractLeftCopy");
 
-    constexpr AliasOption may_alias = AliasOption::NoAlias;
-    constexpr ReadOption read_left  = ReadOption::ReadLeft;
-
-    return AdjacentDifference<may_alias, read_left>(
+    return AdjacentDifference<MayAlias::No, ReadOption::Left>(
       d_temp_storage, temp_storage_bytes, d_input, d_output, num_items, difference_op, stream);
   }
 
@@ -370,10 +367,7 @@ public:
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractLeft");
 
-    constexpr AliasOption may_alias = AliasOption::MayAlias;
-    constexpr ReadOption read_left  = ReadOption::ReadLeft;
-
-    return AdjacentDifference<may_alias, read_left>(
+    return AdjacentDifference<MayAlias::Yes, ReadOption::Left>(
       d_temp_storage, temp_storage_bytes, d_input, d_input, num_items, difference_op, stream);
   }
 
@@ -500,10 +494,7 @@ public:
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractRightCopy");
 
-    constexpr AliasOption may_alias = AliasOption::NoAlias;
-    constexpr ReadOption read_left  = ReadOption::ReadRight;
-
-    return AdjacentDifference<may_alias, read_left>(
+    return AdjacentDifference<MayAlias::No, ReadOption::Right>(
       d_temp_storage, temp_storage_bytes, d_input, d_output, num_items, difference_op, stream);
   }
 
@@ -602,10 +593,7 @@ public:
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractRight");
 
-    constexpr AliasOption may_alias = AliasOption::MayAlias;
-    constexpr ReadOption read_left  = ReadOption::ReadRight;
-
-    return AdjacentDifference<may_alias, read_left>(
+    return AdjacentDifference<MayAlias::Yes, ReadOption::Right>(
       d_temp_storage, temp_storage_bytes, d_input, d_input, num_items, difference_op, stream);
   }
 };

@@ -178,8 +178,8 @@ struct partition_distinct_output_t
  *    num_total_items() -> total number of items across all partitions (partition only)
  *    update_num_selected(d_num_sel_out, num_selected) -> invoked by last CTA with number of selected
  *
- * @tparam SelectionOption SelectionOpt
- *   SelectionOption indicating whether to partition, just selection or selection where the memory for the input and
+ * @tparam SelectImpl SelectionOpt
+ *   SelectImpl indicating whether to partition, just selection or selection where the memory for the input and
  *   output may alias each other.
  */
 template <typename AgentSelectIfPolicyT,
@@ -190,7 +190,7 @@ template <typename AgentSelectIfPolicyT,
           typename EqualityOpT,
           typename OffsetT,
           typename StreamingContextT,
-          SelectionOption SelectionOpt>
+          SelectImpl SelectionOpt>
 struct AgentSelectIf
 {
   //---------------------------------------------------------------------
@@ -209,7 +209,7 @@ struct AgentSelectIf
   // updating a tile state. Similarly, we need to make sure that the load of previous tile states precede writing of
   // the stream-compacted items and, hence, we need a load acquire when reading those tile states.
   static constexpr MemoryOrder memory_order =
-    ((SelectionOpt == SelectionOption::SelectPotentiallyInPlace) && (!loads_via_smem))
+    ((SelectionOpt == SelectImpl::SelectPotentiallyInPlace) && (!loads_via_smem))
       ? MemoryOrder::acquire_release
       : MemoryOrder::relaxed;
 
@@ -850,7 +850,7 @@ struct AgentSelectIf
       0,
       0,
       num_tile_selections,
-      cub::Int2Type<SelectionOpt == SelectionOption::Partition>{});
+      cub::Int2Type < SelectionOpt == SelectImpl::Partition > {});
 
     return num_tile_selections;
   }
@@ -933,7 +933,7 @@ struct AgentSelectIf
       num_selections_prefix,
       num_rejected_prefix,
       num_selections,
-      cub::Int2Type<SelectionOpt == SelectionOption::Partition>{});
+      cub::Int2Type < SelectionOpt == SelectImpl::Partition > {});
 
     return num_selections;
   }

@@ -184,7 +184,7 @@ void copy(nvbench::state& state,
   using buffer_offset_t    = std::uint32_t;
   using block_offset_t     = std::uint32_t;
 
-  constexpr cub::MemcpyOption is_memcpy = cub::MemcpyOption::Memcpy;
+  constexpr cub::CopyAlg is_memcpy = cub::CopyAlg::Memcpy;
 
 #if !TUNE_BASE
   using policy_t = policy_hub_t;

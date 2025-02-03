@@ -192,7 +192,7 @@ public:
 /**
  * @brief Wrapper that partially specializes the `AgentSelectIf` on the non-type name parameter `KeepRejects`.
  */
-template <SelectionOption SelectionOpt>
+template <SelectImpl SelectionOpt>
 struct agent_select_if_wrapper_t
 {
   // Using an explicit list of template parameters forwarded to AgentSelectIf, since MSVC complains about a template
@@ -320,7 +320,7 @@ template <typename ChainedPolicyT,
           typename EqualityOpT,
           typename OffsetT,
           typename StreamingContextT,
-          SelectionOption SelectionOpt>
+          SelectImpl SelectionOpt>
 __launch_bounds__(int(
   vsmem_helper_default_fallback_policy_t<
     typename ChainedPolicyT::ActivePolicy::SelectIfPolicyT,
@@ -407,8 +407,8 @@ __launch_bounds__(int(
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
- * @tparam SelectionOption SelectionOpt
- *   SelectionOption indicating whether to partition, just selection or selection where the memory for the input and
+ * @tparam SelectImpl SelectionOpt
+ *   SelectImpl indicating whether to partition, just selection or selection where the memory for the input and
  *   output may alias each other.
  */
 template <typename InputIteratorT,
@@ -418,12 +418,12 @@ template <typename InputIteratorT,
           typename SelectOpT,
           typename EqualityOpT,
           typename OffsetT,
-          SelectionOption SelectionOpt,
+          SelectImpl SelectionOpt,
           typename PolicyHub = detail::select::policy_hub<cub::detail::value_t<InputIteratorT>,
                                                           cub::detail::value_t<FlagsInputIteratorT>,
                                                           detail::select::per_partition_offset_t,
-                                                          (SelectionOpt == SelectionOption::SelectPotentiallyInPlace),
-                                                          (SelectionOpt == SelectionOption::Partition)>>
+                                                          (SelectionOpt == SelectImpl::SelectPotentiallyInPlace),
+                                                          (SelectionOpt == SelectImpl::Partition)>>
 struct DispatchSelectIf
 {
   /******************************************************************************

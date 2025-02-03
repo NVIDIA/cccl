@@ -96,18 +96,16 @@ struct DispatchPartitionIf
       Predicate,
       equality_op_t,
       OffsetT,
-      cub::SelectionOption::Partition>::
-      Dispatch(
-        nullptr,
-        allocation_sizes[0],
-        first,
-        stencil,
-        output,
-        static_cast<num_selected_out_it_t>(nullptr),
-        predicate,
-        equality_op_t{},
-        num_items,
-        stream);
+      cub::SelectImpl::Partition>::Dispatch(nullptr,
+                                            allocation_sizes[0],
+                                            first,
+                                            stencil,
+                                            output,
+                                            static_cast<num_selected_out_it_t>(nullptr),
+                                            predicate,
+                                            equality_op_t{},
+                                            num_items,
+                                            stream);
     CUDA_CUB_RET_IF_FAIL(status);
 
     status = cub::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
@@ -138,18 +136,16 @@ struct DispatchPartitionIf
       Predicate,
       equality_op_t,
       OffsetT,
-      cub::SelectionOption::Partition>::
-      Dispatch(
-        allocations[0],
-        allocation_sizes[0],
-        first,
-        stencil,
-        output,
-        d_num_selected_out,
-        predicate,
-        equality_op_t{},
-        num_items,
-        stream);
+      cub::SelectImpl::Partition>::Dispatch(allocations[0],
+                                            allocation_sizes[0],
+                                            first,
+                                            stencil,
+                                            output,
+                                            d_num_selected_out,
+                                            predicate,
+                                            equality_op_t{},
+                                            num_items,
+                                            stream);
     CUDA_CUB_RET_IF_FAIL(status);
 
     // Get number of selected items

@@ -190,8 +190,6 @@ struct DeviceMemcpy
     // IDIV_CEIL(num_buffers, 64)
     using BlockOffsetT = uint32_t;
 
-    constexpr MemcpyOption memcpy_option = MemcpyOption::Memcpy;
-
     return detail::DispatchBatchMemcpy<
       InputBufferIt,
       OutputBufferIt,
@@ -199,13 +197,13 @@ struct DeviceMemcpy
       BufferOffsetT,
       BlockOffsetT,
       detail::batch_memcpy::policy_hub<BufferOffsetT, BlockOffsetT>,
-      memcpy_option>::Dispatch(d_temp_storage,
-                               temp_storage_bytes,
-                               input_buffer_it,
-                               output_buffer_it,
-                               buffer_sizes,
-                               num_buffers,
-                               stream);
+      CopyAlg::Memcpy>::Dispatch(d_temp_storage,
+                                 temp_storage_bytes,
+                                 input_buffer_it,
+                                 output_buffer_it,
+                                 buffer_sizes,
+                                 num_buffers,
+                                 stream);
   }
 };
 

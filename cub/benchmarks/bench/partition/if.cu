@@ -142,7 +142,7 @@ void partition(nvbench::state& state, nvbench::type_list<T, OffsetT, UseDistinct
     select_op_t,
     equality_op_t,
     offset_t,
-    cub::SelectionOption::Partition
+    cub::SelectImpl::Partition
 #if !TUNE_BASE
     ,
     policy_hub_t<T>

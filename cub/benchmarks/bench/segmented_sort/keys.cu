@@ -154,7 +154,7 @@ void seg_sort(nvbench::state& state,
               bit_entropy entropy)
 {
   constexpr cub::SortOrder sort_order = cub::SortOrder::Ascending;
-  constexpr bool is_overwrite_ok = false;
+  constexpr bool is_overwrite_ok      = false;
 
   using offset_t          = OffsetT;
   using begin_offset_it_t = const offset_t*;

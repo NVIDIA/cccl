@@ -52,8 +52,8 @@ struct policy_hub_t
 template <class T, class OffsetT>
 void left(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
-  constexpr cub::AliasOption may_alias = cub::AliasOption::NoAlias;
-  constexpr cub::ReadOption read_left  = cub::ReadOption::ReadLeft;
+  constexpr cub::MayAlias may_alias   = cub::MayAlias::No;
+  constexpr cub::ReadOption read_left = cub::ReadOption::Left;
 
   using input_it_t      = const T*;
   using output_it_t     = T*;

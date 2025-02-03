@@ -87,7 +87,7 @@ namespace cuda_cub
 namespace detail
 {
 
-template <cub::SelectionOption SelectionOpt,
+template <cub::SelectImpl SelectionOpt,
           typename Derived,
           typename InputIt,
           typename StencilIt,
@@ -150,24 +150,19 @@ struct DispatchCopyIf
     OffsetT* d_num_selected_out = thrust::detail::aligned_reinterpret_cast<OffsetT*>(allocations[1]);
 
     // Run algorithm
-    status = cub::DispatchSelectIf<
-      InputIt,
-      StencilIt,
-      OutputIt,
-      num_selected_out_it_t,
-      Predicate,
-      equality_op_t,
-      OffsetT,
-      SelectionOpt>::Dispatch(allocations[0],
-                           allocation_sizes[0],
-                           first,
-                           stencil,
-                           output,
-                           d_num_selected_out,
-                           predicate,
-                           equality_op_t{},
-                           num_items,
-                           stream);
+    status = cub::
+      DispatchSelectIf<InputIt, StencilIt, OutputIt, num_selected_out_it_t, Predicate, equality_op_t, OffsetT, SelectionOpt>::
+        Dispatch(
+          allocations[0],
+          allocation_sizes[0],
+          first,
+          stencil,
+          output,
+          d_num_selected_out,
+          predicate,
+          equality_op_t{},
+          num_items,
+          stream);
     CUDA_CUB_RET_IF_FAIL(status);
 
     // Get number of selected items
@@ -179,7 +174,7 @@ struct DispatchCopyIf
   }
 };
 
-template <cub::SelectionOption SelectionOpt,
+template <cub::SelectImpl SelectionOpt,
           typename Derived,
           typename InputIt,
           typename StencilIt,
@@ -233,7 +228,7 @@ template <class Derived, class InputIterator, class OutputIterator, class Predic
 OutputIterator _CCCL_HOST_DEVICE copy_if(
   execution_policy<Derived>& policy, InputIterator first, InputIterator last, OutputIterator result, Predicate pred)
 {
-  THRUST_CDP_DISPATCH((return detail::copy_if<cub::SelectionOption::Select>(
+  THRUST_CDP_DISPATCH((return detail::copy_if<cub::SelectImpl::Select>(
                                 policy, first, last, static_cast<cub::NullType*>(nullptr), result, pred);),
                       (return thrust::copy_if(cvt_to_seq(derived_cast(policy)), first, last, result, pred);));
 }
@@ -248,9 +243,8 @@ OutputIterator _CCCL_HOST_DEVICE copy_if(
   OutputIterator result,
   Predicate pred)
 {
-  THRUST_CDP_DISPATCH(
-    (return detail::copy_if<cub::SelectionOption::Select>(policy, first, last, stencil, result, pred);),
-    (return thrust::copy_if(cvt_to_seq(derived_cast(policy)), first, last, stencil, result, pred);));
+  THRUST_CDP_DISPATCH((return detail::copy_if<cub::SelectImpl::Select>(policy, first, last, stencil, result, pred);),
+                      (return thrust::copy_if(cvt_to_seq(derived_cast(policy)), first, last, stencil, result, pred);));
 }
 
 } // namespace cuda_cub
