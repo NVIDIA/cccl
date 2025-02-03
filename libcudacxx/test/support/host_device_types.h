@@ -87,7 +87,7 @@ struct host_only_type
 };
 #endif // !_CCCL_COMPILER_NVRTC
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if defined(_CCCL_CUDA_COMPILER)
 struct device_only_type
 {
   int val_;
