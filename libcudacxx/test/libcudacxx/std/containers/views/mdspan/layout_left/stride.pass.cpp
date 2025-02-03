@@ -27,8 +27,7 @@
 template <class E, class... Args>
 __host__ __device__ constexpr void test_stride(cuda::std::array<typename E::index_type, E::rank()> strides, Args... args)
 {
-  using M = cuda::std::layout_left::mapping<E>;
-  M m(E(args...));
+  cuda::std::layout_left::mapping<E> m{E{args...}};
 
   ASSERT_NOEXCEPT(m.stride(0));
   for (size_t r = 0; r < E::rank(); r++)
@@ -39,7 +38,7 @@ __host__ __device__ constexpr void test_stride(cuda::std::array<typename E::inde
 
 __host__ __device__ constexpr bool test()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_stride<cuda::std::extents<unsigned, D>>(cuda::std::array<unsigned, 1>{1}, 7);
   test_stride<cuda::std::extents<unsigned, 7>>(cuda::std::array<unsigned, 1>{1});
   test_stride<cuda::std::extents<unsigned, 7, 8>>(cuda::std::array<unsigned, 2>{1, 7});

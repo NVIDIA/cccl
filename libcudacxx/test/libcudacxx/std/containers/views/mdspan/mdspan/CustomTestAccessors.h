@@ -111,7 +111,7 @@ __host__ __device__ constexpr void test_move_counter()
 template <class ElementType>
 struct checked_accessor
 {
-  size_t N;
+  size_t N               = 0;
   using offset_policy    = cuda::std::default_accessor<ElementType>;
   using element_type     = ElementType;
   using reference        = ElementType&;
@@ -120,8 +120,10 @@ struct checked_accessor
   __host__ __device__ constexpr checked_accessor(size_t N_)
       : N(N_)
   {}
-  template <class OtherElementType,
-            cuda::std::enable_if_t<cuda::std::is_convertible<OtherElementType (*)[], element_type (*)[]>::value, int> = 0>
+
+  _CCCL_TEMPLATE(class OtherElementType)
+  _CCCL_REQUIRES((!_CCCL_TRAIT(cuda::std::is_same, OtherElementType, element_type)) _CCCL_AND _CCCL_TRAIT(
+    cuda::std::is_convertible, OtherElementType (*)[], element_type (*)[]))
   __host__ __device__ explicit constexpr checked_accessor(const checked_accessor<OtherElementType>& other) noexcept
   {
     N = other.N;
@@ -145,7 +147,7 @@ static_assert(!cuda::std::is_convertible<const checked_accessor<int>&, checked_a
 template <>
 struct checked_accessor<double>
 {
-  size_t N;
+  size_t N               = 0;
   using offset_policy    = cuda::std::default_accessor<double>;
   using element_type     = double;
   using reference        = double&;
@@ -177,20 +179,18 @@ struct checked_accessor<double>
 template <>
 struct checked_accessor<unsigned>
 {
-  size_t N;
+  size_t N               = 0;
   using offset_policy    = cuda::std::default_accessor<unsigned>;
   using element_type     = unsigned;
   using reference        = unsigned;
   using data_handle_type = not_const_convertible_handle<unsigned>;
 
-  __host__ __device__ constexpr checked_accessor()
-      : N(0)
-  {}
+  constexpr checked_accessor() noexcept                                   = default;
+  constexpr checked_accessor(const checked_accessor&) noexcept            = default;
+  constexpr checked_accessor& operator=(const checked_accessor&) noexcept = default;
+
   __host__ __device__ constexpr checked_accessor(size_t N_)
       : N(N_)
-  {}
-  __host__ __device__ constexpr checked_accessor(const checked_accessor& acc)
-      : N(acc.N)
   {}
 
   __host__ __device__ constexpr reference access(data_handle_type p, size_t i) const noexcept
@@ -207,20 +207,18 @@ struct checked_accessor<unsigned>
 template <>
 struct checked_accessor<const unsigned>
 {
-  size_t N;
+  size_t N               = 0;
   using offset_policy    = cuda::std::default_accessor<const unsigned>;
   using element_type     = const unsigned;
   using reference        = unsigned;
   using data_handle_type = not_const_convertible_handle<const unsigned>;
 
-  __host__ __device__ constexpr checked_accessor()
-      : N(0)
-  {}
+  constexpr checked_accessor() noexcept                                   = default;
+  constexpr checked_accessor(const checked_accessor&) noexcept            = default;
+  constexpr checked_accessor& operator=(const checked_accessor&) noexcept = default;
+
   __host__ __device__ constexpr checked_accessor(size_t N_)
       : N(N_)
-  {}
-  __host__ __device__ constexpr checked_accessor(const checked_accessor& acc)
-      : N(acc.N)
   {}
 
   template <class OtherACC, cuda::std::enable_if_t<!cuda::std::is_const<OtherACC>::value, int> = 0>
@@ -248,20 +246,18 @@ struct checked_accessor<const unsigned>
 template <>
 struct checked_accessor<const float>
 {
-  size_t N;
+  size_t N               = 0;
   using offset_policy    = cuda::std::default_accessor<const float>;
   using element_type     = const float;
   using reference        = const float&;
   using data_handle_type = move_counted_handle<const float>;
 
-  __host__ __device__ constexpr checked_accessor()
-      : N(0)
-  {}
+  constexpr checked_accessor() noexcept                                   = default;
+  constexpr checked_accessor(const checked_accessor&) noexcept            = default;
+  constexpr checked_accessor& operator=(const checked_accessor&) noexcept = default;
+
   __host__ __device__ constexpr checked_accessor(size_t N_)
       : N(N_)
-  {}
-  __host__ __device__ constexpr checked_accessor(const checked_accessor& acc)
-      : N(acc.N)
   {}
 
   __host__ __device__ constexpr checked_accessor(checked_accessor<float>&& acc)
@@ -283,19 +279,21 @@ struct checked_accessor<const float>
 template <>
 struct checked_accessor<const double>
 {
-  size_t N;
+  size_t N               = 0;
   using offset_policy    = cuda::std::default_accessor<const double>;
   using element_type     = const double;
   using reference        = const double&;
   using data_handle_type = move_counted_handle<const double>;
 
-  __host__ __device__ constexpr checked_accessor()
-      : N(0)
-  {}
+  constexpr checked_accessor()                                            = default;
+  constexpr checked_accessor& operator=(const checked_accessor&) noexcept = default;
+
   __host__ __device__ constexpr checked_accessor(size_t N_)
       : N(N_)
   {}
-  __host__ __device__ constexpr checked_accessor(const checked_accessor& acc)
+
+  // Explicitly not defaulted to make it not noexcept
+  __host__ __device__ constexpr checked_accessor(const checked_accessor& acc) noexcept(false)
       : N(acc.N)
   {}
 

@@ -46,12 +46,25 @@ __host__ __device__ constexpr auto array_from_extents(const Extents& exts, cuda:
   return cuda::std::array<typename Extents::index_type, Extents::rank()>{exts.extent(Idxs)...};
 }
 
-template <class MDS, class Exts>
-_CCCL_CONCEPT_FRAGMENT(check_mdspan_ctor_implicit_,
-                       requires(MDS m, typename MDS::data_handle_type h, const Exts& exts)((m = {h, exts})));
+template <class MDS>
+__host__ __device__ void check_implicit_construction(MDS);
 
 template <class MDS, class Exts>
-_CCCL_CONCEPT check_mdspan_ctor_implicit = _CCCL_FRAGMENT(check_mdspan_ctor_implicit_, MDS, Exts);
+__host__ __device__ constexpr bool check_implicit_construction_impl(...)
+{
+  return false;
+}
+template <class MDS, class Exts>
+__host__ __device__ constexpr auto check_implicit_construction_impl(int)
+  -> decltype(check_implicit_construction<MDS>({cuda::std::declval<typename MDS::data_handle_type>(),
+                                                cuda::std::declval<const Exts&>()}),
+              true)
+{
+  return true;
+}
+
+template <class MDS, class Exts>
+_CCCL_CONCEPT check_mdspan_ctor_implicit = check_implicit_construction_impl<MDS, Exts>(0);
 
 template <class H, class M, class A, size_t N>
 __host__ __device__ constexpr void
@@ -125,7 +138,7 @@ __host__ __device__ constexpr void test_mdspan_ctor(const H& handle, const M& ma
 template <bool mec, bool ac, class H, class L, class A>
 __host__ __device__ constexpr void mixin_extents(const H& handle, const L& layout, const A& acc)
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_mdspan_ctor<mec, ac>(handle, construct_mapping(layout, cuda::std::extents<int>()), acc);
   test_mdspan_ctor<mec, ac>(handle, construct_mapping(layout, cuda::std::extents<char, D>(7)), acc);
   test_mdspan_ctor<mec, ac>(handle, construct_mapping(layout, cuda::std::extents<unsigned, 7>()), acc);
@@ -201,8 +214,8 @@ __host__ __device__ constexpr bool test()
   mixin_accessor<const double>();
 
   // test non-constructibility from wrong span type
-  constexpr size_t D = cuda::std::dynamic_extent;
-  using mds_t        = cuda::std::mdspan<float, cuda::std::extents<unsigned, 3, D, D>>;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
+  using mds_t                         = cuda::std::mdspan<float, cuda::std::extents<unsigned, 3, D, D>>;
   // sanity check
   static_assert(cuda::std::is_constructible<mds_t, float*, cuda::std::span<int, 3>>::value, "");
   static_assert(cuda::std::is_constructible<mds_t, float*, cuda::std::span<int, 2>>::value, "");

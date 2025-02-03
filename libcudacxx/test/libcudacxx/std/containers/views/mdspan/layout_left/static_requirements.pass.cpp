@@ -139,7 +139,7 @@ __host__ __device__ void test_layout_mapping_left()
 
 int main(int, char**)
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_layout_mapping_left<cuda::std::extents<int>>();
   test_layout_mapping_left<cuda::std::extents<char, 4, 5>>();
   test_layout_mapping_left<cuda::std::extents<unsigned, D, 4>>();

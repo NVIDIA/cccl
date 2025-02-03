@@ -31,7 +31,7 @@ __host__ __device__ constexpr void test_required_span_size(E e, typename E::inde
 
 __host__ __device__ constexpr bool test()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_required_span_size(cuda::std::extents<int>(), 1);
   test_required_span_size(cuda::std::extents<unsigned, D>(0), 0);
   test_required_span_size(cuda::std::extents<unsigned, D>(1), 1);

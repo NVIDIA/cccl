@@ -52,7 +52,7 @@ __host__ __device__ constexpr void test_layout_mapping_right()
 
 __host__ __device__ constexpr bool test()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_layout_mapping_right<cuda::std::extents<int>>();
   test_layout_mapping_right<cuda::std::extents<char, 4, 5>>();
   test_layout_mapping_right<cuda::std::extents<unsigned, D, 4>>();

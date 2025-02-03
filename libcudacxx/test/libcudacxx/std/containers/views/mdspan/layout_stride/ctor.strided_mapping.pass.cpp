@@ -135,7 +135,7 @@ using FromM = typename FromL::template mapping<cuda::std::extents<IdxT, Extents.
 template <class FromL, cuda::std::enable_if_t<!cuda::std::is_same_v<FromL, always_convertible_layout>, int> = 0>
 __host__ __device__ constexpr void test_no_implicit_conversion()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
   // Sanity check that one static to dynamic conversion works
   static_assert(cuda::std::is_constructible<ToM<int, D>, FromM<FromL, int, 5>>::value, "");
@@ -170,7 +170,7 @@ __host__ __device__ constexpr void test_no_implicit_conversion()
 template <class FromL>
 __host__ __device__ constexpr void test_rank_mismatch()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
   static_assert(!cuda::std::is_constructible<ToM<int, D>, FromM<FromL, int>>::value, "");
   static_assert(!cuda::std::is_constructible<ToM<int>, FromM<FromL, int, D, D>>::value, "");
@@ -181,7 +181,7 @@ __host__ __device__ constexpr void test_rank_mismatch()
 template <class FromL>
 __host__ __device__ constexpr void test_static_extent_mismatch()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
   static_assert(!cuda::std::is_constructible<ToM<int, D, 5>, FromM<FromL, int, D, 4>>::value, "");
   static_assert(!cuda::std::is_constructible<ToM<int, 5>, FromM<FromL, int, 4>>::value, "");

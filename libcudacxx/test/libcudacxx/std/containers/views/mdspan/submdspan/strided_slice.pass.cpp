@@ -48,6 +48,7 @@ __host__ __device__ constexpr T construct_from_int(int val) noexcept
 {
   if constexpr (cuda::std::__integral_constant_like<T>)
   {
+    (void) val;
     return T{};
   }
   else
@@ -65,10 +66,10 @@ __host__ __device__ constexpr void test()
   static_assert(cuda::std::is_trivially_copy_constructible<strided_slice>::value, "");
   static_assert(cuda::std::is_trivially_move_constructible<strided_slice>::value, "");
 
-#if defined(_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS)
   // Ensure we properly do not store compile time sizes
+#if !defined(_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS) && !defined(TEST_COMPILER_MSVC)
   static_assert(sizeof(strided_slice) == sizeof(cuda::std::tuple<OffsetType, ExtentType, StrideType>), "");
-#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS && !defined(TEST_COMPILER_MSVC)
 
   // Ensure we have the right alias types
   static_assert(cuda::std::is_same<typename strided_slice::offset_type, OffsetType>::value, "");
@@ -99,6 +100,7 @@ __host__ __device__ constexpr void test()
     assert(list_initialized.extent == (cuda::std::__integral_constant_like<ExtentType> ? 42 : 2));
     assert(list_initialized.stride == (cuda::std::__integral_constant_like<StrideType> ? 42 : 3));
   }
+#if TEST_STD_VER >= 2020
   { // The const here is load bearing because clang-cuda does not properly initialize otherwise
     const strided_slice aggregate_initialized = {
       .offset = construct_from_int<OffsetType>(1),
@@ -108,6 +110,7 @@ __host__ __device__ constexpr void test()
     assert(aggregate_initialized.extent == (cuda::std::__integral_constant_like<ExtentType> ? 42 : 2));
     assert(aggregate_initialized.stride == (cuda::std::__integral_constant_like<StrideType> ? 42 : 3));
   }
+#endif // TEST_STD_VER >= 2020
 }
 
 __host__ __device__ constexpr bool test()

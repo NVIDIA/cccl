@@ -52,20 +52,23 @@ __host__ __device__ constexpr bool check_operator_constraints(Mapping, Indices..
   return false;
 }
 
-template <class M, class T, class... Args, cuda::std::enable_if_t<(M::extents_type::rank() == sizeof...(Args)), int> = 0>
+template <class M, class T, class... Args>
 __host__ __device__ constexpr void iterate_left(M m, T& count, Args... args)
 {
-  ASSERT_NOEXCEPT(m(args...));
-  assert(count == m(args...));
-  count++;
-}
-template <class M, class T, class... Args, cuda::std::enable_if_t<(M::extents_type::rank() != sizeof...(Args)), int> = 0>
-__host__ __device__ constexpr void iterate_left(M m, T& count, Args... args)
-{
-  constexpr int r = static_cast<int>(M::extents_type::rank()) - 1 - static_cast<int>(sizeof...(Args));
-  for (typename M::index_type i = 0; i < m.extents().extent(r); i++)
+  using extents = typename M::extents_type;
+  if constexpr (extents::rank() == sizeof...(Args))
   {
-    iterate_left(m, count, i, args...);
+    ASSERT_NOEXCEPT(m(args...));
+    assert(count == m(args...));
+    count++;
+  }
+  else
+  {
+    constexpr int r = static_cast<int>(extents::rank()) - 1 - static_cast<int>(sizeof...(Args));
+    for (typename M::index_type i = 0; i < m.extents().extent(r); i++)
+    {
+      iterate_left(m, count, i, args...);
+    }
   }
 }
 
@@ -73,7 +76,7 @@ template <class E, class... Args>
 __host__ __device__ constexpr void test_iteration(Args... args)
 {
   using M = cuda::std::layout_left::mapping<E>;
-  M m(E(args...));
+  M m{E{args...}};
 
   typename E::index_type count = 0;
   iterate_left(m, count);
@@ -81,7 +84,7 @@ __host__ __device__ constexpr void test_iteration(Args... args)
 
 __host__ __device__ constexpr bool test()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_iteration<cuda::std::extents<int>>();
   test_iteration<cuda::std::extents<unsigned, D>>(1);
   test_iteration<cuda::std::extents<unsigned, D>>(7);
@@ -119,7 +122,7 @@ __host__ __device__ constexpr bool test()
 
 __host__ __device__ constexpr bool test_large()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_iteration<cuda::std::extents<int64_t, D, 8, D, D>>(7, 9, 10);
   test_iteration<cuda::std::extents<int64_t, D, 8, 1, D>>(7, 10);
   return true;

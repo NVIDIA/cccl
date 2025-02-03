@@ -88,7 +88,7 @@ using mapping_t = typename cuda::std::layout_right::template mapping<cuda::std::
 
 __host__ __device__ constexpr void test_no_implicit_conversion()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
   // Sanity check that one static to dynamic conversion works
   static_assert(cuda::std::is_constructible<mapping_t<int, D>, mapping_t<int, 5>>::value, "");
@@ -117,7 +117,7 @@ __host__ __device__ constexpr void test_no_implicit_conversion()
 
 __host__ __device__ constexpr void test_rank_mismatch()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
   static_assert(!cuda::std::is_constructible<mapping_t<int, D>, mapping_t<int>>::value, "");
   static_assert(!cuda::std::is_constructible<mapping_t<int>, mapping_t<int, D, D>>::value, "");
@@ -127,7 +127,7 @@ __host__ __device__ constexpr void test_rank_mismatch()
 
 __host__ __device__ constexpr void test_static_extent_mismatch()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
   static_assert(!cuda::std::is_constructible<mapping_t<int, D, 5>, mapping_t<int, D, 4>>::value, "");
   static_assert(!cuda::std::is_constructible<mapping_t<int, 5>, mapping_t<int, 4>>::value, "");

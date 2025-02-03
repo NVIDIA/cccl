@@ -88,7 +88,7 @@ __host__ __device__ constexpr void test_construction(E e, S s)
 
 __host__ __device__ constexpr bool test()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   {
     cuda::std::array<int, 0> s{};
     test_construction(cuda::std::extents<int>(), cuda::std::span<int, 0>(s));

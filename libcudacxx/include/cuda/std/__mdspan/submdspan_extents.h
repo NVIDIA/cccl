@@ -177,7 +177,7 @@ _CCCL_TEMPLATE(class _Extents, class... _Slices)
 _CCCL_REQUIRES((_Extents::rank() == sizeof...(_Slices)))
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto submdspan_extents(const _Extents& __src, _Slices... __slices)
 {
-  static_assert(_CCCL_FOLD_AND((__is_valid_subextents<typename _Extents::index_type, _Slices>) ),
+  static_assert(((__is_valid_subextents<typename _Extents::index_type, _Slices>) && ... && true),
                 "[mdspan.sub.extents] For each rank index k of src.extents(), exactly one of the following is true:");
   return __get_subextent{}(__src, __slices...);
 }

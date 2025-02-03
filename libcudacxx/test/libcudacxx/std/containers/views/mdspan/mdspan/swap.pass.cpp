@@ -65,6 +65,8 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
+#if !_CCCL_COMPILER(GCC, <, 11) // gcc-10 complains about swap failing during constant evaluation
   static_assert(test(), "");
+#endif // !_CCCL_COMPILER(GCC, <, 11)
   return 0;
 }

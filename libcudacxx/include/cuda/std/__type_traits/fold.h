@@ -65,11 +65,6 @@ _CCCL_INLINE_VAR constexpr bool __fold_or_v = __fold_or<_Preds...>::value;
 
 #endif // _CCCL_NO_FOLD_EXPRESSIONS
 
-#define _CCCL_FOLD_AND(__pred)           (__pred && ... && true)
-#define _CCCL_FOLD_OR(__pred)            (__pred || ...)
-#define _CCCL_FOLD_PLUS(__init, __args)  (__args + ... + __init)
-#define _CCCL_FOLD_TIMES(__init, __args) (__args * ... * __init)
-
 _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_FOLD_H

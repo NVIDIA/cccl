@@ -26,7 +26,7 @@
 
 __host__ __device__ constexpr bool test()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
   static_assert(_CCCL_TRAIT(cuda::std::is_convertible, const unsigned&, int)
                 && _CCCL_TRAIT(cuda::std::is_nothrow_constructible, int, const unsigned&));

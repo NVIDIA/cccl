@@ -83,7 +83,7 @@ __host__ __device__ constexpr void test_construction(AllExtents all_ext)
 template <class T, class TArg, class Test>
 __host__ __device__ constexpr void test()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
   test_construction<cuda::std::extents<T>, Test>(cuda::std::array<TArg, 0>{});
 

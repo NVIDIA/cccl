@@ -116,7 +116,7 @@ public:
   __host__ __device__ static constexpr cuda::std::array<index_type, extents_type::rank_dynamic()>
   get_dyn_extents(const mapping<OtherExtents>& other) noexcept
   {
-    cuda::std::array<index_type, extents_type::rank_dynamic()> dyn_extents;
+    cuda::std::array<index_type, extents_type::rank_dynamic()> dyn_extents{};
     rank_type count = 0;
     for (rank_type r = 0; r != extents_type::rank(); r++)
     {

@@ -408,6 +408,8 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
+#if !_CCCL_COMPILER(GCC, <, 11) // gcc-10 complains about __submdspan_offset not being constexpr...
   static_assert(test(), "");
+#endif // !_CCCL_COMPILER(GCC, <, 11)
   return 0;
 }

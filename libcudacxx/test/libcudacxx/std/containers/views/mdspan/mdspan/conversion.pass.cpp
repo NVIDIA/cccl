@@ -152,7 +152,7 @@ construct_from_mds(const FromH& handle, const FromL& layout, const FromExt& exts
 template <class ToL, class ToA, class FromH, class FromL, class FromA>
 __host__ __device__ constexpr void mixin_extents(const FromH& handle, const FromL& layout, const FromA& acc)
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   // constructible and convertible
   construct_from_mds<ToL, cuda::std::dextents<int, 0>, ToA>(handle, layout, cuda::std::dextents<int, 0>(), acc);
   construct_from_mds<ToL, cuda::std::dextents<int, 1>, ToA>(handle, layout, cuda::std::dextents<int, 1>(4), acc);

@@ -48,7 +48,7 @@ __host__ __device__ constexpr void test_stride(cuda::std::array<typename E::inde
 
 __host__ __device__ constexpr bool test()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_stride<cuda::std::extents<unsigned, D>>(cuda::std::array<unsigned, 1>{1}, 7);
   test_stride<cuda::std::extents<unsigned, 7>>(cuda::std::array<unsigned, 1>{1});
   test_stride<cuda::std::extents<unsigned, 7, 8>>(cuda::std::array<unsigned, 2>{8, 1});

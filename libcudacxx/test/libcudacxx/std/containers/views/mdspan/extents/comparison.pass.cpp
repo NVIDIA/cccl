@@ -35,7 +35,7 @@ __host__ __device__ constexpr void test_comparison(bool equal, To dest, From src
 template <class T1, class T2>
 __host__ __device__ constexpr void test_comparison_different_rank()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
   test_comparison(false, cuda::std::extents<T1>(), cuda::std::extents<T2, D>(1));
   test_comparison(false, cuda::std::extents<T1>(), cuda::std::extents<T2, 1>());
@@ -55,7 +55,7 @@ __host__ __device__ constexpr void test_comparison_different_rank()
 template <class T1, class T2>
 __host__ __device__ constexpr void test_comparison_same_rank()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
   test_comparison(true, cuda::std::extents<T1>(), cuda::std::extents<T2>());
 

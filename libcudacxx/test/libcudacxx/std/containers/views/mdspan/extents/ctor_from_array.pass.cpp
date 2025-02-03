@@ -87,8 +87,8 @@ int main(int, char**)
   static_assert(test_index_type_combo<ArrayCtorTest>(), "");
 #endif // TEST_STD_VER >= 2020
 
-  constexpr size_t D = cuda::std::dynamic_extent;
-  using E            = cuda::std::extents<int, 1, D, 3, D>;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
+  using E                             = cuda::std::extents<int, 1, D, 3, D>;
 
   // check can't construct from too few arguments
   static_assert(!cuda::std::is_constructible<E, cuda::std::array<int, 1>>::value,

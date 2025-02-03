@@ -12,8 +12,6 @@
 
 #include <cuda/std/utility>
 
-#include <memory>
-
 #include "CommonHelpers.h"
 #include "test_macros.h"
 
@@ -21,96 +19,62 @@
 // Make sure we don't assume copyable, default constructible, movable etc.
 struct MinimalElementType
 {
+  template <class T, size_t N>
+  friend struct ElementPool;
+
+  struct tag
+  {
+    __host__ __device__ constexpr tag(int) noexcept {}
+
+    __host__ __device__ constexpr operator int() noexcept
+    {
+      return 42;
+    }
+  };
+
   int val;
   constexpr MinimalElementType()                                     = delete;
-  constexpr MinimalElementType(const MinimalElementType&)            = delete;
   constexpr MinimalElementType& operator=(const MinimalElementType&) = delete;
   __host__ __device__ constexpr explicit MinimalElementType(int v) noexcept
       : val(v)
   {}
+
+  __host__ __device__ constexpr MinimalElementType(tag) noexcept
+      : val(42)
+  {}
+
+  // MSVC2019 cannot list init the element and complains about the deleted copy constructor. Emulate via private
+#if _CCCL_COMPILER(MSVC2019)
+
+private:
+  constexpr MinimalElementType(const MinimalElementType&) = default;
+#else // ^^^ _CCCL_COMPILER(MSVC2019) ^^^ / vvv !_CCCL_COMPILER(MSVC2019) vvv
+  constexpr MinimalElementType(const MinimalElementType&) = delete;
+#endif // !_CCCL_COMPILER(MSVC2019)
 };
 
 // Helper class to create pointer to MinimalElementType
 template <class T, size_t N>
 struct ElementPool
 {
-  __host__ __device__ TEST_CONSTEXPR_CXX20 ElementPool()
-  {
-#if TEST_STD_VER >= 2020
-    if (cuda::std::is_constant_evaluated())
-    {
-      // clang-format off
-      NV_IF_TARGET(NV_IS_HOST, (
-        std::construct_at(&constexpr_ptr_, std::allocator<cuda::std::remove_const_t<T>>{}.allocate(N));
-        for (int i = 0; i != N;++i)
-        {
-          std::construct_at(constexpr_ptr_ + i, 42);
-        }
-      ))
-      // clang-format on
-    }
-    else
-#endif // TEST_STD_VER >= 2020
-    {
-      T* ptr = reinterpret_cast<T*>(ptr_);
-      for (int i = 0; i != N; ++i)
-      {
-        cuda::std::__construct_at(ptr + i, 42);
-      }
-    }
-  }
+private:
+  template <int... Indices>
+  __host__ __device__ constexpr ElementPool(cuda::std::integer_sequence<int, Indices...>)
+      : ptr_{T{MinimalElementType::tag{Indices}}...}
+  {}
+
+public:
+  __host__ __device__ constexpr ElementPool()
+      : ElementPool(cuda::std::make_integer_sequence<int, N>())
+  {}
 
   __host__ __device__ constexpr T* get_ptr()
   {
-#if TEST_STD_VER >= 2020
-    if (cuda::std::is_constant_evaluated())
-    {
-      // clang-format off
-      NV_IF_ELSE_TARGET(NV_IS_HOST, (
-        return constexpr_ptr_;
-      ),(
-        return nullptr;
-      ))
-      // clang-format on
-    }
-    else
-#endif // TEST_STD_VER >= 2020
-    {
-      return reinterpret_cast<T*>(ptr_);
-    }
-  }
-
-  __host__ __device__ TEST_CONSTEXPR_CXX20 ~ElementPool()
-  {
-#if TEST_STD_VER >= 2020
-    if (cuda::std::is_constant_evaluated())
-    {
-      // clang-format off
-      NV_IF_TARGET(NV_IS_HOST,(
-        for (int i = 0; i != N; ++i) {
-          std::destroy_at(constexpr_ptr_ + i);
-        }
-        std::allocator<cuda::std::remove_const_t<T>>{}.deallocate(constexpr_ptr_, N);
-      ))
-      return;
-      // clang-format on
-    }
-    else
-#endif // TEST_STD_VER >= 2020
-    {
-      for (int i = 0; i != N; ++i)
-      {
-        cuda::std::__destroy_at(ptr_ + i);
-      }
-    }
+    return ptr_;
   }
 
 private:
-  union
-  {
-    char ptr_[N * sizeof(T)] = {};
-    cuda::std::remove_const_t<T>* constexpr_ptr_;
-  };
+  T ptr_[N];
 };
 
 #endif // TEST_STD_CONTAINERS_VIEWS_MDSPAN_MINIMAL_ELEMENT_TYPE_H

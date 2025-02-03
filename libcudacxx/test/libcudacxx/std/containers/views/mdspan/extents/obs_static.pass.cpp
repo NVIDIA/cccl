@@ -77,8 +77,8 @@ __host__ __device__ void test_static_observers()
 template <class T>
 __host__ __device__ void test()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
-  constexpr size_t S = 5;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
+  constexpr size_t S                  = 5;
 
   test_static_observers<cuda::std::extents<T>, 0, 0>();
 
