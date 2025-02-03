@@ -32,7 +32,7 @@ int main(int, char**)
     assert(m.rank_dynamic() == 0);
     assert(m.static_extent(0) == 5);
     assert(m.extent(0) == 5);
-    assert(__MDSPAN_OP(m, 2) == 3);
+    assert(m[2] == 3);
   }
 #endif
 
