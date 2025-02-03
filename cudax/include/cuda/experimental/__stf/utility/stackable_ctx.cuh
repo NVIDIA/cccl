@@ -332,6 +332,12 @@ public:
     return stackable_logical_data(*this, depth(), true, get_ctx(0).logical_data(mv(s)), true);
   }
 
+  template <typename T, typename... Sizes>
+  auto logical_data(size_t elements, Sizes... more_sizes)
+  {
+    return stackable_logical_data(*this, depth(), true, get_ctx(0).template logical_data<T>(elements, more_sizes...), true);
+  }
+
   template <typename T>
   auto logical_data_no_export(shape_of<T> s)
   {
@@ -340,10 +346,11 @@ public:
   }
 
   template <typename T, typename... Sizes>
-  auto logical_data(size_t elements, Sizes... more_sizes)
+  auto logical_data_no_export(size_t elements, Sizes... more_sizes)
   {
-    return stackable_logical_data(*this, depth(), true, get_ctx(0).template logical_data<T>(elements, more_sizes...), true);
+    return stackable_logical_data(*this, depth(), true, get_ctx(depth()).template logical_data<T>(elements, more_sizes...), false);
   }
+
 
   stackable_logical_data<void_interface> logical_token();
 
@@ -614,7 +621,8 @@ class stackable_logical_data
       if (s_size > 1)
       {
         // This state will be retained until we pop the ctx enough times
-        sctx.retain_data(impl_state->offset_depth, mv(impl_state));
+        size_t offset_depth = impl_state->offset_depth;
+        sctx.retain_data(offset_depth, mv(impl_state));
       }
 
       impl_state = nullptr;
