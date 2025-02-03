@@ -241,13 +241,13 @@ struct dynamic_vsmem_helper_t
   template <typename PolicyT>
   int BlockThreads(PolicyT policy) const
   {
-    return uses_fallback_policy() ? policy.block_size : fallback_policy.block_size;
+    return uses_fallback_policy() ? fallback_policy.block_size : policy.block_size;
   }
 
   template <typename PolicyT>
   int ItemsPerTile(PolicyT policy) const
   {
-    return uses_fallback_policy() ? policy.items_per_tile : fallback_policy.items_per_tile;
+    return uses_fallback_policy() ? fallback_policy.items_per_tile : policy.items_per_tile;
   }
 
 private:
