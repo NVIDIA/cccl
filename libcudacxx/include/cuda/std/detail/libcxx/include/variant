@@ -255,6 +255,7 @@ C++20
 #include <cuda/std/__utility/monostate.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
+#include <cuda/std/__utility/unreachable.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/initializer_list>
 #include <cuda/std/tuple>
@@ -744,10 +745,22 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __alt
 {
   using __value_type = _Tp;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr __alt(in_place_t, _Args&&... __args)
       : __value(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
+  _CCCL_EXEC_CHECK_DISABLE
+  constexpr __alt(const __alt&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  constexpr __alt(__alt&&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  constexpr __alt& operator=(const __alt&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  constexpr __alt& operator=(__alt&&) = default;
+
+  _CCCL_EXEC_CHECK_DISABLE
+  ~__alt() = default;
 
   __value_type __value;
 };
@@ -906,6 +919,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __dtor<__traits<_Types...>, _Trait::_Availab
 {
   struct __visitor
   {
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _Alt>
     _LIBCUDACXX_HIDE_FROM_ABI void operator()(_Alt& __alt) const noexcept
     {
@@ -1145,6 +1159,7 @@ public:
   }
 
 protected:
+  _CCCL_EXEC_CHECK_DISABLE
   template <
     size_t _Ip,
     class _Tp,
@@ -1163,6 +1178,7 @@ protected:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <
     size_t _Ip,
     class _Tp,
@@ -1893,7 +1909,11 @@ private:
       return __op(_CUDA_VSTD::get<0>(__lhs), _CUDA_VSTD::get<0>(__rhs));
     }
     // We already checked that every variant has a value, so we should never reach this line
+#  if _CCCL_COMPILER(MSVC) // MSVC needs this to be wrapped in a function or it will error
+    _CUDA_VSTD::unreachable();
+#  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
     _CCCL_UNREACHABLE();
+#  endif // !_CCCL_COMPILER(MSVC)
   }
 };
 
