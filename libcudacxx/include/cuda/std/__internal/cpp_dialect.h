@@ -21,7 +21,7 @@
 #endif // no system header
 
 // Define LIBCUDACXX_COMPILER_DEPRECATION macro:
-#if _CCCL_COMPILER(MSVC) && !_CCCL_COMPILER(NVRTC)
+#if _CCCL_COMPILER(MSVC)
 #  define LIBCUDACXX_COMP_DEPR_IMPL(msg) \
     _CCCL_PRAGMA(message(__FILE__ ":" _CCCL_TO_STRING(__LINE__) ": warning: " #msg))
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
