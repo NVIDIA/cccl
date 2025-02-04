@@ -471,7 +471,7 @@ extern "C" CCCL_C_API CUresult cccl_device_scan(
       ::cuda::std::size_t,
       void,
       scan::dynamic_scan_policy_t<&scan::get_policy>,
-      false,
+      cub::ForceInclusive::No,
       scan::scan_kernel_source,
       cub::detail::CudaDriverLauncherFactory>::
       Dispatch(
