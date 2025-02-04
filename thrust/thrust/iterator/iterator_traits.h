@@ -56,7 +56,7 @@ struct iterator_traits
 #if _CCCL_COMPILER(NVRTC)
     ::cuda
 #endif // _CCCL_COMPILER(NVRTC)
-      ::std::iterator_traits<T>
+    ::std::iterator_traits<T>
 {};
 
 template <typename Iterator>
