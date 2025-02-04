@@ -47,6 +47,9 @@
 #include <thrust/iterator/iterator_facade.h>
 #include <thrust/iterator/iterator_traits.h>
 
+#include <cuda/std/__memory/construct_at.h>
+#include <cuda/std/type_traits>
+
 THRUST_NAMESPACE_BEGIN
 
 /*! \addtogroup iterators
@@ -198,7 +201,6 @@ public:
   /*! \endcond
    */
 
-public:
   /*! Null constructor does nothing.
    */
   transform_iterator() = default;
@@ -239,19 +241,25 @@ public:
       , m_f(other.functor())
   {}
 
-  /*! Copy assignment operator copies from another \p transform_iterator.
-   *  \p other The other \p transform_iterator to copy
-   *  \return <tt>*this</tt>
-   *
-   *  \note If the type of this \p transform_iterator's functor is not copy assignable
-   *        (for example, if it is a lambda) it is not an error to call this function.
-   *        In this case, however, the functor will not be modified.
-   *
-   *        In any case, this \p transform_iterator's underlying iterator will be copy assigned.
-   */
-  _CCCL_HOST_DEVICE transform_iterator& operator=(const transform_iterator& other)
+  _CCCL_HOST_DEVICE transform_iterator& operator=(transform_iterator const& other)
   {
-    return do_assign(other, ::cuda::std::is_copy_assignable<AdaptableUnaryFunction>());
+    super_t::operator=(other);
+    if constexpr (_CCCL_TRAIT(::cuda::std::is_copy_assignable, AdaptableUnaryFunction))
+    {
+      m_f = other.m_f;
+    }
+    else if constexpr (_CCCL_TRAIT(::cuda::std::is_copy_constructible, AdaptableUnaryFunction))
+    {
+      ::cuda::std::__destroy_at(&m_f);
+      ::cuda::std::__construct_at(&m_f, other.m_f);
+    }
+    else
+    {
+      static_assert(_CCCL_TRAIT(::cuda::std::is_copy_constructible, AdaptableUnaryFunction),
+                    "Cannot use thrust::transform_iterator with a functor that is neither copy constructible nor "
+                    "copy assignable");
+    }
+    return *this;
   }
 
   /*! This method returns a copy of this \p transform_iterator's \c AdaptableUnaryFunction.
@@ -266,25 +274,6 @@ public:
    */
 
 private:
-  _CCCL_HOST_DEVICE transform_iterator& do_assign(const transform_iterator& other, thrust::detail::true_type)
-  {
-    super_t::operator=(other);
-
-    // do assign to m_f
-    m_f = other.functor();
-
-    return *this;
-  }
-
-  _CCCL_HOST_DEVICE transform_iterator& do_assign(const transform_iterator& other, thrust::detail::false_type)
-  {
-    super_t::operator=(other);
-
-    // don't assign to m_f
-
-    return *this;
-  }
-
 // MSVC 2013 and 2015 incorrectly warning about returning a reference to
 // a local/temporary here.
 // See goo.gl/LELTNp

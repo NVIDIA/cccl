@@ -40,14 +40,14 @@ using pair_types =
   c2h::type_list<c2h::type_list<bool, std::uint8_t>,
                  c2h::type_list<std::int8_t, std::uint64_t>,
                  c2h::type_list<double, float>
-#if TEST_HALF_T
+#if TEST_HALF_T()
                  ,
                  c2h::type_list<half_t, std::int8_t>
-#endif
-#if TEST_BF_T
+#endif // TEST_HALF_T()
+#if TEST_BF_T()
                  ,
                  c2h::type_list<bfloat16_t, float>
-#endif
+#endif // TEST_BF_T()
                  >;
 
 C2H_TEST("DeviceSegmentedSortPairs: No segments", "[pairs][segmented][sort][device]")

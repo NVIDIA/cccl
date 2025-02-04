@@ -73,8 +73,6 @@
         "CUB_ENABLE_DIALECT_CPP20": true,
         "THRUST_ENABLE_MULTICONFIG": true,
         "THRUST_MULTICONFIG_WORKLOAD": "LARGE",
-        "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP11": true,
-        "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP14": true,
         "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP17": true,
         "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP20": true,
         "THRUST_MULTICONFIG_ENABLE_SYSTEM_CPP": true,
@@ -129,28 +127,6 @@
       }
     },
     {
-      "name": "libcudacxx-cpp11",
-      "displayName": "libcu++: C++11",
-      "inherits": "libcudacxx-base",
-      "cacheVariables": {
-        "CMAKE_CXX_STANDARD": "11",
-        "CMAKE_CUDA_STANDARD": "11",
-        "LIBCUDACXX_TEST_STANDARD_VER": "c++11",
-        "CCCL_IGNORE_DEPRECATED_CPP_11": true
-      }
-    },
-    {
-      "name": "libcudacxx-cpp14",
-      "displayName": "libcu++: C++14",
-      "inherits": "libcudacxx-base",
-      "cacheVariables": {
-        "CMAKE_CXX_STANDARD": "14",
-        "CMAKE_CUDA_STANDARD": "14",
-        "LIBCUDACXX_TEST_STANDARD_VER": "c++14",
-        "CCCL_IGNORE_DEPRECATED_CPP_14": true
-      }
-    },
-    {
       "name": "libcudacxx-cpp17",
       "displayName": "libcu++: C++17",
       "inherits": "libcudacxx-base",
@@ -177,28 +153,6 @@
       "cacheVariables": {
         "LIBCUDACXX_TEST_WITH_NVRTC": true,
         "CMAKE_CUDA_ARCHITECTURES": "70"
-      }
-    },
-    {
-      "name": "libcudacxx-nvrtc-cpp11",
-      "displayName": "libcu++ NVRTC: C++11",
-      "inherits": "libcudacxx-nvrtc-base",
-      "cacheVariables": {
-        "CMAKE_CXX_STANDARD": "11",
-        "CMAKE_CUDA_STANDARD": "11",
-        "LIBCUDACXX_TEST_STANDARD_VER": "c++11",
-        "CCCL_IGNORE_DEPRECATED_CPP_11": true
-      }
-    },
-    {
-      "name": "libcudacxx-nvrtc-cpp14",
-      "displayName": "libcu++ NVRTC: C++14",
-      "inherits": "libcudacxx-nvrtc-base",
-      "cacheVariables": {
-        "CMAKE_CXX_STANDARD": "14",
-        "CMAKE_CUDA_STANDARD": "14",
-        "LIBCUDACXX_TEST_STANDARD_VER": "c++14",
-        "CCCL_IGNORE_DEPRECATED_CPP_14": true
       }
     },
     {
@@ -261,8 +215,6 @@
         "THRUST_MULTICONFIG_ENABLE_SYSTEM_CUDA": true,
         "THRUST_MULTICONFIG_ENABLE_SYSTEM_OMP": true,
         "THRUST_MULTICONFIG_ENABLE_SYSTEM_TBB": true,
-        "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP11": false,
-        "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP14": false,
         "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP17": false,
         "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP20": false
       }
@@ -421,22 +373,6 @@
       ]
     },
     {
-      "name": "libcudacxx-nvrtc-cpp11",
-      "hidden": false,
-      "inherits": [
-        "libcudacxx-nvrtcc"
-      ],
-      "configurePreset": "libcudacxx-nvrtc-cpp11"
-    },
-    {
-      "name": "libcudacxx-nvrtc-cpp14",
-      "hidden": false,
-      "inherits": [
-        "libcudacxx-nvrtcc"
-      ],
-      "configurePreset": "libcudacxx-nvrtc-cpp14"
-    },
-    {
       "name": "libcudacxx-nvrtc-cpp17",
       "hidden": false,
       "inherits": [
@@ -451,20 +387,6 @@
         "libcudacxx-nvrtcc"
       ],
       "configurePreset": "libcudacxx-nvrtc-cpp20"
-    },
-    {
-      "name": "libcudacxx-cpp11",
-      "configurePreset": "libcudacxx-cpp11",
-      "inherits": [
-        "libcudacxx-base"
-      ]
-    },
-    {
-      "name": "libcudacxx-cpp14",
-      "configurePreset": "libcudacxx-cpp14",
-      "inherits": [
-        "libcudacxx-base"
-      ]
     },
     {
       "name": "libcudacxx-cpp17",
@@ -573,20 +495,6 @@
       }
     },
     {
-      "name": "libcudacxx-lit-cpp11",
-      "configurePreset": "libcudacxx-cpp11",
-      "inherits": [
-        "libcudacxx-lit-base"
-      ]
-    },
-    {
-      "name": "libcudacxx-lit-cpp14",
-      "configurePreset": "libcudacxx-cpp14",
-      "inherits": [
-        "libcudacxx-lit-base"
-      ]
-    },
-    {
       "name": "libcudacxx-lit-cpp17",
       "configurePreset": "libcudacxx-cpp17",
       "inherits": [
@@ -605,20 +513,6 @@
       "hidden": true,
       "inherits": [
         "libcudacxx-lit-base"
-      ]
-    },
-    {
-      "name": "libcudacxx-nvrtc-cpp11",
-      "configurePreset": "libcudacxx-nvrtc-cpp11",
-      "inherits": [
-        "libcudacxx-nvrtc-base"
-      ]
-    },
-    {
-      "name": "libcudacxx-nvrtc-cpp14",
-      "configurePreset": "libcudacxx-nvrtc-cpp14",
-      "inherits": [
-        "libcudacxx-nvrtc-base"
       ]
     },
     {

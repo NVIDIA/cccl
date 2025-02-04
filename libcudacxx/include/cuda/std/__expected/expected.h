@@ -1070,6 +1070,7 @@ public:
   }
 
   // [expected.object.eq], equality operators
+  _CCCL_EXEC_CHECK_DISABLE
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const expected& __x, const expected& __y)
   {
     if (__x.__has_val_ != __y.has_value())
@@ -1090,12 +1091,14 @@ public:
   }
 
 #  if _CCCL_STD_VER < 2020
+  _CCCL_EXEC_CHECK_DISABLE
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator!=(const expected& __x, const expected& __y)
   {
     return !(__x == __y);
   }
 #  endif // _CCCL_STD_VER < 2020
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T2, class _E2)
   _CCCL_REQUIRES((!_CCCL_TRAIT(is_void, _T2)))
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const expected& __x, const expected<_T2, _E2>& __y)
@@ -1118,6 +1121,7 @@ public:
   }
 
 #  if _CCCL_STD_VER < 2020
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T2, class _E2)
   _CCCL_REQUIRES((!_CCCL_TRAIT(is_void, _T2)))
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator!=(const expected& __x, const expected<_T2, _E2>& __y)
@@ -1126,6 +1130,7 @@ public:
   }
 #  endif // _CCCL_STD_VER < 2020
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T2)
   _CCCL_REQUIRES((!__expected::__is_expected_nonvoid<_T2>) )
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const expected& __x, const _T2& __v)
@@ -1133,18 +1138,21 @@ public:
     return __x.__has_val_ && static_cast<bool>(__x.__union_.__val_ == __v);
   }
 #  if _CCCL_STD_VER < 2020
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T2)
   _CCCL_REQUIRES((!__expected::__is_expected_nonvoid<_T2>) )
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const _T2& __v, const expected& __x)
   {
     return __x.__has_val_ && static_cast<bool>(__x.__union_.__val_ == __v);
   }
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T2)
   _CCCL_REQUIRES((!__expected::__is_expected_nonvoid<_T2>) )
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator!=(const expected& __x, const _T2& __v)
   {
     return !__x.__has_val_ || static_cast<bool>(__x.__union_.__val_ != __v);
   }
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T2)
   _CCCL_REQUIRES((!__expected::__is_expected_nonvoid<_T2>) )
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator!=(const _T2& __v, const expected& __x)
@@ -1153,22 +1161,26 @@ public:
   }
 #  endif // _CCCL_STD_VER < 2020
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const expected& __x, const unexpected<_E2>& __e)
   {
     return !__x.__has_val_ && static_cast<bool>(__x.__union_.__unex_ == __e.error());
   }
 #  if _CCCL_STD_VER < 2020
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const unexpected<_E2>& __e, const expected& __x)
   {
     return !__x.__has_val_ && static_cast<bool>(__x.__union_.__unex_ == __e.error());
   }
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator!=(const expected& __x, const unexpected<_E2>& __e)
   {
     return __x.__has_val_ || static_cast<bool>(__x.__union_.__unex_ != __e.error());
   }
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator!=(const unexpected<_E2>& __e, const expected& __x)
   {
@@ -1906,6 +1918,7 @@ public:
   }
 
   // [expected.void.eq], equality operators
+  _CCCL_EXEC_CHECK_DISABLE
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const expected& __x, const expected& __y) noexcept
   {
     if (__x.__has_val_ != __y.has_value())
@@ -1918,12 +1931,14 @@ public:
     }
   }
 #  if _CCCL_STD_VER < 2020
+  _CCCL_EXEC_CHECK_DISABLE
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator!=(const expected& __x, const expected& __y) noexcept
   {
     return !(__x == __y);
   }
 #  endif
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
   operator==(const expected& __x, const expected<void, _E2>& __y) noexcept
@@ -1938,6 +1953,7 @@ public:
     }
   }
 #  if _CCCL_STD_VER < 2020
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
   operator!=(const expected& __x, const expected<void, _E2>& __y) noexcept
@@ -1946,22 +1962,26 @@ public:
   }
 #  endif
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const expected& __x, const unexpected<_E2>& __y) noexcept
   {
     return !__x.__has_val_ && static_cast<bool>(__x.__union_.__unex_ == __y.error());
   }
 #  if _CCCL_STD_VER < 2020
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const unexpected<_E2>& __y, const expected& __x) noexcept
   {
     return !__x.__has_val_ && static_cast<bool>(__x.__union_.__unex_ == __y.error());
   }
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
   _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool operator!=(const expected& __x, const unexpected<_E2>& __y) noexcept
   {
     return __x.__has_val_ || static_cast<bool>(__x.__union_.__unex_ != __y.error());
   }
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
   _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool operator!=(const unexpected<_E2>& __y, const expected& __x) noexcept
   {

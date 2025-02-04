@@ -61,11 +61,13 @@ struct execution_policy<tag> : thrust::execution_policy<tag>
   using tag_type = tag;
 };
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 struct tag
     : execution_policy<tag>
     , thrust::detail::allocator_aware_execution_policy<cuda_cub::execution_policy>
     , thrust::detail::dependencies_aware_execution_policy<cuda_cub::execution_policy>
 {};
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 template <class Derived>
 struct execution_policy : thrust::execution_policy<Derived>

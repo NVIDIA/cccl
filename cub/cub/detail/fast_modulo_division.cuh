@@ -38,7 +38,7 @@
 #endif // no system header
 
 #include <cub/detail/type_traits.cuh> // implicit_prom_t
-#include <cub/util_type.cuh> // CUB_IS_INT128_ENABLED
+#include <cub/util_type.cuh> // _CCCL_HAS_INT128()
 
 #include <cuda/cmath> // cuda::std::ceil_div
 #include <cuda/std/bit> // std::has_single_bit
@@ -63,7 +63,6 @@ namespace detail
 template <typename T, typename = void>
 struct larger_unsigned_type
 {
-  static_assert(sizeof(T) >= 8, "64-bit integer are only supported from CUDA >= 11.5");
   using type = void;
 };
 
@@ -79,7 +78,7 @@ struct larger_unsigned_type<T, typename ::cuda::std::enable_if<(sizeof(T) == 4)>
   using type = ::cuda::std::uint64_t;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 
 template <typename T>
 struct larger_unsigned_type<T, typename ::cuda::std::enable_if<(sizeof(T) == 8)>::type>
@@ -87,7 +86,7 @@ struct larger_unsigned_type<T, typename ::cuda::std::enable_if<(sizeof(T) == 8)>
   using type = __uint128_t;
 };
 
-#endif // CUB_IS_INT128_ENABLED
+#endif // _CCCL_HAS_INT128()
 
 template <typename T>
 using larger_unsigned_type_t = typename larger_unsigned_type<T>::type;

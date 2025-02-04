@@ -2,7 +2,6 @@
 
 #include <thrust/detail/config.h>
 
-#include <thrust/detail/integer_traits.h>
 #include <thrust/limits.h>
 #include <thrust/mr/allocator.h>
 #include <thrust/mr/device_memory_resource.h>
@@ -214,17 +213,6 @@ template <>
 struct numeric_limits<custom_numeric> : numeric_limits<int>
 {};
 _LIBCUDACXX_END_NAMESPACE_STD
-
-THRUST_NAMESPACE_BEGIN
-namespace detail
-{
-// For random number generation
-template <>
-class integer_traits<custom_numeric> : public integer_traits_base<int, INT_MIN, INT_MAX>
-{};
-
-} // namespace detail
-THRUST_NAMESPACE_END
 
 using NumericTypes = unittest::type_list<
   char,

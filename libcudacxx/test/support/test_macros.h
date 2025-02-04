@@ -146,7 +146,7 @@
 #endif
 
 #if TEST_HAS_BUILTIN(__builtin_is_constant_evaluated) || _CCCL_COMPILER(GCC, >=, 9) \
-  || (_CCCL_COMPILER(MSVC) && _MSC_VER > 1924 && _CCCL_CUDACC_AT_LEAST(11, 3))
+  || (_CCCL_COMPILER(MSVC) && _MSC_VER > 1924)
 #  define TEST_IS_CONSTANT_EVALUATED() cuda::std::is_constant_evaluated()
 #else
 #  define TEST_IS_CONSTANT_EVALUATED() false
@@ -444,9 +444,6 @@ __host__ __device__ constexpr bool unused(T&&...)
 #define TEST_CONSTEXPR_GLOBAL _CCCL_CONSTEXPR_GLOBAL
 
 // Some convenience macros for checking nvcc versions
-#if _CCCL_CUDACC_BELOW(11, 3)
-#  define TEST_COMPILER_CUDACC_BELOW_11_3
-#endif // _CCCL_CUDACC_BELOW(11, 3)
 #if _CCCL_CUDACC_BELOW(12, 3)
 #  define TEST_COMPILER_CUDACC_BELOW_12_3
 #endif // _CCCL_CUDACC_BELOW(12, 3)

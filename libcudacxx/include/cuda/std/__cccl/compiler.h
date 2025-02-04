@@ -101,6 +101,11 @@
 #  define _CCCL_HAS_CUDA_COMPILER 1
 #endif
 
+#if defined(_CCCL_HAS_CUDA_COMPILER) && _CCCL_CUDACC_BELOW(12) && !defined(CCCL_IGNORE_DEPRECATED_CUDA_BELOW_12)
+#  error "CUDA versions below 12 are not supported." \
+"Define CCCL_IGNORE_DEPRECATED_CUDA_BELOW_12 to suppress this message."
+#endif
+
 // Convert parameter to string
 #define _CCCL_TO_STRING2(_STR) #_STR
 #define _CCCL_TO_STRING(_STR)  _CCCL_TO_STRING2(_STR)

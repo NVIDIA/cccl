@@ -43,7 +43,7 @@ struct __seq
   };
 
   template <class _Zip>
-  struct __opstate
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate
   {
     using operation_state_concept = operation_state_t;
 
@@ -99,14 +99,14 @@ struct __seq
   };
 
   template <class _Sndr1, class _Sndr2>
-  struct __sndr_t;
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
   template <class _Sndr1, class _Sndr2>
   _CUDAX_API auto operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const -> __sndr_t<_Sndr1, _Sndr2>;
 };
 
 template <class _Sndr1, class _Sndr2>
-struct __seq::__sndr_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __seq::__sndr_t
 {
   using sender_concept = sender_t;
   using __sndr1_t      = _Sndr1;

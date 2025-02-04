@@ -31,7 +31,7 @@ using policy_hub_t = cub::detail::transform::policy_hub<false, ::cuda::std::tupl
 #else
 struct policy_hub_t
 {
-  struct max_policy : cub::ChainedPolicy<350, max_policy, max_policy>
+  struct max_policy : cub::ChainedPolicy<500, max_policy, max_policy>
   {
     static constexpr int min_bif    = cub::detail::transform::arch_to_min_bytes_in_flight(__CUDA_ARCH_LIST__);
     static constexpr auto algorithm = static_cast<cub::detail::transform::Algorithm>(TUNE_ALGORITHM);
@@ -80,7 +80,7 @@ void bench_transform(
 {
   state.exec(exec_tag, [&](const nvbench::launch& launch) {
     cub::detail::transform::dispatch_t<
-      false,
+      cub::detail::transform::requires_stable_address::no,
       OffsetT,
       ::cuda::std::tuple<RandomAccessIteratorsIn...>,
       RandomAccessIteratorOut,

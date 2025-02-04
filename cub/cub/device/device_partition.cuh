@@ -200,7 +200,7 @@ struct DevicePartition
                        SelectOp,
                        EqualityOp,
                        OffsetT,
-                       true>;
+                       SelectImpl::Partition>;
 
     // Check if the number of items exceeds the range covered by the selected signed offset type
     cudaError_t error = ChooseOffsetT::is_exceeding_offset_type(num_items);
@@ -365,7 +365,7 @@ struct DevicePartition
                        SelectOp,
                        EqualityOp,
                        OffsetT,
-                       true>;
+                       SelectImpl::Partition>;
 
     return DispatchSelectIfT::Dispatch(
       d_temp_storage,
@@ -381,7 +381,7 @@ struct DevicePartition
   }
 
 private:
-  template <bool IS_DESCENDING,
+  template <SortOrder Order,
             typename KeyT,
             typename ValueT,
             typename OffsetT,

@@ -250,7 +250,7 @@ public:
           auto const next_end =
             (uniques_index == count - 1) ? out_keys.size() : h_unique_indexes_out[uniques_index + 1];
           REQUIRE(h_unique_keys_out[uniques_index] == i);
-          REQUIRE(next_end - h_unique_indexes_out[uniques_index] == segment_histogram[i]);
+          REQUIRE(next_end - h_unique_indexes_out[uniques_index] == static_cast<std::size_t>(segment_histogram[i]));
           current_offset += segment_histogram[i];
           uniques_index++;
         }
@@ -265,21 +265,21 @@ struct unwrap_value_t_impl
   using type = T;
 };
 
-#if TEST_HALF_T
+#if TEST_HALF_T()
 template <>
 struct unwrap_value_t_impl<half_t>
 {
   using type = __half;
 };
-#endif
+#endif // TEST_HALF_T()
 
-#if TEST_BF_T
+#if TEST_BF_T()
 template <>
 struct unwrap_value_t_impl<bfloat16_t>
 {
   using type = __nv_bfloat16;
 };
-#endif
+#endif // TEST_BF_T()
 
 template <typename T>
 using unwrap_value_t = typename unwrap_value_t_impl<T>::type;

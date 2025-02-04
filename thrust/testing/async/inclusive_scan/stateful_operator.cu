@@ -1,3 +1,7 @@
+#include <cuda/__cccl_config>
+
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 #include <thrust/detail/config.h>
 
 #if _CCCL_STD_VER >= 2014
@@ -62,3 +66,5 @@ struct test_stateful_operator
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(test_stateful_operator, NumericTypes);
 
 #endif // C++14
+
+_CCCL_SUPPRESS_DEPRECATED_POP

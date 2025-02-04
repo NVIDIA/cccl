@@ -27,6 +27,8 @@
 
 #include <cub/device/device_run_length_encode.cuh>
 
+#include <thrust/iterator/constant_iterator.h>
+
 #include <look_back_helper.cuh>
 #include <nvbench_helper.cuh>
 
@@ -53,7 +55,7 @@
 
 struct reduce_by_key_policy_hub
 {
-  struct Policy350 : cub::ChainedPolicy<350, Policy350, Policy350>
+  struct Policy500 : cub::ChainedPolicy<500, Policy500, Policy500>
   {
     using ReduceByKeyPolicyT =
       cub::AgentReduceByKeyPolicy<TUNE_THREADS,
@@ -64,7 +66,7 @@ struct reduce_by_key_policy_hub
                                   delay_constructor_t>;
   };
 
-  using MaxPolicy = Policy350;
+  using MaxPolicy = Policy500;
 };
 #endif // !TUNE_BASE
 
@@ -74,7 +76,7 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   using offset_t                   = OffsetT;
   using keys_input_it_t            = const T*;
   using unique_output_it_t         = T*;
-  using vals_input_it_t            = cub::ConstantInputIterator<offset_t, OffsetT>;
+  using vals_input_it_t            = thrust::constant_iterator<offset_t, OffsetT>;
   using aggregate_output_it_t      = offset_t*;
   using num_runs_output_iterator_t = offset_t*;
   using equality_op_t              = ::cuda::std::equal_to<>;

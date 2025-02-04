@@ -25,6 +25,7 @@
  *
  ******************************************************************************/
 
+#include <cub/detail/choose_offset.cuh>
 #include <cub/device/device_merge_sort.cuh>
 
 #include <nvbench_helper.cuh>
@@ -81,7 +82,7 @@ void pairs(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
   using value_input_it_t = value_t*;
   using key_it_t         = key_t*;
   using value_it_t       = value_t*;
-  using offset_t         = OffsetT;
+  using offset_t         = cub::detail::choose_offset_t<OffsetT>;
   using compare_op_t     = less_t;
 
 #if !TUNE_BASE

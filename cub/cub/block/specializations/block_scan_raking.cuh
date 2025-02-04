@@ -52,7 +52,8 @@
 #include <cub/warp/warp_scan.cuh>
 
 CUB_NAMESPACE_BEGIN
-
+namespace detail
+{
 /**
  * @brief BlockScanRaking provides variants of raking-based parallel prefix scan across a CUDA
  * thread block.
@@ -72,11 +73,8 @@ CUB_NAMESPACE_BEGIN
  * @tparam MEMOIZE
  *   Whether or not to buffer outer raking scan partials to incur fewer shared memory reads at the
  * expense of higher register pressure
- *
- * @tparam LEGACY_PTX_ARCH
- *   The PTX compute capability for which to to specialize this collective
  */
-template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z, bool MEMOIZE, int LEGACY_PTX_ARCH = 0>
+template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z, bool MEMOIZE>
 struct BlockScanRaking
 {
   //---------------------------------------------------------------------
@@ -794,5 +792,11 @@ struct BlockScanRaking
     }
   }
 };
+} // namespace detail
+
+template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z, bool MEMOIZE>
+using BlockScanRaking CCCL_DEPRECATED_BECAUSE(
+  "This class is considered an implementation detail and the public interface will be "
+  "removed.") = detail::BlockScanRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z, MEMOIZE>;
 
 CUB_NAMESPACE_END

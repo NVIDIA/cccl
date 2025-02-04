@@ -109,7 +109,7 @@ int main(int argc, char** argv)
   int sm_count, max_block_threads, max_sm_occupancy;
   CubDebugExit(cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal));
   CubDebugExit(cudaDeviceGetAttribute(&max_block_threads, cudaDevAttrMaxThreadsPerBlock, device_ordinal));
-  CubDebugExit(MaxSmOccupancy(max_sm_occupancy, EmptyKernel<void>, 32));
+  CubDebugExit(MaxSmOccupancy(max_sm_occupancy, detail::EmptyKernel<void>, 32));
 
   // Compute grid size and occupancy
   int occupancy = CUB_MIN((max_block_threads / block_size), max_sm_occupancy);

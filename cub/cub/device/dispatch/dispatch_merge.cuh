@@ -21,10 +21,11 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+
 CUB_NAMESPACE_BEGIN
-namespace detail
-{
-namespace merge
+namespace detail::merge
 {
 _CCCL_INLINE_VAR constexpr int fallback_BLOCK_THREADS    = 64;
 _CCCL_INLINE_VAR constexpr int fallback_ITEMS_PER_THREAD = 1;
@@ -80,7 +81,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void device_partition_merge_path_kernel(
   const Offset partition_idx = blockDim.x * blockIdx.x + threadIdx.x;
   if (partition_idx < num_partitions)
   {
-    const Offset partition_at       = (cub::min)(partition_idx * items_per_tile, keys1_count + keys2_count);
+    const Offset partition_at       = (::cuda::std::min)(partition_idx * items_per_tile, keys1_count + keys2_count);
     merge_partitions[partition_idx] = cub::MergePath(keys1, keys2, keys1_count, keys2_count, partition_at, compare_op);
   }
 }
@@ -137,7 +138,7 @@ __launch_bounds__(
     CompareOp>::type;
   using MergePolicy = typename MergeAgent::policy;
 
-  using THRUST_NS_QUALIFIER::cuda_cub::core::make_load_iterator;
+  using THRUST_NS_QUALIFIER::cuda_cub::core::detail::make_load_iterator;
   using vsmem_helper_t = vsmem_helper_impl<MergeAgent>;
   __shared__ typename vsmem_helper_t::static_temp_storage_t shared_temp_storage;
   auto& temp_storage = vsmem_helper_t::get_temp_storage(shared_temp_storage, global_temp_storage);
@@ -217,7 +218,7 @@ struct dispatch_t
       const int partition_grid_size = static_cast<int>(::cuda::ceil_div(num_partitions, threads_per_partition_block));
 
       auto error = CubDebug(
-        THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
           partition_grid_size, threads_per_partition_block, 0, stream)
           .doit(device_partition_merge_path_kernel<
                   max_policy_t,
@@ -252,7 +253,7 @@ struct dispatch_t
     {
       auto vshmem_ptr = vsmem_t{allocations[1]};
       auto error      = CubDebug(
-        THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
           static_cast<int>(num_tiles), static_cast<int>(agent_t::policy::BLOCK_THREADS), 0, stream)
           .doit(
             device_merge_kernel<max_policy_t, KeyIt1, ValueIt1, KeyIt2, ValueIt2, KeyIt3, ValueIt3, Offset, CompareOp>,
@@ -300,6 +301,5 @@ struct dispatch_t
     return cudaSuccess;
   }
 };
-} // namespace merge
-} // namespace detail
+} // namespace detail::merge
 CUB_NAMESPACE_END

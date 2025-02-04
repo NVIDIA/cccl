@@ -124,6 +124,11 @@ struct AgentRadixSortDownsweepPolicy : ScalingType
  * Thread block abstractions
  ******************************************************************************/
 
+namespace detail
+{
+namespace radix_sort
+{
+
 /**
  * @brief AgentRadixSortDownsweep implements a stateful abstraction of CUDA thread blocks for participating in
  *        device-wide radix sort downsweep .
@@ -148,14 +153,14 @@ template <typename AgentRadixSortDownsweepPolicy,
           typename KeyT,
           typename ValueT,
           typename OffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
+          typename DecomposerT = identity_decomposer_t>
 struct AgentRadixSortDownsweep
 {
   //---------------------------------------------------------------------
   // Type definitions and constants
   //---------------------------------------------------------------------
 
-  using traits                 = detail::radix::traits_t<KeyT>;
+  using traits                 = radix::traits_t<KeyT>;
   using bit_ordered_type       = typename traits::bit_ordered_type;
   using bit_ordered_conversion = typename traits::bit_ordered_conversion_policy;
 
@@ -182,8 +187,7 @@ struct AgentRadixSortDownsweep
   using ValuesItr = CacheModifiedInputIterator<LOAD_MODIFIER, ValueT, OffsetT>;
 
   // Radix ranking type to use
-  using BlockRadixRankT =
-    cub::detail::block_radix_rank_t<RANK_ALGORITHM, BLOCK_THREADS, RADIX_BITS, IS_DESCENDING, SCAN_ALGORITHM>;
+  using BlockRadixRankT = block_radix_rank_t<RANK_ALGORITHM, BLOCK_THREADS, RADIX_BITS, IS_DESCENDING, SCAN_ALGORITHM>;
 
   // Digit extractor type
   using fundamental_digit_extractor_t = BFEDigitExtractor<KeyT>;
@@ -755,5 +759,19 @@ struct AgentRadixSortDownsweep
     }
   }
 };
+
+} // namespace radix_sort
+} // namespace detail
+
+template <typename AgentRadixSortDownsweepPolicy,
+          bool IS_DESCENDING,
+          typename KeyT,
+          typename ValueT,
+          typename OffsetT,
+          typename DecomposerT = detail::identity_decomposer_t>
+using AgentRadixSortDownsweep CCCL_DEPRECATED_BECAUSE(
+  "This class is considered an implementation detail and the public "
+  "interface will be removed.") = detail::radix_sort::
+  AgentRadixSortDownsweep<AgentRadixSortDownsweepPolicy, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>;
 
 CUB_NAMESPACE_END

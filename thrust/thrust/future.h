@@ -61,6 +61,7 @@
 #  include __THRUST_DEVICE_SYSTEM_FUTURE_HEADER
 #  undef __THRUST_DEVICE_SYSTEM_FUTURE_HEADER
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 THRUST_NAMESPACE_BEGIN
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -75,16 +76,14 @@ THRUST_NAMESPACE_BEGIN
 namespace unimplemented
 {
 
-struct no_unique_eager_event_type_found
-{};
+struct CCCL_DEPRECATED no_unique_eager_event_type_found{};
 
-inline _CCCL_HOST no_unique_eager_event_type_found unique_eager_event_type(...) noexcept;
+CCCL_DEPRECATED _CCCL_HOST inline no_unique_eager_event_type_found unique_eager_event_type(...) noexcept;
 
-struct no_unique_eager_future_type_found
-{};
+struct CCCL_DEPRECATED no_unique_eager_future_type_found{};
 
 template <typename T>
-_CCCL_HOST no_unique_eager_future_type_found unique_eager_future_type(...) noexcept;
+CCCL_DEPRECATED _CCCL_HOST no_unique_eager_future_type_found unique_eager_future_type(...) noexcept;
 
 } // namespace unimplemented
 
@@ -94,7 +93,7 @@ namespace unique_eager_event_type_detail
 using unimplemented::unique_eager_event_type;
 
 template <typename System>
-using select = decltype(unique_eager_event_type(std::declval<System>()));
+using select CCCL_DEPRECATED = decltype(unique_eager_event_type(std::declval<System>()));
 
 } // namespace unique_eager_event_type_detail
 
@@ -104,25 +103,25 @@ namespace unique_eager_future_type_detail
 using unimplemented::unique_eager_future_type;
 
 template <typename System, typename T>
-using select = decltype(unique_eager_future_type<T>(std::declval<System>()));
+using select CCCL_DEPRECATED = decltype(unique_eager_future_type<T>(std::declval<System>()));
 
 } // namespace unique_eager_future_type_detail
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename System>
-using unique_eager_event = unique_eager_event_type_detail::select<System>;
+using unique_eager_event CCCL_DEPRECATED = unique_eager_event_type_detail::select<System>;
 
 template <typename System>
-using event = unique_eager_event<System>;
+using event CCCL_DEPRECATED = unique_eager_event<System>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename System, typename T>
-using unique_eager_future = unique_eager_future_type_detail::select<System, T>;
+using unique_eager_future CCCL_DEPRECATED = unique_eager_future_type_detail::select<System, T>;
 
 template <typename System, typename T>
-using future = unique_eager_future<System, T>;
+using future CCCL_DEPRECATED = unique_eager_future<System, T>;
 
 /*
 ///////////////////////////////////////////////////////////////////////////////
@@ -144,25 +143,29 @@ using host_future = host_unique_eager_future<T>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-using device_unique_eager_event =
+using device_unique_eager_event CCCL_DEPRECATED =
   unique_eager_event_type_detail::select<thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::tag>;
 
-using device_event = device_unique_eager_event;
+using device_event CCCL_DEPRECATED = device_unique_eager_event;
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-using device_unique_eager_future =
+using device_unique_eager_future CCCL_DEPRECATED =
   unique_eager_future_type_detail::select<thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::tag, T>;
 
 template <typename T>
-using device_future = device_unique_eager_future<T>;
+using device_future CCCL_DEPRECATED = device_unique_eager_future<T>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct new_stream_t final
+struct CCCL_DEPRECATED new_stream_t final
 {};
 
+#  ifndef CCCL_HEADER_MACRO_CHECK
+// when building header tests, we get a deprecation warning from cudafe1.stub.c if we deprecate a global variable
+CCCL_DEPRECATED
+#  endif
 _CCCL_GLOBAL_CONSTANT new_stream_t new_stream{};
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -171,6 +174,7 @@ using thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::when_all;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+_CCCL_SUPPRESS_DEPRECATED_POP
 THRUST_NAMESPACE_END
 
 #endif

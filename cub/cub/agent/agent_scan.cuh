@@ -112,6 +112,11 @@ struct AgentScanPolicy : ScalingType
  * Thread block abstractions
  ******************************************************************************/
 
+namespace detail
+{
+namespace scan
+{
+
 /**
  * @brief AgentScan implements a stateful abstraction of CUDA thread blocks for
  *        participating in device-wide prefix scan.
@@ -196,7 +201,7 @@ struct AgentScan
 
   // Callback type for obtaining tile prefix during block scan
   using DelayConstructorT     = typename AgentScanPolicyT::detail::delay_constructor_t;
-  using TilePrefixCallbackOpT = TilePrefixCallbackOp<AccumT, ScanOpT, ScanTileStateT, 0 /* PTX */, DelayConstructorT>;
+  using TilePrefixCallbackOpT = TilePrefixCallbackOp<AccumT, ScanOpT, ScanTileStateT, DelayConstructorT>;
 
   // Stateful BlockScan prefix callback type for managing a running total while
   // scanning consecutive tiles
@@ -581,5 +586,20 @@ struct AgentScan
     }
   }
 };
+
+} // namespace scan
+} // namespace detail
+
+template <typename AgentScanPolicyT,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename ScanOpT,
+          typename InitValueT,
+          typename OffsetT,
+          typename AccumT,
+          bool ForceInclusive = false>
+using AgentScan CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public interface "
+                                        "will be removed.") = detail::scan::
+  AgentScan<AgentScanPolicyT, InputIteratorT, OutputIteratorT, ScanOpT, InitValueT, OffsetT, AccumT, ForceInclusive>;
 
 CUB_NAMESPACE_END

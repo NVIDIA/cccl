@@ -31,7 +31,7 @@ int fibo_ref(int n)
   }
 }
 
-__global__ void add(slice<int> out, const slice<int> in1, const slice<int> in2)
+__global__ void add(slice<int> out, const slice<const int> in1, const slice<const int> in2)
 {
   out(0) = in1(0) + in2(0);
 }

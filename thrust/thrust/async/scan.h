@@ -39,7 +39,8 @@
 #  include <thrust/system/detail/adl/async/scan.h>
 #  include <thrust/type_traits/is_execution_policy.h>
 #  include <thrust/type_traits/logical_metafunctions.h>
-#  include <thrust/type_traits/remove_cvref.h>
+
+#  include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -50,6 +51,7 @@ namespace async
 namespace unimplemented
 {
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename OutputIt, typename BinaryOp>
 CCCL_DEPRECATED event<DerivedPolicy>
 async_inclusive_scan(thrust::execution_policy<DerivedPolicy>&, ForwardIt, Sentinel, OutputIt, BinaryOp)
@@ -72,6 +74,7 @@ CCCL_DEPRECATED event<DerivedPolicy> async_exclusive_scan(
                            "this algorithm is not implemented for the specified system");
   return {};
 }
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 } // namespace unimplemented
 
@@ -139,13 +142,13 @@ struct inclusive_scan_fn final
               typename Sentinel,
               typename OutputIt,
               typename BinaryOp,
-              typename = std::enable_if_t<!is_execution_policy_v<remove_cvref_t<ForwardIt>>>>
+              typename = std::enable_if_t<!is_execution_policy_v<::cuda::std::remove_cvref_t<ForwardIt>>>>
     CCCL_DEPRECATED _CCCL_SUPPRESS_DEPRECATED_PUSH
     auto operator()(ForwardIt&& first, Sentinel&& last, OutputIt&& out, BinaryOp&& op) const
     // ADL dispatch.
     THRUST_RETURNS(async_inclusive_scan(
-      thrust::detail::select_system(iterator_system_t<remove_cvref_t<ForwardIt>>{},
-                                    iterator_system_t<remove_cvref_t<OutputIt>>{}),
+      thrust::detail::select_system(iterator_system_t<::cuda::std::remove_cvref_t<ForwardIt>>{},
+                                    iterator_system_t<::cuda::std::remove_cvref_t<OutputIt>>{}),
       THRUST_FWD(first),
       THRUST_FWD(last),
       THRUST_FWD(out),
@@ -156,8 +159,8 @@ struct inclusive_scan_fn final
     auto operator()(ForwardIt&& first, Sentinel&& last, OutputIt&& out) const
     // ADL dispatch.
     THRUST_RETURNS(async_inclusive_scan(
-      thrust::detail::select_system(iterator_system_t<remove_cvref_t<ForwardIt>>{},
-                                    iterator_system_t<remove_cvref_t<OutputIt>>{}),
+      thrust::detail::select_system(iterator_system_t<::cuda::std::remove_cvref_t<ForwardIt>>{},
+                                    iterator_system_t<::cuda::std::remove_cvref_t<OutputIt>>{}),
       THRUST_FWD(first),
       THRUST_FWD(last),
       THRUST_FWD(out),
@@ -168,13 +171,13 @@ struct inclusive_scan_fn final
               typename OutputIt,
               typename InitialValueType,
               typename BinaryOp,
-              typename = std::enable_if_t<!is_execution_policy_v<remove_cvref_t<ForwardIt>>>>
+              typename = std::enable_if_t<!is_execution_policy_v<::cuda::std::remove_cvref_t<ForwardIt>>>>
     CCCL_DEPRECATED _CCCL_SUPPRESS_DEPRECATED_PUSH
     auto operator()(ForwardIt&& first, Sentinel&& last, OutputIt&& out, InitialValueType&& init, BinaryOp&& op) const
     // ADL dispatch.
     THRUST_RETURNS(async_inclusive_scan(
-      thrust::detail::select_system(iterator_system_t<remove_cvref_t<ForwardIt>>{},
-                                    iterator_system_t<remove_cvref_t<OutputIt>>{}),
+      thrust::detail::select_system(iterator_system_t<::cuda::std::remove_cvref_t<ForwardIt>>{},
+                                    iterator_system_t<::cuda::std::remove_cvref_t<OutputIt>>{}),
       THRUST_FWD(first),
       THRUST_FWD(last),
       THRUST_FWD(out),
@@ -248,7 +251,7 @@ struct exclusive_scan_fn final
       THRUST_FWD(first),
       THRUST_FWD(last),
       THRUST_FWD(out),
-      iterator_value_t<remove_cvref_t<ForwardIt>>{},
+      iterator_value_t<::cuda::std::remove_cvref_t<ForwardIt>>{},
       thrust::plus<>{})) _CCCL_SUPPRESS_DEPRECATED_POP
 
     template <typename ForwardIt,
@@ -256,13 +259,13 @@ struct exclusive_scan_fn final
               typename OutputIt,
               typename InitialValueType,
               typename BinaryOp,
-              typename = std::enable_if_t<!is_execution_policy_v<remove_cvref_t<ForwardIt>>>>
+              typename = std::enable_if_t<!is_execution_policy_v<::cuda::std::remove_cvref_t<ForwardIt>>>>
     CCCL_DEPRECATED _CCCL_SUPPRESS_DEPRECATED_PUSH
     auto operator()(ForwardIt&& first, Sentinel&& last, OutputIt&& out, InitialValueType&& init, BinaryOp&& op) const
     // ADL dispatch.
     THRUST_RETURNS(async_exclusive_scan(
-      thrust::detail::select_system(iterator_system_t<remove_cvref_t<ForwardIt>>{},
-                                    iterator_system_t<remove_cvref_t<OutputIt>>{}),
+      thrust::detail::select_system(iterator_system_t<::cuda::std::remove_cvref_t<ForwardIt>>{},
+                                    iterator_system_t<::cuda::std::remove_cvref_t<OutputIt>>{}),
       THRUST_FWD(first),
       THRUST_FWD(last),
       THRUST_FWD(out),
@@ -273,13 +276,13 @@ struct exclusive_scan_fn final
               typename Sentinel,
               typename OutputIt,
               typename InitialValueType,
-              typename = std::enable_if_t<!is_execution_policy_v<remove_cvref_t<ForwardIt>>>>
+              typename = std::enable_if_t<!is_execution_policy_v<::cuda::std::remove_cvref_t<ForwardIt>>>>
     CCCL_DEPRECATED _CCCL_SUPPRESS_DEPRECATED_PUSH
     auto operator()(ForwardIt&& first, Sentinel&& last, OutputIt&& out, InitialValueType&& init) const
     // ADL dispatch.
     THRUST_RETURNS(async_exclusive_scan(
-      thrust::detail::select_system(iterator_system_t<remove_cvref_t<ForwardIt>>{},
-                                    iterator_system_t<remove_cvref_t<OutputIt>>{}),
+      thrust::detail::select_system(iterator_system_t<::cuda::std::remove_cvref_t<ForwardIt>>{},
+                                    iterator_system_t<::cuda::std::remove_cvref_t<OutputIt>>{}),
       THRUST_FWD(first),
       THRUST_FWD(last),
       THRUST_FWD(out),
@@ -291,12 +294,12 @@ struct exclusive_scan_fn final
     auto operator()(ForwardIt&& first, Sentinel&& last, OutputIt&& out) const
     // ADL dispatch.
     THRUST_RETURNS(async_exclusive_scan(
-      thrust::detail::select_system(iterator_system_t<remove_cvref_t<ForwardIt>>{},
-                                    iterator_system_t<remove_cvref_t<OutputIt>>{}),
+      thrust::detail::select_system(iterator_system_t<::cuda::std::remove_cvref_t<ForwardIt>>{},
+                                    iterator_system_t<::cuda::std::remove_cvref_t<OutputIt>>{}),
       THRUST_FWD(first),
       THRUST_FWD(last),
       THRUST_FWD(out),
-      iterator_value_t<remove_cvref_t<ForwardIt>>{},
+      iterator_value_t<::cuda::std::remove_cvref_t<ForwardIt>>{},
       thrust::plus<>{})) _CCCL_SUPPRESS_DEPRECATED_POP
 };
 

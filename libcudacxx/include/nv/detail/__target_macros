@@ -35,6 +35,7 @@
 #define _NV_TARGET_ARCH_TO_SELECTOR_900  nv::target::sm_90
 #define _NV_TARGET_ARCH_TO_SELECTOR_1000 nv::target::sm_100
 #define _NV_TARGET_ARCH_TO_SELECTOR_1010 nv::target::sm_101
+#define _NV_TARGET_ARCH_TO_SELECTOR_1200 nv::target::sm_120
 
 #define _NV_TARGET_ARCH_TO_SM_350  35
 #define _NV_TARGET_ARCH_TO_SM_370  37
@@ -54,6 +55,7 @@
 #define _NV_TARGET_ARCH_TO_SM_900  90
 #define _NV_TARGET_ARCH_TO_SM_1000 100
 #define _NV_TARGET_ARCH_TO_SM_1010 101
+#define _NV_TARGET_ARCH_TO_SM_1200 120
 
 // Only enable when compiling for CUDA/stdpar
 #if defined(_NV_COMPILER_NVCXX) && defined(_NVHPC_CUDA)
@@ -76,6 +78,7 @@
 #  define _NV_TARGET_VAL_SM_90  nv::target::sm_90
 #  define _NV_TARGET_VAL_SM_100 nv::target::sm_100
 #  define _NV_TARGET_VAL_SM_101 nv::target::sm_101
+#  define _NV_TARGET_VAL_SM_120 nv::target::sm_120
 
 #  define _NV_TARGET___NV_IS_HOST   nv::target::is_host
 #  define _NV_TARGET___NV_IS_DEVICE nv::target::is_device
@@ -112,6 +115,7 @@
 #  define _NV_TARGET_VAL_SM_90  900
 #  define _NV_TARGET_VAL_SM_100 1000
 #  define _NV_TARGET_VAL_SM_101 1010
+#  define _NV_TARGET_VAL_SM_120 1200
 
 #  if defined(__CUDA_ARCH__)
 #    define _NV_TARGET_VAL                __CUDA_ARCH__
@@ -160,6 +164,7 @@
 #  define _NV_TARGET_VAL_SM_90  900
 #  define _NV_TARGET_VAL_SM_100 1000
 #  define _NV_TARGET_VAL_SM_101 1010
+#  define _NV_TARGET_VAL_SM_120 1200
 
 #  define _NV_TARGET_VAL 0
 
@@ -191,6 +196,7 @@
 #define _NV_TARGET___NV_PROVIDES_SM_90  (_NV_TARGET_PROVIDES(_NV_TARGET_VAL_SM_90))
 #define _NV_TARGET___NV_PROVIDES_SM_100 (_NV_TARGET_PROVIDES(_NV_TARGET_VAL_SM_100))
 #define _NV_TARGET___NV_PROVIDES_SM_101 (_NV_TARGET_PROVIDES(_NV_TARGET_VAL_SM_101))
+#define _NV_TARGET___NV_PROVIDES_SM_120 (_NV_TARGET_PROVIDES(_NV_TARGET_VAL_SM_120))
 
 #define _NV_TARGET___NV_IS_EXACTLY_SM_35  (_NV_TARGET_IS_EXACTLY(_NV_TARGET_VAL_SM_35))
 #define _NV_TARGET___NV_IS_EXACTLY_SM_37  (_NV_TARGET_IS_EXACTLY(_NV_TARGET_VAL_SM_37))
@@ -210,6 +216,7 @@
 #define _NV_TARGET___NV_IS_EXACTLY_SM_90  (_NV_TARGET_IS_EXACTLY(_NV_TARGET_VAL_SM_90))
 #define _NV_TARGET___NV_IS_EXACTLY_SM_100 (_NV_TARGET_IS_EXACTLY(_NV_TARGET_VAL_SM_100))
 #define _NV_TARGET___NV_IS_EXACTLY_SM_101 (_NV_TARGET_IS_EXACTLY(_NV_TARGET_VAL_SM_101))
+#define _NV_TARGET___NV_IS_EXACTLY_SM_120 (_NV_TARGET_IS_EXACTLY(_NV_TARGET_VAL_SM_120))
 
 #define NV_PROVIDES_SM_35  __NV_PROVIDES_SM_35
 #define NV_PROVIDES_SM_37  __NV_PROVIDES_SM_37
@@ -229,6 +236,7 @@
 #define NV_PROVIDES_SM_90  __NV_PROVIDES_SM_90
 #define NV_PROVIDES_SM_100 __NV_PROVIDES_SM_100
 #define NV_PROVIDES_SM_101 __NV_PROVIDES_SM_101
+#define NV_PROVIDES_SM_120 __NV_PROVIDES_SM_120
 
 #define NV_IS_EXACTLY_SM_35  __NV_IS_EXACTLY_SM_35
 #define NV_IS_EXACTLY_SM_37  __NV_IS_EXACTLY_SM_37
@@ -248,6 +256,7 @@
 #define NV_IS_EXACTLY_SM_90  __NV_IS_EXACTLY_SM_90
 #define NV_IS_EXACTLY_SM_100 __NV_IS_EXACTLY_SM_100
 #define NV_IS_EXACTLY_SM_101 __NV_IS_EXACTLY_SM_101
+#define NV_IS_EXACTLY_SM_120 __NV_IS_EXACTLY_SM_120
 
 // Disable SM_90a support on non-supporting compilers.
 // Will re-enable for nvcc below.
@@ -379,6 +388,12 @@
 #    define _NV_TARGET_BOOL___NV_IS_EXACTLY_SM_101 1
 #  else
 #    define _NV_TARGET_BOOL___NV_IS_EXACTLY_SM_101 0
+#  endif
+
+#  if (_NV_TARGET___NV_IS_EXACTLY_SM_120)
+#    define _NV_TARGET_BOOL___NV_IS_EXACTLY_SM_120 1
+#  else
+#    define _NV_TARGET_BOOL___NV_IS_EXACTLY_SM_120 0
 #  endif
 
 // Re-enable sm_90a support in nvcc.
@@ -527,6 +542,12 @@
 #    define _NV_TARGET_BOOL___NV_PROVIDES_SM_101 1
 #  else
 #    define _NV_TARGET_BOOL___NV_PROVIDES_SM_101 0
+#  endif
+
+#  if (_NV_TARGET___NV_PROVIDES_SM_120)
+#    define _NV_TARGET_BOOL___NV_PROVIDES_SM_120 1
+#  else
+#    define _NV_TARGET_BOOL___NV_PROVIDES_SM_120 0
 #  endif
 
 #  define _NV_ARCH_COND_CAT1(cond) _NV_TARGET_BOOL_##cond

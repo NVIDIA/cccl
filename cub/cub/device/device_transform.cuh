@@ -74,10 +74,16 @@ struct DeviceTransform
       return error;
     }
 
-    return detail::transform::
-      dispatch_t<false, offset_t, ::cuda::std::tuple<RandomAccessIteratorsIn...>, RandomAccessIteratorOut, TransformOp>::
-        dispatch(
-          ::cuda::std::move(inputs), ::cuda::std::move(output), num_items, ::cuda::std::move(transform_op), stream);
+    return detail::transform::dispatch_t<
+      detail::transform::requires_stable_address::no,
+      offset_t,
+      ::cuda::std::tuple<RandomAccessIteratorsIn...>,
+      RandomAccessIteratorOut,
+      TransformOp>::dispatch(::cuda::std::move(inputs),
+                             ::cuda::std::move(output),
+                             num_items,
+                             ::cuda::std::move(transform_op),
+                             stream);
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -212,10 +218,16 @@ struct DeviceTransform
       return error;
     }
 
-    return detail::transform::
-      dispatch_t<true, offset_t, ::cuda::std::tuple<RandomAccessIteratorsIn...>, RandomAccessIteratorOut, TransformOp>::
-        dispatch(
-          ::cuda::std::move(inputs), ::cuda::std::move(output), num_items, ::cuda::std::move(transform_op), stream);
+    return detail::transform::dispatch_t<
+      detail::transform::requires_stable_address::yes,
+      offset_t,
+      ::cuda::std::tuple<RandomAccessIteratorsIn...>,
+      RandomAccessIteratorOut,
+      TransformOp>::dispatch(::cuda::std::move(inputs),
+                             ::cuda::std::move(output),
+                             num_items,
+                             ::cuda::std::move(transform_op),
+                             stream);
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document

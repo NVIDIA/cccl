@@ -41,7 +41,7 @@ private:
 #endif // !_CCCL_CUDA_COMPILER(NVCC)
 
   template <class _Rcvr, class _Sndr, class _Env>
-  struct __opstate_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
     using operation_state_concept = operation_state_t;
     using completion_signatures   = completion_signatures_of_t<_Sndr, __rcvr_with_env_t<_Rcvr, _Env>*>;
@@ -63,7 +63,7 @@ private:
   };
 
   template <class _Sndr, class _Env>
-  struct __sndr_t;
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
 public:
   /// @brief Wraps one sender in another that modifies the execution
@@ -74,7 +74,7 @@ public:
 };
 
 template <class _Sndr, class _Env>
-struct write_env_t::__sndr_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t::__sndr_t
 {
   using sender_concept = sender_t;
   _CCCL_NO_UNIQUE_ADDRESS write_env_t __tag_;

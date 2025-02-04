@@ -69,12 +69,12 @@ using full_type_list =
 // clang-format off
 using full_type_list = c2h::type_list<
 type_quad<custom_t, custom_t, custom_t>
-#if TEST_HALF_T
+#if TEST_HALF_T()
 , type_quad<half_t> // testing half
-#endif
-#if TEST_BF_T
+#endif // TEST_HALF_T()
+#if TEST_BF_T()
 , type_quad<bfloat16_t> // testing bf16
-#endif
+#endif // TEST_BF_T()
 >;
 // clang-format on
 #endif

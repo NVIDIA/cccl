@@ -162,6 +162,12 @@ ArgPair argHandlers[] = {
      nvrtcArguments.emplace_back("-G");
      return NORMAL;
    }},
+  {// Matches -D
+   std::regex("^-D.+$"),
+   [](const std::smatch& match) {
+     nvrtcArguments.emplace_back(match[0].str());
+     return NORMAL;
+   }},
   {// Capture an argument that is just '-'. If no input file is listed input is on stdin
    std::regex("^-$"),
    [](const std::smatch& match) {

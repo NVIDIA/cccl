@@ -538,9 +538,9 @@ struct policy_hub
                              detail::default_delay_constructor_t<int>>;
   };
 
-  struct Policy350
+  struct Policy500
       : DefaultPolicy<9, 128>
-      , ChainedPolicy<350, Policy350, Policy350>
+      , ChainedPolicy<500, Policy500, Policy500>
   {};
 
   // Use values from tuning if a specialization exists, otherwise pick the default
@@ -557,7 +557,7 @@ struct policy_hub
 
   struct Policy520
       : DefaultPolicy<11, 64>
-      , ChainedPolicy<520, Policy520, Policy350>
+      , ChainedPolicy<520, Policy520, Policy500>
   {};
 
   struct Policy800 : ChainedPolicy<800, Policy800, Policy520>
@@ -581,9 +581,9 @@ struct policy_hub
 } // namespace unique_by_key
 } // namespace detail
 
-// TODO(bgruber): deprecate at some point when we have an API to pass tuning policies
 template <typename KeyInputIteratorT, typename ValueInputIteratorT = unsigned long long int*>
-using DeviceUniqueByKeyPolicy =
+using DeviceUniqueByKeyPolicy CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and it will "
+                                                      "be removed.") =
   detail::unique_by_key::policy_hub<detail::value_t<KeyInputIteratorT>, detail::value_t<ValueInputIteratorT>>;
 
 CUB_NAMESPACE_END

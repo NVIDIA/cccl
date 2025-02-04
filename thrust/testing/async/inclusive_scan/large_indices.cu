@@ -1,3 +1,7 @@
+#include <cuda/__cccl_config>
+
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 #include <thrust/detail/config.h>
 
 #if _CCCL_STD_VER >= 2014
@@ -232,3 +236,5 @@ void test_large_indices_custom_scan_op()
 DECLARE_UNITTEST(test_large_indices_custom_scan_op);
 
 #endif // C++14
+
+_CCCL_SUPPRESS_DEPRECATED_POP

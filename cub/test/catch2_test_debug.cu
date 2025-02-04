@@ -11,7 +11,7 @@ TEST_CASE("CubDebug returns input error", "[debug][utils]")
 
 TEST_CASE("CubDebug returns new errors", "[debug][utils]")
 {
-  cub::EmptyKernel<int><<<0, 0>>>();
+  cub::detail::EmptyKernel<int><<<0, 0>>>();
   cudaError error = cudaPeekAtLastError();
 
   REQUIRE(error != cudaSuccess);
@@ -20,7 +20,7 @@ TEST_CASE("CubDebug returns new errors", "[debug][utils]")
 
 TEST_CASE("CubDebug prefers input errors", "[debug][utils]")
 {
-  cub::EmptyKernel<int><<<0, 0>>>();
+  cub::detail::EmptyKernel<int><<<0, 0>>>();
   cudaError error = cudaPeekAtLastError();
 
   REQUIRE(error != cudaSuccess);
@@ -29,7 +29,7 @@ TEST_CASE("CubDebug prefers input errors", "[debug][utils]")
 
 TEST_CASE("CubDebug resets last error", "[debug][utils]")
 {
-  cub::EmptyKernel<int><<<0, 0>>>();
+  cub::detail::EmptyKernel<int><<<0, 0>>>();
   cudaError error = cudaPeekAtLastError();
 
   REQUIRE(error != cudaSuccess);

@@ -137,15 +137,12 @@ CUB_NAMESPACE_BEGIN
 //! @tparam BLOCK_DIM_Z
 //!    **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
-//! @tparam LEGACY_PTX_ARCH
-//!    <b>[optional]</b> Unused.
 template <typename T,
           int BLOCK_DIM_X,
           int ITEMS_PER_THREAD,
           bool WARP_TIME_SLICING = false,
           int BLOCK_DIM_Y        = 1,
-          int BLOCK_DIM_Z        = 1,
-          int LEGACY_PTX_ARCH    = 0>
+          int BLOCK_DIM_Z        = 1>
 class BlockExchange
 {
   static constexpr int BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z; ///< The thread block size in threads

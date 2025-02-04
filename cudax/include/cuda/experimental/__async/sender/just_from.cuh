@@ -112,7 +112,7 @@ private:
   };
 
   template <class _Fn>
-  struct __sndr_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t
   {
     using sender_concept = sender_t;
 

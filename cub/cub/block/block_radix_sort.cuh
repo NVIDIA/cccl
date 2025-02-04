@@ -238,8 +238,6 @@ CUB_NAMESPACE_BEGIN
 //! @tparam BLOCK_DIM_Z
 //!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
-//! @tparam LEGACY_PTX_ARCH
-//!   **[optional]** Unused
 template <typename KeyT,
           int BLOCK_DIM_X,
           int ITEMS_PER_THREAD,
@@ -249,8 +247,7 @@ template <typename KeyT,
           BlockScanAlgorithm INNER_SCAN_ALGORITHM = BLOCK_SCAN_WARP_SCANS,
           cudaSharedMemConfig SMEM_CONFIG         = cudaSharedMemBankSizeFourByte,
           int BLOCK_DIM_Y                         = 1,
-          int BLOCK_DIM_Z                         = 1,
-          int LEGACY_PTX_ARCH                     = 0>
+          int BLOCK_DIM_Z                         = 1>
 class BlockRadixSort
 {
 private:

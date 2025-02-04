@@ -51,14 +51,6 @@ class bad_expected_access;
 template <>
 class bad_expected_access<void> : public ::std::exception
 {
-protected:
-  _CCCL_HIDE_FROM_ABI bad_expected_access() noexcept                             = default;
-  _CCCL_HIDE_FROM_ABI bad_expected_access(const bad_expected_access&)            = default;
-  _CCCL_HIDE_FROM_ABI bad_expected_access(bad_expected_access&&)                 = default;
-  _CCCL_HIDE_FROM_ABI bad_expected_access& operator=(const bad_expected_access&) = default;
-  _CCCL_HIDE_FROM_ABI bad_expected_access& operator=(bad_expected_access&&)      = default;
-  ~bad_expected_access() noexcept override                                       = default;
-
 public:
   // The way this has been designed (by using a class template below) means that we'll already
   // have a profusion of these vtables in TUs, and the dynamic linker will already have a bunch
@@ -74,9 +66,20 @@ template <class _Err>
 class bad_expected_access : public bad_expected_access<void>
 {
 public:
-  explicit bad_expected_access(_Err __e)
+#      if _CCCL_CUDA_COMPILER(CLANG) // Clang needs this or it breaks with device only types
+  _CCCL_HOST_DEVICE
+#      endif // _CCCL_CUDA_COMPILER(CLANG)
+  _CCCL_HIDE_FROM_ABI explicit bad_expected_access(_Err __e)
       : __unex_(_CUDA_VSTD::move(__e))
   {}
+
+#      if _CCCL_CUDA_COMPILER(CLANG) // Clang needs this or it breaks with device only types
+  _CCCL_HOST_DEVICE
+#      endif // _CCCL_CUDA_COMPILER(CLANG)
+  _CCCL_HIDE_FROM_ABI ~bad_expected_access() noexcept
+  {
+    __unex_.~_Err();
+  }
 
   _LIBCUDACXX_HIDE_FROM_ABI _Err& error() & noexcept
   {

@@ -28,6 +28,7 @@
 #include <cub/device/device_radix_sort.cuh>
 #include <cub/util_arch.cuh>
 
+#include <cuda/std/functional>
 #include <cuda/std/type_traits>
 
 #include <nvbench_helper.cuh>
@@ -40,8 +41,8 @@
 
 using value_t = cub::NullType;
 
-constexpr bool is_descending   = false;
-constexpr bool is_overwrite_ok = false;
+constexpr cub::SortOrder sort_order = cub::SortOrder::Ascending;
+constexpr bool is_overwrite_ok      = false;
 
 #if !TUNE_BASE
 template <typename KeyT, typename ValueT, typename OffsetT>
@@ -104,12 +105,13 @@ constexpr std::size_t max_onesweep_temp_storage_size()
   using portion_offset  = int;
   using onesweep_policy = typename policy_hub_t<KeyT, ValueT, OffsetT>::policy_t::OnesweepPolicy;
   using agent_radix_sort_onesweep_t =
-    cub::AgentRadixSortOnesweep<onesweep_policy, is_descending, KeyT, ValueT, OffsetT, portion_offset>;
+    cub::AgentRadixSortOnesweep<onesweep_policy, sort_order, KeyT, ValueT, OffsetT, portion_offset>;
 
   using hist_policy = typename policy_hub_t<KeyT, ValueT, OffsetT>::policy_t::HistogramPolicy;
-  using hist_agent  = cub::AgentRadixSortHistogram<hist_policy, is_descending, KeyT, OffsetT>;
+  using hist_agent  = cub::AgentRadixSortHistogram<hist_policy, sort_order, KeyT, OffsetT>;
 
-  return cub::max(sizeof(typename agent_radix_sort_onesweep_t::TempStorage), sizeof(typename hist_agent::TempStorage));
+  return (::cuda::std::max)(sizeof(typename agent_radix_sort_onesweep_t::TempStorage),
+                            sizeof(typename hist_agent::TempStorage));
 }
 
 template <typename KeyT, typename ValueT, typename OffsetT>
@@ -142,9 +144,9 @@ void radix_sort_keys(std::integral_constant<bool, true>, nvbench::state& state, 
   using key_t = T;
 #if !TUNE_BASE
   using policy_t   = policy_hub_t<key_t, value_t, offset_t>;
-  using dispatch_t = cub::DispatchRadixSort<is_descending, key_t, value_t, offset_t, policy_t>;
+  using dispatch_t = cub::DispatchRadixSort<sort_order, key_t, value_t, offset_t, policy_t>;
 #else // TUNE_BASE
-  using dispatch_t = cub::DispatchRadixSort<is_descending, key_t, value_t, offset_t>;
+  using dispatch_t = cub::DispatchRadixSort<sort_order, key_t, value_t, offset_t>;
 #endif // TUNE_BASE
 
   constexpr int begin_bit = 0;
@@ -205,7 +207,7 @@ void radix_sort_keys(std::integral_constant<bool, true>, nvbench::state& state, 
 template <typename T, typename OffsetT>
 void radix_sort_keys(std::integral_constant<bool, false>, nvbench::state&, nvbench::type_list<T, OffsetT>)
 {
-  (void) is_descending;
+  (void) sort_order;
   (void) is_overwrite_ok;
 }
 

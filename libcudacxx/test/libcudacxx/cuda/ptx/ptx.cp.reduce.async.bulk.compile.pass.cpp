@@ -14,6 +14,8 @@
 #include <cuda/ptx>
 #include <cuda/std/utility>
 
+#include "nvrtc_workaround.h"
+// above header needs to be included before the generated test header
 #include "generated/cp_reduce_async_bulk.h"
 
 #ifdef _LIBCUDACXX_HAS_NVF16

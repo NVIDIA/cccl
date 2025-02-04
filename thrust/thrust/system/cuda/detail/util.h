@@ -38,7 +38,6 @@
 
 #include <cub/config.cuh>
 
-#include <cub/detail/device_synchronize.cuh>
 #include <cub/util_device.cuh>
 
 #include <thrust/iterator/iterator_traits.h>
@@ -178,7 +177,7 @@ trivial_copy_device_to_device(Policy& policy, Type* dst, Type const* src, size_t
   return status;
 }
 
-inline void _CCCL_HOST_DEVICE terminate()
+CCCL_DEPRECATED_BECAUSE("Use cuda::std::terminate() instead") inline void _CCCL_HOST_DEVICE terminate()
 {
   NV_IF_TARGET(NV_IS_HOST, (std::terminate();), (asm("trap;");));
 }
@@ -210,7 +209,7 @@ _CCCL_HOST_DEVICE inline void throw_on_error(cudaError_t status)
 
     NV_IF_TARGET(NV_IS_HOST,
                  (throw thrust::system_error(status, thrust::cuda_category());),
-                 (THRUST_TEMP_DEVICE_CODE; cuda_cub::terminate();));
+                 (THRUST_TEMP_DEVICE_CODE; ::cuda::std::terminate();));
 
 #undef THRUST_TEMP_DEVICE_CODE
   }
@@ -243,18 +242,19 @@ _CCCL_HOST_DEVICE inline void throw_on_error(cudaError_t status, char const* msg
 
     NV_IF_TARGET(NV_IS_HOST,
                  (throw thrust::system_error(status, thrust::cuda_category(), msg);),
-                 (THRUST_TEMP_DEVICE_CODE; cuda_cub::terminate();));
+                 (THRUST_TEMP_DEVICE_CODE; ::cuda::std::terminate();));
 
 #undef THRUST_TEMP_DEVICE_CODE
   }
 }
 
-// FIXME: Move the iterators elsewhere.
-
+// deprecated [Since 2.8]
 template <class ValueType, class InputIt, class UnaryOp>
-struct transform_input_iterator_t
+struct CCCL_DEPRECATED_BECAUSE("Use thrust::transform_iterator") transform_input_iterator_t
 {
-  using self_t            = transform_input_iterator_t;
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
+  using self_t = transform_input_iterator_t;
+  _CCCL_SUPPRESS_DEPRECATED_POP
   using difference_type   = typename iterator_traits<InputIt>::difference_type;
   using value_type        = ValueType;
   using pointer           = void;
@@ -358,10 +358,14 @@ struct transform_input_iterator_t
   }
 }; // struct transform_input_iterarot_t
 
+// deprecated [Since 2.8]
 template <class ValueType, class InputIt1, class InputIt2, class BinaryOp>
-struct transform_pair_of_input_iterators_t
+struct CCCL_DEPRECATED_BECAUSE("Use thrust::transform_iterator of a thrust::zip_iterator")
+  transform_pair_of_input_iterators_t
 {
-  using self_t            = transform_pair_of_input_iterators_t;
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
+  using self_t = transform_pair_of_input_iterators_t;
+  _CCCL_SUPPRESS_DEPRECATED_POP
   using difference_type   = typename iterator_traits<InputIt1>::difference_type;
   using value_type        = ValueType;
   using pointer           = void;
@@ -488,10 +492,13 @@ struct CCCL_DEPRECATED_BECAUSE("Use cuda::std::identity") identity
   }
 };
 
+// deprecated [Since 2.8]
 template <class T>
-struct counting_iterator_t
+struct CCCL_DEPRECATED_BECAUSE("Use thrust::counting_iterator") counting_iterator_t
 {
-  using self_t            = counting_iterator_t;
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
+  using self_t = counting_iterator_t;
+  _CCCL_SUPPRESS_DEPRECATED_POP
   using difference_type   = T;
   using value_type        = T;
   using pointer           = void;

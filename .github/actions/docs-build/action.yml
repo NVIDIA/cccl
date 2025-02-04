@@ -54,4 +54,4 @@ runs:
     # Upload docs as pages artifacts
     - name: Upload artifact
       if: ${{ inputs.upload_pages_artifact == 'true' }}
-      uses: actions/upload-pages-artifact@v2
+      uses: actions/upload-pages-artifact@v3

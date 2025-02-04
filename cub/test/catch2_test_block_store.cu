@@ -27,7 +27,6 @@
 
 #include <cub/block/block_store.cuh>
 #include <cub/iterator/cache_modified_output_iterator.cuh>
-#include <cub/iterator/discard_output_iterator.cuh>
 #include <cub/util_allocator.cuh>
 #include <cub/util_arch.cuh>
 

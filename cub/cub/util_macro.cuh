@@ -49,52 +49,40 @@
 
 CUB_NAMESPACE_BEGIN
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-#  define CUB_PREVENT_MACRO_SUBSTITUTION
-template <typename T, typename U>
-constexpr _CCCL_HOST_DEVICE auto min CUB_PREVENT_MACRO_SUBSTITUTION(T&& t, U&& u)
-  -> decltype(t < u ? ::cuda::std::forward<T>(t) : ::cuda::std::forward<U>(u))
-{
-  return t < u ? ::cuda::std::forward<T>(t) : ::cuda::std::forward<U>(u);
-}
-
-template <typename T, typename U>
-constexpr _CCCL_HOST_DEVICE auto max CUB_PREVENT_MACRO_SUBSTITUTION(T&& t, U&& u)
-  -> decltype(t < u ? ::cuda::std::forward<U>(u) : ::cuda::std::forward<T>(t))
-{
-  return t < u ? ::cuda::std::forward<U>(u) : ::cuda::std::forward<T>(t);
-}
-#  undef CUB_PREVENT_MACRO_SUBSTITUTION
-#endif
-
 #ifndef CUB_MAX
 /// Select maximum(a, b)
+/// Deprecated since [2.8]
 #  define CUB_MAX(a, b) (((b) > (a)) ? (b) : (a))
 #endif
 
 #ifndef CUB_MIN
 /// Select minimum(a, b)
+/// Deprecated since [2.8]
 #  define CUB_MIN(a, b) (((b) < (a)) ? (b) : (a))
 #endif
 
 #ifndef CUB_QUOTIENT_FLOOR
 /// Quotient of x/y rounded down to nearest integer
+/// Deprecated since [2.8]
 #  define CUB_QUOTIENT_FLOOR(x, y) ((x) / (y))
 #endif
 
 #ifndef CUB_QUOTIENT_CEILING
 /// Quotient of x/y rounded up to nearest integer
+/// Deprecated since [2.8]
 // FIXME(bgruber): the following computation can overflow, use cuda::ceil_div instead
 #  define CUB_QUOTIENT_CEILING(x, y) (((x) + (y) - 1) / (y))
 #endif
 
 #ifndef CUB_ROUND_UP_NEAREST
 /// x rounded up to the nearest multiple of y
+/// Deprecated since [2.8]
 #  define CUB_ROUND_UP_NEAREST(x, y) (CUB_QUOTIENT_CEILING(x, y) * y)
 #endif
 
 #ifndef CUB_ROUND_DOWN_NEAREST
 /// x rounded down to the nearest multiple of y
+/// Deprecated since [2.8]
 #  define CUB_ROUND_DOWN_NEAREST(x, y) (((x) / (y)) * y)
 #endif
 

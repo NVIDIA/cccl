@@ -20,23 +20,21 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_valid_expansion.h>
 #include <cuda/std/__utility/declval.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class _Func, class... _Args, class = decltype(_CUDA_VSTD::declval<_Func>()(_CUDA_VSTD::declval<_Args>()...))>
-_LIBCUDACXX_HIDE_FROM_ABI true_type __is_callable_helper(int);
-template <class...>
-_LIBCUDACXX_HIDE_FROM_ABI false_type __is_callable_helper(...);
+template <class _Func, class... _Args>
+using __call_result_t = decltype(_CUDA_VSTD::declval<_Func>()(_CUDA_VSTD::declval<_Args>()...));
 
 template <class _Func, class... _Args>
-struct __is_callable : decltype(__is_callable_helper<_Func, _Args...>(0))
+struct __is_callable : _IsValidExpansion<__call_result_t, _Func, _Args...>
 {};
 
 #ifndef _CCCL_NO_VARIABLE_TEMPLATES
 template <class _Func, class... _Args>
-_CCCL_INLINE_VAR constexpr bool __is_callable_v = decltype(__is_callable_helper<_Func, _Args...>(0))::value;
+_CCCL_INLINE_VAR constexpr bool __is_callable_v = _IsValidExpansion<__call_result_t, _Func, _Args...>::value;
 #endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD

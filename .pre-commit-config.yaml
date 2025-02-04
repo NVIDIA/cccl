@@ -43,6 +43,17 @@ repos:
     hooks:
     - id: ruff  # linter
     - id: ruff-format  # formatter
+
+  # TOML lint & format
+  - repo: https://github.com/ComPWA/taplo-pre-commit
+    rev: v0.9.3
+    hooks:
+      # See https://github.com/NVIDIA/cccl/issues/3426
+      # - id: taplo-lint
+      #   exclude: "^docs/"
+      - id: taplo-format
+        exclude: "^docs/"
+
   - repo: https://github.com/codespell-project/codespell
     rev: v2.3.0
     hooks:

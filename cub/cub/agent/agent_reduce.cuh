@@ -95,6 +95,11 @@ struct AgentReducePolicy : ScalingType
  * Thread block abstractions
  ******************************************************************************/
 
+namespace detail
+{
+namespace reduce
+{
+
 /**
  * @brief AgentReduce implements a stateful abstraction of CUDA thread blocks
  *        for participating in device-wide reduction .
@@ -136,7 +141,7 @@ struct AgentReduce
   //---------------------------------------------------------------------
 
   /// The input value type
-  using InputT = cub::detail::value_t<InputIteratorT>;
+  using InputT = value_t<InputIteratorT>;
 
   /// Vector type of InputT for data movement
   using VectorT = typename CubVector<InputT, AgentReducePolicy::VECTOR_LOAD_LENGTH>::Type;
@@ -249,8 +254,7 @@ struct AgentReduce
     AccumT items[ITEMS_PER_THREAD];
 
     // Load items in striped fashion
-    cub::detail::load_transform_direct_striped<BLOCK_THREADS>(
-      threadIdx.x, d_wrapped_in + block_offset, items, transform_op);
+    load_transform_direct_striped<BLOCK_THREADS>(threadIdx.x, d_wrapped_in + block_offset, items, transform_op);
 
     // Reduce items within each thread stripe
     thread_aggregate = (IS_FIRST_TILE) ? cub::ThreadReduce(items, reduction_op)
@@ -444,5 +448,19 @@ private:
     }
   }
 };
+
+} // namespace reduce
+} // namespace detail
+
+template <typename AgentReducePolicy,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename OffsetT,
+          typename ReductionOp,
+          typename AccumT,
+          typename TransformOp = ::cuda::std::__identity>
+using AgentReduce CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public interface "
+                                          "will be removed.") = detail::reduce::
+  AgentReduce<AgentReducePolicy, InputIteratorT, OutputIteratorT, OffsetT, ReductionOp, AccumT, TransformOp>;
 
 CUB_NAMESPACE_END

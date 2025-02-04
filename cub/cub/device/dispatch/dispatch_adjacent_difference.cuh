@@ -39,6 +39,7 @@
 
 #include <cub/agent/agent_adjacent_difference.cuh>
 #include <cub/detail/type_traits.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_adjacent_difference.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
@@ -50,6 +51,9 @@
 #include <iterator>
 
 CUB_NAMESPACE_BEGIN
+
+namespace detail::adjacent_difference
+{
 
 template <typename AgentDifferenceInitT, typename InputIteratorT, typename InputT, typename OffsetT>
 CUB_DETAIL_KERNEL_ATTRIBUTES void
@@ -78,7 +82,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceDifferenceKernel(
 
   // It is OK to introspect the return type or parameter types of the
   // `operator()` function of `__device__` extended lambda within device code.
-  using OutputT = detail::invoke_result_t<DifferenceOpT, InputT, InputT>;
+  using OutputT = invoke_result_t<DifferenceOpT, InputT, InputT>;
 
   using Agent =
     AgentDifference<ActivePolicyT,
@@ -101,13 +105,21 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceDifferenceKernel(
   agent.Process(tile_idx, tile_base);
 }
 
+} // namespace detail::adjacent_difference
+
+enum class ReadOption
+{
+  Left,
+  Right
+};
+
 template <typename InputIteratorT,
           typename OutputIteratorT,
           typename DifferenceOpT,
           typename OffsetT,
-          bool MayAlias,
-          bool ReadLeft,
-          typename PolicyHub = detail::adjacent_difference::policy_hub<InputIteratorT, MayAlias>>
+          MayAlias AliasOpt,
+          ReadOption ReadOpt,
+          typename PolicyHub = detail::adjacent_difference::policy_hub<InputIteratorT, AliasOpt == MayAlias::Yes>>
 struct DispatchAdjacentDifference
 {
   using InputT = typename std::iterator_traits<InputIteratorT>::value_type;
@@ -150,10 +162,10 @@ struct DispatchAdjacentDifference
       constexpr int tile_size = AdjacentDifferencePolicyT::ITEMS_PER_TILE;
       const int num_tiles     = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
 
-      std::size_t first_tile_previous_size = MayAlias * num_tiles * sizeof(InputT);
+      std::size_t first_tile_previous_size = (AliasOpt == MayAlias::Yes) * num_tiles * sizeof(InputT);
 
       void* allocations[1]            = {nullptr};
-      std::size_t allocation_sizes[1] = {MayAlias * first_tile_previous_size};
+      std::size_t allocation_sizes[1] = {(AliasOpt == MayAlias::Yes) * first_tile_previous_size};
 
       error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
 
@@ -182,23 +194,25 @@ struct DispatchAdjacentDifference
 
       auto first_tile_previous = reinterpret_cast<InputT*>(allocations[0]);
 
-      if (MayAlias)
+      _CCCL_IF_CONSTEXPR (AliasOpt == MayAlias::Yes)
       {
-        using AgentDifferenceInitT = AgentDifferenceInit<InputIteratorT, InputT, OffsetT, ReadLeft>;
+        using AgentDifferenceInitT =
+          detail::adjacent_difference::AgentDifferenceInit<InputIteratorT, InputT, OffsetT, ReadOpt == ReadOption::Left>;
 
         constexpr int init_block_size = AgentDifferenceInitT::BLOCK_THREADS;
         const int init_grid_size      = ::cuda::ceil_div(num_tiles, init_block_size);
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
         _CubLog("Invoking DeviceAdjacentDifferenceInitKernel"
                 "<<<%d, %d, 0, %lld>>>()\n",
                 init_grid_size,
                 init_block_size,
                 reinterpret_cast<long long>(stream));
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
-        THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size, init_block_size, 0, stream)
-          .doit(DeviceAdjacentDifferenceInitKernel<AgentDifferenceInitT, InputIteratorT, InputT, OffsetT>,
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_block_size, 0, stream)
+          .doit(detail::adjacent_difference::
+                  DeviceAdjacentDifferenceInitKernel<AgentDifferenceInitT, InputIteratorT, InputT, OffsetT>,
                 d_input,
                 first_tile_previous,
                 num_tiles,
@@ -219,25 +233,24 @@ struct DispatchAdjacentDifference
         }
       }
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking DeviceAdjacentDifferenceDifferenceKernel"
               "<<<%d, %d, 0, %lld>>>()\n",
               num_tiles,
               AdjacentDifferencePolicyT::BLOCK_THREADS,
               reinterpret_cast<long long>(stream));
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
         num_tiles, AdjacentDifferencePolicyT::BLOCK_THREADS, 0, stream)
-        .doit(DeviceAdjacentDifferenceDifferenceKernel<
-                typename PolicyHub::MaxPolicy,
-                InputIteratorT,
-                OutputIteratorT,
-                DifferenceOpT,
-                OffsetT,
-                InputT,
-                MayAlias,
-                ReadLeft>,
+        .doit(detail::adjacent_difference::DeviceAdjacentDifferenceDifferenceKernel < typename PolicyHub::MaxPolicy,
+              InputIteratorT,
+              OutputIteratorT,
+              DifferenceOpT,
+              OffsetT,
+              InputT,
+              AliasOpt == MayAlias::Yes,
+              ReadOpt == ReadOption::Left >,
               d_input,
               first_tile_previous,
               d_output,

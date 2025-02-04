@@ -121,20 +121,20 @@ template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename
 struct RegBoundScaling
 {
   static constexpr int ITEMS_PER_THREAD =
-    ::cuda::std::max(1, Nominal4ByteItemsPerThread * 4 / ::cuda::std::max(4, int{sizeof(T)}));
-  static constexpr int BLOCK_THREADS =
-    ::cuda::std::min(Nominal4ByteBlockThreads,
-                     ::cuda::ceil_div(int{detail::max_smem_per_block} / (int{sizeof(T)} * ITEMS_PER_THREAD), 32) * 32);
+    (::cuda::std::max)(1, Nominal4ByteItemsPerThread * 4 / (::cuda::std::max)(4, int{sizeof(T)}));
+  static constexpr int BLOCK_THREADS = (::cuda::std::min)(
+    Nominal4ByteBlockThreads,
+    ::cuda::ceil_div(int{detail::max_smem_per_block} / (int{sizeof(T)} * ITEMS_PER_THREAD), 32) * 32);
 };
 
 template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename T>
 struct MemBoundScaling
 {
-  static constexpr int ITEMS_PER_THREAD = ::cuda::std::max(
-    1, ::cuda::std::min(Nominal4ByteItemsPerThread * 4 / int{sizeof(T)}, Nominal4ByteItemsPerThread * 2));
-  static constexpr int BLOCK_THREADS =
-    ::cuda::std::min(Nominal4ByteBlockThreads,
-                     ::cuda::ceil_div(int{detail::max_smem_per_block} / (int{sizeof(T)} * ITEMS_PER_THREAD), 32) * 32);
+  static constexpr int ITEMS_PER_THREAD = (::cuda::std::max)(
+    1, (::cuda::std::min)(Nominal4ByteItemsPerThread * 4 / int{sizeof(T)}, Nominal4ByteItemsPerThread * 2));
+  static constexpr int BLOCK_THREADS = (::cuda::std::min)(
+    Nominal4ByteBlockThreads,
+    ::cuda::ceil_div(int{detail::max_smem_per_block} / (int{sizeof(T)} * ITEMS_PER_THREAD), 32) * 32);
 };
 
 #endif // Do not document

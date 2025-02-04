@@ -176,7 +176,6 @@ using ::cuda::std::bit_xor;
 template <typename T = void>
 struct identity
 {
-  // FIXME(bgruber): we cannot remove this yet, because transform_iterator depends on it
   using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
 
   _CCCL_EXEC_CHECK_DISABLE

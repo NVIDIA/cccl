@@ -49,6 +49,7 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_type.cuh>
@@ -123,6 +124,9 @@ struct AgentSelectIfPolicy
 
 namespace detail
 {
+namespace select
+{
+
 template <typename SelectedOutputItT, typename RejectedOutputItT>
 struct partition_distinct_output_t
 {
@@ -132,7 +136,6 @@ struct partition_distinct_output_t
   selected_iterator_t selected_it;
   rejected_iterator_t rejected_it;
 };
-} // namespace detail
 
 /**
  * @brief AgentSelectIf implements a stateful abstraction of CUDA thread blocks for participating in
@@ -175,8 +178,9 @@ struct partition_distinct_output_t
  *    num_total_items() -> total number of items across all partitions (partition only)
  *    update_num_selected(d_num_sel_out, num_selected) -> invoked by last CTA with number of selected
  *
- * @tparam KeepRejects
- *   Whether or not we push rejected items to the back of the output
+ * @tparam SelectImpl SelectionOpt
+ *   SelectImpl indicating whether to partition, just selection or selection where the memory for the input and
+ *   output may alias each other.
  */
 template <typename AgentSelectIfPolicyT,
           typename InputIteratorT,
@@ -186,8 +190,7 @@ template <typename AgentSelectIfPolicyT,
           typename EqualityOpT,
           typename OffsetT,
           typename StreamingContextT,
-          bool KeepRejects,
-          bool MayAlias>
+          SelectImpl SelectionOpt>
 struct AgentSelectIf
 {
   //---------------------------------------------------------------------
@@ -206,17 +209,19 @@ struct AgentSelectIf
   // updating a tile state. Similarly, we need to make sure that the load of previous tile states precede writing of
   // the stream-compacted items and, hence, we need a load acquire when reading those tile states.
   static constexpr MemoryOrder memory_order =
-    ((!KeepRejects) && MayAlias && (!loads_via_smem)) ? MemoryOrder::acquire_release : MemoryOrder::relaxed;
+    ((SelectionOpt == SelectImpl::SelectPotentiallyInPlace) && (!loads_via_smem))
+      ? MemoryOrder::acquire_release
+      : MemoryOrder::relaxed;
 
   // If we need to enforce memory order for in-place stream compaction, wrap the default decoupled look-back tile
   // state in a helper class that enforces memory order on reads and writes
-  using MemoryOrderedTileStateT = detail::tile_state_with_memory_order<ScanTileStateT, memory_order>;
+  using MemoryOrderedTileStateT = tile_state_with_memory_order<ScanTileStateT, memory_order>;
 
   // The input value type
-  using InputT = cub::detail::value_t<InputIteratorT>;
+  using InputT = value_t<InputIteratorT>;
 
   // The flag value type
-  using FlagT = cub::detail::value_t<FlagsInputIteratorT>;
+  using FlagT = value_t<FlagsInputIteratorT>;
 
   // Constants
   enum
@@ -272,7 +277,7 @@ struct AgentSelectIf
   // Callback type for obtaining tile prefix during block scan
   using DelayConstructorT = typename AgentSelectIfPolicyT::detail::delay_constructor_t;
   using TilePrefixCallbackOpT =
-    TilePrefixCallbackOp<OffsetT, ::cuda::std::plus<>, MemoryOrderedTileStateT, 0, DelayConstructorT>;
+    TilePrefixCallbackOp<OffsetT, ::cuda::std::plus<>, MemoryOrderedTileStateT, DelayConstructorT>;
 
   // Item exchange type
   using ItemExchangeT = InputT[TILE_ITEMS];
@@ -702,7 +707,7 @@ struct AgentSelectIf
     int tile_num_rejections,
     OffsetT num_selections_prefix,
     OffsetT num_rejected_prefix,
-    detail::partition_distinct_output_t<SelectedItT, RejectedItT> partitioned_out_wrapper)
+    partition_distinct_output_t<SelectedItT, RejectedItT> partitioned_out_wrapper)
   {
     auto selected_out_it = partitioned_out_wrapper.selected_it + streaming_context.num_previously_selected();
     auto rejected_out_it = partitioned_out_wrapper.rejected_it + streaming_context.num_previously_rejected();
@@ -845,7 +850,7 @@ struct AgentSelectIf
       0,
       0,
       num_tile_selections,
-      cub::Int2Type<KeepRejects>{});
+      cub::Int2Type < SelectionOpt == SelectImpl::Partition > {});
 
     return num_tile_selections;
   }
@@ -928,7 +933,7 @@ struct AgentSelectIf
       num_selections_prefix,
       num_rejected_prefix,
       num_selections,
-      cub::Int2Type<KeepRejects>{});
+      cub::Int2Type < SelectionOpt == SelectImpl::Partition > {});
 
     return num_selections;
   }
@@ -1013,5 +1018,8 @@ struct AgentSelectIf
     }
   }
 };
+
+} // namespace select
+} // namespace detail
 
 CUB_NAMESPACE_END

@@ -189,9 +189,9 @@ inline const ::std::vector<device>& all_devices::__devices()
 //! * device_ref
 inline constexpr detail::all_devices devices{};
 
-inline const arch_traits_t& device_ref::arch_traits() const
+inline const arch_traits_t& device_ref::get_arch_traits() const
 {
-  return devices[get()].arch_traits();
+  return devices[get()].get_arch_traits();
 }
 
 _CCCL_NODISCARD inline ::std::vector<device_ref> device_ref::get_peers() const

@@ -22,14 +22,14 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
+#if _CCCL_HAS_CUDA_COMPILER
 
-template <int __n>
-using n32_t = _CUDA_VSTD::integral_constant<int, __n>;
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
 /*************************************************************
  *
@@ -103,9 +103,9 @@ inline _CCCL_DEVICE _Tp* __from_ptr_gmem(_CUDA_VSTD::size_t __ptr)
 template <typename _Tp>
 inline _CCCL_DEVICE _CUDA_VSTD::uint32_t __as_b32(_Tp __val)
 {
-#if _CCCL_STD_VER >= 2017
+#  if _CCCL_STD_VER >= 2017
   static_assert(sizeof(_Tp) == 4, "");
-#endif // _CCCL_STD_VER >= 2017
+#  endif // _CCCL_STD_VER >= 2017
   // Consider using std::bitcast
   return *reinterpret_cast<_CUDA_VSTD::uint32_t*>(&__val);
 }
@@ -113,13 +113,15 @@ inline _CCCL_DEVICE _CUDA_VSTD::uint32_t __as_b32(_Tp __val)
 template <typename _Tp>
 inline _CCCL_DEVICE _CUDA_VSTD::uint64_t __as_b64(_Tp __val)
 {
-#if _CCCL_STD_VER >= 2017
+#  if _CCCL_STD_VER >= 2017
   static_assert(sizeof(_Tp) == 8, "");
-#endif // _CCCL_STD_VER >= 2017
+#  endif // _CCCL_STD_VER >= 2017
   // Consider using std::bitcast
   return *reinterpret_cast<_CUDA_VSTD::uint64_t*>(&__val);
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
+
+#endif // _CCCL_HAS_CUDA_COMPILER
 
 #endif // _CUDA_PTX_HELPER_FUNCTIONS_H_

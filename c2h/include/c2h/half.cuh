@@ -37,6 +37,7 @@
 
 #include <cub/util_type.cuh>
 
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
 #include <cstdint>
@@ -327,19 +328,36 @@ inline std::ostream& operator<<(std::ostream& out, const __half& x)
  * Traits overloads
  ******************************************************************************/
 
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <>
-struct CUB_NS_QUALIFIER::FpLimits<half_t>
+struct __is_extended_floating_point<half_t> : true_type
+{};
+
+#ifndef _CCCL_NO_VARIABLE_TEMPLATES
+template <>
+_CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v<half_t> = true;
+#endif // _CCCL_NO_VARIABLE_TEMPLATES
+
+template <>
+class __numeric_limits_impl<half_t, __numeric_limits_type::__floating_point>
 {
-  static __host__ __device__ __forceinline__ half_t Max()
+public:
+  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE half_t max()
   {
-    return (half_t::max)();
+    return half_t(numeric_limits<__half>::max());
   }
 
-  static __host__ __device__ __forceinline__ half_t Lowest()
+  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE half_t min()
   {
-    return half_t::lowest();
+    return half_t(numeric_limits<__half>::min());
+  }
+
+  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE half_t lowest()
+  {
+    return half_t(numeric_limits<__half>::lowest());
   }
 };
+_LIBCUDACXX_END_NAMESPACE_STD
 
 template <>
 struct CUB_NS_QUALIFIER::NumericTraits<half_t>

@@ -37,10 +37,10 @@
 #include <thrust/system/detail/adl/iter_swap.h>
 #include <thrust/system/detail/generic/memory.h>
 #include <thrust/system/detail/generic/select_system.h>
-#include <thrust/type_traits/remove_cvref.h>
+
+#include <cuda/std/type_traits>
 
 #include <ostream>
-#include <type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -61,7 +61,7 @@ private:
 
 public:
   using pointer    = Pointer;
-  using value_type = typename thrust::remove_cvref<Element>::type;
+  using value_type = ::cuda::std::remove_cvref_t<Element>;
 
   reference(reference const&) = default;
 

@@ -10,11 +10,9 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDACC_AT_LEAST(12)
+#include <cuda.h>
 
-#  include <cuda.h>
-
-#  include <cub/util_device.cuh>
+#include <cub/util_device.cuh>
 
 CUB_NAMESPACE_BEGIN
 
@@ -85,5 +83,3 @@ struct CudaDriverLauncherFactory
 } // namespace detail
 
 CUB_NAMESPACE_END
-
-#endif // _CCCL_CUDACC_AT_LEAST(0)

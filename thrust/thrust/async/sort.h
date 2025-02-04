@@ -38,7 +38,8 @@
 #  include <thrust/system/detail/adl/async/sort.h>
 #  include <thrust/type_traits/is_execution_policy.h>
 #  include <thrust/type_traits/logical_metafunctions.h>
-#  include <thrust/type_traits/remove_cvref.h>
+
+#  include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -51,6 +52,7 @@ namespace async
 namespace unimplemented
 {
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename StrictWeakOrdering>
 CCCL_DEPRECATED _CCCL_HOST event<DerivedPolicy>
 async_stable_sort(thrust::execution_policy<DerivedPolicy>&, ForwardIt, Sentinel, StrictWeakOrdering)
@@ -59,6 +61,7 @@ async_stable_sort(thrust::execution_policy<DerivedPolicy>&, ForwardIt, Sentinel,
                            "this algorithm is not implemented for the specified system");
   return {};
 }
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 } // namespace unimplemented
 
@@ -107,7 +110,7 @@ struct stable_sort_fn final
       thrust::detail::derived_cast(thrust::detail::strip_const(exec))
     , THRUST_FWD(first), THRUST_FWD(last)
     , thrust::less<
-        typename iterator_traits<remove_cvref_t<ForwardIt>>::value_type
+        typename iterator_traits<::cuda::std::remove_cvref_t<ForwardIt>>::value_type
       >{}
     )
   )
@@ -119,7 +122,7 @@ struct stable_sort_fn final
   THRUST_RETURNS(
     stable_sort_fn::call(
       thrust::detail::select_system(
-        typename iterator_system<remove_cvref_t<ForwardIt>>::type{}
+        typename iterator_system<::cuda::std::remove_cvref_t<ForwardIt>>::type{}
       )
     , THRUST_FWD(first), THRUST_FWD(last)
     , THRUST_FWD(comp)
@@ -133,7 +136,7 @@ struct stable_sort_fn final
     stable_sort_fn::call(
       THRUST_FWD(first), THRUST_FWD(last)
     , thrust::less<
-        typename iterator_traits<remove_cvref_t<ForwardIt>>::value_type
+        typename iterator_traits<::cuda::std::remove_cvref_t<ForwardIt>>::value_type
       >{}
     )
   )
@@ -160,12 +163,14 @@ _CCCL_GLOBAL_CONSTANT stable_sort_detail::stable_sort_fn stable_sort{};
 namespace fallback
 {
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename StrictWeakOrdering>
 CCCL_DEPRECATED _CCCL_HOST event<DerivedPolicy>
 async_sort(thrust::execution_policy<DerivedPolicy>& exec, ForwardIt&& first, Sentinel&& last, StrictWeakOrdering&& comp)
 {
   return async_stable_sort(thrust::detail::derived_cast(exec), THRUST_FWD(first), THRUST_FWD(last), THRUST_FWD(comp));
 }
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 } // namespace fallback
 
@@ -213,7 +218,7 @@ struct sort_fn final
       exec
     , THRUST_FWD(first), THRUST_FWD(last)
     , thrust::less<
-        typename iterator_traits<remove_cvref_t<ForwardIt>>::value_type
+        typename iterator_traits<::cuda::std::remove_cvref_t<ForwardIt>>::value_type
       >{}
     )
   )
@@ -226,7 +231,7 @@ struct sort_fn final
   THRUST_RETURNS(
     sort_fn::call(
       thrust::detail::select_system(
-        typename iterator_system<remove_cvref_t<ForwardIt>>::type{}
+        typename iterator_system<::cuda::std::remove_cvref_t<ForwardIt>>::type{}
       )
     , THRUST_FWD(first), THRUST_FWD(last)
     , THRUST_FWD(comp)
@@ -241,7 +246,7 @@ struct sort_fn final
   static auto call(T1&& t1, T2&& t2, T3&& t3)
   THRUST_RETURNS(
     sort_fn::call3(THRUST_FWD(t1), THRUST_FWD(t2), THRUST_FWD(t3),
-                   thrust::is_execution_policy<thrust::remove_cvref_t<T1>>{})
+                   thrust::is_execution_policy<::cuda::std::remove_cvref_t<T1>>{})
   )
 
   template <typename ForwardIt, typename Sentinel>
@@ -250,11 +255,11 @@ struct sort_fn final
   THRUST_RETURNS(
     sort_fn::call(
       thrust::detail::select_system(
-        typename iterator_system<remove_cvref_t<ForwardIt>>::type{}
+        typename iterator_system<::cuda::std::remove_cvref_t<ForwardIt>>::type{}
       )
     , THRUST_FWD(first), THRUST_FWD(last)
     , thrust::less<
-        typename iterator_traits<remove_cvref_t<ForwardIt>>::value_type
+        typename iterator_traits<::cuda::std::remove_cvref_t<ForwardIt>>::value_type
       >{}
     )
   )

@@ -43,7 +43,7 @@ public:
 
   // We might want to make this private depending on how this type ends up looking like long term,
   // not documenting it for now
-  _CCCL_NODISCARD constexpr CUcontext context() const noexcept
+  _CCCL_NODISCARD constexpr CUcontext get_context() const noexcept
   {
     return __ctx;
   }
@@ -67,7 +67,7 @@ public:
   explicit logical_device(int __id)
       : __dev_id(__id)
       , __kind(kinds::device)
-      , __ctx(devices[__id].primary_context())
+      , __ctx(devices[__id].get_primary_context())
   {}
 
   //! @brief Construct logical_device from a device_ref
@@ -83,7 +83,7 @@ public:
   logical_device(const ::cuda::experimental::device& __dev)
       : __dev_id(__dev.get())
       , __kind(kinds::device)
-      , __ctx(__dev.primary_context())
+      , __ctx(__dev.get_primary_context())
   {}
 
 #if CUDART_VERSION >= 12050

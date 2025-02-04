@@ -11,6 +11,7 @@
 #ifndef _CUDAX__HIERARCHY_DIMENSIONS
 #define _CUDAX__HIERARCHY_DIMENSIONS
 
+#include <cuda/std/functional>
 #include <cuda/std/mdspan>
 
 #if _CCCL_STD_VER >= 2017

@@ -10,6 +10,7 @@ Numerics Library
    numerics_library/bit
    numerics_library/complex
    numerics_library/numeric
+   numerics_library/linalg
 
 Any Standard C++ header not listed below is omitted.
 

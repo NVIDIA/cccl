@@ -1,3 +1,7 @@
+#include <cuda/__cccl_config>
+
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 #include <thrust/detail/config.h>
 
 #if _CCCL_STD_VER >= 2014
@@ -29,7 +33,7 @@ struct adl_host_synchronous
     thrust::host_vector<input_value_type> host_input(input.cbegin(), input.cend());
     thrust::host_vector<output_value_type> host_output(host_input.size());
 
-    using OutIter = thrust::remove_cvref_t<decltype(host_output.begin())>;
+    using OutIter = cuda::std::remove_cvref_t<decltype(host_output.begin())>;
 
     // ADL should resolve this to the synchronous `thrust::` algorithm.
     // This is checked by ensuring that the call returns an output iterator.
@@ -166,3 +170,5 @@ void test_using_cpo()
 DECLARE_UNITTEST(test_using_cpo);
 
 #endif // C++14
+
+_CCCL_SUPPRESS_DEPRECATED_POP

@@ -1,3 +1,7 @@
+#include <cuda/__cccl_config>
+
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 #include <thrust/detail/config.h>
 
 #if _CCCL_STD_VER >= 2014
@@ -52,3 +56,5 @@ struct test_large_types
 DECLARE_UNITTEST(test_large_types);
 
 #endif // C++14
+
+_CCCL_SUPPRESS_DEPRECATED_POP

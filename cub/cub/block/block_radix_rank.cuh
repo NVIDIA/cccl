@@ -204,8 +204,6 @@ struct warp_in_block_matcher_t<Bits, 0, PartialWarpId>
 //! @tparam BLOCK_DIM_Z
 //!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
-//! @tparam LEGACY_PTX_ARCH
-//!   **[optional]** Unused.
 template <int BLOCK_DIM_X,
           int RADIX_BITS,
           bool IS_DESCENDING,
@@ -213,8 +211,7 @@ template <int BLOCK_DIM_X,
           BlockScanAlgorithm INNER_SCAN_ALGORITHM = BLOCK_SCAN_WARP_SCANS,
           cudaSharedMemConfig SMEM_CONFIG         = cudaSharedMemBankSizeFourByte,
           int BLOCK_DIM_Y                         = 1,
-          int BLOCK_DIM_Z                         = 1,
-          int LEGACY_PTX_ARCH                     = 0>
+          int BLOCK_DIM_Z                         = 1>
 class BlockRadixRank
 {
 private:
@@ -560,8 +557,7 @@ template <int BLOCK_DIM_X,
           bool IS_DESCENDING,
           BlockScanAlgorithm INNER_SCAN_ALGORITHM = BLOCK_SCAN_WARP_SCANS,
           int BLOCK_DIM_Y                         = 1,
-          int BLOCK_DIM_Z                         = 1,
-          int LEGACY_PTX_ARCH                     = 0>
+          int BLOCK_DIM_Z                         = 1>
 class BlockRadixRankMatch
 {
 private:
