@@ -14,6 +14,9 @@
 #  pragma system_header
 #endif // no system header
 
+// TODO: backport to C++17
+#if __cplusplus >= 202002L
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 namespace experimental {
@@ -199,5 +202,7 @@ _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void try_cancel_blocks(bool __is_leader, __Unar
 } // namespace experimental
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#endif // c++20
 
 #endif // _CUDA_TRY_CANCEL
