@@ -568,25 +568,20 @@ CUB_RUNTIME_FUNCTION PolicyWrapper<PolicyT> MakePolicyWrapper(PolicyT policy)
 
 namespace detail
 {
+
 struct TripleChevronFactory;
-}
 
 /**
  * Kernel dispatch configuration
  */
 struct KernelConfig
 {
-  int block_threads;
-  int items_per_thread;
-  int tile_size;
-  int sm_occupancy;
+  int block_threads{0};
+  int items_per_thread{0};
+  int tile_size{0};
+  int sm_occupancy{0};
 
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE KernelConfig()
-      : block_threads(0)
-      , items_per_thread(0)
-      , tile_size(0)
-      , sm_occupancy(0)
-  {}
+  _CCCL_VISIBILITY_HIDDEN explicit KernelConfig() noexcept = default;
 
   template <typename AgentPolicyT, typename KernelPtrT, typename LauncherFactory = detail::TripleChevronFactory>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
@@ -598,6 +593,10 @@ struct KernelConfig
     return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, block_threads);
   }
 };
+
+} // namespace detail
+
+using KernelConfig CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail") = detail::KernelConfig;
 
 /// Helper for dispatching into a policy chain
 template <int PolicyPtxVersion, typename PolicyT, typename PrevPolicyT>
