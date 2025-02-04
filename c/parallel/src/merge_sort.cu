@@ -124,6 +124,10 @@ merge_sort_runtime_tuning_policy get_policy(int cc, int key_size)
   merge_sort_tuning_t chain[] = {
     {60, 256, nominal_4b_items_to_items(17, key_size)}, {35, 256, nominal_4b_items_to_items(11, key_size)}};
   auto [_, block_size, items_per_thread] = find_tuning(cc, chain);
+  // TODO: we hardcode this value in order to make sure that the merge_sort test does not fail due to the memory op
+  // assertions. This currently happens when we pass in items and keys of type uint8_t or int16_t. This will be fixed
+  // after https://github.com/NVIDIA/cccl/issues/3570 is resolved.
+  items_per_thread = 4;
 
   return {block_size, items_per_thread, block_size * items_per_thread};
 }

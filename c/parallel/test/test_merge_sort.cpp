@@ -10,13 +10,13 @@
 
 #include <cuda_runtime.h>
 
-#include <cstdint>
 #include <vector>
 
 #include "test_util.h"
 #include <cccl/c/merge_sort.h>
 
-using key_types = std::tuple<std::uint8_t, std::int16_t, std::uint32_t, double>;
+using key_types = std::tuple<uint8_t, int16_t, uint32_t, double>;
+using item_t    = float;
 
 void merge_sort(cccl_iterator_t input_keys,
                 cccl_iterator_t input_items,
@@ -108,4 +108,58 @@ TEMPLATE_LIST_TEST_CASE("DeviceMergeSort::SortKeysCopy works", "[merge_sort]", k
 
   std::sort(expected_keys.begin(), expected_keys.end());
   REQUIRE(expected_keys == std::vector<TestType>(output_keys_it));
+}
+
+TEMPLATE_LIST_TEST_CASE("DeviceMergeSort::SortPairs works", "[merge_sort]", key_types)
+{
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
+
+  operation_t op                   = make_operation("op", get_merge_sort_op(get_type_info<TestType>().type));
+  std::vector<TestType> input_keys = make_shuffled_key_ranks_vector<TestType>(num_items);
+  std::vector<item_t> input_items(num_items);
+  std::transform(input_keys.begin(), input_keys.end(), input_items.begin(), [](TestType key) {
+    return static_cast<item_t>(key);
+  });
+  std::vector<TestType> expected_keys = input_keys;
+  std::vector<item_t> expected_items  = input_items;
+
+  pointer_t<TestType> input_keys_it(input_keys);
+  pointer_t<item_t> input_items_it(input_items);
+  pointer_t<TestType> output_keys_it(input_keys);
+  pointer_t<item_t> output_items_it(input_items);
+
+  merge_sort(input_keys_it, input_items_it, output_keys_it, output_items_it, num_items, op);
+
+  std::sort(expected_keys.begin(), expected_keys.end());
+  std::sort(expected_items.begin(), expected_items.end());
+  REQUIRE(expected_keys == std::vector<TestType>(output_keys_it));
+  REQUIRE(expected_items == std::vector<item_t>(output_items_it));
+}
+
+TEMPLATE_LIST_TEST_CASE("DeviceMergeSort::SortPairsCopy works ", "[merge_sort]", key_types)
+{
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
+
+  operation_t op                   = make_operation("op", get_merge_sort_op(get_type_info<TestType>().type));
+  std::vector<TestType> input_keys = make_shuffled_key_ranks_vector<TestType>(num_items);
+  std::vector<item_t> input_items(num_items);
+  std::transform(input_keys.begin(), input_keys.end(), input_items.begin(), [](TestType key) {
+    return static_cast<item_t>(key);
+  });
+  std::vector<TestType> output_keys(num_items);
+  std::vector<item_t> output_items(num_items);
+  std::vector<TestType> expected_keys = input_keys;
+  std::vector<item_t> expected_items  = input_items;
+
+  pointer_t<TestType> input_keys_it(input_keys);
+  pointer_t<item_t> input_items_it(input_items);
+  pointer_t<TestType> output_keys_it(output_keys);
+  pointer_t<item_t> output_items_it(output_items);
+
+  merge_sort(input_keys_it, input_items_it, output_keys_it, output_items_it, num_items, op);
+
+  std::sort(expected_keys.begin(), expected_keys.end());
+  std::sort(expected_items.begin(), expected_items.end());
+  REQUIRE(expected_keys == std::vector<TestType>(output_keys_it));
+  REQUIRE(expected_items == std::vector<item_t>(output_items_it));
 }
