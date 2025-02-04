@@ -17,6 +17,8 @@
 
 #include "../util/errors.h"
 
+extern const char* jit_template_header_contents;
+
 template <typename Arg>
 struct parameter_mapping;
 

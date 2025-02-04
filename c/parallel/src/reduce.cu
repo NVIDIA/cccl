@@ -32,8 +32,6 @@
 #include <cccl/c/reduce.h>
 #include <nvrtc/command_list.h>
 
-extern const char* jit_template_header_contents;
-
 struct device_reduce_policy;
 using TransformOpT = ::cuda::std::__identity;
 using OffsetT      = unsigned long long;
