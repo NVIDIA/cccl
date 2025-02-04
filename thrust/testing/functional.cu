@@ -194,7 +194,6 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestIdentityFunctional()
   int i    = 42;
   double d = 3.14;
 
-  // TODO
   // pass through
   ASSERT_EQUAL(thrust::identity<int>{}(i), 42);
   ASSERT_EQUAL(thrust::identity<int>{}(d), 3);

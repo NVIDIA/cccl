@@ -53,8 +53,7 @@ template <typename DerivedPolicy, typename InputIterator, typename Size, typenam
 _CCCL_HOST_DEVICE OutputIterator
 copy_n(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, Size n, OutputIterator result)
 {
-  using value_type = typename thrust::iterator_value<InputIterator>::type;
-  using xfrm_type  = thrust::identity<value_type>; // TODO
+  using xfrm_type = ::cuda::std::identity;
 
   using functor_type = thrust::detail::unary_transform_functor<xfrm_type>;
 
