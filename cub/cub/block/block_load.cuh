@@ -206,22 +206,33 @@ InternalLoadDirectBlockedVectorized(int linear_tid, const T* block_src_ptr, T (&
   _CCCL_DIAG_POP
   constexpr int vector_size        = (total_words % 4 == 0) ? 4 : (total_words % 2 == 0) ? 2 : 1;
   constexpr int vectors_per_thread = total_words / vector_size;
-  using vector_t                   = typename CubVector<device_word_t, vector_size>::Type;
 
   // Load into an array of vectors in thread-blocked order
-  vector_t vec_items[vectors_per_thread];
-  const vector_t* vec_ptr = reinterpret_cast<const vector_t*>(block_src_ptr) + linear_tid * vectors_per_thread;
-#  pragma unroll
-  for (int i = 0; i < vectors_per_thread; i++)
+  using vector_t = typename CubVector<device_word_t, vector_size>::Type;
+
+  // Add the alignment check to ensure the vectorized loading can proceed.
+  if (reinterpret_cast<uintptr_t>(block_src_ptr) % (alignof(vector_t)) == 0)
   {
-    vec_items[i] = ThreadLoad<MODIFIER>(vec_ptr + i);
-  }
+    vector_t vec_items[vectors_per_thread];
+    // Load into an array of vectors in thread-blocked order
+    const vector_t* vec_ptr = reinterpret_cast<const vector_t*>(block_src_ptr) + linear_tid * vectors_per_thread;
+
+#  pragma unroll
+    for (int i = 0; i < vectors_per_thread; i++)
+    {
+      vec_items[i] = ThreadLoad<MODIFIER>(vec_ptr + i);
+    }
 
 // Copy to destination
 #  pragma unroll
-  for (int i = 0; i < ITEMS_PER_THREAD; i++)
+    for (int i = 0; i < ITEMS_PER_THREAD; i++)
+    {
+      dst_items[i] = *(reinterpret_cast<T*>(vec_items) + i);
+    }
+  }
+  else
   {
-    dst_items[i] = *(reinterpret_cast<T*>(vec_items) + i);
+    LoadDirectBlocked(linear_tid, block_src_ptr, dst_items);
   }
 }
 
@@ -876,8 +887,16 @@ class BlockLoad
     {}
 
     // attempts vectorization (pointer)
-    template <typename>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Load(const T* block_ptr, T (&dst_items)[ITEMS_PER_THREAD])
+    {
+      InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, block_ptr, dst_items);
+    }
+    // NOTE: This function is necessary for pointers to non-const types.
+    // The core reason is that the compiler will not deduce 'T*' to 'const T*' automatically.
+    // Otherwise, when the pointer type is 'T*', the compiler will prefer the overloaded version
+    // Load(RandomAccessIterator...) over Load(const T*...), which means it will never perform vectorized loading for
+    // pointers to non-const types.
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Load(T* block_ptr, T (&dst_items)[ITEMS_PER_THREAD])
     {
       InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, block_ptr, dst_items);
     }

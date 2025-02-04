@@ -49,6 +49,7 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_type.cuh>
@@ -177,8 +178,9 @@ struct partition_distinct_output_t
  *    num_total_items() -> total number of items across all partitions (partition only)
  *    update_num_selected(d_num_sel_out, num_selected) -> invoked by last CTA with number of selected
  *
- * @tparam KeepRejects
- *   Whether or not we push rejected items to the back of the output
+ * @tparam SelectImpl SelectionOpt
+ *   SelectImpl indicating whether to partition, just selection or selection where the memory for the input and
+ *   output may alias each other.
  */
 template <typename AgentSelectIfPolicyT,
           typename InputIteratorT,
@@ -188,8 +190,7 @@ template <typename AgentSelectIfPolicyT,
           typename EqualityOpT,
           typename OffsetT,
           typename StreamingContextT,
-          bool KeepRejects,
-          bool MayAlias>
+          SelectImpl SelectionOpt>
 struct AgentSelectIf
 {
   //---------------------------------------------------------------------
@@ -208,7 +209,9 @@ struct AgentSelectIf
   // updating a tile state. Similarly, we need to make sure that the load of previous tile states precede writing of
   // the stream-compacted items and, hence, we need a load acquire when reading those tile states.
   static constexpr MemoryOrder memory_order =
-    ((!KeepRejects) && MayAlias && (!loads_via_smem)) ? MemoryOrder::acquire_release : MemoryOrder::relaxed;
+    ((SelectionOpt == SelectImpl::SelectPotentiallyInPlace) && (!loads_via_smem))
+      ? MemoryOrder::acquire_release
+      : MemoryOrder::relaxed;
 
   // If we need to enforce memory order for in-place stream compaction, wrap the default decoupled look-back tile
   // state in a helper class that enforces memory order on reads and writes
@@ -847,7 +850,7 @@ struct AgentSelectIf
       0,
       0,
       num_tile_selections,
-      cub::Int2Type<KeepRejects>{});
+      cub::Int2Type < SelectionOpt == SelectImpl::Partition > {});
 
     return num_tile_selections;
   }
@@ -930,7 +933,7 @@ struct AgentSelectIf
       num_selections_prefix,
       num_rejected_prefix,
       num_selections,
-      cub::Int2Type<KeepRejects>{});
+      cub::Int2Type < SelectionOpt == SelectImpl::Partition > {});
 
     return num_selections;
   }
@@ -1018,34 +1021,5 @@ struct AgentSelectIf
 
 } // namespace select
 } // namespace detail
-
-template <typename SelectedOutputItT, typename RejectedOutputItT>
-using partition_distinct_output_t CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the "
-                                                          "public interface will be removed.") =
-  detail::select::partition_distinct_output_t<SelectedOutputItT, RejectedOutputItT>;
-
-template <typename AgentSelectIfPolicyT,
-          typename InputIteratorT,
-          typename FlagsInputIteratorT,
-          typename OutputIteratorWrapperT,
-          typename SelectOpT,
-          typename EqualityOpT,
-          typename OffsetT,
-          typename StreamingContextT,
-          bool KeepRejects,
-          bool MayAlias>
-using AgentSelectIf CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
-                                            "interface will be removed.") =
-  detail::select::AgentSelectIf<
-    AgentSelectIfPolicyT,
-    InputIteratorT,
-    FlagsInputIteratorT,
-    OutputIteratorWrapperT,
-    SelectOpT,
-    EqualityOpT,
-    OffsetT,
-    StreamingContextT,
-    KeepRejects,
-    MayAlias>;
 
 CUB_NAMESPACE_END
