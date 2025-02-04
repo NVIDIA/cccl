@@ -390,6 +390,8 @@ struct ReduceByKeyOp
 namespace internal
 {
 
+_CCCL_HOST_DEVICE uint32_t simd_operation_is_not_supported_before_sm90();
+
 template <typename T>
 struct SimdMin
 {
@@ -403,7 +405,7 @@ struct SimdMin<int16_t>
   {
     NV_IF_TARGET(NV_PROVIDES_SM_90,
                  (return __vmins2(a, b);), //
-                 (_CCCL_ASSERT(false, "Not supported on SM < 90"); return uint32_t{};));
+                 (return simd_operation_is_not_supported_before_sm90();));
   }
 };
 
@@ -414,11 +416,13 @@ struct SimdMin<uint16_t>
   {
     NV_IF_TARGET(NV_PROVIDES_SM_90,
                  (return __vminu2(a, b);), //
-                 (_CCCL_ASSERT(false, "Not supported on SM < 90"); return uint32_t{};));
+                 (return simd_operation_is_not_supported_before_sm90();));
   }
 };
 
 #  if defined(_CCCL_HAS_NVFP16)
+
+_CCCL_HOST_DEVICE __half2 simd_operation_is_not_supported_before_sm80(__half2);
 
 template <>
 struct SimdMin<__half>
@@ -428,13 +432,15 @@ struct SimdMin<__half>
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmin2(a, b);), //
-                 (_CCCL_ASSERT(false, "Not supported on SM < 80"); return __half2{};));
+                 (return simd_operation_is_not_supported_before_sm80(__half2{});));
   }
 };
 
 #  endif // defined(_CCCL_HAS_NVFP16)
 
 #  if defined(_CCCL_HAS_NVBF16)
+
+_CCCL_HOST_DEVICE __nv_bfloat162 simd_operation_is_not_supported_before_sm80(__nv_bfloat162);
 
 template <>
 struct SimdMin<__nv_bfloat16>
@@ -444,7 +450,7 @@ struct SimdMin<__nv_bfloat16>
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmin2(a, b);),
-                 (_CCCL_ASSERT(false, "Not supported on SM < 80"); return __nv_bfloat162{};));
+                 (return simd_operation_is_not_supported_before_sm80(__nv_bfloat162{});));
   }
 };
 
@@ -465,7 +471,7 @@ struct SimdMax<int16_t>
   {
     NV_IF_TARGET(NV_PROVIDES_SM_90,
                  (return __vmaxs2(a, b);), //
-                 (_CCCL_ASSERT(false, "Not supported on SM < 90"); return uint32_t{};));
+                 (return simd_operation_is_not_supported_before_sm90();));
   }
 };
 
@@ -476,7 +482,7 @@ struct SimdMax<uint16_t>
   {
     NV_IF_TARGET(NV_PROVIDES_SM_90,
                  (return __vmaxu2(a, b);), //
-                 (_CCCL_ASSERT(false, "Not supported on SM < 90"); return uint32_t{};));
+                 (return simd_operation_is_not_supported_before_sm90();));
   }
 };
 
@@ -490,7 +496,7 @@ struct SimdMax<__half>
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmax2(a, b);), //
-                 (_CCCL_ASSERT(false, "Not supported on SM < 80"); return __half2{};));
+                 (return simd_operation_is_not_supported_before_sm80(__half2{});));
   }
 };
 
@@ -506,7 +512,7 @@ struct SimdMax<__nv_bfloat16>
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmax2(a, b);), //
-                 (_CCCL_ASSERT(false, "Not supported on SM < 80"); return __nv_bfloat162{};));
+                 (return simd_operation_is_not_supported_before_sm80(__nv_bfloat162{});));
   }
 };
 
@@ -522,6 +528,8 @@ struct SimdSum
 
 #  if defined(_CCCL_HAS_NVFP16)
 
+_CCCL_HOST_DEVICE __half2 simd_operation_is_not_supported_before_sm53(__half2);
+
 template <>
 struct SimdSum<__half>
 {
@@ -530,13 +538,15 @@ struct SimdSum<__half>
   {
     NV_IF_TARGET(NV_PROVIDES_SM_53,
                  (return __hadd2(a, b);), //
-                 (_CCCL_ASSERT(false, "Not supported on SM < 53"); return __half2{};));
+                 (return simd_operation_is_not_supported_before_sm53(__half2{});));
   }
 };
 
 #  endif // defined(_CCCL_HAS_NVFP16)
 
 #  if defined(_CCCL_HAS_NVBF16)
+
+_CCCL_HOST_DEVICE __nv_bfloat162 simd_operation_is_not_supported_before_sm53(__nv_bfloat162);
 
 template <>
 struct SimdSum<__nv_bfloat16>
@@ -546,7 +556,7 @@ struct SimdSum<__nv_bfloat16>
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hadd2(a, b);), //
-                 (_CCCL_ASSERT(false, "Not supported on SM < 53"); return __nv_bfloat162{};));
+                 (return simd_operation_is_not_supported_before_sm53(__nv_bfloat162{});));
   }
 };
 
@@ -570,7 +580,7 @@ struct SimdMul<__half>
   {
     NV_IF_TARGET(NV_PROVIDES_SM_53,
                  (return __hmul2(a, b);), //
-                 (_CCCL_ASSERT(false, "Not supported on SM < 53"); return __half2{};));
+                 (return simd_operation_is_not_supported_before_sm53(__half2{});));
   }
 };
 
@@ -586,7 +596,7 @@ struct SimdMul<__nv_bfloat16>
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmul2(a, b);), //
-                 (_CCCL_ASSERT(false, "Not supported on SM < 53"); return __nv_bfloat162{};));
+                 (return simd_operation_is_not_supported_before_sm53(__nv_bfloat162{});));
   }
 };
 
@@ -598,11 +608,11 @@ struct SimdMul<__nv_bfloat16>
 using cub::detail::is_one_of_v;
 
 template <typename ReductionOp, typename T>
-inline constexpr bool is_predefined_min_max_v =
+inline constexpr bool is_cuda_std_min_max_v =
   is_one_of_v<ReductionOp, ::cuda::minimum<>, ::cuda::minimum<T>, ::cuda::maximum<>, ::cuda::maximum<T>>;
 
 template <typename ReductionOp, typename T>
-inline constexpr bool is_predefined_sum_mul_v =
+inline constexpr bool is_cuda_std_plus_mul_v =
   is_one_of_v<ReductionOp,
               ::cuda::std::plus<>,
               ::cuda::std::plus<T>,
@@ -610,7 +620,7 @@ inline constexpr bool is_predefined_sum_mul_v =
               ::cuda::std::multiplies<T>>;
 
 template <typename ReductionOp, typename T>
-inline constexpr bool is_predefined_bitwise_v =
+inline constexpr bool is_cuda_std_bitwise_v =
   is_one_of_v<ReductionOp,
               ::cuda::std::bit_and<>,
               ::cuda::std::bit_and<T>,
@@ -620,33 +630,25 @@ inline constexpr bool is_predefined_bitwise_v =
               ::cuda::std::bit_xor<T>>;
 
 template <typename ReductionOp, typename T>
-inline constexpr bool is_predefined_operator_v =
-  is_predefined_min_max_v<ReductionOp, T> || //
-  is_predefined_sum_mul_v<ReductionOp, T> || //
-  is_predefined_bitwise_v<ReductionOp, T>;
+inline constexpr bool is_cuda_std_operator_v =
+  is_cuda_std_min_max_v<ReductionOp, T> || //
+  is_cuda_std_plus_mul_v<ReductionOp, T> || //
+  is_cuda_std_bitwise_v<ReductionOp, T>;
 
 template <typename ReductionOp>
-struct is_simd_operator : ::cuda::std::false_type
-{};
+inline constexpr bool is_simd_operator_v = false;
 
 template <typename T>
-struct is_simd_operator<SimdSum<T>> : ::cuda::std::true_type
-{};
+inline constexpr bool is_simd_operator_v<SimdSum<T>> = true;
 
 template <typename T>
-struct is_simd_operator<SimdMul<T>> : ::cuda::std::true_type
-{};
+inline constexpr bool is_simd_operator_v<SimdMul<T>> = true;
 
 template <typename T>
-struct is_simd_operator<SimdMin<T>> : ::cuda::std::true_type
-{};
+inline constexpr bool is_simd_operator_v<SimdMin<T>> = true;
 
 template <typename T>
-struct is_simd_operator<SimdMax<T>> : ::cuda::std::true_type
-{};
-
-template <typename ReductionOp>
-inline constexpr bool is_simd_operator_v = is_simd_operator<ReductionOp>::value;
+inline constexpr bool is_simd_operator_v<SimdMax<T>> = true;
 
 //----------------------------------------------------------------------------------------------------------------------
 // Predefined CUDA operators to SIMD

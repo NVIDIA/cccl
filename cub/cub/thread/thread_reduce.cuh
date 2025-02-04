@@ -224,7 +224,7 @@ namespace internal
 
 template <typename T, typename ReductionOp, int Length>
 inline constexpr bool enable_sm90_simd_reduction_v =
-  is_one_of_v<T, int16_t, uint16_t> && is_predefined_min_max_v<ReductionOp, T> && Length >= 10;
+  is_one_of_v<T, int16_t, uint16_t> && is_cuda_std_min_max_v<ReductionOp, T> && Length >= 10;
 
 //----------------------------------------------------------------------------------------------------------------------
 // SM80 SIMD
@@ -236,7 +236,7 @@ inline constexpr bool enable_sm80_simd_reduction_v = false;
 
 template <typename ReductionOp, int Length>
 inline constexpr bool enable_sm80_simd_reduction_v<__half, ReductionOp, Length> =
-  (is_predefined_min_max_v<ReductionOp, __half> || is_predefined_sum_mul_v<ReductionOp, __half>) && Length >= 4;
+  (is_cuda_std_min_max_v<ReductionOp, __half> || is_cuda_std_plus_mul_v<ReductionOp, __half>) && Length >= 4;
 
 #  endif // defined(_CCCL_HAS_NVFP16)
 
@@ -244,7 +244,7 @@ inline constexpr bool enable_sm80_simd_reduction_v<__half, ReductionOp, Length> 
 
 template <typename ReductionOp, int Length>
 inline constexpr bool enable_sm80_simd_reduction_v<__nv_bfloat16, ReductionOp, Length> =
-  (is_predefined_min_max_v<ReductionOp, __nv_bfloat16> || is_predefined_sum_mul_v<ReductionOp, __nv_bfloat16>)
+  (is_cuda_std_min_max_v<ReductionOp, __nv_bfloat16> || is_cuda_std_plus_mul_v<ReductionOp, __nv_bfloat16>)
   && Length >= 4;
 
 #  endif // defined(_CCCL_HAS_NVBF16)
@@ -256,7 +256,7 @@ inline constexpr bool enable_sm80_simd_reduction_v<__nv_bfloat16, ReductionOp, L
 
 template <typename T, typename ReductionOp, int Length>
 inline constexpr bool enable_sm70_simd_reduction_v =
-  ::cuda::std::is_same_v<T, __half> && is_predefined_sum_mul_v<ReductionOp, T> && Length >= 4;
+  ::cuda::std::is_same_v<T, __half> && is_cuda_std_plus_mul_v<ReductionOp, T> && Length >= 4;
 
 #  else // defined(_CCCL_HAS_NVFP16) ^^^^ / !defined(_CCCL_HAS_NVFP16) vvvv
 
@@ -305,13 +305,13 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_simd_reduct
 
 template <typename T, typename ReductionOp>
 inline constexpr bool enable_ternary_reduction_sm90_v =
-  is_one_of_v<T, int32_t, uint32_t> && is_predefined_min_max_v<ReductionOp, T>;
+  is_one_of_v<T, int32_t, uint32_t> && is_cuda_std_min_max_v<ReductionOp, T>;
 
 #  if defined(_CCCL_HAS_NVFP16)
 
 template <typename ReductionOp>
 inline constexpr bool enable_ternary_reduction_sm90_v<__half2, ReductionOp> =
-  is_predefined_min_max_v<ReductionOp, __half2> || is_one_of_v<ReductionOp, SimdMin<__half>, SimdMax<__half>>;
+  is_cuda_std_min_max_v<ReductionOp, __half2> || is_one_of_v<ReductionOp, SimdMin<__half>, SimdMax<__half>>;
 
 #  endif // defined(_CCCL_HAS_NVFP16)
 
@@ -319,7 +319,7 @@ inline constexpr bool enable_ternary_reduction_sm90_v<__half2, ReductionOp> =
 
 template <typename ReductionOp>
 inline constexpr bool enable_ternary_reduction_sm90_v<__nv_bfloat162, ReductionOp> =
-  is_predefined_min_max_v<ReductionOp, __nv_bfloat162>
+  is_cuda_std_min_max_v<ReductionOp, __nv_bfloat162>
   || is_one_of_v<ReductionOp, SimdMin<__nv_bfloat16>, SimdMax<__nv_bfloat16>>;
 
 #  endif // defined(_CCCL_HAS_NVBF16)
@@ -327,7 +327,7 @@ inline constexpr bool enable_ternary_reduction_sm90_v<__nv_bfloat162, ReductionO
 template <typename T, typename ReductionOp>
 inline constexpr bool enable_ternary_reduction_sm50_v =
   ::cuda::std::is_integral_v<T> && sizeof(T) <= 4
-  && (is_one_of_v<ReductionOp, ::cuda::std::plus<>, ::cuda::std::plus<T>> || is_predefined_bitwise_v<ReductionOp, T>);
+  && (is_one_of_v<ReductionOp, ::cuda::std::plus<>, ::cuda::std::plus<T>> || is_cuda_std_bitwise_v<ReductionOp, T>);
 
 template <typename Input, typename ReductionOp>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_ternary_reduction()
@@ -456,7 +456,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input& input, Reducti
 
 template <typename ReductionOp, typename T>
 inline constexpr bool enable_promotion_v =
-  is_predefined_min_max_v<ReductionOp, T> && ::cuda::std::is_integral_v<T> && sizeof(T) <= 2;
+  is_cuda_std_min_max_v<ReductionOp, T> && ::cuda::std::is_integral_v<T> && sizeof(T) <= 2;
 
 } // namespace internal
 
@@ -479,7 +479,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& 
   using namespace cub::internal;
   using PromT = ::cuda::std::_If<enable_promotion_v<ReductionOp, ValueT>, int, AccumT>;
   // TODO: should be part of the tuning policy
-  if constexpr ((!is_predefined_operator_v<ReductionOp, ValueT> && !is_simd_operator_v<ReductionOp>)
+  if constexpr ((!is_cuda_std_operator_v<ReductionOp, ValueT> && !is_simd_operator_v<ReductionOp>)
                 || sizeof(ValueT) >= 8)
   {
     return cub::internal::ThreadReduceSequential<AccumT>(input, reduction_op);
@@ -494,7 +494,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& 
     if constexpr ((is_one_of_v<ReductionOp, ::cuda::std::plus<>, ::cuda::std::plus<PromT>>
                    && is_one_of_v<PromT, int32_t, uint32_t>)
                   // the compiler generates bad code for int8/uint8 and min/max for SM90
-                  || (is_predefined_min_max_v<ReductionOp, ValueT> && is_one_of_v<PromT, int8_t, uint8_t>) )
+                  || (is_cuda_std_min_max_v<ReductionOp, ValueT> && is_one_of_v<PromT, int8_t, uint8_t>) )
     {
       NV_IF_TARGET(NV_PROVIDES_SM_90, //
                    (return cub::internal::ThreadReduceSequential<PromT>(input, reduction_op);));
