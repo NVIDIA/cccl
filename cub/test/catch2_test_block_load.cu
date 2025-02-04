@@ -135,9 +135,6 @@ using odd_load_algorithm =
                       cub::BlockLoadAlgorithm::BLOCK_LOAD_VECTORIZE,
                       cub::BlockLoadAlgorithm::BLOCK_LOAD_TRANSPOSE>;
 
-#if IPT == 1
-using is_const_or_not = c2h::enum_type_list<bool, true, false>;
-#endif
 template <class TestType>
 struct params_t
 {
@@ -225,11 +222,10 @@ C2H_TEST("Block load works with caching iterators", "[load][block]", items_per_t
 #if IPT == 1
 C2H_TEST("Vectorized block load with const and non-const datatype and different alignment cases",
          "[load][block]",
-         is_const_or_not)
+         c2h::type_list<const int*, int*>)
 {
-  constexpr bool is_const_input_ptr = c2h::get<0, TestType>::value;
-  using type                        = int;
-  using input_ptr_type              = std::conditional_t<is_const_input_ptr, const int*, int*>;
+  using type           = int;
+  using input_ptr_type = c2h::get<0, TestType>;
 
   const int offset_for_elements                           = GENERATE_COPY(0, 1, 2, 3, 4);
   constexpr int items_per_thread                          = 4;
