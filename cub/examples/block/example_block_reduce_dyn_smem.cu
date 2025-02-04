@@ -29,7 +29,7 @@
  * Simple demonstration of cub::BlockReduce with dynamic shared memory
  *
  * To compile using the command line:
- *   nvcc -arch=sm_XX example_block_reduce_dyn_smem.cu -I../.. -lcudart -O3 -std=c++14
+ *   nvcc -arch=sm_XX example_block_reduce_dyn_smem.cu -I../.. -lcudart -O3 -std=c++17
  *
  ******************************************************************************/
 
@@ -46,7 +46,6 @@
 #include "../../test/test_util.h"
 #include <stdio.h>
 
-// Some implementation details rely on c++14
 using namespace cub;
 
 //---------------------------------------------------------------------
