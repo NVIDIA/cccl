@@ -847,7 +847,7 @@ struct AgentSelectIf
       0,
       0,
       num_tile_selections,
-      bool_constant_v<KeepRejects>);
+      bool_constant_v < SelectionOpt == SelectImpl::Partition >);
 
     return num_tile_selections;
   }
@@ -930,7 +930,7 @@ struct AgentSelectIf
       num_selections_prefix,
       num_rejected_prefix,
       num_selections,
-      bool_constant_v<KeepRejects>);
+      bool_constant_v < SelectionOpt == SelectImpl::Partition >);
 
     return num_selections;
   }

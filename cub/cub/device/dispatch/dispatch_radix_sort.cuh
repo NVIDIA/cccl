@@ -453,7 +453,13 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THRE
   // Sort tile
   BlockRadixSortT(temp_storage.sort)
     .SortBlockedToStriped(
-      keys, values, current_bit, end_bit, bool_constant_v<IS_DESCENDING>, bool_constant_v<KEYS_ONLY>, decomposer);
+      keys,
+      values,
+      current_bit,
+      end_bit,
+      bool_constant_v < Order == SortOrder::Descending >,
+      bool_constant_v<KEYS_ONLY>,
+      decomposer);
 
 // Store keys and values
 #pragma unroll
