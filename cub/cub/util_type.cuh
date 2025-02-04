@@ -679,20 +679,6 @@ struct KeyValuePair
 };
 
 /**
- * \brief A wrapper for passing simple static arrays as kernel parameters
- * deprecated [Since 2.5.0] The `cub::ArrayWrapper` is deprecated. Use `cuda::std::array` instead.
- */
-template <typename T, int COUNT>
-struct CCCL_DEPRECATED_BECAUSE("Use cuda::std::array instead.") ArrayWrapper
-{
-  /// Statically-sized array of type \p T
-  T array[COUNT];
-
-  /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ArrayWrapper() {}
-};
-
-/**
  * \brief Double-buffer storage wrapper for multi-pass stream transformations that require more than one storage array
  * for streaming intermediate results back and forth.
  *
