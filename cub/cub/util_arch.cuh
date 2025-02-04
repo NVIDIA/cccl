@@ -116,7 +116,7 @@ namespace detail
 static constexpr ::cuda::std::size_t max_smem_per_block = 48 * 1024;
 
 template <typename T>
-constexpr int bound_scaling_block_threads(uint32_t Nominal4ByteBlockThreads, uint32_t ItemsPerThread)
+_CCCL_HOST_DEVICE constexpr int bound_scaling_block_threads(uint32_t Nominal4ByteBlockThreads, uint32_t ItemsPerThread)
 {
   return ::cuda::minimum<>{}(
     Nominal4ByteBlockThreads, ::cuda::round_up(detail::max_smem_per_block / (sizeof(T) * ItemsPerThread), 32));
@@ -128,7 +128,8 @@ struct RegBoundScaling
   static constexpr int ITEMS_PER_THREAD =
     ::cuda::maximum<>{}(1u, (Nominal4ByteItemsPerThread * 4) / ::cuda::maximum<>{}(4u, sizeof(T)));
 
-  static constexpr auto BLOCK_THREADS = bound_scaling_block_threads<T>(Nominal4ByteBlockThreads, ITEMS_PER_THREAD);
+  static constexpr auto BLOCK_THREADS =
+    cub::detail::bound_scaling_block_threads<T>(Nominal4ByteBlockThreads, ITEMS_PER_THREAD);
 };
 
 template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename T>
@@ -137,20 +138,19 @@ struct MemBoundScaling
   static constexpr int ITEMS_PER_THREAD = ::cuda::maximum<>{}(
     1u, ::cuda::minimum<>{}((Nominal4ByteItemsPerThread * 4) / sizeof(T), Nominal4ByteItemsPerThread * 2u));
 
-  static constexpr auto BLOCK_THREADS = bound_scaling_block_threads<T>(Nominal4ByteBlockThreads, ITEMS_PER_THREAD);
+  static constexpr auto BLOCK_THREADS =
+    cub::detail::bound_scaling_block_threads<T>(Nominal4ByteBlockThreads, ITEMS_PER_THREAD);
 };
 
 } // namespace detail
 
 template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename T>
-struct CCCL_DEPRECATED_BECAUSE("Internal-only implementation details") RegBoundScaling
-    : detail::MemBoundScaling<Nominal4ByteBlockThreads, Nominal4ByteItemsPerThread, T>
-{};
+using RegBoundScaling CCCL_DEPRECATED_BECAUSE("Internal-only implementation details") =
+  detail::MemBoundScaling<Nominal4ByteBlockThreads, Nominal4ByteItemsPerThread, T>;
 
 template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename T>
-struct CCCL_DEPRECATED_BECAUSE("Internal-only implementation details") MemBoundScaling
-    : detail::MemBoundScaling<Nominal4ByteBlockThreads, Nominal4ByteItemsPerThread, T>
-{};
+using MemBoundScaling CCCL_DEPRECATED_BECAUSE("Internal-only implementation details") =
+  detail::MemBoundScaling<Nominal4ByteBlockThreads, Nominal4ByteItemsPerThread, T>;
 
 #endif // Do not document
 
