@@ -186,9 +186,8 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_HIDE_FROM_ABI int __cluster_get_dim(__int128 
 template <int __ThreadBlockDim = 3, typename __UnaryFunction = __detail::__empty_t>
     requires std::is_invocable_r_v<void, __UnaryFunction, dim3>
 _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void try_cancel_blocks(bool __is_leader, __UnaryFunction __uf) {
-  #if (__CUDA_ARCH__ < 1000)
-    __trap();
-  #else   // NV_HAS_FEATURE_SM100
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
+    (
     __shared__ uint64_t __barrier; // TODO: use 2 barriers and 2 results avoid last sync threads
     __shared__ __int128 __result;
     bool __phase = false;
@@ -313,8 +312,16 @@ _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void try_cancel_blocks(bool __is_leader, __Unar
                 : "memory"
             );
         }
-    } while (true);
-#endif // NV_HAS_FEATURE_SM100
+      } while (true);
+    ), ( // NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
+      // SW fall-back for lower compute capabilities.
+      // TODO: it may make sense to __trap here instead since lower compute capabilities may want
+      // to do something else (grid-stride, atomics, etc.).
+      // A higher-level abstraction like for_each should handle that.
+
+      __uf(blockId);
+    )
+  )  // NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
 }
 
 } // namespace experimental
