@@ -43,10 +43,8 @@ namespace detail
 template <typename System>
 struct discard_iterator_base
 {
-  // XXX value_type should actually be void
-  //     but this interferes with zip_iterator<discard_iterator>
-  using value_type    = any_assign;
-  using reference     = any_assign&;
+  using value_type    = void;
+  using reference     = void;
   using incrementable = std::ptrdiff_t;
 
   using base_iterator = typename thrust::counting_iterator<incrementable, System, thrust::random_access_traversal_tag>;
