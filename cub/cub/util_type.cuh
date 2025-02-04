@@ -49,21 +49,23 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
-#if defined(_CCCL_HAS_NVFP16)
+#if _CCCL_HAS_NVFP16()
 #  include <cuda_fp16.h>
-#endif // _CCCL_HAS_NVFP16
+#endif // _CCCL_HAS_NVFP16()
 
-#if defined(_CCCL_HAS_NVBF16)
+#if _CCCL_HAS_NVBF16()
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
 #  include <cuda_bf16.h>
 _CCCL_DIAG_POP
+#endif // _CCCL_HAS_NVBF16()
 
 // cuda_fp8.h resets default for C4127, so we have to guard the inclusion
+#if _CCCL_HAS_NVFP8()
 _CCCL_DIAG_PUSH
 #  include <cuda_fp8.h>
 _CCCL_DIAG_POP
-#endif // _CCCL_HAS_NV_BF16
+#endif // _CCCL_HAS_NVFP8()
 
 #if _CCCL_COMPILER(NVRTC)
 #  include <cuda/std/iterator>
@@ -1039,17 +1041,17 @@ struct NumericTraits<__int128_t>
 
 template <> struct NumericTraits<float> :               BaseTraits<FLOATING_POINT, true, false, unsigned int, float> {};
 template <> struct NumericTraits<double> :              BaseTraits<FLOATING_POINT, true, false, unsigned long long, double> {};
-#  if defined(_CCCL_HAS_NVFP16)
+#  if _CCCL_HAS_NVFP16()
     template <> struct NumericTraits<__half> :          BaseTraits<FLOATING_POINT, true, false, unsigned short, __half> {};
-#  endif // _CCCL_HAS_NVFP16
-#  if defined(_CCCL_HAS_NVBF16)
+#  endif // _CCCL_HAS_NVFP16()
+#  if _CCCL_HAS_NVBF16()
     template <> struct NumericTraits<__nv_bfloat16> :   BaseTraits<FLOATING_POINT, true, false, unsigned short, __nv_bfloat16> {};
-#  endif // _CCCL_HAS_NVBF16
+#  endif // _CCCL_HAS_NVBF16()
 
-#if defined(__CUDA_FP8_TYPES_EXIST__)
+#if _CCCL_HAS_NVFP8()
     template <> struct NumericTraits<__nv_fp8_e4m3> :   BaseTraits<FLOATING_POINT, true, false, __nv_fp8_storage_t, __nv_fp8_e4m3> {};
     template <> struct NumericTraits<__nv_fp8_e5m2> :   BaseTraits<FLOATING_POINT, true, false, __nv_fp8_storage_t, __nv_fp8_e5m2> {};
-#endif // __CUDA_FP8_TYPES_EXIST__
+#endif // _CCCL_HAS_NVFP8()
 
 template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTEGER, true, false, typename UnitWord<bool>::VolatileWord, bool> {};
 // clang-format on

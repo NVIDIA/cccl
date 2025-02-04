@@ -44,12 +44,11 @@ __global__ void test_mbarrier_test_wait_parity(void** fn_ptr)
     (
         // mbarrier.test_wait.parity.relaxed.cta.shared::cta.b64 waitComplete, [addr], phaseParity;
         * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::sem_relaxed_t, cuda::ptx::scope_cta_t, bool, uint64_t*, const uint32_t&)>(
+          static_cast<bool (*)(cuda::ptx::sem_relaxed_t, cuda::ptx::scope_cta_t, uint64_t*, const uint32_t&)>(
             cuda::ptx::mbarrier_test_wait_parity));
           // mbarrier.test_wait.parity.relaxed.cluster.shared::cta.b64 waitComplete, [addr], phaseParity;
             * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::sem_relaxed_t, cuda::ptx::scope_cluster_t, bool, uint64_t*, const uint32_t&)>(
+              static_cast<bool (*)(cuda::ptx::sem_relaxed_t, cuda::ptx::scope_cluster_t, uint64_t*, const uint32_t&)>(
                 cuda::ptx::mbarrier_test_wait_parity));));
 #endif // __cccl_ptx_isa >= 860
 }

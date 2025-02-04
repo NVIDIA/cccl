@@ -197,13 +197,13 @@ struct DeviceMemcpy
       BufferOffsetT,
       BlockOffsetT,
       detail::batch_memcpy::policy_hub<BufferOffsetT, BlockOffsetT>,
-      true>::Dispatch(d_temp_storage,
-                      temp_storage_bytes,
-                      input_buffer_it,
-                      output_buffer_it,
-                      buffer_sizes,
-                      num_buffers,
-                      stream);
+      CopyAlg::Memcpy>::Dispatch(d_temp_storage,
+                                 temp_storage_bytes,
+                                 input_buffer_it,
+                                 output_buffer_it,
+                                 buffer_sizes,
+                                 num_buffers,
+                                 stream);
   }
 };
 

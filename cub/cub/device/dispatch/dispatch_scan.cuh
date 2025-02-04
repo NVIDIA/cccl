@@ -1,4 +1,3 @@
-
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2022, NVIDIA CORPORATION.  All rights reserved.
@@ -63,6 +62,12 @@
 
 CUB_NAMESPACE_BEGIN
 
+enum class ForceInclusive
+{
+  Yes,
+  No
+};
+
 namespace detail::scan
 {
 
@@ -73,7 +78,7 @@ template <typename MaxPolicyT,
           typename InitValueT,
           typename OffsetT,
           typename AccumT,
-          bool ForceInclusive>
+          ForceInclusive EnforceInclusive>
 struct DeviceScanKernelSource
 {
   using ScanTileStateT = typename cub::ScanTileState<AccumT>;
@@ -90,7 +95,7 @@ struct DeviceScanKernelSource
                      InitValueT,
                      OffsetT,
                      AccumT,
-                     ForceInclusive>)
+                     EnforceInclusive == ForceInclusive::Yes>)
 
   CUB_RUNTIME_FUNCTION static constexpr std::size_t AccumSize()
   {
@@ -124,8 +129,8 @@ struct DeviceScanKernelSource
  * @tparam OffsetT
  *   Unsigned integer type for global offsets
  *
- * @tparam ForceInclusive
- *   Boolean flag to force InclusiveScan invocation when true.
+ * @tparam EnforceInclusive
+ *   Enum flag to specify whether to enforce inclusive scan.
  *
  */
 template <typename InputIteratorT,
@@ -133,22 +138,22 @@ template <typename InputIteratorT,
           typename ScanOpT,
           typename InitValueT,
           typename OffsetT,
-          typename AccumT       = ::cuda::std::__accumulator_t<ScanOpT,
-                                                               cub::detail::value_t<InputIteratorT>,
-                                                               ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
-                                                                                cub::detail::value_t<InputIteratorT>,
-                                                                                typename InitValueT::value_type>>,
-          typename PolicyHub    = detail::scan::policy_hub<AccumT, ScanOpT>,
-          bool ForceInclusive   = false,
-          typename KernelSource = detail::scan::DeviceScanKernelSource<
-            typename PolicyHub::MaxPolicy,
-            InputIteratorT,
-            OutputIteratorT,
-            ScanOpT,
-            InitValueT,
-            OffsetT,
-            AccumT,
-            ForceInclusive>,
+          typename AccumT                 = ::cuda::std::__accumulator_t<ScanOpT,
+                                                                         cub::detail::value_t<InputIteratorT>,
+                                                                         ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
+                                                                                          cub::detail::value_t<InputIteratorT>,
+                                                                                          typename InitValueT::value_type>>,
+          typename PolicyHub              = detail::scan::policy_hub<AccumT, ScanOpT>,
+          ForceInclusive EnforceInclusive = ForceInclusive::No,
+          typename KernelSource           = detail::scan::DeviceScanKernelSource<
+                      typename PolicyHub::MaxPolicy,
+                      InputIteratorT,
+                      OutputIteratorT,
+                      ScanOpT,
+                      InitValueT,
+                      OffsetT,
+                      AccumT,
+                      EnforceInclusive>,
           typename KernelLauncherFactory = detail::TripleChevronFactory>
 
 struct DispatchScan
