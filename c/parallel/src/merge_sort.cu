@@ -296,7 +296,7 @@ extern "C" CCCL_C_API CUresult cccl_device_merge_sort_build(
     const std::string output_items_iterator_src =
       make_kernel_output_iterator(offset_t, output_items_it_value_t, output_items_it);
 
-    const std::string op_src = make_kernel_user_binary_operator(input_keys_it_value_t, op);
+    const std::string op_src = make_kernel_user_binary_operator(input_keys_it_value_t, op, true);
 
     const std::string src = std::format(
       "#include <cub/device/dispatch/kernels/merge_sort.cuh>\n"

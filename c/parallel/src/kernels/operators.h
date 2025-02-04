@@ -14,4 +14,5 @@
 
 #include <cccl/c/types.h>
 
-std::string make_kernel_user_binary_operator(std::string_view input_value_t, cccl_op_t operation);
+std::string
+make_kernel_user_binary_operator(std::string_view input_value_t, cccl_op_t operation, bool comparison_op = false);
