@@ -10,8 +10,6 @@
 
 #include <cuda_runtime.h>
 
-#include <vector>
-
 #include "test_util.h"
 #include <cccl/c/merge_sort.h>
 
@@ -162,4 +160,66 @@ TEMPLATE_LIST_TEST_CASE("DeviceMergeSort::SortPairsCopy works ", "[merge_sort]",
   std::sort(expected_items.begin(), expected_items.end());
   REQUIRE(expected_keys == std::vector<TestType>(output_keys_it));
   REQUIRE(expected_items == std::vector<item_t>(output_items_it));
+}
+
+struct key_pair
+{
+  short a;
+  size_t b;
+};
+
+struct item_pair
+{
+  short a;
+  size_t b;
+};
+
+TEST_CASE("DeviceMergeSort:SortKeys works with custom types", "[merge_sort]")
+{
+  const size_t num_items = GENERATE_COPY(take(2, random(1, 100000)), values({500, 100000, 200000}));
+  operation_t op         = make_operation(
+    "op",
+    "struct key_pair { short a; size_t b; };\n"
+            "extern \"C\" __device__ bool op(key_pair lhs, key_pair rhs) {\n"
+            "  return lhs.a == rhs.a ? lhs.b < rhs.b : lhs.a < rhs.a;\n"
+            "}");
+  const std::vector<short> a  = generate<short>(num_items);
+  const std::vector<size_t> b = generate<size_t>(num_items);
+  std::vector<key_pair> input_keys(num_items);
+  std::vector<item_pair> input_items(num_items);
+  for (std::size_t i = 0; i < num_items; ++i)
+  {
+    input_keys[i]  = key_pair{a[i], b[i]};
+    input_items[i] = item_pair{a[i], b[i]};
+  }
+  std::vector<key_pair> expected_keys   = input_keys;
+  std::vector<item_pair> expected_items = input_items;
+
+  pointer_t<key_pair> input_keys_it(input_keys);
+  pointer_t<item_pair> input_items_it(input_items);
+  pointer_t<key_pair> output_keys_it(input_keys);
+  pointer_t<item_pair> output_items_it(input_items);
+
+  merge_sort(input_keys_it, input_items_it, output_keys_it, output_items_it, num_items, op);
+
+  std::sort(expected_keys.begin(), expected_keys.end(), [](const key_pair& lhs, const key_pair& rhs) {
+    return lhs.a == rhs.a ? lhs.b < rhs.b : lhs.a < rhs.a;
+  });
+  std::sort(expected_items.begin(), expected_items.end(), [](const item_pair& lhs, const item_pair& rhs) {
+    return lhs.a == rhs.a ? lhs.b < rhs.b : lhs.a < rhs.a;
+  });
+  REQUIRE(std::equal(
+    expected_keys.begin(),
+    expected_keys.end(),
+    std::vector<key_pair>(output_keys_it).begin(),
+    [](const key_pair& lhs, const key_pair& rhs) {
+      return lhs.a == rhs.a && lhs.b == rhs.b;
+    }));
+  REQUIRE(std::equal(
+    expected_items.begin(),
+    expected_items.end(),
+    std::vector<item_pair>(output_items_it).begin(),
+    [](const item_pair& lhs, const item_pair& rhs) {
+      return lhs.a == rhs.a && lhs.b == rhs.b;
+    }));
 }
