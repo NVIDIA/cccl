@@ -24,7 +24,7 @@ _CCCL_DEVICE static inline void tensormap_replace_global_address(space_global_t,
     || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tensormap.replace.tile.global_address.global.b1024.b64 [%0], %1;"
       :
-      : "l"(__as_ptr_gmem(__tm_addr)), "l"(__as_b64(__new_val))
+      : "l"(__as_ptr_gmem(__tm_addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__new_val))
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -54,7 +54,7 @@ _CCCL_DEVICE static inline void tensormap_replace_global_address(space_shared_t,
     || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tensormap.replace.tile.global_address.shared::cta.b1024.b64 [%0], %1;"
       :
-      : "r"(__as_ptr_smem(__tm_addr)), "l"(__as_b64(__new_val))
+      : "r"(__as_ptr_smem(__tm_addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__new_val))
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -83,7 +83,7 @@ _CCCL_DEVICE static inline void tensormap_replace_rank(space_global_t, void* __t
     || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tensormap.replace.tile.rank.global.b1024.b32 [%0], %1;"
       :
-      : "l"(__as_ptr_gmem(__tm_addr)), "r"(__as_b32(__new_val))
+      : "l"(__as_ptr_gmem(__tm_addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__new_val))
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -112,7 +112,7 @@ _CCCL_DEVICE static inline void tensormap_replace_rank(space_shared_t, void* __t
     || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tensormap.replace.tile.rank.shared::cta.b1024.b32 [%0], %1;"
       :
-      : "r"(__as_ptr_smem(__tm_addr)), "r"(__as_b32(__new_val))
+      : "r"(__as_ptr_smem(__tm_addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__new_val))
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -143,7 +143,9 @@ tensormap_replace_box_dim(space_global_t, void* __tm_addr, n32_t<_N32> __ord, _B
     || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tensormap.replace.tile.box_dim.global.b1024.b32 [%0], %1, %2;"
       :
-      : "l"(__as_ptr_gmem(__tm_addr)), "n"(__ord.value), "r"(__as_b32(__new_val))
+      : "l"(__as_ptr_gmem(__tm_addr)),
+        "n"(__ord.value),
+        "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__new_val))
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -174,7 +176,9 @@ tensormap_replace_box_dim(space_shared_t, void* __tm_addr, n32_t<_N32> __ord, _B
     || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tensormap.replace.tile.box_dim.shared::cta.b1024.b32 [%0], %1, %2;"
       :
-      : "r"(__as_ptr_smem(__tm_addr)), "n"(__ord.value), "r"(__as_b32(__new_val))
+      : "r"(__as_ptr_smem(__tm_addr)),
+        "n"(__ord.value),
+        "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__new_val))
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -205,7 +209,9 @@ tensormap_replace_global_dim(space_global_t, void* __tm_addr, n32_t<_N32> __ord,
     || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tensormap.replace.tile.global_dim.global.b1024.b32 [%0], %1, %2;"
       :
-      : "l"(__as_ptr_gmem(__tm_addr)), "n"(__ord.value), "r"(__as_b32(__new_val))
+      : "l"(__as_ptr_gmem(__tm_addr)),
+        "n"(__ord.value),
+        "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__new_val))
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -236,7 +242,9 @@ tensormap_replace_global_dim(space_shared_t, void* __tm_addr, n32_t<_N32> __ord,
     || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tensormap.replace.tile.global_dim.shared::cta.b1024.b32 [%0], %1, %2;"
       :
-      : "r"(__as_ptr_smem(__tm_addr)), "n"(__ord.value), "r"(__as_b32(__new_val))
+      : "r"(__as_ptr_smem(__tm_addr)),
+        "n"(__ord.value),
+        "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__new_val))
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -268,7 +276,9 @@ tensormap_replace_global_stride(space_global_t, void* __tm_addr, n32_t<_N32> __o
     || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tensormap.replace.tile.global_stride.global.b1024.b64 [%0], %1, %2;"
       :
-      : "l"(__as_ptr_gmem(__tm_addr)), "n"(__ord.value), "l"(__as_b64(__new_val))
+      : "l"(__as_ptr_gmem(__tm_addr)),
+        "n"(__ord.value),
+        "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__new_val))
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -300,7 +310,9 @@ tensormap_replace_global_stride(space_shared_t, void* __tm_addr, n32_t<_N32> __o
     || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tensormap.replace.tile.global_stride.shared::cta.b1024.b64 [%0], %1, %2;"
       :
-      : "r"(__as_ptr_smem(__tm_addr)), "n"(__ord.value), "l"(__as_b64(__new_val))
+      : "r"(__as_ptr_smem(__tm_addr)),
+        "n"(__ord.value),
+        "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__new_val))
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -333,7 +345,9 @@ tensormap_replace_element_stride(space_global_t, void* __tm_addr, n32_t<_N32> __
     || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tensormap.replace.tile.element_stride.global.b1024.b32 [%0], %1, %2;"
       :
-      : "l"(__as_ptr_gmem(__tm_addr)), "n"(__ord.value), "r"(__as_b32(__new_val))
+      : "l"(__as_ptr_gmem(__tm_addr)),
+        "n"(__ord.value),
+        "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__new_val))
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -366,7 +380,9 @@ tensormap_replace_element_stride(space_shared_t, void* __tm_addr, n32_t<_N32> __
     || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tensormap.replace.tile.element_stride.shared::cta.b1024.b32 [%0], %1, %2;"
       :
-      : "r"(__as_ptr_smem(__tm_addr)), "n"(__ord.value), "r"(__as_b32(__new_val))
+      : "r"(__as_ptr_smem(__tm_addr)),
+        "n"(__ord.value),
+        "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__new_val))
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -399,7 +415,9 @@ tensormap_replace_element_size(space_global_t, void* __tm_addr, n32_t<_N32> __or
     || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tensormap.replace.tile.element_stride.global.b1024.b32 [%0], %1, %2;"
       :
-      : "l"(__as_ptr_gmem(__tm_addr)), "n"(__ord.value), "r"(__as_b32(__new_val))
+      : "l"(__as_ptr_gmem(__tm_addr)),
+        "n"(__ord.value),
+        "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__new_val))
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -432,7 +450,9 @@ tensormap_replace_element_size(space_shared_t, void* __tm_addr, n32_t<_N32> __or
     || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tensormap.replace.tile.element_stride.shared::cta.b1024.b32 [%0], %1, %2;"
       :
-      : "r"(__as_ptr_smem(__tm_addr)), "n"(__ord.value), "r"(__as_b32(__new_val))
+      : "r"(__as_ptr_smem(__tm_addr)),
+        "n"(__ord.value),
+        "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__new_val))
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message

@@ -156,7 +156,7 @@ struct ReduceAgent
 
     using Vector      = typename cub::CubVector<T, PtxPlan::VECTOR_LOAD_LENGTH>;
     using LoadIt      = typename core::detail::LoadIterator<PtxPlan, InputIt>::type;
-    using BlockReduce = cub::BlockReduce<T, PtxPlan::BLOCK_THREADS, PtxPlan::BLOCK_ALGORITHM, 1, 1, Arch::ver>;
+    using BlockReduce = cub::BlockReduce<T, PtxPlan::BLOCK_THREADS, PtxPlan::BLOCK_ALGORITHM, 1, 1>;
 
     using VectorLoadIt = cub::CacheModifiedInputIterator<PtxPlan::LOAD_MODIFIER, Vector, Size>;
 

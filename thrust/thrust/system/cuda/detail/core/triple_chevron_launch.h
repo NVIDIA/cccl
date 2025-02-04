@@ -45,7 +45,7 @@ THRUST_NAMESPACE_BEGIN
 
 namespace cuda_cub
 {
-namespace launcher
+namespace detail
 {
 
 struct _CCCL_VISIBILITY_HIDDEN triple_chevron
@@ -185,7 +185,11 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
   }
 
 }; // struct triple_chevron
+} // namespace detail
 
+namespace launcher
+{
+using triple_chevron CCCL_DEPRECATED = detail::triple_chevron;
 } // namespace launcher
 } // namespace cuda_cub
 

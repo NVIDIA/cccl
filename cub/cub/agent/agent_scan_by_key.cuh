@@ -179,7 +179,7 @@ struct AgentScanByKey
 
   using DelayConstructorT = typename AgentScanByKeyPolicyT::detail::delay_constructor_t;
   using TilePrefixCallbackT =
-    TilePrefixCallbackOp<FlagValuePairT, ReduceBySegmentOpT, ScanTileStateT, 0, DelayConstructorT>;
+    TilePrefixCallbackOp<FlagValuePairT, ReduceBySegmentOpT, ScanTileStateT, DelayConstructorT>;
 
   using BlockScanT = BlockScan<FlagValuePairT, BLOCK_THREADS, AgentScanByKeyPolicyT::SCAN_ALGORITHM, 1, 1>;
 

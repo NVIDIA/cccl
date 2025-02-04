@@ -174,7 +174,7 @@ using char32_t = unsigned int;
 // Deprecations warnings are always enabled, except when users explicitly opt-out
 // by defining _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS.
 // NVCC 11.1 and 11.2 are broken with the deprecated attribute, so disable it
-#  if !defined(_LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS) && _CCCL_CUDACC_AT_LEAST(11, 3)
+#  if !defined(_LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS)
 #    if _CCCL_HAS_ATTRIBUTE(deprecated)
 #      define _LIBCUDACXX_DEPRECATED __attribute__((deprecated))
 #    elif _CCCL_STD_VER > 2011
@@ -364,7 +364,7 @@ using char32_t = unsigned int;
 
 // NVRTC has a bug that prevented the use of delegated constructors, as it did not accept execution space annotations.
 // This creates a whole lot of boilerplate that we can avoid through a macro (see nvbug3961621)
-#  if (_CCCL_CUDACC_BELOW(12, 6) && _CCCL_COMPILER(NVRTC)) || (_CCCL_CUDACC_BELOW(11, 3) && _CCCL_COMPILER(CLANG))
+#  if (_CCCL_CUDACC_BELOW(12, 6) && _CCCL_COMPILER(NVRTC))
 #    define _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__class, __baseclass, ...)       \
       using __base = __baseclass<__VA_ARGS__>;                                 \
       _CCCL_TEMPLATE(class... _Args)                                           \
@@ -379,7 +379,7 @@ using char32_t = unsigned int;
       using __base = __baseclass<__VA_ARGS__>;                           \
       using __base::__base;                                              \
       _CCCL_HIDE_FROM_ABI constexpr __class() noexcept = default;
-#  endif // !(_CCCL_CUDACC_BELOW(12,5) && _CCCL_COMPILER(NVRTC)) && !(_CCCL_CUDACC_BELOW(11,3) && _CCCL_COMPILER(CLANG))
+#  endif // !(_CCCL_CUDACC_BELOW(12,5) && _CCCL_COMPILER(NVRTC))
 
 #endif // __cplusplus
 

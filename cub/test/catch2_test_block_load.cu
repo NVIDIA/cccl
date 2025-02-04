@@ -218,3 +218,28 @@ C2H_TEST("Block load works with caching iterators", "[load][block]", items_per_t
     thrust::raw_pointer_cast(d_input.data()));
   test_block_load<items_per_thread, threads_in_block, load_algorithm>(d_input, in);
 }
+
+#if IPT == 1
+C2H_TEST("Vectorized block load with const and non-const datatype and different alignment cases",
+         "[load][block]",
+         c2h::type_list<const int*, int*>)
+{
+  using type           = int;
+  using input_ptr_type = c2h::get<0, TestType>;
+
+  const int offset_for_elements                           = GENERATE_COPY(0, 1, 2, 3, 4);
+  constexpr int items_per_thread                          = 4;
+  constexpr int threads_in_block                          = 64;
+  constexpr int tile_size                                 = items_per_thread * threads_in_block;
+  static constexpr cub::BlockLoadAlgorithm load_algorithm = cub::BlockLoadAlgorithm::BLOCK_LOAD_VECTORIZE;
+
+  c2h::device_vector<type> d_input_ref(tile_size);
+  c2h::gen(C2H_SEED(10), d_input_ref);
+
+  c2h::device_vector<type> d_input(tile_size + offset_for_elements);
+  thrust::copy_n(d_input_ref.begin(), tile_size, d_input.begin() + offset_for_elements);
+
+  test_block_load<items_per_thread, threads_in_block, load_algorithm, type, input_ptr_type>(
+    d_input_ref, thrust::raw_pointer_cast(d_input.data()) + offset_for_elements);
+}
+#endif

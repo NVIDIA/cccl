@@ -666,15 +666,15 @@ private:
   {}
 
 public:
-#    if _CCCL_COMPILER(NVRTC) || _CCCL_CUDACC_BELOW(11, 3)
+#    if _CCCL_COMPILER(NVRTC)
   template <class... _Args, enable_if_t<_CCCL_TRAIT(is_constructible, __base_t, _Args...), int> = 0>
   __MDSPAN_FORCE_INLINE_FUNCTION constexpr __partially_static_sizes(_Args&&... __args) noexcept(
     noexcept(__base_t(_CUDA_VSTD::declval<_Args>()...)))
       : __base_t(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
-#    else // ^^^ _CCCL_COMPILER(NVRTC) || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER(NVRTC) || nvcc >= 11.3 vvv
+#    else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ / vvv !_CCCL_COMPILER(NVRTC)
   using __base_t::__base_t;
-#    endif // !_CCCL_COMPILER(NVRTC) || nvcc >= 11.3
+#    endif // !_CCCL_COMPILER(NVRTC)
 
 #    ifdef __MDSPAN_DEFAULTED_CONSTRUCTORS_INHERITANCE_WORKAROUND
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __partially_static_sizes() noexcept
