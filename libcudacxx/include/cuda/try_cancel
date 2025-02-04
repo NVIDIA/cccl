@@ -153,7 +153,7 @@ struct __empty_t {
 };
 
 template <int __I>
-__device__ int __cluster_get_dim(__int128 __result) {
+_CCCL_NODISCARD _CCCL_DEVICE _CCCL_HIDE_FROM_ABI int __cluster_get_dim(__int128 __result) noexcept {
     int __r;
     if constexpr(__I == 0) {
         asm volatile("clusterlaunchcontrol.query_cancel.get_first_ctaid::x.b32.b128 %0, %1;" : "=r"(__r) : "q"(__result) : "memory");
