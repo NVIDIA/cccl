@@ -40,12 +40,9 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __countl_zero(_Tp __t) noexcept
   {
     return numeric_limits<_Tp>::digits;
   }
-  using _Sp         = _If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
-  auto __clz_result = _CUDA_VSTD::__cccl_clz(static_cast<_Sp>(__t));
-  __clz_result -= numeric_limits<_Sp>::digits - numeric_limits<_Tp>::digits;
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                    (return __clz_result;), // if __t == 0 __clz_result is already equal to numeric_limits<_Tp>::digits
-                    (return __t == 0 ? numeric_limits<_Tp>::digits : __clz_result;))
+  using _Sp                    = _If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
+  constexpr auto __digits_diff = numeric_limits<_Sp>::digits - numeric_limits<_Tp>::digits;
+  return _CUDA_VSTD::__cccl_clz(static_cast<_Sp>(__t)) - __digits_diff;
 }
 
 _CCCL_TEMPLATE(class _Tp)

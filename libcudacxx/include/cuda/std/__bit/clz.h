@@ -104,15 +104,18 @@ _LIBCUDACXX_HIDE_FROM_ABI int __runtime_clz(_Tp __x) noexcept
   NV_IF_ELSE_TARGET(NV_IS_DEVICE,
                     (return sizeof(_Tp) == sizeof(uint32_t) ? __clz(static_cast<uint32_t>(__x)) //
                                                             : __clzll(static_cast<uint64_t>(__x));),
-                    (return _CUDA_VSTD::__host_runtime_clz(__x);))
+                    (return __x == 0 ? numeric_limits<_Tp>::digits : _CUDA_VSTD::__host_runtime_clz(__x);))
 }
 
+// __cccl_clz returns numeric_limits<_Tp>::digits if __x == 0 on both host and device
 template <typename _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_clz(_Tp __x) noexcept
 {
   static_assert(is_same_v<_Tp, uint32_t> || is_same_v<_Tp, uint64_t>);
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  return is_constant_evaluated() ? _CUDA_VSTD::__constexpr_clz(__x) : _CUDA_VSTD::__runtime_clz(__x);
+  return is_constant_evaluated()
+         ? (__x == 0 ? numeric_limits<_Tp>::digits : _CUDA_VSTD::__constexpr_clz(__x))
+         : _CUDA_VSTD::__runtime_clz(__x);
 #else
   return _CUDA_VSTD::__constexpr_clz(__x);
 #endif
