@@ -43,8 +43,6 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 #  define THRUST_OPTIONAL_MSVC2015
 #endif
 
-#define THRUST_OPTIONAL_CPP14
-
 THRUST_NAMESPACE_BEGIN
 
 #ifndef THRUST_MONOSTATE_INPLACE_MUTEX
@@ -846,8 +844,7 @@ public:
 #  endif
 #endif
 
-#if defined(THRUST_OPTIONAL_CPP14) && !defined(THRUST_OPTIONAL_GCC49) && !defined(THRUST_OPTIONAL_GCC54) \
-  && !defined(THRUST_OPTIONAL_GCC55)
+#if !defined(THRUST_OPTIONAL_GCC49) && !defined(THRUST_OPTIONAL_GCC54) && !defined(THRUST_OPTIONAL_GCC55)
   /// \brief Carries out some operation on the stored object if there is one.
   /// \return Let `U` be the result of `std::invoke(std::forward<F>(f),
   /// value())`. Returns a `std::optional<U>`. The return value is empty if
@@ -1929,7 +1926,6 @@ optional(T) -> optional<T>;
 /// \exclude
 namespace detail
 {
-#  ifdef THRUST_OPTIONAL_CPP14
 _CCCL_EXEC_CHECK_DISABLE
 template <class Opt,
           class F,
@@ -1950,53 +1946,27 @@ _CCCL_HOST_DEVICE auto optional_map_impl(Opt&& opt, F&& f)
   if (opt.has_value())
   {
     detail::invoke(std::forward<F>(f), *std::forward<Opt>(opt));
-#    if _CCCL_COMPILER(MSVC)
+#  if _CCCL_COMPILER(MSVC)
     // MSVC fails to suppress the warning on make_optional
     _CCCL_SUPPRESS_DEPRECATED_PUSH
     return optional<monostate>(monostate{});
     _CCCL_SUPPRESS_DEPRECATED_POP
-#    elif _CCCL_COMPILER(NVHPC)
+#  elif _CCCL_COMPILER(NVHPC)
     // NVHPC cannot have a diagnostic pop after a return statement
     _CCCL_SUPPRESS_DEPRECATED_PUSH
     auto o = optional<monostate>(monostate{});
     _CCCL_SUPPRESS_DEPRECATED_POP
     return ::cuda::std::move(o);
-#    else
+#  else
     _CCCL_SUPPRESS_DEPRECATED_PUSH
     return make_optional(monostate{});
     _CCCL_SUPPRESS_DEPRECATED_POP
-#    endif
+#  endif
   }
 
   return optional<monostate>(nullopt);
 }
-#  else
-_CCCL_EXEC_CHECK_DISABLE
-template <class Opt,
-          class F,
-          class Ret = decltype(detail::invoke(std::declval<F>(), *std::declval<Opt>())),
-          detail::enable_if_t<!std::is_void<Ret>::value>* = nullptr>
-_CCCL_HOST_DEVICE constexpr optional<Ret> optional_map_impl(Opt&& opt, F&& f)
-{
-  return opt.has_value() ? detail::invoke(std::forward<F>(f), *std::forward<Opt>(opt)) : optional<Ret>(nullopt);
-}
 
-_CCCL_EXEC_CHECK_DISABLE
-template <class Opt,
-          class F,
-          class Ret = decltype(detail::invoke(std::declval<F>(), *std::declval<Opt>())),
-          detail::enable_if_t<std::is_void<Ret>::value>* = nullptr>
-_CCCL_HOST_DEVICE auto optional_map_impl(Opt&& opt, F&& f) -> optional<monostate>
-{
-  if (opt.has_value())
-  {
-    detail::invoke(std::forward<F>(f), *std::forward<Opt>(opt));
-    return monostate{};
-  }
-
-  return nullopt;
-}
-#  endif
 } // namespace detail
 #endif // !defined(_CCCL_DOXYGEN_INVOKED)
 
@@ -2030,8 +2000,7 @@ public:
 // types are not SFINAE-safe. This provides better support for things like
 // generic lambdas. C.f.
 // http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0826r0
-#if defined(THRUST_OPTIONAL_CPP14) && !defined(THRUST_OPTIONAL_GCC49) && !defined(THRUST_OPTIONAL_GCC54) \
-  && !defined(THRUST_OPTIONAL_GCC55)
+#if !defined(THRUST_OPTIONAL_GCC49) && !defined(THRUST_OPTIONAL_GCC54) && !defined(THRUST_OPTIONAL_GCC55)
   /// \group and_then
   /// Carries out some operation which returns an optional on the stored
   /// object if there is one. \requires `std::invoke(std::forward<F>(f),
@@ -2149,8 +2118,7 @@ public:
 #  endif
 #endif
 
-#if defined(THRUST_OPTIONAL_CPP14) && !defined(THRUST_OPTIONAL_GCC49) && !defined(THRUST_OPTIONAL_GCC54) \
-  && !defined(THRUST_OPTIONAL_GCC55)
+#if !defined(THRUST_OPTIONAL_GCC49) && !defined(THRUST_OPTIONAL_GCC54) && !defined(THRUST_OPTIONAL_GCC55)
   /// \brief Carries out some operation on the stored object if there is one.
   /// \return Let `U` be the result of `std::invoke(std::forward<F>(f),
   /// value())`. Returns a `std::optional<U>`. The return value is empty if
