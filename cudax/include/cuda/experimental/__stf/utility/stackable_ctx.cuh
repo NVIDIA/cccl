@@ -622,7 +622,14 @@ class stackable_logical_data
       {
         // This state will be retained until we pop the ctx enough times
         size_t offset_depth = impl_state->offset_depth;
-        sctx.retain_data(offset_depth, mv(impl_state));
+
+        if (offset_depth < sctx.depth())
+        {
+            // If that was an exportable data, offset_depth = 0, it can be deleted
+            // when the first stacked level is popped (ie. when the CUDA graph has
+            // been executed)
+            sctx.retain_data(offset_depth + 1, mv(impl_state));
+        }
       }
 
       impl_state = nullptr;
