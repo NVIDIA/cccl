@@ -35,6 +35,8 @@
 
 #include <cub/config.cuh>
 
+#include "cuda/std/__cccl/deprecated.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -115,7 +117,6 @@ namespace detail
 // The maximum amount of static shared memory available per thread block
 // Note that in contrast to dynamic shared memory, static shared memory is still limited to 48 KB
 static constexpr ::cuda::std::size_t max_smem_per_block = 48 * 1024;
-} // namespace detail
 
 template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename T>
 struct RegBoundScaling
@@ -136,6 +137,16 @@ struct MemBoundScaling
     Nominal4ByteBlockThreads,
     ::cuda::ceil_div(int{detail::max_smem_per_block} / (int{sizeof(T)} * ITEMS_PER_THREAD), 32) * 32);
 };
+
+} // namespace detail
+
+template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename T>
+using RegBoundScaling CCCL_DEPRECATED_BECAUSE("Internal implementation detail") =
+  detail::RegBoundScaling<Nominal4ByteBlockThreads, Nominal4ByteItemsPerThread, T>;
+
+template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename T>
+using MemBoundScaling CCCL_DEPRECATED_BECAUSE("Internal implementation detail") =
+  detail::RegBoundScaling<Nominal4ByteBlockThreads, Nominal4ByteItemsPerThread, T>;
 
 #endif // Do not document
 

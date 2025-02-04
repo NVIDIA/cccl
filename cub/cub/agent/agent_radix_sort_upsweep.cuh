@@ -82,9 +82,9 @@ template <int NOMINAL_BLOCK_THREADS_4B,
           int NOMINAL_ITEMS_PER_THREAD_4B,
           typename ComputeT,
           CacheLoadModifier _LOAD_MODIFIER,
-          int _RADIX_BITS,
-          typename ScalingType = RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
-struct AgentRadixSortUpsweepPolicy : ScalingType
+          int _RADIX_BITS>
+struct AgentRadixSortUpsweepPolicy
+    : detail::RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>
 {
   enum
   {
