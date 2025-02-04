@@ -876,7 +876,7 @@ struct DispatchSegmentedReduce
       }
 
       // Init kernel configuration
-      detail::KernelConfig segmented_reduce_config;
+      [[maybe_unused]] detail::KernelConfig segmented_reduce_config;
       error =
         CubDebug(segmented_reduce_config.Init<typename ActivePolicyT::SegmentedReducePolicy>(segmented_reduce_kernel));
       if (cudaSuccess != error)
