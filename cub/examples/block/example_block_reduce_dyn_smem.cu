@@ -47,8 +47,6 @@
 #include <stdio.h>
 
 // Some implementation details rely on c++14
-#if _CCCL_STD_VER >= 2014
-
 using namespace cub;
 
 //---------------------------------------------------------------------
@@ -240,9 +238,3 @@ int main(int argc, char** argv)
 
   return 0;
 }
-
-#else // < C++14
-
-int main() {}
-
-#endif
