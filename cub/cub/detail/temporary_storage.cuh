@@ -284,7 +284,7 @@ public:
     // AliasTemporaries can return error only in mapping stage,
     // so it's safe to ignore it here.
     std::size_t temp_storage_bytes{};
-    AliasTemporaries(nullptr, temp_storage_bytes, m_pointers, m_sizes);
+    detail::AliasTemporaries(nullptr, temp_storage_bytes, m_pointers, m_sizes);
 
     if (temp_storage_bytes == 0)
     {
@@ -316,7 +316,7 @@ public:
     this->prepare_interface();
 
     cudaError_t error = cudaSuccess;
-    if ((error = AliasTemporaries(d_temp_storage, temp_storage_bytes, m_pointers, m_sizes)))
+    if ((error = detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, m_pointers, m_sizes)))
     {
       return error;
     }

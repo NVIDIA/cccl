@@ -243,7 +243,7 @@ struct DispatchMergeSort
       std::size_t allocation_sizes[4] = {
         merge_partitions_size, temporary_keys_storage_size, temporary_values_storage_size, virtual_shared_memory_size};
 
-      error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;
