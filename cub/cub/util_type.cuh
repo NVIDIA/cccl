@@ -49,21 +49,23 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
-#if defined(_CCCL_HAS_NVFP16)
+#if _CCCL_HAS_NVFP16()
 #  include <cuda_fp16.h>
-#endif // _CCCL_HAS_NVFP16
+#endif // _CCCL_HAS_NVFP16()
 
-#if defined(_CCCL_HAS_NVBF16)
+#if _CCCL_HAS_NVBF16()
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
 #  include <cuda_bf16.h>
 _CCCL_DIAG_POP
+#endif // _CCCL_HAS_NVBF16()
 
 // cuda_fp8.h resets default for C4127, so we have to guard the inclusion
+#if _CCCL_HAS_NVFP8()
 _CCCL_DIAG_PUSH
 #  include <cuda_fp8.h>
 _CCCL_DIAG_POP
-#endif // _CCCL_HAS_NV_BF16
+#endif // _CCCL_HAS_NVFP8()
 
 #if _CCCL_COMPILER(NVRTC)
 #  include <cuda/std/iterator>
@@ -902,115 +904,19 @@ struct BaseTraits<SIGNED_INTEGER, true, false, _UnsignedBits, T>
   }
 };
 
-template <typename _T>
-struct FpLimits;
-
-template <>
-struct FpLimits<float>
+template <typename T>
+struct CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits instead") FpLimits
 {
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE float Max()
+  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Max()
   {
-    return ::cuda::std::numeric_limits<float>::max();
+    return ::cuda::std::numeric_limits<T>::max();
   }
 
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE float Lowest()
+  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Lowest()
   {
-    return ::cuda::std::numeric_limits<float>::lowest();
+    return ::cuda::std::numeric_limits<T>::lowest();
   }
 };
-
-template <>
-struct FpLimits<double>
-{
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE double Max()
-  {
-    return ::cuda::std::numeric_limits<double>::max();
-  }
-
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE double Lowest()
-  {
-    return ::cuda::std::numeric_limits<double>::lowest();
-  }
-};
-
-#  if defined(_CCCL_HAS_NVFP16)
-template <>
-struct FpLimits<__half>
-{
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __half Max()
-  {
-    unsigned short max_word = 0x7BFF;
-    return reinterpret_cast<__half&>(max_word);
-  }
-
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __half Lowest()
-  {
-    unsigned short lowest_word = 0xFBFF;
-    return reinterpret_cast<__half&>(lowest_word);
-  }
-};
-#  endif // _CCCL_HAS_NVFP16
-
-#  if defined(_CCCL_HAS_NVBF16)
-template <>
-struct FpLimits<__nv_bfloat16>
-{
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __nv_bfloat16 Max()
-  {
-    unsigned short max_word = 0x7F7F;
-    return reinterpret_cast<__nv_bfloat16&>(max_word);
-  }
-
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __nv_bfloat16 Lowest()
-  {
-    unsigned short lowest_word = 0xFF7F;
-    return reinterpret_cast<__nv_bfloat16&>(lowest_word);
-  }
-};
-#  endif // _CCCL_HAS_NVBF16
-
-#  if defined(__CUDA_FP8_TYPES_EXIST__)
-template <>
-struct FpLimits<__nv_fp8_e4m3>
-{
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __nv_fp8_e4m3 Max()
-  {
-    unsigned char max_word = 0x7EU;
-    __nv_fp8_e4m3 ret_val;
-    memcpy(&ret_val, &max_word, sizeof(__nv_fp8_e4m3));
-    return ret_val;
-  }
-
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __nv_fp8_e4m3 Lowest()
-  {
-    unsigned char lowest_word = 0xFEU;
-    __nv_fp8_e4m3 ret_val;
-    memcpy(&ret_val, &lowest_word, sizeof(__nv_fp8_e4m3));
-    return ret_val;
-  }
-};
-
-template <>
-struct FpLimits<__nv_fp8_e5m2>
-{
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __nv_fp8_e5m2 Max()
-  {
-    unsigned char max_word = 0x7BU;
-    __nv_fp8_e5m2 ret_val;
-    memcpy(&ret_val, &max_word, sizeof(__nv_fp8_e5m2));
-    return ret_val;
-  }
-
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __nv_fp8_e5m2 Lowest()
-  {
-    unsigned char lowest_word = 0xFBU;
-    __nv_fp8_e5m2 ret_val;
-    memcpy(&ret_val, &lowest_word, sizeof(__nv_fp8_e5m2));
-    return ret_val;
-  }
-};
-
-#  endif // __CUDA_FP8_TYPES_EXIST__
 
 /**
  * Basic type traits (fp primitive specialization)
@@ -1041,12 +947,16 @@ struct BaseTraits<FLOATING_POINT, true, false, _UnsignedBits, T>
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Max()
   {
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     return FpLimits<T>::Max();
+    _CCCL_SUPPRESS_DEPRECATED_POP
   }
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Lowest()
   {
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     return FpLimits<T>::Lowest();
+    _CCCL_SUPPRESS_DEPRECATED_POP
   }
 };
 
@@ -1145,17 +1055,17 @@ struct NumericTraits<__int128_t>
 
 template <> struct NumericTraits<float> :               BaseTraits<FLOATING_POINT, true, false, unsigned int, float> {};
 template <> struct NumericTraits<double> :              BaseTraits<FLOATING_POINT, true, false, unsigned long long, double> {};
-#  if defined(_CCCL_HAS_NVFP16)
+#  if _CCCL_HAS_NVFP16()
     template <> struct NumericTraits<__half> :          BaseTraits<FLOATING_POINT, true, false, unsigned short, __half> {};
-#  endif // _CCCL_HAS_NVFP16
-#  if defined(_CCCL_HAS_NVBF16)
+#  endif // _CCCL_HAS_NVFP16()
+#  if _CCCL_HAS_NVBF16()
     template <> struct NumericTraits<__nv_bfloat16> :   BaseTraits<FLOATING_POINT, true, false, unsigned short, __nv_bfloat16> {};
-#  endif // _CCCL_HAS_NVBF16
+#  endif // _CCCL_HAS_NVBF16()
 
-#if defined(__CUDA_FP8_TYPES_EXIST__)
+#if _CCCL_HAS_NVFP8()
     template <> struct NumericTraits<__nv_fp8_e4m3> :   BaseTraits<FLOATING_POINT, true, false, __nv_fp8_storage_t, __nv_fp8_e4m3> {};
     template <> struct NumericTraits<__nv_fp8_e5m2> :   BaseTraits<FLOATING_POINT, true, false, __nv_fp8_storage_t, __nv_fp8_e5m2> {};
-#endif // __CUDA_FP8_TYPES_EXIST__
+#endif // _CCCL_HAS_NVFP8()
 
 template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTEGER, true, false, typename UnitWord<bool>::VolatileWord, bool> {};
 // clang-format on

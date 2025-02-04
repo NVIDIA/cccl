@@ -69,7 +69,7 @@ auto cast_if_half_pointer(T* p) -> T*
   return p;
 }
 
-#if TEST_HALF_T
+#if TEST_HALF_T()
 auto cast_if_half_pointer(half_t* p) -> __half*
 {
   return reinterpret_cast<__half*>(p);
@@ -79,7 +79,7 @@ auto cast_if_half_pointer(const half_t* p) -> const __half*
 {
   return reinterpret_cast<const __half*>(p);
 }
-#endif
+#endif // TEST_HALF_T()
 
 template <typename T>
 using caller_vector = c2h::
@@ -412,9 +412,9 @@ using types =
                  std::uint32_t,
                  std::int64_t,
                  std::uint64_t,
-#if TEST_HALF_T
+#if TEST_HALF_T()
                  half_t,
-#endif
+#endif // TEST_HALF_T()
                  float,
                  double>;
 

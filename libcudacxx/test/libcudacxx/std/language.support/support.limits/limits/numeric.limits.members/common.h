@@ -60,7 +60,7 @@ __host__ __device__ inline bool float_eq(__nv_fp8_e5m2 x, __nv_fp8_e5m2 y)
 }
 #endif // _CCCL_HAS_NVFP8
 
-#if defined(_CCCL_HAS_NVFP16)
+#if _CCCL_HAS_NVFP16()
 __host__ __device__ inline bool float_eq(__half x, __half y)
 {
 #  if _CCCL_CUDACC_AT_LEAST(12, 2)
@@ -71,7 +71,7 @@ __host__ __device__ inline bool float_eq(__half x, __half y)
 }
 #endif // _CCCL_HAS_NVFP16
 
-#if defined(_CCCL_HAS_NVBF16)
+#if _CCCL_HAS_NVBF16()
 __host__ __device__ inline bool float_eq(__nv_bfloat16 x, __nv_bfloat16 y)
 {
 #  if _CCCL_CUDACC_AT_LEAST(12, 2)

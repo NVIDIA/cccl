@@ -443,7 +443,7 @@ struct dispatch_histogram
 #endif // CUB_DEBUG_LOG
 
       // Invoke histogram_init_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
         histogram_init_grid_dims, histogram_init_block_threads, 0, stream)
         .doit(histogram_init_kernel, num_output_bins_wrapper, d_output_histograms_wrapper, tile_queue);
 
@@ -467,7 +467,7 @@ struct dispatch_histogram
 #endif // CUB_DEBUG_LOG
 
       // Invoke histogram_sweep_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(sweep_grid_dims, block_threads, 0, stream)
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(sweep_grid_dims, block_threads, 0, stream)
         .doit(histogram_sweep_kernel,
               d_samples,
               num_output_bins_wrapper,
@@ -712,7 +712,7 @@ public:
       return this->ComputeScale(num_levels, max_level, min_level, ::cuda::std::is_floating_point<T>{});
     }
 
-#ifdef __CUDA_FP16_TYPES_EXIST__
+#if _CCCL_HAS_NVFP16()
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT ComputeScale(int num_levels, __half max_level, __half min_level)
     {
       ScaleT result;
@@ -722,7 +722,7 @@ public:
                       static_cast<float>(num_levels - 1) / (__half2float(max_level) - __half2float(min_level)));))
       return result;
     }
-#endif // __CUDA_FP16_TYPES_EXIST__
+#endif // _CCCL_HAS_NVFP16()
 
     // All types but __half:
     template <typename T>
@@ -731,7 +731,7 @@ public:
       return sample >= min_level && sample < max_level;
     }
 
-#ifdef __CUDA_FP16_TYPES_EXIST__
+#if _CCCL_HAS_NVFP16()
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int SampleIsValid(__half sample, __half max_level, __half min_level)
     {
       NV_IF_TARGET(
@@ -739,7 +739,7 @@ public:
         (return __hge(sample, min_level) && __hlt(sample, max_level);),
         (return __half2float(sample) >= __half2float(min_level) && __half2float(sample) < __half2float(max_level);));
     }
-#endif // __CUDA_FP16_TYPES_EXIST__
+#endif // _CCCL_HAS_NVFP16()
 
     /**
      * @brief Bin computation for floating point (and extended floating point) types
@@ -778,7 +778,7 @@ public:
       return this->ComputeBin(sample, min_level, scale, ::cuda::std::is_floating_point<T>{});
     }
 
-#ifdef __CUDA_FP16_TYPES_EXIST__
+#if _CCCL_HAS_NVFP16()
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(__half sample, __half min_level, ScaleT scale)
     {
       NV_IF_TARGET(
@@ -786,7 +786,7 @@ public:
         (return static_cast<int>(__hmul(__hsub(sample, min_level), scale.reciprocal));),
         (return static_cast<int>((__half2float(sample) - __half2float(min_level)) * __half2float(scale.reciprocal));));
     }
-#endif // __CUDA_FP16_TYPES_EXIST__
+#endif // _CCCL_HAS_NVFP16()
 
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool
     MayOverflow(CommonT /* num_bins */, ::cuda::std::false_type /* is_integral */)
