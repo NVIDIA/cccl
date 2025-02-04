@@ -36,14 +36,14 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // optimized version of runtime clz that is used in device code.
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_clz_32bit(uint32_t __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_CLZ)
-  return _CCCL_BUILTIN_CLZ(__x);
-#else
   constexpr auto __digits = numeric_limits<uint32_t>::digits;
   if (__x == 0)
   {
     return __digits;
   }
+#if defined(_CCCL_BUILTIN_CLZ)
+  return _CCCL_BUILTIN_CLZ(__x);
+#else
   unsigned __res = 0;
   for (unsigned __i = __digits / 2; __i >= 1; __i /= 2)
   {
@@ -69,7 +69,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_clz(_Tp __x) noexcept
   else
   {
 #if defined(_CCCL_BUILTIN_CLZLL)
-    return _CCCL_BUILTIN_CLZLL(__x);
+    return __x == 0 ? numeric_limits<_Tp>::digits : _CCCL_BUILTIN_CLZLL(__x);
 #else
     auto __higher = __constexpr_clz_32bit(static_cast<uint32_t>(__x >> 32));
     return __higher != numeric_limits<uint32_t>::digits
@@ -90,7 +90,7 @@ _CCCL_HIDE_FROM_ABI int __host_runtime_clz(_Tp __x) noexcept
   auto __res = sizeof(_Tp) == sizeof(uint32_t)
                ? _BitScanReverse(&__where, static_cast<uint32_t>(__x))
                : _BitScanReverse64(&__where, static_cast<uint64_t>(__x));
-  return (__res) ? __digits - 1 - static_cast<int>(__where) : __digits;
+  return __res ? __digits - 1 - static_cast<int>(__where) : __digits;
 #  else
   return __constexpr_clz(__x);
 #  endif // _CCCL_COMPILER(MSVC)
@@ -113,9 +113,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_clz(_Tp __x) noex
 {
   static_assert(is_same_v<_Tp, uint32_t> || is_same_v<_Tp, uint64_t>);
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  return is_constant_evaluated()
-         ? (__x == 0 ? numeric_limits<_Tp>::digits : _CUDA_VSTD::__constexpr_clz(__x))
-         : _CUDA_VSTD::__runtime_clz(__x);
+  return is_constant_evaluated() ? _CUDA_VSTD::__constexpr_clz(__x) : _CUDA_VSTD::__runtime_clz(__x);
 #else
   return _CUDA_VSTD::__constexpr_clz(__x);
 #endif

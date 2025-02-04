@@ -36,10 +36,6 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp) _CCCL_AND(sizeof(_Tp) <= sizeof(uint64_t)))
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __countl_zero(_Tp __t) noexcept
 {
-  if (is_constant_evaluated() && __t == 0)
-  {
-    return numeric_limits<_Tp>::digits;
-  }
   using _Sp                    = _If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
   constexpr auto __digits_diff = numeric_limits<_Sp>::digits - numeric_limits<_Tp>::digits;
   return _CUDA_VSTD::__cccl_clz(static_cast<_Sp>(__t)) - __digits_diff;
