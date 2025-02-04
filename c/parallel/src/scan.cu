@@ -161,6 +161,13 @@ std::string get_scan_kernel_name(cccl_iterator_t input_it, cccl_iterator_t outpu
     init_t); // 9
 }
 
+// TODO: NVRTC doesn't currently support extracting basic type
+// information (e.g., type sizes and alignments) from compiled
+// LTO-IR. So we separately compile a small PTX file that defines the
+// necessary types and constants and grep it for the required
+// information. If/when NVRTC adds these features, we can remove this
+// extra compilation step and get the information directly from the
+// LTO-IR.
 static constexpr auto ptx_u64_assignment_regex = R"(\.visible\s+\.global\s+\.align\s+\d+\s+\.u64\s+{}\s*=\s*(\d+);)";
 
 std::optional<size_t> find_size_t(char* ptx, std::string_view name)
