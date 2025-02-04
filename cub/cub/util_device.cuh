@@ -581,8 +581,6 @@ struct KernelConfig
   int tile_size{0};
   int sm_occupancy{0};
 
-  _CCCL_VISIBILITY_HIDDEN explicit KernelConfig() noexcept = default;
-
   template <typename AgentPolicyT, typename KernelPtrT, typename LauncherFactory = detail::TripleChevronFactory>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   Init(KernelPtrT kernel_ptr, AgentPolicyT agent_policy = {}, LauncherFactory launcher_factory = {})
