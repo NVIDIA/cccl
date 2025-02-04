@@ -61,7 +61,7 @@
 #  define CUB_CPP_DIALECT _CCCL_STD_VER
 
 // Define CUB_COMPILER_DEPRECATION macro:
-#  if _CCCL_COMPILER(MSVC)
+#  if _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
 #    define CUB_COMP_DEPR_IMPL(msg) _CCCL_PRAGMA(message(__FILE__ ":" _CCCL_TO_STRING(__LINE__) ": warning: " #msg))
 #  else // clang / gcc:
 #    define CUB_COMP_DEPR_IMPL(msg) _CCCL_PRAGMA(GCC warning #msg)
