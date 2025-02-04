@@ -10,10 +10,13 @@
 
 #include <cuda_runtime.h>
 
+#include <cstdint>
 #include <vector>
 
 #include "test_util.h"
 #include <cccl/c/merge_sort.h>
+
+using key_types = std::tuple<std::uint8_t, std::int16_t, std::uint32_t, double>;
 
 void merge_sort(cccl_iterator_t input_keys,
                 cccl_iterator_t input_items,
@@ -68,13 +71,12 @@ void merge_sort(cccl_iterator_t input_keys,
   REQUIRE(CUDA_SUCCESS == cccl_device_merge_sort_cleanup(&build));
 }
 
-using integral_types = std::tuple<int32_t, uint32_t, int64_t, uint64_t>;
-TEMPLATE_LIST_TEST_CASE("Merge Sort works with integral keys", "[merge_sort]", integral_types)
+TEMPLATE_LIST_TEST_CASE("DeviceMergeSort::SortKeys works", "[merge_sort]", key_types)
 {
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
 
   operation_t op                      = make_operation("op", get_merge_sort_op(get_type_info<TestType>().type));
-  std::vector<TestType> input_keys    = generate<TestType>(num_items);
+  std::vector<TestType> input_keys    = make_shuffled_key_ranks_vector<TestType>(num_items);
   std::vector<TestType> expected_keys = input_keys;
 
   pointer_t<TestType> input_keys_it(input_keys);
@@ -88,13 +90,12 @@ TEMPLATE_LIST_TEST_CASE("Merge Sort works with integral keys", "[merge_sort]", i
   REQUIRE(expected_keys == std::vector<TestType>(output_keys_it));
 }
 
-using integral_types = std::tuple<int32_t, uint32_t, int64_t, uint64_t>;
-TEMPLATE_LIST_TEST_CASE("Merge Sort Copy works with integral keys", "[merge_sort]", integral_types)
+TEMPLATE_LIST_TEST_CASE("DeviceMergeSort::SortKeysCopy works", "[merge_sort]", key_types)
 {
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
 
   operation_t op                   = make_operation("op", get_merge_sort_op(get_type_info<TestType>().type));
-  std::vector<TestType> input_keys = generate<TestType>(num_items);
+  std::vector<TestType> input_keys = make_shuffled_key_ranks_vector<TestType>(num_items);
   std::vector<TestType> output_keys(num_items);
   std::vector<TestType> expected_keys = input_keys;
 
