@@ -157,9 +157,8 @@ template <typename ValueT> struct sm100_small_key_tuning<ValueT, 1,  2, 4> { sta
 // todo(@gonidelis): insignificant performance gain, need more runs.
 template <typename ValueT> struct sm100_small_key_tuning<ValueT, 1,  4, 4> { static constexpr int threads = 512; static constexpr int items = 18; };
 
-// ipt_16.tpb_288 1.011126  0.935484  1.005081  1.039210
-// todo(@gonidelis): insignificant performance gain, need more runs.
-template <typename ValueT> struct sm100_small_key_tuning<ValueT, 1,  8, 4> { static constexpr int threads = 288; static constexpr int items = 16; };
+// todo(@gonidelis): regresses for large problem sizes.
+// template <typename ValueT> struct sm100_small_key_tuning<ValueT, 1,  8, 4> { static constexpr int threads = 288; static constexpr int items = 16; };
 
 // ipt_21.tpb_576 1.044274  0.979145  1.038723  1.072068
 // todo(@gonidelis): insignificant performance gain, need more runs.
@@ -175,8 +174,8 @@ template <typename ValueT> struct sm100_small_key_tuning<ValueT, 1,  2, 8> { sta
 // ipt_15.tpb_384 1.029730  0.972699  1.029066  1.067894
 template <typename ValueT> struct sm100_small_key_tuning<ValueT, 1,  4, 8> { static constexpr int threads = 384; static constexpr int items = 15; };
 
-// ipt_17.tpb_256 1.086742  0.998922  1.076908  1.168159
-template <typename ValueT> struct sm100_small_key_tuning<ValueT, 1,  8, 8> { static constexpr int threads = 256; static constexpr int items = 17; };
+// todo(@gonidelis): regresses for large problem sizes.
+// template <typename ValueT> struct sm100_small_key_tuning<ValueT, 1,  8, 8> { static constexpr int threads = 256; static constexpr int items = 17; };
 
 // same as previous tuning
 template <typename ValueT> struct sm100_small_key_tuning<ValueT, 1,  16, 8> : sm90_small_key_tuning<1, 16, 8> {};
@@ -193,8 +192,8 @@ template <typename ValueT> struct sm100_small_key_tuning<ValueT, 2,  2, 4> { sta
 // same as previous tuning
 template <typename ValueT> struct sm100_small_key_tuning<ValueT, 2,  4, 4>  : sm90_small_key_tuning<2, 4, 4> {};
 
-// ipt_17.tpb_256 1.122540  0.998612  1.108050  1.253764
-template <typename ValueT> struct sm100_small_key_tuning<ValueT, 2,  8, 4> { static constexpr int threads = 256; static constexpr int items = 17; };
+// todo(@gonidelis): regresses for large problem sizes.
+// template <typename ValueT> struct sm100_small_key_tuning<ValueT, 2,  8, 4> { static constexpr int threads = 256; static constexpr int items = 17; };
 
 // same as previous tuning
 template <typename ValueT> struct sm100_small_key_tuning<ValueT, 2,  16, 4> : sm90_small_key_tuning<2, 16, 4> {};
@@ -208,8 +207,8 @@ template <typename ValueT> struct sm100_small_key_tuning<ValueT, 2,  2, 8> { sta
 // ipt_18.tpb_512 1.096819  0.953488  1.082026  1.209533
 template <typename ValueT> struct sm100_small_key_tuning<ValueT, 2,  4, 8> { static constexpr int threads = 512; static constexpr int items = 18; };
 
-// ipt_16.tpb_288 1.025287  0.975510  1.020999  1.064758
-template <typename ValueT> struct sm100_small_key_tuning<ValueT, 2,  8, 8> { static constexpr int threads = 288; static constexpr int items = 16; };
+// todo(@gonidelis): regresses for large problem sizes.
+// template <typename ValueT> struct sm100_small_key_tuning<ValueT, 2,  8, 8> { static constexpr int threads = 288; static constexpr int items = 16; };
 
 // same as previous tuning
 template <typename ValueT> struct sm100_small_key_tuning<ValueT, 2,  16, 8> : sm90_small_key_tuning<2, 16, 8> {};
