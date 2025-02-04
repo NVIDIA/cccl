@@ -1,3 +1,4 @@
+cuda/_include
 env
 *egg-info
 *so
