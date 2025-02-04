@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import os
+import shutil
 import subprocess
 from pathlib import Path
 
