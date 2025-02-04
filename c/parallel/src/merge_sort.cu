@@ -127,7 +127,7 @@ merge_sort_runtime_tuning_policy get_policy(int cc, int key_size)
   // TODO: we hardcode this value in order to make sure that the merge_sort test does not fail due to the memory op
   // assertions. This currently happens when we pass in items and keys of type uint8_t or int16_t. This will be fixed
   // after https://github.com/NVIDIA/cccl/issues/3570 is resolved.
-  items_per_thread = 2;
+  items_per_thread = 4;
 
   return {block_size, items_per_thread, block_size * items_per_thread};
 }
@@ -305,17 +305,20 @@ extern "C" CCCL_C_API CUresult cccl_device_merge_sort_build(
     const std::string src = std::format(
       "#include <cub/device/dispatch/kernels/merge_sort.cuh>\n"
       "#include <cub/util_type.cuh>\n" // needed for cub::NullType
-      "struct __align__({1}) storage_t {{\n"
+      "struct __align__({1}) keys_storage_t {{\n"
       "  char data[{0}];\n"
       "}};\n"
-      "{5}\n"
-      "{6}\n"
+      "struct __align__({3}) items_storage_t {{\n"
+      "  char data[{2}];\n"
+      "}};\n"
       "{7}\n"
       "{8}\n"
+      "{9}\n"
+      "{10}\n"
       "struct agent_policy_t {{\n"
-      "  static constexpr int ITEMS_PER_TILE = {4};\n"
-      "  static constexpr int ITEMS_PER_THREAD = {3};\n"
-      "  static constexpr int BLOCK_THREADS = {2};\n"
+      "  static constexpr int ITEMS_PER_TILE = {6};\n"
+      "  static constexpr int ITEMS_PER_THREAD = {5};\n"
+      "  static constexpr int BLOCK_THREADS = {4};\n"
       "  static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = cub::BLOCK_LOAD_WARP_TRANSPOSE;\n"
       "  static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_LDG;\n"
       "  static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = cub::BLOCK_STORE_WARP_TRANSPOSE;\n"
@@ -325,17 +328,19 @@ extern "C" CCCL_C_API CUresult cccl_device_merge_sort_build(
       "    using MergeSortPolicy = agent_policy_t;\n"
       "  }};\n"
       "}};\n"
-      "{9};\n",
+      "{11};\n",
       input_keys_it.value_type.size, // 0
       input_keys_it.value_type.alignment, // 1
-      policy.block_size, // 2
-      policy.items_per_thread, // 3
-      policy.items_per_tile, // 4
-      input_keys_iterator_src, // 5
-      input_items_iterator_src, // 6
-      output_keys_iterator_src, // 7
-      output_items_iterator_src, // 8
-      op_src); // 9
+      input_items_it.value_type.size, // 2
+      input_items_it.value_type.alignment, // 3
+      policy.block_size, // 4
+      policy.items_per_thread, // 5
+      policy.items_per_tile, // 6
+      input_keys_iterator_src, // 7
+      input_items_iterator_src, // 8
+      output_keys_iterator_src, // 9
+      output_items_iterator_src, // 10
+      op_src); // 11
 
 #if false // CCCL_DEBUGGING_SWITCH
     fflush(stderr);
