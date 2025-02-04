@@ -156,16 +156,16 @@ struct nvrtc_command_list_visitor
 
     check(jitlink_error);
 
-    bool ptx    = false;
-    auto result = nvJitLinkGetLinkedCubinSize(jitlink.handle, &cleanup.cubin_ref.size);
+    bool output_ptx = false;
+    auto result     = nvJitLinkGetLinkedCubinSize(jitlink.handle, &cleanup.cubin_ref.size);
     if (result != NVJITLINK_SUCCESS)
     {
-      ptx    = true;
-      result = nvJitLinkGetLinkedPtxSize(jitlink.handle, &cleanup.cubin_ref.size);
+      output_ptx = true;
+      check(nvJitLinkGetLinkedPtxSize(jitlink.handle, &cleanup.cubin_ref.size));
     }
     cleanup.cubin_ref.cubin = std::unique_ptr<char[]>(new char[cleanup.cubin_ref.size]);
 
-    if (ptx)
+    if (output_ptx)
     {
       check(nvJitLinkGetLinkedPtx(jitlink.handle, cleanup.cubin_ref.cubin.get()));
     }
