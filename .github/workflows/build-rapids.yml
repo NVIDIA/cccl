@@ -79,7 +79,6 @@ jobs:
           # Start the ssh-agent and add the repo deploy keys
           if ! pgrep ssh-agent >/dev/null 2>&1; then eval "$(ssh-agent -s)"; fi
           ssh-add - <<< '${{ secrets.RAPIDSAI_CUMLPRIMS_DEPLOY_KEY }}'
-          ssh-add - <<< '${{ secrets.RAPIDSAI_CUGRAPH_OPS_DEPLOY_KEY }}'
           devcontainer-utils-init-ssh-deploy-keys || true
           exec "$@"
           EOF
