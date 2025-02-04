@@ -29,9 +29,13 @@
 #include <cub/iterator/discard_output_iterator.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__cccl_config>
 #include <cuda/std/type_traits>
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(C4702) // unreachable code in catch.hpp
 #include <c2h/catch2_test_helper.h>
+_CCCL_DIAG_POP
 #include <c2h/extended_types.h>
 
 C2H_TEST("Tests non_void_value_t", "[util][type]")
