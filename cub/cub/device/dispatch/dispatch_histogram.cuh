@@ -1,4 +1,3 @@
-
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
@@ -36,6 +35,8 @@
 #pragma once
 
 #include <cub/config.cuh>
+
+#include <cuda/std/__type_traits/is_void.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -98,6 +99,9 @@ CUB_NAMESPACE_BEGIN
  * @param tile_queue
  *   Drain queue descriptor for dynamically mapping tile data onto thread blocks
  */
+namespace detail::histogram
+{
+
 template <int NUM_ACTIVE_CHANNELS, typename CounterT, typename OffsetT>
 CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
   ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_bins_wrapper,
@@ -253,9 +257,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT::BLOCK
   // Store output to global (if necessary)
   agent.StoreOutput();
 }
-
-namespace detail
-{
 
 template <int NUM_CHANNELS,
           int NUM_ACTIVE_CHANNELS,
@@ -434,15 +435,15 @@ struct dispatch_histogram
         (max_num_output_bins + histogram_init_block_threads - 1) / histogram_init_block_threads;
 
 // Log DeviceHistogramInitKernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking DeviceHistogramInitKernel<<<%d, %d, 0, %lld>>>()\n",
               histogram_init_grid_dims,
               histogram_init_block_threads,
               (long long) stream);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
       // Invoke histogram_init_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
         histogram_init_grid_dims, histogram_init_block_threads, 0, stream)
         .doit(histogram_init_kernel, num_output_bins_wrapper, d_output_histograms_wrapper, tile_queue);
 
@@ -453,7 +454,7 @@ struct dispatch_histogram
       }
 
 // Log histogram_sweep_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking histogram_sweep_kernel<<<{%d, %d, %d}, %d, 0, %lld>>>(), %d pixels "
               "per thread, %d SM occupancy\n",
               sweep_grid_dims.x,
@@ -463,10 +464,10 @@ struct dispatch_histogram
               (long long) stream,
               pixels_per_thread,
               histogram_sweep_sm_occupancy);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
       // Invoke histogram_sweep_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(sweep_grid_dims, block_threads, 0, stream)
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(sweep_grid_dims, block_threads, 0, stream)
         .doit(histogram_sweep_kernel,
               d_samples,
               num_output_bins_wrapper,
@@ -503,20 +504,21 @@ struct dispatch_histogram
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     return Invoke<ActivePolicyT>(
-      DeviceHistogramInitKernel<NUM_ACTIVE_CHANNELS, CounterT, OffsetT>,
-      DeviceHistogramSweepKernel<MaxPolicyT,
-                                 PRIVATIZED_SMEM_BINS,
-                                 NUM_CHANNELS,
-                                 NUM_ACTIVE_CHANNELS,
-                                 SampleIteratorT,
-                                 CounterT,
-                                 PrivatizedDecodeOpT,
-                                 OutputDecodeOpT,
-                                 OffsetT>);
+      detail::histogram::DeviceHistogramInitKernel<NUM_ACTIVE_CHANNELS, CounterT, OffsetT>,
+      detail::histogram::DeviceHistogramSweepKernel<
+        MaxPolicyT,
+        PRIVATIZED_SMEM_BINS,
+        NUM_CHANNELS,
+        NUM_ACTIVE_CHANNELS,
+        SampleIteratorT,
+        CounterT,
+        PrivatizedDecodeOpT,
+        OutputDecodeOpT,
+        OffsetT>);
   }
 };
 
-} // namespace detail
+} // namespace detail::histogram
 
 /******************************************************************************
  * Dispatch
@@ -554,8 +556,7 @@ template <int NUM_CHANNELS,
           typename CounterT,
           typename LevelT,
           typename OffsetT,
-          typename PolicyHub =
-            detail::histogram::policy_hub<detail::value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS>>
+          typename PolicyHub = void> // if user passes a custom Policy this should not be void
 struct DispatchHistogram
 {
   static_assert(NUM_CHANNELS <= 4, "Histograms only support up to 4 channels");
@@ -646,27 +647,27 @@ public:
     using IntArithmeticT = ::cuda::std::_If< //
       sizeof(SampleT) + sizeof(CommonT) <= sizeof(uint32_t), //
       uint32_t, //
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
       ::cuda::std::_If< //
         (::cuda::std::is_same<CommonT, __int128_t>::value || //
          ::cuda::std::is_same<CommonT, __uint128_t>::value), //
         CommonT, //
         uint64_t> //
-#else // ^^^ CUB_IS_INT128_ENABLED ^^^ / vvv !CUB_IS_INT128_ENABLED vvv
+#else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
       uint64_t
-#endif // !CUB_IS_INT128_ENABLED
+#endif // !_CCCL_HAS_INT128()
       >;
 
     // Alias template that excludes __[u]int128 from the integral types
     template <typename T>
     using is_integral_excl_int128 =
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
       ::cuda::std::_If<::cuda::std::is_same<T, __int128_t>::value&& ::cuda::std::is_same<T, __uint128_t>::value,
                        ::cuda::std::false_type,
                        ::cuda::std::is_integral<T>>;
-#else // ^^^ CUB_IS_INT128_ENABLED ^^^ / vvv !CUB_IS_INT128_ENABLED vvv
+#else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
       ::cuda::std::is_integral<T>;
-#endif // !CUB_IS_INT128_ENABLED
+#endif // !_CCCL_HAS_INT128()
 
     union ScaleT
     {
@@ -920,8 +921,14 @@ public:
     cudaStream_t stream,
     Int2Type<false> /*is_byte_sample*/)
   {
-    using MaxPolicyT = typename PolicyHub::MaxPolicy;
-    cudaError error  = cudaSuccess;
+    // Should we call DispatchHistogram<....., PolicyHub=void> in DeviceHistogram?
+    static constexpr bool isEven = 0;
+    using fallback_policy_hub    = detail::histogram::
+      policy_hub<detail::value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
+
+    using MaxPolicyT =
+      typename cuda::std::_If<cuda::std::is_void<PolicyHub>::value, fallback_policy_hub, PolicyHub>::MaxPolicy;
+    cudaError error = cudaSuccess;
 
     do
     {
@@ -959,7 +966,7 @@ public:
         // Too many bins to keep in shared memory.
         constexpr int PRIVATIZED_SMEM_BINS = 0;
 
-        detail::dispatch_histogram<
+        detail::histogram::dispatch_histogram<
           NUM_CHANNELS,
           NUM_ACTIVE_CHANNELS,
           PRIVATIZED_SMEM_BINS,
@@ -995,7 +1002,7 @@ public:
         // Dispatch shared-privatized approach
         constexpr int PRIVATIZED_SMEM_BINS = MAX_PRIVATIZED_SMEM_BINS;
 
-        detail::dispatch_histogram<
+        detail::histogram::dispatch_histogram<
           NUM_CHANNELS,
           NUM_ACTIVE_CHANNELS,
           PRIVATIZED_SMEM_BINS,
@@ -1091,8 +1098,13 @@ public:
     cudaStream_t stream,
     Int2Type<true> /*is_byte_sample*/)
   {
-    using MaxPolicyT = typename PolicyHub::MaxPolicy;
-    cudaError error  = cudaSuccess;
+    static constexpr bool isEven = 0;
+    using fallback_policy_hub    = detail::histogram::
+      policy_hub<detail::value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
+
+    using MaxPolicyT =
+      typename cuda::std::_If<cuda::std::is_void<PolicyHub>::value, fallback_policy_hub, PolicyHub>::MaxPolicy;
+    cudaError error = cudaSuccess;
 
     do
     {
@@ -1129,7 +1141,7 @@ public:
 
       constexpr int PRIVATIZED_SMEM_BINS = 256;
 
-      detail::dispatch_histogram<
+      detail::histogram::dispatch_histogram<
         NUM_CHANNELS,
         NUM_ACTIVE_CHANNELS,
         PRIVATIZED_SMEM_BINS,
@@ -1226,8 +1238,13 @@ public:
     cudaStream_t stream,
     Int2Type<false> /*is_byte_sample*/)
   {
-    using MaxPolicyT = typename PolicyHub::MaxPolicy;
-    cudaError error  = cudaSuccess;
+    static constexpr bool isEven = 1;
+    using fallback_policy_hub    = detail::histogram::
+      policy_hub<detail::value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
+
+    using MaxPolicyT =
+      typename cuda::std::_If<cuda::std::is_void<PolicyHub>::value, fallback_policy_hub, PolicyHub>::MaxPolicy;
+    cudaError error = cudaSuccess;
 
     do
     {
@@ -1277,7 +1294,7 @@ public:
         // Dispatch shared-privatized approach
         constexpr int PRIVATIZED_SMEM_BINS = 0;
 
-        detail::dispatch_histogram<
+        detail::histogram::dispatch_histogram<
           NUM_CHANNELS,
           NUM_ACTIVE_CHANNELS,
           PRIVATIZED_SMEM_BINS,
@@ -1313,7 +1330,7 @@ public:
         // Dispatch shared-privatized approach
         constexpr int PRIVATIZED_SMEM_BINS = MAX_PRIVATIZED_SMEM_BINS;
 
-        detail::dispatch_histogram<
+        detail::histogram::dispatch_histogram<
           NUM_CHANNELS,
           NUM_ACTIVE_CHANNELS,
           PRIVATIZED_SMEM_BINS,
@@ -1412,8 +1429,13 @@ public:
     cudaStream_t stream,
     Int2Type<true> /*is_byte_sample*/)
   {
-    using MaxPolicyT = typename PolicyHub::MaxPolicy;
-    cudaError error  = cudaSuccess;
+    static constexpr bool isEven = 1;
+    using fallback_policy_hub    = detail::histogram::
+      policy_hub<detail::value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
+
+    using MaxPolicyT =
+      typename cuda::std::_If<cuda::std::is_void<PolicyHub>::value, fallback_policy_hub, PolicyHub>::MaxPolicy;
+    cudaError error = cudaSuccess;
 
     do
     {
@@ -1451,7 +1473,7 @@ public:
 
       constexpr int PRIVATIZED_SMEM_BINS = 256;
 
-      detail::dispatch_histogram<
+      detail::histogram::dispatch_histogram<
         NUM_CHANNELS,
         NUM_ACTIVE_CHANNELS,
         PRIVATIZED_SMEM_BINS,

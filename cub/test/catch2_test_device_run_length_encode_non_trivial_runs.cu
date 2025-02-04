@@ -258,13 +258,13 @@ struct device_rle_policy_hub
   static constexpr int threads = 96;
   static constexpr int items   = 15;
 
-  struct Policy350 : cub::ChainedPolicy<350, Policy350, Policy350>
+  struct Policy500 : cub::ChainedPolicy<500, Policy500, Policy500>
   {
     using RleSweepPolicyT = cub::
       AgentRlePolicy<threads, items, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, TimeSlicing, cub::BLOCK_SCAN_WARP_SCANS>;
   };
 
-  using MaxPolicy = Policy350;
+  using MaxPolicy = Policy500;
 };
 
 struct CustomDeviceRunLengthEncode

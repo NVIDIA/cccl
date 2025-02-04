@@ -1,3 +1,7 @@
+#include <cuda/__cccl_config>
+
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 #include <thrust/detail/config.h>
 
 #if _CCCL_STD_VER >= 2014
@@ -166,3 +170,5 @@ void test_using_cpo()
 DECLARE_UNITTEST(test_using_cpo);
 
 #endif // C++14
+
+_CCCL_SUPPRESS_DEPRECATED_POP

@@ -13,13 +13,6 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDACC_BELOW(11, 5)
-_CCCL_NV_DIAG_SUPPRESS(186)
-#  include <cuda_pipeline_primitives.h>
-// we cannot re-enable the warning here, because it is triggered outside the translation unit
-// see also: https://godbolt.org/z/1x8b4hn3G
-#endif // _CCCL_CUDACC_BELOW(11, 5)
-
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/device/dispatch/tuning/tuning_transform.cuh>
 #include <cub/util_arch.cuh>
@@ -31,6 +24,7 @@ _CCCL_NV_DIAG_SUPPRESS(186)
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
+#include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/cmath>
 #include <cuda/ptx>
@@ -53,9 +47,7 @@ _CCCL_NV_DIAG_SUPPRESS(186)
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace transform
+namespace detail::transform
 {
 template <typename T>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE const char* round_down_ptr(const T* ptr, unsigned alignment)
@@ -118,7 +110,7 @@ _CCCL_DEVICE void transform_kernel_impl(
   constexpr int block_dim = PrefetchPolicy::block_threads;
   const int tile_stride   = block_dim * num_elem_per_thread;
   const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_stride;
-  const int tile_size     = static_cast<int>(::cuda::std::min(num_items - offset, Offset{tile_stride}));
+  const int tile_size     = static_cast<int>((::cuda::std::min)(num_items - offset, Offset{tile_stride}));
 
   // move index and iterator domain to the block/thread index, to reduce arithmetic in the loops below
   {
@@ -329,7 +321,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   constexpr int block_dim = BulkCopyPolicy::block_threads;
   const int tile_stride   = block_dim * num_elem_per_thread;
   const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_stride;
-  const int tile_size     = ::cuda::std::min(num_items - offset, Offset{tile_stride});
+  const int tile_size     = (::cuda::std::min)(num_items - offset, Offset{tile_stride});
 
   const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
   if (inner_blocks)
@@ -662,7 +654,7 @@ struct dispatch_t<RequiresStableAddress,
   template <typename ActivePolicy>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_ublkcp_kernel() -> PoorExpected<
     ::cuda::std::
-      tuple<THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron, decltype(CUB_DETAIL_TRANSFORM_KERNEL_PTR), int>>
+      tuple<THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron, decltype(CUB_DETAIL_TRANSFORM_KERNEL_PTR), int>>
   {
     using policy_t          = typename ActivePolicy::algo_policy;
     constexpr int block_dim = policy_t::block_threads;
@@ -688,10 +680,8 @@ struct dispatch_t<RequiresStableAddress,
         const int smem_size = bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>(tile_size);
         if (smem_size > *max_smem)
         {
-#  ifdef CUB_DETAIL_DEBUG_ENABLE_HOST_ASSERTIONS
           // assert should be prevented by smem check in policy
-          assert(last_counts.elem_per_thread > 0 && "min_items_per_thread exceeds available shared memory");
-#  endif // CUB_DETAIL_DEBUG_ENABLE_HOST_ASSERTIONS
+          _CCCL_ASSERT_HOST(last_counts.elem_per_thread > 0, "min_items_per_thread exceeds available shared memory");
           return last_counts;
         }
 
@@ -729,16 +719,14 @@ struct dispatch_t<RequiresStableAddress,
     {
       return config.error;
     }
-#  ifdef CUB_DETAIL_DEBUG_ENABLE_HOST_ASSERTIONS
-    assert(config->elem_per_thread > 0);
-    assert(config->tile_size > 0);
-    assert(config->tile_size % bulk_copy_alignment == 0);
-    assert((sizeof...(RandomAccessIteratorsIn) == 0) != (config->smem_size != 0)); // logical xor
-#  endif // CUB_DETAIL_DEBUG_ENABLE_HOST_ASSERTIONS
+    _CCCL_ASSERT_HOST(config->elem_per_thread > 0, "");
+    _CCCL_ASSERT_HOST(config->tile_size > 0, "");
+    _CCCL_ASSERT_HOST(config->tile_size % bulk_copy_alignment == 0, "");
+    _CCCL_ASSERT_HOST((sizeof...(RandomAccessIteratorsIn) == 0) != (config->smem_size != 0), ""); // logical xor
 
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{config->tile_size}));
     return ::cuda::std::make_tuple(
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(grid_dim, block_dim, config->smem_size, stream),
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid_dim, block_dim, config->smem_size, stream),
       CUB_DETAIL_TRANSFORM_KERNEL_PTR,
       config->elem_per_thread);
   }
@@ -812,14 +800,14 @@ struct dispatch_t<RequiresStableAddress,
 
     // but also generate enough blocks for full occupancy to optimize small problem sizes, e.g., 2^16 or 2^20 elements
     const int items_per_thread_evenly_spread = static_cast<int>(
-      ::cuda::std::min(Offset{items_per_thread}, num_items / (config->sm_count * block_dim * config->max_occupancy)));
+      (::cuda::std::min)(Offset{items_per_thread}, num_items / (config->sm_count * block_dim * config->max_occupancy)));
 
     const int items_per_thread_clamped = ::cuda::std::clamp(
       items_per_thread_evenly_spread, +policy_t::min_items_per_thread, +policy_t::max_items_per_thread);
     const int tile_size = block_dim * items_per_thread_clamped;
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{tile_size}));
     return CubDebug(
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(grid_dim, block_dim, 0, stream)
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid_dim, block_dim, 0, stream)
         .doit(
           CUB_DETAIL_TRANSFORM_KERNEL_PTR,
           num_items,
@@ -862,6 +850,5 @@ struct dispatch_t<RequiresStableAddress,
 
 #undef CUB_DETAIL_TRANSFORM_KERNEL_PTR
 };
-} // namespace transform
-} // namespace detail
+} // namespace detail::transform
 CUB_NAMESPACE_END

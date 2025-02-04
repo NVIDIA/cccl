@@ -42,11 +42,11 @@
 #endif
 
 // Compile with NVCC compiler and only device code, Volta+  GPUs
-#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_PTX_ARCH >= 700 && _CCCL_CUDACC_AT_LEAST(11, 7)
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_PTX_ARCH >= 700
 #  define _CCCL_GRID_CONSTANT __grid_constant__
 #else // ^^^ _CCCL_CUDA_COMPILER(NVCC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC) vvv
 #  define _CCCL_GRID_CONSTANT
-#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_PTX_ARCH >= 700 && _CCCL_CUDACC_AT_LEAST(11, 7)
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_PTX_ARCH >= 700
 
 #if !defined(_CCCL_EXEC_CHECK_DISABLE)
 #  if _CCCL_CUDA_COMPILER(NVCC)

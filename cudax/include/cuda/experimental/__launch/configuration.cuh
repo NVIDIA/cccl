@@ -463,7 +463,7 @@ template <typename L1, typename Dims1, typename L2, typename Dims2>
 _CUDAX_HOST_API constexpr auto
 operator&(const level_dimensions<L1, Dims1>& l1, const level_dimensions<L2, Dims2>& l2) noexcept
 {
-  return kernel_config(make_hierarchy_fragment(l1, l2));
+  return kernel_config(make_hierarchy(l1, l2));
 }
 
 template <typename _Dimensions, typename... _Options>
@@ -505,9 +505,9 @@ _CCCL_NODISCARD constexpr auto operator&(const hierarchy_dimensions<Levels...>& 
  */
 template <typename BottomUnit, typename... Levels, typename... Opts>
 _CCCL_NODISCARD constexpr auto
-make_config(const hierarchy_dimensions_fragment<BottomUnit, Levels...>& dims, const Opts&... opts) noexcept
+make_config(const hierarchy_dimensions<BottomUnit, Levels...>& dims, const Opts&... opts) noexcept
 {
-  return kernel_config<hierarchy_dimensions_fragment<BottomUnit, Levels...>, Opts...>(dims, opts...);
+  return kernel_config<hierarchy_dimensions<BottomUnit, Levels...>, Opts...>(dims, opts...);
 }
 
 /**
@@ -544,7 +544,7 @@ _CCCL_NODISCARD constexpr auto __process_config_args(const ::cuda::std::tuple<Pr
   }
   else
   {
-    return kernel_config(::cuda::std::apply(make_hierarchy_fragment<void, const Prev&...>, previous));
+    return kernel_config(::cuda::std::apply(make_hierarchy<void, const Prev&...>, previous));
   }
 }
 
@@ -562,7 +562,7 @@ __process_config_args(const ::cuda::std::tuple<Prev...>& previous, const Arg& ar
     }
     else
     {
-      return kernel_config(::cuda::std::apply(make_hierarchy_fragment<void, const Prev&...>, previous), arg, rest...);
+      return kernel_config(::cuda::std::apply(make_hierarchy<void, const Prev&...>, previous), arg, rest...);
     }
   }
   else

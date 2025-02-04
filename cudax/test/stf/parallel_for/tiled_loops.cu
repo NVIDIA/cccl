@@ -66,7 +66,7 @@ int main()
   bool* pchecked = &checked;
 
   /* Check the result on the host */
-  ctx.parallel_for(exec_place::host, ly.shape(), ly.read())->*[=](size_t pos, slice<double> sy) {
+  ctx.parallel_for(exec_place::host, ly.shape(), ly.read())->*[=](size_t pos, slice<const double> sy) {
     int expected = static_cast<int>(ref_tiling(pos, tile_size, nparts));
     int value    = (int) sy(pos);
     if (expected != value)

@@ -38,6 +38,8 @@
 #include <thrust/mr/memory_resource.h>
 #include <thrust/mr/pool_options.h>
 
+#include <cuda/std/cstdint>
+
 #include <cassert>
 
 THRUST_NAMESPACE_BEGIN
@@ -441,7 +443,7 @@ public:
     assert(detail::is_power_of_2(alignment));
 
     // verify that the pointer is at least as aligned as claimed
-    assert(reinterpret_cast<detail::intmax_t>(void_ptr_traits::get(p)) % alignment == 0);
+    assert(reinterpret_cast<::cuda::std::intmax_t>(void_ptr_traits::get(p)) % alignment == 0);
 
     // the deallocated block is oversized and/or overaligned
     if (n > m_options.largest_block_size || alignment > m_options.alignment)

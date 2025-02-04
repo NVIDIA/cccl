@@ -28,6 +28,7 @@
 #include <cub/device/device_radix_sort.cuh>
 #include <cub/util_arch.cuh>
 
+#include <cuda/std/functional>
 #include <cuda/std/type_traits>
 
 #include <nvbench_helper.cuh>
@@ -107,7 +108,8 @@ constexpr std::size_t max_onesweep_temp_storage_size()
   using hist_policy = typename policy_hub_t<KeyT, ValueT, OffsetT>::policy_t::HistogramPolicy;
   using hist_agent  = cub::AgentRadixSortHistogram<hist_policy, is_descending, KeyT, OffsetT>;
 
-  return cub::max(sizeof(typename agent_radix_sort_onesweep_t::TempStorage), sizeof(typename hist_agent::TempStorage));
+  return (::cuda::std::max)(sizeof(typename agent_radix_sort_onesweep_t::TempStorage),
+                            sizeof(typename hist_agent::TempStorage));
 }
 
 template <typename KeyT, typename ValueT, typename OffsetT>

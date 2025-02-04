@@ -23,7 +23,7 @@
 
 using namespace cuda::experimental::stf;
 
-void dump_iter(slice<double, 2> sUn, int iter)
+void dump_iter(slice<const double, 2> sUn, int iter)
 {
   /* Create a binary file in the PPM format */
   char name[64];

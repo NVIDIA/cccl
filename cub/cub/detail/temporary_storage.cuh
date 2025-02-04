@@ -29,6 +29,8 @@
 #include <cub/util_namespace.cuh>
 #include <cub/util_temporary_storage.cuh>
 
+#include <cuda/std/__algorithm/max.h>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail
@@ -96,7 +98,7 @@ public:
 private:
   _CCCL_HOST_DEVICE void set_bytes_required(std::size_t new_size)
   {
-    m_size = (max) (m_size, new_size);
+    m_size = (::cuda::std::max)(m_size, new_size);
   }
 
   _CCCL_HOST_DEVICE std::size_t get_bytes_required() const

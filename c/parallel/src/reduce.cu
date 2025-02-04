@@ -134,7 +134,7 @@ std::string get_single_tile_kernel_name(
   }
 
   return std::format(
-    "cub::DeviceReduceSingleTileKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}>",
+    "cub::detail::reduce::DeviceReduceSingleTileKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}>",
     chained_policy_t,
     input_iterator_t,
     output_iterator_t,
@@ -157,7 +157,7 @@ std::string get_device_reduce_kernel_name(
   check(nvrtcGetTypeName<cuda::std::__identity>(&transform_op_t));
 
   return std::format(
-    "cub::DeviceReduceKernel<{0}, {1}, {2}, {3}, {4}, {5}>",
+    "cub::detail::reduce::DeviceReduceKernel<{0}, {1}, {2}, {3}, {4}, {5}>",
     chained_policy_t,
     input_iterator_t,
     offset_t,

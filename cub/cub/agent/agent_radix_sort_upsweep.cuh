@@ -100,6 +100,11 @@ struct AgentRadixSortUpsweepPolicy : ScalingType
  * Thread block abstractions
  ******************************************************************************/
 
+namespace detail
+{
+namespace radix_sort
+{
+
 /**
  * @brief AgentRadixSortUpsweep implements a stateful abstraction of CUDA thread blocks for
  * participating in device-wide radix sort upsweep .
@@ -110,19 +115,19 @@ struct AgentRadixSortUpsweepPolicy : ScalingType
  * @tparam KeyT
  *   KeyT type
  *
- * @tparam DecomposerT = detail::identity_decomposer_t
+ * @tparam DecomposerT = identity_decomposer_t
  *   Signed integer type for global offsets
  */
 template <typename AgentRadixSortUpsweepPolicy,
           typename KeyT,
           typename OffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
+          typename DecomposerT = identity_decomposer_t>
 struct AgentRadixSortUpsweep
 {
   //---------------------------------------------------------------------
   // Type definitions and constants
   //---------------------------------------------------------------------
-  using traits                 = detail::radix::traits_t<KeyT>;
+  using traits                 = radix::traits_t<KeyT>;
   using bit_ordered_type       = typename traits::bit_ordered_type;
   using bit_ordered_conversion = typename traits::bit_ordered_conversion_policy;
 
@@ -543,5 +548,16 @@ struct AgentRadixSortUpsweep
     }
   }
 };
+
+} // namespace radix_sort
+} // namespace detail
+
+template <typename AgentRadixSortUpsweepPolicy,
+          typename KeyT,
+          typename OffsetT,
+          typename DecomposerT = detail::identity_decomposer_t>
+using AgentRadixSortUpsweep CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
+                                                    "interface will be removed.") =
+  detail::radix_sort::AgentRadixSortUpsweep<AgentRadixSortUpsweepPolicy, KeyT, OffsetT, DecomposerT>;
 
 CUB_NAMESPACE_END

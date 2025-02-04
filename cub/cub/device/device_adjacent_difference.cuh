@@ -43,8 +43,6 @@
 #include <cub/device/dispatch/dispatch_adjacent_difference.cuh>
 #include <cub/util_namespace.cuh>
 
-#include <thrust/detail/integer_traits.h>
-
 #include <cstdint>
 
 CUB_NAMESPACE_BEGIN

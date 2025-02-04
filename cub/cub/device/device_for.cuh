@@ -47,6 +47,7 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/cuda/detail/core/util.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
+#include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #if __cccl_lib_mdspan
 #  include <cuda/std/__mdspan/extents.h>

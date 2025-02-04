@@ -14,6 +14,7 @@ Standard API
    standard_api/ranges_library
    standard_api/synchronization_library
    standard_api/time_library
+   standard_api/type_support
    standard_api/utility_library
 
 Standard Library Backports
