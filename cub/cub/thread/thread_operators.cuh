@@ -723,7 +723,7 @@ struct SimdType<uint16_t>
   using type = uint32_t;
 };
 
-#  if defined(_CCCL_HAS_NVFP16)
+#  if _CCCL_HAS_NVFP16()
 
 template <>
 struct SimdType<__half>
@@ -731,9 +731,9 @@ struct SimdType<__half>
   using type = __half2;
 };
 
-#  endif // defined(_CCCL_HAS_NVFP16)
+#  endif // _CCCL_HAS_NVFP16()
 
-#  if defined(_CCCL_HAS_NVBF16)
+#  if _CCCL_HAS_NVBF16()
 
 template <>
 struct SimdType<__nv_bfloat16>
@@ -741,7 +741,7 @@ struct SimdType<__nv_bfloat16>
   using type = __nv_bfloat162;
 };
 
-#  endif // defined(_CCCL_HAS_NVBF16)
+#  endif // _CCCL_HAS_NVBF16()
 
 template <typename T>
 using simd_type_t = typename SimdType<T>::type;

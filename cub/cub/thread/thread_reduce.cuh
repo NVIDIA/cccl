@@ -252,18 +252,18 @@ inline constexpr bool enable_sm80_simd_reduction_v<__nv_bfloat16, ReductionOp, L
 //----------------------------------------------------------------------------------------------------------------------
 // SM70 SIMD
 
-#  if defined(_CCCL_HAS_NVFP16)
+#  if _CCCL_HAS_NVFP16()
 
 template <typename T, typename ReductionOp, int Length>
 inline constexpr bool enable_sm70_simd_reduction_v =
   ::cuda::std::is_same_v<T, __half> && is_cuda_std_plus_mul_v<ReductionOp, T> && Length >= 4;
 
-#  else // defined(_CCCL_HAS_NVFP16) ^^^^ / !defined(_CCCL_HAS_NVFP16) vvvv
+#  else // _CCCL_HAS_NVFP16() ^^^^ / !_CCCL_HAS_NVFP16() vvvv
 
 template <typename T, typename ReductionOp, int Length>
 inline constexpr bool enable_sm70_simd_reduction_v = false;
 
-#  endif // !defined(_CCCL_HAS_NVFP16) ^^^^
+#  endif // !_CCCL_HAS_NVFP16() ^^^^
 
 //----------------------------------------------------------------------------------------------------------------------
 // All architectures SIMD
