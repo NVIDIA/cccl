@@ -725,8 +725,7 @@ public:
 // types are not SFINAE-safe. This provides better support for things like
 // generic lambdas. C.f.
 // http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0826r0
-#if defined(THRUST_OPTIONAL_CPP14) && !defined(THRUST_OPTIONAL_GCC49) && !defined(THRUST_OPTIONAL_GCC54) \
-  && !defined(THRUST_OPTIONAL_GCC55)
+#if !defined(THRUST_OPTIONAL_GCC49) && !defined(THRUST_OPTIONAL_GCC54) && !defined(THRUST_OPTIONAL_GCC55)
   /// \group and_then
   /// Carries out some operation which returns an optional on the stored
   /// object if there is one. \requires `std::invoke(std::forward<F>(f),
