@@ -172,7 +172,7 @@ struct sm80_tuning<KeyT, ValueT, primitive_op::yes, key_size::_1, val_size::_8, 
   using delay_constructor                              = fixed_delay_constructor_t<124, 1040>;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <class KeyT>
 struct sm80_tuning<KeyT, __int128_t, primitive_op::yes, key_size::_1, val_size::_16, primitive_accum::no>
 {
@@ -229,7 +229,7 @@ struct sm80_tuning<KeyT, ValueT, primitive_op::yes, key_size::_2, val_size::_8, 
   using delay_constructor                              = fixed_delay_constructor_t<160, 695>;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <class KeyT>
 struct sm80_tuning<KeyT, __int128_t, primitive_op::yes, key_size::_2, val_size::_16, primitive_accum::no>
 {
@@ -286,7 +286,7 @@ struct sm80_tuning<KeyT, ValueT, primitive_op::yes, key_size::_4, val_size::_8, 
   using delay_constructor                              = fixed_delay_constructor_t<888, 635>;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <class KeyT>
 struct sm80_tuning<KeyT, __int128_t, primitive_op::yes, key_size::_4, val_size::_16, primitive_accum::no>
 {
@@ -343,7 +343,7 @@ struct sm80_tuning<KeyT, ValueT, primitive_op::yes, key_size::_8, val_size::_8, 
   using delay_constructor                              = no_delay_constructor_t<1160>;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <class KeyT>
 struct sm80_tuning<KeyT, __int128_t, primitive_op::yes, key_size::_8, val_size::_16, primitive_accum::no>
 {
@@ -400,7 +400,7 @@ struct sm80_tuning<KeyT, ValueT, primitive_op::yes, key_size::_16, val_size::_8,
   using delay_constructor                              = no_delay_constructor_t<1030>;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <class KeyT>
 struct sm80_tuning<KeyT, __int128_t, primitive_op::yes, key_size::_16, val_size::_16, primitive_accum::no>
 {
@@ -465,7 +465,7 @@ struct sm90_tuning<KeyT, ValueT, primitive_op::yes, key_size::_1, val_size::_8, 
   using delay_constructor                              = fixed_delay_constructor_t<488, 1070>;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <class KeyT>
 struct sm90_tuning<KeyT, __int128_t, primitive_op::yes, key_size::_1, val_size::_16, primitive_accum::no>
 {
@@ -522,7 +522,7 @@ struct sm90_tuning<KeyT, ValueT, primitive_op::yes, key_size::_2, val_size::_8, 
   using delay_constructor                              = fixed_delay_constructor_t<352, 1170>;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <class KeyT>
 struct sm90_tuning<KeyT, __int128_t, primitive_op::yes, key_size::_2, val_size::_16, primitive_accum::no>
 {
@@ -579,7 +579,7 @@ struct sm90_tuning<KeyT, ValueT, primitive_op::yes, key_size::_4, val_size::_8, 
   using delay_constructor                              = fixed_delay_constructor_t<556, 1195>;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <class KeyT>
 struct sm90_tuning<KeyT, __int128_t, primitive_op::yes, key_size::_4, val_size::_16, primitive_accum::no>
 {
@@ -636,7 +636,7 @@ struct sm90_tuning<KeyT, ValueT, primitive_op::yes, key_size::_8, val_size::_8, 
   using delay_constructor                              = fixed_delay_constructor_t<600, 930>;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <class KeyT>
 struct sm90_tuning<KeyT, __int128_t, primitive_op::yes, key_size::_8, val_size::_16, primitive_accum::no>
 {
@@ -693,7 +693,7 @@ struct sm90_tuning<KeyT, ValueT, primitive_op::yes, key_size::_16, val_size::_8,
   using delay_constructor                              = fixed_delay_constructor_t<320, 1200>;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <class KeyT>
 struct sm90_tuning<KeyT, __int128_t, primitive_op::yes, key_size::_16, val_size::_16, primitive_accum::no>
 {
@@ -717,7 +717,7 @@ struct policy_hub
   static constexpr int max_input_bytes      = static_cast<int>((::cuda::std::max)(sizeof(key_t), sizeof(AccumT)));
   static constexpr int combined_input_bytes = static_cast<int>(sizeof(key_t) + sizeof(AccumT));
 
-  struct Policy350 : ChainedPolicy<350, Policy350, Policy350>
+  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
   {
     static constexpr int nominal_4b_items_per_thread = 6;
     static constexpr int items_per_thread =
@@ -752,7 +752,7 @@ struct policy_hub
 
   struct Policy520
       : DefaultPolicy<LOAD_CA, AccumT>
-      , ChainedPolicy<520, Policy520, Policy350>
+      , ChainedPolicy<520, Policy520, Policy500>
   {};
 
   // Use values from tuning if a specialization exists, otherwise pick the default

@@ -36,6 +36,7 @@
 
 #include <cub/util_type.cuh>
 
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
 #include <cstdint>
@@ -232,19 +233,36 @@ inline std::ostream& operator<<(std::ostream& out, const __nv_bfloat16& x)
  * Traits overloads
  ******************************************************************************/
 
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <>
-struct CUB_NS_QUALIFIER::FpLimits<bfloat16_t>
+struct __is_extended_floating_point<bfloat16_t> : true_type
+{};
+
+#ifndef _CCCL_NO_VARIABLE_TEMPLATES
+template <>
+_CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v<bfloat16_t> = true;
+#endif // _CCCL_NO_VARIABLE_TEMPLATES
+
+template <>
+class __numeric_limits_impl<bfloat16_t, __numeric_limits_type::__floating_point>
 {
-  static __host__ __device__ __forceinline__ bfloat16_t Max()
+public:
+  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bfloat16_t max()
   {
-    return bfloat16_t::max();
+    return bfloat16_t(numeric_limits<__nv_bfloat16>::max());
   }
 
-  static __host__ __device__ __forceinline__ bfloat16_t Lowest()
+  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bfloat16_t min()
   {
-    return bfloat16_t::lowest();
+    return bfloat16_t(numeric_limits<__nv_bfloat16>::min());
+  }
+
+  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bfloat16_t lowest()
+  {
+    return bfloat16_t(numeric_limits<__nv_bfloat16>::lowest());
   }
 };
+_LIBCUDACXX_END_NAMESPACE_STD
 
 template <>
 struct CUB_NS_QUALIFIER::NumericTraits<bfloat16_t>

@@ -896,7 +896,7 @@ struct DispatchSegmentedReduce
 #endif // CUB_DEBUG_LOG
 
       // Invoke DeviceReduceKernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
         num_segments, ActivePolicyT::SegmentedReducePolicy::BLOCK_THREADS, 0, stream)
         .doit(segmented_reduce_kernel, d_in, d_out, d_begin_offsets, d_end_offsets, num_segments, reduction_op, init);
 

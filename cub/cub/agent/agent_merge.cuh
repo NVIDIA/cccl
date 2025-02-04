@@ -64,10 +64,10 @@ struct agent_t
   using key_type  = typename ::cuda::std::iterator_traits<KeysIt1>::value_type;
   using item_type = typename ::cuda::std::iterator_traits<ItemsIt1>::value_type;
 
-  using keys_load_it1  = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, KeysIt1>::type;
-  using keys_load_it2  = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, KeysIt2>::type;
-  using items_load_it1 = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, ItemsIt1>::type;
-  using items_load_it2 = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, ItemsIt2>::type;
+  using keys_load_it1  = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeysIt1>::type;
+  using keys_load_it2  = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeysIt2>::type;
+  using items_load_it1 = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ItemsIt1>::type;
+  using items_load_it2 = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ItemsIt2>::type;
 
   using block_load_keys1  = typename BlockLoadType<Policy, keys_load_it1>::type;
   using block_load_keys2  = typename BlockLoadType<Policy, keys_load_it2>::type;
@@ -173,12 +173,7 @@ struct agent_t
 
     // if items are provided, merge them
     static constexpr bool have_items = !std::is_same<item_type, NullType>::value;
-#if _CCCL_CUDACC_BELOW(11, 8)
-    if (have_items) // nvcc 11.1 cannot handle #pragma unroll inside if constexpr but 11.8 can.
-                    // nvcc versions between may work
-#else // ^^^ _CCCL_CUDACC_BELOW(11, 8) ^^^ / vvv _CCCL_CUDACC_AT_LEAST(11, 8)
     _CCCL_IF_CONSTEXPR (have_items)
-#endif // _CCCL_CUDACC_AT_LEAST(11, 8)
     {
       item_type items_loc[items_per_thread];
       merge_sort::gmem_to_reg<threads_per_block, IsFullTile>(

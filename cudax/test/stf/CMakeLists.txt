@@ -8,6 +8,7 @@ set(stf_test_sources
   dot/basic.cu
   dot/graph_print_to_dot.cu
   dot/sections.cu
+  dot/sections_2.cu
   dot/with_events.cu
   error_checks/ctx_mismatch.cu
   error_checks/data_interface_mismatch.cu
