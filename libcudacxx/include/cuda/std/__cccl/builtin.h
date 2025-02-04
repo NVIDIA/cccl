@@ -239,7 +239,7 @@
 #  undef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #endif // _CCCL_STD_VER < 2014 && _CCCL_CUDA_COMPILER(NVCC)
 
-#if _CCCL_CHECK_BUILTIN(builtin_isfinite) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(NVRTC)
+#if _CCCL_CHECK_BUILTIN(builtin_isfinite) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(NVRTC, >, 12, 2)
 #  define _CCCL_BUILTIN_ISFINITE(...) __builtin_isfinite(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(isfinite)
 
