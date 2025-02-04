@@ -407,25 +407,27 @@ __launch_bounds__(int(
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
- * @tparam SelectImpl SelectionOpt
+ * @tparam SelectionOpt
  *   SelectImpl indicating whether to partition, just selection or selection where the memory for the input and
  *   output may alias each other.
  */
-template <typename InputIteratorT,
-          typename FlagsInputIteratorT,
-          typename SelectedOutputIteratorT,
-          typename NumSelectedIteratorT,
-          typename SelectOpT,
-          typename EqualityOpT,
-          typename OffsetT,
-          SelectImpl SelectionOpt,
-          typename PolicyHub =
-            detail::select::policy_hub<detail::value_t<InputIteratorT>,
-                                       detail::value_t<FlagsInputIteratorT>,
-                                       OffsetT,
-                                       detail::select::is_partition_distinct_output_t<SelectedOutputIteratorT>::value,
-                                       (SelectionOpt == SelectImpl::SelectPotentiallyInPlace),
-                                       (SelectionOpt == SelectImpl::Partition)>>
+template <
+  typename InputIteratorT,
+  typename FlagsInputIteratorT,
+  typename SelectedOutputIteratorT,
+  typename NumSelectedIteratorT,
+  typename SelectOpT,
+  typename EqualityOpT,
+  typename OffsetT,
+  SelectImpl SelectionOpt,
+  typename PolicyHub = detail::select::policy_hub<
+    detail::value_t<InputIteratorT>,
+    detail::value_t<FlagsInputIteratorT>,
+    // if/flagged/unique only have a single code path for different offset types, partition has different code paths
+    ::cuda::std::conditional_t<SelectionOpt == SelectImpl::Partition, OffsetT, detail::select::per_partition_offset_t>,
+    detail::select::is_partition_distinct_output_t<SelectedOutputIteratorT>::value,
+    (SelectionOpt == SelectImpl::SelectPotentiallyInPlace),
+    (SelectionOpt == SelectImpl::Partition)>>
 struct DispatchSelectIf
 {
   /******************************************************************************

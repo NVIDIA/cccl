@@ -1579,15 +1579,11 @@ struct policy_hub
     template <typename Tuning>
     static auto select_agent_policy100(long) -> typename Policy900::SelectIfPolicyT;
 
-    // We use KeepRejects to differentiate between partition and select in the tunings.
-    // If KeepRejects is true we tune for partition otherwise we tune for select.
-    static constexpr offset_size offset_t = KeepRejects ? classify_offset_size<OffsetT>() : offset_size::_4;
-
     using SelectIfPolicyT =
       decltype(select_agent_policy100<sm100_tuning<InputT,
                                                    is_flagged<FlagT>(),
                                                    are_rejects_kept<KeepRejects>(),
-                                                   offset_t,
+                                                   classify_offset_size<OffsetT>(),
                                                    is_primitive<InputT>(),
                                                    classify_input_size<InputT>(),
                                                    should_alias<MayAlias>(),
