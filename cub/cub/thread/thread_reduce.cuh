@@ -52,16 +52,16 @@
 #include <cuda/std/cstdint> // uint16_t
 #include <cuda/std/functional> // cuda::std::plus
 
-#if defined(_CCCL_HAS_NVFP16)
+#if _CCCL_HAS_NVFP16()
 #  include <cuda_fp16.h>
-#endif // _CCCL_HAS_NVFP16
+#endif // _CCCL_HAS_NVFP16()
 
-#if defined(_CCCL_HAS_NVBF16)
+#if _CCCL_HAS_NVBF16()
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
 #  include <cuda_bf16.h>
 _CCCL_DIAG_POP
-#endif // _CCCL_HAS_NVFP16
+#endif // _CCCL_HAS_NVBF16()
 
 CUB_NAMESPACE_BEGIN
 
@@ -232,7 +232,7 @@ inline constexpr bool enable_sm90_simd_reduction_v =
 template <typename T, typename ReductionOp, int Length>
 inline constexpr bool enable_sm80_simd_reduction_v = false;
 
-#  if defined(_CCCL_HAS_NVFP16)
+#  if _CCCL_HAS_NVFP16()
 
 template <typename ReductionOp, int Length>
 inline constexpr bool enable_sm80_simd_reduction_v<__half, ReductionOp, Length> =
@@ -240,14 +240,14 @@ inline constexpr bool enable_sm80_simd_reduction_v<__half, ReductionOp, Length> 
 
 #  endif // defined(_CCCL_HAS_NVFP16)
 
-#  if defined(_CCCL_HAS_NVBF16)
+#  if _CCCL_HAS_NVBF16()
 
 template <typename ReductionOp, int Length>
 inline constexpr bool enable_sm80_simd_reduction_v<__nv_bfloat16, ReductionOp, Length> =
   (is_cuda_std_min_max_v<ReductionOp, __nv_bfloat16> || is_cuda_std_plus_mul_v<ReductionOp, __nv_bfloat16>)
   && Length >= 4;
 
-#  endif // defined(_CCCL_HAS_NVBF16)
+#  endif // _CCCL_HAS_NVBF16()
 
 //----------------------------------------------------------------------------------------------------------------------
 // SM70 SIMD
@@ -307,22 +307,22 @@ template <typename T, typename ReductionOp>
 inline constexpr bool enable_ternary_reduction_sm90_v =
   is_one_of_v<T, int32_t, uint32_t> && is_cuda_std_min_max_v<ReductionOp, T>;
 
-#  if defined(_CCCL_HAS_NVFP16)
+#  if _CCCL_HAS_NVFP16()
 
 template <typename ReductionOp>
 inline constexpr bool enable_ternary_reduction_sm90_v<__half2, ReductionOp> =
   is_cuda_std_min_max_v<ReductionOp, __half2> || is_one_of_v<ReductionOp, SimdMin<__half>, SimdMax<__half>>;
 
-#  endif // defined(_CCCL_HAS_NVFP16)
+#  endif // _CCCL_HAS_NVFP16()
 
-#  if defined(_CCCL_HAS_NVBF16)
+#  if _CCCL_HAS_NVBF16()
 
 template <typename ReductionOp>
 inline constexpr bool enable_ternary_reduction_sm90_v<__nv_bfloat162, ReductionOp> =
   is_cuda_std_min_max_v<ReductionOp, __nv_bfloat162>
   || is_one_of_v<ReductionOp, SimdMin<__nv_bfloat16>, SimdMax<__nv_bfloat16>>;
 
-#  endif // defined(_CCCL_HAS_NVBF16)
+#  endif // _CCCL_HAS_NVBF16()
 
 template <typename T, typename ReductionOp>
 inline constexpr bool enable_ternary_reduction_sm50_v =

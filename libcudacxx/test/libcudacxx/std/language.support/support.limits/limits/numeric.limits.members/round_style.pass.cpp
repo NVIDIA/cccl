@@ -54,10 +54,10 @@ int main(int, char**)
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
   test<long double, cuda::std::round_to_nearest>();
 #endif
-#if defined(_CCCL_HAS_NVFP16)
+#if _CCCL_HAS_NVFP16()
   test<__half, cuda::std::round_to_nearest>();
 #endif // _CCCL_HAS_NVFP16
-#if defined(_CCCL_HAS_NVBF16)
+#if _CCCL_HAS_NVBF16()
   test<__nv_bfloat16, cuda::std::round_to_nearest>();
 #endif // _CCCL_HAS_NVBF16
 #if _CCCL_HAS_NVFP8()

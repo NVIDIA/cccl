@@ -57,16 +57,16 @@
 #include <cuda/std/type_traits> // cuda::std::common_type
 #include <cuda/std/utility> // cuda::std::forward
 
-#if defined(_CCCL_HAS_NVFP16)
+#if _CCCL_HAS_NVFP16()
 #  include <cuda_fp16.h>
-#endif // _CCCL_HAS_NVFP16
+#endif // _CCCL_HAS_NVFP16()
 
-#if defined(_CCCL_HAS_NVBF16)
+#if _CCCL_HAS_NVBF16()
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
 #  include <cuda_bf16.h>
 _CCCL_DIAG_POP
-#endif // _CCCL_HAS_NVFP16
+#endif // _CCCL_HAS_NVBF16()
 
 CUB_NAMESPACE_BEGIN
 
@@ -420,7 +420,7 @@ struct SimdMin<uint16_t>
   }
 };
 
-#  if defined(_CCCL_HAS_NVFP16)
+#  if _CCCL_HAS_NVFP16()
 
 _CCCL_HOST_DEVICE __half2 simd_operation_is_not_supported_before_sm80(__half2);
 
@@ -436,9 +436,9 @@ struct SimdMin<__half>
   }
 };
 
-#  endif // defined(_CCCL_HAS_NVFP16)
+#  endif // _CCCL_HAS_NVFP16()
 
-#  if defined(_CCCL_HAS_NVBF16)
+#  if _CCCL_HAS_NVBF16()
 
 _CCCL_HOST_DEVICE __nv_bfloat162 simd_operation_is_not_supported_before_sm80(__nv_bfloat162);
 
@@ -454,7 +454,7 @@ struct SimdMin<__nv_bfloat16>
   }
 };
 
-#  endif // defined(_CCCL_HAS_NVBF16)
+#  endif // _CCCL_HAS_NVBF16()
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -486,7 +486,7 @@ struct SimdMax<uint16_t>
   }
 };
 
-#  if defined(_CCCL_HAS_NVFP16)
+#  if _CCCL_HAS_NVFP16()
 
 template <>
 struct SimdMax<__half>
@@ -500,9 +500,9 @@ struct SimdMax<__half>
   }
 };
 
-#  endif // defined(_CCCL_HAS_NVFP16)
+#  endif // _CCCL_HAS_NVFP16()
 
-#  if defined(_CCCL_HAS_NVBF16)
+#  if _CCCL_HAS_NVBF16()
 
 template <>
 struct SimdMax<__nv_bfloat16>
@@ -516,7 +516,7 @@ struct SimdMax<__nv_bfloat16>
   }
 };
 
-#  endif // defined(_CCCL_HAS_NVBF16)
+#  endif // _CCCL_HAS_NVBF16()
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -526,7 +526,7 @@ struct SimdSum
   static_assert(cub::detail::always_false_v<T>, "Unsupported specialization");
 };
 
-#  if defined(_CCCL_HAS_NVFP16)
+#  if _CCCL_HAS_NVFP16()
 
 _CCCL_HOST_DEVICE __half2 simd_operation_is_not_supported_before_sm53(__half2);
 
@@ -542,9 +542,9 @@ struct SimdSum<__half>
   }
 };
 
-#  endif // defined(_CCCL_HAS_NVFP16)
+#  endif // _CCCL_HAS_NVFP16()
 
-#  if defined(_CCCL_HAS_NVBF16)
+#  if _CCCL_HAS_NVBF16()
 
 _CCCL_HOST_DEVICE __nv_bfloat162 simd_operation_is_not_supported_before_sm53(__nv_bfloat162);
 
@@ -560,7 +560,7 @@ struct SimdSum<__nv_bfloat16>
   }
 };
 
-#  endif // defined(_CCCL_HAS_NVBF16)
+#  endif // _CCCL_HAS_NVBF16()
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -570,7 +570,7 @@ struct SimdMul
   static_assert(cub::detail::always_false_v<T>, "Unsupported specialization");
 };
 
-#  if defined(_CCCL_HAS_NVFP16)
+#  if _CCCL_HAS_NVFP16()
 
 template <>
 struct SimdMul<__half>
@@ -584,9 +584,9 @@ struct SimdMul<__half>
   }
 };
 
-#  endif // defined(_CCCL_HAS_NVFP16)
+#  endif // _CCCL_HAS_NVFP16()
 
-#  if defined(_CCCL_HAS_NVBF16)
+#  if _CCCL_HAS_NVBF16()
 
 template <>
 struct SimdMul<__nv_bfloat16>
@@ -600,7 +600,7 @@ struct SimdMul<__nv_bfloat16>
   }
 };
 
-#  endif // defined(_CCCL_HAS_NVBF16)
+#  endif // _CCCL_HAS_NVBF16()
 
 //----------------------------------------------------------------------------------------------------------------------
 // Predefined operators
