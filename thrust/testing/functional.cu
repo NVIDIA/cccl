@@ -190,6 +190,7 @@ typename ::cuda::std::add_const<_Tp>::type& as_const(_Tp& __t) noexcept
 // Ad-hoc testing for other functionals
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestIdentityFunctional()
 {
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   int i    = 42;
   double d = 3.14;
 
@@ -220,6 +221,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestIdentityFunctional()
   static_assert(::cuda::std::is_same<decltype(thrust::identity<int>{}(::cuda::std::move(d))), int&&>::value, "");
   static_assert(::cuda::std::is_same<decltype(thrust::identity<int>{}(static_cast<const double&&>(d))), int&&>::value,
                 "");
+  _CCCL_SUPPRESS_DEPRECATED_POP
 }
 DECLARE_UNITTEST(TestIdentityFunctional);
 
