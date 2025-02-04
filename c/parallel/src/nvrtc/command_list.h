@@ -22,9 +22,9 @@
 #include <nvrtc.h>
 #include <util/errors.h>
 
-struct nvrtc_cubin
+struct nvrtc_link_result
 {
-  std::unique_ptr<char[]> cubin{};
+  std::unique_ptr<char[]> data{};
   size_t size;
 };
 
@@ -57,7 +57,7 @@ struct nvrtc_ltoir
 using nvrtc_ltoir_list = std::vector<nvrtc_ltoir>;
 struct nvrtc_jitlink_cleanup
 {
-  nvrtc_cubin& cubin_ref;
+  nvrtc_link_result& link_result_ref;
 };
 
 struct nvrtc_jitlink
@@ -157,21 +157,21 @@ struct nvrtc_command_list_visitor
     check(jitlink_error);
 
     bool output_ptx = false;
-    auto result     = nvJitLinkGetLinkedCubinSize(jitlink.handle, &cleanup.cubin_ref.size);
+    auto result     = nvJitLinkGetLinkedCubinSize(jitlink.handle, &cleanup.link_result_ref.size);
     if (result != NVJITLINK_SUCCESS)
     {
       output_ptx = true;
-      check(nvJitLinkGetLinkedPtxSize(jitlink.handle, &cleanup.cubin_ref.size));
+      check(nvJitLinkGetLinkedPtxSize(jitlink.handle, &cleanup.link_result_ref.size));
     }
-    cleanup.cubin_ref.cubin = std::unique_ptr<char[]>(new char[cleanup.cubin_ref.size]);
+    cleanup.link_result_ref.data = std::unique_ptr<char[]>(new char[cleanup.link_result_ref.size]);
 
     if (output_ptx)
     {
-      check(nvJitLinkGetLinkedPtx(jitlink.handle, cleanup.cubin_ref.cubin.get()));
+      check(nvJitLinkGetLinkedPtx(jitlink.handle, cleanup.link_result_ref.data.get()));
     }
     else
     {
-      check(nvJitLinkGetLinkedCubin(jitlink.handle, cleanup.cubin_ref.cubin.get()));
+      check(nvJitLinkGetLinkedCubin(jitlink.handle, cleanup.link_result_ref.data.get()));
     }
   }
 };
@@ -245,13 +245,13 @@ struct nvrtc_sm_top_level
   }
 
   // Execute steps and link unit
-  nvrtc_cubin finalize_program(uint32_t numLtoOpts, const char** ltoOpts)
+  nvrtc_link_result finalize_program(uint32_t numLtoOpts, const char** ltoOpts)
   {
-    nvrtc_cubin cubin{};
-    nvrtc_jitlink_cleanup cleanup{cubin};
+    nvrtc_link_result link_result{};
+    nvrtc_jitlink_cleanup cleanup{link_result};
     nvrtc_jitlink jl(numLtoOpts, ltoOpts);
     std::apply(nvrtc_command_list_visitor{jl}, nvrtc_command_list_append(std::move(cl), std::move(cleanup)));
-    return cubin;
+    return link_result;
   }
 };
 

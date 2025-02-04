@@ -348,7 +348,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
       ltoir_list_append({output_it.dereference.ltoir, output_it.dereference.ltoir_size});
     }
 
-    nvrtc_cubin result =
+    nvrtc_link_result result =
       make_nvrtc_command_list()
         .add_program(nvrtc_translation_unit{src.c_str(), name})
         .add_expression({single_tile_kernel_name})
@@ -362,14 +362,14 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
         .add_link_list(ltoir_list)
         .finalize_program(num_lto_args, lopts);
 
-    cuLibraryLoadData(&build->library, result.cubin.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+    cuLibraryLoadData(&build->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
     check(cuLibraryGetKernel(&build->single_tile_kernel, build->library, single_tile_kernel_lowered_name.c_str()));
     check(cuLibraryGetKernel(
       &build->single_tile_second_kernel, build->library, single_tile_second_kernel_lowered_name.c_str()));
     check(cuLibraryGetKernel(&build->reduction_kernel, build->library, reduction_kernel_lowered_name.c_str()));
 
     build->cc               = cc;
-    build->cubin            = (void*) result.cubin.release();
+    build->cubin            = (void*) result.data.release();
     build->cubin_size       = result.size;
     build->accumulator_size = accum_t.size;
   }

@@ -366,7 +366,7 @@ extern "C" CCCL_C_API CUresult cccl_device_scan_build(
       ltoir_list_append({output_it.dereference.ltoir, output_it.dereference.ltoir_size});
     }
 
-    nvrtc_cubin result =
+    nvrtc_link_result result =
       make_nvrtc_command_list()
         .add_program(nvrtc_translation_unit{src.c_str(), name})
         .add_expression({init_kernel_name})
@@ -378,7 +378,7 @@ extern "C" CCCL_C_API CUresult cccl_device_scan_build(
         .add_link_list(ltoir_list)
         .finalize_program(num_lto_args, lopts);
 
-    cuLibraryLoadData(&build->library, result.cubin.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+    cuLibraryLoadData(&build->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
     check(cuLibraryGetKernel(&build->init_kernel, build->library, init_kernel_lowered_name.c_str()));
     check(cuLibraryGetKernel(&build->scan_kernel, build->library, scan_kernel_lowered_name.c_str()));
 
@@ -404,7 +404,7 @@ extern "C" CCCL_C_API CUresult cccl_device_scan_build(
         .compile_program({ptx_args, num_ptx_args})
         .cleanup_program()
         .finalize_program(num_ptx_lto_args, ptx_lopts);
-    auto ptx_code = compile_result.cubin.get();
+    auto ptx_code = compile_result.data.get();
 
     size_t description_bytes_per_tile;
     size_t payload_bytes_per_tile;
@@ -422,7 +422,7 @@ extern "C" CCCL_C_API CUresult cccl_device_scan_build(
     auto tile_state = std::make_unique<scan::scan_tile_state>(description_bytes_per_tile, payload_bytes_per_tile);
 
     build->cc               = cc;
-    build->cubin            = (void*) result.cubin.release();
+    build->cubin            = (void*) result.data.release();
     build->cubin_size       = result.size;
     build->accumulator_type = accum_t;
     build->tile_state       = (void*) tile_state.release();
