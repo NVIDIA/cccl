@@ -149,16 +149,16 @@ std::string get_scan_kernel_name(cccl_iterator_t input_it, cccl_iterator_t outpu
   auto tile_state_t = std::format("cub::ScanTileState<{0}>", accum_cpp_t);
   return std::format(
     "cub::detail::scan::DeviceScanKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}>",
-    chained_policy_t,
-    input_iterator_t,
-    output_iterator_t,
-    tile_state_t,
-    scan_op_t,
-    init_t,
-    offset_t,
-    accum_cpp_t,
-    "false", // for now, always exclusive
-    init_t);
+    chained_policy_t, // 0
+    input_iterator_t, // 1
+    output_iterator_t, // 2
+    tile_state_t, // 3
+    scan_op_t, // 4
+    init_t, // 5
+    offset_t, // 6
+    accum_cpp_t, // 7
+    "false", // 8 - for now, always exclusive
+    init_t); // 9
 }
 
 static constexpr auto ptx_u64_assignment_regex = R"(\.visible\s+\.global\s+\.align\s+\d+\s+\.u64\s+{}\s*=\s*(\d+);)";
