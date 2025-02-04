@@ -9,6 +9,7 @@
 
 #include <format>
 #include <iostream>
+#include <optional>
 #include <regex>
 #include <string>
 #include <type_traits>
@@ -162,7 +163,7 @@ std::string get_scan_kernel_name(cccl_iterator_t input_it, cccl_iterator_t outpu
 
 static constexpr auto ptx_u64_assignment_regex = R"(\.visible\s+\.global\s+\.align\s+\d+\s+\.u64\s+{}\s*=\s*(\d+);)";
 
-size_t find_size_t(char* ptx, std::string_view name)
+std::optional<size_t> find_size_t(char* ptx, std::string_view name)
 {
   std::regex regex(std::format(ptx_u64_assignment_regex, name));
   std::cmatch match;
@@ -171,24 +172,7 @@ size_t find_size_t(char* ptx, std::string_view name)
     auto result = std::stoi(match[1].str());
     return result;
   }
-  else
-  {
-    throw std::runtime_error(std::format("Could not find {} in PTX code", name));
-  }
-}
-
-size_t find_size_t(char* ptx, std::string_view name, size_t default_value)
-{
-  std::regex regex(std::format(ptx_u64_assignment_regex, name));
-  std::cmatch match;
-  if (std::regex_search(ptx, match, regex))
-  {
-    return std::stoi(match[1].str());
-  }
-  else
-  {
-    return default_value;
-  }
+  return std::nullopt;
 }
 
 struct scan_tile_state
@@ -403,8 +387,6 @@ extern "C" CCCL_C_API CUresult cccl_device_scan_build(
     constexpr size_t num_ptx_lto_args       = 3;
     const char* ptx_lopts[num_ptx_lto_args] = {"-lto", arch.c_str(), "-ptx"};
 
-    size_t description_bytes_per_tile;
-    size_t payload_bytes_per_tile;
     std::string ptx_src = std::format(
       "#include <cub/agent/single_pass_scan_operators.cuh>\n"
       "#include <cub/util_type.cuh>\n"
@@ -422,9 +404,21 @@ extern "C" CCCL_C_API CUresult cccl_device_scan_build(
         .compile_program({ptx_args, num_ptx_args})
         .cleanup_program()
         .finalize_program(num_ptx_lto_args, ptx_lopts);
-    auto ptx_code              = compile_result.cubin.get();
-    description_bytes_per_tile = scan::find_size_t(ptx_code, "description_bytes_per_tile");
-    payload_bytes_per_tile     = scan::find_size_t(ptx_code, "payload_bytes_per_tile", 0);
+    auto ptx_code = compile_result.cubin.get();
+
+    size_t description_bytes_per_tile;
+    size_t payload_bytes_per_tile;
+    auto maybe_description_bytes_per_tile = scan::find_size_t(ptx_code, "description_bytes_per_tile");
+    if (maybe_description_bytes_per_tile)
+    {
+      description_bytes_per_tile = maybe_description_bytes_per_tile.value();
+    }
+    else
+    {
+      throw std::runtime_error("Failed to find description_bytes_per_tile in PTX");
+    }
+    payload_bytes_per_tile = scan::find_size_t(ptx_code, "payload_bytes_per_tile").value_or(0);
+
     auto tile_state = std::make_unique<scan::scan_tile_state>(description_bytes_per_tile, payload_bytes_per_tile);
 
     build->cc               = cc;
