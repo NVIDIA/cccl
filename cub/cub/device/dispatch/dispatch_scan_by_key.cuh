@@ -406,7 +406,7 @@ struct DispatchScanByKey
       // the necessary size of the blob)
       void* allocations[2] = {};
 
-      error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;
