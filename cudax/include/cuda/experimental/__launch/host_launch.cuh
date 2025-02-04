@@ -46,6 +46,10 @@ void __stream_callback_caller(cudaStream_t, cudaError_t __status, void* __callab
 //! until the asynchronous call happens. Lambda capture or reference_wrapper can be used if
 //! there is a need to pass something by reference.
 //!
+//! Callable must not call any APIs from cuda, thrust or cub namespaces.
+//! It must not call into CUDA Runtime or Driver APIs. It also can't depend on another
+//! thread that might block on any asynchronous CUDA work.
+//!
 //! @param __stream Stream to launch the host function on
 //! @param __callable Host function or callable object to call in stream order
 //! @param __args Arguments to call the supplied callable with
@@ -84,6 +88,10 @@ void __host_func_launcher(void* __callable_ptr)
 //! Callable can't take any arguments, if some additional state is required a lambda can be used
 //! to capture it.
 //!
+//! Callable must not call any APIs from cuda, thrust or cub namespaces.
+//! It must not call into CUDA Runtime or Driver APIs. It also can't depend on another
+//! thread that might block on any asynchronous CUDA work.
+//!
 //! @param __stream Stream to launch the host function on
 //! @param __callable A reference to a host function or callable object to call in stream order
 template <typename _Callable, typename... _Args>
@@ -95,7 +103,7 @@ void host_launch(stream_ref __stream, ::cuda::std::reference_wrapper<_Callable> 
     "Failed to launch host function",
     __stream.get(),
     __host_func_launcher<_Callable*>,
-    &__callable.get());
+    _CUDA_VSTD::addressof(__callable.get()));
 }
 
 } // namespace cuda::experimental
