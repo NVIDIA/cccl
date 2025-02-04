@@ -79,7 +79,9 @@ public:
   template <class T>
   void operator,(T const&) = delete;
 };
+#if TEST_STD_VER >= 2014
 static_assert(cuda::std::output_iterator<cpp17_output_iterator<int*>, int>, "");
+#endif
 
 // This iterator meets C++20's Cpp17InputIterator requirements, as described
 // in Table 89 ([input.iterators]).
@@ -147,9 +149,11 @@ public:
   template <class T>
   void operator,(T const&) = delete;
 };
+#if TEST_STD_VER >= 2014
 static_assert(cuda::std::input_or_output_iterator<cpp17_input_iterator<int*>>, "");
 static_assert(cuda::std::indirectly_readable<cpp17_input_iterator<int*>>, "");
 static_assert(cuda::std::input_iterator<cpp17_input_iterator<int*>>, "");
+#endif
 
 template <class It>
 class forward_iterator
@@ -217,7 +221,9 @@ public:
   template <class T>
   void operator,(T const&) = delete;
 };
+#if TEST_STD_VER >= 2014
 static_assert(cuda::std::forward_iterator<forward_iterator<int*>>, "");
+#endif
 
 template <class It>
 class bidirectional_iterator
@@ -296,7 +302,9 @@ public:
   template <class T>
   void operator,(T const&) = delete;
 };
+#if TEST_STD_VER >= 2014
 static_assert(cuda::std::bidirectional_iterator<bidirectional_iterator<int*>>, "");
+#endif
 
 template <class It>
 class random_access_iterator

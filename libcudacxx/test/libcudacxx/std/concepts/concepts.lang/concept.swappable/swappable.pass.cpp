@@ -264,7 +264,9 @@ int main(int, char**)
   assert(check_rvalue_lvalue_adl_swappable());
   assert(check_throwable_swappable());
   assert(check_non_move_constructible_adl_swappable());
+#if TEST_STD_VER > 2014
   assert(check_non_move_assignable_adl_swappable());
+#endif // TEST_STD_VER > 2014
   assert(check_swap_arrays());
   assert(check_lvalue_adl_swappable_arrays());
   assert(check_throwable_adl_swappable_arrays());
@@ -278,7 +280,9 @@ int main(int, char**)
   static_assert(check_rvalue_lvalue_adl_swappable(), "");
   static_assert(check_throwable_swappable(), "");
   static_assert(check_non_move_constructible_adl_swappable(), "");
+#  if TEST_STD_VER > 2014
   static_assert(check_non_move_assignable_adl_swappable(), "");
+#  endif // TEST_STD_VER > 2014
   static_assert(check_swap_arrays(), "");
   static_assert(check_lvalue_adl_swappable_arrays(), "");
   static_assert(check_throwable_adl_swappable_arrays(), "");

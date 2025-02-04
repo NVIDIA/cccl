@@ -68,7 +68,9 @@ struct MoveOnlyIterator
   }
 };
 
+#if TEST_STD_VER > 2014
 static_assert(cuda::std::input_iterator<MoveOnlyIterator>, "");
+#endif
 static_assert(!cuda::std::is_copy_constructible<MoveOnlyIterator>::value, "");
 
 template <class It>
