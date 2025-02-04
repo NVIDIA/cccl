@@ -28,7 +28,7 @@
 #include <thrust/detail/alignment.h>
 #include <thrust/detail/execute_with_allocator_fwd.h>
 
-#include <type_traits>
+#include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -61,19 +61,20 @@ struct allocator_aware_execution_policy
   };
 
   template <typename MemoryResource>
-  typename execute_with_memory_resource_type<MemoryResource>::type operator()(MemoryResource* mem_res) const
+  _CCCL_HOST_DEVICE typename execute_with_memory_resource_type<MemoryResource>::type
+  operator()(MemoryResource* mem_res) const
   {
     return typename execute_with_memory_resource_type<MemoryResource>::type(mem_res);
   }
 
   template <typename Allocator>
-  typename execute_with_allocator_type<Allocator&>::type operator()(Allocator& alloc) const
+  _CCCL_HOST_DEVICE typename execute_with_allocator_type<Allocator&>::type operator()(Allocator& alloc) const
   {
     return typename execute_with_allocator_type<Allocator&>::type(alloc);
   }
 
   template <typename Allocator>
-  typename execute_with_allocator_type<Allocator>::type operator()(const Allocator& alloc) const
+  _CCCL_HOST_DEVICE typename execute_with_allocator_type<Allocator>::type operator()(const Allocator& alloc) const
   {
     return typename execute_with_allocator_type<Allocator>::type(alloc);
   }
@@ -81,10 +82,11 @@ struct allocator_aware_execution_policy
   // just the rvalue overload
   // perfect forwarding doesn't help, because a const reference has to be turned
   // into a value by copying for the purpose of storing it in execute_with_allocator
-  template <typename Allocator, typename std::enable_if<!std::is_lvalue_reference<Allocator>::value>::type* = nullptr>
-  typename execute_with_allocator_type<Allocator>::type operator()(Allocator&& alloc) const
+  template <typename Allocator,
+            typename ::cuda::std::enable_if<!::cuda::std::is_lvalue_reference<Allocator>::value>::type* = nullptr>
+  _CCCL_HOST_DEVICE typename execute_with_allocator_type<Allocator>::type operator()(Allocator&& alloc) const
   {
-    return typename execute_with_allocator_type<Allocator>::type(std::move(alloc));
+    return typename execute_with_allocator_type<Allocator>::type(::cuda::std::move(alloc));
   }
 };
 
