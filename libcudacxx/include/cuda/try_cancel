@@ -185,7 +185,7 @@ __device__ int __cluster_get_dim(__int128 __result) {
 /// - Exactly one thread block thread shall call this API with `__is_leader` equals `true`.  
 template <int __ThreadBlockDim = 3, typename __UnaryFunction = __detail::__empty_t>
     requires std::is_invocable_r_v<void, __UnaryFunction, dim3>
-__device__ void try_cancel_blocks(bool __is_leader, __UnaryFunction __uf) {
+_CCCL_DEVICE _CCCL_HIDE_FROM_ABI void try_cancel_blocks(bool __is_leader, __UnaryFunction __uf) {
   #if (__CUDA_ARCH__ < 1000)
     __trap();
   #else   // NV_HAS_FEATURE_SM100
