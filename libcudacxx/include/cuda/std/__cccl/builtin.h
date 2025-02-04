@@ -884,6 +884,10 @@
 #  define _CCCL_BUILTIN_REMOVE_REFERENCE_T(...) __remove_reference_t(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__remove_reference_t)
 
+#if _CCCL_COMPILER(NVRTC, <, 12, 4) // NVRTC below 12.4 fails to properly compile cuda::std::move with that
+#  undef _CCCL_BUILTIN_REMOVE_REFERENCE_T
+#endif // _CCCL_COMPILER(NVRTC, <, 12, 4)
+
 #if _CCCL_HAS_BUILTIN(__remove_volatile) && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_REMOVE_VOLATILE(...) __remove_volatile(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__remove_volatile)
