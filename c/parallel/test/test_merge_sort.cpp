@@ -69,7 +69,7 @@ void merge_sort(cccl_iterator_t input_keys,
 }
 
 using integral_types = std::tuple<int32_t, uint32_t, int64_t, uint64_t>;
-TEMPLATE_LIST_TEST_CASE("Merge Sort works with integral types", "[merge_sort]", integral_types)
+TEMPLATE_LIST_TEST_CASE("Merge Sort works with integral keys", "[merge_sort]", integral_types)
 {
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
 
@@ -86,4 +86,25 @@ TEMPLATE_LIST_TEST_CASE("Merge Sort works with integral types", "[merge_sort]", 
 
   std::sort(expected_keys.begin(), expected_keys.end());
   REQUIRE(expected_keys == std::vector<TestType>(output_keys_it));
+}
+
+using integral_types = std::tuple<int32_t, uint32_t, int64_t, uint64_t>;
+TEMPLATE_LIST_TEST_CASE("Merge Sort Copy works with integral keys", "[merge_sort]", integral_types)
+{
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
+
+  operation_t op                   = make_operation("op", get_merge_sort_op(get_type_info<TestType>().type));
+  std::vector<TestType> input_keys = generate<TestType>(num_items);
+  std::vector<TestType> output_keys(num_items);
+  std::vector<TestType> expected_keys = input_keys;
+
+  pointer_t<TestType> input_keys_it(input_keys);
+  pointer_t<TestType> input_items_it;
+  pointer_t<TestType> output_keys_it(output_keys);
+  pointer_t<TestType> output_items_it;
+
+  merge_sort(input_keys_it, input_items_it, output_keys_it, output_items_it, num_items, op);
+
+  std::sort(expected_keys.begin(), expected_keys.end());
+  REQUIRE(expected_keys == output_keys);
 }
