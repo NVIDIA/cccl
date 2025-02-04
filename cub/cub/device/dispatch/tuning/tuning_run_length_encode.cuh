@@ -569,6 +569,12 @@ struct sm100_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, le
   using delay_constructor                            = detail::exponential_backoff_constructor_t<28, 520>;
 };
 
+// need to default it back explicitly because it regresses
+template <class LengthT>
+struct sm100_tuning<LengthT, double, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_8>
+    : sm90_tuning<LengthT, double, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_8>
+{};
+
 // TODO(gonidelis): Tune for I128.
 #if CUB_IS_INT128_ENABLED
 // template <class LengthT>
