@@ -43,12 +43,10 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 #  define THRUST_OPTIONAL_MSVC2015
 #endif
 
-#if _CCCL_STD_VER > 2011
-#  define THRUST_OPTIONAL_CPP14
-#endif
+#define THRUST_OPTIONAL_CPP14
 
 // constexpr implies const in C++11, not C++14
-#if (_CCCL_STD_VER == 2011 || defined(THRUST_OPTIONAL_MSVC2015) || defined(THRUST_OPTIONAL_GCC49))
+#if (defined(THRUST_OPTIONAL_MSVC2015) || defined(THRUST_OPTIONAL_GCC49))
 /// \exclude
 #  define THRUST_OPTIONAL_CPP11_CONSTEXPR
 #else
@@ -103,47 +101,6 @@ struct conjunction<B> : B
 template <class B, class... Bs>
 struct conjunction<B, Bs...> : std::conditional<bool(B::value), conjunction<Bs...>, B>::type
 {};
-
-#  if defined(_LIBCPP_VERSION) && _CCCL_STD_VER == 2011
-#    define THRUST_OPTIONAL_LIBCXX_MEM_FN_WORKAROUND
-#  endif
-
-// In C++11 mode, there's an issue in libc++'s std::mem_fn
-// which results in a hard-error when using it in a noexcept expression
-// in some cases. This is a check to workaround the common failing case.
-#  ifdef THRUST_OPTIONAL_LIBCXX_MEM_FN_WORKAROUND
-template <class T>
-struct is_pointer_to_non_const_member_func : std::false_type
-{};
-template <class T, class Ret, class... Args>
-struct is_pointer_to_non_const_member_func<Ret (T::*)(Args...)> : std::true_type
-{};
-template <class T, class Ret, class... Args>
-struct is_pointer_to_non_const_member_func<Ret (T::*)(Args...)&> : std::true_type
-{};
-template <class T, class Ret, class... Args>
-struct is_pointer_to_non_const_member_func<Ret (T::*)(Args...) &&> : std::true_type
-{};
-template <class T, class Ret, class... Args>
-struct is_pointer_to_non_const_member_func<Ret (T::*)(Args...) volatile> : std::true_type
-{};
-template <class T, class Ret, class... Args>
-struct is_pointer_to_non_const_member_func<Ret (T::*)(Args...) volatile&> : std::true_type
-{};
-template <class T, class Ret, class... Args>
-struct is_pointer_to_non_const_member_func<Ret (T::*)(Args...) volatile&&> : std::true_type
-{};
-
-template <class T>
-struct is_const_or_const_ref : std::false_type
-{};
-template <class T>
-struct is_const_or_const_ref<T const&> : std::true_type
-{};
-template <class T>
-struct is_const_or_const_ref<T const> : std::true_type
-{};
-#  endif
 
 // std::invoke from C++17
 // https://stackoverflow.com/questions/38288042/c11-14-invoke-workaround
@@ -1977,10 +1934,8 @@ _CCCL_HOST_DEVICE inline constexpr optional<T> make_optional(std::initializer_li
   return optional<T>(in_place, il, std::forward<Args>(args)...);
 }
 
-#if _CCCL_STD_VER >= 2017
 template <class T>
 optional(T) -> optional<T>;
-#endif
 
 // Doxygen chokes on the trailing return types used below.
 #if !defined(_CCCL_DOXYGEN_INVOKED)

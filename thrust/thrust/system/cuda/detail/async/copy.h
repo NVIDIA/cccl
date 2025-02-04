@@ -39,26 +39,24 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_STD_VER >= 2014
+#if _CCCL_HAS_CUDA_COMPILER
 
-#  if _CCCL_HAS_CUDA_COMPILER
+#  include <thrust/system/cuda/config.h>
 
-#    include <thrust/system/cuda/config.h>
+#  include <thrust/advance.h>
+#  include <thrust/detail/static_assert.h>
+#  include <thrust/distance.h>
+#  include <thrust/iterator/iterator_traits.h>
+#  include <thrust/system/cuda/detail/async/customization.h>
+#  include <thrust/system/cuda/detail/async/transform.h>
+#  include <thrust/system/cuda/detail/cross_system.h>
+#  include <thrust/system/cuda/future.h>
+#  include <thrust/type_traits/is_contiguous_iterator.h>
+#  include <thrust/type_traits/is_trivially_relocatable.h>
+#  include <thrust/type_traits/logical_metafunctions.h>
+#  include <thrust/uninitialized_copy.h>
 
-#    include <thrust/advance.h>
-#    include <thrust/detail/static_assert.h>
-#    include <thrust/distance.h>
-#    include <thrust/iterator/iterator_traits.h>
-#    include <thrust/system/cuda/detail/async/customization.h>
-#    include <thrust/system/cuda/detail/async/transform.h>
-#    include <thrust/system/cuda/detail/cross_system.h>
-#    include <thrust/system/cuda/future.h>
-#    include <thrust/type_traits/is_contiguous_iterator.h>
-#    include <thrust/type_traits/is_trivially_relocatable.h>
-#    include <thrust/type_traits/logical_metafunctions.h>
-#    include <thrust/uninitialized_copy.h>
-
-#    include <type_traits>
+#  include <type_traits>
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 THRUST_NAMESPACE_BEGIN
@@ -358,6 +356,4 @@ auto async_copy(thrust::cuda::execution_policy<FromPolicy>& from_exec,
 _CCCL_SUPPRESS_DEPRECATED_POP
 THRUST_NAMESPACE_END
 
-#  endif // _CCCL_CUDA_COMPILER
-
-#endif
+#endif // _CCCL_CUDA_COMPILER

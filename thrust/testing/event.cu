@@ -1,11 +1,9 @@
 #include <thrust/detail/config.h>
 
-#if _CCCL_STD_VER >= 2014
+#include <thrust/event.h>
 
-#  include <thrust/event.h>
-
-#  include <unittest/unittest.h>
-#  include <unittest/util_async.h>
+#include <unittest/unittest.h>
+#include <unittest/util_async.h>
 
 // note: there is no matching _CCCL_SUPPRESS_DEPRECATED_POP, so the warning suppression leaks into more content of the
 // generated cudafe1.stub.c file.
@@ -153,5 +151,3 @@ _CCCL_HOST void test_event_when_all()
 DECLARE_UNITTEST(test_event_when_all);
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#endif
