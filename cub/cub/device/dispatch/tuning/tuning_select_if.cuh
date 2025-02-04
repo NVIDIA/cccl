@@ -1544,7 +1544,7 @@ struct policy_hub
       decltype(select_agent_policy<sm80_tuning<InputT,
                                                is_flagged<FlagT>(),
                                                are_rejects_kept<KeepRejects>(),
-                                               classify_offset_size<OffsetT>(),
+                                               offset_size::_4, // before SM100, we only tuned for int32
                                                is_primitive<InputT>(),
                                                classify_input_size<InputT>()>>(0));
   };
@@ -1560,7 +1560,7 @@ struct policy_hub
       decltype(select_agent_policy<sm90_tuning<InputT,
                                                is_flagged<FlagT>(),
                                                are_rejects_kept<KeepRejects>(),
-                                               classify_offset_size<OffsetT>(),
+                                               offset_size::_4, // before SM100, we only tuned for int32
                                                is_primitive<InputT>(),
                                                classify_input_size<InputT>()>>(0));
   };
