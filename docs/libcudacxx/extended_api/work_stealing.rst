@@ -35,12 +35,42 @@ This example shows how to perform work-stealing at thread-block granularity usin
 
 .. code:: cuda
 
+   #include <cuda/math>
    #include <cuda/try_cancel>
-   __global__ void vec_add1(int* a, int* b, int* c, int n, int tidx = 0) {
-     cuda::experimental::try_cancel_blocks<1>(threadIdx.x == tidx, [=](dim3 tb) {
+   __global__ void vec_add(int* a, int* b, int* c, int n) {
+     cuda::experimental::try_cancel_blocks<1>(threadIdx.x == 0, [=](dim3 tb) {
        int idx = threadIdx.x + tb.x * blockDim.x;
        if (idx < n) {
          c[idx] += a[idx] + b[idx];
        }
      });
+   }
+
+   int main() {
+    int N = 10000;
+    int *a, *b, *c;
+    cudaMallocManaged(&a, N * sizeof(int));
+    cudaMallocManaged(&b, N * sizeof(int));
+    cudaMallocManaged(&c, N * sizeof(int));
+    for (int i = 0; i < N; ++i) {
+      a[i] = i;
+      b[i] = 1;
+      c[i] = 0;
+    }
+
+    int tpb = 256;
+    int bpg = cuda::ceil_div(N, tpb);
+
+    vec_add<<<bpg, tpb>>>(a, b, c, N, tidx);
+    cudaDeviceSynchronize();
+
+    bool success = true;
+    for (int i = 0; i < N; ++i) {
+      if (c[i] != (1 + i)) {
+	std::cerr << "ERROR " << i << ", " << c[i] << std::endl;
+	success = false;
+      }
+    }
+
+    return success? 0 : 1;
    }
