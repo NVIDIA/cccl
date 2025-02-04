@@ -822,7 +822,7 @@ struct ScanTileState<T, false>
       allocation_sizes[2] = (num_tiles + TILE_STATUS_PADDING) * sizeof(Uninitialized<T>);
 
       // Compute allocation pointers into the single storage blob
-      error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
 
       if (cudaSuccess != error)
       {
@@ -863,7 +863,7 @@ struct ScanTileState<T, false>
 
     // Set the necessary size of the blob
     void* allocations[3] = {};
-    return CubDebug(AliasTemporaries(nullptr, temp_storage_bytes, allocations, allocation_sizes));
+    return CubDebug(detail::AliasTemporaries(nullptr, temp_storage_bytes, allocations, allocation_sizes));
   }
 
   /**
