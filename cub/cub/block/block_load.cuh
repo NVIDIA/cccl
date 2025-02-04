@@ -891,7 +891,11 @@ class BlockLoad
     {
       InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, block_ptr, dst_items);
     }
-
+    // NOTE: This function is necessary for pointers to non-const types.
+    // The core reason is that the compiler will not deduce 'T*' to 'const T*' automatically.
+    // Otherwise, when the pointer type is 'T*', the compiler will prefer the overloaded version
+    // Load(RandomAccessIterator...) over Load(const T*...), which means it will never perform vectorized loading for
+    // pointers to non-const types.
     _CCCL_DEVICE _CCCL_FORCEINLINE void Load(T* block_ptr, T (&dst_items)[ITEMS_PER_THREAD])
     {
       InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, block_ptr, dst_items);
