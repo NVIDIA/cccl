@@ -94,14 +94,14 @@ using types = c2h::type_list<
   unsigned long,
   long long,
   unsigned long long,
-#if TEST_HALF_T()
+#ifdef TEST_HALF_T
   __half,
   half_t,
-#endif // TEST_HALF_T()
-#if TEST_BF_T()
+#endif // TEST_HALF_T
+#ifdef TEST_BF_T
   __nv_bfloat16,
   bfloat16_t,
-#endif // TEST_BF_T()
+#endif // TEST_BF_T
   float,
   double
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
