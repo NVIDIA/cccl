@@ -142,7 +142,7 @@ CUB_NAMESPACE_BEGIN
 //!    __global__ void ExampleKernel(...)
 //!    {
 //!        int array[4] = {1, 2, 3, 4};
-//!        int sum      = cub::ThreadReduce(array, ::cuda::std::plus<>()); // sum = 10
+//!        int sum      = cub::ThreadReduce(array, ::cuda::std::plus<>{}); // sum = 10
 //!
 //! @endrst
 //!
@@ -425,6 +425,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE Output unsafe_bitcast(const Input
 template <typename Input, typename ReductionOp>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input& input, ReductionOp)
 {
+  using cub::internal::unsafe_bitcast;
   using T                       = cub::detail::random_access_range_elem_t<Input>;
   using SimdReduceOp            = cub_operator_to_simd_operator_t<ReductionOp, T>;
   using SimdType                = simd_type_t<T>;
@@ -546,7 +547,7 @@ ThreadReduce(const Input& input, ReductionOp reduction_op, PrefixT prefix)
   constexpr int length = cub::detail::static_size_v<Input>;
   // copy to a temporary array of type AccumT
   AccumT array[length + 1] = {prefix};
-  UnrolledCopy<length>(input, array + 1);
+  cub::UnrolledCopy<length>(input, array + 1);
   return cub::ThreadReduce<decltype(array), ReductionOp, AccumT, AccumT>(array, reduction_op);
 }
 
