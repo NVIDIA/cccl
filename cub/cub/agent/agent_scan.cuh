@@ -93,9 +93,8 @@ template <int NOMINAL_BLOCK_THREADS_4B,
           CacheLoadModifier _LOAD_MODIFIER,
           BlockStoreAlgorithm _STORE_ALGORITHM,
           BlockScanAlgorithm _SCAN_ALGORITHM,
-          typename ScalingType       = MemBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>,
           typename DelayConstructorT = detail::default_delay_constructor_t<ComputeT>>
-struct AgentScanPolicy : ScalingType
+struct AgentScanPolicy : detail::MemBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>
 {
   static constexpr BlockLoadAlgorithm LOAD_ALGORITHM   = _LOAD_ALGORITHM;
   static constexpr CacheLoadModifier LOAD_MODIFIER     = _LOAD_MODIFIER;

@@ -77,9 +77,8 @@ template <int NOMINAL_BLOCK_THREADS_4B,
           typename ComputeT,
           int _VECTOR_LOAD_LENGTH,
           BlockReduceAlgorithm _BLOCK_ALGORITHM,
-          CacheLoadModifier _LOAD_MODIFIER,
-          typename ScalingType = MemBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
-struct AgentReducePolicy : ScalingType
+          CacheLoadModifier _LOAD_MODIFIER>
+struct AgentReducePolicy : detail::MemBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>
 {
   /// Number of items per vectorized load
   static constexpr int VECTOR_LOAD_LENGTH = _VECTOR_LOAD_LENGTH;

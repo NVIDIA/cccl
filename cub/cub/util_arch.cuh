@@ -35,6 +35,8 @@
 
 #include <cub/config.cuh>
 
+#include "cuda/std/__cccl/deprecated.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -48,8 +50,7 @@
 #include <cub/util_namespace.cuh>
 
 #include <cuda/cmath>
-#include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__algorithm/min.h>
+#include <cuda/functional>
 
 // Legacy include; this functionality used to be defined in here.
 #include <cub/detail/detect_cuda_runtime.cuh>
@@ -115,27 +116,43 @@ namespace detail
 // The maximum amount of static shared memory available per thread block
 // Note that in contrast to dynamic shared memory, static shared memory is still limited to 48 KB
 static constexpr ::cuda::std::size_t max_smem_per_block = 48 * 1024;
-} // namespace detail
+
+template <typename T>
+constexpr int bound_scaling_block_threads(uint32_t Nominal4ByteBlockThreads, uint32_t ItemsPerThread)
+{
+  return ::cuda::minimum<>{}(
+    Nominal4ByteBlockThreads, ::cuda::round_up(detail::max_smem_per_block / (sizeof(T) * ItemsPerThread), 32));
+}
 
 template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename T>
 struct RegBoundScaling
 {
   static constexpr int ITEMS_PER_THREAD =
-    (::cuda::std::max)(1, Nominal4ByteItemsPerThread * 4 / (::cuda::std::max)(4, int{sizeof(T)}));
-  static constexpr int BLOCK_THREADS = (::cuda::std::min)(
-    Nominal4ByteBlockThreads,
-    ::cuda::ceil_div(int{detail::max_smem_per_block} / (int{sizeof(T)} * ITEMS_PER_THREAD), 32) * 32);
+    ::cuda::maximum<>{}(1u, (Nominal4ByteItemsPerThread * 4) / ::cuda::maximum<>{}(4u, sizeof(T)));
+
+  static constexpr auto BLOCK_THREADS = bound_scaling_block_threads<T>(Nominal4ByteBlockThreads, ITEMS_PER_THREAD);
 };
 
 template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename T>
 struct MemBoundScaling
 {
-  static constexpr int ITEMS_PER_THREAD = (::cuda::std::max)(
-    1, (::cuda::std::min)(Nominal4ByteItemsPerThread * 4 / int{sizeof(T)}, Nominal4ByteItemsPerThread * 2));
-  static constexpr int BLOCK_THREADS = (::cuda::std::min)(
-    Nominal4ByteBlockThreads,
-    ::cuda::ceil_div(int{detail::max_smem_per_block} / (int{sizeof(T)} * ITEMS_PER_THREAD), 32) * 32);
+  static constexpr int ITEMS_PER_THREAD = ::cuda::maximum<>{}(
+    1u, ::cuda::minimum<>{}((Nominal4ByteItemsPerThread * 4) / sizeof(T), Nominal4ByteItemsPerThread * 2u));
+
+  static constexpr auto BLOCK_THREADS = bound_scaling_block_threads<T>(Nominal4ByteBlockThreads, ITEMS_PER_THREAD);
 };
+
+} // namespace detail
+
+template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename T>
+struct CCCL_DEPRECATED_BECAUSE("Internal-only implementation details") RegBoundScaling
+    : detail::MemBoundScaling<Nominal4ByteBlockThreads, Nominal4ByteItemsPerThread, T>
+{};
+
+template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename T>
+struct CCCL_DEPRECATED_BECAUSE("Internal-only implementation details") MemBoundScaling
+    : detail::MemBoundScaling<Nominal4ByteBlockThreads, Nominal4ByteItemsPerThread, T>
+{};
 
 #endif // Do not document
 
