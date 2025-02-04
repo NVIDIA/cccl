@@ -200,4 +200,4 @@ _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void try_cancel_blocks(bool __is_leader, __Unar
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#endif // _CUDA_ANNOTATED_PTR
+#endif // _CUDA_TRY_CANCEL
