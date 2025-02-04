@@ -106,5 +106,5 @@ TEMPLATE_LIST_TEST_CASE("Merge Sort Copy works with integral keys", "[merge_sort
   merge_sort(input_keys_it, input_items_it, output_keys_it, output_items_it, num_items, op);
 
   std::sort(expected_keys.begin(), expected_keys.end());
-  REQUIRE(expected_keys == output_keys);
+  REQUIRE(expected_keys == std::vector<TestType>(output_keys_it));
 }
