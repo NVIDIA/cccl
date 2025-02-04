@@ -44,7 +44,7 @@ int main()
   my_system sys;
 
   // To invoke our version of for_each, pass sys as the first parameter
-  thrust::for_each(sys, vec.begin(), vec.end(), ::cuda::std::identity{});
+  thrust::for_each(sys, vec.begin(), vec.end(), ::cuda::std::negate{});
 
   // Other algorithms that Thrust implements with thrust::for_each will also
   // cause our version of for_each to be invoked when we pass an instance of my_system as the first parameter.
@@ -53,7 +53,7 @@ int main()
   thrust::transform(sys, vec.begin(), vec.end(), vec.begin(), ::cuda::std::identity{});
 
   // Invocations without my_system are handled normally.
-  thrust::for_each(vec.begin(), vec.end(), ::cuda::std::identity{});
+  thrust::for_each(vec.begin(), vec.end(), ::cuda::std::negate{});
 
   return 0;
 }
