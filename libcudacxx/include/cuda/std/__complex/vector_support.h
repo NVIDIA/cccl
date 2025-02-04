@@ -48,11 +48,7 @@ template <class _Tp>
 struct __complex_alignment : integral_constant<size_t, 2 * sizeof(_Tp)>
 {};
 
-#if _LIBCUDACXX_CUDA_ABI_VERSION > 3
-#  define _LIBCUDACXX_COMPLEX_ALIGNAS _CCCL_ALIGNAS(__complex_alignment<_Tp>::value)
-#else
-#  define _LIBCUDACXX_COMPLEX_ALIGNAS
-#endif
+#define _LIBCUDACXX_COMPLEX_ALIGNAS _CCCL_ALIGNAS(__complex_alignment<_Tp>::value)
 
 template <class _Tp>
 struct __type_to_vector;

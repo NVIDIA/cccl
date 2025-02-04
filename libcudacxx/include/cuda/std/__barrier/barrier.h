@@ -28,12 +28,6 @@
 #include <cuda/std/chrono>
 #include <cuda/std/cstddef>
 
-#if _LIBCUDACXX_CUDA_ABI_VERSION < 3
-#  define _LIBCUDACXX_BARRIER_ALIGNMENTS alignas(64)
-#else // ^^^ _LIBCUDACXX_CUDA_ABI_VERSION < 3 ^^^ / vvv _LIBCUDACXX_CUDA_ABI_VERSION >= 3 vvv
-#  define _LIBCUDACXX_BARRIER_ALIGNMENTS
-#endif // _LIBCUDACXX_CUDA_ABI_VERSION >= 3
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_DIAG_PUSH
@@ -42,9 +36,9 @@ _CCCL_DIAG_SUPPRESS_MSVC(4324) // structure was padded due to alignment specifie
 template <class _CompletionF, thread_scope _Sco = thread_scope_system>
 class __barrier_base
 {
-  _LIBCUDACXX_BARRIER_ALIGNMENTS __atomic_impl<ptrdiff_t, _Sco> __expected, __arrived;
-  _LIBCUDACXX_BARRIER_ALIGNMENTS _CompletionF __completion;
-  _LIBCUDACXX_BARRIER_ALIGNMENTS __atomic_impl<bool, _Sco> __phase;
+  __atomic_impl<ptrdiff_t, _Sco> __expected, __arrived;
+  _CompletionF __completion;
+  __atomic_impl<bool, _Sco> __phase;
 
 public:
   using arrival_token = bool;
@@ -131,7 +125,7 @@ class __barrier_base<__empty_completion, _Sco>
   static constexpr uint64_t __phase_bit     = 1ull << 63;
   static constexpr uint64_t __arrived_mask  = (__phase_bit - 1) & ~__expected_mask;
 
-  _LIBCUDACXX_BARRIER_ALIGNMENTS __atomic_impl<uint64_t, _Sco> __phase_arrived_expected;
+  __atomic_impl<uint64_t, _Sco> __phase_arrived_expected;
 
 public:
   using arrival_token = uint64_t;
