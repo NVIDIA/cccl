@@ -227,7 +227,6 @@ DECLARE_UNITTEST(TestIdentityFunctional);
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestIdentityFunctionalVector()
 {
-  using T = typename Vector::value_type;
   Vector input{0, 1, 2, 3};
   Vector output(4);
   thrust::transform(input.begin(), input.end(), output.begin(), ::cuda::std::identity{});
