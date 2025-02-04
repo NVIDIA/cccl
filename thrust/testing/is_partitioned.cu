@@ -16,8 +16,6 @@ struct is_even
 template <typename Vector>
 void TestIsPartitionedSimple()
 {
-  using T = typename Vector::value_type;
-
   Vector v{1, 1, 1, 0};
 
   // empty partition

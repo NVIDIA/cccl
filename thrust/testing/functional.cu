@@ -303,8 +303,6 @@ DECLARE_VECTOR_UNITTEST(TestMinimumFunctional);
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestNot1()
 {
-  using T = typename Vector::value_type;
-
   Vector input{1, 0, 1, 1, 0};
 
   Vector output(5);
