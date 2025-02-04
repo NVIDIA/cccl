@@ -83,7 +83,6 @@ void TestReplace(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestReplace);
 
 #ifndef THRUST_GCC13_TBB_MISCOMPILE
-#  ifndef THRUST_GCC12_OMP_MISCOMPILE
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopySimple()
 {
@@ -100,7 +99,6 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopySimple()
   ASSERT_EQUAL(dest, result);
 }
 DECLARE_VECTOR_UNITTEST(TestReplaceCopySimple);
-#  endif
 #endif
 
 template <typename InputIterator, typename OutputIterator, typename T>
