@@ -1080,9 +1080,8 @@ _LIBCUDACXX_VARIANT_MOVE_CONSTRUCTOR(_Trait::_TriviallyAvailable,
 _LIBCUDACXX_VARIANT_MOVE_CONSTRUCTOR(
   _Trait::_Available,
   _LIBCUDACXX_HIDE_FROM_ABI __move_constructor(__move_constructor&& __that) noexcept(
-    __all<_CCCL_TRAIT(is_nothrow_move_constructible, _Types)...>::value) : __move_constructor(__valueless_t{}) {
-    this->__generic_construct(*this, _CUDA_VSTD::move(__that));
-  });
+    __all<_CCCL_TRAIT(is_nothrow_move_constructible, _Types)...>::value)
+  : __move_constructor(__valueless_t{}) { this->__generic_construct(*this, _CUDA_VSTD::move(__that)); });
 
 _LIBCUDACXX_VARIANT_MOVE_CONSTRUCTOR(_Trait::_Unavailable, __move_constructor(__move_constructor&&) = delete;);
 
@@ -1113,10 +1112,8 @@ _LIBCUDACXX_VARIANT_COPY_CONSTRUCTOR(
   _Trait::_TriviallyAvailable, _CCCL_HIDE_FROM_ABI __copy_constructor(const __copy_constructor& __that) = default;);
 
 _LIBCUDACXX_VARIANT_COPY_CONSTRUCTOR(
-  _Trait::_Available,
-  _LIBCUDACXX_HIDE_FROM_ABI __copy_constructor(const __copy_constructor& __that) : __copy_constructor(__valueless_t{}) {
-    this->__generic_construct(*this, __that);
-  });
+  _Trait::_Available, _LIBCUDACXX_HIDE_FROM_ABI __copy_constructor(const __copy_constructor& __that)
+  : __copy_constructor(__valueless_t{}) { this->__generic_construct(*this, __that); });
 
 _LIBCUDACXX_VARIANT_COPY_CONSTRUCTOR(_Trait::_Unavailable, __copy_constructor(const __copy_constructor&) = delete;);
 
@@ -1421,8 +1418,8 @@ template <class _Tp, size_t>
 struct __overload_bool
 {
   template <class _Up, class _Ap = __remove_cvref_t<_Up>>
-  _LIBCUDACXX_HIDE_FROM_ABI auto operator()(bool, _Up&&) const
-    -> enable_if_t<_CCCL_TRAIT(is_same, _Ap, bool), __type_identity<_Tp>>;
+  _LIBCUDACXX_HIDE_FROM_ABI auto
+  operator()(bool, _Up&&) const -> enable_if_t<_CCCL_TRAIT(is_same, _Ap, bool), __type_identity<_Tp>>;
 };
 
 template <size_t _Idx>
@@ -2119,9 +2116,8 @@ visit(_Visitor&& __visitor, _Vs&&... __vs)
 }
 
 template <class... _Types>
-_LIBCUDACXX_HIDE_FROM_ABI auto
-swap(variant<_Types...>& __lhs, variant<_Types...>& __rhs) noexcept(noexcept(__lhs.swap(__rhs)))
-  -> decltype(__lhs.swap(__rhs))
+_LIBCUDACXX_HIDE_FROM_ABI auto swap(variant<_Types...>& __lhs, variant<_Types...>& __rhs) noexcept(
+  noexcept(__lhs.swap(__rhs))) -> decltype(__lhs.swap(__rhs))
 {
   return __lhs.swap(__rhs);
 }
