@@ -21,6 +21,7 @@ workflows:
   #       args: '--preset libcudacxx --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
   override:
+    - {jobs: ['nvrtc'], project: 'libcudacxx', std: 'all', cxx: ['msvc']}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
@@ -59,6 +60,7 @@ workflows:
     - {jobs: ['build'], cpu: 'arm64', project: ['libcudacxx', 'cub', 'thrust', 'cudax'], std: 'max', cxx: ['gcc', 'clang']}
     - {jobs: ['test_gpu'], project: 'thrust', cmake_options: '-DTHRUST_DISPATCH_TYPE=Force32bit', gpu: 'rtx4090'}
     - {jobs: ['nvrtc'], project: 'libcudacxx', std: 'all', gpu: 'rtx2080', sm: 'gpu'}
+    - {jobs: ['nvrtc'], project: 'libcudacxx', std: 'all', cxx: ['msvc']}
     - {jobs: ['verify_codegen'], project: 'libcudacxx'}
     # c.parallel -- pinned to gcc13 / msvc2022 to match python
     - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '12.X', cxx: ['gcc13', 'msvc2022'], gpu: ['rtx2080']}

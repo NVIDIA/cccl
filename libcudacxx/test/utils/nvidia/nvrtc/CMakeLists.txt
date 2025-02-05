@@ -13,3 +13,9 @@ target_link_libraries(
     CUDA::cuda_driver
 )
 target_compile_features(libcudacxx.nvrtcc PRIVATE cxx_std_17)
+
+# defer loading the CUDA driver in case a GPU is not available.
+if (MSVC)
+  target_link_options(libcudacxx.nvrtcc PRIVATE "/delayload:nvcuda.dll")
+  target_link_libraries(libcudacxx.nvrtcc delayimp)
+endif()
