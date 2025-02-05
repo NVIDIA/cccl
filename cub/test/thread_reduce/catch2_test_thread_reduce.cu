@@ -85,13 +85,11 @@ __global__ void thread_reduce_kernel_array(const T* d_in, T* d_out, ReduceOperat
   *d_out = cub::ThreadReduce(thread_data, reduce_operator);
 }
 
-#if _CCCL_STD_VER >= 2014
-
 template <int NUM_ITEMS, typename T, typename ReduceOperator>
 __global__ void thread_reduce_kernel_span(const T* d_in, T* d_out, ReduceOperator reduce_operator)
 {
   T thread_data[NUM_ITEMS];
-#  pragma unroll
+#pragma unroll
   for (int i = 0; i < NUM_ITEMS; ++i)
   {
     thread_data[i] = d_in[i];
@@ -99,8 +97,6 @@ __global__ void thread_reduce_kernel_span(const T* d_in, T* d_out, ReduceOperato
   ::cuda::std::span<T, NUM_ITEMS> span(thread_data);
   *d_out = cub::ThreadReduce(span, reduce_operator);
 }
-
-#endif // _CCCL_STD_VER >= 2014
 
 #if _CCCL_STD_VER >= 2023
 
@@ -475,13 +471,11 @@ C2H_TEST("ThreadReduce Container Tests", "[reduce][thread]")
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   verify_results(reference_result, c2h::host_vector<int>(d_out)[0]);
 
-#  if _CCCL_STD_VER >= 2014
   thread_reduce_kernel_span<max_size>
     <<<1, 1>>>(thrust::raw_pointer_cast(d_in.data()), thrust::raw_pointer_cast(d_out.data()), cuda::std::plus<>{});
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   verify_results(reference_result, c2h::host_vector<int>(d_out)[0]);
-#  endif // _CCCL_STD_VER >= 2014
 
 #  if _CCCL_STD_VER >= 2023
   thread_reduce_kernel_mdspan<max_size>
