@@ -160,18 +160,6 @@ constexpr offset_size classify_offset_size()
   return sizeof(OffsetT) == 4 ? offset_size::_4 : sizeof(OffsetT) == 8 ? offset_size::_8 : offset_size::unknown;
 }
 
-template <class AccumT, int Threads, int Items, int L2B, int L2W>
-struct tuning
-{
-  static constexpr int threads = Threads;
-  static constexpr int items   = Items;
-  using delay_constructor      = fixed_delay_constructor_t<L2B, L2W>;
-  static constexpr BlockLoadAlgorithm load_algorithm =
-    (sizeof(AccumT) > 128) ? BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED : BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr BlockStoreAlgorithm store_algorithm =
-    (sizeof(AccumT) > 128) ? BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : BLOCK_STORE_WARP_TRANSPOSE;
-};
-
 template <class AccumT,
           primitive_op PrimitiveOp,
           primitive_accum PrimitiveAccumulator = is_primitive_accum<AccumT>(),
