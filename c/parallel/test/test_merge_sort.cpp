@@ -79,13 +79,11 @@ TEMPLATE_LIST_TEST_CASE("DeviceMergeSort::SortKeys works", "[merge_sort]", key_t
 
   pointer_t<TestType> input_keys_it(input_keys);
   pointer_t<TestType> input_items_it;
-  pointer_t<TestType> output_keys_it(input_keys);
-  pointer_t<TestType> output_items_it;
 
-  merge_sort(input_keys_it, input_items_it, output_keys_it, output_items_it, num_items, op);
+  merge_sort(input_keys_it, input_items_it, input_keys_it, input_items_it, num_items, op);
 
   std::sort(expected_keys.begin(), expected_keys.end());
-  REQUIRE(expected_keys == std::vector<TestType>(output_keys_it));
+  REQUIRE(expected_keys == std::vector<TestType>(input_keys_it));
 }
 
 TEMPLATE_LIST_TEST_CASE("DeviceMergeSort::SortKeysCopy works", "[merge_sort]", key_types)
@@ -100,9 +98,8 @@ TEMPLATE_LIST_TEST_CASE("DeviceMergeSort::SortKeysCopy works", "[merge_sort]", k
   pointer_t<TestType> input_keys_it(input_keys);
   pointer_t<TestType> input_items_it;
   pointer_t<TestType> output_keys_it(output_keys);
-  pointer_t<TestType> output_items_it;
 
-  merge_sort(input_keys_it, input_items_it, output_keys_it, output_items_it, num_items, op);
+  merge_sort(input_keys_it, input_items_it, output_keys_it, input_items_it, num_items, op);
 
   std::sort(expected_keys.begin(), expected_keys.end());
   REQUIRE(expected_keys == std::vector<TestType>(output_keys_it));
@@ -123,15 +120,13 @@ TEMPLATE_LIST_TEST_CASE("DeviceMergeSort::SortPairs works", "[merge_sort]", key_
 
   pointer_t<TestType> input_keys_it(input_keys);
   pointer_t<item_t> input_items_it(input_items);
-  pointer_t<TestType> output_keys_it(input_keys);
-  pointer_t<item_t> output_items_it(input_items);
 
-  merge_sort(input_keys_it, input_items_it, output_keys_it, output_items_it, num_items, op);
+  merge_sort(input_keys_it, input_items_it, input_keys_it, input_items_it, num_items, op);
 
   std::sort(expected_keys.begin(), expected_keys.end());
   std::sort(expected_items.begin(), expected_items.end());
-  REQUIRE(expected_keys == std::vector<TestType>(output_keys_it));
-  REQUIRE(expected_items == std::vector<item_t>(output_items_it));
+  REQUIRE(expected_keys == std::vector<TestType>(input_keys_it));
+  REQUIRE(expected_items == std::vector<item_t>(input_items_it));
 }
 
 TEMPLATE_LIST_TEST_CASE("DeviceMergeSort::SortPairsCopy works ", "[merge_sort]", key_types)
@@ -174,7 +169,7 @@ struct item_pair
   float b;
 };
 
-TEST_CASE("DeviceMergeSort:SortKeys works with custom types", "[merge_sort]")
+TEST_CASE("DeviceMergeSort:SortPairsCopy works with custom types", "[merge_sort]")
 {
   const size_t num_items = GENERATE_COPY(take(2, random(1, 10)), values({5, 100, 200}));
   operation_t op         = make_operation(
