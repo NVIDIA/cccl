@@ -17,6 +17,7 @@ set(stf_test_sources
   error_checks/misformed_tasks_dbl_end.cu
   error_checks/misformed_tasks_dbl_start.cu
   error_checks/non_managed_data.cu
+  error_checks/stackable_illegal_export.cu
   error_checks/uninitialized_data.cu
   error_checks/write_frozen.cu
   examples/05-stencil-no-copy.cu
