@@ -32,7 +32,7 @@
 #include <cuda/std/type_traits>
 
 _CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(C4702) // unreachable code in catch.hpp
+_CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code in catch.hpp
 #include <c2h/catch2_test_helper.h>
 _CCCL_DIAG_POP
 #include <c2h/extended_types.h>
