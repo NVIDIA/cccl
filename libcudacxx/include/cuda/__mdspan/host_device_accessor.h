@@ -21,8 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/mdspan>
-
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <typename _Accessor>
@@ -81,12 +79,6 @@ public:
   constexpr host_accessor(const host_accessor&) noexcept(__is_copy_ctor_noexcept) = default;
 };
 
-template <typename _ElementType,
-          typename _Extents,
-          typename _LayoutPolicy   = _CUDA_VSTD::layout_right,
-          typename _AccessorPolicy = _CUDA_VSTD::default_accessor<_ElementType>>
-using host_mdspan = _CUDA_VSTD::mdspan<_ElementType, _Extents, _LayoutPolicy, host_accessor<_AccessorPolicy>>;
-
 /***********************************************************************************************************************
  * Device Accessor
  **********************************************************************************************************************/
@@ -107,12 +99,6 @@ public:
 
   constexpr device_accessor(const device_accessor&) noexcept(__is_copy_ctor_noexcept) = default;
 };
-
-template <typename _ElementType,
-          typename _Extents,
-          typename _LayoutPolicy   = _CUDA_VSTD::layout_right,
-          typename _AccessorPolicy = _CUDA_VSTD::default_accessor<_ElementType>>
-using device_mdspan = _CUDA_VSTD::mdspan<_ElementType, _Extents, _LayoutPolicy, device_accessor<_AccessorPolicy>>;
 
 /***********************************************************************************************************************
  * Managed Accessor
@@ -135,12 +121,6 @@ public:
   constexpr managed_accessor(const managed_accessor&) noexcept(__is_copy_ctor_noexcept) = default;
 };
 
-template <typename _ElementType,
-          typename _Extents,
-          typename _LayoutPolicy   = _CUDA_VSTD::layout_right,
-          typename _AccessorPolicy = _CUDA_VSTD::default_accessor<_ElementType>>
-using managed_mdspan = _CUDA_VSTD::mdspan<_ElementType, _Extents, _LayoutPolicy, managed_accessor<_AccessorPolicy>>;
-
 /***********************************************************************************************************************
  * Accessibility Traits
  **********************************************************************************************************************/
@@ -157,17 +137,11 @@ inline constexpr bool is_host_accessible_v<host_accessor<_Accessor>> = true;
 template <typename _Accessor>
 inline constexpr bool is_host_accessible_v<managed_accessor<_Accessor>> = true;
 
-template <typename _T, typename _E, typename _L, typename _A>
-inline constexpr bool is_host_accessible_v<_CUDA_VSTD::mdspan<_T, _E, _L, _A>> = is_host_accessible_v<_A>;
-
 template <typename _Accessor>
 inline constexpr bool is_device_accessible_v<device_accessor<_Accessor>> = true;
 
 template <typename _Accessor>
 inline constexpr bool is_device_accessible_v<managed_accessor<_Accessor>> = true;
-
-template <typename _T, typename _E, typename _L, typename _A>
-inline constexpr bool is_device_accessible_v<_CUDA_VSTD::mdspan<_T, _E, _L, _A>> = is_device_accessible_v<_A>;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
