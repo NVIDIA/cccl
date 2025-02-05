@@ -11,7 +11,6 @@
 
 // gcc is unable to get the construction of b right
 // UNSUPPORTED: gcc-7, gcc-8, gcc-9
-// UNSUPPORTED: nvcc-11.1, nvcc-11.2
 
 // class cuda::std::ranges::subrange;
 //   Test the example from LWG 3470,

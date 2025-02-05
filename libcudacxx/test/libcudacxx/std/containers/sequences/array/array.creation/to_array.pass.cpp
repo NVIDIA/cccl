@@ -10,7 +10,6 @@
 // <cuda/std/array>
 
 // UNSUPPORTED: gcc-6, gcc-7, gcc-8
-// UNSUPPORTED: nvcc-11.1
 
 // template <typename T, size_t Size>
 // constexpr auto to_array(T (&arr)[Size])

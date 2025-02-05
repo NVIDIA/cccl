@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: gcc-6
-// UNSUPPORTED: nvcc-11.1
-
 // functional
 
 // template <class F, class... Args>

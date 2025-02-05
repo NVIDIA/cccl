@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: nvcc-11.1
-
 // <cuda/std/expected>
 
 // template<class F> constexpr auto transform(F&&) &;

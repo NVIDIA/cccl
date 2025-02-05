@@ -6,8 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: nvcc-11.1
-
 // <new>
 
 // template <class T> constexpr T* launder(T* p) noexcept;
