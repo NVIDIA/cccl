@@ -156,7 +156,7 @@ class reverse_iterator : public detail::reverse_iterator_base<BidirectionalItera
 private:
   using super_t = typename thrust::detail::reverse_iterator_base<BidirectionalIterator>::type;
 
-  friend class thrust::iterator_core_access;
+  friend class iterator_core_access;
   /*! \endcond
    */
 

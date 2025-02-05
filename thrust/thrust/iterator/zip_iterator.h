@@ -173,7 +173,7 @@ public:
 private:
   using super_t = typename detail::zip_iterator_base<IteratorTuple>::type;
 
-  friend class thrust::iterator_core_access;
+  friend class iterator_core_access;
 
   // Dereferencing returns a tuple built from the dereferenced
   // iterators in the iterator tuple.

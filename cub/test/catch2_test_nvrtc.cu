@@ -60,6 +60,17 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
     #include <cub/device/dispatch/kernels/scan.cuh>
     #include <cub/device/dispatch/kernels/merge_sort.cuh>
 
+    #include <thrust/iterator/constant_iterator.h>
+    #include <thrust/iterator/counting_iterator.h>
+    #include <thrust/iterator/discard_iterator.h>
+    #include <thrust/iterator/permutation_iterator.h>
+    #include <thrust/iterator/reverse_iterator.h>
+    #include <thrust/iterator/tabulate_output_iterator.h>
+    #include <thrust/iterator/transform_input_output_iterator.h>
+    #include <thrust/iterator/transform_iterator.h>
+    #include <thrust/iterator/transform_output_iterator.h>
+    #include <thrust/iterator/zip_iterator.h>
+
     extern "C" __global__ void kernel(int *ptr, int *errors)
     {
       constexpr int items_per_thread = 4;

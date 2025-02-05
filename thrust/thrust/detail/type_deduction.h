@@ -16,22 +16,23 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/detail/preprocessor.h>
 
-#include <type_traits>
-#include <utility>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 ///////////////////////////////////////////////////////////////////////////////
 
 /// \def THRUST_FWD(x)
 /// \brief Performs universal forwarding of a universal reference.
 ///
-#define THRUST_FWD(x) ::std::forward<decltype(x)>(x)
+#define THRUST_FWD(x) ::cuda::std::forward<decltype(x)>(x)
 
 /// \def THRUST_MVCAP(x)
 /// \brief Capture `x` into a lambda by moving.
 /// deprecated [Since 2.8]
-#define THRUST_MVCAP(x) x = ::std::move(x)
+#define THRUST_MVCAP(x) x = ::cuda::std::move(x)
 
 /// \def THRUST_RETOF(invocable, ...)
 /// \brief Expands to the type returned by invoking an instance of the invocable
@@ -40,9 +41,9 @@
 /// deprecated [Since 2.8]
 #define THRUST_RETOF(...) THRUST_PP_DISPATCH(THRUST_RETOF, __VA_ARGS__)
 /// deprecated [Since 2.8]
-#define THRUST_RETOF1(C) decltype(::std::declval<C>()())
+#define THRUST_RETOF1(C) decltype(::cuda::std::declval<C>()())
 /// deprecated [Since 2.8]
-#define THRUST_RETOF2(C, V) decltype(::std::declval<C>()(::std::declval<V>()))
+#define THRUST_RETOF2(C, V) decltype(::cuda::std::declval<C>()(::cuda::std::declval<V>()))
 
 /// \def THRUST_RETURNS(...)
 /// \brief Expands to a function definition that returns the expression
@@ -91,11 +92,11 @@
     /**/
 #else
 /// deprecated [Since 2.8]
-#  define THRUST_DECLTYPE_RETURNS_WITH_SFINAE_CONDITION(condition, ...)                              \
-    noexcept(noexcept(__VA_ARGS__))->typename std::enable_if<condition, decltype(__VA_ARGS__)>::type \
-    {                                                                                                \
-      return (__VA_ARGS__);                                                                          \
-    }                                                                                                \
+#  define THRUST_DECLTYPE_RETURNS_WITH_SFINAE_CONDITION(condition, ...)                                      \
+    noexcept(noexcept(__VA_ARGS__))->typename ::cuda::std::enable_if<condition, decltype(__VA_ARGS__)>::type \
+    {                                                                                                        \
+      return (__VA_ARGS__);                                                                                  \
+    }                                                                                                        \
     /**/
 #endif
 
