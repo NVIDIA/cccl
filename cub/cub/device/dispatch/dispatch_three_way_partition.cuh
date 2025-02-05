@@ -250,7 +250,7 @@ struct DispatchThreeWayPartitionIf
       // the necessary size of the blob)
       void* allocations[1] = {};
 
-      error = CubDebug(cub::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;

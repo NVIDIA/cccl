@@ -600,6 +600,10 @@ MaxSmOccupancy(int& max_sm_occupancy, KernelPtr kernel_ptr, int block_threads, i
 /******************************************************************************
  * Policy management
  ******************************************************************************/
+// PolicyWrapper
+
+namespace detail
+{
 
 template <typename PolicyT, typename = void>
 struct PolicyWrapper : PolicyT
@@ -635,6 +639,21 @@ CUB_RUNTIME_FUNCTION PolicyWrapper<PolicyT> MakePolicyWrapper(PolicyT policy)
   return PolicyWrapper<PolicyT>{policy};
 }
 
+} // namespace detail
+
+template <typename PolicyT, typename = void>
+using PolicyWrapper CCCL_DEPRECATED_BECAUSE("Internal implementation detail") = detail::PolicyWrapper<PolicyT>;
+
+template <typename PolicyT>
+CCCL_DEPRECATED_BECAUSE("Internal implementation detail")
+CUB_RUNTIME_FUNCTION detail::PolicyWrapper<PolicyT> MakePolicyWrapper(PolicyT policy)
+{
+  return detail::PolicyWrapper<PolicyT>{policy};
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// ChainedPolicy
+
 namespace detail
 {
 
@@ -654,8 +673,8 @@ struct KernelConfig
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   Init(KernelPtrT kernel_ptr, AgentPolicyT agent_policy = {}, LauncherFactory launcher_factory = {})
   {
-    block_threads    = MakePolicyWrapper(agent_policy).BlockThreads();
-    items_per_thread = MakePolicyWrapper(agent_policy).ItemsPerThread();
+    block_threads    = cub::detail::MakePolicyWrapper(agent_policy).BlockThreads();
+    items_per_thread = cub::detail::MakePolicyWrapper(agent_policy).ItemsPerThread();
     tile_size        = block_threads * items_per_thread;
     return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, block_threads);
   }
