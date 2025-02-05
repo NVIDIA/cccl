@@ -26,8 +26,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/execute_with_dependencies.h>
 #include <thrust/detail/type_traits.h>
+#if !_CCCL_COMPILER(NVRTC)
+#  include <thrust/detail/execute_with_dependencies.h>
+#endif // !_CCCL_COMPILER(NVRTC)
 
 THRUST_NAMESPACE_BEGIN
 
@@ -53,11 +55,12 @@ public:
       : alloc(alloc_)
   {}
 
-  ::cuda::std::remove_reference_t<Allocator>& get_allocator()
+  _CCCL_HOST_DEVICE ::cuda::std::remove_reference_t<Allocator>& get_allocator()
   {
     return alloc;
   }
 
+#if !_CCCL_COMPILER(NVRTC)
   template <typename... Dependencies>
   CCCL_DEPRECATED _CCCL_HOST execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>
   after(Dependencies&&... dependencies) const
@@ -97,6 +100,7 @@ public:
   {
     return {alloc, capture_as_dependency(std::move(dependencies))};
   }
+#endif // !_CCCL_COMPILER(NVRTC)
 };
 
 _CCCL_SUPPRESS_DEPRECATED_POP

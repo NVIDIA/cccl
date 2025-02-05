@@ -35,8 +35,6 @@
 #include <cuda/functional>
 #include <cuda/std/functional>
 
-#include <functional>
-
 THRUST_NAMESPACE_BEGIN
 
 /*! \addtogroup function_objects Function Objects
