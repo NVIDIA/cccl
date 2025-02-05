@@ -83,7 +83,7 @@ class stackable_logical_data_impl_state_base
 {
 public:
   virtual ~stackable_logical_data_impl_state_base()         = default;
-  virtual void pop_before_finalize(bool need_untrack) const = 0;
+  virtual void pop_before_finalize() const = 0;
   virtual void pop_after_finalize() const                   = 0;
 };
 
@@ -189,10 +189,7 @@ public:
       for (auto& [key, d_impl] : current_level.pushed_data)
       {
         _CCCL_ASSERT(d_impl, "invalid value");
-        // false indicates there is no need to update the pushed_data map to
-        // automatically pop data when the context is popped because we are
-        // already doing this now.
-        d_impl->pop_before_finalize(false);
+        d_impl->pop_before_finalize();
       }
 
       // Ensure everything is finished in the context
@@ -516,15 +513,8 @@ class stackable_logical_data
           : sctx(mv(_sctx))
       {}
 
-      virtual void pop_before_finalize(bool need_untrack) const override
+      virtual void pop_before_finalize() const override
       {
-        if (need_untrack)
-        {
-          // Prevent the automatic call to pop() when the context level gets
-          // popped.
-          sctx.untrack_pushed_data(s.back().get_unique_id());
-        }
-
         _CCCL_ASSERT(s.size() == sctx.depth() || s.size() == sctx.depth() + 1, "internal error");
 
         // Maybe the logical data was already destroyed if the stackable
@@ -717,12 +707,10 @@ class stackable_logical_data
       s.push_back(mv(ld));
     }
 
-    /* Pop one level down : we do not untrack data if we are already popping
-     * the context (this would be an unnecessary overhead since we are going to
-     * destroy the map anyway) */
-    void pop_before_finalize(bool need_untrack) const
+    /* Pop one level down */
+    void pop_before_finalize() const
     {
-      impl_state->pop_before_finalize(need_untrack);
+      impl_state->pop_before_finalize();
     }
 
     void pop_after_finalize() const
@@ -813,16 +801,6 @@ public:
     pimpl->get_sctx().track_pushed_data(get_ld().get_unique_id(), pimpl.get());
 #endif
   }
-
-#if 0
-  void pop() const
-  {
-    // This is called by the user: we are not currently popping the context so
-    // we need to untrack the data from the map of data previously pushed in
-    // the context (need_untrack=true).
-    pimpl->pop_before_finalize(true);
-  }
-#endif
 
   // Helpers
   template <typename... Pack>
