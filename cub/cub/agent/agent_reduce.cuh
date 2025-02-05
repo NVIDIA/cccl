@@ -164,7 +164,7 @@ struct AgentReduce
   // pointer to a primitive type
   static constexpr bool ATTEMPT_VECTORIZATION =
     (VECTOR_LOAD_LENGTH > 1) && (ITEMS_PER_THREAD % VECTOR_LOAD_LENGTH == 0)
-    && (::cuda::std::is_pointer<InputIteratorT>::value) && Traits<InputT>::PRIMITIVE;
+    && (::cuda::std::is_pointer<InputIteratorT>::value) && is_primitive<InputT>::value;
 
   static constexpr CacheLoadModifier LOAD_MODIFIER = AgentReducePolicy::LOAD_MODIFIER;
 
