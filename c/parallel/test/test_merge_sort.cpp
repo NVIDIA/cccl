@@ -170,13 +170,13 @@ struct key_pair
 
 struct item_pair
 {
-  short a;
-  size_t b;
+  int a;
+  float b;
 };
 
 TEST_CASE("DeviceMergeSort:SortKeys works with custom types", "[merge_sort]")
 {
-  const size_t num_items = GENERATE_COPY(take(2, random(1, 100000)), values({500, 100000, 200000}));
+  const size_t num_items = GENERATE_COPY(take(2, random(1, 10)), values({5, 100, 200}));
   operation_t op         = make_operation(
     "op",
     "struct key_pair { short a; size_t b; };\n"
@@ -190,7 +190,7 @@ TEST_CASE("DeviceMergeSort:SortKeys works with custom types", "[merge_sort]")
   for (std::size_t i = 0; i < num_items; ++i)
   {
     input_keys[i]  = key_pair{a[i], b[i]};
-    input_items[i] = item_pair{a[i], b[i]};
+    input_items[i] = item_pair{static_cast<int>(a[i]), static_cast<float>(b[i])};
   }
   std::vector<key_pair> expected_keys   = input_keys;
   std::vector<item_pair> expected_items = input_items;

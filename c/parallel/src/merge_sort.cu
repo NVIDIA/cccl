@@ -74,6 +74,7 @@ enum class merge_sort_iterator_t
   output_items = 3
 };
 
+template <typename StorageT = storage_t>
 std::string get_iterator_name(cccl_iterator_t iterator, merge_sort_iterator_t which_iterator)
 {
   if (iterator.type == cccl_iterator_kind_t::pointer)
@@ -84,7 +85,7 @@ std::string get_iterator_name(cccl_iterator_t iterator, merge_sort_iterator_t wh
     }
     else
     {
-      return cccl_type_enum_to_name(iterator.value_type.type, true);
+      return cccl_type_enum_to_name<StorageT>(iterator.value_type.type, true);
     }
   }
   else
@@ -125,9 +126,9 @@ merge_sort_runtime_tuning_policy get_policy(int cc, int key_size)
     {60, 256, nominal_4b_items_to_items(17, key_size)}, {35, 256, nominal_4b_items_to_items(11, key_size)}};
   auto [_, block_size, items_per_thread] = find_tuning(cc, chain);
   // TODO: we hardcode this value in order to make sure that the merge_sort test does not fail due to the memory op
-  // assertions. This currently happens when we pass in items and keys of type uint8_t or int16_t. This will be fixed
-  // after https://github.com/NVIDIA/cccl/issues/3570 is resolved.
-  items_per_thread = 4;
+  // assertions. This currently happens when we pass in items and keys of type uint8_t or int16_t, and for the custom
+  // types test as well. This will be fixed after https://github.com/NVIDIA/cccl/issues/3570 is resolved.
+  items_per_thread = 2;
 
   return {block_size, items_per_thread, block_size * items_per_thread};
 }
@@ -142,10 +143,12 @@ std::string get_merge_sort_kernel_name(
   std::string chained_policy_t;
   check(nvrtcGetTypeName<device_merge_sort_policy>(&chained_policy_t));
 
-  const std::string input_keys_iterator_t   = get_iterator_name(input_keys_it, merge_sort_iterator_t::input_keys);
-  const std::string input_items_iterator_t  = get_iterator_name(input_items_it, merge_sort_iterator_t::input_items);
-  const std::string output_keys_iterator_t  = get_iterator_name(output_keys_it, merge_sort_iterator_t::output_keys);
-  const std::string output_items_iterator_t = get_iterator_name(output_items_it, merge_sort_iterator_t::output_items);
+  const std::string input_keys_iterator_t = get_iterator_name(input_keys_it, merge_sort_iterator_t::input_keys);
+  const std::string input_items_iterator_t =
+    get_iterator_name<items_storage_t>(input_items_it, merge_sort_iterator_t::input_items);
+  const std::string output_keys_iterator_t = get_iterator_name(output_keys_it, merge_sort_iterator_t::output_keys);
+  const std::string output_items_iterator_t =
+    get_iterator_name<items_storage_t>(output_items_it, merge_sort_iterator_t::output_items);
 
   std::string offset_t;
   check(nvrtcGetTypeName<OffsetT>(&offset_t));
@@ -157,7 +160,7 @@ std::string get_merge_sort_kernel_name(
   const std::string value_t =
     output_items_it.type == cccl_iterator_kind_t::pointer && output_items_it.state == nullptr
       ? "cub::NullType"
-      : cccl_type_enum_to_name(output_items_it.value_type.type);
+      : cccl_type_enum_to_name<items_storage_t>(output_items_it.value_type.type);
 
   return std::format(
     "cub::detail::merge_sort::{0}<{1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}>",
@@ -305,7 +308,7 @@ extern "C" CCCL_C_API CUresult cccl_device_merge_sort_build(
     const std::string src = std::format(
       "#include <cub/device/dispatch/kernels/merge_sort.cuh>\n"
       "#include <cub/util_type.cuh>\n" // needed for cub::NullType
-      "struct __align__({1}) keys_storage_t {{\n"
+      "struct __align__({1}) storage_t {{\n"
       "  char data[{0}];\n"
       "}};\n"
       "struct __align__({3}) items_storage_t {{\n"
