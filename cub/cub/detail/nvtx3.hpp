@@ -562,21 +562,7 @@
 /* Temporary helper #defines, removed with #undef at end of header */
 
 #if !defined(NVTX3_USE_CHECKED_OVERLOADS_FOR_GET)
-#  if defined(_MSC_VER) && _MSC_VER < 1914
-/* Microsoft's compiler prior to VS2017 Update 7 (15.7) uses an older parser
- * that does not work with domain::get's specialization for domain::global,
- * and would require extra conditions to make SFINAE work for the overloaded
- * get() functions.  This macro disables use of overloaded get() in order to
- * work with VS2015 and versions of VS2017 below 15.7, without penalizing
- * users of newer compilers.  Building with this flag set to 0 means errors
- * when defining tag structs (see documentation for domain, named_category,
- * and registered_string) will have more complex compiler error messages
- * instead of the clear static_assert messages from the get() overloads.
- */
-#    define NVTX3_USE_CHECKED_OVERLOADS_FOR_GET 0
-#  else
-#    define NVTX3_USE_CHECKED_OVERLOADS_FOR_GET 1
-#  endif
+#  define NVTX3_USE_CHECKED_OVERLOADS_FOR_GET 1
 #  define NVTX3_USE_CHECKED_OVERLOADS_FOR_GET_DEFINED_HERE
 #endif
 
