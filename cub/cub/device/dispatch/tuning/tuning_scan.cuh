@@ -60,6 +60,11 @@ enum class keep_rejects
   no,
   yes
 };
+enum class primitive_value
+{
+  no,
+  yes
+};
 enum class primitive_accum
 {
   no,
@@ -82,6 +87,15 @@ enum class offset_size
   _8,
   unknown
 };
+enum class value_size
+{
+  _1,
+  _2,
+  _4,
+  _8,
+  _16,
+  unknown
+};
 enum class accum_size
 {
   _1,
@@ -91,6 +105,12 @@ enum class accum_size
   _16,
   unknown
 };
+
+template <class ValueT>
+constexpr primitive_value is_primitive_value()
+{
+  return Traits<ValueT>::PRIMITIVE ? primitive_value::yes : primitive_value::no;
+}
 
 template <class AccumT>
 constexpr primitive_accum is_primitive_accum()
@@ -140,6 +160,18 @@ constexpr op_type classify_op()
   return is_plus<ScanOpT>::value
          ? op_type::plus
          : (is_min_or_max<ScanOpT>::value ? op_type::min_or_max : op_type::unknown);
+}
+
+template <class ValueT>
+constexpr value_size classify_value_size()
+{
+  return sizeof(ValueT) == 1 ? value_size::_1
+       : sizeof(ValueT) == 2 ? value_size::_2
+       : sizeof(ValueT) == 4 ? value_size::_4
+       : sizeof(ValueT) == 8 ? value_size::_8
+       : sizeof(ValueT) == 16
+         ? value_size::_16
+         : value_size::unknown;
 }
 
 template <class AccumT>
@@ -281,17 +313,26 @@ struct sm90_tuning<__uint128_t, primitive_op::yes, primitive_accum::no, accum_si
 #endif
 // clang-format on
 
-template <class AccumT,
+template <class ValueT,
+          class AccumT,
           class OffsetT,
           op_type OpTypeT,
+          primitive_value PrimitiveValue       = is_primitive_value<ValueT>(),
           primitive_accum PrimitiveAccumulator = is_primitive_accum<AccumT>(),
           offset_size OffsetSize               = classify_offset_size<OffsetT>(),
-          accum_size AccumSize                 = classify_accum_size<AccumT>()>
+          value_size ValueSize                 = classify_value_size<ValueT>()>
 struct sm100_tuning;
 
 // sum
-template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::plus, primitive_accum::yes, offset_size::_4, accum_size::_1>
+template <class ValueT, class AccumT, class OffsetT>
+struct sm100_tuning<ValueT,
+                    AccumT,
+                    OffsetT,
+                    op_type::plus,
+                    primitive_value::yes,
+                    primitive_accum::yes,
+                    offset_size::_4,
+                    value_size::_1>
 {
   // ipt_18.tpb_512.ns_768.dcid_7.l2w_820.trp_1.ld_0 1.188818  1.005682  1.173041  1.305288
   static constexpr int items                           = 18;
@@ -302,8 +343,15 @@ struct sm100_tuning<T, OffsetT, op_type::plus, primitive_accum::yes, offset_size
   static constexpr CacheLoadModifier load_modifier     = LOAD_DEFAULT;
 };
 
-template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::plus, primitive_accum::yes, offset_size::_8, accum_size::_1>
+template <class ValueT, class AccumT, class OffsetT>
+struct sm100_tuning<ValueT,
+                    AccumT,
+                    OffsetT,
+                    op_type::plus,
+                    primitive_value::yes,
+                    primitive_accum::yes,
+                    offset_size::_8,
+                    value_size::_1>
 {
   // ipt_14.tpb_384.ns_228.dcid_7.l2w_775.trp_1.ld_1 1.107210  1.000000  1.100637  1.307692
   static constexpr int items                           = 14;
@@ -314,8 +362,15 @@ struct sm100_tuning<T, OffsetT, op_type::plus, primitive_accum::yes, offset_size
   static constexpr CacheLoadModifier load_modifier     = LOAD_CA;
 };
 
-template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::plus, primitive_accum::yes, offset_size::_4, accum_size::_2>
+template <class ValueT, class AccumT, class OffsetT>
+struct sm100_tuning<ValueT,
+                    AccumT,
+                    OffsetT,
+                    op_type::plus,
+                    primitive_value::yes,
+                    primitive_accum::yes,
+                    offset_size::_4,
+                    value_size::_2>
 {
   // ipt_13.tpb_512.ns_1384.dcid_7.l2w_720.trp_1.ld_0 1.128443  1.002841  1.119688  1.307692
   static constexpr int items                           = 13;
@@ -326,8 +381,15 @@ struct sm100_tuning<T, OffsetT, op_type::plus, primitive_accum::yes, offset_size
   static constexpr CacheLoadModifier load_modifier     = LOAD_DEFAULT;
 };
 
-template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::plus, primitive_accum::yes, offset_size::_8, accum_size::_2>
+template <class ValueT, class AccumT, class OffsetT>
+struct sm100_tuning<ValueT,
+                    AccumT,
+                    OffsetT,
+                    op_type::plus,
+                    primitive_value::yes,
+                    primitive_accum::yes,
+                    offset_size::_8,
+                    value_size::_2>
 {
   // ipt_13.tpb_288.ns_1520.dcid_5.l2w_895.trp_1.ld_1 1.080934  0.983509  1.077724  1.305288
   static constexpr int items                           = 13;
@@ -338,8 +400,15 @@ struct sm100_tuning<T, OffsetT, op_type::plus, primitive_accum::yes, offset_size
   static constexpr CacheLoadModifier load_modifier     = LOAD_CA;
 };
 
-template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::plus, primitive_accum::yes, offset_size::_4, accum_size::_4>
+template <class ValueT, class AccumT, class OffsetT>
+struct sm100_tuning<ValueT,
+                    AccumT,
+                    OffsetT,
+                    op_type::plus,
+                    primitive_value::yes,
+                    primitive_accum::yes,
+                    offset_size::_4,
+                    value_size::_4>
 {
   // ipt_22.tpb_384.ns_1904.dcid_6.l2w_830.trp_1.ld_0 1.148442  0.997167  1.139902  1.462651
   static constexpr int items                           = 22;
@@ -350,8 +419,15 @@ struct sm100_tuning<T, OffsetT, op_type::plus, primitive_accum::yes, offset_size
   static constexpr CacheLoadModifier load_modifier     = LOAD_DEFAULT;
 };
 
-template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::plus, primitive_accum::yes, offset_size::_8, accum_size::_4>
+template <class ValueT, class AccumT, class OffsetT>
+struct sm100_tuning<ValueT,
+                    AccumT,
+                    OffsetT,
+                    op_type::plus,
+                    primitive_value::yes,
+                    primitive_accum::yes,
+                    offset_size::_8,
+                    value_size::_4>
 {
   // ipt_19.tpb_416.ns_956.dcid_7.l2w_550.trp_1.ld_1 1.146142  0.994350  1.137459  1.455636
   static constexpr int items                           = 19;
@@ -362,8 +438,15 @@ struct sm100_tuning<T, OffsetT, op_type::plus, primitive_accum::yes, offset_size
   static constexpr CacheLoadModifier load_modifier     = LOAD_CA;
 };
 
-template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::plus, primitive_accum::yes, offset_size::_4, accum_size::_8>
+template <class ValueT, class AccumT, class OffsetT>
+struct sm100_tuning<ValueT,
+                    AccumT,
+                    OffsetT,
+                    op_type::plus,
+                    primitive_value::yes,
+                    primitive_accum::yes,
+                    offset_size::_4,
+                    value_size::_8>
 {
   // ipt_23.tpb_416.ns_772.dcid_5.l2w_710.trp_1.ld_0 1.089468  1.015581  1.085630  1.264583
   static constexpr int items                           = 23;
@@ -374,8 +457,15 @@ struct sm100_tuning<T, OffsetT, op_type::plus, primitive_accum::yes, offset_size
   static constexpr CacheLoadModifier load_modifier     = LOAD_DEFAULT;
 };
 
-template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::plus, primitive_accum::yes, offset_size::_8, accum_size::_8>
+template <class ValueT, class AccumT, class OffsetT>
+struct sm100_tuning<ValueT,
+                    AccumT,
+                    OffsetT,
+                    op_type::plus,
+                    primitive_value::yes,
+                    primitive_accum::yes,
+                    offset_size::_8,
+                    value_size::_8>
 {
   // ipt_22.tpb_320.ns_328.dcid_2.l2w_965.trp_1.ld_0 1.080133  1.000000  1.075577  1.248963
   static constexpr int items                           = 22;
@@ -401,8 +491,15 @@ struct sm100_tuning<T, OffsetT, op_type::plus, primitive_accum::yes, offset_size
 #endif
 
 // min/max (only ran benchmarks for max)
-template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::min_or_max, primitive_accum::yes, offset_size::_4, accum_size::_1>
+template <class ValueT, class AccumT, class OffsetT>
+struct sm100_tuning<ValueT,
+                    AccumT,
+                    OffsetT,
+                    op_type::min_or_max,
+                    primitive_value::yes,
+                    primitive_accum::yes,
+                    offset_size::_4,
+                    value_size::_1>
 {
   // ipt_22.tpb_128.ns_1900.dcid_5.l2w_750.trp_1.ld_1 1.288379  1.078212  1.274188  1.615385
   static constexpr int items                           = 22;
@@ -413,8 +510,15 @@ struct sm100_tuning<T, OffsetT, op_type::min_or_max, primitive_accum::yes, offse
   static constexpr CacheLoadModifier load_modifier     = LOAD_CA;
 };
 
-template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::min_or_max, primitive_accum::yes, offset_size::_8, accum_size::_1>
+template <class ValueT, class AccumT, class OffsetT>
+struct sm100_tuning<ValueT,
+                    AccumT,
+                    OffsetT,
+                    op_type::min_or_max,
+                    primitive_value::yes,
+                    primitive_accum::yes,
+                    offset_size::_8,
+                    value_size::_1>
 {
   // ipt_24.tpb_128.ns_344.dcid_2.l2w_710.trp_1.ld_0 1.222111  0.983240  1.205706  1.587886
   static constexpr int items                           = 24;
@@ -425,8 +529,15 @@ struct sm100_tuning<T, OffsetT, op_type::min_or_max, primitive_accum::yes, offse
   static constexpr CacheLoadModifier load_modifier     = LOAD_CA;
 };
 
-template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::min_or_max, primitive_accum::yes, offset_size::_4, accum_size::_2>
+template <class ValueT, class AccumT, class OffsetT>
+struct sm100_tuning<ValueT,
+                    AccumT,
+                    OffsetT,
+                    op_type::min_or_max,
+                    primitive_value::yes,
+                    primitive_accum::yes,
+                    offset_size::_4,
+                    value_size::_2>
 {
   // ipt_14.tpb_384.ns_1708.dcid_7.l2w_930.trp_1.ld_1 1.242487  1.002841  1.226297  1.615385
   static constexpr int items                           = 14;
@@ -437,8 +548,15 @@ struct sm100_tuning<T, OffsetT, op_type::min_or_max, primitive_accum::yes, offse
   static constexpr CacheLoadModifier load_modifier     = LOAD_CA;
 };
 
-template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::min_or_max, primitive_accum::yes, offset_size::_8, accum_size::_2>
+template <class ValueT, class AccumT, class OffsetT>
+struct sm100_tuning<ValueT,
+                    AccumT,
+                    OffsetT,
+                    op_type::min_or_max,
+                    primitive_value::yes,
+                    primitive_accum::yes,
+                    offset_size::_8,
+                    value_size::_2>
 {
   // ipt_14.tpb_352.ns_1524.dcid_7.l2w_955.trp_1.ld_1 1.234616  1.000000  1.218721  1.596154
   static constexpr int items                           = 14;
@@ -449,8 +567,15 @@ struct sm100_tuning<T, OffsetT, op_type::min_or_max, primitive_accum::yes, offse
   static constexpr CacheLoadModifier load_modifier     = LOAD_CA;
 };
 
-template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::min_or_max, primitive_accum::yes, offset_size::_4, accum_size::_4>
+template <class ValueT, class AccumT, class OffsetT>
+struct sm100_tuning<ValueT,
+                    AccumT,
+                    OffsetT,
+                    op_type::min_or_max,
+                    primitive_value::yes,
+                    primitive_accum::yes,
+                    offset_size::_4,
+                    value_size::_4>
 {
   // ipt_23.tpb_256.ns_1240.dcid_7.l2w_560.trp_1.ld_2 1.192410  1.000000  1.175338  1.289286
   static constexpr int items                           = 23;
@@ -461,8 +586,15 @@ struct sm100_tuning<T, OffsetT, op_type::min_or_max, primitive_accum::yes, offse
   static constexpr CacheLoadModifier load_modifier     = LOAD_CA;
 };
 
-template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::min_or_max, primitive_accum::yes, offset_size::_8, accum_size::_4>
+template <class ValueT, class AccumT, class OffsetT>
+struct sm100_tuning<ValueT,
+                    AccumT,
+                    OffsetT,
+                    op_type::min_or_max,
+                    primitive_value::yes,
+                    primitive_accum::yes,
+                    offset_size::_8,
+                    value_size::_4>
 {
   // ipt_22.tpb_192.ns_976.dcid_7.l2w_1180.trp_1.ld_0 1.172486  1.000000  1.158032  1.305288
   static constexpr int items                           = 22;
@@ -473,8 +605,15 @@ struct sm100_tuning<T, OffsetT, op_type::min_or_max, primitive_accum::yes, offse
   static constexpr CacheLoadModifier load_modifier     = LOAD_DEFAULT;
 };
 
-template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::min_or_max, primitive_accum::yes, offset_size::_4, accum_size::_8>
+template <class ValueT, class AccumT, class OffsetT>
+struct sm100_tuning<ValueT,
+                    AccumT,
+                    OffsetT,
+                    op_type::min_or_max,
+                    primitive_value::yes,
+                    primitive_accum::yes,
+                    offset_size::_4,
+                    value_size::_8>
 {
   // ipt_22.tpb_256.ns_380.dcid_2.l2w_920.trp_1.ld_0 1.218252  1.171831  1.214092  1.246711
   static constexpr int items                           = 22;
@@ -485,8 +624,15 @@ struct sm100_tuning<T, OffsetT, op_type::min_or_max, primitive_accum::yes, offse
   static constexpr CacheLoadModifier load_modifier     = LOAD_DEFAULT;
 };
 
-template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::min_or_max, primitive_accum::yes, offset_size::_8, accum_size::_8>
+template <class ValueT, class AccumT, class OffsetT>
+struct sm100_tuning<ValueT,
+                    AccumT,
+                    OffsetT,
+                    op_type::min_or_max,
+                    primitive_value::yes,
+                    primitive_accum::yes,
+                    offset_size::_8,
+                    value_size::_8>
 {
   // ipt_20.tpb_256.ns_220.dcid_1.l2w_740.trp_1.ld_1 1.191382  1.010806  1.186827  1.299600
   static constexpr int items                           = 20;
@@ -544,7 +690,7 @@ CUB_RUNTIME_FUNCTION ScanPolicyWrapper<PolicyT> MakeScanPolicyWrapper(PolicyT po
   return ScanPolicyWrapper<PolicyT>{policy};
 }
 
-template <typename AccumT, typename OffsetT, typename ScanOpT>
+template <typename ValueT, typename AccumT, typename OffsetT, typename ScanOpT>
 struct policy_hub
 {
   // For large values, use timesliced loads/stores to fit shared memory.
@@ -625,7 +771,14 @@ struct policy_hub
     template <typename Tuning>
     static auto select_agent_policy100(long) -> typename Policy900::ScanPolicyT;
 
-    using ScanPolicyT = decltype(select_agent_policy100<sm100_tuning<AccumT, OffsetT, classify_op<ScanOpT>()>>(0));
+    // Only consider sm100 tunings if the accumulator size matches the one we use in the benchmarks
+    using benchmark_accum_t                = ::cuda::std::__accumulator_t<ScanOpT, ValueT, ValueT>;
+    static constexpr bool accum_size_match = classify_accum_size<AccumT>() == classify_accum_size<benchmark_accum_t>();
+
+    using ScanPolicyT = ::cuda::std::conditional_t<
+      accum_size_match,
+      decltype(select_agent_policy100<sm100_tuning<ValueT, AccumT, OffsetT, classify_op<ScanOpT>()>>(0)),
+      typename Policy900::ScanPolicyT>;
   };
 
   using MaxPolicy = Policy1000;
@@ -635,6 +788,6 @@ struct policy_hub
 
 template <typename AccumT, typename ScanOpT = ::cuda::std::plus<>>
 using DeviceScanPolicy CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and it will be "
-                                               "removed.") = detail::scan::policy_hub<AccumT, int, ScanOpT>;
+                                               "removed.") = detail::scan::policy_hub<int, AccumT, int, ScanOpT>;
 
 CUB_NAMESPACE_END
