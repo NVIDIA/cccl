@@ -38,6 +38,7 @@ def reduce(dtype, threads_in_block, binary_op, items_per_thread=1, methods=None)
         threads_in_block: The number of threads in a block
         binary_op: Binary reduction function
         items_per_thread: The number of items each thread contributes to the reduction
+        methods: A dict of methods for user-defined types
 
     Warning:
         The return value is undefined in threads other than thread\ :sub:`0`.
@@ -143,6 +144,7 @@ def sum(dtype, threads_in_block, items_per_thread=1, methods=None):
         dtype: Data type being reduced
         threads_in_block: The number of threads in a block
         items_per_thread: The number of items each thread owns
+        methods: A dict of methods for user-defined types
 
     Warning:
         The return value is undefined in threads other than thread\ :sub:`0`.
