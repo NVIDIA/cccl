@@ -988,23 +988,24 @@ struct sm100_tuning<Input,
   using delay_constructor                            = exponential_backon_jitter_window_constructor_t<1712, 825>;
 };
 
-template <class Input>
-struct sm100_tuning<Input,
-                    flagged::no,
-                    keep_rejects::yes,
-                    offset_size::_8,
-                    primitive::yes,
-                    input_size::_8,
-                    may_alias::no,
-                    distinct_partitions::yes>
-{
-  // trp_1.ld_0.ipt_14.tpb_512.ns_1468.dcid_7.l2w_820 1.111830  1.011070  1.119481  1.245868
-  static constexpr int nominal_4b_items              = 14;
-  static constexpr int threads                       = 512;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  using delay_constructor                            = exponential_backon_jitter_constructor_t<1468, 820>;
-};
+// todo(gonidelis): Tuning Regresses for large input sizes. Find better tuning.
+// template <class Input>
+// struct sm100_tuning<Input,
+//                     flagged::no,
+//                     keep_rejects::yes,
+//                     offset_size::_8,
+//                     primitive::yes,
+//                     input_size::_8,
+//                     may_alias::no,
+//                     distinct_partitions::yes>
+// {
+//   // trp_1.ld_0.ipt_14.tpb_512.ns_1468.dcid_7.l2w_820 1.111830  1.011070  1.119481  1.245868
+//   static constexpr int nominal_4b_items              = 14;
+//   static constexpr int threads                       = 512;
+//   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+//   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+//   using delay_constructor                            = exponential_backon_jitter_constructor_t<1468, 820>;
+// };
 
 template <class Input>
 struct sm100_tuning<Input,
