@@ -623,6 +623,14 @@
 #  define _CCCL_BUILTIN_LOGBL(...) __builtin_logbl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_log1)
 
+// Below 11.7 nvcc treats the builtin as a host only function
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "logb"
+#if _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_LOGBF
+#  undef _CCCL_BUILTIN_LOGB
+#  undef _CCCL_BUILTIN_LOGBL
+#endif // _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
+
 #if _CCCL_CHECK_BUILTIN(builtin_memcmp) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC, >=, 19, 28)
 #  define _CCCL_BUILTIN_MEMCMP(...) __builtin_memcmp(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_memcmp) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC, >=, 19, 28)
@@ -638,14 +646,6 @@
 #if _CCCL_CUDA_COMPILER(NVCC)
 #  undef _CCCL_BUILTIN_MEMMOVE
 #endif // _CCCL_CUDA_COMPILER(NVCC)
-
-// Below 11.7 nvcc treats the builtin as a host only function
-// clang-cuda fails with fatal error: error in backend: Undefined external symbol "logb"
-#if _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
-#  undef _CCCL_BUILTIN_LOGBF
-#  undef _CCCL_BUILTIN_LOGB
-#  undef _CCCL_BUILTIN_LOGBL
-#endif // _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
 
 #if _CCCL_CHECK_BUILTIN(__builtin_operator_new) && _CCCL_CHECK_BUILTIN(__builtin_operator_delete) \
   && _CCCL_CUDA_COMPILER(CLANG)
