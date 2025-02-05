@@ -42,7 +42,6 @@ template <class Vector>
 void TestTabulateSimple()
 {
   using namespace thrust::placeholders;
-  using T = typename Vector::value_type;
 
   Vector v(5);
 

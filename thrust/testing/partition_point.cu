@@ -16,7 +16,6 @@ struct is_even
 template <typename Vector>
 void TestPartitionPointSimple()
 {
-  using T        = typename Vector::value_type;
   using Iterator = typename Vector::iterator;
 
   Vector v{1, 1, 1, 0};

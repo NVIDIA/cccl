@@ -139,7 +139,6 @@ DECLARE_INTEGRAL_VECTOR_UNITTEST(TestStablePartitionSimple);
 template <typename Vector>
 void TestStablePartitionStencilSimple()
 {
-  using T        = typename Vector::value_type;
   using Iterator = typename Vector::iterator;
 
   Vector data{1, 2, 1, 3, 2};
@@ -182,10 +181,7 @@ DECLARE_INTEGRAL_VECTOR_UNITTEST(TestStablePartitionCopySimple);
 template <typename Vector>
 void TestStablePartitionCopyStencilSimple()
 {
-  using T = typename Vector::value_type;
-
   Vector data{1, 2, 1, 1, 2};
-
   Vector stencil{false, true, false, false, true};
 
   Vector true_results(2);
