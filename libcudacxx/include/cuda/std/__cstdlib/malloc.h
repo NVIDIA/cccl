@@ -35,6 +35,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 using ::free;
 using ::malloc;
 
+#if _CCCL_HAS_CUDA_COMPILER
 _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __calloc_device(size_t __n, size_t __size) noexcept
 {
   void* __ptr{};
@@ -52,6 +53,7 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __calloc_device(size_t __
 
   return __ptr;
 }
+#endif // _CCCL_HAS_CUDA_COMPILER
 
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI void* calloc(size_t __n, size_t __size) noexcept
 {
