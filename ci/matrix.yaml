@@ -40,7 +40,7 @@ workflows:
 #    - {jobs: ['build'], project: 'libcudacxx', std: 'max', cudacxx: 'clang', cxx: 'clang', sm: '90'}
 #    - {jobs: ['build'], project: 'libcudacxx', std: 'max', cudacxx: 'clang', cxx: 'clang', sm: '90a'}
     # nvrtc:
-    - {jobs: ['nvrtc'], project: 'libcudacxx', std: 'all', gpu: 'rtx2080', sm: 'gpu'}
+    - {jobs: ['nvrtc'], project: 'libcudacxx', std: 'all', cxx: ['gcc', 'msvc'], gpu: 'rtx2080', sm: 'gpu'}
     # verify-codegen:
     - {jobs: ['verify_codegen'], project: 'libcudacxx'}
     # cudax has different CTK reqs:
