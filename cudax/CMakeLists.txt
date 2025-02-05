@@ -25,7 +25,7 @@ endif()
 
 option(cudax_ENABLE_HEADER_TESTING "Test that CUDA Experimental's public headers compile." ON)
 option(cudax_ENABLE_TESTING "Build CUDA Experimental's tests." ON)
-option(cudax_ENABLE_SAMPLES "Build CUDA Experimental's samples." ON)
+option(cudax_ENABLE_SAMPLES "Build CUDA Experimental's samples." OFF)
 
 include(cmake/cudaxBuildCompilerTargets.cmake)
 include(cmake/cudaxBuildTargetList.cmake)
