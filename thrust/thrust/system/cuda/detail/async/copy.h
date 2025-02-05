@@ -126,9 +126,7 @@ auto async_copy_n(thrust::cuda::execution_policy<FromPolicy>& from_exec,
                                       decltype(is_device_to_device_copy(from_exec, to_exec))>::value,
                           unique_eager_event>::type
 {
-  using T = typename iterator_traits<ForwardIt>::value_type;
-
-  return async_transform_n(select_device_system(from_exec, to_exec), first, n, output, thrust::identity<T>());
+  return async_transform_n(select_device_system(from_exec, to_exec), first, n, output, ::cuda::std::identity{});
 }
 
 template <typename OutputIt>

@@ -80,7 +80,7 @@ void TestTransformIfUnaryNoStencilDevice(ExecutionPolicy exec)
   thrust::device_vector<typename Vector::iterator> iter_vec(1);
 
   transform_if_kernel<<<1, 1>>>(
-    exec, input.begin(), input.end(), output.begin(), thrust::negate<T>(), thrust::identity<T>(), iter_vec.begin());
+    exec, input.begin(), input.end(), output.begin(), thrust::negate<T>(), ::cuda::std::identity{}, iter_vec.begin());
   cudaError_t const err = cudaDeviceSynchronize();
   ASSERT_EQUAL(cudaSuccess, err);
 
@@ -144,7 +144,7 @@ void TestTransformIfUnaryDevice(ExecutionPolicy exec)
     stencil.begin(),
     output.begin(),
     thrust::negate<T>(),
-    thrust::identity<T>(),
+    ::cuda::std::identity{},
     iter_vec.begin());
   cudaError_t const err = cudaDeviceSynchronize();
   ASSERT_EQUAL(cudaSuccess, err);
@@ -259,7 +259,7 @@ void TestTransformIfBinaryDevice(ExecutionPolicy exec)
   Vector output{1, 2, 3};
   Vector result{5, 2, -3};
 
-  thrust::identity<T> identity;
+  ::cuda::std::identity identity;
 
   thrust::device_vector<typename Vector::iterator> iter_vec(1);
 

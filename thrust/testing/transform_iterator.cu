@@ -1,3 +1,10 @@
+#include <cuda/__cccl_config>
+
+#if _CCCL_COMPILER(NVHPC)
+// suppress warnings on thrust::identity
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+#endif // _CCCL_COMPILER(NVHPC)
+
 #include <thrust/copy.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/counting_iterator.h>
@@ -10,6 +17,10 @@
 #include <vector>
 
 #include <unittest/unittest.h>
+
+#if _CCCL_COMPILER(NVHPC)
+_CCCL_SUPPRESS_DEPRECATED_POP
+#endif // _CCCL_COMPILER(NVHPC)
 
 template <class Vector>
 void TestTransformIterator()
@@ -135,6 +146,7 @@ struct forward
 
 void TestTransformIteratorReferenceAndValueType()
 {
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   using ::cuda::std::is_same;
   using ::cuda::std::negate;
   {
@@ -243,11 +255,13 @@ void TestTransformIteratorReferenceAndValueType()
     static_assert(is_same<decltype(it_tr_cid)::value_type, bool>::value, "");
     (void) it_tr_cid;
   }
+  _CCCL_SUPPRESS_DEPRECATED_POP
 }
 DECLARE_UNITTEST(TestTransformIteratorReferenceAndValueType);
 
 void TestTransformIteratorIdentity()
 {
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   thrust::device_vector<int> v(3, 42);
 
   ASSERT_EQUAL(*thrust::make_transform_iterator(v.begin(), thrust::identity<int>{}), 42);
@@ -255,6 +269,7 @@ void TestTransformIteratorIdentity()
   ASSERT_EQUAL(*thrust::make_transform_iterator(v.begin(), cuda::std::identity{}), 42);
   using namespace thrust::placeholders;
   ASSERT_EQUAL(*thrust::make_transform_iterator(v.begin(), _1), 42);
+  _CCCL_SUPPRESS_DEPRECATED_POP
 }
 
 DECLARE_UNITTEST(TestTransformIteratorIdentity);
