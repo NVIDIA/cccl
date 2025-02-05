@@ -18,9 +18,9 @@
 
 #include <cuda/experimental/stf.cuh>
 
-#include "cuda/experimental/__stf/utility/stackable_ctx.cuh"
-
 #include <csignal>
+
+#include "cuda/experimental/__stf/utility/stackable_ctx.cuh"
 
 using namespace cuda::experimental::stf;
 
