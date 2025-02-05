@@ -32,10 +32,8 @@ static_assert(!cuda::std::indirectly_movable_storable<int*, const int*>, "");
 static_assert(!cuda::std::indirectly_movable_storable<const int*, const int*>, "");
 static_assert(cuda::std::indirectly_movable_storable<int*, int[2]>, "");
 static_assert(!cuda::std::indirectly_movable_storable<int[2], int*>, "");
-#ifndef TEST_COMPILER_MSVC_2017 // MSVC2017 has issues determining common_reference
 static_assert(cuda::std::indirectly_movable_storable<MoveOnly*, MoveOnly*>, "");
 static_assert(cuda::std::indirectly_movable_storable<PointerTo<MoveOnly>, PointerTo<MoveOnly>>, "");
-#endif // TEST_COMPILER_MSVC_2017
 
 // The dereference operator returns a different type from `value_type` and the reference type cannot be assigned from a
 // `ValueType`.

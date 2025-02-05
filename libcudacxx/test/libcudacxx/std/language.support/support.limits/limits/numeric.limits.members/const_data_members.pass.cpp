@@ -110,10 +110,10 @@ int main(int, char**)
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
   test_type<long double>();
 #endif // _LIBCUDACXX_HAS_NO_LONG_DOUBLE
-#if defined(_CCCL_HAS_NVFP16)
+#if _CCCL_HAS_NVFP16()
   test_type<__half>();
 #endif // _CCCL_HAS_NVFP16
-#if defined(_CCCL_HAS_NVBF16)
+#if _CCCL_HAS_NVBF16()
   test_type<__nv_bfloat16>();
 #endif // _CCCL_HAS_NVBF16
 #if _CCCL_HAS_NVFP8()

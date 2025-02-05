@@ -608,7 +608,7 @@ public:
 #endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
 };
 
-#if defined(_CCCL_HAS_NVFP16)
+#if _CCCL_HAS_NVFP16()
 #  ifdef _LIBCUDACXX_HAS_NVFP16
 #    define _LIBCUDACXX_FP16_CONSTEXPR constexpr
 #  else //_LIBCUDACXX_HAS_NVFP16
@@ -690,7 +690,7 @@ public:
 #  undef _LIBCUDACXX_FP16_CONSTEXPR
 #endif // _CCCL_HAS_NVFP16
 
-#if defined(_CCCL_HAS_NVBF16)
+#if _CCCL_HAS_NVBF16()
 #  ifdef _LIBCUDACXX_HAS_NVBF16
 #    define _LIBCUDACXX_BF16_CONSTEXPR constexpr
 #  else //_LIBCUDACXX_HAS_NVBF16

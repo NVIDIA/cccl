@@ -201,7 +201,7 @@ private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void BlockedToStriped(
     const T (&input_items)[ITEMS_PER_THREAD],
     OutputT (&output_items)[ITEMS_PER_THREAD],
-    Int2Type<false> /*time_slicing*/)
+    ::cuda::std::false_type /*time_slicing*/)
   {
 #pragma unroll
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -238,7 +238,9 @@ private:
   //!   Items to exchange, converting between **blocked** and **striped** arrangements.
   template <typename OutputT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void BlockedToStriped(
-    const T (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD], Int2Type<true> /*time_slicing*/)
+    const T (&input_items)[ITEMS_PER_THREAD],
+    OutputT (&output_items)[ITEMS_PER_THREAD],
+    ::cuda::std::true_type /*time_slicing*/)
   {
     T temp_items[ITEMS_PER_THREAD];
 
@@ -308,7 +310,7 @@ private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void BlockedToWarpStriped(
     const T (&input_items)[ITEMS_PER_THREAD],
     OutputT (&output_items)[ITEMS_PER_THREAD],
-    Int2Type<false> /*time_slicing*/)
+    ::cuda::std::false_type /*time_slicing*/)
   {
 #pragma unroll
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -345,7 +347,9 @@ private:
   //!   Items to exchange, converting between **blocked** and **striped** arrangements.
   template <typename OutputT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void BlockedToWarpStriped(
-    const T (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD], Int2Type<true> /*time_slicing*/)
+    const T (&input_items)[ITEMS_PER_THREAD],
+    OutputT (&output_items)[ITEMS_PER_THREAD],
+    ::cuda::std::true_type /*time_slicing*/)
   {
     if (warp_id == 0)
     {
@@ -420,7 +424,7 @@ private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void StripedToBlocked(
     const T (&input_items)[ITEMS_PER_THREAD],
     OutputT (&output_items)[ITEMS_PER_THREAD],
-    Int2Type<false> /*time_slicing*/)
+    ::cuda::std::false_type /*time_slicing*/)
   {
 #pragma unroll
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -458,7 +462,9 @@ private:
   //!   Items to exchange, converting between **blocked** and **striped** arrangements.
   template <typename OutputT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void StripedToBlocked(
-    const T (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD], Int2Type<true> /*time_slicing*/)
+    const T (&input_items)[ITEMS_PER_THREAD],
+    OutputT (&output_items)[ITEMS_PER_THREAD],
+    ::cuda::std::true_type /*time_slicing*/)
   {
     // Warp time-slicing
     T temp_items[ITEMS_PER_THREAD];
@@ -529,7 +535,7 @@ private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void WarpStripedToBlocked(
     const T (&input_items)[ITEMS_PER_THREAD],
     OutputT (&output_items)[ITEMS_PER_THREAD],
-    Int2Type<false> /*time_slicing*/)
+    ::cuda::std::false_type /*time_slicing*/)
   {
 #pragma unroll
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -566,7 +572,9 @@ private:
   //!   Items to exchange, converting between **blocked** and **striped** arrangements.
   template <typename OutputT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void WarpStripedToBlocked(
-    const T (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD], Int2Type<true> /*time_slicing*/)
+    const T (&input_items)[ITEMS_PER_THREAD],
+    OutputT (&output_items)[ITEMS_PER_THREAD],
+    ::cuda::std::true_type /*time_slicing*/)
   {
 #pragma unroll
     for (int slice = 0; slice < TIME_SLICES; ++slice)
@@ -617,7 +625,7 @@ private:
     const T (&input_items)[ITEMS_PER_THREAD],
     OutputT (&output_items)[ITEMS_PER_THREAD],
     OffsetT (&ranks)[ITEMS_PER_THREAD],
-    Int2Type<false> /*time_slicing*/)
+    ::cuda::std::false_type /*time_slicing*/)
   {
 #pragma unroll
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -659,7 +667,7 @@ private:
     const T (&input_items)[ITEMS_PER_THREAD],
     OutputT (&output_items)[ITEMS_PER_THREAD],
     OffsetT ranks[ITEMS_PER_THREAD],
-    Int2Type<true> /*time_slicing*/)
+    ::cuda::std::true_type /*time_slicing*/)
   {
     T temp_items[ITEMS_PER_THREAD];
 
@@ -724,7 +732,7 @@ private:
     const T (&input_items)[ITEMS_PER_THREAD],
     OutputT (&output_items)[ITEMS_PER_THREAD],
     OffsetT (&ranks)[ITEMS_PER_THREAD],
-    Int2Type<false> /*time_slicing*/)
+    ::cuda::std::false_type /*time_slicing*/)
   {
 #pragma unroll
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
@@ -766,7 +774,7 @@ private:
     const T (&input_items)[ITEMS_PER_THREAD],
     OutputT (&output_items)[ITEMS_PER_THREAD],
     OffsetT (&ranks)[ITEMS_PER_THREAD],
-    Int2Type<true> /*time_slicing*/)
+    ::cuda::std::true_type /*time_slicing*/)
   {
     T temp_items[ITEMS_PER_THREAD];
 
@@ -887,7 +895,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   StripedToBlocked(const T (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD])
   {
-    StripedToBlocked(input_items, output_items, Int2Type<WARP_TIME_SLICING>());
+    StripedToBlocked(input_items, output_items, detail::bool_constant_v<WARP_TIME_SLICING>);
   }
 
   //! @rst
@@ -938,7 +946,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   BlockedToStriped(const T (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD])
   {
-    BlockedToStriped(input_items, output_items, Int2Type<WARP_TIME_SLICING>());
+    BlockedToStriped(input_items, output_items, detail::bool_constant_v<WARP_TIME_SLICING>);
   }
 
   //! @rst
@@ -989,7 +997,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   WarpStripedToBlocked(const T (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD])
   {
-    WarpStripedToBlocked(input_items, output_items, Int2Type<WARP_TIME_SLICING>());
+    WarpStripedToBlocked(input_items, output_items, detail::bool_constant_v<WARP_TIME_SLICING>);
   }
 
   //! @rst
@@ -1043,7 +1051,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   BlockedToWarpStriped(const T (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD])
   {
-    BlockedToWarpStriped(input_items, output_items, Int2Type<WARP_TIME_SLICING>());
+    BlockedToWarpStriped(input_items, output_items, detail::bool_constant_v<WARP_TIME_SLICING>);
   }
 
   //! @}  end member group
@@ -1073,7 +1081,7 @@ public:
     OutputT (&output_items)[ITEMS_PER_THREAD],
     OffsetT (&ranks)[ITEMS_PER_THREAD])
   {
-    ScatterToBlocked(input_items, output_items, ranks, Int2Type<WARP_TIME_SLICING>());
+    ScatterToBlocked(input_items, output_items, ranks, detail::bool_constant_v<WARP_TIME_SLICING>);
   }
 
   //! @rst
@@ -1100,7 +1108,7 @@ public:
     OutputT (&output_items)[ITEMS_PER_THREAD],
     OffsetT (&ranks)[ITEMS_PER_THREAD])
   {
-    ScatterToStriped(input_items, output_items, ranks, Int2Type<WARP_TIME_SLICING>());
+    ScatterToStriped(input_items, output_items, ranks, detail::bool_constant_v<WARP_TIME_SLICING>);
   }
 
   //! @rst

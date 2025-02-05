@@ -115,7 +115,7 @@ struct AgentRadixSortOnesweep
   enum
   {
     ITEMS_PER_THREAD      = AgentRadixSortOnesweepPolicy::ITEMS_PER_THREAD,
-    KEYS_ONLY             = std::is_same<ValueT, NullType>::value,
+    KEYS_ONLY             = ::cuda::std::is_same<ValueT, NullType>::value,
     BLOCK_THREADS         = AgentRadixSortOnesweepPolicy::BLOCK_THREADS,
     RANK_NUM_PARTS        = AgentRadixSortOnesweepPolicy::RANK_NUM_PARTS,
     TILE_ITEMS            = BLOCK_THREADS * ITEMS_PER_THREAD,
@@ -595,7 +595,8 @@ struct AgentRadixSortOnesweep
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void GatherScatterValues(int (&ranks)[ITEMS_PER_THREAD], Int2Type<false> keys_only)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  GatherScatterValues(int (&ranks)[ITEMS_PER_THREAD], ::cuda::std::false_type keys_only)
   {
     // compute digits corresponding to the keys
     int digits[ITEMS_PER_THREAD];
@@ -613,7 +614,9 @@ struct AgentRadixSortOnesweep
     ScatterValuesGlobal(digits);
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void GatherScatterValues(int (&ranks)[ITEMS_PER_THREAD], Int2Type<true> keys_only) {}
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  GatherScatterValues(int (&ranks)[ITEMS_PER_THREAD], ::cuda::std::true_type keys_only)
+  {}
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
   {
@@ -644,7 +647,7 @@ struct AgentRadixSortOnesweep
     ScatterKeysGlobal();
 
     // scatter values if necessary
-    GatherScatterValues(ranks, Int2Type<KEYS_ONLY>());
+    GatherScatterValues(ranks, bool_constant_v<KEYS_ONLY>);
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE //

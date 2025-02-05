@@ -450,7 +450,7 @@ __host__ __device__ constexpr bool unused(T&&...)
 
 #if defined(TEST_COMPILER_MSVC)
 #  if _MSC_VER < 1920
-#    define TEST_COMPILER_MSVC_2017
+#    error "MSVC version not supported"
 #  elif _MSC_VER < 1930
 #    define TEST_COMPILER_MSVC_2019
 #  else

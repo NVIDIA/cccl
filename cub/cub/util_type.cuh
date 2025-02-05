@@ -45,25 +45,29 @@
 
 #include <cub/detail/uninitialized_copy.cuh>
 
+#include <thrust/iterator/discard_iterator.h>
+
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
-#if defined(_CCCL_HAS_NVFP16)
+#if _CCCL_HAS_NVFP16()
 #  include <cuda_fp16.h>
-#endif // _CCCL_HAS_NVFP16
+#endif // _CCCL_HAS_NVFP16()
 
-#if defined(_CCCL_HAS_NVBF16)
+#if _CCCL_HAS_NVBF16()
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
 #  include <cuda_bf16.h>
 _CCCL_DIAG_POP
+#endif // _CCCL_HAS_NVBF16()
 
 // cuda_fp8.h resets default for C4127, so we have to guard the inclusion
+#if _CCCL_HAS_NVFP8()
 _CCCL_DIAG_PUSH
 #  include <cuda_fp8.h>
 _CCCL_DIAG_POP
-#endif // _CCCL_HAS_NV_BF16
+#endif // _CCCL_HAS_NVFP8()
 
 #if _CCCL_COMPILER(NVRTC)
 #  include <cuda/std/iterator>
@@ -105,7 +109,13 @@ struct non_void_value_impl
 template <typename It, typename FallbackT>
 struct non_void_value_impl<It, FallbackT, false>
 {
-  using type = ::cuda::std::_If<::cuda::std::is_void<value_t<It>>::value, FallbackT, value_t<It>>;
+  // we consider thrust::discard_iterator's value_type as `void` as well, so users can switch from
+  // cub::DiscardInputIterator to thrust::discard_iterator.
+  using type =
+    ::cuda::std::_If<::cuda::std::is_void<value_t<It>>::value
+                       || ::cuda::std::is_same<value_t<It>, THRUST_NS_QUALIFIER::discard_iterator<>::value_type>::value,
+                     FallbackT,
+                     value_t<It>>;
 };
 
 /**
@@ -209,13 +219,27 @@ struct NullType
  * dispatch based on constant integral values)
  */
 template <int A>
-struct Int2Type
+struct CCCL_DEPRECATED_BECAUSE("Use ::cuda::std::integral_constant instead") Int2Type
 {
   enum
   {
     VALUE = A
   };
 };
+
+namespace detail
+{
+
+template <bool Value>
+inline constexpr auto bool_constant_v = ::cuda::std::bool_constant<Value>{};
+
+template <auto Value>
+using constant_t = ::cuda::std::integral_constant<decltype(Value), Value>;
+
+template <auto Value>
+inline constexpr auto constant_v = constant_t<Value>{};
+
+} // namespace detail
 
 /**
  * \brief Allows algorithms that take a value as input to take a future value that is not computed yet at launch time.
@@ -679,20 +703,6 @@ struct KeyValuePair
 };
 
 /**
- * \brief A wrapper for passing simple static arrays as kernel parameters
- * deprecated [Since 2.5.0] The `cub::ArrayWrapper` is deprecated. Use `cuda::std::array` instead.
- */
-template <typename T, int COUNT>
-struct CCCL_DEPRECATED_BECAUSE("Use cuda::std::array instead.") ArrayWrapper
-{
-  /// Statically-sized array of type \p T
-  T array[COUNT];
-
-  /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ArrayWrapper() {}
-};
-
-/**
  * \brief Double-buffer storage wrapper for multi-pass stream transformations that require more than one storage array
  * for streaming intermediate results back and forth.
  *
@@ -1039,17 +1049,17 @@ struct NumericTraits<__int128_t>
 
 template <> struct NumericTraits<float> :               BaseTraits<FLOATING_POINT, true, false, unsigned int, float> {};
 template <> struct NumericTraits<double> :              BaseTraits<FLOATING_POINT, true, false, unsigned long long, double> {};
-#  if defined(_CCCL_HAS_NVFP16)
+#  if _CCCL_HAS_NVFP16()
     template <> struct NumericTraits<__half> :          BaseTraits<FLOATING_POINT, true, false, unsigned short, __half> {};
-#  endif // _CCCL_HAS_NVFP16
-#  if defined(_CCCL_HAS_NVBF16)
+#  endif // _CCCL_HAS_NVFP16()
+#  if _CCCL_HAS_NVBF16()
     template <> struct NumericTraits<__nv_bfloat16> :   BaseTraits<FLOATING_POINT, true, false, unsigned short, __nv_bfloat16> {};
-#  endif // _CCCL_HAS_NVBF16
+#  endif // _CCCL_HAS_NVBF16()
 
-#if defined(__CUDA_FP8_TYPES_EXIST__)
+#if _CCCL_HAS_NVFP8()
     template <> struct NumericTraits<__nv_fp8_e4m3> :   BaseTraits<FLOATING_POINT, true, false, __nv_fp8_storage_t, __nv_fp8_e4m3> {};
     template <> struct NumericTraits<__nv_fp8_e5m2> :   BaseTraits<FLOATING_POINT, true, false, __nv_fp8_storage_t, __nv_fp8_e5m2> {};
-#endif // __CUDA_FP8_TYPES_EXIST__
+#endif // _CCCL_HAS_NVFP8()
 
 template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTEGER, true, false, typename UnitWord<bool>::VolatileWord, bool> {};
 // clang-format on
