@@ -1169,11 +1169,11 @@ struct DispatchRadixSort
   struct PassConfig
   {
     UpsweepKernelT upsweep_kernel;
-    KernelConfig upsweep_config;
+    detail::KernelConfig upsweep_config;
     ScanKernelT scan_kernel;
-    KernelConfig scan_config;
+    detail::KernelConfig scan_config;
     DownsweepKernelT downsweep_kernel;
-    KernelConfig downsweep_config;
+    detail::KernelConfig downsweep_config;
     int radix_bits;
     int radix_digits;
     int max_downsweep_grid_size;
@@ -2069,7 +2069,7 @@ struct DispatchSegmentedRadixSort
   struct PassConfig
   {
     SegmentedKernelT segmented_kernel;
-    KernelConfig segmented_config;
+    detail::KernelConfig segmented_config;
     int radix_bits;
     int radix_digits;
 
