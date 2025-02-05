@@ -45,7 +45,6 @@ struct F
 struct FD : public F
 {};
 
-#if TEST_STD_VER > 2011
 template <typename T, typename U>
 struct test_invoke_result;
 
@@ -60,18 +59,13 @@ struct test_invoke_result<Fn(Args...), Ret>
     ASSERT_SAME_TYPE(Ret, cuda::std::invoke_result_t<Fn, Args...>);
   }
 };
-#endif
 
 template <class T, class U>
 __host__ __device__ void test_result_of_imp()
 {
   ASSERT_SAME_TYPE(U, typename cuda::std::result_of<T>::type);
-#if TEST_STD_VER > 2011
   ASSERT_SAME_TYPE(U, cuda::std::result_of_t<T>);
-#endif
-#if TEST_STD_VER > 2011
   test_invoke_result<T, U>::call();
-#endif
 }
 
 int main(int, char**)

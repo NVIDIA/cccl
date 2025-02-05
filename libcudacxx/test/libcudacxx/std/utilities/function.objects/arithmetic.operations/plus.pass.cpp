@@ -41,11 +41,9 @@ int main(int, char**)
 {
   typedef cuda::std::plus<int> F;
   const F f = F();
-#if TEST_STD_VER <= 2017
   static_assert((cuda::std::is_same<int, F::first_argument_type>::value), "");
   static_assert((cuda::std::is_same<int, F::second_argument_type>::value), "");
   static_assert((cuda::std::is_same<int, F::result_type>::value), "");
-#endif
   assert(f(3, 2) == 5);
 
   typedef cuda::std::plus<> F2;
@@ -53,13 +51,11 @@ int main(int, char**)
   assert(f2(3, 2) == 5);
   assert(f2(3.0, 2) == 5);
   assert(f2(3, 2.5) == 5.5);
-#if TEST_STD_VER > 2011
   constexpr int foo = cuda::std::plus<int>()(3, 2);
   static_assert(foo == 5, "");
 
   constexpr double bar = cuda::std::plus<>()(3.0, 2);
   static_assert(bar == 5.0, "");
-#endif
 
   return 0;
 }

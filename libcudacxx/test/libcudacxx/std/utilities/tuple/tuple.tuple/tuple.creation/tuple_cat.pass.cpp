@@ -54,7 +54,6 @@ int main(int, char**)
     assert(cuda::std::get<0>(t) == 1);
   }
 
-#if TEST_STD_VER > 2011
   {
     constexpr cuda::std::tuple<> t = cuda::std::tuple_cat();
     unused(t); // Prevent unused warning
@@ -86,7 +85,6 @@ int main(int, char**)
     static_assert(cuda::std::get<0>(t) == 1, "");
     static_assert(cuda::std::get<1>(t) == 1, "");
   }
-#endif
   {
     cuda::std::tuple<int, MoveOnly> t = cuda::std::tuple_cat(cuda::std::tuple<int, MoveOnly>(1, 2));
     assert(cuda::std::get<0>(t) == 1);

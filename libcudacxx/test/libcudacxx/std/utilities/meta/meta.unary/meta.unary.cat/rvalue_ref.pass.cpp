@@ -18,9 +18,7 @@ template <class T>
 __host__ __device__ void test_rvalue_ref()
 {
   static_assert(!cuda::std::is_void<T>::value, "");
-#if TEST_STD_VER > 2011
   static_assert(!cuda::std::is_null_pointer<T>::value, "");
-#endif
   static_assert(!cuda::std::is_integral<T>::value, "");
   static_assert(!cuda::std::is_floating_point<T>::value, "");
   static_assert(!cuda::std::is_array<T>::value, "");

@@ -42,11 +42,9 @@ int main(int, char**)
   {
     typedef cuda::std::bit_xor<int> F;
     const F f = F();
-#if TEST_STD_VER <= 2017
     static_assert((cuda::std::is_same<int, F::first_argument_type>::value), "");
     static_assert((cuda::std::is_same<int, F::second_argument_type>::value), "");
     static_assert((cuda::std::is_same<int, F::result_type>::value), "");
-#endif
     assert(f(0xEA95, 0xEA95) == 0);
     assert(f(0xEA95, 0x58D3) == 0xB246);
     assert(f(0x58D3, 0xEA95) == 0xB246);
@@ -76,13 +74,11 @@ int main(int, char**)
     assert(f(0xFFFF, 0x58D3) == 0xA72C);
     assert(f(0xFFFFL, 0x58D3) == 0xA72C);
     assert(f(0xFFFF, 0x58D3L) == 0xA72C);
-#if TEST_STD_VER > 2011
     constexpr int foo = cuda::std::bit_xor<int>()(0x58D3, 0xEA95);
     static_assert(foo == 0xB246, "");
 
     constexpr int bar = cuda::std::bit_xor<>()(0x58D3L, 0xEA95);
     static_assert(bar == 0xB246, "");
-#endif
   }
 
   return 0;

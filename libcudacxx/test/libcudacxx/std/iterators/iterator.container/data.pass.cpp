@@ -26,9 +26,7 @@
 #include "test_macros.h"
 
 #if defined(_LIBCUDACXX_HAS_STRING_VIEW)
-#  if TEST_STD_VER > 2014
-#    include <cuda/std/string_view>
-#  endif
+#  include <cuda/std/string_view>
 #endif
 
 template <typename C>
@@ -91,11 +89,9 @@ int main(int, char**)
   test_const_container(il);
 
 #if defined(_LIBCUDACXX_HAS_STRING_VIEW)
-#  if TEST_STD_VER > 2014
   cuda::std::string_view sv{"ABC"};
   test_container(sv);
   test_const_container(sv);
-#  endif
 #endif
 
   test_const_array(arrA);

@@ -14,10 +14,6 @@
 
 #include "test_iterators.h"
 
-#if TEST_STD_VER < 2014
-#  error "test/support/test_range.h" can only be included in builds supporting ranges
-#endif
-
 struct sentinel
 {
   template <class I, cuda::std::enable_if_t<cuda::std::input_or_output_iterator<I>, int> = 0>

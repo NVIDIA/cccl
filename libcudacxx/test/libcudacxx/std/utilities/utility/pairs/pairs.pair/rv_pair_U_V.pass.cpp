@@ -170,7 +170,6 @@ int main(int, char**)
     test_pair_rv<ExplicitTypes::ConvertingType, ExplicitTypes::ConvertingType&, true, false>();
     test_pair_rv<ExplicitTypes::ConvertingType, ExplicitTypes::ConvertingType&&, true, false>();
   }
-#if TEST_STD_VER > 2011
   { // explicit constexpr test
     constexpr cuda::std::pair<int, int> p1(42, 43);
     constexpr cuda::std::pair<ExplicitT, ExplicitT> p2(cuda::std::move(p1));
@@ -183,7 +182,6 @@ int main(int, char**)
     static_assert(p2.first.value == 42, "");
     static_assert(p2.second.value == 43, "");
   }
-#endif
 
   return 0;
 }

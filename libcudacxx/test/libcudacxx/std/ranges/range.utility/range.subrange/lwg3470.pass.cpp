@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
 // UNSUPPORTED: msvc-19.16
 
 // gcc is unable to get the construction of b right

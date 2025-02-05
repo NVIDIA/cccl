@@ -164,11 +164,13 @@
 #define TEST_NOEXCEPT           noexcept
 #define TEST_NOEXCEPT_FALSE     noexcept(false)
 #define TEST_NOEXCEPT_COND(...) noexcept(__VA_ARGS__)
+
 #if TEST_STD_VER >= 2014
 #  define TEST_CONSTEXPR_CXX14 constexpr
 #else
 #  define TEST_CONSTEXPR_CXX14
 #endif
+
 #if TEST_STD_VER >= 2017
 #  define TEST_CONSTEXPR_CXX17 constexpr
 #else
@@ -184,11 +186,7 @@
 #else
 #  define TEST_CONSTEXPR_CXX23
 #endif
-#if TEST_STD_VER > 2014
-#  define TEST_THROW_SPEC(...)
-#else
-#  define TEST_THROW_SPEC(...) throw(__VA_ARGS__)
-#endif
+#define TEST_THROW_SPEC(...)
 
 #if defined(TEST_COMPILER_NVRTC)
 #  define NEW_IS_NOEXCEPT_NVRTC noexcept
@@ -216,18 +214,8 @@
 #endif
 
 /* Features that were introduced in C++14 */
-#if TEST_STD_VER >= 2014
-#  define TEST_HAS_EXTENDED_CONSTEXPR
-#  define TEST_HAS_VARIABLE_TEMPLATES
-#endif
-
-/* Features that were introduced in C++17 */
-#if TEST_STD_VER >= 2017
-#endif
-
-/* Features that were introduced after C++17 */
-#if TEST_STD_VER > 2017
-#endif
+#define TEST_HAS_EXTENDED_CONSTEXPR
+#define TEST_HAS_VARIABLE_TEMPLATES
 
 #define TEST_ALIGNAS_TYPE(...) TEST_ALIGNAS(TEST_ALIGNOF(__VA_ARGS__))
 
@@ -250,8 +238,7 @@
 #  define TEST_HAS_SANITIZERS
 #endif
 
-#if defined(_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION) \
-  || (!(TEST_STD_VER > 2014 || (defined(__cpp_aligned_new) && __cpp_aligned_new >= 201606L)))
+#if defined(_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION)
 #  define TEST_HAS_NO_ALIGNED_ALLOCATION
 #endif
 
@@ -269,11 +256,7 @@
 
 #define ASSERT_NOT_NOEXCEPT(...) static_assert(!noexcept(__VA_ARGS__), "Operation must NOT be noexcept")
 
-#if TEST_STD_VER > 2011
-#  define STATIC_ASSERT_CXX14(Pred) static_assert(Pred, "")
-#else
-#  define STATIC_ASSERT_CXX14(Pred) assert(Pred)
-#endif
+#define STATIC_ASSERT_CXX14(Pred) static_assert(Pred, "")
 
 /* Macros for testing libc++ specific behavior and extensions */
 #if defined(_LIBCUDACXX_VERSION)

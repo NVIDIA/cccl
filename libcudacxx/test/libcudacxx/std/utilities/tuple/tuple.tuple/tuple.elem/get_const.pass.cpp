@@ -42,7 +42,6 @@ int main(int, char**)
       assert(cuda::std::get<1>(t) == 5);
   }
   */
-#if TEST_STD_VER > 2011
   {
     typedef cuda::std::tuple<double, int> T;
     constexpr T t(2.718, 5);
@@ -55,7 +54,6 @@ int main(int, char**)
     constexpr Empty e = cuda::std::get<0>(t);
     ((void) e); // Prevent unused warning
   }
-#endif
   // cuda::std::string not supported
   /*
   {

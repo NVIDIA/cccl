@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14, c++17
+// UNSUPPORTED: c++17
 
 // template<class I1, class I2, class R, class P1, class P2>
 // concept indirectly_comparable;

@@ -23,7 +23,6 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER > 2011
 __host__ __device__ constexpr bool test_tie_constexpr()
 {
   {
@@ -40,7 +39,6 @@ __host__ __device__ constexpr bool test_tie_constexpr()
   }
   return true;
 }
-#endif
 
 int main(int, char**)
 {
@@ -54,7 +52,6 @@ int main(int, char**)
                  assert(i == 42);
                  assert(s == _s);
                }))
-#if TEST_STD_VER > 2011
   {
     static constexpr int i                                  = 42;
     static constexpr double f                               = 1.1;
@@ -65,7 +62,6 @@ int main(int, char**)
   {
     static_assert(test_tie_constexpr(), "");
   }
-#endif
 
   return 0;
 }

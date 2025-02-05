@@ -29,7 +29,6 @@ int main(int, char**)
     assert(cuda::std::get<0>(t1) == 2);
     assert(cuda::std::get<1>(t1) == short('a'));
   }
-#if TEST_STD_VER > 2011
   {
     typedef cuda::std::pair<long, char> P0;
     typedef cuda::std::tuple<long long, short> T1;
@@ -40,7 +39,6 @@ int main(int, char**)
     static_assert(cuda::std::get<0>(t1) == 2, "");
     static_assert(cuda::std::get<1>(t1) == short('a'), "");
   }
-#endif
 
   return 0;
 }

@@ -17,7 +17,6 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER >= 2014
 template <typename T>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void constexpr_test()
 {
@@ -35,7 +34,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void constexpr_test()
   static_assert(cuda::std::midpoint(array + 10, array) == array + 5, "");
   static_assert(cuda::std::midpoint(array + 11, array) == array + 6, "");
 }
-#endif // TEST_STD_VER >= 2014
 
 template <typename T>
 __host__ __device__ void runtime_test()
@@ -70,7 +68,7 @@ __host__ __device__ void pointer_test()
   runtime_test<const volatile T>();
 
   //  The constexpr tests are always const, but we can test them anyway.
-#if TEST_STD_VER >= 2014 && !defined(TEST_COMPILER_CUDACC_BELOW_11_3)
+#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3)
   constexpr_test<T>();
   constexpr_test<const T>();
 
@@ -78,7 +76,7 @@ __host__ __device__ void pointer_test()
   constexpr_test<volatile T>();
   constexpr_test<const volatile T>();
 #  endif // !TEST_COMPILER_GCC
-#endif // TEST_STD_VER >= 2014 && !TEST_COMPILER_CUDACC_BELOW_11_3
+#endif // !TEST_COMPILER_CUDACC_BELOW_11_3
 }
 
 int main(int, char**)

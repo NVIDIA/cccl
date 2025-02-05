@@ -23,8 +23,6 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER > 2011
-
 struct Empty
 {};
 
@@ -44,7 +42,6 @@ __host__ __device__ constexpr cuda::std::tuple<int, int> getP()
 {
   return {3, 4};
 }
-#endif
 
 int main(int, char**)
 {
@@ -83,7 +80,6 @@ int main(int, char**)
       assert(d == 2.5);
   }
   */
-#if TEST_STD_VER > 2011
   { // get on an rvalue tuple
     static_assert(cuda::std::get<0>(cuda::std::make_tuple(0.0f, 1, 2.0, 3L)) == 0, "");
     static_assert(cuda::std::get<1>(cuda::std::make_tuple(0.0f, 1, 2.0, 3L)) == 1, "");
@@ -92,7 +88,6 @@ int main(int, char**)
     static_assert(S().k == 1, "");
     static_assert(cuda::std::get<1>(getP()) == 4, "");
   }
-#endif
 
   return 0;
 }

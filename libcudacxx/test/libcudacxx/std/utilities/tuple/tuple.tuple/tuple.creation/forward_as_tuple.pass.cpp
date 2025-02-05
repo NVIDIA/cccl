@@ -51,13 +51,11 @@ __host__ __device__ void test2a(const Tuple& t)
   assert(cuda::std::get<1>(t) == 'a');
 }
 
-#if TEST_STD_VER > 2011
 template <class Tuple>
 __host__ __device__ constexpr int test3(const Tuple&)
 {
   return cuda::std::tuple_size<Tuple>::value;
 }
-#endif
 
 int main(int, char**)
 {
@@ -75,9 +73,7 @@ int main(int, char**)
     double i = 2.5;
     char c   = 'a';
     test2a(cuda::std::forward_as_tuple(i, c));
-#if TEST_STD_VER > 2011
     static_assert(test3(cuda::std::forward_as_tuple(i, c)) == 2, "");
-#endif
   }
 
   return 0;

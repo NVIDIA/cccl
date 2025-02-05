@@ -8,7 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 // <cuda/std/array>
-// UNSUPPORTED: c++03, c++11
+
 // UNSUPPORTED: gcc-6, gcc-7, gcc-8
 // UNSUPPORTED: nvcc-11.1
 

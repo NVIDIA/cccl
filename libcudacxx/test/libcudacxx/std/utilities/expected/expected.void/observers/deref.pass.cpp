@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // constexpr void operator*() const & noexcept;
 
 #include <cuda/std/cassert>

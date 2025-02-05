@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // constexpr const T& operator*() const & noexcept;
 // constexpr T& operator*() & noexcept;
 // constexpr T&& operator*() && noexcept;

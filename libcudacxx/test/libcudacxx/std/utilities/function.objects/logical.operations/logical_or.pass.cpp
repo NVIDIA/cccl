@@ -41,11 +41,9 @@ int main(int, char**)
 {
   typedef cuda::std::logical_or<int> F;
   const F f = F();
-#if TEST_STD_VER <= 2017
   static_assert((cuda::std::is_same<int, F::first_argument_type>::value), "");
   static_assert((cuda::std::is_same<int, F::second_argument_type>::value), "");
   static_assert((cuda::std::is_same<bool, F::result_type>::value), "");
-#endif
   assert(f(36, 36));
   assert(f(36, 0));
   assert(f(0, 36));
@@ -63,13 +61,11 @@ int main(int, char**)
   assert(!f2(0, 0));
   assert(!f2(0, 0L));
   assert(!f2(0L, 0));
-#if TEST_STD_VER > 2011
   constexpr bool foo = cuda::std::logical_or<int>()(36, 36);
   static_assert(foo, "");
 
   constexpr bool bar = cuda::std::logical_or<>()(36.0, 36);
   static_assert(bar, "");
-#endif
 
   return 0;
 }

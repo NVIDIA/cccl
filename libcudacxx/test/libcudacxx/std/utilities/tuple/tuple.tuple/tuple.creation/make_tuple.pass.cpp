@@ -40,7 +40,6 @@ int main(int, char**)
     assert(i == 0);
     assert(j == 0);
   }
-#if TEST_STD_VER > 2011
   {
     constexpr auto t1   = cuda::std::make_tuple(0, 1, 3.14);
     constexpr int i1    = cuda::std::get<1>(t1);
@@ -48,7 +47,6 @@ int main(int, char**)
     static_assert(i1 == 1, "");
     static_assert(d1 == 3.14, "");
   }
-#endif
 
   return 0;
 }
