@@ -45,6 +45,8 @@
 
 #include <cub/detail/uninitialized_copy.cuh>
 
+#include <thrust/iterator/discard_iterator.h>
+
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
@@ -107,7 +109,13 @@ struct non_void_value_impl
 template <typename It, typename FallbackT>
 struct non_void_value_impl<It, FallbackT, false>
 {
-  using type = ::cuda::std::_If<::cuda::std::is_void<value_t<It>>::value, FallbackT, value_t<It>>;
+  // we consider thrust::discard_iterator's value_type as `void` as well, so users can switch from
+  // cub::DiscardInputIterator to thrust::discard_iterator.
+  using type =
+    ::cuda::std::_If<::cuda::std::is_void<value_t<It>>::value
+                       || ::cuda::std::is_same<value_t<It>, THRUST_NS_QUALIFIER::discard_iterator<>::value_type>::value,
+                     FallbackT,
+                     value_t<It>>;
 };
 
 /**
