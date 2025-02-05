@@ -971,7 +971,9 @@ CUB_NAMESPACE_BEGIN
 template <>
 struct NumericTraits<TestFoo>
 {
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   static constexpr Category CATEGORY = NOT_A_NUMBER;
+  _CCCL_SUPPRESS_DEPRECATED_POP
   enum
   {
     PRIMITIVE = false,
@@ -1105,7 +1107,9 @@ CUB_NAMESPACE_BEGIN
 template <>
 struct NumericTraits<TestBar>
 {
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   static constexpr Category CATEGORY = NOT_A_NUMBER;
+  _CCCL_SUPPRESS_DEPRECATED_POP
   enum
   {
     PRIMITIVE = false,
