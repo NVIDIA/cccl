@@ -434,7 +434,7 @@ struct WarpScanShfl
    */
   template <typename _T, typename ScanOpT>
   _CCCL_DEVICE _CCCL_FORCEINLINE _T
-  InclusiveScanStep(_T input, ScanOpT scan_op, int first_lane, int offset, Int2Type<true> /*is_small_unsigned*/)
+  InclusiveScanStep(_T input, ScanOpT scan_op, int first_lane, int offset, ::cuda::std::true_type /*is_small_unsigned*/)
   {
     return InclusiveScanStep(input, scan_op, first_lane, offset);
   }
@@ -459,8 +459,8 @@ struct WarpScanShfl
    *   Marker type indicating whether T is a small integer
    */
   template <typename _T, typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE _T
-  InclusiveScanStep(_T input, ScanOpT scan_op, int first_lane, int offset, Int2Type<false> /*is_small_unsigned*/)
+  _CCCL_DEVICE _CCCL_FORCEINLINE _T InclusiveScanStep(
+    _T input, ScanOpT scan_op, int first_lane, int offset, ::cuda::std::false_type /*is_small_unsigned*/)
   {
     return InclusiveScanStep(input, scan_op, first_lane, offset);
   }
@@ -516,7 +516,11 @@ struct WarpScanShfl
     for (int STEP = 0; STEP < STEPS; STEP++)
     {
       inclusive_output = InclusiveScanStep(
-        inclusive_output, scan_op, segment_first_lane, (1 << STEP), Int2Type<IntegerTraits<T>::IS_SMALL_UNSIGNED>());
+        inclusive_output,
+        scan_op,
+        segment_first_lane,
+        (1 << STEP),
+        bool_constant_v<IntegerTraits<T>::IS_SMALL_UNSIGNED>);
     }
   }
 
@@ -557,7 +561,7 @@ struct WarpScanShfl
         scan_op.op,
         segment_first_lane,
         (1 << STEP),
-        Int2Type<IntegerTraits<T>::IS_SMALL_UNSIGNED>());
+        bool_constant_v<IntegerTraits<T>::IS_SMALL_UNSIGNED>);
     }
   }
 
@@ -615,7 +619,7 @@ struct WarpScanShfl
    *        integer types)
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  Update(T input, T& inclusive, T& exclusive, ::cuda::std::plus<> /*scan_op*/, Int2Type<true> /*is_integer*/)
+  Update(T input, T& inclusive, T& exclusive, ::cuda::std::plus<> /*scan_op*/, ::cuda::std::true_type /*is_integer*/)
   {
     // initial value presumed 0
     exclusive = inclusive - input;
@@ -643,7 +647,12 @@ struct WarpScanShfl
    *        (specialized for summation of integer types)
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void Update(
-    T input, T& inclusive, T& exclusive, ::cuda::std::plus<> scan_op, T initial_value, Int2Type<true> /*is_integer*/)
+    T input,
+    T& inclusive,
+    T& exclusive,
+    ::cuda::std::plus<> scan_op,
+    T initial_value,
+    ::cuda::std::true_type /*is_integer*/)
   {
     inclusive = scan_op(initial_value, inclusive);
     exclusive = inclusive - input;

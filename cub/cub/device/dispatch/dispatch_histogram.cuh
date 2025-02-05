@@ -919,7 +919,7 @@ public:
     OffsetT num_rows,
     OffsetT row_stride_samples,
     cudaStream_t stream,
-    Int2Type<false> /*is_byte_sample*/)
+    ::cuda::std::false_type /*is_byte_sample*/)
   {
     // Should we call DispatchHistogram<....., PolicyHub=void> in DeviceHistogram?
     static constexpr bool isEven = 0;
@@ -1096,7 +1096,7 @@ public:
     OffsetT num_rows,
     OffsetT row_stride_samples,
     cudaStream_t stream,
-    Int2Type<true> /*is_byte_sample*/)
+    ::cuda::std::true_type /*is_byte_sample*/)
   {
     static constexpr bool isEven = 0;
     using fallback_policy_hub    = detail::histogram::
@@ -1236,7 +1236,7 @@ public:
     OffsetT num_rows,
     OffsetT row_stride_samples,
     cudaStream_t stream,
-    Int2Type<false> /*is_byte_sample*/)
+    ::cuda::std::false_type /*is_byte_sample*/)
   {
     static constexpr bool isEven = 1;
     using fallback_policy_hub    = detail::histogram::
@@ -1427,7 +1427,7 @@ public:
     OffsetT num_rows,
     OffsetT row_stride_samples,
     cudaStream_t stream,
-    Int2Type<true> /*is_byte_sample*/)
+    ::cuda::std::true_type /*is_byte_sample*/)
   {
     static constexpr bool isEven = 1;
     using fallback_policy_hub    = detail::histogram::

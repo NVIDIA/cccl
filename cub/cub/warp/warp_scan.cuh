@@ -532,7 +532,8 @@ public:
     T exclusive_output;
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
-    internal.Update(input, inclusive_output, exclusive_output, scan_op, initial_value, Int2Type<IS_INTEGER>());
+    internal.Update(
+      input, inclusive_output, exclusive_output, scan_op, initial_value, detail::bool_constant_v<IS_INTEGER>);
   }
 
   //! @rst
@@ -655,7 +656,13 @@ public:
     // Update the inclusive_output and warp_aggregate using the Update function
     T exclusive_output;
     internal.Update(
-      input, inclusive_output, exclusive_output, warp_aggregate, scan_op, initial_value, Int2Type<IS_INTEGER>());
+      input,
+      inclusive_output,
+      exclusive_output,
+      warp_aggregate,
+      scan_op,
+      initial_value,
+      detail::bool_constant_v<IS_INTEGER>);
   }
 
   //! @}  end member group
@@ -721,7 +728,7 @@ public:
     T inclusive_output;
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
-    internal.Update(input, inclusive_output, exclusive_output, scan_op, Int2Type<IS_INTEGER>());
+    internal.Update(input, inclusive_output, exclusive_output, scan_op, detail::bool_constant_v<IS_INTEGER>);
   }
 
   //! @rst
@@ -787,7 +794,8 @@ public:
     T inclusive_output;
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
-    internal.Update(input, inclusive_output, exclusive_output, scan_op, initial_value, Int2Type<IS_INTEGER>());
+    internal.Update(
+      input, inclusive_output, exclusive_output, scan_op, initial_value, detail::bool_constant_v<IS_INTEGER>);
   }
 
   //! @rst
@@ -858,7 +866,8 @@ public:
     T inclusive_output;
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
-    internal.Update(input, inclusive_output, exclusive_output, warp_aggregate, scan_op, Int2Type<IS_INTEGER>());
+    internal.Update(
+      input, inclusive_output, exclusive_output, warp_aggregate, scan_op, detail::bool_constant_v<IS_INTEGER>);
   }
 
   //! @rst
@@ -934,7 +943,13 @@ public:
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
     internal.Update(
-      input, inclusive_output, exclusive_output, warp_aggregate, scan_op, initial_value, Int2Type<IS_INTEGER>());
+      input,
+      inclusive_output,
+      exclusive_output,
+      warp_aggregate,
+      scan_op,
+      initial_value,
+      detail::bool_constant_v<IS_INTEGER>);
   }
 
   //! @}  end member group
@@ -1007,7 +1022,7 @@ public:
 
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
-    internal.Update(input, inclusive_output, exclusive_output, scan_op, Int2Type<IS_INTEGER>());
+    internal.Update(input, inclusive_output, exclusive_output, scan_op, detail::bool_constant_v<IS_INTEGER>);
   }
 
   //! @rst
@@ -1080,7 +1095,8 @@ public:
 
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
-    internal.Update(input, inclusive_output, exclusive_output, scan_op, initial_value, Int2Type<IS_INTEGER>());
+    internal.Update(
+      input, inclusive_output, exclusive_output, scan_op, initial_value, detail::bool_constant_v<IS_INTEGER>);
   }
 
   //! @}  end member group
