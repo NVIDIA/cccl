@@ -474,7 +474,7 @@ struct DispatchReduce
       }
 
       // Init regular kernel configuration
-      KernelConfig reduce_config;
+      detail::KernelConfig reduce_config;
       error = CubDebug(reduce_config.Init(reduce_kernel, active_policy.Reduce(), launcher_factory));
       if (cudaSuccess != error)
       {
@@ -949,7 +949,7 @@ struct DispatchSegmentedReduce
       }
 
       // Init kernel configuration
-      KernelConfig segmented_reduce_config;
+      [[maybe_unused]] detail::KernelConfig segmented_reduce_config;
       error =
         CubDebug(segmented_reduce_config.Init<typename ActivePolicyT::SegmentedReducePolicy>(segmented_reduce_kernel));
       if (cudaSuccess != error)
