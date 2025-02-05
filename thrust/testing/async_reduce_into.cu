@@ -2,16 +2,14 @@
 
 #include <thrust/detail/config.h>
 
-#if _CCCL_STD_VER >= 2014
+#include <thrust/async/copy.h>
+#include <thrust/async/reduce.h>
+#include <thrust/device_make_unique.h>
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 
-#  include <thrust/async/copy.h>
-#  include <thrust/async/reduce.h>
-#  include <thrust/device_make_unique.h>
-#  include <thrust/device_vector.h>
-#  include <thrust/host_vector.h>
-
-#  include <unittest/unittest.h>
-#  include <unittest/util_async.h>
+#include <unittest/unittest.h>
+#include <unittest/util_async.h>
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 
@@ -24,48 +22,48 @@ struct custom_plus
   }
 };
 
-#  define DEFINE_STATEFUL_ASYNC_REDUCE_INTO_INVOKER(NAME, MEMBERS, CTOR, DTOR, VALIDATE, ...) \
-    template <typename T>                                                                     \
-    struct NAME                                                                               \
-    {                                                                                         \
-      MEMBERS                                                                                 \
-                                                                                              \
-      NAME()                                                                                  \
-      {                                                                                       \
-        CTOR                                                                                  \
-      }                                                                                       \
-                                                                                              \
-      ~NAME()                                                                                 \
-      {                                                                                       \
-        DTOR                                                                                  \
-      }                                                                                       \
-                                                                                              \
-      template <typename Event>                                                               \
-      void validate_event(Event& e)                                                           \
-      {                                                                                       \
-        THRUST_UNUSED_VAR(e);                                                                 \
-        VALIDATE                                                                              \
-      }                                                                                       \
-                                                                                              \
-      template <typename ForwardIt, typename Sentinel, typename OutputIt>                     \
-      _CCCL_HOST auto operator()(ForwardIt&& first, Sentinel&& last, OutputIt&& output)       \
-        THRUST_DECLTYPE_RETURNS(::thrust::async::reduce_into(__VA_ARGS__))                    \
-    };                                                                                        \
-    /**/
+#define DEFINE_STATEFUL_ASYNC_REDUCE_INTO_INVOKER(NAME, MEMBERS, CTOR, DTOR, VALIDATE, ...) \
+  template <typename T>                                                                     \
+  struct NAME                                                                               \
+  {                                                                                         \
+    MEMBERS                                                                                 \
+                                                                                            \
+    NAME()                                                                                  \
+    {                                                                                       \
+      CTOR                                                                                  \
+    }                                                                                       \
+                                                                                            \
+    ~NAME()                                                                                 \
+    {                                                                                       \
+      DTOR                                                                                  \
+    }                                                                                       \
+                                                                                            \
+    template <typename Event>                                                               \
+    void validate_event(Event& e)                                                           \
+    {                                                                                       \
+      THRUST_UNUSED_VAR(e);                                                                 \
+      VALIDATE                                                                              \
+    }                                                                                       \
+                                                                                            \
+    template <typename ForwardIt, typename Sentinel, typename OutputIt>                     \
+    _CCCL_HOST auto operator()(ForwardIt&& first, Sentinel&& last, OutputIt&& output)       \
+      THRUST_DECLTYPE_RETURNS(::thrust::async::reduce_into(__VA_ARGS__))                    \
+  };                                                                                        \
+  /**/
 
-#  define DEFINE_ASYNC_REDUCE_INTO_INVOKER(NAME, ...)                                                \
-    DEFINE_STATEFUL_ASYNC_REDUCE_INTO_INVOKER(                                                       \
-      NAME, THRUST_PP_EMPTY(), THRUST_PP_EMPTY(), THRUST_PP_EMPTY(), THRUST_PP_EMPTY(), __VA_ARGS__) \
-    /**/
+#define DEFINE_ASYNC_REDUCE_INTO_INVOKER(NAME, ...)                                                \
+  DEFINE_STATEFUL_ASYNC_REDUCE_INTO_INVOKER(                                                       \
+    NAME, THRUST_PP_EMPTY(), THRUST_PP_EMPTY(), THRUST_PP_EMPTY(), THRUST_PP_EMPTY(), __VA_ARGS__) \
+  /**/
 
-#  define DEFINE_SYNC_REDUCE_INVOKER(NAME, ...)                                                                    \
-    template <typename T>                                                                                          \
-    struct NAME                                                                                                    \
-    {                                                                                                              \
-      template <typename ForwardIt, typename Sentinel>                                                             \
-      _CCCL_HOST auto operator()(ForwardIt&& first, Sentinel&& last) THRUST_RETURNS(::thrust::reduce(__VA_ARGS__)) \
-    };                                                                                                             \
-    /**/
+#define DEFINE_SYNC_REDUCE_INVOKER(NAME, ...)                                                                    \
+  template <typename T>                                                                                          \
+  struct NAME                                                                                                    \
+  {                                                                                                              \
+    template <typename ForwardIt, typename Sentinel>                                                             \
+    _CCCL_HOST auto operator()(ForwardIt&& first, Sentinel&& last) THRUST_RETURNS(::thrust::reduce(__VA_ARGS__)) \
+  };                                                                                                             \
+  /**/
 
 DEFINE_ASYNC_REDUCE_INTO_INVOKER(reduce_into_async_invoker, THRUST_FWD(first), THRUST_FWD(last), THRUST_FWD(output));
 DEFINE_ASYNC_REDUCE_INTO_INVOKER(
@@ -481,5 +479,3 @@ DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES_AND_NAME(
                                                reduce_sync_invoker_init_custom_plus>::tester),
   NumericTypes,
   test_async_reduce_into_policy_allocator_on_init_custom_plus);
-
-#endif

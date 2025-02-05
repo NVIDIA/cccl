@@ -4,10 +4,8 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 #include <thrust/detail/config.h>
 
-#if _CCCL_STD_VER >= 2014
-
-#  include <async/inclusive_scan/mixin.h>
-#  include <async/test_policy_overloads.h>
+#include <async/inclusive_scan/mixin.h>
+#include <async/test_policy_overloads.h>
 
 namespace
 {
@@ -64,7 +62,5 @@ struct test_stateful_operator
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(test_stateful_operator, NumericTypes);
-
-#endif // C++14
 
 _CCCL_SUPPRESS_DEPRECATED_POP

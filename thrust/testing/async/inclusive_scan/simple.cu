@@ -4,10 +4,8 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 #include <thrust/detail/config.h>
 
-#if _CCCL_STD_VER >= 2014
-
-#  include <async/inclusive_scan/mixin.h>
-#  include <async/test_policy_overloads.h>
+#include <async/inclusive_scan/mixin.h>
+#include <async/test_policy_overloads.h>
 
 template <typename input_value_type,
           typename output_value_type   = input_value_type,
@@ -92,7 +90,5 @@ struct test_simple_in_place
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(test_simple_in_place, NumericTypes);
-
-#endif // C++14
 
 _CCCL_SUPPRESS_DEPRECATED_POP

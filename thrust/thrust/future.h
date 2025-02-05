@@ -30,12 +30,10 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_STD_VER >= 2014
+#include <thrust/detail/static_assert.h>
+#include <thrust/execution_policy.h>
 
-#  include <thrust/detail/static_assert.h>
-#  include <thrust/execution_policy.h>
-
-#  include <utility>
+#include <utility>
 
 /*
 // #include the host system's pointer.h header.
@@ -45,9 +43,9 @@
 */
 
 // #include the device system's pointer.h header.
-#  define __THRUST_DEVICE_SYSTEM_POINTER_HEADER <__THRUST_DEVICE_SYSTEM_ROOT/pointer.h>
-#  include __THRUST_DEVICE_SYSTEM_POINTER_HEADER
-#  undef __THRUST_DEVICE_SYSTEM_POINTER_HEADER
+#define __THRUST_DEVICE_SYSTEM_POINTER_HEADER <__THRUST_DEVICE_SYSTEM_ROOT/pointer.h>
+#include __THRUST_DEVICE_SYSTEM_POINTER_HEADER
+#undef __THRUST_DEVICE_SYSTEM_POINTER_HEADER
 
 /*
 // #include the host system's future.h header.
@@ -57,9 +55,9 @@
 */
 
 // #include the device system's future.h header.
-#  define __THRUST_DEVICE_SYSTEM_FUTURE_HEADER <__THRUST_DEVICE_SYSTEM_ROOT/future.h>
-#  include __THRUST_DEVICE_SYSTEM_FUTURE_HEADER
-#  undef __THRUST_DEVICE_SYSTEM_FUTURE_HEADER
+#define __THRUST_DEVICE_SYSTEM_FUTURE_HEADER <__THRUST_DEVICE_SYSTEM_ROOT/future.h>
+#include __THRUST_DEVICE_SYSTEM_FUTURE_HEADER
+#undef __THRUST_DEVICE_SYSTEM_FUTURE_HEADER
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 THRUST_NAMESPACE_BEGIN
@@ -162,10 +160,10 @@ using device_future CCCL_DEPRECATED = device_unique_eager_future<T>;
 struct CCCL_DEPRECATED new_stream_t final
 {};
 
-#  ifndef CCCL_HEADER_MACRO_CHECK
+#ifndef CCCL_HEADER_MACRO_CHECK
 // when building header tests, we get a deprecation warning from cudafe1.stub.c if we deprecate a global variable
 CCCL_DEPRECATED
-#  endif
+#endif
 _CCCL_GLOBAL_CONSTANT new_stream_t new_stream{};
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -176,5 +174,3 @@ using thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::when_all;
 
 _CCCL_SUPPRESS_DEPRECATED_POP
 THRUST_NAMESPACE_END
-
-#endif
