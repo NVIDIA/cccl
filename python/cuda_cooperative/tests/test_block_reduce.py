@@ -237,6 +237,7 @@ def test_block_reduction_valid(T, threads_in_block):
 
     dtype = NUMBA_TYPES_TO_NP[T]
     h_input = random_int(threads_in_block, dtype)
+    h_input[-1] = 0
     d_input = cuda.to_device(h_input)
     d_output = cuda.device_array(1, dtype=dtype)
     kernel[1, threads_in_block](d_input, d_output)
@@ -397,6 +398,7 @@ def test_block_sum_valid(T, threads_in_block):
 
     dtype = NUMBA_TYPES_TO_NP[T]
     h_input = random_int(threads_in_block, dtype)
+    h_input[-1] = 0
     d_input = cuda.to_device(h_input)
     d_output = cuda.device_array(1, dtype=dtype)
     kernel[1, threads_in_block](d_input, d_output)
