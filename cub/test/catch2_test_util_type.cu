@@ -29,7 +29,6 @@
 #include <cub/iterator/discard_output_iterator.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/__cccl_config>
 #include <cuda/std/type_traits>
 
 _CCCL_DIAG_PUSH
