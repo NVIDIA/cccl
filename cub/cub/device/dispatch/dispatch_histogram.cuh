@@ -385,7 +385,7 @@ struct dispatch_histogram
 
       // Alias the temporary allocations from the single storage blob (or compute the
       // necessary size of the blob)
-      error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;
