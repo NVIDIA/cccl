@@ -86,7 +86,6 @@ _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __memmove_device(void* __dst, const void*
 }
 #endif // _CCCL_HAS_CUDA_COMPILER
 
-_CCCL_EXEC_CHECK_DISABLE
 _LIBCUDACXX_HIDE_FROM_ABI void* memmove(void* __dst, const void* __src, size_t __n) noexcept
 {
 #if defined(_CCCL_BUILTIN_MEMMOVE)
@@ -117,7 +116,6 @@ _CCCL_HIDE_FROM_ABI _CCCL_DEVICE int __memcmp_device(const void* __lhs, const vo
 }
 #endif // _CCCL_HAS_CUDA_COMPILER
 
-_CCCL_EXEC_CHECK_DISABLE
 _LIBCUDACXX_HIDE_FROM_ABI int memcmp(const void* __lhs, const void* __rhs, size_t __n) noexcept
 {
 #if defined(_CCCL_BUILTIN_MEMCMP)
