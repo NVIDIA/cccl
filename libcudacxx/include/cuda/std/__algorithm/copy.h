@@ -44,32 +44,22 @@ __copy(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
   return {__last, __result};
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool __dispatch_memmove(_Up* __result, _Tp* __first, const size_t __n)
 {
-  // This is a pessimisation, but there's no way to do the code path detection correctly before GCC 9.0.
-  // __builtin_memmove is also illegal in constexpr there, so... just always assume we are constant evaluated,
-  // and let the optimizer *maybe* recover some of the perf.
-#if _CCCL_COMPILER(GCC, <, 9)
-  return false;
-#endif
+#if defined(_CCCL_BUILTIN_MEMMOVE)
+  _CCCL_BUILTIN_MEMMOVE(__result, __first, __n * sizeof(_Up));
+  return true;
+#else // ^^^ _CCCL_BUILTIN_MEMMOVE ^^^ / vvv !_CCCL_BUILTIN_MEMMOVE vvv
+  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  {
+    _CUDA_VSTD::memmove(__result, __first, __n * sizeof(_Up));
+    return true;
+  }
 
-  if (_CUDA_VSTD::is_constant_evaluated())
-  {
-    return false;
-  }
-  else
-  {
-    // For now, we only ever use memmove on host
-    // clang-format off
-    NV_IF_ELSE_TARGET(NV_IS_HOST, (
-      _CUDA_VSTD::memmove(__result, __first, __n * sizeof(_Up));
-      return true;
-    ),(
-      return false;
-    ))
-    // clang-format on
-  }
+  return false;
+#endif // ^^^ !_CCCL_BUILTIN_MEMMOVE ^^^
 }
 
 template <class _Tp, class _Up>
