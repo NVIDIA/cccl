@@ -27,6 +27,7 @@
 #endif // no system header
 #include <thrust/iterator/iterator_categories.h>
 
+#if !_CCCL_COMPILER(NVRTC)
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 THRUST_NAMESPACE_BEGIN
 
@@ -121,3 +122,4 @@ struct CCCL_DEPRECATED random_access_universal_iterator_tag
 
 _CCCL_SUPPRESS_DEPRECATED_POP
 THRUST_NAMESPACE_END
+#endif // !_CCCL_COMPILER(NVRTC)

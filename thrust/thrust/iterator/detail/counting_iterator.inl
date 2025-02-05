@@ -31,7 +31,7 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/iterator_traits.h>
 
-#include <cstddef>
+#include <cuda/std/cstddef>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -62,7 +62,7 @@ struct counting_iterator_base
     thrust::detail::eval_if<thrust::detail::is_numeric<Incrementable>::value,
                             thrust::detail::eval_if<::cuda::std::is_integral<Incrementable>::value,
                                                     thrust::detail::numeric_difference<Incrementable>,
-                                                    thrust::detail::identity_<std::ptrdiff_t>>,
+                                                    thrust::detail::identity_<::cuda::std::ptrdiff_t>>,
                             thrust::iterator_difference<Incrementable>>>::type;
 
   // our implementation departs from Boost's in that counting_iterator::dereference

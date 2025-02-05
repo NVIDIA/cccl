@@ -29,8 +29,6 @@
 
 #include <cuda/std/__type_traits/void_t.h>
 
-#include <type_traits>
-
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
