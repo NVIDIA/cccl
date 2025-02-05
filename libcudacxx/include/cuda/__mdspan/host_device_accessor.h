@@ -21,6 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/cassert>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <typename _Accessor>
@@ -71,12 +74,39 @@ private:
 
   static_assert(!is_host_device_managed_accessor_v<_Accessor>, "Host/Device/Managed accessor cannot be nested");
 
+  using __data_handle_type = typename _Accessor::data_handle_type;
+  using __reference        = typename _Accessor::reference;
+
+  _LIBCUDACXX_HIDE_FROM_ABI static void __check_host_pointer(__data_handle_type __p)
+  {
+    if constexpr (::cuda::std::is_pointer_v<__data_handle_type>)
+    {
+      cudaPointerAttributes __attrib;
+      auto __status = ::cudaPointerGetAttributes(&__attrib, __p);
+      _CCCL_ASSERT(__status == ::cudaSuccess && __attrib.type == ::cudaMemoryTypeHost,
+                   "host_accessor data handle is not a host pointer");
+    }
+  }
+
 public:
   using offset_policy = host_accessor;
 
-  constexpr host_accessor() noexcept(__is_ctor_noexcept) = default;
+  _CCCL_HIDE_FROM_ABI host_accessor() noexcept(__is_ctor_noexcept) = default;
 
-  constexpr host_accessor(const host_accessor&) noexcept(__is_copy_ctor_noexcept) = default;
+  _CCCL_HIDE_FROM_ABI host_accessor(const host_accessor&) noexcept(__is_copy_ctor_noexcept) = default;
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __data_handle_type offset(__data_handle_type __p, size_t __i) const noexcept
+  {
+    NV_IF_ELSE_TARGET(NV_IS_HOST,
+                      (__check_host_pointer(__p);), //
+                      (static_assert(false, "host_accessor cannot be used in device code");))
+    return __p + __i;
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __reference access(__data_handle_type __p, size_t __i) const noexcept
+  {
+    return __p[__i];
+  }
 };
 
 /***********************************************************************************************************************
@@ -92,12 +122,37 @@ private:
 
   static_assert(!is_host_device_managed_accessor_v<_Accessor>, "Host/Device/Managed accessor cannot be nested");
 
+  using __data_handle_type = typename _Accessor::data_handle_type;
+  using __reference        = typename _Accessor::reference;
+
+  _LIBCUDACXX_HIDE_FROM_ABI static void __check_device_pointer(__data_handle_type __p)
+  {
+    if constexpr (::cuda::std::is_pointer_v<__data_handle_type>)
+    {
+      bool __is_device_ptr = __isGlobal(__p) || __isShared(__p) || __isConstant(__p) || __isGridConstant(__p);
+      _CCCL_ASSERT(__is_device_ptr, "device_accessor data handle is not a device pointer");
+    }
+  }
+
 public:
   using offset_policy = device_accessor;
 
-  constexpr device_accessor() noexcept(__is_ctor_noexcept) = default;
+  _CCCL_HIDE_FROM_ABI device_accessor() noexcept(__is_ctor_noexcept) = default;
 
-  constexpr device_accessor(const device_accessor&) noexcept(__is_copy_ctor_noexcept) = default;
+  _CCCL_HIDE_FROM_ABI device_accessor(const device_accessor&) noexcept(__is_copy_ctor_noexcept) = default;
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __data_handle_type offset(__data_handle_type __p, size_t __i) const noexcept
+  {
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                      (__check_host_pointer(__p);), //
+                      (static_assert(false, "device_accessor cannot be used in host code");))
+    return __p + __i;
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __reference access(__data_handle_type __p, size_t __i) const noexcept
+  {
+    return __p[__i];
+  }
 };
 
 /***********************************************************************************************************************
@@ -116,9 +171,9 @@ private:
 public:
   using offset_policy = managed_accessor;
 
-  constexpr managed_accessor() noexcept(__is_ctor_noexcept) = default;
+  _CCCL_HIDE_FROM_ABI managed_accessor() noexcept(__is_ctor_noexcept) = default;
 
-  constexpr managed_accessor(const managed_accessor&) noexcept(__is_copy_ctor_noexcept) = default;
+  _CCCL_HIDE_FROM_ABI managed_accessor(const managed_accessor&) noexcept(__is_copy_ctor_noexcept) = default;
 };
 
 /***********************************************************************************************************************
