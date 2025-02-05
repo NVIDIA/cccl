@@ -36,9 +36,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { cuda: '12.5', libs: 'rmm kvikio cudf cudf_kafka cuspatial'         }
-          - { cuda: '12.5', libs: 'rmm ucxx raft cuvs cumlprims_mg cuml'         }
-          - { cuda: '12.5', libs: 'rmm ucxx raft cugraph-ops cugraph cugraph-gnn'}
+          - { cuda: '12.5', libs: 'rmm kvikio cudf cudf_kafka cuspatial' }
+          - { cuda: '12.5', libs: 'rmm ucxx raft cuvs cumlprims_mg cuml' }
+          - { cuda: '12.5', libs: 'rmm ucxx raft cugraph cugraph-gnn'    }
     permissions:
       id-token: write
       contents: read
@@ -63,7 +63,6 @@ jobs:
           # RAPIDS_cmake_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.04"}'
           # RAPIDS_cudf_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.04"}'
           # RAPIDS_cudf_kafka_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.04"}'
-          # RAPIDS_cugraph_ops_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.04"}'
           # RAPIDS_cugraph_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.04"}'
           # RAPIDS_cugraph_gnn_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.04"}'
           # RAPIDS_cuml_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.04"}'
@@ -80,7 +79,6 @@ jobs:
           # Start the ssh-agent and add the repo deploy keys
           if ! pgrep ssh-agent >/dev/null 2>&1; then eval "$(ssh-agent -s)"; fi
           ssh-add - <<< '${{ secrets.RAPIDSAI_CUMLPRIMS_DEPLOY_KEY }}'
-          ssh-add - <<< '${{ secrets.RAPIDSAI_CUGRAPH_OPS_DEPLOY_KEY }}'
           devcontainer-utils-init-ssh-deploy-keys || true
           exec "$@"
           EOF
