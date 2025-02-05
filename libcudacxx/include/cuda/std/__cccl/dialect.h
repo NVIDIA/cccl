@@ -85,9 +85,9 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Detect whether we can use some language features based on standard dialect
 ///////////////////////////////////////////////////////////////////////////////
-#if _CCCL_STD_VER <= 2014 || __cpp_if_constexpr < 201606L
+#if __cpp_if_constexpr < 201606L
 #  define _CCCL_NO_IF_CONSTEXPR
-#endif // _CCCL_STD_VER <= 2014 || !defined(__cpp_if_constexpr)
+#endif // !defined(__cpp_if_constexpr)
 
 // concepts are only available from C++20 onwards
 #if _CCCL_STD_VER <= 2017 || __cpp_concepts < 201907L
@@ -95,29 +95,29 @@
 #endif // _CCCL_STD_VER <= 2017 || __cpp_concepts < 201907L
 
 // CTAD is only available from C++17 onwards
-#if _CCCL_STD_VER <= 2014 || __cpp_deduction_guides < 201611L
+#if __cpp_deduction_guides < 201611L
 #  define _CCCL_NO_DEDUCTION_GUIDES
-#endif // _CCCL_STD_VER <= 2014 || __cpp_deduction_guides < 201611L
+#endif // __cpp_deduction_guides < 201611L
 
 // Fold expressions are only available from C++17 onwards
-#if _CCCL_STD_VER <= 2014 || __cpp_fold_expressions < 201603L
+#if __cpp_fold_expressions < 201603L
 #  define _CCCL_NO_FOLD_EXPRESSIONS
-#endif // _CCCL_STD_VER <= 2014 || __cpp_fold_expressions < 201603L
+#endif // __cpp_fold_expressions < 201603L
 
 // Inline variables are only available from C++17 onwards
-#if _CCCL_STD_VER <= 2014 || __cpp_inline_variables < 201606L
+#if __cpp_inline_variables < 201606L
 #  define _CCCL_NO_INLINE_VARIABLES
-#endif // _CCCL_STD_VER <= 2014 || __cpp_inline_variables < 201606L
+#endif // __cpp_inline_variables < 201606L
 
 // noexcept function types are only available from C++17 onwards
-#if _CCCL_STD_VER <= 2014 || __cpp_noexcept_function_type < 201510L
+#if __cpp_noexcept_function_type < 201510L
 #  define _CCCL_NO_NOEXCEPT_FUNCTION_TYPE
-#endif // _CCCL_STD_VER <= 2014 || __cpp_noexcept_function_type < 201510L
+#endif // __cpp_noexcept_function_type < 201510L
 
 // Declaring a non-type template parameters with auto is only available from C++17 onwards
-#if _CCCL_STD_VER <= 2014 || __cpp_nontype_template_parameter_auto < 201606L
+#if __cpp_nontype_template_parameter_auto < 201606L
 #  define _CCCL_NO_NONTYPE_TEMPLATE_PARAMETER_AUTO
-#endif // _CCCL_STD_VER <= 2014 || __cpp_nontype_template_parameter_auto < 201606L
+#endif // __cpp_nontype_template_parameter_auto < 201606L
 
 // Three way comparison is only available from C++20 onwards
 #if _CCCL_STD_VER <= 2017 || __cpp_impl_three_way_comparison < 201907L
@@ -125,9 +125,9 @@
 #endif // _CCCL_STD_VER <= 2017 || __cpp_impl_three_way_comparison < 201907L
 
 // Variable templates are only available from C++14 onwards and require some compiler support
-#if _CCCL_STD_VER <= 2011 || __cpp_variable_templates < 201304L
+#if __cpp_variable_templates < 201304L
 #  define _CCCL_NO_VARIABLE_TEMPLATES
-#endif // _CCCL_STD_VER <= 2011 || __cpp_variable_templates < 201304L
+#endif // __cpp_variable_templates < 201304L
 
 ///////////////////////////////////////////////////////////////////////////////
 // Conditionally use certain language features depending on availability

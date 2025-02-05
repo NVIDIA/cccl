@@ -38,8 +38,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2011
-
 template <class _Err>
 class unexpected;
 
@@ -153,7 +151,7 @@ public:
   {
     return __lhs.error() == __rhs.error();
   }
-#  if _CCCL_STD_VER < 2020
+#if _CCCL_STD_VER < 2020
   _CCCL_EXEC_CHECK_DISABLE
   template <class _UErr>
   _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
@@ -162,18 +160,16 @@ public:
   {
     return __lhs.error() != __rhs.error();
   }
-#  endif
+#endif // _CCCL_STD_VER < 2020
 
 private:
   _Err __unex_;
 };
 
-#  if !defined(_CCCL_NO_DEDUCTION_GUIDES)
+#if !defined(_CCCL_NO_DEDUCTION_GUIDES)
 template <class _Err>
 unexpected(_Err) -> unexpected<_Err>;
-#  endif // !defined(_CCCL_NO_DEDUCTION_GUIDES)
-
-#endif // _CCCL_STD_VER > 2011
+#endif // !defined(_CCCL_NO_DEDUCTION_GUIDES)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

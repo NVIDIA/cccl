@@ -47,9 +47,7 @@ struct __bounded_iter
   using pointer           = typename iterator_traits<_Iterator>::pointer;
   using reference         = typename iterator_traits<_Iterator>::reference;
   using iterator_category = typename iterator_traits<_Iterator>::iterator_category;
-#if _CCCL_STD_VER > 2014
-  using iterator_concept = contiguous_iterator_tag;
-#endif
+  using iterator_concept  = contiguous_iterator_tag;
 
   // Create a singular iterator.
   //

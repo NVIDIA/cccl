@@ -64,7 +64,6 @@
 #  define __cccl_lib_type_trait_variable_templates 201510L
 #endif
 
-#if _CCCL_STD_VER >= 2014
 #  define __cccl_lib_as_const     201510L
 #  define __cccl_lib_bit_cast     201806L
 #  define __cccl_lib_chrono_udls  201304L
@@ -97,7 +96,6 @@
 #  define __cccl_lib_span_initializer_list 202311L
 // # define __cccl_lib_string_udls                          201304L
 #  define __cccl_lib_tuples_by_type 201304L
-#endif // _CCCL_STD_VER >= 2014
 
 #if _CCCL_STD_VER >= 2017
 #  ifdef _CCCL_BUILTIN_ADDRESSOF

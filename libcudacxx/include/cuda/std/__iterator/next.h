@@ -42,8 +42,6 @@ next(_InputIter __x, typename iterator_traits<_InputIter>::difference_type __n =
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2014
-
 // [range.iter.op.next]
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
@@ -89,7 +87,5 @@ inline namespace __cpo
 _CCCL_GLOBAL_CONSTANT auto next = __next::__fn{};
 } // namespace __cpo
 _LIBCUDACXX_END_NAMESPACE_RANGES
-
-#endif // _CCCL_STD_VER > 2014
 
 #endif // _LIBCUDACXX___ITERATOR_NEXT_H

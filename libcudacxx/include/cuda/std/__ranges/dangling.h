@@ -27,8 +27,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-#if _CCCL_STD_VER >= 2014
-
 struct dangling
 {
   _CCCL_HIDE_FROM_ABI dangling() = default;
@@ -37,17 +35,15 @@ struct dangling
   {}
 };
 
-#  if _CCCL_STD_VER >= 2020
+#if _CCCL_STD_VER >= 2020
 template <range _Rp>
 using borrowed_iterator_t = _If<borrowed_range<_Rp>, iterator_t<_Rp>, dangling>;
-#  else // ^^^ C++20 ^^^ / vvv C++17 vvv
+#else // ^^^ C++20 ^^^ / vvv C++17 vvv
 template <class _Rp>
 using borrowed_iterator_t = enable_if_t<range<_Rp>, _If<borrowed_range<_Rp>, iterator_t<_Rp>, dangling>>;
-#  endif // _CCCL_STD_VER <= 2017
+#endif // _CCCL_STD_VER <= 2017
 
 // borrowed_subrange_t defined in <__ranges/subrange.h>
-
-#endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

@@ -177,11 +177,9 @@ using char32_t = unsigned int;
 #  if !defined(_LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS)
 #    if _CCCL_HAS_ATTRIBUTE(deprecated)
 #      define _LIBCUDACXX_DEPRECATED __attribute__((deprecated))
-#    elif _CCCL_STD_VER > 2011
+#    else // ^^^ _CCCL_HAS_ATTRIBUTE(deprecated) ^^^ / vvv !_CCCL_HAS_ATTRIBUTE(deprecated) vvv
 #      define _LIBCUDACXX_DEPRECATED [[deprecated]]
-#    else
-#      define _LIBCUDACXX_DEPRECATED
-#    endif
+#    endif // !_CCCL_HAS_ATTRIBUTE(deprecated)
 #  else
 #    define _LIBCUDACXX_DEPRECATED
 #  endif
