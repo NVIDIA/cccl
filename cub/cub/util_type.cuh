@@ -1099,14 +1099,14 @@ using is_primitive = ::cuda::std::bool_constant<is_one_of<
   bool,
   float,
   double
-#  if _CCCL_HAS_NVFP16()
+#  if defined(_CCCL_HAS_NVFP16)
   ,
   __half
-#  endif // _CCCL_HAS_NVFP16()
-#  if _CCCL_HAS_NVBF16()
+#  endif // _CCCL_HAS_NVFP16
+#  if defined(_CCCL_HAS_NVBF16)
   ,
   __nv_bfloat16
-#  endif // _CCCL_HAS_NVBF16()
+#  endif // _CCCL_HAS_NVBF16
 #  if _CCCL_HAS_NVFP8()
   ,
   __nv_fp8_e4m3,
