@@ -43,6 +43,12 @@ class stackable_task_dep;
 
 namespace reserved
 {
+
+// This helper converts stackable_task_dep to the underlying task_dep. If we
+// have a stackable_logical_data A, A.read() is indeed a stackable_task_dep,
+// which we can pass to stream_ctx/graph_ctx constructs by extracting the
+// underlying task_dep.
+//
 // By default, return the argument as-is (perfect forwarding)
 template <typename U>
 decltype(auto) to_task_dep(U&& u)
@@ -204,8 +210,6 @@ public:
         d_impl->pop_after_finalize();
       }
 
-      // TODO deal with pending unfreeze for destroyed data
-
       // Destroy the resources used in the wrapper allocator (if any)
       if (current_level.alloc_adapters)
       {
@@ -248,7 +252,6 @@ public:
       return levels[level].support_stream;
     }
 
-    // void track_pushed_data(int data_id, ::std::shared_ptr<stackable_logical_data_impl_base> data_impl)
     void track_pushed_data(int data_id, const ::std::shared_ptr<stackable_logical_data_impl_state_base> data_impl)
     {
       _CCCL_ASSERT(data_impl, "invalid value");
@@ -402,7 +405,10 @@ public:
     }
   }
 
-  // Process the parameter pack
+  // Process each argument passed to this construct to ensure we are accessing
+  // data at the proper depth, or automatically push them at the appropriate
+  // depth if necessary. If this happens, we may update the task_dep objects to
+  // reflect the actual logical data that needs to be used.
   template <typename... Pack>
   void process_pack(const Pack&... pack) const
   {
@@ -513,6 +519,9 @@ class stackable_logical_data
           : sctx(mv(_sctx))
       {}
 
+      // This method is called when we pop the stackable_logical_data before we
+      // have called finalize() on the nested context. This destroys the
+      // logical data that was created in the nested context.
       virtual void pop_before_finalize() const override
       {
         _CCCL_ASSERT(s.size() == sctx.depth() || s.size() == sctx.depth() + 1, "internal error");
@@ -528,6 +537,7 @@ class stackable_logical_data
         }
       }
 
+      // Unfreeze the logical data after the context has been finalized.
       virtual void pop_after_finalize() const override
       {
         // We are going to unfreeze the data, which is currently being used
