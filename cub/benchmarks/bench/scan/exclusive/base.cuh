@@ -64,7 +64,8 @@ struct policy_hub_t
                          LOAD_ALGORITHM,
                          LOAD_MODIFIER,
                          STORE_ALGORITHM,
-                         SCAN_ALGORITHM delay_constructor_t>;
+                         SCAN_ALGORITHM,
+                         delay_constructor_t>;
 
   struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
   {

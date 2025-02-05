@@ -35,8 +35,6 @@
 
 #include <cub/config.cuh>
 
-#include "cuda/std/__cccl/deprecated.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
