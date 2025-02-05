@@ -14,7 +14,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ void test_out_of_place()
+__host__ __device__ _LIBCUDACXX_CONSTEXPR_MEMMOVE bool test_out_of_place()
 {
   char src[] = "1234567890";
 
@@ -45,9 +45,11 @@ __host__ __device__ void test_out_of_place()
     assert(cuda::std::memmove(dest + 2, src + 6, 3) == dest + 2);
     assert(cuda::std::memcmp(dest, ref, 10) == 0);
   }
+
+  return true;
 }
 
-__host__ __device__ void test_in_place()
+__host__ __device__ _LIBCUDACXX_CONSTEXPR_MEMMOVE bool test_in_place()
 {
   {
     char buf[] = "1234567890";
@@ -76,11 +78,22 @@ __host__ __device__ void test_in_place()
     assert(cuda::std::memmove(buf + 4, buf + 7, 2) == buf + 4);
     assert(cuda::std::memcmp(buf, ref, 10) == 0);
   }
+
+  return true;
+}
+
+__host__ __device__ _LIBCUDACXX_CONSTEXPR_MEMMOVE bool test()
+{
+  test_out_of_place();
+  test_in_place();
+  return true;
 }
 
 int main(int, char**)
 {
-  test_out_of_place();
-  test_in_place();
+  test();
+#if _LIBCUDACXX_HAS_CONSTEXPR_MEMMOVE
+  static_assert(test());
+#endif // _LIBCUDACXX_HAS_CONSTEXPR_MEMMOVE
   return 0;
 }

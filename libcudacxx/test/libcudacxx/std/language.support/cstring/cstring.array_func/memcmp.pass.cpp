@@ -15,7 +15,8 @@
 
 #include "test_macros.h"
 
-__host__ __device__ void test(const char* lhs, const char* rhs, size_t n, int expected)
+__host__ __device__ _LIBCUDACXX_CONSTEXPR_MEMCMP void
+test_memcmp(const char* lhs, const char* rhs, size_t n, int expected)
 {
   const auto ret = cuda::std::memcmp(lhs, rhs, n);
 
@@ -33,19 +34,29 @@ __host__ __device__ void test(const char* lhs, const char* rhs, size_t n, int ex
   }
 }
 
+__host__ __device__ _LIBCUDACXX_CONSTEXPR_MEMCMP bool test()
+{
+  test_memcmp("abcde", "abcde", 5, 0);
+  test_memcmp("abcd1", "abcd0", 5, 1);
+  test_memcmp("abcd0", "abcd1", 5, -1);
+
+  test_memcmp("abcd1", "abcd0", 4, 0);
+  test_memcmp("abcd0", "abcd1", 4, 0);
+
+  test_memcmp("abcde", "fghij", 5, -1);
+  test_memcmp("abcde", "fghij", 0, 0);
+
+  test_memcmp(nullptr, nullptr, 0, 0);
+
+  return true;
+}
+
 int main(int, char**)
 {
-  test("abcde", "abcde", 5, 0);
-  test("abcd1", "abcd0", 5, 1);
-  test("abcd0", "abcd1", 5, -1);
-
-  test("abcd1", "abcd0", 4, 0);
-  test("abcd0", "abcd1", 4, 0);
-
-  test("abcde", "fghij", 5, -1);
-  test("abcde", "fghij", 0, 0);
-
-  test(nullptr, nullptr, 0, 0);
+  test();
+#if _LIBCUDACXX_HAS_CONSTEXPR_MEMCMP
+  static_assert(test());
+#endif // _LIBCUDACXX_HAS_CONSTEXPR_MEMCMP
 
   return 0;
 }
