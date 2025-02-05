@@ -148,7 +148,7 @@ struct sm100_tuning<1, SampleT, 1, 1, counter_size::_4, primitive_sample::yes, s
   static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
   static constexpr CacheLoadModifier load_modifier               = LOAD_CA;
   static constexpr BlockLoadAlgorithm load_algorithm             = BLOCK_LOAD_DIRECT;
-  static constexpr int tune_vec_size                             = 1 << 2;
+  static constexpr int vec_size                                  = 1 << 2;
 };
 
 // same as base
@@ -181,7 +181,7 @@ struct sm100_tuning<0, SampleT, 1, 1, counter_size::_4, primitive_sample::yes, s
   static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
   static constexpr CacheLoadModifier load_modifier               = LOAD_LDG;
   static constexpr BlockLoadAlgorithm load_algorithm             = BLOCK_LOAD_DIRECT;
-  static constexpr int tune_vec_size                             = 1 << 2;
+  static constexpr int vec_size                                  = 1 << 2;
 };
 
 // same as base
@@ -201,7 +201,7 @@ struct sm100_tuning<0, SampleT, 1, 1, counter_size::_4, primitive_sample::yes, s
   static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
   static constexpr CacheLoadModifier load_modifier               = LOAD_DEFAULT;
   static constexpr BlockLoadAlgorithm load_algorithm             = BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr int tune_vec_size                             = 1 << 0;
+  static constexpr int vec_size                                  = 1 << 0;
 };
 
 template <class SampleT>
@@ -215,7 +215,7 @@ struct sm100_tuning<0, SampleT, 1, 1, counter_size::_4, primitive_sample::yes, s
   static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
   static constexpr CacheLoadModifier load_modifier               = LOAD_LDG;
   static constexpr BlockLoadAlgorithm load_algorithm             = BLOCK_LOAD_DIRECT;
-  static constexpr int tune_vec_size                             = 1 << 0;
+  static constexpr int vec_size                                  = 1 << 0;
 };
 
 // multi.even
@@ -230,7 +230,7 @@ struct sm100_tuning<1, SampleT, 4, 3, counter_size::_4, primitive_sample::yes, s
   static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
   static constexpr CacheLoadModifier load_modifier               = LOAD_LDG;
   static constexpr BlockLoadAlgorithm load_algorithm             = BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr int tune_vec_size                             = 1 << 0;
+  static constexpr int vec_size                                  = 1 << 0;
 };
 
 // same as base
@@ -263,7 +263,7 @@ struct sm100_tuning<0, SampleT, 4, 3, counter_size::_4, primitive_sample::yes, s
   static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
   static constexpr CacheLoadModifier load_modifier               = LOAD_LDG;
   static constexpr BlockLoadAlgorithm load_algorithm             = BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr int tune_vec_size                             = 1 << 1;
+  static constexpr int vec_size                                  = 1 << 1;
 };
 
 // same as base
