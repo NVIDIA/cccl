@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11
-
 // <cuda/std/iterator>
 // template <class C> constexpr auto data(C& c) -> decltype(c.data());               // C++17
 // template <class C> constexpr auto data(const C& c) -> decltype(c.data());         // C++17

@@ -16,8 +16,6 @@
 // XFAIL: gcc-4.8, gcc-4.9
 // XFAIL: msvc-19.12, msvc-19.13
 
-// UNSUPPORTED: c++98, c++03
-
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 

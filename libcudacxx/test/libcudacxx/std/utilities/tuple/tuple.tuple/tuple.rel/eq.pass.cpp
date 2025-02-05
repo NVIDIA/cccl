@@ -14,8 +14,6 @@
 //   bool
 //   operator==(const tuple<TTypes...>& t, const tuple<UTypes...>& u);
 
-// UNSUPPORTED: c++98, c++03
-
 #include <cuda/std/tuple>
 // cuda::std::string not supported
 // #include <cuda/std/string>

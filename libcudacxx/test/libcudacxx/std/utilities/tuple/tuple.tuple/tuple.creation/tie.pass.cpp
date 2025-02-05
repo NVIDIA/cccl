@@ -13,8 +13,6 @@
 // template<class... Types>
 //   tuple<Types&...> tie(Types&... t);
 
-// UNSUPPORTED: c++98, c++03
-
 #include <cuda/std/tuple>
 
 // cuda::std::string not supported

@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11
-
 // <cuda/std/iterator>
 // template <class C> constexpr auto size(const C& c) -> decltype(c.size());         // C++17
 // template <class T, size_t N> constexpr size_t size(const T (&array)[N]) noexcept; // C++17
