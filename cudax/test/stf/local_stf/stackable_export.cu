@@ -42,7 +42,7 @@ int main()
   lB.set_symbol("B");
 
   auto lC = sctx.logical_data_no_export(lA.shape());
-  //auto lC = sctx.logical_data(lA.shape());
+  // auto lC = sctx.logical_data(lA.shape());
   lC.set_symbol("C");
 
   sctx.parallel_for(lB.shape(), lB.write(), lA.read(), lC.write())->*[] __device__(size_t i, auto b, auto a, auto c) {

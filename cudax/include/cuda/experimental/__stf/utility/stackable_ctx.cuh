@@ -88,9 +88,9 @@ task_dep<T, reduce_op, initialize> to_task_dep(stackable_task_dep<T, reduce_op, 
 class stackable_logical_data_impl_state_base
 {
 public:
-  virtual ~stackable_logical_data_impl_state_base()         = default;
-  virtual void pop_before_finalize() const = 0;
-  virtual void pop_after_finalize() const                   = 0;
+  virtual ~stackable_logical_data_impl_state_base() = default;
+  virtual void pop_before_finalize() const          = 0;
+  virtual void pop_after_finalize() const           = 0;
 };
 
 /**
@@ -327,7 +327,8 @@ public:
   template <typename T, typename... Sizes>
   auto logical_data(size_t elements, Sizes... more_sizes)
   {
-    return stackable_logical_data(*this, depth(), true, get_ctx(0).template logical_data<T>(elements, more_sizes...), true);
+    return stackable_logical_data(
+      *this, depth(), true, get_ctx(0).template logical_data<T>(elements, more_sizes...), true);
   }
 
   template <typename T>
@@ -340,9 +341,9 @@ public:
   template <typename T, typename... Sizes>
   auto logical_data_no_export(size_t elements, Sizes... more_sizes)
   {
-    return stackable_logical_data(*this, depth(), true, get_ctx(depth()).template logical_data<T>(elements, more_sizes...), false);
+    return stackable_logical_data(
+      *this, depth(), true, get_ctx(depth()).template logical_data<T>(elements, more_sizes...), false);
   }
-
 
   stackable_logical_data<void_interface> logical_token();
 
@@ -350,7 +351,8 @@ public:
   auto logical_data(Pack&&... pack)
   {
     // fprintf(stderr, "initialize from value.\n");
-    return stackable_logical_data(*this, depth(), false, get_ctx(depth()).logical_data(::std::forward<Pack>(pack)...), true);
+    return stackable_logical_data(
+      *this, depth(), false, get_ctx(depth()).logical_data(::std::forward<Pack>(pack)...), true);
   }
 
   // To avoid prematurely destroying data created in a nested context, we need to hold a reference to them
@@ -551,7 +553,7 @@ class stackable_logical_data
 
       // If the logical data was created at a level that is not directly the root of the context, we remember this
       // offset
-      size_t base_depth = 0;
+      size_t base_depth   = 0;
       size_t offset_depth = 0;
 
       ::std::string symbol;
@@ -571,10 +573,12 @@ class stackable_logical_data
 
       impl_state->base_depth = target_depth;
 
-      // TODO pass this offset directly rather than a boolean for more flexibility ? (e.g. creating a ctx of depth 2, export at depth 1, not 0 ...)
-      impl_state->offset_depth = can_export?0:target_depth;
+      // TODO pass this offset directly rather than a boolean for more flexibility ? (e.g. creating a ctx of depth 2,
+      // export at depth 1, not 0 ...)
+      impl_state->offset_depth = can_export ? 0 : target_depth;
 
-      // fprintf(stderr, "stackable_logical_data::impl %p - base depth %ld offset depth %ld can export ? %d\n", this, impl_state->base_depth, impl_state->offset_depth, can_export);
+      // fprintf(stderr, "stackable_logical_data::impl %p - base depth %ld offset depth %ld can export ? %d\n", this,
+      // impl_state->base_depth, impl_state->offset_depth, can_export);
 
       // Save the logical data at the base level
       impl_state->s.push_back(ld);
@@ -611,10 +615,10 @@ class stackable_logical_data
 
         if (offset_depth < sctx.depth())
         {
-            // If that was an exportable data, offset_depth = 0, it can be deleted
-            // when the first stacked level is popped (ie. when the CUDA graph has
-            // been executed)
-            sctx.retain_data(offset_depth + 1, mv(impl_state));
+          // If that was an exportable data, offset_depth = 0, it can be deleted
+          // when the first stacked level is popped (ie. when the CUDA graph has
+          // been executed)
+          sctx.retain_data(offset_depth + 1, mv(impl_state));
         }
       }
 
@@ -740,15 +744,17 @@ class stackable_logical_data
       return sctx;
     }
 
-    size_t get_offset_depth() const {
-        return impl_state->offset_depth;
+    size_t get_offset_depth() const
+    {
+      return impl_state->offset_depth;
     }
 
     // Get the access mode used to freeze at depth d
     // TODO move to state
     access_mode get_frozen_mode(size_t d) const
     {
-      // fprintf(stderr, "get_frozen_mode d = %ld impl_state->offset_depth %ld, impl_state->frozen_s.size() %ld\n", d, impl_state->offset_depth, impl_state->frozen_s.size());
+      // fprintf(stderr, "get_frozen_mode d = %ld impl_state->offset_depth %ld, impl_state->frozen_s.size() %ld\n", d,
+      // impl_state->offset_depth, impl_state->frozen_s.size());
       _CCCL_ASSERT(d >= impl_state->offset_depth, "invalid value");
       _CCCL_ASSERT(d - impl_state->offset_depth < impl_state->frozen_s.size(), "invalid value");
       return impl_state->frozen_s[d - impl_state->offset_depth].get_access_mode();
@@ -768,7 +774,8 @@ public:
    * to export all the way down to the root context, we create the logical data
    * in the root, and import them. */
   template <typename... Args>
-  stackable_logical_data(stackable_ctx sctx, bool ld_from_shape, size_t target_depth, logical_data<T> ld, bool can_export)
+  stackable_logical_data(
+    stackable_ctx sctx, bool ld_from_shape, size_t target_depth, logical_data<T> ld, bool can_export)
       : pimpl(::std::make_shared<impl>(sctx, ld_from_shape, target_depth, mv(ld), can_export))
   {
     static_assert(::std::is_move_constructible_v<stackable_logical_data>, "");
@@ -862,7 +869,8 @@ public:
     // Fast path : do nothing if we are not in a stacked ctx
     if (sctx.depth() == offset_depth)
     {
-      // fprintf(stderr, "validate : FAST PATH %s : sctx.depth() == offset_depth == %ld\n", get_symbol().c_str(), offset_depth);
+      // fprintf(stderr, "validate : FAST PATH %s : sctx.depth() == offset_depth == %ld\n", get_symbol().c_str(),
+      // offset_depth);
       return false;
     }
 
