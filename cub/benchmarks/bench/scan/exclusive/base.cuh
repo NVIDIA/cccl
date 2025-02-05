@@ -57,15 +57,16 @@ struct policy_hub_t
             cub::CacheLoadModifier LOAD_MODIFIER,
             cub::BlockStoreAlgorithm STORE_ALGORITHM,
             cub::BlockScanAlgorithm SCAN_ALGORITHM>
-  using agent_policy_t =
-    cub::AgentScanPolicy<NOMINAL_BLOCK_THREADS_4B,
-                         NOMINAL_ITEMS_PER_THREAD_4B,
-                         ComputeT,
-                         LOAD_ALGORITHM,
-                         LOAD_MODIFIER,
-                         STORE_ALGORITHM,
-                         SCAN_ALGORITHM,
-                         delay_constructor_t>;
+  using agent_policy_t = cub::AgentScanPolicy<
+    NOMINAL_BLOCK_THREADS_4B,
+    NOMINAL_ITEMS_PER_THREAD_4B,
+    ComputeT,
+    LOAD_ALGORITHM,
+    LOAD_MODIFIER,
+    STORE_ALGORITHM,
+    SCAN_ALGORITHM,
+    cub::detail::MemBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>,
+    delay_constructor_t>;
 
   struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
   {

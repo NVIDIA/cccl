@@ -307,6 +307,7 @@ struct policy_hub
                        LOAD_DEFAULT,
                        Tuning::store_algorithm,
                        BLOCK_SCAN_WARP_SCANS,
+                       cub::detail::MemBoundScaling<Tuning::threads, Tuning::items, AccumT>,
                        typename Tuning::delay_constructor>;
   template <typename Tuning>
   static auto select_agent_policy(long) -> typename DefaultPolicy::ScanPolicyT;
