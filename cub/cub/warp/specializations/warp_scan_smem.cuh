@@ -254,7 +254,7 @@ struct WarpScanSmem
   template <typename ScanOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, ScanOp scan_op)
   {
-    InclusiveScan(input, inclusive_output, scan_op, ::cuda::std::bool_constant<Traits<T>::PRIMITIVE>());
+    InclusiveScan(input, inclusive_output, scan_op, ::cuda::std::bool_constant<detail::is_primitive<T>::value>());
   }
 
   /**

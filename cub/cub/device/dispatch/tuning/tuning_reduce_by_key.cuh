@@ -90,13 +90,13 @@ enum class accum_size
 template <class T>
 constexpr primitive_key is_primitive_key()
 {
-  return Traits<T>::PRIMITIVE ? primitive_key::yes : primitive_key::no;
+  return detail::is_primitive<T>::value ? primitive_key::yes : primitive_key::no;
 }
 
 template <class T>
 constexpr primitive_accum is_primitive_accum()
 {
-  return Traits<T>::PRIMITIVE ? primitive_accum::yes : primitive_accum::no;
+  return detail::is_primitive<T>::value ? primitive_accum::yes : primitive_accum::no;
 }
 
 template <class ReductionOpT>

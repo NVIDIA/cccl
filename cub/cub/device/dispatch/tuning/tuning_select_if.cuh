@@ -749,7 +749,7 @@ struct sm100_tuning<Input, flagged::yes, keep_rejects::no, offset_size::_4, prim
 template <class InputT>
 constexpr primitive is_primitive()
 {
-  return Traits<InputT>::PRIMITIVE ? primitive::yes : primitive::no;
+  return detail::is_primitive<InputT>::value ? primitive::yes : primitive::no;
 }
 
 template <class FlagT>
