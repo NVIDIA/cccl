@@ -19,6 +19,10 @@
 #include "test_macros.h"
 #include <nv/target>
 
+#ifdef TEST_COMPILER_MSVC
+#  pragma warning(disable : 4324) // padding was added at the end of a structure because of an alignment specifier
+#endif // TEST_COMPILER_MSVC
+
 template <class T>
 __host__ __device__ void
 test_aligned_alloc(bool expect_success, cuda::std::size_t n, cuda::std::size_t align = TEST_ALIGNOF(T))
