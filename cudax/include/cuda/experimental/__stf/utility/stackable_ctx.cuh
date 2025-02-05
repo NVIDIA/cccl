@@ -258,14 +258,6 @@ public:
       levels[depth()].pushed_data[data_id] = data_impl;
     }
 
-    void untrack_pushed_data(int data_id)
-    {
-      size_t erased = levels[depth()].pushed_data.erase(data_id);
-      // We must have erased exactly one value (at least one otherwise it was already removed, and it must be pushed
-      // only once (TODO check))
-      _CCCL_ASSERT(erased == 1, "invalid value");
-    }
-
     void retain_data(size_t level, ::std::shared_ptr<stackable_logical_data_impl_state_base> data_impl)
     {
       _CCCL_ASSERT(level < levels.size(), "invalid value");
@@ -476,15 +468,9 @@ public:
     return get_ctx(depth()).async_resources();
   }
 
-  // void track_pushed_data(int data_id, ::std::shared_ptr<stackable_logical_data_impl_base> data_impl)
   void track_pushed_data(int data_id, const ::std::shared_ptr<stackable_logical_data_impl_state_base> data_impl)
   {
     pimpl->track_pushed_data(data_id, data_impl);
-  }
-
-  void untrack_pushed_data(int data_id)
-  {
-    pimpl->untrack_pushed_data(data_id);
   }
 
   auto dot_section(::std::string symbol) const
@@ -710,6 +696,8 @@ class stackable_logical_data
       // Keep track of data that were pushed in this context. Note that the ID
       // used is the ID of the logical data at this level. This will be used to
       // pop data automatically when nested contexts are popped.
+      //
+      // This map gets destroyed when we pop the context
       sctx.track_pushed_data(ld.get_unique_id(), impl_state);
 
       // Save the logical data created to keep track of the data instance
