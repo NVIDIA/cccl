@@ -12,7 +12,6 @@
 //  deprecated in C++17
 
 // UNSUPPORTED: clang-4.0
-
 // REQUIRES: verify-support
 
 #include <cuda/std/functional>

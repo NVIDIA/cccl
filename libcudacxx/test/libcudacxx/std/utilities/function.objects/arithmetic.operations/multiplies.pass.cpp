@@ -41,9 +41,11 @@ int main(int, char**)
 {
   typedef cuda::std::multiplies<int> F;
   const F f = F();
+#if TEST_STD_VER <= 2017
   static_assert((cuda::std::is_same<int, F::first_argument_type>::value), "");
   static_assert((cuda::std::is_same<int, F::second_argument_type>::value), "");
   static_assert((cuda::std::is_same<int, F::result_type>::value), "");
+#endif // TEST_STD_VER <= 2017
   assert(f(3, 2) == 6);
 
   typedef cuda::std::multiplies<> F2;
