@@ -126,7 +126,7 @@ void TestFindIfDispatchExplicit()
   thrust::device_vector<int> vec(1);
 
   my_system sys(0);
-  thrust::find_if(sys, vec.begin(), vec.end(), thrust::identity<int>());
+  thrust::find_if(sys, vec.begin(), vec.end(), ::cuda::std::identity{});
 
   ASSERT_EQUAL(true, sys.is_valid());
 }
@@ -143,7 +143,7 @@ void TestFindIfDispatchImplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  thrust::find_if(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), thrust::identity<int>());
+  thrust::find_if(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), ::cuda::std::identity{});
 
   ASSERT_EQUAL(13, vec.front());
 }
@@ -177,7 +177,7 @@ void TestFindIfNotDispatchExplicit()
   thrust::device_vector<int> vec(1);
 
   my_system sys(0);
-  thrust::find_if_not(sys, vec.begin(), vec.end(), thrust::identity<int>());
+  thrust::find_if_not(sys, vec.begin(), vec.end(), ::cuda::std::identity{});
 
   ASSERT_EQUAL(true, sys.is_valid());
 }
@@ -194,7 +194,7 @@ void TestFindIfNotDispatchImplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  thrust::find_if_not(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), thrust::identity<int>());
+  thrust::find_if_not(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), ::cuda::std::identity{});
 
   ASSERT_EQUAL(13, vec.front());
 }
