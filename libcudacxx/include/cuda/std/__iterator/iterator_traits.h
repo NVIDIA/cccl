@@ -92,7 +92,7 @@ using iter_reference_t = decltype(*declval<_Tp&>());
 template <class>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
 
-#elif _CCCL_STD_VER >= 2014 // ^^^ !_CCCL_NO_CONCEPTS ^^^
+#else // ^^^ _CCCL_NO_CONCEPTS ^^^ // vvv !_CCCL_NO_CONCEPTS vvv
 
 template <class _Tp>
 using __with_reference = _Tp&;
@@ -118,10 +118,7 @@ using iter_reference_t = enable_if_t<__dereferenceable<_Tp>, decltype(*declval<_
 
 template <class, class>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
-#else // ^^^ _CCCL_STD_VER >= 2014 ^^^ / vvv _CCCL_STD_VER < 2014 vvv
-template <class>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
-#endif // _CCCL_STD_VER < 2014
+#endif // !_CCCL_NO_CONCEPTS
 
 #if _CCCL_COMPILER(NVRTC)
 
