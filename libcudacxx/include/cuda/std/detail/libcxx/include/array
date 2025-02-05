@@ -487,10 +487,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT array<_Tp, 0>
   _CCCL_DIAG_POP
 };
 
-#if _CCCL_STD_VER >= 2017
 template <class _Tp, class... _Args, class = enable_if_t<(is_same_v<_Tp, _Args> && ...)>>
 _CCCL_HOST_DEVICE array(_Tp, _Args...) -> array<_Tp, 1 + sizeof...(_Args)>;
-#endif // _CCCL_STD_VER >= 2017
 
 template <class _Tp, size_t _Size>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool

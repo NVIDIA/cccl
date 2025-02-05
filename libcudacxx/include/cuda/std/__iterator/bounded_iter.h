@@ -241,7 +241,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __bounded_iter<_It> __make_bounded_iter(_It 
 template <class _Iterator>
 struct __is_cpp17_contiguous_iterator<__bounded_iter<_Iterator>> : true_type
 {};
-#endif
+#endif // _CCCL_STD_VER <= 2017
 
 template <class _Iterator>
 struct pointer_traits<__bounded_iter<_Iterator>>

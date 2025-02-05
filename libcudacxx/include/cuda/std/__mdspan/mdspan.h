@@ -116,13 +116,9 @@ private:
     _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
     __check_index(_Extents const& exts, _SizeTypes... __indices)
     {
-#if _CCCL_STD_VER >= 2017
       return (((is_unsigned_v<index_type> ? true : static_cast<index_type>(__indices) >= 0)
                && static_cast<index_type>(__indices) < exts.extent(_Idxs))
               && ...);
-#else
-      return true;
-#endif // _CCCL_STD_VER >= 2017
     }
 
     template <class... _SizeTypes>

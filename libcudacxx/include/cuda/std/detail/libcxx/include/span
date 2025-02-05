@@ -240,9 +240,9 @@ _CCCL_CONCEPT_FRAGMENT(
 
 template <class _Sentinel, class _It>
 _CCCL_CONCEPT __span_compatible_sentinel_for = _CCCL_FRAGMENT(__span_compatible_sentinel_for_, _Sentinel, _It);
-#endif // _CCCL_STD_VER <= 2017
+#endif // _CCCL_NO_CONCEPTS
 
-#if _CCCL_STD_VER >= 2020
+#if !defined(_CCCL_NO_CONCEPTS)
 
 template <class _Tp>
 concept __integral_constant_like =
@@ -253,7 +253,7 @@ concept __integral_constant_like =
   && bool_constant<_Tp() == _Tp::value>::value
   && bool_constant<static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value>::value;
 
-#else // ^^^ _CCCL_STD_VER >= 2020 ^^^ / vvv _CCCL_STD_VER <= 2017 vvv
+#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 
 template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(
@@ -266,7 +266,7 @@ _CCCL_CONCEPT_FRAGMENT(
              (integral_constant<bool, static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value>::value)));
 template <class _Tp>
 _CCCL_CONCEPT __integral_constant_like = _CCCL_FRAGMENT(__integral_constant_like_, _Tp);
-#endif // _CCCL_STD_VER <= 2017
+#endif // _CCCL_NO_CONCEPTS
 
 template <class _Tp, bool = __integral_constant_like<_Tp>>
 _CCCL_INLINE_VAR constexpr size_t __maybe_static_ext = dynamic_extent;
@@ -737,8 +737,6 @@ _LIBCUDACXX_HIDE_FROM_ABI auto as_writable_bytes(span<_Tp, _Extent> __s) noexcep
   return __s.__as_writable_bytes();
 }
 
-#if _CCCL_STD_VER >= 2017
-
 //  Deduction guides
 template <class _Tp, size_t _Sz>
 _CCCL_HOST_DEVICE span(_Tp (&)[_Sz]) -> span<_Tp, _Sz>;
@@ -757,8 +755,6 @@ _CCCL_HOST_DEVICE span(_It, _EndOrSize)
 _CCCL_TEMPLATE(class _Range)
 _CCCL_REQUIRES(_CUDA_VRANGES::contiguous_range<_Range>)
 _CCCL_HOST_DEVICE span(_Range&&) -> span<remove_reference_t<_CUDA_VRANGES::range_reference_t<_Range>>>;
-
-#endif // _CCCL_STD_VER >= 2017
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

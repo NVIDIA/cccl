@@ -170,7 +170,7 @@ _CCCL_CONCEPT_FRAGMENT(__can_ssize_,
 
 template <class _Tp>
 _CCCL_CONCEPT __can_ssize = _CCCL_FRAGMENT(__can_ssize_, _Tp);
-#endif // _CCCL_STD_VER <= 2017
+#endif // _CCCL_NO_CONCEPTS
 
 struct __fn
 {

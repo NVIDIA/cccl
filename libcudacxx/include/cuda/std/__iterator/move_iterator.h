@@ -103,7 +103,6 @@ private:
 
   _Iter __current_;
 
-#if _CCCL_STD_VER >= 2017
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto __mi_get_iter_concept()
   {
     if constexpr (random_access_iterator<_Iter>)
@@ -124,7 +123,6 @@ private:
     }
     _CCCL_UNREACHABLE();
   }
-#endif // _CCCL_STD_VER >= 2017
 
 public:
   using iterator_type    = _Iter;

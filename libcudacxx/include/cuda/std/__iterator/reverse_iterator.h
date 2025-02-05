@@ -54,7 +54,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER >= 2017
 template <class _Iter, class = void>
 _CCCL_INLINE_VAR constexpr bool __noexcept_rev_iter_iter_move = false;
 
@@ -70,7 +69,6 @@ _CCCL_INLINE_VAR constexpr bool
   __noexcept_rev_iter_iter_swap<_Iter, _Iter2, enable_if_t<indirectly_swappable<_Iter, _Iter2>>> =
     is_nothrow_copy_constructible_v<_Iter> && is_nothrow_copy_constructible_v<_Iter2>
     && noexcept(_CUDA_VRANGES::iter_swap(--declval<_Iter&>(), --declval<_Iter2&>()));
-#endif // _CCCL_STD_VER >= 2017
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Iter>

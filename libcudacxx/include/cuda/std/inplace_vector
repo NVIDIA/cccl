@@ -782,7 +782,6 @@ public:
     }
   }
 
-#if _CCCL_STD_VER >= 2017
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(
     _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _CCCL_AND(!_CUDA_VRANGES::forward_range<_Range>))
@@ -833,7 +832,6 @@ public:
       this->__uninitialized_move(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), this->begin());
     }
   }
-#endif // _CCCL_STD_VER >= 2017
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr inplace_vector& operator=(initializer_list<_Tp> __ilist)
   {
@@ -943,7 +941,6 @@ public:
     }
   }
 
-#if _CCCL_STD_VER >= 2017
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(
     _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _CCCL_AND(!_CUDA_VRANGES::forward_range<_Range>))
@@ -1019,7 +1016,6 @@ public:
       this->__uninitialized_copy(__middle, __last, this->end());
     }
   }
-#endif // _CCCL_STD_VER >= 2017
 
   // [containers.sequences.inplace.vector.access], element access
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference at(const size_type __pos)
@@ -1289,7 +1285,6 @@ public:
     return __res;
   }
 
-#if _CCCL_STD_VER >= 2017
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(
     _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _CCCL_AND(!_CUDA_VRANGES::forward_range<_Range>))
@@ -1337,7 +1332,6 @@ public:
     auto __first = _CUDA_VRANGES::begin(__range);
     insert(this->end(), __first, _CUDA_VRANGES::__unwrap_end(__range));
   }
-#endif // _CCCL_STD_VER >= 2017
 
   template <class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator emplace(const_iterator __cpos, _Args&&... __args)
@@ -1433,7 +1427,6 @@ public:
     return _CUDA_VSTD::addressof(this->unchecked_emplace_back(_CUDA_VSTD::move(__value)));
   }
 
-#if _CCCL_STD_VER >= 2017
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(
     _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _CCCL_AND(!_CUDA_VRANGES::forward_range<_Range>))
@@ -1480,7 +1473,6 @@ public:
     this->__uninitialized_move(__first, __middle, this->end());
     return __middle;
   }
-#endif // _CCCL_STD_VER >= 2017
 
   using __base::unchecked_emplace_back;
 
@@ -1768,7 +1760,6 @@ public:
     }
   }
 
-#if _CCCL_STD_VER >= 2017
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr inplace_vector(from_range_t, _Range&& __range)
@@ -1779,7 +1770,6 @@ public:
       _CUDA_VSTD::__throw_bad_alloc();
     }
   }
-#endif // _CCCL_STD_VER >= 2017
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr inplace_vector& operator=(initializer_list<_Tp> __ilist)
   {
@@ -1820,7 +1810,6 @@ public:
     return;
   }
 
-#if _CCCL_STD_VER >= 2017
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void assign_range(_Range&& __range)
@@ -1831,7 +1820,6 @@ public:
     }
     return;
   }
-#endif // _CCCL_STD_VER >= 2017
 
   // [containers.sequences.inplace.vector.access], element access
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference at(const size_type __pos)
@@ -1978,7 +1966,6 @@ public:
     return nullptr;
   }
 
-#if _CCCL_STD_VER >= 2017
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator insert_range(const_iterator __cpos, _Range&& __range)
@@ -1999,7 +1986,6 @@ public:
       _CUDA_VSTD::__throw_bad_alloc();
     }
   }
-#endif // _CCCL_STD_VER >= 2017
 
   template <class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator emplace(const_iterator, _Args&&...)
@@ -2043,14 +2029,12 @@ public:
     return nullptr;
   }
 
-#if _CCCL_STD_VER >= 2017
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VRANGES::iterator_t<_Range> try_append_range(_Range&& __range) noexcept
   {
     return _CUDA_VRANGES::begin(__range);
   }
-#endif // _CCCL_STD_VER >= 2017
 
   using __base::unchecked_emplace_back;
 

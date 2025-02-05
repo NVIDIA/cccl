@@ -122,7 +122,7 @@ _CCCL_GLOBAL_CONSTANT auto iter_swap = __iter_swap::__fn{};
 _LIBCUDACXX_END_NAMESPACE_RANGES
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
-#if _CCCL_STD_VER > 2017
+#if !defined(_CCCL_NO_CONCEPTS)
 template <class _I1, class _I2 = _I1>
 concept indirectly_swappable =
   indirectly_readable<_I1> && indirectly_readable<_I2> && requires(const _I1 __i1, const _I2 __i2) {
@@ -131,7 +131,7 @@ concept indirectly_swappable =
     _CUDA_VRANGES::iter_swap(__i1, __i2);
     _CUDA_VRANGES::iter_swap(__i2, __i1);
   };
-#else
+#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv !_CCCL_NO_CONCEPTS vvv
 template <class _I1, class _I2>
 _CCCL_CONCEPT_FRAGMENT(
   __indirectly_swappable_,
@@ -145,7 +145,7 @@ _CCCL_CONCEPT_FRAGMENT(
 
 template <class _I1, class _I2 = _I1>
 _CCCL_CONCEPT indirectly_swappable = _CCCL_FRAGMENT(__indirectly_swappable_, _I1, _I2);
-#endif // _CCCL_STD_VER > 2017
+#endif // _CCCL_NO_CONCEPTS
 
 template <class _I1, class _I2 = _I1, class = void>
 _CCCL_INLINE_VAR constexpr bool __noexcept_swappable = false;

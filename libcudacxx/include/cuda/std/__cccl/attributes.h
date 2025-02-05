@@ -50,7 +50,7 @@
 #endif // !_CCCL_COMPILER(MSVC)
 
 // Use a function like macro to imply that it must be followed by a semicolon
-#if _CCCL_STD_VER >= 2017 && _CCCL_HAS_CPP_ATTRIBUTE(fallthrough)
+#if _CCCL_HAS_CPP_ATTRIBUTE(fallthrough)
 #  define _CCCL_FALLTHROUGH() [[fallthrough]]
 #elif _CCCL_COMPILER(NVRTC)
 #  define _CCCL_FALLTHROUGH() ((void) 0)
@@ -99,7 +99,7 @@
 #  define _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 #endif // !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS && _CCCL_COMPILER(CLANG)
 
-#if _CCCL_HAS_CPP_ATTRIBUTE(nodiscard) || (_CCCL_COMPILER(MSVC) && _CCCL_STD_VER >= 2017)
+#if _CCCL_HAS_CPP_ATTRIBUTE(nodiscard) || _CCCL_COMPILER(MSVC)
 #  define _CCCL_NODISCARD [[nodiscard]]
 #else // ^^^ has nodiscard ^^^ / vvv no nodiscard vvv
 #  define _CCCL_NODISCARD

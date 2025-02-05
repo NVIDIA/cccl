@@ -918,9 +918,8 @@
 #endif // !_CCCL_COMPILER(MSVC)
 
 // GCC's builtin_strlen isn't reliable at constexpr time
-// MSVC does not expose builtin_strlen before C++17
 // NVRTC does not expose builtin_strlen
-#if !_CCCL_COMPILER(GCC) && !_CCCL_COMPILER(NVRTC) && !(_CCCL_COMPILER(MSVC) && _CCCL_STD_VER < 2017)
+#if !_CCCL_COMPILER(GCC) && !_CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_STRLEN(...) __builtin_strlen(__VA_ARGS__)
 #endif
 

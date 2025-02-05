@@ -35,13 +35,13 @@ struct dangling
   {}
 };
 
-#if _CCCL_STD_VER >= 2020
+#if !defined(_CCCL_NO_CONCEPTS)
 template <range _Rp>
 using borrowed_iterator_t = _If<borrowed_range<_Rp>, iterator_t<_Rp>, dangling>;
 #else // ^^^ C++20 ^^^ / vvv C++17 vvv
 template <class _Rp>
 using borrowed_iterator_t = enable_if_t<range<_Rp>, _If<borrowed_range<_Rp>, iterator_t<_Rp>, dangling>>;
-#endif // _CCCL_STD_VER <= 2017
+#endif // _CCCL_NO_CONCEPTS
 
 // borrowed_subrange_t defined in <__ranges/subrange.h>
 

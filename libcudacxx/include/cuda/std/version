@@ -97,7 +97,7 @@
 // # define __cccl_lib_string_udls                          201304L
 #  define __cccl_lib_tuples_by_type 201304L
 
-#if _CCCL_STD_VER >= 2017
+
 #  ifdef _CCCL_BUILTIN_ADDRESSOF
 #    define __cccl_lib_addressof_constexpr 201603L
 #  endif // _CCCL_BUILTIN_ADDRESSOF
@@ -144,7 +144,7 @@
 // #  define __cccl_lib_uncaught_exceptions           201411L
 // #  define __cccl_lib_unordered_map_try_emplace     201411L
 #  define __cccl_lib_variant 201606L
-#endif // _CCCL_STD_VER >= 2017
+
 
 #if _CCCL_STD_VER >= 2020
 #  undef __cccl_lib_array_constexpr
