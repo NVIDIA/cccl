@@ -9,6 +9,8 @@
 #include <thrust/tuple.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
+#include <cuda/__cccl_config>
+
 #if _CCCL_COMPILER(GCC, >=, 7)
 // This header pulls in an unsuppressable warning on GCC 6
 #  include <cuda/std/complex>
@@ -46,9 +48,12 @@ void TestIsContiguousIterator()
 
   ASSERT_EQUAL((bool) thrust::is_contiguous_iterator<ConstantIterator>::value, false);
   ASSERT_EQUAL((bool) thrust::is_contiguous_iterator<CountingIterator>::value, false);
+#if !_CCCL_COMPILER(NVHPC)
+  // thrust::identity creates a deprecated warning that could not be worked around
   _CCCL_SUPPRESS_DEPRECATED_PUSH
   ASSERT_EQUAL((bool) thrust::is_contiguous_iterator<TransformIterator1>::value, false);
   _CCCL_SUPPRESS_DEPRECATED_POP
+#endif // !_CCCL_COMPILER(NVHPC)
   ASSERT_EQUAL((bool) thrust::is_contiguous_iterator<TransformIterator2>::value, false);
   ASSERT_EQUAL((bool) thrust::is_contiguous_iterator<ZipIterator>::value, false);
 }

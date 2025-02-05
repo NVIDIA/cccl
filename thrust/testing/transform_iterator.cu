@@ -1,3 +1,10 @@
+#include <cuda/__cccl_config>
+
+#if _CCCL_COMPILER(NVHPC)
+// suppress warnings on thrust::identity
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+#endif // _CCCL_COMPILER(NVHPC)
+
 #include <thrust/copy.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/counting_iterator.h>
@@ -10,6 +17,10 @@
 #include <vector>
 
 #include <unittest/unittest.h>
+
+#if _CCCL_COMPILER(NVHPC)
+_CCCL_SUPPRESS_DEPRECATED_POP
+#endif // _CCCL_COMPILER(NVHPC)
 
 template <class Vector>
 void TestTransformIterator()
