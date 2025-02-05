@@ -155,7 +155,7 @@ struct WarpReduceSmem
    */
   template <bool ALL_LANES_VALID, typename ReductionOp, int STEP>
   _CCCL_DEVICE _CCCL_FORCEINLINE T
-  ReduceStep(T input, int valid_items, ReductionOp reduction_op, Int2Type<STEP> /*step*/)
+  ReduceStep(T input, int valid_items, ReductionOp reduction_op, detail::int_constant_t<STEP> /*step*/)
   {
     constexpr int OFFSET = 1 << STEP;
 
@@ -173,7 +173,7 @@ struct WarpReduceSmem
 
     __syncwarp(member_mask);
 
-    return ReduceStep<ALL_LANES_VALID>(input, valid_items, reduction_op, Int2Type<STEP + 1>());
+    return ReduceStep<ALL_LANES_VALID>(input, valid_items, reduction_op, detail::int_constant_t<STEP + 1>());
   }
 
   /**
@@ -193,7 +193,7 @@ struct WarpReduceSmem
    */
   template <bool ALL_LANES_VALID, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T
-  ReduceStep(T input, int valid_items, ReductionOp /*reduction_op*/, Int2Type<STEPS> /*step*/)
+  ReduceStep(T input, int valid_items, ReductionOp /*reduction_op*/, detail::int_constant_t<STEPS> /*step*/)
   {
     return input;
   }
@@ -222,7 +222,7 @@ struct WarpReduceSmem
    */
   template <bool HEAD_SEGMENTED, typename FlagT, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T
-  SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op, Int2Type<true> /*has_ballot*/)
+  SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op, ::cuda::std::true_type /*has_ballot*/)
   {
     // Get the start flags for each thread in the warp.
     int warp_flags = __ballot_sync(member_mask, flag);
@@ -293,7 +293,7 @@ struct WarpReduceSmem
    */
   template <bool HEAD_SEGMENTED, typename FlagT, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T
-  SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op, Int2Type<false> /*has_ballot*/)
+  SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op, ::cuda::std::false_type /*has_ballot*/)
   {
     enum
     {
@@ -388,7 +388,7 @@ struct WarpReduceSmem
   template <bool ALL_LANES_VALID, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, int valid_items, ReductionOp reduction_op)
   {
-    return ReduceStep<ALL_LANES_VALID>(input, valid_items, reduction_op, Int2Type<0>());
+    return ReduceStep<ALL_LANES_VALID>(input, valid_items, reduction_op, detail::int_constant_t<0>());
   }
 
   /**
@@ -409,7 +409,7 @@ struct WarpReduceSmem
   template <bool HEAD_SEGMENTED, typename FlagT, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op)
   {
-    return SegmentedReduce<HEAD_SEGMENTED>(input, flag, reduction_op, Int2Type<true>());
+    return SegmentedReduce<HEAD_SEGMENTED>(input, flag, reduction_op, ::cuda::std::true_type());
   }
 };
 } // namespace detail

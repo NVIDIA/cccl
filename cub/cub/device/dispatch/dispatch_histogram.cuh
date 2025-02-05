@@ -918,7 +918,7 @@ public:
     OffsetT num_rows,
     OffsetT row_stride_samples,
     cudaStream_t stream,
-    Int2Type<false> /*is_byte_sample*/)
+    ::cuda::std::false_type /*is_byte_sample*/)
   {
     using MaxPolicyT = typename PolicyHub::MaxPolicy;
     cudaError error  = cudaSuccess;
@@ -1045,7 +1045,7 @@ public:
     OffsetT row_stride_samples,
     cudaStream_t stream,
     bool debug_synchronous,
-    Int2Type<false> is_byte_sample)
+    ::cuda::std::false_type is_byte_sample)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
@@ -1122,7 +1122,7 @@ public:
     OffsetT num_rows,
     OffsetT row_stride_samples,
     cudaStream_t stream,
-    Int2Type<true> /*is_byte_sample*/)
+    ::cuda::std::true_type /*is_byte_sample*/)
   {
     using MaxPolicyT = typename PolicyHub::MaxPolicy;
     cudaError error  = cudaSuccess;
@@ -1211,7 +1211,7 @@ public:
     OffsetT row_stride_samples,
     cudaStream_t stream,
     bool debug_synchronous,
-    Int2Type<true> is_byte_sample)
+    ::cuda::std::true_type is_byte_sample)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
@@ -1290,7 +1290,7 @@ public:
     OffsetT num_rows,
     OffsetT row_stride_samples,
     cudaStream_t stream,
-    Int2Type<false> /*is_byte_sample*/)
+    ::cuda::std::false_type /*is_byte_sample*/)
   {
     using MaxPolicyT = typename PolicyHub::MaxPolicy;
     cudaError error  = cudaSuccess;
@@ -1430,7 +1430,7 @@ public:
     OffsetT row_stride_samples,
     cudaStream_t stream,
     bool debug_synchronous,
-    Int2Type<false> is_byte_sample)
+    ::cuda::std::false_type is_byte_sample)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
@@ -1511,7 +1511,7 @@ public:
     OffsetT num_rows,
     OffsetT row_stride_samples,
     cudaStream_t stream,
-    Int2Type<true> /*is_byte_sample*/)
+    ::cuda::std::true_type /*is_byte_sample*/)
   {
     using MaxPolicyT = typename PolicyHub::MaxPolicy;
     cudaError error  = cudaSuccess;
@@ -1602,7 +1602,7 @@ public:
     OffsetT row_stride_samples,
     cudaStream_t stream,
     bool debug_synchronous,
-    Int2Type<true> is_byte_sample)
+    ::cuda::std::true_type is_byte_sample)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 

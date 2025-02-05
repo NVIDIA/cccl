@@ -170,7 +170,13 @@ struct AgentSegmentedRadixSort
 
     BlockRadixSortT(temp_storage.sort)
       .SortBlockedToStriped(
-        thread_keys, thread_values, begin_bit, end_bit, Int2Type<IS_DESCENDING>(), Int2Type<KEYS_ONLY>(), decomposer);
+        thread_keys,
+        thread_values,
+        begin_bit,
+        end_bit,
+        ::cuda::std::bool_constant<IS_DESCENDING>(),
+        ::cuda::std::bool_constant<KEYS_ONLY>(),
+        decomposer);
 
     cub::StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_keys_out, thread_keys, num_items);
 
