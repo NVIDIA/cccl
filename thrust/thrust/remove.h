@@ -565,7 +565,7 @@ OutputIterator remove_copy_if(InputIterator first, InputIterator last, OutputIte
  *  int A[N] = {1, 4, 2, 8, 5, 7};
  *  int S[N] = {0, 1, 1, 1, 0, 0};
  *
- *  int *new_end = thrust::remove_if(thrust::host, A, A + N, S, thrust::identity<int>());
+ *  int *new_end = thrust::remove_if(thrust::host, A, A + N, S, ::cuda::std::identity{});
  *  // The first three values of A are now {1, 5, 7}
  *  // Values beyond new_end are unspecified
  *  \endcode
@@ -623,7 +623,7 @@ _CCCL_HOST_DEVICE ForwardIterator remove_if(
  *  int A[N] = {1, 4, 2, 8, 5, 7};
  *  int S[N] = {0, 1, 1, 1, 0, 0};
  *
- *  int *new_end = thrust::remove_if(A, A + N, S, thrust::identity<int>());
+ *  int *new_end = thrust::remove_if(A, A + N, S, ::cuda::std::identity{});
  *  // The first three values of A are now {1, 5, 7}
  *  // Values beyond new_end are unspecified
  *  \endcode
@@ -683,7 +683,7 @@ ForwardIterator remove_if(ForwardIterator first, ForwardIterator last, InputIter
  *  int V[N] = {-2, 0, -1, 0, 1, 2};
  *  int S[N] = { 1, 1,  0, 1, 0, 1};
  *  int result[2];
- *  thrust::remove_copy_if(thrust::host, V, V + N, S, result, thrust::identity<int>());
+ *  thrust::remove_copy_if(thrust::host, V, V + N, S, result, ::cuda::std::identity{});
  *  // V remains {-2, 0, -1, 0, 1, 2}
  *  // result is now {-1, 1}
  *  \endcode
@@ -745,7 +745,7 @@ _CCCL_HOST_DEVICE OutputIterator remove_copy_if(
  *  int V[N] = {-2, 0, -1, 0, 1, 2};
  *  int S[N] = { 1, 1,  0, 1, 0, 1};
  *  int result[2];
- *  thrust::remove_copy_if(V, V + N, S, result, thrust::identity<int>());
+ *  thrust::remove_copy_if(V, V + N, S, result, ::cuda::std::identity{});
  *  // V remains {-2, 0, -1, 0, 1, 2}
  *  // result is now {-1, 1}
  *  \endcode
