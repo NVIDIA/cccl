@@ -24,8 +24,13 @@
 
 struct op_wrapper;
 struct device_merge_sort_policy;
-using OffsetT = unsigned long long;
-static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "OffsetT must be size_t");
+using OffsetT = int64_t;
+static_assert(std::is_same_v<cub::detail::choose_signed_offset_t<OffsetT>, OffsetT>, "OffsetT must be int64");
+
+struct input_keys_iterator_state_t;
+struct input_items_iterator_state_t;
+struct output_keys_iterator_t;
+struct output_items_iterator_t;
 
 namespace merge_sort
 {
@@ -60,11 +65,6 @@ Tuning find_tuning(int cc, const Tuning (&tunings)[N])
 
   return tunings[N - 1];
 }
-
-struct input_keys_iterator_state_t;
-struct input_items_iterator_state_t;
-struct output_keys_iterator_t;
-struct output_items_iterator_t;
 
 enum class merge_sort_iterator_t
 {
@@ -292,16 +292,28 @@ extern "C" CCCL_C_API CUresult cccl_device_merge_sort_build(
     const auto input_items_it_value_t  = cccl_type_enum_to_string(input_items_it.value_type.type);
     const auto output_keys_it_value_t  = cccl_type_enum_to_string(output_keys_it.value_type.type);
     const auto output_items_it_value_t = cccl_type_enum_to_string(output_items_it.value_type.type);
-    const auto offset_t                = cccl_type_enum_to_string(cccl_type_enum::UINT64);
+    const auto offset_t                = cccl_type_enum_to_string(cccl_type_enum::INT64);
 
-    const std::string input_keys_iterator_src =
-      make_kernel_input_iterator(offset_t, input_keys_it_value_t, input_keys_it);
-    const std::string input_items_iterator_src =
-      make_kernel_output_iterator(offset_t, input_items_it_value_t, input_items_it);
-    const std::string output_keys_iterator_src =
-      make_kernel_input_iterator(offset_t, output_keys_it_value_t, output_keys_it);
-    const std::string output_items_iterator_src =
-      make_kernel_output_iterator(offset_t, output_items_it_value_t, output_items_it);
+    const std::string input_keys_iterator_src = make_kernel_input_iterator(
+      offset_t,
+      get_iterator_name(input_keys_it, merge_sort::merge_sort_iterator_t::input_keys),
+      input_keys_it_value_t,
+      input_keys_it);
+    const std::string input_items_iterator_src = make_kernel_input_iterator(
+      offset_t,
+      get_iterator_name(input_items_it, merge_sort::merge_sort_iterator_t::input_items),
+      input_items_it_value_t,
+      input_items_it);
+    const std::string output_keys_iterator_src = make_kernel_output_iterator(
+      offset_t,
+      get_iterator_name(output_keys_it, merge_sort::merge_sort_iterator_t::output_keys),
+      output_keys_it_value_t,
+      output_keys_it);
+    const std::string output_items_iterator_src = make_kernel_output_iterator(
+      offset_t,
+      get_iterator_name(output_items_it, merge_sort::merge_sort_iterator_t::output_items),
+      output_items_it_value_t,
+      output_items_it);
 
     const std::string op_src = make_kernel_user_binary_operator(input_keys_it_value_t, op, true);
 

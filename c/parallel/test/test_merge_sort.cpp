@@ -223,3 +223,41 @@ TEST_CASE("DeviceMergeSort:SortKeys works with custom types", "[merge_sort]")
       return lhs.a == rhs.a && lhs.b == rhs.b;
     }));
 }
+
+struct random_access_iterator_state_t
+{
+  int* d_input;
+  size_t index;
+};
+
+TEST_CASE("DeviceMergeSort:SortKeys works with input iterators", "[merge_sort]")
+{
+  using TestType      = int;
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
+
+  operation_t op = make_operation("op", get_merge_sort_op(get_type_info<TestType>().type));
+  iterator_t<TestType, random_access_iterator_state_t> input_keys_it =
+    make_iterator<TestType, random_access_iterator_state_t>(
+      "struct random_access_iterator_state_t { int* d_input; size_t index; };\n",
+      {"advance",
+       "extern \"C\" __device__ void advance(random_access_iterator_state_t* state, unsigned long long offset) {\n"
+       "  state->index += offset;\n"
+       "}"},
+      {"dereference",
+       "extern \"C\" __device__ int dereference(random_access_iterator_state_t* state) {\n"
+       "  return state->d_input[state->index];\n"
+       "}"});
+  std::vector<TestType> input_keys    = make_shuffled_key_ranks_vector<TestType>(num_items);
+  std::vector<TestType> expected_keys = input_keys;
+
+  pointer_t<TestType> input_keys_ptr(input_keys);
+  input_keys_it.state.d_input = input_keys_ptr.ptr;
+  input_keys_it.state.index   = 0;
+  pointer_t<TestType> input_items_it;
+  pointer_t<TestType> output_items_it;
+
+  merge_sort(input_keys_it, input_items_it, input_keys_ptr, output_items_it, num_items, op);
+
+  std::sort(expected_keys.begin(), expected_keys.end());
+  REQUIRE(expected_keys == std::vector<TestType>(input_keys_ptr));
+}
