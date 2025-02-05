@@ -39,10 +39,6 @@
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 
-// need to suppress deprecation warnings for ConstantInputIterator in the cudafe1.stub.c file, so there is no matching
-// _CCCL_SUPPRESS_DEPRECATED_POP at the end of this file
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, device_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Min, device_min);
