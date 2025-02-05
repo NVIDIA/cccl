@@ -1116,7 +1116,7 @@ using is_primitive = ::cuda::std::bool_constant<is_one_of<
 
 #  ifndef _CCCL_NO_VARIABLE_TEMPLATES
 template <typename T>
-inline constexpr bool is_primitive_v = is_primitive<T>::value;
+_CCCL_INLINE_VAR constexpr bool is_primitive_v = is_primitive<T>::value;
 #  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 } // namespace detail
 
