@@ -568,8 +568,8 @@ struct sm100_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, le
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
   using delay_constructor                            = detail::exponential_backoff_constructor_t<28, 520>;
 };
-
-// need to default it back explicitly because it regresses
+// Fall back to Policy900 for double, because that one performs better than the above tuning (same key_size)
+// TODO(bgruber): in C++20 put a requires(!std::is_same_v<KeyT, double>) onto the above tuning and delete this one
 template <class LengthT>
 struct sm100_tuning<LengthT, double, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_8>
     : sm90_tuning<LengthT, double, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_8>
