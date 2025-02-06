@@ -14,6 +14,7 @@ Work stealing
    } // namespace cuda::experimental
 
 **WARNING**: this is an experimental API.
+**WARNING**: this API requires C++20 or newer.
 
 This API is useful to implement work-stealing at thread-block level granularity.
 On devices with compute capability 10.0 or higher, it may leverage hardware acceleration for work-stealing.
