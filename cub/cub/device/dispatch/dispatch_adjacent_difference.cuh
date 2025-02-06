@@ -194,7 +194,7 @@ struct DispatchAdjacentDifference
 
       auto first_tile_previous = reinterpret_cast<InputT*>(allocations[0]);
 
-      _CCCL_IF_CONSTEXPR (AliasOpt == MayAlias::Yes)
+      if constexpr (AliasOpt == MayAlias::Yes)
       {
         using AgentDifferenceInitT =
           detail::adjacent_difference::AgentDifferenceInit<InputIteratorT, InputT, OffsetT, ReadOpt == ReadOption::Left>;
