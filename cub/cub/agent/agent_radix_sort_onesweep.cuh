@@ -72,19 +72,20 @@ enum RadixSortStoreAlgorithm
   RADIX_SORT_STORE_ALIGNED
 };
 
-template <int NOMINAL_BLOCK_THREADS_4B,
-          int NOMINAL_ITEMS_PER_THREAD_4B,
-          typename ComputeT,
-          /** \brief Number of private histograms to use in the ranker;
-              ignored if the ranking algorithm is not one of RADIX_RANK_MATCH_EARLY_COUNTS_* */
-          int _RANK_NUM_PARTS,
-          /** \brief Ranking algorithm used in the onesweep kernel. Only algorithms that
-            support warp-strided key arrangement and count callbacks are supported. */
-          RadixRankAlgorithm _RANK_ALGORITHM,
-          BlockScanAlgorithm _SCAN_ALGORITHM,
-          RadixSortStoreAlgorithm _STORE_ALGORITHM,
-          int _RADIX_BITS,
-          typename ScalingType = RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
+template <
+  int NOMINAL_BLOCK_THREADS_4B,
+  int NOMINAL_ITEMS_PER_THREAD_4B,
+  typename ComputeT,
+  /** \brief Number of private histograms to use in the ranker;
+      ignored if the ranking algorithm is not one of RADIX_RANK_MATCH_EARLY_COUNTS_* */
+  int _RANK_NUM_PARTS,
+  /** \brief Ranking algorithm used in the onesweep kernel. Only algorithms that
+    support warp-strided key arrangement and count callbacks are supported. */
+  RadixRankAlgorithm _RANK_ALGORITHM,
+  BlockScanAlgorithm _SCAN_ALGORITHM,
+  RadixSortStoreAlgorithm _STORE_ALGORITHM,
+  int _RADIX_BITS,
+  typename ScalingType = detail::RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
 struct AgentRadixSortOnesweepPolicy : ScalingType
 {
   enum
