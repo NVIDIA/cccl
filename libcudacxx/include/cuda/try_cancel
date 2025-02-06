@@ -60,7 +60,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_HIDE_FROM_ABI int __cluster_get_dim(__int128 
 /// - Exactly one thread block thread shall call this API with `__is_leader` equals `true`.  
 template <int __ThreadBlockDim = 3, typename __UnaryFunction = __detail::__empty_t>
     requires std::is_invocable_r_v<void, __UnaryFunction, dim3>
-_CCCL_DEVICE _CCCL_HIDE_FROM_ABI void __try_cancel_blocks(bool __is_leader, __UnaryFunction __uf) {
+_CCCL_DEVICE _CCCL_HIDE_FROM_ABI void __for_each_cancelled_block(bool __is_leader, __UnaryFunction __uf) {
   static_assert(__ThreadBlockRank >= 1 && __ThreadBlockRank <= 3,
 		"ThreadBlockRank out-of-range [1, 3].");
   dim3 __block_idx = dim3(blockIdx.x, 1, 1);
@@ -193,15 +193,15 @@ _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void __try_cancel_blocks(bool __is_leader, __Un
 /// - Exactly one thread block thread shall call this API with `__is_leader` equals `true`.  
 template <int __ThreadBlockRank = 3, typename __UnaryFunction = __detail::__empty_t>
     requires std::is_invocable_r_v<void, __UnaryFunction, dim3>
-_CCCL_DEVICE _CCCL_HIDE_FROM_ABI  void try_cancel_blocks(__UnaryFunction __uf) {
+_CCCL_DEVICE _CCCL_HIDE_FROM_ABI  void for_each_cancelled_block(__UnaryFunction __uf) {
   static_assert(__ThreadBlockRank >= 1 && __ThreadBlockRank <= 3,
-		"try_cancel_blocks<ThreadBlockRank>: ThreadBlockRank out-of-range [1, 3].");
+		"for_each_cancelled_block<ThreadBlockRank>: ThreadBlockRank out-of-range [1, 3].");
   if constexpr (__ThreadBlockRank == 1) {
-    __detail::__try_cancel_blocks<1>(threadIdx.x == 0, ::cuda::std::move(__uf));
+    __detail::__for_each_cancelled_block<1>(threadIdx.x == 0, ::cuda::std::move(__uf));
   } else if constexpr (__ThreadBlockRank == 2) {
-      __detail::__try_cancel_blocks<2>(threadIdx.x == 0 && threadIdx.y == 0, ::cuda::std::move(__uf));
+      __detail::__for_each_cancelled_block<2>(threadIdx.x == 0 && threadIdx.y == 0, ::cuda::std::move(__uf));
   } else if constexpr (__ThreadBlockRank == 3) {
-      __detail::__try_cancel_blocks<3>(threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0, ::cuda::std::move(__uf));
+      __detail::__for_each_cancelled_block<3>(threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0, ::cuda::std::move(__uf));
   }
 }
   
