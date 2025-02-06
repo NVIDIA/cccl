@@ -289,15 +289,4 @@ struct AgentSegmentedRadixSort
 } // namespace radix_sort
 } // namespace detail
 
-template <bool IS_DESCENDING,
-          typename SegmentedPolicyT,
-          typename KeyT,
-          typename ValueT,
-          typename OffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
-using AgentSegmentedRadixSort CCCL_DEPRECATED_BECAUSE(
-  "This class is considered an implementation detail and the public "
-  "interface will be removed.") =
-  detail::radix_sort::AgentSegmentedRadixSort<IS_DESCENDING, SegmentedPolicyT, KeyT, ValueT, OffsetT, DecomposerT>;
-
 CUB_NAMESPACE_END

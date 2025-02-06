@@ -597,16 +597,4 @@ struct AgentScan
 } // namespace scan
 } // namespace detail
 
-template <typename AgentScanPolicyT,
-          typename InputIteratorT,
-          typename OutputIteratorT,
-          typename ScanOpT,
-          typename InitValueT,
-          typename OffsetT,
-          typename AccumT,
-          bool ForceInclusive = false>
-using AgentScan CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public interface "
-                                        "will be removed.") = detail::scan::
-  AgentScan<AgentScanPolicyT, InputIteratorT, OutputIteratorT, ScanOpT, InitValueT, OffsetT, AccumT, ForceInclusive>;
-
 CUB_NAMESPACE_END

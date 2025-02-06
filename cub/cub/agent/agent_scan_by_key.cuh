@@ -472,26 +472,4 @@ struct AgentScanByKey
 } // namespace scan_by_key
 } // namespace detail
 
-template <typename AgentScanByKeyPolicyT,
-          typename KeysInputIteratorT,
-          typename ValuesInputIteratorT,
-          typename ValuesOutputIteratorT,
-          typename EqualityOp,
-          typename ScanOpT,
-          typename InitValueT,
-          typename OffsetT,
-          typename AccumT>
-using AgentScanByKey CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
-                                             "interface will be removed.") =
-  detail::scan_by_key::AgentScanByKey<
-    AgentScanByKeyPolicyT,
-    KeysInputIteratorT,
-    ValuesInputIteratorT,
-    ValuesOutputIteratorT,
-    EqualityOp,
-    ScanOpT,
-    InitValueT,
-    OffsetT,
-    AccumT>;
-
 CUB_NAMESPACE_END

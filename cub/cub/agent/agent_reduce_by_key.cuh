@@ -701,28 +701,4 @@ struct AgentReduceByKey
 } // namespace reduce
 } // namespace detail
 
-template <typename AgentReduceByKeyPolicyT,
-          typename KeysInputIteratorT,
-          typename UniqueOutputIteratorT,
-          typename ValuesInputIteratorT,
-          typename AggregatesOutputIteratorT,
-          typename NumRunsOutputIteratorT,
-          typename EqualityOpT,
-          typename ReductionOpT,
-          typename OffsetT,
-          typename AccumT>
-using AgentReduceByKey CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
-                                               "interface will be removed.") =
-  detail::reduce::AgentReduceByKey<
-    AgentReduceByKeyPolicyT,
-    KeysInputIteratorT,
-    UniqueOutputIteratorT,
-    ValuesInputIteratorT,
-    AggregatesOutputIteratorT,
-    NumRunsOutputIteratorT,
-    EqualityOpT,
-    ReductionOpT,
-    OffsetT,
-    AccumT>;
-
 CUB_NAMESPACE_END

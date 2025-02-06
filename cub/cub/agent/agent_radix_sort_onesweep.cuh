@@ -696,15 +696,4 @@ struct AgentRadixSortOnesweep
 } // namespace radix_sort
 } // namespace detail
 
-template <typename AgentRadixSortOnesweepPolicy,
-          bool IS_DESCENDING,
-          typename KeyT,
-          typename ValueT,
-          typename OffsetT,
-          typename PortionOffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
-using AgentRadixSortOnesweep CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
-                                                     "interface will be removed.") = detail::radix_sort::
-  AgentRadixSortOnesweep<AgentRadixSortOnesweepPolicy, IS_DESCENDING, KeyT, ValueT, OffsetT, PortionOffsetT, DecomposerT>;
-
 CUB_NAMESPACE_END
