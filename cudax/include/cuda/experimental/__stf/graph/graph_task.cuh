@@ -146,15 +146,17 @@ public:
           done_prereqs.add(mv(gnp));
         }
       }
-      else if (chained_task_nodes.size() > 0) {
+      else if (chained_task_nodes.size() > 0)
+      {
         const cudaGraphNode_t* deps = ready_dependencies.data();
 
         // First node depends on ready_dependencies
         ::std::vector<cudaGraphNode_t> out_array(ready_dependencies.size(), chained_task_nodes[0]);
-        cuda_safe_call(cudaGraphAddDependencies(ctx_graph, ready_dependencies.data(), out_array.data(), ready_dependencies.size()));
+        cuda_safe_call(
+          cudaGraphAddDependencies(ctx_graph, ready_dependencies.data(), out_array.data(), ready_dependencies.size()));
 
         // Overall the task depends on the completion of the last node
-        auto gnp = reserved::graph_event(chained_task_nodes[chained_task_nodes.size()-1], epoch);
+        auto gnp = reserved::graph_event(chained_task_nodes[chained_task_nodes.size() - 1], epoch);
         gnp->set_symbol(ctx, "done " + get_symbol());
         /* This node is now the output dependency of the task */
         done_prereqs.add(mv(gnp));

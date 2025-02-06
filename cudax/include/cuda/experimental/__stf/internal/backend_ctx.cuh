@@ -418,20 +418,18 @@ public:
         }
         else
         {
-          ::std::vector<cudaGraphNode_t> &chain = t.get_node_chain();
-
-          cudaGraphNode_t n      = nullptr;
-          cudaGraphNode_t prev_n = nullptr;
-
+          ::std::vector<cudaGraphNode_t>& chain = t.get_node_chain();
           chain.resize(res.size());
+
+          auto& g = t.get_ctx_graph();
 
           // Create a chain of kernels
           for (size_t i = 0; i < res.size(); i++)
           {
-            insert_one_kernel(res[i], chain[i], t.get_ctx_graph());
+            insert_one_kernel(res[i], chain[i], g);
             if (i > 0)
             {
-              cuda_safe_call(cudaGraphAddDependencies(t.get_ctx_graph(), &chain[i-1], &chain[i], 1));
+              cuda_safe_call(cudaGraphAddDependencies(g, &chain[i - 1], &chain[i], 1));
             }
           }
         }
