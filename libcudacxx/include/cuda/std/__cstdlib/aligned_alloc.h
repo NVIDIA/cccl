@@ -37,7 +37,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_HOST void* __aligned_alloc_host(size_t __nbytes, size_t __align) noexcept
 {
 #  if _CCCL_COMPILER(MSVC)
-  return ::_aligned_alloc(__nbytes, __align)
+  return ::_aligned_malloc(__nbytes, __align);
 #  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
   return ::aligned_alloc(__align, __nbytes);
 #  endif // !_CCCL_COMPILER(MSVC)
