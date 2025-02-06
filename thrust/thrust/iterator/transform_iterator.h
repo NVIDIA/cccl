@@ -203,7 +203,7 @@ public:
   using super_t =
     typename detail::make_transform_iterator_base<AdaptableUnaryFunction, Iterator, Reference, Value>::type;
 
-  friend class thrust::iterator_core_access;
+  friend class iterator_core_access;
   /*! \endcond
    */
 

@@ -27,9 +27,8 @@
 #endif // no system header
 #include <thrust/detail/type_traits.h>
 
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
-
-#include <limits>
 
 // #include <stdint.h> // for intmax_t (not provided on MSVS 2005)
 
@@ -42,16 +41,16 @@ namespace detail
 using intmax_t = long long;
 
 template <typename Number>
-struct is_signed : integral_constant<bool, std::numeric_limits<Number>::is_signed>
+struct is_signed : integral_constant<bool, ::cuda::std::numeric_limits<Number>::is_signed>
 {}; // end is_signed
 
 template <typename T>
 struct num_digits
-    : eval_if<
-        std::numeric_limits<T>::is_specialized,
-        integral_constant<int, std::numeric_limits<T>::digits>,
-        integral_constant<int,
-                          sizeof(T) * std::numeric_limits<unsigned char>::digits - (is_signed<T>::value ? 1 : 0)>>::type
+    : eval_if<::cuda::std::numeric_limits<T>::is_specialized,
+              integral_constant<int, ::cuda::std::numeric_limits<T>::digits>,
+              integral_constant<int,
+                                sizeof(T) * ::cuda::std::numeric_limits<unsigned char>::digits
+                                  - (is_signed<T>::value ? 1 : 0)>>::type
 {}; // end num_digits
 
 template <typename Integer>
@@ -86,16 +85,16 @@ private:
   };
 
 public:
-  using type =
-    typename eval_if<and_<std::numeric_limits<Integer>::is_signed,
-                          (!std::numeric_limits<Integer>::is_bounded
-                           || (int(std::numeric_limits<Integer>::digits) + 1 >= num_digits<intmax_t>::value))>::value,
-                     identity_<Integer>,
-                     eval_if<int(std::numeric_limits<Integer>::digits) + 1 < num_digits<int>::value,
-                             identity_<int>,
-                             eval_if<int(std::numeric_limits<Integer>::digits) + 1 < num_digits<long>::value,
-                                     identity_<long>,
-                                     identity_<intmax_t>>>>::type;
+  using type = typename eval_if<
+    and_<::cuda::std::numeric_limits<Integer>::is_signed,
+         (!::cuda::std::numeric_limits<Integer>::is_bounded
+          || (int(::cuda::std::numeric_limits<Integer>::digits) + 1 >= num_digits<intmax_t>::value))>::value,
+    identity_<Integer>,
+    eval_if<int(::cuda::std::numeric_limits<Integer>::digits) + 1 < num_digits<int>::value,
+            identity_<int>,
+            eval_if<int(::cuda::std::numeric_limits<Integer>::digits) + 1 < num_digits<long>::value,
+                    identity_<long>,
+                    identity_<intmax_t>>>>::type;
 }; // end integer_difference
 
 template <typename Number>
