@@ -79,10 +79,8 @@ struct iterator_system;
 
 THRUST_NAMESPACE_END
 
-#if !_CCCL_COMPILER(NVRTC)
-#  include <thrust/iterator/detail/any_system_tag.h>
-#  include <thrust/iterator/detail/device_system_tag.h>
-#  include <thrust/iterator/detail/host_system_tag.h>
-#  include <thrust/iterator/detail/iterator_traits.inl>
-#  include <thrust/iterator/detail/iterator_traversal_tags.h>
-#endif
+#include <thrust/iterator/detail/any_system_tag.h>
+#include <thrust/iterator/detail/device_system_tag.h>
+#include <thrust/iterator/detail/host_system_tag.h>
+#include <thrust/iterator/detail/iterator_traits.inl>
+#include <thrust/iterator/detail/iterator_traversal_tags.h>
