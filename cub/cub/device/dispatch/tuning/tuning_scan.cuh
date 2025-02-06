@@ -60,11 +60,6 @@ enum class keep_rejects
   no,
   yes
 };
-enum class primitive_value
-{
-  no,
-  yes
-};
 enum class primitive_accum
 {
   no,
@@ -105,12 +100,6 @@ enum class accum_size
   _16,
   unknown
 };
-
-template <class ValueT>
-constexpr primitive_value is_primitive_value()
-{
-  return is_primitive<ValueT>::value ? primitive_value::yes : primitive_value::no;
-}
 
 template <class AccumT>
 constexpr primitive_accum is_primitive_accum()
@@ -317,7 +306,6 @@ template <class ValueT,
           class AccumT,
           class OffsetT,
           op_type OpTypeT,
-          primitive_value PrimitiveValue       = is_primitive_value<ValueT>(),
           primitive_accum PrimitiveAccumulator = is_primitive_accum<AccumT>(),
           offset_size OffsetSize               = classify_offset_size<OffsetT>(),
           value_size ValueSize                 = classify_value_size<ValueT>()>
@@ -325,14 +313,7 @@ struct sm100_tuning;
 
 // sum
 template <class ValueT, class AccumT, class OffsetT>
-struct sm100_tuning<ValueT,
-                    AccumT,
-                    OffsetT,
-                    op_type::plus,
-                    primitive_value::yes,
-                    primitive_accum::yes,
-                    offset_size::_4,
-                    value_size::_1>
+struct sm100_tuning<ValueT, AccumT, OffsetT, op_type::plus, primitive_accum::yes, offset_size::_4, value_size::_1>
 {
   // ipt_18.tpb_512.ns_768.dcid_7.l2w_820.trp_1.ld_0 1.188818  1.005682  1.173041  1.305288
   static constexpr int items                           = 18;
@@ -344,14 +325,7 @@ struct sm100_tuning<ValueT,
 };
 
 template <class ValueT, class AccumT, class OffsetT>
-struct sm100_tuning<ValueT,
-                    AccumT,
-                    OffsetT,
-                    op_type::plus,
-                    primitive_value::yes,
-                    primitive_accum::yes,
-                    offset_size::_8,
-                    value_size::_1>
+struct sm100_tuning<ValueT, AccumT, OffsetT, op_type::plus, primitive_accum::yes, offset_size::_8, value_size::_1>
 {
   // ipt_14.tpb_384.ns_228.dcid_7.l2w_775.trp_1.ld_1 1.107210  1.000000  1.100637  1.307692
   static constexpr int items                           = 14;
@@ -363,14 +337,7 @@ struct sm100_tuning<ValueT,
 };
 
 template <class ValueT, class AccumT, class OffsetT>
-struct sm100_tuning<ValueT,
-                    AccumT,
-                    OffsetT,
-                    op_type::plus,
-                    primitive_value::yes,
-                    primitive_accum::yes,
-                    offset_size::_4,
-                    value_size::_2>
+struct sm100_tuning<ValueT, AccumT, OffsetT, op_type::plus, primitive_accum::yes, offset_size::_4, value_size::_2>
 {
   // ipt_13.tpb_512.ns_1384.dcid_7.l2w_720.trp_1.ld_0 1.128443  1.002841  1.119688  1.307692
   static constexpr int items                           = 13;
@@ -402,14 +369,7 @@ struct sm100_tuning<ValueT,
 // };
 
 template <class ValueT, class AccumT, class OffsetT>
-struct sm100_tuning<ValueT,
-                    AccumT,
-                    OffsetT,
-                    op_type::plus,
-                    primitive_value::yes,
-                    primitive_accum::yes,
-                    offset_size::_4,
-                    value_size::_4>
+struct sm100_tuning<ValueT, AccumT, OffsetT, op_type::plus, primitive_accum::yes, offset_size::_4, value_size::_4>
 {
   // ipt_22.tpb_384.ns_1904.dcid_6.l2w_830.trp_1.ld_0 1.148442  0.997167  1.139902  1.462651
   static constexpr int items                           = 22;
@@ -421,14 +381,7 @@ struct sm100_tuning<ValueT,
 };
 
 template <class ValueT, class AccumT, class OffsetT>
-struct sm100_tuning<ValueT,
-                    AccumT,
-                    OffsetT,
-                    op_type::plus,
-                    primitive_value::yes,
-                    primitive_accum::yes,
-                    offset_size::_8,
-                    value_size::_4>
+struct sm100_tuning<ValueT, AccumT, OffsetT, op_type::plus, primitive_accum::yes, offset_size::_8, value_size::_4>
 {
   // ipt_19.tpb_416.ns_956.dcid_7.l2w_550.trp_1.ld_1 1.146142  0.994350  1.137459  1.455636
   static constexpr int items                           = 19;
@@ -440,14 +393,7 @@ struct sm100_tuning<ValueT,
 };
 
 template <class ValueT, class AccumT, class OffsetT>
-struct sm100_tuning<ValueT,
-                    AccumT,
-                    OffsetT,
-                    op_type::plus,
-                    primitive_value::yes,
-                    primitive_accum::yes,
-                    offset_size::_4,
-                    value_size::_8>
+struct sm100_tuning<ValueT, AccumT, OffsetT, op_type::plus, primitive_accum::yes, offset_size::_4, value_size::_8>
 {
   // ipt_23.tpb_416.ns_772.dcid_5.l2w_710.trp_1.ld_0 1.089468  1.015581  1.085630  1.264583
   static constexpr int items                           = 23;
@@ -459,14 +405,7 @@ struct sm100_tuning<ValueT,
 };
 
 template <class ValueT, class AccumT, class OffsetT>
-struct sm100_tuning<ValueT,
-                    AccumT,
-                    OffsetT,
-                    op_type::plus,
-                    primitive_value::yes,
-                    primitive_accum::yes,
-                    offset_size::_8,
-                    value_size::_8>
+struct sm100_tuning<ValueT, AccumT, OffsetT, op_type::plus, primitive_accum::yes, offset_size::_8, value_size::_8>
 {
   // ipt_22.tpb_320.ns_328.dcid_2.l2w_965.trp_1.ld_0 1.080133  1.000000  1.075577  1.248963
   static constexpr int items                           = 22;
@@ -482,14 +421,8 @@ struct sm100_tuning<ValueT,
 // accum_size::_4>;
 // Default explicitly so it doesn't pick up the sm100<I64, I64> tuning.
 template <class AccumT, class OffsetT>
-struct sm100_tuning<double,
-                    AccumT,
-                    OffsetT,
-                    op_type::plus,
-                    primitive_value::yes,
-                    primitive_accum::yes,
-                    offset_size::_8,
-                    value_size::_8> : sm90_tuning<double, primitive_op::yes, primitive_accum::yes, accum_size::_8>
+struct sm100_tuning<double, AccumT, OffsetT, op_type::plus, primitive_accum::yes, offset_size::_8, value_size::_8>
+    : sm90_tuning<double, primitive_op::yes, primitive_accum::yes, accum_size::_8>
 {};
 
 #if CUB_IS_INT128_ENABLED
@@ -502,14 +435,7 @@ struct sm100_tuning<double,
 
 // min/max (only ran benchmarks for max)
 template <class ValueT, class AccumT, class OffsetT>
-struct sm100_tuning<ValueT,
-                    AccumT,
-                    OffsetT,
-                    op_type::min_or_max,
-                    primitive_value::yes,
-                    primitive_accum::yes,
-                    offset_size::_4,
-                    value_size::_1>
+struct sm100_tuning<ValueT, AccumT, OffsetT, op_type::min_or_max, primitive_accum::yes, offset_size::_4, value_size::_1>
 {
   // ipt_22.tpb_128.ns_1900.dcid_5.l2w_750.trp_1.ld_1 1.288379  1.078212  1.274188  1.615385
   static constexpr int items                           = 22;
@@ -521,14 +447,7 @@ struct sm100_tuning<ValueT,
 };
 
 template <class ValueT, class AccumT, class OffsetT>
-struct sm100_tuning<ValueT,
-                    AccumT,
-                    OffsetT,
-                    op_type::min_or_max,
-                    primitive_value::yes,
-                    primitive_accum::yes,
-                    offset_size::_8,
-                    value_size::_1>
+struct sm100_tuning<ValueT, AccumT, OffsetT, op_type::min_or_max, primitive_accum::yes, offset_size::_8, value_size::_1>
 {
   // ipt_24.tpb_128.ns_344.dcid_2.l2w_710.trp_1.ld_0 1.222111  0.983240  1.205706  1.587886
   static constexpr int items                           = 24;
@@ -540,14 +459,7 @@ struct sm100_tuning<ValueT,
 };
 
 template <class ValueT, class AccumT, class OffsetT>
-struct sm100_tuning<ValueT,
-                    AccumT,
-                    OffsetT,
-                    op_type::min_or_max,
-                    primitive_value::yes,
-                    primitive_accum::yes,
-                    offset_size::_4,
-                    value_size::_2>
+struct sm100_tuning<ValueT, AccumT, OffsetT, op_type::min_or_max, primitive_accum::yes, offset_size::_4, value_size::_2>
 {
   // ipt_14.tpb_384.ns_1708.dcid_7.l2w_930.trp_1.ld_1 1.242487  1.002841  1.226297  1.615385
   static constexpr int items                           = 14;
@@ -559,14 +471,7 @@ struct sm100_tuning<ValueT,
 };
 
 template <class ValueT, class AccumT, class OffsetT>
-struct sm100_tuning<ValueT,
-                    AccumT,
-                    OffsetT,
-                    op_type::min_or_max,
-                    primitive_value::yes,
-                    primitive_accum::yes,
-                    offset_size::_8,
-                    value_size::_2>
+struct sm100_tuning<ValueT, AccumT, OffsetT, op_type::min_or_max, primitive_accum::yes, offset_size::_8, value_size::_2>
 {
   // ipt_14.tpb_352.ns_1524.dcid_7.l2w_955.trp_1.ld_1 1.234616  1.000000  1.218721  1.596154
   static constexpr int items                           = 14;
@@ -578,14 +483,7 @@ struct sm100_tuning<ValueT,
 };
 
 template <class ValueT, class AccumT, class OffsetT>
-struct sm100_tuning<ValueT,
-                    AccumT,
-                    OffsetT,
-                    op_type::min_or_max,
-                    primitive_value::yes,
-                    primitive_accum::yes,
-                    offset_size::_4,
-                    value_size::_4>
+struct sm100_tuning<ValueT, AccumT, OffsetT, op_type::min_or_max, primitive_accum::yes, offset_size::_4, value_size::_4>
 {
   // ipt_23.tpb_256.ns_1240.dcid_7.l2w_560.trp_1.ld_2 1.192410  1.000000  1.175338  1.289286
   static constexpr int items                           = 23;
@@ -597,14 +495,7 @@ struct sm100_tuning<ValueT,
 };
 
 template <class ValueT, class AccumT, class OffsetT>
-struct sm100_tuning<ValueT,
-                    AccumT,
-                    OffsetT,
-                    op_type::min_or_max,
-                    primitive_value::yes,
-                    primitive_accum::yes,
-                    offset_size::_8,
-                    value_size::_4>
+struct sm100_tuning<ValueT, AccumT, OffsetT, op_type::min_or_max, primitive_accum::yes, offset_size::_8, value_size::_4>
 {
   // ipt_22.tpb_192.ns_976.dcid_7.l2w_1180.trp_1.ld_0 1.172486  1.000000  1.158032  1.305288
   static constexpr int items                           = 22;
@@ -616,14 +507,7 @@ struct sm100_tuning<ValueT,
 };
 
 template <class ValueT, class AccumT, class OffsetT>
-struct sm100_tuning<ValueT,
-                    AccumT,
-                    OffsetT,
-                    op_type::min_or_max,
-                    primitive_value::yes,
-                    primitive_accum::yes,
-                    offset_size::_4,
-                    value_size::_8>
+struct sm100_tuning<ValueT, AccumT, OffsetT, op_type::min_or_max, primitive_accum::yes, offset_size::_4, value_size::_8>
 {
   // ipt_22.tpb_256.ns_380.dcid_2.l2w_920.trp_1.ld_0 1.218252  1.171831  1.214092  1.246711
   static constexpr int items                           = 22;
@@ -635,14 +519,7 @@ struct sm100_tuning<ValueT,
 };
 
 template <class ValueT, class AccumT, class OffsetT>
-struct sm100_tuning<ValueT,
-                    AccumT,
-                    OffsetT,
-                    op_type::min_or_max,
-                    primitive_value::yes,
-                    primitive_accum::yes,
-                    offset_size::_8,
-                    value_size::_8>
+struct sm100_tuning<ValueT, AccumT, OffsetT, op_type::min_or_max, primitive_accum::yes, offset_size::_8, value_size::_8>
 {
   // ipt_20.tpb_256.ns_220.dcid_1.l2w_740.trp_1.ld_1 1.191382  1.010806  1.186827  1.299600
   static constexpr int items                           = 20;
@@ -700,7 +577,7 @@ CUB_RUNTIME_FUNCTION ScanPolicyWrapper<PolicyT> MakeScanPolicyWrapper(PolicyT po
   return ScanPolicyWrapper<PolicyT>{policy};
 }
 
-template <typename ValueT, typename AccumT, typename OffsetT, typename ScanOpT>
+template <typename InputValueT, typename OutputValueT, typename AccumT, typename OffsetT, typename ScanOpT>
 struct policy_hub
 {
   // For large values, use timesliced loads/stores to fit shared memory.
@@ -766,8 +643,17 @@ struct policy_hub
 
   struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy900>
   {
-    // Use values from tuning if a specialization exists, otherwise pick Policy900
-    template <typename Tuning>
+    // Use values from tuning if a specialization exists that matches a benchmark, otherwise pick Policy900
+    template <typename Tuning,
+              typename IVT,
+              // In the tuning benchmarks the Initial-, Input- and OutputType are the same. Let's check that the
+              // accumulator type's size matches what we used during the benchmark since that has an impact (The
+              // tunings also check later that it's a primitive type, so arithmetic impact is also comparable to the
+              // benchmark). Input- and OutputType only impact loading and storing data (all arithmetic is done in the
+              // accumulator type), so let's check that they are the same size and dispatch the size in the tunings.
+              ::cuda::std::enable_if_t<sizeof(AccumT) == sizeof(::cuda::std::__accumulator_t<ScanOpT, IVT, IVT>)
+                                         && sizeof(IVT) == sizeof(OutputValueT),
+                                       int> = 0>
     static auto select_agent_policy100(int)
       -> AgentScanPolicy<Tuning::threads,
                          Tuning::items,
@@ -778,26 +664,12 @@ struct policy_hub
                          BLOCK_SCAN_WARP_SCANS,
                          MemBoundScaling<Tuning::threads, Tuning::items, AccumT>,
                          typename Tuning::delay_constructor>;
-    template <typename Tuning>
+    template <typename Tuning, typename IVT>
     static auto select_agent_policy100(long) -> typename Policy900::ScanPolicyT;
 
-    // Only consider sm100 tunings if the accumulator size matches the one we use in the benchmarks
-    template <typename VT, ::cuda::std::enable_if_t<::cuda::std::is_invocable<ScanOpT, VT, VT>::value, int> = 0>
-    static constexpr auto accum_size_matches(int) -> bool
-    {
-      return classify_accum_size<VT>() == classify_accum_size<::cuda::std::__accumulator_t<ScanOpT, VT, VT>>();
-    };
-
-    template <typename VT>
-    static constexpr auto accum_size_matches(long) -> bool
-    {
-      return false;
-    }
-
-    using ScanPolicyT = ::cuda::std::conditional_t<
-      accum_size_matches<ValueT>(0),
-      decltype(select_agent_policy100<sm100_tuning<ValueT, AccumT, OffsetT, classify_op<ScanOpT>()>>(0)),
-      typename Policy900::ScanPolicyT>;
+    using ScanPolicyT =
+      decltype(select_agent_policy100<sm100_tuning<InputValueT, AccumT, OffsetT, classify_op<ScanOpT>()>, InputValueT>(
+        0));
   };
 
   using MaxPolicy = Policy1000;
@@ -807,6 +679,6 @@ struct policy_hub
 
 template <typename AccumT, typename ScanOpT = ::cuda::std::plus<>>
 using DeviceScanPolicy CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and it will be "
-                                               "removed.") = detail::scan::policy_hub<int, AccumT, int, ScanOpT>;
+                                               "removed.") = detail::scan::policy_hub<int, int, AccumT, int, ScanOpT>;
 
 CUB_NAMESPACE_END
