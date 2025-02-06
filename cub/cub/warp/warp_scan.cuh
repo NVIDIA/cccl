@@ -173,8 +173,13 @@ private:
     IS_POW_OF_TWO = ((LOGICAL_WARP_THREADS & (LOGICAL_WARP_THREADS - 1)) == 0),
 
     /// Whether the data type is an integer (which has fully-associative addition)
-    IS_INTEGER = ((Traits<T>::CATEGORY == SIGNED_INTEGER) || (Traits<T>::CATEGORY == UNSIGNED_INTEGER))
+    IS_INTEGER = cuda::std::is_integral<T>::value
   };
+  // TODO(bgruber): sanity check, remove eventually
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
+  static_assert(IS_INTEGER == ((Traits<T>::CATEGORY == SIGNED_INTEGER) || (Traits<T>::CATEGORY == UNSIGNED_INTEGER)),
+                "");
+  _CCCL_SUPPRESS_DEPRECATED_POP
 
   /// Internal specialization.
   /// Use SHFL-based scan if LOGICAL_WARP_THREADS is a power-of-two
@@ -532,7 +537,8 @@ public:
     T exclusive_output;
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
-    internal.Update(input, inclusive_output, exclusive_output, scan_op, initial_value, Int2Type<IS_INTEGER>());
+    internal.Update(
+      input, inclusive_output, exclusive_output, scan_op, initial_value, detail::bool_constant_v<IS_INTEGER>);
   }
 
   //! @rst
@@ -655,7 +661,13 @@ public:
     // Update the inclusive_output and warp_aggregate using the Update function
     T exclusive_output;
     internal.Update(
-      input, inclusive_output, exclusive_output, warp_aggregate, scan_op, initial_value, Int2Type<IS_INTEGER>());
+      input,
+      inclusive_output,
+      exclusive_output,
+      warp_aggregate,
+      scan_op,
+      initial_value,
+      detail::bool_constant_v<IS_INTEGER>);
   }
 
   //! @}  end member group
@@ -721,7 +733,7 @@ public:
     T inclusive_output;
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
-    internal.Update(input, inclusive_output, exclusive_output, scan_op, Int2Type<IS_INTEGER>());
+    internal.Update(input, inclusive_output, exclusive_output, scan_op, detail::bool_constant_v<IS_INTEGER>);
   }
 
   //! @rst
@@ -787,7 +799,8 @@ public:
     T inclusive_output;
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
-    internal.Update(input, inclusive_output, exclusive_output, scan_op, initial_value, Int2Type<IS_INTEGER>());
+    internal.Update(
+      input, inclusive_output, exclusive_output, scan_op, initial_value, detail::bool_constant_v<IS_INTEGER>);
   }
 
   //! @rst
@@ -858,7 +871,8 @@ public:
     T inclusive_output;
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
-    internal.Update(input, inclusive_output, exclusive_output, warp_aggregate, scan_op, Int2Type<IS_INTEGER>());
+    internal.Update(
+      input, inclusive_output, exclusive_output, warp_aggregate, scan_op, detail::bool_constant_v<IS_INTEGER>);
   }
 
   //! @rst
@@ -934,7 +948,13 @@ public:
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
     internal.Update(
-      input, inclusive_output, exclusive_output, warp_aggregate, scan_op, initial_value, Int2Type<IS_INTEGER>());
+      input,
+      inclusive_output,
+      exclusive_output,
+      warp_aggregate,
+      scan_op,
+      initial_value,
+      detail::bool_constant_v<IS_INTEGER>);
   }
 
   //! @}  end member group
@@ -1007,7 +1027,7 @@ public:
 
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
-    internal.Update(input, inclusive_output, exclusive_output, scan_op, Int2Type<IS_INTEGER>());
+    internal.Update(input, inclusive_output, exclusive_output, scan_op, detail::bool_constant_v<IS_INTEGER>);
   }
 
   //! @rst
@@ -1080,7 +1100,8 @@ public:
 
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
-    internal.Update(input, inclusive_output, exclusive_output, scan_op, initial_value, Int2Type<IS_INTEGER>());
+    internal.Update(
+      input, inclusive_output, exclusive_output, scan_op, initial_value, detail::bool_constant_v<IS_INTEGER>);
   }
 
   //! @}  end member group

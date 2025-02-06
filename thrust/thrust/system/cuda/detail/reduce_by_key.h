@@ -761,7 +761,7 @@ THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
   CUDA_CUB_RET_IF_FAIL(status);
 
   void* allocations[2] = {nullptr, nullptr};
-  status               = cub::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+  status = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
   CUDA_CUB_RET_IF_FAIL(status);
 
   if (d_temp_storage == nullptr)

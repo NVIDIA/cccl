@@ -49,12 +49,17 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::transform
 {
+
+enum class requires_stable_address
+{
+  no,
+  yes
+};
+
 template <typename T>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE const char* round_down_ptr(const T* ptr, unsigned alignment)
 {
-#if _CCCL_STD_VER > 2011
   _CCCL_ASSERT(::cuda::std::has_single_bit(alignment), "");
-#endif // _CCCL_STD_VER > 2011
   return reinterpret_cast<const char*>(
     reinterpret_cast<::cuda::std::uintptr_t>(ptr) & ~::cuda::std::uintptr_t{alignment - 1});
 }
@@ -608,21 +613,21 @@ struct prefetch_config
   int sm_count;
 };
 
-template <bool RequiresStableAddress,
+template <requires_stable_address StableAddress,
           typename Offset,
           typename RandomAccessIteratorTupleIn,
           typename RandomAccessIteratorOut,
           typename TransformOp,
-          typename PolicyHub = policy_hub<RequiresStableAddress, RandomAccessIteratorTupleIn>>
+          typename PolicyHub = policy_hub<StableAddress == requires_stable_address::yes, RandomAccessIteratorTupleIn>>
 struct dispatch_t;
 
-template <bool RequiresStableAddress,
+template <requires_stable_address StableAddress,
           typename Offset,
           typename... RandomAccessIteratorsIn,
           typename RandomAccessIteratorOut,
           typename TransformOp,
           typename PolicyHub>
-struct dispatch_t<RequiresStableAddress,
+struct dispatch_t<StableAddress,
                   Offset,
                   ::cuda::std::tuple<RandomAccessIteratorsIn...>,
                   RandomAccessIteratorOut,
@@ -654,7 +659,7 @@ struct dispatch_t<RequiresStableAddress,
   template <typename ActivePolicy>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_ublkcp_kernel() -> PoorExpected<
     ::cuda::std::
-      tuple<THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron, decltype(CUB_DETAIL_TRANSFORM_KERNEL_PTR), int>>
+      tuple<THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron, decltype(CUB_DETAIL_TRANSFORM_KERNEL_PTR), int>>
   {
     using policy_t          = typename ActivePolicy::algo_policy;
     constexpr int block_dim = policy_t::block_threads;
@@ -726,7 +731,7 @@ struct dispatch_t<RequiresStableAddress,
 
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{config->tile_size}));
     return ::cuda::std::make_tuple(
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(grid_dim, block_dim, config->smem_size, stream),
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid_dim, block_dim, config->smem_size, stream),
       CUB_DETAIL_TRANSFORM_KERNEL_PTR,
       config->elem_per_thread);
   }
@@ -807,7 +812,7 @@ struct dispatch_t<RequiresStableAddress,
     const int tile_size = block_dim * items_per_thread_clamped;
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{tile_size}));
     return CubDebug(
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(grid_dim, block_dim, 0, stream)
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid_dim, block_dim, 0, stream)
         .doit(
           CUB_DETAIL_TRANSFORM_KERNEL_PTR,
           num_items,

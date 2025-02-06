@@ -89,9 +89,7 @@ struct async_copy_policy_t
 template <typename Integral>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto round_up_to_po2_multiple(Integral x, Integral mult) -> Integral
 {
-#if _CCCL_STD_VER > 2011
   _CCCL_ASSERT(::cuda::std::has_single_bit(static_cast<::cuda::std::make_unsigned_t<Integral>>(mult)), "");
-#endif // _CCCL_STD_VER > 2011
   return (x + mult - 1) & ~(mult - 1);
 }
 
@@ -107,19 +105,11 @@ _CCCL_HOST_DEVICE constexpr int sum(int head, Ts... tail)
   return head + sum(tail...);
 }
 
-#if _CCCL_STD_VER >= 2017
 template <typename... Its>
 _CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
 {
   return (int{sizeof(value_t<Its>)} + ... + 0);
 }
-#else // ^^^ C++17 ^^^ / vvv C++11 vvv
-template <typename... Its>
-_CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
-{
-  return sum(int{sizeof(value_t<Its>)}...);
-}
-#endif // _CCCL_STD_VER >= 2017
 
 constexpr int bulk_copy_alignment     = 128;
 constexpr int bulk_copy_size_multiple = 16;
@@ -179,11 +169,7 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
         async_policy::block_threads * async_policy::min_items_per_thread)
       > int{max_smem_per_block};
     static constexpr bool any_type_is_overalinged =
-#  if _CCCL_STD_VER >= 2017
       ((alignof(value_t<RandomAccessIteratorsIn>) > bulk_copy_alignment) || ...);
-#  else
-      sum((alignof(value_t<RandomAccessIteratorsIn>) > bulk_copy_alignment)...) > 0;
-#  endif
 
     static constexpr bool use_fallback =
       RequiresStableAddress || !can_memcpy || no_input_streams || exhaust_smem || any_type_is_overalinged;

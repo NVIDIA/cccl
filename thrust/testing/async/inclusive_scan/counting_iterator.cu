@@ -4,13 +4,11 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 #include <thrust/detail/config.h>
 
-#if _CCCL_STD_VER >= 2014
+#include <algorithm>
+#include <limits>
 
-#  include <algorithm>
-#  include <limits>
-
-#  include <async/inclusive_scan/mixin.h>
-#  include <async/test_policy_overloads.h>
+#include <async/inclusive_scan/mixin.h>
+#include <async/test_policy_overloads.h>
 
 template <typename input_value_type,
           typename output_value_type   = input_value_type,
@@ -41,7 +39,5 @@ struct test_counting_iterator
 // Use built-in types only, counting_iterator doesn't seem to be compatible with
 // the custom_numeric.
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(test_counting_iterator, UnsignedIntegralTypes);
-
-#endif // C++14
 
 _CCCL_SUPPRESS_DEPRECATED_POP

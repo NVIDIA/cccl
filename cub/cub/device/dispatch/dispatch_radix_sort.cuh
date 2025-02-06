@@ -50,6 +50,7 @@
 #include <cub/agent/agent_radix_sort_upsweep.cuh>
 #include <cub/agent/agent_scan.cuh>
 #include <cub/block/block_radix_sort.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/util_debug.cuh>
@@ -90,8 +91,8 @@ namespace detail::radix_sort
  * @tparam ALT_DIGIT_BITS
  *   Whether or not to use the alternate (lower-bits) policy
  *
- * @tparam IS_DESCENDING
- *   Whether or not the sorted-order is high-to-low
+ * @tparam SortOrder
+ *   Whether to sort in ascending or descending order
  *
  * @tparam KeyT
  *   Key type
@@ -120,7 +121,7 @@ namespace detail::radix_sort
  */
 template <typename ChainedPolicyT,
           bool ALT_DIGIT_BITS,
-          bool IS_DESCENDING,
+          SortOrder Order,
           typename KeyT,
           typename OffsetT,
           typename DecomposerT = detail::identity_decomposer_t>
@@ -168,7 +169,7 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltUp
   __syncthreads();
 
   // Write out digit counts (striped)
-  upsweep.template ExtractCounts<IS_DESCENDING>(d_spine, gridDim.x, blockIdx.x);
+  upsweep.template ExtractCounts<Order == SortOrder::Descending>(d_spine, gridDim.x, blockIdx.x);
 }
 
 /**
@@ -234,8 +235,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicy::BLOCK_THREADS), 
  * @tparam ALT_DIGIT_BITS
  *   Whether or not to use the alternate (lower-bits) policy
  *
- * @tparam IS_DESCENDING
- *   Whether or not the sorted-order is high-to-low
+ * @tparam SortOrder
+ *   Whether to sort in ascending or descending order
  *
  * @tparam KeyT
  *   Key type
@@ -276,7 +277,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicy::BLOCK_THREADS), 
  */
 template <typename ChainedPolicyT,
           bool ALT_DIGIT_BITS,
-          bool IS_DESCENDING,
+          SortOrder Order,
           typename KeyT,
           typename ValueT,
           typename OffsetT,
@@ -313,7 +314,7 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltDo
 
   // Parameterize AgentRadixSortDownsweep type for the current configuration
   using AgentRadixSortDownsweepT = detail::radix_sort::
-    AgentRadixSortDownsweep<ActiveDownsweepPolicyT, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>;
+    AgentRadixSortDownsweep<ActiveDownsweepPolicyT, Order == SortOrder::Descending, KeyT, ValueT, OffsetT, DecomposerT>;
 
   // Shared memory storage
   __shared__ typename AgentRadixSortDownsweepT::TempStorage temp_storage;
@@ -334,8 +335,8 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltDo
  * @tparam ChainedPolicyT
  *   Chained tuning policy
  *
- * @tparam IS_DESCENDING
- *   Whether or not the sorted-order is high-to-low
+ * @tparam SortOrder
+ *   Whether or not to use the alternate (lower-bits) policy
  *
  * @tparam KeyT
  *   Key type
@@ -368,7 +369,7 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltDo
  *   The past-the-end (most-significant) bit index needed for key comparison
  */
 template <typename ChainedPolicyT,
-          bool IS_DESCENDING,
+          SortOrder Order,
           typename KeyT,
           typename ValueT,
           typename OffsetT,
@@ -429,7 +430,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THRE
 
   // Get default (min/max) value for out-of-bounds keys
   bit_ordered_type default_key_bits =
-    IS_DESCENDING ? traits::min_raw_binary_key(decomposer) : traits::max_raw_binary_key(decomposer);
+    Order == SortOrder::Descending ? traits::min_raw_binary_key(decomposer) : traits::max_raw_binary_key(decomposer);
 
   KeyT default_key = reinterpret_cast<KeyT&>(default_key_bits);
 
@@ -453,7 +454,13 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THRE
   // Sort tile
   BlockRadixSortT(temp_storage.sort)
     .SortBlockedToStriped(
-      keys, values, current_bit, end_bit, Int2Type<IS_DESCENDING>(), Int2Type<KEYS_ONLY>(), decomposer);
+      keys,
+      values,
+      current_bit,
+      end_bit,
+      bool_constant_v < Order == SortOrder::Descending >,
+      bool_constant_v<KEYS_ONLY>,
+      decomposer);
 
 // Store keys and values
 #pragma unroll
@@ -480,8 +487,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THRE
  * @tparam ALT_DIGIT_BITS
  *   Whether or not to use the alternate (lower-bits) policy
  *
- * @tparam IS_DESCENDING
- *   Whether or not the sorted-order is high-to-low
+ * @tparam SortOrder
+ *   Whether to sort in ascending or descending order
  *
  * @tparam KeyT
  *   Key type
@@ -533,7 +540,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THRE
  */
 template <typename ChainedPolicyT,
           bool ALT_DIGIT_BITS,
-          bool IS_DESCENDING,
+          SortOrder Order,
           typename KeyT,
           typename ValueT,
           typename BeginOffsetIteratorT,
@@ -580,8 +587,8 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
   using DigitScanT = BlockScan<OffsetT, BLOCK_THREADS>;
 
   // Downsweep type
-  using BlockDownsweepT =
-    detail::radix_sort::AgentRadixSortDownsweep<SegmentedPolicyT, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>;
+  using BlockDownsweepT = detail::radix_sort::
+    AgentRadixSortDownsweep<SegmentedPolicyT, Order == SortOrder::Descending, KeyT, ValueT, OffsetT, DecomposerT>;
 
   enum
   {
@@ -629,7 +636,7 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
 
   __syncthreads();
 
-  if (IS_DESCENDING)
+  if (Order == SortOrder::Descending)
   {
 // Reverse bin counts
 #pragma unroll
@@ -668,7 +675,7 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
     bin_offset[track] += segment_begin;
   }
 
-  if (IS_DESCENDING)
+  if (Order == SortOrder::Descending)
   {
 // Reverse bin offsets
 #pragma unroll
@@ -725,7 +732,7 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
  * Histogram kernel
  */
 template <typename ChainedPolicyT,
-          bool IS_DESCENDING,
+          SortOrder Order,
           typename KeyT,
           typename OffsetT,
           typename DecomposerT = detail::identity_decomposer_t>
@@ -734,15 +741,15 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::HistogramPolicy::BLOCK_THREADS) 
   OffsetT* d_bins_out, const KeyT* d_keys_in, OffsetT num_items, int start_bit, int end_bit, DecomposerT decomposer = {})
 {
   using HistogramPolicyT = typename ChainedPolicyT::ActivePolicy::HistogramPolicy;
-  using AgentT =
-    detail::radix_sort::AgentRadixSortHistogram<HistogramPolicyT, IS_DESCENDING, KeyT, OffsetT, DecomposerT>;
+  using AgentT           = detail::radix_sort::
+    AgentRadixSortHistogram<HistogramPolicyT, Order == SortOrder::Descending, KeyT, OffsetT, DecomposerT>;
   __shared__ typename AgentT::TempStorage temp_storage;
   AgentT agent(temp_storage, d_bins_out, d_keys_in, num_items, start_bit, end_bit, decomposer);
   agent.Process();
 }
 
 template <typename ChainedPolicyT,
-          bool IS_DESCENDING,
+          SortOrder Order,
           typename KeyT,
           typename ValueT,
           typename OffsetT,
@@ -765,8 +772,14 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void __launch_bounds__(ChainedPolicyT::ActivePolicy
     DecomposerT decomposer = {})
 {
   using OnesweepPolicyT = typename ChainedPolicyT::ActivePolicy::OnesweepPolicy;
-  using AgentT          = detail::radix_sort::
-    AgentRadixSortOnesweep<OnesweepPolicyT, IS_DESCENDING, KeyT, ValueT, OffsetT, PortionOffsetT, DecomposerT>;
+  using AgentT          = detail::radix_sort::AgentRadixSortOnesweep<
+             OnesweepPolicyT,
+             Order == SortOrder::Descending,
+             KeyT,
+             ValueT,
+             OffsetT,
+             PortionOffsetT,
+             DecomposerT>;
   __shared__ typename AgentT::TempStorage s;
 
   AgentT agent(
@@ -839,8 +852,8 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(OffsetT* d_b
 /**
  * Utility class for dispatching the appropriately-tuned kernels for device-wide radix sort
  *
- * @tparam IS_DESCENDING
- *   Whether or not the sorted-order is high-to-low
+ * @tparam SortOrder
+ *   Whether to sort in ascending or descending order
  *
  * @tparam KeyT
  *   Key type
@@ -855,7 +868,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(OffsetT* d_b
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
-template <bool IS_DESCENDING,
+template <SortOrder Order,
           typename KeyT,
           typename ValueT,
           typename OffsetT,
@@ -986,8 +999,7 @@ struct DispatchRadixSort
 #endif
 
       // Invoke upsweep_kernel with same grid size as downsweep_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
-        1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
         .doit(single_tile_kernel,
               d_keys.Current(),
               d_keys.Alternate(),
@@ -1060,7 +1072,7 @@ struct DispatchRadixSort
       int pass_spine_length = pass_config.even_share.grid_size * pass_config.radix_digits;
 
       // Invoke upsweep_kernel with same grid size as downsweep_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
         pass_config.even_share.grid_size, pass_config.upsweep_config.block_threads, 0, stream)
         .doit(pass_config.upsweep_kernel,
               d_keys_in,
@@ -1095,7 +1107,7 @@ struct DispatchRadixSort
 #endif
 
       // Invoke scan_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(1, pass_config.scan_config.block_threads, 0, stream)
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, pass_config.scan_config.block_threads, 0, stream)
         .doit(pass_config.scan_kernel, d_spine, pass_spine_length);
 
       // Check for failure to launch
@@ -1123,7 +1135,7 @@ struct DispatchRadixSort
 #endif
 
       // Invoke downsweep_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
         pass_config.even_share.grid_size, pass_config.downsweep_config.block_threads, 0, stream)
         .doit(pass_config.downsweep_kernel,
               d_keys_in,
@@ -1163,11 +1175,11 @@ struct DispatchRadixSort
   struct PassConfig
   {
     UpsweepKernelT upsweep_kernel;
-    KernelConfig upsweep_config;
+    detail::KernelConfig upsweep_config;
     ScanKernelT scan_kernel;
-    KernelConfig scan_config;
+    detail::KernelConfig scan_config;
     DownsweepKernelT downsweep_kernel;
-    KernelConfig downsweep_config;
+    detail::KernelConfig downsweep_config;
     int radix_bits;
     int radix_digits;
     int max_downsweep_grid_size;
@@ -1256,7 +1268,7 @@ struct DispatchRadixSort
     };
     constexpr int NUM_ALLOCATIONS      = sizeof(allocation_sizes) / sizeof(allocation_sizes[0]);
     void* allocations[NUM_ALLOCATIONS] = {};
-    AliasTemporaries<NUM_ALLOCATIONS>(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+    detail::AliasTemporaries<NUM_ALLOCATIONS>(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
 
     // just return if no temporary storage is provided
     cudaError_t error = cudaSuccess;
@@ -1304,7 +1316,7 @@ struct DispatchRadixSort
       constexpr int HISTO_BLOCK_THREADS = ActivePolicyT::HistogramPolicy::BLOCK_THREADS;
       int histo_blocks_per_sm           = 1;
       auto histogram_kernel =
-        detail::radix_sort::DeviceRadixSortHistogramKernel<max_policy_t, IS_DESCENDING, KeyT, OffsetT, DecomposerT>;
+        detail::radix_sort::DeviceRadixSortHistogramKernel<max_policy_t, Order, KeyT, OffsetT, DecomposerT>;
 
       error = CubDebug(
         cudaOccupancyMaxActiveBlocksPerMultiprocessor(&histo_blocks_per_sm, histogram_kernel, HISTO_BLOCK_THREADS, 0));
@@ -1325,7 +1337,7 @@ struct DispatchRadixSort
               ActivePolicyT::HistogramPolicy::RADIX_BITS);
 #endif
 
-      error = THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+      error = THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
                 histo_blocks_per_sm * num_sms, HISTO_BLOCK_THREADS, 0, stream)
                 .doit(histogram_kernel, d_bins, d_keys.Current(), num_items, begin_bit, end_bit, decomposer);
       error = CubDebug(error);
@@ -1352,7 +1364,7 @@ struct DispatchRadixSort
               ActivePolicyT::ExclusiveSumPolicy::RADIX_BITS);
 #endif
 
-      error = THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(num_passes, SCAN_BLOCK_THREADS, 0, stream)
+      error = THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_passes, SCAN_BLOCK_THREADS, 0, stream)
                 .doit(detail::radix_sort::DeviceRadixSortExclusiveSumKernel<max_policy_t, OffsetT>, d_bins);
       error = CubDebug(error);
       if (cudaSuccess != error)
@@ -1407,7 +1419,7 @@ struct DispatchRadixSort
 
           auto onesweep_kernel = detail::radix_sort::DeviceRadixSortOnesweepKernel<
             max_policy_t,
-            IS_DESCENDING,
+            Order,
             KeyT,
             ValueT,
             OffsetT,
@@ -1416,7 +1428,7 @@ struct DispatchRadixSort
             DecomposerT>;
 
           error =
-            THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(num_blocks, ONESWEEP_BLOCK_THREADS, 0, stream)
+            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_blocks, ONESWEEP_BLOCK_THREADS, 0, stream)
               .doit(onesweep_kernel,
                     d_lookback,
                     d_ctrs + portion * num_passes + pass,
@@ -1560,7 +1572,7 @@ struct DispatchRadixSort
       };
 
       // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
-      error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;
@@ -1652,21 +1664,19 @@ struct DispatchRadixSort
   //------------------------------------------------------------------------------
 
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokeManyTiles(Int2Type<false>)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokeManyTiles(::cuda::std::false_type)
   {
     // Invoke upsweep-downsweep
     return InvokePasses<ActivePolicyT>(
-      detail::radix_sort::DeviceRadixSortUpsweepKernel<max_policy_t, false, IS_DESCENDING, KeyT, OffsetT, DecomposerT>,
-      detail::radix_sort::DeviceRadixSortUpsweepKernel<max_policy_t, true, IS_DESCENDING, KeyT, OffsetT, DecomposerT>,
+      detail::radix_sort::DeviceRadixSortUpsweepKernel<max_policy_t, false, Order, KeyT, OffsetT, DecomposerT>,
+      detail::radix_sort::DeviceRadixSortUpsweepKernel<max_policy_t, true, Order, KeyT, OffsetT, DecomposerT>,
       detail::radix_sort::RadixSortScanBinsKernel<max_policy_t, OffsetT>,
-      detail::radix_sort::
-        DeviceRadixSortDownsweepKernel<max_policy_t, false, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>,
-      detail::radix_sort::
-        DeviceRadixSortDownsweepKernel<max_policy_t, true, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>);
+      detail::radix_sort::DeviceRadixSortDownsweepKernel<max_policy_t, false, Order, KeyT, ValueT, OffsetT, DecomposerT>,
+      detail::radix_sort::DeviceRadixSortDownsweepKernel<max_policy_t, true, Order, KeyT, ValueT, OffsetT, DecomposerT>);
   }
 
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokeManyTiles(Int2Type<true>)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokeManyTiles(::cuda::std::true_type)
   {
     // Invoke onesweep
     return InvokeOnesweep<ActivePolicyT>();
@@ -1762,13 +1772,12 @@ struct DispatchRadixSort
     {
       // Small, single tile size
       return InvokeSingleTile<ActivePolicyT>(
-        detail::radix_sort::
-          DeviceRadixSortSingleTileKernel<max_policy_t, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>);
+        detail::radix_sort::DeviceRadixSortSingleTileKernel<max_policy_t, Order, KeyT, ValueT, OffsetT, DecomposerT>);
     }
     else
     {
       // Regular size
-      return InvokeManyTiles<ActivePolicyT>(Int2Type<ActivePolicyT::ONESWEEP>());
+      return InvokeManyTiles<ActivePolicyT>(detail::bool_constant_v<ActivePolicyT::ONESWEEP>);
     }
   }
 
@@ -1867,8 +1876,8 @@ struct DispatchRadixSort
  * @brief Utility class for dispatching the appropriately-tuned kernels for segmented device-wide
  * radix sort
  *
- * @tparam IS_DESCENDING
- *   Whether or not the sorted-order is high-to-low
+ * @tparam SortOrder
+ *   Whether to sort in ascending or descending order
  *
  * @tparam KeyT
  *   Key type
@@ -1885,7 +1894,7 @@ struct DispatchRadixSort
  * @tparam OffsetT
  *   Signed integer type for global offsets
  */
-template <bool IS_DESCENDING,
+template <SortOrder Order,
           typename KeyT,
           typename ValueT,
           typename BeginOffsetIteratorT,
@@ -2026,7 +2035,7 @@ struct DispatchSegmentedRadixSort
               pass_bits);
 #endif
 
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
         num_segments, pass_config.segmented_config.block_threads, 0, stream)
         .doit(pass_config.segmented_kernel,
               d_keys_in,
@@ -2066,7 +2075,7 @@ struct DispatchSegmentedRadixSort
   struct PassConfig
   {
     SegmentedKernelT segmented_kernel;
-    KernelConfig segmented_config;
+    detail::KernelConfig segmented_config;
     int radix_bits;
     int radix_digits;
 
@@ -2129,7 +2138,7 @@ struct DispatchSegmentedRadixSort
       };
 
       // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
-      error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;
@@ -2238,7 +2247,7 @@ struct DispatchSegmentedRadixSort
       detail::radix_sort::DeviceSegmentedRadixSortKernel<
         max_policy_t,
         false,
-        IS_DESCENDING,
+        Order,
         KeyT,
         ValueT,
         BeginOffsetIteratorT,
@@ -2248,7 +2257,7 @@ struct DispatchSegmentedRadixSort
       detail::radix_sort::DeviceSegmentedRadixSortKernel<
         max_policy_t,
         true,
-        IS_DESCENDING,
+        Order,
         KeyT,
         ValueT,
         BeginOffsetIteratorT,

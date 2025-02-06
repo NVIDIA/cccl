@@ -45,6 +45,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_select_if.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_select_if.cuh>
 #include <cub/grid/grid_queue.cuh>
@@ -191,7 +192,7 @@ public:
 /**
  * @brief Wrapper that partially specializes the `AgentSelectIf` on the non-type name parameter `KeepRejects`.
  */
-template <bool KeepRejects, bool MayAlias>
+template <SelectImpl SelectionOpt>
 struct agent_select_if_wrapper_t
 {
   // Using an explicit list of template parameters forwarded to AgentSelectIf, since MSVC complains about a template
@@ -213,8 +214,7 @@ struct agent_select_if_wrapper_t
                              EqualityOpT,
                              OffsetT,
                              StreamingContextT,
-                             KeepRejects,
-                             MayAlias>
+                             SelectionOpt>
   {
     using AgentSelectIf<AgentSelectIfPolicyT,
                         InputIteratorT,
@@ -224,8 +224,7 @@ struct agent_select_if_wrapper_t
                         EqualityOpT,
                         OffsetT,
                         StreamingContextT,
-                        KeepRejects,
-                        MayAlias>::AgentSelectIf;
+                        SelectionOpt>::AgentSelectIf;
   };
 };
 
@@ -321,12 +320,11 @@ template <typename ChainedPolicyT,
           typename EqualityOpT,
           typename OffsetT,
           typename StreamingContextT,
-          bool KeepRejects,
-          bool MayAlias>
+          SelectImpl SelectionOpt>
 __launch_bounds__(int(
   vsmem_helper_default_fallback_policy_t<
     typename ChainedPolicyT::ActivePolicy::SelectIfPolicyT,
-    agent_select_if_wrapper_t<KeepRejects, MayAlias>::template agent_t,
+    agent_select_if_wrapper_t<SelectionOpt>::template agent_t,
     InputIteratorT,
     FlagsInputIteratorT,
     SelectedOutputIteratorT,
@@ -349,7 +347,7 @@ __launch_bounds__(int(
 {
   using VsmemHelperT = vsmem_helper_default_fallback_policy_t<
     typename ChainedPolicyT::ActivePolicy::SelectIfPolicyT,
-    agent_select_if_wrapper_t<KeepRejects, MayAlias>::template agent_t,
+    agent_select_if_wrapper_t<SelectionOpt>::template agent_t,
     InputIteratorT,
     FlagsInputIteratorT,
     SelectedOutputIteratorT,
@@ -409,8 +407,9 @@ __launch_bounds__(int(
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
- * @tparam KeepRejects
- *   Whether or not we push rejected items to the back of the output
+ * @tparam SelectImpl SelectionOpt
+ *   SelectImpl indicating whether to partition, just selection or selection where the memory for the input and
+ *   output may alias each other.
  */
 template <typename InputIteratorT,
           typename FlagsInputIteratorT,
@@ -419,13 +418,12 @@ template <typename InputIteratorT,
           typename SelectOpT,
           typename EqualityOpT,
           typename OffsetT,
-          bool KeepRejects,
-          bool MayAlias      = false,
+          SelectImpl SelectionOpt,
           typename PolicyHub = detail::select::policy_hub<cub::detail::value_t<InputIteratorT>,
                                                           cub::detail::value_t<FlagsInputIteratorT>,
                                                           detail::select::per_partition_offset_t,
-                                                          MayAlias,
-                                                          KeepRejects>>
+                                                          (SelectionOpt == SelectImpl::SelectPotentiallyInPlace),
+                                                          (SelectionOpt == SelectImpl::Partition)>>
 struct DispatchSelectIf
 {
   /******************************************************************************
@@ -561,7 +559,7 @@ struct DispatchSelectIf
 
     using VsmemHelperT = cub::detail::vsmem_helper_default_fallback_policy_t<
       Policy,
-      detail::select::agent_select_if_wrapper_t<KeepRejects, MayAlias>::template agent_t,
+      detail::select::agent_select_if_wrapper_t<SelectionOpt>::template agent_t,
       InputIteratorT,
       FlagsInputIteratorT,
       SelectedOutputIteratorT,
@@ -619,7 +617,7 @@ struct DispatchSelectIf
       // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
       void* allocations[3] = {};
 
-      error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;
@@ -664,7 +662,7 @@ struct DispatchSelectIf
 #endif
 
         // Invoke scan_init_kernel to initialize tile descriptors
-        THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
           .doit(scan_init_kernel, tile_status, current_num_tiles, d_num_selected_out);
 
         // Check for failure to launch
@@ -712,7 +710,7 @@ struct DispatchSelectIf
 #endif
 
         // Invoke select_if_kernel
-        THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(current_num_tiles, block_threads, 0, stream)
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(current_num_tiles, block_threads, 0, stream)
           .doit(select_if_kernel,
                 d_in,
                 d_flags,
@@ -764,8 +762,7 @@ struct DispatchSelectIf
         EqualityOpT,
         per_partition_offset_t,
         streaming_context_t,
-        KeepRejects,
-        MayAlias>);
+        SelectionOpt>);
   }
 
   /**

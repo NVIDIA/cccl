@@ -308,7 +308,7 @@ struct dispatch_dummy_algorithm_t
     // Compute temporary storage requirements
     void* allocations[1]            = {nullptr};
     std::size_t allocation_sizes[1] = {total_vsmem};
-    error = cub::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+    error = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
     if (cudaSuccess != error)
     {
       return error;
@@ -323,7 +323,7 @@ struct dispatch_dummy_algorithm_t
     launch_config_info->config_assumes_block_threads = static_cast<std::size_t>(block_threads);
     launch_config_info->config_vsmem_per_block       = vsmem_helper_t::vsmem_per_block;
 
-    THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(num_tiles, block_threads, 0, stream)
+    THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_tiles, block_threads, 0, stream)
       .doit(dummy_algorithm_kernel<typename PolicyHub::max_policy_t, InputIteratorT, OutputIteratorT, OffsetT>,
             d_in,
             d_out,

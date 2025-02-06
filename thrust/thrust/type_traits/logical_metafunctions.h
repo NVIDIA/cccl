@@ -45,28 +45,22 @@ template <bool... Bs>
 using conjunction_value CCCL_DEPRECATED_BECAUSE("Use: cuda::std::bool_constant<(Bs && ...)>") =
   conjunction<::cuda::std::bool_constant<Bs>...>;
 
-#if _CCCL_STD_VER >= 2014
 template <bool... Bs>
 constexpr bool
   conjunction_value_v CCCL_DEPRECATED_BECAUSE("Use a fold expression: Bs && ...") = conjunction_value<Bs...>::value;
-#endif
 
 template <bool... Bs>
 using disjunction_value CCCL_DEPRECATED_BECAUSE("Use: cuda::std::bool_constant<(Bs || ...)>") =
   disjunction<::cuda::std::bool_constant<Bs>...>;
 
-#if _CCCL_STD_VER >= 2014
 template <bool... Bs>
 constexpr bool
   disjunction_value_v CCCL_DEPRECATED_BECAUSE("Use a fold expression: Bs || ...") = disjunction_value<Bs...>::value;
-#endif
 
 template <bool B>
 using negation_value CCCL_DEPRECATED_BECAUSE("Use cuda::std::bool_constant<!B>") = ::cuda::std::bool_constant<!B>;
 
-#if _CCCL_STD_VER >= 2014
 template <bool B>
 constexpr bool negation_value_v CCCL_DEPRECATED_BECAUSE("Use a plain negation !B") = negation_value<B>::value;
-#endif
 
 THRUST_NAMESPACE_END

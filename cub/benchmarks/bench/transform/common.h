@@ -80,7 +80,7 @@ void bench_transform(
 {
   state.exec(exec_tag, [&](const nvbench::launch& launch) {
     cub::detail::transform::dispatch_t<
-      false,
+      cub::detail::transform::requires_stable_address::no,
       OffsetT,
       ::cuda::std::tuple<RandomAccessIteratorsIn...>,
       RandomAccessIteratorOut,

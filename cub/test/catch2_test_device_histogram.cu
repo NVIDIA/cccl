@@ -34,6 +34,7 @@
 #include <cuda/std/array>
 #include <cuda/std/bit>
 #include <cuda/std/type_traits>
+#include <cuda/type_traits>
 
 #include <algorithm>
 #include <limits>
@@ -69,7 +70,7 @@ auto cast_if_half_pointer(T* p) -> T*
   return p;
 }
 
-#if TEST_HALF_T
+#if TEST_HALF_T()
 auto cast_if_half_pointer(half_t* p) -> __half*
 {
   return reinterpret_cast<__half*>(p);
@@ -79,7 +80,7 @@ auto cast_if_half_pointer(const half_t* p) -> const __half*
 {
   return reinterpret_cast<const __half*>(p);
 }
-#endif
+#endif // TEST_HALF_T()
 
 template <typename T>
 using caller_vector = c2h::
@@ -412,17 +413,16 @@ using types =
                  std::uint32_t,
                  std::int64_t,
                  std::uint64_t,
-#if TEST_HALF_T
+#if TEST_HALF_T()
                  half_t,
-#endif
+#endif // TEST_HALF_T()
                  float,
                  double>;
 
 C2H_TEST("DeviceHistogram::Histogram* basic use", "[histogram][device]", types)
 {
   using sample_t = c2h::get<0, TestType>;
-  using level_t =
-    typename cs::conditional<cub::NumericTraits<sample_t>::CATEGORY == cub::FLOATING_POINT, sample_t, int>::type;
+  using level_t  = typename cs::conditional<cuda::is_floating_point<sample_t>::value, sample_t, int>::type;
   // Max for int8/uint8 is 2^8, for half_t is 2^10. Beyond, we would need a different level generation
   const auto max_level       = level_t{sizeof(sample_t) == 1 ? 126 : 1024};
   const auto max_level_count = (sizeof(sample_t) == 1 ? 126 : 1024) + 1;

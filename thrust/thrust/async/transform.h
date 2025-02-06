@@ -30,14 +30,12 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_STD_VER >= 2014
+#include <thrust/detail/select_system.h>
+#include <thrust/detail/static_assert.h>
+#include <thrust/event.h>
+#include <thrust/system/detail/adl/async/transform.h>
 
-#  include <thrust/detail/select_system.h>
-#  include <thrust/detail/static_assert.h>
-#  include <thrust/event.h>
-#  include <thrust/system/detail/adl/async/transform.h>
-
-#  include <cuda/std/type_traits>
+#include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -140,5 +138,3 @@ _CCCL_GLOBAL_CONSTANT transform_detail::transform_fn transform{};
 } // namespace async
 
 THRUST_NAMESPACE_END
-
-#endif

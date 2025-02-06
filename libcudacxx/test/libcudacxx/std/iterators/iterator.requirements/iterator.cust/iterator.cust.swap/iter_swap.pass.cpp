@@ -43,7 +43,6 @@ struct HasIterSwap
   }
 };
 
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_MSVC_2017) // nvcc segfaults here
 static_assert(cuda::std::is_invocable_v<IterSwapT, HasIterSwap&, HasIterSwap&>, "");
 static_assert(cuda::std::is_invocable_v<IterSwapT, HasIterSwap&, int&>, "");
 static_assert(!cuda::std::is_invocable_v<IterSwapT, int&, HasIterSwap&>, "");
@@ -55,9 +54,7 @@ static_assert(!cuda::std::is_invocable_v<IterSwapT&, int&, HasIterSwap&>, "");
 static_assert(cuda::std::is_invocable_v<IterSwapT&&, HasIterSwap&, HasIterSwap&>, "");
 static_assert(cuda::std::is_invocable_v<IterSwapT&&, HasIterSwap&, int&>, "");
 static_assert(!cuda::std::is_invocable_v<IterSwapT&&, int&, HasIterSwap&>, "");
-#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_MSVC_2017
 
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_MSVC_2017)
 struct NodiscardIterSwap
 {
   __host__ __device__ _CCCL_NODISCARD_FRIEND int iter_swap(NodiscardIterSwap&, NodiscardIterSwap&)
@@ -70,7 +67,6 @@ __host__ __device__ void ensureVoidCast(NodiscardIterSwap& a, NodiscardIterSwap&
 {
   cuda::std::ranges::iter_swap(a, b);
 }
-#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_MSVC_2017
 
 struct HasRangesSwap
 {
@@ -108,12 +104,10 @@ struct HasRangesSwapWrapper
   }
 };
 
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_MSVC_2017) // nvcc segfaults here
 static_assert(cuda::std::is_invocable_v<IterSwapT, HasRangesSwapWrapper&, HasRangesSwapWrapper&>, "");
 // Does not satisfy swappable_with, even though swap(X, Y) is valid.
 static_assert(!cuda::std::is_invocable_v<IterSwapT, HasRangesSwapWrapper&, int&>, "");
 static_assert(!cuda::std::is_invocable_v<IterSwapT, int&, HasRangesSwapWrapper&>, "");
-#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_MSVC_2017
 
 struct B;
 
@@ -175,7 +169,6 @@ struct MoveOnly2
 
 __host__ __device__ constexpr bool test()
 {
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_MSVC_2017)
   {
     int value1 = 0;
     int value2 = 0;
@@ -213,7 +206,6 @@ __host__ __device__ constexpr bool test()
     cuda::std::ranges::iter_swap(&g, &h);
     assert(g.value && h.value);
   }
-#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_MSVC_2017
 #if TEST_HAS_BUILTIN(__builtin_is_constant_evaluated)
   {
     move_tracker arr[2];
