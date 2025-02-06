@@ -35,6 +35,8 @@
 
 #include <cub/config.cuh>
 
+#include "cuda/std/__cccl/deprecated.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -219,13 +221,21 @@ struct NullType
  * dispatch based on constant integral values)
  */
 template <int A>
-struct Int2Type
+struct CCCL_DEPRECATED_BECAUSE("Use cuda::std::integral_constant instead") Int2Type
 {
   enum
   {
     VALUE = A
   };
 };
+
+namespace detail
+{
+
+template <int Value>
+using int_constant_t = cuda::std::integral_constant<int, Value>;
+
+} // namespace detail
 
 /**
  * \brief Allows algorithms that take a value as input to take a future value that is not computed yet at launch time.

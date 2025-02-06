@@ -128,7 +128,7 @@ struct WarpScanSmem
 
   /// Basic inclusive scan iteration (template unrolled, inductive-case specialization)
   template <bool HAS_IDENTITY, int STEP, typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanStep(T& partial, ScanOp scan_op, Int2Type<STEP> /*step*/)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanStep(T& partial, ScanOp scan_op, detail::int_constant_t<STEP> /*step*/)
   {
     constexpr int OFFSET = 1 << STEP;
 
@@ -145,12 +145,13 @@ struct WarpScanSmem
     }
     __syncwarp(member_mask);
 
-    ScanStep<HAS_IDENTITY>(partial, scan_op, Int2Type<STEP + 1>());
+    ScanStep<HAS_IDENTITY>(partial, scan_op, detail::int_constant_t<STEP + 1>());
   }
 
   /// Basic inclusive scan iteration(template unrolled, base-case specialization)
   template <bool HAS_IDENTITY, typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanStep(T& /*partial*/, ScanOp /*scan_op*/, Int2Type<STEPS> /*step*/)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  ScanStep(T& /*partial*/, ScanOp /*scan_op*/, detail::int_constant_t<STEPS> /*step*/)
   {}
 
   /**
@@ -169,7 +170,7 @@ struct WarpScanSmem
    *   Marker type indicating whether T is primitive type
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  InclusiveScan(T input, T& output, ::cuda::std::plus<> scan_op, Int2Type<true> /*is_primitive*/)
+  InclusiveScan(T input, T& output, ::cuda::std::plus<> scan_op, ::cuda::std::true_type /*is_primitive*/)
   {
     T identity = 0;
     ThreadStore<STORE_VOLATILE>(&temp_storage[lane_id], (CellT) identity);
@@ -178,7 +179,7 @@ struct WarpScanSmem
 
     // Iterate scan steps
     output = input;
-    ScanStep<true>(output, scan_op, Int2Type<0>());
+    ScanStep<true>(output, scan_op, detail::int_constant_t<0>());
   }
 
   /**
@@ -196,13 +197,13 @@ struct WarpScanSmem
    * @param[in] is_primitive
    *   Marker type indicating whether T is primitive type
    */
-  template <typename ScanOp, int IS_PRIMITIVE>
+  template <typename ScanOp, bool IS_PRIMITIVE>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  InclusiveScan(T input, T& output, ScanOp scan_op, Int2Type<IS_PRIMITIVE> /*is_primitive*/)
+  InclusiveScan(T input, T& output, ScanOp scan_op, ::cuda::std::bool_constant<IS_PRIMITIVE> /*is_primitive*/)
   {
     // Iterate scan steps
     output = input;
-    ScanStep<false>(output, scan_op, Int2Type<0>());
+    ScanStep<false>(output, scan_op, detail::int_constant_t<0>());
   }
 
   /******************************************************************************
@@ -253,7 +254,7 @@ struct WarpScanSmem
   template <typename ScanOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, ScanOp scan_op)
   {
-    InclusiveScan(input, inclusive_output, scan_op, Int2Type<Traits<T>::PRIMITIVE>());
+    InclusiveScan(input, inclusive_output, scan_op, ::cuda::std::bool_constant<Traits<T>::PRIMITIVE>());
   }
 
   /**
@@ -320,7 +321,7 @@ struct WarpScanSmem
    *        integer types)
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  Update(T input, T& inclusive, T& exclusive, ::cuda::std::plus<> /*scan_op*/, Int2Type<true> /*is_integer*/)
+  Update(T input, T& inclusive, T& exclusive, ::cuda::std::plus<> /*scan_op*/, ::cuda::std::true_type /*is_integer*/)
   {
     // initial value presumed 0
     exclusive = inclusive - input;
@@ -351,7 +352,12 @@ struct WarpScanSmem
    *        (specialized for summation of integer types)
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void Update(
-    T input, T& inclusive, T& exclusive, ::cuda::std::plus<> scan_op, T initial_value, Int2Type<true> /*is_integer*/)
+    T input,
+    T& inclusive,
+    T& exclusive,
+    ::cuda::std::plus<> scan_op,
+    T initial_value,
+    ::cuda::std::true_type /*is_integer*/)
   {
     inclusive = scan_op(initial_value, inclusive);
     exclusive = inclusive - input;
@@ -383,7 +389,7 @@ struct WarpScanSmem
     T& exclusive,
     T& warp_aggregate,
     ::cuda::std::plus<> /*scan_o*/,
-    Int2Type<true> /*is_integer*/)
+    ::cuda::std::true_type /*is_integer*/)
   {
     // Initial value presumed to be unknown or identity (either way our padding is correct)
     ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], (CellT) inclusive);

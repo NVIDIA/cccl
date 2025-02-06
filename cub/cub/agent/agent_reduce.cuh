@@ -201,7 +201,7 @@ struct AgentReduce
   // Whether or not the input is aligned with the vector type (specialized for
   // types we can vectorize)
   template <typename Iterator>
-  static _CCCL_DEVICE _CCCL_FORCEINLINE bool IsAligned(Iterator d_in, Int2Type<true> /*can_vectorize*/)
+  static _CCCL_DEVICE _CCCL_FORCEINLINE bool IsAligned(Iterator d_in, ::cuda::std::true_type /*can_vectorize*/)
   {
     return (size_t(d_in) & (sizeof(VectorT) - 1)) == 0;
   }
@@ -209,7 +209,7 @@ struct AgentReduce
   // Whether or not the input is aligned with the vector type (specialized for
   // types we cannot vectorize)
   template <typename Iterator>
-  static _CCCL_DEVICE _CCCL_FORCEINLINE bool IsAligned(Iterator /*d_in*/, Int2Type<false> /*can_vectorize*/)
+  static _CCCL_DEVICE _CCCL_FORCEINLINE bool IsAligned(Iterator /*d_in*/, ::cuda::std::false_type /*can_vectorize*/)
   {
     return false;
   }
@@ -249,8 +249,8 @@ struct AgentReduce
     AccumT& thread_aggregate,
     OffsetT block_offset,
     int /*valid_items*/,
-    Int2Type<true> /*is_full_tile*/,
-    Int2Type<false> /*can_vectorize*/)
+    ::cuda::std::true_type /*is_full_tile*/,
+    ::cuda::std::false_type /*can_vectorize*/)
   {
     AccumT items[ITEMS_PER_THREAD];
 
@@ -274,8 +274,8 @@ struct AgentReduce
     AccumT& thread_aggregate,
     OffsetT block_offset,
     int /*valid_items*/,
-    Int2Type<true> /*is_full_tile*/,
-    Int2Type<true> /*can_vectorize*/)
+    ::cuda::std::true_type /*is_full_tile*/,
+    ::cuda::std::true_type /*can_vectorize*/)
   {
     // Alias items as an array of VectorT and load it in striped fashion
     enum
@@ -317,13 +317,13 @@ struct AgentReduce
    * @param is_full_tile Whether or not this is a full tile
    * @param can_vectorize Whether or not we can vectorize loads
    */
-  template <int IS_FIRST_TILE, int CAN_VECTORIZE>
+  template <int IS_FIRST_TILE, bool CAN_VECTORIZE>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTile(
     AccumT& thread_aggregate,
     OffsetT block_offset,
     int valid_items,
-    Int2Type<false> /*is_full_tile*/,
-    Int2Type<CAN_VECTORIZE> /*can_vectorize*/)
+    ::cuda::std::false_type /*is_full_tile*/,
+    ::cuda::std::bool_constant<CAN_VECTORIZE> /*can_vectorize*/)
   {
     // Partial tile
     int thread_offset = threadIdx.x;
@@ -354,9 +354,9 @@ struct AgentReduce
    * @param even_share GridEvenShare descriptor
    * @param can_vectorize Whether or not we can vectorize loads
    */
-  template <int CAN_VECTORIZE>
+  template <bool CAN_VECTORIZE>
   _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
-  ConsumeRange(GridEvenShare<OffsetT>& even_share, Int2Type<CAN_VECTORIZE> can_vectorize)
+  ConsumeRange(GridEvenShare<OffsetT>& even_share, ::cuda::std::bool_constant<CAN_VECTORIZE> can_vectorize)
   {
     AccumT thread_aggregate{};
 
@@ -364,7 +364,8 @@ struct AgentReduce
     {
       // First tile isn't full (not all threads have valid items)
       int valid_items = even_share.block_end - even_share.block_offset;
-      ConsumeTile<true>(thread_aggregate, even_share.block_offset, valid_items, Int2Type<false>(), can_vectorize);
+      ConsumeTile<true>(
+        thread_aggregate, even_share.block_offset, valid_items, ::cuda::std::false_type(), can_vectorize);
       return BlockReduceT(temp_storage.reduce).Reduce(thread_aggregate, reduction_op, valid_items);
     }
 
@@ -386,9 +387,9 @@ struct AgentReduce
     GridEvenShare<OffsetT> even_share;
     even_share.template BlockInit<TILE_ITEMS>(block_offset, block_end);
 
-    return (IsAligned(d_in + block_offset, Int2Type<ATTEMPT_VECTORIZATION>()))
-           ? ConsumeRange(even_share, Int2Type < true && ATTEMPT_VECTORIZATION > ())
-           : ConsumeRange(even_share, Int2Type < false && ATTEMPT_VECTORIZATION > ());
+    return (IsAligned(d_in + block_offset, ::cuda::std::bool_constant<ATTEMPT_VECTORIZATION>()))
+           ? ConsumeRange(even_share, ::cuda::std::bool_constant < true && ATTEMPT_VECTORIZATION > ())
+           : ConsumeRange(even_share, ::cuda::std::bool_constant < false && ATTEMPT_VECTORIZATION > ());
   }
 
   /**
@@ -400,9 +401,9 @@ struct AgentReduce
     // Initialize GRID_MAPPING_STRIP_MINE even-share descriptor for this thread block
     even_share.template BlockInit<TILE_ITEMS, GRID_MAPPING_STRIP_MINE>();
 
-    return (IsAligned(d_in, Int2Type<ATTEMPT_VECTORIZATION>()))
-           ? ConsumeRange(even_share, Int2Type < true && ATTEMPT_VECTORIZATION > ())
-           : ConsumeRange(even_share, Int2Type < false && ATTEMPT_VECTORIZATION > ());
+    return (IsAligned(d_in, ::cuda::std::bool_constant<ATTEMPT_VECTORIZATION>()))
+           ? ConsumeRange(even_share, ::cuda::std::bool_constant < true && ATTEMPT_VECTORIZATION > ())
+           : ConsumeRange(even_share, ::cuda::std::bool_constant < false && ATTEMPT_VECTORIZATION > ());
   }
 
 private:
@@ -411,12 +412,14 @@ private:
    * @param even_share GridEvenShare descriptor
    * @param can_vectorize Whether or not we can vectorize loads
    */
-  template <int CAN_VECTORIZE>
+  template <bool CAN_VECTORIZE>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeFullTileRange(
-    AccumT& thread_aggregate, GridEvenShare<OffsetT>& even_share, Int2Type<CAN_VECTORIZE> can_vectorize)
+    AccumT& thread_aggregate,
+    GridEvenShare<OffsetT>& even_share,
+    ::cuda::std::bool_constant<CAN_VECTORIZE> can_vectorize)
   {
     // At least one full block
-    ConsumeTile<true>(thread_aggregate, even_share.block_offset, TILE_ITEMS, Int2Type<true>(), can_vectorize);
+    ConsumeTile<true>(thread_aggregate, even_share.block_offset, TILE_ITEMS, ::cuda::std::true_type(), can_vectorize);
 
     if (even_share.block_end - even_share.block_offset < even_share.block_stride)
     {
@@ -430,7 +433,7 @@ private:
     // `even_share.block_end >= TILE_ITEMS`
     while (even_share.block_offset <= even_share.block_end - TILE_ITEMS)
     {
-      ConsumeTile<false>(thread_aggregate, even_share.block_offset, TILE_ITEMS, Int2Type<true>(), can_vectorize);
+      ConsumeTile<false>(thread_aggregate, even_share.block_offset, TILE_ITEMS, ::cuda::std::true_type(), can_vectorize);
 
       if (even_share.block_end - even_share.block_offset < even_share.block_stride)
       {
@@ -445,7 +448,8 @@ private:
     if (even_share.block_offset < even_share.block_end)
     {
       int valid_items = even_share.block_end - even_share.block_offset;
-      ConsumeTile<false>(thread_aggregate, even_share.block_offset, valid_items, Int2Type<false>(), can_vectorize);
+      ConsumeTile<false>(
+        thread_aggregate, even_share.block_offset, valid_items, ::cuda::std::false_type(), can_vectorize);
     }
   }
 };

@@ -255,7 +255,7 @@ struct AgentScan
     AccumT init_value,
     ScanOpT scan_op,
     AccumT& block_aggregate,
-    Int2Type<false> /*is_inclusive*/)
+    ::cuda::std::false_type /*is_inclusive*/)
   {
     BlockScanT(temp_storage.scan_storage.scan).ExclusiveScan(items, items, init_value, scan_op, block_aggregate);
     block_aggregate = scan_op(init_value, block_aggregate);
@@ -266,7 +266,7 @@ struct AgentScan
     AccumT init_value,
     ScanOpT scan_op,
     AccumT& block_aggregate,
-    Int2Type<true> /*has_init*/)
+    ::cuda::std::true_type /*has_init*/)
   {
     BlockScanT(temp_storage.scan_storage.scan).InclusiveScan(items, items, init_value, scan_op, block_aggregate);
     block_aggregate = scan_op(init_value, block_aggregate);
@@ -277,7 +277,7 @@ struct AgentScan
     InitValueT /*init_value*/,
     ScanOpT scan_op,
     AccumT& block_aggregate,
-    Int2Type<false> /*has_init*/)
+    ::cuda::std::false_type /*has_init*/)
 
   {
     BlockScanT(temp_storage.scan_storage.scan).InclusiveScan(items, items, scan_op, block_aggregate);
@@ -291,17 +291,20 @@ struct AgentScan
     InitValueT init_value,
     ScanOpT scan_op,
     AccumT& block_aggregate,
-    Int2Type<true> /*is_inclusive*/)
+    ::cuda::std::true_type /*is_inclusive*/)
   {
-    ScanTileInclusive(items, init_value, scan_op, block_aggregate, Int2Type<HAS_INIT>());
+    ScanTileInclusive(items, init_value, scan_op, block_aggregate, ::cuda::std::bool_constant<HAS_INIT>());
   }
 
   /**
    * Exclusive scan specialization (subsequent tiles)
    */
   template <typename PrefixCallback>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(
-    AccumT (&items)[ITEMS_PER_THREAD], ScanOpT scan_op, PrefixCallback& prefix_op, Int2Type<false> /*is_inclusive*/)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  ScanTile(AccumT (&items)[ITEMS_PER_THREAD],
+           ScanOpT scan_op,
+           PrefixCallback& prefix_op,
+           ::cuda::std::false_type /*is_inclusive*/)
   {
     BlockScanT(temp_storage.scan_storage.scan).ExclusiveScan(items, items, scan_op, prefix_op);
   }
@@ -310,8 +313,11 @@ struct AgentScan
    * Inclusive scan specialization (subsequent tiles)
    */
   template <typename PrefixCallback>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(
-    AccumT (&items)[ITEMS_PER_THREAD], ScanOpT scan_op, PrefixCallback& prefix_op, Int2Type<true> /*is_inclusive*/)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  ScanTile(AccumT (&items)[ITEMS_PER_THREAD],
+           ScanOpT scan_op,
+           PrefixCallback& prefix_op,
+           ::cuda::std::true_type /*is_inclusive*/)
   {
     BlockScanT(temp_storage.scan_storage.scan).InclusiveScan(items, items, scan_op, prefix_op);
   }
@@ -391,7 +397,7 @@ struct AgentScan
     {
       // Scan first tile
       AccumT block_aggregate;
-      ScanTile(items, init_value, scan_op, block_aggregate, Int2Type<IS_INCLUSIVE>());
+      ScanTile(items, init_value, scan_op, block_aggregate, ::cuda::std::bool_constant<IS_INCLUSIVE>());
 
       if ((!IS_LAST_TILE) && (threadIdx.x == 0))
       {
@@ -402,7 +408,7 @@ struct AgentScan
     {
       // Scan non-first tile
       TilePrefixCallbackOpT prefix_op(tile_state, temp_storage.scan_storage.prefix, scan_op, tile_idx);
-      ScanTile(items, scan_op, prefix_op, Int2Type<IS_INCLUSIVE>());
+      ScanTile(items, scan_op, prefix_op, ::cuda::std::bool_constant<IS_INCLUSIVE>());
     }
 
     __syncthreads();
@@ -496,12 +502,12 @@ struct AgentScan
     if (IS_FIRST_TILE)
     {
       AccumT block_aggregate;
-      ScanTile(items, init_value, scan_op, block_aggregate, Int2Type<IS_INCLUSIVE>());
+      ScanTile(items, init_value, scan_op, block_aggregate, ::cuda::std::bool_constant<IS_INCLUSIVE>());
       prefix_op.running_total = block_aggregate;
     }
     else
     {
-      ScanTile(items, scan_op, prefix_op, Int2Type<IS_INCLUSIVE>());
+      ScanTile(items, scan_op, prefix_op, ::cuda::std::bool_constant<IS_INCLUSIVE>());
     }
 
     __syncthreads();
