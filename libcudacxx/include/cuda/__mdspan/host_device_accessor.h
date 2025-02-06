@@ -25,6 +25,7 @@
 
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/cassert>
+#include <cuda/std/cstddef>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -110,7 +111,7 @@ public:
 
   _CCCL_HIDE_FROM_ABI host_accessor(const host_accessor&) noexcept(__is_copy_ctor_noexcept) = default;
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __reference access(__data_handle_type __p, size_t __i) const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __reference access(__data_handle_type __p, _CUDA_VSTD::size_t __i) const
     noexcept(__is_access_noexcept)
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
@@ -119,7 +120,7 @@ public:
     return _Accessor::access(__p, __i);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __data_handle_type offset(__data_handle_type __p, size_t __i) const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __data_handle_type offset(__data_handle_type __p, _CUDA_VSTD::size_t __i) const
     noexcept(__is_offset_noexcept)
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
@@ -162,14 +163,14 @@ public:
 
   _CCCL_HIDE_FROM_ABI device_accessor(const device_accessor&) noexcept(__is_copy_ctor_noexcept) = default;
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __reference access(__data_handle_type __p, size_t __i) const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __reference access(__data_handle_type __p, _CUDA_VSTD::size_t __i) const
     noexcept(__is_access_noexcept)
   {
     NV_IF_TARGET(NV_IS_HOST, (__self::__prevent_host_instantiation();))
     return _Accessor::access(__p, __i);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __data_handle_type offset(__data_handle_type __p, size_t __i) const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __data_handle_type offset(__data_handle_type __p, _CUDA_VSTD::size_t __i) const
     noexcept(__is_offset_noexcept)
   {
     NV_IF_TARGET(NV_IS_HOST, (__self::__prevent_host_instantiation();))
@@ -224,14 +225,14 @@ public:
 
   _CCCL_HIDE_FROM_ABI managed_accessor(const managed_accessor&) noexcept(__is_copy_ctor_noexcept) = default;
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __reference access(__data_handle_type __p, size_t __i) const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __reference access(__data_handle_type __p, _CUDA_VSTD::size_t __i) const
     noexcept(__is_access_noexcept)
   {
     NV_IF_TARGET(NV_IS_HOST, (__self::__check_managed_pointer(__p);))
     return _Accessor::access(__p, __i);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __data_handle_type offset(__data_handle_type __p, size_t __i) const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __data_handle_type offset(__data_handle_type __p, _CUDA_VSTD::size_t __i) const
     noexcept(__is_offset_noexcept)
   {
     NV_IF_TARGET(NV_IS_HOST, (__self::__check_managed_pointer(__p);))
