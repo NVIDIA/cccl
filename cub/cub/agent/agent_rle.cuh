@@ -997,14 +997,4 @@ struct AgentRle
 } // namespace rle
 } // namespace detail
 
-template <typename AgentRlePolicyT,
-          typename InputIteratorT,
-          typename OffsetsOutputIteratorT,
-          typename LengthsOutputIteratorT,
-          typename EqualityOpT,
-          typename OffsetT>
-using AgentRle CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public interface "
-                                       "will be removed.") = detail::rle::
-  AgentRle<AgentRlePolicyT, InputIteratorT, OffsetsOutputIteratorT, LengthsOutputIteratorT, EqualityOpT, OffsetT>;
-
 CUB_NAMESPACE_END

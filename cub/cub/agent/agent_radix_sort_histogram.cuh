@@ -283,14 +283,4 @@ struct AgentRadixSortHistogram
 } // namespace radix_sort
 } // namespace detail
 
-template <typename AgentRadixSortHistogramPolicy,
-          bool IS_DESCENDING,
-          typename KeyT,
-          typename OffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
-using AgentRadixSortHistogram CCCL_DEPRECATED_BECAUSE(
-  "This class is considered an implementation detail and the public "
-  "interface will be removed.") =
-  detail::radix_sort::AgentRadixSortHistogram<AgentRadixSortHistogramPolicy, IS_DESCENDING, KeyT, OffsetT, DecomposerT>;
-
 CUB_NAMESPACE_END

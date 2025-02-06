@@ -457,15 +457,4 @@ private:
 } // namespace reduce
 } // namespace detail
 
-template <typename AgentReducePolicy,
-          typename InputIteratorT,
-          typename OutputIteratorT,
-          typename OffsetT,
-          typename ReductionOp,
-          typename AccumT,
-          typename TransformOp = ::cuda::std::__identity>
-using AgentReduce CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public interface "
-                                          "will be removed.") = detail::reduce::
-  AgentReduce<AgentReducePolicy, InputIteratorT, OutputIteratorT, OffsetT, ReductionOp, AccumT, TransformOp>;
-
 CUB_NAMESPACE_END

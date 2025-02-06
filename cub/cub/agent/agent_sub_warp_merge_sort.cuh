@@ -339,9 +339,4 @@ private:
 } // namespace sub_warp_merge_sort
 } // namespace detail
 
-template <bool IS_DESCENDING, typename PolicyT, typename KeyT, typename ValueT, typename OffsetT>
-using AgentSubWarpSort CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
-                                               "interface will be removed.") =
-  detail::sub_warp_merge_sort::AgentSubWarpSort<IS_DESCENDING, PolicyT, KeyT, ValueT, OffsetT>;
-
 CUB_NAMESPACE_END
