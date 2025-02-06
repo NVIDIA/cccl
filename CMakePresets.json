@@ -13,7 +13,7 @@
       "binaryDir": "${sourceDir}/build/$env{CCCL_BUILD_INFIX}/${presetName}",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_CUDA_ARCHITECTURES": "86",
+        "CMAKE_CUDA_ARCHITECTURES": "60;70;80",
         "CCCL_ENABLE_UNSTABLE": true,
         "CCCL_ENABLE_LIBCUDACXX": false,
         "CCCL_ENABLE_CUB": false,
@@ -85,8 +85,8 @@
         "cudax_ENABLE_CUDASTF": true,
         "cudax_ENABLE_CUDASTF_BOUNDSCHECK": false,
         "cudax_ENABLE_CUDASTF_CODE_GENERATION": true,
-        "cudax_ENABLE_CUDASTF_DEBUG": true,
-        "cudax_ENABLE_CUDASTF_MATHLIBS": true,
+        "cudax_ENABLE_CUDASTF_DEBUG": false,
+        "cudax_ENABLE_CUDASTF_MATHLIBS": false,
         "cudax_ENABLE_DIALECT_CPP17": true,
         "cudax_ENABLE_DIALECT_CPP20": true,
         "CCCL_C_Parallel_ENABLE_TESTING": true,
@@ -257,8 +257,7 @@
       "displayName": "cudax: C++17",
       "inherits": "cudax-base",
       "cacheVariables": {
-        "cudax_ENABLE_DIALECT_CPP17": true,
-        "cudax_ENABLE_CUDASTF_MATHLIBS": true
+        "cudax_ENABLE_DIALECT_CPP17": true
       }
     },
     {

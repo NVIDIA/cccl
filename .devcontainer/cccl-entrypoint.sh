@@ -8,7 +8,7 @@ devcontainer-utils-post-create-command;
 devcontainer-utils-init-git;
 devcontainer-utils-post-attach-command;
 
-# cd /home/coder/cccl/
+cd /home/coder/cccl/
 
 if test $# -gt 0; then
     exec "$@";
