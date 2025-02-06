@@ -182,33 +182,35 @@ struct sm100_tuning<false, SampleT, 1, 1, counter_size::_4, primitive_sample::ye
 // template <class SampleT>
 // struct sm100_tuning<false, SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sample_size::_2> {};
 
-template <class SampleT>
-struct sm100_tuning<false, SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sample_size::_4>
-{
-  // ipt_9.tpb_1024.rle_1.ws_0.mem_1.ld_0.laid_1.vec_0 1.358537  1.001009  1.373329  2.614104
-  static constexpr int items                                     = 9;
-  static constexpr int threads                                   = 1024;
-  static constexpr bool rle_compress                             = true;
-  static constexpr bool work_stealing                            = false;
-  static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
-  static constexpr CacheLoadModifier load_modifier               = LOAD_DEFAULT;
-  static constexpr BlockLoadAlgorithm load_algorithm             = BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr int vec_size                                  = 1 << 0;
-};
+// TODO(gonidelis): we found the below tuning but the verification benchmark showed regressions, so it's disabled
+// template <class SampleT>
+// struct sm100_tuning<false, SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sample_size::_4>
+// {
+//   // ipt_9.tpb_1024.rle_1.ws_0.mem_1.ld_0.laid_1.vec_0 1.358537  1.001009  1.373329  2.614104
+//   static constexpr int items                                     = 9;
+//   static constexpr int threads                                   = 1024;
+//   static constexpr bool rle_compress                             = true;
+//   static constexpr bool work_stealing                            = false;
+//   static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
+//   static constexpr CacheLoadModifier load_modifier               = LOAD_DEFAULT;
+//   static constexpr BlockLoadAlgorithm load_algorithm             = BLOCK_LOAD_WARP_TRANSPOSE;
+//   static constexpr int vec_size                                  = 1 << 0;
+// };
 
-template <class SampleT>
-struct sm100_tuning<false, SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sample_size::_8>
-{
-  // ipt_7.tpb_544.rle_1.ws_0.mem_1.ld_1.laid_0.vec_0 1.105331  0.934888  1.108557  1.391657
-  static constexpr int items                                     = 7;
-  static constexpr int threads                                   = 544;
-  static constexpr bool rle_compress                             = true;
-  static constexpr bool work_stealing                            = false;
-  static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
-  static constexpr CacheLoadModifier load_modifier               = LOAD_LDG;
-  static constexpr BlockLoadAlgorithm load_algorithm             = BLOCK_LOAD_DIRECT;
-  static constexpr int vec_size                                  = 1 << 0;
-};
+// TODO(gonidelis): we found the below tuning but the verification benchmark showed regressions, so it's disabled
+// template <class SampleT>
+// struct sm100_tuning<false, SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sample_size::_8>
+// {
+//   // ipt_7.tpb_544.rle_1.ws_0.mem_1.ld_1.laid_0.vec_0 1.105331  0.934888  1.108557  1.391657
+//   static constexpr int items                                     = 7;
+//   static constexpr int threads                                   = 544;
+//   static constexpr bool rle_compress                             = true;
+//   static constexpr bool work_stealing                            = false;
+//   static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
+//   static constexpr CacheLoadModifier load_modifier               = LOAD_LDG;
+//   static constexpr BlockLoadAlgorithm load_algorithm             = BLOCK_LOAD_DIRECT;
+//   static constexpr int vec_size                                  = 1 << 0;
+// };
 
 // multi.even
 template <class SampleT>
