@@ -115,6 +115,7 @@ bool test(size_t N, F&& f) {
 }
 
 int main(int argc, char** argv) {
+  NV_IF_TARGET(NV_IS_HOST, (
     size_t N = 1000000;
     if (!test(N, [](int* a, int* b, int* c, size_t n, int tidx) {
       int tpb = 256;
@@ -182,6 +183,7 @@ int main(int argc, char** argv) {
       }
       vec_add3<<<dim3(bpgx, bpgy, bpgz), tpb>>>(a, b, c, n);
       })) return 1;
-    
-    return 0;
+  ));
+
+  return 0;
 }
