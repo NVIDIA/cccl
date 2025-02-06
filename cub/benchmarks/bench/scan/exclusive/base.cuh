@@ -65,7 +65,7 @@ struct policy_hub_t
     LOAD_MODIFIER,
     STORE_ALGORITHM,
     SCAN_ALGORITHM,
-    cub::MemBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>,
+    cub::detail::MemBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>,
     delay_constructor_t>;
 
   struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
