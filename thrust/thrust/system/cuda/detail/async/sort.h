@@ -39,26 +39,24 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_STD_VER >= 2014
+#if _CCCL_HAS_CUDA_COMPILER
 
-#  if _CCCL_HAS_CUDA_COMPILER
+#  include <thrust/system/cuda/config.h>
 
-#    include <thrust/system/cuda/config.h>
+#  include <thrust/detail/alignment.h>
+#  include <thrust/detail/static_assert.h>
+#  include <thrust/distance.h>
+#  include <thrust/iterator/iterator_traits.h>
+#  include <thrust/system/cuda/detail/async/copy.h>
+#  include <thrust/system/cuda/detail/async/customization.h>
+#  include <thrust/system/cuda/detail/sort.h>
+#  include <thrust/system/cuda/future.h>
+#  include <thrust/type_traits/is_contiguous_iterator.h>
+#  include <thrust/type_traits/is_operator_less_or_greater_function_object.h>
+#  include <thrust/type_traits/is_trivially_relocatable.h>
+#  include <thrust/type_traits/logical_metafunctions.h>
 
-#    include <thrust/detail/alignment.h>
-#    include <thrust/detail/static_assert.h>
-#    include <thrust/distance.h>
-#    include <thrust/iterator/iterator_traits.h>
-#    include <thrust/system/cuda/detail/async/copy.h>
-#    include <thrust/system/cuda/detail/async/customization.h>
-#    include <thrust/system/cuda/detail/sort.h>
-#    include <thrust/system/cuda/future.h>
-#    include <thrust/type_traits/is_contiguous_iterator.h>
-#    include <thrust/type_traits/is_operator_less_or_greater_function_object.h>
-#    include <thrust/type_traits/is_trivially_relocatable.h>
-#    include <thrust/type_traits/logical_metafunctions.h>
-
-#    include <type_traits>
+#  include <type_traits>
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 THRUST_NAMESPACE_BEGIN
@@ -322,6 +320,4 @@ auto async_stable_sort(execution_policy<DerivedPolicy>& policy, ForwardIt first,
 _CCCL_SUPPRESS_DEPRECATED_POP
 THRUST_NAMESPACE_END
 
-#  endif // _CCCL_CUDA_COMPILER
-
-#endif
+#endif // _CCCL_CUDA_COMPILER

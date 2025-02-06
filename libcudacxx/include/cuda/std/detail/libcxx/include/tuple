@@ -891,10 +891,19 @@ public:
             enable_if_t<__is_tuple_of_iterator_references<_TupleOfIteratorReferences>::value, int> = 0,
             enable_if_t<(tuple_size<_TupleOfIteratorReferences>::value == sizeof...(_Tp)), int>    = 0>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 tuple(_TupleOfIteratorReferences&& __t)
-      : tuple(_CUDA_VSTD::forward<_TupleOfIteratorReferences>(__t).template __to_tuple<_Tp...>(
-          __make_tuple_indices_t<sizeof...(_Tp)>()))
+      : tuple(_CUDA_VSTD::forward<_TupleOfIteratorReferences>(__t),
+              typename __make_tuple_indices<sizeof...(_Tp)>::type{})
   {}
 
+private:
+  template <class _TupleOfIteratorReferences,
+            size_t... _Indices,
+            enable_if_t<__is_tuple_of_iterator_references<_TupleOfIteratorReferences>::value, int> = 0>
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 tuple(_TupleOfIteratorReferences&& __t, __tuple_indices<_Indices...>)
+      : tuple(_CUDA_VSTD::get<_Indices>(_CUDA_VSTD::forward<_TupleOfIteratorReferences>(__t))...)
+  {}
+
+public:
   template <class _Tuple,
             class _Constraints                                          = __tuple_like_constraints<_Tuple>,
             enable_if_t<!_PackExpandsToThisTuple<_Tuple>::value, int>   = 0,

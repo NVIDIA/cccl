@@ -45,11 +45,12 @@
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
+#include <c2h/extended_types.h>
 
 // TODO replace with DeviceSegmentedRadixSort::SortKeys interface once https://github.com/NVIDIA/cccl/issues/50 is
 // addressed Temporary wrapper that allows specializing the DeviceSegmentedRadixSort algorithm for different offset
 // types
-template <bool IS_DESCENDING, typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
+template <cub::SortOrder Order, typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_radix_sort_wrapper(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -68,7 +69,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_rad
   cub::DoubleBuffer<cub::NullType> d_values;
   cub::DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
   auto status = cub::DispatchSegmentedRadixSort<
-    IS_DESCENDING,
+    Order,
     KeyT,
     cub::NullType,
     BeginOffsetIteratorT,
@@ -102,8 +103,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_rad
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortKeys, sort_keys);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortKeysDescending, sort_keys_descending);
-DECLARE_LAUNCH_WRAPPER(dispatch_segmented_radix_sort_wrapper<true>, dispatch_segmented_radix_sort_descending);
-DECLARE_LAUNCH_WRAPPER(dispatch_segmented_radix_sort_wrapper<false>, dispatch_segmented_radix_sort);
+DECLARE_LAUNCH_WRAPPER(dispatch_segmented_radix_sort_wrapper<cub::SortOrder::Descending>,
+                       dispatch_segmented_radix_sort_descending);
+DECLARE_LAUNCH_WRAPPER(dispatch_segmented_radix_sort_wrapper<cub::SortOrder::Ascending>, dispatch_segmented_radix_sort);
 
 // TODO:
 // - int128
@@ -120,12 +122,12 @@ using bit_window_key_types = c2h::type_list<cuda::std::uint8_t, cuda::std::int8_
 using key_types = c2h::type_list<
     cuda::std::uint16_t
   , cuda::std::int16_t
-#ifdef TEST_HALF_T
+#if TEST_HALF_T()
   , half_t
-#endif
-#ifdef TEST_BF_T
+#endif // TEST_HALF_T()
+#if TEST_BF_T()
   , bfloat16_t
-#endif
+#endif // TEST_BF_T()
   >;
 // clang-format on
 using bit_window_key_types = c2h::type_list<cuda::std::uint16_t, cuda::std::int16_t>;

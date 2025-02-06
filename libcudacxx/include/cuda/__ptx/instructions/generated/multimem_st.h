@@ -20,7 +20,10 @@ _CCCL_DEVICE static inline void multimem_st(sem_weak_t, _B32* __addr, _B32 __val
   // __sem == sem_weak (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  asm("multimem.st.weak.global.b32 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "r"(__as_b32(__val)) : "memory");
+  asm("multimem.st.weak.global.b32 [%0], %1;"
+      :
+      : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
+      : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_st_is_not_supported_before_SM_90__();
@@ -50,41 +53,59 @@ _CCCL_DEVICE static inline void multimem_st(sem_t<_Sem> __sem, scope_t<_Scope> _
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cta)
   {
-    asm("multimem.st.relaxed.cta.global.b32 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "r"(__as_b32(__val)) : "memory");
+    asm("multimem.st.relaxed.cta.global.b32 [%0], %1;"
+        :
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
+        : "memory");
   }
   else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cluster)
   {
     asm("multimem.st.relaxed.cluster.global.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "r"(__as_b32(__val))
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
         : "memory");
   }
   else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_gpu)
   {
-    asm("multimem.st.relaxed.gpu.global.b32 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "r"(__as_b32(__val)) : "memory");
+    asm("multimem.st.relaxed.gpu.global.b32 [%0], %1;"
+        :
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
+        : "memory");
   }
   else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_sys)
   {
-    asm("multimem.st.relaxed.sys.global.b32 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "r"(__as_b32(__val)) : "memory");
+    asm("multimem.st.relaxed.sys.global.b32 [%0], %1;"
+        :
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
+        : "memory");
   }
   else _CCCL_IF_CONSTEXPR (__sem == sem_release && __scope == scope_cta)
   {
-    asm("multimem.st.release.cta.global.b32 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "r"(__as_b32(__val)) : "memory");
+    asm("multimem.st.release.cta.global.b32 [%0], %1;"
+        :
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
+        : "memory");
   }
   else _CCCL_IF_CONSTEXPR (__sem == sem_release && __scope == scope_cluster)
   {
     asm("multimem.st.release.cluster.global.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "r"(__as_b32(__val))
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
         : "memory");
   }
   else _CCCL_IF_CONSTEXPR (__sem == sem_release && __scope == scope_gpu)
   {
-    asm("multimem.st.release.gpu.global.b32 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "r"(__as_b32(__val)) : "memory");
+    asm("multimem.st.release.gpu.global.b32 [%0], %1;"
+        :
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
+        : "memory");
   }
   else _CCCL_IF_CONSTEXPR (__sem == sem_release && __scope == scope_sys)
   {
-    asm("multimem.st.release.sys.global.b32 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "r"(__as_b32(__val)) : "memory");
+    asm("multimem.st.release.sys.global.b32 [%0], %1;"
+        :
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
+        : "memory");
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -110,7 +131,10 @@ _CCCL_DEVICE static inline void multimem_st(sem_weak_t, _B64* __addr, _B64 __val
   // __sem == sem_weak (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  asm("multimem.st.weak.global.b64 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "l"(__as_b64(__val)) : "memory");
+  asm("multimem.st.weak.global.b64 [%0], %1;"
+      :
+      : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
+      : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_st_is_not_supported_before_SM_90__();
@@ -140,41 +164,59 @@ _CCCL_DEVICE static inline void multimem_st(sem_t<_Sem> __sem, scope_t<_Scope> _
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cta)
   {
-    asm("multimem.st.relaxed.cta.global.b64 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "l"(__as_b64(__val)) : "memory");
+    asm("multimem.st.relaxed.cta.global.b64 [%0], %1;"
+        :
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
+        : "memory");
   }
   else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cluster)
   {
     asm("multimem.st.relaxed.cluster.global.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "l"(__as_b64(__val))
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
         : "memory");
   }
   else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_gpu)
   {
-    asm("multimem.st.relaxed.gpu.global.b64 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "l"(__as_b64(__val)) : "memory");
+    asm("multimem.st.relaxed.gpu.global.b64 [%0], %1;"
+        :
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
+        : "memory");
   }
   else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_sys)
   {
-    asm("multimem.st.relaxed.sys.global.b64 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "l"(__as_b64(__val)) : "memory");
+    asm("multimem.st.relaxed.sys.global.b64 [%0], %1;"
+        :
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
+        : "memory");
   }
   else _CCCL_IF_CONSTEXPR (__sem == sem_release && __scope == scope_cta)
   {
-    asm("multimem.st.release.cta.global.b64 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "l"(__as_b64(__val)) : "memory");
+    asm("multimem.st.release.cta.global.b64 [%0], %1;"
+        :
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
+        : "memory");
   }
   else _CCCL_IF_CONSTEXPR (__sem == sem_release && __scope == scope_cluster)
   {
     asm("multimem.st.release.cluster.global.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "l"(__as_b64(__val))
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
         : "memory");
   }
   else _CCCL_IF_CONSTEXPR (__sem == sem_release && __scope == scope_gpu)
   {
-    asm("multimem.st.release.gpu.global.b64 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "l"(__as_b64(__val)) : "memory");
+    asm("multimem.st.release.gpu.global.b64 [%0], %1;"
+        :
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
+        : "memory");
   }
   else _CCCL_IF_CONSTEXPR (__sem == sem_release && __scope == scope_sys)
   {
-    asm("multimem.st.release.sys.global.b64 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "l"(__as_b64(__val)) : "memory");
+    asm("multimem.st.release.sys.global.b64 [%0], %1;"
+        :
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
+        : "memory");
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message

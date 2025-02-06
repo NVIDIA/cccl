@@ -488,14 +488,7 @@ struct get_arch<Plan<Arch>>
 template <class PtxPlan, class It, class T = typename iterator_traits<It>::value_type>
 struct BlockLoad
 {
-  using type =
-    cub::BlockLoad<T,
-                   PtxPlan::BLOCK_THREADS,
-                   PtxPlan::ITEMS_PER_THREAD,
-                   PtxPlan::LOAD_ALGORITHM,
-                   1,
-                   1,
-                   get_arch<PtxPlan>::type::ver>;
+  using type = cub::BlockLoad<T, PtxPlan::BLOCK_THREADS, PtxPlan::ITEMS_PER_THREAD, PtxPlan::LOAD_ALGORITHM, 1, 1>;
 };
 
 // cuda_optional
@@ -708,7 +701,7 @@ template <int ALLOCATIONS>
 THRUST_RUNTIME_FUNCTION cudaError_t alias_storage(
   void* storage_ptr, size_t& storage_size, void* (&allocations)[ALLOCATIONS], size_t (&allocation_sizes)[ALLOCATIONS])
 {
-  return cub::AliasTemporaries(storage_ptr, storage_size, allocations, allocation_sizes);
+  return cub::detail::AliasTemporaries(storage_ptr, storage_size, allocations, allocation_sizes);
 }
 
 } // namespace detail

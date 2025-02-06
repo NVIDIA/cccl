@@ -156,7 +156,7 @@ struct ReduceAgent
 
     using Vector      = typename cub::CubVector<T, PtxPlan::VECTOR_LOAD_LENGTH>;
     using LoadIt      = typename core::detail::LoadIterator<PtxPlan, InputIt>::type;
-    using BlockReduce = cub::BlockReduce<T, PtxPlan::BLOCK_THREADS, PtxPlan::BLOCK_ALGORITHM, 1, 1, Arch::ver>;
+    using BlockReduce = cub::BlockReduce<T, PtxPlan::BLOCK_THREADS, PtxPlan::BLOCK_ALGORITHM, 1, 1>;
 
     using VectorLoadIt = cub::CacheModifiedInputIterator<PtxPlan::LOAD_MODIFIER, Vector, Size>;
 
@@ -677,7 +677,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
       cub::GridQueue<UnsignedSize>::AllocationSize(), // bytes needed for grid queue descriptor0
       vshmem_size // size of virtualized shared memory storage
     };
-    status = cub::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+    status = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
     CUDA_CUB_RET_IF_FAIL(status);
     if (d_temp_storage == nullptr)
     {

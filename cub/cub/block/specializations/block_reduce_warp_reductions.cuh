@@ -67,11 +67,8 @@ namespace detail
  *
  * @tparam BLOCK_DIM_Z
  *   The thread block length in threads along the Z dimension
- *
- * @tparam LEGACY_PTX_ARCH
- *   The PTX compute capability for which to to specialize this collective
  */
-template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z, int LEGACY_PTX_ARCH = 0>
+template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z>
 struct BlockReduceWarpReductions
 {
   /// Constants
@@ -139,14 +136,14 @@ struct BlockReduceWarpReductions
    */
   template <bool FULL_TILE, typename ReductionOp, int SUCCESSOR_WARP>
   _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregates(
-    ReductionOp reduction_op, T warp_aggregate, int num_valid, Int2Type<SUCCESSOR_WARP> /*successor_warp*/)
+    ReductionOp reduction_op, T warp_aggregate, int num_valid, constant_t<SUCCESSOR_WARP> /*successor_warp*/)
   {
     if (FULL_TILE || (SUCCESSOR_WARP * LOGICAL_WARP_SIZE < num_valid))
     {
       T addend       = temp_storage.warp_aggregates[SUCCESSOR_WARP];
       warp_aggregate = reduction_op(warp_aggregate, addend);
     }
-    return ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid, Int2Type<SUCCESSOR_WARP + 1>());
+    return ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid, constant_v<SUCCESSOR_WARP + 1>);
   }
 
   /**
@@ -161,7 +158,7 @@ struct BlockReduceWarpReductions
    */
   template <bool FULL_TILE, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregates(
-    ReductionOp /*reduction_op*/, T warp_aggregate, int /*num_valid*/, Int2Type<WARPS> /*successor_warp*/)
+    ReductionOp /*reduction_op*/, T warp_aggregate, int /*num_valid*/, constant_t<int{WARPS}> /*successor_warp*/)
   {
     return warp_aggregate;
   }
@@ -192,7 +189,7 @@ struct BlockReduceWarpReductions
     // Update total aggregate in warp 0, lane 0
     if (linear_tid == 0)
     {
-      warp_aggregate = ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid, Int2Type<1>());
+      warp_aggregate = ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid, constant_v<1>);
     }
 
     return warp_aggregate;
@@ -259,9 +256,9 @@ struct BlockReduceWarpReductions
 };
 } // namespace detail
 
-template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z, int LEGACY_PTX_ARCH = 0>
+template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z>
 using BlockReduceWarpReductions CCCL_DEPRECATED_BECAUSE(
   "This class is considered an implementation detail and the public interface will be "
-  "removed.") = detail::BlockReduceWarpReductions<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z, LEGACY_PTX_ARCH>;
+  "removed.") = detail::BlockReduceWarpReductions<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
 CUB_NAMESPACE_END

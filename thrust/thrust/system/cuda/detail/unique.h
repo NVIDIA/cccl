@@ -153,10 +153,10 @@ struct UniqueAgent
 
     using BlockLoadItems = typename core::detail::BlockLoad<PtxPlan, ItemsLoadIt>::type;
 
-    using BlockDiscontinuityItems = cub::BlockDiscontinuity<item_type, PtxPlan::BLOCK_THREADS, 1, 1, Arch::ver>;
+    using BlockDiscontinuityItems = cub::BlockDiscontinuity<item_type, PtxPlan::BLOCK_THREADS, 1, 1>;
 
-    using TilePrefixCallback = cub::TilePrefixCallbackOp<Size, ::cuda::std::plus<>, ScanTileState, Arch::ver>;
-    using BlockScan          = cub::BlockScan<Size, PtxPlan::BLOCK_THREADS, PtxPlan::SCAN_ALGORITHM, 1, 1, Arch::ver>;
+    using TilePrefixCallback = cub::TilePrefixCallbackOp<Size, ::cuda::std::plus<>, ScanTileState>;
+    using BlockScan          = cub::BlockScan<Size, PtxPlan::BLOCK_THREADS, PtxPlan::SCAN_ALGORITHM, 1, 1>;
 
     using shared_items_t = core::detail::uninitialized_array<item_type, PtxPlan::ITEMS_PER_TILE>;
 
@@ -486,7 +486,7 @@ static cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
 
   void* allocations[2] = {nullptr, nullptr};
   //
-  status = cub::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+  status = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
   CUDA_CUB_RET_IF_FAIL(status);
 
   if (d_temp_storage == nullptr)

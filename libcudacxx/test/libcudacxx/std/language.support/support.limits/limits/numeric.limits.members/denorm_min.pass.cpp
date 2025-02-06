@@ -66,10 +66,10 @@ int main(int, char**)
   test<long double>(LDBL_TRUE_MIN);
 #  endif
 #endif
-#if defined(_CCCL_HAS_NVFP16)
+#if _CCCL_HAS_NVFP16()
   test<__half>(__double2half(5.9604644775390625e-08));
 #endif // _CCCL_HAS_NVFP16
-#if defined(_CCCL_HAS_NVBF16)
+#if _CCCL_HAS_NVBF16()
   test<__nv_bfloat16>(__double2bfloat16(9.18354961579912115600575419705e-41));
 #endif // _CCCL_HAS_NVBF16
 #if _CCCL_HAS_NVFP8()

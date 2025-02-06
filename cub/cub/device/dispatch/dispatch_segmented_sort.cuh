@@ -148,7 +148,7 @@ _CCCL_HOST_DEVICE OffsetIteratorT<Iterator, OffsetItT> make_offset_iterator(cons
  *   If `d_end_offsets[i]-1 <= d_begin_offsets[i]`, the i-th segment is
  *   considered empty.
  */
-template <bool IS_DESCENDING,
+template <SortOrder Order,
           typename ChainedPolicyT,
           typename KeyT,
           typename ValueT,
@@ -181,12 +181,12 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
   }
 
   using AgentSegmentedRadixSortT =
-    radix_sort::AgentSegmentedRadixSort<IS_DESCENDING, LargeSegmentPolicyT, KeyT, ValueT, OffsetT>;
+    radix_sort::AgentSegmentedRadixSort<Order == SortOrder::Descending, LargeSegmentPolicyT, KeyT, ValueT, OffsetT>;
 
   using WarpReduceT = cub::WarpReduce<KeyT>;
 
   using AgentWarpMergeSortT =
-    sub_warp_merge_sort::AgentSubWarpSort<IS_DESCENDING, MediumPolicyT, KeyT, ValueT, OffsetT>;
+    sub_warp_merge_sort::AgentSubWarpSort<Order == SortOrder::Descending, MediumPolicyT, KeyT, ValueT, OffsetT>;
 
   __shared__ union
   {
@@ -325,7 +325,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
  *   `d_end_offsets[i]-1 <= d_begin_offsets[i]`, the <em>i</em><sup>th</sup> is
  *   considered empty.
  */
-template <bool IS_DESCENDING,
+template <SortOrder Order,
           typename ChainedPolicyT,
           typename KeyT,
           typename ValueT,
@@ -360,10 +360,10 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::SmallAndMediumSegmentedSortPolic
   constexpr auto threads_per_small_segment  = static_cast<local_segment_index_t>(SmallPolicyT::WARP_THREADS);
 
   using MediumAgentWarpMergeSortT =
-    sub_warp_merge_sort::AgentSubWarpSort<IS_DESCENDING, MediumPolicyT, KeyT, ValueT, OffsetT>;
+    sub_warp_merge_sort::AgentSubWarpSort<Order == SortOrder::Descending, MediumPolicyT, KeyT, ValueT, OffsetT>;
 
   using SmallAgentWarpMergeSortT =
-    sub_warp_merge_sort::AgentSubWarpSort<IS_DESCENDING, SmallPolicyT, KeyT, ValueT, OffsetT>;
+    sub_warp_merge_sort::AgentSubWarpSort<Order == SortOrder::Descending, SmallPolicyT, KeyT, ValueT, OffsetT>;
 
   constexpr auto segments_per_medium_block =
     static_cast<local_segment_index_t>(SmallAndMediumPolicyT::SEGMENTS_PER_MEDIUM_BLOCK);
@@ -449,7 +449,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::SmallAndMediumSegmentedSortPolic
  *   `d_end_offsets[i]-1 <= d_begin_offsets[i]`, the <em>i</em><sup>th</sup> is
  *   considered empty.
  */
-template <bool IS_DESCENDING,
+template <SortOrder Order,
           typename ChainedPolicyT,
           typename KeyT,
           typename ValueT,
@@ -475,7 +475,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
   constexpr int small_tile_size = LargeSegmentPolicyT::BLOCK_THREADS * LargeSegmentPolicyT::ITEMS_PER_THREAD;
 
   using AgentSegmentedRadixSortT =
-    radix_sort::AgentSegmentedRadixSort<IS_DESCENDING, LargeSegmentPolicyT, KeyT, ValueT, OffsetT>;
+    radix_sort::AgentSegmentedRadixSort<Order == SortOrder::Descending, LargeSegmentPolicyT, KeyT, ValueT, OffsetT>;
 
   __shared__ typename AgentSegmentedRadixSortT::TempStorage storage;
 
@@ -601,8 +601,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t DeviceSegmentedSortCont
             (long long) stream);
 #endif // CUB_DEBUG_LOG
 
-    THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
-      blocks_in_grid, LargeSegmentPolicyT::BLOCK_THREADS, 0, stream)
+    THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(blocks_in_grid, LargeSegmentPolicyT::BLOCK_THREADS, 0, stream)
       .doit(large_kernel,
             large_and_medium_segments_indices,
             d_current_keys,
@@ -651,7 +650,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t DeviceSegmentedSortCont
             (long long) stream);
 #endif // CUB_DEBUG_LOG
 
-    THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+    THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
       small_and_medium_blocks_in_grid, SmallAndMediumPolicyT::BLOCK_THREADS, 0, stream)
       .doit(small_kernel,
             small_segments,
@@ -749,7 +748,7 @@ __launch_bounds__(1) CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortContin
 
 } // namespace detail::segmented_sort
 
-template <bool IS_DESCENDING,
+template <SortOrder Order,
           typename KeyT,
           typename ValueT,
           typename OffsetT,
@@ -1079,7 +1078,7 @@ struct DispatchSegmentedSort
         // kernels for each of them.
         error = SortWithPartitioning<LargeSegmentPolicyT, SmallAndMediumPolicyT>(
           detail::segmented_sort::DeviceSegmentedSortKernelLarge<
-            IS_DESCENDING,
+            Order,
             MaxPolicyT,
             KeyT,
             ValueT,
@@ -1087,7 +1086,7 @@ struct DispatchSegmentedSort
             StreamingEndOffsetIteratorT,
             OffsetT>,
           detail::segmented_sort::DeviceSegmentedSortKernelSmall<
-            IS_DESCENDING,
+            Order,
             MaxPolicyT,
             KeyT,
             ValueT,
@@ -1111,7 +1110,7 @@ struct DispatchSegmentedSort
 
         error = SortWithoutPartitioning<LargeSegmentPolicyT>(
           detail::segmented_sort::DeviceSegmentedSortFallbackKernel<
-            IS_DESCENDING,
+            Order,
             MaxPolicyT,
             KeyT,
             ValueT,
@@ -1271,43 +1270,43 @@ private:
 
 #else // CUB_RDC_ENABLED
 
-#  define CUB_TEMP_DEVICE_CODE                                                 \
-    error =                                                                    \
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(1, 1, 0, stream) \
-        .doit(                                                                 \
-          detail::segmented_sort::DeviceSegmentedSortContinuationKernel<       \
-            typename PolicyHub::MaxPolicy,                                     \
-            LargeKernelT,                                                      \
-            SmallKernelT,                                                      \
-            KeyT,                                                              \
-            ValueT,                                                            \
-            StreamingBeginOffsetIteratorT,                                     \
-            StreamingEndOffsetIteratorT>,                                      \
-          large_kernel,                                                        \
-          small_kernel,                                                        \
-          current_num_segments,                                                \
-          d_keys.Current(),                                                    \
-          GetFinalOutput<KeyT>(LargeSegmentPolicyT::RADIX_BITS, d_keys),       \
-          d_keys_double_buffer,                                                \
-          d_values.Current(),                                                  \
-          GetFinalOutput<ValueT>(LargeSegmentPolicyT::RADIX_BITS, d_values),   \
-          d_values_double_buffer,                                              \
-          current_begin_offset,                                                \
-          current_end_offset,                                                  \
-          group_sizes.get(),                                                   \
-          large_and_medium_segments_indices.get(),                             \
-          small_segments_indices.get());                                       \
-    error = CubDebug(error);                                                   \
-                                                                               \
-    if (cudaSuccess != error)                                                  \
-    {                                                                          \
-      return error;                                                            \
-    }                                                                          \
-                                                                               \
-    error = CubDebug(detail::DebugSyncStream(stream));                         \
-    if (cudaSuccess != error)                                                  \
-    {                                                                          \
-      return error;                                                            \
+#  define CUB_TEMP_DEVICE_CODE                                               \
+    error =                                                                  \
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, 1, 0, stream) \
+        .doit(                                                               \
+          detail::segmented_sort::DeviceSegmentedSortContinuationKernel<     \
+            typename PolicyHub::MaxPolicy,                                   \
+            LargeKernelT,                                                    \
+            SmallKernelT,                                                    \
+            KeyT,                                                            \
+            ValueT,                                                          \
+            StreamingBeginOffsetIteratorT,                                   \
+            StreamingEndOffsetIteratorT>,                                    \
+          large_kernel,                                                      \
+          small_kernel,                                                      \
+          current_num_segments,                                              \
+          d_keys.Current(),                                                  \
+          GetFinalOutput<KeyT>(LargeSegmentPolicyT::RADIX_BITS, d_keys),     \
+          d_keys_double_buffer,                                              \
+          d_values.Current(),                                                \
+          GetFinalOutput<ValueT>(LargeSegmentPolicyT::RADIX_BITS, d_values), \
+          d_values_double_buffer,                                            \
+          current_begin_offset,                                              \
+          current_end_offset,                                                \
+          group_sizes.get(),                                                 \
+          large_and_medium_segments_indices.get(),                           \
+          small_segments_indices.get());                                     \
+    error = CubDebug(error);                                                 \
+                                                                             \
+    if (cudaSuccess != error)                                                \
+    {                                                                        \
+      return error;                                                          \
+    }                                                                        \
+                                                                             \
+    error = CubDebug(detail::DebugSyncStream(stream));                       \
+    if (cudaSuccess != error)                                                \
+    {                                                                        \
+      return error;                                                          \
     }
 
 #endif // CUB_RDC_ENABLED
@@ -1385,7 +1384,7 @@ private:
 #endif // CUB_DEBUG_LOG
 
     // Invoke fallback kernel
-    THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(blocks_in_grid, threads_in_block, 0, stream)
+    THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(blocks_in_grid, threads_in_block, 0, stream)
       .doit(fallback_kernel,
             d_keys.Current(),
             GetFinalOutput(LargeSegmentPolicyT::RADIX_BITS, d_keys),

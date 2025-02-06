@@ -62,11 +62,8 @@ namespace detail
  *
  * @tparam LOGICAL_WARP_THREADS
  *   Number of threads per logical warp (must be a power-of-two)
- *
- * @tparam LEGACY_PTX_ARCH
- *   The PTX compute capability for which to to specialize this collective
  */
-template <typename T, int LOGICAL_WARP_THREADS, int LEGACY_PTX_ARCH = 0>
+template <typename T, int LOGICAL_WARP_THREADS>
 struct WarpScanShfl
 {
   //---------------------------------------------------------------------
@@ -88,12 +85,17 @@ struct WarpScanShfl
   template <typename S>
   struct IntegerTraits
   {
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     enum
     {
       /// Whether the data type is a small (32b or less) integer for which we can use a single SFHL instruction per
       /// exchange
-      IS_SMALL_UNSIGNED = (Traits<S>::CATEGORY == UNSIGNED_INTEGER) && (sizeof(S) <= sizeof(unsigned int))
+      IS_SMALL_UNSIGNED =
+        ::cuda::std::is_integral<S>::value && ::cuda::std::is_unsigned<S>::value && (sizeof(S) <= sizeof(unsigned int)),
+      old_IS_SMALL_UNSIGNED = (Traits<S>::CATEGORY == UNSIGNED_INTEGER) && (sizeof(S) <= sizeof(unsigned int))
     };
+    _CCCL_SUPPRESS_DEPRECATED_POP
+    static_assert(IS_SMALL_UNSIGNED == old_IS_SMALL_UNSIGNED, "");
   };
 
   /// Shared memory storage layout type
@@ -437,7 +439,7 @@ struct WarpScanShfl
    */
   template <typename _T, typename ScanOpT>
   _CCCL_DEVICE _CCCL_FORCEINLINE _T
-  InclusiveScanStep(_T input, ScanOpT scan_op, int first_lane, int offset, Int2Type<true> /*is_small_unsigned*/)
+  InclusiveScanStep(_T input, ScanOpT scan_op, int first_lane, int offset, ::cuda::std::true_type /*is_small_unsigned*/)
   {
     return InclusiveScanStep(input, scan_op, first_lane, offset);
   }
@@ -462,8 +464,8 @@ struct WarpScanShfl
    *   Marker type indicating whether T is a small integer
    */
   template <typename _T, typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE _T
-  InclusiveScanStep(_T input, ScanOpT scan_op, int first_lane, int offset, Int2Type<false> /*is_small_unsigned*/)
+  _CCCL_DEVICE _CCCL_FORCEINLINE _T InclusiveScanStep(
+    _T input, ScanOpT scan_op, int first_lane, int offset, ::cuda::std::false_type /*is_small_unsigned*/)
   {
     return InclusiveScanStep(input, scan_op, first_lane, offset);
   }
@@ -519,7 +521,11 @@ struct WarpScanShfl
     for (int STEP = 0; STEP < STEPS; STEP++)
     {
       inclusive_output = InclusiveScanStep(
-        inclusive_output, scan_op, segment_first_lane, (1 << STEP), Int2Type<IntegerTraits<T>::IS_SMALL_UNSIGNED>());
+        inclusive_output,
+        scan_op,
+        segment_first_lane,
+        (1 << STEP),
+        bool_constant_v<IntegerTraits<T>::IS_SMALL_UNSIGNED>);
     }
   }
 
@@ -560,7 +566,7 @@ struct WarpScanShfl
         scan_op.op,
         segment_first_lane,
         (1 << STEP),
-        Int2Type<IntegerTraits<T>::IS_SMALL_UNSIGNED>());
+        bool_constant_v<IntegerTraits<T>::IS_SMALL_UNSIGNED>);
     }
   }
 
@@ -618,7 +624,7 @@ struct WarpScanShfl
    *        integer types)
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  Update(T input, T& inclusive, T& exclusive, ::cuda::std::plus<> /*scan_op*/, Int2Type<true> /*is_integer*/)
+  Update(T input, T& inclusive, T& exclusive, ::cuda::std::plus<> /*scan_op*/, ::cuda::std::true_type /*is_integer*/)
   {
     // initial value presumed 0
     exclusive = inclusive - input;
@@ -646,7 +652,12 @@ struct WarpScanShfl
    *        (specialized for summation of integer types)
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void Update(
-    T input, T& inclusive, T& exclusive, ::cuda::std::plus<> scan_op, T initial_value, Int2Type<true> /*is_integer*/)
+    T input,
+    T& inclusive,
+    T& exclusive,
+    ::cuda::std::plus<> scan_op,
+    T initial_value,
+    ::cuda::std::true_type /*is_integer*/)
   {
     inclusive = scan_op(initial_value, inclusive);
     exclusive = inclusive - input;
@@ -677,9 +688,9 @@ struct WarpScanShfl
 };
 } // namespace detail
 
-template <typename T, int LOGICAL_WARP_THREADS, int LEGACY_PTX_ARCH = 0>
+template <typename T, int LOGICAL_WARP_THREADS>
 using WarpScanShfl CCCL_DEPRECATED_BECAUSE(
   "This class is considered an implementation detail and the public interface will be "
-  "removed.") = detail::WarpScanShfl<T, LOGICAL_WARP_THREADS, LEGACY_PTX_ARCH>;
+  "removed.") = detail::WarpScanShfl<T, LOGICAL_WARP_THREADS>;
 
 CUB_NAMESPACE_END

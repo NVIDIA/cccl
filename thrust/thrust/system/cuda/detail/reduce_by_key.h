@@ -169,12 +169,10 @@ struct ReduceByKeyAgent
     using BlockLoadKeys   = typename core::detail::BlockLoad<PtxPlan, KeysLoadIt>::type;
     using BlockLoadValues = typename core::detail::BlockLoad<PtxPlan, ValuesLoadIt>::type;
 
-    using BlockDiscontinuityKeys = cub::BlockDiscontinuity<key_type, PtxPlan::BLOCK_THREADS, 1, 1, Arch::ver>;
+    using BlockDiscontinuityKeys = cub::BlockDiscontinuity<key_type, PtxPlan::BLOCK_THREADS, 1, 1>;
 
-    using TilePrefixCallback =
-      cub::TilePrefixCallbackOp<size_value_pair_t, ReduceBySegmentOp, ScanTileState, Arch::ver>;
-    using BlockScan =
-      cub::BlockScan<size_value_pair_t, PtxPlan::BLOCK_THREADS, PtxPlan::SCAN_ALGORITHM, 1, 1, Arch::ver>;
+    using TilePrefixCallback = cub::TilePrefixCallbackOp<size_value_pair_t, ReduceBySegmentOp, ScanTileState>;
+    using BlockScan          = cub::BlockScan<size_value_pair_t, PtxPlan::BLOCK_THREADS, PtxPlan::SCAN_ALGORITHM, 1, 1>;
 
     union TempStorage
     {
@@ -763,7 +761,7 @@ THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
   CUDA_CUB_RET_IF_FAIL(status);
 
   void* allocations[2] = {nullptr, nullptr};
-  status               = cub::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+  status = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
   CUDA_CUB_RET_IF_FAIL(status);
 
   if (d_temp_storage == nullptr)

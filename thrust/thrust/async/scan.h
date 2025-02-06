@@ -30,17 +30,15 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_STD_VER >= 2014
+#include <thrust/detail/execution_policy.h>
+#include <thrust/detail/select_system.h>
+#include <thrust/detail/static_assert.h>
+#include <thrust/future.h>
+#include <thrust/system/detail/adl/async/scan.h>
+#include <thrust/type_traits/is_execution_policy.h>
+#include <thrust/type_traits/logical_metafunctions.h>
 
-#  include <thrust/detail/execution_policy.h>
-#  include <thrust/detail/select_system.h>
-#  include <thrust/detail/static_assert.h>
-#  include <thrust/future.h>
-#  include <thrust/system/detail/adl/async/scan.h>
-#  include <thrust/type_traits/is_execution_policy.h>
-#  include <thrust/type_traits/logical_metafunctions.h>
-
-#  include <cuda/std/type_traits>
+#include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -313,5 +311,3 @@ _CCCL_GLOBAL_CONSTANT exclusive_scan_detail::exclusive_scan_fn exclusive_scan{};
 } // namespace async
 
 THRUST_NAMESPACE_END
-
-#endif

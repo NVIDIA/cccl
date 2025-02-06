@@ -15,10 +15,8 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_STD_VER >= 2014
-
-#  include <thrust/system/cuda/detail/execution_policy.h>
-#  include <thrust/system/cuda/pointer.h>
+#include <thrust/system/cuda/detail/execution_policy.h>
+#include <thrust/system/cuda/pointer.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -73,6 +71,4 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 
 THRUST_NAMESPACE_END
 
-#  include <thrust/system/cuda/detail/future.inl>
-
-#endif // C++14
+#include <thrust/system/cuda/detail/future.inl>

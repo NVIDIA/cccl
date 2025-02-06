@@ -1,31 +1,29 @@
 #include <thrust/detail/config.h>
 
-#if _CCCL_STD_VER >= 2014
+#include <thrust/async/for_each.h>
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 
-#  include <thrust/async/for_each.h>
-#  include <thrust/device_vector.h>
-#  include <thrust/host_vector.h>
-
-#  include <unittest/unittest.h>
+#include <unittest/unittest.h>
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 
-#  define DEFINE_ASYNC_FOR_EACH_CALLABLE(name, ...)                                           \
-    struct THRUST_PP_CAT2(name, _fn)                                                          \
-    {                                                                                         \
-      template <typename ForwardIt, typename Sentinel, typename UnaryFunction>                \
-      _CCCL_HOST auto operator()(ForwardIt&& first, Sentinel&& last, UnaryFunction&& f) const \
-        THRUST_RETURNS(::thrust::async::for_each(                                             \
-          __VA_ARGS__ THRUST_PP_COMMA_IF(THRUST_PP_ARITY(__VA_ARGS__)) THRUST_FWD(first),     \
-          THRUST_FWD(last),                                                                   \
-          THRUST_FWD(f)))                                                                     \
-    };                                                                                        \
-    /**/
+#define DEFINE_ASYNC_FOR_EACH_CALLABLE(name, ...)                                           \
+  struct THRUST_PP_CAT2(name, _fn)                                                          \
+  {                                                                                         \
+    template <typename ForwardIt, typename Sentinel, typename UnaryFunction>                \
+    _CCCL_HOST auto operator()(ForwardIt&& first, Sentinel&& last, UnaryFunction&& f) const \
+      THRUST_RETURNS(::thrust::async::for_each(                                             \
+        __VA_ARGS__ THRUST_PP_COMMA_IF(THRUST_PP_ARITY(__VA_ARGS__)) THRUST_FWD(first),     \
+        THRUST_FWD(last),                                                                   \
+        THRUST_FWD(f)))                                                                     \
+  };                                                                                        \
+  /**/
 
 DEFINE_ASYNC_FOR_EACH_CALLABLE(invoke_async_for_each);
 DEFINE_ASYNC_FOR_EACH_CALLABLE(invoke_async_for_each_device, thrust::device);
 
-#  undef DEFINE_ASYNC_FOR_EACH_CALLABLE
+#undef DEFINE_ASYNC_FOR_EACH_CALLABLE
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -69,5 +67,3 @@ DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES_AND_NAME(
   THRUST_PP_EXPAND_ARGS(test_async_for_each<invoke_async_for_each_device_fn, inplace_divide_by_2>::tester),
   NumericTypes,
   test_async_for_each_policy);
-
-#endif

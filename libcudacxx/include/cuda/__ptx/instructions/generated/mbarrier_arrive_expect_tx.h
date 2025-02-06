@@ -90,14 +90,14 @@ _CCCL_DEVICE static inline void mbarrier_arrive_expect_tx(
 
 /*
 // mbarrier.arrive.expect_tx.sem.scope.space.b64 state, [addr], txCount; // PTX ISA 86, SM_90
-// .space     = { .shared::cta }
 // .sem       = { .relaxed }
 // .scope     = { .cta, .cluster }
+// .space     = { .shared::cta }
 template <cuda::ptx::dot_scope Scope>
 __device__ static inline uint64_t mbarrier_arrive_expect_tx(
-  cuda::ptx::space_shared_t,
   cuda::ptx::sem_relaxed_t,
   cuda::ptx::scope_t<Scope> scope,
+  cuda::ptx::space_shared_t,
   uint64_t* addr,
   const uint32_t& txCount);
 */
@@ -105,15 +105,15 @@ __device__ static inline uint64_t mbarrier_arrive_expect_tx(
 extern "C" _CCCL_DEVICE void __cuda_ptx_mbarrier_arrive_expect_tx_is_not_supported_before_SM_90__();
 template <dot_scope _Scope>
 _CCCL_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive_expect_tx(
-  space_shared_t,
   sem_relaxed_t,
   scope_t<_Scope> __scope,
+  space_shared_t,
   _CUDA_VSTD::uint64_t* __addr,
   const _CUDA_VSTD::uint32_t& __txCount)
 {
-  // __space == space_shared (due to parameter type constraint)
   // __sem == sem_relaxed (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
+// __space == space_shared (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   _CUDA_VSTD::uint64_t __state;
   _CCCL_IF_CONSTEXPR (__scope == scope_cta)
@@ -141,14 +141,14 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive_expect_tx(
 
 /*
 // mbarrier.arrive.expect_tx.sem.scope.space.b64 _, [addr], txCount; // PTX ISA 86, SM_90
-// .space     = { .shared::cluster }
 // .sem       = { .relaxed }
 // .scope     = { .cluster }
+// .space     = { .shared::cluster }
 template <typename = void>
 __device__ static inline void mbarrier_arrive_expect_tx(
-  cuda::ptx::space_cluster_t,
   cuda::ptx::sem_relaxed_t,
   cuda::ptx::scope_cluster_t,
+  cuda::ptx::space_cluster_t,
   uint64_t* addr,
   const uint32_t& txCount);
 */
@@ -156,11 +156,11 @@ __device__ static inline void mbarrier_arrive_expect_tx(
 extern "C" _CCCL_DEVICE void __cuda_ptx_mbarrier_arrive_expect_tx_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void mbarrier_arrive_expect_tx(
-  space_cluster_t, sem_relaxed_t, scope_cluster_t, _CUDA_VSTD::uint64_t* __addr, const _CUDA_VSTD::uint32_t& __txCount)
+  sem_relaxed_t, scope_cluster_t, space_cluster_t, _CUDA_VSTD::uint64_t* __addr, const _CUDA_VSTD::uint32_t& __txCount)
 {
-// __space == space_cluster (due to parameter type constraint)
 // __sem == sem_relaxed (due to parameter type constraint)
 // __scope == scope_cluster (due to parameter type constraint)
+// __space == space_cluster (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   asm("mbarrier.arrive.expect_tx.relaxed.cluster.shared::cluster.b64 _, [%0], %1;"
       :

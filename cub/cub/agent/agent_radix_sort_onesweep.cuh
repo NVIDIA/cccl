@@ -72,19 +72,20 @@ enum RadixSortStoreAlgorithm
   RADIX_SORT_STORE_ALIGNED
 };
 
-template <int NOMINAL_BLOCK_THREADS_4B,
-          int NOMINAL_ITEMS_PER_THREAD_4B,
-          typename ComputeT,
-          /** \brief Number of private histograms to use in the ranker;
-              ignored if the ranking algorithm is not one of RADIX_RANK_MATCH_EARLY_COUNTS_* */
-          int _RANK_NUM_PARTS,
-          /** \brief Ranking algorithm used in the onesweep kernel. Only algorithms that
-            support warp-strided key arrangement and count callbacks are supported. */
-          RadixRankAlgorithm _RANK_ALGORITHM,
-          BlockScanAlgorithm _SCAN_ALGORITHM,
-          RadixSortStoreAlgorithm _STORE_ALGORITHM,
-          int _RADIX_BITS,
-          typename ScalingType = RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
+template <
+  int NOMINAL_BLOCK_THREADS_4B,
+  int NOMINAL_ITEMS_PER_THREAD_4B,
+  typename ComputeT,
+  /** \brief Number of private histograms to use in the ranker;
+      ignored if the ranking algorithm is not one of RADIX_RANK_MATCH_EARLY_COUNTS_* */
+  int _RANK_NUM_PARTS,
+  /** \brief Ranking algorithm used in the onesweep kernel. Only algorithms that
+    support warp-strided key arrangement and count callbacks are supported. */
+  RadixRankAlgorithm _RANK_ALGORITHM,
+  BlockScanAlgorithm _SCAN_ALGORITHM,
+  RadixSortStoreAlgorithm _STORE_ALGORITHM,
+  int _RADIX_BITS,
+  typename ScalingType = detail::RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
 struct AgentRadixSortOnesweepPolicy : ScalingType
 {
   enum
@@ -115,7 +116,7 @@ struct AgentRadixSortOnesweep
   enum
   {
     ITEMS_PER_THREAD      = AgentRadixSortOnesweepPolicy::ITEMS_PER_THREAD,
-    KEYS_ONLY             = std::is_same<ValueT, NullType>::value,
+    KEYS_ONLY             = ::cuda::std::is_same<ValueT, NullType>::value,
     BLOCK_THREADS         = AgentRadixSortOnesweepPolicy::BLOCK_THREADS,
     RANK_NUM_PARTS        = AgentRadixSortOnesweepPolicy::RANK_NUM_PARTS,
     TILE_ITEMS            = BLOCK_THREADS * ITEMS_PER_THREAD,
@@ -595,7 +596,8 @@ struct AgentRadixSortOnesweep
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void GatherScatterValues(int (&ranks)[ITEMS_PER_THREAD], Int2Type<false> keys_only)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  GatherScatterValues(int (&ranks)[ITEMS_PER_THREAD], ::cuda::std::false_type keys_only)
   {
     // compute digits corresponding to the keys
     int digits[ITEMS_PER_THREAD];
@@ -613,7 +615,9 @@ struct AgentRadixSortOnesweep
     ScatterValuesGlobal(digits);
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void GatherScatterValues(int (&ranks)[ITEMS_PER_THREAD], Int2Type<true> keys_only) {}
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  GatherScatterValues(int (&ranks)[ITEMS_PER_THREAD], ::cuda::std::true_type keys_only)
+  {}
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
   {
@@ -644,7 +648,7 @@ struct AgentRadixSortOnesweep
     ScatterKeysGlobal();
 
     // scatter values if necessary
-    GatherScatterValues(ranks, Int2Type<KEYS_ONLY>());
+    GatherScatterValues(ranks, bool_constant_v<KEYS_ONLY>);
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE //
@@ -691,16 +695,5 @@ struct AgentRadixSortOnesweep
 
 } // namespace radix_sort
 } // namespace detail
-
-template <typename AgentRadixSortOnesweepPolicy,
-          bool IS_DESCENDING,
-          typename KeyT,
-          typename ValueT,
-          typename OffsetT,
-          typename PortionOffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
-using AgentRadixSortOnesweep CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
-                                                     "interface will be removed.") = detail::radix_sort::
-  AgentRadixSortOnesweep<AgentRadixSortOnesweepPolicy, IS_DESCENDING, KeyT, ValueT, OffsetT, PortionOffsetT, DecomposerT>;
 
 CUB_NAMESPACE_END

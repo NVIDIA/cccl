@@ -41,5 +41,4 @@
 #include <thrust/detail/config/host_system.h> // IWYU pragma: export
 
 #include <thrust/detail/config/device_system.h> // IWYU pragma: export
-#include <thrust/detail/config/global_workarounds.h> // IWYU pragma: export
 #include <thrust/detail/config/namespace.h> // IWYU pragma: export

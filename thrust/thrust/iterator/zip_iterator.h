@@ -140,11 +140,7 @@ public:
 
   /*! Default constructor does nothing.
    */
-#if _CCCL_COMPILER(MSVC2017)
-  inline _CCCL_HOST_DEVICE zip_iterator() {}
-#else // ^^^ _CCCL_COMPILER(MSVC2017) ^^^ / vvv !_CCCL_COMPILER(MSVC2017) vvv
   zip_iterator() = default;
-#endif // !_CCCL_COMPILER(MSVC2017)
 
   /*! This constructor creates a new \p zip_iterator from a
    *  \p tuple of iterators.
@@ -177,7 +173,7 @@ public:
 private:
   using super_t = typename detail::zip_iterator_base<IteratorTuple>::type;
 
-  friend class thrust::iterator_core_access;
+  friend class iterator_core_access;
 
   // Dereferencing returns a tuple built from the dereferenced
   // iterators in the iterator tuple.

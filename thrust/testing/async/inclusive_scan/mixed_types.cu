@@ -4,10 +4,8 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 #include <thrust/detail/config.h>
 
-#if _CCCL_STD_VER >= 2014
-
-#  include <async/inclusive_scan/mixin.h>
-#  include <async/test_policy_overloads.h>
+#include <async/inclusive_scan/mixin.h>
+#include <async/test_policy_overloads.h>
 
 // Test using mixed int/float types for:
 // - input_value_type       | (int, float)
@@ -108,7 +106,5 @@ void test_scan_mixed_types(size_t num_values)
   test_policy_overloads<invoker<float, float>>::run(num_values);
 }
 DECLARE_SIZED_UNITTEST(test_scan_mixed_types);
-
-#endif // C++14
 
 _CCCL_SUPPRESS_DEPRECATED_POP

@@ -116,10 +116,8 @@ struct launch_transform_to_int_convertible
       CUDAX_CHECK(kernel_run_proof);
     }
 
-    using __as_kernel_arg = int;
-
     // This is the value that will be passed to the kernel
-    explicit operator int() const
+    int kernel_transform() const
     {
       return value_;
     }

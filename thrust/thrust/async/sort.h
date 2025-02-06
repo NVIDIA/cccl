@@ -30,16 +30,14 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_STD_VER >= 2014
+#include <thrust/detail/select_system.h>
+#include <thrust/detail/static_assert.h>
+#include <thrust/event.h>
+#include <thrust/system/detail/adl/async/sort.h>
+#include <thrust/type_traits/is_execution_policy.h>
+#include <thrust/type_traits/logical_metafunctions.h>
 
-#  include <thrust/detail/select_system.h>
-#  include <thrust/detail/static_assert.h>
-#  include <thrust/event.h>
-#  include <thrust/system/detail/adl/async/sort.h>
-#  include <thrust/type_traits/is_execution_policy.h>
-#  include <thrust/type_traits/logical_metafunctions.h>
-
-#  include <cuda/std/type_traits>
+#include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -289,5 +287,3 @@ _CCCL_GLOBAL_CONSTANT sort_detail::sort_fn sort{};
 } // namespace async
 
 THRUST_NAMESPACE_END
-
-#endif

@@ -63,7 +63,6 @@ namespace detail
 template <typename T, typename = void>
 struct larger_unsigned_type
 {
-  static_assert(sizeof(T) >= 8, "64-bit integer are only supported from CUDA >= 11.5");
   using type = void;
 };
 

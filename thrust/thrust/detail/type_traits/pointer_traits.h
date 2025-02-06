@@ -91,7 +91,7 @@ template <template <typename, typename, typename, typename...> class Ptr,
           typename T>
 struct rebind_pointer<Ptr<OldT, Tag, Ref<OldT, RefTail...>, PtrTail...>, T>
 {
-  //  static_assert(std::is_same<OldT, Tag>::value, "0");
+  //  static_assert(::cuda::std::is_same<OldT, Tag>::value, "0");
   using type = Ptr<T, Tag, Ref<T, RefTail...>, PtrTail...>;
 };
 
@@ -107,7 +107,7 @@ template <template <typename, typename, typename, typename...> class Ptr,
           typename T>
 struct rebind_pointer<Ptr<OldT, Tag, Ref<OldT, RefTail...>, DerivedPtr<OldT, DerivedPtrTail...>>, T>
 {
-  //  static_assert(std::is_same<OldT, Tag>::value, "1");
+  //  static_assert(::cuda::std::is_same<OldT, Tag>::value, "1");
   using type = Ptr<T, Tag, Ref<T, RefTail...>, DerivedPtr<T, DerivedPtrTail...>>;
 };
 
@@ -119,7 +119,7 @@ template <template <typename, typename, typename, typename...> class Ptr,
           typename T>
 struct rebind_pointer<Ptr<OldT, Tag, typename ::cuda::std::add_lvalue_reference<OldT>::type, PtrTail...>, T>
 {
-  //  static_assert(std::is_same<OldT, Tag>::value, "2");
+  //  static_assert(::cuda::std::is_same<OldT, Tag>::value, "2");
   using type = Ptr<T, Tag, typename ::cuda::std::add_lvalue_reference<T>::type, PtrTail...>;
 };
 
@@ -135,7 +135,7 @@ struct rebind_pointer<
   Ptr<OldT, Tag, typename ::cuda::std::add_lvalue_reference<OldT>::type, DerivedPtr<OldT, DerivedPtrTail...>>,
   T>
 {
-  //  static_assert(std::is_same<OldT, Tag>::value, "3");
+  //  static_assert(::cuda::std::is_same<OldT, Tag>::value, "3");
   using type = Ptr<T, Tag, typename ::cuda::std::add_lvalue_reference<T>::type, DerivedPtr<T, DerivedPtrTail...>>;
 };
 

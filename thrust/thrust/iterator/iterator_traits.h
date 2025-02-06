@@ -41,9 +41,9 @@
 
 #if _CCCL_COMPILER(NVRTC)
 #  include <cuda/std/iterator>
-#else
+#else // _CCCL_COMPILER(NVRTC)
 #  include <iterator>
-#endif
+#endif // _CCCL_COMPILER(NVRTC)
 
 THRUST_NAMESPACE_BEGIN
 
@@ -54,10 +54,9 @@ template <typename T>
 struct iterator_traits
     :
 #if _CCCL_COMPILER(NVRTC)
-    ::cuda::std::iterator_traits<T>
-#else
-    std::iterator_traits<T>
-#endif
+    ::cuda
+#endif // _CCCL_COMPILER(NVRTC)
+    ::std::iterator_traits<T>
 {};
 
 template <typename Iterator>

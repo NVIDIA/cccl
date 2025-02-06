@@ -207,7 +207,7 @@ struct AgentThreeWayPartition
   // Callback type for obtaining tile prefix during block scan
   using DelayConstructorT = typename PolicyT::detail::delay_constructor_t;
   using TilePrefixCallbackOpT =
-    cub::TilePrefixCallbackOp<AccumPackT, ::cuda::std::plus<>, ScanTileStateT, 0, DelayConstructorT>;
+    cub::TilePrefixCallbackOp<AccumPackT, ::cuda::std::plus<>, ScanTileStateT, DelayConstructorT>;
 
   // Item exchange type
   using ItemExchangeT = InputT[TILE_ITEMS];

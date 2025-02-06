@@ -88,10 +88,9 @@ mbarrier.try_wait.parity.relaxed.cta.shared::cta.b64
    // .sem       = { .relaxed }
    // .scope     = { .cta, .cluster }
    template <cuda::ptx::dot_scope Scope>
-   __device__ static inline void mbarrier_try_wait_parity(
+   __device__ static inline bool mbarrier_try_wait_parity(
      cuda::ptx::sem_relaxed_t,
      cuda::ptx::scope_t<Scope> scope,
-     bool waitComplete,
      uint64_t* addr,
      const uint32_t& phaseParity,
      const uint32_t& suspendTimeHint);
@@ -104,10 +103,9 @@ mbarrier.try_wait.parity.relaxed.cluster.shared::cta.b64
    // .sem       = { .relaxed }
    // .scope     = { .cta, .cluster }
    template <cuda::ptx::dot_scope Scope>
-   __device__ static inline void mbarrier_try_wait_parity(
+   __device__ static inline bool mbarrier_try_wait_parity(
      cuda::ptx::sem_relaxed_t,
      cuda::ptx::scope_t<Scope> scope,
-     bool waitComplete,
      uint64_t* addr,
      const uint32_t& phaseParity,
      const uint32_t& suspendTimeHint);
@@ -120,10 +118,9 @@ mbarrier.try_wait.parity.relaxed.cta.shared::cta.b64
    // .sem       = { .relaxed }
    // .scope     = { .cta, .cluster }
    template <cuda::ptx::dot_scope Scope>
-   __device__ static inline void mbarrier_try_wait_parity(
+   __device__ static inline bool mbarrier_try_wait_parity(
      cuda::ptx::sem_relaxed_t,
      cuda::ptx::scope_t<Scope> scope,
-     bool waitComplete,
      uint64_t* addr,
      const uint32_t& phaseParity);
 
@@ -135,9 +132,8 @@ mbarrier.try_wait.parity.relaxed.cluster.shared::cta.b64
    // .sem       = { .relaxed }
    // .scope     = { .cta, .cluster }
    template <cuda::ptx::dot_scope Scope>
-   __device__ static inline void mbarrier_try_wait_parity(
+   __device__ static inline bool mbarrier_try_wait_parity(
      cuda::ptx::sem_relaxed_t,
      cuda::ptx::scope_t<Scope> scope,
-     bool waitComplete,
      uint64_t* addr,
      const uint32_t& phaseParity);
