@@ -1152,8 +1152,8 @@ struct sm100_tuning<Input,
   using delay_constructor                            = exponential_backoff_constructor_t<0, 1200>;
 };
 
-// because we introduced cases for when offset is I64 this leads to regressions if not
-// defaulted explicitly
+#if CUB_IS_INT128_ENABLED
+// because we introduced cases for when offset is I64 this leads to regressions if not defaulted explicitly
 template <distinct_partitions DistinctPartitions>
 struct sm100_tuning<__int128_t,
                     flagged::no,
@@ -1166,6 +1166,7 @@ struct sm100_tuning<__int128_t,
     : sm90_tuning<__int128_t, flagged::no, keep_rejects::yes, offset_size::_4, primitive::no, input_size::_16>
 // ^^^^^ this base is wrong and leads to regressions ^^^^^
 {};
+#endif // CUB_IS_INT128_ENABLED
 
 // partition::flagged
 template <class Input>
