@@ -154,7 +154,7 @@ struct BlockScanRaking
    */
   template <int ITERATION, typename ScanOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T
-  GuardedReduce(T* raking_ptr, ScanOp scan_op, T raking_partial, Int2Type<ITERATION> /*iteration*/)
+  GuardedReduce(T* raking_ptr, ScanOp scan_op, T raking_partial, detail::int_constant_t<ITERATION> /*iteration*/)
   {
     if ((BlockRakingLayout::UNGUARDED) || (((linear_tid * SEGMENT_LENGTH) + ITERATION) < BLOCK_THREADS))
     {
@@ -162,7 +162,7 @@ struct BlockScanRaking
       raking_partial = scan_op(raking_partial, addend);
     }
 
-    return GuardedReduce(raking_ptr, scan_op, raking_partial, Int2Type<ITERATION + 1>());
+    return GuardedReduce(raking_ptr, scan_op, raking_partial, detail::int_constant_t<ITERATION + 1>());
   }
 
   /**
@@ -178,8 +178,8 @@ struct BlockScanRaking
    *   Prefix to seed reduction with
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T
-  GuardedReduce(T* /*raking_ptr*/, ScanOp /*scan_op*/, T raking_partial, Int2Type<SEGMENT_LENGTH> /*iteration*/)
+  _CCCL_DEVICE _CCCL_FORCEINLINE T GuardedReduce(
+    T* /*raking_ptr*/, ScanOp /*scan_op*/, T raking_partial, detail::int_constant_t<SEGMENT_LENGTH> /*iteration*/)
   {
     return raking_partial;
   }
@@ -194,10 +194,10 @@ struct BlockScanRaking
    *   [in] Input array
    */
   template <int ITERATION>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void CopySegment(T* out, T* in, Int2Type<ITERATION> /*iteration*/)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void CopySegment(T* out, T* in, detail::int_constant_t<ITERATION> /*iteration*/)
   {
     out[ITERATION] = in[ITERATION];
-    CopySegment(out, in, Int2Type<ITERATION + 1>());
+    CopySegment(out, in, detail::int_constant_t<ITERATION + 1>());
   }
 
   /**
@@ -209,7 +209,9 @@ struct BlockScanRaking
    * @param[in] in
    *   Input array
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void CopySegment(T* /*out*/, T* /*in*/, Int2Type<SEGMENT_LENGTH> /*iteration*/) {}
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  CopySegment(T* /*out*/, T* /*in*/, detail::int_constant_t<SEGMENT_LENGTH> /*iteration*/)
+  {}
 
   /// Performs upsweep raking reduction, returning the aggregate
   template <typename ScanOp>
@@ -218,11 +220,11 @@ struct BlockScanRaking
     T* smem_raking_ptr = BlockRakingLayout::RakingPtr(temp_storage.raking_grid, linear_tid);
 
     // Read data into registers
-    CopySegment(cached_segment, smem_raking_ptr, Int2Type<0>());
+    CopySegment(cached_segment, smem_raking_ptr, detail::int_constant_t<0>());
 
     T raking_partial = cached_segment[0];
 
-    return GuardedReduce(cached_segment, scan_op, raking_partial, Int2Type<1>());
+    return GuardedReduce(cached_segment, scan_op, raking_partial, detail::int_constant_t<1>());
   }
 
   /// Performs exclusive downsweep raking scan
@@ -234,13 +236,13 @@ struct BlockScanRaking
     // Read data back into registers
     if (!MEMOIZE)
     {
-      CopySegment(cached_segment, smem_raking_ptr, Int2Type<0>());
+      CopySegment(cached_segment, smem_raking_ptr, detail::int_constant_t<0>());
     }
 
     internal::ThreadScanExclusive(cached_segment, cached_segment, scan_op, raking_partial, apply_prefix);
 
     // Write data back to smem
-    CopySegment(smem_raking_ptr, cached_segment, Int2Type<0>());
+    CopySegment(smem_raking_ptr, cached_segment, detail::int_constant_t<0>());
   }
 
   /// Performs inclusive downsweep raking scan
@@ -252,13 +254,13 @@ struct BlockScanRaking
     // Read data back into registers
     if (!MEMOIZE)
     {
-      CopySegment(cached_segment, smem_raking_ptr, Int2Type<0>());
+      CopySegment(cached_segment, smem_raking_ptr, detail::int_constant_t<0>());
     }
 
     internal::ThreadScanInclusive(cached_segment, cached_segment, scan_op, raking_partial, apply_prefix);
 
     // Write data back to smem
-    CopySegment(smem_raking_ptr, cached_segment, Int2Type<0>());
+    CopySegment(smem_raking_ptr, cached_segment, detail::int_constant_t<0>());
   }
 
   //---------------------------------------------------------------------

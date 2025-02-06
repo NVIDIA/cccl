@@ -368,8 +368,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") AgentSpmv
    * @param is_direct_load
    *   Marker type indicating whether to load nonzeros directly during path-discovery or beforehand in batch
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE KeyValuePairT
-  ConsumeTile(int tile_idx, CoordinateT tile_start_coord, CoordinateT tile_end_coord, Int2Type<true> is_direct_load)
+  _CCCL_DEVICE _CCCL_FORCEINLINE KeyValuePairT ConsumeTile(
+    int tile_idx, CoordinateT tile_start_coord, CoordinateT tile_end_coord, ::cuda::std::true_type is_direct_load)
   {
     int tile_num_rows               = tile_end_coord.x - tile_start_coord.x;
     int tile_num_nonzeros           = tile_end_coord.y - tile_start_coord.y;
@@ -496,8 +496,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") AgentSpmv
    * @param is_direct_load
    *   Marker type indicating whether to load nonzeros directly during path-discovery or beforehand in batch
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE KeyValuePairT
-  ConsumeTile(int tile_idx, CoordinateT tile_start_coord, CoordinateT tile_end_coord, Int2Type<false> is_direct_load)
+  _CCCL_DEVICE _CCCL_FORCEINLINE KeyValuePairT ConsumeTile(
+    int tile_idx, CoordinateT tile_start_coord, CoordinateT tile_end_coord, ::cuda::std::false_type is_direct_load)
   {
     int tile_num_rows     = tile_end_coord.x - tile_start_coord.x;
     int tile_num_nonzeros = tile_end_coord.y - tile_start_coord.y;
@@ -732,8 +732,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the cuSPARSE library instead") AgentSpmv
     CoordinateT tile_end_coord   = temp_storage.tile_coords[1];
 
     // Consume multi-segment tile
-    KeyValuePairT tile_carry =
-      ConsumeTile(tile_idx, tile_start_coord, tile_end_coord, Int2Type<AgentSpmvPolicyT::DIRECT_LOAD_NONZEROS>());
+    KeyValuePairT tile_carry = ConsumeTile(
+      tile_idx, tile_start_coord, tile_end_coord, ::cuda::std::bool_constant<AgentSpmvPolicyT::DIRECT_LOAD_NONZEROS>());
 
     // Output the tile's carry-out
     if (threadIdx.x == 0)
