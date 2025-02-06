@@ -72,13 +72,14 @@ CUB_NAMESPACE_BEGIN
  * @tparam _BLOCK_ALGORITHM Cooperative block-wide reduction algorithm to use
  * @tparam _LOAD_MODIFIER Cache load modifier for reading input elements
  */
-template <int NOMINAL_BLOCK_THREADS_4B,
-          int NOMINAL_ITEMS_PER_THREAD_4B,
-          typename ComputeT,
-          int _VECTOR_LOAD_LENGTH,
-          BlockReduceAlgorithm _BLOCK_ALGORITHM,
-          CacheLoadModifier _LOAD_MODIFIER,
-          typename ScalingType = MemBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
+template <
+  int NOMINAL_BLOCK_THREADS_4B,
+  int NOMINAL_ITEMS_PER_THREAD_4B,
+  typename ComputeT,
+  int _VECTOR_LOAD_LENGTH,
+  BlockReduceAlgorithm _BLOCK_ALGORITHM,
+  CacheLoadModifier _LOAD_MODIFIER,
+  typename ScalingType = detail::MemBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
 struct AgentReducePolicy : ScalingType
 {
   /// Number of items per vectorized load
