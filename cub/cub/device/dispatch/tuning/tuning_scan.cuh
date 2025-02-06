@@ -73,7 +73,6 @@ enum class primitive_op
 enum class op_type
 {
   plus,
-  min_or_max,
   unknown
 };
 enum class offset_size
@@ -125,30 +124,10 @@ struct is_plus<::cuda::std::plus<T>>
   static constexpr bool value = true;
 };
 
-template <typename Op>
-struct is_min_or_max
-{
-  static constexpr bool value = false;
-};
-
-template <typename T>
-struct is_min_or_max<::cuda::minimum<T>>
-{
-  static constexpr bool value = true;
-};
-
-template <typename T>
-struct is_min_or_max<::cuda::maximum<T>>
-{
-  static constexpr bool value = true;
-};
-
 template <class ScanOpT>
 constexpr op_type classify_op()
 {
-  return is_plus<ScanOpT>::value
-         ? op_type::plus
-         : (is_min_or_max<ScanOpT>::value ? op_type::min_or_max : op_type::unknown);
+  return is_plus<ScanOpT>::value ? op_type::plus : op_type::unknown;
 }
 
 template <class ValueT>
@@ -430,117 +409,6 @@ struct sm100_tuning<double, AccumT, OffsetT, op_type::plus, primitive_accum::yes
 // offset_size::_8, accum_size::_16> : tuning<576, 21, 860, 630> {}; template <class OffsetT> struct
 // sm100_tuning<__uint128_t, OffsetT, op_type::plus, primitive_accum::no, offset_size::_8, accum_size::_16>
 //     : sm100_tuning<__int128_t, OffsetT, op_type::plus, primitive_accum::no, offset_size::_8, accum_size::_16>
-// {};
-#endif
-
-// min/max (only ran benchmarks for max)
-template <class ValueT, class AccumT, class OffsetT>
-struct sm100_tuning<ValueT, AccumT, OffsetT, op_type::min_or_max, primitive_accum::yes, offset_size::_4, value_size::_1>
-{
-  // ipt_22.tpb_128.ns_1900.dcid_5.l2w_750.trp_1.ld_1 1.288379  1.078212  1.274188  1.615385
-  static constexpr int items                           = 22;
-  static constexpr int threads                         = 128;
-  using delay_constructor                              = exponential_backon_jitter_window_constructor_t<1900, 750>;
-  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
-  static constexpr CacheLoadModifier load_modifier     = LOAD_CA;
-};
-
-template <class ValueT, class AccumT, class OffsetT>
-struct sm100_tuning<ValueT, AccumT, OffsetT, op_type::min_or_max, primitive_accum::yes, offset_size::_8, value_size::_1>
-{
-  // ipt_24.tpb_128.ns_344.dcid_2.l2w_710.trp_1.ld_0 1.222111  0.983240  1.205706  1.587886
-  static constexpr int items                           = 24;
-  static constexpr int threads                         = 128;
-  using delay_constructor                              = exponential_backoff_constructor_t<1900, 750>;
-  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
-  static constexpr CacheLoadModifier load_modifier     = LOAD_CA;
-};
-
-template <class ValueT, class AccumT, class OffsetT>
-struct sm100_tuning<ValueT, AccumT, OffsetT, op_type::min_or_max, primitive_accum::yes, offset_size::_4, value_size::_2>
-{
-  // ipt_14.tpb_384.ns_1708.dcid_7.l2w_930.trp_1.ld_1 1.242487  1.002841  1.226297  1.615385
-  static constexpr int items                           = 14;
-  static constexpr int threads                         = 384;
-  using delay_constructor                              = exponential_backon_constructor_t<1708, 930>;
-  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
-  static constexpr CacheLoadModifier load_modifier     = LOAD_CA;
-};
-
-template <class ValueT, class AccumT, class OffsetT>
-struct sm100_tuning<ValueT, AccumT, OffsetT, op_type::min_or_max, primitive_accum::yes, offset_size::_8, value_size::_2>
-{
-  // ipt_14.tpb_352.ns_1524.dcid_7.l2w_955.trp_1.ld_1 1.234616  1.000000  1.218721  1.596154
-  static constexpr int items                           = 14;
-  static constexpr int threads                         = 352;
-  using delay_constructor                              = exponential_backon_constructor_t<1524, 955>;
-  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
-  static constexpr CacheLoadModifier load_modifier     = LOAD_CA;
-};
-
-template <class ValueT, class AccumT, class OffsetT>
-struct sm100_tuning<ValueT, AccumT, OffsetT, op_type::min_or_max, primitive_accum::yes, offset_size::_4, value_size::_4>
-{
-  // ipt_23.tpb_256.ns_1240.dcid_7.l2w_560.trp_1.ld_2 1.192410  1.000000  1.175338  1.289286
-  static constexpr int items                           = 23;
-  static constexpr int threads                         = 256;
-  using delay_constructor                              = exponential_backon_constructor_t<1240, 560>;
-  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
-  static constexpr CacheLoadModifier load_modifier     = LOAD_CA;
-};
-
-template <class ValueT, class AccumT, class OffsetT>
-struct sm100_tuning<ValueT, AccumT, OffsetT, op_type::min_or_max, primitive_accum::yes, offset_size::_8, value_size::_4>
-{
-  // ipt_22.tpb_192.ns_976.dcid_7.l2w_1180.trp_1.ld_0 1.172486  1.000000  1.158032  1.305288
-  static constexpr int items                           = 22;
-  static constexpr int threads                         = 192;
-  using delay_constructor                              = exponential_backon_constructor_t<976, 1180>;
-  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
-  static constexpr CacheLoadModifier load_modifier     = LOAD_DEFAULT;
-};
-
-template <class ValueT, class AccumT, class OffsetT>
-struct sm100_tuning<ValueT, AccumT, OffsetT, op_type::min_or_max, primitive_accum::yes, offset_size::_4, value_size::_8>
-{
-  // ipt_22.tpb_256.ns_380.dcid_2.l2w_920.trp_1.ld_0 1.218252  1.171831  1.214092  1.246711
-  static constexpr int items                           = 22;
-  static constexpr int threads                         = 256;
-  using delay_constructor                              = exponential_backoff_constructor_t<380, 920>;
-  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
-  static constexpr CacheLoadModifier load_modifier     = LOAD_DEFAULT;
-};
-
-template <class ValueT, class AccumT, class OffsetT>
-struct sm100_tuning<ValueT, AccumT, OffsetT, op_type::min_or_max, primitive_accum::yes, offset_size::_8, value_size::_8>
-{
-  // ipt_20.tpb_256.ns_220.dcid_1.l2w_740.trp_1.ld_1 1.191382  1.010806  1.186827  1.299600
-  static constexpr int items                           = 20;
-  static constexpr int threads                         = 256;
-  using delay_constructor                              = fixed_delay_constructor_t<220, 740>;
-  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
-  static constexpr CacheLoadModifier load_modifier     = LOAD_CA;
-};
-
-// todo(gonidelis): Add tunings for i128, float and double.
-// template <class OffsetT> struct sm100_tuning<float, OffsetT, op_type::min_or_max, primitive_accum::yes,
-// offset_size::_8, accum_size::_4>;
-// template <class OffsetT> struct sm100_tuning<double, OffsetT, op_type::min_or_max,
-// primitive_accum::yes, offset_size::_8, accum_size::_8>;
-
-#if CUB_IS_INT128_ENABLED
-// template <class OffsetT> struct sm100_tuning<__int128_t, OffsetT, op_type::min_or_max, primitive_accum::no,
-// offset_size::_8, accum_size::_16> : tuning<576, 21, 860, 630> {}; template <class OffsetT> struct
-// sm100_tuning<__uint128_t, OffsetT, op_type::min_or_max, primitive_accum::no, offset_size::_8, accum_size::_16>
-//     : sm100_tuning<__int128_t, OffsetT, op_type::min_or_max, primitive_accum::no, offset_size::_8, accum_size::_16>
 // {};
 #endif
 
