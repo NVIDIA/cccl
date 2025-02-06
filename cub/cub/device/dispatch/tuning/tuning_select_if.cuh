@@ -1062,23 +1062,23 @@ struct sm100_tuning<Input,
   using delay_constructor                            = exponential_backon_jitter_window_constructor_t<724, 970>;
 };
 
-template <class Input>
-struct sm100_tuning<Input,
-                    flagged::no,
-                    keep_rejects::yes,
-                    offset_size::_4,
-                    primitive::yes,
-                    input_size::_8,
-                    may_alias::no,
-                    distinct_partitions::no>
-{
-  // trp_1.ld_0.ipt_23.tpb_416.ns_1608.dcid_2.l2w_560 1.099752  0.977393  1.106477  1.259336
-  static constexpr int nominal_4b_items              = 23;
-  static constexpr int threads                       = 416;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  using delay_constructor                            = exponential_backoff_constructor_t<1608, 560>;
-};
+// template <class Input>
+// struct sm100_tuning<Input,
+//                     flagged::no,
+//                     keep_rejects::yes,
+//                     offset_size::_4,
+//                     primitive::yes,
+//                     input_size::_8,
+//                     may_alias::no,
+//                     distinct_partitions::no>
+// {
+//   // trp_1.ld_0.ipt_23.tpb_416.ns_1608.dcid_2.l2w_560 1.099752  0.977393  1.106477  1.259336
+//   static constexpr int nominal_4b_items              = 23;
+//   static constexpr int threads                       = 416;
+//   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+//   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+//   using delay_constructor                            = exponential_backoff_constructor_t<1608, 560>;
+// };
 
 template <class Input>
 struct sm100_tuning<Input,
@@ -1151,22 +1151,6 @@ struct sm100_tuning<Input,
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
   using delay_constructor                            = exponential_backoff_constructor_t<0, 1200>;
 };
-
-#if CUB_IS_INT128_ENABLED
-// because we introduced cases for when offset is I64 this leads to regressions if not defaulted explicitly
-template <distinct_partitions DistinctPartitions>
-struct sm100_tuning<__int128_t,
-                    flagged::no,
-                    keep_rejects::yes,
-                    offset_size::_8,
-                    primitive::no,
-                    input_size::_16,
-                    may_alias::no,
-                    DistinctPartitions>
-    : sm90_tuning<__int128_t, flagged::no, keep_rejects::yes, offset_size::_4, primitive::no, input_size::_16>
-// ^^^^^ this base is wrong and leads to regressions ^^^^^
-{};
-#endif // CUB_IS_INT128_ENABLED
 
 // partition::flagged
 template <class Input>
