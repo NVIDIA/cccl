@@ -41,13 +41,13 @@ struct managed_accessor;
  * Host/Device/Managed Accessor Traits
  **********************************************************************************************************************/
 
-template <typename T>
+template <typename>
 inline constexpr bool is_host_accessor_v = false;
 
-template <typename T>
+template <typename>
 inline constexpr bool is_device_accessor_v = false;
 
-template <typename T>
+template <typename>
 inline constexpr bool is_managed_accessor_v = false;
 
 template <typename _Accessor>
@@ -59,9 +59,9 @@ inline constexpr bool is_device_accessor_v<device_accessor<_Accessor>> = true;
 template <typename _Accessor>
 inline constexpr bool is_managed_accessor_v<managed_accessor<_Accessor>> = true;
 
-template <typename T>
+template <typename _Tp>
 inline constexpr bool is_host_device_managed_accessor_v =
-  is_host_accessor_v<T> || is_device_accessor_v<T> || is_managed_accessor_v<T>;
+  is_host_accessor_v<_Tp> || is_device_accessor_v<_Tp> || is_managed_accessor_v<_Tp>;
 
 /***********************************************************************************************************************
  * Host Accessor
@@ -240,10 +240,10 @@ public:
  * Accessibility Traits
  **********************************************************************************************************************/
 
-template <typename T>
+template <typename>
 inline constexpr bool is_host_accessible_v = false;
 
-template <typename T>
+template <typename>
 inline constexpr bool is_device_accessible_v = false;
 
 template <typename _Accessor>
@@ -252,11 +252,17 @@ inline constexpr bool is_host_accessible_v<host_accessor<_Accessor>> = true;
 template <typename _Accessor>
 inline constexpr bool is_host_accessible_v<managed_accessor<_Accessor>> = true;
 
+template <template <typename> class _TClass, typename _Accessor>
+inline constexpr bool is_host_accessible_v<_TClass<_Accessor>> = is_host_accessible_v<_Accessor>;
+
 template <typename _Accessor>
 inline constexpr bool is_device_accessible_v<device_accessor<_Accessor>> = true;
 
 template <typename _Accessor>
 inline constexpr bool is_device_accessible_v<managed_accessor<_Accessor>> = true;
+
+template <template <typename> class _TClass, typename _Accessor>
+inline constexpr bool is_device_accessible_v<_TClass<_Accessor>> = is_device_accessible_v<_Accessor>;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
