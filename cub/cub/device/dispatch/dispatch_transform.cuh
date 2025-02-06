@@ -13,12 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDACC_BELOW(11, 5)
-_CCCL_NV_DIAG_SUPPRESS(186)
-#  include <cuda_pipeline_primitives.h>
-// we cannot re-enable the warning here, because it is triggered outside the translation unit
-// see also: https://godbolt.org/z/1x8b4hn3G
-#endif // _CCCL_CUDACC_BELOW(11, 5)
+#include <cuda_pipeline_primitives.h>
 
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/device/dispatch/tuning/tuning_transform.cuh>
@@ -866,3 +861,11 @@ struct dispatch_t<RequiresStableAddress,
 } // namespace transform
 } // namespace detail
 CUB_NAMESPACE_END
+
+#if _CCCL_CUDACC_BELOW(11, 5)
+// we need to suppress this warning which is generated outside:
+//   `cuda_pipeline_helpers.h(156): error #186-D: pointless comparison of unsigned integer with zero`
+_CCCL_NV_DIAG_SUPPRESS(186)
+// we cannot re-enable the warning anywhere, because it is triggered outside the translation unit
+// see also: https://godbolt.org/z/1x8b4hn3G
+#endif // _CCCL_CUDACC_BELOW(11, 5)
