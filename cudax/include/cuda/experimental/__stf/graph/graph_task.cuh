@@ -116,9 +116,9 @@ public:
     }
     else
     {
-      // We either created independent task nodes, or a child graph. We need
-      // to inject input dependencies, and make the task completion depend on
-      // task nodes or the child graph.
+      // We either created independent task nodes, a chain of tasks, or a child
+      // graph. We need to inject input dependencies, and make the task
+      // completion depend on task nodes, task chain, or the child graph.
       if (task_nodes.size() > 0)
       {
         for (auto& node : task_nodes)
@@ -339,7 +339,8 @@ public:
   cudaGraph_t& get_graph()
   {
     // We either use a child graph or task nodes, not both
-    assert(task_nodes.empty());
+    _CCCL_ASSERT(task_nodes.empty(), "cannot use both get_graph() and get_node()");
+    _CCCL_ASSERT(chained_task_nodes.empty(), "cannot use both get_graph() and get_node_chain()");
 
     // Lazy creation
     if (child_graph == nullptr)
@@ -354,8 +355,8 @@ public:
   // Create a node in the graph
   cudaGraphNode_t& get_node()
   {
-    // We either use a child graph or task nodes, not both
-    assert(!child_graph);
+    _CCCL_ASSERT(!child_graph, "cannot use both get_node() and get_graph()");
+    _CCCL_ASSERT(chained_task_nodes.empty(), "cannot use both get_node() and get_node_chain()");
 
     // Create a new entry and return it
     task_nodes.emplace_back();
@@ -365,8 +366,8 @@ public:
   // Create a node in the graph
   ::std::vector<cudaGraphNode_t>& get_node_chain()
   {
-    assert(!child_graph);
-    assert(task_nodes.empty());
+    _CCCL_ASSERT(!child_graph, "cannot use both get_node_chain() and get_graph()");
+    _CCCL_ASSERT(task_nodes.empty(), "cannot use both get_node_chain() and get_node()");
 
     return chained_task_nodes;
   }
