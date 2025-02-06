@@ -27,27 +27,21 @@ template <class T>
 __host__ __device__ void
 test_aligned_alloc(bool expect_success, cuda::std::size_t n, cuda::std::size_t align = TEST_ALIGNOF(T))
 {
+  static_assert(noexcept(cuda::std::aligned_alloc(n * sizeof(T), align)), "");
+  T* ptr = static_cast<T*>(cuda::std::aligned_alloc(n * sizeof(T), align));
   if (expect_success)
   {
-    static_assert(noexcept(cuda::std::aligned_alloc(n * sizeof(T), align)), "");
-
-    T* ptr = static_cast<T*>(cuda::std::aligned_alloc(n * sizeof(T), align));
-
     // check that the memory was allocated
     assert(ptr != nullptr);
 
     // check memory alignment
     assert(((align - 1) & reinterpret_cast<cuda::std::uintptr_t>(ptr)) == 0);
-
-    cuda::std::free(ptr);
   }
   else
   {
-    T* ptr = static_cast<T*>(cuda::std::aligned_alloc(n * sizeof(T), align));
-
-    // check that the memory allocation failed
-    assert(ptr == nullptr);
+    // This is undefined behavior and dependent on the host libc
   }
+  cuda::std::free(ptr);
 }
 
 struct BigStruct
