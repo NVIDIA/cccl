@@ -264,10 +264,12 @@ public:
 };
 _LIBCUDACXX_END_NAMESPACE_STD
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <>
 struct CUB_NS_QUALIFIER::NumericTraits<bfloat16_t>
     : CUB_NS_QUALIFIER::BaseTraits<FLOATING_POINT, true, false, unsigned short, bfloat16_t>
 {};
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 #ifdef __GNUC__
 #  pragma GCC diagnostic pop
