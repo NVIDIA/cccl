@@ -49,7 +49,6 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/iterator/constant_input_iterator.cuh>
 
 #include <cuda/std/type_traits>
 
@@ -229,7 +228,7 @@ struct AgentReduceByKey
   // Whether or not the scan operation has a zero-valued identity value (true
   // if we're performing addition on a primitive type)
   static constexpr int HAS_IDENTITY_ZERO =
-    (std::is_same<ReductionOpT, ::cuda::std::plus<>>::value) && (Traits<AccumT>::PRIMITIVE);
+    (std::is_same<ReductionOpT, ::cuda::std::plus<>>::value) && (is_primitive<AccumT>::value);
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier)
   // for keys Wrap the native input pointer with
@@ -277,7 +276,7 @@ struct AgentReduceByKey
   // Callback type for obtaining tile prefix during block scan
   using DelayConstructorT = typename AgentReduceByKeyPolicyT::detail::delay_constructor_t;
   using TilePrefixCallbackOpT =
-    TilePrefixCallbackOp<OffsetValuePairT, ReduceBySegmentOpT, ScanTileStateT, 0, DelayConstructorT>;
+    TilePrefixCallbackOp<OffsetValuePairT, ReduceBySegmentOpT, ScanTileStateT, DelayConstructorT>;
 
   // Key and value exchange types
   using KeyExchangeT   = KeyOutputT[TILE_ITEMS + 1];

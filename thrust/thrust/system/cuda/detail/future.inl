@@ -18,28 +18,26 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_STD_VER >= 2014
+#include <thrust/allocate_unique.h>
+#include <thrust/detail/event_error.h>
+#include <thrust/detail/execute_with_dependencies.h>
+#include <thrust/detail/memory_wrapper.h>
+#include <thrust/detail/static_assert.h>
+#include <thrust/detail/tuple_algorithms.h>
+#include <thrust/detail/type_deduction.h>
+#include <thrust/detail/type_traits/pointer_traits.h>
+#include <thrust/optional.h>
+#include <thrust/system/cuda/detail/get_value.h>
+#include <thrust/system/cuda/detail/util.h>
+#include <thrust/system/cuda/future.h>
+#include <thrust/system/cuda/memory.h>
+#include <thrust/type_traits/integer_sequence.h>
 
-#  include <thrust/allocate_unique.h>
-#  include <thrust/detail/event_error.h>
-#  include <thrust/detail/execute_with_dependencies.h>
-#  include <thrust/detail/memory_wrapper.h>
-#  include <thrust/detail/static_assert.h>
-#  include <thrust/detail/tuple_algorithms.h>
-#  include <thrust/detail/type_deduction.h>
-#  include <thrust/detail/type_traits/pointer_traits.h>
-#  include <thrust/optional.h>
-#  include <thrust/system/cuda/detail/get_value.h>
-#  include <thrust/system/cuda/detail/util.h>
-#  include <thrust/system/cuda/future.h>
-#  include <thrust/system/cuda/memory.h>
-#  include <thrust/type_traits/integer_sequence.h>
+#include <cuda/std/__memory/addressof.h>
+#include <cuda/std/__memory/unique_ptr.h>
+#include <cuda/std/type_traits>
 
-#  include <cuda/std/__memory/addressof.h>
-#  include <cuda/std/__memory/unique_ptr.h>
-#  include <cuda/std/type_traits>
-
-#  include <type_traits>
+#include <type_traits>
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 THRUST_NAMESPACE_BEGIN
@@ -429,12 +427,12 @@ struct async_value : virtual async_signal
   }
 
 // For testing only.
-#  if defined(THRUST_ENABLE_FUTURE_RAW_DATA_MEMBER)
+#if defined(THRUST_ENABLE_FUTURE_RAW_DATA_MEMBER)
   _CCCL_HOST virtual raw_const_pointer raw_data() const
   {
     return nullptr;
   }
-#  endif
+#endif
 };
 
 template <typename T, typename Pointer, typename... KeepAlives>
@@ -521,12 +519,12 @@ public:
   }
 
 // For testing only.
-#  if defined(THRUST_ENABLE_FUTURE_RAW_DATA_MEMBER)
+#if defined(THRUST_ENABLE_FUTURE_RAW_DATA_MEMBER)
   _CCCL_HOST raw_const_pointer raw_data() const final override
   {
     return raw_pointer_cast(content_);
   }
-#  endif
+#endif
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -641,13 +639,13 @@ public:
     return std::move(value_);
   }
 
-#  if defined(THRUST_ENABLE_FUTURE_RAW_DATA_MEMBER)
+#if defined(THRUST_ENABLE_FUTURE_RAW_DATA_MEMBER)
   // For testing only.
   _CCCL_HOST_DEVICE raw_const_pointer data() const
   {
     return ::cuda::std::addressof(value_);
   }
-#  endif
+#endif
 };
 
 struct CCCL_DEPRECATED unique_eager_event final
@@ -895,7 +893,7 @@ public:
   }
 
 // For testing only.
-#  if defined(THRUST_ENABLE_FUTURE_RAW_DATA_MEMBER)
+#if defined(THRUST_ENABLE_FUTURE_RAW_DATA_MEMBER)
   // Precondition: `true == valid_stream()`.
   _CCCL_HOST raw_const_pointer raw_data() const
   {
@@ -906,7 +904,7 @@ public:
 
     return async_signal_->raw_data();
   }
-#  endif
+#endif
 
   _CCCL_SUPPRESS_DEPRECATED_PUSH // for thrust::optional
     template <typename X>
@@ -1230,5 +1228,3 @@ CCCL_DEPRECATED _CCCL_HOST inline auto capture_as_dependency(unique_eager_event&
 
 _CCCL_SUPPRESS_DEPRECATED_POP
 THRUST_NAMESPACE_END
-
-#endif // C++14

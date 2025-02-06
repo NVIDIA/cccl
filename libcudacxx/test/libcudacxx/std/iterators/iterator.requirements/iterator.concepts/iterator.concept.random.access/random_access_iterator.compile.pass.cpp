@@ -24,12 +24,10 @@ static_assert(!cuda::std::random_access_iterator<bidirectional_iterator<int*>>, 
 static_assert(cuda::std::random_access_iterator<random_access_iterator<int*>>, "");
 static_assert(cuda::std::random_access_iterator<contiguous_iterator<int*>>, "");
 
-#ifndef TEST_COMPILER_MSVC_2017
 static_assert(cuda::std::random_access_iterator<int*>, "");
 static_assert(cuda::std::random_access_iterator<int const*>, "");
 static_assert(cuda::std::random_access_iterator<int volatile*>, "");
 static_assert(cuda::std::random_access_iterator<int const volatile*>, "");
-#endif // TEST_COMPILER_MSVC_2017
 
 struct wrong_iterator_category
 {

@@ -34,7 +34,7 @@
 
 THRUST_NAMESPACE_BEGIN
 
-namespace cuda_cub::core
+namespace cuda_cub::core::detail
 {
 
 // LoadIterator
@@ -52,6 +52,6 @@ struct LoadIterator
                                cub::CacheModifiedInputIterator<PtxPlan::LOAD_MODIFIER, value_type, size_type>,
                                It>;
 }; // struct Iterator
-} // namespace cuda_cub::core
+} // namespace cuda_cub::core::detail
 
 THRUST_NAMESPACE_END

@@ -2,14 +2,12 @@
 
 #include <thrust/detail/config.h>
 
-#if _CCCL_STD_VER >= 2014
+#include <thrust/device_allocator.h>
+#include <thrust/future.h>
 
-#  include <thrust/device_allocator.h>
-#  include <thrust/future.h>
+#include <string>
 
-#  include <string>
-
-#  include <unittest/unittest.h>
+#include <unittest/unittest.h>
 
 // TODO Cover these cases from testing/async_reduce.cu:
 //   - [x] test_async_reduce_after ("after_future" in test_policy_overloads)
@@ -349,5 +347,3 @@ private:
 
 } // namespace async
 } // namespace testing
-
-#endif // C++14

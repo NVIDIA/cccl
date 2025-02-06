@@ -58,18 +58,20 @@
 #  include <thrust/system/cuda/detail/util.h>
 #  include <thrust/type_traits/is_contiguous_iterator.h>
 
+#  include <cuda/cmath>
+
 #  include <cstdint>
 
-#  if defined(_CCCL_HAS_NVFP16)
+#  if _CCCL_HAS_NVFP16()
 #    include <cuda_fp16.h>
-#  endif // _CCCL_HAS_NVFP16
+#  endif // _CCCL_HAS_NVFP16()
 
-#  if defined(_CCCL_HAS_NVBF16)
+#  if _CCCL_HAS_NVBF16()
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
 #    include <cuda_bf16.h>
 _CCCL_DIAG_POP
-#  endif // _CCCL_HAS_NVBF16
+#  endif // _CCCL_HAS_NVBF16()
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
@@ -277,8 +279,8 @@ THRUST_RUNTIME_FUNCTION void radix_sort(execution_policy<Derived>& policy, Key* 
     dispatch<SORT_ITEMS, CompareOp>::doit(nullptr, temp_storage_bytes, keys_buffer, items_buffer, keys_count, stream);
   cuda_cub::throw_on_error(status, "radix_sort: failed on 1st step");
 
-  size_t keys_temp_storage  = core::align_to(sizeof(Key) * keys_count, 128);
-  size_t items_temp_storage = core::align_to(sizeof(Item) * items_count, 128);
+  size_t keys_temp_storage  = ::cuda::round_up(sizeof(Key) * keys_count, 128);
+  size_t items_temp_storage = ::cuda::round_up(sizeof(Item) * items_count, 128);
 
   size_t storage_size = keys_temp_storage + items_temp_storage + temp_storage_bytes;
 
@@ -321,13 +323,12 @@ template <class Key, class CompareOp>
 using can_use_primitive_sort = ::cuda::std::integral_constant<
   bool,
   (::cuda::std::is_arithmetic<Key>::value
-#  if defined(_CCCL_HAS_NVFP16) && !defined(__CUDA_NO_HALF_OPERATORS__) && !defined(__CUDA_NO_HALF_CONVERSIONS__)
+#  if _CCCL_HAS_NVFP16() && !defined(__CUDA_NO_HALF_OPERATORS__) && !defined(__CUDA_NO_HALF_CONVERSIONS__)
    || ::cuda::std::is_same<Key, __half>::value
-#  endif // defined(_CCCL_HAS_NVFP16) && !defined(__CUDA_NO_HALF_OPERATORS__) && !defined(__CUDA_NO_HALF_CONVERSIONS__)
-#  if defined(_CCCL_HAS_NVBF16) && !defined(__CUDA_NO_BFLOAT16_CONVERSIONS__) \
-    && !defined(__CUDA_NO_BFLOAT16_OPERATORS__)
+#  endif // _CCCL_HAS_NVFP16() && !defined(__CUDA_NO_HALF_OPERATORS__) && !defined(__CUDA_NO_HALF_CONVERSIONS__)
+#  if _CCCL_HAS_NVBF16() && !defined(__CUDA_NO_BFLOAT16_CONVERSIONS__) && !defined(__CUDA_NO_BFLOAT16_OPERATORS__)
    || ::cuda::std::is_same<Key, __nv_bfloat16>::value
-#  endif // defined(_CCCL_HAS_NVBF16) && !defined(__CUDA_NO_BFLOAT16_CONVERSIONS__) &&
+#  endif // _CCCL_HAS_NVBF16() && !defined(__CUDA_NO_BFLOAT16_CONVERSIONS__) &&
          // !defined(__CUDA_NO_BFLOAT16_OPERATORS__)
    )
     && (::cuda::std::is_same<CompareOp, thrust::less<Key>>::value

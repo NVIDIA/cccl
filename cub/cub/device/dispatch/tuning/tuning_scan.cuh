@@ -88,7 +88,7 @@ enum class accum_size
 template <class AccumT>
 constexpr primitive_accum is_primitive_accum()
 {
-  return Traits<AccumT>::PRIMITIVE ? primitive_accum::yes : primitive_accum::no;
+  return is_primitive<AccumT>::value ? primitive_accum::yes : primitive_accum::no;
 }
 
 template <class ScanOpT>
@@ -175,7 +175,7 @@ struct sm80_tuning<double, primitive_op::yes, primitive_accum::yes, accum_size::
   static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
 };
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <>
 struct sm80_tuning<__int128_t, primitive_op::yes, primitive_accum::no, accum_size::_16>
 {
@@ -221,7 +221,7 @@ template <class T> struct sm90_tuning<T, primitive_op::yes, primitive_accum::yes
 template <> struct sm90_tuning<float,  primitive_op::yes, primitive_accum::yes, accum_size::_4> : sm90_tuning_vals<float,  128, 24, 688, 1140> {};
 template <> struct sm90_tuning<double, primitive_op::yes, primitive_accum::yes, accum_size::_8> : sm90_tuning_vals<double, 224, 24, 576, 1215> {};
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <> struct sm90_tuning<__int128_t, primitive_op::yes, primitive_accum::no, accum_size::_16> : sm90_tuning_vals<__int128_t, 576, 21, 860, 630> {};
 template <>
 struct sm90_tuning<__uint128_t, primitive_op::yes, primitive_accum::no, accum_size::_16>
@@ -248,7 +248,7 @@ struct ScanPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<decltype(StaticPolic
 
   CUB_RUNTIME_FUNCTION static constexpr PolicyWrapper<typename StaticPolicyT::ScanPolicyT> Scan()
   {
-    return MakePolicyWrapper(typename StaticPolicyT::ScanPolicyT());
+    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::ScanPolicyT());
   }
 
   CUB_RUNTIME_FUNCTION constexpr CacheLoadModifier LoadModifier()
@@ -273,13 +273,13 @@ struct policy_hub
   static constexpr BlockStoreAlgorithm scan_transposed_store =
     large_values ? BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : BLOCK_STORE_WARP_TRANSPOSE;
 
-  struct Policy350 : ChainedPolicy<350, Policy350, Policy350>
+  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
   {
     // GTX Titan: 29.5B items/s (232.4 GB/s) @ 48M 32-bit T
     using ScanPolicyT =
       AgentScanPolicy<128, 12, AccumT, BLOCK_LOAD_DIRECT, LOAD_CA, BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED, BLOCK_SCAN_RAKING>;
   };
-  struct Policy520 : ChainedPolicy<520, Policy520, Policy350>
+  struct Policy520 : ChainedPolicy<520, Policy520, Policy500>
   {
     // Titan X: 32.47B items/s @ 48M 32-bit T
     using ScanPolicyT =
@@ -307,7 +307,7 @@ struct policy_hub
                        LOAD_DEFAULT,
                        Tuning::store_algorithm,
                        BLOCK_SCAN_WARP_SCANS,
-                       MemBoundScaling<Tuning::threads, Tuning::items, AccumT>,
+                       cub::detail::MemBoundScaling<Tuning::threads, Tuning::items, AccumT>,
                        typename Tuning::delay_constructor>;
   template <typename Tuning>
   static auto select_agent_policy(long) -> typename DefaultPolicy::ScanPolicyT;

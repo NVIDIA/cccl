@@ -20,10 +20,6 @@
 #include "test_macros.h"
 #include "type_classification/moveconstructible.h"
 
-#ifdef TEST_COMPILER_MSVC_2017
-#  pragma warning(disable : 4239)
-#endif // TEST_COMPILER_MSVC_2017
-
 using cuda::std::swappable;
 
 template <class T>
@@ -111,9 +107,9 @@ __host__ __device__ constexpr bool check_throwable_swappable()
 {
   auto x = throwable_adl_swappable{0};
   auto y = throwable_adl_swappable{1};
-#if !defined(TEST_COMPILER_BROKEN_SMF_NOEXCEPT) && !defined(TEST_COMPILER_MSVC_2017)
+#if !defined(TEST_COMPILER_BROKEN_SMF_NOEXCEPT)
   ASSERT_NOT_NOEXCEPT(cuda::std::ranges::swap(x, y));
-#endif // !TEST_COMPILER_BROKEN_SMF_NOEXCEPT && !TEST_COMPILER_MSVC_2017
+#endif // !TEST_COMPILER_BROKEN_SMF_NOEXCEPT
   assert(check_swap_21(x, y));
   return true;
 }
@@ -128,7 +124,6 @@ __host__ __device__ constexpr bool check_non_move_constructible_adl_swappable()
 }
 
 #if TEST_STD_VER > 2014
-#  ifndef TEST_COMPILER_MSVC_2017
 __host__ __device__ constexpr bool check_non_move_assignable_adl_swappable()
 {
   auto x = non_move_assignable_adl_swappable{0};
@@ -137,7 +132,6 @@ __host__ __device__ constexpr bool check_non_move_assignable_adl_swappable()
   assert(check_swap_21(x, y));
   return true;
 }
-#  endif // !TEST_COMPILER_MSVC_2017
 #endif // TEST_STD_VER > 2014
 
 namespace swappable_namespace
@@ -182,9 +176,9 @@ __host__ __device__ constexpr bool check_throwable_adl_swappable_arrays()
 {
   throwable_adl_swappable x[] = {{0}, {1}, {2}, {3}};
   throwable_adl_swappable y[] = {{4}, {5}, {6}, {7}};
-#if !defined(TEST_COMPILER_BROKEN_SMF_NOEXCEPT) && !defined(TEST_COMPILER_MSVC_2017)
+#if !defined(TEST_COMPILER_BROKEN_SMF_NOEXCEPT)
   ASSERT_NOT_NOEXCEPT(cuda::std::ranges::swap(x, y));
-#endif // !TEST_COMPILER_BROKEN_SMF_NOEXCEPT && !TEST_COMPILER_MSVC_2017
+#endif // !TEST_COMPILER_BROKEN_SMF_NOEXCEPT
   assert(check_swap_22(x, y));
   return true;
 }
@@ -271,9 +265,7 @@ int main(int, char**)
   assert(check_throwable_swappable());
   assert(check_non_move_constructible_adl_swappable());
 #if TEST_STD_VER > 2014
-#  ifndef TEST_COMPILER_MSVC_2017
   assert(check_non_move_assignable_adl_swappable());
-#  endif // TEST_COMPILER_MSVC_2017
 #endif // TEST_STD_VER > 2014
   assert(check_swap_arrays());
   assert(check_lvalue_adl_swappable_arrays());
@@ -289,9 +281,7 @@ int main(int, char**)
   static_assert(check_throwable_swappable(), "");
   static_assert(check_non_move_constructible_adl_swappable(), "");
 #  if TEST_STD_VER > 2014
-#    ifndef TEST_COMPILER_MSVC_2017
   static_assert(check_non_move_assignable_adl_swappable(), "");
-#    endif // TEST_COMPILER_MSVC_2017
 #  endif // TEST_STD_VER > 2014
   static_assert(check_swap_arrays(), "");
   static_assert(check_lvalue_adl_swappable_arrays(), "");

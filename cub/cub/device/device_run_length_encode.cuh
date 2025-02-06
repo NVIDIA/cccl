@@ -49,6 +49,8 @@
 #include <cub/device/dispatch/dispatch_rle.cuh>
 #include <cub/device/dispatch/tuning/tuning_run_length_encode.cuh>
 
+#include <thrust/iterator/constant_iterator.h>
+
 #include <iterator>
 
 #include <stdio.h>
@@ -199,7 +201,7 @@ struct DeviceRunLengthEncode
     using length_t = cub::detail::non_void_value_t<LengthsOutputIteratorT, offset_t>;
 
     // Generator type for providing 1s values for run-length reduction
-    using lengths_input_iterator_t = ConstantInputIterator<length_t, offset_t>;
+    using lengths_input_iterator_t = THRUST_NS_QUALIFIER::constant_iterator<length_t, offset_t>;
 
     using accum_t = ::cuda::std::__accumulator_t<reduction_op, length_t, length_t>;
 

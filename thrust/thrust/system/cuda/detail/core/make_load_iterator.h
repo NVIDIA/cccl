@@ -33,7 +33,7 @@
 
 THRUST_NAMESPACE_BEGIN
 
-namespace cuda_cub::core
+namespace cuda_cub::core::detail
 {
 template <class PtxPlan, class It>
 typename LoadIterator<PtxPlan, It>::type _CCCL_DEVICE _CCCL_FORCEINLINE
@@ -55,6 +55,6 @@ typename LoadIterator<PtxPlan, It>::type _CCCL_DEVICE _CCCL_FORCEINLINE make_loa
   return make_load_iterator_impl<PtxPlan>(it, typename is_contiguous_iterator<It>::type());
 }
 
-} // namespace cuda_cub::core
+} // namespace cuda_cub::core::detail
 
 THRUST_NAMESPACE_END

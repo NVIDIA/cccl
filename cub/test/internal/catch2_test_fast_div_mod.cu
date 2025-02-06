@@ -42,7 +42,7 @@ using index_types =
                  uint16_t,
                  int32_t,
                  uint32_t
-#  if CUB_IS_INT128_ENABLED
+#  if _CCCL_HAS_INT128()
                  ,
                  int64_t,
                  uint64_t
