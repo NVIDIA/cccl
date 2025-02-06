@@ -43,14 +43,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/thread/thread_load.cuh>
-#include <cub/thread/thread_store.cuh>
+#include <cub/util_type.cuh>
 
 #include <thrust/iterator/iterator_facade.h>
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/version.h>
-
-#include <ostream>
 
 CUB_NAMESPACE_BEGIN
 
@@ -244,12 +240,6 @@ public:
   {
     itr += offset;
     offset = 0;
-  }
-
-  /// ostream operator
-  friend std::ostream& operator<<(std::ostream& os, const self_type& /*itr*/)
-  {
-    return os;
   }
 };
 
