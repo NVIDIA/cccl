@@ -87,7 +87,7 @@ private:
   template <typename __data_handle_type>
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __is_host_accessible_pointer(__data_handle_type __p)
   {
-    if constexpr (::cuda::std::is_pointer_v<__data_handle_type>)
+    if constexpr (_CUDA_VSTD::is_pointer_v<__data_handle_type>)
     {
       cudaPointerAttributes __attrib;
       _CCCL_VERIFY(::cudaPointerGetAttributes(&__attrib, __p) == ::cudaSuccess, "cudaPointerGetAttributes failed");
@@ -201,7 +201,7 @@ private:
   template <typename __data_handle_type>
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __is_managed_pointer(__data_handle_type __p)
   {
-    if constexpr (::cuda::std::is_pointer_v<__data_handle_type>)
+    if constexpr (_CUDA_VSTD::is_pointer_v<__data_handle_type>)
     {
       cudaPointerAttributes __attrib;
       _CCCL_VERIFY(::cudaPointerGetAttributes(&__attrib, __p) == ::cudaSuccess, "cudaPointerGetAttributes failed");
