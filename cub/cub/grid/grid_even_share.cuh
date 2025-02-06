@@ -201,8 +201,8 @@ public:
    * @param[in] block_end
    *   Threadblock end offset (exclusive)
    */
-  template <int TILE_ITEMS>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit(OffsetT block_offset, OffsetT block_end)
+  template <int TILE_ITEMS, typename OffsetT1 = OffsetT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit(OffsetT1 block_offset, OffsetT1 block_end)
   {
     this->block_offset = block_offset;
     this->block_end    = block_end;
