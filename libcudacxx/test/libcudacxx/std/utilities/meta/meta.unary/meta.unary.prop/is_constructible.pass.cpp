@@ -251,9 +251,7 @@ int main(int, char**)
 
   // test that T must also be destructible
   test_is_constructible<PrivateDtor&, PrivateDtor&>();
-#if !defined(TEST_COMPILER_MSVC_2017)
   test_is_not_constructible<PrivateDtor, int>();
-#endif
 
   test_is_not_constructible<void() const, void() const>();
   test_is_not_constructible<void() const, void*>();

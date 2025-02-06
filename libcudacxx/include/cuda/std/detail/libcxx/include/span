@@ -203,7 +203,6 @@ _CCCL_INLINE_VAR constexpr bool __is_std_span<span<_Tp, _Extent>> = true;
 template <class _From, class _To>
 _CCCL_CONCEPT __span_array_convertible = _CCCL_TRAIT(is_convertible, _From (*)[], _To (*)[]);
 
-#  if !_CCCL_COMPILER(MSVC2017)
 template <class _Range, class _ElementType>
 _CCCL_CONCEPT_FRAGMENT(
   __span_compatible_range_,
@@ -218,35 +217,6 @@ _CCCL_CONCEPT_FRAGMENT(
 
 template <class _Range, class _ElementType>
 _CCCL_CONCEPT __span_compatible_range = _CCCL_FRAGMENT(__span_compatible_range_, _Range, _ElementType);
-
-#  else // // ^^^ !_CCCL_COMPILER(MSVC2017) ^^^ / vvv _CCCL_COMPILER(MSVC2017) vvv
-
-template <class _Range, class _ElementType, class = void>
-_CCCL_INLINE_VAR constexpr bool __span_compatible_range = false;
-
-template <class _Range, class _ElementType>
-_CCCL_INLINE_VAR constexpr bool __span_compatible_range<
-  _Range,
-  _ElementType,
-  void_t<
-    // // is a contiguous range
-    // enable_if_t<_CUDA_VRANGES::contiguous_range<_Range>, nullptr_t>,
-    // // is a sized range
-    // enable_if_t<_CUDA_VRANGES::sized_range<_Range>, nullptr_t>,
-    // // is a borrowed range or ElementType is const
-    // enable_if_t<(_CUDA_VRANGES::borrowed_range<_Range> || _CCCL_TRAIT(is_const, _ElementType)), nullptr_t>,
-    // is not a C-style array
-    enable_if_t<!_CCCL_TRAIT(is_array, remove_cvref_t<_Range>), nullptr_t>,
-    // is not a specialization of span
-    enable_if_t<!__is_std_span<remove_cvref_t<_Range>>, nullptr_t>,
-    // is not a specialization of array
-    enable_if_t<!__is_std_array<remove_cvref_t<_Range>>, nullptr_t>,
-    // remove_pointer_t<decltype(data(cont))>(*)[] is convertible to ElementType(*)[]
-    enable_if_t<_CCCL_TRAIT(is_convertible,
-                            remove_pointer_t<decltype(_CUDA_VSTD::data(declval<_Range&>()))> (*)[],
-                            _ElementType (*)[]),
-                nullptr_t>>> = true;
-#  endif // _CCCL_COMPILER(MSVC2017)
 
 #  if _CCCL_STD_VER >= 2020
 template <class _It, class _Tp>
@@ -361,7 +331,7 @@ public:
                  "invalid range in span's constructor (iterator, sentinel): last - first != extent");
   }
 
-#  if _CCCL_COMPILER(NVRTC) || _CCCL_COMPILER(MSVC2017)
+#  if _CCCL_COMPILER(NVRTC)
   template <size_t _Sz = _Extent, enable_if_t<_Sz != 0, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr span(type_identity_t<element_type> (&__arr)[_Sz]) noexcept
       : __data_{__arr}
@@ -370,7 +340,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr span(type_identity_t<element_type> (&__arr)[_Extent]) noexcept
       : __data_{__arr}
   {}
-#  endif // !_CCCL_COMPILER(NVRTC) && !_CCCL_COMPILER(MSVC2017)
+#  endif // !_CCCL_COMPILER(NVRTC)
 
   _CCCL_TEMPLATE(class _OtherElementType)
   _CCCL_REQUIRES(__span_array_convertible<_OtherElementType, element_type>)
@@ -796,7 +766,7 @@ _CCCL_HOST_DEVICE span(_Range&&) -> span<remove_reference_t<_CUDA_VRANGES::range
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#if _CCCL_STD_VER >= 2014 && !_CCCL_COMPILER(MSVC2017)
+#if _CCCL_STD_VER >= 2014
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 template <class _Tp, size_t _Extent>
 _CCCL_INLINE_VAR constexpr bool enable_borrowed_range<span<_Tp, _Extent>> = true;
@@ -804,6 +774,6 @@ _CCCL_INLINE_VAR constexpr bool enable_borrowed_range<span<_Tp, _Extent>> = true
 template <class _Tp, size_t _Extent>
 _CCCL_INLINE_VAR constexpr bool enable_view<span<_Tp, _Extent>> = true;
 _LIBCUDACXX_END_NAMESPACE_RANGES
-#endif // _CCCL_STD_VER >= 2014 && !_CCCL_COMPILER(MSVC2017)
+#endif // _CCCL_STD_VER >= 2014
 
 #endif // _LIBCUDACXX_SPAN

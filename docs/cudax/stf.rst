@@ -1853,6 +1853,9 @@ stream passed to ``freeze`` (for example, by using a blocking call such as
 depend on the completion of the work in the streams used for any preceding
 ``freeze`` and ``get`` calls.
 
+It is possible to retrieve the access mode used to freeze a logical data with
+the ``get_access_mode()`` method of the ``frozen_logical_data`` object.
+
 Logical token
 ^^^^^^^^^^^^^
 

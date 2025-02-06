@@ -1051,7 +1051,7 @@ struct BlockRadixRankMatchEarlyCounts
     }
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void ComputeRanksItem(
-      UnsignedBits (&keys)[KEYS_PER_THREAD], int (&ranks)[KEYS_PER_THREAD], Int2Type<WARP_MATCH_ATOMIC_OR>)
+      UnsignedBits (&keys)[KEYS_PER_THREAD], int (&ranks)[KEYS_PER_THREAD], detail::constant_t<WARP_MATCH_ATOMIC_OR>)
     {
       // compute key ranks
       int lane_mask     = 1 << lane;
@@ -1083,8 +1083,8 @@ struct BlockRadixRankMatchEarlyCounts
       }
     }
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE void
-    ComputeRanksItem(UnsignedBits (&keys)[KEYS_PER_THREAD], int (&ranks)[KEYS_PER_THREAD], Int2Type<WARP_MATCH_ANY>)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ComputeRanksItem(
+      UnsignedBits (&keys)[KEYS_PER_THREAD], int (&ranks)[KEYS_PER_THREAD], detail::constant_t<WARP_MATCH_ANY>)
     {
       // compute key ranks
       int* warp_offsets = &s.warp_offsets[warp][0];
@@ -1123,7 +1123,7 @@ struct BlockRadixRankMatchEarlyCounts
 
       ComputeOffsetsWarpDownsweep(exclusive_digit_prefix);
       __syncthreads();
-      ComputeRanksItem(keys, ranks, Int2Type<MATCH_ALGORITHM>());
+      ComputeRanksItem(keys, ranks, detail::constant_v<MATCH_ALGORITHM>);
     }
 
     _CCCL_DEVICE _CCCL_FORCEINLINE

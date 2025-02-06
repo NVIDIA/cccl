@@ -47,6 +47,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_scan.cuh>
 
+#include <cuda/cmath>
 #include <cuda/ptx>
 
 CUB_NAMESPACE_BEGIN
@@ -73,17 +74,14 @@ struct BlockScanWarpScans
   //---------------------------------------------------------------------
 
   /// Constants
-  enum
-  {
-    /// Number of warp threads
-    WARP_THREADS = CUB_WARP_THREADS(0),
+  /// Number of warp threads
+  static constexpr int WARP_THREADS = CUB_WARP_THREADS(0);
 
-    /// The thread block size in threads
-    BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
+  /// The thread block size in threads
+  static constexpr int BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z;
 
-    /// Number of active warps
-    WARPS = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS,
-  };
+  /// Number of active warps
+  static constexpr int WARPS = ::cuda::ceil_div(BLOCK_THREADS, WARP_THREADS);
 
   ///  WarpScan utility type
   using WarpScanT = WarpScan<T, WARP_THREADS>;
@@ -146,7 +144,7 @@ struct BlockScanWarpScans
    */
   template <typename ScanOp, int WARP>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ApplyWarpAggregates(T& warp_prefix, ScanOp scan_op, T& block_aggregate, Int2Type<WARP> /*addend_warp*/)
+  ApplyWarpAggregates(T& warp_prefix, ScanOp scan_op, T& block_aggregate, constant_t<WARP> /*addend_warp*/)
   {
     if (warp_id == WARP)
     {
@@ -156,7 +154,7 @@ struct BlockScanWarpScans
     T addend        = temp_storage.warp_aggregates[WARP];
     block_aggregate = scan_op(block_aggregate, addend);
 
-    ApplyWarpAggregates(warp_prefix, scan_op, block_aggregate, Int2Type<WARP + 1>());
+    ApplyWarpAggregates(warp_prefix, scan_op, block_aggregate, constant_v<WARP + 1>);
   }
 
   /**
@@ -171,7 +169,7 @@ struct BlockScanWarpScans
    */
   template <typename ScanOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ApplyWarpAggregates(T& /*warp_prefix*/, ScanOp /*scan_op*/, T& /*block_aggregate*/, Int2Type<WARPS> /*addend_warp*/)
+  ApplyWarpAggregates(T& /*warp_prefix*/, ScanOp /*scan_op*/, T& /*block_aggregate*/, constant_t<WARPS> /*addend_warp*/)
   {}
 
   /**
@@ -205,7 +203,7 @@ struct BlockScanWarpScans
 
     // Use template unrolling (since the PTX backend can't handle unrolling it for SM1x)
     // TODO(bgruber): does that still hold today? This is creating a lot of template instantiations
-    ApplyWarpAggregates(warp_prefix, scan_op, block_aggregate, Int2Type<1>());
+    ApplyWarpAggregates(warp_prefix, scan_op, block_aggregate, constant_v<1>);
     /*
             #pragma unroll
             for (int WARP = 1; WARP < WARPS; ++WARP)

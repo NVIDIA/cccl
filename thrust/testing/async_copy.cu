@@ -5,27 +5,25 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 #include <thrust/detail/config.h>
 
-#if _CCCL_STD_VER >= 2014
+#include <thrust/async/copy.h>
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
+#include <thrust/limits.h>
 
-#  include <thrust/async/copy.h>
-#  include <thrust/device_vector.h>
-#  include <thrust/host_vector.h>
-#  include <thrust/limits.h>
+#include <unittest/unittest.h>
+#include <unittest/util_async.h>
 
-#  include <unittest/unittest.h>
-#  include <unittest/util_async.h>
-
-#  define DEFINE_ASYNC_COPY_CALLABLE(name, ...)                                               \
-    struct THRUST_PP_CAT2(name, _fn)                                                          \
-    {                                                                                         \
-      template <typename ForwardIt, typename Sentinel, typename OutputIt>                     \
-      _CCCL_HOST auto operator()(ForwardIt&& first, Sentinel&& last, OutputIt&& output) const \
-        THRUST_RETURNS(::thrust::async::copy(                                                 \
-          __VA_ARGS__ THRUST_PP_COMMA_IF(THRUST_PP_ARITY(__VA_ARGS__)) THRUST_FWD(first),     \
-          THRUST_FWD(last),                                                                   \
-          THRUST_FWD(output)))                                                                \
-    };                                                                                        \
-    /**/
+#define DEFINE_ASYNC_COPY_CALLABLE(name, ...)                                               \
+  struct THRUST_PP_CAT2(name, _fn)                                                          \
+  {                                                                                         \
+    template <typename ForwardIt, typename Sentinel, typename OutputIt>                     \
+    _CCCL_HOST auto operator()(ForwardIt&& first, Sentinel&& last, OutputIt&& output) const \
+      THRUST_RETURNS(::thrust::async::copy(                                                 \
+        __VA_ARGS__ THRUST_PP_COMMA_IF(THRUST_PP_ARITY(__VA_ARGS__)) THRUST_FWD(first),     \
+        THRUST_FWD(last),                                                                   \
+        THRUST_FWD(output)))                                                                \
+  };                                                                                        \
+  /**/
 
 DEFINE_ASYNC_COPY_CALLABLE(invoke_async_copy);
 
@@ -37,7 +35,7 @@ DEFINE_ASYNC_COPY_CALLABLE(invoke_async_copy_device_to_host, thrust::device, thr
 DEFINE_ASYNC_COPY_CALLABLE(invoke_async_copy_host_to_host, thrust::host, thrust::host);
 DEFINE_ASYNC_COPY_CALLABLE(invoke_async_copy_device_to_device, thrust::device, thrust::device);
 
-#  undef DEFINE_ASYNC_COPY_CALLABLE
+#undef DEFINE_ASYNC_COPY_CALLABLE
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -317,7 +315,5 @@ DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(test_async_copy_after, BuiltinNumericT
 
 // TODO: H->D copy, then dependent D->H copy (round trip).
 // Can't do this today because we can't do cross-system with explicit policies.
-
-#endif
 
 _CCCL_SUPPRESS_DEPRECATED_POP

@@ -40,20 +40,18 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_STD_VER >= 2014
+#if _CCCL_HAS_CUDA_COMPILER
 
-#  if _CCCL_HAS_CUDA_COMPILER
+#  include <thrust/system/cuda/config.h>
 
-#    include <thrust/system/cuda/config.h>
+#  include <cub/device/device_for.cuh>
 
-#    include <cub/device/device_for.cuh>
+#  include <thrust/distance.h>
+#  include <thrust/iterator/iterator_traits.h>
+#  include <thrust/system/cuda/detail/async/customization.h>
+#  include <thrust/system/cuda/future.h>
 
-#    include <thrust/distance.h>
-#    include <thrust/iterator/iterator_traits.h>
-#    include <thrust/system/cuda/detail/async/customization.h>
-#    include <thrust/system/cuda/future.h>
-
-#    include <type_traits>
+#  include <type_traits>
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 THRUST_NAMESPACE_BEGIN
@@ -130,6 +128,4 @@ auto async_for_each(execution_policy<DerivedPolicy>& policy, ForwardIt first, Se
 _CCCL_SUPPRESS_DEPRECATED_POP
 THRUST_NAMESPACE_END
 
-#  endif // _CCCL_CUDA_COMPILER
-
-#endif
+#endif // _CCCL_CUDA_COMPILER

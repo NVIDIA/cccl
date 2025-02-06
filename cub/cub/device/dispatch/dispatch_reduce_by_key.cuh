@@ -322,7 +322,7 @@ struct DispatchReduceByKey
       // the necessary size of the blob)
       void* allocations[1] = {};
 
-      error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;
@@ -351,7 +351,7 @@ struct DispatchReduceByKey
 #endif // CUB_DEBUG_LOG
 
       // Invoke init_kernel to initialize tile descriptors
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
         .doit(init_kernel, tile_state, num_tiles, d_num_runs_out);
 
       // Check for failure to launch
@@ -408,7 +408,7 @@ struct DispatchReduceByKey
 #endif // CUB_DEBUG_LOG
 
         // Invoke reduce_by_key_kernel
-        THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(scan_grid_size, block_threads, 0, stream)
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(scan_grid_size, block_threads, 0, stream)
           .doit(reduce_by_key_kernel,
                 d_keys_in,
                 d_unique_out,

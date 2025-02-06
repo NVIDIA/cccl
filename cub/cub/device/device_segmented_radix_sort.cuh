@@ -252,20 +252,24 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DispatchSegmentedRadixSort<false, KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT, SegmentSizeT>::
-      Dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_keys,
-        d_values,
-        num_items,
-        num_segments,
-        d_begin_offsets,
-        d_end_offsets,
-        begin_bit,
-        end_bit,
-        false,
-        stream);
+    return DispatchSegmentedRadixSort<
+      SortOrder::Ascending,
+      KeyT,
+      ValueT,
+      BeginOffsetIteratorT,
+      EndOffsetIteratorT,
+      SegmentSizeT>::Dispatch(d_temp_storage,
+                              temp_storage_bytes,
+                              d_keys,
+                              d_values,
+                              num_items,
+                              num_segments,
+                              d_begin_offsets,
+                              d_end_offsets,
+                              begin_bit,
+                              end_bit,
+                              false,
+                              stream);
   }
 
   //! @rst
@@ -429,20 +433,24 @@ public:
     // Signed integer type for global offsets
     using SegmentSizeT = ::cuda::std::int32_t;
 
-    return DispatchSegmentedRadixSort<false, KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT, SegmentSizeT>::
-      Dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_keys,
-        d_values,
-        num_items,
-        num_segments,
-        d_begin_offsets,
-        d_end_offsets,
-        begin_bit,
-        end_bit,
-        true,
-        stream);
+    return DispatchSegmentedRadixSort<
+      SortOrder::Ascending,
+      KeyT,
+      ValueT,
+      BeginOffsetIteratorT,
+      EndOffsetIteratorT,
+      SegmentSizeT>::Dispatch(d_temp_storage,
+                              temp_storage_bytes,
+                              d_keys,
+                              d_values,
+                              num_items,
+                              num_segments,
+                              d_begin_offsets,
+                              d_end_offsets,
+                              begin_bit,
+                              end_bit,
+                              true,
+                              stream);
   }
 
   //! @rst
@@ -606,20 +614,24 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DispatchSegmentedRadixSort<true, KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT, SegmentSizeT>::
-      Dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_keys,
-        d_values,
-        num_items,
-        num_segments,
-        d_begin_offsets,
-        d_end_offsets,
-        begin_bit,
-        end_bit,
-        false,
-        stream);
+    return DispatchSegmentedRadixSort<
+      SortOrder::Descending,
+      KeyT,
+      ValueT,
+      BeginOffsetIteratorT,
+      EndOffsetIteratorT,
+      SegmentSizeT>::Dispatch(d_temp_storage,
+                              temp_storage_bytes,
+                              d_keys,
+                              d_values,
+                              num_items,
+                              num_segments,
+                              d_begin_offsets,
+                              d_end_offsets,
+                              begin_bit,
+                              end_bit,
+                              false,
+                              stream);
   }
 
   //! @rst
@@ -787,20 +799,24 @@ public:
     // Signed integer type for global offsets
     using SegmentSizeT = ::cuda::std::int32_t;
 
-    return DispatchSegmentedRadixSort<true, KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT, SegmentSizeT>::
-      Dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_keys,
-        d_values,
-        num_items,
-        num_segments,
-        d_begin_offsets,
-        d_end_offsets,
-        begin_bit,
-        end_bit,
-        true,
-        stream);
+    return DispatchSegmentedRadixSort<
+      SortOrder::Descending,
+      KeyT,
+      ValueT,
+      BeginOffsetIteratorT,
+      EndOffsetIteratorT,
+      SegmentSizeT>::Dispatch(d_temp_storage,
+                              temp_storage_bytes,
+                              d_keys,
+                              d_values,
+                              num_items,
+                              num_segments,
+                              d_begin_offsets,
+                              d_end_offsets,
+                              begin_bit,
+                              end_bit,
+                              true,
+                              stream);
   }
 
   //! @}  end member group
@@ -951,20 +967,24 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return DispatchSegmentedRadixSort<false, KeyT, NullType, BeginOffsetIteratorT, EndOffsetIteratorT, SegmentSizeT>::
-      Dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_keys,
-        d_values,
-        num_items,
-        num_segments,
-        d_begin_offsets,
-        d_end_offsets,
-        begin_bit,
-        end_bit,
-        false,
-        stream);
+    return DispatchSegmentedRadixSort<
+      SortOrder::Ascending,
+      KeyT,
+      NullType,
+      BeginOffsetIteratorT,
+      EndOffsetIteratorT,
+      SegmentSizeT>::Dispatch(d_temp_storage,
+                              temp_storage_bytes,
+                              d_keys,
+                              d_values,
+                              num_items,
+                              num_segments,
+                              d_begin_offsets,
+                              d_end_offsets,
+                              begin_bit,
+                              end_bit,
+                              false,
+                              stream);
   }
 
   //! @rst
@@ -1120,20 +1140,24 @@ public:
     // Null value type
     DoubleBuffer<NullType> d_values;
 
-    return DispatchSegmentedRadixSort<false, KeyT, NullType, BeginOffsetIteratorT, EndOffsetIteratorT, SegmentSizeT>::
-      Dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_keys,
-        d_values,
-        num_items,
-        num_segments,
-        d_begin_offsets,
-        d_end_offsets,
-        begin_bit,
-        end_bit,
-        true,
-        stream);
+    return DispatchSegmentedRadixSort<
+      SortOrder::Ascending,
+      KeyT,
+      NullType,
+      BeginOffsetIteratorT,
+      EndOffsetIteratorT,
+      SegmentSizeT>::Dispatch(d_temp_storage,
+                              temp_storage_bytes,
+                              d_keys,
+                              d_values,
+                              num_items,
+                              num_segments,
+                              d_begin_offsets,
+                              d_end_offsets,
+                              begin_bit,
+                              end_bit,
+                              true,
+                              stream);
   }
 
   //! @rst
@@ -1280,20 +1304,24 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return DispatchSegmentedRadixSort<true, KeyT, NullType, BeginOffsetIteratorT, EndOffsetIteratorT, SegmentSizeT>::
-      Dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_keys,
-        d_values,
-        num_items,
-        num_segments,
-        d_begin_offsets,
-        d_end_offsets,
-        begin_bit,
-        end_bit,
-        false,
-        stream);
+    return DispatchSegmentedRadixSort<
+      SortOrder::Descending,
+      KeyT,
+      NullType,
+      BeginOffsetIteratorT,
+      EndOffsetIteratorT,
+      SegmentSizeT>::Dispatch(d_temp_storage,
+                              temp_storage_bytes,
+                              d_keys,
+                              d_values,
+                              num_items,
+                              num_segments,
+                              d_begin_offsets,
+                              d_end_offsets,
+                              begin_bit,
+                              end_bit,
+                              false,
+                              stream);
   }
 
   //! @rst
@@ -1447,20 +1475,24 @@ public:
     // Null value type
     DoubleBuffer<NullType> d_values;
 
-    return DispatchSegmentedRadixSort<true, KeyT, NullType, BeginOffsetIteratorT, EndOffsetIteratorT, SegmentSizeT>::
-      Dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_keys,
-        d_values,
-        num_items,
-        num_segments,
-        d_begin_offsets,
-        d_end_offsets,
-        begin_bit,
-        end_bit,
-        true,
-        stream);
+    return DispatchSegmentedRadixSort<
+      SortOrder::Descending,
+      KeyT,
+      NullType,
+      BeginOffsetIteratorT,
+      EndOffsetIteratorT,
+      SegmentSizeT>::Dispatch(d_temp_storage,
+                              temp_storage_bytes,
+                              d_keys,
+                              d_values,
+                              num_items,
+                              num_segments,
+                              d_begin_offsets,
+                              d_end_offsets,
+                              begin_bit,
+                              end_bit,
+                              true,
+                              stream);
   }
 
   //! @}  end member group

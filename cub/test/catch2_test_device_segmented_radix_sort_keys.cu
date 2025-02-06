@@ -45,6 +45,7 @@
 #include "catch2_segmented_sort_helper.cuh"
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
+#include <c2h/extended_types.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 // %PARAM% TEST_KEY_BITS key_bits 8:16:32:64
@@ -67,12 +68,12 @@ using bit_window_key_types = c2h::type_list<cuda::std::uint8_t, cuda::std::int8_
 using key_types = c2h::type_list<
     cuda::std::uint16_t
   , cuda::std::int16_t
-#ifdef TEST_HALF_T
+#if TEST_HALF_T()
   , half_t
-#endif
-#ifdef TEST_BF_T
+#endif // TEST_HALF_T()
+#if TEST_BF_T()
   , bfloat16_t
-#endif
+#endif // TEST_BF_T()
   >;
 // clang-format on
 using bit_window_key_types = c2h::type_list<cuda::std::uint16_t, cuda::std::int16_t>;
@@ -99,12 +100,6 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeys: basic testing",
   using offset_t = c2h::get<1, TestType>;
 
   constexpr std::size_t min_num_items = 1 << 5;
-  constexpr std::size_t max_num_items = 1 << 20;
-  const std::size_t num_items         = GENERATE_COPY(take(3, random(min_num_items, max_num_items)));
-  const std::size_t num_segments      = GENERATE_COPY(take(2, random(std::size_t{2}, num_items / 2)));
-
-  c2h::device_vector<key_t> in_keys(num_items);
-  const int num_key_seeds = 1;
   c2h::gen(C2H_SEED(num_key_seeds), in_keys);
   // Initialize the output keys using the input keys since not all items
   // may belong to a segment.
