@@ -146,6 +146,19 @@ public:
           done_prereqs.add(mv(gnp));
         }
       }
+      else if (chained_task_nodes.size() > 0) {
+        const cudaGraphNode_t* deps = ready_dependencies.data();
+
+        // First node depends on ready_dependencies
+        ::std::vector<cudaGraphNode_t> out_array(ready_dependencies.size(), chained_task_nodes[0]);
+        cuda_safe_call(cudaGraphAddDependencies(ctx_graph, ready_dependencies.data(), out_array.data(), ready_dependencies.size()));
+
+        // Overall the task depends on the completion of the last node
+        auto gnp = reserved::graph_event(chained_task_nodes[chained_task_nodes.size()-1], epoch);
+        gnp->set_symbol(ctx, "done " + get_symbol());
+        /* This node is now the output dependency of the task */
+        done_prereqs.add(mv(gnp));
+      }
       else
       {
         // Note that if nothing was done in the task, this will create a child
@@ -350,6 +363,15 @@ public:
     return task_nodes.back();
   }
 
+  // Create a node in the graph
+  ::std::vector<cudaGraphNode_t>& get_node_chain()
+  {
+    assert(!child_graph);
+    assert(task_nodes.empty());
+
+    return chained_task_nodes;
+  }
+
   const auto& get_ready_dependencies() const
   {
     return ready_dependencies;
@@ -401,6 +423,8 @@ private:
   /* If the task corresponds to independent graph nodes, we do not use a
    * child graph, but add nodes directly */
   ::std::vector<cudaGraphNode_t> task_nodes;
+
+  ::std::vector<cudaGraphNode_t> chained_task_nodes;
 
   /* This is the support graph associated to the entire context */
   cudaGraph_t ctx_graph = nullptr;
