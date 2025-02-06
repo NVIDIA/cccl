@@ -48,11 +48,11 @@ using managed_mdspan = _CUDA_VSTD::mdspan<_ElementType, _Extents, _LayoutPolicy,
  * Accessibility Traits
  **********************************************************************************************************************/
 
-template <typename _T, typename _E, typename _L, typename _A>
-inline constexpr bool is_host_accessible_v<_CUDA_VSTD::mdspan<_T, _E, _L, _A>> = is_host_accessible_v<_A>;
+template <typename _Tp, typename _Ep, typename _Lp, typename _Ap>
+inline constexpr bool is_host_accessible_v<_CUDA_VSTD::mdspan<_Tp, _Ep, _Lp, _Ap>> = is_host_accessible_v<_Ap>;
 
-template <typename _T, typename _E, typename _L, typename _A>
-inline constexpr bool is_device_accessible_v<_CUDA_VSTD::mdspan<_T, _E, _L, _A>> = is_device_accessible_v<_A>;
+template <typename _Tp, typename _Ep, typename _Lp, typename _Ap>
+inline constexpr bool is_device_accessible_v<_CUDA_VSTD::mdspan<_Tp, _Ep, _Lp, _Ap>> = is_device_accessible_v<_Ap>;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
