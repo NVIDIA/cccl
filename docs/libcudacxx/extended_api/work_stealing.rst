@@ -37,7 +37,7 @@ For better performance, extract the thread block prologue - i.e. code and data t
 
 **Effects**:
 
-   - Invokes ``uf`` with ``dim3 == blockIdx``, then repetedly attempts to cancel the launch of a current grid thread block, and:
+   - Invokes ``uf`` with ``dim3 == blockIdx``, then repeatedly attempts to cancel the launch of a current grid thread block, and:
 
       - on success, calls ``uf`` with that thread blocks ``blockIdx`` and repeats,
       - otherwise it failed to cancel the launch of a thread block and it returns.
