@@ -13,15 +13,6 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDACC_BELOW(11, 5)
-// we need to suppress this warning which is generated outside:
-//   `cuda_pipeline_helpers.h(156): error #186-D: pointless comparison of unsigned integer with zero`
-_CCCL_NV_DIAG_SUPPRESS(186)
-#  include <cuda_pipeline_primitives.h>
-// we cannot re-enable the warning here, because it is triggered outside the translation unit
-// see also: https://godbolt.org/z/1x8b4hn3G
-#endif // _CCCL_CUDACC_BELOW(11, 5)
-
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/device/dispatch/tuning/tuning_transform.cuh>
 #include <cub/util_arch.cuh>
@@ -171,10 +162,11 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto poor_apply_impl(F&& f, Tuple&& t, ::cuda::st
 }
 
 template <class F, class Tuple>
-_CCCL_DEVICE _CCCL_FORCEINLINE auto poor_apply(F&& f, Tuple&& t) -> decltype(poor_apply_impl(
-  ::cuda::std::forward<F>(f),
-  ::cuda::std::forward<Tuple>(t),
-  ::cuda::std::make_index_sequence<::cuda::std::tuple_size<::cuda::std::remove_reference_t<Tuple>>::value>{}))
+_CCCL_DEVICE _CCCL_FORCEINLINE auto poor_apply(F&& f, Tuple&& t)
+  -> decltype(poor_apply_impl(
+    ::cuda::std::forward<F>(f),
+    ::cuda::std::forward<Tuple>(t),
+    ::cuda::std::make_index_sequence<::cuda::std::tuple_size<::cuda::std::remove_reference_t<Tuple>>::value>{}))
 {
   return poor_apply_impl(
     ::cuda::std::forward<F>(f),
@@ -474,9 +466,8 @@ using needs_aligned_ptr_t =
 
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
 template <Algorithm Alg, typename It, ::cuda::std::enable_if_t<needs_aligned_ptr_t<Alg>::value, int> = 0>
-_CCCL_DEVICE _CCCL_FORCEINLINE auto
-select_kernel_arg(::cuda::std::integral_constant<Algorithm, Alg>, kernel_arg<It>&& arg)
-  -> aligned_base_ptr<value_t<It>>&&
+_CCCL_DEVICE _CCCL_FORCEINLINE auto select_kernel_arg(
+  ::cuda::std::integral_constant<Algorithm, Alg>, kernel_arg<It>&& arg) -> aligned_base_ptr<value_t<It>>&&
 {
   return ::cuda::std::move(arg.aligned_ptr);
 }
@@ -662,9 +653,10 @@ struct dispatch_t<RequiresStableAddress,
   // TODO(bgruber): I want to write tests for this but those are highly depending on the architecture we are running
   // on?
   template <typename ActivePolicy>
-  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_ublkcp_kernel() -> PoorExpected<
-    ::cuda::std::
-      tuple<THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron, decltype(CUB_DETAIL_TRANSFORM_KERNEL_PTR), int>>
+  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_ublkcp_kernel()
+    -> PoorExpected<
+      ::cuda::std::
+        tuple<THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron, decltype(CUB_DETAIL_TRANSFORM_KERNEL_PTR), int>>
   {
     using policy_t          = typename ActivePolicy::algo_policy;
     constexpr int block_dim = policy_t::block_threads;
@@ -867,3 +859,11 @@ struct dispatch_t<RequiresStableAddress,
 } // namespace transform
 } // namespace detail
 CUB_NAMESPACE_END
+
+#if _CCCL_CUDACC_BELOW(11, 5)
+// we need to suppress this warning which is generated outside:
+//   `cuda_pipeline_helpers.h(156): error #186-D: pointless comparison of unsigned integer with zero`
+_CCCL_NV_DIAG_SUPPRESS(186)
+// we cannot re-enable the warning anywhere, because it is triggered outside the translation unit
+// see also: https://godbolt.org/z/1x8b4hn3G
+#endif // _CCCL_CUDACC_BELOW(11, 5)
