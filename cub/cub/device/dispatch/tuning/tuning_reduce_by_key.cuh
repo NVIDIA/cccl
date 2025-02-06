@@ -720,7 +720,6 @@ struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primiti
 // I16, F32, I32 regresses, default it back.
 template <class KeyT>
 struct sm100_tuning<KeyT, float, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_2, accum_size::_4>
-    : sm90_tuning<KeyT, float, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_4, accum_size::_1>
 {};
 
 // todo(gonidelis): Add tunings for I128.
