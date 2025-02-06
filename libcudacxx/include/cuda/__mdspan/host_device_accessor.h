@@ -73,6 +73,7 @@ struct host_accessor : public _Accessor
 private:
   using __data_handle_type = typename _Accessor::data_handle_type;
   using __reference        = typename _Accessor::reference;
+  using __self             = host_accessor<_Accessor>;
 
   static constexpr bool __is_ctor_noexcept      = noexcept(_Accessor{});
   static constexpr bool __is_copy_ctor_noexcept = noexcept(_Accessor{});
@@ -99,7 +100,7 @@ private:
 
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr void __check_host_pointer(__data_handle_type __p)
   {
-    _CCCL_ASSERT(__is_host_accessible_pointer(__p), "cuda::host_accessor data handle is not a HOST pointer");
+    _CCCL_ASSERT(__self::__is_host_accessible_pointer(__p), "cuda::host_accessor data handle is not a HOST pointer");
   }
 
 public:
@@ -113,7 +114,7 @@ public:
     noexcept(__is_access_noexcept)
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
-                      (__check_host_pointer(__p);), //
+                      (__self::__check_host_pointer(__p);), //
                       (static_assert(false, "cuda::host_accessor cannot be used in DEVICE code");))
     return _Accessor::access(__p, __i);
   }
@@ -122,7 +123,7 @@ public:
     noexcept(__is_offset_noexcept)
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
-                      (__check_host_pointer(__p);), //
+                      (__self::__check_host_pointer(__p);), //
                       (static_assert(false, "cuda::host_accessor cannot be used in DEVICE code");))
     return _Accessor::offset(__p, __i);
   }
@@ -138,6 +139,7 @@ struct device_accessor : public _Accessor
 private:
   using __data_handle_type = typename _Accessor::data_handle_type;
   using __reference        = typename _Accessor::reference;
+  using __self             = host_accessor<_Accessor>;
 
   static constexpr bool __is_ctor_noexcept      = noexcept(_Accessor{});
   static constexpr bool __is_copy_ctor_noexcept = noexcept(_Accessor{});
@@ -163,14 +165,14 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __reference access(__data_handle_type __p, size_t __i) const
     noexcept(__is_access_noexcept)
   {
-    NV_IF_TARGET(NV_IS_HOST, (__prevent_host_instantiation();))
+    NV_IF_TARGET(NV_IS_HOST, (__self::__prevent_host_instantiation();))
     return _Accessor::access(__p, __i);
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __data_handle_type offset(__data_handle_type __p, size_t __i) const
     noexcept(__is_offset_noexcept)
   {
-    NV_IF_TARGET(NV_IS_HOST, (__prevent_host_instantiation();))
+    NV_IF_TARGET(NV_IS_HOST, (__self::__prevent_host_instantiation();))
     return _Accessor::offset(__p, __i);
   }
 };
@@ -185,6 +187,7 @@ struct managed_accessor : public _Accessor
 private:
   using __data_handle_type = typename _Accessor::data_handle_type;
   using __reference        = typename _Accessor::reference;
+  using __self             = host_accessor<_Accessor>;
 
   static constexpr bool __is_ctor_noexcept      = noexcept(_Accessor{});
   static constexpr bool __is_copy_ctor_noexcept = noexcept(_Accessor{});
@@ -211,7 +214,7 @@ private:
 
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr void __check_managed_pointer(__data_handle_type __p)
   {
-    _CCCL_ASSERT(__is_managed_pointer(__p), "cuda::managed_accessor data handle is not a MANAGED pointer");
+    _CCCL_ASSERT(__self::__is_managed_pointer(__p), "cuda::managed_accessor data handle is not a MANAGED pointer");
   }
 
 public:
@@ -224,14 +227,14 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __reference access(__data_handle_type __p, size_t __i) const
     noexcept(__is_access_noexcept)
   {
-    NV_IF_TARGET(NV_IS_HOST, (__check_managed_pointer(__p);))
+    NV_IF_TARGET(NV_IS_HOST, (__self::__check_managed_pointer(__p);))
     return _Accessor::access(__p, __i);
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __data_handle_type offset(__data_handle_type __p, size_t __i) const
     noexcept(__is_offset_noexcept)
   {
-    NV_IF_TARGET(NV_IS_HOST, (__check_managed_pointer(__p);))
+    NV_IF_TARGET(NV_IS_HOST, (__self::__check_managed_pointer(__p);))
     return _Accessor::offset(__p, __i);
   }
 };
