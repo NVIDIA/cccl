@@ -264,4 +264,11 @@ C2H_TEST("ThreadReduce Narrow PrecisionType Tests",
 }
 
 #  endif // TEST_HALF_T() || TEST_BF_T()
+
+#else
+
+#  include "c2h/catch2_test_helper.h"
+
+C2H_TEST("ThreadReduce Empty Test", "[reduce][thread][empty]") {}
+
 #endif // CCCL_CHECK_SASS
