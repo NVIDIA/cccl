@@ -381,24 +381,25 @@ struct sm100_tuning<ValueT,
   static constexpr CacheLoadModifier load_modifier     = LOAD_DEFAULT;
 };
 
-template <class ValueT, class AccumT, class OffsetT>
-struct sm100_tuning<ValueT,
-                    AccumT,
-                    OffsetT,
-                    op_type::plus,
-                    primitive_value::yes,
-                    primitive_accum::yes,
-                    offset_size::_8,
-                    value_size::_2>
-{
-  // ipt_13.tpb_288.ns_1520.dcid_5.l2w_895.trp_1.ld_1 1.080934  0.983509  1.077724  1.305288
-  static constexpr int items                           = 13;
-  static constexpr int threads                         = 288;
-  using delay_constructor                              = exponential_backon_jitter_window_constructor_t<1520, 895>;
-  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
-  static constexpr CacheLoadModifier load_modifier     = LOAD_CA;
-};
+// todo(gonidelis): Regresses for large inputs. Find better tuning.
+// template <class ValueT, class AccumT, class OffsetT>
+// struct sm100_tuning<ValueT,
+//                     AccumT,
+//                     OffsetT,
+//                     op_type::plus,
+//                     primitive_value::yes,
+//                     primitive_accum::yes,
+//                     offset_size::_8,
+//                     value_size::_2>
+// {
+//   // ipt_13.tpb_288.ns_1520.dcid_5.l2w_895.trp_1.ld_1 1.080934  0.983509  1.077724  1.305288
+//   static constexpr int items                           = 13;
+//   static constexpr int threads                         = 288;
+//   using delay_constructor                              = exponential_backon_jitter_window_constructor_t<1520, 895>;
+//   static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
+//   static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
+//   static constexpr CacheLoadModifier load_modifier     = LOAD_CA;
+// };
 
 template <class ValueT, class AccumT, class OffsetT>
 struct sm100_tuning<ValueT,
@@ -479,8 +480,17 @@ struct sm100_tuning<ValueT,
 // todo(gonidelis): Add tunings for i128, float and double.
 // template <class OffsetT> struct sm100_tuning<float, OffsetT, op_type::plus, primitive_accum::yes, offset_size::_8,
 // accum_size::_4>;
-// template <class OffsetT> struct sm100_tuning<double, OffsetT, op_type::plus, primitive_accum::yes, offset_size::_8,
-// accum_size::_8>;
+// Default explicitly so it doesn't pick up the sm100<I64, I64> tuning.
+template <class AccumT, class OffsetT>
+struct sm100_tuning<double,
+                    AccumT,
+                    OffsetT,
+                    op_type::plus,
+                    primitive_value::yes,
+                    primitive_accum::yes,
+                    offset_size::_8,
+                    value_size::_8> : sm90_tuning<double, primitive_op::yes, primitive_accum::yes, accum_size::_8>
+{};
 
 #if CUB_IS_INT128_ENABLED
 // template <class OffsetT> struct sm100_tuning<__int128_t, OffsetT, op_type::plus, primitive_accum::no,
