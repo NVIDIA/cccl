@@ -80,7 +80,7 @@ private:
   static constexpr bool __is_offset_noexcept    = noexcept(_Accessor{}.offset(__data_handle_type{}, 0));
 
   static_assert(!is_host_device_managed_accessor_v<_Accessor>,
-                "cuda::host_accessor/cuda::device_accessor/cuda::managed_accessor accessor cannot be nested");
+                "cuda::host_accessor/cuda::device_accessor/cuda::managed_accessor cannot be nested");
 
   template <typename __data_handle_type>
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __is_host_accessible_pointer(__data_handle_type __p)
@@ -145,7 +145,7 @@ private:
   static constexpr bool __is_offset_noexcept    = noexcept(_Accessor{}.offset(__data_handle_type{}, 0));
 
   static_assert(!is_host_device_managed_accessor_v<_Accessor>,
-                "cuda::host_accessor/cuda::device_accessor/cuda::managed_accessor accessor cannot be nested");
+                "cuda::host_accessor/cuda::device_accessor/cuda::managed_accessor cannot be nested");
 
   template <typename _Sp = bool> // lazy evaluation
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr void __prevent_host_instantiation() noexcept
@@ -192,7 +192,7 @@ private:
   static constexpr bool __is_offset_noexcept    = noexcept(_Accessor{}.offset(__data_handle_type{}, 0));
 
   static_assert(!is_host_device_managed_accessor_v<_Accessor>,
-                "cuda::host_accessor/cuda::device_accessor/cuda::managed_accessor accessor cannot be nested");
+                "cuda::host_accessor/cuda::device_accessor/cuda::managed_accessor cannot be nested");
 
   template <typename __data_handle_type>
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __is_managed_pointer(__data_handle_type __p)
