@@ -782,11 +782,20 @@ struct policy_hub
     static auto select_agent_policy100(long) -> typename Policy900::ScanPolicyT;
 
     // Only consider sm100 tunings if the accumulator size matches the one we use in the benchmarks
-    using benchmark_accum_t                = ::cuda::std::__accumulator_t<ScanOpT, ValueT, ValueT>;
-    static constexpr bool accum_size_match = classify_accum_size<AccumT>() == classify_accum_size<benchmark_accum_t>();
+    template <typename VT, ::cuda::std::enable_if_t<::cuda::std::is_invocable<ScanOpT, VT, VT>::value, int> = 0>
+    static constexpr auto accum_size_matches(int) -> bool
+    {
+      return classify_accum_size<VT>() == classify_accum_size<::cuda::std::__accumulator_t<ScanOpT, VT, VT>>();
+    };
+
+    template <typename VT>
+    static constexpr auto accum_size_matches(long) -> bool
+    {
+      return false;
+    }
 
     using ScanPolicyT = ::cuda::std::conditional_t<
-      accum_size_match,
+      accum_size_matches<ValueT>(0),
       decltype(select_agent_policy100<sm100_tuning<ValueT, AccumT, OffsetT, classify_op<ScanOpT>()>>(0)),
       typename Policy900::ScanPolicyT>;
   };
