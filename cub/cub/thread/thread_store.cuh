@@ -321,7 +321,7 @@ template <typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 ThreadStore(T* ptr, T val, detail::int_constant_t<STORE_VOLATILE> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
 {
-  ThreadStoreVolatilePtr(ptr, val, ::cuda::std::bool_constant<Traits<T>::PRIMITIVE>());
+  ThreadStoreVolatilePtr(ptr, val, ::cuda::std::bool_constant<detail::is_primitive<T>::value>());
 }
 
 /**

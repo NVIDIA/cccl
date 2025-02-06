@@ -85,13 +85,13 @@ enum class val_size
 template <class T>
 constexpr primitive_key is_primitive_key()
 {
-  return Traits<T>::PRIMITIVE ? primitive_key::yes : primitive_key::no;
+  return detail::is_primitive<T>::value ? primitive_key::yes : primitive_key::no;
 }
 
 template <class T>
 constexpr primitive_val is_primitive_val()
 {
-  return Traits<T>::PRIMITIVE ? primitive_val::yes : primitive_val::no;
+  return detail::is_primitive<T>::value ? primitive_val::yes : primitive_val::no;
 }
 
 template <class KeyT>

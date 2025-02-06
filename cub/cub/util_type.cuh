@@ -45,6 +45,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/type_traits.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
 
 #include <thrust/iterator/discard_iterator.h>
@@ -798,19 +799,12 @@ struct BinaryOpHasIdxParam<T,
 
 /******************************************************************************
  * Simple type traits utilities.
- *
- * For example:
- *     Traits<int>::CATEGORY             // SIGNED_INTEGER
- *     Traits<NullType>::NULL_TYPE       // true
- *     Traits<uint4>::CATEGORY           // NOT_A_NUMBER
- *     Traits<uint4>::PRIMITIVE;         // false
- *
  ******************************************************************************/
 
 /**
  * \brief Basic type traits categories
  */
-enum Category
+enum CCCL_DEPRECATED_BECAUSE("Use <cuda/std/type_traits> instead") Category
 {
   NOT_A_NUMBER,
   SIGNED_INTEGER,
@@ -821,27 +815,30 @@ enum Category
 /**
  * \brief Basic type traits
  */
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <Category _CATEGORY, bool _PRIMITIVE, bool _NULL_TYPE, typename _UnsignedBits, typename T>
 struct BaseTraits
 {
-  static constexpr Category CATEGORY = _CATEGORY;
-  static constexpr bool PRIMITIVE    = _PRIMITIVE;
-  static constexpr bool NULL_TYPE    = _NULL_TYPE;
+  CCCL_DEPRECATED_BECAUSE("Use <cuda/std/type_traits> instead") static constexpr Category CATEGORY = _CATEGORY;
+  CCCL_DEPRECATED_BECAUSE("Use <cuda/std/type_traits> instead") static constexpr bool PRIMITIVE    = _PRIMITIVE;
+  CCCL_DEPRECATED static constexpr bool NULL_TYPE                                                  = _NULL_TYPE;
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 /**
  * Basic type traits (unsigned primitive specialization)
  */
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename _UnsignedBits, typename T>
 struct BaseTraits<UNSIGNED_INTEGER, true, false, _UnsignedBits, T>
 {
   using UnsignedBits = _UnsignedBits;
 
-  static constexpr Category CATEGORY       = UNSIGNED_INTEGER;
-  static constexpr UnsignedBits LOWEST_KEY = UnsignedBits(0);
-  static constexpr UnsignedBits MAX_KEY    = UnsignedBits(-1);
-  static constexpr bool PRIMITIVE          = true;
-  static constexpr bool NULL_TYPE          = false;
+  CCCL_DEPRECATED_BECAUSE("Use <cuda/std/type_traits> instead") static constexpr Category CATEGORY = UNSIGNED_INTEGER;
+  static constexpr UnsignedBits LOWEST_KEY                                                         = UnsignedBits(0);
+  static constexpr UnsignedBits MAX_KEY                                                            = UnsignedBits(-1);
+  CCCL_DEPRECATED_BECAUSE("Use <cuda/std/type_traits> instead") static constexpr bool PRIMITIVE    = true;
+  static constexpr bool NULL_TYPE                                                                  = false;
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
   {
@@ -878,12 +875,12 @@ struct BaseTraits<SIGNED_INTEGER, true, false, _UnsignedBits, T>
 {
   using UnsignedBits = _UnsignedBits;
 
-  static constexpr Category CATEGORY       = SIGNED_INTEGER;
+  CCCL_DEPRECATED_BECAUSE("Use <cuda/std/type_traits> instead") static constexpr Category CATEGORY = SIGNED_INTEGER;
   static constexpr UnsignedBits HIGH_BIT   = UnsignedBits(1) << ((sizeof(UnsignedBits) * 8) - 1);
   static constexpr UnsignedBits LOWEST_KEY = HIGH_BIT;
   static constexpr UnsignedBits MAX_KEY    = UnsignedBits(-1) ^ HIGH_BIT;
-  static constexpr bool PRIMITIVE          = true;
-  static constexpr bool NULL_TYPE          = false;
+  CCCL_DEPRECATED_BECAUSE("Use <cuda/std/type_traits> instead") static constexpr bool PRIMITIVE = true;
+  CCCL_DEPRECATED static constexpr bool NULL_TYPE                                               = false;
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
   {
@@ -930,12 +927,12 @@ struct BaseTraits<FLOATING_POINT, true, false, _UnsignedBits, T>
 {
   using UnsignedBits = _UnsignedBits;
 
-  static constexpr Category CATEGORY       = FLOATING_POINT;
+  CCCL_DEPRECATED_BECAUSE("Use <cuda/std/type_traits> instead") static constexpr Category CATEGORY = FLOATING_POINT;
   static constexpr UnsignedBits HIGH_BIT   = UnsignedBits(1) << ((sizeof(UnsignedBits) * 8) - 1);
   static constexpr UnsignedBits LOWEST_KEY = UnsignedBits(-1);
   static constexpr UnsignedBits MAX_KEY    = UnsignedBits(-1) ^ HIGH_BIT;
-  static constexpr bool PRIMITIVE          = true;
-  static constexpr bool NULL_TYPE          = false;
+  CCCL_DEPRECATED_BECAUSE("Use <cuda/std/type_traits> instead") static constexpr bool PRIMITIVE = true;
+  CCCL_DEPRECATED static constexpr bool NULL_TYPE                                               = false;
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
   {
@@ -993,11 +990,11 @@ struct NumericTraits<__uint128_t>
   using T = __uint128_t;
   using UnsignedBits = __uint128_t;
 
-  static constexpr Category       CATEGORY    = UNSIGNED_INTEGER;
+  CCCL_DEPRECATED_BECAUSE("Use <cuda/std/type_traits> instead") static constexpr Category       CATEGORY    = UNSIGNED_INTEGER;
   static constexpr UnsignedBits   LOWEST_KEY  = UnsignedBits(0);
   static constexpr UnsignedBits   MAX_KEY     = UnsignedBits(-1);
-  static constexpr bool PRIMITIVE = false;
-  static constexpr bool NULL_TYPE = false;
+  CCCL_DEPRECATED_BECAUSE("Use <cuda/std/type_traits> instead") static constexpr bool PRIMITIVE = false;
+  CCCL_DEPRECATED static constexpr bool NULL_TYPE = false;
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
   {
@@ -1026,12 +1023,12 @@ struct NumericTraits<__int128_t>
   using T = __int128_t;
   using UnsignedBits = __uint128_t;
 
-  static constexpr Category       CATEGORY    = SIGNED_INTEGER;
+  CCCL_DEPRECATED_BECAUSE("Use <cuda/std/type_traits> instead") static constexpr Category       CATEGORY    = SIGNED_INTEGER;
   static constexpr UnsignedBits   HIGH_BIT    = UnsignedBits(1) << ((sizeof(UnsignedBits) * 8) - 1);
   static constexpr UnsignedBits   LOWEST_KEY  = HIGH_BIT;
   static constexpr UnsignedBits   MAX_KEY     = UnsignedBits(-1) ^ HIGH_BIT;
-  static constexpr bool PRIMITIVE = false;
-  static constexpr bool NULL_TYPE = false;
+ CCCL_DEPRECATED_BECAUSE("Use <cuda/std/type_traits> instead") static constexpr bool PRIMITIVE = false;
+ CCCL_DEPRECATED static constexpr bool NULL_TYPE = false;
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
   {
@@ -1073,6 +1070,7 @@ template <> struct NumericTraits<double> :              BaseTraits<FLOATING_POIN
 
 template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTEGER, true, false, typename UnitWord<bool>::VolatileWord, bool> {};
 // clang-format on
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 /**
  * \brief Type traits
@@ -1080,6 +1078,47 @@ template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTE
 template <typename T>
 struct Traits : NumericTraits<typename ::cuda::std::remove_cv<T>::type>
 {};
+
+namespace detail
+{
+// __uint128_t and __int128_t are not primitive
+template <typename T>
+using is_primitive = ::cuda::std::bool_constant<is_one_of<
+  T,
+  char,
+  signed char,
+  short,
+  int,
+  long,
+  long long,
+  unsigned char,
+  unsigned short,
+  unsigned int,
+  unsigned long,
+  unsigned long long,
+  bool,
+  float,
+  double
+#  if defined(_CCCL_HAS_NVFP16)
+  ,
+  __half
+#  endif // _CCCL_HAS_NVFP16
+#  if defined(_CCCL_HAS_NVBF16)
+  ,
+  __nv_bfloat16
+#  endif // _CCCL_HAS_NVBF16
+#  if _CCCL_HAS_NVFP8()
+  ,
+  __nv_fp8_e4m3,
+  __nv_fp8_e5m2
+#  endif // _CCCL_HAS_NVFP8()
+  >()>;
+
+#  ifndef _CCCL_NO_VARIABLE_TEMPLATES
+template <typename T>
+_CCCL_INLINE_VAR constexpr bool is_primitive_v = is_primitive<T>::value;
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+} // namespace detail
 
 #endif // _CCCL_DOXYGEN_INVOKED
 
