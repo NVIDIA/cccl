@@ -109,7 +109,7 @@ enum class accum_size
 template <class ValueT>
 constexpr primitive_value is_primitive_value()
 {
-  return Traits<ValueT>::PRIMITIVE ? primitive_value::yes : primitive_value::no;
+  return is_primitive<ValueT>::value ? primitive_value::yes : primitive_value::no;
 }
 
 template <class AccumT>
