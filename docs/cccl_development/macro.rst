@@ -21,8 +21,6 @@ Compiler Macros
 +------------------------------+---------------------------------------------+
 | ``_CCCL_COMPILER(MSVC)``     | Microsoft Visual Studio                     |
 +------------------------------+---------------------------------------------+
-| ``_CCCL_COMPILER(MSVC2017)`` | Microsoft Visual Studio 2017 (deprecated)   |
-+------------------------------+---------------------------------------------+
 | ``_CCCL_COMPILER(MSVC2019)`` | Microsoft Visual Studio 2019                |
 +------------------------------+---------------------------------------------+
 | ``_CCCL_COMPILER(MSVC2022)`` | Microsoft Visual Studio 2022                |

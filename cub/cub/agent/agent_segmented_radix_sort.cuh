@@ -170,7 +170,13 @@ struct AgentSegmentedRadixSort
 
     BlockRadixSortT(temp_storage.sort)
       .SortBlockedToStriped(
-        thread_keys, thread_values, begin_bit, end_bit, Int2Type<IS_DESCENDING>(), Int2Type<KEYS_ONLY>(), decomposer);
+        thread_keys,
+        thread_values,
+        begin_bit,
+        end_bit,
+        bool_constant_v<IS_DESCENDING>,
+        bool_constant_v<KEYS_ONLY>,
+        decomposer);
 
     cub::StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_keys_out, thread_keys, num_items);
 
@@ -282,16 +288,5 @@ struct AgentSegmentedRadixSort
 
 } // namespace radix_sort
 } // namespace detail
-
-template <bool IS_DESCENDING,
-          typename SegmentedPolicyT,
-          typename KeyT,
-          typename ValueT,
-          typename OffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
-using AgentSegmentedRadixSort CCCL_DEPRECATED_BECAUSE(
-  "This class is considered an implementation detail and the public "
-  "interface will be removed.") =
-  detail::radix_sort::AgentSegmentedRadixSort<IS_DESCENDING, SegmentedPolicyT, KeyT, ValueT, OffsetT, DecomposerT>;
 
 CUB_NAMESPACE_END

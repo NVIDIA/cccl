@@ -120,8 +120,10 @@ CUB_NAMESPACE_BEGIN
 template <template <typename> class... Policies>
 struct NumericTraits<c2h::custom_type_t<Policies...>>
 {
-  using custom_t                     = c2h::custom_type_t<Policies...>;
+  using custom_t = c2h::custom_type_t<Policies...>;
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   static constexpr Category CATEGORY = NOT_A_NUMBER;
+  _CCCL_SUPPRESS_DEPRECATED_POP
   enum
   {
     PRIMITIVE = false,

@@ -36,7 +36,6 @@
     "RAPIDS_cuvs_GIT_REPO": "${localEnv:RAPIDS_cuvs_GIT_REPO}",
     "RAPIDS_cumlprims_mg_GIT_REPO": "${localEnv:RAPIDS_cumlprims_mg_GIT_REPO}",
     "RAPIDS_cuml_GIT_REPO": "${localEnv:RAPIDS_cuml_GIT_REPO}",
-    "RAPIDS_cugraph_ops_GIT_REPO": "${localEnv:RAPIDS_cugraph_ops_GIT_REPO}",
     "RAPIDS_cugraph_GIT_REPO": "${localEnv:RAPIDS_cugraph_GIT_REPO}",
     "RAPIDS_cugraph_gnn_GIT_REPO": "${localEnv:RAPIDS_cugraph_gnn_GIT_REPO}",
     "RAPIDS_cuspatial_GIT_REPO": "${localEnv:RAPIDS_cuspatial_GIT_REPO}"

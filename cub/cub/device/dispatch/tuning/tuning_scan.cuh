@@ -88,7 +88,7 @@ enum class accum_size
 template <class AccumT>
 constexpr primitive_accum is_primitive_accum()
 {
-  return Traits<AccumT>::PRIMITIVE ? primitive_accum::yes : primitive_accum::no;
+  return is_primitive<AccumT>::value ? primitive_accum::yes : primitive_accum::no;
 }
 
 template <class ScanOpT>
@@ -248,7 +248,7 @@ struct ScanPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<decltype(StaticPolic
 
   CUB_RUNTIME_FUNCTION static constexpr PolicyWrapper<typename StaticPolicyT::ScanPolicyT> Scan()
   {
-    return MakePolicyWrapper(typename StaticPolicyT::ScanPolicyT());
+    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::ScanPolicyT());
   }
 
   CUB_RUNTIME_FUNCTION constexpr CacheLoadModifier LoadModifier()
@@ -307,7 +307,7 @@ struct policy_hub
                        LOAD_DEFAULT,
                        Tuning::store_algorithm,
                        BLOCK_SCAN_WARP_SCANS,
-                       MemBoundScaling<Tuning::threads, Tuning::items, AccumT>,
+                       cub::detail::MemBoundScaling<Tuning::threads, Tuning::items, AccumT>,
                        typename Tuning::delay_constructor>;
   template <typename Tuning>
   static auto select_agent_policy(long) -> typename DefaultPolicy::ScanPolicyT;

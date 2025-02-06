@@ -12,7 +12,7 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 #  endif // NVCC version check
 #endif // MSVC + NVCC check
 
-#if _CCCL_STD_VER >= 2014 && !defined(THRUST_BUG_1098_ACTIVE)
+#if !defined(THRUST_BUG_1098_ACTIVE)
 
 #  include <thrust/async/sort.h>
 #  include <thrust/device_vector.h>

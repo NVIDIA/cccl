@@ -41,22 +41,20 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_STD_VER >= 2014
+#if _CCCL_HAS_CUDA_COMPILER
 
-#  if _CCCL_HAS_CUDA_COMPILER
+#  include <thrust/system/cuda/config.h>
 
-#    include <thrust/system/cuda/config.h>
+#  include <thrust/detail/execute_with_allocator.h>
+#  include <thrust/detail/type_deduction.h>
+#  include <thrust/mr/allocator.h>
+#  include <thrust/mr/disjoint_sync_pool.h>
+#  include <thrust/mr/host_memory_resource.h>
+#  include <thrust/mr/sync_pool.h>
+#  include <thrust/per_device_resource.h>
+#  include <thrust/system/cuda/memory_resource.h>
 
-#    include <thrust/detail/execute_with_allocator.h>
-#    include <thrust/detail/type_deduction.h>
-#    include <thrust/mr/allocator.h>
-#    include <thrust/mr/disjoint_sync_pool.h>
-#    include <thrust/mr/host_memory_resource.h>
-#    include <thrust/mr/sync_pool.h>
-#    include <thrust/per_device_resource.h>
-#    include <thrust/system/cuda/memory_resource.h>
-
-#    include <cstdint>
+#  include <cstdint>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -107,6 +105,4 @@ auto get_async_universal_host_pinned_allocator(thrust::detail::execution_policy_
 
 THRUST_NAMESPACE_END
 
-#  endif // _CCCL_CUDA_COMPILER
-
-#endif
+#endif // _CCCL_CUDA_COMPILER

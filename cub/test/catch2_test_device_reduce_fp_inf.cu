@@ -45,9 +45,6 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min_old);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max_old);
 _CCCL_SUPPRESS_DEPRECATED_POP
 
-// suppress deprecation of ConstantInputIterator in cudafe1.stub.c file
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-
 // %PARAM% TEST_LAUNCH lid 0:1
 
 C2H_TEST("Device reduce arg{min,max} works with inf items", "[reduce][device]")

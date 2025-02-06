@@ -48,7 +48,6 @@ struct C
   {};
 };
 
-#if !defined(TEST_COMPILER_MSVC_2017) // rebind is inaccessible
 template <class T>
 struct D
 {
@@ -58,7 +57,6 @@ struct D
 private:
   typedef void size_type;
 };
-#endif // !TEST_COMPILER_MSVC_2017
 
 namespace cuda
 {
@@ -81,9 +79,7 @@ int main(int, char**)
                                     cuda::std::make_unsigned<cuda::std::ptrdiff_t>::type>::value),
                 "");
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char>>::size_type, unsigned char>::value), "");
-#if !defined(TEST_COMPILER_MSVC_2017) // rebind is inaccessible
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<D<char>>::size_type, unsigned short>::value), "");
-#endif // !TEST_COMPILER_MSVC_2017
 
   return 0;
 }

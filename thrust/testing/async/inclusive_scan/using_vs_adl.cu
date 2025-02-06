@@ -4,10 +4,8 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 #include <thrust/detail/config.h>
 
-#if _CCCL_STD_VER >= 2014
-
-#  include <async/inclusive_scan/mixin.h>
-#  include <async/test_policy_overloads.h>
+#include <async/inclusive_scan/mixin.h>
+#include <async/test_policy_overloads.h>
 
 // Verify what happens when calling the algorithm without any namespace
 // qualifiers:
@@ -168,7 +166,5 @@ void test_using_cpo()
   testing::async::test_policy_overloads<invoker>::run(128);
 }
 DECLARE_UNITTEST(test_using_cpo);
-
-#endif // C++14
 
 _CCCL_SUPPRESS_DEPRECATED_POP
