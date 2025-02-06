@@ -225,15 +225,15 @@ struct sm100_tuning<1, SampleT, 4, 3, counter_size::_4, primitive_sample::yes, s
   static constexpr int vec_size                                  = 1 << 0;
 };
 
-// same as base
+// same as SM90
 // template <class SampleT>
 // struct sm100_tuning<1, SampleT, 4, 3, counter_size::_4, primitive_sample::yes, sample_size::_2> {};
 
-// same as base
+// same as SM90
 // template <class SampleT>
 // struct sm100_tuning<1, SampleT, 4, 3, counter_size::_4, primitive_sample::yes, sample_size::_4> {};
 
-// same as base
+// same as SM90
 // template <class SampleT>
 // struct sm100_tuning<1, SampleT, 4, 3, counter_size::_4, primitive_sample::yes, sample_size::_8> {};
 
@@ -252,23 +252,17 @@ struct sm100_tuning<0, SampleT, 4, 3, counter_size::_4, primitive_sample::yes, s
   static constexpr int vec_size                                  = 1 << 1;
 };
 
-// same as base
-template <class SampleT>
-struct sm100_tuning<0, SampleT, 4, 3, counter_size::_4, primitive_sample::yes, sample_size::_2>
-    : sm90_tuning<SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sample_size::_2>
-{};
+// same as SM90
+// template <class SampleT>
+// struct sm100_tuning<0, SampleT, 4, 3, counter_size::_4, primitive_sample::yes, sample_size::_2> {};
 
-// same as base
-template <class SampleT>
-struct sm100_tuning<0, SampleT, 4, 3, counter_size::_4, primitive_sample::yes, sample_size::_4>
-    : sm90_tuning<SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sample_size::_4>
-{};
+// same as SM90
+// template <class SampleT>
+// struct sm100_tuning<0, SampleT, 4, 3, counter_size::_4, primitive_sample::yes, sample_size::_4> {};
 
-// same as base
-template <class SampleT>
-struct sm100_tuning<0, SampleT, 4, 3, counter_size::_4, primitive_sample::yes, sample_size::_8>
-    : sm90_tuning<SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sample_size::_8>
-{};
+// same as SM90
+// template <class SampleT>
+// struct sm100_tuning<0, SampleT, 4, 3, counter_size::_4, primitive_sample::yes, sample_size::_8> {};
 
 template <class SampleT, class CounterT, int NumChannels, int NumActiveChannels, bool IsEven>
 struct policy_hub
