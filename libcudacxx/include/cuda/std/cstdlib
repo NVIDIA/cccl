@@ -24,6 +24,7 @@
 _CCCL_PUSH_MACROS
 
 #include <cuda/std/__cstdlib/abs.h>
+#include <cuda/std/__cstdlib/aligned_alloc.h>
 #include <cuda/std/__cstdlib/div.h>
 #include <cuda/std/__cstdlib/malloc.h>
 #include <cuda/std/version>

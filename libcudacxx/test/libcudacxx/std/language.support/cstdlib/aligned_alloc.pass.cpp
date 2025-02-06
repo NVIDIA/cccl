@@ -41,7 +41,7 @@ test_aligned_alloc(bool expect_success, cuda::std::size_t n, cuda::std::size_t a
   {
     // This is undefined behavior and dependent on the host libc
   }
-  cuda::std::free(ptr);
+  cuda::std::aligned_free(ptr);
 }
 
 struct BigStruct
@@ -62,14 +62,14 @@ struct TEST_ALIGNAS(128) OverAlignedStruct
 __host__ __device__ bool should_expect_success()
 {
   bool host_has_aligned_alloc = false;
-#if TEST_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC)
+#if TEST_STD_VER >= 2017
   host_has_aligned_alloc = true;
-#endif // ^^^ TEST_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC) ^^^
+#endif // TEST_STD_VER >= 2017
 
   bool device_has_aligned_alloc = false;
 #if !_CCCL_CUDA_COMPILER(CLANG)
   device_has_aligned_alloc = true;
-#endif // ^^^ !_CCCL_CUDA_COMPILER(CLANG) ^^^
+#endif // !_CCCL_CUDA_COMPILER(CLANG)
 
   unused(host_has_aligned_alloc, device_has_aligned_alloc);
 

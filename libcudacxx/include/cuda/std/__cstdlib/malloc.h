@@ -60,43 +60,6 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI void* calloc(size_t __n, size_t __size
   NV_IF_ELSE_TARGET(NV_IS_HOST, (return ::std::calloc(__n, __size);), (return _CUDA_VSTD::__calloc_device(__n, __size);))
 }
 
-#if !_CCCL_COMPILER(NVRTC)
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_HOST void* __aligned_alloc_host(size_t __nbytes, size_t __align) noexcept
-{
-  void* __ptr{};
-#  if _CCCL_COMPILER(MSVC)
-  _LIBCUDACXX_UNUSED_VAR(__nbytes);
-  _LIBCUDACXX_UNUSED_VAR(__align);
-  _CCCL_ASSERT(false, "Use of aligned_alloc in host code is not supported with MSVC");
-#  else
-  __ptr = ::std::aligned_alloc(__align, __nbytes);
-#  endif
-  return __ptr;
-}
-#endif // !_CCCL_COMPILER(NVRTC)
-
-#if _CCCL_HAS_CUDA_COMPILER
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __aligned_alloc_device(size_t __nbytes, size_t __align) noexcept
-{
-  void* __ptr{};
-#  if _CCCL_CUDA_COMPILER(CLANG)
-  _LIBCUDACXX_UNUSED_VAR(__nbytes);
-  _LIBCUDACXX_UNUSED_VAR(__align);
-  _CCCL_ASSERT(false, "Use of aligned_alloc in device code is not supported with clang-cuda");
-#  else // ^^^ _CCCL_CUDA_COMPILER(CLANG) ^^^ / vvv !_CCCL_CUDA_COMPILER(CLANG)
-  NV_IF_TARGET(NV_IS_DEVICE, (__ptr = ::__nv_aligned_device_malloc(__nbytes, __align);))
-#  endif // ^^^ !_CCCL_CUDA_COMPILER(CLANG) ^^^
-  return __ptr;
-}
-#endif // _CCCL_HAS_CUDA_COMPILER
-
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI void* aligned_alloc(size_t __nbytes, size_t __align) noexcept
-{
-  NV_IF_ELSE_TARGET(NV_IS_HOST,
-                    (return _CUDA_VSTD::__aligned_alloc_host(__nbytes, __align);),
-                    (return _CUDA_VSTD::__aligned_alloc_device(__nbytes, __align);))
-}
-
 _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif // _LIBCUDACXX___CSTDLIB_MALLOC_H
