@@ -189,13 +189,10 @@ DECLARE_UNITTEST(TestRemoveIfDispatchImplicit);
 template <typename Vector>
 void TestRemoveIfStencilSimple()
 {
-  using T = typename Vector::value_type;
-
   Vector data{1, 2, 1, 3, 2};
-
   Vector stencil{0, 1, 0, 0, 1};
 
-  typename Vector::iterator end = thrust::remove_if(data.begin(), data.end(), stencil.begin(), thrust::identity<T>());
+  typename Vector::iterator end = thrust::remove_if(data.begin(), data.end(), stencil.begin(), ::cuda::std::identity{});
 
   ASSERT_EQUAL(end - data.begin(), 3);
   data.resize(end - data.begin());
@@ -299,16 +296,13 @@ DECLARE_UNITTEST(TestRemoveCopyIfDispatchImplicit);
 template <typename Vector>
 void TestRemoveCopyIfStencilSimple()
 {
-  using T = typename Vector::value_type;
-
   Vector data{1, 2, 1, 3, 2};
-
   Vector stencil{0, 1, 0, 0, 1};
 
   Vector result(5);
 
   typename Vector::iterator end =
-    thrust::remove_copy_if(data.begin(), data.end(), stencil.begin(), result.begin(), thrust::identity<T>());
+    thrust::remove_copy_if(data.begin(), data.end(), stencil.begin(), result.begin(), ::cuda::std::identity{});
 
   ASSERT_EQUAL(end - result.begin(), 3);
   result.resize(end - result.begin());
