@@ -12,6 +12,7 @@
 
 int main(int, char**)
 {
+// the alignment check is disabled when it is not possible to evaluate the alignment at compile time
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   using E     = cuda::std::extents<size_t, 2>;
   using L     = cuda::std::layout_right;
