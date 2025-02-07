@@ -576,7 +576,7 @@ struct sm100_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_si
 };
 
 // TODO(gonidelis): Tune for I128.
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 // template <class KeyT, class ValueT>
 // struct sm100_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::no, key_size::_1, val_size::_16>
 // {
@@ -634,7 +634,7 @@ struct sm100_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_si
 };
 
 // TODO(gonidelis): Tune for I128.
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 // template <class KeyT, class ValueT>
 // struct sm100_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::no, key_size::_2, val_size::_16>
 // {
@@ -695,7 +695,7 @@ struct sm100_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_si
 };
 
 // TODO(gonidelis): Tune for I128.
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 // template <class KeyT, class ValueT>
 // struct sm100_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::no, key_size::_4, val_size::_16>
 // {
@@ -758,7 +758,7 @@ struct sm100_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_si
 };
 
 // TODO(gonidelis): Tune for I128.
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 // template <class KeyT, class ValueT>
 // struct sm100_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::no, key_size::_8, val_size::_16>
 // {
