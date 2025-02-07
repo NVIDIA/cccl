@@ -105,15 +105,12 @@ struct output_iterator_proxy_t {{
     DEREF(&state, x);
     return *this;
   }}
-  __device__ operator VALUE_T() {{
-    return static_cast<VALUE_T>(*state.data);
-  }}
   output_iterator_state_t state;
 }};
 struct {0} {{
   using iterator_category = cuda::std::random_access_iterator_tag;
   using difference_type   = DIFF_T;
-  using value_type        = VALUE_T;
+  using value_type        = void;
   using pointer           = output_iterator_proxy_t*;
   using reference         = output_iterator_proxy_t;
   __device__ output_iterator_proxy_t operator*() const {{ return {{state}}; }}
