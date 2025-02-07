@@ -9,7 +9,6 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 #include <thrust/device_ptr.h>
 #include <thrust/iterator/detail/device_system_tag.h>
 #include <thrust/iterator/detail/iterator_facade_category.h>
-#include <thrust/optional.h>
 
 #include <cstdint>
 

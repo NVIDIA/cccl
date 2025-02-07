@@ -26,7 +26,6 @@
 #include <thrust/detail/tuple_algorithms.h>
 #include <thrust/detail/type_deduction.h>
 #include <thrust/detail/type_traits/pointer_traits.h>
-#include <thrust/optional.h>
 #include <thrust/system/cuda/detail/get_value.h>
 #include <thrust/system/cuda/detail/util.h>
 #include <thrust/system/cuda/future.h>
