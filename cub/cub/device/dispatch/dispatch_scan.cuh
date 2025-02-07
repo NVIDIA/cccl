@@ -139,23 +139,23 @@ template <
   typename ScanOpT,
   typename InitValueT,
   typename OffsetT,
-  typename AccumT = ::cuda::std::__accumulator_t<ScanOpT,
-                                                 cub::detail::value_t<InputIteratorT>,
-                                                 ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
-                                                                  cub::detail::value_t<InputIteratorT>,
-                                                                  typename InitValueT::value_type>>,
+  typename AccumT                 = ::cuda::std::__accumulator_t<ScanOpT,
+                                                                 cub::detail::value_t<InputIteratorT>,
+                                                                 ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
+                                                                                  cub::detail::value_t<InputIteratorT>,
+                                                                                  typename InitValueT::value_type>>,
+  ForceInclusive EnforceInclusive = ForceInclusive::No,
   typename PolicyHub =
     detail::scan::policy_hub<detail::value_t<InputIteratorT>, detail::value_t<OutputIteratorT>, AccumT, OffsetT, ScanOpT>,
-  ForceInclusive EnforceInclusive = ForceInclusive::No,
-  typename KernelSource           = detail::scan::DeviceScanKernelSource<
-              typename PolicyHub::MaxPolicy,
-              InputIteratorT,
-              OutputIteratorT,
-              ScanOpT,
-              InitValueT,
-              OffsetT,
-              AccumT,
-              EnforceInclusive>,
+  typename KernelSource = detail::scan::DeviceScanKernelSource<
+    typename PolicyHub::MaxPolicy,
+    InputIteratorT,
+    OutputIteratorT,
+    ScanOpT,
+    InitValueT,
+    OffsetT,
+    AccumT,
+    EnforceInclusive>,
   typename KernelLauncherFactory = detail::TripleChevronFactory>
 struct DispatchScan
 {
