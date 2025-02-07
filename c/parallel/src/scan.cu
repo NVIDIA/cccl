@@ -389,8 +389,9 @@ extern "C" CCCL_C_API CUresult cccl_device_scan_build(
     check(cuLibraryGetKernel(&build->init_kernel, build->library, init_kernel_lowered_name.c_str()));
     check(cuLibraryGetKernel(&build->scan_kernel, build->library, scan_kernel_lowered_name.c_str()));
 
-    constexpr size_t num_ptx_args           = 5;
-    const char* ptx_args[num_ptx_args]      = {arch.c_str(), cub_path, libcudacxx_path, "-rdc=true", "-dlto"};
+    constexpr size_t num_ptx_args      = 7;
+    const char* ptx_args[num_ptx_args] = {
+      arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto"};
     constexpr size_t num_ptx_lto_args       = 3;
     const char* ptx_lopts[num_ptx_lto_args] = {"-lto", arch.c_str(), "-ptx"};
 
