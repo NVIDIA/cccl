@@ -26,6 +26,7 @@
 // run_loop isn't supported on-device yet, so neither can sync_wait be.
 #if !defined(__CUDA_ARCH__)
 
+#  include <cuda/std/__type_traits/type_identity.h>
 #  include <cuda/std/optional>
 #  include <cuda/std/tuple>
 
@@ -33,6 +34,7 @@
 #  include <cuda/experimental/__async/sender/meta.cuh>
 #  include <cuda/experimental/__async/sender/run_loop.cuh>
 #  include <cuda/experimental/__async/sender/utility.cuh>
+#  include <cuda/experimental/__async/sender/write_env.cuh>
 
 #  include <system_error>
 
@@ -115,26 +117,38 @@ private:
       }
     };
 
-    using __values_t = value_types_of_t<_Sndr, __rcvr_t, _CUDA_VSTD::tuple, _CUDA_VSTD::__type_self_t>;
+    using __completions_t = completion_signatures_of_t<_Sndr, __rcvr_t>;
+
+    struct __on_success
+    {
+      using type = __value_types<__completions_t, _CUDA_VSTD::tuple, _CUDA_VSTD::__type_self_t>;
+    };
+
+    using __on_error = _CUDA_VSTD::type_identity<_CUDA_VSTD::tuple<__completions_t>>;
+
+    using __values_t =
+      typename _CUDA_VSTD::_If<__is_completion_signatures<__completions_t>, __on_success, __on_error>::type;
 
     _CUDA_VSTD::optional<__values_t>* __values_;
     ::std::exception_ptr __eptr_;
     run_loop __loop_;
   };
 
-  struct __invalid_sync_wait
+  template <class _Type>
+  struct __always_false : _CUDA_VSTD::false_type
+  {};
+
+  template <class _Diagnostic>
+  struct __bad_sync_wait
   {
-    const __invalid_sync_wait& value() const
-    {
-      return *this;
-    }
+    static_assert(__always_false<_Diagnostic>(),
+                  "sync_wait cannot compute the completions of the sender passed to it.");
+    static __bad_sync_wait __result();
 
-    const __invalid_sync_wait& operator*() const
-    {
-      return *this;
-    }
+    const __bad_sync_wait& value() const;
+    const __bad_sync_wait& operator*() const;
 
-    int __i_;
+    int i{}; // so that structured bindings kinda work
   };
 
 public:
@@ -168,12 +182,11 @@ public:
   {
     using __rcvr_t      = typename __state_t<_Sndr>::__rcvr_t;
     using __values_t    = typename __state_t<_Sndr>::__values_t;
-    using __completions = completion_signatures_of_t<_Sndr, __rcvr_t>;
-    static_assert(__is_completion_signatures<__completions>);
+    using __completions = typename __state_t<_Sndr>::__completions_t;
 
     if constexpr (!__is_completion_signatures<__completions>)
     {
-      return __invalid_sync_wait{0};
+      return __bad_sync_wait<__completions>::__result();
     }
     else
     {
@@ -195,6 +208,12 @@ public:
 
       return __result; // uses NRVO to "return" the result
     }
+  }
+
+  template <class _Sndr, class _Env>
+  auto operator()(_Sndr&& __sndr, _Env&& __env) const
+  {
+    return (*this)(__async::write_env(static_cast<_Sndr&&>(__sndr), static_cast<_Env&&>(__env)));
   }
 };
 

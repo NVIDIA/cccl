@@ -160,6 +160,7 @@ struct tuple_element<Id, THRUST_NS_QUALIFIER::detail::tuple_of_iterator_referenc
 _LIBCUDACXX_END_NAMESPACE_STD
 
 // structured bindings support
+#if !_CCCL_COMPILER(NVRTC)
 namespace std
 {
 
@@ -174,3 +175,4 @@ struct tuple_element<Id, THRUST_NS_QUALIFIER::detail::tuple_of_iterator_referenc
 {};
 
 } // namespace std
+#endif // !_CCCL_COMPILER(NVRTC)

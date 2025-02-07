@@ -562,21 +562,7 @@
 /* Temporary helper #defines, removed with #undef at end of header */
 
 #if !defined(NVTX3_USE_CHECKED_OVERLOADS_FOR_GET)
-#  if defined(_MSC_VER) && _MSC_VER < 1914
-/* Microsoft's compiler prior to VS2017 Update 7 (15.7) uses an older parser
- * that does not work with domain::get's specialization for domain::global,
- * and would require extra conditions to make SFINAE work for the overloaded
- * get() functions.  This macro disables use of overloaded get() in order to
- * work with VS2015 and versions of VS2017 below 15.7, without penalizing
- * users of newer compilers.  Building with this flag set to 0 means errors
- * when defining tag structs (see documentation for domain, named_category,
- * and registered_string) will have more complex compiler error messages
- * instead of the clear static_assert messages from the get() overloads.
- */
-#    define NVTX3_USE_CHECKED_OVERLOADS_FOR_GET 0
-#  else
-#    define NVTX3_USE_CHECKED_OVERLOADS_FOR_GET 1
-#  endif
+#  define NVTX3_USE_CHECKED_OVERLOADS_FOR_GET 1
 #  define NVTX3_USE_CHECKED_OVERLOADS_FOR_GET_DEFINED_HERE
 #endif
 
@@ -605,11 +591,6 @@
  * in C++11 compilation.  It is used here on constructors that initialize their
  * member unions.
  */
-#if __cpp_constexpr >= 201304L
-#  define NVTX3_CONSTEXPR_IF_CPP14 constexpr
-#else
-#  define NVTX3_CONSTEXPR_IF_CPP14
-#endif
 
 /* Use a macro for static asserts, which defaults to static_assert, but that
  * testing tools can replace with a logging function.  For example:
@@ -1645,7 +1626,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      *
      * @param msg The contents of the message
      */
-    NVTX3_CONSTEXPR_IF_CPP14 message(char const* msg) noexcept
+    constexpr message(char const* msg) noexcept
         : type_{NVTX_MESSAGE_TYPE_ASCII}
     {
       value_.ascii = msg;
@@ -1675,7 +1656,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      *
      * @param msg The contents of the message
      */
-    NVTX3_CONSTEXPR_IF_CPP14 message(wchar_t const* msg) noexcept
+    constexpr message(wchar_t const* msg) noexcept
         : type_{NVTX_MESSAGE_TYPE_UNICODE}
     {
       value_.unicode = msg;
@@ -1709,7 +1690,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      * @param msg The message that has already been registered with NVTX.
      */
     template <typename D>
-    NVTX3_CONSTEXPR_IF_CPP14 message(registered_string_in<D> const& msg) noexcept
+    constexpr message(registered_string_in<D> const& msg) noexcept
         : type_{NVTX_MESSAGE_TYPE_REGISTERED}
     {
       value_.registered = msg.get_handle();
@@ -1731,7 +1712,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      *
      * @param handle nvtxStringHandle_t value of registered string handle
      */
-    NVTX3_CONSTEXPR_IF_CPP14 message(nvtxStringHandle_t handle) noexcept
+    constexpr message(nvtxStringHandle_t handle) noexcept
         : type_{NVTX_MESSAGE_TYPE_REGISTERED}
     {
       value_.registered = handle;
@@ -1786,7 +1767,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      *
      * @param value Value to use as contents of the payload
      */
-    NVTX3_CONSTEXPR_IF_CPP14 explicit payload(int64_t value) noexcept
+    constexpr explicit payload(int64_t value) noexcept
         : type_{NVTX_PAYLOAD_TYPE_INT64}
         , value_{}
     {
@@ -1798,7 +1779,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      *
      * @param value Value to use as contents of the payload
      */
-    NVTX3_CONSTEXPR_IF_CPP14 explicit payload(int32_t value) noexcept
+    constexpr explicit payload(int32_t value) noexcept
         : type_{NVTX_PAYLOAD_TYPE_INT32}
         , value_{}
     {
@@ -1810,7 +1791,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      *
      * @param value Value to use as contents of the payload
      */
-    NVTX3_CONSTEXPR_IF_CPP14 explicit payload(uint64_t value) noexcept
+    constexpr explicit payload(uint64_t value) noexcept
         : type_{NVTX_PAYLOAD_TYPE_UNSIGNED_INT64}
         , value_{}
     {
@@ -1822,7 +1803,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      *
      * @param value Value to use as contents of the payload
      */
-    NVTX3_CONSTEXPR_IF_CPP14 explicit payload(uint32_t value) noexcept
+    constexpr explicit payload(uint32_t value) noexcept
         : type_{NVTX_PAYLOAD_TYPE_UNSIGNED_INT32}
         , value_{}
     {
@@ -1835,7 +1816,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      *
      * @param value Value to use as contents of the payload
      */
-    NVTX3_CONSTEXPR_IF_CPP14 explicit payload(float value) noexcept
+    constexpr explicit payload(float value) noexcept
         : type_{NVTX_PAYLOAD_TYPE_FLOAT}
         , value_{}
     {
@@ -1848,7 +1829,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      *
      * @param value Value to use as contents of the payload
      */
-    NVTX3_CONSTEXPR_IF_CPP14 explicit payload(double value) noexcept
+    constexpr explicit payload(double value) noexcept
         : type_{NVTX_PAYLOAD_TYPE_DOUBLE}
         , value_{}
     {
@@ -1979,7 +1960,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      *
      */
     template <typename... Args>
-    NVTX3_CONSTEXPR_IF_CPP14 explicit event_attributes(category const& c, Args const&... args) noexcept
+    constexpr explicit event_attributes(category const& c, Args const&... args) noexcept
         : event_attributes(args...)
     {
       attributes_.category = c.get_id();
@@ -1993,7 +1974,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      *
      */
     template <typename... Args>
-    NVTX3_CONSTEXPR_IF_CPP14 explicit event_attributes(color const& c, Args const&... args) noexcept
+    constexpr explicit event_attributes(color const& c, Args const&... args) noexcept
         : event_attributes(args...)
     {
       attributes_.color     = c.get_value();
@@ -2008,7 +1989,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      *
      */
     template <typename... Args>
-    NVTX3_CONSTEXPR_IF_CPP14 explicit event_attributes(payload const& p, Args const&... args) noexcept
+    constexpr explicit event_attributes(payload const& p, Args const&... args) noexcept
         : event_attributes(args...)
     {
       attributes_.payload     = p.get_value();
@@ -2023,7 +2004,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      *
      */
     template <typename... Args>
-    NVTX3_CONSTEXPR_IF_CPP14 explicit event_attributes(message const& m, Args const&... args) noexcept
+    constexpr explicit event_attributes(message const& m, Args const&... args) noexcept
         : event_attributes(args...)
     {
       attributes_.message     = m.get_value();
@@ -2936,7 +2917,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
 #undef NVTX3_NAMESPACE_FOR
 #undef NVTX3_VERSION_NAMESPACE
 #undef NVTX3_INLINE_IF_REQUESTED
-#undef NVTX3_CONSTEXPR_IF_CPP14
+#undef constexpr
 
 #if defined(NVTX3_INLINE_THIS_VERSION)
 #  undef NVTX3_INLINE_THIS_VERSION

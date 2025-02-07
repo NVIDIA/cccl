@@ -73,7 +73,7 @@ namespace cuda_cub
 namespace __adjacent_difference
 {
 
-template <bool MayAlias, class InputIt, class OutputIt, class BinaryOp>
+template <cub::MayAlias AliasOpt, class InputIt, class OutputIt, class BinaryOp>
 cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -88,11 +88,10 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
     return cudaSuccess;
   }
 
-  constexpr bool may_alias = MayAlias;
-  constexpr bool read_left = true;
+  constexpr cub::ReadOption read_left = cub::ReadOption::Left;
 
-  using Dispatch32 = cub::DispatchAdjacentDifference<InputIt, OutputIt, BinaryOp, std::int32_t, may_alias, read_left>;
-  using Dispatch64 = cub::DispatchAdjacentDifference<InputIt, OutputIt, BinaryOp, std::int64_t, may_alias, read_left>;
+  using Dispatch32 = cub::DispatchAdjacentDifference<InputIt, OutputIt, BinaryOp, std::int32_t, AliasOpt, read_left>;
+  using Dispatch64 = cub::DispatchAdjacentDifference<InputIt, OutputIt, BinaryOp, std::int64_t, AliasOpt, read_left>;
 
   cudaError_t status;
   THRUST_INDEX_TYPE_DISPATCH2(
@@ -115,8 +114,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   cudaStream_t stream,
   thrust::detail::integral_constant<bool, false> /* comparable */)
 {
-  constexpr bool may_alias = true;
-  return doit_step<may_alias>(d_temp_storage, temp_storage_bytes, first, result, binary_op, num_items, stream);
+  return doit_step<cub::MayAlias::Yes>(d_temp_storage, temp_storage_bytes, first, result, binary_op, num_items, stream);
 }
 
 template <class InputIt, class OutputIt, class BinaryOp>
@@ -135,12 +133,10 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   // `num_items`. In the latter case, we use an optimized version.
   if (first != result)
   {
-    constexpr bool may_alias = false;
-    return doit_step<may_alias>(d_temp_storage, temp_storage_bytes, first, result, binary_op, num_items, stream);
+    return doit_step<cub::MayAlias::No>(d_temp_storage, temp_storage_bytes, first, result, binary_op, num_items, stream);
   }
 
-  constexpr bool may_alias = true;
-  return doit_step<may_alias>(d_temp_storage, temp_storage_bytes, first, result, binary_op, num_items, stream);
+  return doit_step<cub::MayAlias::Yes>(d_temp_storage, temp_storage_bytes, first, result, binary_op, num_items, stream);
 }
 
 template <typename Derived, typename InputIt, typename OutputIt, typename BinaryOp>

@@ -451,7 +451,7 @@ struct DispatchReduce
       }
 
       // Init regular kernel configuration
-      KernelConfig reduce_config;
+      detail::KernelConfig reduce_config;
       error = CubDebug(reduce_config.Init(reduce_kernel, active_policy.Reduce(), launcher_factory));
       if (cudaSuccess != error)
       {
@@ -474,7 +474,7 @@ struct DispatchReduce
 
       // Alias the temporary allocations from the single storage blob (or
       // compute the necessary size of the blob)
-      error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;
@@ -876,7 +876,7 @@ struct DispatchSegmentedReduce
       }
 
       // Init kernel configuration
-      KernelConfig segmented_reduce_config;
+      [[maybe_unused]] detail::KernelConfig segmented_reduce_config;
       error =
         CubDebug(segmented_reduce_config.Init<typename ActivePolicyT::SegmentedReducePolicy>(segmented_reduce_kernel));
       if (cudaSuccess != error)

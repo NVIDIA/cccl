@@ -78,12 +78,13 @@ CUB_NAMESPACE_BEGIN
  * @tparam _RADIX_BITS
  *   The number of radix bits, i.e., log2(bins)
  */
-template <int NOMINAL_BLOCK_THREADS_4B,
-          int NOMINAL_ITEMS_PER_THREAD_4B,
-          typename ComputeT,
-          CacheLoadModifier _LOAD_MODIFIER,
-          int _RADIX_BITS,
-          typename ScalingType = RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
+template <
+  int NOMINAL_BLOCK_THREADS_4B,
+  int NOMINAL_ITEMS_PER_THREAD_4B,
+  typename ComputeT,
+  CacheLoadModifier _LOAD_MODIFIER,
+  int _RADIX_BITS,
+  typename ScalingType = detail::RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
 struct AgentRadixSortUpsweepPolicy : ScalingType
 {
   enum
@@ -551,13 +552,5 @@ struct AgentRadixSortUpsweep
 
 } // namespace radix_sort
 } // namespace detail
-
-template <typename AgentRadixSortUpsweepPolicy,
-          typename KeyT,
-          typename OffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
-using AgentRadixSortUpsweep CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
-                                                    "interface will be removed.") =
-  detail::radix_sort::AgentRadixSortUpsweep<AgentRadixSortUpsweepPolicy, KeyT, OffsetT, DecomposerT>;
 
 CUB_NAMESPACE_END

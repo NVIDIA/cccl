@@ -63,8 +63,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t transform_many_with_alg_entry_point(
     return cudaSuccess;
   }
 
-  constexpr bool RequiresStableAddress = false;
-  return cub::detail::transform::dispatch_t<RequiresStableAddress,
+  return cub::detail::transform::dispatch_t<cub::detail::transform::requires_stable_address::no,
                                             Offset,
                                             ::cuda::std::tuple<RandomAccessIteratorsIn...>,
                                             RandomAccessIteratorOut,

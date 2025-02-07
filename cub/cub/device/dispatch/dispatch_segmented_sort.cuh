@@ -148,7 +148,7 @@ _CCCL_HOST_DEVICE OffsetIteratorT<Iterator, OffsetItT> make_offset_iterator(cons
  *   If `d_end_offsets[i]-1 <= d_begin_offsets[i]`, the i-th segment is
  *   considered empty.
  */
-template <bool IS_DESCENDING,
+template <SortOrder Order,
           typename ChainedPolicyT,
           typename KeyT,
           typename ValueT,
@@ -181,12 +181,12 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
   }
 
   using AgentSegmentedRadixSortT =
-    radix_sort::AgentSegmentedRadixSort<IS_DESCENDING, LargeSegmentPolicyT, KeyT, ValueT, OffsetT>;
+    radix_sort::AgentSegmentedRadixSort<Order == SortOrder::Descending, LargeSegmentPolicyT, KeyT, ValueT, OffsetT>;
 
   using WarpReduceT = cub::WarpReduce<KeyT>;
 
   using AgentWarpMergeSortT =
-    sub_warp_merge_sort::AgentSubWarpSort<IS_DESCENDING, MediumPolicyT, KeyT, ValueT, OffsetT>;
+    sub_warp_merge_sort::AgentSubWarpSort<Order == SortOrder::Descending, MediumPolicyT, KeyT, ValueT, OffsetT>;
 
   __shared__ union
   {
@@ -325,7 +325,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
  *   `d_end_offsets[i]-1 <= d_begin_offsets[i]`, the <em>i</em><sup>th</sup> is
  *   considered empty.
  */
-template <bool IS_DESCENDING,
+template <SortOrder Order,
           typename ChainedPolicyT,
           typename KeyT,
           typename ValueT,
@@ -360,10 +360,10 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::SmallAndMediumSegmentedSortPolic
   constexpr auto threads_per_small_segment  = static_cast<local_segment_index_t>(SmallPolicyT::WARP_THREADS);
 
   using MediumAgentWarpMergeSortT =
-    sub_warp_merge_sort::AgentSubWarpSort<IS_DESCENDING, MediumPolicyT, KeyT, ValueT, OffsetT>;
+    sub_warp_merge_sort::AgentSubWarpSort<Order == SortOrder::Descending, MediumPolicyT, KeyT, ValueT, OffsetT>;
 
   using SmallAgentWarpMergeSortT =
-    sub_warp_merge_sort::AgentSubWarpSort<IS_DESCENDING, SmallPolicyT, KeyT, ValueT, OffsetT>;
+    sub_warp_merge_sort::AgentSubWarpSort<Order == SortOrder::Descending, SmallPolicyT, KeyT, ValueT, OffsetT>;
 
   constexpr auto segments_per_medium_block =
     static_cast<local_segment_index_t>(SmallAndMediumPolicyT::SEGMENTS_PER_MEDIUM_BLOCK);
@@ -449,7 +449,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::SmallAndMediumSegmentedSortPolic
  *   `d_end_offsets[i]-1 <= d_begin_offsets[i]`, the <em>i</em><sup>th</sup> is
  *   considered empty.
  */
-template <bool IS_DESCENDING,
+template <SortOrder Order,
           typename ChainedPolicyT,
           typename KeyT,
           typename ValueT,
@@ -475,7 +475,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
   constexpr int small_tile_size = LargeSegmentPolicyT::BLOCK_THREADS * LargeSegmentPolicyT::ITEMS_PER_THREAD;
 
   using AgentSegmentedRadixSortT =
-    radix_sort::AgentSegmentedRadixSort<IS_DESCENDING, LargeSegmentPolicyT, KeyT, ValueT, OffsetT>;
+    radix_sort::AgentSegmentedRadixSort<Order == SortOrder::Descending, LargeSegmentPolicyT, KeyT, ValueT, OffsetT>;
 
   __shared__ typename AgentSegmentedRadixSortT::TempStorage storage;
 
@@ -748,7 +748,7 @@ __launch_bounds__(1) CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortContin
 
 } // namespace detail::segmented_sort
 
-template <bool IS_DESCENDING,
+template <SortOrder Order,
           typename KeyT,
           typename ValueT,
           typename OffsetT,
@@ -1078,7 +1078,7 @@ struct DispatchSegmentedSort
         // kernels for each of them.
         error = SortWithPartitioning<LargeSegmentPolicyT, SmallAndMediumPolicyT>(
           detail::segmented_sort::DeviceSegmentedSortKernelLarge<
-            IS_DESCENDING,
+            Order,
             MaxPolicyT,
             KeyT,
             ValueT,
@@ -1086,7 +1086,7 @@ struct DispatchSegmentedSort
             StreamingEndOffsetIteratorT,
             OffsetT>,
           detail::segmented_sort::DeviceSegmentedSortKernelSmall<
-            IS_DESCENDING,
+            Order,
             MaxPolicyT,
             KeyT,
             ValueT,
@@ -1110,7 +1110,7 @@ struct DispatchSegmentedSort
 
         error = SortWithoutPartitioning<LargeSegmentPolicyT>(
           detail::segmented_sort::DeviceSegmentedSortFallbackKernel<
-            IS_DESCENDING,
+            Order,
             MaxPolicyT,
             KeyT,
             ValueT,

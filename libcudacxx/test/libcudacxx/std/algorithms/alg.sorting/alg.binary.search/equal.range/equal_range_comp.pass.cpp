@@ -80,10 +80,10 @@ int main(int, char**)
   test();
   test<const int*>();
 
-#if TEST_STD_VER >= 2014 && !defined(TEST_COMPILER_MSVC_2017)
+#if TEST_STD_VER >= 2014
   static_assert(test(), "");
   static_assert(test<const int*>(), ""); // clang otherwise hits the evaluation limit
-#endif // TEST_STD_VER >= 2014 && !TEST_COMPILER_MSVC_2017
+#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

@@ -42,9 +42,6 @@
 // %RANGE% TUNE_DELAY_CONSTRUCTOR_ID dcid 0:7:1
 // %RANGE% TUNE_L2_WRITE_LATENCY_NS l2w 0:1200:5
 
-constexpr bool keep_rejects = true;
-constexpr bool may_alias    = false;
-
 #if !TUNE_BASE
 #  if TUNE_TRANSPOSE == 0
 #    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_DIRECT
@@ -119,8 +116,7 @@ void flagged(nvbench::state& state, nvbench::type_list<T, OffsetT, UseDistinctPa
     select_op_t,
     equality_op_t,
     offset_t,
-    keep_rejects,
-    may_alias
+    cub::SelectImpl::Partition
 #if !TUNE_BASE
     ,
     policy_hub_t<T>

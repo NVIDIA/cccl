@@ -91,15 +91,15 @@ zip_iterator<IteratorTuple>::distance_to(const zip_iterator<OtherIteratorTuple>&
 } // end zip_iterator::distance_to()
 
 template <typename... Iterators>
-_CCCL_HOST_DEVICE zip_iterator<thrust::tuple<Iterators...>> make_zip_iterator(thrust::tuple<Iterators...> t)
+_CCCL_HOST_DEVICE zip_iterator<_CUDA_VSTD::tuple<Iterators...>> make_zip_iterator(_CUDA_VSTD::tuple<Iterators...> t)
 {
-  return zip_iterator<thrust::tuple<Iterators...>>(t);
+  return zip_iterator<_CUDA_VSTD::tuple<Iterators...>>(t);
 } // end make_zip_iterator()
 
 template <typename... Iterators>
-_CCCL_HOST_DEVICE zip_iterator<thrust::tuple<Iterators...>> make_zip_iterator(Iterators... its)
+_CCCL_HOST_DEVICE zip_iterator<_CUDA_VSTD::tuple<Iterators...>> make_zip_iterator(Iterators... its)
 {
-  return make_zip_iterator(thrust::make_tuple(its...));
+  return make_zip_iterator(_CUDA_VSTD::make_tuple(its...));
 } // end make_zip_iterator()
 
 THRUST_NAMESPACE_END

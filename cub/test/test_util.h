@@ -56,7 +56,6 @@
 #include <vector>
 
 #include "mersenne.h"
-#include "test_warning_suppression.cuh"
 #include <c2h/extended_types.h>
 #include <c2h/test_util_vec.h>
 #include <nv/target>
@@ -972,7 +971,9 @@ CUB_NAMESPACE_BEGIN
 template <>
 struct NumericTraits<TestFoo>
 {
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   static constexpr Category CATEGORY = NOT_A_NUMBER;
+  _CCCL_SUPPRESS_DEPRECATED_POP
   enum
   {
     PRIMITIVE = false,
@@ -1106,7 +1107,9 @@ CUB_NAMESPACE_BEGIN
 template <>
 struct NumericTraits<TestBar>
 {
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   static constexpr Category CATEGORY = NOT_A_NUMBER;
+  _CCCL_SUPPRESS_DEPRECATED_POP
   enum
   {
     PRIMITIVE = false,

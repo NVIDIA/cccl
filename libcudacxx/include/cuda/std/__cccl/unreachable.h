@@ -29,14 +29,7 @@
 #elif defined(__CUDA_ARCH__)
 #  define _CCCL_UNREACHABLE() __builtin_unreachable()
 #else // ^^^ __CUDA_ARCH__ ^^^ / vvv !__CUDA_ARCH__ vvv
-#  if _CCCL_COMPILER(MSVC2017)
-template <class = void>
-_LIBCUDACXX_HIDE_FROM_ABI __declspec(noreturn) void __cccl_unreachable_fallback()
-{
-  __assume(0);
-}
-#    define _CCCL_UNREACHABLE() __cccl_unreachable_fallback()
-#  elif _CCCL_COMPILER(MSVC)
+#  if _CCCL_COMPILER(MSVC)
 #    define _CCCL_UNREACHABLE() __assume(0)
 #  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 #    define _CCCL_UNREACHABLE() __builtin_unreachable()

@@ -99,7 +99,7 @@ private:
     RunItemT (&unique_items)[RUNS_PER_THREAD],
     RunLengthT (&run_lengths)[RUNS_PER_THREAD],
     RunLengthT& decoded_size,
-    cub::Int2Type<true> /*test_run_offsets*/)
+    cuda::std::true_type /*test_run_offsets*/)
   {
     RunLengthT run_offsets[RUNS_PER_THREAD];
     BlockRunOffsetScanT(temp_storage.run_offsets_scan_storage).ExclusiveSum(run_lengths, run_offsets, decoded_size);
@@ -115,7 +115,7 @@ private:
     RunItemT (&unique_items)[RUNS_PER_THREAD],
     RunLengthT (&run_lengths)[RUNS_PER_THREAD],
     RunLengthT& decoded_size,
-    cub::Int2Type<false> /*test_run_offsets*/)
+    cuda::std::false_type /*test_run_offsets*/)
   {
     // Construct BlockRunLengthDecode and initialize with the run lengths
     return BlockRunLengthDecodeT(temp_storage.decode.run_length_decode_storage, unique_items, run_lengths, decoded_size);
@@ -192,7 +192,7 @@ public:
     // "decompressed" size)
     uint32_t decoded_size = 0U;
     BlockRunLengthDecodeT run_length_decode =
-      InitBlockRunLengthDecode(unique_items, run_lengths, decoded_size, cub::Int2Type<TEST_RUN_OFFSETS_>());
+      InitBlockRunLengthDecode(unique_items, run_lengths, decoded_size, cuda::std::bool_constant<TEST_RUN_OFFSETS_>{});
     return decoded_size;
   }
 
@@ -217,7 +217,7 @@ public:
     // "decompressed" size)
     uint32_t decoded_size = 0U;
     BlockRunLengthDecodeT run_length_decode =
-      InitBlockRunLengthDecode(unique_items, run_lengths, decoded_size, cub::Int2Type<TEST_RUN_OFFSETS_>());
+      InitBlockRunLengthDecode(unique_items, run_lengths, decoded_size, cuda::std::bool_constant<TEST_RUN_OFFSETS_>{});
 
     // Run-length decode ("decompress") the runs into a window buffer of limited size. This is
     // repeated until all runs have been decoded.

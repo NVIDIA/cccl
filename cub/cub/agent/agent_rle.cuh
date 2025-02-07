@@ -553,7 +553,7 @@ struct AgentRle
     OffsetT warp_num_runs_exclusive_in_tile,
     OffsetT (&thread_num_runs_exclusive_in_warp)[ITEMS_PER_THREAD],
     LengthOffsetPair (&lengths_and_offsets)[ITEMS_PER_THREAD],
-    Int2Type<true> is_warp_time_slice)
+    ::cuda::std::true_type is_warp_time_slice)
   {
     unsigned int warp_id = ((WARPS == 1) ? 0 : threadIdx.x / WARP_THREADS);
     int lane_id          = ::cuda::ptx::get_sreg_laneid();
@@ -610,7 +610,7 @@ struct AgentRle
     OffsetT warp_num_runs_exclusive_in_tile,
     OffsetT (&thread_num_runs_exclusive_in_warp)[ITEMS_PER_THREAD],
     LengthOffsetPair (&lengths_and_offsets)[ITEMS_PER_THREAD],
-    Int2Type<false> is_warp_time_slice)
+    ::cuda::std::false_type is_warp_time_slice)
   {
     unsigned int warp_id = ((WARPS == 1) ? 0 : threadIdx.x / WARP_THREADS);
     int lane_id          = ::cuda::ptx::get_sreg_laneid();
@@ -720,7 +720,7 @@ struct AgentRle
         warp_num_runs_exclusive_in_tile,
         thread_num_runs_exclusive_in_warp,
         lengths_and_offsets,
-        Int2Type<STORE_WARP_TIME_SLICING>());
+        bool_constant_v<STORE_WARP_TIME_SLICING>);
     }
   }
 
@@ -996,15 +996,5 @@ struct AgentRle
 
 } // namespace rle
 } // namespace detail
-
-template <typename AgentRlePolicyT,
-          typename InputIteratorT,
-          typename OffsetsOutputIteratorT,
-          typename LengthsOutputIteratorT,
-          typename EqualityOpT,
-          typename OffsetT>
-using AgentRle CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public interface "
-                                       "will be removed.") = detail::rle::
-  AgentRle<AgentRlePolicyT, InputIteratorT, OffsetsOutputIteratorT, LengthsOutputIteratorT, EqualityOpT, OffsetT>;
 
 CUB_NAMESPACE_END
