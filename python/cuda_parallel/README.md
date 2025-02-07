@@ -8,6 +8,6 @@ Please visit the documentation here: https://nvidia.github.io/cccl/python.html.
 
 ```bash
 pip3 install ../cuda_cccl
-pip3 install -e .[test] -v
+pip3 install .[test] -v
 pytest -v ./tests/
 ```
