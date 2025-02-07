@@ -3,12 +3,18 @@
 ``<cuda/std/mdspan>``
 ======================
 
+Provided functionalities
+------------------------
+
+-  All features of ``<mdspan>`` are made available in C++14 onwards
+-  C++26 ``std::dims`` is made available in C++14 onwards
+-  C++26 ``std::aligned_accessor`` is made available in C++17 onwards
+
 Extensions
 ----------
 
--  All features of ``<mdspan>`` are made available in C++14 onwards
 -  The C++23 multidimensional ``operator[]`` is replaced with ``operator()``
--  C++26 ``std::dims`` is made available in C++14 onwards
+-  Detection of out-of-bounds accesses  is available debug mode
 
 Restrictions
 ------------
