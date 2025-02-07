@@ -23,7 +23,7 @@ struct CudaDriverLauncher
 {
   dim3 grid;
   dim3 block;
-  std::size_t shared_mem;
+  size_t shared_mem;
   CUstream stream;
 
   template <typename... Args>

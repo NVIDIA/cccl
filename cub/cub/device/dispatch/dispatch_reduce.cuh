@@ -228,7 +228,7 @@ struct DeviceReduceKernelSource
                                  InitT,
                                  AccumT>)
 
-  CUB_RUNTIME_FUNCTION static constexpr std::size_t AccumSize()
+  CUB_RUNTIME_FUNCTION static constexpr size_t AccumSize()
   {
     return sizeof(AccumT);
   }

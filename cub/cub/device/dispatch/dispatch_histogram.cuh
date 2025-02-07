@@ -608,7 +608,7 @@ public:
       // Wrap the native input pointer with CacheModifiedInputIterator
       // or Directly use the supplied input iterator type
       using WrappedLevelIteratorT =
-        ::cuda::std::_If<std::is_pointer<LevelIteratorT>::value,
+        ::cuda::std::_If<::cuda::std::is_pointer<LevelIteratorT>::value,
                          CacheModifiedInputIterator<LOAD_MODIFIER, LevelT, OffsetT>,
                          LevelIteratorT>;
 
