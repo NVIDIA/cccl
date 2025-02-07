@@ -14,10 +14,10 @@ int main(int, char**)
 {
 // the alignment check is disabled when it is not possible to evaluate the alignment at compile time
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  using E     = cuda::std::extents<size_t, 2>;
-  using L     = cuda::std::layout_right;
-  using A     = cuda::std::aligned_accessor<int, 64>;
-  int array[] = {1, 2, 3};
+  using E                = cuda::std::extents<size_t, 2>;
+  using L                = cuda::std::layout_right;
+  using A                = cuda::std::aligned_accessor<int, 64>;
+  alignas(4) int array[] = {1, 2, 3};
   cuda::std::mdspan<int, E, L, A> md(static_cast<int*>(array) + 1, 2);
   unused(md(0));
   return 0;
