@@ -6,7 +6,7 @@ Work stealing
 .. code:: cuda
 
    namespace cuda::experimental {
-	  
+
        template <int ThreadBlockRank = 3, typename UnaryFunction = ..unspecified..>
            requires std::is_invocable_r_v<void, UnaryFunction, dim3>
        __device__ void for_each_cancelled_block(UnaryFunction uf);
