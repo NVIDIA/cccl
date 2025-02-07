@@ -1321,7 +1321,8 @@ struct DeviceScan
       detail::InputValue<InitValueT>,
       OffsetT,
       AccumT,
-      detail::scan::policy_hub<AccumT, ScanOpT>,
+      detail::scan::
+        policy_hub<detail::value_t<InputIteratorT>, detail::value_t<OutputIteratorT>, AccumT, OffsetT, ScanOpT>,
       ForceInclusive>::Dispatch(d_temp_storage,
                                 temp_storage_bytes,
                                 d_in,
