@@ -872,8 +872,8 @@ template <SortOrder Order,
           typename KeyT,
           typename ValueT,
           typename OffsetT,
-          typename PolicyHub   = detail::radix::policy_hub<KeyT, ValueT, OffsetT>,
-          typename DecomposerT = detail::identity_decomposer_t>
+          typename DecomposerT = detail::identity_decomposer_t,
+          typename PolicyHub   = detail::radix::policy_hub<KeyT, ValueT, OffsetT>>
 struct DispatchRadixSort
 {
   //------------------------------------------------------------------------------
