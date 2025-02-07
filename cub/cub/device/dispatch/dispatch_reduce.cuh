@@ -544,7 +544,7 @@ struct DispatchReduce
 
 /**
  * @brief Utility class for dispatching the appropriately-tuned kernels for
- *        device-wide transpose reduce
+ *        device-wide transform reduce
  *
  * @tparam InputIteratorT
  *   Random-access input iterator type for reading input items @iterator
