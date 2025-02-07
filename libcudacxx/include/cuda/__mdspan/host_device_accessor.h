@@ -140,7 +140,7 @@ struct device_accessor : public _Accessor
 private:
   using __data_handle_type = typename _Accessor::data_handle_type;
   using __reference        = typename _Accessor::reference;
-  using __self             = host_accessor<_Accessor>;
+  using __self             = device_accessor<_Accessor>;
 
   static constexpr bool __is_ctor_noexcept      = noexcept(_Accessor{});
   static constexpr bool __is_copy_ctor_noexcept = noexcept(_Accessor{});
@@ -188,7 +188,7 @@ struct managed_accessor : public _Accessor
 private:
   using __data_handle_type = typename _Accessor::data_handle_type;
   using __reference        = typename _Accessor::reference;
-  using __self             = host_accessor<_Accessor>;
+  using __self             = managed_accessor<_Accessor>;
 
   static constexpr bool __is_ctor_noexcept      = noexcept(_Accessor{});
   static constexpr bool __is_copy_ctor_noexcept = noexcept(_Accessor{});
