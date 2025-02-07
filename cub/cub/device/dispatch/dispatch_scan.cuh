@@ -233,12 +233,13 @@ template <typename InputIteratorT,
           typename ScanOpT,
           typename InitValueT,
           typename OffsetT,
-          typename AccumT     = ::cuda::std::__accumulator_t<ScanOpT,
-                                                             cub::detail::value_t<InputIteratorT>,
-                                                             ::cuda::std::_If<std::is_same<InitValueT, NullType>::value,
-                                                                              cub::detail::value_t<InputIteratorT>,
-                                                                              typename InitValueT::value_type>>,
-          typename PolicyHub  = detail::scan::policy_hub<AccumT, ScanOpT>,
+          typename AccumT    = ::cuda::std::__accumulator_t<ScanOpT,
+                                                            cub::detail::value_t<InputIteratorT>,
+                                                            ::cuda::std::_If<std::is_same<InitValueT, NullType>::value,
+                                                                             cub::detail::value_t<InputIteratorT>,
+                                                                             typename InitValueT::value_type>>,
+          typename PolicyHub = detail::scan::
+            policy_hub<detail::value_t<InputIteratorT>, detail::value_t<OutputIteratorT>, AccumT, OffsetT, ScanOpT>,
           bool ForceInclusive = false>
 struct DispatchScan
 {
