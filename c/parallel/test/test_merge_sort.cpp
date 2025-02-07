@@ -74,7 +74,7 @@ TEMPLATE_LIST_TEST_CASE("DeviceMergeSort::SortKeys works", "[merge_sort]", key_t
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
 
   operation_t op                      = make_operation("op", get_merge_sort_op(get_type_info<TestType>().type));
-  std::vector<TestType> input_keys    = make_shuffled_key_ranks_vector<TestType>(num_items);
+  std::vector<TestType> input_keys    = make_shuffled_sequence<TestType>(num_items);
   std::vector<TestType> expected_keys = input_keys;
 
   pointer_t<TestType> input_keys_it(input_keys);
@@ -91,7 +91,7 @@ TEMPLATE_LIST_TEST_CASE("DeviceMergeSort::SortKeysCopy works", "[merge_sort]", k
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
 
   operation_t op                   = make_operation("op", get_merge_sort_op(get_type_info<TestType>().type));
-  std::vector<TestType> input_keys = make_shuffled_key_ranks_vector<TestType>(num_items);
+  std::vector<TestType> input_keys = make_shuffled_sequence<TestType>(num_items);
   std::vector<TestType> output_keys(num_items);
   std::vector<TestType> expected_keys = input_keys;
 
@@ -110,7 +110,7 @@ TEMPLATE_LIST_TEST_CASE("DeviceMergeSort::SortPairs works", "[merge_sort]", key_
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
 
   operation_t op                   = make_operation("op", get_merge_sort_op(get_type_info<TestType>().type));
-  std::vector<TestType> input_keys = make_shuffled_key_ranks_vector<TestType>(num_items);
+  std::vector<TestType> input_keys = make_shuffled_sequence<TestType>(num_items);
   std::vector<item_t> input_items(num_items);
   std::transform(input_keys.begin(), input_keys.end(), input_items.begin(), [](TestType key) {
     return static_cast<item_t>(key);
@@ -134,7 +134,7 @@ TEMPLATE_LIST_TEST_CASE("DeviceMergeSort::SortPairsCopy works ", "[merge_sort]",
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
 
   operation_t op                   = make_operation("op", get_merge_sort_op(get_type_info<TestType>().type));
-  std::vector<TestType> input_keys = make_shuffled_key_ranks_vector<TestType>(num_items);
+  std::vector<TestType> input_keys = make_shuffled_sequence<TestType>(num_items);
   std::vector<item_t> input_items(num_items);
   std::transform(input_keys.begin(), input_keys.end(), input_items.begin(), [](TestType key) {
     return static_cast<item_t>(key);
@@ -241,7 +241,7 @@ TEST_CASE("DeviceMergeSort::SortKeys works with input iterators", "[merge_sort]"
        "extern \"C\" __device__ int dereference(random_access_iterator_state_t* state) {\n"
        "  return *state->d_input;\n"
        "}"});
-  std::vector<TestType> input_keys    = make_shuffled_key_ranks_vector<TestType>(num_items);
+  std::vector<TestType> input_keys    = make_shuffled_sequence<TestType>(num_items);
   std::vector<TestType> expected_keys = input_keys;
 
   pointer_t<TestType> input_keys_ptr(input_keys);
@@ -271,7 +271,7 @@ TEST_CASE("DeviceMergeSort::SortKeys works with input iterators", "[merge_sort]"
 //        "extern \"C\" __device__ void dereference(random_access_iterator_state_t* state, int x) {\n"
 //        "  *state->d_input = x;\n"
 //        "}"});
-//   std::vector<TestType> input_keys    = make_shuffled_key_ranks_vector<TestType>(num_items);
+//   std::vector<TestType> input_keys    = make_shuffled_sequence<TestType>(num_items);
 //   std::vector<TestType> expected_keys = input_keys;
 
 //   pointer_t<TestType> input_keys_it(input_keys);
@@ -320,7 +320,7 @@ TEST_CASE("DeviceMergeSort::SortPairs works with input iterators", "[merge_sort]
        "  return *state->d_input;\n"
        "}"});
 
-  std::vector<TestType> input_keys = make_shuffled_key_ranks_vector<TestType>(num_items);
+  std::vector<TestType> input_keys = make_shuffled_sequence<TestType>(num_items);
   std::vector<item_t> input_items(num_items);
   std::transform(input_keys.begin(), input_keys.end(), input_items.begin(), [](TestType key) {
     return static_cast<item_t>(key);

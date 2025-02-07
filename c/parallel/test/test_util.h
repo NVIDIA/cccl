@@ -121,7 +121,7 @@ std::vector<T> generate(std::size_t num_items)
 }
 
 template <class T>
-std::vector<T> make_shuffled_key_ranks_vector(std::size_t num_items)
+std::vector<T> make_shuffled_sequence(std::size_t num_items)
 {
   std::vector<T> sequence(num_items);
   std::iota(sequence.begin(), sequence.end(), 0);
