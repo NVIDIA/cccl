@@ -17,7 +17,7 @@
 // bool operator!(const uniform_int_distribution& x,
 //                const uniform_int_distribution& y);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"

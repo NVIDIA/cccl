@@ -25,7 +25,7 @@
 // operator>>(basic_istream<charT, traits>& is,
 //            uniform_int_distribution& x);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/sstream>
 

@@ -19,7 +19,7 @@
 //   void
 //   sort(Iter first, Iter last);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/iterator>
 #include <cuda/std/numeric>

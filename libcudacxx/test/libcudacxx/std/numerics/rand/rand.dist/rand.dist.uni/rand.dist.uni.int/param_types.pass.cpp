@@ -14,7 +14,7 @@
 // {
 //     class param_type;
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"

@@ -18,7 +18,7 @@
 // explicit uniform_int_distribution(IntType a,
 //                                   IntType b = numeric_limits<IntType>::max()); // C++20
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/limits>
 

@@ -12,7 +12,7 @@
 
 // Ensure allocator<void> is deprecated
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 
 __host__ __device__ void test()
 {

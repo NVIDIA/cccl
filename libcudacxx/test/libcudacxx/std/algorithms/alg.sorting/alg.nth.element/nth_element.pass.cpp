@@ -14,7 +14,7 @@
 //   constexpr void  // constexpr in C++20
 //   nth_element(Iter first, Iter nth, Iter last);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "MoveOnly.h"

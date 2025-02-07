@@ -14,7 +14,7 @@
 
 // result_type min() const;
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"

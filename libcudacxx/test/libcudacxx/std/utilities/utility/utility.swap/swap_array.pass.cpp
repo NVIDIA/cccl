@@ -13,8 +13,8 @@
 //   void
 //   swap(T (&a)[N], T (&b)[N]);
 
-#include <cuda/std/__algorithm_>
 #include <cuda/std/__memory_>
+#include <cuda/std/algorithm>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>

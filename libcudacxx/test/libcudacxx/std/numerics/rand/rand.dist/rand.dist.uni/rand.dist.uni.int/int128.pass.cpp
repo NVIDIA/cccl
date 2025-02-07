@@ -14,7 +14,7 @@
 
 // template<class _URNG> result_type operator()(_URNG& g);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>

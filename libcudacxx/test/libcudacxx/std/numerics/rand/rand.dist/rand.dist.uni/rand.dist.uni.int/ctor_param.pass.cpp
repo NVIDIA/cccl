@@ -14,7 +14,7 @@
 
 // explicit uniform_int_distribution(const param_type& parm);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"
