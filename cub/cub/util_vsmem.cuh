@@ -177,7 +177,7 @@ public:
     // 128 byte-aligned virtual shared memory discard
     for (auto thread_ptr = ptr + (linear_tid * line_size); thread_ptr < ptr_end; thread_ptr += block_stride)
     {
-      cuda::discard_memory(thread_ptr, line_size);
+      ::cuda::discard_memory(thread_ptr, line_size);
     }
     return true;
   }
