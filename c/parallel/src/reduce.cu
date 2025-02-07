@@ -232,7 +232,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
     const std::string output_iterator_src =
       make_kernel_output_iterator(offset_t, "output_iterator_t", accum_cpp, output_it);
 
-    const std::string op_src = make_kernel_user_binary_operator(accum_cpp, op);
+    const std::string op_src = make_kernel_user_arithmetic_operator(accum_cpp, op);
 
     const std::string src = std::format(
       "#include <cub/block/block_reduce.cuh>\n"
