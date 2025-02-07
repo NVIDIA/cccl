@@ -135,24 +135,26 @@ unique_eager_event async_inclusive_scan_n(
   using AccumT      = typename ::cuda::std::
     __accumulator_t<BinaryOp, typename ::cuda::std::iterator_traits<ForwardIt>::value_type, InitialValueType>;
 
-  using Dispatch32 =
-    cub::DispatchScan<ForwardIt,
-                      OutputIt,
-                      BinaryOp,
-                      InputValueT,
-                      std::int32_t,
-                      AccumT,
-                      cub::detail::scan::policy_hub<AccumT, BinaryOp>,
-                      cub::ForceInclusive::Yes>;
-  using Dispatch64 =
-    cub::DispatchScan<ForwardIt,
-                      OutputIt,
-                      BinaryOp,
-                      InputValueT,
-                      std::int64_t,
-                      AccumT,
-                      cub::detail::scan::policy_hub<AccumT, BinaryOp>,
-                      cub::ForceInclusive::Yes>;
+  using Dispatch32 = cub::DispatchScan<
+    ForwardIt,
+    OutputIt,
+    BinaryOp,
+    InputValueT,
+    std::int32_t,
+    AccumT,
+    cub::detail::scan::
+      policy_hub<cub::detail::value_t<ForwardIt>, cub::detail::value_t<OutputIt>, AccumT, std::int32_t, BinaryOp>,
+    cub::ForceInclusive::Yes>;
+  using Dispatch64 = cub::DispatchScan<
+    ForwardIt,
+    OutputIt,
+    BinaryOp,
+    InputValueT,
+    std::int64_t,
+    AccumT,
+    cub::detail::scan::
+      policy_hub<cub::detail::value_t<ForwardIt>, cub::detail::value_t<OutputIt>, AccumT, std::int64_t, BinaryOp>,
+    cub::ForceInclusive::Yes>;
 
   InputValueT init_value(init);
 
