@@ -12,11 +12,15 @@
 
 int main(int, char**)
 {
+#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   using E     = cuda::std::extents<size_t, 2>;
   using L     = cuda::std::layout_right;
-  using A     = cuda::std::aligned_accessor<int, 8>;
+  using A     = cuda::std::aligned_accessor<int, 64>;
   int array[] = {1, 2, 3};
   cuda::std::mdspan<int, E, L, A> md(static_cast<int*>(array) + 1, 2);
   unused(md(0));
   return 0;
+#else
+  return 1;
+#endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 }

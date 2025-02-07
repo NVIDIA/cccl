@@ -51,14 +51,13 @@ private:
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_aligned(_ElementType* __p) const noexcept
   {
+#  if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
     if constexpr (!is_constant_evaluated())
     {
       return (_CUDA_VSTD::bit_cast<_CUDA_VSTD::uintptr_t>(__p) & (_ByteAlignment - 1)) == 0;
     }
-    else
-    {
-      return true; // cannot be verified at compile time
-    }
+#  endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+    return true; // cannot be verified at compile time
   }
 
 public:
