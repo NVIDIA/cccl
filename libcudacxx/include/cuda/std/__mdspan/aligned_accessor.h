@@ -35,11 +35,15 @@
 
 #if defined(__cccl_lib_mdspan)
 
+#  include <cuda/std/__bit/bit_cast.h>
+#  include <cuda/std/__bit/has_single_bit.h>
 #  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/bit>
-#  include <cuda/std/cmath> // gcd
-#  include <cuda/std/mdspan>
-#  include <cuda/std/memory>
+#  include <cuda/std/__mdspan/default_accessor.h>
+#  include <cuda/std/__memory/assume_aligned.h>
+#  include <cuda/std/__numeric/gcd_lcm.h>
+#  include <cuda/std/__type_traits/is_constant_evaluated.h>
+#  include <cuda/std/cstddef>
+#  include <cuda/std/cstdint>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
