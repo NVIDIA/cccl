@@ -794,7 +794,7 @@ struct BinaryOpHasIdxParam<T,
 /**
  * \brief Basic type traits categories
  */
-enum CCCL_DEPRECATED_BECAUSE("Use <cuda/std/type_traits> instead") Category
+enum Category
 {
   NOT_A_NUMBER,
   SIGNED_INTEGER,
@@ -828,7 +828,7 @@ struct BaseTraits<UNSIGNED_INTEGER, true, false, _UnsignedBits, T>
   static constexpr UnsignedBits LOWEST_KEY                                                         = UnsignedBits(0);
   static constexpr UnsignedBits MAX_KEY                                                            = UnsignedBits(-1);
   CCCL_DEPRECATED_BECAUSE("Use <cuda/std/type_traits> instead") static constexpr bool PRIMITIVE    = true;
-  static constexpr bool NULL_TYPE                                                                  = false;
+  CCCL_DEPRECATED static constexpr bool NULL_TYPE                                                  = false;
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
   {
