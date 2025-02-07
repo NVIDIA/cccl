@@ -6,8 +6,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#include <cuda/std/__mdspan/aligned_accessor.h>
 #include <cuda/std/cassert>
+#include <cuda/std/mdspan>
 #include <cuda/std/type_traits>
 
 #include <test_macros.h>
