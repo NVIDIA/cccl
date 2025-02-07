@@ -85,7 +85,7 @@ private:
                 "cuda::host_accessor/cuda::device_accessor/cuda::managed_accessor cannot be nested");
 
   template <typename __data_handle_type>
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __is_host_accessible_pointer(__data_handle_type __p)
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __is_host_accessible_pointer(__data_handle_type __p) noexcept
   {
     if constexpr (_CUDA_VSTD::is_pointer_v<__data_handle_type>)
     {
@@ -99,7 +99,7 @@ private:
     }
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr void __check_host_pointer(__data_handle_type __p)
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr void __check_host_pointer(__data_handle_type __p) noexcept
   {
     _CCCL_ASSERT(__self::__is_host_accessible_pointer(__p), "cuda::host_accessor data handle is not a HOST pointer");
   }
@@ -199,7 +199,7 @@ private:
                 "cuda::host_accessor/cuda::device_accessor/cuda::managed_accessor cannot be nested");
 
   template <typename __data_handle_type>
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __is_managed_pointer(__data_handle_type __p)
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __is_managed_pointer(__data_handle_type __p) noexcept
   {
     if constexpr (_CUDA_VSTD::is_pointer_v<__data_handle_type>)
     {
@@ -213,7 +213,7 @@ private:
     }
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr void __check_managed_pointer(__data_handle_type __p)
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr void __check_managed_pointer(__data_handle_type __p) noexcept
   {
     _CCCL_ASSERT(__self::__is_managed_pointer(__p), "cuda::managed_accessor data handle is not a MANAGED pointer");
   }
