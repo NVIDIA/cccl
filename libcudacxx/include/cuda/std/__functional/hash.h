@@ -592,7 +592,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<long double> : public __scalar_hash<lo
     __u.__s.__d = 0;
     __u.__t     = __v;
     return __u.__s.__a ^ __u.__s.__b ^ __u.__s.__c ^ __u.__s.__d;
-#  elif defined(__x86_64__)
+#  elif _CCCL_ARCH(X86_64) && _CCCL_OS(LINUX)
     // Zero out padding bits
     union
     {
