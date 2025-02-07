@@ -21,7 +21,7 @@ If($CURRENT_PATH -ne "ci") {
 Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList $CXX_STANDARD, $CUDA_ARCH
 
 $PRESET = "libcudacxx-nvrtc-cpp${CXX_STANDARD}"
-$CMAKE_OPTIONS = ""
+$CMAKE_OPTIONS = "-DLIBCUDACXX_EXECUTOR='NoopExecutor()'"
 
 configure_and_build_preset "libcudacxx NVRTC" "$PRESET" "$CMAKE_OPTIONS"
 
