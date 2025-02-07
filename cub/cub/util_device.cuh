@@ -613,8 +613,6 @@ struct KernelConfig
 
 } // namespace detail
 
-using KernelConfig CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail") = detail::KernelConfig;
-
 /// Helper for dispatching into a policy chain
 template <int PolicyPtxVersion, typename PolicyT, typename PrevPolicyT>
 struct ChainedPolicy
