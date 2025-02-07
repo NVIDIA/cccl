@@ -1540,7 +1540,7 @@ struct offset_scan_op_t
   _CCCL_DEVICE _CCCL_FORCEINLINE int operator()(int a, int b) const
   {
     const int sum = a + b;
-    return CUB_MIN(sum, max_items);
+    return _CUDA_VSTD::min(sum, max_items);
   }
 };
 
@@ -1549,7 +1549,7 @@ generate_random_offsets(c2h::seed_t seed, int max_items, int max_segment, int nu
 {
   C2H_TIME_SCOPE("generate_random_offsets");
   const int expected_segment_length = ::cuda::ceil_div(max_items, num_segments);
-  const int max_segment_length      = CUB_MIN(max_segment, (expected_segment_length * 2) + 1);
+  const int max_segment_length      = ::cuda::std::min(max_segment, (expected_segment_length * 2) + 1);
 
   c2h::device_vector<int> offsets(num_segments + 1);
   c2h::gen(make_offset_seed(seed), offsets, 0, max_segment_length);
