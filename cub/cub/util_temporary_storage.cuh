@@ -117,17 +117,6 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t AliasTemporaries(
 
 } // namespace detail
 
-template <int ALLOCATIONS>
-CCCL_DEPRECATED_BECAUSE("Internal-only implementation detail")
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t
-  AliasTemporaries(void* d_temp_storage,
-                   size_t& temp_storage_bytes,
-                   void* (&allocations)[ALLOCATIONS],
-                   const size_t (&allocation_sizes)[ALLOCATIONS])
-{
-  return detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
-}
-
 #endif // _CCCL_DOXYGEN_INVOKED
 
 CUB_NAMESPACE_END
