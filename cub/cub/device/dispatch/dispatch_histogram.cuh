@@ -927,7 +927,7 @@ public:
       policy_hub<detail::value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
 
     using MaxPolicyT =
-      typename cuda::std::_If<cuda::std::is_void<PolicyHub>::value, fallback_policy_hub, PolicyHub>::MaxPolicy;
+      typename ::cuda::std::_If<::cuda::std::is_void<PolicyHub>::value, fallback_policy_hub, PolicyHub>::MaxPolicy;
     cudaError error = cudaSuccess;
 
     do
@@ -1103,7 +1103,7 @@ public:
       policy_hub<detail::value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
 
     using MaxPolicyT =
-      typename cuda::std::_If<cuda::std::is_void<PolicyHub>::value, fallback_policy_hub, PolicyHub>::MaxPolicy;
+      typename ::cuda::std::_If<::cuda::std::is_void<PolicyHub>::value, fallback_policy_hub, PolicyHub>::MaxPolicy;
     cudaError error = cudaSuccess;
 
     do
@@ -1243,7 +1243,7 @@ public:
       policy_hub<detail::value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
 
     using MaxPolicyT =
-      typename cuda::std::_If<cuda::std::is_void<PolicyHub>::value, fallback_policy_hub, PolicyHub>::MaxPolicy;
+      typename ::cuda::std::_If<::cuda::std::is_void<PolicyHub>::value, fallback_policy_hub, PolicyHub>::MaxPolicy;
     cudaError error = cudaSuccess;
 
     do
@@ -1434,7 +1434,7 @@ public:
       policy_hub<detail::value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
 
     using MaxPolicyT =
-      typename cuda::std::_If<cuda::std::is_void<PolicyHub>::value, fallback_policy_hub, PolicyHub>::MaxPolicy;
+      typename ::cuda::std::_If<::cuda::std::is_void<PolicyHub>::value, fallback_policy_hub, PolicyHub>::MaxPolicy;
     cudaError error = cudaSuccess;
 
     do
