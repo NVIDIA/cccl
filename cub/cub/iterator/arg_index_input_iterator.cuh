@@ -48,6 +48,10 @@
 #include <thrust/iterator/iterator_facade.h>
 #include <thrust/iterator/iterator_traits.h>
 
+#if !_CCCL_COMPILER(NVRTC)
+#  include <ostream>
+#endif // !_CCCL_COMPILER(NVRTC)
+
 CUB_NAMESPACE_BEGIN
 
 /**
@@ -241,6 +245,13 @@ public:
     itr += offset;
     offset = 0;
   }
+
+#if !_CCCL_COMPILER(NVRTC)
+  friend std::ostream& operator<<(std::ostream& os, const self_type& /*itr*/)
+  {
+    return os;
+  }
+#endif // !_CCCL_COMPILER(NVRTC)
 };
 
 CUB_NAMESPACE_END
