@@ -21,6 +21,8 @@
 
 #include <cuda/std/detail/__config>
 
+#include "cuda/std/__type_traits/is_constant_evaluated.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -49,11 +51,18 @@ private:
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_aligned(_ElementType* __p) const noexcept
   {
-    return (_CUDA_VSTD::bit_cast<_CUDA_VSTD::uintptr_t>(__p) & (_ByteAlignment - 1)) == 0;
+    if constexpr (!is_constant_evaluated())
+    {
+      return (_CUDA_VSTD::bit_cast<_CUDA_VSTD::uintptr_t>(__p) & (_ByteAlignment - 1)) == 0;
+    }
+    else
+    {
+      return true; // cannot be verified at compile time
+    }
   }
 
 public:
-  static constexpr size_t byte_alignment = _ByteAlignment;
+  static constexpr auto byte_alignment = _ByteAlignment;
 
   static_assert(_CUDA_VSTD::has_single_bit(byte_alignment), "byte_alignment must be a power of two.");
   static_assert(byte_alignment >= alignof(_ElementType), "Insufficient byte alignment for _ElementType");
