@@ -136,6 +136,15 @@ struct partition_distinct_output_t
   rejected_iterator_t rejected_it;
 };
 
+template <typename OutputIterator>
+struct is_partition_distinct_output_t : ::cuda::std::false_type
+{};
+
+template <typename SelectedOutputItT, typename RejectedOutputItT>
+struct is_partition_distinct_output_t<partition_distinct_output_t<SelectedOutputItT, RejectedOutputItT>>
+    : ::cuda::std::true_type
+{};
+
 /**
  * @brief AgentSelectIf implements a stateful abstraction of CUDA thread blocks for participating in
  * device-wide selection
