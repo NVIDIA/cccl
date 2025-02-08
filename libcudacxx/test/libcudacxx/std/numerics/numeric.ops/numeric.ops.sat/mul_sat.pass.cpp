@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++11, c++14
-
 // <cuda/std/numeric>
 
 // template<class T>
@@ -153,18 +151,18 @@ __host__ __device__ constexpr bool test(int zero_value)
   test_signed<int>(static_cast<int>(zero_value));
   test_signed<long int>(static_cast<long int>(zero_value));
   test_signed<long long int>(static_cast<long long int>(zero_value));
-#ifndef TEST_HAS_NO_INT128_T
+#if !defined(TEST_HAS_NO_INT128_T) && !defined(TEST_COMPILER_CLANG_CUDA)
   test_signed<__int128_t>(static_cast<__int128_t>(zero_value));
-#endif // TEST_HAS_NO_INT128_T
+#endif // !TEST_HAS_NO_INT128_T && !TEST_COMPILER_CLANG_CUDA
 
   test_unsigned<unsigned char>(static_cast<unsigned char>(zero_value));
   test_unsigned<unsigned short int>(static_cast<unsigned short int>(zero_value));
   test_unsigned<unsigned int>(static_cast<unsigned int>(zero_value));
   test_unsigned<unsigned long int>(static_cast<unsigned long int>(zero_value));
   test_unsigned<unsigned long long int>(static_cast<unsigned long long int>(zero_value));
-#ifndef TEST_HAS_NO_INT128_T
+#if !defined(TEST_HAS_NO_INT128_T) && !defined(TEST_COMPILER_CLANG_CUDA)
   test_unsigned<__uint128_t>(static_cast<__uint128_t>(zero_value));
-#endif // TEST_HAS_NO_INT128_T
+#endif // !TEST_HAS_NO_INT128_T && !TEST_COMPILER_CLANG_CUDA
 
   return true;
 }

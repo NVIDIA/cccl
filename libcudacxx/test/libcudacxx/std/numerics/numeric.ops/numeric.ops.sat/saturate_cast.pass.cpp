@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++11, c++14
-
 // <cuda/std/numeric>
 
 // template<class R, class T>
@@ -147,9 +145,9 @@ __host__ __device__ constexpr bool test(int zero_value)
   test_type<signed int>(zero_value);
   test_type<signed long>(zero_value);
   test_type<signed long long>(zero_value);
-#ifndef TEST_HAS_NO_INT128_T
+#if !defined(TEST_HAS_NO_INT128_T) && !defined(TEST_COMPILER_CLANG_CUDA)
   test_type<__int128_t>(zero_value);
-#endif // !TEST_HAS_NO_INT128_T
+#endif // !TEST_HAS_NO_INT128_T && !TEST_COMPILER_CLANG_CUDA
 
   return true;
 }

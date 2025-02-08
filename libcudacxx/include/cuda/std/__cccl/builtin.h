@@ -241,6 +241,7 @@
 #  define _CCCL_BUILTIN_MUL_OVERFLOW(...) __builtin_mul_overflow(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_mul_overflow)
 
+// nvcc does not support these builtins
 #if _CCCL_CUDA_COMPILER(NVCC)
 #  undef _CCCL_BUILTIN_ADD_OVERFLOW
 #  undef _CCCL_BUILTIN_SUB_OVERFLOW
