@@ -108,10 +108,6 @@ private:
   }
 
 public:
-  _CCCL_HIDE_FROM_ABI host_accessor() noexcept(__is_ctor_noexcept) = default;
-
-  _CCCL_HIDE_FROM_ABI host_accessor(const host_accessor&) noexcept(__is_copy_ctor_noexcept) = default;
-
   _LIBCUDACXX_HIDE_FROM_ABI constexpr reference access(data_handle_type __p, _CUDA_VSTD::size_t __i) const
     noexcept(__is_access_noexcept)
   {
@@ -161,10 +157,6 @@ private:
   }
 
 public:
-  _CCCL_HIDE_FROM_ABI device_accessor() noexcept(__is_ctor_noexcept) = default;
-
-  _CCCL_HIDE_FROM_ABI device_accessor(const device_accessor&) noexcept(__is_copy_ctor_noexcept) = default;
-
   _LIBCUDACXX_HIDE_FROM_ABI constexpr reference access(data_handle_type __p, _CUDA_VSTD::size_t __i) const
     noexcept(__is_access_noexcept)
   {
@@ -224,10 +216,6 @@ private:
   }
 
 public:
-  _CCCL_HIDE_FROM_ABI managed_accessor() noexcept(__is_ctor_noexcept) = default;
-
-  _CCCL_HIDE_FROM_ABI managed_accessor(const managed_accessor&) noexcept(__is_copy_ctor_noexcept) = default;
-
   _LIBCUDACXX_HIDE_FROM_ABI constexpr reference access(data_handle_type __p, _CUDA_VSTD::size_t __i) const
     noexcept(__is_access_noexcept)
   {
