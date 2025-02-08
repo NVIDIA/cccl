@@ -16,7 +16,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ constexpr bool operator==(cuda::add_overflow_result<T> a, cuda::add_overflow_result<T> b)
+__host__ __device__ constexpr bool operator==(cuda::overflow_check_result<T> a, cuda::overflow_check_result<T> b)
 {
   return a.result == b.result && a.is_overflow == b.is_overflow;
 }
@@ -25,7 +25,7 @@ template <class T, class U>
 __host__ __device__ constexpr void test()
 {
   using CommonType     = decltype(T{} + U{});
-  using ResultType     = cuda::add_overflow_result<CommonType>;
+  using ResultType     = cuda::overflow_check_result<CommonType>;
   constexpr auto max_a = cuda::std::numeric_limits<T>::max();
   constexpr auto max_b = cuda::std::numeric_limits<U>::max();
   constexpr auto max_c = cuda::std::numeric_limits<CommonType>::max();
@@ -183,6 +183,5 @@ __host__ __device__ constexpr bool test()
 int main(int arg, char** argv)
 {
   test();
-  // static_assert(test(), "");
   return 0;
 }
