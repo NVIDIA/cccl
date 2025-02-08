@@ -48,8 +48,7 @@
 // * C++14 is available for cuda::std::optional
 // * NVTX3 uses module as an identifier, which trips up NVHPC
 #if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && !defined(CCCL_DISABLE_NVTX) && !defined(NVTX_DISABLE) \
-                      && _CCCL_STD_VER >= 2014                                                       \
-                      && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
+                      && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER == 2017)
 // Include our NVTX3 C++ wrapper if not available from the CTK
 // TODO(bgruber): replace by a check for the first CTK version shipping the header
 #  if _CCCL_HAS_INCLUDE(<nvtx3/nvtx3.hpp>)
@@ -105,9 +104,7 @@ CUB_NAMESPACE_END
 #    define CUB_DETAIL_NVTX_RANGE_SCOPE_IF(condition, name)
 #    define CUB_DETAIL_NVTX_RANGE_SCOPE(name)
 #  endif // NVTX3_CPP_DEFINITIONS_V1_0
-#else // _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h> ) && !defined(CCCL_DISABLE_NVTX) && !defined(NVTX_DISABLE) &&
-      // _CCCL_STD_VER >= 2014
+#else // _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h> ) && !defined(CCCL_DISABLE_NVTX) && !defined(NVTX_DISABLE)
 #  define CUB_DETAIL_NVTX_RANGE_SCOPE_IF(condition, name)
 #  define CUB_DETAIL_NVTX_RANGE_SCOPE(name)
-#endif // _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h> ) && !defined(CCCL_DISABLE_NVTX) && !defined(NVTX_DISABLE) &&
-       // _CCCL_STD_VER >= 2014
+#endif // _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h> ) && !defined(CCCL_DISABLE_NVTX) && !defined(NVTX_DISABLE)

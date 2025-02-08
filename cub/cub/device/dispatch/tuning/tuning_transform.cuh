@@ -46,9 +46,9 @@
 
 // The ublkcp kernel needs PTX features that are only available and understood by nvcc >=12.
 // Also, cooperative groups do not support NVHPC yet.
-#if _CCCL_CUDACC_AT_LEAST(12) && !_CCCL_CUDA_COMPILER(NVHPC)
+#if !_CCCL_CUDA_COMPILER(NVHPC)
 #  define _CUB_HAS_TRANSFORM_UBLKCP
-#endif // _CCCL_CUDACC_AT_LEAST(12) && !_CCCL_CUDA_COMPILER(NVHPC)
+#endif // !_CCCL_CUDA_COMPILER(NVHPC)
 
 CUB_NAMESPACE_BEGIN
 
@@ -89,9 +89,7 @@ struct async_copy_policy_t
 template <typename Integral>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto round_up_to_po2_multiple(Integral x, Integral mult) -> Integral
 {
-#if _CCCL_STD_VER > 2011
   _CCCL_ASSERT(::cuda::std::has_single_bit(static_cast<::cuda::std::make_unsigned_t<Integral>>(mult)), "");
-#endif // _CCCL_STD_VER > 2011
   return (x + mult - 1) & ~(mult - 1);
 }
 
@@ -107,19 +105,11 @@ _CCCL_HOST_DEVICE constexpr int sum(int head, Ts... tail)
   return head + sum(tail...);
 }
 
-#if _CCCL_STD_VER >= 2017
 template <typename... Its>
 _CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
 {
   return (int{sizeof(value_t<Its>)} + ... + 0);
 }
-#else // ^^^ C++17 ^^^ / vvv C++11 vvv
-template <typename... Its>
-_CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
-{
-  return sum(int{sizeof(value_t<Its>)}...);
-}
-#endif // _CCCL_STD_VER >= 2017
 
 constexpr int bulk_copy_alignment     = 128;
 constexpr int bulk_copy_size_multiple = 16;
@@ -169,29 +159,35 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
   };
 
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
-  // H100 and H200
-  struct policy900 : ChainedPolicy<900, policy900, policy300>
+  template <int BlockSize, int PtxVersion>
+  struct bulkcopy_policy
   {
-    static constexpr int min_bif = arch_to_min_bytes_in_flight(900);
-    using async_policy           = async_copy_policy_t<256>;
+    static constexpr int min_bif = arch_to_min_bytes_in_flight(PtxVersion);
+    using async_policy           = async_copy_policy_t<BlockSize>;
     static constexpr bool exhaust_smem =
       bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>(
         async_policy::block_threads * async_policy::min_items_per_thread)
       > int{max_smem_per_block};
     static constexpr bool any_type_is_overalinged =
-#  if _CCCL_STD_VER >= 2017
       ((alignof(value_t<RandomAccessIteratorsIn>) > bulk_copy_alignment) || ...);
-#  else
-      sum((alignof(value_t<RandomAccessIteratorsIn>) > bulk_copy_alignment)...) > 0;
-#  endif
 
     static constexpr bool use_fallback =
       RequiresStableAddress || !can_memcpy || no_input_streams || exhaust_smem || any_type_is_overalinged;
     static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Algorithm::ublkcp;
-    using algo_policy               = ::cuda::std::_If<use_fallback, prefetch_policy_t<256>, async_policy>;
+    using algo_policy               = ::cuda::std::_If<use_fallback, prefetch_policy_t<BlockSize>, async_policy>;
   };
 
-  using max_policy = policy900;
+  struct policy900
+      : bulkcopy_policy<256, 900>
+      , ChainedPolicy<900, policy900, policy300>
+  {};
+
+  struct policy1000
+      : bulkcopy_policy<128, 1000>
+      , ChainedPolicy<1000, policy1000, policy900>
+  {};
+
+  using max_policy = policy1000;
 #else // _CUB_HAS_TRANSFORM_UBLKCP
   using max_policy = policy300;
 #endif // _CUB_HAS_TRANSFORM_UBLKCP

@@ -34,9 +34,14 @@ using inout_types =
   c2h::type_list<c2h::pair<std::uint16_t, std::int64_t>,
                  c2h::pair<std::uint16_t, std::uint32_t>,
                  c2h::pair<std::int32_t, std::int32_t>,
-                 c2h::pair<std::int64_t, std::int64_t>,
+                 c2h::pair<std::int64_t, std::int64_t>
+// WAR bug in vec type handling in NVCC 12.0 + GCC 11.4 + C++20
+#if !(_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0) && _CCCL_COMPILER(GCC, ==, 11, 4) && _CCCL_STD_VER == 2020)
+                 ,
                  c2h::pair<uchar3, uchar3>,
-                 c2h::pair<ulonglong4, ulonglong4>>;
+                 c2h::pair<ulonglong4, ulonglong4>
+#endif // !(NVCC 12.0 and GCC 11.4 and C++20)
+                 >;
 
 using logical_warp_threads = c2h::enum_type_list<int, 4, 16, 32>;
 using items_per_thread     = c2h::enum_type_list<int, 1, 4, 7>;

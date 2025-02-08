@@ -58,12 +58,12 @@ using full_type_list = c2h::type_list<type_triple<uchar3, uchar3, custom_t>, typ
 // clang-format off
 using full_type_list = c2h::type_list<
 type_triple<custom_t>
-#if TEST_HALF_T
+#if TEST_HALF_T()
 , type_triple<half_t> // testing half
-#endif
-#if TEST_BF_T
+#endif // TEST_HALF_T()
+#if TEST_BF_T()
 , type_triple<bfloat16_t> // testing bf16
-#endif
+#endif // TEST_BF_T()
 >;
 // clang-format on
 #endif

@@ -107,21 +107,26 @@ function(thrust_configure_multiconfig)
     # from a previous run.
     if (DEFINED THRUST_HOST_SYSTEM)
       set_property(CACHE THRUST_HOST_SYSTEM PROPERTY TYPE STRING)
-      set_property(CACHE THRUST_DEVICE_SYSTEM PROPERTY TYPE STRING)
-      set_property(CACHE THRUST_CPP_DIALECT PROPERTY TYPE STRING)
     else()
       set(THRUST_HOST_SYSTEM "CPP" CACHE STRING "The targeted host system: ${THRUST_HOST_SYSTEM_OPTIONS}")
-      set(THRUST_DEVICE_SYSTEM "CUDA" CACHE STRING "The targeted device system: ${THRUST_DEVICE_SYSTEM_OPTIONS}")
-      set(THRUST_CPP_DIALECT 17 CACHE STRING "The C++ standard to target: ${THRUST_CPP_DIALECT_OPTIONS}")
-
       set_property(CACHE THRUST_HOST_SYSTEM
         PROPERTY STRINGS
         ${THRUST_HOST_SYSTEM_OPTIONS}
       )
+    endif()
+    if (DEFINED THRUST_DEVICE_SYSTEM)
+      set_property(CACHE THRUST_DEVICE_SYSTEM PROPERTY TYPE STRING)
+    else()
+      set(THRUST_DEVICE_SYSTEM "CUDA" CACHE STRING "The targeted device system: ${THRUST_DEVICE_SYSTEM_OPTIONS}")
       set_property(CACHE THRUST_DEVICE_SYSTEM
         PROPERTY STRINGS
         ${THRUST_DEVICE_SYSTEM_OPTIONS}
       )
+    endif()
+    if (DEFINED THRUST_CPP_DIALECT)
+      set_property(CACHE THRUST_CPP_DIALECT PROPERTY TYPE STRING)
+    else()
+      set(THRUST_CPP_DIALECT 17 CACHE STRING "The C++ standard to target: ${THRUST_CPP_DIALECT_OPTIONS}")
       set_property(CACHE THRUST_CPP_DIALECT
         PROPERTY STRINGS
         ${THRUST_CPP_DIALECT_OPTIONS}

@@ -242,7 +242,7 @@ void TestPermutationIteratorWithCountingIterator()
     thrust::transform(thrust::make_permutation_iterator(input, index),
                       thrust::make_permutation_iterator(input, index + 4),
                       output.begin(),
-                      thrust::identity<T>());
+                      ::cuda::std::identity{});
 
     Vector ref{0, 1, 2, 3};
     ASSERT_EQUAL(output, ref);

@@ -95,7 +95,7 @@ struct cub_api_example_t
 
     const int blocks_in_grid = (num_items + threads_in_block - 1) / threads_in_block;
 
-    return thrust::cuda_cub::launcher::triple_chevron(blocks_in_grid, threads_in_block, 0, stream)
+    return thrust::cuda_cub::detail::triple_chevron(blocks_in_grid, threads_in_block, 0, stream)
       .doit(kernel, d_in, d_out, num_items);
   }
 

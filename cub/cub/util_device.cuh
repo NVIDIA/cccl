@@ -47,8 +47,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/device_synchronize.cuh> // IWYU pragma: export
 #include <cub/util_debug.cuh>
+#include <cub/util_policy_wrapper_t.cuh>
 #include <cub/util_type.cuh>
 // for backward compatibility
 #include <cub/util_temporary_storage.cuh>
@@ -70,25 +70,13 @@ CUB_NAMESPACE_BEGIN
 namespace detail
 {
 /**
- * @brief Helper class template that allows overwriting the `BLOCK_THREAD` and `ITEMS_PER_THREAD`
- * configurations of a given policy.
- */
-// TODO(bgruber): this should be called something like "override_policy"
-template <typename PolicyT, int BLOCK_THREADS_, int ITEMS_PER_THREAD_ = PolicyT::ITEMS_PER_THREAD>
-struct policy_wrapper_t : PolicyT
-{
-  static constexpr int ITEMS_PER_THREAD = ITEMS_PER_THREAD_;
-  static constexpr int BLOCK_THREADS    = BLOCK_THREADS_;
-  static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
-};
-} // namespace detail
-
-/**
  * \brief Empty kernel for querying PTX manifest metadata (e.g., version) for the current device
  */
 template <typename T>
 CUB_DETAIL_KERNEL_ATTRIBUTES void EmptyKernel()
 {}
+
+} // namespace detail
 
 #endif // _CCCL_DOXYGEN_INVOKED
 
@@ -278,7 +266,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersionUncached(int& ptx_version)
   // Instantiate `EmptyKernel<void>` in both host and device code to ensure
   // it can be called.
   using EmptyKernelPtr        = void (*)();
-  EmptyKernelPtr empty_kernel = EmptyKernel<void>;
+  EmptyKernelPtr empty_kernel = detail::EmptyKernel<void>;
 
   // This is necessary for unused variable warnings in host compilers. The
   // usual syntax of (void)empty_kernel; was not sufficient on MSVC2015.
@@ -437,62 +425,28 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersion(int& sm_version, int device = 
   return result;
 }
 
-/**
- * Synchronize the specified \p stream.
- */
+//! Synchronize the specified \p stream when called in host code. Otherwise, does nothing.
 CUB_RUNTIME_FUNCTION inline cudaError_t SyncStream(cudaStream_t stream)
 {
-  cudaError_t result = cudaErrorNotSupported;
-
-  NV_IF_TARGET(NV_IS_HOST,
-               (result = CubDebug(cudaStreamSynchronize(stream));),
-               ((void) stream; result = CubDebug(cub::detail::device_synchronize());));
-
-  return result;
+  NV_IF_TARGET(
+    NV_IS_HOST, (return CubDebug(cudaStreamSynchronize(stream));), ((void) stream; return cudaErrorNotSupported;));
 }
 
 namespace detail
 {
-
-/**
- * Same as SyncStream, but intended for use with the debug_synchronous flags
- * in device algorithms. This should not be used if synchronization is required
- * for correctness.
- *
- * If `debug_synchronous` is false, this function will immediately return
- * cudaSuccess. If true, one of the following will occur:
- *
- * If synchronization is supported by the current compilation target and
- * settings, the sync is performed and the sync result is returned.
- *
- * If syncs are not supported then no sync is performed, but a message is logged
- * via _CubLog and cudaSuccess is returned.
- */
+//! If CUB_DEBUG_SYNC is defined and this function is called from host code, a sync is performed and the
+//! sync result is returned. Otherwise, does nothing.
 CUB_RUNTIME_FUNCTION inline cudaError_t DebugSyncStream(cudaStream_t stream)
 {
-#ifndef CUB_DETAIL_DEBUG_ENABLE_SYNC
-
+#ifndef CUB_DEBUG_SYNC
   (void) stream;
   return cudaSuccess;
-
-#else // CUB_DETAIL_DEBUG_ENABLE_SYNC:
-
-#  define CUB_TMP_SYNC_AVAILABLE         \
-    _CubLog("%s\n", "Synchronizing..."); \
-    return SyncStream(stream)
-
-#  define CUB_TMP_DEVICE_SYNC_UNAVAILABLE                                        \
-    (void) stream;                                                               \
-    _CubLog("WARNING: Skipping CUB `debug_synchronous` synchronization (%s).\n", \
-            "device-side sync requires <sm_90, RDC, and CDPv1");                 \
-    return cudaSuccess
-
-  NV_IF_TARGET(NV_IS_HOST, (CUB_TMP_SYNC_AVAILABLE;), (CUB_TMP_DEVICE_SYNC_UNAVAILABLE;));
-
-#  undef CUB_TMP_DEVICE_SYNC_UNAVAILABLE
-#  undef CUB_TMP_SYNC_AVAILABLE
-
-#endif // CUB_DETAIL_DEBUG_ENABLE_SYNC
+#else // CUB_DEBUG_SYNC
+  NV_IF_TARGET(
+    NV_IS_HOST,
+    (_CubLog("%s", "Synchronizing...\n"); return SyncStream(stream);),
+    ((void) stream; _CubLog("%s", "WARNING: Skipping CUB debug synchronization in device code"); return cudaSuccess;));
+#endif // CUB_DEBUG_SYNC
 }
 
 /** \brief Gets whether the current device supports unified addressing */
@@ -572,6 +526,10 @@ MaxSmOccupancy(int& max_sm_occupancy, KernelPtr kernel_ptr, int block_threads, i
 /******************************************************************************
  * Policy management
  ******************************************************************************/
+// PolicyWrapper
+
+namespace detail
+{
 
 template <typename PolicyT, typename = void>
 struct PolicyWrapper : PolicyT
@@ -599,6 +557,11 @@ struct PolicyWrapper<
   {
     return StaticPolicyT::ITEMS_PER_THREAD;
   }
+
+  CUB_RUNTIME_FUNCTION static constexpr int ItemsPerTile()
+  {
+    return StaticPolicyT::ITEMS_PER_TILE;
+  }
 };
 
 template <typename PolicyT>
@@ -607,38 +570,50 @@ CUB_RUNTIME_FUNCTION PolicyWrapper<PolicyT> MakePolicyWrapper(PolicyT policy)
   return PolicyWrapper<PolicyT>{policy};
 }
 
+} // namespace detail
+
+template <typename PolicyT, typename = void>
+using PolicyWrapper CCCL_DEPRECATED_BECAUSE("Internal implementation detail") = detail::PolicyWrapper<PolicyT>;
+
+template <typename PolicyT>
+CCCL_DEPRECATED_BECAUSE("Internal implementation detail")
+CUB_RUNTIME_FUNCTION detail::PolicyWrapper<PolicyT> MakePolicyWrapper(PolicyT policy)
+{
+  return detail::PolicyWrapper<PolicyT>{policy};
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// ChainedPolicy
+
 namespace detail
 {
+
 struct TripleChevronFactory;
-}
 
 /**
  * Kernel dispatch configuration
  */
 struct KernelConfig
 {
-  int block_threads;
-  int items_per_thread;
-  int tile_size;
-  int sm_occupancy;
-
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE KernelConfig()
-      : block_threads(0)
-      , items_per_thread(0)
-      , tile_size(0)
-      , sm_occupancy(0)
-  {}
+  int block_threads{0};
+  int items_per_thread{0};
+  int tile_size{0};
+  int sm_occupancy{0};
 
   template <typename AgentPolicyT, typename KernelPtrT, typename LauncherFactory = detail::TripleChevronFactory>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   Init(KernelPtrT kernel_ptr, AgentPolicyT agent_policy = {}, LauncherFactory launcher_factory = {})
   {
-    block_threads    = MakePolicyWrapper(agent_policy).BlockThreads();
-    items_per_thread = MakePolicyWrapper(agent_policy).ItemsPerThread();
+    block_threads    = cub::detail::MakePolicyWrapper(agent_policy).BlockThreads();
+    items_per_thread = cub::detail::MakePolicyWrapper(agent_policy).ItemsPerThread();
     tile_size        = block_threads * items_per_thread;
     return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, block_threads);
   }
 };
+
+} // namespace detail
+
+using KernelConfig CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail") = detail::KernelConfig;
 
 /// Helper for dispatching into a policy chain
 template <int PolicyPtxVersion, typename PolicyT, typename PrevPolicyT>
@@ -759,4 +734,6 @@ private:
 
 CUB_NAMESPACE_END
 
-#include <cub/detail/launcher/cuda_runtime.cuh> // to complete the definition of TripleChevronFactory
+#if _CCCL_HAS_CUDA_COMPILER
+#  include <cub/detail/launcher/cuda_runtime.cuh> // to complete the definition of TripleChevronFactory
+#endif // _CCCL_HAS_CUDA_COMPILER

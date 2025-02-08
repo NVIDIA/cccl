@@ -190,8 +190,7 @@ struct DeviceSelect
       SelectOp,
       EqualityOp,
       OffsetT,
-      /*KeepRejects*/ false,
-      /*MayAlias*/ false>::Dispatch(d_temp_storage,
+      SelectImpl::Select>::Dispatch(d_temp_storage,
                                     temp_storage_bytes,
                                     d_in,
                                     d_flags,
@@ -298,25 +297,25 @@ struct DeviceSelect
     using SelectOp   = NullType; // Selection op (not used)
     using EqualityOp = NullType; // Equality operator (not used)
 
-    return DispatchSelectIf<
-      IteratorT,
-      FlagIterator,
-      IteratorT,
-      NumSelectedIteratorT,
-      SelectOp,
-      EqualityOp,
-      OffsetT,
-      /*KeepRejects*/ false,
-      /*MayAlias*/ true>::Dispatch(d_temp_storage,
-                                   temp_storage_bytes,
-                                   d_data, // in
-                                   d_flags,
-                                   d_data, // out
-                                   d_num_selected_out,
-                                   SelectOp(),
-                                   EqualityOp(),
-                                   num_items,
-                                   stream);
+    return DispatchSelectIf<IteratorT,
+                            FlagIterator,
+                            IteratorT,
+                            NumSelectedIteratorT,
+                            SelectOp,
+                            EqualityOp,
+                            OffsetT,
+                            SelectImpl::SelectPotentiallyInPlace>::
+      Dispatch(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_data, // in
+        d_flags,
+        d_data, // out
+        d_num_selected_out,
+        SelectOp(),
+        EqualityOp(),
+        num_items,
+        stream);
   }
 
   //! @rst
@@ -445,8 +444,7 @@ struct DeviceSelect
       SelectOp,
       EqualityOp,
       OffsetT,
-      /*KeepRejects*/ false,
-      /*MayAlias*/ false>::Dispatch(d_temp_storage,
+      SelectImpl::Select>::Dispatch(d_temp_storage,
                                     temp_storage_bytes,
                                     d_in,
                                     nullptr,
@@ -565,27 +563,25 @@ struct DeviceSelect
     using FlagIterator = NullType*; // FlagT iterator type (not used)
     using EqualityOp   = NullType; // Equality operator (not used)
 
-    constexpr bool may_alias = true;
-
-    return DispatchSelectIf<
-      IteratorT,
-      FlagIterator,
-      IteratorT,
-      NumSelectedIteratorT,
-      SelectOp,
-      EqualityOp,
-      OffsetT,
-      /*KeepRejects*/ false,
-      /*MayAlias*/ may_alias>::Dispatch(d_temp_storage,
-                                        temp_storage_bytes,
-                                        d_data, // in
-                                        nullptr,
-                                        d_data, // out
-                                        d_num_selected_out,
-                                        select_op,
-                                        EqualityOp(),
-                                        num_items,
-                                        stream);
+    return DispatchSelectIf<IteratorT,
+                            FlagIterator,
+                            IteratorT,
+                            NumSelectedIteratorT,
+                            SelectOp,
+                            EqualityOp,
+                            OffsetT,
+                            SelectImpl::SelectPotentiallyInPlace>::
+      Dispatch(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_data, // in
+        nullptr,
+        d_data, // out
+        d_num_selected_out,
+        select_op,
+        EqualityOp(),
+        num_items,
+        stream);
   }
 
   //! @rst
@@ -694,8 +690,7 @@ struct DeviceSelect
       SelectOp,
       EqualityOp,
       OffsetT,
-      /*KeepRejects*/ false,
-      /*MayAlias*/ false>::Dispatch(d_temp_storage,
+      SelectImpl::Select>::Dispatch(d_temp_storage,
                                     temp_storage_bytes,
                                     d_in,
                                     d_flags,
@@ -792,25 +787,25 @@ struct DeviceSelect
     using OffsetT    = ::cuda::std::int64_t; // Signed integer type for global offsets
     using EqualityOp = NullType; // Equality operator (not used)
 
-    return DispatchSelectIf<
-      IteratorT,
-      FlagIterator,
-      IteratorT,
-      NumSelectedIteratorT,
-      SelectOp,
-      EqualityOp,
-      OffsetT,
-      /*KeepRejects*/ false,
-      /*MayAlias*/ true>::Dispatch(d_temp_storage,
-                                   temp_storage_bytes,
-                                   d_data, // in
-                                   d_flags,
-                                   d_data, // out
-                                   d_num_selected_out,
-                                   select_op,
-                                   EqualityOp(),
-                                   num_items,
-                                   stream);
+    return DispatchSelectIf<IteratorT,
+                            FlagIterator,
+                            IteratorT,
+                            NumSelectedIteratorT,
+                            SelectOp,
+                            EqualityOp,
+                            OffsetT,
+                            SelectImpl::SelectPotentiallyInPlace>::
+      Dispatch(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_data, // in
+        d_flags,
+        d_data, // out
+        d_num_selected_out,
+        select_op,
+        EqualityOp(),
+        num_items,
+        stream);
   }
 
   //! @rst
@@ -919,8 +914,7 @@ struct DeviceSelect
       SelectOp,
       EqualityOp,
       OffsetT,
-      /*KeepRejects*/ false,
-      /*MayAlias*/ false>::Dispatch(d_temp_storage,
+      SelectImpl::Select>::Dispatch(d_temp_storage,
                                     temp_storage_bytes,
                                     d_in,
                                     nullptr,

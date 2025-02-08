@@ -52,7 +52,6 @@
 #include <cub/block/block_store.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/iterator/constant_input_iterator.cuh>
 
 #include <cuda/ptx>
 #include <cuda/std/type_traits>
@@ -133,6 +132,11 @@ struct AgentRlePolicy
 /******************************************************************************
  * Thread block abstractions
  ******************************************************************************/
+
+namespace detail
+{
+namespace rle
+{
 
 /**
  * @brief AgentRle implements a stateful abstraction of CUDA thread blocks for participating in device-wide
@@ -234,7 +238,7 @@ struct AgentRle
   // Wrap the native input pointer with CacheModifiedVLengthnputIterator
   // Directly use the supplied input iterator type
   using WrappedInputIteratorT =
-    ::cuda::std::_If<std::is_pointer<InputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer<InputIteratorT>::value,
                      CacheModifiedInputIterator<AgentRlePolicyT::LOAD_MODIFIER, T, OffsetT>,
                      InputIteratorT>;
 
@@ -254,7 +258,7 @@ struct AgentRle
   // Callback type for obtaining tile prefix during block scan
   using DelayConstructorT = typename AgentRlePolicyT::detail::delay_constructor_t;
   using TilePrefixCallbackOpT =
-    TilePrefixCallbackOp<LengthOffsetPair, ReduceBySegmentOpT, ScanTileStateT, 0, DelayConstructorT>;
+    TilePrefixCallbackOp<LengthOffsetPair, ReduceBySegmentOpT, ScanTileStateT, DelayConstructorT>;
 
   // Warp exchange types
   using WarpExchangePairs = WarpExchange<LengthOffsetPair, ITEMS_PER_THREAD>;
@@ -549,7 +553,7 @@ struct AgentRle
     OffsetT warp_num_runs_exclusive_in_tile,
     OffsetT (&thread_num_runs_exclusive_in_warp)[ITEMS_PER_THREAD],
     LengthOffsetPair (&lengths_and_offsets)[ITEMS_PER_THREAD],
-    Int2Type<true> is_warp_time_slice)
+    ::cuda::std::true_type is_warp_time_slice)
   {
     unsigned int warp_id = ((WARPS == 1) ? 0 : threadIdx.x / WARP_THREADS);
     int lane_id          = ::cuda::ptx::get_sreg_laneid();
@@ -606,7 +610,7 @@ struct AgentRle
     OffsetT warp_num_runs_exclusive_in_tile,
     OffsetT (&thread_num_runs_exclusive_in_warp)[ITEMS_PER_THREAD],
     LengthOffsetPair (&lengths_and_offsets)[ITEMS_PER_THREAD],
-    Int2Type<false> is_warp_time_slice)
+    ::cuda::std::false_type is_warp_time_slice)
   {
     unsigned int warp_id = ((WARPS == 1) ? 0 : threadIdx.x / WARP_THREADS);
     int lane_id          = ::cuda::ptx::get_sreg_laneid();
@@ -716,7 +720,7 @@ struct AgentRle
         warp_num_runs_exclusive_in_tile,
         thread_num_runs_exclusive_in_warp,
         lengths_and_offsets,
-        Int2Type<STORE_WARP_TIME_SLICING>());
+        bool_constant_v<STORE_WARP_TIME_SLICING>);
     }
   }
 
@@ -989,5 +993,8 @@ struct AgentRle
     }
   }
 };
+
+} // namespace rle
+} // namespace detail
 
 CUB_NAMESPACE_END

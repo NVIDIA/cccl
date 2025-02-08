@@ -1096,10 +1096,8 @@ public:
       : it_(it)
   {}
 
-#  ifndef TEST_COMPILER_MSVC_2017 // MSVC2017 has issues determining common_reference
   cpp20_input_iterator(cpp20_input_iterator&&)            = default;
   cpp20_input_iterator& operator=(cpp20_input_iterator&&) = default;
-#  endif // !TEST_COMPILER_MSVC_2017
 
   __host__ __device__ constexpr decltype(auto) operator*() const
   {
@@ -2076,12 +2074,7 @@ ProxyRange(R&&) -> ProxyRange<cuda::std::views::all_t<R&&>>;
 namespace types
 {
 template <class Ptr>
-using random_access_iterator_list =
-  type_list<Ptr,
-#if TEST_STD_VER >= 2017
-            contiguous_iterator<Ptr>,
-#endif
-            random_access_iterator<Ptr>>;
+using random_access_iterator_list = type_list<Ptr, contiguous_iterator<Ptr>, random_access_iterator<Ptr>>;
 
 template <class Ptr>
 using bidirectional_iterator_list =

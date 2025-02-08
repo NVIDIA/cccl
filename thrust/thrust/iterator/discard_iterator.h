@@ -102,7 +102,7 @@ class discard_iterator : public detail::discard_iterator_base<System>::type
 {
   /*! \cond
    */
-  friend class thrust::iterator_core_access;
+  friend class iterator_core_access;
   using super_t       = typename detail::discard_iterator_base<System>::type;
   using incrementable = typename detail::discard_iterator_base<System>::incrementable;
   using base_iterator = typename detail::discard_iterator_base<System>::base_iterator;

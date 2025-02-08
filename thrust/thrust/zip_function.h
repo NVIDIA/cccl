@@ -40,8 +40,6 @@ namespace zip_detail
 {
 
 // Add workaround for decltype(auto) on C++11-only compilers:
-#if _CCCL_STD_VER >= 2014
-
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Function, typename Tuple, std::size_t... Is>
 _CCCL_HOST_DEVICE decltype(auto) apply_impl(Function&& func, Tuple&& args, index_sequence<Is...>)
@@ -55,21 +53,6 @@ _CCCL_HOST_DEVICE decltype(auto) apply(Function&& func, Tuple&& args)
   constexpr auto tuple_size = thrust::tuple_size<typename std::decay<Tuple>::type>::value;
   return apply_impl(THRUST_FWD(func), THRUST_FWD(args), make_index_sequence<tuple_size>{});
 }
-
-#else // _CCCL_STD_VER
-
-_CCCL_EXEC_CHECK_DISABLE
-template <typename Function, typename Tuple, std::size_t... Is>
-_CCCL_HOST_DEVICE auto apply_impl(Function&& func, Tuple&& args, index_sequence<Is...>)
-  THRUST_DECLTYPE_RETURNS(func(thrust::get<Is>(THRUST_FWD(args))...))
-
-    template <typename Function, typename Tuple>
-    _CCCL_HOST_DEVICE auto apply(Function&& func, Tuple&& args) THRUST_DECLTYPE_RETURNS(apply_impl(
-      THRUST_FWD(func),
-      THRUST_FWD(args),
-      make_index_sequence<thrust::tuple_size<typename std::decay<Tuple>::type>::value>{}))
-
-#endif // _CCCL_STD_VER
 
 } // namespace zip_detail
 } // namespace detail
@@ -146,28 +129,13 @@ public:
       : func(std::move(func))
   {}
 
-// Add workaround for decltype(auto) on C++11-only compilers:
-#if _CCCL_STD_VER >= 2014
+  // Add workaround for decltype(auto) on C++11-only compilers:
 
   template <typename Tuple>
   _CCCL_HOST_DEVICE decltype(auto) operator()(Tuple&& args) const
   {
     return detail::zip_detail::apply(func, THRUST_FWD(args));
   }
-
-#else // _CCCL_STD_VER
-
-  // Can't just use THRUST_DECLTYPE_RETURNS here since we need to use
-  // std::declval for the signature components:
-  template <typename Tuple>
-  _CCCL_HOST_DEVICE auto operator()(Tuple&& args) const
-    noexcept(noexcept(detail::zip_detail::apply(std::declval<Function>(), THRUST_FWD(args))))
-      -> decltype(detail::zip_detail::apply(std::declval<Function>(), THRUST_FWD(args)))
-  {
-    return detail::zip_detail::apply(func, THRUST_FWD(args));
-  }
-
-#endif // _CCCL_STD_VER
 
   //! Returns a reference to the underlying function.
   _CCCL_HOST_DEVICE Function& underlying_function() const

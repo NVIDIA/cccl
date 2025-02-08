@@ -41,7 +41,7 @@ std::size_t get_temporary_storage_size(std::size_t (&sizes)[Items])
 {
   void* pointers[Items]{};
   std::size_t temp_storage_bytes{};
-  CubDebugExit(cub::AliasTemporaries(nullptr, temp_storage_bytes, pointers, sizes));
+  CubDebugExit(cub::detail::AliasTemporaries(nullptr, temp_storage_bytes, pointers, sizes));
   return temp_storage_bytes;
 }
 

@@ -61,7 +61,7 @@ struct choose_offset
                 "NumItemsT must be an integral type, but not bool");
 
   // Unsigned integer type for global offsets.
-  using type = ::cuda::std::_If<(sizeof(NumItemsT) <= 4), std::uint32_t, unsigned long long>;
+  using type = ::cuda::std::_If<(sizeof(NumItemsT) <= 4), uint32_t, unsigned long long>;
 };
 
 /**
@@ -84,7 +84,7 @@ struct promote_small_offset
                 "NumItemsT must be an integral type, but not bool");
 
   // Unsigned integer type for global offsets.
-  using type = ::cuda::std::_If<(sizeof(NumItemsT) < 4), std::int32_t, NumItemsT>;
+  using type = ::cuda::std::_If<(sizeof(NumItemsT) < 4), int32_t, NumItemsT>;
 };
 
 /**

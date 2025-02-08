@@ -204,8 +204,6 @@ struct warp_in_block_matcher_t<Bits, 0, PartialWarpId>
 //! @tparam BLOCK_DIM_Z
 //!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
-//! @tparam LEGACY_PTX_ARCH
-//!   **[optional]** Unused.
 template <int BLOCK_DIM_X,
           int RADIX_BITS,
           bool IS_DESCENDING,
@@ -213,8 +211,7 @@ template <int BLOCK_DIM_X,
           BlockScanAlgorithm INNER_SCAN_ALGORITHM = BLOCK_SCAN_WARP_SCANS,
           cudaSharedMemConfig SMEM_CONFIG         = cudaSharedMemBankSizeFourByte,
           int BLOCK_DIM_Y                         = 1,
-          int BLOCK_DIM_Z                         = 1,
-          int LEGACY_PTX_ARCH                     = 0>
+          int BLOCK_DIM_Z                         = 1>
 class BlockRadixRank
 {
 private:
@@ -560,8 +557,7 @@ template <int BLOCK_DIM_X,
           bool IS_DESCENDING,
           BlockScanAlgorithm INNER_SCAN_ALGORITHM = BLOCK_SCAN_WARP_SCANS,
           int BLOCK_DIM_Y                         = 1,
-          int BLOCK_DIM_Z                         = 1,
-          int LEGACY_PTX_ARCH                     = 0>
+          int BLOCK_DIM_Z                         = 1>
 class BlockRadixRankMatch
 {
 private:
@@ -1055,7 +1051,7 @@ struct BlockRadixRankMatchEarlyCounts
     }
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void ComputeRanksItem(
-      UnsignedBits (&keys)[KEYS_PER_THREAD], int (&ranks)[KEYS_PER_THREAD], Int2Type<WARP_MATCH_ATOMIC_OR>)
+      UnsignedBits (&keys)[KEYS_PER_THREAD], int (&ranks)[KEYS_PER_THREAD], detail::constant_t<WARP_MATCH_ATOMIC_OR>)
     {
       // compute key ranks
       int lane_mask     = 1 << lane;
@@ -1087,8 +1083,8 @@ struct BlockRadixRankMatchEarlyCounts
       }
     }
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE void
-    ComputeRanksItem(UnsignedBits (&keys)[KEYS_PER_THREAD], int (&ranks)[KEYS_PER_THREAD], Int2Type<WARP_MATCH_ANY>)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ComputeRanksItem(
+      UnsignedBits (&keys)[KEYS_PER_THREAD], int (&ranks)[KEYS_PER_THREAD], detail::constant_t<WARP_MATCH_ANY>)
     {
       // compute key ranks
       int* warp_offsets = &s.warp_offsets[warp][0];
@@ -1127,7 +1123,7 @@ struct BlockRadixRankMatchEarlyCounts
 
       ComputeOffsetsWarpDownsweep(exclusive_digit_prefix);
       __syncthreads();
-      ComputeRanksItem(keys, ranks, Int2Type<MATCH_ALGORITHM>());
+      ComputeRanksItem(keys, ranks, detail::constant_v<MATCH_ALGORITHM>);
     }
 
     _CCCL_DEVICE _CCCL_FORCEINLINE

@@ -288,7 +288,8 @@ void TestTransformScanConstAccumulator()
   Vector reference(5);
   Vector output(5);
 
-  thrust::transform_inclusive_scan(input.begin(), input.end(), output.begin(), thrust::identity<T>(), thrust::plus<T>());
+  thrust::transform_inclusive_scan(
+    input.begin(), input.end(), output.begin(), ::cuda::std::identity{}, thrust::plus<T>());
   thrust::inclusive_scan(input.begin(), input.end(), reference.begin(), thrust::plus<T>());
 
   ASSERT_EQUAL(output, reference);

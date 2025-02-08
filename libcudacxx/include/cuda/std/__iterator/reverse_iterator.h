@@ -248,18 +248,6 @@ public:
     return _CUDA_VRANGES::iter_move(--__tmp);
   }
 
-#  if _CCCL_COMPILER(MSVC2017) // MSVC2017 cannot find _Iter otherwise
-  template <class _Iter2, class _Iter1 = _Iter>
-  _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
-  iter_swap(const reverse_iterator<_Iter1>& __x,
-            const reverse_iterator<_Iter2>& __y) noexcept(__noexcept_rev_iter_iter_swap<_Iter1, _Iter2>)
-    _CCCL_TRAILING_REQUIRES(void)(same_as<_Iter1, _Iter>&& indirectly_swappable<_Iter2, _Iter1>)
-  {
-    auto __xtmp = __x.base();
-    auto __ytmp = __y.base();
-    _CUDA_VRANGES::iter_swap(--__xtmp, --__ytmp);
-  }
-#  else // ^^^ _CCCL_COMPILER(MSVC2017) ^^^ / vvv !_CCCL_COMPILER(MSVC2017) vvv
   template <class _Iter2>
   _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   iter_swap(const reverse_iterator& __x,
@@ -270,7 +258,6 @@ public:
     auto __ytmp = __y.base();
     return _CUDA_VRANGES::iter_swap(--__xtmp, --__ytmp);
   }
-#  endif // !_CCCL_COMPILER(MSVC2017)
 #endif // _CCCL_STD_VER > 2014
 };
 

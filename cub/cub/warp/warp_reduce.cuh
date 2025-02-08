@@ -150,9 +150,7 @@ CUB_NAMESPACE_BEGIN
 //!   hardware warp threads).  Default is the warp size of the targeted CUDA compute-capability
 //!   (e.g., 32 threads for SM20).
 //!
-//! @tparam LEGACY_PTX_ARCH
-//!   <b>[optional]</b> Unused.
-template <typename T, int LOGICAL_WARP_THREADS = CUB_PTX_WARP_THREADS, int LEGACY_PTX_ARCH = 0>
+template <typename T, int LOGICAL_WARP_THREADS = CUB_PTX_WARP_THREADS>
 class WarpReduce
 {
 private:
@@ -174,8 +172,8 @@ public:
 
   /// Internal specialization.
   /// Use SHFL-based reduction if LOGICAL_WARP_THREADS is a power-of-two
-  using InternalWarpReduce =
-    ::cuda::std::_If<IS_POW_OF_TWO, WarpReduceShfl<T, LOGICAL_WARP_THREADS>, WarpReduceSmem<T, LOGICAL_WARP_THREADS>>;
+  using InternalWarpReduce = ::cuda::std::
+    _If<IS_POW_OF_TWO, detail::WarpReduceShfl<T, LOGICAL_WARP_THREADS>, detail::WarpReduceSmem<T, LOGICAL_WARP_THREADS>>;
 
 #endif // _CCCL_DOXYGEN_INVOKED
 
@@ -663,8 +661,8 @@ public:
 };
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-template <typename T, int LEGACY_PTX_ARCH>
-class WarpReduce<T, 1, LEGACY_PTX_ARCH>
+template <typename T>
+class WarpReduce<T, 1>
 {
 private:
   using _TempStorage = cub::NullType;

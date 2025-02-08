@@ -65,11 +65,11 @@ THRUST_NAMESPACE_BEGIN
  *  ...
  *  bool A[3] = {true, true, false};
  *
- *  thrust::all_of(thrust::host, A, A + 2, thrust::identity<bool>()); // returns true
- *  thrust::all_of(thrust::host, A, A + 3, thrust::identity<bool>()); // returns false
+ *  thrust::all_of(thrust::host, A, A + 2, ::cuda::std::identity{}); // returns true
+ *  thrust::all_of(thrust::host, A, A + 3, ::cuda::std::identity{}); // returns false
  *
  *  // empty range
- *  thrust::all_of(thrust::host, A, A, thrust::identity<bool>()); // returns true
+ *  thrust::all_of(thrust::host, A, A, ::cuda::std::identity{}); // returns true
  *
  *  \endcode
  *
@@ -104,11 +104,11 @@ all_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  ...
  *  bool A[3] = {true, true, false};
  *
- *  thrust::all_of(A, A + 2, thrust::identity<bool>()); // returns true
- *  thrust::all_of(A, A + 3, thrust::identity<bool>()); // returns false
+ *  thrust::all_of(A, A + 2, ::cuda::std::identity{}); // returns true
+ *  thrust::all_of(A, A + 3, ::cuda::std::identity{}); // returns false
  *
  *  // empty range
- *  thrust::all_of(A, A, thrust::identity<bool>()); // returns true
+ *  thrust::all_of(A, A, ::cuda::std::identity{}); // returns true
  *
  *  \endcode
  *
@@ -144,13 +144,13 @@ bool all_of(InputIterator first, InputIterator last, Predicate pred);
  *  ...
  *  bool A[3] = {true, true, false};
  *
- *  thrust::any_of(thrust::host, A, A + 2, thrust::identity<bool>()); // returns true
- *  thrust::any_of(thrust::host, A, A + 3, thrust::identity<bool>()); // returns true
+ *  thrust::any_of(thrust::host, A, A + 2, ::cuda::std::identity{}); // returns true
+ *  thrust::any_of(thrust::host, A, A + 3, ::cuda::std::identity{}); // returns true
  *
- *  thrust::any_of(thrust::host, A + 2, A + 3, thrust::identity<bool>()); // returns false
+ *  thrust::any_of(thrust::host, A + 2, A + 3, ::cuda::std::identity{}); // returns false
  *
  *  // empty range
- *  thrust::any_of(thrust::host, A, A, thrust::identity<bool>()); // returns false
+ *  thrust::any_of(thrust::host, A, A, ::cuda::std::identity{}); // returns false
  *  \endcode
  *
  *  \see all_of
@@ -184,13 +184,13 @@ any_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  ...
  *  bool A[3] = {true, true, false};
  *
- *  thrust::any_of(A, A + 2, thrust::identity<bool>()); // returns true
- *  thrust::any_of(A, A + 3, thrust::identity<bool>()); // returns true
+ *  thrust::any_of(A, A + 2, ::cuda::std::identity{}); // returns true
+ *  thrust::any_of(A, A + 3, ::cuda::std::identity{}); // returns true
  *
- *  thrust::any_of(A + 2, A + 3, thrust::identity<bool>()); // returns false
+ *  thrust::any_of(A + 2, A + 3, ::cuda::std::identity{}); // returns false
  *
  *  // empty range
- *  thrust::any_of(A, A, thrust::identity<bool>()); // returns false
+ *  thrust::any_of(A, A, ::cuda::std::identity{}); // returns false
  *  \endcode
  *
  *  \see all_of
@@ -225,13 +225,13 @@ bool any_of(InputIterator first, InputIterator last, Predicate pred);
  *  ...
  *  bool A[3] = {true, true, false};
  *
- *  thrust::none_of(thrust::host, A, A + 2, thrust::identity<bool>()); // returns false
- *  thrust::none_of(thrust::host, A, A + 3, thrust::identity<bool>()); // returns false
+ *  thrust::none_of(thrust::host, A, A + 2, ::cuda::std::identity{}); // returns false
+ *  thrust::none_of(thrust::host, A, A + 3, ::cuda::std::identity{}); // returns false
  *
- *  thrust::none_of(thrust::host, A + 2, A + 3, thrust::identity<bool>()); // returns true
+ *  thrust::none_of(thrust::host, A + 2, A + 3, ::cuda::std::identity{}); // returns true
  *
  *  // empty range
- *  thrust::none_of(thrust::host, A, A, thrust::identity<bool>()); // returns true
+ *  thrust::none_of(thrust::host, A, A, ::cuda::std::identity{}); // returns true
  *  \endcode
  *
  *  \see all_of
@@ -265,13 +265,13 @@ none_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  ...
  *  bool A[3] = {true, true, false};
  *
- *  thrust::none_of(A, A + 2, thrust::identity<bool>()); // returns false
- *  thrust::none_of(A, A + 3, thrust::identity<bool>()); // returns false
+ *  thrust::none_of(A, A + 2, ::cuda::std::identity{}); // returns false
+ *  thrust::none_of(A, A + 3, ::cuda::std::identity{}); // returns false
  *
- *  thrust::none_of(A + 2, A + 3, thrust::identity<bool>()); // returns true
+ *  thrust::none_of(A + 2, A + 3, ::cuda::std::identity{}); // returns true
  *
  *  // empty range
- *  thrust::none_of(A, A, thrust::identity<bool>()); // returns true
+ *  thrust::none_of(A, A, ::cuda::std::identity{}); // returns true
  *  \endcode
  *
  *  \see all_of

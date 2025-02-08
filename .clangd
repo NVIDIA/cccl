@@ -51,6 +51,7 @@ CompileFlags:
     # strip CUDA flags unknown to clang
     - "-ccbin*"
     - "--compiler-options*"
+    - "--extended-lambda"
     - "--expt-extended-lambda"
     - "--expt-relaxed-constexpr"
     - "-forward-unknown-to-host-compiler"

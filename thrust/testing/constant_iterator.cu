@@ -3,6 +3,7 @@
 #include <thrust/reduce.h>
 #include <thrust/transform.h>
 
+#include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
 
 #include <unittest/unittest.h>
@@ -100,7 +101,7 @@ void TestMakeConstantIterator()
   ASSERT_EQUAL(13, *iter0);
 
   // test two argument version
-  constant_iterator<int, thrust::detail::intmax_t> iter1 = make_constant_iterator<int, thrust::detail::intmax_t>(13, 7);
+  constant_iterator<int, ::cuda::std::intmax_t> iter1 = make_constant_iterator<int, ::cuda::std::intmax_t>(13, 7);
 
   ASSERT_EQUAL(13, *iter1);
   ASSERT_EQUAL(7, iter1 - iter0);

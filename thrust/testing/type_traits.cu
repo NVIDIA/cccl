@@ -9,6 +9,8 @@
 #include <thrust/tuple.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
+#include <cuda/__cccl_config>
+
 #if _CCCL_COMPILER(GCC, >=, 7)
 // This header pulls in an unsuppressable warning on GCC 6
 #  include <cuda/std/complex>
@@ -36,14 +38,23 @@ void TestIsContiguousIterator()
 
   using HostIteratorTuple = thrust::tuple<HostVector::iterator, HostVector::iterator>;
 
-  using ConstantIterator  = thrust::constant_iterator<int>;
-  using CountingIterator  = thrust::counting_iterator<int>;
-  using TransformIterator = thrust::transform_iterator<thrust::identity<int>, HostVector::iterator>;
-  using ZipIterator       = thrust::zip_iterator<HostIteratorTuple>;
+  using ConstantIterator = thrust::constant_iterator<int>;
+  using CountingIterator = thrust::counting_iterator<int>;
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
+  using TransformIterator1 = thrust::transform_iterator<thrust::identity<int>, HostVector::iterator>;
+  _CCCL_SUPPRESS_DEPRECATED_POP
+  using TransformIterator2 = thrust::transform_iterator<cuda::std::identity, HostVector::iterator>;
+  using ZipIterator        = thrust::zip_iterator<HostIteratorTuple>;
 
   ASSERT_EQUAL((bool) thrust::is_contiguous_iterator<ConstantIterator>::value, false);
   ASSERT_EQUAL((bool) thrust::is_contiguous_iterator<CountingIterator>::value, false);
-  ASSERT_EQUAL((bool) thrust::is_contiguous_iterator<TransformIterator>::value, false);
+#if !_CCCL_COMPILER(NVHPC)
+  // thrust::identity creates a deprecated warning that could not be worked around
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
+  ASSERT_EQUAL((bool) thrust::is_contiguous_iterator<TransformIterator1>::value, false);
+  _CCCL_SUPPRESS_DEPRECATED_POP
+#endif // !_CCCL_COMPILER(NVHPC)
+  ASSERT_EQUAL((bool) thrust::is_contiguous_iterator<TransformIterator2>::value, false);
   ASSERT_EQUAL((bool) thrust::is_contiguous_iterator<ZipIterator>::value, false);
 }
 DECLARE_UNITTEST(TestIsContiguousIterator);

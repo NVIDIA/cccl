@@ -21,11 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-inline _CCCL_HOST_DEVICE void discard_memory(volatile void* __ptr, size_t __nbytes) noexcept
+inline _CCCL_HOST_DEVICE void discard_memory(volatile void* __ptr, _CUDA_VSTD::size_t __nbytes) noexcept
 {
   // The discard PTX instruction is only available with PTX ISA 7.4 and later
 #if __cccl_ptx_isa < 740ULL

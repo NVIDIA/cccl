@@ -29,7 +29,7 @@
 #include <thrust/iterator/detail/any_assign.h>
 #include <thrust/iterator/iterator_adaptor.h>
 
-#include <cstddef> // for std::ptrdiff_t
+#include <cuda/std/cstddef> // for std::ptrdiff_t
 
 THRUST_NAMESPACE_BEGIN
 
@@ -47,7 +47,7 @@ struct discard_iterator_base
   //     but this interferes with zip_iterator<discard_iterator>
   using value_type    = any_assign;
   using reference     = any_assign&;
-  using incrementable = std::ptrdiff_t;
+  using incrementable = ::cuda::std::ptrdiff_t;
 
   using base_iterator = typename thrust::counting_iterator<incrementable, System, thrust::random_access_traversal_tag>;
 

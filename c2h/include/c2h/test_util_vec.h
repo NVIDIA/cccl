@@ -418,6 +418,7 @@ C2H_VEC_OVERLOAD(double, double)
 /**
  * Define for types
  */
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 C2H_VEC_TRAITS_OVERLOAD(char, signed char)
 C2H_VEC_TRAITS_OVERLOAD(short, short)
 C2H_VEC_TRAITS_OVERLOAD(int, int)
@@ -430,5 +431,6 @@ C2H_VEC_TRAITS_OVERLOAD(ulong, unsigned long)
 C2H_VEC_TRAITS_OVERLOAD(ulonglong, unsigned long long)
 C2H_VEC_TRAITS_OVERLOAD(float, float)
 C2H_VEC_TRAITS_OVERLOAD(double, double)
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA

@@ -57,7 +57,7 @@ def get_include_paths() -> IncludePaths:
 
     return IncludePaths(
         cuda=cuda_incl,
-        libcudacxx=cccl_incl / "libcudacxx",
+        libcudacxx=cccl_incl,
         cub=cccl_incl,
         thrust=cccl_incl,
     )

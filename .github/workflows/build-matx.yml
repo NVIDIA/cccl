@@ -61,7 +61,7 @@ jobs:
 
           .devcontainer/launch.sh \
             --docker \
-            --cuda 12.6 \
+            --cuda 12.8 \
             --host gcc13 \
             --cuda-ext \
             --env VAULT_HOST= \

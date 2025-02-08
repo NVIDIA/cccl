@@ -160,9 +160,9 @@ public:
   {
     nvtxRangePushA("FILL");
     // Fill blocks by blocks
-    for (int colb = 0; colb < nt; colb++)
+    for (size_t colb = 0; colb < nt; colb++)
     {
-      for (int rowb = 0; rowb < mt; rowb++)
+      for (size_t rowb = 0; rowb < mt; rowb++)
       {
         // Each task fills a block
         auto& h   = get_handle(rowb, colb);
@@ -251,9 +251,9 @@ void PDGEMM(stream_ctx& ctx,
             double beta,
             matrix<double>& C)
 {
-  for (int m = 0; m < C.mt; m++)
+  for (size_t m = 0; m < C.mt; m++)
   {
-    for (int n = 0; n < C.nt; n++)
+    for (size_t n = 0; n < C.nt; n++)
     {
       //=========================================
       // alpha*A*B does not contribute; scale C
@@ -271,7 +271,7 @@ void PDGEMM(stream_ctx& ctx,
         if (transb == CUBLAS_OP_N)
         {
           assert(A.nt == B.mt);
-          for (int k = 0; k < A.nt; k++)
+          for (size_t k = 0; k < A.nt; k++)
           {
             double zbeta = k == 0 ? beta : 1.0;
             DGEMM(ctx, transa, transb, alpha, A, m, k, B, k, n, zbeta, C, m, n);
@@ -282,7 +282,7 @@ void PDGEMM(stream_ctx& ctx,
         //=====================================
         else
         {
-          for (int k = 0; k < A.nt; k++)
+          for (size_t k = 0; k < A.nt; k++)
           {
             double zbeta = k == 0 ? beta : 1.0;
             DGEMM(ctx, transa, transb, alpha, A, m, k, B, n, k, zbeta, C, m, n);
@@ -296,7 +296,7 @@ void PDGEMM(stream_ctx& ctx,
         //=====================================
         if (transb == CUBLAS_OP_N)
         {
-          for (int k = 0; k < A.mt; k++)
+          for (size_t k = 0; k < A.mt; k++)
           {
             double zbeta = k == 0 ? beta : 1.0;
             DGEMM(ctx, transa, transb, alpha, A, k, m, B, k, n, zbeta, C, m, n);
@@ -307,7 +307,7 @@ void PDGEMM(stream_ctx& ctx,
         //==========================================
         else
         {
-          for (int k = 0; k < A.mt; k++)
+          for (size_t k = 0; k < A.mt; k++)
           {
             double zbeta = k == 0 ? beta : 1.0;
             DGEMM(ctx, transa, transb, alpha, A, k, m, B, n, k, zbeta, C, m, n);
@@ -328,14 +328,14 @@ void run(stream_ctx& ctx, size_t N, size_t NB)
   cuda_safe_call(cudaGetDeviceCount(&ndevs));
 
   /* Warm up allocators */
-  for (size_t d = 0; d < ndevs; d++)
+  for (int d = 0; d < ndevs; d++)
   {
     auto lX = ctx.logical_data(shape_of<slice<double>>(1));
     ctx.parallel_for(exec_place::device(d), lX.shape(), lX.write())->*[] _CCCL_DEVICE(size_t, auto) {};
   }
 
   /* Initializes CUBLAS on all devices */
-  for (size_t d = 0; d < ndevs; d++)
+  for (int d = 0; d < ndevs; d++)
   {
     cuda_safe_call(cudaSetDevice(d));
     get_cublas_handle();

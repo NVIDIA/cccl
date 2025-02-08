@@ -38,10 +38,8 @@ struct no_explicit_iter_concept
   __host__ __device__ no_explicit_iter_concept& operator++();
   __host__ __device__ void operator++(int);
 };
-#ifndef TEST_COMPILER_MSVC_2017
 // ITER-CONCEPT is `random_access_iterator_tag` >:(
 static_assert(cuda::std::input_iterator<no_explicit_iter_concept>, "");
-#endif // TEST_COMPILER_MSVC_2017
 
 static_assert(cuda::std::input_iterator<int*>, "");
 static_assert(cuda::std::input_iterator<int const*>, "");

@@ -38,60 +38,46 @@
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-
 template <typename DerivedPolicy, typename Pointer1, typename Pointer2>
-inline _CCCL_HOST_DEVICE void
-assign_value(thrust::cuda::execution_policy<DerivedPolicy>& exec, Pointer1 dst, Pointer2 src)
+_CCCL_HOST_DEVICE void assign_value(execution_policy<DerivedPolicy>& exec, Pointer1 dst, Pointer2 src)
 {
-  // XXX war nvbugs/881631
-  struct war_nvbugs_881631
+  // Because of https://docs.nvidia.com/cuda/cuda-c-programming-guide/#cuda-arch point 2., if a call from a __host__
+  // __device__ function leads to the template instantiation of a __global__ function, then this instantiation needs to
+  // happen regardless of whether __CUDA_ARCH__ is defined. Therefore, we make the host path visible outside the
+  // NV_IF_TARGET switch. See also NVBug 881631.
+  struct HostPath
   {
-    _CCCL_HOST inline static void
-    host_path(thrust::cuda::execution_policy<DerivedPolicy>& exec, Pointer1 dst, Pointer2 src)
+    _CCCL_HOST auto operator()(execution_policy<DerivedPolicy>& exec, Pointer1 dst, Pointer2 src)
     {
       cuda_cub::copy(exec, src, src + 1, dst);
     }
-
-    _CCCL_DEVICE inline static void
-    device_path(thrust::cuda::execution_policy<DerivedPolicy>&, Pointer1 dst, Pointer2 src)
-    {
-      *thrust::raw_pointer_cast(dst) = *thrust::raw_pointer_cast(src);
-    }
   };
-
   NV_IF_TARGET(
-    NV_IS_HOST, (war_nvbugs_881631::host_path(exec, dst, src);), (war_nvbugs_881631::device_path(exec, dst, src);));
-
-} // end assign_value()
+    NV_IS_HOST, (HostPath{}(exec, dst, src);), *thrust::raw_pointer_cast(dst) = *thrust::raw_pointer_cast(src););
+}
 
 template <typename System1, typename System2, typename Pointer1, typename Pointer2>
-inline _CCCL_HOST_DEVICE void assign_value(cross_system<System1, System2>& systems, Pointer1 dst, Pointer2 src)
+_CCCL_HOST_DEVICE void assign_value(cross_system<System1, System2>& systems, Pointer1 dst, Pointer2 src)
 {
-  // XXX war nvbugs/881631
-  struct war_nvbugs_881631
+  // Because of https://docs.nvidia.com/cuda/cuda-c-programming-guide/#cuda-arch point 2., if a call from a __host__
+  // __device__ function leads to the template instantiation of a __global__ function, then this instantiation needs to
+  // happen regardless of whether __CUDA_ARCH__ is defined. Therefore, we make the host path visible outside the
+  // NV_IF_TARGET switch. See also NVBug 881631.
+  struct HostPath
   {
-    _CCCL_HOST inline static void host_path(cross_system<System1, System2>& systems, Pointer1 dst, Pointer2 src)
+    _CCCL_HOST auto operator()(cross_system<System1, System2>& systems, Pointer1 dst, Pointer2 src)
     {
-      // rotate the systems so that they are ordered the same as (src, dst)
-      // for the call to thrust::copy
+      // rotate the systems so that they are ordered the same as (src, dst) for the call to thrust::copy
       cross_system<System2, System1> rotated_systems = systems.rotate();
       cuda_cub::copy(rotated_systems, src, src + 1, dst);
     }
-
-    _CCCL_DEVICE inline static void device_path(cross_system<System1, System2>&, Pointer1 dst, Pointer2 src)
-    {
-      // XXX forward the true cuda::execution_policy inside systems here
-      //     instead of materializing a tag
-      thrust::cuda::tag cuda_tag;
-      thrust::cuda_cub::assign_value(cuda_tag, dst, src);
-    }
   };
-
   NV_IF_TARGET(NV_IS_HOST,
-               (war_nvbugs_881631::host_path(systems, dst, src);),
-               (war_nvbugs_881631::device_path(systems, dst, src);));
-} // end assign_value()
-
+               (HostPath{}(systems, dst, src);),
+               (
+                 // XXX forward the true cuda::execution_policy inside systems here instead of materializing a tag
+                 cuda::tag cuda_tag; cuda_cub::assign_value(cuda_tag, dst, src);));
+}
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 #endif

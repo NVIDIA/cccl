@@ -50,13 +50,11 @@ THRUST_NAMESPACE_BEGIN
 template <typename T>
 using is_execution_policy = ::cuda::std::is_base_of<detail::execution_policy_marker, T>;
 
-#if _CCCL_STD_VER >= 2014
 /*! \brief <tt>constexpr bool</tt> that is \c true if \c T is an
  *  \a ExecutionPolicy and \c false otherwise.
  */
 template <typename T>
 constexpr bool is_execution_policy_v = is_execution_policy<T>::value;
-#endif
 
 /*! \} // type traits
  */

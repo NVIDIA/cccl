@@ -87,7 +87,7 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
   std::uint8_t* d_temp_storage = nullptr;
   std::size_t temp_storage_bytes{};
 
-  cub::Int2Type<sizeof(SampleT) == 1> is_byte_sample;
+  cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
   OffsetT num_row_pixels     = static_cast<OffsetT>(elements);
   OffsetT num_rows           = 1;
   OffsetT row_stride_samples = num_row_pixels;

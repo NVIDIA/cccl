@@ -107,7 +107,6 @@ private:
   _Iter __current_;
 
 #if _CCCL_STD_VER >= 2017
-#  if !_CCCL_COMPILER(MSVC2017)
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto __mi_get_iter_concept()
   {
     if constexpr (random_access_iterator<_Iter>)
@@ -128,22 +127,12 @@ private:
     }
     _CCCL_UNREACHABLE();
   }
-#  endif // !_CCCL_COMPILER(MSVC2017)
 #endif // _CCCL_STD_VER >= 2017
 
 public:
 #if _CCCL_STD_VER > 2014
-  using iterator_type = _Iter;
-#  if _CCCL_COMPILER(MSVC2017)
-  // clang-format off
-  using iterator_concept = conditional_t<random_access_iterator<_Iter>, random_access_iterator_tag,
-                           conditional_t<bidirectional_iterator<_Iter>, bidirectional_iterator_tag,
-                           conditional_t<forward_iterator<_Iter>,       forward_iterator_tag,
-                                                                        input_iterator_tag>>>;
-  // clang-format on
-#  else // ^^^ _CCCL_COMPILER(MSVC2017) ^^^ / vvv !_CCCL_COMPILER(MSVC2017) vvv
+  using iterator_type    = _Iter;
   using iterator_concept = decltype(__mi_get_iter_concept());
-#  endif // !_CCCL_COMPILER(MSVC2017)
 
   // iterator_category is inherited and not always present
   using value_type      = iter_value_t<_Iter>;
@@ -370,15 +359,6 @@ public:
     return _CUDA_VRANGES::iter_move(__i.__current_);
   }
 
-#  if _CCCL_COMPILER(MSVC2017) // MSVC2017 cannot find _Iter otherwise
-  template <class _Iter2, class _Iter1 = _Iter>
-  _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto iter_swap(
-    const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y) noexcept(__noexcept_swappable<_Iter1, _Iter2>)
-    _CCCL_TRAILING_REQUIRES(void)(same_as<_Iter1, _Iter>&& indirectly_swappable<_Iter2, _Iter1>)
-  {
-    return _CUDA_VRANGES::iter_swap(__x.__current_, __y.__current_);
-  }
-#  else // ^^^ _CCCL_COMPILER(MSVC2017) ^^^ / vvv !_CCCL_COMPILER(MSVC2017) vvv
   template <class _Iter2>
   _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   iter_swap(const move_iterator& __x, const move_iterator<_Iter2>& __y) noexcept(__noexcept_swappable<_Iter, _Iter2>)
@@ -386,7 +366,6 @@ public:
   {
     return _CUDA_VRANGES::iter_swap(__x.__current_, __y.__current_);
   }
-#  endif // !_CCCL_COMPILER(MSVC2017)
 #endif // _CCCL_STD_VER > 2014
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(move_iterator);

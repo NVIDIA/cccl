@@ -1157,7 +1157,6 @@ struct DeviceScan
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
     using AccumT  = ::cuda::std::__accumulator_t<ScanOpT, cub::detail::value_t<InputIteratorT>, InitValueT>;
-    constexpr bool ForceInclusive = true;
 
     return DispatchScan<
       InputIteratorT,
@@ -1166,15 +1165,14 @@ struct DeviceScan
       detail::InputValue<InitValueT>,
       OffsetT,
       AccumT,
-      detail::scan::policy_hub<AccumT, ScanOpT>,
-      ForceInclusive>::Dispatch(d_temp_storage,
-                                temp_storage_bytes,
-                                d_in,
-                                d_out,
-                                scan_op,
-                                detail::InputValue<InitValueT>(init_value),
-                                num_items,
-                                stream);
+      ForceInclusive::Yes>::Dispatch(d_temp_storage,
+                                     temp_storage_bytes,
+                                     d_in,
+                                     d_out,
+                                     scan_op,
+                                     detail::InputValue<InitValueT>(init_value),
+                                     num_items,
+                                     stream);
   }
 
   //! @rst
@@ -1377,7 +1375,7 @@ struct DeviceScan
             typename ValuesInputIteratorT,
             typename ValuesOutputIteratorT,
             typename EqualityOpT = ::cuda::std::equal_to<>,
-            typename NumItemsT   = std::uint32_t>
+            typename NumItemsT   = uint32_t>
   CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSumByKey(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1561,7 +1559,7 @@ struct DeviceScan
             typename ScanOpT,
             typename InitValueT,
             typename EqualityOpT = ::cuda::std::equal_to<>,
-            typename NumItemsT   = std::uint32_t>
+            typename NumItemsT   = uint32_t>
   CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScanByKey(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1697,7 +1695,7 @@ struct DeviceScan
             typename ValuesInputIteratorT,
             typename ValuesOutputIteratorT,
             typename EqualityOpT = ::cuda::std::equal_to<>,
-            typename NumItemsT   = std::uint32_t>
+            typename NumItemsT   = uint32_t>
   CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSumByKey(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1862,7 +1860,7 @@ struct DeviceScan
             typename ValuesOutputIteratorT,
             typename ScanOpT,
             typename EqualityOpT = ::cuda::std::equal_to<>,
-            typename NumItemsT   = std::uint32_t>
+            typename NumItemsT   = uint32_t>
   CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanByKey(
     void* d_temp_storage,
     size_t& temp_storage_bytes,

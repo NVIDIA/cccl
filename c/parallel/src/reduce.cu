@@ -160,7 +160,7 @@ std::string get_single_tile_kernel_name(
   check(nvrtcGetTypeName<op_wrapper>(&reduction_op_t));
 
   return std::format(
-    "cub::DeviceReduceSingleTileKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}>",
+    "cub::detail::reduce::DeviceReduceSingleTileKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}>",
     chained_policy_t,
     input_iterator_t,
     output_iterator_t,
@@ -192,7 +192,7 @@ std::string get_device_reduce_kernel_name(cccl_op_t op, cccl_iterator_t input_it
   check(nvrtcGetTypeName<cuda::std::__identity>(&transform_op_t));
 
   return std::format(
-    "cub::DeviceReduceKernel<{0}, {1}, {2}, {3}, {4}, {5}>",
+    "cub::detail::reduce::DeviceReduceKernel<{0}, {1}, {2}, {3}, {4}, {5}>",
     chained_policy_t,
     input_iterator_t,
     offset_t,
@@ -227,10 +227,12 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
     const auto input_it_value_t               = cccl_type_enum_to_string(input_it.value_type.type);
     const auto offset_t                       = cccl_type_enum_to_string(cccl_type_enum::UINT64);
 
-    const std::string input_iterator_src  = make_kernel_input_iterator(offset_t, input_it_value_t, input_it);
-    const std::string output_iterator_src = make_kernel_output_iterator(offset_t, accum_cpp, output_it);
+    const std::string input_iterator_src =
+      make_kernel_input_iterator(offset_t, "input_iterator_state_t", input_it_value_t, input_it);
+    const std::string output_iterator_src =
+      make_kernel_output_iterator(offset_t, "output_iterator_t", accum_cpp, output_it);
 
-    const std::string op_src = make_kernel_user_binary_operator(accum_cpp, op);
+    const std::string op_src = make_kernel_user_arithmetic_operator(accum_cpp, op);
 
     const std::string src = std::format(
       "#include <cub/block/block_reduce.cuh>\n"

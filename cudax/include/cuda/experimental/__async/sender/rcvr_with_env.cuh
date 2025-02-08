@@ -134,6 +134,10 @@ struct __rcvr_with_env_t<_Rcvr*, _Env>
   _Rcvr* __rcvr_;
   _Env __env_;
 };
+
+template <class _Rcvr, class _Env>
+__rcvr_with_env_t(_Rcvr, _Env) -> __rcvr_with_env_t<_Rcvr, _Env>;
+
 } // namespace cuda::experimental::__async
 
 #include <cuda/experimental/__async/sender/epilogue.cuh>

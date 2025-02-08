@@ -75,30 +75,132 @@ CUB_RUNTIME_FUNCTION ReducePolicyWrapper<PolicyT> MakeReducePolicyWrapper(Policy
 {
   return ReducePolicyWrapper<PolicyT>{policy};
 }
+enum class offset_size
+{
+  _4,
+  _8,
+  unknown
+};
+enum class op_type
+{
+  plus,
+  min_or_max,
+  unknown
+};
+enum class accum_size
+{
+  _1,
+  _2,
+  _4,
+  _8,
+  _16,
+  unknown
+};
+template <class AccumT>
+constexpr accum_size classify_accum_size()
+{
+  return sizeof(AccumT) == 1 ? accum_size::_1
+       : sizeof(AccumT) == 2 ? accum_size::_2
+       : sizeof(AccumT) == 4 ? accum_size::_4
+       : sizeof(AccumT) == 8 ? accum_size::_8
+       : sizeof(AccumT) == 16
+         ? accum_size::_16
+         : accum_size::unknown;
+}
+template <class OffsetT>
+constexpr offset_size classify_offset_size()
+{
+  return sizeof(OffsetT) == 4 ? offset_size::_4 : sizeof(OffsetT) == 8 ? offset_size::_8 : offset_size::unknown;
+}
+
+template <typename Op>
+struct is_plus
+{
+  static constexpr bool value = false;
+};
+
+template <typename T>
+struct is_plus<::cuda::std::plus<T>>
+{
+  static constexpr bool value = true;
+};
+template <typename Op>
+struct is_min_or_max
+{
+  static constexpr bool value = false;
+};
+template <typename T>
+struct is_min_or_max<::cuda::minimum<T>>
+{
+  static constexpr bool value = true;
+};
+template <typename T>
+struct is_min_or_max<::cuda::maximum<T>>
+{
+  static constexpr bool value = true;
+};
+
+template <class ScanOpT>
+constexpr op_type classify_op()
+{
+  return is_plus<ScanOpT>::value
+         ? op_type::plus
+         : (is_min_or_max<ScanOpT>::value ? op_type::min_or_max : op_type::unknown);
+}
+
+template <class AccumT,
+          class OffsetT,
+          op_type OpTypeT        = classify_op<OffsetT>(),
+          offset_size OffsetSize = classify_offset_size<OffsetT>(),
+          accum_size AccumSize   = classify_accum_size<AccumT>()>
+struct sm100_tuning;
+
+// sum
+
+// Tunings for offset size 4/8 and accum size 1/2/4 all showed no significant improvement during verification
+
+template <class T, class OffsetT>
+struct sm100_tuning<T, OffsetT, op_type::plus, offset_size::_4, accum_size::_8>
+{
+  // ipt_15.tpb_512.ipv_2 1.019887   1.0  1.017636  1.058036
+  static constexpr int items              = 15;
+  static constexpr int threads            = 512;
+  static constexpr int items_per_vec_load = 2;
+};
+
+template <class T, class OffsetT>
+struct sm100_tuning<T, OffsetT, op_type::plus, offset_size::_8, accum_size::_8>
+{
+  // ipt_15.tpb_512.ipv_1 1.019414  1.000000  1.017218  1.057143
+  static constexpr int items              = 15;
+  static constexpr int threads            = 512;
+  static constexpr int items_per_vec_load = 1;
+};
+
+template <class OffsetT>
+struct sm100_tuning<float, OffsetT, op_type::plus, offset_size::_4, accum_size::_4>
+{
+  // ipt_16.tpb_512.ipv_2 1.061295  1.000000  1.065478  1.167139
+  static constexpr int items              = 16;
+  static constexpr int threads            = 512;
+  static constexpr int items_per_vec_load = 2;
+};
+
+template <class OffsetT>
+struct sm100_tuning<double, OffsetT, op_type::plus, offset_size::_4, accum_size::_8>
+{
+  // ipt_16.tpb_640.ipv_1 1.017834  1.000000  1.015835  1.057092
+  static constexpr int items              = 16;
+  static constexpr int threads            = 640;
+  static constexpr int items_per_vec_load = 1;
+};
+
+// For min or max, verification showed the benefits were too small (within noise)
 
 template <typename AccumT, typename OffsetT, typename ReductionOpT>
 struct policy_hub
 {
-  struct Policy300 : ChainedPolicy<300, Policy300, Policy300>
-  {
-    static constexpr int threads_per_block  = 256;
-    static constexpr int items_per_thread   = 20;
-    static constexpr int items_per_vec_load = 2;
-
-    // ReducePolicy (GTX670: 154.0 @ 48M 4B items)
-    using ReducePolicy =
-      AgentReducePolicy<threads_per_block,
-                        items_per_thread,
-                        AccumT,
-                        items_per_vec_load,
-                        BLOCK_REDUCE_WARP_REDUCTIONS,
-                        LOAD_DEFAULT>;
-
-    using SingleTilePolicy      = ReducePolicy;
-    using SegmentedReducePolicy = ReducePolicy;
-  };
-
-  struct Policy350 : ChainedPolicy<350, Policy350, Policy300>
+  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
   {
     static constexpr int threads_per_block  = 256;
     static constexpr int items_per_thread   = 20;
@@ -117,7 +219,7 @@ struct policy_hub
     using SegmentedReducePolicy = ReducePolicy;
   };
 
-  struct Policy600 : ChainedPolicy<600, Policy600, Policy350>
+  struct Policy600 : ChainedPolicy<600, Policy600, Policy500>
   {
     static constexpr int threads_per_block  = 256;
     static constexpr int items_per_thread   = 16;
@@ -136,12 +238,37 @@ struct policy_hub
     using SegmentedReducePolicy = ReducePolicy;
   };
 
-  using MaxPolicy = Policy600;
+  struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy600>
+  {
+    // Use values from tuning if a specialization exists, otherwise pick Policy600
+    template <typename Tuning>
+    static auto select_agent_policy(int)
+      -> AgentReducePolicy<Tuning::threads,
+                           Tuning::items,
+                           AccumT,
+                           Tuning::items_per_vec_load,
+                           BLOCK_REDUCE_WARP_REDUCTIONS,
+                           LOAD_LDG>;
+    // use Policy600 as DefaultPolicy
+    template <typename Tuning>
+    static auto select_agent_policy(long) -> typename Policy600::ReducePolicy;
+
+    using ReducePolicy =
+      decltype(select_agent_policy<sm100_tuning<AccumT,
+                                                OffsetT,
+                                                classify_op<ReductionOpT>(),
+                                                classify_offset_size<OffsetT>(),
+                                                classify_accum_size<AccumT>()>>(0));
+
+    using SingleTilePolicy      = ReducePolicy;
+    using SegmentedReducePolicy = ReducePolicy;
+  };
+
+  using MaxPolicy = Policy1000;
 };
 } // namespace reduce
 } // namespace detail
 
-// TODO(bgruber): deprecate at some point when we have a better API for users to supply tunings
 /// @tparam AccumT
 ///   Accumulator data type
 ///
@@ -152,10 +279,20 @@ struct policy_hub
 ///   Binary reduction functor type having member
 ///   `auto operator()(const T &a, const U &b)`
 template <typename AccumT, typename OffsetT, typename ReductionOpT>
-using DeviceReducePolicy = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>;
+using DeviceReducePolicy CCCL_DEPRECATED_BECAUSE(
+  "This class is considered an implementation detail and it will be "
+  "removed.") = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>;
 
-// TODO(bgruber): deprecate those
-using detail::reduce::MakeReducePolicyWrapper;
-using detail::reduce::ReducePolicyWrapper;
+template <typename PolicyT, typename Enable = void>
+using ReducePolicyWrapper CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and it will be "
+                                                  "removed.") = detail::reduce::ReducePolicyWrapper<PolicyT, Enable>;
+
+template <typename PolicyT>
+CCCL_DEPRECATED_BECAUSE("This function is considered an implementation detail and it will "
+                        "be removed.")
+CUB_RUNTIME_FUNCTION detail::reduce::ReducePolicyWrapper<PolicyT> MakeReducePolicyWrapper(PolicyT policy)
+{
+  return detail::reduce::ReducePolicyWrapper<PolicyT>{policy};
+}
 
 CUB_NAMESPACE_END

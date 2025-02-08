@@ -265,8 +265,8 @@ _CUB_STORE_ALL(STORE_WT, wt)
  * ThreadStore definition for STORE_DEFAULT modifier on iterator types
  */
 template <typename OutputIteratorT, typename T>
-_CCCL_DEVICE _CCCL_FORCEINLINE void
-ThreadStore(OutputIteratorT itr, T val, Int2Type<STORE_DEFAULT> /*modifier*/, Int2Type<false> /*is_pointer*/)
+_CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStore(
+  OutputIteratorT itr, T val, detail::constant_t<STORE_DEFAULT> /*modifier*/, ::cuda::std::false_type /*is_pointer*/)
 {
   *itr = val;
 }
@@ -276,7 +276,7 @@ ThreadStore(OutputIteratorT itr, T val, Int2Type<STORE_DEFAULT> /*modifier*/, In
  */
 template <typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
-ThreadStore(T* ptr, T val, Int2Type<STORE_DEFAULT> /*modifier*/, Int2Type<true> /*is_pointer*/)
+ThreadStore(T* ptr, T val, detail::constant_t<STORE_DEFAULT> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
 {
   *ptr = val;
 }
@@ -285,7 +285,7 @@ ThreadStore(T* ptr, T val, Int2Type<STORE_DEFAULT> /*modifier*/, Int2Type<true> 
  * ThreadStore definition for STORE_VOLATILE modifier on primitive pointer types
  */
 template <typename T>
-_CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStoreVolatilePtr(T* ptr, T val, Int2Type<true> /*is_primitive*/)
+_CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStoreVolatilePtr(T* ptr, T val, ::cuda::std::true_type /*is_primitive*/)
 {
   *reinterpret_cast<volatile T*>(ptr) = val;
 }
@@ -294,7 +294,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStoreVolatilePtr(T* ptr, T val, Int2Ty
  * ThreadStore definition for STORE_VOLATILE modifier on non-primitive pointer types
  */
 template <typename T>
-_CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStoreVolatilePtr(T* ptr, T val, Int2Type<false> /*is_primitive*/)
+_CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStoreVolatilePtr(T* ptr, T val, ::cuda::std::false_type /*is_primitive*/)
 {
   // Create a temporary using shuffle-words, then store using volatile-words
   using VolatileWord = typename UnitWord<T>::VolatileWord;
@@ -319,17 +319,17 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStoreVolatilePtr(T* ptr, T val, Int2Ty
  */
 template <typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
-ThreadStore(T* ptr, T val, Int2Type<STORE_VOLATILE> /*modifier*/, Int2Type<true> /*is_pointer*/)
+ThreadStore(T* ptr, T val, detail::constant_t<STORE_VOLATILE> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
 {
-  ThreadStoreVolatilePtr(ptr, val, Int2Type<Traits<T>::PRIMITIVE>());
+  ThreadStoreVolatilePtr(ptr, val, detail::bool_constant_v<detail::is_primitive<T>::value>);
 }
 
 /**
  * ThreadStore definition for generic modifiers on pointer types
  */
-template <typename T, int MODIFIER>
+template <typename T, CacheStoreModifier MODIFIER>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
-ThreadStore(T* ptr, T val, Int2Type<MODIFIER> /*modifier*/, Int2Type<true> /*is_pointer*/)
+ThreadStore(T* ptr, T val, detail::constant_t<MODIFIER> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
 {
   // Create a temporary using shuffle-words, then store using device-words
   using DeviceWord  = typename UnitWord<T>::DeviceWord;
@@ -356,7 +356,8 @@ ThreadStore(T* ptr, T val, Int2Type<MODIFIER> /*modifier*/, Int2Type<true> /*is_
 template <CacheStoreModifier MODIFIER, typename OutputIteratorT, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStore(OutputIteratorT itr, T val)
 {
-  ThreadStore(itr, val, Int2Type<MODIFIER>(), Int2Type<std::is_pointer<OutputIteratorT>::value>());
+  ThreadStore(
+    itr, val, detail::constant_v<MODIFIER>, detail::bool_constant_v<::cuda::std::is_pointer_v<OutputIteratorT>>);
 }
 
 #endif // _CCCL_DOXYGEN_INVOKED

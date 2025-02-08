@@ -99,7 +99,7 @@ struct detect_wrong_difference
   using value_type        = void;
   using pointer           = void;
   using reference         = void;
-  using iterator_category = std::output_iterator_tag;
+  using iterator_category = ::cuda::std::output_iterator_tag;
 
   bool* flag;
 

@@ -29,12 +29,10 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_STD_VER >= 2014
+#include <thrust/detail/type_traits.h>
+#include <thrust/system/error_code.h>
 
-#  include <thrust/detail/type_traits.h>
-#  include <thrust/system/error_code.h>
-
-#  include <stdexcept>
+#include <stdexcept>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -160,5 +158,3 @@ inline bool operator<(event_error const& lhs, event_error const& rhs) noexcept
 }
 
 THRUST_NAMESPACE_END
-
-#endif // C++14

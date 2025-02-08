@@ -41,13 +41,11 @@ static_assert(!cuda::std::indirectly_movable<int(), int()>, "");
 static_assert(!cuda::std::indirectly_movable<int*, int()>, "");
 static_assert(!cuda::std::indirectly_movable<void, void>, "");
 
-#ifndef TEST_COMPILER_MSVC_2017 // MSVC2017 has issues determining common_reference
 // Can move move-only objects.
 static_assert(cuda::std::indirectly_movable<MoveOnly*, MoveOnly*>, "");
 static_assert(!cuda::std::indirectly_movable<MoveOnly*, const MoveOnly*>, "");
 static_assert(!cuda::std::indirectly_movable<const MoveOnly*, const MoveOnly*>, "");
 static_assert(!cuda::std::indirectly_movable<const MoveOnly*, MoveOnly*>, "");
-#endif // TEST_COMPILER_MSVC_2017
 
 template <class T>
 struct PointerTo
@@ -56,7 +54,6 @@ struct PointerTo
   __host__ __device__ T& operator*() const;
 };
 
-#ifndef TEST_COMPILER_MSVC_2017 // MSVC2017 has issues determining common_reference
 // Can copy through a dereferenceable class.
 static_assert(cuda::std::indirectly_movable<int*, PointerTo<int>>, "");
 static_assert(!cuda::std::indirectly_movable<int*, PointerTo<const int>>, "");
@@ -65,7 +62,6 @@ static_assert(!cuda::std::indirectly_copyable<PointerTo<int>, PointerTo<const in
 static_assert(cuda::std::indirectly_movable<MoveOnly*, PointerTo<MoveOnly>>, "");
 static_assert(cuda::std::indirectly_movable<PointerTo<MoveOnly>, MoveOnly*>, "");
 static_assert(cuda::std::indirectly_movable<PointerTo<MoveOnly>, PointerTo<MoveOnly>>, "");
-#endif // TEST_COMPILER_MSVC_2017
 
 int main(int, char**)
 {

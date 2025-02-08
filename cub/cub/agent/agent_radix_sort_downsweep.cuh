@@ -90,15 +90,16 @@ CUB_NAMESPACE_BEGIN
  * @tparam _RADIX_BITS
  *   The number of radix bits, i.e., log2(bins)
  */
-template <int NOMINAL_BLOCK_THREADS_4B,
-          int NOMINAL_ITEMS_PER_THREAD_4B,
-          typename ComputeT,
-          BlockLoadAlgorithm _LOAD_ALGORITHM,
-          CacheLoadModifier _LOAD_MODIFIER,
-          RadixRankAlgorithm _RANK_ALGORITHM,
-          BlockScanAlgorithm _SCAN_ALGORITHM,
-          int _RADIX_BITS,
-          typename ScalingType = RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
+template <
+  int NOMINAL_BLOCK_THREADS_4B,
+  int NOMINAL_ITEMS_PER_THREAD_4B,
+  typename ComputeT,
+  BlockLoadAlgorithm _LOAD_ALGORITHM,
+  CacheLoadModifier _LOAD_MODIFIER,
+  RadixRankAlgorithm _RANK_ALGORITHM,
+  BlockScanAlgorithm _SCAN_ALGORITHM,
+  int _RADIX_BITS,
+  typename ScalingType = detail::RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
 struct AgentRadixSortDownsweepPolicy : ScalingType
 {
   enum
@@ -124,6 +125,11 @@ struct AgentRadixSortDownsweepPolicy : ScalingType
  * Thread block abstractions
  ******************************************************************************/
 
+namespace detail
+{
+namespace radix_sort
+{
+
 /**
  * @brief AgentRadixSortDownsweep implements a stateful abstraction of CUDA thread blocks for participating in
  *        device-wide radix sort downsweep .
@@ -148,14 +154,14 @@ template <typename AgentRadixSortDownsweepPolicy,
           typename KeyT,
           typename ValueT,
           typename OffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
+          typename DecomposerT = identity_decomposer_t>
 struct AgentRadixSortDownsweep
 {
   //---------------------------------------------------------------------
   // Type definitions and constants
   //---------------------------------------------------------------------
 
-  using traits                 = detail::radix::traits_t<KeyT>;
+  using traits                 = radix::traits_t<KeyT>;
   using bit_ordered_type       = typename traits::bit_ordered_type;
   using bit_ordered_conversion = typename traits::bit_ordered_conversion_policy;
 
@@ -172,7 +178,7 @@ struct AgentRadixSortDownsweep
     TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD,
 
     RADIX_DIGITS      = 1 << RADIX_BITS,
-    KEYS_ONLY         = std::is_same<ValueT, NullType>::value,
+    KEYS_ONLY         = ::cuda::std::is_same<ValueT, NullType>::value,
     LOAD_WARP_STRIPED = RANK_ALGORITHM == RADIX_RANK_MATCH || RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ANY
                      || RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR,
   };
@@ -182,8 +188,7 @@ struct AgentRadixSortDownsweep
   using ValuesItr = CacheModifiedInputIterator<LOAD_MODIFIER, ValueT, OffsetT>;
 
   // Radix ranking type to use
-  using BlockRadixRankT =
-    cub::detail::block_radix_rank_t<RANK_ALGORITHM, BLOCK_THREADS, RADIX_BITS, IS_DESCENDING, SCAN_ALGORITHM>;
+  using BlockRadixRankT = block_radix_rank_t<RANK_ALGORITHM, BLOCK_THREADS, RADIX_BITS, IS_DESCENDING, SCAN_ALGORITHM>;
 
   // Digit extractor type
   using fundamental_digit_extractor_t = BFEDigitExtractor<KeyT>;
@@ -244,8 +249,8 @@ struct AgentRadixSortDownsweep
   // The global scatter base offset for each digit (valid in the first RADIX_DIGITS threads)
   OffsetT bin_offset[BINS_TRACKED_PER_THREAD];
 
-  std::uint32_t current_bit;
-  std::uint32_t num_bits;
+  uint32_t current_bit;
+  uint32_t num_bits;
 
   // Whether to short-circuit
   int short_circuit;
@@ -283,7 +288,7 @@ struct AgentRadixSortDownsweep
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       bit_ordered_type key       = temp_storage.keys_and_offsets.exchange_keys[threadIdx.x + (ITEM * BLOCK_THREADS)];
-      std::uint32_t digit        = digit_extractor().Digit(key);
+      uint32_t digit             = digit_extractor().Digit(key);
       relative_bin_offsets[ITEM] = temp_storage.keys_and_offsets.relative_bin_offsets[digit];
 
       key = bit_ordered_conversion::from_bit_ordered(decomposer, key);
@@ -337,8 +342,8 @@ struct AgentRadixSortDownsweep
     OffsetT block_offset,
     OffsetT valid_items,
     bit_ordered_type oob_item,
-    Int2Type<true> is_full_tile,
-    Int2Type<false> warp_striped)
+    ::cuda::std::true_type is_full_tile,
+    ::cuda::std::false_type warp_striped)
   {
     BlockLoadKeysT(temp_storage.load_keys).Load(d_keys_in + block_offset, keys);
 
@@ -353,8 +358,8 @@ struct AgentRadixSortDownsweep
     OffsetT block_offset,
     OffsetT valid_items,
     bit_ordered_type oob_item,
-    Int2Type<false> is_full_tile,
-    Int2Type<false> warp_striped)
+    ::cuda::std::false_type is_full_tile,
+    ::cuda::std::false_type warp_striped)
   {
     // Register pressure work-around: moving valid_items through shfl prevents compiler
     // from reusing guards/addressing from prior guarded loads
@@ -373,8 +378,8 @@ struct AgentRadixSortDownsweep
     OffsetT block_offset,
     OffsetT valid_items,
     bit_ordered_type oob_item,
-    Int2Type<true> is_full_tile,
-    Int2Type<true> warp_striped)
+    ::cuda::std::true_type is_full_tile,
+    ::cuda::std::true_type warp_striped)
   {
     LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys);
   }
@@ -387,8 +392,8 @@ struct AgentRadixSortDownsweep
     OffsetT block_offset,
     OffsetT valid_items,
     bit_ordered_type oob_item,
-    Int2Type<false> is_full_tile,
-    Int2Type<true> warp_striped)
+    ::cuda::std::false_type is_full_tile,
+    ::cuda::std::true_type warp_striped)
   {
     // Register pressure work-around: moving valid_items through shfl prevents compiler
     // from reusing guards/addressing from prior guarded loads
@@ -404,8 +409,8 @@ struct AgentRadixSortDownsweep
     ValueT (&values)[ITEMS_PER_THREAD],
     OffsetT block_offset,
     OffsetT valid_items,
-    Int2Type<true> is_full_tile,
-    Int2Type<false> warp_striped)
+    ::cuda::std::true_type is_full_tile,
+    ::cuda::std::false_type warp_striped)
   {
     BlockLoadValuesT(temp_storage.load_values).Load(d_values_in + block_offset, values);
 
@@ -419,8 +424,8 @@ struct AgentRadixSortDownsweep
     ValueT (&values)[ITEMS_PER_THREAD],
     OffsetT block_offset,
     OffsetT valid_items,
-    Int2Type<false> is_full_tile,
-    Int2Type<false> warp_striped)
+    ::cuda::std::false_type is_full_tile,
+    ::cuda::std::false_type warp_striped)
   {
     // Register pressure work-around: moving valid_items through shfl prevents compiler
     // from reusing guards/addressing from prior guarded loads
@@ -438,8 +443,8 @@ struct AgentRadixSortDownsweep
     ValueT (&values)[ITEMS_PER_THREAD],
     OffsetT block_offset,
     OffsetT valid_items,
-    Int2Type<true> is_full_tile,
-    Int2Type<true> warp_striped)
+    ::cuda::std::true_type is_full_tile,
+    ::cuda::std::true_type warp_striped)
   {
     LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values);
   }
@@ -451,8 +456,8 @@ struct AgentRadixSortDownsweep
     ValueT (&values)[ITEMS_PER_THREAD],
     OffsetT block_offset,
     OffsetT valid_items,
-    Int2Type<false> is_full_tile,
-    Int2Type<true> warp_striped)
+    ::cuda::std::false_type is_full_tile,
+    ::cuda::std::true_type warp_striped)
   {
     // Register pressure work-around: moving valid_items through shfl prevents compiler
     // from reusing guards/addressing from prior guarded loads
@@ -470,13 +475,13 @@ struct AgentRadixSortDownsweep
     int (&ranks)[ITEMS_PER_THREAD],
     OffsetT block_offset,
     OffsetT valid_items,
-    Int2Type<false> /*is_keys_only*/)
+    ::cuda::std::false_type /*is_keys_only*/)
   {
     ValueT values[ITEMS_PER_THREAD];
 
     __syncthreads();
 
-    LoadValues(values, block_offset, valid_items, Int2Type<FULL_TILE>(), Int2Type<LOAD_WARP_STRIPED>());
+    LoadValues(values, block_offset, valid_items, bool_constant_v<FULL_TILE>, bool_constant_v<LOAD_WARP_STRIPED>);
 
     ScatterValues<FULL_TILE>(values, relative_bin_offsets, ranks, valid_items);
   }
@@ -490,7 +495,7 @@ struct AgentRadixSortDownsweep
     int (& /*ranks*/)[ITEMS_PER_THREAD],
     OffsetT /*block_offset*/,
     OffsetT /*valid_items*/,
-    Int2Type<true> /*is_keys_only*/)
+    ::cuda::std::true_type /*is_keys_only*/)
   {}
 
   /**
@@ -508,7 +513,8 @@ struct AgentRadixSortDownsweep
       IS_DESCENDING ? traits::min_raw_binary_key(decomposer) : traits::max_raw_binary_key(decomposer);
 
     // Load tile of keys
-    LoadKeys(keys, block_offset, valid_items, default_key, Int2Type<FULL_TILE>(), Int2Type<LOAD_WARP_STRIPED>());
+    LoadKeys(
+      keys, block_offset, valid_items, default_key, bool_constant_v<FULL_TILE>, bool_constant_v<LOAD_WARP_STRIPED>);
 
 #pragma unroll
     for (int KEY = 0; KEY < ITEMS_PER_THREAD; KEY++)
@@ -583,7 +589,7 @@ struct AgentRadixSortDownsweep
     ScatterKeys<FULL_TILE>(keys, relative_bin_offsets, ranks, valid_items);
 
     // Gather/scatter values
-    GatherScatterValues<FULL_TILE>(relative_bin_offsets, ranks, block_offset, valid_items, Int2Type<KEYS_ONLY>());
+    GatherScatterValues<FULL_TILE>(relative_bin_offsets, ranks, block_offset, valid_items, bool_constant_v<KEYS_ONLY>);
   }
 
   //---------------------------------------------------------------------
@@ -755,5 +761,8 @@ struct AgentRadixSortDownsweep
     }
   }
 };
+
+} // namespace radix_sort
+} // namespace detail
 
 CUB_NAMESPACE_END

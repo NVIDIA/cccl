@@ -13,13 +13,6 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDACC_BELOW(11, 5)
-_CCCL_NV_DIAG_SUPPRESS(186)
-#  include <cuda_pipeline_primitives.h>
-// we cannot re-enable the warning here, because it is triggered outside the translation unit
-// see also: https://godbolt.org/z/1x8b4hn3G
-#endif // _CCCL_CUDACC_BELOW(11, 5)
-
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/device/dispatch/tuning/tuning_transform.cuh>
 #include <cub/util_arch.cuh>
@@ -31,6 +24,7 @@ _CCCL_NV_DIAG_SUPPRESS(186)
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
+#include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/cmath>
 #include <cuda/ptx>
@@ -53,16 +47,19 @@ _CCCL_NV_DIAG_SUPPRESS(186)
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace detail::transform
 {
-namespace transform
+
+enum class requires_stable_address
 {
+  no,
+  yes
+};
+
 template <typename T>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE const char* round_down_ptr(const T* ptr, unsigned alignment)
 {
-#if _CCCL_STD_VER > 2011
   _CCCL_ASSERT(::cuda::std::has_single_bit(alignment), "");
-#endif // _CCCL_STD_VER > 2011
   return reinterpret_cast<const char*>(
     reinterpret_cast<::cuda::std::uintptr_t>(ptr) & ~::cuda::std::uintptr_t{alignment - 1});
 }
@@ -161,7 +158,7 @@ _CCCL_DEVICE void transform_kernel_impl(
 }
 
 // TODO(bgruber) cheap copy of ::cuda::std::apply, which requires C++17.
-template <class F, class Tuple, std::size_t... Is>
+template <class F, class Tuple, size_t... Is>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto poor_apply_impl(F&& f, Tuple&& t, ::cuda::std::index_sequence<Is...>)
   -> decltype(::cuda::std::forward<F>(f)(::cuda::std::get<Is>(::cuda::std::forward<Tuple>(t))...))
 {
@@ -616,21 +613,21 @@ struct prefetch_config
   int sm_count;
 };
 
-template <bool RequiresStableAddress,
+template <requires_stable_address StableAddress,
           typename Offset,
           typename RandomAccessIteratorTupleIn,
           typename RandomAccessIteratorOut,
           typename TransformOp,
-          typename PolicyHub = policy_hub<RequiresStableAddress, RandomAccessIteratorTupleIn>>
+          typename PolicyHub = policy_hub<StableAddress == requires_stable_address::yes, RandomAccessIteratorTupleIn>>
 struct dispatch_t;
 
-template <bool RequiresStableAddress,
+template <requires_stable_address StableAddress,
           typename Offset,
           typename... RandomAccessIteratorsIn,
           typename RandomAccessIteratorOut,
           typename TransformOp,
           typename PolicyHub>
-struct dispatch_t<RequiresStableAddress,
+struct dispatch_t<StableAddress,
                   Offset,
                   ::cuda::std::tuple<RandomAccessIteratorsIn...>,
                   RandomAccessIteratorOut,
@@ -662,7 +659,7 @@ struct dispatch_t<RequiresStableAddress,
   template <typename ActivePolicy>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_ublkcp_kernel() -> PoorExpected<
     ::cuda::std::
-      tuple<THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron, decltype(CUB_DETAIL_TRANSFORM_KERNEL_PTR), int>>
+      tuple<THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron, decltype(CUB_DETAIL_TRANSFORM_KERNEL_PTR), int>>
   {
     using policy_t          = typename ActivePolicy::algo_policy;
     constexpr int block_dim = policy_t::block_threads;
@@ -688,10 +685,8 @@ struct dispatch_t<RequiresStableAddress,
         const int smem_size = bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>(tile_size);
         if (smem_size > *max_smem)
         {
-#  ifdef CUB_DETAIL_DEBUG_ENABLE_HOST_ASSERTIONS
           // assert should be prevented by smem check in policy
-          assert(last_counts.elem_per_thread > 0 && "min_items_per_thread exceeds available shared memory");
-#  endif // CUB_DETAIL_DEBUG_ENABLE_HOST_ASSERTIONS
+          _CCCL_ASSERT_HOST(last_counts.elem_per_thread > 0, "min_items_per_thread exceeds available shared memory");
           return last_counts;
         }
 
@@ -729,23 +724,21 @@ struct dispatch_t<RequiresStableAddress,
     {
       return config.error;
     }
-#  ifdef CUB_DETAIL_DEBUG_ENABLE_HOST_ASSERTIONS
-    assert(config->elem_per_thread > 0);
-    assert(config->tile_size > 0);
-    assert(config->tile_size % bulk_copy_alignment == 0);
-    assert((sizeof...(RandomAccessIteratorsIn) == 0) != (config->smem_size != 0)); // logical xor
-#  endif // CUB_DETAIL_DEBUG_ENABLE_HOST_ASSERTIONS
+    _CCCL_ASSERT_HOST(config->elem_per_thread > 0, "");
+    _CCCL_ASSERT_HOST(config->tile_size > 0, "");
+    _CCCL_ASSERT_HOST(config->tile_size % bulk_copy_alignment == 0, "");
+    _CCCL_ASSERT_HOST((sizeof...(RandomAccessIteratorsIn) == 0) != (config->smem_size != 0), ""); // logical xor
 
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{config->tile_size}));
     return ::cuda::std::make_tuple(
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(grid_dim, block_dim, config->smem_size, stream),
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid_dim, block_dim, config->smem_size, stream),
       CUB_DETAIL_TRANSFORM_KERNEL_PTR,
       config->elem_per_thread);
   }
 
-  template <typename ActivePolicy, std::size_t... Is>
+  template <typename ActivePolicy, size_t... Is>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
-  invoke_algorithm(cuda::std::index_sequence<Is...>, ::cuda::std::integral_constant<Algorithm, Algorithm::ublkcp>)
+    invoke_algorithm(::cuda::std::index_sequence<Is...>, ::cuda::std::integral_constant<Algorithm, Algorithm::ublkcp>)
   {
     auto ret = configure_ublkcp_kernel<ActivePolicy>();
     if (!ret)
@@ -766,9 +759,9 @@ struct dispatch_t<RequiresStableAddress,
   }
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
 
-  template <typename ActivePolicy, std::size_t... Is>
+  template <typename ActivePolicy, size_t... Is>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
-  invoke_algorithm(cuda::std::index_sequence<Is...>, ::cuda::std::integral_constant<Algorithm, Algorithm::prefetch>)
+    invoke_algorithm(::cuda::std::index_sequence<Is...>, ::cuda::std::integral_constant<Algorithm, Algorithm::prefetch>)
   {
     using policy_t          = typename ActivePolicy::algo_policy;
     constexpr int block_dim = policy_t::block_threads;
@@ -819,7 +812,7 @@ struct dispatch_t<RequiresStableAddress,
     const int tile_size = block_dim * items_per_thread_clamped;
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{tile_size}));
     return CubDebug(
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(grid_dim, block_dim, 0, stream)
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid_dim, block_dim, 0, stream)
         .doit(
           CUB_DETAIL_TRANSFORM_KERNEL_PTR,
           num_items,
@@ -862,6 +855,5 @@ struct dispatch_t<RequiresStableAddress,
 
 #undef CUB_DETAIL_TRANSFORM_KERNEL_PTR
 };
-} // namespace transform
-} // namespace detail
+} // namespace detail::transform
 CUB_NAMESPACE_END

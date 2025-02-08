@@ -81,8 +81,7 @@ template <class Derived, class InputIt, class OutputIt>
 OutputIt THRUST_RUNTIME_FUNCTION device_to_device(
   execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, thrust::detail::false_type)
 {
-  using InputTy = typename thrust::iterator_traits<InputIt>::value_type;
-  return cuda_cub::transform(policy, first, last, result, thrust::identity<InputTy>());
+  return cuda_cub::transform(policy, first, last, result, ::cuda::std::identity{});
 }
 
 template <class Derived, class InputIt, class OutputIt>

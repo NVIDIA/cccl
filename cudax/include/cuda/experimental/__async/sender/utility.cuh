@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__tuple_dir/ignore.h>
+#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/initializer_list>
 
@@ -34,11 +36,7 @@ namespace cuda::experimental::__async
 {
 _CCCL_GLOBAL_CONSTANT size_t __npos = static_cast<size_t>(-1);
 
-struct __ignore
-{
-  template <class... _As>
-  _CUDAX_API constexpr __ignore(_As&&...) noexcept {};
-};
+using __ignore _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__ignore_t; // NOLINT: misc-unused-using-decls
 
 using _CUDA_VSTD::__undefined; // NOLINT: misc-unused-using-decls
 
@@ -116,7 +114,7 @@ _CUDAX_API constexpr void __swap(_Ty& __left, _Ty& __right) noexcept
 }
 
 template <class _Ty>
-_CUDAX_API constexpr _Ty __decay_copy(_Ty&& __ty) noexcept(__nothrow_decay_copyable<_Ty>)
+_CUDAX_API constexpr _CUDA_VSTD::decay_t<_Ty> __decay_copy(_Ty&& __ty) noexcept(__nothrow_decay_copyable<_Ty>)
 {
   return static_cast<_Ty&&>(__ty);
 }

@@ -150,14 +150,14 @@ SimpleUnitTest<TestRadixSortDispatch,
                                 ,
                                 unittest::type_list<__int128_t, __uint128_t>
 #endif // _LIBCUDACXX_HAS_NO_INT128
-#ifdef _CCCL_HAS_NVFP16
+#if _CCCL_HAS_NVFP16()
                                 ,
                                 unittest::type_list<__half>
-#endif // _CCCL_HAS_NVFP16
-#ifdef _CCCL_HAS_NVBF16
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
                                 ,
                                 unittest::type_list<__nv_bfloat16>
-#endif // _CCCL_HAS_NVBF16
+#endif // _CCCL_HAS_NVBF16()
                                 >>
   TestRadixSortDispatchInstance;
 
@@ -287,12 +287,11 @@ SimpleUnitTest<TestSortAscendingKey,
 #endif
 // CTK 12.2 offers __host__ __device__ operators for __half and __nv_bfloat16, so we can use std::sort
 #if _CCCL_CUDACC_AT_LEAST(12, 2)
-#  if defined(_CCCL_HAS_NVFP16) || !defined(__CUDA_NO_HALF_OPERATORS__) && !defined(__CUDA_NO_HALF_CONVERSIONS__)
+#  if _CCCL_HAS_NVFP16() || !defined(__CUDA_NO_HALF_OPERATORS__) && !defined(__CUDA_NO_HALF_CONVERSIONS__)
                                 ,
                                 unittest::type_list<__half>
 #  endif
-#  if defined(_CCCL_HAS_NVBF16) \
-    || !defined(__CUDA_NO_BFLOAT16_OPERATORS__) && !defined(__CUDA_NO_BFLOAT16_CONVERSIONS__)
+#  if _CCCL_HAS_NVBF16() || !defined(__CUDA_NO_BFLOAT16_OPERATORS__) && !defined(__CUDA_NO_BFLOAT16_CONVERSIONS__)
                                 ,
                                 unittest::type_list<__nv_bfloat16>
 #  endif

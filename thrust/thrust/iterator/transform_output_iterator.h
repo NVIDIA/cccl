@@ -101,7 +101,7 @@ class transform_output_iterator : public detail::transform_output_iterator_base<
 public:
   using super_t = typename detail::transform_output_iterator_base<UnaryFunction, OutputIterator>::type;
 
-  friend class thrust::iterator_core_access;
+  friend class iterator_core_access;
   /*! \endcond
    */
 

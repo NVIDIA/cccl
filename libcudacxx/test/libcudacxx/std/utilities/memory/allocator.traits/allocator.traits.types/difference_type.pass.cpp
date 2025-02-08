@@ -49,7 +49,6 @@ struct C
   {};
 };
 
-#if !defined(TEST_COMPILER_MSVC_2017) // difference_type is inaccessible
 template <class T>
 struct D
 {
@@ -58,7 +57,6 @@ struct D
 private:
   typedef void difference_type;
 };
-#endif // !TEST_COMPILER_MSVC_2017
 
 namespace cuda
 {
@@ -82,10 +80,8 @@ int main(int, char**)
   static_assert(
     (cuda::std::is_same<cuda::std::allocator_traits<B<char>>::difference_type, cuda::std::ptrdiff_t>::value), "");
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char>>::difference_type, signed char>::value), "");
-#if !defined(TEST_COMPILER_MSVC_2017) // difference_type is inaccessible
   static_assert(
     (cuda::std::is_same<cuda::std::allocator_traits<D<char>>::difference_type, cuda::std::ptrdiff_t>::value), "");
-#endif // !TEST_COMPILER_MSVC_2017
 
   return 0;
 }

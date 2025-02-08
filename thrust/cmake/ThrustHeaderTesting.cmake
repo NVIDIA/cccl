@@ -69,14 +69,6 @@ function(thrust_add_header_test thrust_target label definitions)
 
   # List of headers that aren't implemented for all backends, but are implemented for CUDA.
   set(partially_implemented_CUDA
-    thrust/async/copy.h
-    thrust/async/for_each.h
-    thrust/async/reduce.h
-    thrust/async/scan.h
-    thrust/async/sort.h
-    thrust/async/transform.h
-    thrust/event.h
-    thrust/future.h
   )
 
   # List of headers that aren't implemented for all backends, but are implemented for CPP.

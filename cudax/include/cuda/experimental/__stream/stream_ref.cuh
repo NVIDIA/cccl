@@ -66,6 +66,18 @@ struct stream_ref : ::cuda::stream_ref
   /// Disallow construction from `nullptr`.
   stream_ref(_CUDA_VSTD::nullptr_t) = delete;
 
+  /**
+   * \brief Queries if all operations on the stream have completed.
+   *
+   * \throws cuda::cuda_error if the query fails.
+   *
+   * \return `true` if all operations have completed, or `false` if not.
+   */
+  _CCCL_NODISCARD bool is_done() const
+  {
+    return ready();
+  }
+
   //! @brief Create a new event and record it into this stream
   //!
   //! @return A new event that was recorded into this stream
@@ -129,7 +141,7 @@ struct stream_ref : ::cuda::stream_ref
   //!
   //! Compared to `device()` member function the returned \c logical_device will
   //! hold a green context for streams created under one.
-  _CUDAX_HOST_API logical_device logical_device() const
+  _CUDAX_HOST_API logical_device get_logical_device() const
   {
     CUcontext __stream_ctx;
     ::cuda::experimental::logical_device::kinds __ctx_kind = ::cuda::experimental::logical_device::kinds::device;
@@ -168,9 +180,9 @@ struct stream_ref : ::cuda::stream_ref
   //! returned
   //!
   //! @throws cuda_error if device check fails
-  _CUDAX_HOST_API device_ref device() const
+  _CUDAX_HOST_API device_ref get_device() const
   {
-    return logical_device().get_underlying_device();
+    return get_logical_device().get_underlying_device();
   }
 };
 

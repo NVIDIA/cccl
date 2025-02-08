@@ -104,7 +104,7 @@ class constant_iterator : public detail::constant_iterator_base<Value, Increment
 {
   /*! \cond
    */
-  friend class thrust::iterator_core_access;
+  friend class iterator_core_access;
   using super_t       = typename detail::constant_iterator_base<Value, Incrementable, System>::type;
   using incrementable = typename detail::constant_iterator_base<Value, Incrementable, System>::incrementable;
   using base_iterator = typename detail::constant_iterator_base<Value, Incrementable, System>::base_iterator;

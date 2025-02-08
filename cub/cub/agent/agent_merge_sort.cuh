@@ -43,10 +43,11 @@
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/system/cuda/detail/core/util.h>
+#include <thrust/system/cuda/detail/core/load_iterator.h>
 
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cccl/cuda_capabilities.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -66,7 +67,11 @@ struct AgentMergeSortPolicy
   static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = _STORE_ALGORITHM;
 };
 
-/// \brief This agent is responsible for the initial in-tile sorting.
+namespace detail
+{
+namespace merge_sort
+{
+
 template <typename Policy,
           typename KeyInputIteratorT,
           typename ValueInputIteratorT,
@@ -82,12 +87,14 @@ struct AgentBlockSort
   // Types and constants
   //---------------------------------------------------------------------
 
-  static constexpr bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
+  static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
   using BlockMergeSortT = BlockMergeSort<KeyT, Policy::BLOCK_THREADS, Policy::ITEMS_PER_THREAD, ValueT>;
 
-  using KeysLoadIt  = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, KeyInputIteratorT>::type;
-  using ItemsLoadIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, ValueInputIteratorT>::type;
+  using KeysLoadIt =
+    typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeyInputIteratorT>::type;
+  using ItemsLoadIt =
+    typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ValueInputIteratorT>::type;
 
   using BlockLoadKeys  = typename cub::BlockLoadType<Policy, KeysLoadIt>::type;
   using BlockLoadItems = typename cub::BlockLoadType<Policy, ItemsLoadIt>::type;
@@ -374,8 +381,6 @@ struct AgentPartition
   }
 };
 
-namespace detail
-{
 /**
  * \brief Concatenates up to ITEMS_PER_THREAD elements from input{1,2} into output array
  *
@@ -421,7 +426,6 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void reg_to_shared(It output, T (&input)[ITEMS_PE
     output[idx]   = input[item];
   }
 }
-} // namespace detail
 
 /// \brief The agent is responsible for merging N consecutive sorted arrays into N/2 sorted arrays.
 template <typename Policy,
@@ -436,10 +440,11 @@ struct AgentMerge
   //---------------------------------------------------------------------
   // Types and constants
   //---------------------------------------------------------------------
-  using KeysLoadPingIt  = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, KeyIteratorT>::type;
-  using ItemsLoadPingIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, ValueIteratorT>::type;
-  using KeysLoadPongIt  = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, KeyT*>::type;
-  using ItemsLoadPongIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, ValueT*>::type;
+  using KeysLoadPingIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeyIteratorT>::type;
+  using ItemsLoadPingIt =
+    typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ValueIteratorT>::type;
+  using KeysLoadPongIt  = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeyT*>::type;
+  using ItemsLoadPongIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ValueT*>::type;
 
   using KeysOutputPongIt  = KeyIteratorT;
   using ItemsOutputPongIt = ValueIteratorT;
@@ -468,7 +473,7 @@ struct AgentMerge
   struct TempStorage : Uninitialized<_TempStorage>
   {};
 
-  static constexpr bool KEYS_ONLY       = std::is_same<ValueT, NullType>::value;
+  static constexpr bool KEYS_ONLY       = ::cuda::std::is_same_v<ValueT, NullType>;
   static constexpr int BLOCK_THREADS    = Policy::BLOCK_THREADS;
   static constexpr int ITEMS_PER_THREAD = Policy::ITEMS_PER_THREAD;
   static constexpr int ITEMS_PER_TILE   = Policy::ITEMS_PER_TILE;
@@ -550,15 +555,15 @@ struct AgentMerge
     KeyT keys_local[ITEMS_PER_THREAD];
     if (ping)
     {
-      detail::gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
+      gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
         keys_local, keys_in_ping + start + keys1_beg, keys_in_ping + start + size + keys2_beg, num_keys1, num_keys2);
     }
     else
     {
-      detail::gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
+      gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
         keys_local, keys_in_pong + start + keys1_beg, keys_in_pong + start + size + keys2_beg, num_keys1, num_keys2);
     }
-    detail::reg_to_shared<BLOCK_THREADS>(&storage.keys_shared[0], keys_local);
+    reg_to_shared<BLOCK_THREADS>(&storage.keys_shared[0], keys_local);
 
     // preload items into registers already
     //
@@ -568,7 +573,7 @@ struct AgentMerge
     {
       if (ping)
       {
-        detail::gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
+        gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
           items_local,
           items_in_ping + start + keys1_beg,
           items_in_ping + start + size + keys2_beg,
@@ -577,7 +582,7 @@ struct AgentMerge
       }
       else
       {
-        detail::gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
+        gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
           items_local,
           items_in_pong + start + keys1_beg,
           items_in_pong + start + size + keys2_beg,
@@ -646,16 +651,11 @@ struct AgentMerge
     }
 
     // if items are provided, merge them
-#if _CCCL_CUDACC_BELOW(11, 8)
-    if (!KEYS_ONLY) // nvcc 11.1 cannot handle #pragma unroll inside if constexpr but 11.8 can.
-                    // nvcc versions between may work
-#else // ^^^ _CCCL_CUDACC_BELOW(11, 8) ^^^ / vvv _CCCL_CUDACC_AT_LEAST(11, 8)
     _CCCL_IF_CONSTEXPR (!KEYS_ONLY)
-#endif // _CCCL_CUDACC_AT_LEAST(11, 8)
     {
       __syncthreads();
 
-      detail::reg_to_shared<BLOCK_THREADS>(&storage.items_shared[0], items_local);
+      reg_to_shared<BLOCK_THREADS>(&storage.items_shared[0], items_local);
 
       __syncthreads();
 
@@ -746,5 +746,8 @@ struct AgentMerge
     }
   }
 };
+
+} // namespace merge_sort
+} // namespace detail
 
 CUB_NAMESPACE_END

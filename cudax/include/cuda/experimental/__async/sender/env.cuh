@@ -63,7 +63,7 @@ template <class _Ty>
 using __unwrap_reference_t = decltype(__unwrap_ref<_Ty>);
 
 template <class _Query, class _Value>
-struct prop
+struct _CCCL_TYPE_VISIBILITY_DEFAULT prop
 {
   _CCCL_NO_UNIQUE_ADDRESS _Query __query;
   _CCCL_NO_UNIQUE_ADDRESS _Value __value;
@@ -76,8 +76,11 @@ struct prop
   prop& operator=(const prop&) = delete;
 };
 
+template <class _Query, class _Value>
+prop(_Query, _Value) -> prop<_Query, _Value>;
+
 template <class... _Envs>
-struct env
+struct _CCCL_TYPE_VISIBILITY_DEFAULT env
 {
   __tuple<_Envs...> __envs_;
 
@@ -108,7 +111,7 @@ struct env
 
 // partial specialization for two environments
 template <class _Env0, class _Env1>
-struct env<_Env0, _Env1>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT env<_Env0, _Env1>
 {
   _CCCL_NO_UNIQUE_ADDRESS _Env0 __env0_;
   _CCCL_NO_UNIQUE_ADDRESS _Env1 __env1_;

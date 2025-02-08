@@ -25,6 +25,8 @@
  *
  ******************************************************************************/
 
+// Tuning parameters found for signed integer types apply equally for unsigned integer types
+
 #include <nvbench_helper.cuh>
 
 // %RANGE% TUNE_ITEMS ipt 7:24:1

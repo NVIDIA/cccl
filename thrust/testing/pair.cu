@@ -311,7 +311,6 @@ void TestPairSwap()
 }
 DECLARE_UNITTEST(TestPairSwap);
 
-#if _CCCL_STD_VER >= 2017
 void TestPairStructuredBindings()
 {
   const int a = 42;
@@ -335,4 +334,3 @@ void TestPairCTAD(void)
   ASSERT_EQUAL(b, b2);
 }
 DECLARE_UNITTEST(TestPairCTAD);
-#endif // _CCCL_STD_VER >= 2017

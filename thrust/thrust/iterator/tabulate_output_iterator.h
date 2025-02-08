@@ -68,7 +68,7 @@ class tabulate_output_iterator : public detail::tabulate_output_iterator_base<Bi
 public:
   using super_t = detail::tabulate_output_iterator_base<BinaryFunction, System, DifferenceT>;
 
-  friend class thrust::iterator_core_access;
+  friend class iterator_core_access;
   /*! \endcond
    */
 

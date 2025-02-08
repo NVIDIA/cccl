@@ -35,7 +35,6 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/type_deduction.h>
-#include <thrust/detail/type_traits/result_of_adaptable_function.h>
 #include <thrust/tuple.h>
 
 #include <cuda/std/type_traits>
@@ -211,11 +210,5 @@ _CCCL_HOST_DEVICE auto compose(Eval e, const SubExpr1& subexpr1, const SubExpr2&
     {{::cuda::std::move(e)}, make_actor(subexpr1), make_actor(subexpr2)}};
 }
 } // namespace functional
-
-template <typename Eval, typename... Args>
-struct result_of_adaptable_function<functional::actor<Eval>(Args...)>
-{
-  using type = decltype(::cuda::std::declval<functional::actor<Eval>>()(::cuda::std::declval<Args>()...));
-};
 } // namespace detail
 THRUST_NAMESPACE_END

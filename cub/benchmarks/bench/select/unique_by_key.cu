@@ -53,7 +53,7 @@
 
 struct policy_hub
 {
-  struct Policy350 : cub::ChainedPolicy<350, Policy350, Policy350>
+  struct Policy500 : cub::ChainedPolicy<500, Policy500, Policy500>
   {
     using UniqueByKeyPolicyT =
       cub::AgentUniqueByKeyPolicy<TUNE_THREADS,
@@ -64,7 +64,7 @@ struct policy_hub
                                   delay_constructor_t>;
   };
 
-  using MaxPolicy = Policy350;
+  using MaxPolicy = Policy500;
 };
 #endif // !TUNE_BASE
 

@@ -107,22 +107,18 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_ISFINITE bool isfinite
 {
 #if defined(_CCCL_BUILTIN_ISFINITE)
   return _CCCL_BUILTIN_ISFINITE(__x);
-#elif _CCCL_CUDACC_BELOW(11, 8)
-  return !::__isinf(__x) && !::__isnan(__x);
-#else // ^^^ _CCCL_CUDACC_BELOW(11, 8) ^^^ / vvv !_CCCL_CUDACC_BELOW(11, 8) vvv
+#else
   return ::isfinite(__x);
-#endif // !_CCCL_CUDACC_BELOW(11, 8)
+#endif // defined(_CCCL_BUILTIN_ISFINITE)
 }
 
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_ISFINITE bool isfinite(double __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ISFINITE)
   return _CCCL_BUILTIN_ISFINITE(__x);
-#elif _CCCL_CUDACC_BELOW(11, 8)
-  return !::__isinf(__x) && !::__isnan(__x);
-#else // ^^^ _CCCL_CUDACC_BELOW(11, 8) ^^^ / vvv !_CCCL_CUDACC_BELOW(11, 8) vvv
+#else
   return ::isfinite(__x);
-#endif // !_CCCL_CUDACC_BELOW(11, 8)
+#endif // defined(_CCCL_BUILTIN_ISFINITE)
 }
 
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
@@ -130,11 +126,9 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_ISFINITE bool isfinite
 {
 #  if defined(_CCCL_BUILTIN_ISFINITE)
   return _CCCL_BUILTIN_ISFINITE(__x);
-#  elif _CCCL_CUDACC_BELOW(11, 8)
-  return !::__isinf(__x) && !::__isnan(__x);
-#  else // ^^^ _CCCL_CUDACC_BELOW(11, 8) ^^^ / vvv !_CCCL_CUDACC_BELOW(11, 8) vvv
+#  else
   return ::isfinite(__x);
-#  endif // !_CCCL_CUDACC_BELOW(11, 8)
+#  endif // defined(_CCCL_BUILTIN_ISFINITE)
 }
 #endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
@@ -170,22 +164,18 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_ISINF bool isinf(float
 {
 #if defined(_CCCL_BUILTIN_ISINF)
   return _CCCL_BUILTIN_ISINF(__x);
-#elif _CCCL_CUDACC_BELOW(11, 8)
-  return ::__isinf(__x);
-#else // ^^^ _CCCL_CUDACC_BELOW(11, 8) ^^^ / vvv !_CCCL_CUDACC_BELOW(11, 8) vvv
+#else
   return ::isinf(__x);
-#endif // !_CCCL_CUDACC_BELOW(11, 8)
+#endif // defined(_CCCL_BUILTIN_ISINF)
 }
 
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_ISINF bool isinf(double __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ISINF)
   return _CCCL_BUILTIN_ISINF(__x);
-#elif _CCCL_CUDACC_BELOW(11, 8)
-  return ::__isinf(__x);
-#else // ^^^ _CCCL_CUDACC_BELOW(11, 8) ^^^ / vvv !_CCCL_CUDACC_BELOW(11, 8) vvv
+#else
   return ::isinf(__x);
-#endif // !_CCCL_CUDACC_BELOW(11, 8)
+#endif // defined(_CCCL_BUILTIN_ISINF)
 }
 
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
@@ -193,11 +183,9 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_ISINF bool isinf(long 
 {
 #  if defined(_CCCL_BUILTIN_ISINF)
   return _CCCL_BUILTIN_ISINF(__x);
-#  elif _CCCL_CUDACC_BELOW(11, 8)
-  return ::__isinf(__x);
-#  else // ^^^ _CCCL_CUDACC_BELOW(11, 8) ^^^ / vvv !_CCCL_CUDACC_BELOW(11, 8) vvv
+#  else
   return ::isinf(__x);
-#  endif // !_CCCL_CUDACC_BELOW(11, 8)
+#  endif // defined(_CCCL_BUILTIN_ISINF)
 }
 #endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
@@ -243,22 +231,18 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_ISNAN bool isnan(float
 {
 #if defined(_CCCL_BUILTIN_ISNAN)
   return _CCCL_BUILTIN_ISNAN(__x);
-#elif _CCCL_CUDACC_BELOW(11, 8)
-  return ::__isnan(__x);
-#else // ^^^ _CCCL_CUDACC_BELOW(11, 8) ^^^ / vvv !_CCCL_CUDACC_BELOW(11, 8) vvv
+#else
   return ::isnan(__x);
-#endif // !_CCCL_CUDACC_BELOW(11, 8)
+#endif // defined(_CCCL_BUILTIN_ISNAN)
 }
 
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_ISNAN bool isnan(double __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ISNAN)
   return _CCCL_BUILTIN_ISNAN(__x);
-#elif _CCCL_CUDACC_BELOW(11, 8)
-  return ::__isnan(__x);
-#else // ^^^ _CCCL_CUDACC_BELOW(11, 8) ^^^ / vvv !_CCCL_CUDACC_BELOW(11, 8) vvv
+#else
   return ::isnan(__x);
-#endif // !_CCCL_CUDACC_BELOW(11, 8)
+#endif // defined(_CCCL_BUILTIN_ISNAN)
 }
 
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
@@ -266,11 +250,9 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_ISNAN bool isnan(long 
 {
 #  if defined(_CCCL_BUILTIN_ISNAN)
   return _CCCL_BUILTIN_ISNAN(__x);
-#  elif _CCCL_CUDACC_BELOW(11, 8)
-  return ::__isnan(__x);
-#  else // ^^^ _CCCL_CUDACC_BELOW(11, 8) ^^^ / vvv !_CCCL_CUDACC_BELOW(11, 8) vvv
+#  else
   return ::isnan(__x);
-#  endif // !_CCCL_CUDACC_BELOW(11, 8)
+#  endif // defined(_CCCL_BUILTIN_ISNAN)
 }
 #endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
 

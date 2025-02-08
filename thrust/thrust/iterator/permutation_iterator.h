@@ -131,7 +131,7 @@ class _CCCL_DECLSPEC_EMPTY_BASES permutation_iterator
 private:
   using super_t = typename detail::permutation_iterator_base<ElementIterator, IndexIterator>::type;
 
-  friend class thrust::iterator_core_access;
+  friend class iterator_core_access;
   /*! \endcond
    */
 
@@ -181,10 +181,6 @@ private:
   {
     return *(m_element_iterator + *this->base());
   }
-
-#if _CCCL_COMPILER(MSVC2017)
-  _CCCL_DIAG_POP
-#endif // _CCCL_COMPILER(MSVC2017)
 
   // make friends for the copy constructor
   template <typename, typename>

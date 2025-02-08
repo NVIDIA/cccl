@@ -3,7 +3,11 @@ Param(
     [Alias("std")]
     [ValidateNotNullOrEmpty()]
     [ValidateSet(11, 14, 17, 20)]
-    [int]$CXX_STANDARD = 17
+    [int]$CXX_STANDARD = 17,
+    [Parameter(Mandatory = $false)]
+    [ValidateNotNullOrEmpty()]
+    [Alias("arch")]
+    [int]$CUDA_ARCH = 0
 )
 
 $ErrorActionPreference = "Stop"
@@ -14,7 +18,7 @@ If($CURRENT_PATH -ne "ci") {
     pushd "$PSScriptRoot/.."
 }
 
-Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList $CXX_STANDARD
+Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList $CXX_STANDARD, $CUDA_ARCH
 
 $PRESET = "thrust-cpp$CXX_STANDARD"
 $CMAKE_OPTIONS = ""

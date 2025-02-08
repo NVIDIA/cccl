@@ -136,9 +136,9 @@ int main(int, char**)
   test_is_not_convertible<Array, Function*>();
   test_is_not_convertible<Array, Array>();
 
-#if !defined(TEST_COMPILER_MSVC_2017) && !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
+#if !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
   static_assert((!cuda::std::is_convertible<Array, Array&>::value), "");
-#endif // !TEST_COMPILER_MSVC_2017 && !_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK
+#endif // !_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK
   static_assert((cuda::std::is_convertible<Array, const Array&>::value), "");
 #ifndef TEST_COMPILER_MSVC
   // TODO: Unclear why this fails.
@@ -147,23 +147,23 @@ int main(int, char**)
 
   static_assert((!cuda::std::is_convertible<const Array, Array&>::value), "");
   static_assert((cuda::std::is_convertible<const Array, const Array&>::value), "");
-#if !defined(TEST_COMPILER_MSVC_2017) && !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
+#if !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
   static_assert((!cuda::std::is_convertible<Array, volatile Array&>::value), "");
-#endif // !TEST_COMPILER_MSVC_2017 && !_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK
+#endif // !_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK
 
   static_assert((cuda::std::is_convertible<Array, Array&&>::value), "");
   static_assert((cuda::std::is_convertible<Array, const Array&&>::value), "");
-#if !defined(TEST_COMPILER_NVRTC) && !defined(TEST_COMPILER_MSVC_2017)
+#if !defined(TEST_COMPILER_NVRTC)
   // No idea why this fails under NVRTC.
   // TODO: File a compiler bug
   static_assert((cuda::std::is_convertible<Array, volatile Array&&>::value), "");
 #endif
   static_assert((cuda::std::is_convertible<Array, const volatile Array&&>::value), "");
   static_assert((cuda::std::is_convertible<const Array, const Array&&>::value), "");
-#if !defined(TEST_COMPILER_MSVC_2017) && !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
+#if !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
   static_assert((!cuda::std::is_convertible<Array&, Array&&>::value), "");
   static_assert((!cuda::std::is_convertible<Array&&, Array&>::value), "");
-#endif // !TEST_COMPILER_MSVC_2017 && !_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK
+#endif // !_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK
 
   test_is_not_convertible<Array, char>();
   test_is_not_convertible<Array, char&>();

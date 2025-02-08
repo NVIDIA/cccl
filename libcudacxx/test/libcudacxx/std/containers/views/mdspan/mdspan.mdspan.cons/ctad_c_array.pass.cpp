@@ -32,7 +32,7 @@ int main(int, char**)
     assert(m.rank_dynamic() == 0);
     assert(m.static_extent(0) == 5);
     assert(m.extent(0) == 5);
-    assert(__MDSPAN_OP(m, 2) == 3);
+    assert(m[2] == 3);
 
     cuda::std::mdspan m2(data, 3);
 
@@ -43,7 +43,7 @@ int main(int, char**)
     assert(m2.rank() == 1);
     assert(m2.rank_dynamic() == 1);
     assert(m2.extent(0) == 3);
-    assert(__MDSPAN_OP(m2, 2) == 3);
+    assert(m2[2] == 3);
   }
 #endif
 

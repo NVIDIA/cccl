@@ -229,8 +229,7 @@ static_assert(!can_construct_at((int (*)()) nullptr, nullptr));
 int main(int, char**)
 {
   test();
-#if !(defined(TEST_COMPILER_CLANG) && __clang_major__ <= 10) && !defined(TEST_COMPILER_MSVC_2017) \
-  && !defined(TEST_COMPILER_MSVC_2019)
+#if !defined(TEST_COMPILER_MSVC_2019)
   static_assert(test());
 #endif
   return 0;

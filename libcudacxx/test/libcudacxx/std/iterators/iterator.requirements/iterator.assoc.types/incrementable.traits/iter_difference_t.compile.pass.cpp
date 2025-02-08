@@ -27,7 +27,6 @@ template <class T>
 _CCCL_INLINE_VAR constexpr bool has_no_iter_difference_t<T, cuda::std::void_t<cuda::std::iter_difference_t<T>>> = false;
 #endif
 
-#ifndef TEST_COMPILER_MSVC_2017 // MSVC 2017 cannot make this a constexpr function
 template <class T, class Expected>
 __host__ __device__ constexpr bool check_iter_difference_t()
 {
@@ -53,7 +52,6 @@ struct int_subtraction
   __host__ __device__ friend int operator-(int_subtraction, int_subtraction);
 };
 static_assert(check_iter_difference_t<int_subtraction, int>(), "");
-#endif // !TEST_COMPILER_MSVC_2017
 
 static_assert(has_no_iter_difference_t<void>, "");
 static_assert(has_no_iter_difference_t<double>, "");

@@ -266,7 +266,7 @@ void TestCopyIfStencilCudaStreams(ExecutionPolicy policy)
   cudaStreamCreate(&s);
 
   Vector::iterator end =
-    thrust::copy_if(policy.on(s), data.begin(), data.end(), stencil.begin(), result.begin(), thrust::identity<T>());
+    thrust::copy_if(policy.on(s), data.begin(), data.end(), stencil.begin(), result.begin(), ::cuda::std::identity{});
 
   ASSERT_EQUAL(end - result.begin(), 2);
   result.resize(end - result.begin());

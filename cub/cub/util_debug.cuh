@@ -67,22 +67,6 @@
 #  define CUB_DEBUG_SYNC
 
 /**
- * @def CUB_DEBUG_HOST_ASSERTIONS
- *
- * Extends `CUB_DEBUG_SYNC` effects by checking host-side precondition
- * assertions.
- */
-#  define CUB_DEBUG_HOST_ASSERTIONS
-
-/**
- * @def CUB_DEBUG_DEVICE_ASSERTIONS
- *
- * Extends `CUB_DEBUG_HOST_ASSERTIONS` effects by checking device-side
- * precondition assertions.
- */
-#  define CUB_DEBUG_DEVICE_ASSERTIONS
-
-/**
  * @def CUB_DEBUG_ALL
  *
  * Causes host and device-side precondition assertions to be checked. Apart
@@ -94,80 +78,29 @@
 
 #endif // _CCCL_DOXYGEN_INVOKED
 
-// `CUB_DETAIL_DEBUG_LEVEL_*`: Implementation details, internal use only:
-
-#define CUB_DETAIL_DEBUG_LEVEL_NONE                 0
-#define CUB_DETAIL_DEBUG_LEVEL_HOST_ASSERTIONS_ONLY 1
-#define CUB_DETAIL_DEBUG_LEVEL_LOG                  2
-#define CUB_DETAIL_DEBUG_LEVEL_SYNC                 3
-#define CUB_DETAIL_DEBUG_LEVEL_HOST_ASSERTIONS      4
-#define CUB_DETAIL_DEBUG_LEVEL_DEVICE_ASSERTIONS    5
-#define CUB_DETAIL_DEBUG_LEVEL_ALL                  1000
-
-// `CUB_DEBUG_*`: User interfaces:
-
-// Extra logging, no syncs
-#ifdef CUB_DEBUG_LOG
-#  define CUB_DETAIL_DEBUG_LEVEL CUB_DETAIL_DEBUG_LEVEL_LOG
-#endif
-
-// Logging + syncs
+// CUB_DEBUG_SYNC also enables CUB_DEBUG_LOG
 #ifdef CUB_DEBUG_SYNC
-#  define CUB_DETAIL_DEBUG_LEVEL CUB_DETAIL_DEBUG_LEVEL_SYNC
-#endif
-
-// Logging + syncs + host assertions
-#ifdef CUB_DEBUG_HOST_ASSERTIONS
-#  define CUB_DETAIL_DEBUG_LEVEL CUB_DETAIL_DEBUG_LEVEL_HOST_ASSERTIONS
-#endif
-
-// Logging + syncs + host assertions + device assertions
-#ifdef CUB_DEBUG_DEVICE_ASSERTIONS
-#  define CUB_DETAIL_DEBUG_LEVEL CUB_DETAIL_DEBUG_LEVEL_DEVICE_ASSERTIONS
-#endif
-
-// All
-#ifdef CUB_DEBUG_ALL
-#  define CUB_DETAIL_DEBUG_LEVEL CUB_DETAIL_DEBUG_LEVEL_ALL
-#endif
-
-// Default case, no extra debugging:
-#ifndef CUB_DETAIL_DEBUG_LEVEL
-#  ifdef NDEBUG
-#    define CUB_DETAIL_DEBUG_LEVEL CUB_DETAIL_DEBUG_LEVEL_NONE
-#  else
-#    define CUB_DETAIL_DEBUG_LEVEL CUB_DETAIL_DEBUG_LEVEL_HOST_ASSERTIONS_ONLY
+#  ifndef CUB_DEBUG_LOG
+#    define CUB_DEBUG_LOG
 #  endif
 #endif
 
-/*
- * `CUB_DETAIL_DEBUG_ENABLE_*`:
- * Internal implementation details, used for testing enabled debug features:
- */
-
-#if CUB_DETAIL_DEBUG_LEVEL >= CUB_DETAIL_DEBUG_LEVEL_LOG
-#  define CUB_DETAIL_DEBUG_ENABLE_LOG
-#endif
-
-#if CUB_DETAIL_DEBUG_LEVEL >= CUB_DETAIL_DEBUG_LEVEL_SYNC
-#  define CUB_DETAIL_DEBUG_ENABLE_SYNC
-#endif
-
-#if (CUB_DETAIL_DEBUG_LEVEL >= CUB_DETAIL_DEBUG_LEVEL_HOST_ASSERTIONS) \
-  || (CUB_DETAIL_DEBUG_LEVEL == CUB_DETAIL_DEBUG_LEVEL_HOST_ASSERTIONS_ONLY)
-#  define CUB_DETAIL_DEBUG_ENABLE_HOST_ASSERTIONS
-#endif
-
-#if CUB_DETAIL_DEBUG_LEVEL >= CUB_DETAIL_DEBUG_LEVEL_DEVICE_ASSERTIONS
-#  define CUB_DETAIL_DEBUG_ENABLE_DEVICE_ASSERTIONS
-#endif
+// CUB_DEBUG_ALL = CUB_DEBUG_LOG + CUB_DEBUG_SYNC
+#ifdef CUB_DEBUG_ALL
+#  ifndef CUB_DEBUG_LOG
+#    define CUB_DEBUG_LOG
+#  endif // CUB_DEBUG_LOG
+#  ifndef CUB_DEBUG_SYNC
+#    define CUB_DEBUG_SYNC
+#  endif // CUB_DEBUG_SYNC
+#endif // CUB_DEBUG_ALL
 
 /// CUB error reporting macro (prints error messages to stderr)
 #if (defined(DEBUG) || defined(_DEBUG)) && !defined(CUB_STDERR)
 #  define CUB_STDERR
 #endif
 
-#if defined(CUB_STDERR) || defined(CUB_DETAIL_DEBUG_ENABLE_LOG)
+#if defined(CUB_STDERR) || defined(CUB_DEBUG_LOG)
 #  include <cstdio>
 #endif
 

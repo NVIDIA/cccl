@@ -32,7 +32,7 @@
 #include <utility>
 
 #include "catch2_test_block_radix_sort.cuh"
-#include <c2h/catch2_test_helper.h> // __CUDA_FP8_TYPES_EXIST__
+#include <c2h/catch2_test_helper.h> // _CCCL_HAS_NVFP8()
 
 // %PARAM% TEST_MEMOIZE mem 0:1
 // %PARAM% TEST_ALGORITHM alg 0:1
@@ -44,11 +44,11 @@ using types =
                  std::uint16_t,
                  std::uint32_t,
                  std::uint64_t
-#if defined(__CUDA_FP8_TYPES_EXIST__)
+#if _CCCL_HAS_NVFP8()
                  ,
                  __nv_fp8_e5m2,
                  __nv_fp8_e4m3
-#endif // defined(__CUDA_FP8_TYPES_EXIST__)
+#endif // _CCCL_HAS_NVFP8()
                  >;
 using no_value_types = c2h::type_list<cub::NullType>;
 
@@ -59,11 +59,11 @@ using key_types =
                  std::int64_t,
                  float,
                  double
-#if defined(__CUDA_FP8_TYPES_EXIST__)
+#if _CCCL_HAS_NVFP8()
                  ,
                  __nv_fp8_e5m2,
                  __nv_fp8_e4m3
-#endif // defined(__CUDA_FP8_TYPES_EXIST__)
+#endif // _CCCL_HAS_NVFP8()
                  >;
 using value_types = c2h::type_list<std::int8_t, c2h::custom_type_t<c2h::equal_comparable_t>>;
 

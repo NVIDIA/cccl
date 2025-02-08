@@ -64,7 +64,7 @@ template <typename Derived>
 struct execution_policy : thrust::execution_policy<Derived>
 {
   // allow conversion to tag
-  inline operator tag() const
+  _CCCL_HOST_DEVICE inline operator tag() const
   {
     return tag();
   }

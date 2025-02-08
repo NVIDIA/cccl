@@ -38,40 +38,43 @@ std::string make_kernel_input_iterator(
   std::string_view diff_t,
   size_t alignment,
   size_t size,
+  std::string_view iterator_name,
   std::string_view value_t,
   std::string_view deref,
   std::string_view advance)
 {
-  constexpr std::string_view iter_def = R"XXX(
+  const std::string iter_def = std::format(R"XXX(
 extern "C" __device__ VALUE_T DEREF(const void *self_ptr);
 extern "C" __device__ void ADVANCE(void *self_ptr, DIFF_T offset);
-struct __align__(OP_ALIGNMENT) input_iterator_state_t {
+struct __align__(OP_ALIGNMENT) {0} {{
   using iterator_category = cuda::std::random_access_iterator_tag;
   using value_type = VALUE_T;
   using difference_type = DIFF_T;
   using pointer = VALUE_T*;
   using reference = VALUE_T&;
-  __device__ inline value_type operator*() const { return DEREF(data); }
-  __device__ inline input_iterator_state_t& operator+=(difference_type diff) {
+  __device__ inline value_type operator*() const {{ return DEREF(data); }}
+  __device__ inline {0}& operator+=(difference_type diff) {{
       ADVANCE(data, diff);
       return *this;
-  }
-  __device__ inline value_type operator[](difference_type diff) const {
+  }}
+  __device__ inline value_type operator[](difference_type diff) const {{
       return *(*this + diff);
-  }
-  __device__ inline input_iterator_state_t operator+(difference_type diff) const {
-      input_iterator_state_t result = *this;
+  }}
+  __device__ inline {0} operator+(difference_type diff) const {{
+      {0} result = *this;
       result += diff;
       return result;
-  }
+  }}
   char data[OP_SIZE];
-};
-)XXX";
+}};
+)XXX",
+                                           iterator_name);
 
   return std::format(format_template, diff_t, alignment, size, value_t, deref, advance, iter_def);
 };
 
-std::string make_kernel_input_iterator(std::string_view offset_t, std::string_view input_value_t, cccl_iterator_t iter)
+std::string make_kernel_input_iterator(
+  std::string_view offset_t, std::string_view iterator_name, std::string_view input_value_t, cccl_iterator_t iter)
 {
   if (iter.type == cccl_iterator_kind_t::pointer)
   {
@@ -79,59 +82,62 @@ std::string make_kernel_input_iterator(std::string_view offset_t, std::string_vi
   }
 
   return make_kernel_input_iterator(
-    offset_t, iter.alignment, iter.size, input_value_t, iter.dereference.name, iter.advance.name);
+    offset_t, iter.alignment, iter.size, iterator_name, input_value_t, iter.dereference.name, iter.advance.name);
 }
 
 std::string make_kernel_output_iterator(
   std::string_view diff_t,
   size_t alignment,
   size_t size,
+  std::string_view iterator_name,
   std::string_view value_t,
   std::string_view deref,
   std::string_view advance)
 {
-  constexpr std::string_view iter_def = R"XXX(
+  const std::string iter_def = std::format(R"XXX(
 extern "C" __device__ void DEREF(const void *self_ptr, VALUE_T x);
 extern "C" __device__ void ADVANCE(void *self_ptr, DIFF_T offset);
-struct __align__(OP_ALIGNMENT) output_iterator_state_t {
+struct __align__(OP_ALIGNMENT) output_iterator_state_t {{
   char data[OP_SIZE];
-};
-struct output_iterator_proxy_t {
-  __device__ output_iterator_proxy_t operator=(VALUE_T x) {
+}};
+struct output_iterator_proxy_t {{
+  __device__ output_iterator_proxy_t operator=(VALUE_T x) {{
     DEREF(&state, x);
     return *this;
-  }
+  }}
   output_iterator_state_t state;
-};
-struct output_iterator_t {
+}};
+struct {0} {{
   using iterator_category = cuda::std::random_access_iterator_tag;
   using difference_type   = DIFF_T;
   using value_type        = void;
   using pointer           = output_iterator_proxy_t*;
   using reference         = output_iterator_proxy_t;
-  __device__ output_iterator_proxy_t operator*() const { return {state}; }
-  __device__ output_iterator_t& operator+=(difference_type diff) {
+  __device__ output_iterator_proxy_t operator*() const {{ return {{state}}; }}
+  __device__ {0}& operator+=(difference_type diff) {{
       ADVANCE(&state, diff);
       return *this;
-  }
-  __device__ output_iterator_proxy_t operator[](difference_type diff) const {
-    output_iterator_t result = *this;
+  }}
+  __device__ output_iterator_proxy_t operator[](difference_type diff) const {{
+    {0} result = *this;
     result += diff;
-    return { result.state };
-  }
-  __device__ output_iterator_t operator+(difference_type diff) const {
-    output_iterator_t result = *this;
+    return {{ result.state }};
+  }}
+  __device__ {0} operator+(difference_type diff) const {{
+    {0} result = *this;
     result += diff;
     return result;
-  }
+  }}
   output_iterator_state_t state;
-};
-)XXX";
+}};
+)XXX",
+                                           iterator_name);
 
   return std::format(format_template, diff_t, alignment, size, value_t, deref, advance, iter_def);
 };
 
-std::string make_kernel_output_iterator(std::string_view offset_t, std::string_view input_value_t, cccl_iterator_t iter)
+std::string make_kernel_output_iterator(
+  std::string_view offset_t, std::string_view iterator_name, std::string_view input_value_t, cccl_iterator_t iter)
 {
   if (iter.type == cccl_iterator_kind_t::pointer)
   {
@@ -139,7 +145,7 @@ std::string make_kernel_output_iterator(std::string_view offset_t, std::string_v
   }
 
   return make_kernel_output_iterator(
-    offset_t, iter.alignment, iter.size, input_value_t, iter.dereference.name, iter.advance.name);
+    offset_t, iter.alignment, iter.size, iterator_name, input_value_t, iter.dereference.name, iter.advance.name);
 }
 
 std::string make_kernel_inout_iterator(
@@ -161,7 +167,7 @@ struct __align__({5}) output_iterator_state_t{{
 struct output_iterator_t {{
   using iterator_category = cuda::std::random_access_iterator_tag;
   using difference_type   = {0};
-  using value_type        = void;
+  using value_type        = VALUE_T;
   using pointer           = output_iterator_proxy_t*;
   using reference         = output_iterator_proxy_t;
   __device__ {1} operator*() const {{ return {2}(&state); }}

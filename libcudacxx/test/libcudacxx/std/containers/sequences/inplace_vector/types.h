@@ -280,7 +280,7 @@ struct ThrowingSwap
 };
 static_assert(!cuda::std::is_nothrow_swappable<ThrowingMoveConstructor>::value, "");
 
-#if TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
+#if TEST_STD_VER >= 2017
 template <class T, size_t Capacity>
 struct input_range
 {
@@ -341,7 +341,7 @@ struct sized_uncommon_range
 static_assert(cuda::std::ranges::forward_range<sized_uncommon_range<int, 4>>);
 static_assert(!cuda::std::ranges::common_range<sized_uncommon_range<int, 4>>);
 static_assert(cuda::std::ranges::sized_range<sized_uncommon_range<int, 4>>);
-#endif // TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
+#endif // TEST_STD_VER >= 2017
 
 // Helper function to compare two ranges
 template <class Range1, class Range2>

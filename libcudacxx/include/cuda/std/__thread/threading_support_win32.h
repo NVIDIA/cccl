@@ -35,9 +35,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 using __cccl_mutex_t = void*;
 #  define _LIBCUDACXX_MUTEX_INITIALIZER 0
 
-#  if defined(_M_IX86) || defined(__i386__) || defined(_M_ARM) || defined(__arm__)
-using __cccl_recursive_mutex_t = void* [6];
-#  elif defined(_M_AMD64) || defined(__x86_64__) || defined(_M_ARM64) || defined(__aarch64__)
+#  if _CCCL_ARCH(ARM64) || _CCCL_ARCH(X86_64)
 using __cccl_recursive_mutex_t = void* [5];
 #  else
 #    error Unsupported architecture

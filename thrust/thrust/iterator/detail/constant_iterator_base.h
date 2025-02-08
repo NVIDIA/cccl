@@ -29,6 +29,8 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/iterator_adaptor.h>
 
+#include <cuda/std/cstdint>
+
 THRUST_NAMESPACE_BEGIN
 
 // forward declaration of constant_iterator
@@ -52,7 +54,7 @@ struct constant_iterator_base
 
   // the incrementable type is int unless otherwise specified
   using incrementable =
-    typename thrust::detail::ia_dflt_help<Incrementable, thrust::detail::identity_<thrust::detail::intmax_t>>::type;
+    typename thrust::detail::ia_dflt_help<Incrementable, thrust::detail::identity_<::cuda::std::intmax_t>>::type;
 
   using base_iterator = typename thrust::counting_iterator<incrementable, System, thrust::random_access_traversal_tag>;
 

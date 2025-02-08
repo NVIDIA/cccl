@@ -6,6 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// keep this test in sync with `is_floating_point.pass.cpp` for `cuda::is_floating_point`
+
 // type_traits
 
 // is_floating_point

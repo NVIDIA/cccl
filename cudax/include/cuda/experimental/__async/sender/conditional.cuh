@@ -135,7 +135,7 @@ struct __cond_t
   };
 
   template <class _Sndr, class _Pred, class _Then, class _Else>
-  struct __sndr_t;
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
   template <class _Pred, class _Then, class _Else>
   struct __closure
@@ -174,7 +174,7 @@ struct __cond_t
 };
 
 template <class _Sndr, class _Pred, class _Then, class _Else>
-struct __cond_t::__sndr_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __cond_t::__sndr_t
 {
   __cond_t __tag_;
   __cond_t::__data<_Pred, _Then, _Else> __data_;

@@ -64,10 +64,10 @@ struct agent_t
   using key_type  = typename ::cuda::std::iterator_traits<KeysIt1>::value_type;
   using item_type = typename ::cuda::std::iterator_traits<ItemsIt1>::value_type;
 
-  using keys_load_it1  = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, KeysIt1>::type;
-  using keys_load_it2  = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, KeysIt2>::type;
-  using items_load_it1 = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, ItemsIt1>::type;
-  using items_load_it2 = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, ItemsIt2>::type;
+  using keys_load_it1  = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeysIt1>::type;
+  using keys_load_it2  = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeysIt2>::type;
+  using items_load_it1 = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ItemsIt1>::type;
+  using items_load_it2 = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ItemsIt2>::type;
 
   using block_load_keys1  = typename BlockLoadType<Policy, keys_load_it1>::type;
   using block_load_keys2  = typename BlockLoadType<Policy, keys_load_it2>::type;
@@ -130,9 +130,9 @@ struct agent_t
     const int num_keys2 = static_cast<int>(keys2_end - keys2_beg);
 
     key_type keys_loc[items_per_thread];
-    gmem_to_reg<threads_per_block, IsFullTile>(
+    merge_sort::gmem_to_reg<threads_per_block, IsFullTile>(
       keys_loc, keys1_in + keys1_beg, keys2_in + keys2_beg, num_keys1, num_keys2);
-    reg_to_shared<threads_per_block>(&storage.keys_shared[0], keys_loc);
+    merge_sort::reg_to_shared<threads_per_block>(&storage.keys_shared[0], keys_loc);
     __syncthreads();
 
     // use binary search in shared memory to find merge path for each of thread.
@@ -172,20 +172,15 @@ struct agent_t
     }
 
     // if items are provided, merge them
-    static constexpr bool have_items = !std::is_same<item_type, NullType>::value;
-#if _CCCL_CUDACC_BELOW(11, 8)
-    if (have_items) // nvcc 11.1 cannot handle #pragma unroll inside if constexpr but 11.8 can.
-                    // nvcc versions between may work
-#else // ^^^ _CCCL_CUDACC_BELOW(11, 8) ^^^ / vvv _CCCL_CUDACC_AT_LEAST(11, 8)
+    static constexpr bool have_items = !::cuda::std::is_same<item_type, NullType>::value;
     _CCCL_IF_CONSTEXPR (have_items)
-#endif // _CCCL_CUDACC_AT_LEAST(11, 8)
     {
       item_type items_loc[items_per_thread];
-      gmem_to_reg<threads_per_block, IsFullTile>(
+      merge_sort::gmem_to_reg<threads_per_block, IsFullTile>(
         items_loc, items1_in + keys1_beg, items2_in + keys2_beg, num_keys1, num_keys2);
       __syncthreads(); // block_store_keys above uses shared memory, so make sure all threads are done before we write
                        // to it
-      reg_to_shared<threads_per_block>(&storage.items_shared[0], items_loc);
+      merge_sort::reg_to_shared<threads_per_block>(&storage.items_shared[0], items_loc);
       __syncthreads();
 
       // gather items from shared mem

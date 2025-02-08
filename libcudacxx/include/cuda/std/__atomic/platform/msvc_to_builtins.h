@@ -38,10 +38,10 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #  define _LIBCUDACXX_COMPILER_BARRIER() _ReadWriteBarrier()
 
-#  if defined(_M_ARM) || defined(_M_ARM64)
+#  if _CCCL_ARCH(ARM64)
 #    define _LIBCUDACXX_MEMORY_BARRIER()             __dmb(0xB) // inner shared data memory barrier
 #    define _LIBCUDACXX_COMPILER_OR_MEMORY_BARRIER() _LIBCUDACXX_MEMORY_BARRIER()
-#  elif defined(_M_IX86) || defined(_M_X64)
+#  elif _CCCL_ARCH(X86_64)
 #    define _LIBCUDACXX_MEMORY_BARRIER()             __faststorefence()
 // x86/x64 hardware only emits memory barriers inside _Interlocked intrinsics
 #    define _LIBCUDACXX_COMPILER_OR_MEMORY_BARRIER() _LIBCUDACXX_COMPILER_BARRIER()

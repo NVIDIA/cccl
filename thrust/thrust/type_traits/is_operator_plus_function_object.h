@@ -72,7 +72,6 @@ struct is_operator_plus_function_object_impl;
 template <typename T>
 using is_operator_plus_function_object = detail::is_operator_plus_function_object_impl<T>;
 
-#if _CCCL_STD_VER >= 2014
 /*! \brief <tt>constexpr bool</tt> that is \c true if \c T is a
  *  <a href="https://en.cppreference.com/w/cpp/named_req/FunctionObject">FunctionObject</a>
  *  equivalent to \c operator<, and \c false otherwise.
@@ -84,7 +83,6 @@ using is_operator_plus_function_object = detail::is_operator_plus_function_objec
  */
 template <typename T>
 constexpr bool is_operator_plus_function_object_v = is_operator_plus_function_object<T>::value;
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 

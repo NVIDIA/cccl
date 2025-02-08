@@ -163,7 +163,7 @@ public:
   static int get_current_section_id();
 
   template <typename task_type, typename data_type>
-  void add_vertex(task_type t)
+  void add_vertex(const task_type& t)
   {
     // Do this work outside the critical section
     const auto remove_deps = getenv("CUDASTF_DOT_REMOVE_DATA_DEPS");
@@ -208,7 +208,7 @@ public:
   }
 
   template <typename task_type>
-  void add_vertex_timing(task_type t, float time_ms, int device = -1)
+  void add_vertex_timing(const task_type& t, float time_ms, int device = -1)
   {
     ::std::lock_guard<::std::mutex> guard(mtx);
 
@@ -286,7 +286,7 @@ public:
   ::std::shared_ptr<per_ctx_dot> parent;
   ::std::vector<::std::shared_ptr<per_ctx_dot>> children;
 
-  const ::std::string get_ctx_symbol() const
+  const ::std::string& get_ctx_symbol() const
   {
     return ctx_symbol;
   }
@@ -352,7 +352,10 @@ public:
     // Constructor to initialize symbol and children
     section(::std::string sym)
         : symbol(mv(sym))
-    {}
+    {
+      static_assert(::std::is_move_constructible_v<section>, "section must be move constructible");
+      static_assert(::std::is_move_assignable_v<section>, "section must be move assignable");
+    }
 
     class guard
     {
@@ -362,10 +365,24 @@ public:
         section::push(mv(symbol));
       }
 
+      void end()
+      {
+        _CCCL_ASSERT(active, "Attempting to end the same section twice.");
+        section::pop();
+        active = false;
+      }
+
       ~guard()
       {
-        section::pop();
+        if (active)
+        {
+          section::pop();
+        }
       }
+
+    private:
+      // Have we called end() ?
+      bool active = true;
     };
 
     static auto& current()
@@ -380,7 +397,7 @@ public:
       auto sec = ::std::make_shared<section>(mv(symbol));
       int id   = sec->get_id();
 
-      int parent_id  = current().size() == 0 ? 0 : current().top();
+      int parent_id  = current().empty() ? 0 : current().top();
       sec->parent_id = parent_id;
 
       // Save the section in the map
@@ -416,7 +433,7 @@ public:
       return 1 + int(id);
     }
 
-    const ::std::string get_symbol() const
+    const ::std::string& get_symbol() const
     {
       return symbol;
     }
@@ -431,7 +448,7 @@ public:
     ::std::vector<int> children_ids;
 
   private:
-    int depth;
+    int depth = ::std::numeric_limits<int>::min();
 
     ::std::string symbol;
 
@@ -792,14 +809,21 @@ public:
       }
 
       // Update node properties such as labels and colors now that we have all information
+      vertex_count = 0;
       for (const auto& pc : per_ctx)
       {
         for (const auto& p : pc->metadata)
         {
           outFile << "\"NODE_" << p.first << "\" [style=\"filled\" fillcolor=\"" << p.second.color << "\" label=\""
                   << p.second.label << "\"]\n";
+          vertex_count++;
         }
       }
+
+      edge_count = existing_edges.size();
+
+      outFile << "// Edge   count : " << edge_count << "\n";
+      outFile << "// Vertex count : " << vertex_count << "\n";
 
       outFile << "}\n";
 
@@ -808,6 +832,31 @@ public:
     else
     {
       ::std::cerr << "Unable to open file: " << dot_filename << ::std::endl;
+    }
+
+    const char* stats_filename_str = getenv("CUDASTF_DOT_STATS_FILE");
+    if (stats_filename_str)
+    {
+      ::std::string stats_filename = stats_filename_str;
+      ::std::ofstream statsFile(stats_filename);
+      if (statsFile.is_open())
+      {
+        statsFile << "#nedges,nvertices,total_work,critical_path\n";
+
+        // to display an optional value or NA
+        auto formatOptional = [](const ::std::optional<float>& opt) -> ::std::string {
+          return opt ? ::std::to_string(*opt) : "NA";
+        };
+
+        statsFile << edge_count << "," << vertex_count << "," << formatOptional(total_work) << ","
+                  << formatOptional(critical_path) << "\n";
+
+        statsFile.close();
+      }
+      else
+      {
+        ::std::cerr << "Unable to open file: " << stats_filename << ::std::endl;
+      }
     }
 
     dot_filename.clear();
@@ -1049,6 +1098,9 @@ private:
 
     outFile << "// T1 = " << t1 << ::std::endl;
     outFile << "// Tinf = " << max_dist << ::std::endl;
+
+    critical_path = max_dist;
+    total_work    = t1;
   }
 
   // Are we tracing asynchronous events in addition to tasks ? (eg. copies, allocations, ...)
@@ -1068,6 +1120,12 @@ private:
 
   // Map to get dot sections from their ID
   ::std::unordered_map<int, ::std::shared_ptr<section>> map;
+
+  // Stats
+  ::std::optional<float> critical_path; // Tinf
+  ::std::optional<float> total_work; // T1
+  size_t edge_count;
+  size_t vertex_count;
 };
 
 inline int per_ctx_dot::get_current_section_id()

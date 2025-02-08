@@ -109,6 +109,9 @@ public:
     return attr(detail::__dev_attr<_Attr>());
   }
 
+  //! @brief Retrieve string with the name of this device.
+  //!
+  //! @return String containing the name of this device.
   _CCCL_NODISCARD ::std::string get_name() const
   {
     constexpr int __max_name_length = 256;
@@ -139,7 +142,13 @@ public:
     return __can_access;
   }
 
-  const arch_traits_t& arch_traits() const;
+  //! @brief Retrieve architecture traits of this device.
+  //!
+  //! Architecture traits object contains information about certain traits
+  //! that are shared by all devices belonging to given architecture.
+  //!
+  //! @return A reference to `arch_traits_t` object containing architecture traits of this device
+  const arch_traits_t& get_arch_traits() const;
 
   // TODO this might return some more complex type in the future
   // TODO we might want to include the calling device, depends on what we decide

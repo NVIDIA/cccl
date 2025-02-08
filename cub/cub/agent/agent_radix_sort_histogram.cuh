@@ -81,11 +81,16 @@ struct AgentRadixSortExclusiveSumPolicy
   };
 };
 
+namespace detail
+{
+namespace radix_sort
+{
+
 template <typename AgentRadixSortHistogramPolicy,
           bool IS_DESCENDING,
           typename KeyT,
           typename OffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
+          typename DecomposerT = identity_decomposer_t>
 struct AgentRadixSortHistogram
 {
   // constants
@@ -100,12 +105,12 @@ struct AgentRadixSortHistogram
     NUM_PARTS        = AgentRadixSortHistogramPolicy::NUM_PARTS,
   };
 
-  using traits                 = detail::radix::traits_t<KeyT>;
+  using traits                 = radix::traits_t<KeyT>;
   using bit_ordered_type       = typename traits::bit_ordered_type;
   using bit_ordered_conversion = typename traits::bit_ordered_conversion_policy;
 
   using Twiddle             = RadixSortTwiddle<IS_DESCENDING, KeyT>;
-  using ShmemCounterT       = std::uint32_t;
+  using ShmemCounterT       = uint32_t;
   using ShmemAtomicCounterT = ShmemCounterT;
 
   using fundamental_digit_extractor_t = ShiftDigitExtractor<KeyT>;
@@ -209,7 +214,7 @@ struct AgentRadixSortHistogram
 #pragma unroll
       for (int u = 0; u < ITEMS_PER_THREAD; ++u)
       {
-        std::uint32_t bin = digit_extractor(current_bit, num_bits).Digit(keys[u]);
+        uint32_t bin = digit_extractor(current_bit, num_bits).Digit(keys[u]);
         // Using cuda::atomic<> results in lower performance on GP100,
         // so atomicAdd() is used instead.
         atomicAdd(&s.bins[pass][bin][part], 1);
@@ -274,5 +279,8 @@ struct AgentRadixSortHistogram
     return traits::template digit_extractor<fundamental_digit_extractor_t>(current_bit, num_bits, decomposer);
   }
 };
+
+} // namespace radix_sort
+} // namespace detail
 
 CUB_NAMESPACE_END

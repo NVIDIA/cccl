@@ -216,13 +216,10 @@ enum WarpLoadAlgorithm
 //!   targeted CUDA compute-capability (e.g., 32 threads for SM86). Must be a
 //!   power of two.
 //!
-//! @tparam LEGACY_PTX_ARCH
-//!   Unused.
 template <typename InputT,
           int ITEMS_PER_THREAD,
           WarpLoadAlgorithm ALGORITHM = WARP_LOAD_DIRECT,
-          int LOGICAL_WARP_THREADS    = CUB_PTX_WARP_THREADS,
-          int LEGACY_PTX_ARCH         = 0>
+          int LOGICAL_WARP_THREADS    = CUB_PTX_WARP_THREADS>
 class WarpLoad
 {
   static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);

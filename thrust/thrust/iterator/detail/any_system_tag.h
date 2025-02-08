@@ -34,7 +34,7 @@ struct any_system_tag : thrust::execution_policy<any_system_tag>
   // allow any_system_tag to convert to any type at all
   // XXX make this safer using enable_if<is_tag<T>> upon c++11
   template <typename T>
-  operator T() const
+  _CCCL_HOST_DEVICE operator T() const
   {
     return T();
   }

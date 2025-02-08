@@ -34,7 +34,7 @@
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
 #include <cuda/experimental/__memory_resource/properties.cuh>
 
-#if _CCCL_STD_VER >= 2014 && !_CCCL_COMPILER(MSVC2017) && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
+#if _CCCL_STD_VER >= 2014 && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
 //! @file
 //! The \c uninitialized_async_buffer class provides a typed buffer allocated in stream-order from a given memory
@@ -108,7 +108,7 @@ private:
     size_t __space               = __get_allocation_size(__count_);
     void* __ptr                  = __buf_;
     return _CUDA_VSTD::launder(
-      reinterpret_cast<_Tp*>(_CUDA_VSTD::align(__alignment, __count_ * sizeof(_Tp), __ptr, __space)));
+      static_cast<_Tp*>(_CUDA_VSTD::align(__alignment, __count_ * sizeof(_Tp), __ptr, __space)));
   }
 
   //! @brief Causes the buffer to be treated as a span when passed to cudax::launch.
@@ -136,10 +136,12 @@ private:
   }
 
 public:
-  using value_type = _Tp;
-  using reference  = _Tp&;
-  using pointer    = _Tp*;
-  using size_type  = size_t;
+  using value_type      = _Tp;
+  using reference       = _Tp&;
+  using const_reference = const _Tp&;
+  using pointer         = _Tp*;
+  using const_pointer   = const _Tp*;
+  using size_type       = size_t;
 
   //! @brief Constructs an \c uninitialized_async_buffer, allocating sufficient storage for \p __count elements through
   //! \p __mr
@@ -215,20 +217,38 @@ public:
   }
 
   //! @brief Returns an aligned pointer to the first element in the buffer
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr pointer begin() const noexcept
+  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr pointer begin() noexcept
+  {
+    return __get_data();
+  }
+
+  //! @overload
+  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr const_pointer begin() const noexcept
   {
     return __get_data();
   }
 
   //! @brief Returns an aligned pointer to the element following the last element of the buffer.
   //! This element acts as a placeholder; attempting to access it results in undefined behavior.
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr pointer end() const noexcept
+  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr pointer end() noexcept
+  {
+    return __get_data() + __count_;
+  }
+
+  //! @overload
+  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr const_pointer end() const noexcept
   {
     return __get_data() + __count_;
   }
 
   //! @brief Returns an aligned pointer to the first element in the buffer
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr pointer data() const noexcept
+  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr pointer data() noexcept
+  {
+    return __get_data();
+  }
+
+  //! @overload
+  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr const_pointer data() const noexcept
   {
     return __get_data();
   }
@@ -298,6 +318,6 @@ using uninitialized_async_device_buffer = uninitialized_async_buffer<_Tp, device
 
 } // namespace cuda::experimental
 
-#endif // _CCCL_STD_VER >= 2014 && !_CCCL_COMPILER(MSVC2017) && LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+#endif // _CCCL_STD_VER >= 2014 && LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #endif //__CUDAX__CONTAINERS_UNINITIALIZED_ASYNC_BUFFER_H

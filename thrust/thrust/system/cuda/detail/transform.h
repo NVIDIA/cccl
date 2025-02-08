@@ -255,16 +255,17 @@ OutputIt THRUST_FUNCTION cub_transform_many(
     return result;
   }
 
-  constexpr auto requires_stable_address = !::cuda::proclaims_copyable_arguments<TransformOp>::value;
+  constexpr auto stable_address =
+    (::cuda::proclaims_copyable_arguments<TransformOp>::value)
+      ? cub::detail::transform::requires_stable_address::no
+      : cub::detail::transform::requires_stable_address::yes;
 
   cudaError_t status;
   THRUST_INDEX_TYPE_DISPATCH(
     status,
-    (cub::detail::transform::dispatch_t<requires_stable_address,
-                                        decltype(num_items_fixed),
-                                        ::cuda::std::tuple<InputIts...>,
-                                        OutputIt,
-                                        TransformOp>::dispatch),
+    (cub::detail::transform::
+       dispatch_t<stable_address, decltype(num_items_fixed), ::cuda::std::tuple<InputIts...>, OutputIt, TransformOp>::
+         dispatch),
     num_items,
     (firsts, result, num_items_fixed, transform_op, cuda_cub::stream(policy)));
   throw_on_error(status, "transform: failed inside CUB");

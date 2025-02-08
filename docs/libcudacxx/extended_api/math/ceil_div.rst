@@ -1,23 +1,25 @@
 .. _libcudacxx-extended-api-math-ceil-div:
 
-``ceil_div`` Ceiling Division
-=============================
+Math
+=====
 
 .. code:: cuda
 
-   template <typename T, typename = U>
-   [[nodiscard]] __host__ __device__ constexpr T ceil_div(T value, U divisor) noexcept;
+   template <typename T, typename U>
+   [[nodiscard]] __host__ __device__ inline
+   constexpr _CUDA_VSTD::common_type_t<_Tp, _Up> ceil_div(T a, U b) noexcept;
 
-``value``: The value to be divided.
-``divisor``:  The divisor.
+ceil_div
+---------
 
-- *Requires*: ``is_integral_v<T>`` is true and ``is_integral_v<U>`` is true.
+- *Requires*: ``T`` is an integral type (including 128-bit integers) or enumerator.
 - *Preconditions*: ``a >= 0`` is true and ``b > 0`` is true.
 - *Returns*: divides ``a`` by ``b``. If ``a`` is not a multiple of ``b`` rounds the result up to the next integer value.
 
-.. note::
+**Performance considerations**
 
-   The function is only constexpr from C++14 onwards
+- The function computes ``(a + b - 1) / b`` when the common type is a signed integer.
+- The function computes ``min(a, 1 + ((a - 1) / b)`` when the common type is an unsigned integer in CUDA, which generates less instructions than ``(a / b) + ((a / b) * b != a)``, especially for 64-bit types.
 
 **Example**: This API is very useful for determining the *number of thread blocks* required to process a fixed amount of work, given a fixed number of threads per block:
 

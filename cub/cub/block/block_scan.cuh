@@ -221,14 +221,11 @@ enum BlockScanAlgorithm
 //! @tparam BLOCK_DIM_Z
 //!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
-//! @tparam LEGACY_PTX_ARCH
-//!   **[optional]** Unused.
 template <typename T,
           int BLOCK_DIM_X,
           BlockScanAlgorithm ALGORITHM = BLOCK_SCAN_RAKING,
           int BLOCK_DIM_Y              = 1,
-          int BLOCK_DIM_Z              = 1,
-          int LEGACY_PTX_ARCH          = 0>
+          int BLOCK_DIM_Z              = 1>
 class BlockScan
 {
 private:
@@ -250,9 +247,9 @@ private:
       ? BLOCK_SCAN_RAKING
       : ALGORITHM;
 
-  using WarpScans = BlockScanWarpScans<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+  using WarpScans = detail::BlockScanWarpScans<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
   using Raking =
-    BlockScanRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z, (SAFE_ALGORITHM == BLOCK_SCAN_RAKING_MEMOIZE)>;
+    detail::BlockScanRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z, (SAFE_ALGORITHM == BLOCK_SCAN_RAKING_MEMOIZE)>;
 
   /// Define the delegate type for the desired algorithm
   using InternalBlockScan = ::cuda::std::_If<SAFE_ALGORITHM == BLOCK_SCAN_WARP_SCANS, WarpScans, Raking>;

@@ -11,8 +11,6 @@
 // UNSUPPORTED: pre-sm-70
 
 // Remove after bump to version 4
-#define _LIBCUDACXX_CUDA_ABI_VERSION 3
-
 #include <cuda_pipeline.h>
 
 #include <cuda/barrier>

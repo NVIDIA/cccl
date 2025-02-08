@@ -13,10 +13,10 @@ See the documentation of the standard headers `\<iterator\> <https://en.cpprefer
    * - Header
      - Content
      - Availability
-   * - <cuda/std/iterator>
+   * - `\<cuda/std/iterator\> <https://en.cppreference.com/w/cpp/header/iterator>`_
      - Iterator related concepts and machinery such as ``cuda::std::forward_iterator``
      - CCCL 2.3.0 / CUDA 12.4
-   * - <cuda/std/ranges>
+   * - `\<cuda/std/ranges\> <https://en.cppreference.com/w/cpp/header/ranges>`_
      - Range related concepts and machinery such as ``cuda::std::ranges::forward_range`` and ``cuda::std::ranges::subrange``
      - CCCL 2.4.0 / CUDA 12.5
 
