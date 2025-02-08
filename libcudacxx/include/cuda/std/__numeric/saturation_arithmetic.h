@@ -109,6 +109,8 @@ public:
         int8_t __result;
         bool __overflow = _add_overflow_i8(0, __x, __y, &__result);
         return __clamp_overflow<int8_t>(__x, __y, __result, __overflow);
+#    else
+        return __impl_generic(__x, __y);
 #    endif
       }
       else if constexpr (sizeof(_Tp) == 2)
@@ -119,6 +121,8 @@ public:
         int16_t __result;
         bool __overflow = _add_overflow_i16(0, __x, __y, &__result);
         return __clamp_overflow<int16_t>(__x, __y, __result, __overflow);
+#    else
+        return __impl_generic(__x, __y);
 #    endif
       }
       else if constexpr (sizeof(_Tp) == 4)
@@ -129,6 +133,8 @@ public:
         int32_t __result;
         bool __overflow = _add_overflow_i32(0, __x, __y, &__result);
         return __clamp_overflow<int32_t>(__x, __y, __result, __overflow);
+#    else
+        return __impl_generic(__x, __y);
 #    endif
       }
       else if constexpr (sizeof(_Tp) == 8)
@@ -139,7 +145,13 @@ public:
         int64_t __result;
         bool __overflow = _add_overflow_i64(0, __x, __y, &__result);
         return __clamp_overflow<int64_t>(__x, __y, __result, __overflow);
+#    else
+        return __impl_generic(__x, __y);
 #    endif
+      }
+      else
+      {
+        return __impl_generic(__x, __y);
       }
     }
     else
@@ -152,6 +164,8 @@ public:
         uint8_t __result;
         bool __overflow = _addcarry_u8(0, __x, __y, &__result);
         return __clamp_overflow<uint8_t>(__x, __y, __result, __overflow);
+#    else
+        return __impl_generic(__x, __y);
 #    endif
       }
       else if constexpr (sizeof(_Tp) == 2)
@@ -162,6 +176,8 @@ public:
         uint16_t __result;
         bool __overflow = _addcarry_u16(0, __x, __y, &__result);
         return __clamp_overflow<uint16_t>(__x, __y, __result, __overflow);
+#    else
+        return __impl_generic(__x, __y);
 #    endif
       }
       else if constexpr (sizeof(_Tp) == 4)
@@ -172,6 +188,8 @@ public:
         uint32_t __result;
         bool __overflow = _addcarry_u32(0, __x, __y, &__result);
         return __clamp_overflow<uint32_t>(__x, __y, __result, __overflow);
+#    else
+        return __impl_generic(__x, __y);
 #    endif
       }
       else if constexpr (sizeof(_Tp) == 8)
@@ -182,10 +200,15 @@ public:
         uint64_t __result;
         bool __overflow = _addcarry_u64(0, __x, __y, &__result);
         return __clamp_overflow<uint64_t>(__x, __y, __result, __overflow);
+#    else
+        return __impl_generic(__x, __y);
 #    endif
       }
+      else
+      {
+        return __impl_generic(__x, __y);
+      }
     }
-    return __impl_generic(__x, __y);
   }
 #  endif // !_CCCL_COMPILER(NVRTC)
 #  if _CCCL_HAS_CUDA_COMPILER
@@ -234,14 +257,16 @@ public:
             : "l"(__x), "l"(__y));
         return __result;
       }
+      else
+      {
+        return __impl_generic(__x, __y);
+      }
     }
     else
     {
       const _Tp __bneg_x = static_cast<_Tp>(~__x);
       return static_cast<_Tp>(__x + _CUDA_VSTD::min<_Tp>(__y, __bneg_x));
     }
-
-    return __impl_generic(__x, __y);
   }
 #  endif // _CCCL_HAS_CUDA_COMPILER
 };
@@ -328,6 +353,8 @@ public:
         int8_t __result;
         bool __overflow = _sub_overflow_i8(0, __x, __y, &__result);
         return __clamp_overflow<int8_t>(__x, __y, __result, __overflow);
+#    else
+        return __impl_generic(__x, __y);
 #    endif
       }
       else if constexpr (sizeof(_Tp) == 2)
@@ -338,6 +365,8 @@ public:
         int16_t __result;
         bool __overflow = _sub_overflow_i16(0, __x, __y, &__result);
         return __clamp_overflow<int16_t>(__x, __y, __result, __overflow);
+#    else
+        return __impl_generic(__x, __y);
 #    endif
       }
       else if constexpr (sizeof(_Tp) == 4)
@@ -348,6 +377,8 @@ public:
         int32_t __result;
         bool __overflow = _sub_overflow_i32(0, __x, __y, &__result);
         return __clamp_overflow<int32_t>(__x, __y, __result, __overflow);
+#    else
+        return __impl_generic(__x, __y);
 #    endif
       }
       else if constexpr (sizeof(_Tp) == 8)
@@ -358,7 +389,13 @@ public:
         int64_t __result;
         bool __overflow = _sub_overflow_i64(0, __x, __y, &__result);
         return __clamp_overflow<int64_t>(__x, __y, __result, __overflow);
+#    else
+        return __impl_generic(__x, __y);
 #    endif
+      }
+      else
+      {
+        return __impl_generic(__x, __y);
       }
     }
     else
@@ -371,6 +408,8 @@ public:
         uint8_t __result;
         bool __overflow = _subborrow_u8(0, __x, __y, &__result);
         return __clamp_overflow<uint8_t>(__x, __y, __result, __overflow);
+#    else
+        return __impl_generic(__x, __y);
 #    endif
       }
       else if constexpr (sizeof(_Tp) == 2)
@@ -381,6 +420,8 @@ public:
         uint16_t __result;
         bool __overflow = _subborrow_u16(0, __x, __y, &__result);
         return __clamp_overflow<uint16_t>(__x, __y, __result, __overflow);
+#    else
+        return __impl_generic(__x, __y);
 #    endif
       }
       else if constexpr (sizeof(_Tp) == 4)
@@ -391,6 +432,8 @@ public:
         uint32_t __result;
         bool __overflow = _subborrow_u32(0, __x, __y, &__result);
         return __clamp_overflow<uint32_t>(__x, __y, __result, __overflow);
+#    else
+        return __impl_generic(__x, __y);
 #    endif
       }
       else if constexpr (sizeof(_Tp) == 8)
@@ -401,10 +444,15 @@ public:
         uint64_t __result;
         bool __overflow = _subborrow_u64(0, __x, __y, &__result);
         return __clamp_overflow<uint64_t>(__x, __y, __result, __overflow);
+#    else
+        return __impl_generic(__x, __y);
 #    endif
       }
+      else
+      {
+        return __impl_generic(__x, __y);
+      }
     }
-    return __impl_generic(__x, __y);
   }
 #  endif // !_CCCL_COMPILER(NVRTC)
 #  if _CCCL_HAS_CUDA_COMPILER
@@ -437,12 +485,15 @@ public:
       //   asm("sub.sat.s32 %0, %1, %2;" : "=r"(__result) : "r"(__x), "r"(__y));
       //   return __result;
       // }
+      else
+      {
+        return __impl_generic(__x, __y);
+      }
     }
     else
     {
       return static_cast<_Tp>(_CUDA_VSTD::max<_Tp>(__x, __y) - __y);
     }
-    return __impl_generic(__x, __y);
   }
 #  endif // _CCCL_HAS_CUDA_COMPILER
 };
@@ -584,6 +635,8 @@ public:
         int16_t __result;
         bool __overflow = _mul_full_overflow_i8(__x, __y, &__result);
         return __clamp_overflow<int8_t>(__x, __y, static_cast<int8_t>(__result), __overflow);
+#    else
+        return __impl_generic(__x, __y);
 #    endif
       }
       else if constexpr (sizeof(_Tp) == 2)
@@ -592,6 +645,8 @@ public:
         int16_t __result;
         bool __overflow = _mul_overflow_i16(__x, __y, &__result);
         return __clamp_overflow<int16_t>(__x, __y, __result, __overflow);
+#    else
+        return __impl_generic(__x, __y);
 #    endif
       }
       else if constexpr (sizeof(_Tp) == 4)
@@ -608,6 +663,8 @@ public:
           static_cast<int32_t>(__result),
           __result > _CUDA_VSTD::numeric_limits<int32_t>::max()
             || __result < _CUDA_VSTD::numeric_limits<int32_t>::min());
+#    else
+        return __impl_generic(__x, __y);
 #    endif
       }
       else if constexpr (sizeof(_Tp) == 8)
@@ -620,7 +677,13 @@ public:
         int64_t __hi = __mulh(__x, __y);
         int64_t __lo = __x * __y;
         return __clamp_overflow<int64_t>(__x, __y, __lo, __hi != _Tp{0} && __hi != _Tp{-1});
+#    else
+        return __impl_generic(__x, __y);
 #    endif
+      }
+      else
+      {
+        return __impl_generic(__x, __y);
       }
     }
     else
@@ -631,6 +694,8 @@ public:
         uint16_t __result;
         bool __overflow = _mul_full_overflow_u8(__x, __y, &__result);
         return __clamp_overflow<uint8_t>(__x, __y, static_cast<uint8_t>(__result), __overflow);
+#    else
+        return __impl_generic(__x, __y);
 #    endif
       }
       else if constexpr (sizeof(_Tp) == 2)
@@ -639,6 +704,8 @@ public:
         uint16_t __lo, __hi;
         bool __overflow = _mul_full_overflow_u16(__x, __y, &__lo, &__hi);
         return __clamp_overflow<uint16_t>(__x, __y, __lo, __overflow);
+#    else
+        return __impl_generic(__x, __y);
 #    endif
       }
       else if constexpr (sizeof(_Tp) == 4)
@@ -651,6 +718,8 @@ public:
         const uint64_t __result = __emulu(__x, __y);
         return __clamp_overflow<uint32_t>(
           __x, __y, static_cast<uint32_t>(__result), __result > _CUDA_VSTD::numeric_limits<uint32_t>::max());
+#    else
+        return __impl_generic(__x, __y);
 #    endif
       }
       else if constexpr (sizeof(_Tp) == 8)
@@ -661,10 +730,15 @@ public:
         return __clamp_overflow<uint64_t>(__x, __y, __lo, __overflow);
 #    elif _CCCL_COMPILER(MSVC) && _CCCL_ARCH(X86_64)
         return __clamp_overflow<uint64_t>(__x, __y, __x * __y, __umulh(__x, __y) != _Tp{0});
+#    else
+        return __impl_generic(__x, __y);
 #    endif
       }
+      else
+      {
+        return __impl_generic(__x, __y);
+      }
     }
-    return __impl_generic(__x, __y);
   }
 #  endif // !_CCCL_COMPILER(NVRTC)
 #  if _CCCL_HAS_CUDA_COMPILER
@@ -713,6 +787,10 @@ public:
         __hi = __mul64hi(__x, __y);
         return __clamp_overflow<int64_t>(__x, __y, __lo, __hi != _Tp{0} && __hi != _Tp{-1});
       }
+      else
+      {
+        return __impl_generic(__x, __y);
+      }
     }
     else
     {
@@ -746,8 +824,11 @@ public:
         __hi = __umul64hi(__x, __y);
         return (__hi == uint64_t{0}) ? __lo : _CUDA_VSTD::numeric_limits<_Tp>::max();
       }
+      else
+      {
+        return __impl_generic(__x, __y);
+      }
     }
-    return __impl_generic(__x, __y);
   }
 #  endif // _CCCL_HAS_CUDA_COMPILER
 };
