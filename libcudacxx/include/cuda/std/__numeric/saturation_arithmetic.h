@@ -57,7 +57,7 @@ class __add_sat
     {
       if constexpr (_CCCL_TRAIT(is_unsigned, _Tp))
       {
-        static_cast<void>(__y);
+        _LIBCUDACXX_UNUSED_VAR(__y);
         __result = _CUDA_VSTD::numeric_limits<_Tp>::max();
       }
       else
@@ -273,7 +273,7 @@ class __sub_sat
     {
       if constexpr (_CCCL_TRAIT(is_unsigned, _Tp))
       {
-        static_cast<void>(__y);
+        _LIBCUDACXX_UNUSED_VAR(__y);
         __result = _CUDA_VSTD::numeric_limits<_Tp>::min();
       }
       else
@@ -474,8 +474,8 @@ class __mul_sat
     {
       if constexpr (_CCCL_TRAIT(is_unsigned, _Tp))
       {
-        static_cast<void>(__x);
-        static_cast<void>(__y);
+        _LIBCUDACXX_UNUSED_VAR(__x);
+        _LIBCUDACXX_UNUSED_VAR(__y);
         __result = _CUDA_VSTD::numeric_limits<_Tp>::max();
       }
       else
