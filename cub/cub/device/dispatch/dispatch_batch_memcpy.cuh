@@ -421,8 +421,8 @@ struct DispatchBatchMemcpy
     auto blev_buffer_scan_alloc  = blev_buffer_scan_slot->template create_alias<uint8_t>();
     auto blev_block_scan_alloc   = blev_buffer_block_scan_slot->template create_alias<uint8_t>();
 
-    std::size_t buffer_offset_scan_storage = 0;
-    std::size_t blev_block_scan_storage    = 0;
+    size_t buffer_offset_scan_storage = 0;
+    size_t blev_block_scan_storage    = 0;
     error =
       CubDebug(BLevBufferOffsetTileState::AllocationSize(static_cast<int32_t>(num_tiles), buffer_offset_scan_storage));
     if (error)

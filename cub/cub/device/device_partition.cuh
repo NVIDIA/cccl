@@ -112,7 +112,7 @@ struct DevicePartition
   //!
   //!    // Determine temporary device storage requirements
   //!    void *d_temp_storage = nullptr;
-  //!    std::size_t temp_storage_bytes = 0;
+  //!    size_t temp_storage_bytes = 0;
   //!    cub::DevicePartition::Flagged(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_in, d_flags, d_out, d_num_selected_out, num_items);
@@ -270,7 +270,7 @@ struct DevicePartition
   //!
   //!    // Determine temporary device storage requirements
   //!    void *d_temp_storage = nullptr;
-  //!    std::size_t temp_storage_bytes = 0;
+  //!    size_t temp_storage_bytes = 0;
   //!    cub::DevicePartition::If(
   //!    d_temp_storage, temp_storage_bytes,
   //!    d_in, d_out, d_num_selected_out, num_items, select_op);
@@ -401,7 +401,7 @@ private:
             typename NumItemsT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t IfNoNVTX(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     InputIteratorT d_in,
     FirstOutputIteratorT d_first_part_out,
     SecondOutputIteratorT d_second_part_out,
@@ -539,7 +539,7 @@ public:
   //!
   //!    // Determine temporary device storage requirements
   //!    void *d_temp_storage = nullptr;
-  //!    std::size_t temp_storage_bytes = 0;
+  //!    size_t temp_storage_bytes = 0;
   //!    cub::DevicePartition::If(
   //!         d_temp_storage, temp_storage_bytes,
   //!         d_in, d_large_and_medium_out, d_small_out, unselected_out,
@@ -639,7 +639,7 @@ public:
             typename NumItemsT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   If(void* d_temp_storage,
-     std::size_t& temp_storage_bytes,
+     size_t& temp_storage_bytes,
      InputIteratorT d_in,
      FirstOutputIteratorT d_first_part_out,
      SecondOutputIteratorT d_second_part_out,
