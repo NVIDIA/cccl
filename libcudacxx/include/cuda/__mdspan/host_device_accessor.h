@@ -71,23 +71,26 @@ inline constexpr bool is_host_device_managed_accessor_v =
 template <typename _Accessor>
 struct host_accessor : public _Accessor
 {
+  using offset_policy    = host_accessor<typename _Accessor::offset_policy>;
+  using data_handle_type = typename _Accessor::data_handle_type;
+  using reference        = typename _Accessor::reference;
+  using element_type     = typename _Accessor::element_type;
+
 private:
-  using __data_handle_type = typename _Accessor::data_handle_type;
-  using __reference        = typename _Accessor::reference;
-  using __self             = host_accessor<_Accessor>;
+  using __self = host_accessor<_Accessor>;
 
   static constexpr bool __is_ctor_noexcept      = noexcept(_Accessor{});
   static constexpr bool __is_copy_ctor_noexcept = noexcept(_Accessor{});
-  static constexpr bool __is_access_noexcept    = noexcept(_Accessor{}.access(__data_handle_type{}, 0));
-  static constexpr bool __is_offset_noexcept    = noexcept(_Accessor{}.offset(__data_handle_type{}, 0));
+  static constexpr bool __is_access_noexcept    = noexcept(_Accessor{}.access(data_handle_type{}, 0));
+  static constexpr bool __is_offset_noexcept    = noexcept(_Accessor{}.offset(data_handle_type{}, 0));
 
   static_assert(!is_host_device_managed_accessor_v<_Accessor>,
                 "cuda::host_accessor/cuda::device_accessor/cuda::managed_accessor cannot be nested");
 
-  template <typename __data_handle_type>
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __is_host_accessible_pointer(__data_handle_type __p) noexcept
+  template <typename data_handle_type>
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __is_host_accessible_pointer(data_handle_type __p) noexcept
   {
-    if constexpr (_CUDA_VSTD::is_pointer_v<__data_handle_type>)
+    if constexpr (_CUDA_VSTD::is_pointer_v<data_handle_type>)
     {
       cudaPointerAttributes __attrib;
       _CCCL_VERIFY(::cudaPointerGetAttributes(&__attrib, __p) == ::cudaSuccess, "cudaPointerGetAttributes failed");
@@ -99,21 +102,17 @@ private:
     }
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr void __check_host_pointer(__data_handle_type __p) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr void __check_host_pointer(data_handle_type __p) noexcept
   {
     _CCCL_ASSERT(__self::__is_host_accessible_pointer(__p), "cuda::host_accessor data handle is not a HOST pointer");
   }
 
 public:
-  using offset_policy = host_accessor<typename _Accessor::offset_policy>;
-  using data_handle_type = __data_handle_type;
-  using reference = __reference;
-  using element_type = typename _Accessor::element_type;
   _CCCL_HIDE_FROM_ABI host_accessor() noexcept(__is_ctor_noexcept) = default;
 
   _CCCL_HIDE_FROM_ABI host_accessor(const host_accessor&) noexcept(__is_copy_ctor_noexcept) = default;
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __reference access(__data_handle_type __p, _CUDA_VSTD::size_t __i) const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference access(data_handle_type __p, _CUDA_VSTD::size_t __i) const
     noexcept(__is_access_noexcept)
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
@@ -122,7 +121,7 @@ public:
     return _Accessor::access(__p, __i);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __data_handle_type offset(__data_handle_type __p, _CUDA_VSTD::size_t __i) const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr data_handle_type offset(data_handle_type __p, _CUDA_VSTD::size_t __i) const
     noexcept(__is_offset_noexcept)
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
@@ -139,15 +138,18 @@ public:
 template <typename _Accessor>
 struct device_accessor : public _Accessor
 {
+  using offset_policy    = device_accessor<typename _Accessor::offset_policy>;
+  using data_handle_type = typename _Accessor::data_handle_type;
+  using reference        = typename _Accessor::reference;
+  using element_type     = typename _Accessor::element_type;
+
 private:
-  using __data_handle_type = typename _Accessor::data_handle_type;
-  using __reference        = typename _Accessor::reference;
-  using __self             = device_accessor<_Accessor>;
+  using __self = device_accessor<_Accessor>;
 
   static constexpr bool __is_ctor_noexcept      = noexcept(_Accessor{});
   static constexpr bool __is_copy_ctor_noexcept = noexcept(_Accessor{});
-  static constexpr bool __is_access_noexcept    = noexcept(_Accessor{}.access(__data_handle_type{}, 0));
-  static constexpr bool __is_offset_noexcept    = noexcept(_Accessor{}.offset(__data_handle_type{}, 0));
+  static constexpr bool __is_access_noexcept    = noexcept(_Accessor{}.access(data_handle_type{}, 0));
+  static constexpr bool __is_offset_noexcept    = noexcept(_Accessor{}.offset(data_handle_type{}, 0));
 
   static_assert(!is_host_device_managed_accessor_v<_Accessor>,
                 "cuda::host_accessor/cuda::device_accessor/cuda::managed_accessor cannot be nested");
@@ -159,20 +161,18 @@ private:
   }
 
 public:
-  using offset_policy = device_accessor;
-
   _CCCL_HIDE_FROM_ABI device_accessor() noexcept(__is_ctor_noexcept) = default;
 
   _CCCL_HIDE_FROM_ABI device_accessor(const device_accessor&) noexcept(__is_copy_ctor_noexcept) = default;
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __reference access(__data_handle_type __p, _CUDA_VSTD::size_t __i) const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference access(data_handle_type __p, _CUDA_VSTD::size_t __i) const
     noexcept(__is_access_noexcept)
   {
     NV_IF_TARGET(NV_IS_HOST, (__self::__prevent_host_instantiation();))
     return _Accessor::access(__p, __i);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __data_handle_type offset(__data_handle_type __p, _CUDA_VSTD::size_t __i) const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr data_handle_type offset(data_handle_type __p, _CUDA_VSTD::size_t __i) const
     noexcept(__is_offset_noexcept)
   {
     NV_IF_TARGET(NV_IS_HOST, (__self::__prevent_host_instantiation();))
@@ -187,23 +187,26 @@ public:
 template <typename _Accessor>
 struct managed_accessor : public _Accessor
 {
+  using offset_policy    = managed_accessor<typename _Accessor::offset_policy>;
+  using data_handle_type = typename _Accessor::data_handle_type;
+  using reference        = typename _Accessor::reference;
+  using element_type     = typename _Accessor::element_type;
+
 private:
-  using __data_handle_type = typename _Accessor::data_handle_type;
-  using __reference        = typename _Accessor::reference;
-  using __self             = managed_accessor<_Accessor>;
+  using __self = managed_accessor<_Accessor>;
 
   static constexpr bool __is_ctor_noexcept      = noexcept(_Accessor{});
   static constexpr bool __is_copy_ctor_noexcept = noexcept(_Accessor{});
-  static constexpr bool __is_access_noexcept    = noexcept(_Accessor{}.access(__data_handle_type{}, 0));
-  static constexpr bool __is_offset_noexcept    = noexcept(_Accessor{}.offset(__data_handle_type{}, 0));
+  static constexpr bool __is_access_noexcept    = noexcept(_Accessor{}.access(data_handle_type{}, 0));
+  static constexpr bool __is_offset_noexcept    = noexcept(_Accessor{}.offset(data_handle_type{}, 0));
 
   static_assert(!is_host_device_managed_accessor_v<_Accessor>,
                 "cuda::host_accessor/cuda::device_accessor/cuda::managed_accessor cannot be nested");
 
-  template <typename __data_handle_type>
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __is_managed_pointer(__data_handle_type __p) noexcept
+  template <typename data_handle_type>
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __is_managed_pointer(data_handle_type __p) noexcept
   {
-    if constexpr (_CUDA_VSTD::is_pointer_v<__data_handle_type>)
+    if constexpr (_CUDA_VSTD::is_pointer_v<data_handle_type>)
     {
       cudaPointerAttributes __attrib;
       _CCCL_VERIFY(::cudaPointerGetAttributes(&__attrib, __p) == ::cudaSuccess, "cudaPointerGetAttributes failed");
@@ -215,26 +218,24 @@ private:
     }
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr void __check_managed_pointer(__data_handle_type __p) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr void __check_managed_pointer(data_handle_type __p) noexcept
   {
     _CCCL_ASSERT(__self::__is_managed_pointer(__p), "cuda::managed_accessor data handle is not a MANAGED pointer");
   }
 
 public:
-  using offset_policy = managed_accessor;
-
   _CCCL_HIDE_FROM_ABI managed_accessor() noexcept(__is_ctor_noexcept) = default;
 
   _CCCL_HIDE_FROM_ABI managed_accessor(const managed_accessor&) noexcept(__is_copy_ctor_noexcept) = default;
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __reference access(__data_handle_type __p, _CUDA_VSTD::size_t __i) const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference access(data_handle_type __p, _CUDA_VSTD::size_t __i) const
     noexcept(__is_access_noexcept)
   {
     NV_IF_TARGET(NV_IS_HOST, (__self::__check_managed_pointer(__p);))
     return _Accessor::access(__p, __i);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __data_handle_type offset(__data_handle_type __p, _CUDA_VSTD::size_t __i) const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr data_handle_type offset(data_handle_type __p, _CUDA_VSTD::size_t __i) const
     noexcept(__is_offset_noexcept)
   {
     NV_IF_TARGET(NV_IS_HOST, (__self::__check_managed_pointer(__p);))
