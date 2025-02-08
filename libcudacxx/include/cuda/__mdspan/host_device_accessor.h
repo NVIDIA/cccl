@@ -106,7 +106,9 @@ private:
 
 public:
   using offset_policy = host_accessor<typename _Accessor::offset_policy>;
-
+  using data_handle_type = __data_handle_type;
+  using reference = __reference;
+  using element_type = typename _Accessor::element_type;
   _CCCL_HIDE_FROM_ABI host_accessor() noexcept(__is_ctor_noexcept) = default;
 
   _CCCL_HIDE_FROM_ABI host_accessor(const host_accessor&) noexcept(__is_copy_ctor_noexcept) = default;
