@@ -27,7 +27,6 @@
 #endif // no system header
 
 #include <thrust/detail/alignment.h>
-#include <thrust/detail/config/cpp_compatibility.h>
 
 #include <cstddef>
 
