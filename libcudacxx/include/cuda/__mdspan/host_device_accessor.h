@@ -105,7 +105,7 @@ private:
   }
 
 public:
-  using offset_policy = host_accessor;
+  using offset_policy = host_accessor<typename _Accessor::offset_policy>;
 
   _CCCL_HIDE_FROM_ABI host_accessor() noexcept(__is_ctor_noexcept) = default;
 
