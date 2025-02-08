@@ -216,6 +216,21 @@ public:
 
     assert(!payload.empty());
 
+    static size_t max_payload_size = 0;
+    if (payload.size() > max_payload_size)
+    {
+      fprintf(stderr, "MAX EVENT optimize = %ld\n", payload.size());
+      if (getenv("MAX_EVENT_SIZE"))
+      {
+        size_t stop_at = atol(getenv("MAX_EVENT_SIZE"));
+        if (payload.size() > stop_at)
+        {
+          abort();
+        }
+      }
+      max_payload_size = payload.size();
+    }
+
     // nvtx_range r("optimize");
 
     // All items will have the same (derived) event type as the type of the front element.

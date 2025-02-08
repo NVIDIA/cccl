@@ -33,16 +33,66 @@ class graph_event_impl : public event_impl
 protected:
   graph_event_impl()                        = default;
   graph_event_impl(const graph_event_impl&) = delete;
-  graph_event_impl(cudaGraphNode_t n, size_t epoch)
+  graph_event_impl(cudaGraphNode_t n, size_t epoch, cudaGraph_t g)
       : node(n)
       , epoch(epoch)
+      , g(g)
   {
     assert(node);
+  }
+
+  bool factorize(reserved::event_vector& events) override
+  {
+    assert(events.size() >= 2);
+    assert([&] {
+      for (const auto& e : events)
+      {
+        assert(dynamic_cast<const graph_event_impl*>(e.operator->()));
+      }
+      return true;
+    }());
+
+    static size_t max_size = 0;
+    if (events.size() > max_size)
+    {
+      max_size = events.size();
+      fprintf(stderr, "MAX GRAPH EVENT LIST SIZE %ld\n", max_size);
+    }
+
+    // TODO filter according to epoch
+
+    if (events.size() > 16)
+    {
+      cudaGraphNode_t n;
+
+      ::std::vector<cudaGraphNode_t> nodes;
+
+      cudaGraph_t g0;
+      size_t epoch0;
+
+      for (const auto& e : events)
+      {
+        const auto ge = dynamic_cast<const graph_event_impl*>(e.operator->());
+        nodes.push_back(ge->node);
+        g0     = ge->g;
+        epoch0 = ge->epoch;
+      }
+
+      cuda_safe_call(cudaGraphAddEmptyNode(&n, g0, nodes.data(), nodes.size()));
+
+      events.clear();
+      events.push_back(graph_event_impl(n, epoch0, g0));
+
+      return true;
+    }
+
+    return false;
   }
 
 public:
   mutable cudaGraphNode_t node;
   mutable size_t epoch;
+  mutable cudaGraph_t g;
 };
 
 using graph_event = reserved::handle<graph_event_impl, reserved::handle_flags::non_null>;
@@ -76,9 +126,14 @@ inline ::std::vector<cudaGraphNode_t> join_with_graph_nodes(event_list& prereqs,
 /* previous_prereqs is only passed so that we can insert the proper DOT annotations */
 template <typename context_t>
 inline void fork_from_graph_node(
-  context_t& ctx, cudaGraphNode_t n, size_t epoch, event_list& previous_prereqs, ::std::string prereq_string)
+  context_t& ctx,
+  cudaGraphNode_t n,
+  cudaGraph_t g,
+  size_t epoch,
+  event_list& previous_prereqs,
+  ::std::string prereq_string)
 {
-  auto gnp = reserved::graph_event(n, epoch);
+  auto gnp = reserved::graph_event(n, epoch, g);
   gnp->set_symbol(ctx, mv(prereq_string));
 
   auto& dot = *ctx.get_dot();
