@@ -45,6 +45,12 @@ protected:
     assert(node);
   }
 
+  void remove_duplicates(::std::vector<cudaGraphNode_t>& nodes)
+  {
+    ::std::sort(nodes.begin(), nodes.end());
+    nodes.erase(::std::unique(nodes.begin(), nodes.end()), nodes.end()); // Remove duplicates
+  }
+
   bool factorize(reserved::event_vector& events) override
   {
     assert(events.size() >= 2);
@@ -82,6 +88,7 @@ protected:
         epoch0 = ge->epoch;
       }
 
+      remove_duplicates(nodes);
       cuda_safe_call(cudaGraphAddEmptyNode(&n, g0, nodes.data(), nodes.size()));
 
       events.clear();
