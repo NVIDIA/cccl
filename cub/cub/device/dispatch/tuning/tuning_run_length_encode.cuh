@@ -285,7 +285,7 @@ struct sm100_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, le
 };
 
 // TODO(gonidelis): Tune for I128.
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 // template <class LengthT>
 // struct sm100_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
 // {
@@ -577,7 +577,7 @@ struct sm100_tuning<LengthT, double, primitive_length::yes, primitive_key::yes, 
 {};
 
 // TODO(gonidelis): Tune for I128.
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 // template <class LengthT>
 // struct sm100_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
 // {

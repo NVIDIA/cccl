@@ -117,18 +117,13 @@ struct WarpReduceShfl
   template <typename S>
   struct IsInteger
   {
-    _CCCL_SUPPRESS_DEPRECATED_PUSH
     enum
     {
       /// Whether the data type is a small (32b or less) integer for which we can use a single SHFL instruction per
       /// exchange
       IS_SMALL_UNSIGNED =
         ::cuda::std::is_integral<S>::value && ::cuda::std::is_unsigned<S>::value && (sizeof(S) <= sizeof(unsigned int)),
-      // TODO(bgruber): sanity check, remove later
-      old_IS_SMALL_UNSIGNED = (Traits<S>::CATEGORY == UNSIGNED_INTEGER) && (sizeof(S) <= sizeof(unsigned int))
     };
-    _CCCL_SUPPRESS_DEPRECATED_POP
-    static_assert(IS_SMALL_UNSIGNED == old_IS_SMALL_UNSIGNED, "");
   };
 
   /// Shared memory storage layout type

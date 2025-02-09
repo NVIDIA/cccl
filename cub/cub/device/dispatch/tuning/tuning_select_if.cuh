@@ -667,7 +667,7 @@ struct sm100_tuning<Input,
 // };
 
 // TODO(gonidelis): Tune for I128.
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 // template <>
 // struct sm100_tuning<__int128_t, flagged::no, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
 // {
@@ -837,7 +837,7 @@ struct sm100_tuning<Input,
 };
 
 // TODO(gonidelis): Tune for I128.
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 // template <>
 // struct sm100_tuning<__int128_t, flagged::yes, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
 // {

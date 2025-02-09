@@ -404,7 +404,7 @@ struct sm100_tuning<double, AccumT, OffsetT, op_type::plus, primitive_accum::yes
     : sm90_tuning<double, primitive_op::yes, primitive_accum::yes, accum_size::_8>
 {};
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 // template <class OffsetT> struct sm100_tuning<__int128_t, OffsetT, op_type::plus, primitive_accum::no,
 // offset_size::_8, accum_size::_16> : tuning<576, 21, 860, 630> {}; template <class OffsetT> struct
 // sm100_tuning<__uint128_t, OffsetT, op_type::plus, primitive_accum::no, offset_size::_8, accum_size::_16>
