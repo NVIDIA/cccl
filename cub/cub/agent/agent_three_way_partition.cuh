@@ -115,7 +115,7 @@ struct accumulator_pack_base_t
 template <class OffsetT>
 struct accumulator_pack_base_t<OffsetT, typename ::cuda::std::enable_if<sizeof(OffsetT) == 4>::type>
 {
-  using pack_t = std::uint64_t;
+  using pack_t = uint64_t;
 
   _CCCL_DEVICE static pack_t pack(OffsetT f, OffsetT s)
   {
@@ -194,7 +194,7 @@ struct AgentThreeWayPartition
   static constexpr int TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
 
   using WrappedInputIteratorT =
-    ::cuda::std::_If<std::is_pointer<InputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer<InputIteratorT>::value,
                      cub::CacheModifiedInputIterator<PolicyT::LOAD_MODIFIER, InputT, OffsetT>,
                      InputIteratorT>;
 

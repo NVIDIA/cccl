@@ -156,18 +156,14 @@ class reverse_iterator : public detail::reverse_iterator_base<BidirectionalItera
 private:
   using super_t = typename thrust::detail::reverse_iterator_base<BidirectionalIterator>::type;
 
-  friend class thrust::iterator_core_access;
+  friend class iterator_core_access;
   /*! \endcond
    */
 
 public:
   /*! Default constructor does nothing.
    */
-#if _CCCL_COMPILER(MSVC2017)
-  _CCCL_HOST_DEVICE reverse_iterator() {}
-#else // ^^^ _CCCL_COMPILER(MSVC2017) ^^^ / vvv !_CCCL_COMPILER(MSVC2017) vvv
   reverse_iterator() = default;
-#endif // !_CCCL_COMPILER(MSVC2017)
 
   /*! \p Constructor accepts a \c BidirectionalIterator pointing to a range
    *  for this \p reverse_iterator to reverse.

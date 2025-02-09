@@ -55,10 +55,10 @@ int main(int, char**)
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
   test<long double, LDBL_MANT_DIG>();
 #endif
-#if defined(_CCCL_HAS_NVFP16)
+#if _CCCL_HAS_NVFP16()
   test<__half, 11>();
 #endif // _CCCL_HAS_NVFP16
-#if defined(_CCCL_HAS_NVBF16)
+#if _CCCL_HAS_NVBF16()
   test<__nv_bfloat16, 8>();
 #endif // _CCCL_HAS_NVBF16
 #if _CCCL_HAS_NVFP8()

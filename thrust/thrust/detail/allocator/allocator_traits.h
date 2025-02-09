@@ -83,11 +83,10 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 // The following fields of std::allocator have been deprecated (since C++17).
 // There's no way to detect it other than explicit specialization.
-#if _CCCL_STD_VER >= 2017
-#  define THRUST_SPECIALIZE_DEPRECATED(trait_name)    \
-    template <typename T>                             \
-    struct trait_name<std::allocator<T>> : false_type \
-    {};
+#define THRUST_SPECIALIZE_DEPRECATED(trait_name)    \
+  template <typename T>                             \
+  struct trait_name<std::allocator<T>> : false_type \
+  {};
 
 THRUST_SPECIALIZE_DEPRECATED(has_is_always_equal)
 THRUST_SPECIALIZE_DEPRECATED(has_pointer)
@@ -95,12 +94,11 @@ THRUST_SPECIALIZE_DEPRECATED(has_const_pointer)
 THRUST_SPECIALIZE_DEPRECATED(has_reference)
 THRUST_SPECIALIZE_DEPRECATED(has_const_reference)
 
-#  undef THRUST_SPECIALIZE_DEPRECATED
+#undef THRUST_SPECIALIZE_DEPRECATED
 
 template <typename T, typename U>
 struct has_rebind<std::allocator<T>, U> : false_type
 {};
-#endif
 
 template <typename T>
 struct nested_pointer

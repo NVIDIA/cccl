@@ -94,7 +94,7 @@ using can_regain_copy_freedom =
     bool,
     ::cuda::std::is_trivially_constructible<Value>::value &&
     ::cuda::std::is_trivially_copy_assignable<Value>::value &&
-    :: cuda::std::is_trivially_move_assignable<Value>::value &&
+    ::cuda::std::is_trivially_move_assignable<Value>::value &&
     ::cuda::std::is_trivially_destructible<Value>::value &&
     has_unique_value_overload<Value, Fn>::value>;
 // clang-format on

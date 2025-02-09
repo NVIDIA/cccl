@@ -1,36 +1,31 @@
 #include <thrust/detail/static_assert.h>
-
-#include <array>
-#include <iterator>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
-
-#include <unittest/unittest.h>
-#if _CCCL_STD_VER >= 2017
-#  include <string_view>
-#endif
 #include <thrust/device_ptr.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#include <array>
 #include <deque>
+#include <iterator>
 #include <list>
 #include <map>
 #include <set>
+#include <string>
+#include <string_view>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+
+#include <unittest/unittest.h>
 
 THRUST_STATIC_ASSERT((thrust::is_contiguous_iterator<std::string::iterator>::value));
 
 THRUST_STATIC_ASSERT((thrust::is_contiguous_iterator<std::wstring::iterator>::value));
 
-#if _CCCL_STD_VER >= 2017
 THRUST_STATIC_ASSERT((thrust::is_contiguous_iterator<std::string_view::iterator>::value));
 
 THRUST_STATIC_ASSERT((thrust::is_contiguous_iterator<std::wstring_view::iterator>::value));
-#endif
 
 THRUST_STATIC_ASSERT((!thrust::is_contiguous_iterator<std::vector<bool>::iterator>::value));
 

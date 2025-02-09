@@ -90,13 +90,13 @@ enum class accum_size
 template <class T>
 constexpr primitive_key is_primitive_key()
 {
-  return Traits<T>::PRIMITIVE ? primitive_key::yes : primitive_key::no;
+  return detail::is_primitive<T>::value ? primitive_key::yes : primitive_key::no;
 }
 
 template <class T>
 constexpr primitive_accum is_primitive_accum()
 {
-  return Traits<T>::PRIMITIVE ? primitive_accum::yes : primitive_accum::no;
+  return detail::is_primitive<T>::value ? primitive_accum::yes : primitive_accum::no;
 }
 
 template <class ReductionOpT>
@@ -716,6 +716,11 @@ struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primiti
   using delay_constructor                            = fixed_delay_constructor_t<156, 725>;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
 };
+
+// I16, F32, I32 regresses, default it back.
+template <class KeyT>
+struct sm100_tuning<KeyT, float, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_2, accum_size::_4>
+{};
 
 // todo(gonidelis): Add tunings for I128.
 // template <class KeyT, class AccumT>

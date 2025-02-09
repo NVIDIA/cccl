@@ -54,16 +54,16 @@
 #include <cuda/std/cstdint> // uint16_t
 #include <cuda/std/functional> // cuda::std::plus
 
-#if defined(_CCCL_HAS_NVFP16)
+#if _CCCL_HAS_NVFP16()
 #  include <cuda_fp16.h>
-#endif // _CCCL_HAS_NVFP16
+#endif // _CCCL_HAS_NVFP16()
 
-#if defined(_CCCL_HAS_NVBF16)
+#if _CCCL_HAS_NVBF16()
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
 #  include <cuda_bf16.h>
 _CCCL_DIAG_POP
-#endif // _CCCL_HAS_NVFP16
+#endif // _CCCL_HAS_NVBF16()
 
 CUB_NAMESPACE_BEGIN
 
@@ -235,7 +235,7 @@ struct enable_generic_simd_reduction_traits
       is_one_of<ReductionOp, ::cuda::minimum<>, ::cuda::minimum<T>, ::cuda::maximum<>, ::cuda::maximum<T>>();
 };
 
-#  if defined(_CCCL_HAS_NVFP16)
+#  if _CCCL_HAS_NVFP16()
 
 template <typename ReductionOp>
 struct enable_generic_simd_reduction_traits<__half, ReductionOp>
@@ -251,9 +251,9 @@ struct enable_generic_simd_reduction_traits<__half, ReductionOp>
     ::cuda::std::multiplies<>,
     ::cuda::std::multiplies<__half>>();
 };
-#  endif // defined(_CCCL_HAS_NVFP16)
+#  endif // _CCCL_HAS_NVFP16()
 
-#  if defined(_CCCL_HAS_NVBF16)
+#  if _CCCL_HAS_NVBF16()
 
 template <typename ReductionOp>
 struct enable_generic_simd_reduction_traits<__nv_bfloat16, ReductionOp>
@@ -270,7 +270,7 @@ struct enable_generic_simd_reduction_traits<__nv_bfloat16, ReductionOp>
     ::cuda::std::multiplies<__nv_bfloat16>>();
 };
 
-#  endif // defined(_CCCL_HAS_NVBF16)
+#  endif // _CCCL_HAS_NVBF16()
 
 template <typename Input, typename ReductionOp>
 _CCCL_NODISCARD _CCCL_DEVICE constexpr bool enable_generic_simd_reduction()
@@ -306,11 +306,11 @@ _CCCL_NODISCARD _CCCL_DEVICE constexpr bool enable_sm80_simd_reduction()
                    ::cuda::std::multiplies<>,
                    ::cuda::std::multiplies<T>>()
       && Length >= 4
-#  if defined(_CCCL_HAS_NVFP16) && defined(_CCCL_HAS_NVBF16)
+#  if _CCCL_HAS_NVFP16() && _CCCL_HAS_NVBF16()
       && (is_same<T, __half>::value || is_same<T, __nv_bfloat16>::value)
-#  elif defined(_CCCL_HAS_NVFP16)
+#  elif _CCCL_HAS_NVFP16()
       && is_same<T, __half>::value
-#  elif defined(_CCCL_HAS_NVBF16)
+#  elif _CCCL_HAS_NVBF16()
       && is_same<T, __nv_bfloat16>::value
 #  endif
     ;
@@ -321,7 +321,7 @@ _CCCL_NODISCARD _CCCL_DEVICE constexpr bool enable_sm70_simd_reduction()
 {
   using cub::detail::is_one_of;
   using ::cuda::std::is_same;
-#  if defined(_CCCL_HAS_NVFP16)
+#  if _CCCL_HAS_NVFP16()
   return is_same<T, __half>::value
       && is_one_of<ReductionOp,
                    ::cuda::std::plus<>,
@@ -393,7 +393,7 @@ struct enable_ternary_reduction_sm90
       ::cuda::std::bit_xor<T>>();
 };
 
-#  if defined(_CCCL_HAS_NVFP16)
+#  if _CCCL_HAS_NVFP16()
 
 template <typename ReductionOp>
 struct enable_ternary_reduction_sm90<__half2, ReductionOp>
@@ -408,9 +408,9 @@ struct enable_ternary_reduction_sm90<__half2, ReductionOp>
                            SimdMax<__half>>();
 };
 
-#  endif // defined(_CCCL_HAS_NVFP16)
+#  endif // _CCCL_HAS_NVFP16()
 
-#  if defined(_CCCL_HAS_NVBF16)
+#  if _CCCL_HAS_NVBF16()
 
 template <typename ReductionOp>
 struct enable_ternary_reduction_sm90<__nv_bfloat162, ReductionOp>
@@ -425,7 +425,7 @@ struct enable_ternary_reduction_sm90<__nv_bfloat162, ReductionOp>
                            SimdMax<__nv_bfloat16>>();
 };
 
-#  endif // defined(_CCCL_HAS_NVBF16)
+#  endif // _CCCL_HAS_NVBF16()
 
 template <typename Input, typename ReductionOp, typename AccumT>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE _CCCL_CONSTEXPR_CXX14 bool enable_ternary_reduction()
