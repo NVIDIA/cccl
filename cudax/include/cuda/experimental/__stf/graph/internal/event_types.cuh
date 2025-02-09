@@ -27,6 +27,10 @@
 namespace cuda::experimental::stf::reserved
 {
 
+class graph_event_impl;
+
+using graph_event = reserved::handle<graph_event_impl, reserved::handle_flags::non_null>;
+
 /* A prereq corresponds to a node, which is always paired to its graph */
 class graph_event_impl : public event_impl
 {
@@ -81,7 +85,7 @@ protected:
       cuda_safe_call(cudaGraphAddEmptyNode(&n, g0, nodes.data(), nodes.size()));
 
       events.clear();
-      events.push_back(graph_event_impl(n, epoch0, g0));
+      events.push_back(graph_event(n, epoch0, g0));
 
       return true;
     }
@@ -94,8 +98,6 @@ public:
   mutable size_t epoch;
   mutable cudaGraph_t g;
 };
-
-using graph_event = reserved::handle<graph_event_impl, reserved::handle_flags::non_null>;
 
 // This converts a prereqs and converts it to a vector of graph nodes. As a
 // side-effect, it also remove duplicates from the prereqs list of events
