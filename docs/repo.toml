@@ -324,6 +324,7 @@ autodoc.mock_imports = [
     "cuda.bindings",
     "llvmlite",
     "numpy",
+    "cupy",
 ]
 
 enhanced_search_enabled = true
@@ -349,6 +350,7 @@ autodoc.mock_imports = [
     "cuda.cccl",
     "llvmlite",
     "numpy",
+    "cupy",
 ]
 
 enhanced_search_enabled = true
