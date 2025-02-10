@@ -156,7 +156,6 @@ def _device_array_to_cccl_iter(array: DeviceArrayLike) -> Iterator:
     if not is_contiguous(array):
         raise ValueError("Non-contiguous arrays are not supported.")
     info = _numpy_type_to_info(get_dtype(array))
-    print(info.size)
     return Iterator(
         info.size,
         info.alignment,
