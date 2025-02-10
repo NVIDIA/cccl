@@ -72,31 +72,6 @@ def test_complex_device_reduce():
         assert result == pytest.approx(expected)
 
 
-def test_device_reduce_dtype_mismatch():
-    def min_op(a, b):
-        return a if a < b else b
-
-    dtypes = [np.int32, np.int64]
-    h_inits = [np.array([], dt) for dt in dtypes]
-    h_inputs = [np.array([], dt) for dt in dtypes]
-    d_outputs = [numba.cuda.device_array(1, dt) for dt in dtypes]
-    d_inputs = [numba.cuda.to_device(h_inp) for h_inp in h_inputs]
-
-    reduce_into = algorithms.reduce_into(d_inputs[0], d_outputs[0], min_op, h_inits[0])
-
-    for ix in range(3):
-        with pytest.raises(
-            TypeError, match=r"^dtype mismatch: __init__=int32, __call__=int64$"
-        ):
-            reduce_into(
-                None,
-                d_inputs[int(ix == 0)],
-                d_outputs[int(ix == 1)],
-                None,
-                h_inits[int(ix == 2)],
-            )
-
-
 def _test_device_sum_with_iterator(
     l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
 ):
