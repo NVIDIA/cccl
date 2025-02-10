@@ -5,6 +5,8 @@
 
 #include <cub/config.cuh>
 
+#include <thrust/iterator/iterator_adaptor.h>
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -39,5 +41,41 @@ enum class SelectImpl
   // Partition, keeping rejected items. It's required that memory of input and output are disjoint.
   Partition
 };
+
+namespace detail
+{
+
+template <typename Iterator, typename OffsetItT>
+class OffsetIteratorT : public THRUST_NS_QUALIFIER::iterator_adaptor<OffsetIteratorT<Iterator, OffsetItT>, Iterator>
+{
+public:
+  using super_t = THRUST_NS_QUALIFIER::iterator_adaptor<OffsetIteratorT<Iterator, OffsetItT>, Iterator>;
+
+  OffsetIteratorT() = default;
+
+  _CCCL_HOST_DEVICE OffsetIteratorT(const Iterator& it, OffsetItT offset_it)
+      : super_t(it)
+      , offset_it(offset_it)
+  {}
+
+  // befriend thrust::iterator_core_access to allow it access to the private interface below
+  friend class THRUST_NS_QUALIFIER::iterator_core_access;
+
+private:
+  OffsetItT offset_it;
+
+  _CCCL_HOST_DEVICE typename super_t::reference dereference() const
+  {
+    return *(this->base() + (*offset_it));
+  }
+};
+
+template <typename Iterator, typename OffsetItT>
+_CCCL_HOST_DEVICE OffsetIteratorT<Iterator, OffsetItT> make_offset_iterator(const Iterator& it, OffsetItT offset_it)
+{
+  return OffsetIteratorT<Iterator, OffsetItT>{it, offset_it};
+}
+
+} // namespace detail
 
 CUB_NAMESPACE_END

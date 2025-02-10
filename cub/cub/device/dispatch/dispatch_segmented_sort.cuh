@@ -46,6 +46,7 @@
 #include <cub/detail/device_double_buffer.cuh>
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/device/device_partition.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_sort.cuh>
 #include <cub/thread/thread_sort.cuh>
 #include <cub/util_debug.cuh>
@@ -76,37 +77,6 @@ namespace detail::segmented_sort
 using local_segment_index_t = ::cuda::std::uint32_t;
 // Type used for total number of segments and to index within segments globally
 using global_segment_offset_t = ::cuda::std::int64_t;
-
-template <typename Iterator, typename OffsetItT>
-class OffsetIteratorT : public THRUST_NS_QUALIFIER::iterator_adaptor<OffsetIteratorT<Iterator, OffsetItT>, Iterator>
-{
-public:
-  using super_t = THRUST_NS_QUALIFIER::iterator_adaptor<OffsetIteratorT<Iterator, OffsetItT>, Iterator>;
-
-  OffsetIteratorT() = default;
-
-  _CCCL_HOST_DEVICE OffsetIteratorT(const Iterator& it, OffsetItT offset_it)
-      : super_t(it)
-      , offset_it(offset_it)
-  {}
-
-  // befriend thrust::iterator_core_access to allow it access to the private interface below
-  friend class THRUST_NS_QUALIFIER::iterator_core_access;
-
-private:
-  OffsetItT offset_it;
-
-  _CCCL_HOST_DEVICE typename super_t::reference dereference() const
-  {
-    return *(this->base() + (*offset_it));
-  }
-};
-
-template <typename Iterator, typename OffsetItT>
-_CCCL_HOST_DEVICE OffsetIteratorT<Iterator, OffsetItT> make_offset_iterator(const Iterator& it, OffsetItT offset_it)
-{
-  return OffsetIteratorT<Iterator, OffsetItT>{it, offset_it};
-}
 
 /**
  * @brief Fallback kernel, in case there's not enough segments to
@@ -761,10 +731,10 @@ struct DispatchSegmentedSort
   using global_segment_offset_t = detail::segmented_sort::global_segment_offset_t;
 
   using StreamingBeginOffsetIteratorT =
-    detail::segmented_sort::OffsetIteratorT<BeginOffsetIteratorT,
+    detail::OffsetIteratorT<BeginOffsetIteratorT,
                                             THRUST_NS_QUALIFIER::constant_iterator<global_segment_offset_t>>;
   using StreamingEndOffsetIteratorT =
-    detail::segmented_sort::OffsetIteratorT<EndOffsetIteratorT,
+    detail::OffsetIteratorT<EndOffsetIteratorT,
                                             THRUST_NS_QUALIFIER::constant_iterator<global_segment_offset_t>>;
 
   static constexpr int KEYS_ONLY = ::cuda::std::is_same<ValueT, NullType>::value;
@@ -1236,9 +1206,9 @@ private:
 
       large_segments_selector.base_segment_offset = current_seg_offset;
       small_segments_selector.base_segment_offset = current_seg_offset;
-      auto current_begin_offset                   = detail::segmented_sort::make_offset_iterator(
+      auto current_begin_offset                   = detail::make_offset_iterator(
         d_begin_offsets, THRUST_NS_QUALIFIER::constant_iterator<global_segment_offset_t>{current_seg_offset});
-      auto current_end_offset = detail::segmented_sort::make_offset_iterator(
+      auto current_end_offset = detail::make_offset_iterator(
         d_end_offsets, THRUST_NS_QUALIFIER::constant_iterator<global_segment_offset_t>{current_seg_offset});
 
       auto medium_indices_iterator =

@@ -774,6 +774,8 @@ struct DispatchSegmentedReduce
           d_begin_offsets, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>{current_seg_offset});
         auto current_end_offset = detail::make_offset_iterator(
           d_end_offsets, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>{current_seg_offset});
+        auto current_out_it = detail::make_offset_iterator(
+          d_out, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>{current_seg_offset});
 // Log device_reduce_sweep_kernel configuration
 #ifdef CUB_DEBUG_LOG
         _CubLog("Invoking SegmentedDeviceReduceKernel<<<%ld, %d, 0, %lld>>>(), "
@@ -788,7 +790,8 @@ struct DispatchSegmentedReduce
         // Invoke DeviceReduceKernel
         THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
           num_current_segments, ActivePolicyT::SegmentedReducePolicy::BLOCK_THREADS, 0, stream)
-          .doit(segmented_reduce_kernel, d_in, d_out, current_begin_offset, current_end_offset, reduction_op, init);
+          .doit(
+            segmented_reduce_kernel, d_in, current_out_it, current_begin_offset, current_end_offset, reduction_op, init);
 
         // Check for failure to launch
         error = CubDebug(cudaPeekAtLastError());
@@ -818,11 +821,13 @@ struct DispatchSegmentedReduce
       detail::OffsetIteratorT<BeginOffsetIteratorT, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>>;
     using streaming_end_offset_it_t =
       detail::OffsetIteratorT<EndOffsetIteratorT, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>>;
+    using streaming_result_out_it_t =
+      detail::OffsetIteratorT<OutputIteratorT, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>>;
     return InvokePasses<ActivePolicyT>(
       detail::reduce::DeviceSegmentedReduceKernel<
         typename PolicyHub::MaxPolicy,
         InputIteratorT,
-        OutputIteratorT,
+        streaming_result_out_it_t,
         streaming_begin_offset_it_t,
         streaming_end_offset_it_t,
         OffsetT,
