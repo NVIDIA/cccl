@@ -45,9 +45,9 @@ def test_device_reduce(dtype):
         num_items = 2**num_items_pow2
         h_input = random_int(num_items, dtype)
         d_input = numba.cuda.to_device(h_input)
-        temp_storage_size = reduce_into(None, d_input, d_output, None, h_init)
+        temp_storage_size = reduce_into(None, d_input, d_output, len(d_input), h_init)
         d_temp_storage = numba.cuda.device_array(temp_storage_size, dtype=np.uint8)
-        reduce_into(d_temp_storage, d_input, d_output, None, h_init)
+        reduce_into(d_temp_storage, d_input, d_output, len(d_input), h_init)
         h_output = d_output.copy_to_host()
         assert h_output[0] == sum(h_input) + init_value
 
@@ -63,9 +63,9 @@ def test_complex_device_reduce():
     for num_items in [42, 420000]:
         h_input = np.random.random(num_items) + 1j * np.random.random(num_items)
         d_input = numba.cuda.to_device(h_input)
-        temp_storage_bytes = reduce_into(None, d_input, d_output, None, h_init)
+        temp_storage_bytes = reduce_into(None, d_input, d_output, len(d_input), h_init)
         d_temp_storage = numba.cuda.device_array(temp_storage_bytes, np.uint8)
-        reduce_into(d_temp_storage, d_input, d_output, None, h_init)
+        reduce_into(d_temp_storage, d_input, d_output, len(d_input), h_init)
 
         result = d_output.copy_to_host()[0]
         expected = np.sum(h_input, initial=h_init[0])
