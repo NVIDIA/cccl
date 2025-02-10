@@ -46,6 +46,7 @@
 
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/type_traits.cuh> // for cub::detail::invoke_result_t
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/reduce.cuh>
 #include <cub/device/dispatch/kernels/segmented_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
@@ -56,6 +57,8 @@
 #include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
 #include <cub/util_type.cuh> // for cub::detail::non_void_value_t, cub::detail::value_t
+
+#include <thrust/iterator/constant_iterator.h>
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 #include <cuda/std/functional>
@@ -660,7 +663,7 @@ struct DispatchSegmentedReduce
   OutputIteratorT d_out;
 
   /// The number of segments that comprise the sorting data
-  int num_segments;
+  ::cuda::std::int64_t num_segments;
 
   /// Random-access input iterator to the sequence of beginning offsets of
   /// length `num_segments`, such that `d_begin_offsets[i]` is the first
@@ -696,7 +699,7 @@ struct DispatchSegmentedReduce
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    int num_segments,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     ReductionOpT reduction_op,
@@ -758,34 +761,48 @@ struct DispatchSegmentedReduce
         break;
       }
 
+      const auto num_segments_per_invocation =
+        static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<std::int32_t>::max());
+      const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation);
+      for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
+      {
+        const auto current_seg_offset = invocation_index * num_segments_per_invocation;
+        const auto num_current_segments =
+          ::cuda::std::min(num_segments_per_invocation, num_segments - current_seg_offset);
+
+        auto current_begin_offset = detail::make_offset_iterator(
+          d_begin_offsets, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>{current_seg_offset});
+        auto current_end_offset = detail::make_offset_iterator(
+          d_end_offsets, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>{current_seg_offset});
 // Log device_reduce_sweep_kernel configuration
 #ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking SegmentedDeviceReduceKernel<<<%d, %d, 0, %lld>>>(), "
-              "%d items per thread, %d SM occupancy\n",
-              num_segments,
-              ActivePolicyT::SegmentedReducePolicy::BLOCK_THREADS,
-              (long long) stream,
-              ActivePolicyT::SegmentedReducePolicy::ITEMS_PER_THREAD,
-              segmented_reduce_config.sm_occupancy);
+        _CubLog("Invoking SegmentedDeviceReduceKernel<<<%ld, %d, 0, %lld>>>(), "
+                "%d items per thread, %d SM occupancy\n",
+                num_current_segments,
+                ActivePolicyT::SegmentedReducePolicy::BLOCK_THREADS,
+                (long long) stream,
+                ActivePolicyT::SegmentedReducePolicy::ITEMS_PER_THREAD,
+                segmented_reduce_config.sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
-      // Invoke DeviceReduceKernel
-      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-        num_segments, ActivePolicyT::SegmentedReducePolicy::BLOCK_THREADS, 0, stream)
-        .doit(segmented_reduce_kernel, d_in, d_out, d_begin_offsets, d_end_offsets, num_segments, reduction_op, init);
+        // Invoke DeviceReduceKernel
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+          num_current_segments, ActivePolicyT::SegmentedReducePolicy::BLOCK_THREADS, 0, stream)
+          .doit(segmented_reduce_kernel, d_in, d_out, current_begin_offset, current_end_offset, reduction_op, init);
 
-      // Check for failure to launch
-      error = CubDebug(cudaPeekAtLastError());
-      if (cudaSuccess != error)
-      {
-        break;
-      }
+        // Check for failure to launch
+        error = CubDebug(cudaPeekAtLastError());
+        if (cudaSuccess != error)
+        {
+          break;
+        }
 
-      // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
-      if (cudaSuccess != error)
-      {
-        break;
+        // Sync the stream if specified to flush runtime errors
+        error = CubDebug(detail::DebugSyncStream(stream));
+        if (cudaSuccess != error)
+        {
+          break;
+        }
       }
     } while (0);
 
@@ -797,13 +814,17 @@ struct DispatchSegmentedReduce
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     // Force kernel code-generation in all compiler passes
+    using streaming_begin_offset_it_t =
+      detail::OffsetIteratorT<BeginOffsetIteratorT, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>>;
+    using streaming_end_offset_it_t =
+      detail::OffsetIteratorT<EndOffsetIteratorT, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>>;
     return InvokePasses<ActivePolicyT>(
       detail::reduce::DeviceSegmentedReduceKernel<
         typename PolicyHub::MaxPolicy,
         InputIteratorT,
         OutputIteratorT,
-        BeginOffsetIteratorT,
-        EndOffsetIteratorT,
+        streaming_begin_offset_it_t,
+        streaming_end_offset_it_t,
         OffsetT,
         ReductionOpT,
         InitT,
@@ -862,7 +883,7 @@ struct DispatchSegmentedReduce
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    int num_segments,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     ReductionOpT reduction_op,
