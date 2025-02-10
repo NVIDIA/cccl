@@ -61,14 +61,7 @@ struct TEST_ALIGNAS(128) OverAlignedStruct
 
 __host__ __device__ bool should_expect_success()
 {
-  bool device_has_aligned_alloc = false;
-#if !_CCCL_CUDA_COMPILER(CLANG)
-  device_has_aligned_alloc = true;
-#endif // !_CCCL_CUDA_COMPILER(CLANG)
-
-  unused(device_has_aligned_alloc);
-
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (return true;), (return device_has_aligned_alloc;))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (return true;), (return true;))
 }
 
 __host__ __device__ void test()

@@ -47,14 +47,12 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_HOST void* __aligned_alloc_host(size_t
 #if _CCCL_HAS_CUDA_COMPILER
 _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __aligned_alloc_device(size_t __nbytes, size_t __align) noexcept
 {
-#  if _CCCL_CUDA_COMPILER(CLANG)
-  _LIBCUDACXX_UNUSED_VAR(__nbytes);
-  _LIBCUDACXX_UNUSED_VAR(__align);
-  _CCCL_ASSERT(false, "Use of aligned_alloc in device code is not supported with clang-cuda");
-  return nullptr;
-#  else // ^^^ _CCCL_CUDA_COMPILER(CLANG) ^^^ / vvv !_CCCL_CUDA_COMPILER(CLANG)
-  NV_IF_TARGET(NV_IS_DEVICE, (return ::__nv_aligned_device_malloc(__nbytes, __align);))
-#  endif // ^^^ !_CCCL_CUDA_COMPILER(CLANG) ^^^
+  void* __ptr{};
+  asm volatile(".func  (.param .b64 __r) __cuda_syscall_aligned_malloc(.param .b64 __p0, .param .b64 __p1);\t\n"
+               "call.uni (%0), __cuda_syscall_aligned_malloc, (%1, %2);"
+               : "=l"(__ptr)
+               : "l"(__nbytes), "l"(__align));
+  return __ptr;
 }
 #endif // _CCCL_HAS_CUDA_COMPILER
 
