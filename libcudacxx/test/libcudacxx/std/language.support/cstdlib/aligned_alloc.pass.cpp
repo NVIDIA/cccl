@@ -41,7 +41,7 @@ test_aligned_alloc(bool expect_success, cuda::std::size_t n, cuda::std::size_t a
   {
     // This is undefined behavior and dependent on the host libc
   }
-  cuda::std::aligned_free(ptr);
+  cuda::std::free(ptr);
 }
 
 struct BigStruct
@@ -61,7 +61,14 @@ struct TEST_ALIGNAS(128) OverAlignedStruct
 
 __host__ __device__ bool should_expect_success()
 {
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (return true;), (return true;))
+  bool host_expect_success = true;
+#if defined(TEST_COMPILER_MSVC)
+  host_expect_success = false;
+#endif // TEST_COMPILER_MSVC
+
+  unused(host_expect_success);
+
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (return host_expect_success;), (return true;))
 }
 
 __host__ __device__ void test()

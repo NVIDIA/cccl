@@ -57,7 +57,7 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __calloc_device(size_t __
 
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI void* calloc(size_t __n, size_t __size) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (return ::std::calloc(__n, __size);), (return _CUDA_VSTD::__calloc_device(__n, __size);))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (return ::calloc(__n, __size);), (return _CUDA_VSTD::__calloc_device(__n, __size);))
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD

@@ -37,10 +37,11 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_HOST void* __aligned_alloc_host(size_t __nbytes, size_t __align) noexcept
 {
 #  if _CCCL_COMPILER(MSVC)
-  return ::_aligned_malloc(__nbytes, __align);
+  _CCCL_ASSERT(false, "Use of aligned_alloc in host code is not supported with MSVC");
+  return false;
 #  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
   return ::aligned_alloc(__align, __nbytes);
-#  endif // !_CCCL_COMPILER(MSVC)
+#  endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 
@@ -61,16 +62,6 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI void* aligned_alloc(size_t __nbytes, s
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     (return _CUDA_VSTD::__aligned_alloc_host(__nbytes, __align);),
                     (return _CUDA_VSTD::__aligned_alloc_device(__nbytes, __align);))
-}
-
-//! Nonstandard extension to properly allow using aligned_alloc on MSVC
-_LIBCUDACXX_HIDE_FROM_ABI void aligned_free(void* __ptr)
-{
-#if _CCCL_COMPILER(MSVC)
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (return ::_aligned_free(__ptr);), (return ::free(__ptr);))
-#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
-  return ::free(__ptr);
-#endif // !_CCCL_COMPILER(MSVC)
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
