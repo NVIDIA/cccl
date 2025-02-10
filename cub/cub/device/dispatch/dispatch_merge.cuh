@@ -169,7 +169,7 @@ template <typename KeyIt1,
 struct dispatch_t
 {
   void* d_temp_storage;
-  std::size_t& temp_storage_bytes;
+  size_t& temp_storage_bytes;
   KeyIt1 d_keys1;
   ValueIt1 d_values1;
   Offset num_items1;
@@ -193,9 +193,9 @@ struct dispatch_t
     const auto num_tiles = ::cuda::ceil_div(num_items1 + num_items2, agent_t::policy::ITEMS_PER_TILE);
     void* allocations[2] = {nullptr, nullptr};
     {
-      const std::size_t merge_partitions_size      = (1 + num_tiles) * sizeof(Offset);
-      const std::size_t virtual_shared_memory_size = num_tiles * vsmem_helper_impl<agent_t>::vsmem_per_block;
-      const std::size_t allocation_sizes[2]        = {merge_partitions_size, virtual_shared_memory_size};
+      const size_t merge_partitions_size      = (1 + num_tiles) * sizeof(Offset);
+      const size_t virtual_shared_memory_size = num_tiles * vsmem_helper_impl<agent_t>::vsmem_per_block;
+      const size_t allocation_sizes[2]        = {merge_partitions_size, virtual_shared_memory_size};
       const auto error =
         CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)

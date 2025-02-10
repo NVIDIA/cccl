@@ -43,6 +43,8 @@
 #include <thrust/iterator/detail/zip_iterator_base.h>
 #include <thrust/iterator/iterator_facade.h>
 
+#include <cuda/std/tuple>
+
 THRUST_NAMESPACE_BEGIN
 
 /*! \addtogroup iterators
@@ -215,7 +217,8 @@ private:
  *  \see zip_iterator
  */
 template <typename... Iterators>
-inline _CCCL_HOST_DEVICE zip_iterator<thrust::tuple<Iterators...>> make_zip_iterator(thrust::tuple<Iterators...> t);
+inline _CCCL_HOST_DEVICE zip_iterator<_CUDA_VSTD::tuple<Iterators...>>
+make_zip_iterator(_CUDA_VSTD::tuple<Iterators...> t);
 
 /*! \p make_zip_iterator creates a \p zip_iterator from
  *  iterators.
@@ -226,7 +229,7 @@ inline _CCCL_HOST_DEVICE zip_iterator<thrust::tuple<Iterators...>> make_zip_iter
  *  \see zip_iterator
  */
 template <typename... Iterators>
-inline _CCCL_HOST_DEVICE zip_iterator<thrust::tuple<Iterators...>> make_zip_iterator(Iterators... its);
+inline _CCCL_HOST_DEVICE zip_iterator<_CUDA_VSTD::tuple<Iterators...>> make_zip_iterator(Iterators... its);
 
 /*! \} // end fancyiterators
  */

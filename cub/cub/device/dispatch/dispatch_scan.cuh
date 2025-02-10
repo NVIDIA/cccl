@@ -97,7 +97,7 @@ struct DeviceScanKernelSource
                      AccumT,
                      EnforceInclusive == ForceInclusive::Yes>)
 
-  CUB_RUNTIME_FUNCTION static constexpr std::size_t AccumSize()
+  CUB_RUNTIME_FUNCTION static constexpr size_t AccumSize()
   {
     return sizeof(AccumT);
   }
@@ -133,29 +133,30 @@ struct DeviceScanKernelSource
  *   Enum flag to specify whether to enforce inclusive scan.
  *
  */
-template <typename InputIteratorT,
-          typename OutputIteratorT,
-          typename ScanOpT,
-          typename InitValueT,
-          typename OffsetT,
-          typename AccumT                 = ::cuda::std::__accumulator_t<ScanOpT,
-                                                                         cub::detail::value_t<InputIteratorT>,
-                                                                         ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
-                                                                                          cub::detail::value_t<InputIteratorT>,
-                                                                                          typename InitValueT::value_type>>,
-          typename PolicyHub              = detail::scan::policy_hub<AccumT, ScanOpT>,
-          ForceInclusive EnforceInclusive = ForceInclusive::No,
-          typename KernelSource           = detail::scan::DeviceScanKernelSource<
-                      typename PolicyHub::MaxPolicy,
-                      InputIteratorT,
-                      OutputIteratorT,
-                      ScanOpT,
-                      InitValueT,
-                      OffsetT,
-                      AccumT,
-                      EnforceInclusive>,
-          typename KernelLauncherFactory = detail::TripleChevronFactory>
-
+template <
+  typename InputIteratorT,
+  typename OutputIteratorT,
+  typename ScanOpT,
+  typename InitValueT,
+  typename OffsetT,
+  typename AccumT                 = ::cuda::std::__accumulator_t<ScanOpT,
+                                                                 cub::detail::value_t<InputIteratorT>,
+                                                                 ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
+                                                                                  cub::detail::value_t<InputIteratorT>,
+                                                                                  typename InitValueT::value_type>>,
+  ForceInclusive EnforceInclusive = ForceInclusive::No,
+  typename PolicyHub =
+    detail::scan::policy_hub<detail::value_t<InputIteratorT>, detail::value_t<OutputIteratorT>, AccumT, OffsetT, ScanOpT>,
+  typename KernelSource = detail::scan::DeviceScanKernelSource<
+    typename PolicyHub::MaxPolicy,
+    InputIteratorT,
+    OutputIteratorT,
+    ScanOpT,
+    InitValueT,
+    OffsetT,
+    AccumT,
+    EnforceInclusive>,
+  typename KernelLauncherFactory = detail::TripleChevronFactory>
 struct DispatchScan
 {
   //---------------------------------------------------------------------

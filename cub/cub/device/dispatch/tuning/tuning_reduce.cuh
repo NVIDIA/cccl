@@ -156,33 +156,8 @@ template <class AccumT,
 struct sm100_tuning;
 
 // sum
-template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::plus, offset_size::_4, accum_size::_1>
-{
-  // todo(gonidelis): Very low performance, we need more runs.
-  // ipt_16.tpb_256.ipv_2 1.001174   1.0  1.001044  1.004175
-  static constexpr int items              = 16;
-  static constexpr int threads            = 256;
-  static constexpr int items_per_vec_load = 2;
-};
 
-template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::plus, offset_size::_4, accum_size::_2>
-{
-  // ipt_18.tpb_288.ipv_2 1.032068  0.997167  1.028244  1.115809
-  static constexpr int items              = 18;
-  static constexpr int threads            = 288;
-  static constexpr int items_per_vec_load = 2;
-};
-
-template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::plus, offset_size::_4, accum_size::_4>
-{
-  // ipt_15.tpb_960.ipv_1 1.040241  0.988042  1.038795  1.167139
-  static constexpr int items              = 15;
-  static constexpr int threads            = 960;
-  static constexpr int items_per_vec_load = 1;
-};
+// Tunings for offset size 4/8 and accum size 1/2/4 all showed no significant improvement during verification
 
 template <class T, class OffsetT>
 struct sm100_tuning<T, OffsetT, op_type::plus, offset_size::_4, accum_size::_8>
@@ -191,33 +166,6 @@ struct sm100_tuning<T, OffsetT, op_type::plus, offset_size::_4, accum_size::_8>
   static constexpr int items              = 15;
   static constexpr int threads            = 512;
   static constexpr int items_per_vec_load = 2;
-};
-
-template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::plus, offset_size::_8, accum_size::_1>
-{
-  // ipt_14.tpb_288.ipv_2 1.036897  1.000000  1.032813  1.13125
-  static constexpr int items              = 14;
-  static constexpr int threads            = 288;
-  static constexpr int items_per_vec_load = 2;
-};
-
-template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::plus, offset_size::_8, accum_size::_2>
-{
-  // ipt_12.tpb_224.ipv_2 1.032496  1.000000  1.028899  1.115596
-  static constexpr int items              = 12;
-  static constexpr int threads            = 224;
-  static constexpr int items_per_vec_load = 2;
-};
-
-template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::plus, offset_size::_8, accum_size::_4>
-{
-  // ipt_14.tpb_288.ipv_1 1.050725  1.000000  1.048286  1.181818
-  static constexpr int items              = 14;
-  static constexpr int threads            = 288;
-  static constexpr int items_per_vec_load = 1;
 };
 
 template <class T, class OffsetT>
@@ -247,127 +195,7 @@ struct sm100_tuning<double, OffsetT, op_type::plus, offset_size::_4, accum_size:
   static constexpr int items_per_vec_load = 1;
 };
 
-// min or max
-template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::min_or_max, offset_size::_4, accum_size::_1>
-{
-  // ipt_16.tpb_128.ipv_2 1.021369  0.998557  1.019009  1.077479
-  static constexpr int items              = 16;
-  static constexpr int threads            = 128;
-  static constexpr int items_per_vec_load = 2;
-};
-
-template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::min_or_max, offset_size::_4, accum_size::_2>
-{
-  // ipt_16.tpb_256.ipv_2 1.038750   1.0  1.034382  1.117647
-  static constexpr int items              = 16;
-  static constexpr int threads            = 256;
-  static constexpr int items_per_vec_load = 2;
-};
-
-template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::min_or_max, offset_size::_4, accum_size::_4>
-{
-  // ipt_12.tpb_448.ipv_1 1.037834  1.000000  1.036212  1.144847
-  static constexpr int items              = 12;
-  static constexpr int threads            = 448;
-  static constexpr int items_per_vec_load = 1;
-};
-
-template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::min_or_max, offset_size::_4, accum_size::_8>
-{
-  // ipt_15.tpb_512.ipv_2 1.020165   1.0  1.018162  1.058036
-  static constexpr int items              = 15;
-  static constexpr int threads            = 512;
-  static constexpr int items_per_vec_load = 2;
-};
-
-template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::min_or_max, offset_size::_4, accum_size::_16>
-{
-  // ipt_16.tpb_320.ipv_2 1.009217   1.0  1.008197  1.032787
-  static constexpr int items              = 16;
-  static constexpr int threads            = 320;
-  static constexpr int items_per_vec_load = 2;
-};
-
-template <class OffsetT>
-struct sm100_tuning<float, OffsetT, op_type::min_or_max, offset_size::_4, accum_size::_4>
-{
-  // ipt_18.tpb_448.ipv_2 1.032745  0.966480  1.032123  1.162011
-  static constexpr int items              = 18;
-  static constexpr int threads            = 448;
-  static constexpr int items_per_vec_load = 2;
-};
-
-template <class OffsetT>
-struct sm100_tuning<double, OffsetT, op_type::min_or_max, offset_size::_4, accum_size::_4>
-{
-  // ipt_15.tpb_512.ipv_2 1.019901   1.0  1.017648  1.058036
-  static constexpr int items              = 15;
-  static constexpr int threads            = 512;
-  static constexpr int items_per_vec_load = 2;
-};
-
-// same as base, so fall back to Policy600
-// template <class T, class OffsetT>
-// struct sm100_tuning<T, OffsetT, op_type::min_or_max, offset_size::_8, accum_size::_1> {};
-
-template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::min_or_max, offset_size::_8, accum_size::_2>
-{
-  // ipt_16.tpb_224.ipv_2 1.031922  0.997989  1.028396  1.115596
-  static constexpr int items              = 16;
-  static constexpr int threads            = 224;
-  static constexpr int items_per_vec_load = 2;
-};
-
-template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::min_or_max, offset_size::_8, accum_size::_4>
-{
-  // ipt_14.tpb_416.ipv_1 1.047490  1.000000  1.045455  1.181818
-  static constexpr int items              = 14;
-  static constexpr int threads            = 416;
-  static constexpr int items_per_vec_load = 1;
-};
-
-template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::min_or_max, offset_size::_8, accum_size::_8>
-{
-  // ipt_21.tpb_384.ipv_2  1.021487   1.0  1.019033  1.057143
-  static constexpr int items              = 21;
-  static constexpr int threads            = 384;
-  static constexpr int items_per_vec_load = 2;
-};
-
-template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::min_or_max, offset_size::_8, accum_size::_16>
-{
-  // ipt_17.tpb_512.ipv_2 1.003412  0.980713  1.003111  1.031730
-  static constexpr int items              = 17;
-  static constexpr int threads            = 512;
-  static constexpr int items_per_vec_load = 2;
-};
-
-template <class OffsetT>
-struct sm100_tuning<float, OffsetT, op_type::min_or_max, offset_size::_8, accum_size::_4>
-{
-  // ipt_18.tpb_448.ipv_1 1.023427  1.000000  1.022287  1.083333
-  static constexpr int items              = 18;
-  static constexpr int threads            = 448;
-  static constexpr int items_per_vec_load = 1;
-};
-
-template <class OffsetT>
-struct sm100_tuning<double, OffsetT, op_type::min_or_max, offset_size::_8, accum_size::_8>
-{
-  // ipt_16.tpb_320.ipv_2 1.018602   1.0  1.016518  1.059821
-  static constexpr int items              = 16;
-  static constexpr int threads            = 320;
-  static constexpr int items_per_vec_load = 1;
-};
+// For min or max, verification showed the benefits were too small (within noise)
 
 template <typename AccumT, typename OffsetT, typename ReductionOpT>
 struct policy_hub

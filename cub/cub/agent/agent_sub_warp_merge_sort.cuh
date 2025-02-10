@@ -179,7 +179,7 @@ class AgentSubWarpSort
   }
 
 public:
-  static constexpr bool KEYS_ONLY = std::is_same<ValueT, cub::NullType>::value;
+  static constexpr bool KEYS_ONLY = ::cuda::std::is_same<ValueT, cub::NullType>::value;
 
   using WarpMergeSortT = WarpMergeSort<KeyT, PolicyT::ITEMS_PER_THREAD, PolicyT::WARP_THREADS, ValueT>;
 

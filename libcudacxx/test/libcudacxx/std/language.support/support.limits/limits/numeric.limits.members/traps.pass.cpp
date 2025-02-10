@@ -14,7 +14,7 @@
 
 #include "test_macros.h"
 
-#if defined(__i386__) || defined(__x86_64__) || defined(__pnacl__) || defined(__wasm__)
+#if _CCCL_ARCH(X86_64) && _CCCL_OS(LINUX)
 static const bool integral_types_trap = true;
 #else
 static const bool integral_types_trap = false;

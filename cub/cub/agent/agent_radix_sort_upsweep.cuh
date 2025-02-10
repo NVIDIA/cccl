@@ -259,13 +259,13 @@ struct AgentRadixSortUpsweep
     bit_ordered_type converted_key = bit_ordered_conversion::to_bit_ordered(decomposer, key);
 
     // Extract current digit bits
-    std::uint32_t digit = digit_extractor().Digit(converted_key);
+    uint32_t digit = digit_extractor().Digit(converted_key);
 
     // Get sub-counter offset
-    std::uint32_t sub_counter = digit & (PACKING_RATIO - 1);
+    uint32_t sub_counter = digit & (PACKING_RATIO - 1);
 
     // Get row offset
-    std::uint32_t row_offset = digit >> LOG_PACKING_RATIO;
+    uint32_t row_offset = digit >> LOG_PACKING_RATIO;
 
     // Increment counter
     temp_storage.thread_counters[row_offset][threadIdx.x][sub_counter]++;

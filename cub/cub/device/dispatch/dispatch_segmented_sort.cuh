@@ -195,7 +195,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
     typename AgentWarpMergeSortT::TempStorage medium_warp_sort;
   } temp_storage;
 
-  constexpr bool keys_only = std::is_same<ValueT, NullType>::value;
+  constexpr bool keys_only = ::cuda::std::is_same<ValueT, NullType>::value;
   AgentSegmentedRadixSortT agent(num_items, temp_storage.block_sort);
 
   constexpr int begin_bit = 0;
@@ -489,7 +489,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
   const OffsetT segment_end                     = d_end_offsets[global_segment_id];
   const OffsetT num_items                       = segment_end - segment_begin;
 
-  constexpr bool keys_only = std::is_same<ValueT, NullType>::value;
+  constexpr bool keys_only = ::cuda::std::is_same<ValueT, NullType>::value;
   AgentSegmentedRadixSortT agent(num_items, storage);
 
   d_keys_in_orig += segment_begin;
@@ -767,7 +767,7 @@ struct DispatchSegmentedSort
     detail::segmented_sort::OffsetIteratorT<EndOffsetIteratorT,
                                             THRUST_NS_QUALIFIER::constant_iterator<global_segment_offset_t>>;
 
-  static constexpr int KEYS_ONLY = std::is_same<ValueT, NullType>::value;
+  static constexpr int KEYS_ONLY = ::cuda::std::is_same<ValueT, NullType>::value;
 
   struct LargeSegmentsSelectorT
   {
@@ -814,7 +814,7 @@ struct DispatchSegmentedSort
   };
 
   // Partition selects large and small groups. The middle group is not selected.
-  static constexpr std::size_t num_selected_groups = 2;
+  static constexpr size_t num_selected_groups = 2;
 
   /**
    * Device-accessible allocation of temporary storage. When `nullptr`, the
@@ -824,7 +824,7 @@ struct DispatchSegmentedSort
   void* d_temp_storage;
 
   /// Reference to size in bytes of `d_temp_storage` allocation
-  std::size_t& temp_storage_bytes;
+  size_t& temp_storage_bytes;
 
   /**
    * Double-buffer whose current buffer contains the unsorted input keys and,
@@ -868,7 +868,7 @@ struct DispatchSegmentedSort
 
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchSegmentedSort(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
     ::cuda::std::int64_t num_items,
@@ -945,7 +945,7 @@ struct DispatchSegmentedSort
       auto small_segments_indices = small_partitioning_slot->create_alias<local_segment_index_t>();
       auto group_sizes            = group_sizes_slot->create_alias<local_segment_index_t>();
 
-      std::size_t three_way_partition_temp_storage_bytes{};
+      size_t three_way_partition_temp_storage_bytes{};
 
       LargeSegmentsSelectorT large_segments_selector(
         SmallAndMediumPolicyT::MediumPolicyT::ITEMS_PER_TILE, d_begin_offsets, d_end_offsets);
@@ -953,7 +953,7 @@ struct DispatchSegmentedSort
       SmallSegmentsSelectorT small_segments_selector(
         SmallAndMediumPolicyT::SmallPolicyT::ITEMS_PER_TILE + 1, d_begin_offsets, d_end_offsets);
 
-      auto device_partition_temp_storage = keys_slot->create_alias<std::uint8_t>();
+      auto device_partition_temp_storage = keys_slot->create_alias<uint8_t>();
 
       if (partition_segments)
       {
@@ -1131,7 +1131,7 @@ struct DispatchSegmentedSort
 
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
     ::cuda::std::int64_t num_items,
@@ -1208,12 +1208,12 @@ private:
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t SortWithPartitioning(
     LargeKernelT large_kernel,
     SmallKernelT small_kernel,
-    std::size_t three_way_partition_temp_storage_bytes,
+    size_t three_way_partition_temp_storage_bytes,
     cub::detail::device_double_buffer<KeyT>& d_keys_double_buffer,
     cub::detail::device_double_buffer<ValueT>& d_values_double_buffer,
     LargeSegmentsSelectorT& large_segments_selector,
     SmallSegmentsSelectorT& small_segments_selector,
-    cub::detail::temporary_storage::alias<std::uint8_t>& device_partition_temp_storage,
+    cub::detail::temporary_storage::alias<uint8_t>& device_partition_temp_storage,
     cub::detail::temporary_storage::alias<local_segment_index_t>& large_and_medium_segments_indices,
     cub::detail::temporary_storage::alias<local_segment_index_t>& small_segments_indices,
     cub::detail::temporary_storage::alias<local_segment_index_t>& group_sizes)

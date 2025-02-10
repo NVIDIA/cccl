@@ -38,7 +38,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& max(const _Tp& __
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& max(const _Tp& __a, const _Tp& __b)
 {
-  return _CUDA_VSTD::max(__a, __b, __less{});
+  return __a < __b ? __b : __a;
 }
 
 template <class _Tp, class _Compare>
