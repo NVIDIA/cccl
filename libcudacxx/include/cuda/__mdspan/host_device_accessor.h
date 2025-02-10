@@ -23,6 +23,7 @@
 
 #include <cuda_runtime_api.h> // TODO: the code should compile even outside nvcc
 
+#include <cuda/std/__mdspan/default_accessor.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_pointer.h>
@@ -96,7 +97,7 @@ private:
   using __self = __host_accessor<_Accessor>;
 
   static constexpr bool __is_ctor_noexcept      = noexcept(_Accessor{});
-  static constexpr bool __is_copy_ctor_noexcept = noexcept(_Accessor{_Accessor{}});
+  static constexpr bool __is_copy_ctor_noexcept = noexcept(_Accessor{_Accessor{}}); // TODO: this could be a move ctor
   static constexpr bool __is_access_noexcept    = noexcept(_Accessor{}.access(data_handle_type{}, 0));
   static constexpr bool __is_offset_noexcept    = noexcept(_Accessor{}.offset(data_handle_type{}, 0));
 
@@ -120,6 +121,12 @@ private:
     _CCCL_ASSERT(__self::__is_host_accessible_pointer(__p), "cuda::__host_accessor data handle is not a HOST pointer");
   }
 
+  template <typename _Sp = bool> // lazy evaluation
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr void __prevent_device_instantiation() noexcept
+  {
+    static_assert(sizeof(_Sp) != sizeof(_Sp), "cuda::__host_accessor cannot be used in HOST code");
+  }
+
 public:
   _CCCL_TEMPLATE(typename _NotUsed = void)
   _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_default_constructible, _Accessor))
@@ -138,6 +145,29 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __host_accessor(__managed_accessor<_OtherElementType>) noexcept(
     __is_copy_ctor_noexcept)
   {}
+
+  _CCCL_NV_DIAG_SUPPRESS(554) // _Accessor could be exactly default_accessor
+
+  _CCCL_TEMPLATE(class _OtherElementType)
+  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _OtherElementType (*)[], element_type (*)[]))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __host_accessor(_CUDA_VSTD::default_accessor<_OtherElementType>) noexcept
+  {
+    NV_IF_TARGET(NV_IS_DEVICE, (__self::__prevent_device_instantiation();))
+  }
+
+#if defined(_CCCL_TEMPLATED_CONVERSION_TO_DEFAULT_ACCESSOR)
+  _CCCL_TEMPLATE(class _OtherElementType)
+  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _OtherElementType (*)[], element_type (*)[]))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator _CUDA_VSTD::default_accessor<OtherElementType>() const noexcept
+#else
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator _CUDA_VSTD::default_accessor<element_type>() const noexcept
+#endif
+  {
+    NV_IF_TARGET(NV_IS_DEVICE, (__self::__prevent_device_instantiation();))
+    return {};
+  }
+
+  _CCCL_NV_DIAG_DEFAULT(554)
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr reference access(data_handle_type __p, _CUDA_VSTD::size_t __i) const
     noexcept(__is_access_noexcept)
@@ -205,6 +235,29 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __device_accessor(__managed_accessor<_OtherElementType>) noexcept(
     __is_copy_ctor_noexcept)
   {}
+
+  _CCCL_NV_DIAG_SUPPRESS(554) // _Accessor could be exactly default_accessor
+
+  _CCCL_TEMPLATE(class _OtherElementType)
+  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _OtherElementType (*)[], element_type (*)[]))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __device_accessor(_CUDA_VSTD::default_accessor<_OtherElementType>) noexcept
+  {
+    NV_IF_TARGET(NV_IS_DEVICE, (__self::__prevent_host_instantiation();))
+  }
+
+#if defined(_CCCL_TEMPLATED_CONVERSION_TO_DEFAULT_ACCESSOR)
+  _CCCL_TEMPLATE(class _OtherElementType)
+  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _OtherElementType (*)[], element_type (*)[]))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator _CUDA_VSTD::default_accessor<OtherElementType>() const noexcept
+#else
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator _CUDA_VSTD::default_accessor<element_type>() const noexcept
+#endif
+  {
+    NV_IF_TARGET(NV_IS_DEVICE, (__self::__prevent_host_instantiation();))
+    return {};
+  }
+
+  _CCCL_NV_DIAG_DEFAULT(554)
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr reference access(data_handle_type __p, _CUDA_VSTD::size_t __i) const
     noexcept(__is_access_noexcept)
