@@ -34,13 +34,22 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <typename _Accessor>
-struct host_accessor;
+struct __host_accessor;
 
 template <typename _Accessor>
-struct device_accessor;
+struct __device_accessor;
 
 template <typename _Accessor>
-struct managed_accessor;
+struct __managed_accessor;
+
+template <typename _Accessor>
+using host_accessor = __host_accessor<_Accessor>;
+
+template <typename _Accessor>
+using device_accessor = __device_accessor<_Accessor>;
+
+template <typename _Accessor>
+using managed_accessor = __managed_accessor<_Accessor>;
 
 /***********************************************************************************************************************
  * Host/Device/Managed Accessor Traits
@@ -56,13 +65,13 @@ template <typename>
 inline constexpr bool is_managed_accessor_v = false;
 
 template <typename _Accessor>
-inline constexpr bool is_host_accessor_v<host_accessor<_Accessor>> = true;
+inline constexpr bool is_host_accessor_v<__host_accessor<_Accessor>> = true;
 
 template <typename _Accessor>
-inline constexpr bool is_device_accessor_v<device_accessor<_Accessor>> = true;
+inline constexpr bool is_device_accessor_v<__device_accessor<_Accessor>> = true;
 
 template <typename _Accessor>
-inline constexpr bool is_managed_accessor_v<managed_accessor<_Accessor>> = true;
+inline constexpr bool is_managed_accessor_v<__managed_accessor<_Accessor>> = true;
 
 template <typename _Tp>
 inline constexpr bool is_host_device_managed_accessor_v =
@@ -73,18 +82,18 @@ inline constexpr bool is_host_device_managed_accessor_v =
  **********************************************************************************************************************/
 
 template <typename _Accessor>
-struct host_accessor : public _Accessor
+struct __host_accessor : public _Accessor
 {
   static_assert(!is_host_device_managed_accessor_v<_Accessor>,
-                "cuda::host_accessor/cuda::device_accessor/cuda::managed_accessor cannot be nested");
+                "cuda::__host_accessor/cuda::__device_accessor/cuda::__managed_accessor cannot be nested");
 
-  using offset_policy    = host_accessor<typename _Accessor::offset_policy>;
+  using offset_policy    = __host_accessor<typename _Accessor::offset_policy>;
   using data_handle_type = typename _Accessor::data_handle_type;
   using reference        = typename _Accessor::reference;
   using element_type     = typename _Accessor::element_type;
 
 private:
-  using __self = host_accessor<_Accessor>;
+  using __self = __host_accessor<_Accessor>;
 
   static constexpr bool __is_ctor_noexcept      = noexcept(_Accessor{});
   static constexpr bool __is_copy_ctor_noexcept = noexcept(_Accessor{_Accessor{}});
@@ -108,24 +117,25 @@ private:
 
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr void __check_host_pointer(data_handle_type __p) noexcept
   {
-    _CCCL_ASSERT(__self::__is_host_accessible_pointer(__p), "cuda::host_accessor data handle is not a HOST pointer");
+    _CCCL_ASSERT(__self::__is_host_accessible_pointer(__p), "cuda::__host_accessor data handle is not a HOST pointer");
   }
 
 public:
-  _CCCL_TEMPLATE(class)
+  _CCCL_TEMPLATE(typename _NotUsed = void)
   _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_default_constructible, _Accessor))
-  _CCCL_HIDE_FROM_ABI host_accessor() noexcept(__is_ctor_noexcept)
+  _LIBCUDACXX_HIDE_FROM_ABI __host_accessor() noexcept(__is_ctor_noexcept)
       : _Accessor{}
   {}
 
-  _CCCL_TEMPLATE(class _OtherElementType)
+  _CCCL_TEMPLATE(typename _OtherElementType)
   _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _OtherElementType (*)[], element_type (*)[]))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr host_accessor(host_accessor<_OtherElementType>) noexcept(__is_copy_ctor_noexcept)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __host_accessor(__host_accessor<_OtherElementType>) noexcept(
+    __is_copy_ctor_noexcept)
   {}
 
-  _CCCL_TEMPLATE(class _OtherElementType)
+  _CCCL_TEMPLATE(typename _OtherElementType)
   _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _OtherElementType (*)[], element_type (*)[]))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr host_accessor(managed_accessor<_OtherElementType>) noexcept(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __host_accessor(__managed_accessor<_OtherElementType>) noexcept(
     __is_copy_ctor_noexcept)
   {}
 
@@ -134,7 +144,7 @@ public:
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
                       (__self::__check_host_pointer(__p);), //
-                      (static_assert(false, "cuda::host_accessor cannot be used in DEVICE code");))
+                      (static_assert(false, "cuda::__host_accessor cannot be used in DEVICE code");))
     return _Accessor::access(__p, __i);
   }
 
@@ -143,7 +153,7 @@ public:
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
                       (__self::__check_host_pointer(__p);), //
-                      (static_assert(false, "cuda::host_accessor cannot be used in DEVICE code");))
+                      (static_assert(false, "cuda::__host_accessor cannot be used in DEVICE code");))
     return _Accessor::offset(__p, __i);
   }
 };
@@ -153,18 +163,18 @@ public:
  **********************************************************************************************************************/
 
 template <typename _Accessor>
-struct device_accessor : public _Accessor
+struct __device_accessor : public _Accessor
 {
   static_assert(!is_host_device_managed_accessor_v<_Accessor>,
-                "cuda::host_accessor/cuda::device_accessor/cuda::managed_accessor cannot be nested");
+                "cuda::__host_accessor/cuda::__device_accessor/cuda::__managed_accessor cannot be nested");
 
-  using offset_policy    = device_accessor<typename _Accessor::offset_policy>;
+  using offset_policy    = __device_accessor<typename _Accessor::offset_policy>;
   using data_handle_type = typename _Accessor::data_handle_type;
   using reference        = typename _Accessor::reference;
   using element_type     = typename _Accessor::element_type;
 
 private:
-  using __self = device_accessor<_Accessor>;
+  using __self = __device_accessor<_Accessor>;
 
   static constexpr bool __is_ctor_noexcept      = noexcept(_Accessor{});
   static constexpr bool __is_copy_ctor_noexcept = noexcept(_Accessor{_Accessor{}});
@@ -174,25 +184,25 @@ private:
   template <typename _Sp = bool> // lazy evaluation
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr void __prevent_host_instantiation() noexcept
   {
-    static_assert(sizeof(_Sp) != sizeof(_Sp), "cuda::device_accessor cannot be used in HOST code");
+    static_assert(sizeof(_Sp) != sizeof(_Sp), "cuda::__device_accessor cannot be used in HOST code");
   }
 
 public:
-  _CCCL_TEMPLATE(class)
+  _CCCL_TEMPLATE(typename _NotUsed = void)
   _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_default_constructible, _Accessor))
-  _CCCL_HIDE_FROM_ABI device_accessor() noexcept(__is_ctor_noexcept)
+  _LIBCUDACXX_HIDE_FROM_ABI __device_accessor() noexcept(__is_ctor_noexcept)
       : _Accessor{}
   {}
 
-  _CCCL_TEMPLATE(class _OtherElementType)
+  _CCCL_TEMPLATE(typename _OtherElementType)
   _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _OtherElementType (*)[], element_type (*)[]))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr device_accessor(device_accessor<_OtherElementType>) noexcept(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __device_accessor(__device_accessor<_OtherElementType>) noexcept(
     __is_copy_ctor_noexcept)
   {}
 
-  _CCCL_TEMPLATE(class _OtherElementType)
+  _CCCL_TEMPLATE(typename _OtherElementType)
   _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _OtherElementType (*)[], element_type (*)[]))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr device_accessor(managed_accessor<_OtherElementType>) noexcept(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __device_accessor(__managed_accessor<_OtherElementType>) noexcept(
     __is_copy_ctor_noexcept)
   {}
 
@@ -216,18 +226,18 @@ public:
  **********************************************************************************************************************/
 
 template <typename _Accessor>
-struct managed_accessor : public _Accessor
+struct __managed_accessor : public _Accessor
 {
   static_assert(!is_host_device_managed_accessor_v<_Accessor>,
-                "cuda::host_accessor/cuda::device_accessor/cuda::managed_accessor cannot be nested");
+                "cuda::__host_accessor/cuda::__device_accessor/cuda::__managed_accessor cannot be nested");
 
-  using offset_policy    = managed_accessor<typename _Accessor::offset_policy>;
+  using offset_policy    = __managed_accessor<typename _Accessor::offset_policy>;
   using data_handle_type = typename _Accessor::data_handle_type;
   using reference        = typename _Accessor::reference;
   using element_type     = typename _Accessor::element_type;
 
 private:
-  using __self = managed_accessor<_Accessor>;
+  using __self = __managed_accessor<_Accessor>;
 
   static constexpr bool __is_ctor_noexcept      = noexcept(_Accessor{});
   static constexpr bool __is_copy_ctor_noexcept = noexcept(_Accessor{_Accessor{}});
@@ -235,7 +245,7 @@ private:
   static constexpr bool __is_offset_noexcept    = noexcept(_Accessor{}.offset(data_handle_type{}, 0));
 
   static_assert(!is_host_device_managed_accessor_v<_Accessor>,
-                "cuda::host_accessor/cuda::device_accessor/cuda::managed_accessor cannot be nested");
+                "cuda::__host_accessor/cuda::__device_accessor/cuda::__managed_accessor cannot be nested");
 
   template <typename data_handle_type>
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __is_managed_pointer(data_handle_type __p) noexcept
@@ -254,19 +264,19 @@ private:
 
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr void __check_managed_pointer(data_handle_type __p) noexcept
   {
-    _CCCL_ASSERT(__self::__is_managed_pointer(__p), "cuda::managed_accessor data handle is not a MANAGED pointer");
+    _CCCL_ASSERT(__self::__is_managed_pointer(__p), "cuda::__managed_accessor data handle is not a MANAGED pointer");
   }
 
 public:
-  _CCCL_TEMPLATE(class)
+  _CCCL_TEMPLATE(typename _NotUsed = void)
   _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_default_constructible, _Accessor))
-  _CCCL_HIDE_FROM_ABI managed_accessor() noexcept(__is_ctor_noexcept)
+  _LIBCUDACXX_HIDE_FROM_ABI __managed_accessor() noexcept(__is_ctor_noexcept)
       : _Accessor{}
   {}
 
-  _CCCL_TEMPLATE(class _OtherElementType)
+  _CCCL_TEMPLATE(typename _OtherElementType)
   _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _OtherElementType (*)[], element_type (*)[]))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr managed_accessor(managed_accessor<_OtherElementType>) noexcept(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __managed_accessor(__managed_accessor<_OtherElementType>) noexcept(
     __is_copy_ctor_noexcept)
   {}
 
@@ -296,19 +306,19 @@ template <typename>
 inline constexpr bool is_device_accessible_v = false;
 
 template <typename _Accessor>
-inline constexpr bool is_host_accessible_v<host_accessor<_Accessor>> = true;
+inline constexpr bool is_host_accessible_v<__host_accessor<_Accessor>> = true;
 
 template <typename _Accessor>
-inline constexpr bool is_host_accessible_v<managed_accessor<_Accessor>> = true;
+inline constexpr bool is_host_accessible_v<__managed_accessor<_Accessor>> = true;
 
 template <template <typename> class _TClass, typename _Accessor>
 inline constexpr bool is_host_accessible_v<_TClass<_Accessor>> = is_host_accessible_v<_Accessor>;
 
 template <typename _Accessor>
-inline constexpr bool is_device_accessible_v<device_accessor<_Accessor>> = true;
+inline constexpr bool is_device_accessible_v<__device_accessor<_Accessor>> = true;
 
 template <typename _Accessor>
-inline constexpr bool is_device_accessible_v<managed_accessor<_Accessor>> = true;
+inline constexpr bool is_device_accessible_v<__managed_accessor<_Accessor>> = true;
 
 template <template <typename> class _TClass, typename _Accessor>
 inline constexpr bool is_device_accessible_v<_TClass<_Accessor>> = is_device_accessible_v<_Accessor>;
