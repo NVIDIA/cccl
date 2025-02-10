@@ -120,13 +120,8 @@ CUB_NAMESPACE_BEGIN
 template <template <typename> class... Policies>
 struct NumericTraits<c2h::custom_type_t<Policies...>>
 {
-  using custom_t                     = c2h::custom_type_t<Policies...>;
-  static constexpr Category CATEGORY = NOT_A_NUMBER;
-  enum
-  {
-    PRIMITIVE = false,
-    NULL_TYPE = false,
-  };
+  using custom_t = c2h::custom_type_t<Policies...>;
+
   __host__ __device__ static custom_t Max()
   {
     custom_t val{};

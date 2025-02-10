@@ -119,7 +119,7 @@ LoadVectorAndFunnelShiftR(uint32_t const* aligned_ptr, uint32_t bit_shift, uint3
 template <typename VectorT>
 _CCCL_FORCEINLINE _CCCL_DEVICE void LoadVector(const char* ptr, VectorT& data_out)
 {
-  const uint32_t offset            = reinterpret_cast<std::uintptr_t>(ptr) % 4U;
+  const uint32_t offset            = reinterpret_cast<uintptr_t>(ptr) % 4U;
   const uint32_t* aligned_ptr      = reinterpret_cast<uint32_t const*>(ptr - offset);
   constexpr uint32_t bits_per_byte = 8U;
   const uint32_t bit_shift         = offset * bits_per_byte;
@@ -180,13 +180,13 @@ GetAlignedPtrs(const void* in_begin, void* out_begin, ByteOffsetT num_bytes)
   const char* in_ptr = reinterpret_cast<const char*>(in_begin);
 
   // Number of bytes between the first VectorT-aligned address at or before out_begin and out_begin
-  const uint32_t alignment_offset = reinterpret_cast<std::uintptr_t>(out_ptr) % out_datatype_size;
+  const uint32_t alignment_offset = reinterpret_cast<uintptr_t>(out_ptr) % out_datatype_size;
 
   // The first VectorT-aligned address before (or at) out_begin
   char* out_chars_aligned = reinterpret_cast<char*>(out_ptr - alignment_offset);
 
   // The number of extra bytes preceding `in_ptr` that are loaded but dropped
-  uint32_t in_extra_bytes = reinterpret_cast<std::uintptr_t>(in_ptr) % in_datatype_size;
+  uint32_t in_extra_bytes = reinterpret_cast<uintptr_t>(in_ptr) % in_datatype_size;
 
   // The offset required by `LoadVector`:
   // If the input pointer is not aligned, we load data from the last aligned address preceding the
@@ -205,7 +205,7 @@ GetAlignedPtrs(const void* in_begin, void* out_begin, ByteOffsetT num_bytes)
   // bytes after the last byte that is copied. That is, we always load four bytes up to the next
   // aligned input address at a time. E.g., if the last byte loaded is one byte past the last
   // aligned address we'll also load the three bytes after that byte.
-  uint32_t in_extra_bytes_from_aligned = (reinterpret_cast<std::uintptr_t>(in_aligned_begin) % in_datatype_size);
+  uint32_t in_extra_bytes_from_aligned = (reinterpret_cast<uintptr_t>(in_aligned_begin) % in_datatype_size);
   uint32_t in_end_padding_req          = (in_datatype_size - in_extra_bytes_from_aligned) % in_datatype_size;
 
   // Bytes after `out_chars_aligned` to the last VectorT-aligned

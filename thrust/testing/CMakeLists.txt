@@ -18,16 +18,6 @@ macro(thrust_declare_test_restrictions test_name)
   list(APPEND ${test_name}_host.device_allowed ${ARGN})
 endmacro()
 
-# Async/future/event tests only support the CUDA backend:
-thrust_declare_test_restrictions(async_copy        CPP.CUDA OMP.CUDA TBB.CUDA)
-thrust_declare_test_restrictions(async_for_each    CPP.CUDA OMP.CUDA TBB.CUDA)
-thrust_declare_test_restrictions(async_reduce      CPP.CUDA OMP.CUDA TBB.CUDA)
-thrust_declare_test_restrictions(async_reduce_into CPP.CUDA OMP.CUDA TBB.CUDA)
-thrust_declare_test_restrictions(async_sort        CPP.CUDA OMP.CUDA TBB.CUDA)
-thrust_declare_test_restrictions(async_transform   CPP.CUDA OMP.CUDA TBB.CUDA)
-thrust_declare_test_restrictions(event             CPP.CUDA OMP.CUDA TBB.CUDA)
-thrust_declare_test_restrictions(future            CPP.CUDA OMP.CUDA TBB.CUDA)
-
 # This test is incompatible with TBB and OMP, since it requires special per-device
 # handling to process exceptions in a device function, which is only implemented
 # for CUDA.
@@ -163,7 +153,6 @@ foreach(thrust_target IN LISTS THRUST_TARGETS)
 endforeach()
 
 # Add specialized tests:
-add_subdirectory(async)
 add_subdirectory(cmake)
 add_subdirectory(cpp)
 add_subdirectory(cuda)

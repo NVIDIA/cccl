@@ -159,11 +159,6 @@ void TestTransformIteratorReferenceAndValueType()
     static_assert(is_same<decltype(it_tr_fwd)::value_type, bool>::value, "");
     (void) it_tr_fwd;
 
-    auto it_tr_tid = thrust::make_transform_iterator(it, thrust::identity<bool>{});
-    static_assert(is_same<decltype(it_tr_tid)::reference, bool>::value, ""); // identity<bool>::value_type
-    static_assert(is_same<decltype(it_tr_tid)::value_type, bool>::value, "");
-    (void) it_tr_tid;
-
     auto it_tr_cid = thrust::make_transform_iterator(it, cuda::std::identity{});
     static_assert(is_same<decltype(it_tr_cid)::reference, bool>::value, ""); // special handling by
                                                                              // transform_iterator_reference
@@ -192,11 +187,6 @@ void TestTransformIteratorReferenceAndValueType()
     static_assert(is_same<decltype(it_tr_fwd)::reference, bool&&>::value, ""); // wrapped reference is decayed
     static_assert(is_same<decltype(it_tr_fwd)::value_type, bool>::value, "");
     (void) it_tr_fwd;
-
-    auto it_tr_tid = thrust::make_transform_iterator(it, thrust::identity<bool>{});
-    static_assert(is_same<decltype(it_tr_tid)::reference, bool>::value, ""); // identity<bool>::value_type
-    static_assert(is_same<decltype(it_tr_tid)::value_type, bool>::value, "");
-    (void) it_tr_tid;
 
     auto it_tr_cid = thrust::make_transform_iterator(it, cuda::std::identity{});
     static_assert(is_same<decltype(it_tr_cid)::reference, bool>::value, ""); // special handling by
@@ -227,16 +217,6 @@ void TestTransformIteratorReferenceAndValueType()
     static_assert(is_same<decltype(it_tr_fwd)::value_type, bool>::value, "");
     (void) it_tr_fwd;
 
-    auto it_tr_ide = thrust::make_transform_iterator(it, thrust::identity<bool>{});
-    static_assert(is_same<decltype(it_tr_ide)::reference, bool>::value, ""); // identity<bool>::value_type
-    static_assert(is_same<decltype(it_tr_ide)::value_type, bool>::value, "");
-    (void) it_tr_ide;
-
-    auto it_tr_tid = thrust::make_transform_iterator(it, thrust::identity<bool>{});
-    static_assert(is_same<decltype(it_tr_tid)::reference, bool>::value, ""); // identity<bool>::value_type
-    static_assert(is_same<decltype(it_tr_tid)::value_type, bool>::value, "");
-    (void) it_tr_tid;
-
     auto it_tr_cid = thrust::make_transform_iterator(it, cuda::std::identity{});
     static_assert(is_same<decltype(it_tr_cid)::reference, bool>::value, ""); // special handling by
                                                                              // transform_iterator_reference
@@ -250,8 +230,6 @@ void TestTransformIteratorIdentity()
 {
   thrust::device_vector<int> v(3, 42);
 
-  ASSERT_EQUAL(*thrust::make_transform_iterator(v.begin(), thrust::identity<int>{}), 42);
-  ASSERT_EQUAL(*thrust::make_transform_iterator(v.begin(), thrust::identity<>{}), 42);
   ASSERT_EQUAL(*thrust::make_transform_iterator(v.begin(), cuda::std::identity{}), 42);
   using namespace thrust::placeholders;
   ASSERT_EQUAL(*thrust::make_transform_iterator(v.begin(), _1), 42);

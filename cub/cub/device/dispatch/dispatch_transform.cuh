@@ -49,12 +49,17 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::transform
 {
+
+enum class requires_stable_address
+{
+  no,
+  yes
+};
+
 template <typename T>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE const char* round_down_ptr(const T* ptr, unsigned alignment)
 {
-#if _CCCL_STD_VER > 2011
   _CCCL_ASSERT(::cuda::std::has_single_bit(alignment), "");
-#endif // _CCCL_STD_VER > 2011
   return reinterpret_cast<const char*>(
     reinterpret_cast<::cuda::std::uintptr_t>(ptr) & ~::cuda::std::uintptr_t{alignment - 1});
 }
@@ -153,7 +158,7 @@ _CCCL_DEVICE void transform_kernel_impl(
 }
 
 // TODO(bgruber) cheap copy of ::cuda::std::apply, which requires C++17.
-template <class F, class Tuple, std::size_t... Is>
+template <class F, class Tuple, size_t... Is>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto poor_apply_impl(F&& f, Tuple&& t, ::cuda::std::index_sequence<Is...>)
   -> decltype(::cuda::std::forward<F>(f)(::cuda::std::get<Is>(::cuda::std::forward<Tuple>(t))...))
 {
@@ -608,21 +613,21 @@ struct prefetch_config
   int sm_count;
 };
 
-template <bool RequiresStableAddress,
+template <requires_stable_address StableAddress,
           typename Offset,
           typename RandomAccessIteratorTupleIn,
           typename RandomAccessIteratorOut,
           typename TransformOp,
-          typename PolicyHub = policy_hub<RequiresStableAddress, RandomAccessIteratorTupleIn>>
+          typename PolicyHub = policy_hub<StableAddress == requires_stable_address::yes, RandomAccessIteratorTupleIn>>
 struct dispatch_t;
 
-template <bool RequiresStableAddress,
+template <requires_stable_address StableAddress,
           typename Offset,
           typename... RandomAccessIteratorsIn,
           typename RandomAccessIteratorOut,
           typename TransformOp,
           typename PolicyHub>
-struct dispatch_t<RequiresStableAddress,
+struct dispatch_t<StableAddress,
                   Offset,
                   ::cuda::std::tuple<RandomAccessIteratorsIn...>,
                   RandomAccessIteratorOut,
@@ -731,9 +736,9 @@ struct dispatch_t<RequiresStableAddress,
       config->elem_per_thread);
   }
 
-  template <typename ActivePolicy, std::size_t... Is>
+  template <typename ActivePolicy, size_t... Is>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
-  invoke_algorithm(cuda::std::index_sequence<Is...>, ::cuda::std::integral_constant<Algorithm, Algorithm::ublkcp>)
+    invoke_algorithm(::cuda::std::index_sequence<Is...>, ::cuda::std::integral_constant<Algorithm, Algorithm::ublkcp>)
   {
     auto ret = configure_ublkcp_kernel<ActivePolicy>();
     if (!ret)
@@ -754,9 +759,9 @@ struct dispatch_t<RequiresStableAddress,
   }
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
 
-  template <typename ActivePolicy, std::size_t... Is>
+  template <typename ActivePolicy, size_t... Is>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
-  invoke_algorithm(cuda::std::index_sequence<Is...>, ::cuda::std::integral_constant<Algorithm, Algorithm::prefetch>)
+    invoke_algorithm(::cuda::std::index_sequence<Is...>, ::cuda::std::integral_constant<Algorithm, Algorithm::prefetch>)
   {
     using policy_t          = typename ActivePolicy::algo_policy;
     constexpr int block_dim = policy_t::block_threads;

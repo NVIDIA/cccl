@@ -486,14 +486,14 @@ using default_no_delay_t             = default_no_delay_constructor_t::delay_t;
 
 template <class T>
 using default_delay_constructor_t =
-  ::cuda::std::_If<Traits<T>::PRIMITIVE, fixed_delay_constructor_t<350, 450>, default_no_delay_constructor_t>;
+  ::cuda::std::_If<is_primitive<T>::value, fixed_delay_constructor_t<350, 450>, default_no_delay_constructor_t>;
 
 template <class T>
 using default_delay_t = typename default_delay_constructor_t<T>::delay_t;
 
 template <class KeyT, class ValueT>
 using default_reduce_by_key_delay_constructor_t =
-  ::cuda::std::_If<(Traits<ValueT>::PRIMITIVE) && (sizeof(ValueT) + sizeof(KeyT) < 16),
+  ::cuda::std::_If<is_primitive<ValueT>::value && (sizeof(ValueT) + sizeof(KeyT) < 16),
                    reduce_by_key_delay_constructor_t<350, 450>,
                    default_delay_constructor_t<KeyValuePair<KeyT, ValueT>>>;
 
@@ -545,7 +545,7 @@ struct tile_state_with_memory_order
 /**
  * Tile status interface.
  */
-template <typename T, bool SINGLE_WORD = Traits<T>::PRIMITIVE>
+template <typename T, bool SINGLE_WORD = detail::is_primitive<T>::value>
 struct ScanTileState;
 
 /**
@@ -822,7 +822,7 @@ struct ScanTileState<T, false>
       allocation_sizes[2] = (num_tiles + TILE_STATUS_PADDING) * sizeof(Uninitialized<T>);
 
       // Compute allocation pointers into the single storage blob
-      error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
 
       if (cudaSuccess != error)
       {
@@ -863,7 +863,7 @@ struct ScanTileState<T, false>
 
     // Set the necessary size of the blob
     void* allocations[3] = {};
-    return CubDebug(AliasTemporaries(nullptr, temp_storage_bytes, allocations, allocation_sizes));
+    return CubDebug(detail::AliasTemporaries(nullptr, temp_storage_bytes, allocations, allocation_sizes));
   }
 
   /**
@@ -950,7 +950,7 @@ struct ScanTileState<T, false>
  */
 template <typename ValueT,
           typename KeyT,
-          bool SINGLE_WORD = (Traits<ValueT>::PRIMITIVE) && (sizeof(ValueT) + sizeof(KeyT) < 16)>
+          bool SINGLE_WORD = detail::is_primitive<ValueT>::value && (sizeof(ValueT) + sizeof(KeyT) < 16)>
 struct ReduceByKeyScanTileState;
 
 /**

@@ -98,10 +98,6 @@ struct TestAllocatorAttachment
     test_temporary_allocation_valid(policy(alloc));
     test_temporary_allocation_valid(policy(const_alloc));
     test_temporary_allocation_valid(policy(&test_memory_resource));
-
-    test_temporary_allocation_valid(policy(std::allocator<int>()).after(1));
-    test_temporary_allocation_valid(policy(alloc).after(1));
-    test_temporary_allocation_valid(policy(const_alloc).after(1));
   }
 };
 

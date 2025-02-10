@@ -234,7 +234,8 @@ template <
   typename AccumT = ::cuda::std::__accumulator_t<
     ScanOpT,
     cub::detail::value_t<ValuesInputIteratorT>,
-    ::cuda::std::_If<std::is_same<InitValueT, NullType>::value, cub::detail::value_t<ValuesInputIteratorT>, InitValueT>>,
+    ::cuda::std::
+      _If<::cuda::std::is_same<InitValueT, NullType>::value, cub::detail::value_t<ValuesInputIteratorT>, InitValueT>>,
   typename PolicyHub =
     detail::scan_by_key::policy_hub<KeysInputIteratorT, AccumT, cub::detail::value_t<ValuesInputIteratorT>, ScanOpT>>
 struct DispatchScanByKey
@@ -379,7 +380,7 @@ struct DispatchScanByKey
       // the necessary size of the blob)
       void* allocations[2] = {};
 
-      error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;

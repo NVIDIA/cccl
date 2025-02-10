@@ -25,6 +25,12 @@
  *
  ******************************************************************************/
 
+// This benchmark uses a custom operation, max_t, which is not known to CUB, so no operator specific optimizations and
+// tunings are performed.
+
+// Because CUB cannot detect this operator, we cannot add any tunings based on the results of this benchmark. Its main
+// use is to detect regressions.
+
 // %RANGE% TUNE_ITEMS ipt 7:24:1
 // %RANGE% TUNE_THREADS tpb 128:1024:32
 // %RANGE% TUNE_MAGIC_NS ns 0:2048:4

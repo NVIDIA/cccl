@@ -80,10 +80,10 @@ int main(int, char**)
   test_is_floating_point<float>();
   test_is_floating_point<double>();
   test_is_floating_point<long double>();
-#ifdef _CCCL_HAS_NVFP16
+#if _CCCL_HAS_NVFP16()
   test_is_floating_point<__half>();
 #endif // _CCCL_HAS_NVFP16
-#ifdef _CCCL_HAS_NVBF16
+#if _CCCL_HAS_NVBF16()
   test_is_floating_point<__nv_bfloat16>();
 #endif // _CCCL_HAS_NVBF16
 #if _CCCL_HAS_NVFP8()

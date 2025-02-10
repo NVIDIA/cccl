@@ -78,12 +78,13 @@ CUB_NAMESPACE_BEGIN
  * @tparam _RADIX_BITS
  *   The number of radix bits, i.e., log2(bins)
  */
-template <int NOMINAL_BLOCK_THREADS_4B,
-          int NOMINAL_ITEMS_PER_THREAD_4B,
-          typename ComputeT,
-          CacheLoadModifier _LOAD_MODIFIER,
-          int _RADIX_BITS,
-          typename ScalingType = RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
+template <
+  int NOMINAL_BLOCK_THREADS_4B,
+  int NOMINAL_ITEMS_PER_THREAD_4B,
+  typename ComputeT,
+  CacheLoadModifier _LOAD_MODIFIER,
+  int _RADIX_BITS,
+  typename ScalingType = detail::RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
 struct AgentRadixSortUpsweepPolicy : ScalingType
 {
   enum
@@ -258,13 +259,13 @@ struct AgentRadixSortUpsweep
     bit_ordered_type converted_key = bit_ordered_conversion::to_bit_ordered(decomposer, key);
 
     // Extract current digit bits
-    std::uint32_t digit = digit_extractor().Digit(converted_key);
+    uint32_t digit = digit_extractor().Digit(converted_key);
 
     // Get sub-counter offset
-    std::uint32_t sub_counter = digit & (PACKING_RATIO - 1);
+    uint32_t sub_counter = digit & (PACKING_RATIO - 1);
 
     // Get row offset
-    std::uint32_t row_offset = digit >> LOG_PACKING_RATIO;
+    uint32_t row_offset = digit >> LOG_PACKING_RATIO;
 
     // Increment counter
     temp_storage.thread_counters[row_offset][threadIdx.x][sub_counter]++;
@@ -551,13 +552,5 @@ struct AgentRadixSortUpsweep
 
 } // namespace radix_sort
 } // namespace detail
-
-template <typename AgentRadixSortUpsweepPolicy,
-          typename KeyT,
-          typename OffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
-using AgentRadixSortUpsweep CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
-                                                    "interface will be removed.") =
-  detail::radix_sort::AgentRadixSortUpsweep<AgentRadixSortUpsweepPolicy, KeyT, OffsetT, DecomposerT>;
 
 CUB_NAMESPACE_END

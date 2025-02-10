@@ -50,16 +50,6 @@ struct transform_iterator_reference
 
 // for certain function objects, we need to tweak the reference type. Notably, identity functions must decay to values.
 // See the implementation of transform_iterator<...>::dereference() for several comments on why this is necessary.
-template <typename T, class Iterator>
-struct transform_iterator_reference<identity<T>, Iterator>
-{
-  using type = T;
-};
-template <class Iterator>
-struct transform_iterator_reference<identity<>, Iterator>
-{
-  using type = iterator_value_t<Iterator>;
-};
 template <class Iterator>
 struct transform_iterator_reference<::cuda::std::identity, Iterator>
 {
