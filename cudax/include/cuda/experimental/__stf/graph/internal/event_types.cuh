@@ -77,7 +77,7 @@ protected:
 
       ::std::vector<cudaGraphNode_t> nodes;
 
-      // We initialize these variables to prevent compiler from issueing "maybe
+      // We initialize these variables to prevent compiler from issuing "maybe
       // uninitialized" warnings
       cudaGraph_t g0 = nullptr;
       size_t epoch0  = 0;
