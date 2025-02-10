@@ -154,7 +154,7 @@ public:
           cudaGraphAddDependencies(ctx_graph, ready_dependencies.data(), out_array.data(), ready_dependencies.size()));
 
         // Overall the task depends on the completion of the last node
-        auto gnp = reserved::graph_event(chained_task_nodes.back(), epoch);
+        auto gnp = reserved::graph_event(chained_task_nodes.back(), epoch, ctx_graph);
         gnp->set_symbol(ctx, "done " + get_symbol());
         done_prereqs.add(mv(gnp));
       }
