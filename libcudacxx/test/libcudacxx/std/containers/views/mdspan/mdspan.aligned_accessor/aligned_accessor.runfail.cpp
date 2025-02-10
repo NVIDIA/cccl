@@ -8,6 +8,8 @@
 //===----------------------------------------------------------------------===//
 #include <cuda/std/mdspan>
 
+#include <cstdio>
+
 #include <test_macros.h>
 
 int main(int, char**)
@@ -18,6 +20,10 @@ int main(int, char**)
   cuda::std::aligned_accessor<int, 64> aligned;
   volatile auto aligned_ptr = aligned.offset(ptr, 1);
   unused(aligned_ptr);
+#  if !defined(__CUDA_ARCH__)
+  printf("ptr = %p\n", ptr);
+  printf("aligned_ptr = %p\n", aligned_ptr);
+#  endif
   return 0;
 #else
   return 1;
