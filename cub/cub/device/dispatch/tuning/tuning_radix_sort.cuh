@@ -51,7 +51,7 @@ namespace detail
 namespace radix
 {
 // sm90 default
-template <std::size_t KeySize, std::size_t ValueSize, std::size_t OffsetSize>
+template <size_t KeySize, size_t ValueSize, size_t OffsetSize>
 struct sm90_small_key_tuning
 {
   static constexpr int threads = 384;
@@ -92,7 +92,7 @@ template <> struct sm90_small_key_tuning<2, 16, 8> { static constexpr int thread
 // clang-format on
 
 // sm100 default
-template <typename ValueT, std::size_t KeySize, std::size_t ValueSize, std::size_t OffsetSize>
+template <typename ValueT, size_t KeySize, size_t ValueSize, size_t OffsetSize>
 struct sm100_small_key_tuning : sm90_small_key_tuning<KeySize, ValueSize, OffsetSize>
 {};
 
@@ -299,7 +299,7 @@ struct policy_hub
   //------------------------------------------------------------------------------
 
   // Whether this is a keys-only (or key-value) sort
-  static constexpr bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
+  static constexpr bool KEYS_ONLY = ::cuda::std::is_same<ValueT, NullType>::value;
 
   // Dominant-sized key/value type
   using DominantT = ::cuda::std::_If<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;

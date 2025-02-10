@@ -77,11 +77,6 @@ CUB_NAMESPACE_BEGIN
 template <typename KeyT, bool IsFP = ::cuda::is_floating_point<KeyT>::value>
 struct BaseDigitExtractor
 {
-  // TODO(bgruber): sanity check, remove eventually
-  _CCCL_SUPPRESS_DEPRECATED_PUSH
-  static_assert(Traits<KeyT>::CATEGORY != FLOATING_POINT, "");
-  _CCCL_SUPPRESS_DEPRECATED_POP
-
   using TraitsT      = Traits<KeyT>;
   using UnsignedBits = typename TraitsT::UnsignedBits;
 
@@ -94,11 +89,6 @@ struct BaseDigitExtractor
 template <typename KeyT>
 struct BaseDigitExtractor<KeyT, true>
 {
-  // TODO(bgruber): sanity check, remove eventually
-  _CCCL_SUPPRESS_DEPRECATED_PUSH
-  static_assert(Traits<KeyT>::CATEGORY == FLOATING_POINT, "");
-  _CCCL_SUPPRESS_DEPRECATED_POP
-
   using TraitsT      = Traits<KeyT>;
   using UnsignedBits = typename TraitsT::UnsignedBits;
 

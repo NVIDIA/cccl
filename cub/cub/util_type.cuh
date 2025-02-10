@@ -78,11 +78,6 @@ _CCCL_DIAG_POP
 
 CUB_NAMESPACE_BEGIN
 
-#ifndef CUB_IS_INT128_ENABLED
-// Deprecated [Since 2.8]
-#  define CUB_IS_INT128_ENABLED _CCCL_HAS_INT128()
-#endif // !defined(CUB_IS_INT128_ENABLED)
-
 /******************************************************************************
  * Conditional types
  ******************************************************************************/
@@ -213,19 +208,6 @@ struct NullType
   {
     return false;
   }
-};
-
-/**
- * \brief Allows for the treatment of an integral constant as a type at compile-time (e.g., to achieve static call
- * dispatch based on constant integral values)
- */
-template <int A>
-struct CCCL_DEPRECATED_BECAUSE("Use ::cuda::std::integral_constant instead") Int2Type
-{
-  enum
-  {
-    VALUE = A
-  };
 };
 
 namespace detail
@@ -774,18 +756,14 @@ struct DoubleBuffer
  */
 template <typename T, typename BinaryOp, typename = void>
 struct BinaryOpHasIdxParam : ::cuda::std::false_type
-{
-  CCCL_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool HAS_PARAM = false;
-};
+{};
 
 template <typename T, typename BinaryOp>
 struct BinaryOpHasIdxParam<T,
                            BinaryOp,
                            ::cuda::std::void_t<decltype(::cuda::std::declval<BinaryOp>()(
                              ::cuda::std::declval<T>(), ::cuda::std::declval<T>(), int{}))>> : ::cuda::std::true_type
-{
-  CCCL_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool HAS_PARAM = true;
-};
+{};
 
 /******************************************************************************
  * Simple type traits utilities.
@@ -794,7 +772,7 @@ struct BinaryOpHasIdxParam<T,
 /**
  * \brief Basic type traits categories
  */
-enum CCCL_DEPRECATED_BECAUSE("Use <cuda/std/type_traits> instead") Category
+enum Category
 {
   NOT_A_NUMBER,
   SIGNED_INTEGER,
@@ -805,30 +783,19 @@ enum CCCL_DEPRECATED_BECAUSE("Use <cuda/std/type_traits> instead") Category
 /**
  * \brief Basic type traits
  */
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-template <Category _CATEGORY, bool _PRIMITIVE, bool _NULL_TYPE, typename _UnsignedBits, typename T>
+template <Category _CATEGORY, typename _UnsignedBits, typename T>
 struct BaseTraits
-{
-  CCCL_DEPRECATED_BECAUSE("Use <cuda/std/type_traits> instead") static constexpr Category CATEGORY = _CATEGORY;
-  CCCL_DEPRECATED_BECAUSE("Use <cuda/std/type_traits> instead") static constexpr bool PRIMITIVE    = _PRIMITIVE;
-  CCCL_DEPRECATED static constexpr bool NULL_TYPE                                                  = _NULL_TYPE;
-};
-_CCCL_SUPPRESS_DEPRECATED_POP
+{};
 
 /**
  * Basic type traits (unsigned primitive specialization)
  */
-_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename _UnsignedBits, typename T>
-struct BaseTraits<UNSIGNED_INTEGER, true, false, _UnsignedBits, T>
+struct BaseTraits<UNSIGNED_INTEGER, _UnsignedBits, T>
 {
-  using UnsignedBits = _UnsignedBits;
-
-  CCCL_DEPRECATED_BECAUSE("Use <cuda/std/type_traits> instead") static constexpr Category CATEGORY = UNSIGNED_INTEGER;
-  static constexpr UnsignedBits LOWEST_KEY                                                         = UnsignedBits(0);
-  static constexpr UnsignedBits MAX_KEY                                                            = UnsignedBits(-1);
-  CCCL_DEPRECATED_BECAUSE("Use <cuda/std/type_traits> instead") static constexpr bool PRIMITIVE    = true;
-  static constexpr bool NULL_TYPE                                                                  = false;
+  using UnsignedBits                       = _UnsignedBits;
+  static constexpr UnsignedBits LOWEST_KEY = UnsignedBits(0);
+  static constexpr UnsignedBits MAX_KEY    = UnsignedBits(-1);
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
   {
@@ -861,16 +828,13 @@ struct BaseTraits<UNSIGNED_INTEGER, true, false, _UnsignedBits, T>
  * Basic type traits (signed primitive specialization)
  */
 template <typename _UnsignedBits, typename T>
-struct BaseTraits<SIGNED_INTEGER, true, false, _UnsignedBits, T>
+struct BaseTraits<SIGNED_INTEGER, _UnsignedBits, T>
 {
   using UnsignedBits = _UnsignedBits;
 
-  CCCL_DEPRECATED_BECAUSE("Use <cuda/std/type_traits> instead") static constexpr Category CATEGORY = SIGNED_INTEGER;
   static constexpr UnsignedBits HIGH_BIT   = UnsignedBits(1) << ((sizeof(UnsignedBits) * 8) - 1);
   static constexpr UnsignedBits LOWEST_KEY = HIGH_BIT;
   static constexpr UnsignedBits MAX_KEY    = UnsignedBits(-1) ^ HIGH_BIT;
-  CCCL_DEPRECATED_BECAUSE("Use <cuda/std/type_traits> instead") static constexpr bool PRIMITIVE = true;
-  CCCL_DEPRECATED static constexpr bool NULL_TYPE                                               = false;
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
   {
@@ -895,34 +859,17 @@ struct BaseTraits<SIGNED_INTEGER, true, false, _UnsignedBits, T>
   }
 };
 
-template <typename T>
-struct CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits instead") FpLimits
-{
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Max()
-  {
-    return ::cuda::std::numeric_limits<T>::max();
-  }
-
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Lowest()
-  {
-    return ::cuda::std::numeric_limits<T>::lowest();
-  }
-};
-
 /**
  * Basic type traits (fp primitive specialization)
  */
 template <typename _UnsignedBits, typename T>
-struct BaseTraits<FLOATING_POINT, true, false, _UnsignedBits, T>
+struct BaseTraits<FLOATING_POINT, _UnsignedBits, T>
 {
   using UnsignedBits = _UnsignedBits;
 
-  CCCL_DEPRECATED_BECAUSE("Use <cuda/std/type_traits> instead") static constexpr Category CATEGORY = FLOATING_POINT;
   static constexpr UnsignedBits HIGH_BIT   = UnsignedBits(1) << ((sizeof(UnsignedBits) * 8) - 1);
   static constexpr UnsignedBits LOWEST_KEY = UnsignedBits(-1);
   static constexpr UnsignedBits MAX_KEY    = UnsignedBits(-1) ^ HIGH_BIT;
-  CCCL_DEPRECATED_BECAUSE("Use <cuda/std/type_traits> instead") static constexpr bool PRIMITIVE = true;
-  CCCL_DEPRECATED static constexpr bool NULL_TYPE                                               = false;
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
   {
@@ -938,16 +885,12 @@ struct BaseTraits<FLOATING_POINT, true, false, _UnsignedBits, T>
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Max()
   {
-    _CCCL_SUPPRESS_DEPRECATED_PUSH
-    return FpLimits<T>::Max();
-    _CCCL_SUPPRESS_DEPRECATED_POP
+    return ::cuda::std::numeric_limits<T>::max();
   }
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Lowest()
   {
-    _CCCL_SUPPRESS_DEPRECATED_PUSH
-    return FpLimits<T>::Lowest();
-    _CCCL_SUPPRESS_DEPRECATED_POP
+    return ::cuda::std::numeric_limits<T>::lowest();
   }
 };
 
@@ -955,36 +898,33 @@ struct BaseTraits<FLOATING_POINT, true, false, _UnsignedBits, T>
  * \brief Numeric type traits
  */
 // clang-format off
-template <typename T> struct NumericTraits :            BaseTraits<NOT_A_NUMBER, false, false, T, T> {};
+template <typename T> struct NumericTraits :            BaseTraits<NOT_A_NUMBER, T, T> {};
 
-template <> struct NumericTraits<NullType> :            BaseTraits<NOT_A_NUMBER, false, true, NullType, NullType> {};
+template <> struct NumericTraits<NullType> :            BaseTraits<NOT_A_NUMBER, NullType, NullType> {};
 
-template <> struct NumericTraits<char> :                BaseTraits<(::cuda::std::numeric_limits<char>::is_signed) ? SIGNED_INTEGER : UNSIGNED_INTEGER, true, false, unsigned char, char> {};
-template <> struct NumericTraits<signed char> :         BaseTraits<SIGNED_INTEGER, true, false, unsigned char, signed char> {};
-template <> struct NumericTraits<short> :               BaseTraits<SIGNED_INTEGER, true, false, unsigned short, short> {};
-template <> struct NumericTraits<int> :                 BaseTraits<SIGNED_INTEGER, true, false, unsigned int, int> {};
-template <> struct NumericTraits<long> :                BaseTraits<SIGNED_INTEGER, true, false, unsigned long, long> {};
-template <> struct NumericTraits<long long> :           BaseTraits<SIGNED_INTEGER, true, false, unsigned long long, long long> {};
+template <> struct NumericTraits<char> :                BaseTraits<(::cuda::std::numeric_limits<char>::is_signed) ? SIGNED_INTEGER : UNSIGNED_INTEGER, unsigned char, char> {};
+template <> struct NumericTraits<signed char> :         BaseTraits<SIGNED_INTEGER, unsigned char, signed char> {};
+template <> struct NumericTraits<short> :               BaseTraits<SIGNED_INTEGER, unsigned short, short> {};
+template <> struct NumericTraits<int> :                 BaseTraits<SIGNED_INTEGER, unsigned int, int> {};
+template <> struct NumericTraits<long> :                BaseTraits<SIGNED_INTEGER, unsigned long, long> {};
+template <> struct NumericTraits<long long> :           BaseTraits<SIGNED_INTEGER, unsigned long long, long long> {};
 
-template <> struct NumericTraits<unsigned char> :       BaseTraits<UNSIGNED_INTEGER, true, false, unsigned char, unsigned char> {};
-template <> struct NumericTraits<unsigned short> :      BaseTraits<UNSIGNED_INTEGER, true, false, unsigned short, unsigned short> {};
-template <> struct NumericTraits<unsigned int> :        BaseTraits<UNSIGNED_INTEGER, true, false, unsigned int, unsigned int> {};
-template <> struct NumericTraits<unsigned long> :       BaseTraits<UNSIGNED_INTEGER, true, false, unsigned long, unsigned long> {};
-template <> struct NumericTraits<unsigned long long> :  BaseTraits<UNSIGNED_INTEGER, true, false, unsigned long long, unsigned long long> {};
+template <> struct NumericTraits<unsigned char> :       BaseTraits<UNSIGNED_INTEGER, unsigned char, unsigned char> {};
+template <> struct NumericTraits<unsigned short> :      BaseTraits<UNSIGNED_INTEGER, unsigned short, unsigned short> {};
+template <> struct NumericTraits<unsigned int> :        BaseTraits<UNSIGNED_INTEGER, unsigned int, unsigned int> {};
+template <> struct NumericTraits<unsigned long> :       BaseTraits<UNSIGNED_INTEGER, unsigned long, unsigned long> {};
+template <> struct NumericTraits<unsigned long long> :  BaseTraits<UNSIGNED_INTEGER, unsigned long long, unsigned long long> {};
 
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <>
 struct NumericTraits<__uint128_t>
 {
   using T = __uint128_t;
   using UnsignedBits = __uint128_t;
 
-  CCCL_DEPRECATED_BECAUSE("Use <cuda/std/type_traits> instead") static constexpr Category       CATEGORY    = UNSIGNED_INTEGER;
   static constexpr UnsignedBits   LOWEST_KEY  = UnsignedBits(0);
   static constexpr UnsignedBits   MAX_KEY     = UnsignedBits(-1);
-  CCCL_DEPRECATED_BECAUSE("Use <cuda/std/type_traits> instead") static constexpr bool PRIMITIVE = false;
-  CCCL_DEPRECATED static constexpr bool NULL_TYPE = false;
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
   {
@@ -1013,12 +953,9 @@ struct NumericTraits<__int128_t>
   using T = __int128_t;
   using UnsignedBits = __uint128_t;
 
-  CCCL_DEPRECATED_BECAUSE("Use <cuda/std/type_traits> instead") static constexpr Category       CATEGORY    = SIGNED_INTEGER;
   static constexpr UnsignedBits   HIGH_BIT    = UnsignedBits(1) << ((sizeof(UnsignedBits) * 8) - 1);
   static constexpr UnsignedBits   LOWEST_KEY  = HIGH_BIT;
   static constexpr UnsignedBits   MAX_KEY     = UnsignedBits(-1) ^ HIGH_BIT;
- CCCL_DEPRECATED_BECAUSE("Use <cuda/std/type_traits> instead") static constexpr bool PRIMITIVE = false;
- CCCL_DEPRECATED static constexpr bool NULL_TYPE = false;
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
   {
@@ -1044,23 +981,22 @@ struct NumericTraits<__int128_t>
 };
 #endif
 
-template <> struct NumericTraits<float> :               BaseTraits<FLOATING_POINT, true, false, unsigned int, float> {};
-template <> struct NumericTraits<double> :              BaseTraits<FLOATING_POINT, true, false, unsigned long long, double> {};
+template <> struct NumericTraits<float> :               BaseTraits<FLOATING_POINT,unsigned int, float> {};
+template <> struct NumericTraits<double> :              BaseTraits<FLOATING_POINT,unsigned long long, double> {};
 #  if _CCCL_HAS_NVFP16()
-    template <> struct NumericTraits<__half> :          BaseTraits<FLOATING_POINT, true, false, unsigned short, __half> {};
+    template <> struct NumericTraits<__half> :          BaseTraits<FLOATING_POINT,unsigned short, __half> {};
 #  endif // _CCCL_HAS_NVFP16()
 #  if _CCCL_HAS_NVBF16()
-    template <> struct NumericTraits<__nv_bfloat16> :   BaseTraits<FLOATING_POINT, true, false, unsigned short, __nv_bfloat16> {};
+    template <> struct NumericTraits<__nv_bfloat16> :   BaseTraits<FLOATING_POINT,unsigned short, __nv_bfloat16> {};
 #  endif // _CCCL_HAS_NVBF16()
 
 #if _CCCL_HAS_NVFP8()
-    template <> struct NumericTraits<__nv_fp8_e4m3> :   BaseTraits<FLOATING_POINT, true, false, __nv_fp8_storage_t, __nv_fp8_e4m3> {};
-    template <> struct NumericTraits<__nv_fp8_e5m2> :   BaseTraits<FLOATING_POINT, true, false, __nv_fp8_storage_t, __nv_fp8_e5m2> {};
+    template <> struct NumericTraits<__nv_fp8_e4m3> :   BaseTraits<FLOATING_POINT, __nv_fp8_storage_t, __nv_fp8_e4m3> {};
+    template <> struct NumericTraits<__nv_fp8_e5m2> :   BaseTraits<FLOATING_POINT, __nv_fp8_storage_t, __nv_fp8_e5m2> {};
 #endif // _CCCL_HAS_NVFP8()
 
-template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTEGER, true, false, typename UnitWord<bool>::VolatileWord, bool> {};
+template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTEGER, typename UnitWord<bool>::VolatileWord, bool> {};
 // clang-format on
-_CCCL_SUPPRESS_DEPRECATED_POP
 
 /**
  * \brief Type traits

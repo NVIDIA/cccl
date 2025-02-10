@@ -44,19 +44,18 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_reduce.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/detail/type_traits.cuh> // for cub::detail::invoke_result_t
 #include <cub/device/dispatch/kernels/reduce.cuh>
+#include <cub/device/dispatch/kernels/segmented_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/grid/grid_even_share.cuh>
-#include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/thread/thread_store.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
-
-#include <iterator>
+#include <cub/util_type.cuh> // for cub::detail::non_void_value_t, cub::detail::value_t
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 #include <cuda/std/functional>
@@ -68,131 +67,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::reduce
 {
-
-/// Normalize input iterator to segment offset
-template <typename T, typename OffsetT, typename IteratorT>
-_CCCL_DEVICE _CCCL_FORCEINLINE void NormalizeReductionOutput(T& /*val*/, OffsetT /*base_offset*/, IteratorT /*itr*/)
-{}
-
-/// Normalize input iterator to segment offset (specialized for arg-index)
-template <typename KeyValuePairT, typename OffsetT, typename WrappedIteratorT, typename OutputValueT>
-_CCCL_DEVICE _CCCL_FORCEINLINE void NormalizeReductionOutput(
-  KeyValuePairT& val, OffsetT base_offset, ArgIndexInputIterator<WrappedIteratorT, OffsetT, OutputValueT> /*itr*/)
-{
-  val.key -= base_offset;
-}
-
-/**
- * Segmented reduction (one block per segment)
- * @tparam ChainedPolicyT
- *   Chained tuning policy
- *
- * @tparam InputIteratorT
- *   Random-access input iterator type for reading input items @iterator
- *
- * @tparam OutputIteratorT
- *   Output iterator type for recording the reduced aggregate @iterator
- *
- * @tparam BeginOffsetIteratorT
- *   Random-access input iterator type for reading segment beginning offsets
- *   @iterator
- *
- * @tparam EndOffsetIteratorT
- *   Random-access input iterator type for reading segment ending offsets
- *   @iterator
- *
- * @tparam OffsetT
- *   Signed integer type for global offsets
- *
- * @tparam ReductionOpT
- *   Binary reduction functor type having member
- *   `T operator()(const T &a, const U &b)`
- *
- * @tparam InitT
- *   Initial value type
- *
- * @param[in] d_in
- *   Pointer to the input sequence of data items
- *
- * @param[out] d_out
- *   Pointer to the output aggregate
- *
- * @param[in] d_begin_offsets
- *   Random-access input iterator to the sequence of beginning offsets of
- *   length `num_segments`, such that `d_begin_offsets[i]` is the first element
- *   of the *i*<sup>th</sup> data segment in `d_keys_*` and `d_values_*`
- *
- * @param[in] d_end_offsets
- *   Random-access input iterator to the sequence of ending offsets of length
- *   `num_segments`, such that `d_end_offsets[i] - 1` is the last element of
- *   the *i*<sup>th</sup> data segment in `d_keys_*` and `d_values_*`.
- *   If `d_end_offsets[i] - 1 <= d_begin_offsets[i]`, the *i*<sup>th</sup> is
- *   considered empty.
- *
- * @param[in] num_segments
- *   The number of segments that comprise the sorting data
- *
- * @param[in] reduction_op
- *   Binary reduction functor
- *
- * @param[in] init
- *   The initial value of the reduction
- */
-template <typename ChainedPolicyT,
-          typename InputIteratorT,
-          typename OutputIteratorT,
-          typename BeginOffsetIteratorT,
-          typename EndOffsetIteratorT,
-          typename OffsetT,
-          typename ReductionOpT,
-          typename InitT,
-          typename AccumT>
-CUB_DETAIL_KERNEL_ATTRIBUTES
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)) void DeviceSegmentedReduceKernel(
-  InputIteratorT d_in,
-  OutputIteratorT d_out,
-  BeginOffsetIteratorT d_begin_offsets,
-  EndOffsetIteratorT d_end_offsets,
-  int /*num_segments*/,
-  ReductionOpT reduction_op,
-  InitT init)
-{
-  // Thread block type for reducing input tiles
-  using AgentReduceT =
-    AgentReduce<typename ChainedPolicyT::ActivePolicy::ReducePolicy,
-                InputIteratorT,
-                OutputIteratorT,
-                OffsetT,
-                ReductionOpT,
-                AccumT>;
-
-  // Shared memory storage
-  __shared__ typename AgentReduceT::TempStorage temp_storage;
-
-  OffsetT segment_begin = d_begin_offsets[blockIdx.x];
-  OffsetT segment_end   = d_end_offsets[blockIdx.x];
-
-  // Check if empty problem
-  if (segment_begin == segment_end)
-  {
-    if (threadIdx.x == 0)
-    {
-      *(d_out + blockIdx.x) = init;
-    }
-    return;
-  }
-
-  // Consume input tiles
-  AccumT block_aggregate = AgentReduceT(temp_storage, d_in, reduction_op).ConsumeRange(segment_begin, segment_end);
-
-  // Normalize as needed
-  NormalizeReductionOutput(block_aggregate, segment_begin, d_in);
-
-  if (threadIdx.x == 0)
-  {
-    finalize_and_store_aggregate(d_out + blockIdx.x, reduction_op, init, block_aggregate);
-  }
-}
 
 template <typename MaxPolicyT,
           typename InputIteratorT,
@@ -228,7 +102,7 @@ struct DeviceReduceKernelSource
                                  InitT,
                                  AccumT>)
 
-  CUB_RUNTIME_FUNCTION static constexpr std::size_t AccumSize()
+  CUB_RUNTIME_FUNCTION static constexpr size_t AccumSize()
   {
     return sizeof(AccumT);
   }

@@ -140,7 +140,7 @@ private:
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysNoNVTX(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     ::cuda::std::int64_t num_items,
@@ -288,7 +288,7 @@ public:
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     ::cuda::std::int64_t num_items,
@@ -315,7 +315,7 @@ private:
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescendingNoNVTX(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     ::cuda::std::int64_t num_items,
@@ -458,7 +458,7 @@ public:
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     ::cuda::std::int64_t num_items,
@@ -485,7 +485,7 @@ private:
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysNoNVTX(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
@@ -637,7 +637,7 @@ public:
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
@@ -655,7 +655,7 @@ private:
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescendingNoNVTX(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
@@ -808,7 +808,7 @@ public:
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
@@ -935,7 +935,7 @@ public:
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeys(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     ::cuda::std::int64_t num_items,
@@ -1071,7 +1071,7 @@ public:
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeysDescending(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     ::cuda::std::int64_t num_items,
@@ -1218,7 +1218,7 @@ public:
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeys(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
@@ -1355,7 +1355,7 @@ public:
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeysDescending(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
@@ -1373,7 +1373,7 @@ private:
   template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairsNoNVTX(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     const ValueT* d_values_in,
@@ -1544,7 +1544,7 @@ public:
   template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     const ValueT* d_values_in,
@@ -1575,7 +1575,7 @@ private:
   template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescendingNoNVTX(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     const ValueT* d_values_in,
@@ -1742,7 +1742,7 @@ public:
   template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     const ValueT* d_values_in,
@@ -1773,7 +1773,7 @@ private:
   template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairsNoNVTX(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
     ::cuda::std::int64_t num_items,
@@ -1944,7 +1944,7 @@ public:
   template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
     ::cuda::std::int64_t num_items,
@@ -1971,7 +1971,7 @@ private:
   template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescendingNoNVTX(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
     ::cuda::std::int64_t num_items,
@@ -2141,7 +2141,7 @@ public:
   template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
     ::cuda::std::int64_t num_items,
@@ -2295,7 +2295,7 @@ public:
   template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortPairs(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     const ValueT* d_values_in,
@@ -2453,7 +2453,7 @@ public:
   template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortPairsDescending(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     const ValueT* d_values_in,
@@ -2621,7 +2621,7 @@ public:
   template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortPairs(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
     ::cuda::std::int64_t num_items,
@@ -2784,7 +2784,7 @@ public:
   template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortPairsDescending(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
     ::cuda::std::int64_t num_items,

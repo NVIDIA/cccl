@@ -59,6 +59,7 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
     #include <cub/device/dispatch/kernels/for_each.cuh>
     #include <cub/device/dispatch/kernels/scan.cuh>
     #include <cub/device/dispatch/kernels/merge_sort.cuh>
+    #include <cub/device/dispatch/kernels/segmented_reduce.cuh>
 
     #include <thrust/iterator/constant_iterator.h>
     #include <thrust/iterator/counting_iterator.h>

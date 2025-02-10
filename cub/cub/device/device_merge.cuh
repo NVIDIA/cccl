@@ -74,7 +74,7 @@ struct DeviceMerge
             typename CompareOp = ::cuda::std::less<>>
   CUB_RUNTIME_FUNCTION static cudaError_t MergeKeys(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     KeyIteratorIn1 keys_in1,
     ::cuda::std::int64_t num_keys1,
     KeyIteratorIn2 keys_in2,
@@ -161,7 +161,7 @@ struct DeviceMerge
             typename CompareOp = ::cuda::std::less<>>
   CUB_RUNTIME_FUNCTION static cudaError_t MergePairs(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     KeyIteratorIn1 keys_in1,
     ValueIteratorIn1 values_in1,
     ::cuda::std::int64_t num_pairs1,

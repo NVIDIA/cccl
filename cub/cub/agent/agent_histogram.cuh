@@ -222,7 +222,7 @@ struct AgentHistogram
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
   using WrappedSampleIteratorT =
-    ::cuda::std::_If<std::is_pointer<SampleIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer<SampleIteratorT>::value,
                      CacheModifiedInputIterator<LOAD_MODIFIER, SampleT, OffsetT>,
                      SampleIteratorT>;
 
@@ -917,27 +917,5 @@ struct AgentHistogram
 
 } // namespace histogram
 } // namespace detail
-
-template <typename AgentHistogramPolicyT,
-          int PRIVATIZED_SMEM_BINS,
-          int NUM_CHANNELS,
-          int NUM_ACTIVE_CHANNELS,
-          typename SampleIteratorT,
-          typename CounterT,
-          typename PrivatizedDecodeOpT,
-          typename OutputDecodeOpT,
-          typename OffsetT>
-using AgentHistogram CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
-                                             "interface will be removed.") =
-  detail::histogram::AgentHistogram<
-    AgentHistogramPolicyT,
-    PRIVATIZED_SMEM_BINS,
-    NUM_CHANNELS,
-    NUM_ACTIVE_CHANNELS,
-    SampleIteratorT,
-    CounterT,
-    PrivatizedDecodeOpT,
-    OutputDecodeOpT,
-    OffsetT>;
 
 CUB_NAMESPACE_END

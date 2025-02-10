@@ -136,23 +136,9 @@ unique_eager_event async_inclusive_scan_n(
     __accumulator_t<BinaryOp, typename ::cuda::std::iterator_traits<ForwardIt>::value_type, InitialValueType>;
 
   using Dispatch32 =
-    cub::DispatchScan<ForwardIt,
-                      OutputIt,
-                      BinaryOp,
-                      InputValueT,
-                      std::int32_t,
-                      AccumT,
-                      cub::detail::scan::policy_hub<AccumT, BinaryOp>,
-                      cub::ForceInclusive::Yes>;
+    cub::DispatchScan<ForwardIt, OutputIt, BinaryOp, InputValueT, std::int32_t, AccumT, cub::ForceInclusive::Yes>;
   using Dispatch64 =
-    cub::DispatchScan<ForwardIt,
-                      OutputIt,
-                      BinaryOp,
-                      InputValueT,
-                      std::int64_t,
-                      AccumT,
-                      cub::detail::scan::policy_hub<AccumT, BinaryOp>,
-                      cub::ForceInclusive::Yes>;
+    cub::DispatchScan<ForwardIt, OutputIt, BinaryOp, InputValueT, std::int64_t, AccumT, cub::ForceInclusive::Yes>;
 
   InputValueT init_value(init);
 

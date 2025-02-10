@@ -285,7 +285,7 @@ struct sm100_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, le
 };
 
 // TODO(gonidelis): Tune for I128.
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 // template <class LengthT>
 // struct sm100_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
 // {
@@ -569,14 +569,15 @@ struct sm100_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, le
   using delay_constructor                            = detail::exponential_backoff_constructor_t<28, 520>;
 };
 // Fall back to Policy900 for double, because that one performs better than the above tuning (same key_size)
-// TODO(bgruber): in C++20 put a requires(!std::is_same_v<KeyT, double>) onto the above tuning and delete this one
+// TODO(bgruber): in C++20 put a requires(!::cuda::std::is_same_v<KeyT, double>) onto the above tuning and delete this
+// one
 template <class LengthT>
 struct sm100_tuning<LengthT, double, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_8>
     : sm90_tuning<LengthT, double, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_8>
 {};
 
 // TODO(gonidelis): Tune for I128.
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 // template <class LengthT>
 // struct sm100_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
 // {
