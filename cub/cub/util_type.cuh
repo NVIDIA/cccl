@@ -1009,7 +1009,7 @@ namespace detail
 {
 // __uint128_t and __int128_t are not primitive
 template <typename T>
-using is_primitive = ::cuda::std::bool_constant<is_one_of<
+using is_primitive = ::cuda::std::bool_constant<is_one_of_v<
   T,
   char,
   signed char,
@@ -1038,7 +1038,7 @@ using is_primitive = ::cuda::std::bool_constant<is_one_of<
   __nv_fp8_e4m3,
   __nv_fp8_e5m2
 #  endif // _CCCL_HAS_NVFP8()
-  >()>;
+  >>;
 
 #  ifndef _CCCL_NO_VARIABLE_TEMPLATES
 template <typename T>
