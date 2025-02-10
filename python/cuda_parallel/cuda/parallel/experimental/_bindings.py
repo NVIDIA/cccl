@@ -4,7 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import ctypes
+import sys
 from functools import lru_cache
+from pathlib import Path
 from typing import List
 
 from cuda.cccl import get_include_paths  # type: ignore[import-not-found]
@@ -20,6 +22,12 @@ def get_bindings() -> ctypes.CDLL:
 
     with as_file(files("cuda.parallel.experimental")) as f:
         cccl_c_path = str(f / "cccl" / "libcccl.c.parallel.so")
+    if not Path(cccl_c_path).exists():
+        for p in sys.path:
+            gl = Path(p).glob("cuda/parallel/experimental/cccl/libcccl.c.parallel.so")
+            for f in gl:
+                cccl_c_path = str(f)
+                break
     _bindings = ctypes.CDLL(cccl_c_path)
     _bindings.cccl_device_reduce.restype = ctypes.c_int
     _bindings.cccl_device_reduce.argtypes = [
