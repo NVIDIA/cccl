@@ -42,7 +42,7 @@ namespace cuda::experimental
 //! Type safe iterator over heterogeneous memory
 //! ---------------------------------------------
 //!
-//! ``heterogeneous_iterator`` provides a type safe access over heterogeneous memory. Depening on whether the memory is
+//! ``heterogeneous_iterator`` provides a type safe access over heterogeneous memory. Depending on whether the memory is
 //! tagged as host-accessible and / or device-accessible the iterator restricts memory access.
 //! All operations that do not require memory access are always available on host and device.
 //!
@@ -225,7 +225,7 @@ public:
       : __heterogeneous_iterator_access<_Tp, _IsConst, __select_execution_space<_Properties...>>(__ptr)
   {}
 
-  //! @brief Construcs an immutable \c heterogeneous_iterator from a mutable one
+  //! @brief Constructs an immutable \c heterogeneous_iterator from a mutable one
   //! @param __other The mutable \c heterogeneous_iterator
   _CCCL_TEMPLATE(bool _OtherConst)
   _CCCL_REQUIRES((_OtherConst != _IsConst) _CCCL_AND _IsConst)

@@ -39,19 +39,19 @@ TEMPLATE_TEST_CASE("cudax::async_buffer constructors",
 
   SECTION("Construction with explicit size")
   {
-    { // from env, no alllocation
+    { // from env, no allocation
       const Buffer buf{env};
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
     }
 
-    { // from env and size, no alllocation
+    { // from env and size, no allocation
       const Buffer buf{env, 0};
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
     }
 
-    { // from env, size and value, no alllocation
+    { // from env, size and value, no allocation
       const Buffer buf{env, 0, T{42}};
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
