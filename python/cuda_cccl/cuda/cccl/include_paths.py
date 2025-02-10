@@ -4,6 +4,7 @@
 
 import os
 import shutil
+import sys
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -53,7 +54,22 @@ def get_include_paths() -> IncludePaths:
 
     with as_file(files("cuda.cccl.include")) as f:
         cccl_incl = Path(f)
-    assert cccl_incl.exists()
+
+    def cub_version_exists(p):
+        return Path(p / "cub" / "version.cuh").exists()
+
+    # if version is not found, find it in sys.path directories
+    if not cub_version_exists(cccl_incl):
+        cub_ver_fn = "cuda/cccl/include/cub/version.cuh"
+        for dir_ in sys.path:
+            gl = Path(dir_).glob(cub_ver_fn)
+            candidates = list(gl)
+            for f in candidates:
+                # found cub/version.cuh
+                # use one-level-up parent
+                cccl_incl = f.parents[1]
+                break
+    assert cub_version_exists(cccl_incl)
 
     return IncludePaths(
         cuda=cuda_incl,
