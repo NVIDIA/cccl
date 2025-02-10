@@ -31,6 +31,10 @@
 
 #include <nv/target>
 
+#if _CCCL_HAS_CUDA_COMPILER
+extern "C" _CCCL_DEVICE void* __cuda_syscall_aligned_malloc(size_t, size_t);
+#endif // _CCCL_HAS_CUDA_COMPILER
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -40,31 +44,18 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_HOST void* __aligned_alloc_host(size_t
   _LIBCUDACXX_UNUSED_VAR(__nbytes);
   _LIBCUDACXX_UNUSED_VAR(__align);
   _CCCL_ASSERT(false, "Use of aligned_alloc in host code is not supported with MSVC");
-  return false;
+  return nullptr;
 #  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
   return ::aligned_alloc(__align, __nbytes);
 #  endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 
-#if _CCCL_HAS_CUDA_COMPILER
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __aligned_alloc_device(size_t __nbytes, size_t __align) noexcept
-{
-#  if _CCCL_CUDA_COMPILER(CLANG)
-  void* __ptr{};
-  asm volatile("\tcall.uni (%0), __cuda_syscall_aligned_malloc, (%1, %2);" : "=l"(__ptr) : "l"(__nbytes), "l"(__align));
-  return __ptr;
-#  else // ^^^ _CCCL_CUDA_COMPILER(CLANG) ^^^ / vvv !_CCCL_CUDA_COMPILER(CLANG) vvv
-  return ::__nv_aligned_device_malloc(__nbytes, __align);
-#  endif // ^^^ !_CCCL_CUDA_COMPILER(CLANG)
-}
-#endif // _CCCL_HAS_CUDA_COMPILER
-
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI void* aligned_alloc(size_t __nbytes, size_t __align) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     (return _CUDA_VSTD::__aligned_alloc_host(__nbytes, __align);),
-                    (return _CUDA_VSTD::__aligned_alloc_device(__nbytes, __align);))
+                    (return ::__cuda_syscall_aligned_malloc(__nbytes, __align);))
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
