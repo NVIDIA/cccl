@@ -137,7 +137,7 @@ private:
   template <class _Range>
   static constexpr bool __compatible_range = _CUDA_VRANGES::__container_compatible_range<_Range, _Tp>;
 
-  //! @brief Helper to check whether a different async_buffer still statisfies all properties of this one
+  //! @brief Helper to check whether a different async_buffer still satisfies all properties of this one
   template <class... _OtherProperties>
   static constexpr bool __properties_match =
     !_CCCL_TRAIT(_CUDA_VSTD::is_same,
