@@ -100,6 +100,11 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeys: basic testing",
   using offset_t = c2h::get<1, TestType>;
 
   constexpr std::size_t min_num_items = 1 << 5;
+  const std::size_t num_items         = GENERATE_COPY(take(3, random(min_num_items, max_num_items)));
+  const std::size_t num_segments      = GENERATE_COPY(take(2, random(std::size_t{2}, num_items / 2)));
+
+  c2h::device_vector<key_t> in_keys(num_items);
+  const int num_key_seeds = 1;
   c2h::gen(C2H_SEED(num_key_seeds), in_keys);
   // Initialize the output keys using the input keys since not all items
   // may belong to a segment.
