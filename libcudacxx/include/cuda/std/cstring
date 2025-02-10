@@ -25,6 +25,8 @@
 #  include <cstring>
 #endif // !_CCCL_COMPILER(NVRTC)
 
+_CCCL_PUSH_MACROS
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 using ::memcpy;
@@ -121,5 +123,7 @@ _LIBCUDACXX_HIDE_FROM_ABI int memcmp(const void* __lhs, const void* __rhs, size_
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+_CCCL_POP_MACROS
 
 #endif // _CUDA_STD_CSTRING
