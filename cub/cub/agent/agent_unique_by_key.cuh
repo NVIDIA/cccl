@@ -151,16 +151,16 @@ struct AgentUniqueByKey
   };
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier) for keys
-  using WrappedKeyInputIteratorT = typename std::conditional<
-    std::is_pointer<KeyInputIteratorT>::value,
+  using WrappedKeyInputIteratorT = typename ::cuda::std::conditional<
+    ::cuda::std::is_pointer<KeyInputIteratorT>::value,
     CacheModifiedInputIterator<AgentUniqueByKeyPolicyT::LOAD_MODIFIER, KeyT, OffsetT>, // Wrap the native input pointer
                                                                                        // with
                                                                                        // CacheModifiedValuesInputIterator
     KeyInputIteratorT>::type; // Directly use the supplied input iterator type
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier) for values
-  using WrappedValueInputIteratorT = typename std::conditional<
-    std::is_pointer<ValueInputIteratorT>::value,
+  using WrappedValueInputIteratorT = typename ::cuda::std::conditional<
+    ::cuda::std::is_pointer<ValueInputIteratorT>::value,
     CacheModifiedInputIterator<AgentUniqueByKeyPolicyT::LOAD_MODIFIER, ValueT, OffsetT>, // Wrap the native input
                                                                                          // pointer with
                                                                                          // CacheModifiedValuesInputIterator
@@ -612,23 +612,5 @@ struct AgentUniqueByKey
 
 } // namespace unique_by_key
 } // namespace detail
-
-template <typename AgentUniqueByKeyPolicyT,
-          typename KeyInputIteratorT,
-          typename ValueInputIteratorT,
-          typename KeyOutputIteratorT,
-          typename ValueOutputIteratorT,
-          typename EqualityOpT,
-          typename OffsetT>
-using AgentUniqueByKey CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
-                                               "interface will be removed.") =
-  detail::unique_by_key::AgentUniqueByKey<
-    AgentUniqueByKeyPolicyT,
-    KeyInputIteratorT,
-    ValueInputIteratorT,
-    KeyOutputIteratorT,
-    ValueOutputIteratorT,
-    EqualityOpT,
-    OffsetT>;
 
 CUB_NAMESPACE_END

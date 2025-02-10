@@ -175,10 +175,10 @@ struct DeviceMemcpy
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMemcpy::Batched");
-    static_assert(std::is_pointer<cub::detail::value_t<InputBufferIt>>::value,
+    static_assert(::cuda::std::is_pointer<cub::detail::value_t<InputBufferIt>>::value,
                   "DeviceMemcpy::Batched only supports copying of memory buffers."
                   "Please consider using DeviceCopy::Batched instead.");
-    static_assert(std::is_pointer<cub::detail::value_t<OutputBufferIt>>::value,
+    static_assert(::cuda::std::is_pointer<cub::detail::value_t<OutputBufferIt>>::value,
                   "DeviceMemcpy::Batched only supports copying of memory buffers."
                   "Please consider using DeviceCopy::Batched instead.");
 

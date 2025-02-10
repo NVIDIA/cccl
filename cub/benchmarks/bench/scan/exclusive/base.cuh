@@ -87,17 +87,18 @@ struct policy_hub_t
 template <typename T, typename OffsetT>
 static void basic(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
-  using init_t      = cub::detail::InputValue<T>;
-  using accum_t     = ::cuda::std::__accumulator_t<op_t, T, T>;
-  using input_it_t  = const T*;
-  using output_it_t = T*;
-  using offset_t    = cub::detail::choose_offset_t<OffsetT>;
+  using init_t         = T;
+  using wrapped_init_t = cub::detail::InputValue<init_t>;
+  using accum_t        = ::cuda::std::__accumulator_t<op_t, init_t, T>;
+  using input_it_t     = const T*;
+  using output_it_t    = T*;
+  using offset_t       = cub::detail::choose_offset_t<OffsetT>;
 
 #if !TUNE_BASE
   using policy_t   = policy_hub_t<accum_t>;
-  using dispatch_t = cub::DispatchScan<input_it_t, output_it_t, op_t, init_t, offset_t, accum_t, policy_t>;
+  using dispatch_t = cub::DispatchScan<input_it_t, output_it_t, op_t, wrapped_init_t, offset_t, accum_t, policy_t>;
 #else
-  using dispatch_t = cub::DispatchScan<input_it_t, output_it_t, op_t, init_t, offset_t, accum_t>;
+  using dispatch_t = cub::DispatchScan<input_it_t, output_it_t, op_t, wrapped_init_t, offset_t, accum_t>;
 #endif
 
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
@@ -114,7 +115,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 
   size_t tmp_size;
   dispatch_t::Dispatch(
-    nullptr, tmp_size, d_input, d_output, op_t{}, init_t{T{}}, static_cast<int>(input.size()), 0 /* stream */);
+    nullptr, tmp_size, d_input, d_output, op_t{}, wrapped_init_t{T{}}, static_cast<int>(input.size()), 0 /* stream */);
 
   thrust::device_vector<nvbench::uint8_t> tmp(tmp_size);
   nvbench::uint8_t* d_tmp = thrust::raw_pointer_cast(tmp.data());
@@ -126,7 +127,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       d_input,
       d_output,
       op_t{},
-      init_t{T{}},
+      wrapped_init_t{T{}},
       static_cast<int>(input.size()),
       launch.get_stream());
   });

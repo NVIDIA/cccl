@@ -179,6 +179,8 @@ C2H_TEST("Block load works with even odd sizes",
     d_input, thrust::raw_pointer_cast(d_input.data()));
 }
 
+// WAR bug in vec type handling in NVCC 12.0 + GCC 11.4 + C++20
+#if !(_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0) && _CCCL_COMPILER(GCC, ==, 11, 4) && _CCCL_STD_VER == 2020)
 C2H_TEST(
   "Block load works with even vector types", "[load][block]", vec_types, items_per_thread, a_block_size, load_algorithm)
 {
@@ -190,6 +192,7 @@ C2H_TEST(
   test_block_load<params::items_per_thread, params::threads_in_block, params::load_algorithm>(
     d_input, thrust::raw_pointer_cast(d_input.data()));
 }
+#endif // !(NVCC 12.0 and GCC 11.4 and C++20)
 
 C2H_TEST("Block load works with custom types", "[load][block]", items_per_thread, load_algorithm)
 {

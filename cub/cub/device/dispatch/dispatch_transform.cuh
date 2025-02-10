@@ -158,7 +158,7 @@ _CCCL_DEVICE void transform_kernel_impl(
 }
 
 // TODO(bgruber) cheap copy of ::cuda::std::apply, which requires C++17.
-template <class F, class Tuple, std::size_t... Is>
+template <class F, class Tuple, size_t... Is>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto poor_apply_impl(F&& f, Tuple&& t, ::cuda::std::index_sequence<Is...>)
   -> decltype(::cuda::std::forward<F>(f)(::cuda::std::get<Is>(::cuda::std::forward<Tuple>(t))...))
 {
@@ -736,9 +736,9 @@ struct dispatch_t<StableAddress,
       config->elem_per_thread);
   }
 
-  template <typename ActivePolicy, std::size_t... Is>
+  template <typename ActivePolicy, size_t... Is>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
-  invoke_algorithm(cuda::std::index_sequence<Is...>, ::cuda::std::integral_constant<Algorithm, Algorithm::ublkcp>)
+    invoke_algorithm(::cuda::std::index_sequence<Is...>, ::cuda::std::integral_constant<Algorithm, Algorithm::ublkcp>)
   {
     auto ret = configure_ublkcp_kernel<ActivePolicy>();
     if (!ret)
@@ -759,9 +759,9 @@ struct dispatch_t<StableAddress,
   }
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
 
-  template <typename ActivePolicy, std::size_t... Is>
+  template <typename ActivePolicy, size_t... Is>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
-  invoke_algorithm(cuda::std::index_sequence<Is...>, ::cuda::std::integral_constant<Algorithm, Algorithm::prefetch>)
+    invoke_algorithm(::cuda::std::index_sequence<Is...>, ::cuda::std::integral_constant<Algorithm, Algorithm::prefetch>)
   {
     using policy_t          = typename ActivePolicy::algo_policy;
     constexpr int block_dim = policy_t::block_threads;

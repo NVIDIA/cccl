@@ -210,7 +210,7 @@ struct AgentRadixSortOnesweep
   }
 
   // helper methods
-  _CCCL_DEVICE _CCCL_FORCEINLINE std::uint32_t Digit(bit_ordered_type key)
+  _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t Digit(bit_ordered_type key)
   {
     return digit_extractor().Digit(key);
   }
@@ -371,7 +371,7 @@ struct AgentRadixSortOnesweep
     // short-circuit handling; note that global look-back is still required
 
     // compute offsets
-    std::uint32_t common_bin = Digit(keys[0]);
+    uint32_t common_bin = Digit(keys[0]);
     int offsets[BINS_PER_THREAD];
 #pragma unroll
     for (int u = 0; u < BINS_PER_THREAD; ++u)
@@ -695,16 +695,5 @@ struct AgentRadixSortOnesweep
 
 } // namespace radix_sort
 } // namespace detail
-
-template <typename AgentRadixSortOnesweepPolicy,
-          bool IS_DESCENDING,
-          typename KeyT,
-          typename ValueT,
-          typename OffsetT,
-          typename PortionOffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
-using AgentRadixSortOnesweep CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
-                                                     "interface will be removed.") = detail::radix_sort::
-  AgentRadixSortOnesweep<AgentRadixSortOnesweepPolicy, IS_DESCENDING, KeyT, ValueT, OffsetT, PortionOffsetT, DecomposerT>;
 
 CUB_NAMESPACE_END

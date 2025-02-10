@@ -34,7 +34,6 @@
 // NOTE: The order of these #includes matters.
 
 #include <thrust/detail/config/compiler.h> // IWYU pragma: export
-#include <thrust/detail/config/cpp_compatibility.h> // IWYU pragma: export
 #include <thrust/detail/config/cpp_dialect.h> // IWYU pragma: export
 #include <thrust/detail/config/simple_defines.h> // IWYU pragma: export
 // host_system.h & device_system.h must be #included as early as possible because other config headers depend on it

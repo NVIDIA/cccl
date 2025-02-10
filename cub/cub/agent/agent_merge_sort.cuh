@@ -750,42 +750,4 @@ struct AgentMerge
 } // namespace merge_sort
 } // namespace detail
 
-template <typename Policy,
-          typename KeyInputIteratorT,
-          typename ValueInputIteratorT,
-          typename KeyIteratorT,
-          typename ValueIteratorT,
-          typename OffsetT,
-          typename CompareOpT,
-          typename KeyT,
-          typename ValueT>
-using AgentBlockSort CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
-                                             "interface will be removed.") =
-  detail::merge_sort::AgentBlockSort<
-    Policy,
-    KeyInputIteratorT,
-    ValueInputIteratorT,
-    KeyIteratorT,
-    ValueIteratorT,
-    OffsetT,
-    CompareOpT,
-    KeyT,
-    ValueT>;
-
-template <typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename KeyT>
-using AgentPartition CCCL_DEPRECATED_BECAUSE(
-  "This class is considered an implementation detail and the public interface will be "
-  "removed.") = detail::merge_sort::AgentPartition<KeyIteratorT, OffsetT, CompareOpT, KeyT>;
-
-template <typename Policy,
-          typename KeyIteratorT,
-          typename ValueIteratorT,
-          typename OffsetT,
-          typename CompareOpT,
-          typename KeyT,
-          typename ValueT>
-using AgentMerge CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public interface "
-                                         "will be removed.") =
-  detail::merge_sort::AgentMerge<Policy, KeyIteratorT, ValueIteratorT, OffsetT, CompareOpT, KeyT, ValueT>;
-
 CUB_NAMESPACE_END

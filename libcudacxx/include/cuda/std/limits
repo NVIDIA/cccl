@@ -259,7 +259,7 @@ public:
   static constexpr bool is_bounded = true;
   static constexpr bool is_modulo  = !is_signed;
 
-#if defined(__i386__) || defined(__x86_64__) || defined(__pnacl__) || defined(__wasm__)
+#if (_CCCL_ARCH(X86_64) && _CCCL_OS(LINUX)) || defined(__pnacl__) || defined(__wasm__)
   static constexpr bool traps = true;
 #else
   static constexpr bool traps = false;

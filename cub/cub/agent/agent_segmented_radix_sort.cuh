@@ -83,7 +83,7 @@ struct AgentSegmentedRadixSort
   static constexpr int BLOCK_THREADS    = SegmentedPolicyT::BLOCK_THREADS;
   static constexpr int RADIX_BITS       = SegmentedPolicyT::RADIX_BITS;
   static constexpr int RADIX_DIGITS     = 1 << RADIX_BITS;
-  static constexpr int KEYS_ONLY        = std::is_same<ValueT, NullType>::value;
+  static constexpr int KEYS_ONLY        = ::cuda::std::is_same<ValueT, NullType>::value;
 
   using traits           = radix::traits_t<KeyT>;
   using bit_ordered_type = typename traits::bit_ordered_type;
@@ -288,16 +288,5 @@ struct AgentSegmentedRadixSort
 
 } // namespace radix_sort
 } // namespace detail
-
-template <bool IS_DESCENDING,
-          typename SegmentedPolicyT,
-          typename KeyT,
-          typename ValueT,
-          typename OffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
-using AgentSegmentedRadixSort CCCL_DEPRECATED_BECAUSE(
-  "This class is considered an implementation detail and the public "
-  "interface will be removed.") =
-  detail::radix_sort::AgentSegmentedRadixSort<IS_DESCENDING, SegmentedPolicyT, KeyT, ValueT, OffsetT, DecomposerT>;
 
 CUB_NAMESPACE_END

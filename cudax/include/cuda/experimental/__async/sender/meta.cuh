@@ -59,6 +59,8 @@ struct _IN_ALGORITHM;
 
 struct _WHAT;
 
+struct _WHY;
+
 struct _WITH_FUNCTION;
 
 struct _WITH_SENDER;

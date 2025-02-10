@@ -135,7 +135,7 @@ private:
   template <class VectorT, class T>
   CUB_RUNTIME_FUNCTION static bool is_aligned(const T* ptr)
   {
-    return (reinterpret_cast<std::size_t>(ptr) & (sizeof(VectorT) - 1)) == 0;
+    return (reinterpret_cast<size_t>(ptr) & (sizeof(VectorT) - 1)) == 0;
   }
 
   template <class RandomAccessIteratorT, class OffsetT, class OpT>
