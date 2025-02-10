@@ -61,7 +61,7 @@ private:
       return _CUDA_VSTD::bit_cast<_CUDA_VSTD::uintptr_t>(__p) % _ByteAlignment == 0;
     }
 #  endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
-    return true; // cannot be verified at compile time
+    return true; // cannot be verified without breaking constexpr requirements
   }
 
 public:

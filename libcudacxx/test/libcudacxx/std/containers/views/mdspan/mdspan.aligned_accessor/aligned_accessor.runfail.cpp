@@ -13,10 +13,11 @@
 int main(int, char**)
 {
 // the alignment check is disabled when it is not possible to evaluate the alignment at compile time
-#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && defined(_CCCL_ASSERT)
   auto ptr = reinterpret_cast<int*>(0x1);
   cuda::std::aligned_accessor<int, 64> aligned;
-  unused(aligned.offset(ptr, 0));
+  volatile auto aligned_ptr = aligned.offset(ptr, 0);
+  unused(aligned_ptr);
   return 0;
 #else
   return 1;
