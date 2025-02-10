@@ -14,15 +14,29 @@ import numpy as np
 from ..typing import DeviceArrayLike
 
 
-def get_dtype(arr: DeviceArrayLike) -> np.dtype:
-    typestr = arr.__cuda_array_interface__["typestr"]
+def get_data_pointer(arr: DeviceArrayLike) -> int:
+    try:
+        # TODO: this is a fast path for CuPy until
+        # we have a more general solution.
+        return arr.data.ptr  # type: ignore
+    except AttributeError:
+        return arr.__cuda_array_interface__["data"][0]
 
-    if typestr.startswith("|V"):
-        # it's a structured dtype, use the descr field:
-        return np.dtype(arr.__cuda_array_interface__["descr"])
-    else:
-        # a simple dtype, use the typestr field:
-        return np.dtype(typestr)
+
+def get_dtype(arr: DeviceArrayLike) -> np.dtype:
+    try:
+        # TODO: this is a fast path for CuPy until
+        # we have a more general solution.
+        return np.dtype(arr.dtype)  # type: ignore
+    except Exception:
+        typestr = arr.__cuda_array_interface__["typestr"]
+
+        if typestr.startswith("|V"):
+            # it's a structured dtype, use the descr field:
+            return np.dtype(arr.__cuda_array_interface__["descr"])
+        else:
+            # a simple dtype, use the typestr field:
+            return np.dtype(typestr)
 
 
 def get_strides(arr: DeviceArrayLike) -> Optional[Tuple]:
