@@ -294,8 +294,10 @@ extern "C" CCCL_C_API CUresult cccl_device_scan_build(
     const auto input_it_value_t  = cccl_type_enum_to_string(input_it.value_type.type);
     const auto offset_t          = cccl_type_enum_to_string(cccl_type_enum::UINT64);
 
-    const std::string input_iterator_src  = make_kernel_input_iterator(offset_t, input_it_value_t, input_it);
-    const std::string output_iterator_src = make_kernel_output_iterator(offset_t, accum_cpp, output_it);
+    const std::string input_iterator_src =
+      make_kernel_input_iterator(offset_t, "input_iterator_state_t", input_it_value_t, input_it);
+    const std::string output_iterator_src =
+      make_kernel_output_iterator(offset_t, "output_iterator_t", accum_cpp, output_it);
 
     const std::string op_src = make_kernel_user_binary_operator(accum_cpp, op);
 
@@ -472,8 +474,8 @@ extern "C" CCCL_C_API CUresult cccl_device_scan(
       indirect_arg_t,
       ::cuda::std::size_t,
       void,
-      scan::dynamic_scan_policy_t<&scan::get_policy>,
       cub::ForceInclusive::No,
+      scan::dynamic_scan_policy_t<&scan::get_policy>,
       scan::scan_kernel_source,
       cub::detail::CudaDriverLauncherFactory>::
       Dispatch(
