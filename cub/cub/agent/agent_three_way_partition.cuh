@@ -194,7 +194,7 @@ struct AgentThreeWayPartition
   static constexpr int TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
 
   using WrappedInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer<InputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer_v<InputIteratorT>,
                      cub::CacheModifiedInputIterator<PolicyT::LOAD_MODIFIER, InputT, OffsetT>,
                      InputIteratorT>;
 

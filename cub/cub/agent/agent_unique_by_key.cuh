@@ -152,7 +152,7 @@ struct AgentUniqueByKey
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier) for keys
   using WrappedKeyInputIteratorT = typename ::cuda::std::conditional<
-    ::cuda::std::is_pointer<KeyInputIteratorT>::value,
+    ::cuda::std::is_pointer_v<KeyInputIteratorT>,
     CacheModifiedInputIterator<AgentUniqueByKeyPolicyT::LOAD_MODIFIER, KeyT, OffsetT>, // Wrap the native input pointer
                                                                                        // with
                                                                                        // CacheModifiedValuesInputIterator
@@ -160,7 +160,7 @@ struct AgentUniqueByKey
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier) for values
   using WrappedValueInputIteratorT = typename ::cuda::std::conditional<
-    ::cuda::std::is_pointer<ValueInputIteratorT>::value,
+    ::cuda::std::is_pointer_v<ValueInputIteratorT>,
     CacheModifiedInputIterator<AgentUniqueByKeyPolicyT::LOAD_MODIFIER, ValueT, OffsetT>, // Wrap the native input
                                                                                          // pointer with
                                                                                          // CacheModifiedValuesInputIterator

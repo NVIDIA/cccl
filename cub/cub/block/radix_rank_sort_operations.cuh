@@ -74,7 +74,7 @@ CUB_NAMESPACE_BEGIN
     and only one of them is used, the sorting works correctly. For double, the
     same applies, but with 64-bit patterns.
 */
-template <typename KeyT, bool IsFP = ::cuda::is_floating_point<KeyT>::value>
+template <typename KeyT, bool IsFP = ::cuda::is_floating_point_v<KeyT>>
 struct BaseDigitExtractor
 {
   using TraitsT      = Traits<KeyT>;

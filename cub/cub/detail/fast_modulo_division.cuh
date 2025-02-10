@@ -95,8 +95,8 @@ template <typename T>
 using unsigned_implicit_prom_t = typename ::cuda::std::make_unsigned<implicit_prom_t<T>>::type;
 
 template <typename T>
-using supported_integral = ::cuda::std::bool_constant<
-  ::cuda::std::is_integral<T>::value && !::cuda::std::is_same<T, bool>::value && (sizeof(T) <= 8)>;
+using supported_integral =
+  ::cuda::std::bool_constant<::cuda::std::is_integral_v<T> && !::cuda::std::is_same_v<T, bool> && (sizeof(T) <= 8)>;
 
 /***********************************************************************************************************************
  * Extract higher bits after multiplication
@@ -143,7 +143,7 @@ class fast_div_mod
   static_assert(supported_integral<T1>::value, "unsupported type");
 
   // uint16_t is a special case that would requires complex logic. Workaround: convert to int
-  using T          = ::cuda::std::conditional_t<::cuda::std::is_same<T1, ::cuda::std::uint16_t>::value, int, T1>;
+  using T          = ::cuda::std::conditional_t<::cuda::std::is_same_v<T1, ::cuda::std::uint16_t>, int, T1>;
   using unsigned_t = unsigned_implicit_prom_t<T>;
 
 public:

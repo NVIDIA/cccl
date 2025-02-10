@@ -55,10 +55,10 @@ template <typename T>
 void GenerateRandomData(
   T* rand_out,
   const std::size_t num_items,
-  const T min_rand_val                                                           = std::numeric_limits<T>::min(),
-  const T max_rand_val                                                           = std::numeric_limits<T>::max(),
-  const std::uint_fast32_t seed                                                  = 320981U,
-  typename std::enable_if<std::is_integral<T>::value && (sizeof(T) >= 2)>::type* = nullptr)
+  const T min_rand_val                                                      = std::numeric_limits<T>::min(),
+  const T max_rand_val                                                      = std::numeric_limits<T>::max(),
+  const std::uint_fast32_t seed                                             = 320981U,
+  typename std::enable_if<std::is_integral_v<T> && (sizeof(T) >= 2)>::type* = nullptr)
 {
   // initialize random number generator
   std::mt19937 rng(seed);

@@ -231,7 +231,7 @@ using unwrap_value_t = typename std::remove_reference<decltype(*unwrap_it(std::d
 
 template <class WrappedItT, //
           class ItT = decltype(unwrap_it(std::declval<WrappedItT>()))>
-std::integral_constant<bool, !std::is_same<WrappedItT, ItT>::value> //
+std::integral_constant<bool, !std::is_same_v<WrappedItT, ItT>> //
   inline reference_extended_fp(WrappedItT)
 {
   return {};

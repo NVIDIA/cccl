@@ -652,9 +652,10 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
   struct is_c_string : std::false_type
   {};
   template <typename T>
-  struct is_c_string<T,
-                     typename std::enable_if<std::is_convertible<T, char const*>::value
-                                             || std::is_convertible<T, wchar_t const*>::value>::type> : std::true_type
+  struct is_c_string<
+    T,
+    typename std::enable_if<std::is_convertible_v<T, char const*> || std::is_convertible_v<T, wchar_t const*>>::type>
+      : std::true_type
   {};
 
   template <typename T>
