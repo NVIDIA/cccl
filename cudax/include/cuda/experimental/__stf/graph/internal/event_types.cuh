@@ -69,26 +69,33 @@ protected:
       fprintf(stderr, "MAX GRAPH EVENT LIST SIZE %ld\n", max_size);
     }
 
-    // TODO filter according to epoch
-
+    // To prevent "infinite" growth of event lists, we factorize long vector of
+    // graph events by making them depend on a single node instead
     if (events.size() > 16)
     {
       cudaGraphNode_t n;
 
       ::std::vector<cudaGraphNode_t> nodes;
 
-      cudaGraph_t g0;
-      size_t epoch0;
+      // We initialize these variables to prevent compiler from issueing "maybe
+      // uninitialized" warnings
+      cudaGraph_t g0 = nullptr;
+      size_t epoch0  = 0;
 
+      // List all graph nodes in the vector of events
       for (const auto& e : events)
       {
         const auto ge = dynamic_cast<const graph_event_impl*>(e.operator->());
         nodes.push_back(ge->node);
         g0     = ge->g;
-        epoch0 = ge->epoch;
+        epoch0 = ::std::max(ge->epoch, epoch0);
       }
 
+      // We cannot have duplicate entries in dependencies
       remove_duplicates(nodes);
+
+      // Create a new empty graph node which depends on the previous ones,
+      // empty the list of events and replace it with this single "empty" event
       cuda_safe_call(cudaGraphAddEmptyNode(&n, g0, nodes.data(), nodes.size()));
 
       events.clear();
