@@ -203,10 +203,10 @@ def test_reduce_struct_type():
     h_init = Pixel(0, 0, 0)
 
     reduce_into = algorithms.reduce_into(d_rgb, d_out, max_g_value, h_init)
-    temp_storage_bytes = reduce_into(None, d_rgb, d_out, len(d_rgb), h_init)
+    temp_storage_bytes = reduce_into(None, d_rgb, d_out, d_rgb.size, h_init)
 
     d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-    _ = reduce_into(d_temp_storage, d_rgb, d_out, len(d_rgb), h_init)
+    _ = reduce_into(d_temp_storage, d_rgb, d_out, d_rgb.size, h_init)
 
     h_rgb = d_rgb.get()
     expected = h_rgb[h_rgb.view("int32")[:, 1].argmax()]
