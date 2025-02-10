@@ -72,9 +72,7 @@ int main(int, char**)
   test_has_not_nothrow_default_constructor<int&>();
 #ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
   test_has_not_nothrow_default_constructor<A>();
-#  if !defined(TEST_COMPILER_MSVC_2017)
   test_has_not_nothrow_default_constructor<DThrows>(); // This is LWG2116
-#  endif // !TEST_COMPILER_MSVC_2017
 #endif // !TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 
   test_is_nothrow_default_constructible<Union>();

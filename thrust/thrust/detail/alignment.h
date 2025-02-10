@@ -30,9 +30,8 @@
 #endif // no system header
 
 #include <cuda/cmath>
+#include <cuda/std/cstddef> // For `std::size_t` and `std::max_align_t`.
 #include <cuda/std/type_traits>
-
-#include <cstddef> // For `std::size_t` and `std::max_align_t`.
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -49,7 +48,7 @@ using alignment_of = ::cuda::std::alignment_of<T>;
 /// type whose alignment requirement is a divisor of `Align`.
 ///
 /// The behavior is undefined if `Align` is not a power of 2.
-template <std::size_t Align>
+template <::cuda::std::size_t Align>
 struct aligned_type
 {
   struct alignas(Align) type
@@ -74,7 +73,7 @@ _CCCL_HOST_DEVICE T aligned_reinterpret_cast(U u)
   return reinterpret_cast<T>(reinterpret_cast<void*>(u));
 }
 
-_CCCL_HOST_DEVICE inline std::size_t aligned_storage_size(std::size_t n, std::size_t align)
+_CCCL_HOST_DEVICE inline ::cuda::std::size_t aligned_storage_size(::cuda::std::size_t n, ::cuda::std::size_t align)
 {
   return ::cuda::ceil_div(n, align) * align;
 }

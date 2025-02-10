@@ -25,6 +25,8 @@
 #include <cuda/__fwd/barrier.h>
 #include <cuda/std/cstdint>
 
+#if _CCCL_HAS_CUDA_COMPILER
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
 _CCCL_DEVICE inline _CUDA_VSTD::uint64_t* barrier_native_handle(barrier<thread_scope_block>& __b)
@@ -33,5 +35,7 @@ _CCCL_DEVICE inline _CUDA_VSTD::uint64_t* barrier_native_handle(barrier<thread_s
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
+
+#endif // _CCCL_HAS_CUDA_COMPILER
 
 #endif // _CUDA___BARRIER_BARRIER_NATIVE_HANDLE_H

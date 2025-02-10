@@ -49,7 +49,6 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/iterator/constant_input_iterator.cuh>
 
 #include <cuda/std/type_traits>
 
@@ -229,14 +228,14 @@ struct AgentReduceByKey
   // Whether or not the scan operation has a zero-valued identity value (true
   // if we're performing addition on a primitive type)
   static constexpr int HAS_IDENTITY_ZERO =
-    (std::is_same<ReductionOpT, ::cuda::std::plus<>>::value) && (Traits<AccumT>::PRIMITIVE);
+    (::cuda::std::is_same<ReductionOpT, ::cuda::std::plus<>>::value) && (is_primitive<AccumT>::value);
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier)
   // for keys Wrap the native input pointer with
   // CacheModifiedValuesInputIterator or directly use the supplied input
   // iterator type
   using WrappedKeysInputIteratorT =
-    ::cuda::std::_If<std::is_pointer<KeysInputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer<KeysInputIteratorT>::value,
                      CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, KeyInputT, OffsetT>,
                      KeysInputIteratorT>;
 
@@ -245,7 +244,7 @@ struct AgentReduceByKey
   // CacheModifiedValuesInputIterator or directly use the supplied input
   // iterator type
   using WrappedValuesInputIteratorT =
-    ::cuda::std::_If<std::is_pointer<ValuesInputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer<ValuesInputIteratorT>::value,
                      CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, ValueInputT, OffsetT>,
                      ValuesInputIteratorT>;
 
@@ -254,7 +253,7 @@ struct AgentReduceByKey
   // CacheModifiedValuesInputIterator or directly use the supplied input
   // iterator type
   using WrappedFixupInputIteratorT =
-    ::cuda::std::_If<std::is_pointer<AggregatesOutputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer<AggregatesOutputIteratorT>::value,
                      CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, ValueInputT, OffsetT>,
                      AggregatesOutputIteratorT>;
 
@@ -277,7 +276,7 @@ struct AgentReduceByKey
   // Callback type for obtaining tile prefix during block scan
   using DelayConstructorT = typename AgentReduceByKeyPolicyT::detail::delay_constructor_t;
   using TilePrefixCallbackOpT =
-    TilePrefixCallbackOp<OffsetValuePairT, ReduceBySegmentOpT, ScanTileStateT, 0, DelayConstructorT>;
+    TilePrefixCallbackOp<OffsetValuePairT, ReduceBySegmentOpT, ScanTileStateT, DelayConstructorT>;
 
   // Key and value exchange types
   using KeyExchangeT   = KeyOutputT[TILE_ITEMS + 1];
@@ -701,29 +700,5 @@ struct AgentReduceByKey
 
 } // namespace reduce
 } // namespace detail
-
-template <typename AgentReduceByKeyPolicyT,
-          typename KeysInputIteratorT,
-          typename UniqueOutputIteratorT,
-          typename ValuesInputIteratorT,
-          typename AggregatesOutputIteratorT,
-          typename NumRunsOutputIteratorT,
-          typename EqualityOpT,
-          typename ReductionOpT,
-          typename OffsetT,
-          typename AccumT>
-using AgentReduceByKey CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
-                                               "interface will be removed.") =
-  detail::reduce::AgentReduceByKey<
-    AgentReduceByKeyPolicyT,
-    KeysInputIteratorT,
-    UniqueOutputIteratorT,
-    ValuesInputIteratorT,
-    AggregatesOutputIteratorT,
-    NumRunsOutputIteratorT,
-    EqualityOpT,
-    ReductionOpT,
-    OffsetT,
-    AccumT>;
 
 CUB_NAMESPACE_END

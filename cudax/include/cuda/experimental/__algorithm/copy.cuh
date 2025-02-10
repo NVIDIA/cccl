@@ -69,25 +69,9 @@ void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst)
 {
   __copy_bytes_impl(
     __stream,
-    _CUDA_VSTD::span(static_cast<detail::__as_copy_arg_t<_SrcTy>>(
-      detail::__launch_transform(__stream, _CUDA_VSTD::forward<_SrcTy>(__src)))),
-    _CUDA_VSTD::span(static_cast<detail::__as_copy_arg_t<_DstTy>>(
-      detail::__launch_transform(__stream, _CUDA_VSTD::forward<_DstTy>(__dst)))));
+    _CUDA_VSTD::span(__kernel_transform(__launch_transform(__stream, _CUDA_VSTD::forward<_SrcTy>(__src)))),
+    _CUDA_VSTD::span(__kernel_transform(__launch_transform(__stream, _CUDA_VSTD::forward<_DstTy>(__dst)))));
 }
-
-template <typename _Extents, typename _OtherExtents>
-inline constexpr bool __copy_bytes_compatible_extents = false;
-
-template <typename _IndexType,
-          _CUDA_VSTD::size_t... _Extents,
-          typename _OtherIndexType,
-          _CUDA_VSTD::size_t... _OtherExtents>
-inline constexpr bool __copy_bytes_compatible_extents<_CUDA_VSTD::extents<_IndexType, _Extents...>,
-                                                      _CUDA_VSTD::extents<_OtherIndexType, _OtherExtents...>> =
-  decltype(_CUDA_VSTD::__detail::__check_compatible_extents(
-    _CUDA_VSTD::integral_constant<bool, sizeof...(_Extents) == sizeof...(_OtherExtents)>{},
-    _CUDA_VSTD::integer_sequence<size_t, _Extents...>{},
-    _CUDA_VSTD::integer_sequence<size_t, _OtherExtents...>{}))::value;
 
 template <typename _SrcExtents, typename _DstExtents>
 _CCCL_NODISCARD bool __copy_bytes_runtime_extents_match(_SrcExtents __src_exts, _DstExtents __dst_exts)
@@ -116,7 +100,7 @@ void __nd_copy_bytes_impl(stream_ref __stream,
                           _CUDA_VSTD::mdspan<_SrcElem, _SrcExtents, _SrcLayout, _SrcAccessor> __src,
                           _CUDA_VSTD::mdspan<_DstElem, _DstExtents, _DstLayout, _DstAccessor> __dst)
 {
-  static_assert(__copy_bytes_compatible_extents<_SrcExtents, _DstExtents>,
+  static_assert(_CUDA_VSTD::is_constructible_v<_DstExtents, _SrcExtents>,
                 "Multidimensional copy requires both source and destination extents to be compatible");
   static_assert(_CUDA_VSTD::is_same_v<_SrcLayout, _DstLayout>,
                 "Multidimensional copy requires both source and destination layouts to match");
@@ -148,10 +132,10 @@ _CCCL_TEMPLATE(typename _SrcTy, typename _DstTy)
 _CCCL_REQUIRES(__valid_nd_copy_fill_argument<_SrcTy> _CCCL_AND __valid_nd_copy_fill_argument<_DstTy>)
 void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst)
 {
-  decltype(auto) __src_transformed = detail::__launch_transform(__stream, _CUDA_VSTD::forward<_SrcTy>(__src));
-  decltype(auto) __dst_transformed = detail::__launch_transform(__stream, _CUDA_VSTD::forward<_DstTy>(__dst));
-  decltype(auto) __src_as_arg      = static_cast<detail::__as_copy_arg_t<_SrcTy>>(__src_transformed);
-  decltype(auto) __dst_as_arg      = static_cast<detail::__as_copy_arg_t<_DstTy>>(__dst_transformed);
+  decltype(auto) __src_transformed = __launch_transform(__stream, _CUDA_VSTD::forward<_SrcTy>(__src));
+  decltype(auto) __dst_transformed = __launch_transform(__stream, _CUDA_VSTD::forward<_DstTy>(__dst));
+  decltype(auto) __src_as_arg      = __kernel_transform(__src_transformed);
+  decltype(auto) __dst_as_arg      = __kernel_transform(__dst_transformed);
   __nd_copy_bytes_impl(
     __stream, __as_mdspan_t<decltype(__src_as_arg)>(__src_as_arg), __as_mdspan_t<decltype(__dst_as_arg)>(__dst_as_arg));
 }

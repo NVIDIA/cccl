@@ -17,12 +17,6 @@
 
 #include "test_macros.h"
 
-#if defined(TEST_COMPILER_MSVC_2017)
-#  define TEST_CONSTEXPR_CXX14_NOT_MSVC_2017
-#else // ^^^ TEST_COMPILER_MSVC_2017 ^^^ / vvv !TEST_COMPILER_MSVC_2017
-#  define TEST_CONSTEXPR_CXX14_NOT_MSVC_2017 TEST_CONSTEXPR_CXX14
-#endif // !TEST_COMPILER_MSVC_2017
-
 struct NoDefault
 {
   __host__ __device__ TEST_CONSTEXPR_CXX14 NoDefault(int) {}
@@ -38,7 +32,7 @@ struct NonTrivialCopy
   }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14_NOT_MSVC_2017 bool tests()
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
 {
   {
     typedef cuda::std::array<double, 3> Array;
@@ -135,7 +129,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14_NOT_MSVC_2017 bool tests()
 int main(int, char**)
 {
   tests();
-#if TEST_STD_VER >= 2014 && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && !defined(TEST_COMPILER_MSVC_2017)
+#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   static_assert(tests(), "");
 #endif
   return 0;

@@ -26,10 +26,6 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-#if defined(TEST_COMPILER_MSVC_2017)
-#  pragma warning(disable : 4307) // '+': integral constant overflow
-#endif // TEST_COMPILER_MSVC_2017
-
 struct add_one
 {
   template <typename T>

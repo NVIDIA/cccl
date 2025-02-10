@@ -43,10 +43,11 @@
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/system/cuda/detail/core/util.h>
+#include <thrust/system/cuda/detail/core/load_iterator.h>
 
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cccl/cuda_capabilities.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -86,12 +87,14 @@ struct AgentBlockSort
   // Types and constants
   //---------------------------------------------------------------------
 
-  static constexpr bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
+  static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
   using BlockMergeSortT = BlockMergeSort<KeyT, Policy::BLOCK_THREADS, Policy::ITEMS_PER_THREAD, ValueT>;
 
-  using KeysLoadIt  = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, KeyInputIteratorT>::type;
-  using ItemsLoadIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, ValueInputIteratorT>::type;
+  using KeysLoadIt =
+    typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeyInputIteratorT>::type;
+  using ItemsLoadIt =
+    typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ValueInputIteratorT>::type;
 
   using BlockLoadKeys  = typename cub::BlockLoadType<Policy, KeysLoadIt>::type;
   using BlockLoadItems = typename cub::BlockLoadType<Policy, ItemsLoadIt>::type;
@@ -437,10 +440,11 @@ struct AgentMerge
   //---------------------------------------------------------------------
   // Types and constants
   //---------------------------------------------------------------------
-  using KeysLoadPingIt  = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, KeyIteratorT>::type;
-  using ItemsLoadPingIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, ValueIteratorT>::type;
-  using KeysLoadPongIt  = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, KeyT*>::type;
-  using ItemsLoadPongIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, ValueT*>::type;
+  using KeysLoadPingIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeyIteratorT>::type;
+  using ItemsLoadPingIt =
+    typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ValueIteratorT>::type;
+  using KeysLoadPongIt  = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeyT*>::type;
+  using ItemsLoadPongIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ValueT*>::type;
 
   using KeysOutputPongIt  = KeyIteratorT;
   using ItemsOutputPongIt = ValueIteratorT;
@@ -469,7 +473,7 @@ struct AgentMerge
   struct TempStorage : Uninitialized<_TempStorage>
   {};
 
-  static constexpr bool KEYS_ONLY       = std::is_same<ValueT, NullType>::value;
+  static constexpr bool KEYS_ONLY       = ::cuda::std::is_same_v<ValueT, NullType>;
   static constexpr int BLOCK_THREADS    = Policy::BLOCK_THREADS;
   static constexpr int ITEMS_PER_THREAD = Policy::ITEMS_PER_THREAD;
   static constexpr int ITEMS_PER_TILE   = Policy::ITEMS_PER_TILE;
@@ -647,12 +651,7 @@ struct AgentMerge
     }
 
     // if items are provided, merge them
-#if _CCCL_CUDACC_BELOW(11, 8)
-    if (!KEYS_ONLY) // nvcc 11.1 cannot handle #pragma unroll inside if constexpr but 11.8 can.
-                    // nvcc versions between may work
-#else // ^^^ _CCCL_CUDACC_BELOW(11, 8) ^^^ / vvv _CCCL_CUDACC_AT_LEAST(11, 8)
     _CCCL_IF_CONSTEXPR (!KEYS_ONLY)
-#endif // _CCCL_CUDACC_AT_LEAST(11, 8)
     {
       __syncthreads();
 
@@ -750,43 +749,5 @@ struct AgentMerge
 
 } // namespace merge_sort
 } // namespace detail
-
-template <typename Policy,
-          typename KeyInputIteratorT,
-          typename ValueInputIteratorT,
-          typename KeyIteratorT,
-          typename ValueIteratorT,
-          typename OffsetT,
-          typename CompareOpT,
-          typename KeyT,
-          typename ValueT>
-using AgentBlockSort CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
-                                             "interface will be removed.") =
-  detail::merge_sort::AgentBlockSort<
-    Policy,
-    KeyInputIteratorT,
-    ValueInputIteratorT,
-    KeyIteratorT,
-    ValueIteratorT,
-    OffsetT,
-    CompareOpT,
-    KeyT,
-    ValueT>;
-
-template <typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename KeyT>
-using AgentPartition CCCL_DEPRECATED_BECAUSE(
-  "This class is considered an implementation detail and the public interface will be "
-  "removed.") = detail::merge_sort::AgentPartition<KeyIteratorT, OffsetT, CompareOpT, KeyT>;
-
-template <typename Policy,
-          typename KeyIteratorT,
-          typename ValueIteratorT,
-          typename OffsetT,
-          typename CompareOpT,
-          typename KeyT,
-          typename ValueT>
-using AgentMerge CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public interface "
-                                         "will be removed.") =
-  detail::merge_sort::AgentMerge<Policy, KeyIteratorT, ValueIteratorT, OffsetT, CompareOpT, KeyT, ValueT>;
 
 CUB_NAMESPACE_END

@@ -51,7 +51,7 @@
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__utility/move.h>
 
-#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
+#if _CCCL_STD_VER >= 2017
 
 // MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
 _CCCL_DIAG_PUSH
@@ -340,9 +340,6 @@ public:
     {
       return _CUDA_VSTD::__to_unsigned_like(__end_ - __begin_);
     }
-#  if _CCCL_CUDACC_BELOW(11, 3)
-    _CCCL_UNREACHABLE();
-#  endif // _CCCL_CUDACC_BELOW(11, 3)
   }
 
   _CCCL_TEMPLATE(class _It = _Iter)
@@ -515,6 +512,6 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 _CCCL_DIAG_POP
 
-#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
+#endif // _CCCL_STD_VER >= 2017
 
 #endif // _LIBCUDACXX___RANGES_SUBRANGE_H

@@ -38,7 +38,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& min(const _Tp& __
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& min(const _Tp& __a, const _Tp& __b)
 {
-  return _CUDA_VSTD::min(__a, __b, __less{});
+  return __b < __a ? __b : __a;
 }
 
 template <class _Tp, class _Compare>

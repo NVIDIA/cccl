@@ -26,10 +26,10 @@
  ******************************************************************************/
 
 #include <cub/device/device_memcpy.cuh>
-#include <cub/iterator/transform_input_iterator.cuh>
 #include <cub/util_ptx.cuh>
 
 #include <thrust/fill.h>
+#include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/logical.h>
 #include <thrust/sequence.h>
@@ -283,12 +283,12 @@ void RunTest(BufferOffsetT num_buffers,
 
     // Prepare d_buffer_srcs
     OffsetToPtrOp<SrcPtrT> src_transform_op{static_cast<SrcPtrT>(thrust::raw_pointer_cast(d_in.data()))};
-    cub::TransformInputIterator<SrcPtrT, OffsetToPtrOp<SrcPtrT>, ByteOffsetT*> d_buffer_srcs(
+    thrust::transform_iterator<OffsetToPtrOp<SrcPtrT>, ByteOffsetT*> d_buffer_srcs(
       thrust::raw_pointer_cast(d_buffer_src_offsets.data()), src_transform_op);
 
     // Prepare d_buffer_dsts
     OffsetToPtrOp<DstPtrT> dst_transform_op{static_cast<DstPtrT>(thrust::raw_pointer_cast(d_out.data()))};
-    cub::TransformInputIterator<DstPtrT, OffsetToPtrOp<DstPtrT>, ByteOffsetT*> d_buffer_dsts(
+    thrust::transform_iterator<OffsetToPtrOp<DstPtrT>, ByteOffsetT*> d_buffer_dsts(
       thrust::raw_pointer_cast(d_buffer_dst_offsets.data()), dst_transform_op);
 
     // Get temporary storage requirements

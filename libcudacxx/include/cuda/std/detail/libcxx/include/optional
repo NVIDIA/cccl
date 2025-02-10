@@ -296,12 +296,14 @@ struct __optional_destruct_base<_Tp, false>
       , __engaged_(false)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __optional_destruct_base(in_place_t, _Args&&... __args)
       : __val_(_CUDA_VSTD::forward<_Args>(__args)...)
       , __engaged_(true)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fp, class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __optional_destruct_base(
     __optional_construct_from_invoke_tag, _Fp&& __f, _Args&&... __args)
@@ -338,12 +340,14 @@ struct __optional_destruct_base<_Tp, true>
       , __engaged_(false)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __optional_destruct_base(in_place_t, _Args&&... __args)
       : __val_(_CUDA_VSTD::forward<_Args>(__args)...)
       , __engaged_(true)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fp, class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __optional_destruct_base(
     __optional_construct_from_invoke_tag, _Fp&& __f, _Args&&... __args)
@@ -389,6 +393,7 @@ struct __optional_storage_base : __optional_destruct_base<_Tp>
     return _CUDA_VSTD::move(this->__val_);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void __construct(_Args&&... __args)
   {
@@ -410,6 +415,7 @@ struct __optional_storage_base : __optional_destruct_base<_Tp>
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _That>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void __assign_from(_That&& __opt)
   {
@@ -811,6 +817,7 @@ public:
     return this->__get();
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void swap(optional& __opt) noexcept(
     _CCCL_TRAIT(is_nothrow_move_constructible, value_type) && _CCCL_TRAIT(is_nothrow_swappable, value_type))
   {
@@ -1088,6 +1095,7 @@ _CCCL_HOST_DEVICE optional(_Tp) -> optional<_Tp>;
 #  endif // _CCCL_NO_DEDUCTION_GUIDES
 
 // Comparisons between optionals
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() == declval<const _Up&>()), bool),
@@ -1105,6 +1113,7 @@ operator==(const optional<_Tp>& __x, const optional<_Up>& __y)
   return *__x == *__y;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() != declval<const _Up&>()), bool),
@@ -1122,6 +1131,7 @@ operator!=(const optional<_Tp>& __x, const optional<_Up>& __y)
   return *__x != *__y;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() < declval<const _Up&>()), bool),
@@ -1139,6 +1149,7 @@ operator<(const optional<_Tp>& __x, const optional<_Up>& __y)
   return *__x < *__y;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() > declval<const _Up&>()), bool),
@@ -1156,6 +1167,7 @@ operator>(const optional<_Tp>& __x, const optional<_Up>& __y)
   return *__x > *__y;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() <= declval<const _Up&>()), bool),
@@ -1173,6 +1185,7 @@ operator<=(const optional<_Tp>& __x, const optional<_Up>& __y)
   return *__x <= *__y;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() >= declval<const _Up&>()), bool),
@@ -1264,6 +1277,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator>=(nullopt_t, const optional<_T
 }
 
 // Comparisons with T
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() == declval<const _Up&>()), bool),
@@ -1273,6 +1287,7 @@ operator==(const optional<_Tp>& __x, const _Up& __v)
   return static_cast<bool>(__x) ? *__x == __v : false;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() == declval<const _Up&>()), bool),
@@ -1282,6 +1297,7 @@ operator==(const _Tp& __v, const optional<_Up>& __x)
   return static_cast<bool>(__x) ? __v == *__x : false;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() != declval<const _Up&>()), bool),
@@ -1291,6 +1307,7 @@ operator!=(const optional<_Tp>& __x, const _Up& __v)
   return static_cast<bool>(__x) ? *__x != __v : true;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() != declval<const _Up&>()), bool),
@@ -1300,6 +1317,7 @@ operator!=(const _Tp& __v, const optional<_Up>& __x)
   return static_cast<bool>(__x) ? __v != *__x : true;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() < declval<const _Up&>()), bool),
@@ -1309,6 +1327,7 @@ operator<(const optional<_Tp>& __x, const _Up& __v)
   return static_cast<bool>(__x) ? *__x < __v : true;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() < declval<const _Up&>()), bool),
@@ -1318,6 +1337,7 @@ operator<(const _Tp& __v, const optional<_Up>& __x)
   return static_cast<bool>(__x) ? __v < *__x : false;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() <= declval<const _Up&>()), bool),
@@ -1327,6 +1347,7 @@ operator<=(const optional<_Tp>& __x, const _Up& __v)
   return static_cast<bool>(__x) ? *__x <= __v : true;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() <= declval<const _Up&>()), bool),
@@ -1336,6 +1357,7 @@ operator<=(const _Tp& __v, const optional<_Up>& __x)
   return static_cast<bool>(__x) ? __v <= *__x : false;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() > declval<const _Up&>()), bool),
@@ -1345,6 +1367,7 @@ operator>(const optional<_Tp>& __x, const _Up& __v)
   return static_cast<bool>(__x) ? *__x > __v : false;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() > declval<const _Up&>()), bool),
@@ -1354,6 +1377,7 @@ operator>(const _Tp& __v, const optional<_Up>& __x)
   return static_cast<bool>(__x) ? __v > *__x : true;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() >= declval<const _Up&>()), bool),
@@ -1363,6 +1387,7 @@ operator>=(const optional<_Tp>& __x, const _Up& __v)
   return static_cast<bool>(__x) ? *__x >= __v : false;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() >= declval<const _Up&>()), bool),
