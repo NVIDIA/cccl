@@ -21,6 +21,8 @@ int main(int, char**)
 
 #  if defined(_CCCL_ASSERT)
   _CCCL_ASSERT(cuda::std::bit_cast<uintptr_t>(ptr) % 64 == 0, "Alignment assumption is violated");
+  _CCCL_ASSERT(reinterpret_cast<uintptr_t>(ptr) % 64 == 0, "Alignment assumption is violated");
+  //_CCCL_ASSERT(uintptr_t{0x4} % 64 == 0, "Alignment assumption is violated");
 #  else
   static_assert(false);
 #  endif
