@@ -22,9 +22,7 @@ __host__ __device__ void test()
 {
   static_assert(
     (cuda::std::is_base_of<cuda::std::is_floating_point<T>, cuda::std::chrono::treat_as_floating_point<T>>::value), "");
-#if TEST_STD_VER > 2014
   static_assert(cuda::std::is_floating_point<T>::value == cuda::std::chrono::treat_as_floating_point_v<T>, "");
-#endif
 }
 
 struct A

@@ -62,18 +62,14 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
   test_one<int*>();
   test_one<const int*>();
   test_one<random_access_iterator<int*>>();
-#if TEST_STD_VER > 2014
   test_one<contiguous_iterator<int*>>();
-#endif
   return true;
 }
 
 int main(int, char**)
 {
   assert(test());
-#if TEST_STD_VER > 2011
   static_assert(test(), "");
-#endif
 
   return 0;
 }

@@ -59,7 +59,6 @@ distance(_InputIter __first, _InputIter __last)
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
-#if _CCCL_STD_VER > 2014
 
 // [range.iter.op.distance]
 
@@ -117,7 +116,5 @@ inline namespace __cpo
 _CCCL_GLOBAL_CONSTANT auto distance = __distance::__fn{};
 } // namespace __cpo
 _LIBCUDACXX_END_NAMESPACE_RANGES
-
-#endif // _CCCL_STD_VER > 2014
 
 #endif // _LIBCUDACXX___ITERATOR_DISTANCE_H

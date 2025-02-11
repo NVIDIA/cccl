@@ -170,7 +170,7 @@ struct __avoid_promotions
   _DEFINE_COMPARISON(==)
 #if _CCCL_STD_VER <= 2017
   _DEFINE_COMPARISON(!=)
-#endif
+#endif // _CCCL_STD_VER <= 2017
 #undef _DEFINE_COMPARISON
 
   _Int __data;
@@ -883,7 +883,7 @@ public:
   {
     return !(*this == __rhs);
   }
-#endif // C++ <= 17
+#endif // _CCCL_STD_VER <= 2017
 
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool test(size_t __pos) const
   {

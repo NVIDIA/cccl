@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class T, class U>
 // concept regular_invocable;
 
@@ -451,7 +449,7 @@ __host__ __device__ constexpr bool is_regular_invocable(F, Args&&...)
 #endif // TEST_STD_VER > 2017
 
 // execution space annotations on lambda require --extended-lambda flag with nvrtc
-#if TEST_STD_VER > 2014 && !defined(TEST_COMPILER_NVRTC)
+#if !defined(TEST_COMPILER_NVRTC)
 static_assert(is_regular_invocable([] {}), "");
 static_assert(is_regular_invocable([](int) {}, 0), "");
 static_assert(is_regular_invocable([](int) {}, 0L), "");
@@ -459,7 +457,7 @@ static_assert(!is_regular_invocable([](int) {}, nullptr), "");
 
 int i = 0;
 static_assert(is_regular_invocable([](int&) {}, i), "");
-#endif // TEST_STD_VER > 2014
+#endif // TEST_COMPILER_NVRTC
 
 int main(int, char**)
 {
