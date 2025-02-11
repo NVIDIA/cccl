@@ -22,8 +22,7 @@
 
 #include <cuda/__memory_resource/properties.h>
 
-#if _CCCL_STD_VER >= 2014 && !defined(_CCCL_COMPILER_MSVC_2017) \
-  && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
+#if defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 namespace cuda::experimental
 {
 
@@ -43,6 +42,6 @@ _CCCL_INLINE_VAR constexpr _ExecutionSpace __select_execution_space =
 
 } // namespace cuda::experimental
 
-#endif // _CCCL_STD_VER >= 2014 && !_CCCL_COMPILER_MSVC_2017 && LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+#endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #endif //__CUDAX__UTILITY_SELECT_EXECUTION_SPACE_CUH

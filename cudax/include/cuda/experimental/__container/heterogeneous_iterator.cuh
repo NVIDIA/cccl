@@ -30,8 +30,7 @@
 
 #include <cuda/experimental/__utility/select_execution_space.cuh>
 
-#if _CCCL_STD_VER >= 2014 && !defined(_CCCL_COMPILER_MSVC_2017) \
-  && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
+#if defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
 //! @file The \c heterogeneous_iterator class is an iterator that provides typed execution space safety.
 namespace cuda::experimental
@@ -61,9 +60,7 @@ template <class _Tp, bool _IsConst>
 class __heterogeneous_iterator_access<_Tp, _IsConst, _ExecutionSpace::__host>
 {
 public:
-#  if _CCCL_STD_VER >= 2014
-  using iterator_concept = _CUDA_VSTD::contiguous_iterator_tag;
-#  endif // _CCCL_STD_VER >= 2014
+  using iterator_concept  = _CUDA_VSTD::contiguous_iterator_tag;
   using iterator_category = _CUDA_VSTD::random_access_iterator_tag;
   using value_type        = _Tp;
   using difference_type   = _CUDA_VSTD::ptrdiff_t;
@@ -110,9 +107,7 @@ template <class _Tp, bool _IsConst>
 class __heterogeneous_iterator_access<_Tp, _IsConst, _ExecutionSpace::__device>
 {
 public:
-#  if _CCCL_STD_VER >= 2014
-  using iterator_concept = _CUDA_VSTD::contiguous_iterator_tag;
-#  endif // _CCCL_STD_VER >= 2014
+  using iterator_concept  = _CUDA_VSTD::contiguous_iterator_tag;
   using iterator_category = _CUDA_VSTD::random_access_iterator_tag;
   using value_type        = _Tp;
   using difference_type   = _CUDA_VSTD::ptrdiff_t;
@@ -159,9 +154,7 @@ template <class _Tp, bool _IsConst>
 class __heterogeneous_iterator_access<_Tp, _IsConst, _ExecutionSpace::__host_device>
 {
 public:
-#  if _CCCL_STD_VER >= 2014
-  using iterator_concept = _CUDA_VSTD::contiguous_iterator_tag;
-#  endif // _CCCL_STD_VER >= 2014
+  using iterator_concept  = _CUDA_VSTD::contiguous_iterator_tag;
   using iterator_category = _CUDA_VSTD::random_access_iterator_tag;
   using value_type        = _Tp;
   using difference_type   = _CUDA_VSTD::ptrdiff_t;
@@ -209,9 +202,7 @@ class heterogeneous_iterator
     : public __heterogeneous_iterator_access<_Tp, _IsConst, __select_execution_space<_Properties...>>
 {
 public:
-#  if _CCCL_STD_VER >= 2014
-  using iterator_concept = _CUDA_VSTD::contiguous_iterator_tag;
-#  endif // _CCCL_STD_VER >= 2014
+  using iterator_concept  = _CUDA_VSTD::contiguous_iterator_tag;
   using iterator_category = _CUDA_VSTD::random_access_iterator_tag;
   using value_type        = _Tp;
   using difference_type   = _CUDA_VSTD::ptrdiff_t;
@@ -434,6 +425,6 @@ struct pointer_traits<::cuda::experimental::heterogeneous_iterator<_Tp, _IsConst
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _CCCL_STD_VER >= 2014 && !_CCCL_COMPILER_MSVC_2017 && LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+#endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #endif //__CUDAX__CONTAINERS_HETEROGENEOUS_ITERATOR_CUH
