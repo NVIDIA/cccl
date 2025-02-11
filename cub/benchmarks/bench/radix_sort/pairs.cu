@@ -146,7 +146,7 @@ void radix_sort_values(
     cub::DispatchRadixSort<sort_order,
                            key_t,
                            value_t,
-                           offset_t,
+                           offset_t
 #if !TUNE_BASE
                            ,
                            policy_hub_t<key_t, value_t, offset_t>
