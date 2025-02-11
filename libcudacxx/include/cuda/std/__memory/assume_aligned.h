@@ -40,9 +40,9 @@ template <size_t _Align, class _Tp>
 #else
   if (!is_constant_evaluated())
   {
-#  if !_CCCL_COMPILER(MSVC) // MSVC checks within the builtin
+#  if !_CCCL_COMPILER(MSVC) || !defined(_CCCL_BUILTIN_ASSUME_ALIGNED) // MSVC checks within the builtin
     _CCCL_ASSERT(_CUDA_VSTD::bit_cast<uintptr_t>(__ptr) % _Align == 0, "Alignment assumption is violated");
-#  endif // !_CCCL_COMPILER(MSVC)
+#  endif // !_CCCL_COMPILER(MSVC) && defined(_CCCL_BUILTIN_ASSUME_ALIGNED)
 #  if defined(_CCCL_BUILTIN_ASSUME_ALIGNED)
     return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(__ptr, _Align));
 #  endif // defined(_CCCL_BUILTIN_ASSUME_ALIGNED)
