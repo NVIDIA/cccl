@@ -432,14 +432,7 @@ public:
     return pimpl->cached_syncs.validate_sync_and_update(dst, src, event_id);
   }
 
-  void put_graph_in_cache(size_t nnodes, size_t nedges, ::std::shared_ptr<cudaGraphExec_t> exec_g)
-  {
-    assert(pimpl);
-    pimpl->cached_graphs.save(nnodes, nedges, mv(exec_g));
-  }
-
-  ::std::pair<bool, ::std::shared_ptr<cudaGraphExec_t>>
-  cached_graphs_query(size_t nnodes, size_t nedges, ::std::shared_ptr<cudaGraph_t> g)
+  ::std::shared_ptr<cudaGraphExec_t> cached_graphs_query(size_t nnodes, size_t nedges, ::std::shared_ptr<cudaGraph_t> g)
   {
     assert(pimpl);
     return pimpl->cached_graphs.query(nnodes, nedges, mv(g));
