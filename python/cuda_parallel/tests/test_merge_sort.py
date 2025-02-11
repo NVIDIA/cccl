@@ -53,6 +53,7 @@ def test_device_merge_sort_keys(dtype):
         num_items = 2**num_items_pow2
 
         h_in_keys = random_array(num_items, dtype)
+
         d_in_keys = numba.cuda.to_device(h_in_keys)
 
         merge_sort_device(d_in_keys, None, d_in_keys, None, compare_op, num_items)
@@ -84,6 +85,7 @@ def test_device_merge_sort_pairs(dtype):
 
         h_in_keys = random_array(num_items, dtype)
         h_in_items = random_array(num_items, np.float32)
+
         d_in_keys = numba.cuda.to_device(h_in_keys)
         d_in_items = numba.cuda.to_device(h_in_items)
 
@@ -93,6 +95,83 @@ def test_device_merge_sort_pairs(dtype):
 
         h_out_keys = d_in_keys.copy_to_host()
         h_out_items = d_in_items.copy_to_host()
+
+        argsort = np.argsort(h_in_keys, stable=True)
+        h_in_keys = np.array(h_in_keys)[argsort]
+        h_in_items = np.array(h_in_items)[argsort]
+
+        np.testing.assert_array_equal(h_out_keys, h_in_keys)
+        np.testing.assert_array_equal(h_out_items, h_in_items)
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        np.uint8,
+        np.uint16,
+        np.uint32,
+        np.uint64,
+        np.int8,
+        np.int16,
+        np.int32,
+        np.int64,
+        np.float32,
+        np.float64,
+    ],
+)
+def test_device_merge_sort_keys_copy(dtype):
+    for num_items_pow2 in type_to_problem_sizes(dtype):
+        num_items = 2**num_items_pow2
+
+        h_in_keys = random_array(num_items, dtype)
+        h_out_keys = np.empty(num_items, dtype=dtype)
+
+        d_in_keys = numba.cuda.to_device(h_in_keys)
+        d_out_keys = numba.cuda.to_device(h_out_keys)
+
+        merge_sort_device(d_in_keys, None, d_out_keys, None, compare_op, num_items)
+
+        h_out_keys = d_out_keys.copy_to_host()
+        h_in_keys.sort()
+
+        np.testing.assert_array_equal(h_out_keys, h_in_keys)
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        np.uint8,
+        np.uint16,
+        np.uint32,
+        np.uint64,
+        np.int8,
+        np.int16,
+        np.int32,
+        np.int64,
+        np.float32,
+        np.float64,
+    ],
+)
+def test_device_merge_sort_pairs_copy(dtype):
+    for num_items_pow2 in type_to_problem_sizes(dtype):
+        num_items = 2**num_items_pow2
+
+        h_in_keys = random_array(num_items, dtype)
+        h_in_items = random_array(num_items, np.float32)
+        h_out_keys = np.empty(num_items, dtype=dtype)
+        h_out_items = np.empty(num_items, dtype=np.float32)
+
+        d_in_keys = numba.cuda.to_device(h_in_keys)
+        d_in_items = numba.cuda.to_device(h_in_items)
+        d_out_keys = numba.cuda.to_device(h_out_keys)
+        d_out_items = numba.cuda.to_device(h_out_items)
+
+        merge_sort_device(
+            d_in_keys, d_in_items, d_out_keys, d_out_items, compare_op, num_items
+        )
+
+        h_out_keys = d_out_keys.copy_to_host()
+        h_out_items = d_out_items.copy_to_host()
 
         argsort = np.argsort(h_in_keys, stable=True)
         h_in_keys = np.array(h_in_keys)[argsort]
