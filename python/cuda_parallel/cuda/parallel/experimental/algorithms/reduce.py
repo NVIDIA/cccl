@@ -6,6 +6,7 @@
 from __future__ import annotations  # TODO: required for Python 3.7 docs env
 
 import ctypes
+from functools import cached_property
 from typing import Callable
 
 import numba
@@ -30,6 +31,7 @@ class _Op:
         self.ltoir, _ = cuda.compile(op, sig=(value_type, value_type), output="ltoir")
         self.name = op.__name__.encode("utf-8")
 
+    @cached_property
     def handle(self) -> cccl.Op:
         return cccl.Op(
             cccl.OpKind.STATELESS,
@@ -59,24 +61,20 @@ class _Reduce:
         # Referenced from __del__:
         self.build_result = None
 
-        d_in_cccl = cccl.to_cccl_iter(d_in)
-        self._ctor_d_in_cccl_type_enum_name = cccl.type_enum_as_name(
-            d_in_cccl.value_type.type.value
-        )
-        self._ctor_d_out_dtype = protocols.get_dtype(d_out)
-        self._ctor_init_dtype = h_init.dtype
+        self.d_in_cccl = cccl.to_cccl_iter(d_in)
+        self.d_out_cccl = cccl.to_cccl_iter(d_out)
+        self.h_init_cccl = cccl.to_cccl_value(h_init)
         cc_major, cc_minor = cuda.get_current_device().compute_capability
         cub_path, thrust_path, libcudacxx_path, cuda_include_path = get_paths()
         bindings = get_bindings()
         self.op_wrapper = _Op(h_init, op)
-        d_out_cccl = cccl.to_cccl_iter(d_out)
         self.build_result = cccl.DeviceReduceBuildResult()
-
+        self.bindings = get_bindings()
         error = bindings.cccl_device_reduce_build(
             ctypes.byref(self.build_result),
-            d_in_cccl,
-            d_out_cccl,
-            self.op_wrapper.handle(),
+            self.d_in_cccl,
+            self.d_out_cccl,
+            self.op_wrapper.handle,
             cccl.to_cccl_value(h_init),
             cc_major,
             cc_minor,
@@ -97,43 +95,39 @@ class _Reduce:
         h_init: np.ndarray | GpuStruct,
         stream=None,
     ):
-        d_in_cccl = cccl.to_cccl_iter(d_in)
-        if d_in_cccl.type.value == cccl.IteratorKind.ITERATOR:
-            assert num_items is not None
+        if self.d_in_cccl.type.value == cccl.IteratorKind.POINTER:
+            self.d_in_cccl.state = protocols.get_data_pointer(d_in)
         else:
-            assert d_in_cccl.type.value == cccl.IteratorKind.POINTER
-            if num_items is None:
-                num_items = d_in.size
-            else:
-                assert num_items == d_in.size
-        _dtype_validation(
-            self._ctor_d_in_cccl_type_enum_name,
-            cccl.type_enum_as_name(d_in_cccl.value_type.type.value),
-        )
-        _dtype_validation(self._ctor_d_out_dtype, protocols.get_dtype(d_out))
-        _dtype_validation(self._ctor_init_dtype, h_init.dtype)
+            self.d_in_cccl.state = d_in.state
+
+        if self.d_out_cccl.type.value == cccl.IteratorKind.POINTER:
+            self.d_out_cccl.state = protocols.get_data_pointer(d_out)
+        else:
+            self.d_out_cccl.state = d_out.state
+
+        self.h_init_cccl.state = h_init.__array_interface__["data"][0]
+
         stream_handle = protocols.validate_and_get_stream(stream)
-        bindings = get_bindings()
+
         if temp_storage is None:
             temp_storage_bytes = ctypes.c_size_t()
             d_temp_storage = None
         else:
             temp_storage_bytes = ctypes.c_size_t(temp_storage.nbytes)
-            # Note: this is slightly slower, but supports all ndarray-like objects as long as they support CAI
-            # TODO: switch to use gpumemoryview once it's ready
-            d_temp_storage = temp_storage.__cuda_array_interface__["data"][0]
-        d_out_cccl = cccl.to_cccl_iter(d_out)
-        error = bindings.cccl_device_reduce(
+            d_temp_storage = protocols.get_data_pointer(temp_storage)
+
+        error = self.bindings.cccl_device_reduce(
             self.build_result,
             d_temp_storage,
             ctypes.byref(temp_storage_bytes),
-            d_in_cccl,
-            d_out_cccl,
+            self.d_in_cccl,
+            self.d_out_cccl,
             ctypes.c_ulonglong(num_items),
-            self.op_wrapper.handle(),
-            cccl.to_cccl_value(h_init),
+            self.op_wrapper.handle,
+            self.h_init_cccl,
             stream_handle,
         )
+
         if error != enums.CUDA_SUCCESS:
             raise ValueError("Error reducing")
 

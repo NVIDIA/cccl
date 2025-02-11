@@ -5,7 +5,7 @@
 
 import functools
 
-from numba import cuda
+import cupy as cp
 
 
 def cache_with_key(key):
@@ -25,7 +25,7 @@ def cache_with_key(key):
 
         @functools.wraps(func)
         def inner(*args, **kwargs):
-            cc = cuda.get_current_device().compute_capability
+            cc = cp.cuda.Device().compute_capability
             cache_key = (key(*args, **kwargs), cc)
             if cache_key not in cache:
                 result = func(*args, **kwargs)
