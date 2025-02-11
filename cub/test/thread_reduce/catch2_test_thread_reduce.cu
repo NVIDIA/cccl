@@ -115,31 +115,31 @@ struct cub_operator_to_std;
 template <typename T>
 struct cub_operator_to_std<T, cuda::std::plus<>>
 {
-  using type = ::std::plus<>;
+  using type = ::std::plus<T>; // T: MSVC complains about possible loss of data
 };
 
 template <typename T>
 struct cub_operator_to_std<T, cuda::std::multiplies<>>
 {
-  using type = ::std::multiplies<>;
+  using type = ::std::multiplies<T>; // T: MSVC complains about possible loss of data
 };
 
 template <typename T>
 struct cub_operator_to_std<T, cuda::std::bit_and<>>
 {
-  using type = ::std::bit_and<>;
+  using type = ::std::bit_and<T>; // T: MSVC complains about possible loss of data
 };
 
 template <typename T>
 struct cub_operator_to_std<T, cuda::std::bit_or<>>
 {
-  using type = ::std::bit_or<>;
+  using type = ::std::bit_or<T>; // T: MSVC complains about possible loss of data
 };
 
 template <typename T>
 struct cub_operator_to_std<T, cuda::std::bit_xor<>>
 {
-  using type = ::std::bit_xor<>;
+  using type = ::std::bit_xor<T>; // T: MSVC complains about possible loss of data
 };
 
 template <typename T>
