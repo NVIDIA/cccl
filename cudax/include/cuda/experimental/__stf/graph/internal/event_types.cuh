@@ -53,14 +53,13 @@ protected:
 
   bool factorize(reserved::event_vector& events) override
   {
-    assert(events.size() >= 2);
-    assert([&] {
-      for (const auto& e : events)
-      {
-        assert(dynamic_cast<const graph_event_impl*>(e.operator->()));
-      }
-      return true;
-    }());
+    _CCCL_ASSERT(events.size() >= 2, "invalid value");
+
+    // Sanity checks to ensure we are manipulating events in the CUDA graph backend
+    for (const auto& e : events)
+    {
+      _CCCL_ASSERT(dynamic_cast<const graph_event_impl*>(e.operator->()), "invalid event type");
+    }
 
     // To prevent "infinite" growth of event lists, we factorize long vector of
     // graph events by making them depend on a single node instead
