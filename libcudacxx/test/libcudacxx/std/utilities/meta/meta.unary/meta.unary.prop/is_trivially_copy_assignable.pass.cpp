@@ -20,18 +20,14 @@ template <class T>
 __host__ __device__ void test_has_trivially_copy_assignable()
 {
   static_assert(cuda::std::is_trivially_copy_assignable<T>::value, "");
-#if TEST_STD_VER > 2011
   static_assert(cuda::std::is_trivially_copy_assignable_v<T>, "");
-#endif
 }
 
 template <class T>
 __host__ __device__ void test_has_not_trivially_copy_assignable()
 {
   static_assert(!cuda::std::is_trivially_copy_assignable<T>::value, "");
-#if TEST_STD_VER > 2011
   static_assert(!cuda::std::is_trivially_copy_assignable_v<T>, "");
-#endif
 }
 
 class Empty

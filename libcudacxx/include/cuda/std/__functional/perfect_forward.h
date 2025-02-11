@@ -34,8 +34,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2014
-
 template <class _Op, class _Indices, class... _BoundArgs>
 struct __perfect_forward_impl;
 
@@ -115,8 +113,6 @@ public:
 // __perfect_forward implements a perfect-forwarding call wrapper as explained in [func.require].
 template <class _Op, class... _Args>
 using __perfect_forward = __perfect_forward_impl<_Op, index_sequence_for<_Args...>, _Args...>;
-
-#endif // _CCCL_STD_VER > 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

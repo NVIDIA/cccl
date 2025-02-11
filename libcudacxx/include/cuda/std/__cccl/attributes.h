@@ -50,7 +50,7 @@
 #endif // !_CCCL_COMPILER(MSVC)
 
 // Use a function like macro to imply that it must be followed by a semicolon
-#if _CCCL_STD_VER >= 2017 && _CCCL_HAS_CPP_ATTRIBUTE(fallthrough)
+#if _CCCL_HAS_CPP_ATTRIBUTE(fallthrough)
 #  define _CCCL_FALLTHROUGH() [[fallthrough]]
 #elif _CCCL_COMPILER(NVRTC)
 #  define _CCCL_FALLTHROUGH() ((void) 0)
@@ -77,13 +77,8 @@
 #  define _CCCL_NODEBUG_ALIAS
 #endif // !_CCCL_CUDA_COMPILER(CLANG)
 
-#if _CCCL_HAS_CPP_ATTRIBUTE(msvc::no_unique_address)
-// MSVC implements [[no_unique_address]] as a silent no-op currently.
-// (If/when MSVC breaks its C++ ABI, it will be changed to work as intended.)
-// However, MSVC implements [[msvc::no_unique_address]] which does what
-// [[no_unique_address]] is supposed to do, in general.
-#  define _CCCL_NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
-#elif _CCCL_HAS_CPP_ATTRIBUTE(no_unique_address) < 201803L
+#if _CCCL_COMPILER(MSVC) || _CCCL_HAS_CPP_ATTRIBUTE(no_unique_address) < 201803L
+// MSVC implementation has lead to multiple issues with silent runtime corruption when passing data into kernels
 #  define _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 #  define _CCCL_NO_UNIQUE_ADDRESS
 #elif _CCCL_HAS_CPP_ATTRIBUTE(no_unique_address)
@@ -99,7 +94,7 @@
 #  define _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 #endif // !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS && _CCCL_COMPILER(CLANG)
 
-#if _CCCL_HAS_CPP_ATTRIBUTE(nodiscard) || (_CCCL_COMPILER(MSVC) && _CCCL_STD_VER >= 2017)
+#if _CCCL_HAS_CPP_ATTRIBUTE(nodiscard) || _CCCL_COMPILER(MSVC)
 #  define _CCCL_NODISCARD [[nodiscard]]
 #else // ^^^ has nodiscard ^^^ / vvv no nodiscard vvv
 #  define _CCCL_NODISCARD

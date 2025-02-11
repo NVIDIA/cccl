@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class U, class... Args>
 //   constexpr explicit unexpected(in_place_t, initializer_list<U> il, Args&&... args);
 //

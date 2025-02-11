@@ -507,7 +507,7 @@ operator*(const complex<_Tp>& __z, const complex<_Tp>& __w)
   _Tp __c = __w.real();
   _Tp __d = __w.imag();
 
-#if _CCCL_STD_VER > 2011 && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   // Avoid floating point operations that are invalid during constant evaluation
   if (_CUDA_VSTD::is_constant_evaluated())
   {
@@ -540,7 +540,7 @@ operator*(const complex<_Tp>& __z, const complex<_Tp>& __w)
       return complex<_Tp>(_Tp(numeric_limits<_Tp>::quiet_NaN()), _Tp(0));
     }
   }
-#endif // _CCCL_STD_VER > 2011 && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+#endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
   __abcd_results<_Tp> __partials = __complex_calculate_partials(__a, __b, __c, __d);
 
@@ -646,7 +646,7 @@ operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
     __d      = _CUDA_VSTD::__constexpr_scalbn(__d, -__ilogbw);
   }
 
-#if _CCCL_STD_VER > 2011 && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   // Avoid floating point operations that are invalid during constant evaluation
   if (_CUDA_VSTD::is_constant_evaluated())
   {
@@ -691,7 +691,7 @@ operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
       return complex<_Tp>(_Tp(numeric_limits<_Tp>::infinity()), _Tp(numeric_limits<_Tp>::infinity()));
     }
   }
-#endif // _CCCL_STD_VER > 2011 && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+#endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
   __abcd_results<_Tp> __partials = __complex_calculate_partials(__a, __b, __c, __d);
   __ab_results<_Tp> __denom_vec  = __complex_piecewise_mul(__c, __d, __c, __d);
@@ -1500,7 +1500,7 @@ template <class _Tp, class _CharT, class _Traits>
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 
-#if _CCCL_STD_VER > 2011 && defined(_LIBCUDACXX_HAS_STL_LITERALS)
+#ifdef _LIBCUDACXX_HAS_STL_LITERALS
 // Literal suffix for complex number literals [complex.literals]
 
 _CCCL_DIAG_PUSH
@@ -1544,7 +1544,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr complex<float> operator""if(unsigned long lo
 {
   return {0.0f, static_cast<float>(__im)};
 }
-#  else
+#  else // ^^^ _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE ^^^ / vvv !_LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE vvv
 _LIBCUDACXX_HIDE_FROM_ABI constexpr complex<double> operator""i(double __im)
 {
   return {0.0, static_cast<double>(__im)};
@@ -1564,13 +1564,13 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr complex<float> operator""if(unsigned long lo
 {
   return {0.0f, static_cast<float>(__im)};
 }
-#  endif
+#  endif // !_LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 } // namespace complex_literals
 } // namespace literals
 
 _CCCL_DIAG_POP
 
-#endif
+#endif // _LIBCUDACXX_HAS_STL_LITERALS
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

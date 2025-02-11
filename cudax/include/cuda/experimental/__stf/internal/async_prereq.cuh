@@ -214,7 +214,7 @@ public:
       return;
     }
 
-    assert(!payload.empty());
+    _CCCL_ASSERT(!payload.empty(), "internal error");
 
     // nvtx_range r("optimize");
 

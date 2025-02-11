@@ -40,13 +40,11 @@ int main(int, char**)
     cuda::std::chrono::time_point<Clock, Duration2> t2 = t1 - Duration2(5);
     assert(t2.time_since_epoch() == Duration2(2995));
   }
-#if TEST_STD_VER > 2011
   {
     constexpr cuda::std::chrono::time_point<Clock, Duration1> t1(Duration1(3));
     constexpr cuda::std::chrono::time_point<Clock, Duration2> t2 = t1 - Duration2(5);
     static_assert(t2.time_since_epoch() == Duration2(2995), "");
   }
-#endif
   test2739<int32_t>();
   test2739<uint32_t>();
 
