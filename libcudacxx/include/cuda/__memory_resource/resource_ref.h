@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(MSVC2017) && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
+#if defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
 #  include <cuda/__memory_resource/get_property.h>
 #  include <cuda/__memory_resource/properties.h>
@@ -35,8 +35,6 @@
 #  include <cuda/std/__utility/move.h>
 #  include <cuda/std/cstddef>
 #  include <cuda/stream_ref>
-
-#  if _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 
@@ -646,8 +644,6 @@ using async_resource_ref = basic_resource_ref<_AllocType::_Async, _Properties...
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 
-#  endif // _CCCL_STD_VER >= 2014
-
-#endif // !_CCCL_COMPILER(MSVC2017) && LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+#endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #endif //_CUDA__MEMORY_RESOURCE_RESOURCE_REF_H

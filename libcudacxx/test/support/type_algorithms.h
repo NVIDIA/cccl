@@ -65,7 +65,6 @@ struct type_identity
   using type = T;
 };
 
-#if TEST_STD_VER >= 2017
 template <class Func>
 struct apply_type_identity
 {
@@ -85,7 +84,6 @@ struct apply_type_identity
 template <class T>
 apply_type_identity(T) -> apply_type_identity<T>;
 
-#endif
 template <template <class...> class T, class... Args>
 struct partial_instantiation
 {
@@ -100,11 +98,11 @@ using character_types =
 #ifndef TEST_HAS_NO_WIDE_CHARACTERS
             ,
             wchar_t
-#endif
+#endif // !TEST_HAS_NO_WIDE_CHARACTERS
 #ifndef TEST_HAS_NO_CHAR8_T
             ,
             char8_t
-#endif
+#endif // !TEST_HAS_NO_CHAR8_T
             ,
             char16_t,
             char32_t>;
@@ -118,7 +116,7 @@ using signed_integer_types =
 #ifndef _LIBCUDACXX_HAS_NO_INT128
             ,
             __int128_t
-#endif
+#endif // !_LIBCUDACXX_HAS_NO_INT128
             >;
 
 using unsigned_integer_types =
@@ -130,7 +128,7 @@ using unsigned_integer_types =
 #ifndef _LIBCUDACXX_HAS_NO_INT128
             ,
             __uint128_t
-#endif
+#endif // !_LIBCUDACXX_HAS_NO_INT128
             >;
 
 using integer_types = concatenate_t<character_types, signed_integer_types, unsigned_integer_types>;

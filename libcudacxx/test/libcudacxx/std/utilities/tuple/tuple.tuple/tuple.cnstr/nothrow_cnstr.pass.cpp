@@ -12,8 +12,6 @@
 
 // tuple(tuple&& u);
 
-// UNSUPPORTED: c++98, c++03
-
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 #include <cuda/std/utility>

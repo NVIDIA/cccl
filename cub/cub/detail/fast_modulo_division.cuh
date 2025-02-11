@@ -45,7 +45,7 @@
 #include <cuda/std/climits> // CHAR_BIT
 #include <cuda/std/cstdint> // uint64_t
 #include <cuda/std/limits> // numeric_limits
-#include <cuda/std/type_traits> // std::is_integral
+#include <cuda/std/type_traits> // ::cuda::std::is_integral
 
 #if defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
 _CCCL_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero

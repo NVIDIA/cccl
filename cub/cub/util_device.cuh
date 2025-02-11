@@ -526,6 +526,10 @@ MaxSmOccupancy(int& max_sm_occupancy, KernelPtr kernel_ptr, int block_threads, i
 /******************************************************************************
  * Policy management
  ******************************************************************************/
+// PolicyWrapper
+
+namespace detail
+{
 
 template <typename PolicyT, typename = void>
 struct PolicyWrapper : PolicyT
@@ -566,38 +570,50 @@ CUB_RUNTIME_FUNCTION PolicyWrapper<PolicyT> MakePolicyWrapper(PolicyT policy)
   return PolicyWrapper<PolicyT>{policy};
 }
 
+} // namespace detail
+
+template <typename PolicyT, typename = void>
+using PolicyWrapper CCCL_DEPRECATED_BECAUSE("Internal implementation detail") = detail::PolicyWrapper<PolicyT>;
+
+template <typename PolicyT>
+CCCL_DEPRECATED_BECAUSE("Internal implementation detail")
+CUB_RUNTIME_FUNCTION detail::PolicyWrapper<PolicyT> MakePolicyWrapper(PolicyT policy)
+{
+  return detail::PolicyWrapper<PolicyT>{policy};
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// ChainedPolicy
+
 namespace detail
 {
+
 struct TripleChevronFactory;
-}
 
 /**
  * Kernel dispatch configuration
  */
 struct KernelConfig
 {
-  int block_threads;
-  int items_per_thread;
-  int tile_size;
-  int sm_occupancy;
-
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE KernelConfig()
-      : block_threads(0)
-      , items_per_thread(0)
-      , tile_size(0)
-      , sm_occupancy(0)
-  {}
+  int block_threads{0};
+  int items_per_thread{0};
+  int tile_size{0};
+  int sm_occupancy{0};
 
   template <typename AgentPolicyT, typename KernelPtrT, typename LauncherFactory = detail::TripleChevronFactory>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   Init(KernelPtrT kernel_ptr, AgentPolicyT agent_policy = {}, LauncherFactory launcher_factory = {})
   {
-    block_threads    = MakePolicyWrapper(agent_policy).BlockThreads();
-    items_per_thread = MakePolicyWrapper(agent_policy).ItemsPerThread();
+    block_threads    = cub::detail::MakePolicyWrapper(agent_policy).BlockThreads();
+    items_per_thread = cub::detail::MakePolicyWrapper(agent_policy).ItemsPerThread();
     tile_size        = block_threads * items_per_thread;
     return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, block_threads);
   }
 };
+
+} // namespace detail
+
+using KernelConfig CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail") = detail::KernelConfig;
 
 /// Helper for dispatching into a policy chain
 template <int PolicyPtxVersion, typename PolicyT, typename PrevPolicyT>

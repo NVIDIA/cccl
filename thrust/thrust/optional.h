@@ -43,19 +43,6 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 #  define THRUST_OPTIONAL_MSVC2015
 #endif
 
-#if _CCCL_STD_VER > 2011
-#  define THRUST_OPTIONAL_CPP14
-#endif
-
-// constexpr implies const in C++11, not C++14
-#if (_CCCL_STD_VER == 2011 || defined(THRUST_OPTIONAL_MSVC2015) || defined(THRUST_OPTIONAL_GCC49))
-/// \exclude
-#  define THRUST_OPTIONAL_CPP11_CONSTEXPR
-#else
-/// \exclude
-#  define THRUST_OPTIONAL_CPP11_CONSTEXPR constexpr
-#endif
-
 THRUST_NAMESPACE_BEGIN
 
 #ifndef THRUST_MONOSTATE_INPLACE_MUTEX
@@ -103,47 +90,6 @@ struct conjunction<B> : B
 template <class B, class... Bs>
 struct conjunction<B, Bs...> : std::conditional<bool(B::value), conjunction<Bs...>, B>::type
 {};
-
-#  if defined(_LIBCPP_VERSION) && _CCCL_STD_VER == 2011
-#    define THRUST_OPTIONAL_LIBCXX_MEM_FN_WORKAROUND
-#  endif
-
-// In C++11 mode, there's an issue in libc++'s std::mem_fn
-// which results in a hard-error when using it in a noexcept expression
-// in some cases. This is a check to workaround the common failing case.
-#  ifdef THRUST_OPTIONAL_LIBCXX_MEM_FN_WORKAROUND
-template <class T>
-struct is_pointer_to_non_const_member_func : std::false_type
-{};
-template <class T, class Ret, class... Args>
-struct is_pointer_to_non_const_member_func<Ret (T::*)(Args...)> : std::true_type
-{};
-template <class T, class Ret, class... Args>
-struct is_pointer_to_non_const_member_func<Ret (T::*)(Args...)&> : std::true_type
-{};
-template <class T, class Ret, class... Args>
-struct is_pointer_to_non_const_member_func<Ret (T::*)(Args...) &&> : std::true_type
-{};
-template <class T, class Ret, class... Args>
-struct is_pointer_to_non_const_member_func<Ret (T::*)(Args...) volatile> : std::true_type
-{};
-template <class T, class Ret, class... Args>
-struct is_pointer_to_non_const_member_func<Ret (T::*)(Args...) volatile&> : std::true_type
-{};
-template <class T, class Ret, class... Args>
-struct is_pointer_to_non_const_member_func<Ret (T::*)(Args...) volatile&&> : std::true_type
-{};
-
-template <class T>
-struct is_const_or_const_ref : std::false_type
-{};
-template <class T>
-struct is_const_or_const_ref<T const&> : std::true_type
-{};
-template <class T>
-struct is_const_or_const_ref<T const> : std::true_type
-{};
-#  endif
 
 // std::invoke from C++17
 // https://stackoverflow.com/questions/38288042/c11-14-invoke-workaround
@@ -319,14 +265,14 @@ template <class T, bool = ::std::is_trivially_destructible<T>::value>
 struct optional_storage_base
 {
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR optional_storage_base() noexcept
+  _CCCL_HOST_DEVICE constexpr optional_storage_base() noexcept
       : m_dummy()
       , m_has_value(false)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class... U>
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR optional_storage_base(in_place_t, U&&... u)
+  _CCCL_HOST_DEVICE constexpr optional_storage_base(in_place_t, U&&... u)
       : m_value(std::forward<U>(u)...)
       , m_has_value(true)
   {}
@@ -357,14 +303,14 @@ template <class T>
 struct optional_storage_base<T, true>
 {
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR optional_storage_base() noexcept
+  _CCCL_HOST_DEVICE constexpr optional_storage_base() noexcept
       : m_dummy()
       , m_has_value(false)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class... U>
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR optional_storage_base(in_place_t, U&&... u)
+  _CCCL_HOST_DEVICE constexpr optional_storage_base(in_place_t, U&&... u)
       : m_value(std::forward<U>(u)...)
       , m_has_value(true)
   {}
@@ -434,17 +380,17 @@ struct optional_operations_base : optional_storage_base<T>
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR T& get() &
+  _CCCL_HOST_DEVICE constexpr T& get() &
   {
     return this->m_value;
   }
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR const T& get() const&
+  _CCCL_HOST_DEVICE constexpr const T& get() const&
   {
     return this->m_value;
   }
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR T&& get() &&
+  _CCCL_HOST_DEVICE constexpr T&& get() &&
   {
     return std::move(this->m_value);
   }
@@ -779,8 +725,7 @@ public:
 // types are not SFINAE-safe. This provides better support for things like
 // generic lambdas. C.f.
 // http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0826r0
-#if defined(THRUST_OPTIONAL_CPP14) && !defined(THRUST_OPTIONAL_GCC49) && !defined(THRUST_OPTIONAL_GCC54) \
-  && !defined(THRUST_OPTIONAL_GCC55)
+#if !defined(THRUST_OPTIONAL_GCC49) && !defined(THRUST_OPTIONAL_GCC54) && !defined(THRUST_OPTIONAL_GCC55)
   /// \group and_then
   /// Carries out some operation which returns an optional on the stored
   /// object if there is one. \requires `std::invoke(std::forward<F>(f),
@@ -793,7 +738,7 @@ public:
   /// \synopsis template <class F>\nconstexpr auto and_then(F &&f) &;
   _CCCL_EXEC_CHECK_DISABLE
   template <class F>
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR auto and_then(F&& f) &
+  _CCCL_HOST_DEVICE constexpr auto and_then(F&& f) &
   {
     using result = detail::invoke_result_t<F, T&>;
     static_assert(detail::is_optional<result>::value, "F must return an optional");
@@ -805,7 +750,7 @@ public:
   /// \synopsis template <class F>\nconstexpr auto and_then(F &&f) &&;
   _CCCL_EXEC_CHECK_DISABLE
   template <class F>
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR auto and_then(F&& f) &&
+  _CCCL_HOST_DEVICE constexpr auto and_then(F&& f) &&
   {
     using result = detail::invoke_result_t<F, T&&>;
     static_assert(detail::is_optional<result>::value, "F must return an optional");
@@ -851,7 +796,7 @@ public:
   /// \synopsis template <class F>\nconstexpr auto and_then(F &&f) &;
   _CCCL_EXEC_CHECK_DISABLE
   template <class F>
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR detail::invoke_result_t<F, T&> and_then(F&& f) &
+  _CCCL_HOST_DEVICE constexpr detail::invoke_result_t<F, T&> and_then(F&& f) &
   {
     using result = detail::invoke_result_t<F, T&>;
     static_assert(detail::is_optional<result>::value, "F must return an optional");
@@ -863,7 +808,7 @@ public:
   /// \synopsis template <class F>\nconstexpr auto and_then(F &&f) &&;
   _CCCL_EXEC_CHECK_DISABLE
   template <class F>
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR detail::invoke_result_t<F, T&&> and_then(F&& f) &&
+  _CCCL_HOST_DEVICE constexpr detail::invoke_result_t<F, T&&> and_then(F&& f) &&
   {
     using result = detail::invoke_result_t<F, T&&>;
     static_assert(detail::is_optional<result>::value, "F must return an optional");
@@ -898,8 +843,7 @@ public:
 #  endif
 #endif
 
-#if defined(THRUST_OPTIONAL_CPP14) && !defined(THRUST_OPTIONAL_GCC49) && !defined(THRUST_OPTIONAL_GCC54) \
-  && !defined(THRUST_OPTIONAL_GCC55)
+#if !defined(THRUST_OPTIONAL_GCC49) && !defined(THRUST_OPTIONAL_GCC54) && !defined(THRUST_OPTIONAL_GCC55)
   /// \brief Carries out some operation on the stored object if there is one.
   /// \return Let `U` be the result of `std::invoke(std::forward<F>(f),
   /// value())`. Returns a `std::optional<U>`. The return value is empty if
@@ -911,7 +855,7 @@ public:
   /// \synopsis template <class F> constexpr auto map(F &&f) &;
   _CCCL_EXEC_CHECK_DISABLE
   template <class F>
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR auto map(F&& f) &
+  _CCCL_HOST_DEVICE constexpr auto map(F&& f) &
   {
     return optional_map_impl(*this, std::forward<F>(f));
   }
@@ -920,7 +864,7 @@ public:
   /// \synopsis template <class F> constexpr auto map(F &&f) &&;
   _CCCL_EXEC_CHECK_DISABLE
   template <class F>
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR auto map(F&& f) &&
+  _CCCL_HOST_DEVICE constexpr auto map(F&& f) &&
   {
     return optional_map_impl(std::move(*this), std::forward<F>(f));
   }
@@ -954,9 +898,7 @@ public:
   /// \synopsis template <class F> auto map(F &&f) &;
   _CCCL_EXEC_CHECK_DISABLE
   template <class F>
-  _CCCL_HOST_DEVICE
-  THRUST_OPTIONAL_CPP11_CONSTEXPR decltype(optional_map_impl(std::declval<optional&>(), std::declval<F&&>()))
-  map(F&& f) &
+  _CCCL_HOST_DEVICE constexpr decltype(optional_map_impl(std::declval<optional&>(), std::declval<F&&>())) map(F&& f) &
   {
     return optional_map_impl(*this, std::forward<F>(f));
   }
@@ -965,9 +907,7 @@ public:
   /// \synopsis template <class F> auto map(F &&f) &&;
   _CCCL_EXEC_CHECK_DISABLE
   template <class F>
-  _CCCL_HOST_DEVICE
-  THRUST_OPTIONAL_CPP11_CONSTEXPR decltype(optional_map_impl(std::declval<optional&&>(), std::declval<F&&>()))
-  map(F&& f) &&
+  _CCCL_HOST_DEVICE constexpr decltype(optional_map_impl(std::declval<optional&&>(), std::declval<F&&>())) map(F&& f) &&
   {
     return optional_map_impl(std::move(*this), std::forward<F>(f));
   }
@@ -1006,7 +946,7 @@ public:
   /// \synopsis template <class F> optional<T> or_else (F &&f) &;
   _CCCL_EXEC_CHECK_DISABLE
   template <class F, detail::enable_if_ret_void<F>* = nullptr>
-  _CCCL_HOST_DEVICE optional<T> THRUST_OPTIONAL_CPP11_CONSTEXPR or_else(F&& f) &
+  _CCCL_HOST_DEVICE optional<T> constexpr or_else(F&& f) &
   {
     if (has_value())
     {
@@ -1020,7 +960,7 @@ public:
   /// \exclude
   _CCCL_EXEC_CHECK_DISABLE
   template <class F, detail::disable_if_ret_void<F>* = nullptr>
-  _CCCL_HOST_DEVICE optional<T> THRUST_OPTIONAL_CPP11_CONSTEXPR or_else(F&& f) &
+  _CCCL_HOST_DEVICE optional<T> constexpr or_else(F&& f) &
   {
     return has_value() ? *this : std::forward<F>(f)();
   }
@@ -1043,7 +983,7 @@ public:
   /// \exclude
   _CCCL_EXEC_CHECK_DISABLE
   template <class F, detail::disable_if_ret_void<F>* = nullptr>
-  _CCCL_HOST_DEVICE optional<T> THRUST_OPTIONAL_CPP11_CONSTEXPR or_else(F&& f) &&
+  _CCCL_HOST_DEVICE optional<T> constexpr or_else(F&& f) &&
   {
     return has_value() ? std::move(*this) : std::forward<F>(f)();
   }
@@ -1066,7 +1006,7 @@ public:
   /// \exclude
   _CCCL_EXEC_CHECK_DISABLE
   template <class F, detail::disable_if_ret_void<F>* = nullptr>
-  _CCCL_HOST_DEVICE optional<T> THRUST_OPTIONAL_CPP11_CONSTEXPR or_else(F&& f) const&
+  _CCCL_HOST_DEVICE optional<T> constexpr or_else(F&& f) const&
   {
     return has_value() ? *this : std::forward<F>(f)();
   }
@@ -1195,7 +1135,7 @@ public:
   /// \return `rhs` if `*this` is empty, otherwise the current value.
   /// \group disjunction
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR optional disjunction(const optional& rhs) &
+  _CCCL_HOST_DEVICE constexpr optional disjunction(const optional& rhs) &
   {
     return has_value() ? *this : rhs;
   }
@@ -1209,7 +1149,7 @@ public:
 
   /// \group disjunction
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR optional disjunction(const optional& rhs) &&
+  _CCCL_HOST_DEVICE constexpr optional disjunction(const optional& rhs) &&
   {
     return has_value() ? std::move(*this) : rhs;
   }
@@ -1225,7 +1165,7 @@ public:
 
   /// \group disjunction
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR optional disjunction(optional&& rhs) &
+  _CCCL_HOST_DEVICE constexpr optional disjunction(optional&& rhs) &
   {
     return has_value() ? *this : std::move(rhs);
   }
@@ -1239,7 +1179,7 @@ public:
 
   /// \group disjunction
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR optional disjunction(optional&& rhs) &&
+  _CCCL_HOST_DEVICE constexpr optional disjunction(optional&& rhs) &&
   {
     return has_value() ? std::move(*this) : std::move(rhs);
   }
@@ -1308,14 +1248,14 @@ public:
   /// If `rhs` contains a value, the stored value is direct-initialized with
   /// it. Otherwise, the constructed optional is empty.
   _CCCL_EXEC_CHECK_DISABLE
-  THRUST_OPTIONAL_CPP11_CONSTEXPR optional(const optional& rhs) = default;
+  constexpr optional(const optional& rhs) = default;
 
   /// Move constructor
   ///
   /// If `rhs` contains a value, the stored value is direct-initialized with
   /// it. Otherwise, the constructed optional is empty.
   _CCCL_EXEC_CHECK_DISABLE
-  THRUST_OPTIONAL_CPP11_CONSTEXPR optional(optional&& rhs) = default;
+  constexpr optional(optional&& rhs) = default;
 
   /// Constructs the stored value in-place using the given arguments.
   /// \group in_place
@@ -1332,7 +1272,7 @@ public:
   /// Args&&... args);
   _CCCL_EXEC_CHECK_DISABLE
   template <class U, class... Args>
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR explicit optional(
+  _CCCL_HOST_DEVICE constexpr explicit optional(
     detail::enable_if_t<std::is_constructible<T, std::initializer_list<U>&, Args&&...>::value, in_place_t>,
     std::initializer_list<U> il,
     Args&&... args)
@@ -1581,7 +1521,7 @@ public:
   /// \group pointer
   /// \synopsis constexpr T *operator->();
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR T* operator->()
+  _CCCL_HOST_DEVICE constexpr T* operator->()
   {
     return ::cuda::std::addressof(this->m_value);
   }
@@ -1591,7 +1531,7 @@ public:
   /// \group deref
   /// \synopsis constexpr T &operator*();
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR T& operator*() &
+  _CCCL_HOST_DEVICE constexpr T& operator*() &
   {
     return this->m_value;
   }
@@ -1606,7 +1546,7 @@ public:
 
   /// \exclude
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR T&& operator*() &&
+  _CCCL_HOST_DEVICE constexpr T&& operator*() &&
   {
     return std::move(this->m_value);
   }
@@ -1639,7 +1579,7 @@ public:
   /// [bad_optional_access]
   /// \group value
   /// \synopsis constexpr T &value();
-  _CCCL_HOST THRUST_OPTIONAL_CPP11_CONSTEXPR T& value() &
+  _CCCL_HOST constexpr T& value() &
   {
     if (has_value())
     {
@@ -1649,7 +1589,7 @@ public:
   }
   /// \group value
   /// \synopsis constexpr const T &value() const;
-  _CCCL_HOST THRUST_OPTIONAL_CPP11_CONSTEXPR const T& value() const&
+  _CCCL_HOST constexpr const T& value() const&
   {
     if (has_value())
     {
@@ -1658,7 +1598,7 @@ public:
     throw bad_optional_access();
   }
   /// \exclude
-  _CCCL_HOST THRUST_OPTIONAL_CPP11_CONSTEXPR T&& value() &&
+  _CCCL_HOST constexpr T&& value() &&
   {
     if (has_value())
     {
@@ -1669,7 +1609,7 @@ public:
 
 #ifndef THRUST_OPTIONAL_NO_CONSTRR
   /// \exclude
-  _CCCL_HOST THRUST_OPTIONAL_CPP11_CONSTEXPR const T&& value() const&&
+  _CCCL_HOST constexpr const T&& value() const&&
   {
     if (has_value())
     {
@@ -1693,7 +1633,7 @@ public:
   /// \group value_or
   _CCCL_EXEC_CHECK_DISABLE
   template <class U>
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR T value_or(U&& u) &&
+  _CCCL_HOST_DEVICE constexpr T value_or(U&& u) &&
   {
     static_assert(std::is_move_constructible<T>::value && std::is_convertible<U&&, T>::value,
                   "T must be move constructible and convertible from U");
@@ -1977,17 +1917,14 @@ _CCCL_HOST_DEVICE inline constexpr optional<T> make_optional(std::initializer_li
   return optional<T>(in_place, il, std::forward<Args>(args)...);
 }
 
-#if _CCCL_STD_VER >= 2017
 template <class T>
 optional(T) -> optional<T>;
-#endif
 
 // Doxygen chokes on the trailing return types used below.
 #if !defined(_CCCL_DOXYGEN_INVOKED)
 /// \exclude
 namespace detail
 {
-#  ifdef THRUST_OPTIONAL_CPP14
 _CCCL_EXEC_CHECK_DISABLE
 template <class Opt,
           class F,
@@ -2008,53 +1945,27 @@ _CCCL_HOST_DEVICE auto optional_map_impl(Opt&& opt, F&& f)
   if (opt.has_value())
   {
     detail::invoke(std::forward<F>(f), *std::forward<Opt>(opt));
-#    if _CCCL_COMPILER(MSVC)
+#  if _CCCL_COMPILER(MSVC)
     // MSVC fails to suppress the warning on make_optional
     _CCCL_SUPPRESS_DEPRECATED_PUSH
     return optional<monostate>(monostate{});
     _CCCL_SUPPRESS_DEPRECATED_POP
-#    elif _CCCL_COMPILER(NVHPC)
+#  elif _CCCL_COMPILER(NVHPC)
     // NVHPC cannot have a diagnostic pop after a return statement
     _CCCL_SUPPRESS_DEPRECATED_PUSH
     auto o = optional<monostate>(monostate{});
     _CCCL_SUPPRESS_DEPRECATED_POP
     return ::cuda::std::move(o);
-#    else
+#  else
     _CCCL_SUPPRESS_DEPRECATED_PUSH
     return make_optional(monostate{});
     _CCCL_SUPPRESS_DEPRECATED_POP
-#    endif
+#  endif
   }
 
   return optional<monostate>(nullopt);
 }
-#  else
-_CCCL_EXEC_CHECK_DISABLE
-template <class Opt,
-          class F,
-          class Ret = decltype(detail::invoke(std::declval<F>(), *std::declval<Opt>())),
-          detail::enable_if_t<!std::is_void<Ret>::value>* = nullptr>
-_CCCL_HOST_DEVICE constexpr optional<Ret> optional_map_impl(Opt&& opt, F&& f)
-{
-  return opt.has_value() ? detail::invoke(std::forward<F>(f), *std::forward<Opt>(opt)) : optional<Ret>(nullopt);
-}
 
-_CCCL_EXEC_CHECK_DISABLE
-template <class Opt,
-          class F,
-          class Ret = decltype(detail::invoke(std::declval<F>(), *std::declval<Opt>())),
-          detail::enable_if_t<std::is_void<Ret>::value>* = nullptr>
-_CCCL_HOST_DEVICE auto optional_map_impl(Opt&& opt, F&& f) -> optional<monostate>
-{
-  if (opt.has_value())
-  {
-    detail::invoke(std::forward<F>(f), *std::forward<Opt>(opt));
-    return monostate{};
-  }
-
-  return nullopt;
-}
-#  endif
 } // namespace detail
 #endif // !defined(_CCCL_DOXYGEN_INVOKED)
 
@@ -2088,8 +1999,7 @@ public:
 // types are not SFINAE-safe. This provides better support for things like
 // generic lambdas. C.f.
 // http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0826r0
-#if defined(THRUST_OPTIONAL_CPP14) && !defined(THRUST_OPTIONAL_GCC49) && !defined(THRUST_OPTIONAL_GCC54) \
-  && !defined(THRUST_OPTIONAL_GCC55)
+#if !defined(THRUST_OPTIONAL_GCC49) && !defined(THRUST_OPTIONAL_GCC54) && !defined(THRUST_OPTIONAL_GCC55)
   /// \group and_then
   /// Carries out some operation which returns an optional on the stored
   /// object if there is one. \requires `std::invoke(std::forward<F>(f),
@@ -2102,7 +2012,7 @@ public:
   /// \synopsis template <class F>\nconstexpr auto and_then(F &&f) &;
   _CCCL_EXEC_CHECK_DISABLE
   template <class F>
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR auto and_then(F&& f) &
+  _CCCL_HOST_DEVICE constexpr auto and_then(F&& f) &
   {
     using result = detail::invoke_result_t<F, T&>;
     static_assert(detail::is_optional<result>::value, "F must return an optional");
@@ -2114,7 +2024,7 @@ public:
   /// \synopsis template <class F>\nconstexpr auto and_then(F &&f) &&;
   _CCCL_EXEC_CHECK_DISABLE
   template <class F>
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR auto and_then(F&& f) &&
+  _CCCL_HOST_DEVICE constexpr auto and_then(F&& f) &&
   {
     using result = detail::invoke_result_t<F, T&>;
     static_assert(detail::is_optional<result>::value, "F must return an optional");
@@ -2160,7 +2070,7 @@ public:
   /// \synopsis template <class F>\nconstexpr auto and_then(F &&f) &;
   _CCCL_EXEC_CHECK_DISABLE
   template <class F>
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR detail::invoke_result_t<F, T&> and_then(F&& f) &
+  _CCCL_HOST_DEVICE constexpr detail::invoke_result_t<F, T&> and_then(F&& f) &
   {
     using result = detail::invoke_result_t<F, T&>;
     static_assert(detail::is_optional<result>::value, "F must return an optional");
@@ -2172,7 +2082,7 @@ public:
   /// \synopsis template <class F>\nconstexpr auto and_then(F &&f) &&;
   _CCCL_EXEC_CHECK_DISABLE
   template <class F>
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR detail::invoke_result_t<F, T&> and_then(F&& f) &&
+  _CCCL_HOST_DEVICE constexpr detail::invoke_result_t<F, T&> and_then(F&& f) &&
   {
     using result = detail::invoke_result_t<F, T&>;
     static_assert(detail::is_optional<result>::value, "F must return an optional");
@@ -2207,8 +2117,7 @@ public:
 #  endif
 #endif
 
-#if defined(THRUST_OPTIONAL_CPP14) && !defined(THRUST_OPTIONAL_GCC49) && !defined(THRUST_OPTIONAL_GCC54) \
-  && !defined(THRUST_OPTIONAL_GCC55)
+#if !defined(THRUST_OPTIONAL_GCC49) && !defined(THRUST_OPTIONAL_GCC54) && !defined(THRUST_OPTIONAL_GCC55)
   /// \brief Carries out some operation on the stored object if there is one.
   /// \return Let `U` be the result of `std::invoke(std::forward<F>(f),
   /// value())`. Returns a `std::optional<U>`. The return value is empty if
@@ -2220,7 +2129,7 @@ public:
   /// \synopsis template <class F> constexpr auto map(F &&f) &;
   _CCCL_EXEC_CHECK_DISABLE
   template <class F>
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR auto map(F&& f) &
+  _CCCL_HOST_DEVICE constexpr auto map(F&& f) &
   {
     return detail::optional_map_impl(*this, std::forward<F>(f));
   }
@@ -2229,7 +2138,7 @@ public:
   /// \synopsis template <class F> constexpr auto map(F &&f) &&;
   _CCCL_EXEC_CHECK_DISABLE
   template <class F>
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR auto map(F&& f) &&
+  _CCCL_HOST_DEVICE constexpr auto map(F&& f) &&
   {
     return detail::optional_map_impl(std::move(*this), std::forward<F>(f));
   }
@@ -2263,8 +2172,7 @@ public:
   /// \synopsis template <class F> auto map(F &&f) &;
   _CCCL_EXEC_CHECK_DISABLE
   template <class F>
-  _CCCL_HOST_DEVICE
-  THRUST_OPTIONAL_CPP11_CONSTEXPR decltype(detail::optional_map_impl(std::declval<optional&>(), std::declval<F&&>()))
+  _CCCL_HOST_DEVICE constexpr decltype(detail::optional_map_impl(std::declval<optional&>(), std::declval<F&&>()))
   map(F&& f) &
   {
     return detail::optional_map_impl(*this, std::forward<F>(f));
@@ -2274,8 +2182,7 @@ public:
   /// \synopsis template <class F> auto map(F &&f) &&;
   _CCCL_EXEC_CHECK_DISABLE
   template <class F>
-  _CCCL_HOST_DEVICE
-  THRUST_OPTIONAL_CPP11_CONSTEXPR decltype(detail::optional_map_impl(std::declval<optional&&>(), std::declval<F&&>()))
+  _CCCL_HOST_DEVICE constexpr decltype(detail::optional_map_impl(std::declval<optional&&>(), std::declval<F&&>()))
   map(F&& f) &&
   {
     return detail::optional_map_impl(std::move(*this), std::forward<F>(f));
@@ -2314,7 +2221,7 @@ public:
   /// \synopsis template <class F> optional<T> or_else (F &&f) &;
   _CCCL_EXEC_CHECK_DISABLE
   template <class F, detail::enable_if_ret_void<F>* = nullptr>
-  _CCCL_HOST_DEVICE optional<T> THRUST_OPTIONAL_CPP11_CONSTEXPR or_else(F&& f) &
+  _CCCL_HOST_DEVICE optional<T> constexpr or_else(F&& f) &
   {
     if (has_value())
     {
@@ -2328,7 +2235,7 @@ public:
   /// \exclude
   _CCCL_EXEC_CHECK_DISABLE
   template <class F, detail::disable_if_ret_void<F>* = nullptr>
-  _CCCL_HOST_DEVICE optional<T> THRUST_OPTIONAL_CPP11_CONSTEXPR or_else(F&& f) &
+  _CCCL_HOST_DEVICE optional<T> constexpr or_else(F&& f) &
   {
     return has_value() ? *this : std::forward<F>(f)();
   }
@@ -2351,7 +2258,7 @@ public:
   /// \exclude
   _CCCL_EXEC_CHECK_DISABLE
   template <class F, detail::disable_if_ret_void<F>* = nullptr>
-  _CCCL_HOST_DEVICE optional<T> THRUST_OPTIONAL_CPP11_CONSTEXPR or_else(F&& f) &&
+  _CCCL_HOST_DEVICE optional<T> constexpr or_else(F&& f) &&
   {
     return has_value() ? std::move(*this) : std::forward<F>(f)();
   }
@@ -2374,7 +2281,7 @@ public:
   /// \exclude
   _CCCL_EXEC_CHECK_DISABLE
   template <class F, detail::disable_if_ret_void<F>* = nullptr>
-  _CCCL_HOST_DEVICE optional<T> THRUST_OPTIONAL_CPP11_CONSTEXPR or_else(F&& f) const&
+  _CCCL_HOST_DEVICE optional<T> constexpr or_else(F&& f) const&
   {
     return has_value() ? *this : std::forward<F>(f)();
   }
@@ -2503,7 +2410,7 @@ public:
   /// \return `rhs` if `*this` is empty, otherwise the current value.
   /// \group disjunction
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR optional disjunction(const optional& rhs) &
+  _CCCL_HOST_DEVICE constexpr optional disjunction(const optional& rhs) &
   {
     return has_value() ? *this : rhs;
   }
@@ -2517,7 +2424,7 @@ public:
 
   /// \group disjunction
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR optional disjunction(const optional& rhs) &&
+  _CCCL_HOST_DEVICE constexpr optional disjunction(const optional& rhs) &&
   {
     return has_value() ? std::move(*this) : rhs;
   }
@@ -2533,7 +2440,7 @@ public:
 
   /// \group disjunction
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR optional disjunction(optional&& rhs) &
+  _CCCL_HOST_DEVICE constexpr optional disjunction(optional&& rhs) &
   {
     return has_value() ? *this : std::move(rhs);
   }
@@ -2547,7 +2454,7 @@ public:
 
   /// \group disjunction
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR optional disjunction(optional&& rhs) &&
+  _CCCL_HOST_DEVICE constexpr optional disjunction(optional&& rhs) &&
   {
     return has_value() ? std::move(*this) : std::move(rhs);
   }
@@ -2620,14 +2527,14 @@ public:
   /// If `rhs` contains a value, the stored value is direct-initialized with
   /// it. Otherwise, the constructed optional is empty.
   _CCCL_EXEC_CHECK_DISABLE
-  THRUST_OPTIONAL_CPP11_CONSTEXPR optional(const optional& rhs) noexcept = default;
+  constexpr optional(const optional& rhs) noexcept = default;
 
   /// Move constructor
   ///
   /// If `rhs` contains a value, the stored value is direct-initialized with
   /// it. Otherwise, the constructed optional is empty.
   _CCCL_EXEC_CHECK_DISABLE
-  THRUST_OPTIONAL_CPP11_CONSTEXPR optional(optional&& rhs) = default;
+  constexpr optional(optional&& rhs) = default;
 
   /// Constructs the stored value with `u`.
   /// \synopsis template <class U=T> constexpr optional(U &&u);
@@ -2729,7 +2636,7 @@ public:
   /// \group pointer
   /// \synopsis constexpr T *operator->();
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR T* operator->()
+  _CCCL_HOST_DEVICE constexpr T* operator->()
   {
     return m_value;
   }
@@ -2739,7 +2646,7 @@ public:
   /// \group deref
   /// \synopsis constexpr T &operator*();
   _CCCL_EXEC_CHECK_DISABLE
-  THRUST_OPTIONAL_CPP11_CONSTEXPR T& operator*()
+  constexpr T& operator*()
   {
     return *m_value;
   }
@@ -2771,7 +2678,7 @@ public:
   /// [bad_optional_access]
   /// \group value
   /// synopsis constexpr T &value();
-  _CCCL_HOST THRUST_OPTIONAL_CPP11_CONSTEXPR T& value()
+  _CCCL_HOST constexpr T& value()
   {
     if (has_value())
     {
@@ -2781,7 +2688,7 @@ public:
   }
   /// \group value
   /// \synopsis constexpr const T &value() const;
-  _CCCL_HOST THRUST_OPTIONAL_CPP11_CONSTEXPR const T& value() const
+  _CCCL_HOST constexpr const T& value() const
   {
     if (has_value())
     {
@@ -2804,7 +2711,7 @@ public:
   /// \group value_or
   _CCCL_EXEC_CHECK_DISABLE
   template <class U>
-  _CCCL_HOST_DEVICE THRUST_OPTIONAL_CPP11_CONSTEXPR T value_or(U&& u) &&
+  _CCCL_HOST_DEVICE constexpr T value_or(U&& u) &&
   {
     static_assert(std::is_move_constructible<T>::value && std::is_convertible<U&&, T>::value,
                   "T must be move constructible and convertible from U");

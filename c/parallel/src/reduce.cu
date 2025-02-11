@@ -40,6 +40,12 @@ static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "O
 struct nothing_t
 {};
 
+struct input_iterator_state_t;
+struct output_iterator_t;
+
+namespace reduce
+{
+
 struct reduce_runtime_tuning_policy
 {
   int block_size;
@@ -106,9 +112,6 @@ static cccl_type_info get_accumulator_type(cccl_op_t /*op*/, cccl_iterator_t /*i
   //      so switching back to the old accumulator type logic for now
   return init.type;
 }
-
-struct input_iterator_state_t;
-struct output_iterator_t;
 
 std::string get_input_iterator_name()
 {
@@ -201,6 +204,44 @@ std::string get_device_reduce_kernel_name(cccl_op_t op, cccl_iterator_t input_it
     transform_op_t);
 }
 
+template <auto* GetPolicy>
+struct dynamic_reduce_policy_t
+{
+  using MaxPolicy = dynamic_reduce_policy_t;
+
+  template <typename F>
+  cudaError_t Invoke(int device_ptx_version, F& op)
+  {
+    return op.template Invoke<reduce_runtime_tuning_policy>(GetPolicy(device_ptx_version, accumulator_type));
+  }
+
+  cccl_type_info accumulator_type;
+};
+
+struct reduce_kernel_source
+{
+  cccl_device_reduce_build_result_t& build;
+
+  std::size_t AccumSize() const
+  {
+    return build.accumulator_size;
+  }
+  CUkernel SingleTileKernel() const
+  {
+    return build.single_tile_kernel;
+  }
+  CUkernel SingleTileSecondKernel() const
+  {
+    return build.single_tile_second_kernel;
+  }
+  CUkernel ReductionKernel() const
+  {
+    return build.reduction_kernel;
+  }
+};
+
+} // namespace reduce
+
 extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
   cccl_device_reduce_build_result_t* build,
   cccl_iterator_t input_it,
@@ -220,15 +261,17 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
   {
     const char* name = "test";
 
-    const int cc                              = cc_major * 10 + cc_minor;
-    const cccl_type_info accum_t              = get_accumulator_type(op, input_it, init);
-    const reduce_runtime_tuning_policy policy = get_policy(cc, accum_t);
-    const auto accum_cpp                      = cccl_type_enum_to_string(accum_t.type);
-    const auto input_it_value_t               = cccl_type_enum_to_string(input_it.value_type.type);
-    const auto offset_t                       = cccl_type_enum_to_string(cccl_type_enum::UINT64);
+    const int cc                 = cc_major * 10 + cc_minor;
+    const cccl_type_info accum_t = reduce::get_accumulator_type(op, input_it, init);
+    const auto policy            = reduce::get_policy(cc, accum_t);
+    const auto accum_cpp         = cccl_type_enum_to_string(accum_t.type);
+    const auto input_it_value_t  = cccl_type_enum_to_string(input_it.value_type.type);
+    const auto offset_t          = cccl_type_enum_to_string(cccl_type_enum::UINT64);
 
-    const std::string input_iterator_src  = make_kernel_input_iterator(offset_t, input_it_value_t, input_it);
-    const std::string output_iterator_src = make_kernel_output_iterator(offset_t, accum_cpp, output_it);
+    const std::string input_iterator_src =
+      make_kernel_input_iterator(offset_t, "input_iterator_state_t", input_it_value_t, input_it);
+    const std::string output_iterator_src =
+      make_kernel_output_iterator(offset_t, "output_iterator_t", accum_cpp, output_it);
 
     const std::string op_src = make_kernel_user_binary_operator(accum_cpp, op);
 
@@ -269,9 +312,10 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
     fflush(stdout);
 #endif
 
-    std::string single_tile_kernel_name        = get_single_tile_kernel_name(input_it, output_it, op, init, false);
-    std::string single_tile_second_kernel_name = get_single_tile_kernel_name(input_it, output_it, op, init, true);
-    std::string reduction_kernel_name          = get_device_reduce_kernel_name(op, input_it, init);
+    std::string single_tile_kernel_name = reduce::get_single_tile_kernel_name(input_it, output_it, op, init, false);
+    std::string single_tile_second_kernel_name =
+      reduce::get_single_tile_kernel_name(input_it, output_it, op, init, true);
+    std::string reduction_kernel_name = reduce::get_device_reduce_kernel_name(op, input_it, init);
     std::string single_tile_kernel_lowered_name;
     std::string single_tile_second_kernel_lowered_name;
     std::string reduction_kernel_lowered_name;
@@ -304,7 +348,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
       ltoir_list_append({output_it.dereference.ltoir, output_it.dereference.ltoir_size});
     }
 
-    nvrtc_cubin result =
+    nvrtc_link_result result =
       make_nvrtc_command_list()
         .add_program(nvrtc_translation_unit{src.c_str(), name})
         .add_expression({single_tile_kernel_name})
@@ -318,14 +362,14 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
         .add_link_list(ltoir_list)
         .finalize_program(num_lto_args, lopts);
 
-    cuLibraryLoadData(&build->library, result.cubin.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+    cuLibraryLoadData(&build->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
     check(cuLibraryGetKernel(&build->single_tile_kernel, build->library, single_tile_kernel_lowered_name.c_str()));
     check(cuLibraryGetKernel(
       &build->single_tile_second_kernel, build->library, single_tile_second_kernel_lowered_name.c_str()));
     check(cuLibraryGetKernel(&build->reduction_kernel, build->library, reduction_kernel_lowered_name.c_str()));
 
     build->cc               = cc;
-    build->cubin            = (void*) result.cubin.release();
+    build->cubin            = (void*) result.data.release();
     build->cubin_size       = result.size;
     build->accumulator_size = accum_t.size;
   }
@@ -339,42 +383,6 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
 
   return error;
 }
-
-template <auto* GetPolicy>
-struct dynamic_reduce_policy_t
-{
-  using MaxPolicy = dynamic_reduce_policy_t;
-
-  template <typename F>
-  cudaError_t Invoke(int device_ptx_version, F& op)
-  {
-    return op.template Invoke<reduce_runtime_tuning_policy>(GetPolicy(device_ptx_version, accumulator_type));
-  }
-
-  cccl_type_info accumulator_type;
-};
-
-struct reduce_kernel_source
-{
-  cccl_device_reduce_build_result_t& build;
-
-  std::size_t AccumSize() const
-  {
-    return build.accumulator_size;
-  }
-  CUkernel SingleTileKernel() const
-  {
-    return build.single_tile_kernel;
-  }
-  CUkernel SingleTileSecondKernel() const
-  {
-    return build.single_tile_second_kernel;
-  }
-  CUkernel ReductionKernel() const
-  {
-    return build.reduction_kernel;
-  }
-};
 
 extern "C" CCCL_C_API CUresult cccl_device_reduce(
   cccl_device_reduce_build_result_t build,
@@ -402,9 +410,9 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce(
                         indirect_arg_t,
                         indirect_arg_t,
                         void,
-                        dynamic_reduce_policy_t<&get_policy>,
+                        reduce::dynamic_reduce_policy_t<&reduce::get_policy>,
                         ::cuda::std::__identity,
-                        reduce_kernel_source,
+                        reduce::reduce_kernel_source,
                         cub::detail::CudaDriverLauncherFactory>::
       Dispatch(
         d_temp_storage,
@@ -418,7 +426,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce(
         {},
         {build},
         cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
-        {get_accumulator_type(op, d_in, init)});
+        {reduce::get_accumulator_type(op, d_in, init)});
   }
   catch (const std::exception& exc)
   {
@@ -437,7 +445,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce(
   return error;
 }
 
-extern "C" CCCL_C_API CUresult cccl_device_reduce_cleanup(cccl_device_reduce_build_result_t* bld_ptr)
+extern "C" CCCL_C_API CUresult cccl_device_reduce_cleanup(cccl_device_reduce_build_result_t* bld_ptr) noexcept
 {
   try
   {

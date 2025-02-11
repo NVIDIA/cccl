@@ -62,8 +62,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2011
-
 namespace __detail
 {
 
@@ -96,17 +94,17 @@ struct __no_unique_address_emulation<_Tp,
                                                              // specialization
                                                              _CCCL_TRAIT(_CUDA_VSTD::is_trivially_destructible, _Tp)>>
     :
-#  ifdef __MDSPAN_COMPILER_MSVC
+#ifdef __MDSPAN_COMPILER_MSVC
     // MSVC doesn't allow you to access public static member functions of a type
     // when you *happen* to privately inherit from that type.
     protected
-#  else
+#else // ^^^ __MDSPAN_COMPILER_MSVC ^^^ / vvv !__MDSPAN_COMPILER_MSVC vvv
     // But we still want this to be private if possible so that we don't accidentally
     // access members of _Tp directly rather than calling __ref() first, which wouldn't
     // work if _Tp happens to be stateful and thus we're using the unspecialized definition
     // of __no_unique_address_emulation above.
     private
-#  endif
+#endif // !__MDSPAN_COMPILER_MSVC
     _Tp
 {
   using __stored_type = _Tp;
@@ -141,8 +139,6 @@ struct __no_unique_address_emulation<_Tp,
 //==============================================================================
 
 } // end namespace __detail
-
-#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

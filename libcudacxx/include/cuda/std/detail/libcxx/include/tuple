@@ -1044,8 +1044,6 @@ get(const tuple<_Tp...>&& __t) noexcept
   return _CUDA_VSTD::move(__t).template __get_impl<_Ip>();
 }
 
-#if _CCCL_STD_VER > 2011
-
 namespace __find_detail
 {
 
@@ -1107,8 +1105,6 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _T1 const&& get(tuple<_Args...> const&& __tu
 {
   return _CUDA_VSTD::get<__find_exactly_one_t<_T1, _Args...>::value>(_CUDA_VSTD::move(__tup));
 }
-
-#endif
 
 // tie
 
@@ -1354,12 +1350,11 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __pair_base<_T1, _T2, _IsRef>::_
     , second(_CUDA_VSTD::forward<_Args2>(_CUDA_VSTD::get<_I2>(__second_args))...)
 {}
 
-#if _CCCL_STD_VER > 2014
-#  define _LIBCUDACXX_NOEXCEPT_RETURN(...) \
-    noexcept(noexcept(__VA_ARGS__))        \
-    {                                      \
-      return __VA_ARGS__;                  \
-    }
+#define _LIBCUDACXX_NOEXCEPT_RETURN(...) \
+  noexcept(noexcept(__VA_ARGS__))        \
+  {                                      \
+    return __VA_ARGS__;                  \
+  }
 
 template <class _Fn, class _Tuple, size_t... _Id>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) __apply_tuple_impl(_Fn&& __f, _Tuple&& __t, __tuple_indices<_Id...>)
@@ -1383,9 +1378,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) __apply_tuple_impl(_Fn&& __f,
   make_from_tuple(_Tuple&& __t) _LIBCUDACXX_NOEXCEPT_RETURN(_CUDA_VSTD::__make_from_tuple_impl<_Tp>(
     _CUDA_VSTD::forward<_Tuple>(__t), __make_tuple_indices_t<tuple_size_v<remove_reference_t<_Tuple>>>{}))
 
-#  undef _LIBCUDACXX_NOEXCEPT_RETURN
-
-#endif // _CCCL_STD_VER > 2014
+#undef _LIBCUDACXX_NOEXCEPT_RETURN
 
     _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -361,7 +361,6 @@ __host__ __device__ bool tests()
 #if defined(_CCCL_BUILTIN_BIT_CAST)
 __host__ __device__ constexpr bool basic_constexpr_test()
 {
-#  if TEST_STD_VER >= 2014
   struct Nested
   {
     char buffer[sizeof(int)];
@@ -370,10 +369,6 @@ __host__ __device__ constexpr bool basic_constexpr_test()
   Nested middle = cuda::std::bit_cast<Nested>(from);
   int to        = cuda::std::bit_cast<int>(middle);
   return (from == to);
-#  else // ^^^ C++14 ^^^ / vvv C++11 vvv
-  // only do a sanity check in C++11
-  return (3 == cuda::std::bit_cast<unsigned>(3u));
-#  endif // TEST_STD_VER >= 2014
 }
 #endif // _CCCL_BUILTIN_BIT_CAST
 

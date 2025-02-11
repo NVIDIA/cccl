@@ -63,12 +63,6 @@ enum class primitive_op
   no,
   yes
 };
-enum class offset_size
-{
-  _4,
-  _8,
-  unknown
-};
 enum class val_size
 {
   _1,
@@ -91,7 +85,7 @@ enum class key_size
 template <class AccumT>
 constexpr primitive_accum is_primitive_accum()
 {
-  return Traits<AccumT>::PRIMITIVE ? primitive_accum::yes : primitive_accum::no;
+  return detail::is_primitive<AccumT>::value ? primitive_accum::yes : primitive_accum::no;
 }
 
 template <class ScanOpT>
@@ -710,6 +704,211 @@ struct sm90_tuning<KeyT, __uint128_t, primitive_op::yes, key_size::_16, val_size
 {};
 #endif
 
+template <class KeyT,
+          class ValueT,
+          primitive_op PrimitiveOp,
+          key_size KeySize                     = classify_key_size<KeyT>(),
+          val_size ValueSize                   = classify_val_size<ValueT>(),
+          primitive_accum PrimitiveAccumulator = is_primitive_accum<ValueT>()>
+struct sm100_tuning;
+
+// key_size = 8 bits
+template <class KeyT, class ValueT>
+struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_1, val_size::_1, primitive_accum::yes>
+{
+  // ipt_13.tpb_288.ns_420.dcid_0.l2w_745.trp_1.ld_0 1.030222  0.998162  1.027506  1.068348
+  static constexpr int items                           = 13;
+  static constexpr int threads                         = 288;
+  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
+  using delay_constructor                              = no_delay_constructor_t<745>;
+  static constexpr CacheLoadModifier load_modifier     = LOAD_DEFAULT;
+};
+
+template <class KeyT, class ValueT>
+struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_1, val_size::_2, primitive_accum::yes>
+{
+  // ipt_13.tpb_288.ns_388.dcid_1.l2w_570.trp_1.ld_0 1.228612   1.0  1.216841  1.416167
+  static constexpr int items                           = 13;
+  static constexpr int threads                         = 288;
+  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
+  using delay_constructor                              = fixed_delay_constructor_t<388, 570>;
+  static constexpr CacheLoadModifier load_modifier     = LOAD_DEFAULT;
+};
+
+template <class KeyT, class ValueT>
+struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_1, val_size::_4, primitive_accum::yes>
+{
+  // ipt_19.tpb_224.ns_1028.dcid_5.l2w_910.trp_1.ld_1 1.163440   1.0  1.146400  1.260684
+  static constexpr int items                           = 19;
+  static constexpr int threads                         = 224;
+  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
+  using delay_constructor                              = exponential_backon_jitter_window_constructor_t<1028, 910>;
+  static constexpr CacheLoadModifier load_modifier     = LOAD_CA;
+};
+
+template <class KeyT, class ValueT>
+struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_1, val_size::_8, primitive_accum::yes>
+{
+  // ipt_18.tpb_192.ns_432.dcid_1.l2w_1035.trp_1.ld_1 1.177638  0.985417  1.157164  1.296477
+  static constexpr int items                           = 18;
+  static constexpr int threads                         = 192;
+  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
+  using delay_constructor                              = fixed_delay_constructor_t<432, 1035>;
+  static constexpr CacheLoadModifier load_modifier     = LOAD_CA;
+};
+
+// key_size = 16 bits
+template <class KeyT, class ValueT>
+struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_2, val_size::_1, primitive_accum::yes>
+{
+  // ipt_12.tpb_384.ns_1900.dcid_0.l2w_840.trp_1.ld_0 1.010828  0.985782  1.007993  1.048859
+  static constexpr int items                           = 12;
+  static constexpr int threads                         = 384;
+  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
+  using delay_constructor                              = no_delay_constructor_t<1900>;
+  static constexpr CacheLoadModifier load_modifier     = LOAD_DEFAULT;
+};
+
+template <class KeyT, class ValueT>
+struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_2, val_size::_2, primitive_accum::yes>
+{
+  // ipt_14.tpb_160.ns_1736.dcid_7.l2w_170.trp_1.ld_0 1.095207  1.065061  1.100302  1.142857
+  static constexpr int items                           = 14;
+  static constexpr int threads                         = 160;
+  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
+  using delay_constructor                              = exponential_backon_constructor_t<1736, 170>;
+  static constexpr CacheLoadModifier load_modifier     = LOAD_DEFAULT;
+};
+
+template <class KeyT, class ValueT>
+struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_2, val_size::_4, primitive_accum::yes>
+{
+  // ipt_14.tpb_160.ns_336.dcid_1.l2w_805.trp_1.ld_0 1.119313  1.095238  1.122013  1.148681
+  static constexpr int items                           = 14;
+  static constexpr int threads                         = 160;
+  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
+  using delay_constructor                              = fixed_delay_constructor_t<336, 805>;
+  static constexpr CacheLoadModifier load_modifier     = LOAD_DEFAULT;
+};
+
+template <class KeyT, class ValueT>
+struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_2, val_size::_8, primitive_accum::yes>
+{
+  static constexpr int items                           = 13;
+  static constexpr int threads                         = 224;
+  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
+  using delay_constructor                              = exponential_backoff_constructor_t<348, 735>;
+  static constexpr CacheLoadModifier load_modifier     = LOAD_CA;
+};
+
+// key_size = 32 bits
+template <class KeyT, class ValueT>
+struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_4, val_size::_1, primitive_accum::yes>
+{
+  // todo(gonidlelis): Significant regression. Search more workloads.
+  // ipt_20.tpb_224.ns_1436.dcid_7.l2w_155.trp_1.ld_1 1.135878  0.866667  1.106600  1.339708
+  static constexpr int items                           = 20;
+  static constexpr int threads                         = 224;
+  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
+  using delay_constructor                              = exponential_backon_constructor_t<1436, 155>;
+  static constexpr CacheLoadModifier load_modifier     = LOAD_CA;
+};
+
+template <class KeyT, class ValueT>
+struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_4, val_size::_2, primitive_accum::yes>
+{
+  // ipt_13.tpb_288.ns_620.dcid_7.l2w_925.trp_1.ld_2 1.050929  1.000000  1.047178  1.115809
+  static constexpr int items                           = 13;
+  static constexpr int threads                         = 288;
+  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
+  using delay_constructor                              = exponential_backon_constructor_t<620, 925>;
+  static constexpr CacheLoadModifier load_modifier     = LOAD_CA;
+};
+
+template <class KeyT, class ValueT>
+struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_4, val_size::_4, primitive_accum::yes>
+{
+  // ipt_20.tpb_224.ns_1856.dcid_5.l2w_280.trp_1.ld_1 1.247248  1.000000  1.220196  1.446328
+  static constexpr int items                           = 20;
+  static constexpr int threads                         = 224;
+  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
+  using delay_constructor                              = exponential_backon_jitter_window_constructor_t<1856, 280>;
+  static constexpr CacheLoadModifier load_modifier     = LOAD_CA;
+};
+
+template <class KeyT, class ValueT>
+struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_4, val_size::_8, primitive_accum::yes>
+{
+  // ipt_14.tpb_224.ns_464.dcid_2.l2w_680.trp_1.ld_1 1.070831  1.002088  1.064736  1.105437
+  static constexpr int items                           = 14;
+  static constexpr int threads                         = 224;
+  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
+  using delay_constructor                              = exponential_backoff_constructor_t<464, 860>;
+  static constexpr CacheLoadModifier load_modifier     = LOAD_CA;
+};
+
+// key_size = 64 bits
+template <class KeyT, class ValueT>
+struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_8, val_size::_1, primitive_accum::yes>
+{
+  // ipt_12.tpb_160.ns_532.dcid_0.l2w_850.trp_1.ld_0 1.041966  1.000000  1.037010  1.078399
+  static constexpr int items                           = 12;
+  static constexpr int threads                         = 160;
+  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
+  using delay_constructor                              = no_delay_constructor_t<532>;
+  static constexpr CacheLoadModifier load_modifier     = LOAD_DEFAULT;
+};
+
+template <class KeyT, class ValueT>
+struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_8, val_size::_2, primitive_accum::yes>
+{
+  // todo(gonidlelis): Significant regression. Search more workloads.
+  // ipt_15.tpb_288.ns_988.dcid_7.l2w_335.trp_1.ld_0 1.064413  0.866667  1.045946  1.116803
+  static constexpr int items                           = 15;
+  static constexpr int threads                         = 288;
+  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
+  using delay_constructor                              = exponential_backon_constructor_t<988, 335>;
+  static constexpr CacheLoadModifier load_modifier     = LOAD_DEFAULT;
+};
+
+template <class KeyT, class ValueT>
+struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_8, val_size::_4, primitive_accum::yes>
+{
+  // ipt_22.tpb_160.ns_1032.dcid_5.l2w_505.trp_1.ld_2 1.184805  1.000000  1.164843  1.338536
+  static constexpr int items                           = 22;
+  static constexpr int threads                         = 160;
+  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
+  using delay_constructor                              = exponential_backon_jitter_window_constructor_t<1032, 505>;
+  static constexpr CacheLoadModifier load_modifier     = LOAD_CA;
+};
+
+template <class KeyT, class ValueT>
+struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_8, val_size::_8, primitive_accum::yes>
+{
+  // ipt_23.tpb_256.ns_1232.dcid_0.l2w_810.trp_1.ld_0 1.067631  1.000000  1.059607  1.135646
+  static constexpr int items                           = 23;
+  static constexpr int threads                         = 256;
+  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
+  using delay_constructor                              = no_delay_constructor_t<1232>;
+  static constexpr CacheLoadModifier load_modifier     = LOAD_DEFAULT;
+};
+
 template <typename KeysInputIteratorT, typename AccumT, typename ValueT, typename ScanOpT>
 struct policy_hub
 {
@@ -785,7 +984,28 @@ struct policy_hub
     using ScanByKeyPolicyT = decltype(select_agent_policy<sm90_tuning<key_t, ValueT, is_primitive_op<ScanOpT>()>>(0));
   };
 
-  using MaxPolicy = Policy900;
+  struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy900>
+  {
+    // Use values from tuning if a specialization exists, otherwise pick Policy900
+    template <typename Tuning>
+    static auto select_agent_policy100(int)
+      -> AgentScanByKeyPolicy<Tuning::threads,
+                              Tuning::items,
+                              Tuning::load_algorithm,
+                              Tuning::load_modifier,
+                              BLOCK_SCAN_WARP_SCANS,
+                              Tuning::store_algorithm,
+                              typename Tuning::delay_constructor>;
+
+    template <typename Tuning>
+    // FIXME(bgruber): should we rather use `AccumT` instead of `ValueT` like the other default policies?
+    static auto select_agent_policy100(long) -> typename Policy900::ScanByKeyPolicyT;
+
+    using ScanByKeyPolicyT =
+      decltype(select_agent_policy100<sm100_tuning<key_t, ValueT, is_primitive_op<ScanOpT>()>>(0));
+  };
+
+  using MaxPolicy = Policy1000;
 };
 } // namespace scan_by_key
 } // namespace detail

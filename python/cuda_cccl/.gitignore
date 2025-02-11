@@ -1,2 +1,4 @@
-cuda/cccl/include
+build
+dist
 *egg-info
+*~

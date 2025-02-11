@@ -306,8 +306,8 @@ _CUB_LOAD_ALL(LOAD_LDG, global.nc)
  * ThreadLoad definition for LOAD_DEFAULT modifier on iterator types
  */
 template <typename RandomAccessIterator>
-_CCCL_DEVICE _CCCL_FORCEINLINE cub::detail::value_t<RandomAccessIterator>
-ThreadLoad(RandomAccessIterator itr, Int2Type<LOAD_DEFAULT> /*modifier*/, Int2Type<false> /*is_pointer*/)
+_CCCL_DEVICE _CCCL_FORCEINLINE cub::detail::value_t<RandomAccessIterator> ThreadLoad(
+  RandomAccessIterator itr, detail::constant_t<LOAD_DEFAULT> /*modifier*/, ::cuda::std::false_type /*is_pointer*/)
 {
   return *itr;
 }
@@ -317,7 +317,7 @@ ThreadLoad(RandomAccessIterator itr, Int2Type<LOAD_DEFAULT> /*modifier*/, Int2Ty
  */
 template <typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE T
-ThreadLoad(const T* ptr, Int2Type<LOAD_DEFAULT> /*modifier*/, Int2Type<true> /*is_pointer*/)
+ThreadLoad(const T* ptr, detail::constant_t<LOAD_DEFAULT> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
 {
   return *ptr;
 }
@@ -326,7 +326,7 @@ ThreadLoad(const T* ptr, Int2Type<LOAD_DEFAULT> /*modifier*/, Int2Type<true> /*i
  * ThreadLoad definition for LOAD_VOLATILE modifier on primitive pointer types
  */
 template <typename T>
-_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadLoadVolatilePointer(const T* ptr, Int2Type<true> /*is_primitive*/)
+_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadLoadVolatilePointer(const T* ptr, ::cuda::std::true_type /*is_primitive*/)
 {
   T retval = *reinterpret_cast<const volatile T*>(ptr);
   return retval;
@@ -336,7 +336,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadLoadVolatilePointer(const T* ptr, Int2Typ
  * ThreadLoad definition for LOAD_VOLATILE modifier on non-primitive pointer types
  */
 template <typename T>
-_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadLoadVolatilePointer(const T* ptr, Int2Type<false> /*is_primitive*/)
+_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadLoadVolatilePointer(const T* ptr, ::cuda::std::false_type /*is_primitive*/)
 {
   // Word type for memcpying
   using VolatileWord              = typename UnitWord<T>::VolatileWord;
@@ -353,16 +353,17 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadLoadVolatilePointer(const T* ptr, Int2Typ
  */
 template <typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE T
-ThreadLoad(const T* ptr, Int2Type<LOAD_VOLATILE> /*modifier*/, Int2Type<true> /*is_pointer*/)
+ThreadLoad(const T* ptr, detail::constant_t<LOAD_VOLATILE> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
 {
-  return ThreadLoadVolatilePointer(ptr, Int2Type<Traits<T>::PRIMITIVE>());
+  return ThreadLoadVolatilePointer(ptr, detail::bool_constant_v<detail::is_primitive<T>::value>);
 }
 
 /**
  * ThreadLoad definition for generic modifiers on pointer types
  */
-template <typename T, int MODIFIER>
-_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadLoad(T const* ptr, Int2Type<MODIFIER> /*modifier*/, Int2Type<true> /*is_pointer*/)
+template <typename T, CacheLoadModifier MODIFIER>
+_CCCL_DEVICE _CCCL_FORCEINLINE T
+ThreadLoad(T const* ptr, detail::constant_t<MODIFIER> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
 {
   using DeviceWord              = typename UnitWord<T>::DeviceWord;
   constexpr int DEVICE_MULTIPLE = sizeof(T) / sizeof(DeviceWord);
@@ -375,7 +376,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadLoad(T const* ptr, Int2Type<MODIFIER> /*m
 template <CacheLoadModifier MODIFIER, typename RandomAccessIterator>
 _CCCL_DEVICE _CCCL_FORCEINLINE cub::detail::value_t<RandomAccessIterator> ThreadLoad(RandomAccessIterator itr)
 {
-  return ThreadLoad(itr, Int2Type<MODIFIER>(), Int2Type<::cuda::std::is_pointer<RandomAccessIterator>::value>());
+  return ThreadLoad(
+    itr, detail::constant_v<MODIFIER>, detail::bool_constant_v<::cuda::std::is_pointer_v<RandomAccessIterator>>);
 }
 
 #endif // _CCCL_DOXYGEN_INVOKED

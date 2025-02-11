@@ -21,7 +21,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER <= 2014 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
+#if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
 
 template <class _Arg, class _Result>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED_IN_CXX11 unary_function
@@ -30,7 +30,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED_IN_CXX11 unary_funct
   using result_type   = _Result;
 };
 
-#endif // _CCCL_STD_VER <= 2014
+#endif // _LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION
 
 template <class _Arg, class _Result>
 struct __unary_function_keep_layout_base
@@ -41,7 +41,7 @@ struct __unary_function_keep_layout_base
 #endif
 };
 
-#if _CCCL_STD_VER <= 2014 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
+#if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Arg, class _Result>
@@ -51,7 +51,7 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 #else
 template <class _Arg, class _Result>
 using __unary_function = __unary_function_keep_layout_base<_Arg, _Result>;
-#endif
+#endif // !_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

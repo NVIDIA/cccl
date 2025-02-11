@@ -160,8 +160,6 @@ function(cub_build_target_list)
     endif()
   endmacro()
   add_flag_option(IGNORE_DEPRECATED_CPP_DIALECT "Don't warn about any deprecated C++ standards and compilers." OFF)
-  add_flag_option(IGNORE_DEPRECATED_CPP_11 "Don't warn about deprecated C++11." OFF)
-  add_flag_option(IGNORE_DEPRECATED_CPP_14 "Don't warn about deprecated C++14." OFF)
   add_flag_option(IGNORE_DEPRECATED_COMPILER "Don't warn about deprecated compilers." OFF)
 
   # Set up the CUB target while testing out our find_package scripts.

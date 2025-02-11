@@ -574,6 +574,16 @@ struct iterator_traits<only_set_when_expected_it>
 };
 THRUST_NAMESPACE_END
 
+namespace std
+{
+template <>
+struct iterator_traits<only_set_when_expected_it>
+{
+  using value_type = long long;
+  using reference  = only_set_when_expected_it;
+};
+} // namespace std
+
 void TestInclusiveScanWithBigIndexesHelper(int magnitude)
 {
   thrust::constant_iterator<long long> begin(1);

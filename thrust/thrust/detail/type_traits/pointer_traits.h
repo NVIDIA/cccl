@@ -31,8 +31,8 @@
 #include <thrust/detail/type_traits/is_thrust_pointer.h>
 #include <thrust/iterator/iterator_traits.h>
 
-#include <cstddef>
-#include <type_traits>
+#include <cuda/std/cstddef>
+#include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -62,7 +62,7 @@ struct pointer_difference
 template <typename T>
 struct pointer_difference<T*>
 {
-  using type = std::ptrdiff_t;
+  using type = ::cuda::std::ptrdiff_t;
 };
 
 template <typename Ptr, typename T>
@@ -91,7 +91,7 @@ template <template <typename, typename, typename, typename...> class Ptr,
           typename T>
 struct rebind_pointer<Ptr<OldT, Tag, Ref<OldT, RefTail...>, PtrTail...>, T>
 {
-  //  static_assert(std::is_same<OldT, Tag>::value, "0");
+  //  static_assert(::cuda::std::is_same<OldT, Tag>::value, "0");
   using type = Ptr<T, Tag, Ref<T, RefTail...>, PtrTail...>;
 };
 
@@ -107,7 +107,7 @@ template <template <typename, typename, typename, typename...> class Ptr,
           typename T>
 struct rebind_pointer<Ptr<OldT, Tag, Ref<OldT, RefTail...>, DerivedPtr<OldT, DerivedPtrTail...>>, T>
 {
-  //  static_assert(std::is_same<OldT, Tag>::value, "1");
+  //  static_assert(::cuda::std::is_same<OldT, Tag>::value, "1");
   using type = Ptr<T, Tag, Ref<T, RefTail...>, DerivedPtr<T, DerivedPtrTail...>>;
 };
 
@@ -117,10 +117,10 @@ template <template <typename, typename, typename, typename...> class Ptr,
           typename Tag,
           typename... PtrTail,
           typename T>
-struct rebind_pointer<Ptr<OldT, Tag, typename std::add_lvalue_reference<OldT>::type, PtrTail...>, T>
+struct rebind_pointer<Ptr<OldT, Tag, typename ::cuda::std::add_lvalue_reference<OldT>::type, PtrTail...>, T>
 {
-  //  static_assert(std::is_same<OldT, Tag>::value, "2");
-  using type = Ptr<T, Tag, typename std::add_lvalue_reference<T>::type, PtrTail...>;
+  //  static_assert(::cuda::std::is_same<OldT, Tag>::value, "2");
+  using type = Ptr<T, Tag, typename ::cuda::std::add_lvalue_reference<T>::type, PtrTail...>;
 };
 
 // Rebind `thrust::pointer`-like things with native reference types and templated
@@ -131,11 +131,12 @@ template <template <typename, typename, typename, typename...> class Ptr,
           template <typename...> class DerivedPtr,
           typename... DerivedPtrTail,
           typename T>
-struct rebind_pointer<Ptr<OldT, Tag, typename std::add_lvalue_reference<OldT>::type, DerivedPtr<OldT, DerivedPtrTail...>>,
-                      T>
+struct rebind_pointer<
+  Ptr<OldT, Tag, typename ::cuda::std::add_lvalue_reference<OldT>::type, DerivedPtr<OldT, DerivedPtrTail...>>,
+  T>
 {
-  //  static_assert(std::is_same<OldT, Tag>::value, "3");
-  using type = Ptr<T, Tag, typename std::add_lvalue_reference<T>::type, DerivedPtr<T, DerivedPtrTail...>>;
+  //  static_assert(::cuda::std::is_same<OldT, Tag>::value, "3");
+  using type = Ptr<T, Tag, typename ::cuda::std::add_lvalue_reference<T>::type, DerivedPtr<T, DerivedPtrTail...>>;
 };
 
 namespace pointer_traits_detail

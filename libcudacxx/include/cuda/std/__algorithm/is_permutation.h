@@ -106,7 +106,6 @@ is_permutation(_ForwardIterator1 __first1, _ForwardIterator1 __last1, _ForwardIt
   return _CUDA_VSTD::is_permutation(__first1, __last1, __first2, __equal_to{});
 }
 
-#if _CCCL_STD_VER > 2011
 template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterator2>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool __is_permutation(
   _ForwardIterator1 __first1,
@@ -240,7 +239,6 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool is_permutat
     __iterator_category_type<_ForwardIterator1>{},
     __iterator_category_type<_ForwardIterator2>{});
 }
-#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

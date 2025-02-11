@@ -73,8 +73,8 @@ int main(int, char**)
   test();
 #  if TEST_STD_VER > 2017
   static_assert(test());
-#  endif
-#endif
+#  endif // TEST_STD_VER > 2017
+#endif // _LIBCUDACXX_HAS_STRING
 
   return 0;
 }
