@@ -8,12 +8,18 @@
 //===----------------------------------------------------------------------===//
 #include "cuda/std/__memory/assume_aligned.h"
 
+#include <cstdio>
+
 #include <test_macros.h>
 
 int main(int, char**)
 {
   auto ptr1 = reinterpret_cast<int*>(uintptr_t{0x4});
   assert(reinterpret_cast<uintptr_t>(ptr1) % 64 == 0);
+
+  printf("--> %p\n", ptr1);
+  printf("-->  %d\n", (int) (reinterpret_cast<uintptr_t>(ptr1) % 64));
+  printf("-->  %d\n", (int) (reinterpret_cast<uintptr_t>(ptr1) % 64 == 0));
 // the alignment check is disabled when it is not possible to evaluate the alignment at compile time
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   auto ptr                  = cuda::std::bit_cast<int*>(uintptr_t{0x4});

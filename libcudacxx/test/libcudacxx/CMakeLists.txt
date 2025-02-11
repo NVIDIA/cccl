@@ -135,7 +135,7 @@ set(libcudacxx_LIT_PARALLEL_LEVEL 8 CACHE STRING
 add_test(NAME libcudacxx.test.lit COMMAND
   "${CMAKE_COMMAND}" -E env
     "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
-  "${libcudacxx_LIT}" -vv --no-progress-bar --time-tests ${libcudacxx_LIT_FLAGS}
+  "${libcudacxx_LIT}" -a --no-progress-bar --time-tests ${libcudacxx_LIT_FLAGS}
     -j "${libcudacxx_LIT_PARALLEL_LEVEL}" "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
 )
 
