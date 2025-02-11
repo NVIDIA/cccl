@@ -20,15 +20,15 @@ _CCCL_DEVICE static inline void fence(sem_sc_t, scope_t<_Scope> __scope)
   // __sem == sem_sc (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_gpu || __scope == scope_sys, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
-  _CCCL_IF_CONSTEXPR (__scope == scope_cta)
+  if constexpr (__scope == scope_cta)
   {
     asm volatile("fence.sc.cta; // 1." : : : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__scope == scope_gpu)
+  else if constexpr (__scope == scope_gpu)
   {
     asm volatile("fence.sc.gpu; // 1." : : : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__scope == scope_sys)
+  else if constexpr (__scope == scope_sys)
   {
     asm volatile("fence.sc.sys; // 1." : : : "memory");
   }
@@ -81,15 +81,15 @@ _CCCL_DEVICE static inline void fence(sem_acq_rel_t, scope_t<_Scope> __scope)
   // __sem == sem_acq_rel (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_gpu || __scope == scope_sys, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
-  _CCCL_IF_CONSTEXPR (__scope == scope_cta)
+  if constexpr (__scope == scope_cta)
   {
     asm volatile("fence.acq_rel.cta; // 1." : : : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__scope == scope_gpu)
+  else if constexpr (__scope == scope_gpu)
   {
     asm volatile("fence.acq_rel.gpu; // 1." : : : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__scope == scope_sys)
+  else if constexpr (__scope == scope_sys)
   {
     asm volatile("fence.acq_rel.sys; // 1." : : : "memory");
   }
@@ -142,19 +142,19 @@ _CCCL_DEVICE static inline void fence(sem_acquire_t, scope_t<_Scope> __scope)
   // __sem == sem_acquire (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  _CCCL_IF_CONSTEXPR (__scope == scope_cta)
+  if constexpr (__scope == scope_cta)
   {
     asm volatile("fence.acquire.cta;" : : : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__scope == scope_cluster)
+  else if constexpr (__scope == scope_cluster)
   {
     asm volatile("fence.acquire.cluster;" : : : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__scope == scope_gpu)
+  else if constexpr (__scope == scope_gpu)
   {
     asm volatile("fence.acquire.gpu;" : : : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__scope == scope_sys)
+  else if constexpr (__scope == scope_sys)
   {
     asm volatile("fence.acquire.sys;" : : : "memory");
   }
@@ -182,19 +182,19 @@ _CCCL_DEVICE static inline void fence(sem_release_t, scope_t<_Scope> __scope)
   // __sem == sem_release (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  _CCCL_IF_CONSTEXPR (__scope == scope_cta)
+  if constexpr (__scope == scope_cta)
   {
     asm volatile("fence.release.cta;" : : : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__scope == scope_cluster)
+  else if constexpr (__scope == scope_cluster)
   {
     asm volatile("fence.release.cluster;" : : : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__scope == scope_gpu)
+  else if constexpr (__scope == scope_gpu)
   {
     asm volatile("fence.release.gpu;" : : : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__scope == scope_sys)
+  else if constexpr (__scope == scope_sys)
   {
     asm volatile("fence.release.sys;" : : : "memory");
   }
