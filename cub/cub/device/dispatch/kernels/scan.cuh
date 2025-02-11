@@ -162,8 +162,7 @@ template <typename ChainedPolicyT,
           typename OffsetT,
           typename AccumT,
           bool ForceInclusive,
-          typename RealInitValueT = ::cuda::std::
-            _If<::cuda::std::is_void_v<typename InitValueT::value_type>, InitValueT, typename InitValueT::value_type>>
+          typename RealInitValueT = typename InitValueT::value_type>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanKernel(
     InputIteratorT d_in,
