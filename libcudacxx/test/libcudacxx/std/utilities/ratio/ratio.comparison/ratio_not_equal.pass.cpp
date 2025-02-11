@@ -16,9 +16,7 @@ template <class Rat1, class Rat2, bool result>
 __host__ __device__ void test()
 {
   static_assert((result == cuda::std::ratio_not_equal<Rat1, Rat2>::value), "");
-#if TEST_STD_VER > 2014
   static_assert((result == cuda::std::ratio_not_equal_v<Rat1, Rat2>), "");
-#endif
 }
 
 int main(int, char**)

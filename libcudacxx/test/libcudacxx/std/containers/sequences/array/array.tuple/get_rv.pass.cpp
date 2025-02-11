@@ -11,8 +11,6 @@
 
 // template <size_t I, class T, size_t N> T&& get(array<T, N>&& a);
 
-// UNSUPPORTED: c++03
-
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/utility>

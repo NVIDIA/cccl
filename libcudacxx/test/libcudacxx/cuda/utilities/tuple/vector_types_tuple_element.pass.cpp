@@ -79,12 +79,10 @@ int main(int arg, char** argv)
 {
   test();
   test_dim3();
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#  if !defined(TEST_COMPILER_MSVC)
+#if !defined(TEST_COMPILER_MSVC)
   static_assert(test_dim3(), "");
-#  endif // !TEST_COMPILER_MSVC
-#endif // TEST_STD_VER >= 2014
+#endif // !TEST_COMPILER_MSVC
 
   return 0;
 }

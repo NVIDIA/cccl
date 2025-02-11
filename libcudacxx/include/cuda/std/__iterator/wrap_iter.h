@@ -40,9 +40,8 @@ public:
   using pointer           = typename iterator_traits<iterator_type>::pointer;
   using reference         = typename iterator_traits<iterator_type>::reference;
   using iterator_category = typename iterator_traits<iterator_type>::iterator_category;
-#if _CCCL_STD_VER > 2011
+
   using iterator_concept = contiguous_iterator_tag;
-#endif
 
 private:
   iterator_type __i_;

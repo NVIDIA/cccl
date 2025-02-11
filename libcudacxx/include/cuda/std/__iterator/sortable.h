@@ -29,12 +29,12 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2017
+#if !defined(_CCCL_NO_CONCEPTS)
 
 template <class _Iter, class _Comp = _CUDA_VRANGES::less, class _Proj = identity>
 concept sortable = permutable<_Iter> && indirect_strict_weak_order<_Comp, projected<_Iter, _Proj>>;
 
-#elif _CCCL_STD_VER >= 2014
+#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 
 template <class _Iter, class _Comp, class _Proj>
 _CCCL_CONCEPT_FRAGMENT(
@@ -44,7 +44,7 @@ _CCCL_CONCEPT_FRAGMENT(
 template <class _Iter, class _Comp = _CUDA_VRANGES::less, class _Proj = identity>
 _CCCL_CONCEPT sortable = _CCCL_FRAGMENT(__sortable_, _Iter, _Comp, _Proj);
 
-#endif // _CCCL_STD_VER >= 2014
+#endif // _CCCL_NO_CONCEPTS
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

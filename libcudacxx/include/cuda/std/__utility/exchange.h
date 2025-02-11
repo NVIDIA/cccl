@@ -27,7 +27,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2011
 template <class _T1, class _T2 = _T1>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _T1 exchange(_T1& __obj, _T2&& __new_value) noexcept(
   is_nothrow_move_constructible<_T1>::value && is_nothrow_assignable<_T1&, _T2>::value)
@@ -36,7 +35,6 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _T1 exchange(_T1& __obj, _T2&& _
   __obj           = _CUDA_VSTD::forward<_T2>(__new_value);
   return __old_value;
 }
-#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

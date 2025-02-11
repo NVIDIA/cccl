@@ -26,8 +26,6 @@
 
 #if defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
-#  if _CCCL_STD_VER >= 2014
-
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 
 //! @brief The default alignment by a cudaMalloc{...} call
@@ -65,8 +63,6 @@ _CCCL_INLINE_VAR constexpr bool __contains_execution_space_property =
   __is_host_accessible<_Properties...> || __is_device_accessible<_Properties...>;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
-
-#  endif // _CCCL_STD_VER >= 2014
 
 #endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 

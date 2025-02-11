@@ -36,8 +36,6 @@
 #  include <cuda/std/cstddef>
 #  include <cuda/stream_ref>
 
-#  if _CCCL_STD_VER >= 2014
-
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 
 union _AnyResourceStorage
@@ -645,8 +643,6 @@ template <class... _Properties>
 using async_resource_ref = basic_resource_ref<_AllocType::_Async, _Properties...>;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
-
-#  endif // _CCCL_STD_VER >= 2014
 
 #endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 

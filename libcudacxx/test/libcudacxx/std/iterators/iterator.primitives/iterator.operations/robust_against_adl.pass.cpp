@@ -33,12 +33,10 @@ int main(int, char**)
 {
   Holder<Incomplete>* a[2] = {};
   Holder<Incomplete>** p   = a;
-#if TEST_STD_VER > 2011
-  p = cuda::std::next(p);
-  p = cuda::std::prev(p);
-  p = cuda::std::next(p, 2);
-  p = cuda::std::prev(p, 2);
-#endif
+  p                        = cuda::std::next(p);
+  p                        = cuda::std::prev(p);
+  p                        = cuda::std::next(p, 2);
+  p                        = cuda::std::prev(p, 2);
   cuda::std::advance(p, Intable<Holder<Incomplete>>());
   (void) cuda::std::distance(p, p);
 
