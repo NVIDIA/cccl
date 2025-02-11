@@ -78,10 +78,10 @@ template <class Value, class Fn>
 struct has_unique_value_overload<
   Value,
   Fn,
-  typename ::cuda::std::enable_if<
+  ::cuda::std::enable_if_t<
               !::cuda::std::is_reference_v<first_parameter_t<Fn>> &&
               ::cuda::std::is_convertible_v<Value, first_parameter_t<Fn>
-             >>::type>
+             >>>
     : ::cuda::std::true_type
 {};
 

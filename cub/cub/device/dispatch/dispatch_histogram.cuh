@@ -630,7 +630,7 @@ public:
   struct ScaleTransform
   {
   private:
-    using CommonT = typename ::cuda::std::common_type<LevelT, SampleT>::type;
+    using CommonT = ::cuda::std::common_type_t<LevelT, SampleT>;
     static_assert(::cuda::std::is_convertible_v<CommonT, int>,
                   "The common type of `LevelT` and `SampleT` must be "
                   "convertible to `int`.");
@@ -764,7 +764,7 @@ public:
     /**
      * @brief Bin computation for integral types of up to 64-bit types
      */
-    template <typename T, typename ::cuda::std::enable_if<is_integral_excl_int128<T>::value, int>::type = 0>
+    template <typename T, ::cuda::std::enable_if_t<is_integral_excl_int128<T>::value, int> = 0>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(T sample, T min_level, ScaleT scale)
     {
       return static_cast<int>(
@@ -772,7 +772,7 @@ public:
         / static_cast<IntArithmeticT>(scale.fraction.range));
     }
 
-    template <typename T, typename ::cuda::std::enable_if<!is_integral_excl_int128<T>::value, int>::type = 0>
+    template <typename T, ::cuda::std::enable_if_t<!is_integral_excl_int128<T>::value, int> = 0>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(T sample, T min_level, ScaleT scale)
     {
       return this->ComputeBin(sample, min_level, scale, ::cuda::std::is_floating_point<T>{});

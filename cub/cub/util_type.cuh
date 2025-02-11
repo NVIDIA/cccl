@@ -1002,7 +1002,7 @@ template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTE
  * \brief Type traits
  */
 template <typename T>
-struct Traits : NumericTraits<typename ::cuda::std::remove_cv<T>::type>
+struct Traits : NumericTraits<::cuda::std::remove_cv_t<T>>
 {};
 
 namespace detail

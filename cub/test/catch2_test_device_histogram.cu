@@ -288,7 +288,7 @@ void test_even_and_range(LevelT max_level, int max_level_count, OffsetT width, O
     }
 
     auto sample_to_bin_index = [&](int channel, SampleT sample) {
-      using common_t             = typename cs::common_type<LevelT, SampleT>::type;
+      using common_t             = cs::common_type_t<LevelT, SampleT>;
       const auto n               = num_levels[channel];
       const auto max             = static_cast<common_t>(upper_level[channel]);
       const auto min             = static_cast<common_t>(lower_level[channel]);
@@ -422,7 +422,7 @@ using types =
 C2H_TEST("DeviceHistogram::Histogram* basic use", "[histogram][device]", types)
 {
   using sample_t = c2h::get<0, TestType>;
-  using level_t  = typename cs::conditional<cuda::is_floating_point_v<sample_t>, sample_t, int>::type;
+  using level_t  = cs::conditional_t<cuda::is_floating_point_v<sample_t>, sample_t, int>;
   // Max for int8/uint8 is 2^8, for half_t is 2^10. Beyond, we would need a different level generation
   const auto max_level       = level_t{sizeof(sample_t) == 1 ? 126 : 1024};
   const auto max_level_count = (sizeof(sample_t) == 1 ? 126 : 1024) + 1;
@@ -534,7 +534,7 @@ C2H_TEST("DeviceHistogram::Histogram* down-conversion size_t to int", "[histogra
 {
   _CCCL_IF_CONSTEXPR (sizeof(size_t) != sizeof(int))
   {
-    using offset_t = cs::make_signed<size_t>::type;
+    using offset_t = cs::make_signed_t<size_t>;
     test_even_and_range<unsigned char, 4, 3, int>(256, 256 + 1, offset_t{1920}, offset_t{1080});
   }
 }

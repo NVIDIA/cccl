@@ -57,7 +57,7 @@ struct choose_offset
 {
   // NumItemsT must be an integral type (but not bool).
   static_assert(::cuda::std::is_integral_v<NumItemsT>
-                  && !::cuda::std::is_same_v<typename ::cuda::std::remove_cv<NumItemsT>::type, bool>,
+                  && !::cuda::std::is_same_v<::cuda::std::remove_cv_t<NumItemsT>, bool>,
                 "NumItemsT must be an integral type, but not bool");
 
   // Unsigned integer type for global offsets.
@@ -80,7 +80,7 @@ struct promote_small_offset
 {
   // NumItemsT must be an integral type (but not bool).
   static_assert(::cuda::std::is_integral_v<NumItemsT>
-                  && !::cuda::std::is_same_v<typename ::cuda::std::remove_cv<NumItemsT>::type, bool>,
+                  && !::cuda::std::is_same_v<::cuda::std::remove_cv_t<NumItemsT>, bool>,
                 "NumItemsT must be an integral type, but not bool");
 
   // Unsigned integer type for global offsets.
@@ -104,7 +104,7 @@ struct choose_signed_offset
 {
   // NumItemsT must be an integral type (but not bool).
   static_assert(::cuda::std::is_integral_v<NumItemsT>
-                  && !::cuda::std::is_same_v<typename ::cuda::std::remove_cv<NumItemsT>::type, bool>,
+                  && !::cuda::std::is_same_v<::cuda::std::remove_cv_t<NumItemsT>, bool>,
                 "NumItemsT must be an integral type, but not bool");
 
   // Signed integer type for global offsets.

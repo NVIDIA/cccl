@@ -299,8 +299,7 @@ struct AgentScanByKey
     }
   }
 
-  template <bool IsNull                                         = ::cuda::std::is_same_v<InitValueT, NullType>,
-            typename ::cuda::std::enable_if<!IsNull, int>::type = 0>
+  template <bool IsNull = ::cuda::std::is_same_v<InitValueT, NullType>, ::cuda::std::enable_if_t<!IsNull, int> = 0>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   AddInitToScan(AccumT (&items)[ITEMS_PER_THREAD], OffsetT (&flags)[ITEMS_PER_THREAD])
   {
@@ -311,8 +310,7 @@ struct AgentScanByKey
     }
   }
 
-  template <bool IsNull                                        = ::cuda::std::is_same_v<InitValueT, NullType>,
-            typename ::cuda::std::enable_if<IsNull, int>::type = 0>
+  template <bool IsNull = ::cuda::std::is_same_v<InitValueT, NullType>, ::cuda::std::enable_if_t<IsNull, int> = 0>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   AddInitToScan(AccumT (& /*items*/)[ITEMS_PER_THREAD], OffsetT (& /*flags*/)[ITEMS_PER_THREAD])
   {}

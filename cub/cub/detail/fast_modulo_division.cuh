@@ -67,13 +67,13 @@ struct larger_unsigned_type
 };
 
 template <typename T>
-struct larger_unsigned_type<T, typename ::cuda::std::enable_if<(sizeof(T) < 4)>::type>
+struct larger_unsigned_type<T, ::cuda::std::enable_if_t<(sizeof(T) < 4)>>
 {
   using type = ::cuda::std::uint32_t;
 };
 
 template <typename T>
-struct larger_unsigned_type<T, typename ::cuda::std::enable_if<(sizeof(T) == 4)>::type>
+struct larger_unsigned_type<T, ::cuda::std::enable_if_t<(sizeof(T) == 4)>>
 {
   using type = ::cuda::std::uint64_t;
 };
@@ -81,7 +81,7 @@ struct larger_unsigned_type<T, typename ::cuda::std::enable_if<(sizeof(T) == 4)>
 #if _CCCL_HAS_INT128()
 
 template <typename T>
-struct larger_unsigned_type<T, typename ::cuda::std::enable_if<(sizeof(T) == 8)>::type>
+struct larger_unsigned_type<T, ::cuda::std::enable_if_t<(sizeof(T) == 8)>>
 {
   using type = __uint128_t;
 };
@@ -92,7 +92,7 @@ template <typename T>
 using larger_unsigned_type_t = typename larger_unsigned_type<T>::type;
 
 template <typename T>
-using unsigned_implicit_prom_t = typename ::cuda::std::make_unsigned<implicit_prom_t<T>>::type;
+using unsigned_implicit_prom_t = ::cuda::std::make_unsigned_t<implicit_prom_t<T>>;
 
 template <typename T>
 using supported_integral =

@@ -113,7 +113,7 @@ struct accumulator_pack_base_t
 };
 
 template <class OffsetT>
-struct accumulator_pack_base_t<OffsetT, typename ::cuda::std::enable_if<sizeof(OffsetT) == 4>::type>
+struct accumulator_pack_base_t<OffsetT, ::cuda::std::enable_if_t<sizeof(OffsetT) == 4>>
 {
   using pack_t = uint64_t;
 
