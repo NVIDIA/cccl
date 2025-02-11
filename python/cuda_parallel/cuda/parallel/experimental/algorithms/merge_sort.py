@@ -35,8 +35,14 @@ class _MergeSort:
 
         d_in_keys_cccl = cccl.to_cccl_iter(d_in_keys)
         d_in_items_cccl = cccl.to_cccl_iter(d_in_items)
-        d_out_keys_cccl = cccl.to_cccl_iter(d_out_keys)
-        d_out_items_cccl = cccl.to_cccl_iter(d_out_items)
+        d_out_keys_cccl = (
+            d_in_keys_cccl if d_in_keys is d_out_keys else cccl.to_cccl_iter(d_out_keys)
+        )
+        d_out_items_cccl = (
+            d_in_items_cccl
+            if d_in_items is d_out_items
+            else cccl.to_cccl_iter(d_out_items)
+        )
 
         self._ctor_d_in_keys_cccl_type = cccl.type_enum_as_name(
             d_in_keys_cccl.value_type.type.value
@@ -92,8 +98,14 @@ class _MergeSort:
 
         d_in_keys_cccl = cccl.to_cccl_iter(d_in_keys)
         d_in_items_cccl = cccl.to_cccl_iter(d_in_items)
-        d_out_keys_cccl = cccl.to_cccl_iter(d_out_keys)
-        d_out_items_cccl = cccl.to_cccl_iter(d_out_items)
+        d_out_keys_cccl = (
+            d_in_keys_cccl if d_in_keys is d_out_keys else cccl.to_cccl_iter(d_out_keys)
+        )
+        d_out_items_cccl = (
+            d_in_items_cccl
+            if d_in_items is d_out_items
+            else cccl.to_cccl_iter(d_out_items)
+        )
 
         _dtype_validation(
             self._ctor_d_in_keys_cccl_type,
@@ -125,7 +137,7 @@ class _MergeSort:
 
         error = bindings.cccl_device_merge_sort(
             self.build_result,
-            d_temp_storage,
+            ctypes.c_void_p(d_temp_storage),
             ctypes.byref(temp_storage_bytes),
             d_in_keys_cccl,
             d_in_items_cccl,
@@ -133,7 +145,7 @@ class _MergeSort:
             d_out_items_cccl,
             ctypes.c_ulonglong(num_items),
             self.op_wrapper,
-            stream_handle,
+            ctypes.c_void_p(stream_handle),
         )
 
         if error != enums.CUDA_SUCCESS:
