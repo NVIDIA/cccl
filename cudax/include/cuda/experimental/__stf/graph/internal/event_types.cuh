@@ -62,13 +62,6 @@ protected:
       return true;
     }());
 
-    static size_t max_size = 0;
-    if (events.size() > max_size)
-    {
-      max_size = events.size();
-      fprintf(stderr, "MAX GRAPH EVENT LIST SIZE %ld\n", max_size);
-    }
-
     // To prevent "infinite" growth of event lists, we factorize long vector of
     // graph events by making them depend on a single node instead
     if (events.size() > 16)
