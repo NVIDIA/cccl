@@ -79,7 +79,11 @@ protected:
       {
         const auto ge = dynamic_cast<const graph_event_impl*>(e.operator->());
         nodes.push_back(ge->node);
-        g0     = ge->g;
+
+        // We can only have nodes from the same graph
+        _CCCL_ASSERT(!g0 || g0 == ge->g, "inconsistent graphs events (different graphs)");
+        g0 = ge->g;
+
         epoch0 = ::std::max(ge->epoch, epoch0);
       }
 
