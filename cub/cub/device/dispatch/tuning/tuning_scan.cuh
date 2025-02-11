@@ -433,9 +433,16 @@ struct ScanPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<decltype(StaticPolic
     return cub::detail::MakePolicyWrapper(typename StaticPolicyT::ScanPolicyT());
   }
 
-  CUB_RUNTIME_FUNCTION constexpr CacheLoadModifier LoadModifier()
+  CUB_RUNTIME_FUNCTION static constexpr CacheLoadModifier LoadModifier()
   {
     return StaticPolicyT::ScanPolicyT::LOAD_MODIFIER;
+  }
+
+  CUB_RUNTIME_FUNCTION constexpr void CheckLoadModifier()
+  {
+    static_assert(LoadModifier() != CacheLoadModifier::LOAD_LDG,
+                  "The memory consistency model does not apply to texture "
+                  "accesses");
   }
 };
 
