@@ -40,10 +40,8 @@ inline __device__ void __cp_async_shared_global(char* __dest, const char* __src)
 
   // If `if constexpr` is not available, this function gets instantiated even
   // if is not called. Do not static_assert in that case.
-#  if _CCCL_STD_VER >= 2017
   static_assert(_Copy_size == 4 || _Copy_size == 8 || _Copy_size == 16,
                 "cp.async.shared.global requires a copy size of 4, 8, or 16.");
-#  endif // _CCCL_STD_VER >= 2017
 
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_80,
@@ -74,9 +72,7 @@ __cp_async_shared_global_mechanism(_Group __g, char* __dest, const char* __src, 
 {
   // If `if constexpr` is not available, this function gets instantiated even
   // if is not called. Do not static_assert in that case.
-#  if _CCCL_STD_VER >= 2017
   static_assert(4 <= _Alignment, "cp.async requires at least 4-byte alignment");
-#  endif // _CCCL_STD_VER >= 2017
 
   // Maximal copy size is 16.
   constexpr int __copy_size = (_Alignment > 16) ? 16 : _Alignment;

@@ -25,8 +25,6 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_STD_VER >= 2014
-
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
 // [range.range], ranges
@@ -35,7 +33,5 @@ template <class>
 _CCCL_INLINE_VAR constexpr bool enable_borrowed_range = false;
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
-
-#endif // _CCCL_STD_VER > 2014
 
 #endif // _LIBCUDACXX___RANGES_ENABLE_BORROWED_RANGE_H

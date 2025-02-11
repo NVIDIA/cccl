@@ -23,9 +23,7 @@ __host__ __device__ void test_lambda(Fn&&)
 {
   ASSERT_SAME_TYPE(Ret, typename cuda::std::result_of<Fn()>::type);
 
-#if TEST_STD_VER > 2011
   ASSERT_SAME_TYPE(Ret, typename cuda::std::invoke_result<Fn>::type);
-#endif
 }
 
 int main(int, char**)

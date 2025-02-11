@@ -127,7 +127,8 @@ struct cv_move_assign_and_traditional_move_assign
   operator=(cv_move_assign_and_traditional_move_assign&&) const volatile;
 };
 
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC chokes on multiple definitions of SMF
+#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC chokes on multiple definitions
+                                                        // of SMF
 struct const_move_assign_and_default_ops
 {
   const_move_assign_and_default_ops(const_move_assign_and_default_ops const&)            = default;

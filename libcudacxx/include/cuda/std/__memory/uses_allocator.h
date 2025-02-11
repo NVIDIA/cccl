@@ -60,10 +60,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT uses_allocator
     : public integral_constant<bool, _CCCL_TRAIT(__uses_allocator, _Tp, _Alloc)>
 {};
 
-#if _CCCL_STD_VER >= 2014
 template <class _Tp, class _Alloc>
 _CCCL_INLINE_VAR constexpr bool uses_allocator_v = _CCCL_TRAIT(__uses_allocator, _Tp, _Alloc);
-#endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

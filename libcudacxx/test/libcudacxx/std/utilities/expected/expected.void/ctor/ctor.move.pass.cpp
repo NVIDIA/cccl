@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // constexpr expected(expected&& rhs) noexcept(is_nothrow_move_constructible_v<E>);
 //
 // Constraints: is_move_constructible_v<E> is true.

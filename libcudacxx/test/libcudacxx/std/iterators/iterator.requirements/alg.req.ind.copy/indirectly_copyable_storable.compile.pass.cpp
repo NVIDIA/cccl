@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class In, class Out>
 // concept indirectly_copyable_storable;
 
@@ -190,8 +188,9 @@ struct DeletedCopyCtor
   DeletedCopyCtor& operator=(DeletedCopyCtor const&) = default;
 };
 
-#if TEST_STD_VER > 2017 || !defined(TEST_COMPILER_MSVC) //  multiple versions of a defaulted special member functions
-                                                        //  are not allowed
+#if TEST_STD_VER > 2017 || !defined(TEST_COMPILER_MSVC) //  multiple versions of a defaulted
+                                                        //  special member functions
+//  are not allowed
 struct DeletedNonconstCopyCtor
 {
   DeletedNonconstCopyCtor(DeletedNonconstCopyCtor const&)            = default;
@@ -207,8 +206,9 @@ struct DeletedMoveCtor
   DeletedMoveCtor& operator=(DeletedMoveCtor&&) = default;
 };
 
-#if TEST_STD_VER > 2017 || !defined(TEST_COMPILER_MSVC) //  multiple versions of a defaulted special member functions
-                                                        //  are not allowed
+#if TEST_STD_VER > 2017 || !defined(TEST_COMPILER_MSVC) //  multiple versions of a defaulted
+                                                        //  special member functions
+//  are not allowed
 struct DeletedConstMoveCtor
 {
   DeletedConstMoveCtor(DeletedConstMoveCtor&&)            = default;
@@ -224,8 +224,9 @@ struct DeletedCopyAssignment
   DeletedCopyAssignment& operator=(DeletedCopyAssignment const&) = delete;
 };
 
-#if TEST_STD_VER > 2017 || !defined(TEST_COMPILER_MSVC) //  multiple versions of a defaulted special member functions
-                                                        //  are not allowed
+#if TEST_STD_VER > 2017 || !defined(TEST_COMPILER_MSVC) //  multiple versions of a defaulted
+                                                        //  special member functions
+//  are not allowed
 struct DeletedNonconstCopyAssignment
 {
   DeletedNonconstCopyAssignment(DeletedNonconstCopyAssignment const&)            = default;

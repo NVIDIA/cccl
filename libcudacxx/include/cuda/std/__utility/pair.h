@@ -757,7 +757,6 @@ get(const pair<_T1, _T2>&& __p) noexcept
   return __get_pair<_Ip>::get(_CUDA_VSTD::move(__p));
 }
 
-#if _CCCL_STD_VER >= 2014
 template <class _T1, class _T2>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _T1& get(pair<_T1, _T2>& __p) noexcept
 {
@@ -805,8 +804,6 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _T1 const&& get(pair<_T2, _T1> const&& __p) 
 {
   return __get_pair<1>::get(_CUDA_VSTD::move(__p));
 }
-
-#endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

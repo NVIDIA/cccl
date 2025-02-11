@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // constexpr expected(const expected& rhs);
 //
 // Effects: If rhs.has_value() is false, direct-non-list-initializes unex with rhs.error().

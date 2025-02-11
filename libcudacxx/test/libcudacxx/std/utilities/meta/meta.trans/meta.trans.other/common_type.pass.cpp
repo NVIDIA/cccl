@@ -307,10 +307,8 @@ int main(int, char**)
 {
   static_assert((cuda::std::is_same<cuda::std::common_type<int>::type, int>::value), "");
   static_assert((cuda::std::is_same<cuda::std::common_type<char>::type, char>::value), "");
-#if TEST_STD_VER > 2011
   static_assert((cuda::std::is_same<cuda::std::common_type_t<int>, int>::value), "");
   static_assert((cuda::std::is_same<cuda::std::common_type_t<char>, char>::value), "");
-#endif
 
   static_assert((cuda::std::is_same<cuda::std::common_type<int>::type, int>::value), "");
   static_assert((cuda::std::is_same<cuda::std::common_type<const int>::type, int>::value), "");
@@ -328,17 +326,13 @@ int main(int, char**)
 
   static_assert((cuda::std::is_same<cuda::std::common_type<double, char>::type, double>::value), "");
   static_assert((cuda::std::is_same<cuda::std::common_type<short, char>::type, int>::value), "");
-#if TEST_STD_VER > 2011
   static_assert((cuda::std::is_same<cuda::std::common_type_t<double, char>, double>::value), "");
   static_assert((cuda::std::is_same<cuda::std::common_type_t<short, char>, int>::value), "");
-#endif
 
   static_assert((cuda::std::is_same<cuda::std::common_type<double, char, long long>::type, double>::value), "");
   static_assert((cuda::std::is_same<cuda::std::common_type<unsigned, char, long long>::type, long long>::value), "");
-#if TEST_STD_VER > 2011
   static_assert((cuda::std::is_same<cuda::std::common_type_t<double, char, long long>, double>::value), "");
   static_assert((cuda::std::is_same<cuda::std::common_type_t<unsigned, char, long long>, long long>::value), "");
-#endif
 
   static_assert((cuda::std::is_same<cuda::std::common_type<void>::type, void>::value), "");
   static_assert((cuda::std::is_same<cuda::std::common_type<const void>::type, void>::value), "");

@@ -67,7 +67,7 @@ concept __move_iter_comparable = requires {
 template <class _Iter>
 _CCCL_INLINE_VAR constexpr bool __noexcept_move_iter_iter_move =
   noexcept(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<_Iter>()));
-#elif _CCCL_STD_VER > 2014 // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_STD_VER > 2014 vvv
+#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 template <class _Iter, class = void>
 struct __move_iter_category_base
 {};
@@ -92,13 +92,10 @@ _CCCL_CONCEPT __move_iter_comparable = _CCCL_FRAGMENT(__move_iter_comparable_, _
 template <class _Iter>
 _CCCL_INLINE_VAR constexpr bool __noexcept_move_iter_iter_move =
   noexcept(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<_Iter>()));
-#endif // _CCCL_STD_VER > 2014
+#endif // _CCCL_NO_CONCEPTS
 
 template <class _Iter>
-class _CCCL_TYPE_VISIBILITY_DEFAULT move_iterator
-#if _CCCL_STD_VER > 2014
-    : public __move_iter_category_base<_Iter>
-#endif
+class _CCCL_TYPE_VISIBILITY_DEFAULT move_iterator : public __move_iter_category_base<_Iter>
 {
 private:
   template <class _It2>
@@ -106,7 +103,6 @@ private:
 
   _Iter __current_;
 
-#if _CCCL_STD_VER >= 2017
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto __mi_get_iter_concept()
   {
     if constexpr (random_access_iterator<_Iter>)
@@ -127,10 +123,8 @@ private:
     }
     _CCCL_UNREACHABLE();
   }
-#endif // _CCCL_STD_VER >= 2017
 
 public:
-#if _CCCL_STD_VER > 2014
   using iterator_type    = _Iter;
   using iterator_concept = decltype(__mi_get_iter_concept());
 
@@ -139,18 +133,6 @@ public:
   using difference_type = iter_difference_t<_Iter>;
   using pointer         = _Iter;
   using reference       = iter_rvalue_reference_t<_Iter>;
-#else // ^^^ _CCCL_STD_VER > 2014 ^^^ / vvv _CCCL_STD_VER < 2017 vvv
-  using iterator_type = _Iter;
-  using iterator_category =
-    _If<__is_cpp17_random_access_iterator<_Iter>::value,
-        random_access_iterator_tag,
-        typename iterator_traits<_Iter>::iterator_category>;
-  using value_type      = typename iterator_traits<iterator_type>::value_type;
-  using difference_type = typename iterator_traits<iterator_type>::difference_type;
-  using pointer         = iterator_type;
-  using __reference     = typename iterator_traits<iterator_type>::reference;
-  using reference = conditional_t<is_reference<__reference>::value, remove_reference_t<__reference>&&, __reference>;
-#endif // _CCCL_STD_VER < 2017
 
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 explicit move_iterator(_Iter __i)
       : __current_(_CUDA_VSTD::move(__i))
@@ -167,19 +149,18 @@ public:
     return __current_;
   }
 
-#if _CCCL_STD_VER > 2014
-#  if !defined(_CCCL_NO_CONCEPTS)
+#if !defined(_CCCL_NO_CONCEPTS)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr move_iterator()
     requires is_constructible_v<_Iter>
       : __current_()
   {}
-#  else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
   _CCCL_TEMPLATE(class _It2 = _Iter)
   _CCCL_REQUIRES(is_constructible_v<_It2>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr move_iterator()
       : __current_()
   {}
-#  endif // _CCCL_NO_CONCEPTS
+#endif // _CCCL_NO_CONCEPTS
 
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES((!_IsSame<_Up, _Iter>::value) && convertible_to<const _Up&, _Iter>)
@@ -229,52 +210,6 @@ public:
   {
     ++__current_;
   }
-#else // ^^^ _CCCL_STD_VER > 2014 ^^^ / vvv _CCCL_STD_VER < 2017 vvv
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 move_iterator()
-      : __current_()
-  {}
-
-  template <class _Up, class = enable_if_t<!is_same<_Up, _Iter>::value && is_convertible<const _Up&, _Iter>::value>>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 move_iterator(const move_iterator<_Up>& __u)
-      : __current_(__u.base())
-  {}
-
-  template <class _Up,
-            class = enable_if_t<!is_same<_Up, _Iter>::value && is_convertible<const _Up&, _Iter>::value
-                                && is_assignable<_Iter&, const _Up&>::value>>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 move_iterator& operator=(const move_iterator<_Up>& __u)
-  {
-    __current_ = __u.base();
-    return *this;
-  }
-
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Iter base() const
-  {
-    return __current_;
-  }
-
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reference operator*() const
-  {
-    return static_cast<reference>(*__current_);
-  }
-
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_MSVC(4172) // returning address of local variable or temporary
-
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reference operator[](difference_type __n) const
-  {
-    return static_cast<reference>(__current_[__n]);
-  }
-
-  _CCCL_DIAG_POP
-
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 move_iterator operator++(int)
-  {
-    move_iterator __tmp(*this);
-    ++__current_;
-    return __tmp;
-  }
-#endif // _CCCL_STD_VER < 2017
 
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 move_iterator& operator--()
   {
@@ -306,7 +241,6 @@ public:
     return *this;
   }
 
-#if _CCCL_STD_VER > 2014
   _CCCL_TEMPLATE(class _Sent)
   _CCCL_REQUIRES(sentinel_for<_Sent, _Iter> _CCCL_AND __move_iter_comparable<_Iter, _Sent>)
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const move_iterator& __x, const move_sentinel<_Sent>& __y)
@@ -314,7 +248,7 @@ public:
     return __x.base() == __y.base();
   }
 
-#  if _CCCL_STD_VER < 2020
+#if _CCCL_STD_VER < 2020
   _CCCL_TEMPLATE(class _Sent)
   _CCCL_REQUIRES(sentinel_for<_Sent, _Iter> _CCCL_AND __move_iter_comparable<_Iter, _Sent>)
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const move_sentinel<_Sent>& __y, const move_iterator& __x)
@@ -335,7 +269,7 @@ public:
   {
     return __y.base() != __x.base();
   }
-#  endif // _CCCL_STD_VER < 2020
+#endif // _CCCL_STD_VER < 2020
 
   _CCCL_TEMPLATE(class _Sent)
   _CCCL_REQUIRES(sized_sentinel_for<_Sent, _Iter>)
@@ -366,7 +300,6 @@ public:
   {
     return _CUDA_VRANGES::iter_swap(__x.__current_, __y.__current_);
   }
-#endif // _CCCL_STD_VER > 2014
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(move_iterator);
 

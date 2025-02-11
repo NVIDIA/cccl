@@ -6,8 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // type_traits
 
 // is_nothrow_invocable
@@ -66,7 +64,6 @@ __host__ __device__ constexpr bool throws_invocable_r()
 
 __host__ __device__ void test_noexcept_function_pointers()
 {
-#if TEST_STD_VER >= 2017 // nvbug4360046
   struct Dummy
   {
     __host__ __device__ void foo() noexcept {}
@@ -77,14 +74,12 @@ __host__ __device__ void test_noexcept_function_pointers()
   // pointers.
   static_assert(cuda::std::is_nothrow_invocable<decltype(&Dummy::foo), Dummy&>::value, "");
   static_assert(cuda::std::is_nothrow_invocable<decltype(&Dummy::bar)>::value, "");
-#endif // !defined(TEST_COMPILER_NVCC) || TEST_STD_VER >= 2017
 }
 
 int main(int, char**)
 {
-#if TEST_STD_VER >= 2017
   using AbominableFunc = void(...) const noexcept;
-#endif // TEST_STD_VER >= 2017
+
   //  Non-callable things
   {
     static_assert(!cuda::std::is_nothrow_invocable<void>::value, "");
@@ -112,17 +107,15 @@ int main(int, char**)
     static_assert(!cuda::std::is_nothrow_invocable<int, cuda::std::vector<int**>>::value, "");
 #endif // _LIBCUDACXX_HAS_VECTOR
 
-#if TEST_STD_VER >= 2017
     static_assert(!cuda::std::is_nothrow_invocable<AbominableFunc>::value, "");
-#endif // TEST_STD_VER >= 2017
 
     //  with parameters
     static_assert(!cuda::std::is_nothrow_invocable<int, int>::value, "");
     static_assert(!cuda::std::is_nothrow_invocable<int, double, float>::value, "");
     static_assert(!cuda::std::is_nothrow_invocable<int, char, float, double>::value, "");
-#if TEST_STD_VER >= 2017
+
     static_assert(!cuda::std::is_nothrow_invocable<Sink, AbominableFunc>::value, "");
-#endif // TEST_STD_VER >= 2017
+
     static_assert(!cuda::std::is_nothrow_invocable<Sink, void>::value, "");
     static_assert(!cuda::std::is_nothrow_invocable<Sink, const volatile void>::value, "");
 
@@ -150,17 +143,16 @@ int main(int, char**)
     static_assert(!cuda::std::is_nothrow_invocable_r<int, cuda::std::vector<int*>>::value, "");
     static_assert(!cuda::std::is_nothrow_invocable_r<int, cuda::std::vector<int**>>::value, "");
 #endif // _LIBCUDACXX_HAS_VECTOR
-#if TEST_STD_VER >= 2017
+
     static_assert(!cuda::std::is_nothrow_invocable_r<void, AbominableFunc>::value, "");
-#endif // TEST_STD_VER >= 2017
 
     //  with parameters
     static_assert(!cuda::std::is_nothrow_invocable_r<int, int, int>::value, "");
     static_assert(!cuda::std::is_nothrow_invocable_r<int, int, double, float>::value, "");
     static_assert(!cuda::std::is_nothrow_invocable_r<int, int, char, float, double>::value, "");
-#if TEST_STD_VER >= 2017
+
     static_assert(!cuda::std::is_nothrow_invocable_r<void, Sink, AbominableFunc>::value, "");
-#endif // TEST_STD_VER >= 2017
+
     static_assert(!cuda::std::is_nothrow_invocable_r<void, Sink, void>::value, "");
     static_assert(!cuda::std::is_nothrow_invocable_r<void, Sink, const volatile void>::value, "");
   }
@@ -196,7 +188,7 @@ int main(int, char**)
     static_assert(cuda::std::is_nothrow_invocable_r<Implicit, Fn, Tag&>::value, "");
     static_assert(throws_invocable_r<ThrowsImplicit, Fn, Tag&>(), "");
   }
-#if TEST_STD_VER >= 2017
+
   {
     // Check that it's fine if the result type is non-moveable.
     struct CantMove
@@ -216,7 +208,7 @@ int main(int, char**)
     static_assert(cuda::std::is_nothrow_invocable_r_v<CantMove, Fn>, "");
     static_assert(!cuda::std::is_nothrow_invocable_r_v<CantMove, Fn, int>, "");
   }
-#endif // TEST_STD_VER >= 2017
+
   {
     // Check for is_nothrow_invocable_v
     using Fn = CallObject<true, int>;

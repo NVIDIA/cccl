@@ -12,8 +12,6 @@
 
 // tuple(const tuple& u) = default;
 
-// UNSUPPORTED: c++98, c++03
-
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 
@@ -54,7 +52,6 @@ int main(int, char**)
       assert(cuda::std::get<2>(t) == "some text");
   }
   */
-#if TEST_STD_VER > 2011
   {
     typedef cuda::std::tuple<int> T;
     constexpr T t0(2);
@@ -68,7 +65,6 @@ int main(int, char**)
     constexpr Empty e = cuda::std::get<0>(t);
     ((void) e); // Prevent unused warning
   }
-#endif
 
   return 0;
 }

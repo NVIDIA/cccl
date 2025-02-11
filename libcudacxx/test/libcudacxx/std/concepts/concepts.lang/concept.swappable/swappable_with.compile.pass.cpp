@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class T, class U>
 // concept swappable_with = // see below
 
@@ -221,8 +219,9 @@ static_assert(!check_swappable_with_impl<int, int (&)()>(), "");
 namespace adl
 {
 
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC ignores the rvalue/lvalue distinction in the swap
-                                                        // definitions
+#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC ignores the rvalue/lvalue
+                                                        // distinction in the swap
+// definitions
 static_assert(check_swappable_with<lvalue_adl_swappable, lvalue_adl_swappable>(), "");
 static_assert(check_swappable_with<lvalue_rvalue_adl_swappable, lvalue_rvalue_adl_swappable>(), "");
 static_assert(check_swappable_with<rvalue_lvalue_adl_swappable, rvalue_lvalue_adl_swappable>(), "");
@@ -267,8 +266,9 @@ static_assert(cuda::std::common_reference_with<can_swap_with_s1_but_not_swappabl
 static_assert(!swappable<can_swap_with_s1_but_not_swappable>, "");
 static_assert(!check_swappable_with<can_swap_with_s1_but_not_swappable&, s1&>(), "");
 
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC ignores the rvalue/lvalue distinction in the swap
-                                                        // definitions
+#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC ignores the rvalue/lvalue
+                                                        // distinction in the swap
+// definitions
 struct swappable_with_s1
 {
   __host__ __device__ friend void swap(s1&, swappable_with_s1&);
@@ -485,8 +485,9 @@ struct swappable_with_rvalue_ref_to_const_s3
 };
 static_assert(swappable_with<swappable_with_rvalue_ref_to_const_s3 const&&, s3 const&&>, "");
 
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC ignores the rvalue/lvalue distinction in the swap
-                                                        // definitions
+#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC ignores the rvalue/lvalue
+                                                        // distinction in the swap
+// definitions
 struct swappable_with_rvalue_ref_to_volatile_s3
 {
   __host__ __device__ swappable_with_rvalue_ref_to_volatile_s3(swappable_with_rvalue_ref_to_volatile_s3 volatile&);
@@ -541,8 +542,9 @@ __host__ __device__ void swap(adl_swappable&&, adl_swappable&&) noexcept;
 __host__ __device__ void swap(adl_swappable&, int&) noexcept;
 __host__ __device__ void swap(int&, adl_swappable&) noexcept;
 } // namespace union_swap
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC ignores the rvalue/lvalue distinction in the swap
-                                                        // definitions
+#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC ignores the rvalue/lvalue
+                                                        // distinction in the swap
+  // definitions
 static_assert(swappable_with<union_swap::adl_swappable, union_swap::adl_swappable>, "");
 #endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017
 static_assert(swappable_with<union_swap::adl_swappable&, union_swap::adl_swappable&>, "");

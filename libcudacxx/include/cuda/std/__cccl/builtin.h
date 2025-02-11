@@ -294,11 +294,6 @@
 #  define _CCCL_BUILTIN_IS_CONSTANT_EVALUATED(...) __builtin_is_constant_evaluated(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated)
 
-// NVCC and NVRTC in C++11 mode freaks out about `__builtin_is_constant_evaluated`.
-#if _CCCL_STD_VER < 2014 && (_CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC) || _CCCL_COMPILER(NVHPC))
-#  undef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
-#endif // _CCCL_STD_VER < 2014 && _CCCL_CUDA_COMPILER(NVCC)
-
 #if _CCCL_CHECK_BUILTIN(builtin_isfinite) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(NVRTC, >, 12, 2)
 #  define _CCCL_BUILTIN_ISFINITE(...) __builtin_isfinite(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(isfinite)
@@ -923,9 +918,8 @@
 #endif // !_CCCL_COMPILER(MSVC)
 
 // GCC's builtin_strlen isn't reliable at constexpr time
-// MSVC does not expose builtin_strlen before C++17
 // NVRTC does not expose builtin_strlen
-#if !_CCCL_COMPILER(GCC) && !_CCCL_COMPILER(NVRTC) && !(_CCCL_COMPILER(MSVC) && _CCCL_STD_VER < 2017)
+#if !_CCCL_COMPILER(GCC) && !_CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_STRLEN(...) __builtin_strlen(__VA_ARGS__)
 #endif
 
