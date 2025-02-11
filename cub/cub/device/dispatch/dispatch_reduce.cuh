@@ -789,7 +789,10 @@ struct DispatchSegmentedReduce
 
         // Invoke DeviceReduceKernel
         THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-          num_current_segments, ActivePolicyT::SegmentedReducePolicy::BLOCK_THREADS, 0, stream)
+          static_cast<::cuda::std::uint32_t>(num_current_segments),
+          ActivePolicyT::SegmentedReducePolicy::BLOCK_THREADS,
+          0,
+          stream)
           .doit(
             segmented_reduce_kernel, d_in, current_out_it, current_begin_offset, current_end_offset, reduction_op, init);
 
