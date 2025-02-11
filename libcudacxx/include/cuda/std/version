@@ -48,6 +48,10 @@
 #define __cccl_lib_is_swappable                 201603L
 #define __cccl_lib_launder                      201606L
 #define __cccl_lib_logical_traits               201510L
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY) \
+  && defined(_CCCL_BUILTIN_REFERENCE_CONVERTS_FROM_TEMPORARY)
+#  define __cpp_lib_reference_from_temporary 202202L
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY && _CCCL_BUILTIN_REFERENCE_CONVERTS_FROM_TEMPORARY
 #define __cccl_lib_shift                        201806L
 #define __cccl_lib_to_address                   201711L
 #define __cccl_lib_to_array                     201907L
