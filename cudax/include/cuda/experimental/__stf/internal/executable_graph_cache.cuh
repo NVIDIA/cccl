@@ -67,6 +67,26 @@ inline bool try_updating_executable_graph(cudaGraphExec_t exec_graph, cudaGraph_
 
   return (res == cudaSuccess);
 }
+
+// Instantiate a CUDA graph
+inline ::std::shared_ptr<cudaGraphExec_t> graph_instantiate(cudaGraph_t g)
+{
+  // Custom deleter specifically for cudaGraphExec_t
+  auto cudaGraphExecDeleter = [](cudaGraphExec_t* pGraphExec) {
+    cudaGraphExecDestroy(*pGraphExec);
+  };
+
+  ::std::shared_ptr<cudaGraphExec_t> res(new cudaGraphExec_t, cudaGraphExecDeleter);
+
+  cuda_try(cudaGraphInstantiateWithFlags(res.get(), g, 0));
+
+#ifdef CUDASTF_DEBUG
+  reserved::counter<reserved::graph_tag::instantiate>.increment();
+#endif
+
+  return res;
+}
+
 } // end namespace reserved
 
 class executable_graph_cache
@@ -106,27 +126,8 @@ public:
     size_t footprint;
   };
 
-  void save(size_t nnodes, size_t nedges, ::std::shared_ptr<cudaGraphExec_t> exec_g)
-  {
-    // rough estimate
-    size_t footprint = nnodes * 10240;
-
-    if (total_cache_footprint + footprint > cache_size_limit)
-    {
-      reclaim(total_cache_footprint + footprint - cache_size_limit);
-    }
-
-    cached_graphs.insert({::std::make_pair(nnodes, nedges), entry(this, mv(exec_g), footprint)});
-    total_cache_footprint += footprint;
-    fprintf(stderr,
-            "Caching graph %s (total %s)\n",
-            pretty_print_bytes(footprint).c_str(),
-            pretty_print_bytes(total_cache_footprint).c_str());
-  }
-
   // Check if there is a matching entry (and update it if necessary)
-  ::std::pair<bool, ::std::shared_ptr<cudaGraphExec_t>>
-  query(size_t nnodes, size_t nedges, ::std::shared_ptr<cudaGraph_t> g)
+  ::std::shared_ptr<cudaGraphExec_t> query(size_t nnodes, size_t nedges, ::std::shared_ptr<cudaGraph_t> g)
   {
     auto range = cached_graphs.equal_range({nnodes, nedges});
     for (auto it = range.first; it != range.second; ++it)
@@ -138,21 +139,27 @@ public:
         e.update();
 
         // We have successfully updated the graph, this is a cache hit
-        return ::std::make_pair(true, e.exec_g);
+        return e.exec_g;
       }
     }
 
-#if 1
-    // hack ... rough estimate
+    // Rough estimate
     size_t footprint = nnodes * 10240;
-
     if (total_cache_footprint + footprint > cache_size_limit)
     {
       reclaim(total_cache_footprint + footprint - cache_size_limit);
     }
-#endif
 
-    return ::std::make_pair(false, nullptr);
+    auto exec_g = reserved::graph_instantiate(*g);
+
+    // If we maintain a cache, store the executable graph
+    if (!getenv("CUDASTF_NO_CACHE_GRAPH"))
+    {
+      cached_graphs.insert({::std::make_pair(nnodes, nedges), entry(this, exec_g, footprint)});
+      total_cache_footprint += footprint;
+    }
+
+    return exec_g;
   }
 
   // Number of graphs in the cache

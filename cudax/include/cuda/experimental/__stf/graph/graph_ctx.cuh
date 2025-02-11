@@ -474,28 +474,17 @@ public:
 
     auto& state = this->state();
 
-    auto [cache_hit, cache_exec_g] = async_resources().cached_graphs_query(nnodes, nedges, g);
-    if (cache_hit)
-    {
-      state.exec_graph = cache_exec_g;
-      return cache_exec_g;
-    }
-
     if (getenv("CUDASTF_DUMP_GRAPHS"))
     {
       static int instantiated_graph = 0;
       print_to_dot("instantiated_graph" + ::std::to_string(instantiated_graph++) + ".dot");
     }
 
-    state.exec_graph = graph_instantiate(*g);
-
-    // Save this graph for later use
-    if (!getenv("CUDASTF_NO_CACHE_GRAPH"))
-    {
-      async_resources().put_graph_in_cache(nnodes, nedges, state.exec_graph);
-    }
-
-    return state.exec_graph;
+    /* This will lookup in the cache (if any) and update an existing entry, or
+     * instantiate a graph if none is found. */
+    auto cache_exec_g = async_resources().cached_graphs_query(nnodes, nedges, g);
+    state.exec_graph  = cache_exec_g;
+    return cache_exec_g;
   }
 
   void display_graph_info(cudaGraph_t g)
