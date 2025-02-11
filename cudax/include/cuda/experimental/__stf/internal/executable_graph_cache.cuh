@@ -114,14 +114,14 @@ public:
       last_use = cache->index;
     }
 
-    void update()
+    // Update the last_use field to mark that this entry was used recently
+    void lru_refresh()
     {
       last_use = cache->index++;
     }
 
     executable_graph_cache* cache;
     ::std::shared_ptr<cudaGraphExec_t> exec_g;
-    size_t use_cnt;
     size_t last_use;
     size_t footprint;
   };
@@ -136,7 +136,7 @@ public:
       if (reserved::try_updating_executable_graph(*e.exec_g, *g))
       {
         // update the last use index for the LRU algorithm
-        e.update();
+        e.lru_refresh();
 
         // We have successfully updated the graph, this is a cache hit
         return e.exec_g;
