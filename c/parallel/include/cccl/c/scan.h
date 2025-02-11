@@ -27,7 +27,8 @@ struct cccl_device_scan_build_result_t
   cccl_type_info accumulator_type;
   CUkernel init_kernel;
   CUkernel scan_kernel;
-  void* tile_state;
+  size_t description_bytes_per_tile;
+  size_t payload_bytes_per_tile;
 };
 
 extern "C" CCCL_C_API CUresult cccl_device_scan_build(

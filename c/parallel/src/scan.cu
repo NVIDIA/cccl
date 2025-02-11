@@ -261,8 +261,7 @@ struct scan_kernel_source
   }
   scan_tile_state TileState()
   {
-    auto result = (reinterpret_cast<scan_tile_state*>(build.tile_state));
-    return *result;
+    return {build.description_bytes_per_tile, build.payload_bytes_per_tile};
   }
 };
 
@@ -429,13 +428,12 @@ extern "C" CCCL_C_API CUresult cccl_device_scan_build(
     }
     payload_bytes_per_tile = scan::find_size_t(ptx_code, "payload_bytes_per_tile").value_or(0);
 
-    auto tile_state = std::make_unique<scan::scan_tile_state>(description_bytes_per_tile, payload_bytes_per_tile);
-
-    build->cc               = cc;
-    build->cubin            = (void*) result.data.release();
-    build->cubin_size       = result.size;
-    build->accumulator_type = accum_t;
-    build->tile_state       = (void*) tile_state.release();
+    build->cc                         = cc;
+    build->cubin                      = (void*) result.data.release();
+    build->cubin_size                 = result.size;
+    build->accumulator_type           = accum_t;
+    build->description_bytes_per_tile = description_bytes_per_tile;
+    build->payload_bytes_per_tile     = payload_bytes_per_tile;
   }
   catch (const std::exception& exc)
   {
@@ -519,12 +517,8 @@ extern "C" CCCL_C_API CUresult cccl_device_scan_cleanup(cccl_device_scan_build_r
     {
       return CUDA_ERROR_INVALID_VALUE;
     }
-
     std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(bld_ptr->cubin));
     check(cuLibraryUnload(bld_ptr->library));
-
-    std::unique_ptr<scan::scan_tile_state> tile_state(reinterpret_cast<scan::scan_tile_state*>(bld_ptr->tile_state));
-    tile_state.reset();
   }
   catch (const std::exception& exc)
   {
