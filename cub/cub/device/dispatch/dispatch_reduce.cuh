@@ -762,7 +762,7 @@ struct DispatchSegmentedReduce
       }
 
       const auto num_segments_per_invocation =
-        static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<std::int32_t>::max());
+        static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<::cuda::std::int32_t>::max());
       const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation);
       for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
       {
