@@ -308,8 +308,8 @@ struct dispatch_streaming_arg_reduce_t
       const GlobalOffsetT current_num_items =
         (remaining_items < max_partition_size) ? remaining_items : max_partition_size;
 
-      d_indexed_offset_in = arg_index_input_iterator_t(
-        detail::reduce::make_offset_iterator(d_in, constant_offset_it_t{current_partition_offset}));
+      d_indexed_offset_in =
+        arg_index_input_iterator_t{detail::offset_iterator{d_in, constant_offset_it_t{current_partition_offset}}};
 
       error = dispatch_reduce_t::Dispatch(
         d_temp_storage,

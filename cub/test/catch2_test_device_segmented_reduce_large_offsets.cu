@@ -13,10 +13,15 @@
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_segmented_sort_helper.cuh"
 #include "catch2_test_launch_helper.h"
+#include "thrust/iterator/tabulate_output_iterator.h"
 #include <c2h/catch2_test_helper.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_sum);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Min, device_segmented_min);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::ArgMin, device_segmented_arg_min);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Max, device_segmented_max);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::ArgMax, device_segmented_arg_max);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -25,10 +30,31 @@ struct get_gaussian_sum_from_offset_op
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ::cuda::std::int64_t
   operator()(::cuda::std::int64_t begin, ::cuda::std::int64_t end)
   {
-    // The sum of the first n integers is n(n+1)/2
     ::cuda::std::int64_t length                 = end - begin;
     const ::cuda::std::int64_t section_gaussian = ((begin - 1) * length + length * (length + 1) / 2);
     return section_gaussian;
+  }
+};
+
+template <typename IndexT>
+struct get_min_from_counting_it_range_op
+{
+  IndexT init_val;
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE IndexT operator()(IndexT begin, IndexT end)
+  {
+    return begin == end ? init_val : begin;
+  }
+};
+
+template <typename IndexT>
+struct get_max_from_counting_it_range_op
+{
+  IndexT init_val;
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE IndexT operator()(IndexT begin, IndexT end)
+  {
+    return begin == end ? init_val : end - 1;
   }
 };
 
@@ -38,6 +64,30 @@ struct custom_sum_op
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ItemT operator()(const ItemT lhs, const ItemT rhs) const
   {
     return lhs + rhs;
+  }
+};
+
+template <typename OffsetItT>
+struct print_op_t
+{
+  OffsetItT offsets_it;
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void operator()(int64_t segment_index, int64_t result)
+  {
+    // constexpr auto num_empty_segments =
+    //   static_cast<int64_t>(::cuda::std::numeric_limits<std::uint32_t>::max() - 1000000);
+    // if (segment_index < 3 || segment_index > num_empty_segments && segment_index < num_empty_segments + 100)
+    int64_t begin_offset    = offsets_it[segment_index];
+    int64_t end_offset      = offsets_it[segment_index + 1];
+    int64_t expected_result = get_gaussian_sum_from_offset_op{}(begin_offset, end_offset);
+    if (static_cast<int64_t>(result) != expected_result)
+    {
+      printf("segment_index: %ld, range: [%ld,%ld), result: %ld, expected result: %ld\n",
+             static_cast<int64_t>(segment_index),
+             begin_offset,
+             end_offset,
+             static_cast<int64_t>(result),
+             expected_result);
+    }
   }
 };
 
@@ -105,6 +155,40 @@ C2H_TEST("Device reduce works with a very large number of segments", "[reduce][d
     // Run test
     const auto input_it = thrust::make_counting_iterator(sum_t{});
     device_segmented_sum(input_it, check_result_it, num_segments, offsets_it, offsets_it + 1);
+
+    // Verify all results were written as expected
+    check_result_helper.check_all_results_correct();
+  }
+
+  SECTION("segmented min")
+  {
+    auto get_min_from_offset_pair_op =
+      thrust::make_zip_function(get_min_from_counting_it_range_op<offset_t>{cub::Traits<offset_t>::Max()});
+    auto offset_pair_it      = thrust::make_zip_iterator(thrust::make_tuple(offsets_it, offsets_it + 1));
+    auto expected_result_it  = thrust::make_transform_iterator(offset_pair_it, get_min_from_offset_pair_op);
+    auto check_result_helper = detail::large_problem_test_helper(num_segments);
+
+    auto check_result_it = check_result_helper.get_flagging_output_iterator(expected_result_it);
+
+    const auto input_it = thrust::make_counting_iterator(offset_t{});
+    device_segmented_min(input_it, check_result_it, num_segments, offsets_it, offsets_it + 1);
+
+    // Verify all results were written as expected
+    check_result_helper.check_all_results_correct();
+  }
+
+  SECTION("segmented max")
+  {
+    auto get_max_from_offset_pair_op =
+      thrust::make_zip_function(get_max_from_counting_it_range_op<offset_t>{cub::Traits<offset_t>::Lowest()});
+    auto offset_pair_it      = thrust::make_zip_iterator(thrust::make_tuple(offsets_it, offsets_it + 1));
+    auto expected_result_it  = thrust::make_transform_iterator(offset_pair_it, get_max_from_offset_pair_op);
+    auto check_result_helper = detail::large_problem_test_helper(num_segments);
+
+    auto check_result_it = check_result_helper.get_flagging_output_iterator(expected_result_it);
+
+    const auto input_it = thrust::make_counting_iterator(offset_t{});
+    device_segmented_max(input_it, check_result_it, num_segments, offsets_it, offsets_it + 1);
 
     // Verify all results were written as expected
     check_result_helper.check_all_results_correct();
