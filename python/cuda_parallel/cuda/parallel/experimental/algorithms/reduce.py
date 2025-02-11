@@ -6,7 +6,6 @@
 from __future__ import annotations  # TODO: required for Python 3.7 docs env
 
 import ctypes
-from functools import cached_property
 from typing import Callable
 
 import numba
@@ -66,11 +65,15 @@ class _Reduce:
         self.h_init_cccl = cccl.to_cccl_value(h_init)
         cc_major, cc_minor = cuda.get_current_device().compute_capability
         cub_path, thrust_path, libcudacxx_path, cuda_include_path = get_paths()
-        bindings = get_bindings()
-        self.op_wrapper = _Op(h_init, op)
+        if isinstance(h_init, np.ndarray):
+            value_type = numba.from_dtype(h_init.dtype)
+        else:
+            value_type = numba.typeof(h_init)
+        sig = (value_type, value_type)
+        self.op_wrapper = cccl.to_cccl_op(op, sig)
         self.build_result = cccl.DeviceReduceBuildResult()
         self.bindings = get_bindings()
-        error = bindings.cccl_device_reduce_build(
+        error = self.bindings.cccl_device_reduce_build(
             ctypes.byref(self.build_result),
             self.d_in_cccl,
             self.d_out_cccl,
