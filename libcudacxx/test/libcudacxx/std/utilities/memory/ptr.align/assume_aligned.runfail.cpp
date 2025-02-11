@@ -18,6 +18,12 @@ int main(int, char**)
   volatile auto aligned_ptr = cuda::std::assume_aligned<64>(ptr);
   assert(ptr + 1 == aligned_ptr);
   unused(aligned_ptr);
+
+#  if defined(_CCCL_ASSERT)
+  _CCCL_ASSERT(cuda::std::bit_cast<uintptr_t>(ptr) % 64 == 0, "Alignment assumption is violated");
+#  else
+  static_assert(false);
+#  endif
   return 0;
 #else
   return 1;
