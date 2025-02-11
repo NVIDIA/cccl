@@ -731,9 +731,9 @@ struct DispatchSegmentedSort
   using global_segment_offset_t = detail::segmented_sort::global_segment_offset_t;
 
   using StreamingBeginOffsetIteratorT =
-    detail::OffsetIteratorT<BeginOffsetIteratorT, THRUST_NS_QUALIFIER::constant_iterator<global_segment_offset_t>>;
+    detail::offset_iterator_t<BeginOffsetIteratorT, THRUST_NS_QUALIFIER::constant_iterator<global_segment_offset_t>>;
   using StreamingEndOffsetIteratorT =
-    detail::OffsetIteratorT<EndOffsetIteratorT, THRUST_NS_QUALIFIER::constant_iterator<global_segment_offset_t>>;
+    detail::offset_iterator_t<EndOffsetIteratorT, THRUST_NS_QUALIFIER::constant_iterator<global_segment_offset_t>>;
 
   static constexpr int KEYS_ONLY = ::cuda::std::is_same<ValueT, NullType>::value;
 

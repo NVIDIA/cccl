@@ -818,11 +818,11 @@ struct DispatchSegmentedReduce
   {
     // Force kernel code-generation in all compiler passes
     using streaming_begin_offset_it_t =
-      detail::OffsetIteratorT<BeginOffsetIteratorT, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>>;
+      detail::offset_iterator_t<BeginOffsetIteratorT, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>>;
     using streaming_end_offset_it_t =
-      detail::OffsetIteratorT<EndOffsetIteratorT, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>>;
+      detail::offset_iterator_t<EndOffsetIteratorT, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>>;
     using streaming_result_out_it_t =
-      detail::OffsetIteratorT<OutputIteratorT, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>>;
+      detail::offset_iterator_t<OutputIteratorT, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>>;
     return InvokePasses<ActivePolicyT>(
       detail::reduce::DeviceSegmentedReduceKernel<
         typename PolicyHub::MaxPolicy,

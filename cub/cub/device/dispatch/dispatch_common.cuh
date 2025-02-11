@@ -46,14 +46,14 @@ namespace detail
 {
 
 template <typename Iterator, typename OffsetItT>
-class OffsetIteratorT : public THRUST_NS_QUALIFIER::iterator_adaptor<OffsetIteratorT<Iterator, OffsetItT>, Iterator>
+class offset_iterator_t : public THRUST_NS_QUALIFIER::iterator_adaptor<offset_iterator_t<Iterator, OffsetItT>, Iterator>
 {
 public:
-  using super_t = THRUST_NS_QUALIFIER::iterator_adaptor<OffsetIteratorT<Iterator, OffsetItT>, Iterator>;
+  using super_t = THRUST_NS_QUALIFIER::iterator_adaptor<offset_iterator_t<Iterator, OffsetItT>, Iterator>;
 
-  OffsetIteratorT() = default;
+  offset_iterator_t() = default;
 
-  _CCCL_HOST_DEVICE OffsetIteratorT(const Iterator& it, OffsetItT offset_it)
+  _CCCL_HOST_DEVICE offset_iterator_t(const Iterator& it, OffsetItT offset_it)
       : super_t(it)
       , offset_it(offset_it)
   {}
@@ -71,9 +71,9 @@ private:
 };
 
 template <typename Iterator, typename OffsetItT>
-_CCCL_HOST_DEVICE OffsetIteratorT<Iterator, OffsetItT> make_offset_iterator(const Iterator& it, OffsetItT offset_it)
+_CCCL_HOST_DEVICE offset_iterator_t<Iterator, OffsetItT> make_offset_iterator(const Iterator& it, OffsetItT offset_it)
 {
-  return OffsetIteratorT<Iterator, OffsetItT>{it, offset_it};
+  return offset_iterator_t<Iterator, OffsetItT>{it, offset_it};
 }
 
 } // namespace detail
