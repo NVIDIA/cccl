@@ -143,7 +143,11 @@ public:
       }
     }
 
-    // Rough estimate
+    // There was no match, so we ensure we have enough memory (or reclaim
+    // some), and then instantiate a new graph and put it in the cache.
+
+    // Rough footprint estimate of the graph based on the number of nodes (this
+    // is really an approximation)
     size_t footprint = nnodes * 10240;
     if (total_cache_footprint + footprint > cache_size_limit)
     {
@@ -197,11 +201,13 @@ private:
       cached_graphs.erase(lru_it);
     }
 
+#if 0
     fprintf(stderr,
             "Reclaimed %s in cache graph (asked %s remaining %s)\n",
             pretty_print_bytes(reclaimed).c_str(),
             pretty_print_bytes(to_reclaim).c_str(),
             pretty_print_bytes(total_cache_footprint).c_str());
+#endif
   }
 
   // TODO we should not have to redefine this one again
