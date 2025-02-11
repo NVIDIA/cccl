@@ -53,8 +53,6 @@
  * Thread Reduce Wrapper Kernels
  **********************************************************************************************************************/
 
-#  define CCCL_CHECK_SASS // instantiate only the kernels useful for SASS inspection
-
 template <int NUM_ITEMS, typename T, typename ReduceOperator>
 __global__ void thread_reduce_kernel(const T* __restrict__ d_in, T* __restrict__ d_out, ReduceOperator reduce_operator)
 {
