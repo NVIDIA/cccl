@@ -113,39 +113,6 @@ struct local_to_global_op
   }
 };
 
-/**
- * Offsets a given input iterator by a fixed offset, such that when an item at index `i` is accessed, the item
- * `it[*offset_it + i]` is accessed.
- */
-template <typename Iterator, typename OffsetItT>
-class offset_iterator : public THRUST_NS_QUALIFIER::iterator_adaptor<offset_iterator<Iterator, OffsetItT>, Iterator>
-{
-public:
-  using super_t = THRUST_NS_QUALIFIER::iterator_adaptor<offset_iterator, Iterator>;
-
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE offset_iterator(const Iterator& it, OffsetItT offset_it)
-      : super_t(it)
-      , offset_it(offset_it)
-  {}
-
-  // befriend thrust::iterator_core_access to allow it access to the private interface below
-  friend class THRUST_NS_QUALIFIER::iterator_core_access;
-
-private:
-  OffsetItT offset_it;
-
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE typename super_t::reference dereference() const
-  {
-    return *(this->base() + (*offset_it));
-  }
-};
-
-template <typename Iterator, typename OffsetItT>
-_CCCL_HOST_DEVICE offset_iterator<Iterator, OffsetItT> make_offset_iterator(Iterator it, OffsetItT offset_it)
-{
-  return offset_iterator<Iterator, OffsetItT>{it, offset_it};
-}
-
 /******************************************************************************
  * Single-problem streaming reduction dispatch
  *****************************************************************************/
@@ -231,7 +198,7 @@ struct dispatch_streaming_arg_reduce_t
     // Wrapped input iterator to produce index-value tuples, i.e., <PerPartitionOffsetT, InputT>-tuples
     // We make sure to offset the user-provided input iterator by the current partition's offset
     using arg_index_input_iterator_t =
-      ArgIndexInputIterator<offset_iterator<InputIteratorT, constant_offset_it_t>, PerPartitionOffsetT, InitT>;
+      ArgIndexInputIterator<detail::offset_iterator<InputIteratorT, constant_offset_it_t>, PerPartitionOffsetT, InitT>;
 
     // The type used for the aggregate that the user wants to find the extremum for
     using output_aggregate_t = InitT;

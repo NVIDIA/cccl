@@ -770,12 +770,12 @@ struct DispatchSegmentedReduce
         const auto num_current_segments =
           ::cuda::std::min(num_segments_per_invocation, num_segments - current_seg_offset);
 
-        auto current_begin_offset = detail::make_offset_iterator(
-          d_begin_offsets, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>{current_seg_offset});
-        auto current_end_offset = detail::make_offset_iterator(
-          d_end_offsets, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>{current_seg_offset});
-        auto current_out_it = detail::make_offset_iterator(
-          d_out, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>{current_seg_offset});
+        auto current_begin_offset = detail::offset_iterator{
+          d_begin_offsets, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>{current_seg_offset}};
+        auto current_end_offset = detail::offset_iterator{
+          d_end_offsets, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>{current_seg_offset}};
+        auto current_out_it = detail::offset_iterator{
+          d_out, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>{current_seg_offset}};
 // Log device_reduce_sweep_kernel configuration
 #ifdef CUB_DEBUG_LOG
         _CubLog("Invoking SegmentedDeviceReduceKernel<<<%ld, %d, 0, %lld>>>(), "
@@ -818,11 +818,11 @@ struct DispatchSegmentedReduce
   {
     // Force kernel code-generation in all compiler passes
     using streaming_begin_offset_it_t =
-      detail::offset_iterator_t<BeginOffsetIteratorT, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>>;
+      detail::offset_iterator<BeginOffsetIteratorT, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>>;
     using streaming_end_offset_it_t =
-      detail::offset_iterator_t<EndOffsetIteratorT, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>>;
+      detail::offset_iterator<EndOffsetIteratorT, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>>;
     using streaming_result_out_it_t =
-      detail::offset_iterator_t<OutputIteratorT, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>>;
+      detail::offset_iterator<OutputIteratorT, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>>;
     return InvokePasses<ActivePolicyT>(
       detail::reduce::DeviceSegmentedReduceKernel<
         typename PolicyHub::MaxPolicy,

@@ -45,15 +45,19 @@ enum class SelectImpl
 namespace detail
 {
 
+/**
+ * Offsets a given input iterator by a fixed offset, such that when an item at index `i` is accessed, the item
+ * `it[*offset_it + i]` is accessed.
+ */
 template <typename Iterator, typename OffsetItT>
-class offset_iterator_t : public THRUST_NS_QUALIFIER::iterator_adaptor<offset_iterator_t<Iterator, OffsetItT>, Iterator>
+class offset_iterator : public THRUST_NS_QUALIFIER::iterator_adaptor<offset_iterator<Iterator, OffsetItT>, Iterator>
 {
 public:
-  using super_t = THRUST_NS_QUALIFIER::iterator_adaptor<offset_iterator_t<Iterator, OffsetItT>, Iterator>;
+  using super_t = THRUST_NS_QUALIFIER::iterator_adaptor<offset_iterator<Iterator, OffsetItT>, Iterator>;
 
-  offset_iterator_t() = default;
+  offset_iterator() = default;
 
-  _CCCL_HOST_DEVICE offset_iterator_t(const Iterator& it, OffsetItT offset_it)
+  _CCCL_HOST_DEVICE offset_iterator(const Iterator& it, OffsetItT offset_it)
       : super_t(it)
       , offset_it(offset_it)
   {}
@@ -69,12 +73,6 @@ private:
     return *(this->base() + (*offset_it));
   }
 };
-
-template <typename Iterator, typename OffsetItT>
-_CCCL_HOST_DEVICE offset_iterator_t<Iterator, OffsetItT> make_offset_iterator(const Iterator& it, OffsetItT offset_it)
-{
-  return offset_iterator_t<Iterator, OffsetItT>{it, offset_it};
-}
 
 } // namespace detail
 
