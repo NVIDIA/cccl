@@ -115,31 +115,31 @@ struct cub_operator_to_std;
 template <typename T>
 struct cub_operator_to_std<T, cuda::std::plus<>>
 {
-  using type = ::std::plus<T>;
+  using type = ::std::plus<>;
 };
 
 template <typename T>
 struct cub_operator_to_std<T, cuda::std::multiplies<>>
 {
-  using type = ::std::multiplies<T>;
+  using type = ::std::multiplies<>;
 };
 
 template <typename T>
 struct cub_operator_to_std<T, cuda::std::bit_and<>>
 {
-  using type = ::std::bit_and<T>;
+  using type = ::std::bit_and<>;
 };
 
 template <typename T>
 struct cub_operator_to_std<T, cuda::std::bit_or<>>
 {
-  using type = ::std::bit_or<T>;
+  using type = ::std::bit_or<>;
 };
 
 template <typename T>
 struct cub_operator_to_std<T, cuda::std::bit_xor<>>
 {
-  using type = ::std::bit_xor<T>;
+  using type = ::std::bit_xor<>;
 };
 
 template <typename T>
