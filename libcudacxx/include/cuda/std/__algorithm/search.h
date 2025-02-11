@@ -167,14 +167,12 @@ search(_ForwardIterator1 __first1, _ForwardIterator1 __last1, _ForwardIterator2 
   return _CUDA_VSTD::search(__first1, __last1, __first2, __last2, __equal_to{});
 }
 
-#if _CCCL_STD_VER > 2014
 template <class _ForwardIterator, class _Searcher>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
 search(_ForwardIterator __f, _ForwardIterator __l, const _Searcher& __s)
 {
   return __s(__f, __l).first;
 }
-#endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

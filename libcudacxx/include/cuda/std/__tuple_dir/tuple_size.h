@@ -67,10 +67,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<__tuple_types<_Tp...>>
     : public integral_constant<size_t, sizeof...(_Tp)>
 {};
 
-#if _CCCL_STD_VER >= 2017
 template <class _Tp>
 _CCCL_INLINE_VAR constexpr size_t tuple_size_v = tuple_size<_Tp>::value;
-#endif // _CCCL_STD_VER >= 2017
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

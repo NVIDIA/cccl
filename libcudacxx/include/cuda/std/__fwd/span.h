@@ -25,13 +25,9 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2011
-
 _CCCL_INLINE_VAR constexpr size_t dynamic_extent = static_cast<size_t>(-1);
 template <typename _Tp, size_t _Extent = dynamic_extent>
 class span;
-
-#endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

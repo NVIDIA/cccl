@@ -67,7 +67,6 @@ int main(int, char**)
     test(p, 3, Ptr(i + 3));
   }
 #endif // _LIBCUDACXX_HAS_MEMORY
-#if TEST_STD_VER > 2011 && (!defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2014) // MSVC bails here
   {
     constexpr const char* p = "123456789";
     typedef cuda::std::move_iterator<const char*> MI;
@@ -75,9 +74,7 @@ int main(int, char**)
     static_assert(it1[0] == '1', "");
     static_assert(it1[5] == '6', "");
   }
-#endif // TEST_STD_VER > 2011 && (!defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2014)
 
-#if TEST_STD_VER > 2014
   // Ensure the `iter_move` customization point is being used.
   {
     int a[] = {0, 1, 2};
@@ -90,7 +87,6 @@ int main(int, char**)
     assert(x == 0);
     assert(iter_moves == 1);
   }
-#endif // TEST_STD_VER > 2014
 
   return 0;
 }

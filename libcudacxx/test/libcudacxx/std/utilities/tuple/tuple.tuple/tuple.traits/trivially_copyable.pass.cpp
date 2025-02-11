@@ -13,8 +13,6 @@
 // template <class... Types, class Alloc>
 //   struct uses_allocator<tuple<Types...>, Alloc> : true_type { };
 
-// UNSUPPORTED: c++98, c++03
-
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 

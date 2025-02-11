@@ -39,7 +39,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
     cpp17_input_iterator<const int*>(ia + s),
     cpp17_input_iterator<const int*>(ia),
     cuda::std::equal_to<int>()));
-#if TEST_STD_VER >= 2014
   assert(cuda::std::equal(
     cpp17_input_iterator<const int*>(ia),
     cpp17_input_iterator<const int*>(ia + s),
@@ -71,13 +70,13 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
     random_access_iterator<const int*>(ia + s - 1),
     counting_equals));
   assert(comparison_count == 0);
-#endif // TEST_STD_VER >= 2014
+
   assert(!cuda::std::equal(
     cpp17_input_iterator<const int*>(ia),
     cpp17_input_iterator<const int*>(ia + s),
     cpp17_input_iterator<const int*>(ib),
     cuda::std::equal_to<int>()));
-#if TEST_STD_VER >= 2014
+
   assert(!cuda::std::equal(
     cpp17_input_iterator<const int*>(ia),
     cpp17_input_iterator<const int*>(ia + s),
@@ -90,7 +89,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
     random_access_iterator<const int*>(ib),
     random_access_iterator<const int*>(ib + s),
     cuda::std::equal_to<int>()));
-#endif // TEST_STD_VER >= 2014
 
   return true;
 }
@@ -98,9 +96,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif
 
   return 0;
 }

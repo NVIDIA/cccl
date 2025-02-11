@@ -26,8 +26,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2011
-
 template <class _Cont>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto empty(const _Cont& __c) noexcept(noexcept(__c.empty()))
   -> decltype(__c.empty())
@@ -46,8 +44,6 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty(initializer_list<
 {
   return __il.size() == 0;
 }
-
-#endif // _CCCL_STD_VER > 2017
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -6,8 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // P2251 was voted into C++23, but is supported even in C++20 mode by all vendors.
 
 // <span>

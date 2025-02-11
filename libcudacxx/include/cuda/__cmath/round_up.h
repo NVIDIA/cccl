@@ -21,17 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_STD_VER >= 2017
-
-#  include <cuda/__cmath/ceil_div.h>
-#  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__type_traits/common_type.h>
-#  include <cuda/std/__type_traits/is_enum.h>
-#  include <cuda/std/__type_traits/is_integral.h>
-#  include <cuda/std/__type_traits/is_signed.h>
-#  include <cuda/std/__type_traits/make_unsigned.h>
-#  include <cuda/std/__utility/to_underlying.h>
-#  include <cuda/std/limits>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__type_traits/common_type.h>
+#include <cuda/std/__type_traits/is_enum.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_signed.h>
+#include <cuda/std/__type_traits/make_unsigned.h>
+#include <cuda/std/__utility/to_underlying.h>
+#include <cuda/std/limits>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -101,5 +99,4 @@ round_up(const _Tp __a, const _Up __b) noexcept
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#endif // _CCCL_STD_VER >= 2017
 #endif // _CUDA___CMATH_ROUND_UP_H
