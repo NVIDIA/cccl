@@ -15,7 +15,7 @@
 //   constexpr void      // constexpr after C++17
 //   replace(Iter first, Iter last, const T& old_value, const T& new_value);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "test_iterators.h"

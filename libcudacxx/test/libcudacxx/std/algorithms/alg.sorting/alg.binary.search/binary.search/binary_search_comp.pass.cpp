@@ -14,7 +14,7 @@
 //   constexpr bool      // constexpr after C++17
 //   binary_search(Iter first, Iter last, const T& value, Compare comp);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
 #include <cuda/std/functional>
