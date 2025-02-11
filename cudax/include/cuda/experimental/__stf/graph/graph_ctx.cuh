@@ -474,20 +474,11 @@ public:
 
     auto& state = this->state();
 
-    for (const auto& [nnodes_cached, nedges_cached, prev_e_ptr] : async_resources().get_cached_graphs())
+    auto [cache_hit, cache_exec_g] = async_resources().cached_graphs_query(nnodes, nedges, g);
+    if (cache_hit)
     {
-      // Skip the update early if needed
-      if (nnodes_cached != nnodes || nedges_cached != nedges)
-      {
-        continue;
-      }
-      cudaGraphExec_t& prev_e = *prev_e_ptr;
-      if (try_updating_executable_graph(prev_e, *g))
-      {
-        // Return the updated graph
-        state.exec_graph = prev_e_ptr;
-        return prev_e_ptr;
-      }
+      state.exec_graph = cache_exec_g;
+      return cache_exec_g;
     }
 
     if (getenv("CUDASTF_DUMP_GRAPHS"))
@@ -499,7 +490,10 @@ public:
     state.exec_graph = graph_instantiate(*g);
 
     // Save this graph for later use
-    async_resources().put_graph_in_cache(nnodes, nedges, state.exec_graph);
+    if (!getenv("CUDASTF_NO_CACHE_GRAPH"))
+    {
+      async_resources().put_graph_in_cache(nnodes, nedges, state.exec_graph);
+    }
 
     return state.exec_graph;
   }
@@ -656,7 +650,7 @@ private:
         continue;
       }
       cudaGraphExec_t& prev_e = *prev_e_ptr;
-      if (try_updating_executable_graph(prev_e, g))
+      if (reserved::try_updating_executable_graph(prev_e, g))
       {
         local_exec_graph = prev_e;
 
@@ -689,37 +683,6 @@ private:
   }
 
 public:
-  // This tries to instantiate the graph by updating an existing executable graph
-  // the returned value indicates whether the update was successful or not
-  static bool try_updating_executable_graph(cudaGraphExec_t exec_graph, cudaGraph_t graph)
-  {
-#if CUDA_VERSION < 12000
-    cudaGraphNode_t errorNode;
-    cudaGraphExecUpdateResult updateResult;
-    cudaGraphExecUpdate(exec_graph, graph, &errorNode, &updateResult);
-#else
-    cudaGraphExecUpdateResultInfo resultInfo;
-    cudaGraphExecUpdate(exec_graph, graph, &resultInfo);
-#endif
-
-    // Be sure to "erase" the last error
-    cudaError_t res = cudaGetLastError();
-
-#ifdef CUDASTF_DEBUG
-    reserved::counter<reserved::graph_tag::update>.increment();
-    if (res == cudaSuccess)
-    {
-      reserved::counter<reserved::graph_tag::update::success>.increment();
-    }
-    else
-    {
-      reserved::counter<reserved::graph_tag::update::failure>.increment();
-    }
-#endif
-
-    return (res == cudaSuccess);
-  }
-
   friend inline cudaGraph_t ctx_to_graph(backend_ctx_untyped& ctx)
   {
     return ctx.graph();
