@@ -282,7 +282,6 @@ doxygen_predefined = [
   "THRUST_IGNORE_NAMESPACE_MAGIC_ERROR",
   "THRUST_NAMESPACE_BEGIN=namespace thrust {",
   "THRUST_NAMESPACE_END=}",
-  "THRUST_INLINE_CONSTANT",
   "THRUST_PREVENT_MACRO_SUBSTITUTION",
   "THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(x,y)=",
   "THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(x, y)=",
@@ -325,6 +324,7 @@ autodoc.mock_imports = [
     "cuda.bindings",
     "llvmlite",
     "numpy",
+    "cupy",
 ]
 
 enhanced_search_enabled = true
@@ -350,6 +350,7 @@ autodoc.mock_imports = [
     "cuda.cccl",
     "llvmlite",
     "numpy",
+    "cupy",
 ]
 
 enhanced_search_enabled = true

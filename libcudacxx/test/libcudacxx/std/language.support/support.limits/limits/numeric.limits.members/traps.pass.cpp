@@ -14,7 +14,7 @@
 
 #include "test_macros.h"
 
-#if defined(__i386__) || defined(__x86_64__) || defined(__pnacl__) || defined(__wasm__)
+#if _CCCL_ARCH(X86_64) && _CCCL_OS(LINUX)
 static const bool integral_types_trap = true;
 #else
 static const bool integral_types_trap = false;
@@ -60,10 +60,10 @@ int main(int, char**)
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
   test<long double, false>();
 #endif
-#if defined(_CCCL_HAS_NVFP16)
+#if _CCCL_HAS_NVFP16()
   test<__half, false>();
 #endif // _CCCL_HAS_NVFP16
-#if defined(_CCCL_HAS_NVBF16)
+#if _CCCL_HAS_NVBF16()
   test<__nv_bfloat16, false>();
 #endif // _CCCL_HAS_NVBF16
 #if _CCCL_HAS_NVFP8()

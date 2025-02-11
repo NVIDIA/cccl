@@ -4,7 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import ctypes
+import sys
 from functools import lru_cache
+from pathlib import Path
 from typing import List
 
 from cuda.cccl import get_include_paths  # type: ignore[import-not-found]
@@ -18,9 +20,18 @@ def get_bindings() -> ctypes.CDLL:
     # can move this to a module-level import.
     from importlib.resources import as_file, files
 
+    so_path = "cccl/libcccl.c.parallel.so"
     with as_file(files("cuda.parallel.experimental")) as f:
-        cccl_c_path = str(f / "cccl" / "libcccl.c.parallel.so")
-    _bindings = ctypes.CDLL(cccl_c_path)
+        cccl_c_path = f / so_path
+    if not cccl_c_path.exists():
+        # This may be needed to support editable builds (see PR #3762).
+        for sp in sys.path:
+            cccl_c_path = Path(sp).resolve() / "cuda/parallel/experimental" / so_path
+            if cccl_c_path.exists():
+                break
+        else:
+            raise RuntimeError(f"Unable to locate {so_path}")
+    _bindings = ctypes.CDLL(str(cccl_c_path))
     _bindings.cccl_device_reduce.restype = ctypes.c_int
     _bindings.cccl_device_reduce.argtypes = [
         cccl.DeviceReduceBuildResult,

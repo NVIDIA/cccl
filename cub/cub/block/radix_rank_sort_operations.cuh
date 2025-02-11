@@ -54,6 +54,7 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
+#include <cuda/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -73,7 +74,7 @@ CUB_NAMESPACE_BEGIN
     and only one of them is used, the sorting works correctly. For double, the
     same applies, but with 64-bit patterns.
 */
-template <typename KeyT, Category TypeCategory = Traits<KeyT>::CATEGORY>
+template <typename KeyT, bool IsFP = ::cuda::is_floating_point<KeyT>::value>
 struct BaseDigitExtractor
 {
   using TraitsT      = Traits<KeyT>;
@@ -86,7 +87,7 @@ struct BaseDigitExtractor
 };
 
 template <typename KeyT>
-struct BaseDigitExtractor<KeyT, FLOATING_POINT>
+struct BaseDigitExtractor<KeyT, true>
 {
   using TraitsT      = Traits<KeyT>;
   using UnsignedBits = typename TraitsT::UnsignedBits;

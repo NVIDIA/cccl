@@ -50,7 +50,7 @@
 // TODO replace with DeviceSegmentedRadixSort::SortKeys interface once https://github.com/NVIDIA/cccl/issues/50 is
 // addressed Temporary wrapper that allows specializing the DeviceSegmentedRadixSort algorithm for different offset
 // types
-template <bool IS_DESCENDING, typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
+template <cub::SortOrder Order, typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_radix_sort_wrapper(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -69,7 +69,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_rad
   cub::DoubleBuffer<cub::NullType> d_values;
   cub::DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
   auto status = cub::DispatchSegmentedRadixSort<
-    IS_DESCENDING,
+    Order,
     KeyT,
     cub::NullType,
     BeginOffsetIteratorT,
@@ -103,8 +103,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_rad
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortKeys, sort_keys);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortKeysDescending, sort_keys_descending);
-DECLARE_LAUNCH_WRAPPER(dispatch_segmented_radix_sort_wrapper<true>, dispatch_segmented_radix_sort_descending);
-DECLARE_LAUNCH_WRAPPER(dispatch_segmented_radix_sort_wrapper<false>, dispatch_segmented_radix_sort);
+DECLARE_LAUNCH_WRAPPER(dispatch_segmented_radix_sort_wrapper<cub::SortOrder::Descending>,
+                       dispatch_segmented_radix_sort_descending);
+DECLARE_LAUNCH_WRAPPER(dispatch_segmented_radix_sort_wrapper<cub::SortOrder::Ascending>, dispatch_segmented_radix_sort);
 
 // TODO:
 // - int128

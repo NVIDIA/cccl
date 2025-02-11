@@ -121,9 +121,27 @@ struct always_true_t
 };
 
 using all_types =
-  c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t, ulonglong2, ulonglong4, int, long2, custom_t>;
+  c2h::type_list<std::uint8_t,
+                 std::uint16_t,
+                 std::uint32_t,
+                 std::uint64_t,
+                 ulonglong2,
+// WAR bug in vec type handling in NVCC 12.0 + GCC 11.4 + C++20
+#if !(_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0) && _CCCL_COMPILER(GCC, ==, 11, 4) && _CCCL_STD_VER == 2020)
+                 ulonglong4,
+#endif // !(NVCC 12.0 and GCC 11.4 and C++20)
+                 int,
+                 long2,
+                 custom_t>;
 
-using types = c2h::type_list<std::uint8_t, std::uint32_t, ulonglong4, custom_t>;
+using types =
+  c2h::type_list<std::uint8_t,
+                 std::uint32_t,
+// WAR bug in vec type handling in NVCC 12.0 + GCC 11.4 + C++20
+#if !(_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0) && _CCCL_COMPILER(GCC, ==, 11, 4) && _CCCL_STD_VER == 2020)
+                 ulonglong4,
+#endif // !(NVCC 12.0 and GCC 11.4 and C++20)
+                 custom_t>;
 
 using flag_types = c2h::type_list<std::uint8_t, std::uint64_t, custom_t>;
 

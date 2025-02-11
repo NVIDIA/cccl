@@ -78,7 +78,6 @@
 #include <cub/device/device_transform.cuh>
 
 // Grid
-// #include <cub/grid/grid_barrier.cuh>
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/grid/grid_mapping.cuh>
 #include <cub/grid/grid_queue.cuh>

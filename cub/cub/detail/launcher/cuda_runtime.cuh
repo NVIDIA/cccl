@@ -21,10 +21,10 @@ namespace detail
 
 struct TripleChevronFactory
 {
-  CUB_RUNTIME_FUNCTION THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron operator()(
+  CUB_RUNTIME_FUNCTION THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron operator()(
     dim3 grid, dim3 block, _CUDA_VSTD::size_t shared_mem, cudaStream_t stream, bool dependent_launch = false) const
   {
-    return THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(grid, block, shared_mem, stream, dependent_launch);
+    return THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid, block, shared_mem, stream, dependent_launch);
   }
 
   CUB_RUNTIME_FUNCTION cudaError_t PtxVersion(int& version)

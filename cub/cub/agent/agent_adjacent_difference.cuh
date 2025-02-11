@@ -258,22 +258,4 @@ struct AgentDifferenceInit
 } // namespace adjacent_difference
 } // namespace detail
 
-template <typename Policy,
-          typename InputIteratorT,
-          typename OutputIteratorT,
-          typename DifferenceOpT,
-          typename OffsetT,
-          typename InputT,
-          typename OutputT,
-          bool MayAlias,
-          bool ReadLeft>
-using AgentDifference CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
-                                              "interface will be removed.") = detail::adjacent_difference::
-  AgentDifference<Policy, InputIteratorT, OutputIteratorT, DifferenceOpT, OffsetT, InputT, OutputT, MayAlias, ReadLeft>;
-
-template <typename InputIteratorT, typename InputT, typename OffsetT, bool ReadLeft>
-using AgentDifferenceInit CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
-                                                  "interface will be removed.") =
-  detail::adjacent_difference::AgentDifferenceInit<InputIteratorT, InputT, OffsetT, ReadLeft>;
-
 CUB_NAMESPACE_END

@@ -8,11 +8,10 @@
 # - lang: The language to test: C, CXX, or CUDA.
 # - standards: List of any standard versions.
 #
-# Example: detect_supported_cxx_standards(PROJ CXX 11 14 17)
+# Example: detect_supported_cxx_standards(PROJ CXX 17 20)
 #   - Sets the following variables in the parent scope to TRUE or FALSE:
-#     - PROJ_CXX_11_SUPPORTED
-#     - PROJ_CXX_14_SUPPORTED
 #     - PROJ_CXX_17_SUPPORTED
+#     - PROJ_CXX_20_SUPPORTED
 #
 function(detect_supported_standards prefix lang)
   string(TOLOWER "${lang}_std" feature_prefix)
