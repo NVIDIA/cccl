@@ -67,30 +67,6 @@ struct custom_sum_op
   }
 };
 
-template <typename OffsetItT>
-struct print_op_t
-{
-  OffsetItT offsets_it;
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void operator()(int64_t segment_index, int64_t result)
-  {
-    // constexpr auto num_empty_segments =
-    //   static_cast<int64_t>(::cuda::std::numeric_limits<std::uint32_t>::max() - 1000000);
-    // if (segment_index < 3 || segment_index > num_empty_segments && segment_index < num_empty_segments + 100)
-    int64_t begin_offset    = offsets_it[segment_index];
-    int64_t end_offset      = offsets_it[segment_index + 1];
-    int64_t expected_result = get_gaussian_sum_from_offset_op{}(begin_offset, end_offset);
-    if (static_cast<int64_t>(result) != expected_result)
-    {
-      printf("segment_index: %ld, range: [%ld,%ld), result: %ld, expected result: %ld\n",
-             static_cast<int64_t>(segment_index),
-             begin_offset,
-             end_offset,
-             static_cast<int64_t>(result),
-             expected_result);
-    }
-  }
-};
-
 C2H_TEST("Device reduce works with a very large number of segments", "[reduce][device]")
 {
   using offset_t        = ::cuda::std::int64_t;
