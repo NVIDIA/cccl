@@ -117,7 +117,7 @@ class AgentSubWarpSort
     template <typename T>
     _CCCL_DEVICE bool operator()(T lhs, T rhs) const noexcept
     {
-      _CCCL_IF_CONSTEXPR (IS_DESCENDING)
+      if constexpr (IS_DESCENDING)
       {
         return lhs > rhs;
       }
@@ -132,7 +132,7 @@ class AgentSubWarpSort
     _CCCL_DEVICE bool operator()(__half lhs, __half rhs) const noexcept
     {
       // Need to explicitly cast to float for SM <= 52.
-      _CCCL_IF_CONSTEXPR (IS_DESCENDING)
+      if constexpr (IS_DESCENDING)
       {
         NV_IF_TARGET(NV_PROVIDES_SM_53, (return __hgt(lhs, rhs);), (return __half2float(lhs) > __half2float(rhs);));
       }

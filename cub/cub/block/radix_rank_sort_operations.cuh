@@ -586,7 +586,7 @@ public:
   In(bit_ordered_type key, DecomposerT decomposer = {})
   {
     key = bit_ordered_conversion_policy::to_bit_ordered(decomposer, key);
-    _CCCL_IF_CONSTEXPR (IS_DESCENDING)
+    if constexpr (IS_DESCENDING)
     {
       key = bit_ordered_inversion_policy::inverse(decomposer, key);
     }
@@ -598,7 +598,7 @@ public:
   bit_ordered_type
   Out(bit_ordered_type key, DecomposerT decomposer = {})
   {
-    _CCCL_IF_CONSTEXPR (IS_DESCENDING)
+    if constexpr (IS_DESCENDING)
     {
       key = bit_ordered_inversion_policy::inverse(decomposer, key);
     }

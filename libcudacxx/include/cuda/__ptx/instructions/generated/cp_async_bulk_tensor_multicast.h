@@ -84,7 +84,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   // __space == space_global (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm("cp.async.bulk.tensor.1d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group:"
         ":1 [%0], [%1, {%2}], [%3], %4;"
@@ -96,7 +96,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
           "h"(__ctaMask)
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm("cp.async.bulk.tensor.1d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group:"
         ":2 [%0], [%1, {%2}], [%3], %4;"
@@ -197,7 +197,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   // __space == space_global (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm("cp.async.bulk.tensor.2d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group:"
         ":1 [%0], [%1, {%2, %3}], [%4], %5;"
@@ -210,7 +210,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
           "h"(__ctaMask)
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm("cp.async.bulk.tensor.2d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group:"
         ":2 [%0], [%1, {%2, %3}], [%4], %5;"
@@ -313,7 +313,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   // __space == space_global (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm("cp.async.bulk.tensor.3d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group:"
         ":1 [%0], [%1, {%2, %3, %4}], [%5], %6;"
@@ -327,7 +327,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
           "h"(__ctaMask)
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm("cp.async.bulk.tensor.3d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group:"
         ":2 [%0], [%1, {%2, %3, %4}], [%5], %6;"
@@ -432,7 +432,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   // __space == space_global (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm("cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group:"
         ":1 [%0], [%1, {%2, %3, %4, %5}], [%6], %7;"
@@ -447,7 +447,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
           "h"(__ctaMask)
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm("cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group:"
         ":2 [%0], [%1, {%2, %3, %4, %5}], [%6], %7;"
@@ -554,7 +554,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   // __space == space_global (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm("cp.async.bulk.tensor.5d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group:"
         ":1 [%0], [%1, {%2, %3, %4, %5, %6}], [%7], %8;"
@@ -570,7 +570,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
           "h"(__ctaMask)
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm("cp.async.bulk.tensor.5d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group:"
         ":2 [%0], [%1, {%2, %3, %4, %5, %6}], [%7], %8;"

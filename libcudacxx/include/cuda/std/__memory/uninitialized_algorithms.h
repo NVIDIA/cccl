@@ -347,7 +347,7 @@ __allocator_destroy_multidimensional(_Alloc& __alloc, _BidirIter __first, _Bidir
     return;
   }
 
-  _CCCL_IF_CONSTEXPR (_CCCL_TRAIT(is_array, _ValueType))
+  if constexpr (_CCCL_TRAIT(is_array, _ValueType))
   {
     static_assert(!__cccl_is_unbounded_array<_ValueType>::value,
                   "arrays of unbounded arrays don't exist, but if they did we would mess up here");
@@ -385,7 +385,7 @@ __allocator_construct_at_multidimensional(_Alloc& __alloc, _Tp* __loc)
   static_assert(_CCCL_TRAIT(is_same, typename allocator_traits<_Alloc>::value_type, _Tp),
                 "The allocator should already be rebound to the correct type");
 
-  _CCCL_IF_CONSTEXPR (_CCCL_TRAIT(is_array, _Tp))
+  if constexpr (_CCCL_TRAIT(is_array, _Tp))
   {
     using _Element = remove_extent_t<_Tp>;
     __allocator_traits_rebind_t<_Alloc, _Element> __elem_alloc(__alloc);
@@ -426,7 +426,7 @@ __allocator_construct_at_multidimensional(_Alloc& __alloc, _Tp* __loc, _Arg cons
   static_assert(_CCCL_TRAIT(is_same, typename allocator_traits<_Alloc>::value_type, _Tp),
                 "The allocator should already be rebound to the correct type");
 
-  _CCCL_IF_CONSTEXPR (_CCCL_TRAIT(is_array, _Tp))
+  if constexpr (_CCCL_TRAIT(is_array, _Tp))
   {
     static_assert(_CCCL_TRAIT(is_array, _Arg),
                   "Provided non-array initialization argument to __allocator_construct_at_multidimensional when "

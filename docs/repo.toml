@@ -422,7 +422,6 @@ doxygen_predefined = [
   "_CCCL_HIDE_FROM_ABI=",
   "_CCCL_HOST=",
   "_CCCL_HOST_DEVICE=",
-  "_CCCL_IF_CONSTEXPR=if constexpr",
   "_CCCL_INLINE_VAR=inline",
   "_CCCL_NODISCARD=[[nodiscard]]",
   "_CCCL_NODISCARD_FRIEND=",

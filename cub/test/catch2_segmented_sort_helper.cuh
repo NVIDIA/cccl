@@ -459,7 +459,7 @@ private:
         // values are descending when generating ascending input keys for a descending sort.
         const int conv_idx         = sort_descending ? (segment_size - 1 - in_seg_idx) : in_seg_idx;
         const ValueT current_value = static_cast<ValueT>(conv_idx * value_conversion);
-        _CCCL_IF_CONSTEXPR (STABLE)
+        if constexpr (STABLE)
         {
           // For stable sorts, the output value must appear at an exact offset:
           const int out_seg_idx = key_out_dup_begin + dup_idx;
@@ -537,7 +537,7 @@ void generate_unsorted_derived_inputs(
                    thrust::make_counting_iterator(0),
                    thrust::make_counting_iterator(num_segments),
                    segment_filler<KeyT>{keys, offsets, !descending_sort});
-  _CCCL_IF_CONSTEXPR (sort_pairs)
+  if constexpr (sort_pairs)
   {
     // Values are generated in reversed order from keys:
     thrust::for_each(c2h::nosync_device_policy,
@@ -589,7 +589,7 @@ void generate_random_unsorted_inputs(c2h::seed_t seed, //
 
   c2h::gen(make_key_seed(seed), d_keys);
 
-  _CCCL_IF_CONSTEXPR (!::cuda::std::is_same_v<ValueT, cub::NullType>)
+  if constexpr (!::cuda::std::is_same<ValueT, cub::NullType>::value)
   {
     c2h::gen(make_value_seed(seed), d_values);
   }
@@ -622,7 +622,7 @@ void host_sort_random_inputs(
       continue;
     }
 
-    _CCCL_IF_CONSTEXPR (sort_pairs)
+    if constexpr (sort_pairs)
     {
       if (sort_descending)
       {
@@ -754,9 +754,9 @@ void validate_sorted_random_outputs(
   REQUIRE((d_ref_keys == d_sorted_keys) == true);
 
   // Verify segment-by-segment that the values are appropriately sorted for an unstable key-value sort:
-  _CCCL_IF_CONSTEXPR (!::cuda::std::is_same_v<ValueT, cub::NullType>)
+  if constexpr (!::cuda::std::is_same<ValueT, cub::NullType>::value)
   {
-    _CCCL_IF_CONSTEXPR (STABLE)
+    if constexpr (STABLE)
     {
       REQUIRE((d_ref_values == d_sorted_values) == true);
     }
@@ -824,7 +824,7 @@ CUB_RUNTIME_FUNCTION cudaError_t call_cub_segmented_sort_api(
 
   if (stable_sort)
   {
-    _CCCL_IF_CONSTEXPR (sort_pairs)
+    if constexpr (sort_pairs)
     {
       if (descending)
       {
@@ -979,7 +979,7 @@ CUB_RUNTIME_FUNCTION cudaError_t call_cub_segmented_sort_api(
   }
   else
   {
-    _CCCL_IF_CONSTEXPR (sort_pairs)
+    if constexpr (sort_pairs)
     {
       if (descending)
       {
@@ -1292,7 +1292,7 @@ void test_segments_derived(const c2h::device_vector<int>& d_offsets_vec)
 
   c2h::device_vector<ValueT> values_input;
   c2h::device_vector<ValueT> values_output;
-  _CCCL_IF_CONSTEXPR (sort_pairs)
+  if constexpr (sort_pairs)
   {
     values_input.resize(num_items);
     values_output.resize(num_items);
@@ -1318,7 +1318,7 @@ void test_segments_derived(const c2h::device_vector<int>& d_offsets_vec)
   int keys_selector   = 0;
   int values_selector = 1;
 
-  _CCCL_IF_CONSTEXPR (sort_pairs)
+  if constexpr (sort_pairs)
   {
     if (sort_buffers)
     { // Value buffer selector is initialized to read from the second buffer:
@@ -1385,7 +1385,7 @@ void test_segments_random(
 
   c2h::device_vector<ValueT> values_input;
   c2h::device_vector<ValueT> values_output;
-  _CCCL_IF_CONSTEXPR (sort_pairs)
+  if constexpr (sort_pairs)
   {
     values_input.resize(num_items);
     values_output.resize(num_items);
@@ -1462,7 +1462,7 @@ void test_segments_random(
       int keys_selector   = 0;
       int values_selector = 1;
 
-      _CCCL_IF_CONSTEXPR (sort_pairs)
+      if constexpr (sort_pairs)
       {
         if (sort_buffers)
         { // Value buffer selector is initialized to read from the second buffer:
