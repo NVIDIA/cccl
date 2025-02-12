@@ -125,6 +125,10 @@ public:
 
       // If we want to keep the state of some logical data implementations until this level is popped
       ::std::vector<::std::shared_ptr<stackable_logical_data_impl_state_base>> retained_data;
+
+      // dot sections allow to structure the DOT output to better understand
+      // the hierarchy of computation
+      ::std::optional<reserved::dot::section::guard> dot_section;
     };
 
   public:
@@ -178,6 +182,9 @@ public:
         gctx.update_uncached_allocator(wrapper->allocator());
 
         levels.emplace_back(gctx, stream, wrapper);
+
+        // We add a new dot section which will be closed when the context is popped
+        levels.back().dot_section = levels[0].ctx.dot_section("stackable");
       }
     }
 
@@ -197,6 +204,9 @@ public:
         _CCCL_ASSERT(d_impl, "invalid value");
         d_impl->pop_before_finalize();
       }
+
+      _CCCL_ASSERT(current_level.dot_section.has_value(), "invalid dot_section");
+      current_level.dot_section.value().end();
 
       // Ensure everything is finished in the context
       current_level.ctx.finalize();
