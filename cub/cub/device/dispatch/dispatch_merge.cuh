@@ -122,9 +122,8 @@ __launch_bounds__(
   using key_t = value_t<KeyIt1>;
   static_assert(::cuda::std::__invokable<CompareOp, key_t, key_t>::value,
                 "Comparison operator cannot compare two keys");
-  static_assert(
-    ::cuda::std::is_convertible<typename ::cuda::std::__invoke_of<CompareOp, key_t, key_t>::type, bool>::value,
-    "Comparison operator must be convertible to bool");
+  static_assert(::cuda::std::is_convertible_v<typename ::cuda::std::__invoke_of<CompareOp, key_t, key_t>::type, bool>,
+                "Comparison operator must be convertible to bool");
 
   using MergeAgent = typename choose_merge_agent<
     typename MaxPolicy::ActivePolicy::merge_policy,

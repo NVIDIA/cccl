@@ -64,15 +64,9 @@ template <typename Invokable, typename... Args>
 using invoke_result_t = ::cuda::std::invoke_result_t<Invokable, Args...>;
 
 template <typename T, typename... TArgs>
-_CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr bool are_same()
-{
-  return ::cuda::std::conjunction<::cuda::std::is_same<T, TArgs>...>::value;
-}
-
-template <typename T, typename... TArgs>
 _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr bool is_one_of()
 {
-  return ::cuda::std::disjunction<::cuda::std::is_same<T, TArgs>...>::value;
+  return ::cuda::std::disjunction_v<::cuda::std::is_same<T, TArgs>...>;
 }
 
 template <typename...>

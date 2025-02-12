@@ -467,9 +467,9 @@ public:
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortPairs(void* d_temp_storage,
               size_t& temp_storage_bytes,
               const KeyT* d_keys_in,
@@ -607,9 +607,9 @@ public:
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortPairs(void* d_temp_storage,
               size_t& temp_storage_bytes,
               const KeyT* d_keys_in,
@@ -881,9 +881,9 @@ public:
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortPairs(void* d_temp_storage,
               size_t& temp_storage_bytes,
               DoubleBuffer<KeyT>& d_keys,
@@ -1024,9 +1024,9 @@ public:
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortPairs(void* d_temp_storage,
               size_t& temp_storage_bytes,
               DoubleBuffer<KeyT>& d_keys,
@@ -1301,9 +1301,9 @@ public:
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortPairsDescending(
       void* d_temp_storage,
       size_t& temp_storage_bytes,
@@ -1443,9 +1443,9 @@ public:
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortPairsDescending(
       void* d_temp_storage,
       size_t& temp_storage_bytes,
@@ -1714,9 +1714,9 @@ public:
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortPairsDescending(
       void* d_temp_storage,
       size_t& temp_storage_bytes,
@@ -1858,9 +1858,9 @@ public:
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortPairsDescending(
       void* d_temp_storage,
       size_t& temp_storage_bytes,
@@ -2128,9 +2128,9 @@ public:
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortKeys(void* d_temp_storage,
              size_t& temp_storage_bytes,
              const KeyT* d_keys_in,
@@ -2258,9 +2258,9 @@ public:
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortKeys(void* d_temp_storage,
              size_t& temp_storage_bytes,
              const KeyT* d_keys_in,
@@ -2504,9 +2504,9 @@ public:
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortKeys(void* d_temp_storage,
              size_t& temp_storage_bytes,
              DoubleBuffer<KeyT>& d_keys,
@@ -2635,9 +2635,9 @@ public:
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortKeys(void* d_temp_storage,
              size_t& temp_storage_bytes,
              DoubleBuffer<KeyT>& d_keys,
@@ -2885,9 +2885,9 @@ public:
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortKeysDescending(
       void* d_temp_storage,
       size_t& temp_storage_bytes,
@@ -3013,9 +3013,9 @@ public:
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortKeysDescending(
       void* d_temp_storage,
       size_t& temp_storage_bytes,
@@ -3255,9 +3255,9 @@ public:
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortKeysDescending(
       void* d_temp_storage,
       size_t& temp_storage_bytes,
@@ -3387,9 +3387,9 @@ public:
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<DecomposerT, int>, //
+      cudaError_t>
     SortKeysDescending(
       void* d_temp_storage,
       size_t& temp_storage_bytes,
