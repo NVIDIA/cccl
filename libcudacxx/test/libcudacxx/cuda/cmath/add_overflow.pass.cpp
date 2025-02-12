@@ -11,9 +11,9 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
+#include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-#include "cuda/std/__type_traits/common_type.h"
 #include "test_macros.h"
 
 template <class T, class U>
@@ -90,6 +90,11 @@ __host__ __device__ constexpr void test()
       }
     }
   }
+  unused(max_a);
+  unused(max_b);
+  unused(max_c);
+  unused(min_a);
+  unused(min_b);
 }
 
 template <class T>
