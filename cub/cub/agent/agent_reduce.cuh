@@ -151,7 +151,7 @@ struct AgentReduce
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
   using WrappedInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer<InputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer_v<InputIteratorT>,
                      CacheModifiedInputIterator<AgentReducePolicy::LOAD_MODIFIER, InputT, OffsetT>,
                      InputIteratorT>;
 
@@ -165,7 +165,7 @@ struct AgentReduce
   // pointer to a primitive type
   static constexpr bool ATTEMPT_VECTORIZATION =
     (VECTOR_LOAD_LENGTH > 1) && (ITEMS_PER_THREAD % VECTOR_LOAD_LENGTH == 0)
-    && (::cuda::std::is_pointer<InputIteratorT>::value) && is_primitive<InputT>::value;
+    && (::cuda::std::is_pointer_v<InputIteratorT>) && is_primitive<InputT>::value;
 
   static constexpr CacheLoadModifier LOAD_MODIFIER = AgentReducePolicy::LOAD_MODIFIER;
 
