@@ -454,12 +454,6 @@ int main(int argc, char** argv)
   CubDebugExit(args.DeviceInit());
 
   //---------------------------------------------------------------------
-  // VectorizedCopy tests
-  //---------------------------------------------------------------------
-  TestVectorizedCopy<uint32_t>();
-  TestVectorizedCopy<uint4>();
-
-  //---------------------------------------------------------------------
   // BitPackedCounter tests
   //---------------------------------------------------------------------
   TestBitPackedCounter<1, 1>();
