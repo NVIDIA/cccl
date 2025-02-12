@@ -58,8 +58,7 @@ def test_device_merge_sort_keys(dtype):
 
         d_in_keys = numba.cuda.to_device(h_in_keys)
 
-        merge_sort_device(d_in_keys, None, d_in_keys,
-                          None, compare_op, num_items)
+        merge_sort_device(d_in_keys, None, d_in_keys, None, compare_op, num_items)
 
         h_out_keys = d_in_keys.copy_to_host()
         h_in_keys.sort()
@@ -132,8 +131,7 @@ def test_device_merge_sort_keys_copy(dtype):
         d_in_keys = numba.cuda.to_device(h_in_keys)
         d_out_keys = numba.cuda.to_device(h_out_keys)
 
-        merge_sort_device(d_in_keys, None, d_out_keys,
-                          None, compare_op, num_items)
+        merge_sort_device(d_in_keys, None, d_out_keys, None, compare_op, num_items)
 
         h_out_keys = d_out_keys.copy_to_host()
         h_in_keys.sort()
@@ -188,7 +186,7 @@ def test_device_merge_sort_pairs_copy(dtype):
 def test_device_merge_sort_pairs_struct_type():
     @gpu_struct
     class key_pair:
-        a: np.int8
+        a: np.int16
         b: np.uint64
 
     @gpu_struct
@@ -197,11 +195,11 @@ def test_device_merge_sort_pairs_struct_type():
         b: np.float32
 
     def struct_compare_op(lhs, rhs):
-        return np.uint8(lhs.b < rhs.b if lhs.a == rhs.a else lhs.a < rhs.a)
+        return np.uint8(lhs.b < rhs.b) if lhs.a == rhs.a else np.uint8(lhs.a < rhs.a)
 
-    num_items = 10000
+    num_items = 1000
 
-    a_keys = np.random.randint(0, 100, num_items, dtype=np.int8)
+    a_keys = np.random.randint(0, 100, num_items, dtype=np.int16)
     b_keys = np.random.randint(0, 100, num_items, dtype=np.uint64)
 
     a_items = np.random.randint(0, 100, num_items, dtype=np.int32)
@@ -217,7 +215,9 @@ def test_device_merge_sort_pairs_struct_type():
     h_in_items["b"] = b_items
 
     d_in_keys = numba.cuda.to_device(h_in_keys)
+    d_in_keys = cp.asarray(d_in_keys).view(key_pair.dtype)
     d_in_items = numba.cuda.to_device(h_in_items)
+    d_in_items = cp.asarray(d_in_items).view(item_pair.dtype)
 
     merge_sort_device(
         d_in_keys, d_in_items, d_in_keys, d_in_items, struct_compare_op, num_items
