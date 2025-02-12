@@ -367,10 +367,8 @@ public:
 
       // Move constructor: transfer ownership and disable the moved-from guard.
       guard(guard&& other) noexcept
-          : active(other.active)
-      {
-        other.active = false; // Prevent the moved-from object from calling section::pop()
-      }
+          : active(cuda::std::exchange(other.active, false))
+      {}
 
       // Move assignment, disable the moved-from guard
       guard& operator=(guard&& other) noexcept
