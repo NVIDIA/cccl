@@ -377,7 +377,8 @@ public:
       {
         if (this != &other)
         {
-          // Clean up current resource if needed.
+          // Clean up current resource if needed. We must call the pop method
+          // of the existing guard before overwriting it with a new guard.
           if (active)
           {
             section::pop();

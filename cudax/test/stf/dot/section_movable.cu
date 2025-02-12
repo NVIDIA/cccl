@@ -10,7 +10,7 @@
 
 /**
  * @file
- * @brief Test if we can store dot sections in an optional
+ * @brief Test if dot section guards are movable and if we can them as an optional value
  */
 
 #include <cuda/experimental/stf.cuh>
