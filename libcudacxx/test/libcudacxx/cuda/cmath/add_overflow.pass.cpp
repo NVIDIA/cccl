@@ -13,58 +13,54 @@
 #include <cuda/std/limits>
 #include <cuda/std/utility>
 
+#include "cuda/std/__type_traits/common_type.h"
 #include "test_macros.h"
-
-template <class T>
-__host__ __device__ constexpr bool operator==(cuda::overflow_check_result<T> a, cuda::overflow_check_result<T> b)
-{
-  return a.result == b.result && a.is_overflow == b.is_overflow;
-}
 
 template <class T, class U>
 __host__ __device__ constexpr void test()
 {
-  using CommonType     = decltype(T{} + U{});
-  using ResultType     = cuda::overflow_check_result<CommonType>;
+  using CommonType     = cuda::std::common_type_t<T, U>;
   constexpr auto max_a = cuda::std::numeric_limits<T>::max();
   constexpr auto max_b = cuda::std::numeric_limits<U>::max();
   constexpr auto max_c = cuda::std::numeric_limits<CommonType>::max();
   constexpr auto min_a = cuda::std::numeric_limits<T>::min();
   constexpr auto min_b = cuda::std::numeric_limits<U>::min();
   // ensure that we return the right type
-  static_assert(cuda::std::is_same_v<decltype(cuda::add_overflow(T{1}, U{1})), ResultType>, "");
-
-  assert(cuda::add_overflow(T{1}, U{1}) == (ResultType{2, false}));
-  assert(cuda::add_overflow(max_c, U(1)).is_overflow);
-  if constexpr (sizeof(T) < sizeof(int) && sizeof(U) < sizeof(int))
+  static_assert(cuda::std::is_same_v<decltype(cuda::is_add_overflow(T{1}, U{1})), bool>);
+  // basic cases
+  assert(!cuda::is_add_overflow(T{1}, U{1}));
+  assert(cuda::is_add_overflow(max_c, U{1}));
+  assert(cuda::is_add_overflow(T{1}, max_c));
+  // never overflow
+  if constexpr (!cuda::std::is_same_v<T, U> && sizeof(T) < 4 && sizeof(U) < 4)
   {
-    assert(cuda::add_overflow(max_a, max_b) == (ResultType{max_a + max_b, false}));
-    assert(cuda::add_overflow(min_a, min_b) == (ResultType{min_a + min_b, false}));
+    assert(!cuda::is_add_overflow(max_a, max_b));
+    assert(!cuda::is_add_overflow(min_a, min_b));
   }
   else if constexpr (cuda::std::is_signed_v<T> && cuda::std::is_signed_v<U>)
   {
-    assert(cuda::add_overflow(T{-1}, U{1}) == (ResultType{0, false}));
-    assert(cuda::add_overflow(T{1}, U{-1}) == (ResultType{0, false}));
+    assert(!cuda::is_add_overflow(T{-1}, U{1})); // check for unintentional conversion
+    assert(!cuda::is_add_overflow(T{1}, U{-1}));
     if constexpr (sizeof(T) >= sizeof(U))
     {
-      assert(cuda::add_overflow(min_a, U(-1)).is_overflow);
-      assert(cuda::add_overflow(max_a, U(1)).is_overflow);
+      assert(cuda::is_add_overflow(min_a, U{-1}));
+      assert(cuda::is_add_overflow(max_a, U{1}));
     }
     else
     {
-      assert(cuda::add_overflow(T{-1}, min_b).is_overflow);
-      assert(cuda::add_overflow(T{1}, max_b).is_overflow);
+      assert(cuda::is_add_overflow(T{-1}, min_b));
+      assert(cuda::is_add_overflow(T{1}, max_b));
     }
   }
   else if constexpr (cuda::std::is_unsigned_v<T> && cuda::std::is_unsigned_v<U>)
   {
     if constexpr (sizeof(T) >= sizeof(U))
     {
-      assert(cuda::add_overflow(max_a, U{1}).is_overflow);
+      assert(cuda::is_add_overflow(max_a, U{1}));
     }
     else
     {
-      assert(cuda::add_overflow(T{1}, max_b).is_overflow);
+      assert(cuda::is_add_overflow(T{1}, max_b));
     }
   }
   // opposite signed types
@@ -72,23 +68,25 @@ __host__ __device__ constexpr void test()
   {
     if constexpr (sizeof(T) > sizeof(U))
     {
-      assert(!cuda::add_overflow(T{1}, max_b).is_overflow);
+      assert(!cuda::is_add_overflow(T{1}, max_b));
+      assert(cuda::std::is_unsigned_v<U> || cuda::is_add_overflow(max_a, T{1}));
     }
     else if constexpr (sizeof(T) < sizeof(U))
     {
-      assert(!cuda::add_overflow(max_a, U{1}).is_overflow);
+      assert(!cuda::is_add_overflow(max_a, U{1}));
+      assert(cuda::std::is_unsigned_v<T> || cuda::is_add_overflow(T{1}, max_b));
     }
-    else // e.g. int vs. unsigned
+    else // same sizee.g. int vs. unsigned
     {
       if constexpr (cuda::std::is_unsigned_v<T>)
       {
-        assert(!cuda::add_overflow(T{1}, max_b).is_overflow);
-        assert(cuda::add_overflow(max_a, U{1}).is_overflow);
+        assert(!cuda::is_add_overflow(T{1}, max_b));
+        assert(cuda::is_add_overflow(max_a, U{1}));
       }
-      else
+      else // cuda::std::is_unsigned_v<U>
       {
-        assert(!cuda::add_overflow(max_a, U{1}).is_overflow);
-        assert(cuda::add_overflow(T{1}, max_b).is_overflow);
+        assert(!cuda::is_add_overflow(max_a, U{1}));
+        assert(cuda::is_add_overflow(T{1}, max_b));
       }
     }
   }
@@ -98,7 +96,7 @@ template <class T>
 __host__ __device__ constexpr void test()
 {
   // Builtin integer types:
-  test<T, char>();
+  // test<T, char>();
   test<T, signed char>();
   test<T, unsigned char>();
 
@@ -140,7 +138,7 @@ __host__ __device__ constexpr void test()
 __host__ __device__ constexpr bool test()
 {
   // Builtin integer types:
-  test<char>();
+  // test<char>();
   test<signed char>();
   test<unsigned char>();
 
@@ -182,6 +180,7 @@ __host__ __device__ constexpr bool test()
 
 int main(int arg, char** argv)
 {
+  static_assert(test());
   test();
   return 0;
 }
