@@ -108,7 +108,7 @@ public:
       // done_prereqs
       for (auto& node : done_nodes)
       {
-        auto gnp = reserved::graph_event(node, epoch);
+        auto gnp = reserved::graph_event(node, epoch, ctx_graph);
         gnp->set_symbol(ctx, "done " + get_symbol());
         /* This node is now the output dependency of the task */
         done_prereqs.add(mv(gnp));
@@ -140,7 +140,7 @@ public:
           ::std::vector<cudaGraphNode_t> out_array(ready_dependencies.size(), node);
           cuda_safe_call(cudaGraphAddDependencies(
             ctx_graph, ready_dependencies.data(), out_array.data(), ready_dependencies.size()));
-          auto gnp = reserved::graph_event(node, epoch);
+          auto gnp = reserved::graph_event(node, epoch, ctx_graph);
           gnp->set_symbol(ctx, "done " + get_symbol());
           /* This node is now the output dependency of the task */
           done_prereqs.add(mv(gnp));
@@ -154,7 +154,7 @@ public:
           cudaGraphAddDependencies(ctx_graph, ready_dependencies.data(), out_array.data(), ready_dependencies.size()));
 
         // Overall the task depends on the completion of the last node
-        auto gnp = reserved::graph_event(chained_task_nodes.back(), epoch);
+        auto gnp = reserved::graph_event(chained_task_nodes.back(), epoch, ctx_graph);
         gnp->set_symbol(ctx, "done " + get_symbol());
         done_prereqs.add(mv(gnp));
       }
@@ -176,7 +176,7 @@ public:
           cuda_safe_call(cudaGraphDestroy(childGraph));
         }
 
-        auto gnp = reserved::graph_event(n, epoch);
+        auto gnp = reserved::graph_event(n, epoch, ctx_graph);
         gnp->set_symbol(ctx, "done " + get_symbol());
         /* This node is now the output dependency of the task */
         done_prereqs.add(mv(gnp));

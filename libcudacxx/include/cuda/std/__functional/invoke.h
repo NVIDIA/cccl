@@ -490,8 +490,6 @@ struct __invoke_void_return_wrapper<_Ret, true>
   }
 };
 
-#if _CCCL_STD_VER > 2011
-
 // is_invocable
 
 template <class _Fn, class... _Args>
@@ -502,13 +500,13 @@ template <class _Ret, class _Fn, class... _Args>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_invocable_r : integral_constant<bool, __invokable_r<_Ret, _Fn, _Args...>::value>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
+#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Fn, class... _Args>
 _CCCL_INLINE_VAR constexpr bool is_invocable_v = is_invocable<_Fn, _Args...>::value;
 
 template <class _Ret, class _Fn, class... _Args>
 _CCCL_INLINE_VAR constexpr bool is_invocable_r_v = is_invocable_r<_Ret, _Fn, _Args...>::value;
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 // is_nothrow_invocable
 
@@ -550,8 +548,6 @@ invoke_r(_Fn&& __f, _Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_invocable
   return __invoke_void_return_wrapper<_Ret>::__call(
     _CUDA_VSTD::forward<_Fn>(__f), _CUDA_VSTD::forward<_Args>(__args)...);
 }
-
-#endif // _CCCL_STD_VER > 2011
 
 /// The type of intermediate accumulator (according to P2322R6)
 template <typename Invokable, typename InputT, typename InitT = InputT>

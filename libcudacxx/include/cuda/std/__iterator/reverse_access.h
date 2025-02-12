@@ -27,8 +27,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER >= 2014
-
 namespace __rbegin
 {
 struct __fn
@@ -140,8 +138,6 @@ inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto crend = __crend::__fn{};
 } // namespace __cpo
-
-#endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

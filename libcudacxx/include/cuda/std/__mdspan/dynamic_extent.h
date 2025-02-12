@@ -64,8 +64,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2011
-
 namespace __detail
 {
 
@@ -82,8 +80,6 @@ _CCCL_HOST_DEVICE constexpr auto __make_dynamic_extent_integral()
 }
 
 } // end namespace __detail
-
-#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

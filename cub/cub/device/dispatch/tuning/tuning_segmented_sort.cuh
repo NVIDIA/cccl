@@ -51,7 +51,7 @@ template <typename KeyT, typename ValueT>
 struct policy_hub
 {
   using DominantT                = ::cuda::std::_If<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
-  static constexpr int KEYS_ONLY = ::cuda::std::is_same<ValueT, NullType>::value;
+  static constexpr int KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
   struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
   {

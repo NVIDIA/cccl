@@ -19,8 +19,6 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_STD_VER > 2011
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct unexpect_t
@@ -31,7 +29,5 @@ struct unexpect_t
 _CCCL_GLOBAL_CONSTANT unexpect_t unexpect{};
 
 _LIBCUDACXX_END_NAMESPACE_STD
-
-#endif // _CCCL_STD_VER > 2011
 
 #endif // _LIBCUDACXX___EXPECTED_UNEXPECT_H

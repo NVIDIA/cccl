@@ -42,14 +42,12 @@ int main(int, char**)
       assert(p1.second == 4);
   }
   */
-#if TEST_STD_VER >= 2014
   {
     typedef cuda::std::pair<int, short> P1;
     constexpr P1 p1 = cuda::std::make_pair(3, static_cast<short>(4));
     static_assert(p1.first == 3, "");
     static_assert(p1.second == 4, "");
   }
-#endif
 
   return 0;
 }

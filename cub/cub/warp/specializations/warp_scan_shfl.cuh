@@ -90,7 +90,7 @@ struct WarpScanShfl
       /// Whether the data type is a small (32b or less) integer for which we can use a single SFHL instruction per
       /// exchange
       IS_SMALL_UNSIGNED =
-        ::cuda::std::is_integral<S>::value && ::cuda::std::is_unsigned<S>::value && (sizeof(S) <= sizeof(unsigned int)),
+        ::cuda::std::is_integral_v<S> && ::cuda::std::is_unsigned_v<S> && (sizeof(S) <= sizeof(unsigned int)),
     };
   };
 

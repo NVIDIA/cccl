@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // std::ranges::begin
 // std::ranges::cbegin
 
@@ -388,7 +386,7 @@ ASSERT_NOEXCEPT(cuda::std::ranges::begin(cuda::std::declval<int (&)[10]>()));
 ASSERT_NOEXCEPT(cuda::std::ranges::cbegin(cuda::std::declval<int (&)[10]>()));
 
 // needs c++17's guaranteed copy elision
-#if TEST_STD_VER > 2014 && !defined(TEST_COMPILER_MSVC_2019) // broken noexcept
+#if !defined(TEST_COMPILER_MSVC_2019) // broken noexcept
 _CCCL_GLOBAL_CONSTANT struct NoThrowMemberBegin
 {
   __host__ __device__ ThrowingIterator<int> begin() const noexcept; // auto(t.begin()) doesn't throw
@@ -403,7 +401,7 @@ _CCCL_GLOBAL_CONSTANT struct NoThrowADLBegin
 } ntab;
 static_assert(noexcept(cuda::std::ranges::begin(ntab)), "");
 static_assert(noexcept(cuda::std::ranges::cbegin(ntab)), "");
-#endif // TEST_STD_VER > 2014 && !TEST_COMPILER_MSVC_2019
+#endif // !TEST_COMPILER_MSVC_2019
 
 _CCCL_GLOBAL_CONSTANT struct NoThrowMemberBeginReturnsRef
 {
@@ -448,10 +446,10 @@ int main(int, char**)
   testBeginFunction();
   static_assert(testBeginFunction(), "");
 
-#if TEST_STD_VER > 2014 && !defined(TEST_COMPILER_MSVC_2019) // broken noexcept
+#if !defined(TEST_COMPILER_MSVC_2019) // broken noexcept
   unused(ntmb);
   unused(ntab);
-#endif // TEST_STD_VER > 2014 && !TEST_COMPILER_MSVC_2019
+#endif // !TEST_COMPILER_MSVC_2019
   unused(ntmbrr);
   unused(brar);
 

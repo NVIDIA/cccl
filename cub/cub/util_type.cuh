@@ -96,7 +96,7 @@ using value_t =
   typename std::iterator_traits<Iterator>::value_type;
 #  endif // !_CCCL_COMPILER(NVRTC)
 
-template <typename It, typename FallbackT, bool = ::cuda::std::is_void<::cuda::std::remove_pointer_t<It>>::value>
+template <typename It, typename FallbackT, bool = ::cuda::std::is_void_v<::cuda::std::remove_pointer_t<It>>>
 struct non_void_value_impl
 {
   using type = FallbackT;
@@ -108,8 +108,8 @@ struct non_void_value_impl<It, FallbackT, false>
   // we consider thrust::discard_iterator's value_type as `void` as well, so users can switch from
   // cub::DiscardInputIterator to thrust::discard_iterator.
   using type =
-    ::cuda::std::_If<::cuda::std::is_void<value_t<It>>::value
-                       || ::cuda::std::is_same<value_t<It>, THRUST_NS_QUALIFIER::discard_iterator<>::value_type>::value,
+    ::cuda::std::_If<::cuda::std::is_void_v<value_t<It>>
+                       || ::cuda::std::is_same_v<value_t<It>, THRUST_NS_QUALIFIER::discard_iterator<>::value_type>,
                      FallbackT,
                      value_t<It>>;
 };
@@ -1002,7 +1002,7 @@ template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTE
  * \brief Type traits
  */
 template <typename T>
-struct Traits : NumericTraits<typename ::cuda::std::remove_cv<T>::type>
+struct Traits : NumericTraits<::cuda::std::remove_cv_t<T>>
 {};
 
 namespace detail

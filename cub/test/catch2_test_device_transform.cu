@@ -538,8 +538,8 @@ struct non_trivial
     return a.data == b.data;
   }
 };
-static_assert(!::cuda::std::is_trivially_copyable<non_trivial>::value, ""); // as required by the standard
-static_assert(!thrust::is_trivially_relocatable<non_trivial>::value, ""); // CUB uses this check internally
+static_assert(!::cuda::std::is_trivially_copyable_v<non_trivial>); // as required by the standard
+static_assert(!thrust::is_trivially_relocatable_v<non_trivial>); // CUB uses this check internally
 
 // Note(bgruber): I gave up on writing a test that checks whether the copy ctor/assignment operator is actually called
 // (e.g. by tracking/counting invocations of those), since C++ allows (but not guarantees) elision of these operations.
@@ -615,6 +615,6 @@ C2H_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][device_transfo
   using It         = thrust::reverse_iterator<thrust::detail::normal_iterator<thrust::device_ptr<int>>>;
   using kernel_arg = cub::detail::transform::kernel_arg<It>;
 
-  STATIC_REQUIRE(::cuda::std::is_constructible<kernel_arg>::value);
-  STATIC_REQUIRE(::cuda::std::is_copy_constructible<kernel_arg>::value);
+  STATIC_REQUIRE(::cuda::std::is_constructible_v<kernel_arg>);
+  STATIC_REQUIRE(::cuda::std::is_copy_constructible_v<kernel_arg>);
 }

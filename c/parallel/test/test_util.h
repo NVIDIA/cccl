@@ -27,6 +27,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators_all.hpp>
 #include <cccl/c/reduce.h>
+#include <cccl/c/scan.h>
 #include <nvrtc.h>
 
 static std::string inspect_sass(const void* cubin, size_t cubin_size)
