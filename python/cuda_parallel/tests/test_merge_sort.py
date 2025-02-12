@@ -2,15 +2,41 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from typing import List
+
 import cupy as cp
 import numba.cuda
 import numba.types
 import numpy as np
 import pytest
-from conftest import random_array, type_to_problem_sizes
 
 import cuda.parallel.experimental.algorithms as algorithms
+import cuda.parallel.experimental.iterators as iterators
 from cuda.parallel.experimental.struct import gpu_struct
+
+
+def random_array(size, dtype) -> np.typing.NDArray:
+    rng = np.random.default_rng()
+    if np.isdtype(dtype, "integral"):
+        max_value = np.iinfo(dtype).max
+        return rng.integers(max_value, size=size, dtype=dtype)
+    elif np.isdtype(dtype, "real floating"):
+        return rng.random(size=size, dtype=dtype)
+    else:
+        raise ValueError(f"Unsupported dtype {dtype}")
+
+
+def type_to_problem_sizes(dtype) -> List[int]:
+    if dtype in [np.uint8, np.int8]:
+        return [2, 4, 5, 6]
+    elif dtype in [np.uint16, np.int16]:
+        return [4, 8, 14]
+    elif dtype in [np.uint32, np.int32, np.float32]:
+        return [4, 10, 20]
+    elif dtype in [np.uint64, np.int64, np.float64]:
+        return [4, 10, 20]
+    else:
+        raise ValueError("Unsupported dtype")
 
 
 def merge_sort_device(
@@ -50,7 +76,7 @@ def compare_op(lhs, rhs):
         np.float64,
     ],
 )
-def test_device_merge_sort_keys(dtype):
+def test_merge_sort_keys(dtype):
     for num_items_pow2 in type_to_problem_sizes(dtype):
         num_items = 2**num_items_pow2
 
@@ -81,7 +107,7 @@ def test_device_merge_sort_keys(dtype):
         np.float64,
     ],
 )
-def test_device_merge_sort_pairs(dtype):
+def test_merge_sort_pairs(dtype):
     for num_items_pow2 in type_to_problem_sizes(dtype):
         num_items = 2**num_items_pow2
 
@@ -121,7 +147,7 @@ def test_device_merge_sort_pairs(dtype):
         np.float64,
     ],
 )
-def test_device_merge_sort_keys_copy(dtype):
+def test_merge_sort_keys_copy(dtype):
     for num_items_pow2 in type_to_problem_sizes(dtype):
         num_items = 2**num_items_pow2
 
@@ -154,7 +180,7 @@ def test_device_merge_sort_keys_copy(dtype):
         np.float64,
     ],
 )
-def test_device_merge_sort_pairs_copy(dtype):
+def test_merge_sort_pairs_copy(dtype):
     for num_items_pow2 in type_to_problem_sizes(dtype):
         num_items = 2**num_items_pow2
 
@@ -186,7 +212,7 @@ def test_device_merge_sort_pairs_copy(dtype):
 @pytest.mark.xfail(
     reason="Creating an array of gpu_struct keys does not work currently (see https://github.com/NVIDIA/cccl/issues/3789)"
 )
-def test_device_merge_sort_pairs_struct_type():
+def test_merge_sort_pairs_struct_type():
     @gpu_struct
     class key_pair:
         a: np.int16
@@ -235,3 +261,89 @@ def test_device_merge_sort_pairs_struct_type():
 
     np.testing.assert_array_equal(h_out_keys, h_in_keys)
     np.testing.assert_array_equal(h_out_items, h_in_items)
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        np.uint8,
+        np.uint16,
+        np.uint32,
+        np.uint64,
+        np.int8,
+        np.int16,
+        np.int32,
+        np.int64,
+        np.float32,
+        np.float64,
+    ],
+)
+def test_merge_sort_keys_copy_iterator_input(dtype):
+    for num_items_pow2 in type_to_problem_sizes(dtype):
+        num_items = 2**num_items_pow2
+
+        h_in_keys = random_array(num_items, dtype)
+        h_out_keys = np.empty(num_items, dtype=dtype)
+
+        d_in_keys = numba.cuda.to_device(h_in_keys)
+        d_out_keys = numba.cuda.to_device(h_out_keys)
+
+        i_input = iterators.CacheModifiedInputIterator(d_in_keys, modifier="stream")
+
+        merge_sort_device(i_input, None, d_out_keys, None, compare_op, num_items)
+
+        h_in_keys.sort()
+        h_out_keys = d_out_keys.copy_to_host()
+
+        np.testing.assert_array_equal(h_out_keys, h_in_keys)
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        np.uint8,
+        np.uint16,
+        np.uint32,
+        np.uint64,
+        np.int8,
+        np.int16,
+        np.int32,
+        np.int64,
+        np.float32,
+        np.float64,
+    ],
+)
+def test_merge_sort_pairs_copy_iterator_input(dtype):
+    for num_items_pow2 in type_to_problem_sizes(dtype):
+        num_items = 2**num_items_pow2
+
+        h_in_keys = random_array(num_items, dtype)
+        h_in_items = random_array(num_items, np.float32)
+        h_out_keys = np.empty(num_items, dtype=dtype)
+        h_out_items = np.empty(num_items, dtype=np.float32)
+
+        d_in_keys = numba.cuda.to_device(h_in_keys)
+        d_in_items = numba.cuda.to_device(h_in_items)
+        d_out_keys = numba.cuda.to_device(h_out_keys)
+        d_out_items = numba.cuda.to_device(h_out_items)
+
+        i_input_keys = iterators.CacheModifiedInputIterator(
+            d_in_keys, modifier="stream"
+        )
+        i_input_items = iterators.CacheModifiedInputIterator(
+            d_in_items, modifier="stream"
+        )
+
+        merge_sort_device(
+            i_input_keys, i_input_items, d_out_keys, d_out_items, compare_op, num_items
+        )
+
+        h_out_keys = d_out_keys.copy_to_host()
+        h_out_items = d_out_items.copy_to_host()
+
+        argsort = np.argsort(h_in_keys, stable=True)
+        h_in_keys = np.array(h_in_keys)[argsort]
+        h_in_items = np.array(h_in_items)[argsort]
+
+        np.testing.assert_array_equal(h_out_keys, h_in_keys)
+        np.testing.assert_array_equal(h_out_items, h_in_items)
