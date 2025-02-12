@@ -65,7 +65,6 @@ _CCCL_DIAG_POP
 
 CUB_NAMESPACE_BEGIN
 
-// clang-format off
 //! @rst
 //! The ``ThreadReduce`` function computes a reduction of items assigned to a single CUDA thread.
 //!
@@ -163,9 +162,9 @@ CUB_NAMESPACE_BEGIN
 //!   Binary reduction operator
 //!
 //! @return Accumulation of type (simplified) ``decltype(reduction_op(a, b))`` see
-//! <a href="https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2322r6.html#return-the-result-of-the-initial-invocation">P2322</a>
+//! <a
+//! href="https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2322r6.html#return-the-result-of-the-initial-invocation">P2322</a>
 //!
-// clang-format on
 
 template <typename Input,
           typename ReductionOp,
