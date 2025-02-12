@@ -410,8 +410,8 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce(
                         indirect_arg_t,
                         indirect_arg_t,
                         void,
-                        reduce::dynamic_reduce_policy_t<&reduce::get_policy>,
                         ::cuda::std::__identity,
+                        reduce::dynamic_reduce_policy_t<&reduce::get_policy>,
                         reduce::reduce_kernel_source,
                         cub::detail::CudaDriverLauncherFactory>::
       Dispatch(
