@@ -121,7 +121,7 @@ if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
   add_custom_target(libcudacxx.test.lit.precompile
     DEPENDS libcudacxx.test.public_headers libcudacxx.test.internal_headers libcudacxx.test.public_headers_host_only
     COMMAND "${CMAKE_COMMAND}" -E env "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
-    "${libcudacxx_LIT}" -vv --no-progress-bar --time-tests ${libcudacxx_LIT_FLAGS}
+    "${libcudacxx_LIT}" --no-progress-bar --time-tests ${libcudacxx_LIT_FLAGS} -a
     "-Dexecutor=\"NoopExecutor()\"" "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
   )
 
@@ -135,7 +135,7 @@ set(libcudacxx_LIT_PARALLEL_LEVEL 8 CACHE STRING
 add_test(NAME libcudacxx.test.lit COMMAND
   "${CMAKE_COMMAND}" -E env
     "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
-  "${libcudacxx_LIT}" -a --no-progress-bar --time-tests ${libcudacxx_LIT_FLAGS}
+  "${libcudacxx_LIT}" --no-progress-bar --time-tests ${libcudacxx_LIT_FLAGS} -a
     -j "${libcudacxx_LIT_PARALLEL_LEVEL}" "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
 )
 
