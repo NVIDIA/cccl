@@ -738,6 +738,13 @@ class stackable_logical_data
       return impl_state->symbol;
     }
 
+    // The write-back mechanism here refers to the write-back of the data at the bottom of the stack (user visible)
+    void set_write_back(bool flag)
+    {
+      _CCCL_ASSERT(impl_state->s.size() > 0, "invalid value");
+      impl_state->s[0].set_write_back(flag);
+    }
+
     // TODO why making sctx private or why do we need to expose this at all ?
     auto& get_sctx()
     {
@@ -836,6 +843,11 @@ public:
   {
     pimpl->set_symbol(mv(symbol));
     return *this;
+  }
+
+  void set_write_back(bool flag)
+  {
+    pimpl->set_write_back(flag);
   }
 
   auto get_symbol() const

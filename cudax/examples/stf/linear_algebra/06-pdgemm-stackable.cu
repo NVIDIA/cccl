@@ -90,7 +90,7 @@ public:
         std::ignore = ld; // avoid warning #177-D: variable "ld" was declared but never referenced
         auto s      = make_slice(addr_h, std::tuple{mb, nb}, ld);
         auto tile   = ctx.logical_data(s);
-        //        tile.set_write_back(false);
+        tile.set_write_back(false);
 
         tile.set_symbol(std::string(symbol) + "_" + std::to_string(rowb) + "_" + std::to_string(colb));
 
