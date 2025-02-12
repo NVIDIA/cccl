@@ -390,7 +390,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THRE
   {
     BLOCK_THREADS    = ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS,
     ITEMS_PER_THREAD = ChainedPolicyT::ActivePolicy::SingleTilePolicy::ITEMS_PER_THREAD,
-    KEYS_ONLY        = ::cuda::std::is_same<ValueT, NullType>::value,
+    KEYS_ONLY        = ::cuda::std::is_same_v<ValueT, NullType>,
   };
 
   // BlockRadixSort type
@@ -577,7 +577,7 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
     RADIX_BITS       = SegmentedPolicyT::RADIX_BITS,
     TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD,
     RADIX_DIGITS     = 1 << RADIX_BITS,
-    KEYS_ONLY        = ::cuda::std::is_same<ValueT, NullType>::value,
+    KEYS_ONLY        = ::cuda::std::is_same_v<ValueT, NullType>,
   };
 
   // Upsweep type
@@ -872,8 +872,8 @@ template <SortOrder Order,
           typename KeyT,
           typename ValueT,
           typename OffsetT,
-          typename PolicyHub   = detail::radix::policy_hub<KeyT, ValueT, OffsetT>,
-          typename DecomposerT = detail::identity_decomposer_t>
+          typename DecomposerT = detail::identity_decomposer_t,
+          typename PolicyHub   = detail::radix::policy_hub<KeyT, ValueT, OffsetT>>
 struct DispatchRadixSort
 {
   //------------------------------------------------------------------------------
@@ -881,7 +881,7 @@ struct DispatchRadixSort
   //------------------------------------------------------------------------------
 
   // Whether this is a keys-only (or key-value) sort
-  static constexpr bool KEYS_ONLY = ::cuda::std::is_same<ValueT, NullType>::value;
+  static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
   using max_policy_t = typename PolicyHub::MaxPolicy;
 
@@ -1909,7 +1909,7 @@ struct DispatchSegmentedRadixSort
   //------------------------------------------------------------------------------
 
   // Whether this is a keys-only (or key-value) sort
-  static constexpr bool KEYS_ONLY = ::cuda::std::is_same<ValueT, NullType>::value;
+  static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
   using max_policy_t = typename PolicyHub::MaxPolicy;
 

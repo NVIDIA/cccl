@@ -605,6 +605,8 @@ protected:
       return size_t(-1);
     }
 
+    virtual ::std::string to_string() const = 0;
+
     /**
      * @brief Indicate if the backend needs to keep track of dangling events, or if these will be automatically
      * synchronized
@@ -911,6 +913,11 @@ public:
   size_t epoch() const
   {
     return pimpl->epoch();
+  }
+
+  ::std::string to_string() const
+  {
+    return pimpl->to_string();
   }
 
   bool track_dangling_events() const

@@ -11,8 +11,6 @@ from typing import List
 
 from cuda.cccl import get_include_paths  # type: ignore[import-not-found]
 
-from . import _cccl as cccl
-
 
 @lru_cache()
 def get_bindings() -> ctypes.CDLL:
@@ -32,19 +30,6 @@ def get_bindings() -> ctypes.CDLL:
         else:
             raise RuntimeError(f"Unable to locate {so_path}")
     _bindings = ctypes.CDLL(str(cccl_c_path))
-    _bindings.cccl_device_reduce.restype = ctypes.c_int
-    _bindings.cccl_device_reduce.argtypes = [
-        cccl.DeviceReduceBuildResult,
-        ctypes.c_void_p,
-        ctypes.POINTER(ctypes.c_ulonglong),
-        cccl.Iterator,
-        cccl.Iterator,
-        ctypes.c_ulonglong,
-        cccl.Op,
-        cccl.Value,
-        ctypes.c_void_p,
-    ]
-    _bindings.cccl_device_reduce_cleanup.restype = ctypes.c_int
     return _bindings
 
 

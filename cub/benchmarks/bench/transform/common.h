@@ -106,10 +106,10 @@ struct narrowing_error : std::runtime_error
 
 // from C++ GSL
 // implementation insipired by: https://github.com/microsoft/GSL/blob/main/include/gsl/narrow
-template <typename DstT, typename SrcT, ::cuda::std::enable_if_t<::cuda::std::is_arithmetic<SrcT>::value, int> = 0>
+template <typename DstT, typename SrcT, ::cuda::std::enable_if_t<::cuda::std::is_arithmetic_v<SrcT>, int> = 0>
 constexpr DstT narrow(SrcT value)
 {
-  constexpr bool is_different_signedness = ::cuda::std::is_signed<SrcT>::value != ::cuda::std::is_signed<DstT>::value;
+  constexpr bool is_different_signedness = ::cuda::std::is_signed_v<SrcT> != ::cuda::std::is_signed_v<DstT>;
   const auto converted                   = static_cast<DstT>(value);
   if (static_cast<SrcT>(converted) != value || (is_different_signedness && ((converted < DstT{}) != (value < SrcT{}))))
   {

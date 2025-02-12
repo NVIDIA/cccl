@@ -523,7 +523,7 @@ void generate_unsorted_derived_inputs(
 {
   C2H_TIME_SCOPE("GenerateUnsortedDerivedInputs");
 
-  static constexpr bool sort_pairs = !::cuda::std::is_same<ValueT, cub::NullType>::value;
+  static constexpr bool sort_pairs = !::cuda::std::is_same_v<ValueT, cub::NullType>;
 
   const int num_segments = static_cast<int>(d_offsets.size() - 1);
   const int* offsets     = thrust::raw_pointer_cast(d_offsets.data());
@@ -608,7 +608,7 @@ void host_sort_random_inputs(
 {
   C2H_TIME_SCOPE("host_sort_random_inputs");
 
-  constexpr bool sort_pairs = !::cuda::std::is_same<ValueT, cub::NullType>::value;
+  constexpr bool sort_pairs = !::cuda::std::is_same_v<ValueT, cub::NullType>;
 
   (void) h_unsorted_values; // Unused for key-only sort.
 
@@ -806,7 +806,7 @@ CUB_RUNTIME_FUNCTION cudaError_t call_cub_segmented_sort_api(
   cudaStream_t stream = 0)
 {
   using KeyT                = unwrap_value_t<WrappedKeyT>;
-  constexpr bool sort_pairs = !::cuda::std::is_same<ValueT, cub::NullType>::value;
+  constexpr bool sort_pairs = !::cuda::std::is_same_v<ValueT, cub::NullType>;
 
   // Unused for key-only sort.
   (void) values_selector;
@@ -1280,7 +1280,7 @@ template <typename KeyT, typename ValueT = cub::NullType>
 void test_segments_derived(const c2h::device_vector<int>& d_offsets_vec)
 {
   C2H_TIME_SECTION_INIT();
-  constexpr bool sort_pairs = !::cuda::std::is_same<ValueT, cub::NullType>::value;
+  constexpr bool sort_pairs = !::cuda::std::is_same_v<ValueT, cub::NullType>;
 
   const int num_items    = d_offsets_vec.back();
   const int num_segments = static_cast<int>(d_offsets_vec.size() - 1);
@@ -1370,7 +1370,7 @@ void test_segments_random(
   const int* d_begin_offsets,
   const int* d_end_offsets)
 {
-  constexpr bool sort_pairs = !::cuda::std::is_same<ValueT, cub::NullType>::value;
+  constexpr bool sort_pairs = !::cuda::std::is_same_v<ValueT, cub::NullType>;
 
   CAPTURE(c2h::type_name<KeyT>(), //
           c2h::type_name<ValueT>(),
