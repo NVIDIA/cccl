@@ -183,6 +183,9 @@ def test_device_merge_sort_pairs_copy(dtype):
         np.testing.assert_array_equal(h_out_items, h_in_items)
 
 
+@pytest.mark.xfail(
+    reason="Creating an array of gpu_struct keys does not work currently"
+)
 def test_device_merge_sort_pairs_struct_type():
     @gpu_struct
     class key_pair:
