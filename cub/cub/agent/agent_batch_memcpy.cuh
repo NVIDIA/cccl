@@ -243,7 +243,7 @@ GetAlignedPtrs(const void* in_begin, void* out_begin, ByteOffsetT num_bytes)
  */
 template <int LOGICAL_WARP_SIZE, typename VectorT, typename ByteOffsetT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
-VectorizedCopy(int32_t thread_rank, void* dest, ByteOffsetT num_bytes, const void* src)
+vectorized_copy(int32_t thread_rank, void* dest, ByteOffsetT num_bytes, const void* src)
 {
   char* out_ptr      = reinterpret_cast<char*>(dest);
   const char* in_ptr = reinterpret_cast<const char*>(src);
@@ -304,7 +304,7 @@ template <bool IsMemcpy,
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 copy_items(InputBufferT input_buffer, OutputBufferT output_buffer, OffsetT num_bytes, OffsetT offset = 0)
 {
-  VectorizedCopy<LOGICAL_WARP_SIZE, uint4>(
+  vectorized_copy<LOGICAL_WARP_SIZE, uint4>(
     threadIdx.x % LOGICAL_WARP_SIZE,
     &reinterpret_cast<char*>(output_buffer)[offset],
     num_bytes,
