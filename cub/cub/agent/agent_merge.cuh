@@ -172,7 +172,7 @@ struct agent_t
     }
 
     // if items are provided, merge them
-    static constexpr bool have_items = !::cuda::std::is_same<item_type, NullType>::value;
+    static constexpr bool have_items = !::cuda::std::is_same_v<item_type, NullType>;
     _CCCL_IF_CONSTEXPR (have_items)
     {
       item_type items_loc[items_per_thread];

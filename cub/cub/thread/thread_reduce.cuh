@@ -464,7 +464,7 @@ _CCCL_NODISCARD _CCCL_DEVICE constexpr bool enable_promotion()
   using cub::detail::is_one_of;
   using ::cuda::std::is_same;
   using T = ::cuda::std::remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>;
-  return ::cuda::std::is_integral<T>::value && sizeof(T) <= 2
+  return ::cuda::std::is_integral_v<T> && sizeof(T) <= 2
       && is_one_of<ReductionOp,
                    ::cuda::std::plus<>,
                    ::cuda::std::plus<T>,
