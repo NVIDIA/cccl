@@ -184,7 +184,7 @@ def test_device_merge_sort_pairs_copy(dtype):
 
 
 @pytest.mark.xfail(
-    reason="Creating an array of gpu_struct keys does not work currently"
+    reason="Creating an array of gpu_struct keys does not work currently (see https://github.com/NVIDIA/cccl/issues/3789)"
 )
 def test_device_merge_sort_pairs_struct_type():
     @gpu_struct
