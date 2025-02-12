@@ -352,30 +352,41 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void write_item(OutputIt buffer_dst, OffsetT offs
   *(buffer_dst + offset) = value;
 }
 
+enum class prefer_power_of_two_bits_option
+{
+  no,
+  yes
+};
+
 /**
  * @brief A helper class that allows threads to maintain multiple counters, where the counter that
  * shall be incremented can be addressed dynamically without incurring register spillage.
  *
- * @tparam NUM_ITEMS The number of counters to allocate
- * @tparam MAX_ITEM_VALUE The maximum count that must be supported.
- * @tparam PREFER_POW2_BITS Whether the number of bits to dedicate to each counter should be a
+ * @tparam NumItems The number of counters to allocate
+ * @tparam MaxItemValue The maximum count that must be supported.
+ * @tparam PreferPowerOfTwoBits Whether the number of bits to dedicate to each counter should be a
  * power-of-two. If enabled, this allows replacing integer multiplication with a bit-shift in
  * exchange for higher register pressure.
  * @tparam BackingUnitT The data type that is used to provide the bits of all the counters that
  * shall be allocated.
  */
-template <uint32_t NUM_ITEMS, uint32_t MAX_ITEM_VALUE, bool PREFER_POW2_BITS, typename BackingUnitT = uint32_t>
-class BitPackedCounter
+template <uint32_t NumItems,
+          uint32_t MaxItemValue,
+          prefer_power_of_two_bits_option PreferPowerOfTwoBits,
+          typename BackingUnitT = uint32_t>
+class bit_packed_counter
 {
 private:
-  /// The minimum number of bits required to represent all values from [0, MAX_ITEM_VALUE]
+  /// The minimum number of bits required to represent all values from [0, MaxItemValue]
   static constexpr uint32_t MIN_BITS_PER_ITEM =
-    (MAX_ITEM_VALUE == 0U) ? 1U : cub::Log2<static_cast<int32_t>(MAX_ITEM_VALUE + 1U)>::VALUE;
+    (MaxItemValue == 0U) ? 1U : cub::Log2<static_cast<int32_t>(MaxItemValue + 1U)>::VALUE;
 
   /// The number of bits allocated for each item. For pre-Volta, we prefer a power-of-2 here to
   /// have the compiler replace costly integer multiplication with bit-shifting.
   static constexpr uint32_t BITS_PER_ITEM =
-    PREFER_POW2_BITS ? (0x01ULL << (cub::Log2<static_cast<int32_t>(MIN_BITS_PER_ITEM)>::VALUE)) : MIN_BITS_PER_ITEM;
+    (PreferPowerOfTwoBits == prefer_power_of_two_bits_option::yes)
+      ? (0x01ULL << (cub::Log2<static_cast<int32_t>(MIN_BITS_PER_ITEM)>::VALUE))
+      : MIN_BITS_PER_ITEM;
 
   /// The number of bits that each backing data type can store
   static constexpr uint32_t NUM_BITS_PER_UNIT = sizeof(BackingUnitT) * 8;
@@ -387,7 +398,7 @@ private:
   static constexpr uint32_t USED_BITS_PER_UNIT = ITEMS_PER_UNIT * BITS_PER_ITEM;
 
   /// The number of backing data types required to store the given number of items
-  static constexpr uint32_t NUM_TOTAL_UNITS = CUB_QUOTIENT_CEILING(NUM_ITEMS, ITEMS_PER_UNIT);
+  static constexpr uint32_t NUM_TOTAL_UNITS = CUB_QUOTIENT_CEILING(NumItems, ITEMS_PER_UNIT);
 
   /// This is the net number of bit-storage provided by each unit (remainder bits are unused)
   static constexpr uint32_t UNIT_MASK =
@@ -401,7 +412,7 @@ private:
   //------------------------------------------------------------------------------
 
 public:
-  _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t Get(uint32_t index) const
+  _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t get(uint32_t index) const
   {
     const uint32_t target_offset = index * BITS_PER_ITEM;
     uint32_t val                 = 0;
@@ -420,7 +431,7 @@ public:
     return val;
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Add(uint32_t index, uint32_t value)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void add(uint32_t index, uint32_t value)
   {
     const uint32_t target_offset = index * BITS_PER_ITEM;
 
@@ -437,9 +448,9 @@ public:
     }
   }
 
-  _CCCL_DEVICE BitPackedCounter operator+(const BitPackedCounter& rhs) const
+  _CCCL_DEVICE bit_packed_counter operator+(const bit_packed_counter& rhs) const
   {
-    BitPackedCounter result;
+    bit_packed_counter result;
 #pragma unroll
     for (uint32_t i = 0; i < NUM_TOTAL_UNITS; ++i)
     {
@@ -478,7 +489,7 @@ struct AgentBatchMemcpyPolicy
   /// from one or more
   // source-buffers and writing them out to the respective destination-buffers.
   static constexpr uint32_t TLEV_BYTES_PER_THREAD = _TLEV_BYTES_PER_THREAD;
-  /// Whether the BitPackedCounter should prefer allocating a power-of-2 number of bits per
+  /// Whether the bit_packed_counter should prefer allocating a power-of-2 number of bits per
   /// counter
   static constexpr uint32_t PREFER_POW2_BITS = _PREFER_POW2_BITS;
   /// BLEV tile size granularity
@@ -514,7 +525,10 @@ private:
   static constexpr uint32_t BLOCK_THREADS         = AgentMemcpySmallBuffersPolicyT::BLOCK_THREADS;
   static constexpr uint32_t BUFFERS_PER_THREAD    = AgentMemcpySmallBuffersPolicyT::BUFFERS_PER_THREAD;
   static constexpr uint32_t TLEV_BYTES_PER_THREAD = AgentMemcpySmallBuffersPolicyT::TLEV_BYTES_PER_THREAD;
-  static constexpr bool PREFER_POW2_BITS          = AgentMemcpySmallBuffersPolicyT::PREFER_POW2_BITS;
+  static constexpr prefer_power_of_two_bits_option PREFER_POW2_BITS =
+    (AgentMemcpySmallBuffersPolicyT::PREFER_POW2_BITS)
+      ? prefer_power_of_two_bits_option::yes
+      : prefer_power_of_two_bits_option::no;
   static constexpr uint32_t BLOCK_LEVEL_TILE_SIZE = AgentMemcpySmallBuffersPolicyT::BLOCK_LEVEL_TILE_SIZE;
 
   // Derived configs
@@ -601,7 +615,7 @@ private:
   //-> (2) WLEV (warp-level collaboration), requiring a full warp to collaborate on a buffer
   //-> (3) BLEV (block-level collaboration), requiring one or multiple thread blocks to collaborate
   // on a buffer */
-  using VectorizedSizeClassCounterT = BitPackedCounter<NUM_SIZE_CLASSES, BUFFERS_PER_BLOCK, PREFER_POW2_BITS>;
+  using VectorizedSizeClassCounterT = bit_packed_counter<NUM_SIZE_CLASSES, BUFFERS_PER_BLOCK, PREFER_POW2_BITS>;
 
   // Block-level scan used to compute the write offsets
   using BlockSizeClassScanT = cub::BlockScan<VectorizedSizeClassCounterT, static_cast<int32_t>(BLOCK_THREADS)>;
@@ -734,7 +748,7 @@ private:
       buffer_size_class += buffer_sizes[i] > BLOCK_LEVEL_THRESHOLD ? 1U : 0U;
 
       // Increment the count of the respective size class
-      vectorized_counters.Add(buffer_size_class, increment);
+      vectorized_counters.add(buffer_size_class, increment);
     }
     return vectorized_counters;
   }
@@ -761,9 +775,9 @@ private:
         uint32_t buffer_size_class = 0;
         buffer_size_class += buffer_sizes[i] > WARP_LEVEL_THRESHOLD ? 1U : 0U;
         buffer_size_class += buffer_sizes[i] > BLOCK_LEVEL_THRESHOLD ? 1U : 0U;
-        const uint32_t write_offset         = vectorized_offsets.Get(buffer_size_class);
+        const uint32_t write_offset         = vectorized_offsets.get(buffer_size_class);
         buffers_by_size_class[write_offset] = {static_cast<TLevBufferSizeT>(buffer_sizes[i]), buffer_id};
-        vectorized_offsets.Add(buffer_size_class, 1U);
+        vectorized_offsets.add(buffer_size_class, 1U);
       }
       buffer_id += BUFFER_STRIDE;
     }
@@ -1029,8 +1043,8 @@ public:
     uint32_t buffer_count = 0U;
     for (uint32_t i = 0; i < NUM_SIZE_CLASSES; i++)
     {
-      size_class_histogram.Add(i, buffer_count);
-      buffer_count += size_class_agg.Get(i);
+      size_class_histogram.add(i, buffer_count);
+      buffer_count += size_class_agg.get(i);
     }
 
     // Signal the number of BLEV buffers we're planning to write out
@@ -1039,7 +1053,7 @@ public:
     {
       if (threadIdx.x == 0)
       {
-        blev_buffer_scan_state.SetInclusive(tile_id, size_class_agg.Get(BLEV_SIZE_CLASS));
+        blev_buffer_scan_state.SetInclusive(tile_id, size_class_agg.get(BLEV_SIZE_CLASS));
       }
       buffer_exclusive_prefix = 0;
     }
@@ -1051,7 +1065,7 @@ public:
       // Signal our partial prefix and wait for the inclusive prefix of previous tiles
       if (threadIdx.x < CUB_PTX_WARP_THREADS)
       {
-        buffer_exclusive_prefix = blev_buffer_prefix_op(size_class_agg.Get(BLEV_SIZE_CLASS));
+        buffer_exclusive_prefix = blev_buffer_prefix_op(size_class_agg.get(BLEV_SIZE_CLASS));
       }
     }
     if (threadIdx.x == 0)
@@ -1079,11 +1093,11 @@ public:
     // Copy block-level buffers
     EnqueueBLEVBuffers(
       &temp_storage.staged
-         .buffers_by_size_class[size_class_agg.Get(TLEV_SIZE_CLASS) + size_class_agg.Get(WLEV_SIZE_CLASS)],
+         .buffers_by_size_class[size_class_agg.get(TLEV_SIZE_CLASS) + size_class_agg.get(WLEV_SIZE_CLASS)],
       tile_buffer_srcs,
       tile_buffer_dsts,
       tile_buffer_sizes,
-      size_class_agg.Get(BLEV_SIZE_CLASS),
+      size_class_agg.get(BLEV_SIZE_CLASS),
       temp_storage.blev_buffer_offset,
       tile_id);
 
@@ -1092,14 +1106,14 @@ public:
 
     // Copy warp-level buffers
     BatchMemcpyWLEVBuffers(
-      &temp_storage.staged.buffers_by_size_class[size_class_agg.Get(TLEV_SIZE_CLASS)],
+      &temp_storage.staged.buffers_by_size_class[size_class_agg.get(TLEV_SIZE_CLASS)],
       tile_buffer_srcs,
       tile_buffer_dsts,
       tile_buffer_sizes,
-      size_class_agg.Get(WLEV_SIZE_CLASS));
+      size_class_agg.get(WLEV_SIZE_CLASS));
 
     // Perform batch memcpy for all the buffers that require thread-level collaboration
-    uint32_t num_tlev_buffers = size_class_agg.Get(TLEV_SIZE_CLASS);
+    uint32_t num_tlev_buffers = size_class_agg.get(TLEV_SIZE_CLASS);
     BatchMemcpyTLEVBuffers(
       temp_storage.staged.buffers_by_size_class, tile_buffer_srcs, tile_buffer_dsts, num_tlev_buffers);
   }
