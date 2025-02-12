@@ -87,8 +87,6 @@ inline namespace __cpo
 _CCCL_GLOBAL_CONSTANT auto end = __end::__fn{};
 } // namespace __cpo
 
-#if _CCCL_STD_VER >= 2014
-
 namespace __cbegin
 {
 struct __fn
@@ -124,8 +122,6 @@ inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto cend = __cend::__fn{};
 } // namespace __cpo
-
-#endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

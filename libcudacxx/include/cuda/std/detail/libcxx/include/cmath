@@ -468,7 +468,7 @@ using ::tgammal;
 
 #endif // _CCCL_COMPILER(NVRTC)
 
-#if _CCCL_STD_VER > 2014 && !defined(__cuda_std__)
+#ifndef __cuda_std__
 _LIBCUDACXX_HIDE_FROM_ABI float hypot(float x, float y, float z)
 {
   return _CUDA_VSTD::sqrt(x * x + y * y + z * z);
@@ -496,7 +496,7 @@ hypot(_A1 __lcpp_x, _A2 __lcpp_y, _A3 __lcpp_z) noexcept
     "");
   return _CUDA_VSTD::hypot((__result_type) __lcpp_x, (__result_type) __lcpp_y, (__result_type) __lcpp_z);
 }
-#endif
+#endif // !__cuda_std__
 
 #ifndef _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
 #  define _CCCL_CONSTEXPR_CXX14_COMPLEX _CCCL_CONSTEXPR_CXX14

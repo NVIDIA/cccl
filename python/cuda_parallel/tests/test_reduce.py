@@ -1,4 +1,4 @@
-# Copyright (c) 2024, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
@@ -45,9 +45,9 @@ def test_device_reduce(dtype):
         num_items = 2**num_items_pow2
         h_input = random_int(num_items, dtype)
         d_input = numba.cuda.to_device(h_input)
-        temp_storage_size = reduce_into(None, d_input, d_output, None, h_init)
+        temp_storage_size = reduce_into(None, d_input, d_output, d_input.size, h_init)
         d_temp_storage = numba.cuda.device_array(temp_storage_size, dtype=np.uint8)
-        reduce_into(d_temp_storage, d_input, d_output, None, h_init)
+        reduce_into(d_temp_storage, d_input, d_output, d_input.size, h_init)
         h_output = d_output.copy_to_host()
         assert h_output[0] == sum(h_input) + init_value
 
@@ -63,38 +63,13 @@ def test_complex_device_reduce():
     for num_items in [42, 420000]:
         h_input = np.random.random(num_items) + 1j * np.random.random(num_items)
         d_input = numba.cuda.to_device(h_input)
-        temp_storage_bytes = reduce_into(None, d_input, d_output, None, h_init)
+        temp_storage_bytes = reduce_into(None, d_input, d_output, d_input.size, h_init)
         d_temp_storage = numba.cuda.device_array(temp_storage_bytes, np.uint8)
-        reduce_into(d_temp_storage, d_input, d_output, None, h_init)
+        reduce_into(d_temp_storage, d_input, d_output, d_input.size, h_init)
 
         result = d_output.copy_to_host()[0]
         expected = np.sum(h_input, initial=h_init[0])
         assert result == pytest.approx(expected)
-
-
-def test_device_reduce_dtype_mismatch():
-    def min_op(a, b):
-        return a if a < b else b
-
-    dtypes = [np.int32, np.int64]
-    h_inits = [np.array([], dt) for dt in dtypes]
-    h_inputs = [np.array([], dt) for dt in dtypes]
-    d_outputs = [numba.cuda.device_array(1, dt) for dt in dtypes]
-    d_inputs = [numba.cuda.to_device(h_inp) for h_inp in h_inputs]
-
-    reduce_into = algorithms.reduce_into(d_inputs[0], d_outputs[0], min_op, h_inits[0])
-
-    for ix in range(3):
-        with pytest.raises(
-            TypeError, match=r"^dtype mismatch: __init__=int32, __call__=int64$"
-        ):
-            reduce_into(
-                None,
-                d_inputs[int(ix == 0)],
-                d_outputs[int(ix == 1)],
-                None,
-                h_inits[int(ix == 2)],
-            )
 
 
 def _test_device_sum_with_iterator(
@@ -552,27 +527,18 @@ def test_reduce_non_contiguous():
         _ = algorithms.reduce_into(d_in, d_out, binary_op, h_init)
 
 
-def test_reduce_with_stream():
-    # Simple cupy stream wrapper that implements the __cuda_stream__ protocol for the purposes of this test
-    class Stream:
-        def __init__(self, cp_stream):
-            self.cp_stream = cp_stream
-
-        def __cuda_stream__(self):
-            return (0, self.cp_stream.ptr)
-
+def test_reduce_with_stream(cuda_stream):
     def add_op(x, y):
         return x + y
 
     h_init = np.asarray([0], dtype=np.int32)
     h_in = random_int(5, np.int32)
 
-    stream = cp.cuda.Stream()
-    with stream:
+    cp_stream = cp.cuda.ExternalStream(cuda_stream.ptr)
+    with cp_stream:
         d_in = cp.asarray(h_in)
         d_out = cp.empty(1, dtype=np.int32)
 
-    stream_wrapper = Stream(stream)
     reduce_into = algorithms.reduce_into(
         d_in=d_in, d_out=d_out, op=add_op, h_init=h_init
     )
@@ -582,13 +548,13 @@ def test_reduce_with_stream():
         d_out=d_out,
         num_items=d_in.size,
         h_init=h_init,
-        stream=stream_wrapper,
+        stream=cuda_stream,
     )
-    with stream:
+    with cp_stream:
         d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
 
-    reduce_into(d_temp_storage, d_in, d_out, d_in.size, h_init, stream=stream_wrapper)
-    with stream:
+    reduce_into(d_temp_storage, d_in, d_out, d_in.size, h_init, stream=cuda_stream)
+    with cp_stream:
         cp.testing.assert_allclose(d_in.sum().get(), d_out.get())
 
 

@@ -446,8 +446,6 @@ char_traits<wchar_t>::compare(const char_type* __s1, const char_type* __s2, size
   }
 #  if _CCCL_HAS_FEATURE(cxx_constexpr_string_builtins)
   return __builtin_wmemcmp(__s1, __s2, __n);
-#  elif _CCCL_STD_VER <= 2014
-  return wmemcmp(__s1, __s2, __n);
 #  else
   for (; __n; --__n, ++__s1, ++__s2)
   {
@@ -484,8 +482,6 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 size_t char_traits<wchar_t>::len
 {
 #  if _CCCL_HAS_FEATURE(cxx_constexpr_string_builtins)
   return __builtin_wcslen(__s);
-#  elif _CCCL_STD_VER <= 2014
-  return wcslen(__s);
 #  else
   size_t __len = 0;
   for (; !eq(*__s, char_type(0)); ++__s)

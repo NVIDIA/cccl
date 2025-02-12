@@ -111,7 +111,7 @@ extern "C" CCCL_C_API CUresult cccl_device_for_build(
         .cleanup_program()
         .add_link({op.ltoir, op.ltoir_size});
 
-    nvrtc_cubin result{};
+    nvrtc_link_result result{};
 
     if (cccl_iterator_kind_t::iterator == d_data.type)
     {
@@ -124,11 +124,11 @@ extern "C" CCCL_C_API CUresult cccl_device_for_build(
       result = cl.finalize_program(num_lto_args, lopts);
     }
 
-    cuLibraryLoadData(&build->library, result.cubin.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+    cuLibraryLoadData(&build->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
     check(cuLibraryGetKernel(&build->static_kernel, build->library, lowered_name.c_str()));
 
     build->cc         = cc;
-    build->cubin      = (void*) result.cubin.release();
+    build->cubin      = (void*) result.data.release();
     build->cubin_size = result.size;
   }
   catch (...)

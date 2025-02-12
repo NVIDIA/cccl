@@ -5,3 +5,4 @@
 
 from .merge_sort import merge_sort as merge_sort
 from .reduce import reduce_into as reduce_into
+from .scan import scan as scan

@@ -17,10 +17,6 @@
 #include "test_macros.h"
 #include "type_id.h"
 
-#if TEST_STD_VER <= 2011
-#  error This file requires C++14
-#endif
-
 // FIXME: Currently the variant<T&> tests are disabled using this macro.
 #define TEST_VARIANT_HAS_NO_REFERENCES
 #ifdef _LIBCUDACXX_ENABLE_NARROWING_CONVERSIONS_IN_VARIANT

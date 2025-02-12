@@ -106,6 +106,21 @@ class DeviceReduceBuildResult(ctypes.Structure):
     ]
 
 
+# MUST match `cccl_device_scan_build_result_t` in c/include/cccl/c/scan.h
+class DeviceScanBuildResult(ctypes.Structure):
+    _fields_ = [
+        ("cc", ctypes.c_int),
+        ("cubin", ctypes.c_void_p),
+        ("cubin_size", ctypes.c_size_t),
+        ("library", ctypes.c_void_p),
+        ("accumulator_type", TypeInfo),
+        ("init_kernel", ctypes.c_void_p),
+        ("scan_kernel", ctypes.c_void_p),
+        ("description_bytes_per_tile", ctypes.c_size_t),
+        ("payload_bytes_per_tile", ctypes.c_size_t),
+    ]
+
+
 # MUST match `cccl_value_t` in c/include/cccl/c/types.h
 class Value(ctypes.Structure):
     _fields_ = [("type", TypeInfo), ("state", ctypes.c_void_p)]

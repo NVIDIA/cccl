@@ -995,7 +995,6 @@ public:
   }
 };
 
-#if _CCCL_STD_VER > 2011
 template <class _ToDuration, class _Rep, class _Period>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 enable_if_t<__is_duration<_ToDuration>::value, _ToDuration>
 floor(const duration<_Rep, _Period>& __d)
@@ -1038,7 +1037,6 @@ round(const duration<_Rep, _Period>& __d)
   }
   return __lower.count() & 1 ? __upper : __lower;
 }
-#endif // _CCCL_STD_VER > 2011
 
 // duration
 
@@ -1197,12 +1195,12 @@ using milliseconds = duration<long long, milli>;
 using seconds      = duration<long long>;
 using minutes      = duration<long, ratio<60>>;
 using hours        = duration<long, ratio<3600>>;
-#if _CCCL_STD_VER > 2011
+
 using days   = duration<int, ratio_multiply<ratio<24>, hours::period>>;
 using weeks  = duration<int, ratio_multiply<ratio<7>, days::period>>;
 using years  = duration<int, ratio_multiply<ratio<146097, 400>, days::period>>;
 using months = duration<int, ratio_divide<years::period, ratio<12>>>;
-#endif // _CCCL_STD_VER > 2011
+
 // Duration ==
 
 template <class _LhsDuration, class _RhsDuration>
@@ -1463,7 +1461,6 @@ time_point_cast(const time_point<_Clock, _Duration>& __t)
   return time_point<_Clock, _ToDuration>(_CUDA_VSTD::chrono::duration_cast<_ToDuration>(__t.time_since_epoch()));
 }
 
-#if _CCCL_STD_VER > 2011
 template <class _ToDuration, class _Clock, class _Duration>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__is_duration<_ToDuration>::value, time_point<_Clock, _ToDuration>>
 floor(const time_point<_Clock, _Duration>& __t)
@@ -1491,7 +1488,6 @@ abs(duration<_Rep, _Period> __d)
 {
   return __d >= __d.zero() ? +__d : -__d;
 }
-#endif // _CCCL_STD_VER > 2011
 
 // time_point ==
 
@@ -1622,8 +1618,6 @@ using high_resolution_clock = steady_clock;
 #else
 using high_resolution_clock = system_clock;
 #endif
-
-#if _CCCL_STD_VER > 2011
 
 // [time.clock.file], type file_clock
 using file_clock = _CUDA_VSTD_FS::_FilesystemClock;
@@ -3528,17 +3522,16 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr hours make24(const hours& __h, bool __is_pm)
     return __h == hours(12) ? hours(0) : __h;
   }
 }
-#endif // _CCCL_STD_VER > 2011
+
 } // namespace chrono
-#if _CCCL_STD_VER > 2011
 
 // GCC 5 and 6 warn (and then error) on us using the standard reserved UDL names,
 // but have no way of disabling that. Use the system_header pragma on those GCC versions
 // for the remainder of this file, even if it has been requested to disable the pragma
 // earlier.
-#  if _CCCL_COMPILER(GCC, >=, 5) && _CCCL_COMPILER(GCC, <, 7)
-#    pragma GCC system_header
-#  endif
+#if _CCCL_COMPILER(GCC, >=, 5) && _CCCL_COMPILER(GCC, <, 7)
+#  pragma GCC system_header
+#endif
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wliteral-suffix")
@@ -3615,7 +3608,7 @@ operator""ns(long double __ns)
   return chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, nano>(__ns);
 }
 
-#  if _CCCL_STD_VER > 2017 && !defined(_LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS)
+#if _CCCL_STD_VER > 2017 && !defined(_LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS)
 _LIBCUDACXX_HIDE_FROM_ABI constexpr chrono::day operator""d(unsigned long long __d) noexcept
 {
   return chrono::day(static_cast<unsigned>(__d));
@@ -3625,7 +3618,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr chrono::year operator""y(unsigned long long 
 {
   return chrono::year(static_cast<int>(__y));
 }
-#  endif //_CCCL_STD_VER > 2017 && !defined(_LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS)
+#endif //_CCCL_STD_VER > 2017 && !defined(_LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS)
 } // namespace chrono_literals
 } // namespace literals
 
@@ -3635,8 +3628,6 @@ namespace chrono
 { // hoist the literals into namespace std::chrono
 using namespace literals::chrono_literals;
 }
-
-#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
