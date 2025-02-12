@@ -73,7 +73,7 @@ private:
         dot->template add_vertex<task, logical_data_untyped>(unfreeze_fake_task);
 
         // TODO add edge ...
-        dot->add_edge(freeze_fake_task.get_unique_id(), unfreeze_fake_task.get_unique_id(), 0);
+        //   dot->add_edge(freeze_fake_task.get_unique_id(), unfreeze_fake_task.get_unique_id(), 0);
       }
     }
 
@@ -153,6 +153,16 @@ private:
       return m;
     }
 
+    int freeze_fake_task_id() const
+    {
+      return freeze_fake_task.get_unique_id();
+    }
+
+    int unfreeze_fake_task_id() const
+    {
+      return unfreeze_fake_task.get_unique_id();
+    }
+
   private:
     logical_data<T> ld;
     access_mode m;
@@ -221,6 +231,18 @@ public:
   {
     assert(pimpl);
     return pimpl->get_access_mode();
+  }
+
+  int freeze_fake_task_id() const
+  {
+    assert(pimpl);
+    return pimpl->freeze_fake_task_id();
+  }
+
+  int unfreeze_fake_task_id() const
+  {
+    assert(pimpl);
+    return pimpl->unfreeze_fake_task_id();
   }
 
 private:

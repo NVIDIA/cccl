@@ -108,6 +108,16 @@ public:
     oss << "\"NODE_" << unique_id << "\" [style=\"filled\" fillcolor=\"red\" label=\"task fence\"]\n";
   }
 
+  void ctx_add_input_id(int prereq_unique_id)
+  {
+    ctx_input_id.push_back(prereq_unique_id);
+  }
+
+  void ctx_add_output_id(int prereq_unique_id)
+  {
+    ctx_output_id.push_back(prereq_unique_id);
+  }
+
   void add_prereq_vertex(const ::std::string& symbol, int prereq_unique_id)
   {
     if (!is_tracing_prereqs())
@@ -338,6 +348,9 @@ public: // XXX protected, friend : dot
   // strings of the previous epochs
   mutable ::std::vector<::std::ostringstream> prev_oss;
   ::std::unordered_map<int /* id */, per_task_info> metadata;
+
+  ::std::vector<int> ctx_input_id;
+  ::std::vector<int> ctx_output_id;
 };
 
 class dot : public reserved::meyers_singleton<dot>
@@ -512,6 +525,9 @@ public:
   void
   print_one_context(::std::ofstream& outFile, size_t& ctx_cnt, bool display_clusters, ::std::shared_ptr<per_ctx_dot> pc)
   {
+    assert(display_clusters || pc->ctx_input_id.size() == 0);
+    assert(display_clusters || pc->ctx_output_id.size() == 0);
+
     // Pick up an identifier in DOT (we may update this value later)
     size_t ctx_id = ctx_cnt++;
     if (display_clusters)
@@ -529,6 +545,13 @@ public:
 
       outFile << pc->prev_oss[epoch_id].str();
 
+      for (const auto& p : pc->metadata)
+      {
+        outFile << "\"NODE_" << p.first << "\" [style=\"filled\" fillcolor=\"" << p.second.color << "\" label=\""
+                << p.second.label << "\"]\n";
+        vertex_count++;
+      }
+
       if (epoch_cnt > 1)
       {
         outFile << "} // end subgraph cluster_" << epoch_id << "_" << ctx_id << "\n";
@@ -541,18 +564,6 @@ public:
           print_one_context(outFile, ctx_cnt, display_clusters, child_pc);
         }
       }
-    }
-    if (display_clusters)
-    {
-      if (pc->get_ctx_symbol().empty())
-      {
-        outFile << "label=\"cluster_" << ctx_id << "\"\n";
-      }
-      else
-      {
-        outFile << "label=\"" << pc->get_ctx_symbol() << "\"\n";
-      }
-      outFile << "} // end subgraph cluster_" << ctx_id << "\n";
     }
 
     for (const auto& e : pc->existing_edges)
@@ -579,6 +590,38 @@ public:
       if (sec_ptr->parent_id == 0)
       {
         print_section(outFile, id, section_id_to_nodes);
+      }
+    }
+    if (display_clusters)
+    {
+      if (pc->get_ctx_symbol().empty())
+      {
+        outFile << "label=\"cluster_" << ctx_id << "\"\n";
+      }
+      else
+      {
+        outFile << "label=\"" << pc->get_ctx_symbol() << "\"\n";
+      }
+
+      // We need to add "proxy" nodes because we can't make a dependency
+      // between a node and a cluster in DOT
+      outFile << "\"start_cluster_" << ctx_id << "\" [shape=point, style=invis]\n";
+      outFile << "\"end_cluster_" << ctx_id << "\" [shape=point, style=invis]\n";
+
+      // Rank constraints so that these node appear at the top of bottom of the cluster
+      outFile << "{rank=min; " << "\"start_cluster_" << ctx_id << "\"}\n";
+      outFile << "{rank=max; " << "\"end_cluster_" << ctx_id << "\"}\n";
+
+      outFile << "} // end subgraph cluster_" << ctx_id << "\n";
+
+      for (auto i : pc->ctx_input_id)
+      {
+        outFile << "\"NODE_" << i << "\" -> \"start_cluster_" << ctx_id << "\"\n";
+      }
+
+      for (auto i : pc->ctx_output_id)
+      {
+        outFile << "\"end_cluster_" << ctx_id << "\" -> \"NODE_" << i << "\"\n";
       }
     }
   }
@@ -806,9 +849,17 @@ public:
     ::std::ofstream outFile(dot_filename);
     if (outFile.is_open())
     {
+      if (!getenv("CUDASTF_DOT_KEEP_REDUNDANT"))
+      {
+        remove_redundant_edges(existing_edges);
+      }
+
       outFile << "digraph {\n";
       size_t ctx_cnt        = 0;
       bool display_clusters = (per_ctx.size() > 1);
+
+      compute_critical_path(outFile);
+
       /*
        * For every context, we write the description of the DAG per
        * epoch. Then we write the edges after removing redundant ones.
@@ -822,13 +873,6 @@ public:
         }
       }
 
-      if (!getenv("CUDASTF_DOT_KEEP_REDUNDANT"))
-      {
-        remove_redundant_edges(existing_edges);
-      }
-
-      compute_critical_path(outFile);
-
       /* Edges do not have to belong to the cluster (Vertices do) */
       for (const auto& [from, to] : existing_edges)
       {
@@ -839,12 +883,13 @@ public:
       vertex_count = 0;
       for (const auto& pc : per_ctx)
       {
-        for (const auto& p : pc->metadata)
-        {
-          outFile << "\"NODE_" << p.first << "\" [style=\"filled\" fillcolor=\"" << p.second.color << "\" label=\""
-                  << p.second.label << "\"]\n";
-          vertex_count++;
-        }
+        //        for (const auto& p : pc->metadata)
+        //        {
+        //          outFile << "\"NODE_" << p.first << "\" [style=\"filled\" fillcolor=\"" << p.second.color << "\"
+        //          label=\""
+        //                  << p.second.label << "\"]\n";
+        //          vertex_count++;
+        //        }
       }
 
       edge_count = existing_edges.size();

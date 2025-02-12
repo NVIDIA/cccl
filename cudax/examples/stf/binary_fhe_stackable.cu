@@ -229,8 +229,6 @@ int main()
 {
   stackable_ctx ctx;
 
-  auto g2 = ctx.dot_section("all");
-
   std::vector<char> vA{3, 3, 2, 2, 17};
   plaintext pA(ctx, vA);
   pA.set_symbol("A");
@@ -242,16 +240,11 @@ int main()
   auto eA = pA.encrypt().set_symbol("A");
   auto eB = pB.encrypt().set_symbol("B");
 
-  auto g = ctx.dot_section("circuit");
   ctx.push();
-
-  //  eA.push(access_mode::read);
-  //  eB.push(access_mode::read);
 
   auto out = circuit(eA, eB);
 
   ctx.pop();
-  g.end();
 
   std::vector<char> v_out;
   out.decrypt().convert_to_vector(v_out);

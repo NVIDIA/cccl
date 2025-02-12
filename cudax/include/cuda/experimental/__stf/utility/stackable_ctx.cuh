@@ -184,7 +184,7 @@ public:
         levels.emplace_back(gctx, stream, wrapper);
 
         // We add a new dot section which will be closed when the context is popped
-        levels.back().dot_section = levels[0].ctx.dot_section("stackable");
+        ///        levels.back().dot_section = levels[0].ctx.dot_section("stackable");
       }
     }
 
@@ -205,8 +205,8 @@ public:
         d_impl->pop_before_finalize();
       }
 
-      _CCCL_ASSERT(current_level.dot_section.has_value(), "invalid dot_section");
-      current_level.dot_section.value().end();
+      //      _CCCL_ASSERT(current_level.dot_section.has_value(), "invalid dot_section");
+      //      current_level.dot_section.value().end();
 
       // Ensure everything is finished in the context
       current_level.ctx.finalize();
@@ -533,6 +533,8 @@ class stackable_logical_data
           // Remove aliased logical data because this wasn't done yet
           s.pop_back();
         }
+
+        sctx.get_ctx(depth() + 1).get_dot()->ctx_add_output_id(frozen_s.back().unfreeze_fake_task_id());
       }
 
       // Unfreeze the logical data after the context has been finalized.
@@ -700,6 +702,8 @@ class stackable_logical_data
 
       T inst  = f.get(where, stream);
       auto ld = to_ctx.logical_data(inst, where);
+
+      to_ctx.get_dot()->ctx_add_input_id(f.freeze_fake_task_id());
 
       if (!impl_state->symbol.empty())
       {
