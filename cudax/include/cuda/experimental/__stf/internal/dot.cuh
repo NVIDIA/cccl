@@ -365,6 +365,34 @@ public:
         section::push(mv(symbol));
       }
 
+      // Move constructor: transfer ownership and disable the moved-from guard.
+      guard(guard&& other) noexcept
+          : active(other.active)
+      {
+        other.active = false; // Prevent the moved-from object from calling section::pop()
+      }
+
+      // Move assignment, disable the moved-from guard
+      guard& operator=(guard&& other) noexcept
+      {
+        if (this != &other)
+        {
+          // Clean up current resource if needed.
+          if (active)
+          {
+            section::pop();
+          }
+          // Transfer ownership.
+          active       = other.active;
+          other.active = false;
+        }
+        return *this;
+      }
+
+      // Non-copyable
+      guard(const guard&)            = delete;
+      guard& operator=(const guard&) = delete;
+
       void end()
       {
         _CCCL_ASSERT(active, "Attempting to end the same section twice.");
