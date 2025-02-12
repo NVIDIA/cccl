@@ -27,7 +27,7 @@ std::string_view cccl_type_enum_to_string(cccl_type_enum type)
     case cccl_type_enum::INT32:
       return "::cuda::std::int32_t";
     case cccl_type_enum::INT64:
-      return "::cuda::std::int64_t";
+      return "long";
     case cccl_type_enum::UINT8:
       return "::cuda::std::uint8_t";
     case cccl_type_enum::UINT16:
@@ -35,7 +35,7 @@ std::string_view cccl_type_enum_to_string(cccl_type_enum type)
     case cccl_type_enum::UINT32:
       return "::cuda::std::uint32_t";
     case cccl_type_enum::UINT64:
-      return "::cuda::std::uint64_t";
+      return "unsigned long";
     case cccl_type_enum::FLOAT32:
       return "float";
     case cccl_type_enum::FLOAT64:
