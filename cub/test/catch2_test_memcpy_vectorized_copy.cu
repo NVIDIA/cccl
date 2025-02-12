@@ -4,9 +4,9 @@
 #include <cub/device/device_memcpy.cuh>
 #include <cub/util_macro.cuh>
 
+#include <thrust/copy.h>
 #include <thrust/fill.h>
 #include <thrust/sequence.h>
-#include <thrust/copy.h>
 
 #include <c2h/catch2_test_helper.h>
 
@@ -20,13 +20,14 @@ using vector_type_list = c2h::type_list<uint32_t, uint4>;
 
 C2H_TEST("The vectorized copy used by DeviceMemcpy works", "[memcpy]", vector_type_list)
 {
-  using vector_t                       = typename c2h::get<0, TestType>;
-  constexpr uint32_t threads_per_block = 8;
+  using vector_t                            = typename c2h::get<0, TestType>;
+  constexpr std::uint32_t threads_per_block = 8;
 
   // Test the vectorized_copy for various aligned and misaligned input and output pointers.
   std::size_t in_offset  = GENERATE(0, 1, sizeof(uint32_t) - 1);
   std::size_t out_offset = GENERATE(0, 1, sizeof(vector_t) - 1);
-  std::size_t copy_size  = GENERATE(0, 1, sizeof(uint32_t), sizeof(vector_t), 2 * threads_per_block * sizeof(vector_t));
+  std::size_t copy_size =
+    GENERATE_COPY(0, 1, sizeof(uint32_t), sizeof(vector_t), 2 * threads_per_block * sizeof(vector_t));
   CAPTURE(in_offset, out_offset, copy_size);
 
   // Prepare data
