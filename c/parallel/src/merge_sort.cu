@@ -410,7 +410,7 @@ extern "C" CCCL_C_API CUresult cccl_device_merge_sort_build(
       ltoir_list_append({output_items_it.dereference.ltoir, output_items_it.dereference.ltoir_size});
     }
 
-    nvrtc_link_result result =
+    nvrtc_cubin result =
       make_nvrtc_command_list()
         .add_program(nvrtc_translation_unit{src.c_str(), name})
         .add_expression({block_sort_kernel_name})
@@ -424,13 +424,13 @@ extern "C" CCCL_C_API CUresult cccl_device_merge_sort_build(
         .add_link_list(ltoir_list)
         .finalize_program(num_lto_args, lopts);
 
-    cuLibraryLoadData(&build->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+    cuLibraryLoadData(&build->library, result.cubin.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
     check(cuLibraryGetKernel(&build->block_sort_kernel, build->library, block_sort_kernel_lowered_name.c_str()));
     check(cuLibraryGetKernel(&build->partition_kernel, build->library, partition_kernel_lowered_name.c_str()));
     check(cuLibraryGetKernel(&build->merge_kernel, build->library, merge_kernel_lowered_name.c_str()));
 
     build->cc         = cc;
-    build->cubin      = (void*) result.data.release();
+    build->cubin      = (void*) result.cubin.release();
     build->cubin_size = result.size;
   }
   catch (const std::exception& exc)
