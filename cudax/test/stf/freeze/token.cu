@@ -15,8 +15,7 @@
  *
  */
 
-#include <cuda/experimental/__stf/graph/graph_ctx.cuh>
-#include <cuda/experimental/__stf/stream/stream_ctx.cuh>
+#include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;
 
