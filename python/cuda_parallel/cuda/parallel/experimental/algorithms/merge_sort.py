@@ -26,9 +26,9 @@ class _MergeSort:
     def __init__(
         self,
         d_in_keys: DeviceArrayLike,
-        d_in_items: DeviceArrayLike | None,
+        d_in_items: DeviceArrayLike | IteratorBase | None,
         d_out_keys: DeviceArrayLike,
-        d_out_items: DeviceArrayLike | None,
+        d_out_items: DeviceArrayLike | IteratorBase | None,
         op: Callable,
     ):
         assert (d_in_items is None) == (d_out_items is None)
@@ -61,7 +61,11 @@ class _MergeSort:
         cub_path, thrust_path, libcudacxx_path, cuda_include_path = get_paths()
         bindings = get_bindings()
 
-        value_type = numba.from_dtype(protocols.get_dtype(d_in_keys))
+        if isinstance(d_in_keys, IteratorBase):
+            value_type = d_in_keys.value_type
+        else:
+            value_type = numba.from_dtype(protocols.get_dtype(d_in_keys))
+
         sig = (value_type, value_type)
         self.op_wrapper = cccl.to_cccl_op(op, sig)
 
@@ -81,7 +85,7 @@ class _MergeSort:
             ctypes.c_char_p(cuda_include_path),
         )
         if error != enums.CUDA_SUCCESS:
-            raise ValueError("Error building reduce")
+            raise ValueError("Error building merge_sort")
 
     # TODO should I pass op here as well
     def __call__(
@@ -162,9 +166,9 @@ class _MergeSort:
 
 def merge_sort(
     d_in_keys: DeviceArrayLike,
-    d_in_items: DeviceArrayLike | None,
+    d_in_items: DeviceArrayLike | IteratorBase | None,
     d_out_keys: DeviceArrayLike,
-    d_out_items: DeviceArrayLike | None,
+    d_out_items: DeviceArrayLike | IteratorBase | None,
     op: Callable,
 ):
     return _MergeSort(d_in_keys, d_in_items, d_out_keys, d_out_items, op)
