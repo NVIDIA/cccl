@@ -143,7 +143,7 @@ struct DispatchMergeSort
   void* d_temp_storage;
 
   /// Reference to size in bytes of \p d_temp_storage allocation
-  std::size_t& temp_storage_bytes;
+  size_t& temp_storage_bytes;
 
   /// Pointer to the input sequence of unsorted input keys
   KeyInputIteratorT d_input_keys;
@@ -178,7 +178,7 @@ struct DispatchMergeSort
   // Constructor
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchMergeSort(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     KeyInputIteratorT d_input_keys,
     ValueInputIteratorT d_input_items,
     KeyIteratorT d_output_keys,
@@ -226,9 +226,9 @@ struct DispatchMergeSort
       const auto tile_size = vsmem_helper.ItemsPerTile(wrapped_policy.MergeSort());
       const auto num_tiles = ::cuda::ceil_div(num_items, tile_size);
 
-      const auto merge_partitions_size         = static_cast<std::size_t>(1 + num_tiles) * sizeof(OffsetT);
-      const auto temporary_keys_storage_size   = static_cast<std::size_t>(num_items * sizeof(KeyT));
-      const auto temporary_values_storage_size = static_cast<std::size_t>(num_items * sizeof(ValueT)) * !KEYS_ONLY;
+      const auto merge_partitions_size         = static_cast<size_t>(1 + num_tiles) * sizeof(OffsetT);
+      const auto temporary_keys_storage_size   = static_cast<size_t>(num_items * sizeof(KeyT));
+      const auto temporary_values_storage_size = static_cast<size_t>(num_items * sizeof(ValueT)) * !KEYS_ONLY;
 
       /**
        * Merge sort supports large types, which can lead to excessive shared memory size requirements. In these cases,
@@ -238,8 +238,8 @@ struct DispatchMergeSort
       const std::size_t merge_smem_size            = num_tiles * vsmem_helper.MergeVSMemPerBlock();
       const std::size_t virtual_shared_memory_size = (::cuda::std::max)(block_sort_smem_size, merge_smem_size);
 
-      void* allocations[4]            = {nullptr, nullptr, nullptr, nullptr};
-      std::size_t allocation_sizes[4] = {
+      void* allocations[4]       = {nullptr, nullptr, nullptr, nullptr};
+      size_t allocation_sizes[4] = {
         merge_partitions_size, temporary_keys_storage_size, temporary_values_storage_size, virtual_shared_memory_size};
 
       error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
@@ -384,7 +384,7 @@ struct DispatchMergeSort
   template <typename MaxPolicyT = typename PolicyHub::MaxPolicy>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     KeyInputIteratorT d_input_keys,
     ValueInputIteratorT d_input_items,
     KeyIteratorT d_output_keys,

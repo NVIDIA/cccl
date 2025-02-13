@@ -83,8 +83,6 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void advance(_InputIter& __i, _D
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2014
-
 // [range.iter.op.advance]
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
@@ -237,7 +235,5 @@ _CCCL_GLOBAL_CONSTANT auto advance = __advance::__fn{};
 } // namespace __cpo
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
-
-#endif // _CCCL_STD_VER > 2014
 
 #endif // _LIBCUDACXX___ITERATOR_ADVANCE_H

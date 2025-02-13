@@ -24,8 +24,6 @@
 #include <cuda/std/__concepts/totally_ordered.h>
 #include <cuda/std/__utility/forward.h>
 
-#if _CCCL_STD_VER >= 2014
-
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
 
@@ -108,7 +106,5 @@ struct greater_equal
 };
 _LIBCUDACXX_END_NAMESPACE_RANGES_ABI
 _LIBCUDACXX_END_NAMESPACE_RANGES
-
-#endif // _CCCL_STD_VER > 2014
 
 #endif // _LIBCUDACXX___FUNCTIONAL_RANGES_OPERATIONS_H

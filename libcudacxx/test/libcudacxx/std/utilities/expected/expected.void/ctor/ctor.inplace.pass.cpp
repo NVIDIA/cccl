@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // constexpr explicit expected(in_place_t) noexcept;
 
 #include <cuda/std/cassert>

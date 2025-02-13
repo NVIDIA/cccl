@@ -48,7 +48,7 @@ constexpr bool is_overwrite_ok      = false;
 template <typename KeyT, typename ValueT, typename OffsetT>
 struct policy_hub_t
 {
-  static constexpr bool KEYS_ONLY = std::is_same<ValueT, cub::NullType>::value;
+  static constexpr bool KEYS_ONLY = std::is_same_v<ValueT, cub::NullType>;
 
   using DominantT = ::cuda::std::_If<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
 
@@ -142,12 +142,16 @@ void radix_sort_keys(std::integral_constant<bool, true>, nvbench::state& state, 
   using offset_t = cub::detail::choose_offset_t<OffsetT>;
 
   using key_t = T;
+  using dispatch_t =
+    cub::DispatchRadixSort<sort_order,
+                           key_t,
+                           value_t,
+                           offset_t
 #if !TUNE_BASE
-  using policy_t   = policy_hub_t<key_t, value_t, offset_t>;
-  using dispatch_t = cub::DispatchRadixSort<sort_order, key_t, value_t, offset_t, policy_t>;
-#else // TUNE_BASE
-  using dispatch_t = cub::DispatchRadixSort<sort_order, key_t, value_t, offset_t>;
+                           ,
+                           policy_hub_t<key_t, value_t, offset_t>
 #endif // TUNE_BASE
+                           >;
 
   constexpr int begin_bit = 0;
   constexpr int end_bit   = sizeof(key_t) * 8;

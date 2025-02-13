@@ -6,7 +6,6 @@
 // Source Licenses. See LICENSE.TXT for details.
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03
 
 // template <class T>
 //   constexpr T bit_ceil(T x) noexcept;

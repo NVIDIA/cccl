@@ -487,10 +487,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT array<_Tp, 0>
   _CCCL_DIAG_POP
 };
 
-#if _CCCL_STD_VER >= 2017
 template <class _Tp, class... _Args, class = enable_if_t<(is_same_v<_Tp, _Args> && ...)>>
 _CCCL_HOST_DEVICE array(_Tp, _Args...) -> array<_Tp, 1 + sizeof...(_Args)>;
-#endif // _CCCL_STD_VER >= 2017
 
 template <class _Tp, size_t _Size>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
@@ -580,8 +578,6 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const _Tp&& get(const array<_Tp,
   return _CUDA_VSTD::move(__a.__elems_[_Ip]);
 }
 
-#if _CCCL_STD_VER >= 2014
-
 template <typename _Tp, size_t _Size, size_t... _Index>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 array<remove_cv_t<_Tp>, _Size>
 __to_array_lvalue_impl(_Tp (&__arr)[_Size], index_sequence<_Index...>)
@@ -615,8 +611,6 @@ to_array(_Tp (&&__arr)[_Size]) noexcept(_CCCL_TRAIT(is_nothrow_move_constructibl
                 "[array.creation]/4: to_array requires move constructible elements.");
   return _CUDA_VSTD::__to_array_rvalue_impl(_CUDA_VSTD::move(__arr), make_index_sequence<_Size>());
 }
-
-#endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -79,8 +79,7 @@ int main(int, char**)
     ASSERT_SAME_TYPE(decltype(true ? purr() : 0), int);
   }
 #endif // !defined(TEST_COMPILER_MSVC)
-#if TEST_STD_VER > 2014
-#  if (!defined(__GNUC__) || __GNUC__ >= 8) // gcc-7 is broken wrt ctad
+#if (!defined(__GNUC__) || __GNUC__ >= 8) // gcc-7 is broken wrt ctad
   {
     int i = 0;
     cuda::std::reference_wrapper ri(i);
@@ -89,7 +88,6 @@ int main(int, char**)
     cuda::std::reference_wrapper rj(j);
     static_assert((cuda::std::is_same<decltype(rj), cuda::std::reference_wrapper<const int>>::value), "");
   }
-#  endif
 #endif
 
   return 0;

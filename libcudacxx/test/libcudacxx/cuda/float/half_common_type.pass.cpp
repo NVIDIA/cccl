@@ -52,7 +52,6 @@ static_assert(cuda::std::is_same<cuda::std::common_type<__nv_bfloat16&&, float>:
 static_assert(cuda::std::is_same<cuda::std::common_type<__nv_bfloat16&, float&&>::type, float>::value, "");
 static_assert(cuda::std::is_same<cuda::std::common_type<__nv_bfloat16&&, float&>::type, float>::value, "");
 
-#  if TEST_STD_VER >= 2014
 static_assert(!cuda::std::__has_common_type<__nv_bfloat16, __half>, "");
 static_assert(!cuda::std::__has_common_type<__nv_bfloat16, __half&>, "");
 static_assert(!cuda::std::__has_common_type<__nv_bfloat16&, __half>, "");
@@ -60,7 +59,7 @@ static_assert(!cuda::std::__has_common_type<__nv_bfloat16, __half&&>, "");
 static_assert(!cuda::std::__has_common_type<__nv_bfloat16&&, __half>, "");
 static_assert(!cuda::std::__has_common_type<__nv_bfloat16&, __half&&>, "");
 static_assert(!cuda::std::__has_common_type<__nv_bfloat16&&, __half&>, "");
-#  endif // TEST_STD_VER >= 2014
+
 #endif // _LIBCUDACXX_HAS_NVBF16
 
 int main(int argc, char** argv)

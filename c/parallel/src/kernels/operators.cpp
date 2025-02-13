@@ -71,7 +71,7 @@ make_kernel_binary_operator_full_source(std::string_view input_t, cccl_op_t oper
       : std::format(stateful_binary_op_template, return_type));
 }
 
-std::string make_kernel_user_arithmetic_operator(std::string_view input_t, cccl_op_t operation)
+std::string make_kernel_user_binary_operator(std::string_view input_t, cccl_op_t operation)
 {
   return make_kernel_binary_operator_full_source(input_t, operation, "VALUE_T");
 }

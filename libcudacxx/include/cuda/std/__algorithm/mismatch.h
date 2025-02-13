@@ -47,7 +47,6 @@ mismatch(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __fi
   return _CUDA_VSTD::mismatch(__first1, __last1, __first2, __equal_to{});
 }
 
-#if _CCCL_STD_VER > 2011
 template <class _InputIterator1, class _InputIterator2, class _BinaryPredicate>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_InputIterator1, _InputIterator2> mismatch(
   _InputIterator1 __first1,
@@ -72,7 +71,6 @@ mismatch(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __fi
 {
   return _CUDA_VSTD::mismatch(__first1, __last1, __first2, __last2, __equal_to{});
 }
-#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

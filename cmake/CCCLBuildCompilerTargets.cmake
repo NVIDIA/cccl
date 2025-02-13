@@ -162,20 +162,6 @@ function(cccl_build_compiler_targets)
     target_link_libraries(cccl.compiler_interface_cpp${dialect} INTERFACE cccl.compiler_interface)
   endforeach()
 
-  if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    # C4127: conditional expression is constant
-    # Disable this MSVC warning for C++11/C++14. In C++17+, we can use
-    # _CCCL_IF_CONSTEXPR to address these warnings.
-    target_compile_options(cccl.compiler_interface_cpp11 INTERFACE
-      $<$<COMPILE_LANGUAGE:CXX>:/wd4127>
-      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/wd4127>
-    )
-    target_compile_options(cccl.compiler_interface_cpp14 INTERFACE
-      $<$<COMPILE_LANGUAGE:CXX>:/wd4127>
-      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/wd4127>
-    )
-  endif()
-
   # Some of our unit tests unconditionally throw exceptions, and compilers will
   # detect that the following instructions are unreachable. This is intentional
   # and unavoidable in these cases. This target can be used to silence

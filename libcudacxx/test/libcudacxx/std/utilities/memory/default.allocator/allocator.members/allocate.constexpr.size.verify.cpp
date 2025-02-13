@@ -13,7 +13,7 @@
 // allocator:
 // constexpr T* allocate(size_type n);
 
-// UNSUPPORTED: c++03, c++11, c++14, c++17
+// UNSUPPORTED: c++17
 
 #include <cuda/std/__memory_>
 #include <cuda/std/cstddef>

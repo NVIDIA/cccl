@@ -125,7 +125,7 @@ struct DispatchAdjacentDifference
   using InputT = typename std::iterator_traits<InputIteratorT>::value_type;
 
   void* d_temp_storage;
-  std::size_t& temp_storage_bytes;
+  size_t& temp_storage_bytes;
   InputIteratorT d_input;
   OutputIteratorT d_output;
   OffsetT num_items;
@@ -134,7 +134,7 @@ struct DispatchAdjacentDifference
 
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchAdjacentDifference(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     InputIteratorT d_input,
     OutputIteratorT d_output,
     OffsetT num_items,
@@ -162,10 +162,10 @@ struct DispatchAdjacentDifference
       constexpr int tile_size = AdjacentDifferencePolicyT::ITEMS_PER_TILE;
       const int num_tiles     = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
 
-      std::size_t first_tile_previous_size = (AliasOpt == MayAlias::Yes) * num_tiles * sizeof(InputT);
+      size_t first_tile_previous_size = (AliasOpt == MayAlias::Yes) * num_tiles * sizeof(InputT);
 
-      void* allocations[1]            = {nullptr};
-      std::size_t allocation_sizes[1] = {(AliasOpt == MayAlias::Yes) * first_tile_previous_size};
+      void* allocations[1]       = {nullptr};
+      size_t allocation_sizes[1] = {(AliasOpt == MayAlias::Yes) * first_tile_previous_size};
 
       error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
 
@@ -277,7 +277,7 @@ struct DispatchAdjacentDifference
 
   CUB_RUNTIME_FUNCTION static cudaError_t Dispatch(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     InputIteratorT d_input,
     OutputIteratorT d_output,
     OffsetT num_items,

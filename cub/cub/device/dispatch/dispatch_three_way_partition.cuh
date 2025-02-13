@@ -263,7 +263,7 @@ struct DispatchThreeWayPartitionIf
   static constexpr int INIT_KERNEL_THREADS = 256;
 
   void* d_temp_storage;
-  std::size_t& temp_storage_bytes;
+  size_t& temp_storage_bytes;
   InputIteratorT d_in;
   FirstOutputIteratorT d_first_part_out;
   SecondOutputIteratorT d_second_part_out;
@@ -276,7 +276,7 @@ struct DispatchThreeWayPartitionIf
 
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchThreeWayPartitionIf(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     InputIteratorT d_in,
     FirstOutputIteratorT d_first_part_out,
     SecondOutputIteratorT d_second_part_out,
@@ -499,7 +499,7 @@ struct DispatchThreeWayPartitionIf
    */
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     InputIteratorT d_in,
     FirstOutputIteratorT d_first_part_out,
     SecondOutputIteratorT d_second_part_out,

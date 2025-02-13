@@ -60,12 +60,10 @@ int main(int, char**)
   test<__nv_bfloat16>();
 #endif
 
-#if TEST_STD_VER > 2011
   static_assert(test<float>(), "");
   static_assert(test<double>(), "");
-// CUDA treats long double as double
-//  static_assert(test<long double>(), "");
-#endif
+  // CUDA treats long double as double
+  //  static_assert(test<long double>(), "");
 
   return 0;
 }

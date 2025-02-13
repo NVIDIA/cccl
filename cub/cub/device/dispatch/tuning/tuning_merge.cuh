@@ -49,7 +49,7 @@ namespace merge
 template <typename KeyT, typename ValueT>
 struct policy_hub
 {
-  static constexpr bool has_values = !::cuda::std::is_same<ValueT, NullType>::value;
+  static constexpr bool has_values = !::cuda::std::is_same_v<ValueT, NullType>;
 
   using tune_type = char[has_values ? sizeof(KeyT) + sizeof(ValueT) : sizeof(KeyT)];
 

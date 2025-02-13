@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
-
 // <cuda/std/iterator>
 //
 // friend constexpr iter_rvalue_reference_t<Iterator>

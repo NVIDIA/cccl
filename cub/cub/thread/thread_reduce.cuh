@@ -340,7 +340,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE _CCCL_CONSTEXPR_CXX14 bool enable
   using cub::detail::is_one_of;
   using ::cuda::std::is_same;
   using T = ::cuda::std::remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>;
-  _CCCL_IF_CONSTEXPR (!is_same<T, AccumT>::value)
+  if constexpr (!is_same<T, AccumT>::value)
   {
     return false;
   }
@@ -434,7 +434,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE _CCCL_CONSTEXPR_CXX14 bool enable
   using ::cuda::std::is_same;
   using T               = ::cuda::std::remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>;
   constexpr auto length = cub::detail::static_size_v<Input>();
-  _CCCL_IF_CONSTEXPR (length < 6)
+  if constexpr (length < 6)
   {
     return false;
   }
@@ -464,7 +464,7 @@ _CCCL_NODISCARD _CCCL_DEVICE constexpr bool enable_promotion()
   using cub::detail::is_one_of;
   using ::cuda::std::is_same;
   using T = ::cuda::std::remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>;
-  return ::cuda::std::is_integral<T>::value && sizeof(T) <= 2
+  return ::cuda::std::is_integral_v<T> && sizeof(T) <= 2
       && is_one_of<ReductionOp,
                    ::cuda::std::plus<>,
                    ::cuda::std::plus<T>,
@@ -570,7 +570,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input
   auto simd_input         = unsafe_bitcast<SimdArray>(local_array);
   SimdType simd_reduction = cub::ThreadReduce(simd_input, SimdReduceOp{});
   auto unpacked_values    = unsafe_bitcast<UnpackedType>(simd_reduction);
-  _CCCL_IF_CONSTEXPR (simd_ratio == 1)
+  if constexpr (simd_ratio == 1)
   {
     return unpacked_values[0];
   }
@@ -582,7 +582,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input
     auto simd_reduction_rev = unsafe_bitcast<SimdType>(unpacked_values_rev);
     SimdType result         = SimdReduceOp{}(simd_reduction, simd_reduction_rev);
     // repeat the same optimization for the last element
-    _CCCL_IF_CONSTEXPR (length % simd_ratio == 1)
+    if constexpr (length % simd_ratio == 1)
     {
       T tail[]       = {input[length - 1], T{}};
       auto tail_simd = unsafe_bitcast<SimdType>(tail);
@@ -610,30 +610,30 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& 
   using cub::internal::enable_simd_reduction;
   using cub::internal::enable_ternary_reduction;
   using PromT = ::cuda::std::_If<enable_promotion<Input, ReductionOp, AccumT>(), int, AccumT>;
-  _CCCL_IF_CONSTEXPR (!cub::detail::is_one_of<
-                        ReductionOp,
-                        ::cuda::std::plus<>,
-                        ::cuda::std::plus<ValueT>,
-                        ::cuda::std::multiplies<>,
-                        ::cuda::std::multiplies<ValueT>,
-                        ::cuda::std::bit_and<>,
-                        ::cuda::std::bit_and<ValueT>,
-                        ::cuda::std::bit_or<>,
-                        ::cuda::std::bit_or<ValueT>,
-                        ::cuda::std::bit_xor<>,
-                        ::cuda::std::bit_xor<ValueT>,
-                        ::cuda::maximum<>,
-                        ::cuda::maximum<ValueT>,
-                        ::cuda::minimum<>,
-                        ::cuda::minimum<ValueT>,
-                        cub::internal::SimdMin<ValueT>,
-                        cub::internal::SimdMax<ValueT>>()
-                      || sizeof(ValueT) >= 8)
+  if constexpr (!cub::detail::is_one_of<
+                  ReductionOp,
+                  ::cuda::std::plus<>,
+                  ::cuda::std::plus<ValueT>,
+                  ::cuda::std::multiplies<>,
+                  ::cuda::std::multiplies<ValueT>,
+                  ::cuda::std::bit_and<>,
+                  ::cuda::std::bit_and<ValueT>,
+                  ::cuda::std::bit_or<>,
+                  ::cuda::std::bit_or<ValueT>,
+                  ::cuda::std::bit_xor<>,
+                  ::cuda::std::bit_xor<ValueT>,
+                  ::cuda::maximum<>,
+                  ::cuda::maximum<ValueT>,
+                  ::cuda::minimum<>,
+                  ::cuda::minimum<ValueT>,
+                  cub::internal::SimdMin<ValueT>,
+                  cub::internal::SimdMax<ValueT>>()
+                || sizeof(ValueT) >= 8)
   {
     return cub::internal::ThreadReduceSequential<AccumT>(input, reduction_op);
   }
-  _CCCL_IF_CONSTEXPR (cub::detail::is_one_of<ReductionOp, ::cuda::std::plus<>, ::cuda::std::plus<ValueT>>()
-                      && cub::detail::is_one_of<ValueT, int, ::cuda::std::uint32_t>())
+  if constexpr (cub::detail::is_one_of<ReductionOp, ::cuda::std::plus<>, ::cuda::std::plus<ValueT>>()
+                && cub::detail::is_one_of<ValueT, int, ::cuda::std::uint32_t>())
   {
     // clang-format off
     NV_IF_TARGET(NV_PROVIDES_SM_90,

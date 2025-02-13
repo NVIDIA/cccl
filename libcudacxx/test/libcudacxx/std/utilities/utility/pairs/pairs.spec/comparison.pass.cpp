@@ -81,7 +81,6 @@ int main(int, char**)
     assert((p1 >= p2));
   }
 
-#if TEST_STD_VER > 2011
   {
     typedef cuda::std::pair<int, short> P;
     constexpr P p1(3, static_cast<short>(4));
@@ -93,7 +92,6 @@ int main(int, char**)
     static_assert((p1 > p2), "");
     static_assert((p1 >= p2), "");
   }
-#endif
 
   return 0;
 }

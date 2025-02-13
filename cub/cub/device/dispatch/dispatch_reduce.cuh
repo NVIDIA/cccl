@@ -102,7 +102,7 @@ struct DeviceReduceKernelSource
                                  InitT,
                                  AccumT>)
 
-  CUB_RUNTIME_FUNCTION static constexpr std::size_t AccumSize()
+  CUB_RUNTIME_FUNCTION static constexpr size_t AccumSize()
   {
     return sizeof(AccumT);
   }
@@ -137,10 +137,10 @@ template <typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOpT,
-          typename InitT     = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::value_t<InputIteratorT>>,
-          typename AccumT    = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::value_t<InputIteratorT>, InitT>,
-          typename PolicyHub = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
+          typename InitT  = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::value_t<InputIteratorT>>,
+          typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::value_t<InputIteratorT>, InitT>,
           typename TransformOpT = ::cuda::std::__identity,
+          typename PolicyHub    = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
           typename KernelSource = detail::reduce::DeviceReduceKernelSource<
             typename PolicyHub::MaxPolicy,
             InputIteratorT,
@@ -544,7 +544,7 @@ struct DispatchReduce
 
 /**
  * @brief Utility class for dispatching the appropriately-tuned kernels for
- *        device-wide transpose reduce
+ *        device-wide transform reduce
  *
  * @tparam InputIteratorT
  *   Random-access input iterator type for reading input items @iterator
@@ -593,14 +593,48 @@ using DispatchTransformReduce =
                  ReductionOpT,
                  InitT,
                  AccumT,
-                 PolicyHub,
                  TransformOpT,
+                 PolicyHub,
                  KernelSource,
                  KernelLauncherFactory>;
 
 /******************************************************************************
  * Segmented dispatch
  *****************************************************************************/
+
+namespace detail::reduce
+{
+
+template <typename MaxPolicyT,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename BeginOffsetIteratorT,
+          typename EndOffsetIteratorT,
+          typename OffsetT,
+          typename ReductionOpT,
+          typename InitT,
+          typename AccumT>
+struct DeviceSegmentedReduceKernelSource
+{
+  CUB_DEFINE_KERNEL_GETTER(
+    SegmentedReduceKernel,
+    DeviceSegmentedReduceKernel<
+      MaxPolicyT,
+      InputIteratorT,
+      OutputIteratorT,
+      BeginOffsetIteratorT,
+      EndOffsetIteratorT,
+      OffsetT,
+      ReductionOpT,
+      InitT,
+      AccumT>)
+
+  CUB_RUNTIME_FUNCTION static constexpr std::size_t AccumSize()
+  {
+    return sizeof(AccumT);
+  }
+};
+} // namespace detail::reduce
 
 /**
  * @brief Utility class for dispatching the appropriately-tuned kernels for
@@ -630,6 +664,7 @@ using DispatchTransformReduce =
  * @tparam InitT
  *   value type
  */
+
 template <typename InputIteratorT,
           typename OutputIteratorT,
           typename BeginOffsetIteratorT,
@@ -638,7 +673,18 @@ template <typename InputIteratorT,
           typename ReductionOpT,
           typename InitT     = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::value_t<InputIteratorT>>,
           typename AccumT    = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::value_t<InputIteratorT>, InitT>,
-          typename PolicyHub = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>>
+          typename PolicyHub = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
+          typename KernelSource = detail::reduce::DeviceSegmentedReduceKernelSource<
+            typename PolicyHub::MaxPolicy,
+            InputIteratorT,
+            OutputIteratorT,
+            BeginOffsetIteratorT,
+            EndOffsetIteratorT,
+            OffsetT,
+            ReductionOpT,
+            InitT,
+            AccumT>,
+          typename KernelLauncherFactory = detail::TripleChevronFactory>
 struct DispatchSegmentedReduce
 {
   //---------------------------------------------------------------------------
@@ -686,6 +732,11 @@ struct DispatchSegmentedReduce
 
   int ptx_version;
 
+  // Source getter
+  KernelSource kernel_source;
+
+  KernelLauncherFactory launcher_factory;
+
   //---------------------------------------------------------------------------
   // Constructor
   //---------------------------------------------------------------------------
@@ -702,7 +753,9 @@ struct DispatchSegmentedReduce
     ReductionOpT reduction_op,
     InitT init,
     cudaStream_t stream,
-    int ptx_version)
+    int ptx_version,
+    KernelSource kernel_source             = {},
+    KernelLauncherFactory launcher_factory = {})
       : d_temp_storage(d_temp_storage)
       , temp_storage_bytes(temp_storage_bytes)
       , d_in(d_in)
@@ -714,6 +767,8 @@ struct DispatchSegmentedReduce
       , init(init)
       , stream(stream)
       , ptx_version(ptx_version)
+      , kernel_source(kernel_source)
+      , launcher_factory(launcher_factory)
   {}
 
   //---------------------------------------------------------------------------
@@ -735,7 +790,7 @@ struct DispatchSegmentedReduce
    */
   template <typename ActivePolicyT, typename DeviceSegmentedReduceKernelT>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
-  InvokePasses(DeviceSegmentedReduceKernelT segmented_reduce_kernel)
+  InvokePasses(DeviceSegmentedReduceKernelT segmented_reduce_kernel, ActivePolicyT policy = {})
   {
     cudaError error = cudaSuccess;
 
@@ -752,7 +807,7 @@ struct DispatchSegmentedReduce
       // Init kernel configuration
       [[maybe_unused]] detail::KernelConfig segmented_reduce_config;
       error =
-        CubDebug(segmented_reduce_config.Init<typename ActivePolicyT::SegmentedReducePolicy>(segmented_reduce_kernel));
+        CubDebug(segmented_reduce_config.Init(segmented_reduce_kernel, policy.SegmentedReduce(), launcher_factory));
       if (cudaSuccess != error)
       {
         break;
@@ -763,15 +818,14 @@ struct DispatchSegmentedReduce
       _CubLog("Invoking SegmentedDeviceReduceKernel<<<%d, %d, 0, %lld>>>(), "
               "%d items per thread, %d SM occupancy\n",
               num_segments,
-              ActivePolicyT::SegmentedReducePolicy::BLOCK_THREADS,
+              policy.SegmentedReduce().BlockThreads(),
               (long long) stream,
-              ActivePolicyT::SegmentedReducePolicy::ITEMS_PER_THREAD,
+              policy.SegmentedReduce().ItemsPerThread(),
               segmented_reduce_config.sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
       // Invoke DeviceReduceKernel
-      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-        num_segments, ActivePolicyT::SegmentedReducePolicy::BLOCK_THREADS, 0, stream)
+      launcher_factory(num_segments, policy.SegmentedReduce().BlockThreads(), 0, stream)
         .doit(segmented_reduce_kernel, d_in, d_out, d_begin_offsets, d_end_offsets, num_segments, reduction_op, init);
 
       // Check for failure to launch
@@ -794,10 +848,11 @@ struct DispatchSegmentedReduce
 
   /// Invocation
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT policy = {})
   {
+    auto wrapped_policy = detail::reduce::MakeReducePolicyWrapper(policy);
     // Force kernel code-generation in all compiler passes
-    return InvokePasses<ActivePolicyT>(
+    return InvokePasses(
       detail::reduce::DeviceSegmentedReduceKernel<
         typename PolicyHub::MaxPolicy,
         InputIteratorT,
@@ -807,7 +862,8 @@ struct DispatchSegmentedReduce
         OffsetT,
         ReductionOpT,
         InitT,
-        AccumT>);
+        AccumT>,
+      wrapped_policy);
   }
 
   //---------------------------------------------------------------------------
