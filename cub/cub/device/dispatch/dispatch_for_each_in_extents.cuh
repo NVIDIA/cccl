@@ -50,7 +50,7 @@
 #  include <cuda/std/__type_traits/integral_constant.h> // std::integral_constant
 #  include <cuda/std/__utility/integer_sequence.h> // std::index_sequence
 #  include <cuda/std/array> // std::array
-#  include <cuda/std/cstddef> // std::size_t
+#  include <cuda/std/cstddef> // size_t
 
 #  define _CUB_RETURN_IF_ERROR(STATUS)       \
     {                                        \
@@ -123,7 +123,7 @@ public:
             items_per_thread);
 #  endif
     auto status =
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(num_cta, block_threads, 0, _stream)
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_cta, block_threads, 0, _stream)
         .doit(detail::for_each_in_extents::
                 static_kernel<max_policy_t, OpType, ExtentsType, decltype(sub_sizes_div_array), Ranks...>,
               _op,
@@ -160,7 +160,7 @@ public:
             _stream,
             items_per_thread);
 #  endif
-    status = THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(num_cta, block_threads, 0, _stream)
+    status = THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_cta, block_threads, 0, _stream)
                .doit(kernel, _op, _ext, sub_sizes_div_array, extents_div_array);
     _CUB_RETURN_IF_ERROR(status)
     _CUB_RETURN_IF_STREAM_ERROR(_stream)

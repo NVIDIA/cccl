@@ -2103,9 +2103,14 @@ reserved::logical_data_untyped_impl::get_frozen(task& fake_task, const data_plac
   // This will also update the MSI states of the logical data instances.
   reserved::fetch_data(ctx, d, id, fake_task, m, ::std::nullopt, dplace, prereqs);
 
-  // Make sure we now have a valid copy
-  assert(used_instances[int(id)].is_allocated());
-  assert(used_instances[int(id)].get_msir() != reserved::msir_state_id::invalid);
+  // Make sure we now have a valid copy (unless this is a token, because
+  // fetch_data will only enforce dependencies and will not move or allocate
+  // data)
+  if constexpr (!::std::is_same_v<T, void_interface>)
+  {
+    assert(used_instances[int(id)].is_allocated());
+    assert(used_instances[int(id)].get_msir() != reserved::msir_state_id::invalid);
+  }
 
   return ::std::pair<T, event_list>(dinterface->instance<T>(id), mv(prereqs));
 }

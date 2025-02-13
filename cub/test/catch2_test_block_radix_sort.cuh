@@ -63,7 +63,7 @@ kernel(ActionT action, InputIteratorT input, OutputIteratorT output, int begin_b
 
   if (striped)
   {
-    action(block_radix_sort, keys, begin_bit, end_bit, cub::Int2Type<1>{});
+    action(block_radix_sort, keys, begin_bit, end_bit, cuda::std::true_type{});
 
     for (int i = 0; i < ItemsPerThread; i++)
     {
@@ -72,7 +72,7 @@ kernel(ActionT action, InputIteratorT input, OutputIteratorT output, int begin_b
   }
   else
   {
-    action(block_radix_sort, keys, begin_bit, end_bit, cub::Int2Type<0>{});
+    action(block_radix_sort, keys, begin_bit, end_bit, cuda::std::false_type{});
 
     for (int i = 0; i < ItemsPerThread; i++)
     {
@@ -142,7 +142,7 @@ __global__ void kernel(
 
   if (striped)
   {
-    action(block_radix_sort, keys, values, begin_bit, end_bit, cub::Int2Type<1>{});
+    action(block_radix_sort, keys, values, begin_bit, end_bit, cuda::std::true_type{});
 
     for (int i = 0; i < ItemsPerThread; i++)
     {
@@ -152,7 +152,7 @@ __global__ void kernel(
   }
   else
   {
-    action(block_radix_sort, keys, values, begin_bit, end_bit, cub::Int2Type<0>{});
+    action(block_radix_sort, keys, values, begin_bit, end_bit, cuda::std::false_type{});
 
     for (int i = 0; i < ItemsPerThread; i++)
     {
@@ -203,15 +203,15 @@ void block_radix_sort(
 struct sort_op_t
 {
   template <class BlockRadixSortT, class KeysT>
-  __device__ void
-  operator()(BlockRadixSortT& block_radix_sort, KeysT& keys, int begin_bit, int end_bit, cub::Int2Type<0> /* striped */)
+  __device__ void operator()(
+    BlockRadixSortT& block_radix_sort, KeysT& keys, int begin_bit, int end_bit, cuda::std::false_type /* striped */)
   {
     block_radix_sort.Sort(keys, begin_bit, end_bit);
   }
 
   template <class BlockRadixSortT, class KeysT>
-  __device__ void
-  operator()(BlockRadixSortT& block_radix_sort, KeysT& keys, int begin_bit, int end_bit, cub::Int2Type<1> /* striped */)
+  __device__ void operator()(
+    BlockRadixSortT& block_radix_sort, KeysT& keys, int begin_bit, int end_bit, cuda::std::true_type /* striped */)
   {
     block_radix_sort.SortBlockedToStriped(keys, begin_bit, end_bit);
   }
@@ -220,15 +220,15 @@ struct sort_op_t
 struct descending_sort_op_t
 {
   template <class BlockRadixSortT, class KeysT>
-  __device__ void
-  operator()(BlockRadixSortT& block_radix_sort, KeysT& keys, int begin_bit, int end_bit, cub::Int2Type<0> /* striped */)
+  __device__ void operator()(
+    BlockRadixSortT& block_radix_sort, KeysT& keys, int begin_bit, int end_bit, cuda::std::false_type /* striped */)
   {
     block_radix_sort.SortDescending(keys, begin_bit, end_bit);
   }
 
   template <class BlockRadixSortT, class KeysT>
-  __device__ void
-  operator()(BlockRadixSortT& block_radix_sort, KeysT& keys, int begin_bit, int end_bit, cub::Int2Type<1> /* striped */)
+  __device__ void operator()(
+    BlockRadixSortT& block_radix_sort, KeysT& keys, int begin_bit, int end_bit, cuda::std::true_type /* striped */)
   {
     block_radix_sort.SortDescendingBlockedToStriped(keys, begin_bit, end_bit);
   }
@@ -243,7 +243,7 @@ struct sort_pairs_op_t
     ValuesT& values,
     int begin_bit,
     int end_bit,
-    cub::Int2Type<0> /* striped */)
+    cuda::std::false_type /* striped */)
   {
     block_radix_sort.Sort(keys, values, begin_bit, end_bit);
   }
@@ -255,7 +255,7 @@ struct sort_pairs_op_t
     ValuesT& values,
     int begin_bit,
     int end_bit,
-    cub::Int2Type<1> /* striped */)
+    cuda::std::true_type /* striped */)
   {
     block_radix_sort.SortBlockedToStriped(keys, values, begin_bit, end_bit);
   }
@@ -270,7 +270,7 @@ struct descending_sort_pairs_op_t
     ValuesT& values,
     int begin_bit,
     int end_bit,
-    cub::Int2Type<0> /* striped */)
+    cuda::std::false_type /* striped */)
   {
     block_radix_sort.SortDescending(keys, values, begin_bit, end_bit);
   }
@@ -282,7 +282,7 @@ struct descending_sort_pairs_op_t
     ValuesT& values,
     int begin_bit,
     int end_bit,
-    cub::Int2Type<1> /* striped */)
+    cuda::std::true_type /* striped */)
   {
     block_radix_sort.SortDescendingBlockedToStriped(keys, values, begin_bit, end_bit);
   }

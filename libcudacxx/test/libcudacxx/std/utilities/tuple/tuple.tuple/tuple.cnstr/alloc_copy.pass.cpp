@@ -13,8 +13,6 @@
 // template <class Alloc>
 //   tuple(allocator_arg_t, const Alloc& a, const tuple&);
 
-// UNSUPPORTED: c++98, c++03
-
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 

@@ -85,13 +85,11 @@ __global__ void thread_reduce_kernel_array(const T* d_in, T* d_out, ReduceOperat
   *d_out = cub::ThreadReduce(thread_data, reduce_operator);
 }
 
-#if _CCCL_STD_VER >= 2014
-
 template <int NUM_ITEMS, typename T, typename ReduceOperator>
 __global__ void thread_reduce_kernel_span(const T* d_in, T* d_out, ReduceOperator reduce_operator)
 {
   T thread_data[NUM_ITEMS];
-#  pragma unroll
+#pragma unroll
   for (int i = 0; i < NUM_ITEMS; ++i)
   {
     thread_data[i] = d_in[i];
@@ -99,8 +97,6 @@ __global__ void thread_reduce_kernel_span(const T* d_in, T* d_out, ReduceOperato
   ::cuda::std::span<T, NUM_ITEMS> span(thread_data);
   *d_out = cub::ThreadReduce(span, reduce_operator);
 }
-
-#endif // _CCCL_STD_VER >= 2014
 
 #if _CCCL_STD_VER >= 2023
 
@@ -247,12 +243,12 @@ struct cub_operator_to_identity<T, cuda::maximum<>>
  **********************************************************************************************************************/
 
 using narrow_precision_type_list = c2h::type_list<
-#ifdef TEST_HALF_T
+#if TEST_HALF_T()
   __half,
-#endif
-#ifdef TEST_BF_T
+#endif // TEST_HALF_T()
+#if TEST_BF_T()
   __nv_bfloat16
-#endif
+#endif // TEST_BF_T()
   >;
 
 using fp_type_list =
@@ -283,14 +279,14 @@ using cub_operator_fp_list =
  **********************************************************************************************************************/
 
 _CCCL_TEMPLATE(typename T)
-_CCCL_REQUIRES((::cuda::std::is_floating_point<T>::value))
+_CCCL_REQUIRES((::cuda::std::is_floating_point_v<T>) )
 void verify_results(const T& expected_data, const T& test_results)
 {
   REQUIRE_THAT(expected_data, Catch::Matchers::WithinRel(test_results, T{0.05}));
 }
 
 _CCCL_TEMPLATE(typename T)
-_CCCL_REQUIRES((!::cuda::std::is_floating_point<T>::value))
+_CCCL_REQUIRES((!::cuda::std::is_floating_point_v<T>) )
 void verify_results(const T& expected_data, const T& test_results)
 {
   REQUIRE(expected_data == test_results);
@@ -432,7 +428,7 @@ C2H_TEST("ThreadReduce Floating-Point Type Tests", "[reduce][thread]", fp_type_l
   }
 }
 
-#if defined(TEST_HALF_T) || defined(TEST_BF_T)
+#if TEST_HALF_T() || TEST_BF_T()
 
 C2H_TEST("ThreadReduce Narrow PrecisionType Tests",
          "[reduce][thread][narrow]",
@@ -457,7 +453,7 @@ C2H_TEST("ThreadReduce Narrow PrecisionType Tests",
   }
 }
 
-#endif // defined(TEST_HALF_T) || defined(TEST_BF_T)
+#endif // TEST_HALF_T() || TEST_BF_T()
 
 #if defined(CCCL_CHECK_SASS)
 
@@ -475,13 +471,11 @@ C2H_TEST("ThreadReduce Container Tests", "[reduce][thread]")
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   verify_results(reference_result, c2h::host_vector<int>(d_out)[0]);
 
-#  if _CCCL_STD_VER >= 2014
   thread_reduce_kernel_span<max_size>
     <<<1, 1>>>(thrust::raw_pointer_cast(d_in.data()), thrust::raw_pointer_cast(d_out.data()), cuda::std::plus<>{});
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   verify_results(reference_result, c2h::host_vector<int>(d_out)[0]);
-#  endif // _CCCL_STD_VER >= 2014
 
 #  if _CCCL_STD_VER >= 2023
   thread_reduce_kernel_mdspan<max_size>

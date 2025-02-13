@@ -11,8 +11,6 @@
 // nullptr_t
 //  is_null_pointer
 
-// UNSUPPORTED: c++98, c++03, c++11
-
 #include <cuda/std/cstddef> // for cuda::std::nullptr_t
 #include <cuda/std/type_traits>
 

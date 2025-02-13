@@ -32,7 +32,7 @@ namespace cuda::experimental
 {
 
 template <typename _Tp>
-_CCCL_CONCEPT __valid_1d_copy_fill_argument = _CUDA_VRANGES::contiguous_range<detail::__as_copy_arg_t<_Tp>>;
+_CCCL_CONCEPT __valid_1d_copy_fill_argument = _CUDA_VRANGES::contiguous_range<kernel_arg_t<_Tp>>;
 
 template <typename _Tp, typename _Decayed = _CUDA_VSTD::decay_t<_Tp>>
 using __as_mdspan_t =
@@ -50,7 +50,8 @@ inline constexpr bool
     true;
 
 template <typename _Tp>
-inline constexpr bool __valid_nd_copy_fill_argument = __convertible_to_mdspan<detail::__as_copy_arg_t<_Tp>>;
+inline constexpr bool __valid_nd_copy_fill_argument =
+  __convertible_to_mdspan<__kernel_transform_result_t<__launch_transform_result_t<_Tp>>>;
 
 } // namespace cuda::experimental
 #endif //__CUDAX_ALGORITHM_COMMON

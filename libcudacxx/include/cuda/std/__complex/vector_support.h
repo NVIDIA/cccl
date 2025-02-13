@@ -48,11 +48,7 @@ template <class _Tp>
 struct __complex_alignment : integral_constant<size_t, 2 * sizeof(_Tp)>
 {};
 
-#if _LIBCUDACXX_CUDA_ABI_VERSION > 3
-#  define _LIBCUDACXX_COMPLEX_ALIGNAS _CCCL_ALIGNAS(__complex_alignment<_Tp>::value)
-#else
-#  define _LIBCUDACXX_COMPLEX_ALIGNAS
-#endif
+#define _LIBCUDACXX_COMPLEX_ALIGNAS _CCCL_ALIGNAS(__complex_alignment<_Tp>::value)
 
 template <class _Tp>
 struct __type_to_vector;
@@ -85,21 +81,21 @@ struct __ab_results
 };
 
 template <class _Tp, typename = enable_if_t<!__has_vector_type<_Tp>::value>>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __abcd_results<_Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr __abcd_results<_Tp>
 __complex_calculate_partials(_Tp __a, _Tp __b, _Tp __c, _Tp __d) noexcept
 {
   return {__a * __c, __b * __d, __a * __d, __b * __c};
 }
 
 template <class _Tp, typename = enable_if_t<!__has_vector_type<_Tp>::value>>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __ab_results<_Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr __ab_results<_Tp>
 __complex_piecewise_mul(_Tp __x1, _Tp __y1, _Tp __x2, _Tp __y2) noexcept
 {
   return {__x1 * __x2, __y1 * __y2};
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 enable_if_t<__has_vector_type<_Tp>::value, __abcd_results<_Tp>>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__has_vector_type<_Tp>::value, __abcd_results<_Tp>>
 __complex_calculate_partials(_Tp __a, _Tp __b, _Tp __c, _Tp __d) noexcept
 {
   __abcd_results<_Tp> __ret;
@@ -122,7 +118,7 @@ __complex_calculate_partials(_Tp __a, _Tp __b, _Tp __c, _Tp __d) noexcept
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 enable_if_t<__has_vector_type<_Tp>::value, __ab_results<_Tp>>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__has_vector_type<_Tp>::value, __ab_results<_Tp>>
 __complex_piecewise_mul(_Tp __x1, _Tp __y1, _Tp __x2, _Tp __y2) noexcept
 {
   __ab_results<_Tp> __ret;

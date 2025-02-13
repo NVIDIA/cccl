@@ -23,7 +23,6 @@ set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
 option(CCCL_ENABLE_EXCEPTIONS "Enable exceptions within CCCL libraries." ON)
 option(CCCL_ENABLE_RTTI "Enable RTTI within CCCL libraries." ON)
 option(CCCL_ENABLE_WERROR "Treat warnings as errors for CCCL targets." ON)
-option(CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING "Suppress Visual Studio 2017 deprecation warnings" OFF)
 
 function(cccl_build_compiler_interface interface_target cuda_compile_options cxx_compile_options compile_defs)
   add_library(${interface_target} INTERFACE)
@@ -66,10 +65,6 @@ function(cccl_build_compiler_targets)
 
   if (NOT CCCL_ENABLE_RTTI)
     list(APPEND cxx_compile_definitions "CCCL_DISABLE_RTTI")
-  endif()
-
-  if (CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING)
-    list(APPEND cxx_compile_definitions "CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING")
   endif()
 
   if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
@@ -166,20 +161,6 @@ function(cccl_build_compiler_targets)
     add_library(cccl.compiler_interface_cpp${dialect} INTERFACE)
     target_link_libraries(cccl.compiler_interface_cpp${dialect} INTERFACE cccl.compiler_interface)
   endforeach()
-
-  if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    # C4127: conditional expression is constant
-    # Disable this MSVC warning for C++11/C++14. In C++17+, we can use
-    # _CCCL_IF_CONSTEXPR to address these warnings.
-    target_compile_options(cccl.compiler_interface_cpp11 INTERFACE
-      $<$<COMPILE_LANGUAGE:CXX>:/wd4127>
-      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/wd4127>
-    )
-    target_compile_options(cccl.compiler_interface_cpp14 INTERFACE
-      $<$<COMPILE_LANGUAGE:CXX>:/wd4127>
-      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/wd4127>
-    )
-  endif()
 
   # Some of our unit tests unconditionally throw exceptions, and compilers will
   # detect that the following instructions are unreachable. This is intentional

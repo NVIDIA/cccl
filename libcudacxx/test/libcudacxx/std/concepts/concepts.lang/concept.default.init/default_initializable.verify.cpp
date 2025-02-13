@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class T>
 //     concept default_initializable = constructible_from<T> &&
 //     requires { T{}; } &&

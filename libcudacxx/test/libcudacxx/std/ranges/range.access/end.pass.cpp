@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // cuda::std::ranges::end
 // cuda::std::ranges::cend
 
@@ -440,7 +438,7 @@ ASSERT_NOEXCEPT(cuda::std::ranges::end(cuda::std::declval<int (&)[10]>()));
 ASSERT_NOEXCEPT(cuda::std::ranges::cend(cuda::std::declval<int (&)[10]>()));
 
 // needs c++17's guaranteed copy elision
-#if TEST_STD_VER > 2014 && !defined(TEST_COMPILER_MSVC_2019) // broken noexcept
+#if !defined(TEST_COMPILER_MSVC_2019) // broken noexcept
 _CCCL_GLOBAL_CONSTANT struct NoThrowMemberEnd
 {
   __host__ __device__ ThrowingIterator<int> begin() const;
@@ -457,7 +455,7 @@ _CCCL_GLOBAL_CONSTANT struct NoThrowADLEnd
 } ntae;
 static_assert(noexcept(cuda::std::ranges::end(ntae)), "");
 static_assert(noexcept(cuda::std::ranges::cend(ntae)), "");
-#endif // TEST_STD_VER > 2014 && !TEST_COMPILER_MSVC_2019
+#endif // !TEST_COMPILER_MSVC_2019
 
 _CCCL_GLOBAL_CONSTANT struct NoThrowMemberEndReturnsRef
 {
@@ -504,10 +502,10 @@ int main(int, char**)
   testEndFunction();
   static_assert(testEndFunction(), "");
 
-#if TEST_STD_VER > 2014 && !defined(TEST_COMPILER_MSVC_2019) // broken noexcept
+#if !defined(TEST_COMPILER_MSVC_2019) // broken noexcept
   unused(ntme);
   unused(ntae);
-#endif // TEST_STD_VER > 2014 && !TEST_COMPILER_MSVC_2019
+#endif // !TEST_COMPILER_MSVC_2019
   unused(ntmerr);
   unused(erar);
 

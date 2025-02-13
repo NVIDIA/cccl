@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: nvcc-11.1, nvcc-11.2
 // The way we currently compile nvrtc is not working with that test
 // UNSUPPORTED: nvrtc && !c++20
 
@@ -20,9 +19,7 @@
 
 static_assert(cuda::std::is_nothrow_move_constructible<cuda::std::source_location>::value, "support.srcloc.cons (1.1)");
 static_assert(cuda::std::is_nothrow_move_assignable<cuda::std::source_location>::value, "support.srcloc.cons (1.2)");
-#if TEST_STD_VER >= 2014
 static_assert(cuda::std::is_nothrow_swappable<cuda::std::source_location>::value, "support.srcloc.cons (1.3)");
-#endif // TEST_STD_VER >= 2014
 
 ASSERT_NOEXCEPT(cuda::std::source_location());
 #if !defined(TEST_COMPILER_NVCC)
@@ -51,12 +48,10 @@ static_assert(cuda::std::is_same<const char*, decltype(empty.file_name())>::valu
 static_assert(cuda::std::is_same<const char*, decltype(empty.function_name())>::value, "");
 
 __device__ _CCCL_CONSTEXPR_GLOBAL cuda::std::source_location device_empty{};
-#if _CCCL_CUDACC_AT_LEAST(11, 3)
 static_assert(device_empty.line() == 0, "");
 static_assert(device_empty.column() == 0, "");
 static_assert(device_empty.file_name()[0] == '\0', "");
 static_assert(device_empty.function_name()[0] == '\0', "");
-#endif // _CCCL_CUDACC_BELOW(11, 3)
 
 ASSERT_NOEXCEPT(device_empty.line());
 ASSERT_NOEXCEPT(device_empty.column());

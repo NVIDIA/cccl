@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <format>
+#include <string_view>
 
 #include "cccl/c/types.h"
 #include <kernels/operators.h>
@@ -30,33 +31,54 @@ constexpr std::string_view op_template = R"XXX(
 #undef OP_SIZE
 )XXX";
 
+constexpr std::string_view stateless_binary_op_template = R"XXX(
+extern "C" __device__ {0} OP_NAME(VALUE_T lhs, VALUE_T rhs);
+struct op_wrapper {{
+  __device__ {0} operator()(VALUE_T lhs, VALUE_T rhs) const {{
+    return OP_NAME(lhs, rhs);
+  }}
+}};
+)XXX";
+
+constexpr std::string_view stateful_binary_op_template = R"XXX(
+struct __align__(OP_ALIGNMENT) op_state {{
+  char data[OP_SIZE];
+}};
+extern "C" __device__ {0} OP_NAME(op_state *state, VALUE_T lhs, VALUE_T rhs);
+struct op_wrapper {{
+  op_state state;
+  __device__ {0} operator()(VALUE_T lhs, VALUE_T rhs) {{
+    return OP_NAME(&state, lhs, rhs);
+  }}
+}};
+)XXX";
+
+std::string
+make_kernel_binary_operator_full_source(std::string_view input_t, cccl_op_t operation, std::string_view return_type)
+{
+  const std::string op_alignment =
+    operation.type == cccl_op_kind_t::stateless ? "" : std::format("{}", operation.alignment);
+  const std::string op_size = operation.type == cccl_op_kind_t::stateless ? "" : std::format("{}", operation.size);
+
+  return std::format(
+    op_template,
+    input_t,
+    operation.name,
+    op_alignment,
+    op_size,
+    operation.type == cccl_op_kind_t::stateless
+      ? std::format(stateless_binary_op_template, return_type)
+      : std::format(stateful_binary_op_template, return_type));
+}
+
 std::string make_kernel_user_binary_operator(std::string_view input_t, cccl_op_t operation)
 {
-  constexpr std::string_view stateless_op = R"XXX(
-extern "C" __device__ VALUE_T OP_NAME(VALUE_T lhs, VALUE_T rhs);
-struct op_wrapper {
-  __device__ VALUE_T operator()(VALUE_T lhs, VALUE_T rhs) const {
-    return OP_NAME(lhs, rhs);
-  }
-};
-)XXX";
+  return make_kernel_binary_operator_full_source(input_t, operation, "VALUE_T");
+}
 
-  constexpr std::string_view stateful_op = R"XXX(
-struct __align__(OP_ALIGNMENT) op_state {
-  char data[OP_SIZE];
-};
-extern "C" __device__ VALUE_T OP_NAME(op_state *state, VALUE_T lhs, VALUE_T rhs);
-struct op_wrapper {
-  op_state state;
-  __device__ VALUE_T operator()(VALUE_T lhs, VALUE_T rhs) {
-    return OP_NAME(&state, lhs, rhs);
-  }
-};
-)XXX";
-
-  return (operation.type == cccl_op_kind_t::stateless)
-         ? std::format(op_template, input_t, operation.name, "", "", stateless_op)
-         : std::format(op_template, input_t, operation.name, operation.alignment, operation.size, stateful_op);
+std::string make_kernel_user_comparison_operator(std::string_view input_t, cccl_op_t operation)
+{
+  return make_kernel_binary_operator_full_source(input_t, operation, "bool");
 }
 
 std::string make_kernel_user_unary_operator(std::string_view input_t, cccl_op_t operation)

@@ -85,7 +85,7 @@ CUB_NAMESPACE_BEGIN
  * thrust::reverse_iterator<KeyIterator> reverse_iter(d_keys.end());
  *
  * // Determine temporary device storage requirements
- * std::size_t temp_storage_bytes = 0;
+ * size_t temp_storage_bytes = 0;
  * cub::DeviceMergeSort::SortPairs(
  *   nullptr,
  *   temp_storage_bytes,
@@ -122,7 +122,7 @@ private:
   template <typename KeyIteratorT, typename ValueIteratorT, typename OffsetT, typename CompareOpT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairsNoNVTX(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     KeyIteratorT d_keys,
     ValueIteratorT d_items,
     OffsetT num_items,
@@ -167,7 +167,7 @@ public:
    *
    * // Determine temporary device storage requirements
    * void *d_temp_storage = nullptr;
-   * std::size_t temp_storage_bytes = 0;
+   * size_t temp_storage_bytes = 0;
    * cub::DeviceMergeSort::SortPairs(
    *   d_temp_storage, temp_storage_bytes,
    *   d_keys, d_values, num_items, custom_op);
@@ -234,7 +234,7 @@ public:
   template <typename KeyIteratorT, typename ValueIteratorT, typename OffsetT, typename CompareOpT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     KeyIteratorT d_keys,
     ValueIteratorT d_items,
     OffsetT num_items,
@@ -277,7 +277,7 @@ public:
    *
    * // Determine temporary device storage requirements
    * void *d_temp_storage = nullptr;
-   * std::size_t temp_storage_bytes = 0;
+   * size_t temp_storage_bytes = 0;
    * cub::DeviceMergeSort::SortPairsCopy(
    *   d_temp_storage, temp_storage_bytes,
    *   d_keys, d_values, num_items, custom_op);
@@ -364,7 +364,7 @@ public:
             typename CompareOpT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairsCopy(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     KeyInputIteratorT d_input_keys,
     ValueInputIteratorT d_input_items,
     KeyIteratorT d_output_keys,
@@ -396,7 +396,7 @@ private:
   template <typename KeyIteratorT, typename OffsetT, typename CompareOpT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysNoNVTX(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     KeyIteratorT d_keys,
     OffsetT num_items,
     CompareOpT compare_op,
@@ -447,7 +447,7 @@ public:
    *
    * // Determine temporary device storage requirements
    * void *d_temp_storage = nullptr;
-   * std::size_t temp_storage_bytes = 0;
+   * size_t temp_storage_bytes = 0;
    * cub::DeviceMergeSort::SortKeys(
    *   d_temp_storage, temp_storage_bytes,
    *   d_keys, num_items, custom_op);
@@ -506,7 +506,7 @@ public:
   template <typename KeyIteratorT, typename OffsetT, typename CompareOpT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     KeyIteratorT d_keys,
     OffsetT num_items,
     CompareOpT compare_op,
@@ -521,7 +521,7 @@ private:
   template <typename KeyInputIteratorT, typename KeyIteratorT, typename OffsetT, typename CompareOpT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysCopyNoNVTX(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     KeyInputIteratorT d_input_keys,
     KeyIteratorT d_output_keys,
     OffsetT num_items,
@@ -577,7 +577,7 @@ public:
    *
    * // Determine temporary device storage requirements
    * void *d_temp_storage = nullptr;
-   * std::size_t temp_storage_bytes = 0;
+   * size_t temp_storage_bytes = 0;
    * cub::DeviceMergeSort::SortKeysCopy(
    *   d_temp_storage, temp_storage_bytes,
    *   d_keys, num_items, custom_op);
@@ -645,7 +645,7 @@ public:
   template <typename KeyInputIteratorT, typename KeyIteratorT, typename OffsetT, typename CompareOpT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysCopy(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     KeyInputIteratorT d_input_keys,
     KeyIteratorT d_output_keys,
     OffsetT num_items,
@@ -686,7 +686,7 @@ public:
    *
    * // Determine temporary device storage requirements
    * void *d_temp_storage = nullptr;
-   * std::size_t temp_storage_bytes = 0;
+   * size_t temp_storage_bytes = 0;
    * cub::DeviceMergeSort::StableSortPairs(
    *   d_temp_storage, temp_storage_bytes,
    *   d_keys, d_values, num_items, custom_op);
@@ -752,7 +752,7 @@ public:
   template <typename KeyIteratorT, typename ValueIteratorT, typename OffsetT, typename CompareOpT>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortPairs(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     KeyIteratorT d_keys,
     ValueIteratorT d_items,
     OffsetT num_items,
@@ -793,7 +793,7 @@ public:
    *
    * // Determine temporary device storage requirements
    * void *d_temp_storage = nullptr;
-   * std::size_t temp_storage_bytes = 0;
+   * size_t temp_storage_bytes = 0;
    * cub::DeviceMergeSort::StableSortKeys(
    *   d_temp_storage, temp_storage_bytes,
    *   d_keys, num_items, custom_op);
@@ -852,7 +852,7 @@ public:
   template <typename KeyIteratorT, typename OffsetT, typename CompareOpT>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeys(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     KeyIteratorT d_keys,
     OffsetT num_items,
     CompareOpT compare_op,
@@ -896,7 +896,7 @@ public:
    *
    * // Determine temporary device storage requirements
    * void *d_temp_storage = nullptr;
-   * std::size_t temp_storage_bytes = 0;
+   * size_t temp_storage_bytes = 0;
    * cub::DeviceMergeSort::StableSortKeysCopy(
    *   d_temp_storage, temp_storage_bytes,
    *   d_input_keys, d_output_keys, num_items, custom_op);
@@ -964,7 +964,7 @@ public:
   template <typename KeyInputIteratorT, typename KeyIteratorT, typename OffsetT, typename CompareOpT>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeysCopy(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     KeyInputIteratorT d_input_keys,
     KeyIteratorT d_output_keys,
     OffsetT num_items,
