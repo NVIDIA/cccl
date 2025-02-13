@@ -243,7 +243,7 @@ GetAlignedPtrs(const void* in_begin, void* out_begin, ByteOffsetT num_bytes)
  */
 template <int LOGICAL_WARP_SIZE, typename VectorT, typename ByteOffsetT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
-VectorizedCopy(int32_t thread_rank, void* dest, ByteOffsetT num_bytes, const void* src)
+vectorized_copy(int32_t thread_rank, void* dest, ByteOffsetT num_bytes, const void* src)
 {
   char* out_ptr      = reinterpret_cast<char*>(dest);
   const char* in_ptr = reinterpret_cast<const char*>(src);
@@ -300,11 +300,11 @@ template <bool IsMemcpy,
           typename InputBufferT,
           typename OutputBufferT,
           typename OffsetT,
-          typename ::cuda::std::enable_if<IsMemcpy, int>::type = 0>
+          ::cuda::std::enable_if_t<IsMemcpy, int> = 0>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 copy_items(InputBufferT input_buffer, OutputBufferT output_buffer, OffsetT num_bytes, OffsetT offset = 0)
 {
-  VectorizedCopy<LOGICAL_WARP_SIZE, uint4>(
+  vectorized_copy<LOGICAL_WARP_SIZE, uint4>(
     threadIdx.x % LOGICAL_WARP_SIZE,
     &reinterpret_cast<char*>(output_buffer)[offset],
     num_bytes,
@@ -316,7 +316,7 @@ template <bool IsMemcpy,
           typename InputBufferT,
           typename OutputBufferT,
           typename OffsetT,
-          typename ::cuda::std::enable_if<!IsMemcpy, int>::type = 0>
+          ::cuda::std::enable_if_t<!IsMemcpy, int> = 0>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 copy_items(InputBufferT input_buffer, OutputBufferT output_buffer, OffsetT num_items, OffsetT offset = 0)
 {
@@ -328,41 +328,25 @@ copy_items(InputBufferT input_buffer, OutputBufferT output_buffer, OffsetT num_i
   }
 }
 
-template <bool IsMemcpy,
-          typename AliasT,
-          typename InputIt,
-          typename OffsetT,
-          typename ::cuda::std::enable_if<IsMemcpy, int>::type = 0>
+template <bool IsMemcpy, typename AliasT, typename InputIt, typename OffsetT, ::cuda::std::enable_if_t<IsMemcpy, int> = 0>
 _CCCL_DEVICE _CCCL_FORCEINLINE AliasT read_item(InputIt buffer_src, OffsetT offset)
 {
   return *(reinterpret_cast<const AliasT*>(buffer_src) + offset);
 }
 
-template <bool IsMemcpy,
-          typename AliasT,
-          typename InputIt,
-          typename OffsetT,
-          typename ::cuda::std::enable_if<!IsMemcpy, int>::type = 0>
+template <bool IsMemcpy, typename AliasT, typename InputIt, typename OffsetT, ::cuda::std::enable_if_t<!IsMemcpy, int> = 0>
 _CCCL_DEVICE _CCCL_FORCEINLINE AliasT read_item(InputIt buffer_src, OffsetT offset)
 {
   return *(buffer_src + offset);
 }
 
-template <bool IsMemcpy,
-          typename AliasT,
-          typename OutputIt,
-          typename OffsetT,
-          typename ::cuda::std::enable_if<IsMemcpy, int>::type = 0>
+template <bool IsMemcpy, typename AliasT, typename OutputIt, typename OffsetT, ::cuda::std::enable_if_t<IsMemcpy, int> = 0>
 _CCCL_DEVICE _CCCL_FORCEINLINE void write_item(OutputIt buffer_dst, OffsetT offset, AliasT value)
 {
   *(reinterpret_cast<AliasT*>(buffer_dst) + offset) = value;
 }
 
-template <bool IsMemcpy,
-          typename AliasT,
-          typename OutputIt,
-          typename OffsetT,
-          typename ::cuda::std::enable_if<!IsMemcpy, int>::type = 0>
+template <bool IsMemcpy, typename AliasT, typename OutputIt, typename OffsetT, ::cuda::std::enable_if_t<!IsMemcpy, int> = 0>
 _CCCL_DEVICE _CCCL_FORCEINLINE void write_item(OutputIt buffer_dst, OffsetT offset, AliasT value)
 {
   *(buffer_dst + offset) = value;

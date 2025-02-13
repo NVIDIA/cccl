@@ -80,8 +80,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER >= 2014
-
 _CCCL_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
 
 template <class _ElementType,
@@ -118,13 +116,9 @@ private:
     _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
     __check_index(_Extents const& exts, _SizeTypes... __indices)
     {
-#  if _CCCL_STD_VER >= 2017
       return (((is_unsigned_v<index_type> ? true : static_cast<index_type>(__indices) >= 0)
                && static_cast<index_type>(__indices) < exts.extent(_Idxs))
               && ...);
-#  else
-      return true;
-#  endif // _CCCL_STD_VER >= 2017
     }
 
     template <class... _SizeTypes>
@@ -199,9 +193,9 @@ public:
   //--------------------------------------------------------------------------------
   // [mdspan.basic.cons], mdspan constructors, assignment, and destructor
 
-#  if _CCCL_STD_VER <= 2020
+#if _CCCL_STD_VER <= 2020
   _CCCL_HIDE_FROM_ABI constexpr mdspan() = default;
-#  else // ^^^ C++17 ^^^ / vvv C++20 vvv
+#else // ^^^ C++17 ^^^ / vvv C++20 vvv
   _CCCL_HIDE_FROM_ABI constexpr mdspan()
     requires(
               // Directly using rank_dynamic()>0 here doesn't work for nvcc
@@ -209,7 +203,7 @@ public:
               && _CCCL_TRAIT(is_default_constructible, mapping_type)
               && _CCCL_TRAIT(is_default_constructible, accessor_type))
   = default;
-#  endif // _CCCL_STD_VER >= 2020
+#endif // _CCCL_STD_VER >= 2020
   _CCCL_HIDE_FROM_ABI constexpr mdspan(const mdspan&) = default;
   _CCCL_HIDE_FROM_ABI constexpr mdspan(mdspan&&)      = default;
 
@@ -298,7 +292,7 @@ public:
   //--------------------------------------------------------------------------------
   // [mdspan.basic.mapping], mdspan mapping domain multidimensional index to access codomain element
 
-#  if __MDSPAN_USE_BRACKET_OPERATOR
+#if __MDSPAN_USE_BRACKET_OPERATOR
   _CCCL_TEMPLATE(class... _SizeTypes)
   _CCCL_REQUIRES(__fold_and_v<_CCCL_TRAIT(is_convertible, _SizeTypes, index_type)...> _CCCL_AND
                    __fold_and_v<_CCCL_TRAIT(is_nothrow_constructible, index_type, _SizeTypes)...> _CCCL_AND(
@@ -307,7 +301,7 @@ public:
   {
     return __accessor_ref().access(__ptr_ref(), __impl::__index(*this, __indices...));
   }
-#  endif // __MDSPAN_USE_BRACKET_OPERATOR
+#endif // __MDSPAN_USE_BRACKET_OPERATOR
 
   _CCCL_TEMPLATE(class _SizeType)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _SizeType, index_type)
@@ -327,7 +321,7 @@ public:
     return __accessor_ref().access(__ptr_ref(), __impl::__index(*this, __indices));
   }
 
-#  if !__MDSPAN_USE_BRACKET_OPERATOR
+#if !__MDSPAN_USE_BRACKET_OPERATOR
   _CCCL_TEMPLATE(class _Index)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _Index, index_type)
                    _CCCL_AND _CCCL_TRAIT(is_nothrow_constructible, index_type, _Index)
@@ -336,9 +330,9 @@ public:
   {
     return __accessor_ref().access(__ptr_ref(), __impl::__index(*this, __idx));
   }
-#  endif // !__MDSPAN_USE_BRACKET_OPERATOR
+#endif // !__MDSPAN_USE_BRACKET_OPERATOR
 
-#  if __MDSPAN_USE_PAREN_OPERATOR
+#if __MDSPAN_USE_PAREN_OPERATOR
   _CCCL_TEMPLATE(class... _SizeTypes)
   _CCCL_REQUIRES(__fold_and_v<_CCCL_TRAIT(is_convertible, _SizeTypes, index_type)...> _CCCL_AND
                    __fold_and_v<_CCCL_TRAIT(is_nothrow_constructible, index_type, _SizeTypes)...> _CCCL_AND(
@@ -365,7 +359,7 @@ public:
   {
     return __accessor_ref().access(__ptr_ref(), __impl::__index(*this, __indices));
   }
-#  endif // __MDSPAN_USE_PAREN_OPERATOR
+#endif // __MDSPAN_USE_PAREN_OPERATOR
 
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t size() const noexcept
   {
@@ -469,7 +463,7 @@ private:
   friend class mdspan;
 };
 
-#  if defined(__MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION)
+#if defined(__MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION)
 _CCCL_TEMPLATE(class _ElementType, class... _SizeTypes)
 _CCCL_REQUIRES(__fold_and_v<_CCCL_TRAIT(is_integral, _SizeTypes)...> _CCCL_AND(sizeof...(_SizeTypes) > 0))
 _CCCL_HOST_DEVICE explicit mdspan(_ElementType*, _SizeTypes...)
@@ -509,11 +503,9 @@ _CCCL_HOST_DEVICE mdspan(const typename _AccessorType::data_handle_type, const _
             typename _MappingType::extents_type,
             typename _MappingType::layout_type,
             _AccessorType>;
-#  endif // __MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION
+#endif // __MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION
 
 _CCCL_NV_DIAG_DEFAULT(186)
-
-#endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

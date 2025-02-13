@@ -10,8 +10,6 @@
 
 // void_t
 
-// UNSUPPORTED: c++98, c++03
-
 // XFAIL: gcc-5.1, gcc-5.2
 
 #include <cuda/std/type_traits>

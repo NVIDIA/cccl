@@ -204,7 +204,7 @@ void warp_reduce(c2h::device_vector<T>& in, c2h::device_vector<T>& out, ActionT 
 /**
  * @brief Compares the results returned from system under test against the expected results.
  */
-template <typename T, typename ::cuda::std::enable_if<::cuda::std::is_floating_point<T>::value, int>::type = 0>
+template <typename T, ::cuda::std::enable_if_t<::cuda::std::is_floating_point_v<T>, int> = 0>
 void verify_results(const c2h::host_vector<T>& expected_data, const c2h::device_vector<T>& test_results)
 {
   REQUIRE_APPROX_EQ(expected_data, test_results);
@@ -213,7 +213,7 @@ void verify_results(const c2h::host_vector<T>& expected_data, const c2h::device_
 /**
  * @brief Compares the results returned from system under test against the expected results.
  */
-template <typename T, typename ::cuda::std::enable_if<!::cuda::std::is_floating_point<T>::value, int>::type = 0>
+template <typename T, ::cuda::std::enable_if_t<!::cuda::std::is_floating_point_v<T>, int> = 0>
 void verify_results(const c2h::host_vector<T>& expected_data, const c2h::device_vector<T>& test_results)
 {
   REQUIRE(expected_data == test_results);

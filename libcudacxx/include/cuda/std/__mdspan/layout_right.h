@@ -66,8 +66,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2011
-
 //==============================================================================
 template <class _Extents>
 class layout_right::mapping
@@ -246,14 +244,14 @@ public:
   }
 
   // In C++ 20 the not equal exists if equal is found
-#  if !(__MDSPAN_HAS_CXX_20)
+#if !__MDSPAN_HAS_CXX_20
   template <class _OtherExtents>
   _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(mapping const& __lhs, mapping<_OtherExtents> const& __rhs) noexcept
   {
     return __lhs.extents() != __rhs.extents();
   }
-#  endif
+#endif // !__MDSPAN_HAS_CXX_20
 
   // Not really public, but currently needed to implement fully constexpr usable submdspan:
   template <size_t _Np, class _SizeType, size_t... _Ep, size_t... _Idx>
@@ -271,8 +269,6 @@ public:
 private:
   _CCCL_NO_UNIQUE_ADDRESS extents_type __extents{};
 };
-
-#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

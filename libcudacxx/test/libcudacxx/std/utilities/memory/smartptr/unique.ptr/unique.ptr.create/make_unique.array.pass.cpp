@@ -7,7 +7,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++03
+
 #include <cuda/std/__memory_>
 #if defined(_LIBCUDACXX_HAS_STRING)
 #  include <cuda/std/string>

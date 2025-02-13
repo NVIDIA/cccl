@@ -34,8 +34,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-#if _CCCL_STD_VER >= 2017
-
 // [range.access.rend]
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__rend)
@@ -44,7 +42,7 @@ void rend(_Tp&) = delete;
 template <class _Tp>
 void rend(const _Tp&) = delete;
 
-#  if !defined(_CCCL_NO_CONCEPTS)
+#if !defined(_CCCL_NO_CONCEPTS)
 template <class _Tp>
 concept __member_rend = __can_borrow<_Tp> && __workaround_52970<_Tp> && requires(_Tp&& __t) {
   _CUDA_VRANGES::rbegin(__t);
@@ -63,7 +61,7 @@ concept __can_reverse = __can_borrow<_Tp> && !__member_rend<_Tp> && !__unqualifi
   { _CUDA_VRANGES::begin(__t) } -> same_as<decltype(_CUDA_VRANGES::end(__t))>;
   { _CUDA_VRANGES::begin(__t) } -> bidirectional_iterator;
 };
-#  else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(
   __member_rend_,
@@ -100,7 +98,7 @@ _CCCL_CONCEPT_FRAGMENT(
 
 template <class _Tp>
 _CCCL_CONCEPT __can_reverse = _CCCL_FRAGMENT(__can_reverse_, _Tp);
-#  endif // _CCCL_NO_CONCEPTS
+#endif // _CCCL_NO_CONCEPTS
 
 class __fn
 {
@@ -174,8 +172,6 @@ inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto crend = __crend::__fn{};
 } // namespace __cpo
-
-#endif // _CCCL_STD_VER >= 2017
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

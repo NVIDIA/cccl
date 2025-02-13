@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-// UNSUPPORTED: nvcc-11.1
 // Older Clangs do not support the C++20 feature to constrain destructors
 
 // template<class U, class... Args>

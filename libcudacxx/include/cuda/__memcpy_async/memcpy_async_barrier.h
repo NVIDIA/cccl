@@ -106,7 +106,11 @@ _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment __memcpy_async_barrier(
   char const* __src_char = reinterpret_cast<char const*>(__source);
 
   // 2. Issue actual copy instructions.
-  auto __bh = __try_get_barrier_handle(__barrier);
+  _CUDA_VSTD::uint64_t* __bh = nullptr;
+#if __cccl_ptx_isa >= 800
+  NV_IF_TARGET(NV_PROVIDES_SM_90,
+               (__bh = __is_local_smem_barrier(__barrier) ? __try_get_barrier_handle(__barrier) : nullptr;))
+#endif // __cccl_ptx_isa >= 800
   auto __cm = __dispatch_memcpy_async<__align>(__group, __dest_char, __src_char, __size, __allowed_completions, __bh);
 
   // 3. Synchronize barrier with copy instructions.

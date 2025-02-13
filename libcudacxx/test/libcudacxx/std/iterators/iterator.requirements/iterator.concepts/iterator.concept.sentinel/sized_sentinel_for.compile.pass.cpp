@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // [iterator.concept.sizedsentinel], concept sized_sentinel_for
 //
 // template<class S, class I>

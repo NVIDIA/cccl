@@ -418,24 +418,18 @@ public:
         }
         else
         {
-          // Get the (child) graph associated to the task
-          auto g = t.get_graph();
+          ::std::vector<cudaGraphNode_t>& chain = t.get_node_chain();
+          chain.resize(res.size());
 
-          cudaGraphNode_t n      = nullptr;
-          cudaGraphNode_t prev_n = nullptr;
+          auto& g = t.get_ctx_graph();
 
           // Create a chain of kernels
           for (size_t i = 0; i < res.size(); i++)
           {
+            insert_one_kernel(res[i], chain[i], g);
             if (i > 0)
             {
-              prev_n = n;
-            }
-
-            insert_one_kernel(res[i], n, g);
-            if (i > 0)
-            {
-              cuda_safe_call(cudaGraphAddDependencies(g, &prev_n, &n, 1));
+              cuda_safe_call(cudaGraphAddDependencies(g, &chain[i - 1], &chain[i], 1));
             }
           }
         }
@@ -610,6 +604,8 @@ protected:
     {
       return size_t(-1);
     }
+
+    virtual ::std::string to_string() const = 0;
 
     /**
      * @brief Indicate if the backend needs to keep track of dangling events, or if these will be automatically
@@ -917,6 +913,11 @@ public:
   size_t epoch() const
   {
     return pimpl->epoch();
+  }
+
+  ::std::string to_string() const
+  {
+    return pimpl->to_string();
   }
 
   bool track_dangling_events() const

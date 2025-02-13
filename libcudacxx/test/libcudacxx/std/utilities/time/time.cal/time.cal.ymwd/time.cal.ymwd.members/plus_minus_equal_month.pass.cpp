@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11
+
 // XFAIL: gcc-4.8, gcc-5, gcc-6
 // gcc before gcc-7 fails with an internal compiler error
 

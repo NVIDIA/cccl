@@ -60,8 +60,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2011
-
 template <class _ElementType>
 struct default_accessor
 {
@@ -87,8 +85,6 @@ struct default_accessor
     return __p[__i];
   }
 };
-
-#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -8,8 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03
-
 // <algorithm>
 
 // template<class T, class Compare>
@@ -39,9 +37,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_all_equal(cuda::std::initiali
   cuda::std::pair<int, int> p = cuda::std::minmax(il, pred);
   const int* ptr              = il.end();
   assert(p.first == *il.begin());
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && TEST_STD_VER == 2011 // strange miscompilation
   assert(p.second == *--ptr);
-#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && TEST_STD_VER == 2011
   assert(pred.count() <= ((3 * il.size()) / 2));
   unused(ptr);
 }
@@ -79,9 +75,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

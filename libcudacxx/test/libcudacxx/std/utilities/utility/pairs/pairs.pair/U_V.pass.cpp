@@ -6,8 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03
-
 // XFAIL: gcc-4
 
 // <utility>
@@ -95,7 +93,6 @@ int main(int, char**)
     test_sfinae<ExplicitTypes::ConvertingType, int&&, true, false>();
     test_sfinae<ExplicitTypes::ConvertingType, const int&&, true, false>();
   }
-#if TEST_STD_VER > 2011
   { // explicit constexpr test
     constexpr cuda::std::pair<ExplicitT, ExplicitT> p(42, 43);
     static_assert(p.first.value == 42, "");
@@ -106,7 +103,6 @@ int main(int, char**)
     static_assert(p.first.value == 42, "");
     static_assert(p.second.value == 43, "");
   }
-#endif
 
   return 0;
 }

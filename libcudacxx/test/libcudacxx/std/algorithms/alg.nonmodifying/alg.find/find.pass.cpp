@@ -80,9 +80,7 @@ int main(int, char**)
 {
   test();
 
-#if TEST_STD_VER > 2011
   static_assert(test(), "");
-#endif
 
   return 0;
 }

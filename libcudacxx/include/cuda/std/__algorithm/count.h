@@ -25,7 +25,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIterator, class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __iter_diff_t<_InputIterator>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __iter_diff_t<_InputIterator>
 count(_InputIterator __first, _InputIterator __last, const _Tp& __value_)
 {
   __iter_diff_t<_InputIterator> __r{0};

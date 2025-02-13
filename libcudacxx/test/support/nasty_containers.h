@@ -256,12 +256,7 @@ public:
     v_.resize(sz, c);
   }
 
-  void swap(nasty_vector& nv)
-#if TEST_STD_VER > 2014
-    noexcept(std::is_nothrow_swappable<nested_container>::value)
-#elif defined(_LIBCUDACXX_VERSION)
-    TEST_NOEXCEPT_COND(cuda::std::__is_nothrow_swappable<nested_container>::value)
-#endif
+  void swap(nasty_vector& nv) noexcept(std::is_nothrow_swappable<nested_container>::value)
   {
     v_.swap(nv.v_);
   }
@@ -506,12 +501,7 @@ public:
     l_.resize(c);
   }
 
-  void swap(nasty_list& nl)
-#if TEST_STD_VER > 2014
-    noexcept(std::is_nothrow_swappable<nested_container>::value)
-#elif defined(_LIBCUDACXX_VERSION)
-    TEST_NOEXCEPT_COND(cuda::std::__is_nothrow_swappable<nested_container>::value)
-#endif
+  void swap(nasty_list& nl) noexcept(std::is_nothrow_swappable<nested_container>::value)
   {
     l_.swap(nl.l_);
   }

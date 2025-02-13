@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import ctypes
 import functools
+from typing import Callable
 
 import numba
 import numpy as np
@@ -89,6 +90,21 @@ class DeviceReduceBuildResult(ctypes.Structure):
         ("single_tile_kernel", ctypes.c_void_p),
         ("single_tile_second_kernel", ctypes.c_void_p),
         ("reduction_kernel", ctypes.c_void_p),
+    ]
+
+
+# MUST match `cccl_device_scan_build_result_t` in c/include/cccl/c/scan.h
+class DeviceScanBuildResult(ctypes.Structure):
+    _fields_ = [
+        ("cc", ctypes.c_int),
+        ("cubin", ctypes.c_void_p),
+        ("cubin_size", ctypes.c_size_t),
+        ("library", ctypes.c_void_p),
+        ("accumulator_type", TypeInfo),
+        ("init_kernel", ctypes.c_void_p),
+        ("scan_kernel", ctypes.c_void_p),
+        ("description_bytes_per_tile", ctypes.c_size_t),
+        ("payload_bytes_per_tile", ctypes.c_size_t),
     ]
 
 
@@ -223,3 +239,18 @@ def to_cccl_value(array_or_struct: np.ndarray | GpuStruct) -> Value:
     else:
         # it's a GpuStruct, use the array underlying it
         return to_cccl_value(array_or_struct._data)
+
+
+def to_cccl_op(op: Callable, sig) -> Op:
+    ltoir, _ = cuda.compile(op, sig=sig, output="ltoir")
+    name = op.__name__.encode("utf-8")
+    return Op(
+        OpKind.STATELESS,
+        name,
+        ctypes.c_char_p(ltoir),
+        len(ltoir),
+        1,
+        1,
+        None,
+        _data=(ltoir, name),  # keep a reference to these in a _data attribute
+    )

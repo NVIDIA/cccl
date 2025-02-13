@@ -44,7 +44,7 @@ struct __read_from_tmp_value_tag
 } // namespace __unique_copy_tags
 
 template <class _AlgPolicy, class _BinaryPredicate, class _InputIterator, class _Sent, class _OutputIterator>
-_CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI pair<_InputIterator, _OutputIterator> __unique_copy(
+constexpr _LIBCUDACXX_HIDE_FROM_ABI pair<_InputIterator, _OutputIterator> __unique_copy(
   _InputIterator __first,
   _Sent __last,
   _OutputIterator __result,
@@ -70,7 +70,7 @@ _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI pair<_InputIterator, _OutputIter
 }
 
 template <class _AlgPolicy, class _BinaryPredicate, class _ForwardIterator, class _Sent, class _OutputIterator>
-_CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI pair<_ForwardIterator, _OutputIterator> __unique_copy(
+constexpr _LIBCUDACXX_HIDE_FROM_ABI pair<_ForwardIterator, _OutputIterator> __unique_copy(
   _ForwardIterator __first,
   _Sent __last,
   _OutputIterator __result,
@@ -96,7 +96,7 @@ _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI pair<_ForwardIterator, _OutputIt
 }
 
 template <class _AlgPolicy, class _BinaryPredicate, class _InputIterator, class _Sent, class _InputAndOutputIterator>
-_CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI pair<_InputIterator, _InputAndOutputIterator> __unique_copy(
+constexpr _LIBCUDACXX_HIDE_FROM_ABI pair<_InputIterator, _InputAndOutputIterator> __unique_copy(
   _InputIterator __first,
   _Sent __last,
   _InputAndOutputIterator __result,
@@ -119,7 +119,7 @@ _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI pair<_InputIterator, _InputAndOu
 }
 
 template <class _InputIterator, class _OutputIterator, class _BinaryPredicate>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _OutputIterator
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator
 unique_copy(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _BinaryPredicate __pred)
 {
   using __algo_tag = conditional_t<
@@ -135,7 +135,7 @@ unique_copy(_InputIterator __first, _InputIterator __last, _OutputIterator __res
 }
 
 template <class _InputIterator, class _OutputIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _OutputIterator
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator
 unique_copy(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
 {
   return _CUDA_VSTD::unique_copy(

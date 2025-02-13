@@ -12,7 +12,6 @@
 #include "test_macros.h"
 
 // testing transparent
-#if TEST_STD_VER > 2011
 
 struct transparent_less
 {
@@ -103,7 +102,5 @@ bool operator<(const C2Int& rhs, int lhs)
 {
   return rhs.get() < lhs;
 }
-
-#endif
 
 #endif // TRANSPARENT_H

@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03 && !stdlib=libc++
+// UNSUPPORTED !stdlib = libc++
 
 // <utility>
 
@@ -60,11 +60,9 @@ int main(int, char**)
   static_assert((cuda::std::is_same<decltype(cuda::std::move_if_noexcept(ca)), const A&&>::value), "");
   static_assert((cuda::std::is_same<decltype(cuda::std::move_if_noexcept(l)), const legacy&>::value), "");
 
-#if TEST_STD_VER > 2011
   constexpr int i1 = 23;
   constexpr int i2 = cuda::std::move_if_noexcept(i1);
   static_assert(i2 == 23, "");
-#endif
 
   return 0;
 }

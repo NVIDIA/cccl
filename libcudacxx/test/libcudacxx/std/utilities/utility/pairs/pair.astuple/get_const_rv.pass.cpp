@@ -14,7 +14,6 @@
 //     const typename tuple_element<I, cuda::std::pair<T1, T2> >::type&&
 //     get(const pair<T1, T2>&&);
 
-// UNSUPPORTED: c++98, c++03
 // UNSUPPORTED: msvc
 
 #include <cuda/std/tuple>
@@ -60,14 +59,12 @@ int main(int, char**)
     static_assert(noexcept(cuda::std::get<1>(cuda::std::move(p))), "");
   }
 
-#if TEST_STD_VER > 2011
   {
     typedef cuda::std::pair<int, short> P;
     constexpr const P p1(3, static_cast<short>(4));
     static_assert(cuda::std::get<0>(cuda::std::move(p1)) == 3, "");
     static_assert(cuda::std::get<1>(cuda::std::move(p1)) == 4, "");
   }
-#endif
 
   return 0;
 }

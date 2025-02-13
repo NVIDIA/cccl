@@ -29,7 +29,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIterator, class _OutputIterator, class _Tp, class _BinaryOp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _OutputIterator
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator
 inclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _BinaryOp __b, _Tp __init)
 {
   for (; __first != __last; ++__first, (void) ++__result)
@@ -41,7 +41,7 @@ inclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __
 }
 
 template <class _InputIterator, class _OutputIterator, class _BinaryOp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _OutputIterator
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator
 inclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _BinaryOp __b)
 {
   if (__first != __last)
@@ -58,7 +58,7 @@ inclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __
 }
 
 template <class _InputIterator, class _OutputIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _OutputIterator
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator
 inclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
 {
   return _CUDA_VSTD::inclusive_scan(__first, __last, __result, _CUDA_VSTD::plus<>());

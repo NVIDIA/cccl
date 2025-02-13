@@ -14,10 +14,6 @@
 
 #include "test_iterators.h"
 
-#if TEST_STD_VER < 2014
-#  error "test/support/test_range.h" can only be included in builds supporting ranges
-#endif
-
 struct sentinel
 {
   template <class I, cuda::std::enable_if_t<cuda::std::input_or_output_iterator<I>, int> = 0>
@@ -105,11 +101,9 @@ _CCCL_INLINE_VAR constexpr bool enable_borrowed_range<BorrowedRange> = true;
 static_assert(!cuda::std::ranges::view<BorrowedRange>, "");
 static_assert(cuda::std::ranges::borrowed_range<BorrowedRange>, "");
 
-#if _CCCL_STD_VER >= 2017
 using BorrowedView = cuda::std::ranges::empty_view<int>;
 static_assert(cuda::std::ranges::view<BorrowedView>, "");
 static_assert(cuda::std::ranges::borrowed_range<BorrowedView>, "");
-#endif // _CCCL_STD_VER >= 2017
 
 #if _LIBCUDACXX_HAS_RANGES
 using NonBorrowedView = cuda::std::ranges::single_view<int>;

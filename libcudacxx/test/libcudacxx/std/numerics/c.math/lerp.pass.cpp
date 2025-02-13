@@ -77,10 +77,8 @@ int main(int, char**)
   test<__nv_bfloat16>();
 #endif // _LIBCUDACXX_HAS_NVBF16
 
-#if TEST_STD_VER >= 2014
   static_assert(constexpr_test<float>(), "");
   static_assert(constexpr_test<double>(), "");
-#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

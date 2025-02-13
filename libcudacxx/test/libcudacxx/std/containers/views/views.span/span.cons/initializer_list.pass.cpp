@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++11
-
 // <cuda/std/span>
 
 // constexpr explicit(extent != dynamic_extent) span(std::initializer_list<value_type> il);

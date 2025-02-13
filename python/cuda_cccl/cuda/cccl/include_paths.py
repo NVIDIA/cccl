@@ -4,6 +4,7 @@
 
 import os
 import shutil
+import sys
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -41,7 +42,7 @@ class IncludePaths:
 
 
 @lru_cache()
-def get_include_paths() -> IncludePaths:
+def get_include_paths(probe_file: str = "cub/version.cuh") -> IncludePaths:
     # TODO: once docs env supports Python >= 3.9, we
     # can move this to a module-level import.
     from importlib.resources import as_file, files
@@ -53,7 +54,15 @@ def get_include_paths() -> IncludePaths:
 
     with as_file(files("cuda.cccl.include")) as f:
         cccl_incl = Path(f)
-    assert cccl_incl.exists()
+
+    probe_file = Path(probe_file)
+    if not (cccl_incl / probe_file).exists():
+        for sp in sys.path:
+            cccl_incl = Path(sp).resolve() / "cuda" / "cccl" / "include"
+            if (cccl_incl / probe_file).exists():
+                break
+        else:
+            raise RuntimeError("Unable to locate CCCL include directory.")
 
     return IncludePaths(
         cuda=cuda_incl,

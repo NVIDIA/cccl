@@ -42,11 +42,7 @@ template <typename InputT, typename OutputT, int ItemsPerThread, cub::WarpExchan
 struct exchange_data_t;
 
 template <typename InputT, typename OutputT, int ItemsPerThread, cub::WarpExchangeAlgorithm Alg>
-struct exchange_data_t<InputT,
-                       OutputT,
-                       ItemsPerThread,
-                       Alg,
-                       typename std::enable_if<std::is_same<InputT, OutputT>::value>::type>
+struct exchange_data_t<InputT, OutputT, ItemsPerThread, Alg, std::enable_if_t<std::is_same_v<InputT, OutputT>>>
 {
   InputT input[ItemsPerThread];
   OutputT (&output)[ItemsPerThread] = input;
@@ -60,11 +56,7 @@ struct exchange_data_t<InputT,
 };
 
 template <typename InputT, typename OutputT, int ItemsPerThread, cub::WarpExchangeAlgorithm Alg>
-struct exchange_data_t<InputT,
-                       OutputT,
-                       ItemsPerThread,
-                       Alg,
-                       typename std::enable_if<!std::is_same<InputT, OutputT>::value>::type>
+struct exchange_data_t<InputT, OutputT, ItemsPerThread, Alg, std::enable_if_t<!std::is_same_v<InputT, OutputT>>>
 {
   InputT input[ItemsPerThread];
   OutputT output[ItemsPerThread];

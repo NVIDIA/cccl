@@ -40,7 +40,6 @@ struct find_current : private cuda::std::reverse_iterator<It>
   }
 };
 
-#if TEST_STD_VER > 2014
 template <class It,
           cuda::std::enable_if_t<cuda::std::is_same_v<typename cuda::std::iterator_traits<It>::iterator_category,
                                                       cuda::std::contiguous_iterator_tag>,
@@ -62,7 +61,6 @@ __host__ __device__ constexpr void test_iter_category()
                                     typename cuda::std::iterator_traits<It>::iterator_category>::value),
                 "");
 }
-#endif
 
 template <class It>
 __host__ __device__ void test()
@@ -77,18 +75,8 @@ __host__ __device__ void test()
   static_assert((cuda::std::is_same<typename R::reference, typename T::reference>::value), "");
   static_assert((cuda::std::is_same<typename R::pointer, typename cuda::std::iterator_traits<It>::pointer>::value), "");
 
-#if TEST_STD_VER <= 2014
-  typedef cuda::std::iterator<typename T::iterator_category, typename T::value_type> iterator_base;
-  static_assert((cuda::std::is_base_of<iterator_base, R>::value), "");
-#endif
-#if TEST_STD_VER > 2014
   test_iter_category<It>();
-#else
-  static_assert((cuda::std::is_same<typename R::iterator_category, typename T::iterator_category>::value), "");
-#endif
 }
-
-#if TEST_STD_VER > 2014
 
 struct FooIter
 {
@@ -119,8 +107,6 @@ static_assert(cuda::std::is_same_v<typename cuda::std::reverse_iterator<FooIter>
 // Not using `FooIter::difference_type`.
 static_assert(cuda::std::is_same_v<typename cuda::std::reverse_iterator<FooIter>::difference_type, char>, "");
 
-#endif
-
 struct BarIter
 {
   __host__ __device__ bool& operator*() const;
@@ -139,11 +125,7 @@ struct cuda::std::iterator_traits<BarIter>
   using iterator_category = cuda::std::bidirectional_iterator_tag;
 };
 
-#if TEST_STD_VER > 2014
 static_assert(cuda::std::is_same_v<typename cuda::std::reverse_iterator<BarIter>::reference, bool&>, "");
-#else
-static_assert(cuda::std::is_same<typename cuda::std::reverse_iterator<BarIter>::reference, char&>::value, "");
-#endif
 
 __host__ __device__ void test_all()
 {
@@ -151,7 +133,6 @@ __host__ __device__ void test_all()
   test<random_access_iterator<char*>>();
   test<char*>();
 
-#if TEST_STD_VER > 2014
   test<contiguous_iterator<char*>>();
   static_assert(
     cuda::std::is_same_v<typename cuda::std::reverse_iterator<bidirectional_iterator<char*>>::iterator_concept,
@@ -171,7 +152,6 @@ __host__ __device__ void test_all()
   static_assert(cuda::std::is_same_v<typename cuda::std::reverse_iterator<char*>::iterator_concept,
                                      cuda::std::random_access_iterator_tag>,
                 "");
-#endif
 }
 
 int main(int, char**)

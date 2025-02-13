@@ -42,12 +42,12 @@ public:
   __return_type_wrapper() = delete;
 
   template <class _Fn, class = _CUDA_VSTD::enable_if_t<_CUDA_VSTD::is_same<_CUDA_VSTD::decay_t<_Fn>, _DecayFn>::value>>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 explicit __return_type_wrapper(_Fn&& __fn) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __return_type_wrapper(_Fn&& __fn) noexcept
       : __fn_(_CUDA_VSTD::forward<_Fn>(__fn))
   {}
 
   template <class... _As>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Ret operator()(_As&&... __as) & noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Ret operator()(_As&&... __as) & noexcept
   {
 #if !_CCCL_CUDA_COMPILER(NVCC) || defined(__CUDA_ARCH__)
     static_assert(_CUDA_VSTD::is_same<_Ret, typename _CUDA_VSTD::__invoke_of<_DecayFn&, _As...>::type>::value,
@@ -58,7 +58,7 @@ public:
   }
 
   template <class... _As>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Ret operator()(_As&&... __as) && noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Ret operator()(_As&&... __as) && noexcept
   {
 #if !_CCCL_CUDA_COMPILER(NVCC) || defined(__CUDA_ARCH__)
     static_assert(_CUDA_VSTD::is_same<_Ret, typename _CUDA_VSTD::__invoke_of<_DecayFn, _As...>::type>::value,
@@ -69,7 +69,7 @@ public:
   }
 
   template <class... _As>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Ret operator()(_As&&... __as) const& noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Ret operator()(_As&&... __as) const& noexcept
   {
 #if !_CCCL_CUDA_COMPILER(NVCC) || defined(__CUDA_ARCH__)
     static_assert(_CUDA_VSTD::is_same<_Ret, typename _CUDA_VSTD::__invoke_of<const _DecayFn&, _As...>::type>::value,
@@ -80,7 +80,7 @@ public:
   }
 
   template <class... _As>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Ret operator()(_As&&... __as) const&& noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Ret operator()(_As&&... __as) const&& noexcept
   {
 #if !_CCCL_CUDA_COMPILER(NVCC) || defined(__CUDA_ARCH__)
     static_assert(_CUDA_VSTD::is_same<_Ret, typename _CUDA_VSTD::__invoke_of<const _DecayFn, _As...>::type>::value,

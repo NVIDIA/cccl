@@ -29,7 +29,6 @@
 template <class T>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test_constexpr()
 {
-#if TEST_STD_VER > 2011
   {
     constexpr cuda::std::complex<T> lhs(1.5, 2.5);
     constexpr cuda::std::complex<T> rhs(1.5, -2.5);
@@ -40,7 +39,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_constexpr()
     constexpr cuda::std::complex<T> rhs(1.5, 2.5);
     static_assert(!(lhs != rhs), "");
   }
-#endif
 }
 
 template <class T>
@@ -77,16 +75,12 @@ int main(int, char**)
 #ifdef _LIBCUDACXX_HAS_NVBF16
   test_nonconstexpr<__nv_bfloat16>();
 #endif
-// CUDA treats long double as double
-//  test<long double>();
-#if TEST_STD_VER > 2011
+  // CUDA treats long double as double
+  //  test<long double>();
   static_assert(test<float>(), "");
   static_assert(test<double>(), "");
-// CUDA treats long double as double
-//  static_assert(test<long double>(), "");
-#endif
-
-  test_constexpr<int>();
+  // CUDA treats long double as double
+  //  static_assert(test<long double>(), "");
 
   test_constexpr<int>();
 

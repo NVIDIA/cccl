@@ -61,7 +61,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
   assert(counter > 0 && counter < sa);
   counter = 0;
 
-#if TEST_STD_VER >= 2014
   assert(cuda::std::mismatch(II(ia), II(ia + sa), II(ib), II(ib + sb), EQ())
          == (cuda::std::pair<II, II>(II(ia + 3), II(ib + 3))));
   assert(cuda::std::mismatch(RAI(ia), RAI(ia + sa), RAI(ib), RAI(ib + sb), EQ())
@@ -70,14 +69,11 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
   assert(cuda::std::mismatch(II(ia), II(ia + sa), II(ib), II(ib + sb), bcp)
          == (cuda::std::pair<II, II>(II(ia + 3), II(ib + 3))));
   assert(counter > 0 && counter < cuda::std::min(sa, sb));
-#endif
 
   assert(cuda::std::mismatch(ia, ia + sa, ib, EQ()) == (cuda::std::pair<int*, int*>(ia + 3, ib + 3)));
 
-#if TEST_STD_VER >= 2014
   assert(cuda::std::mismatch(ia, ia + sa, ib, ib + sb, EQ()) == (cuda::std::pair<int*, int*>(ia + 3, ib + 3)));
   assert(cuda::std::mismatch(ia, ia + sa, ib, ib + 2, EQ()) == (cuda::std::pair<int*, int*>(ia + 2, ib + 2)));
-#endif
 
   return true;
 }
@@ -85,9 +81,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif
 
   return 0;
 }

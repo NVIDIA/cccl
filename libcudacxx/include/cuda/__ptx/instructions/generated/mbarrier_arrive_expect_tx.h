@@ -31,14 +31,14 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive_expect_tx(
 // __space == space_shared (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   _CUDA_VSTD::uint64_t __state;
-  _CCCL_IF_CONSTEXPR (__scope == scope_cta)
+  if constexpr (__scope == scope_cta)
   {
     asm("mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 %0, [%1], %2; // 8. "
         : "=l"(__state)
         : "r"(__as_ptr_smem(__addr)), "r"(__tx_count)
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__scope == scope_cluster)
+  else if constexpr (__scope == scope_cluster)
   {
     asm("mbarrier.arrive.expect_tx.release.cluster.shared::cta.b64 %0, [%1], %2; // 8. "
         : "=l"(__state)
@@ -116,14 +116,14 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive_expect_tx(
 // __space == space_shared (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   _CUDA_VSTD::uint64_t __state;
-  _CCCL_IF_CONSTEXPR (__scope == scope_cta)
+  if constexpr (__scope == scope_cta)
   {
     asm("mbarrier.arrive.expect_tx.relaxed.cta.shared::cta.b64 %0, [%1], %2;"
         : "=l"(__state)
         : "r"(__as_ptr_dsmem(__addr)), "r"(__txCount)
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__scope == scope_cluster)
+  else if constexpr (__scope == scope_cluster)
   {
     asm("mbarrier.arrive.expect_tx.relaxed.cluster.shared::cta.b64 %0, [%1], %2;"
         : "=l"(__state)

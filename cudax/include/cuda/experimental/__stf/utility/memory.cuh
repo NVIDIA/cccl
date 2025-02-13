@@ -1022,6 +1022,12 @@ UNITTEST("small_vector basics")
   {
     EXPECT(element < 'd');
   }
+
+  // Vector of non-copyable objects
+  small_vector<::std::unique_ptr<int>, 8> v4;
+  v4.reserve(10);
+  v4.push_back(::std::make_unique<int>(42));
+  v4.push_back(::std::make_unique<int>(5));
 };
 #endif // UNITTESTED_FILE
 

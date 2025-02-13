@@ -33,9 +33,7 @@ int main(int, char**)
   typedef double T[17][29];
   {
     LIBCPP_STATIC_ASSERT(cuda::std::__is_swappable<T>::value, "");
-#if TEST_STD_VER > 2011
     static_assert(cuda::std::is_swappable_v<T>, "");
-#endif
   }
   {
     T t1 = {};

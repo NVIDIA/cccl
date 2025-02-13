@@ -229,7 +229,7 @@ public:
   CUB_RUNTIME_FUNCTION static cudaError_t
   Bulk(void* d_temp_storage, size_t& temp_storage_bytes, ShapeT shape, OpT op, cudaStream_t stream = {})
   {
-    static_assert(::cuda::std::is_integral<ShapeT>::value, "ShapeT must be an integral type");
+    static_assert(::cuda::std::is_integral_v<ShapeT>, "ShapeT must be an integral type");
 
     if (d_temp_storage == nullptr)
     {
@@ -580,7 +580,7 @@ public:
   CUB_RUNTIME_FUNCTION static cudaError_t Bulk(ShapeT shape, OpT op, cudaStream_t stream = {})
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::Bulk");
-    static_assert(::cuda::std::is_integral<ShapeT>::value, "ShapeT must be an integral type");
+    static_assert(::cuda::std::is_integral_v<ShapeT>, "ShapeT must be an integral type");
     using offset_t = ShapeT;
     return detail::for_each::dispatch_t<offset_t, OpT>::dispatch(static_cast<offset_t>(shape), op, stream);
   }

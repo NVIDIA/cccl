@@ -185,9 +185,9 @@ struct AgentBlockSort
 
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
-    _CCCL_IF_CONSTEXPR (!KEYS_ONLY)
+    if constexpr (!KEYS_ONLY)
     {
-      _CCCL_IF_CONSTEXPR (IS_LAST_TILE)
+      if constexpr (IS_LAST_TILE)
       {
         BlockLoadItems(storage.load_items)
           .Load(items_in + tile_base, items_local, num_remaining, *(items_in + tile_base));
@@ -201,7 +201,7 @@ struct AgentBlockSort
     }
 
     KeyT keys_local[ITEMS_PER_THREAD];
-    _CCCL_IF_CONSTEXPR (IS_LAST_TILE)
+    if constexpr (IS_LAST_TILE)
     {
       BlockLoadKeys(storage.load_keys).Load(keys_in + tile_base, keys_local, num_remaining, *(keys_in + tile_base));
     }
@@ -213,7 +213,7 @@ struct AgentBlockSort
     __syncthreads();
     _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 
-    _CCCL_IF_CONSTEXPR (IS_LAST_TILE)
+    if constexpr (IS_LAST_TILE)
     {
       BlockMergeSortT(storage.block_merge).Sort(keys_local, items_local, compare_op, num_remaining, keys_local[0]);
     }
@@ -226,7 +226,7 @@ struct AgentBlockSort
 
     if (ping)
     {
-      _CCCL_IF_CONSTEXPR (IS_LAST_TILE)
+      if constexpr (IS_LAST_TILE)
       {
         BlockStoreKeysIt(storage.store_keys_it).Store(keys_out_it + tile_base, keys_local, num_remaining);
       }
@@ -235,11 +235,11 @@ struct AgentBlockSort
         BlockStoreKeysIt(storage.store_keys_it).Store(keys_out_it + tile_base, keys_local);
       }
 
-      _CCCL_IF_CONSTEXPR (!KEYS_ONLY)
+      if constexpr (!KEYS_ONLY)
       {
         __syncthreads();
 
-        _CCCL_IF_CONSTEXPR (IS_LAST_TILE)
+        if constexpr (IS_LAST_TILE)
         {
           BlockStoreItemsIt(storage.store_items_it).Store(items_out_it + tile_base, items_local, num_remaining);
         }
@@ -251,7 +251,7 @@ struct AgentBlockSort
     }
     else
     {
-      _CCCL_IF_CONSTEXPR (IS_LAST_TILE)
+      if constexpr (IS_LAST_TILE)
       {
         BlockStoreKeysRaw(storage.store_keys_raw).Store(keys_out_raw + tile_base, keys_local, num_remaining);
       }
@@ -260,11 +260,11 @@ struct AgentBlockSort
         BlockStoreKeysRaw(storage.store_keys_raw).Store(keys_out_raw + tile_base, keys_local);
       }
 
-      _CCCL_IF_CONSTEXPR (!KEYS_ONLY)
+      if constexpr (!KEYS_ONLY)
       {
         __syncthreads();
 
-        _CCCL_IF_CONSTEXPR (IS_LAST_TILE)
+        if constexpr (IS_LAST_TILE)
         {
           BlockStoreItemsRaw(storage.store_items_raw).Store(items_out_raw + tile_base, items_local, num_remaining);
         }
@@ -391,7 +391,7 @@ template <int BLOCK_THREADS, bool IS_FULL_TILE, int ITEMS_PER_THREAD, class T, c
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 gmem_to_reg(T (&output)[ITEMS_PER_THREAD], It1 input1, It2 input2, int count1, int count2)
 {
-  _CCCL_IF_CONSTEXPR (IS_FULL_TILE)
+  if constexpr (IS_FULL_TILE)
   {
 #pragma unroll
     for (int item = 0; item < ITEMS_PER_THREAD; ++item)
@@ -569,7 +569,7 @@ struct AgentMerge
     //
     ValueT items_local[ITEMS_PER_THREAD];
     (void) items_local; // TODO(bgruber): replace by [[maybe_unused]] in C++17
-    _CCCL_IF_CONSTEXPR (!KEYS_ONLY)
+    if constexpr (!KEYS_ONLY)
     {
       if (ping)
       {
@@ -629,7 +629,7 @@ struct AgentMerge
     // write keys
     if (ping)
     {
-      _CCCL_IF_CONSTEXPR (IS_FULL_TILE)
+      if constexpr (IS_FULL_TILE)
       {
         BlockStoreKeysPing(storage.store_keys_ping).Store(keys_out_ping + tile_base, keys_local);
       }
@@ -640,7 +640,7 @@ struct AgentMerge
     }
     else
     {
-      _CCCL_IF_CONSTEXPR (IS_FULL_TILE)
+      if constexpr (IS_FULL_TILE)
       {
         BlockStoreKeysPong(storage.store_keys_pong).Store(keys_out_pong + tile_base, keys_local);
       }
@@ -651,7 +651,7 @@ struct AgentMerge
     }
 
     // if items are provided, merge them
-    _CCCL_IF_CONSTEXPR (!KEYS_ONLY)
+    if constexpr (!KEYS_ONLY)
     {
       __syncthreads();
 
@@ -673,7 +673,7 @@ struct AgentMerge
       //
       if (ping)
       {
-        _CCCL_IF_CONSTEXPR (IS_FULL_TILE)
+        if constexpr (IS_FULL_TILE)
         {
           BlockStoreItemsPing(storage.store_items_ping).Store(items_out_ping + tile_base, items_local);
         }
@@ -684,7 +684,7 @@ struct AgentMerge
       }
       else
       {
-        _CCCL_IF_CONSTEXPR (IS_FULL_TILE)
+        if constexpr (IS_FULL_TILE)
         {
           BlockStoreItemsPong(storage.store_items_pong).Store(items_out_pong + tile_base, items_local);
         }

@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class U, class... Args>
 //   constexpr T& emplace(initializer_list<U> il, Args&&... args) noexcept;
 // Constraints: is_nothrow_constructible_v<T, initializer_list<U>&, Args...> is true.

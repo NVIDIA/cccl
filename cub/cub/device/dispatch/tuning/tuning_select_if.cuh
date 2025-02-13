@@ -667,7 +667,7 @@ struct sm100_tuning<Input,
 // };
 
 // TODO(gonidelis): Tune for I128.
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 // template <>
 // struct sm100_tuning<__int128_t, flagged::no, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
 // {
@@ -837,7 +837,7 @@ struct sm100_tuning<Input,
 };
 
 // TODO(gonidelis): Tune for I128.
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 // template <>
 // struct sm100_tuning<__int128_t, flagged::yes, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
 // {
@@ -1446,13 +1446,13 @@ struct sm100_tuning<Input,
 template <class InputT>
 constexpr primitive is_primitive()
 {
-  return detail::is_primitive<InputT>::value ? primitive::yes : primitive::no;
+  return detail::is_primitive_v<InputT> ? primitive::yes : primitive::no;
 }
 
 template <class FlagT>
 constexpr flagged is_flagged()
 {
-  return ::cuda::std::is_same<FlagT, NullType>::value ? flagged::no : flagged::yes;
+  return ::cuda::std::is_same_v<FlagT, NullType> ? flagged::no : flagged::yes;
 }
 
 template <bool KeepRejects>

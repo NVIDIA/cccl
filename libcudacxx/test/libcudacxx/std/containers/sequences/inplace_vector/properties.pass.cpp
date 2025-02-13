@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++11
-
 #include <cuda/std/__algorithm_>
 #include <cuda/std/cassert>
 #include <cuda/std/initializer_list>
@@ -71,9 +69,7 @@ __host__ __device__ void test()
     cuda::std::is_same<cuda::std::reverse_iterator<const int*>, typename inplace_vector::const_reverse_iterator>::value,
     "");
 
-#if TEST_STD_VER >= 2017
   static_assert(cuda::std::ranges::contiguous_range<inplace_vector>);
-#endif // TEST_STD_VER >= 2017
 
   // Ensure we uphoold the guarantees about triviality in [inplace.vector.overview]
   // * If is_trivially_copy_constructible_v<T> is true, then IV has a trivial copy constructor.

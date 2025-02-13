@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class I>
 //   concept permutable = see below; // Since C++20
 

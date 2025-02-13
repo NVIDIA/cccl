@@ -8,7 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 // <cuda/std/optional>
-// UNSUPPORTED: c++03, c++11, c++14
+
 //
 // GCC 7 seems to be extremely broken when it comes to deduction here.
 // It fails the test on all the ctor calls, but if the template argument to optional

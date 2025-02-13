@@ -62,8 +62,6 @@
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/initializer_list>
 
-#if _CCCL_STD_VER > 2011
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp, class _Err>
@@ -1090,13 +1088,13 @@ public:
     }
   }
 
-#  if _CCCL_STD_VER < 2020
+#if _CCCL_STD_VER < 2020
   _CCCL_EXEC_CHECK_DISABLE
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator!=(const expected& __x, const expected& __y)
   {
     return !(__x == __y);
   }
-#  endif // _CCCL_STD_VER < 2020
+#endif // _CCCL_STD_VER < 2020
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T2, class _E2)
@@ -1120,7 +1118,7 @@ public:
     }
   }
 
-#  if _CCCL_STD_VER < 2020
+#if _CCCL_STD_VER < 2020
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T2, class _E2)
   _CCCL_REQUIRES((!_CCCL_TRAIT(is_void, _T2)))
@@ -1128,7 +1126,7 @@ public:
   {
     return !(__x == __y);
   }
-#  endif // _CCCL_STD_VER < 2020
+#endif // _CCCL_STD_VER < 2020
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T2)
@@ -1137,7 +1135,7 @@ public:
   {
     return __x.__has_val_ && static_cast<bool>(__x.__union_.__val_ == __v);
   }
-#  if _CCCL_STD_VER < 2020
+#if _CCCL_STD_VER < 2020
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T2)
   _CCCL_REQUIRES((!__expected::__is_expected_nonvoid<_T2>) )
@@ -1159,7 +1157,7 @@ public:
   {
     return !__x.__has_val_ || static_cast<bool>(__x.__union_.__val_ != __v);
   }
-#  endif // _CCCL_STD_VER < 2020
+#endif // _CCCL_STD_VER < 2020
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
@@ -1167,7 +1165,7 @@ public:
   {
     return !__x.__has_val_ && static_cast<bool>(__x.__union_.__unex_ == __e.error());
   }
-#  if _CCCL_STD_VER < 2020
+#if _CCCL_STD_VER < 2020
   _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const unexpected<_E2>& __e, const expected& __x)
@@ -1186,7 +1184,7 @@ public:
   {
     return __x.__has_val_ || static_cast<bool>(__x.__union_.__unex_ != __e.error());
   }
-#  endif // _CCCL_STD_VER < 2020
+#endif // _CCCL_STD_VER < 2020
 };
 
 template <class _Err>
@@ -1930,13 +1928,13 @@ public:
       return __x.__has_val_ || static_cast<bool>(__x.__union_.__unex_ == __y.error());
     }
   }
-#  if _CCCL_STD_VER < 2020
+#if _CCCL_STD_VER < 2020
   _CCCL_EXEC_CHECK_DISABLE
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator!=(const expected& __x, const expected& __y) noexcept
   {
     return !(__x == __y);
   }
-#  endif
+#endif // _CCCL_STD_VER < 2020
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
@@ -1952,7 +1950,7 @@ public:
       return __x.__has_val_ || static_cast<bool>(__x.__union_.__unex_ == __y.error());
     }
   }
-#  if _CCCL_STD_VER < 2020
+#if _CCCL_STD_VER < 2020
   _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
@@ -1960,7 +1958,7 @@ public:
   {
     return !(__x == __y);
   }
-#  endif
+#endif // _CCCL_STD_VER < 2020
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
@@ -1968,7 +1966,7 @@ public:
   {
     return !__x.__has_val_ && static_cast<bool>(__x.__union_.__unex_ == __y.error());
   }
-#  if _CCCL_STD_VER < 2020
+#if _CCCL_STD_VER < 2020
   _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const unexpected<_E2>& __y, const expected& __x) noexcept
@@ -1987,11 +1985,9 @@ public:
   {
     return __x.__has_val_ || static_cast<bool>(__x.__union_.__unex_ != __y.error());
   }
-#  endif
+#endif // _CCCL_STD_VER < 2020
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
-
-#endif // _CCCL_STD_VER > 2011
 
 #endif // _LIBCUDACXX___EXPECTED_EXPECTED_H

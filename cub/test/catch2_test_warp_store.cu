@@ -115,7 +115,7 @@ c2h::device_vector<T> compute_reference(int valid_items)
   constexpr int total_item_count = TOTAL_WARPS * tile_size;
   c2h::device_vector<T> d_input(total_item_count);
 
-  _CCCL_IF_CONSTEXPR (StoreAlgorithm == cub::WarpStoreAlgorithm::WARP_STORE_STRIPED)
+  if constexpr (StoreAlgorithm == cub::WarpStoreAlgorithm::WARP_STORE_STRIPED)
   {
     c2h::host_vector<T> input(total_item_count);
     fill_striped<ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, ITEMS_PER_THREAD * TOTAL_WARPS>(input.begin());

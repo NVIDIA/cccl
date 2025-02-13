@@ -44,7 +44,7 @@ int main(int, char**)
 #if TEST_STD_VER <= 2017
   static_assert((cuda::std::is_same<F::argument_type, int>::value), "");
   static_assert((cuda::std::is_same<F::result_type, int>::value), "");
-#endif
+#endif // TEST_STD_VER <= 2017
   assert(f(36) == -36);
 
   typedef cuda::std::negate<> F2;
@@ -52,13 +52,11 @@ int main(int, char**)
   assert(f2(36) == -36);
   assert(f2(36L) == -36);
   assert(f2(36.0) == -36);
-#if TEST_STD_VER > 2011
   constexpr int foo = cuda::std::negate<int>()(3);
   static_assert(foo == -3, "");
 
   constexpr double bar = cuda::std::negate<>()(3.0);
   static_assert(bar == -3.0, "");
-#endif
 
   return 0;
 }

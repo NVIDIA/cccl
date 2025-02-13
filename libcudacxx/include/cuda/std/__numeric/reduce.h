@@ -29,7 +29,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIterator, class _Tp, class _BinaryOp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp
 reduce(_InputIterator __first, _InputIterator __last, _Tp __init, _BinaryOp __b)
 {
   for (; __first != __last; ++__first)
@@ -40,14 +40,13 @@ reduce(_InputIterator __first, _InputIterator __last, _Tp __init, _BinaryOp __b)
 }
 
 template <class _InputIterator, class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp
-reduce(_InputIterator __first, _InputIterator __last, _Tp __init)
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp reduce(_InputIterator __first, _InputIterator __last, _Tp __init)
 {
   return _CUDA_VSTD::reduce(__first, __last, __init, _CUDA_VSTD::plus<>());
 }
 
 template <class _InputIterator>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 typename iterator_traits<_InputIterator>::value_type
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr typename iterator_traits<_InputIterator>::value_type
 reduce(_InputIterator __first, _InputIterator __last)
 {
   return _CUDA_VSTD::reduce(__first, __last, typename iterator_traits<_InputIterator>::value_type{});

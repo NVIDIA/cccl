@@ -7,7 +7,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++03, c++11
 
 // template<class T>
 //   constexpr unique_ptr<T> make_unique_for_overwrite(); // T is not array

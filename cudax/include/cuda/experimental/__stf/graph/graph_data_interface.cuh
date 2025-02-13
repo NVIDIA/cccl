@@ -82,7 +82,7 @@ public:
 
     cudaGraphNode_t out = graph_data_copy(kind, src_instance_id, dst_instance_id, graph, nodes.data(), nodes.size());
 
-    reserved::fork_from_graph_node(ctx_, out, graph_epoch, prereqs, "copy");
+    reserved::fork_from_graph_node(ctx_, out, graph, graph_epoch, prereqs, "copy");
   }
 };
 

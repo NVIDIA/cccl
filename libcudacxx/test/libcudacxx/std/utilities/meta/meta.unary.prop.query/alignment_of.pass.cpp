@@ -25,12 +25,10 @@ __host__ __device__ void test_alignment_of()
   static_assert(cuda::std::alignment_of<const T>::value == A, "");
   static_assert(cuda::std::alignment_of<volatile T>::value == A, "");
   static_assert(cuda::std::alignment_of<const volatile T>::value == A, "");
-#if TEST_STD_VER > 2011
   static_assert(cuda::std::alignment_of_v<T> == A, "");
   static_assert(cuda::std::alignment_of_v<const T> == A, "");
   static_assert(cuda::std::alignment_of_v<volatile T> == A, "");
   static_assert(cuda::std::alignment_of_v<const volatile T> == A, "");
-#endif
 }
 
 class Class

@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++11
-
 #include <cuda/std/__algorithm_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
@@ -28,7 +26,6 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wmissing-braces")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 _CCCL_DIAG_SUPPRESS_MSVC(5246)
 
-#if TEST_STD_VER >= 2017
 template <class T, template <class, size_t> class Range>
 __host__ __device__ constexpr void test_range()
 {
@@ -106,7 +103,6 @@ __host__ __device__ constexpr void test_range()
     assert(++res == input.end());
   }
 }
-#endif // TEST_STD_VER >= 2017
 
 template <class T>
 __host__ __device__ constexpr void test()
@@ -200,12 +196,10 @@ __host__ __device__ constexpr void test()
     assert(res == vec.cbegin() + 1);
   }
 
-#if TEST_STD_VER >= 2017
   test_range<T, input_range>();
   test_range<T, uncommon_range>();
   test_range<T, sized_uncommon_range>();
   test_range<T, cuda::std::array>();
-#endif // TEST_STD_VER >= 2017
 }
 
 __host__ __device__ constexpr bool test()
@@ -305,7 +299,6 @@ void test_exceptions()
     assert(false);
   }
 
-#  if TEST_STD_VER >= 2017
   try
   {
     too_small.insert_range(too_small.begin(), input_range<int, 3>{42, 3, 1337});
@@ -401,7 +394,6 @@ void test_exceptions()
   {
     assert(false);
   }
-#  endif // TEST_STD_VER >= 2017
 }
 #endif // !TEST_HAS_NO_EXCEPTIONS
 

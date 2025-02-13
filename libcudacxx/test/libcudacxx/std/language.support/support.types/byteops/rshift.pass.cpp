@@ -32,12 +32,10 @@ int main(int, char**)
   assert(cuda::std::to_integer<int>(b115 >> 3) == 14);
   assert(cuda::std::to_integer<int>(b115 >> 6) == 1);
 
-#if TEST_STD_VER >= 2014
   static_assert(cuda::std::to_integer<int>(b100 >> 1) == 50, "");
   static_assert(cuda::std::to_integer<int>(b100 >> 2) == 25, "");
   static_assert(cuda::std::to_integer<int>(b115 >> 3) == 14, "");
   static_assert(cuda::std::to_integer<int>(b115 >> 6) == 1, "");
-#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

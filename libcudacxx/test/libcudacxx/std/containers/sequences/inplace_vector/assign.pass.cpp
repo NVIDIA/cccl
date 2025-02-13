@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++11
-
 #include <cuda/std/__algorithm_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
@@ -28,7 +26,6 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wmissing-braces")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 _CCCL_DIAG_SUPPRESS_MSVC(5246)
 
-#if TEST_STD_VER >= 2017
 template <class T, template <class, size_t> class Range>
 __host__ __device__ constexpr void test_ranges()
 {
@@ -65,7 +62,6 @@ __host__ __device__ constexpr void test_ranges()
     assert(equal_range(vec, cuda::std::array<T, 6>{T(42), T(1), T(42), T(1337), T(0), T(42)}));
   }
 }
-#endif // TEST_STD_VER >= 2017
 
 template <class T>
 __host__ __device__ constexpr void test()
@@ -221,12 +217,10 @@ __host__ __device__ constexpr void test()
     assert(equal_range(vec, expected));
   }
 
-#if TEST_STD_VER >= 2017
   test_ranges<T, input_range>();
   test_ranges<T, uncommon_range>();
   test_ranges<T, sized_uncommon_range>();
   test_ranges<T, cuda::std::array>();
-#endif // TEST_STD_VER >= 2017
 }
 
 __host__ __device__ constexpr bool test()
@@ -245,7 +239,6 @@ __host__ __device__ constexpr bool test()
 }
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
-#  if TEST_STD_VER >= 2017
 template <template <class, size_t> class Range>
 void test_exceptions()
 { // assign_range throws std::bad_alloc
@@ -264,7 +257,6 @@ void test_exceptions()
     assert(false);
   }
 }
-#  endif // TEST_STD_VER >= 2017
 
 void test_exceptions()
 { // assign throws std::bad_alloc
@@ -322,12 +314,10 @@ void test_exceptions()
     assert(false);
   }
 
-#  if TEST_STD_VER >= 2017
   test_exceptions<input_range>();
   test_exceptions<uncommon_range>();
   test_exceptions<sized_uncommon_range>();
   test_exceptions<cuda::std::array>();
-#  endif // TEST_STD_VER >= 2017
 }
 #endif // !TEST_HAS_NO_EXCEPTIONS
 

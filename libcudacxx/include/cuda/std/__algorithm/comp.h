@@ -30,8 +30,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 struct __equal_to
 {
   template <class _T1, class _T2>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
-  operator()(const _T1& __lhs, const _T2& __rhs) const noexcept(noexcept(__lhs == __rhs))
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator()(const _T1& __lhs, const _T2& __rhs) const
+    noexcept(noexcept(__lhs == __rhs))
   {
     return __lhs == __rhs;
   }

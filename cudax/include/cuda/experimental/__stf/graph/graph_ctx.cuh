@@ -109,7 +109,7 @@ public:
       assert(s > 0);
     }
 
-    reserved::fork_from_graph_node(bctx, out, graph_epoch, prereqs, "alloc");
+    reserved::fork_from_graph_node(bctx, out, graph, graph_epoch, prereqs, "alloc");
     return result;
   }
 
@@ -129,7 +129,7 @@ public:
     {
       cuda_safe_call(cudaGraphAddMemFreeNode(&out, graph, nodes.data(), nodes.size(), ptr));
     }
-    reserved::fork_from_graph_node(bctx, out, graph_epoch, prereqs, "dealloc");
+    reserved::fork_from_graph_node(bctx, out, graph, graph_epoch, prereqs, "dealloc");
   }
 
   ::std::string to_string() const override
@@ -216,6 +216,11 @@ class graph_ctx : public backend_ctx<graph_ctx>
 
     ~impl() override {}
 
+    ::std::string to_string() const override
+    {
+      return "graph backend context";
+    }
+
     // Due to circular dependencies, we need to define it here, and not in backend_ctx_untyped
     void update_uncached_allocator(block_allocator_untyped custom) override
     {
@@ -289,11 +294,6 @@ public:
       : backend_ctx<graph_ctx>(::std::make_shared<impl>(g))
   {}
   ///@}
-
-  ::std::string to_string() const
-  {
-    return "graph backend context";
-  }
 
   using backend_ctx<graph_ctx>::task;
 
@@ -566,7 +566,7 @@ private:
     cudaGraphNode_t n;
     cuda_safe_call(cudaGraphAddEmptyNode(&n, get_graph(), nodes.data(), nodes.size()));
 
-    reserved::fork_from_graph_node(*this, n, graph_epoch, prereq_fence, "fence");
+    reserved::fork_from_graph_node(*this, n, get_graph(), graph_epoch, prereq_fence, "fence");
 
     return nullptr; // for conformity with the stream version
   }

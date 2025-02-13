@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03
-
 // test forward
 
 #include <cuda/std/cassert>
@@ -29,7 +27,6 @@ __host__ __device__ const A csource() TEST_NOEXCEPT
   return A();
 }
 
-#if TEST_STD_VER > 2011
 __host__ __device__ constexpr bool test_constexpr_forward()
 {
   int x        = 42;
@@ -39,7 +36,6 @@ __host__ __device__ constexpr bool test_constexpr_forward()
       && cuda::std::forward<int&&>(x) == 42 && cuda::std::forward<const int&&>(x) == 42
       && cuda::std::forward<const int&>(cx) == 101 && cuda::std::forward<const int>(cx) == 101;
 }
-#endif
 
 int main(int, char**)
 {
@@ -70,23 +66,12 @@ int main(int, char**)
   ASSERT_NOEXCEPT(cuda::std::forward<const A>(ca));
   ASSERT_NOEXCEPT(cuda::std::forward<const A>(csource()));
 
-#if TEST_STD_VER > 2011
   {
     constexpr int i2 = cuda::std::forward<int>(42);
     static_assert(cuda::std::forward<int>(42) == 42, "");
     static_assert(cuda::std::forward<const int&>(i2) == 42, "");
     static_assert(test_constexpr_forward(), "");
   }
-#endif
-#if TEST_STD_VER == 2011 && defined(_LIBCUDACXX_VERSION)
-  // Test that cuda::std::forward is constexpr in C++11. This is an extension
-  // provided by both libc++ and libstdc++.
-  {
-    constexpr int i2 = cuda::std::forward<int>(42);
-    static_assert(cuda::std::forward<int>(42) == 42, "");
-    static_assert(cuda::std::forward<const int&>(i2) == 42, "");
-  }
-#endif
 
   return 0;
 }

@@ -8,7 +8,7 @@
 template <typename T, typename CompareOp, typename... Args>
 auto call_merge(Args&&... args) -> decltype(thrust::merge(std::forward<Args>(args)...))
 {
-  _CCCL_IF_CONSTEXPR (::cuda::std::is_void<CompareOp>::value)
+  if constexpr (::cuda::std::is_void<CompareOp>::value)
   {
     return thrust::merge(std::forward<Args>(args)...);
   }
@@ -39,7 +39,7 @@ void TestMergeKeyValue(size_t n)
     h_b[i] = T(h_keys_b[i], h_values_b[i]);
   }
 
-  _CCCL_IF_CONSTEXPR (::cuda::std::is_void<CompareOp>::value)
+  if constexpr (::cuda::std::is_void<CompareOp>::value)
   {
     thrust::stable_sort(h_a.begin(), h_a.end());
     thrust::stable_sort(h_b.begin(), h_b.end());

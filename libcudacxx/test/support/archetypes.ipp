@@ -18,11 +18,7 @@
 #  endif // TEST_WORKAROUND_EDG_EXPLICIT_CONSTEXPR
 #endif
 #ifndef DEFINE_ASSIGN_CONSTEXPR
-#  if TEST_STD_VER >= 2014
-#    define DEFINE_ASSIGN_CONSTEXPR DEFINE_CONSTEXPR
-#  else
-#    define DEFINE_ASSIGN_CONSTEXPR
-#  endif
+#  define DEFINE_ASSIGN_CONSTEXPR DEFINE_CONSTEXPR
 #endif
 #ifndef DEFINE_DEFAULT_CONSTEXPR
 #  if defined(TEST_COMPILER_NVRTC)
@@ -254,7 +250,7 @@ struct ConvertingType : DEFINE_BASE(ConvertingType)
 {
   using Base = DEFINE_BASE(ConvertingType);
 #if defined(TEST_COMPILER_NVRTC) && _CCCL_CUDACC_BELOW(12, 5) // nvbug3961621, this one is special
-                                                                       // because of the converting ctor
+                                                              // because of the converting ctor
 #else
   using Base::Base;
 #endif

@@ -173,10 +173,9 @@ void __global__ __launch_bounds__(
   kernel_test_info->uses_vsmem_ptr =
     (reinterpret_cast<char*>(&temp_storage)
      == (static_cast<char*>(vsmem.gmem_ptr) + (blockIdx.x * vsmem_helper_t::vsmem_per_block)));
-  kernel_test_info->uses_fallback_agent =
-    ::cuda::std::is_same<typename vsmem_helper_t::agent_t, fallback_agent_t>::value;
+  kernel_test_info->uses_fallback_agent = ::cuda::std::is_same_v<typename vsmem_helper_t::agent_t, fallback_agent_t>;
   kernel_test_info->uses_fallback_policy =
-    ::cuda::std::is_same<typename vsmem_helper_t::agent_policy_t, fallback_policy_t>::value;
+    ::cuda::std::is_same_v<typename vsmem_helper_t::agent_policy_t, fallback_policy_t>;
 
   // Instantiate the algorithm's agent
   agent_t agent(temp_storage, d_in, d_out);

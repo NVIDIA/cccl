@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11
+
 // <chrono>
 
 // constexpr hours make12(const hours& h) noexcept;

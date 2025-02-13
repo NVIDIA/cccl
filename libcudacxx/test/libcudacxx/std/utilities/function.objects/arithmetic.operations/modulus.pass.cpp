@@ -45,7 +45,7 @@ int main(int, char**)
   static_assert((cuda::std::is_same<int, F::first_argument_type>::value), "");
   static_assert((cuda::std::is_same<int, F::second_argument_type>::value), "");
   static_assert((cuda::std::is_same<int, F::result_type>::value), "");
-#endif
+#endif // TEST_STD_VER <= 2017
   assert(f(36, 8) == 4);
 
   typedef cuda::std::modulus<> F2;
@@ -53,13 +53,11 @@ int main(int, char**)
   assert(f2(36, 8) == 4);
   assert(f2(36L, 8) == 4);
   assert(f2(36, 8L) == 4);
-#if TEST_STD_VER > 2011
   constexpr int foo = cuda::std::modulus<int>()(3, 2);
   static_assert(foo == 1, "");
 
   constexpr int bar = cuda::std::modulus<>()(3L, 2);
   static_assert(bar == 1, "");
-#endif
 
   return 0;
 }

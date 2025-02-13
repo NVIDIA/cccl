@@ -151,59 +151,6 @@ using ::cuda::std::bit_xor;
  *  \{
  */
 
-/*! \p identity is a Unary Function that represents the identity function: it takes
- *  a single argument \c x, and returns \c x.
- *
- *  \tparam T No requirements on \p T.
- *
- *  The following code snippet demonstrates that \p identity returns its
- *  argument.
- *
- *  \code
- *  #include <thrust/functional.h>
- *  #include <assert.h>
- *  ...
- *  int x = 137;
- *  thrust::identity<int> id;
- *  assert(x == id(x));
- *  \endcode
- *
- *  \see https://en.cppreference.com/w/cpp/utility/functional/identity
- */
-// TODO(bgruber): this version can also act as a functor casting to T making it not equivalent to ::cuda::std::identity
-template <typename T = void>
-struct CCCL_DEPRECATED_BECAUSE("use cuda::std::identity instead") identity
-{
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE constexpr const T& operator()(const T& x) const
-  {
-    return x;
-  }
-
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE constexpr T& operator()(T& x) const
-  {
-    return x;
-  }
-
-  // we cannot add an overload for `const T&&` because then calling e.g. `thrust::identity<int>{}(3.14);` is ambiguous
-  // on MSVC
-
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE constexpr T&& operator()(T&& x) const
-  {
-    return _CUDA_VSTD::move(x);
-  }
-};
-
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-template <>
-struct CCCL_DEPRECATED_BECAUSE("use cuda::std::identity instead") identity<void> : ::cuda::std::__identity
-{};
-_CCCL_SUPPRESS_DEPRECATED_POP
-
 using ::cuda::maximum;
 using ::cuda::minimum;
 

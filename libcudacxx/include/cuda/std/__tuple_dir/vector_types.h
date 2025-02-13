@@ -54,22 +54,22 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
 
 #  define _LIBCUDACXX_SPECIALIZE_GET(__name, __base_type)                                                           \
     template <size_t _Ip>                                                                                           \
-    _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __base_type& get(__name& __val) noexcept                        \
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr __base_type& get(__name& __val) noexcept                                    \
     {                                                                                                               \
       return _CUDA_VSTD::__get_element<_Ip>::template get<__name, __base_type>(__val);                              \
     }                                                                                                               \
     template <size_t _Ip>                                                                                           \
-    _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const __base_type& get(const __name& __val) noexcept            \
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr const __base_type& get(const __name& __val) noexcept                        \
     {                                                                                                               \
       return _CUDA_VSTD::__get_element<_Ip>::template get<__name, __base_type>(__val);                              \
     }                                                                                                               \
     template <size_t _Ip>                                                                                           \
-    _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __base_type&& get(__name&& __val) noexcept                      \
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr __base_type&& get(__name&& __val) noexcept                                  \
     {                                                                                                               \
       return _CUDA_VSTD::__get_element<_Ip>::template get<__name, __base_type>(static_cast<__name&&>(__val));       \
     }                                                                                                               \
     template <size_t _Ip>                                                                                           \
-    _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const __base_type&& get(const __name&& __val) noexcept          \
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr const __base_type&& get(const __name&& __val) noexcept                      \
     {                                                                                                               \
       return _CUDA_VSTD::__get_element<_Ip>::template get<__name, __base_type>(static_cast<const __name&&>(__val)); \
     }
@@ -103,25 +103,25 @@ template <>
 struct __get_element<0>
 {
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _BaseType& get(_Vec& __val) noexcept
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr _BaseType& get(_Vec& __val) noexcept
   {
     return __val.x;
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const _BaseType& get(const _Vec& __val) noexcept
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr const _BaseType& get(const _Vec& __val) noexcept
   {
     return __val.x;
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _BaseType&& get(_Vec&& __val) noexcept
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr _BaseType&& get(_Vec&& __val) noexcept
   {
     return static_cast<_BaseType&&>(__val.x);
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const _BaseType&& get(const _Vec&& __val) noexcept
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr const _BaseType&& get(const _Vec&& __val) noexcept
   {
     return static_cast<const _BaseType&&>(__val.x);
   }
@@ -131,25 +131,25 @@ template <>
 struct __get_element<1>
 {
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _BaseType& get(_Vec& __val) noexcept
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr _BaseType& get(_Vec& __val) noexcept
   {
     return __val.y;
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const _BaseType& get(const _Vec& __val) noexcept
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr const _BaseType& get(const _Vec& __val) noexcept
   {
     return __val.y;
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _BaseType&& get(_Vec&& __val) noexcept
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr _BaseType&& get(_Vec&& __val) noexcept
   {
     return static_cast<_BaseType&&>(__val.y);
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const _BaseType&& get(const _Vec&& __val) noexcept
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr const _BaseType&& get(const _Vec&& __val) noexcept
   {
     return static_cast<const _BaseType&&>(__val.y);
   }
@@ -158,25 +158,25 @@ template <>
 struct __get_element<2>
 {
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _BaseType& get(_Vec& __val) noexcept
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr _BaseType& get(_Vec& __val) noexcept
   {
     return __val.z;
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const _BaseType& get(const _Vec& __val) noexcept
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr const _BaseType& get(const _Vec& __val) noexcept
   {
     return __val.z;
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _BaseType&& get(_Vec&& __val) noexcept
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr _BaseType&& get(_Vec&& __val) noexcept
   {
     return static_cast<_BaseType&&>(__val.z);
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const _BaseType&& get(const _Vec&& __val) noexcept
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr const _BaseType&& get(const _Vec&& __val) noexcept
   {
     return static_cast<const _BaseType&&>(__val.z);
   }
@@ -186,25 +186,25 @@ template <>
 struct __get_element<3>
 {
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _BaseType& get(_Vec& __val) noexcept
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr _BaseType& get(_Vec& __val) noexcept
   {
     return __val.w;
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const _BaseType& get(const _Vec& __val) noexcept
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr const _BaseType& get(const _Vec& __val) noexcept
   {
     return __val.w;
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _BaseType&& get(_Vec&& __val) noexcept
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr _BaseType&& get(_Vec&& __val) noexcept
   {
     return static_cast<_BaseType&&>(__val.w);
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const _BaseType&& get(const _Vec&& __val) noexcept
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr const _BaseType&& get(const _Vec&& __val) noexcept
   {
     return static_cast<const _BaseType&&>(__val.w);
   }

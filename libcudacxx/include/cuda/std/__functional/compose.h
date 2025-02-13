@@ -28,8 +28,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2014
-
 struct __compose_op
 {
   template <class _Fn1, class _Fn2, class... _Args>
@@ -61,8 +59,6 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __compose(_Fn1&& __f1, _Fn2&& __f2) noe
 {
   return __compose_t<decay_t<_Fn1>, decay_t<_Fn2>>(_CUDA_VSTD::forward<_Fn1>(__f1), _CUDA_VSTD::forward<_Fn2>(__f2));
 }
-
-#endif // _CCCL_STD_VER > 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

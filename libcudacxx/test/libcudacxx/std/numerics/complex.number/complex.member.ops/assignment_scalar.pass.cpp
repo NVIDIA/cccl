@@ -42,14 +42,12 @@ int main(int, char**)
 #ifdef _LIBCUDACXX_HAS_NVBF16
   test<__nv_bfloat16>();
 #endif
-// CUDA treats long double as double
-//  test<long double>();
-#if TEST_STD_VER > 2011
+  // CUDA treats long double as double
+  //  test<long double>();
   static_assert(test<float>(), "");
   static_assert(test<double>(), "");
-// CUDA treats long double as double
-//  static_assert(test<long double>(), "");
-#endif
+  // CUDA treats long double as double
+  //  static_assert(test<long double>(), "");
 
   return 0;
 }

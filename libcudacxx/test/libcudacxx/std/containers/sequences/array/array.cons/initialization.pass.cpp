@@ -235,10 +235,8 @@ int main(int, char**)
   with_all_types<test_nondefault_initialization>();
   with_all_types<test_default_initialization>(); // not constexpr
   test_initializer_list();
-#if TEST_STD_VER >= 2014
   static_assert(with_all_types<test_nondefault_initialization>(), "");
   static_assert(test_initializer_list(), "");
-#endif
 
   return 0;
 }

@@ -67,8 +67,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#  if _CCCL_STD_VER > 2011
-
 //==============================================================================
 
 namespace __detail
@@ -115,12 +113,12 @@ struct __maybe_static_value
 // dynamic case
 template <class _dynamic_t, class _static_t, _static_t __is_dynamic_sentinal, size_t __array_entry_index>
 struct __maybe_static_value<_dynamic_t, _static_t, __is_dynamic_sentinal, __is_dynamic_sentinal, __array_entry_index>
-#    ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     : __no_unique_address_emulation<_Tp>
-#    endif
+#  endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 {
   static constexpr _static_t __static_value = __is_dynamic_sentinal;
-#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
   _CCCL_NO_UNIQUE_ADDRESS _dynamic_t __v = {};
   __MDSPAN_FORCE_INLINE_FUNCTION constexpr _dynamic_t __value() const noexcept
   {
@@ -135,7 +133,7 @@ struct __maybe_static_value<_dynamic_t, _static_t, __is_dynamic_sentinal, __is_d
   {
     __v = (_Up&&) rhs;
   }
-#    else
+#  else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
   __MDSPAN_FORCE_INLINE_FUNCTION constexpr _dynamic_t __value() const noexcept
   {
     return this->__no_unique_address_emulation<_dynamic_t>::__ref();
@@ -149,14 +147,12 @@ struct __maybe_static_value<_dynamic_t, _static_t, __is_dynamic_sentinal, __is_d
   {
     this->__no_unique_address_emulation<_dynamic_t>::__ref() = (_Up&&) __rhs;
   }
-#    endif
+#  endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 };
 
 } // namespace __detail
 
 //==============================================================================
-
-#  endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

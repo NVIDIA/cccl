@@ -1150,7 +1150,6 @@ _LIBCUDACXX_HIDE_FROM_ABI _SampleIterator __sample(
   return _CUDA_VSTD::__sample(__first, __last, __output_iter, _CommonType(__n), __g, _PopCategory());
 }
 
-#  if _CCCL_STD_VER > 2014
 template <class _PopulationIterator, class _SampleIterator, class _Distance, class _UniformRandomNumberGenerator>
 _LIBCUDACXX_HIDE_FROM_ABI _SampleIterator sample(
   _PopulationIterator __first,
@@ -1161,7 +1160,6 @@ _LIBCUDACXX_HIDE_FROM_ABI _SampleIterator sample(
 {
   return _CUDA_VSTD::__sample(__first, __last, __output_iter, __n, __g);
 }
-#  endif // _CCCL_STD_VER > 2014
 
 template <class _RandomAccessIterator, class _UniformRandomNumberGenerator>
 _LIBCUDACXX_HIDE_FROM_ABI void

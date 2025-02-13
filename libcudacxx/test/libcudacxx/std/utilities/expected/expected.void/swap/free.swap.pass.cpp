@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: gcc-6
 
 // Older Clangs do not support the C++20 feature to constrain destructors

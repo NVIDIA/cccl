@@ -77,23 +77,19 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_clz(uint64_t __x) noexcept
 
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_clz(uint32_t __x) noexcept
 {
-#  if _CCCL_STD_VER >= 2014
   if (!__cccl_default_is_constant_evaluated())
   {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __clz(__x);), (return __builtin_clz(__x);))
   }
-#  endif
   return __constexpr_clz(__x);
 }
 
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_clz(uint64_t __x) noexcept
 {
-#  if _CCCL_STD_VER >= 2014
   if (!__cccl_default_is_constant_evaluated())
   {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __clzll(__x);), (return __builtin_clzll(__x);))
   }
-#  endif
   return __constexpr_clz(__x);
 }
 

@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class T, class U>
 // concept equality_comparable_with = // see below
 

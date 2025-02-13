@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class LHS, class RHS>
 // concept assignable_from =
 //   std::is_lvalue_reference_v<LHS> &&

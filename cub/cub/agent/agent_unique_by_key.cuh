@@ -151,20 +151,20 @@ struct AgentUniqueByKey
   };
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier) for keys
-  using WrappedKeyInputIteratorT = typename ::cuda::std::conditional<
-    ::cuda::std::is_pointer<KeyInputIteratorT>::value,
+  using WrappedKeyInputIteratorT = ::cuda::std::conditional_t<
+    ::cuda::std::is_pointer_v<KeyInputIteratorT>,
     CacheModifiedInputIterator<AgentUniqueByKeyPolicyT::LOAD_MODIFIER, KeyT, OffsetT>, // Wrap the native input pointer
                                                                                        // with
                                                                                        // CacheModifiedValuesInputIterator
-    KeyInputIteratorT>::type; // Directly use the supplied input iterator type
+    KeyInputIteratorT>; // Directly use the supplied input iterator type
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier) for values
-  using WrappedValueInputIteratorT = typename ::cuda::std::conditional<
-    ::cuda::std::is_pointer<ValueInputIteratorT>::value,
+  using WrappedValueInputIteratorT = ::cuda::std::conditional_t<
+    ::cuda::std::is_pointer_v<ValueInputIteratorT>,
     CacheModifiedInputIterator<AgentUniqueByKeyPolicyT::LOAD_MODIFIER, ValueT, OffsetT>, // Wrap the native input
                                                                                          // pointer with
                                                                                          // CacheModifiedValuesInputIterator
-    ValueInputIteratorT>::type; // Directly use the supplied input iterator type
+    ValueInputIteratorT>; // Directly use the supplied input iterator type
 
   // Parameterized BlockLoad type for input data
   using BlockLoadKeys = BlockLoad<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentUniqueByKeyPolicyT::LOAD_ALGORITHM>;

@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // <cuda/std/optional>
 
 // Make sure we properly generate special member functions for optional<T>

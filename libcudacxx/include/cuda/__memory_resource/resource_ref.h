@@ -36,8 +36,6 @@
 #  include <cuda/std/cstddef>
 #  include <cuda/stream_ref>
 
-#  if _CCCL_STD_VER >= 2014
-
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 
 union _AnyResourceStorage
@@ -191,7 +189,7 @@ struct _Resource_vtable_builder
   static void _Destroy_impl(_AnyResourceStorage* __object_, __wrapper_type<_WrapperType::_Owning>) noexcept
   {
     _Resource* __object = _Any_resource_cast<_Resource>(__object_);
-    _CCCL_IF_CONSTEXPR (_IsSmall<_Resource>())
+    if constexpr (_IsSmall<_Resource>())
     {
       __object->~_Resource();
     }
@@ -215,7 +213,7 @@ struct _Resource_vtable_builder
   static void _Move_impl(
     _AnyResourceStorage* __object, _AnyResourceStorage* __other_, __wrapper_type<_WrapperType::_Owning>) noexcept
   {
-    _CCCL_IF_CONSTEXPR (_IsSmall<_Resource>())
+    if constexpr (_IsSmall<_Resource>())
     {
       _Resource* __other = _Any_resource_cast<_Resource>(__other_);
       ::new (static_cast<void*>(__object->__buf_)) _Resource(_CUDA_VSTD::move(*__other));
@@ -241,7 +239,7 @@ struct _Resource_vtable_builder
   static void _Copy_impl(
     _AnyResourceStorage* __object, const _AnyResourceStorage* __other, __wrapper_type<_WrapperType::_Owning>) noexcept
   {
-    _CCCL_IF_CONSTEXPR (_IsSmall<_Resource>())
+    if constexpr (_IsSmall<_Resource>())
     {
       ::new (static_cast<void*>(__object->__buf_)) _Resource(*_Any_resource_cast<_Resource>(__other));
     }
@@ -645,8 +643,6 @@ template <class... _Properties>
 using async_resource_ref = basic_resource_ref<_AllocType::_Async, _Properties...>;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
-
-#  endif // _CCCL_STD_VER >= 2014
 
 #endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 

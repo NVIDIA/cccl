@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
 // UNSUPPORTED: msvc-19.16
 
 // cuda::std::ranges::borrowed_subrange_t;

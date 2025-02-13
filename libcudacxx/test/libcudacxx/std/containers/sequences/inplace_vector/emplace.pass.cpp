@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++11
-
 #include <cuda/std/__algorithm_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>

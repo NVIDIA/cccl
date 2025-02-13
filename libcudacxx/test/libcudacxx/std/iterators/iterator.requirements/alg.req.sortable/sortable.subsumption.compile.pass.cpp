@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14, c++17
+// UNSUPPORTED: c++17
 
 // template<class I, class R = ranges::less, class P = identity>
 //   concept sortable = see below;                            // since C++20

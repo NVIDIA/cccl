@@ -56,7 +56,6 @@ int main(int, char**)
   test<random_access_iterator<const int*>, bidirectional_iterator<const int*>>();
   test<random_access_iterator<const int*>, random_access_iterator<const int*>>();
 
-#if TEST_STD_VER > 2011
   static_assert(test<forward_iterator<const int*>, forward_iterator<const int*>>(), "");
   static_assert(test<forward_iterator<const int*>, bidirectional_iterator<const int*>>(), "");
   static_assert(test<forward_iterator<const int*>, random_access_iterator<const int*>>(), "");
@@ -66,7 +65,6 @@ int main(int, char**)
   static_assert(test<random_access_iterator<const int*>, forward_iterator<const int*>>(), "");
   static_assert(test<random_access_iterator<const int*>, bidirectional_iterator<const int*>>(), "");
   static_assert(test<random_access_iterator<const int*>, random_access_iterator<const int*>>(), "");
-#endif
 
   return 0;
 }

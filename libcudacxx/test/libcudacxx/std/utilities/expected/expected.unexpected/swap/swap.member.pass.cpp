@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // constexpr void swap(unexpected& other) noexcept(is_nothrow_swappable_v<E>);
 //
 // Mandates: is_swappable_v<E> is true.

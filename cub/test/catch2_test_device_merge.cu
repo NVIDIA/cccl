@@ -87,9 +87,8 @@ C2H_TEST("DeviceMerge::MergeKeys large key types", "[merge][device]", c2h::type_
     sizeof(key_t) * cub::detail::merge::fallback_BLOCK_THREADS * cub::detail::merge::fallback_ITEMS_PER_THREAD;
   static_assert(agent_sm > cub::detail::max_smem_per_block,
                 "key_t is not big enough to exceed SM and trigger fallback policy");
-  static_assert(
-    ::cuda::std::is_same<key_t, large_type_fallb>::value == (fallback_sm <= cub::detail::max_smem_per_block),
-    "SM consumption by fallback policy should fit into max_smem_per_block");
+  static_assert(::cuda::std::is_same_v<key_t, large_type_fallb> == (fallback_sm <= cub::detail::max_smem_per_block),
+                "SM consumption by fallback policy should fit into max_smem_per_block");
 
   test_keys<key_t, offset_t>(
     3623,

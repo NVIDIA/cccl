@@ -26,7 +26,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIterator, class _OutputIterator1, class _OutputIterator2, class _Predicate>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_OutputIterator1, _OutputIterator2> partition_copy(
+_LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_OutputIterator1, _OutputIterator2> partition_copy(
   _InputIterator __first,
   _InputIterator __last,
   _OutputIterator1 __out_true,

@@ -21,12 +21,10 @@ __host__ __device__ void test_rank()
   static_assert(cuda::std::rank<const T>::value == A, "");
   static_assert(cuda::std::rank<volatile T>::value == A, "");
   static_assert(cuda::std::rank<const volatile T>::value == A, "");
-#if TEST_STD_VER > 2011
   static_assert(cuda::std::rank_v<T> == A, "");
   static_assert(cuda::std::rank_v<const T> == A, "");
   static_assert(cuda::std::rank_v<volatile T> == A, "");
   static_assert(cuda::std::rank_v<const volatile T> == A, "");
-#endif
 }
 
 class Class

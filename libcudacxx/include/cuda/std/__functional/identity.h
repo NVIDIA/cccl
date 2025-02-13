@@ -52,11 +52,7 @@ template <>
 struct __is_identity<reference_wrapper<const __identity>> : true_type
 {};
 
-#if _CCCL_STD_VER > 2011
-
 using identity = __identity;
-
-#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

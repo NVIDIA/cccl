@@ -36,11 +36,11 @@ _LIBCUDACXX_DEPRECATED_IN_CXX17 unary_negate : public __unary_function<typename 
   _Predicate __pred_;
 
 public:
-  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI explicit unary_negate(const _Predicate& __pred)
+  constexpr _LIBCUDACXX_HIDE_FROM_ABI explicit unary_negate(const _Predicate& __pred)
       : __pred_(__pred)
   {}
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI bool operator()(const typename _Predicate::argument_type& __x) const
+  constexpr _LIBCUDACXX_HIDE_FROM_ABI bool operator()(const typename _Predicate::argument_type& __x) const
   {
     return !__pred_(__x);
   }
@@ -48,7 +48,7 @@ public:
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Predicate>
-_LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 unary_negate<_Predicate>
+_LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_HIDE_FROM_ABI constexpr unary_negate<_Predicate>
 not1(const _Predicate& __pred)
 {
   return unary_negate<_Predicate>(__pred);

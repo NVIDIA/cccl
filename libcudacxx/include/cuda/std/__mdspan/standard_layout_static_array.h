@@ -68,8 +68,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2011
-
 namespace __detail
 {
 
@@ -96,7 +94,7 @@ using __repeated_with_idxs = _Tp;
 
 //==============================================================================
 
-#  if __MDSPAN_PRESERVE_STANDARD_LAYOUT
+#if __MDSPAN_PRESERVE_STANDARD_LAYOUT
 
 /**
  *  PSA = "partially static array"
@@ -129,7 +127,7 @@ struct __standard_layout_psa<_Tag,
                              _CUDA_VSTD::integer_sequence<_static_t, __value, __values_or_sentinals...>,
                              __sentinal,
                              _CUDA_VSTD::integer_sequence<size_t, _Idx, _Idxs...>>
-#    ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     : private __no_unique_address_emulation<
         __standard_layout_psa<_Tag,
                               _Tp,
@@ -137,7 +135,7 @@ struct __standard_layout_psa<_Tag,
                               _CUDA_VSTD::integer_sequence<_static_t, __values_or_sentinals...>,
                               __sentinal,
                               _CUDA_VSTD::integer_sequence<size_t, _Idxs...>>>
-#    endif
+#  endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 {
   //--------------------------------------------------------------------------
 
@@ -149,27 +147,27 @@ struct __standard_layout_psa<_Tag,
                           __sentinal,
                           _CUDA_VSTD::integer_sequence<size_t, _Idxs...>>;
 
-#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
   _CCCL_NO_UNIQUE_ADDRESS __next_t __next_;
-#    else
+#  else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
   using __base_t = __no_unique_address_emulation<__next_t>;
-#    endif
+#  endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 
   __MDSPAN_FORCE_INLINE_FUNCTION constexpr __next_t& __next() noexcept
   {
-#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     return __next_;
-#    else
+#  else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
     return this->__base_t::__ref();
-#    endif
+#  endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
   }
   __MDSPAN_FORCE_INLINE_FUNCTION constexpr __next_t const& __next() const noexcept
   {
-#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     return __next_;
-#    else
+#  else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
     return this->__base_t::__ref();
-#    endif
+#  endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
   }
 
   static constexpr auto __size         = sizeof...(_Idxs) + 1;
@@ -192,144 +190,144 @@ struct __standard_layout_psa<_Tag,
     __construct_psa_from_all_exts_values_tag_t,
     _Tp const& /*__val*/,
     __repeated_with_idxs<_Idxs, _Tp> const&... __vals) noexcept
-#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
-#    else
+#  else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
       : __base_t(__base_t{__next_t(
-#    endif
+#  endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
           __construct_psa_from_all_exts_values_tag, __vals...
-#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         }
-#    else
+#  else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
           )})
-#    endif
+#  endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
   {}
 
   template <class... _Ts>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __standard_layout_psa(
     __construct_psa_from_dynamic_exts_values_tag_t, _Ts const&... __vals) noexcept
-#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
-#    else
+#  else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
       : __base_t(__base_t{__next_t(
-#    endif
+#  endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
           __construct_psa_from_dynamic_exts_values_tag, __vals...
-#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         }
-#    else
+#  else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
           )})
-#    endif
+#  endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
   {}
 
   template <class _Up, size_t _Np>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __standard_layout_psa(array<_Up, _Np> const& __vals) noexcept
-#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
-#    else
+#  else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
       : __base_t(__base_t{__next_t(
-#    endif
+#  endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
           __vals
-#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         }
-#    else
+#  else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
           )})
-#    endif
+#  endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
   {}
 
   template <class _Up, size_t _NStatic>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __standard_layout_psa(
     __construct_psa_from_all_exts_array_tag_t const& __tag, array<_Up, _NStatic> const& __vals) noexcept
-#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
-#    else
+#  else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
       : __base_t(__base_t{__next_t(
-#    endif
+#  endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
           __tag, __vals
-#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         }
-#    else
+#  else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
           )})
-#    endif
+#  endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
   {}
 
   template <class _Up, size_t _IDynamic, size_t _NDynamic>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __standard_layout_psa(
     __construct_psa_from_dynamic_exts_array_tag_t<_IDynamic> __tag, array<_Up, _NDynamic> const& __vals) noexcept
-#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
-#    else
+#  else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
       : __base_t(__base_t{__next_t(
-#    endif
+#  endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
           __tag, __vals
-#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         }
-#    else
+#  else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
           )})
-#    endif
+#  endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
   {}
 
   template <class _Up, size_t _Np>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __standard_layout_psa(_CUDA_VSTD::span<_Up, _Np> const& __vals) noexcept
-#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
-#    else
+#  else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
       : __base_t(__base_t{__next_t(
-#    endif
+#  endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
           __vals
-#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         }
-#    else
+#  else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
           )})
-#    endif
+#  endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
   {}
 
   template <class _Up, size_t _NStatic>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __standard_layout_psa(
     __construct_psa_from_all_exts_array_tag_t const& __tag, _CUDA_VSTD::span<_Up, _NStatic> const& __vals) noexcept
-#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
-#    else
+#  else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
       : __base_t(__base_t{__next_t(
-#    endif
+#  endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
           __tag, __vals
-#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         }
-#    else
+#  else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
           )})
-#    endif
+#  endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
   {}
 
   template <class _Up, size_t _IDynamic, size_t _NDynamic>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __standard_layout_psa(
     __construct_psa_from_dynamic_exts_array_tag_t<_IDynamic> __tag,
     _CUDA_VSTD::span<_Up, _NDynamic> const& __vals) noexcept
-#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
-#    else
+#  else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
       : __base_t(__base_t{__next_t(
-#    endif
+#  endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
           __tag, __vals
-#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         }
-#    else
+#  else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
           )})
-#    endif
+#  endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
   {}
 
   template <class _UTag, class _Up, class _static_U, class _UValsSeq, _static_U __u_sentinal, class _IdxsSeq>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __standard_layout_psa(
     __standard_layout_psa<_UTag, _Up, _static_U, _UValsSeq, __u_sentinal, _IdxsSeq> const& __rhs) noexcept
-#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
-#    else
+#  else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
       : __base_t(__base_t{__next_t(
-#    endif
+#  endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
           __rhs.__next()
-#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         }
-#    else
+#  else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
             )})
-#    endif
+#  endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
   {}
 
   //--------------------------------------------------------------------------
@@ -666,21 +664,21 @@ private:
   {}
 
 public:
-#    if _CCCL_COMPILER(NVRTC)
+#  if _CCCL_COMPILER(NVRTC)
   template <class... _Args, enable_if_t<_CCCL_TRAIT(is_constructible, __base_t, _Args...), int> = 0>
   __MDSPAN_FORCE_INLINE_FUNCTION constexpr __partially_static_sizes(_Args&&... __args) noexcept(
     noexcept(__base_t(_CUDA_VSTD::declval<_Args>()...)))
       : __base_t(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
-#    else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ / vvv !_CCCL_COMPILER(NVRTC)
+#  else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ / vvv !_CCCL_COMPILER(NVRTC)
   using __base_t::__base_t;
-#    endif // !_CCCL_COMPILER(NVRTC)
+#  endif // !_CCCL_COMPILER(NVRTC)
 
-#    ifdef __MDSPAN_DEFAULTED_CONSTRUCTORS_INHERITANCE_WORKAROUND
+#  ifdef __MDSPAN_DEFAULTED_CONSTRUCTORS_INHERITANCE_WORKAROUND
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __partially_static_sizes() noexcept
       : __base_t()
   {}
-#    endif
+#  endif
   template <class _UTag>
   __MDSPAN_FORCE_INLINE_FUNCTION constexpr __partially_static_sizes_tagged<_UTag, T, _static_t, __values_or_sentinals...>
   __with_tag() const noexcept
@@ -689,11 +687,9 @@ public:
   }
 };
 
-#  endif // __MDSPAN_PRESERVE_STATIC_LAYOUT
+#endif // __MDSPAN_PRESERVE_STATIC_LAYOUT
 
 } // end namespace __detail
-
-#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

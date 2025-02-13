@@ -69,21 +69,17 @@ int main(int, char**)
   test<char*>();
   test<const char*>();
 
-#if TEST_STD_VER > 2011
   static_assert(test<cpp17_input_iterator<char*>>(), "");
   static_assert(test<forward_iterator<char*>>(), "");
   static_assert(test<bidirectional_iterator<char*>>(), "");
   static_assert(test<random_access_iterator<char*>>(), "");
   static_assert(test<char*>(), "");
   static_assert(test<const char*>(), "");
-#endif // TEST_STD_VER > 2011
 
-#if TEST_STD_VER > 2014
   test<contiguous_iterator<char*>>();
   test_moveonly<cpp20_input_iterator<char*>>();
   static_assert(test<contiguous_iterator<char*>>(), "");
   static_assert(test_moveonly<cpp20_input_iterator<char*>>(), "");
-#endif // TEST_STD_VER > 2014
 
   return 0;
 }

@@ -6,7 +6,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++03, c++11, c++14
 
 // gcc does not support deduction guides until gcc-7 and that is buggy
 // UNSUPPORTED: gcc-6, gcc-7

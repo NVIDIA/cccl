@@ -279,14 +279,14 @@ using cub_operator_fp_list =
  **********************************************************************************************************************/
 
 _CCCL_TEMPLATE(typename T)
-_CCCL_REQUIRES((::cuda::std::is_floating_point<T>::value))
+_CCCL_REQUIRES((::cuda::std::is_floating_point_v<T>) )
 void verify_results(const T& expected_data, const T& test_results)
 {
   REQUIRE_THAT(expected_data, Catch::Matchers::WithinRel(test_results, T{0.05}));
 }
 
 _CCCL_TEMPLATE(typename T)
-_CCCL_REQUIRES((!::cuda::std::is_floating_point<T>::value))
+_CCCL_REQUIRES((!::cuda::std::is_floating_point_v<T>) )
 void verify_results(const T& expected_data, const T& test_results)
 {
   REQUIRE(expected_data == test_results);

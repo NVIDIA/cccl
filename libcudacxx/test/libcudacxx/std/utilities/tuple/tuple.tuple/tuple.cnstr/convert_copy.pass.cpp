@@ -14,8 +14,6 @@
 
 // XFAIL: gcc-4.8, gcc-4.9
 
-// UNSUPPORTED: c++98, c++03
-
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 
@@ -64,8 +62,6 @@ struct D : B
   {}
 };
 
-#if TEST_STD_VER > 2011
-
 struct A
 {
   int id_;
@@ -92,8 +88,6 @@ struct C
   }
 };
 
-#endif
-
 int main(int, char**)
 {
   {
@@ -103,7 +97,6 @@ int main(int, char**)
     T1 t1 = t0;
     assert(cuda::std::get<0>(t1) == 2);
   }
-#if TEST_STD_VER > 2011
   {
     typedef cuda::std::tuple<int> T0;
     typedef cuda::std::tuple<A> T1;
@@ -118,7 +111,6 @@ int main(int, char**)
     constexpr T1 t1{t0};
     static_assert(cuda::std::get<0>(t1) == C(2), "");
   }
-#endif
   {
     typedef cuda::std::tuple<long, char> T0;
     typedef cuda::std::tuple<long long, int> T1;

@@ -6,7 +6,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++03, c++11, c++14
 
 #include <cuda/std/__cccl/builtin.h>
 

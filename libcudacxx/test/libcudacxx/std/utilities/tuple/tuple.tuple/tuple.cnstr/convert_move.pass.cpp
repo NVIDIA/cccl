@@ -12,8 +12,6 @@
 
 // template <class... UTypes> tuple(tuple<UTypes...>&& u);
 
-// UNSUPPORTED: c++98, c++03
-
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>

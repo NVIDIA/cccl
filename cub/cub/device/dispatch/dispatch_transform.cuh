@@ -92,7 +92,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(const T* addr, int tile_size)
 // TODO(miscco): we should probably constrain It to not be a contiguous iterator in C++17 (and change the overload
 // above to accept any contiguous iterator)
 // overload for any iterator that is not a pointer, do nothing
-template <int, typename It, ::cuda::std::enable_if_t<!::cuda::std::is_pointer<It>::value, int> = 0>
+template <int, typename It, ::cuda::std::enable_if_t<!::cuda::std::is_pointer_v<It>, int> = 0>
 _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(It, int)
 {}
 
@@ -169,12 +169,12 @@ template <class F, class Tuple>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto poor_apply(F&& f, Tuple&& t) -> decltype(poor_apply_impl(
   ::cuda::std::forward<F>(f),
   ::cuda::std::forward<Tuple>(t),
-  ::cuda::std::make_index_sequence<::cuda::std::tuple_size<::cuda::std::remove_reference_t<Tuple>>::value>{}))
+  ::cuda::std::make_index_sequence<::cuda::std::tuple_size_v<::cuda::std::remove_reference_t<Tuple>>>{}))
 {
   return poor_apply_impl(
     ::cuda::std::forward<F>(f),
     ::cuda::std::forward<Tuple>(t),
-    ::cuda::std::make_index_sequence<::cuda::std::tuple_size<::cuda::std::remove_reference_t<Tuple>>::value>{});
+    ::cuda::std::make_index_sequence<::cuda::std::tuple_size_v<::cuda::std::remove_reference_t<Tuple>>>{});
 }
 
 // Implementation notes on memcpy_async and UBLKCP kernels regarding copy alignment and padding
@@ -422,7 +422,7 @@ union kernel_arg
   aligned_base_ptr<value_t<It>> aligned_ptr; // first member is trivial
   It iterator; // may not be trivially [default|copy]-constructible
 
-  static_assert(::cuda::std::is_trivial<decltype(aligned_ptr)>::value, "");
+  static_assert(::cuda::std::is_trivial_v<decltype(aligned_ptr)>, "");
 
   // Sometimes It is not trivially [default|copy]-constructible (e.g.
   // thrust::normal_iterator<thrust::device_pointer<T>>), so because of
@@ -634,8 +634,8 @@ struct dispatch_t<StableAddress,
                   TransformOp,
                   PolicyHub>
 {
-  static_assert(::cuda::std::is_same<Offset, ::cuda::std::int32_t>::value
-                  || ::cuda::std::is_same<Offset, ::cuda::std::int64_t>::value,
+  static_assert(::cuda::std::is_same_v<Offset, ::cuda::std::int32_t>
+                  || ::cuda::std::is_same_v<Offset, ::cuda::std::int64_t>,
                 "cub::DeviceTransform is only tested and tuned for 32-bit or 64-bit signed offset types");
 
   ::cuda::std::tuple<RandomAccessIteratorsIn...> in;

@@ -31,7 +31,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _AlgPolicy, class _Compare, class _RandomAccessIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
+_LIBCUDACXX_HIDE_FROM_ABI constexpr void
 __sift_up(_RandomAccessIterator __first,
           _RandomAccessIterator __last,
           _Compare&& __comp,
@@ -65,7 +65,7 @@ __sift_up(_RandomAccessIterator __first,
 }
 
 template <class _AlgPolicy, class _RandomAccessIterator, class _Compare>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
+_LIBCUDACXX_HIDE_FROM_ABI constexpr void
 __push_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare& __comp)
 {
   typename iterator_traits<_RandomAccessIterator>::difference_type __len = __last - __first;
@@ -74,7 +74,7 @@ __push_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compar
 }
 
 template <class _RandomAccessIterator, class _Compare>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
+_LIBCUDACXX_HIDE_FROM_ABI constexpr void
 push_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
   static_assert(_CUDA_VSTD::is_copy_constructible<_RandomAccessIterator>::value,
@@ -85,8 +85,7 @@ push_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare 
 }
 
 template <class _RandomAccessIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
-push_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr void push_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
 {
   _CUDA_VSTD::push_heap(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __less{});
 }

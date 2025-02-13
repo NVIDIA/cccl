@@ -89,7 +89,6 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
     assert(i == T{28});
   }
 
-#if TEST_STD_VER >= 2017
   // `get()` allows using `complex` with structured bindings
   {
     cuda::std::complex<T> c{T{27}, T{28}};
@@ -109,10 +108,9 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
     ASSERT_SAME_TYPE(T, decltype(i));
     assert(i == T{28});
   }
-#endif // TEST_STD_VER >= 2017
 
   // TODO: Re-enable this test when we have cuda::ranges::views
-  // #if TEST_STD_VER >= 2017
+  //
   //   // `get()` allows using `complex` with ranges
   //   {
   //     cuda::std::complex<T> arr[]{{T{27}, T{28}}, {T{82}, T{94}}};
@@ -127,7 +125,7 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
   //     assert(cuda::std::ranges::size(imags) == 2);
   //     assert(cuda::std::ranges::equal(imags, std::array<T, 2>{28, 94}));
   //   }
-  // #endif // TEST_STD_VER >= 2017
+  //
 }
 
 __host__ __device__ bool test()
@@ -162,10 +160,7 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ bool test_constexpr()
 int main(int, char**)
 {
   test();
-
-#if TEST_STD_VER >= 2014
   static_assert(test_constexpr(), "");
-#endif
 
   return 0;
 }

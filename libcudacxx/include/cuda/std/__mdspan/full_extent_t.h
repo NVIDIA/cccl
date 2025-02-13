@@ -58,16 +58,12 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2011
-
 struct full_extent_t
 {
   _CCCL_HIDE_FROM_ABI explicit full_extent_t() = default;
 };
 
 _CCCL_INLINE_VAR constexpr auto full_extent = full_extent_t{};
-
-#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

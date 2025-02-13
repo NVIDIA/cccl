@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class F, class... Args>
 // concept predicate;
 
@@ -55,7 +53,7 @@ static_assert(predicate<Predicate&, int, double, char>, "");
 static_assert(!predicate<const Predicate, int, double, char>, "");
 static_assert(!predicate<const Predicate&, int, double, char>, "");
 
-#if TEST_STD_VER > 2014 && !defined(TEST_COMPILER_NVRTC) // lambdas are not allowed in a constexpr expression
+#if !defined(TEST_COMPILER_NVRTC)
 template <class Fun>
 __host__ __device__ constexpr bool check_lambda(Fun)
 {
@@ -88,7 +86,7 @@ static_assert(!check_lambda([] {
   return explicit_bool();
 }),
               "");
-#endif // TEST_STD_VER > 2014
+#endif // !TEST_COMPILER_NVRTC
 
 int main(int, char**)
 {

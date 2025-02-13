@@ -20,12 +20,10 @@ __host__ __device__ void test_is_convertible()
   static_assert((cuda::std::is_convertible<const T, U>::value), "");
   static_assert((cuda::std::is_convertible<T, const U>::value), "");
   static_assert((cuda::std::is_convertible<const T, const U>::value), "");
-#if TEST_STD_VER > 2011
   static_assert((cuda::std::is_convertible_v<T, U>), "");
   static_assert((cuda::std::is_convertible_v<const T, U>), "");
   static_assert((cuda::std::is_convertible_v<T, const U>), "");
   static_assert((cuda::std::is_convertible_v<const T, const U>), "");
-#endif
 }
 
 template <class T, class U>
@@ -35,12 +33,10 @@ __host__ __device__ void test_is_not_convertible()
   static_assert((!cuda::std::is_convertible<const T, U>::value), "");
   static_assert((!cuda::std::is_convertible<T, const U>::value), "");
   static_assert((!cuda::std::is_convertible<const T, const U>::value), "");
-#if TEST_STD_VER > 2011
   static_assert((!cuda::std::is_convertible_v<T, U>), "");
   static_assert((!cuda::std::is_convertible_v<const T, U>), "");
   static_assert((!cuda::std::is_convertible_v<T, const U>), "");
   static_assert((!cuda::std::is_convertible_v<const T, const U>), "");
-#endif
 }
 
 typedef void Function();

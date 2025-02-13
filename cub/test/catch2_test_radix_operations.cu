@@ -154,20 +154,20 @@ struct tuple_decomposer_t<::cuda::std::tuple<Ts...>>
 
 // clang-format off
 template <std::size_t I, class... Ts>
-typename ::cuda::std::enable_if<I == 0>::type
+::cuda::std::enable_if_t<I == 0>
 buffer_to_tpl_helper(const char *buffer, ::cuda::std::tuple<Ts...> &tpl)
 {
   constexpr std::size_t element_size =
-    sizeof(typename ::cuda::std::tuple_element<I, ::cuda::std::tuple<Ts...>>::type);
+    sizeof(::cuda::std::tuple_element_t<I, ::cuda::std::tuple<Ts...>>);
   std::memcpy(&::cuda::std::get<I>(tpl), buffer, element_size);
 }
 
 template <std::size_t I, class... Ts>
-typename ::cuda::std::enable_if <I != 0>::type
+::cuda::std::enable_if_t <I != 0>
 buffer_to_tpl_helper(const char *buffer, ::cuda::std::tuple<Ts...> &tpl)
 {
   constexpr std::size_t element_size =
-    sizeof(typename ::cuda::std::tuple_element<I, ::cuda::std::tuple<Ts...>>::type);
+    sizeof(::cuda::std::tuple_element_t<I, ::cuda::std::tuple<Ts...>>);
   std::memcpy(&::cuda::std::get<I>(tpl), buffer, element_size);
   buffer_to_tpl_helper<I - 1>(buffer + element_size, tpl);
 }
@@ -179,20 +179,20 @@ void buffer_to_tpl(const char *buffer, ::cuda::std::tuple<Ts...> &tpl)
 }
 
 template <std::size_t I, class... Ts>
-typename ::cuda::std::enable_if<I == 0>::type
+::cuda::std::enable_if_t<I == 0>
 tpl_to_buffer_helper(char *buffer, ::cuda::std::tuple<Ts...> &tpl)
 {
   constexpr std::size_t element_size =
-    sizeof(typename ::cuda::std::tuple_element<I, ::cuda::std::tuple<Ts...>>::type);
+    sizeof(::cuda::std::tuple_element_t<I, ::cuda::std::tuple<Ts...>>);
   std::memcpy(buffer, &::cuda::std::get<I>(tpl), element_size);
 }
 
 template <std::size_t I, class... Ts>
-typename ::cuda::std::enable_if <I != 0>::type
+::cuda::std::enable_if_t <I != 0>
 tpl_to_buffer_helper(char *buffer, ::cuda::std::tuple<Ts...> &tpl)
 {
   constexpr std::size_t element_size =
-    sizeof(typename ::cuda::std::tuple_element<I, ::cuda::std::tuple<Ts...>>::type);
+    sizeof(::cuda::std::tuple_element_t<I, ::cuda::std::tuple<Ts...>>);
   std::memcpy(buffer, &::cuda::std::get<I>(tpl), element_size);
   tpl_to_buffer_helper<I - 1>(buffer + element_size, tpl);
 }
@@ -204,45 +204,45 @@ void tpl_to_buffer(char *buffer, ::cuda::std::tuple<Ts...> &tpl)
 }
 
 template <std::size_t I = 0, class... Ts>
-typename ::cuda::std::enable_if<I >= sizeof...(Ts), int>::type
+::cuda::std::enable_if_t<I >= sizeof...(Ts), int>
 tpl_to_max_bits(::cuda::std::tuple<Ts...> &)
 {
   return 0;
 }
 
 template <std::size_t I = 0, class... Ts>
-typename ::cuda::std::enable_if <I < sizeof...(Ts), int>::type
+ ::cuda::std::enable_if_t <I < sizeof...(Ts), int>
 tpl_to_max_bits(::cuda::std::tuple<Ts...> &tpl)
 {
   constexpr std::size_t element_size =
-    sizeof(typename ::cuda::std::tuple_element<I, ::cuda::std::tuple<Ts...>>::type);
+    sizeof(::cuda::std::tuple_element_t<I, ::cuda::std::tuple<Ts...>>);
   return element_size * CHAR_BIT + tpl_to_max_bits<I + 1>(tpl);
 }
 
 template <std::size_t I = 0, class... Ts>
-typename ::cuda::std::enable_if<I >= sizeof...(Ts)>::type
+ ::cuda::std::enable_if_t<I >= sizeof...(Ts)>
 tpl_to_min(::cuda::std::tuple<Ts...> &)
 {}
 
 template <std::size_t I = 0, class... Ts>
-typename ::cuda::std::enable_if <I < sizeof...(Ts)>::type
+ ::cuda::std::enable_if_t <I < sizeof...(Ts)>
 tpl_to_min(::cuda::std::tuple<Ts...> &tpl)
 {
-  using T = typename ::cuda::std::tuple_element<I, ::cuda::std::tuple<Ts...>>::type;
+  using T =  ::cuda::std::tuple_element_t<I, ::cuda::std::tuple<Ts...>>;
   ::cuda::std::get<I>(tpl) = std::numeric_limits<T>::lowest();
   tpl_to_min<I + 1>(tpl);
 }
 
 template <std::size_t I = 0, class... Ts>
-typename ::cuda::std::enable_if<I >= sizeof...(Ts)>::type
+ ::cuda::std::enable_if_t<I >= sizeof...(Ts)>
 tpl_to_max(::cuda::std::tuple<Ts...> &)
 {}
 
 template <std::size_t I = 0, class... Ts>
-typename ::cuda::std::enable_if <I < sizeof...(Ts)>::type
+ ::cuda::std::enable_if_t <I < sizeof...(Ts)>
 tpl_to_max(::cuda::std::tuple<Ts...> &tpl)
 {
-  using T = typename ::cuda::std::tuple_element<I, ::cuda::std::tuple<Ts...>>::type;
+  using T =  ::cuda::std::tuple_element_t<I, ::cuda::std::tuple<Ts...>>;
   ::cuda::std::get<I>(tpl) = std::numeric_limits<T>::max();
   tpl_to_max<I + 1>(tpl);
 }
@@ -503,9 +503,9 @@ C2H_TEST("Radix operations reorder values for pair types",
          fundamental_signed_types)
 {
   using T1    = typename c2h::get<0, TestType>;
-  using UT1   = typename std::make_unsigned<T1>::type;
+  using UT1   = std::make_unsigned_t<T1>;
   using T2    = typename c2h::get<1, TestType>;
-  using UT2   = typename std::make_unsigned<T2>::type;
+  using UT2   = std::make_unsigned_t<T2>;
   using tpl_t = ::cuda::std::tuple<T1, T2>;
 
   using traits            = cub::detail::radix::traits_t<tpl_t>;

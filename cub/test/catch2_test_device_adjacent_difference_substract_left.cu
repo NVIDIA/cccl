@@ -163,7 +163,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with pointers", "[dev
 template <class T>
 struct cust_diff
 {
-  template <class T2, cuda::std::enable_if_t<cuda::std::is_same<T, T2>::value, int> = 0>
+  template <class T2, cuda::std::enable_if_t<cuda::std::is_same_v<T, T2>, int> = 0>
   __host__ __device__ constexpr T2 operator()(const T2& lhs, const T2& rhs) const noexcept
   {
     return lhs - rhs;

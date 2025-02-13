@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // <cuda/std/optional>
 
 // T shall be an object type and shall satisfy the requirements of Destructible

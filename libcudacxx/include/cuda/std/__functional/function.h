@@ -1021,21 +1021,6 @@ public:
   template <class _Fp, class = _EnableIfLValueCallable<_Fp>>
   function(_Fp);
 
-#  if _CCCL_STD_VER <= 2014
-  template <class _Alloc>
-  _LIBCUDACXX_HIDE_FROM_ABI function(allocator_arg_t, const _Alloc&) noexcept
-  {}
-  template <class _Alloc>
-  _LIBCUDACXX_HIDE_FROM_ABI function(allocator_arg_t, const _Alloc&, nullptr_t) noexcept
-  {}
-  template <class _Alloc>
-  function(allocator_arg_t, const _Alloc&, const function&);
-  template <class _Alloc>
-  function(allocator_arg_t, const _Alloc&, function&&);
-  template <class _Fp, class _Alloc, class = _EnableIfLValueCallable<_Fp>>
-  function(allocator_arg_t, const _Alloc& __a, _Fp __f);
-#  endif
-
   function& operator=(const function&);
   function& operator=(function&&) noexcept;
   function& operator=(nullptr_t) noexcept;
@@ -1046,14 +1031,6 @@ public:
 
   // function modifiers:
   void swap(function&) noexcept;
-
-#  if _CCCL_STD_VER <= 2014
-  template <class _Fp, class _Alloc>
-  _LIBCUDACXX_HIDE_FROM_ABI void assign(_Fp&& __f, const _Alloc& __a)
-  {
-    function(allocator_arg, __a, _CUDA_VSTD::forward<_Fp>(__f)).swap(*this);
-  }
-#  endif
 
   // function capacity:
   _LIBCUDACXX_HIDE_FROM_ABI explicit operator bool() const noexcept
@@ -1081,7 +1058,6 @@ public:
 #  endif // _CCCL_NO_RTTI
 };
 
-#  if _CCCL_STD_VER > 2014
 template <class _Rp, class... _Ap>
 function(_Rp (*)(_Ap...)) -> function<_Rp(_Ap...)>;
 
@@ -1174,47 +1150,22 @@ struct __strip_signature<_Rp (_Gp::*)(_Ap...) const volatile & noexcept>
 
 template <class _Fp, class _Stripped = typename __strip_signature<decltype(&_Fp::operator())>::type>
 function(_Fp) -> function<_Stripped>;
-#  endif // _CCCL_STD_VER > 2014
 
 template <class _Rp, class... _ArgTypes>
 function<_Rp(_ArgTypes...)>::function(const function& __f)
     : __f_(__f.__f_)
 {}
 
-#  if _CCCL_STD_VER <= 2014
-template <class _Rp, class... _ArgTypes>
-template <class _Alloc>
-function<_Rp(_ArgTypes...)>::function(allocator_arg_t, const _Alloc&, const function& __f)
-    : __f_(__f.__f_)
-{}
-#  endif
-
 template <class _Rp, class... _ArgTypes>
 function<_Rp(_ArgTypes...)>::function(function&& __f) noexcept
     : __f_(_CUDA_VSTD::move(__f.__f_))
 {}
-
-#  if _CCCL_STD_VER <= 2014
-template <class _Rp, class... _ArgTypes>
-template <class _Alloc>
-function<_Rp(_ArgTypes...)>::function(allocator_arg_t, const _Alloc&, function&& __f)
-    : __f_(_CUDA_VSTD::move(__f.__f_))
-{}
-#  endif
 
 template <class _Rp, class... _ArgTypes>
 template <class _Fp, class>
 function<_Rp(_ArgTypes...)>::function(_Fp __f)
     : __f_(_CUDA_VSTD::move(__f))
 {}
-
-#  if _CCCL_STD_VER <= 2014
-template <class _Rp, class... _ArgTypes>
-template <class _Fp, class _Alloc, class>
-function<_Rp(_ArgTypes...)>::function(allocator_arg_t, const _Alloc& __a, _Fp __f)
-    : __f_(_CUDA_VSTD::move(__f), __a)
-{}
-#  endif
 
 template <class _Rp, class... _ArgTypes>
 function<_Rp(_ArgTypes...)>& function<_Rp(_ArgTypes...)>::operator=(const function& __f)

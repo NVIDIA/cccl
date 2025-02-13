@@ -28,7 +28,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIterator, class _OutputIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _OutputIterator
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator
 partial_sum(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
 {
   if (__first != __last)
@@ -45,7 +45,7 @@ partial_sum(_InputIterator __first, _InputIterator __last, _OutputIterator __res
 }
 
 template <class _InputIterator, class _OutputIterator, class _BinaryOperation>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _OutputIterator
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator
 partial_sum(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _BinaryOperation __binary_op)
 {
   if (__first != __last)

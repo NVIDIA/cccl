@@ -50,8 +50,6 @@
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
 
-#if _CCCL_STD_VER > 2011
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // MSVC complains about [[no_unique_address]] prior to C++20 as a vendor extension
@@ -1059,7 +1057,5 @@ struct __expected_move_assign<void, _Err, __smf_availability::__available> : __e
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
-
-#endif // _CCCL_STD_VER > 2011
 
 #endif // _LIBCUDACXX___EXPECTED_EXPECTED_BASE_H

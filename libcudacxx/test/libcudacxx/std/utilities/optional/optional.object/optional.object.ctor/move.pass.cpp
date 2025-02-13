@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // <cuda/std/optional>
 
 // constexpr optional(optional<T>&& rhs);

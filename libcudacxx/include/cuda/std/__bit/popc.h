@@ -78,23 +78,19 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_popcount(uint64_t __x) noexc
 
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_popc(uint32_t __x) noexcept
 {
-#  if _CCCL_STD_VER >= 2014
   if (!__cccl_default_is_constant_evaluated())
   {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __popc(__x);), (return __builtin_popcount(__x);))
   }
-#  endif
   return __constexpr_popcount(static_cast<uint64_t>(__x));
 }
 
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_popc(uint64_t __x) noexcept
 {
-#  if _CCCL_STD_VER >= 2014
   if (!__cccl_default_is_constant_evaluated())
   {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __popcll(__x);), (return __builtin_popcountll(__x);))
   }
-#  endif
   return __constexpr_popcount(static_cast<uint64_t>(__x));
 }
 

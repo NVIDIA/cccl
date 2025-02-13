@@ -779,7 +779,7 @@ public:
     }
 
     __syncthreads();
-    if (!::cuda::std::is_same<CountsCallback, BlockRadixRankEmptyCallback<BINS_TRACKED_PER_THREAD>>::value)
+    if (!::cuda::std::is_same_v<CountsCallback, BlockRadixRankEmptyCallback<BINS_TRACKED_PER_THREAD>>)
     {
       CallBack<KEYS_PER_THREAD>(callback);
     }

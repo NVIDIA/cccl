@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // friend constexpr void swap(unexpected& x, unexpected& y) noexcept(noexcept(x.swap(y)));
 //
 // Constraints: is_swappable_v<E> is true.

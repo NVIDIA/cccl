@@ -55,4 +55,4 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce(
   cccl_value_t init,
   CUstream stream) noexcept;
 
-extern "C" CCCL_C_API CUresult cccl_device_reduce_cleanup(cccl_device_reduce_build_result_t* bld_ptr);
+extern "C" CCCL_C_API CUresult cccl_device_reduce_cleanup(cccl_device_reduce_build_result_t* bld_ptr) noexcept;

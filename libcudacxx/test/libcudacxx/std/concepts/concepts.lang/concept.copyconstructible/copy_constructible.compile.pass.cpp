@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class T>
 // concept copy_constructible;
 
@@ -131,7 +129,8 @@ struct CopyCtorHasMutableRef
 };
 static_assert(!copy_constructible<CopyCtorHasMutableRef>, "");
 
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC chokes on the deleted copy constructor
+#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC chokes on the deleted copy
+                                                        // constructor
 struct CopyCtorProhibitsMutableRef
 {
   CopyCtorProhibitsMutableRef(CopyCtorProhibitsMutableRef&&) noexcept = default;
@@ -148,7 +147,8 @@ struct CopyAssignHasMutableRef
 };
 static_assert(!copy_constructible<CopyAssignHasMutableRef>, "");
 
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC chokes on the deleted copy assignment
+#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC chokes on the deleted copy
+                                                        // assignment
 struct CopyAssignProhibitsMutableRef
 {
   CopyAssignProhibitsMutableRef& operator=(CopyAssignProhibitsMutableRef&&) noexcept = default;

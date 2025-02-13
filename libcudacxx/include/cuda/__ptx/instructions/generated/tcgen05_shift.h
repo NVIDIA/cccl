@@ -18,11 +18,11 @@ _CCCL_DEVICE static inline void tcgen05_shift_down(cta_group_t<_Cta_Group> __cta
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm volatile("tcgen05.shift.cta_group::1.down [%0];" : : "r"(__taddr) : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm volatile("tcgen05.shift.cta_group::2.down [%0];" : : "r"(__taddr) : "memory");
   }

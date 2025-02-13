@@ -78,8 +78,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2011
-
 struct layout_left
 {
   template <class _Extents>
@@ -97,7 +95,7 @@ template <class _Layout, class _Mapping>
 _CCCL_INLINE_VAR constexpr bool __is_mapping_of =
   is_same<typename _Layout::template mapping<typename _Mapping::extents_type>, _Mapping>::value;
 
-#  if __MDSPAN_USE_CONCEPTS && __MDSPAN_HAS_CXX_20
+#if __MDSPAN_USE_CONCEPTS && __MDSPAN_HAS_CXX_20
 template <class _Mp>
 concept __layout_mapping_alike = requires {
   requires __is_extents<typename _Mp::extents_type>::value;
@@ -108,17 +106,17 @@ concept __layout_mapping_alike = requires {
   bool_constant<_Mp::is_always_exhaustive()>::value;
   bool_constant<_Mp::is_always_unique()>::value;
 };
-#  endif
+#endif // __MDSPAN_USE_CONCEPTS && __MDSPAN_HAS_CXX_20
 } // namespace __detail
 
 struct layout_stride
 {
   template <class _Extents>
   class mapping
-#  ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : private __detail::__no_unique_address_emulation<
           __detail::__compressed_pair<_Extents, _CUDA_VSTD::array<typename _Extents::index_type, _Extents::rank()>>>
-#  endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
   {
   public:
     using extents_type = _Extents;
@@ -138,27 +136,27 @@ struct layout_stride
                                                                                      // extents_type::rank()>;
     using __member_pair_t = __detail::__compressed_pair<extents_type, __strides_storage_t>;
 
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     _CCCL_NO_UNIQUE_ADDRESS __member_pair_t __members;
-#  else
+#else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
     using __base_t = __detail::__no_unique_address_emulation<__member_pair_t>;
-#  endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 
     __MDSPAN_FORCE_INLINE_FUNCTION constexpr __strides_storage_t const& __strides_storage() const noexcept
     {
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       return __members.__second();
-#  else
+#else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
       return this->__base_t::__ref().__second();
-#  endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     }
     __MDSPAN_FORCE_INLINE_FUNCTION constexpr __strides_storage_t& __strides_storage() noexcept
     {
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       return __members.__second();
-#  else
+#else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
       return this->__base_t::__ref().__second();
-#  endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     }
 
     template <class _SizeType, size_t... _Ep, size_t... _Idx>
@@ -259,15 +257,15 @@ struct layout_stride
 
     //----------------------------------------------------------------------------
 
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit mapping(__member_pair_t&& __m)
         : __members(_CUDA_VSTD::move(__m))
     {}
-#  else
+#else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
     _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit mapping(__base_t&& __b)
         : __base_t(_CUDA_VSTD::move(__b))
     {}
-#  endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 
   public: // but not really
     _LIBCUDACXX_HIDE_FROM_ABI static constexpr mapping __make_mapping(
@@ -277,14 +275,14 @@ struct layout_stride
     {
       // call the private constructor we created for this purpose
       return mapping(
-#  ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         __base_t{
-#  endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
           __member_pair_t(extents_type::__make_extents_impl(_CUDA_VSTD::move(__exts)),
                           __strides_storage_t{__impl::fill_strides(_CUDA_VSTD::move(__strs))})
-#  ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         }
-#  endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       );
     }
     //----------------------------------------------------------------------------
@@ -302,17 +300,17 @@ struct layout_stride
       enable_if_t<_CCCL_TRAIT(is_nothrow_constructible, index_type, const remove_const_t<_IntegralTypes>&), int> = 0>
     _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping(
       extents_type const& __e, _CUDA_VSTD::array<_IntegralTypes, extents_type::rank()> const& __s) noexcept
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         : __members{
-#  else
+#else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
         : __base_t(__base_t{__member_pair_t(
-#  endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
             __e, __strides_storage_t(__impl::fill_strides(__s))
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
           }
-#  else
+#else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
               )})
-#  endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     {
       /*
        * TODO: check preconditions
@@ -331,17 +329,17 @@ struct layout_stride
       enable_if_t<_CCCL_TRAIT(is_nothrow_constructible, index_type, const remove_const_t<_IntegralTypes>&), int> = 0>
     _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping(
       extents_type const& __e, _CUDA_VSTD::span<_IntegralTypes, extents_type::rank()> const& __s) noexcept
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         : __members{
-#  else
+#else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
         : __base_t(__base_t{__member_pair_t(
-#  endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
             __e, __strides_storage_t(__impl::fill_strides(__s))
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
           }
-#  else
+#else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
               )})
-#  endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     {
       /*
        * TODO: check preconditions
@@ -353,18 +351,18 @@ struct layout_stride
        */
     }
 
-#  if !(__MDSPAN_USE_CONCEPTS && __MDSPAN_HAS_CXX_20)
+#if !(__MDSPAN_USE_CONCEPTS && __MDSPAN_HAS_CXX_20)
     _CCCL_TEMPLATE(class _StridedLayoutMapping)
     _CCCL_REQUIRES(
       _CCCL_TRAIT(_CUDA_VSTD::is_constructible, extents_type, typename _StridedLayoutMapping::extents_type)
         _CCCL_AND __detail::__is_mapping_of<typename _StridedLayoutMapping::layout_type, _StridedLayoutMapping>
           _CCCL_AND(_StridedLayoutMapping::is_always_unique()) _CCCL_AND(_StridedLayoutMapping::is_always_strided()))
-#  else
+#else // ^^^ !__MDSPAN_USE_CONCEPTS ^^^^/ vvv __MDSPAN_USE_CONCEPTS vvv
     template <class _StridedLayoutMapping>
       requires(__detail::__layout_mapping_alike<_StridedLayoutMapping>
                && _CCCL_TRAIT(is_constructible, extents_type, typename _StridedLayoutMapping::extents_type)
                && _StridedLayoutMapping::is_always_unique() && _StridedLayoutMapping::is_always_strided())
-#  endif
+#endif // __MDSPAN_USE_CONCEPTS
     __MDSPAN_CONDITIONAL_EXPLICIT(
       (!is_convertible<typename _StridedLayoutMapping::extents_type, extents_type>::value)
       && (__detail::__is_mapping_of<layout_left, _StridedLayoutMapping>
@@ -372,17 +370,17 @@ struct layout_stride
           || __detail::__is_mapping_of<layout_stride, _StridedLayoutMapping>) ) // needs two () due to comma
     _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping(
       _StridedLayoutMapping const& __other) noexcept // NOLINT(google-explicit-constructor)
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         : __members{
-#  else
+#else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
         : __base_t(__base_t{__member_pair_t(
-#  endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
             __other.extents(), __strides_storage_t(__impl::fill_strides(__other))
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
           }
-#  else
+#else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
               )})
-#  endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     {
       /*
        * TODO: check preconditions
@@ -398,11 +396,11 @@ struct layout_stride
 
     _LIBCUDACXX_HIDE_FROM_ABI constexpr const extents_type& extents() const noexcept
     {
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       return __members.__first();
-#  else
+#else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
       return this->__base_t::__ref().__first();
-#  endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     };
 
     _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::array<index_type, extents_type::rank()> strides() const noexcept
@@ -470,17 +468,17 @@ struct layout_stride
       return __strides_storage()[__r];
     }
 
-#  if !(__MDSPAN_USE_CONCEPTS && __MDSPAN_HAS_CXX_20)
+#if !(__MDSPAN_USE_CONCEPTS && __MDSPAN_HAS_CXX_20)
     _CCCL_TEMPLATE(class _StridedLayoutMapping)
     _CCCL_REQUIRES(__detail::__is_mapping_of<typename _StridedLayoutMapping::layout_type, _StridedLayoutMapping>
                      _CCCL_AND(extents_type::rank() == _StridedLayoutMapping::extents_type::rank())
                        _CCCL_AND(_StridedLayoutMapping::is_always_strided()))
-#  else
+#else // ^^^ !__MDSPAN_USE_CONCEPTS ^^^ / vvv __MDSPAN_USE_CONCEPTS vvv
     template <class _StridedLayoutMapping>
       requires(__detail::__layout_mapping_alike<_StridedLayoutMapping>
                && (extents_type::rank() == _StridedLayoutMapping::extents_type::rank())
                && _StridedLayoutMapping::is_always_strided())
-#  endif
+#endif // __MDSPAN_USE_CONCEPTS
     _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
     operator==(const mapping& __x, const _StridedLayoutMapping& __y) noexcept
     {
@@ -502,7 +500,7 @@ struct layout_stride
       return __impl::_eq_impl(__lhs, __rhs);
     }
 
-#  if !__MDSPAN_HAS_CXX_20
+#if !__MDSPAN_HAS_CXX_20
     _CCCL_TEMPLATE(class _StridedLayoutMapping)
     _CCCL_REQUIRES(__detail::__is_mapping_of<typename _StridedLayoutMapping::layout_type, _StridedLayoutMapping>
                      _CCCL_AND(extents_type::rank() == _StridedLayoutMapping::extents_type::rank())
@@ -520,11 +518,9 @@ struct layout_stride
     {
       return __impl::_not_eq_impl(__lhs, __rhs);
     }
-#  endif
+#endif // !__MDSPAN_HAS_CXX_20
   };
 };
-
-#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class Err = E>
 //   constexpr explicit unexpected(Err&& e);
 //

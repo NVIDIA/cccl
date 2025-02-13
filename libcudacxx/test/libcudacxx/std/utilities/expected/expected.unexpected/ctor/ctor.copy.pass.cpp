@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // constexpr unexpected(const unexpected&) = default;
 
 #include <cuda/std/cassert>

@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: libcpp-no-exceptions
 // UNSUPPORTED: nvrtc
 

@@ -212,25 +212,17 @@ protected:
 #endif // !TEST_WORKAROUND_C1XX_BROKEN_ZA_CTOR_CHECK
   __host__ __device__ constexpr static int check_value(int const& val)
   {
-#if TEST_STD_VER < 2014
-    return val == -1 || val == 999 ? (TEST_THROW(42), 0) : val;
-#else
     assert(val != -1);
     assert(val != 999);
     return val;
-#endif
   }
   __host__ __device__ constexpr static int check_value(int& val, int val_cp = 0)
   {
-#if TEST_STD_VER < 2014
-    return val_cp = val, val = -1, (val_cp == -1 || val_cp == 999 ? (TEST_THROW(42), 0) : val_cp);
-#else
     assert(val != -1);
     assert(val != 999);
     val_cp = val;
     val    = -1;
     return val_cp;
-#endif
   }
   __host__ __device__ constexpr ValueBase() noexcept
       : value(0)

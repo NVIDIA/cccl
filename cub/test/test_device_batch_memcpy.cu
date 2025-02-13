@@ -54,10 +54,10 @@ template <typename T>
 void GenerateRandomData(
   T* rand_out,
   const std::size_t num_items,
-  const T min_rand_val                                                           = std::numeric_limits<T>::min(),
-  const T max_rand_val                                                           = std::numeric_limits<T>::max(),
-  const std::uint_fast32_t seed                                                  = 320981U,
-  typename std::enable_if<std::is_integral<T>::value && (sizeof(T) >= 2)>::type* = nullptr)
+  const T min_rand_val                                         = std::numeric_limits<T>::min(),
+  const T max_rand_val                                         = std::numeric_limits<T>::max(),
+  const std::uint_fast32_t seed                                = 320981U,
+  std::enable_if_t<std::is_integral_v<T> && (sizeof(T) >= 2)>* = nullptr)
 {
   // initialize random number generator
   std::mt19937 rng(seed);
@@ -345,66 +345,6 @@ void RunTest(BufferOffsetT num_buffers,
   }
 }
 
-template <int LOGICAL_WARP_SIZE, typename VectorT, typename ByteOffsetT>
-__global__ void TestVectorizedCopyKernel(const void* d_in, void* d_out, ByteOffsetT copy_size)
-{
-  cub::detail::batch_memcpy::VectorizedCopy<LOGICAL_WARP_SIZE, VectorT>(threadIdx.x, d_out, copy_size, d_in);
-}
-
-struct TupleMemberEqualityOp
-{
-  template <typename T>
-  __host__ __device__ __forceinline__ bool operator()(T tuple)
-  {
-    return thrust::get<0>(tuple) == thrust::get<1>(tuple);
-  }
-};
-
-/**
- * @brief Tests the VectorizedCopy for various aligned and misaligned input and output pointers.
- * @tparam VectorT The vector type used for vectorized stores (i.e., one of uint4, uint2, uint32_t)
- */
-template <typename VectorT>
-void TestVectorizedCopy()
-{
-  constexpr uint32_t threads_per_block = 8;
-
-  c2h::host_vector<std::size_t> in_offsets{0, 1, sizeof(uint32_t) - 1};
-  c2h::host_vector<std::size_t> out_offsets{0, 1, sizeof(VectorT) - 1};
-  c2h::host_vector<std::size_t> copy_sizes{
-    0, 1, sizeof(uint32_t), sizeof(VectorT), 2 * threads_per_block * sizeof(VectorT)};
-  for (auto copy_sizes_it = std::begin(copy_sizes); copy_sizes_it < std::end(copy_sizes); copy_sizes_it++)
-  {
-    for (auto in_offsets_it = std::begin(in_offsets); in_offsets_it < std::end(in_offsets); in_offsets_it++)
-    {
-      for (auto out_offsets_it = std::begin(out_offsets); out_offsets_it < std::end(out_offsets); out_offsets_it++)
-      {
-        std::size_t in_offset  = *in_offsets_it;
-        std::size_t out_offset = *out_offsets_it;
-        std::size_t copy_size  = *copy_sizes_it;
-
-        // Prepare data
-        const std::size_t alloc_size_in  = in_offset + copy_size;
-        const std::size_t alloc_size_out = out_offset + copy_size;
-        c2h::device_vector<char> data_in(alloc_size_in);
-        c2h::device_vector<char> data_out(alloc_size_out);
-        thrust::sequence(c2h::device_policy, data_in.begin(), data_in.end(), static_cast<char>(0));
-        thrust::fill_n(c2h::device_policy, data_out.begin(), alloc_size_out, static_cast<char>(0x42));
-
-        auto d_in  = thrust::raw_pointer_cast(data_in.data());
-        auto d_out = thrust::raw_pointer_cast(data_out.data());
-
-        TestVectorizedCopyKernel<threads_per_block, VectorT>
-          <<<1, threads_per_block>>>(d_in + in_offset, d_out + out_offset, static_cast<int>(copy_size));
-        auto zip_it = thrust::make_zip_iterator(data_in.begin() + in_offset, data_out.begin() + out_offset);
-
-        bool success = thrust::all_of(c2h::device_policy, zip_it, zip_it + copy_size, TupleMemberEqualityOp{});
-        AssertTrue(success);
-      }
-    }
-  }
-}
-
 template <uint32_t NUM_ITEMS, uint32_t MAX_ITEM_VALUE, bool PREFER_POW2_BITS>
 __global__ void
 TestBitPackedCounterKernel(uint32_t* bins, uint32_t* increments, uint32_t* counts_out, uint32_t num_items)
@@ -512,12 +452,6 @@ int main(int argc, char** argv)
 
   // Initialize device
   CubDebugExit(args.DeviceInit());
-
-  //---------------------------------------------------------------------
-  // VectorizedCopy tests
-  //---------------------------------------------------------------------
-  TestVectorizedCopy<uint32_t>();
-  TestVectorizedCopy<uint4>();
 
   //---------------------------------------------------------------------
   // BitPackedCounter tests

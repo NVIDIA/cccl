@@ -92,7 +92,7 @@ using iter_reference_t = decltype(*declval<_Tp&>());
 template <class>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
 
-#elif _CCCL_STD_VER >= 2014 // ^^^ !_CCCL_NO_CONCEPTS ^^^
+#else // ^^^ _CCCL_NO_CONCEPTS ^^^ // vvv !_CCCL_NO_CONCEPTS vvv
 
 template <class _Tp>
 using __with_reference = _Tp&;
@@ -118,10 +118,7 @@ using iter_reference_t = enable_if_t<__dereferenceable<_Tp>, decltype(*declval<_
 
 template <class, class>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
-#else // ^^^ _CCCL_STD_VER >= 2014 ^^^ / vvv _CCCL_STD_VER < 2014 vvv
-template <class>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
-#endif // _CCCL_STD_VER < 2014
+#endif // !_CCCL_NO_CONCEPTS
 
 #if _CCCL_COMPILER(NVRTC)
 
@@ -135,10 +132,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bidirectional_iterator_tag : public forward
 {};
 struct _CCCL_TYPE_VISIBILITY_DEFAULT random_access_iterator_tag : public bidirectional_iterator_tag
 {};
-#  if _CCCL_STD_VER >= 2014
 struct _CCCL_TYPE_VISIBILITY_DEFAULT contiguous_iterator_tag : public random_access_iterator_tag
 {};
-#  endif // _CCCL_STD_VER >= 2014
 
 #else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ / vvv !_CCCL_COMPILER(NVRTC) vvv
 
@@ -155,10 +150,10 @@ using contiguous_iterator_tag =
   _If<::std::__cccl_std_contiguous_iterator_tag_exists::value,
       ::std::contiguous_iterator_tag,
       __contiguous_iterator_tag_backfill>;
-#  elif _CCCL_STD_VER >= 2014
+#  else // ^^^ C++20 ^^^ / vvv C++17 vvv
 struct _CCCL_TYPE_VISIBILITY_DEFAULT contiguous_iterator_tag : public random_access_iterator_tag
 {};
-#  endif // _CCCL_STD_VER >= 2014
+#  endif // _CCCL_STD_VER <= 2017
 
 #endif // !_CCCL_COMPILER(NVRTC)
 
@@ -170,25 +165,24 @@ struct __iter_traits_cache
 template <class _Iter>
 using _ITER_TRAITS = typename __iter_traits_cache<_Iter>::type;
 
-#if _CCCL_STD_VER >= 2014
-#  if defined(_GLIBCXX_DEBUG)
+#if defined(_GLIBCXX_DEBUG)
 _CCCL_TEMPLATE(class _Iter, class _Ty, class _Range)
 _CCCL_REQUIRES(_IsSame<_Iter, ::__gnu_debug::_Safe_iterator<_Ty*, _Range>>::value)
 _LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(::__gnu_debug::_Safe_iterator<_Ty*, _Range>, __priority_tag<3>)
   -> contiguous_iterator_tag;
-#  endif
-#  if defined(__GLIBCXX__)
+#endif // _GLIBCXX_DEBUG
+#if defined(__GLIBCXX__)
 _CCCL_TEMPLATE(class _Iter, class _Ty, class _Range)
 _CCCL_REQUIRES(_IsSame<_Iter, ::__gnu_cxx::__normal_iterator<_Ty*, _Range>>::value)
 _LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(::__gnu_cxx::__normal_iterator<_Ty*, _Range>, __priority_tag<3>)
   -> contiguous_iterator_tag;
-#  endif // __GLIBCXX__
-#  if defined(_LIBCPP_VERSION)
+#endif // __GLIBCXX__
+#if defined(_LIBCPP_VERSION)
 _CCCL_TEMPLATE(class _Iter, class _Ty)
 _CCCL_REQUIRES(_IsSame<_Iter, ::std::__wrap_iter<_Ty*>>::value)
 _LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(::std::__wrap_iter<_Ty*>, __priority_tag<3>)
   -> contiguous_iterator_tag;
-#  elif defined(_MSVC_STL_VERSION) || defined(_IS_WRS)
+#elif defined(_MSVC_STL_VERSION) || defined(_IS_WRS)
 _CCCL_TEMPLATE(class _Iter)
 _CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_Array_iterator>::value)
 _LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
@@ -213,11 +207,11 @@ _LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Iter, __priority_tag<3>) -> co
 _CCCL_TEMPLATE(class _Iter)
 _CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_Span_iterator>::value)
 _LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
-#  endif // _MSVC_STL_VERSION
+#endif // _MSVC_STL_VERSION
 _CCCL_TEMPLATE(class _Iter, class _Ty)
 _CCCL_REQUIRES(_IsSame<_Iter, _Ty*>::value)
 _LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Ty*, __priority_tag<3>) -> contiguous_iterator_tag;
-#endif // _CCCL_STD_VER >= 2014
+
 template <class _Iter>
 _LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Iter, __priority_tag<2>) ->
   typename _ITER_TRAITS<_Iter>::iterator_concept;
@@ -530,7 +524,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits : __iterator_traits<_Ip>
   using __primary_template = iterator_traits;
 };
 
-#elif _CCCL_STD_VER >= 2014 // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_STD_VER > 2014 vvv
+#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 
 // The `cpp17-*-iterator` exposition-only concepts have very similar names to the `Cpp17*Iterator` named requirements
 // from `[iterator.cpp17]`. To avoid confusion between the two, the exposition-only concepts have been banished to
@@ -810,49 +804,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits : __iterator_traits<_Ip>
   using __primary_template = iterator_traits;
 };
 
-#else // ^^^ _CCCL_STD_VER > 2014 ^^^ / vvv _CCCL_STD_VER <= 2014 vvv
-
-template <class _Iter, bool>
-struct __iterator_traits
-{};
-
-template <class _Iter, bool>
-struct __iterator_traits_impl
-{};
-
-template <class _Iter>
-struct __iterator_traits_impl<_Iter, true>
-{
-  using difference_type   = typename _Iter::difference_type;
-  using value_type        = typename _Iter::value_type;
-  using pointer           = typename _Iter::pointer;
-  using reference         = typename _Iter::reference;
-  using iterator_category = typename _Iter::iterator_category;
-};
-
-template <class _Iter>
-struct __iterator_traits<_Iter, true>
-    : __iterator_traits_impl<_Iter,
-                             is_convertible<typename _Iter::iterator_category, input_iterator_tag>::value
-                               || is_convertible<typename _Iter::iterator_category, output_iterator_tag>::value>
-{};
-
-// iterator_traits<Iterator> will only have the nested types if Iterator::iterator_category
-//    exists.  Else iterator_traits<Iterator> will be an empty class.  This is a
-//    conforming extension which allows some programs to compile and behave as
-//    the client expects instead of failing at compile time.
-
-template <class _Iter>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits : __iterator_traits<_Iter, __has_iterator_typedefs<_Iter>::value>
-{
-  using __primary_template = iterator_traits;
-};
-#endif // _CCCL_STD_VER <= 2014
+#endif // !_CCCL_NO_CONCEPTS
 
 template <class _Tp>
 #if !defined(_CCCL_NO_CONCEPTS)
   requires is_object_v<_Tp>
-#endif
+#endif // !_CCCL_NO_CONCEPTS
 struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits<_Tp*>
 {
   using difference_type   = ptrdiff_t;
@@ -860,9 +817,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits<_Tp*>
   using pointer           = _Tp*;
   using reference         = typename add_lvalue_reference<_Tp>::type;
   using iterator_category = random_access_iterator_tag;
-#if _CCCL_STD_VER >= 2014
-  using iterator_concept = contiguous_iterator_tag;
-#endif
+  using iterator_concept  = contiguous_iterator_tag;
 };
 
 template <class _Tp, class _Up, bool = __has_iterator_category<iterator_traits<_Tp>>::value>
@@ -906,17 +861,11 @@ struct __is_cpp17_random_access_iterator
 // Such iterators receive special "contiguous" optimizations in
 // std::copy and std::sort.
 //
-#if _CCCL_STD_VER > 2014
 template <class _Tp>
 struct __is_cpp17_contiguous_iterator
     : _Or<__has_iterator_category_convertible_to<_Tp, contiguous_iterator_tag>,
           __has_iterator_concept_convertible_to<_Tp, contiguous_iterator_tag>>
 {};
-#else // ^^^ _CCCL_STD_VER > 2014 ^^^ / vvv _CCCL_STD_VER <= 2014 vvv
-template <class _Tp>
-struct __is_cpp17_contiguous_iterator : false_type
-{};
-#endif // _CCCL_STD_VER <= 2014
 
 // Any native pointer which is an iterator is also a contiguous iterator.
 template <class _Up>

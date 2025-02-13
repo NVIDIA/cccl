@@ -295,28 +295,22 @@ C2H_VEC_OVERLOAD(double, double)
 /**
  * Vector1 overloads
  */
-#  define C2H_VEC_1_TRAITS_OVERLOAD(T, BaseT)            \
-    CUB_NAMESPACE_BEGIN                                  \
-    template <>                                          \
-    struct NumericTraits<T>                              \
-    {                                                    \
-      static constexpr Category CATEGORY = NOT_A_NUMBER; \
-      enum                                               \
-      {                                                  \
-        PRIMITIVE = false,                               \
-        NULL_TYPE = false,                               \
-      };                                                 \
-      static __host__ __device__ T Max()                 \
-      {                                                  \
-        T retval = {NumericTraits<BaseT>::Max()};        \
-        return retval;                                   \
-      }                                                  \
-      static __host__ __device__ T Lowest()              \
-      {                                                  \
-        T retval = {NumericTraits<BaseT>::Lowest()};     \
-        return retval;                                   \
-      }                                                  \
-    };                                                   \
+#  define C2H_VEC_1_TRAITS_OVERLOAD(T, BaseT)        \
+    CUB_NAMESPACE_BEGIN                              \
+    template <>                                      \
+    struct NumericTraits<T>                          \
+    {                                                \
+      static __host__ __device__ T Max()             \
+      {                                              \
+        T retval = {NumericTraits<BaseT>::Max()};    \
+        return retval;                               \
+      }                                              \
+      static __host__ __device__ T Lowest()          \
+      {                                              \
+        T retval = {NumericTraits<BaseT>::Lowest()}; \
+        return retval;                               \
+      }                                              \
+    };                                               \
     CUB_NAMESPACE_END
 
 /**
@@ -327,12 +321,6 @@ C2H_VEC_OVERLOAD(double, double)
     template <>                                                                      \
     struct NumericTraits<T>                                                          \
     {                                                                                \
-      static constexpr Category CATEGORY = NOT_A_NUMBER;                             \
-      enum                                                                           \
-      {                                                                              \
-        PRIMITIVE = false,                                                           \
-        NULL_TYPE = false,                                                           \
-      };                                                                             \
       static __host__ __device__ T Max()                                             \
       {                                                                              \
         T retval = {NumericTraits<BaseT>::Max(), NumericTraits<BaseT>::Max()};       \
@@ -354,12 +342,6 @@ C2H_VEC_OVERLOAD(double, double)
     template <>                                                                                                      \
     struct NumericTraits<T>                                                                                          \
     {                                                                                                                \
-      static constexpr Category CATEGORY = NOT_A_NUMBER;                                                             \
-      enum                                                                                                           \
-      {                                                                                                              \
-        PRIMITIVE = false,                                                                                           \
-        NULL_TYPE = false,                                                                                           \
-      };                                                                                                             \
       static __host__ __device__ T Max()                                                                             \
       {                                                                                                              \
         T retval = {NumericTraits<BaseT>::Max(), NumericTraits<BaseT>::Max(), NumericTraits<BaseT>::Max()};          \
@@ -376,34 +358,28 @@ C2H_VEC_OVERLOAD(double, double)
 /**
  * Vector4 overloads
  */
-#  define C2H_VEC_4_TRAITS_OVERLOAD(T, BaseT)            \
-    CUB_NAMESPACE_BEGIN                                  \
-    template <>                                          \
-    struct NumericTraits<T>                              \
-    {                                                    \
-      static constexpr Category CATEGORY = NOT_A_NUMBER; \
-      enum                                               \
-      {                                                  \
-        PRIMITIVE = false,                               \
-        NULL_TYPE = false,                               \
-      };                                                 \
-      static __host__ __device__ T Max()                 \
-      {                                                  \
-        T retval = {NumericTraits<BaseT>::Max(),         \
-                    NumericTraits<BaseT>::Max(),         \
-                    NumericTraits<BaseT>::Max(),         \
-                    NumericTraits<BaseT>::Max()};        \
-        return retval;                                   \
-      }                                                  \
-      static __host__ __device__ T Lowest()              \
-      {                                                  \
-        T retval = {NumericTraits<BaseT>::Lowest(),      \
-                    NumericTraits<BaseT>::Lowest(),      \
-                    NumericTraits<BaseT>::Lowest(),      \
-                    NumericTraits<BaseT>::Lowest()};     \
-        return retval;                                   \
-      }                                                  \
-    };                                                   \
+#  define C2H_VEC_4_TRAITS_OVERLOAD(T, BaseT)        \
+    CUB_NAMESPACE_BEGIN                              \
+    template <>                                      \
+    struct NumericTraits<T>                          \
+    {                                                \
+      static __host__ __device__ T Max()             \
+      {                                              \
+        T retval = {NumericTraits<BaseT>::Max(),     \
+                    NumericTraits<BaseT>::Max(),     \
+                    NumericTraits<BaseT>::Max(),     \
+                    NumericTraits<BaseT>::Max()};    \
+        return retval;                               \
+      }                                              \
+      static __host__ __device__ T Lowest()          \
+      {                                              \
+        T retval = {NumericTraits<BaseT>::Lowest(),  \
+                    NumericTraits<BaseT>::Lowest(),  \
+                    NumericTraits<BaseT>::Lowest(),  \
+                    NumericTraits<BaseT>::Lowest()}; \
+        return retval;                               \
+      }                                              \
+    };                                               \
     CUB_NAMESPACE_END
 
 /**

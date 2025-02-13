@@ -25,7 +25,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _ForwardIterator, class _BinaryPredicate>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
 adjacent_find(_ForwardIterator __first, _ForwardIterator __last, _BinaryPredicate __pred)
 {
   if (__first != __last)
@@ -44,7 +44,7 @@ adjacent_find(_ForwardIterator __first, _ForwardIterator __last, _BinaryPredicat
 }
 
 template <class _ForwardIterator>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
 adjacent_find(_ForwardIterator __first, _ForwardIterator __last)
 {
   return _CUDA_VSTD::adjacent_find(__first, __last, __equal_to{});

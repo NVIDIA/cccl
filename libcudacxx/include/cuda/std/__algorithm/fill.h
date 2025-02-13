@@ -26,7 +26,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _ForwardIterator, class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
+_LIBCUDACXX_HIDE_FROM_ABI constexpr void
 __fill(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_, forward_iterator_tag)
 {
   for (; __first != __last; ++__first)
@@ -36,15 +36,14 @@ __fill(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_, f
 }
 
 template <class _RandomAccessIterator, class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
+_LIBCUDACXX_HIDE_FROM_ABI constexpr void
 __fill(_RandomAccessIterator __first, _RandomAccessIterator __last, const _Tp& __value_, random_access_iterator_tag)
 {
   _CUDA_VSTD::fill_n(__first, __last - __first, __value_);
 }
 
 template <class _ForwardIterator, class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
-fill(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr void fill(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_)
 {
   _CUDA_VSTD::__fill(__first, __last, __value_, typename iterator_traits<_ForwardIterator>::iterator_category());
 }

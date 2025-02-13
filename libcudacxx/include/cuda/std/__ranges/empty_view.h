@@ -24,8 +24,6 @@
 #include <cuda/std/__ranges/view_interface.h>
 #include <cuda/std/__type_traits/is_object.h>
 
-#if _CCCL_STD_VER >= 2017
-
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
 
@@ -65,16 +63,14 @@ _LIBCUDACXX_END_NAMESPACE_RANGES
 
 _LIBCUDACXX_BEGIN_NAMESPACE_VIEWS
 
-#  if _CCCL_COMPILER(MSVC)
+#if _CCCL_COMPILER(MSVC)
 template <class _Tp>
 _CCCL_INLINE_VAR constexpr empty_view<_Tp> empty{};
-#  else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
+#else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
 template <class _Tp>
 _CCCL_GLOBAL_CONSTANT empty_view<_Tp> empty{};
-#  endif // !_CCCL_COMPILER_MSVC
+#endif // !_CCCL_COMPILER_MSVC
 
 _LIBCUDACXX_END_NAMESPACE_VIEWS
-
-#endif // _CCCL_STD_VER >= 2017
 
 #endif // _LIBCUDACXX___RANGES_EMPTY_VIEW_H

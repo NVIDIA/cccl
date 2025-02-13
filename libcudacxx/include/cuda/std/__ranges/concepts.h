@@ -44,9 +44,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-#if _CCCL_STD_VER >= 2014
-
-#  if !defined(_CCCL_NO_CONCEPTS)
+#if !defined(_CCCL_NO_CONCEPTS)
 
 // [range.range]
 
@@ -139,7 +137,7 @@ concept viewable_range =
           && (is_lvalue_reference_v<_Tp>
               || (movable<remove_reference_t<_Tp>> && !__is_std_initializer_list<remove_cvref_t<_Tp>>) )));
 
-#  else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 // [range.range]
 
 // clang-format off
@@ -290,13 +288,13 @@ _CCCL_CONCEPT_FRAGMENT(
 template <class _Tp>
 _CCCL_CONCEPT viewable_range = _CCCL_FRAGMENT(__viewable_range_, _Tp);
 
-#  endif // _CCCL_NO_CONCEPTS
+#endif // _CCCL_NO_CONCEPTS
 
 //[container.intro.reqmts]
-#  if !defined(_CCCL_NO_CONCEPTS)
+#if !defined(_CCCL_NO_CONCEPTS)
 template <class _Range, class _Tp>
 concept __container_compatible_range = input_range<_Range> && convertible_to<range_reference_t<_Range>, _Tp>;
-#  else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 template <class _Range, class _Tp>
 _CCCL_CONCEPT_FRAGMENT(
   __container_compatible_range_,
@@ -304,9 +302,7 @@ _CCCL_CONCEPT_FRAGMENT(
 
 template <class _Range, class _Tp>
 _CCCL_CONCEPT __container_compatible_range = _CCCL_FRAGMENT(__container_compatible_range_, _Range, _Tp);
-#  endif // _CCCL_NO_CONCEPTS
-
-#endif // _CCCL_STD_VER >= 2014
+#endif // _CCCL_NO_CONCEPTS
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

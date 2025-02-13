@@ -264,6 +264,7 @@ struct dispatch_streaming_arg_reduce_t
                      ReductionOpT,
                      empty_problem_init_t,
                      per_partition_accum_t,
+                     ::cuda::std::__identity,
                      PolicyChainT>;
 
     // The current partition's input iterator is an ArgIndex iterator that generates indices relative to the beginning

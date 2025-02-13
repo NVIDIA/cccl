@@ -37,27 +37,25 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-#if _CCCL_STD_VER >= 2017
-
-#  if !defined(_CCCL_NO_CONCEPTS)
+#if !defined(_CCCL_NO_CONCEPTS)
 template <class _Tp>
 concept __can_empty = requires(_Tp& __t) { _CUDA_VRANGES::empty(__t); };
-#  else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(__can_empty_, requires(_Tp& __t)(typename(decltype(_CUDA_VRANGES::empty(__t)))));
 
 template <class _Tp>
 _CCCL_CONCEPT __can_empty = _CCCL_FRAGMENT(__can_empty_, _Tp);
-#  endif //  _CCCL_NO_CONCEPTS
+#endif //  _CCCL_NO_CONCEPTS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
 
-#  if !defined(_CCCL_NO_CONCEPTS)
+#if !defined(_CCCL_NO_CONCEPTS)
 template <class _Derived>
   requires is_class_v<_Derived> && same_as<_Derived, remove_cv_t<_Derived>>
-#  else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 template <class _Derived, enable_if_t<is_class_v<_Derived> && same_as<_Derived, remove_cv_t<_Derived>>, int>>
-#  endif //  _CCCL_NO_CONCEPTS
+#endif //  _CCCL_NO_CONCEPTS
 class view_interface
 {
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _Derived& __derived() noexcept
@@ -177,8 +175,6 @@ public:
 };
 
 _LIBCUDACXX_END_NAMESPACE_RANGES_ABI
-
-#endif // _CCCL_STD_VER >= 2017
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

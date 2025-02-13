@@ -44,7 +44,7 @@ int main(int, char**)
 #if TEST_STD_VER <= 2017
   static_assert((cuda::std::is_same<F::argument_type, int>::value), "");
   static_assert((cuda::std::is_same<F::result_type, bool>::value), "");
-#endif
+#endif // TEST_STD_VER <= 2017
   assert(!f(36));
   assert(f(0));
 
@@ -54,13 +54,11 @@ int main(int, char**)
   assert(f2(0));
   assert(!f2(36L));
   assert(f2(0L));
-#if TEST_STD_VER > 2011
   constexpr bool foo = cuda::std::logical_not<int>()(36);
   static_assert(!foo, "");
 
   constexpr bool bar = cuda::std::logical_not<>()(36);
   static_assert(!bar, "");
-#endif
 
   return 0;
 }

@@ -23,7 +23,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _BidirectionalIterator, class _OutputIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _OutputIterator
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator
 reverse_copy(_BidirectionalIterator __first, _BidirectionalIterator __last, _OutputIterator __result)
 {
   for (; __first != __last; ++__result)

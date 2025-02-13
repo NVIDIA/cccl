@@ -6,7 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03
 // UNSUPPORTED: msvc
 
 // XFAIL: gcc-4
@@ -164,7 +163,6 @@ int main(int, char**)
     test_pair_const<ExplicitTypes::ConvertingType, ExplicitTypes::ConvertingType&, true, false>();
     test_pair_const<ExplicitTypes::ConvertingType, ExplicitTypes::ConvertingType&&, true, false>();
   }
-#if TEST_STD_VER > 2011
   {
     typedef cuda::std::pair<int, int> P1;
     typedef cuda::std::pair<double, long> P2;
@@ -189,7 +187,6 @@ int main(int, char**)
     static_assert(p2.first.value == 42, "");
     static_assert(p2.second.value == 101, "");
   }
-#endif
 
   return 0;
 }

@@ -36,15 +36,15 @@ _CCCL_DEVICE static inline void fence_proxy_async(space_t<_Space> __space)
 {
   static_assert(__space == space_global || __space == space_cluster || __space == space_shared, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  _CCCL_IF_CONSTEXPR (__space == space_global)
+  if constexpr (__space == space_global)
   {
     asm volatile("fence.proxy.async.global; // 6." : : : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__space == space_cluster)
+  else if constexpr (__space == space_cluster)
   {
     asm volatile("fence.proxy.async.shared::cluster; // 6." : : : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__space == space_shared)
+  else if constexpr (__space == space_shared)
   {
     asm volatile("fence.proxy.async.shared::cta; // 6." : : : "memory");
   }

@@ -56,56 +56,56 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_min_t, const _
 // __op == op_min (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   _CUDA_VSTD::uint32_t __dest;
-  _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cta)
+  if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.relaxed.cta.global.min.u32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cluster)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.relaxed.cluster.global.min.u32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_gpu)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.relaxed.gpu.global.min.u32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_sys)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.relaxed.sys.global.min.u32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cta)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.acquire.cta.global.min.u32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cluster)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.acquire.cluster.global.min.u32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_gpu)
+  else if constexpr (__sem == sem_acquire && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.acquire.gpu.global.min.u32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_sys)
+  else if constexpr (__sem == sem_acquire && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.acquire.sys.global.min.u32 %0, [%1];"
         : "=r"(__dest)
@@ -174,56 +174,56 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_min_t, const _
 // __op == op_min (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   _CUDA_VSTD::uint64_t __dest;
-  _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cta)
+  if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.relaxed.cta.global.min.u64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cluster)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.relaxed.cluster.global.min.u64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_gpu)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.relaxed.gpu.global.min.u64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_sys)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.relaxed.sys.global.min.u64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cta)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.acquire.cta.global.min.u64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cluster)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.acquire.cluster.global.min.u64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_gpu)
+  else if constexpr (__sem == sem_acquire && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.acquire.gpu.global.min.u64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_sys)
+  else if constexpr (__sem == sem_acquire && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.acquire.sys.global.min.u64 %0, [%1];"
         : "=l"(__dest)
@@ -292,56 +292,56 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_min_t, const _
 // __op == op_min (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   _CUDA_VSTD::int32_t __dest;
-  _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cta)
+  if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.relaxed.cta.global.min.s32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cluster)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.relaxed.cluster.global.min.s32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_gpu)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.relaxed.gpu.global.min.s32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_sys)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.relaxed.sys.global.min.s32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cta)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.acquire.cta.global.min.s32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cluster)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.acquire.cluster.global.min.s32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_gpu)
+  else if constexpr (__sem == sem_acquire && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.acquire.gpu.global.min.s32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_sys)
+  else if constexpr (__sem == sem_acquire && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.acquire.sys.global.min.s32 %0, [%1];"
         : "=r"(__dest)
@@ -410,56 +410,56 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_min_t, const _
 // __op == op_min (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   _CUDA_VSTD::int64_t __dest;
-  _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cta)
+  if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.relaxed.cta.global.min.s64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cluster)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.relaxed.cluster.global.min.s64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_gpu)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.relaxed.gpu.global.min.s64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_sys)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.relaxed.sys.global.min.s64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cta)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.acquire.cta.global.min.s64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cluster)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.acquire.cluster.global.min.s64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_gpu)
+  else if constexpr (__sem == sem_acquire && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.acquire.gpu.global.min.s64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_sys)
+  else if constexpr (__sem == sem_acquire && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.acquire.sys.global.min.s64 %0, [%1];"
         : "=l"(__dest)
@@ -528,56 +528,56 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_max_t, const _
 // __op == op_max (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   _CUDA_VSTD::uint32_t __dest;
-  _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cta)
+  if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.relaxed.cta.global.max.u32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cluster)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.relaxed.cluster.global.max.u32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_gpu)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.relaxed.gpu.global.max.u32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_sys)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.relaxed.sys.global.max.u32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cta)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.acquire.cta.global.max.u32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cluster)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.acquire.cluster.global.max.u32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_gpu)
+  else if constexpr (__sem == sem_acquire && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.acquire.gpu.global.max.u32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_sys)
+  else if constexpr (__sem == sem_acquire && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.acquire.sys.global.max.u32 %0, [%1];"
         : "=r"(__dest)
@@ -646,56 +646,56 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_max_t, const _
 // __op == op_max (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   _CUDA_VSTD::uint64_t __dest;
-  _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cta)
+  if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.relaxed.cta.global.max.u64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cluster)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.relaxed.cluster.global.max.u64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_gpu)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.relaxed.gpu.global.max.u64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_sys)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.relaxed.sys.global.max.u64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cta)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.acquire.cta.global.max.u64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cluster)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.acquire.cluster.global.max.u64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_gpu)
+  else if constexpr (__sem == sem_acquire && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.acquire.gpu.global.max.u64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_sys)
+  else if constexpr (__sem == sem_acquire && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.acquire.sys.global.max.u64 %0, [%1];"
         : "=l"(__dest)
@@ -764,56 +764,56 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_max_t, const _
 // __op == op_max (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   _CUDA_VSTD::int32_t __dest;
-  _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cta)
+  if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.relaxed.cta.global.max.s32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cluster)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.relaxed.cluster.global.max.s32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_gpu)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.relaxed.gpu.global.max.s32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_sys)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.relaxed.sys.global.max.s32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cta)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.acquire.cta.global.max.s32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cluster)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.acquire.cluster.global.max.s32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_gpu)
+  else if constexpr (__sem == sem_acquire && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.acquire.gpu.global.max.s32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_sys)
+  else if constexpr (__sem == sem_acquire && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.acquire.sys.global.max.s32 %0, [%1];"
         : "=r"(__dest)
@@ -882,56 +882,56 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_max_t, const _
 // __op == op_max (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   _CUDA_VSTD::int64_t __dest;
-  _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cta)
+  if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.relaxed.cta.global.max.s64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cluster)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.relaxed.cluster.global.max.s64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_gpu)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.relaxed.gpu.global.max.s64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_sys)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.relaxed.sys.global.max.s64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cta)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.acquire.cta.global.max.s64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cluster)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.acquire.cluster.global.max.s64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_gpu)
+  else if constexpr (__sem == sem_acquire && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.acquire.gpu.global.max.s64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_sys)
+  else if constexpr (__sem == sem_acquire && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.acquire.sys.global.max.s64 %0, [%1];"
         : "=l"(__dest)
@@ -1000,56 +1000,56 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_add_t, const _
 // __op == op_add (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   _CUDA_VSTD::uint32_t __dest;
-  _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cta)
+  if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.relaxed.cta.global.add.u32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cluster)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.relaxed.cluster.global.add.u32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_gpu)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.relaxed.gpu.global.add.u32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_sys)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.relaxed.sys.global.add.u32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cta)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.acquire.cta.global.add.u32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cluster)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.acquire.cluster.global.add.u32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_gpu)
+  else if constexpr (__sem == sem_acquire && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.acquire.gpu.global.add.u32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_sys)
+  else if constexpr (__sem == sem_acquire && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.acquire.sys.global.add.u32 %0, [%1];"
         : "=r"(__dest)
@@ -1118,56 +1118,56 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_add_t, const _
 // __op == op_add (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   _CUDA_VSTD::uint64_t __dest;
-  _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cta)
+  if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.relaxed.cta.global.add.u64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cluster)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.relaxed.cluster.global.add.u64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_gpu)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.relaxed.gpu.global.add.u64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_sys)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.relaxed.sys.global.add.u64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cta)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.acquire.cta.global.add.u64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cluster)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.acquire.cluster.global.add.u64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_gpu)
+  else if constexpr (__sem == sem_acquire && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.acquire.gpu.global.add.u64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_sys)
+  else if constexpr (__sem == sem_acquire && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.acquire.sys.global.add.u64 %0, [%1];"
         : "=l"(__dest)
@@ -1236,56 +1236,56 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_add_t, const _
 // __op == op_add (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   _CUDA_VSTD::int32_t __dest;
-  _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cta)
+  if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.relaxed.cta.global.add.s32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cluster)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.relaxed.cluster.global.add.s32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_gpu)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.relaxed.gpu.global.add.s32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_sys)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.relaxed.sys.global.add.s32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cta)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.acquire.cta.global.add.s32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cluster)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.acquire.cluster.global.add.s32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_gpu)
+  else if constexpr (__sem == sem_acquire && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.acquire.gpu.global.add.s32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_sys)
+  else if constexpr (__sem == sem_acquire && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.acquire.sys.global.add.s32 %0, [%1];"
         : "=r"(__dest)
@@ -1354,56 +1354,56 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_add_t, const _
 // __op == op_add (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   _CUDA_VSTD::int64_t __dest;
-  _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cta)
+  if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.relaxed.cta.global.add.u64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cluster)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.relaxed.cluster.global.add.u64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_gpu)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.relaxed.gpu.global.add.u64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_sys)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.relaxed.sys.global.add.u64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cta)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.acquire.cta.global.add.u64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cluster)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.acquire.cluster.global.add.u64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_gpu)
+  else if constexpr (__sem == sem_acquire && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.acquire.gpu.global.add.u64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_sys)
+  else if constexpr (__sem == sem_acquire && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.acquire.sys.global.add.u64 %0, [%1];"
         : "=l"(__dest)
@@ -1474,56 +1474,56 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_and_op_t, cons
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   _CUDA_VSTD::uint32_t __dest;
-  _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cta)
+  if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.relaxed.cta.global.and.b32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cluster)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.relaxed.cluster.global.and.b32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_gpu)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.relaxed.gpu.global.and.b32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_sys)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.relaxed.sys.global.and.b32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cta)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.acquire.cta.global.and.b32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cluster)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.acquire.cluster.global.and.b32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_gpu)
+  else if constexpr (__sem == sem_acquire && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.acquire.gpu.global.and.b32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_sys)
+  else if constexpr (__sem == sem_acquire && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.acquire.sys.global.and.b32 %0, [%1];"
         : "=r"(__dest)
@@ -1595,56 +1595,56 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_or_op_t, const
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   _CUDA_VSTD::uint32_t __dest;
-  _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cta)
+  if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.relaxed.cta.global.or.b32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cluster)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.relaxed.cluster.global.or.b32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_gpu)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.relaxed.gpu.global.or.b32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_sys)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.relaxed.sys.global.or.b32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cta)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.acquire.cta.global.or.b32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cluster)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.acquire.cluster.global.or.b32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_gpu)
+  else if constexpr (__sem == sem_acquire && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.acquire.gpu.global.or.b32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_sys)
+  else if constexpr (__sem == sem_acquire && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.acquire.sys.global.or.b32 %0, [%1];"
         : "=r"(__dest)
@@ -1716,56 +1716,56 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_xor_op_t, cons
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   _CUDA_VSTD::uint32_t __dest;
-  _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cta)
+  if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.relaxed.cta.global.xor.b32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cluster)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.relaxed.cluster.global.xor.b32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_gpu)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.relaxed.gpu.global.xor.b32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_sys)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.relaxed.sys.global.xor.b32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cta)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.acquire.cta.global.xor.b32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cluster)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.acquire.cluster.global.xor.b32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_gpu)
+  else if constexpr (__sem == sem_acquire && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.acquire.gpu.global.xor.b32 %0, [%1];"
         : "=r"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_sys)
+  else if constexpr (__sem == sem_acquire && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.acquire.sys.global.xor.b32 %0, [%1];"
         : "=r"(__dest)
@@ -1837,56 +1837,56 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_and_op_t, cons
   static_assert(sizeof(_B64) == 8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   _CUDA_VSTD::uint64_t __dest;
-  _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cta)
+  if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.relaxed.cta.global.and.b64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cluster)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.relaxed.cluster.global.and.b64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_gpu)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.relaxed.gpu.global.and.b64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_sys)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.relaxed.sys.global.and.b64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cta)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.acquire.cta.global.and.b64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cluster)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.acquire.cluster.global.and.b64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_gpu)
+  else if constexpr (__sem == sem_acquire && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.acquire.gpu.global.and.b64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_sys)
+  else if constexpr (__sem == sem_acquire && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.acquire.sys.global.and.b64 %0, [%1];"
         : "=l"(__dest)
@@ -1958,56 +1958,56 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_or_op_t, const
   static_assert(sizeof(_B64) == 8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   _CUDA_VSTD::uint64_t __dest;
-  _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cta)
+  if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.relaxed.cta.global.or.b64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cluster)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.relaxed.cluster.global.or.b64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_gpu)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.relaxed.gpu.global.or.b64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_sys)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.relaxed.sys.global.or.b64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cta)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.acquire.cta.global.or.b64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cluster)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.acquire.cluster.global.or.b64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_gpu)
+  else if constexpr (__sem == sem_acquire && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.acquire.gpu.global.or.b64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_sys)
+  else if constexpr (__sem == sem_acquire && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.acquire.sys.global.or.b64 %0, [%1];"
         : "=l"(__dest)
@@ -2079,56 +2079,56 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_xor_op_t, cons
   static_assert(sizeof(_B64) == 8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   _CUDA_VSTD::uint64_t __dest;
-  _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cta)
+  if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.relaxed.cta.global.xor.b64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_cluster)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.relaxed.cluster.global.xor.b64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_gpu)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.relaxed.gpu.global.xor.b64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_relaxed && __scope == scope_sys)
+  else if constexpr (__sem == sem_relaxed && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.relaxed.sys.global.xor.b64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cta)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cta)
   {
     asm("multimem.ld_reduce.acquire.cta.global.xor.b64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_cluster)
+  else if constexpr (__sem == sem_acquire && __scope == scope_cluster)
   {
     asm("multimem.ld_reduce.acquire.cluster.global.xor.b64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_gpu)
+  else if constexpr (__sem == sem_acquire && __scope == scope_gpu)
   {
     asm("multimem.ld_reduce.acquire.gpu.global.xor.b64 %0, [%1];"
         : "=l"(__dest)
         : "l"(__as_ptr_gmem(__addr))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__sem == sem_acquire && __scope == scope_sys)
+  else if constexpr (__sem == sem_acquire && __scope == scope_sys)
   {
     asm("multimem.ld_reduce.acquire.sys.global.xor.b64 %0, [%1];"
         : "=l"(__dest)

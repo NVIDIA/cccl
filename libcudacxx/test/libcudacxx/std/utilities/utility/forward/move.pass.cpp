@@ -67,7 +67,6 @@ struct A
   __host__ __device__ A& operator=(const A&) = delete;
 };
 
-#if TEST_STD_VER > 2011
 __host__ __device__ constexpr bool test_constexpr_move()
 {
   int y        = 42;
@@ -75,7 +74,6 @@ __host__ __device__ constexpr bool test_constexpr_move()
   return cuda::std::move(y) == 42 && cuda::std::move(cy) == 42 && cuda::std::move(static_cast<int&&>(y)) == 42
       && cuda::std::move(static_cast<int const&&>(y)) == 42;
 }
-#endif
 int main(int, char**)
 {
   { // Test return type and noexcept.
@@ -120,21 +118,11 @@ int main(int, char**)
     test(cuda::std::move(mo));
     test(source());
   }
-#if TEST_STD_VER > 2011
   {
     constexpr int y = 42;
     static_assert(cuda::std::move(y) == 42, "");
     static_assert(test_constexpr_move(), "");
   }
-#endif
-#if TEST_STD_VER == 2011 && defined(_LIBCUDACXX_VERSION)
-  // Test that cuda::std::forward is constexpr in C++11. This is an extension
-  // provided by both libc++ and libstdc++.
-  {
-    constexpr int y = 42;
-    static_assert(cuda::std::move(y) == 42, "");
-  }
-#endif
 
   return 0;
 }

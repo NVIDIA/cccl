@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // constexpr const E& error() const & noexcept;
 // constexpr E& error() & noexcept;
 // constexpr E&& error() && noexcept;

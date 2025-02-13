@@ -238,7 +238,6 @@ struct __to_address_helper<_Pointer, decltype((void) pointer_traits<_Pointer>::t
   }
 };
 
-#if _CCCL_STD_VER > 2011
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr auto to_address(_Tp* __p) noexcept
 {
@@ -251,7 +250,6 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto to_address(const _Pointer& __p) noexcep
 {
   return _CUDA_VSTD::__to_address(__p);
 }
-#endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

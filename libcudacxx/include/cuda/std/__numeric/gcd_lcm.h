@@ -39,7 +39,7 @@ struct __ct_abs;
 template <typename _Result, typename _Source>
 struct __ct_abs<_Result, _Source, true>
 {
-  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI _Result operator()(_Source __t) const noexcept
+  constexpr _LIBCUDACXX_HIDE_FROM_ABI _Result operator()(_Source __t) const noexcept
   {
     if (__t >= 0)
     {
@@ -59,21 +59,21 @@ struct __ct_abs<_Result, _Source, true>
 template <typename _Result, typename _Source>
 struct __ct_abs<_Result, _Source, false>
 {
-  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI _Result operator()(_Source __t) const noexcept
+  constexpr _LIBCUDACXX_HIDE_FROM_ABI _Result operator()(_Source __t) const noexcept
   {
     return __t;
   }
 };
 
 template <class _Tp>
-_CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI _Tp __gcd(_Tp __m, _Tp __n)
+constexpr _LIBCUDACXX_HIDE_FROM_ABI _Tp __gcd(_Tp __m, _Tp __n)
 {
   static_assert((!_CCCL_TRAIT(is_signed, _Tp)), "");
   return __n == 0 ? __m : _CUDA_VSTD::__gcd<_Tp>(__n, __m % __n);
 }
 
 template <class _Tp, class _Up>
-_CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI common_type_t<_Tp, _Up> gcd(_Tp __m, _Up __n)
+constexpr _LIBCUDACXX_HIDE_FROM_ABI common_type_t<_Tp, _Up> gcd(_Tp __m, _Up __n)
 {
   static_assert((_CCCL_TRAIT(is_integral, _Tp) && _CCCL_TRAIT(is_integral, _Up)),
                 "Arguments to gcd must be integer types");
@@ -86,7 +86,7 @@ _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI common_type_t<_Tp, _Up> gcd(_Tp 
 }
 
 template <class _Tp, class _Up>
-_CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI common_type_t<_Tp, _Up> lcm(_Tp __m, _Up __n)
+constexpr _LIBCUDACXX_HIDE_FROM_ABI common_type_t<_Tp, _Up> lcm(_Tp __m, _Up __n)
 {
   static_assert((_CCCL_TRAIT(is_integral, _Tp) && _CCCL_TRAIT(is_integral, _Up)),
                 "Arguments to lcm must be integer types");

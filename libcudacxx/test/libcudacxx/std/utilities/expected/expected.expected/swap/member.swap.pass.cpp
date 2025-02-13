@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // constexpr void swap(expected& rhs) noexcept(see below);
 //
 // Constraints:

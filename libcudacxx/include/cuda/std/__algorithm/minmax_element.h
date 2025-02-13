@@ -42,14 +42,14 @@ public:
   {}
 
   template <class _Iter>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator()(_Iter& __it1, _Iter& __it2)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator()(_Iter& __it1, _Iter& __it2)
   {
     return _CUDA_VSTD::__invoke(__comp_, _CUDA_VSTD::__invoke(__proj_, *__it1), _CUDA_VSTD::__invoke(__proj_, *__it2));
   }
 };
 
 template <class _Iter, class _Sent, class _Proj, class _Comp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_Iter, _Iter>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_Iter, _Iter>
 __minmax_element_impl(_Iter __first, _Sent __last, _Comp& __comp, _Proj& __proj)
 {
   auto __less = _MinmaxElementLessFunc<_Comp, _Proj>(__comp, __proj);
@@ -113,7 +113,7 @@ __minmax_element_impl(_Iter __first, _Sent __last, _Comp& __comp, _Proj& __proj)
 }
 
 template <class _ForwardIterator, class _Compare>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_ForwardIterator, _ForwardIterator>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_ForwardIterator, _ForwardIterator>
 minmax_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
 {
   static_assert(__is_cpp17_input_iterator<_ForwardIterator>::value,
@@ -125,7 +125,7 @@ minmax_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __com
 }
 
 template <class _ForwardIterator>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_ForwardIterator, _ForwardIterator>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_ForwardIterator, _ForwardIterator>
 minmax_element(_ForwardIterator __first, _ForwardIterator __last)
 {
   return _CUDA_VSTD::minmax_element(__first, __last, __less{});

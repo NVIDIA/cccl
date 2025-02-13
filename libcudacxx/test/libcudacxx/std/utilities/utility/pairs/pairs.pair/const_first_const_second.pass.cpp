@@ -6,8 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03
-
 // XFAIL: gcc-4
 
 // <utility>
@@ -83,7 +81,7 @@ int main(int, char**)
     test_sfinae<NonCopyable, false>();
     test_sfinae<ExplicitTypes::NonCopyable, false>();
   }
-#if TEST_STD_VER > 2011
+
   {
     typedef cuda::std::pair<float, short*> P;
     constexpr P p(3.5f, 0);
@@ -106,7 +104,6 @@ int main(int, char**)
     static_assert(p.first.value == 42, "");
     static_assert(p.second == 10, "");
   }
-#endif
 
   return 0;
 }

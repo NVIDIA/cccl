@@ -6,8 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11
-
 // <cuda/std/type_traits>
 
 // template <class T> struct is_aggregate;

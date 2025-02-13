@@ -27,7 +27,6 @@ struct test1
   }
 };
 
-#if TEST_STD_VER > 2011
 __host__ __device__ constexpr bool test_constexpr()
 {
   int ia[] = {1, 3, 6, 7};
@@ -35,7 +34,6 @@ __host__ __device__ constexpr bool test_constexpr()
   return !cuda::std::none_of(cuda::std::begin(ia), cuda::std::end(ia), test1())
       && cuda::std::none_of(cuda::std::begin(ib), cuda::std::end(ib), test1());
 }
-#endif
 
 int main(int, char**)
 {
@@ -64,9 +62,7 @@ int main(int, char**)
            == true);
   }
 
-#if TEST_STD_VER > 2011
   static_assert(test_constexpr(), "");
-#endif
 
   return 0;
 }

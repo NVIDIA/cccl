@@ -182,13 +182,13 @@ __construct_at(_Tp* __location, _Args&&... __args)
 // The internal functions are available regardless of the language version (with the exception of the `__destroy_at`
 // taking an array).
 template <class _ForwardIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator __destroy(_ForwardIterator, _ForwardIterator);
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator __destroy(_ForwardIterator, _ForwardIterator);
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp,
           enable_if_t<!_CCCL_TRAIT(is_array, _Tp), int>                  = 0,
           enable_if_t<!_CCCL_TRAIT(is_trivially_destructible, _Tp), int> = 0>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void __destroy_at(_Tp* __loc)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr void __destroy_at(_Tp* __loc)
 {
   _CCCL_ASSERT(__loc != nullptr, "null pointer given to destroy_at");
   __loc->~_Tp();
@@ -198,22 +198,21 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp,
           enable_if_t<!_CCCL_TRAIT(is_array, _Tp), int>                 = 0,
           enable_if_t<_CCCL_TRAIT(is_trivially_destructible, _Tp), int> = 0>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void __destroy_at(_Tp* __loc)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr void __destroy_at(_Tp* __loc)
 {
   _CCCL_ASSERT(__loc != nullptr, "null pointer given to destroy_at");
   (void) __loc;
 }
 
 template <class _Tp, enable_if_t<_CCCL_TRAIT(is_array, _Tp), int> = 0>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void __destroy_at(_Tp* __loc)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr void __destroy_at(_Tp* __loc)
 {
   _CCCL_ASSERT(__loc != nullptr, "null pointer given to destroy_at");
   _CUDA_VSTD::__destroy(_CUDA_VSTD::begin(*__loc), _CUDA_VSTD::end(*__loc));
 }
 
 template <class _ForwardIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
-__destroy(_ForwardIterator __first, _ForwardIterator __last)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator __destroy(_ForwardIterator __first, _ForwardIterator __last)
 {
   for (; __first != __last; ++__first)
   {
@@ -223,7 +222,7 @@ __destroy(_ForwardIterator __first, _ForwardIterator __last)
 }
 
 template <class _BidirectionalIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _BidirectionalIterator
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _BidirectionalIterator
 __reverse_destroy(_BidirectionalIterator __first, _BidirectionalIterator __last)
 {
   while (__last != __first)

@@ -116,7 +116,7 @@ struct min_init_value_op_t
   template <int ItemsPerThread, class BlockScanT>
   __device__ void operator()(BlockScanT& scan, T (&thread_data)[ItemsPerThread]) const
   {
-    _CCCL_IF_CONSTEXPR (Mode == scan_mode::exclusive)
+    if constexpr (Mode == scan_mode::exclusive)
     {
       scan.ExclusiveScan(thread_data, thread_data, initial_value, ::cuda::minimum<>{});
     }
@@ -156,7 +156,7 @@ struct min_init_value_aggregate_op_t
   {
     T block_aggregate{};
 
-    _CCCL_IF_CONSTEXPR (Mode == scan_mode::exclusive)
+    if constexpr (Mode == scan_mode::exclusive)
     {
       scan.ExclusiveScan(thread_data, thread_data, initial_value, ::cuda::minimum<>{}, block_aggregate);
     }
@@ -511,7 +511,7 @@ C2H_TEST("Block scan supports custom scan op", "[scan][block]", algorithm, modes
     },
     INT_MAX);
 
-  _CCCL_IF_CONSTEXPR (mode == scan_mode::exclusive)
+  if constexpr (mode == scan_mode::exclusive)
   {
     //! With no initial value, the output computed for *thread*\ :sub:`0` is undefined.
     d_out.erase(d_out.begin());

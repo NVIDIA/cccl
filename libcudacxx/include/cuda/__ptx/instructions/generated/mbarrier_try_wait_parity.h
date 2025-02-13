@@ -88,7 +88,7 @@ _CCCL_DEVICE static inline bool mbarrier_try_wait_parity(
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   _CUDA_VSTD::uint32_t __waitComplete;
-  _CCCL_IF_CONSTEXPR (__scope == scope_cta)
+  if constexpr (__scope == scope_cta)
   {
     asm("{\n\t .reg .pred P_OUT; \n\t"
         "mbarrier.try_wait.parity.acquire.cta.shared::cta.b64  P_OUT, [%1], %2;                  // 8a. \n\t"
@@ -98,7 +98,7 @@ _CCCL_DEVICE static inline bool mbarrier_try_wait_parity(
         : "r"(__as_ptr_smem(__addr)), "r"(__phaseParity)
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__scope == scope_cluster)
+  else if constexpr (__scope == scope_cluster)
   {
     asm("{\n\t .reg .pred P_OUT; \n\t"
         "mbarrier.try_wait.parity.acquire.cluster.shared::cta.b64  P_OUT, [%1], %2;                  // 8a. \n\t"
@@ -144,7 +144,7 @@ _CCCL_DEVICE static inline bool mbarrier_try_wait_parity(
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   _CUDA_VSTD::uint32_t __waitComplete;
-  _CCCL_IF_CONSTEXPR (__scope == scope_cta)
+  if constexpr (__scope == scope_cta)
   {
     asm("{\n\t .reg .pred P_OUT; \n\t"
         "mbarrier.try_wait.parity.acquire.cta.shared::cta.b64  P_OUT, [%1], %2, %3; // 8b. \n\t"
@@ -154,7 +154,7 @@ _CCCL_DEVICE static inline bool mbarrier_try_wait_parity(
         : "r"(__as_ptr_smem(__addr)), "r"(__phaseParity), "r"(__suspendTimeHint)
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__scope == scope_cluster)
+  else if constexpr (__scope == scope_cluster)
   {
     asm("{\n\t .reg .pred P_OUT; \n\t"
         "mbarrier.try_wait.parity.acquire.cluster.shared::cta.b64  P_OUT, [%1], %2, %3; // 8b. \n\t"
@@ -200,7 +200,7 @@ _CCCL_DEVICE static inline bool mbarrier_try_wait_parity(
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   _CUDA_VSTD::uint32_t __waitComplete;
-  _CCCL_IF_CONSTEXPR (__scope == scope_cta)
+  if constexpr (__scope == scope_cta)
   {
     asm("{\n\t .reg .pred P_OUT; \n\t"
         "mbarrier.try_wait.parity.relaxed.cta.shared::cta.b64 P_OUT, [%1], %2, %3;\n\t"
@@ -210,7 +210,7 @@ _CCCL_DEVICE static inline bool mbarrier_try_wait_parity(
         : "r"(__as_ptr_smem(__addr)), "r"(__phaseParity), "r"(__suspendTimeHint)
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__scope == scope_cluster)
+  else if constexpr (__scope == scope_cluster)
   {
     asm("{\n\t .reg .pred P_OUT; \n\t"
         "mbarrier.try_wait.parity.relaxed.cluster.shared::cta.b64 P_OUT, [%1], %2, %3;\n\t"
@@ -250,7 +250,7 @@ _CCCL_DEVICE static inline bool mbarrier_try_wait_parity(
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   _CUDA_VSTD::uint32_t __waitComplete;
-  _CCCL_IF_CONSTEXPR (__scope == scope_cta)
+  if constexpr (__scope == scope_cta)
   {
     asm("{\n\t .reg .pred P_OUT; \n\t"
         "mbarrier.try_wait.parity.relaxed.cta.shared::cta.b64 P_OUT, [%1], %2;\n\t"
@@ -260,7 +260,7 @@ _CCCL_DEVICE static inline bool mbarrier_try_wait_parity(
         : "r"(__as_ptr_smem(__addr)), "r"(__phaseParity)
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__scope == scope_cluster)
+  else if constexpr (__scope == scope_cluster)
   {
     asm("{\n\t .reg .pred P_OUT; \n\t"
         "mbarrier.try_wait.parity.relaxed.cluster.shared::cta.b64 P_OUT, [%1], %2;\n\t"

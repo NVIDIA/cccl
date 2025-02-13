@@ -7,7 +7,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++03, c++11
+
 // UNSUPPORTED: sanitizer-new-delete
 
 // It is not possible to overwrite device operator new

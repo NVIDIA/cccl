@@ -299,7 +299,7 @@ struct policy_hub
   //------------------------------------------------------------------------------
 
   // Whether this is a keys-only (or key-value) sort
-  static constexpr bool KEYS_ONLY = ::cuda::std::is_same<ValueT, NullType>::value;
+  static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
   // Dominant-sized key/value type
   using DominantT = ::cuda::std::_If<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
@@ -879,7 +879,7 @@ struct policy_hub
     static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
     static constexpr int SEGMENTED_RADIX_BITS   = (sizeof(KeyT) > 1) ? 6 : 5;
     static constexpr int OFFSET_64BIT           = sizeof(OffsetT) == 8 ? 1 : 0;
-    static constexpr int FLOAT_KEYS             = ::cuda::std::is_same<KeyT, float>::value ? 1 : 0;
+    static constexpr int FLOAT_KEYS             = ::cuda::std::is_same_v<KeyT, float> ? 1 : 0;
 
     using OnesweepPolicyKey32 = AgentRadixSortOnesweepPolicy<
       384,

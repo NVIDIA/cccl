@@ -126,8 +126,6 @@ int main(int, char**)
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
 #endif // !TEST_HAS_NO_EXCEPTIONS
 
-#if TEST_STD_VER >= 2014
   static_assert(tests(), "");
-#endif
   return 0;
 }

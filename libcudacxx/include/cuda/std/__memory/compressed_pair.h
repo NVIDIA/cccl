@@ -70,14 +70,14 @@ struct __compressed_pair_elem
   {}
 
   template <class... _Args, size_t... _Indices>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX17 explicit __compressed_pair_elem(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __compressed_pair_elem(
     piecewise_construct_t,
     tuple<_Args...> __args,
     __tuple_indices<_Indices...>) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Tp, _Args...))
       : __value_(_CUDA_VSTD::forward<_Args>(_CUDA_VSTD::get<_Indices>(__args))...)
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reference __get() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference __get() noexcept
   {
     return __value_;
   }
@@ -115,14 +115,14 @@ struct __compressed_pair_elem<_Tp, _Idx, true> : private _Tp
   {}
 
   template <class... _Args, size_t... _Indices>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX17 __compressed_pair_elem(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __compressed_pair_elem(
     piecewise_construct_t,
     tuple<_Args...> __args,
     __tuple_indices<_Indices...>) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Tp, _Args...))
       : __value_type(_CUDA_VSTD::forward<_Args>(_CUDA_VSTD::get<_Indices>(__args))...)
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reference __get() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference __get() noexcept
   {
     return *this;
   }
@@ -167,7 +167,7 @@ public:
   {}
 
   template <class... _Args1, class... _Args2>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX17 explicit __compressed_pair(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __compressed_pair(
     piecewise_construct_t __pc,
     tuple<_Args1...> __first_args,
     tuple<_Args2...> __second_args) noexcept(_CCCL_TRAIT(is_constructible, _T1, _Args1...)
@@ -176,7 +176,7 @@ public:
       , _Base2(__pc, _CUDA_VSTD::move(__second_args), typename __make_tuple_indices<sizeof...(_Args2)>::type())
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 typename _Base1::reference first() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr typename _Base1::reference first() noexcept
   {
     return static_cast<_Base1&>(*this).__get();
   }
@@ -186,7 +186,7 @@ public:
     return static_cast<_Base1 const&>(*this).__get();
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 typename _Base2::reference second() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr typename _Base2::reference second() noexcept
   {
     return static_cast<_Base2&>(*this).__get();
   }
@@ -205,7 +205,7 @@ public:
     return static_cast<_Base2*>(__pair);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void
   swap(__compressed_pair& __x) noexcept(__is_nothrow_swappable<_T1>::value && __is_nothrow_swappable<_T2>::value)
   {
     using _CUDA_VSTD::swap;
@@ -215,7 +215,7 @@ public:
 };
 
 template <class _T1, class _T2>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void swap(
+_LIBCUDACXX_HIDE_FROM_ABI constexpr void swap(
   __compressed_pair<_T1, _T2>& __x,
   __compressed_pair<_T1, _T2>& __y) noexcept(__is_nothrow_swappable<_T1>::value && __is_nothrow_swappable<_T2>::value)
 {

@@ -58,7 +58,7 @@ C2H_TEST("FastDivMod random", "[FastDivMod][Random]", index_types)
   auto divisor             = GENERATE_COPY(take(20, random(+index_type{1}, max_value)));
   fast_div_mod<index_type> div_mod(static_cast<index_type>(divisor));
   CAPTURE(c2h::type_name<index_type>(), dividend, divisor);
-  static_assert(std::is_same<decltype(dividend / divisor), decltype(div_mod(dividend).quotient)>::value,
+  static_assert(std::is_same_v<decltype(dividend / divisor), decltype(div_mod(dividend).quotient)>,
                 "quotient type mismatch");
   REQUIRE(dividend / divisor == div_mod(dividend).quotient);
   REQUIRE(dividend % divisor == div_mod(dividend).remainder);

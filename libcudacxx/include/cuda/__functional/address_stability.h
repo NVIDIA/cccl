@@ -48,13 +48,6 @@ _CCCL_INLINE_VAR constexpr bool proclaims_copyable_arguments_v = proclaims_copya
 template <typename F>
 struct __callable_permitting_copied_arguments : F
 {
-#if _CCCL_STD_VER <= 2014
-  template <typename G>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __callable_permitting_copied_arguments(G&& g)
-      : F(::cuda::std::forward<G>(g))
-  {}
-#endif // _CCCL_STD_VER <= 2014
-
   using F::operator();
 };
 
@@ -76,11 +69,9 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto proclaim_copyable_argum
 
 // Specializations for libcu++ function objects are provided here to not pull this include into `<cuda/std/...>` headers
 
-#if _CCCL_STD_VER >= 2017
 template <typename _Fn>
 struct proclaims_copyable_arguments<_CUDA_VSTD::__not_fn_t<_Fn>> : proclaims_copyable_arguments<_Fn>
 {};
-#endif // _CCCL_STD_VER > 2014
 
 template <typename _Tp>
 struct __has_builtin_operators
@@ -118,13 +109,11 @@ _LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::logical_and);
 _LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::logical_not);
 _LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::logical_or);
 
-#if _CCCL_STD_VER >= 2017
-
-#  define _LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS(functor)                                              \
-    /*we do not know what equal_to etc. does, which depends on the types and their operator== it is invoked on */ \
-    template <>                                                                                                   \
-    struct proclaims_copyable_arguments<functor> : _CUDA_VSTD::false_type                                         \
-    {};
+#define _LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS(functor)                                              \
+  /*we do not know what equal_to etc. does, which depends on the types and their operator== it is invoked on */ \
+  template <>                                                                                                   \
+  struct proclaims_copyable_arguments<functor> : _CUDA_VSTD::false_type                                         \
+  {};
 
 _LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS(_CUDA_VRANGES::equal_to);
 _LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS(_CUDA_VRANGES::not_equal_to);
@@ -133,9 +122,7 @@ _LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS(_CUDA_VRANGES::less_equal);
 _LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS(_CUDA_VRANGES::greater);
 _LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS(_CUDA_VRANGES::greater_equal);
 
-#  undef _LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS
-
-#endif // _CCCL_STD_VER >= 2017
+#undef _LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 

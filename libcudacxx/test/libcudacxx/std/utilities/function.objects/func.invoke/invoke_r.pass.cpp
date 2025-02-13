@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++11
-
 // <cuda/std/functional>
 
 // template<class R, class F, class... Args>

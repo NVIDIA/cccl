@@ -221,11 +221,6 @@ public:
   // Indicate if the finalize() call should be blocking or not
   bool blocking_finalize = true;
 
-  ::std::string to_string() const
-  {
-    return "stream backend context";
-  }
-
   using backend_ctx<stream_ctx>::task;
 
   /**
@@ -693,6 +688,11 @@ private:
       auto e = reserved::record_event_in_stream(decorated_stream(stream));
       /// e->set_symbol(mv(event_symbol));
       return event_list(mv(e));
+    }
+
+    ::std::string to_string() const override
+    {
+      return "stream backend context";
     }
 
     // We need to ensure all dangling events have been completed (eg. by having

@@ -23,27 +23,22 @@ template <class T, class U>
 __host__ __device__ void test_add_pointer()
 {
   ASSERT_SAME_TYPE(U, typename cuda::std::add_pointer<T>::type);
-#if TEST_STD_VER >= 2014
   ASSERT_SAME_TYPE(U, cuda::std::add_pointer_t<T>);
-#endif // TEST_STD_VER >= 2014
 }
 
 template <class F>
 __host__ __device__ void test_function0()
 {
   ASSERT_SAME_TYPE(F*, typename cuda::std::add_pointer<F>::type);
-#if TEST_STD_VER >= 2014
+
   ASSERT_SAME_TYPE(F*, cuda::std::add_pointer_t<F>);
-#endif // TEST_STD_VER >= 2014
 }
 
 template <class F>
 __host__ __device__ void test_function1()
 {
   ASSERT_SAME_TYPE(F, typename cuda::std::add_pointer<F>::type);
-#if TEST_STD_VER >= 2014
   ASSERT_SAME_TYPE(F, cuda::std::add_pointer_t<F>);
-#endif // TEST_STD_VER >= 2014
 }
 
 struct Foo

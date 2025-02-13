@@ -20,11 +20,11 @@ tcgen05_cp_128x256b(cta_group_t<_Cta_Group> __cta_group, _CUDA_VSTD::uint32_t __
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm("tcgen05.cp.cta_group::1.128x256b [%0], %1;" : : "r"(__taddr), "l"(__s_desc) : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm("tcgen05.cp.cta_group::2.128x256b [%0], %1;" : : "r"(__taddr), "l"(__s_desc) : "memory");
   }
@@ -52,11 +52,11 @@ tcgen05_cp_4x256b(cta_group_t<_Cta_Group> __cta_group, _CUDA_VSTD::uint32_t __ta
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm("tcgen05.cp.cta_group::1.4x256b [%0], %1;" : : "r"(__taddr), "l"(__s_desc) : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm("tcgen05.cp.cta_group::2.4x256b [%0], %1;" : : "r"(__taddr), "l"(__s_desc) : "memory");
   }
@@ -84,11 +84,11 @@ tcgen05_cp_128x128b(cta_group_t<_Cta_Group> __cta_group, _CUDA_VSTD::uint32_t __
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm("tcgen05.cp.cta_group::1.128x128b [%0], %1;" : : "r"(__taddr), "l"(__s_desc) : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm("tcgen05.cp.cta_group::2.128x128b [%0], %1;" : : "r"(__taddr), "l"(__s_desc) : "memory");
   }
@@ -116,11 +116,11 @@ _CCCL_DEVICE static inline void tcgen05_cp_64x128b_warpx2_02_13(
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm("tcgen05.cp.cta_group::1.64x128b.warpx2::02_13 [%0], %1;" : : "r"(__taddr), "l"(__s_desc) : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm("tcgen05.cp.cta_group::2.64x128b.warpx2::02_13 [%0], %1;" : : "r"(__taddr), "l"(__s_desc) : "memory");
   }
@@ -148,11 +148,11 @@ _CCCL_DEVICE static inline void tcgen05_cp_64x128b_warpx2_01_23(
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm("tcgen05.cp.cta_group::1.64x128b.warpx2::01_23 [%0], %1;" : : "r"(__taddr), "l"(__s_desc) : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm("tcgen05.cp.cta_group::2.64x128b.warpx2::01_23 [%0], %1;" : : "r"(__taddr), "l"(__s_desc) : "memory");
   }
@@ -180,11 +180,11 @@ _CCCL_DEVICE static inline void tcgen05_cp_32x128b_warpx4(
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm("tcgen05.cp.cta_group::1.32x128b.warpx4 [%0], %1;" : : "r"(__taddr), "l"(__s_desc) : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm("tcgen05.cp.cta_group::2.32x128b.warpx4 [%0], %1;" : : "r"(__taddr), "l"(__s_desc) : "memory");
   }
@@ -212,11 +212,11 @@ _CCCL_DEVICE static inline void tcgen05_cp_128x256b_b8x16_b6x16_p32(
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm("tcgen05.cp.cta_group::1.128x256b.b8x16.b6x16_p32 [%0], %1;" : : "r"(__taddr), "l"(__s_desc) : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm("tcgen05.cp.cta_group::2.128x256b.b8x16.b6x16_p32 [%0], %1;" : : "r"(__taddr), "l"(__s_desc) : "memory");
   }
@@ -244,11 +244,11 @@ _CCCL_DEVICE static inline void tcgen05_cp_4x256b_b8x16_b6x16_p32(
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm("tcgen05.cp.cta_group::1.4x256b.b8x16.b6x16_p32 [%0], %1;" : : "r"(__taddr), "l"(__s_desc) : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm("tcgen05.cp.cta_group::2.4x256b.b8x16.b6x16_p32 [%0], %1;" : : "r"(__taddr), "l"(__s_desc) : "memory");
   }
@@ -276,11 +276,11 @@ _CCCL_DEVICE static inline void tcgen05_cp_128x128b_b8x16_b6x16_p32(
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm("tcgen05.cp.cta_group::1.128x128b.b8x16.b6x16_p32 [%0], %1;" : : "r"(__taddr), "l"(__s_desc) : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm("tcgen05.cp.cta_group::2.128x128b.b8x16.b6x16_p32 [%0], %1;" : : "r"(__taddr), "l"(__s_desc) : "memory");
   }
@@ -309,14 +309,14 @@ _CCCL_DEVICE static inline void tcgen05_cp_64x128b_warpx2_02_13_b8x16_b6x16_p32(
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm("tcgen05.cp.cta_group::1.64x128b.warpx2::02_13.b8x16.b6x16_p32 [%0], %1;"
         :
         : "r"(__taddr), "l"(__s_desc)
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm("tcgen05.cp.cta_group::2.64x128b.warpx2::02_13.b8x16.b6x16_p32 [%0], %1;"
         :
@@ -348,14 +348,14 @@ _CCCL_DEVICE static inline void tcgen05_cp_64x128b_warpx2_01_23_b8x16_b6x16_p32(
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm("tcgen05.cp.cta_group::1.64x128b.warpx2::01_23.b8x16.b6x16_p32 [%0], %1;"
         :
         : "r"(__taddr), "l"(__s_desc)
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm("tcgen05.cp.cta_group::2.64x128b.warpx2::01_23.b8x16.b6x16_p32 [%0], %1;"
         :
@@ -387,11 +387,11 @@ _CCCL_DEVICE static inline void tcgen05_cp_32x128b_warpx4_b8x16_b6x16_p32(
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm("tcgen05.cp.cta_group::1.32x128b.warpx4.b8x16.b6x16_p32 [%0], %1;" : : "r"(__taddr), "l"(__s_desc) : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm("tcgen05.cp.cta_group::2.32x128b.warpx4.b8x16.b6x16_p32 [%0], %1;" : : "r"(__taddr), "l"(__s_desc) : "memory");
   }
@@ -419,11 +419,11 @@ _CCCL_DEVICE static inline void tcgen05_cp_128x256b_b8x16_b4x16_p64(
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm("tcgen05.cp.cta_group::1.128x256b.b8x16.b4x16_p64 [%0], %1;" : : "r"(__taddr), "l"(__s_desc) : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm("tcgen05.cp.cta_group::2.128x256b.b8x16.b4x16_p64 [%0], %1;" : : "r"(__taddr), "l"(__s_desc) : "memory");
   }
@@ -451,11 +451,11 @@ _CCCL_DEVICE static inline void tcgen05_cp_4x256b_b8x16_b4x16_p64(
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm("tcgen05.cp.cta_group::1.4x256b.b8x16.b4x16_p64 [%0], %1;" : : "r"(__taddr), "l"(__s_desc) : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm("tcgen05.cp.cta_group::2.4x256b.b8x16.b4x16_p64 [%0], %1;" : : "r"(__taddr), "l"(__s_desc) : "memory");
   }
@@ -483,11 +483,11 @@ _CCCL_DEVICE static inline void tcgen05_cp_128x128b_b8x16_b4x16_p64(
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm("tcgen05.cp.cta_group::1.128x128b.b8x16.b4x16_p64 [%0], %1;" : : "r"(__taddr), "l"(__s_desc) : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm("tcgen05.cp.cta_group::2.128x128b.b8x16.b4x16_p64 [%0], %1;" : : "r"(__taddr), "l"(__s_desc) : "memory");
   }
@@ -516,14 +516,14 @@ _CCCL_DEVICE static inline void tcgen05_cp_64x128b_warpx2_02_13_b8x16_b4x16_p64(
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm("tcgen05.cp.cta_group::1.64x128b.warpx2::02_13.b8x16.b4x16_p64 [%0], %1;"
         :
         : "r"(__taddr), "l"(__s_desc)
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm("tcgen05.cp.cta_group::2.64x128b.warpx2::02_13.b8x16.b4x16_p64 [%0], %1;"
         :
@@ -555,14 +555,14 @@ _CCCL_DEVICE static inline void tcgen05_cp_64x128b_warpx2_01_23_b8x16_b4x16_p64(
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm("tcgen05.cp.cta_group::1.64x128b.warpx2::01_23.b8x16.b4x16_p64 [%0], %1;"
         :
         : "r"(__taddr), "l"(__s_desc)
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm("tcgen05.cp.cta_group::2.64x128b.warpx2::01_23.b8x16.b4x16_p64 [%0], %1;"
         :
@@ -594,11 +594,11 @@ _CCCL_DEVICE static inline void tcgen05_cp_32x128b_warpx4_b8x16_b4x16_p64(
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm("tcgen05.cp.cta_group::1.32x128b.warpx4.b8x16.b4x16_p64 [%0], %1;" : : "r"(__taddr), "l"(__s_desc) : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm("tcgen05.cp.cta_group::2.32x128b.warpx4.b8x16.b4x16_p64 [%0], %1;" : : "r"(__taddr), "l"(__s_desc) : "memory");
   }

@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++11
 // UNSUPPORTED: nvrtc
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>

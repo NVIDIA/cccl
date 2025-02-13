@@ -136,9 +136,9 @@ using ::mbtowc;
 using ::qsort;
 using ::wcstombs;
 using ::wctomb;
-#  if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC)
+#  if !_CCCL_COMPILER(MSVC)
 using ::aligned_alloc;
-#  endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC)
+#  endif // !_CCCL_COMPILER(MSVC)
 #endif // !defined(_CCCL_COMPILER_NVRTC)
 
 _LIBCUDACXX_END_NAMESPACE_STD

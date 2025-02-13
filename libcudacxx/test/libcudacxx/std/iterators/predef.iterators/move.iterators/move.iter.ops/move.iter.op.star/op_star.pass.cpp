@@ -70,7 +70,6 @@ int main(int, char**)
     test(&p, cuda::std::unique_ptr<int, do_nothing>(&i));
   }
 #endif
-#if TEST_STD_VER > 2011
   {
     constexpr const char* p = "123456789";
     typedef cuda::std::move_iterator<const char*> MI;
@@ -79,9 +78,7 @@ int main(int, char**)
     static_assert(*it1 == p[0], "");
     static_assert(*it2 == p[1], "");
   }
-#endif
 
-#if TEST_STD_VER > 2014
   // Ensure the `iter_move` customization point is being used.
   {
     int a[] = {0, 1, 2};
@@ -94,7 +91,6 @@ int main(int, char**)
     assert(x == 0);
     assert(iter_moves == 1);
   }
-#endif
 
   return 0;
 }

@@ -164,7 +164,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT negate : __unary_function<_Tp, _Tp>
 {
   using __result_type = _Tp; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI _Tp operator()(const _Tp& __x) const
+  constexpr _LIBCUDACXX_HIDE_FROM_ABI _Tp operator()(const _Tp& __x) const
   {
     return -__x;
   }
@@ -176,7 +176,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT negate<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp>
-  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI auto operator()(_Tp&& __x) const
+  constexpr _LIBCUDACXX_HIDE_FROM_ABI auto operator()(_Tp&& __x) const
     noexcept(noexcept(-_CUDA_VSTD::forward<_Tp>(__x))) -> decltype(-_CUDA_VSTD::forward<_Tp>(__x))
   {
     return -_CUDA_VSTD::forward<_Tp>(__x);
@@ -216,7 +216,7 @@ template <class _Tp = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_not : __unary_function<_Tp, _Tp>
 {
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI _Tp operator()(const _Tp& __x) const
+  constexpr _LIBCUDACXX_HIDE_FROM_ABI _Tp operator()(const _Tp& __x) const
   {
     return ~__x;
   }
@@ -228,7 +228,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_not<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp>
-  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI auto operator()(_Tp&& __x) const
+  constexpr _LIBCUDACXX_HIDE_FROM_ABI auto operator()(_Tp&& __x) const
     noexcept(noexcept(~_CUDA_VSTD::forward<_Tp>(__x))) -> decltype(~_CUDA_VSTD::forward<_Tp>(__x))
   {
     return ~_CUDA_VSTD::forward<_Tp>(__x);
@@ -241,7 +241,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_or : __binary_function<_Tp, _Tp, _Tp>
 {
   using __result_type = _Tp; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI _Tp operator()(const _Tp& __x, const _Tp& __y) const
+  constexpr _LIBCUDACXX_HIDE_FROM_ABI _Tp operator()(const _Tp& __x, const _Tp& __y) const
   {
     return __x | __y;
   }
@@ -491,7 +491,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT logical_not<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp>
-  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI auto operator()(_Tp&& __x) const
+  constexpr _LIBCUDACXX_HIDE_FROM_ABI auto operator()(_Tp&& __x) const
     noexcept(noexcept(!_CUDA_VSTD::forward<_Tp>(__x))) -> decltype(!_CUDA_VSTD::forward<_Tp>(__x))
   {
     return !_CUDA_VSTD::forward<_Tp>(__x);

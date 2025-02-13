@@ -61,11 +61,9 @@ template <class _Tp>
 struct __tuple_like<complex<_Tp>> : true_type
 {};
 
-#if _CCCL_STD_VER >= 2017
 template <class _Ip, class _Sp, _CUDA_VRANGES::subrange_kind _Kp>
 struct __tuple_like<_CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>> : true_type
 {};
-#endif // _CCCL_STD_VER >= 2017
 
 template <class... _Tp>
 struct __tuple_like<__tuple_types<_Tp...>> : true_type

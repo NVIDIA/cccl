@@ -234,8 +234,7 @@ template <
   typename AccumT = ::cuda::std::__accumulator_t<
     ScanOpT,
     cub::detail::value_t<ValuesInputIteratorT>,
-    ::cuda::std::
-      _If<::cuda::std::is_same<InitValueT, NullType>::value, cub::detail::value_t<ValuesInputIteratorT>, InitValueT>>,
+    ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>, cub::detail::value_t<ValuesInputIteratorT>, InitValueT>>,
   typename PolicyHub =
     detail::scan_by_key::policy_hub<KeysInputIteratorT, AccumT, cub::detail::value_t<ValuesInputIteratorT>, ScanOpT>>
 struct DispatchScanByKey

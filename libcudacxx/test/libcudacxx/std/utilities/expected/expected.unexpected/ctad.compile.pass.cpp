@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
 // UNSUPPORTED: gcc-6, gcc-7, gcc-8, gcc-9
 
 // template<class E> unexpected(E) -> unexpected<E>;

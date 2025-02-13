@@ -221,7 +221,7 @@ enable_if_t<(N == sizeof...(T))> print_elem(::std::ostream&, const tuple<T...>&)
 template <size_t N, typename... T>
 enable_if_t<(N < sizeof...(T))> print_elem(::std::ostream& os, const tuple<T...>& tup)
 {
-  _CCCL_IF_CONSTEXPR (N != 0)
+  if constexpr (N != 0)
   {
     os << ", ";
   }

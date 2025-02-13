@@ -665,14 +665,14 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   static_assert(sizeof(_Type) == 4 || sizeof(_Type) == 8, "");
 // __op == op_and_op (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  _CCCL_IF_CONSTEXPR (sizeof(_Type) == 4)
+  if constexpr (sizeof(_Type) == 4)
   {
     asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.and.b32  [%0], [%1], %2; // 3."
         :
         : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (sizeof(_Type) == 8)
+  else if constexpr (sizeof(_Type) == 8)
   {
     asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.and.b64  [%0], [%1], %2; // 3."
         :
@@ -712,14 +712,14 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   static_assert(sizeof(_Type) == 4 || sizeof(_Type) == 8, "");
 // __op == op_or_op (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  _CCCL_IF_CONSTEXPR (sizeof(_Type) == 4)
+  if constexpr (sizeof(_Type) == 4)
   {
     asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.or.b32  [%0], [%1], %2; // 3."
         :
         : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (sizeof(_Type) == 8)
+  else if constexpr (sizeof(_Type) == 8)
   {
     asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.or.b64  [%0], [%1], %2; // 3."
         :
@@ -759,14 +759,14 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   static_assert(sizeof(_Type) == 4 || sizeof(_Type) == 8, "");
 // __op == op_xor_op (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  _CCCL_IF_CONSTEXPR (sizeof(_Type) == 4)
+  if constexpr (sizeof(_Type) == 4)
   {
     asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.xor.b32  [%0], [%1], %2; // 3."
         :
         : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (sizeof(_Type) == 8)
+  else if constexpr (sizeof(_Type) == 8)
   {
     asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.xor.b64  [%0], [%1], %2; // 3."
         :

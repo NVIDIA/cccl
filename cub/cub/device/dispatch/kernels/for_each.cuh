@@ -78,10 +78,10 @@ template <class Value, class Fn>
 struct has_unique_value_overload<
   Value,
   Fn,
-  typename ::cuda::std::enable_if<
-              !::cuda::std::is_reference<first_parameter_t<Fn>>::value &&
-              ::cuda::std::is_convertible<Value, first_parameter_t<Fn>
-             >::value>::type>
+  ::cuda::std::enable_if_t<
+              !::cuda::std::is_reference_v<first_parameter_t<Fn>> &&
+              ::cuda::std::is_convertible_v<Value, first_parameter_t<Fn>
+             >>>
     : ::cuda::std::true_type
 {};
 
@@ -92,10 +92,10 @@ template <typename Value, typename Fn>
 using can_regain_copy_freedom =
   ::cuda::std::integral_constant<
     bool,
-    ::cuda::std::is_trivially_constructible<Value>::value &&
-    ::cuda::std::is_trivially_copy_assignable<Value>::value &&
-    ::cuda::std::is_trivially_move_assignable<Value>::value &&
-    ::cuda::std::is_trivially_destructible<Value>::value &&
+    ::cuda::std::is_trivially_constructible_v<Value> &&
+    ::cuda::std::is_trivially_copy_assignable_v<Value> &&
+    ::cuda::std::is_trivially_move_assignable_v<Value> &&
+    ::cuda::std::is_trivially_destructible_v<Value> &&
     has_unique_value_overload<Value, Fn>::value>;
 // clang-format on
 

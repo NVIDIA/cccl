@@ -28,8 +28,6 @@
 #  include <cuda/std/__type_traits/void_t.h>
 #  include <cuda/std/__utility/declval.h>
 
-#  if _CCCL_STD_VER >= 2014
-
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 //! @brief The \c has_property concept verifies that a Resource satisfies a given Property
@@ -150,8 +148,6 @@ template <class _Derived, class _Upstream>
 using forward_property = __forward_property::__fn<_Derived, _Upstream>;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
-
-#  endif // _CCCL_STD_VER >= 2014
 
 #endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 

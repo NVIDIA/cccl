@@ -25,15 +25,13 @@
 #include <cuda/std/__concepts/semiregular.h>
 #include <cuda/std/__utility/move.h>
 
-#if _CCCL_STD_VER > 2014
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#  if _CCCL_STD_VER > 2017
+#if !defined(_CCCL_NO_CONCEPTS)
 template <semiregular _Sent>
-#  else
+#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 template <class _Sent, enable_if_t<semiregular<_Sent>, int> = 0>
-#  endif
+#endif // _CCCL_NO_CONCEPTS
 class _CCCL_TYPE_VISIBILITY_DEFAULT move_sentinel
 {
 public:
@@ -67,7 +65,5 @@ private:
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
-
-#endif // _CCCL_STD_VER > 2014
 
 #endif // _LIBCUDACXX___ITERATOR_MOVE_SENTINEL_H

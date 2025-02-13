@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // <cuda/std/optional>
 
 // template <class U> constexpr T optional<T>::value_or(U&& v) &&;

@@ -72,75 +72,6 @@ struct __string_view
     return __string_view(__str_ + __check_offset(__start, __len_), __check_offset(__stop - __start, __len_));
   }
 
-  // C++11 constexpr string comparison
-#if _CCCL_STD_VER < 2014 || __cpp_constexpr < 201304L
-
-private:
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr int
-  __compare_(char const* __s1, size_t __len1, char const* __s2, size_t __len2, size_t __n) noexcept
-  {
-    return __n ? (*__s1 - *__s2 ? *__s1 - *__s2 : __compare_(__s1 + 1, __len1, __s2 + 1, __len2, __n - 1))
-               : int(__len1) - int(__len2);
-  }
-
-  template <bool _Forward>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr ptrdiff_t __try_find(
-    size_t __i,
-    const char* __needle,
-    size_t __needle_size,
-    char const* __haystack_begin,
-    char const* __haystack_end,
-    char const* __it) noexcept
-  {
-    return __i == __needle_size //
-           ? (_Forward ? __it - __haystack_begin : __it - __haystack_end - 1)
-           : __needle[__i] != (_Forward ? __it : __it - 1)[__i]
-               ? -1
-               : __try_find<_Forward>(__i + 1, __needle, __needle_size, __haystack_begin, __haystack_end, __it);
-  }
-
-  template <bool _Forward>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr ptrdiff_t __find(
-    ptrdiff_t __found,
-    const char* __needle,
-    size_t __needle_size,
-    char const* __haystack_begin,
-    char const* __haystack_end,
-    char const* __it) noexcept
-  {
-    return __found != -1 //
-           ? __found
-           : __it == __haystack_end
-               ? -1
-               : __find<_Forward>(
-                   __try_find<_Forward>(0, __needle, __needle_size, __haystack_begin, __haystack_end, __it),
-                   __needle,
-                   __needle_size,
-                   __haystack_begin,
-                   __haystack_end,
-                   (_Forward ? __it + 1 : __it - 1));
-  }
-
-public:
-  template <size_t _Np>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr ptrdiff_t find(const char (&__other)[_Np]) const noexcept
-  {
-    return (_Np - 1) > __len_
-           ? -1
-           : __find<true>(-1, __other, _Np - 1, __str_, __str_ + __len_ - (_Np - 1) + 1, __str_);
-  }
-
-  template <size_t _Np>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr ptrdiff_t find_end(const char (&__other)[_Np]) const noexcept
-  {
-    return (_Np - 1) > __len_
-           ? -1
-           : __find<false>(
-               -1, __other, _Np - 1, __str_ + __len_ - (_Np - 1) + 1, __str_, __str_ + __len_ - (_Np - 1) + 1);
-  }
-
-#else // ^^^ C++11 ^^^ / vvv C++14 and beyond vvv
-
 private:
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr int
   __compare_(char const* __s1, size_t __len1, char const* __s2, size_t __len2, size_t __n) noexcept
@@ -201,8 +132,6 @@ public:
   {
     return ((_Np - 1) > __len_) ? -1 : __find<false>(__other, _Np - 1, __str_ + __len_ - (_Np - 1) + 1, __str_);
   }
-
-#endif // ^^^ C++14 and beyond ^^^
 
 private:
   // This overload is selected when we're not in a constant evaluated context.
@@ -294,11 +223,7 @@ private:
 
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __strlen_(char const* __str) noexcept
   {
-#if _CCCL_STD_VER >= 2014
     return _CUDA_VSTD::char_traits<char>::length(__str);
-#else
-    return __strlen_0x_(__str, 0);
-#endif
   }
 
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __check_offset(ptrdiff_t __diff, size_t __len)

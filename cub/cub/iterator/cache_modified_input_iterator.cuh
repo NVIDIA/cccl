@@ -140,7 +140,7 @@ public:
   /// Constructor
   template <typename QualifiedValueType>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CacheModifiedInputIterator(QualifiedValueType* ptr) ///< Native pointer to wrap
-      : ptr(const_cast<typename ::cuda::std::remove_cv<QualifiedValueType>::type*>(ptr))
+      : ptr(const_cast<::cuda::std::remove_cv_t<QualifiedValueType>*>(ptr))
   {}
 
   /// Postfix increment

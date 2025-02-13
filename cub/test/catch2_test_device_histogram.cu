@@ -281,14 +281,14 @@ void test_even_and_range(LevelT max_level, int max_level_count, OffsetT width, O
     std::ignore    = fp_scales; // casting to void was insufficient. TODO(bgruber): use [[maybe_unsued]] in C++17
     for (size_t c = 0; c < ActiveChannels; ++c)
     {
-      _CCCL_IF_CONSTEXPR (!cs::is_integral<LevelT>::value)
+      if constexpr (!cs::is_integral<LevelT>::value)
       {
         fp_scales[c] = static_cast<LevelT>(num_levels[c] - 1) / static_cast<LevelT>(upper_level[c] - lower_level[c]);
       }
     }
 
     auto sample_to_bin_index = [&](int channel, SampleT sample) {
-      using common_t             = typename cs::common_type<LevelT, SampleT>::type;
+      using common_t             = cs::common_type_t<LevelT, SampleT>;
       const auto n               = num_levels[channel];
       const auto max             = static_cast<common_t>(upper_level[channel]);
       const auto min             = static_cast<common_t>(lower_level[channel]);
@@ -297,7 +297,7 @@ void test_even_and_range(LevelT max_level, int max_level_count, OffsetT width, O
       {
         return n; // out of range
       }
-      _CCCL_IF_CONSTEXPR (cs::is_integral<LevelT>::value)
+      if constexpr (cs::is_integral<LevelT>::value)
       {
         // Accurate bin computation following the arithmetic we guarantee in the HistoEven docs
         return static_cast<int>(static_cast<uint64_t>(promoted_sample - min) * static_cast<uint64_t>(n - 1)
@@ -315,7 +315,7 @@ void test_even_and_range(LevelT max_level, int max_level_count, OffsetT width, O
     // Compute result and verify
     {
       const auto* sample_ptr = cast_if_half_pointer(thrust::raw_pointer_cast(d_samples.data()));
-      _CCCL_IF_CONSTEXPR (ActiveChannels == 1 && Channels == 1)
+      if constexpr (ActiveChannels == 1 && Channels == 1)
       {
         histogram_even(
           sample_ptr,
@@ -371,7 +371,7 @@ void test_even_and_range(LevelT max_level, int max_level_count, OffsetT width, O
       const auto* sample_ptr = cast_if_half_pointer(thrust::raw_pointer_cast(d_samples.data()));
       auto d_levels          = array<c2h::device_vector<LevelT>, ActiveChannels>{};
       std::copy(h_levels.begin(), h_levels.end(), d_levels.begin());
-      _CCCL_IF_CONSTEXPR (ActiveChannels == 1 && Channels == 1)
+      if constexpr (ActiveChannels == 1 && Channels == 1)
       {
         histogram_range(
           sample_ptr,
@@ -422,7 +422,7 @@ using types =
 C2H_TEST("DeviceHistogram::Histogram* basic use", "[histogram][device]", types)
 {
   using sample_t = c2h::get<0, TestType>;
-  using level_t  = typename cs::conditional<cuda::is_floating_point<sample_t>::value, sample_t, int>::type;
+  using level_t  = cs::conditional_t<cuda::is_floating_point_v<sample_t>, sample_t, int>;
   // Max for int8/uint8 is 2^8, for half_t is 2^10. Beyond, we would need a different level generation
   const auto max_level       = level_t{sizeof(sample_t) == 1 ? 126 : 1024};
   const auto max_level_count = (sizeof(sample_t) == 1 ? 126 : 1024) + 1;
@@ -437,7 +437,7 @@ C2H_TEST("DeviceHistogram::Histogram* large levels", "[histogram][device]", c2h:
   using level_t              = sample_t;
   const auto max_level_count = 128;
   auto max_level             = cub::NumericTraits<level_t>::Max();
-  _CCCL_IF_CONSTEXPR (sizeof(sample_t) > sizeof(int))
+  if constexpr (sizeof(sample_t) > sizeof(int))
   {
     max_level /= static_cast<level_t>(max_level_count - 1); // cf. overflow detection in ScaleTransform::MayOverflow
   }
@@ -532,9 +532,9 @@ C2H_TEST("DeviceHistogram::Histogram* regression NVIDIA/cub#479", "[histogram][d
 
 C2H_TEST("DeviceHistogram::Histogram* down-conversion size_t to int", "[histogram][device]")
 {
-  _CCCL_IF_CONSTEXPR (sizeof(size_t) != sizeof(int))
+  if constexpr (sizeof(size_t) != sizeof(int))
   {
-    using offset_t = cs::make_signed<size_t>::type;
+    using offset_t = cs::make_signed_t<size_t>;
     test_even_and_range<unsigned char, 4, 3, int>(256, 256 + 1, offset_t{1920}, offset_t{1080});
   }
 }

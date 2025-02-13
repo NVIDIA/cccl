@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++11
 // UNSUPPORTED: nvrtc
 // UNSUPPORTED: msvc && c++14
 // UNSUPPORTED: msvc && c++17

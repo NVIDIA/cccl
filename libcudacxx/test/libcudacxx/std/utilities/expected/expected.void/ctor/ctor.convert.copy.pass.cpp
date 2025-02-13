@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class U, class G>
 //   constexpr explicit(!is_convertible_v<const G&, E>) expected(const expected<U, G>& rhs);
 //

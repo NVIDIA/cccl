@@ -143,7 +143,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     REQUIRE(expected_result == out_result);
 
     // Run test in-place
-    _CCCL_IF_CONSTEXPR (std::is_same<input_t, output_t>::value)
+    if constexpr (std::is_same<input_t, output_t>::value)
     {
       device_inclusive_sum(d_in_it, d_in_it, num_items);
 
@@ -171,7 +171,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     REQUIRE(expected_result == out_result);
 
     // Run test in-place
-    _CCCL_IF_CONSTEXPR (std::is_same<input_t, output_t>::value)
+    if constexpr (std::is_same<input_t, output_t>::value)
     {
       device_exclusive_sum(d_in_it, d_in_it, num_items);
 
@@ -201,7 +201,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     REQUIRE(expected_result == out_result);
 
     // Run test in-place
-    _CCCL_IF_CONSTEXPR (std::is_same<input_t, output_t>::value)
+    if constexpr (std::is_same<input_t, output_t>::value)
     {
       device_inclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), op_t{}, num_items);
 
@@ -236,7 +236,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     REQUIRE(expected_result == out_result);
 
     // Run test in-place
-    _CCCL_IF_CONSTEXPR (std::is_same<input_t, output_t>::value)
+    if constexpr (std::is_same<input_t, output_t>::value)
     {
       device_inclusive_scan_with_init(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, init_value, num_items);
 
@@ -269,7 +269,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     REQUIRE(expected_result == out_result);
 
     // Run test in-place
-    _CCCL_IF_CONSTEXPR (std::is_same<input_t, output_t>::value)
+    if constexpr (std::is_same<input_t, output_t>::value)
     {
       device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, init_t{}, num_items);
 
@@ -307,7 +307,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     REQUIRE(expected_result == out_result);
 
     // Run test in-place
-    _CCCL_IF_CONSTEXPR (std::is_same<input_t, output_t>::value)
+    if constexpr (std::is_same<input_t, output_t>::value)
     {
       device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, future_init_value, num_items);
 

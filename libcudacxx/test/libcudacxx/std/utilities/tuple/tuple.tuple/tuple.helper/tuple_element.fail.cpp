@@ -16,8 +16,6 @@
 //     typedef Ti type;
 // };
 
-// UNSUPPORTED: c++98, c++03
-
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 

@@ -78,8 +78,6 @@ int main(int, char**)
 {
   ASSERT_NOEXCEPT(cuda::std::in_range<int>(-1));
   test();
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014
   return 0;
 }

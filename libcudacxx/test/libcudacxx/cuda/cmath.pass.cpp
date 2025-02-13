@@ -6,7 +6,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++03, c++11, c++14
 
 #include <cuda/cmath>
 #include <cuda/std/cassert>
@@ -129,8 +128,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int arg, char** argv)
 {
   test();
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014
   return 0;
 }

@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // constexpr const T& value() const &;
 // constexpr T& value() &;
 // constexpr T&& value() &&;

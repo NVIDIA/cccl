@@ -95,14 +95,14 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _Iter __rewrap_range(_Iter __orig_iter, _Unw
 }
 #else // ^^^ C++20 ^^^ / vvv C++17 vvv
 template <class _Iter, class _Unwrapped = decltype(_CUDA_VSTD::__unwrap_iter(_CUDA_VSTD::declval<_Iter>()))>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_Unwrapped, _Unwrapped> __unwrap_range(_Iter __first, _Iter __last)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_Unwrapped, _Unwrapped> __unwrap_range(_Iter __first, _Iter __last)
 {
   return _CUDA_VSTD::make_pair(
     _CUDA_VSTD::__unwrap_iter(_CUDA_VSTD::move(__first)), _CUDA_VSTD::__unwrap_iter(_CUDA_VSTD::move(__last)));
 }
 
 template <class _Iter, class _Unwrapped>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Iter __rewrap_range(_Iter __orig_iter, _Unwrapped __iter)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _Iter __rewrap_range(_Iter __orig_iter, _Unwrapped __iter)
 {
   return _CUDA_VSTD::__rewrap_iter(_CUDA_VSTD::move(__orig_iter), _CUDA_VSTD::move(__iter));
 }

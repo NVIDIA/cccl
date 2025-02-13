@@ -7,37 +7,48 @@
 Utilities for extracting information from protocols such as `__cuda_array_interface__` and `__cuda_stream__`.
 """
 
-from typing import Optional, Tuple
+from typing import Optional
 
 import numpy as np
 
 from ..typing import DeviceArrayLike
 
 
+def get_data_pointer(arr: DeviceArrayLike) -> int:
+    try:
+        # TODO: this is a fast path for CuPy until
+        # we have a more general solution.
+        return arr.data.ptr  # type: ignore
+    except AttributeError:
+        return arr.__cuda_array_interface__["data"][0]
+
+
 def get_dtype(arr: DeviceArrayLike) -> np.dtype:
-    typestr = arr.__cuda_array_interface__["typestr"]
+    try:
+        # TODO: this is a fast path for CuPy until
+        # we have a more general solution.
+        return np.dtype(arr.dtype)  # type: ignore
+    except Exception:
+        cai = arr.__cuda_array_interface__
+        typestr = cai["typestr"]
 
-    if typestr.startswith("|V"):
-        # it's a structured dtype, use the descr field:
-        return np.dtype(arr.__cuda_array_interface__["descr"])
-    else:
-        # a simple dtype, use the typestr field:
-        return np.dtype(typestr)
-
-
-def get_strides(arr: DeviceArrayLike) -> Optional[Tuple]:
-    return arr.__cuda_array_interface__["strides"]
-
-
-def get_shape(arr: DeviceArrayLike) -> Tuple:
-    return arr.__cuda_array_interface__["shape"]
+        if typestr.startswith("|V"):
+            # it's a structured dtype, use the descr field:
+            return np.dtype(cai["descr"])
+        else:
+            # a simple dtype, use the typestr field:
+            return np.dtype(typestr)
 
 
 def is_contiguous(arr: DeviceArrayLike) -> bool:
-    shape, strides = get_shape(arr), get_strides(arr)
+    cai = arr.__cuda_array_interface__
+
+    strides = cai["strides"]
 
     if strides is None:
         return True
+
+    shape = cai["shape"]
 
     if any(dim == 0 for dim in shape):
         # array has no elements

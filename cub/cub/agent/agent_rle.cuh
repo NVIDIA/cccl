@@ -238,7 +238,7 @@ struct AgentRle
   // Wrap the native input pointer with CacheModifiedVLengthnputIterator
   // Directly use the supplied input iterator type
   using WrappedInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer<InputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer_v<InputIteratorT>,
                      CacheModifiedInputIterator<AgentRlePolicyT::LOAD_MODIFIER, T, OffsetT>,
                      InputIteratorT>;
 

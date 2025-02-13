@@ -1,10 +1,3 @@
-#include <cuda/__cccl_config>
-
-#if _CCCL_COMPILER(NVHPC)
-// suppress warnings on thrust::identity
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-#endif // _CCCL_COMPILER(NVHPC)
-
 #include <thrust/copy.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/counting_iterator.h>
@@ -17,10 +10,6 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 #include <vector>
 
 #include <unittest/unittest.h>
-
-#if _CCCL_COMPILER(NVHPC)
-_CCCL_SUPPRESS_DEPRECATED_POP
-#endif // _CCCL_COMPILER(NVHPC)
 
 template <class Vector>
 void TestTransformIterator()
@@ -146,7 +135,6 @@ struct forward
 
 void TestTransformIteratorReferenceAndValueType()
 {
-  _CCCL_SUPPRESS_DEPRECATED_PUSH
   using ::cuda::std::is_same;
   using ::cuda::std::negate;
   {
@@ -170,11 +158,6 @@ void TestTransformIteratorReferenceAndValueType()
     static_assert(is_same<decltype(it_tr_fwd)::reference, bool&&>::value, "");
     static_assert(is_same<decltype(it_tr_fwd)::value_type, bool>::value, "");
     (void) it_tr_fwd;
-
-    auto it_tr_tid = thrust::make_transform_iterator(it, thrust::identity<bool>{});
-    static_assert(is_same<decltype(it_tr_tid)::reference, bool>::value, ""); // identity<bool>::value_type
-    static_assert(is_same<decltype(it_tr_tid)::value_type, bool>::value, "");
-    (void) it_tr_tid;
 
     auto it_tr_cid = thrust::make_transform_iterator(it, cuda::std::identity{});
     static_assert(is_same<decltype(it_tr_cid)::reference, bool>::value, ""); // special handling by
@@ -205,11 +188,6 @@ void TestTransformIteratorReferenceAndValueType()
     static_assert(is_same<decltype(it_tr_fwd)::value_type, bool>::value, "");
     (void) it_tr_fwd;
 
-    auto it_tr_tid = thrust::make_transform_iterator(it, thrust::identity<bool>{});
-    static_assert(is_same<decltype(it_tr_tid)::reference, bool>::value, ""); // identity<bool>::value_type
-    static_assert(is_same<decltype(it_tr_tid)::value_type, bool>::value, "");
-    (void) it_tr_tid;
-
     auto it_tr_cid = thrust::make_transform_iterator(it, cuda::std::identity{});
     static_assert(is_same<decltype(it_tr_cid)::reference, bool>::value, ""); // special handling by
                                                                              // transform_iterator_reference
@@ -239,37 +217,22 @@ void TestTransformIteratorReferenceAndValueType()
     static_assert(is_same<decltype(it_tr_fwd)::value_type, bool>::value, "");
     (void) it_tr_fwd;
 
-    auto it_tr_ide = thrust::make_transform_iterator(it, thrust::identity<bool>{});
-    static_assert(is_same<decltype(it_tr_ide)::reference, bool>::value, ""); // identity<bool>::value_type
-    static_assert(is_same<decltype(it_tr_ide)::value_type, bool>::value, "");
-    (void) it_tr_ide;
-
-    auto it_tr_tid = thrust::make_transform_iterator(it, thrust::identity<bool>{});
-    static_assert(is_same<decltype(it_tr_tid)::reference, bool>::value, ""); // identity<bool>::value_type
-    static_assert(is_same<decltype(it_tr_tid)::value_type, bool>::value, "");
-    (void) it_tr_tid;
-
     auto it_tr_cid = thrust::make_transform_iterator(it, cuda::std::identity{});
     static_assert(is_same<decltype(it_tr_cid)::reference, bool>::value, ""); // special handling by
                                                                              // transform_iterator_reference
     static_assert(is_same<decltype(it_tr_cid)::value_type, bool>::value, "");
     (void) it_tr_cid;
   }
-  _CCCL_SUPPRESS_DEPRECATED_POP
 }
 DECLARE_UNITTEST(TestTransformIteratorReferenceAndValueType);
 
 void TestTransformIteratorIdentity()
 {
-  _CCCL_SUPPRESS_DEPRECATED_PUSH
   thrust::device_vector<int> v(3, 42);
 
-  ASSERT_EQUAL(*thrust::make_transform_iterator(v.begin(), thrust::identity<int>{}), 42);
-  ASSERT_EQUAL(*thrust::make_transform_iterator(v.begin(), thrust::identity<>{}), 42);
   ASSERT_EQUAL(*thrust::make_transform_iterator(v.begin(), cuda::std::identity{}), 42);
   using namespace thrust::placeholders;
   ASSERT_EQUAL(*thrust::make_transform_iterator(v.begin(), _1), 42);
-  _CCCL_SUPPRESS_DEPRECATED_POP
 }
 
 DECLARE_UNITTEST(TestTransformIteratorIdentity);

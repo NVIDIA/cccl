@@ -28,7 +28,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Compare, class _InputIterator1, class _InputIterator2, class _OutputIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _OutputIterator __merge(
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator __merge(
   _InputIterator1 __first1,
   _InputIterator1 __last1,
   _InputIterator2 __first2,
@@ -57,24 +57,24 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _OutputIterator __merge(
 }
 
 template <class _InputIterator1, class _InputIterator2, class _OutputIterator, class _Compare>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _OutputIterator merge(
-  _InputIterator1 __first1,
-  _InputIterator1 __last1,
-  _InputIterator2 __first2,
-  _InputIterator2 __last2,
-  _OutputIterator __result,
-  _Compare __comp)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator
+merge(_InputIterator1 __first1,
+      _InputIterator1 __last1,
+      _InputIterator2 __first2,
+      _InputIterator2 __last2,
+      _OutputIterator __result,
+      _Compare __comp)
 {
   return _CUDA_VSTD::__merge<__comp_ref_type<_Compare>>(__first1, __last1, __first2, __last2, __result, __comp);
 }
 
 template <class _InputIterator1, class _InputIterator2, class _OutputIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _OutputIterator merge(
-  _InputIterator1 __first1,
-  _InputIterator1 __last1,
-  _InputIterator2 __first2,
-  _InputIterator2 __last2,
-  _OutputIterator __result)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator
+merge(_InputIterator1 __first1,
+      _InputIterator1 __last1,
+      _InputIterator2 __first2,
+      _InputIterator2 __last2,
+      _OutputIterator __result)
 {
   return _CUDA_VSTD::merge(__first1, __last1, __first2, __last2, __result, __less{});
 }

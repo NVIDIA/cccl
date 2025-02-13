@@ -57,7 +57,7 @@ struct policy_hub_t
     // Type used for the final result
     using output_tuple_t = cub::KeyValuePair<global_offset_t, T>;
 
-    auto const init = ::cuda::std::is_same<OpT, cub::ArgMin>::value ? cub::Traits<T>::Max() : cub::Traits<T>::Lowest();
+    auto const init = ::cuda::std::is_same_v<OpT, cub::ArgMin> ? cub::Traits<T>::Max() : cub::Traits<T>::Lowest();
 
 #if !TUNE_BASE
     using policy_t   = policy_hub_t<output_tuple_t, per_partition_offset_t>;

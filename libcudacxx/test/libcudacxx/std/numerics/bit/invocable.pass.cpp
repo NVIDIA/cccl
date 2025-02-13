@@ -5,7 +5,6 @@
 // Source Licenses. See LICENSE.TXT for details.
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03
 
 // Test the ability of each <bit> function to be invoked
 

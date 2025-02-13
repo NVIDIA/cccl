@@ -222,7 +222,7 @@ struct AgentHistogram
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
   using WrappedSampleIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer<SampleIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer_v<SampleIteratorT>,
                      CacheModifiedInputIterator<LOAD_MODIFIER, SampleT, OffsetT>,
                      SampleIteratorT>;
 

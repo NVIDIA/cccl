@@ -31,7 +31,6 @@ struct S
   S();
 }; // not constexpr
 
-#  if TEST_STD_VER > 2014
 template <typename T, bool isTrivial = cuda::std::is_trivially_default_constructible_v<T>>
 struct test_trivial
 {
@@ -47,7 +46,6 @@ struct test_trivial<T, false>
 {
   void operator()() const {}
 };
-#  endif
 
 int main(int, char**)
 {
@@ -59,13 +57,11 @@ int main(int, char**)
     (void) it2;
   }
 
-#  if TEST_STD_VER > 2014
   test_trivial<int>()();
   test_trivial<char>()();
   test_trivial<double>()();
   test_trivial<S>()();
   test_trivial<cuda::std::string>()();
-#  endif
 
   return 0;
 }

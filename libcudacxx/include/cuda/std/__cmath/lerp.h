@@ -29,7 +29,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <typename _Fp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Fp __lerp(_Fp __a, _Fp __b, _Fp __t) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Fp __lerp(_Fp __a, _Fp __b, _Fp __t) noexcept
 {
   if ((__a <= 0 && __b >= 0) || (__a >= 0 && __b <= 0))
   {
@@ -51,18 +51,18 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Fp __lerp(_Fp _
   }
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 float lerp(float __a, float __b, float __t) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr float lerp(float __a, float __b, float __t) noexcept
 {
   return _CUDA_VSTD::__lerp(__a, __b, __t);
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 double lerp(double __a, double __b, double __t) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr double lerp(double __a, double __b, double __t) noexcept
 {
   return _CUDA_VSTD::__lerp(__a, __b, __t);
 }
 
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 long double
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr long double
 lerp(long double __a, long double __b, long double __t) noexcept
 {
   return _CUDA_VSTD::__lerp(__a, __b, __t);
@@ -85,9 +85,9 @@ lerp(__nv_bfloat16 __a, __nv_bfloat16 __b, __nv_bfloat16 __t) noexcept
 #endif // _LIBCUDACXX_HAS_NVBF16
 
 template <class _A1, class _A2, class _A3>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14
-enable_if_t<_CCCL_TRAIT(is_arithmetic, _A1) && _CCCL_TRAIT(is_arithmetic, _A2) && _CCCL_TRAIT(is_arithmetic, _A3),
-            __promote_t<_A1, _A2, _A3>>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
+  _CCCL_TRAIT(is_arithmetic, _A1) && _CCCL_TRAIT(is_arithmetic, _A2) && _CCCL_TRAIT(is_arithmetic, _A3),
+  __promote_t<_A1, _A2, _A3>>
 lerp(_A1 __a, _A2 __b, _A3 __t) noexcept
 {
   using __result_type = __promote_t<_A1, _A2, _A3>;

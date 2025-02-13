@@ -7,6 +7,5 @@ Users are encouraged to use the standard C++ function objects available from `<c
 Thrust provides the following additional function objects:
 
   - :cpp:struct:`thrust::square <thrust::square>`
-  - :cpp:struct:`thrust::identity <thrust::identity>`
   - :cpp:struct:`thrust::project1st <thrust::project1st>`
   - :cpp:struct:`thrust::project2nd <thrust::project2nd>`

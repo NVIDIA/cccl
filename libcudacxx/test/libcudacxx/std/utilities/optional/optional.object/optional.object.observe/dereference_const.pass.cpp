@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // <cuda/std/optional>
 
 // constexpr const T& optional<T>::operator*() const &;

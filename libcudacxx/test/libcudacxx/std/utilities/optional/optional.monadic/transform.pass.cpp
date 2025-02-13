@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // <cuda/std/optional>
 
 // template<class F> constexpr auto transform(F&&) &;
@@ -110,7 +108,6 @@ struct RVCRefQual
   }
 };
 
-#if TEST_STD_VER >= 2017
 struct NoCopy
 {
   NoCopy() = default;
@@ -133,7 +130,6 @@ struct NoMove
     return NoMove{};
   }
 };
-#endif
 
 __host__ __device__ constexpr void test_val_types()
 {
@@ -254,8 +250,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX17 bool test()
   copt.transform(never_called);
   cuda::std::move(copt).transform(never_called);
 
-  // the code below depends on guaranteed copy/move elision
-#if TEST_STD_VER >= 2017 && (!defined(TEST_COMPILER_MSVC) || TEST_STD_VER >= 2020)
+// the code below depends on guaranteed copy/move elision
+#if (!defined(TEST_COMPILER_MSVC) || TEST_STD_VER >= 2020)
   cuda::std::optional<NoCopy> nc;
   const auto& cnc = nc;
   cuda::std::move(nc).transform(NoCopy{});

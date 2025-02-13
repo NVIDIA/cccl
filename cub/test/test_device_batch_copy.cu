@@ -55,10 +55,10 @@ template <typename T>
 void GenerateRandomData(
   T* rand_out,
   const std::size_t num_items,
-  const T min_rand_val                                                           = std::numeric_limits<T>::min(),
-  const T max_rand_val                                                           = std::numeric_limits<T>::max(),
-  const std::uint_fast32_t seed                                                  = 320981U,
-  typename std::enable_if<std::is_integral<T>::value && (sizeof(T) >= 2)>::type* = nullptr)
+  const T min_rand_val                                         = std::numeric_limits<T>::min(),
+  const T max_rand_val                                         = std::numeric_limits<T>::max(),
+  const std::uint_fast32_t seed                                = 320981U,
+  std::enable_if_t<std::is_integral_v<T> && (sizeof(T) >= 2)>* = nullptr)
 {
   // initialize random number generator
   std::mt19937 rng(seed);
@@ -114,15 +114,15 @@ GetShuffledRangeOffsets(const c2h::host_vector<RangeSizeT>& range_sizes, const s
 }
 
 template <size_t n, typename... T>
-typename std::enable_if<n >= thrust::tuple_size<thrust::tuple<T...>>::value>::type
+std::enable_if_t<n >= thrust::tuple_size<thrust::tuple<T...>>::value>
 print_tuple(std::ostream&, const thrust::tuple<T...>&)
 {}
 
 template <size_t n, typename... T>
-typename std::enable_if<n + 1 <= thrust::tuple_size<thrust::tuple<T...>>::value>::type
+std::enable_if_t<n + 1 <= thrust::tuple_size<thrust::tuple<T...>>::value>
 print_tuple(std::ostream& os, const thrust::tuple<T...>& tup)
 {
-  _CCCL_IF_CONSTEXPR (n != 0)
+  if constexpr (n != 0)
   {
     os << ", ";
   }

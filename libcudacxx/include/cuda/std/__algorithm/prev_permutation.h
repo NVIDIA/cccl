@@ -31,7 +31,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _AlgPolicy, class _Compare, class _BidirectionalIterator, class _Sentinel>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_BidirectionalIterator, bool>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_BidirectionalIterator, bool>
 __prev_permutation(_BidirectionalIterator __first, _Sentinel __last, _Compare&& __comp)
 {
   using _Result = pair<_BidirectionalIterator, bool>;
@@ -64,7 +64,7 @@ __prev_permutation(_BidirectionalIterator __first, _Sentinel __last, _Compare&& 
 }
 
 template <class _BidirectionalIterator, class _Compare>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
 prev_permutation(_BidirectionalIterator __first, _BidirectionalIterator __last, _Compare __comp)
 {
   return _CUDA_VSTD::__prev_permutation<_ClassicAlgPolicy>(
@@ -73,8 +73,7 @@ prev_permutation(_BidirectionalIterator __first, _BidirectionalIterator __last, 
 }
 
 template <class _BidirectionalIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
-prev_permutation(_BidirectionalIterator __first, _BidirectionalIterator __last)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool prev_permutation(_BidirectionalIterator __first, _BidirectionalIterator __last)
 {
   return _CUDA_VSTD::prev_permutation(__first, __last, __less{});
 }

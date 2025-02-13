@@ -6,8 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11, c++14
-
 // <cuda/std/tuple>
 
 // template <class T> constexpr size_t tuple_size_v = tuple_size<T>::value;

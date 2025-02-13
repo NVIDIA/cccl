@@ -71,7 +71,11 @@ def gpu_struct(this: type) -> Type[GpuStruct]:
             [tuple(getattr(self, name) for name in anns)], dtype=self.dtype
         )
 
+    def __array_interface__(self):
+        return self._data.__array_interface__
+
     setattr(this, "__post_init__", __post_init__)
+    setattr(this, "__array_interface__", property(__array_interface__))
 
     # Wrap `this` in a dataclass for convenience:
     this = dataclass(this)

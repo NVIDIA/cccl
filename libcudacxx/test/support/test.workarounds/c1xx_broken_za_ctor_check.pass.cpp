@@ -6,8 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03
-
 // Verify TEST_WORKAROUND_C1XX_BROKEN_ZA_CTOR_CHECK.
 
 #include <cuda/std/type_traits>

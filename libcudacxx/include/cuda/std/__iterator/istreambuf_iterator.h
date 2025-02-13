@@ -31,9 +31,9 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _CharT, class _Traits>
 class _CCCL_TYPE_VISIBILITY_DEFAULT istreambuf_iterator
-#if _CCCL_STD_VER <= 2014 || !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
+#if !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
     : public iterator<input_iterator_tag, _CharT, typename _Traits::off_type, _CharT*, _CharT>
-#endif
+#endif // !_LIBCUDACXX_ABI_NO_ITERATOR_BASES
 {
   _CCCL_SUPPRESS_DEPRECATED_POP
 
@@ -116,12 +116,11 @@ public:
     return __test_for_eof() == __b.__test_for_eof();
   }
 
-#if _CCCL_STD_VER > 2014
   friend _LIBCUDACXX_HIDE_FROM_ABI bool operator==(const istreambuf_iterator& __i, default_sentinel_t)
   {
     return __i.__test_for_eof();
   }
-#  if _CCCL_STD_VER < 2020
+#if _CCCL_STD_VER < 2020
   friend _LIBCUDACXX_HIDE_FROM_ABI bool operator==(default_sentinel_t, const istreambuf_iterator& __i)
   {
     return __i.__test_for_eof();
@@ -134,8 +133,7 @@ public:
   {
     return !__i.__test_for_eof();
   }
-#  endif // _CCCL_STD_VER < 2020
-#endif // _CCCL_STD_VER > 2014
+#endif // _CCCL_STD_VER < 2020
 };
 
 template <class _CharT, class _Traits>

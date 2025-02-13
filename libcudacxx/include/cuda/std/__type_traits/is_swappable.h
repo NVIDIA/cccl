@@ -105,12 +105,12 @@ using __swap_result_t _CCCL_NODEBUG_ALIAS =
 // overload resolution (which is ok since std::swap is only considered when explicitly called, or found by ADL for types
 // from std::)
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __swap_result_t<_Tp> swap(_Tp& __x, type_identity_t<_Tp>& __y) noexcept(
+_LIBCUDACXX_HIDE_FROM_ABI constexpr __swap_result_t<_Tp> swap(_Tp& __x, type_identity_t<_Tp>& __y) noexcept(
   _CCCL_TRAIT(is_nothrow_move_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_move_assignable, _Tp));
 
 template <class _Tp, size_t _Np>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14
-enable_if_t<__detect_adl_swap::__has_no_adl_swap_array<_Tp, _Np>::value && __is_swappable<_Tp>::value>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__detect_adl_swap::__has_no_adl_swap_array<_Tp, _Np>::value
+                                                && __is_swappable<_Tp>::value>
   swap(_Tp (&__a)[_Np], _Tp (&__b)[_Np]) noexcept(__is_nothrow_swappable<_Tp>::value);
 
 namespace __detail

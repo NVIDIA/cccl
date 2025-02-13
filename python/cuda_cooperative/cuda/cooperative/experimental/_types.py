@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import re
+from textwrap import dedent
+from types import FunctionType as PyFunctionType
 
 import jinja2
 import numba
@@ -12,8 +14,8 @@ from numba.core import cgutils
 from numba.core.extending import intrinsic, overload
 from numba.core.typing import signature
 
+import cuda.cooperative.experimental._nvrtc as nvrtc
 from cuda.cooperative.experimental._common import find_unsigned
-from cuda.cooperative.experimental._nvrtc import compile
 
 NUMBA_TYPES_TO_CPP = {
     types.boolean: "bool",
@@ -473,38 +475,14 @@ def mangle_symbol(name, template_parameters):
 
 
 def war_introspection(fn, n):
-    if n == 1:
-
-        def impl(param0):
-            return fn(param0)
-
-        return impl
-    elif n == 2:
-
-        def impl(param0, param1):
-            return fn(param0, param1)
-
-        return impl
-    elif n == 3:
-
-        def impl(param0, param1, param2):
-            return fn(param0, param1, param2)
-
-        return impl
-    elif n == 4:
-
-        def impl(param0, param1, param2, param3):
-            return fn(param0, param1, param2, param3)
-
-        return impl
-    elif n == 5:
-
-        def impl(param0, param1, param2, param3, param4):
-            return fn(param0, param1, param2, param3, param4)
-
-        return impl
-    else:
-        raise ValueError("Unsupported number of arguments")
+    arglist = ", ".join(f"param{i}" for i in range(n))
+    mod_str = dedent(f"""
+    def impl({arglist}):
+        return fn({arglist})
+    """)
+    mod_code = compile(mod_str, "<string>", "exec")
+    func_code = mod_code.co_consts[0]
+    return PyFunctionType(func_code, locals())
 
 
 class Algorithm:
@@ -607,7 +585,7 @@ class Algorithm:
         device = cuda.get_current_device()
         cc_major, cc_minor = device.compute_capability
         cc = cc_major * 10 + cc_minor
-        _, ptx = compile(cpp=src, cc=cc, rdc=True, code="ptx")
+        _, ptx = nvrtc.compile(cpp=src, cc=cc, rdc=True, code="ptx")
         return find_unsigned("temp_storage_bytes", ptx)
 
     def get_lto_ir(self, threads=None):
@@ -745,7 +723,7 @@ class Algorithm:
         device = cuda.get_current_device()
         cc_major, cc_minor = device.compute_capability
         cc = cc_major * 10 + cc_minor
-        _, lto_fn = compile(cpp=src, cc=cc, rdc=True, code="lto")
+        _, lto_fn = nvrtc.compile(cpp=src, cc=cc, rdc=True, code="lto")
         lto_irs.append(lto_fn)
         return lto_irs
 

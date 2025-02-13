@@ -7,10 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
-// UNSUPPORTED: gcc-6
-// UNSUPPORTED: nvcc-11.1
-
 // functional
 
 // template <class F, class... Args>

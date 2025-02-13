@@ -275,8 +275,8 @@ Due to  this limitation, we can't specialize on the PTX version.
 
     template <class U = T>
     __device__ __forceinline__
-      typename std::enable_if<std::is_same<int, U>::value ||
-                              std::is_same<unsigned int, U>::value,
+      typename std::enable_if<std::is_same_v<int, U> ||
+                              std::is_same_v<unsigned int, U>,
                               T>::type
         ReduceImpl(T input,
                   int,               // valid_items

@@ -11,8 +11,6 @@
 
 // template <size_t I, class MoveOnly, size_t N> const MoveOnly&& get(const array<MoveOnly, N>&& a);
 
-// UNSUPPORTED: c++03
-
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
@@ -48,7 +46,6 @@ int main(int, char**)
     assert(t.val_ == 3.5);
   }
 
-#if TEST_STD_VER >= 2014
   {
     typedef double MoveOnly;
     typedef cuda::std::array<MoveOnly, 3> C;
@@ -57,7 +54,6 @@ int main(int, char**)
     static_assert(cuda::std::get<1>(cuda::std::move(c)) == 2, "");
     static_assert(cuda::std::get<2>(cuda::std::move(c)) == 3.5, "");
   }
-#endif
 
   return 0;
 }

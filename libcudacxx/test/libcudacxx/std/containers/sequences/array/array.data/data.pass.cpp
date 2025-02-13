@@ -72,9 +72,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
 int main(int, char**)
 {
   tests();
-#if TEST_STD_VER >= 2014
   static_assert(tests(), "");
-#endif
 
   // Test the alignment of data()
   {

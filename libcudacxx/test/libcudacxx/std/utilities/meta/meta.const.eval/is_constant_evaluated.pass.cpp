@@ -6,8 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03
-
 // <cuda/std/type_traits>
 
 // constexpr bool is_constant_evaluated() noexcept; // C++20

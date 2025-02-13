@@ -6,7 +6,6 @@
 // Source Licenses. See LICENSE.TXT for details.
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03
 
 // template <class T>
 //   constexpr bool has_single_bit(T x) noexcept;

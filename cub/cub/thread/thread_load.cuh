@@ -355,7 +355,7 @@ template <typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE T
 ThreadLoad(const T* ptr, detail::constant_t<LOAD_VOLATILE> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
 {
-  return ThreadLoadVolatilePointer(ptr, detail::bool_constant_v<detail::is_primitive<T>::value>);
+  return ThreadLoadVolatilePointer(ptr, detail::bool_constant_v<detail::is_primitive_v<T>>);
 }
 
 /**

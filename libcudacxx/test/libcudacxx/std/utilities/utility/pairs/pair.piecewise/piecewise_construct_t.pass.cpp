@@ -6,8 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03
-
 // <utility>
 
 // struct piecewise_construct_t { explicit piecewise_construct_t() = default; };

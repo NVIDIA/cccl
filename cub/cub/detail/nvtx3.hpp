@@ -653,8 +653,8 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
   {};
   template <typename T>
   struct is_c_string<T,
-                     typename std::enable_if<std::is_convertible<T, char const*>::value
-                                             || std::is_convertible<T, wchar_t const*>::value>::type> : std::true_type
+                     std::enable_if_t<std::is_convertible_v<T, char const*> || std::is_convertible_v<T, wchar_t const*>>>
+      : std::true_type
   {};
 
   template <typename T>
@@ -782,7 +782,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      * name the `domain` object.
      * @return Reference to the `domain` corresponding to the type `D`.
      */
-    template <typename D = global, typename std::enable_if<detail::is_c_string<decltype(D::name)>::value, int>::type = 0>
+    template <typename D = global, std::enable_if_t<detail::is_c_string<decltype(D::name)>::value, int> = 0>
     static domain const& get() noexcept
     {
       static domain const d(D::name);
@@ -794,8 +794,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      * `D` has a `name` member that is not directly convertible to either
      * `char const*` or `wchar_t const*`.
      */
-    template <typename D                                                                         = global,
-              typename std::enable_if<!detail::is_c_string<decltype(D::name)>::value, int>::type = 0>
+    template <typename D = global, std::enable_if_t<!detail::is_c_string<decltype(D::name)>::value, int> = 0>
     static domain const& get() noexcept
     {
       NVTX3_STATIC_ASSERT(detail::always_false<D>::value,
@@ -810,7 +809,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      * @brief Overload of `domain::get` to provide a clear compile error when
      * `D` does not have a `name` member.
      */
-    template <typename D = global, typename std::enable_if<!detail::has_name<D>::value, int>::type = 0>
+    template <typename D = global, std::enable_if_t<!detail::has_name<D>::value, int> = 0>
     static domain const& get() noexcept
     {
       NVTX3_STATIC_ASSERT(detail::always_false<D>::value,
@@ -1245,8 +1244,8 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      */
     template <
       typename C,
-      typename std::enable_if<detail::is_c_string<decltype(C::name)>::value && detail::is_uint32<decltype(C::id)>::value,
-                              int>::type = 0>
+      std::enable_if_t<detail::is_c_string<decltype(C::name)>::value && detail::is_uint32<decltype(C::id)>::value, int> =
+        0>
     static named_category_in const& get() noexcept
     {
       static named_category_in const cat(C::id, C::name);
@@ -1259,10 +1258,10 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      * required types.  `name` must be directly convertible to `char const*` or
      * `wchar_t const*`, and `id` must be `uint32_t`.
      */
-    template <typename C,
-              typename std::enable_if<!detail::is_c_string<decltype(C::name)>::value
-                                        || !detail::is_uint32<decltype(C::id)>::value,
-                                      int>::type = 0>
+    template <
+      typename C,
+      std::enable_if_t<!detail::is_c_string<decltype(C::name)>::value || !detail::is_uint32<decltype(C::id)>::value,
+                       int> = 0>
     static named_category_in const& get() noexcept
     {
       NVTX3_STATIC_ASSERT(detail::is_c_string<decltype(C::name)>::value,
@@ -1280,8 +1279,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      * @brief Overload of `named_category_in::get` to provide a clear compile error
      * when `C` does not have the required `name` and `id` members.
      */
-    template <typename C,
-              typename std::enable_if<!detail::has_name<C>::value || !detail::has_id<C>::value, int>::type = 0>
+    template <typename C, std::enable_if_t<!detail::has_name<C>::value || !detail::has_id<C>::value, int> = 0>
     static named_category_in const& get() noexcept
     {
       NVTX3_STATIC_ASSERT(detail::has_name<C>::value,
@@ -1442,7 +1440,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      * registered string's contents.
      * @return Reference to a `registered_string_in` associated with the type `M`.
      */
-    template <typename M, typename std::enable_if<detail::is_c_string<decltype(M::message)>::value, int>::type = 0>
+    template <typename M, std::enable_if_t<detail::is_c_string<decltype(M::message)>::value, int> = 0>
     static registered_string_in const& get() noexcept
     {
       static registered_string_in const regstr(M::message);
@@ -1454,7 +1452,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      * when `M` has a `message` member that is not directly convertible to either
      * `char const*` or `wchar_t const*`.
      */
-    template <typename M, typename std::enable_if<!detail::is_c_string<decltype(M::message)>::value, int>::type = 0>
+    template <typename M, std::enable_if_t<!detail::is_c_string<decltype(M::message)>::value, int> = 0>
     static registered_string_in const& get() noexcept
     {
       NVTX3_STATIC_ASSERT(detail::always_false<M>::value,
@@ -1469,7 +1467,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      * @brief Overload of `registered_string_in::get` to provide a clear compile error when
      * `M` does not have a `message` member.
      */
-    template <typename M, typename std::enable_if<!detail::has_message<M>::value, int>::type = 0>
+    template <typename M, std::enable_if_t<!detail::has_message<M>::value, int> = 0>
     static registered_string_in const& get() noexcept
     {
       NVTX3_STATIC_ASSERT(detail::always_false<M>::value,
