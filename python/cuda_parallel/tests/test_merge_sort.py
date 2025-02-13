@@ -328,10 +328,10 @@ def test_merge_sort_pairs_copy_iterator_input(dtype):
         d_out_items = numba.cuda.to_device(h_out_items)
 
         i_input_keys = iterators.CacheModifiedInputIterator(
-            d_in_keys, modifier="stream"
+            d_in_keys, modifier="stream", prefix="keys"
         )
         i_input_items = iterators.CacheModifiedInputIterator(
-            d_in_items, modifier="stream"
+            d_in_items, modifier="stream", prefix="items"
         )
 
         merge_sort_device(

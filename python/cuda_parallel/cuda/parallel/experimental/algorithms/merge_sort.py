@@ -33,6 +33,9 @@ class _MergeSort:
     ):
         assert (d_in_items is None) == (d_out_items is None)
 
+        # Referenced from __del__:
+        self.build_result = None
+
         d_in_keys_cccl = cccl.to_cccl_iter(d_in_keys)
         d_in_items_cccl = cccl.to_cccl_iter(d_in_items)
         d_out_keys_cccl = (
