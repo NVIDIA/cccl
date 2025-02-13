@@ -58,17 +58,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Conditionally enable constexpr per standard dialect
 ///////////////////////////////////////////////////////////////////////////////
-#if _CCCL_STD_VER >= 2014
-#  define _CCCL_CONSTEXPR_CXX14 constexpr
-#else // ^^^ C++14 ^^^ / vvv C++11 vvv
-#  define _CCCL_CONSTEXPR_CXX14
-#endif // _CCCL_STD_VER <= 2011
-
-#if _CCCL_STD_VER >= 2017
-#  define _CCCL_CONSTEXPR_CXX17 constexpr
-#else // ^^^ C++17 ^^^ / vvv C++14 vvv
-#  define _CCCL_CONSTEXPR_CXX17
-#endif // _CCCL_STD_VER <= 2014
 
 #if _CCCL_STD_VER >= 2020
 #  define _CCCL_CONSTEXPR_CXX20 constexpr

@@ -33,7 +33,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIter>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 typename iterator_traits<_InputIter>::difference_type
+_LIBCUDACXX_HIDE_FROM_ABI constexpr typename iterator_traits<_InputIter>::difference_type
 __distance(_InputIter __first, _InputIter __last, input_iterator_tag)
 {
   typename iterator_traits<_InputIter>::difference_type __r(0);
@@ -45,14 +45,14 @@ __distance(_InputIter __first, _InputIter __last, input_iterator_tag)
 }
 
 template <class _RandIter>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 typename iterator_traits<_RandIter>::difference_type
+_LIBCUDACXX_HIDE_FROM_ABI constexpr typename iterator_traits<_RandIter>::difference_type
 __distance(_RandIter __first, _RandIter __last, random_access_iterator_tag)
 {
   return __last - __first;
 }
 
 template <class _InputIter>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 typename iterator_traits<_InputIter>::difference_type
+_LIBCUDACXX_HIDE_FROM_ABI constexpr typename iterator_traits<_InputIter>::difference_type
 distance(_InputIter __first, _InputIter __last)
 {
   return _CUDA_VSTD::__distance(__first, __last, typename iterator_traits<_InputIter>::iterator_category());

@@ -33,7 +33,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterator2>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_ForwardIterator1, _ForwardIterator1> __search(
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_ForwardIterator1, _ForwardIterator1> __search(
   _ForwardIterator1 __first1,
   _ForwardIterator1 __last1,
   _ForwardIterator2 __first2,
@@ -84,14 +84,14 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_ForwardIte
 }
 
 template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAccessIterator2>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_RandomAccessIterator1, _RandomAccessIterator1>
-__search(_RandomAccessIterator1 __first1,
-         _RandomAccessIterator1 __last1,
-         _RandomAccessIterator2 __first2,
-         _RandomAccessIterator2 __last2,
-         _BinaryPredicate __pred,
-         random_access_iterator_tag,
-         random_access_iterator_tag)
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_RandomAccessIterator1, _RandomAccessIterator1> __search(
+  _RandomAccessIterator1 __first1,
+  _RandomAccessIterator1 __last1,
+  _RandomAccessIterator2 __first2,
+  _RandomAccessIterator2 __last2,
+  _BinaryPredicate __pred,
+  random_access_iterator_tag,
+  random_access_iterator_tag)
 {
   using _Diff1 = typename iterator_traits<_RandomAccessIterator1>::difference_type;
   using _Diff2 = typename iterator_traits<_RandomAccessIterator2>::difference_type;
@@ -142,12 +142,12 @@ __search(_RandomAccessIterator1 __first1,
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredicate>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator1 search(
-  _ForwardIterator1 __first1,
-  _ForwardIterator1 __last1,
-  _ForwardIterator2 __first2,
-  _ForwardIterator2 __last2,
-  _BinaryPredicate __pred)
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator1
+search(_ForwardIterator1 __first1,
+       _ForwardIterator1 __last1,
+       _ForwardIterator2 __first2,
+       _ForwardIterator2 __last2,
+       _BinaryPredicate __pred)
 {
   return _CUDA_VSTD::__search<add_lvalue_reference_t<_BinaryPredicate>>(
            __first1,
@@ -161,14 +161,14 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator1
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator1
 search(_ForwardIterator1 __first1, _ForwardIterator1 __last1, _ForwardIterator2 __first2, _ForwardIterator2 __last2)
 {
   return _CUDA_VSTD::search(__first1, __last1, __first2, __last2, __equal_to{});
 }
 
 template <class _ForwardIterator, class _Searcher>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
 search(_ForwardIterator __f, _ForwardIterator __l, const _Searcher& __s)
 {
   return __s(__f, __l).first;
