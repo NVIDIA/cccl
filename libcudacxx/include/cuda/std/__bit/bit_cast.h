@@ -21,10 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__fwd/array.h>
+#include <cuda/std/__tuple_dir/sfinae_helpers.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_extended_floating_point.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__type_traits/is_trivially_default_constructible.h>
+#include <cuda/std/__type_traits/remove_extent.h>
 #include <cuda/std/detail/libcxx/include/cstring>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -40,12 +43,23 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wclass-memaccess")
 #  endif // _CCCL_COMPILER(GCC, >=, 8)
 #endif // !_CCCL_BUILTIN_BIT_CAST
 
-template <
-  class _To,
-  class _From,
-  enable_if_t<(sizeof(_To) == sizeof(_From)), int>                                                                = 0,
-  enable_if_t<_CCCL_TRAIT(is_trivially_copyable, _To) || _CCCL_TRAIT(__is_extended_floating_point, _To), int>     = 0,
-  enable_if_t<_CCCL_TRAIT(is_trivially_copyable, _From) || _CCCL_TRAIT(__is_extended_floating_point, _From), int> = 0>
+// Also allow arrays / tuples
+template <class _Tp>
+struct __is_bit_castable
+{
+  static constexpr bool value =
+    _CCCL_TRAIT(is_trivially_copyable, _Tp) || _CCCL_TRAIT(__is_extended_floating_point, _Tp);
+};
+
+#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
+template <class _Tp>
+_CCCL_INLINE_VAR constexpr bool __is_bit_castable_v =
+  _CCCL_TRAIT(is_trivially_copyable, _Tp) || _CCCL_TRAIT(__is_extended_floating_point, _Tp);
+#endif // !_CCCL_NO_VARIABLE_TEMPLATES
+
+_CCCL_TEMPLATE(class _To, class _From)
+_CCCL_REQUIRES((sizeof(_To) == sizeof(_From)) //
+               _CCCL_AND _CCCL_TRAIT(__is_bit_castable, _To) _CCCL_AND _CCCL_TRAIT(__is_bit_castable, _From))
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST _To bit_cast(const _From& __from) noexcept
 {
 #if defined(_CCCL_BUILTIN_BIT_CAST)
