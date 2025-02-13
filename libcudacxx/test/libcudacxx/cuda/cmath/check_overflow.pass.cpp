@@ -105,7 +105,6 @@ __host__ __device__ constexpr void test_mul()
   using CommonType     = cuda::std::common_type_t<T, U>;
   constexpr auto max_a = cuda::std::numeric_limits<T>::max();
   constexpr auto max_b = cuda::std::numeric_limits<U>::max();
-  constexpr auto max_c = cuda::std::numeric_limits<CommonType>::max();
   constexpr auto min_a = cuda::std::numeric_limits<T>::min();
   constexpr auto min_b = cuda::std::numeric_limits<U>::min();
   constexpr auto min_c = cuda::std::numeric_limits<CommonType>::min();
@@ -140,6 +139,11 @@ __host__ __device__ constexpr void test_mul()
       assert(cuda::is_mul_overflow(T{-1}, max_b));
     }
   }
+  unused(max_a);
+  unused(max_b);
+  unused(min_a);
+  unused(min_b);
+  unused(min_c);
 }
 
 template <class T, class U>
