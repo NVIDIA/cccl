@@ -137,8 +137,7 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Ap) _CCCL_AND _CCCL_TRAIT(_
   {
     return true;
   }
-  if constexpr ((sizeof(_Common) > sizeof(_Ap) && sizeof(_Common) > sizeof(_Bp))
-                || _CUDA_VSTD::is_unsigned_v<_Ap> || _CUDA_VSTD::is_unsigned_v<_Bp>)
+  if constexpr (sizeof(_Common) > sizeof(_Ap) || _CUDA_VSTD::is_unsigned_v<_Ap> || _CUDA_VSTD::is_unsigned_v<_Bp>)
   {
     return false;
   }
