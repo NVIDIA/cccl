@@ -28,35 +28,35 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void check(T* p)
   ASSERT_SAME_TYPE(T*, decltype(cuda::std::assume_aligned<1>(p)));
   constexpr cuda::std::size_t alignment = alignof(T);
 
-  _CCCL_IF_CONSTEXPR (alignment >= 1)
+  if constexpr (alignment >= 1)
   {
     assert(p == cuda::std::assume_aligned<1>(p));
   }
-  _CCCL_IF_CONSTEXPR (alignment >= 2)
+  if constexpr (alignment >= 2)
   {
     assert(p == cuda::std::assume_aligned<2>(p));
   }
-  _CCCL_IF_CONSTEXPR (alignment >= 4)
+  if constexpr (alignment >= 4)
   {
     assert(p == cuda::std::assume_aligned<4>(p));
   }
-  _CCCL_IF_CONSTEXPR (alignment >= 8)
+  if constexpr (alignment >= 8)
   {
     assert(p == cuda::std::assume_aligned<8>(p));
   }
-  _CCCL_IF_CONSTEXPR (alignment >= 16)
+  if constexpr (alignment >= 16)
   {
     assert(p == cuda::std::assume_aligned<16>(p));
   }
-  _CCCL_IF_CONSTEXPR (alignment >= 32)
+  if constexpr (alignment >= 32)
   {
     assert(p == cuda::std::assume_aligned<32>(p));
   }
-  _CCCL_IF_CONSTEXPR (alignment >= 64)
+  if constexpr (alignment >= 64)
   {
     assert(p == cuda::std::assume_aligned<64>(p));
   }
-  _CCCL_IF_CONSTEXPR (alignment >= 128)
+  if constexpr (alignment >= 128)
   {
     assert(p == cuda::std::assume_aligned<128>(p));
   }
