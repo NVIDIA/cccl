@@ -335,7 +335,7 @@ uninitialized_move_n(_InputIterator __ifirst, _Size __n, _ForwardIterator __ofir
 // This function assumes that destructors do not throw, and that the allocator is bound to
 // the correct type.
 template <class _Alloc, class _BidirIter, enable_if_t<__is_cpp17_bidirectional_iterator<_BidirIter>::value, int> = 0>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
+_LIBCUDACXX_HIDE_FROM_ABI constexpr void
 __allocator_destroy_multidimensional(_Alloc& __alloc, _BidirIter __first, _BidirIter __last) noexcept
 {
   using _ValueType = typename iterator_traits<_BidirIter>::value_type;
@@ -379,8 +379,7 @@ __allocator_destroy_multidimensional(_Alloc& __alloc, _BidirIter __first, _Bidir
 //
 // This function assumes that the allocator is bound to the correct type.
 template <class _Alloc, class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
-__allocator_construct_at_multidimensional(_Alloc& __alloc, _Tp* __loc)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr void __allocator_construct_at_multidimensional(_Alloc& __alloc, _Tp* __loc)
 {
   static_assert(_CCCL_TRAIT(is_same, typename allocator_traits<_Alloc>::value_type, _Tp),
                 "The allocator should already be rebound to the correct type");
@@ -420,7 +419,7 @@ __allocator_construct_at_multidimensional(_Alloc& __alloc, _Tp* __loc)
 //
 // This function assumes that the allocator is bound to the correct type.
 template <class _Alloc, class _Tp, class _Arg>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
+_LIBCUDACXX_HIDE_FROM_ABI constexpr void
 __allocator_construct_at_multidimensional(_Alloc& __alloc, _Tp* __loc, _Arg const& __arg)
 {
   static_assert(_CCCL_TRAIT(is_same, typename allocator_traits<_Alloc>::value_type, _Tp),
@@ -462,7 +461,7 @@ __allocator_construct_at_multidimensional(_Alloc& __alloc, _Tp* __loc, _Arg cons
 // initialization using allocator_traits destruction. If the elements in the range are C-style
 // arrays, they are initialized element-wise using allocator construction, and recursively so.
 template <class _Alloc, class _BidirIter, class _Tp, class _Size = typename iterator_traits<_BidirIter>::difference_type>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
+_LIBCUDACXX_HIDE_FROM_ABI constexpr void
 __uninitialized_allocator_fill_n_multidimensional(_Alloc& __alloc, _BidirIter __it, _Size __n, _Tp const& __value)
 {
   using _ValueType = typename iterator_traits<_BidirIter>::value_type;
@@ -483,7 +482,7 @@ __uninitialized_allocator_fill_n_multidimensional(_Alloc& __alloc, _BidirIter __
 // Same as __uninitialized_allocator_fill_n_multidimensional, but doesn't pass any initialization argument
 // to the allocator's construct method, which results in value initialization.
 template <class _Alloc, class _BidirIter, class _Size = typename iterator_traits<_BidirIter>::difference_type>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
+_LIBCUDACXX_HIDE_FROM_ABI constexpr void
 __uninitialized_allocator_value_construct_n_multidimensional(_Alloc& __alloc, _BidirIter __it, _Size __n)
 {
   using _ValueType = typename iterator_traits<_BidirIter>::value_type;
@@ -515,14 +514,13 @@ template <class _Alloc, class _Iter>
 class _AllocatorDestroyRangeReverse
 {
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14
-  _AllocatorDestroyRangeReverse(_Alloc& __alloc, _Iter& __first, _Iter& __last)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr _AllocatorDestroyRangeReverse(_Alloc& __alloc, _Iter& __first, _Iter& __last)
       : __alloc_(__alloc)
       , __first_(__first)
       , __last_(__last)
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void operator()() const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()() const
   {
     _CUDA_VSTD::__allocator_destroy(
       __alloc_, _CUDA_VSTD::reverse_iterator<_Iter>(__last_), _CUDA_VSTD::reverse_iterator<_Iter>(__first_));

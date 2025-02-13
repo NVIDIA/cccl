@@ -335,7 +335,7 @@ _CCCL_NODISCARD _CCCL_DEVICE constexpr bool enable_sm70_simd_reduction()
 }
 
 template <typename Input, typename ReductionOp, typename AccumT>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE _CCCL_CONSTEXPR_CXX14 bool enable_simd_reduction()
+_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_simd_reduction()
 {
   using cub::detail::is_one_of;
   using ::cuda::std::is_same;
@@ -428,7 +428,7 @@ struct enable_ternary_reduction_sm90<__nv_bfloat162, ReductionOp>
 #  endif // _CCCL_HAS_NVBF16()
 
 template <typename Input, typename ReductionOp, typename AccumT>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE _CCCL_CONSTEXPR_CXX14 bool enable_ternary_reduction()
+_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_ternary_reduction()
 {
   using cub::detail::is_one_of;
   using ::cuda::std::is_same;
