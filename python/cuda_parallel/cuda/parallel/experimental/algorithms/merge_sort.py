@@ -25,10 +25,10 @@ def _dtype_validation(dt1, dt2):
 class _MergeSort:
     def __init__(
         self,
-        d_in_keys: DeviceArrayLike,
+        d_in_keys: DeviceArrayLike | IteratorBase,
         d_in_items: DeviceArrayLike | IteratorBase | None,
         d_out_keys: DeviceArrayLike,
-        d_out_items: DeviceArrayLike | IteratorBase | None,
+        d_out_items: DeviceArrayLike | None,
         op: Callable,
     ):
         assert (d_in_items is None) == (d_out_items is None)
@@ -96,8 +96,8 @@ class _MergeSort:
         temp_storage,
         d_in_keys: DeviceArrayLike | IteratorBase,
         d_in_items: DeviceArrayLike | IteratorBase | None,
-        d_out_keys: DeviceArrayLike | IteratorBase,
-        d_out_items: DeviceArrayLike | IteratorBase | None,
+        d_out_keys: DeviceArrayLike,
+        d_out_items: DeviceArrayLike | None,
         num_items: int,
         stream=None,
     ):
@@ -168,10 +168,10 @@ class _MergeSort:
 
 
 def merge_sort(
-    d_in_keys: DeviceArrayLike,
+    d_in_keys: DeviceArrayLike | IteratorBase,
     d_in_items: DeviceArrayLike | IteratorBase | None,
     d_out_keys: DeviceArrayLike,
-    d_out_items: DeviceArrayLike | IteratorBase | None,
+    d_out_items: DeviceArrayLike | None,
     op: Callable,
 ):
     """Implements a device-wide merge sort using ``d_in_keys`` and the comparison operator ``op``.
