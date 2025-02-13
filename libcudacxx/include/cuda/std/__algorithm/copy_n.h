@@ -55,7 +55,7 @@ template <class _InputIterator,
           class _Size,
           class _OutputIterator,
           enable_if_t<__is_cpp17_random_access_iterator<_InputIterator>::value, int> = 0>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _OutputIterator
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator
 copy_n(_InputIterator __first, _Size __orig_n, _OutputIterator __result)
 {
   using _IntegralSize = decltype(__convert_to_integral(__orig_n));

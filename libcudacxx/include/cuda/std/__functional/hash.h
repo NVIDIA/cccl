@@ -35,7 +35,7 @@
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/detail/libcxx/include/cstring>
+#include <cuda/std/cstring>
 
 #ifndef __cuda_std__
 
@@ -45,7 +45,7 @@ template <class _Size>
 _LIBCUDACXX_HIDE_FROM_ABI _Size __loadword(const void* __p)
 {
   _Size __r;
-  std::memcpy(&__r, __p, sizeof(__r));
+  _CUDA_VSTD::memcpy(&__r, __p, sizeof(__r));
   return __r;
 }
 
