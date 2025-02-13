@@ -308,7 +308,7 @@ def test_merge_sort_with_stream(cuda_stream):
 
     with cp_stream:
         h_in_keys = random_array(num_items, np.int32)
-        d_in_keys = numba.cuda.to_device(h_in_keys)
+        d_in_keys = cp.asarray(h_in_keys)
         d_out_keys = cp.empty_like(d_in_keys)
 
     merge_sort_device(
