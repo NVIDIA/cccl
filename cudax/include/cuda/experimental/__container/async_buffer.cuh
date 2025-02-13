@@ -181,7 +181,7 @@ private:
   //! @returns Pointer equal to `__dest + __count`
   _CCCL_HIDE_FROM_ABI pointer __copy_same(const_pointer __first, const_pointer __last, pointer __dest)
   {
-    _CCCL_IF_CONSTEXPR (__is_host_only)
+    if constexpr (__is_host_only)
     {
       return _CUDA_VSTD::copy(__first, __last, __dest);
     }
@@ -210,14 +210,14 @@ private:
   template <class _Iter, cudaMemcpyKind __kind = __is_host_only ? cudaMemcpyHostToHost : cudaMemcpyHostToDevice>
   _CCCL_HIDE_FROM_ABI void __copy_cross(_Iter __first, _Iter __last, pointer __dest, size_type __count)
   {
-    _CCCL_IF_CONSTEXPR (__kind == cudaMemcpyHostToHost)
+    if constexpr (__kind == cudaMemcpyHostToHost)
     {
       _CUDA_VSTD::copy(__first, __last, __dest);
     }
-    else _CCCL_IF_CONSTEXPR (!_CUDA_VSTD::contiguous_iterator<_Iter>)
+    else if constexpr (!_CUDA_VSTD::contiguous_iterator<_Iter>)
     { // For non-coniguous iterators we need to copy into temporary host storage to use cudaMemcpy
       // This should only ever happen when passing in data from host to device
-      _CCCL_ASSERT(__kind == cudaMemcpyHostToDevice, "Invalid use case!");
+      static_assert(__kind == cudaMemcpyHostToDevice, "Invalid use case!");
       auto __temp = _CUDA_VSTD::get_temporary_buffer<_Tp>(__count).first;
       _CUDA_VSTD::copy(__first, __last, __temp);
       _CCCL_TRY_CUDA_API(
@@ -249,7 +249,7 @@ private:
   //! @param __count The number of elements to be initialized.
   _CCCL_HIDE_FROM_ABI void __value_initialize_n(pointer __first, size_type __count)
   {
-    _CCCL_IF_CONSTEXPR (__is_host_only)
+    if constexpr (__is_host_only)
     {
       _CUDA_VSTD::fill_n(__first, __count, _Tp());
     }
@@ -264,7 +264,7 @@ private:
   //! @param __count The number of elements to be initialized.
   _CCCL_HIDE_FROM_ABI void __fill_n(pointer __first, size_type __count, const _Tp& __value)
   {
-    _CCCL_IF_CONSTEXPR (__is_host_only)
+    if constexpr (__is_host_only)
     {
       _CUDA_VSTD::fill_n(__first, __count, __value);
     }
@@ -283,7 +283,7 @@ private:
   _CCCL_HIDE_FROM_ABI bool
   __equality(const_pointer __first1, const_pointer __last1, const_pointer __first2, const_pointer __last2) const
   {
-    _CCCL_IF_CONSTEXPR (__is_host_only)
+    if constexpr (__is_host_only)
     {
       return _CUDA_VSTD::equal(__first1, __last1, __first2, __last2);
     }
