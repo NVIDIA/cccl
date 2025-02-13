@@ -387,25 +387,66 @@ public:
 
   // Helper function to process a single argument
   template <typename T1>
-  void process_argument(const T1&) const
+  void process_argument(const T1&, ::std::vector<::std::pair<int, access_mode>>&) const
   {
     // Do nothing for non-stackable_task_dep
   }
 
   template <typename T1, typename reduce_op, bool initialize>
-  void process_argument(const stackable_task_dep<T1, reduce_op, initialize>& dep) const
+  void process_argument(const stackable_task_dep<T1, reduce_op, initialize>& dep,
+                        ::std::vector<::std::pair<int, access_mode>>& combined_accesses) const
   {
+    // If the stackable logical data appears in multiple deps of the same
+    // task, we need to combine access modes to push the data automatically
+    // with an appropriate mode.
+    int id  = dep.get_d().get_unique_id();
+    auto it = ::std::find_if(
+      combined_accesses.begin(), combined_accesses.end(), [id](const ::std::pair<int, access_mode>& entry) {
+        return entry.first == id;
+      });
+    _CCCL_ASSERT(it != combined_accesses.end(), "internal error");
+    access_mode combined_m = it->second;
+
     // If the logical data was not at the appropriate level, we may
     // automatically push it. In this case, we need to update the logical data
     // referred stored in the task_dep object.
-    bool need_update = dep.get_d().validate_access(*this, dep.get_access_mode());
-    if (need_update)
+    bool need_update = dep.get_d().validate_access(*this, combined_m);
+    //    if (need_update)
     {
       // The underlying dep eg. obtained when calling l.read() was resulting in
       // an task_dep_untyped where the logical data was the one at the "top of
       // the stack". Since a push method was done automatically, the logical
       // data that needs to be used was incorrect, and we update it.
       dep.underlying_dep().update_data(dep.get_d().get_ld());
+    }
+  }
+
+  template <typename T1>
+  void combine_argument_access_modes(const T1&, ::std::vector<::std::pair<int, access_mode>>&) const
+  {
+    // nothing
+  }
+
+  template <typename T1, typename reduce_op, bool initialize>
+  void combine_argument_access_modes(const stackable_task_dep<T1, reduce_op, initialize>& dep,
+                                     ::std::vector<::std::pair<int, access_mode>>& combined_accesses) const
+  {
+    int id        = dep.get_d().get_unique_id();
+    access_mode m = dep.get_access_mode();
+
+    // Now we go through the vector and update it if necessary, or add to the vector
+    auto it = ::std::find_if(
+      combined_accesses.begin(), combined_accesses.end(), [id](const ::std::pair<int, access_mode>& entry) {
+        return entry.first == id;
+      });
+
+    if (it != combined_accesses.end())
+    {
+      it->second = it->second | m; // Merge access modes
+    }
+    else
+    {
+      combined_accesses.emplace_back(id, m); // Insert if not found
     }
   }
 
@@ -416,8 +457,12 @@ public:
   template <typename... Pack>
   void process_pack(const Pack&... pack) const
   {
+    // This is a map of logical data, and the combined access modes
+    ::std::vector<::std::pair<int, access_mode>> combined_accesses;
+    (combine_argument_access_modes(pack, combined_accesses), ...);
+
     // fprintf(stderr, "process_pack begin.\n");
-    (process_argument(pack), ...);
+    (process_argument(pack, combined_accesses), ...);
     //  fprintf(stderr, "process_pack end.\n");
   }
 
@@ -555,6 +600,13 @@ class stackable_logical_data
         return s.size() - 1 + offset_depth;
       }
 
+      int get_unique_id() const
+      {
+        _CCCL_ASSERT(s.size() > 0, "cannot get the id of an uninitialized stackable_logical_data");
+        // Get the ID of the base logical data
+        return s[0].get_unique_id();
+      }
+
       mutable stackable_ctx sctx;
       mutable ::std::vector<logical_data<T>> s;
 
@@ -652,6 +704,11 @@ class stackable_logical_data
     auto& get_ld()
     {
       return impl_state->s.back();
+    }
+
+    int get_unique_id() const
+    {
+      return impl_state->get_unique_id();
     }
 
     /* Push one level up (from the current data depth) */
@@ -810,6 +867,11 @@ public:
   auto& get_ld()
   {
     return pimpl->get_ld();
+  }
+
+  int get_unique_id() const
+  {
+    return pimpl->get_unique_id();
   }
 
   size_t depth() const
