@@ -49,7 +49,7 @@ class NoopExecutor(Executor):
         super(NoopExecutor, self).__init__()
 
     def run(self, exe_path, cmd=None, work_dir=".", file_deps=None, env=None):
-        return (cmd, "", "", 0)
+        return (cmd, "", "", 1 if (cmd and cmd.endswith("runfail.cpp")) else 0)
 
 
 class PrefixExecutor(Executor):
