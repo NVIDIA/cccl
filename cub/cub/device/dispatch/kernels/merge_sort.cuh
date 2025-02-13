@@ -17,17 +17,7 @@
 #include <cub/util_policy_wrapper_t.cuh>
 #include <cub/util_vsmem.cuh>
 
-THRUST_NAMESPACE_BEGIN
-
-namespace cuda_cub::core::detail
-{
-// We must forward declare here because make_load_iterator.h pulls in non NVRTC compilable code
-template <class PtxPlan, class It>
-typename detail::LoadIterator<PtxPlan, It>::type _CCCL_DEVICE _CCCL_FORCEINLINE
-make_load_iterator(PtxPlan const&, It it);
-} // namespace cuda_cub::core::detail
-
-THRUST_NAMESPACE_END
+#include <thrust/system/cuda/detail/core/make_load_iterator.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -118,12 +108,12 @@ public:
     ::cuda::std::_If<uses_fallback_policy, fallback_block_sort_agent_t, default_block_sort_agent_t>;
   using merge_agent_t = ::cuda::std::_If<uses_fallback_policy, fallback_merge_agent_t, default_merge_agent_t>;
 
-  _CCCL_HOST_DEVICE static constexpr ::cuda::std::size_t block_sort_vsmem_per_block()
+  _CCCL_HOST_DEVICE static constexpr ::cuda::std::size_t BlockSortVSMemPerBlock()
   {
     return detail::vsmem_helper_impl<block_sort_agent_t>::vsmem_per_block;
   }
 
-  _CCCL_HOST_DEVICE static constexpr ::cuda::std::size_t merge_vsmem_per_block()
+  _CCCL_HOST_DEVICE static constexpr ::cuda::std::size_t MergeVSMemPerBlock()
   {
     return detail::vsmem_helper_impl<merge_agent_t>::vsmem_per_block;
   }

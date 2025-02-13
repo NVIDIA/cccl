@@ -253,7 +253,7 @@ struct large_array_sort_helper
   // Pass the sorted outputs to verify_stable_pair_sort to validate.
   void initialize_for_stable_pair_sort(c2h::seed_t seed, std::size_t num_items, bool is_descending)
   {
-    static_assert(!::cuda::std::is_same<ValueType, cub::NullType>::value, "ValueType must be valid.");
+    static_assert(!::cuda::std::is_same_v<ValueType, cub::NullType>, "ValueType must be valid.");
     using summary_t = detail::summary<KeyType>;
 
     const std::size_t max_summaries = this->compute_max_summaries(num_items);
@@ -371,7 +371,7 @@ struct large_array_sort_helper
     const c2h::device_vector<KeyType>& keys,
     const c2h::device_vector<ValueType>& values)
   {
-    static_assert(!::cuda::std::is_same<ValueType, cub::NullType>::value, "ValueType must be valid.");
+    static_assert(!::cuda::std::is_same_v<ValueType, cub::NullType>, "ValueType must be valid.");
 
     const std::size_t max_summaries = this->compute_max_summaries(num_items);
     const std::size_t num_summaries = this->compute_num_summaries(num_items, max_summaries);

@@ -669,9 +669,9 @@ private:
     // TODO(bgruber): drop diagnostic suppression in C++17
     _CCCL_DIAG_PUSH
     _CCCL_DIAG_SUPPRESS_MSVC(4127) // suppress Conditional Expression is Constant
-    _CCCL_IF_CONSTEXPR (DevicePtxVersion < PolicyPtxVersion)
+    if constexpr (DevicePtxVersion < PolicyPtxVersion)
     {
-      // TODO(bgruber): drop boolean tag dispatches in C++17, since _CCCL_IF_CONSTEXPR will discard this branch properly
+      // TODO(bgruber): drop boolean tag dispatches in C++17, since if constexpr will discard this branch properly
       return PrevPolicyT::template invoke_static<DevicePtxVersion>(
         op, ::cuda::std::bool_constant<(DevicePtxVersion < PolicyPtxVersion)>{});
     }

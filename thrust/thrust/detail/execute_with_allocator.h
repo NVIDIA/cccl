@@ -75,48 +75,6 @@ _CCCL_HOST void return_temporary_buffer(
   alloc_traits::deallocate(system.get_allocator(), to_ptr, num_elements);
 }
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-template <typename T, template <typename> class BaseSystem, typename Allocator, typename... Dependencies>
-CCCL_DEPRECATED _CCCL_HOST thrust::pair<T*, std::ptrdiff_t> get_temporary_buffer(
-  thrust::detail::execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>& system,
-  std::ptrdiff_t n)
-{
-  using naked_allocator = ::cuda::std::remove_reference_t<Allocator>;
-  using alloc_traits    = typename thrust::detail::allocator_traits<naked_allocator>;
-  using void_pointer    = typename alloc_traits::void_pointer;
-  using size_type       = typename alloc_traits::size_type;
-  using value_type      = typename alloc_traits::value_type;
-
-  // How many elements of type value_type do we need to accommodate n elements
-  // of type T?
-  size_type num_elements = divide_ri(sizeof(T) * n, sizeof(value_type));
-
-  void_pointer ptr = alloc_traits::allocate(system.get_allocator(), num_elements);
-
-  // Return the pointer and the number of elements of type T allocated.
-  return thrust::make_pair(thrust::reinterpret_pointer_cast<T*>(ptr), n);
-}
-
-template <typename Pointer, template <typename> class BaseSystem, typename Allocator, typename... Dependencies>
-_CCCL_HOST void return_temporary_buffer(
-  thrust::detail::execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>& system,
-  Pointer p,
-  std::ptrdiff_t n)
-{
-  using naked_allocator = ::cuda::std::remove_reference_t<Allocator>;
-  using alloc_traits    = typename thrust::detail::allocator_traits<naked_allocator>;
-  using pointer         = typename alloc_traits::pointer;
-  using size_type       = typename alloc_traits::size_type;
-  using value_type      = typename alloc_traits::value_type;
-  using T               = typename thrust::detail::pointer_traits<Pointer>::element_type;
-
-  size_type num_elements = divide_ri(sizeof(T) * n, sizeof(value_type));
-
-  pointer to_ptr = thrust::reinterpret_pointer_cast<pointer>(p);
-  alloc_traits::deallocate(system.get_allocator(), to_ptr, num_elements);
-}
-_CCCL_SUPPRESS_DEPRECATED_POP
-
 } // namespace detail
 
 THRUST_NAMESPACE_END

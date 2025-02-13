@@ -177,11 +177,9 @@ using char32_t = unsigned int;
 #  if !defined(_LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS)
 #    if _CCCL_HAS_ATTRIBUTE(deprecated)
 #      define _LIBCUDACXX_DEPRECATED __attribute__((deprecated))
-#    elif _CCCL_STD_VER > 2011
+#    else // ^^^ _CCCL_HAS_ATTRIBUTE(deprecated) ^^^ / vvv !_CCCL_HAS_ATTRIBUTE(deprecated) vvv
 #      define _LIBCUDACXX_DEPRECATED [[deprecated]]
-#    else
-#      define _LIBCUDACXX_DEPRECATED
-#    endif
+#    endif // !_CCCL_HAS_ATTRIBUTE(deprecated)
 #  else
 #    define _LIBCUDACXX_DEPRECATED
 #  endif
@@ -334,7 +332,7 @@ using char32_t = unsigned int;
 // macro is used to mark them as such, which suppresses the
 // '-Wctad-maybe-unsupported' compiler warning when CTAD is used in user code
 // with these classes.
-#  if (!_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >, 6)) && _CCCL_STD_VER >= 2017
+#  if (!_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >, 6))
 #    define _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(_ClassName) \
       template <class... _Tag>                              \
       _ClassName(typename _Tag::__allow_ctad...)->_ClassName<_Tag...>

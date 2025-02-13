@@ -117,7 +117,7 @@ class AgentSubWarpSort
     template <typename T>
     _CCCL_DEVICE bool operator()(T lhs, T rhs) const noexcept
     {
-      _CCCL_IF_CONSTEXPR (IS_DESCENDING)
+      if constexpr (IS_DESCENDING)
       {
         return lhs > rhs;
       }
@@ -132,7 +132,7 @@ class AgentSubWarpSort
     _CCCL_DEVICE bool operator()(__half lhs, __half rhs) const noexcept
     {
       // Need to explicitly cast to float for SM <= 52.
-      _CCCL_IF_CONSTEXPR (IS_DESCENDING)
+      if constexpr (IS_DESCENDING)
       {
         NV_IF_TARGET(NV_PROVIDES_SM_53, (return __hgt(lhs, rhs);), (return __half2float(lhs) > __half2float(rhs);));
       }
@@ -179,7 +179,7 @@ class AgentSubWarpSort
   }
 
 public:
-  static constexpr bool KEYS_ONLY = std::is_same<ValueT, cub::NullType>::value;
+  static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, cub::NullType>;
 
   using WarpMergeSortT = WarpMergeSort<KeyT, PolicyT::ITEMS_PER_THREAD, PolicyT::WARP_THREADS, ValueT>;
 
@@ -338,10 +338,5 @@ private:
 
 } // namespace sub_warp_merge_sort
 } // namespace detail
-
-template <bool IS_DESCENDING, typename PolicyT, typename KeyT, typename ValueT, typename OffsetT>
-using AgentSubWarpSort CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
-                                               "interface will be removed.") =
-  detail::sub_warp_merge_sort::AgentSubWarpSort<IS_DESCENDING, PolicyT, KeyT, ValueT, OffsetT>;
 
 CUB_NAMESPACE_END

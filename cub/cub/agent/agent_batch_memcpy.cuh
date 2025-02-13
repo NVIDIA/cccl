@@ -119,7 +119,7 @@ LoadVectorAndFunnelShiftR(uint32_t const* aligned_ptr, uint32_t bit_shift, uint3
 template <typename VectorT>
 _CCCL_FORCEINLINE _CCCL_DEVICE void LoadVector(const char* ptr, VectorT& data_out)
 {
-  const uint32_t offset            = reinterpret_cast<std::uintptr_t>(ptr) % 4U;
+  const uint32_t offset            = reinterpret_cast<uintptr_t>(ptr) % 4U;
   const uint32_t* aligned_ptr      = reinterpret_cast<uint32_t const*>(ptr - offset);
   constexpr uint32_t bits_per_byte = 8U;
   const uint32_t bit_shift         = offset * bits_per_byte;
@@ -180,13 +180,13 @@ GetAlignedPtrs(const void* in_begin, void* out_begin, ByteOffsetT num_bytes)
   const char* in_ptr = reinterpret_cast<const char*>(in_begin);
 
   // Number of bytes between the first VectorT-aligned address at or before out_begin and out_begin
-  const uint32_t alignment_offset = reinterpret_cast<std::uintptr_t>(out_ptr) % out_datatype_size;
+  const uint32_t alignment_offset = reinterpret_cast<uintptr_t>(out_ptr) % out_datatype_size;
 
   // The first VectorT-aligned address before (or at) out_begin
   char* out_chars_aligned = reinterpret_cast<char*>(out_ptr - alignment_offset);
 
   // The number of extra bytes preceding `in_ptr` that are loaded but dropped
-  uint32_t in_extra_bytes = reinterpret_cast<std::uintptr_t>(in_ptr) % in_datatype_size;
+  uint32_t in_extra_bytes = reinterpret_cast<uintptr_t>(in_ptr) % in_datatype_size;
 
   // The offset required by `LoadVector`:
   // If the input pointer is not aligned, we load data from the last aligned address preceding the
@@ -205,7 +205,7 @@ GetAlignedPtrs(const void* in_begin, void* out_begin, ByteOffsetT num_bytes)
   // bytes after the last byte that is copied. That is, we always load four bytes up to the next
   // aligned input address at a time. E.g., if the last byte loaded is one byte past the last
   // aligned address we'll also load the three bytes after that byte.
-  uint32_t in_extra_bytes_from_aligned = (reinterpret_cast<std::uintptr_t>(in_aligned_begin) % in_datatype_size);
+  uint32_t in_extra_bytes_from_aligned = (reinterpret_cast<uintptr_t>(in_aligned_begin) % in_datatype_size);
   uint32_t in_end_padding_req          = (in_datatype_size - in_extra_bytes_from_aligned) % in_datatype_size;
 
   // Bytes after `out_chars_aligned` to the last VectorT-aligned
@@ -243,7 +243,7 @@ GetAlignedPtrs(const void* in_begin, void* out_begin, ByteOffsetT num_bytes)
  */
 template <int LOGICAL_WARP_SIZE, typename VectorT, typename ByteOffsetT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
-VectorizedCopy(int32_t thread_rank, void* dest, ByteOffsetT num_bytes, const void* src)
+vectorized_copy(int32_t thread_rank, void* dest, ByteOffsetT num_bytes, const void* src)
 {
   char* out_ptr      = reinterpret_cast<char*>(dest);
   const char* in_ptr = reinterpret_cast<const char*>(src);
@@ -300,11 +300,11 @@ template <bool IsMemcpy,
           typename InputBufferT,
           typename OutputBufferT,
           typename OffsetT,
-          typename ::cuda::std::enable_if<IsMemcpy, int>::type = 0>
+          ::cuda::std::enable_if_t<IsMemcpy, int> = 0>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 copy_items(InputBufferT input_buffer, OutputBufferT output_buffer, OffsetT num_bytes, OffsetT offset = 0)
 {
-  VectorizedCopy<LOGICAL_WARP_SIZE, uint4>(
+  vectorized_copy<LOGICAL_WARP_SIZE, uint4>(
     threadIdx.x % LOGICAL_WARP_SIZE,
     &reinterpret_cast<char*>(output_buffer)[offset],
     num_bytes,
@@ -316,7 +316,7 @@ template <bool IsMemcpy,
           typename InputBufferT,
           typename OutputBufferT,
           typename OffsetT,
-          typename ::cuda::std::enable_if<!IsMemcpy, int>::type = 0>
+          ::cuda::std::enable_if_t<!IsMemcpy, int> = 0>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 copy_items(InputBufferT input_buffer, OutputBufferT output_buffer, OffsetT num_items, OffsetT offset = 0)
 {
@@ -328,41 +328,25 @@ copy_items(InputBufferT input_buffer, OutputBufferT output_buffer, OffsetT num_i
   }
 }
 
-template <bool IsMemcpy,
-          typename AliasT,
-          typename InputIt,
-          typename OffsetT,
-          typename ::cuda::std::enable_if<IsMemcpy, int>::type = 0>
+template <bool IsMemcpy, typename AliasT, typename InputIt, typename OffsetT, ::cuda::std::enable_if_t<IsMemcpy, int> = 0>
 _CCCL_DEVICE _CCCL_FORCEINLINE AliasT read_item(InputIt buffer_src, OffsetT offset)
 {
   return *(reinterpret_cast<const AliasT*>(buffer_src) + offset);
 }
 
-template <bool IsMemcpy,
-          typename AliasT,
-          typename InputIt,
-          typename OffsetT,
-          typename ::cuda::std::enable_if<!IsMemcpy, int>::type = 0>
+template <bool IsMemcpy, typename AliasT, typename InputIt, typename OffsetT, ::cuda::std::enable_if_t<!IsMemcpy, int> = 0>
 _CCCL_DEVICE _CCCL_FORCEINLINE AliasT read_item(InputIt buffer_src, OffsetT offset)
 {
   return *(buffer_src + offset);
 }
 
-template <bool IsMemcpy,
-          typename AliasT,
-          typename OutputIt,
-          typename OffsetT,
-          typename ::cuda::std::enable_if<IsMemcpy, int>::type = 0>
+template <bool IsMemcpy, typename AliasT, typename OutputIt, typename OffsetT, ::cuda::std::enable_if_t<IsMemcpy, int> = 0>
 _CCCL_DEVICE _CCCL_FORCEINLINE void write_item(OutputIt buffer_dst, OffsetT offset, AliasT value)
 {
   *(reinterpret_cast<AliasT*>(buffer_dst) + offset) = value;
 }
 
-template <bool IsMemcpy,
-          typename AliasT,
-          typename OutputIt,
-          typename OffsetT,
-          typename ::cuda::std::enable_if<!IsMemcpy, int>::type = 0>
+template <bool IsMemcpy, typename AliasT, typename OutputIt, typename OffsetT, ::cuda::std::enable_if_t<!IsMemcpy, int> = 0>
 _CCCL_DEVICE _CCCL_FORCEINLINE void write_item(OutputIt buffer_dst, OffsetT offset, AliasT value)
 {
   *(buffer_dst + offset) = value;

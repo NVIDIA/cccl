@@ -18,9 +18,7 @@ template <class T, class U>
 __host__ __device__ void test_remove_pointer()
 {
   ASSERT_SAME_TYPE(U, typename cuda::std::remove_pointer<T>::type);
-#if TEST_STD_VER > 2011
   ASSERT_SAME_TYPE(U, cuda::std::remove_pointer_t<T>);
-#endif
 }
 
 int main(int, char**)

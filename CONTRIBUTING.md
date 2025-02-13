@@ -78,7 +78,7 @@ Use the build scripts provided in the `ci/` directory to build tests for each co
    ci/build_[thrust|cub|libcudacxx].sh -cxx <HOST_COMPILER> -std <CXX_STANDARD> -arch <GPU_ARCHS>
 
 - **HOST_COMPILER**: The desired host compiler (e.g., `g++`, `clang++`).
-- **CXX_STANDARD**: The C++ standard version (e.g., `11`, `14`, `17`, `20`).
+- **CXX_STANDARD**: The C++ standard version (e.g., `17`, `20`).
 - **GPU_ARCHS**: A semicolon-separated list of CUDA GPU architectures (e.g., `"70;85;90"`). This uses the same syntax as CMake's [CUDA_ARCHITECTURES](https://cmake.org/cmake/help/latest/prop_tgt/CUDA_ARCHITECTURES.html#prop_tgt:CUDA_ARCHITECTURES):
    - `70` - both PTX and SASS
    - `70-real` - SASS only
@@ -86,7 +86,7 @@ Use the build scripts provided in the `ci/` directory to build tests for each co
 
 **Example:**
 ```bash
-./ci/build_cub.sh -cxx g++ -std 14 -arch "70;75;80-virtual"
+./ci/build_cub.sh -cxx g++ -std 17 -arch "70;75;80-virtual"
 ```
 
 #### Testing
@@ -100,7 +100,7 @@ Use the test scripts provided in the `ci/` directory to run tests for each compo
 **Example:**
 
 ```bash
-./ci/test_cub.sh -cxx g++ -std 14 -arch "70;75;80-virtual"
+./ci/test_cub.sh -cxx g++ -std 17 -arch "70;75;80-virtual"
 ```
 
 ### Using CMake Presets

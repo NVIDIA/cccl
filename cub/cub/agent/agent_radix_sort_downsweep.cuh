@@ -90,15 +90,16 @@ CUB_NAMESPACE_BEGIN
  * @tparam _RADIX_BITS
  *   The number of radix bits, i.e., log2(bins)
  */
-template <int NOMINAL_BLOCK_THREADS_4B,
-          int NOMINAL_ITEMS_PER_THREAD_4B,
-          typename ComputeT,
-          BlockLoadAlgorithm _LOAD_ALGORITHM,
-          CacheLoadModifier _LOAD_MODIFIER,
-          RadixRankAlgorithm _RANK_ALGORITHM,
-          BlockScanAlgorithm _SCAN_ALGORITHM,
-          int _RADIX_BITS,
-          typename ScalingType = RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
+template <
+  int NOMINAL_BLOCK_THREADS_4B,
+  int NOMINAL_ITEMS_PER_THREAD_4B,
+  typename ComputeT,
+  BlockLoadAlgorithm _LOAD_ALGORITHM,
+  CacheLoadModifier _LOAD_MODIFIER,
+  RadixRankAlgorithm _RANK_ALGORITHM,
+  BlockScanAlgorithm _SCAN_ALGORITHM,
+  int _RADIX_BITS,
+  typename ScalingType = detail::RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
 struct AgentRadixSortDownsweepPolicy : ScalingType
 {
   enum
@@ -177,7 +178,7 @@ struct AgentRadixSortDownsweep
     TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD,
 
     RADIX_DIGITS      = 1 << RADIX_BITS,
-    KEYS_ONLY         = std::is_same<ValueT, NullType>::value,
+    KEYS_ONLY         = ::cuda::std::is_same_v<ValueT, NullType>,
     LOAD_WARP_STRIPED = RANK_ALGORITHM == RADIX_RANK_MATCH || RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ANY
                      || RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR,
   };
@@ -248,8 +249,8 @@ struct AgentRadixSortDownsweep
   // The global scatter base offset for each digit (valid in the first RADIX_DIGITS threads)
   OffsetT bin_offset[BINS_TRACKED_PER_THREAD];
 
-  std::uint32_t current_bit;
-  std::uint32_t num_bits;
+  uint32_t current_bit;
+  uint32_t num_bits;
 
   // Whether to short-circuit
   int short_circuit;
@@ -287,7 +288,7 @@ struct AgentRadixSortDownsweep
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       bit_ordered_type key       = temp_storage.keys_and_offsets.exchange_keys[threadIdx.x + (ITEM * BLOCK_THREADS)];
-      std::uint32_t digit        = digit_extractor().Digit(key);
+      uint32_t digit             = digit_extractor().Digit(key);
       relative_bin_offsets[ITEM] = temp_storage.keys_and_offsets.relative_bin_offsets[digit];
 
       key = bit_ordered_conversion::from_bit_ordered(decomposer, key);
@@ -763,16 +764,5 @@ struct AgentRadixSortDownsweep
 
 } // namespace radix_sort
 } // namespace detail
-
-template <typename AgentRadixSortDownsweepPolicy,
-          bool IS_DESCENDING,
-          typename KeyT,
-          typename ValueT,
-          typename OffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
-using AgentRadixSortDownsweep CCCL_DEPRECATED_BECAUSE(
-  "This class is considered an implementation detail and the public "
-  "interface will be removed.") = detail::radix_sort::
-  AgentRadixSortDownsweep<AgentRadixSortDownsweepPolicy, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>;
 
 CUB_NAMESPACE_END

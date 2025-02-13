@@ -75,8 +75,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2011
-
 namespace __detail
 {
 
@@ -101,12 +99,10 @@ template <size_t _OldExtent, size_t _OldStaticStride, class _IntegerType, _Integ
 _LIBCUDACXX_HIDE_FROM_ABI constexpr __slice_wrap<_OldExtent, _OldStaticStride, integral_constant<_IntegerType, _Value0>>
 __wrap_slice(size_t __val, size_t __ext, integral_constant<_IntegerType, _Value0> __stride)
 {
-#  if __MDSPAN_HAS_CXX_17
   if constexpr (_CUDA_VSTD::is_signed_v<_IntegerType>)
   {
     static_assert(_Value0 >= _IntegerType(0), "Invalid slice specifier");
   }
-#  endif // __MDSPAN_HAS_CXX_17
 
   return {__val, __ext, __stride};
 }
@@ -261,8 +257,8 @@ struct __assign_op_slice_handler<
   __extents_storage_t __exts;
   __strides_storage_t __strides;
 
-#  ifdef __INTEL_COMPILER
-#    if __INTEL_COMPILER <= 1800
+#ifdef __INTEL_COMPILER
+#  if __INTEL_COMPILER <= 1800
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __assign_op_slice_handler(__assign_op_slice_handler&& __other) noexcept
       : __offsets(_CUDA_VSTD::move(__other.__offsets))
       , __exts(_CUDA_VSTD::move(__other.__exts))
@@ -274,13 +270,13 @@ struct __assign_op_slice_handler<
       , __exts(_CUDA_VSTD::move(__e))
       , __strides(_CUDA_VSTD::move(__s))
   {}
-#    endif
 #  endif
+#endif
 
 // Don't define this unless we need it; they have a cost to compile
-#  ifndef __MDSPAN_USE_RETURN_TYPE_DEDUCTION
+#ifndef __MDSPAN_USE_RETURN_TYPE_DEDUCTION
   using __extents_type = _CUDA_VSTD::extents<_IndexT, _Exts...>;
-#  endif
+#endif
 
   // For size_t slice, skip the extent and stride, but add an offset corresponding to the value
   template <size_t _OldStaticExtent, size_t _OldStaticStride>
@@ -312,12 +308,10 @@ struct __assign_op_slice_handler<
                                  __partially_static_sizes<_IndexT, size_t, _Exts...>,
                                  __partially_static_sizes<_IndexT, size_t, _Strides...>>
   {
-#  if __MDSPAN_HAS_CXX_17
     if constexpr (_CUDA_VSTD::is_signed_v<_IntegerType>)
     {
       static_assert(_Value0 >= _IntegerType(0), "Invalid slice specifier");
     }
-#  endif // __MDSPAN_HAS_CXX_17
     return {__partially_static_sizes<_IndexT, size_t, _Offsets..., _Value0>(
               __construct_psa_from_all_exts_values_tag, __offsets.template __get_n<_OffsetIdxs>()..., size_t(_Value0)),
             _CUDA_VSTD::move(__exts),
@@ -437,7 +431,7 @@ struct __assign_op_slice_handler<
 
 //==============================================================================
 
-#  if __MDSPAN_USE_RETURN_TYPE_DEDUCTION
+#if __MDSPAN_USE_RETURN_TYPE_DEDUCTION
 // Forking this because the C++11 version will be *completely* unreadable
 template <class _ET, class _ST, size_t... _Exts, class _LP, class _AP, class... _SliceSpecs, size_t... _Idxs>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr auto _submdspan_impl(
@@ -465,7 +459,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto _submdspan_impl(
                 remove_const_t<_CUDA_VSTD::remove_reference_t<decltype(__acc_pol)>>>(
     _CUDA_VSTD::move(__offset_ptr), _CUDA_VSTD::move(__map), _CUDA_VSTD::move(__acc_pol));
 }
-#  else
+#else
 
 template <class _ET, class _AP, class _Src, class _Handled, size_t... _Idxs>
 auto _submdspan_impl_helper(_Src&& __src, _Handled&& __h, _CUDA_VSTD::integer_sequence<size_t, _Idxs...>)
@@ -495,7 +489,7 @@ _LIBCUDACXX_HIDE_FROM_ABI __MDSPAN_DEDUCE_RETURN_TYPE_SINGLE_LINE(
       __seq) /* ; */
     ))
 
-#  endif
+#endif
 
 template <class _Tp>
 struct _is_layout_stride : false_type
@@ -521,9 +515,7 @@ _LIBCUDACXX_HIDE_FROM_ABI __MDSPAN_DEDUCE_RETURN_TYPE_SINGLE_LINE(
     /* return */
     __detail::_submdspan_impl(_CUDA_VSTD::make_index_sequence<sizeof...(_SliceSpecs)>{}, __src, __slices...) /*;*/
     ))
-/* clang-format: on */
-
-#endif // _CCCL_STD_VER > 2011
+  /* clang-format: on */
 
   _LIBCUDACXX_END_NAMESPACE_STD
 

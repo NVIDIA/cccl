@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class... Args>
 //   constexpr explicit expected(unexpect_t, Args&&... args);
 //

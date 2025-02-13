@@ -72,13 +72,14 @@ CUB_NAMESPACE_BEGIN
  * @tparam _BLOCK_ALGORITHM Cooperative block-wide reduction algorithm to use
  * @tparam _LOAD_MODIFIER Cache load modifier for reading input elements
  */
-template <int NOMINAL_BLOCK_THREADS_4B,
-          int NOMINAL_ITEMS_PER_THREAD_4B,
-          typename ComputeT,
-          int _VECTOR_LOAD_LENGTH,
-          BlockReduceAlgorithm _BLOCK_ALGORITHM,
-          CacheLoadModifier _LOAD_MODIFIER,
-          typename ScalingType = MemBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
+template <
+  int NOMINAL_BLOCK_THREADS_4B,
+  int NOMINAL_ITEMS_PER_THREAD_4B,
+  typename ComputeT,
+  int _VECTOR_LOAD_LENGTH,
+  BlockReduceAlgorithm _BLOCK_ALGORITHM,
+  CacheLoadModifier _LOAD_MODIFIER,
+  typename ScalingType = detail::MemBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
 struct AgentReducePolicy : ScalingType
 {
   /// Number of items per vectorized load
@@ -150,7 +151,7 @@ struct AgentReduce
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
   using WrappedInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer<InputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer_v<InputIteratorT>,
                      CacheModifiedInputIterator<AgentReducePolicy::LOAD_MODIFIER, InputT, OffsetT>,
                      InputIteratorT>;
 
@@ -164,7 +165,7 @@ struct AgentReduce
   // pointer to a primitive type
   static constexpr bool ATTEMPT_VECTORIZATION =
     (VECTOR_LOAD_LENGTH > 1) && (ITEMS_PER_THREAD % VECTOR_LOAD_LENGTH == 0)
-    && (::cuda::std::is_pointer<InputIteratorT>::value) && is_primitive<InputT>::value;
+    && (::cuda::std::is_pointer_v<InputIteratorT>) && is_primitive<InputT>::value;
 
   static constexpr CacheLoadModifier LOAD_MODIFIER = AgentReducePolicy::LOAD_MODIFIER;
 
@@ -455,16 +456,5 @@ private:
 
 } // namespace reduce
 } // namespace detail
-
-template <typename AgentReducePolicy,
-          typename InputIteratorT,
-          typename OutputIteratorT,
-          typename OffsetT,
-          typename ReductionOp,
-          typename AccumT,
-          typename TransformOp = ::cuda::std::__identity>
-using AgentReduce CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public interface "
-                                          "will be removed.") = detail::reduce::
-  AgentReduce<AgentReducePolicy, InputIteratorT, OutputIteratorT, OffsetT, ReductionOp, AccumT, TransformOp>;
 
 CUB_NAMESPACE_END

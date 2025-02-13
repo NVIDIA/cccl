@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class F, class I1, class I2 = I1>
 // concept indirect_strict_weak_order;
 

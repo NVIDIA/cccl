@@ -50,7 +50,7 @@ private:
     connect_result_t<_Sndr, __rcvr_with_env_t<_Rcvr, _Env>*> __opstate_;
 
     _CUDAX_API explicit __opstate_t(_Sndr&& __sndr, _Env __env, _Rcvr __rcvr)
-        : __env_rcvr_(static_cast<_Env&&>(__env), static_cast<_Rcvr&&>(__rcvr))
+        : __env_rcvr_{static_cast<_Rcvr&&>(__rcvr), static_cast<_Env&&>(__env)}
         , __opstate_(__async::connect(static_cast<_Sndr&&>(__sndr), &__env_rcvr_))
     {}
 

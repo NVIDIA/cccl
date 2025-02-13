@@ -86,15 +86,16 @@ CUB_NAMESPACE_BEGIN
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
-template <int NOMINAL_BLOCK_THREADS_4B,
-          int NOMINAL_ITEMS_PER_THREAD_4B,
-          typename ComputeT,
-          BlockLoadAlgorithm _LOAD_ALGORITHM,
-          CacheLoadModifier _LOAD_MODIFIER,
-          BlockStoreAlgorithm _STORE_ALGORITHM,
-          BlockScanAlgorithm _SCAN_ALGORITHM,
-          typename ScalingType       = MemBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>,
-          typename DelayConstructorT = detail::default_delay_constructor_t<ComputeT>>
+template <
+  int NOMINAL_BLOCK_THREADS_4B,
+  int NOMINAL_ITEMS_PER_THREAD_4B,
+  typename ComputeT,
+  BlockLoadAlgorithm _LOAD_ALGORITHM,
+  CacheLoadModifier _LOAD_MODIFIER,
+  BlockStoreAlgorithm _STORE_ALGORITHM,
+  BlockScanAlgorithm _SCAN_ALGORITHM,
+  typename ScalingType       = detail::MemBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>,
+  typename DelayConstructorT = detail::default_delay_constructor_t<ComputeT>>
 struct AgentScanPolicy : ScalingType
 {
   static constexpr BlockLoadAlgorithm LOAD_ALGORITHM   = _LOAD_ALGORITHM;
@@ -165,7 +166,7 @@ struct AgentScan
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
   using WrappedInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer<InputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer_v<InputIteratorT>,
                      CacheModifiedInputIterator<AgentScanPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
                      InputIteratorT>;
 
@@ -173,7 +174,7 @@ struct AgentScan
   enum
   {
     // Inclusive scan if no init_value type is provided
-    HAS_INIT     = !::cuda::std::is_same<InitValueT, NullType>::value,
+    HAS_INIT     = !::cuda::std::is_same_v<InitValueT, NullType>,
     IS_INCLUSIVE = ForceInclusive || !HAS_INIT, // We are relying on either initial value not being `NullType`
                                                 // or the ForceInclusive tag to be true for inclusive scan
                                                 // to get picked up.
@@ -595,17 +596,5 @@ struct AgentScan
 
 } // namespace scan
 } // namespace detail
-
-template <typename AgentScanPolicyT,
-          typename InputIteratorT,
-          typename OutputIteratorT,
-          typename ScanOpT,
-          typename InitValueT,
-          typename OffsetT,
-          typename AccumT,
-          bool ForceInclusive = false>
-using AgentScan CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public interface "
-                                        "will be removed.") = detail::scan::
-  AgentScan<AgentScanPolicyT, InputIteratorT, OutputIteratorT, ScanOpT, InitValueT, OffsetT, AccumT, ForceInclusive>;
 
 CUB_NAMESPACE_END

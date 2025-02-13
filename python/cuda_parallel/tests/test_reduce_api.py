@@ -22,13 +22,13 @@ def test_device_reduce():
     reduce_into = algorithms.reduce_into(d_output, d_output, min_op, h_init)
 
     # Determine temporary device storage requirements
-    temp_storage_size = reduce_into(None, d_input, d_output, None, h_init)
+    temp_storage_size = reduce_into(None, d_input, d_output, len(d_input), h_init)
 
     # Allocate temporary storage
     d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
 
     # Run reduction
-    reduce_into(d_temp_storage, d_input, d_output, None, h_init)
+    reduce_into(d_temp_storage, d_input, d_output, len(d_input), h_init)
 
     # Check the result is correct
     expected_output = 0
@@ -203,10 +203,10 @@ def test_reduce_struct_type():
     h_init = Pixel(0, 0, 0)
 
     reduce_into = algorithms.reduce_into(d_rgb, d_out, max_g_value, h_init)
-    temp_storage_bytes = reduce_into(None, d_rgb, d_out, len(d_rgb), h_init)
+    temp_storage_bytes = reduce_into(None, d_rgb, d_out, d_rgb.size, h_init)
 
     d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-    _ = reduce_into(d_temp_storage, d_rgb, d_out, len(d_rgb), h_init)
+    _ = reduce_into(d_temp_storage, d_rgb, d_out, d_rgb.size, h_init)
 
     h_rgb = d_rgb.get()
     expected = h_rgb[h_rgb.view("int32")[:, 1].argmax()]
