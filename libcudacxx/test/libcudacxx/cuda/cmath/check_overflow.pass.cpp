@@ -126,6 +126,7 @@ __host__ __device__ constexpr void test_mul()
     assert(cuda::is_mul_overflow(min_c, U{-1}));
     assert(!cuda::is_mul_overflow(CommonType{min_c + 1}, U{-1}));
     assert(cuda::is_mul_overflow(min_c, U{-2}));
+    // assert(cuda::is_mul_overflow(max_a, U{-1})); // TODO
   }
   else if constexpr (cuda::std::is_unsigned_v<T> && cuda::std::is_unsigned_v<U>)
   {

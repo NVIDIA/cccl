@@ -104,7 +104,7 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Ap) _CCCL_AND _CCCL_TRAIT(_
     }
     if constexpr (_CUDA_VSTD::is_unsigned_v<_Common>)
     {
-      return (__a1 > __max_v / __b1);
+      return __a1 > __max_v / __b1;
     }
     else // signed
     {
