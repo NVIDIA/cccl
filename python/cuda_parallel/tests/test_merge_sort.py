@@ -14,6 +14,19 @@ import cuda.parallel.experimental.algorithms as algorithms
 import cuda.parallel.experimental.iterators as iterators
 from cuda.parallel.experimental.struct import gpu_struct
 
+DTYPE_LIST = [
+    np.uint8,
+    np.uint16,
+    np.uint32,
+    np.uint64,
+    np.int8,
+    np.int16,
+    np.int32,
+    np.int64,
+    np.float32,
+    np.float64,
+]
+
 
 def random_array(size, dtype) -> np.typing.NDArray:
     rng = np.random.default_rng()
@@ -69,18 +82,7 @@ def compare_op(lhs, rhs):
 
 @pytest.mark.parametrize(
     "dtype",
-    [
-        np.uint8,
-        np.uint16,
-        np.uint32,
-        np.uint64,
-        np.int8,
-        np.int16,
-        np.int32,
-        np.int64,
-        np.float32,
-        np.float64,
-    ],
+    DTYPE_LIST,
 )
 def test_merge_sort_keys(dtype):
     for num_items_pow2 in type_to_problem_sizes(dtype):
@@ -100,18 +102,7 @@ def test_merge_sort_keys(dtype):
 
 @pytest.mark.parametrize(
     "dtype",
-    [
-        np.uint8,
-        np.uint16,
-        np.uint32,
-        np.uint64,
-        np.int8,
-        np.int16,
-        np.int32,
-        np.int64,
-        np.float32,
-        np.float64,
-    ],
+    DTYPE_LIST,
 )
 def test_merge_sort_pairs(dtype):
     for num_items_pow2 in type_to_problem_sizes(dtype):
@@ -140,18 +131,7 @@ def test_merge_sort_pairs(dtype):
 
 @pytest.mark.parametrize(
     "dtype",
-    [
-        np.uint8,
-        np.uint16,
-        np.uint32,
-        np.uint64,
-        np.int8,
-        np.int16,
-        np.int32,
-        np.int64,
-        np.float32,
-        np.float64,
-    ],
+    DTYPE_LIST,
 )
 def test_merge_sort_keys_copy(dtype):
     for num_items_pow2 in type_to_problem_sizes(dtype):
@@ -173,18 +153,7 @@ def test_merge_sort_keys_copy(dtype):
 
 @pytest.mark.parametrize(
     "dtype",
-    [
-        np.uint8,
-        np.uint16,
-        np.uint32,
-        np.uint64,
-        np.int8,
-        np.int16,
-        np.int32,
-        np.int64,
-        np.float32,
-        np.float64,
-    ],
+    DTYPE_LIST,
 )
 def test_merge_sort_pairs_copy(dtype):
     for num_items_pow2 in type_to_problem_sizes(dtype):
@@ -271,18 +240,7 @@ def test_merge_sort_pairs_struct_type():
 
 @pytest.mark.parametrize(
     "dtype",
-    [
-        np.uint8,
-        np.uint16,
-        np.uint32,
-        np.uint64,
-        np.int8,
-        np.int16,
-        np.int32,
-        np.int64,
-        np.float32,
-        np.float64,
-    ],
+    DTYPE_LIST,
 )
 def test_merge_sort_keys_copy_iterator_input(dtype):
     for num_items_pow2 in type_to_problem_sizes(dtype):
@@ -306,18 +264,7 @@ def test_merge_sort_keys_copy_iterator_input(dtype):
 
 @pytest.mark.parametrize(
     "dtype",
-    [
-        np.uint8,
-        np.uint16,
-        np.uint32,
-        np.uint64,
-        np.int8,
-        np.int16,
-        np.int32,
-        np.int64,
-        np.float32,
-        np.float64,
-    ],
+    DTYPE_LIST,
 )
 def test_merge_sort_pairs_copy_iterator_input(dtype):
     for num_items_pow2 in type_to_problem_sizes(dtype):
