@@ -848,10 +848,10 @@ template <class _Tp>
 using async_host_buffer = async_buffer<_Tp, _CUDA_VMR::host_accessible>;
 
 template <class _Tp, class... _TargetProperties, class... _SourceProperties>
-async_buffer<_Tp, _TargetProperties...>
-copy_to(const async_buffer<_Tp, _SourceProperties...>& __source,
-        any_async_resource<_TargetProperties...> __mr,
-        cuda::stream_ref __stream)
+async_buffer<_Tp, _TargetProperties...> make_async_buffer(
+  const async_buffer<_Tp, _SourceProperties...>& __source,
+  any_async_resource<_TargetProperties...> __mr,
+  cuda::stream_ref __stream)
 {
   env_t<_TargetProperties...> __env{__mr, __stream};
   async_buffer<_Tp, _TargetProperties...> __res{__env, __source.size(), uninit};
@@ -870,16 +870,16 @@ copy_to(const async_buffer<_Tp, _SourceProperties...>& __source,
 }
 
 template <class _Tp, class... _TargetProperties, class... _SourceProperties>
-async_buffer<_Tp, _TargetProperties...>
-copy_to(const async_buffer<_Tp, _SourceProperties...>& __source, any_async_resource<_TargetProperties...> __mr)
+async_buffer<_Tp, _TargetProperties...> make_async_buffer(
+  const async_buffer<_Tp, _SourceProperties...>& __source, any_async_resource<_TargetProperties...> __mr)
 {
-  return ::cuda::experimental::copy_to(__source, __mr, __source.get_stream());
+  return ::cuda::experimental::make_async_buffer(__source, __mr, __source.get_stream());
 }
 
 template <class _Tp, class... _SourceProperties>
-async_buffer<_Tp, _SourceProperties...> copy_to(const async_buffer<_Tp, _SourceProperties...>& __source)
+async_buffer<_Tp, _SourceProperties...> make_async_buffer(const async_buffer<_Tp, _SourceProperties...>& __source)
 {
-  return ::cuda::experimental::copy_to(__source, __source.get_memory_resource(), __source.get_stream());
+  return ::cuda::experimental::make_async_buffer(__source, __source.get_memory_resource(), __source.get_stream());
 }
 
 } // namespace cuda::experimental

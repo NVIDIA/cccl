@@ -23,7 +23,7 @@
 #include "types.h"
 
 // TODO: only device accessible resource
-TEMPLATE_TEST_CASE("cudax::async_buffer copy_to",
+TEMPLATE_TEST_CASE("cudax::async_buffer make_async_buffer",
                    "[container][async_buffer]",
                    cuda::std::tuple<cuda::mr::host_accessible>,
                    cuda::std::tuple<cuda::mr::device_accessible>,
@@ -45,28 +45,28 @@ TEMPLATE_TEST_CASE("cudax::async_buffer copy_to",
   {
     { // empty input
       const Buffer input{env};
-      const Buffer buf = cudax::copy_to(input, input.get_memory_resource(), input.get_stream());
+      const Buffer buf = cudax::make_async_buffer(input, input.get_memory_resource(), input.get_stream());
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
     }
 
     { // non-empty input
       const Buffer input{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
-      const Buffer buf = cudax::copy_to(input, input.get_memory_resource(), input.get_stream());
+      const Buffer buf = cudax::make_async_buffer(input, input.get_memory_resource(), input.get_stream());
       CUDAX_CHECK(!buf.empty());
       CUDAX_CHECK(equal_range(buf));
     }
 
     { // empty input
       const Buffer input{env};
-      const Buffer buf = cudax::copy_to(input);
+      const Buffer buf = cudax::make_async_buffer(input);
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
     }
 
     { // non-empty input
       const Buffer input{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
-      const Buffer buf = cudax::copy_to(input);
+      const Buffer buf = cudax::make_async_buffer(input);
       CUDAX_CHECK(!buf.empty());
       CUDAX_CHECK(equal_range(buf));
     }
@@ -77,14 +77,14 @@ TEMPLATE_TEST_CASE("cudax::async_buffer copy_to",
     cudax::stream other_stream{};
     { // empty input
       const Buffer input{env};
-      const Buffer buf = cudax::copy_to(input, input.get_memory_resource(), other_stream);
+      const Buffer buf = cudax::make_async_buffer(input, input.get_memory_resource(), other_stream);
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
     }
 
     { // non-empty input
       const Buffer input{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
-      const Buffer buf = cudax::copy_to(input, input.get_memory_resource(), other_stream);
+      const Buffer buf = cudax::make_async_buffer(input, input.get_memory_resource(), other_stream);
       CUDAX_CHECK(!buf.empty());
       CUDAX_CHECK(equal_range(buf));
     }
@@ -95,7 +95,7 @@ TEMPLATE_TEST_CASE("cudax::async_buffer copy_to",
     cudax::stream other_stream{};
     { // empty input
       const Buffer input{env};
-      const auto buf = cudax::copy_to(input, env.query(cudax::get_memory_resource), other_stream);
+      const auto buf = cudax::make_async_buffer(input, env.query(cudax::get_memory_resource), other_stream);
       static_assert(!cuda::std::is_same_v<Buffer, cuda::std::remove_const_t<decltype(buf)>>);
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
@@ -103,7 +103,7 @@ TEMPLATE_TEST_CASE("cudax::async_buffer copy_to",
 
     { // non-empty input
       const Buffer input{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
-      const auto buf = cudax::copy_to(input, env.query(cudax::get_memory_resource), other_stream);
+      const auto buf = cudax::make_async_buffer(input, env.query(cudax::get_memory_resource), other_stream);
       static_assert(!cuda::std::is_same_v<Buffer, cuda::std::remove_const_t<decltype(buf)>>);
       CUDAX_CHECK(!buf.empty());
       CUDAX_CHECK(equal_range(buf));
@@ -114,7 +114,7 @@ TEMPLATE_TEST_CASE("cudax::async_buffer copy_to",
   {
     { // empty input
       const Buffer input{env};
-      const auto buf = cudax::copy_to(input, env.query(cudax::get_memory_resource), stream);
+      const auto buf = cudax::make_async_buffer(input, env.query(cudax::get_memory_resource), stream);
       static_assert(!cuda::std::is_same_v<Buffer, cuda::std::remove_const_t<decltype(buf)>>);
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
@@ -122,7 +122,7 @@ TEMPLATE_TEST_CASE("cudax::async_buffer copy_to",
 
     { // non-empty input
       const Buffer input{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
-      const auto buf = cudax::copy_to(input, env.query(cudax::get_memory_resource), stream);
+      const auto buf = cudax::make_async_buffer(input, env.query(cudax::get_memory_resource), stream);
       static_assert(!cuda::std::is_same_v<Buffer, cuda::std::remove_const_t<decltype(buf)>>);
       CUDAX_CHECK(!buf.empty());
       CUDAX_CHECK(equal_range(buf));
@@ -130,7 +130,7 @@ TEMPLATE_TEST_CASE("cudax::async_buffer copy_to",
 
     { // empty input
       const Buffer input{env};
-      const auto buf = cudax::copy_to(input, env.query(cudax::get_memory_resource));
+      const auto buf = cudax::make_async_buffer(input, env.query(cudax::get_memory_resource));
       static_assert(!cuda::std::is_same_v<Buffer, cuda::std::remove_const_t<decltype(buf)>>);
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
@@ -138,7 +138,7 @@ TEMPLATE_TEST_CASE("cudax::async_buffer copy_to",
 
     { // non-empty input
       const Buffer input{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
-      const auto buf = cudax::copy_to(input, env.query(cudax::get_memory_resource));
+      const auto buf = cudax::make_async_buffer(input, env.query(cudax::get_memory_resource));
       static_assert(!cuda::std::is_same_v<Buffer, cuda::std::remove_const_t<decltype(buf)>>);
       CUDAX_CHECK(!buf.empty());
       CUDAX_CHECK(equal_range(buf));
