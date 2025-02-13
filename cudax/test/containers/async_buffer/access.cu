@@ -85,12 +85,14 @@ TEMPLATE_TEST_CASE("cudax::async_buffer access",
 
     { // Works without allocation
       Buffer buf{env};
+      buf.wait();
       CUDAX_CHECK(buf.data() == nullptr);
       CUDAX_CHECK(cuda::std::as_const(buf).data() == nullptr);
     }
 
     { // Works with allocation
       Buffer buf{env, {T(1), T(42), T(1337), T(0)}};
+      buf.wait();
       CUDAX_CHECK(buf.data() != nullptr);
       CUDAX_CHECK(cuda::std::as_const(buf).data() != nullptr);
       CUDAX_CHECK(cuda::std::as_const(buf).data() == buf.data());
