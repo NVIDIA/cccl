@@ -188,6 +188,7 @@ private:
     if constexpr (__kind == cudaMemcpyHostToHost)
     {
       ::cuda::experimental::host_launch(__buf_.get_stream(), _CUDA_VSTD::copy<_Iter, pointer>, __first, __last, __dest);
+      __buf_.get_stream().wait();
     }
     else if constexpr (!_CUDA_VSTD::contiguous_iterator<_Iter>)
     { // For non-coniguous iterators we need to copy into temporary host storage to use cudaMemcpy
