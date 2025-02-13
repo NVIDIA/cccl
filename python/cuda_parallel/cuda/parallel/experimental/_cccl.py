@@ -223,7 +223,7 @@ def _iterator_to_cccl_iter(it: IteratorBase) -> Iterator:
 
 
 def _none_to_cccl_iter() -> Iterator:
-    # Create a null int pointer. TODO there should be a better way to do this
+    # Create a null int pointer. Any type could be used here, we just need to pass NULL.
     info = _numpy_type_to_info(np.int32)
     return Iterator(
         info.size,
@@ -232,9 +232,6 @@ def _none_to_cccl_iter() -> Iterator:
         Op(),
         Op(),
         info,
-        # Note: this is slightly slower, but supports all ndarray-like objects
-        # as long as they support CAI
-        # TODO: switch to use gpumemoryview once it's ready
         None,
     )
 
