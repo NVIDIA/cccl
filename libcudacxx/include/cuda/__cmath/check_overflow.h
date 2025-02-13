@@ -46,20 +46,21 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Ap) _CCCL_AND _CCCL_TRAIT(_
     constexpr auto __min_v = _CUDA_VSTD::numeric_limits<_Common>::min();
     auto __a1              = static_cast<_Common>(__a);
     auto __b1              = static_cast<_Common>(__b);
-    if (_CUDA_VSTD::is_unsigned_v<_Common> || __b1 >= 0)
-    {
+    if (_CUDA_VSTD::is_unsigned_v<_Common> || _CUDA_VSTD::is_unsigned_v<_Bp> || __b1 >= 0) // check for overflow
+    { // a + b > max
       return __a1 > __max_v - __b1;
     }
-    return (_CUDA_VSTD::is_same_v<_Common, _Bp> && __b1 == __min_v)
-           ? (/*avoid pointless comparison warning*/ _CUDA_VSTD::is_signed_v<_Common> && __a1 < 0)
-           : (__a1 < __min_v - __b1);
+    // b < 0 --> check for underflow, a + b < min
+    return _CUDA_VSTD::is_unsigned_v<_Ap> ? false : __a1 < __min_v - __b1;
   }
 }
 
 _CCCL_TEMPLATE(class _Ap, class _Bp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Ap) _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::is_integral, _Bp))
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_sub_overflow(const _Ap __a, const _Bp __b) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_sub_overflow([[maybe_unused]] const _Ap __a, //
+                                                                       [[maybe_unused]] const _Bp __b) noexcept
 {
+  // we cannot call is_add_overflow(a, -b) because b could be equal to min
   using _Common = _CUDA_VSTD::common_type_t<_Ap, _Bp>;
   if constexpr (sizeof(_Common) > sizeof(_Ap) && sizeof(_Common) > sizeof(_Bp)) // promotion -> fast path
   {
@@ -71,13 +72,13 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Ap) _CCCL_AND _CCCL_TRAIT(_
     constexpr auto __min_v = _CUDA_VSTD::numeric_limits<_Common>::min();
     auto __a1              = static_cast<_Common>(__a);
     auto __b1              = static_cast<_Common>(__b);
-    if (_CUDA_VSTD::is_unsigned_v<_Common> || __b1 >= 0) // check for underflow
-    {
+    if (_CUDA_VSTD::is_unsigned_v<_Common> || _CUDA_VSTD::is_unsigned_v<_Bp> || __b1 >= 0) // check for underflow
+    { // a - b < min
       return __a1 < __min_v + __b1;
     }
-    // check for overflow
-    // -__min_v -> overflow vvvv
-    return (_CUDA_VSTD::is_same_v<_Common, _Bp> && __b1 == __min_v) || (__a1 > __max_v + __b1);
+    // b < 0 --> check for overflow, a - b > max
+    return __a1 > __max_v + __b1;
+    // we cannot use is_unsigned_v<_Ap> here because b could be equal to min
   }
 }
 
@@ -87,9 +88,7 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Ap) _CCCL_AND _CCCL_TRAIT(_
                                                                        [[maybe_unused]] const _Bp __b) noexcept
 {
   using _Common = _CUDA_VSTD::common_type_t<_Ap, _Bp>;
-
-  if constexpr (sizeof(_Common) > sizeof(_Ap) && sizeof(_Common) > sizeof(_Bp) && // promotion -> fast path
-                !(_CUDA_VSTD::is_same_v<_Ap, _CUDA_VSTD::uint16_t> && _CUDA_VSTD::is_same_v<_Bp, _CUDA_VSTD::uint16_t>) )
+  if constexpr (sizeof(_Common) > sizeof(_Ap) && sizeof(_Common) > sizeof(_Bp)) // promotion -> fast path
   {
     return false;
   }
@@ -102,21 +101,53 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Ap) _CCCL_AND _CCCL_TRAIT(_
     {
       return false;
     }
-    if constexpr (_CUDA_VSTD::is_unsigned_v<_Common>)
+    if constexpr (_CUDA_VSTD::is_unsigned_v<_Common>
+                  || (_CUDA_VSTD::is_unsigned_v<_Ap> && _CUDA_VSTD::is_unsigned_v<_Bp>) )
     {
       return __a1 > __max_v / __b1;
     }
     else // signed
     {
       constexpr auto __min_v = _CUDA_VSTD::numeric_limits<_Common>::min();
-      // a >= 0 && b >= 0 -> a > max / b
-      // a >= 0 && b < 0  -> a > min / b ***
+      auto __a_ge_zero       = _CUDA_VSTD::is_unsigned_v<_Ap> || __a1 >= 0;
+      auto __b_ge_zero       = _CUDA_VSTD::is_unsigned_v<_Bp> || __b1 >= 0;
+      // a >= 0 && b >= 0 -> a > max / b     -
+      // a < 0  && b < 0  -> a < max / b +++                  need to handle  b == min
       // a < 0  && b >= 0 -> a < min / b
-      // a < 0  && b < 0  -> a < max / b
-      auto __same_sign = (__a1 >= 0) == (__b1 >= 0);
-      auto __limit     = __same_sign ? __max_v : __min_v;
-      return __a1 >= 0 ? (__a1 > __limit / __b1) : (__a1 < __limit / __b1);
+      // a >= 0 && b < 0  -> a > min / b *** --> b < min / a  to avoid min / -1 overflow, a != 0
+      if (__a_ge_zero)
+      {
+        return (__b_ge_zero) ? (__a1 > __max_v / __b1) // a >= 0 && b >= 0
+                             : (__a1 == 0 ? false : __b1 < __min_v / __a1); // a >= 0 && b < 0
+      }
+      // a < 0
+      return __b1 >= 0 ? (__a1 < __min_v / __b1) // a < 0 && b >= 0
+                       : (__b1 == __min_v ? true : __a1 < __max_v / __b1); // a < 0 && b < 0
     }
+  }
+}
+
+_CCCL_TEMPLATE(class _Ap, class _Bp)
+_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Ap) _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::is_integral, _Bp))
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_div_overflow([[maybe_unused]] const _Ap __a, //
+                                                                       [[maybe_unused]] const _Bp __b) noexcept
+{
+  using _Common = _CUDA_VSTD::common_type_t<_Ap, _Bp>;
+  if (__b == 0)
+  {
+    return true;
+  }
+  if constexpr ((sizeof(_Common) > sizeof(_Ap) && sizeof(_Common) > sizeof(_Bp))
+                || _CUDA_VSTD::is_unsigned_v<_Ap> || _CUDA_VSTD::is_unsigned_v<_Bp>)
+  {
+    return false;
+  }
+  else
+  {
+    auto __a1              = static_cast<_Common>(__a);
+    auto __b1              = static_cast<_Common>(__b);
+    constexpr auto __min_v = _CUDA_VSTD::numeric_limits<_Common>::min();
+    return (__a1 == __min_v && __b1 == _Common{-1});
   }
 }
 
