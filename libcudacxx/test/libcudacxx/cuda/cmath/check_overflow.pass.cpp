@@ -33,6 +33,8 @@ __host__ __device__ constexpr void test_add_sub()
   assert(cuda::is_add_overflow(max_c, U{1}));
   // sub
   assert(!cuda::is_sub_overflow(T{1}, U{1}));
+  assert(!cuda::is_add_overflow(T{0}, min_b));
+  assert(!cuda::is_add_overflow(min_a, U{0}));
   if constexpr (cuda::std::is_signed_v<CommonType>)
   {
     assert(cuda::is_sub_overflow(T{0}, min_c));

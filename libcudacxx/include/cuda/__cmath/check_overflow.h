@@ -51,7 +51,8 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Ap) _CCCL_AND _CCCL_TRAIT(_
       return __a1 > __max_v - __b1;
     }
     // b < 0 --> check for underflow, a + b < min
-    return _CUDA_VSTD::is_unsigned_v<_Ap> ? false : __a1 < __min_v - __b1;
+    auto __a_lt_zero = (_CUDA_VSTD::is_unsigned_v<_Ap> || _CUDA_VSTD::is_unsigned_v<_Common>) ? false : __a1 < 0;
+    return __a_lt_zero && (__b1 == __min_v || __a1 < __min_v - __b1);
   }
 }
 
@@ -78,7 +79,7 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Ap) _CCCL_AND _CCCL_TRAIT(_
     }
     // b < 0 --> check for overflow, a - b > max
     return __a1 > __max_v + __b1;
-    // we cannot use is_unsigned_v<_Ap> here because b could be equal to min
+    // we cannot use is_unsigned_v<_Ap> here because of a=0, b=min -> -min  overflow
   }
 }
 
@@ -117,12 +118,12 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Ap) _CCCL_AND _CCCL_TRAIT(_
       // a >= 0 && b < 0  -> a > min / b *** --> b < min / a  to avoid min / -1 overflow, a != 0
       if (__a_ge_zero)
       {
-        return (__b_ge_zero) ? (__a1 > __max_v / __b1) // a >= 0 && b >= 0
-                             : (__a1 == 0 ? false : __b1 < __min_v / __a1); // a >= 0 && b < 0
+        return __b_ge_zero ? (__a1 > __max_v / __b1) // a >= 0 && b >= 0
+                           : (__a1 == 0 ? false : __b1 < __min_v / __a1); // a >= 0 && b < 0
       }
       // a < 0
-      return __b1 >= 0 ? (__a1 < __min_v / __b1) // a < 0 && b >= 0
-                       : (__b1 == __min_v ? true : __a1 < __max_v / __b1); // a < 0 && b < 0
+      return __b_ge_zero ? (__a1 < __min_v / __b1) // a < 0 && b >= 0
+                         : (__b1 == __min_v ? true : __a1 < __max_v / __b1); // a < 0 && b < 0
     }
   }
 }
@@ -143,10 +144,10 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Ap) _CCCL_AND _CCCL_TRAIT(_
   }
   else
   {
+    constexpr auto __min_v = _CUDA_VSTD::numeric_limits<_Common>::min();
     auto __a1              = static_cast<_Common>(__a);
     auto __b1              = static_cast<_Common>(__b);
-    constexpr auto __min_v = _CUDA_VSTD::numeric_limits<_Common>::min();
-    return (__a1 == __min_v && __b1 == _Common{-1});
+    return __a1 == __min_v && __b1 == _Common{-1};
   }
 }
 
