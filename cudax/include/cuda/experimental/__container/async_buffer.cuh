@@ -184,7 +184,8 @@ private:
   {
     if constexpr (__is_host_only)
     {
-      return _CUDA_VSTD::copy(__first, __last, __dest);
+      ::cuda::experimental::host_launch(
+        __buf_.get_stream(), &_CUDA_VSTD::copy<const_pointer, pointer>, __first, __last, __dest);
     }
     else
     {
@@ -208,19 +209,21 @@ private:
   //! @param __last Pointer to the end of the input segment.
   //! @param __dest Pointer to the start of the output segment.
   //! @param __count The number of elements to be copied.
+  //! @note This function is inherently asynchronous. We need to ensure that the memory pointed to by \p __first and
+  //! \p __last lives long enough
   template <class _Iter, cudaMemcpyKind __kind = __is_host_only ? cudaMemcpyHostToHost : cudaMemcpyHostToDevice>
   _CCCL_HIDE_FROM_ABI void __copy_cross(_Iter __first, _Iter __last, pointer __dest, size_type __count)
   {
     if constexpr (__kind == cudaMemcpyHostToHost)
     {
-      _CUDA_VSTD::copy(__first, __last, __dest);
+      ::cuda::experimental::host_launch(__buf_.get_stream(), &_CUDA_VSTD::copy<_Iter, pointer>, __first, __last, __dest);
     }
     else if constexpr (!_CUDA_VSTD::contiguous_iterator<_Iter>)
     { // For non-coniguous iterators we need to copy into temporary host storage to use cudaMemcpy
       // This should only ever happen when passing in data from host to device
       static_assert(__kind == cudaMemcpyHostToDevice, "Invalid use case!");
       auto __temp = _CUDA_VSTD::get_temporary_buffer<_Tp>(__count).first;
-      _CUDA_VSTD::copy(__first, __last, __temp);
+      ::cuda::experimental::host_launch(__buf_.get_stream(), &_CUDA_VSTD::copy<_Iter, pointer>, __first, __last, __temp);
       _CCCL_TRY_CUDA_API(
         ::cudaMemcpyAsync,
         "cudax::async_buffer::__copy_cross: failed to copy data",
@@ -229,7 +232,8 @@ private:
         sizeof(_Tp) * __count,
         __kind,
         __buf_.get_stream().get());
-      _CUDA_VSTD::return_temporary_buffer(__temp);
+      // We need to free the temporary buffer in stream order to ensure the memory survives
+      ::cuda::experimental::host_launch(__buf_.get_stream(), &_CUDA_VSTD::return_temporary_buffer<_Tp>, __temp);
     }
     else
     {
@@ -252,7 +256,8 @@ private:
   {
     if constexpr (__is_host_only)
     {
-      _CUDA_VSTD::fill_n(__first, __count, _Tp());
+      ::cuda::experimental::host_launch(
+        __buf_.get_stream(), &_CUDA_VSTD::uninitialized_default_construct_n<pointer, size_type>, __first, __count);
     }
     else
     {
@@ -267,7 +272,8 @@ private:
   {
     if constexpr (__is_host_only)
     {
-      _CUDA_VSTD::fill_n(__first, __count, __value);
+      ::cuda::experimental::host_launch(
+        __buf_.get_stream(), &_CUDA_VSTD::uninitialized_fill_n<pointer, size_type, _Tp>, __first, __count, __value);
     }
     else
     {
