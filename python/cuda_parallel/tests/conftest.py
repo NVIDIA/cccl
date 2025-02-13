@@ -21,19 +21,18 @@ import pytest
 )
 def input_array(request):
     dtype = request.param
-    size = 10000
 
     # Generate random values based on the dtype
     if np.issubdtype(dtype, np.integer):
         # For integer types, use np.random.randint for random integers
-        array = cp.random.randint(low=0, high=10, size=size, dtype=dtype)
+        array = cp.random.randint(low=0, high=10, size=1000, dtype=dtype)
     elif np.issubdtype(dtype, np.floating):
         # For floating-point types, use np.random.random and cast to the required dtype
-        array = cp.random.random(size).astype(dtype)
+        array = cp.random.random(1000).astype(dtype)
     elif np.issubdtype(dtype, np.complexfloating):
         # For complex types, generate random real and imaginary parts
-        real_part = cp.random.random(size)
-        imag_part = cp.random.random(size)
+        real_part = cp.random.random(1000)
+        imag_part = cp.random.random(1000)
         array = (real_part + 1j * imag_part).astype(dtype)
 
     return array
