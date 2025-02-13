@@ -67,13 +67,13 @@ struct larger_unsigned_type
 };
 
 template <typename T>
-struct larger_unsigned_type<T, typename ::cuda::std::enable_if<(sizeof(T) < 4)>::type>
+struct larger_unsigned_type<T, ::cuda::std::enable_if_t<(sizeof(T) < 4)>>
 {
   using type = ::cuda::std::uint32_t;
 };
 
 template <typename T>
-struct larger_unsigned_type<T, typename ::cuda::std::enable_if<(sizeof(T) == 4)>::type>
+struct larger_unsigned_type<T, ::cuda::std::enable_if_t<(sizeof(T) == 4)>>
 {
   using type = ::cuda::std::uint64_t;
 };
@@ -81,7 +81,7 @@ struct larger_unsigned_type<T, typename ::cuda::std::enable_if<(sizeof(T) == 4)>
 #if _CCCL_HAS_INT128()
 
 template <typename T>
-struct larger_unsigned_type<T, typename ::cuda::std::enable_if<(sizeof(T) == 8)>::type>
+struct larger_unsigned_type<T, ::cuda::std::enable_if_t<(sizeof(T) == 8)>>
 {
   using type = __uint128_t;
 };
@@ -92,11 +92,11 @@ template <typename T>
 using larger_unsigned_type_t = typename larger_unsigned_type<T>::type;
 
 template <typename T>
-using unsigned_implicit_prom_t = typename ::cuda::std::make_unsigned<implicit_prom_t<T>>::type;
+using unsigned_implicit_prom_t = ::cuda::std::make_unsigned_t<implicit_prom_t<T>>;
 
 template <typename T>
-using supported_integral = ::cuda::std::bool_constant<
-  ::cuda::std::is_integral<T>::value && !::cuda::std::is_same<T, bool>::value && (sizeof(T) <= 8)>;
+using supported_integral =
+  ::cuda::std::bool_constant<::cuda::std::is_integral_v<T> && !::cuda::std::is_same_v<T, bool> && (sizeof(T) <= 8)>;
 
 /***********************************************************************************************************************
  * Extract higher bits after multiplication
@@ -108,11 +108,11 @@ multiply_extract_higher_bits(T value, R multiplier)
 {
   static_assert(supported_integral<T>::value, "unsupported type");
   static_assert(supported_integral<R>::value, "unsupported type");
-  _CCCL_IF_CONSTEXPR (_CCCL_TRAIT(::cuda::std::is_signed, T))
+  if constexpr (_CCCL_TRAIT(::cuda::std::is_signed, T))
   {
     _CCCL_ASSERT(value >= 0, "value must be non-negative");
   }
-  _CCCL_IF_CONSTEXPR (_CCCL_TRAIT(::cuda::std::is_signed, R))
+  if constexpr (_CCCL_TRAIT(::cuda::std::is_signed, R))
   {
     _CCCL_ASSERT(multiplier >= 0, "multiplier must be non-negative");
   }
@@ -143,7 +143,7 @@ class fast_div_mod
   static_assert(supported_integral<T1>::value, "unsupported type");
 
   // uint16_t is a special case that would requires complex logic. Workaround: convert to int
-  using T          = ::cuda::std::conditional_t<::cuda::std::is_same<T1, ::cuda::std::uint16_t>::value, int, T1>;
+  using T          = ::cuda::std::conditional_t<::cuda::std::is_same_v<T1, ::cuda::std::uint16_t>, int, T1>;
   using unsigned_t = unsigned_implicit_prom_t<T>;
 
 public:

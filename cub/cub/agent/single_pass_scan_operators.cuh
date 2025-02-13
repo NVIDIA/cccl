@@ -702,28 +702,28 @@ struct ScanTileState<T, true>
 
 private:
   template <MemoryOrder Order>
-  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order == MemoryOrder::relaxed), void>::type
+  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::relaxed), void>
   StoreStatus(TxnWord* ptr, TxnWord alias)
   {
     detail::store_relaxed(ptr, alias);
   }
 
   template <MemoryOrder Order>
-  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order == MemoryOrder::acquire_release), void>::type
+  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::acquire_release), void>
   StoreStatus(TxnWord* ptr, TxnWord alias)
   {
     detail::store_release(ptr, alias);
   }
 
   template <MemoryOrder Order>
-  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order == MemoryOrder::relaxed), TxnWord>::type
+  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::relaxed), TxnWord>
   LoadStatus(TxnWord* ptr)
   {
     return detail::load_relaxed(ptr);
   }
 
   template <MemoryOrder Order>
-  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order == MemoryOrder::acquire_release), TxnWord>::type
+  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::acquire_release), TxnWord>
   LoadStatus(TxnWord* ptr)
   {
     // For pre-volta we hoist the memory barrier to outside the loop, i.e., after reading a valid state
@@ -731,12 +731,12 @@ private:
   }
 
   template <MemoryOrder Order>
-  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order == MemoryOrder::relaxed), void>::type
+  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::relaxed), void>
   ThreadfenceForLoadAcqPreVolta()
   {}
 
   template <MemoryOrder Order>
-  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order == MemoryOrder::acquire_release), void>::type
+  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::acquire_release), void>
   ThreadfenceForLoadAcqPreVolta()
   {
     NV_IF_TARGET(NV_PROVIDES_SM_70, (), (__threadfence();));

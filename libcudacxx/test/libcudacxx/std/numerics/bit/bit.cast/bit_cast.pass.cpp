@@ -38,7 +38,7 @@ __host__ __device__ void test_roundtrip_through_buffer(T from)
 
   assert((from == to) == (from == from)); // because NaN
 
-  _CCCL_IF_CONSTEXPR (HasUniqueObjectRepresentations)
+  if constexpr (HasUniqueObjectRepresentations)
   {
     assert(cuda::std::memcmp(&from, &middle, sizeof(T)) == 0);
     assert(cuda::std::memcmp(&to, &middle, sizeof(T)) == 0);
@@ -61,7 +61,7 @@ __host__ __device__ void test_roundtrip_through_nested_T(T from)
 
   assert((from == to) == (from == from)); // because NaN
 
-  _CCCL_IF_CONSTEXPR (HasUniqueObjectRepresentations)
+  if constexpr (HasUniqueObjectRepresentations)
   {
     assert(cuda::std::memcmp(&from, &middle, sizeof(T)) == 0);
     assert(cuda::std::memcmp(&to, &middle, sizeof(T)) == 0);
@@ -80,7 +80,7 @@ __host__ __device__ void test_roundtrip_through(T from)
 
   assert((from == to) == (from == from)); // because NaN
 
-  _CCCL_IF_CONSTEXPR (HasUniqueObjectRepresentations)
+  if constexpr (HasUniqueObjectRepresentations)
   {
     assert(cuda::std::memcmp(&from, &middle, sizeof(T)) == 0);
     assert(cuda::std::memcmp(&to, &middle, sizeof(T)) == 0);

@@ -1446,13 +1446,13 @@ struct sm100_tuning<Input,
 template <class InputT>
 constexpr primitive is_primitive()
 {
-  return detail::is_primitive<InputT>::value ? primitive::yes : primitive::no;
+  return detail::is_primitive_v<InputT> ? primitive::yes : primitive::no;
 }
 
 template <class FlagT>
 constexpr flagged is_flagged()
 {
-  return ::cuda::std::is_same<FlagT, NullType>::value ? flagged::no : flagged::yes;
+  return ::cuda::std::is_same_v<FlagT, NullType> ? flagged::no : flagged::yes;
 }
 
 template <bool KeepRejects>

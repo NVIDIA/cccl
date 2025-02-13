@@ -484,7 +484,7 @@ template <class _Ret>
 struct __invoke_void_return_wrapper<_Ret, true>
 {
   template <class... _Args>
-  _LIBCUDACXX_HIDE_FROM_ABI static _CCCL_CONSTEXPR_CXX14 void __call(_Args&&... __args)
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr void __call(_Args&&... __args)
   {
     _CUDA_VSTD::__invoke(_CUDA_VSTD::forward<_Args>(__args)...);
   }

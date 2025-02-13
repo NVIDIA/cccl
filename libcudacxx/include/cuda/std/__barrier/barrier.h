@@ -162,8 +162,7 @@ private:
 public:
   _CCCL_HIDE_FROM_ABI __barrier_base() = default;
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14
-  __barrier_base(ptrdiff_t __count, __empty_completion = __empty_completion())
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __barrier_base(ptrdiff_t __count, __empty_completion = __empty_completion())
       : __phase_arrived_expected(__init(__count))
   {
     _CCCL_ASSERT(__count >= 0, "");
