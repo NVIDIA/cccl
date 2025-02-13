@@ -10,6 +10,7 @@
 
 #ifndef _CUDAX__LAUNCH_HOST_LAUNCH
 #define _CUDAX__LAUNCH_HOST_LAUNCH
+
 #include <cuda/__cccl_config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)

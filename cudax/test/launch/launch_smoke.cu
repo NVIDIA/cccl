@@ -12,7 +12,6 @@
 #include <cuda/experimental/launch.cuh>
 #include <cuda/experimental/stream.cuh>
 
-#include "cuda/experimental/__stream/stream_ref.cuh"
 #include <cooperative_groups.h>
 #include <testing.cuh>
 
