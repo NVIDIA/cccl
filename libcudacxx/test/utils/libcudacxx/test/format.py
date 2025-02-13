@@ -269,7 +269,7 @@ class LibcxxTestFormat(object):
             # nodiscard before enabling it
             test_str_list = [b"ignoring return value", b"nodiscard", b"NODISCARD"]
             if any(test_str in contents for test_str in test_str_list):
-                test_cxx.flags += ["-Werror=unused-result"]
+                test_cxx.flags += ["-Xcompiler", "-Werror=unused-result"]
         cmd, out, err, rc = test_cxx.compile(source_path, out=os.devnull)
 
         def check_rc(rc):
