@@ -61,6 +61,7 @@
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/policy.cuh>
+#include <cuda/experimental/__launch/host_launch.cuh>
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
 #include <cuda/experimental/__memory_resource/get_memory_resource.cuh>
 #include <cuda/experimental/__memory_resource/properties.cuh>
@@ -272,27 +273,6 @@ private:
     {
       thrust::fill_n(thrust::cuda::par_nosync.on(__buf_.get_stream().get()), __first, __count, __value);
     }
-  }
-
-  //! @brief Equality-compares elements from the sequence `[__first1, __last1)` with those of sequence
-  //! `[__first2, __last2)`.
-  //! @param __first1 Pointer to the start of the first sequence.
-  //! @param __last1 Pointer to the end of the first sequence.
-  //! @param __first2 Pointer to the start of the second sequence.
-  //! @param __last2 Pointer to the end of the second sequence.
-  _CCCL_HIDE_FROM_ABI bool
-  __equality(const_pointer __first1, const_pointer __last1, const_pointer __first2, const_pointer __last2) const
-  {
-    if constexpr (__is_host_only)
-    {
-      return _CUDA_VSTD::equal(__first1, __last1, __first2, __last2);
-    }
-    else
-    {
-      return ((__last1 - __first1) == (__last2 - __first2))
-          && thrust::equal(thrust::cuda::par_nosync.on(__buf_.get_stream().get()), __first1, __last1, __first2);
-    }
-    _CCCL_UNREACHABLE();
   }
 
 public:
@@ -812,9 +792,23 @@ public:
   operator==(const async_buffer& __lhs, const async_buffer& __rhs) noexcept(noexcept(_CUDA_VSTD::equal(
     __lhs.__unwrapped_begin(), __lhs.__unwrapped_end(), __rhs.__unwrapped_begin(), __rhs.__unwrapped_end())))
   {
-    ::cuda::experimental::stream_ref{__lhs.get_stream()}.wait(__rhs.get_stream());
-    return __lhs.__equality(
-      __lhs.__unwrapped_begin(), __lhs.__unwrapped_end(), __rhs.__unwrapped_begin(), __rhs.__unwrapped_end());
+    if constexpr (__is_host_only)
+    {
+      // need to wait here because `host_launch` does not return values
+      __lhs.wait();
+      __rhs.wait();
+      return _CUDA_VSTD::equal(
+        __lhs.__unwrapped_begin(), __lhs.__unwrapped_end(), __rhs.__unwrapped_begin(), __rhs.__unwrapped_end());
+    }
+    else
+    {
+      return (__lhs.size() == __rhs.size())
+          && thrust::equal(thrust::cuda::par_nosync.on(__lhs.get_stream().get()),
+                           __lhs.__unwrapped_begin(),
+                           __lhs.__unwrapped_end(),
+                           __rhs.__unwrapped_begin());
+    }
+    _CCCL_UNREACHABLE();
   }
 #if _CCCL_STD_VER <= 2017
   //! @brief Compares two async_buffers for inequality
@@ -825,9 +819,7 @@ public:
   operator!=(const async_buffer& __lhs, const async_buffer& __rhs) noexcept(noexcept(_CUDA_VSTD::equal(
     __lhs.__unwrapped_begin(), __lhs.__unwrapped_end(), __rhs.__unwrapped_begin(), __rhs.__unwrapped_end())))
   {
-    ::cuda::experimental::stream_ref{__lhs.get_stream()}.wait(__rhs.get_stream());
-    return !__lhs.__equality(
-      __lhs.__unwrapped_begin(), __lhs.__unwrapped_end(), __rhs.__unwrapped_begin(), __rhs.__unwrapped_end());
+    return !(__lhs == __rhs);
   }
 #endif // _CCCL_STD_VER <= 2017
 
