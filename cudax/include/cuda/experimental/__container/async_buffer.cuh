@@ -174,35 +174,6 @@ private:
     __size_ = __count;
   }
 
-  //! @brief Copies data from `[__first, __last)` to \p __dest, where \p __first and \p __dest reside in the same memory
-  //! space
-  //! @param __first Pointer to the start of the input segment.
-  //! @param __last Pointer to the end of the input segment.
-  //! @param __dest Pointer to the start of the output segment.
-  //! @returns Pointer equal to `__dest + __count`
-  _CCCL_HIDE_FROM_ABI pointer __copy_same(const_pointer __first, const_pointer __last, pointer __dest)
-  {
-    if constexpr (__is_host_only)
-    {
-      ::cuda::experimental::host_launch(
-        __buf_.get_stream(), _CUDA_VSTD::copy<const_pointer, pointer>, __first, __last, __dest);
-    }
-    else
-    {
-      const auto __count = static_cast<size_t>(__last - __first);
-      _CCCL_TRY_CUDA_API(
-        ::cudaMemcpyAsync,
-        "cudax::async_buffer::__copy_same: failed to copy data",
-        __dest,
-        __first,
-        sizeof(_Tp) * __count,
-        ::cudaMemcpyDeviceToDevice,
-        __buf_.get_stream().get());
-      return __dest + __count;
-    }
-    _CCCL_UNREACHABLE();
-  }
-
   //! @brief Copies \p __count elements from `[__first, __last)` to \p __dest, where \p __first and \p __dest reside in
   //! the different memory spaces
   //! @param __first Pointer to the start of the input segment.
@@ -298,7 +269,8 @@ public:
   {
     if (__other.__size_ != 0)
     {
-      this->__copy_same(__other.__unwrapped_begin(), __other.__unwrapped_end(), __unwrapped_begin());
+      this->__copy_cross<const_pointer>(
+        __other.__unwrapped_begin(), __other.__unwrapped_end(), __unwrapped_begin(), __other.__size_);
     }
   }
 
