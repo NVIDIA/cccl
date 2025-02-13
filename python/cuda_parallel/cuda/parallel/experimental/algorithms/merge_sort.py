@@ -90,7 +90,6 @@ class _MergeSort:
         if error != enums.CUDA_SUCCESS:
             raise ValueError("Error building merge_sort")
 
-    # TODO should I pass op here as well
     def __call__(
         self,
         temp_storage,
