@@ -852,18 +852,7 @@ struct DispatchSegmentedReduce
   {
     auto wrapped_policy = detail::reduce::MakeReducePolicyWrapper(policy);
     // Force kernel code-generation in all compiler passes
-    return InvokePasses(
-      detail::reduce::DeviceSegmentedReduceKernel<
-        typename PolicyHub::MaxPolicy,
-        InputIteratorT,
-        OutputIteratorT,
-        BeginOffsetIteratorT,
-        EndOffsetIteratorT,
-        OffsetT,
-        ReductionOpT,
-        InitT,
-        AccumT>,
-      wrapped_policy);
+    return InvokePasses(kernel_source.SegmentedReduceKernel(), wrapped_policy);
   }
 
   //---------------------------------------------------------------------------
@@ -913,6 +902,7 @@ struct DispatchSegmentedReduce
    *   **[optional]** CUDA stream to launch kernels within.
    *   Default is stream<sub>0</sub>.
    */
+  template <typename MaxPolicyT = typename PolicyHub::MaxPolicy>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -923,7 +913,10 @@ struct DispatchSegmentedReduce
     EndOffsetIteratorT d_end_offsets,
     ReductionOpT reduction_op,
     InitT init,
-    cudaStream_t stream)
+    cudaStream_t stream,
+    KernelSource kernel_source             = {},
+    KernelLauncherFactory launcher_factory = {},
+    MaxPolicyT max_policy                  = {})
   {
     if (num_segments <= 0)
     {
@@ -936,7 +929,7 @@ struct DispatchSegmentedReduce
     {
       // Get PTX version
       int ptx_version = 0;
-      error           = CubDebug(PtxVersion(ptx_version));
+      error           = CubDebug(launcher_factory.PtxVersion(ptx_version));
       if (cudaSuccess != error)
       {
         break;
@@ -954,10 +947,12 @@ struct DispatchSegmentedReduce
         reduction_op,
         init,
         stream,
-        ptx_version);
+        ptx_version,
+        kernel_source,
+        launcher_factory);
 
       // Dispatch to chained policy
-      error = CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
+      error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
       if (cudaSuccess != error)
       {
         break;
