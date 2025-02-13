@@ -360,7 +360,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT variant_alternative<_Ip, variant<_Types...>
 
 _CCCL_INLINE_VAR constexpr size_t variant_npos = static_cast<size_t>(-1);
 
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 int __choose_index_type(unsigned int __num_elem)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __choose_index_type(unsigned int __num_elem)
 {
   constexpr unsigned char __small   = static_cast<unsigned char>(-1);
   constexpr unsigned short __medium = static_cast<unsigned short>(-1);

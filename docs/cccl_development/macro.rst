@@ -213,10 +213,6 @@ The following macros are required only if the target C++ version does not suppor
 +-----------------------------+----------------------------------------------------------+
 | ``_CCCL_STD_VER``           | C++ standard version, e.g. ``#if _CCCL_STD_VER >= 2017`` |
 +-----------------------------+----------------------------------------------------------+
-| ``_CCCL_CONSTEXPR_CXX14``   | Enable ``constexpr`` for C++14 or newer                  |
-+-----------------------------+----------------------------------------------------------+
-| ``_CCCL_CONSTEXPR_CXX17``   | Enable ``constexpr`` for C++17 or newer                  |
-+-----------------------------+----------------------------------------------------------+
 | ``_CCCL_CONSTEXPR_CXX20``   | Enable ``constexpr`` for C++20 or newer                  |
 +-----------------------------+----------------------------------------------------------+
 | ``_CCCL_CONSTEXPR_CXX23``   | Enable ``constexpr`` for C++23 or newer                  |

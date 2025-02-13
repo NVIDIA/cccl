@@ -71,7 +71,7 @@ struct __allocation_guard
     }
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Pointer __release_ptr() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Pointer __release_ptr() noexcept
   { // not called __release() because it's a keyword in objective-c++
     _Pointer __tmp = __ptr_;
     __ptr_         = nullptr;
