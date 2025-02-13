@@ -151,7 +151,6 @@ __host__ __device__ constexpr void test_mul()
 template <class T, class U>
 __host__ __device__ constexpr void test_div()
 {
-  using CommonType     = cuda::std::common_type_t<T, U>;
   constexpr auto min_a = cuda::std::numeric_limits<T>::min();
   constexpr auto min_b = cuda::std::numeric_limits<U>::min();
   assert(!cuda::is_div_overflow(T{8}, U{4}));
