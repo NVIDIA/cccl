@@ -32,7 +32,7 @@ constexpr int host_data[]              = {1, 42, 1337, 0, 12, -1};
 template <class Buffer>
 constexpr bool equal_range(const Buffer& buf)
 {
-  _CCCL_IF_CONSTEXPR (Buffer::__is_host_only)
+  if constexpr (Buffer::__is_host_only)
   {
     return cuda::std::equal(buf.begin(), buf.end(), cuda::std::begin(host_data), cuda::std::end(host_data));
   }
@@ -49,7 +49,7 @@ constexpr bool equal_range(const Buffer& buf)
 template <bool HostOnly, class T>
 constexpr bool compare_value(const T& value, const T& expected)
 {
-  _CCCL_IF_CONSTEXPR (HostOnly)
+  if constexpr (HostOnly)
   {
     return value == expected;
   }
@@ -71,7 +71,7 @@ constexpr bool compare_value(const T& value, const T& expected)
 template <bool HostOnly, class T>
 void assign_value(T& value, const T& input)
 {
-  _CCCL_IF_CONSTEXPR (HostOnly)
+  if constexpr (HostOnly)
   {
     value = input;
   }
@@ -103,7 +103,7 @@ struct equal_to_value
 template <class Buffer>
 constexpr bool equal_size_value(const Buffer& buf, const size_t size, const int value)
 {
-  _CCCL_IF_CONSTEXPR (Buffer::__is_host_only)
+  if constexpr (Buffer::__is_host_only)
   {
     return buf.size() == size
         && cuda::std::equal(buf.begin(), buf.end(), cuda::std::begin(host_data), equal_to_value{value});
@@ -123,7 +123,7 @@ constexpr bool equal_size_value(const Buffer& buf, const size_t size, const int 
 template <class Range1, class Range2>
 constexpr bool equal_range(const Range1& range1, const Range2& range2)
 {
-  _CCCL_IF_CONSTEXPR (Range1::__is_host_only)
+  if constexpr (Range1::__is_host_only)
   {
     return cuda::std::equal(range1.begin(), range1.end(), range2.begin(), range2.end());
   }
