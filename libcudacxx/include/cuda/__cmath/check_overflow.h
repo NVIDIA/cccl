@@ -32,7 +32,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 _CCCL_TEMPLATE(class _Ap, class _Bp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Ap) _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::is_integral, _Bp))
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_add_overflow(const _Ap __a, const _Bp __b) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_add_overflow([[maybe_unused]] const _Ap __a, //
+                                                                       [[maybe_unused]] const _Bp __b) noexcept
 {
   using _Common = _CUDA_VSTD::common_type_t<_Ap, _Bp>;
   if constexpr (sizeof(_Common) > sizeof(_Ap) && sizeof(_Common) > sizeof(_Bp)) // promotion -> fast path
@@ -82,7 +83,8 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Ap) _CCCL_AND _CCCL_TRAIT(_
 
 _CCCL_TEMPLATE(class _Ap, class _Bp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Ap) _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::is_integral, _Bp))
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_mul_overflow(const _Ap __a, const _Bp __b) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_mul_overflow([[maybe_unused]] const _Ap __a, //
+                                                                       [[maybe_unused]] const _Bp __b) noexcept
 {
   using _Common = _CUDA_VSTD::common_type_t<_Ap, _Bp>;
 
@@ -108,7 +110,7 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Ap) _CCCL_AND _CCCL_TRAIT(_
     {
       constexpr auto __min_v = _CUDA_VSTD::numeric_limits<_Common>::min();
       // a >= 0 && b >= 0 -> a > max / b
-      // a >= 0 && b < 0  -> a > min / b
+      // a >= 0 && b < 0  -> a > min / b ***
       // a < 0  && b >= 0 -> a < min / b
       // a < 0  && b < 0  -> a < max / b
       auto __same_sign = (__a1 >= 0) == (__b1 >= 0);
