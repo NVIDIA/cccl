@@ -32,12 +32,12 @@ Math
 
    * - :ref:`is_add_overflow <libcudacxx-extended-api-math-check-overflow>`
      - Check if addition overflows
-     - CCCL 3.0.0 / CUDA 13
+     - CCCL 3.0.0 / CUDA 13.0
 
    * - :ref:`is_sub_overflow <libcudacxx-extended-api-math-check-overflow>`
      - Check if subtraction overflows
-     - CCCL 3.0.0 / CUDA 13
+     - CCCL 3.0.0 / CUDA 13.0
 
    * - :ref:`is_mul_overflow <libcudacxx-extended-api-math-check-overflow>`
      - Check if multiplication overflows
-     - CCCL 3.0.0 / CUDA 13
+     - CCCL 3.0.0 / CUDA 13.0
