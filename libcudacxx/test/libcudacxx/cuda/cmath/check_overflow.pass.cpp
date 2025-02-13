@@ -126,7 +126,8 @@ __host__ __device__ constexpr void test_mul()
     assert(cuda::is_mul_overflow(min_c, U{-1}));
     assert(!cuda::is_mul_overflow(CommonType{min_c + 1}, U{-1}));
     assert(cuda::is_mul_overflow(min_c, U{-2}));
-    // assert(cuda::is_mul_overflow(max_a, U{-1})); // TODO
+    assert(!cuda::is_mul_overflow(max_a, U{-1}));
+    assert(cuda::is_mul_overflow(T{-1}, min_c));
   }
   else if constexpr (cuda::std::is_unsigned_v<T> && cuda::std::is_unsigned_v<U>)
   {
@@ -148,10 +149,35 @@ __host__ __device__ constexpr void test_mul()
 }
 
 template <class T, class U>
+__host__ __device__ constexpr void test_div()
+{
+  using CommonType     = cuda::std::common_type_t<T, U>;
+  constexpr auto min_a = cuda::std::numeric_limits<T>::min();
+  constexpr auto min_b = cuda::std::numeric_limits<U>::min();
+  assert(!cuda::is_div_overflow(T{8}, U{4}));
+  assert(cuda::is_div_overflow(T{8}, U{0}));
+  assert(cuda::is_div_overflow(T{0}, U{0}));
+  if constexpr (cuda::std::is_signed_v<T> && cuda::std::is_signed_v<U>)
+  {
+    if constexpr (!cuda::std::is_same_v<T, U> && sizeof(T) < 4 && sizeof(U) < 4)
+    {
+      assert(!cuda::is_div_overflow(min_a, U{-1}));
+    }
+    else if constexpr (sizeof(T) >= sizeof(U))
+    {
+      assert(cuda::is_div_overflow(min_a, U{-1}));
+    }
+  }
+  unused(min_a);
+  unused(min_b);
+}
+
+template <class T, class U>
 __host__ __device__ constexpr void test()
 {
   test_add_sub<T, U>();
   test_mul<T, U>();
+  test_div<T, U>();
 }
 
 template <class T>
