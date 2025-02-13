@@ -104,7 +104,7 @@ _LIBCUDACXX_HIDE_FROM_ABI int __runtime_clz(_Tp __x) noexcept
   NV_IF_ELSE_TARGET(NV_IS_DEVICE,
                     (return sizeof(_Tp) == sizeof(uint32_t) ? __clz(static_cast<uint32_t>(__x)) //
                                                             : __clzll(static_cast<uint64_t>(__x));),
-                    (return __x == 0 ? numeric_limits<_Tp>::digits : _CUDA_VSTD::__host_runtime_clz(__x);))
+                    (return _CUDA_VSTD::__host_runtime_clz(__x);))
 }
 
 // __cccl_clz returns numeric_limits<_Tp>::digits if __x == 0 on both host and device
