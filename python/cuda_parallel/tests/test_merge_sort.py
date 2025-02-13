@@ -47,13 +47,19 @@ def merge_sort_device(
     )
 
     temp_storage_size = merge_sort(
-        None, d_in_keys, d_in_items, d_out_keys, d_out_items, num_items
+        None, d_in_keys, d_in_items, d_out_keys, d_out_items, num_items, stream=stream
     )
     d_temp_storage = numba.cuda.device_array(
         temp_storage_size, dtype=np.uint8, stream=stream.ptr if stream else 0
     )
     merge_sort(
-        d_temp_storage, d_in_keys, d_in_items, d_out_keys, d_out_items, num_items
+        d_temp_storage,
+        d_in_keys,
+        d_in_items,
+        d_out_keys,
+        d_out_items,
+        num_items,
+        stream=stream,
     )
 
 
@@ -347,3 +353,22 @@ def test_merge_sort_pairs_copy_iterator_input(dtype):
 
         np.testing.assert_array_equal(h_out_keys, h_in_keys)
         np.testing.assert_array_equal(h_out_items, h_in_items)
+
+
+def test_merge_sort_with_stream(cuda_stream):
+    cp_stream = cp.cuda.ExternalStream(cuda_stream.ptr)
+    num_items = 10000
+
+    with cp_stream:
+        h_in_keys = random_array(num_items, np.int32)
+        d_in_keys = numba.cuda.to_device(h_in_keys)
+        d_out_keys = cp.empty_like(d_in_keys)
+
+    merge_sort_device(
+        d_in_keys, None, d_out_keys, None, compare_op, num_items, stream=cuda_stream
+    )
+
+    got = d_out_keys.get()
+    h_in_keys.sort()
+
+    np.testing.assert_array_equal(got, h_in_keys)

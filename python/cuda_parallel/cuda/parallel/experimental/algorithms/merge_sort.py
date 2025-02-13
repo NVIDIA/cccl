@@ -174,4 +174,25 @@ def merge_sort(
     d_out_items: DeviceArrayLike | IteratorBase | None,
     op: Callable,
 ):
+    """Implements a device-wide merge sort using ``d_in_keys`` and the comparison operator ``op``.
+
+    Example:
+        Below, ``merge_sort`` is used to sort a sequence of keys inplace. It also rearranges the items according to the keys' order.
+
+        .. literalinclude:: ../../python/cuda_parallel/tests/test_merge_sort_api.py
+          :language: python
+          :dedent:
+          :start-after: example-begin merge-sort
+          :end-before: example-end merge-sort
+
+    Args:
+        d_in_keys: Device array or iterator containing the input keys to be sorted
+        d_in_items: Optional device array or iterator that contains each key's corresponding item
+        d_in_keys: Device array to store the sorted keys
+        d_in_items: Device array to store the sorted items
+        op: Callable representing the comparison operator
+
+    Returns:
+        A callable object that can be used to perform the merge sort
+    """
     return _MergeSort(d_in_keys, d_in_items, d_out_keys, d_out_items, op)
