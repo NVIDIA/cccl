@@ -132,11 +132,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Conditionally use certain language features depending on availability
 ///////////////////////////////////////////////////////////////////////////////
-#if defined(_CCCL_NO_IF_CONSTEXPR)
-#  define _CCCL_IF_CONSTEXPR if
-#else // ^^^ _CCCL_NO_IF_CONSTEXPR ^^^ / vvv !_CCCL_NO_IF_CONSTEXPR vvv
-#  define _CCCL_IF_CONSTEXPR if constexpr
-#endif // !_CCCL_NO_IF_CONSTEXPR
 
 #if defined(_CCCL_NO_INLINE_VARIABLES)
 #  define _CCCL_INLINE_VAR

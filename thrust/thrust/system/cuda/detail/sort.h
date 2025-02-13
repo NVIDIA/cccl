@@ -300,7 +300,7 @@ THRUST_RUNTIME_FUNCTION void radix_sort(execution_policy<Derived>& policy, Key* 
     Key* temp_ptr = reinterpret_cast<Key*>(keys_buffer.d_buffers[1]);
     cuda_cub::copy_n(policy, temp_ptr, keys_count, keys);
   }
-  _CCCL_IF_CONSTEXPR (SORT_ITEMS::value)
+  if constexpr (SORT_ITEMS::value)
   {
     if (items_buffer.selector != 0)
     {
