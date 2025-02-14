@@ -74,7 +74,6 @@ struct row_offset_iterator_state_t
 };
 
 using integral_types = std::tuple<std::int32_t, std::int64_t, std::uint32_t, std::uint64_t>;
-
 TEMPLATE_LIST_TEST_CASE(
   "segmented_reduce can sum over rows of matrix with integral type", "[segmented_reduce]", integral_types)
 {
@@ -100,34 +99,22 @@ TEMPLATE_LIST_TEST_CASE(
     "   unsigned long long linear_id;\n"
     "   unsigned long long row_size;\n"
     "};\n",
-    {"advance_start_offset_it",
-     "extern \"C\" __device__ void advance_start_offset_it(row_offset_iterator_state_t* state, unsigned long long "
+    {"advance_offset_it",
+     "extern \"C\" __device__ void advance_offset_it(row_offset_iterator_state_t* state, unsigned long long "
      "offset) {\n"
      "  state->linear_id += offset;\n"
      "}"},
-    {"dereference_start_offset_it",
-     "extern \"C\" __device__ unsigned long long dereference_start_offset_it(row_offset_iterator_state_t* state) { \n"
+    {"dereference_offset_it",
+     "extern \"C\" __device__ unsigned long long dereference_offset_it(row_offset_iterator_state_t* state) { \n"
      "  return (state->linear_id) * (state->row_size);\n"
      "}"});
 
   start_offset_it.state.linear_id = 0;
   start_offset_it.state.row_size  = row_size;
 
-  // TODO: must we generate end_offset iterator? It is just a copy of the start_offset, with linear_id shifted by 1
-  iterator_t<SizeT, row_offset_iterator_state_t> end_offset_it = make_iterator<SizeT, row_offset_iterator_state_t>(
-    "struct row_offset_iterator_state_t {\n"
-    "   unsigned long long linear_id;\n"
-    "   unsigned long long row_size;\n"
-    "};\n",
-    {"advance_end_offset_it",
-     "extern \"C\" __device__ void advance_end_offset_it(row_offset_iterator_state_t* state, unsigned long long "
-     "offset) {\n"
-     "  state->linear_id += offset;\n"
-     "}"},
-    {"dereference_end_offset_it",
-     "extern \"C\" __device__ unsigned long long dereference_end_offset_it(row_offset_iterator_state_t* state) { \n"
-     "  return (state->linear_id) * (state->row_size);\n"
-     "}"});
+  // a copy of offset iterator, so no need to define advance/dereference bodies, just reused those defined above
+  iterator_t<SizeT, row_offset_iterator_state_t> end_offset_it =
+    make_iterator<SizeT, row_offset_iterator_state_t>("", {"advance_offset_it", ""}, {"dereference_offset_it", ""});
 
   end_offset_it.state.linear_id = 1;
   end_offset_it.state.row_size  = row_size;
