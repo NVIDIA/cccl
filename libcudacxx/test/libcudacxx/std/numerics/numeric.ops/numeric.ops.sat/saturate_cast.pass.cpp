@@ -75,7 +75,7 @@ __host__ __device__ constexpr bool test_type(int zero_value)
   ASSERT_SAME_TYPE(S, decltype(cuda::std::saturate_cast<S>(small_umax)));
   static_assert(noexcept(cuda::std::saturate_cast<S>(small_umax)), "");
   test_sat_cast<S>(small_uzero, szero, zero_value);
-  test_sat_cast<S>(small_umax, static_cast<S>(cuda::std::is_same<S, IMIN>::value ? small_smax : small_umax), zero_value);
+  test_sat_cast<S>(small_umax, (sizeof(S) == sizeof(IMIN)) ? small_smax : static_cast<S>(small_umax), zero_value);
 
   ASSERT_SAME_TYPE(S, decltype(cuda::std::saturate_cast<S>(smax)));
   static_assert(noexcept(cuda::std::saturate_cast<S>(smax)), "");
@@ -127,8 +127,7 @@ __host__ __device__ constexpr bool test_type(int zero_value)
   static_assert(noexcept(cuda::std::saturate_cast<U>(big_smax)), "");
   test_sat_cast<U>(big_smin, uzero, zero_value); // saturated
   test_sat_cast<U>(big_szero, uzero, zero_value);
-  test_sat_cast<U>(
-    big_smax, (cuda::std::is_same<U, UMAX>::value ? static_cast<U>(smax) : umax), zero_value); // saturated
+  test_sat_cast<U>(big_smax, (sizeof(U) == sizeof(UMAX)) ? static_cast<U>(smax) : umax, zero_value); // saturated
 
   ASSERT_SAME_TYPE(U, decltype(cuda::std::saturate_cast<U>(big_umax)));
   static_assert(noexcept(cuda::std::saturate_cast<U>(big_umax)), "");
