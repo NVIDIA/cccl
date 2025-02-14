@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++17
-
 // <cuda/std/iterator>
 // template <class C> constexpr auto ssize(const C& c)
 //     -> common_type_t<ptrdiff_t, make_signed_t<decltype(c.size())>>;                    // C++20
