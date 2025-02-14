@@ -95,7 +95,7 @@ Tuning find_tuning(int cc, const Tuning (&tunings)[N])
 
 reduce_runtime_tuning_policy get_policy(int cc, cccl_type_info accumulator_type)
 {
-  reduce_tuning_t chain[] = {{60, 256, 16, 4}, {35, 256, 20, 4}};
+  constexpr reduce_tuning_t chain[] = {{60, 256, 16, 4}, {35, 256, 20, 4}};
 
   auto [_, block_size, items_per_thread, vector_load_length] = find_tuning(cc, chain);
 
