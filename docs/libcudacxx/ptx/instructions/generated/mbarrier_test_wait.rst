@@ -47,10 +47,9 @@ mbarrier.test_wait.relaxed.cta.shared::cta.b64
    // .sem       = { .relaxed }
    // .scope     = { .cta, .cluster }
    template <cuda::ptx::dot_scope Scope>
-   __device__ static inline void mbarrier_test_wait(
+   __device__ static inline bool mbarrier_test_wait(
      cuda::ptx::sem_relaxed_t,
      cuda::ptx::scope_t<Scope> scope,
-     bool waitComplete,
      uint64_t* addr,
      const uint64_t& state);
 
@@ -62,9 +61,8 @@ mbarrier.test_wait.relaxed.cluster.shared::cta.b64
    // .sem       = { .relaxed }
    // .scope     = { .cta, .cluster }
    template <cuda::ptx::dot_scope Scope>
-   __device__ static inline void mbarrier_test_wait(
+   __device__ static inline bool mbarrier_test_wait(
      cuda::ptx::sem_relaxed_t,
      cuda::ptx::scope_t<Scope> scope,
-     bool waitComplete,
      uint64_t* addr,
      const uint64_t& state);

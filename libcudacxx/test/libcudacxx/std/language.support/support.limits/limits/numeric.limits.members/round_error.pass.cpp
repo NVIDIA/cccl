@@ -48,19 +48,19 @@ int main(int, char**)
   test<unsigned long>(0);
   test<long long>(0);
   test<unsigned long long>(0);
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   test<__int128_t>(0);
   test<__uint128_t>(0);
-#endif
+#endif // _CCCL_HAS_INT128()
   test<float>(0.5);
   test<double>(0.5);
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
   test<long double>(0.5);
 #endif
-#if defined(_CCCL_HAS_NVFP16)
+#if _CCCL_HAS_NVFP16()
   test<__half>(__double2half(0.5));
 #endif // _CCCL_HAS_NVFP16
-#if defined(_CCCL_HAS_NVBF16)
+#if _CCCL_HAS_NVBF16()
   test<__nv_bfloat16>(__double2bfloat16(0.5));
 #endif // _CCCL_HAS_NVBF16
 #if _CCCL_HAS_NVFP8()

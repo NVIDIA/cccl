@@ -38,12 +38,10 @@ __host__ __device__ void test(typename cuda::std::enable_if<cuda::std::is_integr
 
   static_assert((cuda::std::is_same<decltype(cuda::std::real(T(x))), double>::value), "");
   assert(cuda::std::real(x) == x);
-#if TEST_STD_VER > 2011
   constexpr T val{x};
   static_assert(cuda::std::real(val) == val, "");
   constexpr cuda::std::complex<T> t{val, val};
   static_assert(t.real() == x, "");
-#endif
 }
 
 template <class T, int x>
@@ -53,12 +51,10 @@ __host__ __device__ void test(typename cuda::std::enable_if<!cuda::std::is_integ
 
   static_assert((cuda::std::is_same<decltype(cuda::std::real(T(x))), T>::value), "");
   assert(cuda::std::real(x) == x);
-#if TEST_STD_VER > 2011
   constexpr T val{x};
   static_assert(cuda::std::real(val) == val, "");
   constexpr cuda::std::complex<T> t{val, val};
   static_assert(t.real() == x, "");
-#endif
 }
 
 template <class T>

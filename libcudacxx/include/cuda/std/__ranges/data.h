@@ -34,8 +34,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-#if _CCCL_STD_VER >= 2014
-
 // [range.prim.data]
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__data)
@@ -43,7 +41,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__data)
 template <class _Tp>
 _CCCL_CONCEPT __ptr_to_object = is_pointer_v<_Tp> && is_object_v<remove_pointer_t<_Tp>>;
 
-#  if !defined(_CCCL_NO_CONCEPTS)
+#if !defined(_CCCL_NO_CONCEPTS)
 template <class _Tp>
 concept __member_data = __can_borrow<_Tp> && __workaround_52970<_Tp> && requires(_Tp&& __t) {
   { _LIBCUDACXX_AUTO_CAST(__t.data()) } -> __ptr_to_object;
@@ -53,7 +51,7 @@ template <class _Tp>
 concept __ranges_begin_invocable = !__member_data<_Tp> && __can_borrow<_Tp> && requires(_Tp&& __t) {
   { _CUDA_VRANGES::begin(__t) } -> contiguous_iterator;
 };
-#  else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(__member_data_,
                        requires(_Tp&& __t)(requires(__can_borrow<_Tp>),
@@ -71,7 +69,7 @@ _CCCL_CONCEPT_FRAGMENT(__ranges_begin_invocable_,
 
 template <class _Tp>
 _CCCL_CONCEPT __ranges_begin_invocable = _CCCL_FRAGMENT(__ranges_begin_invocable_, _Tp);
-#  endif // _CCCL_NO_CONCEPTS
+#endif // _CCCL_NO_CONCEPTS
 
 struct __fn
 {
@@ -128,8 +126,6 @@ inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto cdata = __cdata::__fn{};
 } // namespace __cpo
-
-#endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

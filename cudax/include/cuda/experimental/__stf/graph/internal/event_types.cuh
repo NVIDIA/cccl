@@ -27,25 +27,87 @@
 namespace cuda::experimental::stf::reserved
 {
 
+class graph_event_impl;
+
+using graph_event = reserved::handle<graph_event_impl, reserved::handle_flags::non_null>;
+
 /* A prereq corresponds to a node, which is always paired to its graph */
 class graph_event_impl : public event_impl
 {
 protected:
   graph_event_impl()                        = default;
   graph_event_impl(const graph_event_impl&) = delete;
-  graph_event_impl(cudaGraphNode_t n, size_t epoch)
+  graph_event_impl(cudaGraphNode_t n, size_t epoch, cudaGraph_t g)
       : node(n)
       , epoch(epoch)
+      , g(g)
   {
     assert(node);
+  }
+
+  void remove_duplicates(::std::vector<cudaGraphNode_t>& nodes)
+  {
+    ::std::sort(nodes.begin(), nodes.end());
+    nodes.erase(::std::unique(nodes.begin(), nodes.end()), nodes.end()); // Remove duplicates
+  }
+
+  bool factorize(reserved::event_vector& events) override
+  {
+    _CCCL_ASSERT(events.size() >= 2, "invalid value");
+
+    // Sanity checks to ensure we are manipulating events in the CUDA graph backend
+    for (const auto& e : events)
+    {
+      _CCCL_ASSERT(dynamic_cast<const graph_event_impl*>(e.operator->()), "invalid event type");
+    }
+
+    // To prevent "infinite" growth of event lists, we factorize long vector of
+    // graph events by making them depend on a single node instead
+    if (events.size() > 16)
+    {
+      cudaGraphNode_t n;
+
+      ::std::vector<cudaGraphNode_t> nodes;
+
+      // We initialize these variables to prevent compiler from issuing "maybe
+      // uninitialized" warnings
+      cudaGraph_t g0 = nullptr;
+      size_t epoch0  = 0;
+
+      // List all graph nodes in the vector of events
+      for (const auto& e : events)
+      {
+        const auto ge = dynamic_cast<const graph_event_impl*>(e.operator->());
+        nodes.push_back(ge->node);
+
+        // We can only have nodes from the same graph
+        _CCCL_ASSERT(!g0 || g0 == ge->g, "inconsistent graphs events (different graphs)");
+        g0 = ge->g;
+
+        epoch0 = ::std::max(ge->epoch, epoch0);
+      }
+
+      // We cannot have duplicate entries in dependencies
+      remove_duplicates(nodes);
+
+      // Create a new empty graph node which depends on the previous ones,
+      // empty the list of events and replace it with this single "empty" event
+      cuda_safe_call(cudaGraphAddEmptyNode(&n, g0, nodes.data(), nodes.size()));
+
+      events.clear();
+      events.push_back(graph_event(n, epoch0, g0));
+
+      return true;
+    }
+
+    return false;
   }
 
 public:
   mutable cudaGraphNode_t node;
   mutable size_t epoch;
+  mutable cudaGraph_t g;
 };
-
-using graph_event = reserved::handle<graph_event_impl, reserved::handle_flags::non_null>;
 
 // This converts a prereqs and converts it to a vector of graph nodes. As a
 // side-effect, it also remove duplicates from the prereqs list of events
@@ -76,9 +138,14 @@ inline ::std::vector<cudaGraphNode_t> join_with_graph_nodes(event_list& prereqs,
 /* previous_prereqs is only passed so that we can insert the proper DOT annotations */
 template <typename context_t>
 inline void fork_from_graph_node(
-  context_t& ctx, cudaGraphNode_t n, size_t epoch, event_list& previous_prereqs, ::std::string prereq_string)
+  context_t& ctx,
+  cudaGraphNode_t n,
+  cudaGraph_t g,
+  size_t epoch,
+  event_list& previous_prereqs,
+  ::std::string prereq_string)
 {
-  auto gnp = reserved::graph_event(n, epoch);
+  auto gnp = reserved::graph_event(n, epoch, g);
   gnp->set_symbol(ctx, mv(prereq_string));
 
   auto& dot = *ctx.get_dot();

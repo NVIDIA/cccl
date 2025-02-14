@@ -54,10 +54,9 @@ __host__ __device__ void test()
   static_assert((cuda::std::uses_allocator<T, A>::value == Expected), "");
   static_assert(
     cuda::std::is_base_of<cuda::std::integral_constant<bool, Expected>, cuda::std::uses_allocator<T, A>>::value, "");
-#if TEST_STD_VER >= 2017
+
   ASSERT_SAME_TYPE(decltype(cuda::std::uses_allocator_v<T, A>), const bool);
   static_assert((cuda::std::uses_allocator_v<T, A> == Expected), "");
-#endif // TEST_STD_VER >= 2017
 }
 
 int main(int, char**)
@@ -73,9 +72,9 @@ int main(int, char**)
   test<false, C, decltype(C::allocator_type)>();
 #endif // !TEST_COMPILER_NVRTC
   test<false, D, decltype(D::allocator_type)>();
-#if !defined(TEST_COMPILER_GCC) && !defined(TEST_COMPILER_MSVC_2017) // E::allocator_type is private
+#if !defined(TEST_COMPILER_GCC) // E::allocator_type is private
   test<false, E, int>();
-#endif // !TEST_COMPILER_GCC && !TEST_COMPILER_MSVC_2017
+#endif // !TEST_COMPILER_GCC
 
   static_assert((!cuda::std::uses_allocator<int, cuda::std::allocator<int>>::value), "");
 #if defined(_LIBCUDACXX_HAS_VECTOR)
@@ -88,9 +87,9 @@ int main(int, char**)
   static_assert((!cuda::std::uses_allocator<C, decltype(C::allocator_type)>::value), "");
   static_assert((!cuda::std::uses_allocator<D, decltype(D::allocator_type)>::value), "");
 #endif // !TEST_COMPILER_NVRTC
-#if !defined(TEST_COMPILER_GCC) && !defined(TEST_COMPILER_MSVC_2017) // E::allocator_type is private
+#if !defined(TEST_COMPILER_GCC) // E::allocator_type is private
   static_assert((!cuda::std::uses_allocator<E, int>::value), "");
-#endif // !TEST_COMPILER_GCC && !TEST_COMPILER_MSVC_2017
+#endif // !TEST_COMPILER_GCC
 
   return 0;
 }

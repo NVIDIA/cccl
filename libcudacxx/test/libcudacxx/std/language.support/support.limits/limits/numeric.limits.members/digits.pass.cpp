@@ -46,19 +46,19 @@ int main(int, char**)
   test<unsigned long, sizeof(long) == 4 ? 32 : 64>();
   test<long long, 63>();
   test<unsigned long long, 64>();
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   test<__int128_t, 127>();
   test<__uint128_t, 128>();
-#endif
+#endif // _CCCL_HAS_INT128()
   test<float, FLT_MANT_DIG>();
   test<double, DBL_MANT_DIG>();
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
   test<long double, LDBL_MANT_DIG>();
 #endif
-#if defined(_CCCL_HAS_NVFP16)
+#if _CCCL_HAS_NVFP16()
   test<__half, 11>();
 #endif // _CCCL_HAS_NVFP16
-#if defined(_CCCL_HAS_NVBF16)
+#if _CCCL_HAS_NVBF16()
   test<__nv_bfloat16, 8>();
 #endif // _CCCL_HAS_NVBF16
 #if _CCCL_HAS_NVFP8()

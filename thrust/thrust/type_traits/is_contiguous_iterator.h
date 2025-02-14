@@ -35,16 +35,6 @@
 
 #include <cuda/std/iterator> // Needed for __gnu_cxx::__normal_iterator
 
-#if _CCCL_COMPILER(MSVC, <, 19, 16) // MSVC 2017 version 15.9
-#  include <array>
-#  include <string>
-#  include <vector>
-
-#  if _CCCL_STD_VER >= 2017
-#    include <string_view>
-#  endif
-#endif
-
 THRUST_NAMESPACE_BEGIN
 
 /*! \addtogroup utility
@@ -82,7 +72,6 @@ struct is_contiguous_iterator_impl;
 template <typename Iterator>
 using is_contiguous_iterator = detail::is_contiguous_iterator_impl<Iterator>;
 
-#if _CCCL_STD_VER >= 2014
 /*! \brief <tt>constexpr bool</tt> that is \c true if \c Iterator satisfies
  *  <a href="https://en.cppreference.com/w/cpp/named_req/ContiguousIterator">ContiguousIterator</a>,
  *  aka it points to elements that are contiguous in memory, and \c false
@@ -94,7 +83,6 @@ using is_contiguous_iterator = detail::is_contiguous_iterator_impl<Iterator>;
  */
 template <typename Iterator>
 constexpr bool is_contiguous_iterator_v = is_contiguous_iterator<Iterator>::value;
-#endif
 
 /*! \brief Customization point that can be customized to indicate that an
  *  iterator type \c Iterator satisfies
@@ -155,48 +143,18 @@ struct is_libstdcxx_normal_iterator<::__gnu_cxx::__normal_iterator<Iterator, Con
 {};
 #endif
 
-#if _CCCL_COMPILER(MSVC, >=, 19, 16) // MSVC 2017 version 15.9.
+#if _CCCL_COMPILER(MSVC)
+
 template <typename Iterator>
 struct is_msvc_contiguous_iterator : ::cuda::std::is_pointer<::std::_Unwrapped_t<Iterator>>
 {};
-#elif _CCCL_COMPILER(MSVC, >=, 17) // MSVC 2012.
-template <typename Iterator>
-struct is_msvc_contiguous_iterator : false_type
-{};
 
-template <typename Vector>
-struct is_msvc_contiguous_iterator<::std::_Vector_const_iterator<Vector>> : true_type
-{};
-
-template <typename Vector>
-struct is_msvc_contiguous_iterator<::std::_Vector_iterator<Vector>> : true_type
-{};
-
-template <typename String>
-struct is_msvc_contiguous_iterator<::std::_String_const_iterator<String>> : true_type
-{};
-
-template <typename String>
-struct is_msvc_contiguous_iterator<::std::_String_iterator<String>> : true_type
-{};
-
-template <typename T, std::size_t N>
-struct is_msvc_contiguous_iterator<::std::_Array_const_iterator<T, N>> : true_type
-{};
-
-template <typename T, std::size_t N>
-struct is_msvc_contiguous_iterator<::std::_Array_iterator<T, N>> : true_type
-{};
-
-#  if _CCCL_STD_VER >= 2017
-template <typename Traits>
-struct is_msvc_contiguous_iterator<::std::_String_view_iterator<Traits>> : true_type
-{};
-#  endif
 #else
+
 template <typename Iterator>
 struct is_msvc_contiguous_iterator : false_type
 {};
+
 #endif
 
 template <typename Iterator>

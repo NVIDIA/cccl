@@ -48,10 +48,10 @@ int main(int, char**)
   test<unsigned long>(0);
   test<long long>(0);
   test<unsigned long long>(0);
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   test<__int128_t>(0);
   test<__uint128_t>(0);
-#endif
+#endif // _CCCL_HAS_INT128()
 #if defined(__FLT_DENORM_MIN__) // guarded because these macros are extensions.
   test<float>(__FLT_DENORM_MIN__);
   test<double>(__DBL_DENORM_MIN__);
@@ -66,10 +66,10 @@ int main(int, char**)
   test<long double>(LDBL_TRUE_MIN);
 #  endif
 #endif
-#if defined(_CCCL_HAS_NVFP16)
+#if _CCCL_HAS_NVFP16()
   test<__half>(__double2half(5.9604644775390625e-08));
 #endif // _CCCL_HAS_NVFP16
-#if defined(_CCCL_HAS_NVBF16)
+#if _CCCL_HAS_NVBF16()
   test<__nv_bfloat16>(__double2bfloat16(9.18354961579912115600575419705e-41));
 #endif // _CCCL_HAS_NVBF16
 #if _CCCL_HAS_NVFP8()

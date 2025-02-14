@@ -53,19 +53,19 @@ int main(int, char**)
   test<unsigned long>();
   test<long long>();
   test<unsigned long long>();
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   test<__int128_t>();
   test<__uint128_t>();
-#endif
+#endif // _CCCL_HAS_INT128()
   test<float, FLT_MIN_10_EXP>();
   test<double, DBL_MIN_10_EXP>();
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
   test<long double, LDBL_MIN_10_EXP>();
 #endif
-#if defined(_CCCL_HAS_NVFP16)
+#if _CCCL_HAS_NVFP16()
   test<__half, -4>();
 #endif // _CCCL_HAS_NVFP16
-#if defined(_CCCL_HAS_NVBF16)
+#if _CCCL_HAS_NVBF16()
   test<__nv_bfloat16, -37>();
 #endif // _CCCL_HAS_NVBF16
 #if _CCCL_HAS_NVFP8()

@@ -8,7 +8,6 @@
 //
 
 // <cuda/std/type_traits>
-// UNSUPPORTED: c++98, c++03, c++11
 
 #include <cuda/std/type_traits>
 

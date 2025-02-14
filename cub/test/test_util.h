@@ -56,7 +56,6 @@
 #include <vector>
 
 #include "mersenne.h"
-#include "test_warning_suppression.cuh"
 #include <c2h/extended_types.h>
 #include <c2h/test_util_vec.h>
 #include <nv/target>
@@ -972,12 +971,6 @@ CUB_NAMESPACE_BEGIN
 template <>
 struct NumericTraits<TestFoo>
 {
-  static constexpr Category CATEGORY = NOT_A_NUMBER;
-  enum
-  {
-    PRIMITIVE = false,
-    NULL_TYPE = false,
-  };
   __host__ __device__ static TestFoo Max()
   {
     return TestFoo::MakeTestFoo(
@@ -1106,12 +1099,6 @@ CUB_NAMESPACE_BEGIN
 template <>
 struct NumericTraits<TestBar>
 {
-  static constexpr Category CATEGORY = NOT_A_NUMBER;
-  enum
-  {
-    PRIMITIVE = false,
-    NULL_TYPE = false,
-  };
   __host__ __device__ static TestBar Max()
   {
     return TestBar(NumericTraits<long long>::Max(), NumericTraits<int>::Max());

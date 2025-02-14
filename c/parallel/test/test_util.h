@@ -11,6 +11,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -26,6 +27,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators_all.hpp>
 #include <cccl/c/reduce.h>
+#include <cccl/c/scan.h>
 #include <nvrtc.h>
 
 static std::string inspect_sass(const void* cubin, size_t cubin_size)
@@ -120,6 +122,17 @@ std::vector<T> generate(std::size_t num_items)
 }
 
 template <class T>
+std::vector<T> make_shuffled_sequence(std::size_t num_items)
+{
+  std::vector<T> sequence(num_items);
+  std::iota(sequence.begin(), sequence.end(), 0);
+  std::random_device rnd_device;
+  std::mt19937 mersenne_engine{rnd_device()};
+  std::shuffle(sequence.begin(), sequence.end(), mersenne_engine);
+  return sequence;
+}
+
+template <class T>
 cccl_type_info get_type_info()
 {
   cccl_type_info info;
@@ -129,6 +142,18 @@ cccl_type_info get_type_info()
   if constexpr (std::is_same_v<T, char>)
   {
     info.type = cccl_type_enum::INT8;
+  }
+  else if constexpr (std::is_same_v<T, uint8_t>)
+  {
+    info.type = cccl_type_enum::UINT8;
+  }
+  else if constexpr (std::is_same_v<T, int16_t>)
+  {
+    info.type = cccl_type_enum::INT16;
+  }
+  else if constexpr (std::is_same_v<T, uint16_t>)
+  {
+    info.type = cccl_type_enum::UINT16;
   }
   else if constexpr (std::is_same_v<T, int32_t>)
   {
@@ -145,6 +170,14 @@ cccl_type_info get_type_info()
   else if constexpr (std::is_same_v<T, uint64_t>)
   {
     info.type = cccl_type_enum::UINT64;
+  }
+  else if constexpr (std::is_same_v<T, float>)
+  {
+    info.type = cccl_type_enum::FLOAT32;
+  }
+  else if constexpr (std::is_same_v<T, double>)
+  {
+    info.type = cccl_type_enum::FLOAT64;
   }
   else if constexpr (!std::is_integral_v<T>)
   {
@@ -200,6 +233,37 @@ static std::string get_for_op(cccl_type_enum t)
   return "";
 }
 
+static std::string get_merge_sort_op(cccl_type_enum t)
+{
+  switch (t)
+  {
+    case cccl_type_enum::INT8:
+      return "extern \"C\" __device__ bool op(char lhs, char rhs) { return lhs < rhs; }";
+    case cccl_type_enum::UINT8:
+      return "extern \"C\" __device__ bool op(unsigned char lhs, unsigned char rhs) { return lhs < rhs; }";
+    case cccl_type_enum::INT16:
+      return "extern \"C\" __device__ bool op(short lhs, short rhs) { return lhs < rhs; }";
+    case cccl_type_enum::UINT16:
+      return "extern \"C\" __device__ bool op(unsigned short lhs, unsigned short rhs) { return lhs < rhs; }";
+    case cccl_type_enum::INT32:
+      return "extern \"C\" __device__ bool op(int lhs, int rhs) { return lhs < rhs; }";
+    case cccl_type_enum::UINT32:
+      return "extern \"C\" __device__ bool op(unsigned int lhs, unsigned int rhs) { return lhs < rhs; }";
+    case cccl_type_enum::INT64:
+      return "extern \"C\" __device__ bool op(long long lhs, long long rhs) { return lhs < rhs; }";
+    case cccl_type_enum::UINT64:
+      return "extern \"C\" __device__ bool op(unsigned long long lhs, unsigned long long rhs) { return lhs < rhs; }";
+    case cccl_type_enum::FLOAT32:
+      return "extern \"C\" __device__ bool op(float lhs, float rhs) { return lhs < rhs; }";
+    case cccl_type_enum::FLOAT64:
+      return "extern \"C\" __device__ bool op(double lhs, double rhs) { return lhs < rhs; }";
+
+    default:
+      throw std::runtime_error("Unsupported type");
+  }
+  return "";
+}
+
 template <class T>
 struct pointer_t
 {
@@ -218,6 +282,11 @@ struct pointer_t
     REQUIRE(cudaSuccess == cudaMemcpy(ptr, vec.data(), vec.size() * sizeof(T), cudaMemcpyHostToDevice));
     size = vec.size();
   }
+
+  pointer_t()
+      : ptr(nullptr)
+      , size(0)
+  {}
 
   ~pointer_t()
   {

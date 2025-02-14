@@ -6,8 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: nvcc-11.1
-
 // <new>
 
 // template <class T> constexpr T* launder(T* p) noexcept;
@@ -39,9 +37,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2014 && defined(_CCCL_BUILTIN_LAUNDER)
+#if defined(_CCCL_BUILTIN_LAUNDER)
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014 && _CCCL_BUILTIN_LAUNDER
+#endif // _CCCL_BUILTIN_LAUNDER
 
   return 0;
 }

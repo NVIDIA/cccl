@@ -37,14 +37,12 @@ int main(int, char**)
   test(random_access_iterator<const char*>(s + 5), 5, random_access_iterator<const char*>(s));
   test(s + 5, 5, s);
 
-#if TEST_STD_VER > 2011
   {
     constexpr const char* p = "123456789";
     constexpr auto it1      = cuda::std::make_move_iterator(p);
     constexpr auto it2      = cuda::std::make_move_iterator(p + 5) -= 5;
     static_assert(it1 == it2, "");
   }
-#endif // TEST_STD_VER > 2011
 
   return 0;
 }

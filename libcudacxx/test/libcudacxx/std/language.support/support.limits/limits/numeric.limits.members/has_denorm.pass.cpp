@@ -45,19 +45,19 @@ int main(int, char**)
   test<unsigned long, cuda::std::denorm_absent>();
   test<long long, cuda::std::denorm_absent>();
   test<unsigned long long, cuda::std::denorm_absent>();
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   test<__int128_t, cuda::std::denorm_absent>();
   test<__uint128_t, cuda::std::denorm_absent>();
-#endif
+#endif // _CCCL_HAS_INT128()
   test<float, cuda::std::denorm_present>();
   test<double, cuda::std::denorm_present>();
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
   test<long double, cuda::std::denorm_present>();
 #endif
-#if defined(_CCCL_HAS_NVFP16)
+#if _CCCL_HAS_NVFP16()
   test<__half, cuda::std::denorm_present>();
 #endif // _CCCL_HAS_NVFP16
-#if defined(_CCCL_HAS_NVBF16)
+#if _CCCL_HAS_NVBF16()
   test<__nv_bfloat16, cuda::std::denorm_present>();
 #endif // _CCCL_HAS_NVBF16
 #if _CCCL_HAS_NVFP8()

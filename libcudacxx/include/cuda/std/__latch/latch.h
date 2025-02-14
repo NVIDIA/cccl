@@ -31,16 +31,10 @@ _CCCL_PUSH_MACROS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_CUDA_ABI_VERSION < 3
-#  define _LIBCUDACXX_LATCH_ALIGNMENT alignas(64)
-#else
-#  define _LIBCUDACXX_LATCH_ALIGNMENT
-#endif
-
 template <thread_scope _Sco = thread_scope_system>
 class __latch_base
 {
-  _LIBCUDACXX_LATCH_ALIGNMENT __atomic_impl<ptrdiff_t, _Sco> __counter;
+  __atomic_impl<ptrdiff_t, _Sco> __counter;
 
 public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __latch_base(ptrdiff_t __expected)

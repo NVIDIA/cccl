@@ -149,7 +149,7 @@ public:
    * @note Needs to be followed by `__syncthreads()` if the function returns true and the virtual shared memory is
    * supposed to be reused after this function call.
    */
-  template <bool needs_vsmem_ = needs_vsmem, typename ::cuda::std::enable_if<!needs_vsmem_, int>::type = 0>
+  template <bool needs_vsmem_ = needs_vsmem, ::cuda::std::enable_if_t<!needs_vsmem_, int> = 0>
   static _CCCL_DEVICE _CCCL_FORCEINLINE bool discard_temp_storage(typename AgentT::TempStorage& temp_storage)
   {
     return false;
@@ -162,7 +162,7 @@ public:
    * @note Needs to be followed by `__syncthreads()` if the function returns true and the virtual shared memory is
    * supposed to be reused after this function call.
    */
-  template <bool needs_vsmem_ = needs_vsmem, typename ::cuda::std::enable_if<needs_vsmem_, int>::type = 0>
+  template <bool needs_vsmem_ = needs_vsmem, ::cuda::std::enable_if_t<needs_vsmem_, int> = 0>
   static _CCCL_DEVICE _CCCL_FORCEINLINE bool discard_temp_storage(typename AgentT::TempStorage& temp_storage)
   {
     // Ensure all threads finished using temporary storage
@@ -177,7 +177,7 @@ public:
     // 128 byte-aligned virtual shared memory discard
     for (auto thread_ptr = ptr + (linear_tid * line_size); thread_ptr < ptr_end; thread_ptr += block_stride)
     {
-      cuda::discard_memory(thread_ptr, line_size);
+      ::cuda::discard_memory(thread_ptr, line_size);
     }
     return true;
   }
