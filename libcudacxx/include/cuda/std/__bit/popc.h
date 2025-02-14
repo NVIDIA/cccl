@@ -41,7 +41,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_popc_32bit(uint32_t __x) noe
 #else
   __x = __x - ((__x >> 1) & 0x55555555);
   __x = (__x & 0x33333333) + ((__x >> 2) & 0x33333333);
-  return ((__x + (__x >> 4) & 0xF0F0F0F) * 0x1010101) >> 24;
+  return (((__x + (__x >> 4)) & 0xF0F0F0F) * 0x1010101) >> 24;
 #endif // _CCCL_BUILTIN_POPC
 }
 
