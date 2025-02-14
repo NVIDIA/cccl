@@ -15,11 +15,10 @@
 #include <cub/util_device.cuh>
 
 #include <cuda/std/cstdint>
-#include <cuda/std/functional>
+#include <cuda/std/functional> // ::cuda::std::__identity
 #include <cuda/std/variant>
 
 #include <format>
-#include <iostream>
 #include <memory>
 
 #include "kernels/iterators.h"
@@ -37,10 +36,7 @@ using TransformOpT = ::cuda::std::__identity;
 using OffsetT      = unsigned long long;
 static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "OffsetT must be size_t");
 
-struct nothing_t
-{};
-
-struct input_iterator_state_t;
+struct input_iterator_t;
 struct output_iterator_t;
 
 namespace reduce
@@ -113,18 +109,22 @@ static cccl_type_info get_accumulator_type(cccl_op_t /*op*/, cccl_iterator_t /*i
   return init.type;
 }
 
+template <typename Type>
+std::string get_iterator_name()
+{
+  std::string iterator_t{};
+  check(nvrtcGetTypeName<Type>(&iterator_t));
+  return iterator_t;
+}
+
 std::string get_input_iterator_name()
 {
-  std::string iterator_t;
-  check(nvrtcGetTypeName<input_iterator_state_t>(&iterator_t));
-  return iterator_t;
+  return get_iterator_name<input_iterator_t>();
 }
 
 std::string get_output_iterator_name()
 {
-  std::string iterator_t;
-  check(nvrtcGetTypeName<output_iterator_t>(&iterator_t));
-  return iterator_t;
+  return get_iterator_name<output_iterator_t>();
 }
 
 std::string get_single_tile_kernel_name(
@@ -268,10 +268,13 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
     const auto input_it_value_t  = cccl_type_enum_to_string(input_it.value_type.type);
     const auto offset_t          = cccl_type_enum_to_string(cccl_type_enum::UINT64);
 
+    const auto input_iterator_typename  = reduce::get_input_iterator_name();
+    const auto output_iterator_typename = reduce::get_output_iterator_name();
+
     const std::string input_iterator_src =
-      make_kernel_input_iterator(offset_t, "input_iterator_state_t", input_it_value_t, input_it);
+      make_kernel_input_iterator(offset_t, input_iterator_typename, input_it_value_t, input_it);
     const std::string output_iterator_src =
-      make_kernel_output_iterator(offset_t, "output_iterator_t", accum_cpp, output_it);
+      make_kernel_output_iterator(offset_t, output_iterator_typename, accum_cpp, output_it);
 
     const std::string op_src = make_kernel_user_binary_operator(accum_cpp, op);
 
@@ -404,16 +407,16 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce(
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
-    cub::DispatchReduce<indirect_arg_t,
-                        indirect_arg_t,
-                        ::cuda::std::size_t,
-                        indirect_arg_t,
-                        indirect_arg_t,
-                        void,
-                        reduce::dynamic_reduce_policy_t<&reduce::get_policy>,
-                        ::cuda::std::__identity,
-                        reduce::reduce_kernel_source,
-                        cub::detail::CudaDriverLauncherFactory>::
+    cub::DispatchReduce<indirect_arg_t, // InputIteratorT
+                        indirect_arg_t, // OutputIteratorT
+                        ::cuda::std::size_t, // OffsetT
+                        indirect_arg_t, // ReductionOpT
+                        indirect_arg_t, // InitT
+                        void, // AccumT
+                        reduce::dynamic_reduce_policy_t<&reduce::get_policy>, // PolicyHub
+                        ::cuda::std::__identity, // TransformOpT
+                        reduce::reduce_kernel_source, // KernelSource
+                        cub::detail::CudaDriverLauncherFactory>:: // KernelLauncherFactory
       Dispatch(
         d_temp_storage,
         *temp_storage_bytes,
