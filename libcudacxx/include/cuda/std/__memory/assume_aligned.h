@@ -38,7 +38,6 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* assume_aligned(_Tp* __p
 #if !(_CCCL_COMPILER(MSVC) && defined(_CCCL_BUILTIN_ASSUME_ALIGNED)) // MSVC checks within the builtin
   _CCCL_ASSERT(_CUDA_VSTD::bit_cast<uintptr_t>(__ptr) % _Align == 0, "Alignment assumption is violated");
 #endif // !_CCCL_COMPILER(MSVC) && defined(_CCCL_BUILTIN_ASSUME_ALIGNED)
-
 #if !defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   return __ptr;
 #else
