@@ -28,38 +28,6 @@ __host__ __device__ constexpr void check(T* p)
   ASSERT_SAME_TYPE(T*, decltype(cuda::std::assume_aligned<1>(p)));
   constexpr cuda::std::size_t alignment = alignof(T);
   assert(p == cuda::std::assume_aligned<alignment>(p));
-  // if constexpr (alignment >= 1)
-  // {
-  //   assert(p == cuda::std::assume_aligned<1>(p));
-  // }
-  // if constexpr (alignment >= 2)
-  // {
-  //   assert(p == cuda::std::assume_aligned<2>(p));
-  // }
-  // if constexpr (alignment >= 4)
-  // {
-  //   assert(p == cuda::std::assume_aligned<4>(p));
-  // }
-  // if constexpr (alignment >= 8)
-  // {
-  //   assert(p == cuda::std::assume_aligned<8>(p));
-  // }
-  // if constexpr (alignment >= 16)
-  // {
-  //   assert(p == cuda::std::assume_aligned<16>(p));
-  // }
-  // if constexpr (alignment >= 32)
-  // {
-  //   assert(p == cuda::std::assume_aligned<32>(p));
-  // }
-  // if constexpr (alignment >= 64)
-  // {
-  //   assert(p == cuda::std::assume_aligned<64>(p));
-  // }
-  // if constexpr (alignment >= 128)
-  // {
-  //   assert(p == cuda::std::assume_aligned<128>(p));
-  // }
 }
 
 struct S
