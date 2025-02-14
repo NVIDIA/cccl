@@ -3633,13 +3633,13 @@ _LIBCUDACXX_END_NAMESPACE_STD
 _LIBCUDACXX_BEGIN_NAMESPACE_FILESYSTEM
 struct _FilesystemClock
 {
-#  if !defined(_LIBCUDACXX_HAS_NO_INT128)
+#  if _CCCL_HAS_INT128()
   using rep    = __int128_t;
   using period = nano;
-#  else
+#  else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
   using rep    = long long;
   using period = nano;
-#  endif
+#  endif // !_CCCL_HAS_INT128()
 
   using duration   = chrono::duration<rep, period>;
   using time_point = chrono::time_point<_FilesystemClock>;
