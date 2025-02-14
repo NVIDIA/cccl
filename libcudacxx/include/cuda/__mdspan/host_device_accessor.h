@@ -21,7 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda_runtime_api.h> // TODO: the code should compile even outside nvcc
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  include <cuda_runtime_api.h>
+#endif // _CCCL_CUDA_COMPILER(CLANG) && !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__mdspan/default_accessor.h>
 #include <cuda/std/__type_traits/is_convertible.h>
