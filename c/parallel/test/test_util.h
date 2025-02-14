@@ -53,14 +53,16 @@ static std::string inspect_sass(const void* cubin, size_t cubin_size)
   command += " > ";
   command += temp_out_filename;
 
-  if (std::system(command.c_str()) != 0)
-  {
-    throw std::runtime_error("Failed to execute command.");
-  }
+  int exec_code = std::system(command.c_str());
 
   if (!fs::remove(temp_in_filename))
   {
     throw std::runtime_error("Failed to remove temporary file.");
+  }
+
+  if (exec_code != 0)
+  {
+    throw std::runtime_error("Failed to execute command.");
   }
 
   std::ifstream temp_out_file(temp_out_filename, std::ios::binary);
@@ -125,7 +127,7 @@ template <class T>
 std::vector<T> make_shuffled_sequence(std::size_t num_items)
 {
   std::vector<T> sequence(num_items);
-  std::iota(sequence.begin(), sequence.end(), 0);
+  std::iota(sequence.begin(), sequence.end(), T(0));
   std::random_device rnd_device;
   std::mt19937 mersenne_engine{rnd_device()};
   std::shuffle(sequence.begin(), sequence.end(), mersenne_engine);
