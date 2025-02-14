@@ -223,8 +223,8 @@ def _iterator_to_cccl_iter(it: IteratorBase) -> Iterator:
 
 
 def _none_to_cccl_iter() -> Iterator:
-    # Create a null int pointer. Any type could be used here, we just need to pass NULL.
-    info = _numpy_type_to_info(np.int32)
+    # Any type could be used here, we just need to pass NULL.
+    info = _numpy_type_to_info(np.uint8)
     return Iterator(
         info.size,
         info.alignment,
