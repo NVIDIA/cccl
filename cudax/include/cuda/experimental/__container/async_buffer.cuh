@@ -188,6 +188,7 @@ private:
     if constexpr (__kind == cudaMemcpyHostToHost)
     {
       ::cuda::experimental::host_launch(__buf_.get_stream(), _CUDA_VSTD::copy<_Iter, pointer>, __first, __last, __dest);
+      // FIXME: Something is fishy here. We need to wait otherwise the data is not properly set.
       __buf_.get_stream().wait();
     }
     else if constexpr (!_CUDA_VSTD::contiguous_iterator<_Iter>)
@@ -196,7 +197,7 @@ private:
       static_assert(__kind == cudaMemcpyHostToDevice, "Invalid use case!");
       auto __temp = _CUDA_VSTD::get_temporary_buffer<_Tp>(__count).first;
       ::cuda::experimental::host_launch(__buf_.get_stream(), _CUDA_VSTD::copy<_Iter, pointer>, __first, __last, __temp);
-      // Something is fishy here. We need to wait otherwise the data is not properly set.
+      // FIXME: Something is fishy here. We need to wait otherwise the data is not properly set.
       __buf_.get_stream().wait();
       _CCCL_TRY_CUDA_API(
         ::cudaMemcpyAsync,
