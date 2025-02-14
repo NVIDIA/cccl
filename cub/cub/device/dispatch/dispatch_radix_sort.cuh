@@ -153,8 +153,7 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltUp
   };
 
   // Parameterize AgentRadixSortUpsweep type for the current configuration
-  using AgentRadixSortUpsweepT =
-    detail::radix_sort::AgentRadixSortUpsweep<ActiveUpsweepPolicyT, KeyT, OffsetT, DecomposerT>;
+  using AgentRadixSortUpsweepT = AgentRadixSortUpsweep<ActiveUpsweepPolicyT, KeyT, OffsetT, DecomposerT>;
 
   // Shared memory storage
   __shared__ typename AgentRadixSortUpsweepT::TempStorage temp_storage;
@@ -195,13 +194,13 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicy::BLOCK_THREADS), 
 {
   // Parameterize the AgentScan type for the current configuration
   using AgentScanT =
-    detail::scan::AgentScan<typename ChainedPolicyT::ActivePolicy::ScanPolicy,
-                            OffsetT*,
-                            OffsetT*,
-                            ::cuda::std::plus<>,
-                            OffsetT,
-                            OffsetT,
-                            OffsetT>;
+    scan::AgentScan<typename ChainedPolicyT::ActivePolicy::ScanPolicy,
+                    OffsetT*,
+                    OffsetT*,
+                    ::cuda::std::plus<>,
+                    OffsetT,
+                    OffsetT,
+                    OffsetT>;
 
   // Shared memory storage
   __shared__ typename AgentScanT::TempStorage temp_storage;
@@ -281,7 +280,7 @@ template <typename ChainedPolicyT,
           typename KeyT,
           typename ValueT,
           typename OffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
+          typename DecomposerT = identity_decomposer_t>
 __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltDownsweepPolicy::BLOCK_THREADS)
                                        : int(ChainedPolicyT::ActivePolicy::DownsweepPolicy::BLOCK_THREADS)))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortDownsweepKernel(
@@ -373,7 +372,7 @@ template <typename ChainedPolicyT,
           typename KeyT,
           typename ValueT,
           typename OffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
+          typename DecomposerT = identity_decomposer_t>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS), 1)
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortSingleTileKernel(
     const KeyT* d_keys_in,
@@ -412,7 +411,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THRE
     BlockLoad<ValueT, BLOCK_THREADS, ITEMS_PER_THREAD, ChainedPolicyT::ActivePolicy::SingleTilePolicy::LOAD_ALGORITHM>;
 
   // Unsigned word for key bits
-  using traits           = detail::radix::traits_t<KeyT>;
+  using traits           = radix::traits_t<KeyT>;
   using bit_ordered_type = typename traits::bit_ordered_type;
 
   // Shared memory storage
@@ -545,8 +544,8 @@ template <typename ChainedPolicyT,
           typename ValueT,
           typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
-          typename OffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
+          typename SegmentSizeT,
+          typename DecomposerT = identity_decomposer_t>
 __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmentedPolicy::BLOCK_THREADS
                                        : ChainedPolicyT::ActivePolicy::SegmentedPolicy::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedRadixSortKernel(
@@ -556,7 +555,6 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
     ValueT* d_values_out,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    int /*num_segments*/,
     int current_bit,
     int pass_bits,
     DecomposerT decomposer = {})
@@ -581,14 +579,14 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
   };
 
   // Upsweep type
-  using BlockUpsweepT = detail::radix_sort::AgentRadixSortUpsweep<SegmentedPolicyT, KeyT, OffsetT, DecomposerT>;
+  using BlockUpsweepT = AgentRadixSortUpsweep<SegmentedPolicyT, KeyT, SegmentSizeT, DecomposerT>;
 
   // Digit-scan type
-  using DigitScanT = BlockScan<OffsetT, BLOCK_THREADS>;
+  using DigitScanT = BlockScan<SegmentSizeT, BLOCK_THREADS>;
 
   // Downsweep type
   using BlockDownsweepT = detail::radix_sort::
-    AgentRadixSortDownsweep<SegmentedPolicyT, Order == SortOrder::Descending, KeyT, ValueT, OffsetT, DecomposerT>;
+    AgentRadixSortDownsweep<SegmentedPolicyT, Order == SortOrder::Descending, KeyT, ValueT, SegmentSizeT, DecomposerT>;
 
   enum
   {
@@ -607,16 +605,23 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
     typename BlockDownsweepT::TempStorage downsweep;
     struct
     {
-      volatile OffsetT reverse_counts_in[RADIX_DIGITS];
-      volatile OffsetT reverse_counts_out[RADIX_DIGITS];
+      volatile SegmentSizeT reverse_counts_in[RADIX_DIGITS];
+      volatile SegmentSizeT reverse_counts_out[RADIX_DIGITS];
       typename DigitScanT::TempStorage scan;
     };
 
   } temp_storage;
 
-  OffsetT segment_begin = d_begin_offsets[blockIdx.x];
-  OffsetT segment_end   = d_end_offsets[blockIdx.x];
-  OffsetT num_items     = segment_end - segment_begin;
+  const ::cuda::std::int64_t segment_id =
+    blockIdx.x + (blockIdx.y * static_cast<::cuda::std::int64_t>(gridDim.x))
+    + (blockIdx.z * static_cast<::cuda::std::int64_t>(gridDim.x * gridDim.y));
+
+  // Ensure the size of the current segment does not overflow SegmentSizeT
+  _CCCL_ASSERT(static_cast<decltype(d_end_offsets[segment_id] - d_begin_offsets[segment_id])>(
+                 ::cuda::std::numeric_limits<SegmentSizeT>::max())
+                 > (d_end_offsets[segment_id] - d_begin_offsets[segment_id]),
+               "A single segment size is limited to the maximum value representable by SegmentSizeT");
+  const auto num_items = static_cast<SegmentSizeT>(d_end_offsets[segment_id] - d_begin_offsets[segment_id]);
 
   // Check if empty segment
   if (num_items <= 0)
@@ -625,13 +630,14 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
   }
 
   // Upsweep
-  BlockUpsweepT upsweep(temp_storage.upsweep, d_keys_in, current_bit, pass_bits, decomposer);
-  upsweep.ProcessRegion(segment_begin, segment_end);
+  BlockUpsweepT upsweep(
+    temp_storage.upsweep, d_keys_in + d_begin_offsets[segment_id], current_bit, pass_bits, decomposer);
+  upsweep.ProcessRegion(SegmentSizeT{0}, num_items);
 
   __syncthreads();
 
   // The count of each digit value in this pass (valid in the first RADIX_DIGITS threads)
-  OffsetT bin_count[BINS_TRACKED_PER_THREAD];
+  SegmentSizeT bin_count[BINS_TRACKED_PER_THREAD];
   upsweep.ExtractCounts(bin_count);
 
   __syncthreads();
@@ -665,15 +671,9 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
   }
 
   // Scan
-  OffsetT bin_offset[BINS_TRACKED_PER_THREAD]; // The global scatter base offset for each digit value in this pass
-                                               // (valid in the first RADIX_DIGITS threads)
+  SegmentSizeT bin_offset[BINS_TRACKED_PER_THREAD]; // The scatter base offset within the segment for each digit value
+                                                    // in this pass (valid in the first RADIX_DIGITS threads)
   DigitScanT(temp_storage.scan).ExclusiveSum(bin_count, bin_offset);
-
-#pragma unroll
-  for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
-  {
-    bin_offset[track] += segment_begin;
-  }
 
   if (Order == SortOrder::Descending)
   {
@@ -710,14 +710,14 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
     temp_storage.downsweep,
     bin_offset,
     num_items,
-    d_keys_in,
-    d_keys_out,
-    d_values_in,
-    d_values_out,
+    d_keys_in + d_begin_offsets[segment_id],
+    d_keys_out + d_begin_offsets[segment_id],
+    d_values_in + d_begin_offsets[segment_id],
+    d_values_out + d_begin_offsets[segment_id],
     current_bit,
     pass_bits,
     decomposer);
-  downsweep.ProcessRegion(segment_begin, segment_end);
+  downsweep.ProcessRegion(SegmentSizeT{0}, num_items);
 }
 
 /******************************************************************************
@@ -735,7 +735,7 @@ template <typename ChainedPolicyT,
           SortOrder Order,
           typename KeyT,
           typename OffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
+          typename DecomposerT = identity_decomposer_t>
 CUB_DETAIL_KERNEL_ATTRIBUTES
 __launch_bounds__(ChainedPolicyT::ActivePolicy::HistogramPolicy::BLOCK_THREADS) void DeviceRadixSortHistogramKernel(
   OffsetT* d_bins_out, const KeyT* d_keys_in, OffsetT num_items, int start_bit, int end_bit, DecomposerT decomposer = {})
@@ -755,7 +755,7 @@ template <typename ChainedPolicyT,
           typename OffsetT,
           typename PortionOffsetT,
           typename AtomicOffsetT = PortionOffsetT,
-          typename DecomposerT   = detail::identity_decomposer_t>
+          typename DecomposerT   = identity_decomposer_t>
 CUB_DETAIL_KERNEL_ATTRIBUTES void __launch_bounds__(ChainedPolicyT::ActivePolicy::OnesweepPolicy::BLOCK_THREADS)
   DeviceRadixSortOnesweepKernel(
     AtomicOffsetT* d_lookback,
@@ -1891,16 +1891,16 @@ struct DispatchRadixSort
  * @tparam EndOffsetIteratorT
  *   Random-access input iterator type for reading segment ending offsets @iterator
  *
- * @tparam OffsetT
- *   Signed integer type for global offsets
+ * @tparam SegmentSizeT
+ *   Integer type to index items within a segment
  */
 template <SortOrder Order,
           typename KeyT,
           typename ValueT,
           typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
-          typename OffsetT,
-          typename PolicyHub   = detail::radix::policy_hub<KeyT, ValueT, OffsetT>,
+          typename SegmentSizeT,
+          typename PolicyHub   = detail::radix::policy_hub<KeyT, ValueT, SegmentSizeT>,
           typename DecomposerT = detail::identity_decomposer_t>
 struct DispatchSegmentedRadixSort
 {
@@ -1933,10 +1933,10 @@ struct DispatchSegmentedRadixSort
   DoubleBuffer<ValueT>& d_values;
 
   /// Number of items to sort
-  OffsetT num_items;
+  ::cuda::std::int64_t num_items;
 
   /// The number of segments that comprise the sorting data
-  OffsetT num_segments;
+  ::cuda::std::int64_t num_segments;
 
   /// Random-access input iterator to the sequence of beginning offsets of length `num_segments`,
   /// such that <tt>d_begin_offsets[i]</tt> is the first element of the <em>i</em><sup>th</sup>
@@ -1976,8 +1976,8 @@ struct DispatchSegmentedRadixSort
     size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
-    OffsetT num_items,
-    OffsetT num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     int begin_bit,
@@ -2021,6 +2021,32 @@ struct DispatchSegmentedRadixSort
     {
       int pass_bits = CUB_MIN(pass_config.radix_bits, (end_bit - current_bit));
 
+      int device_ordinal{};
+      error = CubDebug(cudaGetDevice(&device_ordinal));
+      if (cudaSuccess != error)
+      {
+        break;
+      }
+
+      int max_grid_dim_x{};
+      int max_grid_dim_y{};
+      error = CubDebug(cudaDeviceGetAttribute(&max_grid_dim_x, cudaDevAttrMaxGridDimX, device_ordinal));
+      if (cudaSuccess != error)
+      {
+        break;
+      }
+      error = CubDebug(cudaDeviceGetAttribute(&max_grid_dim_y, cudaDevAttrMaxGridDimY, device_ordinal));
+      if (cudaSuccess != error)
+      {
+        break;
+      }
+
+      // Calculate grid dimensions
+      const auto grid_dim_x = ::cuda::std::min(num_segments, static_cast<::cuda::std::int64_t>(max_grid_dim_x));
+      const auto grid_dim_y = ::cuda::std::min(
+        ((num_segments + max_grid_dim_x - 1) / max_grid_dim_x), static_cast<::cuda::std::int64_t>(max_grid_dim_y));
+      const auto grid_dim_z = (num_segments + max_grid_dim_x * max_grid_dim_y - 1) / (max_grid_dim_x * max_grid_dim_y);
+
 // Log kernel configuration
 #ifdef CUB_DEBUG_LOG
       _CubLog("Invoking segmented_kernels<<<%lld, %lld, 0, %lld>>>(), "
@@ -2034,9 +2060,11 @@ struct DispatchSegmentedRadixSort
               current_bit,
               pass_bits);
 #endif
-
+      dim3 grid_dim = dim3(static_cast<unsigned int>(grid_dim_x),
+                           static_cast<unsigned int>(grid_dim_y),
+                           static_cast<unsigned int>(grid_dim_z));
       THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-        num_segments, pass_config.segmented_config.block_threads, 0, stream)
+        grid_dim, pass_config.segmented_config.block_threads, 0, stream)
         .doit(pass_config.segmented_kernel,
               d_keys_in,
               d_keys_out,
@@ -2044,7 +2072,6 @@ struct DispatchSegmentedRadixSort
               d_values_out,
               d_begin_offsets,
               d_end_offsets,
-              num_segments,
               current_bit,
               pass_bits,
               decomposer);
@@ -2252,7 +2279,7 @@ struct DispatchSegmentedRadixSort
         ValueT,
         BeginOffsetIteratorT,
         EndOffsetIteratorT,
-        OffsetT,
+        SegmentSizeT,
         DecomposerT>,
       detail::radix_sort::DeviceSegmentedRadixSortKernel<
         max_policy_t,
@@ -2262,7 +2289,7 @@ struct DispatchSegmentedRadixSort
         ValueT,
         BeginOffsetIteratorT,
         EndOffsetIteratorT,
-        OffsetT,
+        SegmentSizeT,
         DecomposerT>);
   }
 
@@ -2323,8 +2350,8 @@ struct DispatchSegmentedRadixSort
     size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     int begin_bit,
