@@ -43,8 +43,8 @@ __device__ void test()
   // TEST: Add i to buffer[i]
   alignas(16) __shared__ int smem_buffer[buf_len];
 #if _CCCL_CUDA_COMPILER(CLANG)
-  __shared__ char barrier_data[sizeof(barrier)];
-  barrier& bar = cuda::std::bit_cast<barrier>(barrier_data);
+  alignas(8) __shared__ char barrier_data[sizeof(barrier)];
+  barrier& bar = *reinterpret_cast<barrier*>(&barrier_data);
 #else // ^^^ _CCCL_CUDA_COMPILER(CLANG) ^^^ / vvv !_CCCL_CUDA_COMPILER(CLANG)
   __shared__ barrier bar;
 #endif // !_CCCL_CUDA_COMPILER(CLANG)

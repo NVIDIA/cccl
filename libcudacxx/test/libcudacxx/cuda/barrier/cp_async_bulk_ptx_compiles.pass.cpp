@@ -30,8 +30,8 @@ __global__ void test_bulk_tensor(CUtensorMap* map)
 {
   __shared__ int smem;
 #if _CCCL_CUDA_COMPILER(CLANG)
-  __shared__ char barrier_data[sizeof(barrier)];
-  barrier& bar = cuda::std::bit_cast<barrier>(barrier_data);
+  alignas(8) __shared__ char barrier_data[sizeof(barrier)];
+  barrier& bar = *reinterpret_cast<barrier*>(&barrier_data);
 #else // ^^^ _CCCL_CUDA_COMPILER(CLANG) ^^^ / vvv !_CCCL_CUDA_COMPILER(CLANG)
   __shared__ barrier bar;
 #endif // !_CCCL_CUDA_COMPILER(CLANG)
@@ -57,7 +57,7 @@ __global__ void test_bulk_tensor(CUtensorMap* map)
 __global__ void test_bulk(void* gmem)
 {
   __shared__ int smem;
-  __shared__ char barrier_data[sizeof(barrier)];
+  alignas(8) __shared__ char barrier_data[sizeof(barrier)];
   barrier& bar = *reinterpret_cast<barrier*>(&barrier_data);
   if (threadIdx.x == 0)
   {
