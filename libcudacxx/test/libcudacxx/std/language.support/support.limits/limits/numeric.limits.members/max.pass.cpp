@@ -56,10 +56,10 @@ int main(int, char**)
   test<unsigned long>(ULONG_MAX);
   test<long long>(LLONG_MAX);
   test<unsigned long long>(ULLONG_MAX);
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   test<__int128_t>(__int128_t(__uint128_t(-1) / 2));
   test<__uint128_t>(__uint128_t(-1));
-#endif
+#endif // _CCCL_HAS_INT128()
   test<float>(FLT_MAX);
   test<double>(DBL_MAX);
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE

@@ -40,12 +40,12 @@ _CCCL_INLINE_VAR constexpr bool __cccl_is_unsigned_integer_v<unsigned long> = tr
 template <>
 _CCCL_INLINE_VAR constexpr bool __cccl_is_unsigned_integer_v<unsigned long long> = true;
 
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
 
 template <>
 _CCCL_INLINE_VAR constexpr bool __cccl_is_unsigned_integer_v<__uint128_t> = true;
 
-#endif
+#endif // _CCCL_HAS_INT128()
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

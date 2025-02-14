@@ -51,10 +51,10 @@ int main(int, char**)
   test<unsigned long, integral_types_trap>();
   test<long long, integral_types_trap>();
   test<unsigned long long, integral_types_trap>();
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   test<__int128_t, integral_types_trap>();
   test<__uint128_t, integral_types_trap>();
-#endif
+#endif // _CCCL_HAS_INT128()
   test<float, false>();
   test<double, false>();
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
