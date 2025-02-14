@@ -46,7 +46,7 @@
 #include <c2h/test_util_vec.h>
 #include <nv/target>
 
-#if TEST_HALF_T
+#if TEST_HALF_T()
 // Half support is provided by SM53+. We currently test against a few older architectures.
 // The specializations below can be removed once we drop these architectures.
 
@@ -107,7 +107,12 @@ __host__ __device__ __forceinline__ //
 
   return a;
 }
-#endif // TEST_HALF_T
+
+CUB_NAMESPACE_END
+
+#endif // TEST_HALF_T()
+
+CUB_NAMESPACE_BEGIN
 
 /**
  * @brief Introduces the required NumericTraits for `c2h::custom_type_t`.
@@ -115,13 +120,8 @@ __host__ __device__ __forceinline__ //
 template <template <typename> class... Policies>
 struct NumericTraits<c2h::custom_type_t<Policies...>>
 {
-  using custom_t                     = c2h::custom_type_t<Policies...>;
-  static constexpr Category CATEGORY = NOT_A_NUMBER;
-  enum
-  {
-    PRIMITIVE = false,
-    NULL_TYPE = false,
-  };
+  using custom_t = c2h::custom_type_t<Policies...>;
+
   __host__ __device__ static custom_t Max()
   {
     custom_t val{};
@@ -173,21 +173,21 @@ struct ExtendedFloatSum
     return result;
   }
 
-#if TEST_HALF_T
+#if TEST_HALF_T()
   __host__ __device__ __half operator()(__half a, __half b) const
   {
     uint16_t result = this->operator()(half_t{a}, half_t(b)).raw();
     return reinterpret_cast<__half&>(result);
   }
-#endif
+#endif // TEST_HALF_T()
 
-#if TEST_BF_T
+#if TEST_BF_T()
   __device__ __nv_bfloat16 operator()(__nv_bfloat16 a, __nv_bfloat16 b) const
   {
     uint16_t result = this->operator()(bfloat16_t{a}, bfloat16_t(b)).raw();
     return reinterpret_cast<__nv_bfloat16&>(result);
   }
-#endif
+#endif // TEST_BF_T()
 };
 
 template <class It>
@@ -196,42 +196,42 @@ inline It unwrap_it(It it)
   return it;
 }
 
-#if TEST_HALF_T
+#if TEST_HALF_T()
 inline __half* unwrap_it(half_t* it)
 {
   return reinterpret_cast<__half*>(it);
 }
 
 template <class OffsetT>
-inline cub::ConstantInputIterator<__half, OffsetT> unwrap_it(cub::ConstantInputIterator<half_t, OffsetT> it)
+inline thrust::constant_iterator<__half, OffsetT> unwrap_it(thrust::constant_iterator<half_t, OffsetT> it)
 {
   half_t wrapped_val = *it;
   __half val         = wrapped_val.operator __half();
-  return cub::ConstantInputIterator<__half, OffsetT>(val);
+  return thrust::constant_iterator<__half, OffsetT>(val);
 }
-#endif
+#endif // TEST_HALF_T()
 
-#if TEST_BF_T
+#if TEST_BF_T()
 inline __nv_bfloat16* unwrap_it(bfloat16_t* it)
 {
   return reinterpret_cast<__nv_bfloat16*>(it);
 }
 
 template <class OffsetT>
-cub::ConstantInputIterator<__nv_bfloat16, OffsetT> inline unwrap_it(cub::ConstantInputIterator<bfloat16_t, OffsetT> it)
+thrust::constant_iterator<__nv_bfloat16, OffsetT> inline unwrap_it(thrust::constant_iterator<bfloat16_t, OffsetT> it)
 {
   bfloat16_t wrapped_val = *it;
   __nv_bfloat16 val      = wrapped_val.operator __nv_bfloat16();
-  return cub::ConstantInputIterator<__nv_bfloat16, OffsetT>(val);
+  return thrust::constant_iterator<__nv_bfloat16, OffsetT>(val);
 }
-#endif
+#endif // TEST_BF_T()
 
 template <typename T>
-using unwrap_value_t = typename std::remove_reference<decltype(*unwrap_it(std::declval<T*>()))>::type;
+using unwrap_value_t = std::remove_reference_t<decltype(*unwrap_it(std::declval<T*>()))>;
 
 template <class WrappedItT, //
           class ItT = decltype(unwrap_it(std::declval<WrappedItT>()))>
-std::integral_constant<bool, !std::is_same<WrappedItT, ItT>::value> //
+std::integral_constant<bool, !std::is_same_v<WrappedItT, ItT>> //
   inline reference_extended_fp(WrappedItT)
 {
   return {};

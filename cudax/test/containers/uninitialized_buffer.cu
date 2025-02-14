@@ -155,6 +155,9 @@ TEMPLATE_TEST_CASE(
   SECTION("access")
   {
     uninitialized_buffer buf{resource, 42};
+    static_assert(cuda::std::is_same<decltype(buf.begin()), TestType*>::value, "");
+    static_assert(cuda::std::is_same<decltype(buf.end()), TestType*>::value, "");
+    static_assert(cuda::std::is_same<decltype(buf.data()), TestType*>::value, "");
     CUDAX_CHECK(buf.data() != nullptr);
     CUDAX_CHECK(buf.size() == 42);
     CUDAX_CHECK(buf.size_bytes() == 42 * sizeof(TestType));
@@ -162,6 +165,9 @@ TEMPLATE_TEST_CASE(
     CUDAX_CHECK(buf.end() == buf.begin() + buf.size());
     CUDAX_CHECK(buf.get_memory_resource() == resource);
 
+    static_assert(cuda::std::is_same<decltype(cuda::std::as_const(buf).begin()), TestType const*>::value, "");
+    static_assert(cuda::std::is_same<decltype(cuda::std::as_const(buf).end()), TestType const*>::value, "");
+    static_assert(cuda::std::is_same<decltype(cuda::std::as_const(buf).data()), TestType const*>::value, "");
     CUDAX_CHECK(cuda::std::as_const(buf).data() != nullptr);
     CUDAX_CHECK(cuda::std::as_const(buf).size() == 42);
     CUDAX_CHECK(cuda::std::as_const(buf).begin() == buf.data());

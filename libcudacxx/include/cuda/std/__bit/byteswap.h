@@ -71,7 +71,7 @@ class __byteswap_impl
 
 public:
   template <class _Tp>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static _CCCL_CONSTEXPR_CXX14 _Tp __impl(_Tp __val) noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Tp __impl(_Tp __val) noexcept
   {
     _Tp __result{};
     for (size_t __i{}; __i < sizeof(__val); ++__i)
@@ -87,12 +87,12 @@ public:
 #if defined(_CCCL_BUILTIN_BSWAP16)
     return _CCCL_BUILTIN_BSWAP16(__val);
 #else // ^^^ _CCCL_BUILTIN_BSWAP16 ^^^ / vvv !_CCCL_BUILTIN_BSWAP16 vvv
-#  if _CCCL_STD_VER >= 2014 && _CCCL_COMPILER(MSVC)
+#  if _CCCL_COMPILER(MSVC)
     if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
     {
       NV_IF_TARGET(NV_IS_HOST, return _byteswap_ushort(__val);)
     }
-#  endif // _CCCL_STD_VER >= 2014 && _CCCL_COMPILER(MSVC)
+#  endif // _CCCL_COMPILER(MSVC)
     return (__val << CHAR_BIT) | (__val >> CHAR_BIT);
 #endif // !_CCCL_BUILTIN_BSWAP16
   }
@@ -102,15 +102,13 @@ public:
 #if defined(_CCCL_BUILTIN_BSWAP32)
     return _CCCL_BUILTIN_BSWAP32(__val);
 #else // ^^^ _CCCL_BUILTIN_BSWAP32 ^^^ / vvv !_CCCL_BUILTIN_BSWAP32 vvv
-#  if _CCCL_STD_VER >= 2014
     if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
     {
-#    if _CCCL_COMPILER(MSVC)
+#  if _CCCL_COMPILER(MSVC)
       NV_IF_TARGET(NV_IS_HOST, return _byteswap_ulong(__val);)
-#    endif // _CCCL_COMPILER(MSVC)
+#  endif // _CCCL_COMPILER(MSVC)
       NV_IF_TARGET(NV_IS_DEVICE, return __impl_device(__val);)
     }
-#  endif // _CCCL_STD_VER >= 2014
     return __impl_recursive<uint16_t>(__val);
 #endif // !_CCCL_BUILTIN_BSWAP32
   }
@@ -120,20 +118,18 @@ public:
 #if defined(_CCCL_BUILTIN_BSWAP64)
     return _CCCL_BUILTIN_BSWAP64(__val);
 #else // ^^^ _CCCL_BUILTIN_BSWAP64 ^^^ / vvv !_CCCL_BUILTIN_BSWAP64 vvv
-#  if _CCCL_STD_VER >= 2014
     if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
     {
-#    if _CCCL_COMPILER(MSVC)
+#  if _CCCL_COMPILER(MSVC)
       NV_IF_TARGET(NV_IS_HOST, return _byteswap_uint64(__val);)
-#    endif // _CCCL_COMPILER(MSVC)
+#  endif // _CCCL_COMPILER(MSVC)
       NV_IF_TARGET(NV_IS_DEVICE, return __impl_device(__val);)
     }
-#  endif // _CCCL_STD_VER >= 2014
     return __impl_recursive<uint32_t>(__val);
 #endif // !_CCCL_BUILTIN_BSWAP64
   }
 
-#if !defined(_LIBCUDACXX_HAS_NO_INT128)
+#if _CCCL_HAS_INT128()
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr __uint128_t __impl(__uint128_t __val) noexcept
   {
 #  if defined(_CCCL_BUILTIN_BSWAP128)
@@ -142,7 +138,7 @@ public:
     return __impl_recursive<uint64_t>(__val);
 #  endif // !_CCCL_BUILTIN_BSWAP128
   }
-#endif // !_LIBCUDACXX_HAS_NO_INT128
+#endif // _CCCL_HAS_INT128()
 };
 
 _CCCL_TEMPLATE(class _Integer)
@@ -163,7 +159,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Integer byteswap(_Integer _
 _CCCL_TEMPLATE(class _Integer)
 _CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Integer) _CCCL_AND(sizeof(_Integer) > 1)
                  _CCCL_AND(!has_single_bit(sizeof(_Integer))))
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Integer byteswap(_Integer __val) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Integer byteswap(_Integer __val) noexcept
 {
   return static_cast<_Integer>(__byteswap_impl::__impl(_CUDA_VSTD::__to_unsigned_like(__val)));
 }

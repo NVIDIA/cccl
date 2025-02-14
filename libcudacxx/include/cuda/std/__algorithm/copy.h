@@ -28,13 +28,13 @@
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/cstdlib> // ::memmove
-#include <cuda/std/detail/libcxx/include/cstring>
+#include <cuda/std/cstdlib>
+#include <cuda/std/cstring> // memmove
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _AlgPolicy, class _InputIterator, class _OutputIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_InputIterator, _OutputIterator>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_InputIterator, _OutputIterator>
 __copy(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
 {
   for (; __first != __last; ++__first, (void) ++__result)
@@ -44,37 +44,26 @@ __copy(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
   return {__last, __result};
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool __dispatch_memmove(_Up* __result, _Tp* __first, const size_t __n)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __dispatch_memmove(_Up* __result, _Tp* __first, const size_t __n)
 {
-  // This is a pessimisation, but there's no way to do the code path detection correctly before GCC 9.0.
-  // __builtin_memmove is also illegal in constexpr there, so... just always assume we are constant evaluated,
-  // and let the optimizer *maybe* recover some of the perf.
-#if _CCCL_COMPILER(GCC, <, 9)
-  return false;
-#endif
+#if defined(_CCCL_BUILTIN_MEMMOVE)
+  _CCCL_BUILTIN_MEMMOVE(__result, __first, __n * sizeof(_Up));
+  return true;
+#else // ^^^ _CCCL_BUILTIN_MEMMOVE ^^^ / vvv !_CCCL_BUILTIN_MEMMOVE vvv
+  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  {
+    _CUDA_VSTD::memmove(__result, __first, __n * sizeof(_Up));
+    return true;
+  }
 
-  if (_CUDA_VSTD::is_constant_evaluated())
-  {
-    return false;
-  }
-  else
-  {
-    // For now, we only ever use memmove on host
-    // clang-format off
-    NV_IF_ELSE_TARGET(NV_IS_HOST, (
-      _CUDA_VSTD::memmove(__result, __first, __n * sizeof(_Up));
-      return true;
-    ),(
-      return false;
-    ))
-    // clang-format on
-  }
+  return false;
+#endif // ^^^ !_CCCL_BUILTIN_MEMMOVE ^^^
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
-__constexpr_tail_overlap_fallback(_Tp* __first, _Up* __needle, _Tp* __last)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __constexpr_tail_overlap_fallback(_Tp* __first, _Up* __needle, _Tp* __last)
 {
   while (__first != __last)
   {
@@ -88,7 +77,7 @@ __constexpr_tail_overlap_fallback(_Tp* __first, _Up* __needle, _Tp* __last)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool __constexpr_tail_overlap(_Tp* __first, _Up* __needle, _Tp* __last)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __constexpr_tail_overlap(_Tp* __first, _Up* __needle, _Tp* __last)
 {
   _LIBCUDACXX_UNUSED_VAR(__last);
 #if defined(_CCCL_BUILTIN_CONSTANT_P)
@@ -105,7 +94,7 @@ template <class _AlgPolicy,
           class _Up,
           enable_if_t<_CCCL_TRAIT(is_same, remove_const_t<_Tp>, _Up), int> = 0,
           enable_if_t<_CCCL_TRAIT(is_trivially_copyable, _Up), int>        = 0>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_Tp*, _Up*> __copy(_Tp* __first, _Tp* __last, _Up* __result)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_Tp*, _Up*> __copy(_Tp* __first, _Tp* __last, _Up* __result)
 {
   const ptrdiff_t __n = __last - __first;
   if (__n > 0)
@@ -134,7 +123,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_Tp*, _Up*> __copy(_Tp* __f
 }
 
 template <class _InputIterator, class _OutputIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _OutputIterator
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator
 copy(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
 {
   return _CUDA_VSTD::__copy<_ClassicAlgPolicy>(__unwrap_iter(__first), __unwrap_iter(__last), __unwrap_iter(__result))

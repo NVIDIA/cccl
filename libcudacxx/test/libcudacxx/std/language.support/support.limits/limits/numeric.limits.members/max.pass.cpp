@@ -56,21 +56,21 @@ int main(int, char**)
   test<unsigned long>(ULONG_MAX);
   test<long long>(LLONG_MAX);
   test<unsigned long long>(ULLONG_MAX);
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   test<__int128_t>(__int128_t(__uint128_t(-1) / 2));
   test<__uint128_t>(__uint128_t(-1));
-#endif
+#endif // _CCCL_HAS_INT128()
   test<float>(FLT_MAX);
   test<double>(DBL_MAX);
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
   test<long double>(LDBL_MAX);
 #endif
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#if _CCCL_HAS_NVFP16()
   test<__half>(__double2half(65504.0));
-#endif // _LIBCUDACXX_HAS_NVFP16
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#endif // _CCCL_HAS_NVFP16
+#if _CCCL_HAS_NVBF16()
   test<__nv_bfloat16>(__double2bfloat16(3.3895313892515355e+38));
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _CCCL_HAS_NVBF16
 #if _CCCL_HAS_NVFP8()
   test<__nv_fp8_e4m3>(make_fp8_e4m3(448.0));
   test<__nv_fp8_e5m2>(make_fp8_e5m2(57344.0));

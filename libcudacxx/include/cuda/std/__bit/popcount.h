@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -22,65 +22,43 @@
 #endif // no system header
 
 #include <cuda/std/__bit/popc.h>
-#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<sizeof(_Tp) <= sizeof(uint32_t), int>
-__popcount_dispatch(_Tp __t) noexcept
-{
-  return __cccl_popc(static_cast<uint32_t>(__t));
-}
-
-template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<sizeof(_Tp) == sizeof(uint64_t), int>
-__popcount_dispatch(_Tp __t) noexcept
-{
-  return __cccl_popc(static_cast<uint64_t>(__t));
-}
-
-template <typename _Tp, int _St = sizeof(_Tp) / sizeof(uint64_t)>
-struct __popcount_rsh_impl
-{
-  static _LIBCUDACXX_HIDE_FROM_ABI constexpr int __count(_Tp __t)
-  {
-    return __popcount_rsh_impl<_Tp, _St - 1>::__count(__t >> numeric_limits<uint64_t>::digits)
-         + __cccl_popc(static_cast<uint64_t>(__t));
-  }
-};
-
-template <typename _Tp>
-struct __popcount_rsh_impl<_Tp, 1>
-{
-  static _LIBCUDACXX_HIDE_FROM_ABI constexpr int __count(_Tp __t)
-  {
-    return __cccl_popc(static_cast<uint64_t>(__t));
-  }
-};
-
-template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<(sizeof(_Tp) > sizeof(uint64_t)), int>
-__popcount_dispatch(_Tp __t) noexcept
-{
-  return __popcount_rsh_impl<_Tp>::__count(__t);
-}
-
-template <class _Tp>
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp) _CCCL_AND(sizeof(_Tp) <= sizeof(uint64_t)))
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __popcount(_Tp __t) noexcept
 {
-  static_assert(__cccl_is_unsigned_integer<_Tp>::value, "__cccl_popcount requires unsigned");
-
-  return __popcount_dispatch(__t);
+  using _Sp = _If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
+  return _CUDA_VSTD::__cccl_popc(static_cast<_Sp>(__t));
 }
 
-template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer<_Tp>::value, int> popcount(_Tp __t) noexcept
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp) _CCCL_AND(sizeof(_Tp) > sizeof(uint64_t)))
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __popcount(_Tp __t) noexcept
 {
-  return __popcount(__t);
+  constexpr size_t _Ratio = sizeof(_Tp) / sizeof(uint64_t);
+  int __count             = 0;
+  for (size_t __i = 0; __i < _Ratio; ++__i)
+  {
+    __count += _CUDA_VSTD::__cccl_popc(static_cast<uint64_t>(__t));
+    __t >>= numeric_limits<uint64_t>::digits;
+  }
+  return __count;
+}
+
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int popcount(_Tp __t) noexcept
+{
+  auto __ret = _CUDA_VSTD::__popcount(__t);
+  _CCCL_ASSUME(__ret >= 0 && __ret <= numeric_limits<_Tp>::digits);
+  return __ret;
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD

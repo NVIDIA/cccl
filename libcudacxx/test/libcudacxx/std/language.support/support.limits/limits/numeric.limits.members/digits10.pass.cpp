@@ -65,21 +65,21 @@ int main(int, char**)
   test<unsigned long>();
   test<long long>();
   test<unsigned long long>();
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   test<__int128_t>();
   test<__uint128_t>();
-#endif
+#endif // _CCCL_HAS_INT128()
   test<float>();
   test<double>();
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
   test<long double>();
 #endif
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#if _CCCL_HAS_NVFP16()
   test<__half>();
-#endif // _LIBCUDACXX_HAS_NVFP16
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#endif // _CCCL_HAS_NVFP16
+#if _CCCL_HAS_NVBF16()
   test<__nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _CCCL_HAS_NVBF16
 #if _CCCL_HAS_NVFP8()
   test<__nv_fp8_e4m3>();
   test<__nv_fp8_e5m2>();

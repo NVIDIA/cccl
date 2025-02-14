@@ -1096,8 +1096,8 @@ struct DeviceReduce
   //!    thrust::device_vector<int> in = { 1, 2, 3, 4 };
   //!    thrust::device_vector<int> out(1);
   //!
-  //!    std::size_t temp_storage_bytes = 0;
-  //!    std::uint8_t *d_temp_storage = nullptr;
+  //!    size_t temp_storage_bytes = 0;
+  //!    uint8_t *d_temp_storage = nullptr;
   //!
   //!    const int init = 42;
   //!
@@ -1111,7 +1111,7 @@ struct DeviceReduce
   //!      square_t{},
   //!      init);
   //!
-  //!    thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+  //!    thrust::device_vector<uint8_t> temp_storage(temp_storage_bytes);
   //!    d_temp_storage = temp_storage.data().get();
   //!
   //!    cub::DeviceReduce::TransformReduce(

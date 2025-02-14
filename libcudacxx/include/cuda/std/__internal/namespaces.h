@@ -64,11 +64,7 @@
 #  define _LIBCUDACXX_END_NAMESPACE_CPO } _LIBCUDACXX_END_NAMESPACE_RANGES_ABI
 
 // Namespaces related to chrono / filesystem
-#  if _CCCL_STD_VER >= 2017
-#    define _LIBCUDACXX_BEGIN_NAMESPACE_FILESYSTEM namespace cuda { namespace std { inline namespace __fs { namespace filesystem { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
-#  else // ^^^ C++17 ^^^ / vvv C++14 vvv
-#    define _LIBCUDACXX_BEGIN_NAMESPACE_FILESYSTEM namespace cuda { namespace std { namespace __fs { namespace filesystem { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
-#  endif // _CCCL_STD_VER <= 2014
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_FILESYSTEM namespace cuda { namespace std { inline namespace __fs { namespace filesystem { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
 #  define _LIBCUDACXX_END_NAMESPACE_FILESYSTEM } } } } }
 
 // Shorthands for different qualifiers

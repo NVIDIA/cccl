@@ -37,7 +37,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr byte operator|(byte __lhs, byte __rhs) noexc
     static_cast<unsigned char>(static_cast<unsigned int>(__lhs) | static_cast<unsigned int>(__rhs)));
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 byte& operator|=(byte& __lhs, byte __rhs) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr byte& operator|=(byte& __lhs, byte __rhs) noexcept
 {
   return __lhs = __lhs | __rhs;
 }
@@ -48,7 +48,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr byte operator&(byte __lhs, byte __rhs) noexc
     static_cast<unsigned char>(static_cast<unsigned int>(__lhs) & static_cast<unsigned int>(__rhs)));
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 byte& operator&=(byte& __lhs, byte __rhs) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr byte& operator&=(byte& __lhs, byte __rhs) noexcept
 {
   return __lhs = __lhs & __rhs;
 }
@@ -59,7 +59,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr byte operator^(byte __lhs, byte __rhs) noexc
     static_cast<unsigned char>(static_cast<unsigned int>(__lhs) ^ static_cast<unsigned int>(__rhs)));
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 byte& operator^=(byte& __lhs, byte __rhs) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr byte& operator^=(byte& __lhs, byte __rhs) noexcept
 {
   return __lhs = __lhs ^ __rhs;
 }
@@ -71,7 +71,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr byte operator~(byte __b) noexcept
 
 _CCCL_TEMPLATE(class _Integer)
 _CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Integer))
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 byte& operator<<=(byte& __lhs, _Integer __shift) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr byte& operator<<=(byte& __lhs, _Integer __shift) noexcept
 {
   return __lhs = __lhs << __shift;
 }
@@ -85,7 +85,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr byte operator<<(byte __lhs, _Integer __shift
 
 _CCCL_TEMPLATE(class _Integer)
 _CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Integer))
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 byte& operator>>=(byte& __lhs, _Integer __shift) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr byte& operator>>=(byte& __lhs, _Integer __shift) noexcept
 {
   return __lhs = __lhs >> __shift;
 }

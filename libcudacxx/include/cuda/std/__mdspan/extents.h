@@ -75,8 +75,6 @@ _CCCL_PUSH_MACROS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2011
-
 namespace __detail
 {
 
@@ -127,10 +125,10 @@ struct __extents_tag
 
 template <class _ThisIndexType, size_t... _Extents>
 class extents
-#  ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     : private __detail::__no_unique_address_emulation<
         __detail::__partially_static_sizes_tagged<__detail::__extents_tag, _ThisIndexType, size_t, _Extents...>>
-#  endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 {
 public:
   using rank_type  = size_t;
@@ -142,31 +140,31 @@ public:
     __detail::__partially_static_sizes_tagged<__detail::__extents_tag, index_type, size_t, _Extents...>;
   using __indices_t = _CUDA_VSTD::integer_sequence<size_t, _Extents...>;
 
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
   _CCCL_NO_UNIQUE_ADDRESS __storage_t __storage_;
-#  else
+#else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
   using __base_t = __detail::__no_unique_address_emulation<__storage_t>;
-#  endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 
   // private members dealing with the way we internally store dynamic extents
 
 private:
   __MDSPAN_FORCE_INLINE_FUNCTION constexpr __storage_t& __storage() noexcept
   {
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     return __storage_;
-#  else
+#else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
     return this->__base_t::__ref();
-#  endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
   }
   __MDSPAN_FORCE_INLINE_FUNCTION
   constexpr __storage_t const& __storage() const noexcept
   {
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     return __storage_;
-#  else
+#else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
     return this->__base_t::__ref();
-#  endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
   }
 
   template <size_t... _Idxs>
@@ -217,11 +215,11 @@ private:
     );
   }
 
-#  ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit extents(__base_t&& __b) noexcept
       : __base_t(_CUDA_VSTD::move(__b))
   {}
-#  endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 
   // public interface:
 
@@ -259,20 +257,20 @@ public:
     (((_Extents != dynamic_extent) && (_OtherExtents == dynamic_extent)) || ...)
     || (_CUDA_VSTD::numeric_limits<index_type>::max() < _CUDA_VSTD::numeric_limits<
           _OtherIndexType>::max())) constexpr extents(const extents<_OtherIndexType, _OtherExtents...>& __other) noexcept
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __storage_{
-#  else
+#else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
       : __base_t(__base_t {
         __storage_t
         {
-#  endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
           __other.__storage().__enable_psa_conversion()
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         }
-#  else
+#else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
         }
       })
-#  endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
   {
     /* TODO: precondition check
      * __other.extent(r) equals Er for each r for which Er is a static extent, and
@@ -282,7 +280,7 @@ public:
      */
   }
 
-#  ifdef __NVCC__
+#if _CCCL_CUDA_COMPILER(NVCC)
   _CCCL_TEMPLATE(class... _Integral)
   _CCCL_REQUIRES(
     // TODO: check whether the other version works with newest NVCC, doesn't with 11.4
@@ -292,30 +290,30 @@ public:
     // NVCC chokes on the fold thingy here so wrote the workaround
     ((sizeof...(_Integral) == __detail::__count_dynamic_extents<_Extents...>::val)
      || (sizeof...(_Integral) == sizeof...(_Extents))))
-#  else
+#else // ^^^ _CCCL_CUDA_COMPILER(NVCC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC) vvv
   _CCCL_TEMPLATE(class... _Integral)
   _CCCL_REQUIRES(__fold_and_v<_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _Integral, index_type)...> _CCCL_AND
                    __fold_and_v<_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Integral)...> _CCCL_AND(
                      (sizeof...(_Integral) == rank_dynamic()) || (sizeof...(_Integral) == rank())))
-#  endif
+#endif // !_CCCL_CUDA_COMPILER(NVCC)
   _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr extents(_Integral... __exts) noexcept
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __storage_{
-#  else
+#else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
       : __base_t(__base_t {
         typename __base_t::__stored_type
         {
-#  endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
           _CUDA_VSTD::conditional_t<sizeof...(_Integral) == rank_dynamic(),
                                     __detail::__construct_psa_from_dynamic_exts_values_tag_t,
                                     __detail::__construct_psa_from_all_exts_values_tag_t>(),
           static_cast<index_type>(__exts)...
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         }
-#  else
+#else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
         }
       })
-#  endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
   {
     /* TODO: precondition check
      * If sizeof...(_IndexTypes) != rank_dynamic() is true, exts_arr[r] equals Er for each r for which Er is a
@@ -326,7 +324,7 @@ public:
   }
 
   // TODO: check whether this works with newest NVCC, doesn't with 11.4
-#  ifdef __NVCC__
+#if _CCCL_CUDA_COMPILER(NVCC)
   // NVCC seems to pick up rank_dynamic from the wrong extents type???
   // NVCC chokes on the fold thingy here so wrote the workaround
   _CCCL_TEMPLATE(class _IndexType, size_t _Np)
@@ -334,31 +332,31 @@ public:
     _CCCL_TRAIT(_CUDA_VSTD::is_convertible, _IndexType, index_type)
       _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _IndexType)
         _CCCL_AND((_Np == __detail::__count_dynamic_extents<_Extents...>::val) || (_Np == sizeof...(_Extents))))
-#  else
+#else // ^^^ _CCCL_CUDA_COMPILER(NVCC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC) vvv
   _CCCL_TEMPLATE(class _IndexType, size_t _Np)
   _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _IndexType, index_type)
                    _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _IndexType)
                      _CCCL_AND(_Np == rank() || _Np == rank_dynamic()))
-#  endif
+#endif // !_CCCL_CUDA_COMPILER(NVCC)
   __MDSPAN_CONDITIONAL_EXPLICIT(_Np != rank_dynamic())
   _LIBCUDACXX_HIDE_FROM_ABI constexpr extents(_CUDA_VSTD::array<_IndexType, _Np> const& __exts) noexcept
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __storage_{
-#  else
+#else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
       : __base_t(__base_t {
         typename __base_t::__stored_type
         {
-#  endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
           _CUDA_VSTD::conditional_t<_Np == rank_dynamic(),
                                     __detail::__construct_psa_from_dynamic_exts_array_tag_t<0>,
                                     __detail::__construct_psa_from_all_exts_array_tag_t>(),
           _CUDA_VSTD::array<_IndexType, _Np>{__exts}
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         }
-#  else
+#else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
         }
       })
-#  endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
   {
     /* TODO: precondition check
      * If _Np != rank_dynamic() is true, __exts[r] equals Er for each r for which Er is a static extent, and
@@ -369,7 +367,7 @@ public:
   }
 
   // TODO: check whether the below works with newest NVCC, doesn't with 11.4
-#  ifdef __NVCC__
+#if _CCCL_CUDA_COMPILER(NVCC)
   // NVCC seems to pick up rank_dynamic from the wrong extents type???
   // NVCC chokes on the fold thingy here so wrote the workaround
   _CCCL_TEMPLATE(class _IndexType, size_t _Np)
@@ -377,31 +375,31 @@ public:
     _CCCL_TRAIT(_CUDA_VSTD::is_convertible, _IndexType, index_type)
       _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _IndexType)
         _CCCL_AND((_Np == __detail::__count_dynamic_extents<_Extents...>::val) || (_Np == sizeof...(_Extents))))
-#  else
+#else // ^^^ _CCCL_CUDA_COMPILER(NVCC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC) vvv
   _CCCL_TEMPLATE(class _IndexType, size_t _Np)
   _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _IndexType, index_type)
                    _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _IndexType)
                      _CCCL_AND(_Np == rank() || _Np == rank_dynamic()))
-#  endif
+#endif // !_CCCL_CUDA_COMPILER(NVCC)
   __MDSPAN_CONDITIONAL_EXPLICIT(_Np != rank_dynamic())
   _LIBCUDACXX_HIDE_FROM_ABI constexpr extents(_CUDA_VSTD::span<_IndexType, _Np> __exts) noexcept
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __storage_{
-#  else
+#else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
       : __base_t(__base_t {
         typename __base_t::__stored_type
         {
-#  endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
           _CUDA_VSTD::conditional_t<_Np == rank_dynamic(),
                                     __detail::__construct_psa_from_dynamic_exts_array_tag_t<0>,
                                     __detail::__construct_psa_from_all_exts_array_tag_t>(),
           __exts
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         }
-#  else
+#else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
         }
       })
-#  endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
   {
     /* TODO: precondition check
      * If _Np != rank_dynamic() is true, __exts[r] equals Er for each r for which Er is a static extent, and
@@ -414,17 +412,17 @@ public:
   // Need this constructor for some submdspan implementation stuff
   // for the layout_stride case where I use an extents object for strides
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit extents(__storage_t const& __sto) noexcept
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __storage_{
-#  else
+#else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
       : __base_t(__base_t {
-#  endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
           __sto
-#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         }
-#  else
+#else // ^^^ !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS ^^^ / vvv _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS vvv
       })
-#  endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
   {}
 
   //--------------------------------------------------------------------------------
@@ -454,7 +452,7 @@ public:
                         _CUDA_VSTD::make_index_sequence<sizeof...(_RHS)>{});
   }
 
-#  if !(__MDSPAN_HAS_CXX_20)
+#if !__MDSPAN_HAS_CXX_20
   template <class _OtherIndexType, size_t... _RHS>
   _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(extents const& lhs, extents<_OtherIndexType, _RHS...> const& __rhs) noexcept
@@ -463,7 +461,7 @@ public:
                             integral_constant<bool, (sizeof...(_RHS) == rank())>{},
                             _CUDA_VSTD::make_index_sequence<sizeof...(_RHS)>{});
   }
-#  endif
+#endif // !__MDSPAN_HAS_CXX_20
 
   // End of public interface
 
@@ -476,13 +474,13 @@ public: // (but not really)
     // strides could accidentally end up with the same types in their hierarchies
     // somehow (which would cause layout_stride::mapping to not be standard_layout)
     return extents(
-#  ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       __base_t{
-#  endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         _CUDA_VSTD::move(__bs.template __with_tag<__detail::__extents_tag>())
-#  ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       }
-#  endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     );
   }
 
@@ -528,14 +526,14 @@ using dextents = typename __detail::__make_dextents<_IndexType, _Rank>::type;
 template <size_t _Rank, class _IndexType = size_t>
 using dims = dextents<_IndexType, _Rank>;
 
-#  if defined(__MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION)
+#if defined(__MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION)
 template <class... _IndexTypes>
 _CCCL_HOST_DEVICE extents(_IndexTypes...)
   // Workaround for nvcc
   //-> extents<size_t, __detail::__make_dynamic_extent<_IndexTypes>()...>;
   // Adding "(void)" so that clang doesn't complain this is unused
   -> extents<size_t, size_t(((void) _IndexTypes(), -1))...>;
-#  endif
+#endif // __MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION
 
 namespace __detail
 {
@@ -566,8 +564,6 @@ template <typename _Extents>
 using __extents_to_partially_static_sizes_t = typename __extents_to_partially_static_sizes<_Extents>::type;
 
 } // end namespace __detail
-
-#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

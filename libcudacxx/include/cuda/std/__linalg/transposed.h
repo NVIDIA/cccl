@@ -31,7 +31,7 @@
 
 #include <cuda/std/version>
 
-#if defined(__cccl_lib_mdspan) && _CCCL_STD_VER >= 2017
+#if defined(__cccl_lib_mdspan)
 
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__type_traits/is_convertible.h>
@@ -326,5 +326,5 @@ transposed(mdspan<_ElementType, _Extents, _Layout, _Accessor> __a)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // defined(__cccl_lib_mdspan) && _CCCL_STD_VER >= 2017
+#endif // defined(__cccl_lib_mdspan)
 #endif // _LIBCUDACXX___LINALG_TRANSPOSED_HPP

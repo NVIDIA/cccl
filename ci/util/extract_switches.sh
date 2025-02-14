@@ -21,21 +21,21 @@ switches=()
 for arg in "$@"; do
   case "$arg" in
   --help | -h)
-    cat <<-EOF | cut -c 5-
+    cat <<"EOF" | cut -c 5-
     Usage: extract_switches.sh <switch> [<switch> ...] -- <argv>
 
     Sorts any recognized switches in argv to the front and returns the result.
     Unrecognized switches are left in place.
 
     Example Usage:
-      new_args=\$(extract_switches.sh -cpu-only -gpu-only
-      eval set -- \${new_args}
+      new_args=$(extract_switches.sh -cpu-only -gpu-only -- "$@")
+      eval set -- ${new_args}
       while true; do
-        case "\$1" in
+        case "$1" in
         -cpu-only) CPU_ONLY=true; shift;;
         -gpu-only) GPU_ONLY=true; shift;;
         --) shift; break;;
-        *) echo "Unknown argument: \$1"; exit 1;;
+        *) echo "Unknown argument: $1"; exit 1;;
         esac
       done
 EOF
@@ -57,11 +57,11 @@ other_args=()
 for arg in "$@"; do
   for switch in "${switches[@]}"; do
     if [ "$arg" = "$switch" ]; then
-      found_switches+=("$arg")
+      found_switches+=("\"$arg\"")
       continue 2
     fi
   done
-  other_args+=("$arg")
+  other_args+=("\"$arg\"")
 done
 
 echo "${found_switches[@]} -- ${other_args[@]}"
