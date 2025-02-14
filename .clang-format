@@ -25,8 +25,6 @@ AlwaysBreakTemplateDeclarations: Yes
 AttributeMacros: [
                   '_CCCL_ALIGNAS_TYPE',
                   '_CCCL_ALIGNAS',
-                  '_CCCL_CONSTEXPR_CXX14',
-                  '_CCCL_CONSTEXPR_CXX17',
                   '_CCCL_CONSTEXPR_CXX20',
                   '_CCCL_CONSTEXPR_CXX23',
                   '_CCCL_DEVICE',
@@ -87,9 +85,6 @@ ContinuationIndentWidth: 2
 EmptyLineAfterAccessModifier: Never
 EmptyLineBeforeAccessModifier: Always
 FixNamespaceComments: true
-IfMacros: [
-  '_CCCL_IF_CONSTEXPR'
-]
 IndentWrappedFunctionNames: false
 IncludeBlocks:   Regroup
 IncludeCategories:

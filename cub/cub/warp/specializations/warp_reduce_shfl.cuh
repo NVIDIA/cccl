@@ -122,7 +122,7 @@ struct WarpReduceShfl
       /// Whether the data type is a small (32b or less) integer for which we can use a single SHFL instruction per
       /// exchange
       IS_SMALL_UNSIGNED =
-        ::cuda::std::is_integral<S>::value && ::cuda::std::is_unsigned<S>::value && (sizeof(S) <= sizeof(unsigned int)),
+        ::cuda::std::is_integral_v<S> && ::cuda::std::is_unsigned_v<S> && (sizeof(S) <= sizeof(unsigned int)),
     };
   };
 
@@ -602,10 +602,9 @@ struct WarpReduceShfl
   }
 
   template <class U = T>
-  _CCCL_DEVICE _CCCL_FORCEINLINE
-  typename ::cuda::std::enable_if<(::cuda::std::is_same<int, U>::value || ::cuda::std::is_same<unsigned int, U>::value)
-                                    && detail::reduce_add_exists<>::value,
-                                  T>::type
+  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<
+    (::cuda::std::is_same_v<int, U> || ::cuda::std::is_same_v<unsigned int, U>) && detail::reduce_add_exists<>::value,
+    T>
   ReduceImpl(::cuda::std::true_type /* all_lanes_valid */,
              T input,
              int /* valid_items */,
@@ -622,10 +621,9 @@ struct WarpReduceShfl
   }
 
   template <class U = T>
-  _CCCL_DEVICE _CCCL_FORCEINLINE
-  typename ::cuda::std::enable_if<(::cuda::std::is_same<int, U>::value || ::cuda::std::is_same<unsigned int, U>::value)
-                                    && detail::reduce_min_exists<>::value,
-                                  T>::type
+  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<
+    (::cuda::std::is_same_v<int, U> || ::cuda::std::is_same_v<unsigned int, U>) && detail::reduce_min_exists<>::value,
+    T>
   ReduceImpl(
     ::cuda::std::true_type /* all_lanes_valid */, T input, int /* valid_items */, ::cuda::minimum<> /* reduction_op */)
   {
@@ -640,10 +638,9 @@ struct WarpReduceShfl
   }
 
   template <class U = T>
-  _CCCL_DEVICE _CCCL_FORCEINLINE
-  typename ::cuda::std::enable_if<(::cuda::std::is_same<int, U>::value || ::cuda::std::is_same<unsigned int, U>::value)
-                                    && detail::reduce_max_exists<>::value,
-                                  T>::type
+  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<
+    (::cuda::std::is_same_v<int, U> || ::cuda::std::is_same_v<unsigned int, U>) && detail::reduce_max_exists<>::value,
+    T>
   ReduceImpl(
     ::cuda::std::true_type /* all_lanes_valid */, T input, int /* valid_items */, ::cuda::maximum<> /* reduction_op */)
   {

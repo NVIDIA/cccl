@@ -195,7 +195,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
     typename AgentWarpMergeSortT::TempStorage medium_warp_sort;
   } temp_storage;
 
-  constexpr bool keys_only = ::cuda::std::is_same<ValueT, NullType>::value;
+  constexpr bool keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
   AgentSegmentedRadixSortT agent(num_items, temp_storage.block_sort);
 
   constexpr int begin_bit = 0;
@@ -489,7 +489,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
   const OffsetT segment_end                     = d_end_offsets[global_segment_id];
   const OffsetT num_items                       = segment_end - segment_begin;
 
-  constexpr bool keys_only = ::cuda::std::is_same<ValueT, NullType>::value;
+  constexpr bool keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
   AgentSegmentedRadixSortT agent(num_items, storage);
 
   d_keys_in_orig += segment_begin;
@@ -767,7 +767,7 @@ struct DispatchSegmentedSort
     detail::segmented_sort::OffsetIteratorT<EndOffsetIteratorT,
                                             THRUST_NS_QUALIFIER::constant_iterator<global_segment_offset_t>>;
 
-  static constexpr int KEYS_ONLY = ::cuda::std::is_same<ValueT, NullType>::value;
+  static constexpr int KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
   struct LargeSegmentsSelectorT
   {

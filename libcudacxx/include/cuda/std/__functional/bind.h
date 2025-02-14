@@ -53,20 +53,16 @@ struct is_bind_expression
     : _If<_IsSame<_Tp, remove_cvref_t<_Tp>>::value, false_type, is_bind_expression<remove_cvref_t<_Tp>>>
 {};
 
-#  if _CCCL_STD_VER > 2014
 template <class _Tp>
-inline constexpr size_t is_bind_expression_v = is_bind_expression<_Tp>::value;
-#  endif
+_CCCL_INLINE_VAR constexpr size_t is_bind_expression_v = is_bind_expression<_Tp>::value;
 
 template <class _Tp>
 struct is_placeholder
     : _If<_IsSame<_Tp, remove_cvref_t<_Tp>>::value, integral_constant<int, 0>, is_placeholder<remove_cvref_t<_Tp>>>
 {};
 
-#  if _CCCL_STD_VER > 2014
 template <class _Tp>
-inline constexpr size_t is_placeholder_v = is_placeholder<_Tp>::value;
-#  endif
+_CCCL_INLINE_VAR constexpr size_t is_placeholder_v = is_placeholder<_Tp>::value;
 
 namespace placeholders
 {

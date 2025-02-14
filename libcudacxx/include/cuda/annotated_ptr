@@ -353,7 +353,7 @@ public:
   _CCCL_HIDE_FROM_ABI constexpr annotated_ptr() noexcept                     = default;
   _CCCL_HIDE_FROM_ABI constexpr annotated_ptr(annotated_ptr const&) noexcept = default;
   // No constexpr for c11 as the method can't be const
-  _CCCL_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 annotated_ptr& operator=(annotated_ptr const& other) noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr annotated_ptr& operator=(annotated_ptr const& other) noexcept = default;
 
   _CCCL_HOST_DEVICE explicit annotated_ptr(pointer __p)
       : __repr(__p)

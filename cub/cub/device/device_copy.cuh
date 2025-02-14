@@ -183,14 +183,8 @@ struct DeviceCopy
     // IDIV_CEIL(num_ranges, 64)
     using BlockOffsetT = uint32_t;
 
-    return detail::DispatchBatchMemcpy<
-      InputIt,
-      OutputIt,
-      SizeIteratorT,
-      RangeOffsetT,
-      BlockOffsetT,
-      detail::batch_memcpy::policy_hub<RangeOffsetT, BlockOffsetT>,
-      CopyAlg::Copy>::Dispatch(d_temp_storage, temp_storage_bytes, input_it, output_it, sizes, num_ranges, stream);
+    return detail::DispatchBatchMemcpy<InputIt, OutputIt, SizeIteratorT, RangeOffsetT, BlockOffsetT, CopyAlg::Copy>::
+      Dispatch(d_temp_storage, temp_storage_bytes, input_it, output_it, sizes, num_ranges, stream);
   }
 };
 

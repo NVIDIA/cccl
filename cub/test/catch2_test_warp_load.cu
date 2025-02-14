@@ -162,7 +162,7 @@ c2h::device_vector<T> generate_input()
 
   c2h::device_vector<T> d_input(num_items);
 
-  _CCCL_IF_CONSTEXPR (LoadAlgorithm == cub::WarpLoadAlgorithm::WARP_LOAD_STRIPED)
+  if constexpr (LoadAlgorithm == cub::WarpLoadAlgorithm::WARP_LOAD_STRIPED)
   {
     c2h::host_vector<T> h_input(num_items);
 
