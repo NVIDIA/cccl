@@ -50,7 +50,6 @@ class NoopExecutor(Executor):
 
     def run(self, exe_path, cmd=None, work_dir=".", file_deps=None, env=None):
         cmd = cmd or [exe_path]
-        print("------------> ", cmd[-1])
         return (
             cmd,
             "",
