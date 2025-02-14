@@ -48,10 +48,10 @@ int main(int, char**)
   test<unsigned long>(0);
   test<long long>(0);
   test<unsigned long long>(0);
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   test<__int128_t>(0);
   test<__uint128_t>(0);
-#endif
+#endif // _CCCL_HAS_INT128()
 #if defined(__FLT_DENORM_MIN__) // guarded because these macros are extensions.
   test<float>(__FLT_DENORM_MIN__);
   test<double>(__DBL_DENORM_MIN__);

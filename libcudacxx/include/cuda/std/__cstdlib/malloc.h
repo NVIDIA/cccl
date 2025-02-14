@@ -22,7 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/detail/libcxx/include/cstring>
+#include <cuda/std/cstring>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <cstdlib>

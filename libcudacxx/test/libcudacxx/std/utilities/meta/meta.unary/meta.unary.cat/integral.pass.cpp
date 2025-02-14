@@ -59,10 +59,10 @@ int main(int, char**)
   test_integral<unsigned long>();
   test_integral<long long>();
   test_integral<unsigned long long>();
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   test_integral<__int128_t>();
   test_integral<__uint128_t>();
-#endif
+#endif // _CCCL_HAS_INT128()
 
   //  LWG#2582
   static_assert(!cuda::std::is_integral<incomplete_type>::value, "");

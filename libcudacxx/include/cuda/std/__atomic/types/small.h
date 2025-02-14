@@ -28,6 +28,7 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_signed.h>
+#include <cuda/std/cstring>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -53,7 +54,7 @@ template <class _Tp, enable_if_t<!_CCCL_TRAIT(is_arithmetic, _Tp), int> = 0>
 _CCCL_HOST_DEVICE inline __atomic_small_proxy_t<_Tp> __atomic_small_to_32(_Tp __val)
 {
   __atomic_small_proxy_t<_Tp> __temp{};
-  memcpy(&__temp, &__val, sizeof(_Tp));
+  _CUDA_VSTD::memcpy(&__temp, &__val, sizeof(_Tp));
   return __temp;
 }
 
@@ -61,7 +62,7 @@ template <class _Tp, enable_if_t<!_CCCL_TRAIT(is_arithmetic, _Tp), int> = 0>
 _CCCL_HOST_DEVICE inline _Tp __atomic_small_from_32(__atomic_small_proxy_t<_Tp> __val)
 {
   _Tp __temp{};
-  memcpy(&__temp, &__val, sizeof(_Tp));
+  _CUDA_VSTD::memcpy(&__temp, &__val, sizeof(_Tp));
   return __temp;
 }
 

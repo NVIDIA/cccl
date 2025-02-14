@@ -102,9 +102,9 @@ int main(int, char**)
   test_type<unsigned long>();
   test_type<long long>();
   test_type<unsigned long long>();
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   test_type<__int128_t>();
-#endif // _LIBCUDACXX_HAS_NO_INT128
+#endif // _CCCL_HAS_INT128()
   test_type<float>();
   test_type<double>();
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE

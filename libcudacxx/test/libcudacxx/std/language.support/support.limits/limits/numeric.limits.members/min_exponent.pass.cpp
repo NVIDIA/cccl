@@ -53,10 +53,10 @@ int main(int, char**)
   test<unsigned long>();
   test<long long>();
   test<unsigned long long>();
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   test<__int128_t>();
   test<__uint128_t>();
-#endif
+#endif // _CCCL_HAS_INT128()
   test<float, FLT_MIN_EXP>();
   test<double, DBL_MIN_EXP>();
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE

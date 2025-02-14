@@ -42,13 +42,13 @@ using __make_32_64_or_128_bit_t _CCCL_NODEBUG_ALIAS =
                                   int32_t,
                                   conditional_t<sizeof(_Tp) <= sizeof(int64_t),
                                                 int64_t,
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
                                                 conditional_t<sizeof(_Tp) <= sizeof(__int128_t),
                                                               __int128_t,
                                                               /* else */ void>
-#else
+#else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
                                                 /* else */ void
-#endif
+#endif // !_CCCL_HAS_INT128()
                                                 >>>;
 
 _LIBCUDACXX_END_NAMESPACE_STD

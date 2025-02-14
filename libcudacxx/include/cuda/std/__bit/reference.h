@@ -30,7 +30,6 @@
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__utility/swap.h>
-#include <cuda/std/detail/libcxx/include/cstring>
 
 _CCCL_PUSH_MACROS
 

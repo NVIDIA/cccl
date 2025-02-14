@@ -94,9 +94,9 @@ int main(int, char**)
   constexpr_test<uintmax_t>();
   constexpr_test<uintptr_t>();
 
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   constexpr_test<__uint128_t>();
-#endif
+#endif // _CCCL_HAS_INT128()
 
   runtime_test<unsigned char>();
   runtime_test<unsigned>();
@@ -112,7 +112,7 @@ int main(int, char**)
   runtime_test<uintmax_t>();
   runtime_test<uintptr_t>();
 
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   runtime_test<__uint128_t>();
 
   {
@@ -132,7 +132,7 @@ int main(int, char**)
     assert(cuda::std::countl_zero(val) == dig - 45);
     assert(cuda::std::countl_zero(val + 1) == dig - 45);
   }
-#endif
+#endif // _CCCL_HAS_INT128()
 
   return 0;
 }

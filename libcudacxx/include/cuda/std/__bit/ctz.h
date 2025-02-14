@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -22,7 +22,9 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
 #if _CCCL_COMPILER(MSVC)
 #  include <intrin.h>
@@ -30,121 +32,108 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __binary_ctz2(uint64_t __x, int __c) noexcept
+// Contrary to __builtin_clz, __builtin_ctz is not available on device code. We cannot use __builtin_ctz for constexpr
+// function because it is used in both host and device code.
+
+// It is not possible to understand if we are in constant evaluation context in GCC < 9. For this reason, we provide an
+// optimized version of runtime ctz that is used in device code.
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_ctz_32bit(uint32_t __x) noexcept
 {
-  return __c + !(__x & 0x1);
-}
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __binary_ctz4(uint64_t __x, int __c) noexcept
-{
-  return __binary_ctz2(__x >> 2 * !(__x & 0x3), __c + 2 * !(__x & 0x3));
-}
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __binary_ctz8(uint64_t __x, int __c) noexcept
-{
-  return __binary_ctz4(__x >> 4 * !(__x & 0x0F), __c + 4 * !(__x & 0x0F));
-}
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __binary_ctz16(uint64_t __x, int __c) noexcept
-{
-  return __binary_ctz8(__x >> 8 * !(__x & 0x00FF), __c + 8 * !(__x & 0x00FF));
-}
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __binary_ctz32(uint64_t __x, int __c) noexcept
-{
-  return __binary_ctz16(__x >> 16 * !(__x & 0x0000FFFF), __c + 16 * !(__x & 0x0000FFFF));
-}
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __binary_ctz64(uint64_t __x) noexcept
-{
-  return __binary_ctz32(__x >> 32 * !(__x & 0x00000000FFFFFFFF), 32 * !(__x & 0x00000000FFFFFFFF));
+  constexpr auto __digits = numeric_limits<uint32_t>::digits;
+  if (__x == 0)
+  {
+    return __digits;
+  }
+  if (__x & 1)
+  {
+    return 0;
+  }
+  int __pos = 1;
+  for (int __i = __digits / 2; __i >= 2; __i /= 2)
+  {
+    const auto __mark = ~uint32_t{0} >> (__digits - __i);
+    if ((__x & __mark) == 0)
+    {
+      __x >>= __i;
+      __pos += __i;
+    }
+  }
+  return (__pos - (__x & 1));
 }
 
-#if !_CCCL_COMPILER(MSVC)
-
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_ctz(uint32_t __x) noexcept
+template <typename _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_ctz(_Tp __x) noexcept
 {
-#  if defined(__CUDA_ARCH__)
-  return __binary_ctz32(static_cast<uint64_t>(__x), 0); // no device constexpr builtins
+  static_assert(is_same_v<_Tp, uint32_t> || is_same_v<_Tp, uint64_t>);
+  if constexpr (sizeof(_Tp) == sizeof(uint32_t))
+  {
+    return __constexpr_ctz_32bit(__x);
+  }
+  else
+  {
+    auto __lower = __constexpr_ctz_32bit(static_cast<uint32_t>(__x));
+    return __lower != numeric_limits<uint32_t>::digits
+           ? __lower
+           : numeric_limits<uint32_t>::digits + __constexpr_ctz_32bit(static_cast<uint32_t>(__x >> 32));
+  }
+}
+
+#if !_CCCL_COMPILER(NVRTC)
+
+template <typename _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __host_constexpr_ctz(_Tp __x) noexcept
+{
+#  if defined(_CCCL_BUILTIN_CTZ)
+  if (__x == 0)
+  {
+    return numeric_limits<_Tp>::digits;
+  }
+  return sizeof(_Tp) == sizeof(uint32_t)
+         ? _CCCL_BUILTIN_CTZ(static_cast<uint32_t>(__x))
+         : _CCCL_BUILTIN_CTZLL(static_cast<uint64_t>(__x));
 #  else
-  return __builtin_ctz(__x);
+  return _CUDA_VSTD::__constexpr_ctz(__x);
 #  endif
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_ctz(uint64_t __x) noexcept
+template <typename _Tp>
+_CCCL_HIDE_FROM_ABI int __host_runtime_ctz(_Tp __x) noexcept
 {
-#  if defined(__CUDA_ARCH__)
-  return __binary_ctz64(__x); // no device constexpr builtins
+#  if _CCCL_COMPILER(MSVC)
+  unsigned long __where;
+  auto __res = sizeof(_Tp) == sizeof(uint32_t)
+               ? _BitScanForward(&__where, static_cast<uint32_t>(__x))
+               : _BitScanForward64(&__where, static_cast<uint64_t>(__x));
+  return (__res) ? static_cast<int>(__where) : numeric_limits<_Tp>::digits;
 #  else
-  return __builtin_ctzll(__x);
-#  endif
+  return __host_constexpr_ctz(__x);
+#  endif // _CCCL_COMPILER(MSVC)
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_ctz(uint32_t __x) noexcept
+#endif // !_CCCL_COMPILER(NVRTC)
+
+template <typename _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI int __runtime_ctz(_Tp __x) noexcept
 {
-  if (!__cccl_default_is_constant_evaluated())
-  {
-    NV_IF_ELSE_TARGET(
-      NV_IS_DEVICE, (return (!__x) ? (sizeof(uint32_t) * 8) : (__ffs(__x) - 1);), (return __builtin_ctz(__x);))
-  }
-  return __constexpr_ctz(__x);
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                    (return sizeof(_Tp) == sizeof(uint32_t) ? __clz(__brev(static_cast<uint32_t>(__x)))
+                                                            : __clzll(__brevll(static_cast<uint64_t>(__x)));),
+                    (return _CUDA_VSTD::__host_runtime_ctz(__x);))
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_ctz(uint64_t __x) noexcept
+// __cccl_clz returns numeric_limits<_Tp>::digits if __x == 0 on both host and device
+template <typename _Tp>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_ctz(_Tp __x) noexcept
 {
-  if (!__cccl_default_is_constant_evaluated())
-  {
-    NV_IF_ELSE_TARGET(
-      NV_IS_DEVICE, (return (!__x) ? (sizeof(uint64_t) * 8) : (__ffsll(__x) - 1);), (return __builtin_ctzll(__x);))
-  }
-  return __constexpr_ctz(__x);
-}
-
-#else // _CCCL_COMPILER(MSVC)
-
-// Precondition:  __x != 0
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_ctz(uint32_t __x)
-{
-#  if !defined(__CUDA_ARCH__)
-  if (!__cccl_default_is_constant_evaluated())
-  {
-    unsigned long __where = 0;
-    if (_BitScanForward(&__where, __x))
-    {
-      return static_cast<int>(__where);
-    }
-    return 32;
-  }
-#  endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED && !defined(__CUDA_ARCH__)
-
-  return __binary_ctz32(static_cast<uint64_t>(__x), 0);
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_ctz(uint64_t __x)
-{
-#  if !defined(__CUDA_ARCH__)
-  if (!__cccl_default_is_constant_evaluated())
-  {
-    unsigned long __where = 0;
-#    if defined(_LIBCUDACXX_HAS_BITSCAN64) && (defined(_M_AMD64) || defined(__x86_64__))
-    if (_BitScanForward64(&__where, __x))
-    {
-      return static_cast<int>(__where);
-    }
-#    else
-    // Win32 doesn't have _BitScanForward64 so emulate it with two 32 bit calls.
-    if (_BitScanForward(&__where, static_cast<uint32_t>(__x)))
-    {
-      return static_cast<int>(__where);
-    }
-    if (_BitScanForward(&__where, static_cast<uint32_t>(__x >> 32)))
-    {
-      return static_cast<int>(__where + 32);
-    }
-#    endif
-    return 64;
-  }
-#  endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED && !defined(__CUDA_ARCH__)
-
-  return __binary_ctz64(__x);
-}
-
+  static_assert(is_same_v<_Tp, uint32_t> || is_same_v<_Tp, uint64_t>);
+#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+  return is_constant_evaluated() ? _CUDA_VSTD::__constexpr_ctz(__x) : _CUDA_VSTD::__runtime_ctz(__x);
+#else
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, //
+                    (return _CUDA_VSTD::__constexpr_ctz(__x);),
+                    (return _CUDA_VSTD::__host_constexpr_ctz(__x);))
 #endif
+}
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

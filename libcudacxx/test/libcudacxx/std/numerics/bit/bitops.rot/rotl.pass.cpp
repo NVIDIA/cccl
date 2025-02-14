@@ -77,9 +77,9 @@ int main(int, char**)
   static_assert(constexpr_test<uintmax_t>(), "");
   static_assert(constexpr_test<uintptr_t>(), "");
 
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   static_assert(constexpr_test<__uint128_t>(), "");
-#endif
+#endif // _CCCL_HAS_INT128()
 
   runtime_test<unsigned char>();
   runtime_test<unsigned short>();
@@ -95,7 +95,7 @@ int main(int, char**)
   runtime_test<uintmax_t>();
   runtime_test<uintptr_t>();
 
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   runtime_test<__uint128_t>();
 
   {
@@ -110,7 +110,7 @@ int main(int, char**)
     assert(cuda::std::rotl(val, 90) == 84);
     assert(cuda::std::rotl(val, 218) == 84);
   }
-#endif
+#endif // _CCCL_HAS_INT128()
 
   return 0;
 }

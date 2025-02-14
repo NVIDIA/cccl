@@ -11,10 +11,10 @@
 // <cuda/std/iterator>
 // template <class C> constexpr auto empty(const C& c) -> decltype(c.empty());
 
-// UNSUPPORTED: c++17
 // UNSUPPORTED: clang-3.3, clang-3.4, clang-3.5, clang-3.6, clang-3.7, clang-3.8
-// nvrtc will not generate warnings/failures on nodiscard attribute
+// nvrtc and nvhpc will not generate warnings/failures on nodiscard attribute
 // UNSUPPORTED: nvrtc
+// UNSUPPORTED: nvhpc
 
 #include <cuda/std/array>
 #include <cuda/std/iterator>

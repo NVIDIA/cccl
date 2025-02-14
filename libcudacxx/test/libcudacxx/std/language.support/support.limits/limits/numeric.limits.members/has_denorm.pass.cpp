@@ -45,10 +45,10 @@ int main(int, char**)
   test<unsigned long, cuda::std::denorm_absent>();
   test<long long, cuda::std::denorm_absent>();
   test<unsigned long long, cuda::std::denorm_absent>();
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   test<__int128_t, cuda::std::denorm_absent>();
   test<__uint128_t, cuda::std::denorm_absent>();
-#endif
+#endif // _CCCL_HAS_INT128()
   test<float, cuda::std::denorm_present>();
   test<double, cuda::std::denorm_present>();
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE

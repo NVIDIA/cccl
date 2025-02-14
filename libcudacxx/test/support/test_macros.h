@@ -323,7 +323,7 @@ struct is_same<T, T>
 #endif
 
 #ifndef TEST_HAS_NO_INT128_T
-#  ifdef _LIBCUDACXX_HAS_NO_INT128
+#  if !_CCCL_HAS_INT128()
 #    define TEST_HAS_NO_INT128_T
 #  endif
 #endif
