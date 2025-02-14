@@ -8,8 +8,6 @@
 //===----------------------------------------------------------------------===//
 #include "cuda/std/__memory/assume_aligned.h"
 
-#include <cstdio>
-
 #include <test_macros.h>
 
 int main(int, char**)
