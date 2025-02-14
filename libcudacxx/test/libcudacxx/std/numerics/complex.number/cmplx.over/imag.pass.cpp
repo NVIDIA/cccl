@@ -34,12 +34,10 @@ __host__ __device__ void test(typename cuda::std::enable_if<cuda::std::is_integr
 
   static_assert((cuda::std::is_same<decltype(cuda::std::imag(T(x))), double>::value), "");
   assert(cuda::std::imag(x) == 0);
-#if TEST_STD_VER > 2011
   constexpr T val{x};
   static_assert(cuda::std::imag(val) == T(0), "");
   constexpr cuda::std::complex<T> t{val, val};
   static_assert(t.imag() == T(x), "");
-#endif
 }
 
 template <class T, int x>
@@ -49,12 +47,10 @@ __host__ __device__ void test(typename cuda::std::enable_if<!cuda::std::is_integ
 
   static_assert((cuda::std::is_same<decltype(cuda::std::imag(T(x))), T>::value), "");
   assert(cuda::std::imag(x) == 0);
-#if TEST_STD_VER > 2011
   constexpr T val{x};
   static_assert(cuda::std::imag(val) == T(0), "");
   constexpr cuda::std::complex<T> t{val, val};
   static_assert(t.imag() == T(x), "");
-#endif
 }
 
 template <class T>

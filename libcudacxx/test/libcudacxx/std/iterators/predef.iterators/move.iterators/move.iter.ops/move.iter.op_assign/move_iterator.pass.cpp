@@ -91,7 +91,6 @@ int main(int, char**)
   test<random_access_iterator<const Base*>>(random_access_iterator<Derived*>(&d));
   test<Base*>(&d);
   test_conv_assign();
-#if TEST_STD_VER > 2011
   {
     using BaseIter             = cuda::std::move_iterator<const Base*>;
     using DerivedIter          = cuda::std::move_iterator<const Derived*>;
@@ -101,7 +100,6 @@ int main(int, char**)
     static_assert(it2.base() == p, "");
     static_assert(test_conv_assign(), "");
   }
-#endif
 
   return 0;
 }

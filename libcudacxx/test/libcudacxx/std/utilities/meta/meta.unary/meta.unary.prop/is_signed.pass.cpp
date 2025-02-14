@@ -21,12 +21,10 @@ __host__ __device__ void test_is_signed()
   static_assert(cuda::std::is_signed<const T>::value, "");
   static_assert(cuda::std::is_signed<volatile T>::value, "");
   static_assert(cuda::std::is_signed<const volatile T>::value, "");
-#if TEST_STD_VER > 2011
   static_assert(cuda::std::is_signed_v<T>, "");
   static_assert(cuda::std::is_signed_v<const T>, "");
   static_assert(cuda::std::is_signed_v<volatile T>, "");
   static_assert(cuda::std::is_signed_v<const volatile T>, "");
-#endif
 }
 
 template <class T>
@@ -36,12 +34,10 @@ __host__ __device__ void test_is_not_signed()
   static_assert(!cuda::std::is_signed<const T>::value, "");
   static_assert(!cuda::std::is_signed<volatile T>::value, "");
   static_assert(!cuda::std::is_signed<const volatile T>::value, "");
-#if TEST_STD_VER > 2011
   static_assert(!cuda::std::is_signed_v<T>, "");
   static_assert(!cuda::std::is_signed_v<const T>, "");
   static_assert(!cuda::std::is_signed_v<volatile T>, "");
   static_assert(!cuda::std::is_signed_v<const volatile T>, "");
-#endif
 }
 
 class Class
@@ -68,10 +64,10 @@ int main(int, char**)
   test_is_signed<int>();
   test_is_signed<double>();
 
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   test_is_signed<__int128_t>();
   test_is_not_signed<__uint128_t>();
-#endif
+#endif // _CCCL_HAS_INT128()
 
   return 0;
 }

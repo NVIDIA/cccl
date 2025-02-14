@@ -176,9 +176,9 @@ void TestTriviallyRelocatable()
   static_assert(thrust::is_trivially_relocatable<int2>::value, "");
   static_assert(thrust::is_trivially_relocatable<int3>::value, "");
   static_assert(thrust::is_trivially_relocatable<int4>::value, "");
-#  ifndef _LIBCUDACXX_HAS_NO_INT128
+#  if _CCCL_HAS_INT128()
   static_assert(thrust::is_trivially_relocatable<__int128>::value, "");
-#  endif // _LIBCUDACXX_HAS_NO_INT128
+#  endif // _CCCL_HAS_INT128()
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 #if _CCCL_COMPILER(GCC, >=, 7)
   static_assert(thrust::is_trivially_relocatable<thrust::complex<float>>::value, "");

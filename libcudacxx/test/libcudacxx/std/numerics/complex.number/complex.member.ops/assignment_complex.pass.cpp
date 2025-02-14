@@ -67,13 +67,11 @@ int main(int, char**)
 #  endif
 #endif
 
-#if TEST_STD_VER > 2011
   static_assert(test<float, float>(), "");
   static_assert(test<float, double>(), "");
 
   static_assert(test<double, float>(), "");
   static_assert(test<double, double>(), "");
-#endif // TEST_STD_VER > 2011
 
   return 0;
 }

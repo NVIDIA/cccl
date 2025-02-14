@@ -38,7 +38,7 @@ jobs:
         include:
           - { cuda: '12.5', libs: 'rmm kvikio cudf cudf_kafka cuspatial' }
           - { cuda: '12.5', libs: 'rmm ucxx raft cuvs cumlprims_mg cuml' }
-          - { cuda: '12.5', libs: 'rmm ucxx raft cugraph cugraph-gnn'    }
+          - { cuda: '12.5', libs: 'rmm ucxx raft cugraph'                }
     permissions:
       id-token: write
       contents: read

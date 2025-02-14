@@ -155,14 +155,14 @@ int main(int, char**)
   test<double>();
 // CUDA treats long double as double
 //  test<long double>();
-#if TEST_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
+#if !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
 #  if !defined(__GNUC__) || (__GNUC__ > 7) // GCC 7 does not support constexpr is_nan and friends
   static_assert(test<float>(), "");
   static_assert(test<double>(), "");
 // CUDA treats long double as double
 //  static_assert(test<long double>(), "");
 #  endif
-#endif
+#endif // _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
 #ifdef _LIBCUDACXX_HAS_NVFP16
   test<__half>();
 #endif

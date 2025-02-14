@@ -109,9 +109,7 @@ __host__ __device__ constexpr bool tests()
 int main(int, char**)
 {
   tests();
-#if TEST_STD_VER >= 2014
   static_assert(tests(), "");
-#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

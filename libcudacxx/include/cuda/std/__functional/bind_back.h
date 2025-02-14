@@ -35,8 +35,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2014
-
 template <size_t _NBound, class = make_index_sequence<_NBound>>
 struct __bind_back_op;
 
@@ -79,8 +77,6 @@ __bind_back(_Fn&& __f, _Args&&... __args) noexcept(noexcept(__bind_back_t<decay_
   return __bind_back_t<decay_t<_Fn>, tuple<decay_t<_Args>...>>(
     _CUDA_VSTD::forward<_Fn>(__f), _CUDA_VSTD::forward_as_tuple(_CUDA_VSTD::forward<_Args>(__args)...));
 }
-
-#endif // _CCCL_STD_VER > 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

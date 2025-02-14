@@ -54,10 +54,10 @@ int main(int, char**)
   test<unsigned long>(0);
   test<long long>(0);
   test<unsigned long long>(0);
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   test<__int128_t>(0);
   test<__uint128_t>(0);
-#endif
+#endif // _CCCL_HAS_INT128()
 #if !defined(_MSC_VER)
   test<float>(1.f / 0.f);
   test<double>(1. / 0.);
