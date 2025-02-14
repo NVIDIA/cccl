@@ -21,8 +21,6 @@
 
 #include <cuda/std/detail/__config>
 
-#include "cuda/std/__type_traits/is_constant_evaluated.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -43,27 +41,12 @@
 #  include <cuda/std/__numeric/gcd_lcm.h>
 #  include <cuda/std/__type_traits/is_constant_evaluated.h>
 #  include <cuda/std/cstddef>
-#  include <cuda/std/cstdint>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class _ElementType, _CUDA_VSTD::size_t _ByteAlignment>
+template <class _ElementType, size_t _ByteAlignment>
 class aligned_accessor
 {
-private:
-  using __self = aligned_accessor<_ElementType, _ByteAlignment>;
-
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_aligned(_ElementType* __p) const noexcept
-  {
-#  if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-    if (!is_constant_evaluated())
-    {
-      return _CUDA_VSTD::bit_cast<_CUDA_VSTD::uintptr_t>(__p) % _ByteAlignment == 0;
-    }
-#  endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
-    return true; // cannot be verified without breaking constexpr requirements
-  }
-
 public:
   static constexpr auto byte_alignment = _ByteAlignment;
 
@@ -77,7 +60,7 @@ public:
 
   _CCCL_HIDE_FROM_ABI aligned_accessor() noexcept = default;
 
-  _CCCL_TEMPLATE(class _OtherElementType, _CUDA_VSTD::size_t _OtherByteAlignment)
+  _CCCL_TEMPLATE(class _OtherElementType, size_t _OtherByteAlignment)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _OtherElementType (*)[], element_type (*)[])
                    _CCCL_AND(_CUDA_VSTD::gcd(_OtherByteAlignment, byte_alignment) == byte_alignment))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr aligned_accessor(aligned_accessor<_OtherElementType, _OtherByteAlignment>) noexcept
@@ -98,16 +81,14 @@ public:
     return {};
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference access(data_handle_type __p, _CUDA_VSTD::size_t __i) const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference access(data_handle_type __p, size_t __i) const noexcept
   {
-    _CCCL_ASSERT(__self::__is_aligned(__p), "aligned_accessor::access called on unaligned pointer");
     return _CUDA_VSTD::assume_aligned<byte_alignment>(__p)[__i];
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr typename offset_policy::data_handle_type
-  offset(data_handle_type __p, _CUDA_VSTD::size_t __i) const noexcept
+  offset(data_handle_type __p, size_t __i) const noexcept
   {
-    _CCCL_ASSERT(__self::__is_aligned(__p), "aligned_accessor::offset called on unaligned pointer");
     return _CUDA_VSTD::assume_aligned<byte_alignment>(__p) + __i;
   }
 };
