@@ -108,7 +108,7 @@ public:
     return AgentPolicyT::ITEMS_PER_THREAD;
   }
 
-  static constexpr ::cuda::std::size_t VSMemPerBlock()
+  _CCCL_HOST_DEVICE static constexpr ::cuda::std::size_t VSMemPerBlock()
   {
     return vsmem_per_block;
   }
