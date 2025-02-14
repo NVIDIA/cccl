@@ -60,14 +60,14 @@ struct __is_arithmetic_integral_impl<long long> : public true_type
 template <>
 struct __is_arithmetic_integral_impl<unsigned long long> : public true_type
 {};
-#  if !defined(_LIBCUDACXX_HAS_NO_INT128)
+#  if _CCCL_HAS_INT128()
 template <>
 struct __is_arithmetic_integral_impl<__int128_t> : public true_type
 {};
 template <>
 struct __is_arithmetic_integral_impl<__uint128_t> : public true_type
 {};
-#  endif // !_LIBCUDACXX_HAS_NO_INT128
+#  endif // _CCCL_HAS_INT128()
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __is_arithmetic_integral
@@ -109,13 +109,13 @@ _CCCL_INLINE_VAR constexpr bool __is_arithmetic_integral_impl_v<long long> = tru
 template <>
 _CCCL_INLINE_VAR constexpr bool __is_arithmetic_integral_impl_v<unsigned long long> = true;
 
-#  if !defined(_LIBCUDACXX_HAS_NO_INT128)
+#  if _CCCL_HAS_INT128()
 template <>
 _CCCL_INLINE_VAR constexpr bool __is_arithmetic_integral_impl_v<__int128_t> = true;
 
 template <>
 _CCCL_INLINE_VAR constexpr bool __is_arithmetic_integral_impl_v<__uint128_t> = true;
-#  endif // !_LIBCUDACXX_HAS_NO_INT128
+#  endif // _CCCL_HAS_INT128()
 
 template <class _Tp>
 _CCCL_INLINE_VAR constexpr bool __is_arithmetic_integral_v = __is_arithmetic_integral_impl_v<remove_cv_t<_Tp>>;
