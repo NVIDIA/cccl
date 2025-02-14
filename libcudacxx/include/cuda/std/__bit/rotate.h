@@ -46,11 +46,9 @@ template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotl(_Tp __t, uint32_t __cnt) noexcept
 {
   using __nlt = numeric_limits<_Tp>;
-  if (!_CUDA_VSTD::is_constant_evaluated() && is_same_v<_Tp, uint32_t>)
+  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated() && is_same_v<_Tp, uint32_t>)
   {
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                      (return ::__funnelshift_l(__t, __t, __cnt);), //
-                      (return _CUDA_VSTD::__rotl_impl(__t, __cnt % __nlt::digits);))
+    NV_IF_TARGET(NV_IS_DEVICE, (return ::__funnelshift_l(__t, __t, __cnt);))
   }
   return _CUDA_VSTD::__rotl_impl(__t, __cnt % __nlt::digits);
 }
@@ -59,11 +57,9 @@ template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotr(_Tp __t, uint32_t __cnt) noexcept
 {
   using __nlt = numeric_limits<_Tp>;
-  if (!_CUDA_VSTD::is_constant_evaluated() && is_same_v<_Tp, uint32_t>)
+  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated() && is_same_v<_Tp, uint32_t>)
   {
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                      (return ::__funnelshift_r(__t, __t, __cnt);), //
-                      (return _CUDA_VSTD::__rotr_impl(__t, __cnt % __nlt::digits);))
+    NV_IF_TARGET(NV_IS_DEVICE, (return ::__funnelshift_r(__t, __t, __cnt);))
   }
   return _CUDA_VSTD::__rotr_impl(__t, __cnt % __nlt::digits);
 }
