@@ -186,6 +186,7 @@ test(cuda::std::array<uint32_t, num_dims> smem_coord,
   // TEST: Add i to buffer[i]
   alignas(128) __shared__ int smem_buffer[smem_len];
 #if _CCCL_CUDA_COMPILER(CLANG)
+  // clang-cuda complains about initialization of a variable in shared memory
   alignas(8) __shared__ char barrier_data[sizeof(barrier)];
   barrier& bar = *reinterpret_cast<barrier*>(&barrier_data);
 #else // ^^^ _CCCL_CUDA_COMPILER(CLANG) ^^^ / vvv !_CCCL_CUDA_COMPILER(CLANG)
