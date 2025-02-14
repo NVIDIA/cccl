@@ -456,17 +456,17 @@ extern "C" CCCL_C_API CUresult cccl_device_merge_sort(
   cccl_op_t op,
   CUstream stream) noexcept
 {
-  CUresult error = CUDA_SUCCESS;
-
   if (cccl_iterator_kind_t::iterator == d_out_keys.type || cccl_iterator_kind_t::iterator == d_out_items.type)
   {
+    // See https://github.com/NVIDIA/cccl/issues/3722
     fflush(stderr);
-    printf("\nEXCEPTION in cccl_device_merge_sort(): merge sort output cannot be an iterator\n");
+    printf("\nERROR in cccl_device_merge_sort(): merge sort output cannot be an iterator\n");
     fflush(stdout);
-    error = CUDA_ERROR_UNKNOWN;
+    return CUDA_ERROR_UNKNOWN;
   }
 
-  bool pushed = false;
+  CUresult error = CUDA_SUCCESS;
+  bool pushed    = false;
   try
   {
     pushed = try_push_context();
