@@ -185,19 +185,14 @@ private:
   template <class _Iter, cudaMemcpyKind __kind = __is_host_only ? cudaMemcpyHostToHost : cudaMemcpyHostToDevice>
   _CCCL_HIDE_FROM_ABI void __copy_cross(_Iter __first, _Iter __last, pointer __dest, size_type __count)
   {
-    if constexpr (__kind == cudaMemcpyHostToHost)
-    {
-      ::cuda::experimental::host_launch(__buf_.get_stream(), _CUDA_VSTD::copy<_Iter, pointer>, __first, __last, __dest);
-      // FIXME: Something is fishy here. We need to wait otherwise the data is not properly set.
-      __buf_.get_stream().wait();
-    }
-    else if constexpr (!_CUDA_VSTD::contiguous_iterator<_Iter>)
+    if constexpr (!_CUDA_VSTD::contiguous_iterator<_Iter>)
     { // For non-coniguous iterators we need to copy into temporary host storage to use cudaMemcpy
-      // This should only ever happen when passing in data from host to device
-      static_assert(__kind == cudaMemcpyHostToDevice, "Invalid use case!");
+      // Currently only supported from host because no one should use non-contiguous data on device
+      static_assert(__kind == cudaMemcpyHostToDevice || __kind == cudaMemcpyHostToHost, "Invalid use case!");
       auto __temp = _CUDA_VSTD::get_temporary_buffer<_Tp>(__count).first;
       ::cuda::experimental::host_launch(__buf_.get_stream(), _CUDA_VSTD::copy<_Iter, pointer>, __first, __last, __temp);
       // FIXME: Something is fishy here. We need to wait otherwise the data is not properly set.
+      // The test passes fine with compute-sanitizer but we really do not want to take the performance hit for this
       __buf_.get_stream().wait();
       _CCCL_TRY_CUDA_API(
         ::cudaMemcpyAsync,
