@@ -22,6 +22,13 @@ def _dtype_validation(dt1, dt2):
         raise TypeError(f"dtype mismatch: __init__={dt1}, __call__={dt2}")
 
 
+def _update_device_array_pointers(current_array, passed_array):
+    if current_array.type.value == cccl.IteratorKind.POINTER:
+        current_array.state = protocols.get_data_pointer(passed_array)
+    else:
+        current_array.state = passed_array.state
+
+
 class _MergeSort:
     def __init__(
         self,
@@ -36,29 +43,10 @@ class _MergeSort:
         # Referenced from __del__:
         self.build_result = None
 
-        d_in_keys_cccl = cccl.to_cccl_iter(d_in_keys)
-        d_in_items_cccl = cccl.to_cccl_iter(d_in_items)
-        d_out_keys_cccl = (
-            d_in_keys_cccl if d_in_keys is d_out_keys else cccl.to_cccl_iter(d_out_keys)
-        )
-        d_out_items_cccl = (
-            d_in_items_cccl
-            if d_in_items is d_out_items
-            else cccl.to_cccl_iter(d_out_items)
-        )
-
-        self._ctor_d_in_keys_cccl_type = cccl.type_enum_as_name(
-            d_in_keys_cccl.value_type.type.value
-        )
-        self._ctor_d_in_items_cccl_type = cccl.type_enum_as_name(
-            d_in_items_cccl.value_type.type.value
-        )
-        self._ctor_d_out_keys_cccl_type = cccl.type_enum_as_name(
-            d_out_keys_cccl.value_type.type.value
-        )
-        self._ctor_d_out_items_cccl_type = cccl.type_enum_as_name(
-            d_out_items_cccl.value_type.type.value
-        )
+        self.d_in_keys_cccl = cccl.to_cccl_iter(d_in_keys)
+        self.d_in_items_cccl = cccl.to_cccl_iter(d_in_items)
+        self.d_out_keys_cccl = cccl.to_cccl_iter(d_out_keys)
+        self.d_out_items_cccl = cccl.to_cccl_iter(d_out_items)
 
         cc_major, cc_minor = cuda.get_current_device().compute_capability
         cub_path, thrust_path, libcudacxx_path, cuda_include_path = get_paths()
@@ -75,10 +63,10 @@ class _MergeSort:
         self.build_result = cccl.DeviceMergeSortBuildResult()
         error = bindings.cccl_device_merge_sort_build(
             ctypes.byref(self.build_result),
-            d_in_keys_cccl,
-            d_in_items_cccl,
-            d_out_keys_cccl,
-            d_out_items_cccl,
+            self.d_in_keys_cccl,
+            self.d_in_items_cccl,
+            self.d_out_keys_cccl,
+            self.d_out_items_cccl,
             self.op_wrapper,
             cc_major,
             cc_minor,
@@ -102,33 +90,12 @@ class _MergeSort:
     ):
         assert (d_in_items is None) == (d_out_items is None)
 
-        d_in_keys_cccl = cccl.to_cccl_iter(d_in_keys)
-        d_in_items_cccl = cccl.to_cccl_iter(d_in_items)
-        d_out_keys_cccl = (
-            d_in_keys_cccl if d_in_keys is d_out_keys else cccl.to_cccl_iter(d_out_keys)
-        )
-        d_out_items_cccl = (
-            d_in_items_cccl
-            if d_in_items is d_out_items
-            else cccl.to_cccl_iter(d_out_items)
-        )
-
-        _dtype_validation(
-            self._ctor_d_in_keys_cccl_type,
-            cccl.type_enum_as_name(d_in_keys_cccl.value_type.type.value),
-        )
-        _dtype_validation(
-            self._ctor_d_in_items_cccl_type,
-            cccl.type_enum_as_name(d_in_items_cccl.value_type.type.value),
-        )
-        _dtype_validation(
-            self._ctor_d_out_keys_cccl_type,
-            cccl.type_enum_as_name(d_out_keys_cccl.value_type.type.value),
-        )
-        _dtype_validation(
-            self._ctor_d_out_items_cccl_type,
-            cccl.type_enum_as_name(d_out_items_cccl.value_type.type.value),
-        )
+        _update_device_array_pointers(self.d_in_keys_cccl, d_in_keys)
+        if d_in_items is not None:
+            _update_device_array_pointers(self.d_in_items_cccl, d_in_items)
+        _update_device_array_pointers(self.d_out_keys_cccl, d_out_keys)
+        if d_out_items is not None:
+            _update_device_array_pointers(self.d_out_items_cccl, d_out_items)
 
         stream_handle = protocols.validate_and_get_stream(stream)
         bindings = get_bindings()
@@ -145,10 +112,10 @@ class _MergeSort:
             self.build_result,
             ctypes.c_void_p(d_temp_storage),
             ctypes.byref(temp_storage_bytes),
-            d_in_keys_cccl,
-            d_in_items_cccl,
-            d_out_keys_cccl,
-            d_out_items_cccl,
+            self.d_in_keys_cccl,
+            self.d_in_items_cccl,
+            self.d_out_keys_cccl,
+            self.d_out_items_cccl,
             ctypes.c_ulonglong(num_items),
             self.op_wrapper,
             ctypes.c_void_p(stream_handle),
