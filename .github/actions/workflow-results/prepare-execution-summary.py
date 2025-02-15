@@ -21,7 +21,7 @@ def natural_sort_key(key):
     # Natural sort impl (handles embedded numbers in strings, case insensitive)
     return [
         (int(text) if text.isdigit() else text.lower())
-        for text in re.split("(\d+)", key)
+        for text in re.split("(\\d+)", key)
     ]
 
 
