@@ -44,15 +44,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-template <typename T>
-CCCL_DEPRECATED_BECAUSE("Use cuda::std::swap")
-_CCCL_DEVICE _CCCL_FORCEINLINE void Swap(T& lhs, T& rhs)
-{
-  T temp = lhs;
-  lhs    = rhs;
-  rhs    = temp;
-}
-
 /**
  * @brief Sorts data using odd-even sort method
  *

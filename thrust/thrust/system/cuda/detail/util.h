@@ -177,11 +177,6 @@ trivial_copy_device_to_device(Policy& policy, Type* dst, Type const* src, size_t
   return status;
 }
 
-CCCL_DEPRECATED_BECAUSE("Use cuda::std::terminate() instead") inline void _CCCL_HOST_DEVICE terminate()
-{
-  NV_IF_TARGET(NV_IS_HOST, (std::terminate();), (asm("trap;");));
-}
-
 _CCCL_HOST_DEVICE inline void throw_on_error(cudaError_t status)
 {
   // Clear the global CUDA error state which may have been set by the last
