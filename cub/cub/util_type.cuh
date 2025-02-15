@@ -979,7 +979,7 @@ struct NumericTraits<__int128_t>
     return reinterpret_cast<T&>(retval);
   }
 };
-#endif
+#endif // _CCCL_HAS_INT128()
 
 template <> struct NumericTraits<float> :               BaseTraits<FLOATING_POINT,unsigned int, float> {};
 template <> struct NumericTraits<double> :              BaseTraits<FLOATING_POINT,unsigned long long, double> {};

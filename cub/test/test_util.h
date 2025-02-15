@@ -991,6 +991,31 @@ struct NumericTraits<TestFoo>
 };
 CUB_NAMESPACE_END
 
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
+template <>
+class numeric_limits<TestFoo>
+{
+public:
+  __host__ __device__ static TestFoo max()
+  {
+    return TestFoo::MakeTestFoo(
+      numeric_limits<long long>::max(),
+      numeric_limits<int>::max(),
+      numeric_limits<short>::max(),
+      numeric_limits<char>::max());
+  }
+
+  __host__ __device__ static TestFoo lowest()
+  {
+    return TestFoo::MakeTestFoo(
+      numeric_limits<long long>::lowest(),
+      numeric_limits<int>::lowest(),
+      numeric_limits<short>::lowest(),
+      numeric_limits<char>::lowest());
+  }
+};
+_LIBCUDACXX_END_NAMESPACE_STD
+
 //---------------------------------------------------------------------
 // Complex data type TestBar (with optimizations for fence-free warp-synchrony)
 //---------------------------------------------------------------------
@@ -1110,6 +1135,23 @@ struct NumericTraits<TestBar>
   }
 };
 CUB_NAMESPACE_END
+
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
+template <>
+class numeric_limits<TestBar>
+{
+public:
+  __host__ __device__ static TestBar max()
+  {
+    return TestBar(numeric_limits<long long>::max(), numeric_limits<int>::max());
+  }
+
+  __host__ __device__ static TestBar lowest()
+  {
+    return TestBar(numeric_limits<long long>::lowest(), numeric_limits<int>::lowest());
+  }
+};
+_LIBCUDACXX_END_NAMESPACE_STD
 
 /******************************************************************************
  * Helper routines for list comparison and display

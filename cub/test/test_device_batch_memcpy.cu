@@ -54,8 +54,8 @@ template <typename T>
 void GenerateRandomData(
   T* rand_out,
   const std::size_t num_items,
-  const T min_rand_val                                         = std::numeric_limits<T>::min(),
-  const T max_rand_val                                         = std::numeric_limits<T>::max(),
+  const T min_rand_val                                         = ::cuda::std::numeric_limits<T>::min(),
+  const T max_rand_val                                         = ::cuda::std::numeric_limits<T>::max(),
   const std::uint_fast32_t seed                                = 320981U,
   std::enable_if_t<std::is_integral_v<T> && (sizeof(T) >= 2)>* = nullptr)
 {
@@ -423,7 +423,7 @@ int main(int argc, char** argv)
   using ByteOffset64T = uint64_t;
   using BufferSize64T = uint64_t;
   ByteOffset64T large_target_copy_size =
-    static_cast<ByteOffset64T>(std::numeric_limits<uint32_t>::max()) + (128ULL * 1024ULL * 1024ULL);
+    static_cast<ByteOffset64T>(::cuda::std::numeric_limits<uint32_t>::max()) + (128ULL * 1024ULL * 1024ULL);
   // Make sure min_buffer_size is in fact smaller than max buffer size
   constexpr BufferOffsetT single_buffer = 1;
 

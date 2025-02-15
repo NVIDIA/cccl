@@ -111,7 +111,7 @@ void partition(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   const bit_entropy entropy = str_to_entropy(state.get_string("Entropy"));
 
   T min_val{};
-  T max_val = std::numeric_limits<T>::max();
+  T max_val = ::cuda::std::numeric_limits<T>::max();
 
   T left_border  = max_val / 3;
   T right_border = left_border * 2;

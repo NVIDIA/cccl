@@ -114,9 +114,7 @@ CUB_NAMESPACE_END
 
 CUB_NAMESPACE_BEGIN
 
-/**
- * @brief Introduces the required NumericTraits for `c2h::custom_type_t`.
- */
+// TODO(bgruber): drop this when we drop cub::Traits
 template <template <typename> class... Policies>
 struct NumericTraits<c2h::custom_type_t<Policies...>>
 {
@@ -400,7 +398,7 @@ void compute_segmented_argmin_reference(
   {
     if (h_offsets[seg] >= h_offsets[seg + 1])
     {
-      h_results[seg] = {1, cub::Traits<ItemT>::Max()};
+      h_results[seg] = {1, ::cuda::std::numeric_limits<ItemT>::max()};
     }
     else
     {
@@ -427,7 +425,7 @@ void compute_segmented_argmax_reference(
   {
     if (h_offsets[seg] >= h_offsets[seg + 1])
     {
-      h_results[seg] = {1, cub::Traits<ItemT>::Lowest()};
+      h_results[seg] = {1, ::cuda::std::numeric_limits<ItemT>::lowest()};
     }
     else
     {

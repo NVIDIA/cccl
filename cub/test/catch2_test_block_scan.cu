@@ -247,7 +247,7 @@ template <class T, scan_mode Mode>
 struct min_prefix_op_t
 {
   T m_prefix;
-  static constexpr T min_identity = std::numeric_limits<T>::max();
+  static constexpr T min_identity = ::cuda::std::numeric_limits<T>::max();
 
   struct block_prefix_op_t
   {
