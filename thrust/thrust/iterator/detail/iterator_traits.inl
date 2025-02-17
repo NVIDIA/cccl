@@ -109,6 +109,9 @@ struct iterator_traversal
     : detail::iterator_category_to_traversal<typename thrust::iterator_traits<Iterator>::iterator_category>
 {}; // end iterator_traversal
 
+template <typename Iterator>
+using iterator_traversal_t = typename iterator_traversal<Iterator>::type;
+
 namespace detail
 {
 
