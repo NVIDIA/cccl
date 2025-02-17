@@ -233,6 +233,7 @@ private:
 
   // Two zip_iterators are equal if the two first iterators of the tuple are equal. Note this differs from Boost's
   // implementation, which considers the entire tuple.
+  _CCCL_EXEC_CHECK_DISABLE
   template <typename OtherIteratorTuple>
   inline _CCCL_HOST_DEVICE bool equal(const zip_iterator<OtherIteratorTuple>& other) const
   {
