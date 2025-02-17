@@ -142,12 +142,16 @@ void radix_sort_values(
 
   using key_t   = KeyT;
   using value_t = ValueT;
+  using dispatch_t =
+    cub::DispatchRadixSort<sort_order,
+                           key_t,
+                           value_t,
+                           offset_t
 #if !TUNE_BASE
-  using policy_t   = policy_hub_t<key_t, value_t, offset_t>;
-  using dispatch_t = cub::DispatchRadixSort<sort_order, key_t, value_t, offset_t, policy_t>;
-#else // TUNE_BASE
-  using dispatch_t = cub::DispatchRadixSort<sort_order, key_t, value_t, offset_t>;
+                           ,
+                           policy_hub_t<key_t, value_t, offset_t>
 #endif // TUNE_BASE
+                           >;
 
   constexpr int begin_bit = 0;
   constexpr int end_bit   = sizeof(key_t) * 8;

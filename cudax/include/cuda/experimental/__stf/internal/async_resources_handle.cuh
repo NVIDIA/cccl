@@ -438,12 +438,6 @@ public:
     return pimpl->cached_graphs.query(nnodes, nedges, mv(g));
   }
 
-  size_t cached_graphs_cnt() const
-  {
-    assert(pimpl);
-    return pimpl->cached_graphs.size();
-  }
-
   // Get the green context helper cached for this device (or let the user initialize it)
   auto& gc_helper(int dev_id)
   {

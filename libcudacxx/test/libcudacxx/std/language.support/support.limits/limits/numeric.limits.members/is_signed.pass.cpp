@@ -45,10 +45,10 @@ int main(int, char**)
   test<unsigned long, false>();
   test<long long, true>();
   test<unsigned long long, false>();
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   test<__int128_t, true>();
   test<__uint128_t, false>();
-#endif
+#endif // _CCCL_HAS_INT128()
   test<float, true>();
   test<double, true>();
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE

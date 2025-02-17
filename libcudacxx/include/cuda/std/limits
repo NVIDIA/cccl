@@ -76,15 +76,15 @@ template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr __numeric_limits_type __make_numeric_limits_type()
 {
 #if !defined(_CCCL_NO_IF_CONSTEXPR)
-  _CCCL_IF_CONSTEXPR (_CCCL_TRAIT(is_same, _Tp, bool))
+  if constexpr (_CCCL_TRAIT(is_same, _Tp, bool))
   {
     return __numeric_limits_type::__bool;
   }
-  else _CCCL_IF_CONSTEXPR (_CCCL_TRAIT(is_integral, _Tp))
+  else if constexpr (_CCCL_TRAIT(is_integral, _Tp))
   {
     return __numeric_limits_type::__integral;
   }
-  else _CCCL_IF_CONSTEXPR (_CCCL_TRAIT(is_floating_point, _Tp) || _CCCL_TRAIT(__is_extended_floating_point, _Tp))
+  else if constexpr (_CCCL_TRAIT(is_floating_point, _Tp) || _CCCL_TRAIT(__is_extended_floating_point, _Tp))
   {
     return __numeric_limits_type::__floating_point;
   }

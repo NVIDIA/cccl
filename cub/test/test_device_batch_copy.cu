@@ -122,7 +122,7 @@ template <size_t n, typename... T>
 std::enable_if_t<n + 1 <= thrust::tuple_size<thrust::tuple<T...>>::value>
 print_tuple(std::ostream& os, const thrust::tuple<T...>& tup)
 {
-  _CCCL_IF_CONSTEXPR (n != 0)
+  if constexpr (n != 0)
   {
     os << ", ";
   }

@@ -297,8 +297,8 @@ template <typename InputBufferIt,
           typename BufferSizeIteratorT,
           typename BufferOffsetT,
           typename BlockOffsetT,
-          typename PolicyHub = batch_memcpy::policy_hub<BufferOffsetT, BlockOffsetT>,
-          CopyAlg MemcpyOpt  = CopyAlg::Memcpy>
+          CopyAlg MemcpyOpt  = CopyAlg::Memcpy,
+          typename PolicyHub = batch_memcpy::policy_hub<BufferOffsetT, BlockOffsetT>>
 struct DispatchBatchMemcpy
 {
   //------------------------------------------------------------------------------

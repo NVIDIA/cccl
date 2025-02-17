@@ -42,11 +42,11 @@ struct __cccl_is_signed_integer<signed long> : public true_type
 template <>
 struct __cccl_is_signed_integer<signed long long> : public true_type
 {};
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
 template <>
 struct __cccl_is_signed_integer<__int128_t> : public true_type
 {};
-#endif
+#endif // _CCCL_HAS_INT128()
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

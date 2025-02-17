@@ -82,7 +82,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor_tile_gather4(
   // __space == space_global (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm("cp.async.bulk.tensor.2d.shared::cta.global.tile::gather4.mbarrier::complete_tx::bytes.cta_group::1 [%0], [%1, "
         "{%2, %3, %4, %5, %6}], [%7];"
@@ -97,7 +97,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor_tile_gather4(
           "r"(__as_ptr_smem(__smem_bar))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm("cp.async.bulk.tensor.2d.shared::cta.global.tile::gather4.mbarrier::complete_tx::bytes.cta_group::2 [%0], [%1, "
         "{%2, %3, %4, %5, %6}], [%7];"
@@ -203,7 +203,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor_tile_gather4(
   // __space == space_global (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm("cp.async.bulk.tensor.2d.shared::cluster.global.tile::gather4.mbarrier::complete_tx::bytes.multicast::cluster."
         "cta_group::1 [%0], [%1, {%2, %3, %4, %5, %6}], [%7], %8;"
@@ -219,7 +219,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor_tile_gather4(
           "h"(__ctaMask)
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm("cp.async.bulk.tensor.2d.shared::cluster.global.tile::gather4.mbarrier::complete_tx::bytes.multicast::cluster."
         "cta_group::2 [%0], [%1, {%2, %3, %4, %5, %6}], [%7], %8;"

@@ -95,7 +95,7 @@ set(stf_test_codegen_sources
   freeze/freeze.cu
   freeze/freeze_rw.cu
   freeze/task_fence.cu
-  freeze/freeze_token.cu
+  freeze/token.cu
   graph/epoch.cu
   graph/for_each_batched.cu
   graph/for_each_batched_allocator.cu
