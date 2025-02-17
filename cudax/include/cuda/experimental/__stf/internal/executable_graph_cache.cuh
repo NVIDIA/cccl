@@ -96,13 +96,23 @@ public:
   {
     cache_size_limit = 512 * 1024 * 1024;
 
-    // Maximum size of the executable graph cache (in MB)
+    // Maximum size of the executable graph cache (in MB) per device
     // Cache is disabled if the size is 0
     const char* str = getenv("CUDASTF_GRAPH_CACHE_SIZE_MB");
     if (str)
     {
       cache_size_limit = atol(str) * 1024 * 1024;
     }
+
+    int ndevices;
+    cuda_safe_call(cudaGetDeviceCount(&ndevices));
+
+    // One individual cache per device (TODO per execution place at some point
+    // if we consider green contexts or multi-gpu graphs ?)
+    cached_graphs.resize(ndevices);
+
+    // Initialize the footprint per device too
+    total_cache_footprint.resize(ndevices, 0);
   }
 
   // One entry of the cache
@@ -128,10 +138,27 @@ public:
     size_t footprint;
   };
 
+  // TODO we should not have to redefine this one again
+  struct hash_pair
+  {
+    size_t operator()(const std::pair<size_t, size_t>& p) const
+    {
+      auto h1 = ::std::hash<size_t>{}(p.first); // Hash the first element
+      auto h2 = ::std::hash<size_t>{}(p.second); // Hash the second element
+      return h1 ^ (h2 << 1); // Combine the two hash values
+    }
+  };
+
+  // On each device, we have a map indexed by pairs of edge/vertex count
+  using per_device_map_t = ::std::unordered_multimap<::std::pair<size_t, size_t>, entry, hash_pair>;
+
   // Check if there is a matching entry (and update it if necessary)
   ::std::shared_ptr<cudaGraphExec_t> query(size_t nnodes, size_t nedges, ::std::shared_ptr<cudaGraph_t> g)
   {
-    auto range = cached_graphs.equal_range({nnodes, nedges});
+    int dev_id = cuda_try<cudaGetDevice>();
+    _CCCL_ASSERT(dev_id < cached_graphs.size(), "invalid device id value");
+
+    auto range = cached_graphs[dev_id].equal_range({nnodes, nedges});
     for (auto it = range.first; it != range.second; ++it)
     {
       auto& e = it->second;
@@ -151,9 +178,9 @@ public:
     // Rough footprint estimate of the graph based on the number of nodes (this
     // is really an approximation)
     size_t footprint = nnodes * 10240;
-    if (total_cache_footprint + footprint > cache_size_limit)
+    if (total_cache_footprint[dev_id] + footprint > cache_size_limit)
     {
-      reclaim(total_cache_footprint + footprint - cache_size_limit);
+      reclaim(dev_id, total_cache_footprint[dev_id] + footprint - cache_size_limit);
     }
 
     auto exec_g = reserved::graph_instantiate(*g);
@@ -161,33 +188,27 @@ public:
     // If we maintain a cache, store the executable graph
     if (cache_size_limit != 0)
     {
-      cached_graphs.insert({::std::make_pair(nnodes, nedges), entry(this, exec_g, footprint)});
-      total_cache_footprint += footprint;
+      cached_graphs[dev_id].insert({::std::make_pair(nnodes, nedges), entry(this, exec_g, footprint)});
+      total_cache_footprint[dev_id] += footprint;
     }
 
     return exec_g;
   }
 
-  // Number of graphs in the cache
-  size_t size() const
-  {
-    return cached_graphs.size();
-  }
-
 private:
-  void reclaim(size_t to_reclaim)
+  void reclaim(int dev_id, size_t to_reclaim)
   {
     size_t reclaimed = 0;
 
     // Use a priority queue (min-heap) to track least recently used entries
-    using entry_iter = decltype(cached_graphs)::iterator;
+    using entry_iter = per_device_map_t::iterator;
     auto cmp         = [](const entry_iter& a, const entry_iter& b) {
       return a->second.last_use > b->second.last_use;
     };
     ::std::priority_queue<entry_iter, ::std::vector<entry_iter>, decltype(cmp)> lru_queue(cmp);
 
     // Populate the priority queue with all cache entries
-    for (auto it = cached_graphs.begin(); it != cached_graphs.end(); ++it)
+    for (auto it = cached_graphs[dev_id].begin(); it != cached_graphs[dev_id].end(); ++it)
     {
       lru_queue.push(it);
     }
@@ -199,8 +220,8 @@ private:
       lru_queue.pop();
 
       reclaimed += lru_it->second.footprint;
-      total_cache_footprint -= lru_it->second.footprint;
-      cached_graphs.erase(lru_it);
+      total_cache_footprint[dev_id] -= lru_it->second.footprint;
+      cached_graphs[dev_id].erase(lru_it);
     }
 
 #if 0
@@ -208,29 +229,18 @@ private:
             "Reclaimed %s in cache graph (asked %s remaining %s)\n",
             pretty_print_bytes(reclaimed).c_str(),
             pretty_print_bytes(to_reclaim).c_str(),
-            pretty_print_bytes(total_cache_footprint).c_str());
+            pretty_print_bytes(total_cache_footprint[dev_id]).c_str());
 #endif
   }
 
-  // TODO we should not have to redefine this one again
-  struct hash_pair
-  {
-    size_t operator()(const std::pair<size_t, size_t>& p) const
-    {
-      auto h1 = ::std::hash<size_t>{}(p.first); // Hash the first element
-      auto h2 = ::std::hash<size_t>{}(p.second); // Hash the second element
-      return h1 ^ (h2 << 1); // Combine the two hash values
-    }
-  };
-
-  // TODO per device !
-  ::std::unordered_multimap<::std::pair<size_t, size_t>, entry, hash_pair> cached_graphs;
+  // cached graphs index per device, then index per pair of edge/vertex count within each device
+  ::std::vector<per_device_map_t> cached_graphs;
 
   // To keep track of the last recently used entries, we have an entry of
   size_t index = 0;
 
-  // An estimated footprint
-  size_t total_cache_footprint = 0;
+  // An estimated footprint (per device)
+  ::std::vector<size_t> total_cache_footprint;
 
   size_t cache_size_limit;
 };
