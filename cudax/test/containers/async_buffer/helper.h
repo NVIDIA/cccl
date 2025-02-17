@@ -152,8 +152,8 @@ struct extract_properties<cuda::std::tuple<Properties...>>
                                               cuda::std::conditional_t<cuda::mr::__is_host_accessible<Properties...>,
                                                                        host_memory_resource<int>,
                                                                        cudax::device_memory_resource>>>;
-  using iterator       = cudax::heterogeneous_iterator<int, false, Properties...>;
-  using const_iterator = cudax::heterogeneous_iterator<int, true, Properties...>;
+  using iterator       = cudax::heterogeneous_iterator<int, cudax::_IsConstIter::__no, Properties...>;
+  using const_iterator = cudax::heterogeneous_iterator<int, cudax::_IsConstIter::__yes, Properties...>;
 
   using matching_vector   = cudax::async_buffer<int, other_property, Properties...>;
   using matching_resource = memory_resource_wrapper<other_property, Properties...>;
