@@ -190,7 +190,7 @@ C2H_TEST("DeviceRadixSort::SortKeys: bit windows", "[keys][radix][sort][device]"
 C2H_TEST("DeviceRadixSort::SortKeys: negative zero handling", "[keys][radix][sort][device]", fp_key_types)
 {
   using key_t  = c2h::get<0, TestType>;
-  using bits_t = typename cub::Traits<key_t>::UnsignedBits;
+  using bits_t = typename cub::key_traits<key_t>::unsigned_bits;
 
   constexpr std::size_t num_bits = sizeof(key_t) * CHAR_BIT;
   const key_t positive_zero      = ::cuda::std::bit_cast<key_t>(bits_t(0));

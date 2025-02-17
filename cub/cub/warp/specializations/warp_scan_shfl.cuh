@@ -49,6 +49,7 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/ptx>
+#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 namespace detail

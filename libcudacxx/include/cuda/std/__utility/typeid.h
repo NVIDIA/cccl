@@ -40,7 +40,6 @@
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 #  include <cuda/std/compare>
 #endif
-#include <cuda/std/__cccl/preprocessor.h>
 #include <cuda/std/__string/string_view.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>

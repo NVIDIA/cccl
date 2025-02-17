@@ -27,13 +27,14 @@
  ******************************************************************************/
 
 #include <cub/device/device_histogram.cuh>
+#include <cub/util_type.cuh>
 
 #include <thrust/iterator/counting_iterator.h>
 
 #include <cuda/std/__algorithm_>
 #include <cuda/std/array>
 #include <cuda/std/bit>
-#include <cuda/std/type_traits>
+#include <cuda/type_traits>
 #include <cuda/type_traits>
 
 #include <algorithm>
@@ -213,7 +214,7 @@ struct bit_and_anything
   template <typename T>
   _CCCL_HOST_DEVICE auto operator()(const T& a, const T& b) const -> T
   {
-    using U = typename cub::Traits<T>::UnsignedBits;
+    using U = typename cub::detail::unsigned_bits_t<T>;
     return ::cuda::std::bit_cast<T>(static_cast<U>(::cuda::std::bit_cast<U>(a) & ::cuda::std::bit_cast<U>(b)));
   }
 };
