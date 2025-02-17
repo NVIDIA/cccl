@@ -83,11 +83,6 @@ public:
     prev_oss.push_back(mv(oss));
   }
 
-  const auto& get_streams() const
-  {
-    return prev_oss;
-  }
-
   void set_ctx_symbol(::std::string s)
   {
     ctx_symbol = mv(s);
