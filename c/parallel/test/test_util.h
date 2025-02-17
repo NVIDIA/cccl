@@ -141,35 +141,43 @@ cccl_type_info get_type_info()
   info.size      = sizeof(T);
   info.alignment = alignof(T);
 
-  if constexpr (std::is_same_v<T, char>)
+  if constexpr (std::is_same_v<T, char> || (std::is_integral_v<T> && std::is_signed_v<T> && sizeof(T) == sizeof(char)))
   {
     info.type = cccl_type_enum::INT8;
   }
-  else if constexpr (std::is_same_v<T, uint8_t>)
+  else if constexpr (std::is_same_v<T, uint8_t>
+                     || (std::is_integral_v<T> && std::is_unsigned_v<T> && sizeof(T) == sizeof(char)
+                         && !std::is_same_v<T, bool>) )
   {
     info.type = cccl_type_enum::UINT8;
   }
-  else if constexpr (std::is_same_v<T, int16_t>)
+  else if constexpr (std::is_same_v<T, int16_t>
+                     || (std::is_integral_v<T> && std::is_signed_v<T> && sizeof(T) == sizeof(int16_t)))
   {
     info.type = cccl_type_enum::INT16;
   }
-  else if constexpr (std::is_same_v<T, uint16_t>)
+  else if constexpr (std::is_same_v<T, uint16_t>
+                     || (std::is_integral_v<T> && std::is_unsigned_v<T> && sizeof(T) == sizeof(int16_t)))
   {
     info.type = cccl_type_enum::UINT16;
   }
-  else if constexpr (std::is_same_v<T, int32_t>)
+  else if constexpr (std::is_same_v<T, int32_t>
+                     || (std::is_integral_v<T> && std::is_signed_v<T> && sizeof(T) == sizeof(int32_t)))
   {
     info.type = cccl_type_enum::INT32;
   }
-  else if constexpr (std::is_same_v<T, uint32_t>)
+  else if constexpr (std::is_same_v<T, uint32_t>
+                     || (std::is_integral_v<T> && std::is_unsigned_v<T> && sizeof(T) == sizeof(int32_t)))
   {
     info.type = cccl_type_enum::UINT32;
   }
-  else if constexpr (std::is_same_v<T, int64_t>)
+  else if constexpr (std::is_same_v<T, int64_t>
+                     || (std::is_integral_v<T> && std::is_signed_v<T> && sizeof(T) == sizeof(int64_t)))
   {
     info.type = cccl_type_enum::INT64;
   }
-  else if constexpr (std::is_same_v<T, uint64_t>)
+  else if constexpr (std::is_same_v<T, uint64_t>
+                     || (std::is_integral_v<T> && std::is_unsigned_v<T> && sizeof(T) == sizeof(int64_t)))
   {
     info.type = cccl_type_enum::UINT64;
   }
@@ -209,6 +217,10 @@ static std::string get_reduce_op(cccl_type_enum t)
       return "extern \"C\" __device__ unsigned long long op(unsigned long long a, unsigned long long b) { "
              " return a + b; "
              "}";
+    case cccl_type_enum::FLOAT32:
+      return "extern \"C\" __device__ float op(float a, float b) { return a + b; }";
+    case cccl_type_enum::FLOAT64:
+      return "extern \"C\" __device__ double op(double a, double b) { return a + b; }";
     default:
       throw std::runtime_error("Unsupported type");
   }

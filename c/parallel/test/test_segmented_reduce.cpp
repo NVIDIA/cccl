@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <iostream>
 
 #include "test_util.h"
@@ -65,7 +66,7 @@ void segmented_reduce(
   REQUIRE(CUDA_SUCCESS == cccl_device_segmented_reduce_cleanup(&build));
 }
 
-using SizeT = uint64_t;
+using SizeT = unsigned long long;
 
 struct row_offset_iterator_state_t
 {
@@ -73,6 +74,7 @@ struct row_offset_iterator_state_t
   SizeT row_size;
 };
 
+// FIXME: can we cache compiled code for the same TesType and reuse it for different n_rows, n_cols
 using integral_types = std::tuple<std::int32_t, std::int64_t, std::uint32_t, std::uint64_t>;
 TEMPLATE_LIST_TEST_CASE(
   "segmented_reduce can sum over rows of matrix with integral type", "[segmented_reduce]", integral_types)
@@ -133,4 +135,176 @@ TEMPLATE_LIST_TEST_CASE(
     host_output_it[i]      = std::reduce(host_input_it + row_offset, host_input_it + (row_offset + n_cols));
   }
   REQUIRE(host_output == std::vector<TestType>(output_ptr));
+}
+
+struct pair
+{
+  short a;
+  size_t b;
+
+  bool operator==(const pair& other) const
+  {
+    return a == other.a && b == other.b;
+  }
+};
+
+TEST_CASE("SegmentedReduce works with custom types", "[segmented_reduce]")
+{
+  const std::size_t n_segments = 50;
+  auto increments              = generate<std::size_t>(n_segments);
+  std::vector<SizeT> segments(n_segments + 1, 0);
+  auto binary_op = std::plus<>{};
+  auto shift_op  = [](auto i) {
+    return i + 32;
+  };
+  std::transform_inclusive_scan(increments.begin(), increments.end(), segments.begin() + 1, binary_op, shift_op);
+
+  const std::vector<short> a  = generate<short>(segments.back());
+  const std::vector<size_t> b = generate<size_t>(segments.back());
+  std::vector<pair> host_input(segments.back());
+  for (size_t i = 0; i < segments.back(); ++i)
+  {
+    host_input[i] = pair{.a = a[i], .b = b[i]};
+  }
+
+  std::vector<pair> host_output(n_segments, pair{0, 0});
+
+  pointer_t<pair> input_ptr(host_input); // copy from host to device
+  pointer_t<pair> output_ptr(host_output); // copy from host to device
+  pointer_t<SizeT> offset_ptr(segments); // copy from host to device
+
+  auto start_offset_it = static_cast<cccl_iterator_t>(offset_ptr);
+  auto end_offset_it   = start_offset_it;
+  end_offset_it.state  = offset_ptr.ptr + 1;
+
+  operation_t op = make_operation(
+    "op",
+    "struct pair { short a; size_t b; };\n"
+    "extern \"C\" __device__ pair op(pair lhs, pair rhs) {\n"
+    "  return pair{ lhs.a + rhs.a, lhs.b + rhs.b };\n"
+    "}");
+  pair v0 = pair{4, 2};
+  value_t<pair> init{v0};
+
+  segmented_reduce(input_ptr, output_ptr, n_segments, start_offset_it, end_offset_it, op, init);
+
+  for (std::size_t i = 0; i < n_segments; ++i)
+  {
+    auto segment_begin_it = host_input.begin() + segments[i];
+    auto segment_end_it   = host_input.begin() + segments[i + 1];
+    host_output[i]        = std::reduce(segment_begin_it, segment_end_it, v0, [](pair lhs, pair rhs) {
+      return pair{static_cast<short>(lhs.a + rhs.a), lhs.b + rhs.b};
+    });
+  }
+
+  auto host_actual = std::vector<pair>(output_ptr);
+  REQUIRE(host_output == host_actual);
+}
+
+struct strided_offset_iterator_state_t
+{
+  SizeT linear_id;
+  SizeT step;
+};
+
+struct input_transposed_iterator_state_t
+{
+  float* ptr;
+  SizeT linear_id;
+  SizeT n_rows;
+  SizeT n_cols;
+};
+
+TEST_CASE("SegmentedReduce works with input iterators", "[segmented_reduce]")
+{
+  // Sum over columns of matrix
+  const std::size_t n_rows = 2048;
+  const std::size_t n_cols = 128;
+
+  const std::size_t n_elems  = n_rows * n_cols;
+  const std::size_t col_size = n_rows;
+
+  using ValueT = float;
+
+  std::vector<ValueT> host_input;
+  host_input.reserve(n_elems);
+  {
+    auto inp_ = generate<int>(n_elems);
+    for (auto&& el : inp_)
+    {
+      host_input.push_back(el);
+    }
+  }
+  std::vector<ValueT> host_output(n_cols, 0);
+
+  pointer_t<ValueT> input_ptr(host_input); // copy from host to device
+  pointer_t<ValueT> output_ptr(host_output); // copy from host to device
+
+  iterator_t<SizeT, strided_offset_iterator_state_t> start_offset_it =
+    make_iterator<SizeT, strided_offset_iterator_state_t>(
+      "struct strided_offset_iterator_state_t {\n"
+      "   unsigned long long linear_id;\n"
+      "   unsigned long long step;\n"
+      "};\n",
+      {"advance_offset_it",
+       "extern \"C\" __device__ void advance_offset_it(strided_offset_iterator_state_t* state, unsigned long long "
+       "offset) {\n"
+       "  state->linear_id += offset;\n"
+       "}"},
+      {"dereference_offset_it",
+       "extern \"C\" __device__ unsigned long long dereference_offset_it(strided_offset_iterator_state_t* state) { \n"
+       "  return (state->linear_id) * (state->step);\n"
+       "}"});
+
+  start_offset_it.state.linear_id = 0;
+  start_offset_it.state.step      = col_size;
+
+  // a copy of offset iterator, so no need to define advance/dereference bodies, just reused those defined above
+  iterator_t<SizeT, strided_offset_iterator_state_t> end_offset_it =
+    make_iterator<SizeT, strided_offset_iterator_state_t>("", {"advance_offset_it", ""}, {"dereference_offset_it", ""});
+
+  end_offset_it.state.linear_id = 1;
+  end_offset_it.state.step      = col_size;
+
+  iterator_t<ValueT, input_transposed_iterator_state_t> input_transposed_iterator_it =
+    make_iterator<ValueT, input_transposed_iterator_state_t>(
+      "struct input_transposed_iterator_state_t {\n"
+      "  float *ptr;\n"
+      "  unsigned long long linear_id;\n"
+      "  unsigned long long n_rows;\n"
+      "  unsigned long long n_cols;\n"
+      "};\n",
+      {"advance_transposed_it",
+       "extern \"C\" __device__ void advance_transposed_it(input_transposed_iterator_state_t *state, unsigned long "
+       "long offset)\n"
+       "{ state->linear_id += offset; }\n"},
+      {"dereference_transposed_it",
+       "extern \"C\" __device__ float dereference_transposed_it(input_transposed_iterator_state_t *state) {\n"
+       "  unsigned long long col_id = (state->linear_id) / (state->n_rows);\n"
+       "  unsigned long long row_id = (state->linear_id) - col_id * (state->n_rows);\n"
+       "  return *(state->ptr + row_id * (state->n_cols) + col_id);\n"
+       "}\n"});
+
+  input_transposed_iterator_it.state.ptr       = input_ptr.ptr;
+  input_transposed_iterator_it.state.linear_id = 0;
+  input_transposed_iterator_it.state.n_rows    = n_rows;
+  input_transposed_iterator_it.state.n_cols    = n_cols;
+
+  operation_t op = make_operation("op", get_reduce_op(get_type_info<ValueT>().type));
+  value_t<ValueT> init{0};
+
+  segmented_reduce(input_transposed_iterator_it, output_ptr, n_cols, start_offset_it, end_offset_it, op, init);
+
+  for (size_t col_id = 0; col_id < n_cols; ++col_id)
+  {
+    ValueT col_sum = 0;
+    for (size_t row_id = 0; row_id < n_rows; ++row_id)
+    {
+      col_sum += host_input[row_id * n_cols + col_id];
+    }
+    host_output[col_id] = col_sum;
+  }
+
+  auto host_actual = std::vector<ValueT>(output_ptr);
+  REQUIRE(host_actual == host_output);
 }
