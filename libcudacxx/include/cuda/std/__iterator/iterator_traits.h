@@ -216,7 +216,8 @@ _LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Iter, __priority_tag<1>) ->
   typename _ITER_TRAITS<_Iter>::iterator_category;
 template <class _Iter>
 _LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Iter, __priority_tag<0>)
-  -> enable_if_t<__is_primary_cccl_template<_Iter>::value, random_access_iterator_tag>;
+  -> enable_if_t<__is_primary_cccl_template<_Iter>::value && __is_primary_std_template<_Iter>::value,
+                 random_access_iterator_tag>;
 
 template <class _Iter>
 using __iter_concept_t = decltype(_CUDA_VSTD::__iter_concept_fn<_Iter>(declval<_Iter>(), __priority_tag<3>{}));
@@ -331,6 +332,10 @@ concept __cpp17_random_access_iterator =
      };
 } // namespace __iterator_traits_detail
 
+// We need to consider if a user has specialized std::iterator_traits
+template <class _Ip>
+concept __specialized_from_std = !__is_primary_std_template<remove_cvref_t<_Ip>>::value;
+
 template <class _Ip>
 concept __has_member_reference = requires { typename _Ip::reference; };
 
@@ -341,7 +346,7 @@ template <class _Ip>
 concept __has_member_iterator_category = requires { typename _Ip::iterator_category; };
 
 template <class _Ip>
-concept __specifies_members = requires {
+concept __specifies_members = !__specialized_from_std<_Ip> && requires {
   typename _Ip::value_type;
   typename _Ip::difference_type;
   requires __has_member_reference<_Ip>;
@@ -361,7 +366,8 @@ struct __iterator_traits_member_pointer_or_void<_Tp>
 };
 
 template <class _Tp>
-concept __cpp17_iterator_missing_members = !__specifies_members<_Tp> && __iterator_traits_detail::__cpp17_iterator<_Tp>;
+concept __cpp17_iterator_missing_members =
+  !__specialized_from_std<_Tp> && !__specifies_members<_Tp> && __iterator_traits_detail::__cpp17_iterator<_Tp>;
 
 template <class _Tp>
 concept __cpp17_input_iterator_missing_members =
@@ -474,6 +480,13 @@ struct __iterator_traits_difference_type<_Ip>
 template <class>
 struct __iterator_traits
 {};
+
+#  if !_CCCL_COMPILER(NVRTC)
+// We need to properly accept specializations of `std::iterator_traits`
+template <__specialized_from_std _Ip>
+struct __iterator_traits<_Ip> : public ::std::iterator_traits<_Ip>
+{};
+#  endif // !_CCCL_COMPILER(NVRTC)
 
 // [iterator.traits]/3.1
 // If `I` has valid ([temp.deduct]) member types `difference-type`, `value-type`, `reference`, and
@@ -595,6 +608,10 @@ _CCCL_CONCEPT __cpp17_random_access_iterator =
   __cpp17_bidirectional_iterator<_Ip> && totally_ordered<_Ip> && _CCCL_FRAGMENT(__cpp17_random_access_iterator_, _Ip);
 } // namespace __iterator_traits_detail
 
+// We need to consider if a user has specialized std::iterator_traits
+template <class _Ip>
+_CCCL_INLINE_VAR constexpr bool __specialized_from_std = !__is_primary_std_template<remove_cvref_t<_Ip>>::value;
+
 template <class, class = void>
 _CCCL_INLINE_VAR constexpr bool __has_member_reference = false;
 
@@ -615,8 +632,8 @@ _CCCL_INLINE_VAR constexpr bool __has_member_iterator_category<_Tp, void_t<typen
 
 template <class _Ip>
 _CCCL_CONCEPT __specifies_members =
-  __has_member_value_type<_Ip> && __has_member_difference_type<_Ip> && __has_member_reference<_Ip>
-  && __has_member_iterator_category<_Ip>;
+  !__specialized_from_std<_Ip> && __has_member_value_type<_Ip> && __has_member_difference_type<_Ip>
+  && __has_member_reference<_Ip> && __has_member_iterator_category<_Ip>;
 
 template <class, class = void>
 struct __iterator_traits_member_pointer_or_void
@@ -632,7 +649,7 @@ struct __iterator_traits_member_pointer_or_void<_Tp, enable_if_t<__has_member_po
 
 template <class _Tp>
 _CCCL_CONCEPT __cpp17_iterator_missing_members =
-  !__specifies_members<_Tp> && __iterator_traits_detail::__cpp17_iterator<_Tp>;
+  !__specialized_from_std<_Tp> && !__specifies_members<_Tp> && __iterator_traits_detail::__cpp17_iterator<_Tp>;
 
 template <class _Tp>
 _CCCL_CONCEPT __cpp17_input_iterator_missing_members =
@@ -753,6 +770,12 @@ struct __iterator_traits_difference_type<_Ip, void_t<typename incrementable_trai
 template <class, class = void>
 struct __iterator_traits
 {};
+
+#  if !_CCCL_COMPILER(NVRTC)
+template <class _Ip>
+struct __iterator_traits<_Ip, enable_if_t<__specialized_from_std<_Ip>>> : public ::std::iterator_traits<_Ip>
+{};
+#  endif // !_CCCL_COMPILER(NVRTC)
 
 // [iterator.traits]/3.1
 // If `I` has valid ([temp.deduct]) member types `difference-type`, `value-type`, `reference`, and
