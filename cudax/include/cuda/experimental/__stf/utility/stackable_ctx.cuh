@@ -610,6 +610,11 @@ class stackable_logical_data
         return s[0].get_unique_id();
       }
 
+      bool is_read_only() const
+      {
+        return read_only;
+      }
+
       mutable stackable_ctx sctx;
       mutable ::std::vector<logical_data<T>> s;
 
@@ -624,6 +629,10 @@ class stackable_logical_data
       size_t offset_depth = 0;
 
       ::std::string symbol;
+
+      // Indicate whether it is allowed to access this logical data with
+      // write() or rw() access
+      bool read_only = false;
     };
 
   public:
@@ -819,6 +828,16 @@ class stackable_logical_data
       impl_state->s[0].set_write_back(flag);
     }
 
+    void set_read_only(bool flag = true)
+    {
+      impl_state->read_only = flag;
+    }
+
+    bool is_read_only() const
+    {
+      return impl_state->is_read_only();
+    }
+
     // TODO why making sctx private or why do we need to expose this at all ?
     auto& get_sctx()
     {
@@ -929,6 +948,16 @@ public:
     pimpl->set_write_back(flag);
   }
 
+  void set_read_only(bool flag = true)
+  {
+    pimpl->set_read_only(flag);
+  }
+
+  bool is_read_only() const
+  {
+    return pimpl->is_read_only();
+  }
+
   auto get_symbol() const
   {
     return pimpl->get_symbol();
@@ -970,6 +999,8 @@ public:
     _CCCL_ASSERT(m == access_mode::read || m == access_mode::rw || m == access_mode::write,
                  "Unsupported access mode in nested context");
 
+    _CCCL_ASSERT(!is_read_only() || m == access_mode::read, "read only data cannot be modified");
+
     // If the stackable logical data is already at the appropriate depth, we
     // simply need to ensure we don't make an illegal access (eg. writing a
     // read only variable)
@@ -990,7 +1021,8 @@ public:
     // If we reach this point, this means we need to automatically push data
 
     // The access mode will be very conservative for these implicit accesses
-    access_mode push_mode = (m == access_mode::write) ? access_mode::write : access_mode::rw;
+    access_mode push_mode =
+      is_read_only() ? access_mode::read : ((m == access_mode::write) ? access_mode::write : access_mode::rw);
 
     while (sctx.depth() > d)
     {
