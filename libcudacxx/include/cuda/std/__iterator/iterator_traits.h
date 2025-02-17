@@ -236,24 +236,6 @@ template <class _Iter>
 using _ITER_CONCEPT = typename __iter_concept_cache<_Iter>::type;
 
 template <class _Tp>
-struct __has_iterator_typedefs
-{
-private:
-  template <class _Up>
-  _LIBCUDACXX_HIDE_FROM_ABI static false_type __test(...);
-  template <class _Up>
-  _LIBCUDACXX_HIDE_FROM_ABI static true_type
-  __test(void_t<typename _Up::iterator_category>* = nullptr,
-         void_t<typename _Up::difference_type>*   = nullptr,
-         void_t<typename _Up::value_type>*        = nullptr,
-         void_t<typename _Up::reference>*         = nullptr,
-         void_t<typename _Up::pointer>*           = nullptr);
-
-public:
-  static const bool value = decltype(__test<_Tp>(0, 0, 0, 0, 0))::value;
-};
-
-template <class _Tp>
 struct __has_iterator_category
 {
 private:
