@@ -216,7 +216,7 @@ _LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Iter, __priority_tag<1>) ->
   typename _ITER_TRAITS<_Iter>::iterator_category;
 template <class _Iter>
 _LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Iter, __priority_tag<0>)
-  -> enable_if_t<__is_primary_template<iterator_traits<_Iter>>::value, random_access_iterator_tag>;
+  -> enable_if_t<__is_primary_cccl_template<iterator_traits<_Iter>>::value, random_access_iterator_tag>;
 
 template <class _Iter>
 using __iter_concept_t = decltype(_CUDA_VSTD::__iter_concept_fn<_Iter>(declval<_Iter>(), __priority_tag<3>{}));
