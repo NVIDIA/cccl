@@ -95,11 +95,13 @@ public:
   executable_graph_cache()
   {
     cache_size_limit = 512 * 1024 * 1024;
-    const char* str  = getenv("CUDASTF_GRAPH_CACHE_SIZE_MB");
+
+    // Maximum size of the executable graph cache (in MB)
+    // Cache is disabled if the size is 0
+    const char* str = getenv("CUDASTF_GRAPH_CACHE_SIZE_MB");
     if (str)
     {
       cache_size_limit = atol(str) * 1024 * 1024;
-      // fprintf(stderr, "GRAPH CACHE SIZE : %s\n", pretty_print_bytes(cache_size_limit).c_str());
     }
   }
 
@@ -157,7 +159,7 @@ public:
     auto exec_g = reserved::graph_instantiate(*g);
 
     // If we maintain a cache, store the executable graph
-    if (!getenv("CUDASTF_NO_CACHE_GRAPH"))
+    if (cache_size_limit != 0)
     {
       cached_graphs.insert({::std::make_pair(nnodes, nedges), entry(this, exec_g, footprint)});
       total_cache_footprint += footprint;
