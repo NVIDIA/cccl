@@ -33,14 +33,14 @@ struct __is_primary_template : false_type
 {};
 
 template <class _Tp>
-struct __is_primary_template<_Tp, void_t<typename _Tp::__primary_template>>
-    : public is_same<_Tp, typename _Tp::__primary_template>
+struct __is_primary_template<_Tp, void_t<typename _Tp::__cccl_primary_template>>
+    : public is_same<_Tp, typename _Tp::__cccl_primary_template>
 {};
 
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 
 template <class _Tp>
-using __test_for_primary_template = enable_if_t<_IsSame<_Tp, typename _Tp::__primary_template>::value>;
+using __test_for_primary_template = enable_if_t<_IsSame<_Tp, typename _Tp::__cccl_primary_template>::value>;
 template <class _Tp>
 using __is_primary_template = _IsValidExpansion<__test_for_primary_template, _Tp>;
 #endif // !_CCCL_COMPILER(MSVC)

@@ -517,7 +517,7 @@ struct __iterator_traits<_Ip>
 template <class _Ip>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits : __iterator_traits<_Ip>
 {
-  using __primary_template = iterator_traits;
+  using __cccl_primary_template = iterator_traits;
 };
 
 #else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
@@ -797,7 +797,7 @@ struct __iterator_traits<_Ip,
 template <class _Ip, class>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits : __iterator_traits<_Ip>
 {
-  using __primary_template = iterator_traits;
+  using __cccl_primary_template = iterator_traits;
 };
 
 #endif // !_CCCL_NO_CONCEPTS
