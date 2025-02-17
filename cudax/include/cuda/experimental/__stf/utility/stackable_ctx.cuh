@@ -88,9 +88,9 @@ task_dep<T, reduce_op, initialize> to_task_dep(stackable_task_dep<T, reduce_op, 
 class stackable_logical_data_impl_state_base
 {
 public:
-  virtual ~stackable_logical_data_impl_state_base() = default;
-  virtual void pop_before_finalize() const          = 0;
-  virtual void pop_after_finalize() const           = 0;
+  virtual ~stackable_logical_data_impl_state_base()                         = default;
+  virtual void pop_before_finalize() const                                  = 0;
+  virtual void pop_after_finalize(const event_list& finalize_prereqs) const = 0;
 };
 
 /**
@@ -211,13 +211,18 @@ public:
       // Ensure everything is finished in the context
       current_level.ctx.finalize();
 
+      // To create prereqs that depend on this finalize() stage, we get the
+      // stream used in this context, and insert events in it.
+      cudaStream_t stream         = get_stream(depth());
+      event_list finalize_prereqs = levels[depth() - 1].ctx.stream_to_event_list(stream, "finalized");
+
       for (auto& [key, d_impl] : current_level.pushed_data)
       {
         _CCCL_ASSERT(d_impl, "invalid value");
         // false indicates there is no need to update the pushed_data map to
         // automatically pop data when the context is popped because we are
         // already doing this now.
-        d_impl->pop_after_finalize();
+        d_impl->pop_after_finalize(finalize_prereqs);
       }
 
       // Destroy the resources used in the wrapper allocator (if any)
@@ -583,13 +588,11 @@ class stackable_logical_data
       }
 
       // Unfreeze the logical data after the context has been finalized.
-      virtual void pop_after_finalize() const override
+      virtual void pop_after_finalize(const event_list& finalize_prereqs) const override
       {
-        // We are going to unfreeze the data, which is currently being used
-        // in a (graph) ctx that uses this stream to launch the graph
-        cudaStream_t stream = sctx.get_stream(depth());
+        nvtx_range r("stackable_logical_data::pop_after_finalize");
 
-        frozen_s.back().unfreeze(stream);
+        frozen_s.back().unfreeze(finalize_prereqs);
 
         // Remove frozen logical data
         frozen_s.pop_back();
@@ -786,9 +789,9 @@ class stackable_logical_data
       impl_state->pop_before_finalize();
     }
 
-    void pop_after_finalize() const
+    void pop_after_finalize(const event_list& finalize_prereqs) const
     {
-      impl_state->pop_after_finalize();
+      impl_state->pop_after_finalize(finalize_prereqs);
     }
 
     size_t depth() const

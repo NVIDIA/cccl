@@ -132,15 +132,15 @@ private:
       unfreeze_fake_task.merge_event_list(prereqs);
 
       ld.unfreeze(unfreeze_fake_task, mv(prereqs));
+
+      freeze_fake_task.clear();
+      unfreeze_fake_task.clear();
     }
 
     void unfreeze(cudaStream_t stream)
     {
       event_list prereqs = bctx.stream_to_event_list(stream, "unfreeze");
       unfreeze(mv(prereqs));
-
-      freeze_fake_task.clear();
-      unfreeze_fake_task.clear();
     }
 
     void set_automatic_unfreeze(bool flag = true)

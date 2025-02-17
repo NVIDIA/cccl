@@ -260,6 +260,15 @@ public:
       payload);
   }
 
+  auto stream_to_event_list(cudaStream_t stream, ::std::string str) const
+  {
+    return ::std::visit(
+      [&](auto& self) {
+        return self.stream_to_event_list(stream, mv(str));
+      },
+      payload);
+  }
+
   /**
    * @brief Creates logical data with specified sizes.
    *
