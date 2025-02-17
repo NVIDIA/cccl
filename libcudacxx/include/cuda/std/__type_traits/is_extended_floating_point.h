@@ -44,7 +44,7 @@ _CCCL_DIAG_POP
 #if _CCCL_HAS_NVFP4()
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wunused-parameter")
-_CCCL_DIAG_SUPPRESS_MSVC(2220) // unreferenced formal parameter
+_CCCL_DIAG_SUPPRESS_MSVC(4100) // unreferenced formal parameter
 #  include <cuda_fp4.h>
 _CCCL_DIAG_POP
 #endif // _CCCL_HAS_NVFP4()
