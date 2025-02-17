@@ -210,26 +210,28 @@ public:
     ::std::lock_guard<::std::mutex> g(allocator_mutex);
     if (auto it = free_cache.find(memory_node); it != free_cache.end())
     {
-        per_place_map_t& size_map = it->second;
-        if (auto it2 = size_map.find(s); it2 != size_map.end() && !it2->second.empty())
+      per_place_map_t& size_map = it->second;
+      if (auto it2 = size_map.find(s); it2 != size_map.end() && !it2->second.empty())
+      {
+        // Retrieve the first (oldest) entry.
+        alloc_cache_entry e = std::move(it2->second.front());
+        it2->second.pop();
+
+        // Optionally, remove the key if the queue is now empty.
+        if (it2->second.empty())
         {
-            // Retrieve the first (oldest) entry.
-            alloc_cache_entry e = std::move(it2->second.front());
-            it2->second.pop();
-
-            // Optionally, remove the key if the queue is now empty.
-            if (it2->second.empty())
-                size_map.erase(it2);
-
-            prereqs.merge(std::move(e.prereq));
-            return e.ptr;
+          size_map.erase(it2);
         }
+
+        prereqs.merge(std::move(e.prereq));
+        return e.ptr;
+      }
     }
 
     for (size_t k = 0; k < 50; k++)
     {
-        auto *ptr = root_allocator.allocate(ctx, memory_node, s, prereqs);
-        free_cache[memory_node][s].push(alloc_cache_entry{ptr, prereqs});
+      auto* ptr = root_allocator.allocate(ctx, memory_node, s, prereqs);
+      free_cache[memory_node][s].push(alloc_cache_entry{ptr, prereqs});
     }
 
     // That is a miss, we need to allocate data using the root allocator
@@ -270,19 +272,19 @@ public:
     event_list result;
     for (auto& [where, size_map] : free_cache_janitor)
     {
-        // For each size key, iterate over the associated queue
-        for (auto& [sz, queue] : size_map)
+      // For each size key, iterate over the associated queue
+      for (auto& [sz, queue] : size_map)
+      {
+        // Process all cache entries stored in the queue (FIFO order)
+        while (!queue.empty())
         {
-            // Process all cache entries stored in the queue (FIFO order)
-            while (!queue.empty())
-            {
-                alloc_cache_entry ace = std::move(queue.front());
-                queue.pop();
+          alloc_cache_entry ace = std::move(queue.front());
+          queue.pop();
 
-                root_allocator.deallocate(ctx, where, ace.prereq, ace.ptr, sz);
-                result.merge(std::move(ace.prereq));
-            }
+          root_allocator.deallocate(ctx, where, ace.prereq, ace.ptr, sz);
+          result.merge(std::move(ace.prereq));
         }
+      }
     }
     return result;
   }
@@ -333,7 +335,5 @@ protected:
 
   ::std::mutex allocator_mutex;
 };
-
-
 
 } // end namespace cuda::experimental::stf
