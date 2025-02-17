@@ -31,6 +31,7 @@
 
 #include <cuda/std/bit>
 #include <cuda/std/cmath>
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
@@ -283,10 +284,10 @@ inline std::size_t adjust_seed_count(std::size_t requested)
 }
 } // namespace detail
 
-#define C2H_SEED(N)                                                                                                    \
-  c2h::seed_t                                                                                                          \
-  {                                                                                                                    \
-    GENERATE_COPY(take(                                                                                                \
-      detail::adjust_seed_count(N),                                                                                    \
-      random(std::numeric_limits<unsigned long long int>::min(), std::numeric_limits<unsigned long long int>::max()))) \
+#define C2H_SEED(N)                                                                         \
+  c2h::seed_t                                                                               \
+  {                                                                                         \
+    GENERATE_COPY(take(detail::adjust_seed_count(N),                                        \
+                       random(::cuda::std::numeric_limits<unsigned long long int>::min(),   \
+                              ::cuda::std::numeric_limits<unsigned long long int>::max()))) \
   }

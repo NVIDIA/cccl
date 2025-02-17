@@ -165,7 +165,7 @@ C2H_TEST("Device reduce works with all device interfaces", "[segmented][reduce][
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_segments);
     compute_segmented_problem_reference(
-      in_items, segment_offsets, op_t{}, cub::NumericTraits<input_t>::Max(), expected_result.begin());
+      in_items, segment_offsets, op_t{}, ::cuda::std::numeric_limits<input_t>::max(), expected_result.begin());
 
     // Run test
     c2h::device_vector<output_t> out_result(num_segments);
@@ -183,7 +183,7 @@ C2H_TEST("Device reduce works with all device interfaces", "[segmented][reduce][
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_segments);
     compute_segmented_problem_reference(
-      in_items, segment_offsets, op_t{}, cub::NumericTraits<input_t>::Lowest(), expected_result.begin());
+      in_items, segment_offsets, op_t{}, ::cuda::std::numeric_limits<input_t>::lowest(), expected_result.begin());
 
     // Run test
     c2h::device_vector<output_t> out_result(num_segments);

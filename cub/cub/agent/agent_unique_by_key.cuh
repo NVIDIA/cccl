@@ -49,8 +49,6 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/thread/thread_operators.cuh>
 
-#include <cuda/std/iterator>
-
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -135,8 +133,8 @@ struct AgentUniqueByKey
   //---------------------------------------------------------------------
 
   // The input key and value type
-  using KeyT   = typename ::cuda::std::iterator_traits<KeyInputIteratorT>::value_type;
-  using ValueT = typename ::cuda::std::iterator_traits<ValueInputIteratorT>::value_type;
+  using KeyT   = cub::detail::value_t<KeyInputIteratorT>;
+  using ValueT = cub::detail::value_t<ValueInputIteratorT>;
 
   // Tile status descriptor interface type
   using ScanTileStateT = ScanTileState<OffsetT>;

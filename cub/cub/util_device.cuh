@@ -570,23 +570,8 @@ CUB_RUNTIME_FUNCTION PolicyWrapper<PolicyT> MakePolicyWrapper(PolicyT policy)
   return PolicyWrapper<PolicyT>{policy};
 }
 
-} // namespace detail
-
-template <typename PolicyT, typename = void>
-using PolicyWrapper CCCL_DEPRECATED_BECAUSE("Internal implementation detail") = detail::PolicyWrapper<PolicyT>;
-
-template <typename PolicyT>
-CCCL_DEPRECATED_BECAUSE("Internal implementation detail")
-CUB_RUNTIME_FUNCTION detail::PolicyWrapper<PolicyT> MakePolicyWrapper(PolicyT policy)
-{
-  return detail::PolicyWrapper<PolicyT>{policy};
-}
-
 //----------------------------------------------------------------------------------------------------------------------
 // ChainedPolicy
-
-namespace detail
-{
 
 struct TripleChevronFactory;
 
@@ -612,8 +597,6 @@ struct KernelConfig
 };
 
 } // namespace detail
-
-using KernelConfig CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail") = detail::KernelConfig;
 
 /// Helper for dispatching into a policy chain
 template <int PolicyPtxVersion, typename PolicyT, typename PrevPolicyT>
