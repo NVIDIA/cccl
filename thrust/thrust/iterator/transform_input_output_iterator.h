@@ -87,7 +87,7 @@ private:
 
 // Compute the iterator_adaptor instantiation to be used for transform_input_output_iterator
 template <typename InputFunction, typename OutputFunction, typename Iterator>
-struct transform_input_output_iterator_base
+struct make_transform_input_output_iterator_base
 {
 private:
   using iterator_value_type = typename iterator_value<Iterator>::type;
@@ -163,12 +163,13 @@ struct is_proxy_reference<transform_input_output_iterator_proxy<InputFunction, O
 //! \see make_transform_input_output_iterator
 template <typename InputFunction, typename OutputFunction, typename Iterator>
 class transform_input_output_iterator
-    : public detail::transform_input_output_iterator_base<InputFunction, OutputFunction, Iterator>::type
+    : public detail::make_transform_input_output_iterator_base<InputFunction, OutputFunction, Iterator>::type
 {
   //! \cond
 
 public:
-  using super_t = typename detail::transform_input_output_iterator_base<InputFunction, OutputFunction, Iterator>::type;
+  using super_t =
+    typename detail::make_transform_input_output_iterator_base<InputFunction, OutputFunction, Iterator>::type;
 
   friend class iterator_core_access;
   //! \endcond
