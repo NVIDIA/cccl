@@ -423,8 +423,6 @@ public:
 
           auto& g = t.get_ctx_graph();
 
-          chain.resize(res.size());
-
           // Create a chain of kernels
           for (size_t i = 0; i < res.size(); i++)
           {
