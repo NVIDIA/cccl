@@ -390,7 +390,7 @@ struct DispatchUniqueByKey
                 block_threads,
                 (long long) stream,
                 items_per_thread,
-                scan_sm_occupancy);
+                sweep_sm_occupancy);
       }
 #endif // CUB_DEBUG_LOG
 
