@@ -996,6 +996,8 @@ template <>
 class numeric_limits<TestFoo>
 {
 public:
+  static constexpr bool is_specialized = true;
+
   __host__ __device__ static TestFoo max()
   {
     return TestFoo::MakeTestFoo(
@@ -1141,6 +1143,8 @@ template <>
 class numeric_limits<TestBar>
 {
 public:
+  static constexpr bool is_specialized = true;
+
   __host__ __device__ static TestBar max()
   {
     return TestBar(numeric_limits<long long>::max(), numeric_limits<int>::max());
