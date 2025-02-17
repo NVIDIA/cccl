@@ -244,9 +244,11 @@ _CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v<bfloat16_t> = tru
 #endif // _CCCL_NO_VARIABLE_TEMPLATES
 
 template <>
-class __numeric_limits_impl<bfloat16_t, __numeric_limits_type::__floating_point>
+class numeric_limits<bfloat16_t>
 {
 public:
+  static constexpr bool is_specialized = true;
+
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bfloat16_t max()
   {
     return bfloat16_t(numeric_limits<__nv_bfloat16>::max());

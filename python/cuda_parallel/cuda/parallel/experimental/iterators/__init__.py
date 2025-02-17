@@ -85,7 +85,7 @@ def CountingIterator(offset):
 def TransformIterator(it, op):
     """Returns an Iterator representing a transformed sequence of values.
 
-    Similar to https://nvidia.github.io/cccl/cub/api/classcub_1_1TransformInputIterator.html
+    Similar to https://nvidia.github.io/cccl/thrust/api/classthrust_1_1transform__iterator.html
 
     Example:
         The code snippet below demonstrates the usage of a ``TransformIterator``
