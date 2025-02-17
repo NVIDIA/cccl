@@ -59,6 +59,15 @@ using IntPairSet = ::std::unordered_set<::std::pair<int, int>, cuda::experimenta
 
 class dot;
 
+// We have different types of nodes in the graph
+enum vertex_type
+{
+  task_vertex,
+  prereq_vertex,
+  fence_vertex,
+  section_vertex
+};
+
 // Information for every task, so that we can eventually generate a node for the task
 struct per_task_info
 {
@@ -66,6 +75,8 @@ struct per_task_info
   ::std::string label;
   ::std::optional<float> timing;
   int dot_section_id;
+  // is that a task, fence or prereq ?
+  vertex_type type;
 };
 
 class per_ctx_dot
@@ -99,8 +110,13 @@ public:
 
     vertices.push_back(unique_id);
 
-    // Add a node in the DOT file
-    oss << "\"NODE_" << unique_id << "\" [style=\"filled\" fillcolor=\"red\" label=\"task fence\"]\n";
+    auto& m = metadata[unique_id];
+    m.color = "red";
+
+    m.dot_section_id = get_current_section_id();
+    m.label          = "task fence";
+
+    m.type = fence_vertex;
   }
 
   void ctx_add_input_id(int prereq_unique_id)
@@ -125,8 +141,14 @@ public:
     vertices.push_back(prereq_unique_id);
 
     set_current_color_by_device(guard);
-    // Add an entry in the DOT file
-    oss << "\"NODE_" << prereq_unique_id << "\" [label=\"" << symbol << "\", style=dashed]\n";
+
+    auto& m = metadata[prereq_unique_id];
+    m.color = get_current_color();
+
+    m.dot_section_id = get_current_section_id();
+    m.label          = symbol;
+
+    m.type = prereq_vertex;
   }
 
   // Edges are not rendered directly, so that we can decide to filter out
@@ -167,6 +189,9 @@ public:
   // Used to avoid cyclic dependencies, defined later
   static int get_current_section_id();
 
+  // Save the ID of the task in the "vertices" vector, and associate this ID to
+  // the metadata of the task, so that we can generate a node for the task
+  // later.
   template <typename task_type, typename data_type>
   void add_vertex(const task_type& t)
   {
@@ -210,6 +235,7 @@ public:
     }
 
     task_metadata.label = task_oss.str();
+    task_metadata.type  = task_vertex;
   }
 
   template <typename task_type>
@@ -222,14 +248,11 @@ public:
       return;
     }
 
-    oss << "// " << t.get_unique_id() << " : mapping_id=" << t.get_mapping_id() << " time=" << time_ms
-        << " device=" << device << "\n";
-
     // Save timing information for this task
     metadata[t.get_unique_id()].timing = time_ms;
   }
 
-  // Take a reference to an (unused) `::std::lock_guard<::std::mutex>` to make sure someone ddid take a lock.
+  // Take a reference to an (unused) `::std::lock_guard<::std::mutex>` to make sure someone did take a lock.
   void set_current_color_by_device(::std::lock_guard<::std::mutex>&)
   {
     if (getenv("CUDASTF_DOT_COLOR_BY_DEVICE"))
@@ -502,7 +525,6 @@ protected:
     }
 
     dot_filename = filename;
-    //::std::cout << "Creating a DOT file in " << filename << ::std::endl;
 
     const char* ignore_prereqs_str = getenv("CUDASTF_DOT_IGNORE_PREREQS");
     tracing_prereqs                = ignore_prereqs_str && atoi(ignore_prereqs_str) == 0;
@@ -542,8 +564,22 @@ public:
 
       for (const auto& p : pc->metadata)
       {
-        outFile << "\"NODE_" << p.first << "\" [style=\"filled\" fillcolor=\"" << p.second.color << "\" label=\""
-                << p.second.label << "\"]\n";
+        // Select the display style of the node based on the type of vertex
+        ::std::string style;
+        switch (p.second.type)
+        {
+          case task_vertex:
+          case fence_vertex:
+            style = "filled";
+            break;
+          case prereq_vertex:
+            style = "dashed";
+            break;
+          default:
+            abort();
+        };
+        outFile << "\"NODE_" << p.first << "\" [style=\"" << style << "\" fillcolor=\"" << p.second.color
+                << "\" label=\"" << p.second.label << "\"]\n";
         vertex_count++;
       }
 
