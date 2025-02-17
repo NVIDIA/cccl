@@ -116,7 +116,7 @@ C2H_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
 
   // Generate input data
   c2h::device_vector<value_t> in_values(num_items);
-  c2h::gen(C2H_SEED(2), in_values, std::numeric_limits<value_t>::min());
+  c2h::gen(C2H_SEED(2), in_values, ::cuda::std::numeric_limits<value_t>::min());
   auto d_values_it = thrust::raw_pointer_cast(in_values.data());
 
 // Skip DeviceScan::InclusiveSum and DeviceScan::ExclusiveSum tests for extended floating-point
@@ -302,7 +302,7 @@ C2H_TEST("Device scan works when memory for keys and results alias one another",
 
   // Generate input data
   c2h::device_vector<value_t> in_values(num_items);
-  c2h::gen(C2H_SEED(2), in_values, std::numeric_limits<value_t>::min());
+  c2h::gen(C2H_SEED(2), in_values, ::cuda::std::numeric_limits<value_t>::min());
   auto d_values_it = thrust::raw_pointer_cast(in_values.data());
 
   SECTION("inclusive sum")

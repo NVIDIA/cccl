@@ -88,8 +88,8 @@ using types =
 TEMPLATE_LIST_TEST_CASE("Generators produce uniformly distributed data", "[gen][uniform]", types)
 {
   const std::size_t elements = 1 << GENERATE_COPY(16, 20, 24, 28);
-  const TestType min         = std::numeric_limits<TestType>::min();
-  const TestType max         = std::numeric_limits<TestType>::max();
+  const TestType min         = ::cuda::std::numeric_limits<TestType>::min();
+  const TestType max         = ::cuda::std::numeric_limits<TestType>::max();
 
   const thrust::device_vector<TestType> data = generate(elements, bit_entropy::_1_000, min, max);
 
@@ -114,8 +114,8 @@ struct complex_to_imag_t
 
 TEST_CASE("Generators produce uniformly distributed complex", "[gen]")
 {
-  const float min = std::numeric_limits<float>::min();
-  const float max = std::numeric_limits<float>::max();
+  const float min = ::cuda::std::numeric_limits<float>::min();
+  const float max = ::cuda::std::numeric_limits<float>::max();
 
   const thrust::device_vector<complex> data = generate(1 << 16);
 

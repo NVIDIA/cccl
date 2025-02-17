@@ -85,7 +85,7 @@ enum class key_size
 template <class AccumT>
 constexpr primitive_accum is_primitive_accum()
 {
-  return detail::is_primitive<AccumT>::value ? primitive_accum::yes : primitive_accum::no;
+  return is_primitive<AccumT>::value ? primitive_accum::yes : primitive_accum::no;
 }
 
 template <class ScanOpT>

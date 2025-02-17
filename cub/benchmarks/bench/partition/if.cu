@@ -94,11 +94,11 @@ T value_from_entropy(double percentage)
 {
   if (percentage == 1)
   {
-    return std::numeric_limits<T>::max();
+    return ::cuda::std::numeric_limits<T>::max();
   }
 
-  const auto max_val = static_cast<double>(std::numeric_limits<T>::max());
-  const auto min_val = static_cast<double>(std::numeric_limits<T>::lowest());
+  const auto max_val = static_cast<double>(::cuda::std::numeric_limits<T>::max());
+  const auto min_val = static_cast<double>(::cuda::std::numeric_limits<T>::lowest());
   const auto result  = min_val + percentage * max_val - percentage * min_val;
   return static_cast<T>(result);
 }

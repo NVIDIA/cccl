@@ -29,7 +29,7 @@
 
 #include <thrust/detail/config/device_system.h>
 
-#include <limits>
+#include <cuda/std/limits>
 
 #include <c2h/custom_type.h>
 #include <c2h/vector.h>
@@ -51,41 +51,6 @@ _CCCL_DIAG_POP
 _CCCL_DIAG_PUSH
 #    include <cuda_fp8.h>
 _CCCL_DIAG_POP
-#  endif // _CCCL_HAS_NVFP8()
-
-#  if _CCCL_HAS_NVFP8()
-namespace std
-{
-template <>
-class numeric_limits<__nv_fp8_e4m3>
-{
-public:
-  static __nv_fp8_e4m3 max()
-  {
-    return cub::Traits<__nv_fp8_e4m3>::Max();
-  }
-
-  static __nv_fp8_e4m3 lowest()
-  {
-    return cub::Traits<__nv_fp8_e4m3>::Lowest();
-  }
-};
-
-template <>
-class numeric_limits<__nv_fp8_e5m2>
-{
-public:
-  static __nv_fp8_e5m2 max()
-  {
-    return cub::Traits<__nv_fp8_e5m2>::Max();
-  }
-
-  static __nv_fp8_e5m2 lowest()
-  {
-    return cub::Traits<__nv_fp8_e5m2>::Lowest();
-  }
-};
-} // namespace std
 #  endif // _CCCL_HAS_NVFP8()
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 
@@ -157,8 +122,8 @@ void init_key_segments(const c2h::device_vector<OffsetT>& segment_offsets, KeyT*
 template <template <typename> class... Ps>
 void gen(seed_t seed,
          c2h::device_vector<c2h::custom_type_t<Ps...>>& data,
-         c2h::custom_type_t<Ps...> min = std::numeric_limits<c2h::custom_type_t<Ps...>>::lowest(),
-         c2h::custom_type_t<Ps...> max = std::numeric_limits<c2h::custom_type_t<Ps...>>::max())
+         c2h::custom_type_t<Ps...> min = ::cuda::std::numeric_limits<c2h::custom_type_t<Ps...>>::lowest(),
+         c2h::custom_type_t<Ps...> max = ::cuda::std::numeric_limits<c2h::custom_type_t<Ps...>>::max())
 {
   detail::gen(seed,
               reinterpret_cast<char*>(thrust::raw_pointer_cast(data.data())),
@@ -171,8 +136,8 @@ void gen(seed_t seed,
 template <typename T>
 void gen(seed_t seed,
          c2h::device_vector<T>& data,
-         T min = std::numeric_limits<T>::lowest(),
-         T max = std::numeric_limits<T>::max());
+         T min = ::cuda::std::numeric_limits<T>::lowest(),
+         T max = ::cuda::std::numeric_limits<T>::max());
 
 template <typename T>
 void gen(modulo_t mod, c2h::device_vector<T>& data);

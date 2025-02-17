@@ -339,9 +339,11 @@ _CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v<half_t> = true;
 #endif // _CCCL_NO_VARIABLE_TEMPLATES
 
 template <>
-class __numeric_limits_impl<half_t, __numeric_limits_type::__floating_point>
+class numeric_limits<half_t>
 {
 public:
+  static constexpr bool is_specialized = true;
+
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE half_t max()
   {
     return half_t(numeric_limits<__half>::max());

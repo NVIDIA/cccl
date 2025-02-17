@@ -459,7 +459,7 @@ C2H_TEST("Warp scan works with custom scan op", "[scan][warp]", types, logical_w
     [](type l, type r) {
       return std::min(l, r);
     },
-    std::numeric_limits<type>::max());
+    ::cuda::std::numeric_limits<type>::max());
 
   // From the documentation -
   // Computes an exclusive prefix scan using the specified binary scan functor
@@ -505,7 +505,7 @@ C2H_TEST("Warp custom op scan returns valid warp aggregate", "[scan][warp]", typ
     [](type l, type r) {
       return std::min(l, r);
     },
-    std::numeric_limits<type>::max());
+    ::cuda::std::numeric_limits<type>::max());
 
   // From the documentation -
   // Computes an exclusive prefix scan using the specified binary scan functor
@@ -615,7 +615,7 @@ C2H_TEST("Warp combination scan works with custom scan op", "[scan][warp]", logi
     [](type l, type r) {
       return std::min(l, r);
     },
-    std::numeric_limits<type>::max());
+    ::cuda::std::numeric_limits<type>::max());
 
   compute_host_reference(
     scan_mode::inclusive,
@@ -624,7 +624,7 @@ C2H_TEST("Warp combination scan works with custom scan op", "[scan][warp]", logi
     [](type l, type r) {
       return std::min(l, r);
     },
-    std::numeric_limits<type>::max());
+    ::cuda::std::numeric_limits<type>::max());
 
   // According to WarpScan::Scan documentation -
   // Because no initial value is supplied, the exclusive_output computed for warp-lane0 is
