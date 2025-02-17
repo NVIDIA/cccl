@@ -243,16 +243,6 @@ _CCCL_DEVICE void bulk_copy_tile_fallback(
   smem_offset += static_cast<int>(sizeof(T)) * tile_stride + bulk_copy_alignment;
 }
 
-// TODO(bgruber): inline this as lambda in C++14
-template <typename T>
-_CCCL_DEVICE _CCCL_FORCEINLINE const T&
-fetch_operand(int tile_stride, const char* smem, int& smem_offset, int smem_idx, const aligned_base_ptr<T>& aligned_ptr)
-{
-  const T* smem_operand_tile_base = reinterpret_cast<const T*>(smem + smem_offset + aligned_ptr.head_padding);
-  smem_offset += int{sizeof(T)} * tile_stride + bulk_copy_alignment;
-  return smem_operand_tile_base[smem_idx];
-}
-
 template <typename BulkCopyPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InTs>
 _CCCL_DEVICE void transform_kernel_ublkcp(
   Offset num_items, int num_elem_per_thread, F f, RandomAccessIteratorOut out, aligned_base_ptr<InTs>... aligned_ptrs)
@@ -331,7 +321,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
     };
 
     // Order of evaluation is left-to-right
-    (..., bulk_copy_tile_fallback(tile_size, tile_stride, smem, smem_offset, offset, aligned_ptrs));
+    (..., bulk_copy_tile_fallback(aligned_ptrs));
 
     cooperative_groups::wait(cooperative_groups::this_thread_block());
   }
@@ -347,13 +337,20 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       const int idx = j * block_dim + threadIdx.x;
       if (full_tile || idx < tile_size)
       {
-        int smem_offset = 0;
+        int smem_offset    = 0;
+        auto fetch_operand = [&](auto aligned_ptr) {
+          using T                         = typename decltype(aligned_ptr)::value_type;
+          const T* smem_operand_tile_base = reinterpret_cast<const T*>(smem + smem_offset + aligned_ptr.head_padding);
+          smem_offset += int{sizeof(T)} * tile_stride + bulk_copy_alignment;
+          return smem_operand_tile_base[idx];
+        };
+
         // need to expand into a tuple for guaranteed order of evaluation
         out[idx] = ::cuda::std::apply(
           [&](const InTs&... values) {
             return f(values...);
           },
-          ::cuda::std::tuple<InTs...>{fetch_operand(tile_stride, smem, smem_offset, idx, aligned_ptrs)...});
+          ::cuda::std::tuple<InTs...>{fetch_operand(aligned_ptrs)...});
       }
     }
   };
