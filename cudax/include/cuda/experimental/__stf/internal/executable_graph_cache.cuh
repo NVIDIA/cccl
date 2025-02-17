@@ -41,7 +41,7 @@ namespace reserved
 // the returned value indicates whether the update was successful or not
 inline bool try_updating_executable_graph(cudaGraphExec_t exec_graph, cudaGraph_t graph)
 {
-#if CUDA_VERSION < 12000
+#if _CCCL_CUDACC_BELOW(12)
   cudaGraphNode_t errorNode;
   cudaGraphExecUpdateResult updateResult;
   cudaGraphExecUpdate(exec_graph, graph, &errorNode, &updateResult);
