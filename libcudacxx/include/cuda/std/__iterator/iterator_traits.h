@@ -28,6 +28,7 @@
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__concepts/totally_ordered.h>
+#include <cuda/std/__fwd/iterator_traits.h>
 #include <cuda/std/__fwd/pair.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
 #include <cuda/std/__iterator/readable_traits.h>
@@ -89,9 +90,6 @@ concept __dereferenceable = requires(_Tp& __t) {
 template <__dereferenceable _Tp>
 using iter_reference_t = decltype(*declval<_Tp&>());
 
-template <class>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
-
 #else // ^^^ _CCCL_NO_CONCEPTS ^^^ // vvv !_CCCL_NO_CONCEPTS vvv
 
 template <class _Tp>
@@ -116,8 +114,6 @@ _CCCL_CONCEPT __dereferenceable = _CCCL_FRAGMENT(__dereferenceable_, _Tp);
 template <class _Tp>
 using iter_reference_t = enable_if_t<__dereferenceable<_Tp>, decltype(*declval<_Tp&>())>;
 
-template <class, class>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
 #endif // !_CCCL_NO_CONCEPTS
 
 #if _CCCL_COMPILER(NVRTC)

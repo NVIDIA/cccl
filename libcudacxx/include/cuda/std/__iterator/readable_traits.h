@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__fwd/iterator_traits.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -93,9 +94,6 @@ template <__has_member_value_type _Tp>
         && same_as<remove_cv_t<typename _Tp::element_type>, remove_cv_t<typename _Tp::value_type>>
 struct indirectly_readable_traits<_Tp> : __cond_value_type<typename _Tp::value_type>
 {};
-
-template <class>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
 
 // Let `RI` be `remove_cvref_t<I>`. The type `iter_value_t<I>` denotes
 // `indirectly_readable_traits<RI>::value_type` if `iterator_traits<RI>` names a specialization
@@ -170,9 +168,6 @@ struct indirectly_readable_traits<
               && same_as<remove_cv_t<typename _Tp::element_type>, remove_cv_t<typename _Tp::value_type>>>>
     : __cond_value_type<typename _Tp::value_type>
 {};
-
-template <class, class>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
 
 // Let `RI` be `remove_cvref_t<I>`. The type `iter_value_t<I>` denotes
 // `indirectly_readable_traits<RI>::value_type` if `iterator_traits<RI>` names a specialization
