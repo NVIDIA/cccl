@@ -101,8 +101,8 @@ public:
   using const_reference        = const _Tp&;
   using pointer                = _Tp*;
   using const_pointer          = const _Tp*;
-  using iterator               = heterogeneous_iterator<_Tp, false, _Properties...>;
-  using const_iterator         = heterogeneous_iterator<_Tp, true, _Properties...>;
+  using iterator               = heterogeneous_iterator<_Tp, _IsConstIter::__no, _Properties...>;
+  using const_iterator         = heterogeneous_iterator<_Tp, _IsConstIter::__yes, _Properties...>;
   using reverse_iterator       = _CUDA_VSTD::reverse_iterator<iterator>;
   using const_reverse_iterator = _CUDA_VSTD::reverse_iterator<const_iterator>;
   using size_type              = _CUDA_VSTD::size_t;
@@ -147,6 +147,7 @@ private:
     && _CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__make_type_set<_OtherProperties...>, _Properties...>;
 
   //! @brief Helper to determine what cudaMemcpyKind we need to copy data from another async_buffer with different
+  //!        properties. Needed for compilers that have issues handling packs in constraints
   template <class... _OtherProperties>
   static constexpr cudaMemcpyKind __transfer_kind =
     __select_execution_space<_OtherProperties...> == _ExecutionSpace::__host
@@ -315,7 +316,7 @@ public:
 
   //! @brief Constructs a async_buffer of size \p __size using a memory resource and value-initializes \p __size
   //! elements
-  //! @param __mr The memory resource to allocate the async_buffer with.
+  //! @param __env The environment used to query the memory resource.
   //! @param __size The size of the async_buffer. Defaults to zero
   //! @note If `__size == 0` then no memory is allocated.
   _CCCL_HIDE_FROM_ABI explicit async_buffer(const __env_t& __env, const size_type __size)
@@ -329,7 +330,7 @@ public:
 
   //! @brief Constructs a async_buffer of size \p __size using a memory resource and copy-constructs \p __size elements
   //! from \p __value
-  //! @param __mr The memory resource to allocate the async_buffer with.
+  //! @param __env The environment used to query the memory resource.
   //! @param __size The size of the async_buffer.
   //! @param __value The value all elements are copied from.
   //! @note If `__size == 0` then no memory is allocated.
@@ -343,21 +344,20 @@ public:
   }
 
   //! @brief Constructs a async_buffer of size \p __size using a memory and leaves all elements uninitialized
-  //! @param __mr The memory resource to allocate the async_buffer with.
+  //! @param __env The environment used to query the memory resource.
   //! @param __size The size of the async_buffer.
   //! @warning This constructor does *NOT* initialize any elements. It is the user's responsibility to ensure that the
   //! elements within `[vec.begin(), vec.end())` are properly initialized, e.g with `cuda::std::uninitialized_copy`.
   //! At the destruction of the \c async_buffer all elements in the range `[vec.begin(), vec.end())` will be destroyed.
   _CCCL_HIDE_FROM_ABI explicit async_buffer(const __env_t& __env, const size_type __size, ::cuda::experimental::uninit_t)
-      : __buf_(
-          __env.query(::cuda::experimental::get_memory_resource), __env.query(::cuda::experimental::get_stream), __size)
+      : __buf_(::cuda::experimental::get_memory_resource(__env), ::cuda::experimental::get_stream(__env), __size)
       , __size_(__size)
       , __policy_(__env.query(::cuda::experimental::execution::get_execution_policy))
   {}
 
   //! @brief Constructs a async_buffer using a memory resource and copy-constructs all elements from the forward range
   //! ``[__first, __last)``
-  //! @param __mr The memory resource to allocate the async_buffer with.
+  //! @param __env The environment used to query the memory resource.
   //! @param __first The start of the input sequence.
   //! @param __last The end of the input sequence.
   //! @note If `__first == __last` then no memory is allocated
@@ -374,7 +374,7 @@ public:
   }
 
   //! @brief Constructs a async_buffer using a memory resource and copy-constructs all elements from \p __ilist
-  //! @param __mr The memory resource to allocate the async_buffer with.
+  //! @param __env The environment used to query the memory resource.
   //! @param __ilist The initializer_list being copied into the async_buffer.
   //! @note If `__ilist.size() == 0` then no memory is allocated
   _CCCL_HIDE_FROM_ABI async_buffer(const __env_t& __env, _CUDA_VSTD::initializer_list<_Tp> __ilist)
@@ -387,7 +387,7 @@ public:
   }
 
   //! @brief Constructs a async_buffer using a memory resource and an input range
-  //! @param __mr The memory resource to allocate the async_buffer with.
+  //! @param __env The environment used to query the memory resource.
   //! @param __range The input range to be moved into the async_buffer.
   //! @note If `__range.size() == 0` then no memory is allocated.
   _CCCL_TEMPLATE(class _Range)
@@ -662,7 +662,7 @@ public:
     __policy_ = __new_policy;
   }
 
-  //! @brief Returns the execution policy
+  //! @brief Waits on the currently stored stream
   _CCCL_HIDE_FROM_ABI void wait() const
   {
     __buf_.get_stream().wait();
@@ -725,7 +725,7 @@ public:
 #ifndef _CCCL_DOXYGEN_INVOKED // doxygen conflates the overloads
   //! @brief Replaces the content of the async_buffer with the range \p __range
   //! @param __range The range to be copied into this async_buffer.
-  //! @note Neither frees not allocates memory if `__range.size() == 0`.
+  //! @note Neither frees nor allocates memory if `__range.size() == 0`.
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__compatible_range<_Range> _CCCL_AND _CUDA_VRANGES::forward_range<_Range> _CCCL_AND(
     !_CUDA_VRANGES::sized_range<_Range>))
@@ -765,7 +765,7 @@ public:
   //! @param __lhs One async_buffer.
   //! @param __rhs The other async_buffer.
   //! @return true, if \p __lhs and \p __rhs contain equal elements have the same size
-  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI constexpr bool
+  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI bool
   operator==(const async_buffer& __lhs, const async_buffer& __rhs) noexcept(noexcept(_CUDA_VSTD::equal(
     __lhs.__unwrapped_begin(), __lhs.__unwrapped_end(), __rhs.__unwrapped_begin(), __rhs.__unwrapped_end())))
   {
@@ -792,7 +792,7 @@ public:
   //! @param __lhs One async_buffer.
   //! @param __rhs The other async_buffer.
   //! @return false, if \p __lhs and \p __rhs contain equal elements have the same size
-  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI constexpr bool
+  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI bool
   operator!=(const async_buffer& __lhs, const async_buffer& __rhs) noexcept(noexcept(_CUDA_VSTD::equal(
     __lhs.__unwrapped_begin(), __lhs.__unwrapped_end(), __rhs.__unwrapped_begin(), __rhs.__unwrapped_end())))
   {
