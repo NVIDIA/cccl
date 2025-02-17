@@ -156,7 +156,7 @@ public:
   ::std::shared_ptr<cudaGraphExec_t> query(size_t nnodes, size_t nedges, ::std::shared_ptr<cudaGraph_t> g)
   {
     int dev_id = cuda_try<cudaGetDevice>();
-    _CCCL_ASSERT(dev_id < cached_graphs.size(), "invalid device id value");
+    _CCCL_ASSERT(dev_id < int(cached_graphs.size()), "invalid device id value");
 
     auto range = cached_graphs[dev_id].equal_range({nnodes, nedges});
     for (auto it = range.first; it != range.second; ++it)
