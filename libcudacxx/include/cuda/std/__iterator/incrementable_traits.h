@@ -82,9 +82,7 @@ struct incrementable_traits<_Tp>
 // generated from the primary template, and `iterator_traits<RI>::difference_type` otherwise.
 template <class _Ip>
 using iter_difference_t =
-  typename conditional_t<__is_primary_template<iterator_traits<remove_cvref_t<_Ip>>>::value,
-                         incrementable_traits<remove_cvref_t<_Ip>>,
-                         iterator_traits<remove_cvref_t<_Ip>>>::difference_type;
+  typename __select_traits<remove_cvref_t<_Ip>, incrementable_traits<remove_cvref_t<_Ip>>>::difference_type;
 
 #else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 
@@ -141,9 +139,7 @@ struct incrementable_traits<_Tp,
 // generated from the primary template, and `iterator_traits<RI>::difference_type` otherwise.
 template <class _Ip>
 using iter_difference_t =
-  typename conditional_t<__is_primary_template<iterator_traits<remove_cvref_t<_Ip>>>::value,
-                         incrementable_traits<remove_cvref_t<_Ip>>,
-                         iterator_traits<remove_cvref_t<_Ip>>>::difference_type;
+  typename __select_traits<remove_cvref_t<_Ip>, incrementable_traits<remove_cvref_t<_Ip>>>::difference_type;
 
 #endif // _CCCL_NO_CONCEPTS
 

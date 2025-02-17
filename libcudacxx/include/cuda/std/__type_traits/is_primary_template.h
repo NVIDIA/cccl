@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_valid_expansion.h>
@@ -44,6 +45,10 @@ using __test_for_primary_template = enable_if_t<_IsSame<_Tp, typename _Tp::__ccc
 template <class _Tp>
 using __is_primary_template = _IsValidExpansion<__test_for_primary_template, _Tp>;
 #endif // !_CCCL_COMPILER(MSVC)
+
+template <class _Iter, class _OtherTraits>
+using __select_traits =
+  conditional_t<__is_primary_template<iterator_traits<_Iter>>::value, _OtherTraits, iterator_traits<_Iter>>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

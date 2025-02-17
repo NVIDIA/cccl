@@ -156,7 +156,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT contiguous_iterator_tag : public random_acc
 template <class _Iter>
 struct __iter_traits_cache
 {
-  using type = _If<__is_primary_template<iterator_traits<_Iter>>::value, _Iter, iterator_traits<_Iter>>;
+  using type = __select_traits<remove_cvref_t<_Iter>, remove_cvref_t<_Iter>>;
 };
 template <class _Iter>
 using _ITER_TRAITS = typename __iter_traits_cache<_Iter>::type;
