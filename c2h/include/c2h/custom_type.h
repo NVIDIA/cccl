@@ -181,9 +181,11 @@ public:
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <template <typename> class... Policies>
-class __numeric_limits_impl<c2h::custom_type_t<Policies...>, __numeric_limits_type::__other>
+class numeric_limits<c2h::custom_type_t<Policies...>>
 {
 public:
+  static constexpr bool is_specialized = true;
+
   static __host__ __device__ c2h::custom_type_t<Policies...> max()
   {
     c2h::custom_type_t<Policies...> val;
