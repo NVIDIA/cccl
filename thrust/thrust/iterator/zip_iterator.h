@@ -216,14 +216,19 @@ private:
 
   friend class iterator_core_access;
 
+  using index_seq = make_index_sequence<::cuda::std::tuple_size_v<IteratorTuple>>;
+
+  _CCCL_EXEC_CHECK_DISABLE
+  template <size_t... Is>
+  _CCCL_HOST_DEVICE typename super_t::reference dereference_impl(index_sequence<Is...>) const
+  {
+    return {*::cuda::std::get<Is>(m_iterator_tuple)...};
+  }
+
   // Dereferencing returns a tuple built from the dereferenced iterators in the iterator tuple.
   _CCCL_HOST_DEVICE typename super_t::reference dereference() const
   {
-    return ::cuda::std::apply(
-      [&](auto&... it) {
-        return typename super_t::reference{*it...};
-      },
-      m_iterator_tuple);
+    return dereference_impl(index_seq{});
   }
 
   // Two zip_iterators are equal if the two first iterators of the tuple are equal. Note this differs from Boost's
@@ -234,34 +239,43 @@ private:
     return get<0>(get_iterator_tuple()) == get<0>(other.get_iterator_tuple());
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
+  template <size_t... Is>
+  inline _CCCL_HOST_DEVICE void advance_impl(typename super_t::difference_type n, index_sequence<Is...>)
+  {
+    (..., thrust::advance(::cuda::std::get<Is>(m_iterator_tuple), n));
+  }
+
   // Advancing a zip_iterator means to advance all iterators in the tuple
   inline _CCCL_HOST_DEVICE void advance(typename super_t::difference_type n)
   {
-    ::cuda::std::apply(
-      [&](auto&... it) {
-        (..., thrust::advance(it, n));
-      },
-      m_iterator_tuple);
+    advance_impl(n, index_seq{});
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  template <size_t... Is>
+  inline _CCCL_HOST_DEVICE void increment_impl(index_sequence<Is...>)
+  {
+    (..., ++::cuda::std::get<Is>(m_iterator_tuple));
   }
 
   // Incrementing a zip iterator means to increment all iterators in the tuple
   inline _CCCL_HOST_DEVICE void increment()
   {
-    ::cuda::std::apply(
-      [&](auto&... it) {
-        (..., ++it);
-      },
-      m_iterator_tuple);
+    increment_impl(index_seq{});
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  template <size_t... Is>
+  inline _CCCL_HOST_DEVICE void decrement_impl(index_sequence<Is...>)
+  {
+    (..., --::cuda::std::get<Is>(m_iterator_tuple));
   }
 
   // Decrementing a zip iterator means to decrement all iterators in the tuple
   inline _CCCL_HOST_DEVICE void decrement()
   {
-    ::cuda::std::apply(
-      [&](auto&... it) {
-        (..., --it);
-      },
-      m_iterator_tuple);
+    decrement_impl(index_seq{});
   }
 
   // Distance is calculated using the first iterator in the tuple.
