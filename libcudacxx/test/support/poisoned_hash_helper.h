@@ -73,10 +73,10 @@ using LibraryHashTypes = TypeList<
   unsigned long,
   long long,
   unsigned long long,
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   __int128_t,
   __uint128_t,
-#endif
+#endif // _CCCL_HAS_INT128()
   float,
   double,
   long double,

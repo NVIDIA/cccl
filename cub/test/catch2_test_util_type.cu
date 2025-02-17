@@ -42,26 +42,26 @@ C2H_TEST("Tests non_void_value_t", "[util][type]")
   using non_void_fancy_it = thrust::counting_iterator<int>;
 
   // falls back for const void*
-  STATIC_REQUIRE(::cuda::std::is_same<fallback_t, //
-                                      cub::detail::non_void_value_t<const void*, fallback_t>>::value);
+  STATIC_REQUIRE(::cuda::std::is_same_v<fallback_t, //
+                                        cub::detail::non_void_value_t<const void*, fallback_t>>);
   // falls back for const volatile void*
-  STATIC_REQUIRE(::cuda::std::is_same<fallback_t, //
-                                      cub::detail::non_void_value_t<const volatile void*, fallback_t>>::value);
+  STATIC_REQUIRE(::cuda::std::is_same_v<fallback_t, //
+                                        cub::detail::non_void_value_t<const volatile void*, fallback_t>>);
   // falls back for volatile void*
-  STATIC_REQUIRE(::cuda::std::is_same<fallback_t, //
-                                      cub::detail::non_void_value_t<volatile void*, fallback_t>>::value);
+  STATIC_REQUIRE(::cuda::std::is_same_v<fallback_t, //
+                                        cub::detail::non_void_value_t<volatile void*, fallback_t>>);
   // falls back for void*
-  STATIC_REQUIRE(::cuda::std::is_same<fallback_t, //
-                                      cub::detail::non_void_value_t<void*, fallback_t>>::value);
+  STATIC_REQUIRE(::cuda::std::is_same_v<fallback_t, //
+                                        cub::detail::non_void_value_t<void*, fallback_t>>);
   // works for int*
-  STATIC_REQUIRE(::cuda::std::is_same<int, //
-                                      cub::detail::non_void_value_t<int*, void>>::value);
+  STATIC_REQUIRE(::cuda::std::is_same_v<int, //
+                                        cub::detail::non_void_value_t<int*, void>>);
   // falls back for fancy iterator with a void value type
-  STATIC_REQUIRE(::cuda::std::is_same<fallback_t, //
-                                      cub::detail::non_void_value_t<void_fancy_it, fallback_t>>::value);
+  STATIC_REQUIRE(::cuda::std::is_same_v<fallback_t, //
+                                        cub::detail::non_void_value_t<void_fancy_it, fallback_t>>);
   // works for a fancy iterator that has int as value type
-  STATIC_REQUIRE(::cuda::std::is_same<int, //
-                                      cub::detail::non_void_value_t<non_void_fancy_it, fallback_t>>::value);
+  STATIC_REQUIRE(::cuda::std::is_same_v<int, //
+                                        cub::detail::non_void_value_t<non_void_fancy_it, fallback_t>>);
 }
 
 CUB_DEFINE_DETECT_NESTED_TYPE(cat_detect, cat);

@@ -392,7 +392,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned int WarpMask(unsigned int warp_id)
 
   unsigned int member_mask = 0xFFFFFFFFu >> (CUB_WARP_THREADS(0) - LOGICAL_WARP_THREADS);
 
-  _CCCL_IF_CONSTEXPR (is_pow_of_two && !is_arch_warp)
+  if constexpr (is_pow_of_two && !is_arch_warp)
   {
     member_mask <<= warp_id * LOGICAL_WARP_THREADS;
   }

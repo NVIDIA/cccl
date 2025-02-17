@@ -40,8 +40,7 @@ using __move_if_noexcept_result_t =
   conditional_t<!is_nothrow_move_constructible<_Tp>::value && is_copy_constructible<_Tp>::value, const _Tp&, _Tp&&>;
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __move_if_noexcept_result_t<_Tp>
-move_if_noexcept(_Tp& __x) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __move_if_noexcept_result_t<_Tp> move_if_noexcept(_Tp& __x) noexcept
 {
   return _CUDA_VSTD::move(__x);
 }

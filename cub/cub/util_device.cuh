@@ -570,23 +570,8 @@ CUB_RUNTIME_FUNCTION PolicyWrapper<PolicyT> MakePolicyWrapper(PolicyT policy)
   return PolicyWrapper<PolicyT>{policy};
 }
 
-} // namespace detail
-
-template <typename PolicyT, typename = void>
-using PolicyWrapper CCCL_DEPRECATED_BECAUSE("Internal implementation detail") = detail::PolicyWrapper<PolicyT>;
-
-template <typename PolicyT>
-CCCL_DEPRECATED_BECAUSE("Internal implementation detail")
-CUB_RUNTIME_FUNCTION detail::PolicyWrapper<PolicyT> MakePolicyWrapper(PolicyT policy)
-{
-  return detail::PolicyWrapper<PolicyT>{policy};
-}
-
 //----------------------------------------------------------------------------------------------------------------------
 // ChainedPolicy
-
-namespace detail
-{
 
 struct TripleChevronFactory;
 
@@ -612,8 +597,6 @@ struct KernelConfig
 };
 
 } // namespace detail
-
-using KernelConfig CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail") = detail::KernelConfig;
 
 /// Helper for dispatching into a policy chain
 template <int PolicyPtxVersion, typename PolicyT, typename PrevPolicyT>
@@ -669,9 +652,9 @@ private:
     // TODO(bgruber): drop diagnostic suppression in C++17
     _CCCL_DIAG_PUSH
     _CCCL_DIAG_SUPPRESS_MSVC(4127) // suppress Conditional Expression is Constant
-    _CCCL_IF_CONSTEXPR (DevicePtxVersion < PolicyPtxVersion)
+    if constexpr (DevicePtxVersion < PolicyPtxVersion)
     {
-      // TODO(bgruber): drop boolean tag dispatches in C++17, since _CCCL_IF_CONSTEXPR will discard this branch properly
+      // TODO(bgruber): drop boolean tag dispatches in C++17, since if constexpr will discard this branch properly
       return PrevPolicyT::template invoke_static<DevicePtxVersion>(
         op, ::cuda::std::bool_constant<(DevicePtxVersion < PolicyPtxVersion)>{});
     }

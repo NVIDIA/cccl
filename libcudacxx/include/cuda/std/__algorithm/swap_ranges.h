@@ -29,7 +29,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // 2+2 iterators: the shorter size will be used.
 template <class _AlgPolicy, class _ForwardIterator1, class _Sentinel1, class _ForwardIterator2, class _Sentinel2>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_ForwardIterator1, _ForwardIterator2>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_ForwardIterator1, _ForwardIterator2>
 __swap_ranges(_ForwardIterator1 __first1, _Sentinel1 __last1, _ForwardIterator2 __first2, _Sentinel2 __last2)
 {
   while (__first1 != __last1 && __first2 != __last2)
@@ -44,7 +44,7 @@ __swap_ranges(_ForwardIterator1 __first1, _Sentinel1 __last1, _ForwardIterator2 
 
 // 2+1 iterators: size2 >= size1.
 template <class _AlgPolicy, class _ForwardIterator1, class _Sentinel1, class _ForwardIterator2>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_ForwardIterator1, _ForwardIterator2>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_ForwardIterator1, _ForwardIterator2>
 __swap_ranges(_ForwardIterator1 __first1, _Sentinel1 __last1, _ForwardIterator2 __first2)
 {
   while (__first1 != __last1)
@@ -58,7 +58,7 @@ __swap_ranges(_ForwardIterator1 __first1, _Sentinel1 __last1, _ForwardIterator2 
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator2
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator2
 swap_ranges(_ForwardIterator1 __first1, _ForwardIterator1 __last1, _ForwardIterator2 __first2)
 {
   return _CUDA_VSTD::__swap_ranges<_ClassicAlgPolicy>(

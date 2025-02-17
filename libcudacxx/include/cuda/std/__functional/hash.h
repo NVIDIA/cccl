@@ -35,7 +35,7 @@
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/detail/libcxx/include/cstring>
+#include <cuda/std/cstring>
 
 #ifndef __cuda_std__
 
@@ -45,7 +45,7 @@ template <class _Size>
 _LIBCUDACXX_HIDE_FROM_ABI _Size __loadword(const void* __p)
 {
   _Size __r;
-  std::memcpy(&__r, __p, sizeof(__r));
+  _CUDA_VSTD::memcpy(&__r, __p, sizeof(__r));
   return __r;
 }
 
@@ -523,7 +523,7 @@ template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<unsigned long long> : public __scalar_hash<unsigned long long>
 {};
 
-#  ifndef _LIBCUDACXX_HAS_NO_INT128
+#  if _CCCL_HAS_INT128()
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__int128_t> : public __scalar_hash<__int128_t>
@@ -533,7 +533,7 @@ template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__uint128_t> : public __scalar_hash<__uint128_t>
 {};
 
-#  endif
+#  endif // _CCCL_HAS_INT128()
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<float> : public __scalar_hash<float>

@@ -71,7 +71,7 @@ class __byteswap_impl
 
 public:
   template <class _Tp>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static _CCCL_CONSTEXPR_CXX14 _Tp __impl(_Tp __val) noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Tp __impl(_Tp __val) noexcept
   {
     _Tp __result{};
     for (size_t __i{}; __i < sizeof(__val); ++__i)
@@ -129,7 +129,7 @@ public:
 #endif // !_CCCL_BUILTIN_BSWAP64
   }
 
-#if !defined(_LIBCUDACXX_HAS_NO_INT128)
+#if _CCCL_HAS_INT128()
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr __uint128_t __impl(__uint128_t __val) noexcept
   {
 #  if defined(_CCCL_BUILTIN_BSWAP128)
@@ -138,7 +138,7 @@ public:
     return __impl_recursive<uint64_t>(__val);
 #  endif // !_CCCL_BUILTIN_BSWAP128
   }
-#endif // !_LIBCUDACXX_HAS_NO_INT128
+#endif // _CCCL_HAS_INT128()
 };
 
 _CCCL_TEMPLATE(class _Integer)
@@ -159,7 +159,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Integer byteswap(_Integer _
 _CCCL_TEMPLATE(class _Integer)
 _CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Integer) _CCCL_AND(sizeof(_Integer) > 1)
                  _CCCL_AND(!has_single_bit(sizeof(_Integer))))
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Integer byteswap(_Integer __val) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Integer byteswap(_Integer __val) noexcept
 {
   return static_cast<_Integer>(__byteswap_impl::__impl(_CUDA_VSTD::__to_unsigned_like(__val)));
 }

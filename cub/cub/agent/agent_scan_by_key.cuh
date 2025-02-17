@@ -154,18 +154,18 @@ struct AgentScanByKey
 
   // Constants
   // Inclusive scan if no init_value type is provided
-  static constexpr int IS_INCLUSIVE     = ::cuda::std::is_same<InitValueT, NullType>::value;
+  static constexpr int IS_INCLUSIVE     = ::cuda::std::is_same_v<InitValueT, NullType>;
   static constexpr int BLOCK_THREADS    = AgentScanByKeyPolicyT::BLOCK_THREADS;
   static constexpr int ITEMS_PER_THREAD = AgentScanByKeyPolicyT::ITEMS_PER_THREAD;
   static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
 
   using WrappedKeysInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer<KeysInputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer_v<KeysInputIteratorT>,
                      CacheModifiedInputIterator<AgentScanByKeyPolicyT::LOAD_MODIFIER, KeyT, OffsetT>,
                      KeysInputIteratorT>;
 
   using WrappedValuesInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer<ValuesInputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer_v<ValuesInputIteratorT>,
                      CacheModifiedInputIterator<AgentScanByKeyPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
                      ValuesInputIteratorT>;
 
@@ -299,8 +299,7 @@ struct AgentScanByKey
     }
   }
 
-  template <bool IsNull                                         = ::cuda::std::is_same<InitValueT, NullType>::value,
-            typename ::cuda::std::enable_if<!IsNull, int>::type = 0>
+  template <bool IsNull = ::cuda::std::is_same_v<InitValueT, NullType>, ::cuda::std::enable_if_t<!IsNull, int> = 0>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   AddInitToScan(AccumT (&items)[ITEMS_PER_THREAD], OffsetT (&flags)[ITEMS_PER_THREAD])
   {
@@ -311,8 +310,7 @@ struct AgentScanByKey
     }
   }
 
-  template <bool IsNull                                        = ::cuda::std::is_same<InitValueT, NullType>::value,
-            typename ::cuda::std::enable_if<IsNull, int>::type = 0>
+  template <bool IsNull = ::cuda::std::is_same_v<InitValueT, NullType>, ::cuda::std::enable_if_t<IsNull, int> = 0>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   AddInitToScan(AccumT (& /*items*/)[ITEMS_PER_THREAD], OffsetT (& /*flags*/)[ITEMS_PER_THREAD])
   {}

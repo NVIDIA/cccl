@@ -227,11 +227,11 @@ thrust::constant_iterator<__nv_bfloat16, OffsetT> inline unwrap_it(thrust::const
 #endif // TEST_BF_T()
 
 template <typename T>
-using unwrap_value_t = typename std::remove_reference<decltype(*unwrap_it(std::declval<T*>()))>::type;
+using unwrap_value_t = std::remove_reference_t<decltype(*unwrap_it(std::declval<T*>()))>;
 
 template <class WrappedItT, //
           class ItT = decltype(unwrap_it(std::declval<WrappedItT>()))>
-std::integral_constant<bool, !std::is_same<WrappedItT, ItT>::value> //
+std::integral_constant<bool, !std::is_same_v<WrappedItT, ItT>> //
   inline reference_extended_fp(WrappedItT)
 {
   return {};

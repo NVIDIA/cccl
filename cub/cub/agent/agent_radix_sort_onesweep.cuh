@@ -116,7 +116,7 @@ struct AgentRadixSortOnesweep
   enum
   {
     ITEMS_PER_THREAD      = AgentRadixSortOnesweepPolicy::ITEMS_PER_THREAD,
-    KEYS_ONLY             = ::cuda::std::is_same<ValueT, NullType>::value,
+    KEYS_ONLY             = ::cuda::std::is_same_v<ValueT, NullType>,
     BLOCK_THREADS         = AgentRadixSortOnesweepPolicy::BLOCK_THREADS,
     RANK_NUM_PARTS        = AgentRadixSortOnesweepPolicy::RANK_NUM_PARTS,
     TILE_ITEMS            = BLOCK_THREADS * ITEMS_PER_THREAD,
