@@ -93,16 +93,16 @@ struct __is_primary_std_template<_Iter, void_t<typename ::std::iterator_traits<_
 {};
 #  endif // _MSVC_STL_VERSION || _IS_WRS
 
-// C++17 has issues with e.g void* and other pointers.
-// C++20 fails subsumption if we use the indirection
-#  if !defined(_CCCL_NO_CONCEPTS)
+// Without ranges we need to guard against e.g void*
+// With ranges we fail subsumption if we use the indirection
+#  if defined(__cpp_lib_ranges)
 template <class _Iter, class _OtherTraits>
 using __select_traits =
   conditional_t<__is_primary_std_template<_Iter>::value,
                 conditional_t<__is_primary_cccl_template<_Iter>::value, _OtherTraits, iterator_traits<_Iter>>,
                 ::std::iterator_traits<_Iter>>;
 
-#  else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#  else // ^^^ __cpp_lib_ranges ^^^ / vvv !__cpp_lib_ranges vvv
 
 template <class _Iter, class _OtherTraits, bool = _CCCL_TRAIT(is_pointer, _Iter)>
 struct __select_traits_impl
@@ -123,7 +123,7 @@ struct __select_traits_impl<_Iter, _OtherTraits, true>
 template <class _Iter, class _OtherTraits>
 using __select_traits = typename __select_traits_impl<_Iter, _OtherTraits>::type;
 
-#  endif // _CCCL_NO_CONCEPTS
+#  endif // !__cpp_lib_ranges
 
 #endif // !_CCCL_COMPILER(NVRTC)
 
