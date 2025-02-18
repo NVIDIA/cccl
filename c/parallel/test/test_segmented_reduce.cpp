@@ -1,10 +1,9 @@
 
 #include <cuda_runtime.h>
 
-#include <algorithm>
 #include <cstdint>
 #include <cstdlib>
-#include <iostream>
+#include <numeric>
 
 #include "test_util.h"
 #include <cccl/c/segmented_reduce.h>
@@ -96,27 +95,47 @@ TEMPLATE_LIST_TEST_CASE(
   pointer_t<TestType> input_ptr(host_input); // copy from host to device
   pointer_t<TestType> output_ptr(host_output); // copy from host to device
 
+  const std::string offset_iterator_state_src = R"XXX(
+struct row_offset_iterator_state_t {
+  unsigned long long linear_id;
+  unsigned long long row_size;
+};
+)XXX";
+
+  const std::string advance_offset_method_name = "advance_offset_it";
+  const std::string offset_iterator_advance_src =
+    std::format(R"XXX(
+extern "C" __device__ void {0}(
+  row_offset_iterator_state_t* state,
+  unsigned long long offset)
+{{
+  state->linear_id += offset;
+}}
+)XXX",
+                advance_offset_method_name);
+
+  const std::string deref_offset_method_name = "dereference_offset_it";
+  const std::string offset_iterator_deref_src =
+    std::format(R"XXX(
+extern "C" __device__ unsigned long long {0}(
+  row_offset_iterator_state_t* state)
+{{
+  return (state->linear_id) * (state->row_size);
+}}
+)XXX",
+                deref_offset_method_name);
+
   iterator_t<SizeT, row_offset_iterator_state_t> start_offset_it = make_iterator<SizeT, row_offset_iterator_state_t>(
-    "struct row_offset_iterator_state_t {\n"
-    "   unsigned long long linear_id;\n"
-    "   unsigned long long row_size;\n"
-    "};\n",
-    {"advance_offset_it",
-     "extern \"C\" __device__ void advance_offset_it(row_offset_iterator_state_t* state, unsigned long long "
-     "offset) {\n"
-     "  state->linear_id += offset;\n"
-     "}"},
-    {"dereference_offset_it",
-     "extern \"C\" __device__ unsigned long long dereference_offset_it(row_offset_iterator_state_t* state) { \n"
-     "  return (state->linear_id) * (state->row_size);\n"
-     "}"});
+    offset_iterator_state_src,
+    {advance_offset_method_name, offset_iterator_advance_src},
+    {deref_offset_method_name, offset_iterator_deref_src});
 
   start_offset_it.state.linear_id = 0;
   start_offset_it.state.row_size  = row_size;
 
   // a copy of offset iterator, so no need to define advance/dereference bodies, just reused those defined above
-  iterator_t<SizeT, row_offset_iterator_state_t> end_offset_it =
-    make_iterator<SizeT, row_offset_iterator_state_t>("", {"advance_offset_it", ""}, {"dereference_offset_it", ""});
+  iterator_t<SizeT, row_offset_iterator_state_t> end_offset_it = make_iterator<SizeT, row_offset_iterator_state_t>(
+    "", {advance_offset_method_name, ""}, {deref_offset_method_name, ""});
 
   end_offset_it.state.linear_id = 1;
   end_offset_it.state.row_size  = row_size;
@@ -177,13 +196,20 @@ TEST_CASE("SegmentedReduce works with custom types", "[segmented_reduce]")
   auto end_offset_it   = start_offset_it;
   end_offset_it.state  = offset_ptr.ptr + 1;
 
-  operation_t op = make_operation(
-    "op",
-    "struct pair { short a; size_t b; };\n"
-    "extern \"C\" __device__ pair op(pair lhs, pair rhs) {\n"
-    "  return pair{ lhs.a + rhs.a, lhs.b + rhs.b };\n"
-    "}");
-  pair v0 = pair{4, 2};
+  std::string device_op_name                       = "plus_pair";
+  constexpr std::string_view plus_pair_op_template = R"XXX(
+struct pair {{
+  short a;
+  size_t b;
+}};
+extern "C" __device__ pair {0}(pair lhs, pair rhs) {{
+  return pair{{ lhs.a + rhs.a, lhs.b + rhs.b }};
+}}
+)XXX";
+  std::string plus_pair_op_src                     = std::format(plus_pair_op_template, device_op_name);
+
+  operation_t op = make_operation(device_op_name, plus_pair_op_src);
+  pair v0        = pair{4, 2};
   value_t<pair> init{v0};
 
   segmented_reduce(input_ptr, output_ptr, n_segments, start_offset_it, end_offset_it, op, init);
@@ -240,50 +266,82 @@ TEST_CASE("SegmentedReduce works with input iterators", "[segmented_reduce]")
   pointer_t<ValueT> input_ptr(host_input); // copy from host to device
   pointer_t<ValueT> output_ptr(host_output); // copy from host to device
 
+  const std::string offset_it_state_name                = "strided_offset_iterator_state_t";
+  constexpr std::string_view offset_iter_state_src_tmpl = R"XXX(
+struct {0} {{
+  unsigned long long linear_id;
+  unsigned long long step;
+}};
+)XXX";
+  std::string offset_iter_state_src                     = std::format(offset_iter_state_src_tmpl, offset_it_state_name);
+
+  const std::string offset_advance_fn_name                = "advance_offset_it";
+  constexpr std::string_view offset_advance_mthd_src_tmpl = R"XXX(
+extern "C" __device__ void {0}({1} *state, unsigned long long offset) {{
+  state->linear_id += offset;
+}}
+)XXX";
+  const std::string offset_advance_mthd_src =
+    std::format(offset_advance_mthd_src_tmpl, offset_advance_fn_name, offset_it_state_name);
+
+  const std::string offset_deref_fn_name                = "dereference_offset_it";
+  constexpr std::string_view offset_deref_mthd_src_tmpl = R"XXX(
+extern "C" __device__ unsigned long long {0}({1} *state) {{
+  return (state->linear_id) * (state->step);
+}}
+)XXX";
+  const std::string offset_deref_mthd_src =
+    std::format(offset_deref_mthd_src_tmpl, offset_deref_fn_name, offset_it_state_name);
+
   iterator_t<SizeT, strided_offset_iterator_state_t> start_offset_it =
     make_iterator<SizeT, strided_offset_iterator_state_t>(
-      "struct strided_offset_iterator_state_t {\n"
-      "   unsigned long long linear_id;\n"
-      "   unsigned long long step;\n"
-      "};\n",
-      {"advance_offset_it",
-       "extern \"C\" __device__ void advance_offset_it(strided_offset_iterator_state_t* state, unsigned long long "
-       "offset) {\n"
-       "  state->linear_id += offset;\n"
-       "}"},
-      {"dereference_offset_it",
-       "extern \"C\" __device__ unsigned long long dereference_offset_it(strided_offset_iterator_state_t* state) { \n"
-       "  return (state->linear_id) * (state->step);\n"
-       "}"});
+      offset_iter_state_src,
+      {offset_advance_fn_name, offset_advance_mthd_src},
+      {offset_deref_fn_name, offset_deref_mthd_src});
 
   start_offset_it.state.linear_id = 0;
   start_offset_it.state.step      = col_size;
 
   // a copy of offset iterator, so no need to define advance/dereference bodies, just reused those defined above
   iterator_t<SizeT, strided_offset_iterator_state_t> end_offset_it =
-    make_iterator<SizeT, strided_offset_iterator_state_t>("", {"advance_offset_it", ""}, {"dereference_offset_it", ""});
+    make_iterator<SizeT, strided_offset_iterator_state_t>("", {offset_advance_fn_name, ""}, {offset_deref_fn_name, ""});
 
   end_offset_it.state.linear_id = 1;
   end_offset_it.state.step      = col_size;
 
+  const std::string input_it_state_name                    = "input_transposed_iterator_state_t";
+  const std::string value_type_name                        = "float";
+  constexpr std::string_view input_iterator_state_src_tmpl = R"XXX(
+struct {0} {{
+   {1} *ptr;
+   unsigned long long linear_id;
+   unsigned long long n_rows;
+   unsigned long long n_cols;
+}};
+)XXX";
+  const std::string input_iterator_state_src =
+    std::format(input_iterator_state_src_tmpl, /* 0 */ input_it_state_name, /* 1 */ value_type_name);
+
+  const std::string transpose_it_advance_fn_name = "advance_transposed_it";
+  const std::string transpose_it_advance_mthd_src =
+    std::format(offset_advance_mthd_src_tmpl, transpose_it_advance_fn_name, input_it_state_name);
+
+  const std::string transpose_it_deref_fn_name           = "dereference_transposed_it";
+  constexpr std::string_view transpose_it_deref_src_tmpl = R"XXX(
+extern "C" __device__ {1} {0}({2} *state) {{
+  unsigned long long col_id = (state->linear_id) / (state->n_rows);
+  unsigned long long row_id = (state->linear_id) - col_id * (state->n_rows);
+  return *(state->ptr + row_id * (state->n_cols) + col_id);
+}}
+)XXX";
+  const std::string tranpose_it_deref_src                = std::format(
+    transpose_it_deref_src_tmpl, /* 0 */ transpose_it_deref_fn_name, /*1*/ value_type_name, /*2*/ input_it_state_name);
+
   iterator_t<ValueT, input_transposed_iterator_state_t> input_transposed_iterator_it =
     make_iterator<ValueT, input_transposed_iterator_state_t>(
-      "struct input_transposed_iterator_state_t {\n"
-      "  float *ptr;\n"
-      "  unsigned long long linear_id;\n"
-      "  unsigned long long n_rows;\n"
-      "  unsigned long long n_cols;\n"
-      "};\n",
-      {"advance_transposed_it",
-       "extern \"C\" __device__ void advance_transposed_it(input_transposed_iterator_state_t *state, unsigned long "
-       "long offset)\n"
-       "{ state->linear_id += offset; }\n"},
-      {"dereference_transposed_it",
-       "extern \"C\" __device__ float dereference_transposed_it(input_transposed_iterator_state_t *state) {\n"
-       "  unsigned long long col_id = (state->linear_id) / (state->n_rows);\n"
-       "  unsigned long long row_id = (state->linear_id) - col_id * (state->n_rows);\n"
-       "  return *(state->ptr + row_id * (state->n_cols) + col_id);\n"
-       "}\n"});
+      input_iterator_state_src,
+      {transpose_it_advance_fn_name, transpose_it_advance_mthd_src},
+      {transpose_it_deref_fn_name, tranpose_it_deref_src});
 
   input_transposed_iterator_it.state.ptr       = input_ptr.ptr;
   input_transposed_iterator_it.state.linear_id = 0;
