@@ -16,15 +16,19 @@ In header file ``<cuda/for_each_cancelled>``:
 
 **WARNING**: This is an **Experimental API**.
 
-This API is useful to implement work-stealing at thread-block level granularity.
-On devices with compute capability 10.0 or higher, it may leverage hardware acceleration for work-stealing.
+On devices with compute capability 10.0 or higher, it may leverage hardware acceleration.
+
+This API is mainly intended to implement work-stealing at thread-block level granularity.
 When compared against alternative work distribution techniques like `grid-stride loops <https://developer.nvidia.com/blog/cuda-pro-tip-write-flexible-kernels-grid-stride-loops/>`__, which distribute load statically, or against other dynamic work distribution techniques using global memory concurrency, the main advantages of this API over these alternatives are:
 
    - It performs work-stealing dynamically: thread blocks that finish work sooner may do more work than thread blocks whose work takes longer.
    - It may cooperate with the GPU work-scheduler to respect work priorities and perform load-balancing.
    - It may have lower work-stealing latency than global memory atomics.
 
-For better performance, extract the thread block prologue - i.e. code and data that is common to all thread blocks (e.g. initialization, __shared__ memory allocations, common constants loaded to shared memory, etc.) - and thread block epilogue (e.g. writing back shared memory to global memory) outside the lambda passed to this API (see example below).
+For better performance, extract the shared thread block prologue and epilog outside the lambda, and re-use it across thread-block iterations:
+
+  - Prologue: thread-block initialization code and data that is common to all thread blocks, e.g., ``__shared__`` memory allocation, their initialization, etc.
+  - Epilogue: thread-block finalization code that is common to all thread blocks, e.g., writing back shared memory to global memory, etc.
 
 **Mandates**:
 
@@ -33,14 +37,14 @@ For better performance, extract the thread block prologue - i.e. code and data t
 
 **Preconditions**:
 
-   - All threads of current thread-block call ``for_each_cancelled_block`` **exactly once**.
+   - All threads of the current thread-block shall call ``for_each_cancelled_block`` **exactly once**.
 
 **Effects**:
 
-   - Invokes ``uf`` with ``blockIdx``, then repeatedly attempts to cancel the launch of a current grid's thread block, and:
+   - Invokes ``uf`` with ``blockIdx``, then repeatedly attempts to cancel the launch of another thread block in the current grid, and:
 
-      - on success, calls ``uf`` with that thread blocks ``blockIdx`` and repeats,
-      - otherwise it failed to cancel the launch of a thread block and it returns.
+      - on success, calls ``uf`` with that thread block's ``blockIdx`` and repeats,
+      - otherwise, it failed to cancel the launch of a thread block and it returns.
 
 Example
 -------
@@ -61,6 +65,7 @@ This example shows how to perform work-stealing at thread-block granularity usin
 
      cuda::experimental::for_each_cancelled_block<1>([=](dim3 block_idx) {
        int idx = threadIdx.x + block_idx.x * blockDim.x;
+       // assert(block_idx == blockIdx); // May fail!
        if (idx < n) {
          c[idx] += a[idx] + b[idx];
        }
