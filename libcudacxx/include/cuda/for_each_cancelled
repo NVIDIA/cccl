@@ -91,7 +91,7 @@ _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void __for_each_cancelled_block(bool __is_leade
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_100,
     (
-      __shared__ uint64_t __barrier; // TODO: use 2 barriers and 2 results avoid last sync threads
+      __shared__ uint64_t __barrier; // TODO: use 2 barriers and 2 results to avoid last sync threads
       __shared__ __int128 __result;
       bool __phase = false;
 
@@ -168,7 +168,7 @@ _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void __for_each_cancelled_block(bool __is_leade
         // generic->generic synchronization
         __syncthreads();
         // TODO: only control-warp requires sync, other warps can arrive
-        // TODO: double-buffering results+barrier pairs using phase avoids this sync
+        // TODO: double-buffering results+barrier pairs using phase to avoids this sync
 
         if (__is_leader)
         {
