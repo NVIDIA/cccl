@@ -84,7 +84,7 @@ using __is_primary_std_template = _IsValidExpansion<__test_for_primary_template,
 #  elif defined(_MSVC_STL_VERSION) || defined(_IS_WRS)
 // MSVC uses the same mechanism than we do with _From_primary
 template <class _Iter, class = void>
-struct __is_primary_std_template : false_type
+struct __is_primary_std_template : true_type
 {};
 
 template <class _Iter>
