@@ -100,6 +100,9 @@ This example shows how to perform work-stealing at thread-block granularity usin
 	success = false;
       }
     }
+    cudaFree(a);
+    cudaFree(b);
+    cudaFree(c);
 
     return success? 0 : 1;
    }
