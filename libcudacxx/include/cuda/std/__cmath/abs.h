@@ -81,7 +81,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_FABS long double fabs(
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __half fabs(__half __x) noexcept
 {
   // We cannot use `abs.f16` because it is not IEEE 754 compliant, see docs
-  const auto __val = static_cast<uint16_t>(_CUDA_VSTD::__nv_fp_get_storage(__x) & __nv_fp16_exp_mant_mask);
+  const auto __val = static_cast<uint16_t>(_CUDA_VSTD::__cccl_nvfp_get_storage(__x) & __cccl_nvfp16_exp_mant_mask);
   return __half{__half_raw{__val}};
 }
 #endif // _LIBCUDACXX_HAS_NVFP16
@@ -90,7 +90,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __half fabs(__half __x) noex
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_bfloat16 fabs(__nv_bfloat16 __x) noexcept
 {
   // We cannot use `abs.bf16` because it is not IEEE 754 compliant, see docs
-  const auto __val = static_cast<uint16_t>(_CUDA_VSTD::__nv_fp_get_storage(__x) & __nv_bf16_exp_mant_mask);
+  const auto __val = static_cast<uint16_t>(_CUDA_VSTD::__cccl_nvfp_get_storage(__x) & __cccl_nvbf16_exp_mant_mask);
   return __nv_bfloat16{__nv_bfloat16_raw{__val}};
 }
 #endif // _LIBCUDACXX_HAS_NVBF16
@@ -98,7 +98,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_bfloat16 fabs(__nv_bflo
 #if _CCCL_HAS_NVFP8_E4M3()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e4m3 fabs(__nv_fp8_e4m3 __x) noexcept
 {
-  __x.__x &= __nv_fp8_e4m3_exp_mant_mask;
+  __x.__x &= __cccl_nvfp8_e4m3_exp_mant_mask;
   return __x;
 }
 #endif // _CCCL_HAS_NVFP8_E4M#()
@@ -106,7 +106,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e4m3 fabs(__nv_fp8_
 #if _CCCL_HAS_NVFP8_E5M2()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e5m2 fabs(__nv_fp8_e5m2 __x) noexcept
 {
-  __x.__x &= __nv_fp8_e5m2_exp_mant_mask;
+  __x.__x &= __cccl_nvfp8_e5m2_exp_mant_mask;
   return __x;
 }
 #endif // _CCCL_HAS_NVFP8_E5M2()
@@ -121,7 +121,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e8m0 fabs(__nv_fp8_
 #if _CCCL_HAS_NVFP6_E2M3()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp6_e2m3 fabs(__nv_fp6_e2m3 __x) noexcept
 {
-  __x.__x &= __nv_fp6_e2m3_exp_mant_mask;
+  __x.__x &= __cccl_nvfp6_e2m3_exp_mant_mask;
   return __x;
 }
 #endif // _CCCL_HAS_NVFP6_E2M3()
@@ -129,7 +129,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp6_e2m3 fabs(__nv_fp6_
 #if _CCCL_HAS_NVFP6_E3M2()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp6_e3m2 fabs(__nv_fp6_e3m2 __x) noexcept
 {
-  __x.__x &= __nv_fp6_e3m2_exp_mant_mask;
+  __x.__x &= __cccl_nvfp6_e3m2_exp_mant_mask;
   return __x;
 }
 #endif // _CCCL_HAS_NVFP6_E3M2()
@@ -137,7 +137,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp6_e3m2 fabs(__nv_fp6_
 #if _CCCL_HAS_NVFP4_E2M1()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp4_e2m1 fabs(__nv_fp4_e2m1 __x) noexcept
 {
-  __x.__x &= __nv_fp4_e2m1_exp_mant_mask;
+  __x.__x &= __cccl_nvfp4_e2m1_exp_mant_mask;
   return __x;
 }
 #endif // _CCCL_HAS_NVFP4_E2M1()

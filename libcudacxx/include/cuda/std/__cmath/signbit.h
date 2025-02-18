@@ -68,28 +68,28 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_SIGNBIT bool signbit(l
 #if defined(_LIBCUDACXX_HAS_NVFP16)
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__half __x) noexcept
 {
-  return _CUDA_VSTD::__nv_fp_get_storage(__x) & __nv_fp16_sign_mask;
+  return _CUDA_VSTD::__cccl_nvfp_get_storage(__x) & __cccl_nvfp16_sign_mask;
 }
 #endif // _LIBCUDACXX_HAS_NVFP16
 
 #if defined(_LIBCUDACXX_HAS_NVBF16)
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_bfloat16 __x) noexcept
 {
-  return _CUDA_VSTD::__nv_fp_get_storage(__x) & __nv_bf16_sign_mask;
+  return _CUDA_VSTD::__cccl_nvfp_get_storage(__x) & __cccl_nvbf16_sign_mask;
 }
 #endif // _LIBCUDACXX_HAS_NVBF16
 
 #if _CCCL_HAS_NVFP8_E4M3()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_fp8_e4m3 __x) noexcept
 {
-  return __x.__x & __nv_fp8_e4m3_sign_mask;
+  return __x.__x & __cccl_nvfp8_e4m3_sign_mask;
 }
 #endif // _CCCL_HAS_NVFP8_E4M3()
 
 #if _CCCL_HAS_NVFP8_E5M2()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_fp8_e5m2 __x) noexcept
 {
-  return __x.__x & __nv_fp8_e5m2_sign_mask;
+  return __x.__x & __cccl_nvfp8_e5m2_sign_mask;
 }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 
@@ -103,21 +103,21 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_fp8_e8m0) 
 #if _CCCL_HAS_NVFP6_E2M3()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_fp6_e2m3 __x) noexcept
 {
-  return __x.__x & __nv_fp6_e2m3_sign_mask;
+  return __x.__x & __cccl_nvfp6_e2m3_sign_mask;
 }
 #endif // _CCCL_HAS_NVFP6_E2M3()
 
 #if _CCCL_HAS_NVFP6_E3M2()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_fp6_e3m2 __x) noexcept
 {
-  return __x.__x & __nv_fp6_e3m2_sign_mask;
+  return __x.__x & __cccl_nvfp6_e3m2_sign_mask;
 }
 #endif // _CCCL_HAS_NVFP6_E3M2()
 
 #if _CCCL_HAS_NVFP4_E2M1()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_fp4_e2m1 __x) noexcept
 {
-  return __x.__x & __nv_fp4_e2m1_sign_mask;
+  return __x.__x & __cccl_nvfp4_e2m1_sign_mask;
 }
 #endif // _CCCL_HAS_NVFP4_E2M1()
 

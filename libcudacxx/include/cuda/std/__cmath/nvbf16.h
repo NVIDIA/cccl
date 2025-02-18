@@ -23,7 +23,7 @@
 
 #if defined(_LIBCUDACXX_HAS_NVBF16)
 
-#  include <cuda/std/__internal/nv_fp_types.h>
+#  include <cuda/std/__internal/nvfp_types.h>
 #  include <cuda/std/cstdint>
 
 #  include <nv/target>

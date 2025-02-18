@@ -65,35 +65,35 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_ISFINITE bool isfinite
 #if defined(_LIBCUDACXX_HAS_NVFP16)
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isfinite(__half __x) noexcept
 {
-  return (_CUDA_VSTD::__nv_fp_get_storage(__x) & __nv_fp16_exp_mask) != __nv_fp16_exp_mask;
+  return (_CUDA_VSTD::__cccl_nvfp_get_storage(__x) & __cccl_nvfp16_exp_mask) != __cccl_nvfp16_exp_mask;
 }
 #endif // _LIBCUDACXX_HAS_NVFP16
 
 #if defined(_LIBCUDACXX_HAS_NVBF16)
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isfinite(__nv_bfloat16 __x) noexcept
 {
-  return (_CUDA_VSTD::__nv_fp_get_storage(__x) & __nv_bf16_exp_mask) != __nv_bf16_exp_mask;
+  return (_CUDA_VSTD::__cccl_nvfp_get_storage(__x) & __cccl_nvbf16_exp_mask) != __cccl_nvbf16_exp_mask;
 }
 #endif // _LIBCUDACXX_HAS_NVBF16
 
 #if _CCCL_HAS_NVFP8_E4M3()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isfinite(__nv_fp8_e4m3 __x) noexcept
 {
-  return (__x.__x & __nv_fp8_e4m3_exp_mant_mask) != __nv_fp8_e4m3_exp_mant_mask;
+  return (__x.__x & __cccl_nvfp8_e4m3_exp_mant_mask) != __cccl_nvfp8_e4m3_exp_mant_mask;
 }
 #endif // _CCCL_HAS_NVFP8_E4M3()
 
 #if _CCCL_HAS_NVFP8_E5M2()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isfinite(__nv_fp8_e5m2 __x) noexcept
 {
-  return (__x.__x & __nv_fp8_e5m2_exp_mask) != __nv_fp8_e5m2_exp_mask;
+  return (__x.__x & __cccl_nvfp8_e5m2_exp_mask) != __cccl_nvfp8_e5m2_exp_mask;
 }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 
 #if _CCCL_HAS_NVFP8_E8M0()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isfinite(__nv_fp8_e8m0 __x) noexcept
 {
-  return __x.__x != __nv_fp8_e8m0_exp_mask;
+  return __x.__x != __cccl_nvfp8_e8m0_exp_mask;
 }
 #endif // _CCCL_HAS_NVFP8_E8M0()
 

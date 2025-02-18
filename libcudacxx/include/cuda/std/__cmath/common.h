@@ -26,6 +26,6 @@
 #  include <math.h>
 #endif // _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
 
-#include <cuda/std/__internal/nv_fp_types.h>
+#include <cuda/std/__internal/nvfp_types.h>
 
 #endif // _LIBCUDACXX___CMATH_COMMON_H

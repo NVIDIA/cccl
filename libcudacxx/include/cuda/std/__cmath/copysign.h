@@ -69,8 +69,8 @@ copysign(long double __x, long double __y) noexcept
 #if defined(_LIBCUDACXX_HAS_NVFP16)
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __half copysign(__half __x, __half __y) noexcept
 {
-  const auto __val = (_CUDA_VSTD::__nv_fp_get_storage(__x) & __nv_fp16_exp_mant_mask)
-                   | (_CUDA_VSTD::__nv_fp_get_storage(__y) & __nv_fp16_sign_mask);
+  const auto __val = (_CUDA_VSTD::__cccl_nvfp_get_storage(__x) & __cccl_nvfp16_exp_mant_mask)
+                   | (_CUDA_VSTD::__cccl_nvfp_get_storage(__y) & __cccl_nvfp16_sign_mask);
   return __half{__half_raw{static_cast<uint16_t>(__val)}};
 }
 #endif // _LIBCUDACXX_HAS_NVFP16
@@ -78,8 +78,8 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __half copysign(__half __x, 
 #if defined(_LIBCUDACXX_HAS_NVBF16)
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_bfloat16 copysign(__nv_bfloat16 __x, __nv_bfloat16 __y) noexcept
 {
-  const auto __val = (_CUDA_VSTD::__nv_fp_get_storage(__x) & __nv_bf16_exp_mant_mask)
-                   | (_CUDA_VSTD::__nv_fp_get_storage(__y) & __nv_bf16_sign_mask);
+  const auto __val = (_CUDA_VSTD::__cccl_nvfp_get_storage(__x) & __cccl_nvbf16_exp_mant_mask)
+                   | (_CUDA_VSTD::__cccl_nvfp_get_storage(__y) & __cccl_nvbf16_sign_mask);
   return __nv_bfloat16{__nv_bfloat16_raw{static_cast<uint16_t>(__val)}};
 }
 #endif // _LIBCUDACXX_HAS_NVBF16
@@ -87,8 +87,8 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_bfloat16 copysign(__nv_
 #if _CCCL_HAS_NVFP8_E4M3()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e4m3 copysign(__nv_fp8_e4m3 __x, __nv_fp8_e4m3 __y) noexcept
 {
-  __x.__x =
-    static_cast<__nv_fp8_storage_t>((__x.__x & __nv_fp8_e4m3_exp_mant_mask) | (__y.__x & __nv_fp8_e4m3_sign_mask));
+  __x.__x = static_cast<__nv_fp8_storage_t>(
+    (__x.__x & __cccl_nvfp8_e4m3_exp_mant_mask) | (__y.__x & __cccl_nvfp8_e4m3_sign_mask));
   return __x;
 }
 #endif // _CCCL_HAS_NVFP8_E4M3()
@@ -96,8 +96,8 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e4m3 copysign(__nv_
 #if _CCCL_HAS_NVFP8_E5M2()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e5m2 copysign(__nv_fp8_e5m2 __x, __nv_fp8_e5m2 __y) noexcept
 {
-  __x.__x =
-    static_cast<__nv_fp8_storage_t>((__x.__x & __nv_fp8_e5m2_exp_mant_mask) | (__y.__x & __nv_fp8_e5m2_sign_mask));
+  __x.__x = static_cast<__nv_fp8_storage_t>(
+    (__x.__x & __cccl_nvfp8_e5m2_exp_mant_mask) | (__y.__x & __cccl_nvfp8_e5m2_sign_mask));
   return __x;
 }
 #endif // _CCCL_HAS_NVFP8_E5M2()
@@ -112,8 +112,8 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e8m0 copysign(__nv_
 #if _CCCL_HAS_NVFP6_E2M3()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp6_e2m3 copysign(__nv_fp6_e2m3 __x, __nv_fp6_e2m3 __y) noexcept
 {
-  __x.__x =
-    static_cast<__nv_fp6_storage_t>((__x.__x & __nv_fp6_e2m3_exp_mant_mask) | (__y.__x & __nv_fp6_e2m3_sign_mask));
+  __x.__x = static_cast<__nv_fp6_storage_t>(
+    (__x.__x & __cccl_nvfp6_e2m3_exp_mant_mask) | (__y.__x & __cccl_nvfp6_e2m3_sign_mask));
   return __x;
 }
 #endif // _CCCL_HAS_NVFP6_E2M3()
@@ -121,8 +121,8 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp6_e2m3 copysign(__nv_
 #if _CCCL_HAS_NVFP6_E3M2()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp6_e3m2 copysign(__nv_fp6_e3m2 __x, __nv_fp6_e3m2 __y) noexcept
 {
-  __x.__x =
-    static_cast<__nv_fp6_storage_t>((__x.__x & __nv_fp6_e3m2_exp_mant_mask) | (__y.__x & __nv_fp6_e3m2_sign_mask));
+  __x.__x = static_cast<__nv_fp6_storage_t>(
+    (__x.__x & __cccl_nvfp6_e3m2_exp_mant_mask) | (__y.__x & __cccl_nvfp6_e3m2_sign_mask));
   return __x;
 }
 #endif // _CCCL_HAS_NVFP6_E3M2()
@@ -130,8 +130,8 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp6_e3m2 copysign(__nv_
 #if _CCCL_HAS_NVFP4_E2M1()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp4_e2m1 copysign(__nv_fp4_e2m1 __x, __nv_fp4_e2m1 __y) noexcept
 {
-  __x.__x =
-    static_cast<__nv_fp4_storage_t>((__x.__x & __nv_fp4_e2m1_exp_mant_mask) | (__y.__x & __nv_fp4_e2m1_sign_mask));
+  __x.__x = static_cast<__nv_fp4_storage_t>(
+    (__x.__x & __cccl_nvfp4_e2m1_exp_mant_mask) | (__y.__x & __cccl_nvfp4_e2m1_sign_mask));
   return __x;
 }
 #endif // _CCCL_HAS_NVFP4_E2M1()
