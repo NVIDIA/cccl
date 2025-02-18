@@ -23,34 +23,8 @@
 #endif // no system header
 
 #include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__internal/nv_fp_types.h>
 #include <cuda/std/__limits/numeric_limits.h>
-
-#if defined(_LIBCUDACXX_HAS_NVFP16)
-#  include <cuda_fp16.h>
-#endif // _LIBCUDACXX_HAS_NVFP16
-
-#if defined(_LIBCUDACXX_HAS_NVBF16)
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
-#  include <cuda_bf16.h>
-_CCCL_DIAG_POP
-#endif // _LIBCUDACXX_HAS_NVBF16
-
-#if _CCCL_HAS_NVFP8()
-#  include <cuda_fp8.h>
-#endif // _CCCL_HAS_NVFP8()
-
-#if _CCCL_HAS_NVFP6()
-#  include <cuda_fp6.h>
-#endif // _CCCL_HAS_NVFP6()
-
-#if _CCCL_HAS_NVFP4()
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_GCC("-Wunused-parameter")
-_CCCL_DIAG_SUPPRESS_MSVC(4100) // unreferenced formal parameter
-#  include <cuda_fp4.h>
-_CCCL_DIAG_POP
-#endif // _CCCL_HAS_NVFP4()
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -218,7 +192,7 @@ public:
 #  undef _LIBCUDACXX_BF16_CONSTEXPR
 #endif // _CCCL_HAS_NVBF16
 
-#if _CCCL_HAS_NVFP8()
+#if _CCCL_HAS_NVFP8_E4M3()
 template <>
 class __numeric_limits_impl<__nv_fp8_e4m3, __numeric_limits_type::__floating_point>
 {
@@ -302,7 +276,9 @@ public:
   static constexpr bool tinyness_before          = false;
   static constexpr float_round_style round_style = round_to_nearest;
 };
+#endif // _CCCL_HAS_NVFP8_E4M3
 
+#if _CCCL_HAS_NVFP8_E5M2()
 template <>
 class __numeric_limits_impl<__nv_fp8_e5m2, __numeric_limits_type::__floating_point>
 {
@@ -386,20 +362,21 @@ public:
   static constexpr bool tinyness_before          = false;
   static constexpr float_round_style round_style = round_to_nearest;
 };
+#endif // _CCCL_HAS_NVFP8_E5M2
 
-#  if _CCCL_CUDACC_AT_LEAST(12, 8)
+#if _CCCL_HAS_NVFP8_E8M0()
 template <>
 class __numeric_limits_impl<__nv_fp8_e8m0, __numeric_limits_type::__floating_point>
 {
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr __nv_fp8_e8m0 __make_value(__nv_fp8_storage_t __val)
   {
-#    if defined(_CCCL_BUILTIN_BIT_CAST)
+#  if defined(_CCCL_BUILTIN_BIT_CAST)
     return _CUDA_VSTD::bit_cast<__nv_fp8_e8m0>(__val);
-#    else // ^^^ _CCCL_BUILTIN_BIT_CAST ^^^ // vvv !_CCCL_BUILTIN_BIT_CAST vvv
+#  else // ^^^ _CCCL_BUILTIN_BIT_CAST ^^^ // vvv !_CCCL_BUILTIN_BIT_CAST vvv
     __nv_fp8_e8m0 __ret{};
     __ret.__x = __val;
     return __ret;
-#    endif // ^^^ !_CCCL_BUILTIN_BIT_CAST ^^^
+#  endif // ^^^ !_CCCL_BUILTIN_BIT_CAST ^^^
   }
 
 public:
@@ -471,10 +448,9 @@ public:
   static constexpr bool tinyness_before          = false;
   static constexpr float_round_style round_style = round_toward_zero;
 };
-#  endif // _CCCL_CUDACC_AT_LEAST(12, 8)
-#endif // _CCCL_HAS_NVFP8()
+#endif // _CCCL_HAS_NVFP8_E8M0()
 
-#if _CCCL_HAS_NVFP6()
+#if _CCCL_HAS_NVFP6_E2M3()
 template <>
 class __numeric_limits_impl<__nv_fp6_e2m3, __numeric_limits_type::__floating_point>
 {
@@ -558,7 +534,9 @@ public:
   static constexpr bool tinyness_before          = false;
   static constexpr float_round_style round_style = round_to_nearest;
 };
+#endif // _CCCL_HAS_NVFP6_E2M3
 
+#if _CCCL_HAS_NVFP6_E3M2()
 template <>
 class __numeric_limits_impl<__nv_fp6_e3m2, __numeric_limits_type::__floating_point>
 {
@@ -642,9 +620,9 @@ public:
   static constexpr bool tinyness_before          = false;
   static constexpr float_round_style round_style = round_to_nearest;
 };
-#endif // _CCCL_HAS_NVFP6()
+#endif // _CCCL_HAS_NVFP6_E3M2()
 
-#if _CCCL_HAS_NVFP4()
+#if _CCCL_HAS_NVFP4_E2M1()
 template <>
 class __numeric_limits_impl<__nv_fp4_e2m1, __numeric_limits_type::__floating_point>
 {
@@ -728,7 +706,7 @@ public:
   static constexpr bool tinyness_before          = false;
   static constexpr float_round_style round_style = round_to_nearest;
 };
-#endif // _CCCL_HAS_NVFP4()
+#endif // _CCCL_HAS_NVFP4_E2M1()
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

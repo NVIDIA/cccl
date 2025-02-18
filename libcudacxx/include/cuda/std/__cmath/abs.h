@@ -4,7 +4,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -21,13 +21,115 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cmath/common.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__type_traits/is_constant_evaluated.h>
+#include <cuda/std/__type_traits/is_integral.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-using ::fabs;
-using ::fabsf;
+// fabs
+
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float fabsf(float __x) noexcept
+{
+  return ::fabsf(__x);
+}
+
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float fabs(float __x) noexcept
+{
+  return _CUDA_VSTD::fabsf(__x);
+}
+
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double fabs(double __x) noexcept
+{
+  return ::fabs(__x);
+}
+
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-using ::fabsl;
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double fabsl(long double __x) noexcept
+{
+  return ::fabsl(__x);
+}
+
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double fabs(long double __x) noexcept
+{
+  return _CUDA_VSTD::fabsl(__x);
+}
 #endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+
+#if defined(_LIBCUDACXX_HAS_NVFP16)
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __half fabs(__half __x) noexcept
+{
+  // We cannot use `abs.f16` because it is not IEEE 754 compliant, see docs
+  const auto __val = static_cast<uint16_t>(_CUDA_VSTD::__nv_fp_get_storage(__x) & __nv_fp16_exp_mant_mask);
+  return __half{__half_raw{__val}};
+}
+#endif // _LIBCUDACXX_HAS_NVFP16
+
+#if defined(_LIBCUDACXX_HAS_NVBF16)
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_bfloat16 fabs(__nv_bfloat16 __x) noexcept
+{
+  // We cannot use `abs.bf16` because it is not IEEE 754 compliant, see docs
+  const auto __val = static_cast<uint16_t>(_CUDA_VSTD::__nv_fp_get_storage(__x) & __nv_bf16_exp_mant_mask);
+  return __nv_bfloat16{__nv_bfloat16_raw{__val}};
+}
+#endif // _LIBCUDACXX_HAS_NVBF16
+
+#if _CCCL_HAS_NVFP8_E4M3()
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e4m3 fabs(__nv_fp8_e4m3 __x) noexcept
+{
+  __x.__x &= __nv_fp8_e4m3_exp_mant_mask;
+  return __x;
+}
+#endif // _CCCL_HAS_NVFP8_E4M#()
+
+#if _CCCL_HAS_NVFP8_E5M2()
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e5m2 fabs(__nv_fp8_e5m2 __x) noexcept
+{
+  __x.__x &= __nv_fp8_e5m2_exp_mant_mask;
+  return __x;
+}
+#endif // _CCCL_HAS_NVFP8_E5M2()
+
+#if _CCCL_HAS_NVFP8_E8M0()
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e8m0 fabs(__nv_fp8_e8m0 __x) noexcept
+{
+  return __x;
+}
+#endif // _CCCL_HAS_NVFP8_E8M0()
+
+#if _CCCL_HAS_NVFP6_E2M3()
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp6_e2m3 fabs(__nv_fp6_e2m3 __x) noexcept
+{
+  __x.__x &= __nv_fp6_e2m3_exp_mant_mask;
+  return __x;
+}
+#endif // _CCCL_HAS_NVFP6_E2M3()
+
+#if _CCCL_HAS_NVFP6_E3M2()
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp6_e3m2 fabs(__nv_fp6_e3m2 __x) noexcept
+{
+  __x.__x &= __nv_fp6_e3m2_exp_mant_mask;
+  return __x;
+}
+#endif // _CCCL_HAS_NVFP6_E3M2()
+
+#if _CCCL_HAS_NVFP4_E2M1()
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp4_e2m1 fabs(__nv_fp4_e2m1 __x) noexcept
+{
+  __x.__x &= __nv_fp4_e2m1_exp_mant_mask;
+  return __x;
+}
+#endif // _CCCL_HAS_NVFP4_E2M1()
+
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Tp))
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double fabs(_Tp __val) noexcept
+{
+  return _CUDA_VSTD::fabs(static_cast<double>(__val));
+}
+
+// abs
 
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float abs(float __val) noexcept
 {
@@ -45,6 +147,62 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double abs(long double __val) noe
   return _CUDA_VSTD::fabsl(__val);
 }
 #endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+
+#if defined(_LIBCUDACXX_HAS_NVFP16)
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __half abs(__half __x) noexcept
+{
+  return _CUDA_VSTD::fabs(__x);
+}
+#endif // _LIBCUDACXX_HAS_NVFP16
+
+#if defined(_LIBCUDACXX_HAS_NVBF16)
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_bfloat16 abs(__nv_bfloat16 __x) noexcept
+{
+  return _CUDA_VSTD::fabs(__x);
+}
+#endif // _LIBCUDACXX_HAS_NVBF16
+
+#if _CCCL_HAS_NVFP8_E4M3()
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e4m3 abs(__nv_fp8_e4m3 __x) noexcept
+{
+  return _CUDA_VSTD::fabs(__x);
+}
+#endif // _CCCL_HAS_NVFP8_E4M3()
+
+#if _CCCL_HAS_NVFP8_E5M2()
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e5m2 abs(__nv_fp8_e5m2 __x) noexcept
+{
+  return _CUDA_VSTD::fabs(__x);
+}
+#endif // _CCCL_HAS_NVFP8_E5M2()
+
+#if _CCCL_HAS_NVFP8_E8M0()
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e8m0 abs(__nv_fp8_e8m0 __x) noexcept
+{
+  return _CUDA_VSTD::fabs(__x);
+}
+#endif // _CCCL_HAS_NVFP8_E8M0()
+
+#if _CCCL_HAS_NVFP6_E2M3()
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp6_e2m3 abs(__nv_fp6_e2m3 __x) noexcept
+{
+  return _CUDA_VSTD::fabs(__x);
+}
+#endif // _CCCL_HAS_NVFP6_E2M3()
+
+#if _CCCL_HAS_NVFP6_E3M2()
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp6_e3m2 abs(__nv_fp6_e3m2 __x) noexcept
+{
+  return _CUDA_VSTD::fabs(__x);
+}
+#endif // _CCCL_HAS_NVFP6_E3M2()
+
+#if _CCCL_HAS_NVFP4_E2M1()
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp4_e2m1 abs(__nv_fp4_e2m1 __x) noexcept
+{
+  return _CUDA_VSTD::fabs(__x);
+}
+#endif // _CCCL_HAS_NVFP4_E2M1()
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

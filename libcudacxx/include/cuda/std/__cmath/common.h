@@ -26,15 +26,6 @@
 #  include <math.h>
 #endif // _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
 
-#if defined(_LIBCUDACXX_HAS_NVFP16)
-#  include <cuda_fp16.h>
-#endif // _LIBCUDACXX_HAS_NVFP16
-
-#if defined(_LIBCUDACXX_HAS_NVBF16)
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
-#  include <cuda_bf16.h>
-_CCCL_DIAG_POP
-#endif // _LIBCUDACXX_HAS_NVBF16
+#include <cuda/std/__internal/nv_fp_types.h>
 
 #endif // _LIBCUDACXX___CMATH_COMMON_H
