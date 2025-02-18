@@ -267,7 +267,7 @@ struct scan_kernel_source
 
 } // namespace scan
 
-extern "C" CCCL_C_API CUresult cccl_device_scan_build(
+CUresult cccl_device_scan_build(
   cccl_device_scan_build_result_t* build,
   cccl_iterator_t input_it,
   cccl_iterator_t output_it,
@@ -300,32 +300,36 @@ extern "C" CCCL_C_API CUresult cccl_device_scan_build(
 
     const std::string op_src = make_kernel_user_binary_operator(accum_cpp, op);
 
-    const std::string src = std::format(
-      "#include <cub/block/block_scan.cuh>\n"
-      "#include <cub/device/dispatch/kernels/scan.cuh>\n"
-      "#include <cub/agent/single_pass_scan_operators.cuh>\n"
-      "struct __align__({1}) storage_t {{\n"
-      "  char data[{0}];\n"
-      "}};\n"
-      "{4}\n"
-      "{5}\n"
-      "struct agent_policy_t {{\n"
-      "  static constexpr int ITEMS_PER_THREAD = {2};\n"
-      "  static constexpr int BLOCK_THREADS = {3};\n"
-      "  static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = cub::BLOCK_LOAD_WARP_TRANSPOSE;\n"
-      "  static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_DEFAULT;\n"
-      "  static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = cub::BLOCK_STORE_WARP_TRANSPOSE;\n"
-      "  static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS;\n"
-      "  struct detail {{\n"
-      "    using delay_constructor_t = cub::detail::default_delay_constructor_t<{7}>;\n"
-      "  }};\n"
-      "}};\n"
-      "struct device_scan_policy {{\n"
-      "  struct ActivePolicy {{\n"
-      "    using ScanPolicyT = agent_policy_t;\n"
-      "  }};\n"
-      "}};\n"
-      "{6};\n",
+    constexpr std::string_view src_template = R"XXX(
+#include <cub/block/block_scan.cuh>
+#include <cub/device/dispatch/kernels/scan.cuh>
+#include <cub/agent/single_pass_scan_operators.cuh>
+struct __align__({1}) storage_t {{
+  char data[{0}];
+}};
+{4}
+{5}
+struct agent_policy_t {{
+  static constexpr int ITEMS_PER_THREAD = {2};
+  static constexpr int BLOCK_THREADS = {3};
+  static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = cub::BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_DEFAULT;
+  static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = cub::BLOCK_STORE_WARP_TRANSPOSE;
+  static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS;
+  struct detail {{
+    using delay_constructor_t = cub::detail::default_delay_constructor_t<{7}>;
+  }};
+}};
+struct device_scan_policy {{
+  struct ActivePolicy {{
+    using ScanPolicyT = agent_policy_t;
+  }};
+}};
+{6}
+)XXX";
+
+    const std::string& src = std::format(
+      src_template,
       input_it.value_type.size, // 0
       input_it.value_type.alignment, // 1
       policy.items_per_thread, // 2
@@ -396,17 +400,17 @@ extern "C" CCCL_C_API CUresult cccl_device_scan_build(
     constexpr size_t num_ptx_lto_args       = 3;
     const char* ptx_lopts[num_ptx_lto_args] = {"-lto", arch.c_str(), "-ptx"};
 
-    std::string ptx_src = std::format(
-      "#include <cub/agent/single_pass_scan_operators.cuh>\n"
-      "#include <cub/util_type.cuh>\n"
-      "struct __align__({1}) storage_t {{\n"
-      "  char data[{0}];\n"
-      "}};\n"
-      "__device__ size_t description_bytes_per_tile = cub::ScanTileState<{2}>::description_bytes_per_tile;\n"
-      "__device__ size_t payload_bytes_per_tile = cub::ScanTileState<{2}>::payload_bytes_per_tile;\n",
-      accum_t.size,
-      accum_t.alignment,
-      accum_cpp);
+    constexpr std::string_view ptx_src_template = R"XXX(
+#include <cub/agent/single_pass_scan_operators.cuh>
+#include <cub/util_type.cuh>
+struct __align__({1}) storage_t {{
+   char data[{0}];
+}};
+__device__ size_t description_bytes_per_tile = cub::ScanTileState<{2}>::description_bytes_per_tile;
+__device__ size_t payload_bytes_per_tile = cub::ScanTileState<{2}>::payload_bytes_per_tile;
+)XXX";
+
+    const std::string ptx_src = std::format(ptx_src_template, accum_t.size, accum_t.alignment, accum_cpp);
     auto compile_result =
       make_nvrtc_command_list()
         .add_program(nvrtc_translation_unit{ptx_src.c_str(), "tile_state_info"})
@@ -446,7 +450,7 @@ extern "C" CCCL_C_API CUresult cccl_device_scan_build(
   return error;
 }
 
-extern "C" CCCL_C_API CUresult cccl_device_scan(
+CUresult cccl_device_scan(
   cccl_device_scan_build_result_t build,
   void* d_temp_storage,
   size_t* temp_storage_bytes,
@@ -509,7 +513,7 @@ extern "C" CCCL_C_API CUresult cccl_device_scan(
   return error;
 }
 
-extern "C" CCCL_C_API CUresult cccl_device_scan_cleanup(cccl_device_scan_build_result_t* bld_ptr) noexcept
+CUresult cccl_device_scan_cleanup(cccl_device_scan_build_result_t* bld_ptr) noexcept
 {
   try
   {

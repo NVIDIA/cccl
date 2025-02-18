@@ -266,7 +266,7 @@ private:
 };
 } // namespace merge_sort
 
-extern "C" CCCL_C_API CUresult cccl_device_merge_sort_build(
+CUresult cccl_device_merge_sort_build(
   cccl_device_merge_sort_build_result_t* build,
   cccl_iterator_t input_keys_it,
   cccl_iterator_t input_items_it,
@@ -444,7 +444,7 @@ extern "C" CCCL_C_API CUresult cccl_device_merge_sort_build(
   return error;
 }
 
-extern "C" CCCL_C_API CUresult cccl_device_merge_sort(
+CUresult cccl_device_merge_sort(
   cccl_device_merge_sort_build_result_t build,
   void* d_temp_storage,
   size_t* temp_storage_bytes,
@@ -508,7 +508,7 @@ extern "C" CCCL_C_API CUresult cccl_device_merge_sort(
   return error;
 }
 
-extern "C" CCCL_C_API CUresult cccl_device_merge_sort_cleanup(cccl_device_merge_sort_build_result_t* bld_ptr) noexcept
+CUresult cccl_device_merge_sort_cleanup(cccl_device_merge_sort_build_result_t* bld_ptr) noexcept
 {
   try
   {

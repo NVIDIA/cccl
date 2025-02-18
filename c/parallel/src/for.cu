@@ -65,7 +65,7 @@ static std::string get_device_for_kernel_name()
   return std::format("cub::detail::for_each::static_kernel<device_for_policy, {0}, {1}>", offset_t, function_op_t);
 }
 
-extern "C" CCCL_C_API CUresult cccl_device_for_build(
+CUresult cccl_device_for_build(
   cccl_device_for_build_result_t* build,
   cccl_iterator_t d_data,
   cccl_op_t op,
@@ -138,7 +138,7 @@ extern "C" CCCL_C_API CUresult cccl_device_for_build(
   return error;
 }
 
-extern "C" CCCL_C_API CUresult cccl_device_for(
+CUresult cccl_device_for(
   cccl_device_for_build_result_t build,
   cccl_iterator_t d_data,
   int64_t num_items,
@@ -167,7 +167,7 @@ extern "C" CCCL_C_API CUresult cccl_device_for(
   return error;
 }
 
-extern "C" CCCL_C_API CUresult cccl_device_for_cleanup(cccl_device_for_build_result_t* bld_ptr)
+CUresult cccl_device_for_cleanup(cccl_device_for_build_result_t* bld_ptr)
 {
   try
   {

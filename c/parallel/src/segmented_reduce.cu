@@ -239,7 +239,7 @@ struct segmented_reduce_kernel_source
 
 } // namespace segmented_reduce
 
-extern "C" CCCL_C_API CUresult cccl_device_segmented_reduce_build(
+CUresult cccl_device_segmented_reduce_build(
   cccl_device_segmented_reduce_build_result_t* build,
   cccl_iterator_t input_it,
   cccl_iterator_t output_it,
@@ -283,31 +283,31 @@ extern "C" CCCL_C_API CUresult cccl_device_segmented_reduce_build(
     const std::string op_src = make_kernel_user_binary_operator(accum_cpp, op);
 
     // agent_policy_t is to specify parameters like policy_hub does in dispatch_reduce.cuh
-    constexpr std::string_view program_preamble_template =
-      "#include <cub/block/block_reduce.cuh>\n"
-      "#include <cub/device/dispatch/kernels/segmented_reduce.cuh>\n"
-      "\n"
-      "struct __align__({1}) storage_t {{\n"
-      "  char data[{0}];\n"
-      "}};\n"
-      "{4}\n"
-      "{5}\n"
-      "{8}\n"
-      "{9}\n"
-      "struct agent_policy_t {{\n"
-      "  static constexpr int ITEMS_PER_THREAD = {2};\n"
-      "  static constexpr int BLOCK_THREADS = {3};\n"
-      "  static constexpr int VECTOR_LOAD_LENGTH = {7};\n"
-      "  static constexpr cub::BlockReduceAlgorithm BLOCK_ALGORITHM = cub::BLOCK_REDUCE_WARP_REDUCTIONS;\n"
-      "  static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_LDG;\n"
-      "}};\n"
-      "struct device_segmented_reduce_policy {{\n"
-      "  struct ActivePolicy {{\n"
-      "    using ReducePolicy = agent_policy_t;\n"
-      "    using SegmentedReducePolicy = agent_policy_t;\n"
-      "  }};\n"
-      "}};\n"
-      "{6};\n";
+    constexpr std::string_view program_preamble_template = R"XXX(
+#include <cub/block/block_reduce.cuh>
+#include <cub/device/dispatch/kernels/segmented_reduce.cuh>
+struct __align__({1}) storage_t {{
+   char data[{0}];
+}};
+{4}
+{5}
+{8}
+{9}
+struct agent_policy_t {{
+  static constexpr int ITEMS_PER_THREAD = {2};
+  static constexpr int BLOCK_THREADS = {3};
+  static constexpr int VECTOR_LOAD_LENGTH = {7};
+  static constexpr cub::BlockReduceAlgorithm BLOCK_ALGORITHM = cub::BLOCK_REDUCE_WARP_REDUCTIONS;
+  static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_LDG;
+}};
+struct device_segmented_reduce_policy {{
+  struct ActivePolicy {{
+    using ReducePolicy = agent_policy_t;
+    using SegmentedReducePolicy = agent_policy_t;
+  }};
+}};
+{6}
+)XXX";
 
     std::string src = std::format(
       program_preamble_template,
@@ -389,7 +389,7 @@ extern "C" CCCL_C_API CUresult cccl_device_segmented_reduce_build(
   return error;
 }
 
-extern "C" CCCL_C_API CUresult cccl_device_segmented_reduce(
+CUresult cccl_device_segmented_reduce(
   cccl_device_segmented_reduce_build_result_t build,
   void* d_temp_storage,
   size_t* temp_storage_bytes,
@@ -455,8 +455,7 @@ extern "C" CCCL_C_API CUresult cccl_device_segmented_reduce(
   return error;
 }
 
-extern "C" CCCL_C_API CUresult
-cccl_device_segmented_reduce_cleanup(cccl_device_segmented_reduce_build_result_t* bld_ptr) noexcept
+CUresult cccl_device_segmented_reduce_cleanup(cccl_device_segmented_reduce_build_result_t* bld_ptr) noexcept
 {
   try
   {
