@@ -89,11 +89,6 @@ public:
   {}
   ~per_ctx_dot() = default;
 
-  void finish()
-  {
-    prev_oss.push_back(mv(oss));
-  }
-
   void set_ctx_symbol(::std::string s)
   {
     ctx_symbol = mv(s);
@@ -113,7 +108,7 @@ public:
     auto& m = metadata[unique_id];
     m.color = "red";
 
-    m.dot_section_id = get_current_section_id();
+    m.dot_section_id = get_current_section_id(get_unique_id());
     m.label          = "task fence";
 
     m.type = fence_vertex;
@@ -145,7 +140,7 @@ public:
     auto& m = metadata[prereq_unique_id];
     m.color = get_current_color();
 
-    m.dot_section_id = get_current_section_id();
+    m.dot_section_id = get_current_section_id(get_unique_id());
     m.label          = symbol;
 
     m.type = prereq_vertex;
@@ -187,7 +182,7 @@ public:
   }
 
   // Used to avoid cyclic dependencies, defined later
-  static int get_current_section_id();
+  static int get_current_section_id(int per_ctx_id);
 
   // Save the ID of the task in the "vertices" vector, and associate this ID to
   // the metadata of the task, so that we can generate a node for the task
@@ -214,7 +209,7 @@ public:
 
     task_metadata.color = get_current_color();
 
-    task_metadata.dot_section_id = get_current_section_id();
+    task_metadata.dot_section_id = get_current_section_id(get_unique_id());
 
     // We here create the label of the task, which we may augment later with
     // timing information for example
@@ -279,16 +274,6 @@ public:
     return current_color;
   }
 
-  void change_epoch()
-  {
-    if (getenv("CUDASTF_DOT_DISPLAY_EPOCHS"))
-    {
-      ::std::lock_guard<::std::mutex> guard(mtx);
-      prev_oss.push_back(mv(oss));
-      oss.clear();
-    }
-  }
-
   // Change the current tracing mode to enable or disable it dynamically
   void set_tracing(bool enable)
   {
@@ -300,6 +285,7 @@ public:
     single_threaded_section guard(mtx);
     discarded_tasks.insert(id);
   }
+
   bool is_discarded(int id, ::std::lock_guard<::std::mutex>&) const
   {
     return discarded_tasks.find(id) != discarded_tasks.end();
@@ -307,12 +293,12 @@ public:
 
   static void set_parent_ctx(::std::shared_ptr<per_ctx_dot> parent_dot, ::std::shared_ptr<per_ctx_dot> child_dot)
   {
-    parent_dot->children.push_back(child_dot);
+    parent_dot->children.push_back(::std::make_pair(child_dot, get_current_section_id(parent_dot->get_unique_id())));
     child_dot->parent = mv(parent_dot);
   }
 
   ::std::shared_ptr<per_ctx_dot> parent;
-  ::std::vector<::std::shared_ptr<per_ctx_dot>> children;
+  ::std::vector<::std::pair<::std::shared_ptr<per_ctx_dot>, int /* section id */>> children;
 
   const ::std::string& get_ctx_symbol() const
   {
@@ -360,11 +346,13 @@ public:
   // Non copyable unique id, ok because we use shared pointers
   unique_id<per_ctx_dot> id;
 
+  // Get the unique id of this per-context descriptor
+  int get_unique_id() const
+  {
+    return int(id);
+  }
+
 public: // XXX protected, friend : dot
-  // string for the current epoch
-  mutable ::std::ostringstream oss;
-  // strings of the previous epochs
-  mutable ::std::vector<::std::ostringstream> prev_oss;
   ::std::unordered_map<int /* id */, per_task_info> metadata;
 
   ::std::vector<int> ctx_input_id;
@@ -391,14 +379,16 @@ public:
     class guard
     {
     public:
-      guard(::std::string symbol)
+      guard(int _per_ctx_id, ::std::string symbol)
+          : per_ctx_id(_per_ctx_id)
       {
-        section::push(mv(symbol));
+        section::push(per_ctx_id, mv(symbol));
       }
 
       // Move constructor: transfer ownership and disable the moved-from guard.
       guard(guard&& other) noexcept
-          : active(cuda::std::exchange(other.active, false))
+          : per_ctx_id(other.per_ctx_id)
+          , active(cuda::std::exchange(other.active, false))
       {}
 
       // Move assignment, disable the moved-from guard
@@ -410,9 +400,10 @@ public:
           // of the existing guard before overwriting it with a new guard.
           if (active)
           {
-            section::pop();
+            section::pop(per_ctx_id);
           }
           // Transfer ownership.
+          per_ctx_id   = other.per_ctx_id;
           active       = other.active;
           other.active = false;
         }
@@ -426,7 +417,7 @@ public:
       void end()
       {
         _CCCL_ASSERT(active, "Attempting to end the same section twice.");
-        section::pop();
+        section::pop(per_ctx_id);
         active = false;
       }
 
@@ -434,28 +425,33 @@ public:
       {
         if (active)
         {
-          section::pop();
+          section::pop(per_ctx_id);
         }
       }
 
     private:
+      int per_ctx_id;
+
       // Have we called end() ?
       bool active = true;
     };
 
-    static auto& current()
+    static auto& current(int per_ctx_id)
     {
-      thread_local ::std::stack<int> s;
-      return s;
+      // Indexed by the unique id of the per-ctx dot descriptor (should be ctx id ??)
+      thread_local ::std::unordered_map<int, ::std::stack<int>> s;
+      return s[per_ctx_id];
     }
 
-    static void push(::std::string symbol)
+    static void push(int per_ctx_id, ::std::string symbol)
     {
       // We first create a section object, with its unique id
       auto sec = ::std::make_shared<section>(mv(symbol));
       int id   = sec->get_id();
 
-      int parent_id  = current().empty() ? 0 : current().top();
+      auto& section_stack = current(per_ctx_id);
+
+      int parent_id  = section_stack.empty() ? 0 : section_stack.top();
       sec->parent_id = parent_id;
 
       // Save the section in the map
@@ -468,16 +464,16 @@ public:
       }
 
       // Push the id in the current stack
-      current().push(id);
+      section_stack.push(id);
 
       // The size of the stack is the recursion level of the section
-      sec->depth = current().size();
+      sec->depth = section_stack.size();
     }
 
-    static void pop()
+    static void pop(int per_ctx_id)
     {
-      _CCCL_ASSERT(current().size() > 0, "Cannot pop, no section was pushed.");
-      current().pop();
+      _CCCL_ASSERT(current(per_ctx_id).size() > 0, "Cannot pop, no section was pushed.");
+      current(per_ctx_id).pop();
     }
 
     /**
@@ -550,49 +546,51 @@ public:
     if (display_clusters)
     {
       outFile << "subgraph cluster_" << ctx_id << " {\n";
+
+      // We need to add "proxy" nodes because we can't make a dependency
+      // between a node and a cluster in DOT
+      outFile << "\"start_cluster_" << ctx_id << "\" [shape=point, style=invis]\n";
+      // Rank constraints so that these node appear at the top of bottom of the cluster
+      outFile << "{rank=min; " << "\"start_cluster_" << ctx_id << "\"}\n";
     }
-    size_t epoch_cnt = pc->prev_oss.size();
-    for (size_t epoch_id = 0; epoch_id < epoch_cnt; epoch_id++)
+
+    for (const auto& p : pc->metadata)
     {
-      if (epoch_cnt > 1)
+      // Select the display style of the node based on the type of vertex
+      ::std::string style;
+      switch (p.second.type)
       {
-        outFile << "subgraph cluster_" << epoch_id << "_" << ctx_id << " {\n";
-        outFile << "label=\"epoch " << epoch_id << "\"\n";
-      }
+        case task_vertex:
+        case fence_vertex:
+          style = "filled";
+          break;
+        case prereq_vertex:
+          style = "dashed";
+          break;
+        default:
+          abort();
+      };
+      outFile << "\"NODE_" << p.first << "\" [style=\"" << style << "\" fillcolor=\"" << p.second.color << "\" label=\""
+              << p.second.label << "\"]\n";
 
-      outFile << pc->prev_oss[epoch_id].str();
+      // to force the start_cluster node to be at the top, we add dependencies
+      // if (display_clusters) {
+      //   outFile << "\"start_cluster_" << ctx_id << "\" -> \"NODE_" << p.first << "\" [style=invis]\n";
+      //}
 
-      for (const auto& p : pc->metadata)
+      vertex_count++;
+    }
+
+    if (!getenv("CUDASTF_DOT_SKIP_CHILDREN"))
+    {
+      // pairs of child and section id
+      for (auto& p : pc->children)
       {
-        // Select the display style of the node based on the type of vertex
-        ::std::string style;
-        switch (p.second.type)
+        // Print subcontexts not in a section
+        if (p.second == 0)
         {
-          case task_vertex:
-          case fence_vertex:
-            style = "filled";
-            break;
-          case prereq_vertex:
-            style = "dashed";
-            break;
-          default:
-            abort();
-        };
-        outFile << "\"NODE_" << p.first << "\" [style=\"" << style << "\" fillcolor=\"" << p.second.color
-                << "\" label=\"" << p.second.label << "\"]\n";
-        vertex_count++;
-      }
-
-      if (epoch_cnt > 1)
-      {
-        outFile << "} // end subgraph cluster_" << epoch_id << "_" << ctx_id << "\n";
-      }
-
-      if (!getenv("CUDASTF_DOT_SKIP_CHILDREN"))
-      {
-        for (auto& child_pc : pc->children)
-        {
-          print_one_context(outFile, ctx_cnt, display_clusters, child_pc);
+          fprintf(stderr, "PRINT ONE CONTEXT IN SECTION %d\n", 0);
+          print_one_context(outFile, ctx_cnt, display_clusters, p.first);
         }
       }
     }
@@ -620,7 +618,7 @@ public:
       // Select root nodes only
       if (sec_ptr->parent_id == 0)
       {
-        print_section(outFile, id, section_id_to_nodes);
+        print_section(outFile, id, section_id_to_nodes, ctx_cnt, display_clusters, pc);
       }
     }
     if (display_clusters)
@@ -634,13 +632,7 @@ public:
         outFile << "label=\"" << pc->get_ctx_symbol() << "\"\n";
       }
 
-      // We need to add "proxy" nodes because we can't make a dependency
-      // between a node and a cluster in DOT
-      outFile << "\"start_cluster_" << ctx_id << "\" [shape=point, style=invis]\n";
       outFile << "\"end_cluster_" << ctx_id << "\" [shape=point, style=invis]\n";
-
-      // Rank constraints so that these node appear at the top of bottom of the cluster
-      outFile << "{rank=min; " << "\"start_cluster_" << ctx_id << "\"}\n";
       outFile << "{rank=max; " << "\"end_cluster_" << ctx_id << "\"}\n";
 
       outFile << "} // end subgraph cluster_" << ctx_id << "\n";
@@ -660,8 +652,13 @@ public:
   /**
    * @brief Add a dashed box around a section and its children
    */
-  void
-  print_section(::std::ofstream& outFile, int id, ::std::unordered_map<int, ::std::vector<int>>& section_id_to_nodes)
+  void print_section(
+    ::std::ofstream& outFile,
+    int id,
+    ::std::unordered_map<int, ::std::vector<int>>& section_id_to_nodes,
+    size_t& ctx_cnt,
+    bool display_clusters,
+    ::std::shared_ptr<per_ctx_dot>& pc)
   {
     // Stop printing sections if they are deeper than the max depth (if defined)
     const char* env_max_depth = getenv("CUDASTF_DOT_MAX_DEPTH");
@@ -672,10 +669,23 @@ public:
 
     outFile << "subgraph cluster_section_" << ::std::to_string(id) << " {\n ";
 
-    // Display all children too to have nested boxes
-    for (int children_ids : map[id]->children_ids)
+    if (!getenv("CUDASTF_DOT_SKIP_CHILDREN"))
     {
-      print_section(outFile, children_ids, section_id_to_nodes);
+      // pairs of child and section id
+      for (auto& p : pc->children)
+      {
+        // Print subcontexts in this section
+        if (p.second == id)
+        {
+          fprintf(stderr, "PRINT ONE CONTEXT IN SECTION %d\n", id);
+          print_one_context(outFile, ctx_cnt, display_clusters, p.first);
+        }
+      }
+    }
+    // Display all children too to have nested boxes
+    for (int child_id : map[id]->children_ids)
+    {
+      print_section(outFile, child_id, section_id_to_nodes, ctx_cnt, display_clusters, pc);
     }
 
     // style of the box
@@ -864,11 +874,6 @@ public:
     if (dot_filename.empty())
     {
       return;
-    }
-
-    for (const auto& pc : per_ctx)
-    {
-      pc->finish();
     }
 
     collapse_sections();
@@ -1231,10 +1236,10 @@ private:
   size_t vertex_count;
 };
 
-inline int per_ctx_dot::get_current_section_id()
+inline int per_ctx_dot::get_current_section_id(int per_ctx_id)
 {
   // Get the stack of IDs, if it's empty return 0, otherwise the id of the section (which are numbered starting from 1)
-  auto& s = dot::section::current();
+  const auto& s = dot::section::current(per_ctx_id);
   return s.size() == 0 ? 0 : s.top();
 }
 

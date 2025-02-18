@@ -184,7 +184,7 @@ public:
         levels.emplace_back(gctx, stream, wrapper);
 
         // We add a new dot section which will be closed when the context is popped
-        ///        levels.back().dot_section = levels[0].ctx.dot_section("stackable");
+        //        levels.back().dot_section = levels[depth()-1].ctx.dot_section("stackable");
       }
     }
 
@@ -204,9 +204,6 @@ public:
         _CCCL_ASSERT(d_impl, "invalid value");
         d_impl->pop_before_finalize();
       }
-
-      //      _CCCL_ASSERT(current_level.dot_section.has_value(), "invalid dot_section");
-      //      current_level.dot_section.value().end();
 
       // Ensure everything is finished in the context
       current_level.ctx.finalize();
@@ -230,6 +227,9 @@ public:
       {
         current_level.alloc_adapters->clear();
       }
+
+      //      _CCCL_ASSERT(current_level.dot_section.has_value(), "invalid dot_section");
+      //      current_level.dot_section.value().end();
 
       // Destroy the current level state
       levels.pop_back();

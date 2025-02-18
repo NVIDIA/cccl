@@ -409,12 +409,6 @@ public:
     state._graph = shared_cuda_graph();
 
     state.graph_epoch++;
-
-    auto& dot = *get_dot();
-    if (dot.is_tracing())
-    {
-      dot.change_epoch();
-    }
     // fprintf(stderr, "Starting epoch %ld : previous graph %p new graph %p\n", state.graph_epoch, prev_graph,
     //         new_graph);
   }

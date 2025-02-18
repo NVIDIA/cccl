@@ -958,7 +958,7 @@ public:
 
   auto dot_section(::std::string symbol) const
   {
-    return reserved::dot::section::guard(mv(symbol));
+    return reserved::dot::section::guard(get_dot()->get_unique_id(), mv(symbol));
   }
 
   auto get_phase() const
