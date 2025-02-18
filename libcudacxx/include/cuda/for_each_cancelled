@@ -102,8 +102,10 @@ _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void __for_each_cancelled_block(bool __is_leade
           // elect.sync is a workaround for peeling loop (#nvbug-id)
           "elect.sync _|p, %2;\n\t"
           "@p mbarrier.init.shared::cta.b64 [%1], 1;\n\t"
+	  // `try_cancel` access the mbarrier using generic-proxy, so no cross-proxy fence required here
           "@p clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.b128 [%0], [%1];\n\t"
-          "@p mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 _, [%1], 16;\n\t"
+	  // This arrive does not order prior memory operations and can be relaxed.
+          "@p mbarrier.arrive.expect_tx.relaxed.cta.shared::cta.b64 _, [%1], 16;\n\t"
           "}"
           :
           : "r"((int) __cvta_generic_to_shared(&__result)),
