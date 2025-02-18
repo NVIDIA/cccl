@@ -17,8 +17,6 @@
 #include <thrust/shuffle.h>
 #include <thrust/transform.h>
 
-#include <cuda/cmath>
-
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
 
