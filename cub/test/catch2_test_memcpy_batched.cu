@@ -24,15 +24,6 @@
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMemcpy::Batched, memcpy_batched);
 
-enum class test_data_gen_mode
-{
-  // Random offsets into a data segment
-  random,
-
-  // Buffer i+1 cohesively follows buffer i in memory
-  consecutive
-};
-
 /**
  * @brief Function object that takes an offset and returns an iterator at the given
  * offset relative to a fixed base iterator.
@@ -80,18 +71,11 @@ void get_shuffled_buffer_offsets(const c2h::device_vector<BufferSizeT>& buffer_s
   thrust::gather(scatter_idxs.cbegin(), scatter_idxs.cend(), permuted_offsets.cbegin(), buffer_offsets.begin());
 }
 
-C2H_TEST("The batched memcopy used by DeviceMemcpy works", "[memcpy]")
+C2H_TEST("DeviceMemcpy::Batched works", "[memcpy]")
 try
 {
-  constexpr test_data_gen_mode input_gen  = test_data_gen_mode::random;
-  constexpr test_data_gen_mode output_gen = test_data_gen_mode::random;
-
   using src_ptr_t = const uint8_t*;
   using dst_ptr_t = uint8_t*;
-
-  // The most granular type being copied. Buffer's will be aligned and their size be an integer
-  // multiple of this type
-  using atomic_copy_t = uint8_t;
 
   // Type used for indexing into the array of buffers
   using buffer_offset_t = uint32_t;
@@ -125,10 +109,8 @@ try
            },
            chunk(2, random(1, 1000000)))));
 
-  const auto min_buffer_size =
-    static_cast<buffer_size_t>(::cuda::round_up(std::get<0>(buffer_size_range), sizeof(atomic_copy_t)));
-  const auto max_buffer_size = static_cast<buffer_size_t>(
-    ::cuda::round_up(std::get<1>(buffer_size_range), static_cast<buffer_size_t>(sizeof(atomic_copy_t))));
+  const auto min_buffer_size    = static_cast<buffer_size_t>(std::get<0>(buffer_size_range));
+  const auto max_buffer_size    = static_cast<buffer_size_t>(std::get<1>(buffer_size_range));
   double average_buffer_size    = (min_buffer_size + max_buffer_size) / 2.0;
   const auto target_num_buffers = static_cast<buffer_offset_t>(target_copy_size / average_buffer_size);
   const auto num_buffers        = static_cast<buffer_offset_t>(target_copy_size / average_buffer_size);
@@ -140,34 +122,13 @@ try
   // Generate the buffer sizes: Make sure buffer sizes are a multiple of the most granular unit (one AtomicT) being
   // copied (round down)
   c2h::gen(C2H_SEED(2), d_buffer_sizes, min_buffer_size, max_buffer_size);
-  using thrust::placeholders::_1;
-  thrust::transform(d_buffer_sizes.cbegin(),
-                    d_buffer_sizes.cend(),
-                    d_buffer_sizes.begin(),
-                    (_1 / sizeof(atomic_copy_t) * sizeof(atomic_copy_t)));
   byte_offset_t num_total_bytes = thrust::reduce(d_buffer_sizes.cbegin(), d_buffer_sizes.cend());
 
-  // Compute the total bytes to be copied
-  if constexpr (input_gen == test_data_gen_mode::consecutive)
-  {
-    thrust::exclusive_scan(d_buffer_sizes.cbegin(), d_buffer_sizes.cend(), d_buffer_src_offsets.begin());
-  }
-  if constexpr (output_gen == test_data_gen_mode::consecutive)
-  {
-    thrust::exclusive_scan(d_buffer_sizes.cbegin(), d_buffer_sizes.cend(), d_buffer_dst_offsets.begin());
-  }
-
   // Shuffle input buffer source-offsets
-  if constexpr (input_gen == test_data_gen_mode::random)
-  {
-    get_shuffled_buffer_offsets<buffer_offset_t>(d_buffer_sizes, d_buffer_src_offsets, C2H_SEED(1));
-  }
+  get_shuffled_buffer_offsets<buffer_offset_t>(d_buffer_sizes, d_buffer_src_offsets, C2H_SEED(1));
 
-  // Shuffle input buffer source-offsets
-  if (output_gen == test_data_gen_mode::random)
-  {
-    get_shuffled_buffer_offsets<buffer_offset_t>(d_buffer_sizes, d_buffer_dst_offsets, C2H_SEED(1));
-  }
+  // Shuffle output buffer destination-offsets
+  get_shuffled_buffer_offsets<buffer_offset_t>(d_buffer_sizes, d_buffer_dst_offsets, C2H_SEED(1));
 
   // Generate random input data and initialize output data
   c2h::device_vector<std::uint8_t> d_in(num_total_bytes);
