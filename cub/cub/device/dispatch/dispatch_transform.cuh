@@ -347,7 +347,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
         // need to expand into a tuple for guaranteed order of evaluation
         out[idx] = ::cuda::std::apply(
-          [&](const InTs&... values) {
+          [&](auto... values) {
             return f(values...);
           },
           ::cuda::std::tuple<InTs...>{fetch_operand(aligned_ptrs)...});
