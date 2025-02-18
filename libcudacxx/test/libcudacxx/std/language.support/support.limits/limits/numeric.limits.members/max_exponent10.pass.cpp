@@ -53,10 +53,10 @@ int main(int, char**)
   test<unsigned long>();
   test<long long>();
   test<unsigned long long>();
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   test<__int128_t>();
   test<__uint128_t>();
-#endif
+#endif // _CCCL_HAS_INT128()
   test<float, FLT_MAX_10_EXP>();
   test<double, DBL_MAX_10_EXP>();
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
@@ -71,7 +71,17 @@ int main(int, char**)
 #if _CCCL_HAS_NVFP8()
   test<__nv_fp8_e4m3, 2>();
   test<__nv_fp8_e5m2, 4>();
+#  if _CCCL_CUDACC_AT_LEAST(12, 8)
+  test<__nv_fp8_e8m0, 38>();
+#  endif // _CCCL_CUDACC_AT_LEAST(12, 8)
 #endif // _CCCL_HAS_NVFP8()
+#if _CCCL_HAS_NVFP6()
+  test<__nv_fp6_e2m3, 0>();
+  test<__nv_fp6_e3m2, 1>();
+#endif // _CCCL_HAS_NVFP6()
+#if _CCCL_HAS_NVFP4()
+  test<__nv_fp4_e2m1, 0>();
+#endif // _CCCL_HAS_NVFP4()
 
   return 0;
 }

@@ -29,6 +29,8 @@
 
 #include <thrust/detail/config/device_system.h>
 
+#include <cuda/std/limits>
+
 #include <iostream>
 
 /******************************************************************************
@@ -287,114 +289,59 @@ C2H_VEC_OVERLOAD(ulonglong, unsigned long long)
 C2H_VEC_OVERLOAD(float, float)
 C2H_VEC_OVERLOAD(double, double)
 
-/*
- * The following section defines macros to overload cub::NumericTraits<T>::{Max,Lowest}() for vector
- * types.
- */
+// Specialize cub::NumericTraits and cuda::std::numeric_limits for vector types.
 
-/**
- * Vector1 overloads
- */
-#  define C2H_VEC_1_TRAITS_OVERLOAD(T, BaseT)        \
-    CUB_NAMESPACE_BEGIN                              \
-    template <>                                      \
-    struct NumericTraits<T>                          \
-    {                                                \
-      static __host__ __device__ T Max()             \
-      {                                              \
-        T retval = {NumericTraits<BaseT>::Max()};    \
-        return retval;                               \
-      }                                              \
-      static __host__ __device__ T Lowest()          \
-      {                                              \
-        T retval = {NumericTraits<BaseT>::Lowest()}; \
-        return retval;                               \
-      }                                              \
-    };                                               \
-    CUB_NAMESPACE_END
+#  define REPEAT_TO_LIST_1(a)  a
+#  define REPEAT_TO_LIST_2(a)  a, a
+#  define REPEAT_TO_LIST_3(a)  a, a, a
+#  define REPEAT_TO_LIST_4(a)  a, a, a, a
+#  define REPEAT_TO_LIST(N, a) _CCCL_PP_CAT(REPEAT_TO_LIST_, N)(a)
 
-/**
- * Vector2 overloads
- */
-#  define C2H_VEC_2_TRAITS_OVERLOAD(T, BaseT)                                        \
-    CUB_NAMESPACE_BEGIN                                                              \
-    template <>                                                                      \
-    struct NumericTraits<T>                                                          \
-    {                                                                                \
-      static __host__ __device__ T Max()                                             \
-      {                                                                              \
-        T retval = {NumericTraits<BaseT>::Max(), NumericTraits<BaseT>::Max()};       \
-        return retval;                                                               \
-      }                                                                              \
-      static __host__ __device__ T Lowest()                                          \
-      {                                                                              \
-        T retval = {NumericTraits<BaseT>::Lowest(), NumericTraits<BaseT>::Lowest()}; \
-        return retval;                                                               \
-      }                                                                              \
-    };                                                                               \
-    CUB_NAMESPACE_END
+#  define C2H_VEC_TRAITS_OVERLOAD_IMPL(T, BaseT, N)                               \
+    CUB_NAMESPACE_BEGIN                                                           \
+    template <>                                                                   \
+    struct NumericTraits<T>                                                       \
+    {                                                                             \
+      static __host__ __device__ T Max()                                          \
+      {                                                                           \
+        T retval = {REPEAT_TO_LIST(N, NumericTraits<BaseT>::Max())};              \
+        return retval;                                                            \
+      }                                                                           \
+      static __host__ __device__ T Lowest()                                       \
+      {                                                                           \
+        T retval = {REPEAT_TO_LIST(N, NumericTraits<BaseT>::Lowest())};           \
+        return retval;                                                            \
+      }                                                                           \
+    };                                                                            \
+    CUB_NAMESPACE_END                                                             \
+                                                                                  \
+    _LIBCUDACXX_BEGIN_NAMESPACE_STD                                               \
+    template <>                                                                   \
+    class numeric_limits<T>                                                       \
+    {                                                                             \
+    public:                                                                       \
+      static constexpr bool is_specialized = true;                                \
+      static __host__ __device__ T max()                                          \
+      {                                                                           \
+        return {REPEAT_TO_LIST(N, ::cuda::std::numeric_limits<BaseT>::max())};    \
+      }                                                                           \
+      static __host__ __device__ T min()                                          \
+      {                                                                           \
+        return {REPEAT_TO_LIST(N, ::cuda::std::numeric_limits<BaseT>::min())};    \
+      }                                                                           \
+      static __host__ __device__ T lowest()                                       \
+      {                                                                           \
+        return {REPEAT_TO_LIST(N, ::cuda::std::numeric_limits<BaseT>::lowest())}; \
+      }                                                                           \
+    };                                                                            \
+    _LIBCUDACXX_END_NAMESPACE_STD
 
-/**
- * Vector3 overloads
- */
-#  define C2H_VEC_3_TRAITS_OVERLOAD(T, BaseT)                                                                        \
-    CUB_NAMESPACE_BEGIN                                                                                              \
-    template <>                                                                                                      \
-    struct NumericTraits<T>                                                                                          \
-    {                                                                                                                \
-      static __host__ __device__ T Max()                                                                             \
-      {                                                                                                              \
-        T retval = {NumericTraits<BaseT>::Max(), NumericTraits<BaseT>::Max(), NumericTraits<BaseT>::Max()};          \
-        return retval;                                                                                               \
-      }                                                                                                              \
-      static __host__ __device__ T Lowest()                                                                          \
-      {                                                                                                              \
-        T retval = {NumericTraits<BaseT>::Lowest(), NumericTraits<BaseT>::Lowest(), NumericTraits<BaseT>::Lowest()}; \
-        return retval;                                                                                               \
-      }                                                                                                              \
-    };                                                                                                               \
-    CUB_NAMESPACE_END
+#  define C2H_VEC_TRAITS_OVERLOAD(COMPONENT_T, BaseT)      \
+    C2H_VEC_TRAITS_OVERLOAD_IMPL(COMPONENT_T##1, BaseT, 1) \
+    C2H_VEC_TRAITS_OVERLOAD_IMPL(COMPONENT_T##2, BaseT, 2) \
+    C2H_VEC_TRAITS_OVERLOAD_IMPL(COMPONENT_T##3, BaseT, 3) \
+    C2H_VEC_TRAITS_OVERLOAD_IMPL(COMPONENT_T##4, BaseT, 4)
 
-/**
- * Vector4 overloads
- */
-#  define C2H_VEC_4_TRAITS_OVERLOAD(T, BaseT)        \
-    CUB_NAMESPACE_BEGIN                              \
-    template <>                                      \
-    struct NumericTraits<T>                          \
-    {                                                \
-      static __host__ __device__ T Max()             \
-      {                                              \
-        T retval = {NumericTraits<BaseT>::Max(),     \
-                    NumericTraits<BaseT>::Max(),     \
-                    NumericTraits<BaseT>::Max(),     \
-                    NumericTraits<BaseT>::Max()};    \
-        return retval;                               \
-      }                                              \
-      static __host__ __device__ T Lowest()          \
-      {                                              \
-        T retval = {NumericTraits<BaseT>::Lowest(),  \
-                    NumericTraits<BaseT>::Lowest(),  \
-                    NumericTraits<BaseT>::Lowest(),  \
-                    NumericTraits<BaseT>::Lowest()}; \
-        return retval;                               \
-      }                                              \
-    };                                               \
-    CUB_NAMESPACE_END
-
-/**
- * All vector overloads
- */
-#  define C2H_VEC_TRAITS_OVERLOAD(COMPONENT_T, BaseT) \
-    C2H_VEC_1_TRAITS_OVERLOAD(COMPONENT_T##1, BaseT)  \
-    C2H_VEC_2_TRAITS_OVERLOAD(COMPONENT_T##2, BaseT)  \
-    C2H_VEC_3_TRAITS_OVERLOAD(COMPONENT_T##3, BaseT)  \
-    C2H_VEC_4_TRAITS_OVERLOAD(COMPONENT_T##4, BaseT)
-
-/**
- * Define for types
- */
-_CCCL_SUPPRESS_DEPRECATED_PUSH
 C2H_VEC_TRAITS_OVERLOAD(char, signed char)
 C2H_VEC_TRAITS_OVERLOAD(short, short)
 C2H_VEC_TRAITS_OVERLOAD(int, int)
@@ -407,6 +354,13 @@ C2H_VEC_TRAITS_OVERLOAD(ulong, unsigned long)
 C2H_VEC_TRAITS_OVERLOAD(ulonglong, unsigned long long)
 C2H_VEC_TRAITS_OVERLOAD(float, float)
 C2H_VEC_TRAITS_OVERLOAD(double, double)
-_CCCL_SUPPRESS_DEPRECATED_POP
+
+#  undef C2H_VEC_TRAITS_OVERLOAD
+#  undef C2H_VEC_TRAITS_OVERLOAD_IMPL
+#  undef REPEAT_TO_LIST_1
+#  undef REPEAT_TO_LIST_2
+#  undef REPEAT_TO_LIST_3
+#  undef REPEAT_TO_LIST_4
+#  undef REPEAT_TO_LIST
 
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA

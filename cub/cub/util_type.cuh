@@ -96,7 +96,7 @@ using value_t =
   typename std::iterator_traits<Iterator>::value_type;
 #  endif // !_CCCL_COMPILER(NVRTC)
 
-template <typename It, typename FallbackT, bool = ::cuda::std::is_void<::cuda::std::remove_pointer_t<It>>::value>
+template <typename It, typename FallbackT, bool = ::cuda::std::is_void_v<::cuda::std::remove_pointer_t<It>>>
 struct non_void_value_impl
 {
   using type = FallbackT;
@@ -108,8 +108,8 @@ struct non_void_value_impl<It, FallbackT, false>
   // we consider thrust::discard_iterator's value_type as `void` as well, so users can switch from
   // cub::DiscardInputIterator to thrust::discard_iterator.
   using type =
-    ::cuda::std::_If<::cuda::std::is_void<value_t<It>>::value
-                       || ::cuda::std::is_same<value_t<It>, THRUST_NS_QUALIFIER::discard_iterator<>::value_type>::value,
+    ::cuda::std::_If<::cuda::std::is_void_v<value_t<It>>
+                       || ::cuda::std::is_same_v<value_t<It>, THRUST_NS_QUALIFIER::discard_iterator<>::value_type>,
                      FallbackT,
                      value_t<It>>;
 };
@@ -793,6 +793,9 @@ struct BaseTraits
 template <typename _UnsignedBits, typename T>
 struct BaseTraits<UNSIGNED_INTEGER, _UnsignedBits, T>
 {
+  static_assert(::cuda::std::numeric_limits<T>::is_specialized,
+                "Please also specialize cuda::std::numeric_limits for T");
+
   using UnsignedBits                       = _UnsignedBits;
   static constexpr UnsignedBits LOWEST_KEY = UnsignedBits(0);
   static constexpr UnsignedBits MAX_KEY    = UnsignedBits(-1);
@@ -830,6 +833,9 @@ struct BaseTraits<UNSIGNED_INTEGER, _UnsignedBits, T>
 template <typename _UnsignedBits, typename T>
 struct BaseTraits<SIGNED_INTEGER, _UnsignedBits, T>
 {
+  static_assert(::cuda::std::numeric_limits<T>::is_specialized,
+                "Please also specialize cuda::std::numeric_limits for T");
+
   using UnsignedBits = _UnsignedBits;
 
   static constexpr UnsignedBits HIGH_BIT   = UnsignedBits(1) << ((sizeof(UnsignedBits) * 8) - 1);
@@ -865,6 +871,9 @@ struct BaseTraits<SIGNED_INTEGER, _UnsignedBits, T>
 template <typename _UnsignedBits, typename T>
 struct BaseTraits<FLOATING_POINT, _UnsignedBits, T>
 {
+  static_assert(::cuda::std::numeric_limits<T>::is_specialized,
+                "Please also specialize cuda::std::numeric_limits for T");
+
   using UnsignedBits = _UnsignedBits;
 
   static constexpr UnsignedBits HIGH_BIT   = UnsignedBits(1) << ((sizeof(UnsignedBits) * 8) - 1);
@@ -979,7 +988,7 @@ struct NumericTraits<__int128_t>
     return reinterpret_cast<T&>(retval);
   }
 };
-#endif
+#endif // _CCCL_HAS_INT128()
 
 template <> struct NumericTraits<float> :               BaseTraits<FLOATING_POINT,unsigned int, float> {};
 template <> struct NumericTraits<double> :              BaseTraits<FLOATING_POINT,unsigned long long, double> {};
@@ -1002,7 +1011,7 @@ template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTE
  * \brief Type traits
  */
 template <typename T>
-struct Traits : NumericTraits<typename ::cuda::std::remove_cv<T>::type>
+struct Traits : NumericTraits<::cuda::std::remove_cv_t<T>>
 {};
 
 namespace detail

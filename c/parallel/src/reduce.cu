@@ -415,8 +415,8 @@ CUresult cccl_device_reduce(
                         indirect_arg_t, // ReductionOpT
                         indirect_arg_t, // InitT
                         void, // AccumT
-                        reduce::dynamic_reduce_policy_t<&reduce::get_policy>, // PolicyHub
                         ::cuda::std::__identity, // TransformOpT
+                        reduce::dynamic_reduce_policy_t<&reduce::get_policy>, // PolicyHub
                         reduce::reduce_kernel_source, // KernelSource
                         cub::detail::CudaDriverLauncherFactory>:: // KernelLauncherFactory
       Dispatch(

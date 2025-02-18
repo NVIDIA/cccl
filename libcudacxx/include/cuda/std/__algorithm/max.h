@@ -42,13 +42,13 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& max(const _Tp& __
 }
 
 template <class _Tp, class _Compare>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp max(initializer_list<_Tp> __t, _Compare __comp)
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp max(initializer_list<_Tp> __t, _Compare __comp)
 {
   return *_CUDA_VSTD::__max_element<__comp_ref_type<_Compare>>(__t.begin(), __t.end(), __comp);
 }
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp max(initializer_list<_Tp> __t)
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp max(initializer_list<_Tp> __t)
 {
   return *_CUDA_VSTD::max_element(__t.begin(), __t.end(), __less{});
 }

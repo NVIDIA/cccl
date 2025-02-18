@@ -41,202 +41,236 @@
 #  pragma system_header
 #endif // no system header
 
-// #include the details first
+#include <thrust/detail/functional/actor.h>
 #include <thrust/detail/type_traits.h>
-#include <thrust/iterator/detail/transform_iterator.inl>
-#include <thrust/iterator/iterator_facade.h>
+#include <thrust/functional.h>
+#include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_traits.h>
 
 #include <cuda/std/__memory/construct_at.h>
+#include <cuda/std/functional>
 #include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
-/*! \addtogroup iterators
- *  \{
- */
+template <class UnaryFunction, class Iterator, class Reference, class Value>
+class transform_iterator;
 
-/*! \addtogroup fancyiterator Fancy Iterators
- *  \ingroup iterators
- *  \{
- */
+namespace detail
+{
 
-/*! \p transform_iterator is an iterator which represents a pointer into a range
- *  of values after transformation by a function. This iterator is useful for
- *  creating a range filled with the result of applying an operation to another range
- *  without either explicitly storing it in memory, or explicitly executing the transformation.
- *  Using \p transform_iterator facilitates kernel fusion by deferring the execution
- *  of a transformation until the value is needed while saving both memory capacity
- *  and bandwidth.
- *
- *  The following code snippet demonstrates how to create a \p transform_iterator
- *  which represents the result of \c sqrtf applied to the contents of a \p device_vector.
- *
- *  \code
- *  #include <thrust/iterator/transform_iterator.h>
- *  #include <thrust/device_vector.h>
- *
- *  struct square_root
- *  {
- *    __host__ __device__
- *    float operator()(float x) const
- *    {
- *      return sqrtf(x);
- *    }
- *  };
- *
- *  int main()
- *  {
- *    thrust::device_vector<float> v(4);
- *    v[0] = 1.0f;
- *    v[1] = 4.0f;
- *    v[2] = 9.0f;
- *    v[3] = 16.0f;
- *
- *    using FloatIterator = thrust::device_vector<float>::iterator;
- *
- *    thrust::transform_iterator<square_root, FloatIterator> iter(v.begin(), square_root());
- *
- *    *iter;   // returns 1.0f
- *    iter[0]; // returns 1.0f;
- *    iter[1]; // returns 2.0f;
- *    iter[2]; // returns 3.0f;
- *    iter[3]; // returns 4.0f;
- *
- *    // iter[4] is an out-of-bounds error
- *  }
- *  \endcode
- *
- *  This next example demonstrates how to use a \p transform_iterator with the
- *  \p thrust::reduce function to compute the sum of squares of a sequence.
- *  We will create temporary \p transform_iterators with the
- *  \p make_transform_iterator function in order to avoid explicitly specifying their type:
- *
- *  \code
- *  #include <thrust/iterator/transform_iterator.h>
- *  #include <thrust/device_vector.h>
- *  #include <thrust/reduce.h>
- *  #include <iostream>
- *
- *  struct square
- *  {
- *    __host__ __device__
- *    float operator()(float x) const
- *    {
- *      return x * x;
- *    }
- *  };
- *
- *  int main()
- *  {
- *    // initialize a device array
- *    thrust::device_vector<float> v(4);
- *    v[0] = 1.0f;
- *    v[1] = 2.0f;
- *    v[2] = 3.0f;
- *    v[3] = 4.0f;
- *
- *    float sum_of_squares =
- *     thrust::reduce(thrust::make_transform_iterator(v.begin(), square()),
- *                    thrust::make_transform_iterator(v.end(),   square()));
- *
- *    std::cout << "sum of squares: " << sum_of_squares << std::endl;
- *    return 0;
- *  }
- *  \endcode
- *
- *  The following example illustrates how to use the third template argument to explicitly specify the return type of
- *  the function.
- *
- *  \code
- *  #include <thrust/iterator/transform_iterator.h>
- *  #include <thrust/device_vector.h>
- *
- *  struct square_root
- *  {
- *    __host__ __device__
- *    float operator()(float x) const
- *    {
- *      return sqrtf(x);
- *    }
- *  };
- *
- *  int main()
- *  {
- *    thrust::device_vector<float> v(4);
- *    v[0] = 1.0f;
- *    v[1] = 4.0f;
- *    v[2] = 9.0f;
- *    v[3] = 16.0f;
- *
- *    using FloatIterator = thrust::device_vector<float>::iterator;
- *
- *    // note: float result_type is specified explicitly
- *    thrust::transform_iterator<square_root, FloatIterator, float> iter(v.begin(), square_root());
- *
- *    *iter;   // returns 1.0f
- *    iter[0]; // returns 1.0f;
- *    iter[1]; // returns 2.0f;
- *    iter[2]; // returns 3.0f;
- *    iter[3]; // returns 4.0f;
- *
- *    // iter[4] is an out-of-bounds error
- *  }
- *  \endcode
- *
- *  \see make_transform_iterator
- */
+template <class UnaryFunc, class Iterator>
+struct transform_iterator_reference
+{
+  // by default, dereferencing the iterator yields the same as the function.
+  using type = decltype(::cuda::std::declval<UnaryFunc>()(::cuda::std::declval<iterator_value_t<Iterator>>()));
+};
+
+// for certain function objects, we need to tweak the reference type. Notably, identity functions must decay to values.
+// See the implementation of transform_iterator<...>::dereference() for several comments on why this is necessary.
+template <class Iterator>
+struct transform_iterator_reference<::cuda::std::identity, Iterator>
+{
+  using type = iterator_value_t<Iterator>;
+};
+template <typename Eval, class Iterator>
+struct transform_iterator_reference<functional::actor<Eval>, Iterator>
+{
+  using type = ::cuda::std::remove_reference_t<decltype(::cuda::std::declval<functional::actor<Eval>>()(
+    ::cuda::std::declval<iterator_value_t<Iterator>>()))>;
+};
+
+// Type function to compute the iterator_adaptor instantiation to be used for transform_iterator
+template <class UnaryFunc, class Iterator, class Reference, class Value>
+struct make_transform_iterator_base
+{
+private:
+  using reference  = typename ia_dflt_help<Reference, transform_iterator_reference<UnaryFunc, Iterator>>::type;
+  using value_type = typename ia_dflt_help<Value, ::cuda::std::remove_cvref<reference>>::type;
+
+public:
+  using type =
+    iterator_adaptor<transform_iterator<UnaryFunc, Iterator, Reference, Value>,
+                     Iterator,
+                     value_type,
+                     use_default,
+                     typename iterator_traits<Iterator>::iterator_category,
+                     reference>;
+};
+
+} // namespace detail
+
+//! \addtogroup iterators
+//! \{
+
+//!! \addtogroup fancyiterator Fancy Iterators
+//!  \ingroup iterators
+//!  \{
+
+//! \p transform_iterator is an iterator which represents a pointer into a range of values after transformation by a
+//! function. This iterator is useful for creating a range filled with the result of applying an operation to another
+//! range without either explicitly storing it in memory, or explicitly executing the transformation. Using \p
+//! transform_iterator facilitates kernel fusion by deferring the execution of a transformation until the value is
+//! needed while saving both memory capacity and bandwidth.
+//!
+//! The following code snippet demonstrates how to create a \p transform_iterator which represents the result of \c
+//! sqrtf applied to the contents of a \p device_vector.
+//!
+//! \code
+//! #include <thrust/iterator/transform_iterator.h>
+//! #include <thrust/device_vector.h>
+//!
+//! struct square_root
+//! {
+//!   __host__ __device__
+//!   float operator()(float x) const
+//!   {
+//!     return sqrtf(x);
+//!   }
+//! };
+//!
+//! int main()
+//! {
+//!   thrust::device_vector<float> v(4);
+//!   v[0] = 1.0f;
+//!   v[1] = 4.0f;
+//!   v[2] = 9.0f;
+//!   v[3] = 16.0f;
+//!
+//!   using FloatIterator = thrust::device_vector<float>::iterator;
+//!
+//!   thrust::transform_iterator<square_root, FloatIterator> iter(v.begin(), square_root());
+//!
+//!   *iter;   // returns 1.0f
+//!   iter[0]; // returns 1.0f;
+//!   iter[1]; // returns 2.0f;
+//!   iter[2]; // returns 3.0f;
+//!   iter[3]; // returns 4.0f;
+//!
+//!   // iter[4] is an out-of-bounds error
+//! }
+//! \endcode
+//!
+//! This next example demonstrates how to use a \p transform_iterator with the \p thrust::reduce function to compute the
+//! sum of squares of a sequence. We will create temporary \p transform_iterators with the \p make_transform_iterator
+//! function in order to avoid explicitly specifying their type:
+//!
+//! \code
+//! #include <thrust/iterator/transform_iterator.h>
+//! #include <thrust/device_vector.h>
+//! #include <thrust/reduce.h>
+//! #include <iostream>
+//!
+//! struct square
+//! {
+//!   __host__ __device__
+//!   float operator()(float x) const
+//!   {
+//!     return x * x;
+//!   }
+//! };
+//!
+//! int main()
+//! {
+//!   // initialize a device array
+//!   thrust::device_vector<float> v(4);
+//!   v[0] = 1.0f;
+//!   v[1] = 2.0f;
+//!   v[2] = 3.0f;
+//!   v[3] = 4.0f;
+//!
+//!   float sum_of_squares =
+//!    thrust::reduce(thrust::make_transform_iterator(v.begin(), square()),
+//!                   thrust::make_transform_iterator(v.end(),   square()));
+//!
+//!   std::cout << "sum of squares: " << sum_of_squares << std::endl;
+//!   return 0;
+//! }
+//! \endcode
+//!
+//! The following example illustrates how to use the third template argument to explicitly specify the return type of
+//! the function.
+//!
+//! \code
+//! #include <thrust/iterator/transform_iterator.h>
+//! #include <thrust/device_vector.h>
+//!
+//! struct square_root
+//! {
+//!   __host__ __device__
+//!   float operator()(float x) const
+//!   {
+//!     return sqrtf(x);
+//!   }
+//! };
+//!
+//! int main()
+//! {
+//!   thrust::device_vector<float> v(4);
+//!   v[0] = 1.0f;
+//!   v[1] = 4.0f;
+//!   v[2] = 9.0f;
+//!   v[3] = 16.0f;
+//!
+//!   using FloatIterator = thrust::device_vector<float>::iterator;
+//!
+//!   // note: float result_type is specified explicitly
+//!   thrust::transform_iterator<square_root, FloatIterator, float> iter(v.begin(), square_root());
+//!
+//!   *iter;   // returns 1.0f
+//!   iter[0]; // returns 1.0f;
+//!   iter[1]; // returns 2.0f;
+//!   iter[2]; // returns 3.0f;
+//!   iter[3]; // returns 4.0f;
+//!
+//!   // iter[4] is an out-of-bounds error
+//! }
+//! \endcode
+//!
+//! \see make_transform_iterator
 template <class AdaptableUnaryFunction, class Iterator, class Reference = use_default, class Value = use_default>
 class transform_iterator
     : public detail::make_transform_iterator_base<AdaptableUnaryFunction, Iterator, Reference, Value>::type
 {
-  /*! \cond
-   */
+  //! \cond
 
 public:
   using super_t =
     typename detail::make_transform_iterator_base<AdaptableUnaryFunction, Iterator, Reference, Value>::type;
 
   friend class iterator_core_access;
-  /*! \endcond
-   */
+  //! \endcond
 
-  /*! Null constructor does nothing.
-   */
   transform_iterator() = default;
 
   transform_iterator(transform_iterator const&) = default;
 
-  /*! This constructor takes as arguments an \c Iterator and an \c AdaptableUnaryFunction
-   *  and copies them to a new \p transform_iterator.
-   *
-   *  \param x An \c Iterator pointing to the input to this \p transform_iterator's \c AdaptableUnaryFunction.
-   *  \param f An \c AdaptableUnaryFunction used to transform the objects pointed to by \p x.
-   */
+  //! This constructor takes as arguments an \c Iterator and an \c AdaptableUnaryFunction and copies them to a new \p
+  //! transform_iterator.
+  //!
+  //! \param x An \c Iterator pointing to the input to this \p transform_iterator's \c AdaptableUnaryFunction.
+  //! \param f An \c AdaptableUnaryFunction used to transform the objects pointed to by \p x.
   _CCCL_HOST_DEVICE transform_iterator(Iterator const& x, AdaptableUnaryFunction f)
       : super_t(x)
       , m_f(f)
   {}
 
-  /*! This explicit constructor copies the value of a given \c Iterator and creates
-   *  this \p transform_iterator's \c AdaptableUnaryFunction using its null constructor.
-   *
-   *  \param x An \c Iterator to copy.
-   */
+  //! This explicit constructor copies the value of a given \c Iterator and creates this \p transform_iterator's \c
+  //! AdaptableUnaryFunction using its null constructor.
+  //!
+  //! \param x An \c Iterator to copy.
   _CCCL_HOST_DEVICE explicit transform_iterator(Iterator const& x)
       : super_t(x)
   {}
 
-  /*! This copy constructor creates a new \p transform_iterator from another
-   *  \p transform_iterator.
-   *
-   *  \param other The \p transform_iterator to copy.
-   */
+  //! This copy constructor creates a new \p transform_iterator from another \p transform_iterator.
+  //!
+  //! \param other The \p transform_iterator to copy.
   template <typename OtherAdaptableUnaryFunction, typename OtherIterator, typename OtherReference, typename OtherValue>
   _CCCL_HOST_DEVICE transform_iterator(
     const transform_iterator<OtherAdaptableUnaryFunction, OtherIterator, OtherReference, OtherValue>& other,
-    thrust::detail::enable_if_convertible_t<OtherIterator, Iterator>*                             = 0,
-    thrust::detail::enable_if_convertible_t<OtherAdaptableUnaryFunction, AdaptableUnaryFunction>* = 0)
+    detail::enable_if_convertible_t<OtherIterator, Iterator>*                             = 0,
+    detail::enable_if_convertible_t<OtherAdaptableUnaryFunction, AdaptableUnaryFunction>* = 0)
       : super_t(other.base())
       , m_f(other.functor())
   {}
@@ -262,16 +296,14 @@ public:
     return *this;
   }
 
-  /*! This method returns a copy of this \p transform_iterator's \c AdaptableUnaryFunction.
-   *  \return A copy of this \p transform_iterator's \c AdaptableUnaryFunction.
-   */
+  //! This method returns a copy of this \p transform_iterator's \c AdaptableUnaryFunction.
+  //! \return A copy of this \p transform_iterator's \c AdaptableUnaryFunction.
   _CCCL_HOST_DEVICE AdaptableUnaryFunction functor() const
   {
     return m_f;
   }
 
-  /*! \cond
-   */
+  //! \cond
 
 private:
   // MSVC 2013 and 2015 incorrectly warning about returning a reference to
@@ -308,21 +340,16 @@ private:
   // http://lists.boost.org/Archives/boost/2004/05/65332.php
   mutable AdaptableUnaryFunction m_f;
 
-  /*! \endcond
-   */
-}; // end transform_iterator
+  //! \endcond
+};
 
-/*! \p make_transform_iterator creates a \p transform_iterator
- *  from an \c Iterator and \c AdaptableUnaryFunction.
- *
- *  \param it The \c Iterator pointing to the input range of the
- *            newly created \p transform_iterator.
- *  \param fun The \c AdaptableUnaryFunction used to transform the range pointed
- *             to by \p it in the newly created \p transform_iterator.
- *  \return A new \p transform_iterator which transforms the range at
- *          \p it by \p fun.
- *  \see transform_iterator
- */
+//! \p make_transform_iterator creates a \p transform_iterator from an \c Iterator and \c AdaptableUnaryFunction.
+//!
+//! \param it The \c Iterator pointing to the input range of the newly created \p transform_iterator.
+//! \param fun The \c AdaptableUnaryFunction used to transform the range pointed to by \p it in the newly created \p
+//!            transform_iterator.
+//! \return A new \p transform_iterator which transforms the range at \p it by \p fun.
+//! \see transform_iterator
 template <class AdaptableUnaryFunction, class Iterator>
 inline _CCCL_HOST_DEVICE transform_iterator<AdaptableUnaryFunction, Iterator>
 make_transform_iterator(Iterator it, AdaptableUnaryFunction fun)
@@ -330,10 +357,7 @@ make_transform_iterator(Iterator it, AdaptableUnaryFunction fun)
   return transform_iterator<AdaptableUnaryFunction, Iterator>(it, fun);
 } // end make_transform_iterator
 
-/*! \} // end fancyiterators
- */
-
-/*! \} // end iterators
- */
+//! \} // end fancyiterators
+//! \} // end iterators
 
 THRUST_NAMESPACE_END
