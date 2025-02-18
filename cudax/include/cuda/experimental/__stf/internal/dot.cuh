@@ -589,7 +589,6 @@ public:
         // Print subcontexts not in a section
         if (p.second == 0)
         {
-          fprintf(stderr, "PRINT ONE CONTEXT IN SECTION %d\n", 0);
           print_one_context(outFile, ctx_cnt, display_clusters, p.first);
         }
       }
@@ -677,7 +676,6 @@ public:
         // Print subcontexts in this section
         if (p.second == id)
         {
-          fprintf(stderr, "PRINT ONE CONTEXT IN SECTION %d\n", id);
           print_one_context(outFile, ctx_cnt, display_clusters, p.first);
         }
       }
