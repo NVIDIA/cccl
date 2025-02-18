@@ -26,18 +26,26 @@
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_signed.h>
 
+#if defined(_CCCL_BUILTIN_SIGNBIT)
+#  define _CCCL_CONSTEXPR_SIGNBIT       constexpr
+#  define _CCCL_HAS_CONSTEXPR_SIGNBIT() 1
+#else // ^^^ _CCCL_BUILTIN_SIGNBIT ^^^ / vvv !_CCCL_BUILTIN_SIGNBIT vvv
+#  define _CCCL_CONSTEXPR_SIGNBIT
+#  define _CCCL_HAS_CONSTEXPR_SIGNBIT() 0
+#endif // ^^^ !_CCCL_BUILTIN_SIGNBIT ^^^
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool signbit(float __x) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_SIGNBIT bool signbit(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_SIGNBIT)
-  return _CCCL_BUILTIN_SIGNBIT(__x);
-#else // ^^^ _CCCL_BUILTIN_SIGNBIT ^^^ / vvv !_CCCL_BUILTIN_SIGNBIT vvv
+#if defined(_CCCL_BUILTIN_SIGNBITF)
+  return _CCCL_BUILTIN_SIGNBITF(__x);
+#else // ^^^ _CCCL_BUILTIN_SIGNBITF ^^^ / vvv !_CCCL_BUILTIN_SIGNBITF vvv
   return ::signbit(__x);
-#endif // !_CCCL_BUILTIN_SIGNBIT
+#endif // !_CCCL_BUILTIN_SIGNBITF
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool signbit(double __x) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_SIGNBIT bool signbit(double __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_SIGNBIT)
   return _CCCL_BUILTIN_SIGNBIT(__x);
@@ -47,13 +55,13 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool signbit(double __x) noexcept
 }
 
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool signbit(long double __x) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_SIGNBIT bool signbit(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_SIGNBIT)
-  return _CCCL_BUILTIN_SIGNBIT(__x);
-#  else // ^^^ _CCCL_BUILTIN_SIGNBIT ^^^ / vvv !_CCCL_BUILTIN_SIGNBIT vvv
+#  if defined(_CCCL_BUILTIN_SIGNBITL)
+  return _CCCL_BUILTIN_SIGNBITL(__x);
+#  else // ^^^ _CCCL_BUILTIN_SIGNBITL ^^^ / vvv !_CCCL_BUILTIN_SIGNBITL vvv
   return ::signbit(__x);
-#  endif // !_CCCL_BUILTIN_SIGNBIT
+#  endif // !_CCCL_BUILTIN_SIGNBITL
 }
 #endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
@@ -86,7 +94,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_fp8_e5m2 _
 #endif // _CCCL_HAS_NVFP8_E5M2()
 
 #if _CCCL_HAS_NVFP8_E8M0()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_fp8_e8m0 __x) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_fp8_e8m0) noexcept
 {
   return false;
 }

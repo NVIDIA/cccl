@@ -26,32 +26,52 @@
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
+#if defined(_CCCL_BUILTIN_FABS)
+#  define _CCCL_CONSTEXPR_FABS       constexpr
+#  define _CCCL_HAS_CONSTEXPR_FABS() 1
+#else // ^^^ _CCCL_BUILTIN_FABS ^^^ / vvv !_CCCL_BUILTIN_FABS vvv
+#  define _CCCL_CONSTEXPR_FABS
+#  define _CCCL_HAS_CONSTEXPR_FABS() 0
+#endif // ^^^ !_CCCL_BUILTIN_FABS ^^^
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // fabs
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float fabsf(float __x) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_FABS float fabsf(float __x) noexcept
 {
+#if defined(_CCCL_BUILTIN_FABSF)
+  return _CCCL_BUILTIN_FABSF(__x);
+#else // ^^^ _CCCL_BUILTIN_FABSF ^^^ / vvv !_CCCL_BUILTIN_FABSF vvv
   return ::fabsf(__x);
+#endif // ^^^ !_CCCL_BUILTIN_FABSF ^^^
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float fabs(float __x) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_FABS float fabs(float __x) noexcept
 {
   return _CUDA_VSTD::fabsf(__x);
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double fabs(double __x) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_FABS double fabs(double __x) noexcept
 {
+#if defined(_CCCL_BUILTIN_FABS)
+  return _CCCL_BUILTIN_FABS(__x);
+#else // ^^^ _CCCL_BUILTIN_FABS ^^^ / vvv !_CCCL_BUILTIN_FABS vvv
   return ::fabs(__x);
+#endif // ^^^ !_CCCL_BUILTIN_FABS ^^^
 }
 
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double fabsl(long double __x) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_FABS long double fabsl(long double __x) noexcept
 {
+#  if defined(_CCCL_BUILTIN_FABSL)
+  return _CCCL_BUILTIN_FABSL(__x);
+#  else // ^^^ _CCCL_BUILTIN_FABSL ^^^ / vvv !_CCCL_BUILTIN_FABSL vvv
   return ::fabsl(__x);
+#  endif // ^^^ !_CCCL_BUILTIN_FABSL ^^^
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double fabs(long double __x) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_FABS long double fabs(long double __x) noexcept
 {
   return _CUDA_VSTD::fabsl(__x);
 }
@@ -124,25 +144,25 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp4_e2m1 fabs(__nv_fp4_
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Tp))
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double fabs(_Tp __val) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_FABS double fabs(_Tp __val) noexcept
 {
   return _CUDA_VSTD::fabs(static_cast<double>(__val));
 }
 
 // abs
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float abs(float __val) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_FABS float abs(float __val) noexcept
 {
   return _CUDA_VSTD::fabsf(__val);
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double abs(double __val) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_FABS double abs(double __val) noexcept
 {
   return _CUDA_VSTD::fabs(__val);
 }
 
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double abs(long double __val) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_FABS long double abs(long double __val) noexcept
 {
   return _CUDA_VSTD::fabsl(__val);
 }

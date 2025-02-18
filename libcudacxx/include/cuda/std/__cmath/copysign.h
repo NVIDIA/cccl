@@ -26,9 +26,17 @@
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_signed.h>
 
+#if defined(_CCCL_BUILTIN_COPYSIGN)
+#  define _CCCL_CONSTEXPR_COPYSIGN       constexpr
+#  define _CCCL_HAS_CONSTEXPR_COPYSIGN() 1
+#else // ^^^ _CCCL_BUILTIN_COPYSIGN ^^^ / vvv !_CCCL_BUILTIN_COPYSIGN vvv
+#  define _CCCL_CONSTEXPR_COPYSIGN
+#  define _CCCL_HAS_CONSTEXPR_COPYSIGN() 0
+#endif // !_CCCL_BUILTIN_COPYSIGN
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float copysign(float __x, float __y) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_COPYSIGN float copysign(float __x, float __y) noexcept
 {
 #if defined(_CCCL_BUILTIN_COPYSIGN)
   return _CCCL_BUILTIN_COPYSIGNF(__x, __y);
@@ -37,7 +45,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float copysign(float __x, float __y) n
 #endif // !_CCCL_BUILTIN_COPYSIGN
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double copysign(double __x, double __y) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_COPYSIGN double copysign(double __x, double __y) noexcept
 {
 #if defined(_CCCL_BUILTIN_COPYSIGN)
   return _CCCL_BUILTIN_COPYSIGN(__x, __y);
@@ -47,7 +55,8 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double copysign(double __x, double __y
 }
 
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double copysign(long double __x, long double __y) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_COPYSIGN long double
+copysign(long double __x, long double __y) noexcept
 {
 #  if defined(_CCCL_BUILTIN_COPYSIGN)
   return _CCCL_BUILTIN_COPYSIGNL(__x, __y);
@@ -94,7 +103,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e5m2 copysign(__nv_
 #endif // _CCCL_HAS_NVFP8_E5M2()
 
 #if _CCCL_HAS_NVFP8_E8M0()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e8m0 copysign(__nv_fp8_e8m0 __x, __nv_fp8_e8m0 __y) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e8m0 copysign(__nv_fp8_e8m0 __x, __nv_fp8_e8m0) noexcept
 {
   return __x;
 }

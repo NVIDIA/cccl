@@ -27,7 +27,7 @@
 #endif
 
 template <class T>
-void test_nv_fp()
+__host__ __device__ void test_nv_fp()
 {
   auto v = T{1.0f};
   unused(v);
