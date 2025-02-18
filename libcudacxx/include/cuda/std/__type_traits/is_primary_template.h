@@ -71,10 +71,8 @@ using __select_traits = conditional_t<__is_primary_cccl_template<_Iter>::value, 
 #  if defined(__GLIBCXX__)
 // libstdc++ uses `__is_base_of`
 template <class _Iter>
-using __test_for_primary_std_template =
-  enable_if_t<_CCCL_TRAIT(is_base_of, ::std::__iterator_traits<_Iter, void>, ::std::iterator_traits<_Iter>)>;
-template <class _Iter>
-using __is_primary_std_template = _IsValidExpansion<__test_for_primary_std_template, _Iter>;
+struct __is_primary_std_template : is_base_of<::std::__iterator_traits<_Iter>, ::std::iterator_traits<_Iter>>
+{};
 #  elif defined(_LIBCPP_VERSION)
 // libc++ uses the same mechanism than we do with __primary_template
 template <class _Traits>
@@ -82,14 +80,9 @@ using __test_for_primary_std_template = enable_if_t<_IsSame<_Traits, typename _T
 template <class _Iter>
 using __is_primary_std_template = _IsValidExpansion<__test_for_primary_template, ::std::iterator_traits<_Iter>>;
 #  elif defined(_MSVC_STL_VERSION) || defined(_IS_WRS)
-// MSVC uses the same mechanism than we do with _From_primary
-template <class _Iter, class = void>
-struct __is_primary_std_template : true_type
-{};
-
+// On MSVC we must check for the base class because `_From_primary` is only defined in C++20
 template <class _Iter>
-struct __is_primary_std_template<_Iter, void_t<typename ::std::iterator_traits<_Iter>::_From_primary>>
-    : public is_same<::std::iterator_traits<_Iter>, typename ::std::iterator_traits<_Iter>::_From_primary>
+struct __is_primary_std_template : is_base_of<::std::_Iterator_traits_base<_Iter>, ::std::iterator_traits<_Iter>>
 {};
 #  endif // _MSVC_STL_VERSION || _IS_WRS
 
