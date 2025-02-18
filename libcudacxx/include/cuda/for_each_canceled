@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#ifndef _CUDA_FOR_EACH_CANCELLED
-#define _CUDA_FOR_EACH_CANCELLED
+#ifndef _CUDA_FOR_EACH_CANCELED
+#define _CUDA_FOR_EACH_CANCELED
 
 #include <cuda/std/detail/__config>
 
@@ -70,12 +70,12 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_HIDE_FROM_ABI int __cluster_get_dim(__int128 
 /// - All thread block threads shall call this API exactly once.
 /// - Exactly one thread block thread shall call this API with `__is_leader` equals `true`.
 template <int __ThreadBlockRank = 3, typename __UnaryFunction = void>
-_CCCL_DEVICE _CCCL_HIDE_FROM_ABI void __for_each_cancelled_block(bool __is_leader, __UnaryFunction __uf)
+_CCCL_DEVICE _CCCL_HIDE_FROM_ABI void __for_each_canceled_block(bool __is_leader, __UnaryFunction __uf)
 {
   static_assert(__ThreadBlockRank >= 1 && __ThreadBlockRank <= 3, "ThreadBlockRank out-of-range [1, 3].");
   static_assert(::cuda::is_invocable_r_v<void, __UnaryFunction, dim3>,
-                "__for_each_cancelled_block first argument requires an UnaryFunction with signature: void(dim3).\n"
-                "For example, call with lambda: __for_each_cancelled_block([](dim3 block_idx) { ... });");
+                "__for_each_canceled_block first argument requires an UnaryFunction with signature: void(dim3).\n"
+                "For example, call with lambda: __for_each_canceled_block([](dim3 block_idx) { ... });");
   dim3 __block_idx = dim3(blockIdx.x, 1, 1);
   if constexpr (__ThreadBlockRank >= 2)
   {
@@ -213,24 +213,24 @@ _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void __for_each_cancelled_block(bool __is_leade
 /// - All thread block threads shall call this API exactly once.
 /// - Exactly one thread block thread shall call this API with `__is_leader` equals `true`.
 template <int __ThreadBlockRank = 3, typename __UnaryFunction = void>
-_CCCL_DEVICE _CCCL_HIDE_FROM_ABI void for_each_cancelled_block(__UnaryFunction __uf)
+_CCCL_DEVICE _CCCL_HIDE_FROM_ABI void for_each_canceled_block(__UnaryFunction __uf)
 {
   static_assert(__ThreadBlockRank >= 1 && __ThreadBlockRank <= 3,
-                "for_each_cancelled_block<ThreadBlockRank>: ThreadBlockRank out-of-range [1, 3].");
+                "for_each_canceled_block<ThreadBlockRank>: ThreadBlockRank out-of-range [1, 3].");
   static_assert(::cuda::is_invocable_r_v<void, __UnaryFunction, dim3>,
-                "for_each_cancelled_block first argument requires an UnaryFunction with signature: void(dim3).\n"
-                "For example, call with lambda: for_each_cancelled_block([](dim3 block_idx) { ... });");
+                "for_each_canceled_block first argument requires an UnaryFunction with signature: void(dim3).\n"
+                "For example, call with lambda: for_each_canceled_block([](dim3 block_idx) { ... });");
   if constexpr (__ThreadBlockRank == 1)
   {
-    __detail::__for_each_cancelled_block<1>(threadIdx.x == 0, ::cuda::std::move(__uf));
+    __detail::__for_each_canceled_block<1>(threadIdx.x == 0, ::cuda::std::move(__uf));
   }
   else if constexpr (__ThreadBlockRank == 2)
   {
-    __detail::__for_each_cancelled_block<2>(threadIdx.x == 0 && threadIdx.y == 0, ::cuda::std::move(__uf));
+    __detail::__for_each_canceled_block<2>(threadIdx.x == 0 && threadIdx.y == 0, ::cuda::std::move(__uf));
   }
   else if constexpr (__ThreadBlockRank == 3)
   {
-    __detail::__for_each_cancelled_block<3>(
+    __detail::__for_each_canceled_block<3>(
       threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0, ::cuda::std::move(__uf));
   }
 }
@@ -239,4 +239,4 @@ _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void for_each_cancelled_block(__UnaryFunction _
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#endif // _CUDA_FOR_EACH_CANCELLED
+#endif // _CUDA_FOR_EACH_CANCELED

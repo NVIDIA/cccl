@@ -3,14 +3,14 @@
 Work stealing
 =============
 
-In header file ``<cuda/for_each_cancelled>``:
+In header file ``<cuda/for_each_canceled>``:
 
 .. code:: cuda
 
    namespace cuda::experimental {
 
        template <int ThreadBlockRank = 3, typename UnaryFunction = ..unspecified..>
-       __device__ void for_each_cancelled_block(UnaryFunction uf);
+       __device__ void for_each_canceled_block(UnaryFunction uf);
 
    } // namespace cuda::experimental
 
@@ -37,7 +37,7 @@ For better performance, extract the shared thread block prologue and epilog outs
 
 **Preconditions**:
 
-   - All threads of the current thread-block shall call ``for_each_cancelled_block`` **exactly once**.
+   - All threads of the current thread-block shall call ``for_each_canceled_block`` **exactly once**.
 
 **Effects**:
 
@@ -56,21 +56,21 @@ This example shows how to perform work-stealing at thread-block granularity usin
    // Before:
 
    #include <cuda/math>
-   #include <cuda/for_each_cancelled>
+   #include <cuda/for_each_canceled>
    __global__ void vec_add(int* a, int* b, int* c, int n) {
      // Extract common prologue outside the lambda, e.g.,
      // - __shared__ or global (malloc) memory allocation
      // - common initialization code
      // - etc.
 
-     cuda::experimental::for_each_cancelled_block<1>([=](dim3 block_idx) {
+     cuda::experimental::for_each_canceled_block<1>([=](dim3 block_idx) {
        int idx = threadIdx.x + block_idx.x * blockDim.x;
        // assert(block_idx == blockIdx); // May fail!
        if (idx < n) {
          c[idx] += a[idx] + b[idx];
        }
      });
-     // Note: Calling for_each_cancelled_block<1> again from this
+     // Note: Calling for_each_canceled_block<1> again from this
      // thread block exhibits undefined behavior.
 
      // Extract common epilogue outside the lambda, e.g.,
