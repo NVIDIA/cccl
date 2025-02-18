@@ -65,6 +65,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __filter_slices_convert
     return _CUDA_VSTD::__filter_slices_convertible_to_index<_IndexType, _Slices...>(
       index_sequence<_SliceIndices..., _CurrentIndex>{}, index_sequence<_Remaining...>{});
   }
+  _CCCL_UNREACHABLE();
 }
 
 // [mdspan.sub.extents]
