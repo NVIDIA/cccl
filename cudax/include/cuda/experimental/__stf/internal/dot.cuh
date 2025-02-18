@@ -252,8 +252,9 @@ public:
      add_vertex_internal<task_type, data_type>(freeze_fake_task, freeze_vertex);
      add_vertex_internal<task_type, data_type>(unfreeze_fake_task, freeze_vertex);
 
-     // TODO add edge ...
-     // add_edge(freeze_fake_task.get_unique_id(), unfreeze_fake_task.get_unique_id(), 0);
+     if (user_freeze) {
+         add_edge(freeze_fake_task.get_unique_id(), unfreeze_fake_task.get_unique_id(), 0);
+     }
   }
 
 
