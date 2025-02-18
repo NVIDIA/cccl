@@ -70,7 +70,6 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_HIDE_FROM_ABI int __cluster_get_dim(__int128 
 /// - All thread block threads shall call this API exactly once.
 /// - Exactly one thread block thread shall call this API with `__is_leader` equals `true`.
 template <int __ThreadBlockRank = 3, typename __UnaryFunction = void>
-  requires std::is_invocable_r_v<void, __UnaryFunction, dim3>
 _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void __for_each_cancelled_block(bool __is_leader, __UnaryFunction __uf)
 {
   static_assert(__ThreadBlockRank >= 1 && __ThreadBlockRank <= 3, "ThreadBlockRank out-of-range [1, 3].");
@@ -212,7 +211,6 @@ _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void __for_each_cancelled_block(bool __is_leade
 /// - All thread block threads shall call this API exactly once.
 /// - Exactly one thread block thread shall call this API with `__is_leader` equals `true`.
 template <int __ThreadBlockRank = 3, typename __UnaryFunction = void>
-  requires std::is_invocable_r_v<void, __UnaryFunction, dim3>
 _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void for_each_cancelled_block(__UnaryFunction __uf)
 {
   static_assert(__ThreadBlockRank >= 1 && __ThreadBlockRank <= 3,
