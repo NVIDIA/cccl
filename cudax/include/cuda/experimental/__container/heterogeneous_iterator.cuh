@@ -225,7 +225,7 @@ public:
   //! @brief Constructs an immutable \c heterogeneous_iterator from a mutable one
   //! @param __other The mutable \c heterogeneous_iterator
   _CCCL_TEMPLATE(_IsConstIter _OtherConst)
-  _CCCL_REQUIRES((_OtherConst != _IsConst) _CCCL_AND _IsConst == _IsConstIter::__yes)
+  _CCCL_REQUIRES((_OtherConst != _IsConst) _CCCL_AND(_IsConst == _IsConstIter::__yes))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr heterogeneous_iterator(
     heterogeneous_iterator<_Tp, _OtherConst, _Properties...> __other) noexcept
       : __heterogeneous_iterator_access<_Tp, _IsConst, __select_execution_space<_Properties...>>(__other.__ptr_)
@@ -401,7 +401,7 @@ public:
   }
 
   _CCCL_TEMPLATE(_IsConstIter _IsConst2 = _IsConst)
-  _CCCL_REQUIRES(_IsConst2 == _IsConstIter::__yes)
+  _CCCL_REQUIRES((_IsConst2 == _IsConstIter::__yes))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr heterogeneous_iterator<_Tp, _IsConstIter::__no, _Properties...>
   __to_mutable() const noexcept
   {
