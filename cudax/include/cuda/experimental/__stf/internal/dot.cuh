@@ -240,7 +240,7 @@ public:
   template <typename task_type, typename data_type>
   void add_vertex(const task_type& t)
   {
-     add_vertex_internal<task_type, data_type>(t, task_vertex);
+    add_vertex_internal<task_type, data_type>(t, task_vertex);
   }
 
   // internal freeze indicates if this is a freeze/unfreeze from the user or
@@ -249,14 +249,14 @@ public:
   template <typename task_type, typename data_type>
   void add_freeze_vertices(const task_type& freeze_fake_task, const task_type& unfreeze_fake_task, bool user_freeze)
   {
-     add_vertex_internal<task_type, data_type>(freeze_fake_task, freeze_vertex);
-     add_vertex_internal<task_type, data_type>(unfreeze_fake_task, freeze_vertex);
+    add_vertex_internal<task_type, data_type>(freeze_fake_task, freeze_vertex);
+    add_vertex_internal<task_type, data_type>(unfreeze_fake_task, freeze_vertex);
 
-     if (user_freeze) {
-         add_edge(freeze_fake_task.get_unique_id(), unfreeze_fake_task.get_unique_id(), 0);
-     }
+    if (user_freeze)
+    {
+      add_edge(freeze_fake_task.get_unique_id(), unfreeze_fake_task.get_unique_id(), 0);
+    }
   }
-
 
   template <typename task_type>
   void add_vertex_timing(const task_type& t, float time_ms, int device = -1)
