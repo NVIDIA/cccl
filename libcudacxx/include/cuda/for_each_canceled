@@ -202,6 +202,8 @@ _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void __for_each_canceled_block(bool __is_leader
       __uf(__block_idx);)) // NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
 }
 
+} // namespace __detail
+
 /// This API used to implement work-stealing, repeatedly attempts to cancel the launch of a thread block
 /// from the current grid. On success, it invokes the unary function `__uf` before trying again.
 /// On failure, it returns.
