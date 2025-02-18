@@ -65,7 +65,8 @@ enum vertex_type
   task_vertex,
   prereq_vertex,
   fence_vertex,
-  section_vertex
+  section_vertex, // collapsed sections depicted as a single node
+  freeze_vertex // freeze and unfreeze operations
 };
 
 // Information for every task, so that we can eventually generate a node for the task
@@ -188,7 +189,7 @@ public:
   // the metadata of the task, so that we can generate a node for the task
   // later.
   template <typename task_type, typename data_type>
-  void add_vertex(const task_type& t)
+  void add_vertex_internal(const task_type& t, vertex_type type)
   {
     // Do this work outside the critical section
     const auto remove_deps = getenv("CUDASTF_DOT_REMOVE_DATA_DEPS");
@@ -230,8 +231,31 @@ public:
     }
 
     task_metadata.label = task_oss.str();
-    task_metadata.type  = task_vertex;
+    task_metadata.type  = type;
   }
+
+  // Save the ID of the task in the "vertices" vector, and associate this ID to
+  // the metadata of the task, so that we can generate a node for the task
+  // later.
+  template <typename task_type, typename data_type>
+  void add_vertex(const task_type& t)
+  {
+     add_vertex_internal<task_type, data_type>(t, task_vertex);
+  }
+
+  // internal freeze indicates if this is a freeze/unfreeze from the user or
+  // not and if we need to display an edge, or if it is unnecessary because
+  // other dependencies will imply that edge between freeze and unfreeze
+  template <typename task_type, typename data_type>
+  void add_freeze_vertices(const task_type& freeze_fake_task, const task_type& unfreeze_fake_task, bool user_freeze)
+  {
+     add_vertex_internal<task_type, data_type>(freeze_fake_task, freeze_vertex);
+     add_vertex_internal<task_type, data_type>(unfreeze_fake_task, freeze_vertex);
+
+     // TODO add edge ...
+     // add_edge(freeze_fake_task.get_unique_id(), unfreeze_fake_task.get_unique_id(), 0);
+  }
+
 
   template <typename task_type>
   void add_vertex_timing(const task_type& t, float time_ms, int device = -1)
@@ -564,6 +588,7 @@ public:
         case fence_vertex:
           style = "filled";
           break;
+        case freeze_vertex:
         case prereq_vertex:
           style = "dashed";
           break;

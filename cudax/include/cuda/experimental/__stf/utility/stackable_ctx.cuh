@@ -761,7 +761,8 @@ class stackable_logical_data
 
       // Freeze the logical data at the top
       logical_data<T>& from_data = s.back();
-      frozen_logical_data<T> f   = from_ctx.freeze(from_data, m, mv(where));
+
+      frozen_logical_data<T> f   = from_ctx.freeze(from_data, m, mv(where), false /* not a user freeze */);
 
       // Save the frozen data in a separate vector
       frozen_s.push_back(f);

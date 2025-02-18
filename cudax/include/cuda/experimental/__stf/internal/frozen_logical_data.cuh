@@ -48,7 +48,7 @@ private:
   class impl
   {
   public:
-    impl(backend_ctx_untyped bctx_, logical_data<T> ld_, access_mode m_, data_place place_)
+    impl(backend_ctx_untyped bctx_, logical_data<T> ld_, access_mode m_, data_place place_, bool user_freeze)
         : ld(mv(ld_))
         , m(m_)
         , place(mv(place_))
@@ -66,14 +66,8 @@ private:
       auto& dot = bctx.get_dot();
       if (dot->is_tracing())
       {
-        // Add a vertex for the freeze step (and get operations)
-        dot->template add_vertex<task, logical_data_untyped>(freeze_fake_task);
-
-        // Add a vertext for the unfreeze step
-        dot->template add_vertex<task, logical_data_untyped>(unfreeze_fake_task);
-
-        // TODO add edge ...
-        //   dot->add_edge(freeze_fake_task.get_unique_id(), unfreeze_fake_task.get_unique_id(), 0);
+        // Add a vertices for the freeze and unfreeze steps (and an edge is this is a freeze from the user)
+        dot->template add_freeze_vertices<task, logical_data_untyped>(freeze_fake_task, unfreeze_fake_task, user_freeze);
       }
     }
 
@@ -177,8 +171,8 @@ private:
   };
 
 public:
-  frozen_logical_data(backend_ctx_untyped bctx, logical_data<T> ld, access_mode m, data_place place)
-      : pimpl(::std::make_shared<impl>(mv(bctx), mv(ld), m, mv(place)))
+  frozen_logical_data(backend_ctx_untyped bctx, logical_data<T> ld, access_mode m, data_place place, bool user_freeze)
+      : pimpl(::std::make_shared<impl>(mv(bctx), mv(ld), m, mv(place), user_freeze))
   {}
 
   // So that we can have a frozen data variable that is populated later
