@@ -3,19 +3,18 @@
 Work stealing
 =============
 
+In header file ``<cuda/for_each_cancelled>``:
+
 .. code:: cuda
 
    namespace cuda::experimental {
 
        template <int ThreadBlockRank = 3, typename UnaryFunction = ..unspecified..>
-           requires std::is_invocable_r_v<void, UnaryFunction, dim3>
        __device__ void for_each_cancelled_block(UnaryFunction uf);
 
    } // namespace cuda::experimental
 
 **WARNING**: This is an **Experimental API**.
-
-**WARNING**: This API requires C++20 or newer.
 
 This API is useful to implement work-stealing at thread-block level granularity.
 On devices with compute capability 10.0 or higher, it may leverage hardware acceleration for work-stealing.
@@ -30,6 +29,7 @@ For better performance, extract the thread block prologue - i.e. code and data t
 **Mandates**:
 
    - ``ThreadBlockRank`` equals the rank of the thread block: ``1``, ``2``, or ``3`` for one-dimensional, two-dimensional, and three-dimensional thread blocks, respectively.
+   - ``is_invokable_r_v<UnaryFunction, void, dim3>`` is true.
 
 **Preconditions**:
 
@@ -37,7 +37,7 @@ For better performance, extract the thread block prologue - i.e. code and data t
 
 **Effects**:
 
-   - Invokes ``uf`` with ``dim3 == blockIdx``, then repeatedly attempts to cancel the launch of a current grid thread block, and:
+   - Invokes ``uf`` with ``blockIdx``, then repeatedly attempts to cancel the launch of a current grid's thread block, and:
 
       - on success, calls ``uf`` with that thread blocks ``blockIdx`` and repeats,
       - otherwise it failed to cancel the launch of a thread block and it returns.
@@ -52,15 +52,15 @@ This example shows how to perform work-stealing at thread-block granularity usin
    // Before:
 
    #include <cuda/math>
-   #include <cuda/try_cancel>
+   #include <cuda/for_each_cancelled>
    __global__ void vec_add(int* a, int* b, int* c, int n) {
      // Extract common prologue outside the lambda, e.g.,
      // - __shared__ or global (malloc) memory allocation
      // - common initialization code
      // - etc.
 
-     cuda::experimental::for_each_cancelled_block<1>([=](dim3 tb) {
-       int idx = threadIdx.x + tb.x * blockDim.x;
+     cuda::experimental::for_each_cancelled_block<1>([=](dim3 block_idx) {
+       int idx = threadIdx.x + block_idx.x * blockDim.x;
        if (idx < n) {
          c[idx] += a[idx] + b[idx];
        }
