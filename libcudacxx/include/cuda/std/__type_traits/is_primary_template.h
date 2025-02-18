@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__fwd/iterator_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -29,26 +30,25 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_COMPILER(MSVC)
-template <class _Tp, class = void>
+template <class _Iter, class = void>
 struct __is_primary_cccl_template : false_type
 {};
 
-template <class _Tp>
-struct __is_primary_cccl_template<_Tp, void_t<typename _Tp::__cccl_primary_template>>
-    : public is_same<_Tp, typename _Tp::__cccl_primary_template>
+template <class _Iter>
+struct __is_primary_cccl_template<_Iter, void_t<typename iterator_traits<_Iter>::__cccl_primary_template>>
+    : public is_same<iterator_traits<_Iter>, typename iterator_traits<_Iter>::__cccl_primary_template>
 {};
 
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 
-template <class _Tp>
-using __test_for_primary_template = enable_if_t<_IsSame<_Tp, typename _Tp::__cccl_primary_template>::value>;
-template <class _Tp>
-using __is_primary_cccl_template = _IsValidExpansion<__test_for_primary_template, _Tp>;
+template <class _Traits>
+using __test_for_primary_template = enable_if_t<_IsSame<_Traits, typename _Traits::__cccl_primary_template>::value>;
+template <class _Iter>
+using __is_primary_cccl_template = _IsValidExpansion<__test_for_primary_template, iterator_traits<_Iter>>;
 #endif // !_CCCL_COMPILER(MSVC)
 
 template <class _Iter, class _OtherTraits>
-using __select_traits =
-  conditional_t<__is_primary_cccl_template<iterator_traits<_Iter>>::value, _OtherTraits, iterator_traits<_Iter>>;
+using __select_traits = conditional_t<__is_primary_cccl_template<_Iter>::value, _OtherTraits, iterator_traits<_Iter>>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
