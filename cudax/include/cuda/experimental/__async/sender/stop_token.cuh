@@ -65,7 +65,7 @@ protected:
   using __execute_fn_t = void(__inplace_stop_callback_base*) noexcept;
 
   _CUDAX_API explicit __inplace_stop_callback_base( //
-    const inplace_stop_source* __source, //
+    const inplace_stop_source* __source,            //
     __execute_fn_t* __execute) noexcept
       : __source_(__source)
       , __execute_fn_(__execute)

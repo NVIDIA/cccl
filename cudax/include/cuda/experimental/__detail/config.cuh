@@ -53,6 +53,13 @@
 #  define _CUDAX_IMMOVABLE(_XP) _XP(_XP&&) = delete
 #endif // !_CCCL_COMPILER(GCC)
 
+#if _CCCL_STD_VER <= 2017 || __cpp_consteval < 201811L
+#  define _CUDAX_NO_CONSTEVAL
+#  define _CUDAX_CONSTEVAL constexpr
+#else
+#  define _CUDAX_CONSTEVAL consteval
+#endif
+
 namespace cuda::experimental
 {
 namespace __cudax = ::cuda::experimental; // NOLINT: misc-unused-alias-decls

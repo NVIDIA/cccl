@@ -64,7 +64,7 @@ private:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
     using operation_state_concept = operation_state_t;
-    using completion_signatures   = __async::completion_signatures<_SetTag(_Ts...)>;
+
     _Rcvr __rcvr_;
     __tuple<_Ts...> __values_;
 
@@ -87,11 +87,16 @@ private:
   template <class... _Ts>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t
   {
-    using sender_concept        = sender_t;
-    using completion_signatures = __async::completion_signatures<_SetTag(_Ts...)>;
+    using sender_concept = sender_t;
 
     _CCCL_NO_UNIQUE_ADDRESS _JustTag __tag_;
     __tuple<_Ts...> __values_;
+
+    template <class _Self, class... _Env>
+    _CUDAX_API static constexpr auto get_completion_signatures() noexcept
+    {
+      return __async::completion_signatures<_SetTag(_Ts...)>();
+    }
 
     template <class _Rcvr>
     _CUDAX_API __opstate_t<_Rcvr, _Ts...> connect(_Rcvr __rcvr) && //

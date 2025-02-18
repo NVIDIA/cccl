@@ -45,7 +45,7 @@ endfunction()
 file(GLOB example_srcs
   RELATIVE "${cudax_SOURCE_DIR}/examples"
   CONFIGURE_DEPENDS
-  *.cu
+  *.cu *.cpp
 )
 
 foreach(cudax_target IN LISTS cudax_TARGETS)
