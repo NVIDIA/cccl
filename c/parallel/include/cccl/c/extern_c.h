@@ -1,0 +1,23 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of CUDA Experimental in CUDA Core Compute Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#pragma once
+
+#ifdef __cplusplus
+
+#  define CCCL_C_EXTERN_BEGIN extern "C" {
+#  define CCCL_C_EXTERN_END   }
+
+#else
+
+#  define CCCL_C_EXTERN_BEGIN
+#  define CCCL_C_EXTERN_END
+
+#endif

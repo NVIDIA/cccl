@@ -16,7 +16,10 @@
 
 #include <cuda.h>
 
+#include <cccl/c/extern_c.h>
 #include <cccl/c/types.h>
+
+CCCL_C_EXTERN_BEGIN
 
 struct cccl_device_scan_build_result_t
 {
@@ -31,7 +34,7 @@ struct cccl_device_scan_build_result_t
   size_t payload_bytes_per_tile;
 };
 
-extern "C" CCCL_C_API CUresult cccl_device_scan_build(
+CCCL_C_API CUresult cccl_device_scan_build(
   cccl_device_scan_build_result_t* build,
   cccl_iterator_t d_in,
   cccl_iterator_t d_out,
@@ -44,7 +47,7 @@ extern "C" CCCL_C_API CUresult cccl_device_scan_build(
   const char* libcudacxx_path,
   const char* ctk_path) noexcept;
 
-extern "C" CCCL_C_API CUresult cccl_device_scan(
+CCCL_C_API CUresult cccl_device_scan(
   cccl_device_scan_build_result_t build,
   void* d_temp_storage,
   size_t* temp_storage_bytes,
@@ -55,4 +58,6 @@ extern "C" CCCL_C_API CUresult cccl_device_scan(
   cccl_value_t init,
   CUstream stream) noexcept;
 
-extern "C" CCCL_C_API CUresult cccl_device_scan_cleanup(cccl_device_scan_build_result_t* bld_ptr) noexcept;
+CCCL_C_API CUresult cccl_device_scan_cleanup(cccl_device_scan_build_result_t* bld_ptr) noexcept;
+
+CCCL_C_EXTERN_END

@@ -20,7 +20,11 @@
 #  define CCCL_C_API __attribute__((visibility("default")))
 #endif // !_WIN32
 
-enum class cccl_type_enum
+#include <cccl/c/extern_c.h>
+
+CCCL_C_EXTERN_BEGIN
+
+enum cccl_type_enum
 {
   INT8    = 0,
   INT16   = 1,
@@ -42,7 +46,7 @@ struct cccl_type_info
   cccl_type_enum type;
 };
 
-enum class cccl_op_kind_t
+enum cccl_op_kind_t
 {
   stateless = 0,
   stateful  = 1
@@ -59,7 +63,7 @@ struct cccl_op_t
   void* state;
 };
 
-enum class cccl_iterator_kind_t
+enum cccl_iterator_kind_t
 {
   pointer  = 0,
   iterator = 1
@@ -81,3 +85,5 @@ struct cccl_iterator_t
   cccl_type_info value_type;
   void* state;
 };
+
+CCCL_C_EXTERN_END
