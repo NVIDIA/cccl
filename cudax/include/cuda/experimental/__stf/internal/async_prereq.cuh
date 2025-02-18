@@ -48,6 +48,11 @@ namespace reserved
 {
 using unique_id_t = unique_id<event>;
 
+inline int get_next_prereq_unique_id()
+{
+  return int(unique_id<event>::next_id());
+}
+
 using event_vector = small_vector<event, 7>;
 static_assert(sizeof(event_vector) == 120);
 } // namespace reserved

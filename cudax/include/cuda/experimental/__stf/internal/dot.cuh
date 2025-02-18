@@ -53,6 +53,8 @@
 namespace cuda::experimental::stf::reserved
 {
 
+int get_next_prereq_unique_id();
+
 /**
  * @brief Some helper type
  */
@@ -67,9 +69,12 @@ enum vertex_type
   prereq_vertex,
   fence_vertex,
   section_vertex, // collapsed sections depicted as a single node
-  freeze_vertex // freeze and unfreeze operations
+  freeze_vertex, // freeze and unfreeze operations
+  cluster_proxy_vertex // start or end of clusters (invisible nodes)
 };
 
+// TODO rename per_vertex_info
+//
 // Information for every task, so that we can eventually generate a node for the task
 struct per_task_info
 {
@@ -89,6 +94,7 @@ public:
       , _is_tracing_prereqs(_is_tracing_prereqs)
       , _is_timing(_is_timing)
   {}
+
   ~per_ctx_dot() = default;
 
   void set_ctx_symbol(::std::string s)
@@ -118,12 +124,25 @@ public:
 
   void ctx_add_input_id(int prereq_unique_id)
   {
-    ctx_input_id.push_back(prereq_unique_id);
+    // If this is the first input we select the ID of the proxy start
+    if (!proxy_start_unique_id.has_value())
+    {
+      proxy_start_unique_id = get_next_prereq_unique_id();
+      add_ctx_proxy_vertex(proxy_start_unique_id.value());
+    }
+
+    add_edge(prereq_unique_id, proxy_start_unique_id.value(), 1);
   }
 
   void ctx_add_output_id(int prereq_unique_id)
   {
-    ctx_output_id.push_back(prereq_unique_id);
+    if (!proxy_end_unique_id.has_value())
+    {
+      proxy_end_unique_id = get_next_prereq_unique_id();
+      add_ctx_proxy_vertex(proxy_end_unique_id.value());
+    }
+
+    add_edge(proxy_end_unique_id.value(), prereq_unique_id, 1);
   }
 
   void add_prereq_vertex(const ::std::string& symbol, int prereq_unique_id)
@@ -146,6 +165,23 @@ public:
     m.label          = symbol;
 
     m.type = prereq_vertex;
+  }
+
+  // Define vertices which represent the beginning or the end of a (nested) context
+  void add_ctx_proxy_vertex(int prereq_unique_id)
+  {
+    if (!is_tracing())
+    {
+      return;
+    }
+
+    ::std::lock_guard<::std::mutex> guard(mtx);
+
+    auto& m          = metadata[prereq_unique_id];
+    m.color          = get_current_color();
+    m.dot_section_id = get_current_section_id(get_unique_id());
+    m.label          = "proxy";
+    m.type           = cluster_proxy_vertex;
   }
 
   // Edges are not rendered directly, so that we can decide to filter out
@@ -382,8 +418,8 @@ public:
 public: // XXX protected, friend : dot
   ::std::unordered_map<int /* id */, per_task_info> metadata;
 
-  ::std::vector<int> ctx_input_id;
-  ::std::vector<int> ctx_output_id;
+  ::std::optional<int> proxy_start_unique_id;
+  ::std::optional<int> proxy_end_unique_id;
 };
 
 class dot : public reserved::meyers_singleton<dot>
@@ -565,20 +601,17 @@ public:
   void
   print_one_context(::std::ofstream& outFile, size_t& ctx_cnt, bool display_clusters, ::std::shared_ptr<per_ctx_dot> pc)
   {
-    assert(display_clusters || pc->ctx_input_id.size() == 0);
-    assert(display_clusters || pc->ctx_output_id.size() == 0);
-
     // Pick up an identifier in DOT (we may update this value later)
     size_t ctx_id = ctx_cnt++;
     if (display_clusters)
     {
       outFile << "subgraph cluster_" << ctx_id << " {\n";
 
-      // We need to add "proxy" nodes because we can't make a dependency
-      // between a node and a cluster in DOT
-      outFile << "\"start_cluster_" << ctx_id << "\" [shape=point, style=invis]\n";
-      // Rank constraints so that these node appear at the top of bottom of the cluster
-      outFile << "{rank=min; " << "\"start_cluster_" << ctx_id << "\"}\n";
+      //      // We need to add "proxy" nodes because we can't make a dependency
+      //      // between a node and a cluster in DOT
+      //      outFile << "\"start_cluster_" << ctx_id << "\" [shape=point, style=invis]\n";
+      //      // Rank constraints so that these node appear at the top of bottom of the cluster
+      //      outFile << "{rank=min; " << "\"start_cluster_" << ctx_id << "\"}\n";
     }
 
     for (const auto& p : pc->metadata)
@@ -595,7 +628,11 @@ public:
         case prereq_vertex:
           style = "dashed";
           break;
+        case cluster_proxy_vertex:
+          style = "invis";
+          break;
         default:
+          fprintf(stderr, "error: unknown vertex type\n");
           abort();
       };
       outFile << "\"NODE_" << p.first << "\" [style=\"" << style << "\" fillcolor=\"" << p.second.color << "\" label=\""
@@ -620,11 +657,6 @@ public:
           print_one_context(outFile, ctx_cnt, display_clusters, p.first);
         }
       }
-    }
-
-    for (const auto& e : pc->existing_edges)
-    {
-      existing_edges.insert(e);
     }
 
     /* Put nodes which belong to a section into their clusters */
@@ -659,11 +691,12 @@ public:
         outFile << "label=\"" << pc->get_ctx_symbol() << "\"\n";
       }
 
-      outFile << "\"end_cluster_" << ctx_id << "\" [shape=point, style=invis]\n";
-      outFile << "{rank=max; " << "\"end_cluster_" << ctx_id << "\"}\n";
+      //      outFile << "\"end_cluster_" << ctx_id << "\" [shape=point, style=invis]\n";
+      //      outFile << "{rank=max; " << "\"end_cluster_" << ctx_id << "\"}\n";
 
       outFile << "} // end subgraph cluster_" << ctx_id << "\n";
 
+#if 0
       for (auto i : pc->ctx_input_id)
       {
         outFile << "\"NODE_" << i << "\" -> \"start_cluster_" << ctx_id << "\"\n";
@@ -673,6 +706,7 @@ public:
       {
         outFile << "\"end_cluster_" << ctx_id << "\" -> \"NODE_" << i << "\"\n";
       }
+#endif
     }
   }
 
@@ -812,6 +846,76 @@ public:
     ::std::swap(new_edges, pc.existing_edges);
   }
 
+  // Remove one vertex and replace incoming/outgoing edges
+  void collapse_vertex(int vertex_id, IntPairSet& edges)
+  {
+    /* We look for incoming edges, and outgoing edges */
+    ::std::vector<int> in;
+    ::std::vector<int> out;
+
+    IntPairSet new_edges;
+
+    for (auto& [from, to] : edges)
+    {
+      bool keep_edge = true;
+      if (from == vertex_id)
+      {
+        out.push_back(to);
+        keep_edge = false;
+      }
+
+      if (to == vertex_id)
+      {
+        in.push_back(from);
+        keep_edge = false;
+      }
+
+      if (keep_edge)
+      {
+        // Create a copy of the existing edge
+        new_edges.insert(::std::make_pair(from, to));
+      }
+    }
+
+    // Create new edges between all pairs of in/out
+    for (auto& from : in)
+    {
+      for (auto& to : out)
+      {
+        new_edges.insert(::std::make_pair(from, to));
+      }
+    }
+
+    ::std::swap(new_edges, edges);
+  }
+
+  void remove_freeze_nodes(IntPairSet& edges)
+  {
+    if (getenv("CUDASTF_DOT_KEEP_FREEZE"))
+    {
+      return;
+    }
+
+    for (const auto& pc : per_ctx)
+    {
+      // Since we are going to potentially remove nodes, we create a copy first
+      // to iterate on it, and remove from the original structure if necessary
+      decltype(pc->metadata) copy_metadata = pc->metadata;
+
+      // p.first = vertex id, p.second = per_task_info
+      for (auto& p : copy_metadata)
+      {
+        if (p.second.type == freeze_vertex)
+        {
+          collapse_vertex(p.first, edges);
+
+          // remove this collapsed vertex from the unordered_map
+          pc->metadata.erase(p.first);
+        }
+      }
+    }
+  }
+
   /**
    * @brief Collapse nodes which are parts of sections deeper than the value
    *        specified in CUDASTF_DOT_MAX_DEPTH
@@ -901,6 +1005,16 @@ public:
     {
       return;
     }
+
+    for (const auto& pc : per_ctx)
+    {
+      for (const auto& e : pc->existing_edges)
+      {
+        existing_edges.insert(e);
+      }
+    }
+
+    remove_freeze_nodes(existing_edges);
 
     collapse_sections();
 
