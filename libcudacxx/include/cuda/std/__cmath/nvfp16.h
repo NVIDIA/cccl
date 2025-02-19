@@ -38,7 +38,7 @@ _LIBCUDACXX_HIDE_FROM_ABI __half sin(__half __v)
                       __vf                  = ::sinf(__vf);
                       __half_raw __ret_repr = ::__float2half_rn(__vf);
 
-                      uint16_t __repr = __half_raw(__v).x;
+                      uint16_t __repr = _CUDA_VSTD::__cccl_nvfp_get_storage(__v);
                       switch (__repr)
                       {
                         case 12979:
@@ -74,7 +74,7 @@ _LIBCUDACXX_HIDE_FROM_ABI  __half cos(__half __v)
       __vf                  = ::cosf(__vf);
       __half_raw __ret_repr = ::__float2half_rn(__vf);
 
-      uint16_t __repr = __half_raw(__v).x;
+      uint16_t __repr = _CUDA_VSTD::__cccl_nvfp_get_storage(__v);
       switch (__repr)
       {
         case 11132:

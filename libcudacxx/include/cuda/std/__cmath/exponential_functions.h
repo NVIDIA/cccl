@@ -89,7 +89,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half exp(__half __x) noexcept
                         __xf                  = ::expf(__xf);
                         __half_raw __ret_repr = ::__float2half_rn(__xf);
 
-                        uint16_t __repr = __half_raw(__x).x;
+                        uint16_t __repr = _CUDA_VSTD::__cccl_nvfp_get_storage(__x);
                         switch (__repr)
                         {
                           case 8057:

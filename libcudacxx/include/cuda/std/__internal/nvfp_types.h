@@ -70,6 +70,11 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr uint16_t __cccl_nvfp_get_sto
   return __helper{__v}.__x;
 }
 
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __half __cccl_make_nvfp16_from_storage(uint16_t __x) noexcept
+{
+  return __half{__half_raw{__x}};
+}
+
 _CCCL_INLINE_VAR constexpr uint16_t __cccl_nvfp16_sign_mask     = 0x8000u;
 _CCCL_INLINE_VAR constexpr uint16_t __cccl_nvfp16_exp_mask      = 0x7c00u;
 _CCCL_INLINE_VAR constexpr uint16_t __cccl_nvfp16_mant_mask     = 0x03ffu;
@@ -87,6 +92,11 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr uint16_t __cccl_nvfp_get_sto
   return __helper{__v}.__x;
 }
 
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_bfloat16 __cccl_make_nvbf16_from_storage(uint16_t __x) noexcept
+{
+  return __nv_bfloat16{__nv_bfloat16_raw{__x}};
+}
+
 _CCCL_INLINE_VAR constexpr uint16_t __cccl_nvbf16_sign_mask     = 0x8000u;
 _CCCL_INLINE_VAR constexpr uint16_t __cccl_nvbf16_exp_mask      = 0x7f80u;
 _CCCL_INLINE_VAR constexpr uint16_t __cccl_nvbf16_mant_mask     = 0x007fu;
@@ -97,6 +107,14 @@ _CCCL_INLINE_VAR constexpr uint16_t __cccl_nvbf16_exp_mant_mask = 0x7fffu;
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr uint8_t __cccl_nvfp_get_storage(__nv_fp8_e4m3 __v) noexcept
 {
   return __v.__x;
+}
+
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e4m3
+__cccl_make_nvfp8_e4m3_from_storage(uint8_t __x) noexcept
+{
+  __nv_fp8_e4m3 __ret{};
+  __ret.__x = static_cast<__nv_fp8_storage_t>(__x);
+  return __ret;
 }
 
 _CCCL_INLINE_VAR constexpr uint8_t __cccl_nvfp8_e4m3_sign_mask     = 0x80u;
@@ -111,6 +129,14 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr uint8_t __cccl_nvfp_get_stor
   return __v.__x;
 }
 
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e5m2
+__cccl_make_nvfp8_e5m2_from_storage(uint8_t __x) noexcept
+{
+  __nv_fp8_e5m2 __ret{};
+  __ret.__x = static_cast<__nv_fp8_storage_t>(__x);
+  return __ret;
+}
+
 _CCCL_INLINE_VAR constexpr uint8_t __cccl_nvfp8_e5m2_sign_mask     = 0x80u;
 _CCCL_INLINE_VAR constexpr uint8_t __cccl_nvfp8_e5m2_exp_mask      = 0x7cu;
 _CCCL_INLINE_VAR constexpr uint8_t __cccl_nvfp8_e5m2_mant_mask     = 0x03u;
@@ -123,6 +149,14 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr uint8_t __cccl_nvfp_get_stor
   return __v.__x;
 }
 
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e8m0
+__cccl_make_nvfp8_e8m0_from_storage(uint8_t __x) noexcept
+{
+  __nv_fp8_e8m0 __ret{};
+  __ret.__x = static_cast<__nv_fp8_storage_t>(__x);
+  return __ret;
+}
+
 _CCCL_INLINE_VAR constexpr uint8_t __cccl_nvfp8_e8m0_exp_mask = 0xffu;
 #endif // _CCCL_HAS_NVFP8_E8M0()
 
@@ -130,6 +164,15 @@ _CCCL_INLINE_VAR constexpr uint8_t __cccl_nvfp8_e8m0_exp_mask = 0xffu;
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr uint8_t __cccl_nvfp_get_storage(__nv_fp6_e2m3 __v) noexcept
 {
   return __v.__x;
+}
+
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp6_e2m3
+__cccl_make_nvfp6_e2m3_from_storage(uint8_t __x) noexcept
+{
+  _CCCL_ASSERT((__x & 0xc0u) == 0u, "Invalid __nv_fp6_e2m3 storage value");
+  __nv_fp6_e2m3 __ret{};
+  __ret.__x = static_cast<__nv_fp6_storage_t>(__x);
+  return __ret;
 }
 
 _CCCL_INLINE_VAR constexpr uint8_t __cccl_nvfp6_e2m3_sign_mask     = 0x20u;
@@ -144,6 +187,15 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr uint8_t __cccl_nvfp_get_stor
   return __v.__x;
 }
 
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp6_e3m2
+__cccl_make_nvfp6_e3m2_from_storage(uint8_t __x) noexcept
+{
+  _CCCL_ASSERT((__x & 0xc0u) == 0u, "Invalid __nv_fp6_e3m2 storage value");
+  __nv_fp6_e3m2 __ret{};
+  __ret.__x = static_cast<__nv_fp6_storage_t>(__x);
+  return __ret;
+}
+
 _CCCL_INLINE_VAR constexpr uint8_t __cccl_nvfp6_e3m2_sign_mask     = 0x20u;
 _CCCL_INLINE_VAR constexpr uint8_t __cccl_nvfp6_e3m2_exp_mask      = 0x1cu;
 _CCCL_INLINE_VAR constexpr uint8_t __cccl_nvfp6_e3m2_mant_mask     = 0x03u;
@@ -154,6 +206,15 @@ _CCCL_INLINE_VAR constexpr uint8_t __cccl_nvfp6_e3m2_exp_mant_mask = 0x1fu;
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr uint8_t __cccl_nvfp_get_storage(__nv_fp4_e2m1 __v) noexcept
 {
   return __v.__x;
+}
+
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp4_e2m1
+__cccl_make_nvfp4_e2m1_from_storage(uint8_t __x) noexcept
+{
+  _CCCL_ASSERT((__x & 0xf0u) == 0u, "Invalid __nv_fp4_e2m1 storage value");
+  __nv_fp4_e2m1 __ret{};
+  __ret.__x = static_cast<__nv_fp4_storage_t>(__x);
+  return __ret;
 }
 
 _CCCL_INLINE_VAR constexpr uint8_t __cccl_nvfp4_e2m1_sign_mask     = 0x8u;

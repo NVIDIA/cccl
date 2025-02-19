@@ -71,7 +71,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __half copysign(__half __x, 
 {
   const auto __val = (_CUDA_VSTD::__cccl_nvfp_get_storage(__x) & __cccl_nvfp16_exp_mant_mask)
                    | (_CUDA_VSTD::__cccl_nvfp_get_storage(__y) & __cccl_nvfp16_sign_mask);
-  return __half{__half_raw{static_cast<uint16_t>(__val)}};
+  return _CUDA_VSTD::__cccl_make_nvfp16_from_storage(static_cast<uint16_t>(__val));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16
 
@@ -80,7 +80,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_bfloat16 copysign(__nv_
 {
   const auto __val = (_CUDA_VSTD::__cccl_nvfp_get_storage(__x) & __cccl_nvbf16_exp_mant_mask)
                    | (_CUDA_VSTD::__cccl_nvfp_get_storage(__y) & __cccl_nvbf16_sign_mask);
-  return __nv_bfloat16{__nv_bfloat16_raw{static_cast<uint16_t>(__val)}};
+  return _CUDA_VSTD::__cccl_make_nvbf16_from_storage(static_cast<uint16_t>(__val));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16
 
