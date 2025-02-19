@@ -4,12 +4,12 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_FOR_EACH_CANCELED
-#define _CUDA_FOR_EACH_CANCELED
+#ifndef _CUDA__FUNCTIONAL_FOR_EACH_CANCELED_H
+#define _CUDA__FUNCTIONAL_FOR_EACH_CANCELED_H
 
 #include <cuda/std/detail/__config>
 
@@ -256,4 +256,4 @@ _LIBCUDACXX_END_NAMESPACE_CUDA
 
 #endif // _CCCL_HAS_CUDA_COMPILER && (defined(__CUDACC__) || defined(_NVHPC_CUDA))
 
-#endif // _CUDA_FOR_EACH_CANCELED
+#endif // _CUDA__FUNCTIONAL_FOR_EACH_CANCELED_H

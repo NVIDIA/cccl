@@ -11,7 +11,7 @@
 // UNSUPPORTED: !nvcc
 // UNSUPPORTED: nvrtc
 
-#include <cuda/for_each_canceled>
+#include <cuda/functional>
 #include <cuda/std/cmath>
 
 #if !defined(TEST_HAS_NO_INT128_T)

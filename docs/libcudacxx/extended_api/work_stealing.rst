@@ -3,7 +3,7 @@
 Work stealing
 =============
 
-Defined in header ``<cuda/for_each_canceled>``:
+Defined in header ``<cuda/functional>``:
 
 .. code:: cuda
 
@@ -56,7 +56,7 @@ This example demonstrates work-stealing at thread-block granularity using this A
    // Before:
 
    #include <cuda/math>
-   #include <cuda/for_each_canceled>
+   #include <cuda/functional>
    __global__ void vec_add(int* a, int* b, int* c, int n) {
      // Extract common prologue outside the lambda, e.g.,
      // - __shared__ or global (malloc) memory allocation
