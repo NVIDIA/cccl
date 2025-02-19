@@ -23,8 +23,8 @@ static_assert(diff_type_is<uint32_t, ptrdiff_t>);
 static_assert(diff_type_is<int64_t, ptrdiff_t>);
 static_assert(diff_type_is<uint64_t, ptrdiff_t>);
 #if _CCCL_HAS_INT128()
-static_assert(diff_type_is<__int128_t, __int128_t>);
-static_assert(diff_type_is<__uint128_t, long>);
+static_assert(diff_type_is<__int128_t, ptrdiff_t>);
+static_assert(diff_type_is<__uint128_t, ptrdiff_t>);
 #endif
 static_assert(diff_type_is<float, ptrdiff_t>);
 static_assert(diff_type_is<double, ptrdiff_t>);
