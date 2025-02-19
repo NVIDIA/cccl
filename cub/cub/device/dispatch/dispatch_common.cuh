@@ -5,8 +5,6 @@
 
 #include <cub/config.cuh>
 
-#include <thrust/iterator/iterator_adaptor.h>
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -14,6 +12,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <thrust/iterator/iterator_adaptor.h>
 
 CUB_NAMESPACE_BEGIN
 
