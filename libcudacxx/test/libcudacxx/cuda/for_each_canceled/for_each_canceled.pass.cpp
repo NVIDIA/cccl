@@ -10,7 +10,6 @@
 
 // UNSUPPORTED: !nvcc
 // UNSUPPORTED: nvrtc
-// UNSUPPORTED: c++98, c++03, c++14
 
 #include <cuda/for_each_canceled>
 #include <cuda/std/cmath>
