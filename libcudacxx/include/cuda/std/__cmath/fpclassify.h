@@ -22,9 +22,14 @@
 #endif // no system header
 
 #include <cuda/std/__bit/bit_cast.h>
-#include <cuda/std/__cmath/common.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__internal/nvfp_types.h>
 #include <cuda/std/__type_traits/is_integral.h>
+
+// MSVC and clang cuda need the host side functions included
+#if _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
+#  include <math.h>
+#endif // _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
 
 #if _CCCL_COMPILER(NVRTC)
 #  ifndef FP_NAN

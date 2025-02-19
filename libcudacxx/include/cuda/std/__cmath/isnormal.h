@@ -21,9 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cmath/common.h>
 #include <cuda/std/__cmath/fpclassify.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__internal/nvfp_types.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
 #if defined(_CCCL_BUILTIN_ISNORMAL)
