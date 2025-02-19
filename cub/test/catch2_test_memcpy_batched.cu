@@ -44,10 +44,9 @@ struct offset_to_ptr_op
  * @brief Used for generating a shuffled but cohesive sequence of output-buffer offsets for the
  * sequence of input-buffers.
  */
-template <typename BufferOffsetT, typename BufferSizeT, typename ByteOffsetT>
-void get_shuffled_buffer_offsets(const c2h::device_vector<BufferSizeT>& buffer_sizes,
-                                 c2h::device_vector<ByteOffsetT>& buffer_offsets,
-                                 c2h::seed_t seed)
+template <typename BufferOffsetT, typename ByteOffsetT, typename BufferSizeT>
+auto get_shuffled_buffer_offsets(const c2h::device_vector<BufferSizeT>& buffer_sizes, c2h::seed_t seed)
+  -> c2h::device_vector<ByteOffsetT>
 {
   auto const num_buffers = static_cast<BufferOffsetT>(buffer_sizes.size());
 
@@ -68,7 +67,9 @@ void get_shuffled_buffer_offsets(const c2h::device_vector<BufferSizeT>& buffer_s
   thrust::scatter(buffer_index_it, buffer_index_it + num_buffers, pmt_idxs.cbegin(), scatter_idxs.begin());
 
   // Gather the permuted offsets for shuffled buffer offsets
+  c2h::device_vector<ByteOffsetT> buffer_offsets(num_buffers);
   thrust::gather(scatter_idxs.cbegin(), scatter_idxs.cend(), permuted_offsets.cbegin(), buffer_offsets.begin());
+  return buffer_offsets;
 }
 
 C2H_TEST("DeviceMemcpy::Batched works", "[memcpy]")
@@ -92,13 +93,13 @@ try
   // Pairs of [min, max] buffer sizes
   auto buffer_size_range = GENERATE_COPY(
     table<int, int>(
-      {std::make_tuple(0, 1),
-       std::make_tuple(1, 2),
-       std::make_tuple(0, 32),
-       std::make_tuple(1, 1024),
-       std::make_tuple(1, 32 * 1024),
-       std::make_tuple(128 * 1024, 256 * 1024),
-       std::make_tuple(target_copy_size, target_copy_size)}),
+      {{0, 1},
+       {1, 2},
+       {0, 32},
+       {1, 1024},
+       {1, 32 * 1024},
+       {128 * 1024, 256 * 1024},
+       {target_copy_size, target_copy_size}}),
     take(4,
          map(
            [](const std::vector<int>& chunk) {
@@ -109,14 +110,12 @@ try
            },
            chunk(2, random(1, 1000000)))));
 
-  const auto min_buffer_size = static_cast<buffer_size_t>(std::get<0>(buffer_size_range));
-  const auto max_buffer_size = static_cast<buffer_size_t>(std::get<1>(buffer_size_range));
-  double average_buffer_size = (min_buffer_size + max_buffer_size) / 2.0;
-  const auto num_buffers     = static_cast<buffer_offset_t>(target_copy_size / average_buffer_size);
+  const auto min_buffer_size       = static_cast<buffer_size_t>(std::get<0>(buffer_size_range));
+  const auto max_buffer_size       = static_cast<buffer_size_t>(std::get<1>(buffer_size_range));
+  const double average_buffer_size = (min_buffer_size + max_buffer_size) / 2.0;
+  const auto num_buffers           = static_cast<buffer_offset_t>(target_copy_size / average_buffer_size);
 
   c2h::device_vector<buffer_size_t> d_buffer_sizes(num_buffers);
-  c2h::device_vector<byte_offset_t> d_buffer_src_offsets(num_buffers);
-  c2h::device_vector<byte_offset_t> d_buffer_dst_offsets(num_buffers);
 
   // Generate the buffer sizes: Make sure buffer sizes are a multiple of the most granular unit (one AtomicT) being
   // copied (round down)
@@ -124,10 +123,10 @@ try
   byte_offset_t num_total_bytes = thrust::reduce(d_buffer_sizes.cbegin(), d_buffer_sizes.cend());
 
   // Shuffle input buffer source-offsets
-  get_shuffled_buffer_offsets<buffer_offset_t>(d_buffer_sizes, d_buffer_src_offsets, C2H_SEED(1));
+  auto d_buffer_src_offsets = get_shuffled_buffer_offsets<buffer_offset_t, byte_offset_t>(d_buffer_sizes, C2H_SEED(1));
 
   // Shuffle output buffer destination-offsets
-  get_shuffled_buffer_offsets<buffer_offset_t>(d_buffer_sizes, d_buffer_dst_offsets, C2H_SEED(1));
+  auto d_buffer_dst_offsets = get_shuffled_buffer_offsets<buffer_offset_t, byte_offset_t>(d_buffer_sizes, C2H_SEED(1));
 
   // Generate random input data and initialize output data
   c2h::device_vector<std::uint8_t> d_in(num_total_bytes);
