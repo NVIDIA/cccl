@@ -833,18 +833,20 @@ struct DispatchSegmentedReduce
           d_out, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>{current_seg_offset}};
 // Log device_reduce_sweep_kernel configuration
 #ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking SegmentedDeviceReduceKernel<<<%ld, %d, 0, %lld>>>(), "
-              "%d items per thread, %d SM occupancy\n",
-              num_current_segments,
-              policy.SegmentedReduce().BlockThreads(),
-              (long long) stream,
-              policy.SegmentedReduce().ItemsPerThread(),
-              segmented_reduce_config.sm_occupancy);
+        _CubLog("Invoking SegmentedDeviceReduceKernel<<<%ld, %d, 0, %lld>>>(), "
+                "%d items per thread, %d SM occupancy\n",
+                num_current_segments,
+                policy.SegmentedReduce().BlockThreads(),
+                (long long) stream,
+                policy.SegmentedReduce().ItemsPerThread(),
+                segmented_reduce_config.sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
-      // Invoke DeviceReduceKernel
-      launcher_factory(static_cast<::cuda::std::uint32_t>(num_current_segments), policy.SegmentedReduce().BlockThreads(), 0, stream)
-        .doit(segmented_reduce_kernel, d_in, current_out_it, current_begin_offset, current_end_offset, reduction_op, init);
+        // Invoke DeviceReduceKernel
+        launcher_factory(
+          static_cast<::cuda::std::uint32_t>(num_current_segments), policy.SegmentedReduce().BlockThreads(), 0, stream)
+          .doit(
+            segmented_reduce_kernel, d_in, current_out_it, current_begin_offset, current_end_offset, reduction_op, init);
 
         // Check for failure to launch
         error = CubDebug(cudaPeekAtLastError());
