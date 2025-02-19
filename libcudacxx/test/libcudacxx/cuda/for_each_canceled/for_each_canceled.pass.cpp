@@ -108,8 +108,13 @@ bool test(int N, F&& f)
     }
 
     f(a, b, c, N, tidx);
-
     assert(cudaDeviceSynchronize() == cudaSuccess);
+
+    for (int i = 0; i < N; ++i)
+    {
+      assert(c[i] == (1 + i));
+    }
+
     cudaFree(a);
     cudaFree(b);
     cudaFree(c);
