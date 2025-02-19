@@ -137,6 +137,15 @@ struct partition_distinct_output_t
   rejected_iterator_t rejected_it;
 };
 
+template <typename OutputIterator>
+struct is_partition_distinct_output_t : ::cuda::std::false_type
+{};
+
+template <typename SelectedOutputItT, typename RejectedOutputItT>
+struct is_partition_distinct_output_t<partition_distinct_output_t<SelectedOutputItT, RejectedOutputItT>>
+    : ::cuda::std::true_type
+{};
+
 /**
  * @brief AgentSelectIf implements a stateful abstraction of CUDA thread blocks for participating in
  * device-wide selection
@@ -237,8 +246,8 @@ struct AgentSelectIf
   static constexpr ::cuda::std::int32_t TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
   static constexpr bool TWO_PHASE_SCATTER                = (ITEMS_PER_THREAD > 1);
 
-  static constexpr bool has_select_op       = (!::cuda::std::is_same<SelectOpT, NullType>::value);
-  static constexpr bool has_flags_it        = (!::cuda::std::is_same<FlagT, NullType>::value);
+  static constexpr bool has_select_op       = (!::cuda::std::is_same_v<SelectOpT, NullType>);
+  static constexpr bool has_flags_it        = (!::cuda::std::is_same_v<FlagT, NullType>);
   static constexpr bool use_stencil_with_op = has_select_op && has_flags_it;
   static constexpr auto SELECT_METHOD =
     use_stencil_with_op ? USE_STENCIL_WITH_OP
@@ -250,7 +259,7 @@ struct AgentSelectIf
   // Wrap the native input pointer with CacheModifiedValuesInputIterator
   // or directly use the supplied input iterator type
   using WrappedInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer<InputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer_v<InputIteratorT>,
                      CacheModifiedInputIterator<AgentSelectIfPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
                      InputIteratorT>;
 
@@ -258,7 +267,7 @@ struct AgentSelectIf
   // Wrap the native input pointer with CacheModifiedValuesInputIterator
   // or directly use the supplied input iterator type
   using WrappedFlagsInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer<FlagsInputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer_v<FlagsInputIteratorT>,
                      CacheModifiedInputIterator<AgentSelectIfPolicyT::LOAD_MODIFIER, FlagT, OffsetT>,
                      FlagsInputIteratorT>;
 
@@ -387,7 +396,7 @@ struct AgentSelectIf
     OffsetT num_tile_items,
     InputT (&items)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
-    Int2Type<USE_SELECT_OP> /*select_method*/)
+    constant_t<USE_SELECT_OP> /*select_method*/)
   {
 #pragma unroll
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
@@ -411,7 +420,7 @@ struct AgentSelectIf
     OffsetT num_tile_items,
     InputT (& /*items*/)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
-    Int2Type<USE_STENCIL_WITH_OP> /*select_method*/)
+    constant_t<USE_STENCIL_WITH_OP> /*select_method*/)
   {
     __syncthreads();
 
@@ -453,7 +462,7 @@ struct AgentSelectIf
     OffsetT num_tile_items,
     InputT (& /*items*/)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
-    Int2Type<USE_SELECT_FLAGS> /*select_method*/)
+    constant_t<USE_SELECT_FLAGS> /*select_method*/)
   {
     __syncthreads();
 
@@ -487,7 +496,7 @@ struct AgentSelectIf
     OffsetT num_tile_items,
     InputT (&items)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
-    Int2Type<USE_DISCONTINUITY> /*select_method*/)
+    constant_t<USE_DISCONTINUITY> /*select_method*/)
   {
     if (IS_FIRST_TILE && streaming_context.is_first_partition())
     {
@@ -626,7 +635,7 @@ struct AgentSelectIf
     OffsetT num_selections_prefix,
     OffsetT num_rejected_prefix,
     OffsetT num_selections,
-    Int2Type<false> /*is_keep_rejects*/)
+    ::cuda::std::false_type /*is_keep_rejects*/)
   {
     // Do a two-phase scatter if two-phase is enabled and the average number of selection_flags items per thread is
     // greater than one
@@ -670,7 +679,7 @@ struct AgentSelectIf
     OffsetT num_selections_prefix,
     OffsetT num_rejected_prefix,
     OffsetT num_selections,
-    Int2Type<true> /*is_keep_rejects*/)
+    ::cuda::std::true_type /*is_keep_rejects*/)
   {
     __syncthreads();
 
@@ -814,7 +823,7 @@ struct AgentSelectIf
 
     // Initialize selection_flags
     InitializeSelections<true, IS_LAST_TILE>(
-      tile_offset, num_tile_items, items, selection_flags, Int2Type<SELECT_METHOD>());
+      tile_offset, num_tile_items, items, selection_flags, constant_v<SELECT_METHOD>);
 
     // Ensure temporary storage used during block load can be reused
     // Also, in case of in-place stream compaction, this is needed to order the loads of
@@ -850,7 +859,7 @@ struct AgentSelectIf
       0,
       0,
       num_tile_selections,
-      cub::Int2Type < SelectionOpt == SelectImpl::Partition > {});
+      bool_constant_v < SelectionOpt == SelectImpl::Partition >);
 
     return num_tile_selections;
   }
@@ -894,7 +903,7 @@ struct AgentSelectIf
 
     // Initialize selection_flags
     InitializeSelections<false, IS_LAST_TILE>(
-      tile_offset, num_tile_items, items, selection_flags, Int2Type<SELECT_METHOD>());
+      tile_offset, num_tile_items, items, selection_flags, constant_v<SELECT_METHOD>);
 
     // Ensure temporary storage used during block load can be reused
     // Also, in case of in-place stream compaction, this is needed to order the loads of
@@ -933,7 +942,7 @@ struct AgentSelectIf
       num_selections_prefix,
       num_rejected_prefix,
       num_selections,
-      cub::Int2Type < SelectionOpt == SelectImpl::Partition > {});
+      bool_constant_v < SelectionOpt == SelectImpl::Partition >);
 
     return num_selections;
   }

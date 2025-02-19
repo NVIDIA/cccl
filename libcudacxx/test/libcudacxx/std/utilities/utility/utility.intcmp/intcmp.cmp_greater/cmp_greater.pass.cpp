@@ -102,8 +102,6 @@ int main(int, char**)
 {
   ASSERT_NOEXCEPT(cuda::std::cmp_greater(1, 0));
   test();
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014
   return 0;
 }

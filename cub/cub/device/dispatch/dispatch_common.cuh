@@ -32,11 +32,11 @@ enum class SortOrder
 // Options for specifying the behavior of the stream compaction algorithm.
 enum class SelectImpl
 {
-  // Stream compaction, discarding rejected items. It's guaranteed that memory of input and output are disjoint.
+  // Stream compaction, discarding rejected items. It's required that memory of input and output are disjoint.
   Select,
   // Stream compaction, discarding rejected items. Memory of the input may be identical to the memory of the output.
   SelectPotentiallyInPlace,
-  // Partition, keeping rejected items. It's guaranteed that memory of input and output are disjoint.
+  // Partition, keeping rejected items. It's required that memory of input and output are disjoint.
   Partition
 };
 

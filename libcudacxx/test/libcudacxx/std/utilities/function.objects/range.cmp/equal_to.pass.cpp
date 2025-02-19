@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
-
 // <cuda/std/functional>
 
 // ranges::equal_to
@@ -48,9 +46,7 @@ __host__ __device__ constexpr bool test()
 {
   auto fn = cuda::std::ranges::equal_to();
 
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_MSVC_2017)
   assert(fn(MoveOnly(42), MoveOnly(42)));
-#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_MSVC_2017
 
   ForwardingTestObject a{};
   ForwardingTestObject b{};

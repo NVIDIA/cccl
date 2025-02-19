@@ -218,15 +218,15 @@ class WarpExchangeShfl
     }
 
     // terminate recursion
-    _CCCL_DEVICE void TransposeImpl(unsigned int, unsigned int, Int2Type<0>) {}
+    _CCCL_DEVICE void TransposeImpl(unsigned int, unsigned int, constant_t<0>) {}
 
     template <int NUM_ENTRIES>
-    _CCCL_DEVICE void TransposeImpl(const unsigned int lane_id, const unsigned int mask, Int2Type<NUM_ENTRIES>)
+    _CCCL_DEVICE void TransposeImpl(const unsigned int lane_id, const unsigned int mask, constant_t<NUM_ENTRIES>)
     {
       const bool xor_bit_set = lane_id & NUM_ENTRIES;
       Foreach<NUM_ENTRIES>(xor_bit_set, mask);
 
-      TransposeImpl(lane_id, mask, Int2Type<NUM_ENTRIES / 2>());
+      TransposeImpl(lane_id, mask, constant_v<NUM_ENTRIES / 2>);
     }
 
   public:
@@ -243,7 +243,7 @@ class WarpExchangeShfl
 
     _CCCL_DEVICE void Transpose(const unsigned int lane_id, const unsigned int mask)
     {
-      TransposeImpl(lane_id, mask, Int2Type<ITEMS_PER_THREAD / 2>());
+      TransposeImpl(lane_id, mask, constant_v<ITEMS_PER_THREAD / 2>);
     }
   };
 

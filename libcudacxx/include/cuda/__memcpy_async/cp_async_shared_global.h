@@ -34,16 +34,14 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_shared_global_is_not_supported_before_SM_80__();
 template <size_t _Copy_size>
-inline __device__ void __cp_async_shared_global(char* __dest, const char* __src)
+inline _CCCL_DEVICE void __cp_async_shared_global(char* __dest, const char* __src)
 {
   // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async
 
   // If `if constexpr` is not available, this function gets instantiated even
   // if is not called. Do not static_assert in that case.
-#  if _CCCL_STD_VER >= 2017
   static_assert(_Copy_size == 4 || _Copy_size == 8 || _Copy_size == 16,
                 "cp.async.shared.global requires a copy size of 4, 8, or 16.");
-#  endif // _CCCL_STD_VER >= 2017
 
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_80,
@@ -55,7 +53,7 @@ inline __device__ void __cp_async_shared_global(char* __dest, const char* __src)
 }
 
 template <>
-inline __device__ void __cp_async_shared_global<16>(char* __dest, const char* __src)
+inline _CCCL_DEVICE void __cp_async_shared_global<16>(char* __dest, const char* __src)
 {
   // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async
   // When copying 16 bytes, it is possible to skip L1 cache (.cg).
@@ -69,14 +67,12 @@ inline __device__ void __cp_async_shared_global<16>(char* __dest, const char* __
 }
 
 template <size_t _Alignment, typename _Group>
-inline __device__ void
+inline _CCCL_DEVICE void
 __cp_async_shared_global_mechanism(_Group __g, char* __dest, const char* __src, _CUDA_VSTD::size_t __size)
 {
   // If `if constexpr` is not available, this function gets instantiated even
   // if is not called. Do not static_assert in that case.
-#  if _CCCL_STD_VER >= 2017
   static_assert(4 <= _Alignment, "cp.async requires at least 4-byte alignment");
-#  endif // _CCCL_STD_VER >= 2017
 
   // Maximal copy size is 16.
   constexpr int __copy_size = (_Alignment > 16) ? 16 : _Alignment;

@@ -28,7 +28,7 @@
 #include <cuda/__memcpy_async/cp_async_shared_global.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
-#include <cuda/std/detail/libcxx/include/cstring>
+#include <cuda/std/cstring>
 
 #include <nv/target>
 
@@ -75,7 +75,7 @@ _CCCL_NODISCARD _CCCL_DEVICE inline __completion_mechanism __dispatch_memcpy_asy
      (void) __can_use_complete_tx;
      _CCCL_ASSERT(__can_use_complete_tx == (nullptr != __bar_handle),
                   "Pass non-null bar_handle if and only if can_use_complete_tx.");
-     _CCCL_IF_CONSTEXPR (_Align >= 16) {
+     if constexpr (_Align >= 16) {
        if (__can_use_complete_tx && __isShared(__bar_handle))
        {
          __cp_async_bulk_shared_global(__group, __dest_char, __src_char, __size, __bar_handle);
@@ -88,7 +88,7 @@ _CCCL_NODISCARD _CCCL_DEVICE inline __completion_mechanism __dispatch_memcpy_asy
 
   NV_IF_TARGET(
     NV_PROVIDES_SM_80,
-    (_CCCL_IF_CONSTEXPR (_Align >= 4) {
+    (if constexpr (_Align >= 4) {
       const bool __can_use_async_group = __allowed_completions & uint32_t(__completion_mechanism::__async_group);
       if (__can_use_async_group)
       {
@@ -135,7 +135,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __completion_mechanism __dispatch_memc
     (
       // Host code path:
       if (__group.thread_rank() == 0) {
-        memcpy(__dest_char, __src_char, __size);
+        _CUDA_VSTD::memcpy(__dest_char, __src_char, __size);
       } return __completion_mechanism::__sync;));
 }
 

@@ -21,12 +21,10 @@ __host__ __device__ void test_is_volatile()
   static_assert(!cuda::std::is_volatile<const T>::value, "");
   static_assert(cuda::std::is_volatile<volatile T>::value, "");
   static_assert(cuda::std::is_volatile<const volatile T>::value, "");
-#if TEST_STD_VER > 2011
   static_assert(!cuda::std::is_volatile_v<T>, "");
   static_assert(!cuda::std::is_volatile_v<const T>, "");
   static_assert(cuda::std::is_volatile_v<volatile T>, "");
   static_assert(cuda::std::is_volatile_v<const volatile T>, "");
-#endif
 }
 
 struct A; // incomplete

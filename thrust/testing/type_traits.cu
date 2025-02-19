@@ -9,6 +9,8 @@
 #include <thrust/tuple.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
+#include <cuda/__cccl_config>
+
 #if _CCCL_COMPILER(GCC, >=, 7)
 // This header pulls in an unsuppressable warning on GCC 6
 #  include <cuda/std/complex>
@@ -38,7 +40,7 @@ void TestIsContiguousIterator()
 
   using ConstantIterator  = thrust::constant_iterator<int>;
   using CountingIterator  = thrust::counting_iterator<int>;
-  using TransformIterator = thrust::transform_iterator<thrust::identity<int>, HostVector::iterator>;
+  using TransformIterator = thrust::transform_iterator<cuda::std::identity, HostVector::iterator>;
   using ZipIterator       = thrust::zip_iterator<HostIteratorTuple>;
 
   ASSERT_EQUAL((bool) thrust::is_contiguous_iterator<ConstantIterator>::value, false);
@@ -174,9 +176,9 @@ void TestTriviallyRelocatable()
   static_assert(thrust::is_trivially_relocatable<int2>::value, "");
   static_assert(thrust::is_trivially_relocatable<int3>::value, "");
   static_assert(thrust::is_trivially_relocatable<int4>::value, "");
-#  ifndef _LIBCUDACXX_HAS_NO_INT128
+#  if _CCCL_HAS_INT128()
   static_assert(thrust::is_trivially_relocatable<__int128>::value, "");
-#  endif // _LIBCUDACXX_HAS_NO_INT128
+#  endif // _CCCL_HAS_INT128()
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 #if _CCCL_COMPILER(GCC, >=, 7)
   static_assert(thrust::is_trivially_relocatable<thrust::complex<float>>::value, "");

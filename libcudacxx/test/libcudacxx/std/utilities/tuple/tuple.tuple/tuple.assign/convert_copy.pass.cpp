@@ -13,8 +13,6 @@
 // template <class... UTypes>
 //   tuple& operator=(const tuple<UTypes...>& u);
 
-// UNSUPPORTED: c++98, c++03
-
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 

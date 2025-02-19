@@ -1682,7 +1682,7 @@ public:
     bool found                            = false;
     for (::std::shared_ptr<cudaGraphExec_t>& pe : cached_exec_graphs[stream])
     {
-      found = graph_ctx::try_updating_executable_graph(*pe, *gctx_graph);
+      found = reserved::try_updating_executable_graph(*pe, *gctx_graph);
       if (found)
       {
         eg = pe;
@@ -1736,7 +1736,7 @@ public:
     bool found                            = false;
     for (::std::shared_ptr<cudaGraphExec_t>& pe : cached_exec_graphs[stream])
     {
-      found = graph_ctx::try_updating_executable_graph(*pe, *gctx_graph);
+      found = reserved::try_updating_executable_graph(*pe, *gctx_graph);
       if (found)
       {
         eg = pe;

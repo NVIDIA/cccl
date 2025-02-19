@@ -25,9 +25,10 @@
  *
  ******************************************************************************/
 
-#include <cub/iterator/counting_input_iterator.cuh>
-#include <cub/iterator/discard_output_iterator.cuh>
 #include <cub/util_type.cuh>
+
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/discard_iterator.h>
 
 #include <cuda/std/type_traits>
 
@@ -36,33 +37,31 @@
 
 C2H_TEST("Tests non_void_value_t", "[util][type]")
 {
-  _CCCL_SUPPRESS_DEPRECATED_PUSH
   using fallback_t        = float;
-  using void_fancy_it     = cub::DiscardOutputIterator<std::size_t>;
-  using non_void_fancy_it = cub::CountingInputIterator<int>;
+  using void_fancy_it     = thrust::discard_iterator<std::size_t>;
+  using non_void_fancy_it = thrust::counting_iterator<int>;
 
   // falls back for const void*
-  STATIC_REQUIRE(::cuda::std::is_same<fallback_t, //
-                                      cub::detail::non_void_value_t<const void*, fallback_t>>::value);
+  STATIC_REQUIRE(::cuda::std::is_same_v<fallback_t, //
+                                        cub::detail::non_void_value_t<const void*, fallback_t>>);
   // falls back for const volatile void*
-  STATIC_REQUIRE(::cuda::std::is_same<fallback_t, //
-                                      cub::detail::non_void_value_t<const volatile void*, fallback_t>>::value);
+  STATIC_REQUIRE(::cuda::std::is_same_v<fallback_t, //
+                                        cub::detail::non_void_value_t<const volatile void*, fallback_t>>);
   // falls back for volatile void*
-  STATIC_REQUIRE(::cuda::std::is_same<fallback_t, //
-                                      cub::detail::non_void_value_t<volatile void*, fallback_t>>::value);
+  STATIC_REQUIRE(::cuda::std::is_same_v<fallback_t, //
+                                        cub::detail::non_void_value_t<volatile void*, fallback_t>>);
   // falls back for void*
-  STATIC_REQUIRE(::cuda::std::is_same<fallback_t, //
-                                      cub::detail::non_void_value_t<void*, fallback_t>>::value);
+  STATIC_REQUIRE(::cuda::std::is_same_v<fallback_t, //
+                                        cub::detail::non_void_value_t<void*, fallback_t>>);
   // works for int*
-  STATIC_REQUIRE(::cuda::std::is_same<int, //
-                                      cub::detail::non_void_value_t<int*, void>>::value);
+  STATIC_REQUIRE(::cuda::std::is_same_v<int, //
+                                        cub::detail::non_void_value_t<int*, void>>);
   // falls back for fancy iterator with a void value type
-  STATIC_REQUIRE(::cuda::std::is_same<fallback_t, //
-                                      cub::detail::non_void_value_t<void_fancy_it, fallback_t>>::value);
+  STATIC_REQUIRE(::cuda::std::is_same_v<fallback_t, //
+                                        cub::detail::non_void_value_t<void_fancy_it, fallback_t>>);
   // works for a fancy iterator that has int as value type
-  STATIC_REQUIRE(::cuda::std::is_same<int, //
-                                      cub::detail::non_void_value_t<non_void_fancy_it, fallback_t>>::value);
-  _CCCL_SUPPRESS_DEPRECATED_POP
+  STATIC_REQUIRE(::cuda::std::is_same_v<int, //
+                                        cub::detail::non_void_value_t<non_void_fancy_it, fallback_t>>);
 }
 
 CUB_DEFINE_DETECT_NESTED_TYPE(cat_detect, cat);
@@ -80,45 +79,4 @@ C2H_TEST("Test CUB_DEFINE_DETECT_NESTED_TYPE", "[util][type]")
 {
   STATIC_REQUIRE(cat_detect<HasCat>::value);
   STATIC_REQUIRE(!cat_detect<HasDog>::value);
-}
-
-using types = c2h::type_list<
-  char,
-  signed char,
-  unsigned char,
-  short,
-  unsigned short,
-  int,
-  unsigned int,
-  long,
-  unsigned long,
-  long long,
-  unsigned long long,
-#if TEST_HALF_T()
-  __half,
-  half_t,
-#endif // TEST_HALF_T()
-#if TEST_BF_T()
-  __nv_bfloat16,
-  bfloat16_t,
-#endif // TEST_BF_T()
-  float,
-  double
-#ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
-  ,
-  long double
-#endif // _LIBCUDACXX_HAS_NO_LONG_DOUBLE
-  >;
-
-C2H_TEST("Test FpLimits agrees with numeric_limits", "[util][type]", types)
-{
-  using T = c2h::get<0, TestType>;
-  CAPTURE(c2h::type_name<T>());
-  _CCCL_SUPPRESS_DEPRECATED_PUSH
-  CHECK(cub::FpLimits<T>::Max() == cuda::std::numeric_limits<T>::max());
-  CHECK(cub::FpLimits<T>::Lowest() == cuda::std::numeric_limits<T>::lowest());
-
-  CHECK(cub::FpLimits<const T>::Max() == cuda::std::numeric_limits<const T>::max());
-  CHECK(cub::FpLimits<const T>::Lowest() == cuda::std::numeric_limits<const T>::lowest());
-  _CCCL_SUPPRESS_DEPRECATED_POP
 }

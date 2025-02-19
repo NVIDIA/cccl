@@ -22,12 +22,10 @@ __host__ __device__ void test_is_floating_point()
   static_assert(cuda::is_floating_point<const T>::value, "");
   static_assert(cuda::is_floating_point<volatile T>::value, "");
   static_assert(cuda::is_floating_point<const volatile T>::value, "");
-#if TEST_STD_VER > 2011
   static_assert(cuda::is_floating_point_v<T>, "");
   static_assert(cuda::is_floating_point_v<const T>, "");
   static_assert(cuda::is_floating_point_v<volatile T>, "");
   static_assert(cuda::is_floating_point_v<const volatile T>, "");
-#endif
 }
 
 template <class T>
@@ -37,12 +35,10 @@ __host__ __device__ void test_is_not_floating_point()
   static_assert(!cuda::is_floating_point<const T>::value, "");
   static_assert(!cuda::is_floating_point<volatile T>::value, "");
   static_assert(!cuda::is_floating_point<const volatile T>::value, "");
-#if TEST_STD_VER > 2011
   static_assert(!cuda::is_floating_point_v<T>, "");
   static_assert(!cuda::is_floating_point_v<const T>, "");
   static_assert(!cuda::is_floating_point_v<volatile T>, "");
   static_assert(!cuda::is_floating_point_v<const volatile T>, "");
-#endif
 }
 
 class Empty
@@ -80,10 +76,10 @@ int main(int, char**)
   test_is_floating_point<float>();
   test_is_floating_point<double>();
   test_is_floating_point<long double>();
-#ifdef _CCCL_HAS_NVFP16
+#if _CCCL_HAS_NVFP16()
   test_is_floating_point<__half>();
 #endif // _CCCL_HAS_NVFP16
-#ifdef _CCCL_HAS_NVBF16
+#if _CCCL_HAS_NVBF16()
   test_is_floating_point<__nv_bfloat16>();
 #endif // _CCCL_HAS_NVBF16
 #if _CCCL_HAS_NVFP8()

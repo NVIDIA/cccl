@@ -60,13 +60,6 @@
 #  define _LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES
 #endif // _LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES
 
-#ifndef _LIBCUDACXX_HAS_NO_INT128
-#  if _CCCL_COMPILER(MSVC) || (_CCCL_COMPILER(NVRTC) && !defined(__CUDACC_RTC_INT128__)) \
-    || _CCCL_CUDA_COMPILER(NVCC, <, 11, 5) || !defined(__SIZEOF_INT128__)
-#    define _LIBCUDACXX_HAS_NO_INT128
-#  endif
-#endif // !_LIBCUDACXX_HAS_NO_INT128
-
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
 #  if _CCCL_HAS_CUDA_COMPILER
 #    define _LIBCUDACXX_HAS_NO_LONG_DOUBLE
@@ -87,17 +80,17 @@
 
 // libcu++ requires host device support for its tests. Until then restrict usage to at least 12.2
 #ifndef _LIBCUDACXX_HAS_NVFP16
-#  if defined(_CCCL_HAS_NVFP16) && _CCCL_CUDACC_AT_LEAST(12, 2) \
+#  if _CCCL_HAS_NVFP16() && _CCCL_CUDACC_AT_LEAST(12, 2) \
     && (_CCCL_HAS_CUDA_COMPILER || defined(LIBCUDACXX_ENABLE_HOST_NVFP16))
 #    define _LIBCUDACXX_HAS_NVFP16
-#  endif // _CCCL_HAS_NVFP16 && _CCCL_CUDACC_AT_LEAST(12, 2)
+#  endif // _CCCL_HAS_NVFP16() && _CCCL_CUDACC_AT_LEAST(12, 2)
 #endif // !_LIBCUDACXX_HAS_NVFP16
 
 // libcu++ requires host device support for its tests. Until then restrict usage to at least 12.2
 #ifndef _LIBCUDACXX_HAS_NVBF16
-#  if defined(_CCCL_HAS_NVBF16) && _CCCL_CUDACC_AT_LEAST(12, 2)
+#  if _CCCL_HAS_NVBF16() && _CCCL_CUDACC_AT_LEAST(12, 2)
 #    define _LIBCUDACXX_HAS_NVBF16
-#  endif // _CCCL_HAS_NVBF16 && _CCCL_CUDACC_AT_LEAST(12, 2)
+#  endif // _CCCL_HAS_NVBF16() && _CCCL_CUDACC_AT_LEAST(12, 2)
 #endif // !_LIBCUDACXX_HAS_NVBF16
 
 // NVCC does not have a way of silencing non '_' prefixed UDLs

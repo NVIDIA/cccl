@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class From, class To>
 // concept common_reference_with;
 
@@ -267,13 +265,11 @@ struct convertible_with_const_s2
 };
 static_assert(common_reference_with<convertible_with_const_s2 const&, s2 const&>, "");
 
-#ifndef TEST_COMPILER_MSVC_2017
 struct convertible_with_volatile_s2
 {
   __host__ __device__ operator s2 volatile&() volatile;
 };
 static_assert(common_reference_with<convertible_with_volatile_s2 volatile&, s2 volatile&>, "");
-#endif // !TEST_COMPILER_MSVC_2017
 
 struct BadBasicCommonReference
 {

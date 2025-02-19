@@ -23,8 +23,9 @@ struct CudaDriverLauncher
 {
   dim3 grid;
   dim3 block;
-  std::size_t shared_mem;
+  size_t shared_mem;
   CUstream stream;
+  bool dependent_launch;
 
   template <typename... Args>
   _CCCL_HIDE_FROM_ABI cudaError_t doit(CUkernel kernel, Args const&... args) const
@@ -38,16 +39,42 @@ struct CudaDriverLauncher
       return status;
     }
 
-    return static_cast<cudaError_t>(
-      cuLaunchKernel(kernel_fn, grid.x, grid.y, grid.z, block.x, block.y, block.z, shared_mem, stream, kernel_args, 0));
+#if _CCCL_HAS_PDL
+    if (dependent_launch)
+    {
+      CUlaunchAttribute attribute[1];
+      attribute[0].id                                           = CU_LAUNCH_ATTRIBUTE_PROGRAMMATIC_STREAM_SERIALIZATION;
+      attribute[0].value.programmaticStreamSerializationAllowed = 1;
+
+      CUlaunchConfig config{};
+      config.gridDimX       = grid.x;
+      config.gridDimY       = grid.y;
+      config.gridDimZ       = grid.z;
+      config.blockDimX      = block.x;
+      config.blockDimY      = block.y;
+      config.blockDimZ      = block.z;
+      config.sharedMemBytes = shared_mem;
+      config.hStream        = stream;
+      config.attrs          = attribute;
+      config.numAttrs       = 1;
+
+      return static_cast<cudaError_t>(cuLaunchKernelEx(&config, kernel_fn, kernel_args, 0));
+    }
+    else
+#endif
+    {
+      return static_cast<cudaError_t>(cuLaunchKernel(
+        kernel_fn, grid.x, grid.y, grid.z, block.x, block.y, block.z, shared_mem, stream, kernel_args, 0));
+    }
   }
 };
 
 struct CudaDriverLauncherFactory
 {
-  CudaDriverLauncher operator()(dim3 grid, dim3 block, _CUDA_VSTD::size_t shared_mem, CUstream stream) const
+  CudaDriverLauncher
+  operator()(dim3 grid, dim3 block, _CUDA_VSTD::size_t shared_mem, CUstream stream, bool dependent_launch = false) const
   {
-    return CudaDriverLauncher{grid, block, shared_mem, stream};
+    return CudaDriverLauncher{grid, block, shared_mem, stream, dependent_launch};
   }
 
   cudaError_t PtxVersion(int& version) const
@@ -74,6 +101,11 @@ struct CudaDriverLauncherFactory
 
     return static_cast<cudaError_t>(
       cuOccupancyMaxActiveBlocksPerMultiprocessor(&sm_occupancy, kernel_fn, block_size, dynamic_smem_bytes));
+  }
+
+  _CCCL_HIDE_FROM_ABI cudaError_t MaxGridDimX(int& max_grid_dim_x) const
+  {
+    return static_cast<cudaError_t>(cuDeviceGetAttribute(&max_grid_dim_x, CU_DEVICE_ATTRIBUTE_MAX_GRID_DIM_X, device));
   }
 
   CUdevice device;

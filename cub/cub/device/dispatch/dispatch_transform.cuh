@@ -59,9 +59,7 @@ enum class requires_stable_address
 template <typename T>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE const char* round_down_ptr(const T* ptr, unsigned alignment)
 {
-#if _CCCL_STD_VER > 2011
   _CCCL_ASSERT(::cuda::std::has_single_bit(alignment), "");
-#endif // _CCCL_STD_VER > 2011
   return reinterpret_cast<const char*>(
     reinterpret_cast<::cuda::std::uintptr_t>(ptr) & ~::cuda::std::uintptr_t{alignment - 1});
 }
@@ -94,7 +92,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(const T* addr, int tile_size)
 // TODO(miscco): we should probably constrain It to not be a contiguous iterator in C++17 (and change the overload
 // above to accept any contiguous iterator)
 // overload for any iterator that is not a pointer, do nothing
-template <int, typename It, ::cuda::std::enable_if_t<!::cuda::std::is_pointer<It>::value, int> = 0>
+template <int, typename It, ::cuda::std::enable_if_t<!::cuda::std::is_pointer_v<It>, int> = 0>
 _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(It, int)
 {}
 
@@ -160,7 +158,7 @@ _CCCL_DEVICE void transform_kernel_impl(
 }
 
 // TODO(bgruber) cheap copy of ::cuda::std::apply, which requires C++17.
-template <class F, class Tuple, std::size_t... Is>
+template <class F, class Tuple, size_t... Is>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto poor_apply_impl(F&& f, Tuple&& t, ::cuda::std::index_sequence<Is...>)
   -> decltype(::cuda::std::forward<F>(f)(::cuda::std::get<Is>(::cuda::std::forward<Tuple>(t))...))
 {
@@ -171,12 +169,12 @@ template <class F, class Tuple>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto poor_apply(F&& f, Tuple&& t) -> decltype(poor_apply_impl(
   ::cuda::std::forward<F>(f),
   ::cuda::std::forward<Tuple>(t),
-  ::cuda::std::make_index_sequence<::cuda::std::tuple_size<::cuda::std::remove_reference_t<Tuple>>::value>{}))
+  ::cuda::std::make_index_sequence<::cuda::std::tuple_size_v<::cuda::std::remove_reference_t<Tuple>>>{}))
 {
   return poor_apply_impl(
     ::cuda::std::forward<F>(f),
     ::cuda::std::forward<Tuple>(t),
-    ::cuda::std::make_index_sequence<::cuda::std::tuple_size<::cuda::std::remove_reference_t<Tuple>>::value>{});
+    ::cuda::std::make_index_sequence<::cuda::std::tuple_size_v<::cuda::std::remove_reference_t<Tuple>>>{});
 }
 
 // Implementation notes on memcpy_async and UBLKCP kernels regarding copy alignment and padding
@@ -424,7 +422,7 @@ union kernel_arg
   aligned_base_ptr<value_t<It>> aligned_ptr; // first member is trivial
   It iterator; // may not be trivially [default|copy]-constructible
 
-  static_assert(::cuda::std::is_trivial<decltype(aligned_ptr)>::value, "");
+  static_assert(::cuda::std::is_trivial_v<decltype(aligned_ptr)>, "");
 
   // Sometimes It is not trivially [default|copy]-constructible (e.g.
   // thrust::normal_iterator<thrust::device_pointer<T>>), so because of
@@ -636,8 +634,8 @@ struct dispatch_t<StableAddress,
                   TransformOp,
                   PolicyHub>
 {
-  static_assert(::cuda::std::is_same<Offset, ::cuda::std::int32_t>::value
-                  || ::cuda::std::is_same<Offset, ::cuda::std::int64_t>::value,
+  static_assert(::cuda::std::is_same_v<Offset, ::cuda::std::int32_t>
+                  || ::cuda::std::is_same_v<Offset, ::cuda::std::int64_t>,
                 "cub::DeviceTransform is only tested and tuned for 32-bit or 64-bit signed offset types");
 
   ::cuda::std::tuple<RandomAccessIteratorsIn...> in;
@@ -738,9 +736,9 @@ struct dispatch_t<StableAddress,
       config->elem_per_thread);
   }
 
-  template <typename ActivePolicy, std::size_t... Is>
+  template <typename ActivePolicy, size_t... Is>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
-  invoke_algorithm(cuda::std::index_sequence<Is...>, ::cuda::std::integral_constant<Algorithm, Algorithm::ublkcp>)
+    invoke_algorithm(::cuda::std::index_sequence<Is...>, ::cuda::std::integral_constant<Algorithm, Algorithm::ublkcp>)
   {
     auto ret = configure_ublkcp_kernel<ActivePolicy>();
     if (!ret)
@@ -761,9 +759,9 @@ struct dispatch_t<StableAddress,
   }
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
 
-  template <typename ActivePolicy, std::size_t... Is>
+  template <typename ActivePolicy, size_t... Is>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
-  invoke_algorithm(cuda::std::index_sequence<Is...>, ::cuda::std::integral_constant<Algorithm, Algorithm::prefetch>)
+    invoke_algorithm(::cuda::std::index_sequence<Is...>, ::cuda::std::integral_constant<Algorithm, Algorithm::prefetch>)
   {
     using policy_t          = typename ActivePolicy::algo_policy;
     constexpr int block_dim = policy_t::block_threads;

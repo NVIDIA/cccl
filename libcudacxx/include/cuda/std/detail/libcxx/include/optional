@@ -238,18 +238,16 @@ _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
 
 #endif // !_CCCL_NO_EXCEPTIONS
 
-#if _CCCL_STD_VER > 2011
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void __throw_bad_optional_access()
 {
-#  ifndef _CCCL_NO_EXCEPTIONS
+#ifndef _CCCL_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(
     NV_IS_HOST, (throw _CUDA_VSTD_NOVERSION::bad_optional_access();), (_CUDA_VSTD_NOVERSION::terminate();))
-#  else // ^^^ _CCCL_NO_EXCEPTIONS ^^^ / vvv !_CCCL_NO_EXCEPTIONS vvv
+#else // ^^^ _CCCL_NO_EXCEPTIONS ^^^ / vvv !_CCCL_NO_EXCEPTIONS vvv
   _CUDA_VSTD_NOVERSION::terminate();
-#  endif // !_CCCL_NO_EXCEPTIONS
+#endif // !_CCCL_NO_EXCEPTIONS
 }
 
 struct nullopt_t
@@ -398,11 +396,11 @@ struct __optional_storage_base : __optional_destruct_base<_Tp>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void __construct(_Args&&... __args)
   {
     _CCCL_ASSERT(!has_value(), "__construct called for engaged __optional_storage");
-#  if _CCCL_STD_VER > 2017
+#if _CCCL_STD_VER > 2017
     _CUDA_VSTD::construct_at(_CUDA_VSTD::addressof(this->__val_), _CUDA_VSTD::forward<_Args>(__args)...);
-#  else
+#else
     ::new ((void*) _CUDA_VSTD::addressof(this->__val_)) value_type(_CUDA_VSTD::forward<_Args>(__args)...);
-#  endif
+#endif
     this->__engaged_ = true;
   }
 
@@ -1089,10 +1087,10 @@ public:
   using __base::reset;
 };
 
-#  if !defined(_CCCL_NO_DEDUCTION_GUIDES)
+#if !defined(_CCCL_NO_DEDUCTION_GUIDES)
 template <class _Tp>
 _CCCL_HOST_DEVICE optional(_Tp) -> optional<_Tp>;
-#  endif // _CCCL_NO_DEDUCTION_GUIDES
+#endif // _CCCL_NO_DEDUCTION_GUIDES
 
 // Comparisons between optionals
 _CCCL_EXEC_CHECK_DISABLE
@@ -1424,25 +1422,23 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr optional<_Tp> make_optional(initializer_list
   return optional<_Tp>(in_place, __il, _CUDA_VSTD::forward<_Args>(__args)...);
 }
 
-#  ifndef __cuda_std__
+#ifndef __cuda_std__
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__enable_hash_helper<optional<_Tp>, remove_const_t<_Tp>>>
 {
-#    if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
+#  if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
   using argument_type _LIBCUDACXX_DEPRECATED_IN_CXX17 = optional<_Tp>;
   using result_type _LIBCUDACXX_DEPRECATED_IN_CXX17   = size_t;
-#    endif
+#  endif
 
   _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(const optional<_Tp>& __opt) const
   {
     return static_cast<bool>(__opt) ? hash<remove_const_t<_Tp>>()(*__opt) : 0;
   }
 };
-#  endif // __cuda_std__
+#endif // __cuda_std__
 
 _LIBCUDACXX_END_NAMESPACE_STD
-
-#endif // _CCCL_STD_VER > 2011
 
 _CCCL_POP_MACROS
 

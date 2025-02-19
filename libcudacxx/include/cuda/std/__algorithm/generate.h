@@ -23,8 +23,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _ForwardIterator, class _Generator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
-generate(_ForwardIterator __first, _ForwardIterator __last, _Generator __gen)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr void generate(_ForwardIterator __first, _ForwardIterator __last, _Generator __gen)
 {
   for (; __first != __last; ++__first)
   {
