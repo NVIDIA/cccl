@@ -19,7 +19,6 @@
 
 #include <cublas_v2.h>
 #include <cusolverDn.h>
-#include <nvtx3/nvToolsExt.h>
 
 #define TILED
 
