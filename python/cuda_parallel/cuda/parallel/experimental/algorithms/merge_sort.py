@@ -17,11 +17,6 @@ from ..iterators._iterators import IteratorBase
 from ..typing import DeviceArrayLike
 
 
-def _dtype_validation(dt1, dt2):
-    if dt1 != dt2:
-        raise TypeError(f"dtype mismatch: __init__={dt1}, __call__={dt2}")
-
-
 def _update_device_array_pointers(current_array, passed_array):
     if current_array.type.value == cccl.IteratorKind.POINTER:
         current_array.state = protocols.get_data_pointer(passed_array)
