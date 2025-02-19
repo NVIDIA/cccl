@@ -71,7 +71,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_ISINF bool isinf(long 
 #if defined(_LIBCUDACXX_HAS_NVFP16)
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__half __x) noexcept
 {
-  if (_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
 #  if _CCCL_STD_VER >= 2020 && _CCCL_CUDACC_BELOW(12, 3)
     // this is a workaround for nvbug 4362808
@@ -87,7 +87,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__half __x) noexc
 #if defined(_LIBCUDACXX_HAS_NVBF16)
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__nv_bfloat16 __x) noexcept
 {
-  if (_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
 #  if _CCCL_STD_VER >= 2020 && _CCCL_CUDACC_BELOW(12, 3)
     // this is a workaround for nvbug 4362808
