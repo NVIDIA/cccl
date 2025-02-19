@@ -28,10 +28,11 @@ DTYPE_LIST = [
 ]
 
 
-def random_array(size, dtype) -> np.typing.NDArray:
+def random_array(size, dtype, max_value=None) -> np.typing.NDArray:
     rng = np.random.default_rng()
     if np.isdtype(dtype, "integral"):
-        max_value = np.iinfo(dtype).max
+        if max_value is None:
+            max_value = np.iinfo(dtype).max
         return rng.integers(max_value, size=size, dtype=dtype)
     elif np.isdtype(dtype, "real floating"):
         return rng.random(size=size, dtype=dtype)
@@ -236,6 +237,26 @@ def test_merge_sort_pairs_struct_type():
 
     np.testing.assert_array_equal(h_out_keys, h_in_keys)
     np.testing.assert_array_equal(h_out_items, h_in_items)
+
+
+def test_merge_sort_keys_complex():
+    def compare_complex(lhs, rhs):
+        return np.uint8(lhs.real < rhs.real)
+
+    num_items = 10000
+    max_value = 20  # To ensure that the stability property is being tested
+    real = random_array(num_items, np.int64, max_value)
+    imaginary = random_array(num_items, np.int64, max_value)
+
+    h_in_keys = real + 1j * imaginary
+    d_in_keys = numba.cuda.to_device(h_in_keys)
+
+    merge_sort_device(d_in_keys, None, d_in_keys, None, compare_complex, num_items)
+
+    h_out_keys = d_in_keys.copy_to_host()
+    h_in_keys = h_in_keys[np.argsort(h_in_keys.real, stable=True)]
+
+    np.testing.assert_array_equal(h_out_keys, h_in_keys)
 
 
 @pytest.mark.parametrize(
