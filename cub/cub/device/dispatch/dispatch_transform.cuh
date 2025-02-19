@@ -423,7 +423,7 @@ _CCCL_HOST_DEVICE auto make_aligned_base_ptr_kernel_arg(It ptr, int alignment) -
 }
 
 template <Algorithm Alg>
-_CCCL_GLOBAL_CONSTANT bool needs_aligned_ptr_v =
+_CCCL_INLINE_VAR constexpr bool needs_aligned_ptr_v =
   false
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
   || Alg == Algorithm::ublkcp
