@@ -15,6 +15,8 @@
 #include <cuda/for_each_canceled>
 #include <cuda/std/cmath>
 
+#if !defined(TEST_HAS_NO_INT128_T)
+
 __device__ void vec_add_impl1(int* a, int* b, int* c, int n, dim3 block_idx)
 {
   int idx = threadIdx.x + block_idx.x * blockDim.x;
@@ -49,22 +51,21 @@ __device__ void vec_add_impl3(int* a, int* b, int* c, int n, dim3 block_idx)
 
 __global__ void vec_add_det1(int* a, int* b, int* c, int n, int leader_tidx = 0)
 {
-  cuda::__detail::__for_each_canceled_block<1>(threadIdx.x == leader_tidx, [=](dim3 block_idx) {
+  ::cuda::__for_each_canceled_block<1>(threadIdx.x == leader_tidx, [=](dim3 block_idx) {
     vec_add_impl1(a, b, c, n, block_idx);
   });
 }
 
 __global__ void vec_add_det2(int* a, int* b, int* c, int n, int leader_tidx = 0)
 {
-  cuda::__detail::__for_each_canceled_block<2>(
-    threadIdx.x == leader_tidx && threadIdx.y == leader_tidx, [=](dim3 block_idx) {
-      vec_add_impl2(a, b, c, n, block_idx);
-    });
+  ::cuda::__for_each_canceled_block<2>(threadIdx.x == leader_tidx && threadIdx.y == leader_tidx, [=](dim3 block_idx) {
+    vec_add_impl2(a, b, c, n, block_idx);
+  });
 }
 
 __global__ void vec_add_det3(int* a, int* b, int* c, int n, int leader_tidx = 0)
 {
-  cuda::__detail::__for_each_canceled_block<3>(
+  ::cuda::__for_each_canceled_block<3>(
     threadIdx.x == leader_tidx && threadIdx.y == leader_tidx && threadIdx.z == leader_tidx, [=](dim3 block_idx) {
       vec_add_impl3(a, b, c, n, block_idx);
     });
@@ -90,9 +91,6 @@ __global__ void vec_add3(int* a, int* b, int* c, int n)
     vec_add_impl3(a, b, c, n, block_idx);
   });
 }
-
-#include <iostream>
-#include <vector>
 
 template <typename F>
 bool test(int N, F&& f)
@@ -120,69 +118,89 @@ bool test(int N, F&& f)
   return true;
 }
 
+void test()
+{
+  const int N = 1000000;
+  {
+    auto fn = [](int* a, int* b, int* c, int n, int tidx) {
+      int tpb = 256;
+      int bpg = (n + tpb - 1) / tpb;
+      vec_add_det1<<<bpg, tpb>>>(a, b, c, n, tidx);
+    };
+    assert(test(N, fn));
+  }
+
+  {
+    auto fn = [](int* a, int* b, int* c, int n, int tidx) {
+      dim3 tpb(16, 16, 1);
+      int ntpb = tpb.x * tpb.y; // 256
+      int bpg  = (n + ntpb - 1) / ntpb;
+      int bpgx = (int) cuda::std::sqrt(bpg) + 1;
+      int bpgy = bpgx;
+      assert((bpgx * bpgy) >= bpg);
+      vec_add_det2<<<dim3(bpgx, bpgy, 1), tpb>>>(a, b, c, n, tidx);
+    };
+    assert(test(N, fn));
+  }
+
+  {
+    auto fn = [](int* a, int* b, int* c, int n, int tidx) {
+      dim3 tpb(8, 8, 8);
+      int ntpb = tpb.x * tpb.y * tpb.z; // 512
+      int bpg  = (n + ntpb - 1) / ntpb;
+      int bpgx = (int) cuda::std::pow(bpg, 1. / 3.) + 1;
+      int bpgy = bpgx;
+      int bpgz = bpgx;
+      assert((bpgx * bpgy * bpgz) >= bpg);
+      vec_add_det3<<<dim3(bpgx, bpgy, bpgz), tpb>>>(a, b, c, n, tidx);
+    };
+    assert(test(N, fn));
+  }
+
+  {
+    auto fn = [](int* a, int* b, int* c, int n, int tidx) {
+      int tpb = 256;
+      int bpg = (n + tpb - 1) / tpb;
+      vec_add1<<<bpg, tpb>>>(a, b, c, n);
+    };
+    assert(test(N, fn));
+  }
+
+  {
+    auto fn = [](int* a, int* b, int* c, int n, int tidx) {
+      dim3 tpb(16, 16, 1);
+      int ntpb = tpb.x * tpb.y; // 256
+      int bpg  = (n + ntpb - 1) / ntpb;
+      int bpgx = (int) cuda::std::sqrt(bpg) + 1;
+      int bpgy = bpgx;
+      assert((bpgx * bpgy) >= bpg);
+      vec_add2<<<dim3(bpgx, bpgy, 1), tpb>>>(a, b, c, n);
+    };
+    assert(test(N, fn));
+  }
+
+  {
+    auto fn = [](int* a, int* b, int* c, int n, int tidx) {
+      dim3 tpb(8, 8, 8);
+      int ntpb = tpb.x * tpb.y * tpb.z; // 512
+      int bpg  = (n + ntpb - 1) / ntpb;
+      int bpgx = (int) cuda::std::pow(bpg, 1. / 3.) + 1;
+      int bpgy = bpgx;
+      int bpgz = bpgx;
+      assert((bpgx * bpgy * bpgz) >= bpg);
+      vec_add3<<<dim3(bpgx, bpgy, bpgz), tpb>>>(a, b, c, n);
+    };
+    assert(test(N, fn));
+  }
+}
+
+#endif // !TEST_HAS_NO_INT128_T
+
 int main(int argc, char** argv)
 {
-  NV_IF_TARGET(
-    NV_IS_HOST,
-    (int N = 1000000;
-     if (!test(N,
-               [](int* a, int* b, int* c, int n, int tidx) {
-                 int tpb = 256;
-                 int bpg = (n + tpb - 1) / tpb;
-                 vec_add_det1<<<bpg, tpb>>>(a, b, c, n, tidx);
-               })) return 1;
-
-     if (!test(N,
-               [](int* a, int* b, int* c, int n, int tidx) {
-                 dim3 tpb(16, 16, 1);
-                 int ntpb = tpb.x * tpb.y; // 256
-                 int bpg  = (n + ntpb - 1) / ntpb;
-                 int bpgx = (int) cuda::std::sqrt(bpg) + 1;
-                 int bpgy = bpgx;
-                 assert((bpgx * bpgy) >= bpg);
-                 vec_add_det2<<<dim3(bpgx, bpgy, 1), tpb>>>(a, b, c, n, tidx);
-               })) return 1;
-
-     if (!test(N,
-               [](int* a, int* b, int* c, int n, int tidx) {
-                 dim3 tpb(8, 8, 8);
-                 int ntpb = tpb.x * tpb.y * tpb.z; // 512
-                 int bpg  = (n + ntpb - 1) / ntpb;
-                 int bpgx = (int) cuda::std::pow(bpg, 1. / 3.) + 1;
-                 int bpgy = bpgx;
-                 int bpgz = bpgx;
-                 assert((bpgx * bpgy * bpgz) >= bpg);
-                 vec_add_det3<<<dim3(bpgx, bpgy, bpgz), tpb>>>(a, b, c, n, tidx);
-               })) return 1;
-
-     if (!test(N,
-               [](int* a, int* b, int* c, int n, int tidx) {
-                 int tpb = 256;
-                 int bpg = (n + tpb - 1) / tpb;
-                 vec_add1<<<bpg, tpb>>>(a, b, c, n);
-               })) return 1;
-
-     if (!test(N,
-               [](int* a, int* b, int* c, int n, int tidx) {
-                 dim3 tpb(16, 16, 1);
-                 int ntpb = tpb.x * tpb.y; // 256
-                 int bpg  = (n + ntpb - 1) / ntpb;
-                 int bpgx = (int) cuda::std::sqrt(bpg) + 1;
-                 int bpgy = bpgx;
-                 assert((bpgx * bpgy) >= bpg);
-                 vec_add2<<<dim3(bpgx, bpgy, 1), tpb>>>(a, b, c, n);
-               })) return 1;
-
-     if (!test(N, [](int* a, int* b, int* c, int n, int tidx) {
-           dim3 tpb(8, 8, 8);
-           int ntpb = tpb.x * tpb.y * tpb.z; // 512
-           int bpg  = (n + ntpb - 1) / ntpb;
-           int bpgx = (int) cuda::std::pow(bpg, 1. / 3.) + 1;
-           int bpgy = bpgx;
-           int bpgz = bpgx;
-           assert((bpgx * bpgy * bpgz) >= bpg);
-           vec_add3<<<dim3(bpgx, bpgy, bpgz), tpb>>>(a, b, c, n);
-         })) return 1;));
+#if !defined(TEST_HAS_NO_INT128_T)
+  NV_IF_TARGET(NV_IS_HOST, (test();))
+#endif // !TEST_HAS_NO_INT128_T
 
   return 0;
 }
