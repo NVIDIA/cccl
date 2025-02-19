@@ -69,7 +69,7 @@ __global__ void vec_add_det3(int* a, int* b, int* c, int n, int tidx = 0)
     });
 }
 
-__global__ void vec_add1(int* a, int* b, int* c, int n, int tidx = 0)
+__global__ void vec_add1(int* a, int* b, int* c, int n)
 {
   cuda::for_each_canceled_block<1>([=](dim3 block_idx) {
     vec_add_impl1(a, b, c, n, block_idx);
