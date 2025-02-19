@@ -35,31 +35,33 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER && (defined(__CUDACC__) || defined(_NVHPC_CUDA))
+#if _CCCL_HAS_CUDA_COMPILER
 
 #  if _CCCL_HAS_INT128()
 
+#    if __cccl_ptx_isa >= 870
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-template <int __I>
+template <int _Index>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_HIDE_FROM_ABI int __cluster_get_dim(__int128 __result) noexcept
 {
   int __r;
-  if constexpr (__I == 0)
+  if constexpr (_Index == 0)
   {
     asm volatile("clusterlaunchcontrol.query_cancel.get_first_ctaid::x.b32.b128 %0, %1;"
                  : "=r"(__r)
                  : "q"(__result)
                  : "memory");
   }
-  else if constexpr (__I == 1)
+  else if constexpr (_Index == 1)
   {
     asm volatile("clusterlaunchcontrol.query_cancel.get_first_ctaid::y.b32.b128 %0, %1;"
                  : "=r"(__r)
                  : "q"(__result)
                  : "memory");
   }
-  else if constexpr (__I == 2)
+  else if constexpr (_Index == 2)
   {
     asm volatile("clusterlaunchcontrol.query_cancel.get_first_ctaid::z.b32.b128 %0, %1;"
                  : "=r"(__r)
@@ -73,17 +75,141 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_HIDE_FROM_ABI int __cluster_get_dim(__int128 
   return __r;
 }
 
-/// This API for implementing work-stealing, repeatedly attempts to cancel the launch of a thread block
-/// from the current grid. On success, it invokes the unary function `__uf` before trying again.
-/// On failure, it returns.
-///
-/// This API does not provide any memory synchronization.
-/// This API does not guarantee that any thread will invoke `__uf` with the next block index until all
-/// invocatons of `__uf` for the prior block index have returned.
-///
-/// Preconditions:
-/// - All thread block threads shall call this API exactly once.
-/// - Exactly one thread block thread shall call this API with `__is_leader` equals `true`.
+//! This API for implementing work-stealing, repeatedly attempts to cancel the launch of a thread block
+//! from the current grid. On success, it invokes the unary function `__uf` before trying again.
+//! On failure, it returns.
+//!
+//! This API does not provide any memory synchronization.
+//! This API does not guarantee that any thread will invoke `__uf` with the next block index until all
+//! invocatons of `__uf` for the prior block index have returned.
+//!
+//! Preconditions:
+//! - All thread block threads shall call this API exactly once.
+//! - Exactly one thread block thread shall call this API with `__is_leader` equals `true`.
+template <int __ThreadBlockRank = 3, typename __UnaryFunction = void>
+_CCCL_DEVICE _CCCL_HIDE_FROM_ABI void
+__for_each_canceled_block_sm100(dim3 __block_idx, bool __is_leader, __UnaryFunction __uf)
+{
+  __shared__ uint64_t __barrier; // TODO: use 2 barriers and 2 results to avoid last sync threads
+  __shared__ __int128 __result;
+  bool __phase = false;
+
+  // Initialize barrier and kick-start try_cancel pipeline:
+  if (__is_leader)
+  {
+    auto __leader_mask = __activemask();
+    asm volatile(
+      "{\n\t"
+      ".reg .pred p;\n\t"
+      // elect.sync is a workaround for peeling loop (#nvbug-id)
+      "elect.sync _|p, %2;\n\t"
+      "@p mbarrier.init.shared::cta.b64 [%1], 1;\n\t"
+      // `try_cancel` access the mbarrier using generic-proxy, so no cross-proxy fence required here
+      "@p clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.b128 [%0], [%1];\n\t"
+      // This arrive does not order prior memory operations and can be relaxed.
+      "@p mbarrier.arrive.expect_tx.relaxed.cta.shared::cta.b64 _, [%1], 16;\n\t"
+      "}"
+      :
+      : "r"((int) __cvta_generic_to_shared(&__result)),
+        "r"((int) __cvta_generic_to_shared(&__barrier)),
+        "r"(__leader_mask)
+      : "memory");
+  }
+
+  do
+  {
+    __uf(__block_idx); // Invoke unary function.
+
+    if (__is_leader)
+    {
+      asm volatile(
+        "{\n\t"
+        ".reg .pred p;\n\t"
+        "waitLoop:\n\t\t"
+        "mbarrier.try_wait.parity.relaxed.cta.shared.b64 p, [%0], %1;\n\t\t"
+        "@!p bra waitLoop;\n\t"
+        "}"
+        :
+        : "r"((int) __cvta_generic_to_shared(&__barrier)), "r"((unsigned) __phase)
+        : "memory");
+      __phase = !__phase;
+    }
+    __syncthreads(); // All threads of prior thread block have "exited".
+    // Note: this syncthreads provides the .acquire.cta fence preventing
+    // the next query operations from being re-ordered above the poll loop.
+    {
+      int __success = 0;
+      asm volatile(
+        "{\n\t"
+        ".reg .pred p;\n\t"
+        "clusterlaunchcontrol.query_cancel.is_canceled.pred.b128 p, %1;\n\t"
+        "selp.b32 %0, 1, 0, p;\n\t"
+        "}\n\t"
+        : "=r"(__success)
+        : "q"(__result));
+      if (__success != 1)
+      {
+        // Invalidating mbarrier and synchronizing before exiting not
+        // required since each thread block calls this API at most once.
+        break;
+      }
+    }
+
+    // Read new thread block dimensions
+    dim3 __b(::cuda::__cluster_get_dim<0>(__result), 1, 1);
+    if constexpr (__ThreadBlockRank >= 2)
+    {
+      __b.y = ::cuda::__cluster_get_dim<1>(__result);
+    }
+    if constexpr (__ThreadBlockRank == 3)
+    {
+      __b.z = ::cuda::__cluster_get_dim<2>(__result);
+    }
+    __block_idx = __b;
+
+    // Wait for all threads to read __result before issuing next async op.
+    // generic->generic synchronization
+    __syncthreads();
+    // TODO: only control-warp requires sync, other warps can arrive
+    // TODO: double-buffering results+barrier pairs using phase to avoids this sync
+
+    if (__is_leader)
+    {
+      auto __leader_mask = __activemask();
+      asm volatile(
+        "{\n\t"
+        ".reg .pred p;\n\t"
+        // elect.sync is a workaround for peeling loop (#nvbug-id)
+        "elect.sync _|p, %2;\n\t"
+        // generic->async release + acquire synchronization of prior reads:
+        // use bi-directional cross-proxy acq_rel fence instead of uni-dir rel; acq; fences.
+        "@p fence.proxy.async.shared::cta;\n\t"
+        // try to cancel another thread block
+        "@p clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.b128 [%0], [%1];\n\t"
+        "@p mbarrier.arrive.expect_tx.relaxed.cta.shared::cta.b64 _, [%1], 16;\n\t"
+        "}"
+        :
+        : "r"((int) __cvta_generic_to_shared(&__result)),
+          "r"((int) __cvta_generic_to_shared(&__barrier)),
+          "r"(__leader_mask)
+        : "memory");
+    }
+  } while (true);
+}
+
+#    endif // __cccl_ptx_isa >= 870
+
+//! This API for implementing work-stealing, repeatedly attempts to cancel the launch of a thread block
+//! from the current grid. On success, it invokes the unary function `__uf` before trying again.
+//! On failure, it returns.
+//!
+//! This API does not provide any memory synchronization.
+//! This API does not guarantee that any thread will invoke `__uf` with the next block index until all
+//! invocatons of `__uf` for the prior block index have returned.
+//!
+//! Preconditions:
+//! - All thread block threads shall call this API exactly once.
+//! - Exactly one thread block thread shall call this API with `__is_leader` equals `true`.
 template <int __ThreadBlockRank = 3, typename __UnaryFunction = void>
 _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void __for_each_canceled_block(bool __is_leader, __UnaryFunction __uf)
 {
@@ -101,132 +227,22 @@ _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void __for_each_canceled_block(bool __is_leader
     __block_idx = dim3(blockIdx.x, blockIdx.y, blockIdx.z);
   }
 
-  NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_100,
-    (
-      __shared__ uint64_t __barrier; // TODO: use 2 barriers and 2 results to avoid last sync threads
-      __shared__ __int128 __result;
-      bool __phase = false;
-
-      // Initialize barrier and kick-start try_cancel pipeline:
-      if (__is_leader) {
-        auto __leader_mask = __activemask();
-        asm volatile(
-          "{\n\t"
-          ".reg .pred p;\n\t"
-          // elect.sync is a workaround for peeling loop (#nvbug-id)
-          "elect.sync _|p, %2;\n\t"
-          "@p mbarrier.init.shared::cta.b64 [%1], 1;\n\t"
-          // `try_cancel` access the mbarrier using generic-proxy, so no cross-proxy fence required here
-          "@p clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.b128 [%0], [%1];\n\t"
-          // This arrive does not order prior memory operations and can be relaxed.
-          "@p mbarrier.arrive.expect_tx.relaxed.cta.shared::cta.b64 _, [%1], 16;\n\t"
-          "}"
-          :
-          : "r"((int) __cvta_generic_to_shared(&__result)),
-            "r"((int) __cvta_generic_to_shared(&__barrier)),
-            "r"(__leader_mask)
-          : "memory");
-      }
-
-      do {
-        __uf(__block_idx); // Invoke unary function.
-
-        if (__is_leader)
-        {
-          asm volatile(
-            "{\n\t"
-            ".reg .pred p;\n\t"
-            "waitLoop:\n\t\t"
-            "mbarrier.try_wait.parity.relaxed.cta.shared.b64 p, [%0], %1;\n\t\t"
-            "@!p bra waitLoop;\n\t"
-            "}"
-            :
-            : "r"((int) __cvta_generic_to_shared(&__barrier)), "r"((unsigned) __phase)
-            : "memory");
-          __phase = !__phase;
-        }
-        __syncthreads(); // All threads of prior thread block have "exited".
-        // Note: this syncthreads provides the .acquire.cta fence preventing
-        // the next query operations from being re-ordered above the poll loop.
-        {
-          int __success = 0;
-          asm volatile(
-            "{\n\t"
-            ".reg .pred p;\n\t"
-            "clusterlaunchcontrol.query_cancel.is_canceled.pred.b128 p, %1;\n\t"
-            "selp.b32 %0, 1, 0, p;\n\t"
-            "}\n\t"
-            : "=r"(__success)
-            : "q"(__result));
-          if (__success != 1)
-          {
-            // Invalidating mbarrier and synchronizing before exiting not
-            // required since each thread block calls this API at most once.
-            break;
-          }
-        }
-
-        // Read new thread block dimensions
-        dim3 __b(::cuda::__cluster_get_dim<0>(__result), 1, 1);
-        if constexpr (__ThreadBlockRank >= 2)
-        {
-          __b.y = ::cuda::__cluster_get_dim<1>(__result);
-        }
-        if constexpr (__ThreadBlockRank == 3)
-        {
-          __b.z = ::cuda::__cluster_get_dim<2>(__result);
-        }
-        __block_idx = __b;
-
-        // Wait for all threads to read __result before issuing next async op.
-        // generic->generic synchronization
-        __syncthreads();
-        // TODO: only control-warp requires sync, other warps can arrive
-        // TODO: double-buffering results+barrier pairs using phase to avoids this sync
-
-        if (__is_leader)
-        {
-          auto __leader_mask = __activemask();
-          asm volatile(
-            "{\n\t"
-            ".reg .pred p;\n\t"
-            // elect.sync is a workaround for peeling loop (#nvbug-id)
-            "elect.sync _|p, %2;\n\t"
-            // generic->async release + acquire synchronization of prior reads:
-            // use bi-directional cross-proxy acq_rel fence instead of uni-dir rel; acq; fences.
-            "@p fence.proxy.async.shared::cta;\n\t"
-            // try to cancel another thread block
-            "@p clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.b128 [%0], [%1];\n\t"
-            "@p mbarrier.arrive.expect_tx.relaxed.cta.shared::cta.b64 _, [%1], 16;\n\t"
-            "}"
-            :
-            : "r"((int) __cvta_generic_to_shared(&__result)),
-              "r"((int) __cvta_generic_to_shared(&__barrier)),
-              "r"(__leader_mask)
-            : "memory");
-        }
-      } while (true);),
-    ( // NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
-      // SW fall-back for lower compute capabilities.
-      // TODO: it may make sense to __trap here instead since lower compute capabilities may want
-      // to do something else (grid-stride, atomics, etc.).
-      // A higher-level abstraction like for_each should handle that.
-
-      __uf(__block_idx);)) // NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
+                    (::cuda::__for_each_canceled_block_sm100(__block_idx, __is_leader, _CUDA_VSTD::move(__uf));),
+                    (__uf(__block_idx);))
 }
 
-/// This API used to implement work-stealing, repeatedly attempts to cancel the launch of a thread block
-/// from the current grid. On success, it invokes the unary function `__uf` before trying again.
-/// On failure, it returns.
-///
-/// This API does not provide any memory synchronization.
-/// This API does not guarantee that any thread will invoke `__uf` with the next block index until all
-/// invocatons of `__uf` for the prior block index have returned.
-///
-/// Preconditions:
-/// - All thread block threads shall call this API exactly once.
-/// - Exactly one thread block thread shall call this API with `__is_leader` equals `true`.
+//! This API used to implement work-stealing, repeatedly attempts to cancel the launch of a thread block
+//! from the current grid. On success, it invokes the unary function `__uf` before trying again.
+//! On failure, it returns.
+//!
+//! This API does not provide any memory synchronization.
+//! This API does not guarantee that any thread will invoke `__uf` with the next block index until all
+//! invocatons of `__uf` for the prior block index have returned.
+//!
+//! Preconditions:
+//! - All thread block threads shall call this API exactly once.
+//! - Exactly one thread block thread shall call this API with `__is_leader` equals `true`.
 template <int __ThreadBlockRank = 3, typename __UnaryFunction = void>
 _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void for_each_canceled_block(__UnaryFunction __uf)
 {
@@ -254,6 +270,6 @@ _LIBCUDACXX_END_NAMESPACE_CUDA
 
 #  endif // _CCCL_HAS_INT128()
 
-#endif // _CCCL_HAS_CUDA_COMPILER && (defined(__CUDACC__) || defined(_NVHPC_CUDA))
+#endif // _CCCL_HAS_CUDA_COMPILER
 
 #endif // _CUDA__FUNCTIONAL_FOR_EACH_CANCELED_H
