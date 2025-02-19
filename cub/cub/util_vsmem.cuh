@@ -99,13 +99,13 @@ public:
   template <typename AgentPolicyT>
   _CCCL_HOST_DEVICE static constexpr int BlockThreads(AgentPolicyT /* policy */)
   {
-    return AgentPolicyT::BLOCK_THREADS;
+    return AgentT::BLOCK_THREADS;
   }
 
   template <typename AgentPolicyT>
   _CCCL_HOST_DEVICE static constexpr int ItemsPerThread(AgentPolicyT /* policy */)
   {
-    return AgentPolicyT::ITEMS_PER_THREAD;
+    return AgentT::ITEMS_PER_THREAD;
   }
 
   _CCCL_HOST_DEVICE static constexpr ::cuda::std::size_t VSMemPerBlock()

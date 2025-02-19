@@ -117,36 +117,26 @@ struct DeviceUniqueByKeyKernelSource
  * @tparam OffsetT
  *   Signed integer type for global offsets
  */
-template <
-  typename KeyInputIteratorT,
-  typename ValueInputIteratorT,
-  typename KeyOutputIteratorT,
-  typename ValueOutputIteratorT,
-  typename NumSelectedIteratorT,
-  typename EqualityOpT,
-  typename OffsetT,
-  typename PolicyHub =
-    detail::unique_by_key::policy_hub<detail::value_t<KeyInputIteratorT>, detail::value_t<ValueInputIteratorT>>,
-  typename KernelSource = detail::unique_by_key::DeviceUniqueByKeyKernelSource<
-    typename PolicyHub::MaxPolicy,
-    KeyInputIteratorT,
-    ValueInputIteratorT,
-    KeyOutputIteratorT,
-    ValueOutputIteratorT,
-    NumSelectedIteratorT,
-    ScanTileState<OffsetT>,
-    EqualityOpT,
-    OffsetT>,
-  typename KernelLauncherFactory = detail::TripleChevronFactory,
-  typename VSMemHelperPolicyT    = detail::vsmem_helper_default_fallback_policy_t<
-       typename PolicyHub::MaxPolicy::UniqueByKeyPolicyT,
-       detail::unique_by_key::AgentUniqueByKey,
-       KeyInputIteratorT,
-       ValueInputIteratorT,
-       KeyOutputIteratorT,
-       ValueOutputIteratorT,
-       EqualityOpT,
-       OffsetT>>
+template <typename KeyInputIteratorT,
+          typename ValueInputIteratorT,
+          typename KeyOutputIteratorT,
+          typename ValueOutputIteratorT,
+          typename NumSelectedIteratorT,
+          typename EqualityOpT,
+          typename OffsetT,
+          typename PolicyHub =
+            detail::unique_by_key::policy_hub<detail::value_t<KeyInputIteratorT>, detail::value_t<ValueInputIteratorT>>,
+          typename KernelSource = detail::unique_by_key::DeviceUniqueByKeyKernelSource<
+            typename PolicyHub::MaxPolicy,
+            KeyInputIteratorT,
+            ValueInputIteratorT,
+            KeyOutputIteratorT,
+            ValueOutputIteratorT,
+            NumSelectedIteratorT,
+            ScanTileState<OffsetT>,
+            EqualityOpT,
+            OffsetT>,
+          typename KernelLauncherFactory = detail::TripleChevronFactory>
 struct DispatchUniqueByKey
 {
   /******************************************************************************
@@ -198,8 +188,6 @@ struct DispatchUniqueByKey
 
   KernelLauncherFactory launcher_factory;
 
-  VSMemHelperPolicyT vsmem_helper;
-
   /**
    * @param[in] d_temp_storage
    *   Device-accessible allocation of temporary storage.
@@ -247,8 +235,7 @@ struct DispatchUniqueByKey
     OffsetT num_items,
     cudaStream_t stream,
     KernelSource kernel_source             = {},
-    KernelLauncherFactory launcher_factory = {},
-    VSMemHelperPolicyT vsmem_helper        = {})
+    KernelLauncherFactory launcher_factory = {})
       : d_temp_storage(d_temp_storage)
       , temp_storage_bytes(temp_storage_bytes)
       , d_keys_in(d_keys_in)
@@ -261,16 +248,18 @@ struct DispatchUniqueByKey
       , stream(stream)
       , kernel_source(kernel_source)
       , launcher_factory(launcher_factory)
-      , vsmem_helper(vsmem_helper)
   {}
 
   /******************************************************************************
    * Dispatch entrypoints
    ******************************************************************************/
 
-  template <typename ActivePolicyT, typename InitKernelT, typename UniqueByKeySweepKernelT>
-  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t
-  Invoke(InitKernelT init_kernel, UniqueByKeySweepKernelT sweep_kernel, ActivePolicyT policy = {})
+  template <typename ActivePolicyT, typename VSMemHelperPolicyT, typename InitKernelT, typename UniqueByKeySweepKernelT>
+  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(
+    InitKernelT init_kernel,
+    UniqueByKeySweepKernelT sweep_kernel,
+    ActivePolicyT policy            = {},
+    VSMemHelperPolicyT vsmem_helper = {})
   {
     cudaError error = cudaSuccess;
     do
@@ -427,12 +416,23 @@ struct DispatchUniqueByKey
     return error;
   }
 
-  template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT active_policy = {})
+  template <typename ActivePolicyT,
+            typename VSMemHelperPolicyT = detail::vsmem_helper_default_fallback_policy_t<
+              typename ActivePolicyT::UniqueByKeyPolicyT,
+              detail::unique_by_key::AgentUniqueByKey,
+              KeyInputIteratorT,
+              ValueInputIteratorT,
+              KeyOutputIteratorT,
+              ValueOutputIteratorT,
+              EqualityOpT,
+              OffsetT>>
+  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t
+  Invoke(ActivePolicyT active_policy = {}, VSMemHelperPolicyT vsmem_helper = {})
   {
     auto wrapped_policy = detail::unique_by_key::MakeUniqueByKeyPolicyWrapper(active_policy);
 
-    return Invoke(kernel_source.CompactInitKernel(), kernel_source.UniqueByKeySweepKernel(), wrapped_policy);
+    return Invoke(
+      kernel_source.CompactInitKernel(), kernel_source.UniqueByKeySweepKernel(), wrapped_policy, vsmem_helper);
   }
 
   /**
@@ -486,8 +486,7 @@ struct DispatchUniqueByKey
     cudaStream_t stream,
     KernelSource kernel_source             = {},
     KernelLauncherFactory launcher_factory = {},
-    MaxPolicyT max_policy                  = {},
-    VSMemHelperPolicyT vsmem_helper        = {})
+    MaxPolicyT max_policy                  = {})
   {
     cudaError_t error;
     do
@@ -513,8 +512,7 @@ struct DispatchUniqueByKey
         num_items,
         stream,
         kernel_source,
-        launcher_factory,
-        vsmem_helper);
+        launcher_factory);
 
       // Dispatch to chained policy
       error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
