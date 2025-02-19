@@ -9,31 +9,30 @@
 #include "test_util.h"
 #include <cccl/c/segmented_reduce.h>
 
-class SegmentedReduceProgram
+void segmented_reduce(
+  cccl_iterator_t input,
+  cccl_iterator_t output,
+  unsigned long long num_segments,
+  cccl_iterator_t start_offsets,
+  cccl_iterator_t end_offsets,
+  cccl_op_t op,
+  cccl_value_t init)
 {
+  cudaDeviceProp deviceProp;
+  cudaGetDeviceProperties(&deviceProp, 0);
+
+  const int cc_major = deviceProp.major;
+  const int cc_minor = deviceProp.minor;
+
+  const char* cub_path        = TEST_CUB_PATH;
+  const char* thrust_path     = TEST_THRUST_PATH;
+  const char* libcudacxx_path = TEST_LIBCUDACXX_PATH;
+  const char* ctk_path        = TEST_CTK_PATH;
+
   cccl_device_segmented_reduce_build_result_t build;
-
-public:
-  SegmentedReduceProgram(
-    cccl_iterator_t input,
-    cccl_iterator_t output,
-    cccl_iterator_t start_offsets,
-    cccl_iterator_t end_offsets,
-    cccl_op_t op,
-    cccl_value_t init)
-  {
-    cudaDeviceProp deviceProp;
-    cudaGetDeviceProperties(&deviceProp, 0);
-
-    const int cc_major = deviceProp.major;
-    const int cc_minor = deviceProp.minor;
-
-    const char* cub_path        = TEST_CUB_PATH;
-    const char* thrust_path     = TEST_THRUST_PATH;
-    const char* libcudacxx_path = TEST_LIBCUDACXX_PATH;
-    const char* ctk_path        = TEST_CTK_PATH;
-
-    auto status = cccl_device_segmented_reduce_build(
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_segmented_reduce_build(
       &build,
       input,
       output,
@@ -46,82 +45,26 @@ public:
       cub_path,
       thrust_path,
       libcudacxx_path,
-      ctk_path);
+      ctk_path));
 
-    REQUIRE(CUDA_SUCCESS == status);
-  }
+  const std::string sass = inspect_sass(build.cubin, build.cubin_size);
 
-  void check_sass() const
-  {
-    const std::string sass = inspect_sass(build.cubin, build.cubin_size);
+  REQUIRE(sass.find("LDL") == std::string::npos);
+  REQUIRE(sass.find("STL") == std::string::npos);
 
-    REQUIRE(sass.find("LDL") == std::string::npos);
-    REQUIRE(sass.find("STL") == std::string::npos);
-  }
+  size_t temp_storage_bytes = 0;
+  REQUIRE(CUDA_SUCCESS
+          == cccl_device_segmented_reduce(
+            build, nullptr, &temp_storage_bytes, input, output, num_segments, start_offsets, end_offsets, op, init, 0));
 
-  ~SegmentedReduceProgram()
-  {
-    auto status = cccl_device_segmented_reduce_cleanup(&build);
-    REQUIRE(CUDA_SUCCESS == status);
-  }
+  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
 
-  CUresult operator()(
-    cccl_iterator_t input,
-    cccl_iterator_t output,
-    unsigned long long num_segments,
-    cccl_iterator_t start_offsets,
-    cccl_iterator_t end_offsets,
-    cccl_op_t op,
-    cccl_value_t init,
-    CUstream stream = 0)
-  {
-    size_t temp_storage_bytes = 0;
-    CUresult status1          = cccl_device_segmented_reduce(
-      build, nullptr, &temp_storage_bytes, input, output, num_segments, start_offsets, end_offsets, op, init, stream);
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_segmented_reduce(
+      build, temp_storage.ptr, &temp_storage_bytes, input, output, num_segments, start_offsets, end_offsets, op, init, 0));
 
-    if (CUDA_SUCCESS != status1)
-    {
-      return status1;
-    }
-
-    pointer_t<uint8_t> temp_storage(temp_storage_bytes);
-
-    CUresult status2 = cccl_device_segmented_reduce(
-      build,
-      temp_storage.ptr,
-      &temp_storage_bytes,
-      input,
-      output,
-      num_segments,
-      start_offsets,
-      end_offsets,
-      op,
-      init,
-      stream);
-
-    if (CUDA_SUCCESS != status2)
-    {
-      return status2;
-    }
-
-    return status2;
-  }
-};
-
-void segmented_reduce(
-  cccl_iterator_t input,
-  cccl_iterator_t output,
-  unsigned long long num_segments,
-  cccl_iterator_t start_offsets,
-  cccl_iterator_t end_offsets,
-  cccl_op_t op,
-  cccl_value_t init)
-{
-  SegmentedReduceProgram program{input, output, start_offsets, end_offsets, op, init};
-
-  program.check_sass();
-
-  REQUIRE(CUDA_SUCCESS == program(input, output, num_segments, start_offsets, end_offsets, op, init, 0));
+  REQUIRE(CUDA_SUCCESS == cccl_device_segmented_reduce_cleanup(&build));
 }
 
 using SizeT = unsigned long long;
