@@ -183,66 +183,76 @@ int main()
   cudaStream_t stream;
   cuda_safe_call(cudaStreamCreate(&stream));
 
-  nvtxRangePushA("warmup");
-  for (size_t i = 0; i < NITER; i++)
   {
-    ref_lib_call(stream, d_ptrA, d_ptrB, N);
+    nvtx_range r("warmup");
+    for (size_t i = 0; i < NITER; i++)
+    {
+      ref_lib_call(stream, d_ptrA, d_ptrB, N);
+    }
+    cuda_safe_call(cudaStreamSynchronize(stream));
   }
-  cuda_safe_call(cudaStreamSynchronize(stream));
-  nvtxRangePop();
 
-  nvtxRangePushA("ref");
-  for (size_t i = 0; i < NITER; i++)
   {
-    ref_lib_call(stream, d_ptrA, d_ptrB, N);
+    nvtx_range r("ref");
+    for (size_t i = 0; i < NITER; i++)
+    {
+      ref_lib_call(stream, d_ptrA, d_ptrB, N);
+    }
+    cuda_safe_call(cudaStreamSynchronize(stream));
   }
-  cuda_safe_call(cudaStreamSynchronize(stream));
-  nvtxRangePop();
 
-  nvtxRangePushA("local stf");
-  for (size_t i = 0; i < NITER; i++)
   {
-    lib_call(stream, d_ptrA, d_ptrB, N);
+    nvtx_range r("local stf");
+    for (size_t i = 0; i < NITER; i++)
+    {
+      lib_call(stream, d_ptrA, d_ptrB, N);
+    }
+    cuda_safe_call(cudaStreamSynchronize(stream));
   }
-  cuda_safe_call(cudaStreamSynchronize(stream));
-  nvtxRangePop();
 
-  nvtxRangePushA("local stf handle");
-  async_resources_handle handle;
-  for (size_t i = 0; i < NITER; i++)
   {
-    lib_call_with_handle(handle, stream, d_ptrA, d_ptrB, N);
+    nvtx_range r("local stf handle");
+    async_resources_handle handle;
+    for (size_t i = 0; i < NITER; i++)
+    {
+      lib_call_with_handle(handle, stream, d_ptrA, d_ptrB, N);
+    }
+    cuda_safe_call(cudaStreamSynchronize(stream));
   }
-  cuda_safe_call(cudaStreamSynchronize(stream));
-  nvtxRangePop();
 
-  nvtxRangePushA("generic graph handle");
-  for (size_t i = 0; i < NITER; i++)
   {
-    lib_call_generic<graph_ctx>(handle, stream, d_ptrA, d_ptrB, N);
+    nvtx_range r("generic graph handle");
+    for (size_t i = 0; i < NITER; i++)
+    {
+      lib_call_generic<graph_ctx>(handle, stream, d_ptrA, d_ptrB, N);
+    }
+    cuda_safe_call(cudaStreamSynchronize(stream));
   }
-  cuda_safe_call(cudaStreamSynchronize(stream));
 
-  nvtxRangePushA("generic stream handle");
-  for (size_t i = 0; i < NITER; i++)
   {
-    lib_call_generic<stream_ctx>(handle, stream, d_ptrA, d_ptrB, N);
+    nvtx_range r("generic stream handle");
+    for (size_t i = 0; i < NITER; i++)
+    {
+      lib_call_generic<stream_ctx>(handle, stream, d_ptrA, d_ptrB, N);
+    }
+    cuda_safe_call(cudaStreamSynchronize(stream));
   }
-  cuda_safe_call(cudaStreamSynchronize(stream));
 
-  nvtxRangePushA("generic context handle");
-  for (size_t i = 0; i < NITER; i++)
   {
-    lib_call_generic<context>(handle, stream, d_ptrA, d_ptrB, N);
+    nvtx_range r("generic context handle");
+    for (size_t i = 0; i < NITER; i++)
+    {
+      lib_call_generic<context>(handle, stream, d_ptrA, d_ptrB, N);
+    }
+    cuda_safe_call(cudaStreamSynchronize(stream));
   }
-  cuda_safe_call(cudaStreamSynchronize(stream));
 
-  nvtxRangePushA("logical token");
-  for (size_t i = 0; i < NITER; i++)
   {
-    lib_call_logical_token<context>(handle, stream, d_ptrA, d_ptrB, N);
+    nvtx_range r("logical token");
+    for (size_t i = 0; i < NITER; i++)
+    {
+      lib_call_logical_token<context>(handle, stream, d_ptrA, d_ptrB, N);
+    }
+    cuda_safe_call(cudaStreamSynchronize(stream));
   }
-  cuda_safe_call(cudaStreamSynchronize(stream));
-
-  nvtxRangePop();
 }
