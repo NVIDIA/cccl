@@ -288,11 +288,11 @@ extern "C" CCCL_C_API CUresult cccl_device_merge_sort_build(
     const int cc      = cc_major * 10 + cc_minor;
     const auto policy = merge_sort::get_policy(cc, output_keys_it.value_type.size);
 
-    const auto input_keys_it_value_t   = cccl_type_enum_to_string(input_keys_it.value_type.type);
-    const auto input_items_it_value_t  = cccl_type_enum_to_string(input_items_it.value_type.type);
-    const auto output_keys_it_value_t  = cccl_type_enum_to_string(output_keys_it.value_type.type);
-    const auto output_items_it_value_t = cccl_type_enum_to_string(output_items_it.value_type.type);
-    const auto offset_t                = cccl_type_enum_to_string(cccl_type_enum::INT64);
+    const auto input_keys_it_value_t   = cccl_type_enum_to_name(input_keys_it.value_type.type);
+    const auto input_items_it_value_t  = cccl_type_enum_to_name(input_items_it.value_type.type);
+    const auto output_keys_it_value_t  = cccl_type_enum_to_name(output_keys_it.value_type.type);
+    const auto output_items_it_value_t = cccl_type_enum_to_name(output_items_it.value_type.type);
+    const auto offset_t                = cccl_type_enum_to_name(cccl_type_enum::INT64);
 
     const std::string input_keys_iterator_src = make_kernel_input_iterator(
       offset_t,
@@ -456,8 +456,17 @@ extern "C" CCCL_C_API CUresult cccl_device_merge_sort(
   cccl_op_t op,
   CUstream stream) noexcept
 {
-  bool pushed    = false;
+  if (cccl_iterator_kind_t::iterator == d_out_keys.type || cccl_iterator_kind_t::iterator == d_out_items.type)
+  {
+    // See https://github.com/NVIDIA/cccl/issues/3722
+    fflush(stderr);
+    printf("\nERROR in cccl_device_merge_sort(): merge sort output cannot be an iterator\n");
+    fflush(stdout);
+    return CUDA_ERROR_UNKNOWN;
+  }
+
   CUresult error = CUDA_SUCCESS;
+  bool pushed    = false;
   try
   {
     pushed = try_push_context();
@@ -494,7 +503,7 @@ extern "C" CCCL_C_API CUresult cccl_device_merge_sort(
   catch (const std::exception& exc)
   {
     fflush(stderr);
-    printf("\nEXCEPTION in cccl_device_reduce(): %s\n", exc.what());
+    printf("\nEXCEPTION in cccl_device_merge_sort(): %s\n", exc.what());
     fflush(stdout);
     error = CUDA_ERROR_UNKNOWN;
   }
