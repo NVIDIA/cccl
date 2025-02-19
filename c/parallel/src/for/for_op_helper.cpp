@@ -22,8 +22,8 @@
 
 static std::string get_for_kernel_iterator(cccl_iterator_t iter)
 {
-  const auto input_it_value_t = cccl_type_enum_to_string(iter.value_type.type);
-  const auto offset_t         = cccl_type_enum_to_string(cccl_type_enum::CCCL_UINT64);
+  const auto input_it_value_t = cccl_type_enum_to_name(iter.value_type.type);
+  const auto offset_t         = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
 
   constexpr std::string_view stateful_iterator =
     R"XXX(
@@ -74,7 +74,7 @@ using for_each_iterator_t = input_iterator_state_t;
 
 static std::string get_for_kernel_user_op(cccl_op_t user_op, cccl_iterator_t iter)
 {
-  auto value_t = cccl_type_enum_to_string(iter.value_type.type);
+  auto value_t = cccl_type_enum_to_name(iter.value_type.type);
 
   constexpr std::string_view op_format =
     R"XXX(

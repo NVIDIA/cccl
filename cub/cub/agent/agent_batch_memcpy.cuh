@@ -863,9 +863,9 @@ private:
     BlockBufferOffsetT num_wlev_buffers)
   {
     const int32_t warp_id              = threadIdx.x / CUB_PTX_WARP_THREADS;
-    constexpr uint32_t WARPS_PER_BLOCK = BLOCK_THREADS / CUB_PTX_WARP_THREADS;
+    constexpr uint32_t warps_per_block = BLOCK_THREADS / CUB_PTX_WARP_THREADS;
 
-    for (BlockBufferOffsetT buffer_offset = warp_id; buffer_offset < num_wlev_buffers; buffer_offset += WARPS_PER_BLOCK)
+    for (BlockBufferOffsetT buffer_offset = warp_id; buffer_offset < num_wlev_buffers; buffer_offset += warps_per_block)
     {
       const auto buffer_id = buffers_by_size_class[buffer_offset].buffer_id;
       copy_items<IsMemcpy, CUB_PTX_WARP_THREADS, InputBufferT, OutputBufferT, BufferSizeT>(

@@ -264,12 +264,12 @@ CUresult cccl_device_segmented_reduce_build(
     const int cc                       = cc_major * 10 + cc_minor;
     const cccl_type_info accum_t       = segmented_reduce::get_accumulator_type(op, input_it, init);
     const auto policy                  = segmented_reduce::get_policy(cc, accum_t);
-    const auto accum_cpp               = cccl_type_enum_to_string(accum_t.type);
-    const auto input_it_value_t        = cccl_type_enum_to_string(input_it.value_type.type);
-    const auto start_offset_it_value_t = cccl_type_enum_to_string(start_offset_it.value_type.type);
-    const auto end_offset_it_value_t   = cccl_type_enum_to_string(end_offset_it.value_type.type);
+    const auto accum_cpp               = cccl_type_enum_to_name(accum_t.type);
+    const auto input_it_value_t        = cccl_type_enum_to_name(input_it.value_type.type);
+    const auto start_offset_it_value_t = cccl_type_enum_to_name(start_offset_it.value_type.type);
+    const auto end_offset_it_value_t   = cccl_type_enum_to_name(end_offset_it.value_type.type);
     // OffsetT is checked to match have 64-bit size
-    const auto offset_t = cccl_type_enum_to_string(cccl_type_enum::CCCL_UINT64);
+    const auto offset_t = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
 
     const std::string input_iterator_src =
       make_kernel_input_iterator(offset_t, "input_iterator_t", input_it_value_t, input_it);
