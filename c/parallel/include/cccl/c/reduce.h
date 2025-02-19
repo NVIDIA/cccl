@@ -19,7 +19,7 @@
 #include <cccl/c/extern_c.h>
 #include <cccl/c/types.h>
 
-CCCL_C_EXTERN_BEGIN
+CCCL_C_EXTERN_C_BEGIN
 
 struct cccl_device_reduce_build_result_t
 {
@@ -60,4 +60,4 @@ CCCL_C_API CUresult cccl_device_reduce(
 
 CCCL_C_API CUresult cccl_device_reduce_cleanup(cccl_device_reduce_build_result_t* bld_ptr) noexcept;
 
-CCCL_C_EXTERN_END
+CCCL_C_EXTERN_C_END

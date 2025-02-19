@@ -12,12 +12,12 @@
 
 #ifdef __cplusplus
 
-#  define CCCL_C_EXTERN_BEGIN extern "C" {
-#  define CCCL_C_EXTERN_END   }
+#  define CCCL_C_EXTERN_C_BEGIN extern "C" {
+#  define CCCL_C_EXTERN_C_END   }
 
 #else
 
-#  define CCCL_C_EXTERN_BEGIN
-#  define CCCL_C_EXTERN_END
+#  define CCCL_C_EXTERN_C_BEGIN
+#  define CCCL_C_EXTERN_C_END
 
 #endif

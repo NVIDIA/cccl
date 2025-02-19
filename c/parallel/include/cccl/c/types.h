@@ -22,7 +22,7 @@
 
 #include <cccl/c/extern_c.h>
 
-CCCL_C_EXTERN_BEGIN
+CCCL_C_EXTERN_C_BEGIN
 
 typedef enum cccl_type_enum
 {
@@ -86,4 +86,4 @@ typedef struct cccl_iterator_t
   void* state;
 } ccclIterator;
 
-CCCL_C_EXTERN_END
+CCCL_C_EXTERN_C_END
