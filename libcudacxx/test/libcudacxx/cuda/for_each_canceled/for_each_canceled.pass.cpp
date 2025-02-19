@@ -49,14 +49,14 @@ __device__ void vec_add_impl3(int* a, int* b, int* c, int n, dim3 block_idx)
 
 __global__ void vec_add_det1(int* a, int* b, int* c, int n, int tidx = 0)
 {
-  cuda::experimental::__detail::__for_each_canceled_block<1>(threadIdx.x == tidx, [=](dim3 block_idx) {
+  cuda::__detail::__for_each_canceled_block<1>(threadIdx.x == tidx, [=](dim3 block_idx) {
     vec_add_impl1(a, b, c, n, block_idx);
   });
 }
 
 __global__ void vec_add_det2(int* a, int* b, int* c, int n, int tidx = 0)
 {
-  cuda::experimental::__detail::__for_each_canceled_block<2>(
+  cuda::__detail::__for_each_canceled_block<2>(
     threadIdx.x == tidx && threadIdx.y == tidx, [=](dim3 block_idx) {
       vec_add_impl2(a, b, c, n, block_idx);
     });
@@ -64,7 +64,7 @@ __global__ void vec_add_det2(int* a, int* b, int* c, int n, int tidx = 0)
 
 __global__ void vec_add_det3(int* a, int* b, int* c, int n, int tidx = 0)
 {
-  cuda::experimental::__detail::__for_each_canceled_block<3>(
+  cuda::__detail::__for_each_canceled_block<3>(
     threadIdx.x == tidx && threadIdx.y == tidx && threadIdx.z == tidx, [=](dim3 block_idx) {
       vec_add_impl3(a, b, c, n, block_idx);
     });
@@ -72,21 +72,21 @@ __global__ void vec_add_det3(int* a, int* b, int* c, int n, int tidx = 0)
 
 __global__ void vec_add1(int* a, int* b, int* c, int n, int tidx = 0)
 {
-  cuda::experimental::for_each_canceled_block<1>([=](dim3 block_idx) {
+  cuda::for_each_canceled_block<1>([=](dim3 block_idx) {
     vec_add_impl1(a, b, c, n, block_idx);
   });
 }
 
 __global__ void vec_add2(int* a, int* b, int* c, int n, int tidx = 0)
 {
-  cuda::experimental::for_each_canceled_block<2>([=](dim3 block_idx) {
+  cuda::for_each_canceled_block<2>([=](dim3 block_idx) {
     vec_add_impl2(a, b, c, n, block_idx);
   });
 }
 
 __global__ void vec_add3(int* a, int* b, int* c, int n, int tidx = 0)
 {
-  cuda::experimental::for_each_canceled_block<3>([=](dim3 block_idx) {
+  cuda::for_each_canceled_block<3>([=](dim3 block_idx) {
     vec_add_impl3(a, b, c, n, block_idx);
   });
 }

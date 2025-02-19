@@ -7,14 +7,12 @@ In header file ``<cuda/for_each_canceled>``:
 
 .. code:: cuda
 
-   namespace cuda::experimental {
+   namespace cuda {
 
        template <int ThreadBlockRank = 3, typename UnaryFunction = ..unspecified..>
        __device__ void for_each_canceled_block(UnaryFunction uf);
 
-   } // namespace cuda::experimental
-
-**WARNING**: This is an **Experimental API**.
+   } // namespace cuda
 
 On devices with compute capability 10.0 or higher, it may leverage hardware acceleration.
 
@@ -63,7 +61,7 @@ This example shows how to perform work-stealing at thread-block granularity usin
      // - common initialization code
      // - etc.
 
-     cuda::experimental::for_each_canceled_block<1>([=](dim3 block_idx) {
+     cuda::for_each_canceled_block<1>([=](dim3 block_idx) {
        int idx = threadIdx.x + block_idx.x * blockDim.x;
        // assert(block_idx == blockIdx); // May fail!
        if (idx < n) {
