@@ -6,8 +6,17 @@
 
 #include <cuda/std/detail/__config>
 
-#include <cuda/std/type_traits> // For cuda::std::is_invokable_r_v
-#include <cuda/std/utility> // For cuda::std::move, unreachable
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/unreachable.h>
 
 #include <nv/target>
 
@@ -73,7 +82,7 @@ template <int __ThreadBlockRank = 3, typename __UnaryFunction = void>
 _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void __for_each_canceled_block(bool __is_leader, __UnaryFunction __uf)
 {
   static_assert(__ThreadBlockRank >= 1 && __ThreadBlockRank <= 3, "ThreadBlockRank out-of-range [1, 3].");
-  static_assert(::cuda::std::is_invocable_r_v<void, __UnaryFunction, dim3>,
+  static_assert(_CUDA_VSTD::is_invocable_r_v<void, __UnaryFunction, dim3>,
                 "__for_each_canceled_block first argument requires an UnaryFunction with signature: void(dim3).\n"
                 "For example, call with lambda: __for_each_canceled_block([](dim3 block_idx) { ... });");
   dim3 __block_idx = dim3(blockIdx.x, 1, 1);
@@ -219,21 +228,21 @@ _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void for_each_canceled_block(__UnaryFunction __
 {
   static_assert(__ThreadBlockRank >= 1 && __ThreadBlockRank <= 3,
                 "for_each_canceled_block<ThreadBlockRank>: ThreadBlockRank out-of-range [1, 3].");
-  static_assert(::cuda::std::is_invocable_r_v<void, __UnaryFunction, dim3>,
+  static_assert(_CUDA_VSTD::is_invocable_r_v<void, __UnaryFunction, dim3>,
                 "for_each_canceled_block first argument requires an UnaryFunction with signature: void(dim3).\n"
                 "For example, call with lambda: for_each_canceled_block([](dim3 block_idx) { ... });");
   if constexpr (__ThreadBlockRank == 1)
   {
-    __detail::__for_each_canceled_block<1>(threadIdx.x == 0, ::cuda::std::move(__uf));
+    __detail::__for_each_canceled_block<1>(threadIdx.x == 0, _CUDA_VSTD::move(__uf));
   }
   else if constexpr (__ThreadBlockRank == 2)
   {
-    __detail::__for_each_canceled_block<2>(threadIdx.x == 0 && threadIdx.y == 0, ::cuda::std::move(__uf));
+    __detail::__for_each_canceled_block<2>(threadIdx.x == 0 && threadIdx.y == 0, _CUDA_VSTD::move(__uf));
   }
   else if constexpr (__ThreadBlockRank == 3)
   {
     __detail::__for_each_canceled_block<3>(
-      threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0, ::cuda::std::move(__uf));
+      threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0, _CUDA_VSTD::move(__uf));
   }
 }
 
