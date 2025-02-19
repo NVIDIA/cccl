@@ -71,16 +71,15 @@ using __select_traits = conditional_t<__is_primary_cccl_template<_Iter>::value, 
 #  if defined(__GLIBCXX__)
 // libstdc++ uses `is_base_of`
 template <class _Iter, bool>
-struct __is_primary_std_template_impl : is_base_of<::std::__iterator_traits<_Iter>, ::std::iterator_traits<_Iter>>
-{};
+_CCCL_INLINE_VAR constexpr bool __is_primary_std_template_impl =
+  _CCCL_TRAIT(is_base_of, ::std::__iterator_traits<_Iter>, ::std::iterator_traits<_Iter>);
 template <class _Iter>
-struct __is_primary_std_template_impl<_Iter, true> : true_type
-{};
+_CCCL_INLINE_VAR constexpr bool __is_primary_std_template_impl<_Iter, true> = true;
 
 // This is needed because with a defaulted template argument subsumption fails for C++20 for concepts
 // that involve incrementable_traits
 template <class _Iter>
-struct __is_primary_std_template : __is_primary_std_template_impl<_Iter, _CCCL_TRAIT(is_pointer, _Iter)>
+struct __is_primary_std_template : bool_constant<__is_primary_std_template_impl<_Iter, _CCCL_TRAIT(is_pointer, _Iter)>>
 {};
 #  elif defined(_LIBCPP_VERSION)
 // libc++ uses the same mechanism than we do with __primary_template
@@ -91,16 +90,15 @@ using __is_primary_std_template = _IsValidExpansion<__test_for_primary_template,
 #  elif defined(_MSVC_STL_VERSION) || defined(_IS_WRS)
 // On MSVC we must check for the base class because `_From_primary` is only defined in C++20
 template <class _Iter, bool>
-struct __is_primary_std_template_impl : is_base_of<::std::_Iterator_traits_base<_Iter>, ::std::iterator_traits<_Iter>>
-{};
+_CCCL_INLINE_VAR constexpr bool __is_primary_std_template_impl =
+  _CCCL_TRAIT(is_base_of, ::std::_Iterator_traits_base<_Iter>, ::std::iterator_traits<_Iter>);
 template <class _Iter>
-struct __is_primary_std_template_impl<_Iter, true> : true_type
-{};
+_CCCL_INLINE_VAR constexpr bool __is_primary_std_template_impl<_Iter, true> = true;
 
 // This is needed because with a defaulted template argument subsumption fails for C++20 for concepts
 // that involve incrementable_traits
 template <class _Iter>
-struct __is_primary_std_template : __is_primary_std_template_impl<_Iter, _CCCL_TRAIT(is_pointer, _Iter)>
+struct __is_primary_std_template : bool_constant<__is_primary_std_template_impl<_Iter, _CCCL_TRAIT(is_pointer, _Iter)>>
 {};
 #  endif // _MSVC_STL_VERSION || _IS_WRS
 
