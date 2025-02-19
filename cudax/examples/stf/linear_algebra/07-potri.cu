@@ -171,7 +171,7 @@ public:
   template <typename Fun>
   void fill(Fun&& fun)
   {
-    nvtxRangePushA("FILL");
+    nvtx_range r("FILL");
     // Fill blocks by blocks
     for (size_t colb = 0; colb < nt; colb++)
     {
@@ -190,7 +190,6 @@ public:
           };
       }
     }
-    nvtxRangePop();
   }
 
   // Print blocks
@@ -826,6 +825,8 @@ void PDNRM2_HOST(matrix<double>* A, double* result)
 
 void PDPOTRF(matrix<double>& A)
 {
+  nvtx_range r("SUBMIT_PDPOTRF");
+
 #ifdef HAVE_DOT
   ctx.get_dot()->set_current_color("yellow");
 #endif
@@ -836,7 +837,6 @@ void PDPOTRF(matrix<double>& A)
   int NBLOCKS = A.mt;
   assert(A.mb == A.nb);
 
-  nvtxRangePushA("SUBMIT_PDPOTRF");
   for (int K = 0; K < NBLOCKS; K++)
   {
     cuda_try(cudaSetDevice(A.get_preferred_devid(K, K)));
@@ -857,8 +857,6 @@ void PDPOTRF(matrix<double>& A)
       DSYRK(CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_N, -1.0, A, row, K, 1.0, A, row, row);
     }
   }
-
-  nvtxRangePop();
 }
 
 // Algorithm from PLASMA
@@ -872,7 +870,7 @@ void PDTRSM(cublasSideMode_t side,
 {
   //    std::cout << "[PDTRSM] START B MT " << B.mt << " NT " << B.nt << std::endl;
 
-  nvtxRangePushA("SUBMIT_PDTRSM");
+  nvtx_range r("SUBMIT_PDTRSM");
 
   if (side == CUBLAS_SIDE_LEFT)
   {
@@ -938,13 +936,11 @@ void PDTRSM(cublasSideMode_t side,
     abort();
   }
   //    std::cout << "[PDTRSM] END" << std::endl;
-
-  nvtxRangePop();
 }
 
 void PDPOTRS(matrix<double>& A, matrix<double>& B, cublasFillMode_t uplo)
 {
-  nvtxRangePushA("SUBMIT_PDPOTRS");
+  nvtx_range r("SUBMIT_PDPOTRS");
 
 #ifdef HAVE_DOT
   ctx.get_dot()->set_current_color("green");
@@ -962,8 +958,6 @@ void PDPOTRS(matrix<double>& A, matrix<double>& B, cublasFillMode_t uplo)
   PDTRSM(
     CUBLAS_SIDE_LEFT, uplo, uplo == CUBLAS_FILL_MODE_UPPER ? CUBLAS_OP_N : CUBLAS_OP_T, CUBLAS_DIAG_NON_UNIT, 1.0, A, B);
   //    std::cout << "[PDPOTRS] END" << std::endl;
-
-  nvtxRangePop();
 }
 
 /***************************************************************************/ /**
@@ -1058,9 +1052,8 @@ void PDGEMM(cublasOperation_t transa,
 // We assume a lower triangular matrix (uplo == CUBLAS_FILL_MODE_LOWER)
 void PDTRTRI(matrix<double>& A, cublasFillMode_t uplo, cublasDiagType_t diag)
 {
+  nvtx_range r("SUBMIT_PDTRTRI");
   assert(uplo == CUBLAS_FILL_MODE_LOWER);
-
-  nvtxRangePushA("SUBMIT_PDTRTRI");
 
   for (size_t k = 0; k < A.nt; k++)
   {
@@ -1087,8 +1080,6 @@ void PDTRTRI(matrix<double>& A, cublasFillMode_t uplo, cublasDiagType_t diag)
     cuda_try(cudaSetDevice(A.get_preferred_devid(k, k)));
     DTRTRI(uplo, diag, A, k, k);
   }
-
-  nvtxRangePop();
 }
 
 /*
@@ -1097,9 +1088,8 @@ void PDTRTRI(matrix<double>& A, cublasFillMode_t uplo, cublasDiagType_t diag)
 // We assume a lower triangular matrix (uplo == CUBLAS_FILL_MODE_LOWER)
 void PDLAUUM(matrix<double>& A, cublasFillMode_t uplo)
 {
+  nvtx_range r("SUBMIT_PDLAUUM");
   assert(uplo == CUBLAS_FILL_MODE_LOWER);
-
-  nvtxRangePushA("SUBMIT_PDLAUUM");
 
   for (size_t k = 0; k < A.mt; k++)
   {
@@ -1124,8 +1114,6 @@ void PDLAUUM(matrix<double>& A, cublasFillMode_t uplo)
     cuda_try(cudaSetDevice(A.get_preferred_devid(k, k)));
     DLAAUM(uplo, A, k, k);
   }
-
-  nvtxRangePop();
 }
 
 void PDSYMM(cublasSideMode_t side,
