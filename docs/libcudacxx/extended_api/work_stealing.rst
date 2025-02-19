@@ -62,8 +62,10 @@ This example shows how to perform work-stealing at thread-block granularity usin
      // - etc.
 
      cuda::for_each_canceled_block<1>([=](dim3 block_idx) {
+       // block_idx may be different than the built-in blockIdx variable, that is:
+       // assert(block_idx == blockIdx); // may fail!
+       // so we need to use "block_idx" consistently inside for_each_canceled:
        int idx = threadIdx.x + block_idx.x * blockDim.x;
-       // assert(block_idx == blockIdx); // May fail!
        if (idx < n) {
          c[idx] += a[idx] + b[idx];
        }
