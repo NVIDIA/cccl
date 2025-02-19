@@ -585,7 +585,7 @@ struct dispatch_t<StableAddress,
       const auto max_smem = get_max_shared_memory();
       if (!max_smem)
       {
-        return ::cuda::std::unexpected<cudaError_t /* nvcc 12.x fails CTAD here */>(max_smem.error());
+        return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(max_smem.error());
       }
 
       elem_counts last_counts{};
@@ -614,7 +614,7 @@ struct dispatch_t<StableAddress,
           CubDebug(MaxSmOccupancy(max_occupancy, CUB_DETAIL_TRANSFORM_KERNEL_PTR, block_dim, smem_size));
         if (error != cudaSuccess)
         {
-          return ::cuda::std::unexpected(error);
+          return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 with GCC 7 fails CTAD here */>(error);
         }
 
         const int bytes_in_flight_SM = max_occupancy * tile_size * loaded_bytes_per_iter;
@@ -636,7 +636,7 @@ struct dispatch_t<StableAddress,
     }();
     if (!config)
     {
-      return ::cuda::std::unexpected(config.error());
+      return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 with GCC 7 fails CTAD here */>(config.error());
     }
     _CCCL_ASSERT_HOST(config->elem_per_thread > 0, "");
     _CCCL_ASSERT_HOST(config->tile_size > 0, "");
@@ -683,12 +683,12 @@ struct dispatch_t<StableAddress,
       const auto error  = CubDebug(MaxSmOccupancy(max_occupancy, CUB_DETAIL_TRANSFORM_KERNEL_PTR, block_dim, 0));
       if (error != cudaSuccess)
       {
-        return ::cuda::std::unexpected<cudaError_t /* nvcc 12.x fails CTAD here */>(error);
+        return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(error);
       }
       const auto sm_count = get_sm_count();
       if (!sm_count)
       {
-        return ::cuda::std::unexpected<cudaError_t /* nvcc 12.x fails CTAD here */>(sm_count.error());
+        return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(sm_count.error());
       }
       return prefetch_config{max_occupancy, *sm_count};
     };
