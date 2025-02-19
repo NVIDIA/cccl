@@ -8,7 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: pre-sm-100
 // UNSUPPORTED: !nvcc
 // UNSUPPORTED: nvrtc
 // UNSUPPORTED: c++98, c++03, c++14
