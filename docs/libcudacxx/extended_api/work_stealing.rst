@@ -3,7 +3,7 @@
 Work stealing
 =============
 
-In header file ``<cuda/for_each_canceled>``:
+Defined in header ``<cuda/for_each_canceled>``:
 
 .. code:: cuda
 
@@ -14,19 +14,21 @@ In header file ``<cuda/for_each_canceled>``:
 
    } // namespace cuda
 
-On devices with compute capability 10.0 or higher, it may leverage hardware acceleration.
+**Note**: On devices with compute capability 10.0 or higher, this function may leverage hardware acceleration.
 
-This API is mainly intended to implement work-stealing at thread-block level granularity.
-When compared against alternative work distribution techniques like `grid-stride loops <https://developer.nvidia.com/blog/cuda-pro-tip-write-flexible-kernels-grid-stride-loops/>`__, which distribute load statically, or against other dynamic work distribution techniques using global memory concurrency, the main advantages of this API over these alternatives are:
+This API is primarily intended for implementing work-stealing at the thread-block level.
 
-   - It performs work-stealing dynamically: thread blocks that finish work sooner may do more work than thread blocks whose work takes longer.
-   - It may cooperate with the GPU work-scheduler to respect work priorities and perform load-balancing.
-   - It may have lower work-stealing latency than global memory atomics.
 
-For better performance, extract the shared thread block prologue and epilog outside the lambda, and re-use it across thread-block iterations:
+Compared to alternative work distribution techniques, such as  `grid-stride loops <https://developer.nvidia.com/blog/cuda-pro-tip-write-flexible-kernels-grid-stride-loops/>`__, which distribute work statically, or dynamic work distribution methods relying on global memory concurrency, this API offers several advantages:
 
-  - Prologue: thread-block initialization code and data that is common to all thread blocks, e.g., ``__shared__`` memory allocation, their initialization, etc.
-  - Epilogue: thread-block finalization code that is common to all thread blocks, e.g., writing back shared memory to global memory, etc.
+   - It enables dynamic work-stealing: thread blocks that complete their tasks sooner can take on additional work from slower thread blocks.
+   - It may cooperate with the GPU work scheduler to respect work priorities and improve load balancing.
+   - It may reduce work-stealing latency compared to global memory atomics.
+
+For better performance, extract the shared thread-block prologue and epilogue outside the lambda and reuse them across thread-block iterations:
+
+  - Prologue: Thread-block initialization code and data common to all thread blocks, such as ``__shared__`` memory allocation and initialization.
+  - Epilogue: Epilogue: Thread-block finalization code common to all thread blocks, such as writing shared memory back to global memory..
 
 **Mandates**:
 
@@ -35,19 +37,19 @@ For better performance, extract the shared thread block prologue and epilog outs
 
 **Preconditions**:
 
-   - All threads of the current thread-block shall call ``for_each_canceled_block`` **exactly once**.
+   - All threads within a thread block shall call ``for_each_canceled_block`` **exactly once**.
 
 **Effects**:
 
-   - Invokes ``uf`` with ``blockIdx``, then repeatedly attempts to cancel the launch of another thread block in the current grid, and:
+   - Invokes ``uf`` with ``blockIdx`` and then repeatedly attempts to cancel the launch of another thread block within the current grid:
 
-      - on success, calls ``uf`` with that thread block's ``blockIdx`` and repeats,
-      - otherwise, it failed to cancel the launch of a thread block and it returns.
+      - If successful: invokes ``uf`` with the canceled thread block's ``blockIdx`` and repeats.
+      - Otherwise, the function returns; it failed to cancel the launch of another thread block.
 
 Example
 -------
 
-This example shows how to perform work-stealing at thread-block granularity using this API.
+This example demonstrates work-stealing at thread-block granularity using this API.
 
 .. code:: cuda
 
