@@ -793,6 +793,9 @@ struct BaseTraits
 template <typename _UnsignedBits, typename T>
 struct BaseTraits<UNSIGNED_INTEGER, _UnsignedBits, T>
 {
+  static_assert(::cuda::std::numeric_limits<T>::is_specialized,
+                "Please also specialize cuda::std::numeric_limits for T");
+
   using UnsignedBits                       = _UnsignedBits;
   static constexpr UnsignedBits LOWEST_KEY = UnsignedBits(0);
   static constexpr UnsignedBits MAX_KEY    = UnsignedBits(-1);
@@ -830,6 +833,9 @@ struct BaseTraits<UNSIGNED_INTEGER, _UnsignedBits, T>
 template <typename _UnsignedBits, typename T>
 struct BaseTraits<SIGNED_INTEGER, _UnsignedBits, T>
 {
+  static_assert(::cuda::std::numeric_limits<T>::is_specialized,
+                "Please also specialize cuda::std::numeric_limits for T");
+
   using UnsignedBits = _UnsignedBits;
 
   static constexpr UnsignedBits HIGH_BIT   = UnsignedBits(1) << ((sizeof(UnsignedBits) * 8) - 1);
@@ -865,6 +871,9 @@ struct BaseTraits<SIGNED_INTEGER, _UnsignedBits, T>
 template <typename _UnsignedBits, typename T>
 struct BaseTraits<FLOATING_POINT, _UnsignedBits, T>
 {
+  static_assert(::cuda::std::numeric_limits<T>::is_specialized,
+                "Please also specialize cuda::std::numeric_limits for T");
+
   using UnsignedBits = _UnsignedBits;
 
   static constexpr UnsignedBits HIGH_BIT   = UnsignedBits(1) << ((sizeof(UnsignedBits) * 8) - 1);
