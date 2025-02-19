@@ -110,28 +110,11 @@ bool test(int N, F&& f)
     }
 
     f(a, b, c, N, tidx);
-    if (auto e = cudaDeviceSynchronize(); e != cudaSuccess)
-    {
-      std::cerr << "ERROR: synchronize failed" << std::endl;
-      return false;
-    }
 
-    bool success = true;
-    for (int i = 0; i < N; ++i)
-    {
-      if (c[i] != (1 + i))
-      {
-        std::cerr << "ERROR " << i << ", " << c[i] << std::endl;
-        success = false;
-      }
-    }
+    assert(cudaDeviceSynchronize() == cudaSuccess);
     cudaFree(a);
     cudaFree(b);
     cudaFree(c);
-    if (!success)
-    {
-      return false;
-    }
   }
   return true;
 }
@@ -155,11 +138,7 @@ int main(int argc, char** argv)
                  int bpg  = (n + ntpb - 1) / ntpb;
                  int bpgx = (int) std::sqrt((double) bpg) + 1;
                  int bpgy = bpgx;
-                 if ((bpgx * bpgy) < bpg)
-                 {
-                   std::cerr << "ERROR in grid" << std::endl;
-                   std::abort();
-                 }
+                 assert((bpgx * bpgy) >= bpg);
                  vec_add_det2<<<dim3(bpgx, bpgy, 1), tpb>>>(a, b, c, n, tidx);
                })) return 1;
 
@@ -171,11 +150,7 @@ int main(int argc, char** argv)
                  int bpgx = (int) std::pow((double) bpg, 1. / 3.) + 1;
                  int bpgy = bpgx;
                  int bpgz = bpgx;
-                 if ((bpgx * bpgy * bpgz) < bpg)
-                 {
-                   std::cerr << "ERROR in grid" << std::endl;
-                   std::abort();
-                 }
+                 assert((bpgx * bpgy * bpgz) >= bpg);
                  vec_add_det3<<<dim3(bpgx, bpgy, bpgz), tpb>>>(a, b, c, n, tidx);
                })) return 1;
 
@@ -193,11 +168,7 @@ int main(int argc, char** argv)
                  int bpg  = (n + ntpb - 1) / ntpb;
                  int bpgx = (int) std::sqrt((double) bpg) + 1;
                  int bpgy = bpgx;
-                 if ((bpgx * bpgy) < bpg)
-                 {
-                   std::cerr << "ERROR in grid" << std::endl;
-                   std::abort();
-                 }
+                 assert((bpgx * bpgy) >= bpg);
                  vec_add2<<<dim3(bpgx, bpgy, 1), tpb>>>(a, b, c, n);
                })) return 1;
 
@@ -208,11 +179,7 @@ int main(int argc, char** argv)
            int bpgx = (int) std::pow((double) bpg, 1. / 3.) + 1;
            int bpgy = bpgx;
            int bpgz = bpgx;
-           if ((bpgx * bpgy * bpgz) < bpg)
-           {
-             std::cerr << "ERROR in grid" << std::endl;
-             std::abort();
-           }
+           assert((bpgx * bpgy * bpgz) >= bpg);
            vec_add3<<<dim3(bpgx, bpgy, bpgz), tpb>>>(a, b, c, n);
          })) return 1;));
 
