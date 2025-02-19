@@ -210,9 +210,10 @@ int main()
     cuda_safe_call(cudaStreamSynchronize(stream));
   }
 
+  async_resources_handle handle;
+
   {
     nvtx_range r("local stf handle");
-    async_resources_handle handle;
     for (size_t i = 0; i < NITER; i++)
     {
       lib_call_with_handle(handle, stream, d_ptrA, d_ptrB, N);
