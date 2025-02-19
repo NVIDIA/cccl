@@ -92,8 +92,8 @@ This example shows how to perform work-stealing at thread-block granularity usin
       c[i] = 0;
     }
 
-    int tpb = 256;
-    int bpg = cuda::ceil_div(N, tpb);
+    const int threads_per_block = 256;
+    const int blocks = cuda::ceil_div(N, threads_per_block);
 
     vec_add<<<bpg, tpb>>>(a, b, c, N);
     cudaDeviceSynchronize();
