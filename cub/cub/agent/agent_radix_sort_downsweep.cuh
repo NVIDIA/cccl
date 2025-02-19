@@ -53,9 +53,7 @@
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_type.cuh>
 
-#include <type_traits>
-
-#include <stdint.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -178,7 +176,7 @@ struct AgentRadixSortDownsweep
     TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD,
 
     RADIX_DIGITS      = 1 << RADIX_BITS,
-    KEYS_ONLY         = ::cuda::std::is_same<ValueT, NullType>::value,
+    KEYS_ONLY         = ::cuda::std::is_same_v<ValueT, NullType>,
     LOAD_WARP_STRIPED = RANK_ALGORITHM == RADIX_RANK_MATCH || RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ANY
                      || RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR,
   };

@@ -54,10 +54,10 @@ template <typename T>
 void GenerateRandomData(
   T* rand_out,
   const std::size_t num_items,
-  const T min_rand_val                                                           = std::numeric_limits<T>::min(),
-  const T max_rand_val                                                           = std::numeric_limits<T>::max(),
-  const std::uint_fast32_t seed                                                  = 320981U,
-  typename std::enable_if<std::is_integral<T>::value && (sizeof(T) >= 2)>::type* = nullptr)
+  const T min_rand_val                                         = ::cuda::std::numeric_limits<T>::min(),
+  const T max_rand_val                                         = ::cuda::std::numeric_limits<T>::max(),
+  const std::uint_fast32_t seed                                = 320981U,
+  std::enable_if_t<std::is_integral_v<T> && (sizeof(T) >= 2)>* = nullptr)
 {
   // initialize random number generator
   std::mt19937 rng(seed);
@@ -345,192 +345,12 @@ void RunTest(BufferOffsetT num_buffers,
   }
 }
 
-template <int LOGICAL_WARP_SIZE, typename VectorT, typename ByteOffsetT>
-__global__ void TestVectorizedCopyKernel(const void* d_in, void* d_out, ByteOffsetT copy_size)
-{
-  cub::detail::batch_memcpy::VectorizedCopy<LOGICAL_WARP_SIZE, VectorT>(threadIdx.x, d_out, copy_size, d_in);
-}
-
-struct TupleMemberEqualityOp
-{
-  template <typename T>
-  __host__ __device__ __forceinline__ bool operator()(T tuple)
-  {
-    return thrust::get<0>(tuple) == thrust::get<1>(tuple);
-  }
-};
-
-/**
- * @brief Tests the VectorizedCopy for various aligned and misaligned input and output pointers.
- * @tparam VectorT The vector type used for vectorized stores (i.e., one of uint4, uint2, uint32_t)
- */
-template <typename VectorT>
-void TestVectorizedCopy()
-{
-  constexpr uint32_t threads_per_block = 8;
-
-  c2h::host_vector<std::size_t> in_offsets{0, 1, sizeof(uint32_t) - 1};
-  c2h::host_vector<std::size_t> out_offsets{0, 1, sizeof(VectorT) - 1};
-  c2h::host_vector<std::size_t> copy_sizes{
-    0, 1, sizeof(uint32_t), sizeof(VectorT), 2 * threads_per_block * sizeof(VectorT)};
-  for (auto copy_sizes_it = std::begin(copy_sizes); copy_sizes_it < std::end(copy_sizes); copy_sizes_it++)
-  {
-    for (auto in_offsets_it = std::begin(in_offsets); in_offsets_it < std::end(in_offsets); in_offsets_it++)
-    {
-      for (auto out_offsets_it = std::begin(out_offsets); out_offsets_it < std::end(out_offsets); out_offsets_it++)
-      {
-        std::size_t in_offset  = *in_offsets_it;
-        std::size_t out_offset = *out_offsets_it;
-        std::size_t copy_size  = *copy_sizes_it;
-
-        // Prepare data
-        const std::size_t alloc_size_in  = in_offset + copy_size;
-        const std::size_t alloc_size_out = out_offset + copy_size;
-        c2h::device_vector<char> data_in(alloc_size_in);
-        c2h::device_vector<char> data_out(alloc_size_out);
-        thrust::sequence(c2h::device_policy, data_in.begin(), data_in.end(), static_cast<char>(0));
-        thrust::fill_n(c2h::device_policy, data_out.begin(), alloc_size_out, static_cast<char>(0x42));
-
-        auto d_in  = thrust::raw_pointer_cast(data_in.data());
-        auto d_out = thrust::raw_pointer_cast(data_out.data());
-
-        TestVectorizedCopyKernel<threads_per_block, VectorT>
-          <<<1, threads_per_block>>>(d_in + in_offset, d_out + out_offset, static_cast<int>(copy_size));
-        auto zip_it = thrust::make_zip_iterator(data_in.begin() + in_offset, data_out.begin() + out_offset);
-
-        bool success = thrust::all_of(c2h::device_policy, zip_it, zip_it + copy_size, TupleMemberEqualityOp{});
-        AssertTrue(success);
-      }
-    }
-  }
-}
-
-template <uint32_t NUM_ITEMS, uint32_t MAX_ITEM_VALUE, bool PREFER_POW2_BITS>
-__global__ void
-TestBitPackedCounterKernel(uint32_t* bins, uint32_t* increments, uint32_t* counts_out, uint32_t num_items)
-{
-  using BitPackedCounterT = cub::detail::batch_memcpy::BitPackedCounter<NUM_ITEMS, MAX_ITEM_VALUE, PREFER_POW2_BITS>;
-  BitPackedCounterT counter{};
-  for (uint32_t i = 0; i < num_items; i++)
-  {
-    counter.Add(bins[i], increments[i]);
-  }
-
-  for (uint32_t i = 0; i < NUM_ITEMS; i++)
-  {
-    counts_out[i] = counter.Get(i);
-  }
-}
-
-/**
- * @brief Tests BitPackedCounter that's used for computing the histogram of buffer sizes (i.e.,
- * small, medium, large).
- */
-template <uint32_t NUM_ITEMS, uint32_t MAX_ITEM_VALUE>
-void TestBitPackedCounter(const std::uint_fast32_t seed = 320981U)
-{
-  constexpr uint32_t min_increment = 0;
-  constexpr uint32_t max_increment = 4;
-  constexpr double avg_increment =
-    static_cast<double>(min_increment) + (static_cast<double>(max_increment - min_increment) / 2.0);
-  std::uint32_t num_increments = static_cast<uint32_t>(static_cast<double>(MAX_ITEM_VALUE * NUM_ITEMS) / avg_increment);
-
-  // Test input data
-  std::array<uint64_t, NUM_ITEMS> reference_counters{};
-  c2h::host_vector<uint32_t> h_bins(num_increments);
-  c2h::host_vector<uint32_t> h_increments(num_increments);
-
-  // Generate random test input data
-  GenerateRandomData(thrust::raw_pointer_cast(h_bins.data()), num_increments, 0U, NUM_ITEMS - 1U, seed);
-  GenerateRandomData(
-    thrust::raw_pointer_cast(h_increments.data()), num_increments, min_increment, max_increment, (seed + 17));
-
-  // Make sure test data does not overflow any of the counters
-  for (std::size_t i = 0; i < num_increments; i++)
-  {
-    // New increment for this bin would overflow => zero this increment
-    if (reference_counters[h_bins[i]] + h_increments[i] >= MAX_ITEM_VALUE)
-    {
-      h_increments[i] = 0;
-    }
-    else
-    {
-      reference_counters[h_bins[i]] += h_increments[i];
-    }
-  }
-
-  // Device memory
-  c2h::device_vector<uint32_t> bins_in(num_increments);
-  c2h::device_vector<uint32_t> increments_in(num_increments);
-  c2h::device_vector<uint32_t> counts_out(NUM_ITEMS);
-
-  // Initialize device-side test data
-  bins_in       = h_bins;
-  increments_in = h_increments;
-
-  // Memory for GPU-generated results
-  c2h::host_vector<uint32_t> host_counts(num_increments);
-
-  // Reset counters to arbitrary random value
-  thrust::fill(counts_out.begin(), counts_out.end(), 814920U);
-
-  // Run tests with densely bit-packed counters
-  TestBitPackedCounterKernel<NUM_ITEMS, MAX_ITEM_VALUE, false><<<1, 1>>>(
-    thrust::raw_pointer_cast(bins_in.data()),
-    thrust::raw_pointer_cast(increments_in.data()),
-    thrust::raw_pointer_cast(counts_out.data()),
-    num_increments);
-
-  // Result verification
-  host_counts = counts_out;
-  for (uint32_t i = 0; i < NUM_ITEMS; i++)
-  {
-    AssertEquals(reference_counters[i], host_counts[i]);
-  }
-
-  // Reset counters to arbitrary random value
-  thrust::fill(counts_out.begin(), counts_out.end(), 814920U);
-
-  // Run tests with bit-packed counters, where bit-count is a power-of-two
-  TestBitPackedCounterKernel<NUM_ITEMS, MAX_ITEM_VALUE, true><<<1, 1>>>(
-    thrust::raw_pointer_cast(bins_in.data()),
-    thrust::raw_pointer_cast(increments_in.data()),
-    thrust::raw_pointer_cast(counts_out.data()),
-    num_increments);
-
-  // Result verification
-  host_counts = counts_out;
-  for (uint32_t i = 0; i < NUM_ITEMS; i++)
-  {
-    AssertEquals(reference_counters[i], host_counts[i]);
-  }
-}
-
 int main(int argc, char** argv)
 {
   CommandLineArgs args(argc, argv);
 
   // Initialize device
   CubDebugExit(args.DeviceInit());
-
-  //---------------------------------------------------------------------
-  // VectorizedCopy tests
-  //---------------------------------------------------------------------
-  TestVectorizedCopy<uint32_t>();
-  TestVectorizedCopy<uint4>();
-
-  //---------------------------------------------------------------------
-  // BitPackedCounter tests
-  //---------------------------------------------------------------------
-  TestBitPackedCounter<1, 1>();
-  TestBitPackedCounter<1, (0x01U << 16)>();
-  TestBitPackedCounter<4, 1>();
-  TestBitPackedCounter<4, 2>();
-  TestBitPackedCounter<4, 255>();
-  TestBitPackedCounter<4, 256>();
-  TestBitPackedCounter<8, 1024>();
-  TestBitPackedCounter<32, 1>();
-  TestBitPackedCounter<32, 256>();
 
   //---------------------------------------------------------------------
   // DeviceMemcpy::Batched tests
@@ -603,7 +423,7 @@ int main(int argc, char** argv)
   using ByteOffset64T = uint64_t;
   using BufferSize64T = uint64_t;
   ByteOffset64T large_target_copy_size =
-    static_cast<ByteOffset64T>(std::numeric_limits<uint32_t>::max()) + (128ULL * 1024ULL * 1024ULL);
+    static_cast<ByteOffset64T>(::cuda::std::numeric_limits<uint32_t>::max()) + (128ULL * 1024ULL * 1024ULL);
   // Make sure min_buffer_size is in fact smaller than max buffer size
   constexpr BufferOffsetT single_buffer = 1;
 

@@ -29,10 +29,10 @@
 #include <cub/block/block_run_length_decode.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/device/device_scan.cuh>
-#include <cub/iterator/transform_input_iterator.cuh>
 #include <cub/util_allocator.cuh>
 
 #include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
 
 #include <cuda/std/type_traits>
 

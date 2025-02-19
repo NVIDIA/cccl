@@ -22,6 +22,7 @@
 
 #include <cuda/std/__atomic/types/common.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/cstring>
 
 // This file works around a bug in CUDA in which the compiler miscompiles
 // atomics to automatic storage (local memory). This bug is not fixed on any
@@ -96,7 +97,7 @@ _CCCL_DEVICE inline bool __cuda_load_weak_if_local(const volatile void* __ptr, v
   {
     return false;
   }
-  memcpy(__ret, const_cast<const void*>(__ptr), __size);
+  _CUDA_VSTD::memcpy(__ret, const_cast<const void*>(__ptr), __size);
   // Required to workaround a compiler bug, see nvbug/4064730
   NV_IF_TARGET(NV_PROVIDES_SM_70, (__nanosleep(0);))
   return true;
@@ -108,7 +109,7 @@ _CCCL_DEVICE inline bool __cuda_store_weak_if_local(volatile void* __ptr, const 
   {
     return false;
   }
-  memcpy(const_cast<void*>(__ptr), __val, __size);
+  _CUDA_VSTD::memcpy(const_cast<void*>(__ptr), __val, __size);
   return true;
 }
 
@@ -122,12 +123,12 @@ __cuda_compare_exchange_weak_if_local(volatile _Type* __ptr, _Type* __expected, 
   }
   if (__atomic_memcmp(const_cast<const _Type*>(__ptr), const_cast<const _Type*>(__expected), sizeof(_Type)) == 0)
   {
-    memcpy(const_cast<_Type*>(__ptr), const_cast<_Type const*>(__desired), sizeof(_Type));
+    _CUDA_VSTD::memcpy(const_cast<_Type*>(__ptr), const_cast<_Type const*>(__desired), sizeof(_Type));
     *__success = true;
   }
   else
   {
-    memcpy(const_cast<_Type*>(__expected), const_cast<_Type const*>(__ptr), sizeof(_Type));
+    _CUDA_VSTD::memcpy(const_cast<_Type*>(__expected), const_cast<_Type const*>(__ptr), sizeof(_Type));
     *__success = false;
   }
   NV_IF_TARGET(NV_PROVIDES_SM_70, (__nanosleep(0);))
@@ -141,8 +142,8 @@ _CCCL_DEVICE bool __cuda_exchange_weak_if_local(volatile _Type* __ptr, _Type* __
   {
     return false;
   }
-  memcpy(const_cast<_Type*>(__ret), const_cast<const _Type*>(__ptr), sizeof(_Type));
-  memcpy(const_cast<_Type*>(__ptr), const_cast<const _Type*>(__val), sizeof(_Type));
+  _CUDA_VSTD::memcpy(const_cast<_Type*>(__ret), const_cast<const _Type*>(__ptr), sizeof(_Type));
+  _CUDA_VSTD::memcpy(const_cast<_Type*>(__ptr), const_cast<const _Type*>(__val), sizeof(_Type));
   NV_IF_TARGET(NV_PROVIDES_SM_70, (__nanosleep(0);))
   return true;
 }
@@ -154,7 +155,7 @@ _CCCL_DEVICE bool __cuda_fetch_weak_if_local(volatile _Type* __ptr, _Type __val,
   {
     return false;
   }
-  memcpy(const_cast<_Type*>(__ret), const_cast<const _Type*>(__ptr), sizeof(_Type));
+  _CUDA_VSTD::memcpy(const_cast<_Type*>(__ret), const_cast<const _Type*>(__ptr), sizeof(_Type));
   __bop(*__ptr, __val);
   NV_IF_TARGET(NV_PROVIDES_SM_70, (__nanosleep(0);))
   return true;

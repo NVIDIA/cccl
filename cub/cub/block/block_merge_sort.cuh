@@ -175,7 +175,7 @@ private:
   static constexpr int ITEMS_PER_TILE = ITEMS_PER_THREAD * NUM_THREADS;
 
   // Whether or not there are values to be trucked along with keys
-  static constexpr bool KEYS_ONLY = ::cuda::std::is_same<ValueT, NullType>::value;
+  static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   /// Shared memory type required by this thread block
