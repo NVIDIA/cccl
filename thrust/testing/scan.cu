@@ -580,8 +580,9 @@ namespace std
 template <>
 struct iterator_traits<only_set_when_expected_it>
 {
-  using value_type = long long;
-  using reference  = only_set_when_expected_it;
+  using value_type      = long long;
+  using reference       = only_set_when_expected_it;
+  using difference_type = ::cuda::std::ptrdiff_t;
 };
 } // namespace std
 

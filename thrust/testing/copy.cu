@@ -728,6 +728,18 @@ struct iterator_traits<only_set_when_expected_it>
 };
 THRUST_NAMESPACE_END
 
+namespace std
+{
+template <>
+struct iterator_traits<only_set_when_expected_it>
+{
+  using value_type        = long long;
+  using reference         = only_set_when_expected_it;
+  using iterator_category = thrust::random_access_device_iterator_tag;
+  using difference_type   = ::cuda::std::ptrdiff_t;
+};
+} // namespace std
+
 void TestCopyWithBigIndexesHelper(int magnitude)
 {
   thrust::counting_iterator<long long> begin(0);
