@@ -29,38 +29,38 @@ std::string cccl_type_enum_to_name(cccl_type_enum type, bool is_pointer = false)
   {
     switch (type)
     {
-      case cccl_type_enum::INT8:
+      case cccl_type_enum::CCCL_INT8:
 
         check(nvrtcGetTypeName<::cuda::std::int8_t*>(&result));
         break;
-      case cccl_type_enum::INT16:
+      case cccl_type_enum::CCCL_INT16:
         check(nvrtcGetTypeName<::cuda::std::int16_t*>(&result));
         break;
-      case cccl_type_enum::INT32:
+      case cccl_type_enum::CCCL_INT32:
         check(nvrtcGetTypeName<::cuda::std::int32_t*>(&result));
         break;
-      case cccl_type_enum::INT64:
+      case cccl_type_enum::CCCL_INT64:
         check(nvrtcGetTypeName<::cuda::std::int64_t*>(&result));
         break;
-      case cccl_type_enum::UINT8:
+      case cccl_type_enum::CCCL_UINT8:
         check(nvrtcGetTypeName<::cuda::std::uint8_t*>(&result));
         break;
-      case cccl_type_enum::UINT16:
+      case cccl_type_enum::CCCL_UINT16:
         check(nvrtcGetTypeName<::cuda::std::uint16_t*>(&result));
         break;
-      case cccl_type_enum::UINT32:
+      case cccl_type_enum::CCCL_UINT32:
         check(nvrtcGetTypeName<::cuda::std::uint32_t*>(&result));
         break;
-      case cccl_type_enum::UINT64:
+      case cccl_type_enum::CCCL_UINT64:
         check(nvrtcGetTypeName<::cuda::std::uint64_t*>(&result));
         break;
-      case cccl_type_enum::FLOAT32:
+      case cccl_type_enum::CCCL_FLOAT32:
         check(nvrtcGetTypeName<float*>(&result));
         break;
-      case cccl_type_enum::FLOAT64:
+      case cccl_type_enum::CCCL_FLOAT64:
         check(nvrtcGetTypeName<double*>(&result));
         break;
-      case cccl_type_enum::STORAGE:
+      case cccl_type_enum::CCCL_STORAGE:
         check(nvrtcGetTypeName<StorageT*>(&result));
         break;
     }
@@ -69,37 +69,37 @@ std::string cccl_type_enum_to_name(cccl_type_enum type, bool is_pointer = false)
   {
     switch (type)
     {
-      case cccl_type_enum::INT8:
+      case cccl_type_enum::CCCL_INT8:
         check(nvrtcGetTypeName<::cuda::std::int8_t>(&result));
         break;
-      case cccl_type_enum::INT16:
+      case cccl_type_enum::CCCL_INT16:
         check(nvrtcGetTypeName<::cuda::std::int16_t>(&result));
         break;
-      case cccl_type_enum::INT32:
+      case cccl_type_enum::CCCL_INT32:
         check(nvrtcGetTypeName<::cuda::std::int32_t>(&result));
         break;
-      case cccl_type_enum::INT64:
+      case cccl_type_enum::CCCL_INT64:
         check(nvrtcGetTypeName<::cuda::std::int64_t>(&result));
         break;
-      case cccl_type_enum::UINT8:
+      case cccl_type_enum::CCCL_UINT8:
         check(nvrtcGetTypeName<::cuda::std::uint8_t>(&result));
         break;
-      case cccl_type_enum::UINT16:
+      case cccl_type_enum::CCCL_UINT16:
         check(nvrtcGetTypeName<::cuda::std::uint16_t>(&result));
         break;
-      case cccl_type_enum::UINT32:
+      case cccl_type_enum::CCCL_UINT32:
         check(nvrtcGetTypeName<::cuda::std::uint32_t>(&result));
         break;
-      case cccl_type_enum::UINT64:
+      case cccl_type_enum::CCCL_UINT64:
         check(nvrtcGetTypeName<::cuda::std::uint64_t>(&result));
         break;
-      case cccl_type_enum::FLOAT32:
+      case cccl_type_enum::CCCL_FLOAT32:
         check(nvrtcGetTypeName<float>(&result));
         break;
-      case cccl_type_enum::FLOAT64:
+      case cccl_type_enum::CCCL_FLOAT64:
         check(nvrtcGetTypeName<double>(&result));
         break;
-      case cccl_type_enum::STORAGE:
+      case cccl_type_enum::CCCL_STORAGE:
         check(nvrtcGetTypeName<StorageT>(&result));
         break;
     }

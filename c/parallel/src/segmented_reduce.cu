@@ -29,6 +29,7 @@
 #include <cccl/c/segmented_reduce.h>
 #include <cccl/c/types.h> // cccl_type_info
 #include <nvrtc/command_list.h>
+#include <nvrtc/ltoir_list_appender.h>
 #include <stdio.h> // printf
 
 struct op_wrapper;
@@ -155,22 +156,22 @@ std::string get_device_segmented_reduce_kernel_name(
   check(nvrtcGetTypeName<device_segmented_reduce_policy>(&chained_policy_t));
 
   const std::string input_iterator_t =
-    input_it.type == cccl_iterator_kind_t::pointer //
+    input_it.type == cccl_iterator_kind_t::CCCL_POINTER //
       ? cccl_type_enum_to_name(input_it.value_type.type, true) //
       : get_input_iterator_name();
 
   const std::string output_iterator_t =
-    output_it.type == cccl_iterator_kind_t::pointer //
+    output_it.type == cccl_iterator_kind_t::CCCL_POINTER //
       ? cccl_type_enum_to_name(output_it.value_type.type, true) //
       : get_output_iterator_name();
 
   const std::string start_offset_iterator_t =
-    start_offset_it.type == cccl_iterator_kind_t::pointer //
+    start_offset_it.type == cccl_iterator_kind_t::CCCL_POINTER //
       ? cccl_type_enum_to_name(start_offset_it.value_type.type, true) //
       : get_start_offset_iterator_name();
 
   const std::string end_offset_iterator_t =
-    end_offset_it.type == cccl_iterator_kind_t::pointer //
+    end_offset_it.type == cccl_iterator_kind_t::CCCL_POINTER //
       ? cccl_type_enum_to_name(end_offset_it.value_type.type, true) //
       : get_end_offset_iterator_name();
 
@@ -268,7 +269,7 @@ CUresult cccl_device_segmented_reduce_build(
     const auto start_offset_it_value_t = cccl_type_enum_to_string(start_offset_it.value_type.type);
     const auto end_offset_it_value_t   = cccl_type_enum_to_string(end_offset_it.value_type.type);
     // OffsetT is checked to match have 64-bit size
-    const auto offset_t = cccl_type_enum_to_string(cccl_type_enum::UINT64);
+    const auto offset_t = cccl_type_enum_to_string(cccl_type_enum::CCCL_UINT64);
 
     const std::string input_iterator_src =
       make_kernel_input_iterator(offset_t, "input_iterator_t", input_it_value_t, input_it);
@@ -337,26 +338,15 @@ struct device_segmented_reduce_policy {{
 
     // Collect all LTO-IRs to be linked.
     nvrtc_ltoir_list ltoir_list;
-    auto ltoir_list_append = [&ltoir_list](nvrtc_ltoir lto) {
-      if (lto.ltsz)
-      {
-        ltoir_list.push_back(std::move(lto));
-      }
-    };
+    nvrtc_ltoir_list_appender appender{ltoir_list};
+
     // add definition of binary operation op
-    ltoir_list_append({op.ltoir, op.ltoir_size});
-    // add definitions of iterators
-    auto add_iterator_definition = [&ltoir_list_append](cccl_iterator_t it) {
-      if (cccl_iterator_kind_t::iterator == it.type)
-      {
-        ltoir_list_append({it.advance.ltoir, it.advance.ltoir_size});
-        ltoir_list_append({it.dereference.ltoir, it.dereference.ltoir_size});
-      }
-    };
-    add_iterator_definition(input_it);
-    add_iterator_definition(output_it);
-    add_iterator_definition(start_offset_it);
-    add_iterator_definition(end_offset_it);
+    appender.append({op.ltoir, op.ltoir_size});
+    // add iterator definitions
+    appender.add_iterator_definition(input_it);
+    appender.add_iterator_definition(output_it);
+    appender.add_iterator_definition(start_offset_it);
+    appender.add_iterator_definition(end_offset_it);
 
     nvrtc_link_result result =
       make_nvrtc_command_list()

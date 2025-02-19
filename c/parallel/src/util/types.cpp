@@ -20,27 +20,27 @@ std::string_view cccl_type_enum_to_string(cccl_type_enum type)
 {
   switch (type)
   {
-    case cccl_type_enum::INT8:
+    case cccl_type_enum::CCCL_INT8:
       return "::cuda::std::int8_t";
-    case cccl_type_enum::INT16:
+    case cccl_type_enum::CCCL_INT16:
       return "::cuda::std::int16_t";
-    case cccl_type_enum::INT32:
+    case cccl_type_enum::CCCL_INT32:
       return "::cuda::std::int32_t";
-    case cccl_type_enum::INT64:
+    case cccl_type_enum::CCCL_INT64:
       return "::cuda::std::int64_t";
-    case cccl_type_enum::UINT8:
+    case cccl_type_enum::CCCL_UINT8:
       return "::cuda::std::uint8_t";
-    case cccl_type_enum::UINT16:
+    case cccl_type_enum::CCCL_UINT16:
       return "::cuda::std::uint16_t";
-    case cccl_type_enum::UINT32:
+    case cccl_type_enum::CCCL_UINT32:
       return "::cuda::std::uint32_t";
-    case cccl_type_enum::UINT64:
+    case cccl_type_enum::CCCL_UINT64:
       return "::cuda::std::uint64_t";
-    case cccl_type_enum::FLOAT32:
+    case cccl_type_enum::CCCL_FLOAT32:
       return "float";
-    case cccl_type_enum::FLOAT64:
+    case cccl_type_enum::CCCL_FLOAT64:
       return "double";
-    case cccl_type_enum::STORAGE:
+    case cccl_type_enum::CCCL_STORAGE:
       return "storage_t";
   }
   return "unknown";

@@ -80,7 +80,7 @@ CUresult cccl_device_for_build(
 
   try
   {
-    if (d_data.type == cccl_iterator_kind_t::iterator)
+    if (d_data.type == cccl_iterator_kind_t::CCCL_ITERATOR)
     {
       throw std::runtime_error(std::string("Iterators are unsupported in for_each currently"));
     }
@@ -113,7 +113,7 @@ CUresult cccl_device_for_build(
 
     nvrtc_link_result result{};
 
-    if (cccl_iterator_kind_t::iterator == d_data.type)
+    if (cccl_iterator_kind_t::CCCL_ITERATOR == d_data.type)
     {
       result = cl.add_link({d_data.advance.ltoir, d_data.advance.ltoir_size})
                  .add_link({d_data.dereference.ltoir, d_data.dereference.ltoir_size})

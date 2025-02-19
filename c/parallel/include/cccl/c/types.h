@@ -24,35 +24,35 @@
 
 CCCL_C_EXTERN_BEGIN
 
-enum cccl_type_enum
+typedef enum cccl_type_enum
 {
-  INT8    = 0,
-  INT16   = 1,
-  INT32   = 2,
-  INT64   = 3,
-  UINT8   = 4,
-  UINT16  = 5,
-  UINT32  = 6,
-  UINT64  = 7,
-  FLOAT32 = 8,
-  FLOAT64 = 9,
-  STORAGE = 10
-};
+  CCCL_INT8    = 0,
+  CCCL_INT16   = 1,
+  CCCL_INT32   = 2,
+  CCCL_INT64   = 3,
+  CCCL_UINT8   = 4,
+  CCCL_UINT16  = 5,
+  CCCL_UINT32  = 6,
+  CCCL_UINT64  = 7,
+  CCCL_FLOAT32 = 8,
+  CCCL_FLOAT64 = 9,
+  CCCL_STORAGE = 10
+} ccclType;
 
-struct cccl_type_info
+typedef struct cccl_type_info
 {
   int size;
   int alignment;
   cccl_type_enum type;
-};
+} cclTypeInfo;
 
-enum cccl_op_kind_t
+typedef enum cccl_op_kind_t
 {
-  stateless = 0,
-  stateful  = 1
-};
+  CCCL_STATELESS = 0,
+  CCCL_STATEFUL  = 1
+} ccclOpKind;
 
-struct cccl_op_t
+typedef struct cccl_op_t
 {
   cccl_op_kind_t type;
   const char* name;
@@ -61,21 +61,21 @@ struct cccl_op_t
   int size;
   int alignment;
   void* state;
-};
+} ccclOp;
 
-enum cccl_iterator_kind_t
+typedef enum cccl_iterator_kind_t
 {
-  pointer  = 0,
-  iterator = 1
-};
+  CCCL_POINTER  = 0,
+  CCCL_ITERATOR = 1
+} ccclIteratorKind;
 
-struct cccl_value_t
+typedef struct cccl_value_t
 {
   cccl_type_info type;
   void* state;
-};
+} ccclValue;
 
-struct cccl_iterator_t
+typedef struct cccl_iterator_t
 {
   int size;
   int alignment;
@@ -84,6 +84,6 @@ struct cccl_iterator_t
   cccl_op_t dereference;
   cccl_type_info value_type;
   void* state;
-};
+} ccclIterator;
 
 CCCL_C_EXTERN_END

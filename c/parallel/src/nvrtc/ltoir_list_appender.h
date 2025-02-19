@@ -10,26 +10,29 @@
 
 #pragma once
 
+#include <utility> // std::move
+
+#include "command_list.h"
 #include <cccl/c/types.h>
 
-struct indirect_arg_t
+struct nvrtc_ltoir_list_appender
 {
-  void* ptr;
+  nvrtc_ltoir_list& ltoir_list;
 
-  indirect_arg_t(cccl_iterator_t& it)
-      : ptr(it.type == cccl_iterator_kind_t::CCCL_POINTER ? &it.state : it.state)
-  {}
-
-  indirect_arg_t(cccl_op_t& op)
-      : ptr(op.type == cccl_op_kind_t::CCCL_STATELESS ? this : op.state)
-  {}
-
-  indirect_arg_t(cccl_value_t& val)
-      : ptr(val.state)
-  {}
-
-  void* operator&() const
+  void append(nvrtc_ltoir lto)
   {
-    return ptr;
+    if (lto.ltsz)
+    {
+      ltoir_list.push_back(std::move(lto));
+    }
+  }
+
+  void add_iterator_definition(cccl_iterator_t it)
+  {
+    if (cccl_iterator_kind_t::CCCL_ITERATOR == it.type)
+    {
+      append({it.advance.ltoir, it.advance.ltoir_size});
+      append({it.dereference.ltoir, it.dereference.ltoir_size});
+    }
   }
 };

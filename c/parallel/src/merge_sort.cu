@@ -21,6 +21,7 @@
 #include "util/types.h"
 #include <cccl/c/merge_sort.h>
 #include <nvrtc/command_list.h>
+#include <nvrtc/ltoir_list_appender.h>
 
 struct op_wrapper;
 struct device_merge_sort_policy;
@@ -77,7 +78,7 @@ enum class merge_sort_iterator_t
 template <typename StorageT = storage_t>
 std::string get_iterator_name(cccl_iterator_t iterator, merge_sort_iterator_t which_iterator)
 {
-  if (iterator.type == cccl_iterator_kind_t::pointer)
+  if (iterator.type == cccl_iterator_kind_t::CCCL_POINTER)
   {
     if (iterator.state == nullptr)
     {
@@ -158,7 +159,7 @@ std::string get_merge_sort_kernel_name(
 
   const std::string key_t = cccl_type_enum_to_name(output_keys_it.value_type.type);
   const std::string value_t =
-    output_items_it.type == cccl_iterator_kind_t::pointer && output_items_it.state == nullptr
+    output_items_it.type == cccl_iterator_kind_t::CCCL_POINTER && output_items_it.state == nullptr
       ? "cub::NullType"
       : cccl_type_enum_to_name<items_storage_t>(output_items_it.value_type.type);
 
@@ -292,7 +293,7 @@ CUresult cccl_device_merge_sort_build(
     const auto input_items_it_value_t  = cccl_type_enum_to_string(input_items_it.value_type.type);
     const auto output_keys_it_value_t  = cccl_type_enum_to_string(output_keys_it.value_type.type);
     const auto output_items_it_value_t = cccl_type_enum_to_string(output_items_it.value_type.type);
-    const auto offset_t                = cccl_type_enum_to_string(cccl_type_enum::INT64);
+    const auto offset_t                = cccl_type_enum_to_string(cccl_type_enum::CCCL_INT64);
 
     const std::string input_keys_iterator_src = make_kernel_input_iterator(
       offset_t,
@@ -382,33 +383,14 @@ CUresult cccl_device_merge_sort_build(
 
     // Collect all LTO-IRs to be linked.
     nvrtc_ltoir_list ltoir_list;
-    auto ltoir_list_append = [&ltoir_list](nvrtc_ltoir lto) {
-      if (lto.ltsz)
-      {
-        ltoir_list.push_back(std::move(lto));
-      }
-    };
-    ltoir_list_append({op.ltoir, op.ltoir_size});
-    if (cccl_iterator_kind_t::iterator == input_keys_it.type)
-    {
-      ltoir_list_append({input_keys_it.advance.ltoir, input_keys_it.advance.ltoir_size});
-      ltoir_list_append({input_keys_it.dereference.ltoir, input_keys_it.dereference.ltoir_size});
-    }
-    if (cccl_iterator_kind_t::iterator == input_items_it.type)
-    {
-      ltoir_list_append({input_items_it.advance.ltoir, input_items_it.advance.ltoir_size});
-      ltoir_list_append({input_items_it.dereference.ltoir, input_items_it.dereference.ltoir_size});
-    }
-    if (cccl_iterator_kind_t::iterator == output_keys_it.type)
-    {
-      ltoir_list_append({output_keys_it.advance.ltoir, output_keys_it.advance.ltoir_size});
-      ltoir_list_append({output_keys_it.dereference.ltoir, output_keys_it.dereference.ltoir_size});
-    }
-    if (cccl_iterator_kind_t::iterator == output_items_it.type)
-    {
-      ltoir_list_append({output_items_it.advance.ltoir, output_items_it.advance.ltoir_size});
-      ltoir_list_append({output_items_it.dereference.ltoir, output_items_it.dereference.ltoir_size});
-    }
+
+    nvrtc_ltoir_list_appender list_appender{ltoir_list};
+
+    list_appender.append({op.ltoir, op.ltoir_size});
+    list_appender.add_iterator_definition(input_keys_it);
+    list_appender.add_iterator_definition(input_items_it);
+    list_appender.add_iterator_definition(output_keys_it);
+    list_appender.add_iterator_definition(output_items_it);
 
     nvrtc_link_result result =
       make_nvrtc_command_list()

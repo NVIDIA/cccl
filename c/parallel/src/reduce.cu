@@ -29,6 +29,7 @@
 #include "util/types.h"
 #include <cccl/c/reduce.h>
 #include <nvrtc/command_list.h>
+#include <nvrtc/ltoir_list_appender.h>
 
 struct op_wrapper;
 struct device_reduce_policy;
@@ -137,11 +138,11 @@ std::string get_single_tile_kernel_name(
   const std::string accum_cpp_t = cccl_type_enum_to_name(accum_t.type);
   const std::string input_iterator_t =
     is_second_kernel ? cccl_type_enum_to_name(accum_t.type, true)
-    : input_it.type == cccl_iterator_kind_t::pointer //
+    : input_it.type == cccl_iterator_kind_t::CCCL_POINTER //
       ? cccl_type_enum_to_name(input_it.value_type.type, true) //
       : get_input_iterator_name();
   const std::string output_iterator_t =
-    output_it.type == cccl_iterator_kind_t::pointer //
+    output_it.type == cccl_iterator_kind_t::CCCL_POINTER //
       ? cccl_type_enum_to_name(output_it.value_type.type, true) //
       : get_output_iterator_name();
   const std::string init_t = cccl_type_enum_to_name(init.type.type);
@@ -179,7 +180,7 @@ std::string get_device_reduce_kernel_name(cccl_op_t op, cccl_iterator_t input_it
   check(nvrtcGetTypeName<device_reduce_policy>(&chained_policy_t));
 
   const std::string input_iterator_t =
-    input_it.type == cccl_iterator_kind_t::pointer //
+    input_it.type == cccl_iterator_kind_t::CCCL_POINTER //
       ? cccl_type_enum_to_name(input_it.value_type.type, true) //
       : get_input_iterator_name();
 
@@ -266,7 +267,7 @@ CUresult cccl_device_reduce_build(
     const auto policy            = reduce::get_policy(cc, accum_t);
     const auto accum_cpp         = cccl_type_enum_to_string(accum_t.type);
     const auto input_it_value_t  = cccl_type_enum_to_string(input_it.value_type.type);
-    const auto offset_t          = cccl_type_enum_to_string(cccl_type_enum::UINT64);
+    const auto offset_t          = cccl_type_enum_to_string(cccl_type_enum::CCCL_UINT64);
 
     const auto input_iterator_typename  = reduce::get_input_iterator_name();
     const auto output_iterator_typename = reduce::get_output_iterator_name();
@@ -335,23 +336,11 @@ struct device_reduce_policy {{
 
     // Collect all LTO-IRs to be linked.
     nvrtc_ltoir_list ltoir_list;
-    auto ltoir_list_append = [&ltoir_list](nvrtc_ltoir lto) {
-      if (lto.ltsz)
-      {
-        ltoir_list.push_back(std::move(lto));
-      }
-    };
-    ltoir_list_append({op.ltoir, op.ltoir_size});
-    if (cccl_iterator_kind_t::iterator == input_it.type)
-    {
-      ltoir_list_append({input_it.advance.ltoir, input_it.advance.ltoir_size});
-      ltoir_list_append({input_it.dereference.ltoir, input_it.dereference.ltoir_size});
-    }
-    if (cccl_iterator_kind_t::iterator == output_it.type)
-    {
-      ltoir_list_append({output_it.advance.ltoir, output_it.advance.ltoir_size});
-      ltoir_list_append({output_it.dereference.ltoir, output_it.dereference.ltoir_size});
-    }
+    nvrtc_ltoir_list_appender appender{ltoir_list};
+
+    appender.append({op.ltoir, op.ltoir_size});
+    appender.add_iterator_definition(input_it);
+    appender.add_iterator_definition(output_it);
 
     nvrtc_link_result result =
       make_nvrtc_command_list()
