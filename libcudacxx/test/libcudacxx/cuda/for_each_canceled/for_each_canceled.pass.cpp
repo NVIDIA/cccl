@@ -94,7 +94,7 @@ __global__ void vec_add3(int* a, int* b, int* c, int n)
 #include <vector>
 
 template <typename F>
-bool test(size_t N, F&& f)
+bool test(int N, F&& f)
 {
   for (int tidx : {0, 33, 63, 94})
   {
@@ -140,16 +140,16 @@ int main(int argc, char** argv)
 {
   NV_IF_TARGET(
     NV_IS_HOST,
-    (size_t N = 1000000;
+    (int N = 1000000;
      if (!test(N,
-               [](int* a, int* b, int* c, size_t n, int tidx) {
+               [](int* a, int* b, int* c, int n, int tidx) {
                  int tpb = 256;
                  int bpg = (n + tpb - 1) / tpb;
                  vec_add_det1<<<bpg, tpb>>>(a, b, c, n, tidx);
                })) return 1;
 
      if (!test(N,
-               [](int* a, int* b, int* c, size_t n, int tidx) {
+               [](int* a, int* b, int* c, int n, int tidx) {
                  dim3 tpb(16, 16, 1);
                  int ntpb = tpb.x * tpb.y; // 256
                  int bpg  = (n + ntpb - 1) / ntpb;
@@ -164,7 +164,7 @@ int main(int argc, char** argv)
                })) return 1;
 
      if (!test(N,
-               [](int* a, int* b, int* c, size_t n, int tidx) {
+               [](int* a, int* b, int* c, int n, int tidx) {
                  dim3 tpb(8, 8, 8);
                  int ntpb = tpb.x * tpb.y * tpb.z; // 512
                  int bpg  = (n + ntpb - 1) / ntpb;
@@ -180,14 +180,14 @@ int main(int argc, char** argv)
                })) return 1;
 
      if (!test(N,
-               [](int* a, int* b, int* c, size_t n, int tidx) {
+               [](int* a, int* b, int* c, int n, int tidx) {
                  int tpb = 256;
                  int bpg = (n + tpb - 1) / tpb;
                  vec_add1<<<bpg, tpb>>>(a, b, c, n);
                })) return 1;
 
      if (!test(N,
-               [](int* a, int* b, int* c, size_t n, int tidx) {
+               [](int* a, int* b, int* c, int n, int tidx) {
                  dim3 tpb(16, 16, 1);
                  int ntpb = tpb.x * tpb.y; // 256
                  int bpg  = (n + ntpb - 1) / ntpb;
@@ -201,7 +201,7 @@ int main(int argc, char** argv)
                  vec_add2<<<dim3(bpgx, bpgy, 1), tpb>>>(a, b, c, n);
                })) return 1;
 
-     if (!test(N, [](int* a, int* b, int* c, size_t n, int tidx) {
+     if (!test(N, [](int* a, int* b, int* c, int n, int tidx) {
            dim3 tpb(8, 8, 8);
            int ntpb = tpb.x * tpb.y * tpb.z; // 512
            int bpg  = (n + ntpb - 1) / ntpb;
