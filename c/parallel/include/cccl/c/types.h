@@ -44,7 +44,7 @@ typedef struct cccl_type_info
   int size;
   int alignment;
   cccl_type_enum type;
-} cclTypeInfo;
+} ccclTypeInfo;
 
 typedef enum cccl_op_kind_t
 {

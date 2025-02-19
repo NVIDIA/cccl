@@ -103,8 +103,10 @@ segmented_reduce_runtime_tuning_policy get_policy(int cc, cccl_type_info accumul
   auto [_, block_size, items_per_thread, vector_load_length] = find_tuning(cc, chain);
 
   // Implement part of MemBoundScaling
-  items_per_thread = CUB_MAX(1, CUB_MIN(items_per_thread * 4 / accumulator_type.size, items_per_thread * 2));
-  block_size       = CUB_MIN(block_size, (((1024 * 48) / (accumulator_type.size * items_per_thread)) + 31) / 32 * 32);
+  items_per_thread =
+    ::cuda::std::max(1, ::cuda::std::min(items_per_thread * 4 / accumulator_type.size, items_per_thread * 2));
+  block_size =
+    ::cuda::std::min(block_size, (((1024 * 48) / (accumulator_type.size * items_per_thread)) + 31) / 32 * 32);
 
   return {block_size, items_per_thread, vector_load_length};
 }
