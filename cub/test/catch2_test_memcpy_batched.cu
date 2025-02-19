@@ -109,11 +109,10 @@ try
            },
            chunk(2, random(1, 1000000)))));
 
-  const auto min_buffer_size    = static_cast<buffer_size_t>(std::get<0>(buffer_size_range));
-  const auto max_buffer_size    = static_cast<buffer_size_t>(std::get<1>(buffer_size_range));
-  double average_buffer_size    = (min_buffer_size + max_buffer_size) / 2.0;
-  const auto target_num_buffers = static_cast<buffer_offset_t>(target_copy_size / average_buffer_size);
-  const auto num_buffers        = static_cast<buffer_offset_t>(target_copy_size / average_buffer_size);
+  const auto min_buffer_size = static_cast<buffer_size_t>(std::get<0>(buffer_size_range));
+  const auto max_buffer_size = static_cast<buffer_size_t>(std::get<1>(buffer_size_range));
+  double average_buffer_size = (min_buffer_size + max_buffer_size) / 2.0;
+  const auto num_buffers     = static_cast<buffer_offset_t>(target_copy_size / average_buffer_size);
 
   c2h::device_vector<buffer_size_t> d_buffer_sizes(num_buffers);
   c2h::device_vector<byte_offset_t> d_buffer_src_offsets(num_buffers);
