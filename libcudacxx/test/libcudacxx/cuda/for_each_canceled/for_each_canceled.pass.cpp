@@ -13,6 +13,7 @@
 // UNSUPPORTED: c++98, c++03, c++14
 
 #include <cuda/for_each_canceled>
+#include <cuda/std/cmath>
 
 __device__ void vec_add_impl1(int* a, int* b, int* c, int n, dim3 block_idx)
 {
@@ -136,7 +137,7 @@ int main(int argc, char** argv)
                  dim3 tpb(16, 16, 1);
                  int ntpb = tpb.x * tpb.y; // 256
                  int bpg  = (n + ntpb - 1) / ntpb;
-                 int bpgx = (int) std::sqrt((double) bpg) + 1;
+                 int bpgx = (int) cuda::std::sqrt(bpg) + 1;
                  int bpgy = bpgx;
                  assert((bpgx * bpgy) >= bpg);
                  vec_add_det2<<<dim3(bpgx, bpgy, 1), tpb>>>(a, b, c, n, tidx);
@@ -147,7 +148,7 @@ int main(int argc, char** argv)
                  dim3 tpb(8, 8, 8);
                  int ntpb = tpb.x * tpb.y * tpb.z; // 512
                  int bpg  = (n + ntpb - 1) / ntpb;
-                 int bpgx = (int) std::pow((double) bpg, 1. / 3.) + 1;
+                 int bpgx = (int) cuda::std::pow(bpg, 1. / 3.) + 1;
                  int bpgy = bpgx;
                  int bpgz = bpgx;
                  assert((bpgx * bpgy * bpgz) >= bpg);
@@ -166,7 +167,7 @@ int main(int argc, char** argv)
                  dim3 tpb(16, 16, 1);
                  int ntpb = tpb.x * tpb.y; // 256
                  int bpg  = (n + ntpb - 1) / ntpb;
-                 int bpgx = (int) std::sqrt((double) bpg) + 1;
+                 int bpgx = (int) cuda::std::sqrt(bpg) + 1;
                  int bpgy = bpgx;
                  assert((bpgx * bpgy) >= bpg);
                  vec_add2<<<dim3(bpgx, bpgy, 1), tpb>>>(a, b, c, n);
@@ -176,7 +177,7 @@ int main(int argc, char** argv)
            dim3 tpb(8, 8, 8);
            int ntpb = tpb.x * tpb.y * tpb.z; // 512
            int bpg  = (n + ntpb - 1) / ntpb;
-           int bpgx = (int) std::pow((double) bpg, 1. / 3.) + 1;
+           int bpgx = (int) cuda::std::pow(bpg, 1. / 3.) + 1;
            int bpgy = bpgx;
            int bpgz = bpgx;
            assert((bpgx * bpgy * bpgz) >= bpg);
