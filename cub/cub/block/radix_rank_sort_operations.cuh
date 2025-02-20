@@ -446,8 +446,11 @@ struct digit_f
 
       if (bits_to_copy)
       {
+        // nvcc when compiling for GCC complains that ::CATEGORY is deprecated
+        _CCCL_SUPPRESS_DEPRECATED_PUSH
         bit_ordered_type ordered_src =
           BaseDigitExtractor<T>::ProcessFloatMinusZero(reinterpret_cast<bit_ordered_type&>(src));
+        _CCCL_SUPPRESS_DEPRECATED_POP
 
         const ::cuda::std::uint32_t mask = (1 << bits_to_copy) - 1;
         dst                              = dst | (((ordered_src >> src_bit_start) & mask) << dst_bit_start);
