@@ -166,6 +166,7 @@ private:
    * Constants and type definitions
    ******************************************************************************/
 
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   enum
   {
     /// Whether the logical warp size and the PTX warp size coincide
@@ -177,6 +178,7 @@ private:
     /// Whether the data type is an integer (which has fully-associative addition)
     IS_INTEGER = ((Traits<T>::CATEGORY == SIGNED_INTEGER) || (Traits<T>::CATEGORY == UNSIGNED_INTEGER))
   };
+  _CCCL_SUPPRESS_DEPRECATED_POP
 
   /// Internal specialization.
   /// Use SHFL-based scan if LOGICAL_WARP_THREADS is a power-of-two
