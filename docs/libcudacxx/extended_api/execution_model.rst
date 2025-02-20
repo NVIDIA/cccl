@@ -83,6 +83,7 @@ The implementation may assume that any **host** thread will eventually do one of
     being degraded to provide forward progress to “useless” programs, e.g., the undefined
     behavior introduced by programs that eventually only perform atomic write operations
     or fences. - end note.]
+
 .. dropdown:: Examples of forward progress guarantee differences between host and device threads due to modifications to [intro.progress.1].
 
     The following examples refer to the itemized sub-clauses of the implementation assumptions for host and device threads above
