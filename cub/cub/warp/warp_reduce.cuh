@@ -229,7 +229,7 @@ public:
 
   template <typename InputType>
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE //
-  ::cuda::std::enable_if_t<detail::is_fixed_size_random_access_range_t<InputType>{}, T> //
+  ::cuda::std::enable_if_t<detail::is_fixed_size_random_access_range<InputType>::value, T> //
   Sum(const InputType& input)
   {
     auto thread_reduction = cub::ThreadReduce(input, ::cuda::std::plus<>{});
