@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import ctypes
 import functools
+from typing import Callable
 
 import numba
 import numpy as np
@@ -78,6 +79,19 @@ class Iterator(ctypes.Structure):
     ]
 
 
+# MUST match `cccl_device_merge_sort_build_result_t` in c/include/cccl/c/merge_sort.h
+class DeviceMergeSortBuildResult(ctypes.Structure):
+    _fields_ = [
+        ("cc", ctypes.c_int),
+        ("cubin", ctypes.c_void_p),
+        ("cubin_size", ctypes.c_size_t),
+        ("library", ctypes.c_void_p),
+        ("block_sort_kernel", ctypes.c_void_p),
+        ("partition_kernel", ctypes.c_void_p),
+        ("merge_kernel", ctypes.c_void_p),
+    ]
+
+
 # MUST match `cccl_device_reduce_build_result_t` in c/include/cccl/c/reduce.h
 class DeviceReduceBuildResult(ctypes.Structure):
     _fields_ = [
@@ -89,6 +103,21 @@ class DeviceReduceBuildResult(ctypes.Structure):
         ("single_tile_kernel", ctypes.c_void_p),
         ("single_tile_second_kernel", ctypes.c_void_p),
         ("reduction_kernel", ctypes.c_void_p),
+    ]
+
+
+# MUST match `cccl_device_scan_build_result_t` in c/include/cccl/c/scan.h
+class DeviceScanBuildResult(ctypes.Structure):
+    _fields_ = [
+        ("cc", ctypes.c_int),
+        ("cubin", ctypes.c_void_p),
+        ("cubin_size", ctypes.c_size_t),
+        ("library", ctypes.c_void_p),
+        ("accumulator_type", TypeInfo),
+        ("init_kernel", ctypes.c_void_p),
+        ("scan_kernel", ctypes.c_void_p),
+        ("description_bytes_per_tile", ctypes.c_size_t),
+        ("payload_bytes_per_tile", ctypes.c_size_t),
     ]
 
 
@@ -193,6 +222,20 @@ def _iterator_to_cccl_iter(it: IteratorBase) -> Iterator:
     )
 
 
+def _none_to_cccl_iter() -> Iterator:
+    # Any type could be used here, we just need to pass NULL.
+    info = _numpy_type_to_info(np.uint8)
+    return Iterator(
+        info.size,
+        info.alignment,
+        IteratorKind.POINTER,
+        Op(),
+        Op(),
+        info,
+        None,
+    )
+
+
 def type_enum_as_name(enum_value: int) -> str:
     return (
         "int8",
@@ -210,6 +253,8 @@ def type_enum_as_name(enum_value: int) -> str:
 
 
 def to_cccl_iter(array_or_iterator) -> Iterator:
+    if array_or_iterator is None:
+        return _none_to_cccl_iter()
     if isinstance(array_or_iterator, IteratorBase):
         return _iterator_to_cccl_iter(array_or_iterator)
     return _device_array_to_cccl_iter(array_or_iterator)
@@ -223,3 +268,18 @@ def to_cccl_value(array_or_struct: np.ndarray | GpuStruct) -> Value:
     else:
         # it's a GpuStruct, use the array underlying it
         return to_cccl_value(array_or_struct._data)
+
+
+def to_cccl_op(op: Callable, sig) -> Op:
+    ltoir, _ = cuda.compile(op, sig=sig, output="ltoir")
+    name = op.__name__.encode("utf-8")
+    return Op(
+        OpKind.STATELESS,
+        name,
+        ctypes.c_char_p(ltoir),
+        len(ltoir),
+        1,
+        1,
+        None,
+        _data=(ltoir, name),  # keep a reference to these in a _data attribute
+    )

@@ -169,7 +169,7 @@ public:
   template <typename QualifiedT>
   cudaError_t BindTexture(QualifiedT* ptr, size_t bytes, size_t tex_offset = 0)
   {
-    this->ptr        = const_cast<typename std::remove_cv<QualifiedT>::type*>(ptr);
+    this->ptr        = const_cast<std::remove_cv_t<QualifiedT>*>(ptr);
     this->tex_offset = static_cast<difference_type>(tex_offset);
 
     cudaChannelFormatDesc channel_desc = cudaCreateChannelDesc<TextureWord>();

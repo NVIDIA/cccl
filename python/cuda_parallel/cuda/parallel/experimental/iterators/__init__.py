@@ -3,7 +3,7 @@ import numba
 from . import _iterators
 
 
-def CacheModifiedInputIterator(device_array, modifier):
+def CacheModifiedInputIterator(device_array, modifier, prefix=""):
     """Random Access Cache Modified Iterator that wraps a native device pointer.
 
     Similar to https://nvidia.github.io/cccl/cub/api/classcub_1_1CacheModifiedInputIterator.html
@@ -22,6 +22,7 @@ def CacheModifiedInputIterator(device_array, modifier):
     Args:
         device_array: CUDA device array storing the input sequence of data items
         modifier: The PTX cache load modifier
+        prefix: An optional prefix added to the iterator's methods to prevent name collisions.
 
     Returns:
         A ``CacheModifiedInputIterator`` object initialized with ``device_array``
@@ -31,6 +32,7 @@ def CacheModifiedInputIterator(device_array, modifier):
     return _iterators.CacheModifiedPointer(
         device_array.__cuda_array_interface__["data"][0],
         numba.from_dtype(device_array.dtype),
+        prefix,
     )
 
 
@@ -85,7 +87,7 @@ def CountingIterator(offset):
 def TransformIterator(it, op):
     """Returns an Iterator representing a transformed sequence of values.
 
-    Similar to https://nvidia.github.io/cccl/cub/api/classcub_1_1TransformInputIterator.html
+    Similar to https://nvidia.github.io/cccl/thrust/api/classthrust_1_1transform__iterator.html
 
     Example:
         The code snippet below demonstrates the usage of a ``TransformIterator``

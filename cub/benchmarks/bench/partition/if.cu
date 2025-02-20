@@ -42,9 +42,6 @@
 // %RANGE% TUNE_DELAY_CONSTRUCTOR_ID dcid 0:7:1
 // %RANGE% TUNE_L2_WRITE_LATENCY_NS l2w 0:1200:5
 
-constexpr bool keep_rejects = true;
-constexpr bool may_alias    = false;
-
 #if !TUNE_BASE
 #  if TUNE_TRANSPOSE == 0
 #    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_DIRECT
@@ -97,11 +94,11 @@ T value_from_entropy(double percentage)
 {
   if (percentage == 1)
   {
-    return std::numeric_limits<T>::max();
+    return ::cuda::std::numeric_limits<T>::max();
   }
 
-  const auto max_val = static_cast<double>(std::numeric_limits<T>::max());
-  const auto min_val = static_cast<double>(std::numeric_limits<T>::lowest());
+  const auto max_val = static_cast<double>(::cuda::std::numeric_limits<T>::max());
+  const auto min_val = static_cast<double>(::cuda::std::numeric_limits<T>::lowest());
   const auto result  = min_val + percentage * max_val - percentage * min_val;
   return static_cast<T>(result);
 }
@@ -145,8 +142,7 @@ void partition(nvbench::state& state, nvbench::type_list<T, OffsetT, UseDistinct
     select_op_t,
     equality_op_t,
     offset_t,
-    keep_rejects,
-    may_alias
+    cub::SelectImpl::Partition
 #if !TUNE_BASE
     ,
     policy_hub_t<T>

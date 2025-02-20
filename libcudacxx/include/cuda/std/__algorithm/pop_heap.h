@@ -33,7 +33,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _AlgPolicy, class _Compare, class _RandomAccessIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void __pop_heap(
+_LIBCUDACXX_HIDE_FROM_ABI constexpr void __pop_heap(
   _RandomAccessIterator __first,
   _RandomAccessIterator __last,
   _Compare& __comp,
@@ -66,7 +66,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void __pop_heap(
 }
 
 template <class _RandomAccessIterator, class _Compare>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
+_LIBCUDACXX_HIDE_FROM_ABI constexpr void
 pop_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
   static_assert(_CUDA_VSTD::is_copy_constructible<_RandomAccessIterator>::value,
@@ -78,8 +78,7 @@ pop_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare _
 }
 
 template <class _RandomAccessIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
-pop_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr void pop_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
 {
   _CUDA_VSTD::pop_heap(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __less{});
 }

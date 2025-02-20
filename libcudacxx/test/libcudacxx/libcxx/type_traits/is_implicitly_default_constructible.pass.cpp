@@ -6,8 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03
-
 // UNSUPPORTED: gcc-5
 // Before GCC 6, this trait fails. See https://stackoverflow.com/q/41799015/627587.
 

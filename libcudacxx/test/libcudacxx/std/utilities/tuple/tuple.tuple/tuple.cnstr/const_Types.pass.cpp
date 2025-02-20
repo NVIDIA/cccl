@@ -12,8 +12,6 @@
 
 // explicit tuple(const T&...);
 
-// UNSUPPORTED: c++98, c++03
-
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 
@@ -102,7 +100,6 @@ int main(int, char**)
     cuda::std::tuple<int> t(2);
     assert(cuda::std::get<0>(t) == 2);
   }
-#if TEST_STD_VER > 2011
   {
     constexpr cuda::std::tuple<int> t(2);
     static_assert(cuda::std::get<0>(t) == 2, "");
@@ -111,19 +108,16 @@ int main(int, char**)
     constexpr cuda::std::tuple<int> t;
     static_assert(cuda::std::get<0>(t) == 0, "");
   }
-#endif
   {
     cuda::std::tuple<int, char*> t(2, 0);
     assert(cuda::std::get<0>(t) == 2);
     assert(cuda::std::get<1>(t) == nullptr);
   }
-#if TEST_STD_VER > 2011
   {
     constexpr cuda::std::tuple<int, char*> t(2, nullptr);
     static_assert(cuda::std::get<0>(t) == 2, "");
     static_assert(cuda::std::get<1>(t) == nullptr, "");
   }
-#endif
   {
     cuda::std::tuple<int, char*> t(2, nullptr);
     assert(cuda::std::get<0>(t) == 2);

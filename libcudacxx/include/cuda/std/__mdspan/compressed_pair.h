@@ -63,8 +63,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2011
-
 namespace __detail
 {
 
@@ -107,7 +105,7 @@ struct __compressed_pair
   {}
 };
 
-#  ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 
 // First empty.
 template <class _Tp, class _Up>
@@ -200,15 +198,15 @@ struct __compressed_pair<
   _CUDA_VSTD::enable_if_t<_CCCL_TRAIT(_CUDA_VSTD::is_empty, _Tp) && _CCCL_TRAIT(_CUDA_VSTD::is_empty, _Up)>>
 // We need to use the __no_unique_address_emulation wrapper here to avoid
 // base class ambiguities.
-#    ifdef __MDSPAN_COMPILER_MSVC
+#  ifdef __MDSPAN_COMPILER_MSVC
     // MSVC doesn't allow you to access public static member functions of a type
     // when you *happen* to privately inherit from that type.
     : protected __no_unique_address_emulation<_Tp, 0>
     , protected __no_unique_address_emulation<_Up, 1>
-#    else
+#  else
     : private __no_unique_address_emulation<_Tp, 0>
     , private __no_unique_address_emulation<_Up, 1>
-#    endif
+#  endif
 {
   using __first_base_t  = __no_unique_address_emulation<_Tp, 0>;
   using __second_base_t = __no_unique_address_emulation<_Up, 1>;
@@ -245,11 +243,9 @@ struct __compressed_pair<
   {}
 };
 
-#  endif // !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#endif // !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 
 } // end namespace __detail
-
-#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

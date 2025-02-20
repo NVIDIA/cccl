@@ -35,7 +35,6 @@ int main(int, char**)
   assert(cuda::std::to_integer<int>(test(b9, b1)) == 8);
   assert(cuda::std::to_integer<int>(test(b9, b8)) == 1);
 
-#if TEST_STD_VER >= 2014
   static_assert(cuda::std::to_integer<int>(test(b1, b8)) == 9, "");
   static_assert(cuda::std::to_integer<int>(test(b1, b9)) == 8, "");
   static_assert(cuda::std::to_integer<int>(test(b8, b9)) == 1, "");
@@ -43,7 +42,6 @@ int main(int, char**)
   static_assert(cuda::std::to_integer<int>(test(b8, b1)) == 9, "");
   static_assert(cuda::std::to_integer<int>(test(b9, b1)) == 8, "");
   static_assert(cuda::std::to_integer<int>(test(b9, b8)) == 1, "");
-#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

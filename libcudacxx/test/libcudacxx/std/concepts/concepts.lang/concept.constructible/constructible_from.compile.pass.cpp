@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class T, class... Args>
 // concept constructible_from;
 //    destructible<T> && is_constructible_v<T, Args...>;

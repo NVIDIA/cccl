@@ -76,6 +76,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT prop
   prop& operator=(const prop&) = delete;
 };
 
+template <class _Query, class _Value>
+prop(_Query, _Value) -> prop<_Query, _Value>;
+
 template <class... _Envs>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT env
 {

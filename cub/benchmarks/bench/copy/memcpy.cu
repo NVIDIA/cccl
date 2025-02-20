@@ -25,7 +25,7 @@
  *
  ******************************************************************************/
 
-#include <cub/device/device_copy.cuh>
+#include <cub/device/device_memcpy.cuh>
 
 // %RANGE% TUNE_THREADS tpb 128:1024:32
 // %RANGE% TUNE_BUFFERS_PER_THREAD bpt 1:18:1
@@ -184,22 +184,18 @@ void copy(nvbench::state& state,
   using buffer_offset_t    = std::uint32_t;
   using block_offset_t     = std::uint32_t;
 
-  constexpr bool is_memcpy = true;
-
-#if !TUNE_BASE
-  using policy_t = policy_hub_t;
-#else
-  using policy_t = cub::detail::batch_memcpy::policy_hub<buffer_offset_t, block_offset_t>;
-#endif
-
   using dispatch_t = cub::detail::DispatchBatchMemcpy<
     input_buffer_it_t,
     output_buffer_it_t,
     buffer_size_it_t,
     buffer_offset_t,
     block_offset_t,
-    policy_t,
-    is_memcpy>;
+    cub::CopyAlg::Memcpy
+#if !TUNE_BASE
+    ,
+    policy_hub_t
+#endif
+    >;
 
   thrust::device_vector<T> input_buffer = generate(elements);
   thrust::device_vector<T> output_buffer(elements);

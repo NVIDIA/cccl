@@ -275,8 +275,8 @@ Due to  this limitation, we can't specialize on the PTX version.
 
     template <class U = T>
     __device__ __forceinline__
-      typename std::enable_if<std::is_same<int, U>::value ||
-                              std::is_same<unsigned int, U>::value,
+      typename std::enable_if<std::is_same_v<int, U> ||
+                              std::is_same_v<unsigned int, U>,
                               T>::type
         ReduceImpl(T input,
                   int,               // valid_items
@@ -716,7 +716,7 @@ To eliminate the symbol visibility issues on our end, we follow the following ru
        it's important that kernels compiled for a given GPU architecture are always used by the host
        API compiled for that architecture.
 
-To satisfy (1), the visibility of ``thrust::cuda_cub::launcher::triple_chevron`` is hidden.
+To satisfy (1), the visibility of ``thrust::cuda_cub::detail::triple_chevron`` is hidden.
 
 To satisfy (2), instead of annotating kernels as ``__global__`` we annotate them as
 ``CUB_DETAIL_KERNEL_ATTRIBUTES``. Apart from annotating a kernel as global function, the macro also

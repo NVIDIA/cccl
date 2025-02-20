@@ -87,7 +87,7 @@ private:
   CUB_RUNTIME_FUNCTION static cudaError_t segmented_reduce(
     ::cuda::std::false_type,
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
     int num_segments,
@@ -108,7 +108,7 @@ private:
   CUB_RUNTIME_FUNCTION static cudaError_t segmented_reduce(
     ::cuda::std::true_type,
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
     int num_segments,
@@ -508,10 +508,8 @@ public:
       d_begin_offsets,
       d_end_offsets,
       ::cuda::minimum<>{},
-      Traits<InputT>::Max(), // replace with
-                             // std::numeric_limits<T>::max()
-                             // when C++11 support is
-                             // more prevalent
+      // TODO(bgruber): replace with ::cuda::std::numeric_limits<T>::max() (breaking change)
+      Traits<InputT>::Max(),
       stream);
   }
 
@@ -773,10 +771,8 @@ public:
       d_begin_offsets,
       d_end_offsets,
       ::cuda::maximum<>{},
-      Traits<InputT>::Lowest(), // replace with
-                                // std::numeric_limits<T>::lowest()
-                                // when C++11 support is
-                                // more prevalent
+      // TODO(bgruber): replace with ::cuda::std::numeric_limits<T>::lowest() (breaking change)
+      Traits<InputT>::Lowest(),
       stream);
   }
 

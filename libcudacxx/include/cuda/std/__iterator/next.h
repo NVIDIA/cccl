@@ -30,7 +30,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIter>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 enable_if_t<__is_cpp17_input_iterator<_InputIter>::value, _InputIter>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__is_cpp17_input_iterator<_InputIter>::value, _InputIter>
 next(_InputIter __x, typename iterator_traits<_InputIter>::difference_type __n = 1)
 {
   _CCCL_ASSERT(__n >= 0 || __is_cpp17_bidirectional_iterator<_InputIter>::value,
@@ -41,8 +41,6 @@ next(_InputIter __x, typename iterator_traits<_InputIter>::difference_type __n =
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
-
-#if _CCCL_STD_VER > 2014 && !_CCCL_COMPILER(MSVC2017)
 
 // [range.iter.op.next]
 
@@ -89,7 +87,5 @@ inline namespace __cpo
 _CCCL_GLOBAL_CONSTANT auto next = __next::__fn{};
 } // namespace __cpo
 _LIBCUDACXX_END_NAMESPACE_RANGES
-
-#endif // _CCCL_STD_VER > 2014 && !_CCCL_COMPILER(MSVC2017)
 
 #endif // _LIBCUDACXX___ITERATOR_NEXT_H

@@ -81,9 +81,7 @@ __host__ __device__ void test_is_constructible()
   // use it, so waive it.
   static_assert((cuda::std::__cccl_is_constructible<T>::type::value), "");
 #endif
-#if TEST_STD_VER > 2011
   static_assert(cuda::std::is_constructible_v<T>, "");
-#endif
 }
 
 template <class T, class A0>
@@ -95,9 +93,7 @@ __host__ __device__ void test_is_constructible()
   // use it, so waive it.
   static_assert((cuda::std::__cccl_is_constructible<T, A0>::type::value), "");
 #endif
-#if TEST_STD_VER > 2011
   static_assert((cuda::std::is_constructible_v<T, A0>), "");
-#endif
 }
 
 template <class T, class A0, class A1>
@@ -109,9 +105,7 @@ __host__ __device__ void test_is_constructible()
   // use it, so waive it.
   static_assert((cuda::std::__cccl_is_constructible<T, A0, A1>::type::value), "");
 #endif
-#if TEST_STD_VER > 2011
   static_assert((cuda::std::is_constructible_v<T, A0, A1>), "");
-#endif
 }
 
 template <class T, class A0, class A1, class A2>
@@ -123,9 +117,7 @@ __host__ __device__ void test_is_constructible()
   // use it, so waive it.
   static_assert((cuda::std::__cccl_is_constructible<T, A0, A1, A2>::type::value), "");
 #endif
-#if TEST_STD_VER > 2011
   static_assert((cuda::std::is_constructible_v<T, A0, A1, A2>), "");
-#endif
 }
 
 template <class T>
@@ -137,9 +129,7 @@ __host__ __device__ void test_is_not_constructible()
   // use it, so waive it.
   static_assert((!cuda::std::__cccl_is_constructible<T>::type::value), "");
 #endif
-#if TEST_STD_VER > 2011
   static_assert((!cuda::std::is_constructible_v<T>), "");
-#endif
 }
 
 template <class T, class A0>
@@ -151,9 +141,7 @@ __host__ __device__ void test_is_not_constructible()
   // use it, so waive it.
   static_assert((!cuda::std::__cccl_is_constructible<T, A0>::type::value), "");
 #endif
-#if TEST_STD_VER > 2011
   static_assert((!cuda::std::is_constructible_v<T, A0>), "");
-#endif
 }
 
 #if defined(TEST_CLANG_VER)
@@ -251,9 +239,7 @@ int main(int, char**)
 
   // test that T must also be destructible
   test_is_constructible<PrivateDtor&, PrivateDtor&>();
-#if !defined(TEST_COMPILER_MSVC_2017)
   test_is_not_constructible<PrivateDtor, int>();
-#endif
 
   test_is_not_constructible<void() const, void() const>();
   test_is_not_constructible<void() const, void*>();

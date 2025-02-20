@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // <cuda/std/iterator>
 
 // reverse_iterator
@@ -44,8 +42,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
 int main(int, char**)
 {
   tests();
-#if TEST_STD_VER > 2011
   static_assert(tests(), "");
-#endif
   return 0;
 }

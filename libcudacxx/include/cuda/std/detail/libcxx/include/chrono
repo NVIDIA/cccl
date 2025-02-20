@@ -868,11 +868,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_FILESYSTEM
 struct _FilesystemClock;
 _LIBCUDACXX_END_NAMESPACE_FILESYSTEM
 
-#if _LIBCUDACXX_CUDA_ABI_VERSION > 3
-#  define _LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T double
-#else
-#  define _LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T long double
-#endif
+#define _LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T double
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -999,9 +995,8 @@ public:
   }
 };
 
-#if _CCCL_STD_VER > 2011
 template <class _ToDuration, class _Rep, class _Period>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 enable_if_t<__is_duration<_ToDuration>::value, _ToDuration>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__is_duration<_ToDuration>::value, _ToDuration>
 floor(const duration<_Rep, _Period>& __d)
 {
   _ToDuration __t = duration_cast<_ToDuration>(__d);
@@ -1013,7 +1008,7 @@ floor(const duration<_Rep, _Period>& __d)
 }
 
 template <class _ToDuration, class _Rep, class _Period>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 enable_if_t<__is_duration<_ToDuration>::value, _ToDuration>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__is_duration<_ToDuration>::value, _ToDuration>
 ceil(const duration<_Rep, _Period>& __d)
 {
   _ToDuration __t = duration_cast<_ToDuration>(__d);
@@ -1025,7 +1020,7 @@ ceil(const duration<_Rep, _Period>& __d)
 }
 
 template <class _ToDuration, class _Rep, class _Period>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 enable_if_t<__is_duration<_ToDuration>::value, _ToDuration>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__is_duration<_ToDuration>::value, _ToDuration>
 round(const duration<_Rep, _Period>& __d)
 {
   _ToDuration __lower = floor<_ToDuration>(__d);
@@ -1042,7 +1037,6 @@ round(const duration<_Rep, _Period>& __d)
   }
   return __lower.count() & 1 ? __upper : __lower;
 }
-#endif // _CCCL_STD_VER > 2011
 
 // duration
 
@@ -1128,52 +1122,52 @@ public:
   {
     return typename common_type<duration>::type(-__rep_);
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX17 duration& operator++()
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr duration& operator++()
   {
     ++__rep_;
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX17 duration operator++(int)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr duration operator++(int)
   {
     return duration(__rep_++);
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX17 duration& operator--()
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr duration& operator--()
   {
     --__rep_;
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX17 duration operator--(int)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr duration operator--(int)
   {
     return duration(__rep_--);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX17 duration& operator+=(const duration& __d)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr duration& operator+=(const duration& __d)
   {
     __rep_ += __d.count();
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX17 duration& operator-=(const duration& __d)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr duration& operator-=(const duration& __d)
   {
     __rep_ -= __d.count();
     return *this;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX17 duration& operator*=(const rep& rhs)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr duration& operator*=(const rep& rhs)
   {
     __rep_ *= rhs;
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX17 duration& operator/=(const rep& rhs)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr duration& operator/=(const rep& rhs)
   {
     __rep_ /= rhs;
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX17 duration& operator%=(const rep& rhs)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr duration& operator%=(const rep& rhs)
   {
     __rep_ %= rhs;
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX17 duration& operator%=(const duration& rhs)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr duration& operator%=(const duration& rhs)
   {
     __rep_ %= rhs.count();
     return *this;
@@ -1201,12 +1195,12 @@ using milliseconds = duration<long long, milli>;
 using seconds      = duration<long long>;
 using minutes      = duration<long, ratio<60>>;
 using hours        = duration<long, ratio<3600>>;
-#if _CCCL_STD_VER > 2011
+
 using days   = duration<int, ratio_multiply<ratio<24>, hours::period>>;
 using weeks  = duration<int, ratio_multiply<ratio<7>, days::period>>;
 using years  = duration<int, ratio_multiply<ratio<146097, 400>, days::period>>;
 using months = duration<int, ratio_divide<years::period, ratio<12>>>;
-#endif // _CCCL_STD_VER > 2011
+
 // Duration ==
 
 template <class _LhsDuration, class _RhsDuration>
@@ -1402,35 +1396,35 @@ private:
   duration __d_;
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 time_point()
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr time_point()
       : __d_(duration::zero())
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 explicit time_point(const duration& __d)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit time_point(const duration& __d)
       : __d_(__d)
   {}
 
   // conversions
   template <class _Duration2>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14
-  time_point(const time_point<clock, _Duration2>& t, enable_if_t<is_convertible<_Duration2, duration>::value>* = 0)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr time_point(const time_point<clock, _Duration2>& t,
+                                                 enable_if_t<is_convertible<_Duration2, duration>::value>* = 0)
       : __d_(t.time_since_epoch())
   {}
 
   // observer
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 duration time_since_epoch() const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr duration time_since_epoch() const
   {
     return __d_;
   }
 
   // arithmetic
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX17 time_point& operator+=(const duration& __d)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr time_point& operator+=(const duration& __d)
   {
     __d_ += __d;
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX17 time_point& operator-=(const duration& __d)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr time_point& operator-=(const duration& __d)
   {
     __d_ -= __d;
     return *this;
@@ -1461,13 +1455,12 @@ namespace chrono
 {
 
 template <class _ToDuration, class _Clock, class _Duration>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 time_point<_Clock, _ToDuration>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr time_point<_Clock, _ToDuration>
 time_point_cast(const time_point<_Clock, _Duration>& __t)
 {
   return time_point<_Clock, _ToDuration>(_CUDA_VSTD::chrono::duration_cast<_ToDuration>(__t.time_since_epoch()));
 }
 
-#if _CCCL_STD_VER > 2011
 template <class _ToDuration, class _Clock, class _Duration>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__is_duration<_ToDuration>::value, time_point<_Clock, _ToDuration>>
 floor(const time_point<_Clock, _Duration>& __t)
@@ -1495,12 +1488,11 @@ abs(duration<_Rep, _Period> __d)
 {
   return __d >= __d.zero() ? +__d : -__d;
 }
-#endif // _CCCL_STD_VER > 2011
 
 // time_point ==
 
 template <class _Clock, class _Duration1, class _Duration2>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
 operator==(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock, _Duration2>& __rhs)
 {
   return __lhs.time_since_epoch() == __rhs.time_since_epoch();
@@ -1509,7 +1501,7 @@ operator==(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock,
 // time_point !=
 
 template <class _Clock, class _Duration1, class _Duration2>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
 operator!=(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock, _Duration2>& __rhs)
 {
   return !(__lhs == __rhs);
@@ -1518,7 +1510,7 @@ operator!=(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock,
 // time_point <
 
 template <class _Clock, class _Duration1, class _Duration2>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
 operator<(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock, _Duration2>& __rhs)
 {
   return __lhs.time_since_epoch() < __rhs.time_since_epoch();
@@ -1527,7 +1519,7 @@ operator<(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock, 
 // time_point >
 
 template <class _Clock, class _Duration1, class _Duration2>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
 operator>(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock, _Duration2>& __rhs)
 {
   return __rhs < __lhs;
@@ -1536,7 +1528,7 @@ operator>(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock, 
 // time_point <=
 
 template <class _Clock, class _Duration1, class _Duration2>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
 operator<=(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock, _Duration2>& __rhs)
 {
   return !(__rhs < __lhs);
@@ -1545,7 +1537,7 @@ operator<=(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock,
 // time_point >=
 
 template <class _Clock, class _Duration1, class _Duration2>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
 operator>=(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock, _Duration2>& __rhs)
 {
   return !(__lhs < __rhs);
@@ -1554,8 +1546,7 @@ operator>=(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock,
 // time_point operator+(time_point x, duration y);
 
 template <class _Clock, class _Duration1, class _Rep2, class _Period2>
-_LIBCUDACXX_HIDE_FROM_ABI
-_CCCL_CONSTEXPR_CXX14 time_point<_Clock, typename common_type<_Duration1, duration<_Rep2, _Period2>>::type>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr time_point<_Clock, typename common_type<_Duration1, duration<_Rep2, _Period2>>::type>
 operator+(const time_point<_Clock, _Duration1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
 {
   using _Tr = time_point<_Clock, typename common_type<_Duration1, duration<_Rep2, _Period2>>::type>;
@@ -1565,8 +1556,7 @@ operator+(const time_point<_Clock, _Duration1>& __lhs, const duration<_Rep2, _Pe
 // time_point operator+(duration x, time_point y);
 
 template <class _Rep1, class _Period1, class _Clock, class _Duration2>
-_LIBCUDACXX_HIDE_FROM_ABI
-_CCCL_CONSTEXPR_CXX14 time_point<_Clock, typename common_type<duration<_Rep1, _Period1>, _Duration2>::type>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr time_point<_Clock, typename common_type<duration<_Rep1, _Period1>, _Duration2>::type>
 operator+(const duration<_Rep1, _Period1>& __lhs, const time_point<_Clock, _Duration2>& __rhs)
 {
   return __rhs + __lhs;
@@ -1575,8 +1565,7 @@ operator+(const duration<_Rep1, _Period1>& __lhs, const time_point<_Clock, _Dura
 // time_point operator-(time_point x, duration y);
 
 template <class _Clock, class _Duration1, class _Rep2, class _Period2>
-_LIBCUDACXX_HIDE_FROM_ABI
-_CCCL_CONSTEXPR_CXX14 time_point<_Clock, typename common_type<_Duration1, duration<_Rep2, _Period2>>::type>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr time_point<_Clock, typename common_type<_Duration1, duration<_Rep2, _Period2>>::type>
 operator-(const time_point<_Clock, _Duration1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
 {
   using _Ret = time_point<_Clock, typename common_type<_Duration1, duration<_Rep2, _Period2>>::type>;
@@ -1586,7 +1575,7 @@ operator-(const time_point<_Clock, _Duration1>& __lhs, const duration<_Rep2, _Pe
 // duration operator-(time_point x, time_point y);
 
 template <class _Clock, class _Duration1, class _Duration2>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 typename common_type<_Duration1, _Duration2>::type
+_LIBCUDACXX_HIDE_FROM_ABI constexpr typename common_type<_Duration1, _Duration2>::type
 operator-(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock, _Duration2>& __rhs)
 {
   return __lhs.time_since_epoch() - __rhs.time_since_epoch();
@@ -1598,11 +1587,11 @@ operator-(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock, 
 class _CCCL_TYPE_VISIBILITY_DEFAULT system_clock
 {
 public:
-  using duration                                    = _LIBCUDACXX_SYS_CLOCK_DURATION;
-  using rep                                         = duration::rep;
-  using period                                      = duration::period;
-  using time_point                                  = chrono::time_point<system_clock>;
-  static _CCCL_CONSTEXPR_CXX14 const bool is_steady = false;
+  using duration                        = _LIBCUDACXX_SYS_CLOCK_DURATION;
+  using rep                             = duration::rep;
+  using period                          = duration::period;
+  using time_point                      = chrono::time_point<system_clock>;
+  static constexpr const bool is_steady = false;
 
   _LIBCUDACXX_HIDE_FROM_ABI static time_point now() noexcept;
   _LIBCUDACXX_HIDE_FROM_ABI static time_t to_time_t(const time_point& __t) noexcept;
@@ -1613,11 +1602,11 @@ public:
 class _CCCL_TYPE_VISIBILITY_DEFAULT steady_clock
 {
 public:
-  using duration                                    = nanoseconds;
-  using rep                                         = duration::rep;
-  using period                                      = duration::period;
-  using time_point                                  = chrono::time_point<steady_clock, duration>;
-  static _CCCL_CONSTEXPR_CXX14 const bool is_steady = true;
+  using duration                        = nanoseconds;
+  using rep                             = duration::rep;
+  using period                          = duration::period;
+  using time_point                      = chrono::time_point<steady_clock, duration>;
+  static constexpr const bool is_steady = true;
 
   static time_point now() noexcept;
 };
@@ -1626,8 +1615,6 @@ using high_resolution_clock = steady_clock;
 #else
 using high_resolution_clock = system_clock;
 #endif
-
-#if _CCCL_STD_VER > 2011
 
 // [time.clock.file], type file_clock
 using file_clock = _CUDA_VSTD_FS::_FilesystemClock;
@@ -3532,17 +3519,16 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr hours make24(const hours& __h, bool __is_pm)
     return __h == hours(12) ? hours(0) : __h;
   }
 }
-#endif // _CCCL_STD_VER > 2011
+
 } // namespace chrono
-#if _CCCL_STD_VER > 2011
 
 // GCC 5 and 6 warn (and then error) on us using the standard reserved UDL names,
 // but have no way of disabling that. Use the system_header pragma on those GCC versions
 // for the remainder of this file, even if it has been requested to disable the pragma
 // earlier.
-#  if _CCCL_COMPILER(GCC, >=, 5) && _CCCL_COMPILER(GCC, <, 7)
-#    pragma GCC system_header
-#  endif
+#if _CCCL_COMPILER(GCC, >=, 5) && _CCCL_COMPILER(GCC, <, 7)
+#  pragma GCC system_header
+#endif
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wliteral-suffix")
@@ -3619,7 +3605,7 @@ operator""ns(long double __ns)
   return chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, nano>(__ns);
 }
 
-#  if _CCCL_STD_VER > 2017 && !defined(_LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS)
+#if _CCCL_STD_VER > 2017 && !defined(_LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS)
 _LIBCUDACXX_HIDE_FROM_ABI constexpr chrono::day operator""d(unsigned long long __d) noexcept
 {
   return chrono::day(static_cast<unsigned>(__d));
@@ -3629,7 +3615,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr chrono::year operator""y(unsigned long long 
 {
   return chrono::year(static_cast<int>(__y));
 }
-#  endif //_CCCL_STD_VER > 2017 && !defined(_LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS)
+#endif //_CCCL_STD_VER > 2017 && !defined(_LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS)
 } // namespace chrono_literals
 } // namespace literals
 
@@ -3640,8 +3626,6 @@ namespace chrono
 using namespace literals::chrono_literals;
 }
 
-#endif // _CCCL_STD_VER > 2011
-
 _LIBCUDACXX_END_NAMESPACE_STD
 
 #ifndef __cuda_std__
@@ -3649,18 +3633,18 @@ _LIBCUDACXX_END_NAMESPACE_STD
 _LIBCUDACXX_BEGIN_NAMESPACE_FILESYSTEM
 struct _FilesystemClock
 {
-#  if !defined(_LIBCUDACXX_HAS_NO_INT128)
+#  if _CCCL_HAS_INT128()
   using rep    = __int128_t;
   using period = nano;
-#  else
+#  else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
   using rep    = long long;
   using period = nano;
-#  endif
+#  endif // !_CCCL_HAS_INT128()
 
   using duration   = chrono::duration<rep, period>;
   using time_point = chrono::time_point<_FilesystemClock>;
 
-  _CCCL_VISIBILITY_DEFAULT static _CCCL_CONSTEXPR_CXX14 const bool is_steady = false;
+  _CCCL_VISIBILITY_DEFAULT static constexpr const bool is_steady = false;
 
   _LIBCUDACXX_HIDE_FROM_ABI static time_point now() noexcept;
 

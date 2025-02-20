@@ -56,7 +56,6 @@
 #include <vector>
 
 #include "mersenne.h"
-#include "test_warning_suppression.cuh"
 #include <c2h/extended_types.h>
 #include <c2h/test_util_vec.h>
 #include <nv/target>
@@ -434,7 +433,7 @@ inline bool IsNaN<double4>(double4 val)
   return (IsNaN(val.y) || IsNaN(val.x) || IsNaN(val.w) || IsNaN(val.z));
 }
 
-#ifdef TEST_HALF_T
+#if TEST_HALF_T()
 template <>
 inline bool IsNaN<half_t>(half_t val)
 {
@@ -443,9 +442,9 @@ inline bool IsNaN<half_t>(half_t val)
   // commented bit is always true, leaving for documentation:
   return (((bits >= 0x7C01) && (bits <= 0x7FFF)) || ((bits >= 0xFC01) /*&& (bits <= 0xFFFFFFFF)*/));
 }
-#endif
+#endif // TEST_HALF_T()
 
-#ifdef TEST_BF_T
+#if TEST_BF_T()
 template <>
 inline bool IsNaN<bfloat16_t>(bfloat16_t val)
 {
@@ -454,7 +453,7 @@ inline bool IsNaN<bfloat16_t>(bfloat16_t val)
   // commented bit is always true, leaving for documentation:
   return (((bits >= 0x7F81) && (bits <= 0x7FFF)) || ((bits >= 0xFF81) /*&& (bits <= 0xFFFFFFFF)*/));
 }
-#endif
+#endif // TEST_BF_T()
 
 /**
  * Generates random keys.
@@ -972,12 +971,6 @@ CUB_NAMESPACE_BEGIN
 template <>
 struct NumericTraits<TestFoo>
 {
-  static constexpr Category CATEGORY = NOT_A_NUMBER;
-  enum
-  {
-    PRIMITIVE = false,
-    NULL_TYPE = false,
-  };
   __host__ __device__ static TestFoo Max()
   {
     return TestFoo::MakeTestFoo(
@@ -997,6 +990,33 @@ struct NumericTraits<TestFoo>
   }
 };
 CUB_NAMESPACE_END
+
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
+template <>
+class numeric_limits<TestFoo>
+{
+public:
+  static constexpr bool is_specialized = true;
+
+  __host__ __device__ static TestFoo max()
+  {
+    return TestFoo::MakeTestFoo(
+      numeric_limits<long long>::max(),
+      numeric_limits<int>::max(),
+      numeric_limits<short>::max(),
+      numeric_limits<char>::max());
+  }
+
+  __host__ __device__ static TestFoo lowest()
+  {
+    return TestFoo::MakeTestFoo(
+      numeric_limits<long long>::lowest(),
+      numeric_limits<int>::lowest(),
+      numeric_limits<short>::lowest(),
+      numeric_limits<char>::lowest());
+  }
+};
+_LIBCUDACXX_END_NAMESPACE_STD
 
 //---------------------------------------------------------------------
 // Complex data type TestBar (with optimizations for fence-free warp-synchrony)
@@ -1106,12 +1126,6 @@ CUB_NAMESPACE_BEGIN
 template <>
 struct NumericTraits<TestBar>
 {
-  static constexpr Category CATEGORY = NOT_A_NUMBER;
-  enum
-  {
-    PRIMITIVE = false,
-    NULL_TYPE = false,
-  };
   __host__ __device__ static TestBar Max()
   {
     return TestBar(NumericTraits<long long>::Max(), NumericTraits<int>::Max());
@@ -1123,6 +1137,25 @@ struct NumericTraits<TestBar>
   }
 };
 CUB_NAMESPACE_END
+
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
+template <>
+class numeric_limits<TestBar>
+{
+public:
+  static constexpr bool is_specialized = true;
+
+  __host__ __device__ static TestBar max()
+  {
+    return TestBar(numeric_limits<long long>::max(), numeric_limits<int>::max());
+  }
+
+  __host__ __device__ static TestBar lowest()
+  {
+    return TestBar(numeric_limits<long long>::lowest(), numeric_limits<int>::lowest());
+  }
+};
+_LIBCUDACXX_END_NAMESPACE_STD
 
 /******************************************************************************
  * Helper routines for list comparison and display

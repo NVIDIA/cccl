@@ -154,7 +154,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT UpperBound(InputIteratorT input, OffsetT 
   return retval;
 }
 
-#if defined(__CUDA_FP16_TYPES_EXIST__)
+#if _CCCL_HAS_NVFP16()
 /**
  * @param[in] input
  *   Input sequence
@@ -191,6 +191,6 @@ _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT UpperBound(InputIteratorT input, OffsetT 
 
   return retval;
 }
-#endif // __CUDA_FP16_TYPES_EXIST__
+#endif // _CCCL_HAS_NVFP16()
 
 CUB_NAMESPACE_END

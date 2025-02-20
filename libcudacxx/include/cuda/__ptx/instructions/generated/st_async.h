@@ -20,7 +20,7 @@ _CCCL_DEVICE static inline void st_async(_Type* __addr, const _Type& __value, _C
 {
   static_assert(sizeof(_Type) == 4 || sizeof(_Type) == 8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  _CCCL_IF_CONSTEXPR (sizeof(_Type) == 4)
+  if constexpr (sizeof(_Type) == 4)
   {
     asm("st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.b32 [%0], %1, [%2];    // 1. "
         :
@@ -29,7 +29,7 @@ _CCCL_DEVICE static inline void st_async(_Type* __addr, const _Type& __value, _C
           "r"(__as_ptr_remote_dsmem(__remote_bar))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (sizeof(_Type) == 8)
+  else if constexpr (sizeof(_Type) == 8)
   {
     asm("st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.b64 [%0], %1, [%2];    // 1. "
         :
@@ -62,7 +62,7 @@ _CCCL_DEVICE static inline void st_async(_Type* __addr, const _Type (&__value)[2
 {
   static_assert(sizeof(_Type) == 4 || sizeof(_Type) == 8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  _CCCL_IF_CONSTEXPR (sizeof(_Type) == 4)
+  if constexpr (sizeof(_Type) == 4)
   {
     asm("st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.v2.b32 [%0], {%1, %2}, [%3]; // 2. "
         :
@@ -72,7 +72,7 @@ _CCCL_DEVICE static inline void st_async(_Type* __addr, const _Type (&__value)[2
           "r"(__as_ptr_remote_dsmem(__remote_bar))
         : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (sizeof(_Type) == 8)
+  else if constexpr (sizeof(_Type) == 8)
   {
     asm("st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.v2.b64 [%0], {%1, %2}, [%3]; // 2. "
         :

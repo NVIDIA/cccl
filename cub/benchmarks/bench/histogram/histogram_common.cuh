@@ -91,7 +91,7 @@ SampleT get_upper_level(OffsetT bins, OffsetT elements)
   {
     if constexpr (sizeof(SampleT) < sizeof(OffsetT))
     {
-      const SampleT max_key = std::numeric_limits<SampleT>::max();
+      const SampleT max_key = ::cuda::std::numeric_limits<SampleT>::max();
       return static_cast<SampleT>(std::min(bins, static_cast<OffsetT>(max_key)));
     }
     else
