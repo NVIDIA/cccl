@@ -291,7 +291,7 @@ struct WarpReduceSmem
     };
 
     // Alias flags onto shared data storage
-    volatile SmemFlag* flag_storage = temp_storage.flags;
+    SmemFlag* flag_storage = temp_storage.flags;
 
     SmemFlag flag_status = (flag) ? SET : UNSET;
 
