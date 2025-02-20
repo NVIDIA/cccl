@@ -52,7 +52,7 @@ public:
 
   static_assert(_CUDA_VSTD::has_single_bit(byte_alignment), "byte_alignment must be a power of two.");
   static_assert(byte_alignment >= alignof(_ElementType), "Insufficient byte alignment for _ElementType");
-
+  static_assert(_CCCL_TRAIT(is_object, _ElementType) && ! _CCCL_TRAIT(is_abstract, _ElementType) && ! _CCCL_TRAIT(is_array, _ElementType), "_ElementType must be a complete object type that is neither an abstract class type nor an array type.");
   using offset_policy    = default_accessor<_ElementType>;
   using element_type     = _ElementType;
   using reference        = _ElementType&;
