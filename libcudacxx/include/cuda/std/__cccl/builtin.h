@@ -616,9 +616,7 @@
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
 #if _CCCL_CHECK_BUILTIN(builtin_signbit) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_SIGNBITF(...) __builtin_signbitf(__VA_ARGS__)
-#  define _CCCL_BUILTIN_SIGNBIT(...)  __builtin_signbit(__VA_ARGS__)
-#  define _CCCL_BUILTIN_SIGNBITL(...) __builtin_signbitl(__VA_ARGS__)
+#  define _CCCL_BUILTIN_SIGNBIT(...) __builtin_signbit(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_signbit)
 
 #if _CCCL_CHECK_BUILTIN(builtin_sqrt) || _CCCL_COMPILER(GCC)

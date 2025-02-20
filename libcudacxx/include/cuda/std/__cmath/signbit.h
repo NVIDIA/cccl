@@ -36,44 +36,48 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_SIGNBITF) && !_CCCL_CUDA_COMPILER(NVCC)
-  return _CCCL_BUILTIN_SIGNBITF(__x);
-#elif defined(_CCCL_BUILTIN_SIGNBITF)
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
+#if defined(_CCCL_BUILTIN_SIGNBIT)
     return _CCCL_BUILTIN_SIGNBIT(__x);
+#else // ^^^ _CCCL_BUILTIN_SIGNBIT ^^^ / vvv !_CCCL_BUILTIN_SIGNBIT vvv
+    return ::signbit(__x);
+#endif // !_CCCL_BUILTIN_SIGNBIT
   }
+
+  // constexpr implementation
+#if defined(_CCCL_BUILTIN_SIGNBIT) && !(_CCCL_COMPILER(CLANG, <, 20) || _CCCL_CUDA_COMPILER(NVCC))
+  return _CCCL_BUILTIN_SIGNBIT(__x);
+#elif _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST()
+  return _CUDA_VSTD::__cccl_fp_get_storage(__x) & __cccl_fp32_sign_mask;
+#elif defined(_CCCL_BUILTIN_SIGNBIT) && _CCCL_CUDA_COMPILER(NVCC)
   // nvcc has bug in builtin signbit, todo report and add nvbug number
   return _CUDA_VSTD::copysign(1.0f, __x) < 0.0f;
-#elif _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST()
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
-  {
-    NV_IF_TARGET(NV_IS_HOST, (return ::signbit(__x);))
-  }
-  return _CUDA_VSTD::__cccl_fp_get_storage(__x) & __cccl_fp32_sign_mask;
-#else // ^^^ _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() vvv
+#else // ^^^ _CCCL_BUILTIN_SIGNBIT ^^^ / vvv !_CCCL_BUILTIN_SIGNBIT vvv
   return ::signbit(__x);
-#endif // !_CCCL_BUILTIN_SIGNBITF
+#endif // !_CCCL_BUILTIN_SIGNBIT
 }
 
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_SIGNBIT) && !_CCCL_CUDA_COMPILER(NVCC)
-  return _CCCL_BUILTIN_SIGNBIT(__x);
-#elif defined(_CCCL_BUILTIN_SIGNBIT)
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
+#if defined(_CCCL_BUILTIN_SIGNBIT)
     return _CCCL_BUILTIN_SIGNBIT(__x);
+#else // ^^^ _CCCL_BUILTIN_SIGNBIT ^^^ / vvv !_CCCL_BUILTIN_SIGNBIT vvv
+    return ::signbit(__x);
+#endif // !_CCCL_BUILTIN_SIGNBIT
   }
+
+  // constexpr implementation
+#if defined(_CCCL_BUILTIN_SIGNBIT) && !(_CCCL_COMPILER(CLANG, <, 20) || _CCCL_CUDA_COMPILER(NVCC))
+  return _CCCL_BUILTIN_SIGNBIT(__x);
+#elif _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST()
+  return _CUDA_VSTD::__cccl_fp_get_storage(__x) & __cccl_fp64_sign_mask;
+#elif defined(_CCCL_BUILTIN_SIGNBIT) && _CCCL_CUDA_COMPILER(NVCC)
   // nvcc has bug in builtin signbit, todo report and add nvbug number
   return _CUDA_VSTD::copysign(1.0, __x) < 0.0;
-#elif _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST()
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
-  {
-    NV_IF_TARGET(NV_IS_HOST, (return ::signbit(__x);))
-  }
-  return _CUDA_VSTD::__cccl_fp_get_storage(__x) & __cccl_fp64_sign_mask;
-#else // ^^^ _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() vvv
+#else // ^^^ _CCCL_BUILTIN_SIGNBIT ^^^ / vvv !_CCCL_BUILTIN_SIGNBIT vvv
   return ::signbit(__x);
 #endif // !_CCCL_BUILTIN_SIGNBIT
 }
@@ -81,11 +85,11 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(double __x) noe
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_SIGNBITL)
-  return _CCCL_BUILTIN_SIGNBITL(__x);
-#  else // ^^^ _CCCL_BUILTIN_SIGNBITL ^^^ / vvv !_CCCL_BUILTIN_SIGNBITL vvv
+#  if defined(_CCCL_BUILTIN_SIGNBIT)
+  return _CCCL_BUILTIN_SIGNBIT(__x);
+#  else // ^^^ _CCCL_BUILTIN_SIGNBIT ^^^ / vvv !_CCCL_BUILTIN_SIGNBIT vvv
   return ::signbit(__x);
-#  endif // !_CCCL_BUILTIN_SIGNBITL
+#  endif // !_CCCL_BUILTIN_SIGNBIT
 }
 #endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
