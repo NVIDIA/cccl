@@ -53,7 +53,7 @@ Once a device thread makes progress:
   shall eventually make progress.
 
   [Note: Threads in other thread-block clusters are not guaranteed to eventually make progress. - end note.]
-  [Note: This implies that all device-threads in its thread block shall eventually make progress. - end note.]
+  [Note: This implies that all device threads within its thread block shall eventually make progress. - end note.]
 
 The order in which device threads eventually get a chance to make progress is _unspecified_.
 
