@@ -320,6 +320,18 @@ public:
     return InternalWarpReduce(temp_storage).template Reduce<false>(input, valid_items, ::cuda::std::plus<>{});
   }
 
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE T Max(T input, int valid_items)
+  {
+    // Determine if we don't need bounds checking
+    return InternalWarpReduce(temp_storage).template Reduce<false>(input, valid_items, ::cuda::maximum<>{});
+  }
+
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE T Min(T input, int valid_items)
+  {
+    // Determine if we don't need bounds checking
+    return InternalWarpReduce(temp_storage).template Reduce<false>(input, valid_items, ::cuda::minimum<>{});
+  }
+
   //! @rst
   //! Computes a segmented sum in the calling warp where segments are defined by head-flags.
   //! The sum of each segment is returned to the first lane in that segment
@@ -727,7 +739,6 @@ public:
     return cub::ThreadReduce(input, ::cuda::std::plus<>{});
   }
 
-  template <typename InputType>
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int /* valid_items */)
   {
     return input;
@@ -746,7 +757,6 @@ public:
     return cub::ThreadReduce(input, ::cuda::maximum<>{});
   }
 
-  template <typename InputType>
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE T Max(T input, int /* valid_items */)
   {
     return input;
