@@ -11,8 +11,8 @@
 // UNSUPPORTED: !nvcc
 // UNSUPPORTED: nvrtc
 
-#include <cuda/functional>
 #include <cuda/std/cmath>
+#include <cuda/work_stealing>
 
 #if !defined(TEST_HAS_NO_INT128_T)
 

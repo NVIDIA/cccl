@@ -3,7 +3,7 @@
 Work stealing
 =============
 
-Defined in header ``<cuda/functional>`` if the CUDA compiler supports at least PTX ISA 8.7:
+Defined in header ``<cuda/work_stealing>`` if the CUDA compiler supports at least PTX ISA 8.7:
 
 .. code:: cuda
 
