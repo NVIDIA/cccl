@@ -62,6 +62,7 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
     #include <cub/device/dispatch/kernels/segmented_reduce.cuh>
     #include <cub/device/dispatch/kernels/radix_sort.cuh>
     #include <cub/device/dispatch/kernels/unique_by_key.cuh>
+    #include <cub/util_device.cuh>
 
     #include <thrust/iterator/constant_iterator.h>
     #include <thrust/iterator/counting_iterator.h>
