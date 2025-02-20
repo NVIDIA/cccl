@@ -637,50 +637,22 @@ private:
     // queried ptx version (i.e., the closest ptx version to the current device's architecture that the EmptyKernel was
     // compiled for), we return cudaErrorInvalidDeviceFunction. Such a scenario may arise if CUB_DISABLE_NAMESPACE_MAGIC
     // is set and different TUs are compiled for different sets of architecture.
-    cudaError_t e             = cudaErrorInvalidDeviceFunction;
-    const cudaError_t dummy[] = {
-      (device_ptx_version == (CudaArches * ArchMult)
-         ? (e = invoke_static<(CudaArches * ArchMult)>(op, ::cuda::std::true_type{}))
-         : cudaSuccess)...};
-    (void) dummy;
+    cudaError_t e = cudaErrorInvalidDeviceFunction;
+    (..., (device_ptx_version == CudaArches * ArchMult ? (e = invoke_static<CudaArches * ArchMult>(op)) : cudaSuccess));
     return e;
   }
 
   template <int DevicePtxVersion, typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t invoke_static(FunctorT& op, ::cuda::std::true_type)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t invoke_static(FunctorT& op)
   {
-    // TODO(bgruber): drop diagnostic suppression in C++17
-    _CCCL_DIAG_PUSH
-    _CCCL_DIAG_SUPPRESS_MSVC(4127) // suppress Conditional Expression is Constant
     if constexpr (DevicePtxVersion < PolicyPtxVersion)
     {
-      // TODO(bgruber): drop boolean tag dispatches in C++17, since if constexpr will discard this branch properly
-      return PrevPolicyT::template invoke_static<DevicePtxVersion>(
-        op, ::cuda::std::bool_constant<(DevicePtxVersion < PolicyPtxVersion)>{});
+      return PrevPolicyT::template invoke_static<DevicePtxVersion>(op);
     }
     else
     {
-      return do_invoke(op, ::cuda::std::bool_constant<DevicePtxVersion >= PolicyPtxVersion>{});
+      return op.template Invoke<PolicyT>();
     }
-    _CCCL_DIAG_POP
-  }
-
-  template <int, typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t invoke_static(FunctorT&, ::cuda::std::false_type)
-  {
-    _CCCL_UNREACHABLE();
-  }
-
-  template <typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t do_invoke(FunctorT& op, ::cuda::std::true_type)
-  {
-    return op.template Invoke<PolicyT>();
-  }
-
-  template <typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t do_invoke(FunctorT&, ::cuda::std::false_type)
-  {
-    _CCCL_UNREACHABLE();
   }
 };
 
@@ -703,15 +675,9 @@ struct ChainedPolicy<PolicyPtxVersion, PolicyT, PolicyT>
 
 private:
   template <int, typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t invoke_static(FunctorT& op, ::cuda::std::true_type)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t invoke_static(FunctorT& op)
   {
     return op.template Invoke<PolicyT>();
-  }
-
-  template <int, typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t invoke_static(FunctorT&, ::cuda::std::false_type)
-  {
-    _CCCL_UNREACHABLE();
   }
 };
 
