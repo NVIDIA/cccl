@@ -3,21 +3,21 @@
 Execution model
 ===============
 
-CUDA C++ aims to provide `_parallel forward progress_ [intro.progress.9] <https://eel.is/c++draft/intro.progress#9>`__ 
+CUDA C++ aims to provide `_parallel forward progress_ [intro.progress.9] <https://eel.is/c++draft/intro.progress#9>`__
 for all device threads of execution, making the parallelization of pre-existing C++ applications with CUDA C++ straightforward.
 
 .. dropdown:: [intro.progress]
 
     - `[intro.progress.7] <https://eel.is/c++draft/intro.progress#7>`__: For a thread of execution
-      providing `concurrent forward progress guarantees <https://eel.is/c++draft/intro.progress#def:concurrent_forward_progress_guarantees>`__, 
+      providing `concurrent forward progress guarantees <https://eel.is/c++draft/intro.progress#def:concurrent_forward_progress_guarantees>`__,
       the implementation ensures that the thread will eventually make progress for as long as it has not terminated.
 
-      [Note 5: This applies regardless of whether or not other threads of execution (if any) have been or are making progress. 
+      [Note 5: This applies regardless of whether or not other threads of execution (if any) have been or are making progress.
       To eventually fulfill this requirement means that this will happen in an unspecified but finite amount of time. — end note]
 
     - `[intro.progress.9] <https://eel.is/c++draft/intro.progress>`__: For a thread of execution providing
       `parallel forward progress guarantees <https://eel.is/c++draft/intro.progress#9>`__, the implementation is not required to ensure that
-      the thread will eventually make progress if it has not yet executed any execution step; once this thread has executed a step, 
+      the thread will eventually make progress if it has not yet executed any execution step; once this thread has executed a step,
       it provides concurrent forward progress guarantees.
 
       [Note 6: This does not specify a requirement for when to start this thread of execution, which will typically be specified by the entity
@@ -33,7 +33,7 @@ Host threads
 The forward-progress provided by threads of execution created by the host implementation to
 execute `main <https://en.cppreference.com/w/cpp/language/main_function>`__, `std::thread <https://en.cppreference.com/w/cpp/thread/thread>`__,
 and `std::jthread https://en.cppreference.com/w/cpp/thread/jthread>`__ is implementation-defined behavior of the host
-implementation `[intro.progress] <https://eel.is/c++draft/intro.progress>`__. 
+implementation `[intro.progress] <https://eel.is/c++draft/intro.progress>`__.
 General-purpose host implementations should provide _concurrent forward progress_.
 
 If the host implementation provides `_concurrent forward progress_ [intro.progress.7] <https://eel.is/c++draft/intro.progress#7>`__,
@@ -49,9 +49,9 @@ Once a device thread makes progress:
 
 - If the device thread is part of a `Cooperative Grid <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__EXECUTION.html#group__CUDART__EXECUTION_1g504b94170f83285c71031be6d5d15f73>`__,
   then all device threads in its grid shall eventually make progress.
-_ Otherwise, all device threads in its `thread-block cluster <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#thread-block-clusters>`__ 
+_ Otherwise, all device threads in its `thread-block cluster <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#thread-block-clusters>`__
   shall eventually make progress.
-  
+
   [Note: Threads in other thread-block clusters are not guaranteed to eventually make progress. - end note.]
   [Note: This implies that all device-threads in its thread block shall eventually make progress. - end note.]
 
@@ -75,9 +75,9 @@ The implementation may assume that any **host** thread will eventually do one of
     3. **perform an access through a volatile glvalue except if the designated object has automatic storage duration, or**
     4. **perform a synchronization operation or an atomic read operation except if the designated object has automatic storage duration.**
 
-  [Note: We consider some of the current limitations of device threads with respect to host 
-  threads implementation bugs, e.g., the undefined behavior introduced by programs that 
-  eventually only perform volatile or atomic operations on objects with automatic storage 
+  [Note: We consider some of the current limitations of device threads with respect to host
+  threads implementation bugs, e.g., the undefined behavior introduced by programs that
+  eventually only perform volatile or atomic operations on objects with automatic storage
   duration. However, we consider that some of the limitations are due to the C++ standard
   currently being too strict, and this resulting in the performance of common workloads
   being degraded to provide forward progress to “useless” programs, e.g., the undefined
@@ -140,7 +140,7 @@ CUDA APIs
 Any CUDA API shall eventually either return or ensure at least one device thread makes progress.
 
 CUDA query functions (e.g. `cudaStreamQuery <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__STREAM.html#group__CUDART__STREAM_1g2021adeb17905c7ec2a3c1bf125c5435>`__,
-`cudaEventQuery <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__EVENT.html#group__CUDART__EVENT_1g2bf738909b4a059023537eaa29d8a5b7>`__, etc.) shall not consistently 
+`cudaEventQuery <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__EVENT.html#group__CUDART__EVENT_1g2bf738909b4a059023537eaa29d8a5b7>`__, etc.) shall not consistently
 return ``cudaErrorNotReady`` without a device thread making progress.
 
 [Note: The device thread need not be "related" to the API call, e.g., an API operating on one stream or process may ensure progress of a device thread on another stream or process. - end note.]
@@ -150,7 +150,7 @@ return ``cudaErrorNotReady`` without a device thread making progress.
 .. dropdown:: Examples of CUDA API forward progress guarantees.
 
     .. code:: cuda
-        // Example: Execution.Model.API.1 
+        // Example: Execution.Model.API.1
         // Outcome: if device empty, terminates and returns cudaSuccess.
         // Rationale: CUDA guarantees that if the device is empty:
         // - `cudaDeviceSynchronize` eventually ensures that at least one device-thread makes progress, which implies that eventually `hello_world` grid and one of its device-threads start.
@@ -205,7 +205,7 @@ return ``cudaErrorNotReady`` without a device thread making progress.
         int main() {
             cudaHostRegister(&flag, sizeof(flag));
             producer<<<1,1>>>();
-            while (flag.load() == 0) { 
+            while (flag.load() == 0) {
                 (void)cudaStreamQuery(0);
             }
             return cudaDeviceSynchronize();
@@ -229,7 +229,7 @@ A device-thread shall not make progress if it is dependent on termination of one
         // Allowed outcome: eventually, no thread makes progress.
         // Rationale: while CUDA guarantees that one device thread makes progress, since there
         // is no dependency between `first` and `second`, it does not guarantee which thread,
-        // and therefore it could always pick the device thread from `second`, which then never 
+        // and therefore it could always pick the device thread from `second`, which then never
         // unblocks from the spin-loop.
         // That is, `second` may starve `first`.
         cuda::atomic<int, cuda::thread_scope_system> flag = 0;
@@ -238,7 +238,7 @@ A device-thread shall not make progress if it is dependent on termination of one
         int main() {
             cudaHostRegister(&flag, sizeof(flag));
             cudaStream_t s0, s1;
-            cudaStreamCreate(&s0); 
+            cudaStreamCreate(&s0);
             cudaStreamCreate(&s1);
             first<<<1,1,0,s0>>>();
             second<<<1,1,0,s1>>>();
@@ -256,7 +256,7 @@ A device-thread shall not make progress if it is dependent on termination of one
         int main() {
             cudaHostRegister(&flag, sizeof(flag));
             cudaStream_t s0;
-            cudaStreamCreate(&s0); 
+            cudaStreamCreate(&s0);
             first<<<1,1,0,s0>>>();
             second<<<1,1,0,s0>>>();
             return cudaDeviceSynchronize();
