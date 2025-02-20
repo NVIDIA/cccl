@@ -780,16 +780,12 @@ enum Category
   FLOATING_POINT
 };
 
-/**
- * \brief Basic type traits
- */
+namespace detail
+{
 template <Category _CATEGORY, typename _UnsignedBits, typename T>
 struct BaseTraits
 {};
 
-/**
- * Basic type traits (unsigned primitive specialization)
- */
 template <typename _UnsignedBits, typename T>
 struct BaseTraits<UNSIGNED_INTEGER, _UnsignedBits, T>
 {
@@ -810,6 +806,8 @@ struct BaseTraits<UNSIGNED_INTEGER, _UnsignedBits, T>
     return key;
   }
 
+  //! deprecated [Since 3.0]
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::max()")
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Max()
   {
     UnsignedBits retval_bits = MAX_KEY;
@@ -818,6 +816,8 @@ struct BaseTraits<UNSIGNED_INTEGER, _UnsignedBits, T>
     return retval;
   }
 
+  //! deprecated [Since 3.0]
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::lowest()")
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Lowest()
   {
     UnsignedBits retval_bits = LOWEST_KEY;
@@ -827,9 +827,6 @@ struct BaseTraits<UNSIGNED_INTEGER, _UnsignedBits, T>
   }
 };
 
-/**
- * Basic type traits (signed primitive specialization)
- */
 template <typename _UnsignedBits, typename T>
 struct BaseTraits<SIGNED_INTEGER, _UnsignedBits, T>
 {
@@ -852,12 +849,16 @@ struct BaseTraits<SIGNED_INTEGER, _UnsignedBits, T>
     return key ^ HIGH_BIT;
   };
 
+  //! deprecated [Since 3.0]
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::max()")
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Max()
   {
     UnsignedBits retval = MAX_KEY;
     return reinterpret_cast<T&>(retval);
   }
 
+  //! deprecated [Since 3.0]
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::lowest()")
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Lowest()
   {
     UnsignedBits retval = LOWEST_KEY;
@@ -865,9 +866,6 @@ struct BaseTraits<SIGNED_INTEGER, _UnsignedBits, T>
   }
 };
 
-/**
- * Basic type traits (fp primitive specialization)
- */
 template <typename _UnsignedBits, typename T>
 struct BaseTraits<FLOATING_POINT, _UnsignedBits, T>
 {
@@ -892,20 +890,30 @@ struct BaseTraits<FLOATING_POINT, _UnsignedBits, T>
     return key ^ mask;
   };
 
+  //! deprecated [Since 3.0]
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::max()")
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Max()
   {
     return ::cuda::std::numeric_limits<T>::max();
   }
 
+  //! deprecated [Since 3.0]
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::lowest()")
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Lowest()
   {
     return ::cuda::std::numeric_limits<T>::lowest();
   }
 };
+} // namespace detail
 
-/**
- * \brief Numeric type traits
- */
+//! Use this class as base when specializing \ref NumericTraits for primitive signed/unsigned integers or floating-point
+//! types.
+template <Category _CATEGORY, typename _UnsignedBits, typename T>
+using BaseTraits = detail::BaseTraits<_CATEGORY, _UnsignedBits, T>;
+
+//! Numeric type traits for radix sort key operations. You can specialize this template for your own primitive types for
+//! which an unsigned integral type of equal size exists. For other types, please use the decomposer overloads of the
+//! radix sort APIs.
 // clang-format off
 template <typename T> struct NumericTraits :            BaseTraits<NOT_A_NUMBER, T, T> {};
 
@@ -945,11 +953,15 @@ struct NumericTraits<__uint128_t>
     return key;
   }
 
+  //! deprecated [Since 3.0]
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::max()")
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Max()
   {
     return MAX_KEY;
   }
 
+  //! deprecated [Since 3.0]
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::lowest()")
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Lowest()
   {
     return LOWEST_KEY;
@@ -976,12 +988,16 @@ struct NumericTraits<__int128_t>
     return key ^ HIGH_BIT;
   };
 
+  //! deprecated [Since 3.0]
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::max()")
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Max()
   {
     UnsignedBits retval = MAX_KEY;
     return reinterpret_cast<T&>(retval);
   }
 
+  //! deprecated [Since 3.0]
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::lowest()")
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Lowest()
   {
     UnsignedBits retval = LOWEST_KEY;
@@ -1007,16 +1023,25 @@ template <> struct NumericTraits<double> :              BaseTraits<FLOATING_POIN
 template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTEGER, typename UnitWord<bool>::VolatileWord, bool> {};
 // clang-format on
 
-/**
- * \brief Type traits
- */
+namespace detail
+{
 template <typename T>
 struct Traits : NumericTraits<::cuda::std::remove_cv_t<T>>
-{};
+{
+  static_assert(::cuda::std::numeric_limits<T>::is_specialized,
+                "Please also specialize cuda::std::numeric_limits for T");
+};
+} // namespace detail
+
+//! \brief Query type traits for radix sort key operations. To add support for your own primitive types, for which an
+//! unsigned integral type of equal size exists, please specialize \ref NumericTraits. For other types, please use the
+//! decomposer overloads of the radix sort APIs.
+template <typename T>
+using Traits = detail::Traits<T>;
 
 namespace detail
 {
-// __uint128_t and __int128_t are not primitive
+// __uint128_t and __int128_t are not primitive TODO(bgruber): maybe we should add them (affects tunings)
 template <typename T>
 using is_primitive = ::cuda::std::bool_constant<is_one_of<
   T,
