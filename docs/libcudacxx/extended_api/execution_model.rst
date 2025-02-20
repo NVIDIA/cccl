@@ -55,7 +55,7 @@ _ Otherwise, all device threads in its `thread-block cluster <https://docs.nvidi
   [Note: Threads in other thread-block clusters are not guaranteed to eventually make progress. - end note.]
   [Note: This implies that all device-threads in its thread block shall eventually make progress. - end note.]
 
-The order in which device-threads eventually get a chance to make progress is _unspecified_.
+The order in which device threads eventually get a chance to make progress is _unspecified_.
 
 Modify `[intro.progress.1] <https://eel.is/c++draft/intro.progress>`__ as follows:
 
