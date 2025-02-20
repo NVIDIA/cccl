@@ -111,7 +111,7 @@ The implementation may assume that any **host** thread will eventually do one of
         // Example: Execution.Model.Device.3
         // Allowed outcome: No thread makes progress because device threads don't support host.threads.5
         // for objects with automatic storage duration (see exception in device.threads.4).
-        __global__ void v_atomic_automatic() {
+        __global__ void ex3() {
             cuda::atomic<bool, cuda::thread_scope_thread> True = true;
             while(True.load());
         }
