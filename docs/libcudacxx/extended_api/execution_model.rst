@@ -102,7 +102,7 @@ The implementation may assume that any **host** thread will eventually do one of
         // Example: Execution.Model.Device.2
         // Allowed outcome: No thread makes progress because device threads don't support host.threads.4
         // for objects with automatic storage duration (see exception in device.threads.3).
-        __global__ void iv() {
+        __global__ void ex2() {
             volatile bool True = true;
             while(True);
         }
