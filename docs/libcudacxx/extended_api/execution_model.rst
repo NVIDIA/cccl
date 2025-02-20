@@ -77,7 +77,7 @@ The implementation may assume that any **host** thread will eventually do one of
 
   [Note: Some current limitations of device threads relative to host threads are considered
   implementation defects, such as the undefined behavior that arises from device threads
-  that eventually only performs volatile or atomic operations on automatic storage duration objects.
+  that eventually only perform volatile or atomic operations on automatic storage duration objects.
   However, other limitations stem from the strictness of the C++ standard, e.g., providing
   forward progress to programs that eventually only perform atomic writes or fences degrades overall
   performance for little practical benefit. - end note.]
