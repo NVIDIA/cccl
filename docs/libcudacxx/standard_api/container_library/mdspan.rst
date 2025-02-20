@@ -14,7 +14,7 @@ Extensions
 ----------
 
 -  The C++23 multidimensional ``operator[]`` is replaced with ``operator()``
--  Detection of out-of-bounds accesses  is available debug mode
+-  Detection of out-of-bounds accesses is available in debug mode
 
 Restrictions
 ------------
