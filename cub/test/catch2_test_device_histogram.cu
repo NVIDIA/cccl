@@ -422,7 +422,8 @@ using types =
 C2H_TEST("DeviceHistogram::Histogram* basic use", "[histogram][device]", types)
 {
   using sample_t = c2h::get<0, TestType>;
-  using level_t  = typename cs::conditional<cuda::is_floating_point<sample_t>::value, sample_t, int>::type;
+  using level_t =
+    typename cs::conditional<cub::NumericTraits<sample_t>::CATEGORY == cub::FLOATING_POINT, sample_t, int>::type;
   // Max for int8/uint8 is 2^8, for half_t is 2^10. Beyond, we would need a different level generation
   const auto max_level       = level_t{sizeof(sample_t) == 1 ? 126 : 1024};
   const auto max_level_count = (sizeof(sample_t) == 1 ? 126 : 1024) + 1;

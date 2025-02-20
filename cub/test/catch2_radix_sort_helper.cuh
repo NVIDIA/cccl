@@ -248,7 +248,7 @@ c2h::host_vector<KeyT> get_striped_keys(const c2h::host_vector<KeyT>& h_keys, in
   {
     bit_ordered_t key = ::cuda::std::bit_cast<bit_ordered_t>(h_keys[i]);
 
-    _CCCL_IF_CONSTEXPR (::cuda::is_floating_point<KeyT>::value)
+    _CCCL_IF_CONSTEXPR (traits_t::CATEGORY == cub::FLOATING_POINT)
     {
       const bit_ordered_t negative_zero = bit_ordered_t(1) << bit_ordered_t(sizeof(bit_ordered_t) * 8 - 1);
 

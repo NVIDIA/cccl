@@ -74,14 +74,9 @@ CUB_NAMESPACE_BEGIN
     and only one of them is used, the sorting works correctly. For double, the
     same applies, but with 64-bit patterns.
 */
-template <typename KeyT, bool IsFP = ::cuda::is_floating_point<KeyT>::value>
+template <typename KeyT, Category TypeCategory = Traits<KeyT>::CATEGORY>
 struct BaseDigitExtractor
 {
-  // TODO(bgruber): sanity check, remove eventually
-  _CCCL_SUPPRESS_DEPRECATED_PUSH
-  static_assert(Traits<KeyT>::CATEGORY != FLOATING_POINT, "");
-  _CCCL_SUPPRESS_DEPRECATED_POP
-
   using TraitsT      = Traits<KeyT>;
   using UnsignedBits = typename TraitsT::UnsignedBits;
 
@@ -92,13 +87,8 @@ struct BaseDigitExtractor
 };
 
 template <typename KeyT>
-struct BaseDigitExtractor<KeyT, true>
+struct BaseDigitExtractor<KeyT, FLOATING_POINT>
 {
-  // TODO(bgruber): sanity check, remove eventually
-  _CCCL_SUPPRESS_DEPRECATED_PUSH
-  static_assert(Traits<KeyT>::CATEGORY == FLOATING_POINT, "");
-  _CCCL_SUPPRESS_DEPRECATED_POP
-
   using TraitsT      = Traits<KeyT>;
   using UnsignedBits = typename TraitsT::UnsignedBits;
 
