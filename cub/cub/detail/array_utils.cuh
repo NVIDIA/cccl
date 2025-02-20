@@ -69,7 +69,7 @@ template <typename CastType = void, typename Input>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::array<CastType, static_size_v<Input>>
 to_array(const Input& input)
 {
-  using InputType = random_access_range_elem_t<Input>;
+  using InputType = cuda::std::iter_value_t<Input>;
   using CastType1 = ::cuda::std::_If<::cuda::std::is_same_v<CastType, void>, InputType, CastType>;
   return to_array_impl<CastType1>(input, ::cuda::std::make_index_sequence<static_size_v<Input>>{});
 }
