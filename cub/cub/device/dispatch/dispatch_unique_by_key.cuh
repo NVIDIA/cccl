@@ -87,6 +87,34 @@ struct DeviceUniqueByKeyKernelSource
     return ScanTileStateT();
   }
 };
+
+template <typename... Ts>
+struct VSMemHelper
+{
+  template <typename ActivePolicyT>
+  CUB_RUNTIME_FUNCTION static constexpr int BlockThreads(ActivePolicyT /*policy*/)
+  {
+    return cub::detail::vsmem_helper_default_fallback_policy_t<ActivePolicyT,
+                                                               detail::unique_by_key::AgentUniqueByKey,
+                                                               Ts...>::agent_policy_t::BLOCK_THREADS;
+  }
+
+  template <typename ActivePolicyT>
+  CUB_RUNTIME_FUNCTION static constexpr int ItemsPerThread(ActivePolicyT /*policy*/)
+  {
+    return cub::detail::vsmem_helper_default_fallback_policy_t<ActivePolicyT,
+                                                               detail::unique_by_key::AgentUniqueByKey,
+                                                               Ts...>::agent_policy_t::ITEMS_PER_THREAD;
+  }
+
+  template <typename ActivePolicyT>
+  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t VSMemPerBlock(ActivePolicyT /*policy*/)
+  {
+    return cub::detail::vsmem_helper_default_fallback_policy_t<ActivePolicyT,
+                                                               detail::unique_by_key::AgentUniqueByKey,
+                                                               Ts...>::vsmem_per_block;
+  }
+};
 } // namespace detail::unique_by_key
 
 /******************************************************************************
@@ -138,15 +166,8 @@ template <
     EqualityOpT,
     OffsetT>,
   typename KernelLauncherFactory = detail::TripleChevronFactory,
-  typename VSMemHelperPolicyT    = detail::vsmem_helper_default_fallback_policy_t<
-       typename PolicyHub::MaxPolicy::UniqueByKeyPolicyT,
-       detail::unique_by_key::AgentUniqueByKey,
-       KeyInputIteratorT,
-       ValueInputIteratorT,
-       KeyOutputIteratorT,
-       ValueOutputIteratorT,
-       EqualityOpT,
-       OffsetT>>
+  typename VSMemHelperT          = detail::unique_by_key::
+    VSMemHelper<KeyInputIteratorT, ValueInputIteratorT, KeyOutputIteratorT, ValueOutputIteratorT, EqualityOpT, OffsetT>>
 struct DispatchUniqueByKey
 {
   /******************************************************************************
@@ -280,11 +301,11 @@ struct DispatchUniqueByKey
       }
 
       // Number of input tiles
-      const auto block_threads    = VSMemHelperPolicyT::BlockThreads(policy.UniqueByKey());
-      const auto items_per_thread = VSMemHelperPolicyT::ItemsPerThread(policy.UniqueByKey());
+      const auto block_threads    = VSMemHelperT::BlockThreads(policy.UniqueByKey());
+      const auto items_per_thread = VSMemHelperT::ItemsPerThread(policy.UniqueByKey());
       int tile_size               = block_threads * items_per_thread;
       int num_tiles               = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
-      const auto vsmem_size       = num_tiles * VSMemHelperPolicyT::VSMemPerBlock();
+      const auto vsmem_size       = num_tiles * VSMemHelperT::VSMemPerBlock(policy.UniqueByKey());
 
       // Specify temporary storage allocation requirements
       size_t allocation_sizes[2] = {0, vsmem_size};
