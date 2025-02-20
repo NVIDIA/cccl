@@ -782,12 +782,18 @@ enum Category
 
 namespace detail
 {
-template <Category _CATEGORY, typename _UnsignedBits, typename T>
+template <Category _CATEGORY, bool _PRIMITIVE, typename _UnsignedBits, typename T>
 struct BaseTraits
-{};
+{
+private:
+  template <typename>
+  friend struct is_primitive;
+
+  static constexpr bool is_primitive = _PRIMITIVE;
+};
 
 template <typename _UnsignedBits, typename T>
-struct BaseTraits<UNSIGNED_INTEGER, _UnsignedBits, T>
+struct BaseTraits<UNSIGNED_INTEGER, true, _UnsignedBits, T>
 {
   static_assert(::cuda::std::numeric_limits<T>::is_specialized,
                 "Please also specialize cuda::std::numeric_limits for T");
@@ -825,10 +831,16 @@ struct BaseTraits<UNSIGNED_INTEGER, _UnsignedBits, T>
     memcpy(&retval, &retval_bits, sizeof(T));
     return retval;
   }
+
+private:
+  template <typename>
+  friend struct is_primitive;
+
+  static constexpr bool is_primitive = true;
 };
 
 template <typename _UnsignedBits, typename T>
-struct BaseTraits<SIGNED_INTEGER, _UnsignedBits, T>
+struct BaseTraits<SIGNED_INTEGER, true, _UnsignedBits, T>
 {
   static_assert(::cuda::std::numeric_limits<T>::is_specialized,
                 "Please also specialize cuda::std::numeric_limits for T");
@@ -864,10 +876,16 @@ struct BaseTraits<SIGNED_INTEGER, _UnsignedBits, T>
     UnsignedBits retval = LOWEST_KEY;
     return reinterpret_cast<T&>(retval);
   }
+
+private:
+  template <typename>
+  friend struct is_primitive;
+
+  static constexpr bool is_primitive = true;
 };
 
 template <typename _UnsignedBits, typename T>
-struct BaseTraits<FLOATING_POINT, _UnsignedBits, T>
+struct BaseTraits<FLOATING_POINT, true, _UnsignedBits, T>
 {
   static_assert(::cuda::std::numeric_limits<T>::is_specialized,
                 "Please also specialize cuda::std::numeric_limits for T");
@@ -905,45 +923,54 @@ struct BaseTraits<FLOATING_POINT, _UnsignedBits, T>
   {
     return ::cuda::std::numeric_limits<T>::lowest();
   }
+
+private:
+  template <typename>
+  friend struct is_primitive;
+
+  static constexpr bool is_primitive = true;
 };
 } // namespace detail
 
 //! Use this class as base when specializing \ref NumericTraits for primitive signed/unsigned integers or floating-point
 //! types.
-template <Category _CATEGORY, typename _UnsignedBits, typename T>
-using BaseTraits = detail::BaseTraits<_CATEGORY, _UnsignedBits, T>;
+template <Category _CATEGORY, bool _PRIMITIVE, typename _UnsignedBits, typename T>
+using BaseTraits = detail::BaseTraits<_CATEGORY, _PRIMITIVE, _UnsignedBits, T>;
 
-//! Numeric type traits for radix sort key operations. You can specialize this template for your own primitive types for
-//! which an unsigned integral type of equal size exists. For other types, please use the decomposer overloads of the
-//! radix sort APIs.
+//! Numeric type traits for radix sort key operations, decoupled lookback and tuning. You can specialize this template
+//! for your own types if:
+//! * There is an unsigned integral type of equal size
+//! * The size of the type is smaller than 64bits
+//! * The arithmetic throughput of the type is similar to other built-in types of the same size
+//! For other types, if you want to use them with radix sort, please use the decomposer interface of the radix sort.
 // clang-format off
-template <typename T> struct NumericTraits :            BaseTraits<NOT_A_NUMBER, T, T> {};
+template <typename T> struct NumericTraits :            BaseTraits<NOT_A_NUMBER, false, T, T> {};
 
-template <> struct NumericTraits<NullType> :            BaseTraits<NOT_A_NUMBER, NullType, NullType> {};
+template <> struct NumericTraits<NullType> :            BaseTraits<NOT_A_NUMBER, false, NullType, NullType> {};
 
-template <> struct NumericTraits<char> :                BaseTraits<(::cuda::std::numeric_limits<char>::is_signed) ? SIGNED_INTEGER : UNSIGNED_INTEGER, unsigned char, char> {};
-template <> struct NumericTraits<signed char> :         BaseTraits<SIGNED_INTEGER, unsigned char, signed char> {};
-template <> struct NumericTraits<short> :               BaseTraits<SIGNED_INTEGER, unsigned short, short> {};
-template <> struct NumericTraits<int> :                 BaseTraits<SIGNED_INTEGER, unsigned int, int> {};
-template <> struct NumericTraits<long> :                BaseTraits<SIGNED_INTEGER, unsigned long, long> {};
-template <> struct NumericTraits<long long> :           BaseTraits<SIGNED_INTEGER, unsigned long long, long long> {};
+template <> struct NumericTraits<char> :                BaseTraits<(::cuda::std::numeric_limits<char>::is_signed) ? SIGNED_INTEGER : UNSIGNED_INTEGER, true, unsigned char, char> {};
+template <> struct NumericTraits<signed char> :         BaseTraits<SIGNED_INTEGER, true, unsigned char, signed char> {};
+template <> struct NumericTraits<short> :               BaseTraits<SIGNED_INTEGER, true, unsigned short, short> {};
+template <> struct NumericTraits<int> :                 BaseTraits<SIGNED_INTEGER, true, unsigned int, int> {};
+template <> struct NumericTraits<long> :                BaseTraits<SIGNED_INTEGER, true, unsigned long, long> {};
+template <> struct NumericTraits<long long> :           BaseTraits<SIGNED_INTEGER, true, unsigned long long, long long> {};
 
-template <> struct NumericTraits<unsigned char> :       BaseTraits<UNSIGNED_INTEGER, unsigned char, unsigned char> {};
-template <> struct NumericTraits<unsigned short> :      BaseTraits<UNSIGNED_INTEGER, unsigned short, unsigned short> {};
-template <> struct NumericTraits<unsigned int> :        BaseTraits<UNSIGNED_INTEGER, unsigned int, unsigned int> {};
-template <> struct NumericTraits<unsigned long> :       BaseTraits<UNSIGNED_INTEGER, unsigned long, unsigned long> {};
-template <> struct NumericTraits<unsigned long long> :  BaseTraits<UNSIGNED_INTEGER, unsigned long long, unsigned long long> {};
+template <> struct NumericTraits<unsigned char> :       BaseTraits<UNSIGNED_INTEGER, true, unsigned char, unsigned char> {};
+template <> struct NumericTraits<unsigned short> :      BaseTraits<UNSIGNED_INTEGER, true, unsigned short, unsigned short> {};
+template <> struct NumericTraits<unsigned int> :        BaseTraits<UNSIGNED_INTEGER, true, unsigned int, unsigned int> {};
+template <> struct NumericTraits<unsigned long> :       BaseTraits<UNSIGNED_INTEGER, true, unsigned long, unsigned long> {};
+template <> struct NumericTraits<unsigned long long> :  BaseTraits<UNSIGNED_INTEGER, true, unsigned long long, unsigned long long> {};
+// clang-format on
 
-
-#if _CCCL_HAS_INT128()
+#  if _CCCL_HAS_INT128()
 template <>
 struct NumericTraits<__uint128_t>
 {
-  using T = __uint128_t;
+  using T            = __uint128_t;
   using UnsignedBits = __uint128_t;
 
-  static constexpr UnsignedBits   LOWEST_KEY  = UnsignedBits(0);
-  static constexpr UnsignedBits   MAX_KEY     = UnsignedBits(-1);
+  static constexpr UnsignedBits LOWEST_KEY = UnsignedBits(0);
+  static constexpr UnsignedBits MAX_KEY    = UnsignedBits(-1);
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
   {
@@ -968,17 +995,23 @@ struct NumericTraits<__uint128_t>
   {
     return LOWEST_KEY;
   }
+
+private:
+  template <typename>
+  friend struct is_primitive;
+
+  static constexpr bool is_primitive = false;
 };
 
 template <>
 struct NumericTraits<__int128_t>
 {
-  using T = __int128_t;
+  using T            = __int128_t;
   using UnsignedBits = __uint128_t;
 
-  static constexpr UnsignedBits   HIGH_BIT    = UnsignedBits(1) << ((sizeof(UnsignedBits) * 8) - 1);
-  static constexpr UnsignedBits   LOWEST_KEY  = HIGH_BIT;
-  static constexpr UnsignedBits   MAX_KEY     = UnsignedBits(-1) ^ HIGH_BIT;
+  static constexpr UnsignedBits HIGH_BIT   = UnsignedBits(1) << ((sizeof(UnsignedBits) * 8) - 1);
+  static constexpr UnsignedBits LOWEST_KEY = HIGH_BIT;
+  static constexpr UnsignedBits MAX_KEY    = UnsignedBits(-1) ^ HIGH_BIT;
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
   {
@@ -1005,24 +1038,31 @@ struct NumericTraits<__int128_t>
     UnsignedBits retval = LOWEST_KEY;
     return reinterpret_cast<T&>(retval);
   }
-};
-#endif // _CCCL_HAS_INT128()
 
-template <> struct NumericTraits<float> :               BaseTraits<FLOATING_POINT,unsigned int, float> {};
-template <> struct NumericTraits<double> :              BaseTraits<FLOATING_POINT,unsigned long long, double> {};
+private:
+  template <typename>
+  friend struct is_primitive;
+
+  static constexpr bool is_primitive = false;
+};
+#  endif // _CCCL_HAS_INT128()
+
+// clang-format off
+template <> struct NumericTraits<float> :               BaseTraits<FLOATING_POINT, true, unsigned int, float> {};
+template <> struct NumericTraits<double> :              BaseTraits<FLOATING_POINT, true, unsigned long long, double> {};
 #  if _CCCL_HAS_NVFP16()
-    template <> struct NumericTraits<__half> :          BaseTraits<FLOATING_POINT,unsigned short, __half> {};
+    template <> struct NumericTraits<__half> :          BaseTraits<FLOATING_POINT, true, unsigned short, __half> {};
 #  endif // _CCCL_HAS_NVFP16()
 #  if _CCCL_HAS_NVBF16()
-    template <> struct NumericTraits<__nv_bfloat16> :   BaseTraits<FLOATING_POINT,unsigned short, __nv_bfloat16> {};
+    template <> struct NumericTraits<__nv_bfloat16> :   BaseTraits<FLOATING_POINT, true, unsigned short, __nv_bfloat16> {};
 #  endif // _CCCL_HAS_NVBF16()
 
 #if _CCCL_HAS_NVFP8()
-    template <> struct NumericTraits<__nv_fp8_e4m3> :   BaseTraits<FLOATING_POINT, __nv_fp8_storage_t, __nv_fp8_e4m3> {};
-    template <> struct NumericTraits<__nv_fp8_e5m2> :   BaseTraits<FLOATING_POINT, __nv_fp8_storage_t, __nv_fp8_e5m2> {};
+    template <> struct NumericTraits<__nv_fp8_e4m3> :   BaseTraits<FLOATING_POINT, true, __nv_fp8_storage_t, __nv_fp8_e4m3> {};
+    template <> struct NumericTraits<__nv_fp8_e5m2> :   BaseTraits<FLOATING_POINT, true, __nv_fp8_storage_t, __nv_fp8_e5m2> {};
 #endif // _CCCL_HAS_NVFP8()
 
-template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTEGER, typename UnitWord<bool>::VolatileWord, bool> {};
+template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTEGER, true, typename UnitWord<bool>::VolatileWord, bool> {};
 // clang-format on
 
 namespace detail
@@ -1035,46 +1075,23 @@ struct Traits : NumericTraits<::cuda::std::remove_cv_t<T>>
 };
 } // namespace detail
 
-//! \brief Query type traits for radix sort key operations. To add support for your own primitive types, for which an
-//! unsigned integral type of equal size exists, please specialize \ref NumericTraits. For other types, please use the
-//! decomposer overloads of the radix sort APIs.
+//! \brief Query type traits for radix sort key operations, decoupled lookback and tunings. To add support for your own
+//! primitive types please specialize \ref NumericTraits.
 template <typename T>
 using Traits = detail::Traits<T>;
 
 namespace detail
 {
-// __uint128_t and __int128_t are not primitive TODO(bgruber): maybe we should add them (affects tunings)
+// This trait serves two purposes:
+// 1. It is used for tunings to detect whether we have a build-in arithmetic type for which we can expect certain
+// arithmetic throughput. E.g.: we expect all primitive types of the same size to show roughly similar performance.
+// 2. Decoupled lookback uses this trait to determine whether there is a machine word twice the size of T which can be
+// loaded/stored with a single instruction.
+// TODO(bgruber): for 2. we should probably just check whether sizeof(T) * 2 <= sizeof(int128) (or 256-bit on SM100)
+// Users must be able to hook into both scenarios with their custom types, so this trait must depend on cub::Traits
 template <typename T>
-using is_primitive = ::cuda::std::bool_constant<is_one_of<
-  T,
-  char,
-  signed char,
-  short,
-  int,
-  long,
-  long long,
-  unsigned char,
-  unsigned short,
-  unsigned int,
-  unsigned long,
-  unsigned long long,
-  bool,
-  float,
-  double
-#  if _CCCL_HAS_NVFP16()
-  ,
-  __half
-#  endif // _CCCL_HAS_NVFP16()
-#  if _CCCL_HAS_NVBF16()
-  ,
-  __nv_bfloat16
-#  endif // _CCCL_HAS_NVBF16()
-#  if _CCCL_HAS_NVFP8()
-  ,
-  __nv_fp8_e4m3,
-  __nv_fp8_e5m2
-#  endif // _CCCL_HAS_NVFP8()
-  >()>;
+struct is_primitive : ::cuda::std::bool_constant<Traits<T>::is_primitive>
+{};
 
 #  ifndef _CCCL_NO_VARIABLE_TEMPLATES
 template <typename T>

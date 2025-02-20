@@ -362,7 +362,8 @@ public:
 _LIBCUDACXX_END_NAMESPACE_STD
 
 template <>
-struct CUB_NS_QUALIFIER::NumericTraits<half_t> : CUB_NS_QUALIFIER::BaseTraits<FLOATING_POINT, unsigned short, half_t>
+struct CUB_NS_QUALIFIER::NumericTraits<half_t>
+    : CUB_NS_QUALIFIER::BaseTraits<FLOATING_POINT, true, unsigned short, half_t>
 {};
 
 #ifdef __GNUC__
