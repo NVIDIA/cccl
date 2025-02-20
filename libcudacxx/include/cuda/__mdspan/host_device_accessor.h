@@ -23,7 +23,7 @@
 
 #if _CCCL_CUDA_COMPILER(CLANG)
 #  include <cuda_runtime_api.h>
-#endif // _CCCL_CUDA_COMPILER(CLANG) && !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 #include <cuda/std/__mdspan/default_accessor.h>
 #include <cuda/std/__type_traits/is_convertible.h>
@@ -31,7 +31,7 @@
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
-//
+// __concept_macros.h is not self-contained
 #include <cuda/std/__concepts/__concept_macros.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
@@ -85,7 +85,6 @@ inline constexpr bool is_host_device_managed_accessor_v =
  **********************************************************************************************************************/
 
 template <typename _Accessor>
-  requires(std::is_same_v<typename _Accessor::data_handle_type, typename _Accessor::element_type*>)
 struct __host_accessor : public _Accessor
 {
   static_assert(!is_host_device_managed_accessor_v<_Accessor>,
@@ -97,8 +96,6 @@ struct __host_accessor : public _Accessor
   using element_type     = typename _Accessor::element_type;
 
 private:
-  using __self = __host_accessor<_Accessor>;
-
   static constexpr bool __is_ctor_noexcept      = noexcept(_Accessor{});
   static constexpr bool __is_copy_ctor_noexcept = noexcept(_Accessor{_Accessor{}}); // TODO: this could be a move ctor
   static constexpr bool __is_access_noexcept    = noexcept(_Accessor{}.access(data_handle_type{}, 0));
@@ -121,7 +118,7 @@ private:
 
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr void __check_host_pointer(data_handle_type __p) noexcept
   {
-    _CCCL_ASSERT(__self::__is_host_accessible_pointer(__p), "cuda::__host_accessor data handle is not a HOST pointer");
+    _CCCL_ASSERT(__is_host_accessible_pointer(__p), "cuda::__host_accessor data handle is not a HOST pointer");
   }
 
   template <typename _Sp = bool> // lazy evaluation
@@ -155,18 +152,14 @@ public:
   _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _OtherElementType (*)[], element_type (*)[]))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __host_accessor(_CUDA_VSTD::default_accessor<_OtherElementType>) noexcept
   {
-    NV_IF_TARGET(NV_IS_DEVICE, (__self::__prevent_device_instantiation();))
+    NV_IF_TARGET(NV_IS_DEVICE, (__prevent_device_instantiation();))
   }
 
-#if defined(_CCCL_TEMPLATED_CONVERSION_TO_DEFAULT_ACCESSOR)
   _CCCL_TEMPLATE(class _OtherElementType)
   _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _OtherElementType (*)[], element_type (*)[]))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator _CUDA_VSTD::default_accessor<OtherElementType>() const noexcept
-#else
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator _CUDA_VSTD::default_accessor<element_type>() const noexcept
-#endif
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator _CUDA_VSTD::default_accessor<_OtherElementType>() const noexcept
   {
-    NV_IF_TARGET(NV_IS_DEVICE, (__self::__prevent_device_instantiation();))
+    NV_IF_TARGET(NV_IS_DEVICE, (__prevent_device_instantiation();))
     return {};
   }
 
@@ -176,7 +169,7 @@ public:
     noexcept(__is_access_noexcept)
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
-                      (__self::__check_host_pointer(__p);), //
+                      (__check_host_pointer(__p);), //
                       (static_assert(false, "cuda::__host_accessor cannot be used in DEVICE code");))
     return _Accessor::access(__p, __i);
   }
@@ -185,9 +178,17 @@ public:
     noexcept(__is_offset_noexcept)
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
-                      (__self::__check_host_pointer(__p);), //
+                      (__check_host_pointer(__p);), //
                       (static_assert(false, "cuda::__host_accessor cannot be used in DEVICE code");))
     return _Accessor::offset(__p, __i);
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  detectably_invalid([[maybe_unused]] data_handle_type __p, [[maybe_unused]] _CUDA_VSTD::size_t __size) const noexcept
+  {
+    NV_IF_ELSE_TARGET(NV_IS_HOST,
+                      (return __is_host_accessible_pointer(__p) && __is_host_accessible_pointer(__p + __size - 1);),
+                      (return false;))
   }
 };
 
@@ -207,8 +208,6 @@ struct __device_accessor : public _Accessor
   using element_type     = typename _Accessor::element_type;
 
 private:
-  using __self = __device_accessor<_Accessor>;
-
   static constexpr bool __is_ctor_noexcept      = noexcept(_Accessor{});
   static constexpr bool __is_copy_ctor_noexcept = noexcept(_Accessor{_Accessor{}});
   static constexpr bool __is_access_noexcept    = noexcept(_Accessor{}.access(data_handle_type{}, 0));
@@ -245,18 +244,14 @@ public:
   _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _OtherElementType (*)[], element_type (*)[]))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __device_accessor(_CUDA_VSTD::default_accessor<_OtherElementType>) noexcept
   {
-    NV_IF_TARGET(NV_IS_DEVICE, (__self::__prevent_host_instantiation();))
+    NV_IF_TARGET(NV_IS_DEVICE, (__prevent_host_instantiation();))
   }
 
-#if defined(_CCCL_TEMPLATED_CONVERSION_TO_DEFAULT_ACCESSOR)
   _CCCL_TEMPLATE(class _OtherElementType)
   _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _OtherElementType (*)[], element_type (*)[]))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr operator _CUDA_VSTD::default_accessor<OtherElementType>() const noexcept
-#else
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator _CUDA_VSTD::default_accessor<element_type>() const noexcept
-#endif
   {
-    NV_IF_TARGET(NV_IS_DEVICE, (__self::__prevent_host_instantiation();))
+    NV_IF_TARGET(NV_IS_DEVICE, (__prevent_host_instantiation();))
     return {};
   }
 
@@ -265,15 +260,20 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr reference access(data_handle_type __p, _CUDA_VSTD::size_t __i) const
     noexcept(__is_access_noexcept)
   {
-    NV_IF_TARGET(NV_IS_HOST, (__self::__prevent_host_instantiation();))
+    NV_IF_TARGET(NV_IS_HOST, (__prevent_host_instantiation();))
     return _Accessor::access(__p, __i);
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr data_handle_type offset(data_handle_type __p, _CUDA_VSTD::size_t __i) const
     noexcept(__is_offset_noexcept)
   {
-    NV_IF_TARGET(NV_IS_HOST, (__self::__prevent_host_instantiation();))
+    NV_IF_TARGET(NV_IS_HOST, (__prevent_host_instantiation();))
     return _Accessor::offset(__p, __i);
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool detectably_invalid(data_handle_type, _CUDA_VSTD::size_t) const noexcept
+  {
+    NV_IF_ELSE_TARGET(NV_IS_HOST, (return false;), (return true;))
   }
 };
 
@@ -293,8 +293,6 @@ struct __managed_accessor : public _Accessor
   using element_type     = typename _Accessor::element_type;
 
 private:
-  using __self = __managed_accessor<_Accessor>;
-
   static constexpr bool __is_ctor_noexcept      = noexcept(_Accessor{});
   static constexpr bool __is_copy_ctor_noexcept = noexcept(_Accessor{_Accessor{}});
   static constexpr bool __is_access_noexcept    = noexcept(_Accessor{}.access(data_handle_type{}, 0));
@@ -320,7 +318,7 @@ private:
 
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr void __check_managed_pointer(data_handle_type __p) noexcept
   {
-    _CCCL_ASSERT(__self::__is_managed_pointer(__p), "cuda::__managed_accessor data handle is not a MANAGED pointer");
+    _CCCL_ASSERT(__is_managed_pointer(__p), "cuda::__managed_accessor data handle is not a MANAGED pointer");
   }
 
 public:
@@ -339,15 +337,23 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr reference access(data_handle_type __p, _CUDA_VSTD::size_t __i) const
     noexcept(__is_access_noexcept)
   {
-    NV_IF_TARGET(NV_IS_HOST, (__self::__check_managed_pointer(__p);))
+    NV_IF_TARGET(NV_IS_HOST, (__check_managed_pointer(__p);))
     return _Accessor::access(__p, __i);
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr data_handle_type offset(data_handle_type __p, _CUDA_VSTD::size_t __i) const
     noexcept(__is_offset_noexcept)
   {
-    NV_IF_TARGET(NV_IS_HOST, (__self::__check_managed_pointer(__p);))
+    NV_IF_TARGET(NV_IS_HOST, (__check_managed_pointer(__p);))
     return _Accessor::offset(__p, __i);
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  detectably_invalid([[maybe_unused]] data_handle_type __p, [[maybe_unused]] _CUDA_VSTD::size_t __size) const noexcept
+  {
+    NV_IF_ELSE_TARGET(NV_IS_HOST,
+                      (return __is_managed_pointer(__p) && __is_managed_pointer(__p + __size - 1);), //
+                      (return true;))
   }
 };
 
