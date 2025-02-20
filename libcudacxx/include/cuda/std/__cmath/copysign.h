@@ -21,8 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cmath/fp_utils.h>
+#include <cuda/std/__cmath/isinf.h>
+#include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__internal/nvfp_types.h>
+#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/cstdint>
@@ -32,42 +35,70 @@
 #  include <math.h>
 #endif // _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
 
-#if defined(_CCCL_BUILTIN_COPYSIGN)
-#  define _CCCL_CONSTEXPR_COPYSIGN       constexpr
-#  define _CCCL_HAS_CONSTEXPR_COPYSIGN() 1
-#else // ^^^ _CCCL_BUILTIN_COPYSIGN ^^^ / vvv !_CCCL_BUILTIN_COPYSIGN vvv
-#  define _CCCL_CONSTEXPR_COPYSIGN
-#  define _CCCL_HAS_CONSTEXPR_COPYSIGN() 0
-#endif // !_CCCL_BUILTIN_COPYSIGN
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_COPYSIGN float copysign(float __x, float __y) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr float copysign(float __x, float __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_COPYSIGN)
+#if defined(_CCCL_BUILTIN_COPYSIGN) && !_CCCL_CUDA_COMPILER(NVCC)
   return _CCCL_BUILTIN_COPYSIGNF(__x, __y);
-#else // ^^^ _CCCL_BUILTIN_COPYSIGN ^^^ / vvv !_CCCL_BUILTIN_COPYSIGN vvv
-  return ::copysignf(__x, __y);
+#elif defined(_CCCL_BUILTIN_COPYSIGN)
+  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  {
+    return _CCCL_BUILTIN_COPYSIGNF(__x, __y);
+  }
+  // nvcc fails to copysign in constexpr context of nan or inf is passed, todo: add nvbug number
+  if (_CUDA_VSTD::isnan(__x) || _CUDA_VSTD::isinf(__x))
+  {
+    const bool __x_sign = _CCCL_BUILTIN_COPYSIGNF(1.0f, __x) < 0.f;
+    const bool __y_sign = _CCCL_BUILTIN_COPYSIGNF(1.0f, __y) < 0.f;
+    return __x_sign != __y_sign ? -__x : __x;
+  }
+  return _CCCL_BUILTIN_COPYSIGNF(__x, __y);
+#elif _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST()
+  const auto __val = (_CUDA_VSTD::__cccl_fp_get_storage(__x) & __cccl_fp32_exp_mant_mask)
+                   | (_CUDA_VSTD::__cccl_fp_get_storage(__y) & __cccl_fp32_sign_mask);
+  return _CUDA_VSTD::__cccl_make_fp32_from_storage(static_cast<uint32_t>(__val));
+#else // ^^^ _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() vvv
+  // todo: fix compilers that do not support builtin copysign
+#  error "Unsupported compiler"
 #endif // !_CCCL_BUILTIN_COPYSIGN
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_COPYSIGN double copysign(double __x, double __y) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr double copysign(double __x, double __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_COPYSIGN)
+#if defined(_CCCL_BUILTIN_COPYSIGN) && !_CCCL_CUDA_COMPILER(NVCC)
   return _CCCL_BUILTIN_COPYSIGN(__x, __y);
-#else // ^^^ _CCCL_BUILTIN_COPYSIGN ^^^ / vvv !_CCCL_BUILTIN_COPYSIGN vvv
-  return ::copysign(__x, __y);
+#elif defined(_CCCL_BUILTIN_COPYSIGN)
+  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  {
+    return _CCCL_BUILTIN_COPYSIGN(__x, __y);
+  }
+  // nvcc fails to copysign in constexpr context of nan or inf is passed, todo: add nvbug number
+  if (_CUDA_VSTD::isnan(__x) || _CUDA_VSTD::isinf(__x))
+  {
+    const bool __x_sign = _CCCL_BUILTIN_COPYSIGN(1.0, __x) < 0.0;
+    const bool __y_sign = _CCCL_BUILTIN_COPYSIGN(1.0, __y) < 0.0;
+    return __x_sign != __y_sign ? -__x : __x;
+  }
+  return _CCCL_BUILTIN_COPYSIGN(__x, __y);
+#elif _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST()
+  const auto __val = (_CUDA_VSTD::__cccl_fp_get_storage(__x) & __cccl_fp64_exp_mant_mask)
+                   | (_CUDA_VSTD::__cccl_fp_get_storage(__y) & __cccl_fp64_sign_mask);
+  return _CUDA_VSTD::__cccl_make_fp64_from_storage(static_cast<uint64_t>(__val));
+#else // ^^^ _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() vvv
+  // todo: fix compilers that do not support builtin copysign
+#  error "Unsupported compiler"
 #endif // !_CCCL_BUILTIN_COPYSIGN
 }
 
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_COPYSIGN long double
-copysign(long double __x, long double __y) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr long double copysign(long double __x, long double __y) noexcept
 {
 #  if defined(_CCCL_BUILTIN_COPYSIGN)
   return _CCCL_BUILTIN_COPYSIGNL(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_COPYSIGN ^^^ / vvv !_CCCL_BUILTIN_COPYSIGN vvv
-  return ::copysignl(__x, __y);
+  // todo: fix compilers that do not support builtin copysign
+#    error "Unsupported compiler"
 #  endif // !_CCCL_BUILTIN_COPYSIGN
 }
 #endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
@@ -75,8 +106,8 @@ copysign(long double __x, long double __y) noexcept
 #if defined(_LIBCUDACXX_HAS_NVFP16)
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __half copysign(__half __x, __half __y) noexcept
 {
-  const auto __val = (_CUDA_VSTD::__cccl_nvfp_get_storage(__x) & __cccl_nvfp16_exp_mant_mask)
-                   | (_CUDA_VSTD::__cccl_nvfp_get_storage(__y) & __cccl_nvfp16_sign_mask);
+  const auto __val = (_CUDA_VSTD::__cccl_fp_get_storage(__x) & __cccl_nvfp16_exp_mant_mask)
+                   | (_CUDA_VSTD::__cccl_fp_get_storage(__y) & __cccl_nvfp16_sign_mask);
   return _CUDA_VSTD::__cccl_make_nvfp16_from_storage(static_cast<uint16_t>(__val));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16
@@ -84,8 +115,8 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __half copysign(__half __x, 
 #if defined(_LIBCUDACXX_HAS_NVBF16)
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_bfloat16 copysign(__nv_bfloat16 __x, __nv_bfloat16 __y) noexcept
 {
-  const auto __val = (_CUDA_VSTD::__cccl_nvfp_get_storage(__x) & __cccl_nvbf16_exp_mant_mask)
-                   | (_CUDA_VSTD::__cccl_nvfp_get_storage(__y) & __cccl_nvbf16_sign_mask);
+  const auto __val = (_CUDA_VSTD::__cccl_fp_get_storage(__x) & __cccl_nvbf16_exp_mant_mask)
+                   | (_CUDA_VSTD::__cccl_fp_get_storage(__y) & __cccl_nvbf16_sign_mask);
   return _CUDA_VSTD::__cccl_make_nvbf16_from_storage(static_cast<uint16_t>(__val));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16

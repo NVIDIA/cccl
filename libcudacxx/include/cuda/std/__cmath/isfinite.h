@@ -21,8 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cmath/fp_utils.h>
+#include <cuda/std/__cmath/isinf.h>
+#include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__internal/nvfp_types.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
 // MSVC and clang cuda need the host side functions included
@@ -32,37 +34,58 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_CCCL_BUILTIN_ISFINITE)
-#  define _CCCL_CONSTEXPR_ISFINITE constexpr
-#else // ^^^ _CCCL_BUILTIN_ISFINITE ^^^ / vvv !_CCCL_BUILTIN_ISFINITE vvv
-#  define _CCCL_CONSTEXPR_ISFINITE
-#endif // !_CCCL_BUILTIN_ISFINITE
-
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_ISFINITE bool isfinite(float __x) noexcept
+template <class _Tp>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __isfinite_impl(_Tp __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ISFINITE)
-  return _CCCL_BUILTIN_ISFINITE(__x);
-#else
-  return ::isfinite(__x);
-#endif // defined(_CCCL_BUILTIN_ISFINITE)
+  static_assert(_CCCL_TRAIT(is_floating_point, _Tp), "Only standard floating-point types are supported");
+  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  {
+    return ::isfinite(__x);
+  }
+  return !_CUDA_VSTD::isnan(__x) && !_CUDA_VSTD::isinf(__x);
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_ISFINITE bool isfinite(double __x) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isfinite(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ISFINITE)
   return _CCCL_BUILTIN_ISFINITE(__x);
-#else
-  return ::isfinite(__x);
-#endif // defined(_CCCL_BUILTIN_ISFINITE)
+#else // ^^^ _CCCL_BUILTIN_ISFINITE ^^^ / vvv !_CCCL_BUILTIN_ISFINITE vvv
+  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  {
+    return ::isfinite(__x);
+  }
+#  if _LIBCUDACXX_HAS_BUILTIN_BIT_CAST()
+  return (_CUDA_VSTD::__cccl_fp_get_storage(__x) & __cccl_fp32_exp_mask) != __cccl_fp32_exp_mask;
+#  else // ^^^ _LIBCUDACXX_HAS_BUILTIN_BIT_CAST() ^^^ / vvv !_LIBCUDACXX_HAS_BUILTIN_BIT_CAST() vvv
+  return _CUDA_VSTD::__isfinite_impl(__x);
+#  endif // ^^^ !_LIBCUDACXX_HAS_BUILTIN_BIT_CAST() ^^^
+#endif // ^^^ !_CCCL_BUILTIN_ISFINITE ^^^
+}
+
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isfinite(double __x) noexcept
+{
+#if defined(_CCCL_BUILTIN_ISFINITE)
+  return _CCCL_BUILTIN_ISFINITE(__x);
+#else // ^^^ _CCCL_BUILTIN_ISFINITE ^^^ / vvv !_CCCL_BUILTIN_ISFINITE vvv
+  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  {
+    return ::isfinite(__x);
+  }
+#  if _LIBCUDACXX_HAS_BUILTIN_BIT_CAST()
+  return (_CUDA_VSTD::__cccl_fp_get_storage(__x) & __cccl_fp64_exp_mask) != __cccl_fp64_exp_mask;
+#  else // ^^^ _LIBCUDACXX_HAS_BUILTIN_BIT_CAST() ^^^ / vvv !_LIBCUDACXX_HAS_BUILTIN_BIT_CAST() vvv
+  return _CUDA_VSTD::__isfinite_impl(__x);
+#  endif // ^^^ !_LIBCUDACXX_HAS_BUILTIN_BIT_CAST() ^^^
+#endif // ^^^ !_CCCL_BUILTIN_ISFINITE ^^^
 }
 
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_ISFINITE bool isfinite(long double __x) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isfinite(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_ISFINITE)
   return _CCCL_BUILTIN_ISFINITE(__x);
 #  else
-  return ::isfinite(__x);
+  return _CUDA_VSTD::__isfinite_impl(__x);
 #  endif // defined(_CCCL_BUILTIN_ISFINITE)
 }
 #endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
@@ -70,14 +93,14 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_ISFINITE bool isfinite
 #if defined(_LIBCUDACXX_HAS_NVFP16)
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isfinite(__half __x) noexcept
 {
-  return (_CUDA_VSTD::__cccl_nvfp_get_storage(__x) & __cccl_nvfp16_exp_mask) != __cccl_nvfp16_exp_mask;
+  return (_CUDA_VSTD::__cccl_fp_get_storage(__x) & __cccl_nvfp16_exp_mask) != __cccl_nvfp16_exp_mask;
 }
 #endif // _LIBCUDACXX_HAS_NVFP16
 
 #if defined(_LIBCUDACXX_HAS_NVBF16)
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isfinite(__nv_bfloat16 __x) noexcept
 {
-  return (_CUDA_VSTD::__cccl_nvfp_get_storage(__x) & __cccl_nvbf16_exp_mask) != __cccl_nvbf16_exp_mask;
+  return (_CUDA_VSTD::__cccl_fp_get_storage(__x) & __cccl_nvbf16_exp_mask) != __cccl_nvbf16_exp_mask;
 }
 #endif // _LIBCUDACXX_HAS_NVBF16
 

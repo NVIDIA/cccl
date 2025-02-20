@@ -621,13 +621,6 @@
 #  define _CCCL_BUILTIN_SIGNBITL(...) __builtin_signbitl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_signbit)
 
-// nvcc does not implement __builtin_signbit
-#if _CCCL_CUDA_COMPILER(NVCC)
-#  undef _CCCL_BUILTIN_SIGNBITF
-#  undef _CCCL_BUILTIN_SIGNBIT
-#  undef _CCCL_BUILTIN_SIGNBITL
-#endif // _CCCL_CUDA_COMPILER(NVCC)
-
 #if _CCCL_CHECK_BUILTIN(builtin_sqrt) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_SQRTF(...) __builtin_sqrtf(__VA_ARGS__)
 #  define _CCCL_BUILTIN_SQRT(...)  __builtin_sqrt(__VA_ARGS__)

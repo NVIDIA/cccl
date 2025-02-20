@@ -26,17 +26,9 @@
 #include <cuda/std/__internal/nvfp_types.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
-#if defined(_CCCL_BUILTIN_ISNORMAL)
-#  define _CCCL_CONSTEXPR_ISNORMAL       constexpr
-#  define _CCCL_HAS_CONSTEXPR_ISNORMAL() 1
-#else // ^^^ _CCCL_BUILTIN_ISNORMAL ^^^ / vvv !_CCCL_BUILTIN_ISNORMAL vvv
-#  define _CCCL_CONSTEXPR_ISNORMAL
-#  define _CCCL_HAS_CONSTEXPR_ISNORMAL() 0
-#endif // ^^^ !_CCCL_BUILTIN_ISNORMAL ^^^
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_ISNORMAL bool isnormal(float __x) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnormal(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ISNORMAL)
   return _CCCL_BUILTIN_ISNORMAL(__x);
@@ -45,7 +37,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_ISNORMAL bool isnormal
 #endif // !_CCCL_BUILTIN_ISNORMAL
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_ISNORMAL bool isnormal(double __x) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnormal(double __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ISNORMAL)
   return _CCCL_BUILTIN_ISNORMAL(__x);
@@ -55,7 +47,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_ISNORMAL bool isnormal
 }
 
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_ISNORMAL bool isnormal(long double __x) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnormal(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_ISNORMAL)
   return _CCCL_BUILTIN_ISNORMAL(__x);
@@ -66,14 +58,14 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_ISNORMAL bool isnormal
 #endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
 #if defined(_LIBCUDACXX_HAS_NVFP16)
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool isnormal(__half __x) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnormal(__half __x) noexcept
 {
   return _CUDA_VSTD::fpclassify(__x) == FP_NORMAL;
 }
 #endif // _LIBCUDACXX_HAS_NVFP16
 
 #if defined(_LIBCUDACXX_HAS_NVBF16)
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool isnormal(__nv_bfloat16 __x) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnormal(__nv_bfloat16 __x) noexcept
 {
   return _CUDA_VSTD::fpclassify(__x) == FP_NORMAL;
 }

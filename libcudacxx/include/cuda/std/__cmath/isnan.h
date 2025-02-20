@@ -22,8 +22,8 @@
 #endif // no system header
 
 #include <cuda/std/__bit/popcount.h>
+#include <cuda/std/__cmath/fp_utils.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__internal/nvfp_types.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
@@ -34,63 +34,68 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_CCCL_BUILTIN_ISNAN)
-#  define _CCCL_CONSTEXPR_ISNAN constexpr
-#else // ^^^ _CCCL_BUILTIN_ISNAN ^^^ / vvv !_CCCL_BUILTIN_ISNAN vvv
-#  define _CCCL_CONSTEXPR_ISNAN
-#endif // !_CCCL_BUILTIN_ISNAN
-
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_ISNAN bool isnan(float __x) noexcept
+template <class _Tp>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __isnan_impl(_Tp __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ISNAN)
-  return _CCCL_BUILTIN_ISNAN(__x);
-#else
-  return ::isnan(__x);
-#endif // defined(_CCCL_BUILTIN_ISNAN)
+  static_assert(_CCCL_TRAIT(is_floating_point, _Tp), "Only standard floating-point types are supported");
+  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  {
+    return ::isnan(__x);
+  }
+  return __x != __x;
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_ISNAN bool isnan(double __x) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnan(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ISNAN)
   return _CCCL_BUILTIN_ISNAN(__x);
-#else
-  return ::isnan(__x);
-#endif // defined(_CCCL_BUILTIN_ISNAN)
+#else // ^^^ _CCCL_BUILTIN_ISNAN ^^^ / vvv !_CCCL_BUILTIN_ISNAN vvv
+  return _CUDA_VSTD::__isnan_impl(__x);
+#endif // ^^^ !_CCCL_BUILTIN_ISNAN ^^^
+}
+
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnan(double __x) noexcept
+{
+#if defined(_CCCL_BUILTIN_ISNAN)
+  return _CCCL_BUILTIN_ISNAN(__x);
+#else // ^^^ _CCCL_BUILTIN_ISNAN ^^^ / vvv !_CCCL_BUILTIN_ISNAN vvv
+  return _CUDA_VSTD::__isnan_impl(__x);
+#endif // ^^^ !_CCCL_BUILTIN_ISNAN ^^^
 }
 
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_ISNAN bool isnan(long double __x) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnan(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_ISNAN)
   return _CCCL_BUILTIN_ISNAN(__x);
-#  else
-  return ::isnan(__x);
-#  endif // defined(_CCCL_BUILTIN_ISNAN)
+#  else // ^^^ _CCCL_BUILTIN_ISNAN ^^^ / vvv !_CCCL_BUILTIN_ISNAN vvv
+  return _CUDA_VSTD::__isnan_impl(__x);
+#  endif // ^^^ !_CCCL_BUILTIN_ISNAN ^^^
 }
 #endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
 #if defined(_LIBCUDACXX_HAS_NVFP16)
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool isnan(__half __x) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnan(__half __x) noexcept
 {
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
     return ::__hisnan(__x);
   }
 
-  const auto __storage = _CUDA_VSTD::__cccl_nvfp_get_storage(__x);
+  const auto __storage = _CUDA_VSTD::__cccl_fp_get_storage(__x);
   return ((__storage & __cccl_nvfp16_exp_mask) == __cccl_nvfp16_exp_mask) && (__storage & __cccl_nvfp16_mant_mask);
 }
 #endif // _LIBCUDACXX_HAS_NVFP16
 
 #if defined(_LIBCUDACXX_HAS_NVBF16)
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool isnan(__nv_bfloat16 __x) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnan(__nv_bfloat16 __x) noexcept
 {
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
     return ::__hisnan(__x);
   }
 
-  const auto __storage = _CUDA_VSTD::__cccl_nvfp_get_storage(__x);
+  const auto __storage = _CUDA_VSTD::__cccl_fp_get_storage(__x);
   return ((__storage & __cccl_nvbf16_exp_mask) == __cccl_nvbf16_exp_mask) && (__storage & __cccl_nvbf16_mant_mask);
 }
 #endif // _LIBCUDACXX_HAS_NVBF16
