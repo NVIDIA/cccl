@@ -64,7 +64,7 @@ template <typename Invokable, typename... Args>
 using invoke_result_t = ::cuda::std::invoke_result_t<Invokable, Args...>;
 
 template <typename T, typename... TArgs>
-inline constexpr bool is_one_of_v = ::cuda::std::disjunction_v<::cuda::std::is_same<T, TArgs>...>;
+inline constexpr bool is_one_of_v = (_CCCL_TRAIT(is_same, T, TArgs) || ...);
 
 template <typename...>
 inline constexpr bool always_false_v = false;
