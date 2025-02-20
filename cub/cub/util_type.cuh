@@ -1069,10 +1069,7 @@ namespace detail
 {
 template <typename T>
 struct Traits : NumericTraits<::cuda::std::remove_cv_t<T>>
-{
-  static_assert(::cuda::std::numeric_limits<T>::is_specialized,
-                "Please also specialize cuda::std::numeric_limits for T");
-};
+{};
 } // namespace detail
 
 //! \brief Query type traits for radix sort key operations, decoupled lookback and tunings. To add support for your own
