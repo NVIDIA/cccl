@@ -75,14 +75,12 @@ The implementation may assume that any **host** thread will eventually do one of
     3. **perform an access through a volatile glvalue except if the designated object has automatic storage duration, or**
     4. **perform a synchronization operation or an atomic read operation except if the designated object has automatic storage duration.**
 
-  [Note: We consider some of the current limitations of device threads with respect to host
-  threads implementation bugs, e.g., the undefined behavior introduced by programs that
-  eventually only perform volatile or atomic operations on objects with automatic storage
-  duration. However, we consider that some of the limitations are due to the C++ standard
-  currently being too strict, and this resulting in the performance of common workloads
-  being degraded to provide forward progress to “useless” programs, e.g., the undefined
-  behavior introduced by programs that eventually only perform atomic write operations
-  or fences. - end note.]
+  [Note: Some current limitations of device threads relative to host threads are considered
+  implementation defects, such as the undefined behavior that arises from device threads
+  that eventually only performs volatile or atomic operations on automatic storage duration objects.
+  However, other limitations stem from the strictness of the C++ standard, e.g., providing
+  forward progress to programs that eventually only perform atomic writes or fences degrades overall
+  performance for little practical benefit. - end note.]
 
 .. dropdown:: Examples of forward progress guarantee differences between host and device threads due to modifications to [intro.progress.1].
 
