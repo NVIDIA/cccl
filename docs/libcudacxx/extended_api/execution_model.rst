@@ -57,7 +57,7 @@ _ Otherwise, all device threads in its `thread-block cluster <https://docs.nvidi
 
 The order in which device threads eventually get a chance to make progress is _unspecified_.
 
-Modify `[intro.progress.1] <https://eel.is/c++draft/intro.progress>`__ as follows:
+Modify `[intro.progress.1] <https://eel.is/c++draft/intro.progress>`__ as follows (modifications in **bold**):
 
 The implementation may assume that any **host** thread will eventually do one of the following:
 
