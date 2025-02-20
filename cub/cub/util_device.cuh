@@ -26,14 +26,8 @@
  *
  ******************************************************************************/
 
-/**
- * \file
- * Properties of a given CUDA device and the corresponding PTX bundle.
- *
- * \note
- * This file contains __host__ only functions and utilities, and should not be
- * included in code paths that could be online-compiled (ex: using NVRTC).
- */
+//! \file
+//! Properties of a given CUDA device and the corresponding PTX bundle.
 
 #pragma once
 
