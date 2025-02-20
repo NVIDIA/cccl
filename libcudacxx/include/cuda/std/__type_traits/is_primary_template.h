@@ -102,37 +102,11 @@ struct __is_primary_std_template : bool_constant<__is_primary_std_template_impl<
 {};
 #  endif // _MSVC_STL_VERSION || _IS_WRS
 
-// Without ranges we need to guard against e.g void*
-// With ranges we fail subsumption if we use the indirection
-#  if defined(__cpp_lib_ranges)
 template <class _Iter, class _OtherTraits>
 using __select_traits =
   conditional_t<__is_primary_std_template<_Iter>::value,
                 conditional_t<__is_primary_cccl_template<_Iter>::value, _OtherTraits, iterator_traits<_Iter>>,
                 ::std::iterator_traits<_Iter>>;
-
-#  else // ^^^ __cpp_lib_ranges ^^^ / vvv !__cpp_lib_ranges vvv
-
-template <class _Iter, class _OtherTraits, bool = _CCCL_TRAIT(is_pointer, _Iter)>
-struct __select_traits_impl
-{
-  using type =
-    conditional_t<__is_primary_std_template<_Iter>::value,
-                  conditional_t<__is_primary_cccl_template<_Iter>::value, _OtherTraits, iterator_traits<_Iter>>,
-                  ::std::iterator_traits<_Iter>>;
-};
-
-// Pointers are treated specially. Also guards against void* issues
-template <class _Iter, class _OtherTraits>
-struct __select_traits_impl<_Iter, _OtherTraits, true>
-{
-  using type = iterator_traits<_Iter>;
-};
-
-template <class _Iter, class _OtherTraits>
-using __select_traits = typename __select_traits_impl<_Iter, _OtherTraits>::type;
-
-#  endif // !__cpp_lib_ranges
 
 #endif // !_CCCL_COMPILER(NVRTC)
 
