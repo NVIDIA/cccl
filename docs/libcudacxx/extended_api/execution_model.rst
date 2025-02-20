@@ -218,7 +218,7 @@ A device-thread shall not make progress if it is dependent on termination of one
 
 [Note: This excludes dependencies such as Programmatic Dependent Launch or Launch Completion which do not encompass termination of the dependency. - end note.]
 
-[Note: Tasks are also known as `Commands <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#streams>`__. - end note. ]
+[Note: Tasks are also referred to as `Commands <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#streams>`__. - end note. ]
 
 .. dropdown:: Examples of CUDA API forward progress guarantees due to Stream and event ordering
 
