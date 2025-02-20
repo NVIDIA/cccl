@@ -75,7 +75,7 @@ The implementation may assume that any **host** thread will eventually do one of
     3. **perform an access through a volatile glvalue except if the designated object has automatic storage duration, or**
     4. **perform a synchronization operation or an atomic read operation except if the designated object has automatic storage duration.**
 
-.. dropdown:: Examples of forward progress guarantee differences between host and device threads due to [intro.progress.1].
+.. dropdown:: Examples of forward progress guarantee differences between host and device threads due to modifications to [intro.progress.1].
 
     The following examples refer to the itemized sub-clauses of the implementation assumptions for host and device threads above
     using "host.threads.<id>" and "device.threads.<id>", respectively.
