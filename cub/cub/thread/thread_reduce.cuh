@@ -168,7 +168,7 @@ CUB_NAMESPACE_BEGIN
 
 template <typename Input,
           typename ReductionOp,
-          typename ValueT = cub::detail::random_access_range_elem_t<Input>,
+          typename ValueT = ::cuda::std::iter_value_t<Input>,
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, ValueT>>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& input, ReductionOp reduction_op);
 // forward declaration
@@ -270,7 +270,7 @@ inline constexpr bool enable_sm70_simd_reduction_v = false;
 template <typename Input, typename ReductionOp, typename AccumT>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_simd_reduction()
 {
-  using T = detail::random_access_range_elem_t<Input>;
+  using T = ::cuda::std::iter_value_t<Input><Input>;
   if constexpr (!::cuda::std::is_same_v<T, AccumT>)
   {
     return false;
@@ -339,7 +339,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_ternary_red
   else
   {
     // apply SM90 min/max ternary reduction only if the input is natively int32/uint32
-    using T = detail::random_access_range_elem_t<Input>;
+    using T = ::cuda::std::iter_value_t<Input><Input>;
     // clang-format off
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
@@ -425,7 +425,7 @@ template <typename Input, typename ReductionOp>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input& input, ReductionOp)
 {
   using cub::internal::unsafe_bitcast;
-  using T                       = cub::detail::random_access_range_elem_t<Input>;
+  using T                       = ::cuda::std::iter_value_t<Input><Input>;
   using SimdReduceOp            = cub_operator_to_simd_operator_t<ReductionOp, T>;
   using SimdType                = simd_type_t<T>;
   constexpr auto length         = cub::detail::static_size_v<Input>;
@@ -534,7 +534,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& 
 template <typename Input,
           typename ReductionOp,
           typename PrefixT,
-          typename ValueT = cub::detail::random_access_range_elem_t<Input>,
+          typename ValueT = ::cuda::std::iter_value_t<Input>,
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, ValueT, PrefixT>>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
 ThreadReduce(const Input& input, ReductionOp reduction_op, PrefixT prefix)
