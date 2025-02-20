@@ -21,23 +21,24 @@
 
 CCCL_C_EXTERN_C_BEGIN
 
-struct cccl_device_scan_build_result_t
+struct cccl_device_segmented_reduce_build_result_t
 {
   int cc;
   void* cubin;
   size_t cubin_size;
   CUlibrary library;
-  cccl_type_info accumulator_type;
-  CUkernel init_kernel;
-  CUkernel scan_kernel;
-  size_t description_bytes_per_tile;
-  size_t payload_bytes_per_tile;
+  unsigned long long accumulator_size;
+  unsigned long long offset_size;
+  CUkernel segmented_reduce_kernel;
 };
 
-CCCL_C_API CUresult cccl_device_scan_build(
-  cccl_device_scan_build_result_t* build,
+// TODO return a union of nvtx/cuda/nvrtc errors or a string?
+CCCL_C_API CUresult cccl_device_segmented_reduce_build(
+  cccl_device_segmented_reduce_build_result_t* build,
   cccl_iterator_t d_in,
   cccl_iterator_t d_out,
+  cccl_iterator_t begin_offset_it,
+  cccl_iterator_t end_offset_it,
   cccl_op_t op,
   cccl_value_t init,
   int cc_major,
@@ -47,17 +48,19 @@ CCCL_C_API CUresult cccl_device_scan_build(
   const char* libcudacxx_path,
   const char* ctk_path) noexcept;
 
-CCCL_C_API CUresult cccl_device_scan(
-  cccl_device_scan_build_result_t build,
+CCCL_C_API CUresult cccl_device_segmented_reduce(
+  cccl_device_segmented_reduce_build_result_t build,
   void* d_temp_storage,
   size_t* temp_storage_bytes,
   cccl_iterator_t d_in,
   cccl_iterator_t d_out,
-  unsigned long long num_items,
+  unsigned long long num_offsets,
+  cccl_iterator_t start_offset_it,
+  cccl_iterator_t end_offset_it,
   cccl_op_t op,
   cccl_value_t init,
   CUstream stream) noexcept;
 
-CCCL_C_API CUresult cccl_device_scan_cleanup(cccl_device_scan_build_result_t* bld_ptr) noexcept;
+CCCL_C_API CUresult cccl_device_segmented_reduce_cleanup(cccl_device_segmented_reduce_build_result_t* bld_ptr) noexcept;
 
 CCCL_C_EXTERN_C_END

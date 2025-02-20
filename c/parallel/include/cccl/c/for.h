@@ -16,7 +16,10 @@
 
 #  include <cuda.h>
 
+#  include <cccl/c/extern_c.h>
 #  include <cccl/c/types.h>
+
+CCCL_C_EXTERN_C_BEGIN
 
 struct cccl_device_for_build_result_t
 {
@@ -27,7 +30,7 @@ struct cccl_device_for_build_result_t
   CUkernel static_kernel;
 };
 
-extern "C" CCCL_C_API CUresult cccl_device_for_build(
+CCCL_C_API CUresult cccl_device_for_build(
   cccl_device_for_build_result_t* build,
   cccl_iterator_t d_data,
   cccl_op_t op,
@@ -38,13 +41,15 @@ extern "C" CCCL_C_API CUresult cccl_device_for_build(
   const char* libcudacxx_path,
   const char* ctk_path) noexcept;
 
-extern "C" CCCL_C_API CUresult cccl_device_for(
+CCCL_C_API CUresult cccl_device_for(
   cccl_device_for_build_result_t build,
   cccl_iterator_t d_data,
   int64_t num_items,
   cccl_op_t op,
   CUstream stream) noexcept;
 
-extern "C" CCCL_C_API CUresult cccl_device_for_cleanup(cccl_device_for_build_result_t* bld_ptr);
+CCCL_C_API CUresult cccl_device_for_cleanup(cccl_device_for_build_result_t* bld_ptr);
 
 #endif // CCCL_C_EXPERIMENTAL
+
+CCCL_C_EXTERN_C_END
