@@ -586,6 +586,16 @@ protected:
       return nullptr;
     }
 
+    virtual void graph_set_cache_policy(executable_graph_cache_policy<::std::function<bool(size_t)>>)
+    {
+      // ignored by default (only used in the graph_ctx backend)
+    }
+
+    virtual executable_graph_cache_stat* graph_get_cache_stat()
+    {
+      return nullptr;
+    }
+
 #if _CCCL_COMPILER(MSVC)
     _CCCL_DIAG_PUSH
     _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
@@ -902,6 +912,16 @@ public:
   cudaGraph_t graph() const
   {
     return pimpl->graph();
+  }
+
+  void graph_set_cache_policy(executable_graph_cache_policy<::std::function<bool(size_t)>> policy)
+  {
+    pimpl->graph_set_cache_policy(mv(policy));
+  }
+
+  executable_graph_cache_stat* graph_get_cache_stat()
+  {
+    return pimpl->graph_get_cache_stat();
   }
 
   event_list stream_to_event_list(cudaStream_t stream, ::std::string event_symbol) const

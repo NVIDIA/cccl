@@ -89,6 +89,36 @@ inline ::std::shared_ptr<cudaGraphExec_t> graph_instantiate(cudaGraph_t g)
 
 } // end namespace reserved
 
+// To tell how want the cache to be used (or disable it)
+// // Usage with Lambdas
+// auto force_cache = executable_graph_cache_policy([](size_t) { return true; });
+// auto no_cache = executable_graph_cache_policy([](size_t) { return false; });
+// auto threshold_cache = executable_graph_cache_policy([](size_t graph_size) { return graph_size >= 1000; });
+template <typename Func>
+class executable_graph_cache_policy
+{
+public:
+  explicit executable_graph_cache_policy(Func _f)
+      : f(mv(_f))
+  {}
+
+  bool operator()() const
+  {
+    return f();
+  }
+
+private:
+  Func f;
+};
+
+// To get information about how it was used
+class executable_graph_cache_stat
+{
+public:
+  size_t instantiate_cnt = 0;
+  size_t update_cnt      = 0;
+};
+
 class executable_graph_cache
 {
 public:
@@ -153,7 +183,9 @@ public:
   using per_device_map_t = ::std::unordered_multimap<::std::pair<size_t, size_t>, entry, hash_pair>;
 
   // Check if there is a matching entry (and update it if necessary)
-  ::std::shared_ptr<cudaGraphExec_t> query(size_t nnodes, size_t nedges, ::std::shared_ptr<cudaGraph_t> g)
+  // the returned bool indicate is this is a cache hit (true = cache hit, false = cache miss)
+  ::std::pair<::std::shared_ptr<cudaGraphExec_t>, bool>
+  query(size_t nnodes, size_t nedges, ::std::shared_ptr<cudaGraph_t> g)
   {
     int dev_id = cuda_try<cudaGetDevice>();
     _CCCL_ASSERT(dev_id < int(cached_graphs.size()), "invalid device id value");
@@ -168,7 +200,7 @@ public:
         e.lru_refresh();
 
         // We have successfully updated the graph, this is a cache hit
-        return e.exec_g;
+        return ::std::make_pair(e.exec_g, true);
       }
     }
 
@@ -192,7 +224,7 @@ public:
       total_cache_footprint[dev_id] += footprint;
     }
 
-    return exec_g;
+    return ::std::make_pair(exec_g, false);
   }
 
 private:
