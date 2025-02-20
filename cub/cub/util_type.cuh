@@ -871,6 +871,8 @@ struct BaseTraits<FLOATING_POINT, _UnsignedBits, T>
 {
   static_assert(::cuda::std::numeric_limits<T>::is_specialized,
                 "Please also specialize cuda::std::numeric_limits for T");
+  static_assert(::cuda::is_floating_point<T>::value, "Please also specialize cuda::is_floating_point for T");
+  static_assert(::cuda::is_floating_point_v<T>, "Please also specialize cuda::is_floating_point_v for T");
 
   using UnsignedBits = _UnsignedBits;
 
