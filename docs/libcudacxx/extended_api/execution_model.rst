@@ -62,7 +62,7 @@ Modify `[intro.progress.1] <https://eel.is/c++draft/intro.progress>`__ as follow
 The implementation may assume that any **host** thread will eventually do one of the following:
 
     1. terminate,
-    2. invoke the function `std::his_thread::yield <https://en.cppreference.com/w/cpp/thread/yield>`__ (`[thread.thread.this] <http://eel.is/c++draft/thread.thread.this>`__),
+    2. invoke the function `std::this_thread::yield <https://en.cppreference.com/w/cpp/thread/yield>`__ (`[thread.thread.this] <http://eel.is/c++draft/thread.thread.this>`__),
     3. make a call to a library I/O function,
     4. perform an access through a volatile glvalue,
     5. perform a synchronization operation or an atomic operation, or
