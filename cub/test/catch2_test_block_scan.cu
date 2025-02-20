@@ -98,7 +98,7 @@ struct sum_op_t
   template <int ItemsPerThread, class BlockScanT, class T>
   __device__ void operator()(BlockScanT& scan, T (&thread_data)[ItemsPerThread]) const
   {
-    if (Mode == scan_mode::exclusive)
+    if constexpr (Mode == scan_mode::exclusive)
     {
       scan.ExclusiveSum(thread_data, thread_data);
     }
@@ -133,7 +133,7 @@ struct min_op_t
   template <int ItemsPerThread, class BlockScanT>
   __device__ void operator()(BlockScanT& scan, int (&thread_data)[ItemsPerThread]) const
   {
-    if (Mode == scan_mode::exclusive)
+    if constexpr (Mode == scan_mode::exclusive)
     {
       scan.ExclusiveScan(thread_data, thread_data, ::cuda::minimum<>{});
     }
@@ -185,7 +185,7 @@ struct sum_aggregate_op_t
   {
     T block_aggregate{};
 
-    if (Mode == scan_mode::exclusive)
+    if constexpr (Mode == scan_mode::exclusive)
     {
       scan.ExclusiveSum(thread_data, thread_data, block_aggregate);
     }
@@ -232,7 +232,7 @@ struct sum_prefix_op_t
     const int tid = static_cast<int>(cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z));
     block_prefix_op_t prefix_op{tid, m_prefix};
 
-    if (Mode == scan_mode::exclusive)
+    if constexpr (Mode == scan_mode::exclusive)
     {
       scan.ExclusiveSum(thread_data, thread_data, prefix_op);
     }
@@ -273,7 +273,7 @@ struct min_prefix_op_t
     const int tid = static_cast<int>(cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z));
     block_prefix_op_t prefix_op{tid, m_prefix};
 
-    if (Mode == scan_mode::exclusive)
+    if constexpr (Mode == scan_mode::exclusive)
     {
       scan.ExclusiveScan(thread_data, thread_data, ::cuda::minimum<>{}, prefix_op);
     }
