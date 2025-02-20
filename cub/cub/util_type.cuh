@@ -1082,8 +1082,10 @@ struct Traits : NumericTraits<typename ::cuda::std::remove_cv<T>::type>
 namespace detail
 {
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+// we don't make this an alias so we don't have to suppress deprecations for every use of is_primitive.
 template <typename T>
-using is_primitive = ::cuda::std::bool_constant<Traits<T>::PRIMITIVE>;
+struct is_primitive : ::cuda::std::bool_constant<Traits<T>::PRIMITIVE>
+{};
 
 #  ifndef _CCCL_NO_VARIABLE_TEMPLATES
 template <typename T>

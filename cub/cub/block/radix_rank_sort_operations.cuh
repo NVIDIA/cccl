@@ -74,6 +74,7 @@ CUB_NAMESPACE_BEGIN
     and only one of them is used, the sorting works correctly. For double, the
     same applies, but with 64-bit patterns.
 */
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename KeyT, Category TypeCategory = Traits<KeyT>::CATEGORY>
 struct BaseDigitExtractor
 {
@@ -85,6 +86,7 @@ struct BaseDigitExtractor
     return key;
   }
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 template <typename KeyT>
 struct BaseDigitExtractor<KeyT, FLOATING_POINT>
