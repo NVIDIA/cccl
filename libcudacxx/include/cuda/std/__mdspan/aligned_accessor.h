@@ -33,14 +33,14 @@
 
 #if defined(__cccl_lib_mdspan)
 
-#  include <cuda/std/__bit/bit_cast.h>
 #  include <cuda/std/__bit/has_single_bit.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__mdspan/default_accessor.h>
 #  include <cuda/std/__memory/assume_aligned.h>
-#  include <cuda/std/__numeric/gcd_lcm.h>
-#  include <cuda/std/__type_traits/is_constant_evaluated.h>
-#  include <cuda/std/cstddef>
+#  include <cuda/std/__type_traits/is_abstract.h>
+#  include <cuda/std/__type_traits/is_array.h>
+#  include <cuda/std/__type_traits/is_convertible.h>
+#  include <cuda/std/__type_traits/is_object.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -51,8 +51,14 @@ public:
   static constexpr auto byte_alignment = _ByteAlignment;
 
   static_assert(_CUDA_VSTD::has_single_bit(byte_alignment), "byte_alignment must be a power of two.");
+
   static_assert(byte_alignment >= alignof(_ElementType), "Insufficient byte alignment for _ElementType");
-  static_assert(_CCCL_TRAIT(is_object, _ElementType) && ! _CCCL_TRAIT(is_abstract, _ElementType) && ! _CCCL_TRAIT(is_array, _ElementType), "_ElementType must be a complete object type that is neither an abstract class type nor an array type.");
+
+  static_assert(_CCCL_TRAIT(is_object, _ElementType) && !_CCCL_TRAIT(is_abstract, _ElementType)
+                  && !_CCCL_TRAIT(is_array, _ElementType),
+                "_ElementType must be a complete object type that is neither an abstract class type nor an array "
+                "type.");
+
   using offset_policy    = default_accessor<_ElementType>;
   using element_type     = _ElementType;
   using reference        = _ElementType&;
@@ -62,7 +68,7 @@ public:
 
   _CCCL_TEMPLATE(class _OtherElementType, size_t _OtherByteAlignment)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _OtherElementType (*)[], element_type (*)[])
-                   _CCCL_AND((byte_alignment >= byte_alignment))
+                   _CCCL_AND((_OtherByteAlignment >= byte_alignment)))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr aligned_accessor(aligned_accessor<_OtherElementType, _OtherByteAlignment>) noexcept
   {}
 
@@ -70,13 +76,9 @@ public:
   _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _OtherElementType (*)[], element_type (*)[]))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr aligned_accessor(default_accessor<_OtherElementType>) noexcept {}
 
-#  if defined(_CCCL_TEMPLATED_CONVERSION_TO_DEFAULT_ACCESSOR)
   _CCCL_TEMPLATE(class _OtherElementType)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _OtherElementType (*)[], element_type (*)[]))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator default_accessor<OtherElementType>() const noexcept
-#  else
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator default_accessor<element_type>() const noexcept
-#  endif
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator default_accessor<_OtherElementType>() const noexcept
   {
     return {};
   }
