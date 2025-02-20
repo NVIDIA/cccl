@@ -244,7 +244,7 @@ public:
 
   template <typename InputType>
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE //
-  ::cuda::std::enable_if_t<detail::is_fixed_size_random_access_range_t<InputType>{}, T> //
+  ::cuda::std::enable_if_t<detail::is_fixed_size_random_access_range<InputType>::value, T> //
   Max(const InputType& input)
   {
     auto thread_reduction = cub::ThreadReduce(input, ::cuda::maximum<>{});
@@ -259,7 +259,7 @@ public:
 
   template <typename InputType>
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE //
-  ::cuda::std::enable_if_t<detail::is_fixed_size_random_access_range_t<InputType>{}, T> //
+  ::cuda::std::enable_if_t<detail::is_fixed_size_random_access_range<InputType>::value, T> //
   Min(const InputType& input)
   {
     auto thread_reduction = cub::ThreadReduce(input, ::cuda::minimum<>{});
@@ -501,7 +501,7 @@ public:
 
   template <typename InputType, typename ReductionOp>
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE //
-  ::cuda::std::enable_if_t<detail::is_fixed_size_random_access_range_t<InputType>{}, T> //
+  ::cuda::std::enable_if_t<detail::is_fixed_size_random_access_range<InputType>::value, T> //
   Reduce(const InputType& input, ReductionOp reduction_op)
   {
     auto thread_reduction = cub::ThreadReduce(input, reduction_op);
@@ -733,7 +733,7 @@ public:
 
   template <typename InputType>
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE //
-  ::cuda::std::enable_if_t<detail::is_fixed_size_random_access_range_t<InputType>{}, T> //
+  ::cuda::std::enable_if_t<detail::is_fixed_size_random_access_range<InputType>::value, T> //
   Sum(const InputType& input)
   {
     return cub::ThreadReduce(input, ::cuda::std::plus<>{});
@@ -751,7 +751,7 @@ public:
 
   template <typename InputType>
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE //
-  ::cuda::std::enable_if_t<detail::is_fixed_size_random_access_range_t<InputType>{}, T> //
+  ::cuda::std::enable_if_t<detail::is_fixed_size_random_access_range<InputType>::value, T> //
   Max(const InputType& input)
   {
     return cub::ThreadReduce(input, ::cuda::maximum<>{});
@@ -769,7 +769,7 @@ public:
 
   template <typename InputType>
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE //
-  ::cuda::std::enable_if_t<detail::is_fixed_size_random_access_range_t<InputType>{}, T> //
+  ::cuda::std::enable_if_t<detail::is_fixed_size_random_access_range<InputType>::value, T> //
   Min(const InputType& input)
   {
     return cub::ThreadReduce(input, ::cuda::minimum<>{});
@@ -800,7 +800,7 @@ public:
 
   template <typename InputType, typename ReductionOp>
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE //
-  ::cuda::std::enable_if_t<detail::is_fixed_size_random_access_range_t<InputType>{}, T> //
+  ::cuda::std::enable_if_t<detail::is_fixed_size_random_access_range<InputType>::value, T> //
   Reduce(const InputType& input, ReductionOp reduction_op)
   {
     return cub::ThreadReduce(input, reduction_op);
