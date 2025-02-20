@@ -361,6 +361,10 @@ public:
 };
 _LIBCUDACXX_END_NAMESPACE_STD
 
+template <>
+struct CUB_NS_QUALIFIER::NumericTraits<half_t> : CUB_NS_QUALIFIER::BaseTraits<FLOATING_POINT, unsigned short, half_t>
+{};
+
 #ifdef __GNUC__
 #  pragma GCC diagnostic pop
 #endif
