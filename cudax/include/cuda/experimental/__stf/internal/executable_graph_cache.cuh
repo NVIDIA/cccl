@@ -145,6 +145,11 @@ public:
     total_cache_footprint.resize(ndevices, 0);
   }
 
+  ~executable_graph_cache()
+  {
+    print_cache_stats();
+  }
+
   // One entry of the cache
   struct entry
   {
@@ -275,6 +280,62 @@ private:
   ::std::vector<size_t> total_cache_footprint;
 
   size_t cache_size_limit;
+
+  void print_cache_stats() const
+  {
+    for (auto& [loc, stat] : stats_map)
+    {
+      fprintf(stderr,
+              "%s:%ld:%ld [function %s] => STATS %ld hits/%ld misses\n",
+              loc.file_name(),
+              loc.line(),
+              loc.column(),
+              loc.function_name(),
+              stat.cache_hit_cnt,
+              stat.cache_miss_cnt);
+    }
+  }
+
+  void record_stat(const _CUDA_VSTD::source_location& loc, executable_graph_cache_stat& stat)
+  {
+    stats_map[loc].cache_hit_cnt += stat.update_cnt;
+    stats_map[loc].cache_miss_cnt += stat.instantiate_cnt;
+  }
+
+private:
+  struct per_loc_stats
+  {
+    size_t cache_hit_cnt  = 0;
+    size_t cache_miss_cnt = 0;
+  };
+
+  /* We use const char * and not string because these are string literals,
+   * and it is safe to assume they are not going to change. We also take the
+   * function name into account because the same callsite could be used in
+   * different instantiation of the same templated class, the name will reflect
+   * the template parameters. */
+  struct source_location_hash
+  {
+    ::std::size_t operator()(const _CUDA_VSTD::source_location& loc) const noexcept
+    {
+      return ::std::hash<::std::string>{}(::std::string(loc.file_name()))
+           ^ (::std::hash<uint_least32_t>{}(loc.line()) << 1) ^ (::std::hash<uint_least32_t>{}(loc.column()) << 2)
+           ^ (::std::hash<::std::string>{}(::std::string(loc.function_name())) << 3);
+    }
+  };
+
+  struct source_location_equal
+  {
+    bool operator()(const _CUDA_VSTD::source_location& lhs, const _CUDA_VSTD::source_location& rhs) const noexcept
+    {
+      return lhs.file_name() == rhs.file_name() && lhs.line() == rhs.line() && lhs.column() == rhs.column()
+          && lhs.function_name() == rhs.function_name();
+    }
+  };
+
+  /* A map of statistics indexed per source location */
+  ::std::unordered_map<_CUDA_VSTD::source_location, per_loc_stats, source_location_hash, source_location_equal>
+    stats_map;
 };
 
 } // namespace cuda::experimental::stf
