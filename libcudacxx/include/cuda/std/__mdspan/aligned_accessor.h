@@ -62,7 +62,7 @@ public:
 
   _CCCL_TEMPLATE(class _OtherElementType, size_t _OtherByteAlignment)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _OtherElementType (*)[], element_type (*)[])
-                   _CCCL_AND(_CUDA_VSTD::gcd(_OtherByteAlignment, byte_alignment) == byte_alignment))
+                   _CCCL_AND((byte_alignment >= byte_alignment))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr aligned_accessor(aligned_accessor<_OtherElementType, _OtherByteAlignment>) noexcept
   {}
 
