@@ -22,6 +22,23 @@ template <class T>
 __host__ __device__ constexpr void test_fpclassify(T val, int expected)
 {
   assert(cuda::std::fpclassify(val) == expected);
+
+  if constexpr (cuda::std::numeric_limits<T>::is_signed)
+  {
+    T neg{};
+
+    if constexpr (cuda::std::numeric_limits<T>::is_integer)
+    {
+      // handle integer overflow when negating the minimum value
+      neg = (val == cuda::std::numeric_limits<T>::min()) ? cuda::std::numeric_limits<T>::max() : -val;
+    }
+    else
+    {
+      neg = cuda::std::copysign(val, cuda::std::numeric_limits<T>::lowest());
+    }
+
+    assert(cuda::std::fpclassify(neg) == expected);
+  }
 }
 
 template <class T, cuda::std::enable_if_t<cuda::is_floating_point_v<T>, int> = 0>
