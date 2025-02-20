@@ -41,14 +41,17 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr float fabsf(float __x) noexc
 {
 #if defined(_CCCL_BUILTIN_FABSF)
   return _CCCL_BUILTIN_FABSF(__x);
-#endif // _CCCL_BUILTIN_FABSF
+#elif _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST()
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
     return ::fabsf(__x);
   }
-#if _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST()
   return _CUDA_VSTD::__cccl_make_fp32_from_storage(_CUDA_VSTD::__cccl_fp_get_storage(__x) & __cccl_fp32_exp_mant_mask);
 #else // ^^^ _LIBCUDACXX_HAS_BUILTIN_BIT_CAST() ^^^ / vvv !_LIBCUDACXX_HAS_BUILTIN_BIT_CAST() vvv
+  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  {
+    return ::fabsf(__x);
+  }
   return _CUDA_VSTD::signbit(__x) ? -__x : __x;
 #endif // ^^^ !_CCCL_BUILTIN_FABSF ^^^
 }
@@ -62,14 +65,17 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr double fabs(double __x) noex
 {
 #if defined(_CCCL_BUILTIN_FABS)
   return _CCCL_BUILTIN_FABS(__x);
-#endif // _CCCL_BUILTIN_FABS
+#elif _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST()
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
     return ::fabs(__x);
   }
-#if _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST()
   return _CUDA_VSTD::__cccl_make_fp64_from_storage(_CUDA_VSTD::__cccl_fp_get_storage(__x) & __cccl_fp64_exp_mant_mask);
 #else // ^^^ _LIBCUDACXX_HAS_BUILTIN_BIT_CAST() ^^^ / vvv !_LIBCUDACXX_HAS_BUILTIN_BIT_CAST() vvv
+  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  {
+    return ::fabs(__x);
+  }
   return _CUDA_VSTD::signbit(__x) ? -__x : __x;
 #endif // ^^^ !_CCCL_BUILTIN_FABS ^^^
 }
@@ -100,7 +106,6 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __half fabs(__half __x) noex
   // We cannot use `abs.f16` because it is not IEEE 754 compliant, see docs
   const auto __val = _CUDA_VSTD::__cccl_fp_get_storage(__x) & __cccl_nvfp16_exp_mant_mask;
   return _CUDA_VSTD::__cccl_make_nvfp16_from_storage(static_cast<uint16_t>(__val));
-  ;
 }
 #endif // _LIBCUDACXX_HAS_NVFP16
 
