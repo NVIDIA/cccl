@@ -246,7 +246,7 @@ A device-thread shall not make progress if it is dependent on termination of one
         }
 
     .. code:: cuda
-        // Example: Exeuction.Model.Stream.1
+        // Example: Execution.Model.Stream.1
         // Outcome: terminates.
         // Rationale: same as Execution.Model.Stream.0, but this example has a stream dependency
         // between first and second, which requires CUDA to run the grids in order.
