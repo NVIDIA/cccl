@@ -77,13 +77,8 @@
 #  define _CCCL_NODEBUG_ALIAS
 #endif // !_CCCL_CUDA_COMPILER(CLANG)
 
-#if _CCCL_HAS_CPP_ATTRIBUTE(msvc::no_unique_address)
-// MSVC implements [[no_unique_address]] as a silent no-op currently.
-// (If/when MSVC breaks its C++ ABI, it will be changed to work as intended.)
-// However, MSVC implements [[msvc::no_unique_address]] which does what
-// [[no_unique_address]] is supposed to do, in general.
-#  define _CCCL_NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
-#elif _CCCL_CUDACC_BELOW(11, 3) || (_CCCL_HAS_CPP_ATTRIBUTE(no_unique_address) < 201803L)
+#if _CCCL_COMPILER(MSVC) || _CCCL_CUDACC_BELOW(11, 3) || _CCCL_HAS_CPP_ATTRIBUTE(no_unique_address) < 201803L
+// MSVC implementation has lead to multiple issues with silent runtime corruption when passing data into kernels
 #  define _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 #  define _CCCL_NO_UNIQUE_ADDRESS
 #elif _CCCL_HAS_CPP_ATTRIBUTE(no_unique_address)
