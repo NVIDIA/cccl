@@ -83,7 +83,7 @@ The implementation may assume that any **host** thread will eventually do one of
     .. code:: cuda
         // Example: Execution.Model.Device.0
         // Outcome: grid eventually terminates per device.threads.4 because the atomic object does not have automatic storage duration.
-        __global__ void ii(cuda::atomic_ref<int, cuda::thread_scope_device> atom) {
+        __global__ void ex0(cuda::atomic_ref<int, cuda::thread_scope_device> atom) {
             if (threadIdx.x == 0) {
                 while(atom.load(cuda::memory_order_relaxed) == 0);
             } else if (threadIdx.x == 1) {
