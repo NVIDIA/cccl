@@ -225,7 +225,7 @@ A device-thread shall not make progress if it is dependent on termination of one
 .. dropdown:: Examples of CUDA API forward progress guarantees due to Stream and event ordering
 
     .. code:: cuda
-        // Example: Exeuction.Model.Stream.0
+        // Example: Execution.Model.Stream.0
         // Allowed outcome: eventually, no thread makes progress.
         // Rationale: while CUDA guarantees that one device thread makes progress, since there
         // is no dependency between `first` and `second`, it does not guarantee which thread,
