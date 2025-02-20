@@ -134,7 +134,7 @@ CUDA query functions (e.g. `cudaStreamQuery <https://docs.nvidia.com/cuda/cuda-r
 `cudaEventQuery <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__EVENT.html#group__CUDART__EVENT_1g2bf738909b4a059023537eaa29d8a5b7>`__, etc.) shall not consistently 
 return ``cudaErrorNotReady`` without a device thread making progress.
 
-[Note: The device thread need not be "related" to the API call, e.g., an API operating on one stream or process may ensure progress of a device-thread on another stream or process. - end note.]
+[Note: The device thread need not be "related" to the API call, e.g., an API operating on one stream or process may ensure progress of a device thread on another stream or process. - end note.]
 
 [Note: A simple but not sufficient method to test workloads for CUDA API Forward Progress conformance is to run them with following environment variables set: ``CUDA_DEVICE_MAX_CONNECTIONS=1 CUDA_LAUNCH_BLOCKING=1`` - end note.]
 
