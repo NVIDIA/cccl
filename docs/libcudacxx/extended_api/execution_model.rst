@@ -132,7 +132,7 @@ Any CUDA API shall eventually either return or ensure at least one device thread
 
 CUDA query functions (e.g. `cudaStreamQuery <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__STREAM.html#group__CUDART__STREAM_1g2021adeb17905c7ec2a3c1bf125c5435>`__,
 `cudaEventQuery <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__EVENT.html#group__CUDART__EVENT_1g2bf738909b4a059023537eaa29d8a5b7>`__, etc.) shall not consistently 
-return ``cudaErrorNotReady`` without a device-thread making progress.
+return ``cudaErrorNotReady`` without a device thread making progress.
 
 [Note: The device-thread need not be "related" to the API call, e.g., an API operating on one stream or process may ensure progress of a device-thread on another stream or process. - end note.]
 
