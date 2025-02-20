@@ -85,6 +85,7 @@ inline constexpr bool is_host_device_managed_accessor_v =
  **********************************************************************************************************************/
 
 template <typename _Accessor>
+  requires(std::is_same_v<typename _Accessor::data_handle_type, typename _Accessor::element_type*>)
 struct __host_accessor : public _Accessor
 {
   static_assert(!is_host_device_managed_accessor_v<_Accessor>,
