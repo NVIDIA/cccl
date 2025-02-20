@@ -1081,43 +1081,17 @@ struct Traits : NumericTraits<typename ::cuda::std::remove_cv<T>::type>
 
 namespace detail
 {
-// __uint128_t and __int128_t are not primitive
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+// we don't make this an alias so we don't have to suppress deprecations for every use of is_primitive.
 template <typename T>
-using is_primitive = ::cuda::std::bool_constant<is_one_of<
-  T,
-  char,
-  signed char,
-  short,
-  int,
-  long,
-  long long,
-  unsigned char,
-  unsigned short,
-  unsigned int,
-  unsigned long,
-  unsigned long long,
-  bool,
-  float,
-  double
-#  if defined(_CCCL_HAS_NVFP16)
-  ,
-  __half
-#  endif // _CCCL_HAS_NVFP16
-#  if defined(_CCCL_HAS_NVBF16)
-  ,
-  __nv_bfloat16
-#  endif // _CCCL_HAS_NVBF16
-#  if _CCCL_HAS_NVFP8()
-  ,
-  __nv_fp8_e4m3,
-  __nv_fp8_e5m2
-#  endif // _CCCL_HAS_NVFP8()
-  >()>;
+struct is_primitive : ::cuda::std::bool_constant<Traits<T>::PRIMITIVE>
+{};
 
 #  ifndef _CCCL_NO_VARIABLE_TEMPLATES
 template <typename T>
 _CCCL_INLINE_VAR constexpr bool is_primitive_v = is_primitive<T>::value;
 #  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+_CCCL_SUPPRESS_DEPRECATED_POP
 } // namespace detail
 
 #endif // _CCCL_DOXYGEN_INVOKED
