@@ -468,7 +468,7 @@ inline constexpr bool enable_promotion_v =
 template <typename Input, typename ReductionOp, typename ValueT, typename AccumT>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& input, ReductionOp reduction_op)
 {
-  static_assert(detail::is_fixed_size_random_access_range_t<Input>::value,
+  static_assert(detail::is_fixed_size_random_access_range_v<Input>,
                 "Input must support the subscript operator[] and have a compile-time size");
   static_assert(cub::detail::has_binary_call_operator<ReductionOp, ValueT>::value,
                 "ReductionOp must have the binary call operator: operator(ValueT, ValueT)");
@@ -540,7 +540,7 @@ template <typename Input,
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
 ThreadReduce(const Input& input, ReductionOp reduction_op, PrefixT prefix)
 {
-  static_assert(detail::is_fixed_size_random_access_range_t<Input>::value,
+  static_assert(detail::is_fixed_size_random_access_range_v<Input>,
                 "Input must support the subscript operator[] and have a compile-time size");
   static_assert(detail::has_binary_call_operator<ReductionOp, ValueT>::value,
                 "ReductionOp must have the binary call operator: operator(ValueT, ValueT)");

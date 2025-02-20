@@ -112,7 +112,7 @@ struct is_fixed_size_random_access_range<
 #endif // __cccl_lib_mdspan
 
 template <typename T>
-using is_fixed_size_random_access_range_t = typename is_fixed_size_random_access_range<T>::type;
+inline constexpr bool is_fixed_size_random_access_range_v = is_fixed_size_random_access_range<T>::value;
 
 /***********************************************************************************************************************
  * static_size: a type trait that returns the number of elements in an Array-like type
