@@ -119,7 +119,7 @@ The implementation may assume that any **host** thread will eventually do one of
     .. code:: cuda
         // Example: Execution.Model.Device.4
         // Allowed outcome: No thread makes progress because device threads don't support host.thread.6.
-        __global void vi() {
+        __global void ex4() {
             while(true) { /* empty */ }
         }
 
