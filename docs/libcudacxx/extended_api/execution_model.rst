@@ -4,7 +4,7 @@ Execution model
 ===============
 
 CUDA C++ aims to provide `_parallel forward progress_ [intro.progress.9] <https://eel.is/c++draft/intro.progress#9>`__
-for all device threads of execution, making the parallelization of pre-existing C++ applications with CUDA C++ straightforward.
+for all device threads of execution, facilitating the parallelization of pre-existing C++ applications with CUDA C++.
 
 .. dropdown:: [intro.progress]
 
