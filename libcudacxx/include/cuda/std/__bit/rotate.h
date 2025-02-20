@@ -30,51 +30,51 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotl_impl(_Tp __t, uint32_t __cnt_mod) noexcept
+template <typename _Tp>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotr(_Tp __t, int __cnt) noexcept
 {
-  return __cnt_mod == 0 ? __t : (__t << __cnt_mod) | (__t >> (numeric_limits<_Tp>::digits - __cnt_mod));
-}
-
-template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotr_impl(_Tp __t, uint32_t __cnt_mod) noexcept
-{
-  return __cnt_mod == 0 ? __t : (__t >> __cnt_mod) | (__t << (numeric_limits<_Tp>::digits - __cnt_mod));
-}
-
-template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotl(_Tp __t, uint32_t __cnt) noexcept
-{
-  using __nlt = numeric_limits<_Tp>;
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated() && is_same_v<_Tp, uint32_t>)
-  {
-    NV_IF_TARGET(NV_IS_DEVICE, (return ::__funnelshift_l(__t, __t, __cnt);))
-  }
-  return _CUDA_VSTD::__rotl_impl(__t, __cnt % __nlt::digits);
-}
-
-template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotr(_Tp __t, uint32_t __cnt) noexcept
-{
-  using __nlt = numeric_limits<_Tp>;
+  constexpr auto __digits = numeric_limits<_Tp>::digits;
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated() && is_same_v<_Tp, uint32_t>)
   {
     NV_IF_TARGET(NV_IS_DEVICE, (return ::__funnelshift_r(__t, __t, __cnt);))
   }
-  return _CUDA_VSTD::__rotr_impl(__t, __cnt % __nlt::digits);
+  auto __cnt_mod = static_cast<uint32_t>(__cnt) % __digits; // __cnt is always >= 0
+  return __cnt_mod == 0 ? __t : (__t >> __cnt_mod) | (__t << (__digits - __cnt_mod));
+}
+
+template <typename _Tp>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotl(_Tp __t, int __cnt) noexcept
+{
+  constexpr auto __digits = numeric_limits<_Tp>::digits;
+  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated() && is_same_v<_Tp, uint32_t>)
+  {
+    NV_IF_TARGET(NV_IS_DEVICE, (return ::__funnelshift_l(__t, __t, __cnt);))
+  }
+  auto __cnt_mod = static_cast<uint32_t>(__cnt) % __digits; // __cnt is always >= 0
+  return __cnt_mod == 0 ? __t : (__t << __cnt_mod) | (__t >> (__digits - __cnt_mod));
 }
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp rotl(_Tp __t, uint32_t __cnt) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp rotl(_Tp __t, int __cnt) noexcept
 {
+  if (__cnt < 0)
+  {
+    _CCCL_ASSERT(__cnt != numeric_limits<int>::min(), "__cnt overflow");
+    return _CUDA_VSTD::__rotr(__t, -__cnt);
+  }
   return _CUDA_VSTD::__rotl(__t, __cnt);
 }
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp rotr(_Tp __t, uint32_t __cnt) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp rotr(_Tp __t, int __cnt) noexcept
 {
+  if (__cnt < 0)
+  {
+    _CCCL_ASSERT(__cnt != numeric_limits<int>::min(), "__cnt overflow");
+    return _CUDA_VSTD::__rotl(__t, -__cnt);
+  }
   return _CUDA_VSTD::__rotr(__t, __cnt);
 }
 
