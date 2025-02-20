@@ -96,18 +96,6 @@ public:
   // The amount of global memory-backed virtual shared memory needed, padded to an integer multiple of 128 bytes
   static constexpr ::cuda::std::size_t vsmem_per_block = needs_vsmem ? (required_smem + padding_bytes) : 0;
 
-  template <typename AgentPolicyT>
-  _CCCL_HOST_DEVICE static constexpr int BlockThreads(AgentPolicyT /* policy */)
-  {
-    return AgentPolicyT::BLOCK_THREADS;
-  }
-
-  template <typename AgentPolicyT>
-  _CCCL_HOST_DEVICE static constexpr int ItemsPerThread(AgentPolicyT /* policy */)
-  {
-    return AgentPolicyT::ITEMS_PER_THREAD;
-  }
-
   _CCCL_HOST_DEVICE static constexpr ::cuda::std::size_t VSMemPerBlock()
   {
     return vsmem_per_block;
@@ -232,6 +220,18 @@ struct vsmem_helper_with_fallback_impl : public vsmem_helper_impl<DefaultAgentT>
 {
   using agent_t        = DefaultAgentT;
   using agent_policy_t = DefaultAgentPolicyT;
+
+  template <typename AgentPolicyT>
+  _CCCL_HOST_DEVICE static constexpr int BlockThreads(AgentPolicyT /* policy */)
+  {
+    return AgentPolicyT::BLOCK_THREADS;
+  }
+
+  template <typename AgentPolicyT>
+  _CCCL_HOST_DEVICE static constexpr int ItemsPerThread(AgentPolicyT /* policy */)
+  {
+    return AgentPolicyT::ITEMS_PER_THREAD;
+  }
 };
 template <typename DefaultAgentPolicyT, typename DefaultAgentT, typename FallbackAgentPolicyT, typename FallbackAgentT>
 struct vsmem_helper_with_fallback_impl<DefaultAgentPolicyT, DefaultAgentT, FallbackAgentPolicyT, FallbackAgentT, true>
@@ -239,6 +239,18 @@ struct vsmem_helper_with_fallback_impl<DefaultAgentPolicyT, DefaultAgentT, Fallb
 {
   using agent_t        = FallbackAgentT;
   using agent_policy_t = FallbackAgentPolicyT;
+
+  template <typename AgentPolicyT>
+  _CCCL_HOST_DEVICE static constexpr int BlockThreads(AgentPolicyT /* policy */)
+  {
+    return FallbackAgentPolicyT::BLOCK_THREADS;
+  }
+
+  template <typename AgentPolicyT>
+  _CCCL_HOST_DEVICE static constexpr int ItemsPerThread(AgentPolicyT /* policy */)
+  {
+    return FallbackAgentPolicyT::ITEMS_PER_THREAD;
+  }
 };
 
 /**
