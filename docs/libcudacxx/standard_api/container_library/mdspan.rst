@@ -13,7 +13,7 @@ Provided functionalities
 Extensions
 ----------
 
--  The C++23 multidimensional ``operator[]`` is replaced with ``operator()``
+-  The C++23 multidimensional ``operator[]`` is replaced with ``operator()`` in previous c++ standards
 -  Detection of out-of-bounds accesses is available in debug mode
 
 Restrictions
