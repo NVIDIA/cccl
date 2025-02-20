@@ -191,6 +191,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr double copysign(_Tp __x, _Tp
   }
   else
   {
+    _LIBCUDACXX_UNUSED_VAR(__y);
     return static_cast<double>(__x);
   }
 }
