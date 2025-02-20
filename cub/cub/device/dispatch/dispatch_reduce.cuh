@@ -446,12 +446,13 @@ struct DispatchReduce
           wrapped_policy.SingleTile().BlockThreads() * wrapped_policy.SingleTile().ItemsPerThread()))
     {
       // Small, single tile size
-      return InvokeSingleTile(kernel_source.SingleTileKernel(), wrapped_policy);
+      return DispatchReduce::InvokeSingleTile(kernel_source.SingleTileKernel(), wrapped_policy);
     }
     else
     {
       // Regular size
-      return InvokePasses(kernel_source.ReductionKernel(), kernel_source.SingleTileSecondKernel(), wrapped_policy);
+      return DispatchReduce::InvokePasses(
+        kernel_source.ReductionKernel(), kernel_source.SingleTileSecondKernel(), wrapped_policy);
     }
   }
 
@@ -852,7 +853,7 @@ struct DispatchSegmentedReduce
   {
     auto wrapped_policy = detail::reduce::MakeReducePolicyWrapper(policy);
     // Force kernel code-generation in all compiler passes
-    return InvokePasses(kernel_source.SegmentedReduceKernel(), wrapped_policy);
+    return DispatchSegmentedReduce::InvokePasses(kernel_source.SegmentedReduceKernel(), wrapped_policy);
   }
 
   //---------------------------------------------------------------------------

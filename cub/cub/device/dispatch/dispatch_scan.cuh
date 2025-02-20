@@ -406,7 +406,7 @@ struct DispatchScan
   {
     auto wrapped_policy = detail::scan::MakeScanPolicyWrapper(active_policy);
     // Ensure kernels are instantiated.
-    return Invoke(kernel_source.InitKernel(), kernel_source.ScanKernel(), wrapped_policy);
+    return DispatchScan::Invoke(kernel_source.InitKernel(), kernel_source.ScanKernel(), wrapped_policy);
   }
 
   /**
