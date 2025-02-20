@@ -56,7 +56,8 @@ __host__ __device__ constexpr void test_type()
 
   if constexpr (cuda::std::numeric_limits<T>::has_denorm)
   {
-    test_fpclassify(cuda::std::numeric_limits<T>::denorm_min(), FP_SUBNORMAL);
+    // fixme: behaviour of subnormal values depends on the FP mode, may result in FP_ZERO
+    // test_fpclassify(cuda::std::numeric_limits<T>::denorm_min(), FP_SUBNORMAL);
   }
 }
 
