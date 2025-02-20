@@ -74,14 +74,10 @@ CUB_NAMESPACE_BEGIN
     and only one of them is used, the sorting works correctly. For double, the
     same applies, but with 64-bit patterns.
 */
-template <typename KeyT, bool IsFP = ::cuda::is_floating_point<KeyT>::value>
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+template <typename KeyT, Category TypeCategory = Traits<KeyT>::CATEGORY>
 struct BaseDigitExtractor
 {
-  // TODO(bgruber): sanity check, remove eventually
-  _CCCL_SUPPRESS_DEPRECATED_PUSH
-  static_assert(Traits<KeyT>::CATEGORY != FLOATING_POINT, "");
-  _CCCL_SUPPRESS_DEPRECATED_POP
-
   using TraitsT      = Traits<KeyT>;
   using UnsignedBits = typename TraitsT::UnsignedBits;
 
@@ -90,15 +86,11 @@ struct BaseDigitExtractor
     return key;
   }
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 template <typename KeyT>
-struct BaseDigitExtractor<KeyT, true>
+struct BaseDigitExtractor<KeyT, FLOATING_POINT>
 {
-  // TODO(bgruber): sanity check, remove eventually
-  _CCCL_SUPPRESS_DEPRECATED_PUSH
-  static_assert(Traits<KeyT>::CATEGORY == FLOATING_POINT, "");
-  _CCCL_SUPPRESS_DEPRECATED_POP
-
   using TraitsT      = Traits<KeyT>;
   using UnsignedBits = typename TraitsT::UnsignedBits;
 
@@ -454,8 +446,11 @@ struct digit_f
 
       if (bits_to_copy)
       {
+        // nvcc when compiling for GCC complains that ::CATEGORY is deprecated
+        _CCCL_SUPPRESS_DEPRECATED_PUSH
         bit_ordered_type ordered_src =
           BaseDigitExtractor<T>::ProcessFloatMinusZero(reinterpret_cast<bit_ordered_type&>(src));
+        _CCCL_SUPPRESS_DEPRECATED_POP
 
         const ::cuda::std::uint32_t mask = (1 << bits_to_copy) - 1;
         dst                              = dst | (((ordered_src >> src_bit_start) & mask) << dst_bit_start);
