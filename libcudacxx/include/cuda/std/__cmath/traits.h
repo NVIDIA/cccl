@@ -21,8 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cmath/fp_utils.h>
 #include <cuda/std/__cmath/isnan.h>
-#include <cuda/std/__internal/nvfp_types.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_extended_floating_point.h>

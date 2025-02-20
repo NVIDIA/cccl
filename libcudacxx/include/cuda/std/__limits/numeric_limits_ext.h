@@ -23,7 +23,7 @@
 #endif // no system header
 
 #include <cuda/std/__bit/bit_cast.h>
-#include <cuda/std/__internal/nvfp_types.h>
+#include <cuda/std/__cmath/fp_utils.h>
 #include <cuda/std/__limits/numeric_limits.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
