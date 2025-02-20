@@ -49,7 +49,7 @@ Once a device thread makes progress:
 
 - If the device thread is part of a `Cooperative Grid <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__EXECUTION.html#group__CUDART__EXECUTION_1g504b94170f83285c71031be6d5d15f73>`__,
   then all device threads in its grid shall eventually make progress.
-_ Otherwise, all device-threads in its `thread-block cluster <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#thread-block-clusters>`__ 
+_ Otherwise, all device threads in its `thread-block cluster <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#thread-block-clusters>`__ 
   shall eventually make progress.
   
   [Note: Threads in other thread-block clusters are not guaranteed to eventually make progress. - end note.]
