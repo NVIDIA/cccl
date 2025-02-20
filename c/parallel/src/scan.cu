@@ -276,9 +276,7 @@ struct scan_kernel_source
   }
 };
 
-} // namespace scan
-
-CUresult cccl_device_scan_build(
+CUresult build(
   cccl_device_scan_build_result_t* build,
   cccl_iterator_t input_it,
   cccl_iterator_t output_it,
@@ -449,7 +447,7 @@ __device__ size_t payload_bytes_per_tile = cub::ScanTileState<{2}>::payload_byte
   return error;
 }
 
-CUresult cccl_device_scan(
+CUresult invoke(
   cccl_device_scan_build_result_t build,
   void* d_temp_storage,
   size_t* temp_storage_bytes,
@@ -512,7 +510,7 @@ CUresult cccl_device_scan(
   return error;
 }
 
-CUresult cccl_device_scan_cleanup(cccl_device_scan_build_result_t* bld_ptr) noexcept
+CUresult cleanup(cccl_device_scan_build_result_t* bld_ptr) noexcept
 {
   try
   {
@@ -532,4 +530,42 @@ CUresult cccl_device_scan_cleanup(cccl_device_scan_build_result_t* bld_ptr) noex
   }
 
   return CUDA_SUCCESS;
+}
+
+} // namespace scan
+
+CUresult cccl_device_scan_build(
+  cccl_device_scan_build_result_t* build_ptr,
+  cccl_iterator_t input_it,
+  cccl_iterator_t output_it,
+  cccl_op_t op,
+  cccl_value_t init,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path)
+{
+  return scan::build(
+    build_ptr, input_it, output_it, op, init, cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, ctk_path);
+}
+
+CUresult cccl_device_scan(
+  cccl_device_scan_build_result_t build,
+  void* d_temp_storage,
+  size_t* temp_storage_bytes,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_out,
+  unsigned long long num_items,
+  cccl_op_t op,
+  cccl_value_t init,
+  CUstream stream)
+{
+  return scan::invoke(build, d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, op, init, stream);
+}
+
+CUresult cccl_device_scan_cleanup(cccl_device_scan_build_result_t* build_ptr)
+{
+  return scan::cleanup(build_ptr);
 }

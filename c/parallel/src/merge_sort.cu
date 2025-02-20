@@ -265,9 +265,8 @@ private:
     return false;
   }
 };
-} // namespace merge_sort
 
-CUresult cccl_device_merge_sort_build(
+CUresult build(
   cccl_device_merge_sort_build_result_t* build,
   cccl_iterator_t input_keys_it,
   cccl_iterator_t input_items_it,
@@ -426,7 +425,7 @@ CUresult cccl_device_merge_sort_build(
   return error;
 }
 
-CUresult cccl_device_merge_sort(
+CUresult invoke(
   cccl_device_merge_sort_build_result_t build,
   void* d_temp_storage,
   size_t* temp_storage_bytes,
@@ -499,7 +498,7 @@ CUresult cccl_device_merge_sort(
   return error;
 }
 
-CUresult cccl_device_merge_sort_cleanup(cccl_device_merge_sort_build_result_t* bld_ptr) noexcept
+CUresult cleanup(cccl_device_merge_sort_build_result_t* bld_ptr) noexcept
 {
   try
   {
@@ -520,4 +519,56 @@ CUresult cccl_device_merge_sort_cleanup(cccl_device_merge_sort_build_result_t* b
   }
 
   return CUDA_SUCCESS;
+}
+
+} // namespace merge_sort
+
+CUresult cccl_device_merge_sort_build(
+  cccl_device_merge_sort_build_result_t* build_ptr,
+  cccl_iterator_t d_in_keys,
+  cccl_iterator_t d_in_items,
+  cccl_iterator_t d_out_keys,
+  cccl_iterator_t d_out_items,
+  cccl_op_t op,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path)
+{
+  return merge_sort::build(
+    build_ptr,
+    d_in_keys,
+    d_in_items,
+    d_out_keys,
+    d_out_items,
+    op,
+    cc_major,
+    cc_minor,
+    cub_path,
+    thrust_path,
+    libcudacxx_path,
+    ctk_path);
+}
+
+CUresult cccl_device_merge_sort(
+  cccl_device_merge_sort_build_result_t build,
+  void* d_temp_storage,
+  size_t* temp_storage_bytes,
+  cccl_iterator_t d_in_keys,
+  cccl_iterator_t d_in_items,
+  cccl_iterator_t d_out_keys,
+  cccl_iterator_t d_out_items,
+  unsigned long long num_items,
+  cccl_op_t op,
+  CUstream stream)
+{
+  return merge_sort::invoke(
+    build, d_temp_storage, temp_storage_bytes, d_in_keys, d_in_items, d_out_keys, d_out_items, num_items, op, stream);
+}
+
+CUresult cccl_device_merge_sort_cleanup(cccl_device_merge_sort_build_result_t* build_ptr)
+{
+  return merge_sort::cleanup(build_ptr);
 }
