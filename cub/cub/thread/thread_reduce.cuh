@@ -51,6 +51,7 @@
 #include <cuda/std/cassert> // assert
 #include <cuda/std/cstdint> // uint16_t
 #include <cuda/std/functional> // cuda::std::plus
+#include <cuda/std/iterator> // cuda::std::iter_value_t
 
 #if _CCCL_HAS_NVFP16()
 #  include <cuda_fp16.h>

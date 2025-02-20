@@ -42,6 +42,7 @@
 
 #include <cuda/std/array> // array
 #include <cuda/std/cstddef> // size_t
+#include <cuda/std/iterator> // cuda::std::iter_value_t
 #include <cuda/std/type_traits> // _If
 #include <cuda/std/utility> // index_sequence
 
