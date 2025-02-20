@@ -193,18 +193,20 @@ template <typename predefined_op, typename T>
 void compute_host_reference(
   const c2h::host_vector<T>& h_in,
   c2h::host_vector<T>& h_out,
-  int items_per_warp,
   int logical_warps,
-  int logical_warp_stride,
-  int items_per_logical_warp = 0)
+  int logical_warp_threads,
+  int items_per_logical_warp = 0,
+  int items_per_thread1      = 1)
 {
   constexpr auto identity = operator_identity_v<T, predefined_op>;
-  items_per_logical_warp  = items_per_logical_warp == 0 ? logical_warp_stride : items_per_logical_warp;
+  int items_per_warp      = warp_size * items_per_thread1;
+  items_per_logical_warp =
+    items_per_logical_warp == 0 ? logical_warp_threads : items_per_logical_warp * items_per_thread1;
   for (unsigned i = 0; i < total_warps; ++i)
   {
     for (int j = 0; j < logical_warps; ++j)
     {
-      auto start                   = h_in.begin() + i * items_per_warp + j * logical_warp_stride;
+      auto start                   = h_in.begin() + i * items_per_warp + j * logical_warp_threads * items_per_thread1;
       auto end                     = start + items_per_logical_warp;
       h_out[i * logical_warps + j] = std::accumulate(start, end, identity, predefined_op{});
     }
@@ -237,7 +239,7 @@ C2H_TEST("WarpReduce::Sum, full_type_list", "[reduce][warp][predefined_op][full]
 
   c2h::host_vector<type> h_in = d_in;
   c2h::host_vector<type> h_out(output_size);
-  compute_host_reference<cuda::std::plus<>>(h_in, h_out, warp_size, logical_warps, logical_warp_threads);
+  compute_host_reference<cuda::std::plus<>>(h_in, h_out, logical_warps, logical_warp_threads);
   verify_results(h_out, d_out);
 }
 
@@ -259,7 +261,7 @@ C2H_TEST("WarpReduce::Sum/Max/Min, builtin types",
 
   c2h::host_vector<type> h_in = d_in;
   c2h::host_vector<type> h_out(output_size);
-  compute_host_reference<predefined_op>(h_in, h_out, warp_size, logical_warps, logical_warp_threads);
+  compute_host_reference<predefined_op>(h_in, h_out, logical_warps, logical_warp_threads);
   verify_results(h_out, d_out);
 }
 
@@ -276,7 +278,7 @@ C2H_TEST("WarpReduce::Sum", "[reduce][warp][generic][full]", full_type_list, log
 
   c2h::host_vector<type> h_in = d_in;
   c2h::host_vector<type> h_out(output_size);
-  compute_host_reference<cuda::std::plus<>>(h_in, h_out, warp_size, logical_warps, logical_warp_threads);
+  compute_host_reference<cuda::std::plus<>>(h_in, h_out, logical_warps, logical_warp_threads);
   verify_results(h_out, d_out);
 }
 
@@ -302,7 +304,7 @@ C2H_TEST("WarpReduce::Sum/Max/Min Partial",
 
   c2h::host_vector<type> h_in = d_in;
   c2h::host_vector<type> h_out(output_size);
-  compute_host_reference<predefined_op>(h_in, h_out, warp_size, logical_warps, logical_warp_threads, valid_items);
+  compute_host_reference<predefined_op>(h_in, h_out, logical_warps, logical_warp_threads, valid_items);
   verify_results(h_out, d_out);
 }
 
@@ -320,7 +322,7 @@ C2H_TEST("WarpReduce::Sum", "[reduce][warp][generic][partial]", full_type_list, 
 
   c2h::host_vector<type> h_in = d_in;
   c2h::host_vector<type> h_out(output_size);
-  compute_host_reference<cuda::std::plus<>>(h_in, h_out, warp_size, logical_warps, logical_warp_threads, valid_items);
+  compute_host_reference<cuda::std::plus<>>(h_in, h_out, logical_warps, logical_warp_threads, valid_items);
   verify_results(h_out, d_out);
 }
 
@@ -345,12 +347,6 @@ C2H_TEST("WarpReduce::Sum/Max/Min Multiple Items Per Thread",
 
   c2h::host_vector<type> h_in = d_in;
   c2h::host_vector<type> h_out(output_size);
-  compute_host_reference<predefined_op>(
-    h_in,
-    h_out,
-    warp_size * items_per_thread,
-    logical_warps,
-    logical_warp_threads * items_per_thread,
-    logical_warp_threads * items_per_thread);
+  compute_host_reference<predefined_op>(h_in, h_out, logical_warps, logical_warp_threads, 0, items_per_thread);
   verify_results(h_out, d_out);
 }
