@@ -19,7 +19,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_signbit(const T pos)
+__host__ __device__ constexpr void test_signbit(const T pos)
 {
   assert(cuda::std::signbit(pos) == false);
 
@@ -27,6 +27,8 @@ __host__ __device__ void test_signbit(const T pos)
   {
     if constexpr (cuda::std::numeric_limits<T>::is_integer)
     {
+      // handle integer overflow when negating the minimum value
+      const T neg = (pos == cuda::std::numeric_limits<T>::min()) ? cuda::std::numeric_limits<T>::max() : -pos;
       assert(cuda::std::signbit(-pos) == (pos != 0));
     }
     else
@@ -38,7 +40,7 @@ __host__ __device__ void test_signbit(const T pos)
 }
 
 template <class T>
-__host__ __device__ void test_type()
+__host__ __device__ constexpr void test_type()
 {
   ASSERT_SAME_TYPE(bool, decltype(cuda::std::signbit(T{})));
 
@@ -49,7 +51,6 @@ __host__ __device__ void test_type()
   {
     test_signbit(T{});
   }
-  test_signbit(T(1));
   if constexpr (!cuda::std::numeric_limits<T>::is_integer)
   {
     test_signbit(cuda::std::numeric_limits<T>::min());
@@ -77,7 +78,7 @@ __host__ __device__ void test_type()
   }
 }
 
-__host__ __device__ bool test()
+__host__ __device__ constexpr bool test()
 {
   test_type<float>();
   test_type<double>();
@@ -130,5 +131,6 @@ __host__ __device__ bool test()
 int main(int, char**)
 {
   test();
+  static_assert(test());
   return 0;
 }

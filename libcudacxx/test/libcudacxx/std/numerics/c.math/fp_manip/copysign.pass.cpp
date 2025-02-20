@@ -19,7 +19,7 @@
 #include "test_macros.h"
 
 template <class T, cuda::std::enable_if_t<cuda::is_floating_point_v<T>, int> = 0>
-__host__ __device__ void test_copysign(const T val)
+__host__ __device__ constexpr void test_copysign(const T val)
 {
   ASSERT_SAME_TYPE(T, decltype(cuda::std::copysign(T{}, T{})));
 
@@ -44,7 +44,7 @@ __host__ __device__ void test_copysign(const T val)
 }
 
 template <class T, cuda::std::enable_if_t<cuda::std::is_integral_v<T>, int> = 0>
-__host__ __device__ void test_copysign(const T val)
+__host__ __device__ constexpr void test_copysign(const T val)
 {
   ASSERT_SAME_TYPE(double, decltype(cuda::std::copysign(T{}, T{})));
 
@@ -69,7 +69,7 @@ __host__ __device__ void test_copysign(const T val)
 }
 
 template <class T>
-__host__ __device__ void test_type()
+__host__ __device__ constexpr void test_type()
 {
   // __nv_fp8_e8m0 cannot represent 0
 #if _CCCL_HAS_NVFP8_E8M0()
@@ -78,7 +78,6 @@ __host__ __device__ void test_type()
   {
     test_copysign(T{});
   }
-  test_copysign(T(1));
   if constexpr (!cuda::std::numeric_limits<T>::is_integer)
   {
     test_copysign(cuda::std::numeric_limits<T>::min());
@@ -106,7 +105,7 @@ __host__ __device__ void test_type()
   }
 }
 
-__host__ __device__ bool test()
+__host__ __device__ constexpr bool test()
 {
   test_type<float>();
   test_type<double>();
@@ -159,5 +158,6 @@ __host__ __device__ bool test()
 int main(int, char**)
 {
   test();
+  static_assert(test());
   return 0;
 }

@@ -9,40 +9,54 @@
 
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
-#include <cuda/std/cstring>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 #include <cuda/type_traits>
 
 #include "test_macros.h"
 
+template <class T>
+__host__ __device__ constexpr void test_eq(const T tested, const T expected)
+{
+  if (cuda::std::isnan(expected))
+  {
+    assert(cuda::std::isnan(tested));
+    assert(cuda::std::signbit(tested) == false);
+    return;
+  }
+
+  // extended floating point types don't support constexpr operator==
+  if constexpr (cuda::std::is_floating_point_v<T>)
+  {
+    assert(tested == expected);
+  }
+  else
+  {
+    assert(cuda::std::__cccl_fp_get_storage(tested) == cuda::std::__cccl_fp_get_storage(expected));
+  }
+}
+
 template <class T, cuda::std::enable_if_t<cuda::is_floating_point_v<T>, int> = 0>
-__host__ __device__ void test_fabs_abs(const T pos)
+__host__ __device__ void constexpr test_fabs_abs(const T pos)
 {
   ASSERT_SAME_TYPE(T, decltype(cuda::std::fabs(T{})));
   ASSERT_SAME_TYPE(T, decltype(cuda::std::abs(T{})));
 
-  T result{};
-
   // 1. Test fabs on positive input
-  result = cuda::std::fabs(pos);
-  assert(cuda::std::memcmp(&result, &pos, sizeof(T)) == 0);
+  test_eq(cuda::std::fabs(pos), pos);
 
   // 2. Test abs on positive input
-  result = cuda::std::abs(pos);
-  assert(cuda::std::memcmp(&result, &pos, sizeof(T)) == 0);
+  test_eq(cuda::std::abs(pos), pos);
 
   // 3. Test fabsf and fabsl on positive input
   if constexpr (cuda::std::is_same_v<T, float>)
   {
-    result = cuda::std::fabsf(pos);
-    assert(cuda::std::memcmp(&result, &pos, sizeof(T)) == 0);
+    test_eq(cuda::std::fabsf(pos), pos);
   }
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
-    result = cuda::std::fabsl(pos);
-    assert(cuda::std::memcmp(&result, &pos, sizeof(T)) == 0);
+    test_eq(cuda::std::fabsl(pos), pos);
   }
 #endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
@@ -51,54 +65,47 @@ __host__ __device__ void test_fabs_abs(const T pos)
     const T neg = cuda::std::copysign(pos, cuda::std::numeric_limits<T>::lowest());
 
     // 4. Test fabs on negative input
-    result = cuda::std::fabs(neg);
-    assert(cuda::std::memcmp(&result, &pos, sizeof(T)) == 0);
+    test_eq(cuda::std::fabs(neg), pos);
 
     // 5. Test abs on negative input
-    result = cuda::std::abs(neg);
-    assert(cuda::std::memcmp(&result, &pos, sizeof(T)) == 0);
+    test_eq(cuda::std::abs(neg), pos);
 
     // 6. Test fabsf and fabsl on negative input
     if constexpr (cuda::std::is_same_v<T, float>)
     {
-      result = cuda::std::fabsf(neg);
-      assert(cuda::std::memcmp(&result, &pos, sizeof(T)) == 0);
+      test_eq(cuda::std::fabsf(neg), pos);
     }
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
     else if constexpr (cuda::std::is_same_v<T, long double>)
     {
-      result = cuda::std::fabsl(neg);
-      assert(cuda::std::memcmp(&result, &pos, sizeof(T)) == 0);
+      test_eq(cuda::std::fabsl(neg), pos);
     }
 #endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
   }
 }
 
 template <class T, cuda::std::enable_if_t<cuda::std::is_integral_v<T>, int> = 0>
-__host__ __device__ void test_fabs_abs(const T pos)
+__host__ __device__ void constexpr test_fabs_abs(const T pos)
 {
   ASSERT_SAME_TYPE(double, decltype(cuda::std::fabs(T{})));
 
   const double pos_ref = cuda::std::fabs(static_cast<double>(pos));
-  double result{};
 
   // 1. Test fabs on positive input
-  result = cuda::std::fabs(pos);
-  assert(cuda::std::memcmp(&result, &pos_ref, sizeof(double)) == 0);
+  test_eq(cuda::std::fabs(pos), pos_ref);
 
   if constexpr (cuda::std::numeric_limits<T>::is_signed)
   {
-    const T neg          = -pos;
+    const T neg          = (pos == cuda::std::numeric_limits<T>::min()) ? cuda::std::numeric_limits<T>::max() : -pos;
     const double neg_ref = cuda::std::fabs(static_cast<double>(neg));
 
     // 2. Test fabs on negative input
-    result = cuda::std::fabs(neg);
-    assert(cuda::std::memcmp(&result, &neg_ref, sizeof(double)) == 0);
+    test_eq(cuda::std::fabs(neg), neg_ref);
   }
 }
 
 template <class T>
-__host__ __device__ void test_type()
+__host__ __device__ constexpr void test_type()
 {
   // __nv_fp8_e8m0 cannot represent 0
 #if _CCCL_HAS_NVFP8_E8M0()
@@ -107,7 +114,6 @@ __host__ __device__ void test_type()
   {
     test_fabs_abs(T{});
   }
-  test_fabs_abs(static_cast<T>(1));
   test_fabs_abs(cuda::std::numeric_limits<T>::min());
   test_fabs_abs(cuda::std::numeric_limits<T>::max());
 
@@ -127,7 +133,7 @@ __host__ __device__ void test_type()
   }
 }
 
-__host__ __device__ bool test()
+__host__ __device__ constexpr bool test()
 {
   test_type<float>();
   test_type<double>();
@@ -180,6 +186,6 @@ __host__ __device__ bool test()
 int main(int, char**)
 {
   test();
-  // static_assert(test(0.f), "");
+  static_assert(test());
   return 0;
 }

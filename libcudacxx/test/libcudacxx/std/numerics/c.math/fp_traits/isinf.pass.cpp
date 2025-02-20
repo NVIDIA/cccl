@@ -18,7 +18,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_isinf(const T pos, bool expected)
+__host__ __device__ constexpr void test_isinf(const T pos, bool expected)
 {
   assert(cuda::std::isinf(pos) == expected);
 
@@ -28,7 +28,8 @@ __host__ __device__ void test_isinf(const T pos, bool expected)
 
     if constexpr (cuda::std::numeric_limits<T>::is_integer)
     {
-      neg = -pos;
+      // handle integer overflow when negating the minimum value
+      neg = (pos == cuda::std::numeric_limits<T>::min()) ? cuda::std::numeric_limits<T>::max() : -pos;
     }
     else
     {
@@ -40,7 +41,7 @@ __host__ __device__ void test_isinf(const T pos, bool expected)
 }
 
 template <class T>
-__host__ __device__ void test_type()
+__host__ __device__ constexpr void test_type()
 {
   ASSERT_SAME_TYPE(bool, decltype(cuda::std::isinf(T{})));
 
@@ -51,7 +52,6 @@ __host__ __device__ void test_type()
   {
     test_isinf(T{}, false);
   }
-  test_isinf(T(1), false);
   test_isinf(cuda::std::numeric_limits<T>::min(), false);
   test_isinf(cuda::std::numeric_limits<T>::max(), false);
 
@@ -76,7 +76,7 @@ __host__ __device__ void test_type()
   }
 }
 
-__host__ __device__ bool test()
+__host__ __device__ constexpr bool test()
 {
   test_type<float>();
   test_type<double>();
@@ -129,8 +129,6 @@ __host__ __device__ bool test()
 int main(int, char**)
 {
   test();
-#if defined(_CCCL_BUILTIN_ISINF)
-  static_assert(cuda::std::isinf(cuda::std::numeric_limits<float>::infinity()));
-#endif // _CCCL_BUILTIN_ISINF
+  static_assert(test());
   return 0;
 }

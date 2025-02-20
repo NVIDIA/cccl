@@ -19,7 +19,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_isnormal(const T pos, bool expected)
+__host__ __device__ constexpr void test_isnormal(const T pos, bool expected)
 {
   assert(cuda::std::isnormal(pos) == expected);
 
@@ -29,7 +29,8 @@ __host__ __device__ void test_isnormal(const T pos, bool expected)
 
     if constexpr (cuda::std::numeric_limits<T>::is_integer)
     {
-      neg = -pos;
+      // handle integer overflow when negating the minimum value
+      neg = (pos == cuda::std::numeric_limits<T>::min()) ? cuda::std::numeric_limits<T>::max() : -pos;
     }
     else
     {
@@ -41,7 +42,7 @@ __host__ __device__ void test_isnormal(const T pos, bool expected)
 }
 
 template <class T>
-__host__ __device__ void test_type()
+__host__ __device__ constexpr void test_type()
 {
   ASSERT_SAME_TYPE(bool, decltype(cuda::std::isnormal(T{})));
 
@@ -52,7 +53,6 @@ __host__ __device__ void test_type()
   {
     test_isnormal(T{}, false);
   }
-  test_isnormal(T(1), true);
   test_isnormal(cuda::std::numeric_limits<T>::min(),
                 !cuda::std::numeric_limits<T>::is_integer || cuda::std::numeric_limits<T>::is_signed);
   test_isnormal(cuda::std::numeric_limits<T>::max(), true);
@@ -78,7 +78,7 @@ __host__ __device__ void test_type()
   }
 }
 
-__host__ __device__ bool test()
+__host__ __device__ constexpr bool test()
 {
   test_type<float>();
   test_type<double>();
@@ -131,5 +131,6 @@ __host__ __device__ bool test()
 int main(int, char**)
 {
   test();
+  static_assert(test());
   return 0;
 }

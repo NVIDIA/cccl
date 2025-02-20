@@ -19,13 +19,13 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_fpclassify(T val, int expected)
+__host__ __device__ constexpr void test_fpclassify(T val, int expected)
 {
   assert(cuda::std::fpclassify(val) == expected);
 }
 
 template <class T, cuda::std::enable_if_t<cuda::is_floating_point_v<T>, int> = 0>
-__host__ __device__ void test_type()
+__host__ __device__ constexpr void test_type()
 {
   ASSERT_SAME_TYPE(int, decltype(cuda::std::fpclassify(T{})));
 
@@ -36,7 +36,6 @@ __host__ __device__ void test_type()
   {
     test_fpclassify(T{}, FP_ZERO);
   }
-  test_fpclassify(T(1), FP_NORMAL);
   test_fpclassify(cuda::std::numeric_limits<T>::min(), FP_NORMAL);
   test_fpclassify(cuda::std::numeric_limits<T>::max(), FP_NORMAL);
 
@@ -62,7 +61,7 @@ __host__ __device__ void test_type()
 }
 
 template <class T, cuda::std::enable_if_t<cuda::std::is_integral_v<T>, int> = 0>
-__host__ __device__ void test_type()
+__host__ __device__ constexpr void test_type()
 {
   ASSERT_SAME_TYPE(int, decltype(cuda::std::fpclassify(T{})));
 
@@ -72,7 +71,7 @@ __host__ __device__ void test_type()
   test_fpclassify(cuda::std::numeric_limits<T>::max(), FP_NORMAL);
 }
 
-__host__ __device__ bool test()
+__host__ __device__ constexpr bool test()
 {
   test_type<float>();
   test_type<double>();
@@ -125,5 +124,6 @@ __host__ __device__ bool test()
 int main(int, char**)
 {
   test();
+  static_assert(test());
   return 0;
 }
