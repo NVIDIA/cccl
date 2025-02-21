@@ -45,5 +45,7 @@ int main()
       EXPECT(st->instantiate_cnt == 0);
       EXPECT(st->update_cnt == 1);
     }
+
+    // fprintf(stderr, "nnodes %ld nedges %ld\n", st->nnodes, st->nedges);
   }
 }

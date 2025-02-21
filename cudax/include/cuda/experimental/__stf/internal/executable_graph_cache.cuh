@@ -96,6 +96,8 @@ class executable_graph_cache_stat
 public:
   size_t instantiate_cnt = 0;
   size_t update_cnt      = 0;
+  size_t nnodes          = 0;
+  size_t nedges          = 0;
 };
 
 class executable_graph_cache

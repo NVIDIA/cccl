@@ -488,6 +488,10 @@ public:
     }
 
     bool use_cache = true;
+    bool hit       = false;
+
+    // If there is a policy, check whether it enables or disables the use of
+    // the cache
     if (get_graph_cache_policy().has_value())
     {
       ::std::function<bool()> policy = get_graph_cache_policy().value();
@@ -501,28 +505,28 @@ public:
       auto query_result = async_resources().cached_graphs_query(nnodes, nedges, g);
       state.exec_graph  = query_result.first;
 
-      auto* stats = graph_get_cache_stat();
-
-      bool hit = query_result.second; // indicate if this was a hit or miss in the cache
-      if (hit)
-      {
-        stats->update_cnt++;
-      }
-      else
-      {
-        stats->instantiate_cnt++;
-      }
-
-      return query_result.first;
+      hit = query_result.second; // indicate if this was a hit or miss in the cache
     }
     else
     {
-      auto exec_g = reserved::graph_instantiate(*g);
-      auto* stats = graph_get_cache_stat();
-      stats->instantiate_cnt++;
-      state.exec_graph = exec_g;
-      return exec_g;
+      state.exec_graph = reserved::graph_instantiate(*g);
     }
+
+    // Update the statistics associated to the context
+    auto* stats = graph_get_cache_stat();
+    if (hit)
+    {
+      stats->update_cnt++;
+    }
+    else
+    {
+      stats->instantiate_cnt++;
+    }
+
+    stats->nnodes += nnodes;
+    stats->nedges += nedges;
+
+    return state.exec_graph;
   }
 
   void display_graph_info(cudaGraph_t g)
