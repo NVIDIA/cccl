@@ -52,8 +52,12 @@ inline constexpr int items_per_thread = 4;
  * Kernel
  **********************************************************************************************************************/
 
-template <unsigned LogicalWarpThreads, bool EnableNumItems, typename T, typename ReductionOp>
-__global__ void warp_reduce_kernel(T* input, T* output, ReductionOp reduction_op, int num_items = 0)
+template <unsigned LogicalWarpThreads,
+          bool EnableNumItems = false, //
+          typename ThreadDataType,
+          typename T,
+          typename ReductionOp>
+__device__ void warp_reduce_function(ThreadDataType& thread_data, T* output, ReductionOp reduction_op, int num_items = 0)
 {
   using warp_reduce_t = cub::WarpReduce<T, LogicalWarpThreads>;
   using storage_t     = typename warp_reduce_t::TempStorage;
@@ -67,41 +71,39 @@ __global__ void warp_reduce_kernel(T* input, T* output, ReductionOp reduction_op
   {
     return;
   }
-  auto thread_data = input[threadIdx.x];
   warp_reduce_t warp_reduce{storage[logical_warp]};
-  auto result = EnableNumItems ? reduction_op(warp_reduce, thread_data, num_items) //
-                               : reduction_op(warp_reduce, thread_data);
+  using result_t = decltype(reduction_op(warp_reduce, thread_data));
+  result_t result;
+  if constexpr (EnableNumItems)
+  {
+    result = reduction_op(warp_reduce, thread_data, num_items);
+  }
+  else
+  {
+    result = reduction_op(warp_reduce, thread_data);
+  }
   if (logical_lane == 0)
   {
     output[logical_warp] = result;
   }
 }
 
+template <unsigned LogicalWarpThreads, bool EnableNumItems, typename T, typename ReductionOp>
+__global__ void warp_reduce_kernel(T* input, T* output, ReductionOp reduction_op, int num_items = 0)
+{
+  auto thread_data = input[threadIdx.x];
+  warp_reduce_function<LogicalWarpThreads, EnableNumItems>(thread_data, output, reduction_op, num_items);
+}
+
 template <unsigned LogicalWarpThreads, typename T, typename ReductionOp>
 __global__ void warp_reduce_multiple_items_kernel(T* input, T* output, ReductionOp reduction_op)
 {
-  using warp_reduce_t = cub::WarpReduce<T, LogicalWarpThreads>;
-  using storage_t     = typename warp_reduce_t::TempStorage;
-  __shared__ storage_t storage[total_warps];
-  constexpr bool is_power_of_two = cuda::std::has_single_bit(LogicalWarpThreads);
-  auto lane                      = cuda::ptx::get_sreg_laneid();
-  auto logical_warp              = is_power_of_two ? threadIdx.x / LogicalWarpThreads : threadIdx.x / warp_size;
-  auto logical_lane              = is_power_of_two ? threadIdx.x % LogicalWarpThreads : lane;
-  if (!is_power_of_two && lane >= LogicalWarpThreads)
-  {
-    return;
-  }
   T thread_data[items_per_thread];
   for (int i = 0; i < items_per_thread; ++i)
   {
     thread_data[i] = input[threadIdx.x * items_per_thread + i];
   }
-  warp_reduce_t warp_reduce{storage[logical_warp]};
-  auto result = reduction_op(warp_reduce, thread_data);
-  if (logical_lane == 0)
-  {
-    output[logical_warp] = result;
-  }
+  warp_reduce_function<LogicalWarpThreads>(thread_data, output, reduction_op);
 }
 
 template <typename Op, typename T>
@@ -199,15 +201,13 @@ void compute_host_reference(
   int items_per_thread1      = 1)
 {
   constexpr auto identity = operator_identity_v<T, predefined_op>;
-  int items_per_warp      = warp_size * items_per_thread1;
-  items_per_logical_warp =
-    items_per_logical_warp == 0 ? logical_warp_threads : items_per_logical_warp * items_per_thread1;
+  items_per_logical_warp  = items_per_logical_warp == 0 ? logical_warp_threads : items_per_logical_warp;
   for (unsigned i = 0; i < total_warps; ++i)
   {
     for (int j = 0; j < logical_warps; ++j)
     {
-      auto start                   = h_in.begin() + i * items_per_warp + j * logical_warp_threads * items_per_thread1;
-      auto end                     = start + items_per_logical_warp;
+      auto start                   = h_in.begin() + (i * warp_size + j * logical_warp_threads) * items_per_thread1;
+      auto end                     = start + items_per_logical_warp * items_per_thread1;
       h_out[i * logical_warps + j] = std::accumulate(start, end, identity, predefined_op{});
     }
   }
