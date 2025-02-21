@@ -29,7 +29,6 @@
 #include <thrust/iterator/detail/any_system_tag.h>
 #include <thrust/iterator/detail/device_system_tag.h>
 #include <thrust/iterator/detail/host_system_tag.h>
-#include <thrust/iterator/detail/is_iterator_category.h>
 #include <thrust/iterator/detail/iterator_category_to_traversal.h>
 #include <thrust/iterator/detail/iterator_category_with_system_and_traversal.h>
 #include <thrust/iterator/detail/iterator_traversal_tags.h>
@@ -41,6 +40,18 @@ THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
+template <typename T>
+_CCCL_INLINE_VAR constexpr bool is_host_iterator_category =
+  ::cuda::std::is_convertible_v<T, input_host_iterator_tag>
+  || ::cuda::std::is_convertible_v<T, output_host_iterator_tag>;
+
+template <typename T>
+_CCCL_INLINE_VAR constexpr bool is_device_iterator_category =
+  ::cuda::std::is_convertible_v<T, input_device_iterator_tag>
+  || ::cuda::std::is_convertible_v<T, output_device_iterator_tag>;
+
+template <typename T>
+_CCCL_INLINE_VAR constexpr bool is_iterator_category = is_host_iterator_category<T> || is_device_iterator_category<T>;
 
 // adapted from http://www.boost.org/doc/libs/1_37_0/libs/iterator/doc/iterator_facade.html#iterator-category
 //
@@ -201,10 +212,10 @@ struct iterator_facade_category_impl
 template <typename CategoryOrSystem, typename CategoryOrTraversal, typename ValueParam, typename Reference>
 struct iterator_facade_category
 {
-  using type = typename thrust::detail::eval_if<
-    thrust::detail::is_iterator_category<CategoryOrTraversal>::value,
-    thrust::detail::identity_<CategoryOrTraversal>,
-    iterator_facade_category_impl<CategoryOrSystem, CategoryOrTraversal, ValueParam, Reference>>::type;
+  using type =
+    typename eval_if<is_iterator_category<CategoryOrTraversal>,
+                     identity_<CategoryOrTraversal>,
+                     iterator_facade_category_impl<CategoryOrSystem, CategoryOrTraversal, ValueParam, Reference>>::type;
 }; // end iterator_facade_category
 
 } // namespace detail
