@@ -1,4 +1,4 @@
-# Copyright (c) 2024, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
@@ -29,9 +29,19 @@ patch.patch_numba_linker(lto=True)
 @pytest.mark.parametrize("T", [types.uint32, types.uint64])
 @pytest.mark.parametrize("threads_in_block", [32, 64, 128, 256, 512, 1024])
 @pytest.mark.parametrize("items_per_thread", [1, 2, 3, 4])
-def test_block_exclusive_sum(T, threads_in_block, items_per_thread):
+@pytest.mark.parametrize("algorithm", ["raking", "raking_memoize", "warp_scans"])
+def test_block_exclusive_sum(T, threads_in_block, items_per_thread, algorithm):
+    if algorithm == "raking_memoize" and threads_in_block >= 512:
+        # We can hit CUDA_ERROR_LAUNCH_OUT_OF_RESOURCES with raking_memoize in
+        # certain configurations, e.g.: 1024 threads_in_block, or 512
+        # threads_in_block, 3 items_per_thread, and T == uint64, etc.
+        pytest.skip("raking_memoize: skipping threads_in_block >= 512")
+
     block_exclusive_sum = cudax.block.exclusive_sum(
-        dtype=T, threads_in_block=threads_in_block, items_per_thread=items_per_thread
+        dtype=T,
+        threads_in_block=threads_in_block,
+        items_per_thread=items_per_thread,
+        algorithm=algorithm,
     )
     temp_storage_bytes = block_exclusive_sum.temp_storage_bytes
 
@@ -42,7 +52,10 @@ def test_block_exclusive_sum(T, threads_in_block, items_per_thread):
         thread_data = cuda.local.array(shape=items_per_thread, dtype=dtype)
         for i in range(items_per_thread):
             thread_data[i] = input[tid * items_per_thread + i]
-        block_exclusive_sum(temp_storage, thread_data, thread_data)
+        if items_per_thread == 1:
+            thread_data[0] = block_exclusive_sum(temp_storage, thread_data[0])
+        else:
+            block_exclusive_sum(temp_storage, thread_data, thread_data)
         for i in range(items_per_thread):
             output[tid * items_per_thread + i] = thread_data[i]
 
@@ -119,7 +132,14 @@ def impl_block_prefix_callback_op(context, builder, sig, args):
 
 @pytest.mark.parametrize("threads_in_block", [32, 64, 128, 256, 512, 1024])
 @pytest.mark.parametrize("items_per_thread", [1, 2, 3, 4])
-def test_block_exclusive_sum_prefix(threads_in_block, items_per_thread):
+@pytest.mark.parametrize("algorithm", ["raking", "raking_memoize", "warp_scans"])
+def test_block_exclusive_sum_prefix(threads_in_block, items_per_thread, algorithm):
+    if algorithm == "raking_memoize" and threads_in_block >= 512:
+        # We can hit CUDA_ERROR_LAUNCH_OUT_OF_RESOURCES with raking_memoize in
+        # certain configurations, e.g.: 1024 threads_in_block, or 512
+        # threads_in_block, 3 items_per_thread, and T == uint64, etc.
+        pytest.skip("raking_memoize: skipping threads_in_block >= 512")
+
     tile_items = threads_in_block * items_per_thread
     segment_size = 2 * 1024
     num_segments = 128
@@ -133,6 +153,7 @@ def test_block_exclusive_sum_prefix(threads_in_block, items_per_thread):
         threads_in_block=threads_in_block,
         items_per_thread=items_per_thread,
         prefix_op=prefix_op,
+        algorithm=algorithm,
     )
     temp_storage_bytes = block_exclusive_sum.temp_storage_bytes
 
@@ -156,9 +177,14 @@ def test_block_exclusive_sum_prefix(threads_in_block, items_per_thread):
                     else 0
                 )
 
-            block_exclusive_sum(
-                temp_storage, thread_input, thread_output, block_prefix_op
-            )
+            if items_per_thread == 1:
+                thread_output[0] = block_exclusive_sum(
+                    temp_storage, thread_input[0], block_prefix_op
+                )
+            else:
+                block_exclusive_sum(
+                    temp_storage, thread_input, thread_output, block_prefix_op
+                )
 
             for item in range(items_per_thread):
                 item_offset = tile_offset + cuda.threadIdx.x * items_per_thread + item
@@ -197,3 +223,17 @@ def test_block_exclusive_sum_prefix(threads_in_block, items_per_thread):
 
     assert "LDL" not in sass
     assert "STL" not in sass
+
+
+@pytest.mark.parametrize("threads_in_block", [32, 64, 128, 256, 512, 1024])
+@pytest.mark.parametrize("items_per_thread", [0, -1, -127])
+def test_block_scan_exclusive_sum_invalid_items_per_thread(
+    threads_in_block, items_per_thread
+):
+    with pytest.raises(ValueError):
+        cudax.block.exclusive_sum(numba.int32, threads_in_block, items_per_thread)
+
+
+def test_block_scan_exclusive_sum_invalid_algorithm():
+    with pytest.raises(ValueError):
+        cudax.block.exclusive_sum(numba.int32, 128, algorithm="invalid_algorithm")
