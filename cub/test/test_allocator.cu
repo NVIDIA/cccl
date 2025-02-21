@@ -105,7 +105,7 @@ int main(int argc, char** argv)
   CubDebugExit(allocator.DeviceAllocate((void**) &d_999B_stream0_a, 999, 0));
 
   // Run some big kernel in stream 0
-  EmptyKernel<void><<<32000, 512, 1024 * 8, 0>>>();
+  detail::EmptyKernel<void><<<32000, 512, 1024 * 8, 0>>>();
 
   // Free d_999B_stream0_a
   CubDebugExit(allocator.DeviceFree(d_999B_stream0_a));
@@ -120,7 +120,7 @@ int main(int argc, char** argv)
   AssertEquals(allocator.cached_blocks.size(), 0);
 
   // Run some big kernel in stream 0
-  EmptyKernel<void><<<32000, 512, 1024 * 8, 0>>>();
+  detail::EmptyKernel<void><<<32000, 512, 1024 * 8, 0>>>();
 
   // Free d_999B_stream0_b
   CubDebugExit(allocator.DeviceFree(d_999B_stream0_b));
@@ -138,7 +138,7 @@ int main(int argc, char** argv)
   AssertEquals(allocator.cached_blocks.size(), 1);
 
   // Run some big kernel in other_stream
-  EmptyKernel<void><<<32000, 512, 1024 * 8, other_stream>>>();
+  detail::EmptyKernel<void><<<32000, 512, 1024 * 8, other_stream>>>();
 
   // Free d_999B_stream_other
   CubDebugExit(allocator.DeviceFree(d_999B_stream_other_a));
@@ -170,7 +170,7 @@ int main(int argc, char** argv)
   AssertEquals(allocator.cached_blocks.size(), 0);
 
   // Run some big kernel in other_stream
-  EmptyKernel<void><<<32000, 512, 1024 * 8, other_stream>>>();
+  detail::EmptyKernel<void><<<32000, 512, 1024 * 8, other_stream>>>();
 
   // Free d_999B_stream_other_a and d_999B_stream_other_b
   CubDebugExit(allocator.DeviceFree(d_999B_stream_other_a));
@@ -388,7 +388,7 @@ int main(int argc, char** argv)
   // Prime the caching allocator and the kernel
   CubDebugExit(allocator.DeviceAllocate((void**) &d_1024MB, timing_bytes));
   CubDebugExit(allocator.DeviceFree(d_1024MB));
-  cub::EmptyKernel<void><<<1, 32>>>();
+  detail::EmptyKernel<void><<<1, 32>>>();
 
   // CUDA
   cpu_timer.Start();
@@ -427,7 +427,7 @@ int main(int argc, char** argv)
   gpu_timer.Start();
   for (int i = 0; i < timing_iterations; ++i)
   {
-    cub::EmptyKernel<void><<<1, 32>>>();
+    detail::EmptyKernel<void><<<1, 32>>>();
   }
   gpu_timer.Stop();
   float cuda_empty_elapsed_millis = gpu_timer.ElapsedMillis();
@@ -437,7 +437,7 @@ int main(int argc, char** argv)
   for (int i = 0; i < timing_iterations; ++i)
   {
     CubDebugExit(cudaMalloc((void**) &d_1024MB, timing_bytes));
-    cub::EmptyKernel<void><<<1, 32>>>();
+    detail::EmptyKernel<void><<<1, 32>>>();
     CubDebugExit(cudaFree(d_1024MB));
   }
   gpu_timer.Stop();
@@ -448,7 +448,7 @@ int main(int argc, char** argv)
   for (int i = 0; i < timing_iterations; ++i)
   {
     CubDebugExit(allocator.DeviceAllocate((void**) &d_1024MB, timing_bytes));
-    cub::EmptyKernel<void><<<1, 32>>>();
+    detail::EmptyKernel<void><<<1, 32>>>();
     CubDebugExit(allocator.DeviceFree(d_1024MB));
   }
   gpu_timer.Stop();

@@ -58,7 +58,7 @@ struct _Src
 template <size_t>
 struct __one
 {
-  typedef char type;
+  using type = char;
 };
 template <class _Bp, class _Dp>
 _CCCL_HOST_DEVICE typename __one<sizeof(_Dst<_Bp>(_CUDA_VSTD::declval<_Src<_Dp>>()))>::type __test(int);

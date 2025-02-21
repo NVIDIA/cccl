@@ -77,13 +77,13 @@ struct __make_tuple_types
 template <class... _Types, size_t _Ep>
 struct __make_tuple_types<tuple<_Types...>, _Ep, 0, true>
 {
-  typedef _CCCL_NODEBUG_ALIAS __tuple_types<_Types...> type;
+  using type _CCCL_NODEBUG_ALIAS = __tuple_types<_Types...>;
 };
 
 template <class... _Types, size_t _Ep>
 struct __make_tuple_types<__tuple_types<_Types...>, _Ep, 0, true>
 {
-  typedef _CCCL_NODEBUG_ALIAS __tuple_types<_Types...> type;
+  using type _CCCL_NODEBUG_ALIAS = __tuple_types<_Types...>;
 };
 
 template <class _Tp, size_t _Ep = tuple_size<remove_reference_t<_Tp>>::value, size_t _Sp = 0>

@@ -7,15 +7,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class T>
 // using iter_value_t;
 
 #include <cuda/std/concepts>
 #include <cuda/std/iterator>
 
-#ifndef TEST_COMPILER_MSVC_2017 // MSVC 2017 cannot make this a constexpr function
 template <class T, class Expected>
 __host__ __device__ constexpr bool check_iter_value_t()
 {
@@ -43,7 +40,6 @@ struct both_members
   using element_type = double;
 };
 static_assert(check_iter_value_t<both_members, double>(), "");
-#endif // !TEST_COMPILER_MSVC_2017
 
 // clang-format off
 template <class T, class = void>

@@ -27,10 +27,10 @@
 #endif // no system header
 
 #include <thrust/detail/integer_math.h>
-#include <thrust/detail/integer_traits.h>
 #include <thrust/detail/preprocessor.h>
 
 #include <cuda/std/detail/libcxx/include/stdexcept>
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
 #include <cstdint>
@@ -94,7 +94,7 @@
 //! @brief Ensures that the size of the input does not overflow the offset type
 #  define _THRUST_INDEX_TYPE_DISPATCH_GUARD_OVERFLOW(index_type, count)                       \
     if (static_cast<std::uint64_t>(count)                                                     \
-        > static_cast<std::uint64_t>(thrust::detail::integer_traits<index_type>::const_max))  \
+        > static_cast<std::uint64_t>(::cuda::std::numeric_limits<index_type>::max()))         \
     {                                                                                         \
       ::cuda::std::__throw_runtime_error(                                                     \
         "Input size exceeds the maximum allowable value for " #index_type                     \
@@ -106,7 +106,7 @@
 //! @brief Ensures that the sizes of the inputs do not overflow the offset type, but two counts
 #  define _THRUST_INDEX_TYPE_DISPATCH_GUARD_OVERFLOW2(index_type, count1, count2)             \
     if (static_cast<std::uint64_t>(count1) + static_cast<std::uint64_t>(count2)               \
-        > static_cast<std::uint64_t>(thrust::detail::integer_traits<index_type>::const_max))  \
+        > static_cast<std::uint64_t>(::cuda::std::numeric_limits<index_type>::max()))         \
     {                                                                                         \
       ::cuda::std::__throw_runtime_error(                                                     \
         "Input size exceeds the maximum allowable value for " #index_type                     \
@@ -148,12 +148,11 @@
 #else // ^^^ THRUST_FORCE_32_BIT_OFFSET_TYPE ^^^ / vvv !THRUST_FORCE_32_BIT_OFFSET_TYPE vvv
 
 #  define _THRUST_INDEX_TYPE_DISPATCH_SELECT(index_type, count) \
-    (static_cast<std::uint64_t>(count)                          \
-     <= static_cast<std::uint64_t>(thrust::detail::integer_traits<index_type>::const_max))
+    (static_cast<std::uint64_t>(count) <= static_cast<std::uint64_t>(::cuda::std::numeric_limits<index_type>::max()))
 
 #  define _THRUST_INDEX_TYPE_DISPATCH_SELECT2(index_type, count1, count2)    \
     (static_cast<std::uint64_t>(count1) + static_cast<std::uint64_t>(count2) \
-     <= static_cast<std::uint64_t>(thrust::detail::integer_traits<index_type>::const_max))
+     <= static_cast<std::uint64_t>(::cuda::std::numeric_limits<index_type>::max()))
 
 //! Dispatch between 32-bit and 64-bit index_type based versions of the same algorithm implementation. This version
 //! assumes that callables for both branches consist of the same tokens, and is intended to be used with Thrust-style

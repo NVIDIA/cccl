@@ -71,8 +71,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __basic_vtable
   }
 
   template <class... _Others>
-  _CCCL_NODISCARD _CUDAX_HOST_API auto
-  __query_interface(__iset<_Others...>) const noexcept -> __vptr_for<__iset<_Others...>>
+  _CCCL_NODISCARD _CUDAX_HOST_API auto __query_interface(__iset<_Others...>) const noexcept
+    -> __vptr_for<__iset<_Others...>>
   {
     using __remainder _CCCL_NODEBUG_ALIAS =
       _CUDA_VSTD::__type_list_size<_CUDA_VSTD::__type_find<__unique_interfaces<interface>, __iset<_Others...>>>;

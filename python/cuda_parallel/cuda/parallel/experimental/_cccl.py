@@ -1,17 +1,20 @@
-# Copyright (c) 2024, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+from __future__ import annotations
 
 import ctypes
 import functools
+from typing import Callable
 
 import numba
 import numpy as np
 from numba import cuda, types
 
-from ._utils.cai import DeviceArrayLike, get_dtype, is_contiguous
+from ._utils.protocols import get_dtype, is_contiguous
 from .iterators._iterators import IteratorBase
+from .typing import DeviceArrayLike, GpuStruct
 
 
 # MUST match `cccl_type_enum` in c/include/cccl/c/types.h
@@ -76,6 +79,19 @@ class Iterator(ctypes.Structure):
     ]
 
 
+# MUST match `cccl_device_merge_sort_build_result_t` in c/include/cccl/c/merge_sort.h
+class DeviceMergeSortBuildResult(ctypes.Structure):
+    _fields_ = [
+        ("cc", ctypes.c_int),
+        ("cubin", ctypes.c_void_p),
+        ("cubin_size", ctypes.c_size_t),
+        ("library", ctypes.c_void_p),
+        ("block_sort_kernel", ctypes.c_void_p),
+        ("partition_kernel", ctypes.c_void_p),
+        ("merge_kernel", ctypes.c_void_p),
+    ]
+
+
 # MUST match `cccl_device_reduce_build_result_t` in c/include/cccl/c/reduce.h
 class DeviceReduceBuildResult(ctypes.Structure):
     _fields_ = [
@@ -87,6 +103,21 @@ class DeviceReduceBuildResult(ctypes.Structure):
         ("single_tile_kernel", ctypes.c_void_p),
         ("single_tile_second_kernel", ctypes.c_void_p),
         ("reduction_kernel", ctypes.c_void_p),
+    ]
+
+
+# MUST match `cccl_device_scan_build_result_t` in c/include/cccl/c/scan.h
+class DeviceScanBuildResult(ctypes.Structure):
+    _fields_ = [
+        ("cc", ctypes.c_int),
+        ("cubin", ctypes.c_void_p),
+        ("cubin_size", ctypes.c_size_t),
+        ("library", ctypes.c_void_p),
+        ("accumulator_type", TypeInfo),
+        ("init_kernel", ctypes.c_void_p),
+        ("scan_kernel", ctypes.c_void_p),
+        ("description_bytes_per_tile", ctypes.c_size_t),
+        ("payload_bytes_per_tile", ctypes.c_size_t),
     ]
 
 
@@ -121,6 +152,10 @@ def _type_to_enum(numba_type: types.Type) -> TypeEnum:
 def _numba_type_to_info(numba_type: types.Type) -> TypeInfo:
     context = cuda.descriptor.cuda_target.target_context
     value_type = context.get_value_type(numba_type)
+    if isinstance(numba_type, types.Record):
+        # then `value_type` is a pointer and we need the
+        # alignment of the pointee.
+        value_type = value_type.pointee
     size = value_type.get_abi_size(context.target_data)
     alignment = value_type.get_abi_alignment(context.target_data)
     return TypeInfo(size, alignment, _type_to_enum(numba_type))
@@ -187,6 +222,20 @@ def _iterator_to_cccl_iter(it: IteratorBase) -> Iterator:
     )
 
 
+def _none_to_cccl_iter() -> Iterator:
+    # Any type could be used here, we just need to pass NULL.
+    info = _numpy_type_to_info(np.uint8)
+    return Iterator(
+        info.size,
+        info.alignment,
+        IteratorKind.POINTER,
+        Op(),
+        Op(),
+        info,
+        None,
+    )
+
+
 def type_enum_as_name(enum_value: int) -> str:
     return (
         "int8",
@@ -204,11 +253,33 @@ def type_enum_as_name(enum_value: int) -> str:
 
 
 def to_cccl_iter(array_or_iterator) -> Iterator:
+    if array_or_iterator is None:
+        return _none_to_cccl_iter()
     if isinstance(array_or_iterator, IteratorBase):
         return _iterator_to_cccl_iter(array_or_iterator)
     return _device_array_to_cccl_iter(array_or_iterator)
 
 
-def host_array_to_value(array: np.ndarray) -> Value:
-    info = _numpy_type_to_info(array.dtype)
-    return Value(info, array.ctypes.data)
+def to_cccl_value(array_or_struct: np.ndarray | GpuStruct) -> Value:
+    if isinstance(array_or_struct, np.ndarray):
+        info = _numpy_type_to_info(array_or_struct.dtype)
+        data = ctypes.cast(array_or_struct.ctypes.data, ctypes.c_void_p)
+        return Value(info, data)
+    else:
+        # it's a GpuStruct, use the array underlying it
+        return to_cccl_value(array_or_struct._data)
+
+
+def to_cccl_op(op: Callable, sig) -> Op:
+    ltoir, _ = cuda.compile(op, sig=sig, output="ltoir")
+    name = op.__name__.encode("utf-8")
+    return Op(
+        OpKind.STATELESS,
+        name,
+        ctypes.c_char_p(ltoir),
+        len(ltoir),
+        1,
+        1,
+        None,
+        _data=(ltoir, name),  # keep a reference to these in a _data attribute
+    )

@@ -25,7 +25,6 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/minmax.h>
 #include <thrust/detail/range/tail_flags.h>
 #include <thrust/detail/seq.h>
 #include <thrust/detail/temporary_array.h>
@@ -36,6 +35,8 @@
 #include <thrust/system/tbb/detail/reduce_by_key.h>
 #include <thrust/system/tbb/detail/reduce_intervals.h>
 
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/void_t.h>
 
 #include <cassert>
@@ -197,7 +198,7 @@ struct serial_reduce_by_key_body
     const size_type interval_idx = r.begin();
 
     const size_type offset_to_first = interval_size * interval_idx;
-    const size_type offset_to_last  = (thrust::min)(n, offset_to_first + interval_size);
+    const size_type offset_to_last  = ::cuda::std::min(n, offset_to_first + interval_size);
 
     Iterator1 my_keys_first    = keys_first + offset_to_first;
     Iterator1 my_keys_last     = keys_first + offset_to_last;
@@ -319,13 +320,13 @@ thrust::pair<Iterator3, Iterator4> reduce_by_key(
   }
 
   // count the number of processors
-  const unsigned int p = thrust::max<unsigned int>(1u, std::thread::hardware_concurrency());
+  const unsigned int p = ::cuda::std::max<unsigned int>(1u, std::thread::hardware_concurrency());
 
   // generate O(P) intervals of sequential work
   // XXX oversubscribing is a tuning opportunity
   const unsigned int subscription_rate = 1;
-  difference_type interval_size =
-    thrust::min<difference_type>(parallelism_threshold, thrust::max<difference_type>(n, n / (subscription_rate * p)));
+  difference_type interval_size        = ::cuda::std::min<difference_type>(
+    parallelism_threshold, ::cuda::std::max<difference_type>(n, n / (subscription_rate * p)));
   difference_type num_intervals = reduce_by_key_detail::divide_ri(n, interval_size);
 
   // decompose the input into intervals of size N / num_intervals

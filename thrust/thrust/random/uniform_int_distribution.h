@@ -29,9 +29,10 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/integer_traits.h>
 #include <thrust/pair.h>
 #include <thrust/random/detail/random_core_access.h>
+
+#include <cuda/std/limits>
 
 #include <iostream>
 
@@ -117,7 +118,7 @@ public:
    *           the platform.
    */
   _CCCL_HOST_DEVICE explicit uniform_int_distribution(
-    IntType a = 0, IntType b = THRUST_NS_QUALIFIER::detail::integer_traits<IntType>::const_max);
+    IntType a = 0, IntType b = ::cuda::std::numeric_limits<IntType>::max());
 
   /*! This constructor creates a new \p uniform_int_distribution from a \p param_type object
    *  encapsulating the range of the distribution.

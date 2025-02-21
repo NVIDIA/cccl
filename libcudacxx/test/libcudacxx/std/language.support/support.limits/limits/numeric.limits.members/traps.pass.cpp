@@ -14,7 +14,7 @@
 
 #include "test_macros.h"
 
-#if defined(__i386__) || defined(__x86_64__) || defined(__pnacl__) || defined(__wasm__)
+#if _CCCL_ARCH(X86_64) && _CCCL_OS(LINUX)
 static const bool integral_types_trap = true;
 #else
 static const bool integral_types_trap = false;
@@ -51,15 +51,35 @@ int main(int, char**)
   test<unsigned long, integral_types_trap>();
   test<long long, integral_types_trap>();
   test<unsigned long long, integral_types_trap>();
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   test<__int128_t, integral_types_trap>();
   test<__uint128_t, integral_types_trap>();
-#endif
+#endif // _CCCL_HAS_INT128()
   test<float, false>();
   test<double, false>();
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
   test<long double, false>();
 #endif
+#if _CCCL_HAS_NVFP16()
+  test<__half, false>();
+#endif // _CCCL_HAS_NVFP16
+#if _CCCL_HAS_NVBF16()
+  test<__nv_bfloat16, false>();
+#endif // _CCCL_HAS_NVBF16
+#if _CCCL_HAS_NVFP8()
+  test<__nv_fp8_e4m3, false>();
+  test<__nv_fp8_e5m2, false>();
+#  if _CCCL_CUDACC_AT_LEAST(12, 8)
+  test<__nv_fp8_e8m0, false>();
+#  endif // _CCCL_CUDACC_AT_LEAST(12, 8)
+#endif // _CCCL_HAS_NVFP8()
+#if _CCCL_HAS_NVFP6()
+  test<__nv_fp6_e2m3, false>();
+  test<__nv_fp6_e3m2, false>();
+#endif // _CCCL_HAS_NVFP6()
+#if _CCCL_HAS_NVFP4()
+  test<__nv_fp4_e2m1, false>();
+#endif // _CCCL_HAS_NVFP4()
 
   return 0;
 }

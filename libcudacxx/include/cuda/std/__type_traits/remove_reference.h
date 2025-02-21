@@ -45,17 +45,17 @@ using remove_reference_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_REFERENCE_T(
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_reference
 {
-  typedef _CCCL_NODEBUG_ALIAS _Tp type;
+  using type _CCCL_NODEBUG_ALIAS = _Tp;
 };
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_reference<_Tp&>
 {
-  typedef _CCCL_NODEBUG_ALIAS _Tp type;
+  using type _CCCL_NODEBUG_ALIAS = _Tp;
 };
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_reference<_Tp&&>
 {
-  typedef _CCCL_NODEBUG_ALIAS _Tp type;
+  using type _CCCL_NODEBUG_ALIAS = _Tp;
 };
 
 template <class _Tp>

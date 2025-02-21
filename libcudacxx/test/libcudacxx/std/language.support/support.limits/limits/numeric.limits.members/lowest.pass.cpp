@@ -13,20 +13,22 @@
 #include <cuda/std/cassert>
 #include <cuda/std/cfloat>
 #include <cuda/std/climits>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
+#include "common.h"
 #include "test_macros.h"
 
 template <class T>
 __host__ __device__ void test(T expected)
 {
-  assert(cuda::std::numeric_limits<T>::lowest() == expected);
+  assert(float_eq(cuda::std::numeric_limits<T>::lowest(), expected));
   assert(cuda::std::numeric_limits<T>::is_bounded);
-  assert(cuda::std::numeric_limits<const T>::lowest() == expected);
+  assert(float_eq(cuda::std::numeric_limits<const T>::lowest(), expected));
   assert(cuda::std::numeric_limits<const T>::is_bounded);
-  assert(cuda::std::numeric_limits<volatile T>::lowest() == expected);
+  assert(float_eq(cuda::std::numeric_limits<volatile T>::lowest(), expected));
   assert(cuda::std::numeric_limits<volatile T>::is_bounded);
-  assert(cuda::std::numeric_limits<const volatile T>::lowest() == expected);
+  assert(float_eq(cuda::std::numeric_limits<const volatile T>::lowest(), expected));
   assert(cuda::std::numeric_limits<const volatile T>::is_bounded);
 }
 
@@ -34,6 +36,7 @@ int main(int, char**)
 {
   test<bool>(false);
   test<char>(CHAR_MIN);
+
   test<signed char>(SCHAR_MIN);
   test<unsigned char>(0);
 #ifndef TEST_COMPILER_NVRTC
@@ -54,15 +57,35 @@ int main(int, char**)
   test<unsigned long>(0);
   test<long long>(LLONG_MIN);
   test<unsigned long long>(0);
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   test<__int128_t>(-__int128_t(__uint128_t(-1) / 2) - 1);
   test<__uint128_t>(0);
-#endif
+#endif // _CCCL_HAS_INT128()
   test<float>(-FLT_MAX);
   test<double>(-DBL_MAX);
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
   test<long double>(-LDBL_MAX);
 #endif
+#if _CCCL_HAS_NVFP16()
+  test<__half>(__double2half(-65504.0));
+#endif // _CCCL_HAS_NVFP16
+#if _CCCL_HAS_NVBF16()
+  test<__nv_bfloat16>(__double2bfloat16(-3.3895313892515355e+38));
+#endif // _CCCL_HAS_NVBF16
+#if _CCCL_HAS_NVFP8()
+  test<__nv_fp8_e4m3>(make_fp8_e4m3(-448.0));
+  test<__nv_fp8_e5m2>(make_fp8_e5m2(-57344.0));
+#  if _CCCL_CUDACC_AT_LEAST(12, 8)
+  test<__nv_fp8_e8m0>(make_fp8_e8m0(5.8774717541114375398436826861112283890933277838604376075437585313920e-39));
+#  endif // _CCCL_CUDACC_AT_LEAST(12, 8)
+#endif // _CCCL_HAS_NVFP8()
+#if _CCCL_HAS_NVFP6()
+  test<__nv_fp6_e2m3>(make_fp6_e2m3(-7.5));
+  test<__nv_fp6_e3m2>(make_fp6_e3m2(-28.0));
+#endif // _CCCL_HAS_NVFP6()
+#if _CCCL_HAS_NVFP4()
+  test<__nv_fp4_e2m1>(make_fp4_e2m1(-6.0));
+#endif // _CCCL_HAS_NVFP4()
 
   return 0;
 }

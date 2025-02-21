@@ -17,7 +17,7 @@
 #include <cuda/experimental/buffer.cuh>
 #include <cuda/experimental/memory_resource.cuh>
 
-#include <catch2/catch.hpp>
+#include <testing.cuh>
 #include <utility.cuh>
 
 inline constexpr uint8_t fill_byte    = 1;
@@ -88,7 +88,10 @@ struct weird_buffer
     int* data;
     std::size_t size;
 
-    using __as_kernel_arg = AsKernelArg;
+    AsKernelArg kernel_transform()
+    {
+      return *this;
+    };
 
     operator cuda::std::span<int>()
     {

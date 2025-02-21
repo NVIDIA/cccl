@@ -636,39 +636,13 @@ public:
   }
 
   /**
-   * @brief Start a new section in the DOT file identified by its symbol
-   */
-  void dot_push_section(::std::string symbol) const
-  {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    ::std::visit(
-      [symbol = mv(symbol)](auto& self) {
-        self.dot_push_section(symbol);
-      },
-      payload);
-  }
-
-  /**
-   * @brief Ends current dot section
-   */
-  void dot_pop_section() const
-  {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    ::std::visit(
-      [](auto& self) {
-        self.dot_pop_section();
-      },
-      payload);
-  }
-
-  /**
    * @brief RAII-style description of a new section in the DOT file identified by its symbol
    */
   auto dot_section(::std::string symbol) const
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     return ::std::visit(
-      [symbol = mv(symbol)](auto& self) {
+      [&symbol](auto& self) {
         return self.dot_section(symbol);
       },
       payload);
@@ -750,6 +724,23 @@ public:
     {
       throw ::std::runtime_error("Payload does not hold graph_ctx");
     }
+  }
+
+  /**
+   * @brief Get a CUDA stream from the stream pool associated to the context
+   *
+   * This helper is intended to avoid creating CUDA streams manually. Using
+   * this stream after the context has been finalized is an undefined
+   * behaviour.
+   */
+  cudaStream_t pick_stream()
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return ::std::visit(
+      [](auto& self) {
+        return self.pick_stream();
+      },
+      payload);
   }
 
 private:
@@ -1187,7 +1178,7 @@ UNITTEST("context task")
 
   ctx.task(la.read(), lb.write())->*[](auto s, auto a, auto b) {
     // no-op
-    cudaMemcpyAsync(&a(0), &b(0), sizeof(int), cudaMemcpyDeviceToDevice, s);
+    cudaMemcpyAsync(&b(0), &a(0), sizeof(int), cudaMemcpyDeviceToDevice, s);
   };
 
   ctx.finalize();
@@ -1510,7 +1501,7 @@ public:
         // Our infrastructure currently does not like to work with
         // constant types for the data interface so we pretend this is
         // a modifiable data if necessary
-        return gctx.logical_data(rw_type_of<decltype(x)>(x), current_place.affine_data_place());
+        return gctx.logical_data(to_rw_type_of(x), current_place.affine_data_place());
       };
 
       // Transform the tuple of instances into a tuple of logical data
@@ -1671,7 +1662,7 @@ public:
       // Our infrastructure currently does not like to work with constant
       // types for the data interface so we pretend this is a modifiable
       // data if necessary
-      return gctx.logical_data(rw_type_of<decltype(x)>(x), current_place.affine_data_place());
+      return gctx.logical_data(to_rw_type_of(x), current_place.affine_data_place());
     };
 
     // Transform the tuple of instances into a tuple of logical data
@@ -1691,7 +1682,7 @@ public:
     bool found                            = false;
     for (::std::shared_ptr<cudaGraphExec_t>& pe : cached_exec_graphs[stream])
     {
-      found = graph_ctx::try_updating_executable_graph(*pe, *gctx_graph);
+      found = reserved::try_updating_executable_graph(*pe, *gctx_graph);
       if (found)
       {
         eg = pe;
@@ -1745,7 +1736,7 @@ public:
     bool found                            = false;
     for (::std::shared_ptr<cudaGraphExec_t>& pe : cached_exec_graphs[stream])
     {
-      found = graph_ctx::try_updating_executable_graph(*pe, *gctx_graph);
+      found = reserved::try_updating_executable_graph(*pe, *gctx_graph);
       if (found)
       {
         eg = pe;
@@ -1832,7 +1823,7 @@ public:
       (void) data_per_iteration;
 
       auto logify = [](auto& dest_ctx, auto x) {
-        return dest_ctx.logical_data(rw_type_of<decltype(x)>(x), exec_place::current_device().affine_data_place());
+        return dest_ctx.logical_data(to_rw_type_of(x), exec_place::current_device().affine_data_place());
       };
 
       for (size_t i = start; i < end; i++)

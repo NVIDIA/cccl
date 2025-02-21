@@ -50,7 +50,7 @@
 #  include <cuda/std/__type_traits/integral_constant.h> // std::integral_constant
 #  include <cuda/std/__utility/integer_sequence.h> // std::index_sequence
 #  include <cuda/std/array> // std::array
-#  include <cuda/std/cstddef> // std::size_t
+#  include <cuda/std/cstddef> // size_t
 
 #  define _CUB_RETURN_IF_ERROR(STATUS)       \
     {                                        \
@@ -73,9 +73,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace for_each_in_extents
+namespace detail::for_each_in_extents
 {
 
 // The dispatch layer is in the detail namespace until we figure out the tuning API
@@ -117,7 +115,7 @@ public:
     constexpr unsigned items_per_thread = ActivePolicyT::for_policy_t::items_per_thread;
     unsigned num_cta                    = ::cuda::ceil_div(_size, block_threads * items_per_thread);
 
-#  ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#  ifdef CUB_DEBUG_LOG
     _CubLog("Invoking detail::for_each_in_extents::static_kernel<<<%u, %u, 0, %p>>>(), items_per_thread: %u\n",
             num_cta,
             block_threads,
@@ -125,7 +123,7 @@ public:
             items_per_thread);
 #  endif
     auto status =
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(num_cta, block_threads, 0, _stream)
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_cta, block_threads, 0, _stream)
         .doit(detail::for_each_in_extents::
                 static_kernel<max_policy_t, OpType, ExtentsType, decltype(sub_sizes_div_array), Ranks...>,
               _op,
@@ -155,14 +153,14 @@ public:
     _CUB_RETURN_IF_ERROR(status)
     unsigned num_cta = ::cuda::ceil_div(_size, block_threads * items_per_thread);
 
-#  ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#  ifdef CUB_DEBUG_LOG
     _CubLog("Invoking detail::for_each_in_extents::dynamic_kernel<<<%u, %u, 0, %p>>>(), items_per_thread: %u\n",
             num_cta,
             block_threads,
             _stream,
             items_per_thread);
 #  endif
-    status = THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(num_cta, block_threads, 0, _stream)
+    status = THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_cta, block_threads, 0, _stream)
                .doit(kernel, _op, _ext, sub_sizes_div_array, extents_div_array);
     _CUB_RETURN_IF_ERROR(status)
     _CUB_RETURN_IF_STREAM_ERROR(_stream)
@@ -203,8 +201,7 @@ private:
   unsigned_index_type _size;
 };
 
-} // namespace for_each_in_extents
-} // namespace detail
+} // namespace detail::for_each_in_extents
 
 CUB_NAMESPACE_END
 

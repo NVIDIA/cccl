@@ -26,8 +26,8 @@ template <class _Tp, _Tp __v>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT integral_constant
 {
   static constexpr const _Tp value = __v;
-  typedef _Tp value_type;
-  typedef integral_constant type;
+  using value_type                 = _Tp;
+  using type                       = integral_constant;
   _LIBCUDACXX_HIDE_FROM_ABI constexpr operator value_type() const noexcept
   {
     return value;
@@ -41,8 +41,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT integral_constant
 template <class _Tp, _Tp __v>
 constexpr const _Tp integral_constant<_Tp, __v>::value;
 
-typedef integral_constant<bool, true> true_type;
-typedef integral_constant<bool, false> false_type;
+using true_type  = integral_constant<bool, true>;
+using false_type = integral_constant<bool, false>;
 
 template <bool _Val>
 using _BoolConstant _LIBCUDACXX_DEPRECATED _CCCL_NODEBUG_ALIAS = integral_constant<bool, _Val>;

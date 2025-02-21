@@ -107,7 +107,7 @@ using index_types =
                  uint16_t,
                  int32_t,
                  uint32_t
-#  if CUB_IS_INT128_ENABLED
+#  if _CCCL_HAS_INT128()
                  ,
                  int64_t,
                  uint64_t
@@ -120,7 +120,7 @@ using index_types_dynamic =
                  uint16_t,
                  int32_t,
                  uint32_t
-#  if CUB_IS_INT128_ENABLED
+#  if _CCCL_HAS_INT128()
                  ,
                  int64_t,
                  uint64_t
@@ -135,8 +135,8 @@ using dimensions =
                  cuda::std::index_sequence<3, 2, 5, 4>>;
 
 template <typename IndexType, size_t... Dimensions>
-auto build_static_extents(IndexType,
-                          cuda::std::index_sequence<Dimensions...>) -> cuda::std::extents<IndexType, Dimensions...>
+auto build_static_extents(IndexType, cuda::std::index_sequence<Dimensions...>)
+  -> cuda::std::extents<IndexType, Dimensions...>
 {
   return {};
 }

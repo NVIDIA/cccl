@@ -418,24 +418,18 @@ public:
         }
         else
         {
-          // Get the (child) graph associated to the task
-          auto g = t.get_graph();
+          ::std::vector<cudaGraphNode_t>& chain = t.get_node_chain();
+          chain.resize(res.size());
 
-          cudaGraphNode_t n      = nullptr;
-          cudaGraphNode_t prev_n = nullptr;
+          auto& g = t.get_ctx_graph();
 
           // Create a chain of kernels
           for (size_t i = 0; i < res.size(); i++)
           {
+            insert_one_kernel(res[i], chain[i], g);
             if (i > 0)
             {
-              prev_n = n;
-            }
-
-            insert_one_kernel(res[i], n, g);
-            if (i > 0)
-            {
-              cuda_safe_call(cudaGraphAddDependencies(g, &prev_n, &n, 1));
+              cuda_safe_call(cudaGraphAddDependencies(g, &chain[i - 1], &chain[i], 1));
             }
           }
         }
@@ -611,6 +605,14 @@ protected:
       return size_t(-1);
     }
 
+    virtual ::std::string to_string() const = 0;
+
+    /**
+     * @brief Indicate if the backend needs to keep track of dangling events, or if these will be automatically
+     * synchronized
+     */
+    virtual bool track_dangling_events() const = 0;
+
     auto& get_default_allocator()
     {
       return default_allocator;
@@ -642,16 +644,27 @@ protected:
      */
     void detach_allocators(backend_ctx_untyped& bctx)
     {
+      const bool track_dangling = bctx.track_dangling_events();
+
       // Deinitialize all attached allocators in reversed order
       for (auto it : each(attached_allocators.rbegin(), attached_allocators.rend()))
       {
-        stack.add_dangling_events(it->deinit(bctx));
+        auto deinit_res = it->deinit(bctx);
+        if (track_dangling)
+        {
+          stack.add_dangling_events(mv(deinit_res));
+        }
       }
 
       // Erase the vector of allocators now that they were deinitialized
       attached_allocators.clear();
 
-      stack.add_dangling_events(composite_cache.deinit());
+      // We "duplicate" the code of the deinit to remove any storage and avoid a move
+      auto composite_deinit_res = composite_cache.deinit();
+      if (track_dangling)
+      {
+        stack.add_dangling_events(mv(composite_deinit_res));
+      }
     }
 
     void display_transfers() const
@@ -902,6 +915,16 @@ public:
     return pimpl->epoch();
   }
 
+  ::std::string to_string() const
+  {
+    return pimpl->to_string();
+  }
+
+  bool track_dangling_events() const
+  {
+    return pimpl->track_dangling_events();
+  }
+
   // protected:
   impl& get_state()
   {
@@ -931,16 +954,6 @@ public:
   void set_parent_ctx(parent_ctx_t& parent_ctx)
   {
     reserved::per_ctx_dot::set_parent_ctx(parent_ctx.get_dot(), get_dot());
-  }
-
-  void dot_push_section(::std::string symbol) const
-  {
-    reserved::dot::section::push(mv(symbol));
-  }
-
-  void dot_pop_section() const
-  {
-    reserved::dot::section::pop();
   }
 
   auto dot_section(::std::string symbol) const

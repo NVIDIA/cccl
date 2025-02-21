@@ -139,17 +139,13 @@ __host__ __device__ bool test(F zero_value)
 __global__ void test_global_kernel(F* zero_value)
 {
   test(*zero_value);
-  // #if TEST_STD_VER >= 2014
-  //   static_assert(test(0.f), "");
-  // #endif // TEST_STD_VER >= 2014
+  // static_assert(test(0.f), "");
 }
 
 int main(int, char**)
 {
   volatile F zero_value = 0.f;
   assert(test(zero_value));
-  // #if TEST_STD_VER >= 2014
-  //   static_assert(test(0.f), "");
-  // #endif // TEST_STD_VER >= 2014
+  // static_assert(test(0.f), "");
   return 0;
 }

@@ -1,17 +1,15 @@
 #include <thrust/detail/config.h>
 
-#if !defined(THRUST_LEGACY_GCC)
+#include <thrust/device_vector.h>
+#include <thrust/iterator/zip_iterator.h>
+#include <thrust/remove.h>
+#include <thrust/sort.h>
+#include <thrust/transform.h>
+#include <thrust/zip_function.h>
 
-#  include <thrust/device_vector.h>
-#  include <thrust/iterator/zip_iterator.h>
-#  include <thrust/remove.h>
-#  include <thrust/sort.h>
-#  include <thrust/transform.h>
-#  include <thrust/zip_function.h>
+#include <iostream>
 
-#  include <iostream>
-
-#  include <unittest/unittest.h>
+#include <unittest/unittest.h>
 
 using namespace unittest;
 
@@ -35,9 +33,9 @@ struct TestZipFunctionCtor
   {
     ASSERT_EQUAL(thrust::zip_function<SumThree>()(thrust::make_tuple(1, 2, 3)), SumThree{}(1, 2, 3));
     ASSERT_EQUAL(thrust::zip_function<SumThree>(SumThree{})(thrust::make_tuple(1, 2, 3)), SumThree{}(1, 2, 3));
-#  ifdef __cpp_deduction_guides
+#ifdef __cpp_deduction_guides
     ASSERT_EQUAL(thrust::zip_function(SumThree{})(thrust::make_tuple(1, 2, 3)), SumThree{}(1, 2, 3));
-#  endif // __cpp_deduction_guides
+#endif // __cpp_deduction_guides
   }
 };
 SimpleUnitTest<TestZipFunctionCtor, type_list<int>> TestZipFunctionCtorInstance;
@@ -176,4 +174,3 @@ struct TestNestedZipFunction2
   }
 };
 SimpleUnitTest<TestNestedZipFunction2, type_list<int, float>> TestNestedZipFunctionInstance2;
-#endif // _CCCL_STD_VER

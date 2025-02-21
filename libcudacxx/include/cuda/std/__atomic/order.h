@@ -84,15 +84,14 @@ inline constexpr auto memory_order_seq_cst = memory_order::seq_cst;
 
 #else // ^^^ C++20 ^^^ / vvv C++17 vvv
 
-typedef enum memory_order
-{
+using memory_order = enum memory_order {
   memory_order_relaxed = __mo_relaxed,
   memory_order_consume = __mo_consume,
   memory_order_acquire = __mo_acquire,
   memory_order_release = __mo_release,
   memory_order_acq_rel = __mo_acq_rel,
   memory_order_seq_cst = __mo_seq_cst,
-} memory_order;
+};
 
 #endif // _CCCL_STD_VER >= 2020
 

@@ -18,7 +18,7 @@
 #include <stdexcept>
 
 #include "cuda/__memory_resource/resource_ref.h"
-#include <catch2/catch.hpp>
+#include <testing.cuh>
 #include <utility.cuh>
 
 namespace cudax = cuda::experimental;

@@ -41,6 +41,7 @@ endif()
 
 # Creates a cmake executable target for the main program
 add_executable(example_project example.cu)
+target_compile_features(example_project PUBLIC cuda_std_17)
 
 # "Links" the CCCL Cmake target to the `example_project` executable. This configures everything needed to use
 # CCCL headers, including setting up include paths, compiler flags, etc.

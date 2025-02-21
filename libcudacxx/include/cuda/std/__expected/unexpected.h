@@ -38,8 +38,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2011
-
 template <class _Err>
 class unexpected;
 
@@ -73,6 +71,7 @@ public:
   _CCCL_HIDE_FROM_ABI unexpected(const unexpected&) = default;
   _CCCL_HIDE_FROM_ABI unexpected(unexpected&&)      = default;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Error = _Err)
   _CCCL_REQUIRES((!_CCCL_TRAIT(is_same, remove_cvref_t<_Error>, unexpected)
                   && !_CCCL_TRAIT(is_same, remove_cvref_t<_Error>, in_place_t)
@@ -82,6 +81,7 @@ public:
       : __unex_(_CUDA_VSTD::forward<_Error>(__error))
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, _Args...))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit unexpected(in_place_t, _Args&&... __args) noexcept(
@@ -89,6 +89,7 @@ public:
       : __unex_(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Up, class... _Args)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, initializer_list<_Up>&, _Args...))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit unexpected(
@@ -123,6 +124,7 @@ public:
   }
 
   // [expected.un.swap]
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void swap(unexpected& __other) noexcept(_CCCL_TRAIT(is_nothrow_swappable, _Err))
   {
     static_assert(_CCCL_TRAIT(is_swappable, _Err), "E must be swappable");
@@ -130,6 +132,7 @@ public:
     swap(__unex_, __other.__unex_);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Err2 = _Err)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_swappable, _Err2))
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr void
@@ -140,6 +143,7 @@ public:
   }
 
   // [expected.un.eq]
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _UErr>
   _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
   operator==(const unexpected& __lhs,
@@ -147,7 +151,8 @@ public:
   {
     return __lhs.error() == __rhs.error();
   }
-#  if _CCCL_STD_VER < 2020
+#if _CCCL_STD_VER < 2020
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _UErr>
   _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
   operator!=(const unexpected& __lhs,
@@ -155,18 +160,16 @@ public:
   {
     return __lhs.error() != __rhs.error();
   }
-#  endif
+#endif // _CCCL_STD_VER < 2020
 
 private:
   _Err __unex_;
 };
 
-#  if !defined(_CCCL_NO_DEDUCTION_GUIDES)
+#if !defined(_CCCL_NO_DEDUCTION_GUIDES)
 template <class _Err>
 unexpected(_Err) -> unexpected<_Err>;
-#  endif // !defined(_CCCL_NO_DEDUCTION_GUIDES)
-
-#endif // _CCCL_STD_VER > 2011
+#endif // !defined(_CCCL_NO_DEDUCTION_GUIDES)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

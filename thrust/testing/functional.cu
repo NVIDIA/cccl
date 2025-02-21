@@ -187,48 +187,12 @@ typename ::cuda::std::add_const<_Tp>::type& as_const(_Tp& __t) noexcept
   return __t;
 }
 
-// Ad-hoc testing for other functionals
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestIdentityFunctional()
-{
-  int i    = 42;
-  double d = 3.14;
-
-  // pass through
-  ASSERT_EQUAL(thrust::identity<int>{}(i), 42);
-  ASSERT_EQUAL(thrust::identity<int>{}(d), 3);
-
-  // modification through
-  thrust::identity<int>{}(i) = 1337;
-  ASSERT_EQUAL(i, 1337);
-
-  // value categories and const
-  static_assert(::cuda::std::is_same<decltype(thrust::identity<int>{}(42)), int&&>::value, "");
-  static_assert(::cuda::std::is_same<decltype(thrust::identity<int>{}(i)), int&>::value, "");
-  static_assert(::cuda::std::is_same<decltype(thrust::identity<int>{}(as_const(i))), const int&>::value, "");
-  static_assert(::cuda::std::is_same<decltype(thrust::identity<int>{}(::cuda::std::move(i))), int&&>::value, "");
-  static_assert(::cuda::std::is_same<decltype(thrust::identity<int>{}(static_cast<const int&&>(i))), const int&>::value,
-                "");
-
-  // value categories when casting to different type
-  static_assert(::cuda::std::is_same<decltype(thrust::identity<int>{}(3.14)), int&&>::value, "");
-  // unfortunately, old versions of MSVC pick the `const int&` overload instead of `int&&`
-#if !_CCCL_COMPILER(MSVC, <, 19, 29)
-  static_assert(::cuda::std::is_same<decltype(thrust::identity<int>{}(d)), int&&>::value, "");
-  static_assert(::cuda::std::is_same<decltype(thrust::identity<int>{}(as_const(d))), int&&>::value, "");
-#endif
-  static_assert(::cuda::std::is_same<decltype(thrust::identity<int>{}(::cuda::std::move(d))), int&&>::value, "");
-  static_assert(::cuda::std::is_same<decltype(thrust::identity<int>{}(static_cast<const double&&>(d))), int&&>::value,
-                "");
-}
-DECLARE_UNITTEST(TestIdentityFunctional);
-
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestIdentityFunctionalVector()
 {
-  using T = typename Vector::value_type;
   Vector input{0, 1, 2, 3};
   Vector output(4);
-  thrust::transform(input.begin(), input.end(), output.begin(), thrust::identity<T>());
+  thrust::transform(input.begin(), input.end(), output.begin(), ::cuda::std::identity{});
   ASSERT_EQUAL(input, output);
 }
 DECLARE_VECTOR_UNITTEST(TestIdentityFunctionalVector);
@@ -302,26 +266,16 @@ DECLARE_VECTOR_UNITTEST(TestMinimumFunctional);
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestNot1()
 {
-  using T = typename Vector::value_type;
-
   Vector input{1, 0, 1, 1, 0};
 
   Vector output(5);
 
-  thrust::transform(input.begin(), input.end(), output.begin(), thrust::not_fn(thrust::identity<T>()));
+  thrust::transform(input.begin(), input.end(), output.begin(), thrust::not_fn(::cuda::std::identity{}));
 
   Vector ref{0, 1, 0, 0, 1};
   ASSERT_EQUAL(output, ref);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestNot1);
-
-// GCC 11 fails to build this test case with a spurious error in a
-// very specific scenario:
-// - GCC 11
-// - CPP system for both host and device
-// - C++11 dialect
-#if !(_CCCL_COMPILER(GCC, >=, 11) && _CCCL_COMPILER(GCC, <, 12) && THRUST_HOST_SYSTEM == THRUST_HOST_SYSTEM_CPP \
-      && THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CPP && _CCCL_STD_VER == 2011)
 
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestNot2()
@@ -339,7 +293,5 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestNot2()
   ASSERT_EQUAL(output, ref);
 }
 DECLARE_VECTOR_UNITTEST(TestNot2);
-
-#endif // Weird GCC11 failure case
 
 _CCCL_DIAG_POP

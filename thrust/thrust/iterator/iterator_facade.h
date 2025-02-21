@@ -306,7 +306,7 @@ template <typename Derived,
           typename System,
           typename Traversal,
           typename Reference,
-          typename Difference = std::ptrdiff_t>
+          typename Difference = ::cuda::std::ptrdiff_t>
 class iterator_facade
 {
 private:

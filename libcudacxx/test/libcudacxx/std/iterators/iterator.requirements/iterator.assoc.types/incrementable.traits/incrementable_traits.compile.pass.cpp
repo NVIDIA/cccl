@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class T>
 // struct incrementable_traits;
 
@@ -147,7 +145,8 @@ static_assert(!check_has_difference_type<long double>, "");
 static_assert(!check_has_difference_type<float&>, "");
 static_assert(!check_has_difference_type<float const&>, "");
 
-#if !defined(TEST_COMPILER_GCC) || __GNUC__ > 11 || TEST_STD_VER < 2020 // gcc 10 has an issue with void
+#if !defined(TEST_COMPILER_GCC) || __GNUC__ > 11 || TEST_STD_VER < 2020 // gcc 10 has an issue
+                                                                        // with void
 static_assert(!check_has_difference_type<void*>, "");
 #endif // !defined(TEST_COMPILER_GCC) || __GNUC__ > 11 || TEST_STD_VER < 2020
 static_assert(!check_has_difference_type<cuda::std::nullptr_t>, "");
@@ -158,12 +157,12 @@ static_assert(!check_has_difference_type<int (*)() noexcept>, "");
 static_assert(!check_has_difference_type<int (&)()>, "");
 static_assert(!check_has_difference_type<int (&)() noexcept>, "");
 
-#define TEST_POINTER_TO_MEMBER_FUNCTION(type, cv)                               \
-  static_assert(!check_has_difference_type<int (type::*)() cv>, "");            \
-  static_assert(!check_has_difference_type<int (type::*)() cv noexcept>, "");   \
-  static_assert(!check_has_difference_type<int (type::*)() cv&>, "");           \
-  static_assert(!check_has_difference_type<int (type::*)() cv & noexcept>, ""); \
-  static_assert(!check_has_difference_type<int (type::*)() cv&&>, "");          \
+#define TEST_POINTER_TO_MEMBER_FUNCTION(type, cv)                                 \
+  static_assert(!check_has_difference_type<int (type::*)() cv>, "");              \
+  static_assert(!check_has_difference_type<int (type::*)() cv noexcept>, "");     \
+  static_assert(!check_has_difference_type<int (type::*)() cv&>, "");             \
+  static_assert(!check_has_difference_type < int(type::*)() cv & noexcept >, ""); \
+  static_assert(!check_has_difference_type<int (type::*)() cv&&>, "");            \
   static_assert(!check_has_difference_type < int(type::*)() cv && noexcept >, "");
 
 struct empty

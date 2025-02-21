@@ -26,8 +26,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2011
-
 struct _CCCL_TYPE_VISIBILITY_DEFAULT in_place_t
 {
   _CCCL_HIDE_FROM_ABI explicit in_place_t() = default;
@@ -69,8 +67,6 @@ struct __is_inplace_index_imp<in_place_index_t<_Idx>> : true_type
 
 template <class _Tp>
 using __is_inplace_index = __is_inplace_index_imp<remove_cvref_t<_Tp>>;
-
-#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -153,16 +153,14 @@ OutputType inner_product(InputIterator1 first1, InputIterator1 last1, InputItera
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a>, and \p InputIterator1's \c value_type is convertible to \p BinaryFunction2's \c first_argument_type.
+ * Iterator</a>, and \p InputIterator1's \c value_type is convertible to \p BinaryFunction2's first argument type.
  *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a>. and \p InputIterator2's \c value_type is convertible to \p BinaryFunction2's \c second_argument_type.
+ * Iterator</a>. and \p InputIterator2's \c value_type is convertible to \p BinaryFunction2's second argument type.
  *  \tparam OutputType is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>, and \p OutputType is convertible to
- * \p BinaryFunction1's \c first_argument_type. \tparam BinaryFunction1 is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>, and \p
- * BinaryFunction1's \c return_type is convertible to \p OutputType. \tparam BinaryFunction2 is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>, and \p
- * BinaryFunction2's \c return_type is convertible to \p BinaryFunction1's \c second_argument_type.
+ * \p BinaryFunction1's first argument type.
+ *  \tparam BinaryFunction1 The function's return type must be convertible to \p OutputType.
+ *  \tparam BinaryFunction2 The function's return type must be convertible to \p BinaryFunction1's second argument type.
  *
  *  \code
  *  #include <thrust/inner_product.h>
@@ -218,16 +216,14 @@ _CCCL_HOST_DEVICE OutputType inner_product(
  *  \return The inner product of sequences <tt>[first1, last1)</tt> and <tt>[first2, last2)</tt>.
  *
  *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a>, and \p InputIterator1's \c value_type is convertible to \p BinaryFunction2's \c first_argument_type.
+ * Iterator</a>, and \p InputIterator1's \c value_type is convertible to \p BinaryFunction2's first argument type.
  *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a>. and \p InputIterator2's \c value_type is convertible to \p BinaryFunction2's \c second_argument_type.
+ * Iterator</a>. and \p InputIterator2's \c value_type is convertible to \p BinaryFunction2's second argument type.
  *  \tparam OutputType is a model of <a
  * href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>, and \p OutputType is convertible to
- * \p BinaryFunction1's \c first_argument_type. \tparam BinaryFunction1 is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>, and \p
- * BinaryFunction1's \c return_type is convertible to \p OutputType. \tparam BinaryFunction2 is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>, and \p
- * BinaryFunction2's \c return_type is convertible to \p BinaryFunction1's \c second_argument_type.
+ * \p BinaryFunction1's first argument type.
+ *  \tparam BinaryFunction1 The function's return type must be convertible to \p OutputType.
+ *  \tparam BinaryFunction2 The function's return type must be convertible to \p BinaryFunction1's second argument type.
  *
  *  \code
  *  #include <thrust/inner_product.h>

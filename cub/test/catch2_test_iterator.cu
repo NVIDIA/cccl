@@ -26,14 +26,21 @@
  *
  ******************************************************************************/
 
+#include <cuda/__cccl_config>
+
+// with NVHPC we get deprecation warnings originating from instantiations from cudafe1.stub.c, so we have to bulk
+// suppress all deprecation warnings in this file (without a matching pop)
+#if _CCCL_COMPILER(NVHPC)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+#endif
+
 #include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/iterator/constant_input_iterator.cuh>
-#include <cub/iterator/counting_input_iterator.cuh>
 #include <cub/iterator/tex_obj_input_iterator.cuh>
-#include <cub/iterator/transform_input_iterator.cuh>
 #include <cub/util_allocator.cuh>
 #include <cub/util_type.cuh>
+
+#include <thrust/iterator/transform_iterator.h>
 
 #include <cuda/std/__cccl/dialect.h>
 
@@ -91,8 +98,10 @@ __global__ void test_iterator_kernel(InputIteratorT d_in, T* d_out, InputIterato
   d_itrs[1] = d_in; // Iterator at offset 0
 }
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename InputIteratorT, typename T>
-void test_iterator(InputIteratorT d_in, const c2h::host_vector<T>& h_reference)
+void test_iterator(InputIteratorT d_in, const c2h::host_vector<T>& h_reference) //
+  _CCCL_SUPPRESS_DEPRECATED_POP
 {
   c2h::device_vector<T> d_out(h_reference.size());
   c2h::device_vector<InputIteratorT> d_itrs(2, d_in); // TODO(bgruber): using a raw allocation halves the compile time
@@ -106,30 +115,6 @@ void test_iterator(InputIteratorT d_in, const c2h::host_vector<T>& h_reference)
   CHECK(h_reference == c2h::host_vector<T>(d_out)); // comparing host_vectors compiles a lot faster than mixed vectors
   CHECK(d_in + 21 == h_itrs[0]);
   CHECK(d_in == h_itrs[1]);
-}
-
-C2H_TEST("Test constant iterator", "[iterator]", scalar_types)
-{
-  using T                = c2h::get<0, TestType>;
-  const T base           = static_cast<T>(GENERATE(0, 99));
-  const auto h_reference = c2h::host_vector<T>{base, base, base, base, base, base, base, base};
-  test_iterator(cub::ConstantInputIterator<T>(base), h_reference);
-}
-
-C2H_TEST("Test counting iterator", "[iterator]", scalar_types)
-{
-  using T                = c2h::get<0, TestType>;
-  const T base           = static_cast<T>(GENERATE(0, 99));
-  const auto h_reference = c2h::host_vector<T>{
-    static_cast<T>(base + 0),
-    static_cast<T>(base + 100),
-    static_cast<T>(base + 1000),
-    static_cast<T>(base + 10000),
-    static_cast<T>(base + 1),
-    static_cast<T>(base + 21),
-    static_cast<T>(base + 11),
-    static_cast<T>(base + 0)};
-  test_iterator(cub::CountingInputIterator<T>(base), h_reference);
 }
 
 using cache_modifiers =
@@ -167,30 +152,6 @@ struct transform_op_t
     return input + input;
   }
 };
-
-C2H_TEST("Test transform iterator", "[iterator]", types)
-{
-  using T                   = c2h::get<0, TestType>;
-  constexpr int TEST_VALUES = 11000;
-
-  c2h::device_vector<T> d_data(TEST_VALUES);
-  c2h::gen(C2H_SEED(1), d_data);
-  c2h::host_vector<T> h_data(d_data);
-
-  transform_op_t<T> op;
-  const auto h_reference = c2h::host_vector<T>{
-    op(h_data[0]),
-    op(h_data[100]),
-    op(h_data[1000]),
-    op(h_data[10000]),
-    op(h_data[1]),
-    op(h_data[21]),
-    op(h_data[11]),
-    op(h_data[0])};
-  test_iterator(cub::TransformInputIterator<T, transform_op_t<T>, const T*>(
-                  const_cast<const T*>(const_cast<const T*>(thrust::raw_pointer_cast(d_data.data()))), op),
-                h_reference);
-}
 
 C2H_TEST("Test tex-obj texture iterator", "[iterator]", types)
 {
@@ -233,7 +194,7 @@ C2H_TEST("Test texture transform iterator", "[iterator]", types)
   TextureIterator d_tex_itr;
   CubDebugExit(
     d_tex_itr.BindTexture(const_cast<const T*>(thrust::raw_pointer_cast(d_data.data())), sizeof(T) * TEST_VALUES));
-  cub::TransformInputIterator<T, transform_op_t<T>, TextureIterator> xform_itr(d_tex_itr, op);
+  thrust::transform_iterator<transform_op_t<T>, TextureIterator> xform_itr(d_tex_itr, op);
   test_iterator(xform_itr, h_reference);
   CubDebugExit(d_tex_itr.UnbindTexture());
 }

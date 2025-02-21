@@ -40,7 +40,7 @@ using remove_cv_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_CV(_Tp);
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_cv
 {
-  typedef remove_volatile_t<remove_const_t<_Tp>> type;
+  using type = remove_volatile_t<remove_const_t<_Tp>>;
 };
 
 template <class _Tp>

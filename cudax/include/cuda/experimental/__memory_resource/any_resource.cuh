@@ -27,11 +27,6 @@
 #  error "To use the experimental memory resource, define LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
 #endif
 
-// cuda::mr is unavable on MSVC 2017
-#if _CCCL_COMPILER(MSVC2017)
-#  error "The any_resource header is not supported on MSVC 2017"
-#endif
-
 #if !defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 #  define LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 #endif
@@ -80,8 +75,8 @@ struct __with_property
   template <class...>
   struct __iproperty : interface<__iproperty>
   {
-    _CUDAX_HOST_API friend auto
-    get_property([[maybe_unused]] const __iproperty& __obj, _Property) -> __property_result_t<_Property>
+    _CUDAX_HOST_API friend auto get_property([[maybe_unused]] const __iproperty& __obj, _Property)
+      -> __property_result_t<_Property>
     {
       if constexpr (!_CUDA_VSTD::is_same_v<__property_result_t<_Property>, void>)
       {
@@ -268,8 +263,8 @@ template <class _Derived>
 struct __with_try_get_property
 {
   template <class _Property>
-  _CUDAX_HOST_API _CCCL_NODISCARD_FRIEND auto
-  try_get_property(const _Derived& __self, _Property) noexcept -> __try_property_result_t<_Property>
+  _CUDAX_HOST_API _CCCL_NODISCARD_FRIEND auto try_get_property(const _Derived& __self, _Property) noexcept
+    -> __try_property_result_t<_Property>
   {
     auto __prop = __cudax::dynamic_any_cast<const __iproperty<_Property>*>(&__self);
     if constexpr (_CUDA_VSTD::is_same_v<__property_result_t<_Property>, void>)

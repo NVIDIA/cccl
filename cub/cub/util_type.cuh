@@ -43,29 +43,32 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/type_traits.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
+
+#include <thrust/iterator/discard_iterator.h>
 
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
-#if defined(_CCCL_HAS_NVFP16)
+#if _CCCL_HAS_NVFP16()
 #  include <cuda_fp16.h>
-#endif // _CCCL_HAS_NVFP16
+#endif // _CCCL_HAS_NVFP16()
 
-#if defined(_CCCL_HAS_NVBF16)
+#if _CCCL_HAS_NVBF16()
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
 #  include <cuda_bf16.h>
 _CCCL_DIAG_POP
+#endif // _CCCL_HAS_NVBF16()
 
-#  if _CCCL_CUDACC_AT_LEAST(11, 8)
 // cuda_fp8.h resets default for C4127, so we have to guard the inclusion
+#if _CCCL_HAS_NVFP8()
 _CCCL_DIAG_PUSH
-#    include <cuda_fp8.h>
+#  include <cuda_fp8.h>
 _CCCL_DIAG_POP
-#  endif // _CCCL_CUDACC_AT_LEAST(11, 8)
-#endif // _CCCL_HAS_NV_BF16
+#endif // _CCCL_HAS_NVFP8()
 
 #if _CCCL_COMPILER(NVRTC)
 #  include <cuda/std/iterator>
@@ -74,20 +77,6 @@ _CCCL_DIAG_POP
 #endif // _CCCL_COMPILER(NVRTC)
 
 CUB_NAMESPACE_BEGIN
-
-#ifndef CUB_IS_INT128_ENABLED
-#  if defined(__CUDACC_RTC__)
-#    if defined(__CUDACC_RTC_INT128__)
-#      define CUB_IS_INT128_ENABLED 1
-#    endif // !defined(__CUDACC_RTC_INT128__)
-#  else // !defined(__CUDACC_RTC__)
-#    if _CCCL_CUDACC_AT_LEAST(11, 5)
-#      if _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
-#        define CUB_IS_INT128_ENABLED 1
-#      endif // GCC || CLANG || NVHPC
-#    endif // _CCCL_CUDACC_AT_LEAST(11, 5)
-#  endif // !defined(__CUDACC_RTC__)
-#endif // !defined(CUB_IS_INT128_ENABLED)
 
 /******************************************************************************
  * Conditional types
@@ -107,7 +96,7 @@ using value_t =
   typename std::iterator_traits<Iterator>::value_type;
 #  endif // !_CCCL_COMPILER(NVRTC)
 
-template <typename It, typename FallbackT, bool = ::cuda::std::is_void<::cuda::std::remove_pointer_t<It>>::value>
+template <typename It, typename FallbackT, bool = ::cuda::std::is_void_v<::cuda::std::remove_pointer_t<It>>>
 struct non_void_value_impl
 {
   using type = FallbackT;
@@ -116,7 +105,13 @@ struct non_void_value_impl
 template <typename It, typename FallbackT>
 struct non_void_value_impl<It, FallbackT, false>
 {
-  using type = ::cuda::std::_If<::cuda::std::is_void<value_t<It>>::value, FallbackT, value_t<It>>;
+  // we consider thrust::discard_iterator's value_type as `void` as well, so users can switch from
+  // cub::DiscardInputIterator to thrust::discard_iterator.
+  using type =
+    ::cuda::std::_If<::cuda::std::is_void_v<value_t<It>>
+                       || ::cuda::std::is_same_v<value_t<It>, THRUST_NS_QUALIFIER::discard_iterator<>::value_type>,
+                     FallbackT,
+                     value_t<It>>;
 };
 
 /**
@@ -215,18 +210,19 @@ struct NullType
   }
 };
 
-/**
- * \brief Allows for the treatment of an integral constant as a type at compile-time (e.g., to achieve static call
- * dispatch based on constant integral values)
- */
-template <int A>
-struct Int2Type
+namespace detail
 {
-  enum
-  {
-    VALUE = A
-  };
-};
+
+template <bool Value>
+inline constexpr auto bool_constant_v = ::cuda::std::bool_constant<Value>{};
+
+template <auto Value>
+using constant_t = ::cuda::std::integral_constant<decltype(Value), Value>;
+
+template <auto Value>
+inline constexpr auto constant_v = constant_t<Value>{};
+
+} // namespace detail
 
 /**
  * \brief Allows algorithms that take a value as input to take a future value that is not computed yet at launch time.
@@ -690,20 +686,6 @@ struct KeyValuePair
 };
 
 /**
- * \brief A wrapper for passing simple static arrays as kernel parameters
- * deprecated [Since 2.5.0] The `cub::ArrayWrapper` is deprecated. Use `cuda::std::array` instead.
- */
-template <typename T, int COUNT>
-struct CCCL_DEPRECATED_BECAUSE("Use cuda::std::array instead.") ArrayWrapper
-{
-  /// Statically-sized array of type \p T
-  T array[COUNT];
-
-  /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ArrayWrapper() {}
-};
-
-/**
  * \brief Double-buffer storage wrapper for multi-pass stream transformations that require more than one storage array
  * for streaming intermediate results back and forth.
  *
@@ -774,28 +756,17 @@ struct DoubleBuffer
  */
 template <typename T, typename BinaryOp, typename = void>
 struct BinaryOpHasIdxParam : ::cuda::std::false_type
-{
-  CCCL_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool HAS_PARAM = false;
-};
+{};
 
 template <typename T, typename BinaryOp>
 struct BinaryOpHasIdxParam<T,
                            BinaryOp,
                            ::cuda::std::void_t<decltype(::cuda::std::declval<BinaryOp>()(
                              ::cuda::std::declval<T>(), ::cuda::std::declval<T>(), int{}))>> : ::cuda::std::true_type
-{
-  CCCL_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool HAS_PARAM = true;
-};
+{};
 
 /******************************************************************************
  * Simple type traits utilities.
- *
- * For example:
- *     Traits<int>::CATEGORY             // SIGNED_INTEGER
- *     Traits<NullType>::NULL_TYPE       // true
- *     Traits<uint4>::CATEGORY           // NOT_A_NUMBER
- *     Traits<uint4>::PRIMITIVE;         // false
- *
  ******************************************************************************/
 
 /**
@@ -812,27 +783,22 @@ enum Category
 /**
  * \brief Basic type traits
  */
-template <Category _CATEGORY, bool _PRIMITIVE, bool _NULL_TYPE, typename _UnsignedBits, typename T>
+template <Category _CATEGORY, typename _UnsignedBits, typename T>
 struct BaseTraits
-{
-  static constexpr Category CATEGORY = _CATEGORY;
-  static constexpr bool PRIMITIVE    = _PRIMITIVE;
-  static constexpr bool NULL_TYPE    = _NULL_TYPE;
-};
+{};
 
 /**
  * Basic type traits (unsigned primitive specialization)
  */
 template <typename _UnsignedBits, typename T>
-struct BaseTraits<UNSIGNED_INTEGER, true, false, _UnsignedBits, T>
+struct BaseTraits<UNSIGNED_INTEGER, _UnsignedBits, T>
 {
-  using UnsignedBits = _UnsignedBits;
+  static_assert(::cuda::std::numeric_limits<T>::is_specialized,
+                "Please also specialize cuda::std::numeric_limits for T");
 
-  static constexpr Category CATEGORY       = UNSIGNED_INTEGER;
+  using UnsignedBits                       = _UnsignedBits;
   static constexpr UnsignedBits LOWEST_KEY = UnsignedBits(0);
   static constexpr UnsignedBits MAX_KEY    = UnsignedBits(-1);
-  static constexpr bool PRIMITIVE          = true;
-  static constexpr bool NULL_TYPE          = false;
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
   {
@@ -865,16 +831,16 @@ struct BaseTraits<UNSIGNED_INTEGER, true, false, _UnsignedBits, T>
  * Basic type traits (signed primitive specialization)
  */
 template <typename _UnsignedBits, typename T>
-struct BaseTraits<SIGNED_INTEGER, true, false, _UnsignedBits, T>
+struct BaseTraits<SIGNED_INTEGER, _UnsignedBits, T>
 {
+  static_assert(::cuda::std::numeric_limits<T>::is_specialized,
+                "Please also specialize cuda::std::numeric_limits for T");
+
   using UnsignedBits = _UnsignedBits;
 
-  static constexpr Category CATEGORY       = SIGNED_INTEGER;
   static constexpr UnsignedBits HIGH_BIT   = UnsignedBits(1) << ((sizeof(UnsignedBits) * 8) - 1);
   static constexpr UnsignedBits LOWEST_KEY = HIGH_BIT;
   static constexpr UnsignedBits MAX_KEY    = UnsignedBits(-1) ^ HIGH_BIT;
-  static constexpr bool PRIMITIVE          = true;
-  static constexpr bool NULL_TYPE          = false;
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
   {
@@ -899,130 +865,20 @@ struct BaseTraits<SIGNED_INTEGER, true, false, _UnsignedBits, T>
   }
 };
 
-template <typename _T>
-struct FpLimits;
-
-template <>
-struct FpLimits<float>
-{
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE float Max()
-  {
-    return ::cuda::std::numeric_limits<float>::max();
-  }
-
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE float Lowest()
-  {
-    return ::cuda::std::numeric_limits<float>::lowest();
-  }
-};
-
-template <>
-struct FpLimits<double>
-{
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE double Max()
-  {
-    return ::cuda::std::numeric_limits<double>::max();
-  }
-
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE double Lowest()
-  {
-    return ::cuda::std::numeric_limits<double>::lowest();
-  }
-};
-
-#  if defined(_CCCL_HAS_NVFP16)
-template <>
-struct FpLimits<__half>
-{
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __half Max()
-  {
-    unsigned short max_word = 0x7BFF;
-    return reinterpret_cast<__half&>(max_word);
-  }
-
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __half Lowest()
-  {
-    unsigned short lowest_word = 0xFBFF;
-    return reinterpret_cast<__half&>(lowest_word);
-  }
-};
-#  endif // _CCCL_HAS_NVFP16
-
-#  if defined(_CCCL_HAS_NVBF16)
-template <>
-struct FpLimits<__nv_bfloat16>
-{
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __nv_bfloat16 Max()
-  {
-    unsigned short max_word = 0x7F7F;
-    return reinterpret_cast<__nv_bfloat16&>(max_word);
-  }
-
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __nv_bfloat16 Lowest()
-  {
-    unsigned short lowest_word = 0xFF7F;
-    return reinterpret_cast<__nv_bfloat16&>(lowest_word);
-  }
-};
-#  endif // _CCCL_HAS_NVBF16
-
-#  if defined(__CUDA_FP8_TYPES_EXIST__)
-template <>
-struct FpLimits<__nv_fp8_e4m3>
-{
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __nv_fp8_e4m3 Max()
-  {
-    unsigned char max_word = 0x7EU;
-    __nv_fp8_e4m3 ret_val;
-    memcpy(&ret_val, &max_word, sizeof(__nv_fp8_e4m3));
-    return ret_val;
-  }
-
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __nv_fp8_e4m3 Lowest()
-  {
-    unsigned char lowest_word = 0xFEU;
-    __nv_fp8_e4m3 ret_val;
-    memcpy(&ret_val, &lowest_word, sizeof(__nv_fp8_e4m3));
-    return ret_val;
-  }
-};
-
-template <>
-struct FpLimits<__nv_fp8_e5m2>
-{
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __nv_fp8_e5m2 Max()
-  {
-    unsigned char max_word = 0x7BU;
-    __nv_fp8_e5m2 ret_val;
-    memcpy(&ret_val, &max_word, sizeof(__nv_fp8_e5m2));
-    return ret_val;
-  }
-
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __nv_fp8_e5m2 Lowest()
-  {
-    unsigned char lowest_word = 0xFBU;
-    __nv_fp8_e5m2 ret_val;
-    memcpy(&ret_val, &lowest_word, sizeof(__nv_fp8_e5m2));
-    return ret_val;
-  }
-};
-
-#  endif // __CUDA_FP8_TYPES_EXIST__
-
 /**
  * Basic type traits (fp primitive specialization)
  */
 template <typename _UnsignedBits, typename T>
-struct BaseTraits<FLOATING_POINT, true, false, _UnsignedBits, T>
+struct BaseTraits<FLOATING_POINT, _UnsignedBits, T>
 {
+  static_assert(::cuda::std::numeric_limits<T>::is_specialized,
+                "Please also specialize cuda::std::numeric_limits for T");
+
   using UnsignedBits = _UnsignedBits;
 
-  static constexpr Category CATEGORY       = FLOATING_POINT;
   static constexpr UnsignedBits HIGH_BIT   = UnsignedBits(1) << ((sizeof(UnsignedBits) * 8) - 1);
   static constexpr UnsignedBits LOWEST_KEY = UnsignedBits(-1);
   static constexpr UnsignedBits MAX_KEY    = UnsignedBits(-1) ^ HIGH_BIT;
-  static constexpr bool PRIMITIVE          = true;
-  static constexpr bool NULL_TYPE          = false;
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
   {
@@ -1038,12 +894,12 @@ struct BaseTraits<FLOATING_POINT, true, false, _UnsignedBits, T>
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Max()
   {
-    return FpLimits<T>::Max();
+    return ::cuda::std::numeric_limits<T>::max();
   }
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Lowest()
   {
-    return FpLimits<T>::Lowest();
+    return ::cuda::std::numeric_limits<T>::lowest();
   }
 };
 
@@ -1051,36 +907,33 @@ struct BaseTraits<FLOATING_POINT, true, false, _UnsignedBits, T>
  * \brief Numeric type traits
  */
 // clang-format off
-template <typename T> struct NumericTraits :            BaseTraits<NOT_A_NUMBER, false, false, T, T> {};
+template <typename T> struct NumericTraits :            BaseTraits<NOT_A_NUMBER, T, T> {};
 
-template <> struct NumericTraits<NullType> :            BaseTraits<NOT_A_NUMBER, false, true, NullType, NullType> {};
+template <> struct NumericTraits<NullType> :            BaseTraits<NOT_A_NUMBER, NullType, NullType> {};
 
-template <> struct NumericTraits<char> :                BaseTraits<(::cuda::std::numeric_limits<char>::is_signed) ? SIGNED_INTEGER : UNSIGNED_INTEGER, true, false, unsigned char, char> {};
-template <> struct NumericTraits<signed char> :         BaseTraits<SIGNED_INTEGER, true, false, unsigned char, signed char> {};
-template <> struct NumericTraits<short> :               BaseTraits<SIGNED_INTEGER, true, false, unsigned short, short> {};
-template <> struct NumericTraits<int> :                 BaseTraits<SIGNED_INTEGER, true, false, unsigned int, int> {};
-template <> struct NumericTraits<long> :                BaseTraits<SIGNED_INTEGER, true, false, unsigned long, long> {};
-template <> struct NumericTraits<long long> :           BaseTraits<SIGNED_INTEGER, true, false, unsigned long long, long long> {};
+template <> struct NumericTraits<char> :                BaseTraits<(::cuda::std::numeric_limits<char>::is_signed) ? SIGNED_INTEGER : UNSIGNED_INTEGER, unsigned char, char> {};
+template <> struct NumericTraits<signed char> :         BaseTraits<SIGNED_INTEGER, unsigned char, signed char> {};
+template <> struct NumericTraits<short> :               BaseTraits<SIGNED_INTEGER, unsigned short, short> {};
+template <> struct NumericTraits<int> :                 BaseTraits<SIGNED_INTEGER, unsigned int, int> {};
+template <> struct NumericTraits<long> :                BaseTraits<SIGNED_INTEGER, unsigned long, long> {};
+template <> struct NumericTraits<long long> :           BaseTraits<SIGNED_INTEGER, unsigned long long, long long> {};
 
-template <> struct NumericTraits<unsigned char> :       BaseTraits<UNSIGNED_INTEGER, true, false, unsigned char, unsigned char> {};
-template <> struct NumericTraits<unsigned short> :      BaseTraits<UNSIGNED_INTEGER, true, false, unsigned short, unsigned short> {};
-template <> struct NumericTraits<unsigned int> :        BaseTraits<UNSIGNED_INTEGER, true, false, unsigned int, unsigned int> {};
-template <> struct NumericTraits<unsigned long> :       BaseTraits<UNSIGNED_INTEGER, true, false, unsigned long, unsigned long> {};
-template <> struct NumericTraits<unsigned long long> :  BaseTraits<UNSIGNED_INTEGER, true, false, unsigned long long, unsigned long long> {};
+template <> struct NumericTraits<unsigned char> :       BaseTraits<UNSIGNED_INTEGER, unsigned char, unsigned char> {};
+template <> struct NumericTraits<unsigned short> :      BaseTraits<UNSIGNED_INTEGER, unsigned short, unsigned short> {};
+template <> struct NumericTraits<unsigned int> :        BaseTraits<UNSIGNED_INTEGER, unsigned int, unsigned int> {};
+template <> struct NumericTraits<unsigned long> :       BaseTraits<UNSIGNED_INTEGER, unsigned long, unsigned long> {};
+template <> struct NumericTraits<unsigned long long> :  BaseTraits<UNSIGNED_INTEGER, unsigned long long, unsigned long long> {};
 
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 template <>
 struct NumericTraits<__uint128_t>
 {
   using T = __uint128_t;
   using UnsignedBits = __uint128_t;
 
-  static constexpr Category       CATEGORY    = UNSIGNED_INTEGER;
   static constexpr UnsignedBits   LOWEST_KEY  = UnsignedBits(0);
   static constexpr UnsignedBits   MAX_KEY     = UnsignedBits(-1);
-  static constexpr bool PRIMITIVE = false;
-  static constexpr bool NULL_TYPE = false;
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
   {
@@ -1109,12 +962,9 @@ struct NumericTraits<__int128_t>
   using T = __int128_t;
   using UnsignedBits = __uint128_t;
 
-  static constexpr Category       CATEGORY    = SIGNED_INTEGER;
   static constexpr UnsignedBits   HIGH_BIT    = UnsignedBits(1) << ((sizeof(UnsignedBits) * 8) - 1);
   static constexpr UnsignedBits   LOWEST_KEY  = HIGH_BIT;
   static constexpr UnsignedBits   MAX_KEY     = UnsignedBits(-1) ^ HIGH_BIT;
-  static constexpr bool PRIMITIVE = false;
-  static constexpr bool NULL_TYPE = false;
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
   {
@@ -1138,31 +988,72 @@ struct NumericTraits<__int128_t>
     return reinterpret_cast<T&>(retval);
   }
 };
-#endif
+#endif // _CCCL_HAS_INT128()
 
-template <> struct NumericTraits<float> :               BaseTraits<FLOATING_POINT, true, false, unsigned int, float> {};
-template <> struct NumericTraits<double> :              BaseTraits<FLOATING_POINT, true, false, unsigned long long, double> {};
-#  if defined(_CCCL_HAS_NVFP16)
-    template <> struct NumericTraits<__half> :          BaseTraits<FLOATING_POINT, true, false, unsigned short, __half> {};
-#  endif // _CCCL_HAS_NVFP16
-#  if defined(_CCCL_HAS_NVBF16)
-    template <> struct NumericTraits<__nv_bfloat16> :   BaseTraits<FLOATING_POINT, true, false, unsigned short, __nv_bfloat16> {};
-#  endif // _CCCL_HAS_NVBF16
+template <> struct NumericTraits<float> :               BaseTraits<FLOATING_POINT,unsigned int, float> {};
+template <> struct NumericTraits<double> :              BaseTraits<FLOATING_POINT,unsigned long long, double> {};
+#  if _CCCL_HAS_NVFP16()
+    template <> struct NumericTraits<__half> :          BaseTraits<FLOATING_POINT,unsigned short, __half> {};
+#  endif // _CCCL_HAS_NVFP16()
+#  if _CCCL_HAS_NVBF16()
+    template <> struct NumericTraits<__nv_bfloat16> :   BaseTraits<FLOATING_POINT,unsigned short, __nv_bfloat16> {};
+#  endif // _CCCL_HAS_NVBF16()
 
-#if defined(__CUDA_FP8_TYPES_EXIST__)
-    template <> struct NumericTraits<__nv_fp8_e4m3> :   BaseTraits<FLOATING_POINT, true, false, __nv_fp8_storage_t, __nv_fp8_e4m3> {};
-    template <> struct NumericTraits<__nv_fp8_e5m2> :   BaseTraits<FLOATING_POINT, true, false, __nv_fp8_storage_t, __nv_fp8_e5m2> {};
-#endif // __CUDA_FP8_TYPES_EXIST__
+#if _CCCL_HAS_NVFP8()
+    template <> struct NumericTraits<__nv_fp8_e4m3> :   BaseTraits<FLOATING_POINT, __nv_fp8_storage_t, __nv_fp8_e4m3> {};
+    template <> struct NumericTraits<__nv_fp8_e5m2> :   BaseTraits<FLOATING_POINT, __nv_fp8_storage_t, __nv_fp8_e5m2> {};
+#endif // _CCCL_HAS_NVFP8()
 
-template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTEGER, true, false, typename UnitWord<bool>::VolatileWord, bool> {};
+template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTEGER, typename UnitWord<bool>::VolatileWord, bool> {};
 // clang-format on
 
 /**
  * \brief Type traits
  */
 template <typename T>
-struct Traits : NumericTraits<typename ::cuda::std::remove_cv<T>::type>
+struct Traits : NumericTraits<::cuda::std::remove_cv_t<T>>
 {};
+
+namespace detail
+{
+// __uint128_t and __int128_t are not primitive
+template <typename T>
+using is_primitive = ::cuda::std::bool_constant<is_one_of<
+  T,
+  char,
+  signed char,
+  short,
+  int,
+  long,
+  long long,
+  unsigned char,
+  unsigned short,
+  unsigned int,
+  unsigned long,
+  unsigned long long,
+  bool,
+  float,
+  double
+#  if _CCCL_HAS_NVFP16()
+  ,
+  __half
+#  endif // _CCCL_HAS_NVFP16()
+#  if _CCCL_HAS_NVBF16()
+  ,
+  __nv_bfloat16
+#  endif // _CCCL_HAS_NVBF16()
+#  if _CCCL_HAS_NVFP8()
+  ,
+  __nv_fp8_e4m3,
+  __nv_fp8_e5m2
+#  endif // _CCCL_HAS_NVFP8()
+  >()>;
+
+#  ifndef _CCCL_NO_VARIABLE_TEMPLATES
+template <typename T>
+inline constexpr bool is_primitive_v = is_primitive<T>::value;
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+} // namespace detail
 
 #endif // _CCCL_DOXYGEN_INVOKED
 

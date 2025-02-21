@@ -27,7 +27,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2011
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Cont>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr auto size(const _Cont& __c) noexcept(noexcept(__c.size())) -> decltype(__c.size())
@@ -40,9 +39,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t size(const _Tp (&)[_Sz]) noexcept
 {
   return _Sz;
 }
-#endif // _CCCL_STD_VER > 2011
 
-#if _CCCL_STD_VER > 2017
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Cont>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr auto ssize(const _Cont& __c) noexcept(
@@ -62,7 +59,6 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr ptrdiff_t ssize(const _Tp (&)[_Sz]) noexcept
   return _Sz;
 }
 _CCCL_DIAG_POP
-#endif // _CCCL_STD_VER > 2017
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

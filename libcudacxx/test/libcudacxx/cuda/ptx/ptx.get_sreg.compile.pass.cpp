@@ -15,6 +15,8 @@
 #include <cuda/ptx>
 #include <cuda/std/utility>
 
+#include "nvrtc_workaround.h"
+// above header needs to be included before the generated test header
 #include "generated/get_sreg.h"
 
 int main(int, char**)

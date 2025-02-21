@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class T>
 // concept totally_ordered;
 
@@ -88,25 +86,25 @@ static_assert(!totally_ordered<int S::*>, "");
 static_assert(!totally_ordered<int (S::*)()>, "");
 static_assert(!totally_ordered<int (S::*)() noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() &>, "");
-static_assert(!totally_ordered<int (S::*)() & noexcept>, "");
+static_assert(!totally_ordered < int(S::*)() & noexcept >, "");
 static_assert(!totally_ordered<int (S::*)() &&>, "");
 static_assert(!totally_ordered < int(S::*)() && noexcept >, "");
 static_assert(!totally_ordered<int (S::*)() const>, "");
 static_assert(!totally_ordered<int (S::*)() const noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() const&>, "");
-static_assert(!totally_ordered<int (S::*)() const & noexcept>, "");
+static_assert(!totally_ordered < int(S::*)() const& noexcept >, "");
 static_assert(!totally_ordered<int (S::*)() const&&>, "");
 static_assert(!totally_ordered < int(S::*)() const&& noexcept >, "");
 static_assert(!totally_ordered<int (S::*)() volatile>, "");
 static_assert(!totally_ordered<int (S::*)() volatile noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() volatile&>, "");
-static_assert(!totally_ordered<int (S::*)() volatile & noexcept>, "");
+static_assert(!totally_ordered < int(S::*)() volatile & noexcept >, "");
 static_assert(!totally_ordered<int (S::*)() volatile&&>, "");
 static_assert(!totally_ordered < int(S::*)() volatile && noexcept >, "");
 static_assert(!totally_ordered<int (S::*)() const volatile>, "");
 static_assert(!totally_ordered<int (S::*)() const volatile noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() const volatile&>, "");
-static_assert(!totally_ordered<int (S::*)() const volatile & noexcept>, "");
+static_assert(!totally_ordered < int(S::*)() const volatile& noexcept >, "");
 static_assert(!totally_ordered<int (S::*)() const volatile&&>, "");
 static_assert(!totally_ordered < int(S::*)() const volatile&& noexcept >, "");
 

@@ -122,9 +122,7 @@ CUB_NAMESPACE_BEGIN
 //! @tparam BLOCK_DIM_Z
 //!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
-//! @tparam LEGACY_PTX_ARCH
-//!   **[optional]** Unused
-template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y = 1, int BLOCK_DIM_Z = 1, int LEGACY_PTX_ARCH = 0>
+template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y = 1, int BLOCK_DIM_Z = 1>
 class BlockDiscontinuity
 {
 private:
@@ -292,7 +290,7 @@ public:
     // Share last item
     temp_storage.last_items[linear_tid] = input[ITEMS_PER_THREAD - 1];
 
-    CTA_SYNC();
+    __syncthreads();
 
     if (linear_tid == 0)
     {
@@ -337,7 +335,7 @@ public:
     // Share last item
     temp_storage.last_items[linear_tid] = input[ITEMS_PER_THREAD - 1];
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Set flag for first thread-item
     preds[0] = (linear_tid == 0) ? tile_predecessor_item : // First thread
@@ -586,7 +584,7 @@ public:
     // Share first item
     temp_storage.first_items[linear_tid] = input[0];
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Set flag for last thread-item
     tail_flags[ITEMS_PER_THREAD - 1] =
@@ -686,7 +684,7 @@ public:
     // Share first item
     temp_storage.first_items[linear_tid] = input[0];
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Set flag for last thread-item
     T successor_item = (linear_tid == BLOCK_THREADS - 1) ? tile_successor_item : // Last thread
@@ -790,7 +788,7 @@ public:
     temp_storage.first_items[linear_tid] = input[0];
     temp_storage.last_items[linear_tid]  = input[ITEMS_PER_THREAD - 1];
 
-    CTA_SYNC();
+    __syncthreads();
 
     T preds[ITEMS_PER_THREAD];
 
@@ -920,7 +918,7 @@ public:
     temp_storage.first_items[linear_tid] = input[0];
     temp_storage.last_items[linear_tid]  = input[ITEMS_PER_THREAD - 1];
 
-    CTA_SYNC();
+    __syncthreads();
 
     T preds[ITEMS_PER_THREAD];
 
@@ -1052,7 +1050,7 @@ public:
     temp_storage.first_items[linear_tid] = input[0];
     temp_storage.last_items[linear_tid]  = input[ITEMS_PER_THREAD - 1];
 
-    CTA_SYNC();
+    __syncthreads();
 
     T preds[ITEMS_PER_THREAD];
 
@@ -1189,7 +1187,7 @@ public:
     temp_storage.first_items[linear_tid] = input[0];
     temp_storage.last_items[linear_tid]  = input[ITEMS_PER_THREAD - 1];
 
-    CTA_SYNC();
+    __syncthreads();
 
     T preds[ITEMS_PER_THREAD];
 

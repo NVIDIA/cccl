@@ -13,26 +13,21 @@
 #  pragma system_header
 #endif // no system header
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-#include <cuda/std/functional>
-_CCCL_SUPPRESS_DEPRECATED_POP
-
 #include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/iterator/arg_index_input_iterator.cuh>
-#include <cub/iterator/constant_input_iterator.cuh>
 
+#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/tabulate_output_iterator.h>
 
+#include <cuda/std/functional>
 #include <cuda/std/type_traits>
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace reduce
+namespace detail::reduce
 {
 
 template <typename GlobalAccumT, typename PromoteToGlobalOpT, typename GlobalReductionOpT, typename FinalResultOutIteratorT>
@@ -189,7 +184,7 @@ template <typename InputIteratorT,
           typename ReductionOpT,
           typename InitT,
           typename PolicyChainT =
-            DeviceReducePolicy<KeyValuePair<PerPartitionOffsetT, InitT>, PerPartitionOffsetT, ReductionOpT>>
+            detail::reduce::policy_hub<KeyValuePair<PerPartitionOffsetT, InitT>, PerPartitionOffsetT, ReductionOpT>>
 struct dispatch_streaming_arg_reduce_t
 {
   // Internal dispatch routine for computing a device-wide argument extremum, like `ArgMin` and `ArgMax`
@@ -231,7 +226,7 @@ struct dispatch_streaming_arg_reduce_t
     cudaStream_t stream)
   {
     // Constant iterator to provide the offset of the current partition for the user-provided input iterator
-    using constant_offset_it_t = ConstantInputIterator<GlobalOffsetT>;
+    using constant_offset_it_t = THRUST_NS_QUALIFIER::constant_iterator<GlobalOffsetT>;
 
     // Wrapped input iterator to produce index-value tuples, i.e., <PerPartitionOffsetT, InputT>-tuples
     // We make sure to offset the user-provided input iterator by the current partition's offset
@@ -269,6 +264,7 @@ struct dispatch_streaming_arg_reduce_t
                      ReductionOpT,
                      empty_problem_init_t,
                      per_partition_accum_t,
+                     ::cuda::std::__identity,
                      PolicyChainT>;
 
     // The current partition's input iterator is an ArgIndex iterator that generates indices relative to the beginning
@@ -315,7 +311,7 @@ struct dispatch_streaming_arg_reduce_t
 
     // Alias the temporary allocations from the single storage blob (or compute the necessary size
     // of the blob)
-    cudaError_t error = AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+    cudaError_t error = detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
     if (error != cudaSuccess)
     {
       return error;
@@ -374,9 +370,7 @@ struct dispatch_streaming_arg_reduce_t
   }
 };
 
-} // namespace reduce
-} // namespace detail
-
+} // namespace detail::reduce
 CUB_NAMESPACE_END
 
 #endif // !_CCCL_DOXYGEN_INVOKED

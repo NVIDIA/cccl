@@ -8,9 +8,6 @@ find_package(Thrust ${cudax_VERSION} EXACT CONFIG
 )
 thrust_create_target(cudax.test.thrust)
 
-add_library(catch2_main STATIC catch2_helpers/catch2_main.cpp)
-target_link_libraries(catch2_main PUBLIC Catch2::Catch2)
-
 ## cudax_add_test
 #
 # Add a catch2 test executable and register it with ctest.
@@ -34,8 +31,7 @@ function(cudax_add_catch2_test target_name_var test_name cn_target) # ARGN=test 
   target_link_libraries(${test_target} PRIVATE
     ${cn_target}
     cudax.test.thrust
-    Catch2::Catch2
-    catch2_main
+    Catch2::Catch2WithMain
   )
   target_compile_options(${test_target} PRIVATE
     "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"

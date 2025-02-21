@@ -44,14 +44,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-template <typename T>
-_CCCL_DEVICE _CCCL_FORCEINLINE void Swap(T& lhs, T& rhs)
-{
-  T temp = lhs;
-  lhs    = rhs;
-  rhs    = temp;
-}
-
 /**
  * @brief Sorts data using odd-even sort method
  *
@@ -85,7 +77,7 @@ template <typename KeyT, typename ValueT, typename CompareOp, int ITEMS_PER_THRE
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 StableOddEvenSort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&items)[ITEMS_PER_THREAD], CompareOp compare_op)
 {
-  constexpr bool KEYS_ONLY = ::cuda::std::is_same<ValueT, NullType>::value;
+  constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
 #pragma unroll
   for (int i = 0; i < ITEMS_PER_THREAD; ++i)
@@ -95,10 +87,11 @@ StableOddEvenSort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&items)[ITEMS_PER_THRE
     {
       if (compare_op(keys[j + 1], keys[j]))
       {
-        Swap(keys[j], keys[j + 1]);
+        using ::cuda::std::swap;
+        swap(keys[j], keys[j + 1]);
         if (!KEYS_ONLY)
         {
-          Swap(items[j], items[j + 1]);
+          swap(items[j], items[j + 1]);
         }
       }
     } // inner loop

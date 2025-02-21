@@ -58,12 +58,12 @@ using full_type_list = c2h::type_list<type_triple<uchar3, uchar3, custom_t>, typ
 // clang-format off
 using full_type_list = c2h::type_list<
 type_triple<custom_t>
-#if TEST_HALF_T
+#if TEST_HALF_T()
 , type_triple<half_t> // testing half
-#endif
-#if TEST_BF_T
+#endif // TEST_HALF_T()
+#if TEST_BF_T()
 , type_triple<bfloat16_t> // testing bf16
-#endif
+#endif // TEST_BF_T()
 >;
 // clang-format on
 #endif
@@ -149,7 +149,7 @@ C2H_TEST("Device reduce-by-key works", "[by_key][reduce][device]", full_type_lis
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_segments);
     compute_segmented_problem_reference(
-      in_values, segment_offsets, op_t{}, cub::NumericTraits<value_t>::Max(), expected_result.begin());
+      in_values, segment_offsets, op_t{}, ::cuda::std::numeric_limits<value_t>::max(), expected_result.begin());
     c2h::host_vector<key_t> expected_keys = compute_unique_keys_reference(segment_keys);
 
     // Run test

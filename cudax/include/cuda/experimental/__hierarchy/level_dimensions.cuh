@@ -118,7 +118,7 @@ struct level_dimensions
   using level_type = Level;
 
   // Needs alignas to work around an issue with tuple
-  alignas(16) const Dimensions dims; // Unit for dimensions is implicit
+  alignas(16) Dimensions dims; // Unit for dimensions is implicit
 
   _CCCL_HOST_DEVICE constexpr level_dimensions(const Dimensions& d)
       : dims(d)

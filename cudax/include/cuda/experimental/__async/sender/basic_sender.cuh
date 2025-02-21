@@ -60,8 +60,8 @@ struct receiver_defaults
   }
 
   template <class _Rcvr>
-  _CUDAX_TRIVIAL_API static auto
-  set_stopped(__ignore, _Rcvr& __rcvr) noexcept -> __async::completion_signatures<__async::set_stopped_t()>
+  _CUDAX_TRIVIAL_API static auto set_stopped(__ignore, _Rcvr& __rcvr) noexcept
+    -> __async::completion_signatures<__async::set_stopped_t()>
   {
     __async::set_stopped(static_cast<_Rcvr&&>(__rcvr));
     return {};
@@ -75,7 +75,7 @@ struct receiver_defaults
 };
 
 template <class _Data, class _Rcvr>
-struct basic_receiver
+struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_receiver
 {
   using receiver_concept = __async::receiver_t;
   using __rcvr_t         = typename _Data::receiver_tag;
@@ -198,24 +198,24 @@ _CUDAX_TRIVIAL_API auto __make_opstate(_Sndr __sndr, _Rcvr __rcvr)
 }
 
 template <class _Data, class... _Sndrs>
-_CUDAX_TRIVIAL_API auto
-__get_attrs(int, const _Data& __data, const _Sndrs&... __sndrs) noexcept -> decltype(__data.get_attrs(__sndrs...))
+_CUDAX_TRIVIAL_API auto __get_attrs(int, const _Data& __data, const _Sndrs&... __sndrs) noexcept
+  -> decltype(__data.get_attrs(__sndrs...))
 {
   return __data.get_attrs(__sndrs...);
 }
 
 template <class _Data, class... _Sndrs>
-_CUDAX_TRIVIAL_API auto
-__get_attrs(long, const _Data&, const _Sndrs&... __sndrs) noexcept -> decltype(__async::get_env(__sndrs...))
+_CUDAX_TRIVIAL_API auto __get_attrs(long, const _Data&, const _Sndrs&... __sndrs) noexcept
+  -> decltype(__async::get_env(__sndrs...))
 {
   return __async::get_env(__sndrs...);
 }
 
 template <class _Data, class... _Sndrs>
-struct basic_sender;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_sender;
 
 template <class _Data, class _Sndr>
-struct basic_sender<_Data, _Sndr>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_sender<_Data, _Sndr>
 {
   using sender_concept = __async::sender_t;
   using __tag_t        = typename _Data::sender_tag;

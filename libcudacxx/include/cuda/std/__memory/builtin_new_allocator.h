@@ -36,7 +36,7 @@ struct __builtin_new_allocator
 {
   struct __builtin_new_deleter
   {
-    typedef void* pointer_type;
+    using pointer_type = void*;
 
     _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __builtin_new_deleter(size_t __size, size_t __align) noexcept
         : __size_(__size)
@@ -53,7 +53,7 @@ struct __builtin_new_allocator
     size_t __align_;
   };
 
-  typedef unique_ptr<void, __builtin_new_deleter> __holder_t;
+  using __holder_t = unique_ptr<void, __builtin_new_deleter>;
 
   _LIBCUDACXX_HIDE_FROM_ABI static __holder_t __allocate_bytes(size_t __s, size_t __align)
   {

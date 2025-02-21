@@ -221,14 +221,11 @@ enum BlockScanAlgorithm
 //! @tparam BLOCK_DIM_Z
 //!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
-//! @tparam LEGACY_PTX_ARCH
-//!   **[optional]** Unused.
 template <typename T,
           int BLOCK_DIM_X,
           BlockScanAlgorithm ALGORITHM = BLOCK_SCAN_RAKING,
           int BLOCK_DIM_Y              = 1,
-          int BLOCK_DIM_Z              = 1,
-          int LEGACY_PTX_ARCH          = 0>
+          int BLOCK_DIM_Z              = 1>
 class BlockScan
 {
 private:
@@ -250,9 +247,9 @@ private:
       ? BLOCK_SCAN_RAKING
       : ALGORITHM;
 
-  using WarpScans = BlockScanWarpScans<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+  using WarpScans = detail::BlockScanWarpScans<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
   using Raking =
-    BlockScanRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z, (SAFE_ALGORITHM == BLOCK_SCAN_RAKING_MEMOIZE)>;
+    detail::BlockScanRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z, (SAFE_ALGORITHM == BLOCK_SCAN_RAKING_MEMOIZE)>;
 
   /// Define the delegate type for the desired algorithm
   using InternalBlockScan = ::cuda::std::_If<SAFE_ALGORITHM == BLOCK_SCAN_WARP_SCANS, WarpScans, Raking>;
@@ -477,7 +474,7 @@ public:
   //!            // Collectively compute the block-wide exclusive prefix sum
   //!            BlockScan(temp_storage).ExclusiveSum(
   //!                thread_data, thread_data, prefix_op);
-  //!            CTA_SYNC();
+  //!            __syncthreads();
   //!
   //!            // Store scanned items to output segment
   //!            d_data[block_offset] = thread_data;
@@ -714,17 +711,17 @@ public:
   //!            // Load a segment of consecutive items that are blocked across threads
   //!            int thread_data[4];
   //!            BlockLoad(temp_storage.load).Load(d_data + block_offset, thread_data);
-  //!            CTA_SYNC();
+  //!            __syncthreads();
   //!
   //!            // Collectively compute the block-wide exclusive prefix sum
   //!            int block_aggregate;
   //!            BlockScan(temp_storage.scan).ExclusiveSum(
   //!                thread_data, thread_data, prefix_op);
-  //!            CTA_SYNC();
+  //!            __syncthreads();
   //!
   //!            // Store scanned items to output segment
   //!            BlockStore(temp_storage.store).Store(d_data + block_offset, thread_data);
-  //!            CTA_SYNC();
+  //!            __syncthreads();
   //!        }
   //!
   //! Suppose the input ``d_data`` is ``1, 1, 1, 1, 1, 1, 1, 1, ...``.
@@ -957,7 +954,7 @@ public:
   //!            // Collectively compute the block-wide exclusive prefix max scan
   //!            BlockScan(temp_storage).ExclusiveScan(
   //!                thread_data, thread_data, INT_MIN, cuda::maximum<>{}, prefix_op);
-  //!            CTA_SYNC();
+  //!            __syncthreads();
   //!
   //!            // Store scanned items to output segment
   //!            d_data[block_offset] = thread_data;
@@ -1230,16 +1227,16 @@ public:
   //!            // Load a segment of consecutive items that are blocked across threads
   //!            int thread_data[4];
   //!            BlockLoad(temp_storage.load).Load(d_data + block_offset, thread_data);
-  //!            CTA_SYNC();
+  //!            __syncthreads();
   //!
   //!            // Collectively compute the block-wide exclusive prefix max scan
   //!            BlockScan(temp_storage.scan).ExclusiveScan(
   //!                thread_data, thread_data, INT_MIN, cuda::maximum<>{}, prefix_op);
-  //!            CTA_SYNC();
+  //!            __syncthreads();
   //!
   //!            // Store scanned items to output segment
   //!            BlockStore(temp_storage.store).Store(d_data + block_offset, thread_data);
-  //!            CTA_SYNC();
+  //!            __syncthreads();
   //!        }
   //!
   //! Suppose the input ``d_data`` is ``0, -1, 2, -3, 4, -5, ...``.
@@ -1618,7 +1615,7 @@ public:
   //!            // Collectively compute the block-wide inclusive prefix sum
   //!            BlockScan(temp_storage).InclusiveSum(
   //!                thread_data, thread_data, prefix_op);
-  //!            CTA_SYNC();
+  //!            __syncthreads();
   //!
   //!            // Store scanned items to output segment
   //!            d_data[block_offset] = thread_data;
@@ -1874,16 +1871,16 @@ public:
   //!            // Load a segment of consecutive items that are blocked across threads
   //!            int thread_data[4];
   //!            BlockLoad(temp_storage.load).Load(d_data + block_offset, thread_data);
-  //!            CTA_SYNC();
+  //!            __syncthreads();
   //!
   //!            // Collectively compute the block-wide inclusive prefix sum
   //!            BlockScan(temp_storage.scan).IncluisveSum(
   //!                thread_data, thread_data, prefix_op);
-  //!            CTA_SYNC();
+  //!            __syncthreads();
   //!
   //!            // Store scanned items to output segment
   //!            BlockStore(temp_storage.store).Store(d_data + block_offset, thread_data);
-  //!            CTA_SYNC();
+  //!            __syncthreads();
   //!        }
   //!
   //! Suppose the input ``d_data`` is ``1, 1, 1, 1, 1, 1, 1, 1, ...``.
@@ -2123,7 +2120,7 @@ public:
   //!            // Collectively compute the block-wide inclusive prefix max scan
   //!            BlockScan(temp_storage).InclusiveScan(
   //!                thread_data, thread_data, cuda::maximum<>{}, prefix_op);
-  //!            CTA_SYNC();
+  //!            __syncthreads();
   //!
   //!            // Store scanned items to output segment
   //!            d_data[block_offset] = thread_data;
@@ -2516,16 +2513,16 @@ public:
   //!            // Load a segment of consecutive items that are blocked across threads
   //!            int thread_data[4];
   //!            BlockLoad(temp_storage.load).Load(d_data + block_offset, thread_data);
-  //!            CTA_SYNC();
+  //!            __syncthreads();
   //!
   //!            // Collectively compute the block-wide inclusive prefix max scan
   //!            BlockScan(temp_storage.scan).InclusiveScan(
   //!                thread_data, thread_data, cuda::maximum<>{}, prefix_op);
-  //!            CTA_SYNC();
+  //!            __syncthreads();
   //!
   //!            // Store scanned items to output segment
   //!            BlockStore(temp_storage.store).Store(d_data + block_offset, thread_data);
-  //!            CTA_SYNC();
+  //!            __syncthreads();
   //!        }
   //!
   //! Suppose the input ``d_data`` is ``0, -1, 2, -3, 4, -5, ...``.

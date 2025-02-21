@@ -125,7 +125,7 @@ template <class _Tp, class... _Args>
 struct __cccl_is_constructible
 {
   static_assert(sizeof...(_Args) > 1, "Wrong specialization");
-  typedef decltype(__is_constructible_helper::__test_nary<_Tp, _Args...>(0)) type;
+  using type = decltype(__is_constructible_helper::__test_nary<_Tp, _Args...>(0));
 };
 
 template <class _Tp>

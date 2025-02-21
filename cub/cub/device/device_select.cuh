@@ -190,8 +190,7 @@ struct DeviceSelect
       SelectOp,
       EqualityOp,
       OffsetT,
-      /*KeepRejects*/ false,
-      /*MayAlias*/ false>::Dispatch(d_temp_storage,
+      SelectImpl::Select>::Dispatch(d_temp_storage,
                                     temp_storage_bytes,
                                     d_in,
                                     d_flags,
@@ -202,26 +201,6 @@ struct DeviceSelect
                                     num_items,
                                     stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename InputIteratorT, typename FlagIterator, typename OutputIteratorT, typename NumSelectedIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Flagged(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    FlagIterator d_flags,
-    OutputIteratorT d_out,
-    NumSelectedIteratorT d_num_selected_out,
-    ::cuda::std::int64_t num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Flagged<InputIteratorT, FlagIterator, OutputIteratorT, NumSelectedIteratorT>(
-      d_temp_storage, temp_storage_bytes, d_in, d_flags, d_out, d_num_selected_out, num_items, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Uses the ``d_flags`` sequence to selectively compact the items in `d_data``.
@@ -318,45 +297,26 @@ struct DeviceSelect
     using SelectOp   = NullType; // Selection op (not used)
     using EqualityOp = NullType; // Equality operator (not used)
 
-    return DispatchSelectIf<
-      IteratorT,
-      FlagIterator,
-      IteratorT,
-      NumSelectedIteratorT,
-      SelectOp,
-      EqualityOp,
-      OffsetT,
-      /*KeepRejects*/ false,
-      /*MayAlias*/ true>::Dispatch(d_temp_storage,
-                                   temp_storage_bytes,
-                                   d_data, // in
-                                   d_flags,
-                                   d_data, // out
-                                   d_num_selected_out,
-                                   SelectOp(),
-                                   EqualityOp(),
-                                   num_items,
-                                   stream);
+    return DispatchSelectIf<IteratorT,
+                            FlagIterator,
+                            IteratorT,
+                            NumSelectedIteratorT,
+                            SelectOp,
+                            EqualityOp,
+                            OffsetT,
+                            SelectImpl::SelectPotentiallyInPlace>::
+      Dispatch(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_data, // in
+        d_flags,
+        d_data, // out
+        d_num_selected_out,
+        SelectOp(),
+        EqualityOp(),
+        num_items,
+        stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename IteratorT, typename FlagIterator, typename NumSelectedIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Flagged(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    IteratorT d_data,
-    FlagIterator d_flags,
-    NumSelectedIteratorT d_num_selected_out,
-    ::cuda::std::int64_t num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Flagged<IteratorT, FlagIterator, NumSelectedIteratorT>(
-      d_temp_storage, temp_storage_bytes, d_data, d_flags, d_num_selected_out, num_items, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Uses the ``select_op`` functor to selectively copy items from ``d_in`` into ``d_out``.
@@ -484,8 +444,7 @@ struct DeviceSelect
       SelectOp,
       EqualityOp,
       OffsetT,
-      /*KeepRejects*/ false,
-      /*MayAlias*/ false>::Dispatch(d_temp_storage,
+      SelectImpl::Select>::Dispatch(d_temp_storage,
                                     temp_storage_bytes,
                                     d_in,
                                     nullptr,
@@ -496,26 +455,6 @@ struct DeviceSelect
                                     num_items,
                                     stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT, typename SelectOp>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  If(void* d_temp_storage,
-     size_t& temp_storage_bytes,
-     InputIteratorT d_in,
-     OutputIteratorT d_out,
-     NumSelectedIteratorT d_num_selected_out,
-     ::cuda::std::int64_t num_items,
-     SelectOp select_op,
-     cudaStream_t stream,
-     bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return If<InputIteratorT, OutputIteratorT, NumSelectedIteratorT, SelectOp>(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, select_op, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Uses the ``select_op`` functor to selectively compact items in ``d_data``.
@@ -624,47 +563,26 @@ struct DeviceSelect
     using FlagIterator = NullType*; // FlagT iterator type (not used)
     using EqualityOp   = NullType; // Equality operator (not used)
 
-    constexpr bool may_alias = true;
-
-    return DispatchSelectIf<
-      IteratorT,
-      FlagIterator,
-      IteratorT,
-      NumSelectedIteratorT,
-      SelectOp,
-      EqualityOp,
-      OffsetT,
-      /*KeepRejects*/ false,
-      /*MayAlias*/ may_alias>::Dispatch(d_temp_storage,
-                                        temp_storage_bytes,
-                                        d_data, // in
-                                        nullptr,
-                                        d_data, // out
-                                        d_num_selected_out,
-                                        select_op,
-                                        EqualityOp(),
-                                        num_items,
-                                        stream);
+    return DispatchSelectIf<IteratorT,
+                            FlagIterator,
+                            IteratorT,
+                            NumSelectedIteratorT,
+                            SelectOp,
+                            EqualityOp,
+                            OffsetT,
+                            SelectImpl::SelectPotentiallyInPlace>::
+      Dispatch(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_data, // in
+        nullptr,
+        d_data, // out
+        d_num_selected_out,
+        select_op,
+        EqualityOp(),
+        num_items,
+        stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename IteratorT, typename NumSelectedIteratorT, typename SelectOp>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  If(void* d_temp_storage,
-     size_t& temp_storage_bytes,
-     IteratorT d_data,
-     NumSelectedIteratorT d_num_selected_out,
-     ::cuda::std::int64_t num_items,
-     SelectOp select_op,
-     cudaStream_t stream,
-     bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return If<IteratorT, NumSelectedIteratorT, SelectOp>(
-      d_temp_storage, temp_storage_bytes, d_data, d_num_selected_out, num_items, select_op, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Uses the ``select_op`` functor applied to ``d_flags`` to selectively copy the
@@ -772,8 +690,7 @@ struct DeviceSelect
       SelectOp,
       EqualityOp,
       OffsetT,
-      /*KeepRejects*/ false,
-      /*MayAlias*/ false>::Dispatch(d_temp_storage,
+      SelectImpl::Select>::Dispatch(d_temp_storage,
                                     temp_storage_bytes,
                                     d_in,
                                     d_flags,
@@ -870,25 +787,25 @@ struct DeviceSelect
     using OffsetT    = ::cuda::std::int64_t; // Signed integer type for global offsets
     using EqualityOp = NullType; // Equality operator (not used)
 
-    return DispatchSelectIf<
-      IteratorT,
-      FlagIterator,
-      IteratorT,
-      NumSelectedIteratorT,
-      SelectOp,
-      EqualityOp,
-      OffsetT,
-      /*KeepRejects*/ false,
-      /*MayAlias*/ true>::Dispatch(d_temp_storage,
-                                   temp_storage_bytes,
-                                   d_data, // in
-                                   d_flags,
-                                   d_data, // out
-                                   d_num_selected_out,
-                                   select_op,
-                                   EqualityOp(),
-                                   num_items,
-                                   stream);
+    return DispatchSelectIf<IteratorT,
+                            FlagIterator,
+                            IteratorT,
+                            NumSelectedIteratorT,
+                            SelectOp,
+                            EqualityOp,
+                            OffsetT,
+                            SelectImpl::SelectPotentiallyInPlace>::
+      Dispatch(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_data, // in
+        d_flags,
+        d_data, // out
+        d_num_selected_out,
+        select_op,
+        EqualityOp(),
+        num_items,
+        stream);
   }
 
   //! @rst
@@ -997,8 +914,7 @@ struct DeviceSelect
       SelectOp,
       EqualityOp,
       OffsetT,
-      /*KeepRejects*/ false,
-      /*MayAlias*/ false>::Dispatch(d_temp_storage,
+      SelectImpl::Select>::Dispatch(d_temp_storage,
                                     temp_storage_bytes,
                                     d_in,
                                     nullptr,
@@ -1009,25 +925,6 @@ struct DeviceSelect
                                     num_items,
                                     stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Unique(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    NumSelectedIteratorT d_num_selected_out,
-    ::cuda::std::int64_t num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Unique<InputIteratorT, OutputIteratorT, NumSelectedIteratorT>(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Given an input sequence ``d_keys_in`` and ``d_values_in`` with runs of key-value pairs with consecutive
@@ -1152,9 +1049,9 @@ struct DeviceSelect
             typename NumItemsT,
             typename EqualityOpT>
   CUB_RUNTIME_FUNCTION __forceinline__ static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<EqualityOpT, cudaStream_t>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<EqualityOpT, cudaStream_t>, //
+      cudaError_t>
     UniqueByKey(
       void* d_temp_storage,
       size_t& temp_storage_bytes,
@@ -1328,45 +1225,6 @@ struct DeviceSelect
       ::cuda::std::equal_to<>{},
       stream);
   }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename KeyInputIteratorT,
-            typename ValueInputIteratorT,
-            typename KeyOutputIteratorT,
-            typename ValueOutputIteratorT,
-            typename NumSelectedIteratorT,
-            typename NumItemsT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t UniqueByKey(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    KeyInputIteratorT d_keys_in,
-    ValueInputIteratorT d_values_in,
-    KeyOutputIteratorT d_keys_out,
-    ValueOutputIteratorT d_values_out,
-    NumSelectedIteratorT d_num_selected_out,
-    NumItemsT num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return UniqueByKey<KeyInputIteratorT,
-                       ValueInputIteratorT,
-                       KeyOutputIteratorT,
-                       ValueOutputIteratorT,
-                       NumSelectedIteratorT,
-                       NumItemsT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_values_in,
-      d_keys_out,
-      d_values_out,
-      d_num_selected_out,
-      num_items,
-      stream);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

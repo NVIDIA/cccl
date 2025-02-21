@@ -25,7 +25,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT add_const
 {
-  typedef _CCCL_NODEBUG_ALIAS const _Tp type;
+  using type _CCCL_NODEBUG_ALIAS = const _Tp;
 };
 
 template <class _Tp>

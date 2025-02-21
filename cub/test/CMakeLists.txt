@@ -260,7 +260,7 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
     )
     cub_clone_target_properties(${test_target} ${cub_target})
     target_include_directories(${test_target} PRIVATE "${CUB_SOURCE_DIR}/test")
-    target_compile_definitions(${test_target} PRIVATE CUB_DETAIL_DEBUG_ENABLE_SYNC)
+    target_compile_definitions(${test_target} PRIVATE CUB_DEBUG_SYNC)
 
     if ("${test_target}" MATCHES "nvtx_in_usercode")
       target_link_libraries(${test_target} PRIVATE nvtx3-cpp)
@@ -368,6 +368,15 @@ foreach (test_src IN LISTS test_srcs)
         set(launcher 1)
       else()
         set(launcher 0)
+      endif()
+
+      # FIXME: There are a few remaining device algorithm tests that have not been ported to
+      # use Catch2 and lid variants. Mark these as `lid_0/1` so they'll run in the appropriate
+      # CI configs:
+      string(REGEX MATCH "^device_" is_device_test "${test_name}")
+      _cub_is_fail_test(is_fail_test "%{test_name}")
+      if (is_device_test AND NOT is_fail_test)
+        string(APPEND test_name ".lid_${launcher}")
       endif()
 
       # Only one version of this test.

@@ -27,7 +27,8 @@
 #endif // no system header
 #include <thrust/detail/type_deduction.h>
 #include <thrust/system/detail/generic/select_system.h>
-#include <thrust/type_traits/remove_cvref.h>
+
+#include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -64,7 +65,7 @@ struct select_system_fn final
 
 } // namespace select_system_detail
 
-THRUST_INLINE_CONSTANT select_system_detail::select_system_fn select_system{};
+_CCCL_GLOBAL_CONSTANT select_system_detail::select_system_fn select_system{};
 
 } // namespace detail
 

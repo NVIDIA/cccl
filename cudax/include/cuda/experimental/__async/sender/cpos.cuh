@@ -110,8 +110,8 @@ _CCCL_GLOBAL_CONSTANT struct set_error_t
 _CCCL_GLOBAL_CONSTANT struct set_stopped_t
 {
   template <class _Rcvr>
-  _CUDAX_TRIVIAL_API auto
-  operator()(_Rcvr&& __rcvr) const noexcept -> decltype(static_cast<_Rcvr&&>(__rcvr).set_stopped())
+  _CUDAX_TRIVIAL_API auto operator()(_Rcvr&& __rcvr) const noexcept
+    -> decltype(static_cast<_Rcvr&&>(__rcvr).set_stopped())
   {
     static_assert(_CUDA_VSTD::is_same_v<decltype(static_cast<_Rcvr&&>(__rcvr).set_stopped()), void>);
     static_assert(noexcept(static_cast<_Rcvr&&>(__rcvr).set_stopped()));
@@ -119,8 +119,8 @@ _CCCL_GLOBAL_CONSTANT struct set_stopped_t
   }
 
   template <class _Rcvr>
-  _CUDAX_TRIVIAL_API auto
-  operator()(_Rcvr* __rcvr) const noexcept -> decltype(static_cast<_Rcvr&&>(*__rcvr).set_stopped())
+  _CUDAX_TRIVIAL_API auto operator()(_Rcvr* __rcvr) const noexcept
+    -> decltype(static_cast<_Rcvr&&>(*__rcvr).set_stopped())
   {
     static_assert(_CUDA_VSTD::is_same_v<decltype(static_cast<_Rcvr&&>(*__rcvr).set_stopped()), void>);
     static_assert(noexcept(static_cast<_Rcvr&&>(*__rcvr).set_stopped()));

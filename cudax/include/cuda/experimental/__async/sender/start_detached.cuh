@@ -40,7 +40,7 @@ private:
   struct __opstate_base_t : __immovable
   {};
 
-  struct __rcvr_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
   {
     using receiver_concept = receiver_t;
 
@@ -66,7 +66,7 @@ private:
   };
 
   template <class _Sndr>
-  struct __opstate_t : __opstate_base_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t : __opstate_base_t
   {
     using operation_state_concept = operation_state_t;
     using completion_signatures   = __async::completion_signatures_of_t<_Sndr, __rcvr_t>;

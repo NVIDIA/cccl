@@ -69,14 +69,6 @@ function(thrust_add_header_test thrust_target label definitions)
 
   # List of headers that aren't implemented for all backends, but are implemented for CUDA.
   set(partially_implemented_CUDA
-    thrust/async/copy.h
-    thrust/async/for_each.h
-    thrust/async/reduce.h
-    thrust/async/scan.h
-    thrust/async/sort.h
-    thrust/async/transform.h
-    thrust/event.h
-    thrust/future.h
   )
 
   # List of headers that aren't implemented for all backends, but are implemented for CPP.
@@ -121,12 +113,6 @@ function(thrust_add_header_test thrust_target label definitions)
     HEADERS ${headers}
   )
   target_link_libraries(${headertest_target} PUBLIC ${thrust_target})
-  target_compile_definitions(${headertest_target} PRIVATE
-    ${header_definitions}
-    "THRUST_CPP11_REQUIRED_NO_ERROR"
-    "THRUST_CPP14_REQUIRED_NO_ERROR"
-    "THRUST_MODERN_GCC_REQUIRED_NO_ERROR"
-  )
   thrust_clone_target_properties(${headertest_target} ${thrust_target})
 
   if ("CUDA" STREQUAL "${config_device}")

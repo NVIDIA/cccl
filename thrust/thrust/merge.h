@@ -197,10 +197,10 @@ merge(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputI
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a>, \p InputIterator1's \c value_type is convertible to \p StrictWeakCompare's \c first_argument_type. and
+ * Iterator</a>, \p InputIterator1's \c value_type is convertible to \p StrictWeakCompare's first argument type. and
  * \p InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *          \p InputIterator2's \c value_type is convertible to \p StrictWeakCompare's \c second_argument_type.
+ *          \p InputIterator2's \c value_type is convertible to \p StrictWeakCompare's second argument type.
  *          and \p InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types.
  *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  * Iterator</a>. \tparam StrictWeakCompare is a model of <a
@@ -268,10 +268,10 @@ _CCCL_HOST_DEVICE OutputIterator merge(
  *  \return The end of the output range.
  *
  *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a>, \p InputIterator1's \c value_type is convertible to \p StrictWeakCompare's \c first_argument_type. and
+ * Iterator</a>, \p InputIterator1's \c value_type is convertible to \p StrictWeakCompare's first argument type. and
  * \p InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *          \p InputIterator2's \c value_type is convertible to \p StrictWeakCompare's \c second_argument_type.
+ *          \p InputIterator2's \c value_type is convertible to \p StrictWeakCompare's second argument type.
  *          and \p InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types.
  *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
  * Iterator</a>. \tparam StrictWeakCompare is a model of <a
@@ -549,10 +549,10 @@ thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a>, \p InputIterator1's \c value_type is convertible to \p StrictWeakCompare's \c first_argument_type. and
+ * Iterator</a>, \p InputIterator1's \c value_type is convertible to \p StrictWeakCompare's first argument type. and
  * \p InputIterator1's \c value_type is convertible to a type in \p OutputIterator1's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *          \p InputIterator2's \c value_type is convertible to \p StrictWeakCompare's \c second_argument_type.
+ *          \p InputIterator2's \c value_type is convertible to \p StrictWeakCompare's second argument type.
  *          and \p InputIterator2's \c value_type is convertible to a type in \p OutputIterator1's set of \c
  * value_types. \tparam InputIterator3 is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, and \p InputIterator3's \c
@@ -653,10 +653,10 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
  *          and such that <tt>p.second</tt> is the end of the output range of values.
  *
  *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a>, \p InputIterator1's \c value_type is convertible to \p StrictWeakCompare's \c first_argument_type. and
+ * Iterator</a>, \p InputIterator1's \c value_type is convertible to \p StrictWeakCompare's first argument type. and
  * \p InputIterator1's \c value_type is convertible to a type in \p OutputIterator1's set of \c value_types. \tparam
  * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *          \p InputIterator2's \c value_type is convertible to \p StrictWeakCompare's \c second_argument_type.
+ *          \p InputIterator2's \c value_type is convertible to \p StrictWeakCompare's second argument type.
  *          and \p InputIterator2's \c value_type is convertible to a type in \p OutputIterator1's set of \c
  * value_types. \tparam InputIterator3 is a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, and \p InputIterator3's \c

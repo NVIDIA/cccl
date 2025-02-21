@@ -34,12 +34,12 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED_IN_CXX17 binary_negat
   _Predicate __pred_;
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI explicit _CCCL_CONSTEXPR_CXX14 binary_negate(const _Predicate& __pred)
+  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr binary_negate(const _Predicate& __pred)
       : __pred_(__pred)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI bool operator()(
+  constexpr _LIBCUDACXX_HIDE_FROM_ABI bool operator()(
     const typename _Predicate::first_argument_type& __x, const typename _Predicate::second_argument_type& __y) const
   {
     return !__pred_(__x, __y);
@@ -48,7 +48,7 @@ public:
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Predicate>
-_LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 binary_negate<_Predicate>
+_LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_HIDE_FROM_ABI constexpr binary_negate<_Predicate>
 not2(const _Predicate& __pred)
 {
   return binary_negate<_Predicate>(__pred);

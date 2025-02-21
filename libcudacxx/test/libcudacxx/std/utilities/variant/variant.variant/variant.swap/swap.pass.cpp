@@ -6,7 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: clang-7, clang-8
 
@@ -472,8 +471,8 @@ void test_exceptions_different_alternatives()
 #endif // !TEST_HAS_NO_EXCEPTIONS
 
 template <class Var>
-__host__ __device__ constexpr auto
-has_swap_member_imp(int) -> decltype(cuda::std::declval<Var&>().swap(cuda::std::declval<Var&>()), true)
+__host__ __device__ constexpr auto has_swap_member_imp(int)
+  -> decltype(cuda::std::declval<Var&>().swap(cuda::std::declval<Var&>()), true)
 {
   return true;
 }

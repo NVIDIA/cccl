@@ -34,12 +34,12 @@ using add_rvalue_reference_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_ADD_RVALUE_REFE
 template <class _Tp, bool = __cccl_is_referenceable<_Tp>::value>
 struct __add_rvalue_reference_impl
 {
-  typedef _CCCL_NODEBUG_ALIAS _Tp type;
+  using type _CCCL_NODEBUG_ALIAS = _Tp;
 };
 template <class _Tp>
 struct __add_rvalue_reference_impl<_Tp, true>
 {
-  typedef _CCCL_NODEBUG_ALIAS _Tp&& type;
+  using type _CCCL_NODEBUG_ALIAS = _Tp&&;
 };
 
 template <class _Tp>

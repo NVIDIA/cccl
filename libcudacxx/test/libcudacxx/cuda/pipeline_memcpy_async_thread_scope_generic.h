@@ -27,12 +27,9 @@ __host__ __device__ cuda::pipeline<scope> get_pipeline(cuda::pipeline_shared_sta
 
 template <cuda::thread_scope Scope,
           class T,
-          template <typename, typename>
-          class SourceSelector,
-          template <typename, typename>
-          class DestSelector,
-          template <typename, typename>
-          class PipelineSelector,
+          template <typename, typename> class SourceSelector,
+          template <typename, typename> class DestSelector,
+          template <typename, typename> class PipelineSelector,
           uint8_t PipelineStages>
 __host__ __device__ __noinline__ void test_fully_specialized()
 {
@@ -86,10 +83,8 @@ __host__ __device__ __noinline__ void test_fully_specialized()
 
 template <cuda::thread_scope Scope,
           class T,
-          template <typename, typename>
-          class SourceSelector,
-          template <typename, typename>
-          class DestSelector>
+          template <typename, typename> class SourceSelector,
+          template <typename, typename> class DestSelector>
 __host__ __device__ __noinline__ void test_select_pipeline()
 {
   constexpr uint8_t stages_count = 2;

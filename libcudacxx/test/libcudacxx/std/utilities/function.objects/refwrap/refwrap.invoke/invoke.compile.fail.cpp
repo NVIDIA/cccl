@@ -35,7 +35,7 @@ __host__ __device__ void test_int_1()
 {
   // member data pointer
   {
-    int A_int_1::*fp = &A_int_1::data_;
+    int A_int_1::* fp = &A_int_1::data_;
     cuda::std::reference_wrapper<int A_int_1::*> r1(fp);
     A_int_1 a;
     assert(r1(a) == 5);

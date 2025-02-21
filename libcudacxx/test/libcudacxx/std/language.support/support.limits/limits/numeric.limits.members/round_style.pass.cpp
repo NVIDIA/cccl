@@ -45,15 +45,35 @@ int main(int, char**)
   test<unsigned long, cuda::std::round_toward_zero>();
   test<long long, cuda::std::round_toward_zero>();
   test<unsigned long long, cuda::std::round_toward_zero>();
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   test<__int128_t, cuda::std::round_toward_zero>();
   test<__uint128_t, cuda::std::round_toward_zero>();
-#endif
+#endif // _CCCL_HAS_INT128()
   test<float, cuda::std::round_to_nearest>();
   test<double, cuda::std::round_to_nearest>();
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
   test<long double, cuda::std::round_to_nearest>();
 #endif
+#if _CCCL_HAS_NVFP16()
+  test<__half, cuda::std::round_to_nearest>();
+#endif // _CCCL_HAS_NVFP16
+#if _CCCL_HAS_NVBF16()
+  test<__nv_bfloat16, cuda::std::round_to_nearest>();
+#endif // _CCCL_HAS_NVBF16
+#if _CCCL_HAS_NVFP8()
+  test<__nv_fp8_e4m3, cuda::std::round_to_nearest>();
+  test<__nv_fp8_e5m2, cuda::std::round_to_nearest>();
+#  if _CCCL_CUDACC_AT_LEAST(12, 8)
+  test<__nv_fp8_e8m0, cuda::std::round_toward_zero>();
+#  endif // _CCCL_CUDACC_AT_LEAST(12, 8)
+#endif // _CCCL_HAS_NVFP8()
+#if _CCCL_HAS_NVFP6()
+  test<__nv_fp6_e2m3, cuda::std::round_to_nearest>();
+  test<__nv_fp6_e3m2, cuda::std::round_to_nearest>();
+#endif // _CCCL_HAS_NVFP6()
+#if _CCCL_HAS_NVFP4()
+  test<__nv_fp4_e2m1, cuda::std::round_to_nearest>();
+#endif // _CCCL_HAS_NVFP4()
 
   return 0;
 }

@@ -36,25 +36,24 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/cpp14_required.h>
 
-#if _CCCL_STD_VER >= 2014
+#if _CCCL_HAS_CUDA_COMPILER
 
-#  if _CCCL_HAS_CUDA_COMPILER
+#  include <thrust/system/cuda/config.h>
 
-#    include <thrust/system/cuda/config.h>
+#  include <thrust/distance.h>
+#  include <thrust/iterator/iterator_traits.h>
+#  include <thrust/system/cuda/detail/async/customization.h>
+#  include <thrust/system/cuda/detail/util.h>
+#  include <thrust/system/cuda/future.h>
 
-#    include <thrust/distance.h>
-#    include <thrust/iterator/iterator_traits.h>
-#    include <thrust/system/cuda/detail/async/customization.h>
-#    include <thrust/system/cuda/detail/util.h>
-#    include <thrust/system/cuda/future.h>
-#    include <thrust/type_traits/remove_cvref.h>
+#  include <cuda/std/type_traits>
 
-#    include <type_traits>
+#  include <type_traits>
 
 // TODO specialize for thrust::plus to use e.g. InclusiveSum instead of IncScan
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 THRUST_NAMESPACE_BEGIN
 namespace system
 {
@@ -68,8 +67,8 @@ unique_eager_event
 async_inclusive_scan_n(execution_policy<DerivedPolicy>& policy, ForwardIt first, Size n, OutputIt out, BinaryOp op)
 {
   using AccumT     = typename thrust::iterator_traits<ForwardIt>::value_type;
-  using Dispatch32 = cub::DispatchScan<ForwardIt, OutputIt, BinaryOp, cub::NullType, std::int32_t, AccumT>;
-  using Dispatch64 = cub::DispatchScan<ForwardIt, OutputIt, BinaryOp, cub::NullType, std::int64_t, AccumT>;
+  using Dispatch32 = cub::DispatchScan<ForwardIt, OutputIt, BinaryOp, cub::NullType, std::uint32_t, AccumT>;
+  using Dispatch64 = cub::DispatchScan<ForwardIt, OutputIt, BinaryOp, cub::NullType, std::uint64_t, AccumT>;
 
   auto const device_alloc = get_async_device_allocator(policy);
   unique_eager_event ev;
@@ -78,7 +77,7 @@ async_inclusive_scan_n(execution_policy<DerivedPolicy>& policy, ForwardIt first,
   cudaError_t status;
   size_t tmp_size = 0;
   {
-    THRUST_INDEX_TYPE_DISPATCH2(
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
       status,
       Dispatch32::Dispatch,
       Dispatch64::Dispatch,
@@ -135,26 +134,11 @@ unique_eager_event async_inclusive_scan_n(
   using InputValueT = cub::detail::InputValue<InitialValueType>;
   using AccumT      = typename ::cuda::std::
     __accumulator_t<BinaryOp, typename ::cuda::std::iterator_traits<ForwardIt>::value_type, InitialValueType>;
-  constexpr bool ForceInclusive = true;
 
   using Dispatch32 =
-    cub::DispatchScan<ForwardIt,
-                      OutputIt,
-                      BinaryOp,
-                      InputValueT,
-                      std::int32_t,
-                      AccumT,
-                      cub::detail::scan::policy_hub<AccumT, BinaryOp>,
-                      ForceInclusive>;
+    cub::DispatchScan<ForwardIt, OutputIt, BinaryOp, InputValueT, std::int32_t, AccumT, cub::ForceInclusive::Yes>;
   using Dispatch64 =
-    cub::DispatchScan<ForwardIt,
-                      OutputIt,
-                      BinaryOp,
-                      InputValueT,
-                      std::int64_t,
-                      AccumT,
-                      cub::detail::scan::policy_hub<AccumT, BinaryOp>,
-                      ForceInclusive>;
+    cub::DispatchScan<ForwardIt, OutputIt, BinaryOp, InputValueT, std::int64_t, AccumT, cub::ForceInclusive::Yes>;
 
   InputValueT init_value(init);
 
@@ -243,8 +227,7 @@ auto async_inclusive_scan(
 
 } // namespace cuda_cub
 
+_CCCL_SUPPRESS_DEPRECATED_POP
 THRUST_NAMESPACE_END
 
-#  endif // _CCCL_CUDA_COMPILER
-
-#endif // C++14
+#endif // _CCCL_CUDA_COMPILER

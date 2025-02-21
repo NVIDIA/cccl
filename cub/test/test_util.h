@@ -35,7 +35,6 @@
 #  include <sys/resource.h>
 #endif
 
-#include <cub/iterator/discard_output_iterator.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_macro.cuh>
@@ -43,6 +42,8 @@
 #include <cub/util_namespace.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
+
+#include <thrust/iterator/discard_iterator.h>
 
 #include <cfloat>
 #include <cmath>
@@ -55,7 +56,6 @@
 #include <vector>
 
 #include "mersenne.h"
-#include "test_warning_suppression.cuh"
 #include <c2h/extended_types.h>
 #include <c2h/test_util_vec.h>
 #include <nv/target>
@@ -433,7 +433,7 @@ inline bool IsNaN<double4>(double4 val)
   return (IsNaN(val.y) || IsNaN(val.x) || IsNaN(val.w) || IsNaN(val.z));
 }
 
-#ifdef TEST_HALF_T
+#if TEST_HALF_T()
 template <>
 inline bool IsNaN<half_t>(half_t val)
 {
@@ -442,9 +442,9 @@ inline bool IsNaN<half_t>(half_t val)
   // commented bit is always true, leaving for documentation:
   return (((bits >= 0x7C01) && (bits <= 0x7FFF)) || ((bits >= 0xFC01) /*&& (bits <= 0xFFFFFFFF)*/));
 }
-#endif
+#endif // TEST_HALF_T()
 
-#ifdef TEST_BF_T
+#if TEST_BF_T()
 template <>
 inline bool IsNaN<bfloat16_t>(bfloat16_t val)
 {
@@ -453,7 +453,7 @@ inline bool IsNaN<bfloat16_t>(bfloat16_t val)
   // commented bit is always true, leaving for documentation:
   return (((bits >= 0x7F81) && (bits <= 0x7FFF)) || ((bits >= 0xFF81) /*&& (bits <= 0xFFFFFFFF)*/));
 }
-#endif
+#endif // TEST_BF_T()
 
 /**
  * Generates random keys.
@@ -614,7 +614,7 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, T& value, s
         case RANDOM_BIT:
         case RANDOM_MINUS_PLUS_ZERO:
           _CubLog("%s\n", "cub::InitValue cannot generate random numbers on device.");
-          CUB_NS_QUALIFIER::ThreadTrap();
+          cuda::std::terminate();
           break;
         case UNIFORM:
           value = 2;
@@ -656,7 +656,7 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, bool& value
         case RANDOM_BIT:
         case RANDOM_MINUS_PLUS_ZERO:
           _CubLog("%s\n", "cub::InitValue cannot generate random numbers on device.");
-          CUB_NS_QUALIFIER::ThreadTrap();
+          cuda::std::terminate();
           break;
         case UNIFORM:
           value = true;
@@ -697,7 +697,7 @@ InitValue(GenMode gen_mode, CUB_NS_QUALIFIER::KeyValuePair<KeyT, ValueT>& value,
       ), ( // NV_IS_DEVICE
         _CubLog("%s\n",
                 "cub::InitValue cannot generate random numbers on device.");
-        CUB_NS_QUALIFIER::ThreadTrap();
+        cuda::std::terminate();
       ));
   // clang-format on
 }
@@ -716,7 +716,7 @@ std::ostream& operator<<(std::ostream& os, const CUB_NS_QUALIFIER::KeyValuePair<
   return os;
 }
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 inline std::ostream& operator<<(std::ostream& os, __uint128_t val)
 {
   constexpr int max_digits      = 40;
@@ -971,12 +971,6 @@ CUB_NAMESPACE_BEGIN
 template <>
 struct NumericTraits<TestFoo>
 {
-  static constexpr Category CATEGORY = NOT_A_NUMBER;
-  enum
-  {
-    PRIMITIVE = false,
-    NULL_TYPE = false,
-  };
   __host__ __device__ static TestFoo Max()
   {
     return TestFoo::MakeTestFoo(
@@ -996,6 +990,33 @@ struct NumericTraits<TestFoo>
   }
 };
 CUB_NAMESPACE_END
+
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
+template <>
+class numeric_limits<TestFoo>
+{
+public:
+  static constexpr bool is_specialized = true;
+
+  __host__ __device__ static TestFoo max()
+  {
+    return TestFoo::MakeTestFoo(
+      numeric_limits<long long>::max(),
+      numeric_limits<int>::max(),
+      numeric_limits<short>::max(),
+      numeric_limits<char>::max());
+  }
+
+  __host__ __device__ static TestFoo lowest()
+  {
+    return TestFoo::MakeTestFoo(
+      numeric_limits<long long>::lowest(),
+      numeric_limits<int>::lowest(),
+      numeric_limits<short>::lowest(),
+      numeric_limits<char>::lowest());
+  }
+};
+_LIBCUDACXX_END_NAMESPACE_STD
 
 //---------------------------------------------------------------------
 // Complex data type TestBar (with optimizations for fence-free warp-synchrony)
@@ -1105,12 +1126,6 @@ CUB_NAMESPACE_BEGIN
 template <>
 struct NumericTraits<TestBar>
 {
-  static constexpr Category CATEGORY = NOT_A_NUMBER;
-  enum
-  {
-    PRIMITIVE = false,
-    NULL_TYPE = false,
-  };
   __host__ __device__ static TestBar Max()
   {
     return TestBar(NumericTraits<long long>::Max(), NumericTraits<int>::Max());
@@ -1122,6 +1137,25 @@ struct NumericTraits<TestBar>
   }
 };
 CUB_NAMESPACE_END
+
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
+template <>
+class numeric_limits<TestBar>
+{
+public:
+  static constexpr bool is_specialized = true;
+
+  __host__ __device__ static TestBar max()
+  {
+    return TestBar(numeric_limits<long long>::max(), numeric_limits<int>::max());
+  }
+
+  __host__ __device__ static TestBar lowest()
+  {
+    return TestBar(numeric_limits<long long>::lowest(), numeric_limits<int>::lowest());
+  }
+};
+_LIBCUDACXX_END_NAMESPACE_STD
 
 /******************************************************************************
  * Helper routines for list comparison and display
@@ -1234,7 +1268,7 @@ inline int CompareDeviceResults(
 template <typename S, typename OffsetT>
 int CompareDeviceResults(
   S* /*h_reference*/,
-  CUB_NS_QUALIFIER::DiscardOutputIterator<OffsetT> /*d_data*/,
+  THRUST_NS_QUALIFIER::discard_iterator<OffsetT> /*d_data*/,
   std::size_t /*num_items*/,
   bool /*verbose*/      = true,
   bool /*display_data*/ = false)

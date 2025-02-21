@@ -67,8 +67,8 @@ namespace internal
  *   Binary scan operator
  */
 template <int LENGTH, typename T, typename ScanOp>
-_CCCL_DEVICE _CCCL_FORCEINLINE T
-ThreadScanExclusive(T inclusive, T exclusive, T* input, T* output, ScanOp scan_op, Int2Type<LENGTH> /*length*/)
+_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadScanExclusive(
+  T inclusive, T exclusive, T* input, T* output, ScanOp scan_op, detail::constant_t<LENGTH> /*length*/)
 {
 #pragma unroll
   for (int i = 0; i < LENGTH; ++i)
@@ -124,7 +124,7 @@ ThreadScanExclusive(T* input, T* output, ScanOp scan_op, T prefix, bool apply_pr
   output[0]   = prefix;
   T exclusive = inclusive;
 
-  return ThreadScanExclusive(inclusive, exclusive, input + 1, output + 1, scan_op, Int2Type<LENGTH - 1>());
+  return ThreadScanExclusive(inclusive, exclusive, input + 1, output + 1, scan_op, detail::constant_v<LENGTH - 1>);
 }
 
 /**
@@ -176,7 +176,7 @@ ThreadScanExclusive(T (&input)[LENGTH], T (&output)[LENGTH], ScanOp scan_op, T p
  */
 template <int LENGTH, typename T, typename ScanOp>
 _CCCL_DEVICE _CCCL_FORCEINLINE T
-ThreadScanInclusive(T inclusive, T* input, T* output, ScanOp scan_op, Int2Type<LENGTH> /*length*/)
+ThreadScanInclusive(T inclusive, T* input, T* output, ScanOp scan_op, detail::constant_t<LENGTH> /*length*/)
 {
 #pragma unroll
   for (int i = 0; i < LENGTH; ++i)
@@ -218,7 +218,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadScanInclusive(T* input, T* output, ScanOp
   output[0]   = inclusive;
 
   // Continue scan
-  return ThreadScanInclusive(inclusive, input + 1, output + 1, scan_op, Int2Type<LENGTH - 1>());
+  return ThreadScanInclusive(inclusive, input + 1, output + 1, scan_op, detail::constant_v<LENGTH - 1>);
 }
 
 /**
@@ -293,7 +293,7 @@ ThreadScanInclusive(T* input, T* output, ScanOp scan_op, T prefix, bool apply_pr
   output[0] = inclusive;
 
   // Continue scan
-  return ThreadScanInclusive(inclusive, input + 1, output + 1, scan_op, Int2Type<LENGTH - 1>());
+  return ThreadScanInclusive(inclusive, input + 1, output + 1, scan_op, detail::constant_v<LENGTH - 1>);
 }
 
 /**

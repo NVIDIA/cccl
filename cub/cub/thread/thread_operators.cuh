@@ -56,16 +56,16 @@
 #include <cuda/std/type_traits> // cuda::std::common_type
 #include <cuda/std/utility> // cuda::std::forward
 
-#if defined(_CCCL_HAS_NVFP16)
+#if _CCCL_HAS_NVFP16()
 #  include <cuda_fp16.h>
-#endif // _CCCL_HAS_NVFP16
+#endif // _CCCL_HAS_NVFP16()
 
-#if defined(_CCCL_HAS_NVBF16)
+#if _CCCL_HAS_NVBF16()
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
 #  include <cuda_bf16.h>
 _CCCL_DIAG_POP
-#endif // _CCCL_HAS_NVFP16
+#endif // _CCCL_HAS_NVBF16()
 
 CUB_NAMESPACE_BEGIN
 
@@ -380,33 +380,6 @@ struct ReduceByKeyOp
   }
 };
 
-//! Deprecated [Since 2.8]
-template <typename BinaryOpT>
-struct CCCL_DEPRECATED BinaryFlip
-{
-  BinaryOpT binary_op;
-
-  _CCCL_HOST_DEVICE explicit BinaryFlip(BinaryOpT binary_op)
-      : binary_op(binary_op)
-  {}
-
-  template <typename T, typename U>
-  _CCCL_DEVICE auto
-  operator()(T&& t, U&& u) -> decltype(binary_op(::cuda::std::forward<U>(u), ::cuda::std::forward<T>(t)))
-  {
-    return binary_op(::cuda::std::forward<U>(u), ::cuda::std::forward<T>(t));
-  }
-};
-
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-//! Deprecated [Since 2.8]
-template <typename BinaryOpT>
-CCCL_DEPRECATED _CCCL_HOST_DEVICE BinaryFlip<BinaryOpT> MakeBinaryFlip(BinaryOpT binary_op)
-{
-  return BinaryFlip<BinaryOpT>(binary_op);
-}
-_CCCL_SUPPRESS_DEPRECATED_POP
-
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 namespace internal
@@ -442,7 +415,7 @@ struct SimdMin<::cuda::std::uint16_t>
   }
 };
 
-#  if defined(_CCCL_HAS_NVFP16)
+#  if _CCCL_HAS_NVFP16()
 
 template <>
 struct SimdMin<__half>
@@ -463,9 +436,9 @@ struct SimdMin<__half>
   }
 };
 
-#  endif // defined(_CCCL_HAS_NVFP16)
+#  endif // _CCCL_HAS_NVFP16()
 
-#  if defined(_CCCL_HAS_NVBF16)
+#  if _CCCL_HAS_NVBF16()
 
 // NOTE: __halves2bfloat162 is not always available on older CUDA Toolkits for __CUDA_ARCH__ < 800
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 halves2bfloat162(__nv_bfloat16 a, __nv_bfloat16 b)
@@ -499,7 +472,7 @@ struct SimdMin<__nv_bfloat16>
   }
 };
 
-#  endif // defined(_CCCL_HAS_NVBF16)
+#  endif // _CCCL_HAS_NVBF16()
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -533,7 +506,7 @@ struct SimdMax<::cuda::std::uint16_t>
   }
 };
 
-#  if defined(_CCCL_HAS_NVFP16)
+#  if _CCCL_HAS_NVFP16()
 
 template <>
 struct SimdMax<__half>
@@ -554,9 +527,9 @@ struct SimdMax<__half>
   }
 };
 
-#  endif // defined(_CCCL_HAS_NVFP16)
+#  endif // _CCCL_HAS_NVFP16()
 
-#  if defined(_CCCL_HAS_NVBF16)
+#  if _CCCL_HAS_NVBF16()
 
 template <>
 struct SimdMax<__nv_bfloat16>
@@ -578,7 +551,7 @@ struct SimdMax<__nv_bfloat16>
   }
 };
 
-#  endif // defined(_CCCL_HAS_NVBF16)
+#  endif // _CCCL_HAS_NVBF16()
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -588,7 +561,7 @@ struct SimdSum
   static_assert(cub::detail::always_false<T>(), "Unsupported specialization");
 };
 
-#  if defined(_CCCL_HAS_NVFP16)
+#  if _CCCL_HAS_NVFP16()
 
 template <>
 struct SimdSum<__half>
@@ -608,9 +581,9 @@ struct SimdSum<__half>
   }
 };
 
-#  endif // defined(_CCCL_HAS_NVFP16)
+#  endif // _CCCL_HAS_NVFP16()
 
-#  if defined(_CCCL_HAS_NVBF16)
+#  if _CCCL_HAS_NVBF16()
 
 template <>
 struct SimdSum<__nv_bfloat16>
@@ -632,7 +605,7 @@ struct SimdSum<__nv_bfloat16>
   }
 };
 
-#  endif // defined(_CCCL_HAS_NVBF16)
+#  endif // _CCCL_HAS_NVBF16()
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -642,7 +615,7 @@ struct SimdMul
   static_assert(cub::detail::always_false<T>(), "Unsupported specialization");
 };
 
-#  if defined(_CCCL_HAS_NVFP16)
+#  if _CCCL_HAS_NVFP16()
 
 template <>
 struct SimdMul<__half>
@@ -662,9 +635,9 @@ struct SimdMul<__half>
   }
 };
 
-#  endif // defined(_CCCL_HAS_NVFP16)
+#  endif // _CCCL_HAS_NVFP16()
 
-#  if defined(_CCCL_HAS_NVBF16)
+#  if _CCCL_HAS_NVBF16()
 
 template <>
 struct SimdMul<__nv_bfloat16>
@@ -685,7 +658,7 @@ struct SimdMul<__nv_bfloat16>
   }
 };
 
-#  endif // defined(_CCCL_HAS_NVBF16)
+#  endif // _CCCL_HAS_NVBF16()
 
 //----------------------------------------------------------------------------------------------------------------------
 
