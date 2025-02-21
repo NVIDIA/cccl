@@ -260,7 +260,7 @@ public:
       payload);
   }
 
-  void set_graph_cache_policy(::std::function<bool(size_t)> policy)
+  void set_graph_cache_policy(::std::function<bool()> policy)
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     ::std::visit(

@@ -586,12 +586,12 @@ protected:
       return nullptr;
     }
 
-    void set_graph_cache_policy(::std::function<bool(size_t)> fn)
+    void set_graph_cache_policy(::std::function<bool()> fn)
     {
       cache_policy = mv(fn);
     }
 
-    ::std::optional<::std::function<bool(size_t)>> get_graph_cache_policy() const
+    ::std::optional<::std::function<bool()>> get_graph_cache_policy() const
     {
       return cache_policy;
     }
@@ -781,7 +781,7 @@ protected:
     ::std::shared_ptr<reserved::per_ctx_dot> dot;
 
     backend_ctx_untyped::phase ctx_phase = backend_ctx_untyped::phase::setup;
-    ::std::optional<::std::function<bool(size_t)>> cache_policy;
+    ::std::optional<::std::function<bool()>> cache_policy;
   };
 
 public:
@@ -920,7 +920,7 @@ public:
     return pimpl->graph();
   }
 
-  void set_graph_cache_policy(::std::function<bool(size_t)> policy)
+  void set_graph_cache_policy(::std::function<bool()> policy)
   {
     pimpl->set_graph_cache_policy(mv(policy));
   }

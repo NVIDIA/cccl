@@ -490,8 +490,8 @@ public:
     bool use_cache = true;
     if (get_graph_cache_policy().has_value())
     {
-      ::std::function<bool(size_t)> policy = get_graph_cache_policy().value();
-      use_cache                            = policy(0);
+      ::std::function<bool()> policy = get_graph_cache_policy().value();
+      use_cache                      = policy();
     }
 
     if (use_cache)
