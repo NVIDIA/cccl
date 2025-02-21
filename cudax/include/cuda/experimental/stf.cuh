@@ -260,12 +260,22 @@ public:
       payload);
   }
 
-  void graph_set_cache_policy(executable_graph_cache_policy<::std::function<bool(size_t)>> policy)
+  void set_graph_cache_policy(::std::function<bool(size_t)> policy)
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     ::std::visit(
       [&](auto& self) {
-        self.graph_set_cache_policy(mv(policy));
+        self.set_graph_cache_policy(mv(policy));
+      },
+      payload);
+  }
+
+  auto get_graph_cache_policy() const
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return ::std::visit(
+      [&](auto& self) {
+        return self.get_graph_cache_policy();
       },
       payload);
   }

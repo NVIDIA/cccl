@@ -90,28 +90,6 @@ inline ::std::shared_ptr<cudaGraphExec_t> graph_instantiate(cudaGraph_t g)
 
 } // end namespace reserved
 
-// To tell how want the cache to be used (or disable it)
-// // Usage with Lambdas
-// auto force_cache = executable_graph_cache_policy([](size_t) { return true; });
-// auto no_cache = executable_graph_cache_policy([](size_t) { return false; });
-// auto threshold_cache = executable_graph_cache_policy([](size_t graph_size) { return graph_size >= 1000; });
-template <typename Func>
-class executable_graph_cache_policy
-{
-public:
-  explicit executable_graph_cache_policy(Func _f)
-      : f(mv(_f))
-  {}
-
-  bool operator()() const
-  {
-    return f();
-  }
-
-private:
-  Func f;
-};
-
 // To get information about how it was used
 class executable_graph_cache_stat
 {

@@ -233,11 +233,6 @@ class graph_ctx : public backend_ctx<graph_ctx>
       return *_graph;
     }
 
-    void graph_set_cache_policy(executable_graph_cache_policy<::std::function<bool(size_t)>> policy) override
-    {
-      cache_policy = mv(policy);
-    }
-
     executable_graph_cache_stat* graph_get_cache_stat() override
     {
       return &cache_stats;
@@ -267,7 +262,6 @@ class graph_ctx : public backend_ctx<graph_ctx>
     mutable bool explicit_graph                   = false;
 
     executable_graph_cache_stat cache_stats;
-    ::std::optional<executable_graph_cache_policy<::std::function<bool(size_t)>>> cache_policy;
 
     /* By default, the finalize operation is blocking, unless user provided
      * a stream when creating the context */
@@ -493,23 +487,42 @@ public:
       print_to_dot("instantiated_graph" + ::std::to_string(instantiated_graph++) + ".dot");
     }
 
-    /* This will lookup in the cache (if any) and update an existing entry, or
-     * instantiate a graph if none is found. */
-    auto query_result = async_resources().cached_graphs_query(nnodes, nedges, g);
-    state.exec_graph  = query_result.first;
-
-    auto* stats = graph_get_cache_stat();
-
-    bool hit = query_result.second; // indicate if this was a hit or miss in the cache
-    if (hit)
+    bool use_cache = true;
+    if (get_graph_cache_policy().has_value())
     {
-      stats->update_cnt++;
+      ::std::function<bool(size_t)> policy = get_graph_cache_policy().value();
+      use_cache                            = policy(0);
+    }
+
+    if (use_cache)
+    {
+      /* This will lookup in the cache (if any) and update an existing entry, or
+       * instantiate a graph if none is found. */
+      auto query_result = async_resources().cached_graphs_query(nnodes, nedges, g);
+      state.exec_graph  = query_result.first;
+
+      auto* stats = graph_get_cache_stat();
+
+      bool hit = query_result.second; // indicate if this was a hit or miss in the cache
+      if (hit)
+      {
+        stats->update_cnt++;
+      }
+      else
+      {
+        stats->instantiate_cnt++;
+      }
+
+      return query_result.first;
     }
     else
     {
+      auto exec_g = reserved::graph_instantiate(*g);
+      auto* stats = graph_get_cache_stat();
       stats->instantiate_cnt++;
+      state.exec_graph = exec_g;
+      return exec_g;
     }
-    return query_result.first;
   }
 
   void display_graph_info(cudaGraph_t g)

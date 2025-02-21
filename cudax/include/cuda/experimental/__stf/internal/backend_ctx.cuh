@@ -586,9 +586,14 @@ protected:
       return nullptr;
     }
 
-    virtual void graph_set_cache_policy(executable_graph_cache_policy<::std::function<bool(size_t)>>)
+    void set_graph_cache_policy(::std::function<bool(size_t)> fn)
     {
-      // ignored by default (only used in the graph_ctx backend)
+      cache_policy = mv(fn);
+    }
+
+    ::std::optional<::std::function<bool(size_t)>> get_graph_cache_policy() const
+    {
+      return cache_policy;
     }
 
     virtual executable_graph_cache_stat* graph_get_cache_stat()
@@ -776,6 +781,7 @@ protected:
     ::std::shared_ptr<reserved::per_ctx_dot> dot;
 
     backend_ctx_untyped::phase ctx_phase = backend_ctx_untyped::phase::setup;
+    ::std::optional<::std::function<bool(size_t)>> cache_policy;
   };
 
 public:
@@ -914,9 +920,14 @@ public:
     return pimpl->graph();
   }
 
-  void graph_set_cache_policy(executable_graph_cache_policy<::std::function<bool(size_t)>> policy)
+  void set_graph_cache_policy(::std::function<bool(size_t)> policy)
   {
-    pimpl->graph_set_cache_policy(mv(policy));
+    pimpl->set_graph_cache_policy(mv(policy));
+  }
+
+  auto get_graph_cache_policy() const
+  {
+    return pimpl->get_graph_cache_policy();
   }
 
   executable_graph_cache_stat* graph_get_cache_stat()
