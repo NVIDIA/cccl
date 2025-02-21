@@ -38,8 +38,6 @@ static_assert(cuda::aligned_size_t<42>{1337}.value == 1337, "");
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014
   return 0;
 }

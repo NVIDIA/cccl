@@ -78,7 +78,6 @@
 #include <cub/device/device_transform.cuh>
 
 // Grid
-// #include <cub/grid/grid_barrier.cuh>
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/grid/grid_mapping.cuh>
 #include <cub/grid/grid_queue.cuh>
@@ -102,11 +101,7 @@
 #include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/iterator/cache_modified_output_iterator.cuh>
-#include <cub/iterator/constant_input_iterator.cuh>
-#include <cub/iterator/counting_input_iterator.cuh>
-#include <cub/iterator/discard_output_iterator.cuh>
 #include <cub/iterator/tex_obj_input_iterator.cuh>
-#include <cub/iterator/transform_input_iterator.cuh>
 
 // Util
 #include <cub/util_allocator.cuh>

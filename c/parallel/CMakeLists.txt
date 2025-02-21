@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(CCCL_C_Parallel LANGUAGES CUDA CXX)
+project(CCCL_C_Parallel LANGUAGES CUDA CXX C)
 
 option(CCCL_C_Parallel_ENABLE_TESTING "Build CUDA Experimental's tests." OFF)
 option(CCCL_C_Parallel_ENABLE_HEADER_TESTING "Build CUDA Experimental's standalone headers." OFF)

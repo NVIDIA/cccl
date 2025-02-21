@@ -140,7 +140,7 @@ private:
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysNoNVTX(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     ::cuda::std::int64_t num_items,
@@ -149,13 +149,12 @@ private:
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    constexpr bool is_descending     = false;
     constexpr bool is_overwrite_okay = false;
 
     using OffsetT =
       detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
     using DispatchT =
-      DispatchSegmentedSort<is_descending, KeyT, cub::NullType, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
+      DispatchSegmentedSort<SortOrder::Ascending, KeyT, cub::NullType, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
@@ -289,7 +288,7 @@ public:
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     ::cuda::std::int64_t num_items,
@@ -316,7 +315,7 @@ private:
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescendingNoNVTX(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     ::cuda::std::int64_t num_items,
@@ -325,13 +324,12 @@ private:
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    constexpr bool is_descending     = true;
     constexpr bool is_overwrite_okay = false;
 
     using OffsetT =
       detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
     using DispatchT =
-      DispatchSegmentedSort<is_descending, KeyT, cub::NullType, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
+      DispatchSegmentedSort<SortOrder::Descending, KeyT, cub::NullType, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
@@ -460,7 +458,7 @@ public:
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     ::cuda::std::int64_t num_items,
@@ -487,7 +485,7 @@ private:
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysNoNVTX(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
@@ -495,12 +493,11 @@ private:
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    constexpr bool is_descending     = false;
     constexpr bool is_overwrite_okay = true;
     using OffsetT =
       detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
     using DispatchT =
-      DispatchSegmentedSort<is_descending, KeyT, cub::NullType, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
+      DispatchSegmentedSort<SortOrder::Ascending, KeyT, cub::NullType, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     DoubleBuffer<NullType> d_values;
 
@@ -640,7 +637,7 @@ public:
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
@@ -658,7 +655,7 @@ private:
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescendingNoNVTX(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
@@ -666,12 +663,11 @@ private:
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    constexpr bool is_descending     = true;
     constexpr bool is_overwrite_okay = true;
     using OffsetT =
       detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
     using DispatchT =
-      DispatchSegmentedSort<is_descending, KeyT, cub::NullType, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
+      DispatchSegmentedSort<SortOrder::Descending, KeyT, cub::NullType, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     DoubleBuffer<NullType> d_values;
 
@@ -812,7 +808,7 @@ public:
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
@@ -939,7 +935,7 @@ public:
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeys(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     ::cuda::std::int64_t num_items,
@@ -1075,7 +1071,7 @@ public:
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeysDescending(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     ::cuda::std::int64_t num_items,
@@ -1222,7 +1218,7 @@ public:
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeys(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
@@ -1359,7 +1355,7 @@ public:
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeysDescending(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
@@ -1377,7 +1373,7 @@ private:
   template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairsNoNVTX(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     const ValueT* d_values_in,
@@ -1388,13 +1384,12 @@ private:
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    constexpr bool is_descending     = false;
     constexpr bool is_overwrite_okay = false;
 
     using OffsetT =
       detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
     using DispatchT =
-      DispatchSegmentedSort<is_descending, KeyT, ValueT, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
+      DispatchSegmentedSort<SortOrder::Ascending, KeyT, ValueT, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
@@ -1549,7 +1544,7 @@ public:
   template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     const ValueT* d_values_in,
@@ -1580,7 +1575,7 @@ private:
   template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescendingNoNVTX(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     const ValueT* d_values_in,
@@ -1591,13 +1586,12 @@ private:
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    constexpr bool is_descending     = true;
     constexpr bool is_overwrite_okay = false;
 
     using OffsetT =
       detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
     using DispatchT =
-      DispatchSegmentedSort<is_descending, KeyT, ValueT, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
+      DispatchSegmentedSort<SortOrder::Descending, KeyT, ValueT, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
@@ -1748,7 +1742,7 @@ public:
   template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     const ValueT* d_values_in,
@@ -1779,7 +1773,7 @@ private:
   template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairsNoNVTX(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
     ::cuda::std::int64_t num_items,
@@ -1788,13 +1782,12 @@ private:
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    constexpr bool is_descending     = false;
     constexpr bool is_overwrite_okay = true;
 
     using OffsetT =
       detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
     using DispatchT =
-      DispatchSegmentedSort<is_descending, KeyT, ValueT, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
+      DispatchSegmentedSort<SortOrder::Ascending, KeyT, ValueT, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     return DispatchT::Dispatch(
       d_temp_storage,
@@ -1951,7 +1944,7 @@ public:
   template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
     ::cuda::std::int64_t num_items,
@@ -1978,7 +1971,7 @@ private:
   template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescendingNoNVTX(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
     ::cuda::std::int64_t num_items,
@@ -1987,13 +1980,12 @@ private:
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    constexpr bool is_descending     = true;
     constexpr bool is_overwrite_okay = true;
 
     using OffsetT =
       detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
     using DispatchT =
-      DispatchSegmentedSort<is_descending, KeyT, ValueT, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
+      DispatchSegmentedSort<SortOrder::Descending, KeyT, ValueT, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     return DispatchT::Dispatch(
       d_temp_storage,
@@ -2149,7 +2141,7 @@ public:
   template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
     ::cuda::std::int64_t num_items,
@@ -2303,7 +2295,7 @@ public:
   template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortPairs(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     const ValueT* d_values_in,
@@ -2461,7 +2453,7 @@ public:
   template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortPairsDescending(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     const ValueT* d_values_in,
@@ -2629,7 +2621,7 @@ public:
   template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortPairs(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
     ::cuda::std::int64_t num_items,
@@ -2792,7 +2784,7 @@ public:
   template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortPairsDescending(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
     ::cuda::std::int64_t num_items,

@@ -177,11 +177,6 @@ trivial_copy_device_to_device(Policy& policy, Type* dst, Type const* src, size_t
   return status;
 }
 
-CCCL_DEPRECATED_BECAUSE("Use cuda::std::terminate() instead") inline void _CCCL_HOST_DEVICE terminate()
-{
-  NV_IF_TARGET(NV_IS_HOST, (std::terminate();), (asm("trap;");));
-}
-
 _CCCL_HOST_DEVICE inline void throw_on_error(cudaError_t status)
 {
   // Clear the global CUDA error state which may have been set by the last
@@ -259,7 +254,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use thrust::transform_iterator") transform_input
   using value_type        = ValueType;
   using pointer           = void;
   using reference         = value_type;
-  using iterator_category = std::random_access_iterator_tag;
+  using iterator_category = ::cuda::std::random_access_iterator_tag;
 
   InputIt input;
   mutable UnaryOp op;
@@ -370,7 +365,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use thrust::transform_iterator of a thrust::zip_
   using value_type        = ValueType;
   using pointer           = void;
   using reference         = value_type;
-  using iterator_category = std::random_access_iterator_tag;
+  using iterator_category = ::cuda::std::random_access_iterator_tag;
 
   InputIt1 input1;
   InputIt2 input2;
@@ -503,7 +498,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use thrust::counting_iterator") counting_iterato
   using value_type        = T;
   using pointer           = void;
   using reference         = T;
-  using iterator_category = std::random_access_iterator_tag;
+  using iterator_category = ::cuda::std::random_access_iterator_tag;
 
   T count;
 

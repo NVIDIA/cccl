@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // cuda::std::forward_iterator;
 
 #include <cuda/std/concepts>

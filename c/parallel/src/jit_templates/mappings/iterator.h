@@ -42,8 +42,8 @@ struct parameter_mapping<cccl_iterator_t>
   {
     return std::format(
       "cccl_iterator_t_mapping<{}>{{.is_pointer = {}, .size = {}, .alignment = {}, .advance = {}, .{} = {}}}",
-      cccl_type_enum_to_string(arg.value_type.type),
-      arg.type == cccl_iterator_kind_t::pointer,
+      cccl_type_enum_to_name(arg.value_type.type),
+      arg.type == cccl_iterator_kind_t::CCCL_POINTER,
       arg.size,
       arg.alignment,
       arg.advance.name,
@@ -65,9 +65,9 @@ extern "C" __device__ void {0}(void *, {1});
 extern "C" __device__ {3} {2}(const void *);
 )",
       arg.advance.name,
-      cccl_type_enum_to_string(cccl_type_enum::UINT64),
+      cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64),
       arg.dereference.name,
-      cccl_type_enum_to_string(arg.value_type.type));
+      cccl_type_enum_to_name(arg.value_type.type));
   }
 };
 #endif

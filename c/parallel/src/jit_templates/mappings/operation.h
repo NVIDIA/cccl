@@ -34,7 +34,7 @@ struct parameter_mapping<cccl_op_t>
   {
     return std::format(
       "cccl_op_t_mapping{{.is_stateless = {}, .size = {}, .alignment = {}, .operation = {}}}",
-      op.type == cccl_op_kind_t::stateless,
+      op.type == cccl_op_kind_t::CCCL_STATELESS,
       op.size,
       op.alignment,
       op.name);

@@ -60,10 +60,6 @@ if (MSVC)
   endif()
 endif()
 
-if (CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING)
-  string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING")
-endif()
-
 if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
   string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
     " ${CMAKE_CUDA_FLAGS}"
@@ -144,6 +140,6 @@ add_test(NAME libcudacxx.test.lit COMMAND
 )
 
 set_tests_properties(libcudacxx.test.lit PROPERTIES
-  TIMEOUT 6400
+  TIMEOUT 10800 # 3hr, some CI machines are slow
   RUN_SERIAL TRUE
 )

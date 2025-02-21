@@ -21,14 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(MSVC2017) && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
+#if defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
 #  include <cuda/std/__concepts/same_as.h>
 #  include <cuda/std/__type_traits/remove_const_ref.h>
 #  include <cuda/std/__type_traits/void_t.h>
 #  include <cuda/std/__utility/declval.h>
-
-#  if _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -151,8 +149,6 @@ using forward_property = __forward_property::__fn<_Derived, _Upstream>;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#  endif // _CCCL_STD_VER >= 2014
-
-#endif // !_CCCL_COMPILER(MSVC2017) && LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+#endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #endif //_CUDA__MEMORY_RESOURCE_GET_PROPERTY_H

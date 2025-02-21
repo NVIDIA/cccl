@@ -49,9 +49,6 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/thread/thread_operators.cuh>
 
-#include <iterator>
-#include <type_traits>
-
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -136,8 +133,8 @@ struct AgentUniqueByKey
   //---------------------------------------------------------------------
 
   // The input key and value type
-  using KeyT   = typename std::iterator_traits<KeyInputIteratorT>::value_type;
-  using ValueT = typename std::iterator_traits<ValueInputIteratorT>::value_type;
+  using KeyT   = cub::detail::value_t<KeyInputIteratorT>;
+  using ValueT = cub::detail::value_t<ValueInputIteratorT>;
 
   // Tile status descriptor interface type
   using ScanTileStateT = ScanTileState<OffsetT>;
@@ -151,20 +148,20 @@ struct AgentUniqueByKey
   };
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier) for keys
-  using WrappedKeyInputIteratorT = typename std::conditional<
-    std::is_pointer<KeyInputIteratorT>::value,
+  using WrappedKeyInputIteratorT = ::cuda::std::conditional_t<
+    ::cuda::std::is_pointer_v<KeyInputIteratorT>,
     CacheModifiedInputIterator<AgentUniqueByKeyPolicyT::LOAD_MODIFIER, KeyT, OffsetT>, // Wrap the native input pointer
                                                                                        // with
                                                                                        // CacheModifiedValuesInputIterator
-    KeyInputIteratorT>::type; // Directly use the supplied input iterator type
+    KeyInputIteratorT>; // Directly use the supplied input iterator type
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier) for values
-  using WrappedValueInputIteratorT = typename std::conditional<
-    std::is_pointer<ValueInputIteratorT>::value,
+  using WrappedValueInputIteratorT = ::cuda::std::conditional_t<
+    ::cuda::std::is_pointer_v<ValueInputIteratorT>,
     CacheModifiedInputIterator<AgentUniqueByKeyPolicyT::LOAD_MODIFIER, ValueT, OffsetT>, // Wrap the native input
                                                                                          // pointer with
                                                                                          // CacheModifiedValuesInputIterator
-    ValueInputIteratorT>::type; // Directly use the supplied input iterator type
+    ValueInputIteratorT>; // Directly use the supplied input iterator type
 
   // Parameterized BlockLoad type for input data
   using BlockLoadKeys = BlockLoad<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentUniqueByKeyPolicyT::LOAD_ALGORITHM>;
@@ -612,23 +609,5 @@ struct AgentUniqueByKey
 
 } // namespace unique_by_key
 } // namespace detail
-
-template <typename AgentUniqueByKeyPolicyT,
-          typename KeyInputIteratorT,
-          typename ValueInputIteratorT,
-          typename KeyOutputIteratorT,
-          typename ValueOutputIteratorT,
-          typename EqualityOpT,
-          typename OffsetT>
-using AgentUniqueByKey CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
-                                               "interface will be removed.") =
-  detail::unique_by_key::AgentUniqueByKey<
-    AgentUniqueByKeyPolicyT,
-    KeyInputIteratorT,
-    ValueInputIteratorT,
-    KeyOutputIteratorT,
-    ValueOutputIteratorT,
-    EqualityOpT,
-    OffsetT>;
 
 CUB_NAMESPACE_END

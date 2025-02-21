@@ -26,13 +26,13 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2017
+#if !defined(_CCCL_NO_CONCEPTS)
 
 template <class _Iterator>
 concept permutable = forward_iterator<_Iterator> && indirectly_movable_storable<_Iterator, _Iterator>
                   && indirectly_swappable<_Iterator, _Iterator>;
 
-#elif _CCCL_STD_VER >= 2014
+#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 
 template <class _Iterator>
 _CCCL_CONCEPT_FRAGMENT(__permutable_,
@@ -43,7 +43,7 @@ _CCCL_CONCEPT_FRAGMENT(__permutable_,
 template <class _Iterator>
 _CCCL_CONCEPT permutable = _CCCL_FRAGMENT(__permutable_, _Iterator);
 
-#endif // _CCCL_STD_VER >= 2014
+#endif // _CCCL_NO_CONCEPTS
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

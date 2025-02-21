@@ -27,7 +27,7 @@ struct parameter_mapping<cccl_type_info>
   template <typename TplId>
   static std::string map(TplId, cccl_type_info arg)
   {
-    return std::format("cccl_type_info_mapping<{}>{{}}", cccl_type_enum_to_string(arg.type));
+    return std::format("cccl_type_info_mapping<{}>{{}}", cccl_type_enum_to_name(arg.type));
   }
 
   template <typename TplId>

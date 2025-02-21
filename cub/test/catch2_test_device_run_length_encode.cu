@@ -25,13 +25,6 @@
  *
  ******************************************************************************/
 
-#include <cuda/__cccl_config>
-
-#if _CCCL_COMPILER(NVHPC)
-// to suppress warnings for CountingInputIterator
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-#endif // _CCCL_COMPILER(NVHPC)
-
 #include "insert_nested_NVTX_range_guard.h"
 // above header needs to be included first
 
@@ -49,9 +42,6 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 #include <c2h/catch2_test_helper.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRunLengthEncode::Encode, run_length_encode);
-
-// suppress deprecation of ConstantInputIterator in cudafe1.stub.c file
-_CCCL_SUPPRESS_DEPRECATED_PUSH
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -259,7 +249,7 @@ C2H_TEST("DeviceRunLengthEncode::Encode can handle leading NaN", "[device][run_l
   c2h::device_vector<int> out_num_runs(1);
 
   c2h::device_vector<type> reference_unique = in;
-  in.front()                                = std::numeric_limits<type>::quiet_NaN();
+  in.front()                                = ::cuda::std::numeric_limits<type>::quiet_NaN();
 
   run_length_encode(in.begin(), out_unique.begin(), out_counts.begin(), out_num_runs.begin(), num_items);
 
@@ -274,7 +264,3 @@ C2H_TEST("DeviceRunLengthEncode::Encode can handle leading NaN", "[device][run_l
   REQUIRE(out_counts == reference_counts);
   REQUIRE(out_num_runs == reference_num_runs);
 }
-
-#if _CCCL_COMPILER(NVHPC)
-_CCCL_SUPPRESS_DEPRECATED_POP
-#endif // _CCCL_COMPILER(NVHPC)
