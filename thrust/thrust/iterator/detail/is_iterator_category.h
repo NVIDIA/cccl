@@ -25,19 +25,19 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/type_traits.h>
+
 #include <thrust/iterator/iterator_categories.h>
+
+#include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 template <typename T>
-struct is_host_iterator_category
-    : ::cuda::std::disjunction<::cuda::std::is_convertible<T, thrust::input_host_iterator_tag>,
-                               ::cuda::std::is_convertible<T, thrust::output_host_iterator_tag>>
-{}; // end is_host_iterator_category
+using is_host_iterator_category =
+  ::cuda::std::bool_constant<::cuda::std::is_convertible_v<T, input_host_iterator_tag>
+                             || ::cuda::std::is_convertible_v<T, output_host_iterator_tag>>;
 
 template <typename T>
 struct is_device_iterator_category
