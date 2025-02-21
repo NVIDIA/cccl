@@ -782,6 +782,9 @@ enum Category
 
 namespace detail
 {
+template <typename T>
+struct is_primitive;
+
 template <Category _CATEGORY, bool _PRIMITIVE, typename _UnsignedBits, typename T>
 struct BaseTraits
 {
@@ -998,7 +1001,7 @@ struct NumericTraits<__uint128_t>
 
 private:
   template <typename>
-  friend struct is_primitive;
+  friend struct detail::is_primitive;
 
   static constexpr bool is_primitive = false;
 };
@@ -1041,7 +1044,7 @@ struct NumericTraits<__int128_t>
 
 private:
   template <typename>
-  friend struct is_primitive;
+  friend struct detail::is_primitive;
 
   static constexpr bool is_primitive = false;
 };
@@ -1090,10 +1093,8 @@ template <typename T>
 struct is_primitive : ::cuda::std::bool_constant<Traits<T>::is_primitive>
 {};
 
-#  ifndef _CCCL_NO_VARIABLE_TEMPLATES
 template <typename T>
-inline constexpr bool is_primitive_v = is_primitive<T>::value;
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+_CCCL_INLINE_VAR constexpr bool is_primitive_v = is_primitive<T>::value;
 } // namespace detail
 
 #endif // _CCCL_DOXYGEN_INVOKED
