@@ -87,34 +87,6 @@ struct DeviceUniqueByKeyKernelSource
     return ScanTileStateT();
   }
 };
-
-template <typename... Ts>
-struct VSMemHelper
-{
-  template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION static constexpr int BlockThreads(ActivePolicyT /*policy*/)
-  {
-    return cub::detail::vsmem_helper_default_fallback_policy_t<ActivePolicyT,
-                                                               detail::unique_by_key::AgentUniqueByKey,
-                                                               Ts...>::agent_policy_t::BLOCK_THREADS;
-  }
-
-  template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION static constexpr int ItemsPerThread(ActivePolicyT /*policy*/)
-  {
-    return cub::detail::vsmem_helper_default_fallback_policy_t<ActivePolicyT,
-                                                               detail::unique_by_key::AgentUniqueByKey,
-                                                               Ts...>::agent_policy_t::ITEMS_PER_THREAD;
-  }
-
-  template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t VSMemPerBlock(ActivePolicyT /*policy*/)
-  {
-    return cub::detail::vsmem_helper_default_fallback_policy_t<ActivePolicyT,
-                                                               detail::unique_by_key::AgentUniqueByKey,
-                                                               Ts...>::vsmem_per_block;
-  }
-};
 } // namespace detail::unique_by_key
 
 /******************************************************************************
