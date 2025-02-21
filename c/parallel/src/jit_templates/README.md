@@ -1,7 +1,7 @@
 # c.parallel type wrapper templates
 
 This directory houses the definitions of and machinery for templates used to generate types later passed into CUB as
-algorithm arguments. There's four elements of the entire system:
+algorithm arguments. The entire system consists of four elements:
 
 * argument mappings,
 * the templates themselves,

@@ -204,7 +204,7 @@ struct reduce_kernel_source
 };
 } // namespace reduce
 
-struct reduce_output_iterator_tag;
+struct reduce_iterator_tag;
 struct reduction_operation_tag;
 
 CUresult cccl_device_reduce_build(
@@ -232,9 +232,9 @@ CUresult cccl_device_reduce_build(
     const auto accum_cpp         = cccl_type_enum_to_name(accum_t.type);
 
     const auto [input_iterator_name, input_iterator_src] =
-      get_specialization<reduce_output_iterator_tag>(template_id<input_iterator_traits>(), input_it);
+      get_specialization<reduce_iterator_tag>(template_id<input_iterator_traits>(), input_it);
     const auto [output_iterator_name, output_iterator_src] =
-      get_specialization<reduce_output_iterator_tag>(template_id<output_iterator_traits>(), output_it, accum_t);
+      get_specialization<reduce_iterator_tag>(template_id<output_iterator_traits>(), output_it, accum_t);
 
     const auto [op_name, op_src] =
       get_specialization<reduction_operation_tag>(template_id<binary_user_operation_traits>(), op, accum_t);
