@@ -5,7 +5,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -22,6 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/cstddef> // size_t
@@ -32,20 +33,22 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <size_t _Align, class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* assume_aligned(_Tp* __ptr) noexcept
 {
-  static_assert(_CUDA_VSTD::has_single_bit(_Align), "std::assume_aligned requires the alignment to be a power of 2!");
-#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && defined(_CCCL_BUILTIN_ASSUME_ALIGNED)
-  if (!_CCCL_BUILTIN_IS_CONSTANT_EVALUATED())
+  static_assert(_CUDA_VSTD::has_single_bit(_Align), "std::assume_aligned requires the alignment to be a power of 2");
+  static_assert(_Align >= sizeof(_Tp), "Alignment must be greater than or equal to the size of the input type");
+#if !defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+  return __ptr;
+#else
+  if (!_CUDA_VSTD::is_constant_evaluated())
   {
 #  if !_CCCL_COMPILER(MSVC) // MSVC checks within the builtin
-    _CCCL_ASSERT(reinterpret_cast<uintptr_t>(__ptr) % _Align == 0, "Alignment assumption is violated");
-#  endif // !_CCCL_COMPILER(MSVC)
+    _CCCL_ASSERT(_CUDA_VSTD::bit_cast<uintptr_t>(__ptr) % _Align == 0, "Alignment assumption is violated");
+#  endif // !_CCCL_COMPILER(MSVC) && defined(_CCCL_BUILTIN_ASSUME_ALIGNED)
+#  if defined(_CCCL_BUILTIN_ASSUME_ALIGNED)
     return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(__ptr, _Align));
+#  endif // defined(_CCCL_BUILTIN_ASSUME_ALIGNED)
   }
-  else
-#endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED && _CCCL_BUILTIN_ASSUME_ALIGNED
-  {
-    return __ptr;
-  }
+  return __ptr;
+#endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
