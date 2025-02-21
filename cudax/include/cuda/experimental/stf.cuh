@@ -636,39 +636,13 @@ public:
   }
 
   /**
-   * @brief Start a new section in the DOT file identified by its symbol
-   */
-  void dot_push_section(::std::string symbol) const
-  {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    ::std::visit(
-      [symbol = mv(symbol)](auto& self) {
-        self.dot_push_section(symbol);
-      },
-      payload);
-  }
-
-  /**
-   * @brief Ends current dot section
-   */
-  void dot_pop_section() const
-  {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    ::std::visit(
-      [](auto& self) {
-        self.dot_pop_section();
-      },
-      payload);
-  }
-
-  /**
    * @brief RAII-style description of a new section in the DOT file identified by its symbol
    */
   auto dot_section(::std::string symbol) const
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     return ::std::visit(
-      [symbol = mv(symbol)](auto& self) {
+      [&symbol](auto& self) {
         return self.dot_section(symbol);
       },
       payload);
@@ -1708,7 +1682,7 @@ public:
     bool found                            = false;
     for (::std::shared_ptr<cudaGraphExec_t>& pe : cached_exec_graphs[stream])
     {
-      found = graph_ctx::try_updating_executable_graph(*pe, *gctx_graph);
+      found = reserved::try_updating_executable_graph(*pe, *gctx_graph);
       if (found)
       {
         eg = pe;
@@ -1762,7 +1736,7 @@ public:
     bool found                            = false;
     for (::std::shared_ptr<cudaGraphExec_t>& pe : cached_exec_graphs[stream])
     {
-      found = graph_ctx::try_updating_executable_graph(*pe, *gctx_graph);
+      found = reserved::try_updating_executable_graph(*pe, *gctx_graph);
       if (found)
       {
         eg = pe;

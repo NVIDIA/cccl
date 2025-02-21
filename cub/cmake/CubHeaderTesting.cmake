@@ -47,3 +47,10 @@ set(header_definitions
   "CUB_WRAPPED_NAMESPACE=wrapped_cub"
   "CCCL_DISABLE_FP16_SUPPORT")
 cub_add_header_test(no_half "${header_definitions}")
+
+# Check that half support can be disabled
+set(header_definitions
+  "THRUST_WRAPPED_NAMESPACE=wrapped_thrust"
+  "CUB_WRAPPED_NAMESPACE=wrapped_cub"
+  "CCCL_DISABLE_FP8_SUPPORT")
+cub_add_header_test(no_fp8 "${header_definitions}")

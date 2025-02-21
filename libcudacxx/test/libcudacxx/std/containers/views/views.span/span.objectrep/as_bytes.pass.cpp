@@ -6,7 +6,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++03, c++11
 
 // <span>
 
@@ -21,10 +20,6 @@
 #include <cuda/std/span>
 
 #include "test_macros.h"
-
-#ifdef TEST_COMPILER_MSVC_2017
-#  pragma warning(disable : 4307) // integral constant overflow
-#endif // TEST_COMPILER_MSVC_2017
 
 template <typename Span>
 __host__ __device__ void testRuntimeSpan(Span sp)
@@ -45,9 +40,7 @@ __host__ __device__ void testRuntimeSpan(Span sp)
   }
 
   assert((void*) spBytes.data() == (void*) sp.data());
-#ifndef TEST_COMPILER_MSVC_2017
   assert(spBytes.size() == sp.size_bytes());
-#endif // !TEST_COMPILER_MSVC_2017
 }
 
 struct A

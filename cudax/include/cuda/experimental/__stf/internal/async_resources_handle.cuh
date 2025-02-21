@@ -26,6 +26,7 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/internal/exec_affinity.cuh>
+#include <cuda/experimental/__stf/internal/executable_graph_cache.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh> // for ::std::hash<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>>
@@ -385,9 +386,8 @@ private:
     // stores a pool of streams on this device
     ::std::vector<::std::pair<stream_pool, stream_pool>> pool;
 
-    /* Store a vector of previously instantiated graphs, with the number of
-     * nodes, number of edges, and the executable graph */
-    ::std::vector<::std::tuple<size_t, size_t, ::std::shared_ptr<cudaGraphExec_t>>> cached_graphs;
+    /* Store previously instantiated graphs, indexed by the number of edges and nodes */
+    executable_graph_cache cached_graphs;
 
     ::std::vector<::std::shared_ptr<green_context_helper>> per_device_gc_helper;
 
@@ -432,16 +432,10 @@ public:
     return pimpl->cached_syncs.validate_sync_and_update(dst, src, event_id);
   }
 
-  void put_graph_in_cache(size_t nnodes, size_t nedges, ::std::shared_ptr<cudaGraphExec_t> exec_g)
+  ::std::shared_ptr<cudaGraphExec_t> cached_graphs_query(size_t nnodes, size_t nedges, ::std::shared_ptr<cudaGraph_t> g)
   {
     assert(pimpl);
-    pimpl->cached_graphs.push_back(::std::make_tuple(nnodes, nedges, mv(exec_g)));
-  }
-
-  auto& get_cached_graphs()
-  {
-    assert(pimpl);
-    return pimpl->cached_graphs;
+    return pimpl->cached_graphs.query(nnodes, nedges, mv(g));
   }
 
   // Get the green context helper cached for this device (or let the user initialize it)

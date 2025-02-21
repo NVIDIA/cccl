@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // Older Clangs do not support the C++20 feature to constrain destructors
 
 // template<class G>
@@ -63,7 +61,6 @@ struct MoveMayThrow
 // Test constraints
 static_assert(cuda::std::is_assignable_v<cuda::std::expected<int, int>&, cuda::std::unexpected<int>&&>, "");
 
-#ifndef TEST_COMPILER_MSVC_2017
 // !is_constructible_v<E, GF>
 static_assert(!cuda::std::is_assignable_v<cuda::std::expected<int, NotMoveConstructible>&,
                                           cuda::std::unexpected<NotMoveConstructible>&&>,
@@ -73,7 +70,6 @@ static_assert(!cuda::std::is_assignable_v<cuda::std::expected<int, NotMoveConstr
 static_assert(
   !cuda::std::is_assignable_v<cuda::std::expected<int, NotMoveAssignable>&, cuda::std::unexpected<NotMoveAssignable>&&>,
   "");
-#endif // !TEST_COMPILER_MSVC_2017
 
 template <bool moveNoexcept, bool convertNoexcept>
 struct MaybeNoexcept
@@ -102,13 +98,11 @@ static_assert(cuda::std::is_assignable_v<cuda::std::expected<MaybeNoexcept<true,
                                          cuda::std::unexpected<int>&&>,
               "");
 
-#ifndef TEST_COMPILER_MSVC_2017
 // !is_nothrow_constructible_v<E, GF> && !is_nothrow_move_constructible_v<T> &&
 // !is_nothrow_move_constructible_v<E>
 static_assert(!cuda::std::is_assignable_v<cuda::std::expected<MaybeNoexcept<false, false>, MaybeNoexcept<false, false>>&,
                                           cuda::std::unexpected<int>&&>,
               "");
-#endif // !TEST_COMPILER_MSVC_2017
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {

@@ -48,6 +48,7 @@
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
+#include <c2h/extended_types.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -70,12 +71,12 @@ using bit_window_key_types = c2h::type_list<cuda::std::uint8_t, cuda::std::int8_
 using key_types = c2h::type_list<
     cuda::std::uint16_t
   , cuda::std::int16_t
-#ifdef TEST_HALF_T
+#if TEST_HALF_T()
   , half_t
-#endif
-#ifdef TEST_BF_T
+#endif // TEST_HALF_T()
+#if TEST_BF_T()
   , bfloat16_t
-#endif
+#endif // TEST_BF_T()
   >;
 // clang-format on
 using bit_window_key_types = c2h::type_list<cuda::std::uint16_t, cuda::std::int16_t>;
@@ -510,7 +511,7 @@ C2H_TEST("DeviceRadixSort::SortKeys: 32-bit overflow check", "[large][keys][radi
 
   // Test problem sizes near and at the maximum offset value to ensure that internal calculations
   // do not overflow.
-  constexpr std::size_t max_offset    = std::numeric_limits<num_items_t>::max();
+  constexpr std::size_t max_offset    = ::cuda::std::numeric_limits<num_items_t>::max();
   constexpr std::size_t min_num_items = max_offset - 5;
   constexpr std::size_t max_num_items = max_offset;
   const std::size_t num_items         = GENERATE_COPY(min_num_items, max_num_items);

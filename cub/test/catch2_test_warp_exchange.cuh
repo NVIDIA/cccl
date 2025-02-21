@@ -42,36 +42,28 @@ template <typename InputT, typename OutputT, int ItemsPerThread, cub::WarpExchan
 struct exchange_data_t;
 
 template <typename InputT, typename OutputT, int ItemsPerThread, cub::WarpExchangeAlgorithm Alg>
-struct exchange_data_t<InputT,
-                       OutputT,
-                       ItemsPerThread,
-                       Alg,
-                       typename std::enable_if<std::is_same<InputT, OutputT>::value>::type>
+struct exchange_data_t<InputT, OutputT, ItemsPerThread, Alg, std::enable_if_t<std::is_same_v<InputT, OutputT>>>
 {
   InputT input[ItemsPerThread];
   OutputT (&output)[ItemsPerThread] = input;
 
   template <int LogicalWarpThreads>
   inline __device__ void
-  scatter(cub::WarpExchange<InputT, ItemsPerThread, LogicalWarpThreads, 0, Alg>& exchange, int (&ranks)[ItemsPerThread])
+  scatter(cub::WarpExchange<InputT, ItemsPerThread, LogicalWarpThreads, Alg>& exchange, int (&ranks)[ItemsPerThread])
   {
     exchange.ScatterToStriped(input, ranks);
   }
 };
 
 template <typename InputT, typename OutputT, int ItemsPerThread, cub::WarpExchangeAlgorithm Alg>
-struct exchange_data_t<InputT,
-                       OutputT,
-                       ItemsPerThread,
-                       Alg,
-                       typename std::enable_if<!std::is_same<InputT, OutputT>::value>::type>
+struct exchange_data_t<InputT, OutputT, ItemsPerThread, Alg, std::enable_if_t<!std::is_same_v<InputT, OutputT>>>
 {
   InputT input[ItemsPerThread];
   OutputT output[ItemsPerThread];
 
   template <int LogicalWarpThreads>
   inline __device__ void
-  scatter(cub::WarpExchange<InputT, ItemsPerThread, LogicalWarpThreads, 0, Alg>& exchange, int (&ranks)[ItemsPerThread])
+  scatter(cub::WarpExchange<InputT, ItemsPerThread, LogicalWarpThreads, Alg>& exchange, int (&ranks)[ItemsPerThread])
   {
     exchange.ScatterToStriped(input, output, ranks);
   }
@@ -85,7 +77,7 @@ template <int LOGICAL_WARP_THREADS,
           typename OutputT>
 __global__ void scatter_kernel(const InputT* input_data, OutputT* output_data)
 {
-  using warp_exchange_t = cub::WarpExchange<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, 0, Alg>;
+  using warp_exchange_t = cub::WarpExchange<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, Alg>;
   using storage_t       = typename warp_exchange_t::TempStorage;
 
   constexpr int tile_size = ITEMS_PER_THREAD * LOGICAL_WARP_THREADS;
@@ -147,7 +139,7 @@ template <int LOGICAL_WARP_THREADS,
           typename ActionT>
 __global__ void kernel(const InputT* input_data, OutputT* output_data, ActionT action)
 {
-  using warp_exchange_t = cub::WarpExchange<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, 0, Alg>;
+  using warp_exchange_t = cub::WarpExchange<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, Alg>;
   using storage_t       = typename warp_exchange_t::TempStorage;
 
   constexpr int tile_size = ITEMS_PER_THREAD * LOGICAL_WARP_THREADS;
@@ -205,7 +197,7 @@ struct blocked_to_striped
             cub::WarpExchangeAlgorithm Alg>
   __device__ void operator()(InputT (&input)[ITEMS_PER_THREAD],
                              OutputT (&output)[ITEMS_PER_THREAD],
-                             cub::WarpExchange<InputT, ItemsPerThread, LogicalWarpThreads, 0, Alg>& exchange)
+                             cub::WarpExchange<InputT, ItemsPerThread, LogicalWarpThreads, Alg>& exchange)
   {
     exchange.BlockedToStriped(input, output);
   }
@@ -221,7 +213,7 @@ struct striped_to_blocked
             cub::WarpExchangeAlgorithm Alg>
   __device__ void operator()(InputT (&input)[ITEMS_PER_THREAD],
                              OutputT (&output)[ITEMS_PER_THREAD],
-                             cub::WarpExchange<InputT, ItemsPerThread, LogicalWarpThreads, 0, Alg>& exchange)
+                             cub::WarpExchange<InputT, ItemsPerThread, LogicalWarpThreads, Alg>& exchange)
   {
     exchange.StripedToBlocked(input, output);
   }

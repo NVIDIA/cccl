@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
-
 // move_iterator
 
 #include <cuda/std/iterator>
@@ -33,17 +31,13 @@ __host__ __device__ void test()
     static_assert(!cuda::std::indirectly_copyable_storable<int*, iterator>);
     static_assert(cuda::std::indirectly_readable<iterator>);
     static_assert(!cuda::std::indirectly_writable<iterator, int>);
-#if !defined(TEST_COMPILER_MSVC_2017)
     static_assert(cuda::std::indirectly_swappable<iterator, iterator>);
-#endif // !TEST_COMPILER_MSVC_2017
   }
   {
     using iterator = cuda::std::move_iterator<cpp20_input_iterator<int*>>;
 
     static_assert(!cuda::std::default_initializable<iterator>);
-#if !defined(TEST_COMPILER_MSVC_2017)
     static_assert(!cuda::std::copyable<iterator>);
-#endif // !TEST_COMPILER_MSVC_2017
     static_assert(cuda::std::input_iterator<iterator>);
     static_assert(!cuda::std::forward_iterator<iterator>);
     static_assert(!cuda::std::sentinel_for<iterator, iterator>); // not copyable
@@ -54,9 +48,7 @@ __host__ __device__ void test()
     static_assert(!cuda::std::indirectly_copyable_storable<int*, iterator>);
     static_assert(cuda::std::indirectly_readable<iterator>);
     static_assert(!cuda::std::indirectly_writable<iterator, int>);
-#if !defined(TEST_COMPILER_MSVC_2017)
     static_assert(cuda::std::indirectly_swappable<iterator, iterator>);
-#endif // !TEST_COMPILER_MSVC_2017
   }
   {
     using iterator = cuda::std::move_iterator<forward_iterator<int*>>;
@@ -73,9 +65,7 @@ __host__ __device__ void test()
     static_assert(!cuda::std::indirectly_copyable_storable<int*, iterator>);
     static_assert(cuda::std::indirectly_readable<iterator>);
     static_assert(!cuda::std::indirectly_writable<iterator, int>);
-#if !defined(TEST_COMPILER_MSVC_2017)
     static_assert(cuda::std::indirectly_swappable<iterator, iterator>);
-#endif // !TEST_COMPILER_MSVC_2017
   }
   {
     using iterator = cuda::std::move_iterator<bidirectional_iterator<int*>>;
@@ -92,9 +82,7 @@ __host__ __device__ void test()
     static_assert(!cuda::std::indirectly_copyable_storable<int*, iterator>);
     static_assert(cuda::std::indirectly_readable<iterator>);
     static_assert(!cuda::std::indirectly_writable<iterator, int>);
-#if !defined(TEST_COMPILER_MSVC_2017)
     static_assert(cuda::std::indirectly_swappable<iterator, iterator>);
-#endif // !TEST_COMPILER_MSVC_2017
   }
   {
     using iterator = cuda::std::move_iterator<random_access_iterator<int*>>;
@@ -111,9 +99,7 @@ __host__ __device__ void test()
     static_assert(!cuda::std::indirectly_copyable_storable<int*, iterator>);
     static_assert(cuda::std::indirectly_readable<iterator>);
     static_assert(!cuda::std::indirectly_writable<iterator, int>);
-#if !defined(TEST_COMPILER_MSVC_2017)
     static_assert(cuda::std::indirectly_swappable<iterator, iterator>);
-#endif // !TEST_COMPILER_MSVC_2017
   }
   {
     using iterator = cuda::std::move_iterator<contiguous_iterator<int*>>;
@@ -130,9 +116,7 @@ __host__ __device__ void test()
     static_assert(!cuda::std::indirectly_copyable_storable<int*, iterator>);
     static_assert(cuda::std::indirectly_readable<iterator>);
     static_assert(!cuda::std::indirectly_writable<iterator, int>);
-#if !defined(TEST_COMPILER_MSVC_2017)
     static_assert(cuda::std::indirectly_swappable<iterator, iterator>);
-#endif // !TEST_COMPILER_MSVC_2017
   }
   {
     using iterator = cuda::std::move_iterator<int*>;
@@ -149,9 +133,7 @@ __host__ __device__ void test()
     static_assert(!cuda::std::indirectly_copyable_storable<int*, iterator>);
     static_assert(cuda::std::indirectly_readable<iterator>);
     static_assert(!cuda::std::indirectly_writable<iterator, int>);
-#if !defined(TEST_COMPILER_MSVC_2017)
     static_assert(cuda::std::indirectly_swappable<iterator, iterator>);
-#endif // !TEST_COMPILER_MSVC_2017
   }
 }
 

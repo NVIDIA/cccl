@@ -122,9 +122,8 @@ __launch_bounds__(
   using key_t = value_t<KeyIt1>;
   static_assert(::cuda::std::__invokable<CompareOp, key_t, key_t>::value,
                 "Comparison operator cannot compare two keys");
-  static_assert(
-    ::cuda::std::is_convertible<typename ::cuda::std::__invoke_of<CompareOp, key_t, key_t>::type, bool>::value,
-    "Comparison operator must be convertible to bool");
+  static_assert(::cuda::std::is_convertible_v<typename ::cuda::std::__invoke_of<CompareOp, key_t, key_t>::type, bool>,
+                "Comparison operator must be convertible to bool");
 
   using MergeAgent = typename choose_merge_agent<
     typename MaxPolicy::ActivePolicy::merge_policy,
@@ -138,7 +137,7 @@ __launch_bounds__(
     CompareOp>::type;
   using MergePolicy = typename MergeAgent::policy;
 
-  using THRUST_NS_QUALIFIER::cuda_cub::core::make_load_iterator;
+  using THRUST_NS_QUALIFIER::cuda_cub::core::detail::make_load_iterator;
   using vsmem_helper_t = vsmem_helper_impl<MergeAgent>;
   __shared__ typename vsmem_helper_t::static_temp_storage_t shared_temp_storage;
   auto& temp_storage = vsmem_helper_t::get_temp_storage(shared_temp_storage, global_temp_storage);
@@ -169,7 +168,7 @@ template <typename KeyIt1,
 struct dispatch_t
 {
   void* d_temp_storage;
-  std::size_t& temp_storage_bytes;
+  size_t& temp_storage_bytes;
   KeyIt1 d_keys1;
   ValueIt1 d_values1;
   Offset num_items1;
@@ -193,10 +192,11 @@ struct dispatch_t
     const auto num_tiles = ::cuda::ceil_div(num_items1 + num_items2, agent_t::policy::ITEMS_PER_TILE);
     void* allocations[2] = {nullptr, nullptr};
     {
-      const std::size_t merge_partitions_size      = (1 + num_tiles) * sizeof(Offset);
-      const std::size_t virtual_shared_memory_size = num_tiles * vsmem_helper_impl<agent_t>::vsmem_per_block;
-      const std::size_t allocation_sizes[2]        = {merge_partitions_size, virtual_shared_memory_size};
-      const auto error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      const size_t merge_partitions_size      = (1 + num_tiles) * sizeof(Offset);
+      const size_t virtual_shared_memory_size = num_tiles * vsmem_helper_impl<agent_t>::vsmem_per_block;
+      const size_t allocation_sizes[2]        = {merge_partitions_size, virtual_shared_memory_size};
+      const auto error =
+        CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         return error;
@@ -218,7 +218,7 @@ struct dispatch_t
       const int partition_grid_size = static_cast<int>(::cuda::ceil_div(num_partitions, threads_per_partition_block));
 
       auto error = CubDebug(
-        THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
           partition_grid_size, threads_per_partition_block, 0, stream)
           .doit(device_partition_merge_path_kernel<
                   max_policy_t,
@@ -253,7 +253,7 @@ struct dispatch_t
     {
       auto vshmem_ptr = vsmem_t{allocations[1]};
       auto error      = CubDebug(
-        THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
           static_cast<int>(num_tiles), static_cast<int>(agent_t::policy::BLOCK_THREADS), 0, stream)
           .doit(
             device_merge_kernel<max_policy_t, KeyIt1, ValueIt1, KeyIt2, ValueIt2, KeyIt3, ValueIt3, Offset, CompareOp>,

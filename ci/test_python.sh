@@ -12,7 +12,7 @@ begin_group "⚙️ Existing site-packages"
 pip freeze
 end_group "⚙️ Existing site-packages"
 
-for module in cuda_parallel cuda_cooperative; do
+for module in cuda_cccl cuda_parallel cuda_cooperative; do
 
   pushd "../python/${module}" >/dev/null
 
@@ -25,7 +25,7 @@ for module in cuda_parallel cuda_cooperative; do
   begin_group "⚙️ ${module} site-packages"
   pip freeze
   end_group "⚙️ ${module} site-packages"
-  run_command "🚀  Pytest ${module}" python -m pytest -v ./tests
+  run_command "🚀  Pytest ${module}" pytest -v ./tests
   deactivate
 
   popd >/dev/null

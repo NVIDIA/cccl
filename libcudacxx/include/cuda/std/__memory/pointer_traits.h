@@ -117,8 +117,12 @@ struct __pointer_traits_rebind<_Sp<_Tp, _Args...>, _Up, false>
   using type = _Sp<_Up, _Args...>;
 };
 
+template <class _Ptr, class = void>
+struct __pointer_traits_impl
+{};
+
 template <class _Ptr>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT pointer_traits
+struct __pointer_traits_impl<_Ptr, void_t<typename __pointer_traits_element_type<_Ptr>::type>>
 {
   using pointer         = _Ptr;
   using element_type    = typename __pointer_traits_element_type<pointer>::type;
@@ -138,6 +142,10 @@ public:
     return pointer::pointer_to(__r);
   }
 };
+
+template <class _Ptr>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT pointer_traits : __pointer_traits_impl<_Ptr>
+{};
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT pointer_traits<_Tp*>
@@ -230,7 +238,6 @@ struct __to_address_helper<_Pointer, decltype((void) pointer_traits<_Pointer>::t
   }
 };
 
-#if _CCCL_STD_VER > 2011
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr auto to_address(_Tp* __p) noexcept
 {
@@ -243,7 +250,6 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto to_address(const _Pointer& __p) noexcep
 {
   return _CUDA_VSTD::__to_address(__p);
 }
-#endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

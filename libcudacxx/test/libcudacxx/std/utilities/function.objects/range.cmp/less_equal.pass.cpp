@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
-
 // <cuda/std/functional>
 
 // ranges::less_equal
@@ -47,9 +45,7 @@ __host__ __device__ constexpr bool test()
 {
   auto fn = cuda::std::ranges::less_equal();
 
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_MSVC_2017)
   assert(fn(MoveOnly(41), MoveOnly(42)));
-#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_MSVC_2017
 
   // These are the opposite of other tests.
   ForwardingTestObject a{};

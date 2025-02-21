@@ -31,7 +31,7 @@ using policy_hub_t = cub::detail::transform::policy_hub<false, ::cuda::std::tupl
 #else
 struct policy_hub_t
 {
-  struct max_policy : cub::ChainedPolicy<350, max_policy, max_policy>
+  struct max_policy : cub::ChainedPolicy<500, max_policy, max_policy>
   {
     static constexpr int min_bif    = cub::detail::transform::arch_to_min_bytes_in_flight(__CUDA_ARCH_LIST__);
     static constexpr auto algorithm = static_cast<cub::detail::transform::Algorithm>(TUNE_ALGORITHM);
@@ -80,7 +80,7 @@ void bench_transform(
 {
   state.exec(exec_tag, [&](const nvbench::launch& launch) {
     cub::detail::transform::dispatch_t<
-      false,
+      cub::detail::transform::requires_stable_address::no,
       OffsetT,
       ::cuda::std::tuple<RandomAccessIteratorsIn...>,
       RandomAccessIteratorOut,
@@ -106,10 +106,10 @@ struct narrowing_error : std::runtime_error
 
 // from C++ GSL
 // implementation insipired by: https://github.com/microsoft/GSL/blob/main/include/gsl/narrow
-template <typename DstT, typename SrcT, ::cuda::std::enable_if_t<::cuda::std::is_arithmetic<SrcT>::value, int> = 0>
+template <typename DstT, typename SrcT, ::cuda::std::enable_if_t<::cuda::std::is_arithmetic_v<SrcT>, int> = 0>
 constexpr DstT narrow(SrcT value)
 {
-  constexpr bool is_different_signedness = ::cuda::std::is_signed<SrcT>::value != ::cuda::std::is_signed<DstT>::value;
+  constexpr bool is_different_signedness = ::cuda::std::is_signed_v<SrcT> != ::cuda::std::is_signed_v<DstT>;
   const auto converted                   = static_cast<DstT>(value);
   if (static_cast<SrcT>(converted) != value || (is_different_signedness && ((converted < DstT{}) != (value < SrcT{}))))
   {

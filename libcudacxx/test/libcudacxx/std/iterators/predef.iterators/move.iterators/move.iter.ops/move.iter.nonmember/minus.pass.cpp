@@ -39,7 +39,6 @@ int main(int, char**)
   test(random_access_iterator<char*>(s + 5), random_access_iterator<char*>(s), 5);
   test(s + 5, s, 5);
 
-#if TEST_STD_VER > 2011
   {
     constexpr const char* p = "123456789";
     typedef cuda::std::move_iterator<const char*> MI;
@@ -48,7 +47,6 @@ int main(int, char**)
     static_assert(it1 - it2 == -1, "");
     static_assert(it2 - it1 == 1, "");
   }
-#endif
 
   return 0;
 }

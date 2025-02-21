@@ -498,7 +498,6 @@ void TestTupleSwap()
 }
 DECLARE_UNITTEST(TestTupleSwap);
 
-#if _CCCL_STD_VER >= 2017
 void TestTupleStructuredBindings()
 {
   const int a = 0;
@@ -526,4 +525,3 @@ void TestTupleCTAD(void)
   ASSERT_EQUAL(c, c2);
 }
 DECLARE_UNITTEST(TestTupleCTAD);
-#endif // _CCCL_STD_VER >= 2017

@@ -110,7 +110,7 @@ struct AgentRadixSortHistogram
   using bit_ordered_conversion = typename traits::bit_ordered_conversion_policy;
 
   using Twiddle             = RadixSortTwiddle<IS_DESCENDING, KeyT>;
-  using ShmemCounterT       = std::uint32_t;
+  using ShmemCounterT       = uint32_t;
   using ShmemAtomicCounterT = ShmemCounterT;
 
   using fundamental_digit_extractor_t = ShiftDigitExtractor<KeyT>;
@@ -214,7 +214,7 @@ struct AgentRadixSortHistogram
 #pragma unroll
       for (int u = 0; u < ITEMS_PER_THREAD; ++u)
       {
-        std::uint32_t bin = digit_extractor(current_bit, num_bits).Digit(keys[u]);
+        uint32_t bin = digit_extractor(current_bit, num_bits).Digit(keys[u]);
         // Using cuda::atomic<> results in lower performance on GP100,
         // so atomicAdd() is used instead.
         atomicAdd(&s.bins[pass][bin][part], 1);
@@ -282,15 +282,5 @@ struct AgentRadixSortHistogram
 
 } // namespace radix_sort
 } // namespace detail
-
-template <typename AgentRadixSortHistogramPolicy,
-          bool IS_DESCENDING,
-          typename KeyT,
-          typename OffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
-using AgentRadixSortHistogram CCCL_DEPRECATED_BECAUSE(
-  "This class is considered an implementation detail and the public "
-  "interface will be removed.") =
-  detail::radix_sort::AgentRadixSortHistogram<AgentRadixSortHistogramPolicy, IS_DESCENDING, KeyT, OffsetT, DecomposerT>;
 
 CUB_NAMESPACE_END

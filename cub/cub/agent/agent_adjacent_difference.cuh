@@ -79,7 +79,7 @@ template <typename Policy,
           bool ReadLeft>
 struct AgentDifference
 {
-  using LoadIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, InputIteratorT>::type;
+  using LoadIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, InputIteratorT>::type;
 
   using BlockLoad  = typename cub::BlockLoadType<Policy, LoadIt>::type;
   using BlockStore = typename cub::BlockStoreType<Policy, OutputIteratorT, OutputT>::type;
@@ -119,7 +119,7 @@ struct AgentDifference
     OffsetT num_items)
       : temp_storage(temp_storage.Alias())
       , input_it(input_it)
-      , load_it(THRUST_NS_QUALIFIER::cuda_cub::core::make_load_iterator(Policy(), input_it))
+      , load_it(THRUST_NS_QUALIFIER::cuda_cub::core::detail::make_load_iterator(Policy(), input_it))
       , first_tile_previous(first_tile_previous)
       , result(result)
       , difference_op(difference_op)
@@ -257,23 +257,5 @@ struct AgentDifferenceInit
 
 } // namespace adjacent_difference
 } // namespace detail
-
-template <typename Policy,
-          typename InputIteratorT,
-          typename OutputIteratorT,
-          typename DifferenceOpT,
-          typename OffsetT,
-          typename InputT,
-          typename OutputT,
-          bool MayAlias,
-          bool ReadLeft>
-using AgentDifference CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
-                                              "interface will be removed.") = detail::adjacent_difference::
-  AgentDifference<Policy, InputIteratorT, OutputIteratorT, DifferenceOpT, OffsetT, InputT, OutputT, MayAlias, ReadLeft>;
-
-template <typename InputIteratorT, typename InputT, typename OffsetT, bool ReadLeft>
-using AgentDifferenceInit CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and the public "
-                                                  "interface will be removed.") =
-  detail::adjacent_difference::AgentDifferenceInit<InputIteratorT, InputT, OffsetT, ReadLeft>;
 
 CUB_NAMESPACE_END

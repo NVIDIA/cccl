@@ -38,7 +38,6 @@ struct B
   typedef T value_type;
 };
 
-#if !defined(TEST_COMPILER_MSVC_2017) // pointer is inaccessible
 template <class T>
 struct C
 {
@@ -47,15 +46,12 @@ struct C
 private:
   typedef void pointer;
 };
-#endif // !TEST_COMPILER_MSVC_2017
 
 int main(int, char**)
 {
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<A<char>>::pointer, Ptr<char>>::value), "");
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<B<char>>::pointer, char*>::value), "");
-#if !defined(TEST_COMPILER_MSVC_2017) // pointer is inaccessible
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char>>::pointer, char*>::value), "");
-#endif // !TEST_COMPILER_MSVC_2017
 
   return 0;
 }

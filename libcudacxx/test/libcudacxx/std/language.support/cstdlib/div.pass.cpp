@@ -91,17 +91,15 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test(int zero_value)
 __global__ void test_global_kernel(int* zero_value)
 {
   test(*zero_value);
-#if TEST_STD_VER >= 2014
   static_assert(test(0), "");
-#endif // TEST_STD_VER >= 2014
 }
 
 int main(int, char**)
 {
   volatile int zero_value = 0;
   assert(test(zero_value));
-#if TEST_STD_VER >= 2014
+
   static_assert(test(0), "");
-#endif // TEST_STD_VER >= 2014
+
   return 0;
 }

@@ -20,7 +20,7 @@ void TestTabulateDevice(ExecutionPolicy exec)
 
   Vector v(5);
 
-  tabulate_kernel<<<1, 1>>>(exec, v.begin(), v.end(), thrust::identity<T>());
+  tabulate_kernel<<<1, 1>>>(exec, v.begin(), v.end(), ::cuda::std::identity{});
   {
     cudaError_t const err = cudaDeviceSynchronize();
     ASSERT_EQUAL(cudaSuccess, err);
@@ -72,7 +72,7 @@ void TestTabulateCudaStreams()
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  thrust::tabulate(thrust::cuda::par.on(s), v.begin(), v.end(), thrust::identity<T>());
+  thrust::tabulate(thrust::cuda::par.on(s), v.begin(), v.end(), ::cuda::std::identity{});
   cudaStreamSynchronize(s);
 
   Vector ref{0, 1, 2, 3, 4};
