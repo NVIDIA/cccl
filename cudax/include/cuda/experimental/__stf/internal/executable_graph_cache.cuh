@@ -287,7 +287,7 @@ private:
     for (auto& [loc, stat] : stats_map)
     {
       fprintf(stderr,
-              "%s:%ld:%ld [function %s] => STATS %ld hits/%ld misses\n",
+              "%s:%u:%u [function %s] => STATS %ld hits/%ld misses\n",
               loc.file_name(),
               loc.line(),
               loc.column(),
