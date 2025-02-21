@@ -50,7 +50,12 @@ class NoopExecutor(Executor):
 
     def run(self, exe_path, cmd=None, work_dir=".", file_deps=None, env=None):
         cmd = cmd or [exe_path]
-        return (cmd, "", "", 1 if (cmd[-1] and cmd[-1].endswith("runfail.cpp")) else 0)
+        return (
+            cmd,
+            "",
+            "",
+            1 if (cmd[-1] and cmd[-1].endswith("runfail.cpp.exe")) else 0,
+        )
 
 
 class PrefixExecutor(Executor):

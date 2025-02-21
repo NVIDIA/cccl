@@ -240,11 +240,10 @@ struct reduce_kernel_source
     return build.reduction_kernel;
   }
 };
-
 } // namespace reduce
 
 CUresult cccl_device_reduce_build(
-  cccl_device_reduce_build_result_t* build,
+  cccl_device_reduce_build_result_t* build_ptr,
   cccl_iterator_t input_it,
   cccl_iterator_t output_it,
   cccl_op_t op,
@@ -254,7 +253,7 @@ CUresult cccl_device_reduce_build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path) noexcept
+  const char* ctk_path)
 {
   CUresult error = CUDA_SUCCESS;
 
@@ -356,16 +355,17 @@ struct device_reduce_policy {{
         .add_link_list(ltoir_list)
         .finalize_program(num_lto_args, lopts);
 
-    cuLibraryLoadData(&build->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-    check(cuLibraryGetKernel(&build->single_tile_kernel, build->library, single_tile_kernel_lowered_name.c_str()));
+    cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+    check(
+      cuLibraryGetKernel(&build_ptr->single_tile_kernel, build_ptr->library, single_tile_kernel_lowered_name.c_str()));
     check(cuLibraryGetKernel(
-      &build->single_tile_second_kernel, build->library, single_tile_second_kernel_lowered_name.c_str()));
-    check(cuLibraryGetKernel(&build->reduction_kernel, build->library, reduction_kernel_lowered_name.c_str()));
+      &build_ptr->single_tile_second_kernel, build_ptr->library, single_tile_second_kernel_lowered_name.c_str()));
+    check(cuLibraryGetKernel(&build_ptr->reduction_kernel, build_ptr->library, reduction_kernel_lowered_name.c_str()));
 
-    build->cc               = cc;
-    build->cubin            = (void*) result.data.release();
-    build->cubin_size       = result.size;
-    build->accumulator_size = accum_t.size;
+    build_ptr->cc               = cc;
+    build_ptr->cubin            = (void*) result.data.release();
+    build_ptr->cubin_size       = result.size;
+    build_ptr->accumulator_size = accum_t.size;
   }
   catch (const std::exception& exc)
   {
@@ -387,7 +387,7 @@ CUresult cccl_device_reduce(
   unsigned long long num_items,
   cccl_op_t op,
   cccl_value_t init,
-  CUstream stream) noexcept
+  CUstream stream)
 {
   bool pushed    = false;
   CUresult error = CUDA_SUCCESS;
@@ -439,17 +439,17 @@ CUresult cccl_device_reduce(
   return error;
 }
 
-CUresult cccl_device_reduce_cleanup(cccl_device_reduce_build_result_t* bld_ptr) noexcept
+CUresult cccl_device_reduce_cleanup(cccl_device_reduce_build_result_t* build_ptr)
 {
   try
   {
-    if (bld_ptr == nullptr)
+    if (build_ptr == nullptr)
     {
       return CUDA_ERROR_INVALID_VALUE;
     }
 
-    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(bld_ptr->cubin));
-    check(cuLibraryUnload(bld_ptr->library));
+    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+    check(cuLibraryUnload(build_ptr->library));
   }
   catch (const std::exception& exc)
   {

@@ -21,7 +21,7 @@
 
 CCCL_C_EXTERN_C_BEGIN
 
-struct cccl_device_reduce_build_result_t
+typedef struct cccl_device_reduce_build_result_t
 {
   int cc;
   void* cubin;
@@ -31,7 +31,7 @@ struct cccl_device_reduce_build_result_t
   CUkernel single_tile_kernel;
   CUkernel single_tile_second_kernel;
   CUkernel reduction_kernel;
-};
+} cccl_device_reduce_build_result_t;
 
 // TODO return a union of nvtx/cuda/nvrtc errors or a string?
 CCCL_C_API CUresult cccl_device_reduce_build(
@@ -45,7 +45,7 @@ CCCL_C_API CUresult cccl_device_reduce_build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path) noexcept;
+  const char* ctk_path);
 
 CCCL_C_API CUresult cccl_device_reduce(
   cccl_device_reduce_build_result_t build,
@@ -56,8 +56,8 @@ CCCL_C_API CUresult cccl_device_reduce(
   unsigned long long num_items,
   cccl_op_t op,
   cccl_value_t init,
-  CUstream stream) noexcept;
+  CUstream stream);
 
-CCCL_C_API CUresult cccl_device_reduce_cleanup(cccl_device_reduce_build_result_t* bld_ptr) noexcept;
+CCCL_C_API CUresult cccl_device_reduce_cleanup(cccl_device_reduce_build_result_t* bld_ptr);
 
 CCCL_C_EXTERN_C_END

@@ -268,7 +268,7 @@ private:
 } // namespace merge_sort
 
 CUresult cccl_device_merge_sort_build(
-  cccl_device_merge_sort_build_result_t* build,
+  cccl_device_merge_sort_build_result_t* build_ptr,
   cccl_iterator_t input_keys_it,
   cccl_iterator_t input_items_it,
   cccl_iterator_t output_keys_it,
@@ -279,7 +279,7 @@ CUresult cccl_device_merge_sort_build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path) noexcept
+  const char* ctk_path)
 {
   CUresult error = CUDA_SUCCESS;
   try
@@ -406,14 +406,15 @@ CUresult cccl_device_merge_sort_build(
         .add_link_list(ltoir_list)
         .finalize_program(num_lto_args, lopts);
 
-    cuLibraryLoadData(&build->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-    check(cuLibraryGetKernel(&build->block_sort_kernel, build->library, block_sort_kernel_lowered_name.c_str()));
-    check(cuLibraryGetKernel(&build->partition_kernel, build->library, partition_kernel_lowered_name.c_str()));
-    check(cuLibraryGetKernel(&build->merge_kernel, build->library, merge_kernel_lowered_name.c_str()));
+    cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+    check(
+      cuLibraryGetKernel(&build_ptr->block_sort_kernel, build_ptr->library, block_sort_kernel_lowered_name.c_str()));
+    check(cuLibraryGetKernel(&build_ptr->partition_kernel, build_ptr->library, partition_kernel_lowered_name.c_str()));
+    check(cuLibraryGetKernel(&build_ptr->merge_kernel, build_ptr->library, merge_kernel_lowered_name.c_str()));
 
-    build->cc         = cc;
-    build->cubin      = (void*) result.data.release();
-    build->cubin_size = result.size;
+    build_ptr->cc         = cc;
+    build_ptr->cubin      = (void*) result.data.release();
+    build_ptr->cubin_size = result.size;
   }
   catch (const std::exception& exc)
   {
@@ -436,7 +437,7 @@ CUresult cccl_device_merge_sort(
   cccl_iterator_t d_out_items,
   unsigned long long num_items,
   cccl_op_t op,
-  CUstream stream) noexcept
+  CUstream stream)
 {
   if (cccl_iterator_kind_t::CCCL_ITERATOR == d_out_keys.type || cccl_iterator_kind_t::CCCL_ITERATOR == d_out_items.type)
   {
@@ -499,17 +500,17 @@ CUresult cccl_device_merge_sort(
   return error;
 }
 
-CUresult cccl_device_merge_sort_cleanup(cccl_device_merge_sort_build_result_t* bld_ptr) noexcept
+CUresult cccl_device_merge_sort_cleanup(cccl_device_merge_sort_build_result_t* build_ptr)
 {
   try
   {
-    if (bld_ptr == nullptr)
+    if (build_ptr == nullptr)
     {
       return CUDA_ERROR_INVALID_VALUE;
     }
 
-    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(bld_ptr->cubin));
-    check(cuLibraryUnload(bld_ptr->library));
+    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+    check(cuLibraryUnload(build_ptr->library));
   }
   catch (const std::exception& exc)
   {

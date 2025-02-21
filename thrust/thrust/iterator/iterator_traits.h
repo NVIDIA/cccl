@@ -39,6 +39,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/iterator/detail/device_system_tag.h>
+#include <thrust/iterator/detail/iterator_category_to_system.h>
+#include <thrust/iterator/detail/iterator_category_to_traversal.h>
+#include <thrust/iterator/iterator_categories.h>
+
+#include <cuda/std/__type_traits/void_t.h>
+
 #if _CCCL_COMPILER(NVRTC)
 #  include <cuda/std/iterator>
 #else // _CCCL_COMPILER(NVRTC)
@@ -47,9 +54,8 @@
 
 THRUST_NAMESPACE_BEGIN
 
-/*! \p iterator_traits is a type trait class that provides a uniform
- *  interface for querying the properties of iterators at compile-time.
- */
+//! \p iterator_traits is a type trait class that provides a uniform interface for querying the properties of iterators
+//! at compile-time.
 template <typename T>
 struct iterator_traits
     :
@@ -59,28 +65,89 @@ struct iterator_traits
     ::std::iterator_traits<T>
 {};
 
-template <typename Iterator>
-struct iterator_value;
+// value
 
 template <typename Iterator>
-struct iterator_pointer;
+struct iterator_value
+{
+  using type = typename iterator_traits<Iterator>::value_type;
+};
 
 template <typename Iterator>
-struct iterator_reference;
+using iterator_value_t = typename iterator_value<Iterator>::type;
+
+// pointer
 
 template <typename Iterator>
-struct iterator_difference;
+struct iterator_pointer
+{
+  using type = typename iterator_traits<Iterator>::pointer;
+};
+template <typename Iterator>
+using iterator_pointer_t = typename iterator_pointer<Iterator>::type;
+
+// reference
 
 template <typename Iterator>
-struct iterator_traversal;
+struct iterator_reference
+{
+  using type = typename iterator_traits<Iterator>::reference;
+};
 
 template <typename Iterator>
-struct iterator_system;
+using iterator_reference_t = typename iterator_reference<Iterator>::type;
+
+// difference
+
+template <typename Iterator>
+struct iterator_difference
+{
+  using type = typename iterator_traits<Iterator>::difference_type;
+};
+
+template <typename Iterator>
+using iterator_difference_t = typename iterator_difference<Iterator>::type;
+
+// traversal
+
+template <typename Iterator>
+struct iterator_traversal
+    : detail::iterator_category_to_traversal<typename iterator_traits<Iterator>::iterator_category>
+{};
+
+template <typename Iterator>
+using iterator_traversal_t = typename iterator_traversal<Iterator>::type;
+
+// system
+
+namespace detail
+{
+template <typename Iterator, typename = void>
+struct iterator_system_impl
+{};
+
+template <typename Iterator>
+struct iterator_system_impl<Iterator, ::cuda::std::void_t<typename iterator_traits<Iterator>::iterator_category>>
+    : iterator_category_to_system<typename iterator_traits<Iterator>::iterator_category>
+{};
+} // namespace detail
+
+template <typename Iterator>
+struct iterator_system : detail::iterator_system_impl<Iterator>
+{};
+
+// specialize iterator_system for void *, which has no category
+template <>
+struct iterator_system<void*> : iterator_system<int*>
+{};
+
+template <>
+struct iterator_system<const void*> : iterator_system<const int*>
+{};
+
+template <typename Iterator>
+using iterator_system_t = typename iterator_system<Iterator>::type;
 
 THRUST_NAMESPACE_END
 
-#include <thrust/iterator/detail/any_system_tag.h>
-#include <thrust/iterator/detail/device_system_tag.h>
-#include <thrust/iterator/detail/host_system_tag.h>
-#include <thrust/iterator/detail/iterator_traits.inl>
 #include <thrust/iterator/detail/iterator_traversal_tags.h>

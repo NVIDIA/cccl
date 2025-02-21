@@ -12,6 +12,7 @@ from numba.cuda.cudadrv import enums
 
 from .. import _cccl as cccl
 from .._bindings import get_bindings, get_paths
+from .._caching import CachableFunction, cache_with_key
 from .._utils import protocols
 from ..iterators._iterators import IteratorBase
 from ..typing import DeviceArrayLike
@@ -22,6 +23,39 @@ def _update_device_array_pointers(current_array, passed_array):
         current_array.state = protocols.get_data_pointer(passed_array)
     else:
         current_array.state = passed_array.state
+
+
+def make_cache_key(
+    d_in_keys: DeviceArrayLike | IteratorBase,
+    d_in_items: DeviceArrayLike | IteratorBase | None,
+    d_out_keys: DeviceArrayLike,
+    d_out_items: DeviceArrayLike | None,
+    op: Callable,
+):
+    d_in_keys_key = (
+        d_in_keys.kind
+        if isinstance(d_in_keys, IteratorBase)
+        else protocols.get_dtype(d_in_keys)
+    )
+    if d_in_items is None:
+        d_in_items_key = None
+    else:
+        d_in_items_key = (
+            d_in_items.kind
+            if isinstance(d_in_items, IteratorBase)
+            else protocols.get_dtype(d_in_items)
+        )
+    d_out_keys_key = protocols.get_dtype(d_out_keys)
+    if d_out_items is None:
+        d_out_items_key = None
+    else:
+        d_out_items_key = (
+            d_out_items.kind
+            if isinstance(d_out_items, IteratorBase)
+            else protocols.get_dtype(d_out_items)
+        )
+    op_key = CachableFunction(op)
+    return (d_in_keys_key, d_in_items_key, d_out_keys_key, d_out_items_key, op_key)
 
 
 class _MergeSort:
@@ -128,6 +162,7 @@ class _MergeSort:
         bindings.cccl_device_merge_sort_cleanup(ctypes.byref(self.build_result))
 
 
+@cache_with_key(make_cache_key)
 def merge_sort(
     d_in_keys: DeviceArrayLike | IteratorBase,
     d_in_items: DeviceArrayLike | IteratorBase | None,

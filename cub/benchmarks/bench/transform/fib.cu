@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
+// Because CUB cannot inspect the transformation function, we cannot add any tunings based on the results of this
+// benchmark. Its main use is to detect regressions.
+
 // %RANGE% TUNE_THREADS tpb 128:1024:128
 // %RANGE% TUNE_ALGORITHM alg 0:1:1
 

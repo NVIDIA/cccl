@@ -21,24 +21,23 @@
 
 CCCL_C_EXTERN_C_BEGIN
 
-struct cccl_device_segmented_reduce_build_result_t
+typedef struct cccl_device_segmented_reduce_build_result_t
 {
   int cc;
   void* cubin;
   size_t cubin_size;
   CUlibrary library;
   unsigned long long accumulator_size;
-  unsigned long long offset_size;
   CUkernel segmented_reduce_kernel;
-};
+} cccl_device_segmented_reduce_build_result_t;
 
 // TODO return a union of nvtx/cuda/nvrtc errors or a string?
 CCCL_C_API CUresult cccl_device_segmented_reduce_build(
   cccl_device_segmented_reduce_build_result_t* build,
   cccl_iterator_t d_in,
   cccl_iterator_t d_out,
-  cccl_iterator_t begin_offset_it,
-  cccl_iterator_t end_offset_it,
+  cccl_iterator_t begin_offset_in,
+  cccl_iterator_t end_offset_in,
   cccl_op_t op,
   cccl_value_t init,
   int cc_major,
@@ -46,7 +45,7 @@ CCCL_C_API CUresult cccl_device_segmented_reduce_build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path) noexcept;
+  const char* ctk_path);
 
 CCCL_C_API CUresult cccl_device_segmented_reduce(
   cccl_device_segmented_reduce_build_result_t build,
@@ -55,12 +54,12 @@ CCCL_C_API CUresult cccl_device_segmented_reduce(
   cccl_iterator_t d_in,
   cccl_iterator_t d_out,
   unsigned long long num_offsets,
-  cccl_iterator_t start_offset_it,
-  cccl_iterator_t end_offset_it,
+  cccl_iterator_t start_offset_in,
+  cccl_iterator_t end_offset_in,
   cccl_op_t op,
   cccl_value_t init,
-  CUstream stream) noexcept;
+  CUstream stream);
 
-CCCL_C_API CUresult cccl_device_segmented_reduce_cleanup(cccl_device_segmented_reduce_build_result_t* bld_ptr) noexcept;
+CCCL_C_API CUresult cccl_device_segmented_reduce_cleanup(cccl_device_segmented_reduce_build_result_t* bld_ptr);
 
 CCCL_C_EXTERN_C_END
