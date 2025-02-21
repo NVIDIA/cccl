@@ -782,15 +782,13 @@ enum Category
 
 namespace detail
 {
-template <typename T>
-struct is_primitive;
+struct is_primitive_impl;
 
 template <Category _CATEGORY, bool _PRIMITIVE, typename _UnsignedBits, typename T>
 struct BaseTraits
 {
 private:
-  template <typename>
-  friend struct is_primitive;
+  friend struct is_primitive_impl;
 
   static constexpr bool is_primitive = _PRIMITIVE;
 };
@@ -836,8 +834,7 @@ struct BaseTraits<UNSIGNED_INTEGER, true, _UnsignedBits, T>
   }
 
 private:
-  template <typename>
-  friend struct is_primitive;
+  friend struct is_primitive_impl;
 
   static constexpr bool is_primitive = true;
 };
@@ -881,8 +878,7 @@ struct BaseTraits<SIGNED_INTEGER, true, _UnsignedBits, T>
   }
 
 private:
-  template <typename>
-  friend struct is_primitive;
+  friend struct is_primitive_impl;
 
   static constexpr bool is_primitive = true;
 };
@@ -928,8 +924,7 @@ struct BaseTraits<FLOATING_POINT, true, _UnsignedBits, T>
   }
 
 private:
-  template <typename>
-  friend struct is_primitive;
+  friend struct is_primitive_impl;
 
   static constexpr bool is_primitive = true;
 };
@@ -1000,8 +995,7 @@ struct NumericTraits<__uint128_t>
   }
 
 private:
-  template <typename>
-  friend struct detail::is_primitive;
+  friend struct detail::is_primitive_impl;
 
   static constexpr bool is_primitive = false;
 };
@@ -1043,8 +1037,7 @@ struct NumericTraits<__int128_t>
   }
 
 private:
-  template <typename>
-  friend struct detail::is_primitive;
+  friend struct detail::is_primitive_impl;
 
   static constexpr bool is_primitive = false;
 };
@@ -1082,6 +1075,12 @@ using Traits = detail::Traits<T>;
 
 namespace detail
 {
+// we cannot befriend is_primitive on GCC < 11, since it's a template (bug)
+struct is_primitive_impl
+{
+  template <typename T>
+  using is_primitive = ::cuda::std::bool_constant<Traits<T>::is_primitive>;
+};
 // This trait serves two purposes:
 // 1. It is used for tunings to detect whether we have a build-in arithmetic type for which we can expect certain
 // arithmetic throughput. E.g.: we expect all primitive types of the same size to show roughly similar performance.
@@ -1090,7 +1089,7 @@ namespace detail
 // TODO(bgruber): for 2. we should probably just check whether sizeof(T) * 2 <= sizeof(int128) (or 256-bit on SM100)
 // Users must be able to hook into both scenarios with their custom types, so this trait must depend on cub::Traits
 template <typename T>
-struct is_primitive : ::cuda::std::bool_constant<Traits<T>::is_primitive>
+struct is_primitive : is_primitive_impl::is_primitive<T>
 {};
 
 template <typename T>
