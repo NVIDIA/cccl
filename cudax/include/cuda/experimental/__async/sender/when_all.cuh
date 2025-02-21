@@ -396,7 +396,7 @@ _CUDAX_API constexpr auto when_all_t::__merge_completions(_Completions... __cs)
   // Use _CUDAX_LET_COMPLETIONS to ensure all completions are valid:
   _CUDAX_LET_COMPLETIONS(auto(__tmp) = (completion_signatures{}, ..., __cs)) // NB: uses overloaded comma operator
   {
-    _CUDA_VSTD::ignore = __tmp; // silence unused variable warning
+    _CUDA_VSTD::ignore           = __tmp; // silence unused variable warning
     auto __non_value_completions = concat_completion_signatures(
       completion_signatures<set_stopped_t()>(),
       transform_completion_signatures(__cs, __swallow_transform(), __decay_transform<set_error_t>())...);

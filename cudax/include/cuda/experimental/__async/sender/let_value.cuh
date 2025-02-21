@@ -106,7 +106,7 @@ private:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
     using operation_state_concept = operation_state_t;
-    using __env_t = _FWD_ENV_T<env_of_t<_Rcvr>>;
+    using __env_t                 = _FWD_ENV_T<env_of_t<_Rcvr>>;
 
     // Compute the type of the variant of operation states
     using __opstate_variant_t = __opstate2_t<_CvSndr, _Fn, _Rcvr>;

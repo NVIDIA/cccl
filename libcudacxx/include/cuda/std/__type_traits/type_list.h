@@ -360,7 +360,7 @@ _LIBCUDACXX_HIDE_FROM_ABI auto __apply_q_(__undefined<__type_quote<_Fn>>*, __und
 //!     is `R, As...`.
 template <template <class...> class _Fn, class _List>
 using __type_apply_q = __type<decltype(__detail::__apply_q_(static_cast<__undefined<__type_quote<_Fn>>*>(nullptr), //
-                                                     static_cast<__undefined<_List>*>(nullptr)))>;
+                                                            static_cast<__undefined<_List>*>(nullptr)))>;
 
 //! \brief Given a meta-callable and a type that can be interpreted as a type
 //! list, call the meta-callable with types in the type list.

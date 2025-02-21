@@ -149,12 +149,12 @@ _CCCL_CONCEPT sender =                                                          
   );
 
 template <class _Sndr, class... _Env>
-_CCCL_CONCEPT sender_in =                                                 //
-  _CCCL_REQUIRES_EXPR((_Sndr, variadic _Env))                             //
-  (                                                                       //
-    requires(sender<_Sndr>),                                              //
-    requires(sizeof...(_Env) <= 1),                                       //
-    requires(_CUDA_VSTD::__fold_and_v<__queryable<_Env>...>),                                 //
+_CCCL_CONCEPT sender_in =                                                  //
+  _CCCL_REQUIRES_EXPR((_Sndr, variadic _Env))                              //
+  (                                                                        //
+    requires(sender<_Sndr>),                                               //
+    requires(sizeof...(_Env) <= 1),                                        //
+    requires(_CUDA_VSTD::__fold_and_v<__queryable<_Env>...>),              //
     requires(__completions_tester<_Env...>::template __is_valid<_Sndr>(0)) //
   );
 

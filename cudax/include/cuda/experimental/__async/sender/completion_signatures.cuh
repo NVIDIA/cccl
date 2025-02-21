@@ -209,7 +209,8 @@ _CUDAX_API constexpr auto completion_signatures<_Sigs...>::select(_Tag) const no
 
 template <class... _Sigs>
 template <class _Transform, class _Reduce>
-_CUDAX_API constexpr auto completion_signatures<_Sigs...>::transform_reduce(_Transform __transform, _Reduce __reduce) const
+_CUDAX_API constexpr auto
+completion_signatures<_Sigs...>::transform_reduce(_Transform __transform, _Reduce __reduce) const
   -> _CUDA_VSTD::__call_result_t<_Reduce, _CUDA_VSTD::__call_result_t<_Transform, _Sigs*>...>
 {
   return __reduce(__transform(static_cast<_Sigs*>(nullptr))...);
