@@ -220,7 +220,7 @@ A device-thread shall not make progress if it is dependent on termination of one
 
 [Note: Tasks are also referred to as `Commands <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#streams>`__. - end note.]
 
-.. dropdown:: Examples of CUDA API forward progress guarantees due to Stream and event ordering
+.. dropdown:: Examples of CUDA API forward progress guarantees due to stream and event ordering
 
     .. code:: cuda
         // Example: Execution.Model.Stream.0
