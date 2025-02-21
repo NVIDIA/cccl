@@ -40,8 +40,7 @@
 #include <cuda/std/__fwd/pair.h>
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__type_traits/conjunction.h>
-
-#include <type_traits>
+#include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -217,7 +216,7 @@ struct is_trivially_relocatable_impl
     : integral_constant<bool, ::cuda::std::is_trivially_copyable<T>::value || proclaim_trivially_relocatable<T>::value>
 {};
 
-template <typename T, std::size_t N>
+template <typename T, ::cuda::std::size_t N>
 struct is_trivially_relocatable_impl<T[N]> : is_trivially_relocatable_impl<T>
 {};
 
