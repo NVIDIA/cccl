@@ -1,10 +1,3 @@
-# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
-#
-#
-# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-
-from __future__ import annotations  # TODO: required for Python 3.7 docs env
-
 import ctypes
 from typing import Callable
 
@@ -21,25 +14,27 @@ from ..iterators._iterators import IteratorBase
 from ..typing import DeviceArrayLike, GpuStruct
 
 
-def _dtype_validation(dt1, dt2):
-    if dt1 != dt2:
-        raise TypeError(f"dtype mismatch: __init__={dt1}, __call__={dt2}")
+class _SegmentedReduce:
+    def __del__(self):
+        if self.build_result is None:
+            return
+        bindings = get_bindings()
+        bindings.cccl_device_segmented_reduce_cleanup(ctypes.byref(self.build_result))
 
-
-class _Reduce:
-    # TODO: constructor shouldn't require concrete `d_in`, `d_out`:
     def __init__(
         self,
         d_in: DeviceArrayLike | IteratorBase,
         d_out: DeviceArrayLike,
+        start_offsets_in: DeviceArrayLike | IteratorBase,
+        end_offsets_in: DeviceArrayLike | IteratorBase,
         op: Callable,
         h_init: np.ndarray | GpuStruct,
     ):
-        # Referenced from __del__:
         self.build_result = None
-
         self.d_in_cccl = cccl.to_cccl_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_iter(d_out)
+        self.start_offsets_in_cccl = cccl.to_cccl_iter(start_offsets_in)
+        self.end_offsets_in_cccl = cccl.to_cccl_iter(end_offsets_in)
         self.h_init_cccl = cccl.to_cccl_value(h_init)
         cc_major, cc_minor = cuda.get_current_device().compute_capability
         cub_path, thrust_path, libcudacxx_path, cuda_include_path = get_paths()
@@ -49,12 +44,14 @@ class _Reduce:
             value_type = numba.typeof(h_init)
         sig = (value_type, value_type)
         self.op_wrapper = cccl.to_cccl_op(op, sig)
-        self.build_result = cccl.DeviceReduceBuildResult()
+        self.build_result = cccl.DeviceSegmentedReduceBuildResult()
         self.bindings = get_bindings()
-        error = self.bindings.cccl_device_reduce_build(
+        error = self.bindings.cccl_device_segmented_reduce_build(
             ctypes.byref(self.build_result),
             self.d_in_cccl,
             self.d_out_cccl,
+            self.start_offsets_in_cccl,
+            self.end_offsets_in_cccl,
             self.op_wrapper,
             self.h_init_cccl,
             cc_major,
@@ -67,25 +64,28 @@ class _Reduce:
         if error != enums.CUDA_SUCCESS:
             raise ValueError("Error building reduce")
 
+    @staticmethod
+    def _set_iterator(_in_cccl, _in):
+        if _in_cccl.type.value == cccl.IteratorKind.POINTER:
+            _in_cccl.state = protocols.get_data_pointer(_in)
+        else:
+            _in_cccl.state = _in.state
+
     def __call__(
         self,
         temp_storage,
         d_in,
         d_out,
-        num_items: int,
-        h_init: np.ndarray | GpuStruct,
+        num_segments: int,
+        start_offsets_in,
+        end_offsets_in,
+        h_init,
         stream=None,
     ):
-        if self.d_in_cccl.type.value == cccl.IteratorKind.POINTER:
-            self.d_in_cccl.state = protocols.get_data_pointer(d_in)
-        else:
-            self.d_in_cccl.state = d_in.state
-
-        if self.d_out_cccl.type.value == cccl.IteratorKind.POINTER:
-            self.d_out_cccl.state = protocols.get_data_pointer(d_out)
-        else:
-            self.d_out_cccl.state = d_out.state
-
+        _SegmentedReduce._set_iterator(self.d_in_cccl, d_in)
+        _SegmentedReduce._set_iterator(self.d_out_cccl, d_out)
+        _SegmentedReduce._set_iterator(self.start_offsets_in_cccl, start_offsets_in)
+        _SegmentedReduce._set_iterator(self.end_offsets_in_cccl, end_offsets_in)
         self.h_init_cccl.state = h_init.__array_interface__["data"][0]
 
         stream_handle = protocols.validate_and_get_stream(stream)
@@ -97,13 +97,15 @@ class _Reduce:
             temp_storage_bytes = ctypes.c_size_t(temp_storage.nbytes)
             d_temp_storage = protocols.get_data_pointer(temp_storage)
 
-        error = self.bindings.cccl_device_reduce(
+        error = self.bindings.cccl_device_segmented_reduce(
             self.build_result,
             ctypes.c_void_p(d_temp_storage),
             ctypes.byref(temp_storage_bytes),
             self.d_in_cccl,
             self.d_out_cccl,
-            ctypes.c_ulonglong(num_items),
+            ctypes.c_ulonglong(num_segments),
+            self.start_offsets_in_cccl,
+            self.end_offsets_in_cccl,
             self.op_wrapper,
             self.h_init_cccl,
             ctypes.c_void_p(stream_handle),
@@ -114,43 +116,54 @@ class _Reduce:
 
         return temp_storage_bytes.value
 
-    def __del__(self):
-        if self.build_result is None:
-            return
-        bindings = get_bindings()
-        bindings.cccl_device_reduce_cleanup(ctypes.byref(self.build_result))
+
+def _to_key(d_in: DeviceArrayLike | IteratorBase):
+    "Return key for an input array-like argument or an iterator"
+    d_in_key = (
+        d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
+    )
+    return d_in_key
 
 
 def make_cache_key(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike,
+    start_offsets_in: DeviceArrayLike | IteratorBase,
+    end_offsets_in: DeviceArrayLike | IteratorBase,
     op: Callable,
     h_init: np.ndarray,
 ):
-    d_in_key = (
-        d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
-    )
+    d_in_key = _to_key(d_in)
     d_out_key = protocols.get_dtype(d_out)
+    start_offsets_in_key = _to_key(start_offsets_in)
+    end_offsets_in_key = _to_key(end_offsets_in)
     op_key = CachableFunction(op)
     h_init_key = h_init.dtype
-    return (d_in_key, d_out_key, op_key, h_init_key)
+    return (
+        d_in_key,
+        d_out_key,
+        start_offsets_in_key,
+        end_offsets_in_key,
+        op_key,
+        h_init_key,
+    )
 
 
-# TODO Figure out `sum` without operator and initial value
-# TODO Accept stream
 @cache_with_key(make_cache_key)
-def reduce_into(
+def segmented_reduce(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike,
+    start_offsets_in: DeviceArrayLike | IteratorBase,
+    end_offsets_in: DeviceArrayLike | IteratorBase,
     op: Callable,
     h_init: np.ndarray,
 ):
-    """Computes a device-wide reduction using the specified binary ``op`` and initial value ``init``.
+    """Computes a device-wide segmented reduction using the specified binary ``op`` and initial value ``init``.
 
     Example:
-        Below, ``reduce_into`` is used to compute the minimum value of a sequence of integers.
+        Below, ``segmented_reduce`` is used to compute the minimum value of a sequence of integers.
 
-        .. literalinclude:: ../../python/cuda_parallel/tests/test_reduce_api.py
+        .. literalinclude:: ../../python/cuda_parallel/tests/test_segmented_reduce_api.py
             :language: python
             :dedent:
             :start-after: example-begin reduce-min
@@ -158,11 +171,13 @@ def reduce_into(
 
     Args:
         d_in: Device array or iterator containing the input sequence of data items
-        d_out: Device array (of size 1) that will store the result of the reduction
+        d_out: Device array that will store the result of the reduction
+        start_offsets_in: Device array or iterator containing offsets to start of segments
+        end_offsets_in: Device array or iterator containing offsets to end of segments
         op: Callable representing the binary operator to apply
         init: Numpy array storing initial value of the reduction
 
     Returns:
         A callable object that can be used to perform the reduction
     """
-    return _Reduce(d_in, d_out, op, h_init)
+    return _SegmentedReduce(d_in, d_out, start_offsets_in, end_offsets_in, op, h_init)
