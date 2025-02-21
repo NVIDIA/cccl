@@ -27,6 +27,7 @@ set(stf_test_sources
   fhe/parse_arctyrex.cu
   gnu/include_only.cpp
   graph/concurrency_test.cu
+  graph/get_cache_stats.cu
   graph/graph_ctx_low_level.cu
   graph/static_graph_ctx.cu
   hashtable/test.cu
