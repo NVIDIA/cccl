@@ -92,7 +92,7 @@ __global__ void vec_add3(int* a, int* b, int* c, int n)
 }
 
 template <typename F>
-bool test(int N, F&& f)
+void test(int N, F&& f)
 {
   for (int tidx : {0, 33, 63, 94})
   {
@@ -119,7 +119,6 @@ bool test(int N, F&& f)
     cudaFree(b);
     cudaFree(c);
   }
-  return true;
 }
 
 void test()
@@ -131,7 +130,7 @@ void test()
       int bpg = (n + tpb - 1) / tpb;
       vec_add_det1<<<bpg, tpb>>>(a, b, c, n, tidx);
     };
-    assert(test(N, fn));
+    test(N, fn);
   }
 
   {
@@ -144,7 +143,7 @@ void test()
       assert((bpgx * bpgy) >= bpg);
       vec_add_det2<<<dim3(bpgx, bpgy, 1), tpb>>>(a, b, c, n, tidx);
     };
-    assert(test(N, fn));
+    test(N, fn);
   }
 
   {
@@ -158,7 +157,7 @@ void test()
       assert((bpgx * bpgy * bpgz) >= bpg);
       vec_add_det3<<<dim3(bpgx, bpgy, bpgz), tpb>>>(a, b, c, n, tidx);
     };
-    assert(test(N, fn));
+    test(N, fn);
   }
 
   {
@@ -167,7 +166,7 @@ void test()
       int bpg = (n + tpb - 1) / tpb;
       vec_add1<<<bpg, tpb>>>(a, b, c, n);
     };
-    assert(test(N, fn));
+    test(N, fn);
   }
 
   {
@@ -180,7 +179,7 @@ void test()
       assert((bpgx * bpgy) >= bpg);
       vec_add2<<<dim3(bpgx, bpgy, 1), tpb>>>(a, b, c, n);
     };
-    assert(test(N, fn));
+    test(N, fn);
   }
 
   {
@@ -194,7 +193,7 @@ void test()
       assert((bpgx * bpgy * bpgz) >= bpg);
       vec_add3<<<dim3(bpgx, bpgy, bpgz), tpb>>>(a, b, c, n);
     };
-    assert(test(N, fn));
+    test(N, fn);
   }
 }
 
