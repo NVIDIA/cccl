@@ -249,7 +249,7 @@ public:
 
   _CCCL_TEMPLATE(class _OtherElementType)
   _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _OtherElementType (*)[], element_type (*)[]))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator _CUDA_VSTD::default_accessor<OtherElementType>() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator _CUDA_VSTD::default_accessor<_OtherElementType>() const noexcept
   {
     NV_IF_TARGET(NV_IS_DEVICE, (__prevent_host_instantiation();))
     return {};
@@ -333,6 +333,17 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __managed_accessor(__managed_accessor<_OtherElementType>) noexcept(
     __is_copy_ctor_noexcept)
   {}
+
+  _CCCL_TEMPLATE(class _OtherElementType)
+  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _OtherElementType (*)[], element_type (*)[]))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __managed_accessor(_CUDA_VSTD::default_accessor<_OtherElementType>) noexcept {}
+
+  _CCCL_TEMPLATE(class _OtherElementType)
+  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _OtherElementType (*)[], element_type (*)[]))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator _CUDA_VSTD::default_accessor<_OtherElementType>() const noexcept
+  {
+    return {};
+  }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr reference access(data_handle_type __p, _CUDA_VSTD::size_t __i) const
     noexcept(__is_access_noexcept)
