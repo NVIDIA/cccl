@@ -102,7 +102,7 @@ The implementation may assume that any **host** thread will eventually do one of
         // Example: Execution.Model.Device.1
         // Allowed outcome: No thread makes progress because device threads don't support host.threads.2.
         __global__ void ex1() {
-            while(true) std::this_thread::yield();
+            while(true) cuda::std::this_thread::yield();
         }
 
     .. code:: cuda
