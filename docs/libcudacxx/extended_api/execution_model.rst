@@ -249,8 +249,8 @@ A device-thread shall not make progress if it is dependent on termination of one
         // Rationale: same as Execution.Model.Stream.0, but this example has a stream dependency
         // between first and second, which requires CUDA to run the grids in order.
         cuda::atomic<int, cuda::thread_scope_system> flag = 0;
-        __global__ void first() { flag.store(1, rlx); }
-        __global__ void second() { while(flag.load(rlx) == 0) {} }
+        __global__ void first() { flag.store(1, cuda::memory_order_relaxed); }
+        __global__ void second() { while(flag.load(cuda::memory_order_relaxed) == 0) {} }
         int main() {
             cudaHostRegister(&flag, sizeof(flag));
             cudaStream_t s0;
