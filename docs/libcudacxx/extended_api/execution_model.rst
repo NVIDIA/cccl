@@ -158,7 +158,8 @@ return ``cudaErrorNotReady`` without a device thread making progress.
 
     .. code:: cuda
         // Example: Execution.Model.API.1
-        // Outcome: if device empty, terminates and returns cudaSuccess.
+        // Outcome: if no other device threads (e.g., from other processes) are making progress,
+        // this program terminates and returns cudaSuccess.
         // Rationale: CUDA guarantees that if the device is empty:
         // - `cudaDeviceSynchronize` eventually ensures that at least one device-thread makes progress, which implies that eventually `hello_world` grid and one of its device-threads start.
         // - All thread-block threads eventually start (due to "if a device thread makes progress, all other threads in its thread-block cluster eventually make progress").
