@@ -11,6 +11,7 @@ PTX Instructions
    instructions/clusterlaunchcontrol
    instructions/cp_async_bulk
    instructions/cp_async_bulk_commit_group
+   instructions/cp_async_bulk_wait_group
    instructions/cp_async_bulk_tensor
    instructions/cp_async_mbarrier_arrive
    instructions/cp_reduce_async_bulk
@@ -19,9 +20,9 @@ PTX Instructions
    instructions/fence
    instructions/getctarank
    instructions/mapa
+   instructions/mbarrier_init
    instructions/mbarrier_arrive
    instructions/mbarrier_expect_tx
-   instructions/mbarrier_init
    instructions/mbarrier_test_wait
    instructions/mbarrier_try_wait
    instructions/multimem_ld_reduce
@@ -29,7 +30,6 @@ PTX Instructions
    instructions/multimem_st
    instructions/red_async
    instructions/shfl_sync
-   instructions/special_registers
    instructions/st_async
    instructions/st_bulk
    instructions/tcgen05_alloc
