@@ -65,7 +65,7 @@ CUB_NAMESPACE_BEGIN
 //! - A `reduction <http://en.wikipedia.org/wiki/Reduce_(higher-order_function)>`__ (or *fold*) uses a binary combining
 //!   operator to compute a single aggregate from a list of input elements.
 //! - Supports "logical" warps smaller than the physical warp size (e.g., logical warps of 8 threads)
-//! - The number of entrant threads must be an multiple of ``LOGICAL_WARP_THREADS``
+//! - The number of entrant threads must be an multiple of ``LogicalWarpThreads``
 //!
 //! Performance Considerations
 //! ++++++++++++++++++++++++++
@@ -76,7 +76,7 @@ CUB_NAMESPACE_BEGIN
 //! - Computation is slightly more efficient (i.e., having lower instruction overhead) for:
 //!
 //!   - Summation (**vs.** generic reduction)
-//!   - The architecture's warp size is a whole multiple of ``LOGICAL_WARP_THREADS``
+//!   - The architecture's warp size is a whole multiple of ``LogicalWarpThreads``
 //!
 //! Simple Examples
 //! +++++++++++++++
@@ -134,29 +134,27 @@ CUB_NAMESPACE_BEGIN
 //! @tparam T
 //!   The reduction input/output element type
 //!
-//! @tparam LOGICAL_WARP_THREADS
+//! @tparam LogicalWarpThreads
 //!   <b>[optional]</b> The number of threads per "logical" warp (may be less than the number of
 //!   hardware warp threads).  Default is the warp size of the targeted CUDA compute-capability
 //!   (e.g., 32 threads for SM20).
 //!
-template <typename T, int LOGICAL_WARP_THREADS = CUB_PTX_WARP_THREADS>
+template <typename T, int LogicalWarpThreads = CUB_PTX_WARP_THREADS>
 class WarpReduce
 {
-  static_assert(LOGICAL_WARP_THREADS >= 1 && LOGICAL_WARP_THREADS <= CUB_WARP_THREADS(0),
-                "LOGICAL_WARP_THREADS must be in the range [1, 32]");
+  static_assert(LogicalWarpThreads >= 1 && LogicalWarpThreads <= CUB_WARP_THREADS(0),
+                "LogicalWarpThreads must be in the range [1, 32]");
 
-  static constexpr bool is_full_warp    = (LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0));
-  static constexpr bool is_power_of_two = ::cuda::std::has_single_bit(uint32_t{LOGICAL_WARP_THREADS});
+  static constexpr bool is_full_warp    = (LogicalWarpThreads == CUB_WARP_THREADS(0));
+  static constexpr bool is_power_of_two = ::cuda::std::has_single_bit(uint32_t{LogicalWarpThreads});
 
 public:
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
   /// Internal specialization.
-  /// Use SHFL-based reduction if LOGICAL_WARP_THREADS is a power-of-two
-  using InternalWarpReduce =
-    ::cuda::std::_If<is_power_of_two,
-                     detail::WarpReduceShfl<T, LOGICAL_WARP_THREADS>,
-                     detail::WarpReduceSmem<T, LOGICAL_WARP_THREADS>>;
+  /// Use SHFL-based reduction if LogicalWarpThreads is a power-of-two
+  using InternalWarpReduce = ::cuda::std::
+    _If<is_power_of_two, detail::WarpReduceShfl<T, LogicalWarpThreads>, detail::WarpReduceSmem<T, LogicalWarpThreads>>;
 
 #endif // _CCCL_DOXYGEN_INVOKED
 
@@ -224,7 +222,7 @@ public:
   //!
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input)
   {
-    return InternalWarpReduce{temp_storage}.template Reduce<true>(input, LOGICAL_WARP_THREADS, ::cuda::std::plus<>{});
+    return InternalWarpReduce{temp_storage}.template Reduce<true>(input, LogicalWarpThreads, ::cuda::std::plus<>{});
   }
 
   template <typename InputType>
@@ -234,12 +232,12 @@ public:
   {
     auto thread_reduction = cub::ThreadReduce(input, ::cuda::std::plus<>{});
     return InternalWarpReduce{temp_storage}.template Reduce<true>(
-      thread_reduction, LOGICAL_WARP_THREADS, ::cuda::std::plus<>{});
+      thread_reduction, LogicalWarpThreads, ::cuda::std::plus<>{});
   }
 
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE T Max(T input)
   {
-    return InternalWarpReduce{temp_storage}.template Reduce<true>(input, LOGICAL_WARP_THREADS, ::cuda::maximum<>{});
+    return InternalWarpReduce{temp_storage}.template Reduce<true>(input, LogicalWarpThreads, ::cuda::maximum<>{});
   }
 
   template <typename InputType>
@@ -249,12 +247,12 @@ public:
   {
     auto thread_reduction = cub::ThreadReduce(input, ::cuda::maximum<>{});
     return InternalWarpReduce{temp_storage}.template Reduce<true>(
-      thread_reduction, LOGICAL_WARP_THREADS, ::cuda::maximum<>{});
+      thread_reduction, LogicalWarpThreads, ::cuda::maximum<>{});
   }
 
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE T Min(T input)
   {
-    return InternalWarpReduce{temp_storage}.template Reduce<true>(input, LOGICAL_WARP_THREADS, ::cuda::minimum<>{});
+    return InternalWarpReduce{temp_storage}.template Reduce<true>(input, LogicalWarpThreads, ::cuda::minimum<>{});
   }
 
   template <typename InputType>
@@ -264,7 +262,7 @@ public:
   {
     auto thread_reduction = cub::ThreadReduce(input, ::cuda::minimum<>{});
     return InternalWarpReduce{temp_storage}.template Reduce<true>(
-      thread_reduction, LOGICAL_WARP_THREADS, ::cuda::minimum<>{});
+      thread_reduction, LogicalWarpThreads, ::cuda::minimum<>{});
   }
 
   //! @rst
@@ -313,7 +311,7 @@ public:
   //!
   //! @param[in] valid_items
   //!   Total number of valid items in the calling thread's logical warp
-  //!   (may be less than ``LOGICAL_WARP_THREADS``)
+  //!   (may be less than ``LogicalWarpThreads``)
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int valid_items)
   {
     // Determine if we don't need bounds checking
@@ -496,7 +494,7 @@ public:
   template <typename ReductionOp>
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op)
   {
-    return InternalWarpReduce(temp_storage).template Reduce<true>(input, LOGICAL_WARP_THREADS, reduction_op);
+    return InternalWarpReduce(temp_storage).template Reduce<true>(input, LogicalWarpThreads, reduction_op);
   }
 
   template <typename InputType, typename ReductionOp>
@@ -505,7 +503,7 @@ public:
   Reduce(const InputType& input, ReductionOp reduction_op)
   {
     auto thread_reduction = cub::ThreadReduce(input, reduction_op);
-    return WarpReduce<T, LOGICAL_WARP_THREADS>::Reduce(thread_reduction, LOGICAL_WARP_THREADS, reduction_op);
+    return WarpReduce<T, LogicalWarpThreads>::Reduce(thread_reduction, LogicalWarpThreads, reduction_op);
   }
   //! @rst
   //! Computes a partially-full warp-wide reduction in the calling warp using the specified binary
@@ -562,7 +560,7 @@ public:
   //!
   //! @param[in] valid_items
   //!   Total number of valid items in the calling thread's logical warp
-  //!   (may be less than ``LOGICAL_WARP_THREADS``)
+  //!   (may be less than ``LogicalWarpThreads``)
   template <typename ReductionOp>
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op, int valid_items)
   {
