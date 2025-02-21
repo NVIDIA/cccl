@@ -63,6 +63,7 @@ set(stf_test_sources
   threads/axpy-threads-2.cu
   # threads/axpy-threads.cu
   utility/timing_with_fences.cu
+  utility/source_location_map.cu
 )
 
 set(stf_test_codegen_sources

@@ -26,6 +26,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/source_location>
+
 namespace cuda::experimental::stf::reserved
 {
 
@@ -39,8 +41,7 @@ struct source_location_hash
   ::std::size_t operator()(const _CUDA_VSTD::source_location& loc) const noexcept
   {
     return ::std::hash<const char*>{}(loc.file_name()) ^ (::std::hash<uint_least32_t>{}(loc.line()) << 1)
-         ^ (::std::hash<uint_least32_t>{}(loc.column()) << 2)
-         ^ (::std::hash<const char*>{}(loc.function_name()) << 3);
+         ^ (::std::hash<uint_least32_t>{}(loc.column()) << 2) ^ (::std::hash<const char*>{}(loc.function_name()) << 3);
   }
 };
 
@@ -54,4 +55,4 @@ struct source_location_equal
   }
 };
 
-} // end namespace cuda::experimental::stf
+} // end namespace cuda::experimental::stf::reserved
