@@ -238,9 +238,10 @@ struct segmented_reduce_kernel_source
     return build.segmented_reduce_kernel;
   }
 };
+} // namespace segmented_reduce
 
-CUresult build(
-  cccl_device_segmented_reduce_build_result_t* build,
+CUresult cccl_device_segmented_reduce_build(
+  cccl_device_segmented_reduce_build_result_t* build_ptr,
   cccl_iterator_t input_it,
   cccl_iterator_t output_it,
   cccl_iterator_t start_offset_it,
@@ -252,7 +253,7 @@ CUresult build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path) noexcept
+  const char* ctk_path)
 {
   CUresult error = CUDA_SUCCESS;
 
@@ -358,14 +359,14 @@ struct device_segmented_reduce_policy {{
         .finalize_program(num_lto_args, lopts);
 
     // populate build struct members
-    cuLibraryLoadData(&build->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+    cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
     check(cuLibraryGetKernel(
-      &build->segmented_reduce_kernel, build->library, segmented_reduce_kernel_lowered_name.c_str()));
+      &build_ptr->segmented_reduce_kernel, build_ptr->library, segmented_reduce_kernel_lowered_name.c_str()));
 
-    build->cc               = cc;
-    build->cubin            = (void*) result.data.release();
-    build->cubin_size       = result.size;
-    build->accumulator_size = accum_t.size;
+    build_ptr->cc               = cc;
+    build_ptr->cubin            = (void*) result.data.release();
+    build_ptr->cubin_size       = result.size;
+    build_ptr->accumulator_size = accum_t.size;
   }
   catch (const std::exception& exc)
   {
@@ -378,7 +379,7 @@ struct device_segmented_reduce_policy {{
   return error;
 }
 
-CUresult invoke(
+CUresult cccl_device_segmented_reduce(
   cccl_device_segmented_reduce_build_result_t build,
   void* d_temp_storage,
   size_t* temp_storage_bytes,
@@ -389,7 +390,7 @@ CUresult invoke(
   cccl_iterator_t end_offset,
   cccl_op_t op,
   cccl_value_t init,
-  CUstream stream) noexcept
+  CUstream stream)
 {
   bool pushed    = false;
   CUresult error = CUDA_SUCCESS;
@@ -444,18 +445,18 @@ CUresult invoke(
   return error;
 }
 
-CUresult cleanup(cccl_device_segmented_reduce_build_result_t* bld_ptr) noexcept
+CUresult cccl_device_segmented_reduce_cleanup(cccl_device_segmented_reduce_build_result_t* build_ptr)
 {
   try
   {
-    if (bld_ptr == nullptr)
+    if (build_ptr == nullptr)
     {
       return CUDA_ERROR_INVALID_VALUE;
     }
 
     // allocation behind cubin is owned by unique_ptr with delete[] deleter now
-    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(bld_ptr->cubin));
-    check(cuLibraryUnload(bld_ptr->library));
+    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+    check(cuLibraryUnload(build_ptr->library));
   }
   catch (const std::exception& exc)
   {
@@ -467,58 +468,3 @@ CUresult cleanup(cccl_device_segmented_reduce_build_result_t* bld_ptr) noexcept
 
   return CUDA_SUCCESS;
 };
-
-} // namespace segmented_reduce
-
-CUresult cccl_device_segmented_reduce_build(
-  cccl_device_segmented_reduce_build_result_t* build_ptr,
-  cccl_iterator_t input_it,
-  cccl_iterator_t output_it,
-  cccl_iterator_t start_offset_it,
-  cccl_iterator_t end_offset_it,
-  cccl_op_t op,
-  cccl_value_t init,
-  int cc_major,
-  int cc_minor,
-  const char* cub_path,
-  const char* thrust_path,
-  const char* libcudacxx_path,
-  const char* ctk_path)
-{
-  return segmented_reduce::build(
-    build_ptr,
-    input_it,
-    output_it,
-    start_offset_it,
-    end_offset_it,
-    op,
-    init,
-    cc_major,
-    cc_minor,
-    cub_path,
-    thrust_path,
-    libcudacxx_path,
-    ctk_path);
-}
-
-CUresult cccl_device_segmented_reduce(
-  cccl_device_segmented_reduce_build_result_t build,
-  void* d_temp_storage,
-  size_t* temp_storage_bytes,
-  cccl_iterator_t d_in,
-  cccl_iterator_t d_out,
-  unsigned long long num_segments,
-  cccl_iterator_t start_offset,
-  cccl_iterator_t end_offset,
-  cccl_op_t op,
-  cccl_value_t init,
-  CUstream stream)
-{
-  return segmented_reduce::invoke(
-    build, d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, start_offset, end_offset, op, init, stream);
-}
-
-CUresult cccl_device_segmented_reduce_cleanup(cccl_device_segmented_reduce_build_result_t* bld_ptr)
-{
-  return segmented_reduce::cleanup(bld_ptr);
-}

@@ -275,9 +275,10 @@ struct scan_kernel_source
     return {build.description_bytes_per_tile, build.payload_bytes_per_tile};
   }
 };
+} // namespace scan
 
-CUresult build(
-  cccl_device_scan_build_result_t* build,
+CUresult cccl_device_scan_build(
+  cccl_device_scan_build_result_t* build_ptr,
   cccl_iterator_t input_it,
   cccl_iterator_t output_it,
   cccl_op_t op,
@@ -287,7 +288,7 @@ CUresult build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path) noexcept
+  const char* ctk_path)
 {
   CUresult error = CUDA_SUCCESS;
 
@@ -387,9 +388,9 @@ struct device_scan_policy {{
         .add_link_list(ltoir_list)
         .finalize_program(num_lto_args, lopts);
 
-    cuLibraryLoadData(&build->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-    check(cuLibraryGetKernel(&build->init_kernel, build->library, init_kernel_lowered_name.c_str()));
-    check(cuLibraryGetKernel(&build->scan_kernel, build->library, scan_kernel_lowered_name.c_str()));
+    cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+    check(cuLibraryGetKernel(&build_ptr->init_kernel, build_ptr->library, init_kernel_lowered_name.c_str()));
+    check(cuLibraryGetKernel(&build_ptr->scan_kernel, build_ptr->library, scan_kernel_lowered_name.c_str()));
 
     constexpr size_t num_ptx_args      = 7;
     const char* ptx_args[num_ptx_args] = {
@@ -429,12 +430,12 @@ __device__ size_t payload_bytes_per_tile = cub::ScanTileState<{2}>::payload_byte
     }
     payload_bytes_per_tile = scan::find_size_t(ptx_code, "payload_bytes_per_tile").value_or(0);
 
-    build->cc                         = cc;
-    build->cubin                      = (void*) result.data.release();
-    build->cubin_size                 = result.size;
-    build->accumulator_type           = accum_t;
-    build->description_bytes_per_tile = description_bytes_per_tile;
-    build->payload_bytes_per_tile     = payload_bytes_per_tile;
+    build_ptr->cc                         = cc;
+    build_ptr->cubin                      = (void*) result.data.release();
+    build_ptr->cubin_size                 = result.size;
+    build_ptr->accumulator_type           = accum_t;
+    build_ptr->description_bytes_per_tile = description_bytes_per_tile;
+    build_ptr->payload_bytes_per_tile     = payload_bytes_per_tile;
   }
   catch (const std::exception& exc)
   {
@@ -447,7 +448,7 @@ __device__ size_t payload_bytes_per_tile = cub::ScanTileState<{2}>::payload_byte
   return error;
 }
 
-CUresult invoke(
+CUresult cccl_device_scan(
   cccl_device_scan_build_result_t build,
   void* d_temp_storage,
   size_t* temp_storage_bytes,
@@ -456,7 +457,7 @@ CUresult invoke(
   unsigned long long num_items,
   cccl_op_t op,
   cccl_value_t init,
-  CUstream stream) noexcept
+  CUstream stream)
 {
   bool pushed    = false;
   CUresult error = CUDA_SUCCESS;
@@ -510,16 +511,16 @@ CUresult invoke(
   return error;
 }
 
-CUresult cleanup(cccl_device_scan_build_result_t* bld_ptr) noexcept
+CUresult cccl_device_scan_cleanup(cccl_device_scan_build_result_t* build_ptr)
 {
   try
   {
-    if (bld_ptr == nullptr)
+    if (build_ptr == nullptr)
     {
       return CUDA_ERROR_INVALID_VALUE;
     }
-    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(bld_ptr->cubin));
-    check(cuLibraryUnload(bld_ptr->library));
+    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+    check(cuLibraryUnload(build_ptr->library));
   }
   catch (const std::exception& exc)
   {
@@ -530,42 +531,4 @@ CUresult cleanup(cccl_device_scan_build_result_t* bld_ptr) noexcept
   }
 
   return CUDA_SUCCESS;
-}
-
-} // namespace scan
-
-CUresult cccl_device_scan_build(
-  cccl_device_scan_build_result_t* build_ptr,
-  cccl_iterator_t input_it,
-  cccl_iterator_t output_it,
-  cccl_op_t op,
-  cccl_value_t init,
-  int cc_major,
-  int cc_minor,
-  const char* cub_path,
-  const char* thrust_path,
-  const char* libcudacxx_path,
-  const char* ctk_path)
-{
-  return scan::build(
-    build_ptr, input_it, output_it, op, init, cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, ctk_path);
-}
-
-CUresult cccl_device_scan(
-  cccl_device_scan_build_result_t build,
-  void* d_temp_storage,
-  size_t* temp_storage_bytes,
-  cccl_iterator_t d_in,
-  cccl_iterator_t d_out,
-  unsigned long long num_items,
-  cccl_op_t op,
-  cccl_value_t init,
-  CUstream stream)
-{
-  return scan::invoke(build, d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, op, init, stream);
-}
-
-CUresult cccl_device_scan_cleanup(cccl_device_scan_build_result_t* build_ptr)
-{
-  return scan::cleanup(build_ptr);
 }

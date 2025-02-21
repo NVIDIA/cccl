@@ -265,9 +265,10 @@ private:
     return false;
   }
 };
+} // namespace merge_sort
 
-CUresult build(
-  cccl_device_merge_sort_build_result_t* build,
+CUresult cccl_device_merge_sort_build(
+  cccl_device_merge_sort_build_result_t* build_ptr,
   cccl_iterator_t input_keys_it,
   cccl_iterator_t input_items_it,
   cccl_iterator_t output_keys_it,
@@ -278,7 +279,7 @@ CUresult build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path) noexcept
+  const char* ctk_path)
 {
   CUresult error = CUDA_SUCCESS;
   try
@@ -405,14 +406,15 @@ CUresult build(
         .add_link_list(ltoir_list)
         .finalize_program(num_lto_args, lopts);
 
-    cuLibraryLoadData(&build->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-    check(cuLibraryGetKernel(&build->block_sort_kernel, build->library, block_sort_kernel_lowered_name.c_str()));
-    check(cuLibraryGetKernel(&build->partition_kernel, build->library, partition_kernel_lowered_name.c_str()));
-    check(cuLibraryGetKernel(&build->merge_kernel, build->library, merge_kernel_lowered_name.c_str()));
+    cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+    check(
+      cuLibraryGetKernel(&build_ptr->block_sort_kernel, build_ptr->library, block_sort_kernel_lowered_name.c_str()));
+    check(cuLibraryGetKernel(&build_ptr->partition_kernel, build_ptr->library, partition_kernel_lowered_name.c_str()));
+    check(cuLibraryGetKernel(&build_ptr->merge_kernel, build_ptr->library, merge_kernel_lowered_name.c_str()));
 
-    build->cc         = cc;
-    build->cubin      = (void*) result.data.release();
-    build->cubin_size = result.size;
+    build_ptr->cc         = cc;
+    build_ptr->cubin      = (void*) result.data.release();
+    build_ptr->cubin_size = result.size;
   }
   catch (const std::exception& exc)
   {
@@ -425,7 +427,7 @@ CUresult build(
   return error;
 }
 
-CUresult invoke(
+CUresult cccl_device_merge_sort(
   cccl_device_merge_sort_build_result_t build,
   void* d_temp_storage,
   size_t* temp_storage_bytes,
@@ -435,7 +437,7 @@ CUresult invoke(
   cccl_iterator_t d_out_items,
   unsigned long long num_items,
   cccl_op_t op,
-  CUstream stream) noexcept
+  CUstream stream)
 {
   if (cccl_iterator_kind_t::CCCL_ITERATOR == d_out_keys.type || cccl_iterator_kind_t::CCCL_ITERATOR == d_out_items.type)
   {
@@ -498,17 +500,17 @@ CUresult invoke(
   return error;
 }
 
-CUresult cleanup(cccl_device_merge_sort_build_result_t* bld_ptr) noexcept
+CUresult cccl_device_merge_sort_cleanup(cccl_device_merge_sort_build_result_t* build_ptr)
 {
   try
   {
-    if (bld_ptr == nullptr)
+    if (build_ptr == nullptr)
     {
       return CUDA_ERROR_INVALID_VALUE;
     }
 
-    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(bld_ptr->cubin));
-    check(cuLibraryUnload(bld_ptr->library));
+    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+    check(cuLibraryUnload(build_ptr->library));
   }
   catch (const std::exception& exc)
   {
@@ -519,56 +521,4 @@ CUresult cleanup(cccl_device_merge_sort_build_result_t* bld_ptr) noexcept
   }
 
   return CUDA_SUCCESS;
-}
-
-} // namespace merge_sort
-
-CUresult cccl_device_merge_sort_build(
-  cccl_device_merge_sort_build_result_t* build_ptr,
-  cccl_iterator_t d_in_keys,
-  cccl_iterator_t d_in_items,
-  cccl_iterator_t d_out_keys,
-  cccl_iterator_t d_out_items,
-  cccl_op_t op,
-  int cc_major,
-  int cc_minor,
-  const char* cub_path,
-  const char* thrust_path,
-  const char* libcudacxx_path,
-  const char* ctk_path)
-{
-  return merge_sort::build(
-    build_ptr,
-    d_in_keys,
-    d_in_items,
-    d_out_keys,
-    d_out_items,
-    op,
-    cc_major,
-    cc_minor,
-    cub_path,
-    thrust_path,
-    libcudacxx_path,
-    ctk_path);
-}
-
-CUresult cccl_device_merge_sort(
-  cccl_device_merge_sort_build_result_t build,
-  void* d_temp_storage,
-  size_t* temp_storage_bytes,
-  cccl_iterator_t d_in_keys,
-  cccl_iterator_t d_in_items,
-  cccl_iterator_t d_out_keys,
-  cccl_iterator_t d_out_items,
-  unsigned long long num_items,
-  cccl_op_t op,
-  CUstream stream)
-{
-  return merge_sort::invoke(
-    build, d_temp_storage, temp_storage_bytes, d_in_keys, d_in_items, d_out_keys, d_out_items, num_items, op, stream);
-}
-
-CUresult cccl_device_merge_sort_cleanup(cccl_device_merge_sort_build_result_t* build_ptr)
-{
-  return merge_sort::cleanup(build_ptr);
 }

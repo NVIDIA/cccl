@@ -65,11 +65,8 @@ static std::string get_device_for_kernel_name()
   return std::format("cub::detail::for_each::static_kernel<device_for_policy, {0}, {1}>", offset_t, function_op_t);
 }
 
-namespace for_impl
-{
-
-CUresult build(
-  cccl_device_for_build_result_t* build,
+CUresult cccl_device_for_build(
+  cccl_device_for_build_result_t* build_ptr,
   cccl_iterator_t d_data,
   cccl_op_t op,
   int cc_major,
@@ -77,7 +74,7 @@ CUresult build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path) noexcept
+  const char* ctk_path)
 {
   CUresult error = CUDA_SUCCESS;
 
@@ -127,12 +124,12 @@ CUresult build(
       result = cl.finalize_program(num_lto_args, lopts);
     }
 
-    cuLibraryLoadData(&build->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-    check(cuLibraryGetKernel(&build->static_kernel, build->library, lowered_name.c_str()));
+    cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+    check(cuLibraryGetKernel(&build_ptr->static_kernel, build_ptr->library, lowered_name.c_str()));
 
-    build->cc         = cc;
-    build->cubin      = (void*) result.data.release();
-    build->cubin_size = result.size;
+    build_ptr->cc         = cc;
+    build_ptr->cubin      = (void*) result.data.release();
+    build_ptr->cubin_size = result.size;
   }
   catch (...)
   {
@@ -141,11 +138,8 @@ CUresult build(
   return error;
 }
 
-CUresult invoke(cccl_device_for_build_result_t build,
-                cccl_iterator_t d_data,
-                int64_t num_items,
-                cccl_op_t op,
-                CUstream stream) noexcept
+CUresult cccl_device_for(
+  cccl_device_for_build_result_t build, cccl_iterator_t d_data, int64_t num_items, cccl_op_t op, CUstream stream)
 {
   bool pushed    = false;
   CUresult error = CUDA_SUCCESS;
@@ -169,17 +163,17 @@ CUresult invoke(cccl_device_for_build_result_t build,
   return error;
 }
 
-CUresult cleanup(cccl_device_for_build_result_t* bld_ptr) noexcept
+CUresult cccl_device_for_cleanup(cccl_device_for_build_result_t* build_ptr)
 {
   try
   {
-    if (bld_ptr == nullptr)
+    if (build_ptr == nullptr)
     {
       return CUDA_ERROR_INVALID_VALUE;
     }
 
-    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(bld_ptr->cubin));
-    check(cuLibraryUnload(bld_ptr->library));
+    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+    check(cuLibraryUnload(build_ptr->library));
   }
   catch (...)
   {
@@ -187,31 +181,4 @@ CUresult cleanup(cccl_device_for_build_result_t* bld_ptr) noexcept
   }
 
   return CUDA_SUCCESS;
-}
-
-} // namespace for_impl
-
-CUresult cccl_device_for_build(
-  cccl_device_for_build_result_t* build_ptr,
-  cccl_iterator_t d_data,
-  cccl_op_t op,
-  int cc_major,
-  int cc_minor,
-  const char* cub_path,
-  const char* thrust_path,
-  const char* libcudacxx_path,
-  const char* ctk_path)
-{
-  return for_impl::build(build_ptr, d_data, op, cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, ctk_path);
-}
-
-CUresult cccl_device_for(
-  cccl_device_for_build_result_t build, cccl_iterator_t d_data, int64_t num_items, cccl_op_t op, CUstream stream)
-{
-  return for_impl::invoke(build, d_data, num_items, op, stream);
-}
-
-CUresult cccl_device_for_cleanup(cccl_device_for_build_result_t* build_ptr)
-{
-  return for_impl::cleanup(build_ptr);
 }

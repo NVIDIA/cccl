@@ -240,9 +240,10 @@ struct reduce_kernel_source
     return build.reduction_kernel;
   }
 };
+} // namespace reduce
 
-CUresult build(
-  cccl_device_reduce_build_result_t* build,
+CUresult cccl_device_reduce_build(
+  cccl_device_reduce_build_result_t* build_ptr,
   cccl_iterator_t input_it,
   cccl_iterator_t output_it,
   cccl_op_t op,
@@ -252,7 +253,7 @@ CUresult build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path) noexcept
+  const char* ctk_path)
 {
   CUresult error = CUDA_SUCCESS;
 
@@ -354,16 +355,17 @@ struct device_reduce_policy {{
         .add_link_list(ltoir_list)
         .finalize_program(num_lto_args, lopts);
 
-    cuLibraryLoadData(&build->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-    check(cuLibraryGetKernel(&build->single_tile_kernel, build->library, single_tile_kernel_lowered_name.c_str()));
+    cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+    check(
+      cuLibraryGetKernel(&build_ptr->single_tile_kernel, build_ptr->library, single_tile_kernel_lowered_name.c_str()));
     check(cuLibraryGetKernel(
-      &build->single_tile_second_kernel, build->library, single_tile_second_kernel_lowered_name.c_str()));
-    check(cuLibraryGetKernel(&build->reduction_kernel, build->library, reduction_kernel_lowered_name.c_str()));
+      &build_ptr->single_tile_second_kernel, build_ptr->library, single_tile_second_kernel_lowered_name.c_str()));
+    check(cuLibraryGetKernel(&build_ptr->reduction_kernel, build_ptr->library, reduction_kernel_lowered_name.c_str()));
 
-    build->cc               = cc;
-    build->cubin            = (void*) result.data.release();
-    build->cubin_size       = result.size;
-    build->accumulator_size = accum_t.size;
+    build_ptr->cc               = cc;
+    build_ptr->cubin            = (void*) result.data.release();
+    build_ptr->cubin_size       = result.size;
+    build_ptr->accumulator_size = accum_t.size;
   }
   catch (const std::exception& exc)
   {
@@ -376,7 +378,7 @@ struct device_reduce_policy {{
   return error;
 }
 
-CUresult invoke(
+CUresult cccl_device_reduce(
   cccl_device_reduce_build_result_t build,
   void* d_temp_storage,
   size_t* temp_storage_bytes,
@@ -385,7 +387,7 @@ CUresult invoke(
   unsigned long long num_items,
   cccl_op_t op,
   cccl_value_t init,
-  CUstream stream) noexcept
+  CUstream stream)
 {
   bool pushed    = false;
   CUresult error = CUDA_SUCCESS;
@@ -437,17 +439,17 @@ CUresult invoke(
   return error;
 }
 
-CUresult cleanup(cccl_device_reduce_build_result_t* bld_ptr) noexcept
+CUresult cccl_device_reduce_cleanup(cccl_device_reduce_build_result_t* build_ptr)
 {
   try
   {
-    if (bld_ptr == nullptr)
+    if (build_ptr == nullptr)
     {
       return CUDA_ERROR_INVALID_VALUE;
     }
 
-    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(bld_ptr->cubin));
-    check(cuLibraryUnload(bld_ptr->library));
+    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+    check(cuLibraryUnload(build_ptr->library));
   }
   catch (const std::exception& exc)
   {
@@ -458,42 +460,4 @@ CUresult cleanup(cccl_device_reduce_build_result_t* bld_ptr) noexcept
   }
 
   return CUDA_SUCCESS;
-}
-
-} // namespace reduce
-
-CUresult cccl_device_reduce_build(
-  cccl_device_reduce_build_result_t* build_ptr,
-  cccl_iterator_t d_in,
-  cccl_iterator_t d_out,
-  cccl_op_t op,
-  cccl_value_t init,
-  int cc_major,
-  int cc_minor,
-  const char* cub_path,
-  const char* thrust_path,
-  const char* libcudacxx_path,
-  const char* ctk_path)
-{
-  return reduce::build(
-    build_ptr, d_in, d_out, op, init, cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, ctk_path);
-}
-
-CUresult cccl_device_reduce(
-  cccl_device_reduce_build_result_t build,
-  void* d_temp_storage,
-  size_t* temp_storage_bytes,
-  cccl_iterator_t d_in,
-  cccl_iterator_t d_out,
-  unsigned long long num_items,
-  cccl_op_t op,
-  cccl_value_t init,
-  CUstream stream)
-{
-  return reduce::invoke(build, d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, op, init, stream);
-}
-
-CUresult cccl_device_reduce_cleanup(cccl_device_reduce_build_result_t* build_ptr)
-{
-  return reduce::cleanup(build_ptr);
 }
