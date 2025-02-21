@@ -1078,8 +1078,10 @@ namespace detail
 // we cannot befriend is_primitive on GCC < 11, since it's a template (bug)
 struct is_primitive_impl
 {
+  // must be a struct instead of an alias, so the access of Traits<T>::is_primitive happens in the context of this class
   template <typename T>
-  using is_primitive = ::cuda::std::bool_constant<Traits<T>::is_primitive>;
+  struct is_primitive : ::cuda::std::bool_constant<Traits<T>::is_primitive>
+  {};
 };
 // This trait serves two purposes:
 // 1. It is used for tunings to detect whether we have a build-in arithmetic type for which we can expect certain
