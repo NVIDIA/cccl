@@ -13,8 +13,6 @@
 #  pragma system_header
 #endif // no system header
 
-// #include <cub/device/dispatch/tuning/tuning_transform.cuh>
-
 #include <cub/device/dispatch/tuning/tuning_transform.cuh>
 #include <cub/util_vsmem.cuh>
 
