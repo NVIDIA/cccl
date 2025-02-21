@@ -124,11 +124,6 @@ public:
     total_cache_footprint.resize(ndevices, 0);
   }
 
-  ~executable_graph_cache()
-  {
-    print_cache_stats();
-  }
-
   // One entry of the cache
   struct entry
   {
@@ -259,41 +254,6 @@ private:
   ::std::vector<size_t> total_cache_footprint;
 
   size_t cache_size_limit;
-
-  void print_cache_stats() const
-  {
-    for (auto& [loc, stat] : stats_map)
-    {
-      fprintf(stderr,
-              "%s:%u:%u [function %s] => STATS %ld hits/%ld misses\n",
-              loc.file_name(),
-              loc.line(),
-              loc.column(),
-              loc.function_name(),
-              stat.cache_hit_cnt,
-              stat.cache_miss_cnt);
-    }
-  }
-
-  void record_stat(const _CUDA_VSTD::source_location& loc, executable_graph_cache_stat& stat)
-  {
-    stats_map[loc].cache_hit_cnt += stat.update_cnt;
-    stats_map[loc].cache_miss_cnt += stat.instantiate_cnt;
-  }
-
-private:
-  struct per_loc_stats
-  {
-    size_t cache_hit_cnt  = 0;
-    size_t cache_miss_cnt = 0;
-  };
-
-  /* A map of statistics indexed per source location */
-  ::std::unordered_map<_CUDA_VSTD::source_location,
-                       per_loc_stats,
-                       reserved::source_location_hash,
-                       reserved::source_location_equal>
-    stats_map;
 };
 
 } // namespace cuda::experimental::stf
