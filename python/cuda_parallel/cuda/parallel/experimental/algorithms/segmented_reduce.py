@@ -166,8 +166,8 @@ def segmented_reduce(
         .. literalinclude:: ../../python/cuda_parallel/tests/test_segmented_reduce_api.py
             :language: python
             :dedent:
-            :start-after: example-begin reduce-min
-            :end-before: example-end reduce-min
+            :start-after: example-begin segmented-reduce-min
+            :end-before: example-end segmented-reduce-min
 
     Args:
         d_in: Device array or iterator containing the input sequence of data items
