@@ -231,7 +231,7 @@ A device-thread shall not make progress if it is dependent on termination of one
         // unblocks from the spin-loop.
         // That is, `second` may starve `first`.
         cuda::atomic<int, cuda::thread_scope_system> flag = 0;
-        __global__ void first() { flag.store(1, rlx); }
+        __global__ void first() { flag.store(1, cuda::memory_order_relaxed); }
         __global__ void second() { while(flag.load(cuda::memory_order_relaxed) == 0) {} }
         int main() {
             cudaHostRegister(&flag, sizeof(flag));
