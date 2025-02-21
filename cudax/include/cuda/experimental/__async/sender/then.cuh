@@ -109,16 +109,8 @@ private:
   template <class _Rcvr, class _CvSndr, class _Fn>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
-    _CUDAX_API auto get_env() const noexcept -> env_of_t<_Rcvr>
-    {
-      return __async::get_env(__rcvr_);
-    }
-
     using operation_state_concept = operation_state_t;
-
-    _Rcvr __rcvr_;
-    _Fn __fn_;
-    connect_result_t<_CvSndr, __rcvr_ref<__opstate_t>> __opstate_;
+    using __env_t                 = env_of_t<_Rcvr>;
 
     _CUDAX_API __opstate_t(_CvSndr&& __sndr, _Rcvr __rcvr, _Fn __fn)
         : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
@@ -191,6 +183,15 @@ private:
     {
       __complete(set_stopped_t());
     }
+
+    _CUDAX_API auto get_env() const noexcept -> __env_t
+    {
+      return __async::get_env(__rcvr_);
+    }
+
+    _Rcvr __rcvr_;
+    _Fn __fn_;
+    connect_result_t<_CvSndr, __rcvr_ref<__opstate_t, __env_t>> __opstate_;
   };
 
   template <class _Fn>

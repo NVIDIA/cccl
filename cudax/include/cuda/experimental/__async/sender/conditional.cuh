@@ -176,7 +176,7 @@ struct __cond_t
 
     _Rcvr __rcvr_;
     __data_t __data_;
-    connect_result_t<_Sndr, __rcvr_ref<__opstate>> __op_;
+    connect_result_t<_Sndr, __rcvr_ref<__opstate, __env_t>> __op_;
     __next_ops_variant_t __ops_;
   };
 

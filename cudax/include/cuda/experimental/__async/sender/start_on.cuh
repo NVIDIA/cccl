@@ -58,10 +58,7 @@ private:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
     using operation_state_concept = operation_state_t;
-
-    __rcvr_with_env_t<_Rcvr, __sch_env_t<_Sch>> __env_rcvr_;
-    connect_result_t<schedule_result_t<_Sch>, __rcvr_ref<__opstate_t>> __opstate1_;
-    connect_result_t<_CvSndr, __rcvr_ref<__rcvr_with_env_t<_Rcvr, __sch_env_t<_Sch>>>> __opstate2_;
+    using __env_t                 = env_of_t<_Rcvr>;
 
     _CUDAX_API __opstate_t(_Sch __sch, _Rcvr __rcvr, _CvSndr&& __sndr)
         : __env_rcvr_{static_cast<_Rcvr&&>(__rcvr), {__sch}}
@@ -92,10 +89,14 @@ private:
       __async::set_stopped(static_cast<_Rcvr&&>(__env_rcvr_.__rcvr()));
     }
 
-    _CUDAX_API auto get_env() const noexcept -> env_of_t<_Rcvr>
+    _CUDAX_API auto get_env() const noexcept -> __env_t
     {
       return __async::get_env(__env_rcvr_.__rcvr());
     }
+
+    __rcvr_with_env_t<_Rcvr, __sch_env_t<_Sch>> __env_rcvr_;
+    connect_result_t<schedule_result_t<_Sch>, __rcvr_ref<__opstate_t, __env_t>> __opstate1_;
+    connect_result_t<_CvSndr, __rcvr_ref<__rcvr_with_env_t<_Rcvr, __sch_env_t<_Sch>>>> __opstate2_;
   };
 
   template <class _Sch, class _Sndr>

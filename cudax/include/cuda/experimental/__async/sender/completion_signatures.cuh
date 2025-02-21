@@ -295,15 +295,17 @@ template <class... _Sndr>
 }
 #else
 
-#  define _CUDAX_PP_EAT_AUTO_auto(_ID)   _ID _CCCL_PP_EAT _CCCL_PP_LPAREN
-#  define _CUDAX_LET_COMPLETIONS_ID(...) _CCCL_PP_EXPAND(_CCCL_PP_CAT(_CUDAX_PP_EAT_AUTO_, __VA_ARGS__) _CCCL_PP_RPAREN)
+#  define _CUDAX_PP_EAT_AUTO_auto(_ID)    _ID _CCCL_PP_EAT _CCCL_PP_LPAREN
+#  define _CUDAX_PP_EXPAND_AUTO_auto(_ID) auto _ID
+#  define _CUDAX_LET_COMPLETIONS_ID(...)  _CCCL_PP_EXPAND(_CCCL_PP_CAT(_CUDAX_PP_EAT_AUTO_, __VA_ARGS__) _CCCL_PP_RPAREN)
 
-#  define _CUDAX_LET_COMPLETIONS(...)                                                         \
-    if constexpr (__VA_ARGS__; !::cuda::experimental::__async::__valid_completion_signatures< \
-                               decltype(_CUDAX_LET_COMPLETIONS_ID(__VA_ARGS__))>)             \
-    {                                                                                         \
-      return _CUDAX_LET_COMPLETIONS_ID(__VA_ARGS__);                                          \
-    }                                                                                         \
+#  define _CUDAX_LET_COMPLETIONS(...)                                                                               \
+    if constexpr (_CCCL_PP_CAT(_CUDAX_PP_EXPAND_AUTO_, __VA_ARGS__);                                                \
+                  !::cuda::experimental::__async::__valid_completion_signatures<decltype(_CUDAX_LET_COMPLETIONS_ID( \
+                    __VA_ARGS__))>)                                                                                 \
+    {                                                                                                               \
+      return _CUDAX_LET_COMPLETIONS_ID(__VA_ARGS__);                                                                \
+    }                                                                                                               \
     else
 
 template <class... What, class... Values>

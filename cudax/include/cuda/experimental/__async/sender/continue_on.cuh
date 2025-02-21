@@ -126,10 +126,6 @@ private:
     using __result_t =
       typename completion_signatures_of_t<_CvSndr, __env_t>::template __transform_q<__decayed_tuple, __variant>;
 
-    __rcvr_t<_Rcvr, __result_t> __rcvr_;
-    connect_result_t<_CvSndr, __rcvr_ref<__opstate_t>> __opstate1_;
-    connect_result_t<schedule_result_t<_Sch>, __rcvr_ref<__rcvr_t<_Rcvr, __result_t>>> __opstate2_;
-
     _CUDAX_API __opstate_t(_CvSndr&& __sndr, _Sch __sch, _Rcvr __rcvr)
         : __rcvr_{static_cast<_Rcvr&&>(__rcvr), {}, nullptr}
         , __opstate1_{__async::connect(static_cast<_CvSndr&&>(__sndr), __rcvr_ref{*this})}
@@ -167,6 +163,10 @@ private:
     {
       return __async::get_env(__rcvr_.__rcvr);
     }
+
+    __rcvr_t<_Rcvr, __result_t> __rcvr_;
+    connect_result_t<_CvSndr, __rcvr_ref<__opstate_t, __env_t>> __opstate1_;
+    connect_result_t<schedule_result_t<_Sch>, __rcvr_ref<__rcvr_t<_Rcvr, __result_t>>> __opstate2_;
   };
 
   template <class _Sndr, class _Sch>

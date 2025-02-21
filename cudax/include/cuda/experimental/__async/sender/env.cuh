@@ -144,17 +144,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env<_Env0, _Env1>
 };
 
 template <class... _Envs>
-_CUDAX_API env(_Envs...) -> env<__unwrap_reference_t<_Envs>...>;
+env(_Envs...) -> env<__unwrap_reference_t<_Envs>...>;
 
 using empty_env CCCL_DEPRECATED_BECAUSE("please use env<> instead of empty_env") = env<>;
 
 struct get_env_t
 {
   template <class _Ty>
-  using __env_of = decltype(declval<_Ty>.get_env());
+  using __env_of = decltype(declval<_Ty>().get_env());
 
   template <class _Ty>
-  _CUDAX_TRIVIAL_API auto operator()(_Ty&& __ty) const noexcept -> __env_of<_Ty>
+  _CUDAX_TRIVIAL_API auto operator()(_Ty&& __ty) const noexcept -> __env_of<_Ty&>
   {
     static_assert(noexcept(__ty.get_env()));
     return __ty.get_env();

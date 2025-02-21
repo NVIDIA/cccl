@@ -29,7 +29,7 @@
 
 namespace cuda::experimental::__async
 {
-template <class _Rcvr>
+template <class _Rcvr, class _Env = env_of_t<_Rcvr>>
 struct __rcvr_ref
 {
   using receiver_concept = receiver_t;
@@ -52,7 +52,7 @@ struct __rcvr_ref
     static_cast<_Rcvr&&>(__rcvr_).set_stopped();
   }
 
-  _CUDAX_API auto get_env() const noexcept -> env_of_t<_Rcvr>
+  _CUDAX_API auto get_env() const noexcept -> _Env
   {
     return __async::get_env(__rcvr_);
   }

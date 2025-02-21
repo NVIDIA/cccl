@@ -53,15 +53,7 @@ struct __seq
     using __rcvr_t  = typename __args_t::__rcvr_t;
     using __sndr1_t = typename __args_t::__sndr1_t;
     using __sndr2_t = typename __args_t::__sndr2_t;
-
-    _CUDAX_API auto get_env() const noexcept -> env_of_t<__rcvr_t>
-    {
-      return __async::get_env(__rcvr_);
-    }
-
-    __rcvr_t __rcvr_;
-    connect_result_t<__sndr1_t, __rcvr_ref<__opstate>> __opstate1_;
-    connect_result_t<__sndr2_t, __rcvr_ref<__rcvr_t>> __opstate2_;
+    using __env_t   = env_of_t<__rcvr_t>;
 
     _CUDAX_API __opstate(__sndr1_t&& __sndr1, __sndr2_t&& __sndr2, __rcvr_t&& __rcvr)
         : __rcvr_(static_cast<__rcvr_t&&>(__rcvr))
@@ -90,6 +82,15 @@ struct __seq
     {
       __async::set_stopped(static_cast<__rcvr_t&&>(__rcvr_));
     }
+
+    _CUDAX_API auto get_env() const noexcept -> __env_t
+    {
+      return __async::get_env(__rcvr_);
+    }
+
+    __rcvr_t __rcvr_;
+    connect_result_t<__sndr1_t, __rcvr_ref<__opstate, __env_t>> __opstate1_;
+    connect_result_t<__sndr2_t, __rcvr_ref<__rcvr_t>> __opstate2_;
   };
 
   template <class _Sndr1, class _Sndr2>

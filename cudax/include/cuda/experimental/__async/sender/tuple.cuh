@@ -75,8 +75,8 @@ struct __tupl<_CUDA_VSTD::index_sequence<_Idx...>, _Ts...> : __box<_Idx, _Ts>...
 };
 
 template <class... _Ts>
-_CUDAX_API __tupl(_Ts...) //
-  -> __tupl<_CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>, _Ts...>;
+__tupl(_Ts...) //
+  ->__tupl<_CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>, _Ts...>;
 
 template <class _Fn, class _Tupl, class... _Us>
 using __apply_result_t = decltype(declval<_Tupl>().__apply(declval<_Fn>(), declval<_Tupl>(), declval<_Us>()...));

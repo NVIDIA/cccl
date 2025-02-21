@@ -111,12 +111,6 @@ private:
     // Compute the type of the variant of operation states
     using __opstate_variant_t = __opstate2_t<_CvSndr, _Fn, _Rcvr>;
 
-    _Rcvr __rcvr_;
-    _Fn __fn_;
-    __results<_CvSndr, __env_t> __result_;
-    connect_result_t<_CvSndr, __rcvr_ref<__opstate_t>> __opstate1_;
-    __opstate_variant_t __opstate2_;
-
     _CUDAX_API __opstate_t(_CvSndr&& __sndr, _Fn __fn, _Rcvr __rcvr) noexcept(
       __nothrow_decay_copyable<_Fn, _Rcvr> && __nothrow_connectable<_CvSndr, __opstate_t*>)
         : __rcvr_(static_cast<_Rcvr&&>(__rcvr))
@@ -179,6 +173,12 @@ private:
     {
       return __async::get_env(__rcvr_);
     }
+
+    _Rcvr __rcvr_;
+    _Fn __fn_;
+    __results<_CvSndr, __env_t> __result_;
+    connect_result_t<_CvSndr, __rcvr_ref<__opstate_t, __env_t>> __opstate1_;
+    __opstate_variant_t __opstate2_;
   };
 
   template <class _Fn, class... _Env>
