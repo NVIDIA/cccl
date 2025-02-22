@@ -54,7 +54,7 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Tp> warp_shu
                 "_Width must be a power of 2 and less or equal to the warp size");
   if constexpr (_Width == 1)
   {
-    return __data;
+    return WarpShuffleResult<_Tp>{__data, true};
   }
   else
   {
@@ -84,7 +84,7 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Tp> warp_shu
   _CCCL_ASSERT(__delta >= 1 && __delta < _Width, "delta must be in the range [1, _Width)");
   if constexpr (_Width == 1)
   {
-    return __data;
+    return WarpShuffleResult<_Tp>{__data, true};
   }
   else
   {
@@ -114,7 +114,7 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Tp> warp_shu
   _CCCL_ASSERT(__delta >= 1 && __delta < _Width, "delta must be in the range [1, _Width)");
   if constexpr (_Width == 1)
   {
-    return __data;
+    return WarpShuffleResult<_Tp>{__data, true};
   }
   else
   {
@@ -144,7 +144,7 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Tp> warp_shu
   _CCCL_ASSERT(__xor_mask >= 1 && __xor_mask < _Width, "delta must be in the range [1, _Width)");
   if constexpr (_Width == 1)
   {
-    return __data;
+    return WarpShuffleResult<_Tp>{__data, true};
   }
   else
   {
