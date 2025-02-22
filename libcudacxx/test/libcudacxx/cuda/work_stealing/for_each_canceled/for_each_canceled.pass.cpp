@@ -196,8 +196,9 @@ __global__ void  __cluster_dims__(CLUSTER_DIM3, CLUSTER_DIM3, CLUSTER_DIM3) clus
 }
 
 template <typename F>
-void test(int N, F&& f)
+void test(F&& f)
 {
+  for (auto N : {1000, 10000, 1000000, 1000000}) {
   for (int tidx : {0, 33, 63, 94})
   {
     int *s, *a, *b, *c;
@@ -231,11 +232,10 @@ void test(int N, F&& f)
     cudaFree(c);
   }
 }
+}
 
 void test()
 {
-  const int N = 1000000;
-
   //////////////////////////////////////////////////////////////////////////////
   // for_each_canceled_block:
   
@@ -245,7 +245,7 @@ void test()
       int bpg = (n + tpb - 1) / tpb;
       vec_add_det1<<<bpg, tpb>>>(s, a, b, c, n, tidx);
     };
-    test(N, fn);
+    test(fn);
   }
 
   {
@@ -258,7 +258,7 @@ void test()
       assert((bpgx * bpgy) >= bpg);
       vec_add_det2<<<dim3(bpgx, bpgy, 1), tpb>>>(s, a, b, c, n, tidx);
     };
-    test(N, fn);
+    test(fn);
   }
 
   {
@@ -272,7 +272,7 @@ void test()
       assert((bpgx * bpgy * bpgz) >= bpg);
       vec_add_det3<<<dim3(bpgx, bpgy, bpgz), tpb>>>(s, a, b, c, n, tidx);
     };
-    test(N, fn);
+    test(fn);
   }
 
   {
@@ -281,7 +281,7 @@ void test()
       int bpg = (n + tpb - 1) / tpb;
       vec_add1<<<bpg, tpb>>>(s, a, b, c, n);
     };
-    test(N, fn);
+    test(fn);
   }
 
   {
@@ -294,7 +294,7 @@ void test()
       assert((bpgx * bpgy) >= bpg);
       vec_add2<<<dim3(bpgx, bpgy, 1), tpb>>>(s, a, b, c, n);
     };
-    test(N, fn);
+    test(fn);
   }
 
   {
@@ -308,7 +308,7 @@ void test()
       assert((bpgx * bpgy * bpgz) >= bpg);
       vec_add3<<<dim3(bpgx, bpgy, bpgz), tpb>>>(s, a, b, c, n);
     };
-    test(N, fn);
+    test(fn);
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -321,7 +321,7 @@ void test()
       while (bpg % CLUSTER_DIM1 != 0) bpg++;
       cluster_vec_add_det1<<<bpg, tpb>>>(s, a, b, c, n, 0, tidx);
     };
-    test(N, fn);
+    test(fn);
   }
 
   {
@@ -335,7 +335,7 @@ void test()
       assert((bpgx * bpgy) >= bpg);
       cluster_vec_add_det2<<<dim3(bpgx, bpgy, 1), tpb>>>(s, a, b, c, n, 0, tidx);
     };
-    test(N, fn);
+    test(fn);
   }
 
   {
@@ -350,7 +350,7 @@ void test()
       assert((bpgx * bpgy * bpgz) >= bpg);
       cluster_vec_add_det3<<<dim3(bpgx, bpgy, bpgz), tpb>>>(s, a, b, c, n, 0, tidx);
     };
-    test(N, fn);
+    test(fn);
   }
 
   {
@@ -360,7 +360,7 @@ void test()
       while (bpg % CLUSTER_DIM1 != 0) bpg++;
       cluster_vec_add1<<<bpg, tpb>>>(s, a, b, c, n);
     };
-    test(N, fn);
+    test(fn);
   }
 
   {
@@ -374,7 +374,7 @@ void test()
       assert((bpgx * bpgy) >= bpg);
       cluster_vec_add2<<<dim3(bpgx, bpgy, 1), tpb>>>(s, a, b, c, n);
     };
-    test(N, fn);
+    test(fn);
   }
 
   {
@@ -389,7 +389,7 @@ void test()
       assert((bpgx * bpgy * bpgz) >= bpg);
       cluster_vec_add3<<<dim3(bpgx, bpgy, bpgz), tpb>>>(s, a, b, c, n);
     };
-    test(N, fn);
+    test(fn);
   }
 }
 

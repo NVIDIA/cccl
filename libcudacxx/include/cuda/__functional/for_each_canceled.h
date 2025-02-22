@@ -138,7 +138,7 @@ __for_each_canceled_block_sm100(dim3 __block_idx, bool __is_leader, __UnaryFunct
         "waitLoop:\n\t\t"
         "mbarrier.try_wait.parity.relaxed.cta.shared.b64 p, [%0], %1;\n\t\t"
         "@!p bra waitLoop;\n\t"
-	"@p mbarrier.arrive.expect_tx.relaxed.cta.shared::cta.b64 _, [%1], 16;\n\t"
+	"@p mbarrier.arrive.expect_tx.relaxed.cta.shared::cta.b64 _, [%0], 16;\n\t"
         "}"
         :
         : "r"((int) __cvta_generic_to_shared(&__barrier)), "r"((unsigned) __phase)
