@@ -70,6 +70,7 @@ def find_dim3(name, txt):
         find_unsigned(f"{name}_z", txt),
     )
 
+
 def normalize_dim_param(dim):
     x = dim[0] if type(dim) is not int else dim
     y = dim[1] if type(dim) is not int and len(dim) >= 2 else 1
