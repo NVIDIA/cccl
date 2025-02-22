@@ -205,7 +205,7 @@ __for_each_canceled_cluster_sm100(dim3 __block_idx, bool __is_cluster_leader_blo
   bool __phase = false;
   dim3 __pos_in_cluster = cooperative_groups::cluster_group::block_index(); // TODO: optimize
 
-  // Initialize barriers:
+  // Initialize barriers: every CTA initializes its local SMEM barrier.
   if (__is_block_leader_thread)
   {
     auto __leader_mask = __activemask();
@@ -213,16 +213,15 @@ __for_each_canceled_cluster_sm100(dim3 __block_idx, bool __is_cluster_leader_blo
       "{\n\t"
       ".reg .pred p;\n\t"
       // elect.sync is a workaround for peeling loop (#nvbug-id)
-      "elect.sync _|p, %2;\n\t"
-      "@p mbarrier.init.shared::cta.b64 [%1], 1;\n\t"
+      "elect.sync _|p, %1;\n\t"
+      "@p mbarrier.init.shared::cta.b64 [%0], 1;\n\t"
       // Release mbarrier init to cluster scope.
       "@p fence.mbarrier_init.release.cluster;\n\t"      
       // This arrive does not order prior memory operations and can be relaxed.
-      "@p mbarrier.arrive.expect_tx.relaxed.cluster.shared::cta.b64 _, [%1], 16;\n\t"
+      "@p mbarrier.arrive.expect_tx.relaxed.cluster.shared::cta.b64 _, [%0], 16;\n\t"
       "}"
       :
-      : "r"((int) __cvta_generic_to_shared(&__result)),
-        "r"((int) __cvta_generic_to_shared(&__barrier)),
+      : "r"((int) __cvta_generic_to_shared(&__barrier)),
         "r"(__leader_mask)
       : "memory");
   }
@@ -230,8 +229,8 @@ __for_each_canceled_cluster_sm100(dim3 __block_idx, bool __is_cluster_leader_blo
   // Synchronize barrier initialization across cluster:
   asm volatile(
       "{\n\t"
-        "barrier.cluster.arrive.relaxed;\n\t"
-        "barrier.cluster.wait.relaxed;\n\t"
+      "barrier.cluster.arrive.relaxed;\n\t"
+        "barrier.cluster.wait;\n\t" // TODO: should be relaxed // TODO: only leader block needs to wait
       "}"
   );
 
@@ -246,7 +245,8 @@ __for_each_canceled_cluster_sm100(dim3 __block_idx, bool __is_cluster_leader_blo
       "elect.sync _|p, %2;\n\t"
       // Note: only cluster block leader thread needs to acquire mbarrier initialization.
       // Leader threads of other blocks don't have to because they only access their local mbarriers.
-      "@p fence.acquire.shared::cta.cluster;\n\t"
+      // mbarrier initialization in generic proxy to peer SMEM by peer CTAs:
+      "@p fence.acquire.sync_restrict::shared::cluster.cluster;\n\t"
       // At this point, the initialization of mbarriers by all blocks is visible to the lead cluster block.
       // `try_cancel` access all mbarriers in cluster using generic-proxy, so no cross-proxy fence required here
       "@p clusterlaunchcontrol.try_cancel.async.mbarrier::complete_tx::bytes.multicast::cluster::all.b128 [%0], [%1];\n\t"
@@ -261,6 +261,7 @@ __for_each_canceled_cluster_sm100(dim3 __block_idx, bool __is_cluster_leader_blo
   do {
     _CUDA_VSTD::invoke(__uf, __block_idx);
 
+    // Leader thread of each block waits on local barrier completion:
     if (__is_block_leader_thread)
     {
       asm volatile(
@@ -270,9 +271,9 @@ __for_each_canceled_cluster_sm100(dim3 __block_idx, bool __is_cluster_leader_blo
         "mbarrier.try_wait.parity.relaxed.cluster.shared.b64 p, [%0], %1;\n\t\t"
         "@!p bra waitLoop;\n\t"
 	// Issue the expect_tx for the next round:
-	"@p mbarrier.arrive.expect_tx.relaxed.cluster.shared::cta.b64 _, [%1], 16;\n\t"
-	// Async->Generic cluster-scope acquire for the local shared memory try_cancel result:
-	"@p fence.acquire.sync_restrict::shared::cta.cluster;\n\t"
+	"mbarrier.arrive.expect_tx.relaxed.cluster.shared::cta.b64 _, [%0], 16;\n\t"
+	// Async->Generic cluster-scope acquire for try cancel result reads on cluster shared memory (from peer CTAs to peer SMEM):
+	"fence.acquire.sync_restrict::shared::cluster.cluster;\n\t"
         "}"
         :
         : "r"((int) __cvta_generic_to_shared(&__barrier)), "r"((unsigned) __phase)
@@ -318,7 +319,7 @@ __for_each_canceled_cluster_sm100(dim3 __block_idx, bool __is_cluster_leader_blo
       "{\n\t"
       "fence.proxy.async::generic.release.sync_restrict::shared::cta.cluster;\n\t"
       "barrier.cluster.arrive.relaxed;\n\t"
-      "barrier.cluster.wait.relaxed;\n\t" // TODO: move to below
+      "barrier.cluster.wait;\n\t" // TODO: move to below // TODO: could be relaxed
       "}"
     );
 
@@ -428,7 +429,7 @@ _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void __for_each_canceled_cluster(bool __is_clus
                 "__for_each_canceled_cluster first argument requires an UnaryFunction with signature: void(dim3).\n"
                 "For example, call with lambda: __for_each_canceled_block([](dim3 block_idx) { ... });");
   dim3 __block_idx = __thread_block_indices<__ThreadBlockRank>();
-  NV_DISPATCH_TARGET(NV_PROVIDES_SM_100,
+  NV_DISPATCH_TARGET(NV_HAS_FEATURE_SM_100a,
                      (::cuda::__for_each_canceled_cluster_sm100(__block_idx, __is_cluster_leader_block, __is_block_leader_thread, _CUDA_VSTD::move(__uf));),
                      NV_ANY_TARGET,
                      (_CUDA_VSTD::invoke(_CUDA_VSTD::move(__uf), __block_idx);))
