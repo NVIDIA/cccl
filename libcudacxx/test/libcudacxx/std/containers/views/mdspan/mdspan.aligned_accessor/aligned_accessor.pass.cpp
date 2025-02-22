@@ -44,6 +44,7 @@ __host__ __device__ constexpr bool test()
   unused(acc1);
   unused(acc2);
   take_default_accessor(aligned_non_const);
+  unused(aligned_non_const);
 
   cuda::std::aligned_accessor<const T, sizeof(T)> aligned_const;
   cuda::std::default_accessor<const T> acc3{aligned_const};
@@ -51,6 +52,7 @@ __host__ __device__ constexpr bool test()
   unused(acc3);
   unused(acc4);
   take_default_accessor_const(aligned_const);
+  unused(aligned_const);
   return true;
 }
 
