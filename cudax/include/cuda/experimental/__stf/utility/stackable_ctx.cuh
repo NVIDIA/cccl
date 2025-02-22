@@ -540,6 +540,11 @@ public:
     return get_ctx(depth()).dot_section(mv(symbol));
   }
 
+  size_t task_count() const
+  {
+    return get_ctx(depth()).task_count();
+  }
+
   void finalize()
   {
     // There must be only one level left

@@ -299,6 +299,16 @@ public:
       payload);
   }
 
+  size_t task_count() const
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return ::std::visit(
+      [&](auto& self) {
+        return self.task_count();
+      },
+      payload);
+  }
+
   /**
    * @brief Creates logical data with specified sizes.
    *
