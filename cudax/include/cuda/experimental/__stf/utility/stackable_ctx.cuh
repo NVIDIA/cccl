@@ -129,13 +129,16 @@ public:
       // dot sections allow to structure the DOT output to better understand
       // the hierarchy of computation
       ::std::optional<reserved::dot::section::guard> dot_section;
+
+      // Where was the push() called ?
+      _CUDA_VSTD::source_location callsite;
     };
 
   public:
     impl()
     {
       // Create the root level
-      push();
+      push(_CUDA_VSTD::source_location::current());
     }
 
     ~impl() = default;
@@ -151,7 +154,7 @@ public:
     /**
      * @brief Create a new nested level
      */
-    void push()
+    void push(const _CUDA_VSTD::source_location& loc)
     {
       // fprintf(stderr, "stackable_ctx::push() depth() was %ld\n", depth());
 
@@ -182,6 +185,8 @@ public:
         gctx.update_uncached_allocator(wrapper->allocator());
 
         levels.emplace_back(gctx, stream, wrapper);
+
+        levels.back().callsite = loc;
 
         // We add a new dot section which will be closed when the context is popped
         //        levels.back().dot_section = levels[depth()-1].ctx.dot_section("stackable");
@@ -317,9 +322,9 @@ public:
     return get_ctx(depth());
   }
 
-  void push()
+  void push(const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
   {
-    pimpl->push();
+    pimpl->push(loc);
   }
 
   void pop()
