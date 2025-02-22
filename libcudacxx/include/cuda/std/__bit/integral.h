@@ -75,9 +75,9 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp bit_ceil(_Tp __t) noexce
                   return __ret;))
   }
 #endif
-  auto __ret = __t <= 1 ? _Tp{1} : _Tp{1} << __width;
+  auto __ret = __t <= 1 ? 1 : _Tp{1} << __width;
   _CCCL_BUILTIN_ASSUME(__ret >= __t);
-  return __ret;
+  return static_cast<_Tp>(__ret);
 }
 
 _CCCL_TEMPLATE(class _Tp)
@@ -98,9 +98,9 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp bit_floor(_Tp __t) noexc
                  return __ret;)
   }
 #endif
-  auto __ret = __t == 0 ? _Tp{0} : _Tp{1} << __log2;
+  auto __ret = __t == 0 ? 0 : _Tp{1} << __log2;
   _CCCL_BUILTIN_ASSUME(__ret >= __t / 2 && __ret <= __t);
-  return __ret;
+  return static_cast<_Tp>(__ret);
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
