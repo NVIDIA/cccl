@@ -26,6 +26,8 @@
 #endif // no system header
 
 #include "cuda/experimental/__stf/allocators/adapters.cuh"
+#include "cuda/experimental/__stf/utility/hash.cuh"
+#include "cuda/experimental/__stf/utility/source_location.cuh"
 #include "cuda/experimental/stf.cuh"
 
 /**
@@ -141,7 +143,10 @@ public:
       push(_CUDA_VSTD::source_location::current());
     }
 
-    ~impl() = default;
+    ~impl()
+    {
+      print_cache_stats_summary();
+    }
 
     // Delete copy constructor and copy assignment operator
     impl(const impl&)            = delete;
@@ -212,6 +217,14 @@ public:
 
       // Ensure everything is finished in the context
       current_level.ctx.finalize();
+
+      executable_graph_cache_stat* stat = current_level.ctx.graph_get_cache_stat();
+
+      _CCCL_ASSERT(stat, "");
+
+      const auto& loc = current_level.callsite;
+
+      stats_map[loc][::std::make_pair(stat->nnodes, stat->nedges)] += *stat;
 
       // To create prereqs that depend on this finalize() stage, we get the
       // stream used in this context, and insert events in it.
@@ -284,6 +297,31 @@ public:
       levels[level].retained_data.push_back(mv(data_impl));
     }
 
+    void print_cache_stats_summary() const
+    {
+      if (stats_map.size() == 0)
+      {
+        return;
+      }
+
+      fprintf(stderr, "Executable Graph Cache Statistics Summary\n");
+      fprintf(stderr, "=========================================\n");
+
+      for (const auto& [location, stat_map] : stats_map)
+      {
+        fprintf(stderr, "Call-Site: %s:%d (%s)\n", location.file_name(), location.line(), location.function_name());
+
+        fprintf(stderr, "  Nodes  Edges  InstantiateCnt  UpdateCnt\n");
+        fprintf(stderr, "  --------------------------------------\n");
+
+        for (const auto& [key, stat] : stat_map)
+        {
+          fprintf(stderr, "  %5zu  %5zu  %13zu  %9zu\n", key.first, key.second, stat.instantiate_cnt, stat.update_cnt);
+        }
+        fprintf(stderr, "\n");
+      }
+    }
+
   private:
     // State for each nested level
     ::std::vector<per_level> levels;
@@ -291,6 +329,15 @@ public:
     // Handles to retain some asynchronous states, we maintain it separately
     // from levels because we keep its entries even when we pop a level
     ::std::vector<async_resources_handle> async_handles;
+
+    // Create a map indexed by source locations, the value stored are a map of stats indexed per (nnodes,nedges) pairs
+    using stored_type_t =
+      ::std::unordered_map<::std::pair<size_t, size_t>, executable_graph_cache_stat, hash<::std::pair<size_t, size_t>>>;
+    ::std::unordered_map<_CUDA_VSTD::source_location,
+                         stored_type_t,
+                         reserved::source_location_hash,
+                         reserved::source_location_equal>
+      stats_map;
   };
 
   stackable_ctx()
