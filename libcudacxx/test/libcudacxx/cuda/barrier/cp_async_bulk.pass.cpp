@@ -42,10 +42,16 @@ __device__ void test()
 
   // TEST: Add i to buffer[i]
   alignas(16) __shared__ int smem_buffer[buf_len];
-  __shared__ barrier* bar;
+#if _CCCL_CUDA_COMPILER(CLANG)
+  // clang-cuda complains about initialization of a variable in shared memory
+  alignas(8) __shared__ char barrier_data[sizeof(barrier)];
+  barrier& bar = *reinterpret_cast<barrier*>(&barrier_data);
+#else // ^^^ _CCCL_CUDA_COMPILER(CLANG) ^^^ / vvv !_CCCL_CUDA_COMPILER(CLANG)
+  __shared__ barrier bar;
+#endif // !_CCCL_CUDA_COMPILER(CLANG)
   if (threadIdx.x == 0)
   {
-    init(bar, blockDim.x);
+    init(&bar, blockDim.x);
   }
   __syncthreads();
 
@@ -53,14 +59,14 @@ __device__ void test()
   uint64_t token;
   if (threadIdx.x == 0)
   {
-    cde::cp_async_bulk_global_to_shared(smem_buffer, gmem_buffer, sizeof(smem_buffer), *bar);
-    token = cuda::device::barrier_arrive_tx(*bar, 1, sizeof(smem_buffer));
+    cde::cp_async_bulk_global_to_shared(smem_buffer, gmem_buffer, sizeof(smem_buffer), bar);
+    token = cuda::device::barrier_arrive_tx(bar, 1, sizeof(smem_buffer));
   }
   else
   {
-    token = bar->arrive();
+    token = bar.arrive();
   }
-  bar->wait(cuda::std::move(token));
+  bar.wait(cuda::std::move(token));
 
   // Update in shared memory
   for (int i = threadIdx.x; i < buf_len; i += blockDim.x)
