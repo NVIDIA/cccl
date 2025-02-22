@@ -12,13 +12,18 @@
 #include <cuda/std/cstdint>
 #include <cuda/warp_comm>
 
+#include <type_traits>
+
+template <int Value>
+inline constexpr auto width_v = cuda::std::integral_constant<int, Value>{};
+
+template <int Value>
 __device__ void warp_shuffle_semantic_test()
 {
   uint32_t data = threadIdx.x;
-  bool p;
   for (int i = 0; i < 32; i++)
   {
-    assert(cuda::warp_shuffle(data, i) == __shfl_sync(0xFFFFFFFF, data, i));
+    assert(cuda::warp_shuffle(data, i, 0xFFFFFFFF, width_v<Value>) == __shfl_sync(0xFFFFFFFF, data, i, Value));
   }
 }
 
@@ -33,7 +38,12 @@ __device__ void type_test()
 
 __global__ void test_kernel()
 {
-  warp_shuffle_semantic_test();
+  warp_shuffle_semantic_test<1>();
+  warp_shuffle_semantic_test<2>();
+  warp_shuffle_semantic_test<4>();
+  warp_shuffle_semantic_test<8>();
+  warp_shuffle_semantic_test<16>();
+  warp_shuffle_semantic_test<32>();
   type_test();
 }
 
