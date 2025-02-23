@@ -14,7 +14,7 @@ Defined in header ``<cuda/work_stealing>`` if the CUDA compiler supports at leas
 
        template <int ThreadBlockRank = 3, invocable<dim3> UnaryFunction = ..unspecified..>
        __device__ void for_each_canceled_cluster(UnaryFunction uf);
-       
+
    } // namespace cuda
 
 **Note**: On devices with compute capability 10.0 or higher, this function may leverage hardware acceleration.
@@ -34,7 +34,7 @@ For better performance, extract the shared prologue and epilogue from the work t
 
 The ``for_each_canceled_cluster`` API may be used with thread-block clusters of any size, including one.
 The ```for_each_canceled_block`` API is optimized for and requires thread-block clusters of size one.
-    
+
 **Mandates**:
 
    - ``ThreadBlockRank`` equals the rank of the thread block: ``1``, ``2``, or ``3`` for one-dimensional, two-dimensional, and three-dimensional thread blocks, respectively.
