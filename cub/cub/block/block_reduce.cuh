@@ -207,6 +207,7 @@ enum BlockReduceAlgorithm
 //!
 //!        // Compute the block-wide sum for thread0
 //!        int aggregate = BlockReduce(temp_storage).Sum(thread_data);
+//!    }
 //!
 //! Re-using dynamically allocating shared memory
 //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -336,6 +337,7 @@ public:
   //!
   //!        // Compute the block-wide max for thread0
   //!        int aggregate = BlockReduce(temp_storage).Reduce(thread_data, cuda::maximum<>{});
+  //!    }
   //!
   //! @endrst
   //!
@@ -440,6 +442,7 @@ public:
   //!
   //!        // Compute the block-wide max for thread0
   //!        int aggregate = BlockReduce(temp_storage).Reduce(thread_data, cuda::maximum<>{}, num_valid);
+  //!    }
   //!
   //! @endrst
   //!
@@ -504,6 +507,7 @@ public:
   //!
   //!        // Compute the block-wide sum for thread0
   //!        int aggregate = BlockReduce(temp_storage).Sum(thread_data);
+  //!    }
   //!
   //! @endrst
   //!
@@ -547,6 +551,7 @@ public:
   //!
   //!        // Compute the block-wide sum for thread0
   //!        int aggregate = BlockReduce(temp_storage).Sum(thread_data);
+  //!    }
   //!
   //! @endrst
   //!
@@ -596,6 +601,7 @@ public:
   //!
   //!        // Compute the block-wide sum for thread0
   //!        int aggregate = BlockReduce(temp_storage).Sum(thread_data, num_valid);
+  //!    }
   //!
   //! @endrst
   //!
