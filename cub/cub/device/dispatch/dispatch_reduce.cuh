@@ -667,27 +667,28 @@ struct DeviceSegmentedReduceKernelSource
  * @tparam InitT
  *   value type
  */
-
-template <typename InputIteratorT,
-          typename OutputIteratorT,
-          typename BeginOffsetIteratorT,
-          typename EndOffsetIteratorT,
-          typename OffsetT,
-          typename ReductionOpT,
-          typename InitT     = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::value_t<InputIteratorT>>,
-          typename AccumT    = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::value_t<InputIteratorT>, InitT>,
-          typename PolicyHub = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
-          typename KernelSource = detail::reduce::DeviceSegmentedReduceKernelSource<
-            typename PolicyHub::MaxPolicy,
-            InputIteratorT,
-            OutputIteratorT,
-            BeginOffsetIteratorT,
-            EndOffsetIteratorT,
-            OffsetT,
-            ReductionOpT,
-            InitT,
-            AccumT>,
-          typename KernelLauncherFactory = detail::TripleChevronFactory>
+template <
+  typename InputIteratorT,
+  typename OutputIteratorT,
+  typename BeginOffsetIteratorT,
+  typename EndOffsetIteratorT,
+  typename OffsetT,
+  typename ReductionOpT,
+  typename InitT        = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::value_t<InputIteratorT>>,
+  typename AccumT       = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::value_t<InputIteratorT>, InitT>,
+  typename PolicyHub    = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
+  typename KernelSource = detail::reduce::DeviceSegmentedReduceKernelSource<
+    typename PolicyHub::MaxPolicy,
+    InputIteratorT,
+    detail::offset_iterator<OutputIteratorT, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>>,
+    detail::offset_input_iterator<BeginOffsetIteratorT,
+                                  THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>>,
+    detail::offset_input_iterator<EndOffsetIteratorT, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>>,
+    OffsetT,
+    ReductionOpT,
+    InitT,
+    AccumT>,
+  typename KernelLauncherFactory = detail::TripleChevronFactory>
 struct DispatchSegmentedReduce
 {
   //---------------------------------------------------------------------------
@@ -873,26 +874,7 @@ struct DispatchSegmentedReduce
   {
     auto wrapped_policy = detail::reduce::MakeReducePolicyWrapper(policy);
     // Force kernel code-generation in all compiler passes
-    using streaming_begin_offset_it_t =
-      detail::offset_input_iterator<BeginOffsetIteratorT,
-                                    THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>>;
-    using streaming_end_offset_it_t =
-      detail::offset_input_iterator<EndOffsetIteratorT,
-                                    THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>>;
-    using streaming_result_out_it_t =
-      detail::offset_iterator<OutputIteratorT, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>>;
-    return InvokePasses(
-      detail::reduce::DeviceSegmentedReduceKernel<
-        typename PolicyHub::MaxPolicy,
-        InputIteratorT,
-        streaming_result_out_it_t,
-        streaming_begin_offset_it_t,
-        streaming_end_offset_it_t,
-        OffsetT,
-        ReductionOpT,
-        InitT,
-        AccumT>,
-      wrapped_policy);
+    return InvokePasses(kernel_source.SegmentedReduceKernel(), wrapped_policy);
   }
 
   //---------------------------------------------------------------------------
@@ -942,6 +924,7 @@ struct DispatchSegmentedReduce
    *   **[optional]** CUDA stream to launch kernels within.
    *   Default is stream<sub>0</sub>.
    */
+  template <typename MaxPolicyT = typename PolicyHub::MaxPolicy>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -952,7 +935,10 @@ struct DispatchSegmentedReduce
     EndOffsetIteratorT d_end_offsets,
     ReductionOpT reduction_op,
     InitT init,
-    cudaStream_t stream)
+    cudaStream_t stream,
+    KernelSource kernel_source             = {},
+    KernelLauncherFactory launcher_factory = {},
+    MaxPolicyT max_policy                  = {})
   {
     if (num_segments <= 0)
     {
@@ -965,7 +951,7 @@ struct DispatchSegmentedReduce
     {
       // Get PTX version
       int ptx_version = 0;
-      error           = CubDebug(PtxVersion(ptx_version));
+      error           = CubDebug(launcher_factory.PtxVersion(ptx_version));
       if (cudaSuccess != error)
       {
         break;
@@ -983,10 +969,12 @@ struct DispatchSegmentedReduce
         reduction_op,
         init,
         stream,
-        ptx_version);
+        ptx_version,
+        kernel_source,
+        launcher_factory);
 
       // Dispatch to chained policy
-      error = CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
+      error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
       if (cudaSuccess != error)
       {
         break;
