@@ -14,6 +14,7 @@
 #endif // no system header
 
 #include <thrust/iterator/iterator_adaptor.h>
+#include <thrust/iterator/iterator_facade.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -62,10 +63,6 @@ public:
       , offset_it(offset_it)
   {}
 
-  // befriend thrust::iterator_core_access to allow it access to the private interface below
-  friend class THRUST_NS_QUALIFIER::iterator_core_access;
-
-private:
   OffsetItT offset_it;
 
   _CCCL_HOST_DEVICE typename super_t::reference dereference() const
@@ -104,10 +101,6 @@ public:
       , offset_it(offset_it)
   {}
 
-  // befriend thrust::iterator_core_access to allow it access to the private interface below
-  friend class THRUST_NS_QUALIFIER::iterator_core_access;
-
-private:
   OffsetItT offset_it;
 
   _CCCL_HOST_DEVICE typename super_t::reference dereference() const
