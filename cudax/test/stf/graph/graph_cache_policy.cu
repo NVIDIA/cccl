@@ -25,7 +25,7 @@ int main()
     graph_ctx ctx(handle);
 
     // If i is a multiple of 3 we enable the cache, the first iteration will fill the cache
-    ctx.set_graph_cache_policy([i](size_t) {
+    ctx.set_graph_cache_policy([i]() {
       return (i % 3) == 0;
     });
 
