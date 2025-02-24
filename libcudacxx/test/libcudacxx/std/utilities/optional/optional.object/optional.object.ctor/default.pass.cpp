@@ -21,66 +21,39 @@
 using cuda::std::optional;
 
 template <class Opt>
-__host__ __device__ constexpr bool test_constexpr()
+__host__ __device__ constexpr void test()
 {
   static_assert(cuda::std::is_nothrow_default_constructible<Opt>::value, "");
-  static_assert(cuda::std::is_trivially_destructible<Opt>::value, "");
-  static_assert(cuda::std::is_trivially_destructible<typename Opt::value_type>::value, "");
-
-  Opt opt;
-  assert(static_cast<bool>(opt) == false);
-
-  struct test_constexpr_ctor : public Opt
+  static_assert(cuda::std::is_trivially_destructible<Opt>::value
+                  == cuda::std::is_trivially_destructible<typename Opt::value_type>::value,
+                "");
   {
-    __host__ __device__ constexpr test_constexpr_ctor() {}
-  };
-
-  return true;
+    Opt opt{};
+    assert(static_cast<bool>(opt) == false);
+  }
+  {
+    const Opt opt{};
+    assert(static_cast<bool>(opt) == false);
+  }
 }
 
-template <class Opt>
 __host__ __device__ constexpr bool test()
 {
-  static_assert(cuda::std::is_nothrow_default_constructible<Opt>::value, "");
-  static_assert(!cuda::std::is_trivially_destructible<Opt>::value, "");
-  static_assert(!cuda::std::is_trivially_destructible<typename Opt::value_type>::value, "");
-  {
-    Opt opt;
-    assert(static_cast<bool>(opt) == false);
-  }
-  {
-    const Opt opt;
-    assert(static_cast<bool>(opt) == false);
-  }
-
-  struct test_constexpr_ctor : public Opt
-  {
-    __host__ __device__ constexpr test_constexpr_ctor() {}
-  };
+  test<optional<int>>();
+  test<optional<int*>>();
+  test<optional<ImplicitTypes::NoCtors>>();
+  test<optional<NonTrivialTypes::NoCtors>>();
+  test<optional<NonConstexprTypes::NoCtors>>();
 
   return true;
 }
 
 int main(int, char**)
 {
-  test_constexpr<optional<int>>();
-  test_constexpr<optional<int*>>();
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER >= 2017
-  test_constexpr<optional<ImplicitTypes::NoCtors>>();
-  test_constexpr<optional<NonTrivialTypes::NoCtors>>();
-  test_constexpr<optional<NonConstexprTypes::NoCtors>>();
-#endif
-  test<optional<NonLiteralTypes::NoCtors>>();
+  test();
+  static_assert(test(), "");
 
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-  static_assert(test_constexpr<optional<int>>(), "");
-  static_assert(test_constexpr<optional<int*>>(), "");
-#  if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER >= 2017
-  static_assert(test_constexpr<optional<ImplicitTypes::NoCtors>>(), "");
-  static_assert(test_constexpr<optional<NonTrivialTypes::NoCtors>>(), "");
-  static_assert(test_constexpr<optional<NonConstexprTypes::NoCtors>>(), "");
-#  endif
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+  test<optional<NonLiteralTypes::NoCtors>>();
 
   return 0;
 }

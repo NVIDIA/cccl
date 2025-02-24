@@ -131,6 +131,50 @@ struct NoMove
   }
 };
 
+struct LValRef
+{
+  __host__ __device__ constexpr int& operator()(int& val)
+  {
+    return val;
+  }
+  int& operator()(const int&)  = delete;
+  int& operator()(int&&)       = delete;
+  int& operator()(const int&&) = delete;
+};
+
+struct RefQualRef
+{
+  __host__ __device__ constexpr int& operator()(int& val) &
+  {
+    return val;
+  }
+  int& operator()(int&) const&  = delete;
+  int& operator()(int&) &&      = delete;
+  int& operator()(int&) const&& = delete;
+};
+
+struct LValRefObj
+{
+  __host__ __device__ constexpr int operator()(int& val)
+  {
+    return val;
+  }
+  int operator()(const int&)  = delete;
+  int operator()(int&&)       = delete;
+  int operator()(const int&&) = delete;
+};
+
+struct RefQualRefObj
+{
+  __host__ __device__ constexpr int operator()(int& val) &
+  {
+    return val;
+  }
+  int operator()(int&) const&  = delete;
+  int operator()(int&) &&      = delete;
+  int operator()(int&) const&& = delete;
+};
+
 __host__ __device__ constexpr void test_val_types()
 {
   // Test & overload
@@ -203,6 +247,52 @@ __host__ __device__ constexpr void test_val_types()
       ASSERT_SAME_TYPE(decltype(i.transform(cuda::std::move(l))), cuda::std::optional<int>);
     }
   }
+
+  // Test optional<T&> overload
+  {
+    int value = 42;
+    // Without & qualifier on F's operator()
+    {
+      cuda::std::optional<int&> i{};
+      assert(!i.transform(LValRef{}).has_value());
+
+      i = value;
+      assert(i.transform(LValRef{}) == 42);
+      ASSERT_SAME_TYPE(decltype(i.transform(LValRef{})), cuda::std::optional<int&>);
+    }
+
+    // With & qualifier on F's operator()
+    {
+      cuda::std::optional<int&> i{};
+      RefQualRef l{};
+      assert(!i.transform(l).has_value());
+
+      i = value;
+      assert(i.transform(l) == 42);
+      ASSERT_SAME_TYPE(decltype(i.transform(l)), cuda::std::optional<int&>);
+    }
+
+    // Without & qualifier on F's operator() returning an object type
+    {
+      cuda::std::optional<int&> i{};
+      assert(!i.transform(LValRefObj{}).has_value());
+
+      i = value;
+      assert(i.transform(LValRefObj{}) == 42);
+      ASSERT_SAME_TYPE(decltype(i.transform(LValRefObj{})), cuda::std::optional<int>);
+    }
+
+    // With & qualifier on F's operator() returning an object type
+    {
+      cuda::std::optional<int&> i{};
+      RefQualRefObj l{};
+      assert(!i.transform(l).has_value());
+
+      i = value;
+      assert(i.transform(l) == 42);
+      ASSERT_SAME_TYPE(decltype(i.transform(l)), cuda::std::optional<int>);
+    }
+  }
 }
 
 struct NonConst
@@ -237,7 +327,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX17 bool test()
 {
   test_sfinae();
   test_val_types();
-  cuda::std::optional<int> opt;
+  cuda::std::optional<int> opt{};
   const auto& copt = opt;
 
   const auto never_called = [](int) {

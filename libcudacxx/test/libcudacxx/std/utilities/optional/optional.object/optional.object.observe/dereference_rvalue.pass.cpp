@@ -25,7 +25,7 @@ struct X
   {
     return 3;
   }
-  __host__ __device__ int test() &
+  __host__ __device__ constexpr int test() &
   {
     return 4;
   }
@@ -33,7 +33,7 @@ struct X
   {
     return 5;
   }
-  __host__ __device__ int test() &&
+  __host__ __device__ constexpr int test() &&
   {
     return 6;
   }
@@ -45,21 +45,20 @@ struct Y
   {
     return 7;
   }
+
+  __host__ __device__ constexpr int test() &
+  {
+    return 42;
+  }
 };
 
-__host__ __device__ constexpr int test()
-{
-  optional<Y> opt{Y{}};
-  return (*cuda::std::move(opt)).test();
-}
-
-int main(int, char**)
+__host__ __device__ constexpr bool test()
 {
   {
-    optional<X> opt;
+    optional<X> opt{};
     unused(opt);
     ASSERT_SAME_TYPE(decltype(*cuda::std::move(opt)), X&&);
-    LIBCPP_STATIC_ASSERT(noexcept(*opt), "");
+    LIBCPP_STATIC_ASSERT(noexcept(*cuda::std::move(opt)), "");
     // ASSERT_NOT_NOEXCEPT(*cuda::std::move(opt));
     // FIXME: This assertion fails with GCC because it can see that
     // (A) operator*() is constexpr, and
@@ -68,14 +67,45 @@ int main(int, char**)
     // operator.
     // Regardless this function should still be noexcept(false) because
     // it has a narrow contract.
+
+    optional<X&> optref;
+    unused(optref);
+    ASSERT_SAME_TYPE(decltype(*cuda::std::move(optref)), X&);
+    LIBCPP_STATIC_ASSERT(noexcept(*cuda::std::move(optref)), "");
+    ASSERT_NOEXCEPT(*cuda::std::move(optref));
   }
+
   {
     optional<X> opt(X{});
     assert((*cuda::std::move(opt)).test() == 6);
   }
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-  static_assert(test() == 7, "");
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
+  {
+    X val{};
+    optional<X&> opt(val);
+    assert((*cuda::std::move(opt)).test() == 4);
+    assert(cuda::std::addressof(val) == cuda::std::addressof(*cuda::std::move(opt)));
+  }
+
+  {
+    optional<Y> opt(Y{});
+    assert((*cuda::std::move(opt)).test() == 7);
+  }
+
+  {
+    Y val{};
+    optional<Y&> opt(val);
+    assert((*cuda::std::move(opt)).test() == 42);
+    assert(cuda::std::addressof(val) == cuda::std::addressof(*cuda::std::move(opt)));
+  }
+
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test(), "");
 
   return 0;
 }

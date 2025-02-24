@@ -36,5 +36,7 @@ int main(int, char**)
   test<optional<double>, double>();
   test<optional<const double>, const double>();
 
+  test<optional<int&>, int&>();
+
   return 0;
 }
