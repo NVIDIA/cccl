@@ -22,6 +22,8 @@
 class my_memory_system : public thrust::device_execution_policy<my_memory_system>
 {
 public:
+  my_memory_system() = default;
+
   my_memory_system(int)
       : correctly_dispatched(false)
       , num_copies(0)
@@ -43,14 +45,11 @@ public:
   }
 
 private:
-  bool correctly_dispatched;
+  bool correctly_dispatched = true;
 
   // count the number of copies so that we can validate
   // that dispatch does not introduce any
-  unsigned int num_copies;
-
-  // disallow default construction
-  my_memory_system();
+  unsigned int num_copies = 0;
 };
 
 namespace my_old_namespace
