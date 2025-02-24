@@ -128,6 +128,9 @@ class IteratorBase:
     def dereference(state):
         raise NotImplementedError("Subclasses must override dereference staticmethod")
 
+    def __add__(self, offset: int):
+        return make_advanced_iterator(self, offset=offset)
+
 
 def sizeof_pointee(context, ptr):
     size = context.get_abi_sizeof(ptr.type.pointee)
@@ -343,13 +346,12 @@ def make_transform_iterator(it, op: Callable):
     return TransformIterator(it, op)
 
 
-class AdvancedIteratorKind(IteratorKind):
-    pass
-
-
 def make_advanced_iterator(it: IteratorBase, /, *, offset: int = 1):
     it_advance = cuda.jit(type(it).advance, device=True)
     it_dereference = cuda.jit(type(it).dereference, device=True)
+
+    class AdvancedIteratorKind(IteratorKind):
+        pass
 
     class AdvancedIterator(IteratorBase):
         iterator_kind_type = AdvancedIteratorKind

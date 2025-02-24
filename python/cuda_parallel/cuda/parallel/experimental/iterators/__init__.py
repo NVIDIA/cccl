@@ -108,8 +108,3 @@ def TransformIterator(it, op):
         A ``TransformIterator`` object to transform the items in ``it`` using ``op``
     """
     return _iterators.make_transform_iterator(it, op)
-
-
-def AdvancedIterator(it, /, *, offset: int = 1):
-    """Returns an Iterator advanced by given offset."""
-    return _iterators.make_advanced_iterator(it, offset=offset)
