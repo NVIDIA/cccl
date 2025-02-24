@@ -18,6 +18,11 @@
 #include <cub/agent/agent_unique_by_key.cuh>
 #include <cub/util_vsmem.cuh>
 
+#define XSTR(x) STR(x)
+#define STR(x)  #x
+
+#pragma message "The value of ABC: " XSTR(CUB_PTX_ARCH)
+
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -35,19 +40,19 @@ struct VSMemHelper
     vsmem_helper_default_fallback_policy_t<ActivePolicyT, detail::unique_by_key::AgentUniqueByKey, Ts...>;
 
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION static constexpr int BlockThreads(ActivePolicyT /*policy*/)
+  _CCCL_HOST_DEVICE static constexpr int BlockThreads(ActivePolicyT /*policy*/)
   {
     return VSMemHelperDefaultFallbackPolicyT<ActivePolicyT>::agent_policy_t::BLOCK_THREADS;
   }
 
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION static constexpr int ItemsPerThread(ActivePolicyT /*policy*/)
+  _CCCL_HOST_DEVICE static constexpr int ItemsPerThread(ActivePolicyT /*policy*/)
   {
     return VSMemHelperDefaultFallbackPolicyT<ActivePolicyT>::agent_policy_t::ITEMS_PER_THREAD;
   }
 
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t VSMemPerBlock(ActivePolicyT /*policy*/)
+  _CCCL_HOST_DEVICE static constexpr ::cuda::std::size_t VSMemPerBlock(ActivePolicyT /*policy*/)
   {
     return VSMemHelperDefaultFallbackPolicyT<ActivePolicyT>::vsmem_per_block;
   }
