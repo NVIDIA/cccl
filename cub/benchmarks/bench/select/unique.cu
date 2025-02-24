@@ -10,7 +10,7 @@
 
 // %RANGE% TUNE_TRANSPOSE trp 0:1:1
 // %RANGE% TUNE_LOAD ld 0:1:1
-// %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
+// %RANGE% TUNE_NOMINAL_ITEMS_PER_THREAD nipt 7:24:1
 // %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
 // %RANGE% TUNE_MAGIC_NS ns 0:2048:4
 // %RANGE% TUNE_DELAY_CONSTRUCTOR_ID dcid 0:7:1
@@ -34,7 +34,7 @@ struct policy_hub_t
 {
   struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
   {
-    static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = TUNE_ITEMS_PER_THREAD;
+    static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = TUNE_NOMINAL_ITEMS_PER_THREAD;
 
     static constexpr int ITEMS_PER_THREAD =
       CUB_MIN(NOMINAL_4B_ITEMS_PER_THREAD, CUB_MAX(1, (NOMINAL_4B_ITEMS_PER_THREAD * 4 / sizeof(InputT))));
