@@ -84,6 +84,16 @@ using ::cuda::std::iter_difference_t;
 using ::cuda::std::iter_reference_t;
 using ::cuda::std::iter_value_t;
 
+template <typename T>
+using iter_pointer_t = typename ::cuda::std::iterator_traits<T>::pointer;
+
+// use this whenever you need to lazily evaluate a trait. E.g., as an alternative in replace_if_use_default.
+template <template <typename...> typename Trait, typename... Args>
+struct lazy_trait
+{
+  using type = Trait<Args...>;
+};
+
 template <typename It, typename FallbackT, bool = ::cuda::std::is_void_v<::cuda::std::remove_pointer_t<It>>>
 struct non_void_value_impl
 {
