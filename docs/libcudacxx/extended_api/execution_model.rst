@@ -226,11 +226,10 @@ This method is not sufficient because it does not catch all Forward Progress bug
 Stream and event ordering
 -------------------------
 
-A device-thread shall not make progress if it is dependent on termination of one or more unterminated device-threads or tasks via CUDA streams and/or events.
+A device thread shall not start making progress until all its dependencies have completed.
 
-[Note: This excludes dependencies such as Programmatic Dependent Launch or Launch Completion which do not encompass termination of the dependency. - end note.]
-
-[Note: Tasks are also referred to as `Commands <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#streams>`__. - end note.]
+[Note: Dependencies that prevent device threads from starting to make progress can be created, for example, via CUDA Stream `Command <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#streams>`__s. 
+These may include dependencies on the completion of, among others, `CUDA Events <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#events>`__ and `CUDA Kernels <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#kernels>`__. - end note.]
 
 .. dropdown:: Examples of CUDA API forward progress guarantees due to stream and event ordering
 
