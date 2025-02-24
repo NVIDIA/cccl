@@ -159,7 +159,7 @@ struct AgentReduce
   static constexpr int BLOCK_THREADS      = AgentReducePolicy::BLOCK_THREADS;
   static constexpr int ITEMS_PER_THREAD   = AgentReducePolicy::ITEMS_PER_THREAD;
   static constexpr int TILE_ITEMS         = BLOCK_THREADS * ITEMS_PER_THREAD;
-  static constexpr int VECTOR_LOAD_LENGTH = CUB_MIN(ITEMS_PER_THREAD, AgentReducePolicy::VECTOR_LOAD_LENGTH);
+  static constexpr int VECTOR_LOAD_LENGTH = _CUDA_VSTD::min(ITEMS_PER_THREAD, AgentReducePolicy::VECTOR_LOAD_LENGTH);
 
   // Can vectorize according to the policy if the input iterator is a native
   // pointer to a primitive type
