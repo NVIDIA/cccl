@@ -56,9 +56,10 @@ template <>
 _LIBCUDACXX_HIDE_FROM_ABI __half minimum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
 {
 #  if defined(__CUDA_NO_HALF_OPERATORS__)
-  return CUB_MIN(__half2float(a), __half2float(b));
+  return ::cuda::std::min(__half2float(a), __half2float(b));
 #  else // ^^^ __CUDA_NO_HALF_OPERATORS__ ^^^ / vvv !__CUDA_NO_HALF_OPERATORS__ vvv
-  NV_IF_TARGET(NV_PROVIDES_SM_53, (return CUB_MIN(a, b);), (return CUB_MIN(__half2float(a), __half2float(b));));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_53, (return ::cuda::std::min(a, b);), (return ::cuda::std::min(__half2float(a), __half2float(b));));
 #  endif // !__CUDA_NO_HALF_OPERATORS__
 }
 
@@ -66,9 +67,10 @@ template <>
 _LIBCUDACXX_HIDE_FROM_ABI __half maximum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
 {
 #  if defined(__CUDA_NO_HALF_OPERATORS__)
-  return CUB_MAX(__half2float(a), __half2float(b));
+  return ::cuda::std::max(__half2float(a), __half2float(b));
 #  else // ^^^ __CUDA_NO_HALF_OPERATORS__ ^^^ / vvv !__CUDA_NO_HALF_OPERATORS__ vvv
-  NV_IF_TARGET(NV_PROVIDES_SM_53, (return CUB_MAX(a, b);), (return CUB_MAX(__half2float(a), __half2float(b));));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_53, (return ::cuda::std::max(a, b);), (return ::cuda::std::max(__half2float(a), __half2float(b));));
 #  endif // !__CUDA_NO_HALF_OPERATORS__
 }
 
