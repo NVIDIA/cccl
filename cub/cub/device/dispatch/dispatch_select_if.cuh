@@ -421,7 +421,7 @@ template <
   typename OffsetT,
   SelectImpl SelectionOpt,
   typename PolicyHub = detail::select::policy_hub<
-    detail::value_t<InputIteratorT>,
+    detail::iter_value_t<InputIteratorT>,
     detail::value_t<FlagsInputIteratorT>,
     // if/flagged/unique only have a single code path for different offset types, partition has different code paths
     ::cuda::std::conditional_t<SelectionOpt == SelectImpl::Partition, OffsetT, detail::select::per_partition_offset_t>,

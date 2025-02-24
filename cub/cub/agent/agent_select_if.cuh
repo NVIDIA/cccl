@@ -227,7 +227,7 @@ struct AgentSelectIf
   using MemoryOrderedTileStateT = tile_state_with_memory_order<ScanTileStateT, memory_order>;
 
   // The input value type
-  using InputT = value_t<InputIteratorT>;
+  using InputT = iter_value_t<InputIteratorT>;
 
   // The flag value type
   using FlagT = value_t<FlagsInputIteratorT>;

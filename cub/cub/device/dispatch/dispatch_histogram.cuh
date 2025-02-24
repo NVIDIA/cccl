@@ -569,7 +569,7 @@ public:
   //---------------------------------------------------------------------
 
   /// The sample value type of the input iterator
-  using SampleT = cub::detail::value_t<SampleIteratorT>;
+  using SampleT = cub::detail::iter_value_t<SampleIteratorT>;
 
   enum
   {
@@ -924,7 +924,7 @@ public:
     // Should we call DispatchHistogram<....., PolicyHub=void> in DeviceHistogram?
     static constexpr bool isEven = 0;
     using fallback_policy_hub    = detail::histogram::
-      policy_hub<detail::value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
+      policy_hub<detail::iter_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
 
     using MaxPolicyT =
       typename ::cuda::std::_If<::cuda::std::is_void_v<PolicyHub>, fallback_policy_hub, PolicyHub>::MaxPolicy;
@@ -1100,7 +1100,7 @@ public:
   {
     static constexpr bool isEven = 0;
     using fallback_policy_hub    = detail::histogram::
-      policy_hub<detail::value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
+      policy_hub<detail::iter_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
 
     using MaxPolicyT =
       typename ::cuda::std::_If<::cuda::std::is_void_v<PolicyHub>, fallback_policy_hub, PolicyHub>::MaxPolicy;

@@ -59,7 +59,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(It begin, int tile_size)
   {
     constexpr int prefetch_byte_stride = 128; // TODO(bgruber): should correspond to cache line size. Does this need to
                                               // be architecture dependent?
-    const int tile_size_bytes = tile_size * sizeof(value_t<It>);
+    const int tile_size_bytes = tile_size * sizeof(iter_value_t<It>);
     // prefetch does not stall and unrolling just generates a lot of unnecessary computations and predicate handling
 #pragma unroll 1
     for (int offset = threadIdx.x * prefetch_byte_stride; offset < tile_size_bytes;

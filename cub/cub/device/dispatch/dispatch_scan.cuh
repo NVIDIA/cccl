@@ -145,7 +145,7 @@ template <
   typename InitValueT,
   typename OffsetT,
   typename AccumT                 = ::cuda::std::__accumulator_t<ScanOpT,
-                                                                 cub::detail::value_t<InputIteratorT>,
+                                                                 cub::detail::iter_value_t<InputIteratorT>,
                                                                  ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
                                                                                   cub::detail::value_t<InputIteratorT>,
                                                                                   typename InitValueT::value_type>>,

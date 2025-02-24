@@ -133,7 +133,7 @@ struct AgentUniqueByKey
   //---------------------------------------------------------------------
 
   // The input key and value type
-  using KeyT   = cub::detail::value_t<KeyInputIteratorT>;
+  using KeyT   = cub::detail::iter_value_t<KeyInputIteratorT>;
   using ValueT = cub::detail::value_t<ValueInputIteratorT>;
 
   // Tile status descriptor interface type

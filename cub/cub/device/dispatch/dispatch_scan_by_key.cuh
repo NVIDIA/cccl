@@ -136,7 +136,7 @@ template <typename ChainedPolicyT,
           typename InitValueT,
           typename OffsetT,
           typename AccumT,
-          typename KeyT = cub::detail::value_t<KeysInputIteratorT>>
+          typename KeyT = cub::detail::iter_value_t<KeysInputIteratorT>>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanByKeyPolicyT::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanByKeyKernel(
     KeysInputIteratorT d_keys_in,

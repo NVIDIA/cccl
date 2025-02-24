@@ -87,7 +87,7 @@ struct agent_dummy_algorithm_t
   static constexpr auto items_per_thread = ActivePolicyT::ITEMS_PER_THREAD;
   static constexpr auto tile_size        = block_threads * items_per_thread;
 
-  using item_t = cub::detail::value_t<InputIteratorT>;
+  using item_t = cub::detail::iter_value_t<InputIteratorT>;
 
   using block_load_t = cub::BlockLoad<item_t, block_threads, items_per_thread, cub::BLOCK_LOAD_TRANSPOSE>;
 

@@ -64,8 +64,8 @@ template <typename MaxPolicyT,
           typename CompareOpT>
 struct DeviceMergeSortKernelSource
 {
-  using KeyT   = cub::detail::value_t<KeyIteratorT>;
-  using ValueT = cub::detail::value_t<ValueIteratorT>;
+  using KeyT   = cub::detail::iter_value_t<KeyIteratorT>;
+  using ValueT = cub::detail::iter_value_t<ValueIteratorT>;
 
   CUB_DEFINE_KERNEL_GETTER(
     MergeSortBlockSortKernel,
@@ -127,10 +127,10 @@ template <
        ValueIteratorT,
        OffsetT,
        CompareOpT,
-       cub::detail::value_t<KeyIteratorT>,
-       cub::detail::value_t<ValueIteratorT>>,
-  typename KeyT   = cub::detail::value_t<KeyIteratorT>,
-  typename ValueT = cub::detail::value_t<ValueIteratorT>>
+       cub::detail::iter_value_t<KeyIteratorT>,
+       cub::detail::iter_value_t<ValueIteratorT>>,
+  typename KeyT   = cub::detail::iter_value_t<KeyIteratorT>,
+  typename ValueT = cub::detail::iter_value_t<ValueIteratorT>>
 struct DispatchMergeSort
 {
   /// Whether or not there are values to be trucked along with keys

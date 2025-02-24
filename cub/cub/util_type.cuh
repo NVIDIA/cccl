@@ -49,6 +49,7 @@
 #include <thrust/iterator/discard_iterator.h>
 
 #include <cuda/std/cstdint>
+#include <cuda/std/iterator>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
@@ -70,12 +71,6 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_POP
 #endif // _CCCL_HAS_NVFP8()
 
-#if _CCCL_COMPILER(NVRTC)
-#  include <cuda/std/iterator>
-#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ // vvv !_CCCL_COMPILER(NVRTC) vvv
-#  include <iterator>
-#endif // _CCCL_COMPILER(NVRTC)
-
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -85,16 +80,9 @@ CUB_NAMESPACE_BEGIN
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 namespace detail
 {
-//! Alias to the given iterator's value_type.
-// Aliases to std::iterator_traits, since users can specialize this template to provide traits for their iterators. We
-// only defer to the libcu++ implementation for NVRTC.
-template <typename Iterator>
-using value_t =
-#  if _CCCL_COMPILER(NVRTC)
-  typename ::cuda::std::iterator_traits<Iterator>::value_type;
-#  else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ // vvv !_CCCL_COMPILER(NVRTC) vvv
-  typename std::iterator_traits<Iterator>::value_type;
-#  endif // !_CCCL_COMPILER(NVRTC)
+using ::cuda::std::iter_difference_t;
+using ::cuda::std::iter_reference_t;
+using ::cuda::std::iter_value_t;
 
 template <typename It, typename FallbackT, bool = ::cuda::std::is_void_v<::cuda::std::remove_pointer_t<It>>>
 struct non_void_value_impl
@@ -108,10 +96,10 @@ struct non_void_value_impl<It, FallbackT, false>
   // we consider thrust::discard_iterator's value_type as `void` as well, so users can switch from
   // cub::DiscardInputIterator to thrust::discard_iterator.
   using type =
-    ::cuda::std::_If<::cuda::std::is_void_v<value_t<It>>
-                       || ::cuda::std::is_same_v<value_t<It>, THRUST_NS_QUALIFIER::discard_iterator<>::value_type>,
+    ::cuda::std::_If<::cuda::std::is_void_v<iter_value_t<It>>
+                       || ::cuda::std::is_same_v<iter_value_t<It>, THRUST_NS_QUALIFIER::discard_iterator<>::value_type>,
                      FallbackT,
-                     value_t<It>>;
+                     iter_value_t<It>>;
 };
 
 /**

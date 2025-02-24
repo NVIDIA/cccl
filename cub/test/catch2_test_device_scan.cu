@@ -266,7 +266,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     // Run test
     c2h::device_vector<output_t> out_result(num_items);
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    using init_t  = cub::detail::value_t<decltype(unwrap_it(d_out_it))>;
+    using init_t  = cub::detail::iter_value_t<decltype(unwrap_it(d_out_it))>;
     device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_out_it), scan_op, init_t{}, num_items);
 
     // Verify result

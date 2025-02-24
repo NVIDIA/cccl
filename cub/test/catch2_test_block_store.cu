@@ -57,7 +57,7 @@ template <typename InputIteratorT,
           cub::BlockStoreAlgorithm StoreAlgorithm>
 __global__ void kernel(std::integral_constant<bool, true>, InputIteratorT input, OutputIteratorT output, int num_items)
 {
-  using input_t       = cub::detail::value_t<InputIteratorT>;
+  using input_t       = cub::detail::iter_value_t<InputIteratorT>;
   using block_store_t = cub::BlockStore<input_t, ThreadsInBlock, ItemsPerThread, StoreAlgorithm>;
   using storage_t     = typename block_store_t::TempStorage;
 

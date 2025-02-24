@@ -108,7 +108,7 @@ _CCCL_HOST_DEVICE constexpr int sum(int head, Ts... tail)
 template <typename... Its>
 _CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
 {
-  return (int{sizeof(value_t<Its>)} + ... + 0);
+  return (int{sizeof(iter_value_t<Its>)} + ... + 0);
 }
 
 constexpr int bulk_copy_alignment     = 128;

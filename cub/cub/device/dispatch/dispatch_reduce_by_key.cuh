@@ -226,7 +226,7 @@ template <typename KeysInputIteratorT,
           typename ReductionOpT,
           typename OffsetT,
           typename AccumT    = ::cuda::std::__accumulator_t<ReductionOpT,
-                                                            cub::detail::value_t<ValuesInputIteratorT>,
+                                                            cub::detail::iter_value_t<ValuesInputIteratorT>,
                                                             cub::detail::value_t<ValuesInputIteratorT>>,
           typename PolicyHub = detail::reduce_by_key::policy_hub<
             ReductionOpT,

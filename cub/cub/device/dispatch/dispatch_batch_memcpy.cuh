@@ -56,6 +56,7 @@
 
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 
 #include <cstdint>
@@ -110,14 +111,15 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT::BLO
 {
   using StatusWord    = typename TileT::StatusWord;
   using ActivePolicyT = typename ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT;
-  using BufferSizeT   = value_t<BufferSizeIteratorT>;
+  using BufferSizeT   = iter_value_t<BufferSizeIteratorT>;
   /// Internal load/store type. For byte-wise memcpy, a single-byte type
-  using AliasT = typename ::cuda::std::conditional_t<MemcpyOpt == CopyAlg::Memcpy,
-                                                     std::iterator_traits<char*>,
-                                                     std::iterator_traits<value_t<InputBufferIt>>>::value_type;
+  using AliasT =
+    typename ::cuda::std::conditional_t<MemcpyOpt == CopyAlg::Memcpy,
+                                        ::cuda::std::iterator_traits<char*>,
+                                        ::cuda::std::iterator_traits<iter_value_t<InputBufferIt>>>::value_type;
   /// Types of the input and output buffers
-  using InputBufferT  = value_t<InputBufferIt>;
-  using OutputBufferT = value_t<OutputBufferIt>;
+  using InputBufferT  = iter_value_t<InputBufferIt>;
+  using OutputBufferT = iter_value_t<OutputBufferIt>;
 
   constexpr uint32_t BLOCK_THREADS    = ActivePolicyT::BLOCK_THREADS;
   constexpr uint32_t ITEMS_PER_THREAD = ActivePolicyT::BYTES_PER_THREAD;
@@ -240,7 +242,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentSmallBufferPolicyT::BLO
     BLevBlockOffsetTileState blev_block_scan_state)
 {
   // Internal type used for storing a buffer's size
-  using BufferSizeT = value_t<BufferSizeIteratorT>;
+  using BufferSizeT = iter_value_t<BufferSizeIteratorT>;
 
   // Alias the correct tuning policy for the current compilation pass' architecture
   using AgentBatchMemcpyPolicyT = typename ChainedPolicyT::ActivePolicy::AgentSmallBufferPolicyT;
@@ -313,7 +315,7 @@ struct DispatchBatchMemcpy
   using BufferTileOffsetScanStateT = typename cub::ScanTileState<BlockOffsetT>;
 
   // Internal type used to keep track of a buffer's size
-  using BufferSizeT = cub::detail::value_t<BufferSizeIteratorT>;
+  using BufferSizeT = cub::detail::iter_value_t<BufferSizeIteratorT>;
 
   //------------------------------------------------------------------------------
   // Member Variables
@@ -397,7 +399,7 @@ struct DispatchBatchMemcpy
     BlockOffsetT num_tiles = ::cuda::ceil_div(num_buffers, TILE_SIZE);
 
     using BlevBufferSrcsOutT =
-      ::cuda::std::_If<MemcpyOpt == CopyAlg::Memcpy, const void*, cub::detail::value_t<InputBufferIt>>;
+      ::cuda::std::_If<MemcpyOpt == CopyAlg::Memcpy, const void*, cub::detail::iter_value_t<InputBufferIt>>;
     using BlevBufferDstOutT =
       ::cuda::std::_If<MemcpyOpt == CopyAlg::Memcpy, void*, cub::detail::value_t<OutputBufferIt>>;
     using BlevBufferSrcsOutItT        = BlevBufferSrcsOutT*;

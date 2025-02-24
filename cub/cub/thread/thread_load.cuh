@@ -106,7 +106,7 @@ enum CacheLoadModifier
  *   <b>[inferred]</b> The input's iterator type \iterator
  */
 template <CacheLoadModifier MODIFIER, typename RandomAccessIterator>
-_CCCL_DEVICE _CCCL_FORCEINLINE cub::detail::value_t<RandomAccessIterator> ThreadLoad(RandomAccessIterator itr);
+_CCCL_DEVICE _CCCL_FORCEINLINE cub::detail::iter_value_t<RandomAccessIterator> ThreadLoad(RandomAccessIterator itr);
 
 //@}  end member group
 

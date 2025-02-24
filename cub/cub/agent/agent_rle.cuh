@@ -173,7 +173,7 @@ struct AgentRle
   //---------------------------------------------------------------------
 
   /// The input value type
-  using T = cub::detail::value_t<InputIteratorT>;
+  using T = cub::detail::iter_value_t<InputIteratorT>;
 
   /// The lengths output value type
   using LengthT = cub::detail::non_void_value_t<LengthsOutputIteratorT, OffsetT>;

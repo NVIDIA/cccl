@@ -50,7 +50,7 @@ namespace adjacent_difference
 template <typename InputIteratorT, bool MayAlias>
 struct policy_hub
 {
-  using ValueT = typename std::iterator_traits<InputIteratorT>::value_type;
+  using ValueT = iter_value_t<InputIteratorT>;
 
   struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
   {

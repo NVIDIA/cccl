@@ -557,16 +557,16 @@ private:
   /// Internal load/store type. For byte-wise memcpy, a single-byte type
   using AliasT =
     typename ::cuda::std::conditional<IsMemcpy,
-                                      std::iterator_traits<char*>,
-                                      std::iterator_traits<cub::detail::value_t<InputBufferIt>>>::type::value_type;
+                                      ::cuda::std::iterator_traits<char*>,
+                                      ::cuda::std::iterator_traits<iter_value_t<InputBufferIt>>>::type::value_type;
 
   /// Types of the input and output buffers
-  using InputBufferT  = cub::detail::value_t<InputBufferIt>;
-  using OutputBufferT = cub::detail::value_t<OutputBufferIt>;
+  using InputBufferT  = value_t<InputBufferIt>;
+  using OutputBufferT = value_t<OutputBufferIt>;
 
   /// Type that has to be sufficiently large to hold any of the buffers' sizes.
   /// The BufferSizeIteratorT's value type must be convertible to this type.
-  using BufferSizeT = cub::detail::value_t<BufferSizeIteratorT>;
+  using BufferSizeT = value_t<BufferSizeIteratorT>;
 
   /// Type used to index into the tile of buffers that this thread block is assigned to.
   using BlockBufferOffsetT = uint16_t;

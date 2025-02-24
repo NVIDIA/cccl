@@ -44,7 +44,7 @@ template <typename InputIteratorT,
 __global__ void
 kernel(ActionT action, InputIteratorT input, OutputIteratorT output, int begin_bit, int end_bit, bool striped)
 {
-  using key_t = cub::detail::value_t<InputIteratorT>;
+  using key_t = cub::detail::iter_value_t<InputIteratorT>;
   using block_radix_sort_t =
     cub::BlockRadixSort<key_t, ThreadsInBlock, ItemsPerThread, cub::NullType, RadixBits, Memoize, Algorithm, ShmemConfig>;
 

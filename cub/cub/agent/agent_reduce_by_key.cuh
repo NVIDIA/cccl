@@ -171,7 +171,7 @@ struct AgentReduceByKey
   //---------------------------------------------------------------------
 
   // The input keys type
-  using KeyInputT = value_t<KeysInputIteratorT>;
+  using KeyInputT = iter_value_t<KeysInputIteratorT>;
 
   // The output keys type
   using KeyOutputT = non_void_value_t<UniqueOutputIteratorT, KeyInputT>;
