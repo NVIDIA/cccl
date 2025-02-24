@@ -2,7 +2,6 @@
 
 #include <thrust/detail/type_traits.h>
 #include <thrust/extrema.h>
-#include <thrust/limits.h>
 
 #include <iostream>
 #include <string>

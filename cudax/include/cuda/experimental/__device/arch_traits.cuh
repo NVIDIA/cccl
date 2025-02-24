@@ -336,7 +336,30 @@ inline constexpr arch_traits_t sm_900_traits = []() constexpr {
   return __traits;
 }();
 
-inline constexpr unsigned int __highest_known_arch = 900;
+inline constexpr arch_traits_t sm_1000_traits = []() constexpr {
+  arch_traits_t __traits{};
+  __traits.compute_capability_major             = 10;
+  __traits.compute_capability_minor             = 0;
+  __traits.compute_capability                   = 1000;
+  __traits.max_shared_memory_per_multiprocessor = 228 * 1024;
+  __traits.max_blocks_per_multiprocessor        = 32;
+  __traits.max_threads_per_multiprocessor       = 2048;
+  __traits.max_warps_per_multiprocessor =
+    __traits.max_threads_per_multiprocessor / detail::arch_common_traits::warp_size;
+  __traits.reserved_shared_memory_per_block = 1024;
+  __traits.max_shared_memory_per_block_optin =
+    __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
+
+  __traits.cluster_supported  = true;
+  __traits.redux_intrinisic   = true;
+  __traits.elect_intrinsic    = true;
+  __traits.cp_async_supported = true;
+  __traits.tma_supported      = true;
+
+  return __traits;
+}();
+
+inline constexpr unsigned int __highest_known_arch = 1000;
 
 } // namespace detail
 
@@ -366,6 +389,8 @@ _CCCL_HOST_DEVICE inline constexpr arch_traits_t arch_traits(unsigned int __sm_v
       return detail::sm_890_traits;
     case 900:
       return detail::sm_900_traits;
+    case 1000:
+      return detail::sm_1000_traits;
     default:
       __throw_cuda_error(cudaErrorInvalidValue, "Traits requested for an unknown architecture");
       break;

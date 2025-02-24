@@ -49,6 +49,7 @@
 #include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
 #include <iterator>
@@ -392,7 +393,7 @@ public:
   //! @rst
   //! Computes a device-wide segmented minimum using the less-than (``<``) operator.
   //!
-  //! - Uses ``std::numeric_limits<T>::max()`` as the initial value of the reduction for each segment.
+  //! - Uses ``::cuda::std::numeric_limits<T>::max()`` as the initial value of the reduction for each segment.
   //! - When input a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased for both
   //!   the ``d_begin_offsets`` and ``d_end_offsets`` parameters (where the latter is
@@ -508,10 +509,7 @@ public:
       d_begin_offsets,
       d_end_offsets,
       ::cuda::minimum<>{},
-      Traits<InputT>::Max(), // replace with
-                             // std::numeric_limits<T>::max()
-                             // when C++11 support is
-                             // more prevalent
+      ::cuda::std::numeric_limits<InputT>::max(),
       stream);
   }
 
@@ -524,7 +522,7 @@ public:
   //!
   //!   - The minimum of the *i*\ :sup:`th` segment is written to
   //!     ``d_out[i].value`` and its offset in that segment is written to ``d_out[i].key``.
-  //!   - The ``{1, std::numeric_limits<T>::max()}`` tuple is produced for zero-length inputs
+  //!   - The ``{1, ::cuda::std::numeric_limits<T>::max()}`` tuple is produced for zero-length inputs
   //!
   //! - When input a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased for both
@@ -638,8 +636,7 @@ public:
     ArgIndexInputIteratorT d_indexed_in(d_in);
 
     // Initial value
-    // TODO Address https://github.com/NVIDIA/cub/issues/651
-    InitT initial_value{AccumT(1, Traits<InputValueT>::Max())};
+    InitT initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::max())};
 
     using integral_offset_check = ::cuda::std::is_integral<OffsetT>;
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
@@ -668,7 +665,7 @@ public:
   //! @rst
   //! Computes a device-wide segmented maximum using the greater-than (``>``) operator.
   //!
-  //! - Uses ``std::numeric_limits<T>::lowest()`` as the initial value of the reduction.
+  //! - Uses ``::cuda::std::numeric_limits<T>::lowest()`` as the initial value of the reduction.
   //! - When input a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
   //!   for both the ``d_begin_offsets`` and ``d_end_offsets`` parameters (where
@@ -773,10 +770,7 @@ public:
       d_begin_offsets,
       d_end_offsets,
       ::cuda::maximum<>{},
-      Traits<InputT>::Lowest(), // replace with
-                                // std::numeric_limits<T>::lowest()
-                                // when C++11 support is
-                                // more prevalent
+      ::cuda::std::numeric_limits<InputT>::lowest(),
       stream);
   }
 
@@ -789,7 +783,7 @@ public:
   //!
   //!   - The maximum of the *i*\ :sup:`th` segment is written to
   //!     ``d_out[i].value`` and its offset in that segment is written to ``d_out[i].key``.
-  //!   - The ``{1, std::numeric_limits<T>::lowest()}`` tuple is produced for zero-length inputs
+  //!   - The ``{1, ::cuda::std::numeric_limits<T>::lowest()}`` tuple is produced for zero-length inputs
   //!
   //! - When input a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
@@ -906,8 +900,7 @@ public:
     ArgIndexInputIteratorT d_indexed_in(d_in);
 
     // Initial value
-    // TODO Address https://github.com/NVIDIA/cub/issues/651
-    InitT initial_value{AccumT(1, Traits<InputValueT>::Lowest())};
+    InitT initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::lowest())};
 
     using integral_offset_check = ::cuda::std::is_integral<OffsetT>;
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");

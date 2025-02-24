@@ -64,7 +64,7 @@ __convert_to_integral(_Fp __val)
   return __val;
 }
 
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
 _LIBCUDACXX_HIDE_FROM_ABI constexpr __int128_t __convert_to_integral(__int128_t __val)
 {
   return __val;
@@ -74,7 +74,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __uint128_t __convert_to_integral(__uint128_
 {
   return __val;
 }
-#endif
+#endif // _CCCL_HAS_INT128()
 
 template <class _Tp, bool = is_enum<_Tp>::value>
 struct __sfinae_underlying_type

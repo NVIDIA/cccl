@@ -49,6 +49,10 @@ int main(int argc, char* argv[])
     return returnCode;
   }
 
-  cudaSetDevice(device_guard(device_id));
+  if (cudaSuccess != cudaSetDevice(device_guard(device_id)))
+  {
+    std::cerr << "Can't set device." << std::endl;
+    std::exit(-1);
+  };
   return session.run(argc, argv);
 }

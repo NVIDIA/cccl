@@ -523,7 +523,7 @@ template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<unsigned long long> : public __scalar_hash<unsigned long long>
 {};
 
-#  ifndef _LIBCUDACXX_HAS_NO_INT128
+#  if _CCCL_HAS_INT128()
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__int128_t> : public __scalar_hash<__int128_t>
@@ -533,7 +533,7 @@ template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__uint128_t> : public __scalar_hash<__uint128_t>
 {};
 
-#  endif
+#  endif // _CCCL_HAS_INT128()
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<float> : public __scalar_hash<float>

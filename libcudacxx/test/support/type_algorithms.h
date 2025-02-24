@@ -113,10 +113,10 @@ using signed_integer_types =
             int,
             long,
             long long
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
             ,
             __int128_t
-#endif // !_LIBCUDACXX_HAS_NO_INT128
+#endif // _CCCL_HAS_INT128()
             >;
 
 using unsigned_integer_types =
@@ -125,10 +125,10 @@ using unsigned_integer_types =
             unsigned int,
             unsigned long,
             unsigned long long
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
             ,
             __uint128_t
-#endif // !_LIBCUDACXX_HAS_NO_INT128
+#endif // _CCCL_HAS_INT128()
             >;
 
 using integer_types = concatenate_t<character_types, signed_integer_types, unsigned_integer_types>;

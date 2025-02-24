@@ -51,8 +51,9 @@
 
 #include <thrust/iterator/tabulate_output_iterator.h>
 
+#include <cuda/std/limits>
+
 #include <iterator>
-#include <limits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -335,7 +336,7 @@ struct DeviceReduce
   //! @rst
   //! Computes a device-wide minimum using the less-than (``<``) operator.
   //!
-  //! - Uses ``std::numeric_limits<T>::max()`` as the initial value of the reduction.
+  //! - Uses ``::cuda::std::numeric_limits<T>::max()`` as the initial value of the reduction.
   //! - Does not support ``<`` operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
   //!   (e.g., addition of floating point types) on the same GPU device.
@@ -434,10 +435,7 @@ struct DeviceReduce
       d_out,
       static_cast<OffsetT>(num_items),
       ::cuda::minimum<>{},
-      // replace with
-      // std::numeric_limits<T>::max() when
-      // C++11 support is more prevalent
-      Traits<InitT>::Max(),
+      ::cuda::std::numeric_limits<InitT>::max(),
       stream);
   }
 
@@ -586,7 +584,7 @@ struct DeviceReduce
   //!   (assuming the value type of ``d_in`` is ``T``)
   //!
   //!   - The minimum is written to ``d_out.value`` and its offset in the input array is written to ``d_out.key``.
-  //!   - The ``{1, std::numeric_limits<T>::max()}`` tuple is produced for zero-length inputs
+  //!   - The ``{1, ::cuda::std::numeric_limits<T>::max()}`` tuple is produced for zero-length inputs
   //!
   //! - Does not support ``<`` operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
@@ -693,8 +691,7 @@ struct DeviceReduce
     ArgIndexInputIteratorT d_indexed_in(d_in);
 
     // Initial value
-    // TODO Address https://github.com/NVIDIA/cub/issues/651
-    InitT initial_value{AccumT(1, Traits<InputValueT>::Max())};
+    InitT initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::max())};
 
     return DispatchReduce<ArgIndexInputIteratorT, OutputIteratorT, OffsetT, cub::ArgMin, InitT, AccumT>::Dispatch(
       d_temp_storage, temp_storage_bytes, d_indexed_in, d_out, num_items, cub::ArgMin(), initial_value, stream);
@@ -703,7 +700,7 @@ struct DeviceReduce
   //! @rst
   //! Computes a device-wide maximum using the greater-than (``>``) operator.
   //!
-  //! - Uses ``std::numeric_limits<T>::lowest()`` as the initial value of the reduction.
+  //! - Uses ``::cuda::std::numeric_limits<T>::lowest()`` as the initial value of the reduction.
   //! - Does not support ``>`` operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
   //!   (e.g., addition of floating point types) on the same GPU device.
@@ -799,11 +796,7 @@ struct DeviceReduce
       d_out,
       static_cast<OffsetT>(num_items),
       ::cuda::maximum<>{},
-      // replace with
-      // std::numeric_limits<T>::lowest()
-      // when C++11 support is more
-      // prevalent
-      Traits<InitT>::Lowest(),
+      ::cuda::std::numeric_limits<InitT>::lowest(),
       stream);
   }
 
@@ -954,7 +947,7 @@ struct DeviceReduce
   //!
   //!   - The maximum is written to ``d_out.value`` and its offset in the input
   //!     array is written to ``d_out.key``.
-  //!   - The ``{1, std::numeric_limits<T>::lowest()}`` tuple is produced for zero-length inputs
+  //!   - The ``{1, ::cuda::std::numeric_limits<T>::lowest()}`` tuple is produced for zero-length inputs
   //!
   //! - Does not support ``>`` operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
@@ -1063,8 +1056,7 @@ struct DeviceReduce
     ArgIndexInputIteratorT d_indexed_in(d_in);
 
     // Initial value
-    // TODO Address https://github.com/NVIDIA/cub/issues/651
-    InitT initial_value{AccumT(1, Traits<InputValueT>::Lowest())};
+    InitT initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::lowest())};
 
     return DispatchReduce<ArgIndexInputIteratorT, OutputIteratorT, OffsetT, cub::ArgMax, InitT, AccumT>::Dispatch(
       d_temp_storage, temp_storage_bytes, d_indexed_in, d_out, num_items, cub::ArgMax(), initial_value, stream);
