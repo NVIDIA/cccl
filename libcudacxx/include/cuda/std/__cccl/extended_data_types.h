@@ -26,13 +26,19 @@
 #include <cuda/std/__cccl/os.h>
 #include <cuda/std/__cccl/preprocessor.h>
 
-#define _CCCL_HAS_INT128()   0
-#define _CCCL_HAS_NVFP4()    0
-#define _CCCL_HAS_NVFP6()    0
-#define _CCCL_HAS_NVFP8()    0
-#define _CCCL_HAS_NVFP16()   0
-#define _CCCL_HAS_NVBF16()   0
-#define _CCCL_HAS_FLOAT128() 0
+#define _CCCL_HAS_INT128()     0
+#define _CCCL_HAS_NVFP4()      0
+#define _CCCL_HAS_NVFP4_E2M1() _CCCL_HAS_NVFP4()
+#define _CCCL_HAS_NVFP6()      0
+#define _CCCL_HAS_NVFP6_E2M3() _CCCL_HAS_NVFP6()
+#define _CCCL_HAS_NVFP6_E3M2() _CCCL_HAS_NVFP6()
+#define _CCCL_HAS_NVFP8()      0
+#define _CCCL_HAS_NVFP8_E4M3() _CCCL_HAS_NVFP8()
+#define _CCCL_HAS_NVFP8_E5M2() _CCCL_HAS_NVFP8()
+#define _CCCL_HAS_NVFP8_E8M0() (_CCCL_HAS_NVFP8() && _CCCL_CUDACC_AT_LEAST(12, 8))
+#define _CCCL_HAS_NVFP16()     0
+#define _CCCL_HAS_NVBF16()     0
+#define _CCCL_HAS_FLOAT128()   0
 
 #if !defined(CCCL_DISABLE_INT128_SUPPORT) && _CCCL_OS(LINUX) \
   && ((_CCCL_COMPILER(NVRTC) && defined(__CUDACC_RTC_INT128__)) || defined(__SIZEOF_INT128__))

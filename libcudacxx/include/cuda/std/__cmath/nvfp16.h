@@ -23,8 +23,7 @@
 
 #if defined(_LIBCUDACXX_HAS_NVFP16)
 
-#  include <cuda_fp16.h>
-
+#  include <cuda/std/__cmath/fp_utils.h>
 #  include <cuda/std/cstdint>
 
 #  include <nv/target>
@@ -39,7 +38,7 @@ _LIBCUDACXX_HIDE_FROM_ABI __half sin(__half __v)
                       __vf                  = ::sinf(__vf);
                       __half_raw __ret_repr = ::__float2half_rn(__vf);
 
-                      uint16_t __repr = __half_raw(__v).x;
+                      uint16_t __repr = _CUDA_VSTD::__cccl_fp_get_storage(__v);
                       switch (__repr)
                       {
                         case 12979:
@@ -75,7 +74,7 @@ _LIBCUDACXX_HIDE_FROM_ABI  __half cos(__half __v)
       __vf                  = ::cosf(__vf);
       __half_raw __ret_repr = ::__float2half_rn(__vf);
 
-      uint16_t __repr = __half_raw(__v).x;
+      uint16_t __repr = _CUDA_VSTD::__cccl_fp_get_storage(__v);
       switch (__repr)
       {
         case 11132:
@@ -105,32 +104,6 @@ _LIBCUDACXX_HIDE_FROM_ABI __half hypot(__half __x, __half __y)
 _LIBCUDACXX_HIDE_FROM_ABI __half atan2(__half __x, __half __y)
 {
   return __float2half(::atan2f(__half2float(__x), __half2float(__y)));
-}
-
-// floating point helper
-_LIBCUDACXX_HIDE_FROM_ABI __half __constexpr_copysign(__half __x, __half __y) noexcept
-{
-  return __float2half(::copysignf(__half2float(__x), __half2float(__y)));
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI __half copysign(__half __x, __half __y)
-{
-  return _CUDA_VSTD::__constexpr_copysign(__x, __y);
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI __half __constexpr_fabs(__half __x) noexcept
-{
-  return ::__habs(__x);
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI __half fabs(__half __x)
-{
-  return _CUDA_VSTD::__constexpr_fabs(__x);
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI __half abs(__half __x)
-{
-  return _CUDA_VSTD::__constexpr_fabs(__x);
 }
 
 _LIBCUDACXX_HIDE_FROM_ABI __half __constexpr_fmax(__half __x, __half __y) noexcept
