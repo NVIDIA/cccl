@@ -32,29 +32,28 @@ CUB_NAMESPACE_BEGIN
 namespace detail::unique_by_key
 {
 
-template <typename... Ts>
 struct VSMemHelper
 {
-  template <typename ActivePolicyT>
+  template <typename ActivePolicyT, typename... Ts>
   using VSMemHelperDefaultFallbackPolicyT =
     vsmem_helper_default_fallback_policy_t<ActivePolicyT, detail::unique_by_key::AgentUniqueByKey, Ts...>;
 
-  template <typename ActivePolicyT>
+  template <typename ActivePolicyT, typename... Ts>
   _CCCL_HOST_DEVICE static constexpr int BlockThreads(ActivePolicyT /*policy*/)
   {
-    return VSMemHelperDefaultFallbackPolicyT<ActivePolicyT>::agent_policy_t::BLOCK_THREADS;
+    return VSMemHelperDefaultFallbackPolicyT<ActivePolicyT, Ts...>::agent_policy_t::BLOCK_THREADS;
   }
 
-  template <typename ActivePolicyT>
+  template <typename ActivePolicyT, typename... Ts>
   _CCCL_HOST_DEVICE static constexpr int ItemsPerThread(ActivePolicyT /*policy*/)
   {
-    return VSMemHelperDefaultFallbackPolicyT<ActivePolicyT>::agent_policy_t::ITEMS_PER_THREAD;
+    return VSMemHelperDefaultFallbackPolicyT<ActivePolicyT, Ts...>::agent_policy_t::ITEMS_PER_THREAD;
   }
 
-  template <typename ActivePolicyT>
+  template <typename ActivePolicyT, typename... Ts>
   _CCCL_HOST_DEVICE static constexpr ::cuda::std::size_t VSMemPerBlock(ActivePolicyT /*policy*/)
   {
-    return VSMemHelperDefaultFallbackPolicyT<ActivePolicyT>::vsmem_per_block;
+    return VSMemHelperDefaultFallbackPolicyT<ActivePolicyT, Ts...>::vsmem_per_block;
   }
 };
 
@@ -117,20 +116,25 @@ struct VSMemHelper
  * @param[in] vsmem
  *   Memory to support virtual shared memory
  */
-template <
-  typename ChainedPolicyT,
-  typename KeyInputIteratorT,
-  typename ValueInputIteratorT,
-  typename KeyOutputIteratorT,
-  typename ValueOutputIteratorT,
-  typename NumSelectedIteratorT,
-  typename ScanTileStateT,
-  typename EqualityOpT,
-  typename OffsetT,
-  typename VSMemHelperT =
-    VSMemHelper<KeyInputIteratorT, ValueInputIteratorT, KeyOutputIteratorT, ValueOutputIteratorT, EqualityOpT, OffsetT>>
-__launch_bounds__(int(VSMemHelperT::template VSMemHelperDefaultFallbackPolicyT<
-                      typename ChainedPolicyT::ActivePolicy::UniqueByKeyPolicyT>::agent_policy_t::BLOCK_THREADS))
+template <typename ChainedPolicyT,
+          typename KeyInputIteratorT,
+          typename ValueInputIteratorT,
+          typename KeyOutputIteratorT,
+          typename ValueOutputIteratorT,
+          typename NumSelectedIteratorT,
+          typename ScanTileStateT,
+          typename EqualityOpT,
+          typename OffsetT,
+          typename VSMemHelperT = VSMemHelper>
+__launch_bounds__(int(
+  VSMemHelperT::template VSMemHelperDefaultFallbackPolicyT<
+    typename ChainedPolicyT::ActivePolicy::UniqueByKeyPolicyT,
+    KeyInputIteratorT,
+    ValueInputIteratorT,
+    KeyOutputIteratorT,
+    ValueOutputIteratorT,
+    EqualityOpT,
+    OffsetT>::agent_policy_t::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceUniqueByKeySweepKernel(
     KeyInputIteratorT d_keys_in,
     ValueInputIteratorT d_values_in,
@@ -144,7 +148,13 @@ __launch_bounds__(int(VSMemHelperT::template VSMemHelperDefaultFallbackPolicyT<
     vsmem_t vsmem)
 {
   using VsmemHelperT = typename VSMemHelperT::template VSMemHelperDefaultFallbackPolicyT<
-    typename ChainedPolicyT::ActivePolicy::UniqueByKeyPolicyT>;
+    typename ChainedPolicyT::ActivePolicy::UniqueByKeyPolicyT,
+    KeyInputIteratorT,
+    ValueInputIteratorT,
+    KeyOutputIteratorT,
+    ValueOutputIteratorT,
+    EqualityOpT,
+    OffsetT>;
 
   using AgentUniqueByKeyPolicyT = typename VsmemHelperT::agent_policy_t;
 

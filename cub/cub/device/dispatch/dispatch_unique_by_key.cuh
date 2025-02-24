@@ -117,29 +117,27 @@ struct DeviceUniqueByKeyKernelSource
  * @tparam OffsetT
  *   Signed integer type for global offsets
  */
-template <
-  typename KeyInputIteratorT,
-  typename ValueInputIteratorT,
-  typename KeyOutputIteratorT,
-  typename ValueOutputIteratorT,
-  typename NumSelectedIteratorT,
-  typename EqualityOpT,
-  typename OffsetT,
-  typename PolicyHub =
-    detail::unique_by_key::policy_hub<detail::value_t<KeyInputIteratorT>, detail::value_t<ValueInputIteratorT>>,
-  typename KernelSource = detail::unique_by_key::DeviceUniqueByKeyKernelSource<
-    typename PolicyHub::MaxPolicy,
-    KeyInputIteratorT,
-    ValueInputIteratorT,
-    KeyOutputIteratorT,
-    ValueOutputIteratorT,
-    NumSelectedIteratorT,
-    ScanTileState<OffsetT>,
-    EqualityOpT,
-    OffsetT>,
-  typename KernelLauncherFactory = detail::TripleChevronFactory,
-  typename VSMemHelperT          = detail::unique_by_key::
-    VSMemHelper<KeyInputIteratorT, ValueInputIteratorT, KeyOutputIteratorT, ValueOutputIteratorT, EqualityOpT, OffsetT>>
+template <typename KeyInputIteratorT,
+          typename ValueInputIteratorT,
+          typename KeyOutputIteratorT,
+          typename ValueOutputIteratorT,
+          typename NumSelectedIteratorT,
+          typename EqualityOpT,
+          typename OffsetT,
+          typename PolicyHub =
+            detail::unique_by_key::policy_hub<detail::value_t<KeyInputIteratorT>, detail::value_t<ValueInputIteratorT>>,
+          typename KernelSource = detail::unique_by_key::DeviceUniqueByKeyKernelSource<
+            typename PolicyHub::MaxPolicy,
+            KeyInputIteratorT,
+            ValueInputIteratorT,
+            KeyOutputIteratorT,
+            ValueOutputIteratorT,
+            NumSelectedIteratorT,
+            ScanTileState<OffsetT>,
+            EqualityOpT,
+            OffsetT>,
+          typename KernelLauncherFactory = detail::TripleChevronFactory,
+          typename VSMemHelperT          = detail::unique_by_key::VSMemHelper>
 struct DispatchUniqueByKey
 {
   /******************************************************************************
@@ -273,11 +271,34 @@ struct DispatchUniqueByKey
       }
 
       // Number of input tiles
-      const auto block_threads    = VSMemHelperT::BlockThreads(policy.UniqueByKey());
-      const auto items_per_thread = VSMemHelperT::ItemsPerThread(policy.UniqueByKey());
-      int tile_size               = block_threads * items_per_thread;
-      int num_tiles               = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
-      const auto vsmem_size       = num_tiles * VSMemHelperT::VSMemPerBlock(policy.UniqueByKey());
+      const auto block_threads = VSMemHelperT::template BlockThreads<
+        typename ActivePolicyT::UniqueByKeyPolicyT,
+        KeyInputIteratorT,
+        ValueInputIteratorT,
+        KeyOutputIteratorT,
+        ValueOutputIteratorT,
+        EqualityOpT,
+        OffsetT>(policy.UniqueByKey());
+      const auto items_per_thread = VSMemHelperT::template ItemsPerThread<
+        typename ActivePolicyT::UniqueByKeyPolicyT,
+        KeyInputIteratorT,
+        ValueInputIteratorT,
+        KeyOutputIteratorT,
+        ValueOutputIteratorT,
+        EqualityOpT,
+        OffsetT>(policy.UniqueByKey());
+      int tile_size = block_threads * items_per_thread;
+      int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
+      const auto vsmem_size =
+        num_tiles
+        * VSMemHelperT::template VSMemPerBlock<
+          typename ActivePolicyT::UniqueByKeyPolicyT,
+          KeyInputIteratorT,
+          ValueInputIteratorT,
+          KeyOutputIteratorT,
+          ValueOutputIteratorT,
+          EqualityOpT,
+          OffsetT>(policy.UniqueByKey());
 
       // Specify temporary storage allocation requirements
       size_t allocation_sizes[2] = {0, vsmem_size};
