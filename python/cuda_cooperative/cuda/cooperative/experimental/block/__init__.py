@@ -9,13 +9,17 @@ from cuda.cooperative.experimental.block._block_radix_sort import (
     radix_sort_keys_descending,
 )
 from cuda.cooperative.experimental.block._block_reduce import reduce, sum
-from cuda.cooperative.experimental.block._block_scan import exclusive_sum
+from cuda.cooperative.experimental.block._block_scan import (
+    exclusive_sum,
+    inclusive_sum,
+)
 
 __all__ = [
     "merge_sort_keys",
     "reduce",
     "sum",
     "exclusive_sum",
+    "inclusive_sum",
     "radix_sort_keys",
     "radix_sort_keys_descending",
     "load",
