@@ -698,6 +698,7 @@ public:
         kernel_params.sharedMemBytes = 0;
 
         // This new node will depend on the previous in the chain (allocation)
+        ::std::lock_guard<::std::mutex> lock(*t.get_ctx_graph_mutex());
         cuda_safe_call(cudaGraphAddKernelNode(&t.get_node(), t.get_ctx_graph(), NULL, 0, &kernel_params));
       }
 
@@ -760,6 +761,7 @@ public:
     else
     {
       auto g = t.get_ctx_graph();
+      ::std::lock_guard<::std::mutex> lock(*t.get_ctx_graph_mutex());
 
       _CCCL_ASSERT(sub_exec_place.is_device(), "Invalid execution place");
       int dev_id = device_ordinal(sub_exec_place.affine_data_place());
@@ -898,6 +900,7 @@ public:
       // This task corresponds to a single graph node, so we set that
       // node instead of creating an child graph. Input and output
       // dependencies will be filled later.
+      ::std::lock_guard<::std::mutex> lock(*t.get_ctx_graph_mutex());
       cuda_safe_call(cudaGraphAddKernelNode(&t.get_node(), t.get_ctx_graph(), nullptr, 0, &kernel_params));
       // fprintf(stderr, "KERNEL NODE => graph %p, gridDim %d blockDim %d (n %ld)\n", t.get_graph(),
       // kernel_params.gridDim.x, kernel_params.blockDim.x, n);
