@@ -29,6 +29,7 @@ PTX Instructions
    instructions/multimem_red
    instructions/multimem_st
    instructions/red_async
+   instructions/shfl_sync
    instructions/st_async
    instructions/st_bulk
    instructions/tcgen05_alloc
@@ -251,8 +252,8 @@ Instructions by section
      - No
    * - `shfl <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-shfl-deprecated>`__
      - No
-   * - `shfl.s <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-shfl-sync>`__
-     - No
+   * - `shfl.sync <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-shfl-sync>`__
+     - Yes, CCCL 2.9.0 / CUDA 12.9
    * - `prmt <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-prmt>`__
      - No
    * - `ld <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-ld>`__

@@ -66,7 +66,7 @@ static std::string get_device_for_kernel_name()
 }
 
 CUresult cccl_device_for_build(
-  cccl_device_for_build_result_t* build,
+  cccl_device_for_build_result_t* build_ptr,
   cccl_iterator_t d_data,
   cccl_op_t op,
   int cc_major,
@@ -74,7 +74,7 @@ CUresult cccl_device_for_build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path) noexcept
+  const char* ctk_path)
 {
   CUresult error = CUDA_SUCCESS;
 
@@ -124,12 +124,12 @@ CUresult cccl_device_for_build(
       result = cl.finalize_program(num_lto_args, lopts);
     }
 
-    cuLibraryLoadData(&build->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-    check(cuLibraryGetKernel(&build->static_kernel, build->library, lowered_name.c_str()));
+    cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+    check(cuLibraryGetKernel(&build_ptr->static_kernel, build_ptr->library, lowered_name.c_str()));
 
-    build->cc         = cc;
-    build->cubin      = (void*) result.data.release();
-    build->cubin_size = result.size;
+    build_ptr->cc         = cc;
+    build_ptr->cubin      = (void*) result.data.release();
+    build_ptr->cubin_size = result.size;
   }
   catch (...)
   {
@@ -139,11 +139,7 @@ CUresult cccl_device_for_build(
 }
 
 CUresult cccl_device_for(
-  cccl_device_for_build_result_t build,
-  cccl_iterator_t d_data,
-  int64_t num_items,
-  cccl_op_t op,
-  CUstream stream) noexcept
+  cccl_device_for_build_result_t build, cccl_iterator_t d_data, int64_t num_items, cccl_op_t op, CUstream stream)
 {
   bool pushed    = false;
   CUresult error = CUDA_SUCCESS;
@@ -167,17 +163,17 @@ CUresult cccl_device_for(
   return error;
 }
 
-CUresult cccl_device_for_cleanup(cccl_device_for_build_result_t* bld_ptr)
+CUresult cccl_device_for_cleanup(cccl_device_for_build_result_t* build_ptr)
 {
   try
   {
-    if (bld_ptr == nullptr)
+    if (build_ptr == nullptr)
     {
       return CUDA_ERROR_INVALID_VALUE;
     }
 
-    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(bld_ptr->cubin));
-    check(cuLibraryUnload(bld_ptr->library));
+    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+    check(cuLibraryUnload(build_ptr->library));
   }
   catch (...)
   {

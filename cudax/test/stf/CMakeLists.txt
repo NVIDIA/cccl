@@ -27,6 +27,8 @@ set(stf_test_sources
   fhe/parse_arctyrex.cu
   gnu/include_only.cpp
   graph/concurrency_test.cu
+  graph/get_cache_stats.cu
+  graph/graph_cache_policy.cu
   graph/graph_ctx_low_level.cu
   graph/static_graph_ctx.cu
   hashtable/test.cu
@@ -62,6 +64,7 @@ set(stf_test_sources
   threads/axpy-threads-2.cu
   # threads/axpy-threads.cu
   utility/timing_with_fences.cu
+  utility/source_location_map.cu
 )
 
 set(stf_test_codegen_sources
