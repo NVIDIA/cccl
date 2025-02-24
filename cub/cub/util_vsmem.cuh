@@ -96,23 +96,6 @@ public:
   // The amount of global memory-backed virtual shared memory needed, padded to an integer multiple of 128 bytes
   static constexpr ::cuda::std::size_t vsmem_per_block = needs_vsmem ? (required_smem + padding_bytes) : 0;
 
-  template <typename AgentPolicyT>
-  _CCCL_HOST_DEVICE static constexpr int BlockThreads(AgentPolicyT /* policy */)
-  {
-    return AgentPolicyT::BLOCK_THREADS;
-  }
-
-  template <typename AgentPolicyT>
-  _CCCL_HOST_DEVICE static constexpr int ItemsPerThread(AgentPolicyT /* policy */)
-  {
-    return AgentPolicyT::ITEMS_PER_THREAD;
-  }
-
-  _CCCL_HOST_DEVICE static constexpr ::cuda::std::size_t VSMemPerBlock()
-  {
-    return vsmem_per_block;
-  }
-
   /**
    * @brief Used from within the device algorithm's kernel to get the temporary storage that can be
    * passed to the agent, specialized for the case when we can use native shared memory as temporary

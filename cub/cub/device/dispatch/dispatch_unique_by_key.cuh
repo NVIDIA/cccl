@@ -126,7 +126,7 @@ template <
   typename EqualityOpT,
   typename OffsetT,
   typename PolicyHub =
-    detail::unique_by_key::policy_hub<detail::value_t<KeyInputIteratorT>, detail::value_t<ValueInputIteratorT>>,
+    detail::unique_by_key::policy_hub<detail::it_value_t<KeyInputIteratorT>, detail::it_value_t<ValueInputIteratorT>>,
   typename KernelSource = detail::unique_by_key::DeviceUniqueByKeyKernelSource<
     typename PolicyHub::MaxPolicy,
     KeyInputIteratorT,
@@ -138,15 +138,7 @@ template <
     EqualityOpT,
     OffsetT>,
   typename KernelLauncherFactory = detail::TripleChevronFactory,
-  typename VSMemHelperPolicyT    = detail::vsmem_helper_default_fallback_policy_t<
-       typename PolicyHub::MaxPolicy::UniqueByKeyPolicyT,
-       detail::unique_by_key::AgentUniqueByKey,
-       KeyInputIteratorT,
-       ValueInputIteratorT,
-       KeyOutputIteratorT,
-       ValueOutputIteratorT,
-       EqualityOpT,
-       OffsetT>>
+  typename VSMemHelperT          = detail::unique_by_key::VSMemHelper>
 struct DispatchUniqueByKey
 {
   /******************************************************************************
@@ -159,8 +151,8 @@ struct DispatchUniqueByKey
   };
 
   // The input key and value type
-  using KeyT   = typename std::iterator_traits<KeyInputIteratorT>::value_type;
-  using ValueT = typename std::iterator_traits<ValueInputIteratorT>::value_type;
+  using KeyT   = detail::it_value_t<KeyInputIteratorT>;
+  using ValueT = detail::it_value_t<ValueInputIteratorT>;
 
   /// Device-accessible allocation of temporary storage.  When nullptr, the required allocation size
   /// is written to `temp_storage_bytes` and no work is done.
@@ -197,8 +189,6 @@ struct DispatchUniqueByKey
   KernelSource kernel_source;
 
   KernelLauncherFactory launcher_factory;
-
-  VSMemHelperPolicyT vsmem_helper;
 
   /**
    * @param[in] d_temp_storage
@@ -247,8 +237,7 @@ struct DispatchUniqueByKey
     OffsetT num_items,
     cudaStream_t stream,
     KernelSource kernel_source             = {},
-    KernelLauncherFactory launcher_factory = {},
-    VSMemHelperPolicyT vsmem_helper        = {})
+    KernelLauncherFactory launcher_factory = {})
       : d_temp_storage(d_temp_storage)
       , temp_storage_bytes(temp_storage_bytes)
       , d_keys_in(d_keys_in)
@@ -261,7 +250,6 @@ struct DispatchUniqueByKey
       , stream(stream)
       , kernel_source(kernel_source)
       , launcher_factory(launcher_factory)
-      , vsmem_helper(vsmem_helper)
   {}
 
   /******************************************************************************
@@ -284,11 +272,34 @@ struct DispatchUniqueByKey
       }
 
       // Number of input tiles
-      const auto block_threads    = vsmem_helper.BlockThreads(policy.UniqueByKey());
-      const auto items_per_thread = vsmem_helper.ItemsPerThread(policy.UniqueByKey());
-      int tile_size               = block_threads * items_per_thread;
-      int num_tiles               = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
-      const auto vsmem_size       = num_tiles * vsmem_helper.VSMemPerBlock();
+      const auto block_threads = VSMemHelperT::template BlockThreads<
+        typename ActivePolicyT::UniqueByKeyPolicyT,
+        KeyInputIteratorT,
+        ValueInputIteratorT,
+        KeyOutputIteratorT,
+        ValueOutputIteratorT,
+        EqualityOpT,
+        OffsetT>(policy.UniqueByKey());
+      const auto items_per_thread = VSMemHelperT::template ItemsPerThread<
+        typename ActivePolicyT::UniqueByKeyPolicyT,
+        KeyInputIteratorT,
+        ValueInputIteratorT,
+        KeyOutputIteratorT,
+        ValueOutputIteratorT,
+        EqualityOpT,
+        OffsetT>(policy.UniqueByKey());
+      int tile_size = block_threads * items_per_thread;
+      int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
+      const auto vsmem_size =
+        num_tiles
+        * VSMemHelperT::template VSMemPerBlock<
+          typename ActivePolicyT::UniqueByKeyPolicyT,
+          KeyInputIteratorT,
+          ValueInputIteratorT,
+          KeyOutputIteratorT,
+          ValueOutputIteratorT,
+          EqualityOpT,
+          OffsetT>(policy.UniqueByKey());
 
       // Specify temporary storage allocation requirements
       size_t allocation_sizes[2] = {0, vsmem_size};
@@ -486,8 +497,7 @@ struct DispatchUniqueByKey
     cudaStream_t stream,
     KernelSource kernel_source             = {},
     KernelLauncherFactory launcher_factory = {},
-    MaxPolicyT max_policy                  = {},
-    VSMemHelperPolicyT vsmem_helper        = {})
+    MaxPolicyT max_policy                  = {})
   {
     cudaError_t error;
     do
@@ -513,8 +523,7 @@ struct DispatchUniqueByKey
         num_items,
         stream,
         kernel_source,
-        launcher_factory,
-        vsmem_helper);
+        launcher_factory);
 
       // Dispatch to chained policy
       error = CubDebug(max_policy.Invoke(ptx_version, dispatch));

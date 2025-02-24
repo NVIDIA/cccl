@@ -47,7 +47,6 @@
 #include <cub/thread/thread_store.cuh>
 
 #include <thrust/iterator/iterator_facade.h>
-#include <thrust/iterator/iterator_traits.h>
 
 #include <iosfwd>
 

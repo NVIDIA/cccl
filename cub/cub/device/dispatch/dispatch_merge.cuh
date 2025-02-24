@@ -119,7 +119,7 @@ __launch_bounds__(
     vsmem_t global_temp_storage)
 {
   // the merge agent loads keys into a local array of KeyIt1::value_type, on which the comparisons are performed
-  using key_t = value_t<KeyIt1>;
+  using key_t = it_value_t<KeyIt1>;
   static_assert(::cuda::std::__invokable<CompareOp, key_t, key_t>::value,
                 "Comparison operator cannot compare two keys");
   static_assert(::cuda::std::is_convertible_v<typename ::cuda::std::__invoke_of<CompareOp, key_t, key_t>::type, bool>,
@@ -164,7 +164,7 @@ template <typename KeyIt1,
           typename ValueIt3,
           typename Offset,
           typename CompareOp,
-          typename PolicyHub = detail::merge::policy_hub<value_t<KeyIt1>, value_t<ValueIt1>>>
+          typename PolicyHub = detail::merge::policy_hub<it_value_t<KeyIt1>, it_value_t<ValueIt1>>>
 struct dispatch_t
 {
   void* d_temp_storage;
