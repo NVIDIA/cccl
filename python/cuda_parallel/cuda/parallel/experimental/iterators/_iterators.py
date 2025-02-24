@@ -341,3 +341,48 @@ def make_transform_iterator(it, op: Callable):
             return self._it == other._it and self._op == other._op
 
     return TransformIterator(it, op)
+
+
+class AdvancedIteratorKind(IteratorKind):
+    pass
+
+
+def make_advanced_iterator(it: IteratorBase, /, *, offset: int = 1):
+    it_advance = cuda.jit(type(it).advance, device=True)
+    it_dereference = cuda.jit(type(it).dereference, device=True)
+
+    class AdvancedIterator(IteratorBase):
+        iterator_kind_type = AdvancedIteratorKind
+
+        def __init__(self, it: IteratorBase, advance_steps: int):
+            self._it = it
+            cvalue_advanced = to_ctypes(it.value_type)(
+                it.cvalue + it.value_type(advance_steps)
+            )
+            super().__init__(
+                cvalue=cvalue_advanced,
+                numba_type=it.numba_type,
+                value_type=it.value_type,
+            )
+
+        @property
+        def kind(self):
+            return self.__class__.iterator_kind_type(self._it.kind)
+
+        @staticmethod
+        def advance(state, distance):
+            return it_advance(state, distance)
+
+        @staticmethod
+        def dereference(state):
+            return it_dereference(state)
+
+        def __hash__(self):
+            return hash((self.__class__.iterator_kind_type, self._it))
+
+        def __eq__(self, other):
+            if not isinstance(other.kind, self.__class__.iterator_kind_type):
+                return NotImplemented
+            return self._it == other._it
+
+    return AdvancedIterator(it, offset)
