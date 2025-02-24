@@ -555,10 +555,7 @@ private:
   // TYPE DECLARATIONS
   //---------------------------------------------------------------------
   /// Internal load/store type. For byte-wise memcpy, a single-byte type
-  using AliasT =
-    typename ::cuda::std::conditional<IsMemcpy,
-                                      ::cuda::std::iterator_traits<char*>,
-                                      ::cuda::std::iterator_traits<iter_value_t<InputBufferIt>>>::type::value_type;
+  using AliasT = ::cuda::std::conditional_t<IsMemcpy, char, iter_value_t<iter_value_t<InputBufferIt>>>;
 
   /// Types of the input and output buffers
   using InputBufferT  = value_t<InputBufferIt>;
