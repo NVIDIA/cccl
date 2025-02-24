@@ -42,24 +42,45 @@ __device__ void test_semantic()
     assert(cuda::warp_shuffle_down(data, i, mask2, width_v<Value>) == __shfl_down_sync(mask2, data, i, Value));
     assert(cuda::warp_shuffle_xor(data, i, mask2, width_v<Value>) == __shfl_xor_sync(mask2, data, i, Value));
     assert(cuda::warp_shuffle_up(data, i, mask2, width_v<Value>) == __shfl_up_sync(mask2, data, i, Value));
+    assert(cuda::warp_shuffle_up<16>(data, i, mask2) == __shfl_up_sync(mask2, data, i, Value));
   }
 }
 
 template <class T>
-__device__ void test_large_type(const T& data)
+__device__ void test_non_trivial_types(const T& data)
 {
-  auto data1 = threadIdx.x == 0 ? data : T{};
-  assert(cuda::warp_shuffle_idx(data1, 0).data == data);
-  auto data2 = threadIdx.x >= 2 ? data : T{};
-  assert(cuda::warp_shuffle_down(data2, 2).data == data);
-  auto data3 = threadIdx.x < 30 ? data : T{};
-  assert(cuda::warp_shuffle_up(data3, 2).data == data);
-  auto data4 = threadIdx.x % 2 == 0 ? data : T{};
-  assert(cuda::warp_shuffle_xor(data4, 1).data == ((threadIdx.x % 2 == 0) ? T{} : data));
-  unused(data1);
-  unused(data2);
-  unused(data3);
-  unused(data4);
+  const T default_value{};
+  // idx
+  {
+    auto& data1 = threadIdx.x == 0 ? data : default_value;
+    auto ret    = cuda::warp_shuffle_idx(data1, 0);
+    assert(ret.data[0] == data[0] && ret.data[1] == data[1] && ret.data[2] == data[2] && ret.data[3] == data[3]);
+    unused(ret);
+  }
+  {
+    // down
+    auto& data1 = threadIdx.x >= 2 ? data : default_value;
+    auto ret    = cuda::warp_shuffle_down(data1, 2);
+    assert(ret.data[0] == data[0] && ret.data[1] == data[1] && ret.data[2] == data[2] && ret.data[3] == data[3]);
+    unused(ret);
+  }
+  {
+    // up
+    auto& data1 = threadIdx.x < 30 ? data : default_value;
+    auto ret    = cuda::warp_shuffle_up(data1, 2);
+    assert(ret.data[0] == data[0] && ret.data[1] == data[1] && ret.data[2] == data[2] && ret.data[3] == data[3]);
+    unused(ret);
+  }
+  {
+    // xor
+    auto& data1   = threadIdx.x % 2 == 0 ? data : default_value;
+    auto ret      = cuda::warp_shuffle_xor(data1, 1);
+    auto cmp_data = threadIdx.x % 2 == 0 ? default_value : data;
+    assert(ret.data[0] == cmp_data[0] && ret.data[1] == cmp_data[1] && ret.data[2] == cmp_data[2]
+           && ret.data[3] == cmp_data[3]);
+    unused(ret);
+    unused(cmp_data);
+  }
 }
 
 __device__ void test_overloadings()
@@ -87,7 +108,11 @@ __global__ void test_kernel()
   test_semantic<16>();
   test_semantic<32>();
   test_overloadings();
-  test_large_type(cuda::std::array<double, 4>{1.0, 2.0, 3.0, 4.0});
+  test_non_trivial_types(cuda::std::array<double, 4>{1.0, 2.0, 3.0, 4.0});
+  double array[4] = {1.0, 2.0, 3.0, 4.0};
+  test_non_trivial_types(array);
+  auto ptr = threadIdx.x == 0 ? static_cast<const void*>(array) : nullptr;
+  assert(cuda::warp_shuffle_idx(ptr, 0) == static_cast<const void*>(array));
 }
 
 int main(int, char**)
