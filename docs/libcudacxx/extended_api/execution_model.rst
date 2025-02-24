@@ -31,6 +31,7 @@ The CUDA C++ Programming Language is an extension of the C++ Programming Languag
 This section documents the modifications and extensions to the `[intro.progress] <https://eel.is/c++draft/intro.progress>`__ section of the current `ISO International Standard ISO/IEC 14882 – Programming Language C++ <https://eel.is/c++draft/>`__ draft.
 Modified sections are called out explicitly and their diff is shown in **bold**.
 All other sections are additions.
+
 Host threads
 ------------
 
