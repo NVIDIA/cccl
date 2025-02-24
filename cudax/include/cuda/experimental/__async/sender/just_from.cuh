@@ -21,11 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/unreachable.h>
 #include <cuda/std/__type_traits/conditional.h>
 
 #include <cuda/experimental/__async/sender/completion_signatures.cuh>
 #include <cuda/experimental/__async/sender/cpos.cuh>
-#include <cuda/experimental/__async/sender/rcvr_ref.cuh>
 #include <cuda/experimental/__async/sender/tuple.cuh>
 #include <cuda/experimental/__async/sender/utility.cuh>
 #include <cuda/experimental/__detail/config.cuh>
@@ -66,7 +66,7 @@ private:
   using _JustTag = decltype(__detail::__just_from_tag<_Disposition>());
   using _SetTag  = decltype(__detail::__set_tag<_Disposition>());
 
-  using __diag_t = _CUDA_VSTD::conditional_t<_CUDA_VSTD::is_same_v<_SetTag, set_error_t>,
+  using __diag_t = _CUDA_VSTD::conditional_t<_SetTag() == set_error,
                                              _AN_ERROR_COMPLETION_MUST_HAVE_EXACTLY_ONE_ERROR_ARGUMENT,
                                              _A_STOPPED_COMPLETION_MUST_HAVE_NO_ARGUMENTS>;
 
@@ -83,7 +83,7 @@ private:
                                    __error_t<_Ts...>>;
   };
 
-  template <class _Rcvr = receiver_archetype>
+  template <class _Rcvr>
   struct __complete_fn
   {
     _Rcvr& __rcvr_;
@@ -99,8 +99,6 @@ private:
   struct __opstate
   {
     using operation_state_concept = operation_state_t;
-    using completion_signatures   = __call_result_t<_Fn, __probe_fn>;
-    static_assert(__is_completion_signatures<completion_signatures>);
 
     _Rcvr __rcvr_;
     _Fn __fn_;
@@ -118,6 +116,12 @@ private:
 
     _CCCL_NO_UNIQUE_ADDRESS _JustTag __tag_;
     _Fn __fn_;
+
+    template <class _Self, class...>
+    _CUDAX_API static constexpr auto get_completion_signatures() noexcept
+    {
+      return __call_result_t<_Fn, __probe_fn>{};
+    }
 
     template <class _Rcvr>
     _CUDAX_API __opstate<_Rcvr, _Fn> connect(_Rcvr __rcvr) && //
@@ -139,7 +143,7 @@ public:
   _CUDAX_TRIVIAL_API auto operator()(_Fn __fn) const noexcept
   {
     using __completions = __call_result_t<_Fn, __probe_fn>;
-    static_assert(__is_completion_signatures<__completions>,
+    static_assert(__valid_completion_signatures<__completions>,
                   "The function passed to just_from must return an instance of a specialization of "
                   "completion_signatures<>.");
     return __sndr_t<_Fn>{{}, static_cast<_Fn&&>(__fn)};

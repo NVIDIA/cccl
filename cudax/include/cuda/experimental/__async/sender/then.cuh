@@ -21,12 +21,17 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/unreachable.h>
+#include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/type_list.h>
 
 #include <cuda/experimental/__async/sender/completion_signatures.cuh>
+#include <cuda/experimental/__async/sender/concepts.cuh>
 #include <cuda/experimental/__async/sender/cpos.cuh>
 #include <cuda/experimental/__async/sender/exception.cuh>
 #include <cuda/experimental/__async/sender/meta.cuh>
+#include <cuda/experimental/__async/sender/rcvr_ref.cuh>
 #include <cuda/experimental/__async/sender/tuple.cuh>
 #include <cuda/experimental/__async/sender/utility.cuh>
 
@@ -101,49 +106,16 @@ private:
   using _UponTag = decltype(__detail::__upon_tag<_Disposition>());
   using _SetTag  = decltype(__detail::__set_tag<_Disposition>());
 
-  template <class _Fn, class... _Ts>
-  using __error_not_callable = //
-    _ERROR< //
-      _WHERE(_IN_ALGORITHM, _UponTag),
-      _WHAT(_FUNCTION_IS_NOT_CALLABLE),
-      _WITH_FUNCTION(_Fn),
-      _WITH_ARGUMENTS(_Ts...)>;
-
-  template <class _Fn>
-  struct __transform_completion
-  {
-    template <class... _Ts>
-    using __call =
-      _CUDA_VSTD::__type_call<__type_try_quote<__upon::__completion, __error_not_callable<_Fn, _Ts...>>, _Fn, _Ts...>;
-  };
-
-  template <class _CvSndr, class _Fn, class _Rcvr>
-  using __completions =
-    __gather_completion_signatures<completion_signatures_of_t<_CvSndr, _Rcvr>,
-                                   _SetTag,
-                                   __transform_completion<_Fn>::template __call,
-                                   __default_completions,
-                                   __type_try_quote<__concat_completion_signatures>::__call>;
-
   template <class _Rcvr, class _CvSndr, class _Fn>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
-    _CUDAX_API friend env_of_t<_Rcvr> get_env(const __opstate_t* __self) noexcept
-    {
-      return __async::get_env(__self->__rcvr_);
-    }
-
     using operation_state_concept = operation_state_t;
-    using completion_signatures   = __completions<_CvSndr, _Fn, __opstate_t*>;
-
-    _Rcvr __rcvr_;
-    _Fn __fn_;
-    connect_result_t<_CvSndr, __opstate_t*> __opstate_;
+    using __env_t                 = env_of_t<_Rcvr>;
 
     _CUDAX_API __opstate_t(_CvSndr&& __sndr, _Rcvr __rcvr, _Fn __fn)
         : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
         , __fn_{static_cast<_Fn&&>(__fn)}
-        , __opstate_{__async::connect(static_cast<_CvSndr&&>(__sndr), this)}
+        , __opstate_{__async::connect(static_cast<_CvSndr&&>(__sndr), __rcvr_ref{*this})}
     {}
 
     _CUDAX_IMMOVABLE(__opstate_t);
@@ -170,14 +142,15 @@ private:
       }
       else
       {
-        _CUDAX_TRY( //
-          ({ //
+        _CUDAX_TRY(                                   //
+          ({                                          //
             __set<true>(static_cast<_Ts&&>(__ts)...); //
-          }), //
-          _CUDAX_CATCH(...)( //
-            { //
-              __async::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
-            }))
+          }),                                         //
+          _CUDAX_CATCH(...)                           //
+          ({                                          //
+            __async::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
+          }) //
+        )
       }
     }
 
@@ -210,6 +183,35 @@ private:
     {
       __complete(set_stopped_t());
     }
+
+    _CUDAX_API auto get_env() const noexcept -> __env_t
+    {
+      return __async::get_env(__rcvr_);
+    }
+
+    _Rcvr __rcvr_;
+    _Fn __fn_;
+    connect_result_t<_CvSndr, __rcvr_ref<__opstate_t, __env_t>> __opstate_;
+  };
+
+  template <class _Fn>
+  struct __transform_args_fn
+  {
+    template <class... _Ts>
+    _CUDAX_API constexpr auto operator()() const
+    {
+      if constexpr (_CUDA_VSTD::__is_callable_v<_Fn, _Ts...>)
+      {
+        return __upon::__completion<_Fn, _Ts...>();
+      }
+      else
+      {
+        return invalid_completion_signature<_WHERE(_IN_ALGORITHM, _UponTag),
+                                            _WHAT(_FUNCTION_IS_NOT_CALLABLE),
+                                            _WITH_FUNCTION(_Fn),
+                                            _WITH_ARGUMENTS(_Ts...)>();
+      }
+    }
   };
 
   template <class _Fn, class _Sndr>
@@ -220,8 +222,30 @@ private:
     _Fn __fn_;
     _Sndr __sndr_;
 
+    template <class _Self, class... _Env>
+    _CUDAX_API static constexpr auto get_completion_signatures()
+    {
+      _CUDAX_LET_COMPLETIONS(auto(__child_completions) = get_child_completion_signatures<_Self, _Sndr, _Env...>())
+      {
+        if constexpr (_Disposition == __disposition_t::__value)
+        {
+          return transform_completion_signatures(__child_completions, __transform_args_fn<_Fn>{});
+        }
+        else if constexpr (_Disposition == __disposition_t::__error)
+        {
+          return transform_completion_signatures(__child_completions, {}, __transform_args_fn<_Fn>{});
+        }
+        else
+        {
+          return transform_completion_signatures(__child_completions, {}, {}, __transform_args_fn<_Fn>{});
+        }
+      }
+
+      _CCCL_UNREACHABLE();
+    }
+
     template <class _Rcvr>
-    _CUDAX_API auto connect(_Rcvr __rcvr) && //
+    _CUDAX_API auto connect(_Rcvr __rcvr) &&                                               //
       noexcept(__nothrow_constructible<__opstate_t<_Rcvr, _Sndr, _Fn>, _Sndr, _Rcvr, _Fn>) //
       -> __opstate_t<_Rcvr, _Sndr, _Fn>
     {
@@ -273,10 +297,10 @@ public:
   {
     // If the incoming sender is non-dependent, we can check the completion
     // signatures of the composed sender immediately.
-    if constexpr (__is_non_dependent_sender<_Sndr>)
+    if constexpr (!dependent_sender<_Sndr>)
     {
       using __completions = completion_signatures_of_t<__sndr_t<_Fn, _Sndr>>;
-      static_assert(__is_completion_signatures<__completions>);
+      static_assert(__valid_completion_signatures<__completions>);
     }
     return __sndr_t<_Fn, _Sndr>{{}, static_cast<_Fn&&>(__fn), static_cast<_Sndr&&>(__sndr)};
   }
