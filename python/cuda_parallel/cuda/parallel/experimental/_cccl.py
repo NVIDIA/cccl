@@ -121,6 +121,18 @@ class DeviceScanBuildResult(ctypes.Structure):
     ]
 
 
+# MUST match `cccl_device_segmented_reduce_build_result_t` in c/include/cccl/c/segmented_reduce.h
+class DeviceSegmentedReduceBuildResult(ctypes.Structure):
+    _fields_ = [
+        ("cc", ctypes.c_int),
+        ("cubin", ctypes.c_void_p),
+        ("cubin_size", ctypes.c_size_t),
+        ("library", ctypes.c_void_p),
+        ("accumulator_size", ctypes.c_ulonglong),
+        ("segmented_reduce_kernel", ctypes.c_void_p),
+    ]
+
+
 # MUST match `cccl_value_t` in c/include/cccl/c/types.h
 class Value(ctypes.Structure):
     _fields_ = [("type", TypeInfo), ("state", ctypes.c_void_p)]
