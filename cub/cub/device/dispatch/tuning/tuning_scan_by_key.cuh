@@ -912,7 +912,7 @@ struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_8, val_size::_8,
 template <typename KeysInputIteratorT, typename AccumT, typename ValueT, typename ScanOpT>
 struct policy_hub
 {
-  using key_t                               = value_t<KeysInputIteratorT>;
+  using key_t                               = it_value_t<KeysInputIteratorT>;
   static constexpr int max_input_bytes      = static_cast<int>((::cuda::std::max)(sizeof(key_t), sizeof(AccumT)));
   static constexpr int combined_input_bytes = static_cast<int>(sizeof(key_t) + sizeof(AccumT));
 

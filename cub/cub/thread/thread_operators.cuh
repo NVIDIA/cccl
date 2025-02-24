@@ -90,14 +90,6 @@ struct InequalityWrapper
   }
 };
 
-using Equality CCCL_DEPRECATED_BECAUSE("use cuda::std::equal_to instead")       = ::cuda::std::equal_to<>;
-using Inequality CCCL_DEPRECATED_BECAUSE("use cuda::std::not_equal_to instead") = ::cuda::std::not_equal_to<>;
-using Sum CCCL_DEPRECATED_BECAUSE("use cuda::std::plus instead")                = ::cuda::std::plus<>;
-using Difference CCCL_DEPRECATED_BECAUSE("use cuda::std::minus instead")        = ::cuda::std::minus<>;
-using Division CCCL_DEPRECATED_BECAUSE("use cuda::std::divides instead")        = ::cuda::std::divides<>;
-using Max CCCL_DEPRECATED_BECAUSE("use cuda::maximum instead")                  = ::cuda::maximum<>;
-using Min CCCL_DEPRECATED_BECAUSE("use cuda::minimum instead")                  = ::cuda::minimum<>;
-
 /// @brief Arg max functor (keeps the value and offset of the first occurrence
 ///        of the larger item)
 struct ArgMax
@@ -212,20 +204,20 @@ struct basic_binary_op_t
   static constexpr bool value = false;
 };
 
-template <>
-struct basic_binary_op_t<Sum>
+template <typename T>
+struct basic_binary_op_t<::cuda::std::plus<T>>
 {
   static constexpr bool value = true;
 };
 
-template <>
-struct basic_binary_op_t<Min>
+template <typename T>
+struct basic_binary_op_t<::cuda::minimum<T>>
 {
   static constexpr bool value = true;
 };
 
-template <>
-struct basic_binary_op_t<Max>
+template <typename T>
+struct basic_binary_op_t<::cuda::maximum<T>>
 {
   static constexpr bool value = true;
 };

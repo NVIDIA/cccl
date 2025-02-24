@@ -966,31 +966,6 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, TestFoo& va
   InitValue(gen_mode, value.w, index);
 }
 
-/// numeric_limits<TestFoo> specialization
-CUB_NAMESPACE_BEGIN
-template <>
-struct NumericTraits<TestFoo>
-{
-  __host__ __device__ static TestFoo Max()
-  {
-    return TestFoo::MakeTestFoo(
-      NumericTraits<long long>::Max(),
-      NumericTraits<int>::Max(),
-      NumericTraits<short>::Max(),
-      NumericTraits<char>::Max());
-  }
-
-  __host__ __device__ static TestFoo Lowest()
-  {
-    return TestFoo::MakeTestFoo(
-      NumericTraits<long long>::Lowest(),
-      NumericTraits<int>::Lowest(),
-      NumericTraits<short>::Lowest(),
-      NumericTraits<char>::Lowest());
-  }
-};
-CUB_NAMESPACE_END
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <>
 class numeric_limits<TestFoo>
@@ -1120,23 +1095,6 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, TestBar& va
   InitValue(gen_mode, value.x, index);
   InitValue(gen_mode, value.y, index);
 }
-
-/// numeric_limits<TestBar> specialization
-CUB_NAMESPACE_BEGIN
-template <>
-struct NumericTraits<TestBar>
-{
-  __host__ __device__ static TestBar Max()
-  {
-    return TestBar(NumericTraits<long long>::Max(), NumericTraits<int>::Max());
-  }
-
-  __host__ __device__ static TestBar Lowest()
-  {
-    return TestBar(NumericTraits<long long>::Lowest(), NumericTraits<int>::Lowest());
-  }
-};
-CUB_NAMESPACE_END
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <>
