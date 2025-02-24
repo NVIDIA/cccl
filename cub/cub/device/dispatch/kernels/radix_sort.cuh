@@ -98,8 +98,8 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltUp
 
   enum
   {
-    TILE_ITEMS = CUB_MAX(ActiveUpsweepPolicyT::BLOCK_THREADS * ActiveUpsweepPolicyT::ITEMS_PER_THREAD,
-                         ActiveDownsweepPolicyT::BLOCK_THREADS * ActiveDownsweepPolicyT::ITEMS_PER_THREAD)
+    TILE_ITEMS = _CUDA_VSTD::max(ActiveUpsweepPolicyT::BLOCK_THREADS * ActiveUpsweepPolicyT::ITEMS_PER_THREAD,
+                                 ActiveDownsweepPolicyT::BLOCK_THREADS * ActiveDownsweepPolicyT::ITEMS_PER_THREAD)
   };
 
   // Parameterize AgentRadixSortUpsweep type for the current configuration
@@ -258,8 +258,8 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltDo
 
   enum
   {
-    TILE_ITEMS = CUB_MAX(ActiveUpsweepPolicyT::BLOCK_THREADS * ActiveUpsweepPolicyT::ITEMS_PER_THREAD,
-                         ActiveDownsweepPolicyT::BLOCK_THREADS * ActiveDownsweepPolicyT::ITEMS_PER_THREAD)
+    TILE_ITEMS = _CUDA_VSTD::max(ActiveUpsweepPolicyT::BLOCK_THREADS * ActiveUpsweepPolicyT::ITEMS_PER_THREAD,
+                                 ActiveDownsweepPolicyT::BLOCK_THREADS * ActiveDownsweepPolicyT::ITEMS_PER_THREAD)
   };
 
   // Parameterize AgentRadixSortDownsweep type for the current configuration
