@@ -57,9 +57,14 @@ public:
   // A cudaGraph_t is needed
   graph_task() = delete;
 
-  graph_task(backend_ctx_untyped ctx, cudaGraph_t g, size_t epoch, exec_place e_place = exec_place::current_device())
+  graph_task(backend_ctx_untyped ctx,
+             cudaGraph_t g,
+             ::std::shared_ptr<::std::mutex> graph_mutex,
+             size_t epoch,
+             exec_place e_place = exec_place::current_device())
       : task(mv(e_place))
       , ctx_graph(EXPECT(g))
+      , graph_mutex(mv(graph_mutex))
       , epoch(epoch)
       , ctx(mv(ctx))
   {
@@ -75,6 +80,8 @@ public:
 
   graph_task& start()
   {
+    ::std::lock_guard<::std::mutex> lock(*graph_mutex);
+
     event_list prereqs = acquire(ctx);
 
     // The CUDA graph API does not like duplicate dependencies
@@ -98,6 +105,8 @@ public:
   /* End the task, but do not clear its data structures yet */
   graph_task<>& end_uncleared()
   {
+    ::std::lock_guard<::std::mutex> lock(*graph_mutex);
+
     cudaGraphNode_t n;
 
     auto done_prereqs = event_list();
@@ -428,7 +437,11 @@ private:
 
   /* This is the support graph associated to the entire context */
   cudaGraph_t ctx_graph = nullptr;
-  size_t epoch          = 0;
+
+  // This protects ctx_graph
+  ::std::shared_ptr<::std::mutex> graph_mutex;
+
+  size_t epoch = 0;
 
   ::std::vector<cudaGraphNode_t> ready_dependencies;
 
@@ -448,8 +461,13 @@ template <typename... Deps>
 class graph_task : public graph_task<>
 {
 public:
-  graph_task(backend_ctx_untyped ctx, cudaGraph_t g, size_t epoch, exec_place e_place, task_dep<Deps>... deps)
-      : graph_task<>(mv(ctx), g, epoch, mv(e_place))
+  graph_task(backend_ctx_untyped ctx,
+             cudaGraph_t g,
+             ::std::shared_ptr<::std::mutex> graph_mutex,
+             size_t epoch,
+             exec_place e_place,
+             task_dep<Deps>... deps)
+      : graph_task<>(mv(ctx), g, mv(graph_mutex), epoch, mv(e_place))
   {
     static_assert(sizeof(*this) == sizeof(graph_task<>), "Cannot add state - it would be lost by slicing.");
     add_deps(mv(deps)...);
