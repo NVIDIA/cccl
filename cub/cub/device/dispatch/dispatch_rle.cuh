@@ -194,7 +194,7 @@ template <typename InputIteratorT,
           typename OffsetT,
           typename PolicyHub =
             detail::rle::non_trivial_runs::policy_hub<cub::detail::non_void_value_t<LengthsOutputIteratorT, OffsetT>,
-                                                      cub::detail::iter_value_t<InputIteratorT>>>
+                                                      cub::detail::it_value_t<InputIteratorT>>>
 struct DeviceRleDispatch
 {
   /******************************************************************************

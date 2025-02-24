@@ -145,8 +145,8 @@ struct AgentScanByKey
   // Types and constants
   //---------------------------------------------------------------------
 
-  using KeyT               = iter_value_t<KeysInputIteratorT>;
-  using InputT             = iter_value_t<ValuesInputIteratorT>;
+  using KeyT               = it_value_t<KeysInputIteratorT>;
+  using InputT             = it_value_t<ValuesInputIteratorT>;
   using FlagValuePairT     = KeyValuePair<int, AccumT>;
   using ReduceBySegmentOpT = ScanBySegmentOp<ScanOpT>;
 

@@ -79,15 +79,16 @@ CUB_NAMESPACE_BEGIN
  * @tparam OffsetT
  *   Signed integer type for global offsets
  */
-template <typename KeyInputIteratorT,
-          typename ValueInputIteratorT,
-          typename KeyOutputIteratorT,
-          typename ValueOutputIteratorT,
-          typename NumSelectedIteratorT,
-          typename EqualityOpT,
-          typename OffsetT,
-          typename PolicyHub = detail::unique_by_key::policy_hub<detail::iter_value_t<KeyInputIteratorT>,
-                                                                 detail::iter_value_t<ValueInputIteratorT>>>
+template <
+  typename KeyInputIteratorT,
+  typename ValueInputIteratorT,
+  typename KeyOutputIteratorT,
+  typename ValueOutputIteratorT,
+  typename NumSelectedIteratorT,
+  typename EqualityOpT,
+  typename OffsetT,
+  typename PolicyHub =
+    detail::unique_by_key::policy_hub<detail::it_value_t<KeyInputIteratorT>, detail::it_value_t<ValueInputIteratorT>>>
 struct DispatchUniqueByKey
 {
   /******************************************************************************
@@ -100,8 +101,8 @@ struct DispatchUniqueByKey
   };
 
   // The input key and value type
-  using KeyT   = detail::iter_value_t<KeyInputIteratorT>;
-  using ValueT = detail::iter_value_t<ValueInputIteratorT>;
+  using KeyT   = detail::it_value_t<KeyInputIteratorT>;
+  using ValueT = detail::it_value_t<ValueInputIteratorT>;
 
   // Tile status descriptor interface type
   using ScanTileStateT = ScanTileState<OffsetT>;

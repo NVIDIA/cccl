@@ -241,7 +241,7 @@ template <typename InputIteratorT,
           typename SelectSecondPartOp,
           typename OffsetT,
           typename PolicyHub = detail::three_way_partition::
-            policy_hub<cub::detail::iter_value_t<InputIteratorT>, detail::three_way_partition::per_partition_offset_t>>
+            policy_hub<cub::detail::it_value_t<InputIteratorT>, detail::three_way_partition::per_partition_offset_t>>
 struct DispatchThreeWayPartitionIf
 {
   /*****************************************************************************

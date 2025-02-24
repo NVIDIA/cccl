@@ -142,7 +142,7 @@ struct AgentReduce
   //---------------------------------------------------------------------
 
   /// The input value type
-  using InputT = iter_value_t<InputIteratorT>;
+  using InputT = it_value_t<InputIteratorT>;
 
   /// Vector type of InputT for data movement
   using VectorT = typename CubVector<InputT, AgentReducePolicy::VECTOR_LOAD_LENGTH>::Type;

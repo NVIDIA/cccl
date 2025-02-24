@@ -1227,7 +1227,7 @@ public:
 };
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-template <class Policy, class It, class T = cub::detail::iter_value_t<It>>
+template <class Policy, class It, class T = cub::detail::it_value_t<It>>
 struct BlockStoreType
 {
   using type = cub::BlockStore<T, Policy::BLOCK_THREADS, Policy::ITEMS_PER_THREAD, Policy::STORE_ALGORITHM>;

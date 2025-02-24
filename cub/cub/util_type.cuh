@@ -80,12 +80,22 @@ CUB_NAMESPACE_BEGIN
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 namespace detail
 {
-using ::cuda::std::iter_difference_t;
-using ::cuda::std::iter_reference_t;
-using ::cuda::std::iter_value_t;
+// the following iterator helpers are not named iter_value_t etc, like the C++20 facilities, because they are defined in
+// terms of C++17 iterator_traits and not the new C++20 indirectly_readable trait etc. This allows them to detect nested
+// value_type, difference_type and reference aliases, which the new C+20 traits do not consider (they only consider
+// specializations of iterator_traits). Also, a value_type of void remains supported (needed by some output iterators).
 
-template <typename T>
-using iter_pointer_t = typename ::cuda::std::iterator_traits<T>::pointer;
+template <typename It>
+using it_value_t = typename ::cuda::std::iterator_traits<It>::value_type;
+
+template <typename It>
+using it_reference_t = typename ::cuda::std::iterator_traits<It>::reference;
+
+template <typename It>
+using it_difference_t = typename ::cuda::std::iterator_traits<It>::difference_type;
+
+template <typename It>
+using it_pointer_t = typename ::cuda::std::iterator_traits<It>::pointer;
 
 // use this whenever you need to lazily evaluate a trait. E.g., as an alternative in replace_if_use_default.
 template <template <typename...> typename Trait, typename... Args>
@@ -106,10 +116,10 @@ struct non_void_value_impl<It, FallbackT, false>
   // we consider thrust::discard_iterator's value_type as `void` as well, so users can switch from
   // cub::DiscardInputIterator to thrust::discard_iterator.
   using type =
-    ::cuda::std::_If<::cuda::std::is_void_v<iter_value_t<It>>
-                       || ::cuda::std::is_same_v<iter_value_t<It>, THRUST_NS_QUALIFIER::discard_iterator<>::value_type>,
+    ::cuda::std::_If<::cuda::std::is_void_v<it_value_t<It>>
+                       || ::cuda::std::is_same_v<it_value_t<It>, THRUST_NS_QUALIFIER::discard_iterator<>::value_type>,
                      FallbackT,
-                     iter_value_t<It>>;
+                     it_value_t<It>>;
 };
 
 /**

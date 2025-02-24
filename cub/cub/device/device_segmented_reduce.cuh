@@ -366,7 +366,7 @@ public:
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     // The output value type
-    using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::iter_value_t<InputIteratorT>>;
+    using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
     using integral_offset_check = ::cuda::std::is_integral<OffsetT>;
 
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
@@ -489,7 +489,7 @@ public:
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     // The input value type
-    using InputT                = cub::detail::iter_value_t<InputIteratorT>;
+    using InputT                = cub::detail::it_value_t<InputIteratorT>;
     using integral_offset_check = ::cuda::std::is_integral<OffsetT>;
 
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
@@ -618,7 +618,7 @@ public:
     using OffsetT = int; // detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     // The input type
-    using InputValueT = cub::detail::iter_value_t<InputIteratorT>;
+    using InputValueT = cub::detail::it_value_t<InputIteratorT>;
 
     // The output tuple type
     using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;
@@ -755,7 +755,7 @@ public:
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     // The input value type
-    using InputT = cub::detail::iter_value_t<InputIteratorT>;
+    using InputT = cub::detail::it_value_t<InputIteratorT>;
 
     using integral_offset_check = ::cuda::std::is_integral<OffsetT>;
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
@@ -882,7 +882,7 @@ public:
     using OffsetT = int; // detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     // The input type
-    using InputValueT = cub::detail::iter_value_t<InputIteratorT>;
+    using InputValueT = cub::detail::it_value_t<InputIteratorT>;
 
     // The output tuple type
     using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;

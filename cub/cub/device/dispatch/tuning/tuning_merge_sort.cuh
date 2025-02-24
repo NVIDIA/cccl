@@ -73,7 +73,7 @@ CUB_RUNTIME_FUNCTION MergeSortPolicyWrapper<PolicyT> MakeMergeSortPolicyWrapper(
 template <typename KeyIteratorT>
 struct policy_hub
 {
-  using KeyT = iter_value_t<KeyIteratorT>;
+  using KeyT = it_value_t<KeyIteratorT>;
 
   struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
   {

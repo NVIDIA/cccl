@@ -61,7 +61,7 @@ struct modx_and_add_divy
 template <typename SelectedItT, typename RejectedItT>
 struct index_to_expected_partition_op
 {
-  using value_t = cub::detail::iter_value_t<SelectedItT>;
+  using value_t = cub::detail::it_value_t<SelectedItT>;
   SelectedItT expected_selected_it;
   RejectedItT expected_rejected_it;
   std::int64_t expected_num_selected;
