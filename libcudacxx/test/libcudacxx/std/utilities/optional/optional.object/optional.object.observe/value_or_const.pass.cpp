@@ -74,15 +74,18 @@ __host__ __device__ constexpr bool test()
     const optional<X&> opt(val);
     const Y y(3);
     assert(opt.value_or(y) == 2);
+    ASSERT_SAME_TYPE(decltype(cuda::std::declval<const optional<X&>>().value_or(y)), X);
   }
   {
     const optional<X&> opt(val);
     assert(opt.value_or(Y(3)) == 2);
+    ASSERT_SAME_TYPE(decltype(cuda::std::declval<const optional<X&>>().value_or(Y(3))), X);
   }
   {
     const optional<X&> opt{};
     const Y y(3);
     assert(opt.value_or(y) == 3);
+    ASSERT_SAME_TYPE(decltype(cuda::std::declval<const optional<X>>().value_or(y)), X);
   }
   {
     const optional<X&> opt{};

@@ -79,6 +79,7 @@ __host__ __device__ constexpr bool test()
     X val{};
     const optional<X&> opt(val);
     assert((*opt).test() == 4); // returns a X&
+    assert(cuda::std::addressof(val) == cuda::std::addressof(*opt));
   }
 
   {
@@ -90,6 +91,7 @@ __host__ __device__ constexpr bool test()
     Y val{};
     const optional<Y&> opt(val);
     assert((*opt).test() == 2);
+    assert(cuda::std::addressof(val) == cuda::std::addressof(*opt));
   }
 
   return true;

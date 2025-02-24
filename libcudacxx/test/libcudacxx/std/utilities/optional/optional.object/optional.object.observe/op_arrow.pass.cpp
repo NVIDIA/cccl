@@ -65,6 +65,7 @@ __host__ __device__ constexpr bool test()
     X val{};
     optional<X&> opt(val);
     assert(opt->test() == 3);
+    assert(cuda::std::addressof(val) == opt.operator->());
   }
 
   {
@@ -74,8 +75,9 @@ __host__ __device__ constexpr bool test()
 
   {
     Y val{};
-    optional<Y> opt(val);
+    optional<Y&> opt(val);
     assert(opt->test() == 5);
+    assert(cuda::std::addressof(val) == opt.operator->());
   }
 
   return true;
