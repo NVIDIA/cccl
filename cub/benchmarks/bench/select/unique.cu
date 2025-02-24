@@ -36,8 +36,8 @@ struct policy_hub_t
   {
     static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = TUNE_ITEMS_PER_THREAD;
 
-    static constexpr int ITEMS_PER_THREAD =
-      CUB_MIN(NOMINAL_4B_ITEMS_PER_THREAD, CUB_MAX(1, (NOMINAL_4B_ITEMS_PER_THREAD * 4 / sizeof(InputT))));
+    static constexpr int ITEMS_PER_THREAD = _CUDA_VSTD::min(
+      NOMINAL_4B_ITEMS_PER_THREAD, _CUDA_VSTD::max(1, (NOMINAL_4B_ITEMS_PER_THREAD * 4 / sizeof(InputT))));
 
     using SelectIfPolicyT =
       cub::AgentSelectIfPolicy<TUNE_THREADS_PER_BLOCK,

@@ -414,9 +414,9 @@ int main(int argc, char** argv)
   {
     // The most granular type being copied.
     using AtomicCopyT         = int64_t;
-    RangeSizeT min_range_size = static_cast<RangeSizeT>(CUB_ROUND_UP_NEAREST(size_range.first, sizeof(AtomicCopyT)));
+    RangeSizeT min_range_size = static_cast<RangeSizeT>(cuda::round_up(size_range.first, sizeof(AtomicCopyT)));
     RangeSizeT max_range_size =
-      static_cast<RangeSizeT>(CUB_ROUND_UP_NEAREST(size_range.second, static_cast<RangeSizeT>(sizeof(AtomicCopyT))));
+      static_cast<RangeSizeT>(cuda::round_up(size_range.second, static_cast<RangeSizeT>(sizeof(AtomicCopyT))));
     double average_range_size      = (min_range_size + max_range_size) / 2.0;
     RangeOffsetT target_num_ranges = static_cast<RangeOffsetT>(target_copy_size / average_range_size);
 
@@ -433,9 +433,9 @@ int main(int argc, char** argv)
   {
     // The most granular type being copied.
     using AtomicCopyT         = thrust::tuple<int64_t, int32_t, int16_t, char, char>;
-    RangeSizeT min_range_size = static_cast<RangeSizeT>(CUB_ROUND_UP_NEAREST(size_range.first, sizeof(AtomicCopyT)));
+    RangeSizeT min_range_size = static_cast<RangeSizeT>(cuda::round_up(size_range.first, sizeof(AtomicCopyT)));
     RangeSizeT max_range_size =
-      static_cast<RangeSizeT>(CUB_ROUND_UP_NEAREST(size_range.second, static_cast<RangeSizeT>(sizeof(AtomicCopyT))));
+      static_cast<RangeSizeT>(cuda::round_up(size_range.second, static_cast<RangeSizeT>(sizeof(AtomicCopyT))));
     double average_range_size      = (min_range_size + max_range_size) / 2.0;
     RangeOffsetT target_num_ranges = static_cast<RangeOffsetT>(target_copy_size / average_range_size);
 
