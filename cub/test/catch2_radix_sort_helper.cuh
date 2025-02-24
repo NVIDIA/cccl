@@ -477,7 +477,7 @@ struct radix_offset_scan_op_t
   __host__ __device__ OffsetT operator()(OffsetT a, OffsetT b) const
   {
     const OffsetT sum = a + b;
-    return CUB_MIN(sum, num_items);
+    return _CUDA_VSTD::min(sum, num_items);
   }
 };
 
