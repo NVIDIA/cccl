@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -21,16 +21,6 @@
 #include <thread>
 
 using namespace cuda::experimental::stf;
-
-double X0(int i)
-{
-  return sin((double) i);
-}
-
-double Y0(int i)
-{
-  return cos((double) i);
-}
 
 void mytask(graph_ctx ctx, int /*id*/)
 {
