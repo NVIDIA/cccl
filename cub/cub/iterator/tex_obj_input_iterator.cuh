@@ -48,7 +48,6 @@
 #include <cub/util_debug.cuh>
 
 #include <thrust/iterator/iterator_facade.h>
-#include <thrust/iterator/iterator_traits.h>
 
 #include <ostream>
 

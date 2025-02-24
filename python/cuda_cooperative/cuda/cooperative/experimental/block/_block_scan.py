@@ -27,7 +27,7 @@ CUB_BLOCK_SCAN_ALGOS = {
 
 def _scan(
     dtype: Type[numba.types.Number],
-    threads_in_block: int,
+    threads_per_block: int,
     items_per_thread: int = 1,
     mode: Literal["exclusive"] = "exclusive",
     scan_op: Literal["+"] = "+",
@@ -45,7 +45,7 @@ def _scan(
 
     specialization_kwds = {
         "T": dtype,
-        "BLOCK_DIM_X": threads_in_block,
+        "BLOCK_DIM_X": threads_per_block,
         "ALGORITHM": CUB_BLOCK_SCAN_ALGOS[algorithm],
     }
 
@@ -176,7 +176,7 @@ def _scan(
 
 def exclusive_sum(
     dtype: Type[numba.types.Number],
-    threads_in_block: int,
+    threads_per_block: int,
     items_per_thread: int = 1,
     prefix_op: Callable = None,
     algorithm: Literal["raking", "raking_memoize", "warp_scans"] = "raking",
@@ -186,7 +186,7 @@ def exclusive_sum(
     """
     return _scan(
         dtype=dtype,
-        threads_in_block=threads_in_block,
+        threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,
         mode="exclusive",
         scan_op="+",
