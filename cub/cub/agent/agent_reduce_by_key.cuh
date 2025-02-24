@@ -177,7 +177,7 @@ struct AgentReduceByKey
   using KeyOutputT = non_void_value_t<UniqueOutputIteratorT, KeyInputT>;
 
   // The input values type
-  using ValueInputT = value_t<ValuesInputIteratorT>;
+  using ValueInputT = iter_value_t<ValuesInputIteratorT>;
 
   // Tuple type for scanning (pairs accumulated segment-value with
   // segment-index)

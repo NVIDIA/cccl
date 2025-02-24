@@ -178,7 +178,7 @@ struct DeviceMemcpy
     static_assert(::cuda::std::is_pointer_v<cub::detail::iter_value_t<InputBufferIt>>,
                   "DeviceMemcpy::Batched only supports copying of memory buffers."
                   "Please consider using DeviceCopy::Batched instead.");
-    static_assert(::cuda::std::is_pointer_v<cub::detail::value_t<OutputBufferIt>>,
+    static_assert(::cuda::std::is_pointer_v<cub::detail::iter_value_t<OutputBufferIt>>,
                   "DeviceMemcpy::Batched only supports copying of memory buffers."
                   "Please consider using DeviceCopy::Batched instead.");
 

@@ -121,8 +121,8 @@ __global__ void kernel(
   int end_bit,
   bool striped)
 {
-  using key_t   = cub::detail::value_t<InputKeyIteratorT>;
-  using value_t = cub::detail::value_t<InputValueIteratorT>;
+  using key_t   = cub::detail::iter_value_t<InputKeyIteratorT>;
+  using value_t = cub::detail::iter_value_t<InputValueIteratorT>;
   using block_radix_sort_t =
     cub::BlockRadixSort<key_t, ThreadsInBlock, ItemsPerThread, value_t, RadixBits, Memoize, Algorithm, ShmemConfig>;
 

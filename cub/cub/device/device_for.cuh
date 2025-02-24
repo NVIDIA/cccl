@@ -596,7 +596,7 @@ private:
     using offset_t = NumItemsT;
     // Disable auto-vectorization for now:
     // constexpr bool use_vectorization =
-    //   detail::for_each::can_regain_copy_freedom<detail::value_t<RandomAccessIteratorT>, OpT>::value
+    //   detail::for_each::can_regain_copy_freedom<detail::iter_value_t<RandomAccessIteratorT>, OpT>::value
     //   && THRUST_NS_QUALIFIER::is_contiguous_iterator<RandomAccessIteratorT>::value;
     using use_vectorization_t = ::cuda::std::bool_constant<false>;
     return for_each_n<RandomAccessIteratorT, offset_t, OpT>(first, num_items, op, stream, use_vectorization_t{});

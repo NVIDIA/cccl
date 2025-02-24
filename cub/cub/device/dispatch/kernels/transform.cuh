@@ -361,7 +361,7 @@ _CCCL_DEVICE void transform_kernel_impl(
 template <typename It>
 union kernel_arg
 {
-  aligned_base_ptr<value_t<It>> aligned_ptr; // first member is trivial
+  aligned_base_ptr<iter_value_t<It>> aligned_ptr; // first member is trivial
   It iterator; // may not be trivially [default|copy]-constructible
 
   static_assert(::cuda::std::is_trivial_v<decltype(aligned_ptr)>, "");

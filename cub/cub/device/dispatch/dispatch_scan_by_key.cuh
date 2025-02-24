@@ -176,7 +176,7 @@ template <typename ScanTileStateT, typename KeysInputIteratorT, typename OffsetT
 CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanByKeyInitKernel(
   ScanTileStateT tile_state,
   KeysInputIteratorT d_keys_in,
-  cub::detail::value_t<KeysInputIteratorT>* d_keys_prev_in,
+  cub::detail::iter_value_t<KeysInputIteratorT>* d_keys_prev_in,
   OffsetT items_per_tile,
   int num_tiles)
 {
@@ -233,10 +233,11 @@ template <
   typename OffsetT,
   typename AccumT = ::cuda::std::__accumulator_t<
     ScanOpT,
-    cub::detail::value_t<ValuesInputIteratorT>,
-    ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>, cub::detail::value_t<ValuesInputIteratorT>, InitValueT>>,
+    cub::detail::iter_value_t<ValuesInputIteratorT>,
+    ::cuda::std::
+      _If<::cuda::std::is_same_v<InitValueT, NullType>, cub::detail::iter_value_t<ValuesInputIteratorT>, InitValueT>>,
   typename PolicyHub =
-    detail::scan_by_key::policy_hub<KeysInputIteratorT, AccumT, cub::detail::value_t<ValuesInputIteratorT>, ScanOpT>>
+    detail::scan_by_key::policy_hub<KeysInputIteratorT, AccumT, cub::detail::iter_value_t<ValuesInputIteratorT>, ScanOpT>>
 struct DispatchScanByKey
 {
   //---------------------------------------------------------------------
@@ -246,10 +247,10 @@ struct DispatchScanByKey
   static constexpr int INIT_KERNEL_THREADS = 128;
 
   // The input key type
-  using KeyT = cub::detail::value_t<KeysInputIteratorT>;
+  using KeyT = cub::detail::iter_value_t<KeysInputIteratorT>;
 
   // The input value type
-  using InputT = cub::detail::value_t<ValuesInputIteratorT>;
+  using InputT = cub::detail::iter_value_t<ValuesInputIteratorT>;
 
   // Tile state used for the decoupled look-back
   using ScanByKeyTileStateT = ReduceByKeyScanTileState<AccumT, int>;

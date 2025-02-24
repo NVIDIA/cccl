@@ -318,7 +318,7 @@ struct DeviceReduce
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     // The output value type
-    using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::value_t<InputIteratorT>>;
+    using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::iter_value_t<InputIteratorT>>;
 
     using InitT = OutputT;
 
@@ -424,7 +424,7 @@ struct DeviceReduce
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     // The input value type
-    using InputT = cub::detail::value_t<InputIteratorT>;
+    using InputT = cub::detail::iter_value_t<InputIteratorT>;
 
     using InitT = InputT;
 
@@ -539,7 +539,7 @@ struct DeviceReduce
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMin");
 
     // The input type
-    using InputValueT = cub::detail::value_t<InputIteratorT>;
+    using InputValueT = cub::detail::iter_value_t<InputIteratorT>;
 
     // Offset type used within the kernel and to index within one partition
     using PerPartitionOffsetT = int;
@@ -673,7 +673,7 @@ struct DeviceReduce
     using OffsetT = int;
 
     // The input type
-    using InputValueT = cub::detail::value_t<InputIteratorT>;
+    using InputValueT = cub::detail::iter_value_t<InputIteratorT>;
 
     // The output tuple type
     using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;
@@ -785,7 +785,7 @@ struct DeviceReduce
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     // The input value type
-    using InputT = cub::detail::value_t<InputIteratorT>;
+    using InputT = cub::detail::iter_value_t<InputIteratorT>;
 
     using InitT = InputT;
 
@@ -900,7 +900,7 @@ struct DeviceReduce
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMax");
 
     // The input type
-    using InputValueT = cub::detail::value_t<InputIteratorT>;
+    using InputValueT = cub::detail::iter_value_t<InputIteratorT>;
 
     // Offset type used within the kernel and to index within one partition
     using PerPartitionOffsetT = int;
@@ -1038,7 +1038,7 @@ struct DeviceReduce
     using OffsetT = int;
 
     // The input type
-    using InputValueT = cub::detail::value_t<InputIteratorT>;
+    using InputValueT = cub::detail::iter_value_t<InputIteratorT>;
 
     // The output tuple type
     using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;

@@ -558,12 +558,12 @@ private:
   using AliasT = ::cuda::std::conditional_t<IsMemcpy, char, iter_value_t<iter_value_t<InputBufferIt>>>;
 
   /// Types of the input and output buffers
-  using InputBufferT  = value_t<InputBufferIt>;
-  using OutputBufferT = value_t<OutputBufferIt>;
+  using InputBufferT  = iter_value_t<InputBufferIt>;
+  using OutputBufferT = iter_value_t<OutputBufferIt>;
 
   /// Type that has to be sufficiently large to hold any of the buffers' sizes.
   /// The BufferSizeIteratorT's value type must be convertible to this type.
-  using BufferSizeT = value_t<BufferSizeIteratorT>;
+  using BufferSizeT = iter_value_t<BufferSizeIteratorT>;
 
   /// Type used to index into the tile of buffers that this thread block is assigned to.
   using BlockBufferOffsetT = uint16_t;

@@ -144,7 +144,7 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
   static constexpr bool all_contiguous =
     ::cuda::std::conjunction_v<THRUST_NS_QUALIFIER::is_contiguous_iterator<RandomAccessIteratorsIn>...>;
   static constexpr bool all_values_trivially_reloc =
-    ::cuda::std::conjunction_v<THRUST_NS_QUALIFIER::is_trivially_relocatable<value_t<RandomAccessIteratorsIn>>...>;
+    ::cuda::std::conjunction_v<THRUST_NS_QUALIFIER::is_trivially_relocatable<iter_value_t<RandomAccessIteratorsIn>>...>;
 
   static constexpr bool can_memcpy = all_contiguous && all_values_trivially_reloc;
 
@@ -169,7 +169,7 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
         async_policy::block_threads * async_policy::min_items_per_thread)
       > int{max_smem_per_block};
     static constexpr bool any_type_is_overalinged =
-      ((alignof(value_t<RandomAccessIteratorsIn>) > bulk_copy_alignment) || ...);
+      ((alignof(iter_value_t<RandomAccessIteratorsIn>) > bulk_copy_alignment) || ...);
 
     static constexpr bool use_fallback =
       RequiresStableAddress || !can_memcpy || no_input_streams || exhaust_smem || any_type_is_overalinged;

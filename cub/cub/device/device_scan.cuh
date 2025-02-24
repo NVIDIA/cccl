@@ -1390,7 +1390,7 @@ struct DeviceScan
 
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
-    using InitT   = cub::detail::value_t<ValuesInputIteratorT>;
+    using InitT   = cub::detail::iter_value_t<ValuesInputIteratorT>;
 
     // Initial value
     InitT init_value{};

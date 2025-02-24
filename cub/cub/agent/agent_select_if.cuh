@@ -230,7 +230,7 @@ struct AgentSelectIf
   using InputT = iter_value_t<InputIteratorT>;
 
   // The flag value type
-  using FlagT = value_t<FlagsInputIteratorT>;
+  using FlagT = iter_value_t<FlagsInputIteratorT>;
 
   // Constants
   enum

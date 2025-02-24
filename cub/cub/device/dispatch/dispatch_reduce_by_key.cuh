@@ -227,11 +227,11 @@ template <typename KeysInputIteratorT,
           typename OffsetT,
           typename AccumT    = ::cuda::std::__accumulator_t<ReductionOpT,
                                                             cub::detail::iter_value_t<ValuesInputIteratorT>,
-                                                            cub::detail::value_t<ValuesInputIteratorT>>,
+                                                            cub::detail::iter_value_t<ValuesInputIteratorT>>,
           typename PolicyHub = detail::reduce_by_key::policy_hub<
             ReductionOpT,
             AccumT,
-            cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::value_t<KeysInputIteratorT>>>>
+            cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::iter_value_t<KeysInputIteratorT>>>>
 struct DispatchReduceByKey
 {
   //-------------------------------------------------------------------------
@@ -239,7 +239,7 @@ struct DispatchReduceByKey
   //-------------------------------------------------------------------------
 
   // The input values type
-  using ValueInputT = cub::detail::value_t<ValuesInputIteratorT>;
+  using ValueInputT = cub::detail::iter_value_t<ValuesInputIteratorT>;
 
   static constexpr int INIT_KERNEL_THREADS = 128;
 

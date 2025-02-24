@@ -399,7 +399,7 @@ struct DispatchBatchMemcpy
     using BlevBufferSrcsOutT =
       ::cuda::std::_If<MemcpyOpt == CopyAlg::Memcpy, const void*, cub::detail::iter_value_t<InputBufferIt>>;
     using BlevBufferDstOutT =
-      ::cuda::std::_If<MemcpyOpt == CopyAlg::Memcpy, void*, cub::detail::value_t<OutputBufferIt>>;
+      ::cuda::std::_If<MemcpyOpt == CopyAlg::Memcpy, void*, cub::detail::iter_value_t<OutputBufferIt>>;
     using BlevBufferSrcsOutItT        = BlevBufferSrcsOutT*;
     using BlevBufferDstsOutItT        = BlevBufferDstOutT*;
     using BlevBufferSizesOutItT       = BufferSizeT*;

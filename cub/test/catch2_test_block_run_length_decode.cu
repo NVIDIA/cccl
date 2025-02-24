@@ -75,7 +75,7 @@ public:
 
 private:
   using RunItemT   = cub::detail::iter_value_t<ItemItT>;
-  using RunLengthT = cub::detail::value_t<RunLengthsItT>;
+  using RunLengthT = cub::detail::iter_value_t<RunLengthsItT>;
 
   using BlockRunOffsetScanT = cub::BlockScan<RunLengthT, BLOCK_DIM_X, cub::BLOCK_SCAN_RAKING, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 

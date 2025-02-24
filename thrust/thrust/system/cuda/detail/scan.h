@@ -120,7 +120,7 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   ScanOp scan_op)
 {
   using InputValueT = cub::detail::InputValue<InitValueT>;
-  using ValueT      = cub::detail::value_t<InputIt>;
+  using ValueT      = cub::detail::iter_value_t<InputIt>;
   using AccumT      = ::cuda::std::__accumulator_t<ScanOp, ValueT, InitValueT>;
 
   using Dispatch32 =
