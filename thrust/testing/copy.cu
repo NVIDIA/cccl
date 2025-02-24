@@ -717,15 +717,30 @@ template <>
 struct is_non_const_reference<only_set_when_expected_it> : thrust::true_type
 {};
 } // end namespace detail
+THRUST_NAMESPACE_END
 
+namespace std
+{
 template <>
 struct iterator_traits<only_set_when_expected_it>
 {
   using value_type        = long long;
   using reference         = only_set_when_expected_it;
   using iterator_category = thrust::random_access_device_iterator_tag;
+  using difference_type   = ::cuda::std::ptrdiff_t;
 };
-THRUST_NAMESPACE_END
+} // namespace std
+
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
+template <>
+struct iterator_traits<only_set_when_expected_it>
+{
+  using value_type        = long long;
+  using reference         = only_set_when_expected_it;
+  using iterator_category = thrust::random_access_device_iterator_tag;
+  using difference_type   = ::cuda::std::ptrdiff_t;
+};
+_LIBCUDACXX_END_NAMESPACE_STD
 
 void TestCopyWithBigIndexesHelper(int magnitude)
 {

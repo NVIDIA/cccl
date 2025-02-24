@@ -56,9 +56,10 @@ template <>
 _LIBCUDACXX_HIDE_FROM_ABI __half minimum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
 {
 #  if defined(__CUDA_NO_HALF_OPERATORS__)
-  return CUB_MIN(__half2float(a), __half2float(b));
+  return ::cuda::std::min(__half2float(a), __half2float(b));
 #  else // ^^^ __CUDA_NO_HALF_OPERATORS__ ^^^ / vvv !__CUDA_NO_HALF_OPERATORS__ vvv
-  NV_IF_TARGET(NV_PROVIDES_SM_53, (return CUB_MIN(a, b);), (return CUB_MIN(__half2float(a), __half2float(b));));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_53, (return ::cuda::std::min(a, b);), (return ::cuda::std::min(__half2float(a), __half2float(b));));
 #  endif // !__CUDA_NO_HALF_OPERATORS__
 }
 
@@ -66,9 +67,10 @@ template <>
 _LIBCUDACXX_HIDE_FROM_ABI __half maximum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
 {
 #  if defined(__CUDA_NO_HALF_OPERATORS__)
-  return CUB_MAX(__half2float(a), __half2float(b));
+  return ::cuda::std::max(__half2float(a), __half2float(b));
 #  else // ^^^ __CUDA_NO_HALF_OPERATORS__ ^^^ / vvv !__CUDA_NO_HALF_OPERATORS__ vvv
-  NV_IF_TARGET(NV_PROVIDES_SM_53, (return CUB_MAX(a, b);), (return CUB_MAX(__half2float(a), __half2float(b));));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_53, (return ::cuda::std::max(a, b);), (return ::cuda::std::max(__half2float(a), __half2float(b));));
 #  endif // !__CUDA_NO_HALF_OPERATORS__
 }
 
@@ -113,29 +115,6 @@ CUB_NAMESPACE_END
 #endif // TEST_HALF_T()
 
 CUB_NAMESPACE_BEGIN
-
-// TODO(bgruber): drop this when we drop cub::Traits
-template <template <typename> class... Policies>
-struct NumericTraits<c2h::custom_type_t<Policies...>>
-{
-  using custom_t = c2h::custom_type_t<Policies...>;
-
-  __host__ __device__ static custom_t Max()
-  {
-    custom_t val{};
-    val.key = NumericTraits<decltype(std::declval<custom_t>().key)>::Max();
-    val.val = NumericTraits<decltype(std::declval<custom_t>().val)>::Max();
-    return val;
-  }
-
-  __host__ __device__ static custom_t Lowest()
-  {
-    custom_t val{};
-    val.key = NumericTraits<decltype(std::declval<custom_t>().key)>::Lowest();
-    val.val = NumericTraits<decltype(std::declval<custom_t>().val)>::Lowest();
-    return val;
-  }
-};
 
 template <typename Key, typename Value>
 static std::ostream& operator<<(std::ostream& os, const KeyValuePair<Key, Value>& val)
@@ -293,7 +272,7 @@ inline void compute_host_reference(
     auto seg_end   = seg_begin + h_sizes_begin[segment];
     // TODO Should this be using cub accumulator t?
     h_data_out[segment] =
-      static_cast<cub::detail::value_t<ResultOutItT>>(std::accumulate(seg_begin, seg_end, init, reduction_op));
+      static_cast<cub::detail::it_value_t<ResultOutItT>>(std::accumulate(seg_begin, seg_end, init, reduction_op));
   }
 }
 

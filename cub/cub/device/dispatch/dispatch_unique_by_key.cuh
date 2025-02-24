@@ -117,27 +117,28 @@ struct DeviceUniqueByKeyKernelSource
  * @tparam OffsetT
  *   Signed integer type for global offsets
  */
-template <typename KeyInputIteratorT,
-          typename ValueInputIteratorT,
-          typename KeyOutputIteratorT,
-          typename ValueOutputIteratorT,
-          typename NumSelectedIteratorT,
-          typename EqualityOpT,
-          typename OffsetT,
-          typename PolicyHub =
-            detail::unique_by_key::policy_hub<detail::value_t<KeyInputIteratorT>, detail::value_t<ValueInputIteratorT>>,
-          typename KernelSource = detail::unique_by_key::DeviceUniqueByKeyKernelSource<
-            typename PolicyHub::MaxPolicy,
-            KeyInputIteratorT,
-            ValueInputIteratorT,
-            KeyOutputIteratorT,
-            ValueOutputIteratorT,
-            NumSelectedIteratorT,
-            ScanTileState<OffsetT>,
-            EqualityOpT,
-            OffsetT>,
-          typename KernelLauncherFactory = detail::TripleChevronFactory,
-          typename VSMemHelperT          = detail::unique_by_key::VSMemHelper>
+template <
+  typename KeyInputIteratorT,
+  typename ValueInputIteratorT,
+  typename KeyOutputIteratorT,
+  typename ValueOutputIteratorT,
+  typename NumSelectedIteratorT,
+  typename EqualityOpT,
+  typename OffsetT,
+  typename PolicyHub =
+    detail::unique_by_key::policy_hub<detail::it_value_t<KeyInputIteratorT>, detail::it_value_t<ValueInputIteratorT>>,
+  typename KernelSource = detail::unique_by_key::DeviceUniqueByKeyKernelSource<
+    typename PolicyHub::MaxPolicy,
+    KeyInputIteratorT,
+    ValueInputIteratorT,
+    KeyOutputIteratorT,
+    ValueOutputIteratorT,
+    NumSelectedIteratorT,
+    ScanTileState<OffsetT>,
+    EqualityOpT,
+    OffsetT>,
+  typename KernelLauncherFactory = detail::TripleChevronFactory,
+  typename VSMemHelperT          = detail::unique_by_key::VSMemHelper>
 struct DispatchUniqueByKey
 {
   /******************************************************************************
@@ -150,8 +151,8 @@ struct DispatchUniqueByKey
   };
 
   // The input key and value type
-  using KeyT   = typename std::iterator_traits<KeyInputIteratorT>::value_type;
-  using ValueT = typename std::iterator_traits<ValueInputIteratorT>::value_type;
+  using KeyT   = detail::it_value_t<KeyInputIteratorT>;
+  using ValueT = detail::it_value_t<ValueInputIteratorT>;
 
   /// Device-accessible allocation of temporary storage.  When nullptr, the required allocation size
   /// is written to `temp_storage_bytes` and no work is done.
