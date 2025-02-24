@@ -580,7 +580,7 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, T& value, s
       case RANDOM_MINUS_PLUS_ZERO: {
         // Replace roughly 1/128 of values with -0.0 or +0.0, and
         // generate the rest randomly
-        using UnsignedBits = typename CUB_NS_QUALIFIER::Traits<T>::UnsignedBits;
+        using UnsignedBits = CUB_NS_QUALIFIER::detail::unsigned_bits_t<T>;
         char c;
         RandomBits(c);
         if (c == 0)
