@@ -34,7 +34,7 @@ class IteratorKind:
         return type(self) is type(other) and self.value_type == other.value_type
 
     def __hash__(self):
-        return hash(self.value_type)
+        return hash((self.__class__, self.value_type))
 
 
 @lru_cache(maxsize=None)
@@ -286,11 +286,7 @@ class CountingIterator(IteratorBase):
 
 
 class TransformIteratorKind(IteratorKind):
-    def __eq__(self, other):
-        return type(self) is type(other) and self.value_type == other.value_type
-
-    def __hash__(self):
-        return hash(self.value_type)
+    pass
 
 
 def make_transform_iterator(it, op: Callable):
