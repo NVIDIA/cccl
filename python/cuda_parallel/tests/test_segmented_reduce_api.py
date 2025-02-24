@@ -54,3 +54,54 @@ def test_device_segmented_reduce():
     expected_output = cp.asarray([0, -4, 1], dtype=d_output.dtype)
     assert (d_output == expected_output).all()
     # example-end segmented-reduce-min
+
+
+def test_device_segmented_reduce_for_rowwise_sum():
+    # example-begin segmented-reduce-rowwise-sum
+    import cupy as cp
+    import numpy as np
+
+    import cuda.parallel.experimental.algorithms as algorithms
+    import cuda.parallel.experimental.iterators as iterators
+
+    def add_op(a, b):
+        return a + b
+
+    n_rows, n_cols = 67, 12345
+    rng = np.random.default_rng()
+    mat = rng.integers(low=-31, high=32, dtype=np.int32, size=(n_rows, n_cols))
+
+    def make_scaler(step):
+        def scale(row_id):
+            return row_id * step
+
+        return scale
+
+    zero = np.int32(0)
+    row_offset = make_scaler(np.int32(n_cols))
+    start_offsets = iterators.TransformIterator(
+        iterators.CountingIterator(zero), row_offset
+    )
+
+    end_offsets = iterators.AdvancedIterator(start_offsets, offset=1)
+
+    d_input = cp.asarray(mat)
+    h_init = np.zeros(tuple(), dtype=np.int32)
+    d_output = cp.empty(n_rows, dtype=d_input.dtype)
+
+    alg = algorithms.segmented_reduce(
+        d_input, d_output, start_offsets, end_offsets, add_op, h_init
+    )
+
+    # query size of temporary storage and allocate
+    temp_nbytes = alg(
+        None, d_input, d_output, n_rows, start_offsets, end_offsets, h_init
+    )
+    temp_storage = cp.empty(temp_nbytes, dtype=cp.uint8)
+    # launch computation
+    alg(temp_storage, d_input, d_output, n_rows, start_offsets, end_offsets, h_init)
+
+    # Verify correctness
+    expected = cp.asarray(np.sum(mat, axis=-1))
+    assert cp.all(d_output == expected)
+    # example-end segmented-reduce-columnwise-total
