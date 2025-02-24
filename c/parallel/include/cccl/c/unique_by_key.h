@@ -16,9 +16,12 @@
 
 #include <cuda.h>
 
+#include <cccl/c/extern_c.h>
 #include <cccl/c/types.h>
 
-struct cccl_device_unique_by_key_build_result_t
+CCCL_C_EXTERN_C_BEGIN
+
+typedef struct cccl_device_unique_by_key_build_result_t
 {
   int cc;
   void* cubin;
@@ -26,10 +29,9 @@ struct cccl_device_unique_by_key_build_result_t
   CUlibrary library;
   CUkernel compact_init_kernel;
   CUkernel sweep_kernel;
-};
+} cccl_device_unique_by_key_build_result_t;
 
-// TODO return a union of nvtx/cuda/nvrtc errors or a string?
-extern "C" CCCL_C_API CUresult cccl_device_unique_by_key_build(
+CCCL_C_API CUresult cccl_device_unique_by_key_build(
   cccl_device_unique_by_key_build_result_t* build,
   cccl_iterator_t d_keys_in,
   cccl_iterator_t d_values_in,
@@ -44,7 +46,7 @@ extern "C" CCCL_C_API CUresult cccl_device_unique_by_key_build(
   const char* libcudacxx_path,
   const char* ctk_path) noexcept;
 
-extern "C" CCCL_C_API CUresult cccl_device_unique_by_key(
+CCCL_C_API CUresult cccl_device_unique_by_key(
   cccl_device_unique_by_key_build_result_t build,
   void* d_temp_storage,
   size_t* temp_storage_bytes,
@@ -57,5 +59,6 @@ extern "C" CCCL_C_API CUresult cccl_device_unique_by_key(
   unsigned long long num_items,
   CUstream stream) noexcept;
 
-extern "C" CCCL_C_API CUresult
-cccl_device_unique_by_key_cleanup(cccl_device_unique_by_key_build_result_t* bld_ptr) noexcept;
+CCCL_C_API CUresult cccl_device_unique_by_key_cleanup(cccl_device_unique_by_key_build_result_t* bld_ptr) noexcept;
+
+CCCL_C_EXTERN_C_END

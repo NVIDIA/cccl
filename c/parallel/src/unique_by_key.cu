@@ -66,7 +66,7 @@ enum class unique_by_key_iterator_t
 template <typename StorageT = storage_t>
 std::string get_iterator_name(cccl_iterator_t iterator, unique_by_key_iterator_t which_iterator)
 {
-  if (iterator.type == cccl_iterator_kind_t::pointer)
+  if (iterator.type == cccl_iterator_kind_t::CCCL_POINTER)
   {
     if (iterator.state == nullptr)
     {
@@ -162,7 +162,7 @@ std::string get_sweep_kernel_name(
 
 } // namespace unique_by_key
 
-extern "C" CCCL_C_API CUresult cccl_device_unique_by_key_build(
+CUresult cccl_device_unique_by_key_build(
   cccl_device_unique_by_key_build_result_t* build,
   cccl_iterator_t input_keys_it,
   cccl_iterator_t input_values_it,
@@ -186,12 +186,12 @@ extern "C" CCCL_C_API CUresult cccl_device_unique_by_key_build(
     const int cc      = cc_major * 10 + cc_minor;
     const auto policy = unique_by_key::get_policy(cc);
 
-    const auto input_keys_it_value_t          = cccl_type_enum_to_string(input_keys_it.value_type.type);
-    const auto input_values_it_value_t        = cccl_type_enum_to_string(input_values_it.value_type.type);
-    const auto output_keys_it_value_t         = cccl_type_enum_to_string(output_keys_it.value_type.type);
-    const auto output_values_it_value_t       = cccl_type_enum_to_string(output_values_it.value_type.type);
-    const auto output_num_selected_it_value_t = cccl_type_enum_to_string(output_num_selected_it.value_type.type);
-    const auto offset_t                       = cccl_type_enum_to_string(cccl_type_enum::INT64);
+    const auto input_keys_it_value_t          = cccl_type_enum_to_name(input_keys_it.value_type.type);
+    const auto input_values_it_value_t        = cccl_type_enum_to_name(input_values_it.value_type.type);
+    const auto output_keys_it_value_t         = cccl_type_enum_to_name(output_keys_it.value_type.type);
+    const auto output_values_it_value_t       = cccl_type_enum_to_name(output_values_it.value_type.type);
+    const auto output_num_selected_it_value_t = cccl_type_enum_to_name(output_num_selected_it.value_type.type);
+    const auto offset_t                       = cccl_type_enum_to_name(cccl_type_enum::CCCL_INT64);
 
     const std::string input_keys_iterator_src = make_kernel_input_iterator(
       offset_t,
@@ -294,27 +294,27 @@ extern "C" CCCL_C_API CUresult cccl_device_unique_by_key_build(
       }
     };
     ltoir_list_append({op.ltoir, op.ltoir_size});
-    if (cccl_iterator_kind_t::iterator == input_keys_it.type)
+    if (cccl_iterator_kind_t::CCCL_ITERATOR == input_keys_it.type)
     {
       ltoir_list_append({input_keys_it.advance.ltoir, input_keys_it.advance.ltoir_size});
       ltoir_list_append({input_keys_it.dereference.ltoir, input_keys_it.dereference.ltoir_size});
     }
-    if (cccl_iterator_kind_t::iterator == input_values_it.type)
+    if (cccl_iterator_kind_t::CCCL_ITERATOR == input_values_it.type)
     {
       ltoir_list_append({input_values_it.advance.ltoir, input_values_it.advance.ltoir_size});
       ltoir_list_append({input_values_it.dereference.ltoir, input_values_it.dereference.ltoir_size});
     }
-    if (cccl_iterator_kind_t::iterator == output_keys_it.type)
+    if (cccl_iterator_kind_t::CCCL_ITERATOR == output_keys_it.type)
     {
       ltoir_list_append({output_keys_it.advance.ltoir, output_keys_it.advance.ltoir_size});
       ltoir_list_append({output_keys_it.dereference.ltoir, output_keys_it.dereference.ltoir_size});
     }
-    if (cccl_iterator_kind_t::iterator == output_values_it.type)
+    if (cccl_iterator_kind_t::CCCL_ITERATOR == output_values_it.type)
     {
       ltoir_list_append({output_values_it.advance.ltoir, output_values_it.advance.ltoir_size});
       ltoir_list_append({output_values_it.dereference.ltoir, output_values_it.dereference.ltoir_size});
     }
-    if (cccl_iterator_kind_t::iterator == output_num_selected_it.type)
+    if (cccl_iterator_kind_t::CCCL_ITERATOR == output_num_selected_it.type)
     {
       ltoir_list_append({output_values_it.advance.ltoir, output_values_it.advance.ltoir_size});
       ltoir_list_append({output_values_it.dereference.ltoir, output_values_it.dereference.ltoir_size});
@@ -351,7 +351,7 @@ extern "C" CCCL_C_API CUresult cccl_device_unique_by_key_build(
   return error;
 }
 
-extern "C" CCCL_C_API CUresult cccl_device_unique_by_key(
+CUresult cccl_device_unique_by_key(
   cccl_device_unique_by_key_build_result_t build,
   void* d_temp_storage,
   size_t* temp_storage_bytes,
@@ -364,5 +364,25 @@ extern "C" CCCL_C_API CUresult cccl_device_unique_by_key(
   unsigned long long num_items,
   CUstream stream) noexcept;
 
-extern "C" CCCL_C_API CUresult
-cccl_device_unique_by_key_cleanup(cccl_device_unique_by_key_build_result_t* bld_ptr) noexcept;
+CUresult cccl_device_unique_by_key_cleanup(cccl_device_unique_by_key_build_result_t* build_ptr) noexcept
+{
+  try
+  {
+    if (build_ptr == nullptr)
+    {
+      return CUDA_ERROR_INVALID_VALUE;
+    }
+
+    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+    check(cuLibraryUnload(build_ptr->library));
+  }
+  catch (const std::exception& exc)
+  {
+    fflush(stderr);
+    printf("\nEXCEPTION in cccl_device_merge_sort_cleanup(): %s\n", exc.what());
+    fflush(stdout);
+    return CUDA_ERROR_UNKNOWN;
+  }
+
+  return CUDA_SUCCESS;
+}
