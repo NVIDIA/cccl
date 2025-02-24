@@ -109,7 +109,7 @@ struct TestZipIteratorReference
     using IteratorTuple1 = tuple<Iterator1, Iterator2>;
     using ZipIterator1   = zip_iterator<IteratorTuple1>;
 
-    using zip_iterator_reference_type1 = typename iterator_reference<ZipIterator1>::type;
+    using zip_iterator_reference_type1 = thrust::detail::it_reference_t<ZipIterator1>;
 
     host_vector<T> h_variable(1);
 
@@ -128,7 +128,7 @@ struct TestZipIteratorReference
     using IteratorTuple2 = tuple<Iterator3, Iterator4>;
     using ZipIterator2   = zip_iterator<IteratorTuple2>;
 
-    using zip_iterator_reference_type2 = typename iterator_reference<ZipIterator2>::type;
+    using zip_iterator_reference_type2 = thrust::detail::it_reference_t<ZipIterator2>;
 
     device_vector<T> d_variable(1);
 

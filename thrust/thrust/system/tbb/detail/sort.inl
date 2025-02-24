@@ -94,7 +94,7 @@ void merge_sort(execution_policy<DerivedPolicy>& exec,
                 StrictWeakOrdering comp,
                 bool inplace)
 {
-  using difference_type = typename thrust::iterator_difference<Iterator1>::type;
+  using difference_type = thrust::detail::it_difference_t<Iterator1>;
 
   difference_type n = thrust::distance(first1, last1);
 
@@ -212,7 +212,7 @@ void merge_sort_by_key(
   StrictWeakOrdering comp,
   bool inplace)
 {
-  using difference_type = typename thrust::iterator_difference<Iterator1>::type;
+  using difference_type = thrust::detail::it_difference_t<Iterator1>;
 
   difference_type n = thrust::distance(first1, last1);
 
@@ -260,7 +260,7 @@ template <typename DerivedPolicy, typename RandomAccessIterator, typename Strict
 void stable_sort(
   execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, RandomAccessIterator last, StrictWeakOrdering comp)
 {
-  using key_type = typename thrust::iterator_value<RandomAccessIterator>::type;
+  using key_type = thrust::detail::it_value_t<RandomAccessIterator>;
 
   thrust::detail::temporary_array<key_type, DerivedPolicy> temp(exec, first, last);
 
@@ -278,8 +278,8 @@ void stable_sort_by_key(
   RandomAccessIterator2 first2,
   StrictWeakOrdering comp)
 {
-  using key_type = typename thrust::iterator_value<RandomAccessIterator1>::type;
-  using val_type = typename thrust::iterator_value<RandomAccessIterator2>::type;
+  using key_type = thrust::detail::it_value_t<RandomAccessIterator1>;
+  using val_type = thrust::detail::it_value_t<RandomAccessIterator2>;
 
   RandomAccessIterator2 last2 = first2 + thrust::distance(first1, last1);
 

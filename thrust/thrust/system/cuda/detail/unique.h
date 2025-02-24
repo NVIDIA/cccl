@@ -73,7 +73,7 @@ _CCCL_HOST_DEVICE OutputIterator unique_copy(
   BinaryPredicate binary_pred);
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE typename thrust::iterator_traits<ForwardIterator>::difference_type unique_count(
+_CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator> unique_count(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -626,7 +626,7 @@ struct zip_adj_not_predicate
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class ForwardIt, class BinaryPred>
-typename thrust::iterator_traits<ForwardIt>::difference_type _CCCL_HOST_DEVICE
+thrust::detail::it_difference_t<ForwardIt> _CCCL_HOST_DEVICE
 unique_count(execution_policy<Derived>& policy, ForwardIt first, ForwardIt last, BinaryPred binary_pred)
 {
   if (first == last)

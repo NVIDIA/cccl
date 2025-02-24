@@ -38,7 +38,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator>
-_CCCL_HOST_DEVICE typename thrust::iterator_traits<InputIterator>::value_type
+_CCCL_HOST_DEVICE detail::it_value_t<InputIterator>
 reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, InputIterator last)
 {
   using thrust::system::detail::generic::reduce;
@@ -149,7 +149,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
 } // end reduce_by_key()
 
 template <typename InputIterator>
-typename thrust::iterator_traits<InputIterator>::value_type reduce(InputIterator first, InputIterator last)
+detail::it_value_t<InputIterator> reduce(InputIterator first, InputIterator last)
 {
   using thrust::system::detail::generic::select_system;
 

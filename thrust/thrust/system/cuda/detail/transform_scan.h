@@ -61,7 +61,7 @@ OutputIt _CCCL_HOST_DEVICE transform_inclusive_scan(
   ScanOp scan_op)
 {
   // Use the transformed input iterator's value type per https://wg21.link/P0571
-  using input_type  = typename thrust::iterator_value<InputIt>::type;
+  using input_type  = thrust::detail::it_value_t<InputIt>;
   using result_type = thrust::detail::invoke_result_t<TransformOp, input_type>;
   using value_type  = ::cuda::std::remove_cvref_t<result_type>;
 
@@ -82,7 +82,7 @@ OutputIt _CCCL_HOST_DEVICE transform_inclusive_scan(
   InitialValueType init,
   ScanOp scan_op)
 {
-  using input_type  = typename thrust::iterator_value<InputIt>::type;
+  using input_type  = thrust::detail::it_value_t<InputIt>;
   using result_type = thrust::detail::invoke_result_t<TransformOp, input_type>;
   using value_type  = ::cuda::std::remove_cvref_t<result_type>;
 

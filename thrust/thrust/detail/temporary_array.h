@@ -128,7 +128,7 @@ template <typename Iterator, typename FromSystem, typename ToSystem>
 struct move_to_system_base
     : public eval_if<::cuda::std::is_convertible<FromSystem, ToSystem>::value,
                      identity_<tagged_iterator_range<Iterator, ToSystem>>,
-                     identity_<temporary_array<typename thrust::iterator_value<Iterator>::type, ToSystem>>>
+                     identity_<temporary_array<thrust::detail::it_value_t<Iterator>, ToSystem>>>
 {};
 
 template <typename Iterator, typename FromSystem, typename ToSystem>

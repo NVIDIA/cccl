@@ -51,7 +51,7 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator1, ForwardIterator2> unique_by_key
   ForwardIterator1 keys_last,
   ForwardIterator2 values_first)
 {
-  using KeyType = typename thrust::iterator_traits<ForwardIterator1>::value_type;
+  using KeyType = thrust::detail::it_value_t<ForwardIterator1>;
   return thrust::unique_by_key(exec, keys_first, keys_last, values_first, thrust::equal_to<KeyType>());
 } // end unique_by_key()
 
@@ -63,8 +63,8 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator1, ForwardIterator2> unique_by_key
   ForwardIterator2 values_first,
   BinaryPredicate binary_pred)
 {
-  using InputType1 = typename thrust::iterator_traits<ForwardIterator1>::value_type;
-  using InputType2 = typename thrust::iterator_traits<ForwardIterator2>::value_type;
+  using InputType1 = thrust::detail::it_value_t<ForwardIterator1>;
+  using InputType2 = thrust::detail::it_value_t<ForwardIterator2>;
 
   ForwardIterator2 values_last = values_first + (keys_last - keys_first);
 
@@ -87,7 +87,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_c
   OutputIterator1 keys_output,
   OutputIterator2 values_output)
 {
-  using KeyType = typename thrust::iterator_traits<InputIterator1>::value_type;
+  using KeyType = thrust::detail::it_value_t<InputIterator1>;
   return thrust::unique_by_key_copy(
     exec, keys_first, keys_last, values_first, keys_output, values_output, thrust::equal_to<KeyType>());
 } // end unique_by_key_copy()
@@ -107,7 +107,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_c
   OutputIterator2 values_output,
   BinaryPredicate binary_pred)
 {
-  using difference_type = typename thrust::iterator_traits<InputIterator1>::difference_type;
+  using difference_type = thrust::detail::it_difference_t<InputIterator1>;
 
   difference_type n = thrust::distance(keys_first, keys_last);
 

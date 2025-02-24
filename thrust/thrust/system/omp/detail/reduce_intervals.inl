@@ -64,7 +64,7 @@ void reduce_intervals(
     "OpenMP compiler support is not enabled");
 
 #if (THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE == THRUST_TRUE)
-  using OutputType = typename thrust::iterator_value<OutputIterator>::type;
+  using OutputType = thrust::detail::it_value_t<OutputIterator>;
 
   // wrap binary_op
   thrust::detail::wrapped_function<BinaryFunction, OutputType> wrapped_binary_op{binary_op};

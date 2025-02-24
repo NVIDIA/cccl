@@ -136,13 +136,13 @@ struct transform_input_iterator_t
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*() const
   {
-    typename thrust::iterator_value<InputIt>::type x = *input;
+    thrust::detail::it_value_t<InputIt> x = *input;
     return op(x);
   }
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*()
   {
-    typename thrust::iterator_value<InputIt>::type x = *input;
+    thrust::detail::it_value_t<InputIt> x = *input;
     return op(x);
   }
 

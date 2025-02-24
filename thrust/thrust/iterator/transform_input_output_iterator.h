@@ -45,7 +45,7 @@ namespace detail
 template <typename InputFunction, typename OutputFunction, typename Iterator>
 class transform_input_output_iterator_proxy
 {
-  using iterator_value_type = typename iterator_value<Iterator>::type;
+  using iterator_value_type = it_value_t<Iterator>;
   using Value               = invoke_result_t<InputFunction, iterator_value_type>;
 
 public:
@@ -90,7 +90,7 @@ template <typename InputFunction, typename OutputFunction, typename Iterator>
 struct make_transform_input_output_iterator_base
 {
 private:
-  using iterator_value_type = typename iterator_value<Iterator>::type;
+  using iterator_value_type = it_value_t<Iterator>;
 
 public:
   using type =

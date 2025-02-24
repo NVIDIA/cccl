@@ -110,7 +110,7 @@ OutputIt _CCCL_HOST cross_system_copy_n(
   thrust::detail::false_type) // non-trivial copy
 {
   // get type of the input data
-  using InputTy = typename thrust::iterator_value<InputIt>::type;
+  using InputTy = thrust::detail::it_value_t<InputIt>;
 
   // copy input data into host temp storage
   InputIt last = first;
@@ -152,7 +152,7 @@ OutputIt _CCCL_HOST cross_system_copy_n(
 
 {
   // get type of the input data
-  using InputTy = typename thrust::iterator_value<InputIt>::type;
+  using InputTy = thrust::detail::it_value_t<InputIt>;
 
   // allocate device temp storage
   thrust::detail::temporary_array<InputTy, D> d_in_ptr(device_s, num_items);

@@ -409,8 +409,8 @@ void assert_equal(
   const std::string& filename = "unknown",
   int lineno                  = -1)
 {
-  using difference_type = typename THRUST_NS_QUALIFIER::iterator_difference<ForwardIterator1>::type;
-  using InputType       = typename THRUST_NS_QUALIFIER::iterator_value<ForwardIterator1>::type;
+  using difference_type = THRUST_NS_QUALIFIER::detail::it_difference_t<ForwardIterator1>;
+  using InputType       = THRUST_NS_QUALIFIER::detail::it_value_t<ForwardIterator1>;
 
   bool failure = false;
 

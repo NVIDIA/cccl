@@ -66,7 +66,7 @@ template <typename DerivedPolicy, typename ForwardIt, typename Size, typename Ou
 unique_eager_event
 async_inclusive_scan_n(execution_policy<DerivedPolicy>& policy, ForwardIt first, Size n, OutputIt out, BinaryOp op)
 {
-  using AccumT     = typename thrust::iterator_traits<ForwardIt>::value_type;
+  using AccumT     = thrust::detail::it_value_t<ForwardIt>;
   using Dispatch32 = cub::DispatchScan<ForwardIt, OutputIt, BinaryOp, cub::NullType, std::uint32_t, AccumT>;
   using Dispatch64 = cub::DispatchScan<ForwardIt, OutputIt, BinaryOp, cub::NullType, std::uint64_t, AccumT>;
 
@@ -132,8 +132,8 @@ unique_eager_event async_inclusive_scan_n(
   execution_policy<DerivedPolicy>& policy, ForwardIt first, Size n, OutputIt out, InitialValueType init, BinaryOp op)
 {
   using InputValueT = cub::detail::InputValue<InitialValueType>;
-  using AccumT      = typename ::cuda::std::
-    __accumulator_t<BinaryOp, typename ::cuda::std::iterator_traits<ForwardIt>::value_type, InitialValueType>;
+  using AccumT =
+    typename ::cuda::std::__accumulator_t<BinaryOp, thrust::detail::it_value_t<ForwardIt>, InitialValueType>;
 
   using Dispatch32 =
     cub::DispatchScan<ForwardIt, OutputIt, BinaryOp, InputValueT, std::int32_t, AccumT, cub::ForceInclusive::Yes>;

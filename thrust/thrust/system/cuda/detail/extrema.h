@@ -51,6 +51,8 @@
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/reduce.h>
 
+#  include <cuda/std/iterator>
+
 #  include <cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -403,7 +405,7 @@ min_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, Bina
 template <class Derived, class ItemsIt>
 ItemsIt _CCCL_HOST_DEVICE min_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last)
 {
-  using value_type = typename iterator_value<ItemsIt>::type;
+  using value_type = thrust::detail::it_value_t<ItemsIt>;
   return cuda_cub::min_element(policy, first, last, less<value_type>());
 }
 
@@ -422,7 +424,7 @@ max_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, Bina
 template <class Derived, class ItemsIt>
 ItemsIt _CCCL_HOST_DEVICE max_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last)
 {
-  using value_type = typename iterator_value<ItemsIt>::type;
+  using value_type = thrust::detail::it_value_t<ItemsIt>;
   return cuda_cub::max_element(policy, first, last, less<value_type>());
 }
 
@@ -467,7 +469,7 @@ minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, B
 template <class Derived, class ItemsIt>
 pair<ItemsIt, ItemsIt> _CCCL_HOST_DEVICE minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last)
 {
-  using value_type = typename iterator_value<ItemsIt>::type;
+  using value_type = thrust::detail::it_value_t<ItemsIt>;
   return cuda_cub::minmax_element(policy, first, last, less<value_type>());
 }
 
