@@ -64,16 +64,10 @@ template <typename Invokable, typename... Args>
 using invoke_result_t = ::cuda::std::invoke_result_t<Invokable, Args...>;
 
 template <typename T, typename... TArgs>
-_CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr bool is_one_of()
-{
-  return ::cuda::std::disjunction_v<::cuda::std::is_same<T, TArgs>...>;
-}
+inline constexpr bool is_one_of_v = (_CCCL_TRAIT(::cuda::std::is_same, T, TArgs) || ...);
 
 template <typename...>
-_CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr bool always_false()
-{
-  return false;
-}
+inline constexpr bool always_false_v = false;
 
 template <typename T, typename V, typename = void>
 struct has_binary_call_operator : ::cuda::std::false_type
@@ -95,12 +89,16 @@ template <typename T, typename = void>
 struct is_fixed_size_random_access_range : ::cuda::std::false_type
 {};
 
-template <typename T, ::cuda::std::size_t N>
+template <typename T, size_t N>
 struct is_fixed_size_random_access_range<T[N], void> : ::cuda::std::true_type
 {};
 
-template <typename T, ::cuda::std::size_t N>
+template <typename T, size_t N>
 struct is_fixed_size_random_access_range<::cuda::std::array<T, N>, void> : ::cuda::std::true_type
+{};
+
+template <typename T, size_t N>
+struct is_fixed_size_random_access_range<::cuda::std::span<T, N>, void> : ::cuda::std::true_type
 {};
 
 #if __cccl_lib_mdspan
@@ -114,7 +112,7 @@ struct is_fixed_size_random_access_range<
 #endif // __cccl_lib_mdspan
 
 template <typename T>
-using is_fixed_size_random_access_range_t = typename is_fixed_size_random_access_range<T>::type;
+inline constexpr bool is_fixed_size_random_access_range_v = is_fixed_size_random_access_range<T>::value;
 
 /***********************************************************************************************************************
  * static_size: a type trait that returns the number of elements in an Array-like type
@@ -128,18 +126,18 @@ using is_fixed_size_random_access_range_t = typename is_fixed_size_random_access
 template <typename T, typename = void>
 struct static_size
 {
-  static_assert(cub::detail::always_false<T>(), "static_size not supported for this type");
+  static_assert(cub::detail::always_false_v<T>, "static_size not supported for this type");
 };
 
-template <typename T, ::cuda::std::size_t N>
+template <typename T, size_t N>
 struct static_size<T[N], void> : ::cuda::std::integral_constant<int, N>
 {};
 
-template <typename T, ::cuda::std::size_t N>
+template <typename T, size_t N>
 struct static_size<::cuda::std::array<T, N>, void> : ::cuda::std::integral_constant<int, N>
 {};
 
-template <typename T, ::cuda::std::size_t N>
+template <typename T, size_t N>
 struct static_size<::cuda::std::span<T, N>, void> : ::cuda::std::integral_constant<int, N>
 {};
 
@@ -154,10 +152,7 @@ struct static_size<::cuda::std::mdspan<T, E, L, A>,
 #endif // __cccl_lib_mdspan
 
 template <typename T>
-_CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::size_t static_size_v()
-{
-  return static_size<T>::value;
-}
+inline constexpr auto static_size_v = static_size<T>::value;
 
 template <typename T>
 using implicit_prom_t = decltype(+T{});
