@@ -18,11 +18,6 @@
 #include <cub/agent/agent_unique_by_key.cuh>
 #include <cub/util_vsmem.cuh>
 
-#define XSTR(x) STR(x)
-#define STR(x)  #x
-
-#pragma message "The value of ABC: " XSTR(CUB_PTX_ARCH)
-
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
