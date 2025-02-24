@@ -617,14 +617,7 @@ public:
   }
 
   // no-op : so that we can use the same code with stream_ctx and graph_ctx
-  void change_epoch()
-  {
-    auto& dot = *get_dot();
-    if (dot.is_tracing())
-    {
-      dot.change_epoch();
-    }
-  }
+  void change_epoch() {}
 
   template <typename S, typename... Deps>
   auto deferred_parallel_for(exec_place e_place, S shape, task_dep<Deps>... deps)
@@ -683,10 +676,9 @@ private:
       reserved::backend_ctx_update_uncached_allocator(*this, mv(custom));
     }
 
-    event_list stream_to_event_list(cudaStream_t stream, ::std::string) const override
+    event_list stream_to_event_list(cudaStream_t stream, ::std::string symbol) const override
     {
-      auto e = reserved::record_event_in_stream(decorated_stream(stream));
-      /// e->set_symbol(mv(event_symbol));
+      auto e = reserved::record_event_in_stream(decorated_stream(stream), *get_dot(), mv(symbol));
       return event_list(mv(e));
     }
 

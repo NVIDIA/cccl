@@ -989,7 +989,7 @@ public:
 
   auto dot_section(::std::string symbol) const
   {
-    return reserved::dot::section::guard(mv(symbol));
+    return reserved::dot::section::guard(get_dot()->get_unique_id(), mv(symbol));
   }
 
   auto get_phase() const
@@ -1138,11 +1138,13 @@ public:
   }
 
   template <typename T>
-  frozen_logical_data<T> freeze(cuda::experimental::stf::logical_data<T> d,
-                                access_mode m    = access_mode::read,
-                                data_place where = data_place::invalid)
+  frozen_logical_data<T>
+  freeze(cuda::experimental::stf::logical_data<T> d,
+         access_mode m    = access_mode::read,
+         data_place where = data_place::invalid,
+         bool user_freeze = true)
   {
-    return frozen_logical_data<T>(*this, mv(d), m, mv(where));
+    return frozen_logical_data<T>(*this, mv(d), m, mv(where), user_freeze);
   }
 
   /**
