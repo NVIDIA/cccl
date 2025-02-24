@@ -60,7 +60,6 @@ Once a device thread makes progress:
   [Note: Threads in other thread-block clusters are not guaranteed to eventually make progress. - end note.]
   [Note: This implies that all device threads within its thread block shall eventually make progress. - end note.]
 
-The order in which device threads make progress is _unspecified_.
 
 Modify `[intro.progress.1] <https://eel.is/c++draft/intro.progress>`__ as follows (modifications in **bold**):
 
