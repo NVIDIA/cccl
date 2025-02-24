@@ -91,8 +91,6 @@ _CCCL_DEVICE static inline void __shfl_sync_checks(
 #  if __CUDA_ARCH__ >= 700
   [[maybe_unused]] int __pred;
   _CCCL_ASSERT(__match_all_sync(__activemask(), __lane_mask, &__pred), "all active lanes must have the same lane mask");
-  _CCCL_ASSERT(__match_all_sync(__activemask(), __clamp_segmask, &__pred),
-               "all active lanes must have the same clamp_segmask");
 #  endif
   _CCCL_ASSERT(::cuda::ptx::__shfl_sync_dst_lane(__shfl_mode, __lane_idx_offset, __clamp_segmask) & __lane_mask,
                "the destination lane must be a member of the lane mask");
