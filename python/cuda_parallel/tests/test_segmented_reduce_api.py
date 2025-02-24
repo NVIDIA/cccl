@@ -83,7 +83,7 @@ def test_device_segmented_reduce_for_rowwise_sum():
         iterators.CountingIterator(zero), row_offset
     )
 
-    end_offsets = iterators.AdvancedIterator(start_offsets, offset=1)
+    end_offsets = start_offsets + 1
 
     d_input = cp.asarray(mat)
     h_init = np.zeros(tuple(), dtype=np.int32)
