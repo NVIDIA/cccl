@@ -38,21 +38,19 @@ __host__ __device__ constexpr bool test()
   assert(md(0) == 42);
   assert(md(1) == 43);
 
-  A aligned_non_const;
+  A aligned_non_const{};
   cuda::std::default_accessor<int> acc1{aligned_non_const};
   cuda::std::default_accessor<int> acc2 = aligned_non_const;
   unused(acc1);
   unused(acc2);
   take_default_accessor(aligned_non_const);
-  unused(aligned_non_const);
 
-  cuda::std::aligned_accessor<const T, sizeof(T)> aligned_const;
+  cuda::std::aligned_accessor<const T, sizeof(T)> aligned_const{};
   cuda::std::default_accessor<const T> acc3{aligned_const};
   cuda::std::default_accessor<const T> acc4 = aligned_const;
   unused(acc3);
   unused(acc4);
   take_default_accessor_const(aligned_const);
-  unused(aligned_const);
   return true;
 }
 
