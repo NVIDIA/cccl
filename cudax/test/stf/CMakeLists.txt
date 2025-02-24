@@ -150,6 +150,7 @@ set(stf_test_codegen_sources
   stress/launch_vs_parallelfor.cu
   stress/parallel_for_overhead.cu
   # threads/axpy-threads-pfor.cu   # Currently has a difficult-to-reproduce concurrency problem
+  threads/axpy-threads-graph.cu
   tools/auto_dump/auto_dump.cu
 )
 

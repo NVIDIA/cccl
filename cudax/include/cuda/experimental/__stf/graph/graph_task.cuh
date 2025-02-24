@@ -397,6 +397,11 @@ public:
     return ctx_graph;
   }
 
+  auto& get_ctx_graph_mutex()
+  {
+    return graph_mutex;
+  }
+
   void set_current_place(pos4 p)
   {
     get_exec_place().as_grid().set_current_place(ctx, p);
