@@ -1626,15 +1626,6 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Up = _Tp)
-  _CCCL_REQUIRES((!__is_std_optional<decay_t<_Up>>::value) _CCCL_AND _CCCL_TRAIT(is_constructible, _Tp&, _Up))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr optional&
-  operator=(_Up&& __u) noexcept(noexcept(static_cast<_Tp&>(_CUDA_VSTD::forward<_Up>(__u))))
-  {
-    __value_ = _CUDA_VSTD::addressof(__u);
-    return *this;
-  }
-
-  _CCCL_TEMPLATE(class _Up = _Tp)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Tp&, _Up) _CCCL_AND(!__from_temporary<_Up>))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp&
   emplace(_Up&& __u) noexcept(noexcept(static_cast<_Tp&>(_CUDA_VSTD::forward<_Up>(__u))))
