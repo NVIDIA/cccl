@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__mdspan/aligned_accessor.h>
 #include <cuda/std/__mdspan/default_accessor.h>
 #include <cuda/std/__mdspan/dynamic_extent.h>
 #include <cuda/std/__mdspan/extents.h>
