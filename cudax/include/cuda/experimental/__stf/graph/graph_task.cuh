@@ -574,7 +574,7 @@ public:
       //
       // TODO : provide a per-thread CUDA stream dedicated for capture on that
       // execution place.
-      auto lock = t.lock_ctx_graph();
+      auto lock = lock_ctx_graph();
 
       // Get a stream from the pool associated to the execution place
       cudaStream_t capture_stream = get_exec_place().getStream(ctx.async_resources(), true).stream;
