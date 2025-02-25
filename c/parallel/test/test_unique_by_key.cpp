@@ -121,12 +121,6 @@ TEMPLATE_LIST_TEST_CASE("DeviceSelect::UniqueByKey works", "[unique_by_key]", ke
   std::vector<TestType> input_keys = generate<TestType>(num_items);
   std::vector<item_t> input_values = generate<item_t>(num_items);
 
-  std::vector<std::pair<TestType, item_t>> input_pairs;
-  for (size_t i = 0; i < input_keys.size(); ++i)
-  {
-    input_pairs.emplace_back(input_keys[i], input_values[i]);
-  }
-
   std::vector<TestType> output_keys(num_items);
   std::vector<item_t> output_values(num_items);
 
@@ -140,6 +134,11 @@ TEMPLATE_LIST_TEST_CASE("DeviceSelect::UniqueByKey works", "[unique_by_key]", ke
 
   unique_by_key(input_keys_it, input_values_it, output_keys_it, output_values_it, output_num_selected_it, op, num_items);
 
+  std::vector<std::pair<TestType, item_t>> input_pairs;
+  for (size_t i = 0; i < input_keys.size(); ++i)
+  {
+    input_pairs.emplace_back(input_keys[i], input_values[i]);
+  }
   const auto boundary = std::unique(input_pairs.begin(), input_pairs.end(), [](const auto& a, const auto& b) {
     return a.first == b.first;
   });
@@ -150,12 +149,12 @@ TEMPLATE_LIST_TEST_CASE("DeviceSelect::UniqueByKey works", "[unique_by_key]", ke
 
   input_pairs.resize(num_selected);
 
-  std::vector<TestType> host_output_keys(output_keys);
-  std::vector<item_t> host_output_values(output_values);
+  std::vector<TestType> host_output_keys(output_keys_it);
+  std::vector<item_t> host_output_values(output_values_it);
   std::vector<std::pair<TestType, item_t>> output_pairs;
   for (int i = 0; i < num_selected; ++i)
   {
-    output_pairs.emplace_back(output_keys[i], output_values[i]);
+    output_pairs.emplace_back(host_output_keys[i], host_output_values[i]);
   }
 
   REQUIRE(input_pairs == output_pairs);
