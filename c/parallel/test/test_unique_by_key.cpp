@@ -10,13 +10,15 @@
 
 #include <cuda_runtime.h>
 
+#include <algorithm>
 #include <vector>
 
 #include "test_util.h"
+#include <catch2/catch_test_macros.hpp>
 #include <cccl/c/unique_by_key.h>
 
-using key_types = std::tuple<uint8_t, int16_t, uint32_t, double>;
-using item_t    = float;
+using key_types = std::tuple<uint8_t, int16_t, uint32_t, int64_t>;
+using item_t    = int32_t;
 
 void unique_by_key(
   cccl_iterator_t input_keys,
@@ -109,4 +111,52 @@ TEMPLATE_LIST_TEST_CASE("DeviceSelect::UniqueByKey can run with empty input", "[
   unique_by_key(input_keys_it, input_keys_it, input_keys_it, input_keys_it, output_num_selected_it, op, num_items);
 
   REQUIRE(0 == std::vector<int>(output_num_selected_it)[0]);
+}
+
+TEMPLATE_LIST_TEST_CASE("DeviceSelect::UniqueByKey works", "[unique_by_key]", key_types)
+{
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+
+  operation_t op                   = make_operation("op", get_unique_by_key_op(get_type_info<TestType>().type));
+  std::vector<TestType> input_keys = generate<TestType>(num_items);
+  std::vector<item_t> input_values = generate<item_t>(num_items);
+
+  std::vector<std::pair<TestType, item_t>> input_pairs;
+  for (size_t i = 0; i < input_keys.size(); ++i)
+  {
+    input_pairs.emplace_back(input_keys[i], input_values[i]);
+  }
+
+  std::vector<TestType> output_keys(num_items);
+  std::vector<item_t> output_values(num_items);
+
+  std::vector<int> output_num_selected(1, 0);
+
+  pointer_t<TestType> input_keys_it(input_keys);
+  pointer_t<item_t> input_values_it(input_values);
+  pointer_t<TestType> output_keys_it(output_keys);
+  pointer_t<item_t> output_values_it(output_values);
+  pointer_t<int> output_num_selected_it(output_num_selected);
+
+  unique_by_key(input_keys_it, input_values_it, output_keys_it, output_values_it, output_num_selected_it, op, num_items);
+
+  const auto boundary = std::unique(input_pairs.begin(), input_pairs.end(), [](const auto& a, const auto& b) {
+    return a.first == b.first;
+  });
+
+  int num_selected = std::vector<int>(output_num_selected_it)[0];
+
+  REQUIRE((boundary - input_pairs.begin()) == num_selected);
+
+  input_pairs.resize(num_selected);
+
+  std::vector<TestType> host_output_keys(output_keys);
+  std::vector<item_t> host_output_values(output_values);
+  std::vector<std::pair<TestType, item_t>> output_pairs;
+  for (int i = 0; i < num_selected; ++i)
+  {
+    output_pairs.emplace_back(output_keys[i], output_values[i]);
+  }
+
+  REQUIRE(input_pairs == output_pairs);
 }
