@@ -1,4 +1,3 @@
-
 /******************************************************************************
  * Copyright (c) 2011-2023, NVIDIA CORPORATION.  All rights reserved.
  *
@@ -41,7 +40,7 @@
 #include <thrust/scan.h>
 #include <thrust/sequence.h>
 
-#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__algorithm_>
 #include <cuda/std/bit>
 #include <cuda/std/functional>
 #include <cuda/type_traits>

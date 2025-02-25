@@ -39,6 +39,7 @@
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+
 #  pragma clang system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
@@ -51,7 +52,7 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/ptx>
-#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm_>
 
 CUB_NAMESPACE_BEGIN
 

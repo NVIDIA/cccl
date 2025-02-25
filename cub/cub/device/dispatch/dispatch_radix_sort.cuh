@@ -53,8 +53,7 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__algorithm_>
 #include <cuda/std/type_traits>
 
 #include <iterator>
