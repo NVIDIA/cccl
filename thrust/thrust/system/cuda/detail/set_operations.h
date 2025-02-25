@@ -1075,7 +1075,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
 
   size_t tile_agent_storage;
   status = ScanTileState::AllocationSize(static_cast<int>(num_tiles), tile_agent_storage);
-  CUDA_CUB_RET_IF_FAIL(status);
+  _CUDA_CUB_RET_IF_FAIL(status);
 
   size_t vshmem_storage          = core::detail::vshmem_size(set_op_plan.shared_memory_size, num_tiles);
   size_t partition_agent_storage = (num_tiles + 1) * sizeof(Size) * 2;
@@ -1084,7 +1084,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   size_t allocation_sizes[3] = {tile_agent_storage, partition_agent_storage, vshmem_storage};
 
   status = core::detail::alias_storage(d_temp_storage, temp_storage_size, allocations, allocation_sizes);
-  CUDA_CUB_RET_IF_FAIL(status);
+  _CUDA_CUB_RET_IF_FAIL(status);
 
   if (d_temp_storage == nullptr)
   {
@@ -1093,18 +1093,18 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
 
   ScanTileState tile_state;
   status = tile_state.Init(static_cast<int>(num_tiles), allocations[0], allocation_sizes[0]);
-  CUDA_CUB_RET_IF_FAIL(status);
+  _CUDA_CUB_RET_IF_FAIL(status);
 
   pair<Size, Size>* partitions = (pair<Size, Size>*) allocations[1];
   char* vshmem_ptr             = vshmem_storage > 0 ? (char*) allocations[2] : nullptr;
 
   init_agent ia(init_plan, num_tiles, stream, "set_op::init_agent");
   ia.launch(tile_state, num_tiles);
-  CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
+  _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
 
   partition_agent pa(partition_plan, num_tiles + 1, stream, "set_op::partition agent");
   pa.launch(keys1, keys2, num_keys1, num_keys2, num_tiles + 1, partitions, compare_op, tile_size);
-  CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
+  _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
 
   set_op_agent sa(set_op_plan, keys_total, stream, vshmem_ptr, "set_op::set_op_agent");
   sa.launch(
@@ -1121,7 +1121,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
     partitions,
     output_count,
     tile_state);
-  CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
+  _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
 
   return status;
 }
