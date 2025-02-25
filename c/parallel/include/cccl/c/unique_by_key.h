@@ -29,6 +29,8 @@ typedef struct cccl_device_unique_by_key_build_result_t
   CUlibrary library;
   CUkernel compact_init_kernel;
   CUkernel sweep_kernel;
+  size_t description_bytes_per_tile;
+  size_t payload_bytes_per_tile;
 } cccl_device_unique_by_key_build_result_t;
 
 CCCL_C_API CUresult cccl_device_unique_by_key_build(

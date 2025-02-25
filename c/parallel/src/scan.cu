@@ -8,7 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_driver.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
@@ -20,7 +19,6 @@
 #include <format>
 #include <iostream>
 #include <optional>
-#include <regex>
 #include <string>
 #include <type_traits>
 
@@ -30,6 +28,7 @@
 #include "util/context.h"
 #include "util/errors.h"
 #include "util/indirect_arg.h"
+#include "util/scan_tile_state.h"
 #include "util/types.h"
 #include <cccl/c/scan.h>
 #include <nvrtc.h>
@@ -171,74 +170,6 @@ std::string get_scan_kernel_name(cccl_iterator_t input_it, cccl_iterator_t outpu
     "false", // 8 - for now, always exclusive
     init_t); // 9
 }
-
-// TODO: NVRTC doesn't currently support extracting basic type
-// information (e.g., type sizes and alignments) from compiled
-// LTO-IR. So we separately compile a small PTX file that defines the
-// necessary types and constants and grep it for the required
-// information. If/when NVRTC adds these features, we can remove this
-// extra compilation step and get the information directly from the
-// LTO-IR.
-static constexpr auto ptx_u64_assignment_regex = R"(\.visible\s+\.global\s+\.align\s+\d+\s+\.u64\s+{}\s*=\s*(\d+);)";
-
-std::optional<size_t> find_size_t(char* ptx, std::string_view name)
-{
-  std::regex regex(std::format(ptx_u64_assignment_regex, name));
-  std::cmatch match;
-  if (std::regex_search(ptx, match, regex))
-  {
-    auto result = std::stoi(match[1].str());
-    return result;
-  }
-  return std::nullopt;
-}
-
-struct scan_tile_state
-{
-  // scan_tile_state implements the same (host) interface as cub::ScanTileStateT, except
-  // that it accepts the acummulator type as a runtime parameter rather than being
-  // templated on it.
-  //
-  // Both specializations ScanTileStateT<T, true> and ScanTileStateT<T, false> - where the
-  // bool parameter indicates whether `T` is primitive - are combined into a single type.
-
-  void* d_tile_status; // d_tile_descriptors
-  void* d_tile_partial;
-  void* d_tile_inclusive;
-
-  size_t description_bytes_per_tile;
-  size_t payload_bytes_per_tile;
-
-  scan_tile_state(size_t description_bytes_per_tile, size_t payload_bytes_per_tile)
-      : d_tile_status(nullptr)
-      , d_tile_partial(nullptr)
-      , d_tile_inclusive(nullptr)
-      , description_bytes_per_tile(description_bytes_per_tile)
-      , payload_bytes_per_tile(payload_bytes_per_tile)
-  {}
-
-  cudaError_t Init(int num_tiles, void* d_temp_storage, size_t temp_storage_bytes)
-  {
-    void* allocations[3] = {};
-    auto status          = cub::detail::tile_state_init(
-      description_bytes_per_tile, payload_bytes_per_tile, num_tiles, d_temp_storage, temp_storage_bytes, allocations);
-    if (status != cudaSuccess)
-    {
-      return status;
-    }
-    d_tile_status    = allocations[0];
-    d_tile_partial   = allocations[1];
-    d_tile_inclusive = allocations[2];
-    return cudaSuccess;
-  }
-
-  cudaError_t AllocationSize(int num_tiles, size_t& temp_storage_bytes) const
-  {
-    temp_storage_bytes =
-      cub::detail::tile_state_allocation_size(description_bytes_per_tile, payload_bytes_per_tile, num_tiles);
-    return cudaSuccess;
-  }
-};
 
 template <auto* GetPolicy>
 struct dynamic_scan_policy_t
@@ -392,43 +323,8 @@ struct device_scan_policy {{
     check(cuLibraryGetKernel(&build_ptr->init_kernel, build_ptr->library, init_kernel_lowered_name.c_str()));
     check(cuLibraryGetKernel(&build_ptr->scan_kernel, build_ptr->library, scan_kernel_lowered_name.c_str()));
 
-    constexpr size_t num_ptx_args      = 7;
-    const char* ptx_args[num_ptx_args] = {
-      arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto"};
-    constexpr size_t num_ptx_lto_args       = 3;
-    const char* ptx_lopts[num_ptx_lto_args] = {"-lto", arch.c_str(), "-ptx"};
-
-    constexpr std::string_view ptx_src_template = R"XXX(
-#include <cub/agent/single_pass_scan_operators.cuh>
-#include <cub/util_type.cuh>
-struct __align__({1}) storage_t {{
-   char data[{0}];
-}};
-__device__ size_t description_bytes_per_tile = cub::ScanTileState<{2}>::description_bytes_per_tile;
-__device__ size_t payload_bytes_per_tile = cub::ScanTileState<{2}>::payload_bytes_per_tile;
-)XXX";
-
-    const std::string ptx_src = std::format(ptx_src_template, accum_t.size, accum_t.alignment, accum_cpp);
-    auto compile_result =
-      make_nvrtc_command_list()
-        .add_program(nvrtc_translation_unit{ptx_src.c_str(), "tile_state_info"})
-        .compile_program({ptx_args, num_ptx_args})
-        .cleanup_program()
-        .finalize_program(num_ptx_lto_args, ptx_lopts);
-    auto ptx_code = compile_result.data.get();
-
-    size_t description_bytes_per_tile;
-    size_t payload_bytes_per_tile;
-    auto maybe_description_bytes_per_tile = scan::find_size_t(ptx_code, "description_bytes_per_tile");
-    if (maybe_description_bytes_per_tile)
-    {
-      description_bytes_per_tile = maybe_description_bytes_per_tile.value();
-    }
-    else
-    {
-      throw std::runtime_error("Failed to find description_bytes_per_tile in PTX");
-    }
-    payload_bytes_per_tile = scan::find_size_t(ptx_code, "payload_bytes_per_tile").value_or(0);
+    auto [description_bytes_per_tile,
+          payload_bytes_per_tile] = get_tile_state_bytes_per_tile(accum_t, accum_cpp, args, num_args, arch);
 
     build_ptr->cc                         = cc;
     build_ptr->cubin                      = (void*) result.data.release();

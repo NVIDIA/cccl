@@ -18,6 +18,7 @@
 #include "kernels/operators.h"
 #include "util/context.h"
 #include "util/indirect_arg.h"
+#include "util/scan_tile_state.h"
 #include "util/types.h"
 #include <cccl/c/unique_by_key.h>
 #include <nvrtc/command_list.h>
@@ -79,7 +80,7 @@ unique_by_key_runtime_tuning_policy get_policy(int /*cc*/)
   // TODO: we should update this once we figure out a way to reuse
   // tuning logic from C++. Alternately, we should implement
   // something better than a hardcoded default:
-  return {384, 10, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT};
+  return {128, 10, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT};
 }
 
 enum class unique_by_key_iterator_t
@@ -134,11 +135,11 @@ std::string get_compact_init_kernel_name(cccl_iterator_t output_num_selected_it)
   std::string offset_t;
   check(nvrtcGetTypeName<OffsetT>(&offset_t));
 
-  const std::string input_keys_iterator_t =
+  const std::string num_selected_iterator_t =
     get_iterator_name(output_num_selected_it, unique_by_key_iterator_t::num_selected);
 
   return std::format(
-    "cub::detail::scan::DeviceCompactInitKernel<cub::ScanTileState<{0}>, {1}>;", offset_t, input_keys_iterator_t);
+    "cub::detail::scan::DeviceCompactInitKernel<cub::ScanTileState<{0}>, {1}>", offset_t, num_selected_iterator_t);
 }
 
 std::string get_sweep_kernel_name(
@@ -169,7 +170,7 @@ std::string get_sweep_kernel_name(
   check(nvrtcGetTypeName<op_wrapper>(&equality_op_t));
 
   return std::format(
-    "cub::detail::unique_by_key::DeviceUniqueByKeySweepKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}>;",
+    "cub::detail::unique_by_key::DeviceUniqueByKeySweepKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}>",
     chained_policy_t,
     input_keys_iterator_t,
     input_values_iterator_t,
@@ -205,6 +206,11 @@ struct unique_by_key_kernel_source
   CUkernel CompactInitKernel() const
   {
     return build.compact_init_kernel;
+  }
+
+  scan_tile_state TileState()
+  {
+    return {build.description_bytes_per_tile, build.payload_bytes_per_tile};
   }
 };
 
@@ -267,66 +273,75 @@ CUresult cccl_device_unique_by_key_build(
     const auto output_keys_it_value_t         = cccl_type_enum_to_name(output_keys_it.value_type.type);
     const auto output_values_it_value_t       = cccl_type_enum_to_name(output_values_it.value_type.type);
     const auto output_num_selected_it_value_t = cccl_type_enum_to_name(output_num_selected_it.value_type.type);
-    const auto offset_t                       = cccl_type_enum_to_name(cccl_type_enum::CCCL_INT64);
+    const auto offset_cpp                     = cccl_type_enum_to_name(cccl_type_enum::CCCL_INT64);
+    const cccl_type_info offset_t{sizeof(int64_t), alignof(int64_t), cccl_type_enum::CCCL_INT64};
 
     const std::string input_keys_iterator_src = make_kernel_input_iterator(
-      offset_t,
+      offset_cpp,
       get_iterator_name(input_keys_it, unique_by_key::unique_by_key_iterator_t::input_keys),
       input_keys_it_value_t,
       input_keys_it);
     const std::string input_values_iterator_src = make_kernel_input_iterator(
-      offset_t,
+      offset_cpp,
       get_iterator_name(input_values_it, unique_by_key::unique_by_key_iterator_t::input_values),
       input_values_it_value_t,
       input_values_it);
     const std::string output_keys_iterator_src = make_kernel_output_iterator(
-      offset_t,
+      offset_cpp,
       get_iterator_name(output_keys_it, unique_by_key::unique_by_key_iterator_t::output_keys),
       output_keys_it_value_t,
       output_keys_it);
     const std::string output_values_iterator_src = make_kernel_output_iterator(
-      offset_t,
+      offset_cpp,
       get_iterator_name(output_values_it, unique_by_key::unique_by_key_iterator_t::output_values),
       output_values_it_value_t,
       output_values_it);
     const std::string output_num_selected_iterator_src = make_kernel_output_iterator(
-      offset_t,
+      offset_cpp,
       get_iterator_name(output_num_selected_it, unique_by_key::unique_by_key_iterator_t::num_selected),
       output_num_selected_it_value_t,
       output_num_selected_it);
 
     const std::string op_src = make_kernel_user_comparison_operator(input_keys_it_value_t, op);
 
+    constexpr std::string_view src_template = R"XXX(
+#include <cub/device/dispatch/kernels/scan.cuh>
+#include <cub/device/dispatch/kernels/unique_by_key.cuh>
+#include <cub/agent/single_pass_scan_operators.cuh>
+struct __align__({1}) storage_t {{
+  char data[{0}];
+}};
+struct __align__({3}) items_storage_t {{
+  char data[{2}];
+}};
+struct __align__({5}) num_out_storage_t {{
+  char data[{4}];
+}};
+{8}
+{9}
+{10}
+{11}
+{12}
+struct agent_policy_t {{
+  static constexpr int ITEMS_PER_THREAD = {7};
+  static constexpr int BLOCK_THREADS = {6};
+  static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = cub::BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_LDG;
+  static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS;
+  struct detail {{
+    using delay_constructor_t = cub::detail::default_delay_constructor_t<int>;
+  }};
+}};
+struct device_unique_by_key_policy {{
+  struct ActivePolicy {{
+    using UniqueByKeyPolicyT = agent_policy_t;
+  }};
+}};
+{13}
+)XXX";
+
     const std::string src = std::format(
-      "#include <cub/device/dispatch/kernels/unique_by_key.cuh>\n"
-      "struct __align__({1}) storage_t {{\n"
-      "  char data[{0}];\n"
-      "}};\n"
-      "struct __align__({3}) items_storage_t {{\n"
-      "  char data[{2}];\n"
-      "}};\n"
-      "struct __align__({5}) num_out_storage_t {{\n"
-      "  char data[{4}];\n"
-      "}};\n"
-      "{8}\n"
-      "{9}\n"
-      "{10}\n"
-      "{11}\n"
-      "{12}\n"
-      "struct agent_policy_t {{\n"
-      "  static constexpr int ITEMS_PER_THREAD = {7};\n"
-      "  static constexpr int BLOCK_THREADS = {6};\n"
-      "  static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = cub::BLOCK_LOAD_DIRECT;\n"
-      "  static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_LDG;\n"
-      "  static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS;\n"
-      "  using delay_constructor_t = detail::fixed_delay_constructor_t<350, 450>>\n"
-      "}};\n"
-      "struct device_unique_by_key_policy {{\n"
-      "  struct ActivePolicy {{\n"
-      "    using UniqueByKeyPolicy = agent_policy_t;\n"
-      "  }};\n"
-      "}};\n"
-      "{13}\n",
+      src_template,
       input_keys_it.value_type.size, // 0
       input_keys_it.value_type.alignment, // 1
       input_values_it.value_type.size, // 2
@@ -413,9 +428,14 @@ CUresult cccl_device_unique_by_key_build(
     check(cuLibraryGetKernel(&build->compact_init_kernel, build->library, compact_init_kernel_lowered_name.c_str()));
     check(cuLibraryGetKernel(&build->sweep_kernel, build->library, sweep_kernel_lowered_name.c_str()));
 
-    build->cc         = cc;
-    build->cubin      = (void*) result.data.release();
-    build->cubin_size = result.size;
+    auto [description_bytes_per_tile,
+          payload_bytes_per_tile] = get_tile_state_bytes_per_tile(offset_t, offset_cpp, args, num_args, arch);
+
+    build->cc                         = cc;
+    build->cubin                      = (void*) result.data.release();
+    build->cubin_size                 = result.size;
+    build->description_bytes_per_tile = description_bytes_per_tile;
+    build->payload_bytes_per_tile     = payload_bytes_per_tile;
   }
   catch (const std::exception& exc)
   {
