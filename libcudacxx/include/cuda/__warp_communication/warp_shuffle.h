@@ -67,8 +67,8 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Tp> warp_shu
   }
   else
   {
-    constexpr auto __ratio = ::cuda::ceil_div(sizeof(_Tp), sizeof(uint32_t));
-    auto __clamp_segmask   = (_Width - 1) | ((__warp_size - _Width) << 8);
+    constexpr int __ratio = ::cuda::ceil_div(sizeof(_Tp), sizeof(uint32_t));
+    auto __clamp_segmask  = (_Width - 1) | ((__warp_size - _Width) << 8);
     bool __pred;
     uint32_t __array[__ratio];
     ::memcpy(static_cast<void*>(__array), static_cast<const void*>(_CUDA_VSTD::addressof(__data)), sizeof(_Tp));
@@ -113,8 +113,8 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Tp> warp_shu
   else
   {
     _CCCL_ASSERT(__delta >= 1 && __delta < _Width, "delta must be in the range [1, _Width)");
-    constexpr auto __ratio = ::cuda::ceil_div(sizeof(_Tp), sizeof(uint32_t));
-    auto __clamp_segmask   = (__warp_size - _Width) << 8;
+    constexpr int __ratio = ::cuda::ceil_div(sizeof(_Tp), sizeof(uint32_t));
+    auto __clamp_segmask  = (__warp_size - _Width) << 8;
     bool __pred;
     uint32_t __array[__ratio];
     ::memcpy(static_cast<void*>(__array), static_cast<const void*>(_CUDA_VSTD::addressof(__data)), sizeof(_Tp));
@@ -159,8 +159,8 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Tp> warp_shu
   else
   {
     _CCCL_ASSERT(__delta >= 1 && __delta < _Width, "delta must be in the range [1, _Width)");
-    constexpr auto __ratio = ::cuda::ceil_div(sizeof(_Tp), sizeof(uint32_t));
-    auto __clamp_segmask   = (_Width - 1) | ((__warp_size - _Width) << 8);
+    constexpr int __ratio = ::cuda::ceil_div(sizeof(_Tp), sizeof(uint32_t));
+    auto __clamp_segmask  = (_Width - 1) | ((__warp_size - _Width) << 8);
     bool __pred;
     uint32_t __array[__ratio];
     ::memcpy(static_cast<void*>(__array), static_cast<const void*>(_CUDA_VSTD::addressof(__data)), sizeof(_Tp));
@@ -205,8 +205,8 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Tp> warp_shu
   else
   {
     _CCCL_ASSERT(__xor_mask >= 1 && __xor_mask < _Width, "delta must be in the range [1, _Width)");
-    constexpr auto __ratio = ::cuda::ceil_div(sizeof(_Tp), sizeof(uint32_t));
-    auto __clamp_segmask   = (_Width - 1) | ((__warp_size - _Width) << 8);
+    constexpr int __ratio = ::cuda::ceil_div(sizeof(_Tp), sizeof(uint32_t));
+    auto __clamp_segmask  = (_Width - 1) | ((__warp_size - _Width) << 8);
     bool __pred;
     uint32_t __array[__ratio];
     ::memcpy(static_cast<void*>(__array), static_cast<const void*>(_CUDA_VSTD::addressof(__data)), sizeof(_Tp));
