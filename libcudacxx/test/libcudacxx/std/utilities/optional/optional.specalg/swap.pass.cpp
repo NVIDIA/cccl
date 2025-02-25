@@ -412,11 +412,15 @@ int main(int, char**)
     assert(*opt1 == value);
     assert(opt2.has_value());
     assert(*opt2 == other_value);
+    assert(cuda::std::addressof(value) == opt1.operator->());
+    assert(cuda::std::addressof(other_value) == opt2.operator->());
     swap(opt1, opt2);
     assert(opt1.has_value());
     assert(*opt1 == other_value);
     assert(opt2.has_value());
     assert(*opt2 == value);
+    assert(cuda::std::addressof(value) == opt2.operator->());
+    assert(cuda::std::addressof(other_value) == opt1.operator->());
   }
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
