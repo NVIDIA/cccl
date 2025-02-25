@@ -16,4 +16,5 @@ Extended API
    extended_api/streams
    extended_api/memory_resource
    extended_api/math
+   extended_api/warp_communication
    extended_api/work_stealing
