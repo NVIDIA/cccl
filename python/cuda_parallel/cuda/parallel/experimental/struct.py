@@ -38,9 +38,9 @@ def gpu_struct(this: type) -> Type[GpuStruct]:
 
     Example:
         The code snippet below shows how to use `gpu_struct` to define
-        a `MinMax` type (composed of `min_val`, `max_val` values),  and perform
-        a reduction on an array of `MinMax` objects to compute the smallest and
-        the largest `g` values in the input array:
+        a `MinMax` type (composed of `min_val`, `max_val` values), and perform
+        a reduction on an input array of floating point values to compute its
+        the smallest and the largest absolute values:
 
         .. literalinclude:: ../../python/cuda_parallel/tests/test_reduce_api.py
             :language: python
