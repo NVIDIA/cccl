@@ -102,8 +102,8 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Tp> warp_shu
   static_assert(_CUDA_VSTD::has_single_bit(static_cast<uint32_t>(_Width)) && _Width >= 1 && _Width <= __warp_size,
                 "_Width must be a power of 2 and less or equal to the warp size");
 #  if __CUDA_ARCH__ >= 700
-  [[maybe_unused]] int __pred;
-  _CCCL_ASSERT(__match_all_sync(__activemask(), __delta, &__pred), "all active lanes must have the same delta");
+  [[maybe_unused]] int __pred1;
+  _CCCL_ASSERT(__match_all_sync(__activemask(), __delta, &__pred1), "all active lanes must have the same delta");
 #  endif
   if constexpr (_Width == 1)
   {
@@ -148,8 +148,8 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Tp> warp_shu
   static_assert(_CUDA_VSTD::has_single_bit(static_cast<uint32_t>(_Width)) && _Width >= 1 && _Width <= __warp_size,
                 "_Width must be a power of 2 and less or equal to the warp size");
 #  if __CUDA_ARCH__ >= 700
-  [[maybe_unused]] int __pred;
-  _CCCL_ASSERT(__match_all_sync(__activemask(), __delta, &__pred), "all active lanes must have the same delta");
+  [[maybe_unused]] int __pred1;
+  _CCCL_ASSERT(__match_all_sync(__activemask(), __delta, &__pred1), "all active lanes must have the same delta");
 #  endif
   if constexpr (_Width == 1)
   {
@@ -194,8 +194,8 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Tp> warp_shu
   static_assert(_CUDA_VSTD::has_single_bit(static_cast<uint32_t>(_Width)) && _Width >= 1 && _Width <= __warp_size,
                 "_Width must be a power of 2 and less or equal to the warp size");
 #  if __CUDA_ARCH__ >= 700
-  [[maybe_unused]] int __pred;
-  _CCCL_ASSERT(__match_all_sync(__activemask(), __xor_mask, &__pred), "all active lanes must have the same delta");
+  [[maybe_unused]] int __pred1;
+  _CCCL_ASSERT(__match_all_sync(__activemask(), __xor_mask, &__pred1), "all active lanes must have the same delta");
 #  endif
   if constexpr (_Width == 1)
   {
