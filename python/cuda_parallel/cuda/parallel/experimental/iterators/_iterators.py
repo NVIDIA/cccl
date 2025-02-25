@@ -336,7 +336,7 @@ def make_transform_iterator(it, op: Callable):
             return op(it_dereference(state))
 
         def __hash__(self):
-            return hash((self._it, self._op))
+            return hash((self.__class__.iterator_kind_type, self._it, self._op))
 
         def __eq__(self, other):
             if not isinstance(other.kind, TransformIteratorKind):
