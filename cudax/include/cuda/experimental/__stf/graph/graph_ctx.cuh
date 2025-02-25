@@ -202,7 +202,6 @@ class graph_ctx : public backend_ctx<graph_ctx>
     impl(async_resources_handle _async_resources = async_resources_handle(nullptr))
         : backend_ctx<graph_ctx>::impl(mv(_async_resources))
         , _graph(shared_cuda_graph())
-        , graph_mutex(::std::make_shared<::std::mutex>())
     {
       reserved::backend_ctx_setup_allocators<impl, uncached_graph_allocator>(*this);
     }
@@ -211,7 +210,6 @@ class graph_ctx : public backend_ctx<graph_ctx>
     impl(cudaGraph_t g)
         : _graph(wrap_cuda_graph(g))
         , explicit_graph(true)
-        , graph_mutex(::std::make_shared<::std::mutex>())
     {
       reserved::backend_ctx_setup_allocators<impl, uncached_graph_allocator>(*this);
     }
@@ -264,7 +262,7 @@ class graph_ctx : public backend_ctx<graph_ctx>
     mutable bool explicit_graph                   = false;
 
     // To protect _graph against concurrent modifications
-    ::std::shared_ptr<::std::mutex> graph_mutex;
+    ::std::shared_ptr<::std::mutex> graph_mutex = ::std::make_shared<::std::mutex>();
 
     executable_graph_cache_stat cache_stats;
 

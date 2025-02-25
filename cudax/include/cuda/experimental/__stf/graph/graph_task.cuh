@@ -59,12 +59,12 @@ public:
 
   graph_task(backend_ctx_untyped ctx,
              cudaGraph_t g,
-             ::std::shared_ptr<::std::mutex> graph_mutex,
+             const ::std::shared_ptr<::std::mutex>& graph_mutex,
              size_t epoch,
              exec_place e_place = exec_place::current_device())
       : task(mv(e_place))
       , ctx_graph(EXPECT(g))
-      , graph_mutex(mv(graph_mutex))
+      , graph_mutex(graph_mutex)
       , epoch(epoch)
       , ctx(mv(ctx))
   {
@@ -80,7 +80,9 @@ public:
 
   graph_task& start()
   {
-    ::std::lock_guard<::std::mutex> lock(*graph_mutex);
+    auto sp = graph_mutex.lock();
+    EXPECT(sp);
+    ::std::lock_guard<::std::mutex> lock(*sp);
 
     event_list prereqs = acquire(ctx);
 
@@ -105,7 +107,9 @@ public:
   /* End the task, but do not clear its data structures yet */
   graph_task<>& end_uncleared()
   {
-    ::std::lock_guard<::std::mutex> lock(*graph_mutex);
+    auto sp = graph_mutex.lock();
+    EXPECT(sp);
+    ::std::lock_guard<::std::mutex> lock(*sp);
 
     cudaGraphNode_t n;
 
@@ -397,9 +401,13 @@ public:
     return ctx_graph;
   }
 
-  auto& get_ctx_graph_mutex()
+  template <typename Fun>
+  decltype(auto) with_locked_graph(Fun&& fun)
   {
-    return graph_mutex;
+    auto sp = graph_mutex.lock();
+    EXPECT(sp);
+    ::std::lock_guard<::std::mutex> lock(*sp);
+    return fun();
   }
 
   void set_current_place(pos4 p)
@@ -444,7 +452,7 @@ private:
   cudaGraph_t ctx_graph = nullptr;
 
   // This protects ctx_graph
-  ::std::shared_ptr<::std::mutex> graph_mutex;
+  ::std::weak_ptr<::std::mutex> graph_mutex;
 
   size_t epoch = 0;
 
@@ -468,11 +476,11 @@ class graph_task : public graph_task<>
 public:
   graph_task(backend_ctx_untyped ctx,
              cudaGraph_t g,
-             ::std::shared_ptr<::std::mutex> graph_mutex,
+             const ::std::shared_ptr<::std::mutex>& graph_mutex,
              size_t epoch,
              exec_place e_place,
              task_dep<Deps>... deps)
-      : graph_task<>(mv(ctx), g, mv(graph_mutex), epoch, mv(e_place))
+      : graph_task<>(mv(ctx), g, graph_mutex, epoch, mv(e_place))
   {
     static_assert(sizeof(*this) == sizeof(graph_task<>), "Cannot add state - it would be lost by slicing.");
     add_deps(mv(deps)...);

@@ -217,11 +217,10 @@ public:
     if constexpr (::std::is_same_v<Ctx, graph_ctx>)
     {
       cudaHostNodeParams params = {.fn = callback, .userData = wrapper};
-
-      ::std::lock_guard<::std::mutex> lock(*t.get_ctx_graph_mutex());
-
-      // Put this host node into the child graph that implements the graph_task<>
-      cuda_safe_call(cudaGraphAddHostNode(&t.get_node(), t.get_ctx_graph(), nullptr, 0, &params));
+      cuda_safe_call(t.with_locked_graph([&] {
+        // Put this host node into the child graph that implements the graph_task<>
+        return cudaGraphAddHostNode(&t.get_node(), t.get_ctx_graph(), nullptr, 0, &params);
+      }));
     }
     else
     {
@@ -413,31 +412,31 @@ public:
 
       if constexpr (::std::is_same_v<Ctx, graph_ctx>)
       {
-        ::std::lock_guard<::std::mutex> lock(*t.get_ctx_graph_mutex());
+        t->with_locked_graph([&] {
+          auto& g = t.get_ctx_graph();
 
-        auto& g = t.get_ctx_graph();
-
-        // We have two situations : either there is a single kernel and we put the kernel in the context's
-        // graph, or we rely on a child graph
-        if (res.size() == 1)
-        {
-          insert_one_kernel(res[0], t.get_node(), g);
-        }
-        else
-        {
-          ::std::vector<cudaGraphNode_t>& chain = t.get_node_chain();
-          chain.resize(res.size());
-
-          // Create a chain of kernels
-          for (size_t i = 0; i < res.size(); i++)
+          // We have two situations : either there is a single kernel and we put the kernel in the context's
+          // graph, or we rely on a child graph
+          if (res.size() == 1)
           {
-            insert_one_kernel(res[i], chain[i], g);
-            if (i > 0)
+            insert_one_kernel(res[0], t.get_node(), g);
+          }
+          else
+          {
+            ::std::vector<cudaGraphNode_t>& chain = t.get_node_chain();
+            chain.resize(res.size());
+
+            // Create a chain of kernels
+            for (size_t i = 0; i < res.size(); i++)
             {
-              cuda_safe_call(cudaGraphAddDependencies(g, &chain[i - 1], &chain[i], 1));
+              insert_one_kernel(res[i], chain[i], g);
+              if (i > 0)
+              {
+                cuda_safe_call(cudaGraphAddDependencies(g, &chain[i - 1], &chain[i], 1));
+              }
             }
           }
-        }
+        });
       }
       else
       {
@@ -460,8 +459,9 @@ public:
 
       if constexpr (::std::is_same_v<Ctx, graph_ctx>)
       {
-        ::std::lock_guard<::std::mutex> lock(*t.get_ctx_graph_mutex());
-        insert_one_kernel(res, t.get_node(), t.get_ctx_graph());
+        t->with_locked_graph([&] {
+          insert_one_kernel(res, t.get_node(), t.get_ctx_graph());
+        });
       }
       else
       {
