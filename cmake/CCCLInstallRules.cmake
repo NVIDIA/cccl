@@ -38,7 +38,7 @@ function(cccl_generate_install_rules project_name enable_rules_by_default)
 
   string(TOLOWER ${project_name} project_name_lower)
   set(project_source_dir "${CCCL_SOURCE_DIR}/${project_name_lower}")
-  set(header_dest_dir "${CMAKE_INSTALL_INCLUDEDIR}")
+  set(header_dest_dir "${CMAKE_INSTALL_INCLUDEDIR}/cccl")
   set(package_source_dir "${CCCL_SOURCE_DIR}/lib/cmake/${project_name_lower}")
   set(package_dest_dir "${CMAKE_INSTALL_LIBDIR}/cmake/")
   set(header_search_template "${package_source_dir}/${project_name_lower}-header-search.cmake.in")
