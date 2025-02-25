@@ -59,25 +59,6 @@ namespace cuda_cub
 {
 namespace core
 {
-
-#ifdef _NVHPC_CUDA
-#  if (__NVCOMPILER_CUDA_ARCH__ >= 600)
-// deprecated [since 2.8]
-#    define THRUST_TUNING_ARCH sm60
-#  else
-// deprecated [since 2.8]
-#    define THRUST_TUNING_ARCH sm52
-#  endif
-#else
-#  if (__CUDA_ARCH__ >= 600)
-// deprecated [since 2.8]
-#    define THRUST_TUNING_ARCH sm60
-#  else
-// deprecated [since 2.8]
-#    define THRUST_TUNING_ARCH sm52
-#  endif
-#endif
-
 namespace detail
 {
 /// Typelist - a container of types
@@ -176,7 +157,21 @@ struct specialize_plan_impl_match<P, typelist<SM, SMs...>>
     : ::cuda::std::conditional<has_sm_tuning<P, SM>::value, P<SM>, specialize_plan_impl_match<P, typelist<SMs...>>>::type
 {};
 
-template <template <class> class Plan, class SM = THRUST_TUNING_ARCH>
+#ifdef _NVHPC_CUDA
+#  if (__NVCOMPILER_CUDA_ARCH__ >= 600)
+#    define _THRUST_TUNING_ARCH sm60
+#  else
+#    define _THRUST_TUNING_ARCH sm52
+#  endif
+#else
+#  if (__CUDA_ARCH__ >= 600)
+#    define _THRUST_TUNING_ARCH sm60
+#  else
+#    define _THRUST_TUNING_ARCH sm52
+#  endif
+#endif
+
+template <template <class> class Plan, class SM = _THRUST_TUNING_ARCH>
 struct specialize_plan_msvc10_war
 {
   // if Plan has tuning type, this means it has SM-specific tuning
@@ -187,9 +182,11 @@ struct specialize_plan_msvc10_war
                                         Plan<SM>>;
 };
 
-template <template <class> class Plan, class SM = THRUST_TUNING_ARCH>
+template <template <class> class Plan, class SM = _THRUST_TUNING_ARCH>
 struct specialize_plan : specialize_plan_msvc10_war<Plan, SM>::type::type
 {};
+
+#undef _THRUST_TUNING_ARCH
 
 /////////////////////////
 /////////////////////////
@@ -585,8 +582,7 @@ THRUST_RUNTIME_FUNCTION inline int get_ptx_version()
   return ptx_version;
 }
 
-// Deprecated [Since 2.8]
-#define CUDA_CUB_RET_IF_FAIL(e)                \
+#define _CUDA_CUB_RET_IF_FAIL(e)               \
   {                                            \
     auto const error = (e);                    \
     if (cub::Debug(error, __FILE__, __LINE__)) \
