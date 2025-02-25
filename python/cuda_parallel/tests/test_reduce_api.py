@@ -234,14 +234,18 @@ def test_reduce_struct_type_minmax():
         c_max = max(v1.max_val, v2.max_val)
         return MinMax(c_min, c_max)
 
-    def embedding_op(v):
+    def transform_op(v):
         av = abs(v)
         return MinMax(av, av)
 
     nelems = 4096
 
     d_in = cp.random.randn(nelems)
-    tr_it = iterators.TransformIterator(d_in, embedding_op)
+    # input values must be transformed to MinMax structures
+    # in-place to map computation to data-parallel reduction
+    # algorithm that requires commutative binary operation
+    # with both operands having the same type.
+    tr_it = iterators.TransformIterator(d_in, transform_op)
 
     d_out = cp.empty(tuple(), dtype=MinMax.dtype)
 
