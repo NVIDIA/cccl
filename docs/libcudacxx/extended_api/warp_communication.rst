@@ -13,7 +13,7 @@ Warp Communication
    :widths: 25 45 30
    :header-rows: 0
 
-   * - :ref:`warp_shuffle_idx <libcudacxx-extended-api-warp-communitioncal-warp-shuffle>`
+   * - :ref:`warp_shuffle_idx <libcudacxx-extended-api-warp-communication-warp-shuffle>`
      - Warp shuffle from a specific lane
      - CCCL 3.0.0 / CUDA 13.0
 
