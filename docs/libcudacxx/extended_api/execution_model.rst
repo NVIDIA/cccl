@@ -144,7 +144,7 @@ The implementation may assume that any **host** thread will eventually do one of
 CUDA APIs
 ---------
 
-Any CUDA API shall eventually either return or ensure at least one device thread makes progress.
+A host or device thread CUDA API call shall eventually either return or ensure at least once device thread makes progress.
 
 CUDA query functions (e.g. `cudaStreamQuery <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__STREAM.html#group__CUDART__STREAM_1g2021adeb17905c7ec2a3c1bf125c5435>`__,
 `cudaEventQuery <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__EVENT.html#group__CUDART__EVENT_1g2bf738909b4a059023537eaa29d8a5b7>`__, etc.) shall not consistently
