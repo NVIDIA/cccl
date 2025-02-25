@@ -138,7 +138,9 @@ template <
     EqualityOpT,
     OffsetT>,
   typename KernelLauncherFactory = detail::TripleChevronFactory,
-  typename VSMemHelperT          = detail::unique_by_key::VSMemHelper>
+  typename VSMemHelperT          = detail::unique_by_key::VSMemHelper,
+  typename KeyT                  = detail::it_value_t<KeyInputIteratorT>,
+  typename ValueT                = detail::it_value_t<ValueInputIteratorT>>
 struct DispatchUniqueByKey
 {
   /******************************************************************************
@@ -149,10 +151,6 @@ struct DispatchUniqueByKey
   {
     INIT_KERNEL_THREADS = 128,
   };
-
-  // The input key and value type
-  using KeyT   = detail::it_value_t<KeyInputIteratorT>;
-  using ValueT = detail::it_value_t<ValueInputIteratorT>;
 
   /// Device-accessible allocation of temporary storage.  When nullptr, the required allocation size
   /// is written to `temp_storage_bytes` and no work is done.
