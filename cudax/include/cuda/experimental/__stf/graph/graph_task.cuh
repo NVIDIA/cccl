@@ -446,6 +446,8 @@ private:
   // This protects ctx_graph : it's ok to store a reference to it because the
   // context and this mutex will outlive the moment when this mutex is needed
   // (and most likely the graph_task object)
+  // Note that we use a reference_wrapper instead of a mere reference to ensure
+  // the graph_task class remains move assignable.
   ::std::reference_wrapper<::std::mutex> graph_mutex;
 
   size_t epoch = 0;
