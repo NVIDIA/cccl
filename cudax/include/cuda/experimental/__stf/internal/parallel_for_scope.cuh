@@ -771,7 +771,7 @@ public:
       allocParams.bytesize              = blocks * sizeof(redux_vars<deps_tup_t, ops_and_inits>);
 
       t->with_locked_graph([&] {
-        auto g = t.get_ctx_graph();
+        auto g                  = t.get_ctx_graph();
         const auto& input_nodes = t.get_ready_dependencies();
 
         /* This first node depends on task's dependencies themselves */

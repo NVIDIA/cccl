@@ -59,7 +59,7 @@ public:
 
   graph_task(backend_ctx_untyped ctx,
              cudaGraph_t g,
-             const ::std::shared_ptr<::std::mutex>& graph_mutex,
+             ::std::mutex& graph_mutex,
              size_t epoch,
              exec_place e_place = exec_place::current_device())
       : task(mv(e_place))
@@ -80,9 +80,7 @@ public:
 
   graph_task& start()
   {
-    auto sp = graph_mutex.lock();
-    EXPECT(sp);
-    ::std::lock_guard<::std::mutex> lock(*sp);
+    ::std::lock_guard<::std::mutex> lock(graph_mutex);
 
     event_list prereqs = acquire(ctx);
 
@@ -107,9 +105,7 @@ public:
   /* End the task, but do not clear its data structures yet */
   graph_task<>& end_uncleared()
   {
-    auto sp = graph_mutex.lock();
-    EXPECT(sp);
-    ::std::lock_guard<::std::mutex> lock(*sp);
+    ::std::lock_guard<::std::mutex> lock(graph_mutex);
 
     cudaGraphNode_t n;
 
@@ -404,9 +400,7 @@ public:
   template <typename Fun>
   decltype(auto) with_locked_graph(Fun&& fun)
   {
-    auto sp = graph_mutex.lock();
-    EXPECT(sp);
-    ::std::lock_guard<::std::mutex> lock(*sp);
+    ::std::lock_guard<::std::mutex> lock(graph_mutex);
     return fun();
   }
 
@@ -451,8 +445,10 @@ private:
   /* This is the support graph associated to the entire context */
   cudaGraph_t ctx_graph = nullptr;
 
-  // This protects ctx_graph
-  ::std::weak_ptr<::std::mutex> graph_mutex;
+  // This protects ctx_graph : it's ok to store a reference to it because the
+  // context and this mutex will outlive the moment when this mutex is needed
+  // (and most likely the graph_task object)
+  ::std::mutex& graph_mutex;
 
   size_t epoch = 0;
 
@@ -476,7 +472,7 @@ class graph_task : public graph_task<>
 public:
   graph_task(backend_ctx_untyped ctx,
              cudaGraph_t g,
-             const ::std::shared_ptr<::std::mutex>& graph_mutex,
+             ::std::mutex& graph_mutex,
              size_t epoch,
              exec_place e_place,
              task_dep<Deps>... deps)

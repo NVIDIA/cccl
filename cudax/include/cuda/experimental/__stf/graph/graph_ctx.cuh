@@ -262,7 +262,7 @@ class graph_ctx : public backend_ctx<graph_ctx>
     mutable bool explicit_graph                   = false;
 
     // To protect _graph against concurrent modifications
-    ::std::shared_ptr<::std::mutex> graph_mutex = ::std::make_shared<::std::mutex>();
+    ::std::mutex graph_mutex;
 
     executable_graph_cache_stat cache_stats;
 
