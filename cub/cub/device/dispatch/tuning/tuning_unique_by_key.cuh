@@ -776,7 +776,8 @@ struct UniqueByKeyPolicyWrapper : PolicyT
 };
 
 template <typename StaticPolicyT>
-struct UniqueByKeyPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<typename StaticPolicyT::UniqueByKeyPolicyT>>
+struct UniqueByKeyPolicyWrapper<StaticPolicyT,
+                                ::cuda::std::void_t<decltype(StaticPolicyT::UniqueByKeyPolicyT::LOAD_MODIFIER)>>
     : StaticPolicyT
 {
   CUB_RUNTIME_FUNCTION UniqueByKeyPolicyWrapper(StaticPolicyT base)
