@@ -43,6 +43,8 @@
 #include <cub/device/device_partition.cuh>
 #include <cub/util_allocator.cuh>
 
+#include <cuda/std/limits>
+
 #include "../../test/test_util.h"
 #include <stdio.h>
 
@@ -65,20 +67,18 @@ CachingDeviceAllocator g_allocator(true); // Caching allocator for device memory
  */
 void Initialize(int* h_in, unsigned char* h_flags, int num_items, int max_segment)
 {
-  unsigned short max_short = (unsigned short) -1;
-
   int key = 0;
   int i   = 0;
   while (i < num_items)
   {
     // Select number of repeating occurrences
-    unsigned short repeat;
-    RandomBits(repeat);
-    repeat = (unsigned short) ((float(repeat) * (float(max_segment) / float(max_short))));
-    repeat = CUB_MAX(1, repeat);
+    unsigned short bits;
+    RandomBits(bits);
+    const int repeat = cuda::std::max(
+      1, static_cast<int>(bits * (static_cast<float>(max_segment) / cuda::std::numeric_limits<unsigned short>::max())));
 
     int j = i;
-    while (j < CUB_MIN(i + repeat, num_items))
+    while (j < cuda::std::min(i + repeat, num_items))
     {
       h_flags[j] = 0;
       h_in[j]    = key;
