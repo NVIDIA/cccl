@@ -94,14 +94,7 @@ std::string get_iterator_name(cccl_iterator_t iterator, unique_by_key_iterator_t
 {
   if (iterator.type == cccl_iterator_kind_t::CCCL_POINTER)
   {
-    if (iterator.state == nullptr)
-    {
-      return "cub::NullType*";
-    }
-    else
-    {
-      return cccl_type_enum_to_name<StorageT>(iterator.value_type.type, true);
-    }
+    return cccl_type_enum_to_name<StorageT>(iterator.value_type.type, true);
   }
   else
   {
@@ -466,21 +459,21 @@ CUresult cccl_device_unique_by_key(
       unique_by_key::dynamic_unique_by_key_policy_t<&unique_by_key::get_policy>,
       unique_by_key::unique_by_key_kernel_source,
       cub::detail::CudaDriverLauncherFactory,
-      unique_by_key::dynamic_vsmem_helper_t>::
-      Dispatch(
-        d_temp_storage,
-        *temp_storage_bytes,
-        d_keys_in,
-        d_values_in,
-        d_keys_out,
-        d_values_out,
-        d_num_selected_out,
-        op,
-        num_items,
-        stream,
-        {build},
-        cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
-        {});
+      unique_by_key::dynamic_vsmem_helper_t,
+      indirect_arg_t,
+      indirect_arg_t>::Dispatch(d_temp_storage,
+                                *temp_storage_bytes,
+                                d_keys_in,
+                                d_values_in,
+                                d_keys_out,
+                                d_values_out,
+                                d_num_selected_out,
+                                op,
+                                num_items,
+                                stream,
+                                {build},
+                                cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
+                                {});
   }
   catch (const std::exception& exc)
   {
