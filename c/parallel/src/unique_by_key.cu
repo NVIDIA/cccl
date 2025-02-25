@@ -10,15 +10,18 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_driver.cuh>
-#include <cub/device/device_merge_sort.cuh>
+#include <cub/device/device_select.cuh>
 
 #include <format>
 
 #include "kernels/iterators.h"
 #include "kernels/operators.h"
+#include "util/context.h"
+#include "util/indirect_arg.h"
 #include "util/types.h"
 #include <cccl/c/unique_by_key.h>
 #include <nvrtc/command_list.h>
+#include <nvrtc/ltoir_list_appender.h>
 
 struct op_wrapper;
 struct device_unique_by_key_policy;
@@ -48,9 +51,32 @@ struct unique_by_key_runtime_tuning_policy
   }
 };
 
+struct unique_by_key_tuning_t
+{
+  int cc;
+  int block_size;
+  int items_per_thread;
+};
+
+template <typename Tuning, int N>
+Tuning find_tuning(int cc, const Tuning (&tunings)[N])
+{
+  for (const Tuning& tuning : tunings)
+  {
+    if (cc >= tuning.cc)
+    {
+      return tuning;
+    }
+  }
+
+  return tunings[N - 1];
+}
+
 unique_by_key_runtime_tuning_policy get_policy(int /*cc*/)
 {
-  // TODO: fix later
+  // TODO: we should update this once we figure out a way to reuse
+  // tuning logic from C++. Alternately, we should implement
+  // something better than a hardcoded default:
   return {384, 10, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT};
 }
 
@@ -160,6 +186,61 @@ std::string get_sweep_kernel_name(
     offset_t);
 }
 
+template <auto* GetPolicy>
+struct dynamic_unique_by_key_policy_t
+{
+  using MaxPolicy = dynamic_unique_by_key_policy_t;
+
+  template <typename F>
+  cudaError_t Invoke(int device_ptx_version, F& op)
+  {
+    return op.template Invoke<unique_by_key_runtime_tuning_policy>(GetPolicy(device_ptx_version));
+  }
+};
+
+struct unique_by_key_kernel_source
+{
+  cccl_device_unique_by_key_build_result_t& build;
+
+  CUkernel UniqueByKeySweepKernel() const
+  {
+    return build.sweep_kernel;
+  }
+
+  CUkernel CompactInitKernel() const
+  {
+    return build.compact_init_kernel;
+  }
+};
+
+struct dynamic_vsmem_helper_t
+{
+  template <typename PolicyT, typename... Ts>
+  int BlockThreads(PolicyT policy) const
+  {
+    return uses_fallback_policy() ? fallback_policy.block_size : policy.block_size;
+  }
+
+  template <typename PolicyT, typename... Ts>
+  int ItemsPerThread(PolicyT policy) const
+  {
+    return uses_fallback_policy() ? fallback_policy.items_per_thread : policy.items_per_tile;
+  }
+
+  template <typename PolicyT, typename... Ts>
+  ::cuda::std::size_t VSMemPerBlock(PolicyT /*policy*/) const
+  {
+    return 0;
+  }
+
+private:
+  unique_by_key_runtime_tuning_policy fallback_policy = {64, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT};
+  bool uses_fallback_policy() const
+  {
+    return false;
+  }
+};
+
 } // namespace unique_by_key
 
 CUresult cccl_device_unique_by_key_build(
@@ -241,8 +322,9 @@ CUresult cccl_device_unique_by_key_build(
       "  static constexpr int ITEMS_PER_THREAD = {7};\n"
       "  static constexpr int BLOCK_THREADS = {6};\n"
       "  static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = cub::BLOCK_LOAD_DIRECT;\n"
-      "  static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_DEFAULT;\n"
+      "  static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_LDG;\n"
       "  static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS;\n"
+      "  using delay_constructor_t = detail::fixed_delay_constructor_t<350, 450>>\n"
       "}};\n"
       "struct device_unique_by_key_policy {{\n"
       "  struct ActivePolicy {{\n"
@@ -362,7 +444,60 @@ CUresult cccl_device_unique_by_key(
   cccl_iterator_t d_num_selected_out,
   cccl_op_t op,
   unsigned long long num_items,
-  CUstream stream) noexcept;
+  CUstream stream) noexcept
+{
+  CUresult error = CUDA_SUCCESS;
+  bool pushed    = false;
+  try
+  {
+    pushed = try_push_context();
+
+    CUdevice cu_device;
+    check(cuCtxGetDevice(&cu_device));
+
+    cub::DispatchUniqueByKey<
+      indirect_arg_t,
+      indirect_arg_t,
+      indirect_arg_t,
+      indirect_arg_t,
+      indirect_arg_t,
+      indirect_arg_t,
+      ::cuda::std::size_t,
+      unique_by_key::dynamic_unique_by_key_policy_t<&unique_by_key::get_policy>,
+      unique_by_key::unique_by_key_kernel_source,
+      cub::detail::CudaDriverLauncherFactory,
+      unique_by_key::dynamic_vsmem_helper_t>::
+      Dispatch(
+        d_temp_storage,
+        *temp_storage_bytes,
+        d_keys_in,
+        d_values_in,
+        d_keys_out,
+        d_values_out,
+        d_num_selected_out,
+        op,
+        num_items,
+        stream,
+        {build},
+        cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
+        {});
+  }
+  catch (const std::exception& exc)
+  {
+    fflush(stderr);
+    printf("\nEXCEPTION in cccl_device_unique_by_key(): %s\n", exc.what());
+    fflush(stdout);
+    error = CUDA_ERROR_UNKNOWN;
+  }
+
+  if (pushed)
+  {
+    CUcontext dummy;
+    cuCtxPopCurrent(&dummy);
+  }
+
+  return error;
+}
 
 CUresult cccl_device_unique_by_key_cleanup(cccl_device_unique_by_key_build_result_t* build_ptr) noexcept
 {
@@ -379,7 +514,7 @@ CUresult cccl_device_unique_by_key_cleanup(cccl_device_unique_by_key_build_resul
   catch (const std::exception& exc)
   {
     fflush(stderr);
-    printf("\nEXCEPTION in cccl_device_merge_sort_cleanup(): %s\n", exc.what());
+    printf("\nEXCEPTION in cccl_device_unique_by_key_cleanup(): %s\n", exc.what());
     fflush(stdout);
     return CUDA_ERROR_UNKNOWN;
   }
