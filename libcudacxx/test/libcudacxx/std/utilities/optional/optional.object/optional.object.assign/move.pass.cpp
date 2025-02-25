@@ -190,6 +190,10 @@ __host__ __device__ constexpr void test()
     assert(opt.has_value());
     assert(input.has_value()); // input still holds a moved from value
     assert(*opt == val);
+    if constexpr (cuda::std::is_reference_v<T>)
+    {
+      assert(input.operator->() == opt.operator->());
+    }
   }
   // non-empty move assigned to empty
   {
@@ -199,6 +203,10 @@ __host__ __device__ constexpr void test()
     assert(opt.has_value());
     assert(input.has_value()); // input still holds a moved from value
     assert(*opt == val);
+    if constexpr (cuda::std::is_reference_v<T>)
+    {
+      assert(input.operator->() == opt.operator->());
+    }
   }
 }
 
