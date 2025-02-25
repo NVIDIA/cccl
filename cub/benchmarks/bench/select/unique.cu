@@ -3,6 +3,8 @@
 
 #include <cub/device/device_select.cuh>
 
+#include <cuda/std/__algorithm_>
+
 #include <limits>
 
 #include <look_back_helper.cuh>

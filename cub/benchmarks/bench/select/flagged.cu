@@ -29,6 +29,8 @@
 
 #include <thrust/count.h>
 
+#include <cuda/std/__algorithm_>
+
 #include <look_back_helper.cuh>
 #include <nvbench_helper.cuh>
 

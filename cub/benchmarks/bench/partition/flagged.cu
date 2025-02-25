@@ -29,6 +29,7 @@
 
 #include <thrust/count.h>
 
+#include <cuda/std/__algorithm_>
 #include <cuda/std/type_traits>
 
 #include <look_back_helper.cuh>

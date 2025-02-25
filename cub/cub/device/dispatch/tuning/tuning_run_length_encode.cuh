@@ -47,8 +47,7 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/cmath>
-#include <cuda/std/__algorithm/clamp.h>
-#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm_>
 
 CUB_NAMESPACE_BEGIN
 
