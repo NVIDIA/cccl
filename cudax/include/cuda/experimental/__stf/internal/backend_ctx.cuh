@@ -565,8 +565,9 @@ protected:
 
     virtual ~impl()
     {
-      // We can't assert here because there may be tasks inside tasks
-      //_CCCL_ASSERT(total_task_cnt == 0, "You created some tasks but forgot to call finalize().");
+#ifndef NDEBUG
+      _CCCL_ASSERT(total_task_cnt == total_finished_task_cnt, "Not all tasks were finished.");
+#endif
 
       if (!is_recording_stats)
       {
@@ -712,7 +713,6 @@ protected:
     {
       // assert(!stack.hasCurrentTask());
       attached_allocators.clear();
-      total_task_cnt.store(0);
       // Leave custom_allocator, auto_scheduler, and auto_reordered as they were.
     }
 
@@ -737,6 +737,11 @@ protected:
     bool is_recording_stats = false;
     // Keep track of the number of tasks generated in the context
     ::std::atomic<size_t> total_task_cnt;
+
+#ifndef NDEBUG
+    // Keep track of the number of completed tasks in that context
+    ::std::atomic<size_t> total_finished_task_cnt;
+#endif
 
     // This data structure contains all resources useful for an efficient
     // asynchronous execution. This will for example contain pools of CUDA
@@ -854,6 +859,13 @@ public:
   {
     ++pimpl->total_task_cnt;
   }
+
+#ifndef NDEBUG
+  void increment_finished_task_count()
+  {
+    ++pimpl->total_finished_task_cnt;
+  }
+#endif
 
   size_t task_count() const
   {
