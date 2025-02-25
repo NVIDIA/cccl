@@ -594,6 +594,13 @@ All the kernel does is derive the proper policy type,
 unwrap the policy to initialize the agent and call one of its ``Consume`` / ``Process`` functions.
 Agents are frequently reused by unrelated device-scope algorithms.
 
+
+Policies
+====================================
+
+Policies describe the configuration of agents wrt. to their execution.
+They do not change functional behavior, but usually affect how work is mapped to the hardware.
+
 An agent policy could look like this:
 
 .. code-block:: c++
@@ -612,8 +619,11 @@ An agent policy could look like this:
 
 It's typically a collection of configuration values for the kernel launch configuration,
 work distribution setting, load and store algorithms to use, as well as load instruction cache modifiers.
+A CUB algorithm can have multiple agents and thus use multiple agent policies.
 
-Finally, the tuning policy hub looks like:
+Since the device code of CUB algorithms is compiled for each PTX version, a different agent policy may be used.
+Therefore, all agent policies of a CUB algorithm, called a policy, may be replicated for several minimum PTX versions.
+A chained collection of such policies finally forms a policy hub:
 
 .. code-block:: c++
 
@@ -635,13 +645,13 @@ Finally, the tuning policy hub looks like:
       using MaxPolicy = Policy600; // alias where policy selection is started by ChainedPolicy
     };
 
-The tuning (hub) consists of a class template, possibly parameterized by tuning-relevant compile-time parameters,
-containing a list of policies.
-These policies are chained by inheriting from ChainedPolicy
+The policy hub is a class template, possibly parameterized by tuning-relevant compile-time parameters,
+containing a list of policies, one per minimum PTX version (i.e., SM architecture) they target.
+These policies are chained by inheriting from ``ChainedPolicy``
 and passing the minimum PTX version where they should be used,
-as well as their own policy type and next lower policy type.
+as well as their own policy type and the next lower policy type.
 An alias ``MaxPolicy`` serves as entry point into the chain of tuning policies.
-Each policy then defines sub policies for each agent, since a CUB algorithm may use multiple kernels/agents.
+
 
 Temporary storage usage
 ====================================
