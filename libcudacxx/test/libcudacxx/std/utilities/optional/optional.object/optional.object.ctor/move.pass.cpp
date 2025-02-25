@@ -37,6 +37,10 @@ __host__ __device__ constexpr void test() noexcept
     assert(input.has_value());
     assert(opt.has_value());
     assert(*opt == val);
+    if constexpr (cuda::std::is_reference_v<T>)
+    {
+      assert(cuda::std::addressof(val) == opt.operator->());
+    }
   }
 }
 

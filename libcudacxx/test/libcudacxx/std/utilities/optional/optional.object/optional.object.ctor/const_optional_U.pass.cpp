@@ -113,6 +113,11 @@ __host__ __device__ constexpr void test()
     assert(input.has_value());
     assert(opt.has_value());
     assert(*opt == 42);
+    if constexpr (cuda::std::is_reference_v<T>)
+    {
+      // optional<U> does not necessarily hold a reference so we cannot use addressof(val)
+      assert(cuda::std::addressof(static_cast<T>(*input)) == opt.operator->());
+    }
   }
 }
 

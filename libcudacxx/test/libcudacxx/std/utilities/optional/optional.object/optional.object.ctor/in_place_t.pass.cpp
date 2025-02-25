@@ -85,6 +85,10 @@ __host__ __device__ constexpr void test(Args... vals)
     const optional<T> opt(in_place, vals...);
     assert(opt.has_value());
     assert(*opt == expected);
+    if constexpr (cuda::std::is_reference_v<T>)
+    {
+      assert(cuda::std::addressof(expected) == opt.operator->());
+    }
   }
 }
 

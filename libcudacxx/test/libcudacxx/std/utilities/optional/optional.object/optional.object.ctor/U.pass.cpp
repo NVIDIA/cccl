@@ -118,6 +118,10 @@ __host__ __device__ constexpr void test(From input)
     optional<To> opt{input};
     assert(opt.has_value());
     assert(*opt == static_cast<To>(input));
+    if constexpr (cuda::std::is_reference_v<To>)
+    {
+      assert(cuda::std::addressof(static_cast<To>(input)) == opt.operator->());
+    }
   }
 }
 

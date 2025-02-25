@@ -39,6 +39,10 @@ public:
   {
     return x.i_ == y.i_;
   }
+  __host__ __device__ friend constexpr bool operator==(const X& x, const int& y)
+  {
+    return x.i_ == y;
+  }
 };
 
 class Y
@@ -53,6 +57,11 @@ public:
   __host__ __device__ friend constexpr bool operator==(const Y& x, const Y& y)
   {
     return x.i_ == y.i_;
+  }
+
+  __host__ __device__ friend constexpr bool operator==(const Y& x, const int& y)
+  {
+    return x.i_ == y;
   }
 };
 
@@ -138,7 +147,12 @@ __host__ __device__ constexpr void test()
     optional<T> opt{input};
     assert(input.has_value());
     assert(opt.has_value());
-    assert(*opt == T{42});
+    assert(*opt == 42);
+    if constexpr (cuda::std::is_reference_v<T>)
+    {
+      // optional<U> does not necessarily hold a reference so we cannot use addressof(val)
+      assert(cuda::std::addressof(static_cast<T>(*input)) == opt.operator->());
+    }
   }
 }
 
