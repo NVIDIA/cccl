@@ -233,6 +233,11 @@ class graph_ctx : public backend_ctx<graph_ctx>
       return *_graph;
     }
 
+    executable_graph_cache_stat* graph_get_cache_stat() override
+    {
+      return &cache_stats;
+    }
+
     size_t epoch() const override
     {
       return graph_epoch;
@@ -255,6 +260,8 @@ class graph_ctx : public backend_ctx<graph_ctx>
     size_t graph_epoch                            = 0;
     bool submitted                                = false; // did we submit ?
     mutable bool explicit_graph                   = false;
+
+    executable_graph_cache_stat cache_stats;
 
     /* By default, the finalize operation is blocking, unless user provided
      * a stream when creating the context */
@@ -474,32 +481,50 @@ public:
 
     auto& state = this->state();
 
-    for (const auto& [nnodes_cached, nedges_cached, prev_e_ptr] : async_resources().get_cached_graphs())
-    {
-      // Skip the update early if needed
-      if (nnodes_cached != nnodes || nedges_cached != nedges)
-      {
-        continue;
-      }
-      cudaGraphExec_t& prev_e = *prev_e_ptr;
-      if (try_updating_executable_graph(prev_e, *g))
-      {
-        // Return the updated graph
-        state.exec_graph = prev_e_ptr;
-        return prev_e_ptr;
-      }
-    }
-
     if (getenv("CUDASTF_DUMP_GRAPHS"))
     {
       static int instantiated_graph = 0;
       print_to_dot("instantiated_graph" + ::std::to_string(instantiated_graph++) + ".dot");
     }
 
-    state.exec_graph = graph_instantiate(*g);
+    bool use_cache = true;
+    bool hit       = false;
 
-    // Save this graph for later use
-    async_resources().put_graph_in_cache(nnodes, nedges, state.exec_graph);
+    // If there is a policy, check whether it enables or disables the use of
+    // the cache
+    if (get_graph_cache_policy().has_value())
+    {
+      ::std::function<bool()> policy = get_graph_cache_policy().value();
+      use_cache                      = policy();
+    }
+
+    if (use_cache)
+    {
+      /* This will lookup in the cache (if any) and update an existing entry, or
+       * instantiate a graph if none is found. */
+      auto query_result = async_resources().cached_graphs_query(nnodes, nedges, g);
+      state.exec_graph  = query_result.first;
+
+      hit = query_result.second; // indicate if this was a hit or miss in the cache
+    }
+    else
+    {
+      state.exec_graph = reserved::graph_instantiate(*g);
+    }
+
+    // Update the statistics associated to the context
+    auto* stats = graph_get_cache_stat();
+    if (hit)
+    {
+      stats->update_cnt++;
+    }
+    else
+    {
+      stats->instantiate_cnt++;
+    }
+
+    stats->nnodes += nnodes;
+    stats->nedges += nedges;
 
     return state.exec_graph;
   }
@@ -656,7 +681,7 @@ private:
         continue;
       }
       cudaGraphExec_t& prev_e = *prev_e_ptr;
-      if (try_updating_executable_graph(prev_e, g))
+      if (reserved::try_updating_executable_graph(prev_e, g))
       {
         local_exec_graph = prev_e;
 
@@ -689,37 +714,6 @@ private:
   }
 
 public:
-  // This tries to instantiate the graph by updating an existing executable graph
-  // the returned value indicates whether the update was successful or not
-  static bool try_updating_executable_graph(cudaGraphExec_t exec_graph, cudaGraph_t graph)
-  {
-#if CUDA_VERSION < 12000
-    cudaGraphNode_t errorNode;
-    cudaGraphExecUpdateResult updateResult;
-    cudaGraphExecUpdate(exec_graph, graph, &errorNode, &updateResult);
-#else
-    cudaGraphExecUpdateResultInfo resultInfo;
-    cudaGraphExecUpdate(exec_graph, graph, &resultInfo);
-#endif
-
-    // Be sure to "erase" the last error
-    cudaError_t res = cudaGetLastError();
-
-#ifdef CUDASTF_DEBUG
-    reserved::counter<reserved::graph_tag::update>.increment();
-    if (res == cudaSuccess)
-    {
-      reserved::counter<reserved::graph_tag::update::success>.increment();
-    }
-    else
-    {
-      reserved::counter<reserved::graph_tag::update::failure>.increment();
-    }
-#endif
-
-    return (res == cudaSuccess);
-  }
-
   friend inline cudaGraph_t ctx_to_graph(backend_ctx_untyped& ctx)
   {
     return ctx.graph();

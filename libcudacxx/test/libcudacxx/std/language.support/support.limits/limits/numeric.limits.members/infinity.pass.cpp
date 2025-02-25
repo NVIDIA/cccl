@@ -14,13 +14,11 @@
 #include <cuda/std/cfloat>
 #include <cuda/std/limits>
 
-#include "common.h"
-
-// MSVC has issues with producing INF with divisions by zero.
-#if defined(_MSC_VER)
+#if _CCCL_COMPILER(MSVC)
 #  include <cmath>
-#endif
+#endif // _CCCL_COMPILER(MSVC)
 
+#include "common.h"
 #include "test_macros.h"
 
 template <class T>
@@ -34,6 +32,13 @@ __host__ __device__ void test(T expected)
 
 int main(int, char**)
 {
+  // MSVC has problems producing infinity from 1.0 / 0.0
+#if _CCCL_COMPILER(MSVC)
+  const double inf = INFINITY;
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
+  const double inf = 1.0 / 0.0;
+#endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
+
   test<bool>(false);
   test<char>(0);
   test<signed char>(0);
@@ -58,40 +63,31 @@ int main(int, char**)
   test<__int128_t>(0);
   test<__uint128_t>(0);
 #endif // _CCCL_HAS_INT128()
-#if !defined(_MSC_VER)
-  test<float>(1.f / 0.f);
-  test<double>(1. / 0.);
-#  ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
-  test<long double>(1. / 0.);
-#  endif
-#  if _CCCL_HAS_NVFP16()
-  test<__half>(__double2half(1.0 / 0.0));
-#  endif // _CCCL_HAS_NVFP16
-#  if _CCCL_HAS_NVBF16()
-  test<__nv_bfloat16>(__double2bfloat16(1.0 / 0.0));
-#  endif // _CCCL_HAS_NVBF16
-#  if _CCCL_HAS_NVFP8()
-  test<__nv_fp8_e4m3>(__nv_fp8_e4m3{});
-  test<__nv_fp8_e5m2>(make_fp8_e5m2(1.0 / 0.0));
-#  endif // _CCCL_HAS_NVFP8()
-// MSVC has issues with producing INF with divisions by zero.
-#else
-  test<float>(INFINITY);
-  test<double>(INFINITY);
-#  ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
-  test<long double>(INFINITY);
-#  endif
-#  if _CCCL_HAS_NVFP16()
-  test<__half>(__double2half(INFINITY));
-#  endif // _CCCL_HAS_NVFP16
-#  if _CCCL_HAS_NVBF16()
-  test<__nv_bfloat16>(__double2bfloat16(INFINITY));
-#  endif // _CCCL_HAS_NVBF16
-#  if _CCCL_HAS_NVFP8()
-  test<__nv_fp8_e4m3>(__nv_fp8_e4m3{});
-  test<__nv_fp8_e5m2>(make_fp8_e5m2(INFINITY));
-#  endif // _CCCL_HAS_NVFP8()
+  test<float>(inf);
+  test<double>(inf);
+#ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+  test<long double>(inf);
 #endif
+#if _CCCL_HAS_NVFP16()
+  test<__half>(__double2half(inf));
+#endif // _CCCL_HAS_NVFP16
+#if _CCCL_HAS_NVBF16()
+  test<__nv_bfloat16>(__double2bfloat16(inf));
+#endif // _CCCL_HAS_NVBF16
+#if _CCCL_HAS_NVFP8()
+  test<__nv_fp8_e4m3>(__nv_fp8_e4m3{});
+  test<__nv_fp8_e5m2>(make_fp8_e5m2(inf));
+#  if _CCCL_CUDACC_AT_LEAST(12, 8)
+  test<__nv_fp8_e8m0>(__nv_fp8_e8m0{});
+#  endif // _CCCL_CUDACC_AT_LEAST(12, 8)
+#endif // _CCCL_HAS_NVFP8()
+#if _CCCL_HAS_NVFP6()
+  test<__nv_fp6_e2m3>(__nv_fp6_e2m3{});
+  test<__nv_fp6_e3m2>(__nv_fp6_e3m2{});
+#endif // _CCCL_HAS_NVFP6
+#if _CCCL_HAS_NVFP4()
+  test<__nv_fp4_e2m1>(__nv_fp4_e2m1{});
+#endif // _CCCL_HAS_NVFP4
 
   return 0;
 }

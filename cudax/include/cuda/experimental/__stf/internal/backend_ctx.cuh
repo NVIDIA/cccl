@@ -586,6 +586,21 @@ protected:
       return nullptr;
     }
 
+    void set_graph_cache_policy(::std::function<bool()> fn)
+    {
+      cache_policy = mv(fn);
+    }
+
+    ::std::optional<::std::function<bool()>> get_graph_cache_policy() const
+    {
+      return cache_policy;
+    }
+
+    virtual executable_graph_cache_stat* graph_get_cache_stat()
+    {
+      return nullptr;
+    }
+
 #if _CCCL_COMPILER(MSVC)
     _CCCL_DIAG_PUSH
     _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
@@ -766,6 +781,7 @@ protected:
     ::std::shared_ptr<reserved::per_ctx_dot> dot;
 
     backend_ctx_untyped::phase ctx_phase = backend_ctx_untyped::phase::setup;
+    ::std::optional<::std::function<bool()>> cache_policy;
   };
 
 public:
@@ -902,6 +918,21 @@ public:
   cudaGraph_t graph() const
   {
     return pimpl->graph();
+  }
+
+  void set_graph_cache_policy(::std::function<bool()> policy)
+  {
+    pimpl->set_graph_cache_policy(mv(policy));
+  }
+
+  auto get_graph_cache_policy() const
+  {
+    return pimpl->get_graph_cache_policy();
+  }
+
+  executable_graph_cache_stat* graph_get_cache_stat()
+  {
+    return pimpl->graph_get_cache_stat();
   }
 
   event_list stream_to_event_list(cudaStream_t stream, ::std::string event_symbol) const

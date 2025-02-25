@@ -82,13 +82,13 @@ enum class length_size
 template <class T>
 constexpr primitive_key is_primitive_key()
 {
-  return detail::is_primitive<T>::value ? primitive_key::yes : primitive_key::no;
+  return is_primitive<T>::value ? primitive_key::yes : primitive_key::no;
 }
 
 template <class T>
 constexpr primitive_length is_primitive_length()
 {
-  return detail::is_primitive<T>::value ? primitive_length::yes : primitive_length::no;
+  return is_primitive<T>::value ? primitive_length::yes : primitive_length::no;
 }
 
 template <class KeyT>

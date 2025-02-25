@@ -127,7 +127,7 @@ template <typename Derived,
           typename Reference  = use_default,
           typename Difference = use_default>
 class _CCCL_DECLSPEC_EMPTY_BASES iterator_adaptor
-    : public detail::iterator_adaptor_base<Derived, Base, Value, System, Traversal, Reference, Difference>::type
+    : public detail::make_iterator_adaptor_base<Derived, Base, Value, System, Traversal, Reference, Difference>::type
 {
   /*! \cond
    */
@@ -136,7 +136,7 @@ class _CCCL_DECLSPEC_EMPTY_BASES iterator_adaptor
 
 protected:
   using super_t =
-    typename detail::iterator_adaptor_base<Derived, Base, Value, System, Traversal, Reference, Difference>::type;
+    typename detail::make_iterator_adaptor_base<Derived, Base, Value, System, Traversal, Reference, Difference>::type;
 
   /*! \endcond
    */
