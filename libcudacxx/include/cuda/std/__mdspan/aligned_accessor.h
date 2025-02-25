@@ -16,7 +16,7 @@
 // ************************************************************************
 //@HEADER
 
-#ifndef _LIBCUDACXX___ALIGNED_ACCESSOR_H
+#ifndef _LIBCUDACXX___MDSPAN_ALIGNED_ACCESSOR_H
 #define _LIBCUDACXX___ALIGNED_ACCESSOR_H
 
 #include <cuda/std/detail/__config>
