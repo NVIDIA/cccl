@@ -235,7 +235,8 @@ def test_reduce_struct_type_minmax():
         return MinMax(c_min, c_max)
 
     def embedding_op(v):
-        return MinMax(v, v)
+        av = abs(v)
+        return MinMax(av, av)
 
     nelems = 4096
 
@@ -261,7 +262,7 @@ def test_reduce_struct_type_minmax():
     # display values computed on the device
     actual = d_out.get()
 
-    h = d_in.get()
+    h = np.abs(d_in.get())
     expected = np.asarray([(h.min(), h.max())], dtype=MinMax.dtype)
 
     assert actual == expected
