@@ -49,6 +49,8 @@ struct unique_by_key_runtime_tuning_policy
   {
     return *this;
   }
+
+  using UniqueByKeyPolicyT = unique_by_key_runtime_tuning_policy;
 };
 
 struct unique_by_key_tuning_t
@@ -209,19 +211,19 @@ struct unique_by_key_kernel_source
 struct dynamic_vsmem_helper_t
 {
   template <typename PolicyT, typename... Ts>
-  int BlockThreads(PolicyT policy) const
+  static int BlockThreads(PolicyT policy)
   {
-    return uses_fallback_policy() ? fallback_policy.block_size : policy.block_size;
+    return policy.block_size;
   }
 
   template <typename PolicyT, typename... Ts>
-  int ItemsPerThread(PolicyT policy) const
+  static int ItemsPerThread(PolicyT policy)
   {
-    return uses_fallback_policy() ? fallback_policy.items_per_thread : policy.items_per_tile;
+    return policy.items_per_thread;
   }
 
   template <typename PolicyT, typename... Ts>
-  ::cuda::std::size_t VSMemPerBlock(PolicyT /*policy*/) const
+  static ::cuda::std::size_t VSMemPerBlock(PolicyT /*policy*/)
   {
     return 0;
   }
