@@ -594,6 +594,7 @@ All the kernel does is derive the proper policy type,
 unwrap the policy to initialize the agent and call one of its ``Consume`` / ``Process`` functions.
 Agents are frequently reused by unrelated device-scope algorithms.
 
+.. _cub-developer-policies:
 
 Policies
 ====================================
@@ -709,8 +710,9 @@ The logic to select tunings varies, and different mechanisms are used for differ
 Some algorithms provide a generic default policy if no tuning is available,
 others implement a fallback logic to select the previous PTX version's agent policy,
 if no tuning is available for the current PTX version.
-In general, tunings are not exhaustive and usually only apply for specific combinations of parameter values,
+In general, tunings are not exhaustive and usually only apply for specific combinations of parameter values and a single PTX version,
 falling back to generic policies when no tuning matches.
+Tunings for CUB algorithms reside in ``cub/device/dispatch/tuning/tuning_<algorithm>.cuh``.
 
 
 Temporary storage usage
