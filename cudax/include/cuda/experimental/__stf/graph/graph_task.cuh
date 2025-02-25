@@ -397,11 +397,9 @@ public:
     return ctx_graph;
   }
 
-  template <typename Fun>
-  decltype(auto) with_locked_graph(Fun&& fun)
+  [[nodiscard]] auto lock_ctx_graph()
   {
-    ::std::lock_guard<::std::mutex> lock(graph_mutex);
-    return fun();
+    return ::std::unique_lock<::std::mutex>(graph_mutex);
   }
 
   void set_current_place(pos4 p)

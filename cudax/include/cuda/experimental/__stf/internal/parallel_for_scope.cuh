@@ -698,9 +698,8 @@ public:
         kernel_params.sharedMemBytes = 0;
 
         // This new node will depend on the previous in the chain (allocation)
-        cuda_safe_call(t->with_locked_graph([&] {
-          return cudaGraphAddKernelNode(&t.get_node(), t.get_ctx_graph(), NULL, 0, &kernel_params);
-        }));
+        auto lock = t.lock_ctx_graph();
+        cudaGraphAddKernelNode(&t.get_node(), t.get_ctx_graph(), NULL, 0, &kernel_params);
       }
 
       return;
@@ -770,56 +769,55 @@ public:
       allocParams.poolProps.location    = {.type = cudaMemLocationTypeDevice, .id = dev_id};
       allocParams.bytesize              = blocks * sizeof(redux_vars<deps_tup_t, ops_and_inits>);
 
-      t->with_locked_graph([&] {
-        auto g                  = t.get_ctx_graph();
-        const auto& input_nodes = t.get_ready_dependencies();
+      auto lock               = t.lock_ctx_graph();
+      auto g                  = t.get_ctx_graph();
+      const auto& input_nodes = t.get_ready_dependencies();
 
-        /* This first node depends on task's dependencies themselves */
-        cudaGraphNode_t allocNode;
-        cuda_safe_call(cudaGraphAddMemAllocNode(&allocNode, g, input_nodes.data(), input_nodes.size(), &allocParams));
+      /* This first node depends on task's dependencies themselves */
+      cudaGraphNode_t allocNode;
+      cuda_safe_call(cudaGraphAddMemAllocNode(&allocNode, g, input_nodes.data(), input_nodes.size(), &allocParams));
 
-        auto* d_redux_buffer = static_cast<redux_vars<deps_tup_t, ops_and_inits>*>(allocParams.dptr);
+      auto* d_redux_buffer = static_cast<redux_vars<deps_tup_t, ops_and_inits>*>(allocParams.dptr);
 
-        // Launch the main kernel
-        // It is ok to use reference to local variables because the arguments
-        // will be used directly when calling cudaGraphAddKernelNode
-        void* kernelArgs[] = {
-          &n, const_cast<void*>(static_cast<const void*>(&sub_shape)), &f, &arg_instances, &d_redux_buffer};
-        cudaKernelNodeParams kernel_params;
-        kernel_params.func           = (void*) reserved::loop_redux<Fun_no_ref, sub_shape_t, deps_tup_t, ops_and_inits>;
-        kernel_params.gridDim        = dim3(static_cast<int>(blocks));
-        kernel_params.blockDim       = dim3(static_cast<int>(block_size));
-        kernel_params.kernelParams   = kernelArgs;
-        kernel_params.extra          = nullptr;
-        kernel_params.sharedMemBytes = dyn_shmem_size;
+      // Launch the main kernel
+      // It is ok to use reference to local variables because the arguments
+      // will be used directly when calling cudaGraphAddKernelNode
+      void* kernelArgs[] = {
+        &n, const_cast<void*>(static_cast<const void*>(&sub_shape)), &f, &arg_instances, &d_redux_buffer};
+      cudaKernelNodeParams kernel_params;
+      kernel_params.func           = (void*) reserved::loop_redux<Fun_no_ref, sub_shape_t, deps_tup_t, ops_and_inits>;
+      kernel_params.gridDim        = dim3(static_cast<int>(blocks));
+      kernel_params.blockDim       = dim3(static_cast<int>(block_size));
+      kernel_params.kernelParams   = kernelArgs;
+      kernel_params.extra          = nullptr;
+      kernel_params.sharedMemBytes = dyn_shmem_size;
 
-        // This new node will depend on the previous in the chain (allocation)
-        cudaGraphNode_t kernel_1;
-        cuda_safe_call(cudaGraphAddKernelNode(&kernel_1, g, &allocNode, 1, &kernel_params));
+      // This new node will depend on the previous in the chain (allocation)
+      cudaGraphNode_t kernel_1;
+      cuda_safe_call(cudaGraphAddKernelNode(&kernel_1, g, &allocNode, 1, &kernel_params));
 
-        // Launch the second kernel to reduce remaining values among original blocks
-        // It is ok to use reference to local variables because the arguments
-        // will be used directly when calling cudaGraphAddKernelNode
-        void* kernel2Args[] = {&arg_instances, &d_redux_buffer, const_cast<void*>(static_cast<const void*>(&blocks))};
+      // Launch the second kernel to reduce remaining values among original blocks
+      // It is ok to use reference to local variables because the arguments
+      // will be used directly when calling cudaGraphAddKernelNode
+      void* kernel2Args[] = {&arg_instances, &d_redux_buffer, const_cast<void*>(static_cast<const void*>(&blocks))};
 
-        size_t finalize_block_size = blocks;
-        cudaKernelNodeParams kernel2_params;
-        kernel2_params.func           = (void*) reserved::loop_redux_finalize<deps_tup_t, ops_and_inits>;
-        kernel2_params.gridDim        = dim3(1);
-        kernel2_params.blockDim       = dim3(static_cast<int>(finalize_block_size));
-        kernel2_params.kernelParams   = kernel2Args;
-        kernel2_params.extra          = nullptr;
-        kernel2_params.sharedMemBytes = dynamic_shared_mem_finalize;
-        cudaGraphNode_t kernel_2;
-        cuda_safe_call(cudaGraphAddKernelNode(&kernel_2, g, &kernel_1, 1, &kernel2_params));
+      size_t finalize_block_size = blocks;
+      cudaKernelNodeParams kernel2_params;
+      kernel2_params.func           = (void*) reserved::loop_redux_finalize<deps_tup_t, ops_and_inits>;
+      kernel2_params.gridDim        = dim3(1);
+      kernel2_params.blockDim       = dim3(static_cast<int>(finalize_block_size));
+      kernel2_params.kernelParams   = kernel2Args;
+      kernel2_params.extra          = nullptr;
+      kernel2_params.sharedMemBytes = dynamic_shared_mem_finalize;
+      cudaGraphNode_t kernel_2;
+      cuda_safe_call(cudaGraphAddKernelNode(&kernel_2, g, &kernel_1, 1, &kernel2_params));
 
-        // We can now free memory
-        cudaGraphNode_t free_node;
-        cuda_safe_call(cudaGraphAddMemFreeNode(&free_node, g, &kernel_2, 1, allocParams.dptr));
+      // We can now free memory
+      cudaGraphNode_t free_node;
+      cuda_safe_call(cudaGraphAddMemFreeNode(&free_node, g, &kernel_2, 1, allocParams.dptr));
 
-        // Make this the node which defines the end of the task
-        t.add_done_node(free_node);
-      });
+      // Make this the node which defines the end of the task
+      t.add_done_node(free_node);
     }
   }
 
@@ -901,9 +899,9 @@ public:
       // This task corresponds to a single graph node, so we set that
       // node instead of creating an child graph. Input and output
       // dependencies will be filled later.
-      t.with_locked_graph([&] {
-        cuda_safe_call(cudaGraphAddKernelNode(&t.get_node(), t.get_ctx_graph(), nullptr, 0, &kernel_params));
-      });
+      auto lock = t.lock_ctx_graph();
+      cuda_safe_call(cudaGraphAddKernelNode(&t.get_node(), t.get_ctx_graph(), nullptr, 0, &kernel_params));
+
       // fprintf(stderr, "KERNEL NODE => graph %p, gridDim %d blockDim %d (n %ld)\n", t.get_graph(),
       // kernel_params.gridDim.x, kernel_params.blockDim.x, n);
     }
