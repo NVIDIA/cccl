@@ -53,6 +53,8 @@
 #include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/ptx>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 
 CUB_NAMESPACE_BEGIN
 

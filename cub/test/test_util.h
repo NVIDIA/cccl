@@ -45,6 +45,9 @@
 
 #include <thrust/iterator/discard_iterator.h>
 
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+
 #include <cfloat>
 #include <cmath>
 #include <cstddef>

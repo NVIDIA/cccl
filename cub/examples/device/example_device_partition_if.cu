@@ -43,7 +43,7 @@
 #include <cub/device/device_partition.cuh>
 #include <cub/util_allocator.cuh>
 
-#include <limits>
+#include <cuda/std/limits>
 
 #include "../../test/test_util.h"
 #include <stdio.h>
@@ -89,7 +89,7 @@ void Initialize(int* h_in, int num_items, int max_segment)
     unsigned short bits;
     RandomBits(bits);
     const int repeat = cuda::std::max(
-      1, static_cast<int>(bits * (static_cast<float>(max_segment) / std::numeric_limits<unsigned short>::max())));
+      1, static_cast<int>(bits * (static_cast<float>(max_segment) / cuda::std::numeric_limits<unsigned short>::max())));
 
     int j = i;
     while (j < cuda::std::min(i + repeat, num_items))

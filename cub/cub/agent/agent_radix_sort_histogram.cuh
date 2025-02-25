@@ -51,6 +51,7 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/ptx>
+#include <cuda/std/__algorithm/max.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -208,8 +209,8 @@ struct AgentRadixSortHistogram
     for (int current_bit = begin_bit, pass = 0; current_bit < end_bit; current_bit += RADIX_BITS, ++pass)
     {
       // FIXME(bgruber): the following replacement changes SASS for cub.test.device_radix_sort_pairs.lid_0
-      // int num_bits = _CUDA_VSTD::min(+RADIX_BITS, end_bit - current_bit);
-      int num_bits = CUB_MIN(+RADIX_BITS, end_bit - current_bit);
+      // const int num_bits = _CUDA_VSTD::min(+RADIX_BITS, end_bit - current_bit);
+      const int num_bits = CUB_MIN(+RADIX_BITS, end_bit - current_bit);
 #pragma unroll
       for (int u = 0; u < ITEMS_PER_THREAD; ++u)
       {

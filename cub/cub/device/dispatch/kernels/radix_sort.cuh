@@ -22,6 +22,8 @@
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/grid/grid_even_share.cuh>
 
+#include <cuda/std/__algorithm/max.h>
+
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************

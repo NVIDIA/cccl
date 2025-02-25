@@ -53,6 +53,8 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/type_traits>
 
 #include <iterator>
@@ -275,7 +277,7 @@ struct DispatchRadixSort
     cudaError error = cudaSuccess;
     do
     {
-      int pass_bits = _CUDA_VSTD::min(pass_config.radix_bits, (end_bit - current_bit));
+      int pass_bits = _CUDA_VSTD::min(pass_config.radix_bits, end_bit - current_bit);
 
 // Log upsweep_kernel configuration
 #ifdef CUB_DEBUG_LOG
@@ -614,8 +616,8 @@ struct DispatchRadixSort
         int num_bits = _CUDA_VSTD::min(end_bit - current_bit, RADIX_BITS);
         for (OffsetT portion = 0; portion < num_portions; ++portion)
         {
-          PortionOffsetT portion_num_items = static_cast<PortionOffsetT>(
-            _CUDA_VSTD::min(num_items - portion * PORTION_SIZE, static_cast<OffsetT>(PORTION_SIZE)));
+          PortionOffsetT portion_num_items =
+            static_cast<PortionOffsetT>(_CUDA_VSTD::min(num_items - portion * PORTION_SIZE, OffsetT{PORTION_SIZE}));
 
           PortionOffsetT num_blocks = ::cuda::ceil_div(portion_num_items, ONESWEEP_TILE_ITEMS);
 
@@ -1378,10 +1380,11 @@ struct DispatchSegmentedRadixSort
 
       // Pass planning.  Run passes of the alternate digit-size configuration until we have an even multiple of our
       // preferred digit size
-      int radix_bits         = ActivePolicyT::SegmentedPolicy::RADIX_BITS;
-      int alt_radix_bits     = ActivePolicyT::AltSegmentedPolicy::RADIX_BITS;
-      int num_bits           = end_bit - begin_bit;
-      int num_passes         = _CUDA_VSTD::max(::cuda::ceil_div(num_bits, radix_bits), 1);
+      int radix_bits     = ActivePolicyT::SegmentedPolicy::RADIX_BITS;
+      int alt_radix_bits = ActivePolicyT::AltSegmentedPolicy::RADIX_BITS;
+      int num_bits       = end_bit - begin_bit;
+      _CCCL_ASSERT(num_bits > 0, "");
+      int num_passes         = ::cuda::ceil_div(num_bits, radix_bits);
       bool is_num_passes_odd = num_passes & 1;
       int max_alt_passes     = (num_passes * radix_bits) - num_bits;
       int alt_end_bit        = _CUDA_VSTD::min(end_bit, begin_bit + (max_alt_passes * alt_radix_bits));

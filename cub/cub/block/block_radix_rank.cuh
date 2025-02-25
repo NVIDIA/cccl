@@ -49,6 +49,7 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/ptx>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
@@ -242,7 +243,7 @@ private:
     LOG_PACKING_RATIO = Log2<PACKING_RATIO>::VALUE,
 
     // Always at least one lane
-    LOG_COUNTER_LANES = _CUDA_VSTD::max((int(RADIX_BITS) - int(LOG_PACKING_RATIO)), 0),
+    LOG_COUNTER_LANES = _CUDA_VSTD::max(RADIX_BITS - LOG_PACKING_RATIO, 0),
     COUNTER_LANES     = 1 << LOG_COUNTER_LANES,
 
     // The number of packed counters per thread (plus one for padding)
