@@ -485,3 +485,30 @@ in which case a new tuning class template and specializations should be added.
 Or we tune for new key, value or offset types, etc.,
 in which case the existing policy hub and tuning class templates may need to be extended.
 There is no general rule on how this extension is done, though.
+
+In the seldom case, that no tuning better than the existing one (baseline) has been found,
+it must be ensured that either the old tuning values are replicated in the new tuning specialization,
+or the new tuning specialization defers to the old one,
+or the tuning selection mechanism falls back accordingly.
+There is no general rule on how this is implemented.
+
+
+Verification
+--------------------------------------------------------------------------------
+
+Once we have selected tunings and implemented them in CUB, we need to verify them.
+That is, we must benchmark and compare the performance of the tuned algorithm before and after the tunings have been applied.
+This extra step is needed, because the score shown during the tuning analysis is just an aggregated result.
+Individual benchmarks may still have regressed for some compile-time workloads.
+Fortunately, this is no different than :ref:`running <cub-benchmarking-running>` the corresponding CUB benchmark with and without the changes,
+and :ref:`comparing <cub-benchmarking-comparing>` the resulting JSON files.
+Such a diff should be supplied to any request to change CUB tunings.
+
+If verification fails for some compile-time workloads (there are regressions), there are two options:
+
+1. Discard the tuning entirely and ensure the tuning selection falls back to the baseline tuning.
+2. Narrow down the tuning template specialization to only apply to the workloads where it improves performance,
+   and fallback where it regressed.
+
+The latter is more complex and may not be justified, if the improvements are small or the use case too narrow.
+Use your judgement. Good luck!
