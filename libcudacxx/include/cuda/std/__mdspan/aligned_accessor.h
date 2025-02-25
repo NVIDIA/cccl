@@ -17,7 +17,7 @@
 //@HEADER
 
 #ifndef _LIBCUDACXX___MDSPAN_ALIGNED_ACCESSOR_H
-#define _LIBCUDACXX___ALIGNED_ACCESSOR_H
+#define _LIBCUDACXX___MDSPAN_ALIGNED_ACCESSOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -98,4 +98,4 @@ public:
 _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif // defined(__cccl_lib_mdspan)
-#endif // _LIBCUDACXX___ALIGNED_ACCESSOR_H
+#endif // _LIBCUDACXX___MDSPAN_ALIGNED_ACCESSOR_H
