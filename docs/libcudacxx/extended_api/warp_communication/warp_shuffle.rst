@@ -1,4 +1,4 @@
-.. _libcudacxx-extended-api-warp-communitioncal-warp-shuffle:
+.. _libcudacxx-extended-api-warp-communication-warp-shuffle:
 
 Warp Shuffle
 ============
