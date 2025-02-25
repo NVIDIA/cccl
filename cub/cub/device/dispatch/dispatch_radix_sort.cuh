@@ -1379,11 +1379,10 @@ struct DispatchSegmentedRadixSort
 
       // Pass planning.  Run passes of the alternate digit-size configuration until we have an even multiple of our
       // preferred digit size
-      int radix_bits     = ActivePolicyT::SegmentedPolicy::RADIX_BITS;
-      int alt_radix_bits = ActivePolicyT::AltSegmentedPolicy::RADIX_BITS;
-      int num_bits       = end_bit - begin_bit;
-      _CCCL_ASSERT(num_bits > 0, "");
-      int num_passes         = ::cuda::ceil_div(num_bits, radix_bits);
+      int radix_bits         = ActivePolicyT::SegmentedPolicy::RADIX_BITS;
+      int alt_radix_bits     = ActivePolicyT::AltSegmentedPolicy::RADIX_BITS;
+      int num_bits           = end_bit - begin_bit;
+      int num_passes         = _CUDA_VSTD::max(::cuda::ceil_div(num_bits, radix_bits), 1); // num_bits may be zero
       bool is_num_passes_odd = num_passes & 1;
       int max_alt_passes     = (num_passes * radix_bits) - num_bits;
       int alt_end_bit        = _CUDA_VSTD::min(end_bit, begin_bit + (max_alt_passes * alt_radix_bits));
