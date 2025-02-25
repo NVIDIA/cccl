@@ -226,7 +226,7 @@ This method is not sufficient because it does not catch all Forward Progress bug
 Stream and event ordering
 -------------------------
 
-A device thread shall not start making progress until all its dependencies have completed.
+A device thread shall not start until all its dependencies have completed.
 
 [Note: Dependencies that prevent device threads from starting to make progress can be created, for example, via CUDA Stream `Command <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#streams>`__s.
 These may include dependencies on the completion of, among others, `CUDA Events <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#events>`__ and `CUDA Kernels <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#kernels>`__. - end note.]
