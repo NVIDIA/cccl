@@ -85,8 +85,8 @@ template <class UnaryFunc, class Iterator, class Reference, class Value>
 struct make_transform_iterator_base
 {
 private:
-  using reference  = typename ia_dflt_help<Reference, transform_iterator_reference<UnaryFunc, Iterator>>::type;
-  using value_type = typename ia_dflt_help<Value, ::cuda::std::remove_cvref<reference>>::type;
+  using reference  = replace_if_use_default<Reference, transform_iterator_reference<UnaryFunc, Iterator>>;
+  using value_type = replace_if_use_default<Value, ::cuda::std::remove_cvref<reference>>;
 
 public:
   using type =

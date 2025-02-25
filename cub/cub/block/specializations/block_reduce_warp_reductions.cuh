@@ -84,7 +84,7 @@ struct BlockReduceWarpReductions
     WARPS = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS,
 
     /// The logical warp size for warp reductions
-    LOGICAL_WARP_SIZE = CUB_MIN(BLOCK_THREADS, WARP_THREADS),
+    LOGICAL_WARP_SIZE = _CUDA_VSTD::min(BLOCK_THREADS, WARP_THREADS),
 
     /// Whether or not the logical warp size evenly divides the thread block size
     EVEN_WARP_MULTIPLE = (BLOCK_THREADS % LOGICAL_WARP_SIZE == 0)

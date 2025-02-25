@@ -226,12 +226,12 @@ template <typename KeysInputIteratorT,
           typename ReductionOpT,
           typename OffsetT,
           typename AccumT    = ::cuda::std::__accumulator_t<ReductionOpT,
-                                                            cub::detail::value_t<ValuesInputIteratorT>,
-                                                            cub::detail::value_t<ValuesInputIteratorT>>,
+                                                            cub::detail::it_value_t<ValuesInputIteratorT>,
+                                                            cub::detail::it_value_t<ValuesInputIteratorT>>,
           typename PolicyHub = detail::reduce_by_key::policy_hub<
             ReductionOpT,
             AccumT,
-            cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::value_t<KeysInputIteratorT>>>>
+            cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::it_value_t<KeysInputIteratorT>>>>
 struct DispatchReduceByKey
 {
   //-------------------------------------------------------------------------
@@ -239,7 +239,7 @@ struct DispatchReduceByKey
   //-------------------------------------------------------------------------
 
   // The input values type
-  using ValueInputT = cub::detail::value_t<ValuesInputIteratorT>;
+  using ValueInputT = cub::detail::it_value_t<ValuesInputIteratorT>;
 
   static constexpr int INIT_KERNEL_THREADS = 128;
 
@@ -344,7 +344,7 @@ struct DispatchReduceByKey
       }
 
       // Log init_kernel configuration
-      int init_grid_size = CUB_MAX(1, ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS));
+      int init_grid_size = _CUDA_VSTD::max(1, ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS));
 
 #ifdef CUB_DEBUG_LOG
       _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
@@ -392,7 +392,7 @@ struct DispatchReduceByKey
       }
 
       // Run grids in epochs (in case number of tiles exceeds max x-dimension
-      int scan_grid_size = CUB_MIN(num_tiles, max_dim_x);
+      int scan_grid_size = _CUDA_VSTD::min(num_tiles, max_dim_x);
       for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
       {
 // Log reduce_by_key_kernel configuration

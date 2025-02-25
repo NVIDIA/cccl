@@ -106,10 +106,10 @@ struct DispatchPartitionIf
                                             equality_op_t{},
                                             num_items,
                                             stream);
-    CUDA_CUB_RET_IF_FAIL(status);
+    _CUDA_CUB_RET_IF_FAIL(status);
 
     status = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
-    CUDA_CUB_RET_IF_FAIL(status);
+    _CUDA_CUB_RET_IF_FAIL(status);
 
     // Return if we're only querying temporary storage requirements
     if (d_temp_storage == nullptr)
@@ -146,11 +146,11 @@ struct DispatchPartitionIf
                                             equality_op_t{},
                                             num_items,
                                             stream);
-    CUDA_CUB_RET_IF_FAIL(status);
+    _CUDA_CUB_RET_IF_FAIL(status);
 
     // Get number of selected items
     status = cuda_cub::synchronize(policy);
-    CUDA_CUB_RET_IF_FAIL(status);
+    _CUDA_CUB_RET_IF_FAIL(status);
     num_selected = static_cast<std::size_t>(get_value(policy, d_num_selected_out));
 
     return status;
