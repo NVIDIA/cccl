@@ -145,15 +145,16 @@ Example
         cuda::std::array<int, 3> array       = {threadIdx.x, threadIdx.x + 1, threadIdx.x + 2};
         MyStruct                 my_structs{static_cast<double>(threadIdx.x), threadIdx.x + 1};
         if (laneid < 16) {
-            // first 16 lanes get the array {5, 6, 7}
+            // lanes [0, 15] get an array with values {5, 6, 7}
             auto ret = cuda::warp_shuffle_idx(raw_array, 5, 0xFFFF, half_warp);
             printf("lane %2d: [%d, %d, %d]\n", laneid, ret.data[0], ret.data[1], ret.data[2]);
 
-            // first 16 lanes get array with values {threadIdx.x - 1, threadIdx.x, threadIdx.x + 1}
+            // lanes [1, 15] get an array with values {threadIdx.x - 1, threadIdx.x, threadIdx.x + 1}
+            // lane 0 keeps the original values
             auto array_ret = cuda::warp_shuffle_up(array, 1, half_warp).data;
             printf("lane %2d: [%d, %d, %d]\n", laneid, array[0], array[1], array_ret[2]);
         }
-        // laneid % 16 < 14 get my_structs with values {threadIdx.x + 2, threadIdx.x + 3} and pred=true
+        // lanes [0, 13] get my_structs with values {threadIdx.x + 2, threadIdx.x + 3} and pred=true
         auto ret = cuda::warp_shuffle_down<16>(my_structs, 2);
         printf("lane %2d: {%f, %d}, pred %d\n", laneid, ret.data.x, ret.data.y, ret.pred);
     }
@@ -164,4 +165,4 @@ Example
         return 0;
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/qfT38PTo3>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/soWTaG6Eb>`_
