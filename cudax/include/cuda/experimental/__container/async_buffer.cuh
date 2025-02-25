@@ -193,7 +193,8 @@ private:
       auto __temp = _CUDA_VSTD::get_temporary_buffer<_Tp>(__count).first;
       ::cuda::experimental::host_launch(__buf_.get_stream(), _CUDA_VSTD::copy<_Iter, pointer>, __first, __last, __temp);
       // FIXME: Something is fishy here. We need to wait otherwise the data is not properly set.
-      // The test passes fine with compute-sanitizer but we really do not want to take the performance hit for this
+      // The test passes fine with compute-sanitizer but we really do not want to take the performance hit for this.
+      // See https://github.com/NVIDIA/cccl/issues/3814
       __buf_.get_stream().wait();
       _CCCL_TRY_CUDA_API(
         ::cudaMemcpyAsync,
