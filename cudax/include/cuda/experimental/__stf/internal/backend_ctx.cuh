@@ -217,7 +217,9 @@ public:
     if constexpr (::std::is_same_v<Ctx, graph_ctx>)
     {
       cudaHostNodeParams params = {.fn = callback, .userData = wrapper};
-      auto lock                 = t.lock_ctx_graph();
+
+      // Put this host node into the child graph that implements the graph_task<>
+      auto lock = t.lock_ctx_graph();
       cuda_safe_call(cudaGraphAddHostNode(&t.get_node(), t.get_ctx_graph(), nullptr, 0, &params));
     }
     else
