@@ -188,7 +188,7 @@ THRUST_RUNTIME_FUNCTION OutputIt copy_if(
   OutputIt output,
   Predicate predicate)
 {
-  using size_type = typename iterator_traits<InputIt>::difference_type;
+  using size_type = thrust::detail::it_difference_t<InputIt>;
 
   size_type num_items       = static_cast<size_type>(thrust::distance(first, last));
   cudaError_t status        = cudaSuccess;

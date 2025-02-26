@@ -10,7 +10,7 @@ void test(Iterator first, Iterator last)
   using System = typename thrust::iterator_system<Iterator>::type;
   System system;
   thrust::detail::trivial_sequence<Iterator, System> ts(system, first, last);
-  using ValueType = typename thrust::iterator_traits<Iterator>::value_type;
+  using ValueType = typename ::cuda::std::iterator_traits<Iterator>::value_type;
 
   ASSERT_EQUAL_QUIET((ValueType) ts.begin()[0], ValueType(0, 11));
   ASSERT_EQUAL_QUIET((ValueType) ts.begin()[1], ValueType(2, 11));
