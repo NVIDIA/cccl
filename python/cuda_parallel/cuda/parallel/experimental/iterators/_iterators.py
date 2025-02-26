@@ -34,7 +34,7 @@ class IteratorKind:
         return type(self) is type(other) and self.value_type == other.value_type
 
     def __hash__(self):
-        return hash((self.__class__, self.value_type))
+        return hash((type(self), self.value_type))
 
 
 @lru_cache(maxsize=None)
@@ -335,14 +335,6 @@ def make_transform_iterator(it, op: Callable):
         def dereference(state):
             return op(it_dereference(state))
 
-        def __hash__(self):
-            return hash((self.__class__.iterator_kind_type, self._it, self._op))
-
-        def __eq__(self, other):
-            if not isinstance(other.kind, TransformIteratorKind):
-                return NotImplemented
-            return self._it == other._it and self._op == other._op
-
     return TransformIterator(it, op)
 
 
@@ -378,13 +370,5 @@ def make_advanced_iterator(it: IteratorBase, /, *, offset: int = 1):
         @staticmethod
         def dereference(state):
             return it_dereference(state)
-
-        def __hash__(self):
-            return hash((self.__class__.iterator_kind_type, self._it))
-
-        def __eq__(self, other):
-            if not isinstance(other.kind, self.__class__.iterator_kind_type):
-                return NotImplemented
-            return self._it == other._it
 
     return AdvancedIterator(it, offset)
