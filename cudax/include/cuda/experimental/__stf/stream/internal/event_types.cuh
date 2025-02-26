@@ -42,21 +42,6 @@ inline event join_with_stream(
 
 using stream_and_event_vector = small_vector<reserved::handle<stream_and_event>, 7>;
 
-/* Tag types for event counters */
-class cuda_event_tag
-{
-public:
-  class created
-  {};
-  class alive
-  {};
-  class destroyed
-  {};
-};
-
-class cuda_stream_wait_event_tag
-{};
-
 } // namespace reserved
 
 /* This event type allows to synchronize a CUDA stream with a CUDA event in
