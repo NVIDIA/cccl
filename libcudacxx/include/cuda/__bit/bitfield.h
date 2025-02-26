@@ -29,6 +29,24 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
+#if _CCCL_HAS_CUDA_COMPILER
+
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI uint32_t __bfi(uint32_t __value, int __start, int __width) noexcept
+{
+  uint32_t __ret;
+  asm("bfi.b32 %0, %1, %2, %3, %4;" : "=r"(__ret) : "r"(0xFFFFFFFF), "r"(__value), "r"(__start), "r"(__width));
+  return __ret;
+}
+
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI uint32_t __bfe(uint32_t __value, int __start, int __width) noexcept
+{
+  uint32_t __ret;
+  asm("bfe.u32 %0, %1, %2, %3;" : "=r"(__ret) : "r"(__value), "r"(__start), "r"(__width));
+  return __ret;
+}
+
+#endif // _CCCL_HAS_CUDA_COMPILER
+
 template <typename _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp
 bitfield_insert(const _Tp __value, int __start, int __width = 1) noexcept
@@ -42,7 +60,11 @@ bitfield_insert(const _Tp __value, int __start, int __width = 1) noexcept
   {
     if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
     {
-      NV_IF_TARGET(NV_PROVIDES_SM_70, (return __value | _CUDA_VPTX::bmsk_clamp(__start, __width);))
+      // clang-format off
+      NV_DISPATCH_TARGET(
+        NV_PROVIDES_SM_70, (return __value | _CUDA_VPTX::bmsk_clamp(__start, __width);),
+        NV_IS_DEVICE,      (return ::cuda::__bfi(static_cast<uint32_t>(__value), __start, __width);))
+      // clang-format on
     }
   }
   if (__width == __digits)
@@ -66,7 +88,11 @@ bitfield_extract(const _Tp __value, int __start, int __width = 1) noexcept
   {
     if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
     {
-      NV_IF_TARGET(NV_PROVIDES_SM_70, (return __value & _CUDA_VPTX::bmsk_clamp(__start, __width);))
+      // clang-format off
+      NV_DISPATCH_TARGET(
+        NV_PROVIDES_SM_70, (return __value & _CUDA_VPTX::bmsk_clamp(__start, __width);),
+        NV_IS_DEVICE,      (return ::cuda::__bfe(static_cast<uint32_t>(__value), __start, __width);))
+      // clang-format on
     }
   }
   if (__width == __digits)
