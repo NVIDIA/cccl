@@ -42,13 +42,17 @@
 
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/cuda/detail/execution_policy.h>
-#include <thrust/system/cuda/error.h>
-#include <thrust/system_error.h>
 
-#include <cstdio>
-#include <exception>
+// #include <exception>
 
 #include <nv/target>
+
+#if !_CCCL_COMPILER(NVRTC)
+#  include <thrust/system/cuda/error.h>
+#  include <thrust/system_error.h>
+
+#  include <cstdio>
+#endif // !_CCCL_COMPILER(NVRTC)
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
@@ -132,6 +136,7 @@ _CCCL_HOST_DEVICE cudaError_t synchronize_optional(Policy& policy)
   return synchronize_stream_optional(derived_cast(policy));
 }
 
+#if !_CCCL_COMPILER(NVRTC)
 template <class Type>
 THRUST_HOST_FUNCTION cudaError_t trivial_copy_from_device(Type* dst, Type const* src, size_t count, cudaStream_t stream)
 {
@@ -176,6 +181,7 @@ trivial_copy_device_to_device(Policy& policy, Type* dst, Type const* src, size_t
   cuda_cub::synchronize_optional(policy);
   return status;
 }
+#endif // !_CCCL_COMPILER(NVRTC)
 
 _CCCL_HOST_DEVICE inline void throw_on_error(cudaError_t status)
 {

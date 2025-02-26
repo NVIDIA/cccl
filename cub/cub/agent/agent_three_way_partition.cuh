@@ -47,9 +47,6 @@
 
 #include <cuda/std/type_traits>
 
-#include <iterator>
-#include <type_traits>
-
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
