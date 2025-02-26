@@ -121,6 +121,20 @@ class DeviceScanBuildResult(ctypes.Structure):
     ]
 
 
+# MUST match `cccl_device_unique_by_key_build_result_t` in c/include/cccl/c/unique_by_key.h
+class DeviceUniqueByKeyBuildResult(ctypes.Structure):
+    _fields_ = [
+        ("cc", ctypes.c_int),
+        ("cubin", ctypes.c_void_p),
+        ("cubin_size", ctypes.c_size_t),
+        ("library", ctypes.c_void_p),
+        ("compact_init_kernel", ctypes.c_void_p),
+        ("sweep_kernel", ctypes.c_void_p),
+        ("description_bytes_per_tile", ctypes.c_size_t),
+        ("payload_bytes_per_tile", ctypes.c_size_t),
+    ]
+
+
 # MUST match `cccl_value_t` in c/include/cccl/c/types.h
 class Value(ctypes.Structure):
     _fields_ = [("type", TypeInfo), ("state", ctypes.c_void_p)]
@@ -192,7 +206,8 @@ def _iterator_to_cccl_iter(it: IteratorBase) -> Iterator:
     alignment = context.get_value_type(numba_type).get_abi_alignment(
         context.target_data
     )
-    (advance_abi_name, advance_ltoir), (deref_abi_name, deref_ltoir) = it.ltoirs.items()
+    (advance_abi_name, advance_ltoir), (deref_abi_name,
+                                        deref_ltoir) = it.ltoirs.items()
     advance_op = Op(
         OpKind.STATELESS,
         advance_abi_name.encode("utf-8"),
