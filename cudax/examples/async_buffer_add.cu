@@ -77,12 +77,9 @@ int main()
   // Do not forget to sync afterwards
   stream.wait();
 
-  float* ptr_A = h_A.data();
-  float* ptr_B = h_B.data();
-  float* ptr_C = h_C.data();
   for (int i = 0; i < numElements; ++i)
   {
-    if (cuda::std::abs(ptr_A[i] + ptr_B[i] - ptr_C[i]) > 1e-5)
+    if (cuda::std::abs(h_A.get_unsynchronized(i) + h_B.get_unsynchronized(i) - h_C.get_unsynchronized(i)) > 1e-5)
     {
       std::cerr << "Result verification failed at element " << i << "\n";
       exit(EXIT_FAILURE);

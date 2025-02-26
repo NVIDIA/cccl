@@ -141,10 +141,7 @@ private:
   //! @brief Helper to check whether a different async_buffer still satisfies all properties of this one
   template <class... _OtherProperties>
   static constexpr bool __properties_match =
-    !_CCCL_TRAIT(_CUDA_VSTD::is_same,
-                 _CUDA_VSTD::__make_type_set<_Properties...>,
-                 _CUDA_VSTD::__make_type_set<_OtherProperties...>)
-    && _CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__make_type_set<_OtherProperties...>, _Properties...>;
+    _CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__make_type_set<_OtherProperties...>, _Properties...>;
 
   //! @brief Helper to determine what cudaMemcpyKind we need to copy data from another async_buffer with different
   //!        properties. Needed for compilers that have issues handling packs in constraints
@@ -166,7 +163,7 @@ private:
   template <class _Iter, cudaMemcpyKind __kind = __detect_transfer_kind<__is_host_only, _Iter>>
   _CCCL_HIDE_FROM_ABI void __assign_impl(const size_type __count, _Iter __first, _Iter __last)
   {
-    if (size() < __count)
+    if (__size_ < __count)
     {
       (void) __buf_.__replace_allocation(__count);
     }
@@ -186,6 +183,11 @@ private:
   template <class _Iter, cudaMemcpyKind __kind = __is_host_only ? cudaMemcpyHostToHost : cudaMemcpyHostToDevice>
   _CCCL_HIDE_FROM_ABI void __copy_cross(_Iter __first, _Iter __last, pointer __dest, size_type __count)
   {
+    if (__count == 0)
+    {
+      return;
+    }
+
     if constexpr (!_CUDA_VSTD::contiguous_iterator<_Iter>)
     { // For non-coniguous iterators we need to copy into temporary host storage to use cudaMemcpy
       // Currently only supported from host because no one should use non-contiguous data on device
@@ -226,6 +228,11 @@ private:
   //! @param __count The number of elements to be initialized.
   _CCCL_HIDE_FROM_ABI void __value_initialize_n(pointer __first, size_type __count)
   {
+    if (__count == 0)
+    {
+      return;
+    }
+
     if constexpr (__is_host_only)
     {
       ::cuda::experimental::host_launch(
@@ -242,6 +249,11 @@ private:
   //! @param __count The number of elements to be initialized.
   _CCCL_HIDE_FROM_ABI void __fill_n(pointer __first, size_type __count, const _Tp& __value)
   {
+    if (__count == 0)
+    {
+      return;
+    }
+
     if constexpr (__is_host_only)
     {
       ::cuda::experimental::host_launch(
@@ -257,25 +269,19 @@ public:
   //! @addtogroup construction
   //! @{
 
-  //! @brief Copy-constructs a async_buffer
+  //! @brief Copy-constructs from a async_buffer
   //! @param __other The other async_buffer.
-  //! The new async_buffer has size of \p __other.size() which is potentially less than \p __other.size().
-  //! @note No memory is allocated if \p __other is empty
   _CCCL_HIDE_FROM_ABI async_buffer(const async_buffer& __other)
       : __buf_(__other.get_memory_resource(), __other.get_stream(), __other.__size_)
       , __size_(__other.__size_)
       , __policy_(__other.__policy_)
   {
-    if (__other.__size_ != 0)
-    {
-      this->__copy_cross<const_pointer>(
-        __other.__unwrapped_begin(), __other.__unwrapped_end(), __unwrapped_begin(), __other.__size_);
-    }
+    this->__copy_cross<const_pointer>(
+      __other.__unwrapped_begin(), __other.__unwrapped_end(), __unwrapped_begin(), __other.__size_);
   }
 
-  //! @brief Move-constructs a async_buffer
+  //! @brief Move-constructs from a async_buffer
   //! @param __other The other async_buffer.
-  //! The new async_buffer takes ownership of the allocation of \p __other and resets it.
   _CCCL_HIDE_FROM_ABI async_buffer(async_buffer&& __other) noexcept
       : __buf_(_CUDA_VSTD::move(__other.__buf_))
       , __size_(_CUDA_VSTD::exchange(__other.__size_, 0))
@@ -291,11 +297,8 @@ public:
       , __size_(__other.__size_)
       , __policy_(__other.__policy_)
   {
-    if (__other.__size_ != 0)
-    {
-      this->__copy_cross<const_pointer, __transfer_kind<_OtherProperties...>>(
-        __other.__unwrapped_begin(), __other.__unwrapped_end(), __unwrapped_begin(), __other.__size_);
-    }
+    this->__copy_cross<const_pointer, __transfer_kind<_OtherProperties...>>(
+      __other.__unwrapped_begin(), __other.__unwrapped_end(), __unwrapped_begin(), __other.__size_);
   }
 
   //! @brief Move-constructs from a async_buffer with matching properties
@@ -323,10 +326,7 @@ public:
   _CCCL_HIDE_FROM_ABI explicit async_buffer(const __env_t& __env, const size_type __size)
       : async_buffer(__env, __size, ::cuda::experimental::uninit)
   {
-    if (__size != 0)
-    {
-      this->__value_initialize_n(__unwrapped_begin(), __size);
-    }
+    this->__value_initialize_n(__unwrapped_begin(), __size);
   }
 
   //! @brief Constructs a async_buffer of size \p __size using a memory resource and copy-constructs \p __size elements
@@ -338,10 +338,7 @@ public:
   _CCCL_HIDE_FROM_ABI explicit async_buffer(const __env_t& __env, const size_type __size, const _Tp& __value)
       : async_buffer(__env, __size, ::cuda::experimental::uninit)
   {
-    if (__size != 0)
-    {
-      this->__fill_n(__unwrapped_begin(), __size, __value);
-    }
+    this->__fill_n(__unwrapped_begin(), __size, __value);
   }
 
   //! @brief Constructs a async_buffer of size \p __size using a memory and leaves all elements uninitialized
@@ -367,11 +364,8 @@ public:
   _CCCL_HIDE_FROM_ABI async_buffer(const __env_t& __env, _Iter __first, _Iter __last)
       : async_buffer(__env, static_cast<size_type>(_CUDA_VSTD::distance(__first, __last)), ::cuda::experimental::uninit)
   {
-    if (__size_ > 0)
-    {
-      this->__copy_cross<_Iter, __detect_transfer_kind<__is_host_only, _Iter>>(
-        __first, __last, __unwrapped_begin(), __size_);
-    }
+    this->__copy_cross<_Iter, __detect_transfer_kind<__is_host_only, _Iter>>(
+      __first, __last, __unwrapped_begin(), __size_);
   }
 
   //! @brief Constructs a async_buffer using a memory resource and copy-constructs all elements from \p __ilist
@@ -381,10 +375,7 @@ public:
   _CCCL_HIDE_FROM_ABI async_buffer(const __env_t& __env, _CUDA_VSTD::initializer_list<_Tp> __ilist)
       : async_buffer(__env, __ilist.size(), ::cuda::experimental::uninit)
   {
-    if (__size_ > 0)
-    {
-      this->__copy_cross(__ilist.begin(), __ilist.end(), __unwrapped_begin(), __size_);
-    }
+    this->__copy_cross(__ilist.begin(), __ilist.end(), __unwrapped_begin(), __size_);
   }
 
   //! @brief Constructs a async_buffer using a memory resource and an input range
@@ -397,12 +388,9 @@ public:
   _CCCL_HIDE_FROM_ABI async_buffer(const __env_t& __env, _Range&& __range)
       : async_buffer(__env, static_cast<size_type>(_CUDA_VRANGES::size(__range)), ::cuda::experimental::uninit)
   {
-    if (__size_ > 0)
-    {
-      using _Iter = _CUDA_VRANGES::iterator_t<_Range>;
-      this->__copy_cross<_Iter, __detect_transfer_kind<__is_host_only, _Range>>(
-        _CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __unwrapped_begin(), __size_);
-    }
+    using _Iter = _CUDA_VRANGES::iterator_t<_Range>;
+    this->__copy_cross<_Iter, __detect_transfer_kind<__is_host_only, _Range>>(
+      _CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __unwrapped_begin(), __size_);
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // doxygen conflates the overloads
@@ -415,12 +403,9 @@ public:
           static_cast<size_type>(_CUDA_VRANGES::distance(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::end(__range))),
           ::cuda::experimental::uninit)
   {
-    if (__size_ > 0)
-    {
-      using _Iter = _CUDA_VRANGES::iterator_t<_Range>;
-      this->__copy_cross<_Iter, __detect_transfer_kind<__is_host_only, _Range>>(
-        _CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __unwrapped_begin(), __size_);
-    }
+    using _Iter = _CUDA_VRANGES::iterator_t<_Range>;
+    this->__copy_cross<_Iter, __detect_transfer_kind<__is_host_only, _Range>>(
+      _CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __unwrapped_begin(), __size_);
   }
 #endif // _CCCL_DOXYGEN_INVOKED
   //! @}
@@ -679,7 +664,7 @@ public:
   //! @note Neither frees not allocates memory if `__first == __last`.
   _CCCL_HIDE_FROM_ABI void assign(const size_type __count, const _Tp& __value)
   {
-    if (size() < __count)
+    if (__size_ < __count)
     {
       (void) __buf_.__replace_allocation(__count);
     }
@@ -766,13 +751,11 @@ public:
   //! @param __lhs One async_buffer.
   //! @param __rhs The other async_buffer.
   //! @return true, if \p __lhs and \p __rhs contain equal elements have the same size
-  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI bool
-  operator==(const async_buffer& __lhs, const async_buffer& __rhs) noexcept(noexcept(_CUDA_VSTD::equal(
-    __lhs.__unwrapped_begin(), __lhs.__unwrapped_end(), __rhs.__unwrapped_begin(), __rhs.__unwrapped_end())))
+  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI bool operator==(const async_buffer& __lhs, const async_buffer& __rhs)
   {
     if constexpr (__is_host_only)
     {
-      // need to wait here because `host_launch` does not return values
+      // need to wait here because `host_launch` does not return values, so we cannot easily put it in stream order
       __lhs.wait();
       __rhs.wait();
       return _CUDA_VSTD::equal(
@@ -793,9 +776,7 @@ public:
   //! @param __lhs One async_buffer.
   //! @param __rhs The other async_buffer.
   //! @return false, if \p __lhs and \p __rhs contain equal elements have the same size
-  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI bool
-  operator!=(const async_buffer& __lhs, const async_buffer& __rhs) noexcept(noexcept(_CUDA_VSTD::equal(
-    __lhs.__unwrapped_begin(), __lhs.__unwrapped_end(), __rhs.__unwrapped_begin(), __rhs.__unwrapped_end())))
+  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI bool operator!=(const async_buffer& __lhs, const async_buffer& __rhs)
   {
     return !(__lhs == __rhs);
   }

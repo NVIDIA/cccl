@@ -40,7 +40,7 @@ namespace cuda::experimental
 using ::cuda::mr::device_accessible;
 using ::cuda::mr::host_accessible;
 
-//! @brief determines the cudaMemcpyKind needed to transfer memory pointed to by an iterator to a cudax::mdarray
+//! @brief determines the cudaMemcpyKind needed to transfer memory pointed to by an iterator to a cudax::async_buffer
 template <bool _IsHostOnly, class _Iter>
 _CCCL_INLINE_VAR constexpr cudaMemcpyKind __detect_transfer_kind =
   has_property<_Iter, _CUDA_VMR::device_accessible>

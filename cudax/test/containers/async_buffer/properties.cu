@@ -34,22 +34,17 @@ TEMPLATE_TEST_CASE("cudax::async_buffer properties",
   using const_reverse_iterator = cuda::std::reverse_iterator<const_iterator>;
 
   // Check the type aliases
-  static_assert(cuda::std::is_same<int, typename Buffer::value_type>::value, "");
-  static_assert(cuda::std::is_same<cuda::std::size_t, typename Buffer::size_type>::value, "");
-  static_assert(cuda::std::is_same<cuda::std::ptrdiff_t, typename Buffer::difference_type>::value, "");
-  static_assert(cuda::std::is_same<int*, typename Buffer::pointer>::value, "");
-  static_assert(cuda::std::is_same<const int*, typename Buffer::const_pointer>::value, "");
-  static_assert(cuda::std::is_same<int&, typename Buffer::reference>::value, "");
-  static_assert(cuda::std::is_same<const int&, typename Buffer::const_reference>::value, "");
-  static_assert(cuda::std::is_same<iterator, typename Buffer::iterator>::value, "");
-  static_assert(cuda::std::is_same<const_iterator, typename Buffer::const_iterator>::value, "");
-  static_assert(cuda::std::is_same<cuda::std::reverse_iterator<iterator>, typename Buffer::reverse_iterator>::value,
-                "");
+  static_assert(cuda::std::is_same_v<int, typename Buffer::value_type>, "");
+  static_assert(cuda::std::is_same_v<cuda::std::size_t, typename Buffer::size_type>, "");
+  static_assert(cuda::std::is_same_v<cuda::std::ptrdiff_t, typename Buffer::difference_type>, "");
+  static_assert(cuda::std::is_same_v<int*, typename Buffer::pointer>, "");
+  static_assert(cuda::std::is_same_v<const int*, typename Buffer::const_pointer>, "");
+  static_assert(cuda::std::is_same_v<int&, typename Buffer::reference>, "");
+  static_assert(cuda::std::is_same_v<const int&, typename Buffer::const_reference>, "");
+  static_assert(cuda::std::is_same_v<iterator, typename Buffer::iterator>, "");
+  static_assert(cuda::std::is_same_v<const_iterator, typename Buffer::const_iterator>, "");
+  static_assert(cuda::std::is_same_v<cuda::std::reverse_iterator<iterator>, typename Buffer::reverse_iterator>, "");
   static_assert(
-    cuda::std::is_same<cuda::std::reverse_iterator<const_iterator>, typename Buffer::const_reverse_iterator>::value,
-    "");
-
-#if TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
+    cuda::std::is_same_v<cuda::std::reverse_iterator<const_iterator>, typename Buffer::const_reverse_iterator>, "");
   static_assert(cuda::std::ranges::contiguous_range<Buffer>);
-#endif // TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
 }
