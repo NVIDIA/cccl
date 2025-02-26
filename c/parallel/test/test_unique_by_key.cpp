@@ -261,3 +261,84 @@ TEST_CASE("DeviceSelect::UniqueByKey works with custom types", "[device][select_
 
   REQUIRE(input_pairs == output_pairs);
 }
+
+struct random_access_iterator_state_t
+{
+  int* d_input;
+};
+
+struct value_random_access_iterator_state_t
+{
+  int* d_input;
+};
+
+TEST_CASE("DeviceMergeSort::SortPairs works with input iterators", "[merge_sort]")
+{
+  using TestType = int;
+
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+
+  operation_t op = make_operation("op", get_unique_by_key_op(get_type_info<int>().type));
+  iterator_t<TestType, random_access_iterator_state_t> input_keys_it =
+    make_iterator<TestType, random_access_iterator_state_t>(
+      "struct random_access_iterator_state_t { int* d_input; };\n",
+      {"key_advance",
+       "extern \"C\" __device__ void key_advance(random_access_iterator_state_t* state, unsigned long long offset) {\n"
+       "  state->d_input += offset;\n"
+       "}"},
+      {"key_dereference",
+       "extern \"C\" __device__ int key_dereference(random_access_iterator_state_t* state) {\n"
+       "  return *state->d_input;\n"
+       "}"});
+  iterator_t<TestType, random_access_iterator_state_t> input_values_it =
+    make_iterator<TestType, random_access_iterator_state_t>(
+      "struct value_random_access_iterator_state_t { int* d_input; };\n",
+      {"value_advance",
+       "extern \"C\" __device__ void value_advance(value_random_access_iterator_state_t* state, unsigned long long "
+       "offset) {\n"
+       "  state->d_input += offset;\n"
+       "}"},
+      {"value_dereference",
+       "extern \"C\" __device__ int value_dereference(value_random_access_iterator_state_t* state) {\n"
+       "  return *state->d_input;\n"
+       "}"});
+
+  std::vector<TestType> input_keys = generate<TestType>(num_items);
+  std::vector<item_t> input_values = generate<int>(num_items);
+
+  pointer_t<TestType> input_keys_ptr(input_keys);
+  input_keys_it.state.d_input = input_keys_ptr.ptr;
+  pointer_t<item_t> input_values_ptr(input_values);
+  input_values_it.state.d_input = input_values_ptr.ptr;
+
+  pointer_t<TestType> output_keys_it(num_items);
+  pointer_t<item_t> output_values_it(num_items);
+  pointer_t<int> output_num_selected_it(1);
+
+  unique_by_key(input_keys_it, input_values_it, output_keys_it, output_values_it, output_num_selected_it, op, num_items);
+
+  std::vector<std::pair<TestType, item_t>> input_pairs;
+  for (size_t i = 0; i < input_keys.size(); ++i)
+  {
+    input_pairs.emplace_back(input_keys[i], input_values[i]);
+  }
+  const auto boundary = std::unique(input_pairs.begin(), input_pairs.end(), [](const auto& a, const auto& b) {
+    return a.first == b.first;
+  });
+
+  int num_selected = std::vector<int>(output_num_selected_it)[0];
+
+  REQUIRE((boundary - input_pairs.begin()) == num_selected);
+
+  input_pairs.resize(num_selected);
+
+  std::vector<TestType> host_output_keys(output_keys_it);
+  std::vector<item_t> host_output_values(output_values_it);
+  std::vector<std::pair<TestType, item_t>> output_pairs;
+  for (int i = 0; i < num_selected; ++i)
+  {
+    output_pairs.emplace_back(host_output_keys[i], host_output_values[i]);
+  }
+
+  REQUIRE(input_pairs == output_pairs);
+}
