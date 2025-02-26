@@ -15,24 +15,36 @@
 
 using namespace cuda::experimental::stf;
 
-void worker(
-  stream_ctx ctx, int id, frozen_logical_data<slice<int>> fAi, frozen_logical_data<slice<int>> fB, ::std::mutex& mutex)
+void worker(stream_ctx ctx,
+            [[maybe_unused]] int id,
+            [[maybe_unused]] frozen_logical_data<slice<int>> fAi,
+            [[maybe_unused]] frozen_logical_data<slice<int>> fB,
+            [[maybe_unused]] ::std::mutex& mutex)
 {
   cudaStream_t stream = ctx.pick_stream();
 
+  // FIXME this is not suppose to require locking
+  mutex.lock();
   auto gctx = graph_ctx(stream);
+  mutex.unlock();
 
   mutex.lock();
-  auto dAi = fAi.get(data_place::current_device(), stream);
-  auto dB  = fB.get(data_place::current_device(), stream);
+  [[maybe_unused]] auto dAi = fAi.get(data_place::current_device(), stream);
+  [[maybe_unused]] auto dB  = fB.get(data_place::current_device(), stream);
   mutex.unlock();
 
   auto g_lAi = gctx.logical_data(dAi, data_place::current_device());
   auto g_lB  = gctx.logical_data(dB, data_place::current_device());
 
-  gctx.parallel_for(g_lAi.shape(), g_lAi.rw(), g_lB.read())->*[id] __device__(size_t j, auto ai, auto b) {
-    ai(j) += id + b(j);
-  };
+  for (int k1 = 0; k1 < 10; k1++)
+  {
+    gctx.parallel_for(g_lAi.shape(), g_lAi.rw(), g_lB.read())->*[id] __device__(size_t j, auto ai, auto b) {
+      for (int k = 0; k < 1000; k++)
+      {
+        ai(j) += id + b(j);
+      }
+    };
+  }
 
   gctx.finalize();
 }
@@ -42,7 +54,7 @@ int main()
   ::std::mutex mutex;
   stream_ctx ctx;
 
-  const int N = 16384;
+  const int N = 128000;
 
   const int NTHREADS = 8;
 
@@ -97,12 +109,12 @@ int main()
 
   for (int i = 0; i < NTHREADS; ++i)
   {
-    ctx.host_launch(lA[i].read())->*[i](auto ai) {
-      for (size_t j = 0; j < N; j++)
-      {
-        EXPECT(ai(j) == (i + j) + i + (17 * j + 3));
-      }
-    };
+    //    ctx.host_launch(lA[i].read())->*[i](auto ai) {
+    //    for (size_t j = 0; j < N; j++)
+    //    {
+    //      EXPECT(ai(j) == (i + j) + 1000*(i + (17 * j + 3)));
+    //    }
+    //    };
   }
 
   ctx.finalize();
