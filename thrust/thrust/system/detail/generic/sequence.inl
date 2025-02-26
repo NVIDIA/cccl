@@ -41,7 +41,7 @@ template <typename DerivedPolicy, typename ForwardIterator>
 _CCCL_HOST_DEVICE void
 sequence(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last)
 {
-  using T = typename thrust::iterator_traits<ForwardIterator>::value_type;
+  using T = thrust::detail::it_value_t<ForwardIterator>;
 
   thrust::sequence(exec, first, last, T(0));
 } // end sequence()

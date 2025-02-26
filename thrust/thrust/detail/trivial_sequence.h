@@ -85,7 +85,7 @@ struct _trivial_sequence<Iterator, DerivedPolicy, thrust::detail::true_type>
 template <typename Iterator, typename DerivedPolicy>
 struct _trivial_sequence<Iterator, DerivedPolicy, thrust::detail::false_type>
 {
-  using iterator_value = typename thrust::iterator_value<Iterator>::type;
+  using iterator_value = it_value_t<Iterator>;
   using iterator_type  = typename thrust::detail::temporary_array<iterator_value, DerivedPolicy>::iterator;
 
   thrust::detail::temporary_array<iterator_value, DerivedPolicy> buffer;
