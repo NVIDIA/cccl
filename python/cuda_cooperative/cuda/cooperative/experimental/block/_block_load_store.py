@@ -35,7 +35,7 @@ CUB_BLOCK_STORE_ALGOS = {
 }
 
 
-def load(dtype, threads_in_block, items_per_thread=1, algorithm="direct"):
+def load(dtype, threads_per_block, items_per_thread=1, algorithm="direct"):
     template = Algorithm(
         "BlockLoad",
         "Load",
@@ -58,7 +58,7 @@ def load(dtype, threads_in_block, items_per_thread=1, algorithm="direct"):
     specialization = template.specialize(
         {
             "T": dtype,
-            "BLOCK_DIM_X": threads_in_block,
+            "BLOCK_DIM_X": threads_per_block,
             "ITEMS_PER_THREAD": items_per_thread,
             "ALGORITHM": CUB_BLOCK_LOAD_ALGOS[algorithm],
         }
@@ -73,7 +73,7 @@ def load(dtype, threads_in_block, items_per_thread=1, algorithm="direct"):
     )
 
 
-def store(dtype, threads_in_block, items_per_thread=1, algorithm="direct"):
+def store(dtype, threads_per_block, items_per_thread=1, algorithm="direct"):
     template = Algorithm(
         "BlockStore",
         "Store",
@@ -96,7 +96,7 @@ def store(dtype, threads_in_block, items_per_thread=1, algorithm="direct"):
     specialization = template.specialize(
         {
             "T": dtype,
-            "BLOCK_DIM_X": threads_in_block,
+            "BLOCK_DIM_X": threads_per_block,
             "ITEMS_PER_THREAD": items_per_thread,
             "ALGORITHM": CUB_BLOCK_STORE_ALGOS[algorithm],
         }

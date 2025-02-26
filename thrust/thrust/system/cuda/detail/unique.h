@@ -482,12 +482,12 @@ static cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   cudaError_t status         = cudaSuccess;
   size_t allocation_sizes[2] = {0, vshmem_size};
   status                     = ScanTileState::AllocationSize(static_cast<int>(num_tiles), allocation_sizes[0]);
-  CUDA_CUB_RET_IF_FAIL(status);
+  _CUDA_CUB_RET_IF_FAIL(status);
 
   void* allocations[2] = {nullptr, nullptr};
   //
   status = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
-  CUDA_CUB_RET_IF_FAIL(status);
+  _CUDA_CUB_RET_IF_FAIL(status);
 
   if (d_temp_storage == nullptr)
   {
@@ -496,12 +496,12 @@ static cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
 
   ScanTileState tile_status;
   status = tile_status.Init(static_cast<int>(num_tiles), allocations[0], allocation_sizes[0]);
-  CUDA_CUB_RET_IF_FAIL(status);
+  _CUDA_CUB_RET_IF_FAIL(status);
 
   num_tiles = ::cuda::std::max<size_t>(1, num_tiles);
   init_agent ia(init_plan, num_tiles, stream, "unique_by_key::init_agent");
   ia.launch(tile_status, num_tiles, num_selected_out);
-  CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
+  _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
 
   if (num_items == 0)
   {
@@ -512,7 +512,7 @@ static cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
 
   unique_agent ua(unique_plan, num_items, stream, vshmem_ptr, "unique_by_key::unique_agent");
   ua.launch(items_in, items_out, binary_pred, num_selected_out, num_items, tile_status, num_tiles);
-  CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
+  _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
   return status;
 }
 

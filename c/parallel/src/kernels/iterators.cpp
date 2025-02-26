@@ -76,7 +76,7 @@ struct __align__(OP_ALIGNMENT) {0} {{
 std::string make_kernel_input_iterator(
   std::string_view offset_t, std::string_view iterator_name, std::string_view input_value_t, cccl_iterator_t iter)
 {
-  if (iter.type == cccl_iterator_kind_t::pointer)
+  if (iter.type == cccl_iterator_kind_t::CCCL_POINTER)
   {
     return {};
   }
@@ -139,7 +139,7 @@ struct {0} {{
 std::string make_kernel_output_iterator(
   std::string_view offset_t, std::string_view iterator_name, std::string_view input_value_t, cccl_iterator_t iter)
 {
-  if (iter.type == cccl_iterator_kind_t::pointer)
+  if (iter.type == cccl_iterator_kind_t::CCCL_POINTER)
   {
     return {};
   }
@@ -194,7 +194,7 @@ struct output_iterator_t {{
 
 std::string make_kernel_inout_iterator(std::string_view offset_t, std::string_view input_value_t, cccl_iterator_t iter)
 {
-  if (iter.type == cccl_iterator_kind_t::pointer)
+  if (iter.type == cccl_iterator_kind_t::CCCL_POINTER)
   {
     return {};
   }

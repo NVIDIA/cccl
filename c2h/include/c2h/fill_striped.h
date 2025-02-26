@@ -139,7 +139,7 @@ struct scalar_to_vec_t
 template <int LogicalWarpThreads, int ItemsPerThread, int BlockThreads, typename IteratorT>
 void fill_striped(IteratorT it)
 {
-  using T = cub::detail::value_t<IteratorT>;
+  using T = cub::detail::it_value_t<IteratorT>;
 
   constexpr int warps_in_block = BlockThreads / LogicalWarpThreads;
   constexpr int items_per_warp = LogicalWarpThreads * ItemsPerThread;

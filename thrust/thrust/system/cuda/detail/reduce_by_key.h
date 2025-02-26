@@ -758,11 +758,11 @@ THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
 
   size_t allocation_sizes[2] = {9, vshmem_size};
   status                     = ScanTileState::AllocationSize(static_cast<int>(num_tiles), allocation_sizes[0]);
-  CUDA_CUB_RET_IF_FAIL(status);
+  _CUDA_CUB_RET_IF_FAIL(status);
 
   void* allocations[2] = {nullptr, nullptr};
   status = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
-  CUDA_CUB_RET_IF_FAIL(status);
+  _CUDA_CUB_RET_IF_FAIL(status);
 
   if (d_temp_storage == nullptr)
   {
@@ -771,11 +771,11 @@ THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
 
   ScanTileState tile_state;
   status = tile_state.Init(static_cast<int>(num_tiles), allocations[0], allocation_sizes[0]);
-  CUDA_CUB_RET_IF_FAIL(status);
+  _CUDA_CUB_RET_IF_FAIL(status);
 
   init_agent ia(init_plan, num_tiles, stream, "reduce_by_key::init_agent");
   ia.launch(tile_state, num_tiles, num_runs_output_it);
-  CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
+  _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
 
   char* vshmem_ptr = vshmem_size > 0 ? (char*) allocations[1] : nullptr;
 
@@ -791,7 +791,7 @@ THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
     reduction_op,
     num_items,
     num_tiles);
-  CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
+  _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
   return status;
 }
 

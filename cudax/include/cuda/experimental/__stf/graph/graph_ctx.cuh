@@ -233,6 +233,11 @@ class graph_ctx : public backend_ctx<graph_ctx>
       return *_graph;
     }
 
+    executable_graph_cache_stat* graph_get_cache_stat() override
+    {
+      return &cache_stats;
+    }
+
     size_t epoch() const override
     {
       return graph_epoch;
@@ -255,6 +260,8 @@ class graph_ctx : public backend_ctx<graph_ctx>
     size_t graph_epoch                            = 0;
     bool submitted                                = false; // did we submit ?
     mutable bool explicit_graph                   = false;
+
+    executable_graph_cache_stat cache_stats;
 
     /* By default, the finalize operation is blocking, unless user provided
      * a stream when creating the context */
@@ -480,11 +487,46 @@ public:
       print_to_dot("instantiated_graph" + ::std::to_string(instantiated_graph++) + ".dot");
     }
 
-    /* This will lookup in the cache (if any) and update an existing entry, or
-     * instantiate a graph if none is found. */
-    auto cache_exec_g = async_resources().cached_graphs_query(nnodes, nedges, g);
-    state.exec_graph  = cache_exec_g;
-    return cache_exec_g;
+    bool use_cache = true;
+    bool hit       = false;
+
+    // If there is a policy, check whether it enables or disables the use of
+    // the cache
+    if (get_graph_cache_policy().has_value())
+    {
+      ::std::function<bool()> policy = get_graph_cache_policy().value();
+      use_cache                      = policy();
+    }
+
+    if (use_cache)
+    {
+      /* This will lookup in the cache (if any) and update an existing entry, or
+       * instantiate a graph if none is found. */
+      auto query_result = async_resources().cached_graphs_query(nnodes, nedges, g);
+      state.exec_graph  = query_result.first;
+
+      hit = query_result.second; // indicate if this was a hit or miss in the cache
+    }
+    else
+    {
+      state.exec_graph = reserved::graph_instantiate(*g);
+    }
+
+    // Update the statistics associated to the context
+    auto* stats = graph_get_cache_stat();
+    if (hit)
+    {
+      stats->update_cnt++;
+    }
+    else
+    {
+      stats->instantiate_cnt++;
+    }
+
+    stats->nnodes += nnodes;
+    stats->nedges += nedges;
+
+    return state.exec_graph;
   }
 
   void display_graph_info(cudaGraph_t g)
