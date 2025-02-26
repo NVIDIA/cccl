@@ -16,17 +16,15 @@
 using namespace cuda::experimental::stf;
 
 void worker(
-  stream_ctx ctx, int id, logical_data<slice<int>> lAi, frozen_logical_data<slice<int>> fB, ::std::mutex& mutex)
+  stream_ctx ctx, int id, frozen_logical_data<slice<int>> fAi, frozen_logical_data<slice<int>> fB, ::std::mutex& mutex)
 {
   cudaStream_t stream = ctx.pick_stream();
 
   auto gctx = graph_ctx(stream);
 
   mutex.lock();
-  auto fAi = ctx.freeze(lAi, access_mode::rw, data_place::current_device());
   auto dAi = fAi.get(data_place::current_device(), stream);
-
-  auto dB = fB.get(data_place::current_device(), stream);
+  auto dB  = fB.get(data_place::current_device(), stream);
   mutex.unlock();
 
   auto g_lAi = gctx.logical_data(dAi, data_place::current_device());
@@ -37,10 +35,6 @@ void worker(
   };
 
   gctx.finalize();
-
-  mutex.lock();
-  fAi.unfreeze(stream);
-  mutex.unlock();
 }
 
 int main()
@@ -75,19 +69,31 @@ int main()
   }
   lB = ctx.logical_data(B.data(), {N}).set_symbol("B");
 
+  ::std::vector<frozen_logical_data<slice<int>>> fA(NTHREADS);
+  for (int i = 0; i < NTHREADS; i++)
+  {
+    fA[i] = ctx.freeze(lA[i], access_mode::rw, data_place::current_device());
+    fA[i].set_automatic_unfreeze(true);
+  }
+
   auto fB = ctx.freeze(lB, access_mode::read, data_place::current_device());
   fB.set_automatic_unfreeze(true);
 
   ::std::vector<::std::thread> threads;
   for (int i = 0; i < NTHREADS; ++i)
   {
-    threads.emplace_back(worker, ctx, i, lA[i], fB, ::std::ref(mutex));
+    threads.emplace_back(worker, ctx, i, fA[i], fB, ::std::ref(mutex));
   }
 
-  for (auto& th : threads)
+  cudaStream_t stream = ctx.pick_stream();
+
+  for (int i = 0; i < NTHREADS; ++i)
   {
-    th.join();
+    threads[i].join();
+    fA[i].unfreeze(stream);
   }
+
+  fB.unfreeze(stream);
 
   for (int i = 0; i < NTHREADS; ++i)
   {
