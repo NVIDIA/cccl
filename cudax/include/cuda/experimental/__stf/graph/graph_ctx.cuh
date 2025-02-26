@@ -34,6 +34,8 @@
 #include <cuda/experimental/__stf/internal/parallel_for_scope.cuh>
 #include <cuda/experimental/__stf/places/blocked_partition.cuh> // for unit test!
 
+#include <mutex>
+
 namespace cuda::experimental::stf
 {
 
