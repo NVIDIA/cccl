@@ -261,6 +261,9 @@ class graph_ctx : public backend_ctx<graph_ctx>
     bool submitted                                = false; // did we submit ?
     mutable bool explicit_graph                   = false;
 
+    // To protect _graph against concurrent modifications
+    ::std::mutex graph_mutex;
+
     executable_graph_cache_stat cache_stats;
 
     /* By default, the finalize operation is blocking, unless user provided
@@ -311,7 +314,8 @@ public:
   auto task(exec_place e_place, task_dep<Deps>... deps)
   {
     auto dump_hooks = reserved::get_dump_hooks(this, deps...);
-    auto result     = graph_task<Deps...>(*this, get_graph(), get_graph_epoch(), mv(e_place), mv(deps)...);
+    auto result =
+      graph_task<Deps...>(*this, get_graph(), this->state().graph_mutex, get_graph_epoch(), mv(e_place), mv(deps)...);
     result.add_post_submission_hook(dump_hooks);
     return result;
   }
