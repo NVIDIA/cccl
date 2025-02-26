@@ -36,11 +36,6 @@
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/array>
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4848) // [[no_unique_address]] prior to C++20 as a vendor extension
-
-#if _CCCL_STD_VER >= 2017
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // [mdspan.sub.map]
@@ -203,25 +198,27 @@ __submdspan_mapping_impl(const typename layout_left::mapping<_Extents>& __mappin
   {
     return submdspan_mapping_result{__mapping, 0};
   }
-
-  // [mdspan.sub.map.left-1.2]
-  // [mdspan.sub.map.left-1.3]
-  using _SubExtents    = __get_subextents_t<_Extents, _Slices...>;
-  const auto __sub_ext = _CUDA_VSTD::submdspan_extents(__mapping.extents(), __slices...);
-  const auto __offset  = _CUDA_VSTD::__submdspan_offset(__mapping, __slices...);
-  if constexpr (_CUDA_VSTD::__can_layout_left<typename layout_left::mapping<_Extents>, _SubExtents, _Slices...>())
-  {
-    using __sub_mapping_t = layout_left::template mapping<_SubExtents>;
-    return submdspan_mapping_result<__sub_mapping_t>{__sub_mapping_t{__sub_ext}, __offset};
-  }
-  // [mdspan.sub.map.left-1.4]
-  // TODO: Implement padded layouts
   else
   {
-    // [mdspan.sub.map.left-1.5]
-    using __sub_mapping_t    = layout_stride::template mapping<_SubExtents>;
-    const auto __sub_strides = _CUDA_VSTD::__submdspan_strides(__mapping, __slices...);
-    return submdspan_mapping_result<__sub_mapping_t>{__sub_mapping_t{__sub_ext, __sub_strides}, __offset};
+    // [mdspan.sub.map.left-1.2]
+    // [mdspan.sub.map.left-1.3]
+    using _SubExtents    = __get_subextents_t<_Extents, _Slices...>;
+    const auto __sub_ext = _CUDA_VSTD::submdspan_extents(__mapping.extents(), __slices...);
+    const auto __offset  = _CUDA_VSTD::__submdspan_offset(__mapping, __slices...);
+    if constexpr (_CUDA_VSTD::__can_layout_left<typename layout_left::mapping<_Extents>, _SubExtents, _Slices...>())
+    {
+      using __sub_mapping_t = layout_left::template mapping<_SubExtents>;
+      return submdspan_mapping_result<__sub_mapping_t>{__sub_mapping_t{__sub_ext}, __offset};
+    }
+    // [mdspan.sub.map.left-1.4]
+    // TODO: Implement padded layouts
+    else
+    {
+      // [mdspan.sub.map.left-1.5]
+      using __sub_mapping_t    = layout_stride::template mapping<_SubExtents>;
+      const auto __sub_strides = _CUDA_VSTD::__submdspan_strides(__mapping, __slices...);
+      return submdspan_mapping_result<__sub_mapping_t>{__sub_mapping_t{__sub_ext, __sub_strides}, __offset};
+    }
   }
   _CCCL_UNREACHABLE();
 }
@@ -325,9 +322,5 @@ submdspan(const mdspan<_Tp, _Extents, _Layout, _Accessor>& __src, _Slices... __s
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
-
-#endif // _CCCL_STD_VER >= 2017
-
-_CCCL_DIAG_POP
 
 #endif // _LIBCUDACXX___MDSPAN_SUBMDSPAN_MAPPING_H

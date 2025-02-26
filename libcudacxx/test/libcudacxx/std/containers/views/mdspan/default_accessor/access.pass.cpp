@@ -47,11 +47,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2020
-  NV_IF_TARGET(NV_IS_HOST,
-               ( // This fails because we cannot allocate on device at compile time
-                 static_assert(test(), "");))
-#endif // TEST_STD_VER >= 2020
+  static_assert(test(), "");
 
   return 0;
 }

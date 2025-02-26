@@ -4,7 +4,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //                        Kokkos v. 4.0
 //       Copyright (2022) National Technology & Engineering
@@ -68,12 +68,12 @@ _CCCL_INLINE_VAR constexpr bool __is_mapping_of =
   _CCCL_TRAIT(is_same, typename _Layout::template mapping<typename _Mapping::extents_type>, _Mapping);
 
 // [mdspan.layout.reqmts]/1
-#  if _CCCL_STD_VER >= 2020
+#if _CCCL_STD_VER >= 2020
 template <class _Mapping>
 concept __layout_mapping_req_type =
   copyable<_Mapping> && equality_comparable<_Mapping> && //
   is_nothrow_move_constructible_v<_Mapping> && is_move_assignable_v<_Mapping> && is_nothrow_swappable_v<_Mapping>;
-#  else // ^^^ _CCCL_STD_VER >= 2020 ^^^ / vvv _CCCL_STD_VER <= 2017 vvv
+#else // ^^^ _CCCL_STD_VER >= 2020 ^^^ / vvv _CCCL_STD_VER <= 2017 vvv
 template <class _Mapping>
 _CCCL_CONCEPT_FRAGMENT(
   __layout_mapping_req_type_,
@@ -86,10 +86,10 @@ _CCCL_CONCEPT_FRAGMENT(
 
 template <class _Mapping>
 _CCCL_CONCEPT __layout_mapping_req_type = _CCCL_FRAGMENT(__layout_mapping_req_type_, _Mapping);
-#  endif // _CCCL_STD_VER <= 2017
+#endif // _CCCL_STD_VER <= 2017
 
 // [mdspan.layout.reqmts]/2-4
-#  if _CCCL_STD_VER >= 2020
+#if _CCCL_STD_VER >= 2020
 template <class _Mapping>
 concept __layout_mapping_req_types = requires {
   requires __is_extents_v<typename _Mapping::extents_type>;
@@ -97,7 +97,7 @@ concept __layout_mapping_req_types = requires {
   requires same_as<typename _Mapping::rank_type, typename _Mapping::extents_type::rank_type>;
   requires __is_mapping_of<typename _Mapping::layout_type, _Mapping>;
 };
-#  else // ^^^ _CCCL_STD_VER >= 2020 ^^^ / vvv _CCCL_STD_VER <= 2017 vvv
+#else // ^^^ _CCCL_STD_VER >= 2020 ^^^ / vvv _CCCL_STD_VER <= 2017 vvv
 template <class _Mapping>
 _CCCL_CONCEPT_FRAGMENT(
   __layout_mapping_req_types_,
@@ -109,7 +109,7 @@ _CCCL_CONCEPT_FRAGMENT(
 
 template <class _Mapping>
 _CCCL_CONCEPT __layout_mapping_req_types = _CCCL_FRAGMENT(__layout_mapping_req_types_, _Mapping);
-#  endif // _CCCL_STD_VER <= 2017
+#endif // _CCCL_STD_VER <= 2017
 
 // [mdspan.layout.stride.expo]/4
 #if _CCCL_STD_VER >= 2020
@@ -159,7 +159,7 @@ _CCCL_CONCEPT __all_convertible_to_index_type =
 
 } // namespace __mdspan_detail
 
-#  if _CCCL_STD_VER >= 2020
+#if _CCCL_STD_VER >= 2020
 
 template <class _Tp, class _IndexType>
 concept __index_pair_like =
@@ -167,7 +167,7 @@ concept __index_pair_like =
   && convertible_to<tuple_element_t<0, _Tp>, _IndexType> //
   && convertible_to<tuple_element_t<1, _Tp>, _IndexType>;
 
-#  else // ^^^ _CCCL_STD_VER >= 2020 ^^^ / vvv _CCCL_STD_VER <= 2017 vvv
+#else // ^^^ _CCCL_STD_VER >= 2020 ^^^ / vvv _CCCL_STD_VER <= 2017 vvv
 
 template <class _Tp, class _IndexType>
 _CCCL_CONCEPT_FRAGMENT(
@@ -180,7 +180,7 @@ _CCCL_CONCEPT_FRAGMENT(
 template <class _Tp, class _IndexType>
 _CCCL_CONCEPT __index_pair_like = _CCCL_FRAGMENT(__index_pair_like_, _Tp, _IndexType);
 
-#  endif // _CCCL_STD_VER <= 2017
+#endif // _CCCL_STD_VER <= 2017
 
 // [mdspan.submdspan.strided.slice]/3
 

@@ -4,7 +4,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //                        Kokkos v. 4.0
 //       Copyright (2022) National Technology & Engineering
@@ -62,13 +62,15 @@ public:
   friend class mdspan;
 
 private:
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __mul_overflow(index_type x, index_type y, index_type* res) noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
+  __mul_overflow(index_type x, index_type y, index_type* res) noexcept
   {
     *res = x * y;
     return x && ((*res / x) != y);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __required_span_size_is_representable(const extents_type& __ext)
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
+  __required_span_size_is_representable(const extents_type& __ext)
   {
     if constexpr (extents_type::rank() != 0)
     {
@@ -89,8 +91,9 @@ private:
 
 public:
   // [mdspan.layout.left.cons], constructors
-  constexpr mapping() noexcept               = default;
-  constexpr mapping(const mapping&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr mapping() noexcept               = default;
+  _CCCL_HIDE_FROM_ABI constexpr mapping(const mapping&) noexcept = default;
+
   _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping(const extents_type& __ext) noexcept
       : __base(__ext)
   {
@@ -161,7 +164,7 @@ public:
   }
 
   template <class _OtherMappping>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __check_strides(const _OtherMappping& __other) const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __check_strides(const _OtherMappping& __other) const noexcept
   {
     // avoid warning when comparing signed and unsigner integers and pick the wider of two types
     using _CommonType = common_type_t<index_type, typename _OtherMappping::index_type>;
@@ -193,15 +196,15 @@ public:
       : __base(__other.extents())
   {}
 
-  constexpr mapping& operator=(const mapping&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr mapping& operator=(const mapping&) noexcept = default;
 
   // [mdspan.layout.left.obs], observers
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr const extents_type& extents() const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const extents_type& extents() const noexcept
   {
     return this->template __get<0>();
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type required_span_size() const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type required_span_size() const noexcept
   {
     index_type __size = 1;
     if constexpr (extents_type::rank() != 0)
@@ -215,7 +218,7 @@ public:
   }
 
   template <size_t... _Pos>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type
   __op_index(const array<index_type, _Extents::rank()>& __idx_a, index_sequence<_Pos...>) const noexcept
   {
     index_type __res = 0;
@@ -223,7 +226,7 @@ public:
      ...);
     return __res;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type
   __op_index(const array<index_type, extents_type::rank()>&, index_sequence<>) const noexcept
   {
     return 0;
@@ -232,7 +235,7 @@ public:
   _CCCL_TEMPLATE(class... _Indices)
   _CCCL_REQUIRES((sizeof...(_Indices) == extents_type::rank())
                    _CCCL_AND __mdspan_detail::__all_convertible_to_index_type<index_type, _Indices...>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type operator()(_Indices... __idx) const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type operator()(_Indices... __idx) const noexcept
   {
     // Mappings are generally meant to be used for accessing allocations and are meant to guarantee to never
     // return a value exceeding required_span_size(), which is used to know how large an allocation one needs
@@ -245,35 +248,35 @@ public:
     return __op_index(__idx_a, make_index_sequence<sizeof...(_Indices)>());
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_unique() noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_unique() noexcept
   {
     return true;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_exhaustive() noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_exhaustive() noexcept
   {
     return true;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_strided() noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_strided() noexcept
   {
     return true;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_unique() noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_unique() noexcept
   {
     return true;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_exhaustive() noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_exhaustive() noexcept
   {
     return true;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_strided() noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_strided() noexcept
   {
     return true;
   }
 
   _CCCL_TEMPLATE(class _Extents2 = _Extents)
   _CCCL_REQUIRES((_Extents2::rank() > 0))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type stride(rank_type __r) const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type stride(rank_type __r) const noexcept
   {
     // While it would be caught by extents itself too, using a too large __r
     // is functionally an out of bounds access on the stored information needed to compute strides
@@ -287,7 +290,7 @@ public:
   }
 
   template <class _OtherExtents, class _Extents2 = _Extents>
-  _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
   operator==(const mapping& __lhs, const mapping<_OtherExtents>& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)((_OtherExtents::rank() == _Extents2::rank()))
   {
@@ -296,7 +299,7 @@ public:
 
 #if _CCCL_STD_VER <= 2017
   template <class _OtherExtents, class _Extents2 = _Extents>
-  _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
   operator!=(const mapping& __lhs, const mapping<_OtherExtents>& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)((_OtherExtents::rank() == _Extents2::rank()))
   {

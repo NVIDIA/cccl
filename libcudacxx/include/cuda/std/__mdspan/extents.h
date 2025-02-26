@@ -4,7 +4,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //                        Kokkos v. 4.0
 //       Copyright (2022) National Technology & Engineering
@@ -59,20 +59,19 @@ namespace __mdspan_detail
 template <class _Tp, _Tp... _Values>
 struct __static_array
 {
-public:
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __size()
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __size() noexcept
   {
     return sizeof...(_Values);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Tp __get(size_t __index) noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Tp __get(size_t __index) noexcept
   {
     constexpr array<_Tp, sizeof...(_Values)> __array = {_Values...};
     return __array[__index];
   }
 
   template <size_t _Index>
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Tp __get()
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Tp __get()
   {
     return __get(_Index);
   }
@@ -91,11 +90,11 @@ template <class _Tp, size_t _Size>
 struct __possibly_empty_array
 {
   _Tp __vals_[_Size];
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp& operator[](size_t __index)
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp& operator[](size_t __index)
   {
     return __vals_[__index];
   }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& operator[](size_t __index) const
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& operator[](size_t __index) const
   {
     return __vals_[__index];
   }
@@ -143,7 +142,8 @@ struct __possibly_empty_array<_Tp, 0>
 template <size_t... _Values>
 struct __static_partial_sums
 {
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr array<size_t, sizeof...(_Values)> __static_partial_sums_impl()
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr array<size_t, sizeof...(_Values)>
+  __static_partial_sums_impl()
   {
     array<size_t, sizeof...(_Values)> __values{_Values...};
     array<size_t, sizeof...(_Values)> __partial_sums{{}};
@@ -156,7 +156,7 @@ struct __static_partial_sums
     return __partial_sums;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __get(size_t __index)
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __get(size_t __index)
   {
     constexpr array<size_t, sizeof...(_Values)> __result = __static_partial_sums_impl();
     return __result[__index];
@@ -177,14 +177,15 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t __count_dynamic()
 // only stores the runtime values.
 // The type of the static and the runtime values can be different.
 // The position of a dynamic value is indicated through a tag value.
+// We manually implement EBCO because MSVC and some odler compiler fail hard with [[no_unique_address]]
 template <class _TDynamic, class _TStatic, _TStatic _DynTag, _TStatic... _Values>
 struct __maybe_static_array
     : private __possibly_empty_array<_TDynamic,
                                      _CUDA_VSTD::__mdspan_detail::__count_dynamic<_TStatic, _DynTag, _Values...>()>
 {
-  static_assert(is_convertible<_TStatic, _TDynamic>::value,
+  static_assert(_CCCL_TRAIT(is_convertible, _TStatic, _TDynamic),
                 "__maybe_static_array: _TStatic must be convertible to _TDynamic");
-  static_assert(is_convertible<_TDynamic, _TStatic>::value,
+  static_assert(_CCCL_TRAIT(is_convertible, _TDynamic, _TStatic),
                 "__maybe_static_array: _TDynamic must be convertible to _TStatic");
 
 private:
@@ -199,7 +200,7 @@ private:
   using _DynamicIdxMap = __static_partial_sums<static_cast<size_t>(_Values == _DynTag)...>;
 
   template <size_t... Indices>
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr _DynamicValues __zeros(index_sequence<Indices...>) noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr _DynamicValues __zeros(index_sequence<Indices...>) noexcept
   {
     return _DynamicValues{((void) Indices, 0)...};
   }
@@ -277,7 +278,7 @@ public:
   }
 
   // access functions
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr _TStatic __static_value(size_t __i) noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr _TStatic __static_value(size_t __i) noexcept
   {
     if constexpr (__size_ > 0)
     {
@@ -286,7 +287,7 @@ public:
     return _StaticValues::__get(__i);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr _TDynamic __value(size_t __i) const
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _TDynamic __value(size_t __i) const
   {
     if constexpr (__size_ > 0)
     {
@@ -297,7 +298,8 @@ public:
            ? (*static_cast<const _DynamicValues*>(this))[_DynamicIdxMap::__get(__i)]
            : static_cast<_TDynamic>(__static_val);
   }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr _TDynamic operator[](size_t __i) const
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _TDynamic operator[](size_t __i) const
   {
     if constexpr (__size_ > 0)
     {
@@ -307,11 +309,11 @@ public:
   }
 
   // observers
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __size()
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __size()
   {
     return __size_;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __size_dynamic()
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __size_dynamic()
   {
     return __size_dynamic_;
   }
@@ -327,7 +329,7 @@ static constexpr bool __potentially_narrowing =
 // if _From is not an integral, we just check positivity
 _CCCL_TEMPLATE(class _To, class _From)
 _CCCL_REQUIRES(integral<_To>)
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_representable_as(_From __value)
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_representable_as(_From __value)
 {
   (void) __value;
   if constexpr (integral<_From>)
@@ -379,14 +381,14 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_representable_as(_From __value)
 
 _CCCL_TEMPLATE(class _To, class... _From)
 _CCCL_REQUIRES(integral<_To>)
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __are_representable_as(_From... __values)
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __are_representable_as(_From... __values)
 {
   return (__mdspan_detail::__is_representable_as<_To>(__values) && ... && true);
 }
 
 _CCCL_TEMPLATE(class _To, class _From, size_t _Size)
 _CCCL_REQUIRES(integral<_To>)
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __are_representable_as(span<_From, _Size> __values)
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __are_representable_as(span<_From, _Size> __values)
 {
   for (size_t __i = 0; __i != _Size; __i++)
   {
@@ -420,7 +422,7 @@ public:
   using size_type  = make_unsigned_t<index_type>;
   using rank_type  = size_t;
 
-  static_assert(is_integral<index_type>::value && !is_same<index_type, bool>::value,
+  static_assert(_CCCL_TRAIT(is_integral, index_type) && !_CCCL_TRAIT(is_same, index_type, bool),
                 "extents::index_type must be a signed or unsigned integer type");
   static_assert(
     __all<(__mdspan_detail::__is_representable_as<index_type>(_Extents) || (_Extents == dynamic_extent))...>::value,
@@ -436,26 +438,26 @@ private:
 
 public:
   // [mdspan.extents.obs], observers of multidimensional index space
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr rank_type rank() noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr rank_type rank() noexcept
   {
     return __rank_;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr rank_type rank_dynamic() noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr rank_type rank_dynamic() noexcept
   {
     return __rank_dynamic_;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type extent(rank_type __r) const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type extent(rank_type __r) const noexcept
   {
     return this->__value(__r);
   }
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t static_extent(rank_type __r) noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t static_extent(rank_type __r) noexcept
   {
     return _Values::__static_value(__r);
   }
 
   // [mdspan.extents.cons], constructors
-  constexpr extents() noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr extents() noexcept = default;
 
   // Construction from just dynamic or all values.
   // Precondition check is deferred to __maybe_static_array constructor
@@ -517,7 +519,7 @@ public:
 private:
   // Function to construct extents storage from other extents.
   template <size_t _DynCount, size_t _Idx, class _OtherExtents, class... _DynamicValues>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Values __construct_vals_from_extents(
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Values __construct_vals_from_extents(
     integral_constant<size_t, _DynCount>,
     integral_constant<size_t, _Idx>,
     const _OtherExtents& __exts,
@@ -613,32 +615,22 @@ public:
   // Comparison operator
   template <class _OtherIndexType, size_t... _OtherExtents>
   _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
-  operator==(const extents&, const extents<_OtherIndexType, _OtherExtents...>&) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)((rank() != sizeof...(_OtherExtents)))
-  {
-    return false;
-  }
-
-  template <class _OtherIndexType, size_t... _OtherExtents>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
-  operator==(const extents&, const extents<_OtherIndexType, _OtherExtents...>&) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)((rank() == sizeof...(_OtherExtents) && rank() == 0))
-  {
-    return true;
-  }
-
-  template <class _OtherIndexType, size_t... _OtherExtents>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
   operator==(const extents& __lhs, const extents<_OtherIndexType, _OtherExtents...>& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)((rank() == sizeof...(_OtherExtents) && rank() != 0))
   {
-    for (rank_type __r = 0; __r != __rank_; __r++)
+    if constexpr (rank() != sizeof...(_OtherExtents))
     {
-      // avoid warning when comparing signed and unsigner integers and pick the wider of two types
-      using _CommonType = common_type_t<index_type, _OtherIndexType>;
-      if (static_cast<_CommonType>(__lhs.extent(__r)) != static_cast<_CommonType>(__rhs.extent(__r)))
+      return false;
+    }
+    else if constexpr (rank() != 0)
+    {
+      for (rank_type __r = 0; __r != __rank_; __r++)
       {
-        return false;
+        // avoid warning when comparing signed and unsigner integers and pick the wider of two types
+        using _CommonType = common_type_t<index_type, _OtherIndexType>;
+        if (static_cast<_CommonType>(__lhs.extent(__r)) != static_cast<_CommonType>(__rhs.extent(__r)))
+        {
+          return false;
+        }
       }
     }
     return true;
@@ -709,52 +701,54 @@ struct __is_extents<extents<_IndexType, _ExtentsPack...>> : true_type
 // the respective extents.
 
 _CCCL_TEMPLATE(class _IndexType, class _From)
-_CCCL_REQUIRES(integral<_IndexType> _CCCL_AND integral<_From> _CCCL_AND _CCCL_TRAIT(is_signed, _From))
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_index_in_extent(_IndexType __extent, _From __value)
+_CCCL_REQUIRES(integral<_IndexType>)
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_index_in_extent(_IndexType __extent, _From __value)
 {
-  if (__value < 0)
+  if constexpr (integral<_From>)
   {
-    return false;
+    if constexpr (_CCCL_TRAIT(is_signed, _From))
+    {
+      if (__value < 0)
+      {
+        return false;
+      }
+      using _Tp = common_type_t<_IndexType, _From>;
+      return static_cast<_Tp>(__value) < static_cast<_Tp>(__extent);
+    }
+    else
+    {
+      using _Tp = common_type_t<_IndexType, _From>;
+      return static_cast<_Tp>(__value) < static_cast<_Tp>(__extent);
+    }
   }
-  using _Tp = common_type_t<_IndexType, _From>;
-  return static_cast<_Tp>(__value) < static_cast<_Tp>(__extent);
-}
-
-_CCCL_TEMPLATE(class _IndexType, class _From)
-_CCCL_REQUIRES(integral<_IndexType> _CCCL_AND integral<_From> _CCCL_AND(!_CCCL_TRAIT(is_signed, _From)))
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_index_in_extent(_IndexType __extent, _From __value)
-{
-  using _Tp = common_type_t<_IndexType, _From>;
-  return static_cast<_Tp>(__value) < static_cast<_Tp>(__extent);
-}
-
-_CCCL_TEMPLATE(class _IndexType, class _From)
-_CCCL_REQUIRES(integral<_IndexType> _CCCL_AND(!integral<_From>) _CCCL_AND _CCCL_TRAIT(is_signed, _From))
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_index_in_extent(_IndexType __extent, _From __value)
-{
-  if (static_cast<_IndexType>(__value) < 0)
+  else
   {
-    return false;
+    if constexpr (_CCCL_TRAIT(is_signed, _From))
+    {
+      if (static_cast<_IndexType>(__value) < 0)
+      {
+        return false;
+      }
+      return static_cast<_IndexType>(__value) < __extent;
+    }
+    else
+    {
+      return static_cast<_IndexType>(__value) < __extent;
+    }
   }
-  return static_cast<_IndexType>(__value) < __extent;
-}
-
-_CCCL_TEMPLATE(class _IndexType, class _From)
-_CCCL_REQUIRES(integral<_IndexType> _CCCL_AND(!integral<_From>) _CCCL_AND(!_CCCL_TRAIT(is_signed, _From)))
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_index_in_extent(_IndexType __extent, _From __value)
-{
-  return static_cast<_IndexType>(__value) < __extent;
+  _CCCL_UNREACHABLE();
 }
 
 template <size_t... _Idxs, class _Extents, class... _From>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
 __is_multidimensional_index_in_impl(index_sequence<_Idxs...>, const _Extents& __ext, _From... __values)
 {
   return (__mdspan_detail::__is_index_in_extent(__ext.extent(_Idxs), __values) && ... && true);
 }
 
 template <class _Extents, class... _From>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_multidimensional_index_in(const _Extents& __ext, _From... __values)
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+__is_multidimensional_index_in(const _Extents& __ext, _From... __values)
 {
   return __mdspan_detail::__is_multidimensional_index_in_impl(
     make_index_sequence<_Extents::rank()>(), __ext, __values...);

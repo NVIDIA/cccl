@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -33,11 +33,6 @@
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/array>
 #include <cuda/std/tuple>
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4848) // [[no_unique_address]] prior to C++20 as a vendor extension
-
-#if _CCCL_STD_VER >= 2017
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -84,9 +79,9 @@ _CCCL_INLINE_VAR constexpr bool __is_strided_slice<strided_slice<_OffsetType, _E
 
 struct full_extent_t
 {
-  explicit full_extent_t() = default;
+  _CCCL_HIDE_FROM_ABI explicit full_extent_t() = default;
 };
-_CCCL_GLOBAL_CONSTANT full_extent_t full_extent{};
+_CCCL_INLINE_VAR constexpr full_extent_t full_extent{};
 
 // [mdspan.submdspan.helpers]
 _CCCL_TEMPLATE(class _Tp)
@@ -103,17 +98,17 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __de_ice(_Tp) noexcept
   return _Tp::value;
 }
 
-_CCCL_TEMPLATE(class _IndexType, class _From)
-_CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _From) _CCCL_AND(!_CCCL_TRAIT(is_same, _From, bool)))
+template <class _IndexType, class _From>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __index_cast(_From&& __from) noexcept
 {
-  return __from;
-}
-_CCCL_TEMPLATE(class _IndexType, class _From)
-_CCCL_REQUIRES((!_CCCL_TRAIT(is_integral, _From)) || _CCCL_TRAIT(is_same, _From, bool))
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __index_cast(_From&& __from) noexcept
-{
-  return static_cast<_IndexType>(__from);
+  if constexpr (_CCCL_TRAIT(is_integral, _From) && !_CCCL_TRAIT(is_same, _From, bool))
+  {
+    return __from;
+  }
+  else
+  {
+    return static_cast<_IndexType>(__from);
+  }
 }
 
 template <size_t _Index, class... _Slices>
@@ -189,9 +184,5 @@ __last_extent_from_slice(const _Extents& __src, _Slices... __slices) noexcept
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
-
-#endif // _CCCL_STD_VER >= 2017
-
-_CCCL_DIAG_POP
 
 #endif // _LIBCUDACXX___MDSPAN_SUBMDSPAN_HELPER_H

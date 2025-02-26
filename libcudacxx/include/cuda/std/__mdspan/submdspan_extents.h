@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -37,8 +37,6 @@
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/array>
 #include <cuda/std/tuple>
-
-#if _CCCL_STD_VER >= 2017
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -188,7 +186,5 @@ using __get_subextents_t =
   decltype(_CUDA_VSTD::submdspan_extents(_CUDA_VSTD::declval<_Extents>(), _CUDA_VSTD::declval<_Slices>()...));
 
 _LIBCUDACXX_END_NAMESPACE_STD
-
-#endif // _CCCL_STD_VER >= 2017
 
 #endif // _LIBCUDACXX___MDSPAN_SUBMDSPAN_EXTENTS_H

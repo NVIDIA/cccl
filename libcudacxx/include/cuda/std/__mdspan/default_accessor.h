@@ -4,7 +4,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //                        Kokkos v. 4.0
 //       Copyright (2022) National Technology & Engineering
@@ -48,17 +48,18 @@ struct default_accessor
   using reference        = _ElementType&;
   using data_handle_type = _ElementType*;
 
-  constexpr default_accessor() noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr default_accessor() noexcept = default;
 
   _CCCL_TEMPLATE(class _OtherElementType)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _OtherElementType (*)[], element_type (*)[]))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr default_accessor(default_accessor<_OtherElementType>) noexcept {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference access(data_handle_type __p, size_t __i) const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference access(data_handle_type __p, size_t __i) const noexcept
   {
     return __p[__i];
   }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr data_handle_type offset(data_handle_type __p, size_t __i) const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr data_handle_type
+  offset(data_handle_type __p, size_t __i) const noexcept
   {
     return __p + __i;
   }
