@@ -8,10 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "scan_tile_state.h"
-
 #include <format>
 #include <regex>
+
+#include "scan_tile_state.h"
 
 // TODO: NVRTC doesn't currently support extracting basic type
 // information (e.g., type sizes and alignments) from compiled
