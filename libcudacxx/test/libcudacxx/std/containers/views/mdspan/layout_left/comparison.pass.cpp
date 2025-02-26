@@ -34,7 +34,7 @@ __host__ __device__ constexpr void test_comparison(bool equal, To dest_exts, Fro
 template <class E1, class E2>
 _CCCL_CONCEPT_FRAGMENT(
   can_compare_layouts_,
-  requires(E1 e1, E2 e2)((cuda::std::layout_left::mapping<E1>(e1) == cuda::std::layout_left::mapping<E2>(e2))));
+  requires(E1 e1, E2 e2)((void) (cuda::std::layout_left::mapping<E1>(e1) == cuda::std::layout_left::mapping<E2>(e2))));
 
 template <class E1, class E2>
 _CCCL_CONCEPT can_compare_layouts = _CCCL_FRAGMENT(can_compare_layouts_, E1, E2);

@@ -34,9 +34,9 @@ template <class E>
 using strides = cuda::std::array<typename E::index_type, E::rank()>;
 
 template <class E1, class E2, class S1 = strides<E1>, class S2 = strides<E2>>
-_CCCL_CONCEPT_FRAGMENT(layout_mapping_comparable_,
-                       requires(cuda::std::layout_stride::mapping<E1> e1, cuda::std::layout_stride::mapping<E2> e2)( //
-                         (e1 == e2)));
+_CCCL_CONCEPT_FRAGMENT(
+  layout_mapping_comparable_,
+  requires(cuda::std::layout_stride::mapping<E1> e1, cuda::std::layout_stride::mapping<E2> e2)((void) (e1 == e2)));
 
 template <class E1, class E2>
 _CCCL_CONCEPT layout_mapping_comparable = _CCCL_FRAGMENT(layout_mapping_comparable_, E1, E2);

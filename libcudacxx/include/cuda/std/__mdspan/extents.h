@@ -632,8 +632,13 @@ public:
           return false;
         }
       }
+      return true;
     }
-    return true;
+    else // MSVC needs this or it complains about unreachable code in the first condition
+    {
+      return true;
+    }
+    _CCCL_UNREACHABLE();
   }
 
 #if _CCCL_STD_VER <= 2017

@@ -25,7 +25,7 @@ __host__ __device__ constexpr void test_access()
 {
   ElementPool<cuda::std::remove_const_t<T>, 10> data;
   T* ptr = data.get_ptr();
-  cuda::std::default_accessor<T> acc;
+  cuda::std::default_accessor<T> acc{};
   for (int i = 0; i < 10; i++)
   {
     static_assert(
