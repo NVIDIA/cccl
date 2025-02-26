@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__bit/bit_reverse.h>
 #include <cuda/__bit/bitfield.h>
 
 #endif // _CUDA_BIT
