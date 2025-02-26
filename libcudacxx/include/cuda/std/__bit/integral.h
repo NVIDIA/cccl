@@ -62,7 +62,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int bit_width(_Tp __t) noexc
   // if __t == 0, __bit_log2(0) returns 0xFFFFFFFF. Since unsigned overflow is well-defined, the result is -1 + 1 = 0
   auto __ret = _CUDA_VSTD::__bit_log2(__t) + 1;
   _CCCL_BUILTIN_ASSUME(__ret <= numeric_limits<_Tp>::digits);
-  return __ret;
+  return static_cast<int>(__ret);
 }
 
 _CCCL_TEMPLATE(class _Tp)
