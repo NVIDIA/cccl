@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "test_util.h"
+#include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <cccl/c/unique_by_key.h>
 
@@ -103,10 +104,9 @@ TEMPLATE_LIST_TEST_CASE("DeviceSelect::UniqueByKey can run with empty input", "[
 
   operation_t op = make_operation("op", get_unique_by_key_op(get_type_info<TestType>().type));
   std::vector<TestType> input_keys(num_items);
-  std::vector<int> output_num_selected(1, 0);
 
   pointer_t<TestType> input_keys_it(input_keys);
-  pointer_t<int> output_num_selected_it(output_num_selected);
+  pointer_t<int> output_num_selected_it(1);
 
   unique_by_key(input_keys_it, input_keys_it, input_keys_it, input_keys_it, output_num_selected_it, op, num_items);
 
@@ -121,16 +121,11 @@ TEMPLATE_LIST_TEST_CASE("DeviceSelect::UniqueByKey works", "[unique_by_key]", ke
   std::vector<TestType> input_keys = generate<TestType>(num_items);
   std::vector<item_t> input_values = generate<item_t>(num_items);
 
-  std::vector<TestType> output_keys(num_items);
-  std::vector<item_t> output_values(num_items);
-
-  std::vector<int> output_num_selected(1, 0);
-
   pointer_t<TestType> input_keys_it(input_keys);
   pointer_t<item_t> input_values_it(input_values);
-  pointer_t<TestType> output_keys_it(output_keys);
-  pointer_t<item_t> output_values_it(output_values);
-  pointer_t<int> output_num_selected_it(output_num_selected);
+  pointer_t<TestType> output_keys_it(num_items);
+  pointer_t<item_t> output_values_it(num_items);
+  pointer_t<int> output_num_selected_it(1);
 
   unique_by_key(input_keys_it, input_values_it, output_keys_it, output_values_it, output_num_selected_it, op, num_items);
 
@@ -158,4 +153,46 @@ TEMPLATE_LIST_TEST_CASE("DeviceSelect::UniqueByKey works", "[unique_by_key]", ke
   }
 
   REQUIRE(input_pairs == output_pairs);
+}
+
+TEMPLATE_LIST_TEST_CASE("DeviceSelect::UniqueByKey handles none equal", "[device][select_unique_by_key]", key_types)
+{
+  const int num_items = 500; // to ensure that we get none equal for smaller data types
+
+  operation_t op                   = make_operation("op", get_unique_by_key_op(get_type_info<TestType>().type));
+  std::vector<TestType> input_keys = make_shuffled_sequence<TestType>(num_items);
+  std::vector<item_t> input_values = generate<item_t>(num_items);
+
+  pointer_t<TestType> input_keys_it(input_keys);
+  pointer_t<item_t> input_values_it(input_values);
+  pointer_t<TestType> output_keys_it(num_items);
+  pointer_t<item_t> output_values_it(num_items);
+  pointer_t<int> output_num_selected_it(1);
+
+  unique_by_key(input_keys_it, input_values_it, output_keys_it, output_values_it, output_num_selected_it, op, num_items);
+
+  REQUIRE(num_items == std::vector<int>(output_num_selected_it)[0]);
+  REQUIRE(input_keys == std::vector<TestType>(output_keys_it));
+  REQUIRE(input_values == std::vector<item_t>(output_values_it));
+}
+
+TEMPLATE_LIST_TEST_CASE("DeviceSelect::UniqueByKey handles all equal", "[device][select_unique_by_key]", key_types)
+{
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+
+  operation_t op = make_operation("op", get_unique_by_key_op(get_type_info<TestType>().type));
+  std::vector<TestType> input_keys(num_items, static_cast<TestType>(1));
+  std::vector<item_t> input_values = generate<item_t>(num_items);
+
+  pointer_t<TestType> input_keys_it(input_keys);
+  pointer_t<item_t> input_values_it(input_values);
+  pointer_t<TestType> output_keys_it(1);
+  pointer_t<item_t> output_values_it(1);
+  pointer_t<int> output_num_selected_it(1);
+
+  unique_by_key(input_keys_it, input_values_it, output_keys_it, output_values_it, output_num_selected_it, op, num_items);
+
+  REQUIRE(1 == std::vector<int>(output_num_selected_it)[0]);
+  REQUIRE(input_keys[0] == std::vector<TestType>(output_keys_it)[0]);
+  REQUIRE(input_values[0] == std::vector<item_t>(output_values_it)[0]);
 }
