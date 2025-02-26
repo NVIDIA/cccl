@@ -157,7 +157,7 @@ TEMPLATE_LIST_TEST_CASE("DeviceSelect::UniqueByKey works", "[unique_by_key]", ke
 
 TEMPLATE_LIST_TEST_CASE("DeviceSelect::UniqueByKey handles none equal", "[device][select_unique_by_key]", key_types)
 {
-  const int num_items = 500; // to ensure that we get none equal for smaller data types
+  const int num_items = 250; // to ensure that we get none equal for smaller data types
 
   operation_t op                   = make_operation("op", get_unique_by_key_op(get_type_info<TestType>().type));
   std::vector<TestType> input_keys = make_shuffled_sequence<TestType>(num_items);
