@@ -133,7 +133,7 @@ public:
       reserved::counter<reserved::cuda_event_tag::created>::increment();
       reserved::counter<reserved::cuda_event_tag::alive>::increment();
       reserved::high_water_mark<reserved::cuda_event_tag::alive>::record(
-        reserved::counter<cuda_event_tag::alive>::load());
+        reserved::counter<reserved::cuda_event_tag::alive>::load());
 #endif
 
       cuda_safe_call(cudaEventRecord(sync_event, s2));
@@ -141,7 +141,7 @@ public:
       // According to documentation "event may be from a different device than stream."
       cuda_safe_call(cudaStreamWaitEvent(s1, sync_event, 0));
 #ifdef CUDASTF_DEBUG
-      reserved::counter<reserved::cuda_stream_wait_event_tag>.increment();
+      reserved::counter<reserved::cuda_stream_wait_event_tag>::increment();
 #endif
 
       // Asynchronously destroy event to avoid a memleak
@@ -171,7 +171,7 @@ public:
       reserved::counter<reserved::cuda_event_tag::created>::increment();
       reserved::counter<reserved::cuda_event_tag::alive>::increment();
       reserved::high_water_mark<reserved::cuda_event_tag::alive>::record(
-        reserved::counter<cuda_event_tag::alive>::load());
+        reserved::counter<reserved::cuda_event_tag::alive>::load());
 #endif
       cuda_safe_call(cudaEventRecord(cudaEvent, dstream.stream));
     };
@@ -187,7 +187,7 @@ public:
       {
         cuda_safe_call(cudaStreamWaitEvent(dstream.stream, from.cudaEvent, 0));
 #ifdef CUDASTF_DEBUG
-        reserved::counter<reserved::cuda_stream_wait_event_tag>.increment();
+        reserved::counter<reserved::cuda_stream_wait_event_tag>::increment();
 #endif
       }
     }
@@ -416,7 +416,7 @@ private:
         {
           cuda_safe_call(cudaStreamWaitEvent(dstream.stream, se->get_cuda_event(), 0));
 #ifdef CUDASTF_DEBUG
-          reserved::counter<reserved::cuda_stream_wait_event_tag>.increment();
+          reserved::counter<reserved::cuda_stream_wait_event_tag>::increment();
 #endif
         }
       }
