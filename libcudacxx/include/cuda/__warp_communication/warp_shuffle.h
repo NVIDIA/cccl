@@ -31,6 +31,7 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_void.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/cstdint>
 
 #if __cccl_ptx_isa >= 600
@@ -51,57 +52,57 @@ struct WarpShuffleResult
   }
 };
 
-template <int _Width = 32, typename _Tp>
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Tp> warp_shuffle_idx(
+template <int _Width = 32, typename _Tp, typename _Up = _CUDA_VSTD::remove_cv_t<_Tp>>
+_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Up> warp_shuffle_idx(
   const _Tp& __data, int __src_lane, uint32_t __lane_mask = 0xFFFFFFFF, _CUDA_VSTD::integral_constant<int, _Width> = {})
 {
-  constexpr int __warp_size   = 32;
-  constexpr int __is_void_ptr = _CUDA_VSTD::is_same_v<_Tp, void*> || _CUDA_VSTD::is_same_v<_Tp, const void*>;
-  static_assert(!_CUDA_VSTD::is_pointer_v<_Tp> || __is_void_ptr,
+  constexpr auto __warp_size   = 32u;
+  constexpr bool __is_void_ptr = _CUDA_VSTD::is_same_v<_Up, void*> || _CUDA_VSTD::is_same_v<_Up, const void*>;
+  static_assert(!_CUDA_VSTD::is_pointer_v<_Up> || __is_void_ptr,
                 "non-void pointers are not allowed to prevent bug-prone code");
-  static_assert(_CUDA_VSTD::has_single_bit(static_cast<uint32_t>(_Width)) && _Width >= 1 && _Width <= __warp_size,
+  static_assert(_CUDA_VSTD::has_single_bit(uint32_t{_Width}) && _Width >= 1 && _Width <= __warp_size,
                 "_Width must be a power of 2 and less or equal to the warp size");
   if constexpr (_Width == 1)
   {
-    return WarpShuffleResult<_Tp>{__data, true};
+    return WarpShuffleResult<_Up>{__data, true};
   }
   else
   {
-    constexpr int __ratio = ::cuda::ceil_div(sizeof(_Tp), sizeof(uint32_t));
-    auto __clamp_segmask  = (_Width - 1) | ((__warp_size - _Width) << 8);
+    constexpr int __ratio = ::cuda::ceil_div(sizeof(_Up), sizeof(uint32_t));
+    auto __clamp_segmask  = (_Width - 1u) | ((__warp_size - _Width) << 8);
     bool __pred;
     uint32_t __array[__ratio];
     _CUDA_VSTD::memcpy(
-      static_cast<void*>(__array), static_cast<const void*>(_CUDA_VSTD::addressof(__data)), sizeof(_Tp));
+      static_cast<void*>(__array), static_cast<const void*>(_CUDA_VSTD::addressof(__data)), sizeof(_Up));
 #  pragma unroll
     for (int i = 0; i < __ratio; ++i)
     {
       __array[i] = _CUDA_VPTX::shfl_sync_idx(__array[i], __pred, __src_lane, __clamp_segmask, __lane_mask);
     }
-    WarpShuffleResult<_Tp> __result;
+    WarpShuffleResult<_Up> __result;
     __result.pred = __pred;
     _CUDA_VSTD::memcpy(
-      static_cast<void*>(_CUDA_VSTD::addressof(__result.data)), static_cast<void*>(__array), sizeof(_Tp));
+      static_cast<void*>(_CUDA_VSTD::addressof(__result.data)), static_cast<void*>(__array), sizeof(_Up));
     return __result;
   }
 }
 
-template <int _Width, typename _Tp>
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Tp>
+template <int _Width, typename _Tp, typename _Up = _CUDA_VSTD::remove_cv_t<_Tp>>
+_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Up>
 warp_shuffle_idx(const _Tp& __data, int __src_lane, _CUDA_VSTD::integral_constant<int, _Width> __width)
 {
   return ::cuda::warp_shuffle_idx(__data, __src_lane, 0xFFFFFFFF, __width);
 }
 
-template <int _Width = 32, typename _Tp>
+template <int _Width = 32, typename _Tp, typename _Up = _CUDA_VSTD::remove_cv_t<_Tp>>
 _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Tp> warp_shuffle_up(
   const _Tp& __data, int __delta, uint32_t __lane_mask = 0xFFFFFFFF, _CUDA_VSTD::integral_constant<int, _Width> = {})
 {
-  constexpr int __warp_size   = 32;
-  constexpr int __is_void_ptr = _CUDA_VSTD::is_same_v<_Tp, void*> || _CUDA_VSTD::is_same_v<_Tp, const void*>;
-  static_assert(!_CUDA_VSTD::is_pointer_v<_Tp> || __is_void_ptr,
+  constexpr auto __warp_size   = 32u;
+  constexpr bool __is_void_ptr = _CUDA_VSTD::is_same_v<_Up, void*> || _CUDA_VSTD::is_same_v<_Up, const void*>;
+  static_assert(!_CUDA_VSTD::is_pointer_v<_Up> || __is_void_ptr,
                 "non-void pointers are not allowed to prevent bug-prone code");
-  static_assert(_CUDA_VSTD::has_single_bit(static_cast<uint32_t>(_Width)) && _Width >= 1 && _Width <= __warp_size,
+  static_assert(_CUDA_VSTD::has_single_bit(uint32_t{_Width}) && _Width >= 1 && _Width <= __warp_size,
                 "_Width must be a power of 2 and less or equal to the warp size");
 #  if __CUDA_ARCH__ >= 700
   [[maybe_unused]] int __pred1;
@@ -110,46 +111,46 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Tp> warp_shu
   if constexpr (_Width == 1)
   {
     _CCCL_ASSERT(__delta == 0, "delta must be 0 when Width == 1");
-    return WarpShuffleResult<_Tp>{__data, true};
+    return WarpShuffleResult<_Up>{__data, true};
   }
   else
   {
     _CCCL_ASSERT(__delta >= 1 && __delta < _Width, "delta must be in the range [1, _Width)");
-    constexpr int __ratio = ::cuda::ceil_div(sizeof(_Tp), sizeof(uint32_t));
+    constexpr int __ratio = ::cuda::ceil_div(sizeof(_Up), sizeof(uint32_t));
     auto __clamp_segmask  = (__warp_size - _Width) << 8;
     bool __pred;
     uint32_t __array[__ratio];
     _CUDA_VSTD::memcpy(
-      static_cast<void*>(__array), static_cast<const void*>(_CUDA_VSTD::addressof(__data)), sizeof(_Tp));
+      static_cast<void*>(__array), static_cast<const void*>(_CUDA_VSTD::addressof(__data)), sizeof(_Up));
 #  pragma unroll
     for (int i = 0; i < __ratio; ++i)
     {
       __array[i] = _CUDA_VPTX::shfl_sync_up(__array[i], __pred, __delta, __clamp_segmask, __lane_mask);
     }
-    WarpShuffleResult<_Tp> __result;
+    WarpShuffleResult<_Up> __result;
     __result.pred = __pred;
     _CUDA_VSTD::memcpy(
-      static_cast<void*>(_CUDA_VSTD::addressof(__result.data)), static_cast<void*>(__array), sizeof(_Tp));
+      static_cast<void*>(_CUDA_VSTD::addressof(__result.data)), static_cast<void*>(__array), sizeof(_Up));
     return __result;
   }
 }
 
-template <int _Width, typename _Tp>
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Tp>
+template <int _Width, typename _Tp, typename _Up = _CUDA_VSTD::remove_cv_t<_Tp>>
+_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Up>
 warp_shuffle_up(const _Tp& __data, int __src_lane, _CUDA_VSTD::integral_constant<int, _Width> __width)
 {
   return ::cuda::warp_shuffle_up(__data, __src_lane, 0xFFFFFFFF, __width);
 }
 
-template <int _Width = 32, typename _Tp>
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Tp> warp_shuffle_down(
+template <int _Width = 32, typename _Tp, typename _Up = _CUDA_VSTD::remove_cv_t<_Tp>>
+_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Up> warp_shuffle_down(
   const _Tp& __data, int __delta, uint32_t __lane_mask = 0xFFFFFFFF, _CUDA_VSTD::integral_constant<int, _Width> = {})
 {
-  constexpr int __warp_size   = 32;
-  constexpr int __is_void_ptr = _CUDA_VSTD::is_same_v<_Tp, void*> || _CUDA_VSTD::is_same_v<_Tp, const void*>;
-  static_assert(!_CUDA_VSTD::is_pointer_v<_Tp> || __is_void_ptr,
+  constexpr auto __warp_size   = 32u;
+  constexpr bool __is_void_ptr = _CUDA_VSTD::is_same_v<_Up, void*> || _CUDA_VSTD::is_same_v<_Up, const void*>;
+  static_assert(!_CUDA_VSTD::is_pointer_v<_Up> || __is_void_ptr,
                 "non-void pointers are not allowed to prevent bug-prone code");
-  static_assert(_CUDA_VSTD::has_single_bit(static_cast<uint32_t>(_Width)) && _Width >= 1 && _Width <= __warp_size,
+  static_assert(_CUDA_VSTD::has_single_bit(uint32_t{_Width}) && _Width >= 1 && _Width <= __warp_size,
                 "_Width must be a power of 2 and less or equal to the warp size");
 #  if __CUDA_ARCH__ >= 700
   [[maybe_unused]] int __pred1;
@@ -158,46 +159,46 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Tp> warp_shu
   if constexpr (_Width == 1)
   {
     _CCCL_ASSERT(__delta == 0, "delta must be 0 when Width == 1");
-    return WarpShuffleResult<_Tp>{__data, true};
+    return WarpShuffleResult<_Up>{__data, true};
   }
   else
   {
     _CCCL_ASSERT(__delta >= 1 && __delta < _Width, "delta must be in the range [1, _Width)");
-    constexpr int __ratio = ::cuda::ceil_div(sizeof(_Tp), sizeof(uint32_t));
-    auto __clamp_segmask  = (_Width - 1) | ((__warp_size - _Width) << 8);
+    constexpr int __ratio = ::cuda::ceil_div(sizeof(_Up), sizeof(uint32_t));
+    auto __clamp_segmask  = (_Width - 1u) | ((__warp_size - _Width) << 8);
     bool __pred;
     uint32_t __array[__ratio];
     _CUDA_VSTD::memcpy(
-      static_cast<void*>(__array), static_cast<const void*>(_CUDA_VSTD::addressof(__data)), sizeof(_Tp));
+      static_cast<void*>(__array), static_cast<const void*>(_CUDA_VSTD::addressof(__data)), sizeof(_Up));
 #  pragma unroll
     for (int i = 0; i < __ratio; ++i)
     {
       __array[i] = _CUDA_VPTX::shfl_sync_down(__array[i], __pred, __delta, __clamp_segmask, __lane_mask);
     }
-    WarpShuffleResult<_Tp> __result;
+    WarpShuffleResult<_Up> __result;
     __result.pred = __pred;
     _CUDA_VSTD::memcpy(
-      static_cast<void*>(_CUDA_VSTD::addressof(__result.data)), static_cast<void*>(__array), sizeof(_Tp));
+      static_cast<void*>(_CUDA_VSTD::addressof(__result.data)), static_cast<void*>(__array), sizeof(_Up));
     return __result;
   }
 }
 
-template <int _Width, typename _Tp>
+template <int _Width, typename _Tp, typename _Up = _CUDA_VSTD::remove_cv_t<_Tp>>
 _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Tp>
 warp_shuffle_down(const _Tp& __data, int __src_lane, _CUDA_VSTD::integral_constant<int, _Width> __width)
 {
   return ::cuda::warp_shuffle_down(__data, __src_lane, 0xFFFFFFFF, __width);
 }
 
-template <int _Width = 32, typename _Tp>
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Tp> warp_shuffle_xor(
+template <int _Width = 32, typename _Tp, typename _Up = _CUDA_VSTD::remove_cv_t<_Tp>>
+_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Up> warp_shuffle_xor(
   const _Tp& __data, int __xor_mask, uint32_t __lane_mask = 0xFFFFFFFF, _CUDA_VSTD::integral_constant<int, _Width> = {})
 {
-  constexpr int __warp_size   = 32;
-  constexpr int __is_void_ptr = _CUDA_VSTD::is_same_v<_Tp, void*> || _CUDA_VSTD::is_same_v<_Tp, const void*>;
-  static_assert(!_CUDA_VSTD::is_pointer_v<_Tp> || __is_void_ptr,
+  constexpr auto __warp_size   = 32u;
+  constexpr bool __is_void_ptr = _CUDA_VSTD::is_same_v<_Up, void*> || _CUDA_VSTD::is_same_v<_Up, const void*>;
+  static_assert(!_CUDA_VSTD::is_pointer_v<_Up> || __is_void_ptr,
                 "non-void pointers are not allowed to prevent bug-prone code");
-  static_assert(_CUDA_VSTD::has_single_bit(static_cast<uint32_t>(_Width)) && _Width >= 1 && _Width <= __warp_size,
+  static_assert(_CUDA_VSTD::has_single_bit(uint32_t{_Width}) && _Width >= 1 && _Width <= __warp_size,
                 "_Width must be a power of 2 and less or equal to the warp size");
 #  if __CUDA_ARCH__ >= 700
   [[maybe_unused]] int __pred1;
@@ -206,32 +207,32 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Tp> warp_shu
   if constexpr (_Width == 1)
   {
     _CCCL_ASSERT(__xor_mask == 0, "delta must be 0 when Width == 1");
-    return WarpShuffleResult<_Tp>{__data, true};
+    return WarpShuffleResult<_Up>{__data, true};
   }
   else
   {
     _CCCL_ASSERT(__xor_mask >= 1 && __xor_mask < _Width, "delta must be in the range [1, _Width)");
-    constexpr int __ratio = ::cuda::ceil_div(sizeof(_Tp), sizeof(uint32_t));
-    auto __clamp_segmask  = (_Width - 1) | ((__warp_size - _Width) << 8);
+    constexpr int __ratio = ::cuda::ceil_div(sizeof(_Up), sizeof(uint32_t));
+    auto __clamp_segmask  = (_Width - 1u) | ((__warp_size - _Width) << 8);
     bool __pred;
     uint32_t __array[__ratio];
     _CUDA_VSTD::memcpy(
-      static_cast<void*>(__array), static_cast<const void*>(_CUDA_VSTD::addressof(__data)), sizeof(_Tp));
+      static_cast<void*>(__array), static_cast<const void*>(_CUDA_VSTD::addressof(__data)), sizeof(_Up));
 #  pragma unroll
     for (int i = 0; i < __ratio; ++i)
     {
       __array[i] = _CUDA_VPTX::shfl_sync_bfly(__array[i], __pred, __xor_mask, __clamp_segmask, __lane_mask);
     }
-    WarpShuffleResult<_Tp> __result;
+    WarpShuffleResult<_Up> __result;
     __result.pred = __pred;
     _CUDA_VSTD::memcpy(
-      static_cast<void*>(_CUDA_VSTD::addressof(__result.data)), static_cast<void*>(__array), sizeof(_Tp));
+      static_cast<void*>(_CUDA_VSTD::addressof(__result.data)), static_cast<void*>(__array), sizeof(_Up));
     return __result;
   }
 }
 
-template <int _Width, typename _Tp>
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Tp>
+template <int _Width, typename _Tp, typename _Up = _CUDA_VSTD::remove_cv_t<_Tp>>
+_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Up>
 warp_shuffle_xor(const _Tp& __data, int __src_lane, _CUDA_VSTD::integral_constant<int, _Width> __width)
 {
   return ::cuda::warp_shuffle_xor(__data, __src_lane, 0xFFFFFFFF, __width);
