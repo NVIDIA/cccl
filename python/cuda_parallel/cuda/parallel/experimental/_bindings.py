@@ -7,7 +7,7 @@ import ctypes
 import sys
 from functools import lru_cache
 from pathlib import Path
-from typing import Callable, List, Tuple
+from typing import Callable, List
 
 from numba import cuda
 
@@ -45,7 +45,7 @@ def get_paths() -> List[bytes]:
     return paths
 
 
-def call_build(build_impl_fn: Callable, args: Tuple):
+def call_build(build_impl_fn: Callable, *args, **kwargs):
     """Calls given build_impl_fn callable while providing compute capability and paths
 
     Returns result of the call.
@@ -60,5 +60,6 @@ def call_build(build_impl_fn: Callable, args: Tuple):
         ctypes.c_char_p(thrust_path),
         ctypes.c_char_p(libcudacxx_path),
         ctypes.c_char_p(cuda_include_path),
+        **kwargs,
     )
     return error

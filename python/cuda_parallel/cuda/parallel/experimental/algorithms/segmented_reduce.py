@@ -45,15 +45,13 @@ class _SegmentedReduce:
         self.bindings = get_bindings()
         error = call_build(
             self.bindings.cccl_device_segmented_reduce_build,
-            (
-                ctypes.byref(self.build_result),
-                self.d_in_cccl,
-                self.d_out_cccl,
-                self.start_offsets_in_cccl,
-                self.end_offsets_in_cccl,
-                self.op_wrapper,
-                self.h_init_cccl,
-            ),
+            ctypes.byref(self.build_result),
+            self.d_in_cccl,
+            self.d_out_cccl,
+            self.start_offsets_in_cccl,
+            self.end_offsets_in_cccl,
+            self.op_wrapper,
+            self.h_init_cccl,
         )
         if error != enums.CUDA_SUCCESS:
             raise ValueError("Error building reduce")
