@@ -12,7 +12,7 @@ import numba
 import numpy as np
 from numba import cuda, types
 
-from ._utils.protocols import get_dtype, is_contiguous
+from ._utils.protocols import get_data_pointer, get_dtype, is_contiguous
 from .iterators._iterators import IteratorBase
 from .typing import DeviceArrayLike, GpuStruct
 
@@ -295,3 +295,10 @@ def to_cccl_op(op: Callable, sig) -> Op:
         None,
         _data=(ltoir, name),  # keep a reference to these in a _data attribute
     )
+
+
+def set_cccl_iterator_state(cccl_it: Iterator, input_it):
+    if cccl_it.type.value == IteratorKind.POINTER:
+        cccl_it.state = get_data_pointer(input_it)
+    else:
+        cccl_it.state = input_it.state

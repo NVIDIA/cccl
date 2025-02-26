@@ -64,13 +64,6 @@ class _SegmentedReduce:
         if error != enums.CUDA_SUCCESS:
             raise ValueError("Error building reduce")
 
-    @staticmethod
-    def _set_iterator(_in_cccl, _in):
-        if _in_cccl.type.value == cccl.IteratorKind.POINTER:
-            _in_cccl.state = protocols.get_data_pointer(_in)
-        else:
-            _in_cccl.state = _in.state
-
     def __call__(
         self,
         temp_storage,
@@ -82,10 +75,11 @@ class _SegmentedReduce:
         h_init,
         stream=None,
     ):
-        _SegmentedReduce._set_iterator(self.d_in_cccl, d_in)
-        _SegmentedReduce._set_iterator(self.d_out_cccl, d_out)
-        _SegmentedReduce._set_iterator(self.start_offsets_in_cccl, start_offsets_in)
-        _SegmentedReduce._set_iterator(self.end_offsets_in_cccl, end_offsets_in)
+        set_state_fn = cccl.set_cccl_iterator_state
+        set_state_fn(self.d_in_cccl, d_in)
+        set_state_fn(self.d_out_cccl, d_out)
+        set_state_fn(self.start_offsets_in_cccl, start_offsets_in)
+        set_state_fn(self.end_offsets_in_cccl, end_offsets_in)
         self.h_init_cccl.state = h_init.__array_interface__["data"][0]
 
         stream_handle = protocols.validate_and_get_stream(stream)
