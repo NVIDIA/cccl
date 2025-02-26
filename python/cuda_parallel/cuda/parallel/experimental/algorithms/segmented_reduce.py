@@ -3,11 +3,10 @@ from typing import Callable
 
 import numba
 import numpy as np
-from numba import cuda
 from numba.cuda.cudadrv import enums
 
 from .. import _cccl as cccl
-from .._bindings import get_bindings, get_paths
+from .._bindings import call_build, get_bindings
 from .._caching import CachableFunction, cache_with_key
 from .._utils import protocols
 from ..iterators._iterators import IteratorBase
@@ -36,8 +35,6 @@ class _SegmentedReduce:
         self.start_offsets_in_cccl = cccl.to_cccl_iter(start_offsets_in)
         self.end_offsets_in_cccl = cccl.to_cccl_iter(end_offsets_in)
         self.h_init_cccl = cccl.to_cccl_value(h_init)
-        cc_major, cc_minor = cuda.get_current_device().compute_capability
-        cub_path, thrust_path, libcudacxx_path, cuda_include_path = get_paths()
         if isinstance(h_init, np.ndarray):
             value_type = numba.from_dtype(h_init.dtype)
         else:
@@ -46,20 +43,17 @@ class _SegmentedReduce:
         self.op_wrapper = cccl.to_cccl_op(op, sig)
         self.build_result = cccl.DeviceSegmentedReduceBuildResult()
         self.bindings = get_bindings()
-        error = self.bindings.cccl_device_segmented_reduce_build(
-            ctypes.byref(self.build_result),
-            self.d_in_cccl,
-            self.d_out_cccl,
-            self.start_offsets_in_cccl,
-            self.end_offsets_in_cccl,
-            self.op_wrapper,
-            self.h_init_cccl,
-            cc_major,
-            cc_minor,
-            ctypes.c_char_p(cub_path),
-            ctypes.c_char_p(thrust_path),
-            ctypes.c_char_p(libcudacxx_path),
-            ctypes.c_char_p(cuda_include_path),
+        error = call_build(
+            self.bindings.cccl_device_segmented_reduce_build,
+            (
+                ctypes.byref(self.build_result),
+                self.d_in_cccl,
+                self.d_out_cccl,
+                self.start_offsets_in_cccl,
+                self.end_offsets_in_cccl,
+                self.op_wrapper,
+                self.h_init_cccl,
+            ),
         )
         if error != enums.CUDA_SUCCESS:
             raise ValueError("Error building reduce")
