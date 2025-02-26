@@ -5,14 +5,13 @@
 from typing import List
 
 import cupy as cp
-import numpy as np
 import numba.cuda
+import numpy as np
 import pytest
 
 import cuda.parallel.experimental.algorithms as algorithms
 import cuda.parallel.experimental.iterators as iterators
 from cuda.parallel.experimental.struct import gpu_struct
-
 
 DTYPE_LIST = [
     np.uint8,
@@ -54,14 +53,28 @@ def type_to_problem_sizes(dtype) -> List[int]:
 
 
 def unique_by_key_device(
-    d_in_keys, d_in_items, d_out_keys, d_out_items, d_out_num_selected, op, num_items, stream=None
+    d_in_keys,
+    d_in_items,
+    d_out_keys,
+    d_out_items,
+    d_out_num_selected,
+    op,
+    num_items,
+    stream=None,
 ):
     unique_by_key = algorithms.unique_by_key(
         d_in_keys, d_in_items, d_out_keys, d_out_items, d_out_num_selected, op
     )
 
     temp_storage_size = unique_by_key(
-        None, d_in_keys, d_in_items, d_out_keys, d_out_items, d_out_num_selected, num_items, stream=stream
+        None,
+        d_in_keys,
+        d_in_items,
+        d_out_keys,
+        d_out_items,
+        d_out_num_selected,
+        num_items,
+        stream=stream,
     )
     d_temp_storage = numba.cuda.device_array(
         temp_storage_size, dtype=np.uint8, stream=stream.ptr if stream else 0
@@ -82,9 +95,7 @@ def is_equal_func(lhs, rhs):
     return lhs == rhs
 
 
-def unique_by_key_host(
-    keys, items, is_equal=is_equal_func
-):
+def unique_by_key_host(keys, items, is_equal=is_equal_func):
     # Must implement our own version of unique_by_key since np.unique() returns
     # unique elements across the entire array, while cub::UniqueByKey
     # de-duplicates consecutive keys that are equal.
@@ -131,8 +142,15 @@ def test_unique_by_key(dtype):
         d_out_items = numba.cuda.to_device(h_out_items)
         d_out_num_selected = numba.cuda.to_device(h_out_num_selected)
 
-        unique_by_key_device(d_in_keys, d_in_items, d_out_keys,
-                             d_out_items, d_out_num_selected, compare_op, num_items)
+        unique_by_key_device(
+            d_in_keys,
+            d_in_items,
+            d_out_keys,
+            d_out_items,
+            d_out_num_selected,
+            compare_op,
+            num_items,
+        )
 
         h_out_num_selected = d_out_num_selected.copy_to_host()
         num_selected = h_out_num_selected[0]
@@ -140,7 +158,8 @@ def test_unique_by_key(dtype):
         h_out_items = np.resize(d_out_items.copy_to_host(), num_selected)
 
         expected_out_keys, expected_out_items = unique_by_key_host(
-            h_in_keys, h_in_items)
+            h_in_keys, h_in_items
+        )
 
         np.testing.assert_array_equal(h_out_keys, expected_out_keys)
         np.testing.assert_array_equal(h_out_items, expected_out_items)
@@ -173,8 +192,15 @@ def test_unique_by_key_iterators(dtype):
             d_in_items, modifier="stream", prefix="items"
         )
 
-        unique_by_key_device(i_in_keys, i_in_items, d_out_keys,
-                             d_out_items, d_out_num_selected, compare_op, num_items)
+        unique_by_key_device(
+            i_in_keys,
+            i_in_items,
+            d_out_keys,
+            d_out_items,
+            d_out_num_selected,
+            compare_op,
+            num_items,
+        )
 
         h_out_num_selected = d_out_num_selected.copy_to_host()
         num_selected = h_out_num_selected[0]
@@ -182,7 +208,8 @@ def test_unique_by_key_iterators(dtype):
         h_out_items = np.resize(d_out_items.copy_to_host(), num_selected)
 
         expected_out_keys, expected_out_items = unique_by_key_host(
-            h_in_keys, h_in_items)
+            h_in_keys, h_in_items
+        )
 
         np.testing.assert_array_equal(h_out_keys, expected_out_keys)
         np.testing.assert_array_equal(h_out_items, expected_out_items)
@@ -209,8 +236,15 @@ def test_unique_by_key_complex():
     d_out_items = numba.cuda.to_device(h_out_items)
     d_out_num_selected = numba.cuda.to_device(h_out_num_selected)
 
-    unique_by_key_device(d_in_keys, d_in_items, d_out_keys,
-                         d_out_items, d_out_num_selected, compare_complex, num_items)
+    unique_by_key_device(
+        d_in_keys,
+        d_in_items,
+        d_out_keys,
+        d_out_items,
+        d_out_num_selected,
+        compare_complex,
+        num_items,
+    )
 
     h_out_num_selected = d_out_num_selected.copy_to_host()
     num_selected = h_out_num_selected[0]
@@ -218,7 +252,8 @@ def test_unique_by_key_complex():
     h_out_items = np.resize(d_out_items.copy_to_host(), num_selected)
 
     expected_out_keys, expected_out_items = unique_by_key_host(
-        h_in_keys, h_in_items, compare_complex)
+        h_in_keys, h_in_items, compare_complex
+    )
 
     np.testing.assert_array_equal(h_out_keys, expected_out_keys)
     np.testing.assert_array_equal(h_out_items, expected_out_items)
@@ -268,8 +303,15 @@ def test_unique_by_key_struct_types():
     d_out_items = cp.empty_like(d_in_items)
     d_out_num_selected = numba.cuda.to_device(h_out_num_selected)
 
-    unique_by_key_device(d_in_keys, d_in_items, d_out_keys,
-                         d_out_items, d_out_num_selected, struct_compare_op, num_items)
+    unique_by_key_device(
+        d_in_keys,
+        d_in_items,
+        d_out_keys,
+        d_out_items,
+        d_out_num_selected,
+        struct_compare_op,
+        num_items,
+    )
 
     h_out_num_selected = d_out_num_selected.copy_to_host()
     num_selected = h_out_num_selected[0]
@@ -277,7 +319,8 @@ def test_unique_by_key_struct_types():
     h_out_items = np.resize(d_out_items.copy_to_host(), num_selected)
 
     expected_out_keys, expected_out_items = unique_by_key_host(
-        h_in_keys, h_in_items, struct_compare_op)
+        h_in_keys, h_in_items, struct_compare_op
+    )
 
     np.testing.assert_array_equal(h_out_keys, expected_out_keys)
     np.testing.assert_array_equal(h_out_items, expected_out_items)
@@ -301,8 +344,16 @@ def test_unique_by_key_with_stream(cuda_stream):
         d_out_items = cp.empty_like(h_out_items)
         d_out_num_selected = cp.empty_like(h_out_num_selected)
 
-    unique_by_key_device(d_in_keys, d_in_items, d_out_keys,
-                         d_out_items, d_out_num_selected, compare_op, num_items, stream=cuda_stream)
+    unique_by_key_device(
+        d_in_keys,
+        d_in_items,
+        d_out_keys,
+        d_out_items,
+        d_out_num_selected,
+        compare_op,
+        num_items,
+        stream=cuda_stream,
+    )
 
     h_out_keys = d_out_keys.get()
     h_out_items = d_out_items.get()
@@ -312,8 +363,7 @@ def test_unique_by_key_with_stream(cuda_stream):
     h_out_keys = np.resize(h_out_keys, num_selected)
     h_out_items = np.resize(h_out_items, num_selected)
 
-    expected_out_keys, expected_out_items = unique_by_key_host(
-        h_in_keys, h_in_items)
+    expected_out_keys, expected_out_items = unique_by_key_host(h_in_keys, h_in_items)
 
     np.testing.assert_array_equal(h_out_keys, expected_out_keys)
     np.testing.assert_array_equal(h_out_items, expected_out_items)

@@ -24,7 +24,7 @@ def make_cache_key(
     d_out_keys: DeviceArrayLike | IteratorBase,
     d_out_items: DeviceArrayLike | IteratorBase,
     d_out_num_selected: DeviceArrayLike,
-    op: Callable
+    op: Callable,
 ):
     d_in_keys_key = (
         d_in_keys.kind
@@ -49,7 +49,14 @@ def make_cache_key(
     d_out_num_selected_key = protocols.get_dtype(d_out_num_selected)
     op_key = CachableFunction(op)
 
-    return (d_in_keys_key, d_in_items_key, d_out_keys_key, d_out_items_key, d_out_num_selected_key, op_key)
+    return (
+        d_in_keys_key,
+        d_in_items_key,
+        d_out_keys_key,
+        d_out_items_key,
+        d_out_num_selected_key,
+        op_key,
+    )
 
 
 def _update_device_array_pointers(current_array, passed_array):
@@ -67,7 +74,7 @@ class _UniqueByKey:
         d_out_keys: DeviceArrayLike | IteratorBase,
         d_out_items: DeviceArrayLike | IteratorBase,
         d_out_num_selected: DeviceArrayLike,
-        op: Callable
+        op: Callable,
     ):
         # Referenced from __del__:
         self.build_result = None
@@ -120,13 +127,11 @@ class _UniqueByKey:
         num_items: int,
         stream=None,
     ):
-
         _update_device_array_pointers(self.d_in_keys_cccl, d_in_keys)
         _update_device_array_pointers(self.d_in_items_cccl, d_in_items)
         _update_device_array_pointers(self.d_out_keys_cccl, d_out_keys)
         _update_device_array_pointers(self.d_out_items_cccl, d_out_items)
-        _update_device_array_pointers(
-            self.d_out_num_selected_cccl, d_out_num_selected)
+        _update_device_array_pointers(self.d_out_num_selected_cccl, d_out_num_selected)
 
         stream_handle = protocols.validate_and_get_stream(stream)
         bindings = get_bindings()
@@ -162,8 +167,7 @@ class _UniqueByKey:
         if self.build_result is None:
             return
         bindings = get_bindings()
-        bindings.cccl_device_unique_by_key_cleanup(
-            ctypes.byref(self.build_result))
+        bindings.cccl_device_unique_by_key_cleanup(ctypes.byref(self.build_result))
 
 
 @cache_with_key(make_cache_key)
@@ -173,7 +177,8 @@ def unique_by_key(
     d_out_keys: DeviceArrayLike | IteratorBase,
     d_out_items: DeviceArrayLike | IteratorBase,
     d_out_num_selected: DeviceArrayLike,
-    op: Callable
+    op: Callable,
 ):
-
-    return _UniqueByKey(d_in_keys, d_in_items, d_out_keys, d_out_items, d_out_num_selected, op)
+    return _UniqueByKey(
+        d_in_keys, d_in_items, d_out_keys, d_out_items, d_out_num_selected, op
+    )

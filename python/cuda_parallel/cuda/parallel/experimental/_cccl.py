@@ -206,8 +206,7 @@ def _iterator_to_cccl_iter(it: IteratorBase) -> Iterator:
     alignment = context.get_value_type(numba_type).get_abi_alignment(
         context.target_data
     )
-    (advance_abi_name, advance_ltoir), (deref_abi_name,
-                                        deref_ltoir) = it.ltoirs.items()
+    (advance_abi_name, advance_ltoir), (deref_abi_name, deref_ltoir) = it.ltoirs.items()
     advance_op = Op(
         OpKind.STATELESS,
         advance_abi_name.encode("utf-8"),
