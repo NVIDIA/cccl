@@ -196,3 +196,68 @@ TEMPLATE_LIST_TEST_CASE("DeviceSelect::UniqueByKey handles all equal", "[device]
   REQUIRE(input_keys[0] == std::vector<TestType>(output_keys_it)[0]);
   REQUIRE(input_values[0] == std::vector<item_t>(output_values_it)[0]);
 }
+
+struct key_pair
+{
+  short a;
+  size_t b;
+
+  bool operator==(const key_pair& other) const
+  {
+    return a == other.a && b == other.b;
+  }
+};
+
+TEST_CASE("DeviceSelect::UniqueByKey works with custom types", "[device][select_unique_by_key]")
+{
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+
+  operation_t op = make_operation(
+    "op",
+    "struct key_pair { short a; size_t b; };\n"
+    "extern \"C\" __device__ bool op(key_pair lhs, key_pair rhs) {\n"
+    "  return lhs.a == rhs.a && lhs.b == rhs.b;\n"
+    "}");
+  const std::vector<short> a  = generate<short>(num_items);
+  const std::vector<size_t> b = generate<size_t>(num_items);
+  std::vector<key_pair> input_keys(num_items);
+  std::vector<item_t> input_values = generate<item_t>(num_items);
+  for (int i = 0; i < num_items; ++i)
+  {
+    input_keys[i] = key_pair{a[i], b[i]};
+  }
+
+  pointer_t<key_pair> input_keys_it(input_keys);
+  pointer_t<item_t> input_values_it(input_values);
+  pointer_t<key_pair> output_keys_it(num_items);
+  pointer_t<item_t> output_values_it(num_items);
+  pointer_t<int> output_num_selected_it(1);
+
+  unique_by_key(input_keys_it, input_values_it, output_keys_it, output_values_it, output_num_selected_it, op, num_items);
+
+  std::vector<std::pair<key_pair, item_t>> input_pairs;
+  for (size_t i = 0; i < input_keys.size(); ++i)
+  {
+    input_pairs.emplace_back(input_keys[i], input_values[i]);
+  }
+
+  const auto boundary = std::unique(input_pairs.begin(), input_pairs.end(), [](const auto& a, const auto& b) {
+    return a.first == b.first;
+  });
+
+  int num_selected = std::vector<int>(output_num_selected_it)[0];
+
+  REQUIRE((boundary - input_pairs.begin()) == num_selected);
+
+  input_pairs.resize(num_selected);
+
+  std::vector<key_pair> host_output_keys(output_keys_it);
+  std::vector<item_t> host_output_values(output_values_it);
+  std::vector<std::pair<key_pair, item_t>> output_pairs;
+  for (int i = 0; i < num_selected; ++i)
+  {
+    output_pairs.emplace_back(host_output_keys[i], host_output_values[i]);
+  }
+
+  REQUIRE(input_pairs == output_pairs);
+}
