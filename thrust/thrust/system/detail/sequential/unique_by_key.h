@@ -57,8 +57,8 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_c
   OutputIterator2 values_output,
   BinaryPredicate binary_pred)
 {
-  using InputKeyType    = typename thrust::iterator_traits<InputIterator1>::value_type;
-  using OutputValueType = typename thrust::iterator_traits<OutputIterator2>::value_type;
+  using InputKeyType    = thrust::detail::it_value_t<InputIterator1>;
+  using OutputValueType = thrust::detail::it_value_t<OutputIterator2>;
 
   if (keys_first != keys_last)
   {
