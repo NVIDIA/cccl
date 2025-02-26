@@ -2,10 +2,26 @@ name: Build all RAPIDS repositories
 
 on:
   workflow_dispatch:
+    inputs:
+      override_cccl_tag:
+        description: "If set, override the tag used when pulling the CCCL repository into RAPIDS."
+        required: false
+        default: ""
+        type: string
+      override_cccl_version:
+        description: "If set, override the version used by rapids-cmake to patch CCCL."
+        required: false
+        default: ""
+        type: string
+      enable_slack_alerts:
+        description: "If true, a message will be posted to the CCCL GHA CI Alert channel if the workflow fails."
+        required: false
+        default: false
+        type: boolean
   workflow_call:
     inputs:
       override_cccl_tag:
-        description: "If set, override the tag used for the CCCL repository."
+        description: "If set, override the tag used when pulling the CCCL repository into RAPIDS."
         required: false
         default: ""
         type: string
