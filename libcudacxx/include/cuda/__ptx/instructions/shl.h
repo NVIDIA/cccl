@@ -1,3 +1,4 @@
+// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
 // Part of libcu++, the C++ Standard Library for your entire system,
@@ -8,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD_MDSPAN
-#define _CUDA_STD_MDSPAN
+#ifndef _CUDA_PTX_SHL_H_
+#define _CUDA_PTX_SHL_H_
 
 #include <cuda/std/detail/__config>
 
@@ -21,18 +22,16 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__mdspan/aligned_accessor.h>
-#include <cuda/std/__mdspan/default_accessor.h>
-#include <cuda/std/__mdspan/dynamic_extent.h>
-#include <cuda/std/__mdspan/extents.h>
-#include <cuda/std/__mdspan/full_extent_t.h>
-#include <cuda/std/__mdspan/layout_left.h>
-#include <cuda/std/__mdspan/layout_right.h>
-#include <cuda/std/__mdspan/layout_stride.h>
-#include <cuda/std/__mdspan/macros.h>
-#include <cuda/std/__mdspan/mdspan.h>
-#include <cuda/std/__mdspan/static_array.h>
-#include <cuda/std/__mdspan/submdspan.h>
-#include <cuda/std/version>
+#include <cuda/__ptx/ptx_dot_variants.h>
+#include <cuda/__ptx/ptx_helper_functions.h>
+#include <cuda/std/cstdint>
 
-#endif // _CUDA_STD_MDSPAN
+#include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends
+
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
+
+#include <cuda/__ptx/instructions/generated/shl.h>
+
+_LIBCUDACXX_END_NAMESPACE_CUDA_PTX
+
+#endif // _CUDA_PTX_SHL_H_

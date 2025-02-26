@@ -1,15 +1,16 @@
+// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
 // Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD_MDSPAN
-#define _CUDA_STD_MDSPAN
+#ifndef _LIBCUDACXX___MEMORY_IS_SUFFICIENTLY_ALIGNED_H
+#define _LIBCUDACXX___MEMORY_IS_SUFFICIENTLY_ALIGNED_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,18 +22,18 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__mdspan/aligned_accessor.h>
-#include <cuda/std/__mdspan/default_accessor.h>
-#include <cuda/std/__mdspan/dynamic_extent.h>
-#include <cuda/std/__mdspan/extents.h>
-#include <cuda/std/__mdspan/full_extent_t.h>
-#include <cuda/std/__mdspan/layout_left.h>
-#include <cuda/std/__mdspan/layout_right.h>
-#include <cuda/std/__mdspan/layout_stride.h>
-#include <cuda/std/__mdspan/macros.h>
-#include <cuda/std/__mdspan/mdspan.h>
-#include <cuda/std/__mdspan/static_array.h>
-#include <cuda/std/__mdspan/submdspan.h>
-#include <cuda/std/version>
+#include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/cstddef> // size_t
+#include <cuda/std/cstdint> // uintptr_t
 
-#endif // _CUDA_STD_MDSPAN
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
+
+template <size_t _ByteAlignment, class _ElementType>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool is_sufficiently_aligned(_ElementType* __ptr) noexcept
+{
+  return _CUDA_VSTD::bit_cast<uintptr_t>(__ptr) % _ByteAlignment == 0;
+}
+
+_LIBCUDACXX_END_NAMESPACE_STD
+
+#endif // _LIBCUDACXX___MEMORY_IS_SUFFICIENTLY_ALIGNED_H
