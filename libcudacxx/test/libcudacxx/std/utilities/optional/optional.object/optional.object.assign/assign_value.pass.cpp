@@ -340,9 +340,8 @@ int main(int, char**)
 #endif // !TEST_HAS_NO_EXCEPTIONS
 
 #if !defined(TEST_COMPILER_GCC) || __GNUC__ > 6
-#  if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
   static_assert(pr38638(3) == 5, "");
-#  endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
 #endif // !defined(TEST_COMPILER_GCC) || __GNUC__ > 6
 
   return 0;
