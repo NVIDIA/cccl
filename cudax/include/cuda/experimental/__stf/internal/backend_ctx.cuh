@@ -554,11 +554,8 @@ protected:
         reserved::dot::instance().is_timing());
 
       // We generate symbols if we may use them
-#ifdef CUDASTF_DEBUG
-      generate_event_symbols = true;
-#else
       generate_event_symbols = dot->is_tracing_prereqs();
-#endif
+
       // Record it in the list of all traced contexts
       reserved::dot::instance().per_ctx.push_back(dot);
     }
