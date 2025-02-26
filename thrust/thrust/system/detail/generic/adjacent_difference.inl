@@ -44,7 +44,7 @@ template <typename DerivedPolicy, typename InputIterator, typename OutputIterato
 _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
   thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result)
 {
-  using InputType = typename thrust::iterator_traits<InputIterator>::value_type;
+  using InputType = thrust::detail::it_value_t<InputIterator>;
   thrust::minus<InputType> binary_op;
 
   return thrust::adjacent_difference(exec, first, last, result, binary_op);
@@ -58,7 +58,7 @@ _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
   OutputIterator result,
   BinaryFunction binary_op)
 {
-  using InputType = typename thrust::iterator_traits<InputIterator>::value_type;
+  using InputType = thrust::detail::it_value_t<InputIterator>;
 
   if (first == last)
   {

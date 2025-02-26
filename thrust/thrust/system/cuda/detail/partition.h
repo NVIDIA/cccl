@@ -106,10 +106,10 @@ struct DispatchPartitionIf
                                             equality_op_t{},
                                             num_items,
                                             stream);
-    CUDA_CUB_RET_IF_FAIL(status);
+    _CUDA_CUB_RET_IF_FAIL(status);
 
     status = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
-    CUDA_CUB_RET_IF_FAIL(status);
+    _CUDA_CUB_RET_IF_FAIL(status);
 
     // Return if we're only querying temporary storage requirements
     if (d_temp_storage == nullptr)
@@ -146,11 +146,11 @@ struct DispatchPartitionIf
                                             equality_op_t{},
                                             num_items,
                                             stream);
-    CUDA_CUB_RET_IF_FAIL(status);
+    _CUDA_CUB_RET_IF_FAIL(status);
 
     // Get number of selected items
     status = cuda_cub::synchronize(policy);
-    CUDA_CUB_RET_IF_FAIL(status);
+    _CUDA_CUB_RET_IF_FAIL(status);
     num_selected = static_cast<std::size_t>(get_value(policy, d_num_selected_out));
 
     return status;
@@ -166,7 +166,7 @@ THRUST_RUNTIME_FUNCTION std::size_t partition(
   OutputIt output,
   Predicate predicate)
 {
-  using size_type = typename iterator_traits<InputIt>::difference_type;
+  using size_type = thrust::detail::it_difference_t<InputIt>;
 
   size_type num_items = thrust::distance(first, last);
   std::size_t num_selected{};
@@ -241,7 +241,7 @@ THRUST_RUNTIME_FUNCTION InputIt inplace_partition(
   }
 
   // Element type of the input iterator
-  using value_t         = typename iterator_traits<InputIt>::value_type;
+  using value_t         = thrust::detail::it_value_t<InputIt>;
   std::size_t num_items = static_cast<std::size_t>(thrust::distance(first, last));
 
   // Allocate temporary storage, which will serve as the input to the partition

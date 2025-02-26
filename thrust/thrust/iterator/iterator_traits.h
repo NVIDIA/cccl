@@ -45,68 +45,103 @@
 #include <thrust/iterator/iterator_categories.h>
 
 #include <cuda/std/__type_traits/void_t.h>
-
-#if _CCCL_COMPILER(NVRTC)
-#  include <cuda/std/iterator>
-#else // _CCCL_COMPILER(NVRTC)
-#  include <iterator>
-#endif // _CCCL_COMPILER(NVRTC)
+#include <cuda/std/iterator>
 
 THRUST_NAMESPACE_BEGIN
 
+namespace detail
+{
+// the following iterator helpers are not named it_value_t etc, like the C++20 facilities, because they are defined in
+// terms of C++17 iterator_traits and not the new C++20 indirectly_readable trait etc. This allows them to detect nested
+// value_type, difference_type and reference aliases, which the new C+20 traits do not consider (they only consider
+// specializations of iterator_traits). Also, a value_type of void remains supported (needed by some output iterators).
+
+template <typename It>
+using it_value_t = typename ::cuda::std::iterator_traits<It>::value_type;
+
+template <typename It>
+using it_reference_t = typename ::cuda::std::iterator_traits<It>::reference;
+
+template <typename It>
+using it_difference_t = typename ::cuda::std::iterator_traits<It>::difference_type;
+
+template <typename It>
+using it_pointer_t = typename ::cuda::std::iterator_traits<It>::pointer;
+
+// use this whenever you need to lazily evaluate a trait. E.g., as an alternative in replace_if_use_default.
+template <template <typename...> typename Trait, typename... Args>
+struct lazy_trait
+{
+  using type = Trait<Args...>;
+};
+} // namespace detail
+
 //! \p iterator_traits is a type trait class that provides a uniform interface for querying the properties of iterators
-//! at compile-time.
+//! at compile-time. You can specialize cuda::std::iterator_traits for your own iterator types if needed.
+//! deprecated [Since 3.0]
 template <typename T>
-struct iterator_traits
-    :
+using iterator_traits CCCL_DEPRECATED_BECAUSE("Use cuda::std::iterator_traits instead") =
+// FIXME(bgruber): switching to ::cuda::std::iterator_traits<T> breaks some tests, e.g. cub.test.device_merge_sort.lid_1
 #if _CCCL_COMPILER(NVRTC)
-    ::cuda
+  ::cuda
 #endif // _CCCL_COMPILER(NVRTC)
-    ::std::iterator_traits<T>
-{};
+  ::std::iterator_traits<T>;
+
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 
 // value
 
+//! deprecated [Since 3.0]
 template <typename Iterator>
-struct iterator_value
+struct CCCL_DEPRECATED_BECAUSE("Use cuda::std::it_value_t instead") iterator_value
 {
   using type = typename iterator_traits<Iterator>::value_type;
 };
 
+//! deprecated [Since 3.0]
 template <typename Iterator>
-using iterator_value_t = typename iterator_value<Iterator>::type;
+using iterator_value_t CCCL_DEPRECATED_BECAUSE("Use cuda::std::it_value_t instead") = iterator_value<Iterator>;
 
 // pointer
 
+//! deprecated [Since 3.0]
 template <typename Iterator>
-struct iterator_pointer
+struct CCCL_DEPRECATED iterator_pointer
 {
   using type = typename iterator_traits<Iterator>::pointer;
 };
+
+//! deprecated [Since 3.0]
 template <typename Iterator>
-using iterator_pointer_t = typename iterator_pointer<Iterator>::type;
+using iterator_pointer_t CCCL_DEPRECATED = typename iterator_pointer<Iterator>::type;
 
 // reference
 
+//! deprecated [Since 3.0]
 template <typename Iterator>
-struct iterator_reference
+struct CCCL_DEPRECATED_BECAUSE("Use cuda::std::it_reference_t instead") iterator_reference
 {
   using type = typename iterator_traits<Iterator>::reference;
 };
 
+//! deprecated [Since 3.0]
 template <typename Iterator>
-using iterator_reference_t = typename iterator_reference<Iterator>::type;
+using iterator_reference_t
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::it_reference_t instead") = typename iterator_reference<Iterator>::type;
 
 // difference
 
+//! deprecated [Since 3.0]
 template <typename Iterator>
-struct iterator_difference
+struct CCCL_DEPRECATED_BECAUSE("Use cuda::std::it_difference_t instead") iterator_difference
 {
   using type = typename iterator_traits<Iterator>::difference_type;
 };
 
+//! deprecated [Since 3.0]
 template <typename Iterator>
-using iterator_difference_t = typename iterator_difference<Iterator>::type;
+using iterator_difference_t
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::it_difference_t instead") = typename iterator_difference<Iterator>::type;
 
 // traversal
 
@@ -131,6 +166,8 @@ struct iterator_system_impl<Iterator, ::cuda::std::void_t<typename iterator_trai
     : iterator_category_to_system<typename iterator_traits<Iterator>::iterator_category>
 {};
 } // namespace detail
+
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 template <typename Iterator>
 struct iterator_system : detail::iterator_system_impl<Iterator>

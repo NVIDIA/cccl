@@ -39,7 +39,7 @@ THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
 template <typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE iterator_value_t<Pointer> get_value(execution_policy<DerivedPolicy>& exec, Pointer ptr)
+_CCCL_HOST_DEVICE thrust::detail::it_value_t<Pointer> get_value(execution_policy<DerivedPolicy>& exec, Pointer ptr)
 {
   // Because of https://docs.nvidia.com/cuda/cuda-c-programming-guide/#cuda-arch point 2., if a call from a __host__
   // __device__ function leads to the template instantiation of a __global__ function, then this instantiation needs to
@@ -50,7 +50,7 @@ _CCCL_HOST_DEVICE iterator_value_t<Pointer> get_value(execution_policy<DerivedPo
     _CCCL_HOST auto operator()(execution_policy<DerivedPolicy>& exec, Pointer ptr)
     {
       // implemented with assign_value, which requires a type with a default constructor
-      iterator_value_t<Pointer> result;
+      thrust::detail::it_value_t<Pointer> result;
       host_system_tag host_tag;
       cross_system<host_system_tag, DerivedPolicy> systems(host_tag, exec);
       assign_value(systems, &result, ptr);

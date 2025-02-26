@@ -849,6 +849,6 @@ struct policy_hub
 template <typename KeyInputIteratorT, typename ValueInputIteratorT = unsigned long long int*>
 using DeviceUniqueByKeyPolicy CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and it will "
                                                       "be removed.") =
-  detail::unique_by_key::policy_hub<detail::value_t<KeyInputIteratorT>, detail::value_t<ValueInputIteratorT>>;
+  detail::unique_by_key::policy_hub<detail::it_value_t<KeyInputIteratorT>, detail::it_value_t<ValueInputIteratorT>>;
 
 CUB_NAMESPACE_END

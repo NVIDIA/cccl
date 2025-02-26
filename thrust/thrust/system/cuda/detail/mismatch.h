@@ -69,7 +69,7 @@ template <class ValueType, class InputIt1, class InputIt2, class BinaryOp>
 struct transform_pair_of_input_iterators_t
 {
   using self_t            = transform_pair_of_input_iterators_t;
-  using difference_type   = typename iterator_traits<InputIt1>::difference_type;
+  using difference_type   = thrust::detail::it_difference_t<InputIt1>;
   using value_type        = ValueType;
   using pointer           = void;
   using reference         = value_type;
@@ -208,7 +208,7 @@ template <class Derived, class InputIt1, class InputIt2>
 pair<InputIt1, InputIt2> _CCCL_HOST_DEVICE
 mismatch(execution_policy<Derived>& policy, InputIt1 first1, InputIt1 last1, InputIt2 first2)
 {
-  using InputType1 = typename thrust::iterator_value<InputIt1>::type;
+  using InputType1 = thrust::detail::it_value_t<InputIt1>;
   return cuda_cub::mismatch(policy, first1, last1, first2, equal_to<InputType1>());
 }
 
