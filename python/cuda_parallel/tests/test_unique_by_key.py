@@ -157,12 +157,10 @@ def test_unique_by_key(dtype):
         h_out_keys = np.resize(d_out_keys.copy_to_host(), num_selected)
         h_out_items = np.resize(d_out_items.copy_to_host(), num_selected)
 
-        expected_out_keys, expected_out_items = unique_by_key_host(
-            h_in_keys, h_in_items
-        )
+        expected_keys, expected_items = unique_by_key_host(h_in_keys, h_in_items)
 
-        np.testing.assert_array_equal(h_out_keys, expected_out_keys)
-        np.testing.assert_array_equal(h_out_items, expected_out_items)
+        np.testing.assert_array_equal(h_out_keys, expected_keys)
+        np.testing.assert_array_equal(h_out_items, expected_items)
 
 
 @pytest.mark.parametrize(
@@ -207,12 +205,10 @@ def test_unique_by_key_iterators(dtype):
         h_out_keys = np.resize(d_out_keys.copy_to_host(), num_selected)
         h_out_items = np.resize(d_out_items.copy_to_host(), num_selected)
 
-        expected_out_keys, expected_out_items = unique_by_key_host(
-            h_in_keys, h_in_items
-        )
+        expected_keys, expected_items = unique_by_key_host(h_in_keys, h_in_items)
 
-        np.testing.assert_array_equal(h_out_keys, expected_out_keys)
-        np.testing.assert_array_equal(h_out_items, expected_out_items)
+        np.testing.assert_array_equal(h_out_keys, expected_keys)
+        np.testing.assert_array_equal(h_out_items, expected_items)
 
 
 def test_unique_by_key_complex():
@@ -251,12 +247,12 @@ def test_unique_by_key_complex():
     h_out_keys = np.resize(d_out_keys.copy_to_host(), num_selected)
     h_out_items = np.resize(d_out_items.copy_to_host(), num_selected)
 
-    expected_out_keys, expected_out_items = unique_by_key_host(
+    expected_keys, expected_items = unique_by_key_host(
         h_in_keys, h_in_items, compare_complex
     )
 
-    np.testing.assert_array_equal(h_out_keys, expected_out_keys)
-    np.testing.assert_array_equal(h_out_items, expected_out_items)
+    np.testing.assert_array_equal(h_out_keys, expected_keys)
+    np.testing.assert_array_equal(h_out_items, expected_items)
 
 
 @pytest.mark.xfail(
@@ -318,12 +314,12 @@ def test_unique_by_key_struct_types():
     h_out_keys = np.resize(d_out_keys.copy_to_host(), num_selected)
     h_out_items = np.resize(d_out_items.copy_to_host(), num_selected)
 
-    expected_out_keys, expected_out_items = unique_by_key_host(
+    expected_keys, expected_items = unique_by_key_host(
         h_in_keys, h_in_items, struct_compare_op
     )
 
-    np.testing.assert_array_equal(h_out_keys, expected_out_keys)
-    np.testing.assert_array_equal(h_out_items, expected_out_items)
+    np.testing.assert_array_equal(h_out_keys, expected_keys)
+    np.testing.assert_array_equal(h_out_items, expected_items)
 
 
 def test_unique_by_key_with_stream(cuda_stream):
@@ -363,7 +359,7 @@ def test_unique_by_key_with_stream(cuda_stream):
     h_out_keys = np.resize(h_out_keys, num_selected)
     h_out_items = np.resize(h_out_items, num_selected)
 
-    expected_out_keys, expected_out_items = unique_by_key_host(h_in_keys, h_in_items)
+    expected_keys, expected_items = unique_by_key_host(h_in_keys, h_in_items)
 
-    np.testing.assert_array_equal(h_out_keys, expected_out_keys)
-    np.testing.assert_array_equal(h_out_items, expected_out_items)
+    np.testing.assert_array_equal(h_out_keys, expected_keys)
+    np.testing.assert_array_equal(h_out_items, expected_items)
