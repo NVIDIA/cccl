@@ -1,9 +1,9 @@
 //===----------------------------------------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is dual licensed under the MIT and the University of Illinois Open
-// Source Licenses. See LICENSE.TXT for details.
+// Part of the libcu++ Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -18,30 +18,33 @@ template <typename T>
 __host__ __device__ constexpr bool test()
 {
   using nl             = cuda::std::numeric_limits<T>;
-  constexpr auto max_v = nl::max();
-  static_assert(cuda::bitfield_insert(T{0}, 0) == 1);
-  static_assert(cuda::bitfield_insert(T{0}, 1) == 0b10);
-  static_assert(cuda::bitfield_insert(T{0b10}, 0) == 0b11);
-  static_assert(cuda::bitfield_insert(max_v, 0) == max_v);
-  static_assert(cuda::bitfield_insert(max_v, 2) == max_v);
+  constexpr T all_ones = ~T{0};
+  unused(all_ones);
+  assert(cuda::bitfield_insert(T{0}, 0) == 1);
+  assert(cuda::bitfield_insert(T{0}, 1) == 0b10);
+  assert(cuda::bitfield_insert(T{0b10}, 0) == 0b11);
+  assert(cuda::bitfield_insert(all_ones, 0) == all_ones);
+  assert(cuda::bitfield_insert(all_ones, 2) == all_ones);
 
-  static_assert(cuda::bitfield_insert(T{0}, 0, 2) == 0b11);
-  static_assert(cuda::bitfield_insert(T{0}, 3, 2) == 0b11000);
-  static_assert(cuda::bitfield_insert(T{0b10100000}, 3, 2) == 0b10111000);
-  static_assert(cuda::bitfield_insert(T{0}, nl::digits - 1, 1) == (T{1} << (nl::digits - 1u)));
+  assert(cuda::bitfield_insert(T{0}, 0, 2) == 0b11);
+  assert(cuda::bitfield_insert(T{0}, 3, 2) == 0b11000);
+  assert(cuda::bitfield_insert(T{0b10100000}, 3, 2) == 0b10111000);
+  assert(cuda::bitfield_insert(T{0}, nl::digits - 1, 1) == (T{1} << (nl::digits - 1u)));
+  assert(cuda::bitfield_insert(T{0b10100000}, 0, nl::digits) == all_ones);
 
-  static_assert(cuda::bitfield_extract(T{0}, 3, 4) == 0);
-  static_assert(cuda::bitfield_extract(T{0b1011}, 0) == 0b001);
-  static_assert(cuda::bitfield_extract(T{0b1011}, 1) == 0b010);
-  static_assert(cuda::bitfield_extract(T{0b1011}, 2) == 0);
-  static_assert(cuda::bitfield_extract(max_v, 0, 4) == 0b1111);
-  static_assert(cuda::bitfield_extract(max_v, 2, 4) == 0b111100);
+  assert(cuda::bitfield_extract(T{0}, 3, 4) == 0);
+  assert(cuda::bitfield_extract(T{0b1011}, 0) == 0b001);
+  assert(cuda::bitfield_extract(T{0b1011}, 1) == 0b010);
+  assert(cuda::bitfield_extract(T{0b1011}, 2) == 0);
+  assert(cuda::bitfield_extract(all_ones, 0, 4) == 0b1111);
+  assert(cuda::bitfield_extract(all_ones, 2, 4) == 0b111100);
 
-  static_assert(cuda::bitfield_extract(T{0b1010010}, 0, 2) == 0b10);
-  static_assert(cuda::bitfield_extract(T{0b10101100}, 3, 2) == 0b01000);
-  static_assert(cuda::bitfield_extract(T{0b10100000}, 3, 3) == 0b00100000);
+  assert(cuda::bitfield_extract(T{0b1010010}, 0, 2) == 0b10);
+  assert(cuda::bitfield_extract(T{0b10101100}, 3, 2) == 0b01000);
+  assert(cuda::bitfield_extract(T{0b10100000}, 3, 3) == 0b00100000);
 
-  static_assert(cuda::bitfield_extract(T{max_v}, nl::digits - 1, 1) == (T{1} << (nl::digits - 1u)));
+  assert(cuda::bitfield_extract(T{all_ones}, nl::digits - 1, 1) == (T{1} << (nl::digits - 1u)));
+  assert(cuda::bitfield_extract(T{0b10100000}, 0, nl::digits) == T{0b10100000});
   return true;
 }
 
