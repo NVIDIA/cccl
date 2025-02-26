@@ -39,6 +39,52 @@ struct Y2
   }
 };
 
+struct B
+{
+  int val_;
+
+  __host__ __device__ constexpr bool operator==(const int& other) const noexcept
+  {
+    return other == val_;
+  }
+};
+class D : public B
+{};
+
+#ifdef CCCL_ENABLE_OPTIONAL_REF
+template <class T>
+struct ConvertibleToReference
+{
+  T val_;
+
+  __host__ __device__ constexpr operator const T&() const noexcept
+  {
+    return val_;
+  }
+
+  __host__ __device__ friend constexpr bool operator==(const int& lhs, const ConvertibleToReference& rhs) noexcept
+  {
+    return lhs == rhs.val_;
+  }
+};
+
+template <class T>
+struct ConvertibleToValue
+{
+  T val_;
+
+  __host__ __device__ constexpr operator T() const noexcept
+  {
+    return val_;
+  }
+
+  __host__ __device__ friend constexpr bool operator==(const int& lhs, const ConvertibleToValue& rhs) noexcept
+  {
+    return lhs == rhs.val_;
+  }
+};
+#endif // CCCL_ENABLE_OPTIONAL_REF
+
 template <class T>
 struct AssignableFrom
 {
@@ -86,7 +132,7 @@ __host__ __device__ void test_with_test_type()
   T::reset();
   { // non-empty to empty
     T::reset_constructors();
-    optional<T> opt;
+    optional<T> opt{};
     const optional<int> other(42);
     opt = other;
     assert(T::alive() == 1);
@@ -130,7 +176,7 @@ __host__ __device__ void test_with_test_type()
   }
   assert(T::alive() == 0);
   { // empty to empty
-    optional<T> opt;
+    optional<T> opt{};
     const optional<int> other;
     T::reset_constructors();
     opt = other;
@@ -197,6 +243,80 @@ __host__ __device__ __noinline__ void test_ambiguous_assign()
   }
 }
 
+template <class T, class U>
+__host__ __device__ constexpr bool test()
+{
+  { // empty assigned to empty
+    optional<T> opt{};
+    const optional<U> input{};
+    opt = input;
+    assert(!input.has_value());
+    assert(!opt.has_value());
+  }
+  { // non-empty assigned to empty
+    cuda::std::remove_reference_t<U> val{42};
+    optional<T> opt{};
+    const optional<U> input{val};
+    opt = input;
+    assert(input.has_value());
+    assert(opt.has_value());
+    assert(*opt == 42);
+    if constexpr (cuda::std::is_reference_v<T>)
+    {
+      // optional<U> does not necessarily hold a reference so we cannot use addressof(val)
+      assert(cuda::std::addressof(static_cast<T>(*input)) == opt.operator->());
+    }
+  }
+  { // empty assigned to non-empty
+    cuda::std::remove_reference_t<T> val{42};
+    optional<T> opt{val};
+    const optional<U> input{};
+    opt = input;
+    assert(!input.has_value());
+    assert(!opt.has_value());
+  }
+  { // non-empty assigned to non-empty
+    cuda::std::remove_reference_t<U> val{42};
+    cuda::std::remove_reference_t<T> other_val{1337};
+    optional<T> opt{other_val};
+    const optional<U> input{val};
+    opt = input;
+    assert(input.has_value());
+    assert(opt.has_value());
+    assert(*opt == 42);
+    if constexpr (cuda::std::is_reference_v<T>)
+    {
+      // optional<U> does not necessarily hold a reference so we cannot use addressof(val)
+      assert(cuda::std::addressof(static_cast<T>(*input)) == opt.operator->());
+    }
+  }
+
+  return true;
+}
+
+__host__ __device__ constexpr bool test()
+{
+  test<int, short>();
+
+#ifdef CCCL_ENABLE_OPTIONAL_REF
+  test<B&, D&>();
+
+  test<const int&, ConvertibleToReference<int>&>();
+  test<const int&, const ConvertibleToReference<int>&>();
+
+  test<int, int&>();
+  test<int, const int&>();
+
+  test<int, ConvertibleToReference<int>&>();
+  test<int, const ConvertibleToReference<int>&>();
+
+  test<int, ConvertibleToValue<int>&>();
+  test<int, const ConvertibleToValue<int>&>();
+#endif // CCCL_ENABLE_OPTIONAL_REF
+
+  return true;
+}
+
 #ifndef TEST_HAS_NO_EXCEPTIONS
 struct X
 {
@@ -214,7 +334,7 @@ struct X
 
 void throws_exception()
 {
-  optional<X> opt;
+  optional<X> opt{};
   optional<int> opt2(42);
   assert(static_cast<bool>(opt2) == true);
   try
@@ -233,42 +353,13 @@ void throws_exception()
 
 int main(int, char**)
 {
+  test();
+#if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
+  static_assert(test());
+#endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
+
   test_with_test_type();
   test_ambiguous_assign();
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-  {
-    optional<int> opt;
-    constexpr optional<short> opt2;
-    opt = opt2;
-    static_assert(static_cast<bool>(opt2) == false, "");
-    assert(static_cast<bool>(opt) == static_cast<bool>(opt2));
-  }
-  {
-    optional<int> opt;
-    constexpr optional<short> opt2(short{2});
-    opt = opt2;
-    static_assert(static_cast<bool>(opt2) == true, "");
-    static_assert(*opt2 == 2, "");
-    assert(static_cast<bool>(opt) == static_cast<bool>(opt2));
-    assert(*opt == *opt2);
-  }
-  {
-    optional<int> opt(3);
-    constexpr optional<short> opt2;
-    opt = opt2;
-    static_assert(static_cast<bool>(opt2) == false, "");
-    assert(static_cast<bool>(opt) == static_cast<bool>(opt2));
-  }
-  {
-    optional<int> opt(3);
-    constexpr optional<short> opt2(short{2});
-    opt = opt2;
-    static_assert(static_cast<bool>(opt2) == true, "");
-    static_assert(*opt2 == 2, "");
-    assert(static_cast<bool>(opt) == static_cast<bool>(opt2));
-    assert(*opt == *opt2);
-  }
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 #ifndef TEST_HAS_NO_EXCEPTIONS
   NV_IF_TARGET(NV_IS_HOST, (throws_exception();))
 #endif // !TEST_HAS_NO_EXCEPTIONS

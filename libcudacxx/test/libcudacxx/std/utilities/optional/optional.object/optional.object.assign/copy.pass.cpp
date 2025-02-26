@@ -20,22 +20,6 @@
 
 using cuda::std::optional;
 
-template <class Tp>
-__host__ __device__ constexpr bool assign_empty(optional<Tp>&& lhs)
-{
-  const optional<Tp> rhs;
-  lhs = rhs;
-  return !lhs.has_value() && !rhs.has_value();
-}
-
-template <class Tp>
-__host__ __device__ constexpr bool assign_value(optional<Tp>&& lhs)
-{
-  const optional<Tp> rhs(101);
-  lhs = rhs;
-  return lhs.has_value() && rhs.has_value() && *lhs == *rhs;
-}
-
 #ifndef TEST_HAS_NO_EXCEPTIONS
 struct X
 {
@@ -54,7 +38,7 @@ struct X
 
 void test_exceptions()
 {
-  optional<X> opt;
+  optional<X> opt{};
   optional<X> opt2(X{});
   assert(static_cast<bool>(opt2) == true);
   try
@@ -71,46 +55,86 @@ void test_exceptions()
 }
 #endif // !TEST_HAS_NO_EXCEPTIONS
 
+template <class T>
+__host__ __device__ constexpr void test()
+{
+  cuda::std::remove_reference_t<T> val{42};
+  cuda::std::remove_reference_t<T> other_val{1337};
+
+  static_assert(cuda::std::is_nothrow_copy_assignable<optional<T>>::value, "");
+  // empty copy assigned to empty
+  {
+    optional<T> opt{};
+    const optional<T> input{};
+    opt = input;
+    assert(!opt.has_value());
+    assert(!input.has_value());
+  }
+  // empty copy assigned to non-empty
+  {
+    optional<T> opt{val};
+    const optional<T> input{};
+    opt = input;
+    assert(!opt.has_value());
+    assert(!input.has_value());
+  }
+  // non-empty copy assigned to empty
+  {
+    optional<T> opt{};
+    const optional<T> input{val};
+    opt = input;
+    assert(opt.has_value());
+    assert(input.has_value());
+    assert(*opt == val);
+    if constexpr (cuda::std::is_reference_v<T>)
+    {
+      assert(input.operator->() == opt.operator->());
+    }
+  }
+  // non-empty copy assigned to empty
+  {
+    optional<T> opt{other_val};
+    const optional<T> input{val};
+    opt = input;
+    assert(opt.has_value());
+    assert(input.has_value());
+    assert(*opt == val);
+    if constexpr (cuda::std::is_reference_v<T>)
+    {
+      assert(input.operator->() == opt.operator->());
+    }
+  }
+}
+
+__host__ __device__ constexpr bool test()
+{
+  test<int>();
+#ifdef CCCL_ENABLE_OPTIONAL_REF
+  test<int&>();
+#endif // CCCL_ENABLE_OPTIONAL_REF
+
+  test<TrivialTestTypes::TestType>();
+
+  return true;
+}
+
 int main(int, char**)
 {
-  {
-    using O = optional<int>;
-#if !defined(TEST_COMPILER_GCC) || __GNUC__ > 6
-#  if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-    static_assert(assign_empty(O{42}), "");
-    static_assert(assign_value(O{42}), "");
-#  endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-#endif // !defined(TEST_COMPILER_GCC) || __GNUC__ > 6
-    assert(assign_empty(O{42}));
-    assert(assign_value(O{42}));
-  }
-  {
-    using O = optional<TrivialTestTypes::TestType>;
-#if !defined(TEST_COMPILER_GCC) || __GNUC__ > 6
-#  if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-    static_assert(assign_empty(O{42}), "");
-    static_assert(assign_value(O{42}), "");
-#  endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-#endif // !defined(TEST_COMPILER_GCC) || __GNUC__ > 6
-    assert(assign_empty(O{42}));
-    assert(assign_value(O{42}));
-  }
-  {
-    using O = optional<TestTypes::TestType>;
-    assert(assign_empty(O{42}));
-    assert(assign_value(O{42}));
-  }
+  test();
+  static_assert(test(), "");
+
   {
     using T = TestTypes::TestType;
     T::reset();
     optional<T> opt(3);
-    const optional<T> opt2;
+    const optional<T> opt2{};
     assert(T::alive() == 1);
     opt = opt2;
     assert(T::alive() == 0);
     assert(!opt2.has_value());
     assert(!opt.has_value());
   }
+
 #ifndef TEST_HAS_NO_EXCEPTIONS
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
 #endif // !TEST_HAS_NO_EXCEPTIONS
