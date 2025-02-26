@@ -179,6 +179,21 @@ def unique_by_key(
     d_out_num_selected: DeviceArrayLike,
     op: Callable,
 ):
+    """Implements a device-wide unique by key operation using ``d_in_keys`` and the comparison operator ``op``. Only the first key and its value from each run is selected and the total number of items selected is also reported.
+
+    Example:
+        Below, ``unique_by_key`` is used to populate the arrays of output keys and items with the first key and its corresponding item from each sequence of equal keys. It also outputs the number of items selected.
+
+        .. literalinclude:: ../../python/cuda_parallel/tests/test_unique_by_key_api.py
+          :language: python
+          :dedent:
+          :start-after: example-begin unique-by-key
+          :end-before: example-end unique-by-key
+
+    Returns:
+        A callable object that can be used to perform unique by key
+    """
+
     return _UniqueByKey(
         d_in_keys, d_in_items, d_out_keys, d_out_items, d_out_num_selected, op
     )
