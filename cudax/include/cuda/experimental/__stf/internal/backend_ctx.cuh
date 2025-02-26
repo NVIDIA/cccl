@@ -738,11 +738,11 @@ protected:
       transfers;
     bool is_recording_stats = false;
     // Keep track of the number of tasks generated in the context
-    ::std::atomic<size_t> total_task_cnt;
+    ::std::atomic<size_t> total_task_cnt = 0;
 
 #ifndef NDEBUG
     // Keep track of the number of completed tasks in that context
-    ::std::atomic<size_t> total_finished_task_cnt;
+    ::std::atomic<size_t> total_finished_task_cnt = 0;
 #endif
 
     // This data structure contains all resources useful for an efficient

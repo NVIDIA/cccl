@@ -716,7 +716,8 @@ public:
       return ::std::pair(size_t(minGridSize), size_t(blockSize));
     }();
 
-    const auto block_size = conf.first, min_blocks = conf.second;
+    const auto block_size = conf.first;
+    const auto min_blocks = conf.second;
 
     // max_blocks is computed so we have one thread per element processed
     const auto max_blocks = (n + block_size - 1) / block_size;
