@@ -9,36 +9,38 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/experimental/stf.cuh>
-#include <thread>
+
 #include <functional>
+#include <thread>
 
 using namespace cuda::experimental::stf;
 
-void worker(stream_ctx ctx, int id, logical_data<slice<int>> lAi, frozen_logical_data<slice<int>> fB, ::std::mutex &mutex)
+void worker(
+  stream_ctx ctx, int id, logical_data<slice<int>> lAi, frozen_logical_data<slice<int>> fB, ::std::mutex& mutex)
 {
-    cudaStream_t stream = ctx.pick_stream();
+  cudaStream_t stream = ctx.pick_stream();
 
-    auto gctx = graph_ctx(stream);
+  auto gctx = graph_ctx(stream);
 
-    mutex.lock();
-    auto fAi = ctx.freeze(lAi, access_mode::rw, data_place::current_device());
-    auto dAi = fAi.get(data_place::current_device(), stream);
+  mutex.lock();
+  auto fAi = ctx.freeze(lAi, access_mode::rw, data_place::current_device());
+  auto dAi = fAi.get(data_place::current_device(), stream);
 
-    auto dB = fB.get(data_place::current_device(), stream);
-    mutex.unlock();
+  auto dB = fB.get(data_place::current_device(), stream);
+  mutex.unlock();
 
-    auto g_lAi = gctx.logical_data(dAi, data_place::current_device());
-    auto g_lB = gctx.logical_data(dB, data_place::current_device());
+  auto g_lAi = gctx.logical_data(dAi, data_place::current_device());
+  auto g_lB  = gctx.logical_data(dB, data_place::current_device());
 
-    gctx.parallel_for(g_lAi.shape(), g_lAi.rw(), g_lB.read())->*[id]__device__(size_t j, auto ai, auto b) {
-        ai(j) += id + b(j);
-    };
+  gctx.parallel_for(g_lAi.shape(), g_lAi.rw(), g_lB.read())->*[id] __device__(size_t j, auto ai, auto b) {
+    ai(j) += id + b(j);
+  };
 
-    gctx.finalize();
+  gctx.finalize();
 
-    mutex.lock();
-    fAi.unfreeze(stream);
-    mutex.unlock();
+  mutex.lock();
+  fAi.unfreeze(stream);
+  mutex.unlock();
 }
 
 int main()
@@ -56,19 +58,20 @@ int main()
 
   for (int i = 0; i < NTHREADS; i++)
   {
-     A[i].resize(N);
-     for (int j = 0; j < N; j++) {
-         A[i][j] = (i+j);
-     }
+    A[i].resize(N);
+    for (int j = 0; j < N; j++)
+    {
+      A[i][j] = (i + j);
+    }
 
-     lA[i] = ctx.logical_data(A[i].data(), {N}).set_symbol("A_" + ::std::to_string(i));
+    lA[i] = ctx.logical_data(A[i].data(), {N}).set_symbol("A_" + ::std::to_string(i));
   }
 
   ::std::vector<int> B(N);
   logical_data<slice<int>> lB;
   for (int j = 0; j < N; j++)
   {
-     B[j] = (17*j+3);
+    B[j] = (17 * j + 3);
   }
   lB = ctx.logical_data(B.data(), {N}).set_symbol("B");
 
@@ -89,14 +92,12 @@ int main()
   for (int i = 0; i < NTHREADS; ++i)
   {
     ctx.host_launch(lA[i].read())->*[i](auto ai) {
-       for (size_t j = 0; j < N; j++)
-       {
-           EXPECT(ai(j) == (i+j) + i + (17*j+3));
-       }
+      for (size_t j = 0; j < N; j++)
+      {
+        EXPECT(ai(j) == (i + j) + i + (17 * j + 3));
+      }
     };
   }
-
-
 
   ctx.finalize();
 }
