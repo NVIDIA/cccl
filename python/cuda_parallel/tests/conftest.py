@@ -22,27 +22,27 @@ import pytest
 )
 def input_array(request):
     dtype = np.dtype(request.param)
-    n = 1000
+    sample_size = 1000
 
     # Generate random values based on the dtype
     if np.issubdtype(dtype, np.integer):
         is_unsigned = dtype.kind == "u"
         # For integer types, use np.random.randint for random integers
         if is_unsigned:
-            low_inclusive, high_exclusive = 0, 10
+            low_inclusive, high_exclusive = 0, 8
         else:
             low_inclusive, high_exclusive = -5, 6
         array = cp.random.randint(
-            low=low_inclusive, high=high_exclusive, size=n, dtype=dtype
+            low=low_inclusive, high=high_exclusive, size=sample_size, dtype=dtype
         )
     elif np.issubdtype(dtype, np.floating):
         # For floating-point types, use np.random.random and cast to the required dtype
-        array = cp.random.random(n).astype(dtype)
+        array = cp.random.random(sample_size).astype(dtype)
     elif np.issubdtype(dtype, np.complexfloating):
         # For complex types, generate random real and imaginary parts
-        packed = cp.random.random(2 * n)
-        real_part = packed[:n]
-        imag_part = packed[n:]
+        packed = cp.random.random(2 * sample_size)
+        real_part = packed[:sample_size]
+        imag_part = packed[sample_size:]
         array = (real_part + 1j * imag_part).astype(dtype)
 
     return array
