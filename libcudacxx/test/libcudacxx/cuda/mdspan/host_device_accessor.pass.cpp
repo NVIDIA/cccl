@@ -23,10 +23,9 @@ int main(int, char**)
   cuda::managed_mdspan<int, ext_t> m_md{managed_array, ext_t{}};
 #if !defined(__CUDA_ARCH__)
   unused(h_md[0]);
-  unused(m_md[0]);
 #else
   unused(d_md[0]);
-  unused(m_md[0]);
 #endif
+  unused(m_md[0]);
   return 0;
 }

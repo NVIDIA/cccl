@@ -6,6 +6,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+// UNSUPPORTED: nvrtc
+
 #include <cuda/__mdspan/host_device_mdspan.h>
 
 #include "test_macros.h"
@@ -17,8 +19,6 @@ int main(int, char**)
   cuda::device_mdspan<int, ext_t> d_md{array, ext_t{}};
 #if !defined(__CUDA_ARCH__)
   unused(d_md[0]);
-#elif _CCCL_COMPILER(NVRTC)
-  static_assert(false, "unsupported test for nvrtc");
 #endif
   return 0;
 }
