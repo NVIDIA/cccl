@@ -22,7 +22,7 @@
 #endif // no system header
 
 // cudaMallocAsync was introduced in CTK 11.2
-#if !_CCCL_COMPILER(MSVC2017) && _CCCL_CUDACC_AT_LEAST(12, 2)
+#if _CCCL_CUDACC_AT_LEAST(12, 6)
 
 #  if _CCCL_CUDA_COMPILER(CLANG)
 #    include <cuda_runtime.h>
@@ -52,15 +52,23 @@ class pinned_memory_pool : public __memory_pool_base
   {}
 
 public:
-  //! @brief Constructs a \c pinned_memory_pool with the optionally specified initial pool size and release threshold.
+  //! @brief Constructs a \c pinned_memory_pool with the specified NUMA node id and initial pool size and release threshold.
   //! If the pool size grows beyond the release threshold, unused memory held by the pool will be released at the next
   //! synchronization event.
-  //! @throws cuda_error if the CUDA version does not support ``cudaMallocAsync``.
-  //! @param __device_id The device id of the device the stream pool is constructed on.
+  //! @param __numa_id The NUMA node id of the NUMA node the pool is constructed on.
   //! @param __pool_properties Optional, additional properties of the pool to be created.
-  explicit pinned_memory_pool(memory_pool_properties __properties = {})
-      : __memory_pool_base(__memory_location_type::__host, __properties)
-  {}
+  explicit pinned_memory_pool(int __numa_id, memory_pool_properties __properties)
+      : __memory_pool_base(__memory_location_type::__host, __properties, __numa_id)
+  {
+    enable_access_from(devices);
+  }
+
+  //! @brief Constructs a \c pinned_memory_pool on the host with the specified NUMA node id.
+  //! @param __numa_id The NUMA node id of the NUMA node the pool is constructed on.
+  explicit pinned_memory_pool(int __numa_id = 0)
+      : pinned_memory_pool(__numa_id, {})
+  {
+  }
 
   //! @brief Disables construction from a plain `cudaMemPool_t`. We want to ensure clean ownership semantics.
   pinned_memory_pool(::cudaMemPool_t) = delete;

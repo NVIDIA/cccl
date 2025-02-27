@@ -32,7 +32,6 @@ static_assert(cuda::std::is_trivially_move_constructible<pinned_resource>::value
 static_assert(cuda::std::is_trivially_copy_assignable<pinned_resource>::value, "");
 static_assert(cuda::std::is_trivially_move_assignable<pinned_resource>::value, "");
 static_assert(cuda::std::is_trivially_destructible<pinned_resource>::value, "");
-static_assert(!cuda::std::is_empty<pinned_resource>::value, "");
 
 static void ensure_pinned_ptr(void* ptr)
 {
@@ -41,7 +40,9 @@ static void ensure_pinned_ptr(void* ptr)
   cudaError_t status = cudaPointerGetAttributes(&attributes, ptr);
   CHECK(status == cudaSuccess);
   CHECK(attributes.type == cudaMemoryTypeHost);
-  CHECK(attributes.devicePointer != nullptr);
+  // Driver bug fixed in r575
+  // TODO Re-enable one we start testing with r575
+  // CHECK(attributes.devicePointer != nullptr);
 }
 
 TEST_CASE("pinned_memory_resource construction", "[memory_resource]")
@@ -49,13 +50,6 @@ TEST_CASE("pinned_memory_resource construction", "[memory_resource]")
   SECTION("Default construction")
   {
     STATIC_REQUIRE(cuda::std::is_default_constructible_v<pinned_resource>);
-  }
-
-  SECTION("Construct with flag")
-  {
-    pinned_resource defaulted{};
-    pinned_resource with_flag{cudaHostAllocMapped};
-    CHECK(defaulted != with_flag);
   }
 }
 
@@ -221,15 +215,10 @@ TEST_CASE("pinned_memory_resource comparison", "[memory_resource]")
     CHECK(!(first != second));
   }
 
-  { // comparison against a plain pinned_memory_resource with a different pool
-    pinned_resource second{cudaMemAttachHost};
-    CHECK((first != second));
-    CHECK(!(first == second));
-  }
-
   { // comparison against a pinned_memory_resource wrapped inside a resource_ref<device_accessible>
     pinned_resource second{};
-    cuda::mr::resource_ref<cudax::device_accessible> const second_ref{second};
+    cudax::resource_ref<cudax::device_accessible> const second_ref{second};
+
     CHECK((first == second_ref));
     CHECK(!(first != second_ref));
     CHECK((second_ref == first));
@@ -238,7 +227,6 @@ TEST_CASE("pinned_memory_resource comparison", "[memory_resource]")
 
   { // comparison against a pinned_memory_resource wrapped inside a async_resource_ref
     pinned_resource second{};
-    // cuda::mr::async_resource_ref<cudax::device_accessible> second_ref{second};
     cudax::async_resource_ref<cudax::device_accessible> second_ref{second};
 
     CHECK((first == second_ref));
@@ -276,8 +264,10 @@ TEST_CASE("pinned_memory_resource comparison", "[memory_resource]")
   }
 }
 
-TEST_CASE("managed_memory_resource async deallocate", "[memory_resource]")
+#if _CCCL_CUDACC_AT_LEAST(12, 6)
+TEST_CASE("pinned_memory_resource async deallocate", "[memory_resource]")
 {
-  cudax::managed_memory_resource resource{};
+  cudax::pinned_memory_resource resource{};
   test_deallocate_async(resource);
 }
+#endif // _CCCL_CUDACC_AT_LEAST(12, 6)

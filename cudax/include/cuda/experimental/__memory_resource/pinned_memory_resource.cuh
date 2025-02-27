@@ -43,7 +43,7 @@
 namespace cuda::experimental
 {
 
-#if !_CCCL_COMPILER(MSVC2017) && _CCCL_CUDACC_AT_LEAST(12, 2)
+#if _CCCL_CUDACC_AT_LEAST(12, 6)
 
 //! @rst
 //! .. _cudax-memory-resource-async:
@@ -70,14 +70,13 @@ private:
   _CCCL_NODISCARD static ::cudaMemPool_t __get_default_sysmem_pool()
   {
     static pinned_memory_pool __default_pool;
-
     return __default_pool.get();
   }
 
 public:
   //! @brief Default constructs the pinned_memory_resource using the default \c cudaMemPool_t of the default device.
   //! @throws cuda_error if retrieving the default \c cudaMemPool_t fails.
-  pinned_memory_resource(unsigned int = 0)
+  pinned_memory_resource()
       : __memory_resource_base(__get_default_sysmem_pool())
   {}
 
@@ -105,17 +104,10 @@ public:
 //! @brief pinned_memory_resource uses `cudaMallocHost` / `cudaFreeHost` for allocation / deallocation.
 class pinned_memory_resource
 {
-private:
-  unsigned int __flags_ = cudaHostAllocDefault;
-
-  static constexpr unsigned int __available_flags =
-    cudaHostAllocDefault | cudaHostAllocPortable | cudaHostAllocWriteCombined;
 
 public:
-  constexpr pinned_memory_resource(const unsigned int __flags = cudaHostAllocDefault) noexcept
-      : __flags_(__flags & __available_flags)
+  constexpr pinned_memory_resource() noexcept
   {
-    _CCCL_ASSERT(__flags_ == __flags, "Unexpected flags passed to pinned_memory_resource");
   }
 
   //! @brief Allocate host memory of size at least \p __bytes.
@@ -133,7 +125,7 @@ public:
     }
 
     void* __ptr{nullptr};
-    _CCCL_TRY_CUDA_API(::cudaMallocHost, "Failed to allocate memory with cudaMallocHost.", &__ptr, __bytes, __flags_);
+    _CCCL_TRY_CUDA_API(::cudaMallocHost, "Failed to allocate memory with cudaMallocHost.", &__ptr, __bytes);
     return __ptr;
   }
 
@@ -207,17 +199,17 @@ public:
   //! @brief Equality comparison with another \c pinned_memory_resource.
   //! @param __other The other \c pinned_memory_resource.
   //! @return Whether both \c pinned_memory_resource were constructed with the same flags.
-  _CCCL_NODISCARD constexpr bool operator==(pinned_memory_resource const& __other) const noexcept
+  _CCCL_NODISCARD constexpr bool operator==([[maybe_unused]] pinned_memory_resource const& __other) const noexcept
   {
-    return __flags_ == __other.__flags_;
+    return true;
   }
 #  if _CCCL_STD_VER <= 2017
   //! @brief Equality comparison with another \c pinned_memory_resource.
   //! @param __other The other \c pinned_memory_resource.
   //! @return Whether both \c pinned_memory_resource were constructed with different flags.
-  _CCCL_NODISCARD constexpr bool operator!=(pinned_memory_resource const& __other) const noexcept
+  _CCCL_NODISCARD constexpr bool operator!=([[maybe_unused]] pinned_memory_resource const& __other) const noexcept
   {
-    return __flags_ != __other.__flags_;
+    return false;
   }
 #  endif // _CCCL_STD_VER <= 2017
 
@@ -295,7 +287,7 @@ public:
   }
 };
 
-#endif // !_CCCL_COMPILER(MSVC2017) && _CCCL_CUDACC_AT_LEAST(12, 2)
+#endif // _CCCL_CUDACC_AT_LEAST(12, 6)
 
 static_assert(_CUDA_VMR::async_resource_with<pinned_memory_resource, device_accessible>, "");
 static_assert(_CUDA_VMR::async_resource_with<pinned_memory_resource, host_accessible>, "");

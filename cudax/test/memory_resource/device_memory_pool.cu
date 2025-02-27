@@ -323,9 +323,7 @@ TEST_CASE("device_memory_pool accessors", "[memory_resource]")
       }
       catch (::std::invalid_argument& err)
       {
-        CHECK(strcmp(err.what(),
-                     "device_memory_pool::set_attribute: It is illegal to set this attribute to a non-zero value.")
-              == 0);
+        CHECK(strcmp(err.what(), "set_attribute: It is illegal to set this attribute to a non-zero value.") == 0);
       }
       catch (...)
       {
@@ -353,8 +351,7 @@ TEST_CASE("device_memory_pool accessors", "[memory_resource]")
       catch (::std::invalid_argument& err)
       {
         CHECK(strcmp(err.what(),
-                     "device_memory_pool::set_attribute: It is illegal to set this attribute to a non-zero value.")
-              == 0);
+                     "set_attribute: It is illegal to set this attribute to a non-zero value.") == 0);
       }
       catch (...)
       {
@@ -379,7 +376,7 @@ TEST_CASE("device_memory_pool accessors", "[memory_resource]")
       }
       catch (::std::invalid_argument& err)
       {
-        CHECK(strcmp(err.what(), "Invalid attribute passed to device_memory_pool::set_attribute.") == 0);
+        CHECK(strcmp(err.what(), "Invalid attribute passed to set_attribute.") == 0);
       }
       catch (...)
       {
@@ -399,7 +396,7 @@ TEST_CASE("device_memory_pool accessors", "[memory_resource]")
       }
       catch (::std::invalid_argument& err)
       {
-        CHECK(strcmp(err.what(), "Invalid attribute passed to device_memory_pool::set_attribute.") == 0);
+        CHECK(strcmp(err.what(), "Invalid attribute passed to set_attribute.") == 0);
       }
       catch (...)
       {

@@ -23,8 +23,6 @@
 #  pragma system_header
 #endif // no system header
 
-// cudaMallocAsync was introduced in CTK 11.2
-#if !_CCCL_COMPILER(MSVC2017) && _CCCL_CUDACC_AT_LEAST(11, 2)
 
 #  if _CCCL_CUDA_COMPILER(CLANG)
 #    include <cuda_runtime.h>
@@ -173,12 +171,12 @@ private:
   //! @throws cuda_error If the creation of the CUDA memory pool failed.
   //! @returns The created CUDA memory pool.
   _CCCL_NODISCARD static cudaMemPool_t
-  __create_cuda_mempool(__memory_location_type __kind, memory_pool_properties __properties, int __device_id) noexcept
+  __create_cuda_mempool(__memory_location_type __kind, memory_pool_properties __properties, int __id) noexcept
   {
     if (__kind == __memory_location_type::__device)
     {
-      ::cuda::experimental::__device_supports_stream_ordered_allocations(__device_id);
-      __memory_pool_base::__cuda_supports_export_handle_type(__device_id, __properties.allocation_handle_type);
+      ::cuda::experimental::__device_supports_stream_ordered_allocations(__id);
+      __memory_pool_base::__cuda_supports_export_handle_type(__id, __properties.allocation_handle_type);
     }
 
     ::cudaMemPoolProps __pool_properties{};
@@ -187,14 +185,14 @@ private:
     if (__kind == __memory_location_type::__device)
     {
       __pool_properties.location.type = ::cudaMemLocationTypeDevice;
-      __pool_properties.location.id   = __device_id;
+      __pool_properties.location.id   = __id;
     }
     else
     {
-#    if _CCCL_CUDACC_AT_LEAST(12, 2)
+#    if _CCCL_CUDACC_AT_LEAST(12, 6)
       // Construct on NUMA node 0 only for now
       __pool_properties.location.type = ::cudaMemLocationTypeHostNuma;
-      __pool_properties.location.id   = 0;
+      __pool_properties.location.id   = __id;
 #    else
       _CCCL_ASSERT(false, "Host pinned memory pools unavailable");
       _CUDA_VSTD_NOVERSION::terminate();
@@ -202,24 +200,6 @@ private:
     }
     ::cudaMemPool_t __cuda_pool_handle{};
     _CCCL_TRY_CUDA_API(::cudaMemPoolCreate, "Failed to call cudaMemPoolCreate", &__cuda_pool_handle, &__pool_properties);
-
-    // CUDA drivers before 11.5 have known incompatibilities with the async allocator.
-    // We'll disable `cudaMemPoolReuseAllowOpportunistic` if cuda driver < 11.5.
-    // See https://github.com/NVIDIA/spark-rapids/issues/4710.
-    int __driver_version = 0;
-    _CCCL_TRY_CUDA_API(::cudaDriverGetVersion, "Failed to call cudaDriverGetVersion", &__driver_version);
-
-    constexpr int __min_async_version = 11050;
-    if (__driver_version < __min_async_version)
-    {
-      int __disable_reuse = 0;
-      _CCCL_TRY_CUDA_API(
-        ::cudaMemPoolSetAttribute,
-        "Failed to call cudaMemPoolSetAttribute with cudaMemPoolReuseAllowOpportunistic",
-        __cuda_pool_handle,
-        ::cudaMemPoolReuseAllowOpportunistic,
-        &__disable_reuse);
-    }
 
     _CCCL_TRY_CUDA_API(
       ::cudaMemPoolSetAttribute,
@@ -266,8 +246,8 @@ public:
   //! @throws cuda_error if the CUDA version does not support ``cudaMallocAsync``.
   //! @param __device_id The device id of the device the stream pool is constructed on.
   //! @param __pool_properties Optional, additional properties of the pool to be created.
-  explicit __memory_pool_base(__memory_location_type __kind, memory_pool_properties __properties, int __device_id = -1)
-      : __pool_handle_(__create_cuda_mempool(__kind, __properties, __device_id))
+  explicit __memory_pool_base(__memory_location_type __kind, memory_pool_properties __properties, int __id = -1)
+      : __pool_handle_(__create_cuda_mempool(__kind, __properties, __id))
   {}
 
   __memory_pool_base(__memory_pool_base const&)            = delete;
@@ -315,12 +295,12 @@ public:
   {
     if (__attr == ::cudaMemPoolAttrReservedMemCurrent || __attr == cudaMemPoolAttrUsedMemCurrent)
     {
-      _CUDA_VSTD_NOVERSION::__throw_invalid_argument("Invalid attribute passed to __memory_pool_base::set_attribute.");
+      _CUDA_VSTD_NOVERSION::__throw_invalid_argument("Invalid attribute passed to set_attribute.");
     }
     else if ((__attr == ::cudaMemPoolAttrReservedMemHigh || __attr == cudaMemPoolAttrUsedMemHigh) && __value != 0)
     {
       _CUDA_VSTD_NOVERSION::__throw_invalid_argument(
-        "__memory_pool_base::set_attribute: It is illegal to set this "
+        "set_attribute: It is illegal to set this "
         "attribute to a non-zero value.");
     }
 
@@ -432,7 +412,5 @@ public:
 } // namespace cuda::experimental
 
 #  endif // _CCCL_STD_VER >= 2014
-
-#endif // !_CCCL_COMPILER(MSVC2017) && _CCCL_CUDACC_AT_LEAST(11, 2)
 
 #endif // _CUDAX__MEMORY_RESOURCE_MEMORY_POOL_BASE

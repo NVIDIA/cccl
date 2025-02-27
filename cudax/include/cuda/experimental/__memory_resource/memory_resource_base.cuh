@@ -206,7 +206,7 @@ public:
   //! Device on which this resource allocates memory can be included in the vector.
   //!
   //! @param __devices A vector of `device_ref`s listing devices to enable access for
-  void enable_peer_access_from(const ::std::vector<device_ref>& __devices)
+  void enable_access_from(const ::std::vector<device_ref>& __devices)
   {
     ::cuda::experimental::__mempool_set_access(
       __pool_, {__devices.data(), __devices.size()}, cudaMemAccessFlagsProtReadWrite);
@@ -218,7 +218,7 @@ public:
   //! setting is shared between all memory resources created from the same pool.
   //!
   //! @param __device device_ref indicating for which device the access should be enabled
-  void enable_peer_access_from(device_ref __device)
+  void enable_access_from(device_ref __device)
   {
     ::cuda::experimental::__mempool_set_access(__pool_, {&__device, 1}, cudaMemAccessFlagsProtReadWrite);
   }
@@ -230,7 +230,7 @@ public:
   //! Device on which this resource allocates memory can be included in the vector.
   //!
   //! @param __devices A vector of `device_ref`s listing devices to disable access for
-  void disable_peer_access_from(const ::std::vector<device_ref>& __devices)
+  void disable_access_from(const ::std::vector<device_ref>& __devices)
   {
     ::cuda::experimental::__mempool_set_access(
       __pool_, {__devices.data(), __devices.size()}, cudaMemAccessFlagsProtNone);
@@ -242,7 +242,7 @@ public:
   //! setting is shared between all memory resources created from the same pool.
   //!
   //! @param __device device_ref indicating for which device the access should be enabled
-  void disable_peer_access_from(device_ref __device)
+  void disable_access_from(device_ref __device)
   {
     ::cuda::experimental::__mempool_set_access(__pool_, {&__device, 1}, cudaMemAccessFlagsProtNone);
   }
@@ -257,7 +257,7 @@ public:
 
   //! @brief Equality comparison with another __memory_resource_base.
   //! @returns true if underlying \c cudaMemPool_t are equal.
-  _CCCL_NODISCARD constexpr bool operator==(__memory_resource_base const& __rhs) const noexcept
+  _CCCL_NODISCARD bool operator==(__memory_resource_base const& __rhs) const noexcept
   {
     return __pool_ == __rhs.__pool_;
   }
@@ -279,8 +279,16 @@ protected:
   {
     if constexpr (has_property<_Resource, device_accessible>)
     {
-      return resource_ref<device_accessible>{*const_cast<__memory_resource_base*>(this)}
+      if constexpr (has_property<_Resource, host_accessible>)
+      {
+        return resource_ref<host_accessible, device_accessible>{*const_cast<__memory_resource_base*>(this)}
+          == __cudax::__as_resource_ref<host_accessible, device_accessible>(const_cast<_Resource&>(__rhs));
+      }
+      else
+      {
+        return resource_ref<device_accessible>{*const_cast<__memory_resource_base*>(this)}
           == __cudax::__as_resource_ref<device_accessible>(const_cast<_Resource&>(__rhs));
+      }
     }
     else if constexpr (has_property<_Resource, host_accessible>)
     {
