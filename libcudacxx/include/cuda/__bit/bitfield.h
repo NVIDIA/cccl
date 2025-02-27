@@ -29,7 +29,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if defined(__CUDA_ARCH__) || _CCCL_COMPILER(NVHPC)
 
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI uint32_t __bfi(uint32_t __value, int __start, int __width) noexcept
 {
@@ -45,7 +45,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI uint32_t __bfe(uint32_t __value, int _
   return __ret;
 }
 
-#endif // _CCCL_HAS_CUDA_COMPILER
+#endif // defined(__CUDA_ARCH__) || _CCCL_COMPILER(NVHPC)
 
 template <typename _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp
