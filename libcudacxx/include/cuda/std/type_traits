@@ -131,7 +131,6 @@
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/is_volatile.h>
 #include <cuda/std/__type_traits/lazy.h>
-#include <cuda/std/__type_traits/make_32_64_or_128_bit.h>
 #include <cuda/std/__type_traits/make_const_lvalue_ref.h>
 #include <cuda/std/__type_traits/make_signed.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
