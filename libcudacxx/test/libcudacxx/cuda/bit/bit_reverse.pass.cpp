@@ -18,14 +18,14 @@ template <typename T>
 __host__ __device__ constexpr bool test()
 {
   using nl              = cuda::std::numeric_limits<T>;
-  constexpr T all_ones  = static_cast<T>(~0u);
+  constexpr T all_ones  = static_cast<T>(~T{0});
   constexpr T half_low  = all_ones >> (nl::digits / 2u);
   constexpr T half_high = static_cast<T>(all_ones << (nl::digits / 2u));
-  assert(cuda::bit_reverse(T{0}) == T{0});
-  assert(cuda::bit_reverse(all_ones) == all_ones);
-  assert(cuda::bit_reverse(half_low) == half_high);
-  assert(cuda::bit_reverse(T{0b11001001}) == (T{0b10010011} << (nl::digits - 8u)));
-  assert(cuda::bit_reverse(T{T{0b10010011} << (nl::digits - 8u)}) == T{0b11001001});
+  static_assert(cuda::bit_reverse(all_ones) == all_ones);
+  static_assert(cuda::bit_reverse(T{0}) == T{0});
+  static_assert(cuda::bit_reverse(half_low) == half_high);
+  static_assert(cuda::bit_reverse(T{0b11001001}) == (T{0b10010011} << (nl::digits - 8u)));
+  static_assert(cuda::bit_reverse(T{T{0b10010011} << (nl::digits - 8u)}) == T{0b11001001});
   unused(all_ones);
   unused(half_low);
   unused(half_high);
