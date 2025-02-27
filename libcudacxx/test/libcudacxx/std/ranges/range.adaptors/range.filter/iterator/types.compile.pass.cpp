@@ -59,9 +59,8 @@ template <class Iterator>
 __host__ __device__ constexpr void test_iterator(Iterator)
 {
   using FilterView      = FilterViewFor<Iterator>;
-  using FilterIterator  = FilterIteratorFor<Iterator>;
-  using value_type      = typename FilterIterator::value_type;
-  using difference_type = typename FilterIterator::difference_type;
+  using value_type      = typename FilterIteratorFor<Iterator>::value_type;
+  using difference_type = typename FilterIteratorFor<Iterator>::difference_type;
 
   static_assert(cuda::std::is_same_v<value_type, cuda::std::ranges::range_value_t<FilterView>>);
   static_assert(cuda::std::is_same_v<difference_type, cuda::std::ranges::range_difference_t<FilterView>>);
