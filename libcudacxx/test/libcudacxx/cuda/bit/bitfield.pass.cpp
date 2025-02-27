@@ -18,7 +18,7 @@ template <typename T>
 __host__ __device__ constexpr bool test()
 {
   using nl             = cuda::std::numeric_limits<T>;
-  constexpr T all_ones = ~T{0};
+  constexpr T all_ones = static_cast<T>(~0u);
   unused(all_ones);
   assert(cuda::bitfield_insert(T{0}, all_ones, 0, 1) == 1);
   assert(cuda::bitfield_insert(T{0}, all_ones, 1, 1) == 0b10);

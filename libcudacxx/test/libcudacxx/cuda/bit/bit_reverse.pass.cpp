@@ -18,7 +18,7 @@ template <typename T>
 __host__ __device__ constexpr bool test()
 {
   using nl              = cuda::std::numeric_limits<T>;
-  constexpr T all_ones  = ~T{0};
+  constexpr T all_ones  = static_cast<T>(~0u);
   constexpr T half_low  = all_ones >> (nl::digits / 2u);
   constexpr T half_high = static_cast<T>(all_ones << (nl::digits / 2u));
   assert(cuda::bit_reverse(T{0}) == T{0});
