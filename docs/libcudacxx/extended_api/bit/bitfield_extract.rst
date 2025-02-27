@@ -1,20 +1,15 @@
-.. _libcudacxx-extended-api-bit-bitfield:
+.. _libcudacxx-extended-api-bit-bitfield_extract:
 
-``bitfield_insert`` and ``bitfield_extract``
-============================================
+``bitfield_extract``
+====================
 
 .. code:: cpp
 
    template <typename T>
    [[nodiscard]] constexpr T
-   bitfield_insert(T value, int start, int width = 1) noexcept;
-
-   template <typename T>
-   [[nodiscard]] constexpr T
    bitfield_extract(T value, int start, int width = 1) noexcept;
 
-The functions insert or extract a bitfield from a value.
-``bitfield_insert`` computes ``value | bitfield``, while ``bitfield_extract`` computes ``value & bitfield``.
+The functions extract a bitfield from a value. ``bitfield_extract()`` computes ``value & bitfield``.
 ``bitfield`` is a sequence of bit of width ``width`` shifted left by ``start``.
 
 **Parameters**
@@ -25,8 +20,7 @@ The functions insert or extract a bitfield from a value.
 
 **Return value**
 
-- ``bitfield_insert``: ``value | bitfield``.
-- ``bitfield_extract``: ``value & bitfield``.
+-  ``value & bitfield``.
 
 **Preconditions**
 
@@ -41,8 +35,8 @@ The functions insert or extract a bitfield from a value.
 
 The functions perform the following operations in CUDA:
 
-- ``SM < 70``: ``BFI/BFE`` + bitwise and/or
-- ``SM >= 70``: ``BMSK`` + bitwise and/or
+- ``SM < 70``: ``BFE``
+- ``SM >= 70``: ``BMSK`` + bitwise AND
 
 .. note::
 
@@ -60,20 +54,16 @@ Example
     #include <cuda/bit>
     #include <cuda/std/cassert>
 
-    __global__ void bitfield_kernel() {
-        assert(bitfield_insert(0u, 0, 4) == 0b1111);
-        assert(bitfield_insert(0u, 3, 4) == 0b1111000);
-        assert(bitfield_insert(1u, 3, 4) == 0b1111001);
-
-        assert(bitfield_extract(~0u, 0, 4) == 0b1111);
-        assert(bitfield_extract(~0u, 3, 4) == 0b1111000);
-        assert(bitfield_extract(0b00100111u, 3, 4) == 0b00100000);
+    __global__ void bitfield_insert_kernel() {
+        assert(cuda::bitfield_extract(~0u, 0, 4) == 0b1111);
+        assert(cuda::bitfield_extract(~0u, 3, 4) == 0b1111000);
+        assert(cuda::bitfield_extract(0b00100111u, 3, 4) == 0b00100000);
     }
 
     int main() {
-        bitfield_kernel<<<1, 1>>>();
+        bitfield_insert_kernel<<<1, 1>>>();
         cudaDeviceSynchronize();
         return 0;
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/j7W5hjrfa>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/3sdYKMd57>`_
