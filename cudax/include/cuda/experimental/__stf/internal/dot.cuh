@@ -291,15 +291,6 @@ public:
     return ctx_symbol;
   }
 
-private:
-  mutable ::std::string ctx_symbol;
-
-  mutable ::std::mutex mtx;
-
-  ::std::vector<int> vertices;
-
-  ::std::unordered_set<int> discarded_tasks;
-
 public:
   // Keep track of existing edges, to make the output possibly look better
   IntPairSet existing_edges;
@@ -338,6 +329,15 @@ public: // XXX protected, friend : dot
   // strings of the previous epochs
   mutable ::std::vector<::std::ostringstream> prev_oss;
   ::std::unordered_map<int /* id */, per_task_info> metadata;
+
+private:
+  mutable ::std::string ctx_symbol;
+
+  mutable ::std::mutex mtx;
+
+  ::std::vector<int> vertices;
+
+  ::std::unordered_set<int> discarded_tasks;
 };
 
 class dot : public reserved::meyers_singleton<dot>
@@ -487,6 +487,8 @@ public:
 protected:
   dot()
   {
+    ::std::lock_guard<::std::mutex> lock(mtx);
+
     const char* filename = getenv("CUDASTF_DOT_FILE");
     if (!filename)
     {
@@ -509,6 +511,30 @@ protected:
   }
 
 public:
+  bool is_tracing() const
+  {
+    return !dot_filename.empty();
+  }
+
+  bool is_tracing_prereqs()
+  {
+    return tracing_prereqs;
+  }
+
+  bool is_timing() const
+  {
+    return enable_timing;
+  }
+
+  // Add a context to the vector of contexts we track
+  void track_ctx(::std::shared_ptr<per_ctx_dot> pc)
+  {
+    ::std::lock_guard<::std::mutex> lock(mtx);
+
+    per_ctx.push_back(mv(pc));
+  }
+
+private:
   void
   print_one_context(::std::ofstream& outFile, size_t& ctx_cnt, bool display_clusters, ::std::shared_ptr<per_ctx_dot> pc)
   {
@@ -889,23 +915,6 @@ public:
     dot_filename.clear();
   }
 
-  bool is_tracing() const
-  {
-    return !dot_filename.empty();
-  }
-
-  bool is_tracing_prereqs()
-  {
-    return tracing_prereqs;
-  }
-
-  bool is_timing() const
-  {
-    return enable_timing;
-  }
-
-  ::std::vector<::std::shared_ptr<per_ctx_dot>> per_ctx;
-
 private:
   // Function to get a color based on task duration relative to the average
   ::std::string get_color_for_duration(double duration, double avg_duration)
@@ -1141,8 +1150,6 @@ private:
 
   ::std::unordered_map<int, ::std::vector<int>> predecessors;
 
-  mutable ::std::mutex mtx;
-
   ::std::string dot_filename;
 
   // Map to get dot sections from their ID
@@ -1153,6 +1160,12 @@ private:
   ::std::optional<float> total_work; // T1
   size_t edge_count;
   size_t vertex_count;
+
+private:
+  mutable ::std::mutex mtx;
+
+  // A vector that keeps track of all per context stored data
+  ::std::vector<::std::shared_ptr<per_ctx_dot>> per_ctx;
 };
 
 inline int per_ctx_dot::get_current_section_id()

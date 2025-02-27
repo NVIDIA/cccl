@@ -46,7 +46,9 @@ class machine : public reserved::meyers_singleton<machine>
 protected:
   machine()
   {
-    cuda_safe_call(cudaGetDeviceCount(&ndevices));
+    // We hold a lock to ensure concurrent calls will wait for the completion of the first call
+    ::std::lock_guard<::std::mutex> lock(mutex);
+
     // TODO: remove this call? Currently anyone getting a machine gets peer access
     // and subsequent explicit calls to enable_peer_accesses() are no-ops.
     enable_peer_accesses();
@@ -66,6 +68,8 @@ public:
     {
       return;
     }
+
+    cuda_safe_call(cudaGetDeviceCount(&ndevices));
 
     int current_dev;
     cuda_safe_call(cudaGetDevice(&current_dev));
@@ -127,6 +131,7 @@ public:
 private:
   bool initialized_peer_accesses = false;
   int ndevices;
+  ::std::mutex mutex;
 };
 
 } // namespace cuda::experimental::stf::reserved

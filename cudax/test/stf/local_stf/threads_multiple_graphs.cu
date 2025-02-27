@@ -23,10 +23,7 @@ void worker(stream_ctx ctx,
 {
   cudaStream_t stream = ctx.pick_stream();
 
-  // FIXME this is not suppose to require locking
-  mutex.lock();
   auto gctx = graph_ctx(stream);
-  mutex.unlock();
 
   mutex.lock();
   [[maybe_unused]] auto dAi = fAi.get(data_place::current_device(), stream);
