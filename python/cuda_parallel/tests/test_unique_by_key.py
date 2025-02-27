@@ -129,8 +129,7 @@ def test_unique_by_key(dtype):
         num_items = 2**num_items_pow2
         num_items = 10
 
-        # h_in_keys = random_array(num_items, dtype, max_value=20)
-        h_in_keys = np.array([4, 3, 3, 1, 2, 6, 3, 3, 9, 7])
+        h_in_keys = random_array(num_items, dtype, max_value=20)
         h_in_items = random_array(num_items, np.float32)
         h_out_keys = np.empty(num_items, dtype=dtype)
         h_out_items = np.empty(num_items, dtype=np.float32)
