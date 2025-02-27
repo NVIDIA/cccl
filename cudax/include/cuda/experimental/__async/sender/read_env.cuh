@@ -42,11 +42,7 @@ struct _THE_CURRENT_ENVIRONMENT_RETURNED_VOID_FOR_THIS_QUERY;
 
 struct read_env_t
 {
-#if !_CCCL_CUDA_COMPILER(NVCC)
-
 private:
-#endif // !_CCCL_CUDA_COMPILER(NVCC)
-
   template <class _Rcvr, class _Query>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
@@ -86,10 +82,10 @@ private:
     }
   };
 
+public:
   template <class _Query>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
-public:
   /// @brief Returns a sender that, when connected to a receiver and started,
   /// invokes the query with the receiver's environment and forwards the result
   /// to the receiver's `set_value` member.

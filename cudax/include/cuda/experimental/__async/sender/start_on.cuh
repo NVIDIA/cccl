@@ -49,11 +49,7 @@ struct __sch_env_t
 
 _CCCL_GLOBAL_CONSTANT struct start_on_t
 {
-#if !_CCCL_CUDA_COMPILER(NVCC)
-
 private:
-#endif // !_CCCL_CUDA_COMPILER(NVCC)
-
   template <class _Rcvr, class _Sch, class _CvSndr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
@@ -104,8 +100,7 @@ private:
 
 public:
   template <class _Sch, class _Sndr>
-  _CUDAX_API auto operator()(_Sch __sch, _Sndr __sndr) const noexcept //
-    -> __sndr_t<_Sch, _Sndr>;
+  _CUDAX_API auto operator()(_Sch __sch, _Sndr __sndr) const noexcept -> __sndr_t<_Sch, _Sndr>;
 } start_on{};
 
 template <class _Sch, class _Sndr>
@@ -156,7 +151,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT start_on_t::__sndr_t
 };
 
 template <class _Sch, class _Sndr>
-_CUDAX_API auto start_on_t::operator()(_Sch __sch, _Sndr __sndr) const noexcept -> start_on_t::__sndr_t<_Sch, _Sndr>
+_CUDAX_API auto start_on_t::operator()(_Sch __sch, _Sndr __sndr) const noexcept -> __sndr_t<_Sch, _Sndr>
 {
   return __sndr_t<_Sch, _Sndr>{{}, __sch, __sndr};
 }

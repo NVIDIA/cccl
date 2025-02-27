@@ -37,11 +37,7 @@ namespace cuda::experimental::__async
 {
 struct write_env_t
 {
-#if !_CCCL_CUDA_COMPILER(NVCC)
-
 private:
-#endif // !_CCCL_CUDA_COMPILER(NVCC)
-
   template <class _Rcvr, class _Sndr, class _Env>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
@@ -63,15 +59,14 @@ private:
     }
   };
 
+public:
   template <class _Sndr, class _Env>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
-public:
   /// @brief Wraps one sender in another that modifies the execution
   /// environment by merging in the environment specified.
   template <class _Sndr, class _Env>
-  _CUDAX_TRIVIAL_API constexpr auto operator()(_Sndr, _Env) const //
-    -> __sndr_t<_Sndr, _Env>;
+  _CUDAX_TRIVIAL_API constexpr auto operator()(_Sndr, _Env) const -> __sndr_t<_Sndr, _Env>;
 };
 
 template <class _Sndr, class _Env>
@@ -109,10 +104,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t::__sndr_t
 };
 
 template <class _Sndr, class _Env>
-_CUDAX_TRIVIAL_API constexpr auto write_env_t::operator()(_Sndr __sndr, _Env __env) const //
-  -> write_env_t::__sndr_t<_Sndr, _Env>
+_CUDAX_TRIVIAL_API constexpr auto write_env_t::operator()(_Sndr __sndr, _Env __env) const -> __sndr_t<_Sndr, _Env>
 {
-  return write_env_t::__sndr_t<_Sndr, _Env>{{}, static_cast<_Env&&>(__env), static_cast<_Sndr&&>(__sndr)};
+  return __sndr_t<_Sndr, _Env>{{}, static_cast<_Env&&>(__env), static_cast<_Sndr&&>(__sndr)};
 }
 
 _CCCL_GLOBAL_CONSTANT write_env_t write_env{};

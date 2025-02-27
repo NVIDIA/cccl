@@ -40,10 +40,7 @@ namespace cuda::experimental::__async
 {
 struct continue_on_t
 {
-#if !_CCCL_CUDA_COMPILER(NVCC)
-
 private:
-#endif // !_CCCL_CUDA_COMPILER(NVCC)
   template <class... _As>
   using __set_value_tuple_t = __tuple<set_value_t, __decay_t<_As>...>;
 
@@ -169,13 +166,13 @@ private:
     connect_result_t<schedule_result_t<_Sch>, __rcvr_ref<__rcvr_t<_Rcvr, __result_t>>> __opstate2_;
   };
 
+public:
   template <class _Sndr, class _Sch>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
   template <class _Sch>
   struct __closure_t;
 
-public:
   template <class _Sndr, class _Sch>
   _CUDAX_API __sndr_t<_Sndr, _Sch> operator()(_Sndr __sndr, _Sch __sch) const noexcept;
 

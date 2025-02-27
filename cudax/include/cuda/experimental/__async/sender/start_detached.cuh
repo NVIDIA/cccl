@@ -32,11 +32,7 @@ namespace cuda::experimental::__async
 {
 struct start_detached_t
 {
-#if !_CCCL_CUDA_COMPILER(NVCC)
-
 private:
-#endif // !_CCCL_CUDA_COMPILER(NVCC)
-
   struct __opstate_base_t : __immovable
   {};
 
