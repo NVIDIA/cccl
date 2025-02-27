@@ -33,8 +33,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Fn, class... _Args>
 concept invocable = requires(_Fn&& __fn, _Args&&... __args) {
-  _CUDA_VSTD::__invoke(_CUDA_VSTD::forward<_Fn>(__fn), _CUDA_VSTD::forward<_Args>(__args)...); // not required to be
-                                                                                               // equality preserving
+  // not required to be equality preserving
+  _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fn>(__fn), _CUDA_VSTD::forward<_Args>(__args)...);
 };
 
 // [concept.regular.invocable]
