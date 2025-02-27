@@ -188,7 +188,7 @@ This method is not sufficient because it does not catch all Forward Progress bug
 
     .. code:: cuda
 	:number-lines:
-	      
+
         // Example: Execution.Model.API.2
         // Allowed outcome: eventually, no thread makes progress.
         // Rationale: the `cudaDeviceSynchronize` API below is only called if a device thread eventually makes progress and sets the flag.
@@ -205,7 +205,7 @@ This method is not sufficient because it does not catch all Forward Progress bug
 
     .. code:: cuda
 	:number-lines:
-	      
+
         // Example: Execution.Model.API.3
         // Allowed outcome: eventually, no thread makes progress.
         // Rationale: same as Example.Model.API.2, with the addition that a single CUDA query API call does not guarantee
@@ -222,7 +222,7 @@ This method is not sufficient because it does not catch all Forward Progress bug
 
     .. code:: cuda
 	:number-lines:
-	      
+
         // Example: Execution.Model.API.4
         // Outcome: terminates.
         // Rationale: same as Execution.Model.API.3, but this example repeatedly calls
@@ -253,7 +253,7 @@ These may include dependencies on the completion of, among others, `CUDA Events 
 
     .. code:: cuda
 	:number-lines:
-	      
+
         // Example: Execution.Model.Stream.0
         // Allowed outcome: eventually, no thread makes progress.
         // Rationale: while CUDA guarantees that one device thread makes progress, since there
@@ -276,7 +276,7 @@ These may include dependencies on the completion of, among others, `CUDA Events 
 
     .. code:: cuda
 	:number-lines:
-	      
+
         // Example: Execution.Model.Stream.1
         // Outcome: terminates.
         // Rationale: same as Execution.Model.Stream.0, but this example has a stream dependency
