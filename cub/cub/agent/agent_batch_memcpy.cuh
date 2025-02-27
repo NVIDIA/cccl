@@ -52,9 +52,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
-
-#include <cstdint>
 
 CUB_NAMESPACE_BEGIN
 
