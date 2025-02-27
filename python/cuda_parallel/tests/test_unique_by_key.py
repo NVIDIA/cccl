@@ -151,6 +151,8 @@ def test_unique_by_key(dtype):
             num_items,
         )
 
+        numba.cuda.synchronize()
+
         h_out_num_selected = d_out_num_selected.copy_to_host()
         num_selected = h_out_num_selected[0]
         h_out_keys = np.resize(d_out_keys.copy_to_host(), num_selected)
