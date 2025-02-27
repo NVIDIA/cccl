@@ -68,89 +68,34 @@ _CCCL_INLINE_VAR constexpr bool __is_mapping_of =
   _CCCL_TRAIT(is_same, typename _Layout::template mapping<typename _Mapping::extents_type>, _Mapping);
 
 // [mdspan.layout.reqmts]/1
-#if _CCCL_STD_VER >= 2020
 template <class _Mapping>
-concept __layout_mapping_req_type =
-  copyable<_Mapping> && equality_comparable<_Mapping> && //
-  is_nothrow_move_constructible_v<_Mapping> && is_move_assignable_v<_Mapping> && is_nothrow_swappable_v<_Mapping>;
-#else // ^^^ _CCCL_STD_VER >= 2020 ^^^ / vvv _CCCL_STD_VER <= 2017 vvv
-template <class _Mapping>
-_CCCL_CONCEPT_FRAGMENT(
-  __layout_mapping_req_type_,
-  requires()( //
-    requires(copyable<_Mapping>),
-    requires(equality_comparable<_Mapping>),
-    requires(_CCCL_TRAIT(is_nothrow_move_constructible, _Mapping)),
-    requires(_CCCL_TRAIT(is_move_assignable, _Mapping)),
-    requires(_CCCL_TRAIT(is_nothrow_swappable, _Mapping))));
-
-template <class _Mapping>
-_CCCL_CONCEPT __layout_mapping_req_type = _CCCL_FRAGMENT(__layout_mapping_req_type_, _Mapping);
-#endif // _CCCL_STD_VER <= 2017
+_CCCL_CONCEPT __layout_mapping_req_type = _CCCL_REQUIRES_EXPR((_Mapping))(
+  requires(copyable<_Mapping>),
+  requires(equality_comparable<_Mapping>),
+  requires(_CCCL_TRAIT(is_nothrow_move_constructible, _Mapping)),
+  requires(_CCCL_TRAIT(is_move_assignable, _Mapping)),
+  requires(_CCCL_TRAIT(is_nothrow_swappable, _Mapping)));
 
 // [mdspan.layout.reqmts]/2-4
-#if _CCCL_STD_VER >= 2020
 template <class _Mapping>
-concept __layout_mapping_req_types = requires {
-  requires __is_extents_v<typename _Mapping::extents_type>;
-  requires same_as<typename _Mapping::index_type, typename _Mapping::extents_type::index_type>;
-  requires same_as<typename _Mapping::rank_type, typename _Mapping::extents_type::rank_type>;
-  requires __is_mapping_of<typename _Mapping::layout_type, _Mapping>;
-};
-#else // ^^^ _CCCL_STD_VER >= 2020 ^^^ / vvv _CCCL_STD_VER <= 2017 vvv
-template <class _Mapping>
-_CCCL_CONCEPT_FRAGMENT(
-  __layout_mapping_req_types_,
-  requires()( //
-    requires(__is_extents_v<typename _Mapping::extents_type>),
-    requires(same_as<typename _Mapping::index_type, typename _Mapping::extents_type::index_type>),
-    requires(same_as<typename _Mapping::rank_type, typename _Mapping::extents_type::rank_type>),
-    requires(__is_mapping_of<typename _Mapping::layout_type, _Mapping>)));
-
-template <class _Mapping>
-_CCCL_CONCEPT __layout_mapping_req_types = _CCCL_FRAGMENT(__layout_mapping_req_types_, _Mapping);
-#endif // _CCCL_STD_VER <= 2017
+_CCCL_CONCEPT __layout_mapping_req_types = _CCCL_REQUIRES_EXPR((_Mapping))(
+  requires(__is_extents_v<typename _Mapping::extents_type>),
+  requires(same_as<typename _Mapping::index_type, typename _Mapping::extents_type::index_type>),
+  requires(same_as<typename _Mapping::rank_type, typename _Mapping::extents_type::rank_type>),
+  requires(__is_mapping_of<typename _Mapping::layout_type, _Mapping>));
 
 // [mdspan.layout.stride.expo]/4
-#if _CCCL_STD_VER >= 2020
-template <class _Mapping>
-concept __layout_mapping_alike = requires {
-  requires __is_mapping_of<typename _Mapping::layout_type, _Mapping>;
-  requires __is_extents_v<typename _Mapping::extents_type>;
-  { _Mapping::is_always_strided() } -> same_as<bool>;
-  { _Mapping::is_always_exhaustive() } -> same_as<bool>;
-  { _Mapping::is_always_unique() } -> same_as<bool>;
-  bool_constant<_Mapping::is_always_strided()>::value;
-  bool_constant<_Mapping::is_always_exhaustive()>::value;
-  bool_constant<_Mapping::is_always_unique()>::value;
-};
-#else // ^^^ _CCCL_STD_VER >= 2020 ^^^ / vvv _CCCL_STD_VER <= 2017 vvv
 // NOTE: integral_constant<bool, _Mapping::is_always_strided()>::value only checks that this is a constant expression
 template <class _Mapping>
-_CCCL_CONCEPT_FRAGMENT(
-  __layout_mapping_alike_prop_,
-  requires()( //
-    requires(same_as<bool, decltype(_Mapping::is_always_strided())>),
-    requires(same_as<bool, decltype(_Mapping::is_always_exhaustive())>),
-    requires(same_as<bool, decltype(_Mapping::is_always_unique())>),
-    (integral_constant<bool, _Mapping::is_always_strided()>::value),
-    (integral_constant<bool, _Mapping::is_always_exhaustive()>::value),
-    (integral_constant<bool, _Mapping::is_always_unique()>::value)));
-
-template <class _Mapping>
-_CCCL_CONCEPT __layout_mapping_alike_prop = _CCCL_FRAGMENT(__layout_mapping_alike_prop_, _Mapping);
-
-template <class _Mapping>
-_CCCL_CONCEPT_FRAGMENT(
-  __layout_mapping_alike_,
-  requires()( //
-    requires(__is_mapping_of<typename _Mapping::layout_type, _Mapping>),
-    requires(_CCCL_TRAIT(__is_extents, typename _Mapping::extents_type)),
-    requires(__layout_mapping_alike_prop<_Mapping>)));
-
-template <class _Mapping>
-_CCCL_CONCEPT __layout_mapping_alike = _CCCL_FRAGMENT(__layout_mapping_alike_, _Mapping);
-#endif // _CCCL_STD_VER <= 2017
+_CCCL_CONCEPT __layout_mapping_alike = _CCCL_REQUIRES_EXPR((_Mapping))(
+  requires(__is_mapping_of<typename _Mapping::layout_type, _Mapping>),
+  requires(__is_extents_v<typename _Mapping::extents_type>),
+  requires(same_as<bool, decltype(_Mapping::is_always_strided())>),
+  requires(same_as<bool, decltype(_Mapping::is_always_exhaustive())>),
+  requires(same_as<bool, decltype(_Mapping::is_always_unique())>),
+  (integral_constant<bool, _Mapping::is_always_strided()>::value),
+  (integral_constant<bool, _Mapping::is_always_exhaustive()>::value),
+  (integral_constant<bool, _Mapping::is_always_unique()>::value));
 
 template <class _IndexType, class... _Indices>
 _CCCL_CONCEPT __all_convertible_to_index_type =
@@ -159,28 +104,11 @@ _CCCL_CONCEPT __all_convertible_to_index_type =
 
 } // namespace __mdspan_detail
 
-#if _CCCL_STD_VER >= 2020
-
 template <class _Tp, class _IndexType>
-concept __index_pair_like =
-  __pair_like<_Tp> //
-  && convertible_to<tuple_element_t<0, _Tp>, _IndexType> //
-  && convertible_to<tuple_element_t<1, _Tp>, _IndexType>;
-
-#else // ^^^ _CCCL_STD_VER >= 2020 ^^^ / vvv _CCCL_STD_VER <= 2017 vvv
-
-template <class _Tp, class _IndexType>
-_CCCL_CONCEPT_FRAGMENT(
-  __index_pair_like_,
-  requires()( //
-    requires(__pair_like<_Tp>),
-    requires(convertible_to<tuple_element_t<0, _Tp>, _IndexType>),
-    requires(convertible_to<tuple_element_t<1, _Tp>, _IndexType>) //
-    ));
-template <class _Tp, class _IndexType>
-_CCCL_CONCEPT __index_pair_like = _CCCL_FRAGMENT(__index_pair_like_, _Tp, _IndexType);
-
-#endif // _CCCL_STD_VER <= 2017
+_CCCL_CONCEPT __index_pair_like = _CCCL_REQUIRES_EXPR((_Tp, _IndexType))(
+  requires(__pair_like<_Tp>),
+  requires(convertible_to<tuple_element_t<0, _Tp>, _IndexType>),
+  requires(convertible_to<tuple_element_t<1, _Tp>, _IndexType>));
 
 // [mdspan.submdspan.strided.slice]/3
 
