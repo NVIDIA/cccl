@@ -21,21 +21,29 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__bit/bitmask.h>
 #include <cuda/__ptx/instructions/bmsk.h>
-#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/limits>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-#if defined(__CUDA_ARCH__) || _CCCL_COMPILER(NVHPC)
+#if defined(__CUDA_ARCH__)
 
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE uint32_t __bfi(uint32_t __value, int __start, int __width) noexcept
+_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE uint32_t
+__bfi(uint32_t __dest, uint32_t __source, int __start, int __width) noexcept
 {
-  uint32_t __ret;
-  asm("bfi.b32 %0, %1, %2, %3, %4;" : "=r"(__ret) : "r"(0xFFFFFFFF), "r"(__value), "r"(__start), "r"(__width));
-  return __ret;
+  asm("bfi.b32 %0, %1, %2, %3, %4;" : "=r"(__dest) : "r"(__dest), "r"(__source), "r"(__start), "r"(__width));
+  return __dest;
+}
+
+_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE uint64_t
+__bfi(uint64_t __dest, uint64_t __source, int __start, int __width) noexcept
+{
+  asm("bfi.b64 %0, %1, %2, %3, %4;" : "=l"(__dest) : "l"(__dest), "l"(__source), "r"(__start), "r"(__width));
+  return __dest;
 }
 
 _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE uint32_t __bfe(uint32_t __value, int __start, int __width) noexcept
@@ -45,34 +53,39 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE uint32_t __bfe(uint32_t __value
   return __ret;
 }
 
-#endif // defined(__CUDA_ARCH__) || _CCCL_COMPILER(NVHPC)
+_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE uint64_t __bfe(uint64_t __value, int __start, int __width) noexcept
+{
+  uint64_t __ret;
+  asm("bfe.u64 %0, %1, %2, %3;" : "=l"(__ret) : "l"(__value), "r"(__start), "r"(__width));
+  return __ret;
+}
+
+#endif // defined(__CUDA_ARCH__)
 
 template <typename _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp
-bitfield_insert(const _Tp __value, int __start, int __width = 1) noexcept
+bitfield_insert(const _Tp __dest, const _Tp __source, int __start, int __width) noexcept
 {
   static_assert(_CUDA_VSTD::__cccl_is_unsigned_integer_v<_Tp>, "bitfield_insert() requires unsigned integer types");
   constexpr auto __digits = _CUDA_VSTD::numeric_limits<_Tp>::digits;
   _CCCL_ASSERT(__width > 0 && __width <= __digits, "width out of range");
   _CCCL_ASSERT(__start >= 0 && __start < __digits, "start position out of range");
   _CCCL_ASSERT(__start + __width <= __digits, "start position + width out of range");
-  if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
+  if constexpr (sizeof(_Tp) <= sizeof(uint64_t))
   {
     if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
     {
       // clang-format off
-      NV_DISPATCH_TARGET(
-        NV_PROVIDES_SM_70, (return __value | _CUDA_VPTX::bmsk_clamp(__start, __width);),
-        NV_IS_DEVICE,      (return ::cuda::__bfi(static_cast<uint32_t>(__value), __start, __width);))
+      NV_DISPATCH_TARGET( // all SM < 70
+        NV_PROVIDES_SM_70, (;),
+        NV_IS_DEVICE,      (using _Up = _CUDA_VSTD::_If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
+                            return ::cuda::__bfi(static_cast<_Up>(__dest), static_cast<_Up>(__source),
+                                                 __start, __width);))
       // clang-format on
     }
   }
-  if (__width == __digits)
-  {
-    return ~_Tp{0};
-  }
-  auto __mask = (_Tp{1} << __width) - 1;
-  return __value | (__mask << __start);
+  auto __mask = ::cuda::bitmask<_Tp>(__start, __width);
+  return ((__source << __start) & __mask) | (__dest & ~__mask);
 }
 
 template <typename _Tp>
@@ -89,18 +102,14 @@ bitfield_extract(const _Tp __value, int __start, int __width = 1) noexcept
     if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
     {
       // clang-format off
-      NV_DISPATCH_TARGET(
-        NV_PROVIDES_SM_70, (return __value & _CUDA_VPTX::bmsk_clamp(__start, __width);),
-        NV_IS_DEVICE,      (return ::cuda::__bfe(static_cast<uint32_t>(__value), __start, __width);))
+      NV_DISPATCH_TARGET( // all SM < 70
+        NV_PROVIDES_SM_70, (;),
+        NV_IS_DEVICE,      (using _Up = _CUDA_VSTD::_If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
+                            return ::cuda::__bfe(static_cast<_Up>(__value), __start, __width);))
       // clang-format on
     }
   }
-  if (__width == __digits)
-  {
-    return __value;
-  }
-  auto __mask = (_Tp{1} << __width) - 1;
-  return __value & (__mask << __start);
+  return __value & ::cuda::bitmask<_Tp>(__start, __width);
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
