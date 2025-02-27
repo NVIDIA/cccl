@@ -534,6 +534,113 @@ public:
     per_ctx.push_back(mv(pc));
   }
 
+  // This should not need to be called explicitly, unless we are doing some automatic tests for example
+  void finish()
+  {
+    single_threaded_section guard(mtx);
+
+    if (dot_filename.empty())
+    {
+      return;
+    }
+
+    for (const auto& pc : per_ctx)
+    {
+      pc->finish();
+    }
+
+    collapse_sections();
+
+    // Now we have executed all tasks, so we can compute the average execution
+    // times, and update the colors appropriately if needed.
+    update_colors_with_timing();
+
+    ::std::ofstream outFile(dot_filename);
+    if (outFile.is_open())
+    {
+      outFile << "digraph {\n";
+      size_t ctx_cnt        = 0;
+      bool display_clusters = (per_ctx.size() > 1);
+      /*
+       * For every context, we write the description of the DAG per
+       * epoch. Then we write the edges after removing redundant ones.
+       */
+      for (const auto& pc : per_ctx)
+      {
+        // If the context has a parent, it will be printed by this parent itself
+        if (!pc->parent)
+        {
+          print_one_context(outFile, ctx_cnt, display_clusters, pc);
+        }
+      }
+
+      if (!getenv("CUDASTF_DOT_KEEP_REDUNDANT"))
+      {
+        remove_redundant_edges(existing_edges);
+      }
+
+      compute_critical_path(outFile);
+
+      /* Edges do not have to belong to the cluster (Vertices do) */
+      for (const auto& [from, to] : existing_edges)
+      {
+        outFile << "\"NODE_" << from << "\" -> \"NODE_" << to << "\"\n";
+      }
+
+      // Update node properties such as labels and colors now that we have all information
+      vertex_count = 0;
+      for (const auto& pc : per_ctx)
+      {
+        for (const auto& p : pc->metadata)
+        {
+          outFile << "\"NODE_" << p.first << "\" [style=\"filled\" fillcolor=\"" << p.second.color << "\" label=\""
+                  << p.second.label << "\"]\n";
+          vertex_count++;
+        }
+      }
+
+      edge_count = existing_edges.size();
+
+      outFile << "// Edge   count : " << edge_count << "\n";
+      outFile << "// Vertex count : " << vertex_count << "\n";
+
+      outFile << "}\n";
+
+      outFile.close();
+    }
+    else
+    {
+      ::std::cerr << "Unable to open file: " << dot_filename << ::std::endl;
+    }
+
+    const char* stats_filename_str = getenv("CUDASTF_DOT_STATS_FILE");
+    if (stats_filename_str)
+    {
+      ::std::string stats_filename = stats_filename_str;
+      ::std::ofstream statsFile(stats_filename);
+      if (statsFile.is_open())
+      {
+        statsFile << "#nedges,nvertices,total_work,critical_path\n";
+
+        // to display an optional value or NA
+        auto formatOptional = [](const ::std::optional<float>& opt) -> ::std::string {
+          return opt ? ::std::to_string(*opt) : "NA";
+        };
+
+        statsFile << edge_count << "," << vertex_count << "," << formatOptional(total_work) << ","
+                  << formatOptional(critical_path) << "\n";
+
+        statsFile.close();
+      }
+      else
+      {
+        ::std::cerr << "Unable to open file: " << stats_filename << ::std::endl;
+      }
+    }
+
+    dot_filename.clear();
+  }
+
 private:
   void
   print_one_context(::std::ofstream& outFile, size_t& ctx_cnt, bool display_clusters, ::std::shared_ptr<per_ctx_dot> pc)
@@ -806,113 +913,6 @@ private:
         pc->metadata[p.second[0]].dot_section_id = sec->parent_id;
       }
     }
-  }
-
-  // This should not need to be called explicitly, unless we are doing some automatic tests for example
-  void finish()
-  {
-    single_threaded_section guard(mtx);
-
-    if (dot_filename.empty())
-    {
-      return;
-    }
-
-    for (const auto& pc : per_ctx)
-    {
-      pc->finish();
-    }
-
-    collapse_sections();
-
-    // Now we have executed all tasks, so we can compute the average execution
-    // times, and update the colors appropriately if needed.
-    update_colors_with_timing();
-
-    ::std::ofstream outFile(dot_filename);
-    if (outFile.is_open())
-    {
-      outFile << "digraph {\n";
-      size_t ctx_cnt        = 0;
-      bool display_clusters = (per_ctx.size() > 1);
-      /*
-       * For every context, we write the description of the DAG per
-       * epoch. Then we write the edges after removing redundant ones.
-       */
-      for (const auto& pc : per_ctx)
-      {
-        // If the context has a parent, it will be printed by this parent itself
-        if (!pc->parent)
-        {
-          print_one_context(outFile, ctx_cnt, display_clusters, pc);
-        }
-      }
-
-      if (!getenv("CUDASTF_DOT_KEEP_REDUNDANT"))
-      {
-        remove_redundant_edges(existing_edges);
-      }
-
-      compute_critical_path(outFile);
-
-      /* Edges do not have to belong to the cluster (Vertices do) */
-      for (const auto& [from, to] : existing_edges)
-      {
-        outFile << "\"NODE_" << from << "\" -> \"NODE_" << to << "\"\n";
-      }
-
-      // Update node properties such as labels and colors now that we have all information
-      vertex_count = 0;
-      for (const auto& pc : per_ctx)
-      {
-        for (const auto& p : pc->metadata)
-        {
-          outFile << "\"NODE_" << p.first << "\" [style=\"filled\" fillcolor=\"" << p.second.color << "\" label=\""
-                  << p.second.label << "\"]\n";
-          vertex_count++;
-        }
-      }
-
-      edge_count = existing_edges.size();
-
-      outFile << "// Edge   count : " << edge_count << "\n";
-      outFile << "// Vertex count : " << vertex_count << "\n";
-
-      outFile << "}\n";
-
-      outFile.close();
-    }
-    else
-    {
-      ::std::cerr << "Unable to open file: " << dot_filename << ::std::endl;
-    }
-
-    const char* stats_filename_str = getenv("CUDASTF_DOT_STATS_FILE");
-    if (stats_filename_str)
-    {
-      ::std::string stats_filename = stats_filename_str;
-      ::std::ofstream statsFile(stats_filename);
-      if (statsFile.is_open())
-      {
-        statsFile << "#nedges,nvertices,total_work,critical_path\n";
-
-        // to display an optional value or NA
-        auto formatOptional = [](const ::std::optional<float>& opt) -> ::std::string {
-          return opt ? ::std::to_string(*opt) : "NA";
-        };
-
-        statsFile << edge_count << "," << vertex_count << "," << formatOptional(total_work) << ","
-                  << formatOptional(critical_path) << "\n";
-
-        statsFile.close();
-      }
-      else
-      {
-        ::std::cerr << "Unable to open file: " << stats_filename << ::std::endl;
-      }
-    }
-
-    dot_filename.clear();
   }
 
 private:
