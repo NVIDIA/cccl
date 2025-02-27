@@ -341,7 +341,6 @@ int main(int, char**)
 
 #if !defined(TEST_COMPILER_GCC) || __GNUC__ > 6
   static_assert(pr38638(3) == 5, "");
-
 #endif // !defined(TEST_COMPILER_GCC) || __GNUC__ > 6
 
   return 0;
