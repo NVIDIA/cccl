@@ -54,8 +54,8 @@ def test_unique_by_key():
 
     # Check the result is correct
     num_selected = cp.asnumpy(d_out_num_selected)[0]
-    h_out_keys = np.resize(cp.asnumpy(d_out_keys), num_selected)
-    h_out_items = np.resize(cp.asnumpy(d_out_items), num_selected)
+    h_out_keys = cp.asnumpy(d_out_keys)[:num_selected]
+    h_out_items = cp.asnumpy(d_out_items)[:num_selected]
 
     prev_key = h_in_keys[0]
     expected_keys = [prev_key]

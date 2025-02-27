@@ -152,8 +152,8 @@ def test_unique_by_key(dtype):
 
         h_out_num_selected = d_out_num_selected.copy_to_host()
         num_selected = h_out_num_selected[0]
-        h_out_keys = np.resize(d_out_keys.copy_to_host(), num_selected)
-        h_out_items = np.resize(d_out_items.copy_to_host(), num_selected)
+        h_out_keys = d_out_keys.copy_to_host()[:num_selected]
+        h_out_items = d_out_items.copy_to_host()[:num_selected]
 
         expected_keys, expected_items = unique_by_key_host(h_in_keys, h_in_items)
 
@@ -200,8 +200,8 @@ def test_unique_by_key_iterators(dtype):
 
         h_out_num_selected = d_out_num_selected.copy_to_host()
         num_selected = h_out_num_selected[0]
-        h_out_keys = np.resize(d_out_keys.copy_to_host(), num_selected)
-        h_out_items = np.resize(d_out_items.copy_to_host(), num_selected)
+        h_out_keys = d_out_keys.copy_to_host()[:num_selected]
+        h_out_items = d_out_items.copy_to_host()[:num_selected]
 
         expected_keys, expected_items = unique_by_key_host(h_in_keys, h_in_items)
 
@@ -242,8 +242,8 @@ def test_unique_by_key_complex():
 
     h_out_num_selected = d_out_num_selected.copy_to_host()
     num_selected = h_out_num_selected[0]
-    h_out_keys = np.resize(d_out_keys.copy_to_host(), num_selected)
-    h_out_items = np.resize(d_out_items.copy_to_host(), num_selected)
+    h_out_keys = d_out_keys.copy_to_host()[:num_selected]
+    h_out_items = d_out_items.copy_to_host()[:num_selected]
 
     expected_keys, expected_items = unique_by_key_host(
         h_in_keys, h_in_items, compare_complex
@@ -309,8 +309,8 @@ def test_unique_by_key_struct_types():
 
     h_out_num_selected = d_out_num_selected.copy_to_host()
     num_selected = h_out_num_selected[0]
-    h_out_keys = np.resize(d_out_keys.copy_to_host(), num_selected)
-    h_out_items = np.resize(d_out_items.copy_to_host(), num_selected)
+    h_out_keys = d_out_keys.copy_to_host()[:num_selected]
+    h_out_items = d_out_items.copy_to_host()[:num_selected]
 
     expected_keys, expected_items = unique_by_key_host(
         h_in_keys, h_in_items, struct_compare_op
@@ -354,8 +354,8 @@ def test_unique_by_key_with_stream(cuda_stream):
     h_out_num_selected = d_out_num_selected.get()
 
     num_selected = h_out_num_selected[0]
-    h_out_keys = np.resize(h_out_keys, num_selected)
-    h_out_items = np.resize(h_out_items, num_selected)
+    h_out_keys = h_out_keys[:num_selected]
+    h_out_items = h_out_items[:num_selected]
 
     expected_keys, expected_items = unique_by_key_host(h_in_keys, h_in_items)
 
