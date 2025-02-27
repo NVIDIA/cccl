@@ -97,6 +97,8 @@ The implementation may assume that any **host** thread will eventually do one of
     using "host.threads.<id>" and "device.threads.<id>", respectively.
 
     .. code:: cuda
+	:number-lines:
+
         // Example: Execution.Model.Device.0
         // Outcome: grid eventually terminates per device.threads.4 because the atomic object does not have automatic storage duration.
         __global__ void ex0(cuda::atomic_ref<int, cuda::thread_scope_device> atom) {
@@ -108,6 +110,8 @@ The implementation may assume that any **host** thread will eventually do one of
         }
 
     .. code:: cuda
+	:number-lines:
+
         // Example: Execution.Model.Device.1
         // Allowed outcome: No thread makes progress because device threads don't support host.threads.2.
         __global__ void ex1() {
@@ -115,6 +119,8 @@ The implementation may assume that any **host** thread will eventually do one of
         }
 
     .. code:: cuda
+	:number-lines:
+
         // Example: Execution.Model.Device.2
         // Allowed outcome: No thread makes progress because device threads don't support host.threads.4
         // for objects with automatic storage duration (see exception in device.threads.3).
@@ -124,6 +130,8 @@ The implementation may assume that any **host** thread will eventually do one of
         }
 
     .. code:: cuda
+	:number-lines:
+
         // Example: Execution.Model.Device.3
         // Allowed outcome: No thread makes progress because device threads don't support host.threads.5
         // for objects with automatic storage duration (see exception in device.threads.4).
@@ -133,6 +141,8 @@ The implementation may assume that any **host** thread will eventually do one of
         }
 
     .. code:: cuda
+	:number-lines:
+
         // Example: Execution.Model.Device.4
         // Allowed outcome: No thread makes progress because device threads don't support host.thread.6.
         __global void ex4() {
@@ -159,6 +169,8 @@ This method is not sufficient because it does not catch all Forward Progress bug
 .. dropdown:: Examples of CUDA API forward progress guarantees.
 
     .. code:: cuda
+	:number-lines:
+
         // Example: Execution.Model.API.1
         // Outcome: if no other device threads (e.g., from other processes) are making progress,
         // this program terminates and returns cudaSuccess.
@@ -175,6 +187,8 @@ This method is not sufficient because it does not catch all Forward Progress bug
         }
 
     .. code:: cuda
+	:number-lines:
+	      
         // Example: Execution.Model.API.2
         // Allowed outcome: eventually, no thread makes progress.
         // Rationale: the `cudaDeviceSynchronize` API below is only called if a device thread eventually makes progress and sets the flag.
@@ -190,6 +204,8 @@ This method is not sufficient because it does not catch all Forward Progress bug
         }
 
     .. code:: cuda
+	:number-lines:
+	      
         // Example: Execution.Model.API.3
         // Allowed outcome: eventually, no thread makes progress.
         // Rationale: same as Example.Model.API.2, with the addition that a single CUDA query API call does not guarantee
@@ -205,6 +221,8 @@ This method is not sufficient because it does not catch all Forward Progress bug
         }
 
     .. code:: cuda
+	:number-lines:
+	      
         // Example: Execution.Model.API.4
         // Outcome: terminates.
         // Rationale: same as Execution.Model.API.3, but this example repeatedly calls
@@ -234,6 +252,8 @@ These may include dependencies on the completion of, among others, `CUDA Events 
 .. dropdown:: Examples of CUDA API forward progress guarantees due to stream and event ordering
 
     .. code:: cuda
+	:number-lines:
+	      
         // Example: Execution.Model.Stream.0
         // Allowed outcome: eventually, no thread makes progress.
         // Rationale: while CUDA guarantees that one device thread makes progress, since there
@@ -255,6 +275,8 @@ These may include dependencies on the completion of, among others, `CUDA Events 
         }
 
     .. code:: cuda
+	:number-lines:
+	      
         // Example: Execution.Model.Stream.1
         // Outcome: terminates.
         // Rationale: same as Execution.Model.Stream.0, but this example has a stream dependency
