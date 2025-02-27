@@ -25,12 +25,13 @@ for all device threads of execution, facilitating the parallelization of pre-exi
       tasks from a set of tasks in an arbitrary order, one after the other, satisfies the requirements of parallel forward progress for these
       tasks. — end note]
 
-.. _libcudacxx-extended-api-execution-model-host-threads:
 
 The CUDA C++ Programming Language is an extension of the C++ Programming Language.
 This section documents the modifications and extensions to the `[intro.progress] <https://eel.is/c++draft/intro.progress>`__ section of the current `ISO International Standard ISO/IEC 14882 – Programming Language C++ <https://eel.is/c++draft/>`__ draft.
 Modified sections are called out explicitly and their diff is shown in **bold**.
 All other sections are additions.
+
+.. _libcudacxx-extended-api-execution-model-host-threads:
 
 Host threads
 ------------
