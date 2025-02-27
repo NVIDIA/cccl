@@ -31,7 +31,7 @@
 
 template <class Mapping, class... Indices>
 _CCCL_CONCEPT operator_constraints = _CCCL_REQUIRES_EXPR((Mapping, variadic Indices), Mapping m, Indices... idxs)(
-  requires(cuda::std::is_same_v<decltype(m(idxs...)), typename Mapping::index_type>));
+  _Same_as(typename Mapping::index_type) m(idxs...));
 
 _CCCL_TEMPLATE(class Mapping, class... Indices)
 _CCCL_REQUIRES(operator_constraints<Mapping, Indices...>)
