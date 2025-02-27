@@ -55,7 +55,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_fence(__thread_scope_block_tag, __
 static inline _CCCL_DEVICE void __cuda_atomic_fence(__thread_scope_cluster_tag, __atomic_cuda_acq_rel)
 { asm volatile("fence.acq_rel.cluster;" ::: "memory"); }
 static inline _CCCL_DEVICE void __cuda_atomic_fence(__thread_scope_cluster_tag, __atomic_cuda_seq_cst)
-{ asm volatile("fence.sc.cluster.;" ::: "memory"); }
+{ asm volatile("fence.sc.cluster;" ::: "memory"); }
 static inline _CCCL_DEVICE void __cuda_atomic_fence(__thread_scope_device_tag, __atomic_cuda_acq_rel)
 { asm volatile("fence.acq_rel.gpu;" ::: "memory"); }
 static inline _CCCL_DEVICE void __cuda_atomic_fence(__thread_scope_device_tag, __atomic_cuda_seq_cst)
