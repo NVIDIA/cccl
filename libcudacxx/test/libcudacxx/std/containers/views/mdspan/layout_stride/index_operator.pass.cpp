@@ -30,13 +30,8 @@
 #include "test_macros.h"
 
 template <class Mapping, class... Indices>
-_CCCL_CONCEPT_FRAGMENT(
-  operator_constraints_,
-  requires(Mapping m,
-           Indices... idxs)((cuda::std::is_same<decltype(m(idxs...)), typename Mapping::index_type>::value)));
-
-template <class Mapping, class... Indices>
-_CCCL_CONCEPT operator_constraints = _CCCL_FRAGMENT(operator_constraints_, Mapping, Indices...);
+_CCCL_CONCEPT operator_constraints = _CCCL_REQUIRES_EXPR((Mapping, variadic Indices), Mapping m, Indices... idxs)(
+  requires(cuda::std::is_same_v<decltype(m(idxs...)), typename Mapping::index_type>));
 
 _CCCL_TEMPLATE(class Mapping, class... Indices)
 _CCCL_REQUIRES(operator_constraints<Mapping, Indices...>)

@@ -103,12 +103,7 @@ struct SizeTIntType
 };
 
 template <class H>
-_CCCL_CONCEPT_FRAGMENT(can_deduce_layout_,
-                       requires()( //
-                         requires((sizeof(decltype(cuda::std::mdspan(cuda::std::declval<H>(), 10))) > 0))));
-
-template <class H>
-_CCCL_CONCEPT can_deduce_layout = _CCCL_FRAGMENT(can_deduce_layout_, H);
+_CCCL_CONCEPT can_deduce_layout = _CCCL_REQUIRES_EXPR((H))((cuda::std::mdspan(cuda::std::declval<H>(), 10)));
 
 template <class H, class A, cuda::std::enable_if_t<can_deduce_layout<H>, int> = 0>
 __host__ __device__ constexpr bool test_no_layout_deduction_guides(const H& handle, const A&)
