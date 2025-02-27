@@ -25,6 +25,7 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/climits>
 #include <cuda/std/cstdint>
@@ -40,9 +41,9 @@ class __byteswap_impl
   template <class _Full>
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Full __impl_recursive(_Full __val) noexcept
   {
-    if constexpr (sizeof(_Full) / 2 > 1)
+    if constexpr (sizeof(_Full) > 2)
     {
-      using _Half = __uint_t<sizeof(_Full) / 2 * CHAR_BIT>;
+      using _Half = __make_nbit_uint_t<sizeof(_Full) / 2 * CHAR_BIT>;
 
       return static_cast<_Full>(__impl<_Half>(static_cast<_Half>(__val >> CHAR_BIT * sizeof(_Half))))
            | (static_cast<_Full>(__impl<_Half>(static_cast<_Half>(__val))) << CHAR_BIT * sizeof(_Half));
@@ -103,7 +104,7 @@ public:
       NV_IF_TARGET(NV_IS_HOST, return _byteswap_ushort(__val);)
 #  endif // _CCCL_COMPILER(MSVC)
 #  if __cccl_ptx_isa >= 200
-      NV_IF_TARGET(NV_PROVIDES_SM_50, return __impl_device(__val);)
+      NV_IF_TARGET(NV_IS_DEVICE, return __impl_device(__val);)
 #  endif // __cccl_ptx_isa >= 200
     }
     return __impl_recursive(__val);
@@ -121,7 +122,7 @@ public:
       NV_IF_TARGET(NV_IS_HOST, return _byteswap_ulong(__val);)
 #  endif // _CCCL_COMPILER(MSVC)
 #  if __cccl_ptx_isa >= 200
-      NV_IF_TARGET(NV_PROVIDES_SM_50, return __impl_device(__val);)
+      NV_IF_TARGET(NV_IS_DEVICE, return __impl_device(__val);)
 #  endif // __cccl_ptx_isa >= 200
     }
     return __impl_recursive(__val);
@@ -139,7 +140,7 @@ public:
       NV_IF_TARGET(NV_IS_HOST, return _byteswap_uint64(__val);)
 #  endif // _CCCL_COMPILER(MSVC)
 #  if __cccl_ptx_isa >= 200
-      NV_IF_TARGET(NV_PROVIDES_SM_50, return __impl_device(__val);)
+      NV_IF_TARGET(NV_IS_DEVICE, return __impl_device(__val);)
 #  endif // __cccl_ptx_isa >= 200
     }
     return __impl_recursive(__val);

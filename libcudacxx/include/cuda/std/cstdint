@@ -21,7 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/version>
 
 _CCCL_PUSH_MACROS
@@ -164,83 +163,12 @@ using ::uintptr_t;
 using ::intmax_t;
 using ::uintmax_t;
 
-template <size_t _NBits, bool _IsSigned>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr auto __make_sized_int_impl() noexcept
-{
-  if constexpr (_IsSigned)
-  {
-    if constexpr (_NBits == 8)
-    {
-      return int8_t{};
-    }
-    else if constexpr (_NBits == 16)
-    {
-      return int16_t{};
-    }
-    else if constexpr (_NBits == 32)
-    {
-      return int32_t{};
-    }
-    else if constexpr (_NBits == 64)
-    {
-      return int64_t{};
-    }
 #if _CCCL_HAS_INT128()
-    else if constexpr (_NBits == 128)
-    {
-      return __int128_t{};
-    }
-#endif // _CCCL_HAS_INT128()
-    else
-    {
-      static_assert(_CCCL_TRAIT(__always_false, decltype(_NBits)), "Unsupported signed integer size");
-      _CCCL_UNREACHABLE();
-    }
-  }
-  else
-  {
-    if constexpr (_NBits == 8)
-    {
-      return uint8_t{};
-    }
-    else if constexpr (_NBits == 16)
-    {
-      return uint16_t{};
-    }
-    else if constexpr (_NBits == 32)
-    {
-      return uint32_t{};
-    }
-    else if constexpr (_NBits == 64)
-    {
-      return uint64_t{};
-    }
-#if _CCCL_HAS_INT128()
-    else if constexpr (_NBits == 128)
-    {
-      return __uint128_t{};
-    }
-#endif // _CCCL_HAS_INT128()
-    else
-    {
-      static_assert(_CCCL_TRAIT(__always_false, decltype(_NBits)), "Unsupported unsigned integer size");
-      _CCCL_UNREACHABLE();
-    }
-  }
-}
-
-template <size_t _NBytes, bool _IsSigned = true>
-using __int_t = decltype(__make_sized_int_impl<_NBytes, _IsSigned>());
-
-template <size_t _NBytes>
-using __uint_t = __int_t<_NBytes, false>;
-
-#if _CCCL_HAS_INT128()
-using __intmax_t  = __int_t<128>;
-using __uintmax_t = __uint_t<128>;
+using __cccl_intmax_t  = __int128_t;
+using __cccl_uintmax_t = __uint128_t;
 #else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
-using __intmax_t  = __int_t<64>;
-using __uintmax_t = __uint_t<64>;
+using __cccl_intmax_t  = long long;
+using __cccl_uintmax_t = unsigned long long;
 #endif // !_CCCL_HAS_INT128()
 
 _LIBCUDACXX_END_NAMESPACE_STD

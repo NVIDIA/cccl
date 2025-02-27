@@ -23,14 +23,8 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class...>
-struct __always_false : public false_type
-{};
-
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class... _Args>
 _CCCL_INLINE_VAR constexpr bool __always_false_v = false;
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
