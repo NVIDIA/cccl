@@ -84,6 +84,20 @@ _CCCL_CONCEPT __layout_mapping_req_types = _CCCL_REQUIRES_EXPR((_Mapping))(
   requires(same_as<typename _Mapping::rank_type, typename _Mapping::extents_type::rank_type>),
   requires(__is_mapping_of<typename _Mapping::layout_type, _Mapping>));
 
+template <class _Mapping>
+_CCCL_CONCEPT __layout_mapping_req_members = _CCCL_REQUIRES_EXPR((_Mapping), const _Mapping& __map)(
+  _Same_as(const typename _Mapping::extents_type&) __map.extents(),
+  _Same_as(typename _Mapping::index_type) __map.required_span_size(),
+  _Same_as(bool) __map.is_unique(),
+  _Same_as(bool) __map.is_exhaustive(),
+  _Same_as(bool) __map.is_strided());
+
+template <class _Mapping>
+_CCCL_CONCEPT __layout_mapping_req = _CCCL_REQUIRES_EXPR((_Mapping))(
+  requires(__layout_mapping_req_type<_Mapping>),
+  requires(__layout_mapping_req_types<_Mapping>),
+  requires(__layout_mapping_req_members<_Mapping>));
+
 // [mdspan.layout.stride.expo]/4
 // NOTE: integral_constant<bool, _Mapping::is_always_strided()>::value only checks that this is a constant expression
 template <class _Mapping>

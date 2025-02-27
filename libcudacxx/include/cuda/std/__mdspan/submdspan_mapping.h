@@ -44,7 +44,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _LayoutMapping>
 struct submdspan_mapping_result
 {
-  static_assert(true, // __is_layout_mapping<_LayoutMapping>,
+  static_assert(__mdspan_detail::__layout_mapping_req<_LayoutMapping>,
                 "[mdspan.submdspan.submdspan.mapping.result] shall meet the layout mapping requirements");
 
   _CCCL_NO_UNIQUE_ADDRESS _LayoutMapping mapping{};
