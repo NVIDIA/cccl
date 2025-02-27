@@ -127,7 +127,6 @@ def compare_op(lhs, rhs):
 def test_unique_by_key(dtype):
     for num_items_pow2 in type_to_problem_sizes(dtype):
         num_items = 2**num_items_pow2
-        num_items = 10
 
         h_in_keys = random_array(num_items, dtype, max_value=20)
         h_in_items = random_array(num_items, np.float32)
@@ -150,8 +149,6 @@ def test_unique_by_key(dtype):
             compare_op,
             num_items,
         )
-
-        numba.cuda.synchronize()
 
         h_out_num_selected = d_out_num_selected.copy_to_host()
         num_selected = h_out_num_selected[0]
