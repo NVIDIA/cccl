@@ -23,23 +23,9 @@ struct NonMovable
   NonMovable(NonMovable&&) = delete;
 };
 
-#if TEST_STD_VER > 2017
-
 template <class Opt, class F>
-concept has_or_else = requires(Opt&& opt, F&& f) {
-  { cuda::std::forward<Opt>(opt).or_else(cuda::std::forward<F>(f)) };
-};
-
-#else
-
-template <class Opt, class F>
-_CCCL_CONCEPT_FRAGMENT(HasOrElse,
-                       requires(Opt&& opt, F&& f)(cuda::std::forward<Opt>(opt).or_else(cuda::std::forward<F>(f))));
-
-template <class Opt, class F>
-_CCCL_CONCEPT has_or_else = _CCCL_FRAGMENT(HasOrElse, Opt, F);
-
-#endif
+_CCCL_CONCEPT has_or_else =
+  _CCCL_REQUIRES_EXPR((Opt, F), Opt&& opt, F&& f)((cuda::std::forward<Opt>(opt).or_else(cuda::std::forward<F>(f))));
 
 template <class T>
 __host__ __device__ cuda::std::optional<T> return_optional();
