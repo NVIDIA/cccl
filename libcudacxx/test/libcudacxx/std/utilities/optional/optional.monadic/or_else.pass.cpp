@@ -120,16 +120,16 @@ int main(int, char**)
 {
   test();
   test_nontrivial();
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
   // GCC <9 incorrectly trips on the assertions in this, so disable it there
-#  if (!defined(TEST_COMPILER_GCC) || __GNUC__ < 9)
+#if (!defined(TEST_COMPILER_GCC) || __GNUC__ < 9)
   static_assert(test(), "");
-#  endif // (!defined(TEST_COMPILER_GCC) || __GNUC__ < 9)
-#  if TEST_STD_VER > 2017
-#    if defined(_CCCL_BUILTIN_ADDRESSOF)
+#endif // (!defined(TEST_COMPILER_GCC) || __GNUC__ < 9)
+#if TEST_STD_VER > 2017
+#  if defined(_CCCL_BUILTIN_ADDRESSOF)
   static_assert(test_nontrivial());
-#    endif // defined(_CCCL_BUILTIN_ADDRESSOF)
-#  endif // TEST_STD_VER > 2017
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+#  endif // defined(_CCCL_BUILTIN_ADDRESSOF)
+#endif // TEST_STD_VER > 2017
+
   return 0;
 }
