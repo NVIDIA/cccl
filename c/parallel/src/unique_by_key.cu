@@ -379,38 +379,14 @@ struct device_unique_by_key_policy {{
 
     // Collect all LTO-IRs to be linked.
     nvrtc_ltoir_list ltoir_list;
-    auto ltoir_list_append = [&ltoir_list](nvrtc_ltoir lto) {
-      if (lto.ltsz)
-      {
-        ltoir_list.push_back(std::move(lto));
-      }
-    };
-    ltoir_list_append({op.ltoir, op.ltoir_size});
-    if (cccl_iterator_kind_t::CCCL_ITERATOR == input_keys_it.type)
-    {
-      ltoir_list_append({input_keys_it.advance.ltoir, input_keys_it.advance.ltoir_size});
-      ltoir_list_append({input_keys_it.dereference.ltoir, input_keys_it.dereference.ltoir_size});
-    }
-    if (cccl_iterator_kind_t::CCCL_ITERATOR == input_values_it.type)
-    {
-      ltoir_list_append({input_values_it.advance.ltoir, input_values_it.advance.ltoir_size});
-      ltoir_list_append({input_values_it.dereference.ltoir, input_values_it.dereference.ltoir_size});
-    }
-    if (cccl_iterator_kind_t::CCCL_ITERATOR == output_keys_it.type)
-    {
-      ltoir_list_append({output_keys_it.advance.ltoir, output_keys_it.advance.ltoir_size});
-      ltoir_list_append({output_keys_it.dereference.ltoir, output_keys_it.dereference.ltoir_size});
-    }
-    if (cccl_iterator_kind_t::CCCL_ITERATOR == output_values_it.type)
-    {
-      ltoir_list_append({output_values_it.advance.ltoir, output_values_it.advance.ltoir_size});
-      ltoir_list_append({output_values_it.dereference.ltoir, output_values_it.dereference.ltoir_size});
-    }
-    if (cccl_iterator_kind_t::CCCL_ITERATOR == output_num_selected_it.type)
-    {
-      ltoir_list_append({output_values_it.advance.ltoir, output_values_it.advance.ltoir_size});
-      ltoir_list_append({output_values_it.dereference.ltoir, output_values_it.dereference.ltoir_size});
-    }
+    nvrtc_ltoir_list_appender appender{ltoir_list};
+
+    appender.append({op.ltoir, op.ltoir_size});
+    appender.add_iterator_definition(input_keys_it);
+    appender.add_iterator_definition(input_values_it);
+    appender.add_iterator_definition(output_keys_it);
+    appender.add_iterator_definition(output_values_it);
+    appender.add_iterator_definition(output_num_selected_it);
 
     nvrtc_link_result result =
       make_nvrtc_command_list()
