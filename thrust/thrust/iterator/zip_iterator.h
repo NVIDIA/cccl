@@ -70,7 +70,20 @@ struct make_zip_iterator_base<::cuda::std::tuple<Its...>>
   using reference = tuple_of_iterator_references<it_reference_t<Its>...>;
 
   // Boost's Value type is the same as reference type. using value_type = reference;
-  using value_type = ::cuda::std::tuple<it_value_t<Its>...>;
+  template <typename... ValueTypes>
+  static constexpr auto make_value_type()
+  {
+    if constexpr ((::cuda::std::is_void_v<ValueTypes> || ...))
+    {
+      return; // void
+    }
+    else
+    {
+      // we use if constexpr to discard instantiating a tuple<... void ...>, which is ill-formed
+      return ::cuda::std::tuple<ValueTypes...>{};
+    }
+  }
+  using value_type = decltype(make_value_type<it_value_t<Its>...>());
 
   // Difference type is the first iterator's difference type
   using difference_type = it_difference_t<::cuda::std::tuple_element_t<0, ::cuda::std::tuple<Its...>>>;
@@ -155,7 +168,6 @@ struct make_zip_iterator_base<::cuda::std::tuple<Its...>>
 //!
 //! \code
 //! #include <thrust/zip_iterator.h>
-//! #include <thrust/tuple.h>
 //! #include <thrust/device_vector.h>
 //!
 //! int main()
@@ -163,9 +175,9 @@ struct make_zip_iterator_base<::cuda::std::tuple<Its...>>
 //!   thrust::device_vector<int> int_in{0, 1, 2}, int_out(3);
 //!   thrust::device_vector<float> float_in{0.0f, 10.0f, 20.0f}, float_out(3);
 //!
-//!   thrust::copy(thrust::make_zip_iterator(thrust::make_tuple(int_in.begin(), float_in.begin())),
-//!                thrust::make_zip_iterator(thrust::make_tuple(int_in.end(),   float_in.end())),
-//!                thrust::make_zip_iterator(thrust::make_tuple(int_out.begin(),float_out.begin())));
+//!   thrust::copy(thrust::make_zip_iterator(int_in.begin(), float_in.begin()),
+//!                thrust::make_zip_iterator(int_in.end(),   float_in.end()),
+//!                thrust::make_zip_iterator(int_out.begin(),float_out.begin()));
 //!
 //!   // int_out is now [0, 1, 2]
 //!   // float_out is now [0.0f, 10.0f, 20.0f]
