@@ -18,6 +18,7 @@ set(stf_test_sources
   error_checks/misformed_tasks_dbl_end.cu
   error_checks/misformed_tasks_dbl_start.cu
   error_checks/non_managed_data.cu
+  error_checks/stackable_illegal_export.cu
   error_checks/uninitialized_data.cu
   error_checks/write_frozen.cu
   examples/05-stencil-no-copy.cu
@@ -35,6 +36,15 @@ set(stf_test_sources
   interface/data_from_device_async.cu
   interface/move_operator.cu
   local_stf/legacy_to_stf.cu
+  local_stf/stackable.cu
+  local_stf/stackable2.cu
+  local_stf/stackable3.cu
+  local_stf/stackable_export.cu
+  local_stf/stackable_export2.cu
+  local_stf/stackable_move.cu
+  local_stf/stackable_token.cu
+  local_stf/stackable_write_back.cu
+  local_stf/stackable_redundant_deps.cu
   local_stf/threads_multiple_graphs.cu
   places/managed.cu
   places/managed_from_user.cu
@@ -92,6 +102,7 @@ set(stf_test_codegen_sources
   freeze/token.cu
   graph/epoch.cu
   graph/for_each_batched.cu
+  graph/for_each_batched_allocator.cu
   graph/for_each_batched_write.cu
   graph/freeze_for_graph.cu
   graph/graph_composition.cu
@@ -183,6 +194,7 @@ set(stf_unittested_headers
   cuda/experimental/__stf/utility/hash.cuh
   cuda/experimental/__stf/utility/memory.cuh
   cuda/experimental/__stf/utility/scope_guard.cuh
+  cuda/experimental/__stf/utility/stackable_ctx.cuh
   cuda/experimental/__stf/utility/stopwatch.cuh
   cuda/experimental/__stf/utility/unittest.cuh
   cuda/experimental/__stf/utility/unstable_unique.cuh
