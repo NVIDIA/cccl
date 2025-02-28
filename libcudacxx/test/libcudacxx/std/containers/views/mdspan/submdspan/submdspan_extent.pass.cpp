@@ -49,6 +49,7 @@ __host__ __device__ constexpr bool test()
       static_assert(subextents_t::rank() == extents_t::rank());
       static_assert(subextents_t::rank_dynamic() == extents_t::rank_dynamic());
       assert(sub_ext.static_extent(0) == ext.static_extent(0));
+      assert(sub_ext.extent(0) == ext.extent(0));
       unused(sub_ext);
     }
 
@@ -93,7 +94,7 @@ __host__ __device__ constexpr bool test()
     }
 
     { // [mdspan.sub.extents-4.2.3]
-      // S_k is a specialization of strided_slice and extend_type models integral-constant-like and is zero
+      // S_k is a specialization of strided_slice and extent_type models integral-constant-like and is zero
       const auto slice = cuda::std::strided_slice{0, cuda::std::integral_constant<size_t, 0>{}, 1};
       static_assert(cuda::std::__integral_constant_like<decltype(slice)::extent_type>);
       cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
@@ -109,7 +110,7 @@ __host__ __device__ constexpr bool test()
     }
 
     { // [mdspan.sub.extents-4.2.3]
-      // S_k is a specialization of strided_slice and extend_type models integral-constant-like and is not zero
+      // S_k is a specialization of strided_slice and extent_type models integral-constant-like and is not zero
       const auto slice = cuda::std::strided_slice{0, cuda::std::integral_constant<size_t, 2>{}, 1};
       static_assert(cuda::std::__integral_constant_like<decltype(slice)::extent_type>);
       cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
@@ -123,7 +124,7 @@ __host__ __device__ constexpr bool test()
     }
 
     { // [mdspan.sub.extents-4.2.4]
-      // S_k is a specialization of strided_slice and extend_type and stride_type model integral-constant-like but
+      // S_k is a specialization of strided_slice and extent_type and stride_type model integral-constant-like but
       // extent is zero
       const auto slice = cuda::std::strided_slice{
         0, cuda::std::integral_constant<size_t, 0>{}, cuda::std::integral_constant<size_t, 2>{}};
@@ -142,7 +143,7 @@ __host__ __device__ constexpr bool test()
     }
 
     { // [mdspan.sub.extents-4.2.4]
-      // S_k is a specialization of strided_slice and extend_type and stride_type model integral-constant-like
+      // S_k is a specialization of strided_slice and extent_type and stride_type model integral-constant-like
       const auto slice = cuda::std::strided_slice{
         0, cuda::std::integral_constant<size_t, 2>{}, cuda::std::integral_constant<size_t, 2>{}};
       static_assert(cuda::std::__integral_constant_like<typename decltype(slice)::extent_type>);
@@ -237,7 +238,7 @@ __host__ __device__ constexpr bool test()
     }
 
     { // [mdspan.sub.extents-4.2.3]
-      // S_k is a specialization of strided_slice and extend_type models integral-constant-like and is zero
+      // S_k is a specialization of strided_slice and extent_type models integral-constant-like and is zero
       const auto slice = cuda::std::strided_slice{0, cuda::std::integral_constant<size_t, 0>{}, 1};
       static_assert(cuda::std::__integral_constant_like<decltype(slice)::extent_type>);
       cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
@@ -253,7 +254,7 @@ __host__ __device__ constexpr bool test()
     }
 
     { // [mdspan.sub.extents-4.2.3]
-      // S_k is a specialization of strided_slice and extend_type models integral-constant-like and is not zero
+      // S_k is a specialization of strided_slice and extent_type models integral-constant-like and is not zero
       const auto slice = cuda::std::strided_slice{0, cuda::std::integral_constant<size_t, 2>{}, 1};
       static_assert(cuda::std::__integral_constant_like<decltype(slice)::extent_type>);
       cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
@@ -267,7 +268,7 @@ __host__ __device__ constexpr bool test()
     }
 
     { // [mdspan.sub.extents-4.2.4]
-      // S_k is a specialization of strided_slice and extend_type and stride_type model integral-constant-like but
+      // S_k is a specialization of strided_slice and extent_type and stride_type model integral-constant-like but
       // extent is zero
       const auto slice = cuda::std::strided_slice{
         0, cuda::std::integral_constant<size_t, 0>{}, cuda::std::integral_constant<size_t, 2>{}};
@@ -286,7 +287,7 @@ __host__ __device__ constexpr bool test()
     }
 
     { // [mdspan.sub.extents-4.2.4]
-      // S_k is a specialization of strided_slice and extend_type and stride_type model integral-constant-like
+      // S_k is a specialization of strided_slice and extent_type and stride_type model integral-constant-like
       const auto slice = cuda::std::strided_slice{
         0, cuda::std::integral_constant<size_t, 2>{}, cuda::std::integral_constant<size_t, 2>{}};
       static_assert(cuda::std::__integral_constant_like<typename decltype(slice)::extent_type>);
@@ -385,7 +386,7 @@ __host__ __device__ constexpr bool test()
     }
 
     { // [mdspan.sub.extents-4.2.3]
-      // S_k is a specialization of strided_slice and extend_type models integral-constant-like and is zero
+      // S_k is a specialization of strided_slice and extent_type models integral-constant-like and is zero
       const auto slice = cuda::std::strided_slice{0, cuda::std::integral_constant<size_t, 0>{}, 1};
       static_assert(cuda::std::__integral_constant_like<decltype(slice)::extent_type>);
       cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, 1, slice, 1);
@@ -401,7 +402,7 @@ __host__ __device__ constexpr bool test()
     }
 
     { // [mdspan.sub.extents-4.2.3]
-      // S_k is a specialization of strided_slice and extend_type models integral-constant-like and is not zero
+      // S_k is a specialization of strided_slice and extent_type models integral-constant-like and is not zero
       const auto slice = cuda::std::strided_slice{0, cuda::std::integral_constant<size_t, 2>{}, 1};
       static_assert(cuda::std::__integral_constant_like<decltype(slice)::extent_type>);
       cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, 1, slice, 1);
@@ -415,7 +416,7 @@ __host__ __device__ constexpr bool test()
     }
 
     { // [mdspan.sub.extents-4.2.4]
-      // S_k is a specialization of strided_slice and extend_type and stride_type model integral-constant-like but
+      // S_k is a specialization of strided_slice and extent_type and stride_type model integral-constant-like but
       // extent is zero
       const auto slice = cuda::std::strided_slice{
         0, cuda::std::integral_constant<size_t, 0>{}, cuda::std::integral_constant<size_t, 2>{}};
@@ -434,7 +435,7 @@ __host__ __device__ constexpr bool test()
     }
 
     { // [mdspan.sub.extents-4.2.4]
-      // S_k is a specialization of strided_slice and extend_type and stride_type model integral-constant-like
+      // S_k is a specialization of strided_slice and extent_type and stride_type model integral-constant-like
       const auto slice = cuda::std::strided_slice{
         0, cuda::std::integral_constant<size_t, 2>{}, cuda::std::integral_constant<size_t, 2>{}};
       static_assert(cuda::std::__integral_constant_like<typename decltype(slice)::extent_type>);

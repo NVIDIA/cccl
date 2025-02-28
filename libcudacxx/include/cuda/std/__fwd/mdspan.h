@@ -32,7 +32,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-// Layout policy with a mapping which corresponds to FORTRAN-style array layouts
+// Layout policy with a mapping which corresponds to Fortran-style array layouts
 struct layout_left
 {
   template <class _Extents>
