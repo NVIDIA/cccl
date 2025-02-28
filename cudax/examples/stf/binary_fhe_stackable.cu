@@ -67,19 +67,6 @@ public:
 
   mutable stackable_logical_data<slice<char>> ld;
 
-  template <typename... Pack>
-  void push(Pack&&... pack)
-  {
-    ld.push(::std::forward<Pack>(pack)...);
-  }
-
-#if 0
-  void pop()
-  {
-    ld.pop();
-  }
-#endif
-
 private:
   std::vector<char> values;
   mutable stackable_ctx ctx;
@@ -184,19 +171,6 @@ public:
 
     return result;
   }
-
-  template <typename... Pack>
-  void push(Pack&&... pack)
-  {
-    ld.push(::std::forward<Pack>(pack)...);
-  }
-
-#if 0
-  void pop()
-  {
-    ld.pop();
-  }
-#endif
 
   mutable stackable_logical_data<slice<uint64_t>> ld;
 
