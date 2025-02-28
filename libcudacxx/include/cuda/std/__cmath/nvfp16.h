@@ -31,13 +31,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-// trigonometric functions
-
-_LIBCUDACXX_HIDE_FROM_ABI __half hypot(__half __x, __half __y)
-{
-  return __float2half(::hypotf(__half2float(__x), __half2float(__y)));
-}
-
 // floating point helper
 _LIBCUDACXX_HIDE_FROM_ABI __half __constexpr_copysign(__half __x, __half __y) noexcept
 {

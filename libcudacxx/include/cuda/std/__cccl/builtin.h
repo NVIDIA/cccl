@@ -340,6 +340,12 @@
 #  define _CCCL_BUILTIN_HUGE_VALL() static_cast<long double>(__builtin_huge_val())
 #endif // _CCCL_CHECK_BUILTIN(builtin_huge_vall)
 
+#if _CCCL_CHECK_BUILTIN(builtin_hypot) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_HYPOTF(...) __builtin_hypotf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_HYPOT(...)  __builtin_hypot(__VA_ARGS__)
+#  define _CCCL_BUILTIN_HYPOTL(...) __builtin_hypotl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_hypot)
+
 #if _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated) || _CCCL_COMPILER(GCC, >=, 9) || _CCCL_COMPILER(MSVC, >, 19, 24)
 #  define _CCCL_BUILTIN_IS_CONSTANT_EVALUATED(...) __builtin_is_constant_evaluated(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated)
