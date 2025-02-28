@@ -47,8 +47,8 @@ template <typename System>
 struct make_discard_iterator_base
 {
   // XXX value_type should actually be void but this interferes with zip_iterator<discard_iterator>
-  using value_type    = any_assign;
-  using reference     = any_assign&;
+  using value_type    = void;
+  using reference     = any_assign;
   using incrementable = ::cuda::std::ptrdiff_t;
 
   using base_iterator = counting_iterator<incrementable, System, random_access_traversal_tag>;
@@ -150,10 +150,8 @@ public:
 private: // Core iterator interface
   _CCCL_HOST_DEVICE reference dereference() const
   {
-    return m_element;
+    return {};
   }
-
-  mutable value_type m_element;
 
   //! \endcond
 };
