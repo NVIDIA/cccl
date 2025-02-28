@@ -26,7 +26,11 @@ The function reverses the order of bits in a value.
 
 **Performance considerations**
 
-The function performs the following operations in device code: ``BMSK`` for all types of size <= 4B
+The function performs the following operations in device code:
+
+- ``uint8_t``, ``uint16_t``, ``uint32_t``: ``BMSK``
+- ``uint64_t``: ``SHL`` x4, ``UADD`` x2
+- ``uint128_t``: ``SHL`` x8, ``UADD`` x4
 
 .. note::
 

@@ -27,7 +27,13 @@ The function reverses the order of bits in a value.
 
 The function performs the following operations:
 
-- Device: ``BREV``
+- Device:
+
+    - ``uint8_t`` ``uint16_t``: ``PRMT``, ``BREV``
+    - ``uint32_t``: ``BREV``
+    - ``uint64_t``: ``BREV`` x2, ``MOV`` x2
+    - ``uint128_t``: ``BREV`` x4, ``MOV`` x4
+
 - Host: ``__builtin_bitreverse<N>`` with clang
 
 .. note::
@@ -48,7 +54,7 @@ Example
 
     __global__ void bit_reverse_kernel() {
         assert(bitfield_reverse(0u) == ~0u);
-        assert(bitfield_reverse(~0u) == 0);
+        assert(bitfield_reverse(uint8_t{0b00001011}) == uint8_t{0b11010000});
     }
 
     int main() {
@@ -57,4 +63,4 @@ Example
         return 0;
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/bjM8Tjr7d>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/K36dvoh58>`_

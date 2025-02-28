@@ -33,10 +33,10 @@ The function extracts the lower bitfield of size ``width`` from ``source`` and i
 
 **Performance considerations**
 
-The function performs the following operations in CUDA:
+The function performs the following operations in CUDA for ``uint8_t``, ``uint16_t``, ``uint32_t``:
 
 - ``SM < 70``: ``BFI``
-- ``SM >= 70``: ``BMSK`` + 5 bitwise operations
+- ``SM >= 70``: ``BMSK``, bitwise operation x5
 
 .. note::
 

@@ -7,10 +7,10 @@
 
    template <typename T>
    [[nodiscard]] constexpr T
-   bitfield_extract(T value, int start, int width = 1) noexcept;
+   bitfield_extract(T value, int start, int width) noexcept;
 
-The function extracts a bitfield from a value. ``bitfield_extract()`` computes ``value & bitfield``.
-``bitfield`` is a sequence of bit of width ``width`` shifted left by ``start``.
+The function extracts a bitfield from a value and returns it in the lower bits.
+``bitfield_extract()`` computes ``(value >> start) & bitfield``, where ``bitfield`` is a sequence of bit of width ``width``.
 
 **Parameters**
 
@@ -20,7 +20,7 @@ The function extracts a bitfield from a value. ``bitfield_extract()`` computes `
 
 **Return value**
 
--  ``value & bitfield``.
+- ``(value >> start) & bitfield``.
 
 **Preconditions**
 
@@ -33,10 +33,10 @@ The function extracts a bitfield from a value. ``bitfield_extract()`` computes `
 
 **Performance considerations**
 
-The function performs the following operations in CUDA:
+The function performs the following operations in CUDA for ``uint8_t``, ``uint16_t``, ``uint32_t``:
 
 - ``SM < 70``: ``BFE``
-- ``SM >= 70``: ``BMSK`` + bitwise AND
+- ``SM >= 70``: ``BMSK``, bitwise operation x2
 
 .. note::
 
@@ -56,8 +56,7 @@ Example
 
     __global__ void bitfield_insert_kernel() {
         assert(cuda::bitfield_extract(~0u, 0, 4) == 0b1111);
-        assert(cuda::bitfield_extract(~0u, 3, 4) == 0b1111000);
-        assert(cuda::bitfield_extract(0b00100111u, 3, 4) == 0b00100000);
+        assert(cuda::bitfield_extract(0b1011000, 3, 4) == 0b1011);
     }
 
     int main() {
@@ -66,4 +65,4 @@ Example
         return 0;
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/3sdYKMd57>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/WvqfG9nbP>`_
