@@ -137,6 +137,55 @@ private:
                        stream);
   }
 
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename OffsetT,
+            typename SegmentSizeT,
+            typename ReductionOpT,
+            typename InitT>
+  CUB_RUNTIME_FUNCTION static cudaError_t segmented_reduce(
+    ::cuda::std::false_type,
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    int num_segments,
+    SegmentSizeT segment_size,
+    ReductionOpT reduction_op,
+    InitT initial_value,
+    cudaStream_t stream);
+
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename OffsetT,
+            typename SegmentSizeT,
+            typename ReductionOpT,
+            typename InitT>
+  CUB_RUNTIME_FUNCTION static cudaError_t segmented_reduce(
+    ::cuda::std::true_type,
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    int num_segments,
+    SegmentSizeT segment_size,
+    ReductionOpT reduction_op,
+    InitT initial_value,
+    cudaStream_t stream)
+  {
+    return detail::reduce::
+      DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, OffsetT, SegmentSizeT, ReductionOpT, InitT>::
+        Dispatch(d_temp_storage,
+                 temp_storage_bytes,
+                 d_in,
+                 d_out,
+                 num_segments,
+                 segment_size,
+                 reduction_op,
+                 initial_value,
+                 stream);
+  }
+
 public:
   //! @rst
   //! Computes a device-wide segmented reduction using the specified
@@ -268,6 +317,107 @@ public:
       d_end_offsets,
       reduction_op,
       initial_value, // zero-initialize
+      stream);
+  }
+
+  //! @rst
+  //! Computes a device-wide segmented reduction using the specified
+  //! binary ``reduction_op`` functor and a fixed segment size.
+  //!
+  //! - Does not support binary reduction operators that are non-commutative.
+  //! - Provides "run-to-run" determinism for pseudo-associative reduction
+  //!   (e.g., addition of floating point types) on the same GPU device.
+  //!   However, results for pseudo-associative reduction may be inconsistent
+  //!   from one device to a another device of a different compute-capability
+  //!   because CUB can employ different tile-sizing for different architectures.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates a custom min-reduction of a device vector of ``int`` data elements.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin fixed-size-segmented-reduce-reduce
+  //!     :end-before: example-end fixed-size-segmented-reduce-reduce
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
+  //!
+  //! @tparam SegmentSizeT
+  //!  **[inferred]** Segment size type that is integral
+  //!
+  //! @tparam ReductionOpT
+  //!   **[inferred]** Binary reduction functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam T
+  //!   **[inferred]** Data element type that is convertible to the `value` type of `InputIteratorT`
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_in
+  //!   Pointer to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Pointer to the output aggregate
+  //!
+  //! @param[in] num_segments
+  //!   The number of segments that comprise the sorting data
+  //!
+  //! @param[in] segment_size
+  //!   The fixed segment size of each segment
+  //!
+  //! @param[in] reduction_op
+  //!   Binary reduction functor
+  //!
+  //! @param[in] initial_value
+  //!   Initial value of the reduction for each segment
+  //!
+  //! @param[in] stream
+  //!   @rst
+  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   @endrst
+  template <typename InputIteratorT, typename OutputIteratorT, typename SegmentSizeT, typename ReductionOpT, typename T>
+  CUB_RUNTIME_FUNCTION static cudaError_t Reduce(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    int num_segments,
+    SegmentSizeT segment_size,
+    ReductionOpT reduction_op,
+    T initial_value,
+    cudaStream_t stream = 0)
+  {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Reduce");
+
+    // Integer type for segment size
+    using integral_segment_size_check = ::cuda::std::is_integral<SegmentSizeT>;
+    static_assert(integral_segment_size_check::value, "Segment Size type should be integral.");
+
+    using offset_t = detail::choose_offset_t<SegmentSizeT>;
+    return segmented_reduce<InputIteratorT, OutputIteratorT, offset_t, SegmentSizeT, ReductionOpT>(
+      integral_segment_size_check{},
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      segment_size,
+      reduction_op,
+      initial_value,
       stream);
   }
 

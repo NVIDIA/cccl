@@ -32,6 +32,8 @@
 
 #include <cuda/std/limits>
 
+#include <numeric>
+
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
@@ -224,6 +226,93 @@ C2H_TEST("Device reduce works with all device interfaces", "[segmented][reduce][
     c2h::device_vector<result_t> out_result(num_segments);
     device_segmented_arg_min(
       d_in_it, thrust::raw_pointer_cast(out_result.data()), num_segments, d_offsets_it, d_offsets_it + 1);
+    // Verify result
+    REQUIRE(expected_result == out_result);
+  }
+}
+
+/**
+ * @brief Helper function to compute the reference solution for result verification, taking a
+ * c2h::device_vector of input items, num_segments and segment_size.
+ */
+template <typename ItemT, typename ReductionOpT, typename AccumulatorT, typename ResultItT>
+void compute_fixed_size_segmented_problem_reference(
+  const c2h::device_vector<ItemT>& d_in,
+  const int num_segments,
+  const int segment_size,
+  ReductionOpT reduction_op,
+  AccumulatorT init,
+  ResultItT h_results)
+{
+  c2h::host_vector<ItemT> h_items(d_in);
+  auto h_begin = h_items.cbegin();
+
+  for (int segment = 0; segment < num_segments; segment++)
+  {
+    auto seg_begin = h_begin + segment * segment_size;
+    auto seg_end   = seg_begin + segment_size;
+    h_results[segment] =
+      static_cast<cub::detail::value_t<ResultItT>>(std::accumulate(seg_begin, seg_end, init, reduction_op));
+  }
+}
+
+C2H_TEST("Device fixed size segmented reduce works with all device interfaces",
+         "[segmented][reduce][device]",
+         full_type_list,
+         offsets)
+{
+  using type_pair_t = typename c2h::get<0, TestType>;
+  using input_t     = typename type_pair_t::input_t;
+  using output_t    = typename type_pair_t::output_t;
+  using offset_t    = typename c2h::get<1, TestType>;
+
+  const int max_items = 1 << 22;
+
+  const int segments = GENERATE_COPY(
+    take(2, random(1 << 0, 1 << 5)), //
+    take(2, random(1 << 5, 1 << 10)),
+    take(2, random(1 << 10, 1 << 15)),
+    take(2, random(1 << 15, 1 << 20)));
+
+  const int segment_size = GENERATE_COPY(
+    take(2, random(1 << 0, 1 << 5)), //
+    take(2, random(1 << 5, 1 << 10)),
+    take(2, random(1 << 10, 1 << 15)),
+    take(2, random(1 << 15, 1 << 20)));
+
+  const int num_segments = max_items / segment_size;
+  const int num_items    = std::min(num_segments * segment_size, max_items);
+
+  // Number of items
+  INFO("Test num_items: " << num_items);
+  INFO("Test num_segments: " << num_segments);
+  INFO("Test segment_size: " << segment_size);
+
+  // Generate input data
+  c2h::device_vector<input_t> in_items(num_items);
+  c2h::gen(C2H_SEED(2), in_items);
+
+  auto d_in_it = thrust::raw_pointer_cast(in_items.data());
+
+  SECTION("reduce")
+  {
+    using op_t = ::cuda::std::plus<>;
+
+    // Binary reduction operator
+    auto reduction_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
+
+    // Prepare verification data
+    using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, output_t>;
+    c2h::host_vector<output_t> expected_result(num_segments);
+    compute_fixed_size_segmented_problem_reference(
+      in_items, num_segments, segment_size, reduction_op, accum_t{}, expected_result.begin());
+
+    // Run test
+    c2h::device_vector<output_t> out_result(num_segments);
+    auto d_out_it = thrust::raw_pointer_cast(out_result.data());
+
+    using init_t = output_t;
+    device_segmented_reduce(unwrap_it(d_in_it), unwrap_it(d_out_it), num_segments, segment_size, reduction_op, init_t{});
     // Verify result
     REQUIRE(expected_result == out_result);
   }
