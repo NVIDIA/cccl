@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__cmath/fp_utils.h>
 #include <cuda/std/__cmath/isinf.h>
 #include <cuda/std/__cmath/isnan.h>

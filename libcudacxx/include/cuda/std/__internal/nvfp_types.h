@@ -22,18 +22,18 @@
 #endif // no system header
 
 // Prevent resetting of the diagnostic state by guarding the push/pop with a macro
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#if _CCCL_HAS_NVFP16()
 _CCCL_DIAG_PUSH
 #  include <cuda_fp16.h>
 _CCCL_DIAG_POP
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _CCCL_HAS_NVFP16()
 
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#if _CCCL_HAS_NVBF16()
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
 #  include <cuda_bf16.h>
 _CCCL_DIAG_POP
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _CCCL_HAS_NVBF16()
 
 #if _CCCL_HAS_NVFP8()
 _CCCL_DIAG_PUSH

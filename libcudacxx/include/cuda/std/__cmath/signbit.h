@@ -129,6 +129,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(_Tp __x) noexce
   }
   else
   {
+    _LIBCUDACXX_UNUSED_VAR(__x);
     return false;
   }
 }
