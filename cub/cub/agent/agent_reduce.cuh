@@ -92,6 +92,31 @@ struct AgentReducePolicy : ScalingType
   static constexpr CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;
 };
 
+template <
+  int NOMINAL_BLOCK_THREADS_4B,
+  int NOMINAL_WARP_THREADS_4B,
+  int NOMINAL_ITEMS_PER_THREAD_4B,
+  typename ComputeT,
+  int _VECTOR_LOAD_LENGTH,
+  CacheLoadModifier _LOAD_MODIFIER,
+  typename ScalingType = detail::MemBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
+struct AgentWarpReducePolicy : ScalingType
+{
+  static constexpr int WARP_THREADS = NOMINAL_WARP_THREADS_4B;
+
+  /// Number of items per vectorized load
+  static constexpr int VECTOR_LOAD_LENGTH = _VECTOR_LOAD_LENGTH;
+
+  /// Cache load modifier for reading input elements
+  static constexpr CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;
+
+  constexpr static int ITEMS_PER_TILE = ScalingType::ITEMS_PER_THREAD * WARP_THREADS;
+
+  constexpr static int SEGMENTS_PER_BLOCK = ScalingType::BLOCK_THREADS / WARP_THREADS;
+
+  static_assert((ScalingType::BLOCK_THREADS % WARP_THREADS) == 0, "Block should be multiple of warp");
+};
+
 /******************************************************************************
  * Thread block abstractions
  ******************************************************************************/
@@ -134,8 +159,10 @@ template <typename AgentReducePolicy,
           typename OffsetT,
           typename ReductionOp,
           typename AccumT,
-          typename TransformOp = ::cuda::std::__identity>
-struct AgentReduce
+          typename TransformOp,
+          typename CollectiveReduceT,
+          int THREADS>
+struct AgentReduceImpl
 {
   //---------------------------------------------------------------------
   // Types and constants
@@ -156,9 +183,8 @@ struct AgentReduce
                      InputIteratorT>;
 
   /// Constants
-  static constexpr int BLOCK_THREADS      = AgentReducePolicy::BLOCK_THREADS;
   static constexpr int ITEMS_PER_THREAD   = AgentReducePolicy::ITEMS_PER_THREAD;
-  static constexpr int TILE_ITEMS         = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr int TILE_ITEMS         = THREADS * ITEMS_PER_THREAD;
   static constexpr int VECTOR_LOAD_LENGTH = CUB_MIN(ITEMS_PER_THREAD, AgentReducePolicy::VECTOR_LOAD_LENGTH);
 
   // Can vectorize according to the policy if the input iterator is a native
@@ -171,13 +197,10 @@ struct AgentReduce
 
   static constexpr BlockReduceAlgorithm BLOCK_ALGORITHM = AgentReducePolicy::BLOCK_ALGORITHM;
 
-  /// Parameterized BlockReduce primitive
-  using BlockReduceT = BlockReduce<AccumT, BLOCK_THREADS, AgentReducePolicy::BLOCK_ALGORITHM>;
-
   /// Shared memory type required by this thread block
   struct _TempStorage
   {
-    typename BlockReduceT::TempStorage reduce;
+    typename CollectiveReduceT::TempStorage reduce;
   };
 
   /// Alias wrapper allowing storage to be unioned
@@ -193,7 +216,7 @@ struct AgentReduce
   WrappedInputIteratorT d_wrapped_in; ///< Wrapped input data to reduce
   ReductionOp reduction_op; ///< Binary reduction operator
   TransformOp transform_op; ///< Transform operator
-
+  unsigned int lane_id;
   //---------------------------------------------------------------------
   // Utility
   //---------------------------------------------------------------------
@@ -224,13 +247,14 @@ struct AgentReduce
    * @param d_in Input data to reduce
    * @param reduction_op Binary reduction operator
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE
-  AgentReduce(TempStorage& temp_storage, InputIteratorT d_in, ReductionOp reduction_op, TransformOp transform_op = {})
+  _CCCL_DEVICE _CCCL_FORCEINLINE AgentReduceImpl(
+    TempStorage& temp_storage, InputIteratorT d_in, ReductionOp reduction_op, TransformOp transform_op, int lane_id)
       : temp_storage(temp_storage.Alias())
       , d_in(d_in)
       , d_wrapped_in(d_in)
       , reduction_op(reduction_op)
       , transform_op(transform_op)
+      , lane_id(lane_id)
   {}
 
   //---------------------------------------------------------------------
@@ -255,7 +279,7 @@ struct AgentReduce
     AccumT items[ITEMS_PER_THREAD];
 
     // Load items in striped fashion
-    load_transform_direct_striped<BLOCK_THREADS>(threadIdx.x, d_wrapped_in + block_offset, items, transform_op);
+    load_transform_direct_striped<THREADS>(lane_id, d_wrapped_in + block_offset, items, transform_op);
 
     // Reduce items within each thread stripe
     thread_aggregate = (IS_FIRST_TILE) ? cub::ThreadReduce(items, reduction_op)
@@ -284,7 +308,7 @@ struct AgentReduce
     };
 
     // Fabricate a vectorized input iterator
-    InputT* d_in_unqualified = const_cast<InputT*>(d_in) + block_offset + (threadIdx.x * VECTOR_LOAD_LENGTH);
+    InputT* d_in_unqualified = const_cast<InputT*>(d_in) + block_offset + (lane_id * VECTOR_LOAD_LENGTH);
     CacheModifiedInputIterator<AgentReducePolicy::LOAD_MODIFIER, VectorT, OffsetT> d_vec_in(
       reinterpret_cast<VectorT*>(d_in_unqualified));
 
@@ -294,7 +318,7 @@ struct AgentReduce
 #pragma unroll
     for (int i = 0; i < WORDS; ++i)
     {
-      vec_items[i] = d_vec_in[BLOCK_THREADS * i];
+      vec_items[i] = d_vec_in[THREADS * i];
     }
 
     // Convert from input type to output type
@@ -326,13 +350,13 @@ struct AgentReduce
     ::cuda::std::bool_constant<CAN_VECTORIZE> /*can_vectorize*/)
   {
     // Partial tile
-    int thread_offset = threadIdx.x;
+    int thread_offset = lane_id;
 
     // Read first item
     if ((IS_FIRST_TILE) && (thread_offset < valid_items))
     {
       thread_aggregate = transform_op(d_wrapped_in[block_offset + thread_offset]);
-      thread_offset += BLOCK_THREADS;
+      thread_offset += THREADS;
     }
 
     // Continue reading items (block-striped)
@@ -341,7 +365,7 @@ struct AgentReduce
       InputT item(d_wrapped_in[block_offset + thread_offset]);
 
       thread_aggregate = reduction_op(thread_aggregate, transform_op(item));
-      thread_offset += BLOCK_THREADS;
+      thread_offset += THREADS;
     }
   }
 
@@ -366,7 +390,8 @@ struct AgentReduce
       int valid_items = even_share.block_end - even_share.block_offset;
       ConsumeTile<true>(
         thread_aggregate, even_share.block_offset, valid_items, ::cuda::std::false_type(), can_vectorize);
-      return BlockReduceT(temp_storage.reduce).Reduce(thread_aggregate, reduction_op, valid_items);
+      int num_valid = (THREADS <= valid_items) ? THREADS : valid_items;
+      return CollectiveReduceT(temp_storage.reduce).Reduce(thread_aggregate, reduction_op, num_valid);
     }
 
     // Extracting this into a function saves 8% of generated kernel size by allowing to reuse
@@ -374,7 +399,7 @@ struct AgentReduce
     ConsumeFullTileRange(thread_aggregate, even_share, can_vectorize);
 
     // Compute block-wide reduction (all threads have valid items)
-    return BlockReduceT(temp_storage.reduce).Reduce(thread_aggregate, reduction_op);
+    return CollectiveReduceT(temp_storage.reduce).Reduce(thread_aggregate, reduction_op);
   }
 
   /**
@@ -452,6 +477,82 @@ private:
         thread_aggregate, even_share.block_offset, valid_items, ::cuda::std::false_type(), can_vectorize);
     }
   }
+};
+
+template <typename AgentReducePolicy,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename OffsetT,
+          typename ReductionOp,
+          typename AccumT,
+          typename TransformOp = ::cuda::std::__identity>
+struct AgentReduce
+    : AgentReduceImpl<AgentReducePolicy,
+                      InputIteratorT,
+                      OutputIteratorT,
+                      OffsetT,
+                      ReductionOp,
+                      AccumT,
+                      TransformOp,
+                      BlockReduce<AccumT, AgentReducePolicy::BLOCK_THREADS, AgentReducePolicy::BLOCK_ALGORITHM>,
+                      AgentReducePolicy::BLOCK_THREADS>
+{
+  using base_t =
+    AgentReduceImpl<AgentReducePolicy,
+                    InputIteratorT,
+                    OutputIteratorT,
+                    OffsetT,
+                    ReductionOp,
+                    AccumT,
+                    TransformOp,
+                    BlockReduce<AccumT, AgentReducePolicy::BLOCK_THREADS, AgentReducePolicy::BLOCK_ALGORITHM>,
+                    AgentReducePolicy::BLOCK_THREADS>;
+
+  __device__ __forceinline__ AgentReduce(
+    typename base_t::TempStorage& temp_storage,
+    InputIteratorT d_in,
+    ReductionOp reduction_op,
+    TransformOp transform_op = {})
+      : base_t(temp_storage, d_in, reduction_op, transform_op, threadIdx.x)
+  {}
+};
+
+template <typename AgentReducePolicy,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename OffsetT,
+          typename ReductionOp,
+          typename AccumT,
+          typename TransformOp = ::cuda::std::__identity>
+struct AgentWarpReduce
+    : AgentReduceImpl<AgentReducePolicy,
+                      InputIteratorT,
+                      OutputIteratorT,
+                      OffsetT,
+                      ReductionOp,
+                      AccumT,
+                      TransformOp,
+                      WarpReduce<AccumT, AgentReducePolicy::WARP_THREADS>,
+                      AgentReducePolicy::WARP_THREADS>
+{
+  using base_t =
+    AgentReduceImpl<AgentReducePolicy,
+                    InputIteratorT,
+                    OutputIteratorT,
+                    OffsetT,
+                    ReductionOp,
+                    AccumT,
+                    TransformOp,
+                    WarpReduce<AccumT, AgentReducePolicy::WARP_THREADS>,
+                    AgentReducePolicy::WARP_THREADS>;
+
+  __device__ __forceinline__ AgentWarpReduce(
+    typename base_t::TempStorage& temp_storage,
+    InputIteratorT d_in,
+    ReductionOp reduction_op,
+    TransformOp transform_op = {})
+      : base_t(temp_storage, d_in, reduction_op, transform_op, threadIdx.x % AgentReducePolicy::WARP_THREADS)
+  {}
 };
 
 } // namespace reduce
