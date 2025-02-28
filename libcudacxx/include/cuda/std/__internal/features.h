@@ -20,11 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-// If NVCC is not being used <complex> can safely use `long double` without warnings
-#if !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(NVRTC)
-#  define _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
-#endif // !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(NVRTC)
-
 #ifndef _LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP
 #  define _LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP
 #endif // _LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP
@@ -61,9 +56,10 @@
 #endif // _LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES
 
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
-#  if _CCCL_HAS_CUDA_COMPILER
+// FIXME: Enable this for clang-cuda in a followup
+#  if 1 // !_CCCL_CUDA_COMPILER(CLANG)
 #    define _LIBCUDACXX_HAS_NO_LONG_DOUBLE
-#  endif // _CCCL_HAS_CUDA_COMPILER
+#  endif // !_CCCL_CUDA_COMPILER(CLANG)
 #endif // _LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
 #ifndef _LIBCUDACXX_HAS_NO_MONOTONIC_CLOCK
