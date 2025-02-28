@@ -86,15 +86,23 @@
 #  define _CCCL_BUILTIN_ARRAY_EXTENT(...) __array_extent(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__array_extent)
 
-#if _CCCL_HAS_BUILTIN(__builtin_assume_aligned) || _CCCL_COMPILER(MSVC, >=, 19, 23) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_ASSUME_ALIGNED(...) __builtin_assume_aligned(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__builtin_assume_aligned)
+#if _CCCL_CHECK_BUILTIN(builtin_acos) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ACOSF(...) __builtin_acosf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ACOS(...)  __builtin_acos(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ACOSL(...) __builtin_acosl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_acos)
 
 // nvhpc has a bug where it supports __builtin_addressof but does not mark it via _CCCL_CHECK_BUILTIN
 #if _CCCL_CHECK_BUILTIN(builtin_addressof) || _CCCL_COMPILER(GCC, >=, 7) || _CCCL_COMPILER(MSVC) \
   || _CCCL_COMPILER(NVHPC)
 #  define _CCCL_BUILTIN_ADDRESSOF(...) __builtin_addressof(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_addressof)
+
+#if _CCCL_CHECK_BUILTIN(builtin_asin) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ASINF(...) __builtin_asinf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ASIN(...)  __builtin_asin(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ASINL(...) __builtin_asinl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_asin)
 
 #if _CCCL_CHECK_BUILTIN(builtin_assume) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
 #  define _CCCL_BUILTIN_ASSUME(...) __builtin_assume(__VA_ARGS__)
@@ -108,11 +116,21 @@
 #  define _CCCL_BUILTIN_ASSUME(...)
 #endif // _CCCL_CHECK_BUILTIN(builtin_assume)
 
-#if _CCCL_CHECK_BUILTIN(builtin_prefetch) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_PREFETCH(...) NV_IF_TARGET(NV_IS_HOST, __builtin_prefetch(__VA_ARGS__);)
-#else
-#  define _CCCL_BUILTIN_PREFETCH(...)
-#endif // _CCCL_CHECK_BUILTIN(builtin_prefetch)
+#if _CCCL_HAS_BUILTIN(__builtin_assume_aligned) || _CCCL_COMPILER(MSVC, >=, 19, 23) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ASSUME_ALIGNED(...) __builtin_assume_aligned(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__builtin_assume_aligned)
+
+#if _CCCL_CHECK_BUILTIN(builtin_atan) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ATANF(...) __builtin_atanf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ATAN(...)  __builtin_atan(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ATANL(...) __builtin_atanl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_atan)
+
+#if _CCCL_CHECK_BUILTIN(builtin_atan2) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ATAN2F(...) __builtin_atan2f(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ATAN2(...)  __builtin_atan2(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ATAN2L(...) __builtin_atan2l(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_atan2)
 
 // MSVC supports __builtin_bit_cast from 19.25 on
 #if _CCCL_CHECK_BUILTIN(builtin_bit_cast) || _CCCL_COMPILER(MSVC, >, 19, 25)
@@ -562,6 +580,12 @@
 #  undef _CCCL_BUILTIN_POW
 #  undef _CCCL_BUILTIN_POWL
 #endif // _CCCL_CUDA_COMPILER(CLANG)
+
+#if _CCCL_CHECK_BUILTIN(builtin_prefetch) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_PREFETCH(...) NV_IF_TARGET(NV_IS_HOST, __builtin_prefetch(__VA_ARGS__);)
+#else
+#  define _CCCL_BUILTIN_PREFETCH(...)
+#endif // _CCCL_CHECK_BUILTIN(builtin_prefetch)
 
 #if _CCCL_CHECK_BUILTIN(builtin_rint) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_RINTF(...) __builtin_rintf(__VA_ARGS__)

@@ -41,11 +41,6 @@ _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 hypot(__nv_bfloat16 __x, __nv_bfloat16 _
   return __float2bfloat16(::hypotf(__bfloat162float(__x), __bfloat162float(__y)));
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 atan2(__nv_bfloat16 __x, __nv_bfloat16 __y)
-{
-  return __float2bfloat16(::atan2f(__bfloat162float(__x), __bfloat162float(__y)));
-}
-
 // floating point helper
 _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 __constexpr_copysign(__nv_bfloat16 __x, __nv_bfloat16 __y) noexcept
 {
