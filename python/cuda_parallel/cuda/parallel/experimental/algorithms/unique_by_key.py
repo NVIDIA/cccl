@@ -190,6 +190,14 @@ def unique_by_key(
           :start-after: example-begin unique-by-key
           :end-before: example-end unique-by-key
 
+    Args:
+        d_in_keys: Device array or iterator containing the input sequence of keys
+        d_in_items: Device array or iterator that contains each key's corresponding item
+        d_out_keys: Device array or iterator to store the outputted keys
+        d_out_items: Device array or iterator to store each outputted key's item
+        d_out_num_selected: Device array to store how many items were selected
+        op: Callable representing the equality operator
+
     Returns:
         A callable object that can be used to perform unique by key
     """
