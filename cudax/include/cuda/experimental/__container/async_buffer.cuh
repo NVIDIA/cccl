@@ -66,6 +66,7 @@
 #include <cuda/experimental/__memory_resource/get_memory_resource.cuh>
 #include <cuda/experimental/__memory_resource/properties.cuh>
 #include <cuda/experimental/__stream/get_stream.cuh>
+#include <cuda/experimental/__utility/ensure_current_device.cuh>
 #include <cuda/experimental/__utility/select_execution_space.cuh>
 
 _CCCL_PUSH_MACROS
@@ -240,6 +241,7 @@ private:
     }
     else
     {
+      ::cuda::experimental::__ensure_current_device __guard(__buf_.get_stream());
       thrust::fill_n(thrust::cuda::par_nosync.on(__buf_.get_stream().get()), __first, __count, _Tp());
     }
   }
@@ -261,6 +263,7 @@ private:
     }
     else
     {
+      ::cuda::experimental::__ensure_current_device __guard(__buf_.get_stream());
       thrust::fill_n(thrust::cuda::par_nosync.on(__buf_.get_stream().get()), __first, __count, __value);
     }
   }
@@ -763,6 +766,7 @@ public:
     }
     else
     {
+      ::cuda::experimental::__ensure_current_device __guard(__lhs.get_stream().get());
       return (__lhs.size() == __rhs.size())
           && thrust::equal(thrust::cuda::par_nosync.on(__lhs.get_stream().get()),
                            __lhs.__unwrapped_begin(),
