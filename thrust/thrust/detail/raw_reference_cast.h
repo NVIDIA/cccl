@@ -25,10 +25,12 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/detail/tuple_transform.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/type_traits/has_nested_type.h>
+#include <thrust/tuple.h>
 
 // the order of declarations and definitions in this file is totally goofy
 // this header defines raw_reference_cast, which has a few overloads towards the bottom of the file
@@ -54,6 +56,7 @@ struct is_unwrappable : is_wrapped_reference<T>
 // specialize is_unwrappable
 // a tuple is_unwrappable if any of its elements is_unwrappable
 template <typename... Ts>
+
 struct is_unwrappable<thrust::tuple<Ts...>> : ::cuda::std::disjunction<is_unwrappable<Ts>...>
 {};
 
