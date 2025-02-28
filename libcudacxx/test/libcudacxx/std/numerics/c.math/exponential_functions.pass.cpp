@@ -29,8 +29,9 @@ __host__ __device__ void test_exp(T val)
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::exp(T{})), ret>, "");
 
-  const T euler = T(2.718281828459045);
+  [[maybe_unused]] const T euler = T(2.718281828459045);
   assert(eq(cuda::std::exp(T(-0.0)), T(1.0)));
+  unused(val);
   if constexpr (!cuda::std::is_integral_v<T>)
   {
     assert(eq(cuda::std::exp(val), euler));
@@ -93,13 +94,14 @@ __host__ __device__ void test_expm1(T val)
   static_assert(cuda::std::is_same_v<decltype(cuda::std::expm1(T{})), ret>, "");
 
   const T eulerm1 = T(1.718281828459045);
+  assert(is_about(T(cuda::std::expm1(val)), eulerm1));
   assert(eq(cuda::std::expm1(T(-0.0)), T(-0.0)));
   if constexpr (!cuda::std::is_integral_v<T>)
   {
-    assert(is_about(T(cuda::std::expm1(val)), eulerm1));
     assert(eq(cuda::std::expm1(800), cuda::std::numeric_limits<T>::infinity()));
     assert(eq(cuda::std::expm1(T(-cuda::std::numeric_limits<T>::infinity())), T(-1)));
   }
+
   if constexpr (cuda::std::is_same_v<T, float>)
   {
     assert(is_about(T(cuda::std::expm1f(val)), eulerm1));
@@ -130,6 +132,7 @@ __host__ __device__ void test_frexp(T val)
   exponent = -1;
   assert(eq(cuda::std::frexp(T(-0.0), &exponent), T(0.0)));
   assert(exponent == 0);
+  unused(val);
   if constexpr (!cuda::std::is_integral_v<T>)
   {
     exponent = -1;

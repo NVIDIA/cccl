@@ -286,7 +286,7 @@ __host__ __device__ void test_nextafter(T val)
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::nextafter(T{}, T{})), ret>, "");
 
-  // assert(eq(cuda::std::nextafter(cuda::std::nextafter(val, T(10)), T(-10)), val));
+  unused(val);
   if constexpr (cuda::std::is_same_v<T, float>)
   {
     assert(eq(cuda::std::nextafterf(cuda::std::nextafterf(val, T(10)), T(-10)), val));
