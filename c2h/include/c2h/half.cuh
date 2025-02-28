@@ -307,6 +307,10 @@ struct half_t
   }
 };
 
+#ifdef __GNUC__
+#  pragma GCC diagnostic pop
+#endif
+
 /******************************************************************************
  * I/O stream overloads
  ******************************************************************************/
@@ -325,7 +329,7 @@ inline std::ostream& operator<<(std::ostream& out, const __half& x)
 }
 
 /******************************************************************************
- * Traits overloads
+ * traits and limits
  ******************************************************************************/
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -333,10 +337,8 @@ template <>
 struct __is_extended_floating_point<half_t> : true_type
 {};
 
-#ifndef _CCCL_NO_VARIABLE_TEMPLATES
 template <>
 _CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v<half_t> = true;
-#endif // _CCCL_NO_VARIABLE_TEMPLATES
 
 template <>
 class numeric_limits<half_t>
@@ -362,10 +364,12 @@ public:
 _LIBCUDACXX_END_NAMESPACE_STD
 
 template <>
-struct CUB_NS_QUALIFIER::NumericTraits<half_t>
-    : CUB_NS_QUALIFIER::BaseTraits<FLOATING_POINT, true, unsigned short, half_t>
-{};
+struct CUB_NS_QUALIFIER::detail::unsigned_bits<half_t, void>
+{
+  using type = unsigned short;
+};
 
-#ifdef __GNUC__
-#  pragma GCC diagnostic pop
-#endif
+// template <>
+// struct CUB_NS_QUALIFIER::detail::NumericTraits<half_t>
+//     : CUB_NS_QUALIFIER::detail::BaseTraits<FLOATING_POINT, true, unsigned short, half_t>
+// {};

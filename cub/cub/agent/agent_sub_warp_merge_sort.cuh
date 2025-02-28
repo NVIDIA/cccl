@@ -161,7 +161,7 @@ class AgentSubWarpSort
 
   _CCCL_DEVICE static bool get_oob_default(::cuda::std::true_type /* is bool */)
   {
-    // Traits<KeyT>::MAX_KEY for `bool` is 0xFF which is different from `true` and makes
+    // key_traits<KeyT>::max_key for `bool` is 0xFF which is different from `true` and makes
     // comparison with oob unreliable.
     return !IS_DESCENDING;
   }
