@@ -63,7 +63,17 @@ int main(int, char**)
 #if _CCCL_HAS_NVFP8()
   test<__nv_fp8_e4m3, cuda::std::round_to_nearest>();
   test<__nv_fp8_e5m2, cuda::std::round_to_nearest>();
+#  if _CCCL_CUDACC_AT_LEAST(12, 8)
+  test<__nv_fp8_e8m0, cuda::std::round_toward_zero>();
+#  endif // _CCCL_CUDACC_AT_LEAST(12, 8)
 #endif // _CCCL_HAS_NVFP8()
+#if _CCCL_HAS_NVFP6()
+  test<__nv_fp6_e2m3, cuda::std::round_to_nearest>();
+  test<__nv_fp6_e3m2, cuda::std::round_to_nearest>();
+#endif // _CCCL_HAS_NVFP6()
+#if _CCCL_HAS_NVFP4()
+  test<__nv_fp4_e2m1, cuda::std::round_to_nearest>();
+#endif // _CCCL_HAS_NVFP4()
 
   return 0;
 }

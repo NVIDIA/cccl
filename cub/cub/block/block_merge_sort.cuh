@@ -66,8 +66,8 @@ MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, 
   {
     const OffsetT mid = cub::MidPoint<OffsetT>(keys1_begin, keys1_end);
     // pull copies of the keys before calling binary_pred so proxy references are unwrapped
-    const detail::value_t<KeyIt1> key1 = keys1[mid];
-    const detail::value_t<KeyIt2> key2 = keys2[diag - 1 - mid];
+    const detail::it_value_t<KeyIt1> key1 = keys1[mid];
+    const detail::it_value_t<KeyIt2> key2 = keys2[diag - 1 - mid];
     if (binary_pred(key2, key1))
     {
       keys1_end = mid;

@@ -67,6 +67,7 @@ class IteratorBase:
         cvalue: ctypes.c_void_p,
         numba_type: types.Type,
         value_type: types.Type,
+        prefix: str = "",
     ):
         """
         Parameters
@@ -78,10 +79,13 @@ class IteratorBase:
           and dereference functions.
         value_type
           The numba type of the value returned by the dereference operation.
+        prefix
+          An optional prefix added to the iterator's methods to prevent name collisions.
         """
         self.cvalue = cvalue
         self.numba_type = numba_type
         self.value_type = value_type
+        self.prefix = prefix
 
     @property
     def kind(self):
@@ -92,8 +96,8 @@ class IteratorBase:
     # needed.
     @property
     def ltoirs(self) -> Dict[str, bytes]:
-        advance_abi_name = "advance_" + _get_abi_suffix(self.kind)
-        deref_abi_name = "dereference_" + _get_abi_suffix(self.kind)
+        advance_abi_name = f"{self.prefix}advance_" + _get_abi_suffix(self.kind)
+        deref_abi_name = f"{self.prefix}dereference_" + _get_abi_suffix(self.kind)
         advance_ltoir, _ = cached_compile(
             self.__class__.advance,
             (
@@ -212,14 +216,12 @@ class CacheModifiedPointerKind(IteratorKind):
 class CacheModifiedPointer(IteratorBase):
     iterator_kind_type = CacheModifiedPointerKind
 
-    def __init__(self, ptr: int, ntype: types.Type):
+    def __init__(self, ptr: int, ntype: types.Type, prefix: str):
         cvalue = ctypes.c_void_p(ptr)
         value_type = ntype
         numba_type = types.CPointer(types.CPointer(value_type))
         super().__init__(
-            cvalue=cvalue,
-            numba_type=numba_type,
-            value_type=value_type,
+            cvalue=cvalue, numba_type=numba_type, value_type=value_type, prefix=prefix
         )
 
     @staticmethod

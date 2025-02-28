@@ -89,7 +89,7 @@ THRUST_NAMESPACE_BEGIN
  *  \see https://en.cppreference.com/w/cpp/algorithm/count
  */
 template <typename DerivedPolicy, typename InputIterator, typename EqualityComparable>
-_CCCL_HOST_DEVICE typename thrust::iterator_traits<InputIterator>::difference_type
+_CCCL_HOST_DEVICE thrust::detail::it_difference_t<InputIterator>
 count(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
       InputIterator first,
       InputIterator last,
@@ -131,7 +131,7 @@ count(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \see https://en.cppreference.com/w/cpp/algorithm/count
  */
 template <typename InputIterator, typename EqualityComparable>
-typename thrust::iterator_traits<InputIterator>::difference_type
+thrust::detail::it_difference_t<InputIterator>
 count(InputIterator first, InputIterator last, const EqualityComparable& value);
 
 /*! \p count_if finds the number of elements in <tt>[first,last)</tt> for which
@@ -184,7 +184,7 @@ count(InputIterator first, InputIterator last, const EqualityComparable& value);
  *  \see https://en.cppreference.com/w/cpp/algorithm/count
  */
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE typename thrust::iterator_traits<InputIterator>::difference_type
+_CCCL_HOST_DEVICE thrust::detail::it_difference_t<InputIterator>
 count_if(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
          InputIterator first,
          InputIterator last,
@@ -234,8 +234,7 @@ count_if(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \see https://en.cppreference.com/w/cpp/algorithm/count
  */
 template <typename InputIterator, typename Predicate>
-typename thrust::iterator_traits<InputIterator>::difference_type
-count_if(InputIterator first, InputIterator last, Predicate pred);
+thrust::detail::it_difference_t<InputIterator> count_if(InputIterator first, InputIterator last, Predicate pred);
 
 /*! \} // end counting
  *  \} // end reductions

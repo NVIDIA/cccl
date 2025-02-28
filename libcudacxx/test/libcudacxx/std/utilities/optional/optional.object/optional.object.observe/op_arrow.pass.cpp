@@ -62,10 +62,8 @@ int main(int, char**)
   }
   {
 #if defined(_CCCL_BUILTIN_ADDRESSOF)
-#  if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
     static_assert(test() == 3, "");
-#  endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-#endif
+#endif // _CCCL_BUILTIN_ADDRESSOF
   }
 
   return 0;
