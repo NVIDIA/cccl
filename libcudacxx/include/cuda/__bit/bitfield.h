@@ -36,7 +36,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE uint32_t
 __bfi(uint32_t __dest, uint32_t __source, int __start, int __width) noexcept
 {
-  asm("bfi.b32 %0, %1, %2, %3, %4;" : "=r"(__dest) : "r"(__dest), "r"(__source), "r"(__start), "r"(__width));
+  asm("bfi.b32 %0, %1, %2, %3, %4;" : "=r"(__dest) : "r"(__source), "r"(__dest), "r"(__start), "r"(__width));
   return __dest;
 }
 
