@@ -349,7 +349,9 @@ int main(int, char**)
   test_host_device_accessor_conversions<cuda::host_accessor>();
   test_host_device_accessor_conversions<cuda::device_accessor>();
   test_host_device_accessor_conversions<cuda::managed_accessor>();
-  test_conversion();
+  test_conversion<cuda::host_accessor>();
+  test_conversion<cuda::device_accessor>();
+  test_conversion<cuda::managed_accessor>();
   test_aligned_to_default<cuda::host_accessor>();
   test_aligned_to_default<cuda::device_accessor>();
   test_aligned_to_default<cuda::managed_accessor>();
