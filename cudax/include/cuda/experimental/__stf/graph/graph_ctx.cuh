@@ -39,29 +39,6 @@
 namespace cuda::experimental::stf
 {
 
-namespace reserved
-{
-
-// For counters
-class graph_tag
-{
-public:
-  class launch
-  {};
-  class instantiate
-  {};
-  class update
-  {
-  public:
-    class success
-    {};
-    class failure
-    {};
-  };
-};
-
-} // end namespace reserved
-
 /**
  * @brief Uncached allocator (used as a base for other allocators)
  *
@@ -348,23 +325,6 @@ public:
     state.submitted_stream = nullptr;
     state.cleanup();
     set_phase(backend_ctx_untyped::phase::finalized);
-
-#ifdef CUDASTF_DEBUG
-    const char* display_stats_env = getenv("CUDASTF_DISPLAY_STATS");
-    if (!display_stats_env || atoi(display_stats_env) == 0)
-    {
-      return;
-    }
-
-    fprintf(
-      stderr, "[STATS CUDA GRAPHS] instantiated=%lu\n", reserved::counter<reserved::graph_tag::instantiate>.load());
-    fprintf(stderr, "[STATS CUDA GRAPHS] launched=%lu\n", reserved::counter<reserved::graph_tag::launch>.load());
-    fprintf(stderr,
-            "[STATS CUDA GRAPHS] updated=%lu success=%ld failed=%ld\n",
-            reserved::counter<reserved::graph_tag::update>.load(),
-            reserved::counter<reserved::graph_tag::update::success>.load(),
-            reserved::counter<reserved::graph_tag::update::failure>.load());
-#endif
   }
 
   void submit(cudaStream_t stream = nullptr)
@@ -393,10 +353,6 @@ public:
     // cuda_safe_call(cudaStreamSynchronize(state.submitted_stream));
 
     cuda_try(cudaGraphLaunch(*state.exec_graph, state.submitted_stream));
-
-#ifdef CUDASTF_DEBUG
-    reserved::counter<reserved::graph_tag::launch>.increment();
-#endif
 
     // Note that we comment this out for now, so that it is possible to use
     // the print_to_dot method; but we may perhaps discard this graph to
@@ -614,10 +570,6 @@ private:
 
     cuda_try(cudaGraphInstantiateWithFlags(res.get(), g, 0));
 
-#ifdef CUDASTF_DEBUG
-    reserved::counter<reserved::graph_tag::instantiate>.increment();
-#endif
-
     return res;
   }
 
@@ -711,10 +663,6 @@ private:
     }
 
     cuda_try(cudaGraphLaunch(local_exec_graph, state.submitted_stream));
-
-#ifdef CUDASTF_DEBUG
-    reserved::counter<reserved::graph_tag::launch>.increment();
-#endif
 
     return state.submitted_stream;
   }
