@@ -56,7 +56,6 @@
 #include <cuda/std/__type_traits/is_aggregate.h>
 #include <cuda/std/__type_traits/is_allocator.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
-#include <cuda/std/__type_traits/is_arithmetic_integral.h>
 #include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/is_assignable.h>
 #include <cuda/std/__type_traits/is_base_of.h>
@@ -82,6 +81,7 @@
 #include <cuda/std/__type_traits/is_function.h>
 #include <cuda/std/__type_traits/is_fundamental.h>
 #include <cuda/std/__type_traits/is_implicitly_default_constructible.h>
+#include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_literal_type.h>
 #include <cuda/std/__type_traits/is_member_function_pointer.h>
