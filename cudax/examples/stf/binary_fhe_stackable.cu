@@ -81,7 +81,6 @@ public:
   ciphertext(const ciphertext& other)
       : ctx(other.ctx)
   {
-    fprintf(stderr, "CTX copy ctor (src = %s)\n", other.symbol.c_str());
     copy_content(ctx, other, *this);
   }
 
