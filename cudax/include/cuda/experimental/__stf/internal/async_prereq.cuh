@@ -446,15 +446,6 @@ inline event_list event_impl::from_stream(backend_ctx_untyped&, cudaStream_t) co
 }
 _CCCL_DIAG_POP
 
-namespace reserved
-{
-
-// For counters
-class join_tag
-{};
-
-} // end namespace reserved
-
 /**
  * @brief Introduce a dependency from all entries of an event list to an event.
 
@@ -487,7 +478,6 @@ void join(context_t& ctx, some_event& to, event_list& prereq_in)
     {
       from = static_cast<some_event*>(item.operator->());
     }
-    reserved::counter<reserved::join_tag>::increment();
     to.insert_dep(ctx.async_resources(), *from);
     from->outbound_deps++;
   }

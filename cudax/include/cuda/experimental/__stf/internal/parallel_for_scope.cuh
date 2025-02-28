@@ -698,8 +698,8 @@ public:
         kernel_params.sharedMemBytes = 0;
 
         // This new node will depend on the previous in the chain (allocation)
-        ::std::lock_guard<::std::mutex> lock(*t.get_ctx_graph_mutex());
-        cuda_safe_call(cudaGraphAddKernelNode(&t.get_node(), t.get_ctx_graph(), NULL, 0, &kernel_params));
+        auto lock = t.lock_ctx_graph();
+        cudaGraphAddKernelNode(&t.get_node(), t.get_ctx_graph(), NULL, 0, &kernel_params);
       }
 
       return;
@@ -716,7 +716,8 @@ public:
       return ::std::pair(size_t(minGridSize), size_t(blockSize));
     }();
 
-    const auto [block_size, min_blocks] = conf;
+    const auto block_size = conf.first;
+    const auto min_blocks = conf.second;
 
     // max_blocks is computed so we have one thread per element processed
     const auto max_blocks = (n + block_size - 1) / block_size;
@@ -760,11 +761,8 @@ public:
     }
     else
     {
-      auto g = t.get_ctx_graph();
-      ::std::lock_guard<::std::mutex> lock(*t.get_ctx_graph_mutex());
-
       _CCCL_ASSERT(sub_exec_place.is_device(), "Invalid execution place");
-      int dev_id = device_ordinal(sub_exec_place.affine_data_place());
+      const int dev_id = device_ordinal(sub_exec_place.affine_data_place());
 
       cudaMemAllocNodeParams allocParams{};
       allocParams.poolProps.allocType   = cudaMemAllocationTypePinned;
@@ -772,6 +770,8 @@ public:
       allocParams.poolProps.location    = {.type = cudaMemLocationTypeDevice, .id = dev_id};
       allocParams.bytesize              = blocks * sizeof(redux_vars<deps_tup_t, ops_and_inits>);
 
+      auto lock               = t.lock_ctx_graph();
+      auto g                  = t.get_ctx_graph();
       const auto& input_nodes = t.get_ready_dependencies();
 
       /* This first node depends on task's dependencies themselves */
@@ -900,8 +900,9 @@ public:
       // This task corresponds to a single graph node, so we set that
       // node instead of creating an child graph. Input and output
       // dependencies will be filled later.
-      ::std::lock_guard<::std::mutex> lock(*t.get_ctx_graph_mutex());
+      auto lock = t.lock_ctx_graph();
       cuda_safe_call(cudaGraphAddKernelNode(&t.get_node(), t.get_ctx_graph(), nullptr, 0, &kernel_params));
+
       // fprintf(stderr, "KERNEL NODE => graph %p, gridDim %d blockDim %d (n %ld)\n", t.get_graph(),
       // kernel_params.gridDim.x, kernel_params.blockDim.x, n);
     }

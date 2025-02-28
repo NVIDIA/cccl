@@ -64,8 +64,8 @@ template <typename MaxPolicyT,
           typename CompareOpT>
 struct DeviceMergeSortKernelSource
 {
-  using KeyT   = cub::detail::value_t<KeyIteratorT>;
-  using ValueT = cub::detail::value_t<ValueIteratorT>;
+  using KeyT   = cub::detail::it_value_t<KeyIteratorT>;
+  using ValueT = cub::detail::it_value_t<ValueIteratorT>;
 
   CUB_DEFINE_KERNEL_GETTER(
     MergeSortBlockSortKernel,
@@ -127,10 +127,10 @@ template <
        ValueIteratorT,
        OffsetT,
        CompareOpT,
-       cub::detail::value_t<KeyIteratorT>,
-       cub::detail::value_t<ValueIteratorT>>,
-  typename KeyT   = cub::detail::value_t<KeyIteratorT>,
-  typename ValueT = cub::detail::value_t<ValueIteratorT>>
+       cub::detail::it_value_t<KeyIteratorT>,
+       cub::detail::it_value_t<ValueIteratorT>>,
+  typename KeyT   = cub::detail::it_value_t<KeyIteratorT>,
+  typename ValueT = cub::detail::it_value_t<ValueIteratorT>>
 struct DispatchMergeSort
 {
   /// Whether or not there are values to be trucked along with keys
@@ -234,9 +234,9 @@ struct DispatchMergeSort
        * Merge sort supports large types, which can lead to excessive shared memory size requirements. In these cases,
        * merge sort allocates virtual shared memory that resides in global memory.
        */
-      const std::size_t block_sort_smem_size       = num_tiles * vsmem_helper.BlockSortVSMemPerBlock();
-      const std::size_t merge_smem_size            = num_tiles * vsmem_helper.MergeVSMemPerBlock();
-      const std::size_t virtual_shared_memory_size = (::cuda::std::max)(block_sort_smem_size, merge_smem_size);
+      const ::cuda::std::size_t block_sort_smem_size       = num_tiles * vsmem_helper.BlockSortVSMemPerBlock();
+      const ::cuda::std::size_t merge_smem_size            = num_tiles * vsmem_helper.MergeVSMemPerBlock();
+      const ::cuda::std::size_t virtual_shared_memory_size = (::cuda::std::max)(block_sort_smem_size, merge_smem_size);
 
       void* allocations[4]       = {nullptr, nullptr, nullptr, nullptr};
       size_t allocation_sizes[4] = {

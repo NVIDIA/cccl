@@ -96,7 +96,7 @@ _CCCL_HOST_DEVICE OutputIterator replace_copy_if(
   Predicate pred,
   const T& new_value)
 {
-  using OutputType = typename thrust::iterator_traits<OutputIterator>::value_type;
+  using OutputType = thrust::detail::it_value_t<OutputIterator>;
 
   detail::new_value_if<Predicate, T, OutputType> op(pred, new_value);
   return thrust::transform(exec, first, last, result, op);
@@ -117,7 +117,7 @@ _CCCL_HOST_DEVICE OutputIterator replace_copy_if(
   Predicate pred,
   const T& new_value)
 {
-  using OutputType = typename thrust::iterator_traits<OutputIterator>::value_type;
+  using OutputType = thrust::detail::it_value_t<OutputIterator>;
 
   detail::new_value_if<Predicate, T, OutputType> op(pred, new_value);
   return thrust::transform(exec, first, last, stencil, result, op);

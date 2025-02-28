@@ -33,6 +33,8 @@
 #include <cuda/experimental/__stf/internal/logical_data.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
 
+#include <mutex>
+
 namespace cuda::experimental::stf
 {
 
@@ -59,12 +61,12 @@ public:
 
   graph_task(backend_ctx_untyped ctx,
              cudaGraph_t g,
-             ::std::shared_ptr<::std::mutex> graph_mutex,
+             ::std::mutex& graph_mutex,
              size_t epoch,
              exec_place e_place = exec_place::current_device())
       : task(mv(e_place))
       , ctx_graph(EXPECT(g))
-      , graph_mutex(mv(graph_mutex))
+      , graph_mutex(graph_mutex)
       , epoch(epoch)
       , ctx(mv(ctx))
   {
@@ -80,7 +82,7 @@ public:
 
   graph_task& start()
   {
-    ::std::lock_guard<::std::mutex> lock(*graph_mutex);
+    ::std::lock_guard<::std::mutex> lock(graph_mutex);
 
     event_list prereqs = acquire(ctx);
 
@@ -105,7 +107,7 @@ public:
   /* End the task, but do not clear its data structures yet */
   graph_task<>& end_uncleared()
   {
-    ::std::lock_guard<::std::mutex> lock(*graph_mutex);
+    ::std::lock_guard<::std::mutex> lock(graph_mutex);
 
     cudaGraphNode_t n;
 
@@ -397,9 +399,9 @@ public:
     return ctx_graph;
   }
 
-  auto& get_ctx_graph_mutex()
+  [[nodiscard]] auto lock_ctx_graph()
   {
-    return graph_mutex;
+    return ::std::unique_lock<::std::mutex>(graph_mutex);
   }
 
   void set_current_place(pos4 p)
@@ -443,8 +445,12 @@ private:
   /* This is the support graph associated to the entire context */
   cudaGraph_t ctx_graph = nullptr;
 
-  // This protects ctx_graph
-  ::std::shared_ptr<::std::mutex> graph_mutex;
+  // This protects ctx_graph : it's ok to store a reference to it because the
+  // context and this mutex will outlive the moment when this mutex is needed
+  // (and most likely the graph_task object)
+  // Note that we use a reference_wrapper instead of a mere reference to ensure
+  // the graph_task class remains move assignable.
+  ::std::reference_wrapper<::std::mutex> graph_mutex;
 
   size_t epoch = 0;
 
@@ -468,11 +474,11 @@ class graph_task : public graph_task<>
 public:
   graph_task(backend_ctx_untyped ctx,
              cudaGraph_t g,
-             ::std::shared_ptr<::std::mutex> graph_mutex,
+             ::std::mutex& graph_mutex,
              size_t epoch,
              exec_place e_place,
              task_dep<Deps>... deps)
-      : graph_task<>(mv(ctx), g, mv(graph_mutex), epoch, mv(e_place))
+      : graph_task<>(mv(ctx), g, graph_mutex, epoch, mv(e_place))
   {
     static_assert(sizeof(*this) == sizeof(graph_task<>), "Cannot add state - it would be lost by slicing.");
     add_deps(mv(deps)...);
@@ -566,6 +572,13 @@ public:
       //
       // CAPTURE the lambda
       //
+
+      // To ensure the same CUDA stream is not used in multiple threads, we
+      // ensure there can't be multiple threads capturing at the same time.
+      //
+      // TODO : provide a per-thread CUDA stream dedicated for capture on that
+      // execution place.
+      auto lock = lock_ctx_graph();
 
       // Get a stream from the pool associated to the execution place
       cudaStream_t capture_stream = get_exec_place().getStream(ctx.async_resources(), true).stream;

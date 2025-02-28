@@ -52,9 +52,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
-
-#include <cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -555,18 +554,16 @@ private:
   // TYPE DECLARATIONS
   //---------------------------------------------------------------------
   /// Internal load/store type. For byte-wise memcpy, a single-byte type
-  using AliasT =
-    typename ::cuda::std::conditional<IsMemcpy,
-                                      std::iterator_traits<char*>,
-                                      std::iterator_traits<cub::detail::value_t<InputBufferIt>>>::type::value_type;
+  using AliasT = typename ::cuda::std::
+    conditional_t<IsMemcpy, ::cuda::std::type_identity<char>, lazy_trait<it_value_t, it_value_t<InputBufferIt>>>::type;
 
   /// Types of the input and output buffers
-  using InputBufferT  = cub::detail::value_t<InputBufferIt>;
-  using OutputBufferT = cub::detail::value_t<OutputBufferIt>;
+  using InputBufferT  = it_value_t<InputBufferIt>;
+  using OutputBufferT = it_value_t<OutputBufferIt>;
 
   /// Type that has to be sufficiently large to hold any of the buffers' sizes.
   /// The BufferSizeIteratorT's value type must be convertible to this type.
-  using BufferSizeT = cub::detail::value_t<BufferSizeIteratorT>;
+  using BufferSizeT = it_value_t<BufferSizeIteratorT>;
 
   /// Type used to index into the tile of buffers that this thread block is assigned to.
   using BlockBufferOffsetT = uint16_t;

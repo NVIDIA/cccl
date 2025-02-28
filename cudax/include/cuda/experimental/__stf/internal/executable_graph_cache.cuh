@@ -54,18 +54,6 @@ inline bool try_updating_executable_graph(cudaGraphExec_t exec_graph, cudaGraph_
   // Be sure to "erase" the last error
   cudaError_t res = cudaGetLastError();
 
-#ifdef CUDASTF_DEBUG
-  reserved::counter<reserved::graph_tag::update>.increment();
-  if (res == cudaSuccess)
-  {
-    reserved::counter<reserved::graph_tag::update::success>.increment();
-  }
-  else
-  {
-    reserved::counter<reserved::graph_tag::update::failure>.increment();
-  }
-#endif
-
   return (res == cudaSuccess);
 }
 
@@ -80,10 +68,6 @@ inline ::std::shared_ptr<cudaGraphExec_t> graph_instantiate(cudaGraph_t g)
   ::std::shared_ptr<cudaGraphExec_t> res(new cudaGraphExec_t, cudaGraphExecDeleter);
 
   cuda_try(cudaGraphInstantiateWithFlags(res.get(), g, 0));
-
-#ifdef CUDASTF_DEBUG
-  reserved::counter<reserved::graph_tag::instantiate>.increment();
-#endif
 
   return res;
 }

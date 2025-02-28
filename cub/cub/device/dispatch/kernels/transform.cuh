@@ -59,7 +59,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(It begin, int tile_size)
   {
     constexpr int prefetch_byte_stride = 128; // TODO(bgruber): should correspond to cache line size. Does this need to
                                               // be architecture dependent?
-    const int tile_size_bytes = tile_size * sizeof(value_t<It>);
+    const int tile_size_bytes = tile_size * sizeof(it_value_t<It>);
     // prefetch does not stall and unrolling just generates a lot of unnecessary computations and predicate handling
 #pragma unroll 1
     for (int offset = threadIdx.x * prefetch_byte_stride; offset < tile_size_bytes;
@@ -361,7 +361,7 @@ _CCCL_DEVICE void transform_kernel_impl(
 template <typename It>
 union kernel_arg
 {
-  aligned_base_ptr<value_t<It>> aligned_ptr; // first member is trivial
+  aligned_base_ptr<it_value_t<It>> aligned_ptr; // first member is trivial
   It iterator; // may not be trivially [default|copy]-constructible
 
   static_assert(::cuda::std::is_trivial_v<decltype(aligned_ptr)>, "");

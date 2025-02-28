@@ -74,8 +74,8 @@ public:
   static constexpr bool TEST_RELATIVE_OFFSETS = TEST_RELATIVE_OFFSETS_;
 
 private:
-  using RunItemT   = cub::detail::value_t<ItemItT>;
-  using RunLengthT = cub::detail::value_t<RunLengthsItT>;
+  using RunItemT   = cub::detail::it_value_t<ItemItT>;
+  using RunLengthT = cub::detail::it_value_t<RunLengthsItT>;
 
   using BlockRunOffsetScanT = cub::BlockScan<RunLengthT, BLOCK_DIM_X, cub::BLOCK_SCAN_RAKING, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 

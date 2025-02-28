@@ -137,8 +137,8 @@ template <typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOpT,
-          typename InitT  = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::value_t<InputIteratorT>>,
-          typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::value_t<InputIteratorT>, InitT>,
+          typename InitT  = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>,
+          typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::it_value_t<InputIteratorT>, InitT>,
           typename TransformOpT = ::cuda::std::__identity,
           typename PolicyHub    = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
           typename KernelSource = detail::reduce::DeviceReduceKernelSource<
@@ -573,8 +573,10 @@ template <
   typename ReductionOpT,
   typename TransformOpT,
   typename InitT,
-  typename AccumT = ::cuda::std::
-    __accumulator_t<ReductionOpT, cub::detail::invoke_result_t<TransformOpT, cub::detail::value_t<InputIteratorT>>, InitT>,
+  typename AccumT =
+    ::cuda::std::__accumulator_t<ReductionOpT,
+                                 cub::detail::invoke_result_t<TransformOpT, cub::detail::it_value_t<InputIteratorT>>,
+                                 InitT>,
   typename PolicyHub    = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
   typename KernelSource = detail::reduce::DeviceReduceKernelSource<
     typename PolicyHub::MaxPolicy,
@@ -629,7 +631,7 @@ struct DeviceSegmentedReduceKernelSource
       InitT,
       AccumT>)
 
-  CUB_RUNTIME_FUNCTION static constexpr std::size_t AccumSize()
+  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t AccumSize()
   {
     return sizeof(AccumT);
   }
@@ -671,9 +673,9 @@ template <typename InputIteratorT,
           typename EndOffsetIteratorT,
           typename OffsetT,
           typename ReductionOpT,
-          typename InitT     = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::value_t<InputIteratorT>>,
-          typename AccumT    = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::value_t<InputIteratorT>, InitT>,
-          typename PolicyHub = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
+          typename InitT  = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>,
+          typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::it_value_t<InputIteratorT>, InitT>,
+          typename PolicyHub    = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
           typename KernelSource = detail::reduce::DeviceSegmentedReduceKernelSource<
             typename PolicyHub::MaxPolicy,
             InputIteratorT,

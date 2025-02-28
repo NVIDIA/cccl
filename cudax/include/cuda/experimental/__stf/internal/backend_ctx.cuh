@@ -218,9 +218,8 @@ public:
     {
       cudaHostNodeParams params = {.fn = callback, .userData = wrapper};
 
-      ::std::lock_guard<::std::mutex> lock(*t.get_ctx_graph_mutex());
-
       // Put this host node into the child graph that implements the graph_task<>
+      auto lock = t.lock_ctx_graph();
       cuda_safe_call(cudaGraphAddHostNode(&t.get_node(), t.get_ctx_graph(), nullptr, 0, &params));
     }
     else
@@ -413,9 +412,8 @@ public:
 
       if constexpr (::std::is_same_v<Ctx, graph_ctx>)
       {
-        ::std::lock_guard<::std::mutex> lock(*t.get_ctx_graph_mutex());
-
-        auto& g = t.get_ctx_graph();
+        auto lock = t.lock_ctx_graph();
+        auto& g   = t.get_ctx_graph();
 
         // We have two situations : either there is a single kernel and we put the kernel in the context's
         // graph, or we rely on a child graph
@@ -460,7 +458,7 @@ public:
 
       if constexpr (::std::is_same_v<Ctx, graph_ctx>)
       {
-        ::std::lock_guard<::std::mutex> lock(*t.get_ctx_graph_mutex());
+        auto lock = t.lock_ctx_graph();
         insert_one_kernel(res, t.get_node(), t.get_ctx_graph());
       }
       else
@@ -556,19 +554,17 @@ protected:
         reserved::dot::instance().is_timing());
 
       // We generate symbols if we may use them
-#ifdef CUDASTF_DEBUG
-      generate_event_symbols = true;
-#else
       generate_event_symbols = dot->is_tracing_prereqs();
-#endif
+
       // Record it in the list of all traced contexts
-      reserved::dot::instance().per_ctx.push_back(dot);
+      reserved::dot::instance().track_ctx(dot);
     }
 
     virtual ~impl()
     {
-      // We can't assert here because there may be tasks inside tasks
-      //_CCCL_ASSERT(total_task_cnt == 0, "You created some tasks but forgot to call finalize().");
+#ifndef NDEBUG
+      _CCCL_ASSERT(total_task_cnt == total_finished_task_cnt, "Not all tasks were finished.");
+#endif
 
       if (!is_recording_stats)
       {
@@ -576,8 +572,6 @@ protected:
       }
 
       display_transfers();
-
-      fprintf(stderr, "TOTAL SYNC COUNT: %lu\n", reserved::counter<reserved::join_tag>::load());
     }
 
     impl(const impl&)            = delete;
@@ -714,7 +708,6 @@ protected:
     {
       // assert(!stack.hasCurrentTask());
       attached_allocators.clear();
-      total_task_cnt.store(0);
       // Leave custom_allocator, auto_scheduler, and auto_reordered as they were.
     }
 
@@ -738,7 +731,12 @@ protected:
       transfers;
     bool is_recording_stats = false;
     // Keep track of the number of tasks generated in the context
-    ::std::atomic<size_t> total_task_cnt;
+    ::std::atomic<size_t> total_task_cnt = 0;
+
+#ifndef NDEBUG
+    // Keep track of the number of completed tasks in that context
+    ::std::atomic<size_t> total_finished_task_cnt = 0;
+#endif
 
     // This data structure contains all resources useful for an efficient
     // asynchronous execution. This will for example contain pools of CUDA
@@ -856,6 +854,13 @@ public:
   {
     ++pimpl->total_task_cnt;
   }
+
+#ifndef NDEBUG
+  void increment_finished_task_count()
+  {
+    ++pimpl->total_finished_task_cnt;
+  }
+#endif
 
   size_t task_count() const
   {
