@@ -75,15 +75,15 @@ struct make_zip_iterator_base<::cuda::std::tuple<Its...>>
   {
     if constexpr ((::cuda::std::is_void_v<ValueTypes> || ...))
     {
-      return; // void
+      return ::cuda::std::type_identity<void>{};
     }
     else
     {
       // we use if constexpr to discard instantiating a tuple<... void ...>, which is ill-formed
-      return ::cuda::std::tuple<ValueTypes...>{};
+      return ::cuda::std::type_identity<::cuda::std::tuple<ValueTypes...>>{};
     }
   }
-  using value_type = decltype(make_value_type<it_value_t<Its>...>());
+  using value_type = typename decltype(make_value_type<it_value_t<Its>...>())::type;
 
   // Difference type is the first iterator's difference type
   using difference_type = it_difference_t<::cuda::std::tuple_element_t<0, ::cuda::std::tuple<Its...>>>;
