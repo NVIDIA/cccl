@@ -23,6 +23,9 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+// __is_arithmetic_integral is a trait that tests whether a type is an integral type intended for arithmetic.
+// In contrast to is_integral, __is_arithmetic_integral excludes bool and character types.
+
 template <class _Tp>
 _CCCL_INLINE_VAR constexpr bool __is_arithmetic_integral_impl_v = false;
 
