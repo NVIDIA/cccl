@@ -26,12 +26,12 @@
 template <typename T>
 __host__ __device__ void test_acos(T val)
 {
-  using ret = cuda::std::conditional_t<cuda::std::is_integral<T>::value, double, T>;
-  static_assert(cuda::std::is_same<decltype(cuda::std::acos(T{})), ret>::value, "");
+  using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::acos(T{})), ret>, "");
 
   assert(eq(cuda::std::acos(T(1.0)), val));
   assert(cuda::std::isnan(cuda::std::acos(T(2.0))));
-  if constexpr (!cuda::std::is_integral<T>::value)
+  if constexpr (!cuda::std::is_integral_v<T>)
   {
     assert(cuda::std::isnan(cuda::std::acos(cuda::std::numeric_limits<T>::infinity())));
     assert(cuda::std::isnan(cuda::std::acos(-cuda::std::numeric_limits<T>::infinity())));
@@ -42,7 +42,7 @@ __host__ __device__ void test_acos(T val)
     assert(is_about(cuda::std::acos(T(0.5)), pi / T(3.0)));
   }
 
-  if constexpr (cuda::std::is_same<T, float>::value)
+  if constexpr (cuda::std::is_same_v<T, float>)
   {
     assert(cuda::std::isnan(cuda::std::acosf(cuda::std::numeric_limits<T>::infinity())));
     assert(cuda::std::isnan(cuda::std::acosf(-cuda::std::numeric_limits<T>::infinity())));
@@ -53,7 +53,7 @@ __host__ __device__ void test_acos(T val)
     assert(is_about(cuda::std::acosf(T(0.5)), pi / T(3.0)));
   }
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-  else if constexpr (cuda::std::is_same<T, long double>::value)
+  else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(cuda::std::isnan(cuda::std::acosl(cuda::std::numeric_limits<T>::infinity())));
     assert(cuda::std::isnan(cuda::std::acosl(-cuda::std::numeric_limits<T>::infinity())));
@@ -69,14 +69,14 @@ __host__ __device__ void test_acos(T val)
 template <typename T>
 __host__ __device__ void test_asin(T val)
 {
-  using ret = cuda::std::conditional_t<cuda::std::is_integral<T>::value, double, T>;
-  static_assert(cuda::std::is_same<decltype(cuda::std::asin(T{})), ret>::value, "");
+  using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::asin(T{})), ret>, "");
 
   // 0 is returned unmodified
   assert(eq(cuda::std::asin(val), val));
   assert(eq(cuda::std::asin(-val), -val));
   assert(cuda::std::isnan(cuda::std::asin(T(2.0))));
-  if constexpr (!cuda::std::is_integral<T>::value)
+  if constexpr (!cuda::std::is_integral_v<T>)
   {
     assert(cuda::std::isnan(cuda::std::asin(cuda::std::numeric_limits<T>::infinity())));
     assert(cuda::std::isnan(cuda::std::asin(-cuda::std::numeric_limits<T>::infinity())));
@@ -88,7 +88,7 @@ __host__ __device__ void test_asin(T val)
     assert(is_about(cuda::std::asin(T(-0.5)), -pi / T(6.0)));
   }
 
-  if constexpr (cuda::std::is_same<T, float>::value)
+  if constexpr (cuda::std::is_same_v<T, float>)
   {
     assert(cuda::std::isnan(cuda::std::asinf(cuda::std::numeric_limits<T>::infinity())));
     assert(cuda::std::isnan(cuda::std::asinf(-cuda::std::numeric_limits<T>::infinity())));
@@ -100,7 +100,7 @@ __host__ __device__ void test_asin(T val)
     assert(is_about(cuda::std::asinf(T(-0.5)), -pi / T(6.0)));
   }
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-  else if constexpr (cuda::std::is_same<T, long double>::value)
+  else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(cuda::std::isnan(cuda::std::asinl(cuda::std::numeric_limits<T>::infinity())));
     assert(cuda::std::isnan(cuda::std::asinl(-cuda::std::numeric_limits<T>::infinity())));
@@ -117,13 +117,13 @@ __host__ __device__ void test_asin(T val)
 template <typename T>
 __host__ __device__ void test_atan(T val)
 {
-  using ret = cuda::std::conditional_t<cuda::std::is_integral<T>::value, double, T>;
-  static_assert(cuda::std::is_same<decltype(cuda::std::atan(T{})), ret>::value, "");
+  using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::atan(T{})), ret>, "");
 
   // 0 is returned unmodified
   assert(eq(cuda::std::atan(val), val));
   assert(eq(cuda::std::atan(-val), -val));
-  if constexpr (!cuda::std::is_integral<T>::value)
+  if constexpr (!cuda::std::is_integral_v<T>)
   {
     const T pi = T(3.141592653589793238462643383279502);
     assert(eq(cuda::std::atan(cuda::std::numeric_limits<T>::infinity()), pi / T(2.0)));
@@ -134,7 +134,7 @@ __host__ __device__ void test_atan(T val)
     assert(is_about(cuda::std::atan(T(1.0)), pi / T(4.0)));
   }
 
-  if constexpr (cuda::std::is_same<T, float>::value)
+  if constexpr (cuda::std::is_same_v<T, float>)
   {
     const T pi = T(3.141592653589793238462643383279502);
     assert(eq(cuda::std::atanf(cuda::std::numeric_limits<T>::infinity()), pi / T(2.0)));
@@ -145,7 +145,7 @@ __host__ __device__ void test_atan(T val)
     assert(is_about(cuda::std::atanf(T(1.0)), pi / T(4.0)));
   }
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-  else if constexpr (cuda::std::is_same<T, long double>::value)
+  else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     const T pi = T(3.141592653589793238462643383279502);
     assert(eq(cuda::std::atanl(cuda::std::numeric_limits<T>::infinity()), pi / T(2.0)));
@@ -161,15 +161,15 @@ __host__ __device__ void test_atan(T val)
 template <typename T>
 __host__ __device__ void test_atan2(T val)
 {
-  using ret = cuda::std::conditional_t<cuda::std::is_integral<T>::value, double, T>;
-  static_assert(cuda::std::is_same<decltype(cuda::std::atan2(T{}, T{})), ret>::value, "");
+  using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::atan2(T{}, T{})), ret>, "");
 
   // If y is ±0 and x is positive or +0, ±0 is returned.
   assert(eq(cuda::std::atan2(val, val), val));
   assert(eq(cuda::std::atan2(-val, val), -val));
   assert(eq(cuda::std::atan2(val, T(2.0)), val));
   assert(eq(cuda::std::atan2(-val, T(2.0)), val));
-  if constexpr (!cuda::std::is_integral<T>::value)
+  if constexpr (!cuda::std::is_integral_v<T>)
   {
     const T pi = T(3.141592653589793238462643383279502);
     assert(cuda::std::isnan(cuda::std::atan2(val, cuda::std::numeric_limits<T>::signaling_NaN())));
@@ -226,7 +226,7 @@ __host__ __device__ void test_atan2(T val)
     assert(eq(cuda::std::atan2(T(-2.0), cuda::std::numeric_limits<T>::infinity()), -val));
   }
 
-  if constexpr (cuda::std::is_same<T, float>::value)
+  if constexpr (cuda::std::is_same_v<T, float>)
   {
     const T pi = T(3.141592653589793238462643383279502);
     assert(cuda::std::isnan(cuda::std::atan2f(val, cuda::std::numeric_limits<T>::signaling_NaN())));
@@ -283,7 +283,7 @@ __host__ __device__ void test_atan2(T val)
     assert(eq(cuda::std::atan2f(T(-2.0), cuda::std::numeric_limits<T>::infinity()), -val));
   }
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-  else if constexpr (cuda::std::is_same<T, long double>::value)
+  else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     const T pi = T(3.141592653589793238462643383279502);
     assert(cuda::std::isnan(cuda::std::atan2l(val, cuda::std::numeric_limits<T>::signaling_NaN())));

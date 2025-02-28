@@ -26,8 +26,8 @@
 template <typename T>
 __host__ __device__ void test_hypot(T val)
 {
-  using ret = cuda::std::conditional_t<cuda::std::is_integral<T>::value, double, T>;
-  static_assert(cuda::std::is_same<decltype(cuda::std::hypot(T{}, T{})), ret>::value, "");
+  using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::hypot(T{}, T{})), ret>, "");
 
   // hypot(x, y), hypot(y, x), and hypot(x, -y) are equivalent.
   assert(eq(cuda::std::hypot(T(1.0), T(0.25)), cuda::std::hypot(T(0.25), T(1.0))));
@@ -47,7 +47,7 @@ __host__ __device__ void test_hypot(T val)
     assert(eq(cuda::std::hypot(-val, T(-0.25)), T(0.25)));
   }
 
-  if constexpr (!cuda::std::is_integral<T>::value)
+  if constexpr (!cuda::std::is_integral_v<T>)
   {
     // If one of the arguments is ±∞, std::hypot(x, y) returns +∞ even if the other argument is NaN.
     assert(eq(cuda::std::hypot(cuda::std::numeric_limits<T>::infinity(), cuda::std::numeric_limits<T>::quiet_NaN()),
@@ -74,7 +74,7 @@ __host__ __device__ void test_hypot(T val)
     assert(is_about(cuda::std::hypot(T(1.0), T(2.0)), expected));
   }
 
-  if constexpr (cuda::std::is_same<T, float>::value)
+  if constexpr (cuda::std::is_same_v<T, float>)
   {
     // If one of the arguments is ±∞, std::hypot(x, y) returns +∞ even if the other argument is NaN.
     assert(eq(cuda::std::hypotf(cuda::std::numeric_limits<T>::infinity(), cuda::std::numeric_limits<T>::quiet_NaN()),
@@ -102,7 +102,7 @@ __host__ __device__ void test_hypot(T val)
     assert(is_about(cuda::std::hypotf(T(3.0), T(4.0)), T(5.0)));
   }
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-  else if constexpr (cuda::std::is_same<T, long double>::value)
+  else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     // If one of the arguments is ±∞, std::hypot(x, y) returns +∞ even if the other argument is NaN.
     assert(eq(cuda::std::hypotl(cuda::std::numeric_limits<T>::infinity(), cuda::std::numeric_limits<T>::quiet_NaN()),
@@ -135,8 +135,8 @@ __host__ __device__ void test_hypot(T val)
 template <typename T>
 __host__ __device__ void test_hypot3(T val)
 {
-  using ret = cuda::std::conditional_t<cuda::std::is_integral<T>::value, double, T>;
-  static_assert(cuda::std::is_same<decltype(cuda::std::hypot(T{}, T{}, T{})), ret>::value, "");
+  using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::hypot(T{}, T{}, T{})), ret>, "");
 
   // hypot(x, y), hypot(y, x), and hypot(x, -y) are equivalent.
   assert(eq(cuda::std::hypot(T(1.0), T(0.25), T(2.0)), cuda::std::hypot(T(0.25), T(1.0), T(2.0))));
@@ -154,7 +154,7 @@ __host__ __device__ void test_hypot3(T val)
     assert(eq(cuda::std::hypot(-val, T(-0.25), T(2.0)), cuda::std::hypot(T(0.25), T(2.0))));
   }
 
-  if constexpr (!cuda::std::is_integral<T>::value)
+  if constexpr (!cuda::std::is_integral_v<T>)
   {
     // If any of the arguments is NaN, NaN is returned.
     assert(cuda::std::isnan(cuda::std::hypot(cuda::std::numeric_limits<T>::quiet_NaN(), T(0.25), T(3.0))));
@@ -174,7 +174,7 @@ __host__ __device__ void test_hypot3(T val)
     assert(is_about(cuda::std::hypot(T(2.0), T(3.0), T(6.0)), T(7.0)));
   }
 
-  if constexpr (cuda::std::is_same<T, float>::value)
+  if constexpr (cuda::std::is_same_v<T, float>)
   {
     // If any of the arguments is NaN, NaN is returned.
     assert(cuda::std::isnan(cuda::std::hypotf(cuda::std::numeric_limits<T>::quiet_NaN(), T(0.25), T(3.0))));
@@ -194,7 +194,7 @@ __host__ __device__ void test_hypot3(T val)
     assert(is_about(cuda::std::hypotf(T(2.0), T(3.0), T(6.0)), T(7.0)));
   }
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-  else if constexpr (cuda::std::is_same<T, long double>::value)
+  else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     // If any of the arguments is NaN, NaN is returned.
     assert(cuda::std::isnan(cuda::std::hypotl(cuda::std::numeric_limits<T>::quiet_NaN(), T(0.25), T(3.0))));

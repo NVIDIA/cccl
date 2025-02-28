@@ -26,8 +26,8 @@
 template <typename T>
 __host__ __device__ void test_lgamma(T val)
 {
-  using ret = cuda::std::conditional_t<cuda::std::is_integral<T>::value, double, T>;
-  static_assert(cuda::std::is_same<decltype(cuda::std::lgamma(T{})), ret>::value, "");
+  using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::lgamma(T{})), ret>, "");
 
   // If the argument is 1, +0 is returned.
   assert(eq(cuda::std::lgamma(T(1.0)), val));
@@ -61,7 +61,7 @@ __host__ __device__ void test_lgamma(T val)
     assert(is_about(cuda::std::lgamma(T(0.5)), expected));
   }
 
-  if constexpr (cuda::std::is_same<T, float>::value)
+  if constexpr (cuda::std::is_same_v<T, float>)
   {
     // If the argument is 1, +0 is returned.
     assert(eq(cuda::std::lgammaf(T(1.0)), val));
@@ -88,7 +88,7 @@ __host__ __device__ void test_lgamma(T val)
     assert(is_about(cuda::std::lgammaf(T(0.5)), expected));
   }
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-  else if constexpr (cuda::std::is_same<T, long double>::value)
+  else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     // If the argument is 1, +0 is returned.
     assert(eq(cuda::std::lgammal(T(1.0)), val));
@@ -120,8 +120,8 @@ __host__ __device__ void test_lgamma(T val)
 template <typename T>
 __host__ __device__ void test_tgamma(T val)
 {
-  using ret = cuda::std::conditional_t<cuda::std::is_integral<T>::value, double, T>;
-  static_assert(cuda::std::is_same<decltype(cuda::std::tgamma(T{})), ret>::value, "");
+  using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::tgamma(T{})), ret>, "");
 
   // If the argument is a negative integer.
   assert(cuda::std::isnan(cuda::std::tgamma(-2)));
@@ -154,7 +154,7 @@ __host__ __device__ void test_tgamma(T val)
     assert(is_about(cuda::std::tgamma(T(0.5)), expected));
   }
 
-  if constexpr (cuda::std::is_same<T, float>::value)
+  if constexpr (cuda::std::is_same_v<T, float>)
   {
     // If the argument is ±0, ±∞ is returned.
     assert(eq(cuda::std::tgammaf(val), cuda::std::numeric_limits<T>::infinity()));
@@ -177,7 +177,7 @@ __host__ __device__ void test_tgamma(T val)
     assert(is_about(cuda::std::tgammaf(T(0.5)), expected));
   }
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-  else if constexpr (cuda::std::is_same<T, long double>::value)
+  else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     // If the argument is ±0, ±∞ is returned.
     assert(eq(cuda::std::tgammal(val), cuda::std::numeric_limits<T>::infinity()));

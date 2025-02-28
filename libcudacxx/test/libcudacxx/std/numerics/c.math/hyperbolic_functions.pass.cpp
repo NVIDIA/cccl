@@ -26,13 +26,13 @@
 template <typename T>
 __host__ __device__ void test_cosh(T val)
 {
-  using ret = cuda::std::conditional_t<cuda::std::is_integral<T>::value, double, T>;
-  static_assert(cuda::std::is_same<decltype(cuda::std::cosh(T{})), ret>::value, "");
+  using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::cosh(T{})), ret>, "");
 
   // 0 is returned unmodified
   assert(eq(cuda::std::cosh(val), T(1.0)));
   assert(eq(cuda::std::cosh(-val), T(1.0)));
-  if constexpr (!cuda::std::is_integral<T>::value)
+  if constexpr (!cuda::std::is_integral_v<T>)
   {
     assert(cuda::std::isinf(cuda::std::cosh(cuda::std::numeric_limits<T>::infinity())));
     assert(cuda::std::isinf(cuda::std::cosh(-cuda::std::numeric_limits<T>::infinity())));
@@ -44,7 +44,7 @@ __host__ __device__ void test_cosh(T val)
     assert(is_about(cuda::std::cosh(T(-1.0)), expected));
   }
 
-  if constexpr (cuda::std::is_same<T, float>::value)
+  if constexpr (cuda::std::is_same_v<T, float>)
   {
     assert(cuda::std::isinf(cuda::std::coshf(cuda::std::numeric_limits<T>::infinity())));
     assert(cuda::std::isinf(cuda::std::coshf(-cuda::std::numeric_limits<T>::infinity())));
@@ -56,7 +56,7 @@ __host__ __device__ void test_cosh(T val)
     assert(is_about(cuda::std::coshf(T(-1.0)), expected));
   }
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-  else if constexpr (cuda::std::is_same<T, long double>::value)
+  else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(cuda::std::isinf(cuda::std::coshl(cuda::std::numeric_limits<T>::infinity())));
     assert(cuda::std::isinf(cuda::std::coshl(-cuda::std::numeric_limits<T>::infinity())));
@@ -73,13 +73,13 @@ __host__ __device__ void test_cosh(T val)
 template <typename T>
 __host__ __device__ void test_sinh(T val)
 {
-  using ret = cuda::std::conditional_t<cuda::std::is_integral<T>::value, double, T>;
-  static_assert(cuda::std::is_same<decltype(cuda::std::sinh(T{})), ret>::value, "");
+  using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::sinh(T{})), ret>, "");
 
   // 0 is returned unmodified
   assert(eq(cuda::std::sinh(val), val));
   assert(eq(cuda::std::sinh(-val), -val));
-  if constexpr (!cuda::std::is_integral<T>::value)
+  if constexpr (!cuda::std::is_integral_v<T>)
   {
     assert(eq(cuda::std::sinh(cuda::std::numeric_limits<T>::infinity()), cuda::std::numeric_limits<T>::infinity()));
     assert(eq(cuda::std::sinh(-cuda::std::numeric_limits<T>::infinity()), -cuda::std::numeric_limits<T>::infinity()));
@@ -91,7 +91,7 @@ __host__ __device__ void test_sinh(T val)
     assert(is_about(cuda::std::sinh(T(-1.0)), -expected));
   }
 
-  if constexpr (cuda::std::is_same<T, float>::value)
+  if constexpr (cuda::std::is_same_v<T, float>)
   {
     assert(eq(cuda::std::sinhf(cuda::std::numeric_limits<T>::infinity()), cuda::std::numeric_limits<T>::infinity()));
     assert(eq(cuda::std::sinhf(-cuda::std::numeric_limits<T>::infinity()), -cuda::std::numeric_limits<T>::infinity()));
@@ -103,7 +103,7 @@ __host__ __device__ void test_sinh(T val)
     assert(is_about(cuda::std::sinhf(T(-1.0)), -expected));
   }
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-  else if constexpr (cuda::std::is_same<T, long double>::value)
+  else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(eq(cuda::std::sinhl(cuda::std::numeric_limits<T>::infinity()), cuda::std::numeric_limits<T>::infinity()));
     assert(eq(cuda::std::sinhl(-cuda::std::numeric_limits<T>::infinity()), -cuda::std::numeric_limits<T>::infinity()));
@@ -120,13 +120,13 @@ __host__ __device__ void test_sinh(T val)
 template <typename T>
 __host__ __device__ void test_tanh(T val)
 {
-  using ret = cuda::std::conditional_t<cuda::std::is_integral<T>::value, double, T>;
-  static_assert(cuda::std::is_same<decltype(cuda::std::tanh(T{})), ret>::value, "");
+  using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::tanh(T{})), ret>, "");
 
   // 0 is returned unmodified
   assert(eq(cuda::std::tanh(val), val));
   assert(eq(cuda::std::tanh(-val), -val));
-  if constexpr (!cuda::std::is_integral<T>::value)
+  if constexpr (!cuda::std::is_integral_v<T>)
   {
     assert(eq(cuda::std::tanh(cuda::std::numeric_limits<T>::infinity()), T(1.0)));
     assert(eq(cuda::std::tanh(-cuda::std::numeric_limits<T>::infinity()), T(-1.0)));
@@ -134,7 +134,7 @@ __host__ __device__ void test_tanh(T val)
     assert(cuda::std::isnan(cuda::std::tanh(-cuda::std::numeric_limits<T>::quiet_NaN())));
 
     // We have precision issues with tanh because ... its tanh
-    if constexpr (cuda::std::is_same<T, double>::value)
+    if constexpr (cuda::std::is_same_v<T, double>)
     {
       const T expected = T(0.7615941559557648510292438004398718);
       assert(is_about(cuda::std::tanh(T(1.0)), expected));
@@ -148,7 +148,7 @@ __host__ __device__ void test_tanh(T val)
     }
   }
 
-  if constexpr (cuda::std::is_same<T, float>::value)
+  if constexpr (cuda::std::is_same_v<T, float>)
   {
     assert(eq(cuda::std::tanhf(cuda::std::numeric_limits<T>::infinity()), T(1.0)));
     assert(eq(cuda::std::tanhf(-cuda::std::numeric_limits<T>::infinity()), T(-1.0)));
@@ -160,7 +160,7 @@ __host__ __device__ void test_tanh(T val)
     assert(is_about(cuda::std::tanhf(T(-1.0)), -expected));
   }
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-  else if constexpr (cuda::std::is_same<T, long double>::value)
+  else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(eq(cuda::std::tanhl(cuda::std::numeric_limits<T>::infinity()), T(1.0)));
     assert(eq(cuda::std::tanhl(-cuda::std::numeric_limits<T>::infinity()), T(-1.0)));
