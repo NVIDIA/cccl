@@ -33,16 +33,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // trigonometric functions
 
-_LIBCUDACXX_HIDE_FROM_ABI __half sinh(__half __v)
-{
-  return __float2half(::sinhf(__half2float(__v)));
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI __half cosh(__half __v)
-{
-  return __float2half(::coshf(__half2float(__v)));
-}
-
 _LIBCUDACXX_HIDE_FROM_ABI __half hypot(__half __x, __half __y)
 {
   return __float2half(::hypotf(__half2float(__x), __half2float(__y)));

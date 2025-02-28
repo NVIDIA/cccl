@@ -36,16 +36,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // trigonometric functions
 
-_LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 sinh(__nv_bfloat16 __v)
-{
-  return __float2bfloat16(::sinhf(__bfloat162float(__v)));
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 cosh(__nv_bfloat16 __v)
-{
-  return __float2bfloat16(::coshf(__bfloat162float(__v)));
-}
-
 _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 hypot(__nv_bfloat16 __x, __nv_bfloat16 __y)
 {
   return __float2bfloat16(::hypotf(__bfloat162float(__x), __bfloat162float(__y)));

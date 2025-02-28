@@ -194,6 +194,12 @@
 #  define _CCCL_BUILTIN_COSL(...) __builtin_cosl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_cos)
 
+#if _CCCL_CHECK_BUILTIN(builtin_cosh) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_COSHF(...) __builtin_coshf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_COSH(...)  __builtin_cosh(__VA_ARGS__)
+#  define _CCCL_BUILTIN_COSHL(...) __builtin_coshl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_cos)
+
 #if _CCCL_CHECK_BUILTIN(builtin_exp) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_EXPF(...) __builtin_expf(__VA_ARGS__)
 #  define _CCCL_BUILTIN_EXP(...)  __builtin_exp(__VA_ARGS__)
@@ -605,6 +611,12 @@
 #  define _CCCL_BUILTIN_SINL(...) __builtin_sinl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_sin)
 
+#if _CCCL_CHECK_BUILTIN(builtin_sinh) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_SINHF(...) __builtin_sinhf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_SINH(...)  __builtin_sinh(__VA_ARGS__)
+#  define _CCCL_BUILTIN_SINHL(...) __builtin_sinhl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_sin)
+
 #if _CCCL_CHECK_BUILTIN(builtin_sqrt) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_SQRTF(...) __builtin_sqrtf(__VA_ARGS__)
 #  define _CCCL_BUILTIN_SQRT(...)  __builtin_sqrt(__VA_ARGS__)
@@ -615,6 +627,12 @@
 #  define _CCCL_BUILTIN_TANF(...) __builtin_tanf(__VA_ARGS__)
 #  define _CCCL_BUILTIN_TAN(...)  __builtin_tan(__VA_ARGS__)
 #  define _CCCL_BUILTIN_TANL(...) __builtin_tanl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_tan)
+
+#if _CCCL_CHECK_BUILTIN(builtin_tanh) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_TANHF(...) __builtin_tanhf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_TANH(...)  __builtin_tanh(__VA_ARGS__)
+#  define _CCCL_BUILTIN_TANHL(...) __builtin_tanhl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_tan)
 
 #if _CCCL_CHECK_BUILTIN(builtin_trunc) || _CCCL_COMPILER(GCC)
