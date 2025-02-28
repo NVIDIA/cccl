@@ -9,7 +9,7 @@
    [[nodiscard]] constexpr T
    bitfield_extract(T value, int start, int width = 1) noexcept;
 
-The functions extract a bitfield from a value. ``bitfield_extract()`` computes ``value & bitfield``.
+The function extracts a bitfield from a value. ``bitfield_extract()`` computes ``value & bitfield``.
 ``bitfield`` is a sequence of bit of width ``width`` shifted left by ``start``.
 
 **Parameters**
@@ -33,14 +33,14 @@ The functions extract a bitfield from a value. ``bitfield_extract()`` computes `
 
 **Performance considerations**
 
-The functions perform the following operations in CUDA:
+The function performs the following operations in CUDA:
 
 - ``SM < 70``: ``BFE``
 - ``SM >= 70``: ``BMSK`` + bitwise AND
 
 .. note::
 
-    When the input values are run-time values that the compiler can resolve at compile-time, e.g. an index of a loop with a fixed number of iterations, using the functions could not be optimal.
+    When the input values are run-time values that the compiler can resolve at compile-time, e.g. an index of a loop with a fixed number of iterations, using the function could not be optimal.
 
 .. note::
 

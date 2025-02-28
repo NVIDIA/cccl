@@ -30,7 +30,7 @@ The function performs the following operations in device code: ``BMSK`` for all 
 
 .. note::
 
-    When the input values are run-time values that the compiler can resolve at compile-time, e.g. an index of a loop with a fixed number of iterations, using the functions could not be optimal.
+    When the input values are run-time values that the compiler can resolve at compile-time, e.g. an index of a loop with a fixed number of iterations, using the function could not be optimal.
 
 .. note::
 

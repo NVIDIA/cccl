@@ -9,7 +9,7 @@
    [[nodiscard]] constexpr T
    bitfield_insert(T dest, T source, int start, int width = 1) noexcept;
 
-The functions extract the lower bitfield of size ``width`` from ``source`` and insert it into ``dest`` at position ``start``.
+The function extracts the lower bitfield of size ``width`` from ``source`` and insert it into ``dest`` at position ``start``.
 
 **Parameters**
 
@@ -33,14 +33,14 @@ The functions extract the lower bitfield of size ``width`` from ``source`` and i
 
 **Performance considerations**
 
-The functions perform the following operations in CUDA:
+The function performs the following operations in CUDA:
 
 - ``SM < 70``: ``BFI``
 - ``SM >= 70``: ``BMSK`` + 5 bitwise operations
 
 .. note::
 
-    When the input values are run-time values that the compiler can resolve at compile-time, e.g. an index of a loop with a fixed number of iterations, using the functions could not be optimal.
+    When the input values are run-time values that the compiler can resolve at compile-time, e.g. an index of a loop with a fixed number of iterations, using the function could not be optimal.
 
 .. note::
 
