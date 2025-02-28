@@ -36,6 +36,7 @@ namespace system::detail::generic
 template <typename Generator>
 struct generate_functor
 {
+  _CCCL_EXEC_CHECK_DISABLE
   template <typename T>
   _CCCL_HOST_DEVICE void operator()(T&& x)
   {
