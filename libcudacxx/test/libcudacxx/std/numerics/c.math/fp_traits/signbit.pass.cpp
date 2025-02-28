@@ -1,11 +1,14 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// <cmath>
 
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
@@ -16,120 +19,66 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ constexpr void test_eq(const T tested, const T expected)
+__host__ __device__ constexpr void test_signbit(const T pos)
 {
-  if (cuda::std::isnan(expected))
-  {
-    assert(cuda::std::isnan(tested));
-    assert(cuda::std::signbit(tested) == false);
-    return;
-  }
-
-  // extended floating point types don't support constexpr operator==
-  if constexpr (cuda::std::is_floating_point_v<T>)
-  {
-    assert(tested == expected);
-  }
-  else
-  {
-    assert(cuda::std::__cccl_fp_get_storage(tested) == cuda::std::__cccl_fp_get_storage(expected));
-  }
-}
-
-template <class T, cuda::std::enable_if_t<cuda::is_floating_point_v<T>, int> = 0>
-__host__ __device__ void constexpr test_fabs_abs(const T pos)
-{
-  ASSERT_SAME_TYPE(T, decltype(cuda::std::fabs(T{})));
-  ASSERT_SAME_TYPE(T, decltype(cuda::std::abs(T{})));
-
-  // 1. Test fabs on positive input
-  test_eq(cuda::std::fabs(pos), pos);
-
-  // 2. Test abs on positive input
-  test_eq(cuda::std::abs(pos), pos);
-
-  // 3. Test fabsf and fabsl on positive input
-  if constexpr (cuda::std::is_same_v<T, float>)
-  {
-    test_eq(cuda::std::fabsf(pos), pos);
-  }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-  else if constexpr (cuda::std::is_same_v<T, long double>)
-  {
-    test_eq(cuda::std::fabsl(pos), pos);
-  }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+  assert(cuda::std::signbit(pos) == false);
 
   if constexpr (cuda::std::numeric_limits<T>::is_signed)
   {
-    const T neg = cuda::std::copysign(pos, cuda::std::numeric_limits<T>::lowest());
-
-    // 4. Test fabs on negative input
-    test_eq(cuda::std::fabs(neg), pos);
-
-    // 5. Test abs on negative input
-    test_eq(cuda::std::abs(neg), pos);
-
-    // 6. Test fabsf and fabsl on negative input
-    if constexpr (cuda::std::is_same_v<T, float>)
+    if constexpr (cuda::std::numeric_limits<T>::is_integer)
     {
-      test_eq(cuda::std::fabsf(neg), pos);
+      // handle integer overflow when negating the minimum value
+      const T neg = (pos == cuda::std::numeric_limits<T>::min()) ? cuda::std::numeric_limits<T>::max() : -pos;
+      assert(cuda::std::signbit(neg) == (pos != 0));
     }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-    else if constexpr (cuda::std::is_same_v<T, long double>)
+    else if constexpr (cuda::std::is_floating_point_v<T>)
     {
-      test_eq(cuda::std::fabsl(neg), pos);
+      assert(cuda::std::signbit(-pos) == true);
     }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
-  }
-}
-
-template <class T, cuda::std::enable_if_t<cuda::std::is_integral_v<T>, int> = 0>
-__host__ __device__ void constexpr test_fabs_abs(const T pos)
-{
-  ASSERT_SAME_TYPE(double, decltype(cuda::std::fabs(T{})));
-
-  const double pos_ref = cuda::std::fabs(static_cast<double>(pos));
-
-  // 1. Test fabs on positive input
-  test_eq(cuda::std::fabs(pos), pos_ref);
-
-  if constexpr (cuda::std::numeric_limits<T>::is_signed)
-  {
-    const T neg          = (pos == cuda::std::numeric_limits<T>::min()) ? cuda::std::numeric_limits<T>::max() : -pos;
-    const double neg_ref = cuda::std::fabs(static_cast<double>(neg));
-
-    // 2. Test fabs on negative input
-    test_eq(cuda::std::fabs(neg), neg_ref);
+    else // nvfp types
+    {
+      const T neg = cuda::std::copysign(pos, cuda::std::numeric_limits<T>::lowest());
+      assert(cuda::std::signbit(neg) == true);
+    }
   }
 }
 
 template <class T>
 __host__ __device__ constexpr void test_type()
 {
+  ASSERT_SAME_TYPE(bool, decltype(cuda::std::signbit(T{})));
+
   // __nv_fp8_e8m0 cannot represent 0
 #if _CCCL_HAS_NVFP8_E8M0()
   if constexpr (!cuda::std::is_same_v<T, __nv_fp8_e8m0>)
 #endif // _CCCL_HAS_NVFP8_E8M0
   {
-    test_fabs_abs(T{});
+    test_signbit(T{});
   }
-  test_fabs_abs(cuda::std::numeric_limits<T>::min());
-  test_fabs_abs(cuda::std::numeric_limits<T>::max());
+  if constexpr (!cuda::std::numeric_limits<T>::is_integer)
+  {
+    test_signbit(cuda::std::numeric_limits<T>::min());
+  }
+  test_signbit(cuda::std::numeric_limits<T>::max());
 
   if constexpr (cuda::std::numeric_limits<T>::has_infinity)
   {
-    test_fabs_abs(cuda::std::numeric_limits<T>::infinity());
+    test_signbit(cuda::std::numeric_limits<T>::infinity());
   }
 
   if constexpr (cuda::std::numeric_limits<T>::has_quiet_NaN)
   {
-    test_fabs_abs(cuda::std::numeric_limits<T>::quiet_NaN());
+    test_signbit(cuda::std::numeric_limits<T>::quiet_NaN());
   }
 
   if constexpr (cuda::std::numeric_limits<T>::has_signaling_NaN)
   {
-    test_fabs_abs(cuda::std::numeric_limits<T>::signaling_NaN());
+    test_signbit(cuda::std::numeric_limits<T>::signaling_NaN());
+  }
+
+  if constexpr (cuda::std::numeric_limits<T>::has_denorm)
+  {
+    test_signbit(cuda::std::numeric_limits<T>::denorm_min());
   }
 }
 
@@ -209,6 +158,21 @@ __host__ __device__ constexpr bool test_constexpr()
 #if _CCCL_HAS_NVFP4_E2M1()
   test_type<__nv_fp4_e2m1>();
 #endif // _CCCL_HAS_NVFP4_E2M1
+
+  test_type<signed char>();
+  test_type<unsigned char>();
+  test_type<signed short>();
+  test_type<unsigned short>();
+  test_type<signed int>();
+  test_type<unsigned int>();
+  test_type<signed long>();
+  test_type<unsigned long>();
+  test_type<signed long long>();
+  test_type<unsigned long long>();
+#if !defined(TEST_HAS_NO_INT128_T)
+  test_type<__int128_t>();
+  test_type<__uint128_t>();
+#endif // !TEST_HAS_NO_INT128_T
 
   return true;
 }

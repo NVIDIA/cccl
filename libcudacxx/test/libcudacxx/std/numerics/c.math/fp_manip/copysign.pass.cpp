@@ -1,11 +1,14 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// <cmath>
 
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
@@ -15,92 +18,53 @@
 
 #include "test_macros.h"
 
-template <class T>
-__host__ __device__ constexpr void test_eq(const T tested, const T expected)
-{
-  if (cuda::std::isnan(expected))
-  {
-    assert(cuda::std::isnan(tested));
-    assert(cuda::std::signbit(tested) == false);
-    return;
-  }
-
-  // extended floating point types don't support constexpr operator==
-  if constexpr (cuda::std::is_floating_point_v<T>)
-  {
-    assert(tested == expected);
-  }
-  else
-  {
-    assert(cuda::std::__cccl_fp_get_storage(tested) == cuda::std::__cccl_fp_get_storage(expected));
-  }
-}
-
 template <class T, cuda::std::enable_if_t<cuda::is_floating_point_v<T>, int> = 0>
-__host__ __device__ void constexpr test_fabs_abs(const T pos)
+__host__ __device__ constexpr void test_copysign(const T val)
 {
-  ASSERT_SAME_TYPE(T, decltype(cuda::std::fabs(T{})));
-  ASSERT_SAME_TYPE(T, decltype(cuda::std::abs(T{})));
+  ASSERT_SAME_TYPE(T, decltype(cuda::std::copysign(T{}, T{})));
 
-  // 1. Test fabs on positive input
-  test_eq(cuda::std::fabs(pos), pos);
-
-  // 2. Test abs on positive input
-  test_eq(cuda::std::abs(pos), pos);
-
-  // 3. Test fabsf and fabsl on positive input
-  if constexpr (cuda::std::is_same_v<T, float>)
-  {
-    test_eq(cuda::std::fabsf(pos), pos);
-  }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-  else if constexpr (cuda::std::is_same_v<T, long double>)
-  {
-    test_eq(cuda::std::fabsl(pos), pos);
-  }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+  // 1. positive -> positive
+  const T pos = cuda::std::copysign(val, cuda::std::numeric_limits<T>::max());
+  assert(cuda::std::signbit(pos) == false);
 
   if constexpr (cuda::std::numeric_limits<T>::is_signed)
   {
-    const T neg = cuda::std::copysign(pos, cuda::std::numeric_limits<T>::lowest());
+    // 2. positive -> negative
+    const T neg = cuda::std::copysign(val, cuda::std::numeric_limits<T>::lowest());
+    assert(cuda::std::signbit(neg) == true);
 
-    // 4. Test fabs on negative input
-    test_eq(cuda::std::fabs(neg), pos);
+    // 3. negative -> negative
+    const T neg2 = cuda::std::copysign(neg, cuda::std::numeric_limits<T>::lowest());
+    assert(cuda::std::signbit(neg2) == true);
 
-    // 5. Test abs on negative input
-    test_eq(cuda::std::abs(neg), pos);
-
-    // 6. Test fabsf and fabsl on negative input
-    if constexpr (cuda::std::is_same_v<T, float>)
-    {
-      test_eq(cuda::std::fabsf(neg), pos);
-    }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-    else if constexpr (cuda::std::is_same_v<T, long double>)
-    {
-      test_eq(cuda::std::fabsl(neg), pos);
-    }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+    // 4. negative -> positive
+    const T pos2 = cuda::std::copysign(val, cuda::std::numeric_limits<T>::max());
+    assert(cuda::std::signbit(pos2) == false);
   }
 }
 
 template <class T, cuda::std::enable_if_t<cuda::std::is_integral_v<T>, int> = 0>
-__host__ __device__ void constexpr test_fabs_abs(const T pos)
+__host__ __device__ constexpr void test_copysign(const T val)
 {
-  ASSERT_SAME_TYPE(double, decltype(cuda::std::fabs(T{})));
+  ASSERT_SAME_TYPE(double, decltype(cuda::std::copysign(T{}, T{})));
 
-  const double pos_ref = cuda::std::fabs(static_cast<double>(pos));
-
-  // 1. Test fabs on positive input
-  test_eq(cuda::std::fabs(pos), pos_ref);
+  // 1. positive -> positive
+  const double pos = cuda::std::copysign(val, cuda::std::numeric_limits<T>::max());
+  assert(cuda::std::signbit(pos) == false);
 
   if constexpr (cuda::std::numeric_limits<T>::is_signed)
   {
-    const T neg          = (pos == cuda::std::numeric_limits<T>::min()) ? cuda::std::numeric_limits<T>::max() : -pos;
-    const double neg_ref = cuda::std::fabs(static_cast<double>(neg));
+    // 2. positive -> negative
+    const double neg = cuda::std::copysign(val, cuda::std::numeric_limits<T>::lowest());
+    assert(cuda::std::signbit(neg) == true);
 
-    // 2. Test fabs on negative input
-    test_eq(cuda::std::fabs(neg), neg_ref);
+    // 3. negative -> negative
+    const double neg2 = cuda::std::copysign(static_cast<T>(-val), cuda::std::numeric_limits<T>::lowest());
+    assert(cuda::std::signbit(neg2) == true);
+
+    // 4. negative -> positive
+    const double pos2 = cuda::std::copysign(static_cast<T>(-val), cuda::std::numeric_limits<T>::max());
+    assert(cuda::std::signbit(pos2) == false);
   }
 }
 
@@ -112,24 +76,32 @@ __host__ __device__ constexpr void test_type()
   if constexpr (!cuda::std::is_same_v<T, __nv_fp8_e8m0>)
 #endif // _CCCL_HAS_NVFP8_E8M0
   {
-    test_fabs_abs(T{});
+    test_copysign(T{});
   }
-  test_fabs_abs(cuda::std::numeric_limits<T>::min());
-  test_fabs_abs(cuda::std::numeric_limits<T>::max());
+  if constexpr (!cuda::std::numeric_limits<T>::is_integer)
+  {
+    test_copysign(cuda::std::numeric_limits<T>::min());
+  }
+  test_copysign(cuda::std::numeric_limits<T>::max());
 
   if constexpr (cuda::std::numeric_limits<T>::has_infinity)
   {
-    test_fabs_abs(cuda::std::numeric_limits<T>::infinity());
+    test_copysign(cuda::std::numeric_limits<T>::infinity());
   }
 
   if constexpr (cuda::std::numeric_limits<T>::has_quiet_NaN)
   {
-    test_fabs_abs(cuda::std::numeric_limits<T>::quiet_NaN());
+    test_copysign(cuda::std::numeric_limits<T>::quiet_NaN());
   }
 
   if constexpr (cuda::std::numeric_limits<T>::has_signaling_NaN)
   {
-    test_fabs_abs(cuda::std::numeric_limits<T>::signaling_NaN());
+    test_copysign(cuda::std::numeric_limits<T>::signaling_NaN());
+  }
+
+  if constexpr (cuda::std::numeric_limits<T>::has_denorm)
+  {
+    test_copysign(cuda::std::numeric_limits<T>::denorm_min());
   }
 }
 
@@ -209,6 +181,8 @@ __host__ __device__ constexpr bool test_constexpr()
 #if _CCCL_HAS_NVFP4_E2M1()
   test_type<__nv_fp4_e2m1>();
 #endif // _CCCL_HAS_NVFP4_E2M1
+
+  // we cannot test integral types, because signbit(double) is not constexpr
 
   return true;
 }
