@@ -231,6 +231,25 @@
 #  define _CCCL_BUILTIN_EXPECT(...) __builtin_expect(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_expect)
 
+#if _CCCL_CHECK_BUILTIN(builtin_add_overflow)
+#  define _CCCL_BUILTIN_ADD_OVERFLOW(...) __builtin_add_overflow(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_add_overflow)
+
+#if _CCCL_CHECK_BUILTIN(builtin_sub_overflow)
+#  define _CCCL_BUILTIN_SUB_OVERFLOW(...) __builtin_sub_overflow(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_sub_overflow)
+
+#if _CCCL_CHECK_BUILTIN(builtin_mul_overflow)
+#  define _CCCL_BUILTIN_MUL_OVERFLOW(...) __builtin_mul_overflow(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_mul_overflow)
+
+// nvcc does not support these builtins
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  undef _CCCL_BUILTIN_ADD_OVERFLOW
+#  undef _CCCL_BUILTIN_SUB_OVERFLOW
+#  undef _CCCL_BUILTIN_MUL_OVERFLOW
+#endif // _CCCL_CUDA_COMPILER(NVCC)
+
 #if _CCCL_CHECK_BUILTIN(builtin_floor) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_FLOORF(...) __builtin_floorf(__VA_ARGS__)
 #  define _CCCL_BUILTIN_FLOOR(...)  __builtin_floor(__VA_ARGS__)
