@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/remove_cv.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // __is_arithmetic_integral is a trait that tests whether a type is an integral type intended for arithmetic.
