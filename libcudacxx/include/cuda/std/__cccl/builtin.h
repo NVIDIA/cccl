@@ -373,6 +373,12 @@
 #  undef _CCCL_BUILTIN_LDEXPL
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
+#if _CCCL_CHECK_BUILTIN(builtin_lgamma) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_LGAMMAF(...) __builtin_lgammaf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LGAMMA(...)  __builtin_lgamma(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LGAMMAL(...) __builtin_lgammal(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_lgamma)
+
 #if _CCCL_HAS_BUILTIN(__builtin_LINE) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC, >=, 19, 27)
 #  define _CCCL_BUILTIN_LINE() __builtin_LINE()
 #else // ^^^ _CCCL_HAS_BUILTIN(__builtin_LINE) ^^^ / vvv !_CCCL_HAS_BUILTIN(__builtin_LINE) vvv
@@ -676,6 +682,12 @@
 #  define _CCCL_BUILTIN_TANH(...)  __builtin_tanh(__VA_ARGS__)
 #  define _CCCL_BUILTIN_TANHL(...) __builtin_tanhl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_tan)
+
+#if _CCCL_CHECK_BUILTIN(builtin_tgamma) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_TGAMMAF(...) __builtin_tgammaf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_TGAMMA(...)  __builtin_tgamma(__VA_ARGS__)
+#  define _CCCL_BUILTIN_TGAMMAL(...) __builtin_tgammal(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_tgamma)
 
 #if _CCCL_CHECK_BUILTIN(builtin_trunc) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_TRUNCF(...) __builtin_truncf(__VA_ARGS__)
