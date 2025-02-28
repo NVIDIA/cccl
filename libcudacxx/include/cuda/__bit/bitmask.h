@@ -45,9 +45,9 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp bitmask(int __start, int
   }
   if (__width == __digits)
   {
-    return ~_Tp{0};
+    return static_cast<_Tp>(~_Tp{0});
   }
-  return (((_Tp{1} << __width) - 1) << __start);
+  return static_cast<_Tp>(((_Tp{1} << __width) - 1) << __start);
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
