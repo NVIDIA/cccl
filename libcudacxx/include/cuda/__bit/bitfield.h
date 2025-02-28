@@ -23,9 +23,12 @@
 
 #include <cuda/__bit/bitmask.h>
 #include <cuda/__ptx/instructions/bmsk.h>
+#include <cuda/__ptx/instructions/shl.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
@@ -63,6 +66,27 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE uint64_t __bfe(uint64_t __value
 #endif // defined(__CUDA_ARCH__)
 
 template <typename _Tp>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __shl(const _Tp __value, int __shift) noexcept
+{
+  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  {
+    if constexpr (sizeof(_Tp) <= sizeof(uint64_t))
+    {
+      NV_DISPATCH_TARGET(NV_IS_DEVICE, (return _CUDA_VPTX::shl(__source, __shift);))
+    }
+    else
+    {
+      // the compiler should generate exactly four 32-bit shl instructions
+      NV_DISPATCH_TARGET(NV_IS_DEVICE,
+                         (auto __low  = _CUDA_VPTX::shl(static_cast<uint64_t>(__value), __shift);
+                          auto __high = _CUDA_VPTX::shl(static_cast<uint64_t>(__value >> 64), __shift);
+                          return __low | (__high << 64);))
+    }
+  }
+  return (__shift == _CUDA_VSTD::numeric_limits<_Tp>::digits) ? static_cast<_Tp>(~_Tp{0}) : __value << __shift;
+}
+
+template <typename _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp
 bitfield_insert(const _Tp __dest, const _Tp __source, int __start, int __width) noexcept
 {
@@ -85,7 +109,7 @@ bitfield_insert(const _Tp __dest, const _Tp __source, int __start, int __width) 
     }
   }
   auto __mask = ::cuda::bitmask<_Tp>(__start, __width);
-  return ((__source << __start) & __mask) | (__dest & ~__mask);
+  return (::cuda::__shl(__source, __start) & __mask) | (__dest & ~__mask);
 }
 
 template <typename _Tp>
