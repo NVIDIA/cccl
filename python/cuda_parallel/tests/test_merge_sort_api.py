@@ -21,7 +21,7 @@ def test_merge_sort():
     d_in_keys = cp.asarray(h_in_keys)
     d_in_items = cp.asarray(h_in_items)
 
-    # Instantiate scan for the given keys, items, and operator
+    # Instantiate merge_sort for the given keys, items, and operator
     merge_sort = algorithms.merge_sort(
         d_in_keys, d_in_items, d_in_keys, d_in_items, compare_op
     )
