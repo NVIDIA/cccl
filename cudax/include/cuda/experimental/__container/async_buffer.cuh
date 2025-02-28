@@ -101,8 +101,8 @@ public:
   using const_reference        = const _Tp&;
   using pointer                = _Tp*;
   using const_pointer          = const _Tp*;
-  using iterator               = heterogeneous_iterator<_Tp, _IsConstIter::__no, _Properties...>;
-  using const_iterator         = heterogeneous_iterator<_Tp, _IsConstIter::__yes, _Properties...>;
+  using iterator               = heterogeneous_iterator<_Tp, _Properties...>;
+  using const_iterator         = heterogeneous_iterator<const _Tp, _Properties...>;
   using reverse_iterator       = _CUDA_VSTD::reverse_iterator<iterator>;
   using const_reverse_iterator = _CUDA_VSTD::reverse_iterator<const_iterator>;
   using size_type              = _CUDA_VSTD::size_t;
