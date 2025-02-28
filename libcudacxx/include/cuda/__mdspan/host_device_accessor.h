@@ -146,7 +146,7 @@ public:
     explicit(!_CUDA_VSTD::is_convertible_v<_OtherAccessor, _Accessor>)
 #endif
       __host_accessor(const __host_accessor<_OtherAccessor>& __acc) //
-    noexcept(_Accessor{_CUDA_VSTD::declval<_OtherAccessor>()})
+    noexcept(noexcept(_Accessor{_CUDA_VSTD::declval<_OtherAccessor>()}))
       : _Accessor{__acc}
   {}
 
@@ -157,7 +157,7 @@ public:
     explicit(!_CUDA_VSTD::is_convertible_v<_OtherAccessor, _Accessor>)
 #endif
       __host_accessor(const __managed_accessor<_OtherAccessor>& __acc) //
-    noexcept(_Accessor{_CUDA_VSTD::declval<_OtherAccessor>()})
+    noexcept(noexcept(_Accessor{_CUDA_VSTD::declval<_OtherAccessor>()}))
       : _Accessor{__acc}
   {}
 
@@ -243,7 +243,7 @@ public:
     explicit(!_CUDA_VSTD::is_convertible_v<_OtherAccessor, _Accessor>)
 #endif
       __device_accessor(const __managed_accessor<_OtherAccessor>& __acc) //
-    noexcept(_Accessor{_CUDA_VSTD::declval<_OtherAccessor>()})
+    noexcept(noexcept(_Accessor{_CUDA_VSTD::declval<_OtherAccessor>()}))
       : _Accessor{__acc}
   {}
 
@@ -327,7 +327,7 @@ public:
     explicit(!_CUDA_VSTD::is_convertible_v<_OtherAccessor, _Accessor>)
 #endif
       __managed_accessor(const __managed_accessor<_OtherAccessor>& __acc) //
-    noexcept(_CUDA_VSTD::is_nothrow_copy_constructible_v<_Accessor>)
+    noexcept(noexcept(_Accessor{_CUDA_VSTD::declval<_OtherAccessor>()}))
       : _Accessor{__acc}
   {}
 
