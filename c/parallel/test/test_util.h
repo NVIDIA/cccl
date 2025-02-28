@@ -278,6 +278,37 @@ static std::string get_merge_sort_op(cccl_type_enum t)
   return "";
 }
 
+static std::string get_unique_by_key_op(cccl_type_enum t)
+{
+  switch (t)
+  {
+    case cccl_type_enum::CCCL_INT8:
+      return "extern \"C\" __device__ bool op(char lhs, char rhs) { return lhs == rhs; }";
+    case cccl_type_enum::CCCL_UINT8:
+      return "extern \"C\" __device__ bool op(unsigned char lhs, unsigned char rhs) { return lhs == rhs; }";
+    case cccl_type_enum::CCCL_INT16:
+      return "extern \"C\" __device__ bool op(short lhs, short rhs) { return lhs == rhs; }";
+    case cccl_type_enum::CCCL_UINT16:
+      return "extern \"C\" __device__ bool op(unsigned short lhs, unsigned short rhs) { return lhs == rhs; }";
+    case cccl_type_enum::CCCL_INT32:
+      return "extern \"C\" __device__ bool op(int lhs, int rhs) { return lhs == rhs; }";
+    case cccl_type_enum::CCCL_UINT32:
+      return "extern \"C\" __device__ bool op(unsigned int lhs, unsigned int rhs) { return lhs == rhs; }";
+    case cccl_type_enum::CCCL_INT64:
+      return "extern \"C\" __device__ bool op(long long lhs, long long rhs) { return lhs == rhs; }";
+    case cccl_type_enum::CCCL_UINT64:
+      return "extern \"C\" __device__ bool op(unsigned long long lhs, unsigned long long rhs) { return lhs == rhs; }";
+    case cccl_type_enum::CCCL_FLOAT32:
+      return "extern \"C\" __device__ bool op(float lhs, float rhs) { return lhs == rhs; }";
+    case cccl_type_enum::CCCL_FLOAT64:
+      return "extern \"C\" __device__ bool op(double lhs, double rhs) { return lhs == rhs; }";
+
+    default:
+      throw std::runtime_error("Unsupported type");
+  }
+  return "";
+}
+
 template <class T>
 struct pointer_t
 {
