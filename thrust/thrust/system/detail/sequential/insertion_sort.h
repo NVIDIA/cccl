@@ -42,7 +42,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <typename RandomAccessIterator, typename StrictWeakOrdering>
 _CCCL_HOST_DEVICE void insertion_sort(RandomAccessIterator first, RandomAccessIterator last, StrictWeakOrdering comp)
 {
-  using value_type = typename thrust::iterator_value<RandomAccessIterator>::type;
+  using value_type = thrust::detail::it_value_t<RandomAccessIterator>;
 
   if (first == last)
   {
@@ -86,8 +86,8 @@ template <typename RandomAccessIterator1, typename RandomAccessIterator2, typena
 _CCCL_HOST_DEVICE void insertion_sort_by_key(
   RandomAccessIterator1 first1, RandomAccessIterator1 last1, RandomAccessIterator2 first2, StrictWeakOrdering comp)
 {
-  using value_type1 = typename thrust::iterator_value<RandomAccessIterator1>::type;
-  using value_type2 = typename thrust::iterator_value<RandomAccessIterator2>::type;
+  using value_type1 = thrust::detail::it_value_t<RandomAccessIterator1>;
+  using value_type2 = thrust::detail::it_value_t<RandomAccessIterator2>;
 
   if (first1 == last1)
   {

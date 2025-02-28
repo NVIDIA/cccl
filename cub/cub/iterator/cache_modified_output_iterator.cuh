@@ -47,9 +47,10 @@
 #include <cub/thread/thread_store.cuh>
 
 #include <thrust/iterator/iterator_facade.h>
-#include <thrust/iterator/iterator_traits.h>
 
-#include <iosfwd>
+#if !_CCCL_COMPILER(NVRTC)
+#  include <iosfwd>
+#endif // !_CCCL_COMPILER(NVRTC)
 
 CUB_NAMESPACE_BEGIN
 
@@ -156,7 +157,7 @@ public:
    */
   template <typename QualifiedValueType>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CacheModifiedOutputIterator(QualifiedValueType* ptr)
-      : ptr(const_cast<typename std::remove_cv<QualifiedValueType>::type*>(ptr))
+      : ptr(const_cast<::cuda::std::remove_cv_t<QualifiedValueType>*>(ptr))
   {}
 
   /// Postfix increment
@@ -237,11 +238,13 @@ public:
     return (ptr != rhs.ptr);
   }
 
+#if !_CCCL_COMPILER(NVRTC)
   /// ostream operator
   friend std::ostream& operator<<(std::ostream& os, const self_type& itr)
   {
     return os;
   }
+#endif // !_CCCL_COMPILER(NVRTC)
 };
 
 CUB_NAMESPACE_END

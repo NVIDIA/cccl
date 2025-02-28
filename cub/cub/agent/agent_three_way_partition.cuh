@@ -47,9 +47,6 @@
 
 #include <cuda/std/type_traits>
 
-#include <iterator>
-#include <type_traits>
-
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -180,7 +177,7 @@ struct AgentThreeWayPartition
   //---------------------------------------------------------------------
 
   // The input value type
-  using InputT = value_t<InputIteratorT>;
+  using InputT = it_value_t<InputIteratorT>;
 
   using AccumPackHelperT = accumulator_pack_t<OffsetT>;
   using AccumPackT       = typename AccumPackHelperT::pack_t;

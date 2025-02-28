@@ -36,7 +36,7 @@ struct TestTupleTransform
 
     // zip up the data
     host_vector<tuple<T, T>> h_tuples(n);
-    transform(h_t1.begin(), h_t1.end(), h_t2.begin(), h_tuples.begin(), MakeTupleFunctor());
+    thrust::transform(h_t1.begin(), h_t1.end(), h_t2.begin(), h_tuples.begin(), MakeTupleFunctor());
 
     // copy to device
     device_vector<tuple<T, T>> d_tuples = h_tuples;
@@ -44,10 +44,10 @@ struct TestTupleTransform
     device_vector<T> d_t1(n), d_t2(n);
 
     // select 0th
-    transform(d_tuples.begin(), d_tuples.end(), d_t1.begin(), GetFunctor<0>());
+    thrust::transform(d_tuples.begin(), d_tuples.end(), d_t1.begin(), GetFunctor<0>());
 
     // select 1st
-    transform(d_tuples.begin(), d_tuples.end(), d_t2.begin(), GetFunctor<1>());
+    thrust::transform(d_tuples.begin(), d_tuples.end(), d_t2.begin(), GetFunctor<1>());
 
     ASSERT_ALMOST_EQUAL(h_t1, d_t1);
     ASSERT_ALMOST_EQUAL(h_t2, d_t2);

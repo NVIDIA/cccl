@@ -64,7 +64,7 @@ merge(execution_policy<Derived>& policy,
       CompareOp compare_op = {})
 {
   THRUST_CDP_DISPATCH(
-    (using size_type         = typename iterator_traits<KeysIt1>::difference_type;
+    (using size_type         = thrust::detail::it_difference_t<KeysIt1>;
      const auto num_keys1    = static_cast<size_type>(thrust::distance(keys1_begin, keys1_end));
      const auto num_keys2    = static_cast<size_type>(thrust::distance(keys2_begin, keys2_end));
      const auto num_keys_out = num_keys1 + num_keys2;
@@ -151,7 +151,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE merge_by_key(
   CompareOp compare_op = {})
 {
   THRUST_CDP_DISPATCH(
-    (using size_type = typename iterator_traits<KeysIt1>::difference_type;
+    (using size_type = thrust::detail::it_difference_t<KeysIt1>;
 
      const auto num_keys1    = static_cast<size_type>(thrust::distance(keys1_begin, keys1_end));
      const auto num_keys2    = static_cast<size_type>(thrust::distance(keys2_begin, keys2_end));

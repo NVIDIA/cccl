@@ -42,7 +42,7 @@ struct TestTupleScan
 
     // initialize input
     host_vector<tuple<T, T>> h_input(n);
-    transform(h_t1.begin(), h_t1.end(), h_t2.begin(), h_input.begin(), MakeTupleFunctor());
+    thrust::transform(h_t1.begin(), h_t1.end(), h_t2.begin(), h_input.begin(), MakeTupleFunctor());
     device_vector<tuple<T, T>> d_input = h_input;
 
     // allocate output

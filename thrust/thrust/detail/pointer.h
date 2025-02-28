@@ -1,3 +1,4 @@
+
 /*
  *  Copyright 2008-2021 NVIDIA Corporation
  *
@@ -43,29 +44,15 @@
 #include <ostream>
 
 THRUST_NAMESPACE_BEGIN
-
 template <typename Element, typename Tag, typename Reference = use_default, typename Derived = use_default>
 class pointer;
-
-// Specialize `thrust::iterator_traits` to avoid problems with the name of
-// pointer's constructor shadowing its nested pointer type. We do this before
-// pointer is defined so the specialization is correctly used inside the
-// definition.
-template <typename Element, typename Tag, typename Reference, typename Derived>
-struct iterator_traits<thrust::pointer<Element, Tag, Reference, Derived>>
-{
-  using pointer           = thrust::pointer<Element, Tag, Reference, Derived>;
-  using iterator_category = typename pointer::iterator_category;
-  using value_type        = typename pointer::value_type;
-  using difference_type   = typename pointer::difference_type;
-  using reference         = typename pointer::reference;
-};
-
 THRUST_NAMESPACE_END
 
+// Specialize `std::iterator_traits` (picked up by cuda::std::iterator_traits) to avoid problems with the name of
+// pointer's constructor shadowing its nested pointer type. We do this before pointer is defined so the specialization
+// is correctly used inside the definition.
 namespace std
 {
-
 template <typename Element, typename Tag, typename Reference, typename Derived>
 struct iterator_traits<THRUST_NS_QUALIFIER::pointer<Element, Tag, Reference, Derived>>
 {
@@ -75,7 +62,6 @@ struct iterator_traits<THRUST_NS_QUALIFIER::pointer<Element, Tag, Reference, Der
   using difference_type   = typename pointer::difference_type;
   using reference         = typename pointer::reference;
 };
-
 } // namespace std
 
 THRUST_NAMESPACE_BEGIN

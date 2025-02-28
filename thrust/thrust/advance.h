@@ -101,7 +101,7 @@ template <typename InputIterator, typename Distance>
 _CCCL_HOST_DEVICE
 InputIterator next(
   InputIterator i
-, typename iterator_traits<InputIterator>::difference_type n = 1
+, typename ::cuda::std::iterator_traits<InputIterator>::difference_type n = 1
 );
 #endif
 
@@ -135,7 +135,7 @@ template <typename BidirectionalIterator, typename Distance>
 _CCCL_HOST_DEVICE
 BidirectionalIterator prev(
   BidirectionalIterator i
-, typename iterator_traits<BidirectionalIterator>::difference_type n = 1
+, typename ::cuda::std::iterator_traits<BidirectionalIterator>::difference_type n = 1
 );
 #endif
 

@@ -51,6 +51,8 @@
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/reduce.h>
 
+#  include <cuda/std/iterator>
+
 #  include <cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -216,13 +218,13 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
 
     reduce_agent ra(reduce_plan, num_items, stream, vshmem_ptr, "reduce_agent: single_tile only");
     ra.launch(input_it, output_it, num_items, reduction_op);
-    CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
+    _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
   }
   else
   {
     // regular size
     cuda_optional<int> sm_count = core::detail::get_sm_count();
-    CUDA_CUB_RET_IF_FAIL(sm_count.status());
+    _CUDA_CUB_RET_IF_FAIL(sm_count.status());
 
     // reduction will not use more cta counts than requested
     cuda_optional<int> max_blocks_per_sm = reduce_agent::template get_max_blocks_per_sm<
@@ -232,7 +234,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
       cub::GridEvenShare<Size>,
       cub::GridQueue<UnsignedSize>,
       ReductionOp>(reduce_plan);
-    CUDA_CUB_RET_IF_FAIL(max_blocks_per_sm.status());
+    _CUDA_CUB_RET_IF_FAIL(max_blocks_per_sm.status());
 
     int reduce_device_occupancy = (int) max_blocks_per_sm * sm_count;
 
@@ -255,7 +257,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
       vshmem_size // size of virtualized shared memory storage
     };
     status = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
-    CUDA_CUB_RET_IF_FAIL(status);
+    _CUDA_CUB_RET_IF_FAIL(status);
     if (d_temp_storage == nullptr)
     {
       return status;
@@ -286,17 +288,17 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
       drain_plan.grid_size = 1;
       drain_agent da(drain_plan, stream, "__reduce::drain_agent");
       da.launch(queue, num_items);
-      CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
+      _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
     }
     else
     {
-      CUDA_CUB_RET_IF_FAIL(cudaErrorNotSupported);
+      _CUDA_CUB_RET_IF_FAIL(cudaErrorNotSupported);
     }
 
     reduce_plan.grid_size = reduce_grid_size;
     reduce_agent ra(reduce_plan, stream, vshmem_ptr, "reduce_agent: regular size reduce");
     ra.launch(input_it, d_block_reductions, num_items, even_share, queue, reduction_op);
-    CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
+    _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
 
     using reduce_agent_single = AgentLauncher<__reduce::ReduceAgent<T*, OutputIt, T, Size, ReductionOp>>;
 
@@ -304,7 +306,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
     reduce_agent_single ra1(reduce_plan, stream, vshmem_ptr, "reduce_agent: single tile reduce");
 
     ra1.launch(d_block_reductions, output_it, reduce_grid_size, reduction_op);
-    CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
+    _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
   }
 
   return status;
@@ -367,8 +369,8 @@ element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPr
     return last;
   }
 
-  using InputType = typename iterator_traits<ItemsIt>::value_type;
-  using IndexType = typename iterator_traits<ItemsIt>::difference_type;
+  using InputType = thrust::detail::it_value_t<ItemsIt>;
+  using IndexType = thrust::detail::it_difference_t<ItemsIt>;
 
   IndexType num_items = static_cast<IndexType>(thrust::distance(first, last));
 
@@ -403,7 +405,7 @@ min_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, Bina
 template <class Derived, class ItemsIt>
 ItemsIt _CCCL_HOST_DEVICE min_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last)
 {
-  using value_type = typename iterator_value<ItemsIt>::type;
+  using value_type = thrust::detail::it_value_t<ItemsIt>;
   return cuda_cub::min_element(policy, first, last, less<value_type>());
 }
 
@@ -422,7 +424,7 @@ max_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, Bina
 template <class Derived, class ItemsIt>
 ItemsIt _CCCL_HOST_DEVICE max_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last)
 {
-  using value_type = typename iterator_value<ItemsIt>::type;
+  using value_type = thrust::detail::it_value_t<ItemsIt>;
   return cuda_cub::max_element(policy, first, last, less<value_type>());
 }
 
@@ -440,8 +442,7 @@ minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, B
   }
 
   THRUST_CDP_DISPATCH(
-    (using InputType = typename iterator_traits<ItemsIt>::value_type;
-     using IndexType = typename iterator_traits<ItemsIt>::difference_type;
+    (using InputType = thrust::detail::it_value_t<ItemsIt>; using IndexType = thrust::detail::it_difference_t<ItemsIt>;
 
      const auto num_items = static_cast<IndexType>(thrust::distance(first, last));
 
@@ -467,7 +468,7 @@ minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, B
 template <class Derived, class ItemsIt>
 pair<ItemsIt, ItemsIt> _CCCL_HOST_DEVICE minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last)
 {
-  using value_type = typename iterator_value<ItemsIt>::type;
+  using value_type = thrust::detail::it_value_t<ItemsIt>;
   return cuda_cub::minmax_element(policy, first, last, less<value_type>());
 }
 

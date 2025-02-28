@@ -235,7 +235,7 @@ DECLARE_UNITTEST(TestCountingIteratorLowerBound);
 void TestCountingIteratorDifference()
 {
   using Iterator   = thrust::counting_iterator<std::uint64_t>;
-  using Difference = thrust::iterator_difference<Iterator>::type;
+  using Difference = thrust::detail::it_difference_t<Iterator>;
 
   Difference diff = std::numeric_limits<std::uint32_t>::max() + 1;
 

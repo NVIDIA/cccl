@@ -23,12 +23,11 @@ option(cudax_ENABLE_EXAMPLES "Build CUDA Experimental's examples." ON)
 option(cudax_ENABLE_CUDASTF "Enable CUDASTF subproject" ON)
 option(cudax_ENABLE_CUDASTF_CODE_GENERATION "Enable code generation using STF's parallel_for or launch with CUDA compiler." ON)
 option(cudax_ENABLE_CUDASTF_BOUNDSCHECK "Enable bounds checks for STF targets. Requires debug build." OFF)
-option(cudax_ENABLE_CUDASTF_DEBUG "Enable additional debugging for STF targets. Requires debug build." OFF)
 option(cudax_ENABLE_CUDASTF_MATHLIBS "Enable STF tests/examples that use cublas/cusolver." OFF)
 
-if ((cudax_ENABLE_CUDASTF_BOUNDSCHECK OR cudax_ENABLE_CUDASTF_DEBUG) AND
+if (cudax_ENABLE_CUDASTF_BOUNDSCHECK AND
     NOT CMAKE_BUILD_TYPE MATCHES "Debug" AND NOT CMAKE_BUILD_TYPE MATCHES "RelWithDebInfo")
-  message(FATAL_ERROR "cudax_ENABLE_CUDASTF_BOUNDSCHECK and cudax_ENABLE_CUDASTF_DEBUG require a Debug build.")
+  message(FATAL_ERROR "cudax_ENABLE_CUDASTF_BOUNDSCHECK requires a Debug build.")
 endif()
 
 include(cmake/cudaxBuildCompilerTargets.cmake)

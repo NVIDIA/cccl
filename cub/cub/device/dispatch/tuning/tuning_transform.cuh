@@ -108,7 +108,7 @@ _CCCL_HOST_DEVICE constexpr int sum(int head, Ts... tail)
 template <typename... Its>
 _CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
 {
-  return (int{sizeof(value_t<Its>)} + ... + 0);
+  return (int{sizeof(it_value_t<Its>)} + ... + 0);
 }
 
 constexpr int bulk_copy_alignment     = 128;
@@ -123,7 +123,7 @@ _CCCL_HOST_DEVICE constexpr auto bulk_copy_smem_for_tile_size(int tile_size) -> 
        + sizeof...(RandomAccessIteratorsIn) * bulk_copy_alignment;
 }
 
-constexpr int arch_to_min_bytes_in_flight(int sm_arch)
+_CCCL_HOST_DEVICE constexpr int arch_to_min_bytes_in_flight(int sm_arch)
 {
   // TODO(bgruber): use if-else in C++14 for better readability
   return sm_arch >= 900 ? 48 * 1024 // 32 for H100, 48 for H200
@@ -144,7 +144,7 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
   static constexpr bool all_contiguous =
     ::cuda::std::conjunction_v<THRUST_NS_QUALIFIER::is_contiguous_iterator<RandomAccessIteratorsIn>...>;
   static constexpr bool all_values_trivially_reloc =
-    ::cuda::std::conjunction_v<THRUST_NS_QUALIFIER::is_trivially_relocatable<value_t<RandomAccessIteratorsIn>>...>;
+    ::cuda::std::conjunction_v<THRUST_NS_QUALIFIER::is_trivially_relocatable<it_value_t<RandomAccessIteratorsIn>>...>;
 
   static constexpr bool can_memcpy = all_contiguous && all_values_trivially_reloc;
 
@@ -169,7 +169,7 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
         async_policy::block_threads * async_policy::min_items_per_thread)
       > int{max_smem_per_block};
     static constexpr bool any_type_is_overalinged =
-      ((alignof(value_t<RandomAccessIteratorsIn>) > bulk_copy_alignment) || ...);
+      ((alignof(it_value_t<RandomAccessIteratorsIn>) > bulk_copy_alignment) || ...);
 
     static constexpr bool use_fallback =
       RequiresStableAddress || !can_memcpy || no_input_streams || exhaust_smem || any_type_is_overalinged;

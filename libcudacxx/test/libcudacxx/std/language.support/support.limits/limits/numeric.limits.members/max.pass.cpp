@@ -74,7 +74,17 @@ int main(int, char**)
 #if _CCCL_HAS_NVFP8()
   test<__nv_fp8_e4m3>(make_fp8_e4m3(448.0));
   test<__nv_fp8_e5m2>(make_fp8_e5m2(57344.0));
+#  if _CCCL_CUDACC_AT_LEAST(12, 8)
+  test<__nv_fp8_e8m0>(make_fp8_e8m0(3.40282366920938463463374607431768211456e+38));
+#  endif // _CCCL_CUDACC_AT_LEAST(12, 8)
 #endif // _CCCL_HAS_NVFP8()
+#if _CCCL_HAS_NVFP6()
+  test<__nv_fp6_e2m3>(make_fp6_e2m3(7.5));
+  test<__nv_fp6_e3m2>(make_fp6_e3m2(28.0));
+#endif // _CCCL_HAS_NVFP6()
+#if _CCCL_HAS_NVFP4()
+  test<__nv_fp4_e2m1>(make_fp4_e2m1(6.0));
+#endif // _CCCL_HAS_NVFP4()
 
   return 0;
 }

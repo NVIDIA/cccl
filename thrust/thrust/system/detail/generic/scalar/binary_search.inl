@@ -73,7 +73,7 @@ template <typename RandomAccessIterator, typename T, typename BinaryPredicate>
 _CCCL_HOST_DEVICE RandomAccessIterator
 lower_bound(RandomAccessIterator first, RandomAccessIterator last, const T& val, BinaryPredicate comp)
 {
-  typename thrust::iterator_difference<RandomAccessIterator>::type n = last - first;
+  thrust::detail::it_difference_t<RandomAccessIterator> n = last - first;
   return lower_bound_n(first, n, val, comp);
 }
 
@@ -105,7 +105,7 @@ template <typename RandomAccessIterator, typename T, typename BinaryPredicate>
 _CCCL_HOST_DEVICE RandomAccessIterator
 upper_bound(RandomAccessIterator first, RandomAccessIterator last, const T& val, BinaryPredicate comp)
 {
-  typename thrust::iterator_difference<RandomAccessIterator>::type n = last - first;
+  thrust::detail::it_difference_t<RandomAccessIterator> n = last - first;
   return upper_bound_n(first, n, val, comp);
 }
 

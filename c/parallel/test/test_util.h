@@ -53,14 +53,16 @@ static std::string inspect_sass(const void* cubin, size_t cubin_size)
   command += " > ";
   command += temp_out_filename;
 
-  if (std::system(command.c_str()) != 0)
-  {
-    throw std::runtime_error("Failed to execute command.");
-  }
+  int exec_code = std::system(command.c_str());
 
   if (!fs::remove(temp_in_filename))
   {
     throw std::runtime_error("Failed to remove temporary file.");
+  }
+
+  if (exec_code != 0)
+  {
+    throw std::runtime_error("Failed to execute command.");
   }
 
   std::ifstream temp_out_file(temp_out_filename, std::ios::binary);
@@ -125,7 +127,7 @@ template <class T>
 std::vector<T> make_shuffled_sequence(std::size_t num_items)
 {
   std::vector<T> sequence(num_items);
-  std::iota(sequence.begin(), sequence.end(), 0);
+  std::iota(sequence.begin(), sequence.end(), T(0));
   std::random_device rnd_device;
   std::mt19937 mersenne_engine{rnd_device()};
   std::shuffle(sequence.begin(), sequence.end(), mersenne_engine);
@@ -139,49 +141,57 @@ cccl_type_info get_type_info()
   info.size      = sizeof(T);
   info.alignment = alignof(T);
 
-  if constexpr (std::is_same_v<T, char>)
+  if constexpr (std::is_same_v<T, char> || (std::is_integral_v<T> && std::is_signed_v<T> && sizeof(T) == sizeof(char)))
   {
-    info.type = cccl_type_enum::INT8;
+    info.type = cccl_type_enum::CCCL_INT8;
   }
-  else if constexpr (std::is_same_v<T, uint8_t>)
+  else if constexpr (std::is_same_v<T, uint8_t>
+                     || (std::is_integral_v<T> && std::is_unsigned_v<T> && sizeof(T) == sizeof(char)
+                         && !std::is_same_v<T, bool>) )
   {
-    info.type = cccl_type_enum::UINT8;
+    info.type = cccl_type_enum::CCCL_UINT8;
   }
-  else if constexpr (std::is_same_v<T, int16_t>)
+  else if constexpr (std::is_same_v<T, int16_t>
+                     || (std::is_integral_v<T> && std::is_signed_v<T> && sizeof(T) == sizeof(int16_t)))
   {
-    info.type = cccl_type_enum::INT16;
+    info.type = cccl_type_enum::CCCL_INT16;
   }
-  else if constexpr (std::is_same_v<T, uint16_t>)
+  else if constexpr (std::is_same_v<T, uint16_t>
+                     || (std::is_integral_v<T> && std::is_unsigned_v<T> && sizeof(T) == sizeof(int16_t)))
   {
-    info.type = cccl_type_enum::UINT16;
+    info.type = cccl_type_enum::CCCL_UINT16;
   }
-  else if constexpr (std::is_same_v<T, int32_t>)
+  else if constexpr (std::is_same_v<T, int32_t>
+                     || (std::is_integral_v<T> && std::is_signed_v<T> && sizeof(T) == sizeof(int32_t)))
   {
-    info.type = cccl_type_enum::INT32;
+    info.type = cccl_type_enum::CCCL_INT32;
   }
-  else if constexpr (std::is_same_v<T, uint32_t>)
+  else if constexpr (std::is_same_v<T, uint32_t>
+                     || (std::is_integral_v<T> && std::is_unsigned_v<T> && sizeof(T) == sizeof(int32_t)))
   {
-    info.type = cccl_type_enum::UINT32;
+    info.type = cccl_type_enum::CCCL_UINT32;
   }
-  else if constexpr (std::is_same_v<T, int64_t>)
+  else if constexpr (std::is_same_v<T, int64_t>
+                     || (std::is_integral_v<T> && std::is_signed_v<T> && sizeof(T) == sizeof(int64_t)))
   {
-    info.type = cccl_type_enum::INT64;
+    info.type = cccl_type_enum::CCCL_INT64;
   }
-  else if constexpr (std::is_same_v<T, uint64_t>)
+  else if constexpr (std::is_same_v<T, uint64_t>
+                     || (std::is_integral_v<T> && std::is_unsigned_v<T> && sizeof(T) == sizeof(int64_t)))
   {
-    info.type = cccl_type_enum::UINT64;
+    info.type = cccl_type_enum::CCCL_UINT64;
   }
   else if constexpr (std::is_same_v<T, float>)
   {
-    info.type = cccl_type_enum::FLOAT32;
+    info.type = cccl_type_enum::CCCL_FLOAT32;
   }
   else if constexpr (std::is_same_v<T, double>)
   {
-    info.type = cccl_type_enum::FLOAT64;
+    info.type = cccl_type_enum::CCCL_FLOAT64;
   }
   else if constexpr (!std::is_integral_v<T>)
   {
-    info.type = cccl_type_enum::STORAGE;
+    info.type = cccl_type_enum::CCCL_STORAGE;
   }
   else
   {
@@ -195,18 +205,22 @@ static std::string get_reduce_op(cccl_type_enum t)
 {
   switch (t)
   {
-    case cccl_type_enum::INT8:
+    case cccl_type_enum::CCCL_INT8:
       return "extern \"C\" __device__ char op(char a, char b) { return a + b; }";
-    case cccl_type_enum::INT32:
+    case cccl_type_enum::CCCL_INT32:
       return "extern \"C\" __device__ int op(int a, int b) { return a + b; }";
-    case cccl_type_enum::UINT32:
+    case cccl_type_enum::CCCL_UINT32:
       return "extern \"C\" __device__ unsigned int op(unsigned int a, unsigned int b) { return a + b; }";
-    case cccl_type_enum::INT64:
+    case cccl_type_enum::CCCL_INT64:
       return "extern \"C\" __device__ long long op(long long a, long long b) { return a + b; }";
-    case cccl_type_enum::UINT64:
+    case cccl_type_enum::CCCL_UINT64:
       return "extern \"C\" __device__ unsigned long long op(unsigned long long a, unsigned long long b) { "
              " return a + b; "
              "}";
+    case cccl_type_enum::CCCL_FLOAT32:
+      return "extern \"C\" __device__ float op(float a, float b) { return a + b; }";
+    case cccl_type_enum::CCCL_FLOAT64:
+      return "extern \"C\" __device__ double op(double a, double b) { return a + b; }";
     default:
       throw std::runtime_error("Unsupported type");
   }
@@ -217,15 +231,15 @@ static std::string get_for_op(cccl_type_enum t)
 {
   switch (t)
   {
-    case cccl_type_enum::INT8:
+    case cccl_type_enum::CCCL_INT8:
       return "extern \"C\" __device__ void op(char* a) {(*a)++;}";
-    case cccl_type_enum::INT32:
+    case cccl_type_enum::CCCL_INT32:
       return "extern \"C\" __device__ void op(int* a) {(*a)++;}";
-    case cccl_type_enum::UINT32:
+    case cccl_type_enum::CCCL_UINT32:
       return "extern \"C\" __device__ void op(unsigned int* a) {(*a)++;}";
-    case cccl_type_enum::INT64:
+    case cccl_type_enum::CCCL_INT64:
       return "extern \"C\" __device__ void op(long long* a) {(*a)++;}";
-    case cccl_type_enum::UINT64:
+    case cccl_type_enum::CCCL_UINT64:
       return "extern \"C\" __device__ void op(unsigned long long* a) {(*a)++;}";
     default:
       throw std::runtime_error("Unsupported type");
@@ -237,25 +251,25 @@ static std::string get_merge_sort_op(cccl_type_enum t)
 {
   switch (t)
   {
-    case cccl_type_enum::INT8:
+    case cccl_type_enum::CCCL_INT8:
       return "extern \"C\" __device__ bool op(char lhs, char rhs) { return lhs < rhs; }";
-    case cccl_type_enum::UINT8:
+    case cccl_type_enum::CCCL_UINT8:
       return "extern \"C\" __device__ bool op(unsigned char lhs, unsigned char rhs) { return lhs < rhs; }";
-    case cccl_type_enum::INT16:
+    case cccl_type_enum::CCCL_INT16:
       return "extern \"C\" __device__ bool op(short lhs, short rhs) { return lhs < rhs; }";
-    case cccl_type_enum::UINT16:
+    case cccl_type_enum::CCCL_UINT16:
       return "extern \"C\" __device__ bool op(unsigned short lhs, unsigned short rhs) { return lhs < rhs; }";
-    case cccl_type_enum::INT32:
+    case cccl_type_enum::CCCL_INT32:
       return "extern \"C\" __device__ bool op(int lhs, int rhs) { return lhs < rhs; }";
-    case cccl_type_enum::UINT32:
+    case cccl_type_enum::CCCL_UINT32:
       return "extern \"C\" __device__ bool op(unsigned int lhs, unsigned int rhs) { return lhs < rhs; }";
-    case cccl_type_enum::INT64:
+    case cccl_type_enum::CCCL_INT64:
       return "extern \"C\" __device__ bool op(long long lhs, long long rhs) { return lhs < rhs; }";
-    case cccl_type_enum::UINT64:
+    case cccl_type_enum::CCCL_UINT64:
       return "extern \"C\" __device__ bool op(unsigned long long lhs, unsigned long long rhs) { return lhs < rhs; }";
-    case cccl_type_enum::FLOAT32:
+    case cccl_type_enum::CCCL_FLOAT32:
       return "extern \"C\" __device__ bool op(float lhs, float rhs) { return lhs < rhs; }";
-    case cccl_type_enum::FLOAT64:
+    case cccl_type_enum::CCCL_FLOAT64:
       return "extern \"C\" __device__ bool op(double lhs, double rhs) { return lhs < rhs; }";
 
     default:
@@ -309,7 +323,7 @@ struct pointer_t
     cccl_iterator_t it;
     it.size       = sizeof(T);
     it.alignment  = alignof(T);
-    it.type       = cccl_iterator_kind_t::pointer;
+    it.type       = cccl_iterator_kind_t::CCCL_POINTER;
     it.state      = ptr;
     it.value_type = get_type_info<T>();
     return it;
@@ -331,7 +345,7 @@ struct operation_t
   operator cccl_op_t()
   {
     cccl_op_t op;
-    op.type       = cccl_op_kind_t::stateless;
+    op.type       = cccl_op_kind_t::CCCL_STATELESS;
     op.name       = name.c_str();
     op.ltoir      = code.c_str();
     op.ltoir_size = code.size();
@@ -349,7 +363,7 @@ struct stateful_operation_t
   operator cccl_op_t()
   {
     cccl_op_t op;
-    op.type       = cccl_op_kind_t::stateful;
+    op.type       = cccl_op_kind_t::CCCL_STATEFUL;
     op.size       = sizeof(OpT);
     op.alignment  = alignof(OpT);
     op.state      = &op_state;
@@ -383,7 +397,7 @@ struct iterator_t
     cccl_iterator_t it;
     it.size        = sizeof(StateT);
     it.alignment   = alignof(StateT);
-    it.type        = cccl_iterator_kind_t::iterator;
+    it.type        = cccl_iterator_kind_t::CCCL_ITERATOR;
     it.advance     = advance;
     it.dereference = dereference;
     it.value_type  = get_type_info<ValueT>();

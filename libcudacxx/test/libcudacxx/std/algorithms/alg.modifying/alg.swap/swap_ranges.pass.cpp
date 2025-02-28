@@ -96,7 +96,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-
   static_assert(test(), "");
 
   return 0;

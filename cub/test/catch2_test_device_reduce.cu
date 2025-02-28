@@ -149,7 +149,7 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
     // Run test
     c2h::device_vector<output_t> out_result(num_segments);
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    using init_t  = cub::detail::value_t<decltype(unwrap_it(d_out_it))>;
+    using init_t  = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
     device_reduce(unwrap_it(d_in_it), unwrap_it(d_out_it), num_items, reduction_op, init_t{});
 
     // Verify result

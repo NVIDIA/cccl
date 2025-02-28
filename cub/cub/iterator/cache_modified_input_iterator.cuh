@@ -47,7 +47,6 @@
 #  include <cuda/std/iterator>
 #else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ // vvv !_CCCL_COMPILER(NVRTC) vvv
 #  include <thrust/iterator/iterator_facade.h>
-#  include <thrust/iterator/iterator_traits.h>
 
 #  include <iostream>
 #  include <iterator>

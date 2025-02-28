@@ -49,3 +49,6 @@ platlib = ""
 provider = "scikit_build_core.metadata.regex"
 input = "cuda/cccl/_version.py"
 # use default regex
+
+[project.optional-dependencies]
+test = ["pytest"]

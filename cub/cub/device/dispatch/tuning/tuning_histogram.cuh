@@ -74,7 +74,7 @@ enum class counter_size
 template <class T>
 constexpr primitive_sample is_primitive_sample()
 {
-  return detail::is_primitive<T>::value ? primitive_sample::yes : primitive_sample::no;
+  return is_primitive<T>::value ? primitive_sample::yes : primitive_sample::no;
 }
 
 template <class CounterT>

@@ -48,9 +48,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-#ifndef TEST_COMPILER_CUDACC_BELOW_11_3
   static_assert(test());
-#endif // TEST_COMPILER_CUDACC_BELOW_11_3
 
   return 0;
 }

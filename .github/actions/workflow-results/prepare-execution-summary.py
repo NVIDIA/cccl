@@ -21,7 +21,7 @@ def natural_sort_key(key):
     # Natural sort impl (handles embedded numbers in strings, case insensitive)
     return [
         (int(text) if text.isdigit() else text.lower())
-        for text in re.split("(\d+)", key)
+        for text in re.split("(\\d+)", key)
     ]
 
 
@@ -69,7 +69,7 @@ def update_summary_entry(entry, job, job_times=None):
     else:
         entry["failed"] += 1
 
-    if job_times:
+    if job_times and job["id"] in job_times:
         time_info = job_times[job["id"]]
         job_time = time_info["job_seconds"]
         command_time = time_info["command_seconds"]

@@ -12,7 +12,7 @@ begin_group "⚙️ Existing site-packages"
 pip freeze
 end_group "⚙️ Existing site-packages"
 
-for module in cuda_parallel cuda_cooperative; do
+for module in cuda_cccl cuda_parallel cuda_cooperative; do
 
   pushd "../python/${module}" >/dev/null
 

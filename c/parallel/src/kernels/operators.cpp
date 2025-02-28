@@ -57,8 +57,8 @@ std::string
 make_kernel_binary_operator_full_source(std::string_view input_t, cccl_op_t operation, std::string_view return_type)
 {
   const std::string op_alignment =
-    operation.type == cccl_op_kind_t::stateless ? "" : std::format("{}", operation.alignment);
-  const std::string op_size = operation.type == cccl_op_kind_t::stateless ? "" : std::format("{}", operation.size);
+    operation.type == cccl_op_kind_t::CCCL_STATELESS ? "" : std::format("{}", operation.alignment);
+  const std::string op_size = operation.type == cccl_op_kind_t::CCCL_STATELESS ? "" : std::format("{}", operation.size);
 
   return std::format(
     op_template,
@@ -66,7 +66,7 @@ make_kernel_binary_operator_full_source(std::string_view input_t, cccl_op_t oper
     operation.name,
     op_alignment,
     op_size,
-    operation.type == cccl_op_kind_t::stateless
+    operation.type == cccl_op_kind_t::CCCL_STATELESS
       ? std::format(stateless_binary_op_template, return_type)
       : std::format(stateful_binary_op_template, return_type));
 }
@@ -105,7 +105,7 @@ struct op_wrapper {
 };
 )XXX";
 
-  return (operation.type == cccl_op_kind_t::stateless)
+  return (operation.type == cccl_op_kind_t::CCCL_STATELESS)
          ? std::format(op_template, input_t, operation.name, "", "", stateless_op)
          : std::format(op_template, input_t, operation.name, operation.alignment, operation.size, stateful_op);
 }

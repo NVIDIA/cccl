@@ -38,10 +38,9 @@ __host__ __device__ void test_const_lvalue_get()
   {
     using V = cuda::std::variant<int, const long>;
     constexpr V v(42);
-#if !defined(TEST_COMPILER_MSVC) && !(defined(TEST_COMPILER_GCC) && __GNUC__ < 9) \
-  && !defined(TEST_COMPILER_CUDACC_BELOW_11_3)
+#if !defined(TEST_COMPILER_MSVC) && !(defined(TEST_COMPILER_GCC) && __GNUC__ < 9)
     ASSERT_NOT_NOEXCEPT(cuda::std::get<0>(v));
-#endif // !TEST_COMPILER_MSVC && !TEST_COMPILER_GCC && TEST_COMPILER_CUDACC_BELOW_11_3
+#endif // !TEST_COMPILER_MSVC && !TEST_COMPILER_GCC
     ASSERT_SAME_TYPE(decltype(cuda::std::get<0>(v)), const int&);
     static_assert(cuda::std::get<0>(v) == 42, "");
   }
@@ -55,10 +54,9 @@ __host__ __device__ void test_const_lvalue_get()
   {
     using V = cuda::std::variant<int, const long>;
     constexpr V v(42l);
-#if !defined(TEST_COMPILER_MSVC) && !(defined(TEST_COMPILER_GCC) && __GNUC__ < 9) \
-  && !defined(TEST_COMPILER_CUDACC_BELOW_11_3)
+#if !defined(TEST_COMPILER_MSVC) && !(defined(TEST_COMPILER_GCC) && __GNUC__ < 9)
     ASSERT_NOT_NOEXCEPT(cuda::std::get<1>(v));
-#endif // !TEST_COMPILER_MSVC && !TEST_COMPILER_GCC && TEST_COMPILER_CUDACC_BELOW_11_3
+#endif // !TEST_COMPILER_MSVC && !TEST_COMPILER_GCC
     ASSERT_SAME_TYPE(decltype(cuda::std::get<1>(v)), const long&);
     static_assert(cuda::std::get<1>(v) == 42, "");
   }

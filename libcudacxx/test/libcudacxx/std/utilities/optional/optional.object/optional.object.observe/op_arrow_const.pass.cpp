@@ -59,14 +59,14 @@ int main(int, char**)
     // Regardless this function should still be noexcept(false) because
     // it has a narrow contract.
   }
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
   {
     constexpr optional<X> opt(X{});
-#  if defined(_CCCL_BUILTIN_ADDRESSOF)
+#if defined(_CCCL_BUILTIN_ADDRESSOF)
     static_assert(opt->test() == 3, "");
-#  else
+#else
     unused(opt);
-#  endif
+#endif
   }
   {
     constexpr optional<Y> opt(Y{});
@@ -74,13 +74,12 @@ int main(int, char**)
   }
   {
     constexpr optional<Z> opt(Z{});
-#  if defined(_CCCL_BUILTIN_ADDRESSOF)
+#if defined(_CCCL_BUILTIN_ADDRESSOF)
     static_assert(opt->test() == 1, "");
-#  else
+#else
     unused(opt);
-#  endif
+#endif
   }
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 
   return 0;
 }

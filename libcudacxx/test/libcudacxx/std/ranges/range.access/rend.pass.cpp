@@ -697,9 +697,7 @@ int main(int, char**)
   static_assert(testReturnTypes());
 
   testArray();
-#ifndef TEST_COMPILER_CUDACC_BELOW_11_3
   static_assert(testArray());
-#endif // TEST_COMPILER_CUDACC_BELOW_11_3
 
   testREndMember();
   static_assert(testREndMember());

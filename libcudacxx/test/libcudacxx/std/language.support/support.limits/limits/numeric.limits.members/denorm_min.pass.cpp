@@ -75,7 +75,18 @@ int main(int, char**)
 #if _CCCL_HAS_NVFP8()
   test<__nv_fp8_e4m3>(make_fp8_e4m3(0.001953125));
   test<__nv_fp8_e5m2>(make_fp8_e5m2(0.0000152587890625));
+#  if _CCCL_CUDACC_AT_LEAST(12, 8)
+  test<__nv_fp8_e8m0>(__nv_fp8_e8m0{});
+#  endif // _CCCL_CUDACC_AT_LEAST(12, 8)
 #endif // _CCCL_HAS_NVFP8()
+#if _CCCL_HAS_NVFP6()
+  test<__nv_fp6_e2m3>(make_fp6_e2m3(0.125));
+  test<__nv_fp6_e3m2>(make_fp6_e3m2(0.0625));
+#endif // _CCCL_HAS_NVFP6
+#if _CCCL_HAS_NVFP4()
+  test<__nv_fp4_e2m1>(make_fp4_e2m1(0.5));
+#endif // _CCCL_HAS_NVFP4
+
 #if !defined(__FLT_DENORM_MIN__) && !defined(FLT_TRUE_MIN)
 #  error Test has no expected values for floating point types
 #endif

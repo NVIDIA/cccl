@@ -399,7 +399,7 @@ C2H_TEST("ThreadReduce Integral Type Tests", "[reduce][thread]", integral_type_l
   CAPTURE(c2h::type_name<value_t>(), max_size, c2h::type_name<decltype(reduce_op)>());
   c2h::device_vector<value_t> d_in(max_size);
   c2h::device_vector<value_t> d_out(1);
-  c2h::gen(C2H_SEED(num_seeds), d_in, std::numeric_limits<value_t>::min());
+  c2h::gen(C2H_SEED(num_seeds), d_in, ::cuda::std::numeric_limits<value_t>::min());
   c2h::host_vector<value_t> h_in = d_in;
   for (int num_items = min_size; num_items <= max_size; ++num_items)
   {
@@ -418,7 +418,7 @@ C2H_TEST("ThreadReduce Floating-Point Type Tests", "[reduce][thread]", fp_type_l
   CAPTURE(c2h::type_name<value_t>(), max_size, c2h::type_name<decltype(reduce_op)>());
   c2h::device_vector<value_t> d_in(max_size);
   c2h::device_vector<value_t> d_out(1);
-  c2h::gen(C2H_SEED(num_seeds), d_in, std::numeric_limits<value_t>::min());
+  c2h::gen(C2H_SEED(num_seeds), d_in, ::cuda::std::numeric_limits<value_t>::min());
   c2h::host_vector<value_t> h_in = d_in;
   for (int num_items = min_size; num_items <= max_size; ++num_items)
   {

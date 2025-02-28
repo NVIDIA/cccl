@@ -226,7 +226,7 @@ Contrary to running a benchmark directly,
 the tuning infrastructure will just ignore an axis value if a benchmark does not support,
 run the benchmark regardless, and continue.
 
-The tuning infrastructure stores results in an SQLite database called `cccl_meta_bench.db` in the build directory.
+The tuning infrastructure stores results in an SQLite database called :code:`cccl_meta_bench.db` in the build directory.
 This database persists across tuning runs.
 If you interrupt the benchmark script and then launch it again, only missing benchmark variants will be run.
 

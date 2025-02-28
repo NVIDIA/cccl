@@ -27,6 +27,8 @@
 #include <cuda/std/__cccl/preprocessor.h>
 
 #define _CCCL_HAS_INT128()   0
+#define _CCCL_HAS_NVFP4()    0
+#define _CCCL_HAS_NVFP6()    0
 #define _CCCL_HAS_NVFP8()    0
 #define _CCCL_HAS_NVFP16()   0
 #define _CCCL_HAS_NVBF16()   0
@@ -52,6 +54,16 @@
 #if _CCCL_HAS_INCLUDE(<cuda_fp8.h>) && _CCCL_HAS_NVFP16() && _CCCL_HAS_NVBF16() && !defined(CCCL_DISABLE_NVFP8_SUPPORT)
 #  undef _CCCL_HAS_NVFP8
 #  define _CCCL_HAS_NVFP8() 1
+#endif
+
+#if _CCCL_HAS_INCLUDE(<cuda_fp6.h>) && _CCCL_HAS_NVFP8() && !defined(CCCL_DISABLE_NVFP6_SUPPORT)
+#  undef _CCCL_HAS_NVFP6
+#  define _CCCL_HAS_NVFP6() 1
+#endif
+
+#if _CCCL_HAS_INCLUDE(<cuda_fp4.h>) && _CCCL_HAS_NVFP6() && !defined(CCCL_DISABLE_NVFP4_SUPPORT)
+#  undef _CCCL_HAS_NVFP4
+#  define _CCCL_HAS_NVFP4() 1
 #endif
 
 // NVC++ supports float128 only in host code

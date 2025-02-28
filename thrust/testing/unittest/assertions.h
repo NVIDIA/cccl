@@ -409,8 +409,8 @@ void assert_equal(
   const std::string& filename = "unknown",
   int lineno                  = -1)
 {
-  using difference_type = typename THRUST_NS_QUALIFIER::iterator_difference<ForwardIterator1>::type;
-  using InputType       = typename THRUST_NS_QUALIFIER::iterator_value<ForwardIterator1>::type;
+  using difference_type = THRUST_NS_QUALIFIER::detail::it_difference_t<ForwardIterator1>;
+  using InputType       = THRUST_NS_QUALIFIER::detail::it_value_t<ForwardIterator1>;
 
   bool failure = false;
 
@@ -486,7 +486,7 @@ void assert_equal(
   const std::string& filename = "unknown",
   int lineno                  = -1)
 {
-  using InputType = typename THRUST_NS_QUALIFIER::iterator_traits<ForwardIterator1>::value_type;
+  using InputType = typename ::cuda::std::iterator_traits<ForwardIterator1>::value_type;
   assert_equal(first1, last1, first2, last2, THRUST_NS_QUALIFIER::equal_to<InputType>(), filename, lineno);
 }
 
@@ -501,7 +501,7 @@ void assert_almost_equal(
   const double a_tol          = DEFAULT_ABSOLUTE_TOL,
   const double r_tol          = DEFAULT_RELATIVE_TOL)
 {
-  using InputType = typename THRUST_NS_QUALIFIER::iterator_traits<ForwardIterator1>::value_type;
+  using InputType = typename ::cuda::std::iterator_traits<ForwardIterator1>::value_type;
   assert_equal(first1, last1, first2, last2, almost_equal_to<InputType>(a_tol, r_tol), filename, lineno);
 }
 

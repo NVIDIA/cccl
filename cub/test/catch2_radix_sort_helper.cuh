@@ -40,6 +40,7 @@
 #include <thrust/scan.h>
 #include <thrust/sequence.h>
 
+#include <cuda/std/__algorithm_>
 #include <cuda/std/bit>
 #include <cuda/std/functional>
 #include <cuda/type_traits>
@@ -227,7 +228,7 @@ c2h::host_vector<KeyT> get_striped_keys(const c2h::host_vector<KeyT>& h_keys, in
   {
     bit_ordered_t key = ::cuda::std::bit_cast<bit_ordered_t>(h_keys[i]);
 
-    if constexpr (::cuda::is_floating_point<KeyT>::value)
+    if constexpr (::cuda::is_floating_point_v<KeyT>)
     {
       const bit_ordered_t negative_zero = bit_ordered_t(1) << bit_ordered_t(sizeof(bit_ordered_t) * 8 - 1);
 
@@ -477,7 +478,7 @@ struct radix_offset_scan_op_t
   __host__ __device__ OffsetT operator()(OffsetT a, OffsetT b) const
   {
     const OffsetT sum = a + b;
-    return CUB_MIN(sum, num_items);
+    return _CUDA_VSTD::min(sum, num_items);
   }
 };
 

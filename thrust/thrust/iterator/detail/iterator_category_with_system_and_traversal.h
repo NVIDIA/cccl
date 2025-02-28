@@ -29,10 +29,9 @@
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
-
 template <typename Category, typename System, typename Traversal>
 struct iterator_category_with_system_and_traversal : Category
-{}; // end iterator_category_with_system_and_traversal
+{};
 
 // specialize iterator_category_to_system for iterator_category_with_system_and_traversal
 template <typename Category>
@@ -42,7 +41,7 @@ template <typename Category, typename System, typename Traversal>
 struct iterator_category_to_system<iterator_category_with_system_and_traversal<Category, System, Traversal>>
 {
   using type = System;
-}; // end iterator_category_to_system
+};
 
 // specialize iterator_category_to_traversal for iterator_category_with_system_and_traversal
 template <typename Category>
@@ -52,7 +51,7 @@ template <typename Category, typename System, typename Traversal>
 struct iterator_category_to_traversal<iterator_category_with_system_and_traversal<Category, System, Traversal>>
 {
   using type = Traversal;
-}; // end iterator_category_to_traversal
+};
 
 } // namespace detail
 THRUST_NAMESPACE_END

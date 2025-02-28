@@ -46,7 +46,6 @@
 #include <cub/util_type.cuh>
 
 #include <thrust/iterator/iterator_facade.h>
-#include <thrust/iterator/iterator_traits.h>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ostream>
@@ -106,7 +105,7 @@ CUB_NAMESPACE_BEGIN
  */
 template <typename InputIteratorT,
           typename OffsetT      = ptrdiff_t,
-          typename OutputValueT = cub::detail::value_t<InputIteratorT>>
+          typename OutputValueT = detail::it_value_t<InputIteratorT>>
 class ArgIndexInputIterator
 {
 public:

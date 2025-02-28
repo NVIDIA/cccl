@@ -16,18 +16,21 @@
 
 #  include <cuda.h>
 
+#  include <cccl/c/extern_c.h>
 #  include <cccl/c/types.h>
 
-struct cccl_device_for_build_result_t
+CCCL_C_EXTERN_C_BEGIN
+
+typedef struct cccl_device_for_build_result_t
 {
   int cc;
   void* cubin;
   size_t cubin_size;
   CUlibrary library;
   CUkernel static_kernel;
-};
+} cccl_device_for_build_result_t;
 
-extern "C" CCCL_C_API CUresult cccl_device_for_build(
+CCCL_C_API CUresult cccl_device_for_build(
   cccl_device_for_build_result_t* build,
   cccl_iterator_t d_data,
   cccl_op_t op,
@@ -36,15 +39,13 @@ extern "C" CCCL_C_API CUresult cccl_device_for_build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path) noexcept;
+  const char* ctk_path);
 
-extern "C" CCCL_C_API CUresult cccl_device_for(
-  cccl_device_for_build_result_t build,
-  cccl_iterator_t d_data,
-  int64_t num_items,
-  cccl_op_t op,
-  CUstream stream) noexcept;
+CCCL_C_API CUresult cccl_device_for(
+  cccl_device_for_build_result_t build, cccl_iterator_t d_data, int64_t num_items, cccl_op_t op, CUstream stream);
 
-extern "C" CCCL_C_API CUresult cccl_device_for_cleanup(cccl_device_for_build_result_t* bld_ptr);
+CCCL_C_API CUresult cccl_device_for_cleanup(cccl_device_for_build_result_t* bld_ptr);
 
 #endif // CCCL_C_EXPERIMENTAL
+
+CCCL_C_EXTERN_C_END

@@ -51,8 +51,6 @@
 
 #include <cuda/std/type_traits>
 
-#include <iterator>
-
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -189,7 +187,7 @@ struct AgentHistogram
   //---------------------------------------------------------------------
 
   /// The sample type of the input iterator
-  using SampleT = cub::detail::value_t<SampleIteratorT>;
+  using SampleT = cub::detail::it_value_t<SampleIteratorT>;
 
   /// The pixel type of SampleT
   using PixelT = typename CubVector<SampleT, NUM_CHANNELS>::Type;

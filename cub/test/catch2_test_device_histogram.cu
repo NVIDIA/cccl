@@ -436,7 +436,7 @@ C2H_TEST("DeviceHistogram::Histogram* large levels", "[histogram][device]", c2h:
   using sample_t             = c2h::get<0, TestType>;
   using level_t              = sample_t;
   const auto max_level_count = 128;
-  auto max_level             = cub::NumericTraits<level_t>::Max();
+  auto max_level             = ::cuda::std::numeric_limits<level_t>::max();
   if constexpr (sizeof(sample_t) > sizeof(int))
   {
     max_level /= static_cast<level_t>(max_level_count - 1); // cf. overflow detection in ScaleTransform::MayOverflow

@@ -19,7 +19,7 @@ from cuda.cooperative.experimental._types import (
 
 
 def merge_sort_keys(
-    dtype, threads_in_block, items_per_thread, compare_op, methods=None
+    dtype, threads_per_block, items_per_thread, compare_op, methods=None
 ):
     """Performs a block-wide merge sort over a :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
 
@@ -49,7 +49,7 @@ def merge_sort_keys(
 
     Args:
         dtype: Numba data type of the keys to be sorted
-        threads_in_block: The number of threads in a block
+        threads_per_block: The number of threads in a block
         items_per_thread: The number of items each thread owns
         compare_op: Comparison function object which returns true if the first argument is ordered before the second one
 
@@ -82,7 +82,7 @@ def merge_sort_keys(
     specialization = template.specialize(
         {
             "KeyT": dtype,
-            "BLOCK_DIM_X": threads_in_block,
+            "BLOCK_DIM_X": threads_per_block,
             "ITEMS_PER_THREAD": items_per_thread,
             "Op": compare_op,
         }

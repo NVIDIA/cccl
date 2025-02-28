@@ -260,6 +260,36 @@ public:
       payload);
   }
 
+  void set_graph_cache_policy(::std::function<bool()> policy)
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    ::std::visit(
+      [&](auto& self) {
+        self.set_graph_cache_policy(mv(policy));
+      },
+      payload);
+  }
+
+  auto get_graph_cache_policy() const
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return ::std::visit(
+      [&](auto& self) {
+        return self.get_graph_cache_policy();
+      },
+      payload);
+  }
+
+  executable_graph_cache_stat* graph_get_cache_stat()
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return ::std::visit(
+      [&](auto& self) {
+        return self.graph_get_cache_stat();
+      },
+      payload);
+  }
+
   /**
    * @brief Creates logical data with specified sizes.
    *
@@ -1682,7 +1712,7 @@ public:
     bool found                            = false;
     for (::std::shared_ptr<cudaGraphExec_t>& pe : cached_exec_graphs[stream])
     {
-      found = graph_ctx::try_updating_executable_graph(*pe, *gctx_graph);
+      found = reserved::try_updating_executable_graph(*pe, *gctx_graph);
       if (found)
       {
         eg = pe;
@@ -1736,7 +1766,7 @@ public:
     bool found                            = false;
     for (::std::shared_ptr<cudaGraphExec_t>& pe : cached_exec_graphs[stream])
     {
-      found = graph_ctx::try_updating_executable_graph(*pe, *gctx_graph);
+      found = reserved::try_updating_executable_graph(*pe, *gctx_graph);
       if (found)
       {
         eg = pe;

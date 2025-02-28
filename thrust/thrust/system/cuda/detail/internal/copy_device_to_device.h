@@ -61,7 +61,7 @@ template <class Derived, class InputIt, class OutputIt>
 OutputIt THRUST_RUNTIME_FUNCTION device_to_device(
   execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, thrust::detail::true_type)
 {
-  using InputTy = typename thrust::iterator_traits<InputIt>::value_type;
+  using InputTy = thrust::detail::it_value_t<InputIt>;
   const auto n  = thrust::distance(first, last);
   if (n > 0)
   {

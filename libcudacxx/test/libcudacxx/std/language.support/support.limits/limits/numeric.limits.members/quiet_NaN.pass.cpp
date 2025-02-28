@@ -15,6 +15,7 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
+#include "common.h"
 #include "test_macros.h"
 
 template <class T>
@@ -33,6 +34,13 @@ __host__ __device__ bool is_nan(__nv_fp8_e5m2 x)
 {
   return is_nan(__half{__nv_cvt_fp8_to_halfraw(x.__x, __NV_E5M2)});
 }
+
+#  if _CCCL_CUDACC_AT_LEAST(12, 8)
+__host__ __device__ bool is_nan(__nv_fp8_e8m0 x)
+{
+  return x.__x == static_cast<__nv_fp8_storage_t>(0xffu);
+}
+#  endif // _CCCL_CUDACC_AT_LEAST(12, 8)
 #endif // _CCCL_HAS_NVFP8()
 
 template <class T>
@@ -45,30 +53,12 @@ __host__ __device__ void test_impl(cuda::std::true_type)
 }
 
 template <class T>
-__host__ __device__ bool equal_to(T x, T y)
-{
-  return x == y;
-}
-
-#if _CCCL_HAS_NVFP8()
-__host__ __device__ bool equal_to(__nv_fp8_e4m3 x, __nv_fp8_e4m3 y)
-{
-  return x.__x == y.__x;
-}
-
-__host__ __device__ bool equal_to(__nv_fp8_e5m2 x, __nv_fp8_e5m2 y)
-{
-  return x.__x == y.__x;
-}
-#endif // _CCCL_HAS_NVFP8()
-
-template <class T>
 __host__ __device__ void test_impl(cuda::std::false_type)
 {
-  assert(equal_to(cuda::std::numeric_limits<T>::signaling_NaN(), T()));
-  assert(equal_to(cuda::std::numeric_limits<const T>::signaling_NaN(), T()));
-  assert(equal_to(cuda::std::numeric_limits<volatile T>::signaling_NaN(), T()));
-  assert(equal_to(cuda::std::numeric_limits<const volatile T>::signaling_NaN(), T()));
+  assert(float_eq(cuda::std::numeric_limits<T>::signaling_NaN(), T()));
+  assert(float_eq(cuda::std::numeric_limits<const T>::signaling_NaN(), T()));
+  assert(float_eq(cuda::std::numeric_limits<volatile T>::signaling_NaN(), T()));
+  assert(float_eq(cuda::std::numeric_limits<const volatile T>::signaling_NaN(), T()));
 }
 
 template <class T>
@@ -117,7 +107,17 @@ int main(int, char**)
 #if _CCCL_HAS_NVFP8()
   test<__nv_fp8_e4m3>();
   test<__nv_fp8_e5m2>();
+#  if _CCCL_CUDACC_AT_LEAST(12, 8)
+  test<__nv_fp8_e8m0>();
+#  endif // _CCCL_CUDACC_AT_LEAST(12, 8)
 #endif // _CCCL_HAS_NVFP8()
+#if _CCCL_HAS_NVFP6()
+  test<__nv_fp6_e2m3>();
+  test<__nv_fp6_e3m2>();
+#endif // _CCCL_HAS_NVFP6()
+#if _CCCL_HAS_NVFP4()
+  test<__nv_fp4_e2m1>();
+#endif // _CCCL_HAS_NVFP4()
 
   return 0;
 }

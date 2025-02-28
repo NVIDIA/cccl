@@ -37,6 +37,18 @@ _CCCL_DIAG_POP
 #  include <cuda_fp8.h>
 #endif // _CCCL_HAS_NVFP8()
 
+#if _CCCL_HAS_NVFP6()
+#  include <cuda_fp6.h>
+#endif // _CCCL_HAS_NVFP6()
+
+#if _CCCL_HAS_NVFP4()
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wunused-parameter")
+_CCCL_DIAG_SUPPRESS_MSVC(4100) // unreferenced formal parameter
+#  include <cuda_fp4.h>
+_CCCL_DIAG_POP
+#endif // _CCCL_HAS_NVFP4()
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
@@ -83,13 +95,48 @@ template <>
 struct __is_extended_floating_point<__nv_fp8_e5m2> : true_type
 {};
 
+#  if _CCCL_CUDACC_AT_LEAST(12, 8)
+template <>
+struct __is_extended_floating_point<__nv_fp8_e8m0> : true_type
+{};
+#  endif // _CCCL_CUDACC_AT_LEAST(12, 8)
+
 #  ifndef _CCCL_NO_INLINE_VARIABLES
 template <>
 _CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v<__nv_fp8_e4m3> = true;
 template <>
 _CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v<__nv_fp8_e5m2> = true;
+#    if _CCCL_CUDACC_AT_LEAST(12, 8)
+template <>
+_CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v<__nv_fp8_e8m0> = true;
+#    endif // _CCCL_CUDACC_AT_LEAST(12, 8)
 #  endif // !_CCCL_NO_INLINE_VARIABLES
 #endif // _CCCL_HAS_NVFP8()
+
+#if _CCCL_HAS_NVFP6()
+template <>
+struct __is_extended_floating_point<__nv_fp6_e2m3> : true_type
+{};
+template <>
+struct __is_extended_floating_point<__nv_fp6_e3m2> : true_type
+{};
+#  ifndef _CCCL_NO_INLINE_VARIABLES
+template <>
+_CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v<__nv_fp6_e2m3> = true;
+template <>
+_CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v<__nv_fp6_e3m2> = true;
+#  endif // !_CCCL_NO_INLINE_VARIABLES
+#endif // _CCCL_HAS_NVFP6()
+
+#if _CCCL_HAS_NVFP4()
+template <>
+struct __is_extended_floating_point<__nv_fp4_e2m1> : true_type
+{};
+#  ifndef _CCCL_NO_INLINE_VARIABLES
+template <>
+_CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v<__nv_fp4_e2m1> = true;
+#  endif // !_CCCL_NO_INLINE_VARIABLES
+#endif // _CCCL_HAS_NVFP4()
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

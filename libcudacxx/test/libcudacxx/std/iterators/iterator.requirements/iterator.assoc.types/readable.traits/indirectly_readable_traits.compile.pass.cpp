@@ -13,31 +13,14 @@
 #include <cuda/std/concepts>
 #include <cuda/std/iterator>
 
-#if TEST_STD_VER > 2017
 template <class T>
-concept has_no_value_type = !requires { typename cuda::std::indirectly_readable_traits<T>::value_type; };
+_CCCL_CONCEPT has_no_value_type =
+  !_CCCL_REQUIRES_EXPR((T))(typename(typename cuda::std::indirectly_readable_traits<T>::value_type));
 
 template <class T, class Expected>
-concept value_type_matches =
-  cuda::std::same_as<typename cuda::std::indirectly_readable_traits<T>::value_type, Expected>;
-
-#else
-template <class T>
-_CCCL_CONCEPT_FRAGMENT(has_no_value_type_,
-                       requires()(typename(typename cuda::std::indirectly_readable_traits<T>::value_type)));
-
-template <class T>
-_CCCL_CONCEPT has_no_value_type = !_CCCL_FRAGMENT(has_no_value_type_, T);
-
-template <class T, class Expected>
-_CCCL_CONCEPT_FRAGMENT(
-  value_type_matches_,
-  requires()(typename(typename cuda::std::indirectly_readable_traits<T>::value_type),
-             requires(cuda::std::same_as<typename cuda::std::indirectly_readable_traits<T>::value_type, Expected>)));
-
-template <class T, class Expected>
-_CCCL_CONCEPT value_type_matches = _CCCL_FRAGMENT(value_type_matches_, T, Expected);
-#endif
+_CCCL_CONCEPT value_type_matches = _CCCL_REQUIRES_EXPR(
+  (T, Expected))(typename(typename cuda::std::indirectly_readable_traits<T>::value_type),
+                 requires(cuda::std::same_as<typename cuda::std::indirectly_readable_traits<T>::value_type, Expected>));
 
 template <class T>
 __host__ __device__ constexpr bool check_pointer()

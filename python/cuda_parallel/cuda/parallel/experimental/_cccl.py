@@ -79,6 +79,19 @@ class Iterator(ctypes.Structure):
     ]
 
 
+# MUST match `cccl_device_merge_sort_build_result_t` in c/include/cccl/c/merge_sort.h
+class DeviceMergeSortBuildResult(ctypes.Structure):
+    _fields_ = [
+        ("cc", ctypes.c_int),
+        ("cubin", ctypes.c_void_p),
+        ("cubin_size", ctypes.c_size_t),
+        ("library", ctypes.c_void_p),
+        ("block_sort_kernel", ctypes.c_void_p),
+        ("partition_kernel", ctypes.c_void_p),
+        ("merge_kernel", ctypes.c_void_p),
+    ]
+
+
 # MUST match `cccl_device_reduce_build_result_t` in c/include/cccl/c/reduce.h
 class DeviceReduceBuildResult(ctypes.Structure):
     _fields_ = [
@@ -209,6 +222,20 @@ def _iterator_to_cccl_iter(it: IteratorBase) -> Iterator:
     )
 
 
+def _none_to_cccl_iter() -> Iterator:
+    # Any type could be used here, we just need to pass NULL.
+    info = _numpy_type_to_info(np.uint8)
+    return Iterator(
+        info.size,
+        info.alignment,
+        IteratorKind.POINTER,
+        Op(),
+        Op(),
+        info,
+        None,
+    )
+
+
 def type_enum_as_name(enum_value: int) -> str:
     return (
         "int8",
@@ -226,6 +253,8 @@ def type_enum_as_name(enum_value: int) -> str:
 
 
 def to_cccl_iter(array_or_iterator) -> Iterator:
+    if array_or_iterator is None:
+        return _none_to_cccl_iter()
     if isinstance(array_or_iterator, IteratorBase):
         return _iterator_to_cccl_iter(array_or_iterator)
     return _device_array_to_cccl_iter(array_or_iterator)

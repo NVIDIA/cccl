@@ -158,10 +158,9 @@ int main(int, char**)
 {
   test<int>();
   test<int>(3);
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
   static_assert(constexpr_test<int>(), "");
   static_assert(constexpr_test<int>(3), "");
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 
   {
     optional<const int> o(42);
@@ -229,13 +228,12 @@ int main(int, char**)
   {
     test_reference_extension();
   }
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
   {
     constexpr cuda::std::optional<int> o1{4};
     constexpr cuda::std::optional<int> o2 = cuda::std::move(o1);
     static_assert(*o2 == 4, "");
   }
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 
   return 0;
 }

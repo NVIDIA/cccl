@@ -46,8 +46,6 @@
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
 
-#include <iterator>
-
 #include <nv/target>
 
 CUB_NAMESPACE_BEGIN
@@ -60,7 +58,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void MergePathSearch(
   OffsetT diagonal, AIteratorT a, BIteratorT b, OffsetT a_len, OffsetT b_len, CoordinateT& path_coordinate)
 {
   /// The value type of the input iterator
-  using T = cub::detail::value_t<AIteratorT>;
+  using T = cub::detail::it_value_t<AIteratorT>;
 
   OffsetT split_min = CUB_MAX(diagonal - b_len, 0);
   OffsetT split_max = CUB_MIN(diagonal, a_len);

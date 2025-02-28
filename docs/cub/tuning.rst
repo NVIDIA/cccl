@@ -265,20 +265,21 @@ You can then run the tuning search for a specific algorithm and compile-time wor
   cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_11.tpb_10 1.0774560502969677
   ...
 
-This will tune merge sort for key-value pairs, for the key type :code:`int128_t` on :code:`2^28` elements.
+This will search the space of merge sort for key-value pairs, for the key type :code:`int128_t` on :code:`2^28` elements.
 The :code:`-R` and :code:`-a` options are optional. If not specified, all benchmarks are going to be tuned.
 The :code:`-R` option can select multiple benchmarks using a regular expression.
 For the axis option :code:`-a`, you can also specify a range of values like :code:`-a 'KeyT{ct}=[I32,I64]'`.
 Any axis values not supported by a selected benchmark will be ignored.
-The first variant :code:`cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_13.tpb_6` has a score <1 and is thus generally slower than baseline,
+The first variant :code:`cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_13.tpb_6` has a score <1 and is thus generally slower than the baseline,
 whereas the second variant :code:`cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_11.tpb_10` has a score of >1 and is thus an improvement over the baseline.
 
 Notice there is currently a limitation in :code:`search.py`
 which will only execute runs for the first axis value for each axis
 (independently of whether the axis is specified on the command line or not).
+Tuning for multiple axis values requires multiple runs of :code:`search.py`.
 Please see `this issue <https://github.com/NVIDIA/cccl/issues/2267>`_ for more information.
 
-The tuning framework will handle building the benchmarks (base and variants) by itself.
+The tuning framework will handle building the benchmarks (base and variants) and running them by itself.
 It will keep track of the build time for base and variants.
 Sometimes, a tuning variant may lead the compiler to hang or take exceptionally long to compile.
 To keep the tuning process going, if the build time of a variant exceeds a threshold, the build is cancelled.
@@ -302,13 +303,51 @@ you can add the :code:`-l` option:
 It will list all selected benchmarks as well as the total number of variants (the magnitude of the search space)
 as a result of the Cartesian product of all its tuning parameter spaces.
 
+The tuning infrastructure stores results in an SQLite database called :code:`cccl_meta_bench.db` in the build directory.
+This database persists across tuning runs.
+If you interrupt the benchmark script and then launch it again, only missing benchmark variants will be run.
+
+Tuning on multiple GPUs
+--------------------------------------------------------------------------------
+
+Because the search process computes scores by comparing the performance of a variant to the baseline,
+it has to store the baseline result in the tuning database.
+The baseline is specific to the physical GPU on which it was obtained.
+Therefore, a single tuning database should not be used to run the tuning search on two different GPUs, even of the same architecture.
+Similarly, you should also not interrupt the search and resume it on a different GPU.
+Be careful when sharing build directories over network file systems.
+Check whether a build directory already contains a :code:`cccl_meta_bench.db` from a previous run before starting a new search.
+
+..
+    TODO(bgruber): I don't yet understand whether we can tune a single variant on multiple GPUs.
+    I think this is possible, but would it then create a database per GPU (because 1 baseline per GPU)?
+    Does search.py do this automatically, or do I need to pass a flag? Or does this only work with our "internal extensions"?
+
+Because the search space can be separated based on different axis values,
+a tuning search can be run on multiple GPUs in parallel, even across multiple physical machines (e.g., on a cluster).
+To do this, :code:`search.py` is invoked in parallel, one invocation/process per GPU,
+with different axis values specified for each invocation.
+A dedicated tuning database will be created per physical GPU.
+If a shared filesystem is in use, make sure that :code:`search.py` is run from different directories,
+so the :code:`cccl_meta_bench.db` files are placed into distinct paths.
+
+It is recommended to drive a multi-GPU/multi-node search process from a script,
+iterating the axis values and invoking :code:`search.py` for each variant.
+This integrates nicely with workload managers on clusters, which allow submitting batch jobs.
+In such a scenario, it is recommended to submit a job per variant.
+
+After tuning on multiple GPUs, the results are available in multiple tuning databases, which can be analyzed together.
+
 
 Analyzing the results
 --------------------------------------------------------------------------------
 
-The result of the search is stored in the :code:`build/cccl_meta_bench.db` file. To analyze the
+The result of the search is stored in one or more :code:`cccl_meta_bench.db` files. To analyze the
 result you can use the :code:`analyze.py` script.
 The :code:`--coverage` flag will show the amount of variants that were covered per compile-time workload:
+
+..
+    TODO(bgruber): also show analysis using multiple tuning databases
 
 .. code:: bash
 

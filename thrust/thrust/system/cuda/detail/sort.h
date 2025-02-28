@@ -160,7 +160,7 @@ THRUST_RUNTIME_FUNCTION void merge_sort(
   execution_policy<Derived>& policy, KeysIt keys_first, KeysIt keys_last, ItemsIt items_first, CompareOp compare_op)
 
 {
-  using size_type = typename iterator_traits<KeysIt>::difference_type;
+  using size_type = thrust::detail::it_difference_t<KeysIt>;
 
   size_type count = static_cast<size_type>(thrust::distance(keys_first, keys_last));
 
@@ -347,7 +347,7 @@ template <
   class KeysIt,
   class ItemsIt,
   class CompareOp,
-  ::cuda::std::enable_if_t<!can_use_primitive_sort<typename iterator_value<KeysIt>::type, CompareOp>::value, int> = 0>
+  ::cuda::std::enable_if_t<!can_use_primitive_sort<thrust::detail::it_value_t<KeysIt>, CompareOp>::value, int> = 0>
 THRUST_RUNTIME_FUNCTION void
 smart_sort(Policy& policy, KeysIt keys_first, KeysIt keys_last, ItemsIt items_first, CompareOp compare_op)
 {
@@ -361,7 +361,7 @@ template <
   class KeysIt,
   class ItemsIt,
   class CompareOp,
-  ::cuda::std::enable_if_t<can_use_primitive_sort<typename iterator_value<KeysIt>::type, CompareOp>::value, int> = 0>
+  ::cuda::std::enable_if_t<can_use_primitive_sort<thrust::detail::it_value_t<KeysIt>, CompareOp>::value, int> = 0>
 THRUST_RUNTIME_FUNCTION void smart_sort(
   execution_policy<Policy>& policy, KeysIt keys_first, KeysIt keys_last, ItemsIt items_first, CompareOp compare_op)
 {
@@ -413,7 +413,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class ItemsIt, class CompareOp>
 void _CCCL_HOST_DEVICE sort(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, CompareOp compare_op)
 {
-  THRUST_CDP_DISPATCH((using item_t = thrust::iterator_value_t<ItemsIt>; item_t* null_ = nullptr;
+  THRUST_CDP_DISPATCH((using item_t = thrust::detail::it_value_t<ItemsIt>; item_t* null_ = nullptr;
                        __smart_sort::smart_sort<thrust::detail::false_type, thrust::detail::false_type>(
                          policy, first, last, null_, compare_op);),
                       (thrust::sort(cvt_to_seq(derived_cast(policy)), first, last, compare_op);));
@@ -423,7 +423,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class ItemsIt, class CompareOp>
 void _CCCL_HOST_DEVICE stable_sort(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, CompareOp compare_op)
 {
-  THRUST_CDP_DISPATCH((using item_t = thrust::iterator_value_t<ItemsIt>; item_t* null_ = nullptr;
+  THRUST_CDP_DISPATCH((using item_t = thrust::detail::it_value_t<ItemsIt>; item_t* null_ = nullptr;
                        __smart_sort::smart_sort<thrust::detail::false_type, thrust::detail::true_type>(
                          policy, first, last, null_, compare_op);),
                       (thrust::stable_sort(cvt_to_seq(derived_cast(policy)), first, last, compare_op);));
@@ -456,14 +456,14 @@ void _CCCL_HOST_DEVICE stable_sort_by_key(
 template <class Derived, class ItemsIt>
 void _CCCL_HOST_DEVICE sort(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last)
 {
-  using item_type = typename thrust::iterator_value<ItemsIt>::type;
+  using item_type = thrust::detail::it_value_t<ItemsIt>;
   cuda_cub::sort(policy, first, last, less<item_type>());
 }
 
 template <class Derived, class ItemsIt>
 void _CCCL_HOST_DEVICE stable_sort(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last)
 {
-  using item_type = typename thrust::iterator_value<ItemsIt>::type;
+  using item_type = thrust::detail::it_value_t<ItemsIt>;
   cuda_cub::stable_sort(policy, first, last, less<item_type>());
 }
 
@@ -471,7 +471,7 @@ template <class Derived, class KeysIt, class ValuesIt>
 void _CCCL_HOST_DEVICE
 sort_by_key(execution_policy<Derived>& policy, KeysIt keys_first, KeysIt keys_last, ValuesIt values)
 {
-  using key_type = typename thrust::iterator_value<KeysIt>::type;
+  using key_type = thrust::detail::it_value_t<KeysIt>;
   cuda_cub::sort_by_key(policy, keys_first, keys_last, values, less<key_type>());
 }
 
@@ -479,7 +479,7 @@ template <class Derived, class KeysIt, class ValuesIt>
 void _CCCL_HOST_DEVICE
 stable_sort_by_key(execution_policy<Derived>& policy, KeysIt keys_first, KeysIt keys_last, ValuesIt values)
 {
-  using key_type = typename thrust::iterator_value<KeysIt>::type;
+  using key_type = thrust::detail::it_value_t<KeysIt>;
   cuda_cub::stable_sort_by_key(policy, keys_first, keys_last, values, less<key_type>());
 }
 

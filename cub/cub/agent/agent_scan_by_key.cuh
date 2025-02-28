@@ -52,8 +52,6 @@
 
 #include <cuda/std/type_traits>
 
-#include <iterator>
-
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -145,8 +143,8 @@ struct AgentScanByKey
   // Types and constants
   //---------------------------------------------------------------------
 
-  using KeyT               = value_t<KeysInputIteratorT>;
-  using InputT             = value_t<ValuesInputIteratorT>;
+  using KeyT               = it_value_t<KeysInputIteratorT>;
+  using InputT             = it_value_t<ValuesInputIteratorT>;
   using FlagValuePairT     = KeyValuePair<int, AccumT>;
   using ReduceBySegmentOpT = ScanBySegmentOp<ScanOpT>;
 

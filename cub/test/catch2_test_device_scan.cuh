@@ -63,9 +63,9 @@ struct Mod2Equality
 template <typename InputIt, typename OutputIt, typename InitT, typename BinaryOp>
 void compute_exclusive_scan_reference(InputIt first, InputIt last, OutputIt result, InitT init, BinaryOp op)
 {
-  using value_t  = cub::detail::value_t<InputIt>;
+  using value_t  = cub::detail::it_value_t<InputIt>;
   using accum_t  = ::cuda::std::__accumulator_t<BinaryOp, value_t, InitT>;
-  using output_t = cub::detail::value_t<OutputIt>;
+  using output_t = cub::detail::it_value_t<OutputIt>;
   accum_t acc    = static_cast<accum_t>(init);
   for (; first != last; ++first)
   {
@@ -77,9 +77,9 @@ void compute_exclusive_scan_reference(InputIt first, InputIt last, OutputIt resu
 template <typename InputIt, typename OutputIt, typename BinaryOp, typename InitT>
 void compute_inclusive_scan_reference(InputIt first, InputIt last, OutputIt result, BinaryOp op, InitT init)
 {
-  using value_t  = cub::detail::value_t<InputIt>;
+  using value_t  = cub::detail::it_value_t<InputIt>;
   using accum_t  = ::cuda::std::__accumulator_t<BinaryOp, value_t, InitT>;
-  using output_t = cub::detail::value_t<OutputIt>;
+  using output_t = cub::detail::it_value_t<OutputIt>;
   accum_t acc    = static_cast<accum_t>(init);
   for (; first != last; ++first)
   {
@@ -103,9 +103,9 @@ void compute_exclusive_scan_by_key_reference(
   InitT init,
   std::size_t num_items)
 {
-  using value_t  = cub::detail::value_t<ValueInItT>;
+  using value_t  = cub::detail::it_value_t<ValueInItT>;
   using accum_t  = ::cuda::std::__accumulator_t<ScanOpT, value_t, InitT>;
-  using output_t = cub::detail::value_t<ValuesOutItT>;
+  using output_t = cub::detail::it_value_t<ValuesOutItT>;
 
   if (num_items > 0)
   {
@@ -154,9 +154,9 @@ void compute_inclusive_scan_by_key_reference(
   EqualityOpT equality_op,
   std::size_t num_items)
 {
-  using value_t  = cub::detail::value_t<ValueInItT>;
+  using value_t  = cub::detail::it_value_t<ValueInItT>;
   using accum_t  = ::cuda::std::__accumulator_t<ScanOpT, value_t, value_t>;
-  using output_t = cub::detail::value_t<ValuesOutItT>;
+  using output_t = cub::detail::it_value_t<ValuesOutItT>;
 
   for (std::size_t i = 0; i < num_items;)
   {

@@ -49,13 +49,13 @@ template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
 _CCCL_HOST_DEVICE ForwardIterator stable_partition(
   thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, Predicate pred)
 {
-  using InputType = typename thrust::iterator_traits<ForwardIterator>::value_type;
+  using InputType = thrust::detail::it_value_t<ForwardIterator>;
 
   // copy input to temp buffer
   thrust::detail::temporary_array<InputType, DerivedPolicy> temp(exec, first, last);
 
   // count the size of the true partition
-  typename thrust::iterator_difference<ForwardIterator>::type num_true = thrust::count_if(exec, first, last, pred);
+  thrust::detail::it_difference_t<ForwardIterator> num_true = thrust::count_if(exec, first, last, pred);
 
   // point to the beginning of the false partition
   ForwardIterator out_false = first;
@@ -72,7 +72,7 @@ _CCCL_HOST_DEVICE ForwardIterator stable_partition(
   InputIterator stencil,
   Predicate pred)
 {
-  using InputType = typename thrust::iterator_traits<ForwardIterator>::value_type;
+  using InputType = thrust::detail::it_value_t<ForwardIterator>;
 
   // copy input to temp buffer
   thrust::detail::temporary_array<InputType, DerivedPolicy> temp(exec, first, last);
@@ -80,8 +80,7 @@ _CCCL_HOST_DEVICE ForwardIterator stable_partition(
   // count the size of the true partition
   InputIterator stencil_last = stencil;
   thrust::advance(stencil_last, temp.size());
-  typename thrust::iterator_difference<InputIterator>::type num_true =
-    thrust::count_if(exec, stencil, stencil_last, pred);
+  thrust::detail::it_difference_t<InputIterator> num_true = thrust::count_if(exec, stencil, stencil_last, pred);
 
   // point to the beginning of the false partition
   ForwardIterator out_false = first;

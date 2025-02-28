@@ -254,36 +254,6 @@ TEST_CASE("DeviceMergeSort::SortKeys works with input iterators", "[merge_sort]"
   REQUIRE(expected_keys == std::vector<TestType>(input_keys_ptr));
 }
 
-// TEST_CASE("DeviceMergeSort::SortKeys works with output iterators", "[merge_sort]")
-// {
-//   using TestType      = int;
-//   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
-
-//   operation_t op = make_operation("op", get_merge_sort_op(get_type_info<TestType>().type));
-//   iterator_t<TestType, random_access_iterator_state_t> output_keys_it =
-//     make_iterator<TestType, random_access_iterator_state_t>(
-//       "struct random_access_iterator_state_t { int* d_input; };\n",
-//       {"advance",
-//        "extern \"C\" __device__ void advance(random_access_iterator_state_t* state, unsigned long long offset) {\n"
-//        "  state->d_input += offset;\n"
-//        "}"},
-//       {"dereference",
-//        "extern \"C\" __device__ void dereference(random_access_iterator_state_t* state, int x) {\n"
-//        "  *state->d_input = x;\n"
-//        "}"});
-//   std::vector<TestType> input_keys    = make_shuffled_sequence<TestType>(num_items);
-//   std::vector<TestType> expected_keys = input_keys;
-
-//   pointer_t<TestType> input_keys_it(input_keys);
-//   pointer_t<TestType> input_items_it;
-//   output_keys_it.state.d_input = input_keys_it.ptr;
-
-//   merge_sort(input_keys_it, input_items_it, output_keys_it, input_items_it, num_items, op);
-
-//   std::sort(expected_keys.begin(), expected_keys.end());
-//   REQUIRE(expected_keys == std::vector<TestType>(input_keys_it));
-// }
-
 struct item_random_access_iterator_state_t
 {
   int* d_input;
@@ -341,3 +311,77 @@ TEST_CASE("DeviceMergeSort::SortPairs works with input iterators", "[merge_sort]
   REQUIRE(expected_keys == std::vector<TestType>(input_keys_ptr));
   REQUIRE(expected_items == std::vector<item_t>(input_items_ptr));
 }
+
+// These tests with output iterators are currently failing https://github.com/NVIDIA/cccl/issues/3722
+#ifdef NEVER_DEFINED
+TEST_CASE("DeviceMergeSort::SortKeys works with output iterators", "[merge_sort]")
+{
+  using TestType      = int;
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
+
+  operation_t op = make_operation("op", get_merge_sort_op(get_type_info<TestType>().type));
+  iterator_t<TestType, random_access_iterator_state_t> output_keys_it =
+    make_iterator<TestType, random_access_iterator_state_t>(
+      "struct random_access_iterator_state_t { int* d_input; };\n",
+      {"advance",
+       "extern \"C\" __device__ void advance(random_access_iterator_state_t* state, unsigned long long offset) {\n"
+       "  state->d_input += offset;\n"
+       "}"},
+      {"dereference",
+       "extern \"C\" __device__ void dereference(random_access_iterator_state_t* state, int x) {\n"
+       "  *state->d_input = x;\n"
+       "}"});
+  std::vector<TestType> input_keys    = make_shuffled_key_ranks_vector<TestType>(num_items);
+  std::vector<TestType> expected_keys = input_keys;
+
+  pointer_t<TestType> input_keys_it(input_keys);
+  pointer_t<TestType> input_items_it;
+  output_keys_it.state.d_input = input_keys_it.ptr;
+
+  merge_sort(input_keys_it, input_items_it, output_keys_it, input_items_it, num_items, op);
+
+  std::sort(expected_keys.begin(), expected_keys.end());
+  REQUIRE(expected_keys == std::vector<TestType>(input_keys_it));
+}
+
+TEST_CASE("DeviceMergeSort::SortPairs works with output iterators for items", "[merge_sort]")
+{
+  using TestType      = int;
+  using item_t        = int;
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
+
+  operation_t op                   = make_operation("op", get_merge_sort_op(get_type_info<TestType>().type));
+  std::vector<TestType> input_keys = make_shuffled_sequence<TestType>(num_items);
+  std::vector<item_t> input_items(num_items);
+  std::transform(input_keys.begin(), input_keys.end(), input_items.begin(), [](TestType key) {
+    return static_cast<item_t>(key);
+  });
+  std::vector<TestType> expected_keys = input_keys;
+  std::vector<item_t> expected_items  = input_items;
+
+  iterator_t<item_t, item_random_access_iterator_state_t> output_items_it =
+    make_iterator<TestType, item_random_access_iterator_state_t>(
+      "struct item_random_access_iterator_state_t { int* d_input; };\n",
+      {"advance",
+       "extern \"C\" __device__ void advance(item_random_access_iterator_state_t* state, unsigned long long offset) "
+       "{\n"
+       "  state->d_input += offset;\n"
+       "}"},
+      {"dereference",
+       "extern \"C\" __device__ void dereference(item_random_access_iterator_state_t* state, int x) {\n"
+       "  *state->d_input = x;\n"
+       "}"});
+
+  pointer_t<TestType> input_keys_it(input_keys);
+  pointer_t<item_t> input_items_it(input_items);
+  output_items_it.state.d_input = input_items_it.ptr;
+
+  merge_sort(input_keys_it, input_items_it, input_keys_it, output_items_it, num_items, op);
+
+  std::sort(expected_keys.begin(), expected_keys.end());
+  std::sort(expected_items.begin(), expected_items.end());
+  REQUIRE(expected_keys == std::vector<TestType>(input_keys_it));
+  REQUIRE(expected_items == std::vector<item_t>(input_items_it));
+}
+
+#endif

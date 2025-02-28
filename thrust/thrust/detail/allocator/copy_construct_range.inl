@@ -100,12 +100,12 @@ _CCCL_HOST_DEVICE enable_if_convertible_t<FromSystem, ToSystem, Pointer> uniniti
   ZipIterator end   = begin;
 
   // get a zip_iterator pointing to the end
-  const typename thrust::iterator_difference<InputIterator>::type n = thrust::distance(first, last);
+  const thrust::detail::it_difference_t<InputIterator> n = thrust::distance(first, last);
   thrust::advance(end, n);
 
   // create a functor
-  using InputType  = typename iterator_traits<InputIterator>::value_type;
-  using OutputType = typename iterator_traits<Pointer>::value_type;
+  using InputType  = it_value_t<InputIterator>;
+  using OutputType = it_value_t<Pointer>;
 
   // do the for_each
   // note we use to_system to dispatch the for_each
@@ -135,8 +135,8 @@ _CCCL_HOST_DEVICE enable_if_convertible_t<FromSystem, ToSystem, Pointer> uniniti
   ZipIterator begin = thrust::make_zip_iterator(thrust::make_tuple(first, result));
 
   // create a functor
-  using InputType  = typename iterator_traits<InputIterator>::value_type;
-  using OutputType = typename iterator_traits<Pointer>::value_type;
+  using InputType  = it_value_t<InputIterator>;
+  using OutputType = it_value_t<Pointer>;
 
   // do the for_each_n
   // note we use to_system to dispatch the for_each_n

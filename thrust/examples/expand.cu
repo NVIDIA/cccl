@@ -20,7 +20,7 @@
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 OutputIterator expand(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputIterator output)
 {
-  using difference_type = typename thrust::iterator_difference<InputIterator1>::type;
+  using difference_type = typename cuda::std::iterator_traits<InputIterator1>::difference_type;
 
   difference_type input_size  = thrust::distance(first1, last1);
   difference_type output_size = thrust::reduce(first1, last1);

@@ -52,8 +52,6 @@
 
 #include <cuda/std/type_traits>
 
-#include <iterator>
-
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -171,13 +169,13 @@ struct AgentReduceByKey
   //---------------------------------------------------------------------
 
   // The input keys type
-  using KeyInputT = value_t<KeysInputIteratorT>;
+  using KeyInputT = it_value_t<KeysInputIteratorT>;
 
   // The output keys type
   using KeyOutputT = non_void_value_t<UniqueOutputIteratorT, KeyInputT>;
 
   // The input values type
-  using ValueInputT = value_t<ValuesInputIteratorT>;
+  using ValueInputT = it_value_t<ValuesInputIteratorT>;
 
   // Tuple type for scanning (pairs accumulated segment-value with
   // segment-index)

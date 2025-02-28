@@ -157,7 +157,7 @@ struct AgentScan
   //---------------------------------------------------------------------
 
   // The input value type
-  using InputT = cub::detail::value_t<InputIteratorT>;
+  using InputT = cub::detail::it_value_t<InputIteratorT>;
 
   // Tile status descriptor interface type
   using ScanTileStateT = ScanTileState<AccumT>;

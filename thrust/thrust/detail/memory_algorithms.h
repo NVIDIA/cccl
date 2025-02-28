@@ -64,7 +64,7 @@ _CCCL_HOST_DEVICE ForwardIt destroy(ForwardIt first, ForwardIt last) noexcept
 template <typename Allocator, typename ForwardIt>
 _CCCL_HOST_DEVICE ForwardIt destroy(Allocator const& alloc, ForwardIt first, ForwardIt last) noexcept
 {
-  using T      = typename iterator_traits<ForwardIt>::value_type;
+  using T      = detail::it_value_t<ForwardIt>;
   using traits = typename detail::allocator_traits<
     ::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<Allocator>>>::template rebind_traits<T>::other;
 
@@ -92,7 +92,7 @@ _CCCL_HOST_DEVICE ForwardIt destroy_n(ForwardIt first, Size n) noexcept
 template <typename Allocator, typename ForwardIt, typename Size>
 _CCCL_HOST_DEVICE ForwardIt destroy_n(Allocator const& alloc, ForwardIt first, Size n) noexcept
 {
-  using T      = typename iterator_traits<ForwardIt>::value_type;
+  using T      = detail::it_value_t<ForwardIt>;
   using traits = typename detail::allocator_traits<
     ::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<Allocator>>>::template rebind_traits<T>::other;
 
@@ -109,7 +109,7 @@ _CCCL_HOST_DEVICE ForwardIt destroy_n(Allocator const& alloc, ForwardIt first, S
 template <typename ForwardIt, typename... Args>
 _CCCL_HOST_DEVICE void uninitialized_construct(ForwardIt first, ForwardIt last, Args const&... args)
 {
-  using T = typename iterator_traits<ForwardIt>::value_type;
+  using T = detail::it_value_t<ForwardIt>;
 
   ForwardIt current = first;
 
@@ -132,7 +132,7 @@ _CCCL_HOST_DEVICE void uninitialized_construct(ForwardIt first, ForwardIt last, 
 template <typename Allocator, typename ForwardIt, typename... Args>
 void uninitialized_construct_with_allocator(Allocator const& alloc, ForwardIt first, ForwardIt last, Args const&... args)
 {
-  using T      = typename iterator_traits<ForwardIt>::value_type;
+  using T      = detail::it_value_t<ForwardIt>;
   using traits = typename detail::allocator_traits<
     typename std::remove_cv<typename std::remove_reference<Allocator>::type>::type>::template rebind_traits<T>;
 
@@ -159,7 +159,7 @@ void uninitialized_construct_with_allocator(Allocator const& alloc, ForwardIt fi
 template <typename ForwardIt, typename Size, typename... Args>
 void uninitialized_construct_n(ForwardIt first, Size n, Args const&... args)
 {
-  using T = typename iterator_traits<ForwardIt>::value_type;
+  using T = detail::it_value_t<ForwardIt>;
 
   ForwardIt current = first;
 
@@ -182,7 +182,7 @@ void uninitialized_construct_n(ForwardIt first, Size n, Args const&... args)
 template <typename Allocator, typename ForwardIt, typename Size, typename... Args>
 void uninitialized_construct_n_with_allocator(Allocator const& alloc, ForwardIt first, Size n, Args const&... args)
 {
-  using T      = typename iterator_traits<ForwardIt>::value_type;
+  using T      = detail::it_value_t<ForwardIt>;
   using traits = typename detail::allocator_traits<
     typename std::remove_cv<typename std::remove_reference<Allocator>::type>::type>::template rebind_traits<T>;
 

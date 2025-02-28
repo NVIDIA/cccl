@@ -57,8 +57,8 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
   BinaryPredicate binary_pred,
   BinaryFunction binary_op)
 {
-  using KeyType   = typename thrust::iterator_traits<InputIterator1>::value_type;
-  using ValueType = typename thrust::iterator_traits<InputIterator2>::value_type;
+  using KeyType   = thrust::detail::it_value_t<InputIterator1>;
+  using ValueType = thrust::detail::it_value_t<InputIterator2>;
 
   // wrap binary_op
   thrust::detail::wrapped_function<BinaryFunction, ValueType> wrapped_binary_op{binary_op};
@@ -108,7 +108,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
   BinaryPredicate binary_pred,
   BinaryFunction binary_op)
 {
-  using KeyType   = typename thrust::iterator_traits<InputIterator1>::value_type;
+  using KeyType   = thrust::detail::it_value_t<InputIterator1>;
   using ValueType = T;
 
   if (first1 != last1)

@@ -58,6 +58,8 @@ THRUST_NAMESPACE_END
 #  include <thrust/system/cuda/detail/copy.h>
 #  include <thrust/system/cuda/detail/swap_ranges.h>
 
+#  include <cuda/std/iterator>
+
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
@@ -71,7 +73,7 @@ ResultIt _CCCL_HOST_DEVICE reverse_copy(execution_policy<Derived>& policy, Items
 template <class Derived, class ItemsIt>
 void _CCCL_HOST_DEVICE reverse(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last)
 {
-  using difference_type = typename thrust::iterator_difference<ItemsIt>::type;
+  using difference_type = thrust::detail::it_difference_t<ItemsIt>;
 
   // find the midpoint of [first,last)
   difference_type N = thrust::distance(first, last);

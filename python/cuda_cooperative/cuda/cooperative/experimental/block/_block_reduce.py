@@ -19,7 +19,7 @@ from cuda.cooperative.experimental._types import (
 )
 
 
-def reduce(dtype, threads_in_block, binary_op, items_per_thread=1, methods=None):
+def reduce(dtype, threads_per_block, binary_op, items_per_thread=1, methods=None):
     """Creates an operation that computes a block-wide reduction for thread\ :sub:`0` using the
     specified binary reduction functor.
 
@@ -35,7 +35,7 @@ def reduce(dtype, threads_in_block, binary_op, items_per_thread=1, methods=None)
 
     Args:
         dtype: Data type being reduced
-        threads_in_block: The number of threads in a block
+        threads_per_block: The number of threads in a block
         binary_op: Binary reduction function
         items_per_thread: The number of items each thread contributes to the reduction
         methods: A dict of methods for user-defined types
@@ -110,7 +110,7 @@ def reduce(dtype, threads_in_block, binary_op, items_per_thread=1, methods=None)
     specialization = template.specialize(
         {
             "T": dtype,
-            "BLOCK_DIM_X": threads_in_block,
+            "BLOCK_DIM_X": threads_per_block,
             "ITEMS_PER_THREAD": items_per_thread,
             "Op": binary_op,
         }
@@ -126,7 +126,7 @@ def reduce(dtype, threads_in_block, binary_op, items_per_thread=1, methods=None)
     )
 
 
-def sum(dtype, threads_in_block, items_per_thread=1, methods=None):
+def sum(dtype, threads_per_block, items_per_thread=1, methods=None):
     """Creates an operation that computes a block-wide reduction for thread\ :sub:`0` using
     addition (+) as the reduction operator.
 
@@ -142,7 +142,7 @@ def sum(dtype, threads_in_block, items_per_thread=1, methods=None):
 
     Args:
         dtype: Data type being reduced
-        threads_in_block: The number of threads in a block
+        threads_per_block: The number of threads in a block
         items_per_thread: The number of items each thread owns
         methods: A dict of methods for user-defined types
 
@@ -201,7 +201,7 @@ def sum(dtype, threads_in_block, items_per_thread=1, methods=None):
     specialization = template.specialize(
         {
             "T": dtype,
-            "BLOCK_DIM_X": threads_in_block,
+            "BLOCK_DIM_X": threads_per_block,
             "ITEMS_PER_THREAD": items_per_thread,
         }
     )

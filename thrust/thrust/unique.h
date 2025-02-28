@@ -961,7 +961,7 @@ thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
  *  \see reduce_by_key_copy
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE typename thrust::iterator_traits<ForwardIterator>::difference_type unique_count(
+_CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator> unique_count(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -1005,7 +1005,7 @@ _CCCL_HOST_DEVICE typename thrust::iterator_traits<ForwardIterator>::difference_
  *  \see reduce_by_key_copy
  */
 template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE typename thrust::iterator_traits<ForwardIterator>::difference_type unique_count(
+_CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator> unique_count(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last);
 
 /*! \p unique_count counts runs of equal elements in the range <tt>[first, last)</tt>
@@ -1042,7 +1042,7 @@ _CCCL_HOST_DEVICE typename thrust::iterator_traits<ForwardIterator>::difference_
  *  \see reduce_by_key_copy
  */
 template <typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE typename thrust::iterator_traits<ForwardIterator>::difference_type
+_CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator>
 unique_count(ForwardIterator first, ForwardIterator last, BinaryPredicate binary_pred);
 
 /*! \p unique_count counts runs of equal elements in the range <tt>[first, last)</tt>
@@ -1079,7 +1079,7 @@ unique_count(ForwardIterator first, ForwardIterator last, BinaryPredicate binary
  *  \see reduce_by_key_copy
  */
 template <typename ForwardIterator>
-_CCCL_HOST_DEVICE typename thrust::iterator_traits<ForwardIterator>::difference_type
+_CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator>
 unique_count(ForwardIterator first, ForwardIterator last);
 
 /*! \} // end stream_compaction

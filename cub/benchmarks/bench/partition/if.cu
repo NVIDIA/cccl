@@ -29,6 +29,7 @@
 
 #include <thrust/count.h>
 
+#include <cuda/std/__algorithm_>
 #include <cuda/std/type_traits>
 
 #include <look_back_helper.cuh>
@@ -63,7 +64,7 @@ struct policy_hub_t
     static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = TUNE_ITEMS_PER_THREAD;
 
     static constexpr int ITEMS_PER_THREAD =
-      CUB_MIN(NOMINAL_4B_ITEMS_PER_THREAD, CUB_MAX(1, (NOMINAL_4B_ITEMS_PER_THREAD * 4 / sizeof(InputT))));
+      _CUDA_VSTD::clamp(NOMINAL_4B_ITEMS_PER_THREAD * 4 / sizeof(InputT), 1, NOMINAL_4B_ITEMS_PER_THREAD);
 
     using SelectIfPolicyT =
       cub::AgentSelectIfPolicy<TUNE_THREADS_PER_BLOCK,
@@ -94,11 +95,11 @@ T value_from_entropy(double percentage)
 {
   if (percentage == 1)
   {
-    return std::numeric_limits<T>::max();
+    return ::cuda::std::numeric_limits<T>::max();
   }
 
-  const auto max_val = static_cast<double>(std::numeric_limits<T>::max());
-  const auto min_val = static_cast<double>(std::numeric_limits<T>::lowest());
+  const auto max_val = static_cast<double>(::cuda::std::numeric_limits<T>::max());
+  const auto min_val = static_cast<double>(::cuda::std::numeric_limits<T>::lowest());
   const auto result  = min_val + percentage * max_val - percentage * min_val;
   return static_cast<T>(result);
 }

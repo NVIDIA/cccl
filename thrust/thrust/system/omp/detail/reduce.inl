@@ -47,7 +47,7 @@ OutputType reduce(execution_policy<DerivedPolicy>& exec,
                   OutputType init,
                   BinaryFunction binary_op)
 {
-  using difference_type = typename thrust::iterator_difference<InputIterator>::type;
+  using difference_type = thrust::detail::it_difference_t<InputIterator>;
 
   const difference_type n = thrust::distance(first, last);
 

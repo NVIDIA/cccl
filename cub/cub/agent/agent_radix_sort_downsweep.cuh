@@ -53,9 +53,7 @@
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_type.cuh>
 
-#include <type_traits>
-
-#include <stdint.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 

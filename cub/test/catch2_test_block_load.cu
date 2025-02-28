@@ -49,7 +49,7 @@ template <int ItemsPerThread,
           typename OutputIteratorT>
 __global__ void kernel(cuda::std::true_type, InputIteratorT input, OutputIteratorT output, int num_items)
 {
-  using input_t      = cub::detail::value_t<InputIteratorT>;
+  using input_t      = cub::detail::it_value_t<InputIteratorT>;
   using block_load_t = cub::BlockLoad<input_t, ThreadsInBlock, ItemsPerThread, LoadAlgorithm>;
   using storage_t    = typename block_load_t::TempStorage;
 

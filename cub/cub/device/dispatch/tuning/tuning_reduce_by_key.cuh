@@ -45,7 +45,8 @@
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/std/__algorithm/max.h>
+#include <cuda/cmath>
+#include <cuda/std/__algorithm/clamp.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -871,9 +872,8 @@ struct policy_hub
     static constexpr int items_per_thread =
       (max_input_bytes <= 8)
         ? 6
-        // TODO(bgruber): use ceil_div and clamp in C++14
-        : CUB_MIN(nominal_4B_items_per_thread,
-                  CUB_MAX(1, ((nominal_4B_items_per_thread * 8) + combined_input_bytes - 1) / combined_input_bytes));
+        : ::cuda::std::clamp(
+            ::cuda::ceil_div(nominal_4B_items_per_thread * 8, combined_input_bytes), 1, nominal_4B_items_per_thread);
 
     using ReduceByKeyPolicyT =
       AgentReduceByKeyPolicy<128,

@@ -72,7 +72,7 @@ struct functor
 template <class Derived, class Iterator, class TabulateOp>
 void _CCCL_HOST_DEVICE tabulate(execution_policy<Derived>& policy, Iterator first, Iterator last, TabulateOp tabulate_op)
 {
-  using size_type = typename iterator_traits<Iterator>::difference_type;
+  using size_type = thrust::detail::it_difference_t<Iterator>;
 
   size_type count = thrust::distance(first, last);
 

@@ -112,7 +112,7 @@ void reduce_intervals(
   RandomAccessIterator2 result,
   BinaryFunction binary_op)
 {
-  typename thrust::iterator_difference<RandomAccessIterator1>::type n = last - first;
+  thrust::detail::it_difference_t<RandomAccessIterator1> n = last - first;
 
   Size num_intervals = reduce_intervals_detail::divide_ri(n, interval_size);
 
@@ -129,7 +129,7 @@ void reduce_intervals(
   Size interval_size,
   RandomAccessIterator2 result)
 {
-  using value_type = typename thrust::iterator_value<RandomAccessIterator1>::type;
+  using value_type = thrust::detail::it_value_t<RandomAccessIterator1>;
 
   return thrust::system::tbb::detail::reduce_intervals(
     exec, first, last, interval_size, result, thrust::plus<value_type>());

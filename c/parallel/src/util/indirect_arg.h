@@ -17,11 +17,11 @@ struct indirect_arg_t
   void* ptr;
 
   indirect_arg_t(cccl_iterator_t& it)
-      : ptr(it.type == cccl_iterator_kind_t::pointer ? &it.state : it.state)
+      : ptr(it.type == cccl_iterator_kind_t::CCCL_POINTER ? &it.state : it.state)
   {}
 
   indirect_arg_t(cccl_op_t& op)
-      : ptr(op.type == cccl_op_kind_t::stateless ? this : op.state)
+      : ptr(op.type == cccl_op_kind_t::CCCL_STATELESS ? this : op.state)
   {}
 
   indirect_arg_t(cccl_value_t& val)
