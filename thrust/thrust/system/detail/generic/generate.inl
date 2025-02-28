@@ -28,6 +28,8 @@
 
 #include <thrust/for_each.h>
 
+#include <cuda/std/utility>
+
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
