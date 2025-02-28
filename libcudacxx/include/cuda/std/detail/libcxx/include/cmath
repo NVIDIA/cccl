@@ -327,6 +327,7 @@ long double    truncl(long double x);
 #include <cuda/std/__cmath/roots.h>
 #include <cuda/std/__cmath/rounding_functions.h>
 #include <cuda/std/__cmath/traits.h>
+#include <cuda/std/__cmath/trigonometric_functions.h>
 #include <cuda/std/__cstdlib/abs.h>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
@@ -357,18 +358,11 @@ using ::atan;
 using ::atan2;
 using ::atan2f;
 using ::atanf;
-using ::cos;
-using ::cosf;
 using ::cosh;
 using ::coshf;
 
-using ::sin;
-using ::sinf;
 using ::sinh;
 using ::sinhf;
-
-using ::tan;
-using ::tanf;
 
 using ::tanh;
 using ::tanhf;
@@ -394,13 +388,8 @@ using ::fmodf;
 using ::modf;
 using ::modff;
 
-using ::sin;
-using ::sinf;
 using ::sinh;
 using ::sinhf;
-
-using ::tan;
-using ::tanf;
 
 using ::tanh;
 using ::tanhf;
@@ -441,12 +430,9 @@ using ::asinl;
 using ::atan2l;
 using ::atanl;
 using ::coshl;
-using ::cosl;
 using ::fmodl;
 using ::modfl;
 using ::sinhl;
-using ::sinl;
-using ::tanl;
 
 using ::acoshl;
 using ::asinhl;

@@ -32,65 +32,11 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // trigonometric functions
-_LIBCUDACXX_HIDE_FROM_ABI __half sin(__half __v)
-{
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (return ::hsin(__v);), ({
-                      float __vf            = __half2float(__v);
-                      __vf                  = ::sinf(__vf);
-                      __half_raw __ret_repr = ::__float2half_rn(__vf);
-
-                      uint16_t __repr = __half_raw(__v).x;
-                      switch (__repr)
-                      {
-                        case 12979:
-                        case 45747:
-                          __ret_repr.x += 1;
-                          break;
-
-                        case 23728:
-                        case 56496:
-                          __ret_repr.x -= 1;
-                          break;
-
-                        default:;
-                      }
-
-                      return __ret_repr;
-                    }))
-}
 
 _LIBCUDACXX_HIDE_FROM_ABI __half sinh(__half __v)
 {
   return __float2half(::sinhf(__half2float(__v)));
 }
-
-// clang-format off
-_LIBCUDACXX_HIDE_FROM_ABI  __half cos(__half __v)
-{
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (
-    return ::hcos(__v);
-  ), (
-    {
-      float __vf            = __half2float(__v);
-      __vf                  = ::cosf(__vf);
-      __half_raw __ret_repr = ::__float2half_rn(__vf);
-
-      uint16_t __repr = __half_raw(__v).x;
-      switch (__repr)
-      {
-        case 11132:
-        case 43900:
-          __ret_repr.x += 1;
-          break;
-
-        default:;
-      }
-
-      return __ret_repr;
-    }
-  ))
-}
-// clang-format on
 
 _LIBCUDACXX_HIDE_FROM_ABI __half cosh(__half __v)
 {

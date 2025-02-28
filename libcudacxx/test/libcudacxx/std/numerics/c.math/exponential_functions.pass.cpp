@@ -14,6 +14,7 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
+#include "comparison.h"
 #include "test_macros.h"
 
 #if defined(TEST_COMPILER_MSVC)
@@ -21,68 +22,6 @@
 #  pragma warning(disable : 4305) // 'argument': truncation from 'T' to 'float'
 #  pragma warning(disable : 4146) // unary minus operator applied to unsigned type, result still unsigned
 #endif // TEST_COMPILER_MSVC
-
-template <typename T>
-__host__ __device__ bool eq(T lhs, T rhs) noexcept
-{
-  return lhs == rhs;
-}
-
-template <typename T, typename U, cuda::std::enable_if_t<cuda::std::is_arithmetic<U>::value, int> = 0>
-__host__ __device__ bool eq(T lhs, U rhs) noexcept
-{
-  return eq(lhs, T(rhs));
-}
-
-#ifdef _LIBCUDACXX_HAS_NVFP16
-__host__ __device__ bool eq(__half lhs, __half rhs) noexcept
-{
-  return ::__heq(lhs, rhs);
-}
-#endif // _LIBCUDACXX_HAS_NVFP16
-#ifdef _LIBCUDACXX_HAS_NVBF16
-__host__ __device__ bool eq(__nv_bfloat16 lhs, __nv_bfloat16 rhs) noexcept
-{
-  return ::__heq(lhs, rhs);
-}
-#endif // _LIBCUDACXX_HAS_NVBF16
-
-template <class Integer>
-__host__ __device__ bool is_about(Integer x, Integer y)
-{
-  return true;
-}
-
-__host__ __device__ bool is_about(float x, float y)
-{
-  return (cuda::std::abs((x - y) / (x + y)) < 1.e-6);
-}
-
-__host__ __device__ bool is_about(double x, double y)
-{
-  return (cuda::std::abs((x - y) / (x + y)) < 1.e-14);
-}
-
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-__host__ __device__ bool is_about(long double x, long double y)
-{
-  return (cuda::std::abs((x - y) / (x + y)) < 1.e-14);
-}
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
-
-#ifdef _LIBCUDACXX_HAS_NVFP16
-__host__ __device__ bool is_about(__half x, __half y)
-{
-  return (cuda::std::fabs((x - y) / (x + y)) <= __half(1e-3));
-}
-#endif // _LIBCUDACXX_HAS_NVFP16
-
-#ifdef _LIBCUDACXX_HAS_NVBF16
-__host__ __device__ bool is_about(__nv_bfloat16 x, __nv_bfloat16 y)
-{
-  return (cuda::std::fabs((x - y) / (x + y)) <= __nv_bfloat16(5e-3));
-}
-#endif // _LIBCUDACXX_HAS_NVBF16
 
 template <typename T>
 __host__ __device__ void test_exp(T val)

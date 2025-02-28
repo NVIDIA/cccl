@@ -14,6 +14,7 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
+#include "comparison.h"
 #include "fp_compare.h"
 #include "test_macros.h"
 
@@ -22,31 +23,6 @@
 #  pragma warning(disable : 4305) // 'argument': truncation from 'T' to 'float'
 #  pragma warning(disable : 4146) // unary minus operator applied to unsigned type, result still unsigned
 #endif // TEST_COMPILER_MSVC
-
-template <typename T>
-__host__ __device__ bool eq(T lhs, T rhs) noexcept
-{
-  return lhs == rhs;
-}
-
-template <typename T, typename U, cuda::std::enable_if_t<cuda::std::is_arithmetic<U>::value, int> = 0>
-__host__ __device__ bool eq(T lhs, U rhs) noexcept
-{
-  return eq(lhs, T(rhs));
-}
-
-#ifdef _LIBCUDACXX_HAS_NVFP16
-__host__ __device__ bool eq(__half lhs, __half rhs) noexcept
-{
-  return ::__heq(lhs, rhs);
-}
-#endif // _LIBCUDACXX_HAS_NVFP16
-#ifdef _LIBCUDACXX_HAS_NVBF16
-__host__ __device__ bool eq(__nv_bfloat16 lhs, __nv_bfloat16 rhs) noexcept
-{
-  return ::__heq(lhs, rhs);
-}
-#endif // _LIBCUDACXX_HAS_NVBF16
 
 template <typename T>
 __host__ __device__ void test_ceil(T val)
