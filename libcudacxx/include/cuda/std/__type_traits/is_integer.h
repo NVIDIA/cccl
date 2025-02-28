@@ -28,7 +28,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // __cccl_is_integer is a trait that tests whether a type is an integral type intended for arithmetic.
 // In contrast to is_integral, __cccl_is_integer excludes bool and character types.
-
+// See https://eel.is/c++draft/basic.fundamental#1
 template <class _Tp>
 _CCCL_INLINE_VAR constexpr bool __cccl_is_integer_v =
   __cccl_is_signed_integer_v<_Tp> || __cccl_is_unsigned_integer_v<_Tp>;
