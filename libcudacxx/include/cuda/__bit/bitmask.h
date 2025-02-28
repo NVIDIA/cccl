@@ -22,11 +22,39 @@
 #endif // no system header
 
 #include <cuda/__ptx/instructions/bmsk.h>
+#include <cuda/__ptx/instructions/shl.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/limits>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
+template <typename _Tp>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __shl(const _Tp __value, int __shift) noexcept
+{
+  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  {
+    if constexpr (sizeof(_Tp) <= sizeof(uint64_t))
+    {
+      NV_DISPATCH_TARGET(NV_IS_DEVICE,
+                         (using _Up = _CUDA_VSTD::_If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
+                          return _CUDA_VPTX::shl(static_cast<_Up>(__value), __shift);))
+    }
+    else
+    {
+#if _CCCL_HAS_INT128()
+      // the compiler should generate exactly four 32-bit shl instructions
+      NV_DISPATCH_TARGET(NV_IS_DEVICE,
+                         (auto __low  = _CUDA_VPTX::shl(static_cast<uint64_t>(__value), __shift);
+                          auto __high = _CUDA_VPTX::shl(static_cast<uint64_t>(__value >> 64), __shift);
+                          return __low | (static_cast<__uint128_t>(__high) << 64);))
+#endif // _CCCL_HAS_INT128()
+    }
+  }
+  constexpr auto __all_ones = static_cast<_Tp>(~_Tp{0});
+  return (__shift == _CUDA_VSTD::numeric_limits<_Tp>::digits) ? __all_ones : __value << __shift;
+}
 
 template <typename _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp bitmask(int __start, int __width) noexcept
@@ -36,18 +64,19 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp bitmask(int __start, int
   _CCCL_ASSERT(__width > 0 && __width <= __digits, "width out of range");
   _CCCL_ASSERT(__start >= 0 && __start < __digits, "start position out of range");
   _CCCL_ASSERT(__start + __width <= __digits, "start position + width out of range");
-  if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
+  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
-    if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+    if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
     {
       NV_IF_TARGET(NV_PROVIDES_SM_70, (return _CUDA_VPTX::bmsk_clamp(__start, __width);))
     }
+    else
+    {
+      NV_IF_TARGET(NV_IS_DEVICE, (return (::cuda::__shl(_Tp{1}, __width) - 1) << __start;))
+    }
   }
-  if (__width == __digits)
-  {
-    return static_cast<_Tp>(~_Tp{0});
-  }
-  return static_cast<_Tp>(((_Tp{1} << __width) - 1) << __start);
+  constexpr auto __all_ones = static_cast<_Tp>(~_Tp{0});
+  return __width == __digits ? __all_ones : (static_cast<_Tp>((_Tp{1} << __width) - 1) << __start);
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
