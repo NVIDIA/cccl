@@ -99,113 +99,116 @@ public:
   {
     if constexpr (_CCCL_TRAIT(is_signed, _Tp))
     {
+#  if _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
       if constexpr (sizeof(_Tp) == 1)
       {
-#  if _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
         return _sat_sub_i8(__x, __y);
+      }
+      else if constexpr (sizeof(_Tp) == 2)
+      {
+        return _sat_sub_i16(__x, __y);
+      }
+      else if constexpr (sizeof(_Tp) == 4)
+      {
+        return _sat_sub_i32(__x, __y);
+      }
+      else if constexpr (sizeof(_Tp) == 8)
+      {
+        return _sat_sub_i64(__x, __y);
+      }
+      else
+      {
+        return __impl_generic(__x, __y);
+      }
 #  elif _CCCL_COMPILER(MSVC, >=, 19, 37) && _CCCL_ARCH(X86_64)
+      if constexpr (sizeof(_Tp) == 1)
+      {
         int8_t __result;
         bool __overflow = _sub_overflow_i8(0, __x, __y, &__result);
         return __clamp_overflow<int8_t>(__x, __y, __result, __overflow);
-#  else
-        return __impl_generic(__x, __y);
-#  endif
       }
       else if constexpr (sizeof(_Tp) == 2)
       {
-#  if _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
-        return _sat_sub_i16(__x, __y);
-#  elif _CCCL_COMPILER(MSVC, >=, 19, 37) && _CCCL_ARCH(X86_64)
         int16_t __result;
         bool __overflow = _sub_overflow_i16(0, __x, __y, &__result);
         return __clamp_overflow<int16_t>(__x, __y, __result, __overflow);
-#  else
-        return __impl_generic(__x, __y);
-#  endif
       }
       else if constexpr (sizeof(_Tp) == 4)
       {
-#  if _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
-        return _sat_sub_i32(__x, __y);
-#  elif _CCCL_COMPILER(MSVC, >=, 19, 37) && _CCCL_ARCH(X86_64)
         int32_t __result;
         bool __overflow = _sub_overflow_i32(0, __x, __y, &__result);
         return __clamp_overflow<int32_t>(__x, __y, __result, __overflow);
-#  else
-        return __impl_generic(__x, __y);
-#  endif
       }
       else if constexpr (sizeof(_Tp) == 8)
       {
-#  if _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
-        return _sat_sub_i64(__x, __y);
-#  elif _CCCL_COMPILER(MSVC, >=, 19, 37) && _CCCL_ARCH(X86_64)
         int64_t __result;
         bool __overflow = _sub_overflow_i64(0, __x, __y, &__result);
         return __clamp_overflow<int64_t>(__x, __y, __result, __overflow);
-#  else
-        return __impl_generic(__x, __y);
-#  endif
       }
       else
       {
         return __impl_generic(__x, __y);
       }
+#  else // ^^^ _CCCL_COMPILER(MSVC, >=, 19, 37) && _CCCL_ARCH(X86_64) ^^^ / vvv _CCCL_COMPILER(MSVC, <, 19, 37) ||
+        // !_CCCL_ARCH(X86_64) vvv
+      return __impl_generic(__x, __y);
+#  endif // ^^^ _CCCL_COMPILER(MSVC, <, 19, 37) || !_CCCL_ARCH(X86_64) ^^^
     }
     else
     {
+#  if _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
       if constexpr (sizeof(_Tp) == 1)
       {
-#  if _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
         return _sat_sub_u8(__x, __y);
-#  elif _CCCL_COMPILER(MSVC) && _CCCL_ARCH(X86_64)
-        uint8_t __result;
-        bool __overflow = _subborrow_u8(0, __x, __y, &__result);
-        return __clamp_overflow<uint8_t>(__x, __y, __result, __overflow);
-#  else
-        return __impl_generic(__x, __y);
-#  endif
       }
       else if constexpr (sizeof(_Tp) == 2)
       {
-#  if _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
         return _sat_sub_u16(__x, __y);
-#  elif _CCCL_COMPILER(MSVC) && _CCCL_ARCH(X86_64)
-        uint16_t __result;
-        bool __overflow = _subborrow_u16(0, __x, __y, &__result);
-        return __clamp_overflow<uint16_t>(__x, __y, __result, __overflow);
-#  else
-        return __impl_generic(__x, __y);
-#  endif
       }
       else if constexpr (sizeof(_Tp) == 4)
       {
-#  if _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
         return _sat_sub_u32(__x, __y);
-#  elif _CCCL_COMPILER(MSVC) && _CCCL_ARCH(X86_64)
-        uint32_t __result;
-        bool __overflow = _subborrow_u32(0, __x, __y, &__result);
-        return __clamp_overflow<uint32_t>(__x, __y, __result, __overflow);
-#  else
-        return __impl_generic(__x, __y);
-#  endif
       }
       else if constexpr (sizeof(_Tp) == 8)
       {
-#  if _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
         return _sat_sub_u64(__x, __y);
-#  elif _CCCL_COMPILER(MSVC) && _CCCL_ARCH(X86_64)
-        uint64_t __result;
-        bool __overflow = _subborrow_u64(0, __x, __y, &__result);
-        return __clamp_overflow<uint64_t>(__x, __y, __result, __overflow);
-#  else
-        return __impl_generic(__x, __y);
-#  endif
       }
       else
       {
         return __impl_generic(__x, __y);
       }
+#  elif _CCCL_COMPILER(MSVC) && _CCCL_ARCH(X86_64)
+      if constexpr (sizeof(_Tp) == 1)
+      {
+        uint8_t __result;
+        bool __overflow = _subborrow_u8(0, __x, __y, &__result);
+        return __clamp_overflow<uint8_t>(__x, __y, __result, __overflow);
+      }
+      else if constexpr (sizeof(_Tp) == 2)
+      {
+        uint16_t __result;
+        bool __overflow = _subborrow_u16(0, __x, __y, &__result);
+        return __clamp_overflow<uint16_t>(__x, __y, __result, __overflow);
+      }
+      else if constexpr (sizeof(_Tp) == 4)
+      {
+        uint32_t __result;
+        bool __overflow = _subborrow_u32(0, __x, __y, &__result);
+        return __clamp_overflow<uint32_t>(__x, __y, __result, __overflow);
+      }
+      else if constexpr (sizeof(_Tp) == 8)
+      {
+        uint64_t __result;
+        bool __overflow = _subborrow_u64(0, __x, __y, &__result);
+        return __clamp_overflow<uint64_t>(__x, __y, __result, __overflow);
+      }
+      else
+      {
+        return __impl_generic(__x, __y);
+      }
+#  elif // ^^^ _CCCL_COMPILER(MSVC) && _CCCL_ARCH(X86_64) ^^^ / vvv !_CCCL_COMPILER(MSVC) || !_CCCL_ARCH(X86_64) vvv
+      return __impl_generic(__x, __y);
+#  endif // ^^^ !_CCCL_COMPILER(MSVC) || !_CCCL_ARCH(X86_64) ^^^
     }
   }
 #endif // !_CCCL_COMPILER(NVRTC)
