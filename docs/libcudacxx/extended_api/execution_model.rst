@@ -6,7 +6,7 @@ Execution model
 CUDA C++ aims to provide `_parallel forward progress_ [intro.progress.9] <https://eel.is/c++draft/intro.progress#9>`__
 for all device threads of execution, facilitating the parallelization of pre-existing C++ applications with CUDA C++.
 
-.. dropdown:: [intro.progress]
+.. dropdown:: `[intro.progress] <https://eel.is/c++draft/intro.progress>`__
 
     - `[intro.progress.7] <https://eel.is/c++draft/intro.progress#7>`__: For a thread of execution
       providing `concurrent forward progress guarantees <https://eel.is/c++draft/intro.progress#def:concurrent_forward_progress_guarantees>`__,
