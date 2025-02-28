@@ -297,7 +297,7 @@ public:
   }
 
   template <typename task_type>
-  void add_vertex_timing(const task_type& t, float time_ms, int device = -1)
+  void add_vertex_timing(const task_type& t, float time_ms, [[maybe_unused]] int device = -1)
   {
     ::std::lock_guard<::std::mutex> guard(mtx);
 
