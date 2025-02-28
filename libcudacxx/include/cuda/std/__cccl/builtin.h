@@ -92,6 +92,12 @@
 #  define _CCCL_BUILTIN_ACOSL(...) __builtin_acosl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_acos)
 
+#if _CCCL_CHECK_BUILTIN(builtin_acosh) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ACOSHF(...) __builtin_acoshf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ACOSH(...)  __builtin_acosh(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ACOSHL(...) __builtin_acoshl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_acosh)
+
 // nvhpc has a bug where it supports __builtin_addressof but does not mark it via _CCCL_CHECK_BUILTIN
 #if _CCCL_CHECK_BUILTIN(builtin_addressof) || _CCCL_COMPILER(GCC, >=, 7) || _CCCL_COMPILER(MSVC) \
   || _CCCL_COMPILER(NVHPC)
@@ -102,6 +108,12 @@
 #  define _CCCL_BUILTIN_ASINF(...) __builtin_asinf(__VA_ARGS__)
 #  define _CCCL_BUILTIN_ASIN(...)  __builtin_asin(__VA_ARGS__)
 #  define _CCCL_BUILTIN_ASINL(...) __builtin_asinl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_asinh)
+
+#if _CCCL_CHECK_BUILTIN(builtin_asinh) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ASINHF(...) __builtin_asinhf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ASINH(...)  __builtin_asinh(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ASINHL(...) __builtin_asinhl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_asin)
 
 #if _CCCL_CHECK_BUILTIN(builtin_assume) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
@@ -131,6 +143,12 @@
 #  define _CCCL_BUILTIN_ATAN2(...)  __builtin_atan2(__VA_ARGS__)
 #  define _CCCL_BUILTIN_ATAN2L(...) __builtin_atan2l(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_atan2)
+
+#if _CCCL_CHECK_BUILTIN(builtin_atanh) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ATANHF(...) __builtin_atanhf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ATANH(...)  __builtin_atanh(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ATANHL(...) __builtin_atanhl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_atanh)
 
 // MSVC supports __builtin_bit_cast from 19.25 on
 #if _CCCL_CHECK_BUILTIN(builtin_bit_cast) || _CCCL_COMPILER(MSVC, >, 19, 25)

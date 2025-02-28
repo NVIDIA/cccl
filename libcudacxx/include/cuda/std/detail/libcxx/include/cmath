@@ -322,6 +322,7 @@ long double    truncl(long double x);
 #include <cuda/std/__cmath/exponential_functions.h>
 #include <cuda/std/__cmath/fpclassify.h>
 #include <cuda/std/__cmath/hyperbolic_functions.h>
+#include <cuda/std/__cmath/inverse_hyperbolic_functions.h>
 #include <cuda/std/__cmath/inverse_trigonometric_functions.h>
 #include <cuda/std/__cmath/lerp.h>
 #include <cuda/std/__cmath/logarithms.h>
@@ -352,13 +353,6 @@ _CCCL_PUSH_MACROS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-using ::acosh;
-using ::acoshf;
-using ::asinh;
-using ::asinhf;
-using ::atanh;
-using ::atanhf;
-
 using ::hypot;
 using ::hypotf;
 
@@ -372,13 +366,6 @@ using ::fmodf;
 
 using ::modf;
 using ::modff;
-
-using ::acosh;
-using ::acoshf;
-using ::asinh;
-using ::asinhf;
-using ::atanh;
-using ::atanhf;
 
 using ::copysign;
 using ::copysignf;
@@ -406,10 +393,6 @@ using ::tgammaf;
 
 using ::fmodl;
 using ::modfl;
-
-using ::acoshl;
-using ::asinhl;
-using ::atanhl;
 
 using ::copysignl;
 
