@@ -45,7 +45,6 @@ _CCCL_INLINE_VAR constexpr bool __cccl_is_signed_integer_impl_v<signed long long
 #if _CCCL_HAS_INT128()
 template <>
 _CCCL_INLINE_VAR constexpr bool __cccl_is_signed_integer_impl_v<__int128_t> = true;
-{};
 #endif // _CCCL_HAS_INT128()
 
 template <class _Tp>
