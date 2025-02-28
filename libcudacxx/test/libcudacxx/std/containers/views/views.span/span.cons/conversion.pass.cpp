@@ -19,7 +19,7 @@
 
 struct ConvertibleButNoRange
 {
-  int buffer[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+  static constexpr int buffer[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
   __host__ __device__ constexpr operator cuda::std::span<int>() const noexcept
   {
