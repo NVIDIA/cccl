@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/unreachable.h>
+
 #include <cuda/experimental/__async/sender/completion_signatures.cuh>
 #include <cuda/experimental/__async/sender/cpos.cuh>
 #include <cuda/experimental/__async/sender/exception.cuh>
@@ -51,28 +53,12 @@ struct __seq
     using __rcvr_t  = typename __args_t::__rcvr_t;
     using __sndr1_t = typename __args_t::__sndr1_t;
     using __sndr2_t = typename __args_t::__sndr2_t;
-
-    using completion_signatures = //
-      transform_completion_signatures_of< //
-        __sndr1_t,
-        __opstate*,
-        completion_signatures_of_t<__sndr2_t, __rcvr_ref_t<__rcvr_t&>>,
-        _CUDA_VSTD::__type_always<__async::completion_signatures<>>::__call>; // swallow the first sender's value
-                                                                              // completions
-
-    _CUDAX_API friend env_of_t<__rcvr_t> get_env(const __opstate* __self) noexcept
-    {
-      return __async::get_env(__self->__rcvr_);
-    }
-
-    __rcvr_t __rcvr_;
-    connect_result_t<__sndr1_t, __opstate*> __opstate1_;
-    connect_result_t<__sndr2_t, __rcvr_ref_t<__rcvr_t&>> __opstate2_;
+    using __env_t   = env_of_t<__rcvr_t>;
 
     _CUDAX_API __opstate(__sndr1_t&& __sndr1, __sndr2_t&& __sndr2, __rcvr_t&& __rcvr)
         : __rcvr_(static_cast<__rcvr_t&&>(__rcvr))
-        , __opstate1_(__async::connect(static_cast<__sndr1_t&&>(__sndr1), this))
-        , __opstate2_(__async::connect(static_cast<__sndr2_t&&>(__sndr2), __rcvr_ref(__rcvr_)))
+        , __opstate1_(__async::connect(static_cast<__sndr1_t&&>(__sndr1), __rcvr_ref{*this}))
+        , __opstate2_(__async::connect(static_cast<__sndr2_t&&>(__sndr2), __rcvr_ref{__rcvr_}))
     {}
 
     _CUDAX_API void start() noexcept
@@ -96,6 +82,15 @@ struct __seq
     {
       __async::set_stopped(static_cast<__rcvr_t&&>(__rcvr_));
     }
+
+    _CUDAX_API auto get_env() const noexcept -> __env_t
+    {
+      return __async::get_env(__rcvr_);
+    }
+
+    __rcvr_t __rcvr_;
+    connect_result_t<__sndr1_t, __rcvr_ref<__opstate, __env_t>> __opstate1_;
+    connect_result_t<__sndr2_t, __rcvr_ref<__rcvr_t>> __opstate2_;
   };
 
   template <class _Sndr1, class _Sndr2>
@@ -111,6 +106,21 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __seq::__sndr_t
   using sender_concept = sender_t;
   using __sndr1_t      = _Sndr1;
   using __sndr2_t      = _Sndr2;
+
+  template <class _Self, class... _Env>
+  _CUDAX_API static constexpr auto get_completion_signatures()
+  {
+    _CUDAX_LET_COMPLETIONS(auto(__completions1) = get_child_completion_signatures<_Self, _Sndr1, _Env...>())
+    {
+      _CUDAX_LET_COMPLETIONS(auto(__completions2) = get_child_completion_signatures<_Self, _Sndr2, _Env...>())
+      {
+        // ignore the first sender's value completions
+        return __completions2 + transform_completion_signatures(__completions1, __swallow_transform());
+      }
+    }
+
+    _CCCL_UNREACHABLE();
+  }
 
   template <class _Rcvr>
   _CUDAX_API auto connect(_Rcvr __rcvr) &&

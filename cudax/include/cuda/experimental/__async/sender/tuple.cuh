@@ -75,12 +75,11 @@ struct __tupl<_CUDA_VSTD::index_sequence<_Idx...>, _Ts...> : __box<_Idx, _Ts>...
 };
 
 template <class... _Ts>
-_CUDAX_API __tupl(_Ts...) //
-  -> __tupl<_CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>, _Ts...>;
+__tupl(_Ts...) //
+  ->__tupl<_CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>, _Ts...>;
 
 template <class _Fn, class _Tupl, class... _Us>
-using __apply_result_t =
-  decltype(__declval<_Tupl>().__apply(__declval<_Fn>(), __declval<_Tupl>(), __declval<_Us>()...));
+using __apply_result_t = decltype(declval<_Tupl>().__apply(declval<_Fn>(), declval<_Tupl>(), declval<_Us>()...));
 
 #if _CCCL_COMPILER(MSVC)
 template <class... _Ts>
@@ -99,6 +98,18 @@ using __tuple = __tupl<_CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>, _Ts...>;
 
 template <class... _Ts>
 using __decayed_tuple = __tuple<__decay_t<_Ts>...>;
+
+// A very simple pair type
+template <class _First, class _Second>
+struct __pair
+{
+  _First first;
+  _Second second;
+};
+
+template <class _First, class _Second>
+__pair(_First, _Second) -> __pair<_First, _Second>;
+
 } // namespace cuda::experimental::__async
 
 #include <cuda/experimental/__async/sender/epilogue.cuh>
