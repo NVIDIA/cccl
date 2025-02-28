@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_ARITHMETIC_INTEGRAL_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_ARITHMETIC_INTEGRAL_H
+#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_INTEGER_H
+#define _LIBCUDACXX___TYPE_TRAITS_IS_INTEGER_H
 
 #include <cuda/std/detail/__config>
 
@@ -35,4 +35,4 @@ _CCCL_INLINE_VAR constexpr bool __cccl_is_integer_v =
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_ARITHMETIC_INTEGRAL_H
+#endif // _LIBCUDACXX___TYPE_TRAITS_IS_INTEGER_H
