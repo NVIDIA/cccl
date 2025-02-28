@@ -10,11 +10,10 @@ from typing import Callable
 
 import numba
 import numpy as np
-from numba import cuda
 from numba.cuda.cudadrv import enums
 
 from .. import _cccl as cccl
-from .._bindings import get_bindings, get_paths
+from .._bindings import call_build, get_bindings
 from .._caching import CachableFunction, cache_with_key
 from .._utils import protocols
 from ..iterators._iterators import IteratorBase
@@ -41,8 +40,6 @@ class _Reduce:
         self.d_in_cccl = cccl.to_cccl_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_iter(d_out)
         self.h_init_cccl = cccl.to_cccl_value(h_init)
-        cc_major, cc_minor = cuda.get_current_device().compute_capability
-        cub_path, thrust_path, libcudacxx_path, cuda_include_path = get_paths()
         if isinstance(h_init, np.ndarray):
             value_type = numba.from_dtype(h_init.dtype)
         else:
@@ -51,18 +48,13 @@ class _Reduce:
         self.op_wrapper = cccl.to_cccl_op(op, sig)
         self.build_result = cccl.DeviceReduceBuildResult()
         self.bindings = get_bindings()
-        error = self.bindings.cccl_device_reduce_build(
+        error = call_build(
+            self.bindings.cccl_device_reduce_build,
             ctypes.byref(self.build_result),
             self.d_in_cccl,
             self.d_out_cccl,
             self.op_wrapper,
             self.h_init_cccl,
-            cc_major,
-            cc_minor,
-            ctypes.c_char_p(cub_path),
-            ctypes.c_char_p(thrust_path),
-            ctypes.c_char_p(libcudacxx_path),
-            ctypes.c_char_p(cuda_include_path),
         )
         if error != enums.CUDA_SUCCESS:
             raise ValueError("Error building reduce")
@@ -76,15 +68,9 @@ class _Reduce:
         h_init: np.ndarray | GpuStruct,
         stream=None,
     ):
-        if self.d_in_cccl.type.value == cccl.IteratorKind.POINTER:
-            self.d_in_cccl.state = protocols.get_data_pointer(d_in)
-        else:
-            self.d_in_cccl.state = d_in.state
-
-        if self.d_out_cccl.type.value == cccl.IteratorKind.POINTER:
-            self.d_out_cccl.state = protocols.get_data_pointer(d_out)
-        else:
-            self.d_out_cccl.state = d_out.state
+        set_state_fn = cccl.set_cccl_iterator_state
+        set_state_fn(self.d_in_cccl, d_in)
+        set_state_fn(self.d_out_cccl, d_out)
 
         self.h_init_cccl.state = h_init.__array_interface__["data"][0]
 
