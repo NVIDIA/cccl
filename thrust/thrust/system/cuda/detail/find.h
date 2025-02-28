@@ -97,7 +97,7 @@ template <class ValueType, class InputIt, class UnaryOp>
 struct transform_input_iterator_t
 {
   using self_t            = transform_input_iterator_t;
-  using difference_type   = typename iterator_traits<InputIt>::difference_type;
+  using difference_type   = thrust::detail::it_difference_t<InputIt>;
   using value_type        = ValueType;
   using pointer           = void;
   using reference         = value_type;
@@ -136,13 +136,13 @@ struct transform_input_iterator_t
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*() const
   {
-    typename thrust::iterator_value<InputIt>::type x = *input;
+    thrust::detail::it_value_t<InputIt> x = *input;
     return op(x);
   }
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*()
   {
-    typename thrust::iterator_value<InputIt>::type x = *input;
+    thrust::detail::it_value_t<InputIt> x = *input;
     return op(x);
   }
 

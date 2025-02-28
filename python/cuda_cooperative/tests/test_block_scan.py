@@ -29,46 +29,57 @@ patch.patch_numba_linker(lto=True)
 @pytest.mark.parametrize("T", [types.uint32, types.uint64])
 @pytest.mark.parametrize("threads_per_block", [32, 64, 128, 256, 512, 1024])
 @pytest.mark.parametrize("items_per_thread", [1, 2, 3, 4])
+@pytest.mark.parametrize("mode", ["inclusive", "exclusive"])
 @pytest.mark.parametrize("algorithm", ["raking", "raking_memoize", "warp_scans"])
-def test_block_exclusive_sum(T, threads_per_block, items_per_thread, algorithm):
+def test_block_sum(T, threads_per_block, items_per_thread, mode, algorithm):
     if algorithm == "raking_memoize" and threads_per_block >= 512:
         # We can hit CUDA_ERROR_LAUNCH_OUT_OF_RESOURCES with raking_memoize in
         # certain configurations, e.g.: 1024 threads_per_block, or 512
         # threads_per_block, 3 items_per_thread, and T == uint64, etc.
         pytest.skip("raking_memoize: skipping threads_per_block >= 512")
 
-    block_exclusive_sum = cudax.block.exclusive_sum(
+    if mode == "inclusive":
+        target_sum = cudax.block.inclusive_sum
+    else:
+        target_sum = cudax.block.exclusive_sum
+
+    block_sum = target_sum(
         dtype=T,
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,
         algorithm=algorithm,
     )
-    temp_storage_bytes = block_exclusive_sum.temp_storage_bytes
+    temp_storage_bytes = block_sum.temp_storage_bytes
 
-    @cuda.jit(link=block_exclusive_sum.files)
+    @cuda.jit(link=block_sum.files)
     def kernel(input, output):
         tid = cuda.threadIdx.x
         temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
-        thread_data = cuda.local.array(shape=items_per_thread, dtype=dtype)
+        thread_data = cuda.local.array(shape=items_per_thread, dtype=T)
         for i in range(items_per_thread):
             thread_data[i] = input[tid * items_per_thread + i]
         if items_per_thread == 1:
-            thread_data[0] = block_exclusive_sum(temp_storage, thread_data[0])
+            thread_data[0] = block_sum(temp_storage, thread_data[0])
         else:
-            block_exclusive_sum(temp_storage, thread_data, thread_data)
+            block_sum(temp_storage, thread_data, thread_data)
         for i in range(items_per_thread):
             output[tid * items_per_thread + i] = thread_data[i]
 
-    dtype = NUMBA_TYPES_TO_NP[T]
+    dtype_np = NUMBA_TYPES_TO_NP[T]
     items_per_tile = threads_per_block * items_per_thread
-    h_input = random_int(items_per_tile, dtype)
+    h_input = random_int(items_per_tile, dtype_np)
     d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(items_per_tile, dtype=dtype)
+    d_output = cuda.device_array(items_per_tile, dtype=dtype_np)
     kernel[1, threads_per_block](d_input, d_output)
     cuda.synchronize()
 
     output = d_output.copy_to_host()
-    reference = np.cumsum(h_input) - h_input
+
+    if mode == "inclusive":
+        reference = np.cumsum(h_input)
+    else:
+        reference = np.cumsum(h_input) - h_input
+
     for i in range(items_per_tile):
         assert output[i] == reference[i]
 
@@ -132,8 +143,9 @@ def impl_block_prefix_callback_op(context, builder, sig, args):
 
 @pytest.mark.parametrize("threads_per_block", [32, 64, 128, 256, 512, 1024])
 @pytest.mark.parametrize("items_per_thread", [1, 2, 3, 4])
+@pytest.mark.parametrize("mode", ["inclusive", "exclusive"])
 @pytest.mark.parametrize("algorithm", ["raking", "raking_memoize", "warp_scans"])
-def test_block_exclusive_sum_prefix(threads_per_block, items_per_thread, algorithm):
+def test_block_sum_prefix(threads_per_block, items_per_thread, mode, algorithm):
     if algorithm == "raking_memoize" and threads_per_block >= 512:
         # We can hit CUDA_ERROR_LAUNCH_OUT_OF_RESOURCES with raking_memoize in
         # certain configurations, e.g.: 1024 threads_per_block, or 512
@@ -148,16 +160,22 @@ def test_block_exclusive_sum_prefix(threads_per_block, items_per_thread, algorit
     prefix_op = cudax.StatefulFunction(
         BlockPrefixCallbackOp, block_prefix_callback_op_type
     )
-    block_exclusive_sum = cudax.block.exclusive_sum(
+
+    if mode == "inclusive":
+        target_sum = cudax.block.inclusive_sum
+    else:
+        target_sum = cudax.block.exclusive_sum
+
+    block_sum = target_sum(
         dtype=numba.types.int32,
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,
         prefix_op=prefix_op,
         algorithm=algorithm,
     )
-    temp_storage_bytes = block_exclusive_sum.temp_storage_bytes
+    temp_storage_bytes = block_sum.temp_storage_bytes
 
-    @cuda.jit(link=block_exclusive_sum.files)
+    @cuda.jit(link=block_sum.files)
     def kernel(input, output):
         segment_offset = cuda.blockIdx.x * segment_size
         temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
@@ -178,13 +196,11 @@ def test_block_exclusive_sum_prefix(threads_per_block, items_per_thread, algorit
                 )
 
             if items_per_thread == 1:
-                thread_output[0] = block_exclusive_sum(
+                thread_output[0] = block_sum(
                     temp_storage, thread_input[0], block_prefix_op
                 )
             else:
-                block_exclusive_sum(
-                    temp_storage, thread_input, thread_output, block_prefix_op
-                )
+                block_sum(temp_storage, thread_input, thread_output, block_prefix_op)
 
             for item in range(items_per_thread):
                 item_offset = tile_offset + cuda.threadIdx.x * items_per_thread + item
@@ -198,15 +214,30 @@ def test_block_exclusive_sum_prefix(threads_per_block, items_per_thread, algorit
     d_output = cuda.to_device(np.zeros(num_elements, dtype="int32"))
     kernel[num_segments, threads_per_block](d_input, d_output)
     cuda.synchronize()
+
     h_output = d_output.copy_to_host()
     h_reference = np.zeros(segment_size * num_segments, dtype="int32")
-    for sid in range(num_segments):
-        h_reference[sid * segment_size] = 0
-        for i in range(1, segment_size):
-            h_reference[sid * segment_size + i] = (
-                h_reference[sid * segment_size + i - 1]
-                + h_input[sid * segment_size + i - 1]
-            )
+
+    if mode == "inclusive":
+        for sid in range(num_segments):
+            for i in range(segment_size):
+                if i == 0:
+                    h_reference[sid * segment_size + i] = h_input[
+                        sid * segment_size + i
+                    ]
+                else:
+                    h_reference[sid * segment_size + i] = (
+                        h_reference[sid * segment_size + i - 1]
+                        + h_input[sid * segment_size + i]
+                    )
+    else:
+        for sid in range(num_segments):
+            h_reference[sid * segment_size] = 0
+            for i in range(1, segment_size):
+                h_reference[sid * segment_size + i] = (
+                    h_reference[sid * segment_size + i - 1]
+                    + h_input[sid * segment_size + i - 1]
+                )
 
     for sid in range(num_segments):
         for i in range(segment_size):
@@ -227,13 +258,25 @@ def test_block_exclusive_sum_prefix(threads_per_block, items_per_thread, algorit
 
 @pytest.mark.parametrize("threads_per_block", [32, 64, 128, 256, 512, 1024])
 @pytest.mark.parametrize("items_per_thread", [0, -1, -127])
+@pytest.mark.parametrize("mode", ["inclusive", "exclusive"])
 def test_block_scan_exclusive_sum_invalid_items_per_thread(
-    threads_per_block, items_per_thread
+    threads_per_block, items_per_thread, mode
 ):
+    if mode == "inclusive":
+        target_sum = cudax.block.inclusive_sum
+    else:
+        target_sum = cudax.block.exclusive_sum
+
     with pytest.raises(ValueError):
-        cudax.block.exclusive_sum(numba.int32, threads_per_block, items_per_thread)
+        target_sum(numba.int32, threads_per_block, items_per_thread)
 
 
-def test_block_scan_exclusive_sum_invalid_algorithm():
+@pytest.mark.parametrize("mode", ["inclusive", "exclusive"])
+def test_block_scan_sum_invalid_algorithm(mode):
+    if mode == "inclusive":
+        target_sum = cudax.block.inclusive_sum
+    else:
+        target_sum = cudax.block.exclusive_sum
+
     with pytest.raises(ValueError):
-        cudax.block.exclusive_sum(numba.int32, 128, algorithm="invalid_algorithm")
+        target_sum(numba.int32, 128, algorithm="invalid_algorithm")
