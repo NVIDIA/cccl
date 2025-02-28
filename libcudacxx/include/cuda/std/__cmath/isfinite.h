@@ -55,11 +55,11 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isfinite(float __x) noe
   {
     return ::isfinite(__x);
   }
-#  if _LIBCUDACXX_HAS_BUILTIN_BIT_CAST()
+#  if _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST()
   return (_CUDA_VSTD::__cccl_fp_get_storage(__x) & __cccl_fp32_exp_mask) != __cccl_fp32_exp_mask;
-#  else // ^^^ _LIBCUDACXX_HAS_BUILTIN_BIT_CAST() ^^^ / vvv !_LIBCUDACXX_HAS_BUILTIN_BIT_CAST() vvv
+#  else // ^^^ _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() vvv
   return _CUDA_VSTD::__isfinite_impl(__x);
-#  endif // ^^^ !_LIBCUDACXX_HAS_BUILTIN_BIT_CAST() ^^^
+#  endif // ^^^ !_LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() ^^^
 #endif // ^^^ !_CCCL_BUILTIN_ISFINITE ^^^
 }
 
@@ -72,11 +72,11 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isfinite(double __x) no
   {
     return ::isfinite(__x);
   }
-#  if _LIBCUDACXX_HAS_BUILTIN_BIT_CAST()
+#  if _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST()
   return (_CUDA_VSTD::__cccl_fp_get_storage(__x) & __cccl_fp64_exp_mask) != __cccl_fp64_exp_mask;
-#  else // ^^^ _LIBCUDACXX_HAS_BUILTIN_BIT_CAST() ^^^ / vvv !_LIBCUDACXX_HAS_BUILTIN_BIT_CAST() vvv
+#  else // ^^^ _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() vvv
   return _CUDA_VSTD::__isfinite_impl(__x);
-#  endif // ^^^ !_LIBCUDACXX_HAS_BUILTIN_BIT_CAST() ^^^
+#  endif // ^^^ !_LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() ^^^
 #endif // ^^^ !_CCCL_BUILTIN_ISFINITE ^^^
 }
 
