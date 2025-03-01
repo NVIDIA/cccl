@@ -104,8 +104,7 @@ bool binary_equal(
 {
   d_tmp = h_reference;
 
-  using traits_t      = cub::Traits<T>;
-  using bit_ordered_t = typename traits_t::UnsignedBits;
+  using bit_ordered_t = typename cub::key_traits<T>::unsigned_bits;
 
   auto d_output_ptr    = reinterpret_cast<const bit_ordered_t*>(thrust::raw_pointer_cast(d_output.data()));
   auto d_reference_ptr = reinterpret_cast<const bit_ordered_t*>(thrust::raw_pointer_cast(d_tmp.data()));
