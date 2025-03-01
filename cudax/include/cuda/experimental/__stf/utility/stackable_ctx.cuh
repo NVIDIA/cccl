@@ -634,7 +634,7 @@ class stackable_logical_data
         size_t data_depth = depth();
         _CCCL_ASSERT(sctx_depth > 0, "internal error");
 
-        auto &dnode = data_nodes.back();
+        auto& dnode = data_nodes.back();
 
         _CCCL_ASSERT(data_depth == sctx_depth - 1 || data_depth == sctx_depth, "internal error");
 
@@ -651,9 +651,11 @@ class stackable_logical_data
         // Unfreezing data will create a dependency which we need to track to
         // display a dependency between the context and its parent in DOT.
         // We do this operation before finalizing the context.
-        auto &parent_dnode = get_data_node(sctx_depth - 1);
+        auto& parent_dnode = get_data_node(sctx_depth - 1);
         _CCCL_ASSERT(parent_dnode.frozen_ld.has_value(), "internal error");
-        sctx.get_node(sctx_depth).ctx.get_dot()->ctx_add_output_id(parent_dnode.frozen_ld.value().unfreeze_fake_task_id());
+        sctx.get_node(sctx_depth)
+          .ctx.get_dot()
+          ->ctx_add_output_id(parent_dnode.frozen_ld.value().unfreeze_fake_task_id());
       }
 
       // Unfreeze the logical data after the context has been finalized.
@@ -661,7 +663,7 @@ class stackable_logical_data
       {
         nvtx_range r("stackable_logical_data::pop_after_finalize");
 
-        auto &dnode = data_nodes.back();
+        auto& dnode = data_nodes.back();
         _CCCL_ASSERT(dnode.frozen_ld.has_value(), "internal error");
         dnode.frozen_ld.value().unfreeze(finalize_prereqs);
         dnode.frozen_ld.reset();
@@ -684,36 +686,41 @@ class stackable_logical_data
         return read_only;
       }
 
-      class data_node {
+      class data_node
+      {
       public:
-          data_node(logical_data<T> ld) : ld(mv(ld)) {}
+        data_node(logical_data<T> ld)
+            : ld(mv(ld))
+        {}
 
-          // Get the access mode used to freeze data
-          access_mode get_frozen_mode() const
-          {
-            _CCCL_ASSERT(frozen_ld.has_value(), "cannot query frozen mode : not frozen");
-            return frozen_ld.value().get_access_mode();
-          }
+        // Get the access mode used to freeze data
+        access_mode get_frozen_mode() const
+        {
+          _CCCL_ASSERT(frozen_ld.has_value(), "cannot query frozen mode : not frozen");
+          return frozen_ld.value().get_access_mode();
+        }
 
-          void set_symbol(const ::std::string &symbol)
-          {
-            ld.set_symbol(symbol);
-          }
+        void set_symbol(const ::std::string& symbol)
+        {
+          ld.set_symbol(symbol);
+        }
 
-          logical_data<T> ld;
+        logical_data<T> ld;
 
-          // Frozen counterpart of ld (if any)
-          ::std::optional<frozen_logical_data<T>> frozen_ld;
+        // Frozen counterpart of ld (if any)
+        ::std::optional<frozen_logical_data<T>> frozen_ld;
       };
 
       mutable ::std::vector<data_node> data_nodes;
 
-      auto &get_data_node(size_t level) {
-          return data_nodes[level - offset_depth];
+      auto& get_data_node(size_t level)
+      {
+        return data_nodes[level - offset_depth];
       }
 
-      const auto &get_data_node(size_t level) const {
-          return data_nodes[level - offset_depth];
+      const auto& get_data_node(size_t level) const
+      {
+        return data_nodes[level - offset_depth];
       }
 
       void set_symbol(::std::string symbol_)
@@ -721,8 +728,6 @@ class stackable_logical_data
         symbol = mv(symbol_);
         data_nodes.back().set_symbol(symbol);
       }
-
-
 
       mutable stackable_ctx sctx;
 
@@ -825,7 +830,8 @@ class stackable_logical_data
     /* Push one level up (from the current data depth) */
     void push(access_mode m, data_place where = data_place::invalid) const
     {
-      // fprintf(stderr, "stackable_logical_data::push() %s mode = %s\n", symbol.c_str(), access_mode_string(m));
+      // fprintf(stderr, "stackable_logical_data::push() %s mode = %s\n", impl_state->symbol.c_str(),
+      // access_mode_string(m));
 
       const size_t ctx_depth          = sctx.depth();
       const size_t current_data_depth = depth();
@@ -839,7 +845,7 @@ class stackable_logical_data
       context& from_ctx = from_node.ctx;
       context& to_ctx   = to_node.ctx;
 
-      auto &from_data_node = impl_state->data_nodes[current_data_depth];
+      auto& from_data_node = impl_state->data_nodes[current_data_depth];
 
       if (where == data_place::invalid)
       {
@@ -1109,11 +1115,12 @@ public:
     while (sctx.depth() > d)
     {
       // fprintf(stderr,
-      //         "AUTOMATIC PUSH of data %p (symbol=%s) with mode %s at depth %d\n",
+      //         "AUTOMATIC PUSH of data %p (symbol=%s) with mode %s at depth %ld\n",
       //         pimpl.get(),
       //         get_symbol().c_str(),
       //         access_mode_string(push_mode),
       //         d);
+
       pimpl->push(push_mode, data_place::current_device());
       d++;
     }
