@@ -631,22 +631,29 @@ class stackable_logical_data
       virtual void pop_before_finalize() const override
       {
         size_t sctx_depth = sctx.depth();
+        size_t data_depth = depth();
+        _CCCL_ASSERT(sctx_depth > 0, "internal error");
 
-        _CCCL_ASSERT(s.size() == sctx_depth || s.size() == sctx_depth + 1, "internal error");
+        auto &dnode = data_nodes.back();
+
+        _CCCL_ASSERT(data_depth == sctx_depth - 1 || data_depth == sctx_depth, "internal error");
 
         // Maybe the logical data was already destroyed if the stackable
         // logical data was destroyed before ctx pop, and that the data state
-        // was retained. In this case, we don't remove an entry from the vector
-        // of logical data.
-        if (s.size() == sctx_depth + 1)
+        // was retained. In this case, the data_node object was already
+        // destroyed and there is no need to do it here.
+        if (data_depth == sctx_depth)
         {
-          // Remove aliased logical data because this wasn't done yet
-          s.pop_back();
+          _CCCL_ASSERT(!dnode.frozen_ld.has_value(), "internal error");
+          data_nodes.pop_back();
         }
 
         // Unfreezing data will create a dependency which we need to track to
         // display a dependency between the context and its parent in DOT.
-        sctx.get_node(depth() + 1).ctx.get_dot()->ctx_add_output_id(frozen_s.back().unfreeze_fake_task_id());
+        // We do this operation before finalizing the context.
+        auto &parent_dnode = get_data_node(sctx_depth - 1);
+        _CCCL_ASSERT(parent_dnode.frozen_ld.has_value(), "internal error");
+        sctx.get_node(sctx_depth).ctx.get_dot()->ctx_add_output_id(parent_dnode.frozen_ld.value().unfreeze_fake_task_id());
       }
 
       // Unfreeze the logical data after the context has been finalized.
@@ -654,22 +661,22 @@ class stackable_logical_data
       {
         nvtx_range r("stackable_logical_data::pop_after_finalize");
 
-        frozen_s.back().unfreeze(finalize_prereqs);
-
-        // Remove frozen logical data
-        frozen_s.pop_back();
+        auto &dnode = data_nodes.back();
+        _CCCL_ASSERT(dnode.frozen_ld.has_value(), "internal error");
+        dnode.frozen_ld.value().unfreeze(finalize_prereqs);
+        dnode.frozen_ld.reset();
       }
 
       size_t depth() const
       {
-        return s.size() - 1 + offset_depth;
+        return data_nodes.size() - 1 + offset_depth;
       }
 
       int get_unique_id() const
       {
-        _CCCL_ASSERT(s.size() > 0, "cannot get the id of an uninitialized stackable_logical_data");
+        _CCCL_ASSERT(data_nodes.size() > 0, "cannot get the id of an uninitialized stackable_logical_data");
         // Get the ID of the base logical data
-        return s[0].get_unique_id();
+        return data_nodes[0].ld.get_unique_id();
       }
 
       bool is_read_only() const
@@ -677,16 +684,50 @@ class stackable_logical_data
         return read_only;
       }
 
+      class data_node {
+      public:
+          data_node(logical_data<T> ld) : ld(mv(ld)) {}
+
+          // Get the access mode used to freeze data
+          access_mode get_frozen_mode() const
+          {
+            _CCCL_ASSERT(frozen_ld.has_value(), "cannot query frozen mode : not frozen");
+            return frozen_ld.value().get_access_mode();
+          }
+
+          void set_symbol(const ::std::string &symbol)
+          {
+            ld.set_symbol(symbol);
+          }
+
+          logical_data<T> ld;
+
+          // Frozen counterpart of ld (if any)
+          ::std::optional<frozen_logical_data<T>> frozen_ld;
+      };
+
+      mutable ::std::vector<data_node> data_nodes;
+
+      auto &get_data_node(size_t level) {
+          return data_nodes[level - offset_depth];
+      }
+
+      const auto &get_data_node(size_t level) const {
+          return data_nodes[level - offset_depth];
+      }
+
+      void set_symbol(::std::string symbol_)
+      {
+        symbol = mv(symbol_);
+        data_nodes.back().set_symbol(symbol);
+      }
+
+
+
       mutable stackable_ctx sctx;
-      mutable ::std::vector<logical_data<T>> s;
 
-      // When stacking data, we freeze data from the parent nodes, these are
-      // their frozen counterparts. This vector has one item less than the
-      // vector of logical data.
-      mutable ::std::vector<frozen_logical_data<T>> frozen_s;
-
-      // If the logical data was created at a level that is not directly the root of the context, we remember this
-      // offset
+      // If the logical data was created at a level that is not directly the
+      // root of the context, we remember this offset
       size_t base_depth   = 0;
       size_t offset_depth = 0;
 
@@ -715,11 +756,8 @@ class stackable_logical_data
       // export at depth 1, not 0 ...)
       impl_state->offset_depth = can_export ? 0 : target_depth;
 
-      // fprintf(stderr, "stackable_logical_data::impl %p - base depth %ld offset depth %ld can export ? %d\n", this,
-      // impl_state->base_depth, impl_state->offset_depth, can_export);
-
       // Save the logical data at the base level
-      impl_state->s.push_back(ld);
+      impl_state->data_nodes.emplace_back(ld);
 
       // If necessary, import data recursively until we reach the target depth
       for (size_t current_depth = impl_state->offset_depth + 1; current_depth <= target_depth; current_depth++)
@@ -736,13 +774,12 @@ class stackable_logical_data
         return;
       }
 
-      auto& s       = impl_state->s;
-      size_t s_size = s.size();
+      size_t s_size = impl_state->data_nodes.size();
 
       // There is at least the logical data passed when we created the stackable_logical_data
       _CCCL_ASSERT(s_size > 0, "internal error");
 
-      s.pop_back();
+      impl_state->data_nodes.pop_back();
 
       // If there were at least 2 logical data before pop_back, there remains
       // at least one logical data, so we need to retain the impl.
@@ -773,11 +810,11 @@ class stackable_logical_data
 
     const auto& get_ld() const
     {
-      return impl_state->s.back();
+      return impl_state->data_nodes.back().ld;
     }
     auto& get_ld()
     {
-      return impl_state->s.back();
+      return impl_state->data_nodes.back().ld;
     }
 
     int get_unique_id() const
@@ -802,8 +839,7 @@ class stackable_logical_data
       context& from_ctx = from_node.ctx;
       context& to_ctx   = to_node.ctx;
 
-      auto& s        = impl_state->s;
-      auto& frozen_s = impl_state->frozen_s;
+      auto &from_data_node = impl_state->data_nodes[current_data_depth];
 
       if (where == data_place::invalid)
       {
@@ -813,21 +849,19 @@ class stackable_logical_data
 
       _CCCL_ASSERT(where != data_place::invalid, "Invalid data place");
 
-      // Freeze the logical data at the top
-      logical_data<T>& from_data = s.back();
+      // Freeze the logical data of the node
+      _CCCL_ASSERT(!from_data_node.frozen_ld.has_value(), "data node already frozen");
+      auto frozen_ld = from_ctx.freeze(from_data_node.ld, m, mv(where), false /* not a user freeze */);
 
-      frozen_logical_data<T> f = from_ctx.freeze(from_data, m, mv(where), false /* not a user freeze */);
-
-      // Save the frozen data in a separate vector
-      frozen_s.push_back(f);
+      // Save in the optional value (we keep using frozen_ld variable to avoid
+      // using frozen_ld.value() in the rest of this function)
+      from_data_node.frozen_ld = frozen_ld;
 
       // FAKE IMPORT : use the stream needed to support the (graph) ctx
       cudaStream_t stream = to_node.support_stream;
 
-      T inst  = f.get(where, stream);
+      T inst  = frozen_ld.get(where, stream);
       auto ld = to_ctx.logical_data(inst, where);
-
-      to_ctx.get_dot()->ctx_add_input_id(f.freeze_fake_task_id());
 
       if (!impl_state->symbol.empty())
       {
@@ -835,16 +869,22 @@ class stackable_logical_data
         ld.set_symbol(impl_state->symbol + "." + ::std::to_string(current_data_depth + 1 - impl_state->base_depth));
       }
 
+      // The inner context depends on the freeze operation, so we ensure DOT
+      // displays these dependencies from the freeze in the parent context to
+      // the child context itself.
+      to_ctx.get_dot()->ctx_add_input_id(frozen_ld.freeze_fake_task_id());
+
       // Keep track of data that were pushed in this context. Note that the ID
       // used is the ID of the logical data at this level. This will be used to
       // pop data automatically when nested contexts are popped.
       //
+      // XXX rework !!
       // This map gets destroyed when we pop the context
       sctx.track_pushed_data(ld.get_unique_id(), impl_state);
 
       // Save the logical data created to keep track of the data instance
       // obtained with the get method of the frozen_logical_data object.
-      s.push_back(mv(ld));
+      impl_state->data_nodes.emplace_back(mv(ld));
     }
 
     /* Pop one level down */
@@ -863,12 +903,9 @@ class stackable_logical_data
       return impl_state->depth();
     }
 
-    // TODO move to state
-    void set_symbol(::std::string symbol_)
+    void set_symbol(::std::string symbol)
     {
-      impl_state->symbol = mv(symbol_);
-      // TODO reflect base/offset depths
-      impl_state->s.back().set_symbol(impl_state->symbol + "." + ::std::to_string(depth() - impl_state->base_depth));
+      impl_state->set_symbol(mv(symbol));
     }
 
     auto get_symbol() const
@@ -908,11 +945,7 @@ class stackable_logical_data
     // TODO move to state
     access_mode get_frozen_mode(size_t d) const
     {
-      // fprintf(stderr, "get_frozen_mode d = %ld impl_state->offset_depth %ld, impl_state->frozen_s.size() %ld\n", d,
-      // impl_state->offset_depth, impl_state->frozen_s.size());
-      _CCCL_ASSERT(d >= impl_state->offset_depth, "invalid value");
-      _CCCL_ASSERT(d - impl_state->offset_depth < impl_state->frozen_s.size(), "invalid value");
-      return impl_state->frozen_s[d - impl_state->offset_depth].get_access_mode();
+      return impl_state->get_data_node(d).get_frozen_mode();
     }
 
   private:
