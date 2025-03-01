@@ -144,6 +144,12 @@ public:
         retained_data.push_back(mv(data_impl));
       }
 
+      void track_pushed_data(int data_id, ::std::shared_ptr<stackable_logical_data_impl_state_base> data_impl)
+      {
+        _CCCL_ASSERT(data_impl, "invalid value");
+        pushed_data[data_id] = mv(data_impl);
+      }
+
       // Where was the push() called ?
       _CUDA_VSTD::source_location callsite;
 
@@ -303,12 +309,6 @@ public:
     {
       _CCCL_ASSERT(level < nodes.size(), "invalid value");
       return nodes[level].ctx;
-    }
-
-    void track_pushed_data(int data_id, const ::std::shared_ptr<stackable_logical_data_impl_state_base> data_impl)
-    {
-      _CCCL_ASSERT(data_impl, "invalid value");
-      nodes[depth()].pushed_data[data_id] = data_impl;
     }
 
     void print_cache_stats_summary() const
@@ -581,11 +581,6 @@ public:
   auto& async_resources() const
   {
     return get_head_ctx().async_resources();
-  }
-
-  void track_pushed_data(int data_id, const ::std::shared_ptr<stackable_logical_data_impl_state_base> data_impl)
-  {
-    pimpl->track_pushed_data(data_id, data_impl);
   }
 
   auto dot_section(::std::string symbol) const
@@ -884,9 +879,8 @@ class stackable_logical_data
       // used is the ID of the logical data at this level. This will be used to
       // pop data automatically when nested contexts are popped.
       //
-      // XXX rework !!
       // This map gets destroyed when we pop the context
-      sctx.track_pushed_data(ld.get_unique_id(), impl_state);
+      to_node.track_pushed_data(ld.get_unique_id(), impl_state);
 
       // Save the logical data created to keep track of the data instance
       // obtained with the get method of the frozen_logical_data object.
