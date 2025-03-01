@@ -221,7 +221,7 @@ function build_preset() {
     source "./sccache_stats.sh" "start"
 
     pushd .. > /dev/null
-    run_command "$GROUP_NAME" cmake --build --preset=$PRESET -v
+    run_command "$GROUP_NAME" cmake --build --preset=$PRESET ${VERBOSE:+-v}
     status=$?
     popd > /dev/null
 
