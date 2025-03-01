@@ -248,7 +248,7 @@ public:
 
       // To create prereqs that depend on this finalize() stage, we get the
       // stream used in this context, and insert events in it.
-      cudaStream_t stream         = get_node(depth()).support_stream;
+      cudaStream_t stream         = current_node.support_stream;
       event_list finalize_prereqs = nodes[depth() - 1].ctx.stream_to_event_list(stream, "finalized");
 
       for (auto& [key, d_impl] : current_node.pushed_data)
@@ -630,18 +630,22 @@ class stackable_logical_data
       // logical data that was created in the nested context.
       virtual void pop_before_finalize() const override
       {
-        _CCCL_ASSERT(s.size() == sctx.depth() || s.size() == sctx.depth() + 1, "internal error");
+        size_t sctx_depth = sctx.depth();
+
+        _CCCL_ASSERT(s.size() == sctx_depth || s.size() == sctx_depth + 1, "internal error");
 
         // Maybe the logical data was already destroyed if the stackable
         // logical data was destroyed before ctx pop, and that the data state
         // was retained. In this case, we don't remove an entry from the vector
         // of logical data.
-        if (s.size() == sctx.depth() + 1)
+        if (s.size() == sctx_depth + 1)
         {
           // Remove aliased logical data because this wasn't done yet
           s.pop_back();
         }
 
+        // Unfreezing data will create a dependency which we need to track to
+        // display a dependency between the context and its parent in DOT.
         sctx.get_node(depth() + 1).ctx.get_dot()->ctx_add_output_id(frozen_s.back().unfreeze_fake_task_id());
       }
 
