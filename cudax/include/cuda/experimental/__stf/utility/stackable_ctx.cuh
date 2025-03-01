@@ -85,7 +85,7 @@ task_dep<T, reduce_op, initialize> to_task_dep(stackable_task_dep<T, reduce_op, 
  * @brief Base class with a virtual pop method to enable type erasure
  *
  * This is used to implement the automatic call to pop() on logical data when a
- * context level is popped.
+ * context node is popped.
  */
 class stackable_logical_data_impl_state_base
 {
@@ -108,9 +108,9 @@ public:
     /*
      * State of each nested context
      */
-    struct per_level
+    struct ctx_node
     {
-      per_level(context ctx, cudaStream_t support_stream, ::std::shared_ptr<stream_adapter> alloc_adapters)
+      ctx_node(context ctx, cudaStream_t support_stream, ::std::shared_ptr<stream_adapter> alloc_adapters)
           : ctx(mv(ctx))
           , support_stream(mv(support_stream))
           , alloc_adapters(mv(alloc_adapters))
@@ -118,19 +118,15 @@ public:
 
       context ctx;
       cudaStream_t support_stream;
-      // A wrapper to forward allocations from a level to the previous one (none is used at the root level)
+      // A wrapper to forward allocations from a node to its parent node (none is used at the root level)
       ::std::shared_ptr<stream_adapter> alloc_adapters;
 
-      // This map keeps track of the logical data that were pushed in this level
+      // This map keeps track of the logical data that were pushed in this ctx node
       // key: logical data's unique id
       ::std::unordered_map<int, ::std::shared_ptr<stackable_logical_data_impl_state_base>> pushed_data;
 
-      // If we want to keep the state of some logical data implementations until this level is popped
+      // If we want to keep the state of some logical data implementations until this node is popped
       ::std::vector<::std::shared_ptr<stackable_logical_data_impl_state_base>> retained_data;
-
-      // dot sections allow to structure the DOT output to better understand
-      // the hierarchy of computation
-      ::std::optional<reserved::dot::section::guard> dot_section;
 
       // Where was the push() called ?
       _CUDA_VSTD::source_location callsite;
@@ -143,7 +139,7 @@ public:
       const char* display_graph_stats_str = getenv("CUDASTF_DISPLAY_GRAPH_STATS");
       display_graph_stats                 = (display_graph_stats_str && atoi(display_graph_stats_str) != 0);
 
-      // Create the root level
+      // Create the root node
       push(_CUDA_VSTD::source_location::current());
     }
 
@@ -168,39 +164,36 @@ public:
       // fprintf(stderr, "stackable_ctx::push() depth() was %ld\n", depth());
 
       // These resources are not destroyed when we pop, so we create it only if needed
-      if (async_handles.size() < levels.size())
+      if (async_handles.size() < nodes.size())
       {
         async_handles.emplace_back();
       }
 
-      if (levels.size() == 0)
+      if (nodes.size() == 0)
       {
-        levels.emplace_back(stream_ctx(), nullptr, nullptr);
+        nodes.emplace_back(stream_ctx(), nullptr, nullptr);
       }
       else
       {
         // Get a stream from previous context (we haven't pushed the new one yet)
-        cudaStream_t stream = levels[depth()].ctx.pick_stream();
+        cudaStream_t stream = nodes[depth()].ctx.pick_stream();
 
         auto gctx = graph_ctx(stream, async_handles.back());
 
         // Useful for tools
-        gctx.set_parent_ctx(levels[depth()].ctx);
-        gctx.get_dot()->set_ctx_symbol("stacked_ctx_" + ::std::to_string(levels.size()));
+        gctx.set_parent_ctx(nodes[depth()].ctx);
+        gctx.get_dot()->set_ctx_symbol("stacked_ctx_" + ::std::to_string(nodes.size()));
 
         auto wrapper = ::std::make_shared<stream_adapter>(gctx, stream);
 
         gctx.update_uncached_allocator(wrapper->allocator());
 
-        levels.emplace_back(gctx, stream, wrapper);
+        nodes.emplace_back(gctx, stream, wrapper);
 
         if (display_graph_stats)
         {
-            levels.back().callsite = loc;
+          nodes.back().callsite = loc;
         }
-
-        // We add a new dot section which will be closed when the context is popped
-        //        levels.back().dot_section = levels[depth()-1].ctx.dot_section("stackable");
       }
     }
 
@@ -210,54 +203,48 @@ public:
     void pop()
     {
       // fprintf(stderr, "stackable_ctx::pop() depth() was %ld\n", depth());
-      _CCCL_ASSERT(levels.size() > 0, "Calling pop while no context was pushed");
+      _CCCL_ASSERT(nodes.size() > 0, "Calling pop while no context was pushed");
 
-      auto& current_level = levels.back();
+      auto& current_node = nodes.back();
 
       // Automatically pop data if needed
-      for (auto& [key, d_impl] : current_level.pushed_data)
+      for (auto& [key, d_impl] : current_node.pushed_data)
       {
         _CCCL_ASSERT(d_impl, "invalid value");
         d_impl->pop_before_finalize();
       }
 
       // Ensure everything is finished in the context
-      current_level.ctx.finalize();
+      current_node.ctx.finalize();
 
       if (display_graph_stats)
       {
-        executable_graph_cache_stat* stat = current_level.ctx.graph_get_cache_stat();
+        executable_graph_cache_stat* stat = current_node.ctx.graph_get_cache_stat();
         _CCCL_ASSERT(stat, "");
 
-        const auto& loc = current_level.callsite;
+        const auto& loc = current_node.callsite;
         stats_map[loc][::std::make_pair(stat->nnodes, stat->nedges)] += *stat;
       }
 
       // To create prereqs that depend on this finalize() stage, we get the
       // stream used in this context, and insert events in it.
       cudaStream_t stream         = get_stream(depth());
-      event_list finalize_prereqs = levels[depth() - 1].ctx.stream_to_event_list(stream, "finalized");
+      event_list finalize_prereqs = nodes[depth() - 1].ctx.stream_to_event_list(stream, "finalized");
 
-      for (auto& [key, d_impl] : current_level.pushed_data)
+      for (auto& [key, d_impl] : current_node.pushed_data)
       {
         _CCCL_ASSERT(d_impl, "invalid value");
-        // false indicates there is no need to update the pushed_data map to
-        // automatically pop data when the context is popped because we are
-        // already doing this now.
         d_impl->pop_after_finalize(finalize_prereqs);
       }
 
       // Destroy the resources used in the wrapper allocator (if any)
-      if (current_level.alloc_adapters)
+      if (current_node.alloc_adapters)
       {
-        current_level.alloc_adapters->clear();
+        current_node.alloc_adapters->clear();
       }
 
-      //      _CCCL_ASSERT(current_level.dot_section.has_value(), "invalid dot_section");
-      //      current_level.dot_section.value().end();
-
-      // Destroy the current level state
-      levels.pop_back();
+      // Destroy the current node
+      nodes.pop_back();
     }
 
     /**
@@ -265,43 +252,43 @@ public:
      */
     size_t depth() const
     {
-      return levels.size() - 1;
+      return nodes.size() - 1;
     }
 
     /**
-     * @brief Returns a reference to the context at a specific level
+     * @brief Returns a reference to the context for a specific ctx node
      */
     auto& get_ctx(size_t level)
     {
-      _CCCL_ASSERT(level < levels.size(), "invalid value");
-      return levels[level].ctx;
+      _CCCL_ASSERT(level < nodes.size(), "invalid value");
+      return nodes[level].ctx;
     }
 
     /**
-     * @brief Returns a const reference to the context at a specific level
+     * @brief Returns a const reference to the context for a specific ctx node
      */
     const auto& get_ctx(size_t level) const
     {
-      _CCCL_ASSERT(level < levels.size(), "invalid value");
-      return levels[level].ctx;
+      _CCCL_ASSERT(level < nodes.size(), "invalid value");
+      return nodes[level].ctx;
     }
 
     cudaStream_t get_stream(size_t level) const
     {
-      _CCCL_ASSERT(level < levels.size(), "invalid value");
-      return levels[level].support_stream;
+      _CCCL_ASSERT(level < nodes.size(), "invalid value");
+      return nodes[level].support_stream;
     }
 
     void track_pushed_data(int data_id, const ::std::shared_ptr<stackable_logical_data_impl_state_base> data_impl)
     {
       _CCCL_ASSERT(data_impl, "invalid value");
-      levels[depth()].pushed_data[data_id] = data_impl;
+      nodes[depth()].pushed_data[data_id] = data_impl;
     }
 
     void retain_data(size_t level, ::std::shared_ptr<stackable_logical_data_impl_state_base> data_impl)
     {
-      _CCCL_ASSERT(level < levels.size(), "invalid value");
-      levels[level].retained_data.push_back(mv(data_impl));
+      _CCCL_ASSERT(level < nodes.size(), "invalid value");
+      nodes[level].retained_data.push_back(mv(data_impl));
     }
 
     void print_cache_stats_summary() const
@@ -330,11 +317,11 @@ public:
     }
 
   private:
-    // State for each nested level
-    ::std::vector<per_level> levels;
+    // State for each node
+    ::std::vector<ctx_node> nodes;
 
     // Handles to retain some asynchronous states, we maintain it separately
-    // from levels because we keep its entries even when we pop a level
+    // from nodes because we keep its entries even when we pop a level
     ::std::vector<async_resources_handle> async_handles;
 
     bool display_graph_stats;
@@ -609,7 +596,7 @@ public:
   void finalize()
   {
     // There must be only one level left
-    _CCCL_ASSERT(depth() == 0, "All nested levels must have been popped");
+    _CCCL_ASSERT(depth() == 0, "All nested contexts must have been popped");
 
     get_ctx(depth()).finalize();
   }
@@ -684,7 +671,7 @@ class stackable_logical_data
       mutable stackable_ctx sctx;
       mutable ::std::vector<logical_data<T>> s;
 
-      // When stacking data, we freeze data from the lower levels, these are
+      // When stacking data, we freeze data from the parent nodes, these are
       // their frozen counterparts. This vector has one item less than the
       // vector of logical data.
       mutable ::std::vector<frozen_logical_data<T>> frozen_s;
