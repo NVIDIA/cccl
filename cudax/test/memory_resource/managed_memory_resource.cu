@@ -84,7 +84,9 @@ TEST_CASE("managed_memory_resource allocation", "[memory_resource]")
     stream.wait();
     ensure_managed_ptr(ptr);
 
-    res.deallocate_async(ptr, 42, stream);
+    // deallocate_async on managed not available
+    // res.deallocate_async(ptr, 42, stream);
+    res.deallocate(ptr, 42);
   }
 
   { // allocate_async / deallocate_async with alignment
@@ -94,7 +96,9 @@ TEST_CASE("managed_memory_resource allocation", "[memory_resource]")
     stream.wait();
     ensure_managed_ptr(ptr);
 
-    res.deallocate_async(ptr, 42, 4, stream);
+    // deallocate_async on managed not available
+    // res.deallocate_async(ptr, 42, 4, stream);
+    res.deallocate(ptr, 42, 4);
   }
 
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
