@@ -592,7 +592,7 @@ The kernels in the dispatch layer shouldn't contain a lot of code.
 Usually, the functionality is extracted into the agent layer.
 All the kernel does is derive the proper policy type,
 unwrap the policy to initialize the agent and call one of its ``Consume`` / ``Process`` functions.
-Agents are frequently reused by unrelated device-scope algorithms.
+Agents hold kernel bodies and are frequently reused by unrelated device-scope algorithms.
 
 .. _cub-developer-policies:
 
