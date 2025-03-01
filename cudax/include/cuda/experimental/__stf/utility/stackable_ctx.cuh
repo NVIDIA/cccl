@@ -139,6 +139,10 @@ public:
   public:
     impl()
     {
+      // Stats are disabled by default, unless a non null value is passed to this env variable
+      const char* display_graph_stats_str = getenv("CUDASTF_DISPLAY_GRAPH_STATS");
+      display_graph_stats                 = (display_graph_stats_str && atoi(display_graph_stats_str) != 0);
+
       // Create the root level
       push(_CUDA_VSTD::source_location::current());
     }
@@ -218,13 +222,14 @@ public:
       // Ensure everything is finished in the context
       current_level.ctx.finalize();
 
-      executable_graph_cache_stat* stat = current_level.ctx.graph_get_cache_stat();
+      if (display_graph_stats)
+      {
+        executable_graph_cache_stat* stat = current_level.ctx.graph_get_cache_stat();
+        _CCCL_ASSERT(stat, "");
 
-      _CCCL_ASSERT(stat, "");
-
-      const auto& loc = current_level.callsite;
-
-      stats_map[loc][::std::make_pair(stat->nnodes, stat->nedges)] += *stat;
+        const auto& loc = current_level.callsite;
+        stats_map[loc][::std::make_pair(stat->nnodes, stat->nedges)] += *stat;
+      }
 
       // To create prereqs that depend on this finalize() stage, we get the
       // stream used in this context, and insert events in it.
@@ -299,7 +304,7 @@ public:
 
     void print_cache_stats_summary() const
     {
-      if (stats_map.size() == 0)
+      if (!display_graph_stats || stats_map.size() == 0)
       {
         return;
       }
@@ -329,6 +334,8 @@ public:
     // Handles to retain some asynchronous states, we maintain it separately
     // from levels because we keep its entries even when we pop a level
     ::std::vector<async_resources_handle> async_handles;
+
+    bool display_graph_stats;
 
     // Create a map indexed by source locations, the value stored are a map of stats indexed per (nnodes,nedges) pairs
     using stored_type_t =
