@@ -125,11 +125,31 @@ public:
       // key: logical data's unique id
       ::std::unordered_map<int, ::std::shared_ptr<stackable_logical_data_impl_state_base>> pushed_data;
 
-      // If we want to keep the state of some logical data implementations until this node is popped
-      ::std::vector<::std::shared_ptr<stackable_logical_data_impl_state_base>> retained_data;
+      // To avoid prematurely destroying data created in a nested context, we need to hold a reference to them
+      //
+      // This happens for example in this case where we want to defer the release
+      // of the resources of "a" until we call pop() because this is when we would
+      // have submitted the CUDA graph where "a" is used. Destroying it earlier
+      // would mean we destroy that memory before the graph is even launched.
+      //
+      // ctx.push()
+      // {
+      //    auto a = ctx.logical_data(...);
+      //    ... use a ...
+      // }
+      // ctx.pop()
+      void retain_data(::std::shared_ptr<stackable_logical_data_impl_state_base> data_impl)
+      {
+        // This keeps a reference to the shared_ptr until retained_data is destroyed
+        retained_data.push_back(mv(data_impl));
+      }
 
       // Where was the push() called ?
       _CUDA_VSTD::source_location callsite;
+
+    private:
+      // If we want to keep the state of some logical data implementations until this node is popped
+      ::std::vector<::std::shared_ptr<stackable_logical_data_impl_state_base>> retained_data;
     };
 
   public:
@@ -255,18 +275,17 @@ public:
       return nodes.size() - 1;
     }
 
-    ctx_node &get_node(size_t level)
+    ctx_node& get_node(size_t level)
     {
-        _CCCL_ASSERT(level < nodes.size(), "invalid value");
-        return nodes[level];
+      _CCCL_ASSERT(level < nodes.size(), "invalid value");
+      return nodes[level];
     }
 
-    const ctx_node &get_node(size_t level) const
+    const ctx_node& get_node(size_t level) const
     {
-        _CCCL_ASSERT(level < nodes.size(), "invalid value");
-        return nodes[level];
+      _CCCL_ASSERT(level < nodes.size(), "invalid value");
+      return nodes[level];
     }
-
 
     /**
      * @brief Returns a reference to the context for a specific ctx node
@@ -290,12 +309,6 @@ public:
     {
       _CCCL_ASSERT(data_impl, "invalid value");
       nodes[depth()].pushed_data[data_id] = data_impl;
-    }
-
-    void retain_data(size_t level, ::std::shared_ptr<stackable_logical_data_impl_state_base> data_impl)
-    {
-      _CCCL_ASSERT(level < nodes.size(), "invalid value");
-      nodes[level].retained_data.push_back(mv(data_impl));
     }
 
     void print_cache_stats_summary() const
@@ -357,14 +370,24 @@ public:
     return pimpl->get_node(level);
   }
 
-  const auto& get_ctx(size_t level) const
+  const auto& get_root_ctx() const
   {
-    return pimpl->get_ctx(level);
+    return pimpl->get_ctx(0);
   }
 
-  auto& get_ctx(size_t level)
+  auto& get_root_ctx()
   {
-    return pimpl->get_ctx(level);
+    return pimpl->get_ctx(0);
+  }
+
+  const auto& get_head_ctx() const
+  {
+    return pimpl->get_ctx(depth());
+  }
+
+  auto& get_head_ctx()
+  {
+    return pimpl->get_ctx(depth());
   }
 
   void push(const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
@@ -386,28 +409,28 @@ public:
   auto logical_data(shape_of<T> s)
   {
     // fprintf(stderr, "initialize from shape.\n");
-    return stackable_logical_data(*this, depth(), true, get_ctx(0).logical_data(mv(s)), true);
+    return stackable_logical_data(*this, depth(), true, get_root_ctx().logical_data(mv(s)), true);
   }
 
   template <typename T, typename... Sizes>
   auto logical_data(size_t elements, Sizes... more_sizes)
   {
     return stackable_logical_data(
-      *this, depth(), true, get_ctx(0).template logical_data<T>(elements, more_sizes...), true);
+      *this, depth(), true, get_root_ctx().template logical_data<T>(elements, more_sizes...), true);
   }
 
   template <typename T>
   auto logical_data_no_export(shape_of<T> s)
   {
     // fprintf(stderr, "initialize from shape.\n");
-    return stackable_logical_data(*this, depth(), true, get_ctx(depth()).logical_data(mv(s)), false);
+    return stackable_logical_data(*this, depth(), true, get_head_ctx().logical_data(mv(s)), false);
   }
 
   template <typename T, typename... Sizes>
   auto logical_data_no_export(size_t elements, Sizes... more_sizes)
   {
     return stackable_logical_data(
-      *this, depth(), true, get_ctx(depth()).template logical_data<T>(elements, more_sizes...), false);
+      *this, depth(), true, get_head_ctx().template logical_data<T>(elements, more_sizes...), false);
   }
 
   stackable_logical_data<void_interface> logical_token();
@@ -417,27 +440,7 @@ public:
   {
     // fprintf(stderr, "initialize from value.\n");
     return stackable_logical_data(
-      *this, depth(), false, get_ctx(depth()).logical_data(::std::forward<Pack>(pack)...), true);
-  }
-
-  // To avoid prematurely destroying data created in a nested context, we need to hold a reference to them
-  //
-  // This happens for example in this case where we want to defer the release
-  // of the resources of "a" until we call pop() because this is when we would
-  // have submitted the CUDA graph where "a" is used. Destroying it earlier
-  // would mean we destroy that memory before the graph is even launched.
-  //
-  // ctx.push()
-  // {
-  //    auto a = ctx.logical_data(...);
-  //    ... use a ...
-  // }
-  // ctx.pop()
-  void retain_data(size_t level, ::std::shared_ptr<stackable_logical_data_impl_state_base> data_impl)
-  {
-    _CCCL_ASSERT(pimpl, "uninitialized context");
-    _CCCL_ASSERT(data_impl, "invalid value");
-    pimpl->retain_data(level, mv(data_impl));
+      *this, depth(), false, get_head_ctx().logical_data(::std::forward<Pack>(pack)...), true);
   }
 
   // Helper function to process a single argument
@@ -525,7 +528,7 @@ public:
   auto task(Pack&&... pack)
   {
     process_pack(pack...);
-    return get_ctx(depth()).task(reserved::to_task_dep(::std::forward<Pack>(pack))...);
+    return get_head_ctx().task(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 
 #if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
@@ -533,21 +536,21 @@ public:
   auto parallel_for(Pack&&... pack)
   {
     process_pack(pack...);
-    return get_ctx(depth()).parallel_for(reserved::to_task_dep(::std::forward<Pack>(pack))...);
+    return get_head_ctx().parallel_for(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 
   template <typename... Pack>
   auto cuda_kernel(Pack&&... pack)
   {
     process_pack(pack...);
-    return get_ctx(depth()).cuda_kernel(reserved::to_task_dep(::std::forward<Pack>(pack))...);
+    return get_head_ctx().cuda_kernel(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 
   template <typename... Pack>
   auto cuda_kernel_chain(Pack&&... pack)
   {
     process_pack(pack...);
-    return get_ctx(depth()).cuda_kernel_chain(reserved::to_task_dep(::std::forward<Pack>(pack))...);
+    return get_head_ctx().cuda_kernel_chain(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 #endif
 
@@ -555,29 +558,29 @@ public:
   auto host_launch(Pack&&... pack)
   {
     process_pack(pack...);
-    return get_ctx(depth()).host_launch(reserved::to_task_dep(::std::forward<Pack>(pack))...);
+    return get_head_ctx().host_launch(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 
   auto task_fence()
   {
-    return get_ctx(depth()).task_fence();
+    return get_head_ctx().task_fence();
   }
 
   template <typename... Pack>
   void push_affinity(Pack&&... pack) const
   {
     process_pack(pack...);
-    get_ctx(depth()).push_affinity(reserved::to_task_dep(::std::forward<Pack>(pack))...);
+    get_head_ctx().push_affinity(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 
   void pop_affinity() const
   {
-    get_ctx(depth()).pop_affinity();
+    get_head_ctx().pop_affinity();
   }
 
   auto& async_resources() const
   {
-    return get_ctx(depth()).async_resources();
+    return get_head_ctx().async_resources();
   }
 
   void track_pushed_data(int data_id, const ::std::shared_ptr<stackable_logical_data_impl_state_base> data_impl)
@@ -587,12 +590,12 @@ public:
 
   auto dot_section(::std::string symbol) const
   {
-    return get_ctx(depth()).dot_section(mv(symbol));
+    return get_head_ctx().dot_section(mv(symbol));
   }
 
   size_t task_count() const
   {
-    return get_ctx(depth()).task_count();
+    return get_head_ctx().task_count();
   }
 
   void finalize()
@@ -600,7 +603,7 @@ public:
     // There must be only one level left
     _CCCL_ASSERT(depth() == 0, "All nested contexts must have been popped");
 
-    get_ctx(depth()).finalize();
+    get_head_ctx().finalize();
   }
 
 public:
@@ -639,7 +642,7 @@ class stackable_logical_data
           s.pop_back();
         }
 
-        sctx.get_ctx(depth() + 1).get_dot()->ctx_add_output_id(frozen_s.back().unfreeze_fake_task_id());
+        sctx.get_node(depth() + 1).ctx.get_dot()->ctx_add_output_id(frozen_s.back().unfreeze_fake_task_id());
       }
 
       // Unfreeze the logical data after the context has been finalized.
@@ -749,7 +752,7 @@ class stackable_logical_data
           // If that was an exportable data, offset_depth = 0, it can be deleted
           // when the first stacked level is popped (ie. when the CUDA graph has
           // been executed)
-          sctx.retain_data(offset_depth + 1, mv(impl_state));
+          sctx.get_node(offset_depth + 1).retain_data(mv(impl_state));
         }
       }
 
@@ -789,8 +792,10 @@ class stackable_logical_data
       // (current_data_depth + 1) is the data depth after pushing
       _CCCL_ASSERT(ctx_depth >= current_data_depth + 1, "Invalid depth");
 
-      context& from_ctx = sctx.get_ctx(current_data_depth);
-      auto &to_node = sctx.get_node(current_data_depth + 1);
+      auto& from_node = sctx.get_node(current_data_depth);
+      auto& to_node   = sctx.get_node(current_data_depth + 1);
+
+      context& from_ctx = from_node.ctx;
       context& to_ctx   = to_node.ctx;
 
       auto& s        = impl_state->s;
@@ -950,12 +955,6 @@ public:
   void push(access_mode m, data_place where = data_place::invalid) const
   {
     pimpl->push(m, mv(where));
-
-#if 0
-    // Keep track of data that were pushed in this context. Note that the ID
-    // used is the ID of the logical data at this level.
-    pimpl->get_sctx().track_pushed_data(get_ld().get_unique_id(), pimpl.get());
-#endif
   }
 
   // Helpers
@@ -1091,7 +1090,7 @@ private:
 
 inline stackable_logical_data<void_interface> stackable_ctx::logical_token()
 {
-  return stackable_logical_data<void_interface>(*this, depth(), true, get_ctx(0).logical_token(), true);
+  return stackable_logical_data<void_interface>(*this, depth(), true, get_root_ctx().logical_token(), true);
 }
 
 /**
