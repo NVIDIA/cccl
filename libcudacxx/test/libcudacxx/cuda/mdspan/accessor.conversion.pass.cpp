@@ -239,49 +239,53 @@ __host__ __device__ void test_host_device_accessor_conversions()
 {
   using user1::AccessorA;
   using user1::AccessorB;
+  using WrapperA      = Wrapper<AccessorA<float>>;
+  using WrapperAconst = Wrapper<AccessorA<const float>>;
+  using WrapperB      = Wrapper<AccessorB<float>>;
+  using WrapperBconst = Wrapper<AccessorB<const float>>;
   {
     // Test CTAD with wrapping constructor
-    Wrapper wrapper_acc1(AccessorA<float>{});
-    static_assert(cuda::std::is_same_v<decltype(wrapper_acc1), Wrapper<AccessorA<float>>>);
-    Wrapper wrapper_acc_const1(AccessorA<const float>{});
-    static_assert(cuda::std::is_same_v<decltype(wrapper_acc_const1), Wrapper<AccessorA<const float>>>);
+    WrapperA wrapper_acc1(AccessorA<float>{});
+    static_assert(cuda::std::is_same_v<decltype(wrapper_acc1), WrapperA>);
+    WrapperAconst wrapper_acc_const1(AccessorA<const float>{});
+    static_assert(cuda::std::is_same_v<decltype(wrapper_acc_const1), WrapperAconst>);
 
     // Test CTAD with copy constructor
-    Wrapper wrapper_acc2{wrapper_acc1};
+    WrapperA wrapper_acc2{wrapper_acc1};
     static_assert(cuda::std::is_same_v<decltype(wrapper_acc2), decltype(wrapper_acc1)>);
-    Wrapper wrapper_acc_const2{wrapper_acc_const1};
+    WrapperAconst wrapper_acc_const2{wrapper_acc_const1};
     static_assert(cuda::std::is_same_v<decltype(wrapper_acc_const2), decltype(wrapper_acc_const1)>);
 
     // Test converting constructor: Wrapper<AccessorA<const T>>(AccessorA<T>)
-    Wrapper<AccessorA<const float>> wrapper_acc_const3{wrapper_acc1};
+    WrapperAconst wrapper_acc_const3{wrapper_acc1};
     unused(wrapper_acc_const3);
     // Test implicit conversion: Wrapper<AccessorA<T>> -> Wrapper<AccessorA<const T>>
-    auto f = [](const Wrapper<AccessorA<float>>& wrapper_acc1) -> Wrapper<AccessorA<const float>> {
+    auto f = [](const WrapperA& wrapper_acc1) -> WrapperAconst {
       return wrapper_acc1;
     };
-    unused(f(Wrapper<AccessorA<float>>{}));
+    unused(f(WrapperA{}));
   }
   {
     // Test (explicit) converting constructor: Wrapper<AccessorB<T>>(AccessorA<T>)
-    Wrapper<AccessorB<float>> wrapper_acc3{Wrapper<AccessorA<float>>{}};
+    WrapperB wrapper_acc3{WrapperA{}};
     // Test implicit conversion from AccessorB<T> to AccessorA<T> (type erasure)
-    auto f1 = [](const Wrapper<AccessorB<float>>& wrapper_acc1) -> Wrapper<AccessorA<float>> {
+    auto f1 = [](const WrapperB& wrapper_acc1) -> WrapperA {
       return wrapper_acc1;
     };
     unused(f1(wrapper_acc3));
 
     // Test implicit conversion from AccessorB<T> to AccessorA<const T> (type erasure)
-    auto f2 = [](const Wrapper<AccessorB<float>>& wrapper_acc1) -> Wrapper<AccessorA<const float>> {
+    auto f2 = [](const WrapperB& wrapper_acc1) -> WrapperAconst {
       return wrapper_acc1;
     };
     unused(f2(wrapper_acc3));
 
     // Test that implicit conversion from AccessorA<T> to AccessorB<T> is forbidden
-    auto f3 = [](const Wrapper<AccessorA<float>>& wrapper_acc1) -> Wrapper<AccessorB<float>> {
+    auto f3 = [](const WrapperA& wrapper_acc1) -> WrapperB {
       // return wrapper_acc1; // rightfully does not compile
-      return Wrapper<AccessorB<float>>{wrapper_acc1};
+      return WrapperB{wrapper_acc1};
     };
-    unused(f3(Wrapper<AccessorA<float>>{}));
+    unused(f3(WrapperA{}));
   }
 }
 
@@ -292,26 +296,30 @@ __host__ __device__ void test_conversion()
   using user1::AccessorB;
   using user2::AccessorC;
   using user2::AccessorD;
+  using WrapperA = Wrapper<AccessorA<float>>;
+  using WrapperB = Wrapper<AccessorB<float>>;
+  using WrapperC = Wrapper<AccessorC<float>>;
+  using WrapperD = Wrapper<AccessorD<float>>;
   {
     // Test explicit and implicit conversion from Wrapper<AccessorC<T>> to Wrapper<AccessorA<T>>.
     // This works because Wrapper<AccessorC<T>> publicly inherits from AccessorC<T>,
     // so it inherits AccessorC<T>'s conversion operators.
-    Wrapper<AccessorA<float>> wrapper_acc1{Wrapper<AccessorC<float>>{}};
-    auto f1 = [](const Wrapper<AccessorC<float>>& wrapper_acc1) -> Wrapper<AccessorA<float>> {
+    WrapperA wrapper_acc1{WrapperC{}};
+    auto f1 = [](const WrapperA& wrapper_acc1) -> WrapperA {
       return wrapper_acc1;
     };
-    unused(f1(Wrapper<AccessorC<float>>{}));
+    unused(f1(WrapperC{}));
   }
   {
     // Test explicit conversion from Wrapper<AccessorD<T>> to Wrapper<AccessorB<T>>.
     // This works because Wrapper<AccessorD<T>> publicly inherits from AccessorD<T>,
     // so it inherits AccessorD<T>'s conversion operators.
-    Wrapper<AccessorB<float>> wrapper_acc1{Wrapper<AccessorD<float>>{}};
-    auto f1 = [](const Wrapper<AccessorD<float>>& /*w*/) -> Wrapper<AccessorB<float>> {
+    WrapperB wrapper_acc1{WrapperD{}};
+    auto f1 = [](const WrapperD& /*w*/) -> WrapperB {
       // return w; // rightfully does not compile
-      return Wrapper<AccessorB<float>>{};
+      return WrapperB{};
     };
-    unused(f1(Wrapper<AccessorD<float>>{}));
+    unused(f1(WrapperD{}));
   }
 }
 
@@ -320,9 +328,11 @@ __host__ __device__ void test_conversion()
 template <template <class> class Wrapper>
 __host__ __device__ void test_aligned_to_default()
 {
-  Wrapper wrapper_align_acc{cuda::std::aligned_accessor<float, 16>{}};
-  Wrapper<cuda::std::default_accessor<float>> wrapper_default_acc{wrapper_align_acc};
-  auto f = [](const Wrapper<cuda::std::aligned_accessor<float, 16>>& w) -> Wrapper<cuda::std::default_accessor<float>> {
+  using WrapperDefault = Wrapper<cuda::std::default_accessor<float>>;
+  using WrapperAligned = Wrapper<cuda::std::aligned_accessor<float, 16>>;
+  WrapperAligned wrapper_align_acc{cuda::std::aligned_accessor<float, 16>{}};
+  WrapperDefault wrapper_default_acc{wrapper_align_acc};
+  auto f = [](const WrapperAligned& w) -> WrapperDefault {
     return w;
   };
   unused(f(wrapper_default_acc));
@@ -333,11 +343,13 @@ __host__ __device__ void test_aligned_to_default()
 template <template <class> class Wrapper>
 __host__ __device__ void test_default_to_aligned()
 {
-  Wrapper wrapper_default_acc{cuda::std::default_accessor<float>{}};
-  Wrapper<cuda::std::aligned_accessor<float, 16>> wrapper_aligned_acc{wrapper_default_acc};
-  auto f = [](const Wrapper<cuda::std::default_accessor<float>>& w) -> Wrapper<cuda::std::aligned_accessor<float, 16>> {
+  using WrapperDefault = Wrapper<cuda::std::default_accessor<float>>;
+  using WrapperAligned = Wrapper<cuda::std::aligned_accessor<float, 16>>;
+  WrapperDefault wrapper_default_acc{cuda::std::default_accessor<float>{}};
+  WrapperAligned wrapper_aligned_acc{wrapper_default_acc};
+  auto f = [](const WrapperDefault& w) -> WrapperAligned {
     // return w; // rightfully does not compile
-    return Wrapper<cuda::std::aligned_accessor<float, 16>>{w};
+    return WrapperAligned{w};
   };
   unused(wrapper_aligned_acc);
   unused(f(wrapper_default_acc));
