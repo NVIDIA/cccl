@@ -195,7 +195,10 @@ public:
 
         levels.emplace_back(gctx, stream, wrapper);
 
-        levels.back().callsite = loc;
+        if (display_graph_stats)
+        {
+            levels.back().callsite = loc;
+        }
 
         // We add a new dot section which will be closed when the context is popped
         //        levels.back().dot_section = levels[depth()-1].ctx.dot_section("stackable");
