@@ -127,7 +127,7 @@ C2H_TEST("DeviceMerge::MergeKeys large key types", "[merge][device]", c2h::type_
     });
 }
 
-C2H_TEST("DeviceMerge::MergeKeys works for large number of items", "[merge][device]")
+C2H_TEST("DeviceMerge::MergeKeys works for large number of items", "[merge][device][skip-cs-racecheck]")
 
 try
 {
@@ -316,7 +316,7 @@ C2H_TEST("DeviceMerge::MergePairs input sizes", "[merge][device]")
 }
 
 // this test exceeds 4GiB of memory and the range of 32-bit integers
-C2H_TEST("DeviceMerge::MergePairs really large input", "[merge][device]")
+C2H_TEST("DeviceMerge::MergePairs really large input", "[merge][device][skip-cs-racecheck]")
 try
 {
   using key_t     = char;
