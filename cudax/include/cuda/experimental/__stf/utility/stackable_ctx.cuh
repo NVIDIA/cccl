@@ -190,7 +190,6 @@ public:
 
         auto wrapper = ::std::make_shared<stream_adapter>(gctx, stream);
 
-        // FIXME : issue with the deinit phase
         gctx.update_uncached_allocator(wrapper->allocator());
 
         levels.emplace_back(gctx, stream, wrapper);
@@ -626,7 +625,7 @@ class stackable_logical_data
   {
     // We separate the impl and the state so that if the stackable logical data
     // gets destroyed before the stackable context gets destroyed, we can save
-    // this state in the context, in a vector of retained states
+    // this state in the context, in a vector of type-erased retained states
     class state : public stackable_logical_data_impl_state_base
     {
     public:
@@ -806,17 +805,6 @@ class stackable_logical_data
 
       auto& s        = impl_state->s;
       auto& frozen_s = impl_state->frozen_s;
-
-      // fprintf(stderr,
-      //         "pushing data (%p) %ld[%s,%p]->%ld[%s,%p] (ctx depth %ld)\n",
-      //         this,
-      //         current_data_depth,
-      //         from_ctx.to_string().c_str(),
-      //         &from_ctx,
-      //         current_data_depth + 1,
-      //         to_ctx.to_string().c_str(),
-      //         &to_ctx,
-      //         ctx_depth);
 
       if (where == data_place::invalid)
       {
