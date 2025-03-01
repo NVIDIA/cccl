@@ -21,26 +21,22 @@
 #  pragma system_header
 #endif // no system header
 
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  include <cuda_runtime.h>
+#  include <cuda_runtime_api.h>
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
-#  if _CCCL_CUDA_COMPILER(CLANG)
-#    include <cuda_runtime.h>
-#    include <cuda_runtime_api.h>
-#  endif // _CCCL_CUDA_COMPILER(CLANG)
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cuda/api_wrapper.h>
+#include <cuda/std/cstddef>
+#include <cuda/stream_ref>
 
-#  include <cuda/__memory_resource/get_property.h>
-#  include <cuda/__memory_resource/properties.h>
-#  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__cuda/api_wrapper.h>
-#  include <cuda/std/__new_>
-#  include <cuda/std/cstddef>
-#  include <cuda/stream_ref>
-
-#  include <cuda/experimental/__device/device_ref.cuh>
-#  include <cuda/experimental/__memory_resource/any_resource.cuh>
-#  include <cuda/experimental/__memory_resource/device_memory_pool.cuh>
-#  include <cuda/experimental/__memory_resource/properties.cuh>
-#  include <cuda/experimental/__stream/internal_streams.cuh>
-#  include <cuda/experimental/__stream/stream.cuh>
+#include <cuda/experimental/__device/device_ref.cuh>
+#include <cuda/experimental/__memory_resource/any_resource.cuh>
+#include <cuda/experimental/__memory_resource/memory_pool_base.cuh>
+#include <cuda/experimental/__memory_resource/properties.cuh>
+#include <cuda/experimental/__stream/internal_streams.cuh>
+#include <cuda/experimental/__stream/stream.cuh>
 
 namespace cuda::experimental
 {
@@ -241,17 +237,17 @@ public:
     return __pool_ == __rhs.__pool_;
   }
 
-  #if _CCCL_STD_VER >= 2017
+#if _CCCL_STD_VER >= 2017
   //! @brief Inequality comparison with another __memory_resource_base.
   //! @returns true if underlying \c cudaMemPool_t are not equal.
   _CCCL_NODISCARD bool operator!=(__memory_resource_base const& __rhs) const noexcept
   {
     return __pool_ != __rhs.__pool_;
   }
-  #endif // _CCCL_STD_VER >= 2017
+#endif // _CCCL_STD_VER >= 2017
 
-//TODO Should this be declared in general for two things that satisfy resource concept?
-#    if _CCCL_STD_VER >= 2020
+// TODO Should this be declared in general for two things that satisfy resource concept?
+#if _CCCL_STD_VER >= 2020
   //! @brief Equality comparison between a \c __memory_resource_base and another resource.
   //! @param __rhs The resource to compare to.
   //! @returns If the underlying types are equality comparable, returns the result of equality comparison of both
@@ -262,9 +258,10 @@ public:
   {
     return false;
   }
-#    else // ^^^ C++20 ^^^ / vvv C++17
+#else // ^^^ C++20 ^^^ / vvv C++17
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator==([[maybe_unused]] __memory_resource_base const& __lhs, [[maybe_unused]] _Resource const& __rhs) noexcept
+  _CCCL_NODISCARD_FRIEND auto
+  operator==([[maybe_unused]] __memory_resource_base const& __lhs, [[maybe_unused]] _Resource const& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)(
       _CUDA_VMR::__different_resource<__memory_resource_base, _Resource>&& __non_polymorphic<_Resource>)
   {
@@ -272,7 +269,8 @@ public:
   }
 
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator==([[maybe_unused]] _Resource const& __lhs, [[maybe_unused]] __memory_resource_base const& __rhs) noexcept
+  _CCCL_NODISCARD_FRIEND auto
+  operator==([[maybe_unused]] _Resource const& __lhs, [[maybe_unused]] __memory_resource_base const& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)(
       _CUDA_VMR::__different_resource<__memory_resource_base, _Resource>&& __non_polymorphic<_Resource>)
   {
@@ -280,7 +278,8 @@ public:
   }
 
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator!=([[maybe_unused]] __memory_resource_base const& __lhs, [[maybe_unused]] _Resource const& __rhs) noexcept
+  _CCCL_NODISCARD_FRIEND auto
+  operator!=([[maybe_unused]] __memory_resource_base const& __lhs, [[maybe_unused]] _Resource const& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)(
       _CUDA_VMR::__different_resource<__memory_resource_base, _Resource>&& __non_polymorphic<_Resource>)
   {
@@ -288,13 +287,14 @@ public:
   }
 
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator!=([[maybe_unused]] _Resource const& __lhs, [[maybe_unused]] __memory_resource_base const& __rhs) noexcept
+  _CCCL_NODISCARD_FRIEND auto
+  operator!=([[maybe_unused]] _Resource const& __lhs, [[maybe_unused]] __memory_resource_base const& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)(
       _CUDA_VMR::__different_resource<__memory_resource_base, _Resource>&& __non_polymorphic<_Resource>)
   {
     return true;
   }
-#    endif // _CCCL_STD_VER <= 2017
+#endif // _CCCL_STD_VER <= 2017
 
   _CCCL_NODISCARD constexpr cudaMemPool_t get() const noexcept
   {

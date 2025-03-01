@@ -49,9 +49,9 @@ class pinned_memory_pool : public __memory_pool_base
   {}
 
 public:
-  //! @brief Constructs a \c pinned_memory_pool with the specified NUMA node id and initial pool size and release threshold.
-  //! If the pool size grows beyond the release threshold, unused memory held by the pool will be released at the next
-  //! synchronization event.
+  //! @brief Constructs a \c pinned_memory_pool with the specified NUMA node id and initial pool size and release
+  //! threshold. If the pool size grows beyond the release threshold, unused memory held by the pool will be released at
+  //! the next synchronization event.
   //! @param __numa_id The NUMA node id of the NUMA node the pool is constructed on.
   //! @param __pool_properties Optional, additional properties of the pool to be created.
   explicit pinned_memory_pool(int __numa_id, memory_pool_properties __properties)
@@ -64,8 +64,7 @@ public:
   //! @param __numa_id The NUMA node id of the NUMA node the pool is constructed on.
   explicit pinned_memory_pool(int __numa_id = 0)
       : pinned_memory_pool(__numa_id, {})
-  {
-  }
+  {}
 
   //! @brief Disables construction from a plain `cudaMemPool_t`. We want to ensure clean ownership semantics.
   pinned_memory_pool(::cudaMemPool_t) = delete;

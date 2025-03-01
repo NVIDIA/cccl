@@ -26,17 +26,13 @@
 #  include <cuda_runtime_api.h>
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
-#include <cuda/__memory_resource/get_property.h>
 #include <cuda/__memory_resource/properties.h>
-#include <cuda/__memory_resource/resource.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/detail/libcxx/include/stdexcept>
 
-#include <cuda/experimental/__memory_resource/any_resource.cuh>
 #include <cuda/experimental/__memory_resource/memory_resource_base.cuh>
 #include <cuda/experimental/__memory_resource/pinned_memory_pool.cuh>
-#include <cuda/experimental/__memory_resource/properties.cuh>
 
 //! @file
 //! The \c pinned_memory_resource class provides a memory resource that allocates pinned memory.
@@ -92,7 +88,6 @@ public:
       : __memory_resource_base(__pool.get())
   {}
 
-
 #  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   //! @brief Enables the \c device_accessible property
   friend constexpr void get_property(pinned_memory_resource const&, device_accessible) noexcept {}
@@ -105,11 +100,8 @@ public:
 //! @brief pinned_memory_resource uses `cudaMallocHost` / `cudaFreeHost` for allocation / deallocation.
 class pinned_memory_resource
 {
-
 public:
-  constexpr pinned_memory_resource() noexcept
-  {
-  }
+  constexpr pinned_memory_resource() noexcept {}
 
   //! @brief Allocate host memory of size at least \p __bytes.
   //! @param __bytes The size in bytes of the allocation.

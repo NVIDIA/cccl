@@ -30,25 +30,9 @@
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cuda/api_wrapper.h>
-#include <cuda/std/__new_>
-#include <cuda/std/cstddef>
-#include <cuda/stream_ref>
 
-#  include <cuda/__memory_resource/get_property.h>
-#  include <cuda/__memory_resource/properties.h>
-#  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__cuda/api_wrapper.h>
-#  include <cuda/std/__new_>
-#  include <cuda/std/cstddef>
-#  include <cuda/stream_ref>
-
-#  include <cuda/experimental/__device/device_ref.cuh>
-#  include <cuda/experimental/__memory_resource/any_resource.cuh>
-#  include <cuda/experimental/__memory_resource/device_memory_pool.cuh>
-#  include <cuda/experimental/__memory_resource/memory_resource_base.cuh>
-#  include <cuda/experimental/__memory_resource/properties.cuh>
-#  include <cuda/experimental/__stream/internal_streams.cuh>
-#  include <cuda/experimental/__stream/stream.cuh>
+#include <cuda/experimental/__memory_resource/device_memory_pool.cuh>
+#include <cuda/experimental/__memory_resource/memory_resource_base.cuh>
 
 //! @file
 //! The \c device_memory_pool class provides an asynchronous memory resource that allocates device memory in stream
@@ -116,11 +100,11 @@ public:
       : __memory_resource_base(__pool.get())
   {}
 
-#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   //! @brief Enables the \c device_accessible property for \c device_memory_resource.
   //! @relates device_memory_resource
   friend constexpr void get_property(device_memory_resource const&, device_accessible) noexcept {}
-#  endif // _CCCL_DOXYGEN_INVOKED
+#endif // _CCCL_DOXYGEN_INVOKED
 };
 static_assert(_CUDA_VMR::resource_with<device_memory_resource, device_accessible>, "");
 } // namespace cuda::experimental

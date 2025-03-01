@@ -15,12 +15,13 @@
 #include <utility.cuh>
 
 template <typename ResourceType>
-void test_deallocate_async(ResourceType& resource) {
+void test_deallocate_async(ResourceType& resource)
+{
   cudax::stream stream;
   test::managed<int> i(0);
   cuda::atomic_ref atomic_i(*i);
 
-  int* allocation = static_cast<int *>(resource.allocate(sizeof(int)));
+  int* allocation = static_cast<int*>(resource.allocate(sizeof(int)));
 
   cudax::launch(stream, test::one_thread_dims, test::spin_until_80{}, i.get());
   cudax::launch(stream, test::one_thread_dims, test::assign_42{}, allocation);

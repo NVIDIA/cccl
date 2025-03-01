@@ -22,8 +22,9 @@
 
 namespace cudax = cuda::experimental;
 
-template<typename PoolType>
-void pool_static_asserts() {
+template <typename PoolType>
+void pool_static_asserts()
+{
   static_assert(!cuda::std::is_trivial<PoolType>::value, "");
   static_assert(!cuda::std::is_trivially_default_constructible<PoolType>::value, "");
   static_assert(!cuda::std::is_copy_constructible<PoolType>::value, "");
@@ -45,16 +46,16 @@ static_assert(cuda::std::is_default_constructible<cudax::pinned_memory_pool>::va
 #endif
 
 // TODO should this be part of the public API?
-template<typename PoolType>
-using memory_resource_for_pool = cuda::std::conditional_t<
-  cuda::std::is_same_v<PoolType, cudax::device_memory_pool>,
-  cudax::device_memory_resource,
-  #if _CCCL_CUDACC_AT_LEAST(12, 6)
-  cudax::pinned_memory_resource
-  #else
-  void
-  #endif
->;
+template <typename PoolType>
+using memory_resource_for_pool =
+  cuda::std::conditional_t<cuda::std::is_same_v<PoolType, cudax::device_memory_pool>,
+                           cudax::device_memory_resource,
+#if _CCCL_CUDACC_AT_LEAST(12, 6)
+                           cudax::pinned_memory_resource
+#else
+                           void
+#endif
+                           >;
 
 static bool ensure_release_threshold(::cudaMemPool_t pool, const size_t expected_threshold)
 {
@@ -92,9 +93,12 @@ static bool ensure_export_handle(::cudaMemPool_t pool, const ::cudaMemAllocation
   return allocation_handle == ::cudaMemHandleTypeNone ? status == ::cudaErrorInvalidValue : status == ::cudaSuccess;
 }
 
-TEMPLATE_TEST_CASE("device_memory_pool construction", "[memory_resource]", cudax::device_memory_pool
+TEMPLATE_TEST_CASE("device_memory_pool construction",
+                   "[memory_resource]",
+                   cudax::device_memory_pool
 #if _CCCL_CUDACC_AT_LEAST(12, 6)
-, cudax::pinned_memory_pool
+                   ,
+                   cudax::pinned_memory_pool
 #endif
 )
 {
@@ -193,13 +197,15 @@ TEMPLATE_TEST_CASE("device_memory_pool construction", "[memory_resource]", cudax
   SECTION("Take ownership of native handle")
   {
     ::cudaMemPoolProps pool_properties{};
-    pool_properties.allocType     = ::cudaMemAllocationTypePinned;
-    pool_properties.handleTypes   = ::cudaMemAllocationHandleType(cudaMemAllocationHandleType::cudaMemHandleTypeNone);
-    if (cuda::std::is_same_v<memory_pool, cudax::device_memory_pool>) {
+    pool_properties.allocType   = ::cudaMemAllocationTypePinned;
+    pool_properties.handleTypes = ::cudaMemAllocationHandleType(cudaMemAllocationHandleType::cudaMemHandleTypeNone);
+    if (cuda::std::is_same_v<memory_pool, cudax::device_memory_pool>)
+    {
       pool_properties.location.type = ::cudaMemLocationTypeDevice;
       pool_properties.location.id   = current_device;
     }
-    else {
+    else
+    {
 #if _CCCL_CUDACC_AT_LEAST(12, 6)
       pool_properties.location.type = cudaMemLocationTypeHostNuma;
       pool_properties.location.id   = 0;
@@ -215,9 +221,12 @@ TEMPLATE_TEST_CASE("device_memory_pool construction", "[memory_resource]", cudax
   }
 }
 
-TEMPLATE_TEST_CASE("device_memory_pool comparison", "[memory_resource]", cudax::device_memory_pool
+TEMPLATE_TEST_CASE("device_memory_pool comparison",
+                   "[memory_resource]",
+                   cudax::device_memory_pool
 #if _CCCL_CUDACC_AT_LEAST(12, 6)
-, cudax::pinned_memory_pool
+                   ,
+                   cudax::pinned_memory_pool
 #endif
 )
 {
@@ -255,9 +264,12 @@ TEMPLATE_TEST_CASE("device_memory_pool comparison", "[memory_resource]", cudax::
   }
 }
 
-TEMPLATE_TEST_CASE("device_memory_pool accessors", "[memory_resource]", cudax::device_memory_pool
+TEMPLATE_TEST_CASE("device_memory_pool accessors",
+                   "[memory_resource]",
+                   cudax::device_memory_pool
 #if _CCCL_CUDACC_AT_LEAST(12, 6)
-, cudax::pinned_memory_pool
+                   ,
+                   cudax::pinned_memory_pool
 #endif
 )
 {
@@ -398,8 +410,7 @@ TEMPLATE_TEST_CASE("device_memory_pool accessors", "[memory_resource]", cudax::d
       }
       catch (::std::invalid_argument& err)
       {
-        CHECK(strcmp(err.what(),
-                     "set_attribute: It is illegal to set this attribute to a non-zero value.") == 0);
+        CHECK(strcmp(err.what(), "set_attribute: It is illegal to set this attribute to a non-zero value.") == 0);
       }
       catch (...)
       {
@@ -540,14 +551,14 @@ TEST_CASE("device_memory_pool::enable_peer_access", "[memory_resource]")
 #if _CCCL_CUDACC_AT_LEAST(12, 6)
 TEST_CASE("pinned_memory_pool::enable_peer_access", "[memory_resource]")
 {
-    cudax::pinned_memory_pool pool{};
-    CUDAX_CHECK(pool.is_accessible_from(cudax::devices[0]));
+  cudax::pinned_memory_pool pool{};
+  CUDAX_CHECK(pool.is_accessible_from(cudax::devices[0]));
 
-    // Currently bugged, need to wait for driver fix
-    // pool.disable_access_from(cudax::devices[0]);
-    // CUDAX_CHECK(!pool.is_accessible_from(cudax::devices[0]));
+  // Currently bugged, need to wait for driver fix
+  // pool.disable_access_from(cudax::devices[0]);
+  // CUDAX_CHECK(!pool.is_accessible_from(cudax::devices[0]));
 
-    // pool.enable_access_from(cudax::devices[0]);
-    // CUDAX_CHECK(pool.is_accessible_from(cudax::devices[0]));
+  // pool.enable_access_from(cudax::devices[0]);
+  // CUDAX_CHECK(pool.is_accessible_from(cudax::devices[0]));
 }
 #endif
