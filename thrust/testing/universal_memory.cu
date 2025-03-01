@@ -13,7 +13,7 @@ namespace
 
 // The managed_memory_pointer class should be identified as a
 // contiguous_iterator
-THRUST_STATIC_ASSERT(thrust::is_contiguous_iterator<thrust::universal_allocator<int>::pointer>::value);
+static_assert(thrust::is_contiguous_iterator<thrust::universal_allocator<int>::pointer>::value);
 
 template <typename T>
 struct some_object
