@@ -64,11 +64,11 @@ int main(int, char**)
   {
     ::map_test<cuda::std::layout_right>(cuda::std::layout_right::mapping<E>{});
     ::map_test<cuda::std::layout_left>(cuda::std::layout_left::mapping<E>{});
-    ::map_test<cuda::std::layout_stride>(cuda::std::layout_stride::mapping<E>{E{}, cuda::std::array<T, 2>{10, 12}});
+    ::map_test<cuda::std::layout_stride>(cuda::std::layout_stride::mapping<E>{E{}, cuda::std::array<T, 2>{3, 12}});
   }
   // stride()
   {
-    cuda::std::layout_stride::mapping<E> map{E{}, cuda::std::array<T, 2>{10, 12}};
+    cuda::std::layout_stride::mapping<E> map{E{}, cuda::std::array<T, 2>{3, 12}};
     cuda::std::array<T, 6> d{42, 43, 44, 45, 46, 47};
     cuda::std::mdspan<T, E, cuda::std::layout_stride> md(d.data(), map);
     auto transposed_md = cuda::std::linalg::transposed(md);
