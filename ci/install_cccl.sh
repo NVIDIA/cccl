@@ -37,6 +37,11 @@ if [ $VERBOSE ]; then
     set -x
 fi
 
+# Remove sccache as this build doesn't require caching
+unset CMAKE_C_COMPILER_LAUNCHER;
+unset CMAKE_CXX_COMPILER_LAUNCHER;
+unset CMAKE_CUDA_COMPILER_LAUNCHER;
+
 # Move to cccl/ dir
 pushd ".." > /dev/null
 GROUP_NAME="🛠️  CMake Configure CCCL - Install"
