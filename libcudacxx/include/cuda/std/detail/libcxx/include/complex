@@ -893,13 +893,13 @@ _LIBCUDACXX_HIDE_FROM_ABI _Tp arg(const complex<_Tp>& __c)
   return _CUDA_VSTD::atan2(__c.imag(), __c.real());
 }
 
-#ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
+#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_same<_Tp, long double>::value, long double> arg(_Tp __re)
 {
   return _CUDA_VSTD::atan2l(0.L, __re);
 }
-#endif // _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
+#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_integral<_Tp>::value || is_same<_Tp, double>::value, double> arg(_Tp __re)
@@ -1512,7 +1512,7 @@ inline namespace literals
 {
 inline namespace complex_literals
 {
-#  ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
+#  if !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(NVRTC)
 // NOTE: if you get a warning from GCC <7 here that "literal operator suffixes not preceded by ‘_’ are reserved for
 // future standardization" then we are sorry. The warning was implemented before GCC 7, but can only be disabled since
 // GCC 7. See also: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=69523
@@ -1544,7 +1544,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr complex<float> operator""if(unsigned long lo
 {
   return {0.0f, static_cast<float>(__im)};
 }
-#  else // ^^^ _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE ^^^ / vvv !_LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE vvv
+#  else // ^^^ !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(NVRTC) ^^^ / vvv other compilers vvv
 _LIBCUDACXX_HIDE_FROM_ABI constexpr complex<double> operator""i(double __im)
 {
   return {0.0, static_cast<double>(__im)};
@@ -1564,7 +1564,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr complex<float> operator""if(unsigned long lo
 {
   return {0.0f, static_cast<float>(__im)};
 }
-#  endif // !_LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
+#  endif // other compilers
 } // namespace complex_literals
 } // namespace literals
 

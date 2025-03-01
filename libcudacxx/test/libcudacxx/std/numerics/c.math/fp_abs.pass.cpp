@@ -44,7 +44,7 @@ template <class T, class = void>
 struct OverloadTester;
 
 template <class T>
-struct OverloadTester<T, cuda::std::enable_if_t<!cuda::std::__is_extended_floating_point<T>::value>>
+struct OverloadTester<T, cuda::std::enable_if_t<!cuda::std::__is_extended_floating_point_v<T>>>
 {
   __host__ __device__ static bool test_fabs(T in, T ref, T zero_value)
   {
@@ -62,7 +62,7 @@ struct OverloadTester<T, cuda::std::enable_if_t<!cuda::std::__is_extended_floati
 };
 
 template <class T>
-struct OverloadTester<T, cuda::std::enable_if_t<cuda::std::__is_extended_floating_point<T>::value>>
+struct OverloadTester<T, cuda::std::enable_if_t<cuda::std::__is_extended_floating_point_v<T>>>
 {
   __host__ __device__ static bool test_fabs(T in, T ref, T zero_value)
   {
@@ -111,7 +111,7 @@ __host__ __device__ bool test_fabs(T zero_value)
   test_fabs(-cuda::std::numeric_limits<T>::infinity(), cuda::std::numeric_limits<T>::infinity(), zero_value);
 
   // __half and __nvbfloat have precision issues here
-  if (!cuda::std::__is_extended_floating_point<T>::value)
+  if constexpr (!cuda::std::__is_extended_floating_point_v<T>)
   {
     test_fabs_nan(zero_value);
   }
