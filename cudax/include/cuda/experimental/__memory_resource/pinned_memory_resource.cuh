@@ -39,7 +39,7 @@
 #include <cuda/experimental/__memory_resource/properties.cuh>
 
 //! @file
-//! The \c managed_memory_resource class provides a memory resource that allocates pinned memory.
+//! The \c pinned_memory_resource class provides a memory resource that allocates pinned memory.
 namespace cuda::experimental
 {
 
@@ -64,9 +64,9 @@ namespace cuda::experimental
 class pinned_memory_resource : public __memory_resource_base
 {
 private:
-  //! @brief  Returns the default ``cudaMemPool_t`` from the specified device.
+  //! @brief  Returns the default ``cudaMemPool_t`` for host pinned memory.
   //! @throws cuda_error if retrieving the default ``cudaMemPool_t`` fails.
-  //! @returns The default memory pool of the specified device.
+  //! @returns The default memory pool for host pinned memory.
   _CCCL_NODISCARD static ::cudaMemPool_t __get_default_sysmem_pool()
   {
     static pinned_memory_pool __default_pool;
@@ -74,7 +74,7 @@ private:
   }
 
 public:
-  //! @brief Default constructs the pinned_memory_resource using the default \c cudaMemPool_t of the default device.
+  //! @brief Default constructs the pinned_memory_resource using the default \c cudaMemPool_t for host pinned memory.
   //! @throws cuda_error if retrieving the default \c cudaMemPool_t fails.
   pinned_memory_resource()
       : __memory_resource_base(__get_default_sysmem_pool())
@@ -91,6 +91,7 @@ public:
   explicit pinned_memory_resource(pinned_memory_pool& __pool) noexcept
       : __memory_resource_base(__pool.get())
   {}
+
 
 #  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   //! @brief Enables the \c device_accessible property

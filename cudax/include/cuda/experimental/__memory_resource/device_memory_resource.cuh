@@ -123,7 +123,6 @@ public:
 #  endif // _CCCL_DOXYGEN_INVOKED
 };
 static_assert(_CUDA_VMR::resource_with<device_memory_resource, device_accessible>, "");
-
 } // namespace cuda::experimental
 
 #endif //_CUDAX__MEMORY_RESOURCE_CUDA_DEVICE_MEMORY_RESOURCE

@@ -40,8 +40,6 @@
 #  include <cuda/experimental/__stream/internal_streams.cuh>
 #  include <cuda/experimental/__stream/stream.cuh>
 
-#  if _CCCL_STD_VER >= 2014
-
 //! @file
 //! The \c __memory_pool_base class provides a wrapper around a `cudaMempool_t`.
 namespace cuda::experimental
@@ -121,10 +119,6 @@ struct memory_pool_properties
   cudaMemAllocationHandleType allocation_handle_type = cudaMemAllocationHandleType::cudaMemHandleTypeNone;
 };
 
-//! @brief \c __memory_pool_base is an owning wrapper around a
-//! <a href="https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html">cudaMemPool_t</a>.
-//!
-//! It handles creation and destruction of the underlying pool utilizing the provided \c memory_pool_properties.
 class __memory_pool_base
 {
 private:
@@ -244,7 +238,7 @@ public:
   //! If the pool size grows beyond the release threshold, unused memory held by the pool will be released at the next
   //! synchronization event.
   //! @throws cuda_error if the CUDA version does not support ``cudaMallocAsync``.
-  //! @param __device_id The device id of the device the stream pool is constructed on.
+  //! @param __id The device id of the device the stream pool is constructed on.
   //! @param __pool_properties Optional, additional properties of the pool to be created.
   explicit __memory_pool_base(__memory_location_type __kind, memory_pool_properties __properties, int __id = -1)
       : __pool_handle_(__create_cuda_mempool(__kind, __properties, __id))
@@ -365,14 +359,14 @@ public:
     return __pool_handle_ == __rhs.__pool_handle_;
   }
 
-#    if _CCCL_STD_VER <= 2017
+  #if _CCCL_STD_VER >= 2017
   //! @brief Inequality comparison with another \c __memory_pool_base.
   //! @returns true if the stored ``cudaMemPool_t`` are not equal.
   _CCCL_NODISCARD constexpr bool operator!=(__memory_pool_base const& __rhs) const noexcept
   {
     return __pool_handle_ != __rhs.__pool_handle_;
   }
-#    endif // _CCCL_STD_VER <= 2017
+  #endif // _CCCL_STD_VER >= 2017
 
   //! @brief Equality comparison with a \c cudaMemPool_t.
   //! @param __rhs A \c cudaMemPool_t.
@@ -410,7 +404,5 @@ public:
 };
 
 } // namespace cuda::experimental
-
-#  endif // _CCCL_STD_VER >= 2014
 
 #endif // _CUDAX__MEMORY_RESOURCE_MEMORY_POOL_BASE

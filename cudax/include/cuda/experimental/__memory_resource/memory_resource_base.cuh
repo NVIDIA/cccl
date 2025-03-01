@@ -21,8 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-// cudaMallocAsync was introduced in CTK 11.2
-#if !_CCCL_COMPILER(MSVC2017) && _CCCL_CUDACC_AT_LEAST(11, 2)
 
 #  if _CCCL_CUDA_COMPILER(CLANG)
 #    include <cuda_runtime.h>
@@ -44,28 +42,9 @@
 #  include <cuda/experimental/__stream/internal_streams.cuh>
 #  include <cuda/experimental/__stream/stream.cuh>
 
-//! @file
-//! The \c device_memory_pool class provides an asynchronous memory resource that allocates device memory in stream
-//! order.
 namespace cuda::experimental
 {
 
-//! @rst
-//! .. _cudax-memory-resource-async:
-//!
-//! Stream ordered memory resource
-//! ------------------------------
-//!
-//! ``__memory_resource_base`` uses `cudaMallocFromPoolAsync / cudaFreeAsync
-//! <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html>`__ for allocation/deallocation. A
-//! ``__memory_resource_base`` is a thin wrapper around a \c cudaMemPool_t.
-//!
-//! .. warning::
-//!
-//!    ``__memory_resource_base`` does not own the pool and it is the responsibility of the user to ensure that the
-//!    lifetime of the pool exceeds the lifetime of the ``__memory_resource_base``.
-//!
-//! @endrst
 class __memory_resource_base
 {
 protected:
@@ -261,47 +240,17 @@ public:
   {
     return __pool_ == __rhs.__pool_;
   }
-#  if _CCCL_STD_VER <= 2017
 
-  //! @brief Inequality comparison with another \c __memory_resource_base.
-  //! @returns true if underlying \c cudaMemPool_t are inequal.
-  _CCCL_NODISCARD constexpr bool operator!=(__memory_resource_base const& __rhs) const noexcept
+  #if _CCCL_STD_VER >= 2017
+  //! @brief Inequality comparison with another __memory_resource_base.
+  //! @returns true if underlying \c cudaMemPool_t are not equal.
+  _CCCL_NODISCARD bool operator!=(__memory_resource_base const& __rhs) const noexcept
   {
     return __pool_ != __rhs.__pool_;
   }
-#  endif // _CCCL_STD_VER <= 2017
+  #endif // _CCCL_STD_VER >= 2017
 
-#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-
-protected:
-  template <class _Resource>
-  _CCCL_NODISCARD bool __equal_to(_Resource const& __rhs) const noexcept
-  {
-    if constexpr (has_property<_Resource, device_accessible>)
-    {
-      if constexpr (has_property<_Resource, host_accessible>)
-      {
-        return resource_ref<host_accessible, device_accessible>{*const_cast<__memory_resource_base*>(this)}
-          == __cudax::__as_resource_ref<host_accessible, device_accessible>(const_cast<_Resource&>(__rhs));
-      }
-      else
-      {
-        return resource_ref<device_accessible>{*const_cast<__memory_resource_base*>(this)}
-          == __cudax::__as_resource_ref<device_accessible>(const_cast<_Resource&>(__rhs));
-      }
-    }
-    else if constexpr (has_property<_Resource, host_accessible>)
-    {
-      return resource_ref<host_accessible>{*const_cast<__memory_resource_base*>(this)}
-          == __cudax::__as_resource_ref<host_accessible>(const_cast<_Resource&>(__rhs));
-    }
-    else
-    {
-      return false;
-    }
-  }
-
-public:
+//TODO Should this be declared in general for two things that satisfy resource concept?
 #    if _CCCL_STD_VER >= 2020
   //! @brief Equality comparison between a \c __memory_resource_base and another resource.
   //! @param __rhs The resource to compare to.
@@ -309,50 +258,44 @@ public:
   //! resources. Otherwise, returns false.
   template <class _Resource>
     requires _CUDA_VMR::__different_resource<__memory_resource_base, _Resource> && __non_polymorphic<_Resource>
-  _CCCL_NODISCARD bool operator==(_Resource const& __rhs) const noexcept
+  _CCCL_NODISCARD bool operator==([[maybe_unused]] _Resource const& __rhs) const noexcept
   {
-    return this->__equal_to(__rhs);
+    return false;
   }
 #    else // ^^^ C++20 ^^^ / vvv C++17
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator==(__memory_resource_base const& __lhs, _Resource const& __rhs) noexcept
+  _CCCL_NODISCARD_FRIEND auto operator==([[maybe_unused]] __memory_resource_base const& __lhs, [[maybe_unused]] _Resource const& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)(
       _CUDA_VMR::__different_resource<__memory_resource_base, _Resource>&& __non_polymorphic<_Resource>)
   {
-    return __lhs.__equal_to(__rhs);
+    return false;
   }
 
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator==(_Resource const& __lhs, __memory_resource_base const& __rhs) noexcept
+  _CCCL_NODISCARD_FRIEND auto operator==([[maybe_unused]] _Resource const& __lhs, [[maybe_unused]] __memory_resource_base const& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)(
       _CUDA_VMR::__different_resource<__memory_resource_base, _Resource>&& __non_polymorphic<_Resource>)
   {
-    return __rhs.__equal_to(__lhs);
+    return false;
   }
 
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator!=(__memory_resource_base const& __lhs, _Resource const& __rhs) noexcept
+  _CCCL_NODISCARD_FRIEND auto operator!=([[maybe_unused]] __memory_resource_base const& __lhs, [[maybe_unused]] _Resource const& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)(
       _CUDA_VMR::__different_resource<__memory_resource_base, _Resource>&& __non_polymorphic<_Resource>)
   {
-    return !__lhs.__equal_to(__rhs);
+    return true;
   }
 
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator!=(_Resource const& __lhs, __memory_resource_base const& __rhs) noexcept
+  _CCCL_NODISCARD_FRIEND auto operator!=([[maybe_unused]] _Resource const& __lhs, [[maybe_unused]] __memory_resource_base const& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)(
       _CUDA_VMR::__different_resource<__memory_resource_base, _Resource>&& __non_polymorphic<_Resource>)
   {
-    return !__rhs.__equal_to(__lhs);
+    return true;
   }
 #    endif // _CCCL_STD_VER <= 2017
 
-  //! @brief Enables the \c device_accessible property for \c __memory_resource_base.
-  //! @relates __memory_resource_base
-  friend constexpr void get_property(__memory_resource_base const&, device_accessible) noexcept {}
-#  endif // _CCCL_DOXYGEN_INVOKED
-
-  //! @brief Returns the underlying handle to the CUDA memory pool.
   _CCCL_NODISCARD constexpr cudaMemPool_t get() const noexcept
   {
     return __pool_;
@@ -361,6 +304,4 @@ public:
 
 } // namespace cuda::experimental
 
-#endif // !_CCCL_COMPILER(MSVC2017) && _CCCL_CUDACC_AT_LEAST(11, 2)
-
-#endif //_CUDAX__MEMORY_RESOURCE_MEMORY_RESOURCE_BASE
+#endif // _CUDAX__MEMORY_RESOURCE_MEMORY_RESOURCE_BASE

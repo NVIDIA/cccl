@@ -21,7 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-// cudaMallocAsync was introduced in CTK 11.2
 #if _CCCL_CUDACC_AT_LEAST(12, 6)
 
 #  if _CCCL_CUDA_COMPILER(CLANG)
@@ -31,8 +30,6 @@
 
 #  include <cuda/experimental/__memory_resource/memory_pool_base.cuh>
 #  include <cuda/experimental/__stream/stream.cuh>
-
-#  if _CCCL_STD_VER >= 2014
 
 //! @file
 //! The \c pinned_memory_pool class provides a wrapper around a `cudaMempool_t`.
@@ -99,8 +96,6 @@ public:
 
 } // namespace cuda::experimental
 
-#  endif // _CCCL_STD_VER >= 2014
-
-#endif // !_CCCL_COMPILER(MSVC2017) && _CCCL_CUDACC_AT_LEAST(11, 2)
+#endif // _CCCL_CUDACC_AT_LEAST(12, 6)
 
 #endif // _CUDAX__MEMORY_RESOURCE_PINNED_MEMORY_POOL
