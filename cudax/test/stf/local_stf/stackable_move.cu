@@ -36,8 +36,6 @@ int main()
   auto g = sctx.dot_section("foo");
   sctx.push();
 
-  lA.push(access_mode::read);
-
   auto lB = sctx.logical_data(lA.shape());
   lB.set_symbol("B");
 
