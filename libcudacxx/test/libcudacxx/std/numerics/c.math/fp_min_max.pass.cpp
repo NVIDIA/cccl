@@ -33,12 +33,12 @@ __host__ __device__ void test_fmax(float value)
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
   test_fmax<long double>(value);
 #endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _LIBCUDACXX_HAS_NVFP16()
   test_fmax<__half>(__float2half(value));
-#endif // _LIBCUDACXX_HAS_NVFP16
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test_fmax<__nv_bfloat16>(__float2bfloat16(value));
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
   static_assert((cuda::std::is_same_v<decltype(cuda::std::fmax((int) 0, (int) 0)), double>), "");
   static_assert((cuda::std::is_same_v<decltype(cuda::std::fmax((int) 0, (long long) 0)), double>), "");
@@ -74,12 +74,12 @@ __host__ __device__ void test_fmin(float value)
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
   test_fmax<long double>(value);
 #endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _LIBCUDACXX_HAS_NVFP16()
   test_fmax<__half>(__float2half(value));
-#endif // _LIBCUDACXX_HAS_NVFP16
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test_fmax<__nv_bfloat16>(__float2bfloat16(value));
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
   static_assert((cuda::std::is_same_v<decltype(cuda::std::fmin((int) 0, (int) 0)), double>), "");
   static_assert((cuda::std::is_same_v<decltype(cuda::std::fmin((int) 0, (long long) 0)), double>), "");

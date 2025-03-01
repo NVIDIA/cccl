@@ -52,12 +52,12 @@ __host__ __device__ void test()
   // CUDA treats long double as double
   // test<long double>();
 
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _LIBCUDACXX_HAS_NVFP16()
   test<__half>();
-#endif
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16>();
-#endif
+#endif // _LIBCUDACXX_HAS_NVBF16()
 }
 
 int main(int, char**)

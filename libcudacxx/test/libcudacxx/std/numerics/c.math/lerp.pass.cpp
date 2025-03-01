@@ -70,12 +70,12 @@ int main(int, char**)
   test<long double>();
 #endif //!_LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _LIBCUDACXX_HAS_NVFP16()
   test<__half>();
-#endif // _LIBCUDACXX_HAS_NVFP16
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
   static_assert(constexpr_test<float>(), "");
   static_assert(constexpr_test<double>(), "");

@@ -359,12 +359,12 @@ __host__ __device__ void test(const float val)
   test<long double>();
 #endif //!_LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _LIBCUDACXX_HAS_NVFP16()
   test<__half>(val);
-#endif // _LIBCUDACXX_HAS_NVFP16
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16>(val);
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
   test<unsigned short>(static_cast<unsigned short>(val));
   test<int>(static_cast<int>(val));

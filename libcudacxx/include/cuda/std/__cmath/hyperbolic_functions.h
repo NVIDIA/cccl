@@ -83,19 +83,19 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double coshl(long double __x) noe
 }
 #endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half cosh(__half __x) noexcept
 {
   return __float2half(_CUDA_VSTD::coshf(__half2float(__x)));
 }
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#if _LIBCUDACXX_HAS_NVBF16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 cosh(__nv_bfloat16 __x) noexcept
 {
   return __float2bfloat16(_CUDA_VSTD::coshf(__bfloat162float(__x)));
 }
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double cosh(_Integer __x) noexcept
@@ -152,19 +152,19 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double sinhl(long double __x) noe
 }
 #endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half sinh(__half __x) noexcept
 {
   return __float2half(_CUDA_VSTD::sinhf(__half2float(__x)));
 }
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#if _LIBCUDACXX_HAS_NVBF16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 sinh(__nv_bfloat16 __x) noexcept
 {
   return __float2bfloat16(_CUDA_VSTD::sinhf(__bfloat162float(__x)));
 }
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double sinh(_Integer __x) noexcept
@@ -221,19 +221,19 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double tanhl(long double __x) noe
 }
 #endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half tanh(__half __x) noexcept
 {
   return __float2half(_CUDA_VSTD::tanhf(__half2float(__x)));
 }
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#if _LIBCUDACXX_HAS_NVBF16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 tanh(__nv_bfloat16 __x) noexcept
 {
   return __float2bfloat16(_CUDA_VSTD::tanhf(__bfloat162float(__x)));
 }
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double tanh(_Integer __x) noexcept

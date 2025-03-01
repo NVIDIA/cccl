@@ -83,19 +83,19 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double lgammal(long double __x) n
 }
 #endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half lgamma(__half __x) noexcept
 {
   return __float2half(_CUDA_VSTD::lgammaf(__half2float(__x)));
 }
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#if _LIBCUDACXX_HAS_NVBF16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 lgamma(__nv_bfloat16 __x) noexcept
 {
   return __float2bfloat16(_CUDA_VSTD::lgammaf(__bfloat162float(__x)));
 }
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double lgamma(_Integer __x) noexcept
@@ -152,19 +152,19 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double tgammal(long double __x) n
 }
 #endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half tgamma(__half __x) noexcept
 {
   return __float2half(_CUDA_VSTD::tgammaf(__half2float(__x)));
 }
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#if _LIBCUDACXX_HAS_NVBF16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 tgamma(__nv_bfloat16 __x) noexcept
 {
   return __float2bfloat16(_CUDA_VSTD::tgammaf(__bfloat162float(__x)));
 }
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double tgamma(_Integer __x) noexcept

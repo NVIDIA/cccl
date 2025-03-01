@@ -75,19 +75,19 @@
 #endif // _LIBCUDACXX_HAS_NO_WCHAR_H
 
 // libcu++ requires host device support for its tests. Until then restrict usage to at least 12.2
-#ifndef _LIBCUDACXX_HAS_NVFP16
-#  if _CCCL_HAS_NVFP16() && _CCCL_CUDACC_AT_LEAST(12, 2) \
-    && (_CCCL_HAS_CUDA_COMPILER || defined(LIBCUDACXX_ENABLE_HOST_NVFP16))
-#    define _LIBCUDACXX_HAS_NVFP16
-#  endif // _CCCL_HAS_NVFP16() && _CCCL_CUDACC_AT_LEAST(12, 2)
-#endif // !_LIBCUDACXX_HAS_NVFP16
+#if _CCCL_HAS_NVFP16() && _CCCL_CUDACC_AT_LEAST(12, 2) \
+  && (_CCCL_HAS_CUDA_COMPILER || defined(LIBCUDACXX_ENABLE_HOST_NVFP16))
+#  define _LIBCUDACXX_HAS_NVFP16() 1
+#else
+#  define _LIBCUDACXX_HAS_NVFP16() 0
+#endif // _CCCL_HAS_NVFP16() && _CCCL_CUDACC_AT_LEAST(12, 2)
 
 // libcu++ requires host device support for its tests. Until then restrict usage to at least 12.2
-#ifndef _LIBCUDACXX_HAS_NVBF16
-#  if _CCCL_HAS_NVBF16() && _CCCL_CUDACC_AT_LEAST(12, 2)
-#    define _LIBCUDACXX_HAS_NVBF16
-#  endif // _CCCL_HAS_NVBF16() && _CCCL_CUDACC_AT_LEAST(12, 2)
-#endif // !_LIBCUDACXX_HAS_NVBF16
+#if _CCCL_HAS_NVBF16() && _CCCL_CUDACC_AT_LEAST(12, 2)
+#  define _LIBCUDACXX_HAS_NVBF16() 1
+#else
+#  define _LIBCUDACXX_HAS_NVBF16() 0
+#endif // _CCCL_HAS_NVBF16() && _CCCL_CUDACC_AT_LEAST(12, 2)
 
 // NVCC does not have a way of silencing non '_' prefixed UDLs
 #if !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(NVRTC)

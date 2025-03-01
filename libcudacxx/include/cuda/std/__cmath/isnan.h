@@ -74,7 +74,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnan(long double __x) 
 }
 #endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnan(__half __x) noexcept
 {
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
@@ -85,9 +85,9 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnan(__half __x) noexc
   const auto __storage = _CUDA_VSTD::__cccl_fp_get_storage(__x);
   return ((__storage & __cccl_nvfp16_exp_mask) == __cccl_nvfp16_exp_mask) && (__storage & __cccl_nvfp16_mant_mask);
 }
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#if _LIBCUDACXX_HAS_NVBF16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnan(__nv_bfloat16 __x) noexcept
 {
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
@@ -98,7 +98,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnan(__nv_bfloat16 __x
   const auto __storage = _CUDA_VSTD::__cccl_fp_get_storage(__x);
   return ((__storage & __cccl_nvbf16_exp_mask) == __cccl_nvbf16_exp_mask) && (__storage & __cccl_nvbf16_mant_mask);
 }
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 #if _CCCL_HAS_NVFP8_E4M3()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnan(__nv_fp8_e4m3 __x) noexcept

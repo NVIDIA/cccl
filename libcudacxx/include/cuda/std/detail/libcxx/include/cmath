@@ -344,13 +344,13 @@ long double    truncl(long double x);
 #include <cuda/std/type_traits>
 #include <cuda/std/version>
 
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _LIBCUDACXX_HAS_NVFP16()
 #  include <cuda/std/__cmath/nvfp16.h>
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#if _LIBCUDACXX_HAS_NVBF16()
 #  include <cuda/std/__cmath/nvbf16.h>
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 #if _CCCL_COMPILER(NVRTC)
 #  define INFINITY _CUDA_VSTD::numeric_limits<float>::infinity()

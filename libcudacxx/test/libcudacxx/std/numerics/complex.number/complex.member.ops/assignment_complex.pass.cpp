@@ -54,12 +54,12 @@ int main(int, char**)
   //  test<long double, double>();
   //  test<long double, long double>();
 
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _LIBCUDACXX_HAS_NVFP16()
   test<float, __half>();
   test<double, __half>();
   test<__half, float>();
   test<__half, double>();
-#  ifdef _LIBCUDACXX_HAS_NVBF16
+#  if _LIBCUDACXX_HAS_NVBF16()
   test<float, __nv_bfloat16>();
   test<double, __nv_bfloat16>();
   test<__nv_bfloat16, float>();

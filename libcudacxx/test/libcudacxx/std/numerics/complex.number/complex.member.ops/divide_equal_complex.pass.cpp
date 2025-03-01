@@ -55,12 +55,12 @@ int main(int, char**)
 {
   test<float>();
   test<double>();
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _LIBCUDACXX_HAS_NVFP16()
   test<__half>();
-#endif
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16>();
-#endif
+#endif // _LIBCUDACXX_HAS_NVBF16()
 // CUDA treats long double as double
 //  test<long double>();
 #if !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)

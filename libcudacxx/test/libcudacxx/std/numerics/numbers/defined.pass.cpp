@@ -65,12 +65,12 @@ __host__ __device__ constexpr bool test()
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
   test_type<long double>();
 #endif // !defined(_LIBCUDACXX_NO_LONG_DOUBLE)
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#if _LIBCUDACXX_HAS_NVFP16()
   test_type<__half>();
-#endif // _LIBCUDACXX_HAS_NVFP16
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test_type<__nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
   return true;
 }

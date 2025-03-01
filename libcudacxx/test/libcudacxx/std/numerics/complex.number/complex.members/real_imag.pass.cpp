@@ -80,12 +80,12 @@ int main(int, char**)
   test<double>();
 // CUDA treats long double as double
 //  test<long double>();
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _LIBCUDACXX_HAS_NVFP16()
   test_nonconstexpr<__half>();
-#endif
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test_nonconstexpr<__nv_bfloat16>();
-#endif
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
   static_assert(test<float>(), "");
   static_assert(test<double>(), "");
@@ -96,10 +96,10 @@ int main(int, char**)
   // test volatile extensions
   test_volatile<float>();
   test_volatile<double>();
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _LIBCUDACXX_HAS_NVFP16()
   // test_volatile<__half>();
 #endif
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#if _LIBCUDACXX_HAS_NVBF16()
   // test_volatile<__nv_bfloat16>();
 #endif
 

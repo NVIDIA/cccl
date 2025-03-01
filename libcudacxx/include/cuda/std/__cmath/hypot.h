@@ -90,19 +90,19 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double hypotl(long double __x, lo
 }
 #endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half hypot(__half __x, __half __y) noexcept
 {
   return __float2half(_CUDA_VSTD::hypotf(__half2float(__x), __half2float(__y)));
 }
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#if _LIBCUDACXX_HAS_NVBF16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 hypot(__nv_bfloat16 __x, __nv_bfloat16 __y) noexcept
 {
   return __float2bfloat16(_CUDA_VSTD::hypotf(__bfloat162float(__x), __bfloat162float(__y)));
 }
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _A1, class _A2, enable_if_t<_CCCL_TRAIT(is_arithmetic, _A1) && _CCCL_TRAIT(is_arithmetic, _A2), int> = 0>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __promote_t<_A1, _A2> hypot(_A1 __x, _A2 __y) noexcept
@@ -177,20 +177,20 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double hypotl(long double __x, lo
 }
 #endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half hypot(__half __x, __half __y, __half __z) noexcept
 {
   return __float2half(_CUDA_VSTD::__hypot(__half2float(__x), __half2float(__y), __half2float(__z)));
 }
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#if _LIBCUDACXX_HAS_NVBF16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16
 hypot(__nv_bfloat16 __x, __nv_bfloat16 __y, __nv_bfloat16 __z) noexcept
 {
   return __float2bfloat16(_CUDA_VSTD::__hypot(__bfloat162float(__x), __bfloat162float(__y), __bfloat162float(__z)));
 }
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 _CCCL_TEMPLATE(class _A1, class _A2, class _A3)
 _CCCL_REQUIRES(_CCCL_TRAIT(is_arithmetic, _A1) _CCCL_AND _CCCL_TRAIT(is_arithmetic, _A2)
