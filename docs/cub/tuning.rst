@@ -419,7 +419,7 @@ Here is an example:
 
 Assume we have determined this tuning to be the best one for sorting I8 keys using radix_sort using I64 offsets.
 The ``variant`` can be decoded using the ``// %RANGE%`` comments in the C++ source code of the benchmark,
-since the names of the reported parameters in the variant are derived these:
+since the names of the reported parameters in the variant are derived from these:
 
 .. code::  c++
 
@@ -427,7 +427,7 @@ since the names of the reported parameters in the variant are derived these:
     // %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
 
 The variant ``ipt_19.tpb_512``, which stands for 19 items per thread (``ipt``) and 512 threads per block (``tpb``),
-was thus compile with ``-DTUNE_ITEMS_PER_THREAD=19 -DTUNE_THREADS_PER_BLOCK=512``.
+was thus compiled with ``-DTUNE_ITEMS_PER_THREAD=19 -DTUNE_THREADS_PER_BLOCK=512``.
 The meaning of these values is specific to the benchmark definition,
 and we have to check the benchmark’s source code for how they are applied.
 Equally named tuning parameters may not translate to different benchmarks (please double check).

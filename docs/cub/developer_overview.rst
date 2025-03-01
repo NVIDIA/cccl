@@ -600,7 +600,7 @@ Policies
 ====================================
 
 Policies describe the configuration of agents wrt. to their execution.
-They do not change functional behavior, but usually affect how work is mapped to the hardware.
+They do not change functional behavior, but usually affect how work is mapped to the hardware by defining certain compile-time parameters (items per thread, block size, etc.).
 
 An agent policy could look like this:
 
@@ -664,7 +664,7 @@ See also :ref:`cub-tuning`.
 
 Tunings are usually organized as a class template, one per PTX version,
 with a template specialization for each combination of the compile-time parameters,
-for which better values for an agent policies are known.
+for which better values for an agent policy are known.
 An example set of tunings could look like this:
 
 .. code-block:: c++
