@@ -228,7 +228,7 @@ public:
 
       // To create prereqs that depend on this finalize() stage, we get the
       // stream used in this context, and insert events in it.
-      cudaStream_t stream         = get_stream(depth());
+      cudaStream_t stream         = get_node(depth()).support_stream;
       event_list finalize_prereqs = nodes[depth() - 1].ctx.stream_to_event_list(stream, "finalized");
 
       for (auto& [key, d_impl] : current_node.pushed_data)
@@ -255,6 +255,19 @@ public:
       return nodes.size() - 1;
     }
 
+    ctx_node &get_node(size_t level)
+    {
+        _CCCL_ASSERT(level < nodes.size(), "invalid value");
+        return nodes[level];
+    }
+
+    const ctx_node &get_node(size_t level) const
+    {
+        _CCCL_ASSERT(level < nodes.size(), "invalid value");
+        return nodes[level];
+    }
+
+
     /**
      * @brief Returns a reference to the context for a specific ctx node
      */
@@ -271,12 +284,6 @@ public:
     {
       _CCCL_ASSERT(level < nodes.size(), "invalid value");
       return nodes[level].ctx;
-    }
-
-    cudaStream_t get_stream(size_t level) const
-    {
-      _CCCL_ASSERT(level < nodes.size(), "invalid value");
-      return nodes[level].support_stream;
     }
 
     void track_pushed_data(int data_id, const ::std::shared_ptr<stackable_logical_data_impl_state_base> data_impl)
@@ -340,9 +347,14 @@ public:
       : pimpl(::std::make_shared<impl>())
   {}
 
-  cudaStream_t get_stream(size_t level) const
+  const auto& get_node(size_t level) const
   {
-    return pimpl->get_stream(level);
+    return pimpl->get_node(level);
+  }
+
+  auto& get_node(size_t level)
+  {
+    return pimpl->get_node(level);
   }
 
   const auto& get_ctx(size_t level) const
@@ -353,16 +365,6 @@ public:
   auto& get_ctx(size_t level)
   {
     return pimpl->get_ctx(level);
-  }
-
-  const auto& operator()() const
-  {
-    return get_ctx(depth());
-  }
-
-  auto& operator()()
-  {
-    return get_ctx(depth());
   }
 
   void push(const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
@@ -788,7 +790,8 @@ class stackable_logical_data
       _CCCL_ASSERT(ctx_depth >= current_data_depth + 1, "Invalid depth");
 
       context& from_ctx = sctx.get_ctx(current_data_depth);
-      context& to_ctx   = sctx.get_ctx(current_data_depth + 1);
+      auto &to_node = sctx.get_node(current_data_depth + 1);
+      context& to_ctx   = to_node.ctx;
 
       auto& s        = impl_state->s;
       auto& frozen_s = impl_state->frozen_s;
@@ -810,7 +813,7 @@ class stackable_logical_data
       frozen_s.push_back(f);
 
       // FAKE IMPORT : use the stream needed to support the (graph) ctx
-      cudaStream_t stream = sctx.get_stream(current_data_depth + 1);
+      cudaStream_t stream = to_node.support_stream;
 
       T inst  = f.get(where, stream);
       auto ld = to_ctx.logical_data(inst, where);
