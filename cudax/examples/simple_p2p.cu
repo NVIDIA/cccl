@@ -219,9 +219,9 @@ try
 
   printf("Enabling peer access between GPU%d and GPU%d...\n", peers[0].get(), peers[1].get());
   cudax::device_memory_resource dev0_resource(peers[0]);
-  dev0_resource.enable_peer_access_from(peers[1]);
+  dev0_resource.enable_access_from(peers[1]);
   cudax::device_memory_resource dev1_resource(peers[1]);
-  dev1_resource.enable_peer_access_from(peers[0]);
+  dev1_resource.enable_access_from(peers[0]);
 
   // Allocate buffers
   constexpr size_t buf_cnt = 1024 * 1024 * 16;
@@ -239,8 +239,8 @@ try
 
   // Disable peer access
   printf("Disabling peer access...\n");
-  dev0_resource.disable_peer_access_from(peers[1]);
-  dev1_resource.disable_peer_access_from(peers[0]);
+  dev0_resource.disable_access_from(peers[1]);
+  dev1_resource.disable_access_from(peers[0]);
 
   // No cleanup needed
   printf("Test passed\n");
