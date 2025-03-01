@@ -6,6 +6,8 @@ PTX Instructions
 .. toctree::
    :maxdepth: 1
 
+   instructions/ld
+   instructions/st
    instructions/shr
    instructions/shl
    instructions/bmsk
@@ -261,13 +263,13 @@ Instructions by section
    * - `prmt <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-prmt>`__
      - Yes, CCCL 3.0.0 / CUDA 13.0
    * - `ld <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-ld>`__
-     - No
+     - Yes, CCCL 3.0.0 / CUDA 13.0
    * - `ld.global.nc <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-ld-global-nc>`__
-     - No
+     - Yes, CCCL 3.0.0 / CUDA 13.0
    * - `ldu <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-ldu>`__
      - No
    * - `st <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-st>`__
-     - No
+     - Yes, CCCL 3.0.0 / CUDA 13.0
    * - :ref:`st.async <libcudacxx-ptx-instructions-st-async>`
      - CCCL 2.3.0 / CUDA 12.4
    * - :ref:`st.bulk <libcudacxx-ptx-instructions-st-bulk>`
