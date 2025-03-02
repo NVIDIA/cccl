@@ -166,7 +166,7 @@ public:
         // Add an edge between that leaf task and the fence node in the DOT output
         if (dot_is_tracing)
         {
-          dot.add_edge(t_id, fence_unique_id, 1);
+          dot.add_edge(t_id, fence_unique_id, 2);
         }
       }
 
