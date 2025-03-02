@@ -44,7 +44,7 @@ def load(dtype, threads_per_block, items_per_thread=1, algorithm="direct"):
     Returns a callable object that can be linked to and invoked from device code. It can be
     invoked with the following signatures:
 
-    - `(src: numba.types.Array, dest: numba.types.Array) -> dtype`: Each thread loads
+    - `(src: numba.types.Array, dest: numba.types.Array) -> None`: Each thread loads
         `items_per_thread` items from `src` into `dest`. `dest` must contain at least
         `items_per_thread` items.
 
@@ -129,7 +129,7 @@ def store(dtype, threads_per_block, items_per_thread=1, algorithm="direct"):
     Returns a callable object that can be linked to and invoked from device code. It can be
     invoked with the following signatures:
 
-    - `(dest: numba.types.Array, src: numba.types.Array) -> dtype`: Each thread stores
+    - `(dest: numba.types.Array, src: numba.types.Array) -> None`: Each thread stores
         `items_per_thread` items from `src` into `dest`. `src` must contain at least
         `items_per_thread` items.
 
@@ -145,7 +145,7 @@ def store(dtype, threads_per_block, items_per_thread=1, algorithm="direct"):
     For more details, [read the corresponding CUB C++ documentation](https://nvidia.github.io/cccl/cub/api/classcub_1_1BlockStore.html).
 
     Args:
-        dtype: Data type being loaded
+        dtype: Data type being stored
         threads_per_block: The number of threads in a block, either an integer or a tuple of 2 or 3 integers
         items_per_thread: The number of items each thread loads
         algorithm: The data movement algorithm to use

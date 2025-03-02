@@ -31,7 +31,6 @@ def test_block_load_store():
     def kernel(input, output):
         tmp = cuda.local.array(items_per_thread, numba.int32)
         block_load(input, tmp)
-        cuda.syncthreads()
         block_store(output, tmp)
 
     # example-end load_store
