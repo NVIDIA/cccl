@@ -208,7 +208,7 @@ struct dynamic_merge_sort_policy_t
     return op.template Invoke<merge_sort_runtime_tuning_policy>(GetPolicy(device_ptx_version, key_size));
   }
 
-  int key_size;
+  uint64_t key_size;
 };
 
 struct merge_sort_kernel_source
