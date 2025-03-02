@@ -234,9 +234,9 @@ struct DispatchMergeSort
        * Merge sort supports large types, which can lead to excessive shared memory size requirements. In these cases,
        * merge sort allocates virtual shared memory that resides in global memory.
        */
-      const std::size_t block_sort_smem_size       = num_tiles * vsmem_helper.BlockSortVSMemPerBlock();
-      const std::size_t merge_smem_size            = num_tiles * vsmem_helper.MergeVSMemPerBlock();
-      const std::size_t virtual_shared_memory_size = (::cuda::std::max)(block_sort_smem_size, merge_smem_size);
+      const ::cuda::std::size_t block_sort_smem_size       = num_tiles * vsmem_helper.BlockSortVSMemPerBlock();
+      const ::cuda::std::size_t merge_smem_size            = num_tiles * vsmem_helper.MergeVSMemPerBlock();
+      const ::cuda::std::size_t virtual_shared_memory_size = (::cuda::std::max)(block_sort_smem_size, merge_smem_size);
 
       void* allocations[4]       = {nullptr, nullptr, nullptr, nullptr};
       size_t allocation_sizes[4] = {

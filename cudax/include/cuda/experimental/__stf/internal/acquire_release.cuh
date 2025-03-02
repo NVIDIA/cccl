@@ -324,6 +324,10 @@ inline void task::release(backend_ctx_untyped& ctx, event_list& done_prereqs)
   // This will, in particular, release shared_ptr to logical data captured in
   // the dependencies.
   pimpl->post_submission_hooks.clear();
+
+#ifndef NDEBUG
+  ctx.increment_finished_task_count();
+#endif
 }
 
 } // namespace cuda::experimental::stf

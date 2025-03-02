@@ -60,10 +60,8 @@ int main(int, char**)
 {
   test();
 #if defined(_CCCL_BUILTIN_ADDRESSOF)
-#  if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
   static_assert(test(), "");
-#  endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-#endif
+#endif // _CCCL_BUILTIN_ADDRESSOF
   /*
   {
     auto opt = cuda::std::make_optional<cuda::std::string>({'1', '2', '3'});

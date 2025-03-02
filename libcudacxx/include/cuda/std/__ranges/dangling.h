@@ -38,7 +38,7 @@ struct dangling
 #if !defined(_CCCL_NO_CONCEPTS)
 template <range _Rp>
 using borrowed_iterator_t = _If<borrowed_range<_Rp>, iterator_t<_Rp>, dangling>;
-#else // ^^^ C++20 ^^^ / vvv C++17 vvv
+#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 template <class _Rp>
 using borrowed_iterator_t = enable_if_t<range<_Rp>, _If<borrowed_range<_Rp>, iterator_t<_Rp>, dangling>>;
 #endif // _CCCL_NO_CONCEPTS

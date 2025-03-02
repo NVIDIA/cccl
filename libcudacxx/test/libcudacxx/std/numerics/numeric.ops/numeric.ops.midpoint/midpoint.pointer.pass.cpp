@@ -68,15 +68,13 @@ __host__ __device__ void pointer_test()
   runtime_test<const volatile T>();
 
   //  The constexpr tests are always const, but we can test them anyway.
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3)
   constexpr_test<T>();
   constexpr_test<const T>();
 
-#  if !defined(TEST_COMPILER_GCC)
+#if !defined(TEST_COMPILER_GCC)
   constexpr_test<volatile T>();
   constexpr_test<const volatile T>();
-#  endif // !TEST_COMPILER_GCC
-#endif // !TEST_COMPILER_CUDACC_BELOW_11_3
+#endif // !TEST_COMPILER_GCC
 }
 
 int main(int, char**)
