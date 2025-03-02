@@ -385,7 +385,7 @@ CUresult cccl_device_segmented_reduce(
   size_t* temp_storage_bytes,
   cccl_iterator_t d_in,
   cccl_iterator_t d_out,
-  unsigned long long num_segments,
+  uint64_t num_segments,
   cccl_iterator_t start_offset,
   cccl_iterator_t end_offset,
   cccl_op_t op,
