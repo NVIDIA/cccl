@@ -123,7 +123,7 @@ public:
 
       // This map keeps track of the logical data that were pushed in this ctx node
       // key: logical data's unique id
-      ::std::unordered_map<int, ::std::shared_ptr<stackable_logical_data_impl_state_base>> pushed_data;
+      ::std::vector<::std::shared_ptr<stackable_logical_data_impl_state_base>> pushed_data;
 
       // To avoid prematurely destroying data created in a nested context, we need to hold a reference to them
       //
@@ -144,10 +144,10 @@ public:
         retained_data.push_back(mv(data_impl));
       }
 
-      void track_pushed_data(int data_id, ::std::shared_ptr<stackable_logical_data_impl_state_base> data_impl)
+      void track_pushed_data(::std::shared_ptr<stackable_logical_data_impl_state_base> data_impl)
       {
         _CCCL_ASSERT(data_impl, "invalid value");
-        pushed_data[data_id] = mv(data_impl);
+        pushed_data.push_back(mv(data_impl));
       }
 
       // Where was the push() called ?
@@ -234,7 +234,7 @@ public:
       auto& current_node = nodes.back();
 
       // Automatically pop data if needed
-      for (auto& [key, d_impl] : current_node.pushed_data)
+      for (auto& d_impl : current_node.pushed_data)
       {
         _CCCL_ASSERT(d_impl, "invalid value");
         d_impl->pop_before_finalize();
@@ -257,7 +257,7 @@ public:
       cudaStream_t stream         = current_node.support_stream;
       event_list finalize_prereqs = nodes[depth() - 1].ctx.stream_to_event_list(stream, "finalized");
 
-      for (auto& [key, d_impl] : current_node.pushed_data)
+      for (auto& d_impl : current_node.pushed_data)
       {
         _CCCL_ASSERT(d_impl, "invalid value");
         d_impl->pop_after_finalize(finalize_prereqs);
@@ -875,12 +875,9 @@ class stackable_logical_data
       // the child context itself.
       to_ctx.get_dot()->ctx_add_input_id(frozen_ld.freeze_fake_task_id());
 
-      // Keep track of data that were pushed in this context. Note that the ID
-      // used is the ID of the logical data at this level. This will be used to
-      // pop data automatically when nested contexts are popped.
-      //
-      // This map gets destroyed when we pop the context
-      to_node.track_pushed_data(ld.get_unique_id(), impl_state);
+      // Keep track of data that were pushed in this context.  This will be
+      // used to pop data automatically when nested contexts are popped.
+      to_node.track_pushed_data(impl_state);
 
       // Save the logical data created to keep track of the data instance
       // obtained with the get method of the frozen_logical_data object.
