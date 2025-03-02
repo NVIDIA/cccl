@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdlib>
 #include <iostream>
 #include <memory>
@@ -68,7 +69,7 @@ struct nvrtc_program_cleanup
 struct nvrtc_ltoir
 {
   const char* ltoir;
-  int ltsz;
+  size_t ltsz;
 };
 using nvrtc_ltoir_list = std::vector<nvrtc_ltoir>;
 struct nvrtc_jitlink_cleanup
@@ -147,8 +148,8 @@ struct nvrtc_command_list_visitor
   }
   void execute(nvrtc_ltoir lto)
   {
-    check(nvJitLinkAddData(
-      jitlink.handle, NVJITLINK_INPUT_LTOIR, (const void*) lto.ltoir, (size_t) lto.ltsz, program_name.data()));
+    check(
+      nvJitLinkAddData(jitlink.handle, NVJITLINK_INPUT_LTOIR, (const void*) lto.ltoir, lto.ltsz, program_name.data()));
   }
   void execute(const nvrtc_ltoir_list& lto_list)
   {
