@@ -159,7 +159,7 @@ std::string get_sweep_kernel_name(
   const std::string output_values_iterator_t =
     get_iterator_name<items_storage_t>(output_values_it, unique_by_key_iterator_t::output_values);
   const std::string output_num_selected_iterator_t =
-    get_iterator_name<num_selected_storage_t>(output_num_selected_it, unique_by_key_iterator_t::output_values);
+    get_iterator_name<num_selected_storage_t>(output_num_selected_it, unique_by_key_iterator_t::num_selected);
 
   std::string offset_t;
   check(nvrtcGetTypeName<OffsetT>(&offset_t));
