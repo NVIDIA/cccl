@@ -31,27 +31,18 @@
 #include <thrust/transform.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace generic
+namespace system::detail::generic
 {
 namespace detail
 {
 
 // this functor receives x, and returns a new_value if predicate(x) is true; otherwise,
 // it returns x
-template <typename Predicate, typename NewType, typename OutputType>
+template <typename Predicate, typename NewType>
 struct new_value_if
 {
-  _CCCL_HOST_DEVICE new_value_if(Predicate p, NewType nv)
-      : pred(p)
-      , new_value(nv)
-  {}
-
   template <typename InputType>
-  _CCCL_HOST_DEVICE OutputType operator()(const InputType& x) const
+  _CCCL_HOST_DEVICE auto operator()(const InputType& x) const
   {
     return pred(x) ? new_value : x;
   } // end operator()()
@@ -59,14 +50,14 @@ struct new_value_if
   // this version of operator()() works like the previous but
   // feeds its second argument to pred
   template <typename InputType, typename PredicateArgumentType>
-  _CCCL_HOST_DEVICE OutputType operator()(const InputType& x, const PredicateArgumentType& y)
+  _CCCL_HOST_DEVICE auto operator()(const InputType& x, const PredicateArgumentType& y)
   {
     return pred(y) ? new_value : x;
   } // end operator()()
 
   Predicate pred;
   NewType new_value;
-}; // end new_value_if
+};
 
 // this unary functor ignores its argument and returns a constant
 template <typename T>
@@ -96,10 +87,7 @@ _CCCL_HOST_DEVICE OutputIterator replace_copy_if(
   Predicate pred,
   const T& new_value)
 {
-  using OutputType = thrust::detail::it_value_t<OutputIterator>;
-
-  detail::new_value_if<Predicate, T, OutputType> op(pred, new_value);
-  return thrust::transform(exec, first, last, result, op);
+  return thrust::transform(exec, first, last, result, detail::new_value_if<Predicate, T>{pred, new_value});
 } // end replace_copy_if()
 
 template <typename DerivedPolicy,
@@ -117,10 +105,8 @@ _CCCL_HOST_DEVICE OutputIterator replace_copy_if(
   Predicate pred,
   const T& new_value)
 {
-  using OutputType = thrust::detail::it_value_t<OutputIterator>;
-
-  detail::new_value_if<Predicate, T, OutputType> op(pred, new_value);
-  return thrust::transform(exec, first, last, stencil, result, op);
+  ;
+  return thrust::transform(exec, first, last, stencil, result, detail::new_value_if<Predicate, T>{pred, new_value});
 } // end replace_copy_if()
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T>
@@ -175,7 +161,5 @@ replace(thrust::execution_policy<DerivedPolicy>& exec,
   return thrust::replace_if(exec, first, last, _1 == old_value, new_value);
 } // end replace()
 
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

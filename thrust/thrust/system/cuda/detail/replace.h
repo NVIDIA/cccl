@@ -63,30 +63,24 @@ struct constant_f
   }
 }; // struct constant_f
 
-template <class Predicate, class NewType, class OutputType>
+template <class Predicate, class NewType>
 struct new_value_if_f
 {
   Predicate pred;
   NewType new_value;
 
-  THRUST_FUNCTION
-  new_value_if_f(Predicate pred_, NewType new_value_)
-      : pred(pred_)
-      , new_value(new_value_)
-  {}
-
   template <class T>
-  OutputType THRUST_DEVICE_FUNCTION operator()(T const& x)
+  auto THRUST_DEVICE_FUNCTION operator()(T const& x)
   {
     return pred(x) ? new_value : x;
   }
 
   template <class T, class P>
-  OutputType THRUST_DEVICE_FUNCTION operator()(T const& x, P const& y)
+  auto THRUST_DEVICE_FUNCTION operator()(T const& x, P const& y)
   {
     return pred(y) ? new_value : x;
   }
-}; // struct new_value_if_f
+};
 
 } // namespace __replace
 
@@ -127,9 +121,8 @@ OutputIt _CCCL_HOST_DEVICE replace_copy_if(
   Predicate predicate,
   T const& new_value)
 {
-  using output_type    = thrust::detail::it_value_t<OutputIt>;
-  using new_value_if_t = __replace::new_value_if_f<Predicate, T, output_type>;
-  return cuda_cub::transform(policy, first, last, result, new_value_if_t(predicate, new_value));
+  using new_value_if_t = __replace::new_value_if_f<Predicate, T>;
+  return cuda_cub::transform(policy, first, last, result, new_value_if_t{predicate, new_value});
 }
 
 template <class Derived, class InputIt, class StencilIt, class OutputIt, class Predicate, class T>
@@ -142,9 +135,8 @@ OutputIt _CCCL_HOST_DEVICE replace_copy_if(
   Predicate predicate,
   T const& new_value)
 {
-  using output_type    = thrust::detail::it_value_t<OutputIt>;
-  using new_value_if_t = __replace::new_value_if_f<Predicate, T, output_type>;
-  return cuda_cub::transform(policy, first, last, stencil, result, new_value_if_t(predicate, new_value));
+  using new_value_if_t = __replace::new_value_if_f<Predicate, T>;
+  return cuda_cub::transform(policy, first, last, stencil, result, new_value_if_t{predicate, new_value});
 }
 
 template <class Derived, class InputIt, class OutputIt, class T>
