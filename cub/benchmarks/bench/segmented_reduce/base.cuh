@@ -129,7 +129,7 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Of
     d_in,
     d_out,
     num_segments,
-    static_cast<segmeent_size_t>(segment_size),
+    static_cast<segment_size_t>(segment_size),
     op_t{},
     init_t{},
     0 /* stream */);
@@ -144,7 +144,7 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Of
       d_in,
       d_out,
       num_segments,
-      static_cast<segmeent_size_t>(segment_size),
+      static_cast<segment_size_t>(segment_size),
       op_t{},
       init_t{},
       launch.get_stream());
