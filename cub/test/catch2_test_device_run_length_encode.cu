@@ -249,7 +249,7 @@ C2H_TEST("DeviceRunLengthEncode::Encode can handle leading NaN", "[device][run_l
   c2h::device_vector<int> out_num_runs(1);
 
   c2h::device_vector<type> reference_unique = in;
-  in.front()                                = std::numeric_limits<type>::quiet_NaN();
+  in.front()                                = ::cuda::std::numeric_limits<type>::quiet_NaN();
 
   run_length_encode(in.begin(), out_unique.begin(), out_counts.begin(), out_num_runs.begin(), num_items);
 

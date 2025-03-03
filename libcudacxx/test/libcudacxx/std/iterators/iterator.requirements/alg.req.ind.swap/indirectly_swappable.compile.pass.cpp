@@ -77,9 +77,7 @@ struct G
   __host__ __device__ friend void iter_swap(const PointerTo<G>&, const PointerTo<F>&);
 };
 
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3)
 static_assert(cuda::std::indirectly_swappable<PointerTo<A>, PointerTo<B>>, "");
-#endif // !TEST_COMPILER_CUDACC_BELOW_11_3
 static_assert(!cuda::std::indirectly_swappable<PointerTo<A>, PointerTo<C>>, "");
 static_assert(!cuda::std::indirectly_swappable<PointerTo<A>, PointerTo<D>>, "");
 static_assert(!cuda::std::indirectly_swappable<PointerTo<A>, PointerTo<E>>, "");

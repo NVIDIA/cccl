@@ -45,6 +45,8 @@
 
 #include <thrust/iterator/discard_iterator.h>
 
+#include <cuda/std/__algorithm_>
+
 #include <cfloat>
 #include <cmath>
 #include <cstddef>
@@ -505,8 +507,8 @@ void RandomBits(K& key, int entropy_reduction = 0, int begin_bit = 0, int end_bi
       int current_bit = j * WORD_BYTES * 8;
 
       unsigned int word = 0xffffffff;
-      word &= 0xffffffff << CUB_MAX(0, begin_bit - current_bit);
-      word &= 0xffffffff >> CUB_MAX(0, (current_bit + (WORD_BYTES * 8)) - end_bit);
+      word &= 0xffffffff << ::cuda::std::max(0, begin_bit - current_bit);
+      word &= 0xffffffff >> ::cuda::std::max(0, (current_bit + (WORD_BYTES * 8)) - end_bit);
 
       for (int i = 0; i <= entropy_reduction; i++)
       {
@@ -966,30 +968,32 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, TestFoo& va
   InitValue(gen_mode, value.w, index);
 }
 
-/// numeric_limits<TestFoo> specialization
-CUB_NAMESPACE_BEGIN
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <>
-struct NumericTraits<TestFoo>
+class numeric_limits<TestFoo>
 {
-  __host__ __device__ static TestFoo Max()
+public:
+  static constexpr bool is_specialized = true;
+
+  __host__ __device__ static TestFoo max()
   {
     return TestFoo::MakeTestFoo(
-      NumericTraits<long long>::Max(),
-      NumericTraits<int>::Max(),
-      NumericTraits<short>::Max(),
-      NumericTraits<char>::Max());
+      numeric_limits<long long>::max(),
+      numeric_limits<int>::max(),
+      numeric_limits<short>::max(),
+      numeric_limits<char>::max());
   }
 
-  __host__ __device__ static TestFoo Lowest()
+  __host__ __device__ static TestFoo lowest()
   {
     return TestFoo::MakeTestFoo(
-      NumericTraits<long long>::Lowest(),
-      NumericTraits<int>::Lowest(),
-      NumericTraits<short>::Lowest(),
-      NumericTraits<char>::Lowest());
+      numeric_limits<long long>::lowest(),
+      numeric_limits<int>::lowest(),
+      numeric_limits<short>::lowest(),
+      numeric_limits<char>::lowest());
   }
 };
-CUB_NAMESPACE_END
+_LIBCUDACXX_END_NAMESPACE_STD
 
 //---------------------------------------------------------------------
 // Complex data type TestBar (with optimizations for fence-free warp-synchrony)
@@ -1094,22 +1098,24 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, TestBar& va
   InitValue(gen_mode, value.y, index);
 }
 
-/// numeric_limits<TestBar> specialization
-CUB_NAMESPACE_BEGIN
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <>
-struct NumericTraits<TestBar>
+class numeric_limits<TestBar>
 {
-  __host__ __device__ static TestBar Max()
+public:
+  static constexpr bool is_specialized = true;
+
+  __host__ __device__ static TestBar max()
   {
-    return TestBar(NumericTraits<long long>::Max(), NumericTraits<int>::Max());
+    return TestBar(numeric_limits<long long>::max(), numeric_limits<int>::max());
   }
 
-  __host__ __device__ static TestBar Lowest()
+  __host__ __device__ static TestBar lowest()
   {
-    return TestBar(NumericTraits<long long>::Lowest(), NumericTraits<int>::Lowest());
+    return TestBar(numeric_limits<long long>::lowest(), numeric_limits<int>::lowest());
   }
 };
-CUB_NAMESPACE_END
+_LIBCUDACXX_END_NAMESPACE_STD
 
 /******************************************************************************
  * Helper routines for list comparison and display
@@ -1388,7 +1394,7 @@ void InitializeSegments(OffsetT num_items, int num_segments, OffsetT* h_segment_
 
     OffsetT segment_length = RandomValue((expected_segment_length * 2) + 1);
     offset += segment_length;
-    offset = CUB_MIN(offset, num_items);
+    offset = ::cuda::std::min(offset, num_items);
   }
   h_segment_offsets[num_segments] = num_items;
 

@@ -78,12 +78,7 @@ __host__ __device__
     check_noexcept(array);
     typename C::iterator i       = array.begin();
     typename C::const_iterator j = array.cbegin();
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) // seems there are different nullptr's
     assert(i == j);
-#else // ^^^ !TEST_COMPILER_CUDACC_BELOW_11_3 ^^^ / vvv TEST_COMPILER_CUDACC_BELOW_11_3 vvv
-    assert(i == nullptr);
-    assert(j == nullptr);
-#endif // TEST_COMPILER_CUDACC_BELOW_11_3
   }
 
   {
@@ -146,17 +141,10 @@ __host__ __device__
       assert(ii1 == ii4);
       static_assert(cuda::std::is_same_v<decltype(ii1), int*>, "");
       static_assert(cuda::std::is_same_v<decltype(cii), const int*>, "");
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) // old NVCC has issues comparing int* with const int*
       assert(ii1 == cii);
-#else // ^^^ !TEST_COMPILER_CUDACC_BELOW_11_3 ^^^ / vvv TEST_COMPILER_CUDACC_BELOW_11_3 vvv
-      assert(ii1 == nullptr);
-      assert(cii == nullptr);
-#endif // TEST_COMPILER_CUDACC_BELOW_11_3
 
       assert(!(ii1 != ii2));
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) // old NVCC has issues comparing int* with const int*
       assert(!(ii1 != cii));
-#endif // TEST_COMPILER_CUDACC_BELOW_11_3
 
       C c = {};
       check_noexcept(c);
@@ -193,16 +181,11 @@ __host__ __device__
 
       assert(!(ii1 != ii2));
 
-#ifndef TEST_COMPILER_CUDACC_BELOW_11_3 // old NVCC has issues comparing int* with const int*
       assert((ii1 == cii));
       assert((cii == ii1));
       assert(!(ii1 != cii));
       assert(!(cii != ii1));
-#else // ^^^ !TEST_COMPILER_CUDACC_BELOW_11_3 ^^^ / vvv TEST_COMPILER_CUDACC_BELOW_11_3 vvv
-      assert(ii1 == nullptr);
-      assert(cii == nullptr);
-#endif // TEST_COMPILER_CUDACC_BELOW_11_3
-       // This breaks NVCCs constexpr evaluator
+      // This breaks NVCCs constexpr evaluator
       if (!TEST_IS_CONSTANT_EVALUATED())
       {
         assert(!(ii1 < cii));

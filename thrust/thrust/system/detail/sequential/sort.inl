@@ -63,7 +63,7 @@ _CCCL_HOST_DEVICE void stable_sort(
   thrust::system::detail::sequential::stable_primitive_sort(exec, first, last);
 
   // if comp is greater<T> then reverse the keys
-  using KeyType = typename thrust::iterator_traits<RandomAccessIterator>::value_type;
+  using KeyType = thrust::detail::it_value_t<RandomAccessIterator>;
 
   if (needs_reverse<KeyType, StrictWeakOrdering>::value)
   {
@@ -84,7 +84,7 @@ _CCCL_HOST_DEVICE void stable_sort_by_key(
   thrust::detail::true_type)
 {
   // if comp is greater<T> then reverse the keys and values
-  using KeyType = typename thrust::iterator_traits<RandomAccessIterator1>::value_type;
+  using KeyType = thrust::detail::it_value_t<RandomAccessIterator1>;
 
   // note, we also have to reverse the (unordered) input to preserve stability
   if (needs_reverse<KeyType, StrictWeakOrdering>::value)
@@ -151,7 +151,7 @@ _CCCL_HOST_DEVICE void stable_sort(
   // the compilation time of stable_primitive_sort is too expensive to use within a single CUDA thread
   NV_IF_TARGET(
     NV_IS_HOST,
-    (using KeyType = thrust::iterator_value_t<RandomAccessIterator>;
+    (using KeyType = thrust::detail::it_value_t<RandomAccessIterator>;
      sort_detail::use_primitive_sort<KeyType, StrictWeakOrdering> use_primitive_sort;
      sort_detail::stable_sort(exec, first, last, comp, use_primitive_sort);),
     ( // NV_IS_DEVICE:
@@ -173,7 +173,7 @@ _CCCL_HOST_DEVICE void stable_sort_by_key(
   // the compilation time of stable_primitive_sort_by_key is too expensive to use within a single CUDA thread
   NV_IF_TARGET(
     NV_IS_HOST,
-    (using KeyType = thrust::iterator_value_t<RandomAccessIterator1>;
+    (using KeyType = thrust::detail::it_value_t<RandomAccessIterator1>;
      sort_detail::use_primitive_sort<KeyType, StrictWeakOrdering> use_primitive_sort;
      sort_detail::stable_sort_by_key(exec, first1, last1, first2, comp, use_primitive_sort);),
     ( // NV_IS_DEVICE:

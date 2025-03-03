@@ -137,15 +137,6 @@ struct MemBoundScaling
 };
 
 } // namespace detail
-
-template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename T>
-using RegBoundScaling CCCL_DEPRECATED_BECAUSE("Internal implementation detail") =
-  detail::RegBoundScaling<Nominal4ByteBlockThreads, Nominal4ByteItemsPerThread, T>;
-
-template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename T>
-using MemBoundScaling CCCL_DEPRECATED_BECAUSE("Internal implementation detail") =
-  detail::RegBoundScaling<Nominal4ByteBlockThreads, Nominal4ByteItemsPerThread, T>;
-
 #endif // Do not document
 
 CUB_NAMESPACE_END

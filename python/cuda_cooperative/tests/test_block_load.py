@@ -2,9 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from functools import reduce
+from operator import mul
+
 import numba
 import pytest
-from helpers import NUMBA_TYPES_TO_NP, random_int
+from helpers import NUMBA_TYPES_TO_NP, random_int, row_major_tid
 from numba import cuda, types
 from pynvjitlink import patch
 
@@ -15,7 +18,7 @@ numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 
 @pytest.mark.parametrize("T", [types.int8, types.int16, types.uint32, types.uint64])
-@pytest.mark.parametrize("threads_in_block", [32, 128, 256])
+@pytest.mark.parametrize("threads_per_block", [32, 128, 256, (4, 8), (2, 4, 8)])
 @pytest.mark.parametrize("items_per_thread", [1, 3])
 @pytest.mark.parametrize(
     "algorithm",
@@ -28,20 +31,26 @@ numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
         "warp_transpose_timesliced",
     ],
 )
-def test_block_load(T, threads_in_block, items_per_thread, algorithm):
-    block_load = cudax.block.load(T, threads_in_block, items_per_thread, algorithm)
+def test_block_load(T, threads_per_block, items_per_thread, algorithm):
+    block_load = cudax.block.load(T, threads_per_block, items_per_thread, algorithm)
     temp_storage_bytes = block_load.temp_storage_bytes
+
+    num_threads_per_block = (
+        threads_per_block
+        if type(threads_per_block) is int
+        else reduce(mul, threads_per_block)
+    )
 
     if algorithm == "striped":
 
         @cuda.jit(device=True)
         def output_index(i):
-            return cuda.threadIdx.x + threads_in_block * i
+            return row_major_tid() + num_threads_per_block * i
     else:
 
         @cuda.jit(device=True)
         def output_index(i):
-            return cuda.threadIdx.x * items_per_thread + i
+            return row_major_tid() * items_per_thread + i
 
     @cuda.jit(link=block_load.files)
     def kernel(d_input, d_output):
@@ -52,11 +61,11 @@ def test_block_load(T, threads_in_block, items_per_thread, algorithm):
             d_output[output_index(i)] = thread_data[i]
 
     dtype = NUMBA_TYPES_TO_NP[T]
-    items_per_tile = threads_in_block * items_per_thread
+    items_per_tile = num_threads_per_block * items_per_thread
     h_input = random_int(items_per_tile, dtype)
     d_input = cuda.to_device(h_input)
     d_output = cuda.device_array(items_per_tile, dtype=dtype)
-    kernel[1, threads_in_block](d_input, d_output)
+    kernel[1, threads_per_block](d_input, d_output)
     cuda.synchronize()
 
     output = d_output.copy_to_host()
