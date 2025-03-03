@@ -17,36 +17,38 @@
 
 #include <cuda/experimental/stf.cuh>
 
-#include "cuda/experimental/__stf/utility/stackable_ctx.cuh"
-
-#include <thread>
 #include <mutex>
+#include <thread>
+
+#include "cuda/experimental/__stf/utility/stackable_ctx.cuh"
 
 using namespace cuda::experimental::stf;
 
 ::std::mutex mutex;
 
-void worker(stackable_ctx sctx, int id, int main_head, stackable_logical_data<slice<int>> lAi, stackable_logical_data<slice<int>> lB)
+void worker(stackable_ctx sctx,
+            int id,
+            int main_head,
+            stackable_logical_data<slice<int>> lAi,
+            stackable_logical_data<slice<int>> lB)
 {
-    mutex.lock();
-    fprintf(stderr, "launching thread %d\n", id);
-    sctx.set_head_offset(main_head);
+  mutex.lock();
+  fprintf(stderr, "launching thread %d\n", id);
+  sctx.set_head_offset(main_head);
 
-    sctx.push();
+  sctx.push();
 
-    sctx.parallel_for(lAi.shape(), lAi.write())->*[]__device__ (size_t k, auto ai) {
-        ai(k) = k;
-    };
+  sctx.parallel_for(lAi.shape(), lAi.write())->*[] __device__(size_t k, auto ai) {
+    ai(k) = k;
+  };
 
-    sctx.parallel_for(lAi.shape(), lAi.rw(), lB.read())->*[]__device__ (size_t k, auto ai, auto b) {
-        ai(k) += b(k);
-    };
+  sctx.parallel_for(lAi.shape(), lAi.rw(), lB.read())->*[] __device__(size_t k, auto ai, auto b) {
+    ai(k) += b(k);
+  };
 
-    sctx.pop();
-    mutex.unlock();
+  sctx.pop();
+  mutex.unlock();
 }
-
-
 
 int main()
 {

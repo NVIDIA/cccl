@@ -292,8 +292,6 @@ public:
      */
     int push(int head_offset, const _CUDA_VSTD::source_location& loc)
     {
-      // fprintf(stderr, "stackable_ctx::push() depth() was %ld\n", depth());
-
       // Select the offset of the new node
       int node_offset = node_tree.get_avail_entry();
 
@@ -462,41 +460,6 @@ public:
       return get_node(offset).ctx;
     }
 
-// TODO reimplement
-#if 0
-    /**
-     * @brief Get the nesting depth
-     */
-    size_t depth() const
-    {
-      return nodes.size() - 1;
-    }
-
-    const ctx_node& get_node(size_t level) const
-    {
-      _CCCL_ASSERT(level < nodes.size(), "invalid value");
-      return nodes[level];
-    }
-
-    /**
-     * @brief Returns a reference to the context for a specific ctx node
-     */
-    auto& get_ctx(size_t level)
-    {
-      _CCCL_ASSERT(level < nodes.size(), "invalid value");
-      return nodes[level].ctx;
-    }
-
-    /**
-     * @brief Returns a const reference to the context for a specific ctx node
-     */
-    const auto& get_ctx(size_t level) const
-    {
-      _CCCL_ASSERT(level < nodes.size(), "invalid value");
-      return nodes[level].ctx;
-    }
-#endif
-
     // XXX until we have a per-thread map
     int get_head_offset() const
     {
@@ -653,8 +616,6 @@ public:
     pimpl->set_head_offset(offset);
   }
 
-
-
   void push(const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
   {
     int head     = get_head_offset();
@@ -669,13 +630,6 @@ public:
     int new_head = pimpl->pop(head);
     pimpl->set_head_offset(new_head);
   }
-
-#if 0
-  size_t depth() const
-  {
-    return pimpl->depth();
-  }
-#endif
 
   template <typename T>
   auto logical_data(shape_of<T> s)
@@ -962,13 +916,6 @@ class stackable_logical_data
           dnode.frozen_ld.reset();
         }
       }
-
-#if 0
-      size_t depth() const
-      {
-        return data_nodes.size() - 1 + offset_depth;
-      }
-#endif
 
       int get_unique_id() const
       {
@@ -1283,11 +1230,6 @@ class stackable_logical_data
       impl_state->pop_after_finalize(parent_offset, finalize_prereqs);
     }
 
-    //    size_t depth() const
-    //    {
-    //      return impl_state->depth();
-    //    }
-
     void set_symbol(::std::string symbol)
     {
       impl_state->set_symbol(mv(symbol));
@@ -1320,13 +1262,6 @@ class stackable_logical_data
     {
       return sctx;
     }
-
-#if 0
-    size_t get_offset_depth() const
-    {
-      return impl_state->offset_depth;
-    }
-#endif
 
     bool was_imported(int offset) const
     {
@@ -1390,11 +1325,6 @@ public:
   {
     return pimpl->get_unique_id();
   }
-
-  //  size_t depth() const
-  //  {
-  //    return pimpl->depth();
-  //  }
 
   void push(int ctx_offset, access_mode m, data_place where = data_place::invalid) const
   {
