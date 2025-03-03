@@ -158,6 +158,91 @@ public:
       ::std::vector<::std::shared_ptr<stackable_logical_data_impl_state_base>> retained_data;
     };
 
+    class node_hierarchy
+    {
+    public:
+      node_hierarchy()
+      {
+        // May grow up later if more contexts are needed
+        int initialize_size = 16;
+        parent.resize(initialize_size);
+        children.resize(initialize_size);
+        free_list.resize(initialize_size);
+
+        for (int i = 0; i < initialize_size; i++)
+        {
+          // The order of the nodes does not really matter, but it may be
+          // easier to follow if we get nodes in a reasonable order (sequence
+          // from 0 ...)
+          free_list.push_back(initialize_size - 1 - i);
+        }
+      }
+
+      int get_avail_entry()
+      {
+        // XXX implement growth mechanism
+        // remember size of parent, push new items in the free list ? (grow())
+        _CCCL_ASSERT(!free_list.size(), "no slot available");
+
+        int res = free_list.back();
+        free_list.pop_back();
+
+        parent[res] = -1;
+        // the node should be unused
+        _CCCL_ASSERT(children[res].size() == 0, "invalid state");
+
+        return res;
+      }
+
+      // Make the node available again
+      void discard_node(int offset)
+      {
+        // Remove this child from it's parent (if any)
+        int p = parent[offset];
+        if (p != -1)
+        {
+          bool found = false;
+          ::std::vector<int> new_children;
+          new_children.resize(children[p].size() - 1);
+          for (auto c : children[p])
+          {
+            if (c == offset)
+            {
+              found = true;
+            }
+            else
+            {
+              new_children.push_back(c);
+            }
+          }
+
+          // Ensure we did find the node in it's parent's children
+          _CCCL_ASSERT(found, "invalid hierarchy state");
+          ::std::swap(children[p], new_children);
+        }
+
+        children[offset].clear();
+        parent[offset] = -1;
+      }
+
+      void set_parent(int parent_offset, int child_offset)
+      {
+        parent[child_offset] = parent_offset;
+
+        children[parent_offset].push_back(child_offset);
+      }
+
+    private:
+      // Offset of the node's parent : -1 if none. Only valid for entries not in free-list.
+      ::std::vector<int> parent;
+
+      // If a node has children, indicate their offset here
+      ::std::vector<::std::vector<int>> children;
+
+      // Available offsets to create new nodes
+      ::std::vector<int> free_list;
+    };
+
   public:
     impl()
     {
