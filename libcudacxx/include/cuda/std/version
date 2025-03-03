@@ -96,6 +96,7 @@
 #define __cccl_lib_span                  202311L
 #define __cccl_lib_span_initializer_list 202311L
 // # define __cccl_lib_string_udls                          201304L
+#define __cccl_lib_submdspan      202207L
 #define __cccl_lib_tuples_by_type 201304L
 
 #ifdef _CCCL_BUILTIN_ADDRESSOF
