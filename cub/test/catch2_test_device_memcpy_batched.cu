@@ -91,8 +91,8 @@ try
   constexpr buffer_offset_t target_copy_size = 32U << 20;
 
   // Pairs of [min, max] buffer sizes
-  auto buffer_size_range = GENERATE_COPY(
-    table<int, int>(
+  auto [min_buffer_size, max_buffer_size] = GENERATE_COPY(
+    table<buffer_size_t, buffer_size_t>(
       {{0, 1},
        {1, 2},
        {0, 32},
@@ -102,16 +102,14 @@ try
        {target_copy_size, target_copy_size}}),
     take(4,
          map(
-           [](const std::vector<int>& chunk) {
-             int lhs = chunk[0];
-             int rhs = chunk[1];
+           [](const std::vector<buffer_size_t>& chunk) {
+             buffer_size_t lhs = chunk[0];
+             buffer_size_t rhs = chunk[1];
              // Optionally ensure lhs < rhs, for example:
              return (lhs < rhs) ? std::make_tuple(lhs, rhs) : std::make_tuple(rhs, lhs);
            },
-           chunk(2, random(1, 1000000)))));
+           chunk(2, random(buffer_size_t{1}, buffer_size_t{1000000})))));
 
-  const auto min_buffer_size       = static_cast<buffer_size_t>(std::get<0>(buffer_size_range));
-  const auto max_buffer_size       = static_cast<buffer_size_t>(std::get<1>(buffer_size_range));
   const double average_buffer_size = (min_buffer_size + max_buffer_size) / 2.0;
   const auto num_buffers           = static_cast<buffer_offset_t>(target_copy_size / average_buffer_size);
 
