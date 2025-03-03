@@ -25,6 +25,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <stack>
+
 #include "cuda/experimental/__stf/allocators/adapters.cuh"
 #include "cuda/experimental/__stf/utility/hash.cuh"
 #include "cuda/experimental/__stf/utility/source_location.cuh"
@@ -90,9 +92,9 @@ task_dep<T, reduce_op, initialize> to_task_dep(stackable_task_dep<T, reduce_op, 
 class stackable_logical_data_impl_state_base
 {
 public:
-  virtual ~stackable_logical_data_impl_state_base()                         = default;
-  virtual void pop_before_finalize() const                                  = 0;
-  virtual void pop_after_finalize(const event_list& finalize_prereqs) const = 0;
+  virtual ~stackable_logical_data_impl_state_base()                                            = default;
+  virtual void pop_before_finalize(int ctx_offset) const                                       = 0;
+  virtual void pop_after_finalize(int parent_offset, const event_list& finalize_prereqs) const = 0;
 };
 
 /**
@@ -167,7 +169,6 @@ public:
         int initialize_size = 16;
         parent.resize(initialize_size);
         children.resize(initialize_size);
-        free_list.resize(initialize_size);
 
         for (int i = 0; i < initialize_size; i++)
         {
@@ -182,7 +183,7 @@ public:
       {
         // XXX implement growth mechanism
         // remember size of parent, push new items in the free list ? (grow())
-        _CCCL_ASSERT(!free_list.size(), "no slot available");
+        _CCCL_ASSERT(free_list.size() > 0, "no slot available");
 
         int res = free_list.back();
         free_list.pop_back();
@@ -223,6 +224,9 @@ public:
 
         children[offset].clear();
         parent[offset] = -1;
+
+        // Make this offset available again
+        free_list.push_back(offset);
       }
 
       void set_parent(int parent_offset, int child_offset)
@@ -230,6 +234,18 @@ public:
         parent[child_offset] = parent_offset;
 
         children[parent_offset].push_back(child_offset);
+      }
+
+      int get_parent(int offset) const
+      {
+        _CCCL_ASSERT(offset < int(parent.size()), "");
+        return parent[offset];
+      }
+
+      const auto& get_children(int offset) const
+      {
+        _CCCL_ASSERT(offset < int(children.size()), "");
+        return children[offset];
       }
 
     private:
@@ -251,7 +267,7 @@ public:
       display_graph_stats                 = (display_graph_stats_str && atoi(display_graph_stats_str) != 0);
 
       // Create the root node
-      push(_CUDA_VSTD::source_location::current());
+      push(-1, _CUDA_VSTD::source_location::current());
     }
 
     ~impl()
@@ -269,60 +285,92 @@ public:
 
     /**
      * @brief Create a new nested level
+     *
+     * head_offset is the offset of thread's current top context (-1 if none)
      */
-    void push(const _CUDA_VSTD::source_location& loc)
+    void push(int head_offset, const _CUDA_VSTD::source_location& loc)
     {
       // fprintf(stderr, "stackable_ctx::push() depth() was %ld\n", depth());
 
-      // These resources are not destroyed when we pop, so we create it only if needed
-      if (async_handles.size() < nodes.size())
+      // Select the offset of the new node
+      int node_offset = node_tree.get_avail_entry();
+
+      fprintf(stderr, "picked node_offset %d (head offset %d)\n", node_offset, head_offset);
+
+      if (int(nodes.size()) <= node_offset)
       {
-        async_handles.emplace_back();
+        nodes.resize(node_offset + 1); // TODO round or resize to node_tree size ?
       }
 
-      if (nodes.size() == 0)
+      // Ensure the node offset was unused
+      _CCCL_ASSERT(!nodes[node_offset].has_value(), "inconsistent state");
+
+      // Keep track of parenthood
+      fprintf(stderr, "SET PARENT ? head offset %d node offset %d\n", head_offset, node_offset);
+      if (head_offset != -1)
       {
-        nodes.emplace_back(stream_ctx(), nullptr, nullptr);
+        node_tree.set_parent(head_offset, node_offset);
+      }
+
+      if (head_offset == -1)
+      {
+        nodes[node_offset].emplace(stream_ctx(), nullptr, nullptr);
+
+        // root of the context
+        root_offset = node_offset;
       }
       else
       {
-        // Get a stream from previous context (we haven't pushed the new one yet)
-        cudaStream_t stream = nodes[depth()].ctx.pick_stream();
+        _CCCL_ASSERT(nodes[head_offset].has_value(), "invalid hierarchy");
+        auto& parent_node = nodes[head_offset].value();
 
-        auto gctx = graph_ctx(stream, async_handles.back());
+        // Get a stream from previous context (we haven't pushed the new one yet)
+        cudaStream_t stream = parent_node.ctx.pick_stream();
+
+        // These resources are not destroyed when we pop, so we create it only if needed
+        while (int(async_handles.size()) < node_offset + 1)
+        {
+          async_handles.emplace_back();
+        }
+
+        auto gctx = graph_ctx(stream, async_handles[node_offset]);
 
         // Useful for tools
-        gctx.set_parent_ctx(nodes[depth()].ctx);
-        gctx.get_dot()->set_ctx_symbol("stacked_ctx_" + ::std::to_string(nodes.size()));
+        gctx.set_parent_ctx(parent_node.ctx);
+        gctx.get_dot()->set_ctx_symbol("stacked_ctx_" + ::std::to_string(node_offset));
 
         auto wrapper = ::std::make_shared<stream_adapter>(gctx, stream);
 
         gctx.update_uncached_allocator(wrapper->allocator());
 
-        nodes.emplace_back(gctx, stream, wrapper);
+        nodes[node_offset].emplace(gctx, stream, wrapper);
 
         if (display_graph_stats)
         {
-          nodes.back().callsite = loc;
+          nodes[node_offset]->callsite = loc;
         }
       }
+
+      // XXX until this is per thread
+      current_head_offset = node_offset;
     }
 
     /**
      * @brief Terminate the current nested level and get back to the previous one
      */
-    void pop()
+    void pop(int head_offset)
     {
       // fprintf(stderr, "stackable_ctx::pop() depth() was %ld\n", depth());
       _CCCL_ASSERT(nodes.size() > 0, "Calling pop while no context was pushed");
+      _CCCL_ASSERT(nodes[head_offset].has_value(), "invalid state");
 
-      auto& current_node = nodes.back();
+      auto& current_node = nodes[head_offset].value();
 
       // Automatically pop data if needed
       for (auto& d_impl : current_node.pushed_data)
       {
         _CCCL_ASSERT(d_impl, "invalid value");
-        d_impl->pop_before_finalize();
+        d_impl->pop_before_finalize(head_offset);
       }
 
       // Ensure everything is finished in the context
@@ -339,13 +387,19 @@ public:
 
       // To create prereqs that depend on this finalize() stage, we get the
       // stream used in this context, and insert events in it.
-      cudaStream_t stream         = current_node.support_stream;
-      event_list finalize_prereqs = nodes[depth() - 1].ctx.stream_to_event_list(stream, "finalized");
+      cudaStream_t stream = current_node.support_stream;
+
+      int parent_offset = node_tree.get_parent(head_offset);
+      _CCCL_ASSERT(parent_offset != -1, "");
+
+      auto& parent_node = nodes[parent_offset].value();
+
+      event_list finalize_prereqs = parent_node.ctx.stream_to_event_list(stream, "finalized");
 
       for (auto& d_impl : current_node.pushed_data)
       {
         _CCCL_ASSERT(d_impl, "invalid value");
-        d_impl->pop_after_finalize(finalize_prereqs);
+        d_impl->pop_after_finalize(parent_offset, finalize_prereqs);
       }
 
       // Destroy the resources used in the wrapper allocator (if any)
@@ -355,21 +409,48 @@ public:
       }
 
       // Destroy the current node
-      nodes.pop_back();
+      nodes[head_offset].reset();
+
+      node_tree.discard_node(head_offset);
+      fprintf(stderr, "change CTX HEAD from %d to %d\n", head_offset, parent_offset);
+      current_head_offset = parent_offset;
     }
 
+    int get_root_offset() const
+    {
+      return root_offset;
+    }
+
+    auto& get_root_ctx()
+    {
+      _CCCL_ASSERT(root_offset != -1, "invalid state");
+      _CCCL_ASSERT(nodes[root_offset].has_value(), "invalid state");
+      return nodes[root_offset].value().ctx;
+    }
+
+    const auto& get_root_ctx() const
+    {
+      _CCCL_ASSERT(root_offset != -1, "invalid state");
+      _CCCL_ASSERT(nodes[root_offset].has_value(), "invalid state");
+      return nodes[root_offset].value().ctx;
+    }
+
+    ctx_node& get_node(int offset)
+    {
+      _CCCL_ASSERT(offset != -1, "invalid value");
+      _CCCL_ASSERT(offset < int(nodes.size()), "invalid value");
+      _CCCL_ASSERT(nodes[offset].has_value(), "invalid value");
+      return nodes[offset].value();
+    }
+
+// TODO reimplement
+#if 0
     /**
      * @brief Get the nesting depth
      */
     size_t depth() const
     {
       return nodes.size() - 1;
-    }
-
-    ctx_node& get_node(size_t level)
-    {
-      _CCCL_ASSERT(level < nodes.size(), "invalid value");
-      return nodes[level];
     }
 
     const ctx_node& get_node(size_t level) const
@@ -394,6 +475,44 @@ public:
     {
       _CCCL_ASSERT(level < nodes.size(), "invalid value");
       return nodes[level].ctx;
+    }
+#endif
+
+    // XXX until we have a per-thread map
+    int get_head_offset() const
+    {
+      return current_head_offset;
+    }
+
+    auto& get_head_ctx()
+    {
+      _CCCL_ASSERT(current_head_offset != -1, "");
+      _CCCL_ASSERT(current_head_offset < int(nodes.size()), "");
+      _CCCL_ASSERT(nodes[current_head_offset].has_value(), "invalid state");
+
+      return nodes[current_head_offset].value().ctx;
+    }
+
+    const auto& get_head_ctx() const
+    {
+      _CCCL_ASSERT(current_head_offset != -1, "");
+      _CCCL_ASSERT(current_head_offset < int(nodes.size()), "");
+      _CCCL_ASSERT(nodes[current_head_offset].has_value(), "invalid state");
+
+      return nodes[current_head_offset].value().ctx;
+    }
+
+    int get_parent_offset(int offset) const
+    {
+      _CCCL_ASSERT(offset != -1, "");
+      fprintf(stderr, "get_parent_offet(%d) => %d\n", offset, node_tree.get_parent(offset));
+      return node_tree.get_parent(offset);
+    }
+
+    const auto& get_children_offsets(int parent) const
+    {
+      _CCCL_ASSERT(parent != -1, "");
+      return node_tree.get_children(parent);
     }
 
   private:
@@ -422,8 +541,16 @@ public:
       }
     }
 
-    // State for each node
-    ::std::vector<ctx_node> nodes;
+    // Actual state for each node (which organization is dictated by node_tree)
+    ::std::vector<::std::optional<ctx_node>> nodes;
+
+    // Hierarchy of the context nodes
+    node_hierarchy node_tree;
+
+    int root_offset = -1;
+
+    // Get the current offset (XXX later this will be a per-thread map)
+    int current_head_offset = -1;
 
     // Handles to retain some asynchronous states, we maintain it separately
     // from nodes because we keep its entries even when we pop a level
@@ -445,77 +572,109 @@ public:
       : pimpl(::std::make_shared<impl>())
   {}
 
+// TODO redo
+#if 0
   const auto& get_node(size_t level) const
   {
     return pimpl->get_node(level);
   }
 
-  auto& get_node(size_t level)
+#endif
+
+  auto& get_node(size_t offset)
   {
-    return pimpl->get_node(level);
+    return pimpl->get_node(offset);
   }
 
-  const auto& get_root_ctx() const
+  int get_parent_offset(int offset) const
   {
-    return pimpl->get_ctx(0);
+    return pimpl->get_parent_offset(offset);
+  }
+
+  const auto& get_children_offsets(int parent) const
+  {
+    return pimpl->get_children_offsets(parent);
   }
 
   auto& get_root_ctx()
   {
-    return pimpl->get_ctx(0);
+    return pimpl->get_root_ctx();
   }
 
-  const auto& get_head_ctx() const
+  const auto& get_root_ctx() const
   {
-    return pimpl->get_ctx(depth());
+    return pimpl->get_root_ctx();
+  }
+
+  int get_root_offset() const
+  {
+    return pimpl->get_root_offset();
   }
 
   auto& get_head_ctx()
   {
-    return pimpl->get_ctx(depth());
+    return pimpl->get_head_ctx();
+  }
+
+  const auto& get_head_ctx() const
+  {
+    return pimpl->get_head_ctx();
+  }
+
+  int get_head_offset() const
+  {
+    return pimpl->get_head_offset();
   }
 
   void push(const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
   {
-    pimpl->push(loc);
+    int head = get_head_offset();
+    pimpl->push(head, loc);
   }
 
   void pop()
   {
-    pimpl->pop();
+    int head = get_head_offset();
+    pimpl->pop(head);
   }
 
+#if 0
   size_t depth() const
   {
     return pimpl->depth();
   }
+#endif
 
   template <typename T>
   auto logical_data(shape_of<T> s)
   {
     // fprintf(stderr, "initialize from shape.\n");
-    return stackable_logical_data(*this, depth(), true, get_root_ctx().logical_data(mv(s)), true);
+    int head = pimpl->get_head_offset();
+    return stackable_logical_data(*this, head, true, get_root_ctx().logical_data(mv(s)), true);
   }
 
   template <typename T, typename... Sizes>
   auto logical_data(size_t elements, Sizes... more_sizes)
   {
+    int head = pimpl->get_head_offset();
     return stackable_logical_data(
-      *this, depth(), true, get_root_ctx().template logical_data<T>(elements, more_sizes...), true);
+      *this, head, true, get_root_ctx().template logical_data<T>(elements, more_sizes...), true);
   }
 
   template <typename T>
   auto logical_data_no_export(shape_of<T> s)
   {
     // fprintf(stderr, "initialize from shape.\n");
-    return stackable_logical_data(*this, depth(), true, get_head_ctx().logical_data(mv(s)), false);
+    int head = pimpl->get_head_offset();
+    return stackable_logical_data(*this, head, true, get_head_ctx().logical_data(mv(s)), false);
   }
 
   template <typename T, typename... Sizes>
   auto logical_data_no_export(size_t elements, Sizes... more_sizes)
   {
+    int head = pimpl->get_head_offset();
     return stackable_logical_data(
-      *this, depth(), true, get_head_ctx().template logical_data<T>(elements, more_sizes...), false);
+      *this, head, true, get_head_ctx().template logical_data<T>(elements, more_sizes...), false);
   }
 
   stackable_logical_data<void_interface> logical_token();
@@ -523,20 +682,21 @@ public:
   template <typename... Pack>
   auto logical_data(Pack&&... pack)
   {
+    int head = pimpl->get_head_offset();
     // fprintf(stderr, "initialize from value.\n");
-    return stackable_logical_data(
-      *this, depth(), false, get_head_ctx().logical_data(::std::forward<Pack>(pack)...), true);
+    return stackable_logical_data(*this, head, false, get_head_ctx().logical_data(::std::forward<Pack>(pack)...), true);
   }
 
   // Helper function to process a single argument
   template <typename T1>
-  void process_argument(const T1&, ::std::vector<::std::pair<int, access_mode>>&) const
+  void process_argument(int, const T1&, ::std::vector<::std::pair<int, access_mode>>&) const
   {
     // Do nothing for non-stackable_task_dep
   }
 
   template <typename T1, typename reduce_op, bool initialize>
-  void process_argument(const stackable_task_dep<T1, reduce_op, initialize>& dep,
+  void process_argument(int ctx_offset,
+                        const stackable_task_dep<T1, reduce_op, initialize>& dep,
                         ::std::vector<::std::pair<int, access_mode>>& combined_accesses) const
   {
     // If the stackable logical data appears in multiple deps of the same
@@ -553,14 +713,14 @@ public:
     // If the logical data was not at the appropriate level, we may
     // automatically push it. In this case, we need to update the logical data
     // referred stored in the task_dep object.
-    bool need_update = dep.get_d().validate_access(*this, combined_m);
+    bool need_update = dep.get_d().validate_access(ctx_offset, *this, combined_m);
     //    if (need_update)
     {
       // The underlying dep eg. obtained when calling l.read() was resulting in
       // an task_dep_untyped where the logical data was the one at the "top of
       // the stack". Since a push method was done automatically, the logical
       // data that needs to be used was incorrect, and we update it.
-      dep.underlying_dep().update_data(dep.get_d().get_ld());
+      dep.underlying_dep().update_data(dep.get_d().get_ld(ctx_offset));
     }
   }
 
@@ -598,21 +758,22 @@ public:
   // depth if necessary. If this happens, we may update the task_dep objects to
   // reflect the actual logical data that needs to be used.
   template <typename... Pack>
-  void process_pack(const Pack&... pack) const
+  void process_pack(int offset, const Pack&... pack) const
   {
     // This is a map of logical data, and the combined access modes
     ::std::vector<::std::pair<int, access_mode>> combined_accesses;
     (combine_argument_access_modes(pack, combined_accesses), ...);
 
     // fprintf(stderr, "process_pack begin.\n");
-    (process_argument(pack, combined_accesses), ...);
+    (process_argument(offset, pack, combined_accesses), ...);
     //  fprintf(stderr, "process_pack end.\n");
   }
 
   template <typename... Pack>
   auto task(Pack&&... pack)
   {
-    process_pack(pack...);
+    int offset = get_head_offset();
+    process_pack(offset, pack...);
     return get_head_ctx().task(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 
@@ -620,21 +781,24 @@ public:
   template <typename... Pack>
   auto parallel_for(Pack&&... pack)
   {
-    process_pack(pack...);
+    int offset = get_head_offset();
+    process_pack(offset, pack...);
     return get_head_ctx().parallel_for(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 
   template <typename... Pack>
   auto cuda_kernel(Pack&&... pack)
   {
-    process_pack(pack...);
+    int offset = get_head_offset();
+    process_pack(offset, pack...);
     return get_head_ctx().cuda_kernel(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 
   template <typename... Pack>
   auto cuda_kernel_chain(Pack&&... pack)
   {
-    process_pack(pack...);
+    int offset = get_head_offset();
+    process_pack(offset, pack...);
     return get_head_ctx().cuda_kernel_chain(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 #endif
@@ -642,7 +806,8 @@ public:
   template <typename... Pack>
   auto host_launch(Pack&&... pack)
   {
-    process_pack(pack...);
+    int offset = get_head_offset();
+    process_pack(offset, pack...);
     return get_head_ctx().host_launch(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 
@@ -654,7 +819,8 @@ public:
   template <typename... Pack>
   void push_affinity(Pack&&... pack) const
   {
-    process_pack(pack...);
+    int offset = get_head_offset();
+    process_pack(offset, pack...);
     get_head_ctx().push_affinity(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 
@@ -680,10 +846,10 @@ public:
 
   void finalize()
   {
-    // There must be only one level left
-    _CCCL_ASSERT(depth() == 0, "All nested contexts must have been popped");
+    _CCCL_ASSERT(pimpl->get_head_offset() == pimpl->get_root_offset(),
+                 "Can only finalize if there is no pending contexts");
 
-    get_head_ctx().finalize();
+    get_root_ctx().finalize();
   }
 
 public:
@@ -708,43 +874,48 @@ class stackable_logical_data
       // This method is called when we pop the stackable_logical_data before we
       // have called finalize() on the nested context. This destroys the
       // logical data that was created in the nested context.
-      virtual void pop_before_finalize() const override
+      virtual void pop_before_finalize(int ctx_offset) const override
       {
-        size_t sctx_depth = sctx.depth();
-        size_t data_depth = depth();
-        _CCCL_ASSERT(sctx_depth > 0, "internal error");
+        // either data node is valid at the same offset (if the logical data
+        // wasn't destroyed), or its parent must be valid.
+        // int parent_offset = node_tree.parent[ctx_offset];
+        int parent_offset = sctx.get_parent_offset(ctx_offset);
+        _CCCL_ASSERT(parent_offset != -1, "");
 
-        auto& dnode = data_nodes.back();
+        // check the parent data is valid
+        _CCCL_ASSERT(data_nodes[parent_offset].has_value(), "");
 
-        _CCCL_ASSERT(data_depth == sctx_depth - 1 || data_depth == sctx_depth, "internal error");
+        auto& parent_dnode = data_nodes[parent_offset].value();
 
         // Maybe the logical data was already destroyed if the stackable
         // logical data was destroyed before ctx pop, and that the data state
         // was retained. In this case, the data_node object was already
-        // destroyed and there is no need to do it here.
-        if (data_depth == sctx_depth)
+        // cleared and there is no need to do it here.
+        if (data_nodes[ctx_offset].has_value())
         {
-          _CCCL_ASSERT(!dnode.frozen_ld.has_value(), "internal error");
-          data_nodes.pop_back();
+          _CCCL_ASSERT(!data_nodes[ctx_offset].value().frozen_ld.has_value(), "internal error");
+          data_nodes[ctx_offset].reset();
         }
 
         // Unfreezing data will create a dependency which we need to track to
         // display a dependency between the context and its parent in DOT.
         // We do this operation before finalizing the context.
-        auto& parent_dnode = get_data_node(sctx_depth - 1);
         _CCCL_ASSERT(parent_dnode.frozen_ld.has_value(), "internal error");
         parent_dnode.get_cnt--;
-        sctx.get_node(sctx_depth)
+
+        sctx.get_node(ctx_offset)
           .ctx.get_dot()
           ->ctx_add_output_id(parent_dnode.frozen_ld.value().unfreeze_fake_task_id());
       }
 
       // Unfreeze the logical data after the context has been finalized.
-      virtual void pop_after_finalize(const event_list& finalize_prereqs) const override
+      virtual void pop_after_finalize(int parent_offset, const event_list& finalize_prereqs) const override
       {
         nvtx_range r("stackable_logical_data::pop_after_finalize");
 
-        auto& dnode = data_nodes.back();
+        _CCCL_ASSERT(data_nodes[parent_offset].has_value(), "");
+        auto& dnode = data_nodes[parent_offset].value();
+
         _CCCL_ASSERT(dnode.frozen_ld.has_value(), "internal error");
 
         // Only unfreeze if there are no other subcontext still using it
@@ -755,16 +926,20 @@ class stackable_logical_data
         }
       }
 
+#if 0
       size_t depth() const
       {
         return data_nodes.size() - 1 + offset_depth;
       }
+#endif
 
       int get_unique_id() const
       {
-        _CCCL_ASSERT(data_nodes.size() > 0, "cannot get the id of an uninitialized stackable_logical_data");
+        _CCCL_ASSERT(data_root_offset != -1, "");
+        _CCCL_ASSERT(data_nodes[data_root_offset].has_value(), "");
+
         // Get the ID of the base logical data
-        return data_nodes[0].ld.get_unique_id();
+        return get_data_node(data_root_offset).ld.get_unique_id();
       }
 
       bool is_read_only() const
@@ -783,7 +958,7 @@ class stackable_logical_data
         access_mode get_frozen_mode() const
         {
           _CCCL_ASSERT(frozen_ld.has_value(), "cannot query frozen mode : not frozen");
-          return frozen_ld.value().get_access_mode();
+          return frozen_ld.value().get_frozen_mode();
         }
 
         void set_symbol(const ::std::string& symbol)
@@ -800,42 +975,83 @@ class stackable_logical_data
         mutable int get_cnt;
       };
 
-      mutable ::std::vector<data_node> data_nodes;
-
-      auto& get_data_node(size_t level)
+      auto& get_data_node(int offset)
       {
-        return data_nodes[level - offset_depth];
+        _CCCL_ASSERT(offset != -1, "invalid value");
+        _CCCL_ASSERT(data_nodes[offset].has_value(), "invalid value");
+        return data_nodes[offset].value();
       }
 
-      const auto& get_data_node(size_t level) const
+      const auto& get_data_node(int offset) const
       {
-        return data_nodes[level - offset_depth];
+        _CCCL_ASSERT(offset != -1, "invalid value");
+        _CCCL_ASSERT(data_nodes[offset].has_value(), "invalid value");
+        return data_nodes[offset].value();
       }
 
       void set_symbol(::std::string symbol_)
       {
         symbol = mv(symbol_);
-        data_nodes.back().set_symbol(symbol);
+        get_data_node(data_root_offset).set_symbol(symbol);
       }
 
+      int get_data_root_offset() const
+      {
+        return data_root_offset;
+      }
+
+      bool was_imported(int offset) const
+      {
+        _CCCL_ASSERT(offset != -1, "");
+
+        if (offset >= int(data_nodes.size()))
+        {
+          return false;
+        }
+
+        return data_nodes[offset].has_value();
+      }
+
+      bool is_frozen(int offset) const
+      {
+        _CCCL_ASSERT(data_nodes[offset].has_value(), "");
+        return data_nodes[offset].value().frozen_ld.has_value();
+      }
+
+      access_mode get_frozen_mode(int offset) const
+      {
+        _CCCL_ASSERT(is_frozen(offset), "");
+        return data_nodes[offset].value().frozen_ld.value().get_access_mode();
+      }
+
+      friend impl;
+
+    private:
       mutable stackable_ctx sctx;
+
+      mutable ::std::vector<::std::optional<data_node>> data_nodes;
 
       // If the logical data was created at a level that is not directly the
       // root of the context, we remember this offset
-      size_t base_depth   = 0;
-      size_t offset_depth = 0;
+      // size_t offset_depth = 0;
+      int data_root_offset;
 
       ::std::string symbol;
 
       // Indicate whether it is allowed to access this logical data with
       // write() or rw() access
       bool read_only = false;
+
+      // We can call the stackable_logical_data destructor before popping the
+      // context. In this case, the state must be retained to unfreeze when
+      // appropriate.
+      bool was_destroyed = false;
     };
 
   public:
     impl() = default;
     impl(stackable_ctx sctx_,
-         size_t target_depth,
+         int target_offset,
          bool ld_from_shape,
          logical_data<T> ld,
          bool can_export,
@@ -844,56 +1060,78 @@ class stackable_logical_data
     {
       impl_state = ::std::make_shared<state>(sctx);
 
-      impl_state->base_depth = target_depth;
-
       // TODO pass this offset directly rather than a boolean for more flexibility ? (e.g. creating a ctx of depth 2,
       // export at depth 1, not 0 ...)
-      impl_state->offset_depth = can_export ? 0 : target_depth;
+      int data_root_offset         = can_export ? sctx.get_root_offset() : target_offset;
+      impl_state->data_root_offset = data_root_offset;
 
       // Save the logical data at the base level
-      impl_state->data_nodes.emplace_back(ld);
-
-      // If necessary, import data recursively until we reach the target depth
-      for (size_t current_depth = impl_state->offset_depth + 1; current_depth <= target_depth; current_depth++)
+      if (data_root_offset >= int(impl_state->data_nodes.size()))
       {
-        push(ld_from_shape ? access_mode::write : access_mode::rw, where);
+        impl_state->data_nodes.resize(data_root_offset + 1);
+      }
+      _CCCL_ASSERT(!impl_state->data_nodes[data_root_offset].has_value(), "");
+
+      impl_state->data_nodes[data_root_offset].emplace(ld);
+
+      fprintf(stderr, "Creating ld with ctx offset %d and root offset %d\n", target_offset, data_root_offset);
+
+      // If necessary, import data recursively until we reach the target depth.
+      // We first find the path from the target to the root and we push along this path
+      if (target_offset != data_root_offset)
+      {
+        // Recurse from the target offset to the root offset
+        ::std::stack<int> path;
+        int current = target_offset;
+        while (current != data_root_offset)
+        {
+          path.push(current);
+
+          current = sctx.get_parent_offset(current);
+          _CCCL_ASSERT(current != -1, "");
+        }
+
+        // push along the path
+        while (!path.empty())
+        {
+          int offset = path.top();
+          push(offset, ld_from_shape ? access_mode::write : access_mode::rw, where);
+
+          path.pop();
+        }
       }
     }
 
     // stackable_logical_data::impl::~impl
     ~impl()
     {
+      // Maybe we moved it for example
       if (!impl_state)
       {
         return;
       }
 
-      size_t s_size = impl_state->data_nodes.size();
+      int data_root_offset = impl_state->get_data_root_offset();
 
-      // There is at least the logical data passed when we created the stackable_logical_data
-      _CCCL_ASSERT(s_size > 0, "internal error");
+      _CCCL_ASSERT(impl_state->data_nodes[data_root_offset].has_value(), "");
 
-      // This state will be retained until we pop the ctx enough times
-      size_t offset_depth = impl_state->offset_depth;
+      impl_state->was_destroyed = true;
 
-      if (depth() != offset_depth)
-      {
-        // if there is a parent with a frozen data
-        impl_state->data_nodes[depth() - 1].get_cnt--;
-      }
-
+      // TODO reset all leaves to destroy ld early
       impl_state->data_nodes.pop_back();
 
-      // If there were at least 2 logical data before pop_back, there remains
-      // at least one logical data, so we need to retain the impl.
-      if (s_size > 1)
+      // Ensure we don't destroy the state too early by retaining its state
+      // (with a shared_ptr) in all children of the data_root_offset if they
+      // are valid
+      // We do not retain it in the data_root_offset because  is not frozen
+      // in this context.
+      const auto& root_children = sctx.get_children_offsets(data_root_offset);
+      for (auto c : root_children)
       {
-        if (offset_depth < sctx.depth())
+        if (impl_state->data_nodes[c].has_value())
         {
-          // If that was an exportable data, offset_depth = 0, it can be deleted
-          // when the first stacked level is popped (ie. when the CUDA graph has
-          // been executed)
-          sctx.get_node(offset_depth + 1).retain_data(mv(impl_state));
+          // Save the shared_ptr into the children contexts using the data
+          sctx.get_node(c).retain_data(mv(impl_state));
         }
       }
 
@@ -908,13 +1146,18 @@ class stackable_logical_data
     impl(impl&&) noexcept            = default;
     impl& operator=(impl&&) noexcept = default;
 
-    const auto& get_ld() const
+    const auto& get_ld(int offset) const
     {
-      return impl_state->data_nodes.back().ld;
+      return impl_state->get_data_node(offset).ld;
     }
-    auto& get_ld()
+    auto& get_ld(int offset)
     {
-      return impl_state->data_nodes.back().ld;
+      return impl_state->get_data_node(offset).ld;
+    }
+
+    int get_data_root_offset() const
+    {
+      return impl_state->get_data_root_offset();
     }
 
     int get_unique_id() const
@@ -922,25 +1165,27 @@ class stackable_logical_data
       return impl_state->get_unique_id();
     }
 
-    /* Push one level up (from the current data depth) */
-    void push(access_mode m, data_place where = data_place::invalid) const
+    /* Import data into the ctx at this offset */
+    void push(int ctx_offset, access_mode m, data_place where = data_place::invalid) const
     {
-      // fprintf(stderr, "stackable_logical_data::push() %s mode = %s\n", impl_state->symbol.c_str(),
-      // access_mode_string(m));
+      int parent_offset = sctx.get_parent_offset(ctx_offset);
+      _CCCL_ASSERT(parent_offset != -1, "");
 
-      const size_t ctx_depth          = sctx.depth();
-      const size_t current_data_depth = depth();
+      if (ctx_offset >= int(impl_state->data_nodes.size()))
+      {
+        impl_state->data_nodes.resize(ctx_offset + 1);
+      }
 
-      // (current_data_depth + 1) is the data depth after pushing
-      _CCCL_ASSERT(ctx_depth >= current_data_depth + 1, "Invalid depth");
+      _CCCL_ASSERT(!impl_state->data_nodes[ctx_offset].has_value(), "already pushed");
+      _CCCL_ASSERT(impl_state->data_nodes[parent_offset].has_value(), "parent data must have been pushed");
 
-      auto& from_node = sctx.get_node(current_data_depth);
-      auto& to_node   = sctx.get_node(current_data_depth + 1);
+      auto& to_node   = sctx.get_node(ctx_offset);
+      auto& from_node = sctx.get_node(parent_offset);
 
-      context& from_ctx = from_node.ctx;
       context& to_ctx   = to_node.ctx;
+      context& from_ctx = from_node.ctx;
 
-      auto& from_data_node = impl_state->data_nodes[current_data_depth];
+      auto& from_data_node = impl_state->data_nodes[parent_offset].value();
 
       if (where == data_place::invalid)
       {
@@ -950,15 +1195,19 @@ class stackable_logical_data
 
       _CCCL_ASSERT(where != data_place::invalid, "Invalid data place");
 
-      // Freeze the logical data of the node
-      // TODO refcnt here, check compatibility in freeze mode
-      _CCCL_ASSERT(!from_data_node.frozen_ld.has_value(), "data node already frozen");
-      auto frozen_ld         = from_ctx.freeze(from_data_node.ld, m, mv(where), false /* not a user freeze */);
-      from_data_node.get_cnt = 0;
+      // Freeze the logical data of the parent node if it wasn't yet
+      if (!from_data_node.frozen_ld.has_value())
+      {
+        from_data_node.frozen_ld = from_ctx.freeze(from_data_node.ld, m, mv(where), false /* not a user freeze */);
+        from_data_node.get_cnt   = 0;
+      }
+      else
+      {
+        // TODO check that the frozen mode is compatible !
+      }
 
-      // Save in the optional value (we keep using frozen_ld variable to avoid
-      // using frozen_ld.value() in the rest of this function)
-      from_data_node.frozen_ld = frozen_ld;
+      _CCCL_ASSERT(from_data_node.frozen_ld.has_value(), "");
+      auto& frozen_ld = from_data_node.frozen_ld.value();
 
       // FAKE IMPORT : use the stream needed to support the (graph) ctx
       cudaStream_t stream = to_node.support_stream;
@@ -969,8 +1218,7 @@ class stackable_logical_data
 
       if (!impl_state->symbol.empty())
       {
-        // TODO reflect base/offset depths
-        ld.set_symbol(impl_state->symbol + "." + ::std::to_string(current_data_depth + 1 - impl_state->base_depth));
+        ld.set_symbol(impl_state->symbol);
       }
 
       // The inner context depends on the freeze operation, so we ensure DOT
@@ -982,26 +1230,26 @@ class stackable_logical_data
       // used to pop data automatically when nested contexts are popped.
       to_node.track_pushed_data(impl_state);
 
-      // Save the logical data created to keep track of the data instance
-      // obtained with the get method of the frozen_logical_data object.
-      impl_state->data_nodes.emplace_back(mv(ld));
+      // Create the node at the requested offset based on the logical data we
+      // have just created from the data frozen in its parent.
+      impl_state->data_nodes[ctx_offset].emplace(mv(ld));
     }
 
     /* Pop one level down */
-    void pop_before_finalize() const
+    void pop_before_finalize(int ctx_offset) const
     {
-      impl_state->pop_before_finalize();
+      impl_state->pop_before_finalize(ctx_offset);
     }
 
-    void pop_after_finalize(const event_list& finalize_prereqs) const
+    void pop_after_finalize(int parent_offset, const event_list& finalize_prereqs) const
     {
-      impl_state->pop_after_finalize(finalize_prereqs);
+      impl_state->pop_after_finalize(parent_offset, finalize_prereqs);
     }
 
-    size_t depth() const
-    {
-      return impl_state->depth();
-    }
+    //    size_t depth() const
+    //    {
+    //      return impl_state->depth();
+    //    }
 
     void set_symbol(::std::string symbol)
     {
@@ -1036,16 +1284,32 @@ class stackable_logical_data
       return sctx;
     }
 
+#if 0
     size_t get_offset_depth() const
     {
       return impl_state->offset_depth;
     }
+#endif
 
-    // Get the access mode used to freeze at depth d
-    // TODO move to state
-    access_mode get_frozen_mode(size_t d) const
+    bool was_imported(int offset) const
     {
-      return impl_state->get_data_node(d).get_frozen_mode();
+      return impl_state->was_imported(offset);
+    }
+
+    bool is_frozen(int offset) const
+    {
+      return impl_state->is_frozen(offset);
+    }
+
+    // Get the access mode used to freeze at a given offset
+    access_mode get_frozen_mode(int offset) const
+    {
+      return impl_state->get_frozen_mode(offset);
+    }
+
+    int get_ctx_head_offset() const
+    {
+      return sctx.get_head_offset();
     }
 
   private:
@@ -1062,21 +1326,27 @@ public:
    * to export all the way down to the root context, we create the logical data
    * in the root, and import them. */
   template <typename... Args>
-  stackable_logical_data(
-    stackable_ctx sctx, bool ld_from_shape, size_t target_depth, logical_data<T> ld, bool can_export)
-      : pimpl(::std::make_shared<impl>(sctx, ld_from_shape, target_depth, mv(ld), can_export))
+  stackable_logical_data(stackable_ctx sctx, int ctx_offset, bool ld_from_shape, logical_data<T> ld, bool can_export)
+      : pimpl(::std::make_shared<impl>(sctx, ctx_offset, ld_from_shape, mv(ld), can_export))
   {
+    fprintf(stderr, "stackable_logical_data ctor : ctx_offset = %d\n", ctx_offset);
     static_assert(::std::is_move_constructible_v<stackable_logical_data>, "");
     static_assert(::std::is_move_assignable_v<stackable_logical_data>, "");
   }
 
-  const auto& get_ld() const
+  int get_data_root_offset() const
   {
-    return pimpl->get_ld();
+    return pimpl->get_data_root_offset();
   }
-  auto& get_ld()
+
+  const auto& get_ld(int offset) const
   {
-    return pimpl->get_ld();
+    return pimpl->get_ld(offset);
+  }
+
+  auto& get_ld(int offset)
+  {
+    return pimpl->get_ld(offset);
   }
 
   int get_unique_id() const
@@ -1084,14 +1354,20 @@ public:
     return pimpl->get_unique_id();
   }
 
-  size_t depth() const
+  //  size_t depth() const
+  //  {
+  //    return pimpl->depth();
+  //  }
+
+  void push(int ctx_offset, access_mode m, data_place where = data_place::invalid) const
   {
-    return pimpl->depth();
+    pimpl->push(ctx_offset, m, mv(where));
   }
 
   void push(access_mode m, data_place where = data_place::invalid) const
   {
-    pimpl->push(m, mv(where));
+    int ctx_offset = pimpl->get_ctx_head_offset();
+    pimpl->push(ctx_offset, m, mv(where));
   }
 
   // Helpers
@@ -1099,24 +1375,25 @@ public:
   auto read(Pack&&... pack) const
   {
     using U = rw_type_of<T>;
-    return stackable_task_dep<U, ::std::monostate, false>(*this, get_ld().read(::std::forward<Pack>(pack)...));
+    return stackable_task_dep<U, ::std::monostate, false>(
+      *this, get_ld(get_data_root_offset()).read(::std::forward<Pack>(pack)...));
   }
 
   template <typename... Pack>
   auto write(Pack&&... pack)
   {
-    return stackable_task_dep(*this, get_ld().write(::std::forward<Pack>(pack)...));
+    return stackable_task_dep(*this, get_ld(get_data_root_offset()).write(::std::forward<Pack>(pack)...));
   }
 
   template <typename... Pack>
   auto rw(Pack&&... pack)
   {
-    return stackable_task_dep(*this, get_ld().rw(::std::forward<Pack>(pack)...));
+    return stackable_task_dep(*this, get_ld(get_data_root_offset()).rw(::std::forward<Pack>(pack)...));
   }
 
   auto shape() const
   {
-    return get_ld().shape();
+    return get_ld(get_data_root_offset()).shape();
   }
 
   auto& set_symbol(::std::string symbol)
@@ -1155,49 +1432,33 @@ public:
   // if necessary.
   //
   // Returns true if the task_dep needs an update
-  bool validate_access(const stackable_ctx& sctx, access_mode m) const
+  bool validate_access(int ctx_offset, const stackable_ctx& sctx, access_mode m) const
   {
-    // fprintf(stderr,
-    //         "Calling validate_access() on stackable_logical_data %p - symbol=%s - requested mode %s\n",
-    //         pimpl.get(),
-    //         get_symbol().c_str(),
-    //         access_mode_string(m));
-
-    size_t offset_depth = pimpl->get_offset_depth();
-
-    // Are we trying to access a logical data that cannot be "exported" at this level ?
-    _CCCL_ASSERT(sctx.depth() >= offset_depth, "Invalid value");
-
-    // Fast path : do nothing if we are not in a stacked ctx
-    if (sctx.depth() == offset_depth)
-    {
-      // fprintf(stderr, "validate : FAST PATH %s : sctx.depth() == offset_depth == %ld\n", get_symbol().c_str(),
-      // offset_depth);
-      return false;
-    }
-
-    // TODO assert sctx == this->sctx
-
     _CCCL_ASSERT(m == access_mode::read || m == access_mode::rw || m == access_mode::write,
                  "Unsupported access mode in nested context");
 
     _CCCL_ASSERT(!is_read_only() || m == access_mode::read, "read only data cannot be modified");
 
-    // If the stackable logical data is already at the appropriate depth, we
+    if (get_data_root_offset() == ctx_offset)
+    {
+      return false;
+    }
+
+    // If the stackable logical data is already available at the appropriate depth, we
     // simply need to ensure we don't make an illegal access (eg. writing a
     // read only variable)
-    size_t d = depth();
-
-    // Data depth cannot be higher than context depth
-    _CCCL_ASSERT(sctx.depth() >= d, "Invalid value");
-
-    if (sctx.depth() == d)
+    if (pimpl->was_imported(ctx_offset))
     {
-      _CCCL_ASSERT(d > 0, "data must have already been pushed");
-      _CCCL_ASSERT(access_mode_is_compatible(pimpl->get_frozen_mode(d - 1), m), "Invalid access mode");
-      // fprintf(stderr, "VALIDATED ACCESS ON stackable_logical_data %p - symbol=%s\n", pimpl.get(),
-      //  get_symbol().c_str());
-      return false;
+#ifndef NDEBUG
+      // Parent must be frozen, and current offset must not be frozen (otherwise a subcontext is accessing it)
+      int parent_offset = sctx.get_parent_offset(ctx_offset);
+      _CCCL_ASSERT(!pimpl->is_frozen(ctx_offset), "");
+      _CCCL_ASSERT(pimpl->is_frozen(parent_offset), "");
+      _CCCL_ASSERT(access_mode_is_compatible(pimpl->get_frozen_mode(parent_offset), m), "Invalid access mode");
+#endif
+
+      // We need to update because the current ctx offset was not the base offset
+      return true;
     }
 
     // If we reach this point, this means we need to automatically push data
@@ -1206,17 +1467,23 @@ public:
     access_mode push_mode =
       is_read_only() ? access_mode::read : ((m == access_mode::write) ? access_mode::write : access_mode::rw);
 
-    while (sctx.depth() > d)
+    // Recurse from the target offset to its first imported(pushed) parent
+    ::std::stack<int> path;
+    int current = ctx_offset;
+    while (!pimpl->was_imported(current))
     {
-      // fprintf(stderr,
-      //         "AUTOMATIC PUSH of data %p (symbol=%s) with mode %s at depth %ld\n",
-      //         pimpl.get(),
-      //         get_symbol().c_str(),
-      //         access_mode_string(push_mode),
-      //         d);
+      path.push(current);
 
-      pimpl->push(push_mode, data_place::current_device());
-      d++;
+      current = sctx.get_parent_offset(current);
+      _CCCL_ASSERT(current != -1, "");
+    }
+
+    // push along the path
+    while (!path.empty())
+    {
+      int offset = path.top();
+      pimpl->push(offset, push_mode, data_place::current_device());
+      path.pop();
     }
 
     return true;
@@ -1228,7 +1495,8 @@ private:
 
 inline stackable_logical_data<void_interface> stackable_ctx::logical_token()
 {
-  return stackable_logical_data<void_interface>(*this, depth(), true, get_root_ctx().logical_token(), true);
+  int head = pimpl->get_head_offset();
+  return stackable_logical_data<void_interface>(*this, head, true, get_root_ctx().logical_token(), true);
 }
 
 /**
