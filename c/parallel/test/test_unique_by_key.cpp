@@ -267,7 +267,7 @@ struct random_access_iterator_state_t
   int* d_input;
 };
 
-struct value_random_access_iterator_state_t
+struct transform_iterator_state_t
 {
   int* d_input;
 };
@@ -290,18 +290,17 @@ TEST_CASE("DeviceMergeSort::SortPairs works with input and output iterators", "[
        "extern \"C\" __device__ int key_dereference(random_access_iterator_state_t* state) {\n"
        "  return *state->d_input;\n"
        "}"});
-  iterator_t<TestType, random_access_iterator_state_t> input_values_it =
-    make_iterator<TestType, random_access_iterator_state_t>(
-      "struct value_random_access_iterator_state_t { int* d_input; };\n",
-      {"value_advance",
-       "extern \"C\" __device__ void value_advance(value_random_access_iterator_state_t* state, unsigned long long "
-       "offset) {\n"
-       "  state->d_input += offset;\n"
-       "}"},
-      {"value_dereference",
-       "extern \"C\" __device__ int value_dereference(value_random_access_iterator_state_t* state) {\n"
-       "  return *state->d_input;\n"
-       "}"});
+  iterator_t<TestType, transform_iterator_state_t> input_values_it = make_iterator<TestType, transform_iterator_state_t>(
+    "struct transform_iterator_state_t { int* d_input; };\n",
+    {"value_advance",
+     "extern \"C\" __device__ void value_advance(transform_iterator_state_t* state, unsigned long long "
+     "offset) {\n"
+     "  state->d_input += offset;\n"
+     "}"},
+    {"value_dereference",
+     "extern \"C\" __device__ int value_dereference(transform_iterator_state_t* state) {\n"
+     "  return (*state->d_input) * 2;\n"
+     "}"});
   iterator_t<TestType, random_access_iterator_state_t> output_keys_it =
     make_iterator<TestType, random_access_iterator_state_t>(
       "struct random_access_iterator_state_t { int* d_input; };\n",
@@ -314,17 +313,17 @@ TEST_CASE("DeviceMergeSort::SortPairs works with input and output iterators", "[
        "extern \"C\" __device__ void key_dereference_out(random_access_iterator_state_t* state, int x) {\n"
        "  *state->d_input = x;\n"
        "}"});
-  iterator_t<TestType, random_access_iterator_state_t> output_values_it =
-    make_iterator<TestType, random_access_iterator_state_t>(
-      "struct value_random_access_iterator_state_t { int* d_input; };\n",
+  iterator_t<TestType, transform_iterator_state_t> output_values_it =
+    make_iterator<TestType, transform_iterator_state_t>(
+      "struct transform_iterator_state_t { int* d_input; };\n",
       {"value_advance_out",
-       "extern \"C\" __device__ void value_advance_out(value_random_access_iterator_state_t* state, unsigned long long "
+       "extern \"C\" __device__ void value_advance_out(transform_iterator_state_t* state, unsigned long long "
        "offset) {\n"
        "  state->d_input += offset;\n"
        "}"},
       {"value_dereference_out",
-       "extern \"C\" __device__ void value_dereference_out(value_random_access_iterator_state_t* state, int x) {\n"
-       "  *state->d_input = x;\n"
+       "extern \"C\" __device__ void value_dereference_out(transform_iterator_state_t* state, int x) {\n"
+       "  *state->d_input = x * 3;\n"
        "}"});
 
   std::vector<TestType> input_keys = generate<TestType>(num_items);
@@ -347,7 +346,8 @@ TEST_CASE("DeviceMergeSort::SortPairs works with input and output iterators", "[
   std::vector<std::pair<TestType, item_t>> input_pairs;
   for (size_t i = 0; i < input_keys.size(); ++i)
   {
-    input_pairs.emplace_back(input_keys[i], input_values[i]);
+    // Multiplying by 6 since we multiply by 2 and 3 in the input and output value iterators
+    input_pairs.emplace_back(input_keys[i], input_values[i] * 6);
   }
   const auto boundary = std::unique(input_pairs.begin(), input_pairs.end(), [](const auto& a, const auto& b) {
     return a.first == b.first;
