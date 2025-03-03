@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import numpy as np
-from numba import types
+from numba import cuda, types
 
 NUMBA_TYPES_TO_NP = {
     types.int8: np.int8,
@@ -21,3 +21,14 @@ NUMBA_TYPES_TO_NP = {
 
 def random_int(shape, dtype):
     return np.random.randint(0, 128, size=shape).astype(dtype)
+
+
+@cuda.jit(device=True)
+def row_major_tid():
+    dim = cuda.blockDim
+    idx = cuda.threadIdx
+    return (
+        (0 if dim.z == 1 else idx.z * dim.x * dim.y)
+        + (0 if dim.y == 1 else idx.y * dim.x)
+        + idx.x
+    )
