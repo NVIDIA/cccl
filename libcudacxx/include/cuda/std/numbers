@@ -107,37 +107,35 @@ struct __numbers<__nv_bfloat16>
 };
 #endif // _LIBCUDACXX_HAS_NVBF16
 
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
-
 namespace numbers
 {
 
 template <class _Tp>
-inline constexpr _Tp e_v = __numbers<_Tp>::__e;
+_CCCL_GLOBAL_CONSTANT _Tp e_v = __numbers<_Tp>::__e;
 template <class _Tp>
-inline constexpr _Tp log2e_v = __numbers<_Tp>::__log2e;
+_CCCL_GLOBAL_CONSTANT _Tp log2e_v = __numbers<_Tp>::__log2e;
 template <class _Tp>
-inline constexpr _Tp log10e_v = __numbers<_Tp>::__log10e;
+_CCCL_GLOBAL_CONSTANT _Tp log10e_v = __numbers<_Tp>::__log10e;
 template <class _Tp>
-inline constexpr _Tp pi_v = __numbers<_Tp>::__pi;
+_CCCL_GLOBAL_CONSTANT _Tp pi_v = __numbers<_Tp>::__pi;
 template <class _Tp>
-inline constexpr _Tp inv_pi_v = __numbers<_Tp>::__inv_pi;
+_CCCL_GLOBAL_CONSTANT _Tp inv_pi_v = __numbers<_Tp>::__inv_pi;
 template <class _Tp>
-inline constexpr _Tp inv_sqrtpi_v = __numbers<_Tp>::__inv_sqrtpi;
+_CCCL_GLOBAL_CONSTANT _Tp inv_sqrtpi_v = __numbers<_Tp>::__inv_sqrtpi;
 template <class _Tp>
-inline constexpr _Tp ln2_v = __numbers<_Tp>::__ln2;
+_CCCL_GLOBAL_CONSTANT _Tp ln2_v = __numbers<_Tp>::__ln2;
 template <class _Tp>
-inline constexpr _Tp ln10_v = __numbers<_Tp>::__ln10;
+_CCCL_GLOBAL_CONSTANT _Tp ln10_v = __numbers<_Tp>::__ln10;
 template <class _Tp>
-inline constexpr _Tp sqrt2_v = __numbers<_Tp>::__sqrt2;
+_CCCL_GLOBAL_CONSTANT _Tp sqrt2_v = __numbers<_Tp>::__sqrt2;
 template <class _Tp>
-inline constexpr _Tp sqrt3_v = __numbers<_Tp>::__sqrt3;
+_CCCL_GLOBAL_CONSTANT _Tp sqrt3_v = __numbers<_Tp>::__sqrt3;
 template <class _Tp>
-inline constexpr _Tp inv_sqrt3_v = __numbers<_Tp>::__inv_sqrt3;
+_CCCL_GLOBAL_CONSTANT _Tp inv_sqrt3_v = __numbers<_Tp>::__inv_sqrt3;
 template <class _Tp>
-inline constexpr _Tp egamma_v = __numbers<_Tp>::__egamma;
+_CCCL_GLOBAL_CONSTANT _Tp egamma_v = __numbers<_Tp>::__egamma;
 template <class _Tp>
-inline constexpr _Tp phi_v = __numbers<_Tp>::__phi;
+_CCCL_GLOBAL_CONSTANT _Tp phi_v = __numbers<_Tp>::__phi;
 
 inline constexpr double e          = e_v<double>;
 inline constexpr double log2e      = log2e_v<double>;
@@ -154,8 +152,6 @@ inline constexpr double egamma     = egamma_v<double>;
 inline constexpr double phi        = phi_v<double>;
 
 } // namespace numbers
-
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
