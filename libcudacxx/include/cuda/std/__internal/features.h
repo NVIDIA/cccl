@@ -20,9 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#ifndef _LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP
-#  define _LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP
-#endif // _LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP
+#define _LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP() 1
 
 #ifndef _LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION
 #  if _CCCL_HAS_CUDA_COMPILER || __cpp_aligned_new < 201606
