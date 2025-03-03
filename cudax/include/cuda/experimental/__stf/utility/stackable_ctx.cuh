@@ -267,7 +267,8 @@ public:
       display_graph_stats                 = (display_graph_stats_str && atoi(display_graph_stats_str) != 0);
 
       // Create the root node
-      push(-1, _CUDA_VSTD::source_location::current());
+      int new_head = push(-1, _CUDA_VSTD::source_location::current());
+      set_head_offset(new_head);
     }
 
     ~impl()
@@ -288,7 +289,7 @@ public:
      *
      * head_offset is the offset of thread's current top context (-1 if none)
      */
-    void push(int head_offset, const _CUDA_VSTD::source_location& loc)
+    int push(int head_offset, const _CUDA_VSTD::source_location& loc)
     {
       // fprintf(stderr, "stackable_ctx::push() depth() was %ld\n", depth());
 
@@ -351,14 +352,13 @@ public:
         }
       }
 
-      // XXX until this is per thread
-      current_head_offset = node_offset;
+      return node_offset;
     }
 
     /**
      * @brief Terminate the current nested level and get back to the previous one
      */
-    void pop(int head_offset)
+    int pop(int head_offset)
     {
       // fprintf(stderr, "stackable_ctx::pop() depth() was %ld\n", depth());
       _CCCL_ASSERT(nodes.size() > 0, "Calling pop while no context was pushed");
@@ -412,8 +412,8 @@ public:
       nodes[head_offset].reset();
 
       node_tree.discard_node(head_offset);
-      fprintf(stderr, "change CTX HEAD from %d to %d\n", head_offset, parent_offset);
-      current_head_offset = parent_offset;
+
+      return parent_offset;
     }
 
     int get_root_offset() const
@@ -441,6 +441,24 @@ public:
       _CCCL_ASSERT(offset < int(nodes.size()), "invalid value");
       _CCCL_ASSERT(nodes[offset].has_value(), "invalid value");
       return nodes[offset].value();
+    }
+
+    const ctx_node& get_node(int offset) const
+    {
+      _CCCL_ASSERT(offset != -1, "invalid value");
+      _CCCL_ASSERT(offset < int(nodes.size()), "invalid value");
+      _CCCL_ASSERT(nodes[offset].has_value(), "invalid value");
+      return nodes[offset].value();
+    }
+
+    auto& get_ctx(int offset)
+    {
+      return get_node(offset).ctx;
+    }
+
+    const auto& get_ctx(int offset) const
+    {
+      return get_node(offset).ctx;
     }
 
 // TODO reimplement
@@ -484,28 +502,17 @@ public:
       return current_head_offset;
     }
 
-    auto& get_head_ctx()
+    // XXX until we have a per-thread map
+    void set_head_offset(int offset)
     {
-      _CCCL_ASSERT(current_head_offset != -1, "");
-      _CCCL_ASSERT(current_head_offset < int(nodes.size()), "");
-      _CCCL_ASSERT(nodes[current_head_offset].has_value(), "invalid state");
-
-      return nodes[current_head_offset].value().ctx;
-    }
-
-    const auto& get_head_ctx() const
-    {
-      _CCCL_ASSERT(current_head_offset != -1, "");
-      _CCCL_ASSERT(current_head_offset < int(nodes.size()), "");
-      _CCCL_ASSERT(nodes[current_head_offset].has_value(), "invalid state");
-
-      return nodes[current_head_offset].value().ctx;
+      fprintf(stderr, "set_head_offset => from %d to %d\n", current_head_offset, offset);
+      current_head_offset = offset;
     }
 
     int get_parent_offset(int offset) const
     {
       _CCCL_ASSERT(offset != -1, "");
-      fprintf(stderr, "get_parent_offet(%d) => %d\n", offset, node_tree.get_parent(offset));
+      // fprintf(stderr, "get_parent_offet(%d) => %d\n", offset, node_tree.get_parent(offset));
       return node_tree.get_parent(offset);
     }
 
@@ -611,14 +618,14 @@ public:
     return pimpl->get_root_offset();
   }
 
-  auto& get_head_ctx()
+  auto& get_ctx(int offset)
   {
-    return pimpl->get_head_ctx();
+    return pimpl->get_ctx(offset);
   }
 
-  const auto& get_head_ctx() const
+  const auto& get_ctx(int offset) const
   {
-    return pimpl->get_head_ctx();
+    return pimpl->get_ctx(offset);
   }
 
   int get_head_offset() const
@@ -628,14 +635,17 @@ public:
 
   void push(const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
   {
-    int head = get_head_offset();
-    pimpl->push(head, loc);
+    int head     = get_head_offset();
+    int new_head = pimpl->push(head, loc);
+    pimpl->set_head_offset(new_head);
+    fprintf(stderr, "ctx.push (head %d new head %d)\n", head, new_head);
   }
 
   void pop()
   {
-    int head = get_head_offset();
-    pimpl->pop(head);
+    int head     = get_head_offset();
+    int new_head = pimpl->pop(head);
+    pimpl->set_head_offset(new_head);
   }
 
 #if 0
@@ -666,7 +676,7 @@ public:
   {
     // fprintf(stderr, "initialize from shape.\n");
     int head = pimpl->get_head_offset();
-    return stackable_logical_data(*this, head, true, get_head_ctx().logical_data(mv(s)), false);
+    return stackable_logical_data(*this, head, true, get_ctx(head).logical_data(mv(s)), false);
   }
 
   template <typename T, typename... Sizes>
@@ -674,7 +684,7 @@ public:
   {
     int head = pimpl->get_head_offset();
     return stackable_logical_data(
-      *this, head, true, get_head_ctx().template logical_data<T>(elements, more_sizes...), false);
+      *this, head, true, get_ctx(head).template logical_data<T>(elements, more_sizes...), false);
   }
 
   stackable_logical_data<void_interface> logical_token();
@@ -684,7 +694,7 @@ public:
   {
     int head = pimpl->get_head_offset();
     // fprintf(stderr, "initialize from value.\n");
-    return stackable_logical_data(*this, head, false, get_head_ctx().logical_data(::std::forward<Pack>(pack)...), true);
+    return stackable_logical_data(*this, head, false, get_ctx(head).logical_data(::std::forward<Pack>(pack)...), true);
   }
 
   // Helper function to process a single argument
@@ -774,7 +784,7 @@ public:
   {
     int offset = get_head_offset();
     process_pack(offset, pack...);
-    return get_head_ctx().task(reserved::to_task_dep(::std::forward<Pack>(pack))...);
+    return get_ctx(offset).task(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 
 #if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
@@ -783,7 +793,7 @@ public:
   {
     int offset = get_head_offset();
     process_pack(offset, pack...);
-    return get_head_ctx().parallel_for(reserved::to_task_dep(::std::forward<Pack>(pack))...);
+    return get_ctx(offset).parallel_for(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 
   template <typename... Pack>
@@ -791,7 +801,7 @@ public:
   {
     int offset = get_head_offset();
     process_pack(offset, pack...);
-    return get_head_ctx().cuda_kernel(reserved::to_task_dep(::std::forward<Pack>(pack))...);
+    return get_ctx(offset).cuda_kernel(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 
   template <typename... Pack>
@@ -799,7 +809,7 @@ public:
   {
     int offset = get_head_offset();
     process_pack(offset, pack...);
-    return get_head_ctx().cuda_kernel_chain(reserved::to_task_dep(::std::forward<Pack>(pack))...);
+    return get_ctx(offset).cuda_kernel_chain(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 #endif
 
@@ -808,12 +818,13 @@ public:
   {
     int offset = get_head_offset();
     process_pack(offset, pack...);
-    return get_head_ctx().host_launch(reserved::to_task_dep(::std::forward<Pack>(pack))...);
+    return get_ctx(offset).host_launch(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 
   auto task_fence()
   {
-    return get_head_ctx().task_fence();
+    int offset = get_head_offset();
+    return get_ctx(offset).task_fence();
   }
 
   template <typename... Pack>
@@ -821,27 +832,31 @@ public:
   {
     int offset = get_head_offset();
     process_pack(offset, pack...);
-    get_head_ctx().push_affinity(reserved::to_task_dep(::std::forward<Pack>(pack))...);
+    get_ctx(offset).push_affinity(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 
   void pop_affinity() const
   {
-    get_head_ctx().pop_affinity();
+    int offset = get_head_offset();
+    get_ctx(offset).pop_affinity();
   }
 
   auto& async_resources() const
   {
-    return get_head_ctx().async_resources();
+    int offset = get_head_offset();
+    return get_ctx(offset).async_resources();
   }
 
   auto dot_section(::std::string symbol) const
   {
-    return get_head_ctx().dot_section(mv(symbol));
+    int offset = get_head_offset();
+    return get_ctx(offset).dot_section(mv(symbol));
   }
 
   size_t task_count() const
   {
-    return get_head_ctx().task_count();
+    int offset = get_head_offset();
+    return get_ctx(offset).task_count();
   }
 
   void finalize()
