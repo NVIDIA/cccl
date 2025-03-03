@@ -49,6 +49,9 @@ struct __numbers
                 "template is ill-formed.");
 };
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4305) // truncation from 'double' to 'const _Tp'
+
 template <class _Tp>
 struct __numbers<_Tp, enable_if_t<_CCCL_TRAIT(is_floating_point, _Tp)>>
 {
@@ -66,6 +69,8 @@ struct __numbers<_Tp, enable_if_t<_CCCL_TRAIT(is_floating_point, _Tp)>>
   static constexpr _Tp __egamma     = 0.577215664901532860606512090082402;
   static constexpr _Tp __phi        = 1.618033988749894848204586834365638;
 };
+
+_CCCL_DIAG_POP
 
 #if defined(_LIBCUDACXX_HAS_NVFP16)
 template <>
@@ -111,31 +116,90 @@ namespace numbers
 {
 
 template <class _Tp>
-_CCCL_GLOBAL_CONSTANT _Tp e_v = __numbers<_Tp>::__e;
+inline constexpr _Tp e_v = __numbers<_Tp>::__e;
 template <class _Tp>
-_CCCL_GLOBAL_CONSTANT _Tp log2e_v = __numbers<_Tp>::__log2e;
+inline constexpr _Tp log2e_v = __numbers<_Tp>::__log2e;
 template <class _Tp>
-_CCCL_GLOBAL_CONSTANT _Tp log10e_v = __numbers<_Tp>::__log10e;
+inline constexpr _Tp log10e_v = __numbers<_Tp>::__log10e;
 template <class _Tp>
-_CCCL_GLOBAL_CONSTANT _Tp pi_v = __numbers<_Tp>::__pi;
+inline constexpr _Tp pi_v = __numbers<_Tp>::__pi;
 template <class _Tp>
-_CCCL_GLOBAL_CONSTANT _Tp inv_pi_v = __numbers<_Tp>::__inv_pi;
+inline constexpr _Tp inv_pi_v = __numbers<_Tp>::__inv_pi;
 template <class _Tp>
-_CCCL_GLOBAL_CONSTANT _Tp inv_sqrtpi_v = __numbers<_Tp>::__inv_sqrtpi;
+inline constexpr _Tp inv_sqrtpi_v = __numbers<_Tp>::__inv_sqrtpi;
 template <class _Tp>
-_CCCL_GLOBAL_CONSTANT _Tp ln2_v = __numbers<_Tp>::__ln2;
+inline constexpr _Tp ln2_v = __numbers<_Tp>::__ln2;
 template <class _Tp>
-_CCCL_GLOBAL_CONSTANT _Tp ln10_v = __numbers<_Tp>::__ln10;
+inline constexpr _Tp ln10_v = __numbers<_Tp>::__ln10;
 template <class _Tp>
-_CCCL_GLOBAL_CONSTANT _Tp sqrt2_v = __numbers<_Tp>::__sqrt2;
+inline constexpr _Tp sqrt2_v = __numbers<_Tp>::__sqrt2;
 template <class _Tp>
-_CCCL_GLOBAL_CONSTANT _Tp sqrt3_v = __numbers<_Tp>::__sqrt3;
+inline constexpr _Tp sqrt3_v = __numbers<_Tp>::__sqrt3;
 template <class _Tp>
-_CCCL_GLOBAL_CONSTANT _Tp inv_sqrt3_v = __numbers<_Tp>::__inv_sqrt3;
+inline constexpr _Tp inv_sqrt3_v = __numbers<_Tp>::__inv_sqrt3;
 template <class _Tp>
-_CCCL_GLOBAL_CONSTANT _Tp egamma_v = __numbers<_Tp>::__egamma;
+inline constexpr _Tp egamma_v = __numbers<_Tp>::__egamma;
 template <class _Tp>
-_CCCL_GLOBAL_CONSTANT _Tp phi_v = __numbers<_Tp>::__phi;
+inline constexpr _Tp phi_v = __numbers<_Tp>::__phi;
+
+#if defined(_LIBCUDACXX_HAS_NVFP16)
+template <>
+_CCCL_DEVICE_VARIABLE inline constexpr __half e_v<__half> = __numbers<__half>::__e;
+template <>
+_CCCL_DEVICE_VARIABLE inline constexpr __half log2e_v<__half> = __numbers<__half>::__log2e;
+template <>
+_CCCL_DEVICE_VARIABLE inline constexpr __half log10e_v<__half> = __numbers<__half>::__log10e;
+template <>
+_CCCL_DEVICE_VARIABLE inline constexpr __half pi_v<__half> = __numbers<__half>::__pi;
+template <>
+_CCCL_DEVICE_VARIABLE inline constexpr __half inv_pi_v<__half> = __numbers<__half>::__inv_pi;
+template <>
+_CCCL_DEVICE_VARIABLE inline constexpr __half inv_sqrtpi_v<__half> = __numbers<__half>::__inv_sqrtpi;
+template <>
+_CCCL_DEVICE_VARIABLE inline constexpr __half ln2_v<__half> = __numbers<__half>::__ln2;
+template <>
+_CCCL_DEVICE_VARIABLE inline constexpr __half ln10_v<__half> = __numbers<__half>::__ln10;
+template <>
+_CCCL_DEVICE_VARIABLE inline constexpr __half sqrt2_v<__half> = __numbers<__half>::__sqrt2;
+template <>
+_CCCL_DEVICE_VARIABLE inline constexpr __half sqrt3_v<__half> = __numbers<__half>::__sqrt3;
+template <>
+_CCCL_DEVICE_VARIABLE inline constexpr __half inv_sqrt3_v<__half> = __numbers<__half>::__inv_sqrt3;
+template <>
+_CCCL_DEVICE_VARIABLE inline constexpr __half egamma_v<__half> = __numbers<__half>::__egamma;
+template <>
+_CCCL_DEVICE_VARIABLE inline constexpr __half phi_v<__half> = __numbers<__half>::__phi;
+#endif // _LIBCUDACXX_HAS_NVFP16
+
+#if defined(_LIBCUDACXX_HAS_NVBF16)
+template <>
+_CCCL_DEVICE_VARIABLE inline constexpr __nv_bfloat16 e_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__e;
+template <>
+_CCCL_DEVICE_VARIABLE inline constexpr __nv_bfloat16 log2e_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__log2e;
+template <>
+_CCCL_DEVICE_VARIABLE inline constexpr __nv_bfloat16 log10e_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__log10e;
+template <>
+_CCCL_DEVICE_VARIABLE inline constexpr __nv_bfloat16 pi_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__pi;
+template <>
+_CCCL_DEVICE_VARIABLE inline constexpr __nv_bfloat16 inv_pi_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__inv_pi;
+template <>
+_CCCL_DEVICE_VARIABLE inline constexpr __nv_bfloat16 inv_sqrtpi_v<__nv_bfloat16> =
+  __numbers<__nv_bfloat16>::__inv_sqrtpi;
+template <>
+_CCCL_DEVICE_VARIABLE inline constexpr __nv_bfloat16 ln2_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__ln2;
+template <>
+_CCCL_DEVICE_VARIABLE inline constexpr __nv_bfloat16 ln10_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__ln10;
+template <>
+_CCCL_DEVICE_VARIABLE inline constexpr __nv_bfloat16 sqrt2_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__sqrt2;
+template <>
+_CCCL_DEVICE_VARIABLE inline constexpr __nv_bfloat16 sqrt3_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__sqrt3;
+template <>
+_CCCL_DEVICE_VARIABLE inline constexpr __nv_bfloat16 inv_sqrt3_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__inv_sqrt3;
+template <>
+_CCCL_DEVICE_VARIABLE inline constexpr __nv_bfloat16 egamma_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__egamma;
+template <>
+_CCCL_DEVICE_VARIABLE inline constexpr __nv_bfloat16 phi_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__phi;
+#endif // _LIBCUDACXX_HAS_NVBF16
 
 inline constexpr double e          = e_v<double>;
 inline constexpr double log2e      = log2e_v<double>;
