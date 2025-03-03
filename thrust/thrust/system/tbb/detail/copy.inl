@@ -46,11 +46,11 @@ copy(execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator l
   using traversal  = typename thrust::detail::minimum_type<traversal1, traversal2>::type;
   if constexpr (::cuda::std::is_convertible_v<traversal, random_access_traversal_tag>)
   {
-    return system::detail::generic::copy_n(exec, first, last, result);
+    return system::detail::generic::copy(exec, first, last, result);
   }
   else
   {
-    return system::detail::sequential::copy_n(exec, first, last, result);
+    return system::detail::sequential::copy(exec, first, last, result);
   }
 }
 
