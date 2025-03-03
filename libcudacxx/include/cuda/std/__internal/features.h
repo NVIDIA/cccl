@@ -24,6 +24,7 @@
 #define _LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP()   1
 #define _LIBCUDACXX_HAS_MONOTONIC_CLOCK()       0
 #define _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()    0
+#define _LIBCUDACXX_HAS_WCHAR_H()               0
 
 #if _CCCL_HAS_CUDA_COMPILER || __cpp_aligned_new < 201606
 #  define _LIBCUDACXX_HAS_ALIGNED_ALLOCATION() 0
@@ -58,10 +59,6 @@
 #    define _LIBCUDACXX_HAS_NO_LONG_DOUBLE
 #  endif // !_CCCL_CUDA_COMPILER(CLANG)
 #endif // _LIBCUDACXX_HAS_NO_LONG_DOUBLE
-
-#ifndef _LIBCUDACXX_HAS_NO_WCHAR_H
-#  define _LIBCUDACXX_HAS_NO_WCHAR_H
-#endif // _LIBCUDACXX_HAS_NO_WCHAR_H
 
 // libcu++ requires host device support for its tests. Until then restrict usage to at least 12.2
 #if _CCCL_HAS_NVFP16() && _CCCL_CUDACC_AT_LEAST(12, 2) \
