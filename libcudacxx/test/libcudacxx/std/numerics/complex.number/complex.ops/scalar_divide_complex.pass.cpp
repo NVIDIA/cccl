@@ -41,12 +41,12 @@ int main(int, char**)
 #endif // _LIBCUDACXX_HAS_NVBF16()
 // CUDA treats long double as double
 //  test<long double>();
-#if !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
+#if _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
   static_assert(test<float>(), "");
   static_assert(test<double>(), "");
 // CUDA treats long double as double
 //  static_assert(test<long double>(), "");
-#endif // !_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
+#endif // _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
 
   return 0;
 }
