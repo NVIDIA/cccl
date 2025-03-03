@@ -63,7 +63,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double acosh(double __x) noexcept
 #endif // !_CCCL_BUILTIN_ACOSH
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double acosh(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_ACOSHL)
@@ -81,7 +81,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double acoshl(long double __x) no
   return ::acoshl(__x);
 #  endif // !_CCCL_BUILTIN_ACOSHL
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half acosh(__half __x) noexcept
@@ -132,7 +132,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double asinh(double __x) noexcept
 #endif // !_CCCL_BUILTIN_ASINH
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double asinh(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_ASINHL)
@@ -150,7 +150,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double asinhl(long double __x) no
   return ::asinhl(__x);
 #  endif // !_CCCL_BUILTIN_ASINHL
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half asinh(__half __x) noexcept
@@ -201,7 +201,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double atanh(double __x) noexcept
 #endif // !_CCCL_BUILTIN_ATANH
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double atanh(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_ATANHL)
@@ -219,7 +219,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double atanhl(long double __x) no
   return ::atanhl(__x);
 #  endif // !_CCCL_BUILTIN_ATANHL
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half atanh(__half __x) noexcept

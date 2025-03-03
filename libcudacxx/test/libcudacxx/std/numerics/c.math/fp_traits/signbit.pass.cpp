@@ -90,9 +90,9 @@ __host__ __device__ constexpr bool test()
 {
   test_type<float>();
   test_type<double>();
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   test_type<long double>();
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 #if _LIBCUDACXX_HAS_NVFP16()
   test_type<__half>();
 #endif // _LIBCUDACXX_HAS_NVFP16()

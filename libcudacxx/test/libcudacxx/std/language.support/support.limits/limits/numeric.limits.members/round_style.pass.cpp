@@ -51,9 +51,9 @@ int main(int, char**)
 #endif // _CCCL_HAS_INT128()
   test<float, cuda::std::round_to_nearest>();
   test<double, cuda::std::round_to_nearest>();
-#ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#if _CCCL_HAS_LONG_DOUBLE()
   test<long double, cuda::std::round_to_nearest>();
-#endif
+#endif // _CCCL_HAS_LONG_DOUBLE()
 #if _CCCL_HAS_NVFP16()
   test<__half, cuda::std::round_to_nearest>();
 #endif // _CCCL_HAS_NVFP16

@@ -66,9 +66,9 @@ int main(int, char**)
 {
   test<float>();
   test<double>();
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   test<long double>();
-#endif //!_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
   test<__half>();

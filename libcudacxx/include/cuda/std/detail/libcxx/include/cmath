@@ -425,12 +425,12 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr double __constexpr_copysign(double __x, doub
   return __builtin_copysign(__x, __y);
 }
 
-#  if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#  if _CCCL_HAS_LONG_DOUBLE()
 _LIBCUDACXX_HIDE_FROM_ABI constexpr long double __constexpr_copysign(long double __x, long double __y) noexcept
 {
   return __builtin_copysignl(__x, __y);
 }
-#  endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#  endif // _CCCL_HAS_LONG_DOUBLE()
 
 template <class _A1, class _A2>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<is_arithmetic<_A1>::value && is_arithmetic<_A2>::value,
@@ -460,12 +460,12 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr double __constexpr_fabs(double __x) noexcept
   return __builtin_fabs(__x);
 }
 
-#  if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#  if _CCCL_HAS_LONG_DOUBLE()
 _LIBCUDACXX_HIDE_FROM_ABI constexpr long double __constexpr_fabs(long double __x) noexcept
 {
   return __builtin_fabsl(__x);
 }
-#  endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#  endif // _CCCL_HAS_LONG_DOUBLE()
 
 template <class _Tp, enable_if_t<is_integral<_Tp>::value, int> = 0>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr double __constexpr_fabs(_Tp __x) noexcept
@@ -519,7 +519,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX double __constexpr_fmax(
   return __builtin_fmax(__x, __y);
 }
 
-#  if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#  if _CCCL_HAS_LONG_DOUBLE()
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX long double
 __constexpr_fmax(long double __x, long double __y) noexcept
 {
@@ -539,7 +539,7 @@ __constexpr_fmax(long double __x, long double __y) noexcept
 #    endif // defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   return __builtin_fmax(__x, __y);
 }
-#  endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#  endif // _CCCL_HAS_LONG_DOUBLE()
 
 template <class _Tp, class _Up, enable_if_t<is_arithmetic<_Tp>::value && is_arithmetic<_Up>::value, int> = 0>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX __promote_t<_Tp, _Up> __constexpr_fmax(_Tp __x, _Up __y) noexcept
@@ -611,13 +611,13 @@ _LIBCUDACXX_HIDE_FROM_ABI double __constexpr_scalbn<double>(double __x, int __i)
   return ::scalbn(__x, __i);
 }
 
-#  ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#  if _CCCL_HAS_LONG_DOUBLE()
 template <>
 _LIBCUDACXX_HIDE_FROM_ABI long double __constexpr_scalbn<long double>(long double __x, int __i)
 {
   return ::scalbnl(__x, __i);
 }
-#  endif // _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#  endif // _CCCL_HAS_LONG_DOUBLE()
 #else
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX _Tp __constexpr_scalbn(_Tp __x, int __exp)

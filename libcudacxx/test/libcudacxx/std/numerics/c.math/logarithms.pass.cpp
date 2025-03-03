@@ -77,9 +77,9 @@ __host__ __device__ void test(float value)
 {
   test<float>(value);
   test<double>(value);
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   test<long double>(value);
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 #if _LIBCUDACXX_HAS_NVFP16()
   test<__half>(__float2half(value));
 #endif // _LIBCUDACXX_HAS_NVFP16()

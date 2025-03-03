@@ -60,7 +60,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double fabs(double __x) noexcept
 #endif // ^^^ !_CCCL_BUILTIN_FABS ^^^
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double fabsl(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_FABSL)
@@ -74,7 +74,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double fabs(long double __x) noex
 {
   return _CUDA_VSTD::fabsl(__x);
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __half fabs(__half __x) noexcept
@@ -160,12 +160,12 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double abs(double __val) noexcept
   return _CUDA_VSTD::fabs(__val);
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double abs(long double __val) noexcept
 {
   return _CUDA_VSTD::fabsl(__val);
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __half abs(__half __x) noexcept

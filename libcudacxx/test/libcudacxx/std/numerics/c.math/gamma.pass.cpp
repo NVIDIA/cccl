@@ -87,7 +87,7 @@ __host__ __device__ void test_lgamma(T val)
     const T expected = T(0.5723649429247000819387380943226162);
     assert(is_about(cuda::std::lgammaf(T(0.5)), expected));
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     // If the argument is 1, +0 is returned.
@@ -114,7 +114,7 @@ __host__ __device__ void test_lgamma(T val)
     const T expected = T(0.5723649429247000819387380943226162);
     assert(is_about(cuda::std::lgammal(T(0.5)), expected));
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -176,7 +176,7 @@ __host__ __device__ void test_tgamma(T val)
     const T expected = T(1.772453850905516103964032481599133);
     assert(is_about(cuda::std::tgammaf(T(0.5)), expected));
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     // If the argument is ±0, ±∞ is returned.
@@ -199,7 +199,7 @@ __host__ __device__ void test_tgamma(T val)
     const T expected = T(1.772453850905516103964032481599133);
     assert(is_about(cuda::std::tgammal(T(0.5)), expected));
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -213,9 +213,9 @@ __host__ __device__ void test(const float val)
 {
   test<float>(val);
   test<double>(val);
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   test<long double>();
-#endif //!_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
   test<__half>(val);

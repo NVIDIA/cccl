@@ -63,9 +63,9 @@ int main(int, char**)
 #endif // _CCCL_HAS_INT128()
   test<float>(-FLT_MAX);
   test<double>(-DBL_MAX);
-#ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#if _CCCL_HAS_LONG_DOUBLE()
   test<long double>(-LDBL_MAX);
-#endif
+#endif // _CCCL_HAS_LONG_DOUBLE()
 #if _CCCL_HAS_NVFP16()
   test<__half>(__double2half(-65504.0));
 #endif // _CCCL_HAS_NVFP16

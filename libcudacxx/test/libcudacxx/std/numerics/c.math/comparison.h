@@ -56,12 +56,12 @@ __host__ __device__ bool is_about(double x, double y)
   return (cuda::std::abs((x - y) / (x + y)) < 1.e-14);
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 __host__ __device__ bool is_about(long double x, long double y)
 {
   return (cuda::std::abs((x - y) / (x + y)) < 1.e-14);
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 __host__ __device__ bool is_about(__half x, __half y)

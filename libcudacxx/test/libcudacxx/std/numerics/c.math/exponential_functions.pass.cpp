@@ -43,14 +43,14 @@ __host__ __device__ void test_exp(T val)
     assert(eq(cuda::std::expf(T(-0.0)), T(1.0)));
     assert(eq(cuda::std::expf(T(-cuda::std::numeric_limits<T>::infinity())), T(0.0)));
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-  else if constexpr (cuda::std::is_same_v<T, long double>)
+#if _CCCL_HAS_LONG_DOUBLE()
+  else if (cuda::std::is_same<T, long double>::value)
   {
     assert(eq(cuda::std::expl(val), euler));
     assert(eq(cuda::std::expl(T(-0.0)), T(1.0)));
     assert(eq(cuda::std::expl(T(-cuda::std::numeric_limits<T>::infinity())), T(0.0)));
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -75,7 +75,7 @@ __host__ __device__ void test_exp2(T val)
     assert(eq(cuda::std::exp2f(T(-0.0)), T(1.0)));
     assert(eq(cuda::std::exp2f(T(-cuda::std::numeric_limits<T>::infinity())), T(0.0)));
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(eq(cuda::std::exp2l(val), T(2.0)));
@@ -84,7 +84,7 @@ __host__ __device__ void test_exp2(T val)
     assert(eq(cuda::std::exp2l(T(-0.0)), T(1.0)));
     assert(eq(cuda::std::exp2l(T(-cuda::std::numeric_limits<T>::infinity())), T(0.0)));
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -109,7 +109,7 @@ __host__ __device__ void test_expm1(T val)
     assert(eq(cuda::std::expm1f(800), cuda::std::numeric_limits<T>::infinity()));
     assert(eq(cuda::std::expm1f(T(-cuda::std::numeric_limits<T>::infinity())), T(-1)));
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(is_about(T(cuda::std::expm1l(val)), eulerm1));
@@ -117,7 +117,7 @@ __host__ __device__ void test_expm1(T val)
     assert(eq(cuda::std::expm1l(800), cuda::std::numeric_limits<T>::infinity()));
     assert(eq(cuda::std::expm1l(T(-cuda::std::numeric_limits<T>::infinity())), T(-1)));
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -165,7 +165,7 @@ __host__ __device__ void test_frexp(T val)
               T(-cuda::std::numeric_limits<T>::infinity())));
     assert(cuda::std::isnan(cuda::std::frexpf(T(cuda::std::numeric_limits<T>::quiet_NaN()), &exponent)));
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     exponent = -1;
@@ -185,7 +185,7 @@ __host__ __device__ void test_frexp(T val)
               T(-cuda::std::numeric_limits<T>::infinity())));
     assert(cuda::std::isnan(cuda::std::frexpl(T(cuda::std::numeric_limits<T>::quiet_NaN()), &exponent)));
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -218,7 +218,7 @@ __host__ __device__ void test_ldexp(T val)
               T(-cuda::std::numeric_limits<T>::infinity())));
     assert(cuda::std::isnan(cuda::std::ldexpf(T(cuda::std::numeric_limits<T>::quiet_NaN()), 1)));
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(eq(cuda::std::ldexpl(T(0.0), 800), T(0.0)));
@@ -231,7 +231,7 @@ __host__ __device__ void test_ldexp(T val)
               T(-cuda::std::numeric_limits<T>::infinity())));
     assert(cuda::std::isnan(cuda::std::ldexpl(T(cuda::std::numeric_limits<T>::quiet_NaN()), 1)));
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -264,7 +264,7 @@ __host__ __device__ void test_scalbln(T val)
               T(-cuda::std::numeric_limits<T>::infinity())));
     assert(cuda::std::isnan(cuda::std::scalblnf(T(cuda::std::numeric_limits<T>::quiet_NaN()), 1)));
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(eq(cuda::std::scalblnl(T(0.0), 800), T(0.0)));
@@ -277,7 +277,7 @@ __host__ __device__ void test_scalbln(T val)
               T(-cuda::std::numeric_limits<T>::infinity())));
     assert(cuda::std::isnan(cuda::std::scalblnl(T(cuda::std::numeric_limits<T>::quiet_NaN()), 1)));
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -310,7 +310,7 @@ __host__ __device__ void test_scalbn(T val)
               T(-cuda::std::numeric_limits<T>::infinity())));
     assert(cuda::std::isnan(cuda::std::scalbnf(T(cuda::std::numeric_limits<T>::quiet_NaN()), 1)));
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(eq(cuda::std::scalbnl(T(0.0), 800), T(0.0)));
@@ -323,7 +323,7 @@ __host__ __device__ void test_scalbn(T val)
               T(-cuda::std::numeric_limits<T>::infinity())));
     assert(cuda::std::isnan(cuda::std::scalbnl(T(cuda::std::numeric_limits<T>::quiet_NaN()), 1)));
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -367,7 +367,7 @@ __host__ __device__ void test_pow(T val)
     assert(
       eq(cuda::std::powf(T(0.5), -cuda::std::numeric_limits<T>::infinity()), cuda::std::numeric_limits<T>::infinity()));
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(eq(cuda::std::powl(T(2), T(-3)), T(0.125)));
@@ -383,7 +383,7 @@ __host__ __device__ void test_pow(T val)
     assert(
       eq(cuda::std::powl(T(0.5), -cuda::std::numeric_limits<T>::infinity()), cuda::std::numeric_limits<T>::infinity()));
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -403,9 +403,9 @@ __host__ __device__ void test(const float val)
 {
   test<float>(val);
   test<double>(val);
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   test<long double>();
-#endif //!_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
   test<__half>(val);

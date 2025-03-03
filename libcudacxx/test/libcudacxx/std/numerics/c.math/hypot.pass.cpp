@@ -101,7 +101,7 @@ __host__ __device__ void test_hypot(T val)
     assert(is_about(cuda::std::hypotf(T(1.0), T(2.0)), expected));
     assert(is_about(cuda::std::hypotf(T(3.0), T(4.0)), T(5.0)));
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     // If one of the arguments is ±∞, std::hypot(x, y) returns +∞ even if the other argument is NaN.
@@ -129,7 +129,7 @@ __host__ __device__ void test_hypot(T val)
     assert(is_about(cuda::std::hypotl(T(1.0), T(2.0)), expected));
     assert(is_about(cuda::std::hypotl(T(3.0), T(4.0)), T(5.0)));
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -193,7 +193,7 @@ __host__ __device__ void test_hypot3(T val)
     // Some random value
     assert(is_about(cuda::std::hypotf(T(2.0), T(3.0), T(6.0)), T(7.0)));
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     // If any of the arguments is NaN, NaN is returned.
@@ -213,7 +213,7 @@ __host__ __device__ void test_hypot3(T val)
     // Some random value
     assert(is_about(cuda::std::hypotl(T(2.0), T(3.0), T(6.0)), T(7.0)));
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -227,9 +227,9 @@ __host__ __device__ void test(const float val)
 {
   test<float>(val);
   test<double>(val);
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   test<long double>();
-#endif //!_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
   test<__half>(val);

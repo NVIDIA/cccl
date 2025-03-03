@@ -894,13 +894,13 @@ _LIBCUDACXX_HIDE_FROM_ABI _Tp arg(const complex<_Tp>& __c)
   return _CUDA_VSTD::atan2(__c.imag(), __c.real());
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_same<_Tp, long double>::value, long double> arg(_Tp __re)
 {
   return _CUDA_VSTD::atan2l(0.L, __re);
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_integral<_Tp>::value || is_same<_Tp, double>::value, double> arg(_Tp __re)

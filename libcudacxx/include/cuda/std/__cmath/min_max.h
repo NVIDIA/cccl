@@ -64,7 +64,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double fmax(double __x, double __y) no
 #endif // !_CCCL_BUILTIN_FMAX
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double fmax(long double __x, long double __y) noexcept
 {
 #  if defined(_CCCL_BUILTIN_FMAX)
@@ -81,7 +81,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double fmaxl(long double __x, lon
   return ::fmaxl(__x, __y);
 #  endif // !_CCCL_BUILTIN_FMAX
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half fmax(__half __x, __half __y) noexcept
@@ -160,7 +160,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double fmin(double __x, double __y) no
 #endif // !_CCCL_BUILTIN_FMIN
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double fmin(long double __x, long double __y) noexcept
 {
 #  if defined(_CCCL_BUILTIN_FMIN)
@@ -177,7 +177,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double fminl(long double __x, lon
   return ::fminl(__x, __y);
 #  endif // !_CCCL_BUILTIN_FMIN
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half fmin(__half __x, __half __y) noexcept

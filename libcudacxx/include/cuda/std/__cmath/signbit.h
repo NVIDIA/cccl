@@ -52,7 +52,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool signbit(double __x) noexcept
 #endif // !_CCCL_BUILTIN_SIGNBIT
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool signbit(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_SIGNBIT)
@@ -61,7 +61,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool signbit(long double __x) noexcept
   return ::signbit(__x);
 #  endif // !_CCCL_BUILTIN_SIGNBIT
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__half __x) noexcept

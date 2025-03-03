@@ -55,7 +55,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double copysign(double __x, double __y
 #endif // !_CCCL_BUILTIN_COPYSIGN
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double copysign(long double __x, long double __y) noexcept
 {
 #  if defined(_CCCL_BUILTIN_COPYSIGNL)
@@ -64,7 +64,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double copysign(long double __x, 
   return ::copysignl(__x, __y);
 #  endif // !_CCCL_BUILTIN_COPYSIGNL
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __half copysign(__half __x, __half __y) noexcept

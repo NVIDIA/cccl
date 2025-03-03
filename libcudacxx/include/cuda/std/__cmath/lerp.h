@@ -61,13 +61,13 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr double lerp(double __a, doub
   return _CUDA_VSTD::__lerp(__a, __b, __t);
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr long double
 lerp(long double __a, long double __b, long double __t) noexcept
 {
   return _CUDA_VSTD::__lerp(__a, __b, __t);
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half lerp(__half __a, __half __b, __half __t) noexcept

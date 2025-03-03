@@ -65,7 +65,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double exp(double __x) noexcept
 #endif // !_CCCL_BUILTIN_EXP
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double exp(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_EXPL)
@@ -83,7 +83,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double expl(long double __x) noex
   return ::expl(__x);
 #  endif // !_CCCL_BUILTIN_EXPL
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half exp(__half __x) noexcept
@@ -154,7 +154,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double frexp(double __x, int* __e) noe
 #endif // !_CCCL_BUILTIN_FREXP
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double frexp(long double __x, int* __e) noexcept
 {
 #  if defined(_CCCL_BUILTIN_FREXPL)
@@ -172,7 +172,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double frexpl(long double __x, in
   return ::frexpl(__x, __e);
 #  endif // !_CCCL_BUILTIN_FREXPL
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half frexp(__half __x, int* __e) noexcept
@@ -223,7 +223,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double ldexp(double __x, int __e) noex
 #endif // !_CCCL_BUILTIN_LDEXP
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double ldexp(long double __x, int __e) noexcept
 {
 #  if defined(_CCCL_BUILTIN_LDEXPL)
@@ -241,7 +241,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double ldexpl(long double __x, in
   return ::ldexpl(__x, __e);
 #  endif // !_CCCL_BUILTIN_LDEXPL
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half ldexp(__half __x, int __e) noexcept
@@ -292,7 +292,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double exp2(double __x) noexcept
 #endif // !_CCCL_BUILTIN_EXP2
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double exp2(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_EXP2L)
@@ -310,7 +310,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double exp2l(long double __x) noe
   return ::exp2l(__x);
 #  endif // !_CCCL_BUILTIN_EXP2L
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half exp2(__half __x) noexcept
@@ -362,7 +362,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double expm1(double __x) noexcept
 #endif // !_CCCL_BUILTIN_EXPM1
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double expm1(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_EXPM1L)
@@ -380,7 +380,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double expm1l(long double __x) no
   return ::expm1l(__x);
 #  endif // !_CCCL_BUILTIN_EXPM1L
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half expm1(__half __x) noexcept
@@ -431,7 +431,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double scalbln(double __x, long __y) n
 #endif // !_CCCL_BUILTIN_SCALBLN
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double scalbln(long double __x, long __y) noexcept
 {
 #  if defined(_CCCL_BUILTIN_SCALBLNL)
@@ -449,7 +449,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double scalblnl(long double __x, 
   return ::scalblnl(__x, __y);
 #  endif // !_CCCL_BUILTIN_SCALBLNL
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half scalbln(__half __x, long __y) noexcept
@@ -500,7 +500,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double scalbn(double __x, int __y) noe
 #endif // !_CCCL_BUILTIN_SCALBN
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double scalbn(long double __x, int __y) noexcept
 {
 #  if defined(_CCCL_BUILTIN_SCALBNL)
@@ -518,7 +518,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double scalbnl(long double __x, i
   return ::scalbnl(__x, __y);
 #  endif // !_CCCL_BUILTIN_SCALBNL
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half scalbn(__half __x, int __y) noexcept
@@ -569,7 +569,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double pow(double __x, double __y) noe
 #endif // !_CCCL_BUILTIN_POW
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double pow(long double __x, long double __y) noexcept
 {
 #  if defined(_CCCL_BUILTIN_POWL)
@@ -587,7 +587,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double powl(long double __x, long
   return ::powl(__x, __y);
 #  endif // !_CCCL_BUILTIN_POWL
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half pow(__half __x, __half __y) noexcept

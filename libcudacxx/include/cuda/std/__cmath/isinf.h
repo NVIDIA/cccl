@@ -95,7 +95,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(double __x) noexc
 #endif // ^^^ !_CCCL_BUILTIN_ISINF ^^^
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_ISINF)
@@ -104,7 +104,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(long double __x) 
   return _CUDA_VSTD::__isinf_impl(__x);
 #  endif // defined(_CCCL_BUILTIN_ISINF)
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__half __x) noexcept

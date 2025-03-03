@@ -51,9 +51,9 @@ int main(int, char**)
 #endif // _CCCL_HAS_INT128()
   test<float, cuda::std::denorm_present>();
   test<double, cuda::std::denorm_present>();
-#ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#if _CCCL_HAS_LONG_DOUBLE()
   test<long double, cuda::std::denorm_present>();
-#endif
+#endif // _CCCL_HAS_LONG_DOUBLE()
 #if _CCCL_HAS_NVFP16()
   test<__half, cuda::std::denorm_present>();
 #endif // _CCCL_HAS_NVFP16

@@ -70,7 +70,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double hypot(double __x, double __y) n
 #endif // !_CCCL_BUILTIN_HYPOT
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double hypot(long double __x, long double __y) noexcept
 {
 #  if defined(_CCCL_BUILTIN_HYPOTL)
@@ -88,7 +88,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double hypotl(long double __x, lo
   return ::hypotl(__x, __y);
 #  endif // !_CCCL_BUILTIN_HYPOTL
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half hypot(__half __x, __half __y) noexcept
@@ -165,7 +165,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double hypot(double __x, double __y, d
   return _CUDA_VSTD::__hypot(__x, __y, __z);
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double hypot(long double __x, long double __y, long double __z) noexcept
 {
   return _CUDA_VSTD::__hypot(__x, __y, __z);
@@ -175,7 +175,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double hypotl(long double __x, lo
 {
   return _CUDA_VSTD::__hypot(__x, __y, __z);
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half hypot(__half __x, __half __y, __half __z) noexcept

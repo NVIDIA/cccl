@@ -62,7 +62,7 @@ __host__ __device__ void test_acosh(T val)
     const T expected = T(1.316957896924816795447554795828182);
     assert(is_about(cuda::std::acoshf(T(2.0)), expected));
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(eq(cuda::std::acoshl(cuda::std::numeric_limits<T>::infinity()), cuda::std::numeric_limits<T>::infinity()));
@@ -75,7 +75,7 @@ __host__ __device__ void test_acosh(T val)
     const T expected = T(1.316957896924816795447554795828182);
     assert(is_about(cuda::std::acoshl(T(2.0)), expected));
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -130,7 +130,7 @@ __host__ __device__ void test_asinh(T val)
     assert(is_about(cuda::std::asinhf(T(1.0)), expected));
     assert(is_about(cuda::std::asinhf(T(-1.0)), -expected));
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     // If  the argument is ±0 or ±∞, it is returned unmodified.
@@ -152,7 +152,7 @@ __host__ __device__ void test_asinh(T val)
     assert(is_about(cuda::std::asinhl(T(1.0)), expected));
     assert(is_about(cuda::std::asinhl(T(-1.0)), -expected));
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -205,7 +205,7 @@ __host__ __device__ void test_atanh(T val)
     assert(is_about(cuda::std::atanhf(T(0.5)), expected));
     assert(is_about(cuda::std::atanhf(T(-0.5)), -expected));
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(eq(cuda::std::atanhl(T(1.0)), cuda::std::numeric_limits<T>::infinity()));
@@ -225,7 +225,7 @@ __host__ __device__ void test_atanh(T val)
     assert(is_about(cuda::std::atanhl(T(0.5)), expected));
     assert(is_about(cuda::std::atanhl(T(-0.5)), -expected));
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -240,9 +240,9 @@ __host__ __device__ void test(const float val)
 {
   test<float>(val);
   test<double>(val);
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   test<long double>();
-#endif //!_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
   test<__half>(val);

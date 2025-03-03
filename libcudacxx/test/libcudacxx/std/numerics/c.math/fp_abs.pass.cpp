@@ -57,12 +57,12 @@ __host__ __device__ void constexpr test_fabs_abs(const T pos)
   {
     test_eq(cuda::std::fabsf(pos), pos);
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     test_eq(cuda::std::fabsl(pos), pos);
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
   if constexpr (cuda::std::numeric_limits<T>::is_signed)
   {
@@ -79,12 +79,12 @@ __host__ __device__ void constexpr test_fabs_abs(const T pos)
     {
       test_eq(cuda::std::fabsf(neg), pos);
     }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
     else if constexpr (cuda::std::is_same_v<T, long double>)
     {
       test_eq(cuda::std::fabsl(neg), pos);
     }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
   }
 }
 
@@ -141,9 +141,9 @@ __host__ __device__ constexpr bool test()
 {
   test_type<float>();
   test_type<double>();
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   test_type<long double>();
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 #if _LIBCUDACXX_HAS_NVFP16()
   test_type<__half>();
 #endif // _LIBCUDACXX_HAS_NVFP16()

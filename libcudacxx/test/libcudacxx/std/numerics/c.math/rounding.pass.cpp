@@ -50,7 +50,7 @@ __host__ __device__ void test_ceil(T val)
     assert(eq(cuda::std::ceilf(T(-0.0)), T(-0.0)));
     assert(eq(cuda::std::ceilf(T(0.0)), T(0.0)));
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(eq(cuda::std::ceill(val), T(2)));
@@ -58,7 +58,7 @@ __host__ __device__ void test_ceil(T val)
     assert(eq(cuda::std::ceill(T(-0.0)), T(-0.0)));
     assert(eq(cuda::std::ceill(T(0.0)), T(0.0)));
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -87,7 +87,7 @@ __host__ __device__ void test_floor(T val)
     assert(eq(cuda::std::floorf(T(-0.0)), T(-0.0)));
     assert(eq(cuda::std::floorf(T(0.0)), T(0.0)));
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(eq(cuda::std::floorl(val), T(1)));
@@ -95,7 +95,7 @@ __host__ __device__ void test_floor(T val)
     assert(eq(cuda::std::floorl(T(-0.0)), T(-0.0)));
     assert(eq(cuda::std::floorl(T(0.0)), T(0.0)));
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -123,7 +123,7 @@ __host__ __device__ void test_llrint(T val)
     assert(cuda::std::llrintf(val - T(0.2)) == 1);
     assert(cuda::std::llrintf(-val + T(0.2)) == -1);
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(cuda::std::llrintl(val) == 2);
@@ -131,7 +131,7 @@ __host__ __device__ void test_llrint(T val)
     assert(cuda::std::llrintl(val - T(0.2)) == 1);
     assert(cuda::std::llrintl(-val + T(0.2)) == -1);
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -159,7 +159,7 @@ __host__ __device__ void test_llround(T val)
     assert(cuda::std::llroundf(val - T(0.2)) == 1);
     assert(cuda::std::llroundf(-val + T(0.2)) == -1);
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(cuda::std::llroundl(val) == 2);
@@ -167,7 +167,7 @@ __host__ __device__ void test_llround(T val)
     assert(cuda::std::llroundl(val - T(0.2)) == 1);
     assert(cuda::std::llroundl(-val + T(0.2)) == -1);
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -195,7 +195,7 @@ __host__ __device__ void test_lrint(T val)
     assert(cuda::std::lrintf(val - T(0.2)) == 1);
     assert(cuda::std::lrintf(-val + T(0.2)) == -1);
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(cuda::std::lrintl(val) == 2);
@@ -203,7 +203,7 @@ __host__ __device__ void test_lrint(T val)
     assert(cuda::std::lrintl(val - T(0.2)) == 1);
     assert(cuda::std::lrintl(-val + T(0.2)) == -1);
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -231,7 +231,7 @@ __host__ __device__ void test_lround(T val)
     assert(cuda::std::lroundf(val - T(0.2)) == 1);
     assert(cuda::std::lroundf(-val + T(0.2)) == -1);
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(cuda::std::lroundl(val) == 2);
@@ -239,7 +239,7 @@ __host__ __device__ void test_lround(T val)
     assert(cuda::std::lroundl(val - T(0.2)) == 1);
     assert(cuda::std::lroundl(-val + T(0.2)) == -1);
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -269,7 +269,7 @@ __host__ __device__ void test_nearbyint(T val)
     assert(eq(cuda::std::nearbyintf(val - T(0.2)), T(1)));
     assert(eq(cuda::std::nearbyintf(-val + T(0.2)), T(-1)));
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(eq(cuda::std::nearbyintl(val), T(2)));
@@ -277,7 +277,7 @@ __host__ __device__ void test_nearbyint(T val)
     assert(eq(cuda::std::nearbyintl(val - T(0.2)), T(1)));
     assert(eq(cuda::std::nearbyintl(-val + T(0.2)), T(-1)));
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -291,15 +291,15 @@ __host__ __device__ void test_nextafter(T val)
   {
     assert(eq(cuda::std::nextafterf(cuda::std::nextafterf(val, T(10)), T(-10)), val));
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(eq(cuda::std::nextafterl(cuda::std::nextafterl(val, T(10)), T(-10)), val));
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 template <typename T>
 __host__ __device__ void test_nexttoward(T val)
 {
@@ -316,7 +316,7 @@ __host__ __device__ void test_nexttoward(T val)
     assert(eq(cuda::std::nexttowardl(cuda::std::nexttowardl(val, long double(10.0)), long double(-10.0)), val));
   }
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 template <typename T>
 __host__ __device__ void test_rint(T val)
@@ -345,7 +345,7 @@ __host__ __device__ void test_rint(T val)
     assert(eq(cuda::std::rintf(val - T(0.2)), T(1)));
     assert(eq(cuda::std::rintf(-val + T(0.2)), T(-1)));
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(eq(cuda::std::rintl(val), T(2)));
@@ -353,7 +353,7 @@ __host__ __device__ void test_rint(T val)
     assert(eq(cuda::std::rintl(val - T(0.2)), T(1)));
     assert(eq(cuda::std::rintl(-val + T(0.2)), T(-1)));
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -383,7 +383,7 @@ __host__ __device__ void test_round(T val)
     assert(eq(cuda::std::roundf(val - T(0.2)), T(1)));
     assert(eq(cuda::std::roundf(-val + T(0.2)), T(-1)));
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(eq(cuda::std::roundl(val), T(2)));
@@ -391,7 +391,7 @@ __host__ __device__ void test_round(T val)
     assert(eq(cuda::std::roundl(val - T(0.2)), T(1)));
     assert(eq(cuda::std::roundl(-val + T(0.2)), T(-1)));
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -417,13 +417,13 @@ __host__ __device__ void test_trunc(T val)
     assert(eq(cuda::std::truncf(val), T(1)));
     assert(eq(cuda::std::truncf(-val), T(-1)));
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(eq(cuda::std::truncl(val), T(1)));
     assert(eq(cuda::std::truncl(-val), T(-1)));
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -437,9 +437,9 @@ __host__ __device__ void test(const T val)
   test_lround<T>(val);
   test_nearbyint<T>(val);
   test_nextafter<T>(val);
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   test_nexttoward<T>(val);
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
   test_rint<T>(val);
   test_round<T>(val);
   test_trunc<T>(val);
@@ -449,9 +449,9 @@ __host__ __device__ void test(const float val)
 {
   test<float>(val);
   test<double>(val);
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   test<long double>();
-#endif //!_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
   test<__half>(val);

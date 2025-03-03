@@ -63,7 +63,7 @@ __host__ __device__ constexpr bool test()
   assert(cuda::std::numbers::egamma_v<double> == 0x1.2788cfc6fb619p-1);
   assert(cuda::std::numbers::phi_v<double> == 0x1.9e3779b97f4a8p+0);
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   // long double constants
   assert(cuda::std::numbers::e_v<long double> == 0x1.5bf0a8b145769p+1l);
   assert(cuda::std::numbers::log2e_v<long double> == 0x1.71547652b82fep+0l);
@@ -78,7 +78,7 @@ __host__ __device__ constexpr bool test()
   assert(cuda::std::numbers::inv_sqrt3_v<long double> == 0x1.279a74590331cp-1l);
   assert(cuda::std::numbers::egamma_v<long double> == 0x1.2788cfc6fb619p-1l);
   assert(cuda::std::numbers::phi_v<long double> == 0x1.9e3779b97f4a8p+0l);
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
   return true;
 }

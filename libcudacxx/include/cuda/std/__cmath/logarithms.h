@@ -64,7 +64,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double log(double __x) noexcept
 #endif // !_CCCL_BUILTIN_LOG
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double log(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_LOGL)
@@ -82,7 +82,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double logl(long double __x) noex
   return ::logl(__x);
 #  endif // !_CCCL_BUILTIN_LOGL
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half log(__half __x) noexcept
@@ -154,7 +154,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double log10(double __x) noexcept
 #endif // !_CCCL_BUILTIN_LOG10
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double log10(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_LOG10L)
@@ -172,7 +172,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double log10l(long double __x) no
   return ::log10l(__x);
 #  endif // !_CCCL_BUILTIN_LOG10L
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half log10(__half __x) noexcept
@@ -229,7 +229,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI int ilogb(double __x) noexcept
 #endif // !_CCCL_BUILTIN_ILOGB
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI int ilogb(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_ILOGBL)
@@ -247,7 +247,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI int ilogbl(long double __x) noexcept
   return ::ilogbl(__x);
 #  endif // !_CCCL_BUILTIN_ILOGBL
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI int ilogb(__half __x) noexcept
@@ -302,7 +302,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double log1p(double __x) noexcept
 #endif // !_CCCL_BUILTIN_LOG1P
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double log1p(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_LOG1PL)
@@ -320,7 +320,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double log1pl(long double __x) no
   return ::log1pl(__x);
 #  endif // !_CCCL_BUILTIN_LOG1PL
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half log1p(__half __x) noexcept
@@ -375,7 +375,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double log2(double __x) noexcept
 #endif // !_CCCL_BUILTIN_LOG2
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double log2(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_LOG2L)
@@ -393,7 +393,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double log2l(long double __x) noe
   return ::log2l(__x);
 #  endif // !_CCCL_BUILTIN_LOG2L
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half log2(__half __x) noexcept
@@ -450,7 +450,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double logb(double __x) noexcept
 #endif // !_CCCL_BUILTIN_LOGB
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double logb(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_LOGBL)
@@ -468,7 +468,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double logbl(long double __x) noe
   return ::logbl(__x);
 #  endif // !_CCCL_BUILTIN_LOGBL
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half logb(__half __x) noexcept

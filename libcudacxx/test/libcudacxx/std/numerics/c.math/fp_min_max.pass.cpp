@@ -30,9 +30,9 @@ __host__ __device__ void test_fmax(float value)
 {
   test_fmax<float>(value);
   test_fmax<double>(value);
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   test_fmax<long double>(value);
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 #if _LIBCUDACXX_HAS_NVFP16()
   test_fmax<__half>(__float2half(value));
 #endif // _LIBCUDACXX_HAS_NVFP16()
@@ -50,10 +50,10 @@ __host__ __device__ void test_fmax(float value)
   static_assert((cuda::std::is_same_v<decltype(cuda::std::fmax((unsigned short) 0, (double) 0)), double>), "");
 
   static_assert((cuda::std::is_same_v<decltype(cuda::std::fmaxf(0, 0)), float>), "");
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   static_assert((cuda::std::is_same_v<decltype(cuda::std::fmax((long double) 0, (unsigned long) 0)), long double>), "");
   static_assert((cuda::std::is_same_v<decltype(cuda::std::fmaxl(0, 0)), long double>), "");
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <class T>
@@ -71,9 +71,9 @@ __host__ __device__ void test_fmin(float value)
 {
   test_fmax<float>(value);
   test_fmax<double>(value);
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   test_fmax<long double>(value);
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 #if _LIBCUDACXX_HAS_NVFP16()
   test_fmax<__half>(__float2half(value));
 #endif // _LIBCUDACXX_HAS_NVFP16()
@@ -91,10 +91,10 @@ __host__ __device__ void test_fmin(float value)
   static_assert((cuda::std::is_same_v<decltype(cuda::std::fmin((unsigned short) 0, (double) 0)), double>), "");
 
   static_assert((cuda::std::is_same_v<decltype(cuda::std::fminf(0, 0)), float>), "");
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   static_assert((cuda::std::is_same_v<decltype(cuda::std::fmin((long double) 0, (unsigned long) 0)), long double>), "");
   static_assert((cuda::std::is_same_v<decltype(cuda::std::fminl(0, 0)), long double>), "");
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 __host__ __device__ void test(float value)

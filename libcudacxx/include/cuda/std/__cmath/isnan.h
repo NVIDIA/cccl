@@ -63,7 +63,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnan(double __x) noexc
 #endif // ^^^ !_CCCL_BUILTIN_ISNAN ^^^
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnan(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_ISNAN)
@@ -72,7 +72,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnan(long double __x) 
   return _CUDA_VSTD::__isnan_impl(__x);
 #  endif // ^^^ !_CCCL_BUILTIN_ISNAN ^^^
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnan(__half __x) noexcept

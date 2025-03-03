@@ -46,7 +46,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnormal(double __x) no
 #endif // !_CCCL_BUILTIN_ISNORMAL
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnormal(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_ISNORMAL)
@@ -55,7 +55,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnormal(long double __
   return _CUDA_VSTD::fpclassify(__x) == FP_NORMAL;
 #  endif // !_CCCL_BUILTIN_ISNORMAL
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnormal(__half __x) noexcept

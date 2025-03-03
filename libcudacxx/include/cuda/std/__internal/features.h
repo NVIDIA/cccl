@@ -53,13 +53,6 @@
 #  define _LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES
 #endif // _LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES
 
-#ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
-// FIXME: Enable this for clang-cuda in a followup
-#  if 1 // !_CCCL_CUDA_COMPILER(CLANG)
-#    define _LIBCUDACXX_HAS_NO_LONG_DOUBLE
-#  endif // !_CCCL_CUDA_COMPILER(CLANG)
-#endif // _LIBCUDACXX_HAS_NO_LONG_DOUBLE
-
 // libcu++ requires host device support for its tests. Until then restrict usage to at least 12.2
 #if _CCCL_HAS_NVFP16() && _CCCL_CUDACC_AT_LEAST(12, 2) \
   && (_CCCL_HAS_CUDA_COMPILER || defined(LIBCUDACXX_ENABLE_HOST_NVFP16))

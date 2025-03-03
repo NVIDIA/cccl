@@ -52,7 +52,7 @@ __host__ __device__ void test_acos(T val)
     const T pi = T(3.141592653589793238462643383279502);
     assert(is_about(cuda::std::acosf(T(0.5)), pi / T(3.0)));
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(cuda::std::isnan(cuda::std::acosl(cuda::std::numeric_limits<T>::infinity())));
@@ -63,7 +63,7 @@ __host__ __device__ void test_acos(T val)
     const T pi = T(3.141592653589793238462643383279502);
     assert(is_about(cuda::std::acosl(T(0.5)), pi / T(3.0)));
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -99,7 +99,7 @@ __host__ __device__ void test_asin(T val)
     assert(is_about(cuda::std::asinf(T(1.0)), pi / T(2.0)));
     assert(is_about(cuda::std::asinf(T(-0.5)), -pi / T(6.0)));
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(cuda::std::isnan(cuda::std::asinl(cuda::std::numeric_limits<T>::infinity())));
@@ -111,7 +111,7 @@ __host__ __device__ void test_asin(T val)
     assert(is_about(cuda::std::asinl(T(1.0)), pi / T(2.0)));
     assert(is_about(cuda::std::asinl(T(-0.5)), -pi / T(6.0)));
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -144,7 +144,7 @@ __host__ __device__ void test_atan(T val)
 
     assert(is_about(cuda::std::atanf(T(1.0)), pi / T(4.0)));
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     const T pi = T(3.141592653589793238462643383279502);
@@ -155,7 +155,7 @@ __host__ __device__ void test_atan(T val)
 
     assert(is_about(cuda::std::atanl(T(1.0)), pi / T(4.0)));
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -282,7 +282,7 @@ __host__ __device__ void test_atan2(T val)
     assert(eq(cuda::std::atan2f(T(-2.0), cuda::std::numeric_limits<T>::infinity()), -val));
     assert(eq(cuda::std::atan2f(T(-2.0), cuda::std::numeric_limits<T>::infinity()), -val));
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     const T pi = T(3.141592653589793238462643383279502);
@@ -339,7 +339,7 @@ __host__ __device__ void test_atan2(T val)
     assert(eq(cuda::std::atan2l(T(-2.0), cuda::std::numeric_limits<T>::infinity()), -val));
     assert(eq(cuda::std::atan2l(T(-2.0), cuda::std::numeric_limits<T>::infinity()), -val));
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -355,9 +355,9 @@ __host__ __device__ void test(const float val)
 {
   test<float>(val);
   test<double>(val);
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   test<long double>();
-#endif //!_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
   test<__half>(val);

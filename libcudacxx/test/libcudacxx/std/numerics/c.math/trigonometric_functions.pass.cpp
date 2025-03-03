@@ -55,7 +55,7 @@ __host__ __device__ void test_cos(T val)
     assert(eq(cuda::std::cosf(pi * T(0.25)), -cuda::std::cosf(pi * T(0.75))));
     assert(eq(cuda::std::cosf(pi / T(2.0)), cuda::std::cosf(-pi / T(2.0))));
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(cuda::std::isnan(cuda::std::cosl(cuda::std::numeric_limits<T>::infinity())));
@@ -67,7 +67,7 @@ __host__ __device__ void test_cos(T val)
     assert(eq(cuda::std::cosl(pi * T(0.25)), -cuda::std::cosl(pi * T(0.75))));
     assert(eq(cuda::std::cosl(pi / T(2.0)), cuda::std::cosl(-pi / T(2.0))));
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -106,7 +106,7 @@ __host__ __device__ void test_sin(T val)
     assert(eq(cuda::std::sinf(pi / T(2.0)), T(1.0)));
     assert(eq(cuda::std::sinf(-pi / T(2.0)), T(-1.0)));
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(cuda::std::isnan(cuda::std::sinl(cuda::std::numeric_limits<T>::infinity())));
@@ -120,7 +120,7 @@ __host__ __device__ void test_sin(T val)
     assert(eq(cuda::std::sinl(pi / T(2.0)), T(1.0)));
     assert(eq(cuda::std::sinl(-pi / T(2.0)), T(-1.0)));
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -164,7 +164,7 @@ __host__ __device__ void test_tan(T val)
     assert(is_about(cuda::std::tanf(pi * T(1.25)), T(1.0)));
     assert(is_about(cuda::std::tanf(pi * T(1.75)), T(-1.0)));
   }
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(cuda::std::isnan(cuda::std::tanl(cuda::std::numeric_limits<T>::infinity())));
@@ -178,7 +178,7 @@ __host__ __device__ void test_tan(T val)
     assert(is_about(cuda::std::tanl(pi * T(1.25)), T(1.0)));
     assert(is_about(cuda::std::tanl(pi * T(1.75)), T(-1.0)));
   }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
@@ -193,9 +193,9 @@ __host__ __device__ void test(const float val)
 {
   test<float>(val);
   test<double>(val);
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   test<long double>();
-#endif //!_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
   test<__half>(val);

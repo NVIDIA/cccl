@@ -61,7 +61,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double sqrt(double __x) noexcept
 #endif // !_CCCL_BUILTIN_SQRT
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double sqrt(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_SQRTL)
@@ -79,7 +79,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double sqrtl(long double __x) noe
   return ::sqrtl(__x);
 #  endif // !_CCCL_BUILTIN_SQRTL
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half sqrt(__half __x) noexcept
@@ -131,7 +131,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double cbrt(double __x) noexcept
 #endif // !_CCCL_BUILTIN_CBRT
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double cbrt(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_CBRTL)
@@ -149,7 +149,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double cbrtl(long double __x) noe
   return ::cbrtl(__x);
 #  endif // !_CCCL_BUILTIN_CBRTL
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half cbrt(__half __x) noexcept

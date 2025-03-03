@@ -64,7 +64,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double cos(double __x) noexcept
 #endif // !_CCCL_BUILTIN_COS
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double cos(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_COSL)
@@ -82,7 +82,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double cosl(long double __x) noex
   return ::cosl(__x);
 #  endif // !_CCCL_BUILTIN_COSL
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half cos(__half __x) noexcept
@@ -151,7 +151,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double sin(double __x) noexcept
 #endif // !_CCCL_BUILTIN_SIN
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double sin(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_SINL)
@@ -169,7 +169,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double sinl(long double __x) noex
   return ::sinl(__x);
 #  endif // !_CCCL_BUILTIN_SINL
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half sin(__half __x) noexcept
@@ -243,7 +243,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double tan(double __x) noexcept
 #endif // !_CCCL_BUILTIN_TAN
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double tan(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_TANL)
@@ -261,7 +261,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double tanl(long double __x) noex
   return ::tanl(__x);
 #  endif // !_CCCL_BUILTIN_TANL
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half tan(__half __x) noexcept
