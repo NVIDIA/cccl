@@ -138,7 +138,7 @@ TEMPLATE_LIST_TEST_CASE("DeviceSelect::UniqueByKey works", "[unique_by_key]", ke
     return a.first == b.first;
   });
 
-  int num_selected = std::vector<int>(output_num_selected_it)[0];
+  int num_selected = output_num_selected_it[0];
 
   REQUIRE((boundary - input_pairs.begin()) == num_selected);
 
@@ -245,7 +245,7 @@ TEST_CASE("DeviceSelect::UniqueByKey works with custom types", "[device][select_
     return a.first == b.first;
   });
 
-  int num_selected = std::vector<int>(output_num_selected_it)[0];
+  int num_selected = output_num_selected_it[0];
 
   REQUIRE((boundary - input_pairs.begin()) == num_selected);
 
@@ -353,7 +353,7 @@ TEST_CASE("DeviceMergeSort::SortPairs works with input and output iterators", "[
     return a.first == b.first;
   });
 
-  int num_selected = std::vector<int>(output_num_selected_it)[0];
+  int num_selected = output_num_selected_it[0];
 
   REQUIRE((boundary - input_pairs.begin()) == num_selected);
 
