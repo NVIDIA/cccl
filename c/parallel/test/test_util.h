@@ -16,6 +16,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <iostream>
 #include <random>
@@ -437,6 +438,30 @@ struct iterator_t
   }
 };
 
+enum class iterator_kind
+{
+  INPUT  = 0,
+  OUTPUT = 1,
+};
+
+template <typename T>
+struct random_access_iterator_state_t
+{
+  T* data;
+};
+
+template <typename T>
+struct counting_iterator_state_t
+{
+  T value;
+};
+
+template <typename T>
+struct constant_iterator_state_t
+{
+  T value;
+};
+
 template <class ValueT, class StateT>
 iterator_t<ValueT, StateT> make_iterator(std::string state, operation_t advance, operation_t dereference)
 {
@@ -444,6 +469,91 @@ iterator_t<ValueT, StateT> make_iterator(std::string state, operation_t advance,
   it.advance     = make_operation(advance.name, state + advance.code);
   it.dereference = make_operation(dereference.name, state + dereference.code);
   return it;
+}
+
+template <class ValueT>
+iterator_t<ValueT, random_access_iterator_state_t<ValueT>> make_random_access_iterator(
+  iterator_kind kind, std::string value_type, std::string prefix = "", std::string transform = "")
+{
+  std::string iterator_state = std::format("struct state_t {{ {0}* data; }};\n", value_type);
+
+  operation_t advance = {
+    std::format("{0}_advance", prefix),
+    std::format("extern \"C\" __device__ void {0}_advance(state_t* state, unsigned long long offset) {{\n"
+                "  state->data += offset;\n"
+                "}}",
+                prefix)};
+
+  std::string dereference_method;
+  if (kind == iterator_kind::INPUT)
+  {
+    dereference_method = std::format(
+      "extern \"C\" __device__ {1} {0}_dereference(state_t* state) {{\n"
+      "  return (*state->data){2};\n"
+      "}}",
+      prefix,
+      value_type,
+      transform);
+  }
+  else
+  {
+    dereference_method = std::format(
+      "extern \"C\" __device__ void {0}_dereference(state_t* state, {1} x) {{\n"
+      "  *state->data = x{2};\n"
+      "}}",
+      prefix,
+      value_type,
+      transform);
+  }
+
+  operation_t dereference = {std::format("{0}_dereference", prefix), dereference_method};
+
+  return make_iterator<ValueT, random_access_iterator_state_t<ValueT>>(iterator_state, advance, dereference);
+}
+
+template <class ValueT>
+iterator_t<ValueT, counting_iterator_state_t<ValueT>>
+make_counting_iterator(std::string value_type, std::string prefix = "")
+{
+  std::string iterator_state = std::format("struct state_t {{ {0} value; }};\n", value_type);
+
+  operation_t advance = {
+    std::format("{0}_advance", prefix),
+    std::format("extern \"C\" __device__ void {0}_advance(state_t* state, unsigned long long offset) {{\n"
+                "  state->value += offset;\n"
+                "}}",
+                prefix)};
+
+  operation_t dereference = {
+    std::format("{0}_dereference", prefix),
+    std::format("extern \"C\" __device__ {1} {0}_dereference(state_t* state) {{ \n"
+                "  return state->value;\n"
+                "}}",
+                prefix,
+                value_type)};
+
+  return make_iterator<ValueT, counting_iterator_state_t<ValueT>>(iterator_state, advance, dereference);
+}
+
+template <class ValueT>
+iterator_t<ValueT, constant_iterator_state_t<ValueT>>
+make_constant_iterator(std::string value_type, std::string prefix = "")
+{
+  std::string iterator_state = std::format("struct state_t {{ {0} value; }};\n", value_type);
+
+  operation_t advance = {
+    std::format("{0}_advance", prefix),
+    std::format("extern \"C\" __device__ void {0}_advance(state_t* state, unsigned long long offset) {{ }}", prefix)};
+
+  operation_t dereference = {
+    std::format("{0}_dereference", prefix),
+    std::format("extern \"C\" __device__ {1} {0}_dereference(state_t* state) {{ \n"
+                "  return state->value;\n"
+                "}}",
+                prefix,
+                value_type)};
+
+  return make_iterator<ValueT, constant_iterator_state_t<ValueT>>(iterator_state, advance, dereference);
 }
 
 template <class T>

@@ -262,16 +262,6 @@ TEST_CASE("DeviceSelect::UniqueByKey works with custom types", "[device][select_
   REQUIRE(input_pairs == output_pairs);
 }
 
-struct random_access_iterator_state_t
-{
-  int* d_input;
-};
-
-struct transform_iterator_state_t
-{
-  int* d_input;
-};
-
 TEST_CASE("DeviceMergeSort::SortPairs works with input and output iterators", "[merge_sort]")
 {
   using TestType = int;
@@ -279,81 +269,32 @@ TEST_CASE("DeviceMergeSort::SortPairs works with input and output iterators", "[
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
 
   operation_t op = make_operation("op", get_unique_by_key_op(get_type_info<int>().type));
-  iterator_t<TestType, random_access_iterator_state_t> input_keys_it =
-    make_iterator<TestType, random_access_iterator_state_t>(
-      "struct random_access_iterator_state_t { int* d_input; };\n",
-      {"key_advance",
-       "extern \"C\" __device__ void key_advance(random_access_iterator_state_t* state, unsigned long long offset) {\n"
-       "  state->d_input += offset;\n"
-       "}"},
-      {"key_dereference",
-       "extern \"C\" __device__ int key_dereference(random_access_iterator_state_t* state) {\n"
-       "  return *state->d_input;\n"
-       "}"});
-  iterator_t<TestType, transform_iterator_state_t> input_values_it = make_iterator<TestType, transform_iterator_state_t>(
-    "struct transform_iterator_state_t { int* d_input; };\n",
-    {"value_advance",
-     "extern \"C\" __device__ void value_advance(transform_iterator_state_t* state, unsigned long long "
-     "offset) {\n"
-     "  state->d_input += offset;\n"
-     "}"},
-    {"value_dereference",
-     "extern \"C\" __device__ int value_dereference(transform_iterator_state_t* state) {\n"
-     "  return (*state->d_input) * 2;\n"
-     "}"});
-  iterator_t<TestType, random_access_iterator_state_t> output_keys_it =
-    make_iterator<TestType, random_access_iterator_state_t>(
-      "struct random_access_iterator_state_t { int* d_input; };\n",
-      {"key_advance_out",
-       "extern \"C\" __device__ void key_advance_out(random_access_iterator_state_t* state, unsigned long long offset) "
-       "{\n"
-       "  state->d_input += offset;\n"
-       "}"},
-      {"key_dereference_out",
-       "extern \"C\" __device__ void key_dereference_out(random_access_iterator_state_t* state, int x) {\n"
-       "  *state->d_input = x;\n"
-       "}"});
-  iterator_t<TestType, transform_iterator_state_t> output_values_it =
-    make_iterator<TestType, transform_iterator_state_t>(
-      "struct transform_iterator_state_t { int* d_input; };\n",
-      {"value_advance_out",
-       "extern \"C\" __device__ void value_advance_out(transform_iterator_state_t* state, unsigned long long "
-       "offset) {\n"
-       "  state->d_input += offset;\n"
-       "}"},
-      {"value_dereference_out",
-       "extern \"C\" __device__ void value_dereference_out(transform_iterator_state_t* state, int x) {\n"
-       "  *state->d_input = x * 3;\n"
-       "}"});
-  iterator_t<TestType, random_access_iterator_state_t> output_num_selected_it =
-    make_iterator<TestType, random_access_iterator_state_t>(
-      "struct random_access_iterator_state_t { int* d_input; };\n",
-      {"num_selected_advance_out",
-       "extern \"C\" __device__ void num_selected_advance_out(random_access_iterator_state_t* state, unsigned long "
-       "long offset) "
-       "{\n"
-       "  state->d_input += offset;\n"
-       "}"},
-      {"num_selected_dereference_out",
-       "extern \"C\" __device__ void num_selected_dereference_out(random_access_iterator_state_t* state, int x) {\n"
-       "  *state->d_input = x;\n"
-       "}"});
+  iterator_t<TestType, random_access_iterator_state_t<TestType>> input_keys_it =
+    make_random_access_iterator<TestType>(iterator_kind::INPUT, "int", "key");
+  iterator_t<TestType, random_access_iterator_state_t<TestType>> input_values_it =
+    make_random_access_iterator<TestType>(iterator_kind::INPUT, "int", "value", " * 2");
+  iterator_t<TestType, random_access_iterator_state_t<TestType>> output_keys_it =
+    make_random_access_iterator<TestType>(iterator_kind::OUTPUT, "int", "key_out");
+  iterator_t<TestType, random_access_iterator_state_t<TestType>> output_values_it =
+    make_random_access_iterator<TestType>(iterator_kind::OUTPUT, "int", "value_out", " * 3");
+  iterator_t<TestType, random_access_iterator_state_t<TestType>> output_num_selected_it =
+    make_random_access_iterator<TestType>(iterator_kind::OUTPUT, "int", "num_selected");
 
   std::vector<TestType> input_keys = generate<TestType>(num_items);
   std::vector<item_t> input_values = generate<int>(num_items);
 
   pointer_t<TestType> input_keys_ptr(input_keys);
-  input_keys_it.state.d_input = input_keys_ptr.ptr;
+  input_keys_it.state.data = input_keys_ptr.ptr;
   pointer_t<item_t> input_values_ptr(input_values);
-  input_values_it.state.d_input = input_values_ptr.ptr;
+  input_values_it.state.data = input_values_ptr.ptr;
 
   pointer_t<TestType> output_keys_ptr(num_items);
-  output_keys_it.state.d_input = output_keys_ptr.ptr;
+  output_keys_it.state.data = output_keys_ptr.ptr;
   pointer_t<item_t> output_values_ptr(num_items);
-  output_values_it.state.d_input = output_values_ptr.ptr;
+  output_values_it.state.data = output_values_ptr.ptr;
 
   pointer_t<int> output_num_selected_ptr(1);
-  output_num_selected_it.state.d_input = output_num_selected_ptr.ptr;
+  output_num_selected_it.state.data = output_num_selected_ptr.ptr;
 
   unique_by_key(input_keys_it, input_values_it, output_keys_it, output_values_it, output_num_selected_it, op, num_items);
 
