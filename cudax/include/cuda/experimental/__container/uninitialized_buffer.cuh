@@ -33,7 +33,7 @@
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
 #include <cuda/experimental/__memory_resource/properties.cuh>
 
-#if _CCCL_STD_VER >= 2014 && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
+#if defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
 //! @file
 //! The \c uninitialized_buffer class provides a typed buffer allocated from a given memory resource.
@@ -283,6 +283,6 @@ using uninitialized_device_buffer = uninitialized_buffer<_Tp, device_accessible>
 
 } // namespace cuda::experimental
 
-#endif // _CCCL_STD_VER >= 2014 && LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+#endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #endif //__CUDAX__CONTAINERS_UNINITIALIZED_BUFFER_H

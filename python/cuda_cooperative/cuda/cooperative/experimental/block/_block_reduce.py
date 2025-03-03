@@ -28,8 +28,8 @@ def reduce(dtype, threads_per_block, binary_op, items_per_thread=1, methods=None
 
     - `(item: dtype) -> dtype)`: Each thread contributes a single item to the reduction.
     - `(items: numba.types.Array) -> dtype`: Each thread contributes an array of items to the
-        reduction. The array must be 1D and contain at least `items_per_thread` items; only the
-        first `items_per_thread` items will be included in the reduction.
+        reduction. The array must contain at least `items_per_thread` items; only the first
+        `items_per_thread` items will be included in the reduction.
     - `(item: dtype, num_valid: int) -> dtype`: The first `num_valid` threads contribute a
         single item to the reduction. The items contributed by all other threads are ignored.
 
@@ -135,7 +135,7 @@ def sum(dtype, threads_per_block, items_per_thread=1, methods=None):
 
     - `(item: dtype) -> dtype)`: Each thread contributes a single item to the reduction.
     - `(items: numba.types.Array) -> dtype`: Each thread contributes an array of items to the
-        reduction. The array must be 1D and contain at least `items_per_thread` items; only the
+        reduction. The array must contain at least `items_per_thread` items; only the
         first `items_per_thread` items will be included in the reduction.
     - `(item: dtype, num_valid: int) -> dtype`: The first `num_valid` threads contribute a
         single item to the reduction. The items contributed by all other threads are ignored.

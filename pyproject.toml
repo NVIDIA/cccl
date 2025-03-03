@@ -19,6 +19,6 @@ extend-select = ["I"]
 skip = "./.git,./build,./CITATION.md"
 # ignore short words, and typename parameters like OffsetT
 ignore-regex = "\\b(.{1,4}|[A-Z]\\w*T)\\b"
-ignore-words-list = "inout,imovable,optionN,aCount,quitted,Invokable,countr,unexpect,numer,euclidian,couldn,OffsetT"
+ignore-words-list = "inout,imovable,optionN,aCount,quitted,Invokable,countr,unexpect,numer,euclidian,couldn,OffsetT,FromM"
 builtin = "clear"
 quiet-level = 3

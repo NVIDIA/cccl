@@ -557,7 +557,7 @@ protected:
       generate_event_symbols = dot->is_tracing_prereqs();
 
       // Record it in the list of all traced contexts
-      reserved::dot::instance().per_ctx.push_back(dot);
+      reserved::dot::instance().track_ctx(dot);
     }
 
     virtual ~impl()

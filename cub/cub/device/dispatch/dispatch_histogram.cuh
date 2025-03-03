@@ -59,8 +59,7 @@
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/functional>
-#include <cuda/std/__algorithm/copy.h>
-#include <cuda/std/__algorithm/transform.h>
+#include <cuda/std/__algorithm_>
 #include <cuda/std/array>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
@@ -362,9 +361,11 @@ struct dispatch_histogram
       // Get grid dimensions, trying to keep total blocks ~histogram_sweep_occupancy
       int pixels_per_tile = block_threads * pixels_per_thread;
       int tiles_per_row   = static_cast<int>(::cuda::ceil_div(num_row_pixels, pixels_per_tile));
-      int blocks_per_row  = CUB_MIN(histogram_sweep_occupancy, tiles_per_row);
+      int blocks_per_row  = _CUDA_VSTD::min(histogram_sweep_occupancy, tiles_per_row);
       int blocks_per_col =
-        (blocks_per_row > 0) ? int(CUB_MIN(histogram_sweep_occupancy / blocks_per_row, num_rows)) : 0;
+        (blocks_per_row > 0)
+          ? int(_CUDA_VSTD::min(static_cast<OffsetT>(histogram_sweep_occupancy / blocks_per_row), num_rows))
+          : 0;
       int num_thread_blocks = blocks_per_row * blocks_per_col;
 
       dim3 sweep_grid_dims;

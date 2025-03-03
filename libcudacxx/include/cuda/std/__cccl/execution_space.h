@@ -33,6 +33,14 @@
 #  define _CCCL_HOST_DEVICE
 #endif // !_CCCL_CUDA_COMPILATION
 
+// NVCC complains bitterly that inline variable of non literal types are not defined in device code
+// This is a hack around this and one of the few cases we use `__CUDA_ARCH__` open coded
+#if defined(__CUDA_ARCH__)
+#  define _CCCL_DEVICE_VARIABLE __device__
+#else
+#  define _CCCL_DEVICE_VARIABLE
+#endif //
+
 /// In device code, _CCCL_PTX_ARCH expands to the PTX version for which we are compiling.
 /// In host code, _CCCL_PTX_ARCH's value is implementation defined.
 #if !defined(__CUDA_ARCH__)

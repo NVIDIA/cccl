@@ -208,7 +208,7 @@ struct dynamic_merge_sort_policy_t
     return op.template Invoke<merge_sort_runtime_tuning_policy>(GetPolicy(device_ptx_version, key_size));
   }
 
-  int key_size;
+  uint64_t key_size;
 };
 
 struct merge_sort_kernel_source
@@ -435,7 +435,7 @@ CUresult cccl_device_merge_sort(
   cccl_iterator_t d_in_items,
   cccl_iterator_t d_out_keys,
   cccl_iterator_t d_out_items,
-  unsigned long long num_items,
+  uint64_t num_items,
   cccl_op_t op,
   CUstream stream)
 {
