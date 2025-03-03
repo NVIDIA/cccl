@@ -98,10 +98,12 @@ reduce_runtime_tuning_policy get_policy(int cc, cccl_type_info accumulator_type)
   auto [_, block_size, items_per_thread, vector_load_length] = find_tuning(cc, chain);
 
   // Implement part of MemBoundScaling
-  int candidate_ipt  = static_cast<int>(items_per_thread * 4 / accumulator_type.size);
-  items_per_thread   = cuda::std::clamp(candidate_ipt, 1, items_per_thread * 2);
-  int max_block_size = static_cast<int>((((1024 * 48) / (accumulator_type.size * items_per_thread)) + 31) / 32 * 32);
-  block_size         = _CUDA_VSTD::min(block_size, max_block_size);
+  auto four_bytes_per_thread = items_per_thread * 4 / accumulator_type.size;
+  items_per_thread = _CUDA_VSTD::clamp<decltype(items_per_thread)>(four_bytes_per_thread, 1, items_per_thread * 2);
+
+  auto work_per_sm    = cub::detail::max_smem_per_block / (accumulator_type.size * items_per_thread);
+  auto max_block_size = cuda::round_up(work_per_sm, 32);
+  block_size          = _CUDA_VSTD::min<decltype(block_size)>(block_size, max_block_size);
 
   return {block_size, items_per_thread, vector_load_length};
 }
