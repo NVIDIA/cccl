@@ -35,18 +35,18 @@ THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-auto category_to_system_impl(...) -> void;
+_CCCL_HOST_DEVICE auto cat_to_system_impl(...) -> void;
 
-auto category_to_system_impl(const input_host_iterator_tag&) -> host_system_tag;
-auto category_to_system_impl(const output_host_iterator_tag&) -> host_system_tag;
+_CCCL_HOST_DEVICE auto cat_to_system_impl(const input_host_iterator_tag&) -> host_system_tag;
+_CCCL_HOST_DEVICE auto cat_to_system_impl(const output_host_iterator_tag&) -> host_system_tag;
 
-auto category_to_system_impl(const input_device_iterator_tag&) -> device_system_tag;
-auto category_to_system_impl(const output_device_iterator_tag&) -> device_system_tag;
+_CCCL_HOST_DEVICE auto cat_to_system_impl(const input_device_iterator_tag&) -> device_system_tag;
+_CCCL_HOST_DEVICE auto cat_to_system_impl(const output_device_iterator_tag&) -> device_system_tag;
 
 template <typename Category>
 struct iterator_category_to_system
 {
-  using type = decltype(category_to_system_impl(Category{}));
+  using type = decltype(cat_to_system_impl(Category{}));
 };
 } // namespace detail
 THRUST_NAMESPACE_END
