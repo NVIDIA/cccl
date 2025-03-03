@@ -22,11 +22,11 @@
 
 #define _LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP() 1
 
-#ifndef _LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION
-#  if _CCCL_HAS_CUDA_COMPILER || __cpp_aligned_new < 201606
-#    define _LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION
-#  endif // _CCCL_HAS_CUDA_COMPILER || __cpp_aligned_new < 201606
-#endif // _LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION
+#if _CCCL_HAS_CUDA_COMPILER || __cpp_aligned_new < 201606
+#  define _LIBCUDACXX_HAS_ALIGNED_ALLOCATION() 0
+#else
+#  define _LIBCUDACXX_HAS_ALIGNED_ALLOCATION() 1
+#endif // !_CCCL_HAS_CUDA_COMPILER && __cpp_aligned_new >= 201606
 
 #ifndef _LIBCUDACXX_HAS_NO_CHAR8_T
 #  if _CCCL_STD_VER <= 2017 || !defined(__cpp_char8_t)

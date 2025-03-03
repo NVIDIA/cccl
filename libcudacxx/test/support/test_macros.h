@@ -17,6 +17,7 @@
 #ifdef __has_include
 #  if __has_include(<cuda/__cccl_config>)
 #    include <cuda/__cccl_config>
+#    include <cuda/std/__internal/features.h>
 #  elif __has_include("<__config>")
 #    include <__config>
 #    define TEST_IMP_INCLUDED_HEADER
@@ -238,9 +239,9 @@
 #  define TEST_HAS_SANITIZERS
 #endif
 
-#if defined(_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION)
+#if !_LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
 #  define TEST_HAS_NO_ALIGNED_ALLOCATION
-#endif
+#endif // !_LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
 
 #if defined(_LIBCUDACXX_SAFE_STATIC)
 #  define TEST_SAFE_STATIC _LIBCUDACXX_SAFE_STATIC
