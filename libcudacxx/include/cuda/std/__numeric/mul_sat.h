@@ -29,7 +29,6 @@
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
-#include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
@@ -54,13 +53,13 @@ class __mul_sat
       {
         _LIBCUDACXX_UNUSED_VAR(__x);
         _LIBCUDACXX_UNUSED_VAR(__y);
-        __result = _CUDA_VSTD::numeric_limits<_Tp>::max();
+        __result = numeric_limits<_Tp>::max();
       }
       else
       {
         __result = (__x > _Tp{0} && __y > _Tp{0}) || (__x < _Tp{0} && __y < _Tp{0})
-                   ? _CUDA_VSTD::numeric_limits<_Tp>::max()
-                   : _CUDA_VSTD::numeric_limits<_Tp>::min();
+                   ? numeric_limits<_Tp>::max()
+                   : numeric_limits<_Tp>::min();
       }
     }
     return __result;
@@ -79,56 +78,56 @@ public:
     {
       if (__x == _Tp{-1})
       {
-        if (__y == _CUDA_VSTD::numeric_limits<_Tp>::min())
+        if (__y == numeric_limits<_Tp>::min())
         {
-          return _CUDA_VSTD::numeric_limits<_Tp>::max();
+          return numeric_limits<_Tp>::max();
         }
         return static_cast<_Tp>(-__y);
       }
 
       if (__y == _Tp{-1})
       {
-        if (__x == _CUDA_VSTD::numeric_limits<_Tp>::min())
+        if (__x == numeric_limits<_Tp>::min())
         {
-          return _CUDA_VSTD::numeric_limits<_Tp>::max();
+          return numeric_limits<_Tp>::max();
         }
         return static_cast<_Tp>(-__x);
       }
 
       if (__x > _Tp{0} && __y > _Tp{0})
       {
-        if (__x > static_cast<_Tp>(_CUDA_VSTD::numeric_limits<_Tp>::max() / __y))
+        if (__x > static_cast<_Tp>(numeric_limits<_Tp>::max() / __y))
         {
-          return _CUDA_VSTD::numeric_limits<_Tp>::max();
+          return numeric_limits<_Tp>::max();
         }
       }
       else if (__x < _Tp{0} && __y < _Tp{0})
       {
-        if (__x < static_cast<_Tp>(_CUDA_VSTD::numeric_limits<_Tp>::max() / __y))
+        if (__x < static_cast<_Tp>(numeric_limits<_Tp>::max() / __y))
         {
-          return _CUDA_VSTD::numeric_limits<_Tp>::max();
+          return numeric_limits<_Tp>::max();
         }
       }
       else if (__x < _Tp{0} && __y > _Tp{0})
       {
-        if (__x < static_cast<_Tp>(_CUDA_VSTD::numeric_limits<_Tp>::min() / __y))
+        if (__x < static_cast<_Tp>(numeric_limits<_Tp>::min() / __y))
         {
-          return _CUDA_VSTD::numeric_limits<_Tp>::min();
+          return numeric_limits<_Tp>::min();
         }
       }
       else
       {
-        if (__x > static_cast<_Tp>(_CUDA_VSTD::numeric_limits<_Tp>::min() / __y))
+        if (__x > static_cast<_Tp>(numeric_limits<_Tp>::min() / __y))
         {
-          return _CUDA_VSTD::numeric_limits<_Tp>::min();
+          return numeric_limits<_Tp>::min();
         }
       }
     }
     else
     {
-      if (__x > static_cast<_Tp>(_CUDA_VSTD::numeric_limits<_Tp>::max() / __y))
+      if (__x > static_cast<_Tp>(numeric_limits<_Tp>::max() / __y))
       {
-        return _CUDA_VSTD::numeric_limits<_Tp>::max();
+        return numeric_limits<_Tp>::max();
       }
     }
     return static_cast<_Tp>(__x * __y);
@@ -144,16 +143,17 @@ public:
     return __clamp_overflow<_Tp>(__x, __y, __result, __overflow);
   }
 #endif // _CCCL_BUILTIN_MUL_OVERFLOW
+
 #if !_CCCL_COMPILER(NVRTC)
   template <class _Tp>
   _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_HOST static _Tp __impl_host(_Tp __x, _Tp __y) noexcept
   {
     if constexpr (_CCCL_TRAIT(is_signed, _Tp))
     {
-      if ((__x == _Tp{-1} && __y == _CUDA_VSTD::numeric_limits<_Tp>::min())
-          || (__y == _Tp{-1} && __x == _CUDA_VSTD::numeric_limits<_Tp>::min()))
+      if ((__x == _Tp{-1} && __y == numeric_limits<_Tp>::min())
+          || (__y == _Tp{-1} && __x == numeric_limits<_Tp>::min()))
       {
-        return _CUDA_VSTD::numeric_limits<_Tp>::max();
+        return numeric_limits<_Tp>::max();
       }
 
 #  if _CCCL_COMPILER(MSVC, >=, 19, 37) && _CCCL_ARCH(X86_64)
@@ -193,8 +193,7 @@ public:
           __x,
           __y,
           static_cast<int32_t>(__result),
-          __result > _CUDA_VSTD::numeric_limits<int32_t>::max()
-            || __result < _CUDA_VSTD::numeric_limits<int32_t>::min());
+          __result > numeric_limits<int32_t>::max() || __result < numeric_limits<int32_t>::min());
       }
       else if constexpr (sizeof(_Tp) == 8)
       {
@@ -210,7 +209,7 @@ public:
       return __impl_generic(__x, __y);
 #  endif // ^^^ !_CCCL_COMPILER(MSVC) || !_CCCL_ARCH(X86_64) ^^^
     }
-    else
+    else // ^^^ signed types ^^^ / vvv unsigned types vvv
     {
 #  if _CCCL_COMPILER(MSVC, >=, 19, 37) && _CCCL_ARCH(X86_64)
       if constexpr (sizeof(_Tp) == 1)
@@ -246,7 +245,7 @@ public:
       {
         const uint64_t __result = __emulu(__x, __y);
         return __clamp_overflow<uint32_t>(
-          __x, __y, static_cast<uint32_t>(__result), __result > _CUDA_VSTD::numeric_limits<uint32_t>::max());
+          __x, __y, static_cast<uint32_t>(__result), __result > numeric_limits<uint32_t>::max());
       }
       else if constexpr (sizeof(_Tp) == 8)
       {
@@ -259,9 +258,10 @@ public:
 #  else // ^^^ _CCCL_COMPILER(MSVC) && _CCCL_ARCH(X86_64) ^^^ / vvv !_CCCL_COMPILER(MSVC) || !_CCCL_ARCH(X86_64) vvv
       return __impl_generic(__x, __y);
 #  endif // ^^^ !_CCCL_COMPILER(MSVC) || !_CCCL_ARCH(X86_64) ^^^
-    }
+    } // ^^^ unsigned types ^^^
   }
 #endif // !_CCCL_COMPILER(NVRTC)
+
 #if _CCCL_HAS_CUDA_COMPILER
   template <class _Tp>
   _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE static _Tp __impl_device(_Tp __x, _Tp __y) noexcept
@@ -274,8 +274,8 @@ public:
         asm("mul.lo.s16 %0, %1, %2;" : "=h"(__result) : "h"(static_cast<int16_t>(__x)), "h"(static_cast<int16_t>(__y)));
         return static_cast<int8_t>(_CUDA_VSTD::clamp(
           __result,
-          static_cast<int16_t>(_CUDA_VSTD::numeric_limits<int8_t>::min()),
-          static_cast<int16_t>(_CUDA_VSTD::numeric_limits<int8_t>::max())));
+          static_cast<int16_t>(numeric_limits<int8_t>::min()),
+          static_cast<int16_t>(numeric_limits<int8_t>::max())));
       }
       else if constexpr (sizeof(_Tp) == 2)
       {
@@ -283,8 +283,8 @@ public:
         asm("mul.wide.s16 %0, %1, %2;" : "=r"(__result) : "h"(__x), "h"(__y));
         return static_cast<int16_t>(_CUDA_VSTD::clamp(
           __result,
-          static_cast<int32_t>(_CUDA_VSTD::numeric_limits<int16_t>::min()),
-          static_cast<int32_t>(_CUDA_VSTD::numeric_limits<int16_t>::max())));
+          static_cast<int32_t>(numeric_limits<int16_t>::min()),
+          static_cast<int32_t>(numeric_limits<int16_t>::max())));
       }
       else if constexpr (sizeof(_Tp) == 4)
       {
@@ -292,15 +292,15 @@ public:
         asm("mul.wide.s32 %0, %1, %2;" : "=l"(__result) : "r"(__x), "r"(__y));
         return static_cast<int32_t>(_CUDA_VSTD::clamp(
           __result,
-          static_cast<int64_t>(_CUDA_VSTD::numeric_limits<int32_t>::min()),
-          static_cast<int64_t>(_CUDA_VSTD::numeric_limits<int32_t>::max())));
+          static_cast<int64_t>(numeric_limits<int32_t>::min()),
+          static_cast<int64_t>(numeric_limits<int32_t>::max())));
       }
       else if constexpr (sizeof(_Tp) == 8)
       {
-        if ((__x == _Tp{-1} && __y == _CUDA_VSTD::numeric_limits<_Tp>::min())
-            || (__y == _Tp{-1} && __x == _CUDA_VSTD::numeric_limits<_Tp>::min()))
+        if ((__x == _Tp{-1} && __y == numeric_limits<_Tp>::min())
+            || (__y == _Tp{-1} && __x == numeric_limits<_Tp>::min()))
         {
-          return _CUDA_VSTD::numeric_limits<_Tp>::max();
+          return numeric_limits<_Tp>::max();
         }
 
         int64_t __lo, __hi;
@@ -313,7 +313,7 @@ public:
         return __impl_generic(__x, __y);
       }
     }
-    else
+    else // ^^^ signed types ^^^ / vvv unsigned types vvv
     {
       if constexpr (sizeof(_Tp) == 1)
       {
@@ -322,34 +322,34 @@ public:
             : "=h"(__result)
             : "h"(static_cast<uint16_t>(__x)), "h"(static_cast<uint16_t>(__y)));
         return static_cast<uint8_t>(
-          _CUDA_VSTD::min<uint16_t>(__result, static_cast<uint16_t>(_CUDA_VSTD::numeric_limits<uint8_t>::max())));
+          _CUDA_VSTD::min<uint16_t>(__result, static_cast<uint16_t>(numeric_limits<uint8_t>::max())));
       }
       else if constexpr (sizeof(_Tp) == 2)
       {
         uint32_t __result;
         asm("mul.wide.u16 %0, %1, %2;" : "=r"(__result) : "h"(__x), "h"(__y));
         return static_cast<uint16_t>(
-          _CUDA_VSTD::min<uint32_t>(__result, static_cast<uint32_t>(_CUDA_VSTD::numeric_limits<uint16_t>::max())));
+          _CUDA_VSTD::min<uint32_t>(__result, static_cast<uint32_t>(numeric_limits<uint16_t>::max())));
       }
       else if constexpr (sizeof(_Tp) == 4)
       {
         uint64_t __result;
         asm("mul.wide.u32 %0, %1, %2;" : "=l"(__result) : "r"(__x), "r"(__y));
         return static_cast<uint32_t>(
-          _CUDA_VSTD::min<uint64_t>(__result, static_cast<uint64_t>(_CUDA_VSTD::numeric_limits<uint32_t>::max())));
+          _CUDA_VSTD::min<uint64_t>(__result, static_cast<uint64_t>(numeric_limits<uint32_t>::max())));
       }
       else if constexpr (sizeof(_Tp) == 8)
       {
         uint64_t __lo, __hi;
         __lo = __x * __y;
         __hi = __umul64hi(__x, __y);
-        return (__hi == uint64_t{0}) ? __lo : _CUDA_VSTD::numeric_limits<_Tp>::max();
+        return (__hi == uint64_t{0}) ? __lo : numeric_limits<_Tp>::max();
       }
       else
       {
         return __impl_generic(__x, __y);
       }
-    }
+    } // ^^^ unsigned types ^^^
   }
 #endif // _CCCL_HAS_CUDA_COMPILER
 };

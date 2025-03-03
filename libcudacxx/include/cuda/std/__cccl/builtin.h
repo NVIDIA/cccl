@@ -231,15 +231,15 @@
 #  define _CCCL_BUILTIN_EXPECT(...) __builtin_expect(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_expect)
 
-#if _CCCL_CHECK_BUILTIN(builtin_add_overflow)
+#if _CCCL_CHECK_BUILTIN(builtin_add_overflow) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_ADD_OVERFLOW(...) __builtin_add_overflow(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_add_overflow)
 
-#if _CCCL_CHECK_BUILTIN(builtin_sub_overflow)
+#if _CCCL_CHECK_BUILTIN(builtin_sub_overflow) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_SUB_OVERFLOW(...) __builtin_sub_overflow(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_sub_overflow)
 
-#if _CCCL_CHECK_BUILTIN(builtin_mul_overflow)
+#if _CCCL_CHECK_BUILTIN(builtin_mul_overflow) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_MUL_OVERFLOW(...) __builtin_mul_overflow(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_mul_overflow)
 

@@ -33,13 +33,13 @@ _CCCL_TEMPLATE(class _Up, class _Tp)
 _CCCL_REQUIRES(__cccl_is_integer_v<_Up> _CCCL_AND __cccl_is_integer_v<_Tp>)
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Up saturate_cast(_Tp __x) noexcept
 {
-  if (_CUDA_VSTD::cmp_less(__x, _CUDA_VSTD::numeric_limits<_Up>::min()))
+  if (_CUDA_VSTD::cmp_less(__x, numeric_limits<_Up>::min()))
   {
-    return _CUDA_VSTD::numeric_limits<_Up>::min();
+    return numeric_limits<_Up>::min();
   }
-  if (_CUDA_VSTD::cmp_greater(__x, _CUDA_VSTD::numeric_limits<_Up>::max()))
+  if (_CUDA_VSTD::cmp_greater(__x, numeric_limits<_Up>::max()))
   {
-    return _CUDA_VSTD::numeric_limits<_Up>::max();
+    return numeric_limits<_Up>::max();
   }
   return static_cast<_Up>(__x);
 }

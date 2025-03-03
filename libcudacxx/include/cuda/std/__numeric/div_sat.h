@@ -36,9 +36,9 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp div_sat(_Tp __x, _Tp __y
   _CCCL_ASSERT(__y != _Tp{}, "division by zero");
   if constexpr (_CCCL_TRAIT(is_signed, _Tp))
   {
-    if (__x == _CUDA_VSTD::numeric_limits<_Tp>::min() && __y == _Tp{-1})
+    if (__x == numeric_limits<_Tp>::min() && __y == _Tp{-1})
     {
-      return _CUDA_VSTD::numeric_limits<_Tp>::max();
+      return numeric_limits<_Tp>::max();
     }
   }
   return static_cast<_Tp>(__x / __y);
