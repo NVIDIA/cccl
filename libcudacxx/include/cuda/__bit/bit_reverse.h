@@ -27,7 +27,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-#if _CCCL_COMPILER(CLANG)
+#if _CCCL_CHECK_BUILTIN(builtin_bitreverse32)
 
 template <typename _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __bit_reverse_clang(_Tp __value) noexcept
@@ -35,30 +35,30 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __bit_reverse_clang(_Tp 
 #  if _CCCL_HAS_INT128()
   if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
   {
-    auto __high = static_cast<__uint128_t>(__builtin_bitreverse64(static_cast<uint64_t>(__value))) << 64;
-    auto __low  = static_cast<__uint128_t>(__builtin_bitreverse64(static_cast<uint64_t>(__value >> 64)));
+    auto __high = static_cast<__uint128_t>(_CCCL_BUILTIN_BITREVERSE64(static_cast<uint64_t>(__value))) << 64;
+    auto __low  = static_cast<__uint128_t>(_CCCL_BUILTIN_BITREVERSE64(static_cast<uint64_t>(__value >> 64)));
     return __high | __low;
   }
 #  endif // _CCCL_HAS_INT128()
   if constexpr (sizeof(_Tp) == sizeof(uint64_t))
   {
-    return __builtin_bitreverse64(__value);
+    return _CCCL_BUILTIN_BITREVERSE64(__value);
   }
   else if constexpr (sizeof(_Tp) == sizeof(uint32_t))
   {
-    return __builtin_bitreverse32(__value);
+    return _CCCL_BUILTIN_BITREVERSE32(__value);
   }
   else if constexpr (sizeof(_Tp) == sizeof(uint16_t))
   {
-    return __builtin_bitreverse16(__value);
+    return _CCCL_BUILTIN_BITREVERSE16(__value);
   }
   else
   {
-    return __builtin_bitreverse8(__value);
+    return _CCCL_BUILTIN_BITREVERSE8(__value);
   }
 }
 
-#endif // _CCCL_COMPILER(CLANG)
+#endif // _CCCL_CHECK_BUILTIN(builtin_bitreverse32)
 
 #if _CCCL_HAS_CUDA_COMPILER
 
@@ -155,7 +155,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp bit_reverse(_Tp __value)
   {
     NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::__bit_reverse_device(__value);))
   }
-#if _CCCL_COMPILER(CLANG) && !_CCCL_HAS_CUDA_COMPILER
+#if _CCCL_CHECK_BUILTIN(builtin_bitreverse32)
   return ::cuda::__bit_reverse_clang(__value);
 #else
   return ::cuda::__bit_reverse_generic(__value);
