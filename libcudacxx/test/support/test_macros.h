@@ -333,7 +333,7 @@ struct is_same<T, T>
 #  define TEST_HAS_NO_LOCALIZATION
 #endif
 
-#if defined(_LIBCUDACXX_HAS_NO_CHAR8_T)
+#if !_LIBCUDACXX_HAS_CHAR8_T()
 #  define TEST_HAS_NO_CHAR8_T
 #endif
 
