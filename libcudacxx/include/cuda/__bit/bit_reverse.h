@@ -30,7 +30,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 #if _CCCL_CHECK_BUILTIN(builtin_bitreverse32)
 
 template <typename _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __bit_reverse_clang(_Tp __value) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __bit_reverse_builtin(_Tp __value) noexcept
 {
 #  if _CCCL_HAS_INT128()
   if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
@@ -156,7 +156,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp bit_reverse(_Tp __value)
     NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::__bit_reverse_device(__value);))
   }
 #if _CCCL_CHECK_BUILTIN(builtin_bitreverse32)
-  return ::cuda::__bit_reverse_clang(__value);
+  return ::cuda::__bit_reverse_builtin(__value);
 #else
   return ::cuda::__bit_reverse_generic(__value);
 #endif
