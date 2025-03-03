@@ -34,6 +34,7 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
+_CCCL_EXEC_CHECK_DISABLE
 template <typename InputIterator, typename Distance>
 _CCCL_HOST_DEVICE void advance(InputIterator& i, Distance n)
 {
