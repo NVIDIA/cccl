@@ -77,19 +77,19 @@ struct object_with_non_trivial_ctor
     }
     return *this;
   }
+
+  friend std::ostream& operator<<(std::ostream& os, const object_with_non_trivial_ctor& val)
+  {
+    os << '(' << val.field << ',' << val.magic << ')';
+    return os;
+  }
+
+  __host__ __device__ __forceinline__ friend bool
+  operator==(const object_with_non_trivial_ctor& lhs, const object_with_non_trivial_ctor& rhs)
+  {
+    return lhs.field == rhs.field && lhs.magic == rhs.magic;
+  }
 };
-
-static std::ostream& operator<<(std::ostream& os, const object_with_non_trivial_ctor& val)
-{
-  os << '(' << val.field << ',' << val.magic << ')';
-  return os;
-}
-
-__host__ __device__ __forceinline__ bool
-operator==(const object_with_non_trivial_ctor& lhs, const object_with_non_trivial_ctor& rhs)
-{
-  return lhs.field == rhs.field && lhs.magic == rhs.magic;
-}
 
 C2H_TEST("DeviceCopy::Batched works", "[copy]")
 try
@@ -107,8 +107,8 @@ try
   constexpr range_offset_t target_copy_size = 32U << 20;
 
   // Pairs of [min, max] range sizes
-  auto range_size_range = GENERATE_COPY(
-    table<std::int32_t, std::int32_t>(
+  auto [min_range_size, max_range_size] = GENERATE_COPY(
+    table<range_size_t, range_size_t>(
       {{0, 1},
        {1, 2},
        {0, 32},
@@ -118,16 +118,14 @@ try
        {target_copy_size, target_copy_size}}),
     take(4,
          map(
-           [](const std::vector<std::int32_t>& chunk) {
-             std::int32_t lhs = chunk[0];
-             std::int32_t rhs = chunk[1];
+           [](const std::vector<range_size_t>& chunk) {
+             range_size_t lhs = chunk[0];
+             range_size_t rhs = chunk[1];
              // Optionally ensure lhs < rhs, for example:
              return (lhs < rhs) ? std::make_tuple(lhs, rhs) : std::make_tuple(rhs, lhs);
            },
-           chunk(2, random(1, 1000000)))));
+           chunk(2, random(range_size_t{1}, range_size_t{1000000})))));
 
-  const auto min_range_size       = static_cast<range_size_t>(std::get<0>(range_size_range));
-  const auto max_range_size       = static_cast<range_size_t>(std::get<1>(range_size_range));
   const double average_range_size = (min_range_size + max_range_size) / 2.0;
   const auto num_ranges           = static_cast<range_offset_t>(target_copy_size / average_range_size);
 
