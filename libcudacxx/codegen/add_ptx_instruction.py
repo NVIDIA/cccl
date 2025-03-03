@@ -6,6 +6,7 @@ docs = Path("docs/libcudacxx/ptx/instructions")
 test = Path("libcudacxx/test/libcudacxx/cuda/ptx")
 src = Path("libcudacxx/include/cuda/__ptx/instructions")
 ptx_header = Path("libcudacxx/include/cuda/ptx")
+instr_docs = Path("docs/libcudacxx/ptx/instructions.rst")
 
 
 def add_docs(ptx_instr, url):
@@ -28,7 +29,8 @@ def add_docs(ptx_instr, url):
 
 def add_test(ptx_instr):
     cpp_instr = ptx_instr.replace(".", "_")
-    (test / f"ptx.{ptx_instr}.compile.pass.cpp").write_text(
+    dst = test / f"ptx.{ptx_instr}.compile.pass.cpp"
+    dst.write_text(
         f"""//===----------------------------------------------------------------------===//
 //
 // Part of libcu++, the C++ Standard Library for your entire system,
@@ -99,11 +101,26 @@ _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
     )
 
 
-def add_include_reminder(ptx_instr):
+def add_ptx_header_include(ptx_instr):
     cpp_instr = ptx_instr.replace(".", "_")
     txt = ptx_header.read_text()
-    reminder = f"""// TODO: #include <cuda/__ptx/instructions/{cpp_instr}.h>"""
-    ptx_header.write_text(f"{txt}\n{reminder}\n")
+    # just add as first new include. clang-format will sort it in
+    idx = txt.index("#include <cuda/__ptx/instructions")
+    txt = (
+        txt[:idx]
+        + f"""#include <cuda/__ptx/instructions/{cpp_instr}.h>\n"""
+        + txt[idx:]
+    )
+    ptx_header.write_text(txt)
+
+
+def add_docs_include(ptx_instr):
+    cpp_instr = ptx_instr.replace(".", "_")
+    txt = instr_docs.read_text()
+    # just add as first new include
+    idx = txt.index("   instructions/")
+    txt = txt[:idx] + f"   instructions/{cpp_instr}\n" + txt[idx:]
+    instr_docs.write_text(txt)
 
 
 if __name__ == "__main__":
@@ -126,4 +143,5 @@ if __name__ == "__main__":
     add_test(ptx_instr)
     add_docs(ptx_instr, url)
     add_src(ptx_instr)
-    add_include_reminder(ptx_instr)
+    add_ptx_header_include(ptx_instr)
+    add_docs_include(ptx_instr)

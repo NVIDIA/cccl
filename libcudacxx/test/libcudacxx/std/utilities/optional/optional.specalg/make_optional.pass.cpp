@@ -33,13 +33,13 @@ int main(int, char**)
     ASSERT_SAME_TYPE(decltype(opt), cuda::std::optional<int*>);
     assert(*opt == arr);
   }
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
   {
     constexpr auto opt = cuda::std::make_optional(2);
     ASSERT_SAME_TYPE(decltype(opt), const cuda::std::optional<int>);
     static_assert(opt.value() == 2, "");
   }
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
   {
     auto opt = cuda::std::make_optional(2);
     ASSERT_SAME_TYPE(decltype(opt), cuda::std::optional<int>);

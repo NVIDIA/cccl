@@ -46,9 +46,8 @@
 
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-
-#include <limits>
-#include <type_traits>
+#include <cuda/std/limits>
+#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 

@@ -45,6 +45,8 @@
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__algorithm_>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail
@@ -1498,9 +1500,8 @@ struct policy_hub
   struct DefaultPolicy
   {
     static constexpr int nominal_4B_items_per_thread = 10;
-    // TODO(bgruber): use cuda::std::clamp() in C++14
     static constexpr int items_per_thread =
-      CUB_MIN(nominal_4B_items_per_thread, CUB_MAX(1, (nominal_4B_items_per_thread * 4 / sizeof(InputT))));
+      ::cuda::std::clamp(nominal_4B_items_per_thread * 4 / int{sizeof(InputT)}, 1, nominal_4B_items_per_thread);
     using SelectIfPolicyT =
       AgentSelectIfPolicy<128,
                           items_per_thread,

@@ -129,7 +129,7 @@ public:
 #endif // !_CCCL_BUILTIN_BSWAP64
   }
 
-#if !defined(_LIBCUDACXX_HAS_NO_INT128)
+#if _CCCL_HAS_INT128()
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr __uint128_t __impl(__uint128_t __val) noexcept
   {
 #  if defined(_CCCL_BUILTIN_BSWAP128)
@@ -138,7 +138,7 @@ public:
     return __impl_recursive<uint64_t>(__val);
 #  endif // !_CCCL_BUILTIN_BSWAP128
   }
-#endif // !_LIBCUDACXX_HAS_NO_INT128
+#endif // _CCCL_HAS_INT128()
 };
 
 _CCCL_TEMPLATE(class _Integer)
