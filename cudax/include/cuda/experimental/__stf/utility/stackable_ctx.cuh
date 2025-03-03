@@ -648,6 +648,13 @@ public:
     return pimpl->get_head_offset();
   }
 
+  void set_head_offset(int offset)
+  {
+    pimpl->set_head_offset(offset);
+  }
+
+
+
   void push(const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
   {
     int head     = get_head_offset();
