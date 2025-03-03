@@ -36,9 +36,9 @@ namespace detail
 {
 
 template <typename RandomAccessIterator,
-          typename BinaryPredicate = thrust::equal_to<typename thrust::iterator_value<RandomAccessIterator>::type>,
+          typename BinaryPredicate = equal_to<it_value_t<RandomAccessIterator>>,
           typename ValueType       = bool,
-          typename IndexType       = typename thrust::iterator_difference<RandomAccessIterator>::type>
+          typename IndexType       = it_difference_t<RandomAccessIterator>>
 class head_flags
 {
 public:

@@ -50,7 +50,7 @@ _CCCL_HOST_DEVICE OutputIterator set_difference(
   InputIterator2 last2,
   OutputIterator result)
 {
-  using value_type = typename thrust::iterator_value<InputIterator1>::type;
+  using value_type = thrust::detail::it_value_t<InputIterator1>;
   return thrust::set_difference(exec, first1, last1, first2, last2, result, thrust::less<value_type>());
 } // end set_difference()
 
@@ -72,7 +72,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_difference_
   OutputIterator1 keys_result,
   OutputIterator2 values_result)
 {
-  using value_type = typename thrust::iterator_value<InputIterator1>::type;
+  using value_type = thrust::detail::it_value_t<InputIterator1>;
   return thrust::set_difference_by_key(
     exec,
     keys_first1,
@@ -140,7 +140,7 @@ _CCCL_HOST_DEVICE OutputIterator set_intersection(
   InputIterator2 last2,
   OutputIterator result)
 {
-  using value_type = typename thrust::iterator_value<InputIterator1>::type;
+  using value_type = thrust::detail::it_value_t<InputIterator1>;
   return thrust::set_intersection(exec, first1, last1, first2, last2, result, thrust::less<value_type>());
 } // end set_intersection()
 
@@ -160,7 +160,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_intersectio
   OutputIterator1 keys_result,
   OutputIterator2 values_result)
 {
-  using value_type = typename thrust::iterator_value<InputIterator1>::type;
+  using value_type = thrust::detail::it_value_t<InputIterator1>;
   return thrust::set_intersection_by_key(
     exec,
     keys_first1,
@@ -191,7 +191,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_intersectio
   OutputIterator2 values_result,
   StrictWeakOrdering comp)
 {
-  using value_type1       = typename thrust::iterator_value<InputIterator3>::type;
+  using value_type1       = thrust::detail::it_value_t<InputIterator3>;
   using constant_iterator = thrust::constant_iterator<value_type1>;
 
   using iterator_tuple1 = thrust::tuple<InputIterator1, InputIterator3>;
@@ -232,7 +232,7 @@ _CCCL_HOST_DEVICE OutputIterator set_symmetric_difference(
   InputIterator2 last2,
   OutputIterator result)
 {
-  using value_type = typename thrust::iterator_value<InputIterator1>::type;
+  using value_type = thrust::detail::it_value_t<InputIterator1>;
   return thrust::set_symmetric_difference(exec, first1, last1, first2, last2, result, thrust::less<value_type>());
 } // end set_symmetric_difference()
 
@@ -254,7 +254,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_symmetric_d
   OutputIterator1 keys_result,
   OutputIterator2 values_result)
 {
-  using value_type = typename thrust::iterator_value<InputIterator1>::type;
+  using value_type = thrust::detail::it_value_t<InputIterator1>;
   return thrust::set_symmetric_difference_by_key(
     exec,
     keys_first1,
@@ -323,7 +323,7 @@ _CCCL_HOST_DEVICE OutputIterator set_union(
   InputIterator2 last2,
   OutputIterator result)
 {
-  using value_type = typename thrust::iterator_value<InputIterator1>::type;
+  using value_type = thrust::detail::it_value_t<InputIterator1>;
   return thrust::set_union(exec, first1, last1, first2, last2, result, thrust::less<value_type>());
 } // end set_union()
 
@@ -345,7 +345,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_union_by_ke
   OutputIterator1 keys_result,
   OutputIterator2 values_result)
 {
-  using value_type = typename thrust::iterator_value<InputIterator1>::type;
+  using value_type = thrust::detail::it_value_t<InputIterator1>;
   return thrust::set_union_by_key(
     exec,
     keys_first1,
@@ -418,8 +418,7 @@ _CCCL_HOST_DEVICE OutputIterator set_difference(
   OutputIterator result,
   StrictWeakOrdering)
 {
-  THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<InputIterator1, false>::value),
-                           "unimplemented for this system");
+  static_assert(thrust::detail::depend_on_instantiation<InputIterator1, false>::value, "unimplemented for this system");
   return result;
 } // end set_difference()
 
@@ -437,8 +436,7 @@ _CCCL_HOST_DEVICE OutputIterator set_intersection(
   OutputIterator result,
   StrictWeakOrdering)
 {
-  THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<InputIterator1, false>::value),
-                           "unimplemented for this system");
+  static_assert(thrust::detail::depend_on_instantiation<InputIterator1, false>::value, "unimplemented for this system");
   return result;
 } // end set_intersection()
 
@@ -456,8 +454,7 @@ _CCCL_HOST_DEVICE OutputIterator set_symmetric_difference(
   OutputIterator result,
   StrictWeakOrdering)
 {
-  THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<InputIterator1, false>::value),
-                           "unimplemented for this system");
+  static_assert(thrust::detail::depend_on_instantiation<InputIterator1, false>::value, "unimplemented for this system");
   return result;
 } // end set_symmetric_difference()
 
@@ -475,8 +472,7 @@ _CCCL_HOST_DEVICE OutputIterator set_union(
   OutputIterator result,
   StrictWeakOrdering)
 {
-  THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<InputIterator1, false>::value),
-                           "unimplemented for this system");
+  static_assert(thrust::detail::depend_on_instantiation<InputIterator1, false>::value, "unimplemented for this system");
   return result;
 } // end set_union()
 

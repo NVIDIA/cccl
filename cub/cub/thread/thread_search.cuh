@@ -46,8 +46,6 @@
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
 
-#include <iterator>
-
 #include <nv/target>
 
 CUB_NAMESPACE_BEGIN
