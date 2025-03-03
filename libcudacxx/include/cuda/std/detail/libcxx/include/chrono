@@ -1598,7 +1598,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI static time_point from_time_t(time_t __t) noexcept;
 };
 
-#ifndef _LIBCUDACXX_HAS_NO_MONOTONIC_CLOCK
+#if _LIBCUDACXX_HAS_MONOTONIC_CLOCK()
 class _CCCL_TYPE_VISIBILITY_DEFAULT steady_clock
 {
 public:
@@ -1612,9 +1612,9 @@ public:
 };
 
 using high_resolution_clock = steady_clock;
-#else
+#else // ^^^ _LIBCUDACXX_HAS_MONOTONIC_CLOCK() ^^^ / vvv !_LIBCUDACXX_HAS_MONOTONIC_CLOCK() vvv
 using high_resolution_clock = system_clock;
-#endif
+#endif // !_LIBCUDACXX_HAS_MONOTONIC_CLOCK()
 
 // [time.clock.file], type file_clock
 using file_clock = _CUDA_VSTD_FS::_FilesystemClock;
