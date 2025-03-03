@@ -10,6 +10,8 @@
 
 #include <cuda_runtime.h>
 
+#include <cstdint>
+
 #include "test_util.h"
 #include <cccl/c/merge_sort.h>
 
@@ -20,7 +22,7 @@ void merge_sort(cccl_iterator_t input_keys,
                 cccl_iterator_t input_items,
                 cccl_iterator_t output_keys,
                 cccl_iterator_t output_items,
-                unsigned long long num_items,
+                uint64_t num_items,
                 cccl_op_t op)
 {
   cudaDeviceProp deviceProp;

@@ -454,7 +454,7 @@ CUresult cccl_device_scan(
   size_t* temp_storage_bytes,
   cccl_iterator_t d_in,
   cccl_iterator_t d_out,
-  unsigned long long num_items,
+  uint64_t num_items,
   cccl_op_t op,
   cccl_value_t init,
   CUstream stream)

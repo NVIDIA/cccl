@@ -18,6 +18,7 @@
 
 #include <cccl/c/extern_c.h>
 #include <cccl/c/types.h>
+#include <stdint.h>
 
 CCCL_C_EXTERN_C_BEGIN
 
@@ -27,7 +28,7 @@ typedef struct cccl_device_segmented_reduce_build_result_t
   void* cubin;
   size_t cubin_size;
   CUlibrary library;
-  unsigned long long accumulator_size;
+  uint64_t accumulator_size;
   CUkernel segmented_reduce_kernel;
 } cccl_device_segmented_reduce_build_result_t;
 
@@ -53,7 +54,7 @@ CCCL_C_API CUresult cccl_device_segmented_reduce(
   size_t* temp_storage_bytes,
   cccl_iterator_t d_in,
   cccl_iterator_t d_out,
-  unsigned long long num_offsets,
+  uint64_t num_offsets,
   cccl_iterator_t start_offset_in,
   cccl_iterator_t end_offset_in,
   cccl_op_t op,
