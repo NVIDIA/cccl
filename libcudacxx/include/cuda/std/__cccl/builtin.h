@@ -159,19 +159,19 @@
 #  undef _CCCL_BUILTIN_BSWAP128
 #endif // _CCCL_CUDA_COMPILER(NVCC)
 
-#if _CCCL_CHECK_BUILTIN(builtin_bitreverse8)
+#if _CCCL_CHECK_BUILTIN(builtin_bitreverse8) && !_CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_BITREVERSE8(...) __builtin_bitreverse8(__VA_ARGS__)
 #endif
 
-#if _CCCL_CHECK_BUILTIN(builtin_bitreverse16)
+#if _CCCL_CHECK_BUILTIN(builtin_bitreverse16) && !_CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_BITREVERSE16(...) __builtin_bitreverse16(__VA_ARGS__)
 #endif
 
-#if _CCCL_CHECK_BUILTIN(builtin_bitreverse32)
+#if _CCCL_CHECK_BUILTIN(builtin_bitreverse32) && !_CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_BITREVERSE32(...) __builtin_bitreverse32(__VA_ARGS__)
 #endif
 
-#if _CCCL_CHECK_BUILTIN(builtin_bitreverse64)
+#if _CCCL_CHECK_BUILTIN(builtin_bitreverse64) && !_CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_BITREVERSE64(...) __builtin_bitreverse64(__VA_ARGS__)
 #endif
 
