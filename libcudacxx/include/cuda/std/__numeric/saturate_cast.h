@@ -23,14 +23,14 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__type_traits/is_arithmetic_integral.h>
+#include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__utility/cmp.h>
 #include <cuda/std/limits>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_TEMPLATE(class _Up, class _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(__is_arithmetic_integral, _Up) _CCCL_AND _CCCL_TRAIT(__is_arithmetic_integral, _Tp))
+_CCCL_REQUIRES(__cccl_is_integer_v<_Up> _CCCL_AND __cccl_is_integer_v<_Tp>)
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Up saturate_cast(_Tp __x) noexcept
 {
   if (_CUDA_VSTD::cmp_less(__x, _CUDA_VSTD::numeric_limits<_Up>::min()))

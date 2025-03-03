@@ -23,14 +23,14 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__type_traits/is_arithmetic_integral.h>
+#include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/limits>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(__is_arithmetic_integral, _Tp))
+_CCCL_REQUIRES(__cccl_is_integer_v<_Tp>)
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp div_sat(_Tp __x, _Tp __y) noexcept
 {
   _CCCL_ASSERT(__y != _Tp{}, "division by zero");

@@ -25,8 +25,8 @@
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__type_traits/is_arithmetic_integral.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
+#include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
@@ -256,7 +256,7 @@ public:
 };
 
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(__is_arithmetic_integral, _Tp))
+_CCCL_REQUIRES(__cccl_is_integer_v<_Tp>)
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp sub_sat(_Tp __x, _Tp __y) noexcept
 {
   using _Up = remove_cv_t<_Tp>;
