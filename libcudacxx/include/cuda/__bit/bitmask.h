@@ -41,16 +41,16 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __shl(const _Tp __value,
                          (using _Up = _CUDA_VSTD::_If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
                           return _CUDA_VPTX::shl(static_cast<_Up>(__value), __shift);))
     }
+#if _CCCL_HAS_INT128()
     else
     {
-#if _CCCL_HAS_INT128()
       // the compiler should generate exactly four 32-bit shl instructions
       NV_DISPATCH_TARGET(NV_IS_DEVICE,
                          (auto __low  = _CUDA_VPTX::shl(static_cast<uint64_t>(__value), __shift);
                           auto __high = _CUDA_VPTX::shl(static_cast<uint64_t>(__value >> 64), __shift);
                           return __low | (static_cast<__uint128_t>(__high) << 64);))
-#endif // _CCCL_HAS_INT128()
     }
+#endif // _CCCL_HAS_INT128()
   }
   constexpr auto __all_ones = static_cast<_Tp>(~_Tp{0});
   return (__shift == _CUDA_VSTD::numeric_limits<_Tp>::digits) ? __all_ones : __value << __shift;
