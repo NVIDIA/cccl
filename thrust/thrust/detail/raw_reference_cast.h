@@ -49,20 +49,17 @@ __THRUST_DEFINE_HAS_NESTED_TYPE(is_wrapped_reference, wrapped_reference_hint)
 // wrapped reference-like things which aren't strictly wrapped references
 // (e.g. tuples of wrapped references) are considered unwrappable
 template <typename T>
-struct is_unwrappable : is_wrapped_reference<T>
-{};
+_CCCL_INLINE_VAR constexpr bool can_unwrap = is_wrapped_reference<T>::value;
 
 // specialize is_unwrappable
 // a tuple is_unwrappable if any of its elements is_unwrappable
 template <typename... Ts>
-struct is_unwrappable<tuple<Ts...>> : ::cuda::std::disjunction<is_unwrappable<Ts>...>
-{};
+_CCCL_INLINE_VAR constexpr bool can_unwrap<tuple<Ts...>> = (can_unwrap<Ts> || ...);
 
 // specialize is_unwrappable
 // a tuple_of_iterator_references is_unwrappable if any of its elements is_unwrappable
 template <typename... Ts>
-struct is_unwrappable<tuple_of_iterator_references<Ts...>> : ::cuda::std::disjunction<is_unwrappable<Ts>...>
-{};
+_CCCL_INLINE_VAR constexpr bool can_unwrap<tuple_of_iterator_references<Ts...>> = (can_unwrap<Ts> || ...);
 
 namespace raw_reference_detail
 {
@@ -99,8 +96,7 @@ namespace raw_reference_detail
 
 // wrapped references are unwrapped using raw_reference, otherwise, return T
 template <typename T>
-struct raw_reference_tuple_helper
-    : eval_if<is_unwrappable<::cuda::std::remove_cv_t<T>>::value, raw_reference<T>, identity_<T>>
+struct raw_reference_tuple_helper : eval_if<can_unwrap<::cuda::std::remove_cv_t<T>>, raw_reference<T>, identity_<T>>
 {};
 
 // recurse on tuples
@@ -130,7 +126,7 @@ private:
   using tuple_type = tuple<Ts...>;
 
 public:
-  using type = typename eval_if<is_unwrappable<tuple_type>::value,
+  using type = typename eval_if<can_unwrap<tuple_type>,
                                 raw_reference_detail::raw_reference_tuple_helper<tuple_type>,
                                 ::cuda::std::add_lvalue_reference<tuple_type>>::type;
 };
@@ -160,7 +156,7 @@ template <typename... Ts>
 _CCCL_HOST_DEVICE auto raw_reference_cast(detail::tuple_of_iterator_references<Ts...> t) ->
   typename detail::raw_reference<detail::tuple_of_iterator_references<Ts...>>::type
 {
-  if constexpr (detail::is_unwrappable<detail::tuple_of_iterator_references<Ts...>>::value)
+  if constexpr (detail::can_unwrap<detail::tuple_of_iterator_references<Ts...>>)
   {
     using ResultTuple = tuple<typename detail::raw_reference_detail::raw_reference_tuple_helper<Ts>::type...>;
     return ::cuda::std::apply(
