@@ -419,8 +419,7 @@ _CCCL_HOST_DEVICE __half2 simd_operation_is_not_supported_before_sm80(__half2);
 template <>
 struct SimdMin<__half>
 {
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2
-  operator()([[maybe_unused]] __half2 a, [[maybe_unused]] __half2 b) const
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmin2(a, b);), //
@@ -437,8 +436,7 @@ _CCCL_HOST_DEVICE __nv_bfloat162 simd_operation_is_not_supported_before_sm80(__n
 template <>
 struct SimdMin<__nv_bfloat16>
 {
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162
-  operator()([[maybe_unused]] __nv_bfloat162 a, [[maybe_unused]] __nv_bfloat162 b) const
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmin2(a, b);),
@@ -483,8 +481,7 @@ struct SimdMax<uint16_t>
 template <>
 struct SimdMax<__half>
 {
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2
-  operator()([[maybe_unused]] __half2 a, [[maybe_unused]] __half2 b) const
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmax2(a, b);), //
@@ -499,8 +496,7 @@ struct SimdMax<__half>
 template <>
 struct SimdMax<__nv_bfloat16>
 {
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162
-  operator()([[maybe_unused]] __nv_bfloat162 a, [[maybe_unused]] __nv_bfloat162 b) const
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmax2(a, b);), //
@@ -525,8 +521,7 @@ _CCCL_HOST_DEVICE __half2 simd_operation_is_not_supported_before_sm53(__half2);
 template <>
 struct SimdSum<__half>
 {
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2
-  operator()([[maybe_unused]] __half2 a, [[maybe_unused]] __half2 b) const
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_53,
                  (return __hadd2(a, b);), //
@@ -543,8 +538,7 @@ _CCCL_HOST_DEVICE __nv_bfloat162 simd_operation_is_not_supported_before_sm53(__n
 template <>
 struct SimdSum<__nv_bfloat16>
 {
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162
-  operator()([[maybe_unused]] __nv_bfloat162 a, [[maybe_unused]] __nv_bfloat162 b) const
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hadd2(a, b);), //
@@ -567,8 +561,7 @@ struct SimdMul
 template <>
 struct SimdMul<__half>
 {
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2
-  operator()([[maybe_unused]] __half2 a, [[maybe_unused]] __half2 b) const
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_53,
                  (return __hmul2(a, b);), //
@@ -583,8 +576,7 @@ struct SimdMul<__half>
 template <>
 struct SimdMul<__nv_bfloat16>
 {
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162
-  operator()([[maybe_unused]] __nv_bfloat162 a, [[maybe_unused]] __nv_bfloat162 b) const
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmul2(a, b);), //
@@ -597,29 +589,27 @@ struct SimdMul<__nv_bfloat16>
 //----------------------------------------------------------------------------------------------------------------------
 // Predefined operators
 
-using cub::detail::is_one_of_v;
-
 template <typename ReductionOp, typename T>
 inline constexpr bool is_cuda_std_min_max_v =
-  is_one_of_v<ReductionOp, ::cuda::minimum<>, ::cuda::minimum<T>, ::cuda::maximum<>, ::cuda::maximum<T>>;
+  cub::detail::is_one_of_v<ReductionOp, ::cuda::minimum<>, ::cuda::minimum<T>, ::cuda::maximum<>, ::cuda::maximum<T>>;
 
 template <typename ReductionOp, typename T>
 inline constexpr bool is_cuda_std_plus_mul_v =
-  is_one_of_v<ReductionOp,
-              ::cuda::std::plus<>,
-              ::cuda::std::plus<T>,
-              ::cuda::std::multiplies<>,
-              ::cuda::std::multiplies<T>>;
+  cub::detail::is_one_of_v<ReductionOp,
+                           ::cuda::std::plus<>,
+                           ::cuda::std::plus<T>,
+                           ::cuda::std::multiplies<>,
+                           ::cuda::std::multiplies<T>>;
 
 template <typename ReductionOp, typename T>
 inline constexpr bool is_cuda_std_bitwise_v =
-  is_one_of_v<ReductionOp,
-              ::cuda::std::bit_and<>,
-              ::cuda::std::bit_and<T>,
-              ::cuda::std::bit_or<>,
-              ::cuda::std::bit_or<T>,
-              ::cuda::std::bit_xor<>,
-              ::cuda::std::bit_xor<T>>;
+  cub::detail::is_one_of_v<ReductionOp,
+                           ::cuda::std::bit_and<>,
+                           ::cuda::std::bit_and<T>,
+                           ::cuda::std::bit_or<>,
+                           ::cuda::std::bit_or<T>,
+                           ::cuda::std::bit_xor<>,
+                           ::cuda::std::bit_xor<T>>;
 
 template <typename ReductionOp, typename T>
 inline constexpr bool is_cuda_std_operator_v =

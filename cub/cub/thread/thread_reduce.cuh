@@ -224,7 +224,7 @@ namespace internal
 
 template <typename T, typename ReductionOp, int Length>
 inline constexpr bool enable_sm90_simd_reduction_v =
-  is_one_of_v<T, int16_t, uint16_t> && is_cuda_std_min_max_v<ReductionOp, T> && Length >= 10;
+  cub::detail::is_one_of_v<T, int16_t, uint16_t> && is_cuda_std_min_max_v<ReductionOp, T> && Length >= 10;
 
 //----------------------------------------------------------------------------------------------------------------------
 // SM80 SIMD
@@ -305,13 +305,14 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_simd_reduct
 
 template <typename T, typename ReductionOp>
 inline constexpr bool enable_ternary_reduction_sm90_v =
-  is_one_of_v<T, int32_t, uint32_t> && is_cuda_std_min_max_v<ReductionOp, T>;
+  cub::detail::is_one_of_v<T, int32_t, uint32_t> && is_cuda_std_min_max_v<ReductionOp, T>;
 
 #  if _CCCL_HAS_NVFP16()
 
 template <typename ReductionOp>
 inline constexpr bool enable_ternary_reduction_sm90_v<__half2, ReductionOp> =
-  is_cuda_std_min_max_v<ReductionOp, __half2> || is_one_of_v<ReductionOp, SimdMin<__half>, SimdMax<__half>>;
+  is_cuda_std_min_max_v<ReductionOp, __half2>
+  || cub::detail::is_one_of_v<ReductionOp, SimdMin<__half>, SimdMax<__half>>;
 
 #  endif // _CCCL_HAS_NVFP16()
 
@@ -320,14 +321,15 @@ inline constexpr bool enable_ternary_reduction_sm90_v<__half2, ReductionOp> =
 template <typename ReductionOp>
 inline constexpr bool enable_ternary_reduction_sm90_v<__nv_bfloat162, ReductionOp> =
   is_cuda_std_min_max_v<ReductionOp, __nv_bfloat162>
-  || is_one_of_v<ReductionOp, SimdMin<__nv_bfloat16>, SimdMax<__nv_bfloat16>>;
+  || cub::detail::is_one_of_v<ReductionOp, SimdMin<__nv_bfloat16>, SimdMax<__nv_bfloat16>>;
 
 #  endif // _CCCL_HAS_NVBF16()
 
 template <typename T, typename ReductionOp>
 inline constexpr bool enable_ternary_reduction_sm50_v =
   ::cuda::std::is_integral_v<T> && sizeof(T) <= 4
-  && (is_one_of_v<ReductionOp, ::cuda::std::plus<>, ::cuda::std::plus<T>> || is_cuda_std_bitwise_v<ReductionOp, T>);
+  && (cub::detail::is_one_of_v<ReductionOp, ::cuda::std::plus<>, ::cuda::std::plus<T>>
+      || is_cuda_std_bitwise_v<ReductionOp, T>);
 
 template <typename Input, typename ReductionOp>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_ternary_reduction()
@@ -456,7 +458,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input& input, Reducti
 }
 
 template <typename ReductionOp, typename T>
-inline constexpr bool enable_promotion_v =
+inline constexpr bool enable_min_max_promotion_v =
   is_cuda_std_min_max_v<ReductionOp, T> && ::cuda::std::is_integral_v<T> && sizeof(T) <= 2;
 
 } // namespace internal
@@ -478,16 +480,16 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& 
   }
   using cub::detail::is_one_of_v;
   using namespace cub::internal;
-  using PromT = ::cuda::std::_If<enable_promotion_v<ReductionOp, ValueT>, int, AccumT>;
+  using PromT = ::cuda::std::_If<enable_min_max_promotion_v<ReductionOp, ValueT>, int, AccumT>;
   // TODO: should be part of the tuning policy
   if constexpr ((!is_cuda_std_operator_v<ReductionOp, ValueT> && !is_simd_operator_v<ReductionOp>)
                 || sizeof(ValueT) >= 8)
   {
-    return cub::internal::ThreadReduceSequential<AccumT>(input, reduction_op);
+    return ThreadReduceSequential<AccumT>(input, reduction_op);
   }
   else if constexpr (enable_simd_reduction<Input, ReductionOp, AccumT>())
   {
-    return cub::internal::ThreadReduceSimd(input, reduction_op);
+    return ThreadReduceSimd(input, reduction_op);
   }
   else if constexpr (enable_ternary_reduction<Input, ReductionOp>())
   {
@@ -498,13 +500,13 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& 
                   || (is_cuda_std_min_max_v<ReductionOp, ValueT> && is_one_of_v<PromT, int8_t, uint8_t>) )
     {
       NV_IF_TARGET(NV_PROVIDES_SM_90, //
-                   (return cub::internal::ThreadReduceSequential<PromT>(input, reduction_op);));
+                   (return ThreadReduceSequential<PromT>(input, reduction_op);));
     }
-    return cub::internal::ThreadReduceTernaryTree<PromT>(input, reduction_op);
+    return ThreadReduceTernaryTree<PromT>(input, reduction_op);
   }
   else
   {
-    return cub::internal::ThreadReduceBinaryTree<PromT>(input, reduction_op);
+    return ThreadReduceBinaryTree<PromT>(input, reduction_op);
   }
 }
 
