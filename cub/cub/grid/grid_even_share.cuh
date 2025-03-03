@@ -135,8 +135,8 @@ public:
     int avg_tiles_per_block = total_tiles / grid_size;
     // leftover grains go to big blocks:
     this->big_shares         = total_tiles - (avg_tiles_per_block * grid_size);
-    this->normal_share_items = avg_tiles_per_block * tile_items;
-    this->normal_base_offset = big_shares * tile_items;
+    this->normal_share_items = static_cast<OffsetT>(avg_tiles_per_block) * tile_items;
+    this->normal_base_offset = static_cast<OffsetT>(big_shares) * tile_items;
     this->big_share_items    = normal_share_items + tile_items;
   }
 
