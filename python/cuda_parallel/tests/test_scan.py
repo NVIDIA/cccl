@@ -34,10 +34,14 @@ def test_scan_array_input(input_array):
     def op(a, b):
         return a + b
 
-    d_input = input_array
-    dtype = d_input.dtype
+    dtype = input_array.dtype
+    is_short_dtype = dtype.itemsize < 16
+    # for small range data types make input small to assure that
+    # accumulation does not overflow
+    d_input = input_array[:31] if is_short_dtype else input_array
+
     h_init = np.array([42], dtype=dtype)
-    d_output = cp.empty(len(d_input), dtype=dtype)
+    d_output = cp.empty_like(d_input)
 
     exclusive_scan_device(d_input, d_output, len(d_input), op, h_init)
 

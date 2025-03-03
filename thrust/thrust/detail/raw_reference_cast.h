@@ -25,10 +25,11 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/tuple_transform.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/type_traits/has_nested_type.h>
+#include <thrust/tuple.h>
 
 // the order of declarations and definitions in this file is totally goofy
 // this header defines raw_reference_cast, which has a few overloads towards the bottom of the file
@@ -54,32 +55,26 @@ struct is_unwrappable : is_wrapped_reference<T>
 // specialize is_unwrappable
 // a tuple is_unwrappable if any of its elements is_unwrappable
 template <typename... Ts>
-struct is_unwrappable<thrust::tuple<Ts...>> : ::cuda::std::disjunction<is_unwrappable<Ts>...>
+struct is_unwrappable<tuple<Ts...>> : ::cuda::std::disjunction<is_unwrappable<Ts>...>
 {};
 
 // specialize is_unwrappable
 // a tuple_of_iterator_references is_unwrappable if any of its elements is_unwrappable
 template <typename... Ts>
-struct is_unwrappable<thrust::detail::tuple_of_iterator_references<Ts...>>
-    : ::cuda::std::disjunction<is_unwrappable<Ts>...>
-{};
-
-template <typename T, typename Result = void>
-struct enable_if_unwrappable : ::cuda::std::enable_if<is_unwrappable<T>::value, Result>
+struct is_unwrappable<tuple_of_iterator_references<Ts...>> : ::cuda::std::disjunction<is_unwrappable<Ts>...>
 {};
 
 namespace raw_reference_detail
 {
 
-template <typename T, typename Enable = void>
+template <typename T, bool = is_wrapped_reference<::cuda::std::remove_cv_t<T>>::value>
 struct raw_reference_impl : ::cuda::std::add_lvalue_reference<T>
 {};
 
 template <typename T>
-struct raw_reference_impl<T, ::cuda::std::enable_if_t<is_wrapped_reference<::cuda::std::remove_cv_t<T>>::value>>
-{
-  using type = ::cuda::std::add_lvalue_reference_t<typename pointer_element<typename T::pointer>::type>;
-};
+struct raw_reference_impl<T, true>
+    : ::cuda::std::add_lvalue_reference<typename pointer_element<typename T::pointer>::type>
+{};
 
 } // namespace raw_reference_detail
 
@@ -110,15 +105,15 @@ struct raw_reference_tuple_helper
 
 // recurse on tuples
 template <typename... Ts>
-struct raw_reference_tuple_helper<thrust::tuple<Ts...>>
+struct raw_reference_tuple_helper<tuple<Ts...>>
 {
-  using type = thrust::tuple<typename raw_reference_tuple_helper<Ts>::type...>;
+  using type = tuple<typename raw_reference_tuple_helper<Ts>::type...>;
 };
 
 template <typename... Ts>
-struct raw_reference_tuple_helper<thrust::detail::tuple_of_iterator_references<Ts...>>
+struct raw_reference_tuple_helper<tuple_of_iterator_references<Ts...>>
 {
-  using type = thrust::detail::tuple_of_iterator_references<typename raw_reference_tuple_helper<Ts>::type...>;
+  using type = tuple_of_iterator_references<typename raw_reference_tuple_helper<Ts>::type...>;
 };
 
 } // namespace raw_reference_detail
@@ -129,10 +124,10 @@ struct raw_reference_tuple_helper<thrust::detail::tuple_of_iterator_references<T
 //   then the raw_reference of tuple_type is a tuple of its members' raw_references
 //   else the raw_reference of tuple_type is tuple_type &
 template <typename... Ts>
-struct raw_reference<thrust::tuple<Ts...>>
+struct raw_reference<tuple<Ts...>>
 {
 private:
-  using tuple_type = thrust::tuple<Ts...>;
+  using tuple_type = tuple<Ts...>;
 
 public:
   using type = typename eval_if<is_unwrappable<tuple_type>::value,
@@ -141,81 +136,43 @@ public:
 };
 
 template <typename... Ts>
-struct raw_reference<thrust::detail::tuple_of_iterator_references<Ts...>>
+struct raw_reference<tuple_of_iterator_references<Ts...>>
 {
-private:
-  using tuple_type = detail::tuple_of_iterator_references<Ts...>;
-
-public:
-  using type = typename raw_reference_detail::raw_reference_tuple_helper<tuple_type>::type;
+  using type = typename raw_reference_detail::raw_reference_tuple_helper<tuple_of_iterator_references<Ts...>>::type;
 };
 
 } // namespace detail
 
 // provide declarations of raw_reference_cast's overloads for raw_reference_caster below
 template <typename T>
-_CCCL_HOST_DEVICE typename detail::raw_reference<T>::type raw_reference_cast(T& ref);
-
-template <typename T>
-_CCCL_HOST_DEVICE typename detail::raw_reference<const T>::type raw_reference_cast(const T& ref);
-
-template <typename... Ts>
-_CCCL_HOST_DEVICE typename detail::enable_if_unwrappable<
-  thrust::detail::tuple_of_iterator_references<Ts...>,
-  typename detail::raw_reference<thrust::detail::tuple_of_iterator_references<Ts...>>::type>::type
-raw_reference_cast(thrust::detail::tuple_of_iterator_references<Ts...> t);
-
-namespace detail
-{
-
-struct raw_reference_caster
-{
-  template <typename T>
-  _CCCL_HOST_DEVICE typename detail::raw_reference<T>::type operator()(T& ref)
-  {
-    return thrust::raw_reference_cast(ref);
-  }
-
-  template <typename T>
-  _CCCL_HOST_DEVICE typename detail::raw_reference<const T>::type operator()(const T& ref)
-  {
-    return thrust::raw_reference_cast(ref);
-  }
-
-  template <typename... Ts>
-  _CCCL_HOST_DEVICE typename detail::raw_reference<thrust::detail::tuple_of_iterator_references<Ts...>>::type
-  operator()(thrust::detail::tuple_of_iterator_references<Ts...> t,
-             ::cuda::std::enable_if_t<is_unwrappable<thrust::detail::tuple_of_iterator_references<Ts...>>::value>* = 0)
-  {
-    return thrust::raw_reference_cast(t);
-  }
-}; // end raw_reference_caster
-
-} // namespace detail
-
-template <typename T>
 _CCCL_HOST_DEVICE typename detail::raw_reference<T>::type raw_reference_cast(T& ref)
 {
   return *thrust::raw_pointer_cast(&ref);
-} // end raw_reference_cast
+}
 
 template <typename T>
 _CCCL_HOST_DEVICE typename detail::raw_reference<const T>::type raw_reference_cast(const T& ref)
 {
   return *thrust::raw_pointer_cast(&ref);
-} // end raw_reference_cast
+}
 
 template <typename... Ts>
-_CCCL_HOST_DEVICE typename detail::enable_if_unwrappable<
-  thrust::detail::tuple_of_iterator_references<Ts...>,
-  typename detail::raw_reference<thrust::detail::tuple_of_iterator_references<Ts...>>::type>::type
-raw_reference_cast(thrust::detail::tuple_of_iterator_references<Ts...> t)
+_CCCL_HOST_DEVICE auto raw_reference_cast(detail::tuple_of_iterator_references<Ts...> t) ->
+  typename detail::raw_reference<detail::tuple_of_iterator_references<Ts...>>::type
 {
-  thrust::detail::raw_reference_caster f;
-
-  // note that we pass raw_reference_tuple_helper, not raw_reference as the unary metafunction
-  // the different way that raw_reference_tuple_helper unwraps tuples is important
-  return thrust::detail::tuple_host_device_transform<detail::raw_reference_detail::raw_reference_tuple_helper>(t, f);
-} // end raw_reference_cast
+  if constexpr (detail::is_unwrappable<detail::tuple_of_iterator_references<Ts...>>::value)
+  {
+    using ResultTuple = tuple<typename detail::raw_reference_detail::raw_reference_tuple_helper<Ts>::type...>;
+    return ::cuda::std::apply(
+      [](auto&&... refs) {
+        return ResultTuple{raw_reference_cast(::cuda::std::forward<decltype(refs)>(refs))...};
+      },
+      static_cast<tuple<Ts...>&>(t));
+  }
+  else
+  {
+    return t;
+  }
+}
 
 THRUST_NAMESPACE_END

@@ -34,7 +34,7 @@ class IteratorKind:
         return type(self) is type(other) and self.value_type == other.value_type
 
     def __hash__(self):
-        return hash(self.value_type)
+        return hash((type(self), self.value_type))
 
 
 @lru_cache(maxsize=None)
@@ -127,6 +127,9 @@ class IteratorBase:
     @staticmethod
     def dereference(state):
         raise NotImplementedError("Subclasses must override dereference staticmethod")
+
+    def __add__(self, offset: int):
+        return make_advanced_iterator(self, offset=offset)
 
 
 def sizeof_pointee(context, ptr):
@@ -286,11 +289,7 @@ class CountingIterator(IteratorBase):
 
 
 class TransformIteratorKind(IteratorKind):
-    def __eq__(self, other):
-        return type(self) is type(other) and self.value_type == other.value_type
-
-    def __hash__(self):
-        return hash(self.value_type)
+    pass
 
 
 def make_transform_iterator(it, op: Callable):
@@ -336,12 +335,40 @@ def make_transform_iterator(it, op: Callable):
         def dereference(state):
             return op(it_dereference(state))
 
-        def __hash__(self):
-            return hash((self._it, self._op))
-
-        def __eq__(self, other):
-            if not isinstance(other.kind, TransformIteratorKind):
-                return NotImplemented
-            return self._it == other._it and self._op == other._op
-
     return TransformIterator(it, op)
+
+
+def make_advanced_iterator(it: IteratorBase, /, *, offset: int = 1):
+    it_advance = cuda.jit(type(it).advance, device=True)
+    it_dereference = cuda.jit(type(it).dereference, device=True)
+
+    class AdvancedIteratorKind(IteratorKind):
+        pass
+
+    class AdvancedIterator(IteratorBase):
+        iterator_kind_type = AdvancedIteratorKind
+
+        def __init__(self, it: IteratorBase, advance_steps: int):
+            self._it = it
+            cvalue_advanced = to_ctypes(it.value_type)(
+                it.cvalue + it.value_type(advance_steps)
+            )
+            super().__init__(
+                cvalue=cvalue_advanced,
+                numba_type=it.numba_type,
+                value_type=it.value_type,
+            )
+
+        @property
+        def kind(self):
+            return self.__class__.iterator_kind_type(self._it.kind)
+
+        @staticmethod
+        def advance(state, distance):
+            return it_advance(state, distance)
+
+        @staticmethod
+        def dereference(state):
+            return it_dereference(state)
+
+    return AdvancedIterator(it, offset)

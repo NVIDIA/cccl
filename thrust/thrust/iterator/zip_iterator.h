@@ -44,6 +44,7 @@
 #include <thrust/iterator/detail/tuple_of_iterator_references.h>
 #include <thrust/iterator/iterator_facade.h>
 #include <thrust/iterator/iterator_traits.h>
+#include <thrust/type_traits/integer_sequence.h>
 
 #include <cuda/std/tuple>
 

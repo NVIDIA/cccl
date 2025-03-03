@@ -242,6 +242,7 @@ private:
         , previous_allocated_count(other.previous_allocated_count)
     {}
 
+    _CCCL_EXEC_CHECK_DISABLE
     pool& operator=(const pool&) = default;
 
     _CCCL_HOST ~pool() {}
