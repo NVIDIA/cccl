@@ -27,10 +27,6 @@
 
 #include <cub/device/device_reduce.cuh>
 
-#include <cstddef>
-
-#include "thrust/iterator/counting_iterator.h"
-
 #ifndef TUNE_BASE
 #  define TUNE_ITEMS_PER_VEC_LOAD (1 << TUNE_ITEMS_PER_VEC_LOAD_POW2)
 #endif
@@ -103,7 +99,7 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Of
   const size_t segment_size = static_cast<size_t>(state.get_int64("SegmentSize{io}"));
   const size_t elements     = num_segments * segment_size;
 
-  const size_t max_elements = std::pow(2, 31);
+  const size_t max_elements = std::pow(2, 30);
   if (elements > max_elements)
   {
     state.skip("Input size too large for current configuration");
@@ -154,5 +150,5 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Of
 NVBENCH_BENCH_TYPES(fixed_size_segmented_reduce, NVBENCH_TYPE_AXES(value_types, offset_types))
   .set_name("base")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
-  .add_int64_power_of_two_axis("NumSegments{io}", nvbench::range(0, 30, 1))
-  .add_int64_power_of_two_axis("SegmentSize{io}", nvbench::range(0, 30, 1));
+  .add_int64_power_of_two_axis("NumSegments{io}", nvbench::range(18, 28, 2))
+  .add_int64_power_of_two_axis("SegmentSize{io}", nvbench::range(0, 10, 1));
