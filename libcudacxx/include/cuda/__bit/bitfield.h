@@ -31,7 +31,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-#if defined(__CUDA_ARCH__)
+#if __cccl_ptx_isa >= 200
 
 _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE uint32_t
 __bfi(uint32_t __dest, uint32_t __source, int __start, int __width) noexcept
@@ -43,7 +43,7 @@ __bfi(uint32_t __dest, uint32_t __source, int __start, int __width) noexcept
 _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE uint64_t
 __bfi(uint64_t __dest, uint64_t __source, int __start, int __width) noexcept
 {
-  asm("bfi.b64 %0, %1, %2, %3, %4;" : "=l"(__dest) : "l"(__dest), "l"(__source), "r"(__start), "r"(__width));
+  asm("bfi.b64 %0, %1, %2, %3, %4;" : "=l"(__dest) : "l"(__source), "l"(__dest), "r"(__start), "r"(__width));
   return __dest;
 }
 
@@ -61,7 +61,7 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE uint64_t __bfe(uint64_t __value
   return __ret;
 }
 
-#endif // defined(__CUDA_ARCH__)
+#endif // __cccl_ptx_isa >= 200
 
 template <typename _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp
