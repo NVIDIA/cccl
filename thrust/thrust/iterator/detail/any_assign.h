@@ -26,6 +26,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/type_traits.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
@@ -44,5 +46,9 @@ struct any_assign
     return *this;
   }
 };
+
+template <>
+struct is_proxy_reference<any_assign> : true_type
+{};
 } // namespace detail
 THRUST_NAMESPACE_END

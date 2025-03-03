@@ -64,14 +64,20 @@ _CCCL_INLINE_VAR constexpr bool can_unwrap<tuple_of_iterator_references<Ts...>> 
 namespace raw_reference_detail
 {
 
-template <typename T, bool = is_wrapped_reference<::cuda::std::remove_cv_t<T>>::value>
+template <typename T, typename SFINAE = void>
 struct raw_reference_impl : ::cuda::std::add_lvalue_reference<T>
 {};
 
 template <typename T>
-struct raw_reference_impl<T, true>
+struct raw_reference_impl<T, ::cuda::std::enable_if_t<is_wrapped_reference<::cuda::std::remove_cv_t<T>>::value>>
     : ::cuda::std::add_lvalue_reference<typename pointer_element<typename T::pointer>::type>
 {};
+
+template <typename T>
+struct raw_reference_impl<T, ::cuda::std::enable_if_t<is_proxy_reference<::cuda::std::remove_cv_t<T>>::value>>
+{
+  using type = T;
+};
 
 } // namespace raw_reference_detail
 
@@ -150,6 +156,12 @@ template <typename T>
 _CCCL_HOST_DEVICE typename detail::raw_reference<const T>::type raw_reference_cast(const T& ref)
 {
   return *thrust::raw_pointer_cast(&ref);
+}
+
+template <typename T, ::cuda::std::enable_if_t<detail::is_proxy_reference<::cuda::std::remove_cv_t<T>>::value, int> = 0>
+_CCCL_HOST_DEVICE typename detail::raw_reference<T>::type raw_reference_cast(T&& t)
+{
+  return t;
 }
 
 template <typename... Ts>
