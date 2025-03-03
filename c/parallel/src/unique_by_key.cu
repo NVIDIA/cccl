@@ -29,12 +29,6 @@ struct device_unique_by_key_policy;
 using OffsetT = int64_t;
 static_assert(std::is_same_v<cub::detail::choose_signed_offset_t<OffsetT>, OffsetT>, "OffsetT must be int64");
 
-struct input_keys_iterator_state_t;
-struct input_values_iterator_state_t;
-struct output_keys_iterator_t;
-struct output_values_iterator_t;
-struct output_num_selected_iterator_t;
-
 struct num_selected_storage_t;
 
 namespace unique_by_key
@@ -90,26 +84,21 @@ std::string get_iterator_name(cccl_iterator_t iterator, unique_by_key_iterator_t
     std::string iterator_t;
     switch (which_iterator)
     {
-      case unique_by_key_iterator_t::input_keys: {
-        check(nvrtcGetTypeName<input_keys_iterator_state_t>(&iterator_t));
+      case unique_by_key_iterator_t::input_keys:
+        return "input_keys_iterator_state_t";
         break;
-      }
-      case unique_by_key_iterator_t::input_values: {
-        check(nvrtcGetTypeName<input_values_iterator_state_t>(&iterator_t));
+      case unique_by_key_iterator_t::input_values:
+        return "input_values_iterator_state_t";
         break;
-      }
-      case unique_by_key_iterator_t::output_keys: {
-        check(nvrtcGetTypeName<output_keys_iterator_t>(&iterator_t));
+      case unique_by_key_iterator_t::output_keys:
+        return "output_keys_iterator_t";
         break;
-      }
-      case unique_by_key_iterator_t::output_values: {
-        check(nvrtcGetTypeName<output_values_iterator_t>(&iterator_t));
+      case unique_by_key_iterator_t::output_values:
+        return "output_values_iterator_t";
         break;
-      }
-      case unique_by_key_iterator_t::num_selected: {
-        check(nvrtcGetTypeName<output_num_selected_iterator_t>(&iterator_t));
+      case unique_by_key_iterator_t::num_selected:
+        return "output_num_selected_iterator_t";
         break;
-      }
     }
 
     return iterator_t;
