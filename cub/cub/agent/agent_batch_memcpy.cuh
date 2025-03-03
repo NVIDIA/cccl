@@ -802,8 +802,7 @@ private:
       if (blev_buffer_offset < num_blev_buffers)
       {
         BlockBufferOffsetT tile_buffer_id = buffers_by_size_class[blev_buffer_offset].buffer_id;
-        block_offset[i] =
-          ::cuda::ceil_div(static_cast<BlockBufferOffsetT>(tile_buffer_sizes[tile_buffer_id]), BLOCK_LEVEL_TILE_SIZE);
+        block_offset[i]                   = ::cuda::ceil_div(+tile_buffer_sizes[tile_buffer_id], BLOCK_LEVEL_TILE_SIZE);
       }
       else
       {
