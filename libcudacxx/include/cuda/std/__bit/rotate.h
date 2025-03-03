@@ -34,9 +34,11 @@ template <typename _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotr(_Tp __t, int __cnt) noexcept
 {
   constexpr auto __digits = numeric_limits<_Tp>::digits;
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated() && is_same_v<_Tp, uint32_t>)
-  {
-    NV_IF_TARGET(NV_IS_DEVICE, (return ::__funnelshift_r(__t, __t, __cnt);))
+  if constexpr(is_same_v<_Tp, uint32_t>) {
+    if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+    {
+      NV_IF_TARGET(NV_IS_DEVICE, (return ::__funnelshift_r(__t, __t, __cnt);))
+    }
   }
   auto __cnt_mod = static_cast<uint32_t>(__cnt) % __digits; // __cnt is always >= 0
   return __cnt_mod == 0 ? __t : (__t >> __cnt_mod) | (__t << (__digits - __cnt_mod));
