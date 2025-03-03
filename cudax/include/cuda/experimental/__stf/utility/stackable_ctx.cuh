@@ -26,6 +26,7 @@
 #endif // no system header
 
 #include <stack>
+#include <thread>
 
 #include "cuda/experimental/__stf/allocators/adapters.cuh"
 #include "cuda/experimental/__stf/utility/hash.cuh"
@@ -499,14 +500,24 @@ public:
     // XXX until we have a per-thread map
     int get_head_offset() const
     {
+#if 0
       return current_head_offset;
+#else
+      auto it = head_map.find(::std::this_thread::get_id());
+      return (it != head_map.end()) ? it->second : -1;
+#endif
     }
 
     // XXX until we have a per-thread map
     void set_head_offset(int offset)
     {
+#if 0
       fprintf(stderr, "set_head_offset => from %d to %d\n", current_head_offset, offset);
       current_head_offset = offset;
+#else
+      fprintf(stderr, "set_head_offset => from %d to %d\n", head_map[::std::this_thread::get_id()], offset);
+      head_map[::std::this_thread::get_id()] = offset;
+#endif
     }
 
     int get_parent_offset(int offset) const
@@ -556,8 +567,12 @@ public:
 
     int root_offset = -1;
 
+#if 0
     // Get the current offset (XXX later this will be a per-thread map)
     int current_head_offset = -1;
+#else
+    ::std::unordered_map<::std::thread::id, int> head_map;
+#endif
 
     // Handles to retain some asynchronous states, we maintain it separately
     // from nodes because we keep its entries even when we pop a level
