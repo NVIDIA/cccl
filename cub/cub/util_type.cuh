@@ -116,6 +116,13 @@ struct non_void_value_impl<It, FallbackT, false>
   using type = ::cuda::std::_If<::cuda::std::is_void_v<it_value_t<It>>, FallbackT, it_value_t<It>>;
 };
 
+//! Equals sizeof(T), where sizeof(void) == 0
+template <typename T>
+_CCCL_INLINE_VAR constexpr size_t size_of = sizeof(T);
+
+template <>
+_CCCL_INLINE_VAR constexpr size_t size_of<void> = 0;
+
 /**
  * The output value type
  * type = (if IteratorT's value type is void) ?
