@@ -53,6 +53,7 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/std/__algorithm_>
 #include <cuda/std/type_traits>
 
 #include <iterator>
@@ -442,7 +443,7 @@ struct DispatchScanByKey
       }
 
       // Run grids in epochs (in case number of tiles exceeds max x-dimension
-      int scan_grid_size = CUB_MIN(num_tiles, max_dim_x);
+      int scan_grid_size = _CUDA_VSTD::min(num_tiles, max_dim_x);
       for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
       {
 // Log scan_kernel configuration
