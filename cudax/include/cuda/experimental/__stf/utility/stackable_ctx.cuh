@@ -116,15 +116,6 @@ public:
           , alloc_adapters(mv(alloc_adapters))
       {}
 
-      context ctx;
-      cudaStream_t support_stream;
-      // A wrapper to forward allocations from a node to its parent node (none is used at the root level)
-      ::std::shared_ptr<stream_adapter> alloc_adapters;
-
-      // This map keeps track of the logical data that were pushed in this ctx node
-      // key: logical data's unique id
-      ::std::vector<::std::shared_ptr<stackable_logical_data_impl_state_base>> pushed_data;
-
       // To avoid prematurely destroying data created in a nested context, we need to hold a reference to them
       //
       // This happens for example in this case where we want to defer the release
@@ -149,6 +140,15 @@ public:
         _CCCL_ASSERT(data_impl, "invalid value");
         pushed_data.push_back(mv(data_impl));
       }
+
+      context ctx;
+      cudaStream_t support_stream;
+      // A wrapper to forward allocations from a node to its parent node (none is used at the root level)
+      ::std::shared_ptr<stream_adapter> alloc_adapters;
+
+      // This map keeps track of the logical data that were pushed in this ctx node
+      // key: logical data's unique id
+      ::std::vector<::std::shared_ptr<stackable_logical_data_impl_state_base>> pushed_data;
 
       // Where was the push() called ?
       _CUDA_VSTD::source_location callsite;
@@ -311,6 +311,7 @@ public:
       return nodes[level].ctx;
     }
 
+  private:
     void print_cache_stats_summary() const
     {
       if (!display_graph_stats || stats_map.size() == 0)
@@ -336,7 +337,6 @@ public:
       }
     }
 
-  private:
     // State for each node
     ::std::vector<ctx_node> nodes;
 
@@ -648,6 +648,7 @@ class stackable_logical_data
         // We do this operation before finalizing the context.
         auto& parent_dnode = get_data_node(sctx_depth - 1);
         _CCCL_ASSERT(parent_dnode.frozen_ld.has_value(), "internal error");
+        parent_dnode.get_cnt--;
         sctx.get_node(sctx_depth)
           .ctx.get_dot()
           ->ctx_add_output_id(parent_dnode.frozen_ld.value().unfreeze_fake_task_id());
@@ -660,8 +661,13 @@ class stackable_logical_data
 
         auto& dnode = data_nodes.back();
         _CCCL_ASSERT(dnode.frozen_ld.has_value(), "internal error");
-        dnode.frozen_ld.value().unfreeze(finalize_prereqs);
-        dnode.frozen_ld.reset();
+
+        // Only unfreeze if there are no other subcontext still using it
+        if (dnode.get_cnt == 0)
+        {
+          dnode.frozen_ld.value().unfreeze(finalize_prereqs);
+          dnode.frozen_ld.reset();
+        }
       }
 
       size_t depth() const
@@ -704,6 +710,9 @@ class stackable_logical_data
 
         // Frozen counterpart of ld (if any)
         ::std::optional<frozen_logical_data<T>> frozen_ld;
+
+        // Once frozen, count number of calls to get
+        mutable int get_cnt;
       };
 
       mutable ::std::vector<data_node> data_nodes;
@@ -779,15 +788,21 @@ class stackable_logical_data
       // There is at least the logical data passed when we created the stackable_logical_data
       _CCCL_ASSERT(s_size > 0, "internal error");
 
+      // This state will be retained until we pop the ctx enough times
+      size_t offset_depth = impl_state->offset_depth;
+
+      if (depth() != offset_depth)
+      {
+        // if there is a parent with a frozen data
+        impl_state->data_nodes[depth() - 1].get_cnt--;
+      }
+
       impl_state->data_nodes.pop_back();
 
       // If there were at least 2 logical data before pop_back, there remains
       // at least one logical data, so we need to retain the impl.
       if (s_size > 1)
       {
-        // This state will be retained until we pop the ctx enough times
-        size_t offset_depth = impl_state->offset_depth;
-
         if (offset_depth < sctx.depth())
         {
           // If that was an exportable data, offset_depth = 0, it can be deleted
@@ -851,8 +866,10 @@ class stackable_logical_data
       _CCCL_ASSERT(where != data_place::invalid, "Invalid data place");
 
       // Freeze the logical data of the node
+      // TODO refcnt here, check compatibility in freeze mode
       _CCCL_ASSERT(!from_data_node.frozen_ld.has_value(), "data node already frozen");
-      auto frozen_ld = from_ctx.freeze(from_data_node.ld, m, mv(where), false /* not a user freeze */);
+      auto frozen_ld         = from_ctx.freeze(from_data_node.ld, m, mv(where), false /* not a user freeze */);
+      from_data_node.get_cnt = 0;
 
       // Save in the optional value (we keep using frozen_ld variable to avoid
       // using frozen_ld.value() in the rest of this function)
@@ -863,6 +880,7 @@ class stackable_logical_data
 
       T inst  = frozen_ld.get(where, stream);
       auto ld = to_ctx.logical_data(inst, where);
+      from_data_node.get_cnt++;
 
       if (!impl_state->symbol.empty())
       {
