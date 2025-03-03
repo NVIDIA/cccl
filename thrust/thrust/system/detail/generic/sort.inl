@@ -156,8 +156,8 @@ template <typename DerivedPolicy, typename RandomAccessIterator, typename Strict
 _CCCL_HOST_DEVICE void
 stable_sort(thrust::execution_policy<DerivedPolicy>&, RandomAccessIterator, RandomAccessIterator, StrictWeakOrdering)
 {
-  THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<RandomAccessIterator, false>::value),
-                           "unimplemented for this system");
+  static_assert(thrust::detail::depend_on_instantiation<RandomAccessIterator, false>::value,
+                "unimplemented for this system");
 } // end stable_sort()
 
 template <typename DerivedPolicy,
@@ -171,8 +171,8 @@ _CCCL_HOST_DEVICE void stable_sort_by_key(
   RandomAccessIterator2,
   StrictWeakOrdering)
 {
-  THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<RandomAccessIterator1, false>::value),
-                           "unimplemented for this system");
+  static_assert(thrust::detail::depend_on_instantiation<RandomAccessIterator1, false>::value,
+                "unimplemented for this system");
 } // end stable_sort_by_key()
 
 } // namespace generic

@@ -9,6 +9,7 @@ Numerics Library
 
    numerics_library/bit
    numerics_library/complex
+   numerics_library/numbers
    numerics_library/numeric
    numerics_library/linalg
 
@@ -42,6 +43,9 @@ Any Standard C++ header not listed below is omitted.
    * - `\<cuda/std/cstdint\> <https://en.cppreference.com/w/cpp/header/cstdint>`_
      - Fixed-width integer types
      - libcu++ 1.0.0 / CCCL 2.0.0 / CUDA 10.2
+   * - `\<cuda/std/numbers\> <https://en.cppreference.com/w/cpp/header/numbers>`_
+     - Numeric constants
+     - CCCL 3.0.0
    * - `\<cuda/std/numeric\> <https://en.cppreference.com/w/cpp/header/numeric>`_
      - Numeric algorithms
      - CCCL 2.5.0
