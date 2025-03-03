@@ -241,6 +241,8 @@ template <
     detail::scan_by_key::policy_hub<KeysInputIteratorT, AccumT, cub::detail::it_value_t<ValuesInputIteratorT>, ScanOpT>>
 struct DispatchScanByKey
 {
+  static_assert(::cuda::std::is_unsigned_v<OffsetT>, "DispatchScanByKey only supports unsigned offset types");
+
   //---------------------------------------------------------------------
   // Constants and Types
   //---------------------------------------------------------------------

@@ -165,6 +165,8 @@ template <
   typename KernelLauncherFactory = detail::TripleChevronFactory>
 struct DispatchScan
 {
+  static_assert(::cuda::std::is_unsigned_v<OffsetT>, "DispatchScan only supports unsigned offset types");
+
   //---------------------------------------------------------------------
   // Constants and Types
   //---------------------------------------------------------------------
