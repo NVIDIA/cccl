@@ -72,7 +72,7 @@ struct make_zip_iterator_base<::cuda::std::tuple<Its...>>
 
   // Boost's Value type is the same as reference type. using value_type = reference;
   template <typename... ValueTypes>
-  static constexpr auto make_value_type()
+  _CCCL_HOST_DEVICE static constexpr auto make_value_type()
   {
     if constexpr ((::cuda::std::is_void_v<ValueTypes> || ...))
     {
