@@ -170,7 +170,7 @@ try
   {
     auto out_begin = h_out.begin() + h_dst_offsets[i];
     auto out_end   = out_begin + h_range_sizes[i];
-    std::fill(out_begin, out_end, static_cast<range_offset_t>(i));
+    std::fill(out_begin, out_end, static_cast<std::uint8_t>(i));
   }
 
   REQUIRE(d_out == h_out);
