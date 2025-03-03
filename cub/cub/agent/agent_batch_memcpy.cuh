@@ -194,7 +194,7 @@ GetAlignedPtrs(const void* in_begin, void* out_begin, ByteOffsetT num_bytes)
   uint32_t in_offset_req = in_extra_bytes;
 
   // Bytes after `out_chars_aligned` to the first VectorT-aligned address at or after `out_begin`
-  uint32_t out_start_aligned = cuda::round_up(in_offset_req + alignment_offset, out_datatype_size);
+  uint32_t out_start_aligned = ::cuda::round_up(in_offset_req + alignment_offset, out_datatype_size);
 
   // Compute the beginning of the aligned ranges (output and input pointers)
   VectorT* out_aligned_begin   = reinterpret_cast<VectorT*>(out_chars_aligned + out_start_aligned);
