@@ -61,20 +61,6 @@ struct unique_by_key_tuning_t
   int items_per_thread;
 };
 
-template <typename Tuning, int N>
-Tuning find_tuning(int cc, const Tuning (&tunings)[N])
-{
-  for (const Tuning& tuning : tunings)
-  {
-    if (cc >= tuning.cc)
-    {
-      return tuning;
-    }
-  }
-
-  return tunings[N - 1];
-}
-
 unique_by_key_runtime_tuning_policy get_policy(int /*cc*/)
 {
   // TODO: we should update this once we figure out a way to reuse
