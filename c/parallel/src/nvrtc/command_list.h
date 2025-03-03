@@ -52,7 +52,7 @@ struct nvrtc_get_name
 
   nvrtc_get_name(const nvrtc_get_name&) = delete;
   nvrtc_get_name(nvrtc_get_name&& other) noexcept
-      : name(std::move(other.name))
+      : name(other.name)
       , lowered_name(other.lowered_name)
   {}
 
