@@ -39,7 +39,7 @@ static_assert(cuda::std::is_same<BoundedIter1::pointer, Iterator::pointer>::valu
 static_assert(cuda::std::is_same<BoundedIter1::reference, Iterator::reference>::value, "");
 static_assert(cuda::std::is_same<BoundedIter1::iterator_category, Iterator::iterator_category>::value, "");
 static_assert(cuda::std::is_same<BoundedIter1::iterator_concept, Iterator::iterator_concept>::value, "");
-#endif
+#endif // TEST_STD_VER > 2017
 
 using BoundedIter2 = cuda::std::__bounded_iter<int*>;
 static_assert(cuda::std::is_same<BoundedIter2::value_type, int>::value, "");
@@ -49,7 +49,7 @@ static_assert(cuda::std::is_same<BoundedIter2::reference, int&>::value, "");
 static_assert(cuda::std::is_same<BoundedIter2::iterator_category, cuda::std::random_access_iterator_tag>::value, "");
 #if TEST_STD_VER > 2017
 static_assert(cuda::std::is_same<BoundedIter2::iterator_concept, cuda::std::contiguous_iterator_tag>::value, "");
-#endif
+#endif // TEST_STD_VER > 2017
 
 int main(int, char**)
 {

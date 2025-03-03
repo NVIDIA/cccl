@@ -40,8 +40,7 @@
 #include <cuda/std/__fwd/pair.h>
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__type_traits/conjunction.h>
-
-#include <type_traits>
+#include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -145,11 +144,10 @@ constexpr bool is_trivially_relocatable_to_v = is_trivially_relocatable_to<From,
  * \see THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE
  */
 template <typename FromIterator, typename ToIterator>
-using is_indirectly_trivially_relocatable_to =
-  integral_constant<bool,
-                    is_contiguous_iterator<FromIterator>::value && is_contiguous_iterator<ToIterator>::value
-                      && is_trivially_relocatable_to<typename thrust::iterator_traits<FromIterator>::value_type,
-                                                     typename thrust::iterator_traits<ToIterator>::value_type>::value>;
+using is_indirectly_trivially_relocatable_to = integral_constant<
+  bool,
+  is_contiguous_iterator<FromIterator>::value && is_contiguous_iterator<ToIterator>::value
+    && is_trivially_relocatable_to<detail::it_value_t<FromIterator>, detail::it_value_t<ToIterator>>::value>;
 
 /*! \brief <tt>constexpr bool</tt> that is \c true if the element type of
  *  \c FromIterator is
@@ -217,7 +215,7 @@ struct is_trivially_relocatable_impl
     : integral_constant<bool, ::cuda::std::is_trivially_copyable<T>::value || proclaim_trivially_relocatable<T>::value>
 {};
 
-template <typename T, std::size_t N>
+template <typename T, ::cuda::std::size_t N>
 struct is_trivially_relocatable_impl<T[N]> : is_trivially_relocatable_impl<T>
 {};
 

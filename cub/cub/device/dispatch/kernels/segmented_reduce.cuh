@@ -38,6 +38,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_reduce.cuh>
+#include <cub/device/dispatch/kernels/reduce.cuh> // finalize_and_store_aggregate
 #include <cub/iterator/arg_index_input_iterator.cuh>
 
 CUB_NAMESPACE_BEGIN

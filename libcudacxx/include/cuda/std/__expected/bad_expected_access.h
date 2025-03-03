@@ -25,25 +25,23 @@
 
 #include <nv/target>
 
-#if _CCCL_STD_VER > 2011
-
-#  ifndef _CCCL_NO_EXCEPTIONS
-#    ifdef __cpp_lib_expected
-#      include <expected>
-#    else // ^^^ __cpp_lib_expected ^^^ / vvv !__cpp_lib_expected vvv
-#      include <exception>
-#    endif // !__cpp_lib_expected
-#  endif // _CCCL_NO_EXCEPTIONS
+#ifndef _CCCL_NO_EXCEPTIONS
+#  ifdef __cpp_lib_expected
+#    include <expected>
+#  else // ^^^ __cpp_lib_expected ^^^ / vvv !__cpp_lib_expected vvv
+#    include <exception>
+#  endif // !__cpp_lib_expected
+#endif // _CCCL_NO_EXCEPTIONS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#  ifndef _CCCL_NO_EXCEPTIONS
+#ifndef _CCCL_NO_EXCEPTIONS
 
-#    ifdef __cpp_lib_expected
+#  ifdef __cpp_lib_expected
 
 using ::std::bad_expected_access;
 
-#    else // ^^^ __cpp_lib_expected ^^^ / vvv !__cpp_lib_expected vvv
+#  else // ^^^ __cpp_lib_expected ^^^ / vvv !__cpp_lib_expected vvv
 
 template <class _Err>
 class bad_expected_access;
@@ -66,16 +64,16 @@ template <class _Err>
 class bad_expected_access : public bad_expected_access<void>
 {
 public:
-#      if _CCCL_CUDA_COMPILER(CLANG) // Clang needs this or it breaks with device only types
+#    if _CCCL_CUDA_COMPILER(CLANG) // Clang needs this or it breaks with device only types
   _CCCL_HOST_DEVICE
-#      endif // _CCCL_CUDA_COMPILER(CLANG)
+#    endif // _CCCL_CUDA_COMPILER(CLANG)
   _CCCL_HIDE_FROM_ABI explicit bad_expected_access(_Err __e)
       : __unex_(_CUDA_VSTD::move(__e))
   {}
 
-#      if _CCCL_CUDA_COMPILER(CLANG) // Clang needs this or it breaks with device only types
+#    if _CCCL_CUDA_COMPILER(CLANG) // Clang needs this or it breaks with device only types
   _CCCL_HOST_DEVICE
-#      endif // _CCCL_CUDA_COMPILER(CLANG)
+#    endif // _CCCL_CUDA_COMPILER(CLANG)
   _CCCL_HIDE_FROM_ABI ~bad_expected_access() noexcept
   {
     __unex_.~_Err();
@@ -104,25 +102,23 @@ public:
 private:
   _Err __unex_;
 };
-#    endif // !__cpp_lib_expected
+#  endif // !__cpp_lib_expected
 
-#  endif // !_CCCL_NO_EXCEPTIONS
+#endif // !_CCCL_NO_EXCEPTIONS
 
 template <class _Err, class _Arg>
 _CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void __throw_bad_expected_access(_Arg&& __arg)
 {
-#  ifndef _CCCL_NO_EXCEPTIONS
+#ifndef _CCCL_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     (throw _CUDA_VSTD::bad_expected_access<_Err>(_CUDA_VSTD::forward<_Arg>(__arg));),
                     ((void) __arg; _CUDA_VSTD_NOVERSION::terminate();))
-#  else // ^^^ !_CCCL_NO_EXCEPTIONS ^^^ / vvv _CCCL_NO_EXCEPTIONS vvv
+#else // ^^^ !_CCCL_NO_EXCEPTIONS ^^^ / vvv _CCCL_NO_EXCEPTIONS vvv
   (void) __arg;
   _CUDA_VSTD_NOVERSION::terminate();
-#  endif // _CCCL_NO_EXCEPTIONS
+#endif // _CCCL_NO_EXCEPTIONS
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
-
-#endif // _CCCL_STD_VER > 2011
 
 #endif // _LIBCUDACXX___EXPECTED_BAD_EXPECTED_ACCESS_H

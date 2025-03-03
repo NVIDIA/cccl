@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // <cuda/std/optional>
 
 // constexpr T&& optional<T>::operator*() const &&;
@@ -64,7 +63,7 @@ int main(int, char**)
     // Regardless this function should still be noexcept(false) because
     // it has a narrow contract.
   }
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
   {
     constexpr optional<X> opt(X{});
     static_assert((*cuda::std::move(opt)).test() == 5, "");
@@ -73,7 +72,6 @@ int main(int, char**)
     constexpr optional<Y> opt(Y{});
     assert((*cuda::std::move(opt)).test() == 2);
   }
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 
   return 0;
 }

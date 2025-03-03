@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++11
-// UNSUPPORTED: msvc && c++14, msvc && c++17
-
 #include <cuda/std/cassert>
 #include <cuda/std/mdspan>
 

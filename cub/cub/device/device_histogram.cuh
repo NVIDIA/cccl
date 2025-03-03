@@ -190,7 +190,7 @@ struct DeviceHistogram
     cudaStream_t stream = 0)
   {
     /// The sample value type of the input iterator
-    using SampleT = cub::detail::value_t<SampleIteratorT>;
+    using SampleT = cub::detail::it_value_t<SampleIteratorT>;
     return MultiHistogramEven<1, 1>(
       d_temp_storage,
       temp_storage_bytes,
@@ -509,7 +509,7 @@ struct DeviceHistogram
     cudaStream_t stream = 0)
   {
     /// The sample value type of the input iterator
-    using SampleT = cub::detail::value_t<SampleIteratorT>;
+    using SampleT = cub::detail::it_value_t<SampleIteratorT>;
 
     return MultiHistogramEven<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
       d_temp_storage,
@@ -700,10 +700,10 @@ struct DeviceHistogram
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceHistogram::MultiHistogramEven");
 
     /// The sample value type of the input iterator
-    using SampleT = cub::detail::value_t<SampleIteratorT>;
+    using SampleT = cub::detail::it_value_t<SampleIteratorT>;
     ::cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
 
-    _CCCL_IF_CONSTEXPR (sizeof(OffsetT) > sizeof(int))
+    if constexpr (sizeof(OffsetT) > sizeof(int))
     {
       if ((unsigned long long) (num_rows * row_stride_bytes) < (unsigned long long) INT_MAX)
       {
@@ -850,7 +850,7 @@ struct DeviceHistogram
     cudaStream_t stream = 0)
   {
     /// The sample value type of the input iterator
-    using SampleT = cub::detail::value_t<SampleIteratorT>;
+    using SampleT = cub::detail::it_value_t<SampleIteratorT>;
     return MultiHistogramRange<1, 1>(
       d_temp_storage,
       temp_storage_bytes,
@@ -1145,7 +1145,7 @@ struct DeviceHistogram
     cudaStream_t stream = 0)
   {
     /// The sample value type of the input iterator
-    using SampleT = cub::detail::value_t<SampleIteratorT>;
+    using SampleT = cub::detail::it_value_t<SampleIteratorT>;
 
     return MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
       d_temp_storage,
@@ -1326,10 +1326,10 @@ struct DeviceHistogram
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceHistogram::MultiHistogramRange");
 
     /// The sample value type of the input iterator
-    using SampleT = cub::detail::value_t<SampleIteratorT>;
+    using SampleT = cub::detail::it_value_t<SampleIteratorT>;
     ::cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
 
-    _CCCL_IF_CONSTEXPR (sizeof(OffsetT) > sizeof(int))
+    if constexpr (sizeof(OffsetT) > sizeof(int))
     {
       if ((unsigned long long) (num_rows * row_stride_bytes) < (unsigned long long) INT_MAX)
       {

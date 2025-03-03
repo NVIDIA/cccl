@@ -17,14 +17,12 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER > 2014
 __host__ __device__ constexpr bool test_constexpr()
 {
   cuda::std::chrono::seconds s(15);
   s /= 5;
   return s.count() == 3;
 }
-#endif
 
 int main(int, char**)
 {
@@ -34,9 +32,7 @@ int main(int, char**)
     assert(ns.count() == 3);
   }
 
-#if TEST_STD_VER > 2014
   static_assert(test_constexpr(), "");
-#endif
 
   return 0;
 }

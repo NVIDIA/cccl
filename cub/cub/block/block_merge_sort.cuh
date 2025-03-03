@@ -66,8 +66,8 @@ MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, 
   {
     const OffsetT mid = cub::MidPoint<OffsetT>(keys1_begin, keys1_end);
     // pull copies of the keys before calling binary_pred so proxy references are unwrapped
-    const detail::value_t<KeyIt1> key1 = keys1[mid];
-    const detail::value_t<KeyIt2> key2 = keys2[diag - 1 - mid];
+    const detail::it_value_t<KeyIt1> key1 = keys1[mid];
+    const detail::it_value_t<KeyIt2> key2 = keys2[diag - 1 - mid];
     if (binary_pred(key2, key1))
     {
       keys1_end = mid;
@@ -175,7 +175,7 @@ private:
   static constexpr int ITEMS_PER_TILE = ITEMS_PER_THREAD * NUM_THREADS;
 
   // Whether or not there are values to be trucked along with keys
-  static constexpr bool KEYS_ONLY = ::cuda::std::is_same<ValueT, NullType>::value;
+  static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   /// Shared memory type required by this thread block

@@ -6,12 +6,13 @@ from __future__ import annotations
 
 import ctypes
 import functools
+from typing import Callable
 
 import numba
 import numpy as np
 from numba import cuda, types
 
-from ._utils.protocols import get_dtype, is_contiguous
+from ._utils.protocols import get_data_pointer, get_dtype, is_contiguous
 from .iterators._iterators import IteratorBase
 from .typing import DeviceArrayLike, GpuStruct
 
@@ -46,8 +47,8 @@ class IteratorKind(ctypes.c_int):
 # MUST match `cccl_type_info` in c/include/cccl/c/types.h
 class TypeInfo(ctypes.Structure):
     _fields_ = [
-        ("size", ctypes.c_int),
-        ("alignment", ctypes.c_int),
+        ("size", ctypes.c_size_t),
+        ("alignment", ctypes.c_size_t),
         ("type", TypeEnum),
     ]
 
@@ -59,8 +60,8 @@ class Op(ctypes.Structure):
         ("name", ctypes.c_char_p),
         ("ltoir", ctypes.c_char_p),
         ("ltoir_size", ctypes.c_int),
-        ("size", ctypes.c_int),
-        ("alignment", ctypes.c_int),
+        ("size", ctypes.c_size_t),
+        ("alignment", ctypes.c_size_t),
         ("state", ctypes.c_void_p),
     ]
 
@@ -68,13 +69,26 @@ class Op(ctypes.Structure):
 # MUST match `cccl_iterator_t` in c/include/cccl/c/types.h
 class Iterator(ctypes.Structure):
     _fields_ = [
-        ("size", ctypes.c_int),
-        ("alignment", ctypes.c_int),
+        ("size", ctypes.c_size_t),
+        ("alignment", ctypes.c_size_t),
         ("type", IteratorKind),
         ("advance", Op),
         ("dereference", Op),
         ("value_type", TypeInfo),
         ("state", ctypes.c_void_p),
+    ]
+
+
+# MUST match `cccl_device_merge_sort_build_result_t` in c/include/cccl/c/merge_sort.h
+class DeviceMergeSortBuildResult(ctypes.Structure):
+    _fields_ = [
+        ("cc", ctypes.c_int),
+        ("cubin", ctypes.c_void_p),
+        ("cubin_size", ctypes.c_size_t),
+        ("library", ctypes.c_void_p),
+        ("block_sort_kernel", ctypes.c_void_p),
+        ("partition_kernel", ctypes.c_void_p),
+        ("merge_kernel", ctypes.c_void_p),
     ]
 
 
@@ -85,10 +99,37 @@ class DeviceReduceBuildResult(ctypes.Structure):
         ("cubin", ctypes.c_void_p),
         ("cubin_size", ctypes.c_size_t),
         ("library", ctypes.c_void_p),
-        ("accumulator_size", ctypes.c_ulonglong),
+        ("accumulator_size", ctypes.c_uint64),
         ("single_tile_kernel", ctypes.c_void_p),
         ("single_tile_second_kernel", ctypes.c_void_p),
         ("reduction_kernel", ctypes.c_void_p),
+    ]
+
+
+# MUST match `cccl_device_scan_build_result_t` in c/include/cccl/c/scan.h
+class DeviceScanBuildResult(ctypes.Structure):
+    _fields_ = [
+        ("cc", ctypes.c_int),
+        ("cubin", ctypes.c_void_p),
+        ("cubin_size", ctypes.c_size_t),
+        ("library", ctypes.c_void_p),
+        ("accumulator_type", TypeInfo),
+        ("init_kernel", ctypes.c_void_p),
+        ("scan_kernel", ctypes.c_void_p),
+        ("description_bytes_per_tile", ctypes.c_size_t),
+        ("payload_bytes_per_tile", ctypes.c_size_t),
+    ]
+
+
+# MUST match `cccl_device_segmented_reduce_build_result_t` in c/include/cccl/c/segmented_reduce.h
+class DeviceSegmentedReduceBuildResult(ctypes.Structure):
+    _fields_ = [
+        ("cc", ctypes.c_int),
+        ("cubin", ctypes.c_void_p),
+        ("cubin_size", ctypes.c_size_t),
+        ("library", ctypes.c_void_p),
+        ("accumulator_size", ctypes.c_uint64),
+        ("segmented_reduce_kernel", ctypes.c_void_p),
     ]
 
 
@@ -142,9 +183,12 @@ def _device_array_to_cccl_iter(array: DeviceArrayLike) -> Iterator:
     if not is_contiguous(array):
         raise ValueError("Non-contiguous arrays are not supported.")
     info = _numpy_type_to_info(get_dtype(array))
+    # state is a pointer, size and alignment of iterator
+    # is that of a integral type that holds a pointer
+    state_info = _numpy_type_to_info(np.dtype(np.uintp))
     return Iterator(
-        info.size,
-        info.alignment,
+        state_info.size,
+        state_info.alignment,
         IteratorKind.POINTER,
         Op(),
         Op(),
@@ -193,6 +237,20 @@ def _iterator_to_cccl_iter(it: IteratorBase) -> Iterator:
     )
 
 
+def _none_to_cccl_iter() -> Iterator:
+    # Any type could be used here, we just need to pass NULL.
+    info = _numpy_type_to_info(np.uint8)
+    return Iterator(
+        info.size,
+        info.alignment,
+        IteratorKind.POINTER,
+        Op(),
+        Op(),
+        info,
+        None,
+    )
+
+
 def type_enum_as_name(enum_value: int) -> str:
     return (
         "int8",
@@ -210,6 +268,8 @@ def type_enum_as_name(enum_value: int) -> str:
 
 
 def to_cccl_iter(array_or_iterator) -> Iterator:
+    if array_or_iterator is None:
+        return _none_to_cccl_iter()
     if isinstance(array_or_iterator, IteratorBase):
         return _iterator_to_cccl_iter(array_or_iterator)
     return _device_array_to_cccl_iter(array_or_iterator)
@@ -223,3 +283,25 @@ def to_cccl_value(array_or_struct: np.ndarray | GpuStruct) -> Value:
     else:
         # it's a GpuStruct, use the array underlying it
         return to_cccl_value(array_or_struct._data)
+
+
+def to_cccl_op(op: Callable, sig) -> Op:
+    ltoir, _ = cuda.compile(op, sig=sig, output="ltoir")
+    name = op.__name__.encode("utf-8")
+    return Op(
+        OpKind.STATELESS,
+        name,
+        ctypes.c_char_p(ltoir),
+        len(ltoir),
+        1,
+        1,
+        None,
+        _data=(ltoir, name),  # keep a reference to these in a _data attribute
+    )
+
+
+def set_cccl_iterator_state(cccl_it: Iterator, input_it):
+    if cccl_it.type.value == IteratorKind.POINTER:
+        cccl_it.state = get_data_pointer(input_it)
+    else:
+        cccl_it.state = input_it.state

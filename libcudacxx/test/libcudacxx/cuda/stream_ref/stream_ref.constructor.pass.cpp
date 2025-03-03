@@ -17,22 +17,12 @@ static_assert(cuda::std::is_default_constructible<cuda::stream_ref>::value, "");
 static_assert(!cuda::std::is_constructible<cuda::stream_ref, int>::value, "");
 static_assert(!cuda::std::is_constructible<cuda::stream_ref, cuda::std::nullptr_t>::value, "");
 
-#if TEST_STD_VER < 2014
-template <class T, class = void>
-struct has_value_type : cuda::std::false_type
-{};
-template <class T>
-struct has_value_type<T, cuda::std::void_t<typename T::value_type>> : cuda::std::true_type
-{};
-static_assert(has_value_type<cuda::stream_ref>::value, "");
-#else
 template <class T, class = void>
 constexpr bool has_value_type = false;
 
 template <class T>
-constexpr bool has_value_type_v<T, cuda::std::void_t<typename T::value_type>> = true;
+constexpr bool has_value_type<T, cuda::std::void_t<typename T::value_type>> = true;
 static_assert(has_value_type<cuda::stream_ref>, "");
-#endif
 
 int main(int argc, char** argv)
 {

@@ -21,6 +21,7 @@
 #include "util/types.h"
 #include <cccl/c/merge_sort.h>
 #include <nvrtc/command_list.h>
+#include <nvrtc/ltoir_list_appender.h>
 
 struct op_wrapper;
 struct device_merge_sort_policy;
@@ -77,7 +78,7 @@ enum class merge_sort_iterator_t
 template <typename StorageT = storage_t>
 std::string get_iterator_name(cccl_iterator_t iterator, merge_sort_iterator_t which_iterator)
 {
-  if (iterator.type == cccl_iterator_kind_t::pointer)
+  if (iterator.type == cccl_iterator_kind_t::CCCL_POINTER)
   {
     if (iterator.state == nullptr)
     {
@@ -158,7 +159,7 @@ std::string get_merge_sort_kernel_name(
 
   const std::string key_t = cccl_type_enum_to_name(output_keys_it.value_type.type);
   const std::string value_t =
-    output_items_it.type == cccl_iterator_kind_t::pointer && output_items_it.state == nullptr
+    output_items_it.type == cccl_iterator_kind_t::CCCL_POINTER && output_items_it.state == nullptr
       ? "cub::NullType"
       : cccl_type_enum_to_name<items_storage_t>(output_items_it.value_type.type);
 
@@ -207,7 +208,7 @@ struct dynamic_merge_sort_policy_t
     return op.template Invoke<merge_sort_runtime_tuning_policy>(GetPolicy(device_ptx_version, key_size));
   }
 
-  int key_size;
+  uint64_t key_size;
 };
 
 struct merge_sort_kernel_source
@@ -266,8 +267,8 @@ private:
 };
 } // namespace merge_sort
 
-extern "C" CCCL_C_API CUresult cccl_device_merge_sort_build(
-  cccl_device_merge_sort_build_result_t* build,
+CUresult cccl_device_merge_sort_build(
+  cccl_device_merge_sort_build_result_t* build_ptr,
   cccl_iterator_t input_keys_it,
   cccl_iterator_t input_items_it,
   cccl_iterator_t output_keys_it,
@@ -278,7 +279,7 @@ extern "C" CCCL_C_API CUresult cccl_device_merge_sort_build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path) noexcept
+  const char* ctk_path)
 {
   CUresult error = CUDA_SUCCESS;
   try
@@ -288,11 +289,11 @@ extern "C" CCCL_C_API CUresult cccl_device_merge_sort_build(
     const int cc      = cc_major * 10 + cc_minor;
     const auto policy = merge_sort::get_policy(cc, output_keys_it.value_type.size);
 
-    const auto input_keys_it_value_t   = cccl_type_enum_to_string(input_keys_it.value_type.type);
-    const auto input_items_it_value_t  = cccl_type_enum_to_string(input_items_it.value_type.type);
-    const auto output_keys_it_value_t  = cccl_type_enum_to_string(output_keys_it.value_type.type);
-    const auto output_items_it_value_t = cccl_type_enum_to_string(output_items_it.value_type.type);
-    const auto offset_t                = cccl_type_enum_to_string(cccl_type_enum::INT64);
+    const auto input_keys_it_value_t   = cccl_type_enum_to_name(input_keys_it.value_type.type);
+    const auto input_items_it_value_t  = cccl_type_enum_to_name(input_items_it.value_type.type);
+    const auto output_keys_it_value_t  = cccl_type_enum_to_name(output_keys_it.value_type.type);
+    const auto output_items_it_value_t = cccl_type_enum_to_name(output_items_it.value_type.type);
+    const auto offset_t                = cccl_type_enum_to_name(cccl_type_enum::CCCL_INT64);
 
     const std::string input_keys_iterator_src = make_kernel_input_iterator(
       offset_t,
@@ -382,35 +383,16 @@ extern "C" CCCL_C_API CUresult cccl_device_merge_sort_build(
 
     // Collect all LTO-IRs to be linked.
     nvrtc_ltoir_list ltoir_list;
-    auto ltoir_list_append = [&ltoir_list](nvrtc_ltoir lto) {
-      if (lto.ltsz)
-      {
-        ltoir_list.push_back(std::move(lto));
-      }
-    };
-    ltoir_list_append({op.ltoir, op.ltoir_size});
-    if (cccl_iterator_kind_t::iterator == input_keys_it.type)
-    {
-      ltoir_list_append({input_keys_it.advance.ltoir, input_keys_it.advance.ltoir_size});
-      ltoir_list_append({input_keys_it.dereference.ltoir, input_keys_it.dereference.ltoir_size});
-    }
-    if (cccl_iterator_kind_t::iterator == input_items_it.type)
-    {
-      ltoir_list_append({input_items_it.advance.ltoir, input_items_it.advance.ltoir_size});
-      ltoir_list_append({input_items_it.dereference.ltoir, input_items_it.dereference.ltoir_size});
-    }
-    if (cccl_iterator_kind_t::iterator == output_keys_it.type)
-    {
-      ltoir_list_append({output_keys_it.advance.ltoir, output_keys_it.advance.ltoir_size});
-      ltoir_list_append({output_keys_it.dereference.ltoir, output_keys_it.dereference.ltoir_size});
-    }
-    if (cccl_iterator_kind_t::iterator == output_items_it.type)
-    {
-      ltoir_list_append({output_items_it.advance.ltoir, output_items_it.advance.ltoir_size});
-      ltoir_list_append({output_items_it.dereference.ltoir, output_items_it.dereference.ltoir_size});
-    }
 
-    nvrtc_cubin result =
+    nvrtc_ltoir_list_appender list_appender{ltoir_list};
+
+    list_appender.append({op.ltoir, op.ltoir_size});
+    list_appender.add_iterator_definition(input_keys_it);
+    list_appender.add_iterator_definition(input_items_it);
+    list_appender.add_iterator_definition(output_keys_it);
+    list_appender.add_iterator_definition(output_items_it);
+
+    nvrtc_link_result result =
       make_nvrtc_command_list()
         .add_program(nvrtc_translation_unit{src.c_str(), name})
         .add_expression({block_sort_kernel_name})
@@ -424,14 +406,15 @@ extern "C" CCCL_C_API CUresult cccl_device_merge_sort_build(
         .add_link_list(ltoir_list)
         .finalize_program(num_lto_args, lopts);
 
-    cuLibraryLoadData(&build->library, result.cubin.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-    check(cuLibraryGetKernel(&build->block_sort_kernel, build->library, block_sort_kernel_lowered_name.c_str()));
-    check(cuLibraryGetKernel(&build->partition_kernel, build->library, partition_kernel_lowered_name.c_str()));
-    check(cuLibraryGetKernel(&build->merge_kernel, build->library, merge_kernel_lowered_name.c_str()));
+    cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+    check(
+      cuLibraryGetKernel(&build_ptr->block_sort_kernel, build_ptr->library, block_sort_kernel_lowered_name.c_str()));
+    check(cuLibraryGetKernel(&build_ptr->partition_kernel, build_ptr->library, partition_kernel_lowered_name.c_str()));
+    check(cuLibraryGetKernel(&build_ptr->merge_kernel, build_ptr->library, merge_kernel_lowered_name.c_str()));
 
-    build->cc         = cc;
-    build->cubin      = (void*) result.cubin.release();
-    build->cubin_size = result.size;
+    build_ptr->cc         = cc;
+    build_ptr->cubin      = (void*) result.data.release();
+    build_ptr->cubin_size = result.size;
   }
   catch (const std::exception& exc)
   {
@@ -444,7 +427,7 @@ extern "C" CCCL_C_API CUresult cccl_device_merge_sort_build(
   return error;
 }
 
-extern "C" CCCL_C_API CUresult cccl_device_merge_sort(
+CUresult cccl_device_merge_sort(
   cccl_device_merge_sort_build_result_t build,
   void* d_temp_storage,
   size_t* temp_storage_bytes,
@@ -452,12 +435,21 @@ extern "C" CCCL_C_API CUresult cccl_device_merge_sort(
   cccl_iterator_t d_in_items,
   cccl_iterator_t d_out_keys,
   cccl_iterator_t d_out_items,
-  unsigned long long num_items,
+  uint64_t num_items,
   cccl_op_t op,
-  CUstream stream) noexcept
+  CUstream stream)
 {
-  bool pushed    = false;
+  if (cccl_iterator_kind_t::CCCL_ITERATOR == d_out_keys.type || cccl_iterator_kind_t::CCCL_ITERATOR == d_out_items.type)
+  {
+    // See https://github.com/NVIDIA/cccl/issues/3722
+    fflush(stderr);
+    printf("\nERROR in cccl_device_merge_sort(): merge sort output cannot be an iterator\n");
+    fflush(stdout);
+    return CUDA_ERROR_UNKNOWN;
+  }
+
   CUresult error = CUDA_SUCCESS;
+  bool pushed    = false;
   try
   {
     pushed = try_push_context();
@@ -494,7 +486,7 @@ extern "C" CCCL_C_API CUresult cccl_device_merge_sort(
   catch (const std::exception& exc)
   {
     fflush(stderr);
-    printf("\nEXCEPTION in cccl_device_reduce(): %s\n", exc.what());
+    printf("\nEXCEPTION in cccl_device_merge_sort(): %s\n", exc.what());
     fflush(stdout);
     error = CUDA_ERROR_UNKNOWN;
   }
@@ -508,17 +500,17 @@ extern "C" CCCL_C_API CUresult cccl_device_merge_sort(
   return error;
 }
 
-extern "C" CCCL_C_API CUresult cccl_device_merge_sort_cleanup(cccl_device_merge_sort_build_result_t* bld_ptr) noexcept
+CUresult cccl_device_merge_sort_cleanup(cccl_device_merge_sort_build_result_t* build_ptr)
 {
   try
   {
-    if (bld_ptr == nullptr)
+    if (build_ptr == nullptr)
     {
       return CUDA_ERROR_INVALID_VALUE;
     }
 
-    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(bld_ptr->cubin));
-    check(cuLibraryUnload(bld_ptr->library));
+    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+    check(cuLibraryUnload(build_ptr->library));
   }
   catch (const std::exception& exc)
   {

@@ -59,8 +59,7 @@
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/functional>
-#include <cuda/std/__algorithm/copy.h>
-#include <cuda/std/__algorithm/transform.h>
+#include <cuda/std/__algorithm_>
 #include <cuda/std/array>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
@@ -362,9 +361,11 @@ struct dispatch_histogram
       // Get grid dimensions, trying to keep total blocks ~histogram_sweep_occupancy
       int pixels_per_tile = block_threads * pixels_per_thread;
       int tiles_per_row   = static_cast<int>(::cuda::ceil_div(num_row_pixels, pixels_per_tile));
-      int blocks_per_row  = CUB_MIN(histogram_sweep_occupancy, tiles_per_row);
+      int blocks_per_row  = _CUDA_VSTD::min(histogram_sweep_occupancy, tiles_per_row);
       int blocks_per_col =
-        (blocks_per_row > 0) ? int(CUB_MIN(histogram_sweep_occupancy / blocks_per_row, num_rows)) : 0;
+        (blocks_per_row > 0)
+          ? int(_CUDA_VSTD::min(static_cast<OffsetT>(histogram_sweep_occupancy / blocks_per_row), num_rows))
+          : 0;
       int num_thread_blocks = blocks_per_row * blocks_per_col;
 
       dim3 sweep_grid_dims;
@@ -569,7 +570,7 @@ public:
   //---------------------------------------------------------------------
 
   /// The sample value type of the input iterator
-  using SampleT = cub::detail::value_t<SampleIteratorT>;
+  using SampleT = cub::detail::it_value_t<SampleIteratorT>;
 
   enum
   {
@@ -608,7 +609,7 @@ public:
       // Wrap the native input pointer with CacheModifiedInputIterator
       // or Directly use the supplied input iterator type
       using WrappedLevelIteratorT =
-        ::cuda::std::_If<::cuda::std::is_pointer<LevelIteratorT>::value,
+        ::cuda::std::_If<::cuda::std::is_pointer_v<LevelIteratorT>,
                          CacheModifiedInputIterator<LOAD_MODIFIER, LevelT, OffsetT>,
                          LevelIteratorT>;
 
@@ -630,11 +631,11 @@ public:
   struct ScaleTransform
   {
   private:
-    using CommonT = typename ::cuda::std::common_type<LevelT, SampleT>::type;
-    static_assert(::cuda::std::is_convertible<CommonT, int>::value,
+    using CommonT = ::cuda::std::common_type_t<LevelT, SampleT>;
+    static_assert(::cuda::std::is_convertible_v<CommonT, int>,
                   "The common type of `LevelT` and `SampleT` must be "
                   "convertible to `int`.");
-    static_assert(::cuda::std::is_trivially_copyable<CommonT>::value,
+    static_assert(::cuda::std::is_trivially_copyable_v<CommonT>,
                   "The common type of `LevelT` and `SampleT` must be "
                   "trivially copyable.");
 
@@ -649,8 +650,8 @@ public:
       uint32_t, //
 #if _CCCL_HAS_INT128()
       ::cuda::std::_If< //
-        (::cuda::std::is_same<CommonT, __int128_t>::value || //
-         ::cuda::std::is_same<CommonT, __uint128_t>::value), //
+        (::cuda::std::is_same_v<CommonT, __int128_t> || //
+         ::cuda::std::is_same_v<CommonT, __uint128_t>), //
         CommonT, //
         uint64_t> //
 #else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
@@ -662,7 +663,7 @@ public:
     template <typename T>
     using is_integral_excl_int128 =
 #if _CCCL_HAS_INT128()
-      ::cuda::std::_If<::cuda::std::is_same<T, __int128_t>::value&& ::cuda::std::is_same<T, __uint128_t>::value,
+      ::cuda::std::_If<::cuda::std::is_same_v<T, __int128_t>&& ::cuda::std::is_same_v<T, __uint128_t>,
                        ::cuda::std::false_type,
                        ::cuda::std::is_integral<T>>;
 #else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
@@ -764,7 +765,7 @@ public:
     /**
      * @brief Bin computation for integral types of up to 64-bit types
      */
-    template <typename T, typename ::cuda::std::enable_if<is_integral_excl_int128<T>::value, int>::type = 0>
+    template <typename T, ::cuda::std::enable_if_t<is_integral_excl_int128<T>::value, int> = 0>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(T sample, T min_level, ScaleT scale)
     {
       return static_cast<int>(
@@ -772,7 +773,7 @@ public:
         / static_cast<IntArithmeticT>(scale.fraction.range));
     }
 
-    template <typename T, typename ::cuda::std::enable_if<!is_integral_excl_int128<T>::value, int>::type = 0>
+    template <typename T, ::cuda::std::enable_if_t<!is_integral_excl_int128<T>::value, int> = 0>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(T sample, T min_level, ScaleT scale)
     {
       return this->ComputeBin(sample, min_level, scale, ::cuda::std::is_floating_point<T>{});
@@ -924,10 +925,10 @@ public:
     // Should we call DispatchHistogram<....., PolicyHub=void> in DeviceHistogram?
     static constexpr bool isEven = 0;
     using fallback_policy_hub    = detail::histogram::
-      policy_hub<detail::value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
+      policy_hub<detail::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
 
     using MaxPolicyT =
-      typename ::cuda::std::_If<::cuda::std::is_void<PolicyHub>::value, fallback_policy_hub, PolicyHub>::MaxPolicy;
+      typename ::cuda::std::_If<::cuda::std::is_void_v<PolicyHub>, fallback_policy_hub, PolicyHub>::MaxPolicy;
     cudaError error = cudaSuccess;
 
     do
@@ -1100,10 +1101,10 @@ public:
   {
     static constexpr bool isEven = 0;
     using fallback_policy_hub    = detail::histogram::
-      policy_hub<detail::value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
+      policy_hub<detail::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
 
     using MaxPolicyT =
-      typename ::cuda::std::_If<::cuda::std::is_void<PolicyHub>::value, fallback_policy_hub, PolicyHub>::MaxPolicy;
+      typename ::cuda::std::_If<::cuda::std::is_void_v<PolicyHub>, fallback_policy_hub, PolicyHub>::MaxPolicy;
     cudaError error = cudaSuccess;
 
     do
@@ -1240,10 +1241,10 @@ public:
   {
     static constexpr bool isEven = 1;
     using fallback_policy_hub    = detail::histogram::
-      policy_hub<detail::value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
+      policy_hub<detail::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
 
     using MaxPolicyT =
-      typename ::cuda::std::_If<::cuda::std::is_void<PolicyHub>::value, fallback_policy_hub, PolicyHub>::MaxPolicy;
+      typename ::cuda::std::_If<::cuda::std::is_void_v<PolicyHub>, fallback_policy_hub, PolicyHub>::MaxPolicy;
     cudaError error = cudaSuccess;
 
     do
@@ -1431,10 +1432,10 @@ public:
   {
     static constexpr bool isEven = 1;
     using fallback_policy_hub    = detail::histogram::
-      policy_hub<detail::value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
+      policy_hub<detail::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
 
     using MaxPolicyT =
-      typename ::cuda::std::_If<::cuda::std::is_void<PolicyHub>::value, fallback_policy_hub, PolicyHub>::MaxPolicy;
+      typename ::cuda::std::_If<::cuda::std::is_void_v<PolicyHub>, fallback_policy_hub, PolicyHub>::MaxPolicy;
     cudaError error = cudaSuccess;
 
     do

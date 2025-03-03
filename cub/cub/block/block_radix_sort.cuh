@@ -50,6 +50,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__algorithm_>
 #include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
@@ -261,7 +262,7 @@ private:
     BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
 
     // Whether or not there are values to be trucked along with keys
-    KEYS_ONLY = ::cuda::std::is_same<ValueT, NullType>::value,
+    KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>,
   };
 
   // KeyT traits and unsigned bits type
@@ -431,7 +432,7 @@ private:
     // Radix sorting passes
     while (true)
     {
-      int pass_bits = CUB_MIN(RADIX_BITS, end_bit - begin_bit);
+      int pass_bits = _CUDA_VSTD::min(RADIX_BITS, end_bit - begin_bit);
       auto digit_extractor =
         traits::template digit_extractor<fundamental_digit_extractor_t>(begin_bit, pass_bits, decomposer);
 
@@ -510,7 +511,7 @@ public:
     // Radix sorting passes
     while (true)
     {
-      int pass_bits = CUB_MIN(RADIX_BITS, end_bit - begin_bit);
+      int pass_bits = _CUDA_VSTD::min(RADIX_BITS, end_bit - begin_bit);
       auto digit_extractor =
         traits::template digit_extractor<fundamental_digit_extractor_t>(begin_bit, pass_bits, decomposer);
 
@@ -694,8 +695,8 @@ public:
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-  typename ::cuda::std::enable_if< //
-    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  ::cuda::std::enable_if_t< //
+    !::cuda::std::is_convertible_v<DecomposerT, int>>
   Sort(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer, int begin_bit, int end_bit)
   {
     NullType values[ITEMS_PER_THREAD];
@@ -754,8 +755,8 @@ public:
   //!   modify members of the key.
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-  typename ::cuda::std::enable_if< //
-    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  ::cuda::std::enable_if_t< //
+    !::cuda::std::is_convertible_v<DecomposerT, int>>
   Sort(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer)
   {
     Sort(keys, decomposer, 0, detail::radix::traits_t<KeyT>::default_end_bit(decomposer));
@@ -895,8 +896,8 @@ public:
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-  typename ::cuda::std::enable_if< //
-    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  ::cuda::std::enable_if_t< //
+    !::cuda::std::is_convertible_v<DecomposerT, int>>
   Sort(KeyT (&keys)[ITEMS_PER_THREAD],
        ValueT (&values)[ITEMS_PER_THREAD],
        DecomposerT decomposer,
@@ -965,8 +966,8 @@ public:
   //!   modify members of the key.
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-  typename ::cuda::std::enable_if< //
-    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  ::cuda::std::enable_if_t< //
+    !::cuda::std::is_convertible_v<DecomposerT, int>>
   Sort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], DecomposerT decomposer)
   {
     Sort(keys, values, decomposer, 0, detail::radix::traits_t<KeyT>::default_end_bit(decomposer));
@@ -1086,8 +1087,8 @@ public:
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-  typename ::cuda::std::enable_if< //
-    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  ::cuda::std::enable_if_t< //
+    !::cuda::std::is_convertible_v<DecomposerT, int>>
   SortDescending(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer, int begin_bit, int end_bit)
   {
     NullType values[ITEMS_PER_THREAD];
@@ -1146,8 +1147,8 @@ public:
   //!   modify members of the key.
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-  typename ::cuda::std::enable_if< //
-    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  ::cuda::std::enable_if_t< //
+    !::cuda::std::is_convertible_v<DecomposerT, int>>
   SortDescending(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer)
   {
     NullType values[ITEMS_PER_THREAD];
@@ -1294,8 +1295,8 @@ public:
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-  typename ::cuda::std::enable_if< //
-    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  ::cuda::std::enable_if_t< //
+    !::cuda::std::is_convertible_v<DecomposerT, int>>
   SortDescending(KeyT (&keys)[ITEMS_PER_THREAD],
                  ValueT (&values)[ITEMS_PER_THREAD],
                  DecomposerT decomposer,
@@ -1364,8 +1365,8 @@ public:
   //!   modify members of the key.
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-  typename ::cuda::std::enable_if< //
-    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  ::cuda::std::enable_if_t< //
+    !::cuda::std::is_convertible_v<DecomposerT, int>>
   SortDescending(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], DecomposerT decomposer)
   {
     SortBlocked(
@@ -1498,8 +1499,8 @@ public:
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-  typename ::cuda::std::enable_if< //
-    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  ::cuda::std::enable_if_t< //
+    !::cuda::std::is_convertible_v<DecomposerT, int>>
   SortBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer, int begin_bit, int end_bit)
   {
     NullType values[ITEMS_PER_THREAD];
@@ -1559,8 +1560,8 @@ public:
   //!   modify members of the key.
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-  typename ::cuda::std::enable_if< //
-    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  ::cuda::std::enable_if_t< //
+    !::cuda::std::is_convertible_v<DecomposerT, int>>
   SortBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer)
   {
     NullType values[ITEMS_PER_THREAD];
@@ -1704,8 +1705,8 @@ public:
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-  typename ::cuda::std::enable_if< //
-    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  ::cuda::std::enable_if_t< //
+    !::cuda::std::is_convertible_v<DecomposerT, int>>
   SortBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD],
                        ValueT (&values)[ITEMS_PER_THREAD],
                        DecomposerT decomposer,
@@ -1770,8 +1771,8 @@ public:
   //!   modify members of the key.
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-  typename ::cuda::std::enable_if< //
-    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  ::cuda::std::enable_if_t< //
+    !::cuda::std::is_convertible_v<DecomposerT, int>>
   SortBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], DecomposerT decomposer)
   {
     SortBlockedToStriped(
@@ -1899,8 +1900,8 @@ public:
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-  typename ::cuda::std::enable_if< //
-    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  ::cuda::std::enable_if_t< //
+    !::cuda::std::is_convertible_v<DecomposerT, int>>
   SortDescendingBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer, int begin_bit, int end_bit)
   {
     NullType values[ITEMS_PER_THREAD];
@@ -1960,8 +1961,8 @@ public:
   //!   modify members of the key.
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-  typename ::cuda::std::enable_if< //
-    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  ::cuda::std::enable_if_t< //
+    !::cuda::std::is_convertible_v<DecomposerT, int>>
   SortDescendingBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer)
   {
     NullType values[ITEMS_PER_THREAD];
@@ -2104,8 +2105,8 @@ public:
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-  typename ::cuda::std::enable_if< //
-    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  ::cuda::std::enable_if_t< //
+    !::cuda::std::is_convertible_v<DecomposerT, int>>
   SortDescendingBlockedToStriped(
     KeyT (&keys)[ITEMS_PER_THREAD],
     ValueT (&values)[ITEMS_PER_THREAD],
@@ -2171,8 +2172,8 @@ public:
   //!   modify members of the key.
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-  typename ::cuda::std::enable_if< //
-    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  ::cuda::std::enable_if_t< //
+    !::cuda::std::is_convertible_v<DecomposerT, int>>
   SortDescendingBlockedToStriped(
     KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], DecomposerT decomposer)
   {

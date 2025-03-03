@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class... Args>
 //   constexpr explicit unexpected(in_place_t, Args&&... args);
 //
@@ -38,11 +36,8 @@ template <class T>
 __host__ __device__ void conversion_test(T);
 
 template <class T, class... Args>
-_CCCL_CONCEPT_FRAGMENT(ImplicitlyConstructible_,
-                       requires(Args&&... args)((conversion_test<T>({cuda::std::forward<Args>(args)...}))));
-
-template <class T, class... Args>
-constexpr bool ImplicitlyConstructible = _CCCL_FRAGMENT(ImplicitlyConstructible_, T, Args...);
+_CCCL_CONCEPT ImplicitlyConstructible = _CCCL_REQUIRES_EXPR((T, variadic Args), T t, Args&&... args)(
+  (conversion_test<T>({cuda::std::forward<Args>(args)...})));
 
 static_assert(ImplicitlyConstructible<int, int>, "");
 static_assert(!ImplicitlyConstructible<cuda::std::unexpected<int>, cuda::std::in_place_t, int>, "");

@@ -47,10 +47,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-
-namespace unique_by_key
+namespace detail::unique_by_key
 {
 
 enum class primitive_key
@@ -85,13 +82,13 @@ enum class val_size
 template <class T>
 constexpr primitive_key is_primitive_key()
 {
-  return detail::is_primitive<T>::value ? primitive_key::yes : primitive_key::no;
+  return is_primitive<T>::value ? primitive_key::yes : primitive_key::no;
 }
 
 template <class T>
 constexpr primitive_val is_primitive_val()
 {
-  return detail::is_primitive<T>::value ? primitive_val::yes : primitive_val::no;
+  return is_primitive<T>::value ? primitive_val::yes : primitive_val::no;
 }
 
 template <class KeyT>
@@ -770,6 +767,35 @@ struct sm100_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_si
 // };
 #endif
 
+template <typename PolicyT, typename = void>
+struct UniqueByKeyPolicyWrapper : PolicyT
+{
+  CUB_RUNTIME_FUNCTION UniqueByKeyPolicyWrapper(PolicyT base)
+      : PolicyT(base)
+  {}
+};
+
+template <typename StaticPolicyT>
+struct UniqueByKeyPolicyWrapper<StaticPolicyT,
+                                ::cuda::std::void_t<decltype(StaticPolicyT::UniqueByKeyPolicyT::LOAD_MODIFIER)>>
+    : StaticPolicyT
+{
+  CUB_RUNTIME_FUNCTION UniqueByKeyPolicyWrapper(StaticPolicyT base)
+      : StaticPolicyT(base)
+  {}
+
+  CUB_RUNTIME_FUNCTION static constexpr PolicyWrapper<typename StaticPolicyT::UniqueByKeyPolicyT> UniqueByKey()
+  {
+    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::UniqueByKeyPolicyT());
+  }
+};
+
+template <typename PolicyT>
+CUB_RUNTIME_FUNCTION UniqueByKeyPolicyWrapper<PolicyT> MakeUniqueByKeyPolicyWrapper(PolicyT policy)
+{
+  return UniqueByKeyPolicyWrapper<PolicyT>{policy};
+}
+
 template <class KeyT, class ValueT>
 struct policy_hub
 {
@@ -843,12 +869,11 @@ struct policy_hub
   using MaxPolicy = Policy1000;
 };
 
-} // namespace unique_by_key
-} // namespace detail
+} // namespace detail::unique_by_key
 
 template <typename KeyInputIteratorT, typename ValueInputIteratorT = unsigned long long int*>
 using DeviceUniqueByKeyPolicy CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and it will "
                                                       "be removed.") =
-  detail::unique_by_key::policy_hub<detail::value_t<KeyInputIteratorT>, detail::value_t<ValueInputIteratorT>>;
+  detail::unique_by_key::policy_hub<detail::it_value_t<KeyInputIteratorT>, detail::it_value_t<ValueInputIteratorT>>;
 
 CUB_NAMESPACE_END

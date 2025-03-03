@@ -104,6 +104,8 @@
 #elif _CCCL_COMPILER(MSVC)
 #  define _CCCL_BUILTIN_ASSUME(...) \
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__builtin_assume(__VA_ARGS__);), (__assume(__VA_ARGS__);))
+#else
+#  define _CCCL_BUILTIN_ASSUME(...)
 #endif // _CCCL_CHECK_BUILTIN(builtin_assume)
 
 #if _CCCL_CHECK_BUILTIN(builtin_prefetch) || _CCCL_COMPILER(GCC)
@@ -119,18 +121,18 @@
 
 #if _CCCL_CHECK_BUILTIN(builtin_popcount) || _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(CLANG) \
   || _CCCL_COMPILER(NVHPC)
-#  define _CCCL_BUILTIN_POPCOUNT(...)   ::__builtin_popcount(__VA_ARGS__)
-#  define _CCCL_BUILTIN_POPCOUNTLL(...) ::__builtin_popcountll(__VA_ARGS__)
+#  define _CCCL_BUILTIN_POPCOUNT(...)   __builtin_popcount(__VA_ARGS__)
+#  define _CCCL_BUILTIN_POPCOUNTLL(...) __builtin_popcountll(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_popcount)
 
 #if _CCCL_CHECK_BUILTIN(builtin_clz) || _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
-#  define _CCCL_BUILTIN_CLZ(...)   ::__builtin_clz(__VA_ARGS__)
-#  define _CCCL_BUILTIN_CLZLL(...) ::__builtin_clzll(__VA_ARGS__)
+#  define _CCCL_BUILTIN_CLZ(...)   __builtin_clz(__VA_ARGS__)
+#  define _CCCL_BUILTIN_CLZLL(...) __builtin_clzll(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_clz)
 
 #if _CCCL_CHECK_BUILTIN(builtin_ctz) || _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
-#  define _CCCL_BUILTIN_CTZ(...)   ::__builtin_ctz(__VA_ARGS__)
-#  define _CCCL_BUILTIN_CTZLL(...) ::__builtin_ctzll(__VA_ARGS__)
+#  define _CCCL_BUILTIN_CTZ(...)   __builtin_ctz(__VA_ARGS__)
+#  define _CCCL_BUILTIN_CTZLL(...) __builtin_ctzll(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_ctz)
 
 #if _CCCL_CHECK_BUILTIN(builtin_bswap16)
@@ -293,11 +295,6 @@
 #if _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated) || _CCCL_COMPILER(GCC, >=, 9) || _CCCL_COMPILER(MSVC, >, 19, 24)
 #  define _CCCL_BUILTIN_IS_CONSTANT_EVALUATED(...) __builtin_is_constant_evaluated(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated)
-
-// NVCC and NVRTC in C++11 mode freaks out about `__builtin_is_constant_evaluated`.
-#if _CCCL_STD_VER < 2014 && (_CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC) || _CCCL_COMPILER(NVHPC))
-#  undef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
-#endif // _CCCL_STD_VER < 2014 && _CCCL_CUDA_COMPILER(NVCC)
 
 #if _CCCL_CHECK_BUILTIN(builtin_isfinite) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(NVRTC, >, 12, 2)
 #  define _CCCL_BUILTIN_ISFINITE(...) __builtin_isfinite(__VA_ARGS__)
@@ -518,6 +515,22 @@
 #  undef _CCCL_BUILTIN_LOGB
 #  undef _CCCL_BUILTIN_LOGBL
 #endif // _CCCL_CUDA_COMPILER(CLANG)
+
+#if _CCCL_CHECK_BUILTIN(builtin_memcmp) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC, >=, 19, 28)
+#  define _CCCL_BUILTIN_MEMCMP(...) __builtin_memcmp(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_memcmp) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC, >=, 19, 28)
+
+#if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_MEMCMP
+#endif // _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(CLANG)
+
+#if _CCCL_CHECK_BUILTIN(builtin_memmove) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_MEMMOVE(...) __builtin_memmove(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_memmove) || _CCCL_COMPILER(GCC)
+
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  undef _CCCL_BUILTIN_MEMMOVE
+#endif // _CCCL_CUDA_COMPILER(NVCC)
 
 #if _CCCL_CHECK_BUILTIN(__builtin_operator_new) && _CCCL_CHECK_BUILTIN(__builtin_operator_delete) \
   && _CCCL_CUDA_COMPILER(CLANG)
@@ -923,9 +936,8 @@
 #endif // !_CCCL_COMPILER(MSVC)
 
 // GCC's builtin_strlen isn't reliable at constexpr time
-// MSVC does not expose builtin_strlen before C++17
 // NVRTC does not expose builtin_strlen
-#if !_CCCL_COMPILER(GCC) && !_CCCL_COMPILER(NVRTC) && !(_CCCL_COMPILER(MSVC) && _CCCL_STD_VER < 2017)
+#if !_CCCL_COMPILER(GCC) && !_CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_STRLEN(...) __builtin_strlen(__VA_ARGS__)
 #endif
 

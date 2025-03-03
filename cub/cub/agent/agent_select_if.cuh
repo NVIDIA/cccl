@@ -56,8 +56,6 @@
 
 #include <cuda/std/type_traits>
 
-#include <iterator>
-
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -227,10 +225,10 @@ struct AgentSelectIf
   using MemoryOrderedTileStateT = tile_state_with_memory_order<ScanTileStateT, memory_order>;
 
   // The input value type
-  using InputT = value_t<InputIteratorT>;
+  using InputT = it_value_t<InputIteratorT>;
 
   // The flag value type
-  using FlagT = value_t<FlagsInputIteratorT>;
+  using FlagT = it_value_t<FlagsInputIteratorT>;
 
   // Constants
   enum
@@ -246,8 +244,8 @@ struct AgentSelectIf
   static constexpr ::cuda::std::int32_t TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
   static constexpr bool TWO_PHASE_SCATTER                = (ITEMS_PER_THREAD > 1);
 
-  static constexpr bool has_select_op       = (!::cuda::std::is_same<SelectOpT, NullType>::value);
-  static constexpr bool has_flags_it        = (!::cuda::std::is_same<FlagT, NullType>::value);
+  static constexpr bool has_select_op       = (!::cuda::std::is_same_v<SelectOpT, NullType>);
+  static constexpr bool has_flags_it        = (!::cuda::std::is_same_v<FlagT, NullType>);
   static constexpr bool use_stencil_with_op = has_select_op && has_flags_it;
   static constexpr auto SELECT_METHOD =
     use_stencil_with_op ? USE_STENCIL_WITH_OP
@@ -259,7 +257,7 @@ struct AgentSelectIf
   // Wrap the native input pointer with CacheModifiedValuesInputIterator
   // or directly use the supplied input iterator type
   using WrappedInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer<InputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer_v<InputIteratorT>,
                      CacheModifiedInputIterator<AgentSelectIfPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
                      InputIteratorT>;
 
@@ -267,7 +265,7 @@ struct AgentSelectIf
   // Wrap the native input pointer with CacheModifiedValuesInputIterator
   // or directly use the supplied input iterator type
   using WrappedFlagsInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer<FlagsInputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer_v<FlagsInputIteratorT>,
                      CacheModifiedInputIterator<AgentSelectIfPolicyT::LOAD_MODIFIER, FlagT, OffsetT>,
                      FlagsInputIteratorT>;
 

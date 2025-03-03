@@ -56,8 +56,6 @@
 #include <cuda/ptx>
 #include <cuda/std/type_traits>
 
-#include <iterator>
-
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -173,7 +171,7 @@ struct AgentRle
   //---------------------------------------------------------------------
 
   /// The input value type
-  using T = cub::detail::value_t<InputIteratorT>;
+  using T = cub::detail::it_value_t<InputIteratorT>;
 
   /// The lengths output value type
   using LengthT = cub::detail::non_void_value_t<LengthsOutputIteratorT, OffsetT>;
@@ -238,7 +236,7 @@ struct AgentRle
   // Wrap the native input pointer with CacheModifiedVLengthnputIterator
   // Directly use the supplied input iterator type
   using WrappedInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer<InputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer_v<InputIteratorT>,
                      CacheModifiedInputIterator<AgentRlePolicyT::LOAD_MODIFIER, T, OffsetT>,
                      InputIteratorT>;
 

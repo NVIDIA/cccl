@@ -151,11 +151,12 @@ class BlockExchange
                                                                                   // C++14
   static constexpr int LOG_SMEM_BANKS = CUB_LOG_SMEM_BANKS(0);
 
-  static constexpr int TILE_ITEMS          = BLOCK_THREADS * ITEMS_PER_THREAD;
-  static constexpr int TIME_SLICES         = WARP_TIME_SLICING ? WARPS : 1;
-  static constexpr int TIME_SLICED_THREADS = WARP_TIME_SLICING ? CUB_MIN(BLOCK_THREADS, WARP_THREADS) : BLOCK_THREADS;
-  static constexpr int TIME_SLICED_ITEMS   = TIME_SLICED_THREADS * ITEMS_PER_THREAD;
-  static constexpr int WARP_TIME_SLICED_THREADS = CUB_MIN(BLOCK_THREADS, WARP_THREADS);
+  static constexpr int TILE_ITEMS  = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr int TIME_SLICES = WARP_TIME_SLICING ? WARPS : 1;
+  static constexpr int TIME_SLICED_THREADS =
+    WARP_TIME_SLICING ? _CUDA_VSTD::min(BLOCK_THREADS, WARP_THREADS) : BLOCK_THREADS;
+  static constexpr int TIME_SLICED_ITEMS        = TIME_SLICED_THREADS * ITEMS_PER_THREAD;
+  static constexpr int WARP_TIME_SLICED_THREADS = _CUDA_VSTD::min(BLOCK_THREADS, WARP_THREADS);
   static constexpr int WARP_TIME_SLICED_ITEMS   = WARP_TIME_SLICED_THREADS * ITEMS_PER_THREAD;
 
   // Insert padding to avoid bank conflicts during raking when items per thread is a power of two and > 4 (otherwise
@@ -207,7 +208,7 @@ private:
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = linear_tid * ITEMS_PER_THREAD + i;
-      _CCCL_IF_CONSTEXPR (INSERT_PADDING)
+      if constexpr (INSERT_PADDING)
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
@@ -220,7 +221,7 @@ private:
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = i * BLOCK_THREADS + linear_tid;
-      _CCCL_IF_CONSTEXPR (INSERT_PADDING)
+      if constexpr (INSERT_PADDING)
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
@@ -258,7 +259,7 @@ private:
         for (int i = 0; i < ITEMS_PER_THREAD; i++)
         {
           int item_offset = lane_id * ITEMS_PER_THREAD + i;
-          _CCCL_IF_CONSTEXPR (INSERT_PADDING)
+          if constexpr (INSERT_PADDING)
           {
             item_offset += item_offset >> LOG_SMEM_BANKS;
           }
@@ -280,7 +281,7 @@ private:
           int item_offset = strip_offset + linear_tid - slice_offset;
           if (item_offset >= 0 && item_offset < TIME_SLICED_ITEMS)
           {
-            _CCCL_IF_CONSTEXPR (INSERT_PADDING)
+            if constexpr (INSERT_PADDING)
             {
               item_offset += item_offset >> LOG_SMEM_BANKS;
             }
@@ -316,7 +317,7 @@ private:
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = warp_offset + i + (lane_id * ITEMS_PER_THREAD);
-      _CCCL_IF_CONSTEXPR (INSERT_PADDING)
+      if constexpr (INSERT_PADDING)
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
@@ -329,7 +330,7 @@ private:
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = warp_offset + (i * WARP_TIME_SLICED_THREADS) + lane_id;
-      _CCCL_IF_CONSTEXPR (INSERT_PADDING)
+      if constexpr (INSERT_PADDING)
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
@@ -357,7 +358,7 @@ private:
       for (int i = 0; i < ITEMS_PER_THREAD; i++)
       {
         int item_offset = i + lane_id * ITEMS_PER_THREAD;
-        _CCCL_IF_CONSTEXPR (INSERT_PADDING)
+        if constexpr (INSERT_PADDING)
         {
           item_offset += item_offset >> LOG_SMEM_BANKS;
         }
@@ -370,7 +371,7 @@ private:
       for (int i = 0; i < ITEMS_PER_THREAD; i++)
       {
         int item_offset = i * WARP_TIME_SLICED_THREADS + lane_id;
-        _CCCL_IF_CONSTEXPR (INSERT_PADDING)
+        if constexpr (INSERT_PADDING)
         {
           item_offset += item_offset >> LOG_SMEM_BANKS;
         }
@@ -389,7 +390,7 @@ private:
         for (int i = 0; i < ITEMS_PER_THREAD; i++)
         {
           int item_offset = i + lane_id * ITEMS_PER_THREAD;
-          _CCCL_IF_CONSTEXPR (INSERT_PADDING)
+          if constexpr (INSERT_PADDING)
           {
             item_offset += item_offset >> LOG_SMEM_BANKS;
           }
@@ -402,7 +403,7 @@ private:
         for (int i = 0; i < ITEMS_PER_THREAD; i++)
         {
           int item_offset = i * WARP_TIME_SLICED_THREADS + lane_id;
-          _CCCL_IF_CONSTEXPR (INSERT_PADDING)
+          if constexpr (INSERT_PADDING)
           {
             item_offset += item_offset >> LOG_SMEM_BANKS;
           }
@@ -430,7 +431,7 @@ private:
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = i * BLOCK_THREADS + linear_tid;
-      _CCCL_IF_CONSTEXPR (INSERT_PADDING)
+      if constexpr (INSERT_PADDING)
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
@@ -444,7 +445,7 @@ private:
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = linear_tid * ITEMS_PER_THREAD + i;
-      _CCCL_IF_CONSTEXPR (INSERT_PADDING)
+      if constexpr (INSERT_PADDING)
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
@@ -489,7 +490,7 @@ private:
           int item_offset = strip_offset + linear_tid - slice_offset;
           if (item_offset >= 0 && item_offset < TIME_SLICED_ITEMS)
           {
-            _CCCL_IF_CONSTEXPR (INSERT_PADDING)
+            if constexpr (INSERT_PADDING)
             {
               item_offset += item_offset >> LOG_SMEM_BANKS;
             }
@@ -506,7 +507,7 @@ private:
         for (int i = 0; i < ITEMS_PER_THREAD; i++)
         {
           int item_offset = lane_id * ITEMS_PER_THREAD + i;
-          _CCCL_IF_CONSTEXPR (INSERT_PADDING)
+          if constexpr (INSERT_PADDING)
           {
             item_offset += item_offset >> LOG_SMEM_BANKS;
           }
@@ -541,7 +542,7 @@ private:
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = warp_offset + (i * WARP_TIME_SLICED_THREADS) + lane_id;
-      _CCCL_IF_CONSTEXPR (INSERT_PADDING)
+      if constexpr (INSERT_PADDING)
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
@@ -554,7 +555,7 @@ private:
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = warp_offset + i + (lane_id * ITEMS_PER_THREAD);
-      _CCCL_IF_CONSTEXPR (INSERT_PADDING)
+      if constexpr (INSERT_PADDING)
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
@@ -587,7 +588,7 @@ private:
         for (int i = 0; i < ITEMS_PER_THREAD; i++)
         {
           int item_offset = i * WARP_TIME_SLICED_THREADS + lane_id;
-          _CCCL_IF_CONSTEXPR (INSERT_PADDING)
+          if constexpr (INSERT_PADDING)
           {
             item_offset += item_offset >> LOG_SMEM_BANKS;
           }
@@ -600,7 +601,7 @@ private:
         for (int i = 0; i < ITEMS_PER_THREAD; i++)
         {
           int item_offset = i + lane_id * ITEMS_PER_THREAD;
-          _CCCL_IF_CONSTEXPR (INSERT_PADDING)
+          if constexpr (INSERT_PADDING)
           {
             item_offset += item_offset >> LOG_SMEM_BANKS;
           }
@@ -631,7 +632,7 @@ private:
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = ranks[i];
-      _CCCL_IF_CONSTEXPR (INSERT_PADDING)
+      if constexpr (INSERT_PADDING)
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
@@ -644,7 +645,7 @@ private:
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = linear_tid * ITEMS_PER_THREAD + i;
-      _CCCL_IF_CONSTEXPR (INSERT_PADDING)
+      if constexpr (INSERT_PADDING)
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
@@ -684,7 +685,7 @@ private:
         int item_offset = ranks[i] - slice_offset;
         if (item_offset >= 0 && item_offset < WARP_TIME_SLICED_ITEMS)
         {
-          _CCCL_IF_CONSTEXPR (INSERT_PADDING)
+          if constexpr (INSERT_PADDING)
           {
             item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
           }
@@ -700,7 +701,7 @@ private:
         for (int i = 0; i < ITEMS_PER_THREAD; i++)
         {
           int item_offset = lane_id * ITEMS_PER_THREAD + i;
-          _CCCL_IF_CONSTEXPR (INSERT_PADDING)
+          if constexpr (INSERT_PADDING)
           {
             item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
           }
@@ -738,7 +739,7 @@ private:
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = ranks[i];
-      _CCCL_IF_CONSTEXPR (INSERT_PADDING)
+      if constexpr (INSERT_PADDING)
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
@@ -751,7 +752,7 @@ private:
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = i * BLOCK_THREADS + linear_tid;
-      _CCCL_IF_CONSTEXPR (INSERT_PADDING)
+      if constexpr (INSERT_PADDING)
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
@@ -792,7 +793,7 @@ private:
         int item_offset = ranks[i] - slice_offset;
         if (item_offset >= 0 && item_offset < WARP_TIME_SLICED_ITEMS)
         {
-          _CCCL_IF_CONSTEXPR (INSERT_PADDING)
+          if constexpr (INSERT_PADDING)
           {
             item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
           }
@@ -814,7 +815,7 @@ private:
           int item_offset = strip_offset + linear_tid - slice_offset;
           if (item_offset >= 0 && item_offset < TIME_SLICED_ITEMS)
           {
-            _CCCL_IF_CONSTEXPR (INSERT_PADDING)
+            if constexpr (INSERT_PADDING)
             {
               item_offset += item_offset >> LOG_SMEM_BANKS;
             }
@@ -1139,7 +1140,7 @@ public:
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = ranks[i];
-      _CCCL_IF_CONSTEXPR (INSERT_PADDING)
+      if constexpr (INSERT_PADDING)
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
@@ -1155,7 +1156,7 @@ public:
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = i * BLOCK_THREADS + linear_tid;
-      _CCCL_IF_CONSTEXPR (INSERT_PADDING)
+      if constexpr (INSERT_PADDING)
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
@@ -1198,7 +1199,7 @@ public:
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = ranks[i];
-      _CCCL_IF_CONSTEXPR (INSERT_PADDING)
+      if constexpr (INSERT_PADDING)
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
@@ -1214,7 +1215,7 @@ public:
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = i * BLOCK_THREADS + linear_tid;
-      _CCCL_IF_CONSTEXPR (INSERT_PADDING)
+      if constexpr (INSERT_PADDING)
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }

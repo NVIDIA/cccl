@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // <cuda/std/optional>
 
 // constexpr optional(nullopt_t) noexcept;
@@ -78,15 +77,13 @@ int main(int, char**)
 #endif
   test<optional<NonLiteralTypes::NoCtors>>();
 
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
   static_assert(test_constexpr<optional<int>>(), "");
   static_assert(test_constexpr<optional<int*>>(), "");
-#  if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER >= 2017
+#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER >= 2017
   static_assert(test_constexpr<optional<ImplicitTypes::NoCtors>>(), "");
   static_assert(test_constexpr<optional<NonTrivialTypes::NoCtors>>(), "");
   static_assert(test_constexpr<optional<NonConstexprTypes::NoCtors>>(), "");
-#  endif
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+#endif
 
   return 0;
 }

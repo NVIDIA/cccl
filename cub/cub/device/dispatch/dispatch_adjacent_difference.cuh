@@ -48,8 +48,6 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <iterator>
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail::adjacent_difference
@@ -122,7 +120,7 @@ template <typename InputIteratorT,
           typename PolicyHub = detail::adjacent_difference::policy_hub<InputIteratorT, AliasOpt == MayAlias::Yes>>
 struct DispatchAdjacentDifference
 {
-  using InputT = typename std::iterator_traits<InputIteratorT>::value_type;
+  using InputT = detail::it_value_t<InputIteratorT>;
 
   void* d_temp_storage;
   size_t& temp_storage_bytes;

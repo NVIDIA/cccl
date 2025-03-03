@@ -47,7 +47,6 @@
 #  include <cuda/std/iterator>
 #else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ // vvv !_CCCL_COMPILER(NVRTC) vvv
 #  include <thrust/iterator/iterator_facade.h>
-#  include <thrust/iterator/iterator_traits.h>
 
 #  include <iostream>
 #  include <iterator>
@@ -140,7 +139,7 @@ public:
   /// Constructor
   template <typename QualifiedValueType>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CacheModifiedInputIterator(QualifiedValueType* ptr) ///< Native pointer to wrap
-      : ptr(const_cast<typename ::cuda::std::remove_cv<QualifiedValueType>::type*>(ptr))
+      : ptr(const_cast<::cuda::std::remove_cv_t<QualifiedValueType>*>(ptr))
   {}
 
   /// Postfix increment

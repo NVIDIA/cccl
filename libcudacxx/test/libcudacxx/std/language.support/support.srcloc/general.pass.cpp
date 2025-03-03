@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: nvcc-11.1, nvcc-11.2
 // The way we currently compile nvrtc is not working with that test
 // UNSUPPORTED: nvrtc && !c++20
 
@@ -20,9 +19,7 @@
 
 static_assert(cuda::std::is_nothrow_move_constructible<cuda::std::source_location>::value, "support.srcloc.cons (1.1)");
 static_assert(cuda::std::is_nothrow_move_assignable<cuda::std::source_location>::value, "support.srcloc.cons (1.2)");
-#if TEST_STD_VER >= 2014
 static_assert(cuda::std::is_nothrow_swappable<cuda::std::source_location>::value, "support.srcloc.cons (1.3)");
-#endif // TEST_STD_VER >= 2014
 
 ASSERT_NOEXCEPT(cuda::std::source_location());
 #if !defined(TEST_COMPILER_NVCC)

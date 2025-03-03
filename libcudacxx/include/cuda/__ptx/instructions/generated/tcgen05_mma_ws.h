@@ -35,7 +35,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -51,7 +51,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -67,7 +67,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -83,7 +83,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -136,7 +136,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -151,7 +151,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -166,7 +166,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -181,7 +181,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -236,7 +236,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -252,7 +252,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -268,7 +268,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -284,7 +284,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -338,7 +338,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -353,7 +353,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -368,7 +368,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -383,7 +383,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -437,7 +437,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -453,7 +453,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -469,7 +469,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -485,7 +485,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -538,7 +538,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -553,7 +553,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -568,7 +568,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -583,7 +583,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -638,7 +638,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -654,7 +654,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -670,7 +670,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -686,7 +686,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -740,7 +740,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -755,7 +755,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -770,7 +770,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -785,7 +785,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -839,7 +839,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -855,7 +855,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -871,7 +871,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -887,7 +887,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -940,7 +940,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -955,7 +955,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -970,7 +970,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -985,7 +985,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1040,7 +1040,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1056,7 +1056,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1072,7 +1072,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1088,7 +1088,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1142,7 +1142,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1157,7 +1157,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1172,7 +1172,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1187,7 +1187,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1241,7 +1241,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1257,7 +1257,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1273,7 +1273,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1289,7 +1289,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1342,7 +1342,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1357,7 +1357,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1372,7 +1372,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1387,7 +1387,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1442,7 +1442,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1458,7 +1458,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1474,7 +1474,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1490,7 +1490,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1544,7 +1544,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1559,7 +1559,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1574,7 +1574,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1589,7 +1589,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1643,7 +1643,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1659,7 +1659,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1675,7 +1675,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1691,7 +1691,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1744,7 +1744,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1759,7 +1759,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1774,7 +1774,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1789,7 +1789,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1844,7 +1844,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1860,7 +1860,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1876,7 +1876,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1892,7 +1892,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1946,7 +1946,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1961,7 +1961,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1976,7 +1976,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1991,7 +1991,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2045,7 +2045,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2061,7 +2061,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2077,7 +2077,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2093,7 +2093,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2146,7 +2146,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2161,7 +2161,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2176,7 +2176,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2191,7 +2191,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2246,7 +2246,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2262,7 +2262,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2278,7 +2278,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2294,7 +2294,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2348,7 +2348,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2363,7 +2363,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2378,7 +2378,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2393,7 +2393,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2447,7 +2447,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2463,7 +2463,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2479,7 +2479,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2495,7 +2495,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2548,7 +2548,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2563,7 +2563,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2578,7 +2578,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2593,7 +2593,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2648,7 +2648,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2664,7 +2664,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2680,7 +2680,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2696,7 +2696,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2750,7 +2750,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2765,7 +2765,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2780,7 +2780,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2795,7 +2795,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2849,7 +2849,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2865,7 +2865,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2881,7 +2881,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2897,7 +2897,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2950,7 +2950,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2965,7 +2965,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2980,7 +2980,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2995,7 +2995,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3050,7 +3050,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3066,7 +3066,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3082,7 +3082,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3098,7 +3098,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3152,7 +3152,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3167,7 +3167,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3182,7 +3182,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3197,7 +3197,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3251,7 +3251,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3267,7 +3267,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3283,7 +3283,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3299,7 +3299,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3352,7 +3352,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3367,7 +3367,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3382,7 +3382,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3397,7 +3397,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3452,7 +3452,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3468,7 +3468,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3484,7 +3484,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3500,7 +3500,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3554,7 +3554,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3569,7 +3569,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3584,7 +3584,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3599,7 +3599,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3653,7 +3653,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3669,7 +3669,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3685,7 +3685,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3701,7 +3701,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3754,7 +3754,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3769,7 +3769,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3784,7 +3784,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3799,7 +3799,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3854,7 +3854,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3870,7 +3870,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3886,7 +3886,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3902,7 +3902,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3956,7 +3956,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3971,7 +3971,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3986,7 +3986,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4001,7 +4001,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4055,7 +4055,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4071,7 +4071,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4087,7 +4087,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4103,7 +4103,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4156,7 +4156,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4171,7 +4171,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4186,7 +4186,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4201,7 +4201,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4256,7 +4256,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4272,7 +4272,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4288,7 +4288,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4304,7 +4304,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4358,7 +4358,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4373,7 +4373,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4388,7 +4388,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4403,7 +4403,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4457,7 +4457,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4473,7 +4473,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4489,7 +4489,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4505,7 +4505,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4558,7 +4558,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4573,7 +4573,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4588,7 +4588,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4603,7 +4603,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4658,7 +4658,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4674,7 +4674,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4690,7 +4690,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4706,7 +4706,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4760,7 +4760,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4775,7 +4775,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4790,7 +4790,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4805,7 +4805,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4859,7 +4859,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4875,7 +4875,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4891,7 +4891,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4907,7 +4907,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4960,7 +4960,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4975,7 +4975,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -4990,7 +4990,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5005,7 +5005,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5060,7 +5060,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5076,7 +5076,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5092,7 +5092,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5108,7 +5108,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5162,7 +5162,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5177,7 +5177,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5192,7 +5192,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5207,7 +5207,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5261,7 +5261,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5277,7 +5277,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5293,7 +5293,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5309,7 +5309,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5362,7 +5362,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5377,7 +5377,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5392,7 +5392,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5407,7 +5407,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5462,7 +5462,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5478,7 +5478,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5494,7 +5494,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5510,7 +5510,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5564,7 +5564,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5579,7 +5579,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5594,7 +5594,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5609,7 +5609,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5663,7 +5663,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5679,7 +5679,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5695,7 +5695,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5711,7 +5711,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5764,7 +5764,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5779,7 +5779,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5794,7 +5794,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5809,7 +5809,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5864,7 +5864,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5880,7 +5880,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5896,7 +5896,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5912,7 +5912,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5966,7 +5966,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5981,7 +5981,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -5996,7 +5996,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -6011,7 +6011,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -6065,7 +6065,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -6081,7 +6081,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -6097,7 +6097,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -6113,7 +6113,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -6166,7 +6166,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -6181,7 +6181,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -6196,7 +6196,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -6211,7 +6211,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -6266,7 +6266,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -6282,7 +6282,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -6298,7 +6298,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -6314,7 +6314,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -6368,7 +6368,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -6383,7 +6383,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -6398,7 +6398,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -6413,7 +6413,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"

@@ -36,6 +36,7 @@
 #include <cuda/experimental/__stf/stream/interfaces/slice.cuh> // For implicit logical_data_untyped constructors
 #include <cuda/experimental/__stf/stream/interfaces/void_interface.cuh>
 #include <cuda/experimental/__stf/stream/stream_task.cuh>
+#include <cuda/experimental/__stf/utility/threads.cuh> // for reserved::counter
 
 namespace cuda::experimental::stf
 {
@@ -220,11 +221,6 @@ public:
 
   // Indicate if the finalize() call should be blocking or not
   bool blocking_finalize = true;
-
-  ::std::string to_string() const
-  {
-    return "stream backend context";
-  }
 
   using backend_ctx<stream_ctx>::task;
 
@@ -521,38 +517,6 @@ public:
     }
     state.cleanup();
     set_phase(backend_ctx_untyped::phase::finalized);
-
-#ifdef CUDASTF_DEBUG
-    // Ensure that the total number of CUDA events created corresponds to
-    // the number of events destroyed
-    const auto alive = reserved::counter<reserved::cuda_event_tag::alive>.load();
-    if (alive != 0)
-    {
-      fprintf(stderr,
-              "WARNING!!! %lu CUDA events leaked (approx %lu created vs. %lu destroyed).\n",
-              alive,
-              reserved::counter<reserved::cuda_event_tag::created>.load(),
-              reserved::counter<reserved::cuda_event_tag::destroyed>.load());
-    }
-
-    assert(alive == 0);
-
-    const char* display_stats_env = getenv("CUDASTF_DISPLAY_STATS");
-    if (!display_stats_env || atoi(display_stats_env) == 0)
-    {
-      return;
-    }
-
-    fprintf(stderr,
-            "[STATS CUDA EVENTS] created=%lu destroyed=%lu alive=%lu reserved::high_water_mark=%lu\n",
-            reserved::counter<reserved::cuda_event_tag::created>.load(),
-            reserved::counter<reserved::cuda_event_tag::destroyed>.load(),
-            alive,
-            reserved::high_water_mark<reserved::cuda_event_tag>.load());
-    fprintf(stderr,
-            "[STATS CUDA EVENTS] cuda_stream_wait_event=%lu\n",
-            reserved::counter<reserved::cuda_stream_wait_event_tag>.load());
-#endif
   }
 
   float get_submission_time_ms() const
@@ -693,6 +657,11 @@ private:
       auto e = reserved::record_event_in_stream(decorated_stream(stream));
       /// e->set_symbol(mv(event_symbol));
       return event_list(mv(e));
+    }
+
+    ::std::string to_string() const override
+    {
+      return "stream backend context";
     }
 
     // We need to ensure all dangling events have been completed (eg. by having

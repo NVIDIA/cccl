@@ -51,8 +51,6 @@
 
 #include <cuda/std/type_traits>
 
-#include <iterator>
-
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -189,7 +187,7 @@ struct AgentHistogram
   //---------------------------------------------------------------------
 
   /// The sample type of the input iterator
-  using SampleT = cub::detail::value_t<SampleIteratorT>;
+  using SampleT = cub::detail::it_value_t<SampleIteratorT>;
 
   /// The pixel type of SampleT
   using PixelT = typename CubVector<SampleT, NUM_CHANNELS>::Type;
@@ -222,7 +220,7 @@ struct AgentHistogram
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
   using WrappedSampleIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer<SampleIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer_v<SampleIteratorT>,
                      CacheModifiedInputIterator<LOAD_MODIFIER, SampleT, OffsetT>,
                      SampleIteratorT>;
 

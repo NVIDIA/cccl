@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // Older Clangs do not support the C++20 feature to constrain destructors
 
 // constexpr void swap(expected& rhs) noexcept(see below);
@@ -30,10 +29,8 @@
 
 // Test Constraints:
 template <class E>
-_CCCL_CONCEPT_FRAGMENT(HasMemberSwap_,
-                       requires(cuda::std::expected<void, E> x, cuda::std::expected<void, E> y)((x.swap(y))));
-template <class E>
-_CCCL_CONCEPT HasMemberSwap = _CCCL_FRAGMENT(HasMemberSwap_, E);
+_CCCL_CONCEPT HasMemberSwap =
+  _CCCL_REQUIRES_EXPR((E), cuda::std::expected<void, E> x, cuda::std::expected<void, E> y)((x.swap(y)));
 
 static_assert(HasMemberSwap<int>, "");
 

@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // <cuda/std/optional>
 
 // constexpr bool optional<T>::has_value() const noexcept;
@@ -35,7 +34,7 @@ int main(int, char**)
     optional<int> opt(0);
     assert(opt.has_value());
   }
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
   {
     constexpr optional<int> opt;
     static_assert(!opt.has_value(), "");
@@ -44,7 +43,6 @@ int main(int, char**)
     constexpr optional<int> opt(0);
     static_assert(opt.has_value(), "");
   }
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 
   return 0;
 }

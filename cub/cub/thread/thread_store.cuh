@@ -46,6 +46,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/type_traits>
+
 CUB_NAMESPACE_BEGIN
 
 //-----------------------------------------------------------------------------
@@ -150,9 +152,6 @@ struct iterate_thread_store<MAX, MAX>
   {}
 };
 } // namespace detail
-
-template <int COUNT, int MAX>
-using IterateThreadStore CCCL_DEPRECATED = detail::iterate_thread_store<COUNT, MAX>;
 
 /**
  * Define a uint4 (16B) ThreadStore specialization for the given Cache load modifier

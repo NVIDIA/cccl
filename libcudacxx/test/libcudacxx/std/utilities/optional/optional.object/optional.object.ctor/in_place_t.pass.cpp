@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// UNSUPPORTED: c++03, c++11
 
 // <cuda/std/optional>
 
@@ -98,7 +97,6 @@ void test_exceptions()
 
 int main(int, char**)
 {
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
   {
     constexpr optional<int> opt(in_place, 5);
     static_assert(static_cast<bool>(opt) == true, "");
@@ -111,7 +109,7 @@ int main(int, char**)
       {}
     };
   }
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
   {
     optional<const int> opt(in_place, 5);
     assert(*opt == 5);
@@ -131,7 +129,7 @@ int main(int, char**)
     assert(static_cast<bool>(opt) == true);
     assert(*opt == X(5, 4));
   }
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
   {
     constexpr optional<Y> opt(in_place);
     static_assert(static_cast<bool>(opt) == true, "");
@@ -168,7 +166,6 @@ int main(int, char**)
       {}
     };
   }
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))

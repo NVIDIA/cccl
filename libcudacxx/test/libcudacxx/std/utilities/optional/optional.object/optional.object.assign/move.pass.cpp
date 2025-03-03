@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // <cuda/std/optional>
 
 // constexpr optional<T>& operator=(optional<T>&& rhs)
@@ -135,7 +134,7 @@ int main(int, char**)
     static_assert(static_cast<bool>(opt2) == false, "");
     assert(static_cast<bool>(opt) == static_cast<bool>(opt2));
   }
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
   {
     optional<int> opt;
     constexpr optional<int> opt2(2);
@@ -145,7 +144,7 @@ int main(int, char**)
     assert(static_cast<bool>(opt) == static_cast<bool>(opt2));
     assert(*opt == *opt2);
   }
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
   {
     optional<int> opt(3);
     constexpr optional<int> opt2;
@@ -164,7 +163,7 @@ int main(int, char**)
     assert(static_cast<bool>(opt2) == false);
     assert(static_cast<bool>(opt) == static_cast<bool>(opt2));
   }
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
   {
     optional<int> opt(3);
     constexpr optional<int> opt2(2);
@@ -174,14 +173,13 @@ int main(int, char**)
     assert(static_cast<bool>(opt) == static_cast<bool>(opt2));
     assert(*opt == *opt2);
   }
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
   {
     using O = optional<int>;
 #if !defined(TEST_COMPILER_GCC) || __GNUC__ > 6
-#  if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
     static_assert(assign_empty(O{42}), "");
     static_assert(assign_value(O{42}), "");
-#  endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
 #endif // !defined(TEST_COMPILER_GCC) || __GNUC__ > 6
     assert(assign_empty(O{42}));
     assert(assign_value(O{42}));
@@ -189,10 +187,9 @@ int main(int, char**)
   {
     using O = optional<TrivialTestTypes::TestType>;
 #if !defined(TEST_COMPILER_GCC) || __GNUC__ > 6
-#  if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
     static_assert(assign_empty(O{42}), "");
     static_assert(assign_value(O{42}), "");
-#  endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
 #endif // !defined(TEST_COMPILER_GCC) || __GNUC__ > 6
     assert(assign_empty(O{42}));
     assert(assign_value(O{42}));

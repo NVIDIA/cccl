@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // <cuda/std/optional>
 
 // constexpr T& optional<T>::value() &&;
@@ -88,9 +87,7 @@ int main(int, char**)
     assert(cuda::std::move(opt).value().test() == 6);
   }
   assert(test() == 7);
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
   static_assert(test() == 7, "");
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))

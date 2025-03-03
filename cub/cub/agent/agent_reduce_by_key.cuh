@@ -52,8 +52,6 @@
 
 #include <cuda/std/type_traits>
 
-#include <iterator>
-
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -171,13 +169,13 @@ struct AgentReduceByKey
   //---------------------------------------------------------------------
 
   // The input keys type
-  using KeyInputT = value_t<KeysInputIteratorT>;
+  using KeyInputT = it_value_t<KeysInputIteratorT>;
 
   // The output keys type
   using KeyOutputT = non_void_value_t<UniqueOutputIteratorT, KeyInputT>;
 
   // The input values type
-  using ValueInputT = value_t<ValuesInputIteratorT>;
+  using ValueInputT = it_value_t<ValuesInputIteratorT>;
 
   // Tuple type for scanning (pairs accumulated segment-value with
   // segment-index)
@@ -228,14 +226,14 @@ struct AgentReduceByKey
   // Whether or not the scan operation has a zero-valued identity value (true
   // if we're performing addition on a primitive type)
   static constexpr int HAS_IDENTITY_ZERO =
-    (::cuda::std::is_same<ReductionOpT, ::cuda::std::plus<>>::value) && (is_primitive<AccumT>::value);
+    (::cuda::std::is_same_v<ReductionOpT, ::cuda::std::plus<>>) && (is_primitive<AccumT>::value);
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier)
   // for keys Wrap the native input pointer with
   // CacheModifiedValuesInputIterator or directly use the supplied input
   // iterator type
   using WrappedKeysInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer<KeysInputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer_v<KeysInputIteratorT>,
                      CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, KeyInputT, OffsetT>,
                      KeysInputIteratorT>;
 
@@ -244,7 +242,7 @@ struct AgentReduceByKey
   // CacheModifiedValuesInputIterator or directly use the supplied input
   // iterator type
   using WrappedValuesInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer<ValuesInputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer_v<ValuesInputIteratorT>,
                      CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, ValueInputT, OffsetT>,
                      ValuesInputIteratorT>;
 
@@ -253,7 +251,7 @@ struct AgentReduceByKey
   // CacheModifiedValuesInputIterator or directly use the supplied input
   // iterator type
   using WrappedFixupInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer<AggregatesOutputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer_v<AggregatesOutputIteratorT>,
                      CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, ValueInputT, OffsetT>,
                      AggregatesOutputIteratorT>;
 

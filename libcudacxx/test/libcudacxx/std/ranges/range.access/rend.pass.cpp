@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
 // UNSUPPORTED: msvc-19.16
 
 // cuda::std::ranges::rend
@@ -698,9 +697,7 @@ int main(int, char**)
   static_assert(testReturnTypes());
 
   testArray();
-#ifndef TEST_COMPILER_CUDACC_BELOW_11_3
   static_assert(testArray());
-#endif // TEST_COMPILER_CUDACC_BELOW_11_3
 
   testREndMember();
   static_assert(testREndMember());

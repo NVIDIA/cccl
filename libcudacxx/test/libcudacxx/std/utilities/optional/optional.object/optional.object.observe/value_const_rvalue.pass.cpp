@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // <cuda/std/optional>
 
 // constexpr const T& optional<T>::value() const &&;
@@ -70,12 +68,12 @@ int main(int, char**)
     ASSERT_NOT_NOEXCEPT(cuda::std::move(opt).value());
     ASSERT_SAME_TYPE(decltype(cuda::std::move(opt).value()), X const&&);
   }
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
   {
     constexpr optional<X> opt(in_place);
     static_assert(cuda::std::move(opt).value().test() == 5, "");
   }
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
   {
     const optional<X> opt(in_place);
     assert(cuda::std::move(opt).value().test() == 5);

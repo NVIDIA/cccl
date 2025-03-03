@@ -16,9 +16,13 @@
 
 #include <cuda.h>
 
+#include <cccl/c/extern_c.h>
 #include <cccl/c/types.h>
+#include <stdint.h>
 
-struct cccl_device_merge_sort_build_result_t
+CCCL_C_EXTERN_C_BEGIN
+
+typedef struct cccl_device_merge_sort_build_result_t
 {
   int cc;
   void* cubin;
@@ -27,9 +31,9 @@ struct cccl_device_merge_sort_build_result_t
   CUkernel block_sort_kernel;
   CUkernel partition_kernel;
   CUkernel merge_kernel;
-};
+} cccl_device_merge_sort_build_result_t;
 
-extern "C" CCCL_C_API CUresult cccl_device_merge_sort_build(
+CCCL_C_API CUresult cccl_device_merge_sort_build(
   cccl_device_merge_sort_build_result_t* build,
   cccl_iterator_t d_in_keys,
   cccl_iterator_t d_in_items,
@@ -41,9 +45,9 @@ extern "C" CCCL_C_API CUresult cccl_device_merge_sort_build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path) noexcept;
+  const char* ctk_path);
 
-extern "C" CCCL_C_API CUresult cccl_device_merge_sort(
+CCCL_C_API CUresult cccl_device_merge_sort(
   cccl_device_merge_sort_build_result_t build,
   void* d_temp_storage,
   size_t* temp_storage_bytes,
@@ -51,8 +55,10 @@ extern "C" CCCL_C_API CUresult cccl_device_merge_sort(
   cccl_iterator_t d_in_items,
   cccl_iterator_t d_out_keys,
   cccl_iterator_t d_out_items,
-  unsigned long long num_items,
+  uint64_t num_items,
   cccl_op_t op,
-  CUstream stream) noexcept;
+  CUstream stream);
 
-extern "C" CCCL_C_API CUresult cccl_device_merge_sort_cleanup(cccl_device_merge_sort_build_result_t* bld_ptr) noexcept;
+CCCL_C_API CUresult cccl_device_merge_sort_cleanup(cccl_device_merge_sort_build_result_t* bld_ptr);
+
+CCCL_C_EXTERN_C_END

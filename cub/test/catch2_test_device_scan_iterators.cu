@@ -33,6 +33,8 @@
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 
+#include <cuda/std/limits>
+
 #include <cstdint>
 
 #include "catch2_test_device_reduce.cuh"
@@ -125,7 +127,7 @@ C2H_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
     compute_inclusive_scan_reference(
-      in_it, in_it + num_items, expected_result.begin(), op_t{}, cub::NumericTraits<accum_t>::Max());
+      in_it, in_it + num_items, expected_result.begin(), op_t{}, ::cuda::std::numeric_limits<accum_t>::max());
 
     // Run test
     c2h::device_vector<output_t> out_result(num_items);
@@ -168,7 +170,7 @@ C2H_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
     // Run test
     c2h::device_vector<output_t> out_result(num_items);
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    using init_t  = cub::detail::value_t<decltype(unwrap_it(d_out_it))>;
+    using init_t  = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
     c2h::device_vector<init_t> d_initial_value(1);
     d_initial_value[0]     = static_cast<init_t>(init_value);
     auto future_init_value = cub::FutureValue<init_t>(thrust::raw_pointer_cast(d_initial_value.data()));

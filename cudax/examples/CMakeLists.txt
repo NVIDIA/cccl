@@ -25,6 +25,10 @@ function(cudax_add_example target_name_var example_src cudax_target)
     ${cudax_target}
     cudax.examples.thrust
   )
+  target_compile_options(${example_target} PRIVATE
+    "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
+  )
+
   cudax_clone_target_properties(${example_target} ${cudax_target})
   target_include_directories(${example_target} PRIVATE "${CUB_SOURCE_DIR}/examples")
 

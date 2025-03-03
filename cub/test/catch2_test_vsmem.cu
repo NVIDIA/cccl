@@ -87,7 +87,7 @@ struct agent_dummy_algorithm_t
   static constexpr auto items_per_thread = ActivePolicyT::ITEMS_PER_THREAD;
   static constexpr auto tile_size        = block_threads * items_per_thread;
 
-  using item_t = cub::detail::value_t<InputIteratorT>;
+  using item_t = cub::detail::it_value_t<InputIteratorT>;
 
   using block_load_t = cub::BlockLoad<item_t, block_threads, items_per_thread, cub::BLOCK_LOAD_TRANSPOSE>;
 
@@ -173,10 +173,9 @@ void __global__ __launch_bounds__(
   kernel_test_info->uses_vsmem_ptr =
     (reinterpret_cast<char*>(&temp_storage)
      == (static_cast<char*>(vsmem.gmem_ptr) + (blockIdx.x * vsmem_helper_t::vsmem_per_block)));
-  kernel_test_info->uses_fallback_agent =
-    ::cuda::std::is_same<typename vsmem_helper_t::agent_t, fallback_agent_t>::value;
+  kernel_test_info->uses_fallback_agent = ::cuda::std::is_same_v<typename vsmem_helper_t::agent_t, fallback_agent_t>;
   kernel_test_info->uses_fallback_policy =
-    ::cuda::std::is_same<typename vsmem_helper_t::agent_policy_t, fallback_policy_t>::value;
+    ::cuda::std::is_same_v<typename vsmem_helper_t::agent_policy_t, fallback_policy_t>;
 
   // Instantiate the algorithm's agent
   agent_t agent(temp_storage, d_in, d_out);
@@ -194,7 +193,7 @@ void __global__ __launch_bounds__(
 template <typename InputIteratorT>
 struct device_dummy_algorithm_policy_t
 {
-  using item_t = cub::detail::value_t<InputIteratorT>;
+  using item_t = cub::detail::it_value_t<InputIteratorT>;
 
   static constexpr int FALLBACK_BLOCK_THREADS = 64;
 
@@ -220,7 +219,7 @@ template <typename InputIteratorT,
           typename PolicyHub = device_dummy_algorithm_policy_t<InputIteratorT>>
 struct dispatch_dummy_algorithm_t
 {
-  using item_t = cub::detail::value_t<InputIteratorT>;
+  using item_t = cub::detail::it_value_t<InputIteratorT>;
 
   /// Device-accessible allocation of temporary storage. When nullptr, the required
   /// allocation size is written to \p temp_storage_bytes and no work is done.

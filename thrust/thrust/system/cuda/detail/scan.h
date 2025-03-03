@@ -63,7 +63,7 @@ template <typename Derived, typename InputIt, typename Size, typename OutputIt, 
 _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   thrust::cuda_cub::execution_policy<Derived>& policy, InputIt first, Size num_items, OutputIt result, ScanOp scan_op)
 {
-  using AccumT     = typename thrust::iterator_traits<InputIt>::value_type;
+  using AccumT     = thrust::detail::it_value_t<InputIt>;
   using Dispatch32 = cub::DispatchScan<InputIt, OutputIt, ScanOp, cub::NullType, std::uint32_t, AccumT>;
   using Dispatch64 = cub::DispatchScan<InputIt, OutputIt, ScanOp, cub::NullType, std::uint64_t, AccumT>;
 
@@ -120,7 +120,7 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   ScanOp scan_op)
 {
   using InputValueT = cub::detail::InputValue<InitValueT>;
-  using ValueT      = cub::detail::value_t<InputIt>;
+  using ValueT      = cub::detail::it_value_t<InputIt>;
   using AccumT      = ::cuda::std::__accumulator_t<ScanOp, ValueT, InitValueT>;
 
   using Dispatch32 =
@@ -262,7 +262,7 @@ template <typename Derived, typename InputIt, typename OutputIt, typename ScanOp
 _CCCL_HOST_DEVICE OutputIt inclusive_scan(
   thrust::cuda_cub::execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, ScanOp scan_op)
 {
-  using diff_t           = typename thrust::iterator_traits<InputIt>::difference_type;
+  using diff_t           = thrust::detail::it_difference_t<InputIt>;
   diff_t const num_items = thrust::distance(first, last);
   return thrust::cuda_cub::inclusive_scan_n(policy, first, num_items, result, scan_op);
 }
@@ -276,7 +276,7 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan(
   T init,
   ScanOp scan_op)
 {
-  using diff_t           = typename thrust::iterator_traits<InputIt>::difference_type;
+  using diff_t           = thrust::detail::it_difference_t<InputIt>;
   diff_t const num_items = thrust::distance(first, last);
   return thrust::cuda_cub::inclusive_scan_n(policy, first, num_items, result, init, scan_op);
 }
@@ -314,7 +314,7 @@ _CCCL_HOST_DEVICE OutputIt exclusive_scan(
   T init,
   ScanOp scan_op)
 {
-  using diff_t           = typename thrust::iterator_traits<InputIt>::difference_type;
+  using diff_t           = thrust::detail::it_difference_t<InputIt>;
   diff_t const num_items = thrust::distance(first, last);
   return thrust::cuda_cub::exclusive_scan_n(policy, first, num_items, result, init, scan_op);
 }
@@ -330,7 +330,7 @@ template <typename Derived, typename InputIt, typename OutputIt>
 _CCCL_HOST_DEVICE OutputIt
 exclusive_scan(thrust::cuda_cub::execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result)
 {
-  using init_type = typename thrust::iterator_traits<InputIt>::value_type;
+  using init_type = thrust::detail::it_value_t<InputIt>;
   return cuda_cub::exclusive_scan(policy, first, last, result, init_type{});
 };
 
