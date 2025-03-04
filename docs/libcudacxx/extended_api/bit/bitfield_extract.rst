@@ -10,7 +10,7 @@
    bitfield_extract(T value, int start, int width) noexcept;
 
 The function extracts a bitfield from a value and returns it in the lower bits.
-``bitfield_extract()`` computes ``(value >> start) & bitfield``, where ``bitfield`` is a sequence of bit of width ``width``.
+``bitfield_extract()`` computes ``(value >> start) & bitfield``, where ``bitfield`` is a sequence of bits of width ``width``.
 
 **Parameters**
 
