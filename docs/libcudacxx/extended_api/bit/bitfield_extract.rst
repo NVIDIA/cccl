@@ -22,10 +22,11 @@ The function extracts a bitfield from a value and returns it in the lower bits.
 
 - ``(value >> start) & bitfield``.
 
-**Preconditions**
+**Mandates**
 
-- *Compile-time*: ``T`` is an unsigned integral type (including 128-bit integers).
-- *Run-time* (debug mode):
+- ``T`` is an unsigned integer type
+
+**Preconditions**
 
     - ``start >= 0 && start < num_bits(T)``
     - ``width >  0 && width <= num_bits(T)``
