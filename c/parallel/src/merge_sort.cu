@@ -26,8 +26,8 @@
 
 struct op_wrapper;
 struct device_merge_sort_policy;
-using OffsetT = int64_t;
-static_assert(std::is_same_v<cub::detail::choose_signed_offset_t<OffsetT>, OffsetT>, "OffsetT must be int64");
+using OffsetT = unsigned long long;
+static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "OffsetT must be unsigned long long");
 
 struct input_keys_iterator_state_t;
 struct input_items_iterator_state_t;
@@ -458,7 +458,7 @@ CUresult cccl_device_merge_sort(
       indirect_arg_t,
       indirect_arg_t,
       indirect_arg_t,
-      ::cuda::std::size_t,
+      OffsetT,
       indirect_arg_t,
       merge_sort::dynamic_merge_sort_policy_t<&merge_sort::get_policy>,
       merge_sort::merge_sort_kernel_source,

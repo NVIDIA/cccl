@@ -14,6 +14,7 @@
 
 #include <format>
 
+#include "cub/block/block_scan.cuh"
 #include "kernels/iterators.h"
 #include "kernels/operators.h"
 #include "util/context.h"
@@ -27,8 +28,8 @@
 
 struct op_wrapper;
 struct device_unique_by_key_policy;
-using OffsetT = int64_t;
-static_assert(std::is_same_v<cub::detail::choose_signed_offset_t<OffsetT>, OffsetT>, "OffsetT must be int64");
+using OffsetT = unsigned long long;
+static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "OffsetT must be unsigned long long");
 
 struct num_selected_storage_t;
 
@@ -40,6 +41,7 @@ struct unique_by_key_runtime_tuning_policy
   int items_per_thread;
   cub::BlockLoadAlgorithm load_algorithm;
   cub::CacheLoadModifier load_modifier;
+  cub::BlockScanAlgorithm scan_algorithm;
 
   unique_by_key_runtime_tuning_policy UniqueByKey() const
   {
@@ -56,12 +58,12 @@ struct unique_by_key_tuning_t
   int items_per_thread;
 };
 
-unique_by_key_runtime_tuning_policy get_policy(int /*cc*/, int key_size)
+unique_by_key_runtime_tuning_policy get_policy(int /*cc*/, int /*key_size*/)
 {
   // TODO: we should update this once we figure out a way to reuse
   // tuning logic from C++. Alternately, we should implement
   // something better than a hardcoded default:
-  return {128, nominal_4b_items_to_items(9, key_size), cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT};
+  return {128, 4, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS};
 }
 
 enum class unique_by_key_iterator_t
@@ -211,13 +213,6 @@ struct dynamic_vsmem_helper_t
   {
     return 0;
   }
-
-private:
-  unique_by_key_runtime_tuning_policy fallback_policy = {64, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT};
-  bool uses_fallback_policy() const
-  {
-    return false;
-  }
 };
 
 } // namespace unique_by_key
@@ -303,8 +298,8 @@ struct __align__({5}) num_out_storage_t {{
 struct agent_policy_t {{
   static constexpr int ITEMS_PER_THREAD = {7};
   static constexpr int BLOCK_THREADS = {6};
-  static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = cub::BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_LDG;
+  static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = cub::BLOCK_LOAD_DIRECT;
+  static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_DEFAULT;
   static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS;
   struct detail {{
     using delay_constructor_t = cub::detail::default_delay_constructor_t<int>;
@@ -431,7 +426,7 @@ CUresult cccl_device_unique_by_key(
       indirect_arg_t,
       indirect_arg_t,
       indirect_arg_t,
-      ::cuda::std::size_t,
+      OffsetT,
       unique_by_key::dynamic_unique_by_key_policy_t<&unique_by_key::get_policy>,
       unique_by_key::unique_by_key_kernel_source,
       cub::detail::CudaDriverLauncherFactory,
