@@ -161,19 +161,3 @@ class TestNormalizeDtypeParam:
             with pytest.raises(ValueError) as excinfo:
                 normalize_dtype_param(dtype)
             assert "Unrecognized dtype format:" in str(excinfo.value)
-
-    def test_python_builtin_types(self):
-        """Test conversion of Python built-in types."""
-        python_types = [
-            int,
-            float,
-        ]
-
-        expected_numba_types = [
-            numba.int64,
-            numba.float64,
-        ]
-
-        for dtype, expected in zip(python_types, expected_numba_types):
-            result = normalize_dtype_param(dtype)
-            assert result == expected

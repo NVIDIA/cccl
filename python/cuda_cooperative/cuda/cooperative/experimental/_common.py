@@ -96,8 +96,6 @@ def normalize_dtype_param(
     - If the dtype is a valid numpy dtype, convert it to the corresponding
       numba type.  Note that this applies to both `np.int32` and
       `np.dtype(np.int32)`.
-    - If the dtype is a Python built-in type (int or float), map to numba's
-      int64 or float64 respectively.
     - If the dtype is a string:
         - If there's a period in the string, ensure it's because the string
           starts with "np." and is followed by a valid numpy dtype.  Otherwise,
@@ -123,12 +121,6 @@ def normalize_dtype_param(
     # If dtype is already a numba type, return it as is.
     if isinstance(dtype, numba.types.Type):
         return dtype
-
-    # Handle Python built-in types.
-    if dtype is int:
-        return numba.int64
-    if dtype is float:
-        return numba.float64
 
     # Handle numpy dtype objects.
     if hasattr(np, "dtype") and isinstance(dtype, np.dtype):
