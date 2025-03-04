@@ -17,14 +17,11 @@
 
 #include <cuda/experimental/stf.cuh>
 
-#include <mutex>
 #include <thread>
 
 #include "cuda/experimental/__stf/utility/stackable_ctx.cuh"
 
 using namespace cuda::experimental::stf;
-
-::std::mutex mutex;
 
 void worker(stackable_ctx sctx,
             int id,
@@ -32,22 +29,23 @@ void worker(stackable_ctx sctx,
             stackable_logical_data<slice<int>> lAi,
             stackable_logical_data<slice<int>> lB)
 {
-  mutex.lock();
   fprintf(stderr, "launching thread %d\n", id);
   sctx.set_head_offset(main_head);
 
-  sctx.push();
+  for (size_t k = 0; k < 3; k++)
+  {
+    sctx.push();
 
-  sctx.parallel_for(lAi.shape(), lAi.write())->*[] __device__(size_t k, auto ai) {
-    ai(k) = k;
-  };
+    sctx.parallel_for(lAi.shape(), lAi.write())->*[] __device__(size_t k, auto ai) {
+      ai(k) = k;
+    };
 
-  sctx.parallel_for(lAi.shape(), lAi.rw(), lB.read())->*[] __device__(size_t k, auto ai, auto b) {
-    ai(k) += b(k);
-  };
+    sctx.parallel_for(lAi.shape(), lAi.rw(), lB.read())->*[] __device__(size_t k, auto ai, auto b) {
+      ai(k) += int(cos(10.0 * b(k)));
+    };
 
-  sctx.pop();
-  mutex.unlock();
+    sctx.pop();
+  }
 }
 
 int main()
@@ -70,7 +68,7 @@ int main()
   ::std::vector<::std::thread> threads;
   ::std::vector<stackable_logical_data<slice<int>>> lA;
 
-  const int NTHREADS = 8;
+  const int NTHREADS = 4;
 
   for (int i = 0; i < NTHREADS; ++i)
   {
