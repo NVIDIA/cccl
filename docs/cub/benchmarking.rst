@@ -54,6 +54,8 @@ We also provide a target to build all benchmarks:
     ninja cub.all.benches
 
 
+.. _cub-benchmarking-running:
+
 Running a benchmark
 --------------------------------------------------------------------------------
 
@@ -110,6 +112,8 @@ See the `NVBench documentation <https://github.com/NVIDIA/nvbench/blob/main/docs
 for more information on how to specify the axis values.
 If the specified axis does not exist, the benchmark will terminate with an error.
 
+
+.. _cub-benchmarking-comparing:
 
 Comparing benchmark results
 --------------------------------------------------------------------------------

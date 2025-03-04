@@ -52,28 +52,6 @@ CUB_NAMESPACE_BEGIN
  * Inlined PTX intrinsics
  ******************************************************************************/
 
-/**
- * \brief Shift-right then add.  Returns (\p x >> \p shift) + \p addend.
- */
-CCCL_DEPRECATED_BECAUSE("will be removed in the next major release")
-_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int SHR_ADD(unsigned int x, unsigned int shift, unsigned int addend)
-{
-  unsigned int ret;
-  asm("vshr.u32.u32.u32.clamp.add %0, %1, %2, %3;" : "=r"(ret) : "r"(x), "r"(shift), "r"(addend));
-  return ret;
-}
-
-/**
- * \brief Shift-left then add.  Returns (\p x << \p shift) + \p addend.
- */
-CCCL_DEPRECATED_BECAUSE("will be removed in the next major release")
-_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int SHL_ADD(unsigned int x, unsigned int shift, unsigned int addend)
-{
-  unsigned int ret;
-  asm("vshl.u32.u32.u32.clamp.add %0, %1, %2, %3;" : "=r"(ret) : "r"(x), "r"(shift), "r"(addend));
-  return ret;
-}
-
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 /**
@@ -124,134 +102,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int BFE(UnsignedBits source, unsigned in
   return BFE(source, bit_start, num_bits, detail::constant_v<int{sizeof(UnsignedBits)}>);
 }
 
-/**
- * \brief Bitfield insert.  Inserts the \p num_bits least significant bits of \p y into \p x at bit-offset \p bit_start.
- */
-CCCL_DEPRECATED_BECAUSE("will be removed in the next major release")
-_CCCL_DEVICE _CCCL_FORCEINLINE void
-BFI(unsigned int& ret, unsigned int x, unsigned int y, unsigned int bit_start, unsigned int num_bits)
-{
-  asm("bfi.b32 %0, %1, %2, %3, %4;" : "=r"(ret) : "r"(y), "r"(x), "r"(bit_start), "r"(num_bits));
-}
-
-/**
- * \brief Three-operand add.  Returns \p x + \p y + \p z.
- */
-CCCL_DEPRECATED_BECAUSE("will be removed in the next major release")
-_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int IADD3(unsigned int x, unsigned int y, unsigned int z)
-{
-  asm("vadd.u32.u32.u32.add %0, %1, %2, %3;" : "=r"(x) : "r"(x), "r"(y), "r"(z));
-  return x;
-}
-
-/**
- * \brief Byte-permute. Pick four arbitrary bytes from two 32-bit registers, and reassemble them into a 32-bit
- * destination register.  For SM2.0 or later.
- *
- * \par
- * The bytes in the two source registers \p a and \p b are numbered from 0 to 7:
- * {\p b, \p a} = {{b7, b6, b5, b4}, {b3, b2, b1, b0}}. For each of the four bytes
- * {b3, b2, b1, b0} selected in the return value, a 4-bit selector is defined within
- * the four lower "nibbles" of \p index: {\p index } = {n7, n6, n5, n4, n3, n2, n1, n0}
- *
- * \par Snippet
- * The code snippet below illustrates byte-permute.
- * \par
- * \code
- * #include <cub/cub.cuh>
- *
- * __global__ void ExampleKernel(...)
- * {
- *     int a        = 0x03020100;
- *     int b        = 0x07060504;
- *     int index    = 0x00007531;
- *
- *     int selected = PRMT(a, b, index);    // 0x07050301
- *
- * \endcode
- *
- */
-CCCL_DEPRECATED_BECAUSE("will be removed in the next major release")
-_CCCL_DEVICE _CCCL_FORCEINLINE int PRMT(unsigned int a, unsigned int b, unsigned int index)
-{
-  int ret;
-  asm("prmt.b32 %0, %1, %2, %3;" : "=r"(ret) : "r"(a), "r"(b), "r"(index));
-  return ret;
-}
-
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-
-/**
- * Sync-threads barrier.
- */
-CCCL_DEPRECATED_BECAUSE("will be removed in the next major release")
-_CCCL_DEVICE _CCCL_FORCEINLINE void BAR(int count)
-{
-  asm volatile("bar.sync 1, %0;" : : "r"(count));
-}
-
-/**
- * CTA barrier
- */
-CCCL_DEPRECATED_BECAUSE("use __syncthreads() instead")
-_CCCL_DEVICE _CCCL_FORCEINLINE void CTA_SYNC()
-{
-  __syncthreads();
-}
-
-/**
- * CTA barrier with predicate
- */
-CCCL_DEPRECATED_BECAUSE("use __syncthreads_and() instead")
-_CCCL_DEVICE _CCCL_FORCEINLINE int CTA_SYNC_AND(int p)
-{
-  return __syncthreads_and(p);
-}
-
-/**
- * CTA barrier with predicate
- */
-CCCL_DEPRECATED_BECAUSE("use __syncthreads_or() instead")
-_CCCL_DEVICE _CCCL_FORCEINLINE int CTA_SYNC_OR(int p)
-{
-  return __syncthreads_or(p);
-}
-
-/**
- * Warp barrier
- */
-CCCL_DEPRECATED_BECAUSE("use __syncwarp() instead")
-_CCCL_DEVICE _CCCL_FORCEINLINE void WARP_SYNC(unsigned int member_mask)
-{
-  __syncwarp(member_mask);
-}
-
-/**
- * Warp any
- */
-CCCL_DEPRECATED_BECAUSE("use __any_sync() instead")
-_CCCL_DEVICE _CCCL_FORCEINLINE int WARP_ANY(int predicate, unsigned int member_mask)
-{
-  return __any_sync(member_mask, predicate);
-}
-
-/**
- * Warp any
- */
-CCCL_DEPRECATED_BECAUSE("use __all_sync() instead")
-_CCCL_DEVICE _CCCL_FORCEINLINE int WARP_ALL(int predicate, unsigned int member_mask)
-{
-  return __all_sync(member_mask, predicate);
-}
-
-/**
- * Warp ballot
- */
-CCCL_DEPRECATED_BECAUSE("use __ballot_sync() instead")
-_CCCL_DEVICE _CCCL_FORCEINLINE int WARP_BALLOT(int predicate, unsigned int member_mask)
-{
-  return __ballot_sync(member_mask, predicate);
-}
 
 /**
  * Warp synchronous shfl_up
@@ -277,50 +128,6 @@ SHFL_DOWN_SYNC(unsigned int word, int src_offset, int flags, unsigned int member
   return word;
 }
 
-/**
- * Warp synchronous shfl_idx
- */
-CCCL_DEPRECATED_BECAUSE("use __shfl_sync() instead")
-_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int
-SHFL_IDX_SYNC(unsigned int word, int src_lane, int flags, unsigned int member_mask)
-{
-  asm volatile("shfl.sync.idx.b32 %0, %1, %2, %3, %4;"
-               : "=r"(word)
-               : "r"(word), "r"(src_lane), "r"(flags), "r"(member_mask));
-  return word;
-}
-
-/**
- * Warp synchronous shfl_idx
- */
-CCCL_DEPRECATED_BECAUSE("use __shfl_sync() instead")
-_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int SHFL_IDX_SYNC(unsigned int word, int src_lane, unsigned int member_mask)
-{
-  return __shfl_sync(member_mask, word, src_lane);
-}
-
-/**
- * Floating point multiply. (Mantissa LSB rounds towards zero.)
- */
-CCCL_DEPRECATED_BECAUSE("will be removed in the next major release")
-_CCCL_DEVICE _CCCL_FORCEINLINE float FMUL_RZ(float a, float b)
-{
-  float d;
-  asm("mul.rz.f32 %0, %1, %2;" : "=f"(d) : "f"(a), "f"(b));
-  return d;
-}
-
-/**
- * Floating point multiply-add. (Mantissa LSB rounds towards zero.)
- */
-CCCL_DEPRECATED_BECAUSE("will be removed in the next major release")
-_CCCL_DEVICE _CCCL_FORCEINLINE float FFMA_RZ(float a, float b, float c)
-{
-  float d;
-  asm("fma.rz.f32 %0, %1, %2, %3;" : "=f"(d) : "f"(a), "f"(b), "f"(c));
-  return d;
-}
-
 #endif // _CCCL_DOXYGEN_INVOKED
 
 /**
@@ -332,44 +139,12 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadExit()
 }
 
 /**
- * \brief  Abort execution and generate an interrupt to the host CPU
- */
-CCCL_DEPRECATED_BECAUSE("use cuda::std::terminate() instead")
-_CCCL_DEVICE _CCCL_FORCEINLINE void ThreadTrap()
-{
-  asm volatile("trap;");
-}
-
-/**
  * \brief Returns the row-major linear thread identifier for a multidimensional thread block
  */
 _CCCL_DEVICE _CCCL_FORCEINLINE int RowMajorTid(int block_dim_x, int block_dim_y, int block_dim_z)
 {
   return ((block_dim_z == 1) ? 0 : (threadIdx.z * block_dim_x * block_dim_y))
        + ((block_dim_y == 1) ? 0 : (threadIdx.y * block_dim_x)) + threadIdx.x;
-}
-
-/**
- * \brief Returns the warp lane ID of the calling thread
- */
-CCCL_DEPRECATED_BECAUSE("use cuda::ptx::get_sreg_laneid() instead")
-_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneId()
-{
-  unsigned int ret;
-  asm("mov.u32 %0, %%laneid;" : "=r"(ret));
-  return ret;
-}
-
-/**
- * \brief Returns the warp ID of the calling thread.  Warp ID is guaranteed to be unique among warps, but may not
- * correspond to a zero-based ranking within the thread block.
- */
-CCCL_DEPRECATED_BECAUSE("use cuda::ptx::get_sreg_warpid() instead")
-_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int WarpId()
-{
-  unsigned int ret;
-  asm("mov.u32 %0, %%warpid;" : "=r"(ret));
-  return ret;
 }
 
 /**
@@ -399,50 +174,6 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned int WarpMask(unsigned int warp_id)
   (void) warp_id;
 
   return member_mask;
-}
-
-/**
- * \brief Returns the warp lane mask of all lanes less than the calling thread
- */
-CCCL_DEPRECATED_BECAUSE("use cuda::ptx::get_sreg_lanemask_lt() instead")
-_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneMaskLt()
-{
-  unsigned int ret;
-  asm("mov.u32 %0, %%lanemask_lt;" : "=r"(ret));
-  return ret;
-}
-
-/**
- * \brief Returns the warp lane mask of all lanes less than or equal to the calling thread
- */
-CCCL_DEPRECATED_BECAUSE("use cuda::ptx::get_sreg_lanemask_le() instead")
-_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneMaskLe()
-{
-  unsigned int ret;
-  asm("mov.u32 %0, %%lanemask_le;" : "=r"(ret));
-  return ret;
-}
-
-/**
- * \brief Returns the warp lane mask of all lanes greater than the calling thread
- */
-CCCL_DEPRECATED_BECAUSE("use cuda::ptx::get_sreg_lanemask_gt() instead")
-_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneMaskGt()
-{
-  unsigned int ret;
-  asm("mov.u32 %0, %%lanemask_gt;" : "=r"(ret));
-  return ret;
-}
-
-/**
- * \brief Returns the warp lane mask of all lanes greater than or equal to the calling thread
- */
-CCCL_DEPRECATED_BECAUSE("use cuda::ptx::get_sreg_lanemask_ge() instead")
-_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneMaskGe()
-{
-  unsigned int ret;
-  asm("mov.u32 %0, %%lanemask_ge;" : "=r"(ret));
-  return ret;
 }
 
 /**

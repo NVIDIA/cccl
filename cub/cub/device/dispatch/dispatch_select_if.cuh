@@ -56,6 +56,8 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/std/__algorithm_>
+
 #include <cstdio>
 #include <iterator>
 
@@ -421,8 +423,8 @@ template <
   typename OffsetT,
   SelectImpl SelectionOpt,
   typename PolicyHub = detail::select::policy_hub<
-    detail::value_t<InputIteratorT>,
-    detail::value_t<FlagsInputIteratorT>,
+    detail::it_value_t<InputIteratorT>,
+    detail::it_value_t<FlagsInputIteratorT>,
     // if/flagged/unique only have a single code path for different offset types, partition has different code paths
     ::cuda::std::conditional_t<SelectionOpt == SelectImpl::Partition, OffsetT, detail::select::per_partition_offset_t>,
     detail::select::is_partition_distinct_output_t<SelectedOutputIteratorT>::value,
@@ -656,7 +658,7 @@ struct DispatchSelectIf
         }
 
         // Log scan_init_kernel configuration
-        int init_grid_size = CUB_MAX(1, ::cuda::ceil_div(current_num_tiles, INIT_KERNEL_THREADS));
+        int init_grid_size = _CUDA_VSTD::max(1, ::cuda::ceil_div(current_num_tiles, INIT_KERNEL_THREADS));
 
 #ifdef CUB_DEBUG_LOG
         _CubLog("Invoking scan_init_kernel<<<%d, %d, 0, %lld>>>()\n",

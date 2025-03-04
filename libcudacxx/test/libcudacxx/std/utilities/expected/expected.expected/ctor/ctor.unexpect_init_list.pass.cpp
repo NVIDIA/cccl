@@ -52,11 +52,8 @@ template <class T>
 __host__ __device__ void conversion_test(T);
 
 template <class T, class... Args>
-_CCCL_CONCEPT_FRAGMENT(ImplicitlyConstructible_,
-                       requires(Args&&... args)((conversion_test<T>({cuda::std::forward<Args>(args)...}))));
-
-template <class T, class... Args>
-constexpr bool ImplicitlyConstructible = _CCCL_FRAGMENT(ImplicitlyConstructible_, T, Args...);
+_CCCL_CONCEPT ImplicitlyConstructible = _CCCL_REQUIRES_EXPR((T, variadic Args), T t, Args&&... args)(
+  (conversion_test<T>({cuda::std::forward<Args>(args)...})));
 static_assert(ImplicitlyConstructible<int, int>, "");
 
 #if defined(_LIBCUDACXX_HAS_VECTOR)
@@ -165,9 +162,7 @@ int main(int, char**)
 {
   test();
 #if defined(_CCCL_BUILTIN_ADDRESSOF)
-#  if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
   static_assert(test(), "");
-#  endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 #endif // defined(_CCCL_BUILTIN_ADDRESSOF)
 #ifndef TEST_HAS_NO_EXCEPTIONS
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))

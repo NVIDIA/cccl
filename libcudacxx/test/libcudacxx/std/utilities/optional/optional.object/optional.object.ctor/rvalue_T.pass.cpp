@@ -103,7 +103,6 @@ int main(int, char**)
     assert(static_cast<bool>(opt) == true);
     assert(opt.value().value == 3);
   }
-
 #ifndef TEST_HAS_NO_EXCEPTIONS
   {
     NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))

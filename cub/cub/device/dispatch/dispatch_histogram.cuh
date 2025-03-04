@@ -59,8 +59,7 @@
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/functional>
-#include <cuda/std/__algorithm/copy.h>
-#include <cuda/std/__algorithm/transform.h>
+#include <cuda/std/__algorithm_>
 #include <cuda/std/array>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
@@ -362,9 +361,11 @@ struct dispatch_histogram
       // Get grid dimensions, trying to keep total blocks ~histogram_sweep_occupancy
       int pixels_per_tile = block_threads * pixels_per_thread;
       int tiles_per_row   = static_cast<int>(::cuda::ceil_div(num_row_pixels, pixels_per_tile));
-      int blocks_per_row  = CUB_MIN(histogram_sweep_occupancy, tiles_per_row);
+      int blocks_per_row  = _CUDA_VSTD::min(histogram_sweep_occupancy, tiles_per_row);
       int blocks_per_col =
-        (blocks_per_row > 0) ? int(CUB_MIN(histogram_sweep_occupancy / blocks_per_row, num_rows)) : 0;
+        (blocks_per_row > 0)
+          ? int(_CUDA_VSTD::min(static_cast<OffsetT>(histogram_sweep_occupancy / blocks_per_row), num_rows))
+          : 0;
       int num_thread_blocks = blocks_per_row * blocks_per_col;
 
       dim3 sweep_grid_dims;
@@ -569,7 +570,7 @@ public:
   //---------------------------------------------------------------------
 
   /// The sample value type of the input iterator
-  using SampleT = cub::detail::value_t<SampleIteratorT>;
+  using SampleT = cub::detail::it_value_t<SampleIteratorT>;
 
   enum
   {
@@ -924,7 +925,7 @@ public:
     // Should we call DispatchHistogram<....., PolicyHub=void> in DeviceHistogram?
     static constexpr bool isEven = 0;
     using fallback_policy_hub    = detail::histogram::
-      policy_hub<detail::value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
+      policy_hub<detail::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
 
     using MaxPolicyT =
       typename ::cuda::std::_If<::cuda::std::is_void_v<PolicyHub>, fallback_policy_hub, PolicyHub>::MaxPolicy;
@@ -1100,7 +1101,7 @@ public:
   {
     static constexpr bool isEven = 0;
     using fallback_policy_hub    = detail::histogram::
-      policy_hub<detail::value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
+      policy_hub<detail::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
 
     using MaxPolicyT =
       typename ::cuda::std::_If<::cuda::std::is_void_v<PolicyHub>, fallback_policy_hub, PolicyHub>::MaxPolicy;
@@ -1240,7 +1241,7 @@ public:
   {
     static constexpr bool isEven = 1;
     using fallback_policy_hub    = detail::histogram::
-      policy_hub<detail::value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
+      policy_hub<detail::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
 
     using MaxPolicyT =
       typename ::cuda::std::_If<::cuda::std::is_void_v<PolicyHub>, fallback_policy_hub, PolicyHub>::MaxPolicy;
@@ -1431,7 +1432,7 @@ public:
   {
     static constexpr bool isEven = 1;
     using fallback_policy_hub    = detail::histogram::
-      policy_hub<detail::value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
+      policy_hub<detail::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
 
     using MaxPolicyT =
       typename ::cuda::std::_If<::cuda::std::is_void_v<PolicyHub>, fallback_policy_hub, PolicyHub>::MaxPolicy;

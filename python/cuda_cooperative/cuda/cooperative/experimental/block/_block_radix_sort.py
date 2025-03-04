@@ -16,7 +16,7 @@ from cuda.cooperative.experimental._types import (
 )
 
 
-def radix_sort_keys(dtype, threads_in_block, items_per_thread):
+def radix_sort_keys(dtype, threads_per_block, items_per_thread):
     """Performs an ascending block-wide radix sort over a :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
 
     Example:
@@ -45,7 +45,7 @@ def radix_sort_keys(dtype, threads_in_block, items_per_thread):
 
     Args:
         dtype: Numba data type of the keys to be sorted
-        threads_in_block: The number of threads in a block
+        threads_per_block: The number of threads in a block
         items_per_thread: The number of items each thread owns
 
     Returns:
@@ -77,7 +77,7 @@ def radix_sort_keys(dtype, threads_in_block, items_per_thread):
     specialization = template.specialize(
         {
             "KeyT": dtype,
-            "BLOCK_DIM_X": threads_in_block,
+            "BLOCK_DIM_X": threads_per_block,
             "ITEMS_PER_THREAD": items_per_thread,
         }
     )
@@ -91,7 +91,7 @@ def radix_sort_keys(dtype, threads_in_block, items_per_thread):
     )
 
 
-def radix_sort_keys_descending(dtype, threads_in_block, items_per_thread):
+def radix_sort_keys_descending(dtype, threads_per_block, items_per_thread):
     """Performs an descending block-wide radix sort over a :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
 
     Example:
@@ -120,7 +120,7 @@ def radix_sort_keys_descending(dtype, threads_in_block, items_per_thread):
 
     Args:
         dtype: Numba data type of the keys to be sorted
-        threads_in_block: The number of threads in a block
+        threads_per_block: The number of threads in a block
         items_per_thread: The number of items each thread owns
 
     Returns:
@@ -152,7 +152,7 @@ def radix_sort_keys_descending(dtype, threads_in_block, items_per_thread):
     specialization = template.specialize(
         {
             "KeyT": dtype,
-            "BLOCK_DIM_X": threads_in_block,
+            "BLOCK_DIM_X": threads_per_block,
             "ITEMS_PER_THREAD": items_per_thread,
         }
     )

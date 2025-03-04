@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <cub/util_type.cuh>
+
 #include <thrust/iterator/constant_iterator.h>
 
 #include <cuda/std/type_traits>
@@ -59,7 +61,7 @@ struct modx_and_add_divy
 template <typename SelectedItT, typename RejectedItT>
 struct index_to_expected_partition_op
 {
-  using value_t = typename ::cuda::std::iterator_traits<SelectedItT>::value_type;
+  using value_t = cub::detail::it_value_t<SelectedItT>;
   SelectedItT expected_selected_it;
   RejectedItT expected_rejected_it;
   std::int64_t expected_num_selected;

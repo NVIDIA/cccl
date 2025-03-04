@@ -96,9 +96,9 @@ DECLARE_UNITTEST(TestAdjacentDifferenceCudaStreams);
 struct detect_wrong_difference
 {
   using difference_type   = void;
-  using value_type        = void;
+  using value_type        = long long;
   using pointer           = void;
-  using reference         = void;
+  using reference         = detect_wrong_difference;
   using iterator_category = ::cuda::std::output_iterator_tag;
 
   bool* flag;
