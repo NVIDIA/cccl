@@ -17,7 +17,7 @@ template <typename Eviction>
 __device__ void store_call(Eviction eviction)
 {
   auto local = cuda::ptx::get_sreg_clock();
-  cuda::store(local, &memory, eviction);
+  cuda::device::store(local, &memory, eviction);
   __threadfence();
   assert(memory == local);
   __threadfence();
@@ -25,13 +25,13 @@ __device__ void store_call(Eviction eviction)
 
 __global__ void store_kernel()
 {
+  store_call(cuda::device::eviction_none);
 #if __CUDA_ARCH__ >= 700
-  store_call(cuda::eviction_none);
-  store_call(cuda::eviction_normal);
-  store_call(cuda::eviction_unchanged);
-  store_call(cuda::eviction_first);
-  store_call(cuda::eviction_last);
-  store_call(cuda::eviction_no_alloc);
+  store_call(cuda::device::eviction_normal);
+  store_call(cuda::device::eviction_unchanged);
+  store_call(cuda::device::eviction_first);
+  store_call(cuda::device::eviction_last);
+  store_call(cuda::device::eviction_no_alloc);
 #endif
 }
 

@@ -20,7 +20,7 @@ __device__ void load_call(Access access, Eviction eviction, Prefetch prefetch)
   auto local = cuda::ptx::get_sreg_clock();
   input      = local;
   __threadfence();
-  output = cuda::load(&input, access, eviction, prefetch);
+  output = cuda::device::load(&input, access, eviction, prefetch);
   assert(output == local);
   __threadfence();
 }
@@ -28,12 +28,12 @@ __device__ void load_call(Access access, Eviction eviction, Prefetch prefetch)
 template <typename Access, typename Eviction>
 __device__ void load_call(Access access, Eviction eviction)
 {
-  load_call(access, eviction, cuda::prefetch_spatial_none);
+  load_call(access, eviction, cuda::device::prefetch_spatial_none);
 #if __CUDA_ARCH__ >= 750
-  load_call(access, eviction, cuda::prefetch_64B);
-  load_call(access, eviction, cuda::prefetch_128B);
+  load_call(access, eviction, cuda::device::prefetch_64B);
+  load_call(access, eviction, cuda::device::prefetch_128B);
 #  if __CUDA_ARCH__ >= 800
-  load_call(access, eviction, cuda::prefetch_256B);
+  load_call(access, eviction, cuda::device::prefetch_256B);
 #  endif
 #endif
 }
@@ -41,19 +41,21 @@ __device__ void load_call(Access access, Eviction eviction)
 template <typename Access>
 __device__ void load_call(Access access)
 {
-  load_call(access, cuda::eviction_none);
-  load_call(access, cuda::eviction_normal);
-  load_call(access, cuda::eviction_unchanged);
-  load_call(access, cuda::eviction_first);
-  load_call(access, cuda::eviction_last);
-  load_call(access, cuda::eviction_no_alloc);
+  load_call(access, cuda::device::eviction_none);
+#if __CUDA_ARCH__ >= 700
+  load_call(access, cuda::device::eviction_normal);
+  load_call(access, cuda::device::eviction_unchanged);
+  load_call(access, cuda::device::eviction_first);
+  load_call(access, cuda::device::eviction_last);
+  load_call(access, cuda::device::eviction_no_alloc);
+#endif
 }
 
 __global__ void load_kernel()
 {
+  load_call(cuda::device::read_write);
 #if __CUDA_ARCH__ >= 700
-  load_call(cuda::read_only);
-  load_call(cuda::read_write);
+  load_call(cuda::device::read_only);
 #endif
 }
 
