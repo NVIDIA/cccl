@@ -9,7 +9,7 @@
    [[nodiscard]] constexpr T
    bitfield_insert(T dest, T source, int start, int width = 1) noexcept;
 
-The function extracts the lower bitfield of size ``width`` from ``source`` and insert it into ``dest`` at position ``start``.
+The function extracts the lower bitfield of size ``width`` from ``source`` and inserts it into ``dest`` at position ``start``.
 
 **Parameters**
 
