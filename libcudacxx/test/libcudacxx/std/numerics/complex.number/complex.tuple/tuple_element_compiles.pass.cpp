@@ -48,10 +48,9 @@ __host__ __device__ void test()
 {
   test<float>();
   test<double>();
-
-  // CUDA treats long double as double
-  // test<long double>();
-
+#if _CCCL_HAS_LONG_DOUBLE()
+  test<long double>();
+#endif // _CCCL_HAS_LONG_DOUBLE()
 #if _LIBCUDACXX_HAS_NVFP16()
   test<__half>();
 #endif // _LIBCUDACXX_HAS_NVFP16()

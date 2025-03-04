@@ -77,8 +77,9 @@ int main(int, char**)
 {
   test<float>();
   test<double>();
-  // CUDA treats long double as double
-  //  test<long double>();
+#if _CCCL_HAS_LONG_DOUBLE()
+  test<long double>();
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
   // Also test conversions
   test<float, int>();
