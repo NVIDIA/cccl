@@ -26,6 +26,11 @@
  *
  ******************************************************************************/
 
+// FIXME(bgruber): I found no way to suppress the deprecations for the _lid_1 build
+#if TEST_LAUNCH == 1
+#  define CCCL_IGNORE_DEPRECATED_API
+#endif
+
 #include <cub/device/device_histogram.cuh>
 
 #include <thrust/iterator/counting_iterator.h>
