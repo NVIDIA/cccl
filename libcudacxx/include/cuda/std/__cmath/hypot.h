@@ -22,10 +22,10 @@
 #endif // no system header
 
 #include <cuda/std/__cmath/abs.h>
-#include <cuda/std/__cmath/common.h>
 #include <cuda/std/__cmath/exponential_functions.h>
 #include <cuda/std/__cmath/min_max.h>
 #include <cuda/std/__cmath/roots.h>
+#include <cuda/std/__internal/nvfp_types.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_integral.h>
@@ -33,6 +33,11 @@
 #include <cuda/std/limits>
 
 #include <nv/target>
+
+// MSVC and clang cuda need the host side functions included
+#if _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
+#  include <math.h>
+#endif // _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

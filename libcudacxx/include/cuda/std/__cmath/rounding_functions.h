@@ -21,12 +21,17 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cmath/common.h>
+#include <cuda/std/__cmath/fp_utils.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/promote.h>
+
+// MSVC and clang cuda need the host side functions included
+#if _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
+#  include <math.h>
+#endif // _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
