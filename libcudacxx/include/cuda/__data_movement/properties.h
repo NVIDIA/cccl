@@ -1,0 +1,105 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA___DATA_MOVEMENT_PROPERTIES_H
+#define _CUDA___DATA_MOVEMENT_PROPERTIES_H
+
+#include <cuda/__cccl_config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/std/__type_traits/integral_constant.h>
+
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
+/***********************************************************************************************************************
+ * Load Behavior
+ **********************************************************************************************************************/
+
+enum class _MemoryBehavior
+{
+  _ReadOnly,
+  _ReadWrite,
+};
+
+template <_MemoryBehavior _Value>
+using __memory_behavior_t = _CUDA_VSTD::integral_constant<_MemoryBehavior, _Value>;
+
+using __read_only_t  = __memory_behavior_t<_MemoryBehavior::_ReadOnly>;
+using __read_write_t = __memory_behavior_t<_MemoryBehavior::_ReadWrite>;
+
+inline constexpr auto read_only  = __read_only_t{};
+inline constexpr auto read_write = __read_write_t{};
+
+/***********************************************************************************************************************
+ * Eviction Policies
+ **********************************************************************************************************************/
+
+enum class _EvictionPolicyEnum
+{
+  _None,
+  _Normal,
+  _Unchanged,
+  _First,
+  _Last,
+  _NoAllocation,
+};
+
+template <_EvictionPolicyEnum _Value>
+using __eviction_policy_t = _CUDA_VSTD::integral_constant<_EvictionPolicyEnum, _Value>;
+
+using __eviction_none_t      = __eviction_policy_t<_EvictionPolicyEnum::_None>;
+using __eviction_normal_t    = __eviction_policy_t<_EvictionPolicyEnum::_Normal>;
+using __eviction_unchanged_t = __eviction_policy_t<_EvictionPolicyEnum::_Unchanged>;
+using __eviction_first_t     = __eviction_policy_t<_EvictionPolicyEnum::_First>;
+using __eviction_last_t      = __eviction_policy_t<_EvictionPolicyEnum::_Last>;
+using __eviction_no_alloc_t  = __eviction_policy_t<_EvictionPolicyEnum::_NoAllocation>;
+
+inline constexpr auto eviction_none      = __eviction_none_t{};
+inline constexpr auto eviction_normal    = __eviction_normal_t{};
+inline constexpr auto eviction_unchanged = __eviction_unchanged_t{};
+inline constexpr auto eviction_first     = __eviction_first_t{};
+inline constexpr auto eviction_last      = __eviction_last_t{};
+inline constexpr auto eviction_no_alloc  = __eviction_no_alloc_t{};
+
+/***********************************************************************************************************************
+ * Prefetch Spatial Locality
+ **********************************************************************************************************************/
+
+enum class _PrefetchSpatialEnum
+{
+  _None,
+  _Bytes64,
+  _Bytes128,
+  _Bytes256,
+};
+
+template <_PrefetchSpatialEnum _Value>
+using __prefetch_spatial_t = _CUDA_VSTD::integral_constant<_PrefetchSpatialEnum, _Value>;
+
+using __prefetch_spatial_none_t = __prefetch_spatial_t<_PrefetchSpatialEnum::_None>;
+using __prefetch_64B_t          = __prefetch_spatial_t<_PrefetchSpatialEnum::_Bytes64>;
+using __prefetch_128B_t         = __prefetch_spatial_t<_PrefetchSpatialEnum::_Bytes128>;
+using __prefetch_256B_t         = __prefetch_spatial_t<_PrefetchSpatialEnum::_Bytes256>;
+
+inline constexpr auto prefetch_spatial_none = __prefetch_spatial_none_t{};
+inline constexpr auto prefetch_64B          = __prefetch_64B_t{};
+inline constexpr auto prefetch_128B         = __prefetch_128B_t{};
+inline constexpr auto prefetch_256B         = __prefetch_256B_t{};
+
+_LIBCUDACXX_END_NAMESPACE_CUDA
+
+#endif // _CUDA___DATA_MOVEMENT_PROPERTIES_H
