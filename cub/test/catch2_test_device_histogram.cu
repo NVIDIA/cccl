@@ -97,6 +97,9 @@ auto cast_if_half(array<T, N> a)
 
 #if TEST_HALF_T()
 template <size_t N>
+#  if _CCCL_COMPILER(GCC)
+__attribute__((optimize("no-tree-vectorize")))
+#  endif
 auto cast_if_half(array<half_t, N> a)
 {
   __half* p = cast_if_half_pointer(a.data()); // cast to avoid ambiguous conversion from half_t -> __half
