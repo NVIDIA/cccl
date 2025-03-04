@@ -56,24 +56,30 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Full __byteswap_impl_recurs
   }
 }
 
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE uint16_t __byteswap_impl_device(uint16_t __val) noexcept
+template <class _Tp>
+_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp __byteswap_impl_device(_Tp __val) noexcept
 {
-  return static_cast<uint16_t>(_CUDA_VPTX::prmt(static_cast<uint32_t>(__val), uint32_t{0}, uint32_t{0x3201}));
-}
+  if constexpr (sizeof(_Tp) == sizeof(uint16_t))
+  {
+    return static_cast<uint16_t>(_CUDA_VPTX::prmt(static_cast<uint32_t>(__val), uint32_t{0}, uint32_t{0x3201}));
+  }
+  else if constexpr (sizeof(_Tp) == sizeof(uint32_t))
+  {
+    return _CUDA_VPTX::prmt(__val, uint32_t{0}, uint32_t{0x0123});
+  }
+  else if constexpr (sizeof(_Tp) == sizeof(uint64_t))
+  {
+    const auto __hi     = static_cast<uint32_t>(__val >> 32);
+    const auto __lo     = static_cast<uint32_t>(__val);
+    const auto __new_lo = _CUDA_VPTX::prmt(__hi, uint32_t{0}, uint32_t{0x0123});
+    const auto __new_hi = _CUDA_VPTX::prmt(__lo, uint32_t{0}, uint32_t{0x0123});
 
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE uint32_t __byteswap_impl_device(uint32_t __val) noexcept
-{
-  return _CUDA_VPTX::prmt(__val, uint32_t{0}, uint32_t{0x0123});
-}
-
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE uint64_t __byteswap_impl_device(uint64_t __val) noexcept
-{
-  const auto __hi     = static_cast<uint32_t>(__val >> 32);
-  const auto __lo     = static_cast<uint32_t>(__val);
-  const auto __new_lo = _CUDA_VPTX::prmt(__hi, uint32_t{0}, uint32_t{0x0123});
-  const auto __new_hi = _CUDA_VPTX::prmt(__lo, uint32_t{0}, uint32_t{0x0123});
-
-  return static_cast<uint64_t>(__new_hi) << 32 | static_cast<uint64_t>(__new_lo);
+    return static_cast<uint64_t>(__new_hi) << 32 | static_cast<uint64_t>(__new_lo);
+  }
+  else
+  {
+    return _CUDA_VSTD::__byteswap_impl_recursive(__val);
+  }
 }
 
 template <class _Tp>
@@ -82,10 +88,11 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __byteswap_impl(_Tp __va
   constexpr auto __shift = numeric_limits<uint8_t>::digits;
 
   _Tp __result{};
+#pragma unroll
   for (size_t __i{}; __i < sizeof(__val); ++__i)
   {
     __result <<= __shift;
-    __result |= (__val >> (__i * __shift)) & static_cast<_Tp>(_CUDA_VSTD::numeric_limits<uint8_t>::max());
+    __result |= (__val >> (__i * __shift)) & _Tp(numeric_limits<uint8_t>::max());
   }
   return __result;
 }
@@ -98,7 +105,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr uint16_t __byteswap_impl(uin
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
 #  if _CCCL_COMPILER(MSVC)
-    NV_IF_TARGET(NV_IS_HOST, return _byteswap_ushort(__val);)
+    NV_IF_TARGET(NV_IS_HOST, return ::_byteswap_ushort(__val);)
 #  endif // _CCCL_COMPILER(MSVC)
 #  if __cccl_ptx_isa >= 200
     NV_IF_TARGET(NV_IS_DEVICE, return _CUDA_VSTD::__byteswap_impl_device(__val);)
@@ -116,7 +123,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr uint32_t __byteswap_impl(uin
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
 #  if _CCCL_COMPILER(MSVC)
-    NV_IF_TARGET(NV_IS_HOST, return _byteswap_ulong(__val);)
+    NV_IF_TARGET(NV_IS_HOST, return ::_byteswap_ulong(__val);)
 #  endif // _CCCL_COMPILER(MSVC)
 #  if __cccl_ptx_isa >= 200
     NV_IF_TARGET(NV_IS_DEVICE, return _CUDA_VSTD::__byteswap_impl_device(__val);)
@@ -134,7 +141,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr uint64_t __byteswap_impl(uin
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
 #  if _CCCL_COMPILER(MSVC)
-    NV_IF_TARGET(NV_IS_HOST, return _byteswap_uint64(__val);)
+    NV_IF_TARGET(NV_IS_HOST, return ::_byteswap_uint64(__val);)
 #  endif // _CCCL_COMPILER(MSVC)
 #  if __cccl_ptx_isa >= 200
     NV_IF_TARGET(NV_IS_DEVICE, return _CUDA_VSTD::__byteswap_impl_device(__val);)
