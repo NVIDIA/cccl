@@ -242,7 +242,6 @@ __host__ __device__ void test_host_device_accessor_conversions()
   using WrapperA      = Wrapper<AccessorA<float>>;
   using WrapperAconst = Wrapper<AccessorA<const float>>;
   using WrapperB      = Wrapper<AccessorB<float>>;
-  using WrapperBconst = Wrapper<AccessorB<const float>>;
   {
     // Test CTAD with wrapping constructor
     WrapperA wrapper_acc1(AccessorA<float>{});

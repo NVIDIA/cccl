@@ -11,8 +11,8 @@
 
 #include "test_macros.h"
 
-__device__ int device_array[]   = {1, 2, 3, 4};
-__managed__ int managed_array[] = {1, 2, 3, 4};
+__device__ int device_array[]              = {1, 2, 3, 4};
+__device__ __managed__ int managed_array[] = {1, 2, 3, 4};
 
 int main(int, char**)
 {
