@@ -14,6 +14,7 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
+#include "comparison.h"
 #include "fp_compare.h"
 #include "test_macros.h"
 
@@ -24,37 +25,12 @@
 #endif // TEST_COMPILER_MSVC
 
 template <typename T>
-__host__ __device__ bool eq(T lhs, T rhs) noexcept
-{
-  return lhs == rhs;
-}
-
-template <typename T, typename U, cuda::std::enable_if_t<cuda::std::is_arithmetic<U>::value, int> = 0>
-__host__ __device__ bool eq(T lhs, U rhs) noexcept
-{
-  return eq(lhs, T(rhs));
-}
-
-#ifdef _LIBCUDACXX_HAS_NVFP16
-__host__ __device__ bool eq(__half lhs, __half rhs) noexcept
-{
-  return ::__heq(lhs, rhs);
-}
-#endif // _LIBCUDACXX_HAS_NVFP16
-#ifdef _LIBCUDACXX_HAS_NVBF16
-__host__ __device__ bool eq(__nv_bfloat16 lhs, __nv_bfloat16 rhs) noexcept
-{
-  return ::__heq(lhs, rhs);
-}
-#endif // _LIBCUDACXX_HAS_NVBF16
-
-template <typename T>
 __host__ __device__ void test_ceil(T val)
 {
-  using ret = cuda::std::conditional_t<cuda::std::is_integral<T>::value, double, T>;
-  static_assert(cuda::std::is_same<decltype(cuda::std::ceil(T{})), ret>::value, "");
+  using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::ceil(T{})), ret>, "");
 
-  if (cuda::std::is_integral<T>::value)
+  if constexpr (cuda::std::is_integral_v<T>)
   {
     assert(eq(cuda::std::ceil(val), val));
     assert(eq(cuda::std::ceil(-val), -val));
@@ -67,7 +43,7 @@ __host__ __device__ void test_ceil(T val)
   assert(eq(cuda::std::ceil(T(-0.0)), T(-0.0)));
   assert(eq(cuda::std::ceil(T(0.0)), T(0.0)));
   assert(eq(cuda::std::ceil(T(-cuda::std::numeric_limits<T>::infinity())), -cuda::std::numeric_limits<T>::infinity()));
-  if (cuda::std::is_same<T, float>::value)
+  if constexpr (cuda::std::is_same_v<T, float>)
   {
     assert(eq(cuda::std::ceilf(val), T(2)));
     assert(eq(cuda::std::ceilf(-val), T(-1)));
@@ -75,7 +51,7 @@ __host__ __device__ void test_ceil(T val)
     assert(eq(cuda::std::ceilf(T(0.0)), T(0.0)));
   }
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-  else if (cuda::std::is_same<T, long double>::value)
+  else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(eq(cuda::std::ceill(val), T(2)));
     assert(eq(cuda::std::ceill(-val), T(-1)));
@@ -88,10 +64,10 @@ __host__ __device__ void test_ceil(T val)
 template <typename T>
 __host__ __device__ void test_floor(T val)
 {
-  using ret = cuda::std::conditional_t<cuda::std::is_integral<T>::value, double, T>;
-  static_assert(cuda::std::is_same<decltype(cuda::std::floor(T{})), ret>::value, "");
+  using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::floor(T{})), ret>, "");
 
-  if (cuda::std::is_integral<T>::value)
+  if constexpr (cuda::std::is_integral_v<T>)
   {
     assert(eq(cuda::std::floor(val), val));
     assert(eq(cuda::std::floor(-val), -val));
@@ -104,7 +80,7 @@ __host__ __device__ void test_floor(T val)
   assert(eq(cuda::std::floor(T(-0.0)), T(-0.0)));
   assert(eq(cuda::std::floor(T(0.0)), T(0.0)));
   assert(eq(cuda::std::floor(T(-cuda::std::numeric_limits<T>::infinity())), -cuda::std::numeric_limits<T>::infinity()));
-  if (cuda::std::is_same<T, float>::value)
+  if constexpr (cuda::std::is_same_v<T, float>)
   {
     assert(eq(cuda::std::floorf(val), T(1)));
     assert(eq(cuda::std::floorf(-val), T(-2)));
@@ -112,7 +88,7 @@ __host__ __device__ void test_floor(T val)
     assert(eq(cuda::std::floorf(T(0.0)), T(0.0)));
   }
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-  else if (cuda::std::is_same<T, long double>::value)
+  else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(eq(cuda::std::floorl(val), T(1)));
     assert(eq(cuda::std::floorl(-val), T(-2)));
@@ -125,9 +101,9 @@ __host__ __device__ void test_floor(T val)
 template <typename T>
 __host__ __device__ void test_llrint(T val)
 {
-  static_assert(cuda::std::is_same<decltype(cuda::std::llrint(T{})), long long>::value, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::llrint(T{})), long long>, "");
 
-  if (cuda::std::is_integral<T>::value)
+  if constexpr (cuda::std::is_integral_v<T>)
   {
     assert(eq(cuda::std::llrint(val), val));
   }
@@ -140,7 +116,7 @@ __host__ __device__ void test_llrint(T val)
   }
   assert(cuda::std::llrint(T(-0.0)) == -0);
   assert(cuda::std::llrint(T(0.0)) == 0);
-  if (cuda::std::is_same<T, float>::value)
+  if constexpr (cuda::std::is_same_v<T, float>)
   {
     assert(cuda::std::llrintf(val) == 2);
     assert(cuda::std::llrintf(-val) == -2);
@@ -148,7 +124,7 @@ __host__ __device__ void test_llrint(T val)
     assert(cuda::std::llrintf(-val + T(0.2)) == -1);
   }
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-  else if (cuda::std::is_same<T, long double>::value)
+  else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(cuda::std::llrintl(val) == 2);
     assert(cuda::std::llrintl(-val) == -2);
@@ -161,9 +137,9 @@ __host__ __device__ void test_llrint(T val)
 template <typename T>
 __host__ __device__ void test_llround(T val)
 {
-  static_assert(cuda::std::is_same<decltype(cuda::std::llround(T{})), long long>::value, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::llround(T{})), long long>, "");
 
-  if (cuda::std::is_integral<T>::value)
+  if constexpr (cuda::std::is_integral_v<T>)
   {
     assert(eq(cuda::std::llround(val), val));
   }
@@ -176,7 +152,7 @@ __host__ __device__ void test_llround(T val)
   }
   assert(cuda::std::llround(T(-0.0)) == -0);
   assert(cuda::std::llround(T(0.0)) == 0);
-  if (cuda::std::is_same<T, float>::value)
+  if constexpr (cuda::std::is_same_v<T, float>)
   {
     assert(cuda::std::llroundf(val) == 2);
     assert(cuda::std::llroundf(-val) == -2);
@@ -184,7 +160,7 @@ __host__ __device__ void test_llround(T val)
     assert(cuda::std::llroundf(-val + T(0.2)) == -1);
   }
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-  else if (cuda::std::is_same<T, long double>::value)
+  else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(cuda::std::llroundl(val) == 2);
     assert(cuda::std::llroundl(-val) == -2);
@@ -197,9 +173,9 @@ __host__ __device__ void test_llround(T val)
 template <typename T>
 __host__ __device__ void test_lrint(T val)
 {
-  static_assert(cuda::std::is_same<decltype(cuda::std::lrint(T{})), long>::value, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::lrint(T{})), long>, "");
 
-  if (cuda::std::is_integral<T>::value)
+  if constexpr (cuda::std::is_integral_v<T>)
   {
     assert(eq(cuda::std::lrint(val), val));
   }
@@ -212,7 +188,7 @@ __host__ __device__ void test_lrint(T val)
   }
   assert(cuda::std::lrint(T(-0.0)) == -0);
   assert(cuda::std::lrint(T(0.0)) == 0);
-  if (cuda::std::is_same<T, float>::value)
+  if constexpr (cuda::std::is_same_v<T, float>)
   {
     assert(cuda::std::lrintf(val) == 2);
     assert(cuda::std::lrintf(-val) == -2);
@@ -220,7 +196,7 @@ __host__ __device__ void test_lrint(T val)
     assert(cuda::std::lrintf(-val + T(0.2)) == -1);
   }
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-  else if (cuda::std::is_same<T, long double>::value)
+  else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(cuda::std::lrintl(val) == 2);
     assert(cuda::std::lrintl(-val) == -2);
@@ -233,9 +209,9 @@ __host__ __device__ void test_lrint(T val)
 template <typename T>
 __host__ __device__ void test_lround(T val)
 {
-  static_assert(cuda::std::is_same<decltype(cuda::std::lround(T{})), long>::value, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::lround(T{})), long>, "");
 
-  if (cuda::std::is_integral<T>::value)
+  if constexpr (cuda::std::is_integral_v<T>)
   {
     assert(eq(cuda::std::lround(val), val));
   }
@@ -248,7 +224,7 @@ __host__ __device__ void test_lround(T val)
   }
   assert(cuda::std::lround(T(-0.0)) == -0);
   assert(cuda::std::lround(T(0.0)) == 0);
-  if (cuda::std::is_same<T, float>::value)
+  if constexpr (cuda::std::is_same_v<T, float>)
   {
     assert(cuda::std::lroundf(val) == 2);
     assert(cuda::std::lroundf(-val) == -2);
@@ -256,7 +232,7 @@ __host__ __device__ void test_lround(T val)
     assert(cuda::std::lroundf(-val + T(0.2)) == -1);
   }
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-  else if (cuda::std::is_same<T, long double>::value)
+  else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(cuda::std::lroundl(val) == 2);
     assert(cuda::std::lroundl(-val) == -2);
@@ -269,10 +245,10 @@ __host__ __device__ void test_lround(T val)
 template <typename T>
 __host__ __device__ void test_nearbyint(T val)
 {
-  using ret = cuda::std::conditional_t<cuda::std::is_integral<T>::value, double, T>;
-  static_assert(cuda::std::is_same<decltype(cuda::std::nearbyint(T{})), ret>::value, "");
+  using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::nearbyint(T{})), ret>, "");
 
-  if (cuda::std::is_integral<T>::value)
+  if constexpr (cuda::std::is_integral_v<T>)
   {
     assert(eq(cuda::std::nearbyint(val), val));
     assert(eq(cuda::std::nearbyint(-val), -val));
@@ -286,7 +262,7 @@ __host__ __device__ void test_nearbyint(T val)
   }
   assert(eq(cuda::std::nearbyint(T(-0.0)), T(-0.0)));
   assert(eq(cuda::std::nearbyint(T(0.0)), T(0.0)));
-  if (cuda::std::is_same<T, float>::value)
+  if constexpr (cuda::std::is_same_v<T, float>)
   {
     assert(eq(cuda::std::nearbyintf(val), T(2)));
     assert(eq(cuda::std::nearbyintf(-val), T(-2)));
@@ -294,7 +270,7 @@ __host__ __device__ void test_nearbyint(T val)
     assert(eq(cuda::std::nearbyintf(-val + T(0.2)), T(-1)));
   }
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-  else if (cuda::std::is_same<T, long double>::value)
+  else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(eq(cuda::std::nearbyintl(val), T(2)));
     assert(eq(cuda::std::nearbyintl(-val), T(-2)));
@@ -307,16 +283,16 @@ __host__ __device__ void test_nearbyint(T val)
 template <typename T>
 __host__ __device__ void test_nextafter(T val)
 {
-  using ret = cuda::std::conditional_t<cuda::std::is_integral<T>::value, double, T>;
-  static_assert(cuda::std::is_same<decltype(cuda::std::nextafter(T{}, T{})), ret>::value, "");
+  using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::nextafter(T{}, T{})), ret>, "");
 
-  // assert(eq(cuda::std::nextafter(cuda::std::nextafter(val, T(10)), T(-10)), val));
-  if (cuda::std::is_same<T, float>::value)
+  unused(val);
+  if constexpr (cuda::std::is_same_v<T, float>)
   {
     assert(eq(cuda::std::nextafterf(cuda::std::nextafterf(val, T(10)), T(-10)), val));
   }
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-  else if (cuda::std::is_same<T, long double>::value)
+  else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(eq(cuda::std::nextafterl(cuda::std::nextafterl(val, T(10)), T(-10)), val));
   }
@@ -327,15 +303,15 @@ __host__ __device__ void test_nextafter(T val)
 template <typename T>
 __host__ __device__ void test_nexttoward(T val)
 {
-  using ret = cuda::std::conditional_t<cuda::std::is_integral<T>::value, double, T>;
-  static_assert(cuda::std::is_same<decltype(cuda::std::nexttoward(T{}, long double{})), ret>::value, "");
+  using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::nexttoward(T{}, long double{})), ret>, "");
 
   assert(eq(cuda::std::nexttoward(cuda::std::nexttoward(val, long double(10.0)), long double(-10.0)), val));
-  if (cuda::std::is_same<T, float>::value)
+  if constexpr (cuda::std::is_same_v<T, float>)
   {
     assert(eq(cuda::std::nexttowardf(cuda::std::nexttowardf(val, long double(10.0)), long double(-10.0)), val));
   }
-  else if (cuda::std::is_same<T, float>::value)
+  else if constexpr (cuda::std::is_same_v<T, float>)
   {
     assert(eq(cuda::std::nexttowardl(cuda::std::nexttowardl(val, long double(10.0)), long double(-10.0)), val));
   }
@@ -345,10 +321,10 @@ __host__ __device__ void test_nexttoward(T val)
 template <typename T>
 __host__ __device__ void test_rint(T val)
 {
-  using ret = cuda::std::conditional_t<cuda::std::is_integral<T>::value, double, T>;
-  static_assert(cuda::std::is_same<decltype(cuda::std::rint(T{})), ret>::value, "");
+  using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::rint(T{})), ret>, "");
 
-  if (cuda::std::is_integral<T>::value)
+  if constexpr (cuda::std::is_integral_v<T>)
   {
     assert(eq(cuda::std::rint(val), val));
     assert(eq(cuda::std::rint(-val), -val));
@@ -362,7 +338,7 @@ __host__ __device__ void test_rint(T val)
   }
   assert(eq(cuda::std::rint(T(-0.0)), T(-0.0)));
   assert(eq(cuda::std::rint(T(0.0)), T(0.0)));
-  if (cuda::std::is_same<T, float>::value)
+  if constexpr (cuda::std::is_same_v<T, float>)
   {
     assert(eq(cuda::std::rintf(val), T(2)));
     assert(eq(cuda::std::rintf(-val), T(-2)));
@@ -370,7 +346,7 @@ __host__ __device__ void test_rint(T val)
     assert(eq(cuda::std::rintf(-val + T(0.2)), T(-1)));
   }
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-  else if (cuda::std::is_same<T, long double>::value)
+  else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(eq(cuda::std::rintl(val), T(2)));
     assert(eq(cuda::std::rintl(-val), T(-2)));
@@ -383,10 +359,10 @@ __host__ __device__ void test_rint(T val)
 template <typename T>
 __host__ __device__ void test_round(T val)
 {
-  using ret = cuda::std::conditional_t<cuda::std::is_integral<T>::value, double, T>;
-  static_assert(cuda::std::is_same<decltype(cuda::std::round(T{})), ret>::value, "");
+  using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::round(T{})), ret>, "");
 
-  if (cuda::std::is_integral<T>::value)
+  if constexpr (cuda::std::is_integral_v<T>)
   {
     assert(eq(cuda::std::round(val), val));
     assert(eq(cuda::std::round(-val), -val));
@@ -400,7 +376,7 @@ __host__ __device__ void test_round(T val)
   }
   assert(eq(cuda::std::round(T(-0.0)), T(-0.0)));
   assert(eq(cuda::std::round(T(0.0)), T(0.0)));
-  if (cuda::std::is_same<T, float>::value)
+  if constexpr (cuda::std::is_same_v<T, float>)
   {
     assert(eq(cuda::std::roundf(val), T(2)));
     assert(eq(cuda::std::roundf(-val), T(-2)));
@@ -408,7 +384,7 @@ __host__ __device__ void test_round(T val)
     assert(eq(cuda::std::roundf(-val + T(0.2)), T(-1)));
   }
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-  else if (cuda::std::is_same<T, long double>::value)
+  else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(eq(cuda::std::roundl(val), T(2)));
     assert(eq(cuda::std::roundl(-val), T(-2)));
@@ -421,9 +397,9 @@ __host__ __device__ void test_round(T val)
 template <typename T>
 __host__ __device__ void test_trunc(T val)
 {
-  using ret = cuda::std::conditional_t<cuda::std::is_integral<T>::value, double, T>;
-  static_assert(cuda::std::is_same<decltype(cuda::std::trunc(T{})), ret>::value, "");
-  if (cuda::std::is_integral<T>::value)
+  using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::trunc(T{})), ret>, "");
+  if constexpr (cuda::std::is_integral_v<T>)
   {
     assert(eq(cuda::std::trunc(val), val));
     assert(eq(cuda::std::trunc(-val), -val));
@@ -436,13 +412,13 @@ __host__ __device__ void test_trunc(T val)
   assert(eq(cuda::std::trunc(T(-0.0)), T(-0.0)));
   assert(eq(cuda::std::trunc(T(0.0)), T(0.0)));
   assert(eq(cuda::std::trunc(T(-cuda::std::numeric_limits<T>::infinity())), -cuda::std::numeric_limits<T>::infinity()));
-  if (cuda::std::is_same<T, float>::value)
+  if constexpr (cuda::std::is_same_v<T, float>)
   {
     assert(eq(cuda::std::truncf(val), T(1)));
     assert(eq(cuda::std::truncf(-val), T(-1)));
   }
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
-  else if (cuda::std::is_same<T, long double>::value)
+  else if constexpr (cuda::std::is_same_v<T, long double>)
   {
     assert(eq(cuda::std::truncl(val), T(1)));
     assert(eq(cuda::std::truncl(-val), T(-1)));

@@ -7,12 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-#define __CUDA_NO_HALF_CONVERSIONS__     1
-#define __CUDA_NO_HALF_OPERATORS__       1
-#define __CUDA_NO_BFLOAT16_CONVERSIONS__ 1
-#define __CUDA_NO_BFLOAT16_OPERATORS__   1
-#define __CUDA_NO_HALF2_OPERATORS__      1
-#define __CUDA_NO_BFLOAT162_OPERATORS__  1
+// clang-format off
+#include <disable_nvfp_conversions_and_operators.h>
+// clang-format on
 
 #include <cuda/std/cassert>
 #include <cuda/std/complex>

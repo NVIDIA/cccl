@@ -20,7 +20,7 @@ int main(int, char**)
   using cuda::std::in_place_t;
   using cuda::std::optional;
 
-  optional<in_place_t> opt; // expected-note {{requested here}}
+  optional<in_place_t> opt{}; // expected-note {{requested here}}
   // expected-error@optional:* {{instantiation of optional with in_place_t is ill-formed}}
 
   return 0;

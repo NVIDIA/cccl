@@ -418,8 +418,7 @@ _CCCL_HOST_DEVICE OutputIterator set_difference(
   OutputIterator result,
   StrictWeakOrdering)
 {
-  THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<InputIterator1, false>::value),
-                           "unimplemented for this system");
+  static_assert(thrust::detail::depend_on_instantiation<InputIterator1, false>::value, "unimplemented for this system");
   return result;
 } // end set_difference()
 
@@ -437,8 +436,7 @@ _CCCL_HOST_DEVICE OutputIterator set_intersection(
   OutputIterator result,
   StrictWeakOrdering)
 {
-  THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<InputIterator1, false>::value),
-                           "unimplemented for this system");
+  static_assert(thrust::detail::depend_on_instantiation<InputIterator1, false>::value, "unimplemented for this system");
   return result;
 } // end set_intersection()
 
@@ -456,8 +454,7 @@ _CCCL_HOST_DEVICE OutputIterator set_symmetric_difference(
   OutputIterator result,
   StrictWeakOrdering)
 {
-  THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<InputIterator1, false>::value),
-                           "unimplemented for this system");
+  static_assert(thrust::detail::depend_on_instantiation<InputIterator1, false>::value, "unimplemented for this system");
   return result;
 } // end set_symmetric_difference()
 
@@ -475,8 +472,7 @@ _CCCL_HOST_DEVICE OutputIterator set_union(
   OutputIterator result,
   StrictWeakOrdering)
 {
-  THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<InputIterator1, false>::value),
-                           "unimplemented for this system");
+  static_assert(thrust::detail::depend_on_instantiation<InputIterator1, false>::value, "unimplemented for this system");
   return result;
 } // end set_union()
 

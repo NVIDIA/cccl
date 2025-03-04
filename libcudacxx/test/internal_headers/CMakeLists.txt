@@ -53,6 +53,7 @@ function(libcudacxx_create_internal_header_test header_name, headertest_src, fal
     $<$<COMPILE_LANGUAGE:CXX>:${headertest_warning_levels_host}>
     -DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
   target_compile_definitions(headertest_${header_name} PRIVATE CCCL_ENABLE_ASSERTIONS)
+  target_compile_definitions(headertest_${header_name} PRIVATE CCCL_ENABLE_OPTIONAL_REF)
   if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
     target_link_libraries(headertest_${header_name} NVHPC::CUDART)
   else()

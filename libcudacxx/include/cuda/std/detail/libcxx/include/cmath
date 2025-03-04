@@ -319,14 +319,26 @@ long double    truncl(long double x);
 #endif // _CCCL_COMPILER(NVHPC)
 
 #include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__cmath/copysign.h>
 #include <cuda/std/__cmath/exponential_functions.h>
 #include <cuda/std/__cmath/fpclassify.h>
+#include <cuda/std/__cmath/gamma.h>
+#include <cuda/std/__cmath/hyperbolic_functions.h>
+#include <cuda/std/__cmath/hypot.h>
+#include <cuda/std/__cmath/inverse_hyperbolic_functions.h>
+#include <cuda/std/__cmath/inverse_trigonometric_functions.h>
+#include <cuda/std/__cmath/isfinite.h>
+#include <cuda/std/__cmath/isinf.h>
+#include <cuda/std/__cmath/isnan.h>
+#include <cuda/std/__cmath/isnormal.h>
 #include <cuda/std/__cmath/lerp.h>
 #include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__cmath/min_max.h>
 #include <cuda/std/__cmath/roots.h>
 #include <cuda/std/__cmath/rounding_functions.h>
+#include <cuda/std/__cmath/signbit.h>
 #include <cuda/std/__cmath/traits.h>
+#include <cuda/std/__cmath/trigonometric_functions.h>
 #include <cuda/std/__cstdlib/abs.h>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
@@ -349,40 +361,6 @@ _CCCL_PUSH_MACROS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-using ::acos;
-using ::acosf;
-using ::asin;
-using ::asinf;
-using ::atan;
-using ::atan2;
-using ::atan2f;
-using ::atanf;
-using ::cos;
-using ::cosf;
-using ::cosh;
-using ::coshf;
-
-using ::sin;
-using ::sinf;
-using ::sinh;
-using ::sinhf;
-
-using ::tan;
-using ::tanf;
-
-using ::tanh;
-using ::tanhf;
-
-using ::acosh;
-using ::acoshf;
-using ::asinh;
-using ::asinhf;
-using ::atanh;
-using ::atanhf;
-
-using ::hypot;
-using ::hypotf;
-
 #if !_CCCL_COMPILER(NVRTC)
 
 using ::double_t;
@@ -394,27 +372,6 @@ using ::fmodf;
 using ::modf;
 using ::modff;
 
-using ::sin;
-using ::sinf;
-using ::sinh;
-using ::sinhf;
-
-using ::tan;
-using ::tanf;
-
-using ::tanh;
-using ::tanhf;
-
-using ::acosh;
-using ::acoshf;
-using ::asinh;
-using ::asinhf;
-using ::atanh;
-using ::atanhf;
-
-using ::copysign;
-using ::copysignf;
-
 using ::erf;
 using ::erfc;
 using ::erfcf;
@@ -423,8 +380,6 @@ using ::fdim;
 using ::fdimf;
 using ::fma;
 using ::fmaf;
-using ::lgamma;
-using ::lgammaf;
 
 using ::nan;
 using ::nanf;
@@ -433,70 +388,19 @@ using ::remainder;
 using ::remainderf;
 using ::remquo;
 using ::remquof;
-using ::tgamma;
-using ::tgammaf;
 
-using ::acosl;
-using ::asinl;
-using ::atan2l;
-using ::atanl;
-using ::coshl;
-using ::cosl;
 using ::fmodl;
 using ::modfl;
-using ::sinhl;
-using ::sinl;
-using ::tanl;
-
-using ::acoshl;
-using ::asinhl;
-using ::atanhl;
-using ::tanhl;
-
-using ::copysignl;
 
 using ::erfcl;
 using ::erfl;
 using ::fdiml;
 using ::fmal;
-using ::hypotl;
-using ::lgammal;
 using ::nanl;
 using ::remainderl;
 using ::remquol;
-using ::tgammal;
 
 #endif // _CCCL_COMPILER(NVRTC)
-
-#ifndef __cuda_std__
-_LIBCUDACXX_HIDE_FROM_ABI float hypot(float x, float y, float z)
-{
-  return _CUDA_VSTD::sqrt(x * x + y * y + z * z);
-}
-_LIBCUDACXX_HIDE_FROM_ABI double hypot(double x, double y, double z)
-{
-  return _CUDA_VSTD::sqrt(x * x + y * y + z * z);
-}
-#  ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
-_LIBCUDACXX_HIDE_FROM_ABI long double hypot(long double x, long double y, long double z)
-{
-  return _CUDA_VSTD::sqrt(x * x + y * y + z * z);
-}
-#  endif
-
-template <class _A1, class _A2, class _A3>
-_LIBCUDACXX_HIDE_FROM_ABI
-enable_if_t<is_arithmetic<_A1>::value && is_arithmetic<_A2>::value && is_arithmetic<_A3>::value,
-            __promote_t<_A1, _A2, _A3>>
-hypot(_A1 __lcpp_x, _A2 __lcpp_y, _A3 __lcpp_z) noexcept
-{
-  using __result_type = __promote_t<_A1, _A2, _A3>;
-  static_assert(
-    (!(is_same<_A1, __result_type>::value && is_same<_A2, __result_type>::value && is_same<_A3, __result_type>::value)),
-    "");
-  return _CUDA_VSTD::hypot((__result_type) __lcpp_x, (__result_type) __lcpp_y, (__result_type) __lcpp_z);
-}
-#endif // !__cuda_std__
 
 #ifndef _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
 #  define _CCCL_CONSTEXPR_CXX14_COMPLEX constexpr
