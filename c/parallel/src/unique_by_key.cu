@@ -302,7 +302,7 @@ struct agent_policy_t {{
   static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_DEFAULT;
   static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS;
   struct detail {{
-    using delay_constructor_t = cub::detail::default_delay_constructor_t<int>;
+    using delay_constructor_t = cub::detail::default_delay_constructor_t<unsigned long long>;
   }};
 }};
 struct device_unique_by_key_policy {{
