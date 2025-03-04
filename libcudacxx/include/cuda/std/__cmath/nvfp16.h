@@ -23,8 +23,8 @@
 
 #if defined(_LIBCUDACXX_HAS_NVFP16)
 
-#  include <cuda_fp16.h>
-
+#  include <cuda/std/__cmath/copysign.h>
+#  include <cuda/std/__cmath/fp_utils.h>
 #  include <cuda/std/cstdint>
 
 #  include <nv/target>
@@ -32,29 +32,14 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // floating point helper
-_LIBCUDACXX_HIDE_FROM_ABI __half __constexpr_copysign(__half __x, __half __y) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr __half __constexpr_copysign(__half __x, __half __y) noexcept
 {
-  return __float2half(::copysignf(__half2float(__x), __half2float(__y)));
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI __half copysign(__half __x, __half __y)
-{
-  return _CUDA_VSTD::__constexpr_copysign(__x, __y);
+  return _CUDA_VSTD::copysign(__x, __y);
 }
 
 _LIBCUDACXX_HIDE_FROM_ABI __half __constexpr_fabs(__half __x) noexcept
 {
   return ::__habs(__x);
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI __half fabs(__half __x)
-{
-  return _CUDA_VSTD::__constexpr_fabs(__x);
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI __half abs(__half __x)
-{
-  return _CUDA_VSTD::__constexpr_fabs(__x);
 }
 
 _LIBCUDACXX_HIDE_FROM_ABI __half __constexpr_fmax(__half __x, __half __y) noexcept

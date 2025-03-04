@@ -74,20 +74,24 @@ int main(int, char**)
 #if _CCCL_HAS_NVBF16()
   test<__nv_bfloat16>();
 #endif // _CCCL_HAS_NVBF16
-#if _CCCL_HAS_NVFP8()
+#if _CCCL_HAS_NVFP8_E4M3()
   test<__nv_fp8_e4m3>();
+#endif // _CCCL_HAS_NVFP8_E4M3()
+#if _CCCL_HAS_NVFP8_E5M2()
   test<__nv_fp8_e5m2>();
-#  if _CCCL_CUDACC_AT_LEAST(12, 8)
+#endif // _CCCL_HAS_NVFP8_E5M2()
+#if _CCCL_HAS_NVFP8_E8M0()
   test<__nv_fp8_e8m0>();
-#  endif // _CUDACC_AT_LEAST(12, 8)
-#endif // _CCCL_HAS_NVFP8()
-#if _CCCL_HAS_NVFP6()
+#endif // _CCCL_HAS_NVFP8_E8M0()
+#if _CCCL_HAS_NVFP6_E2M3()
   test<__nv_fp6_e2m3>();
+#endif // _CCCL_HAS_NVFP6_E2M3()
+#if _CCCL_HAS_NVFP6_E3M2()
   test<__nv_fp6_e3m2>();
-#endif // _CCCL_HAS_NVFP6()
-#if _CCCL_HAS_NVFP4()
+#endif // _CCCL_HAS_NVFP6_E3M2()
+#if _CCCL_HAS_NVFP4_E2M1()
   test<__nv_fp4_e2m1>();
-#endif // _CCCL_HAS_NVFP4()
+#endif // _CCCL_HAS_NVFP4_E2M1()
 
   static_assert(!cuda::std::numeric_limits<cuda::std::complex<double>>::is_specialized,
                 "!cuda::std::numeric_limits<cuda::std::complex<double> >::is_specialized");

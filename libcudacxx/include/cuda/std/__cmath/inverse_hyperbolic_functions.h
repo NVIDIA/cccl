@@ -21,11 +21,16 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cmath/common.h>
+#include <cuda/std/__internal/nvfp_types.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
 #include <nv/target>
+
+// MSVC and clang cuda need the host side functions included
+#if _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
+#  include <math.h>
+#endif // _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
