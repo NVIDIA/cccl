@@ -18,6 +18,7 @@
 #include "kernels/operators.h"
 #include "util/context.h"
 #include "util/indirect_arg.h"
+#include "util/tuning.h"
 #include "util/types.h"
 #include <cccl/c/merge_sort.h>
 #include <nvrtc/command_list.h>
@@ -114,11 +115,6 @@ std::string get_iterator_name(cccl_iterator_t iterator, merge_sort_iterator_t wh
 
     return iterator_t;
   }
-}
-
-int nominal_4b_items_to_items(int nominal_4b_items_per_thread, int key_size)
-{
-  return std::min(nominal_4b_items_per_thread, std::max(1, nominal_4b_items_per_thread * 4 / key_size));
 }
 
 merge_sort_runtime_tuning_policy get_policy(int cc, int key_size)

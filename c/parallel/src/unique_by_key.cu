@@ -19,6 +19,7 @@
 #include "util/context.h"
 #include "util/indirect_arg.h"
 #include "util/scan_tile_state.h"
+#include "util/tuning.h"
 #include "util/types.h"
 #include <cccl/c/unique_by_key.h>
 #include <nvrtc/command_list.h>
@@ -55,12 +56,12 @@ struct unique_by_key_tuning_t
   int items_per_thread;
 };
 
-unique_by_key_runtime_tuning_policy get_policy(int /*cc*/)
+unique_by_key_runtime_tuning_policy get_policy(int /*cc*/, int key_size)
 {
   // TODO: we should update this once we figure out a way to reuse
   // tuning logic from C++. Alternately, we should implement
   // something better than a hardcoded default:
-  return {128, 10, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT};
+  return {128, nominal_4b_items_to_items(9, key_size), cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT};
 }
 
 enum class unique_by_key_iterator_t
@@ -165,8 +166,10 @@ struct dynamic_unique_by_key_policy_t
   template <typename F>
   cudaError_t Invoke(int device_ptx_version, F& op)
   {
-    return op.template Invoke<unique_by_key_runtime_tuning_policy>(GetPolicy(device_ptx_version));
+    return op.template Invoke<unique_by_key_runtime_tuning_policy>(GetPolicy(device_ptx_version, key_size));
   }
+
+  int key_size;
 };
 
 struct unique_by_key_kernel_source
@@ -241,7 +244,7 @@ CUresult cccl_device_unique_by_key_build(
     const char* name = "test";
 
     const int cc      = cc_major * 10 + cc_minor;
-    const auto policy = unique_by_key::get_policy(cc);
+    const auto policy = unique_by_key::get_policy(cc, input_keys_it.value_type.size);
 
     const auto input_keys_it_value_t          = cccl_type_enum_to_name(input_keys_it.value_type.type);
     const auto input_values_it_value_t        = cccl_type_enum_to_name(input_values_it.value_type.type);
@@ -446,7 +449,7 @@ CUresult cccl_device_unique_by_key(
                                 stream,
                                 {build},
                                 cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
-                                {});
+                                {d_keys_in.value_type.size});
   }
   catch (const std::exception& exc)
   {
