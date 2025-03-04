@@ -843,6 +843,11 @@ public:
    * ForEachInExtents
    ********************************************************************************************************************/
 
+#ifdef _CCCL_DOXYGEN_INVOKED // Otherwise doxygen doesn't document the functions
+#  undef __cccl_lib_mdspan
+#  define __cccl_lib_mdspan 1
+#endif
+
 #if __cccl_lib_mdspan
 
   //! @rst
@@ -875,7 +880,7 @@ public:
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_each_in_extents_api.cu
   //!     :language: c++
   //!     :dedent:
-  //!     :start-after:example-begin for-each-in-extents-example
+  //!     :start-after: example-begin for-each-in-extents-example
   //!     :end-before: example-end for-each-in-extents-example
   //!
   //! @endrst
@@ -955,7 +960,7 @@ public:
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_each_in_extents_api.cu
   //!     :language: c++
   //!     :dedent:
-  //!     :start-after:example-begin for-each-in-extents-example
+  //!     :start-after: example-begin for-each-in-extents-example
   //!     :end-before: example-end for-each-in-extents-example
   //!
   //! @endrst
@@ -990,7 +995,6 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachInExtents");
     return detail::for_each_in_extents::dispatch_t<extents_type, OpType>::dispatch(extents, op, stream);
   }
-
 #endif // __cccl_lib_mdspan
 };
 
