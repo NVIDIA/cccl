@@ -196,6 +196,7 @@ public:
         int initialize_size = 16;
         parent.resize(initialize_size);
         children.resize(initialize_size);
+        free_list.reserve(initialize_size);
 
         for (int i = 0; i < initialize_size; i++)
         {
@@ -233,7 +234,7 @@ public:
         {
           bool found = false;
           ::std::vector<int> new_children;
-          new_children.resize(children[p].size() - 1);
+          new_children.reserve(children[p].size() - 1);
           for (auto c : children[p])
           {
             if (c == offset)
