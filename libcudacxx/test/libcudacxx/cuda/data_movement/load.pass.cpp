@@ -8,44 +8,53 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/data_movement>
+#include <cuda/ptx>
 #include <cuda/std/cassert>
 
 __device__ unsigned input;
 __device__ unsigned output;
 
-template <typename Behavior, typename Eviction, typename Prefetch>
-__device__ void load_call(Behavior behavior, Eviction eviction, Prefetch prefetch)
+template <typename Access, typename Eviction, typename Prefetch>
+__device__ void load_call(Access access, Eviction eviction, Prefetch prefetch)
 {
-#if __libcuda_ptx_isa > 0
-  output = cuda::load(&input, behavior, eviction, prefetch);
-  printf("%u\n", output);
+  auto local = cuda::ptx::get_sreg_clock();
+  input      = local;
+  __threadfence();
+  output = cuda::load(&input, access, eviction, prefetch);
+  assert(output == local);
+  __threadfence();
+}
+
+template <typename Access, typename Eviction>
+__device__ void load_call(Access access, Eviction eviction)
+{
+  load_call(access, eviction, cuda::prefetch_spatial_none);
+#if __CUDA_ARCH__ >= 750
+  load_call(access, eviction, cuda::prefetch_64B);
+  load_call(access, eviction, cuda::prefetch_128B);
+#  if __CUDA_ARCH__ >= 800
+  load_call(access, eviction, cuda::prefetch_256B);
+#  endif
 #endif
 }
 
-template <typename Behavior, typename Eviction>
-__device__ void load_call(Behavior behavior, Eviction eviction)
+template <typename Access>
+__device__ void load_call(Access access)
 {
-  load_call(behavior, eviction, cuda::prefetch_spatial_none);
-  load_call(behavior, eviction, cuda::prefetch_64B);
-  load_call(behavior, eviction, cuda::prefetch_128B);
-  load_call(behavior, eviction, cuda::prefetch_256B);
-}
-
-template <typename Behavior>
-__device__ void load_call(Behavior behavior)
-{
-  load_call(behavior, cuda::eviction_none);
-  load_call(behavior, cuda::eviction_normal);
-  load_call(behavior, cuda::eviction_unchanged);
-  load_call(behavior, cuda::eviction_first);
-  load_call(behavior, cuda::eviction_last);
-  load_call(behavior, cuda::eviction_no_alloc);
+  load_call(access, cuda::eviction_none);
+  load_call(access, cuda::eviction_normal);
+  load_call(access, cuda::eviction_unchanged);
+  load_call(access, cuda::eviction_first);
+  load_call(access, cuda::eviction_last);
+  load_call(access, cuda::eviction_no_alloc);
 }
 
 __global__ void load_kernel()
 {
+#if __CUDA_ARCH__ >= 700
   load_call(cuda::read_only);
   load_call(cuda::read_write);
+#endif
 }
 
 //----------------------------------------------------------------------------------------------------------------------
