@@ -77,15 +77,15 @@ __host__ __device__ void test(float value)
 {
   test<float>(value);
   test<double>(value);
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   test<long double>(value);
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#endif // _CCCL_HAS_LONG_DOUBLE()
+#if _LIBCUDACXX_HAS_NVFP16()
   test<__half>(__float2half(value));
-#endif // _LIBCUDACXX_HAS_NVFP16
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16>(__float2bfloat16(value));
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
   test<unsigned short>(static_cast<unsigned short>(value));
   test<int>(static_cast<int>(value));

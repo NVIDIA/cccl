@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#if _LIBCUDACXX_HAS_NVBF16()
 
 #  include <cuda/std/__cmath/nvbf16.h>
 #  include <cuda/std/__complex/vector_support.h>
@@ -344,6 +344,6 @@ operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const complex<__nv_bfloa
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif /// _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 #endif // _LIBCUDACXX___COMPLEX_NVBF16_H

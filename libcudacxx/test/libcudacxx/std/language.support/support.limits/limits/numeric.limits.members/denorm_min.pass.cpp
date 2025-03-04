@@ -55,16 +55,16 @@ int main(int, char**)
 #if defined(__FLT_DENORM_MIN__) // guarded because these macros are extensions.
   test<float>(__FLT_DENORM_MIN__);
   test<double>(__DBL_DENORM_MIN__);
-#  ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#  if _CCCL_HAS_LONG_DOUBLE()
   test<long double>(__LDBL_DENORM_MIN__);
-#  endif
+#  endif // _CCCL_HAS_LONG_DOUBLE()
 #endif
 #if defined(FLT_TRUE_MIN) // not currently provided on linux.
   test<float>(FLT_TRUE_MIN);
   test<double>(DBL_TRUE_MIN);
-#  ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#  if _CCCL_HAS_LONG_DOUBLE()
   test<long double>(LDBL_TRUE_MIN);
-#  endif
+#  endif // _CCCL_HAS_LONG_DOUBLE()
 #endif
 #if _CCCL_HAS_NVFP16()
   test<__half>(__double2half(5.9604644775390625e-08));

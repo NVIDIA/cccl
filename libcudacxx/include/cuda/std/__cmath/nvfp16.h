@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#if _LIBCUDACXX_HAS_NVFP16()
 
 #  include <cuda/std/__cmath/copysign.h>
 #  include <cuda/std/__cmath/fp_utils.h>
@@ -49,6 +49,6 @@ _LIBCUDACXX_HIDE_FROM_ABI __half __constexpr_fmax(__half __x, __half __y) noexce
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif /// _LIBCUDACXX_HAS_NVFP16
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
 #endif // _LIBCUDACXX___CMATH_NVFP16_H

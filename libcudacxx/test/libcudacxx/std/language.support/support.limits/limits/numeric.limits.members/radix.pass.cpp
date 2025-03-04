@@ -52,9 +52,9 @@ int main(int, char**)
 #endif // _CCCL_HAS_INT128()
   test<float, FLT_RADIX>();
   test<double, FLT_RADIX>();
-#ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#if _CCCL_HAS_LONG_DOUBLE()
   test<long double, FLT_RADIX>();
-#endif
+#endif // _CCCL_HAS_LONG_DOUBLE()
 #if _CCCL_HAS_NVFP16()
   test<__half, FLT_RADIX>();
 #endif // _CCCL_HAS_NVFP16

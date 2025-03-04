@@ -80,7 +80,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isfinite(double __x) no
 #endif // ^^^ !_CCCL_BUILTIN_ISFINITE ^^^
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isfinite(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_ISFINITE)
@@ -89,21 +89,21 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isfinite(long double __
   return _CUDA_VSTD::__isfinite_impl(__x);
 #  endif // defined(_CCCL_BUILTIN_ISFINITE)
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isfinite(__half __x) noexcept
 {
   return (_CUDA_VSTD::__cccl_fp_get_storage(__x) & __cccl_nvfp16_exp_mask) != __cccl_nvfp16_exp_mask;
 }
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#if _LIBCUDACXX_HAS_NVBF16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isfinite(__nv_bfloat16 __x) noexcept
 {
   return (_CUDA_VSTD::__cccl_fp_get_storage(__x) & __cccl_nvbf16_exp_mask) != __cccl_nvbf16_exp_mask;
 }
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 #if _CCCL_HAS_NVFP8_E4M3()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isfinite(__nv_fp8_e4m3 __x) noexcept

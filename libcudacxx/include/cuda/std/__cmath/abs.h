@@ -60,7 +60,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double fabs(double __x) noexcept
 #endif // ^^^ !_CCCL_BUILTIN_FABS ^^^
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double fabsl(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_FABSL)
@@ -74,25 +74,25 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double fabs(long double __x) noex
 {
   return _CUDA_VSTD::fabsl(__x);
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __half fabs(__half __x) noexcept
 {
   // We cannot use `abs.f16` because it is not IEEE 754 compliant, see docs
   const auto __val = _CUDA_VSTD::__cccl_fp_get_storage(__x) & __cccl_nvfp16_exp_mant_mask;
   return _CUDA_VSTD::__cccl_make_nvfp16_from_storage(static_cast<uint16_t>(__val));
 }
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#if _LIBCUDACXX_HAS_NVBF16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_bfloat16 fabs(__nv_bfloat16 __x) noexcept
 {
   // We cannot use `abs.bf16` because it is not IEEE 754 compliant, see docs
   const auto __val = _CUDA_VSTD::__cccl_fp_get_storage(__x) & __cccl_nvbf16_exp_mant_mask;
   return _CUDA_VSTD::__cccl_make_nvbf16_from_storage(static_cast<uint16_t>(__val));
 }
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 #if _CCCL_HAS_NVFP8_E4M3()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e4m3 fabs(__nv_fp8_e4m3 __x) noexcept
@@ -160,26 +160,26 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double abs(double __val) noexcept
   return _CUDA_VSTD::fabs(__val);
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double abs(long double __val) noexcept
 {
   return _CUDA_VSTD::fabsl(__val);
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __half abs(__half __x) noexcept
 {
   return _CUDA_VSTD::fabs(__x);
 }
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#if _LIBCUDACXX_HAS_NVBF16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_bfloat16 abs(__nv_bfloat16 __x) noexcept
 {
   return _CUDA_VSTD::fabs(__x);
 }
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 #if _CCCL_HAS_NVFP8_E4M3()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e4m3 abs(__nv_fp8_e4m3 __x) noexcept

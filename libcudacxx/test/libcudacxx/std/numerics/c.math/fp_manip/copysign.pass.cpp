@@ -113,15 +113,15 @@ __host__ __device__ constexpr bool test()
 {
   test_type<float>();
   test_type<double>();
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   test_type<long double>();
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#endif // _CCCL_HAS_LONG_DOUBLE()
+#if _LIBCUDACXX_HAS_NVFP16()
   test_type<__half>();
-#endif // _LIBCUDACXX_HAS_NVFP16
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test_type<__nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 #if _CCCL_HAS_NVFP8_E4M3()
   test_type<__nv_fp8_e4m3>();
 #endif // _CCCL_HAS_NVFP8_E4M3
@@ -161,12 +161,12 @@ __host__ __device__ constexpr bool test()
 
 __host__ __device__ constexpr bool test_constexpr()
 {
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#if _LIBCUDACXX_HAS_NVFP16()
   test_type<__half>();
-#endif // _LIBCUDACXX_HAS_NVFP16
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test_type<__nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 #if _CCCL_HAS_NVFP8_E4M3()
   test_type<__nv_fp8_e4m3>();
 #endif // _CCCL_HAS_NVFP8_E4M3
