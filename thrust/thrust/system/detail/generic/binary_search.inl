@@ -58,7 +58,7 @@ namespace detail
 struct lbf
 {
   template <typename RandomAccessIterator, typename T, typename StrictWeakOrdering>
-  _CCCL_HOST_DEVICE typename thrust::iterator_traits<RandomAccessIterator>::difference_type
+  _CCCL_HOST_DEVICE thrust::detail::it_difference_t<RandomAccessIterator>
   operator()(RandomAccessIterator begin, RandomAccessIterator end, const T& value, StrictWeakOrdering comp)
   {
     return thrust::system::detail::generic::scalar::lower_bound(begin, end, value, comp) - begin;
@@ -68,7 +68,7 @@ struct lbf
 struct ubf
 {
   template <typename RandomAccessIterator, typename T, typename StrictWeakOrdering>
-  _CCCL_HOST_DEVICE typename thrust::iterator_traits<RandomAccessIterator>::difference_type
+  _CCCL_HOST_DEVICE thrust::detail::it_difference_t<RandomAccessIterator>
   operator()(RandomAccessIterator begin, RandomAccessIterator end, const T& value, StrictWeakOrdering comp)
   {
     return thrust::system::detail::generic::scalar::upper_bound(begin, end, value, comp) - begin;
@@ -224,7 +224,7 @@ _CCCL_HOST_DEVICE ForwardIterator lower_bound(
   const T& value,
   StrictWeakOrdering comp)
 {
-  using difference_type = typename thrust::iterator_traits<ForwardIterator>::difference_type;
+  using difference_type = thrust::detail::it_difference_t<ForwardIterator>;
 
   return begin + detail::binary_search<difference_type>(exec, begin, end, value, comp, detail::lbf());
 }
@@ -245,7 +245,7 @@ _CCCL_HOST_DEVICE ForwardIterator upper_bound(
   const T& value,
   StrictWeakOrdering comp)
 {
-  using difference_type = typename thrust::iterator_traits<ForwardIterator>::difference_type;
+  using difference_type = thrust::detail::it_difference_t<ForwardIterator>;
 
   return begin + detail::binary_search<difference_type>(exec, begin, end, value, comp, detail::ubf());
 }

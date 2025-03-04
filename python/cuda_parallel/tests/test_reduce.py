@@ -61,11 +61,13 @@ def test_complex_device_reduce():
     reduce_into = algorithms.reduce_into(d_output, d_output, op, h_init)
 
     for num_items in [42, 420000]:
-        h_input = np.random.random(num_items) + 1j * np.random.random(num_items)
+        real_imag = np.random.random((2, num_items))
+        h_input = real_imag[0] + 1j * real_imag[1]
         d_input = numba.cuda.to_device(h_input)
-        temp_storage_bytes = reduce_into(None, d_input, d_output, d_input.size, h_init)
+        assert d_input.size == num_items
+        temp_storage_bytes = reduce_into(None, d_input, d_output, num_items, h_init)
         d_temp_storage = numba.cuda.device_array(temp_storage_bytes, np.uint8)
-        reduce_into(d_temp_storage, d_input, d_output, d_input.size, h_init)
+        reduce_into(d_temp_storage, d_input, d_output, num_items, h_init)
 
         result = d_output.copy_to_host()[0]
         expected = np.sum(h_input, initial=h_init[0])

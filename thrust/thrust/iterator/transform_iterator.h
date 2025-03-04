@@ -63,7 +63,7 @@ template <class UnaryFunc, class Iterator>
 struct transform_iterator_reference
 {
   // by default, dereferencing the iterator yields the same as the function.
-  using type = decltype(::cuda::std::declval<UnaryFunc>()(::cuda::std::declval<iterator_value_t<Iterator>>()));
+  using type = decltype(::cuda::std::declval<UnaryFunc>()(::cuda::std::declval<it_value_t<Iterator>>()));
 };
 
 // for certain function objects, we need to tweak the reference type. Notably, identity functions must decay to values.
@@ -71,13 +71,13 @@ struct transform_iterator_reference
 template <class Iterator>
 struct transform_iterator_reference<::cuda::std::identity, Iterator>
 {
-  using type = iterator_value_t<Iterator>;
+  using type = it_value_t<Iterator>;
 };
 template <typename Eval, class Iterator>
 struct transform_iterator_reference<functional::actor<Eval>, Iterator>
 {
   using type = ::cuda::std::remove_reference_t<decltype(::cuda::std::declval<functional::actor<Eval>>()(
-    ::cuda::std::declval<iterator_value_t<Iterator>>()))>;
+    ::cuda::std::declval<it_value_t<Iterator>>()))>;
 };
 
 // Type function to compute the iterator_adaptor instantiation to be used for transform_iterator
@@ -85,8 +85,8 @@ template <class UnaryFunc, class Iterator, class Reference, class Value>
 struct make_transform_iterator_base
 {
 private:
-  using reference  = typename ia_dflt_help<Reference, transform_iterator_reference<UnaryFunc, Iterator>>::type;
-  using value_type = typename ia_dflt_help<Value, ::cuda::std::remove_cvref<reference>>::type;
+  using reference  = replace_if_use_default<Reference, transform_iterator_reference<UnaryFunc, Iterator>>;
+  using value_type = replace_if_use_default<Value, ::cuda::std::remove_cvref<reference>>;
 
 public:
   using type =
@@ -94,7 +94,7 @@ public:
                      Iterator,
                      value_type,
                      use_default,
-                     typename iterator_traits<Iterator>::iterator_category,
+                     typename ::cuda::std::iterator_traits<Iterator>::iterator_category,
                      reference>;
 };
 
@@ -329,7 +329,7 @@ private:
     // The workaround is to create a temporary to allow iterators with wrapped/proxy references to convert to their
     // value type before calling m_f. This also loads values from a different memory space (cf. `device_reference`).
     // Note that this disallows mutable operations through m_f.
-    iterator_value_t<Iterator> const& x = *this->base();
+    detail::it_value_t<Iterator> const& x = *this->base();
     // FIXME(bgruber): x may be a reference to a temporary (e.g. if the base iterator is a counting_iterator). If `m_f`
     // does not produce an independent copy and super_t::reference is a reference, we return a dangling reference (e.g.
     // for any `[thrust|::cuda::std]::identity` functor).

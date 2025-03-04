@@ -53,6 +53,7 @@
 #include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/ptx>
+#include <cuda/std/__algorithm_>
 
 CUB_NAMESPACE_BEGIN
 
@@ -160,17 +161,17 @@ struct AgentRadixSortUpsweep
     PACKING_RATIO     = sizeof(PackedCounter) / sizeof(DigitCounter),
     LOG_PACKING_RATIO = Log2<PACKING_RATIO>::VALUE,
 
-    LOG_COUNTER_LANES = CUB_MAX(0, int(RADIX_BITS) - int(LOG_PACKING_RATIO)),
+    LOG_COUNTER_LANES = _CUDA_VSTD::max(0, int(RADIX_BITS) - int(LOG_PACKING_RATIO)),
     COUNTER_LANES     = 1 << LOG_COUNTER_LANES,
 
     // To prevent counter overflow, we must periodically unpack and aggregate the
     // digit counters back into registers.  Each counter lane is assigned to a
     // warp for aggregation.
 
-    LANES_PER_WARP = CUB_MAX(1, (COUNTER_LANES + WARPS - 1) / WARPS),
+    LANES_PER_WARP = _CUDA_VSTD::max(1, (COUNTER_LANES + WARPS - 1) / WARPS),
 
     // Unroll tiles in batches without risk of counter overflow
-    UNROLL_COUNT      = CUB_MIN(64, 255 / KEYS_PER_THREAD),
+    UNROLL_COUNT      = _CUDA_VSTD::min(64, 255 / KEYS_PER_THREAD),
     UNROLLED_ELEMENTS = UNROLL_COUNT * TILE_ITEMS,
   };
 

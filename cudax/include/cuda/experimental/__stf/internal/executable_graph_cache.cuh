@@ -28,6 +28,7 @@
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh> // for ::std::hash<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>>
 #include <cuda/experimental/__stf/utility/pretty_print.cuh>
+#include <cuda/experimental/__stf/utility/source_location.cuh>
 
 #include <queue> // for ::std::priority_queue
 #include <unordered_map>
@@ -53,18 +54,6 @@ inline bool try_updating_executable_graph(cudaGraphExec_t exec_graph, cudaGraph_
   // Be sure to "erase" the last error
   cudaError_t res = cudaGetLastError();
 
-#ifdef CUDASTF_DEBUG
-  reserved::counter<reserved::graph_tag::update>.increment();
-  if (res == cudaSuccess)
-  {
-    reserved::counter<reserved::graph_tag::update::success>.increment();
-  }
-  else
-  {
-    reserved::counter<reserved::graph_tag::update::failure>.increment();
-  }
-#endif
-
   return (res == cudaSuccess);
 }
 
@@ -80,14 +69,20 @@ inline ::std::shared_ptr<cudaGraphExec_t> graph_instantiate(cudaGraph_t g)
 
   cuda_try(cudaGraphInstantiateWithFlags(res.get(), g, 0));
 
-#ifdef CUDASTF_DEBUG
-  reserved::counter<reserved::graph_tag::instantiate>.increment();
-#endif
-
   return res;
 }
 
 } // end namespace reserved
+
+// To get information about how it was used
+class executable_graph_cache_stat
+{
+public:
+  size_t instantiate_cnt = 0;
+  size_t update_cnt      = 0;
+  size_t nnodes          = 0;
+  size_t nedges          = 0;
+};
 
 class executable_graph_cache
 {
@@ -153,7 +148,9 @@ public:
   using per_device_map_t = ::std::unordered_multimap<::std::pair<size_t, size_t>, entry, hash_pair>;
 
   // Check if there is a matching entry (and update it if necessary)
-  ::std::shared_ptr<cudaGraphExec_t> query(size_t nnodes, size_t nedges, ::std::shared_ptr<cudaGraph_t> g)
+  // the returned bool indicate is this is a cache hit (true = cache hit, false = cache miss)
+  _CUDA_VSTD::pair<::std::shared_ptr<cudaGraphExec_t>, bool>
+  query(size_t nnodes, size_t nedges, ::std::shared_ptr<cudaGraph_t> g)
   {
     int dev_id = cuda_try<cudaGetDevice>();
     _CCCL_ASSERT(dev_id < int(cached_graphs.size()), "invalid device id value");
@@ -168,7 +165,7 @@ public:
         e.lru_refresh();
 
         // We have successfully updated the graph, this is a cache hit
-        return e.exec_g;
+        return _CUDA_VSTD::make_pair(e.exec_g, true);
       }
     }
 
@@ -192,7 +189,7 @@ public:
       total_cache_footprint[dev_id] += footprint;
     }
 
-    return exec_g;
+    return _CUDA_VSTD::make_pair(exec_g, false);
   }
 
 private:

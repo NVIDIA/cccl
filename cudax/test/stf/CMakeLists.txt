@@ -27,12 +27,15 @@ set(stf_test_sources
   fhe/parse_arctyrex.cu
   gnu/include_only.cpp
   graph/concurrency_test.cu
+  graph/get_cache_stats.cu
+  graph/graph_cache_policy.cu
   graph/graph_ctx_low_level.cu
   graph/static_graph_ctx.cu
   hashtable/test.cu
   interface/data_from_device_async.cu
   interface/move_operator.cu
   local_stf/legacy_to_stf.cu
+  local_stf/threads_multiple_graphs.cu
   places/managed.cu
   places/managed_from_user.cu
   places/non_current_device.cu
@@ -62,6 +65,7 @@ set(stf_test_sources
   threads/axpy-threads-2.cu
   # threads/axpy-threads.cu
   utility/timing_with_fences.cu
+  utility/source_location_map.cu
 )
 
 set(stf_test_codegen_sources
@@ -136,6 +140,8 @@ set(stf_test_codegen_sources
   stress/launch_vs_parallelfor.cu
   stress/parallel_for_overhead.cu
   # threads/axpy-threads-pfor.cu   # Currently has a difficult-to-reproduce concurrency problem
+  threads/axpy-threads-graph.cu
+  threads/axpy-threads-graph-capture.cu
   tools/auto_dump/auto_dump.cu
 )
 

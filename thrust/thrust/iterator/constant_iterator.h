@@ -44,7 +44,7 @@ namespace detail
 template <typename Value, typename Incrementable, typename System>
 struct make_constant_iterator_base
 {
-  using incrementable = typename ia_dflt_help<Incrementable, identity_<::cuda::std::intmax_t>>::type;
+  using incrementable = replace_if_use_default<Incrementable, identity_<::cuda::std::intmax_t>>;
   using base_iterator = counting_iterator<incrementable, System, random_access_traversal_tag>;
   using type =
     iterator_adaptor<constant_iterator<Value, Incrementable, System>,
