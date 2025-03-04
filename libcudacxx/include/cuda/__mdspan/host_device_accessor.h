@@ -121,12 +121,6 @@ private:
     _CCCL_ASSERT(__is_host_accessible_pointer(__p), "cuda::__host_accessor data handle is not a HOST pointer");
   }
 
-  // template <typename _Sp = bool> // lazy evaluation
-  // _LIBCUDACXX_HIDE_FROM_ABI static constexpr void __prevent_device_instantiation() noexcept
-  // {
-  //   static_assert(sizeof(_Sp) != sizeof(_Sp), "cuda::__host_accessor cannot be used in HOST code");
-  // }
-
 public:
   _CCCL_TEMPLATE(typename _NotUsed = void)
   _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_default_constructible, _Accessor))
@@ -138,6 +132,9 @@ public:
     noexcept(_CUDA_VSTD::is_nothrow_copy_constructible_v<_Accessor>)
       : _Accessor{__acc}
   {}
+
+  template <typename _OtherAccessor>
+  __host_accessor(const __device_accessor<_OtherAccessor>&) = delete;
 
   _CCCL_TEMPLATE(typename _OtherAccessor)
   _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, _OtherAccessor))
@@ -180,11 +177,9 @@ public:
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-  detectably_invalid([[maybe_unused]] data_handle_type __p, [[maybe_unused]] size_t __size) const noexcept
+  __detectably_invalid([[maybe_unused]] data_handle_type __p, size_t) const noexcept
   {
-    NV_IF_ELSE_TARGET(NV_IS_HOST,
-                      (return __is_host_accessible_pointer(__p) && __is_host_accessible_pointer(__p + __size - 1);),
-                      (return false;))
+    NV_IF_ELSE_TARGET(NV_IS_HOST, (return __is_host_accessible_pointer(__p);), (return false;))
   }
 };
 
@@ -225,6 +220,9 @@ public:
       : _Accessor{__acc}
   {}
 
+  template <typename _OtherAccessor>
+  __device_accessor(const __host_accessor<_OtherAccessor>&) = delete;
+
   _CCCL_TEMPLATE(typename _OtherAccessor)
   _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, _OtherAccessor))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr
@@ -261,7 +259,7 @@ public:
     return _Accessor::offset(__p, __i);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool detectably_invalid(data_handle_type, size_t) const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __detectably_invalid(data_handle_type, size_t) const noexcept
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST, (return false;), (return true;))
   }
@@ -320,6 +318,12 @@ public:
       : _Accessor{__acc}
   {}
 
+  template <typename _OtherAccessor>
+  __managed_accessor(const __host_accessor<_OtherAccessor>&) = delete;
+
+  template <typename _OtherAccessor>
+  __managed_accessor(const __device_accessor<_OtherAccessor>&) = delete;
+
   _CCCL_TEMPLATE(typename _OtherAccessor)
   _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, _OtherAccessor))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr
@@ -346,11 +350,9 @@ public:
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-  detectably_invalid([[maybe_unused]] data_handle_type __p, [[maybe_unused]] size_t __size) const noexcept
+  __detectably_invalid([[maybe_unused]] data_handle_type __p, size_t) const noexcept
   {
-    NV_IF_ELSE_TARGET(NV_IS_HOST,
-                      (return __is_managed_pointer(__p) && __is_managed_pointer(__p + __size - 1);), //
-                      (return true;))
+    NV_IF_ELSE_TARGET(NV_IS_HOST, (return __is_managed_pointer(__p);), (return true;))
   }
 };
 
