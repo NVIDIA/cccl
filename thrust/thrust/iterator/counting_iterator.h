@@ -53,7 +53,7 @@
 THRUST_NAMESPACE_BEGIN
 
 // forward declaration of counting_iterator
-template <typename Incrementable, typename System, typename Traversal, typename Difference>
+template <typename Incrementable, typename System, typename Traversal, typename Difference, typename Step>
 class counting_iterator;
 
 namespace detail
@@ -110,7 +110,7 @@ _CCCL_HOST_DEVICE typename numeric_difference<Number>::type numeric_distance(Num
   return difference_type(y) - difference_type(x);
 } // end numeric_distance
 
-template <typename Incrementable, typename System, typename Traversal, typename Difference>
+template <typename Incrementable, typename System, typename Traversal, typename Difference, typename Step>
 struct make_counting_iterator_base
 {
   using system =
@@ -135,7 +135,7 @@ struct make_counting_iterator_base
   // to the internal state of an iterator causes subtle bugs (consider the temporary
   // iterator created in the expression *(iter + i)) and has no compelling use case
   using type =
-    iterator_adaptor<counting_iterator<Incrementable, System, Traversal, Difference>,
+    iterator_adaptor<counting_iterator<Incrementable, System, Traversal, Difference, Step>,
                      Incrementable,
                      Incrementable,
                      system,
@@ -186,6 +186,16 @@ struct counting_iterator_equal<Difference,
   }
 };
 
+template <typename T>
+struct value_holder
+{
+  T value;
+
+  _CCCL_HOST_DEVICE auto operator()() const
+  {
+    return value;
+  }
+};
 } // namespace detail
 
 //! \addtogroup iterators
@@ -269,12 +279,15 @@ struct counting_iterator_equal<Difference,
 template <typename Incrementable,
           typename System     = use_default,
           typename Traversal  = use_default,
-          typename Difference = use_default>
+          typename Difference = use_default,
+          typename Step       = ::cuda::std::monostate>
 class _CCCL_DECLSPEC_EMPTY_BASES counting_iterator
-    : public detail::make_counting_iterator_base<Incrementable, System, Traversal, Difference>::type
+    : public detail::make_counting_iterator_base<Incrementable, System, Traversal, Difference, Step>::type
+    , public Step
 {
   //! \cond
-  using super_t = typename detail::make_counting_iterator_base<Incrementable, System, Traversal, Difference>::type;
+  using super_t =
+    typename detail::make_counting_iterator_base<Incrementable, System, Traversal, Difference, Step>::type;
   friend class iterator_core_access;
 
 public:
@@ -292,10 +305,11 @@ public:
   //! \param rhs The \p counting_iterator to copy.
   template <class OtherSystem,
             detail::enable_if_convertible_t<
-              typename iterator_system<counting_iterator<Incrementable, OtherSystem, Traversal, Difference>>::type,
+              typename iterator_system<counting_iterator<Incrementable, OtherSystem, Traversal, Difference, Step>>::type,
               typename iterator_system<super_t>::type,
               int> = 0>
-  _CCCL_HOST_DEVICE counting_iterator(counting_iterator<Incrementable, OtherSystem, Traversal, Difference> const& rhs)
+  _CCCL_HOST_DEVICE
+  counting_iterator(counting_iterator<Incrementable, OtherSystem, Traversal, Difference, Step> const& rhs)
       : super_t(rhs.base())
   {}
 
@@ -307,9 +321,60 @@ public:
       : super_t(x)
   {}
 
+  _CCCL_HOST_DEVICE explicit counting_iterator(Incrementable x, Step step)
+      : super_t(x)
+      , Step(step)
+  {}
+
   //! \cond
 
 private:
+  template <typename S = Step>
+  auto step() const -> Incrementable
+  {
+    static_assert(!::cuda::std::is_same_v<Step, ::cuda::std::monostate>);
+    return static_cast<const Step&>(*this)();
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE void advance(difference_type n)
+  {
+    if constexpr (::cuda::std::is_same_v<Step, ::cuda::std::monostate>)
+    {
+      this->base_reference() = static_cast<Incrementable>(this->base_reference() + n);
+    }
+    else
+    {
+      this->base_reference() += n * step();
+    }
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE void increment()
+  {
+    if constexpr (::cuda::std::is_same_v<Step, ::cuda::std::monostate>)
+    {
+      ++this->base_reference();
+    }
+    else
+    {
+      this->base_reference() += step();
+    }
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE void decrement()
+  {
+    if constexpr (::cuda::std::is_same_v<Step, ::cuda::std::monostate>)
+    {
+      --this->base_reference();
+    }
+    else
+    {
+      this->base_reference() -= step();
+    }
+  }
+
   _CCCL_HOST_DEVICE reference dereference() const
   {
     return this->base_reference();
@@ -348,6 +413,24 @@ template <typename Incrementable>
 inline _CCCL_HOST_DEVICE counting_iterator<Incrementable> make_counting_iterator(Incrementable x)
 {
   return counting_iterator<Incrementable>(x);
+}
+
+template <typename Incrementable, typename Stride>
+inline _CCCL_HOST_DEVICE auto make_counting_iterator(Incrementable x, Stride stride)
+{
+  return counting_iterator<Incrementable, use_default, use_default, use_default, detail::value_holder<Stride>>(
+    x, {stride});
+}
+
+template <typename Incrementable, typename Stride, Stride Value>
+inline _CCCL_HOST_DEVICE auto
+make_counting_iterator(Incrementable x, ::cuda::std::integral_constant<Stride, Value> stride)
+{
+  return counting_iterator<Incrementable,
+                           use_default,
+                           use_default,
+                           use_default,
+                           ::cuda::std::integral_constant<Stride, Value>>(x, stride);
 }
 
 //! \} // end fancyiterators

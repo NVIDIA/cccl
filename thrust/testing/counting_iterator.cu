@@ -257,4 +257,40 @@ void TestCountingIteratorDifference()
 }
 DECLARE_UNITTEST(TestCountingIteratorDifference);
 
+void TestCountingIteratorDynamicStride()
+{
+  auto iter = thrust::make_counting_iterator(0, 2);
+  // static_assert(sizeof(iter) == 2 * sizeof(int));
+
+  ASSERT_EQUAL(*iter, 0);
+  iter++;
+  ASSERT_EQUAL(*iter, 2);
+  iter++;
+  iter++;
+  ASSERT_EQUAL(*iter, 6);
+  iter += 5;
+  ASSERT_EQUAL(*iter, 16);
+  iter -= 10;
+  ASSERT_EQUAL(*iter, -4);
+}
+DECLARE_UNITTEST(TestCountingIteratorDynamicStride);
+
+void TestCountingIteratorStaticStride()
+{
+  auto iter = thrust::make_counting_iterator(0, ::cuda::std::integral_constant<int, 2>{});
+  static_assert(sizeof(decltype(iter)) == sizeof(int));
+
+  ASSERT_EQUAL(*iter, 0);
+  iter++;
+  ASSERT_EQUAL(*iter, 2);
+  iter++;
+  iter++;
+  ASSERT_EQUAL(*iter, 6);
+  iter += 5;
+  ASSERT_EQUAL(*iter, 16);
+  iter -= 10;
+  ASSERT_EQUAL(*iter, -4);
+}
+DECLARE_UNITTEST(TestCountingIteratorStaticStride);
+
 _CCCL_DIAG_POP
