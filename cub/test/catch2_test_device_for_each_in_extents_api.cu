@@ -26,7 +26,6 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-#include "thrust/fill.h"
 // above header needs to be included first
 
 #include <cub/config.cuh>
@@ -37,6 +36,7 @@
 
 #  include <thrust/detail/raw_pointer_cast.h>
 #  include <thrust/device_vector.h>
+#  include <thrust/fill.h>
 #  include <thrust/host_vector.h>
 
 #  include <cuda/std/array>
