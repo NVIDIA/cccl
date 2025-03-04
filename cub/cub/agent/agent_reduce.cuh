@@ -195,8 +195,6 @@ struct AgentReduceImpl
 
   static constexpr CacheLoadModifier LOAD_MODIFIER = AgentReducePolicy::LOAD_MODIFIER;
 
-  static constexpr BlockReduceAlgorithm BLOCK_ALGORITHM = AgentReducePolicy::BLOCK_ALGORITHM;
-
   /// Shared memory type required by this thread block
   struct _TempStorage
   {
