@@ -8,6 +8,7 @@ import numba
 from cuda.cooperative.experimental._common import (
     make_binary_tempfile,
     normalize_dim_param,
+    normalize_dtype_param,
 )
 from cuda.cooperative.experimental._types import (
     Algorithm,
@@ -82,6 +83,8 @@ def load(dtype, threads_per_block, items_per_thread=1, algorithm="direct"):
             :end-before: example-end load_store
     """
     dim = normalize_dim_param(threads_per_block)
+    dtype = normalize_dtype_param(dtype)
+
     template = Algorithm(
         "BlockLoad",
         "Load",
@@ -167,6 +170,8 @@ def store(dtype, threads_per_block, items_per_thread=1, algorithm="direct"):
             :end-before: example-end load_store
     """
     dim = normalize_dim_param(threads_per_block)
+    dtype = normalize_dtype_param(dtype)
+
     template = Algorithm(
         "BlockStore",
         "Store",
