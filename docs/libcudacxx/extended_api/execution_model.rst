@@ -38,7 +38,7 @@ Host threads
 
 The forward progress provided by threads of execution created by the host implementation to
 execute `main <https://en.cppreference.com/w/cpp/language/main_function>`__, `std::thread <https://en.cppreference.com/w/cpp/thread/thread>`__,
-and `std::jthread https://en.cppreference.com/w/cpp/thread/jthread>`__ is implementation-defined behavior of the host
+and `std::jthread <https://en.cppreference.com/w/cpp/thread/jthread>`__ is implementation-defined behavior of the host
 implementation `[intro.progress] <https://eel.is/c++draft/intro.progress>`__.
 General-purpose host implementations should provide _concurrent forward progress _.
 
