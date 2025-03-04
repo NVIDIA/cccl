@@ -41,7 +41,7 @@ struct is_memory_behavior<memory_behavior_t<Value>> : ::cuda::std::true_type
 {};
 
 template <typename T>
-constexpr bool is_memory_behavior_v = is_memory_behavior<T>::value;
+inline constexpr bool is_memory_behavior_v = is_memory_behavior<T>::value;
 
 /***********************************************************************************************************************
  * Cache Hint
