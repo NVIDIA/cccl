@@ -20,9 +20,9 @@ The function reverses the order of bits in a value.
 
 - bitmask of size ``width`` starting at ``start``
 
-**Preconditions**
+**Mandates**
 
-- *Compile-time*: ``T`` is an unsigned integral type (including 128-bit integers).
+- ``T`` is an unsigned integral type (including 128-bit integers).
 
 **Performance considerations**
 
