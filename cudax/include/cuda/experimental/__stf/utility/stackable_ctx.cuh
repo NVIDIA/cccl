@@ -909,10 +909,12 @@ class stackable_logical_data
 
         _CCCL_ASSERT(dnode.frozen_ld.has_value(), "internal error");
 
+        dnode.unfreeze_prereqs.merge(finalize_prereqs);
+
         // Only unfreeze if there are no other subcontext still using it
         if (dnode.get_cnt == 0)
         {
-          dnode.frozen_ld.value().unfreeze(finalize_prereqs);
+          dnode.frozen_ld.value().unfreeze(dnode.unfreeze_prereqs);
           dnode.frozen_ld.reset();
         }
       }
@@ -954,6 +956,8 @@ class stackable_logical_data
 
         // Frozen counterpart of ld (if any)
         ::std::optional<frozen_logical_data<T>> frozen_ld;
+
+        event_list unfreeze_prereqs;
 
         // Once frozen, count number of calls to get
         mutable int get_cnt;
@@ -1115,7 +1119,7 @@ class stackable_logical_data
         if (impl_state->data_nodes[c].has_value())
         {
           // Save the shared_ptr into the children contexts using the data
-          sctx.get_node(c).retain_data(mv(impl_state));
+          sctx.get_node(c).retain_data(impl_state);
         }
       }
 
