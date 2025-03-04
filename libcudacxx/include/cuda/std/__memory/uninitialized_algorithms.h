@@ -50,7 +50,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-struct __always_false
+struct __AlwaysFalse
 {
   template <class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator()(_Args&&...) const noexcept
@@ -99,7 +99,7 @@ uninitialized_copy(_InputIterator __ifirst, _InputIterator __ilast, _ForwardIter
 {
   using _ValueType = typename iterator_traits<_ForwardIterator>::value_type;
   auto __result    = _CUDA_VSTD::__uninitialized_copy<_ValueType>(
-    _CUDA_VSTD::move(__ifirst), _CUDA_VSTD::move(__ilast), _CUDA_VSTD::move(__ofirst), __always_false{});
+    _CUDA_VSTD::move(__ifirst), _CUDA_VSTD::move(__ilast), _CUDA_VSTD::move(__ofirst), __AlwaysFalse{});
   return _CUDA_VSTD::move(__result.second);
 }
 
@@ -126,7 +126,7 @@ uninitialized_copy_n(_InputIterator __ifirst, _Size __n, _ForwardIterator __ofir
 {
   using _ValueType = typename iterator_traits<_ForwardIterator>::value_type;
   auto __result    = _CUDA_VSTD::__uninitialized_copy_n<_ValueType>(
-    _CUDA_VSTD::move(__ifirst), __n, _CUDA_VSTD::move(__ofirst), __always_false{});
+    _CUDA_VSTD::move(__ifirst), __n, _CUDA_VSTD::move(__ofirst), __AlwaysFalse{});
   return _CUDA_VSTD::move(__result.second);
 }
 
@@ -297,7 +297,7 @@ uninitialized_move(_InputIterator __ifirst, _InputIterator __ilast, _ForwardIter
 {
   using _ValueType = typename iterator_traits<_ForwardIterator>::value_type;
   auto __result    = _CUDA_VSTD::__uninitialized_move<_ValueType, _IterOps<_ClassicAlgPolicy>>(
-    _CUDA_VSTD::move(__ifirst), _CUDA_VSTD::move(__ilast), _CUDA_VSTD::move(__ofirst), __always_false{});
+    _CUDA_VSTD::move(__ifirst), _CUDA_VSTD::move(__ilast), _CUDA_VSTD::move(__ofirst), __AlwaysFalse{});
   return _CUDA_VSTD::move(__result.second);
 }
 
@@ -324,7 +324,7 @@ uninitialized_move_n(_InputIterator __ifirst, _Size __n, _ForwardIterator __ofir
 {
   using _ValueType = typename iterator_traits<_ForwardIterator>::value_type;
   return _CUDA_VSTD::__uninitialized_move_n<_ValueType, _IterOps<_ClassicAlgPolicy>>(
-    _CUDA_VSTD::move(__ifirst), __n, _CUDA_VSTD::move(__ofirst), __always_false{});
+    _CUDA_VSTD::move(__ifirst), __n, _CUDA_VSTD::move(__ofirst), __AlwaysFalse{});
 }
 
 // TODO: Rewrite this to iterate left to right and use reverse_iterators when calling

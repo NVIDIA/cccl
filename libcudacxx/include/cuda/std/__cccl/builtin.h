@@ -1059,6 +1059,14 @@
 #  define _CCCL_BUILTIN_MAKE_UNSIGNED(...) __make_unsigned(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__make_unsigned)
 
+#if _CCCL_HAS_BUILTIN(__reference_constructs_from_temporary)
+#  define _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY(...) __reference_constructs_from_temporary(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__reference_constructs_from_temporary)
+
+#if _CCCL_HAS_BUILTIN(__reference_converts_from_temporary)
+#  define _CCCL_BUILTIN_REFERENCE_CONVERTS_FROM_TEMPORARY(...) __reference_converts_from_temporary(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__reference_converts_from_temporary)
+
 #if _CCCL_HAS_BUILTIN(__remove_all_extents) && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_REMOVE_ALL_EXTENTS(...) __remove_all_extents(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__remove_all_extents)
