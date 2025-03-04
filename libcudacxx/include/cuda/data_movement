@@ -22,6 +22,6 @@
 #endif // no system header
 
 #include <cuda/__data_movement/load.h>
-// #include <cuda/__data_movement/store.h>
+#include <cuda/__data_movement/store.h>
 
 #endif // _CUDA_DATA_MOVEMENT

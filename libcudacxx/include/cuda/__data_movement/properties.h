@@ -29,17 +29,17 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
  * Load Behavior
  **********************************************************************************************************************/
 
-enum class _MemoryBehavior
+enum class _MemoryAccess
 {
   _ReadOnly,
   _ReadWrite,
 };
 
-template <_MemoryBehavior _Value>
-using __memory_behavior_t = _CUDA_VSTD::integral_constant<_MemoryBehavior, _Value>;
+template <_MemoryAccess _Value>
+using __memory_access_t = _CUDA_VSTD::integral_constant<_MemoryAccess, _Value>;
 
-using __read_only_t  = __memory_behavior_t<_MemoryBehavior::_ReadOnly>;
-using __read_write_t = __memory_behavior_t<_MemoryBehavior::_ReadWrite>;
+using __read_only_t  = __memory_access_t<_MemoryAccess::_ReadOnly>;
+using __read_write_t = __memory_access_t<_MemoryAccess::_ReadWrite>;
 
 inline constexpr auto read_only  = __read_only_t{};
 inline constexpr auto read_write = __read_write_t{};

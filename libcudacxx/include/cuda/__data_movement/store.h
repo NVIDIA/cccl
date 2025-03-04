@@ -22,15 +22,16 @@
 #endif // no system header
 
 #if _CCCL_HAS_CUDA_COMPILER
+#  if __cccl_ptx_isa >= 700
 
-#  include <cuda/__data_movement/properties.h>
-#  include <cuda/__ptx/instructions/st.h>
-#  include <cuda/std/__type_traits/is_const.h>
+#    include <cuda/__data_movement/properties.h>
+#    include <cuda/__ptx/instructions/st.h>
+#    include <cuda/std/__type_traits/is_const.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <typename _Tp, _EvictionPolicyEnum _Ep>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE _Tp
+_CCCL_HIDE_FROM_ABI _CCCL_DEVICE void
 __store_sm70(_Tp __data, _Tp* __ptr, __eviction_policy_t<_Ep> __eviction_policy) noexcept
 {
   // TODO: cvta.to.global
@@ -56,14 +57,14 @@ __store_sm70(_Tp __data, _Tp* __ptr, __eviction_policy_t<_Ep> __eviction_policy)
   }
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI void __eviction_policy_require_SM_70_or_higher();
+extern "C" _CCCL_DEVICE void __eviction_policy_require_SM_70_or_higher();
 
 /***********************************************************************************************************************
  * USER API
  **********************************************************************************************************************/
 
 template <typename _Tp, _EvictionPolicyEnum _Ep>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_DEVICE _CCCL_FORCEINLINE _Tp
+_CCCL_HIDE_FROM_ABI _CCCL_DEVICE void
 store(_Tp __data, _Tp* __ptr, __eviction_policy_t<_Ep> __eviction_policy = eviction_none) noexcept
 {
   _CCCL_ASSERT(__ptr != nullptr, "cuda::store: 'ptr' must not be null");
@@ -77,12 +78,13 @@ store(_Tp __data, _Tp* __ptr, __eviction_policy_t<_Ep> __eviction_policy = evict
   {
     static_assert(sizeof(_Tp) <= 16, "cuda::store with non-default properties only supports types up to 16 bytes");
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70,
-                      (return __store_sm70(__data, __ptr, __eviction_policy);),
-                      (__eviction_policy_require_SM_70_or_higher();));
+                      (::cuda::__store_sm70(__data, __ptr, __eviction_policy);),
+                      (::cuda::__eviction_policy_require_SM_70_or_higher();));
   }
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
+#  endif // __cccl_ptx_isa >= 700
 #endif // _CCCL_HAS_CUDA_COMPILER
 #endif // _CUDA___DATA_MOVEMENT_STORE_H
