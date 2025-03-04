@@ -225,7 +225,7 @@ __host__ __device__ void test_basic_accessor_conversions()
     // AccessorB<float> B_acc2{AccessorA<const float>{}}; // doesn't compile, rightfully so
     auto f = [](const AccessorA<float>& A_acc1) -> AccessorB<float> {
       // return A_acc1; // implicit conversion doesn't compile, rightfully so
-      return AccessorB<float>{AccessorA<float>{}};
+      return AccessorB<float>{A_acc1};
     };
     unused(f(AccessorA<float>{}));
     unused(B_acc1);
@@ -282,8 +282,11 @@ __host__ __device__ void test_host_device_accessor_conversions()
 
     // Test that implicit conversion from AccessorA<T> to AccessorB<T> is forbidden
     auto f3 = [](const WrapperA& wrapper_acc1) -> WrapperB {
-      // return wrapper_acc1; // rightfully does not compile
+#if _CCCL_STD_VER >= 2020
       return WrapperB{wrapper_acc1};
+#else
+      return wrapper_acc1; // rightfully does not compile
+#endif
     };
     unused(f3(WrapperA{}));
   }
@@ -315,9 +318,12 @@ __host__ __device__ void test_conversion()
     // This works because Wrapper<AccessorD<T>> publicly inherits from AccessorD<T>,
     // so it inherits AccessorD<T>'s conversion operators.
     WrapperB wrapper_acc1{WrapperD{}};
-    auto f1 = [](const WrapperD& /*w*/) -> WrapperB {
-      // return w; // rightfully does not compile
+    auto f1 = [](const WrapperD& w) -> WrapperB {
+#if _CCCL_STD_VER >= 2020
       return WrapperB{};
+#else
+      return w; // rightfully does not compile
+#endif
     };
     unused(f1(WrapperD{}));
   }
@@ -348,11 +354,49 @@ __host__ __device__ void test_default_to_aligned()
   WrapperDefault wrapper_default_acc{cuda::std::default_accessor<float>{}};
   WrapperAligned wrapper_aligned_acc{wrapper_default_acc};
   auto f = [](const WrapperDefault& w) -> WrapperAligned {
-    // return w; // rightfully does not compile
+#if _CCCL_STD_VER >= 2020
     return WrapperAligned{w};
+#else
+    return w; // rightfully does not compile
+#endif
   };
   unused(wrapper_aligned_acc);
   unused(f(wrapper_default_acc));
+}
+
+template <template <class> class Wrapper>
+__host__ __device__ void test_managed_conversions()
+{
+  using HostOrDeviceAccessor      = Wrapper<cuda::std::default_accessor<float>>;
+  using ManagedAccessor           = cuda::managed_accessor<cuda::std::default_accessor<float>>;
+  using HostOrDeviceAccessorConst = cuda::host_accessor<cuda::std::default_accessor<const float>>;
+  using ManagedAccessorConst      = cuda::managed_accessor<cuda::std::default_accessor<const float>>;
+  static_assert(cuda::is_host_device_managed_accessor_v<HostOrDeviceAccessor>);
+  static_assert(cuda::is_host_device_managed_accessor_v<HostOrDeviceAccessorConst>);
+  HostOrDeviceAccessor host_acc1{ManagedAccessor{}};
+  HostOrDeviceAccessorConst host_acc2{ManagedAccessor{}};
+  HostOrDeviceAccessorConst host_acc3{ManagedAccessorConst{}};
+  unused(host_acc1);
+  unused(host_acc2);
+  unused(host_acc3);
+  {
+    auto f = [](const ManagedAccessor& w) -> HostOrDeviceAccessor {
+      return w;
+    };
+    unused(f(ManagedAccessor{}));
+  }
+  {
+    auto f = [](const ManagedAccessorConst& w) -> HostOrDeviceAccessorConst {
+      return w;
+    };
+    unused(f(ManagedAccessorConst{}));
+  }
+  {
+    auto f = [](const ManagedAccessor& w) -> HostOrDeviceAccessorConst {
+      return w;
+    };
+    unused(f(ManagedAccessor{}));
+  }
 }
 
 int main(int, char**)
@@ -370,5 +414,7 @@ int main(int, char**)
   test_default_to_aligned<cuda::host_accessor>();
   test_default_to_aligned<cuda::device_accessor>();
   test_default_to_aligned<cuda::managed_accessor>();
+  test_managed_conversions<cuda::host_accessor>();
+  test_managed_conversions<cuda::device_accessor>();
   return 0;
 }
