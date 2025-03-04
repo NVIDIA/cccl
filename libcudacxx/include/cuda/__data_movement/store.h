@@ -28,11 +28,11 @@
 #    include <cuda/__ptx/instructions/st.h>
 #    include <cuda/std/__type_traits/is_const.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
 template <typename _Tp, _EvictionPolicyEnum _Ep>
 _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void
-__store_sm70(_Tp __data, _Tp* __ptr, __eviction_policy_t<_Ep> __eviction_policy) noexcept
+__store(_Tp __data, _Tp* __ptr, __eviction_policy_t<_Ep> __eviction_policy) noexcept
 {
   // TODO: cvta.to.global
   if constexpr (__eviction_policy == eviction_unchanged)
@@ -57,8 +57,6 @@ __store_sm70(_Tp __data, _Tp* __ptr, __eviction_policy_t<_Ep> __eviction_policy)
   }
 }
 
-extern "C" _CCCL_DEVICE void __eviction_policy_require_SM_70_or_higher();
-
 /***********************************************************************************************************************
  * USER API
  **********************************************************************************************************************/
@@ -77,13 +75,11 @@ store(_Tp __data, _Tp* __ptr, __eviction_policy_t<_Ep> __eviction_policy = evict
   else
   {
     static_assert(sizeof(_Tp) <= 16, "cuda::store with non-default properties only supports types up to 16 bytes");
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70,
-                      (::cuda::__store_sm70(__data, __ptr, __eviction_policy);),
-                      (::cuda::__eviction_policy_require_SM_70_or_higher();));
+    ::cuda::device::__store(__data, __ptr, __eviction_policy);
   }
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
 
 #  endif // __cccl_ptx_isa >= 700
 #endif // _CCCL_HAS_CUDA_COMPILER

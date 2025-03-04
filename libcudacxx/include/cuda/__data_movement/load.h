@@ -28,7 +28,7 @@
 #    include <cuda/__ptx/instructions/ld.h>
 #    include <cuda/std/__bit/bit_cast.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
 #    define _CCCL_LOAD_ADD_PREFETCH(LOAD_BEHAVIOR, EVICT_POLICY, PREFETCH)          \
       if constexpr ((PREFETCH) == prefetch_spatial_none)                            \
@@ -75,7 +75,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
       }
 
 template <typename _Tp, _MemoryAccess _Bp, _EvictionPolicyEnum _Ep, _PrefetchSpatialEnum _Pp>
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp __load_sm70(
+_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp __load(
   const _Tp* __ptr1,
   __memory_access_t<_Bp> __memory_access,
   __eviction_policy_t<_Ep> __eviction_policy,
@@ -94,8 +94,6 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp __load_sm70(
 
 #    undef _CCCL_LOAD_ADD_PREFETCH
 #    undef _CCCL_LOAD_ADD_EVICTION_POLICY
-
-extern "C" _CCCL_DEVICE void __eviction_policy_and_prefetch_require_SM_70_or_higher();
 
 /***********************************************************************************************************************
  * USER API
@@ -121,13 +119,11 @@ load(const _Tp* __ptr,
   else
   {
     static_assert(sizeof(_Tp) <= 16, "cuda::load with non-default properties only supports types up to 16 bytes");
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70,
-                      (return ::cuda::__load_sm70(__ptr, __memory_access, __eviction_policy, __prefetch);),
-                      (::cuda::__eviction_policy_and_prefetch_require_SM_70_or_higher();));
+    return ::cuda::device::__load(__ptr, __memory_access, __eviction_policy, __prefetch);
   }
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
 
 #  endif // __cccl_ptx_isa >= 700
 #endif // _CCCL_HAS_CUDA_COMPILER

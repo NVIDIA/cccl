@@ -23,7 +23,7 @@
 
 #include <cuda/std/__type_traits/integral_constant.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
 /***********************************************************************************************************************
  * Load Behavior
@@ -100,6 +100,6 @@ inline constexpr auto prefetch_64B          = __prefetch_64B_t{};
 inline constexpr auto prefetch_128B         = __prefetch_128B_t{};
 inline constexpr auto prefetch_256B         = __prefetch_256B_t{};
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
 
 #endif // _CUDA___DATA_MOVEMENT_PROPERTIES_H
