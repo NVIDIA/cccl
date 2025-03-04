@@ -10,17 +10,9 @@
 #ifndef NUMERIC_LIMITS_MEMBERS_COMMON_H
 #define NUMERIC_LIMITS_MEMBERS_COMMON_H
 
-// Disable all the extended floating point operations and conversions
-#define __CUDA_NO_FP4_CONVERSIONS__          1
-#define __CUDA_NO_FP4_CONVERSION_OPERATORS__ 1
-#define __CUDA_NO_FP6_CONVERSIONS__          1
-#define __CUDA_NO_FP6_CONVERSION_OPERATORS__ 1
-#define __CUDA_NO_FP8_CONVERSIONS__          1
-#define __CUDA_NO_FP8_CONVERSION_OPERATORS__ 1
-#define __CUDA_NO_HALF_CONVERSIONS__         1
-#define __CUDA_NO_HALF_OPERATORS__           1
-#define __CUDA_NO_BFLOAT16_CONVERSIONS__     1
-#define __CUDA_NO_BFLOAT16_OPERATORS__       1
+// clang-format off
+#include <disable_nvfp_conversions_and_operators.h>
+// clang-format on
 
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/limits>

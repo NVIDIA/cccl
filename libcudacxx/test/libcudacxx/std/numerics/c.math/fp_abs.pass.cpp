@@ -7,6 +7,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// clang-format off
+#include <disable_nvfp_conversions_and_operators.h>
+// clang-format on
+
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
 #include <cuda/std/limits>
