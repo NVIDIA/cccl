@@ -233,29 +233,28 @@ struct merge_sort_kernel_source
 
 struct dynamic_vsmem_helper_t
 {
-  ::cuda::std::size_t block_sort_vsmem_per_block = 0;
-  ::cuda::std::size_t merge_vsmem_per_block      = 0;
-
-  ::cuda::std::size_t BlockSortVSMemPerBlock() const
+  template <typename PolicyT>
+  static ::cuda::std::size_t BlockSortVSMemPerBlock(PolicyT /*policy*/)
   {
-    return block_sort_vsmem_per_block;
-  }
-
-  ::cuda::std::size_t MergeVSMemPerBlock() const
-  {
-    return merge_vsmem_per_block;
+    return 0;
   }
 
   template <typename PolicyT>
-  int BlockThreads(PolicyT policy) const
+  static ::cuda::std::size_t MergeVSMemPerBlock(PolicyT /*policy*/)
   {
-    return uses_fallback_policy() ? fallback_policy.block_size : policy.block_size;
+    return 0;
   }
 
   template <typename PolicyT>
-  int ItemsPerTile(PolicyT policy) const
+  static int BlockThreads(PolicyT policy)
   {
-    return uses_fallback_policy() ? fallback_policy.items_per_tile : policy.items_per_tile;
+    return policy.block_size;
+  }
+
+  template <typename PolicyT>
+  static int ItemsPerTile(PolicyT policy)
+  {
+    return policy.items_per_tile;
   }
 
 private:
@@ -480,8 +479,7 @@ CUresult cccl_device_merge_sort(
                                 stream,
                                 {build},
                                 cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
-                                {d_out_keys.value_type.size},
-                                {});
+                                {d_out_keys.value_type.size});
   }
   catch (const std::exception& exc)
   {

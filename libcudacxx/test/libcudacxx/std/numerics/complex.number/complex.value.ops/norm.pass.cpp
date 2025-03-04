@@ -63,28 +63,30 @@ int main(int, char**)
 {
   test<float>();
   test<double>();
-// CUDA treats long double as double
-//  test<long double>();
-#if !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
+#if _CCCL_HAS_LONG_DOUBLE()
+  test<long double>();
+#endif // _CCCL_HAS_LONG_DOUBLE()
+#if _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
   static_assert(test<float>(), "");
   static_assert(test<double>(), "");
-// CUDA treats long double as double
-//  static_assert(test<long double>(), "");
-#endif // !_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#  if _CCCL_HAS_LONG_DOUBLE()
+  static_assert(test<long double>(), "");
+#  endif // _CCCL_HAS_LONG_DOUBLE()
+#endif // _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
+#if _LIBCUDACXX_HAS_NVFP16()
   test<__half>();
-#endif
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16>();
-#endif
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
   test_edges<double>();
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _LIBCUDACXX_HAS_NVFP16()
   test_edges<__half>();
-#endif
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test_edges<__nv_bfloat16>();
-#endif
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
   return 0;
 }
