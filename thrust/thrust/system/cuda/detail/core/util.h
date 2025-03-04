@@ -156,7 +156,7 @@ struct specialize_plan_impl_match<P, typelist<SM, SMs...>>
     : ::cuda::std::conditional<has_sm_tuning<P, SM>::value, P<SM>, specialize_plan_impl_match<P, typelist<SMs...>>>::type
 {};
 
-#ifdef _NVHPC_CUDA
+#if _CCCL_CUDA_COMPILER(NVHPC)
 #  if (__NVCOMPILER_CUDA_ARCH__ >= 600)
 #    define _THRUST_TUNING_ARCH sm60
 #  else
