@@ -56,7 +56,7 @@ __host__ __device__ void test()
   assert(cuda::std::lerp(T(0.0), T(0.0), T(23)) == T(0.0));
 
   // __half and __nvbfloat have precision issues here
-  if (!cuda::std::__is_extended_floating_point<T>::value)
+  if constexpr (!cuda::std::__is_extended_floating_point_v<T>)
   {
     assert(cuda::std::isnan(cuda::std::lerp(T(0.0), T(0.0), T(inf))));
   }

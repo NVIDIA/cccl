@@ -18,47 +18,47 @@
 template <class T>
 __host__ __device__ void test_log(T value)
 {
-  using ret = cuda::std::conditional_t<cuda::std::is_integral<T>::value, double, T>;
-  static_assert(cuda::std::is_same<decltype(cuda::std::log(value)), ret>::value, "");
+  using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::log(value)), ret>, "");
   assert(cuda::std::log(value) == ret{0});
 }
 
 template <class T>
 __host__ __device__ void test_log10(T value)
 {
-  using ret = cuda::std::conditional_t<cuda::std::is_integral<T>::value, double, T>;
-  static_assert(cuda::std::is_same<decltype(cuda::std::log10(value)), ret>::value, "");
+  using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::log10(value)), ret>, "");
   assert(cuda::std::log10(value) == ret{0});
 }
 
 template <class T>
 __host__ __device__ void test_ilogb(T value)
 {
-  static_assert(cuda::std::is_same<decltype(cuda::std::ilogb(value)), int>::value, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::ilogb(value)), int>, "");
   assert(cuda::std::ilogb(value) == 0);
 }
 
 template <class T>
 __host__ __device__ void test_log1p(T value)
 {
-  using ret = cuda::std::conditional_t<cuda::std::is_integral<T>::value, double, T>;
-  static_assert(cuda::std::is_same<decltype(cuda::std::log1p(value)), ret>::value, "");
+  using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::log1p(value)), ret>, "");
   assert(cuda::std::log1p(value - value) == ret{0});
 }
 
 template <class T>
 __host__ __device__ void test_log2(T value)
 {
-  using ret = cuda::std::conditional_t<cuda::std::is_integral<T>::value, double, T>;
-  static_assert(cuda::std::is_same<decltype(cuda::std::log2(value)), ret>::value, "");
+  using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::log2(value)), ret>, "");
   assert(cuda::std::log2(value) == ret{0});
 }
 
 template <class T>
 __host__ __device__ void test_logb(T value)
 {
-  using ret = cuda::std::conditional_t<cuda::std::is_integral<T>::value, double, T>;
-  static_assert(cuda::std::is_same<decltype(cuda::std::logb(value)), ret>::value, "");
+  using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::logb(value)), ret>, "");
   assert(cuda::std::logb(value) == ret{0});
 }
 
