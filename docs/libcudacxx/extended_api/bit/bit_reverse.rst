@@ -19,9 +19,9 @@ The function reverses the order of bits in a value.
 
 - Value with reversed bits
 
-**Preconditions**
+**Mandates**
 
-- *Compile-time*: ``T`` is an unsigned integral type (including 128-bit integers).
+- ``T`` is an unsigned integer type
 
 **Performance considerations**
 
