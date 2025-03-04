@@ -49,6 +49,7 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/ptx>
+#include <cuda/std/__algorithm_>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
@@ -683,10 +684,5 @@ struct WarpScanShfl
   }
 };
 } // namespace detail
-
-template <typename T, int LOGICAL_WARP_THREADS>
-using WarpScanShfl CCCL_DEPRECATED_BECAUSE(
-  "This class is considered an implementation detail and the public interface will be "
-  "removed.") = detail::WarpScanShfl<T, LOGICAL_WARP_THREADS>;
 
 CUB_NAMESPACE_END

@@ -59,9 +59,9 @@ int main(int, char**)
 #endif // _CCCL_HAS_INT128()
   test<float, FLT_MIN_EXP>();
   test<double, DBL_MIN_EXP>();
-#ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#if _CCCL_HAS_LONG_DOUBLE()
   test<long double, LDBL_MIN_EXP>();
-#endif
+#endif // _CCCL_HAS_LONG_DOUBLE()
 #if _CCCL_HAS_NVFP16()
   test<__half, -13>();
 #endif // _CCCL_HAS_NVFP16

@@ -26,19 +26,19 @@ __host__ __device__ bool eq(T lhs, U rhs) noexcept
   return eq(lhs, T(rhs));
 }
 
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _LIBCUDACXX_HAS_NVFP16()
 __host__ __device__ bool eq(__half lhs, __half rhs) noexcept
 {
   return ::__heq(lhs, rhs);
 }
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#if _LIBCUDACXX_HAS_NVBF16()
 __host__ __device__ bool eq(__nv_bfloat16 lhs, __nv_bfloat16 rhs) noexcept
 {
   return ::__heq(lhs, rhs);
 }
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class Integer>
 __host__ __device__ bool is_about(Integer x, Integer y)
@@ -56,25 +56,25 @@ __host__ __device__ bool is_about(double x, double y)
   return (cuda::std::abs((x - y) / (x + y)) < 1.e-14);
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 __host__ __device__ bool is_about(long double x, long double y)
 {
   return (cuda::std::abs((x - y) / (x + y)) < 1.e-14);
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _LIBCUDACXX_HAS_NVFP16()
 __host__ __device__ bool is_about(__half x, __half y)
 {
   return (cuda::std::fabs((x - y) / (x + y)) <= __half(1e-3));
 }
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#if _LIBCUDACXX_HAS_NVBF16()
 __host__ __device__ bool is_about(__nv_bfloat16 x, __nv_bfloat16 y)
 {
   return (cuda::std::fabs((x - y) / (x + y)) <= __nv_bfloat16(5e-3));
 }
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 #endif // TEST_CMATH_COMPARISON_H

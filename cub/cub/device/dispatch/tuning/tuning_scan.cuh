@@ -552,8 +552,4 @@ struct policy_hub
 } // namespace scan
 } // namespace detail
 
-template <typename AccumT, typename ScanOpT = ::cuda::std::plus<>>
-using DeviceScanPolicy CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and it will be "
-                                               "removed.") = detail::scan::policy_hub<int, int, AccumT, int, ScanOpT>;
-
 CUB_NAMESPACE_END

@@ -285,7 +285,7 @@ __host__ __device__ bool tests()
     test_roundtrip_through<long long>(i);
   }
 
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _LIBCUDACXX_HAS_NVFP16()
   // Extended floating point type __half
   for (__half i :
        {__float2half(0.0f),
@@ -300,9 +300,9 @@ __host__ __device__ bool tests()
     test_roundtrip_through_buffer(i);
     test_roundtrip_through<cuda::std::int16_t>(i);
   }
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#if _LIBCUDACXX_HAS_NVBF16()
   // Extended floating point type __half
   for (__nv_bfloat16 i :
        {__float2bfloat16(0.0f),
@@ -317,7 +317,7 @@ __host__ __device__ bool tests()
     test_roundtrip_through_buffer(i);
     test_roundtrip_through<cuda::std::int16_t>(i);
   }
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
   // Test pointers
   {

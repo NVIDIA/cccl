@@ -65,9 +65,9 @@ int main(int, char**)
 #endif // _CCCL_HAS_INT128()
   test<float>(inf);
   test<double>(inf);
-#ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#if _CCCL_HAS_LONG_DOUBLE()
   test<long double>(inf);
-#endif
+#endif // _CCCL_HAS_LONG_DOUBLE()
 #if _CCCL_HAS_NVFP16()
   test<__half>(__double2half(inf));
 #endif // _CCCL_HAS_NVFP16
