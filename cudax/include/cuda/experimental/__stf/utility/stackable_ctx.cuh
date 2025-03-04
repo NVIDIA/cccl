@@ -250,8 +250,6 @@ public:
             }
           }
 
-          fprintf(stderr, "new children size %ld, children before %ld\n", new_children.size(), children[p].size());
-
           // Ensure we did find the node in it's parent's children
           _CCCL_ASSERT(found, "invalid hierarchy state");
           ::std::swap(children[p], new_children);
@@ -267,8 +265,6 @@ public:
       void set_parent(int parent_offset, int child_offset)
       {
         parent[child_offset] = parent_offset;
-        fprintf(stderr, "PARENT[%d] = %d\n", child_offset, parent_offset);
-
         children[parent_offset].push_back(child_offset);
       }
 
@@ -330,8 +326,6 @@ public:
       // Select the offset of the new node
       int node_offset = node_tree.get_avail_entry();
 
-      fprintf(stderr, "picked node_offset %d (head offset %d)\n", node_offset, head_offset);
-
       if (int(nodes.size()) <= node_offset)
       {
         nodes.resize(node_offset + 1); // TODO round or resize to node_tree size ?
@@ -341,7 +335,6 @@ public:
       _CCCL_ASSERT(!nodes[node_offset].has_value(), "inconsistent state");
 
       // Keep track of parenthood
-      fprintf(stderr, "SET PARENT ? head offset %d node offset %d\n", head_offset, node_offset);
       if (head_offset != -1)
       {
         node_tree.set_parent(head_offset, node_offset);
@@ -1160,7 +1153,7 @@ class stackable_logical_data
 
       impl_state->data_nodes[data_root_offset].emplace(ld);
 
-      fprintf(stderr, "Creating ld with ctx offset %d and root offset %d\n", target_offset, data_root_offset);
+      // fprintf(stderr, "Creating ld with ctx offset %d and root offset %d\n", target_offset, data_root_offset);
 
       // If necessary, import data recursively until we reach the target depth.
       // We first find the path from the target to the root and we push along this path
@@ -1413,7 +1406,6 @@ public:
   stackable_logical_data(stackable_ctx sctx, int ctx_offset, bool ld_from_shape, logical_data<T> ld, bool can_export)
       : pimpl(::std::make_shared<impl>(sctx, ctx_offset, ld_from_shape, mv(ld), can_export))
   {
-    fprintf(stderr, "stackable_logical_data ctor : ctx_offset = %d\n", ctx_offset);
     static_assert(::std::is_move_constructible_v<stackable_logical_data>, "");
     static_assert(::std::is_move_assignable_v<stackable_logical_data>, "");
   }
