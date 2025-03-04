@@ -25,6 +25,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <shared_mutex>
 #include <stack>
 #include <thread>
 
@@ -84,6 +85,7 @@ task_dep<T, reduce_op, initialize> to_task_dep(stackable_task_dep<T, reduce_op, 
 
 } // end namespace reserved
 
+#if 0
 template <typename ScopeT>
 class locked_scope
 {
@@ -109,6 +111,7 @@ private:
   ScopeT inner_scope;
   ::std::unique_lock<::std::mutex> lock;
 };
+#endif
 
 /**
  * @brief Base class with a virtual pop method to enable type erasure
@@ -247,6 +250,8 @@ public:
             }
           }
 
+          fprintf(stderr, "new children size %ld, children before %ld\n", new_children.size(), children[p].size());
+
           // Ensure we did find the node in it's parent's children
           _CCCL_ASSERT(found, "invalid hierarchy state");
           ::std::swap(children[p], new_children);
@@ -262,6 +267,7 @@ public:
       void set_parent(int parent_offset, int child_offset)
       {
         parent[child_offset] = parent_offset;
+        fprintf(stderr, "PARENT[%d] = %d\n", child_offset, parent_offset);
 
         children[parent_offset].push_back(child_offset);
       }
@@ -582,7 +588,18 @@ public:
       stats_map;
 
   public:
-    ::std::mutex mutex;
+    ::std::shared_lock<::std::shared_mutex> get_read_lock() const
+    {
+      return ::std::shared_lock<::std::shared_mutex>(mutex);
+    }
+
+    ::std::unique_lock<::std::shared_mutex> get_write_lock()
+    {
+      return ::std::unique_lock<::std::shared_mutex>(mutex);
+    }
+
+  private:
+    mutable ::std::shared_mutex mutex;
   };
 
   stackable_ctx()
@@ -650,7 +667,7 @@ public:
 
   void push(const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
   {
-    ::std::lock_guard<::std::mutex> lock(pimpl->mutex);
+    auto lock    = pimpl->get_write_lock();
     int head     = get_head_offset();
     int new_head = pimpl->push(head, loc);
     pimpl->set_head_offset(new_head);
@@ -659,7 +676,8 @@ public:
 
   void pop()
   {
-    ::std::lock_guard<::std::mutex> lock(pimpl->mutex);
+    auto lock = pimpl->get_write_lock();
+
     int head     = get_head_offset();
     int new_head = pimpl->pop(head);
     pimpl->set_head_offset(new_head);
@@ -668,7 +686,8 @@ public:
   template <typename T>
   auto logical_data(shape_of<T> s)
   {
-    ::std::lock_guard<::std::mutex> lock(pimpl->mutex);
+    auto lock = pimpl->get_read_lock();
+
     // fprintf(stderr, "initialize from shape.\n");
     int head = pimpl->get_head_offset();
     return stackable_logical_data(*this, head, true, get_root_ctx().logical_data(mv(s)), true);
@@ -677,7 +696,8 @@ public:
   template <typename T, typename... Sizes>
   auto logical_data(size_t elements, Sizes... more_sizes)
   {
-    ::std::lock_guard<::std::mutex> lock(pimpl->mutex);
+    auto lock = pimpl->get_read_lock();
+
     int head = pimpl->get_head_offset();
     return stackable_logical_data(
       *this, head, true, get_root_ctx().template logical_data<T>(elements, more_sizes...), true);
@@ -686,7 +706,8 @@ public:
   template <typename T>
   auto logical_data_no_export(shape_of<T> s)
   {
-    ::std::lock_guard<::std::mutex> lock(pimpl->mutex);
+    auto lock = pimpl->get_read_lock();
+
     // fprintf(stderr, "initialize from shape.\n");
     int head = pimpl->get_head_offset();
     return stackable_logical_data(*this, head, true, get_ctx(head).logical_data(mv(s)), false);
@@ -695,7 +716,8 @@ public:
   template <typename T, typename... Sizes>
   auto logical_data_no_export(size_t elements, Sizes... more_sizes)
   {
-    ::std::lock_guard<::std::mutex> lock(pimpl->mutex);
+    auto lock = pimpl->get_read_lock();
+
     int head = pimpl->get_head_offset();
     return stackable_logical_data(
       *this, head, true, get_ctx(head).template logical_data<T>(elements, more_sizes...), false);
@@ -706,7 +728,8 @@ public:
   template <typename... Pack>
   auto logical_data(Pack&&... pack)
   {
-    ::std::lock_guard<::std::mutex> lock(pimpl->mutex);
+    auto lock = pimpl->get_read_lock();
+
     int head = pimpl->get_head_offset();
     // fprintf(stderr, "initialize from value.\n");
     return stackable_logical_data(*this, head, false, get_ctx(head).logical_data(::std::forward<Pack>(pack)...), true);
@@ -797,59 +820,58 @@ public:
   template <typename... Pack>
   auto task(Pack&&... pack)
   {
-    ::std::unique_lock<::std::mutex> lock(pimpl->mutex);
+    auto lock = pimpl->get_read_lock();
 
     int offset = get_head_offset();
     process_pack(offset, pack...);
-    return locked_scope(get_ctx(offset).task(reserved::to_task_dep(::std::forward<Pack>(pack))...), mv(lock));
+    return get_ctx(offset).task(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 
 #if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
   template <typename... Pack>
   auto parallel_for(Pack&&... pack)
   {
-    ::std::unique_lock<::std::mutex> lock(pimpl->mutex);
+    auto lock = pimpl->get_read_lock();
 
     int offset = get_head_offset();
     process_pack(offset, pack...);
-    return locked_scope(get_ctx(offset).parallel_for(reserved::to_task_dep(::std::forward<Pack>(pack))...), mv(lock));
+    return get_ctx(offset).parallel_for(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 
   template <typename... Pack>
   auto cuda_kernel(Pack&&... pack)
   {
-    ::std::unique_lock<::std::mutex> lock(pimpl->mutex);
+    auto lock = pimpl->get_read_lock();
 
     int offset = get_head_offset();
     process_pack(offset, pack...);
-    return locked_scope(get_ctx(offset).cuda_kernel(reserved::to_task_dep(::std::forward<Pack>(pack))...), mv(lock));
+    return get_ctx(offset).cuda_kernel(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 
   template <typename... Pack>
   auto cuda_kernel_chain(Pack&&... pack)
   {
-    ::std::unique_lock<::std::mutex> lock(pimpl->mutex);
+    auto lock = pimpl->get_read_lock();
 
     int offset = get_head_offset();
     process_pack(offset, pack...);
-    return locked_scope(get_ctx(offset).cuda_kernel_chain(reserved::to_task_dep(::std::forward<Pack>(pack))...),
-                        mv(lock));
+    return get_ctx(offset).cuda_kernel_chain(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 #endif
 
   template <typename... Pack>
   auto host_launch(Pack&&... pack)
   {
-    ::std::unique_lock<::std::mutex> lock(pimpl->mutex);
+    auto lock = pimpl->get_read_lock();
 
     int offset = get_head_offset();
     process_pack(offset, pack...);
-    return locked_scope(get_ctx(offset).host_launch(reserved::to_task_dep(::std::forward<Pack>(pack))...), mv(lock));
+    return get_ctx(offset).host_launch(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 
   auto task_fence()
   {
-    ::std::lock_guard<::std::mutex> lock(pimpl->mutex);
+    auto lock = pimpl->get_read_lock();
 
     int offset = get_head_offset();
     return get_ctx(offset).task_fence();
@@ -858,7 +880,7 @@ public:
   template <typename... Pack>
   void push_affinity(Pack&&... pack) const
   {
-    ::std::lock_guard<::std::mutex> lock(pimpl->mutex);
+    auto lock = pimpl->get_read_lock();
 
     int offset = get_head_offset();
     process_pack(offset, pack...);
@@ -867,7 +889,7 @@ public:
 
   void pop_affinity() const
   {
-    ::std::lock_guard<::std::mutex> lock(pimpl->mutex);
+    auto lock = pimpl->get_read_lock();
 
     int offset = get_head_offset();
     get_ctx(offset).pop_affinity();
@@ -875,7 +897,7 @@ public:
 
   auto& async_resources() const
   {
-    ::std::lock_guard<::std::mutex> lock(pimpl->mutex);
+    auto lock = pimpl->get_read_lock();
 
     int offset = get_head_offset();
     return get_ctx(offset).async_resources();
@@ -883,7 +905,7 @@ public:
 
   auto dot_section(::std::string symbol) const
   {
-    ::std::lock_guard<::std::mutex> lock(pimpl->mutex);
+    auto lock = pimpl->get_read_lock();
 
     int offset = get_head_offset();
     return get_ctx(offset).dot_section(mv(symbol));
@@ -891,7 +913,7 @@ public:
 
   size_t task_count() const
   {
-    ::std::lock_guard<::std::mutex> lock(pimpl->mutex);
+    auto lock = pimpl->get_read_lock();
 
     int offset = get_head_offset();
     return get_ctx(offset).task_count();
@@ -899,7 +921,7 @@ public:
 
   void finalize()
   {
-    ::std::lock_guard<::std::mutex> lock(pimpl->mutex);
+    auto lock = pimpl->get_read_lock();
 
     _CCCL_ASSERT(pimpl->get_head_offset() == pimpl->get_root_offset(),
                  "Can only finalize if there is no pending contexts");
@@ -1076,6 +1098,16 @@ class stackable_logical_data
         return data_nodes[offset].value().frozen_ld.value().get_access_mode();
       }
 
+      ::std::shared_lock<::std::shared_mutex> get_read_lock() const
+      {
+        return ::std::shared_lock<::std::shared_mutex>(mutex);
+      }
+
+      ::std::unique_lock<::std::shared_mutex> get_write_lock()
+      {
+        return ::std::unique_lock<::std::shared_mutex>(mutex);
+      }
+
       friend impl;
 
     private:
@@ -1098,6 +1130,8 @@ class stackable_logical_data
       // context. In this case, the state must be retained to unfreeze when
       // appropriate.
       bool was_destroyed = false;
+
+      mutable ::std::shared_mutex mutex;
     };
 
   public:
@@ -1197,6 +1231,16 @@ class stackable_logical_data
     // Define move constructor and move assignment operator
     impl(impl&&) noexcept            = default;
     impl& operator=(impl&&) noexcept = default;
+
+    ::std::shared_lock<::std::shared_mutex> get_read_lock() const
+    {
+      return impl_state->get_read_lock();
+    }
+
+    ::std::unique_lock<::std::shared_mutex> get_write_lock()
+    {
+      return impl_state->get_write_lock();
+    }
 
     const auto& get_ld(int offset) const
     {
@@ -1469,6 +1513,9 @@ public:
   // Returns true if the task_dep needs an update
   bool validate_access(int ctx_offset, const stackable_ctx& sctx, access_mode m) const
   {
+    // Grab the lock of the data, note that we are already holding the context lock in read mode
+    auto lock = pimpl->get_write_lock();
+
     _CCCL_ASSERT(m == access_mode::read || m == access_mode::rw || m == access_mode::write,
                  "Unsupported access mode in nested context");
 
