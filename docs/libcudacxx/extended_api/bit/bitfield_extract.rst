@@ -24,7 +24,7 @@ The function extracts a bitfield from a value and returns it in the lower bits.
 
 **Mandates**
 
-- ``T`` is an unsigned integer type
+- ``T`` is an unsigned integer type.
 
 **Preconditions**
 

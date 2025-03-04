@@ -7,7 +7,7 @@
 
    template <typename T>
    [[nodiscard]] constexpr T
-   bitfield_insert(T dest, T source, int start, int width = 1) noexcept;
+   bitfield_insert(T dest, T source, int start, int width) noexcept;
 
 The function extracts the lower bitfield of size ``width`` from ``source`` and inserts it into ``dest`` at position ``start``.
 
@@ -24,7 +24,7 @@ The function extracts the lower bitfield of size ``width`` from ``source`` and i
 
 **Mandates**
 
-- ``T`` is an unsigned integer type
+- ``T`` is an unsigned integer type.
 
 **Preconditions**
 

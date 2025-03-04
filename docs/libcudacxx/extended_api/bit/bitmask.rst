@@ -9,7 +9,7 @@
    [[nodiscard]] constexpr T
    bitmask(int start, int width) noexcept;
 
-The function reverses the order of bits in a value.
+The function generates a bitmask of size ``width`` starting at position ``start``.
 
 **Parameters**
 
@@ -18,11 +18,17 @@ The function reverses the order of bits in a value.
 
 **Return value**
 
-- bitmask of size ``width`` starting at ``start``
+- Bitmask of size ``width`` starting at ``start``
 
 **Mandates**
 
-- ``T`` is an unsigned integral type (including 128-bit integers).
+- ``T`` is an unsigned integral type.
+
+**Preconditions**
+
+    - ``start >= 0 && start < num_bits(T)``
+    - ``width >  0 && width <= num_bits(T)``
+    - ``start + width <= num_bits(T)``
 
 **Performance considerations**
 

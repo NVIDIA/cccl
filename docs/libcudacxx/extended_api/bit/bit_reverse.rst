@@ -21,7 +21,7 @@ The function reverses the order of bits in a value.
 
 **Mandates**
 
-- ``T`` is an unsigned integer type
+- ``T`` is an unsigned integer type.
 
 **Performance considerations**
 
