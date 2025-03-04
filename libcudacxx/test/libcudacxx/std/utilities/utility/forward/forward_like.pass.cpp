@@ -133,7 +133,6 @@ int main(int, char**)
 {
   compile_test();
   test();
-
   static_assert(test(), "");
 
   return 0;

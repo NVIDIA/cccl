@@ -113,26 +113,12 @@ TEST_CASE("Scan works with custom types", "[scan]")
   }
 }
 
-struct counting_iterator_state_t
-{
-  int value;
-};
-
 TEST_CASE("Scan works with input iterators", "[scan]")
 {
-  const std::size_t num_items                         = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
-  operation_t op                                      = make_operation("op", get_reduce_op(get_type_info<int>().type));
-  iterator_t<int, counting_iterator_state_t> input_it = make_iterator<int, counting_iterator_state_t>(
-    "struct counting_iterator_state_t { int value; };\n",
-    {"advance",
-     "extern \"C\" __device__ void advance(counting_iterator_state_t* state, unsigned long long offset) {\n"
-     "  state->value += offset;\n"
-     "}"},
-    {"dereference",
-     "extern \"C\" __device__ int dereference(counting_iterator_state_t* state) { \n"
-     "  return state->value;\n"
-     "}"});
-  input_it.state.value = 0;
+  const std::size_t num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
+  operation_t op              = make_operation("op", get_reduce_op(get_type_info<int>().type));
+  iterator_t<int, counting_iterator_state_t<int>> input_it = make_counting_iterator<int>("int");
+  input_it.state.value                                     = 0;
   pointer_t<int> output_it(num_items);
   value_t<int> init{42};
 
@@ -150,29 +136,16 @@ TEST_CASE("Scan works with input iterators", "[scan]")
   }
 }
 
-struct transform_output_iterator_state_t
-{
-  int* d_output;
-};
-
 TEST_CASE("Scan works with output iterators", "[scan]")
 {
   const int num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
   operation_t op      = make_operation("op", get_reduce_op(get_type_info<int>().type));
-  iterator_t<int, transform_output_iterator_state_t> output_it = make_iterator<int, transform_output_iterator_state_t>(
-    "struct transform_output_iterator_state_t { int* d_output; };\n",
-    {"advance",
-     "extern \"C\" __device__ void advance(transform_output_iterator_state_t* state, unsigned long long offset) {\n"
-     "  state->d_output += offset;\n"
-     "}"},
-    {"dereference",
-     "extern \"C\" __device__ void dereference(transform_output_iterator_state_t* state, int x) { \n"
-     "  *state->d_output = 2 * x;\n"
-     "}"});
+  iterator_t<int, random_access_iterator_state_t<int>> output_it =
+    make_random_access_iterator<int>(iterator_kind::OUTPUT, "int", "out", " * 2");
   const std::vector<int> input = generate<int>(num_items);
   pointer_t<int> input_it(input);
   pointer_t<int> inner_output_it(num_items);
-  output_it.state.d_output = inner_output_it.ptr;
+  output_it.state.data = inner_output_it.ptr;
   value_t<int> init{42};
 
   scan(input_it, output_it, num_items, op, init);
@@ -189,38 +162,16 @@ TEST_CASE("Scan works with output iterators", "[scan]")
   }
 }
 
-template <class T>
-struct constant_iterator_state_t
-{
-  T value;
-};
-
 TEST_CASE("Scan works with input and output iterators", "[scan]")
 {
   const int num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
   operation_t op      = make_operation("op", get_reduce_op(get_type_info<int>().type));
-  iterator_t<int, constant_iterator_state_t<int>> input_it = make_iterator<int, constant_iterator_state_t<int>>(
-    "struct constant_iterator_state_t { int value; };\n",
-    {"in_advance",
-     "extern \"C\" __device__ void in_advance(constant_iterator_state_t*, unsigned long long) {\n"
-     "}"},
-    {"in_dereference",
-     "extern \"C\" __device__ int in_dereference(constant_iterator_state_t* state) { \n"
-     "  return state->value;\n"
-     "}"});
-  input_it.state.value                                         = 1;
-  iterator_t<int, transform_output_iterator_state_t> output_it = make_iterator<int, transform_output_iterator_state_t>(
-    "struct transform_output_iterator_state_t { int* d_output; };\n",
-    {"out_advance",
-     "extern \"C\" __device__ void out_advance(transform_output_iterator_state_t* state, unsigned long long offset) {\n"
-     "  state->d_output += offset;\n"
-     "}"},
-    {"out_dereference",
-     "extern \"C\" __device__ void out_dereference(transform_output_iterator_state_t* state, int x) { \n"
-     "  *state->d_output = 2 * x;\n"
-     "}"});
+  iterator_t<int, constant_iterator_state_t<int>> input_it = make_constant_iterator<int>("int");
+  input_it.state.value                                     = 1;
+  iterator_t<int, random_access_iterator_state_t<int>> output_it =
+    make_random_access_iterator<int>(iterator_kind::OUTPUT, "int", "out", " * 2");
   pointer_t<int> inner_output_it(num_items);
-  output_it.state.d_output = inner_output_it.ptr;
+  output_it.state.data = inner_output_it.ptr;
   value_t<int> init{42};
 
   scan(input_it, output_it, num_items, op, init);

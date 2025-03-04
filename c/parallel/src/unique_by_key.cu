@@ -14,11 +14,13 @@
 
 #include <format>
 
+#include "cub/block/block_scan.cuh"
 #include "kernels/iterators.h"
 #include "kernels/operators.h"
 #include "util/context.h"
 #include "util/indirect_arg.h"
 #include "util/scan_tile_state.h"
+#include "util/tuning.h"
 #include "util/types.h"
 #include <cccl/c/unique_by_key.h>
 #include <nvrtc/command_list.h>
@@ -26,14 +28,8 @@
 
 struct op_wrapper;
 struct device_unique_by_key_policy;
-using OffsetT = int64_t;
-static_assert(std::is_same_v<cub::detail::choose_signed_offset_t<OffsetT>, OffsetT>, "OffsetT must be int64");
-
-struct input_keys_iterator_state_t;
-struct input_values_iterator_state_t;
-struct output_keys_iterator_t;
-struct output_values_iterator_t;
-struct output_num_selected_iterator_t;
+using OffsetT = unsigned long long;
+static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "OffsetT must be unsigned long long");
 
 struct num_selected_storage_t;
 
@@ -45,6 +41,7 @@ struct unique_by_key_runtime_tuning_policy
   int items_per_thread;
   cub::BlockLoadAlgorithm load_algorithm;
   cub::CacheLoadModifier load_modifier;
+  cub::BlockScanAlgorithm scan_algorithm;
 
   unique_by_key_runtime_tuning_policy UniqueByKey() const
   {
@@ -61,26 +58,12 @@ struct unique_by_key_tuning_t
   int items_per_thread;
 };
 
-template <typename Tuning, int N>
-Tuning find_tuning(int cc, const Tuning (&tunings)[N])
-{
-  for (const Tuning& tuning : tunings)
-  {
-    if (cc >= tuning.cc)
-    {
-      return tuning;
-    }
-  }
-
-  return tunings[N - 1];
-}
-
-unique_by_key_runtime_tuning_policy get_policy(int /*cc*/)
+unique_by_key_runtime_tuning_policy get_policy(int /*cc*/, int /*key_size*/)
 {
   // TODO: we should update this once we figure out a way to reuse
   // tuning logic from C++. Alternately, we should implement
   // something better than a hardcoded default:
-  return {128, 10, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT};
+  return {128, 4, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS};
 }
 
 enum class unique_by_key_iterator_t
@@ -104,26 +87,21 @@ std::string get_iterator_name(cccl_iterator_t iterator, unique_by_key_iterator_t
     std::string iterator_t;
     switch (which_iterator)
     {
-      case unique_by_key_iterator_t::input_keys: {
-        check(nvrtcGetTypeName<input_keys_iterator_state_t>(&iterator_t));
+      case unique_by_key_iterator_t::input_keys:
+        return "input_keys_iterator_state_t";
         break;
-      }
-      case unique_by_key_iterator_t::input_values: {
-        check(nvrtcGetTypeName<input_values_iterator_state_t>(&iterator_t));
+      case unique_by_key_iterator_t::input_values:
+        return "input_values_iterator_state_t";
         break;
-      }
-      case unique_by_key_iterator_t::output_keys: {
-        check(nvrtcGetTypeName<output_keys_iterator_t>(&iterator_t));
+      case unique_by_key_iterator_t::output_keys:
+        return "output_keys_iterator_t";
         break;
-      }
-      case unique_by_key_iterator_t::output_values: {
-        check(nvrtcGetTypeName<output_values_iterator_t>(&iterator_t));
+      case unique_by_key_iterator_t::output_values:
+        return "output_values_iterator_t";
         break;
-      }
-      case unique_by_key_iterator_t::num_selected: {
-        check(nvrtcGetTypeName<output_num_selected_iterator_t>(&iterator_t));
+      case unique_by_key_iterator_t::num_selected:
+        return "output_num_selected_iterator_t";
         break;
-      }
     }
 
     return iterator_t;
@@ -159,7 +137,7 @@ std::string get_sweep_kernel_name(
   const std::string output_values_iterator_t =
     get_iterator_name<items_storage_t>(output_values_it, unique_by_key_iterator_t::output_values);
   const std::string output_num_selected_iterator_t =
-    get_iterator_name<num_selected_storage_t>(output_num_selected_it, unique_by_key_iterator_t::output_values);
+    get_iterator_name<num_selected_storage_t>(output_num_selected_it, unique_by_key_iterator_t::num_selected);
 
   std::string offset_t;
   check(nvrtcGetTypeName<OffsetT>(&offset_t));
@@ -190,8 +168,10 @@ struct dynamic_unique_by_key_policy_t
   template <typename F>
   cudaError_t Invoke(int device_ptx_version, F& op)
   {
-    return op.template Invoke<unique_by_key_runtime_tuning_policy>(GetPolicy(device_ptx_version));
+    return op.template Invoke<unique_by_key_runtime_tuning_policy>(GetPolicy(device_ptx_version, key_size));
   }
+
+  int key_size;
 };
 
 struct unique_by_key_kernel_source
@@ -233,13 +213,6 @@ struct dynamic_vsmem_helper_t
   {
     return 0;
   }
-
-private:
-  unique_by_key_runtime_tuning_policy fallback_policy = {64, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT};
-  bool uses_fallback_policy() const
-  {
-    return false;
-  }
 };
 
 } // namespace unique_by_key
@@ -266,7 +239,7 @@ CUresult cccl_device_unique_by_key_build(
     const char* name = "test";
 
     const int cc      = cc_major * 10 + cc_minor;
-    const auto policy = unique_by_key::get_policy(cc);
+    const auto policy = unique_by_key::get_policy(cc, input_keys_it.value_type.size);
 
     const auto input_keys_it_value_t          = cccl_type_enum_to_name(input_keys_it.value_type.type);
     const auto input_values_it_value_t        = cccl_type_enum_to_name(input_values_it.value_type.type);
@@ -325,11 +298,11 @@ struct __align__({5}) num_out_storage_t {{
 struct agent_policy_t {{
   static constexpr int ITEMS_PER_THREAD = {7};
   static constexpr int BLOCK_THREADS = {6};
-  static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = cub::BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_LDG;
+  static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = cub::BLOCK_LOAD_DIRECT;
+  static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_DEFAULT;
   static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS;
   struct detail {{
-    using delay_constructor_t = cub::detail::default_delay_constructor_t<int>;
+    using delay_constructor_t = cub::detail::default_delay_constructor_t<unsigned long long>;
   }};
 }};
 struct device_unique_by_key_policy {{
@@ -453,7 +426,7 @@ CUresult cccl_device_unique_by_key(
       indirect_arg_t,
       indirect_arg_t,
       indirect_arg_t,
-      ::cuda::std::size_t,
+      OffsetT,
       unique_by_key::dynamic_unique_by_key_policy_t<&unique_by_key::get_policy>,
       unique_by_key::unique_by_key_kernel_source,
       cub::detail::CudaDriverLauncherFactory,
@@ -471,7 +444,7 @@ CUresult cccl_device_unique_by_key(
                                 stream,
                                 {build},
                                 cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
-                                {});
+                                {d_keys_in.value_type.size});
   }
   catch (const std::exception& exc)
   {

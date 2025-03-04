@@ -18,6 +18,7 @@
 #include "kernels/operators.h"
 #include "util/context.h"
 #include "util/indirect_arg.h"
+#include "util/tuning.h"
 #include "util/types.h"
 #include <cccl/c/merge_sort.h>
 #include <nvrtc/command_list.h>
@@ -25,8 +26,8 @@
 
 struct op_wrapper;
 struct device_merge_sort_policy;
-using OffsetT = int64_t;
-static_assert(std::is_same_v<cub::detail::choose_signed_offset_t<OffsetT>, OffsetT>, "OffsetT must be int64");
+using OffsetT = unsigned long long;
+static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "OffsetT must be unsigned long long");
 
 struct input_keys_iterator_state_t;
 struct input_items_iterator_state_t;
@@ -114,11 +115,6 @@ std::string get_iterator_name(cccl_iterator_t iterator, merge_sort_iterator_t wh
 
     return iterator_t;
   }
-}
-
-int nominal_4b_items_to_items(int nominal_4b_items_per_thread, int key_size)
-{
-  return std::min(nominal_4b_items_per_thread, std::max(1, nominal_4b_items_per_thread * 4 / key_size));
 }
 
 merge_sort_runtime_tuning_policy get_policy(int cc, int key_size)
@@ -462,7 +458,7 @@ CUresult cccl_device_merge_sort(
       indirect_arg_t,
       indirect_arg_t,
       indirect_arg_t,
-      ::cuda::std::size_t,
+      OffsetT,
       indirect_arg_t,
       merge_sort::dynamic_merge_sort_policy_t<&merge_sort::get_policy>,
       merge_sort::merge_sort_kernel_source,

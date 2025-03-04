@@ -23,8 +23,7 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/disjunction.h>
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
@@ -43,30 +42,8 @@ _CCCL_DIAG_SUPPRESS_MSVC(4389) // signed/unsigned mismatch for == and !=
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class _Tp, class... _Up>
-using __is_same_as_any = __fold_or<_CCCL_TRAIT(is_same, _Tp, _Up)...>;
-
-template <class _Tp>
-struct __is_safe_integral_cmp
-    : bool_constant<_CCCL_TRAIT(is_integral, _Tp)
-                    && !__is_same_as_any<_Tp,
-                                         bool,
-                                         char,
-                                         char16_t,
-                                         char32_t
-#ifndef _LIBCUDACXX_HAS_NO_CHAR8_T
-                                         ,
-                                         char8_t
-#endif // _LIBCUDACXX_HAS_NO_CHAR8_T
-#ifndef _LIBCUDACXX_HAS_NO_WIDE_CHARACTERS
-                                         ,
-                                         wchar_t
-#endif // _LIBCUDACXX_HAS_NO_WIDE_CHARACTERS
-                                         >::value>
-{};
-
 _CCCL_TEMPLATE(class _Tp, class _Up)
-_CCCL_REQUIRES(__is_safe_integral_cmp<_Tp>::value _CCCL_AND __is_safe_integral_cmp<_Up>::value)
+_CCCL_REQUIRES(__cccl_is_integer_v<_Tp> _CCCL_AND __cccl_is_integer_v<_Up>)
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_equal(_Tp __t, _Up __u) noexcept
 {
 #if !defined(_CCCL_NO_IF_CONSTEXPR)
@@ -92,14 +69,14 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_equal(_Tp __t, _Up __u) noexcept
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
-_CCCL_REQUIRES(__is_safe_integral_cmp<_Tp>::value _CCCL_AND __is_safe_integral_cmp<_Up>::value)
+_CCCL_REQUIRES(__cccl_is_integer_v<_Tp> _CCCL_AND __cccl_is_integer_v<_Up>)
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_not_equal(_Tp __t, _Up __u) noexcept
 {
   return !_CUDA_VSTD::cmp_equal(__t, __u);
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
-_CCCL_REQUIRES(__is_safe_integral_cmp<_Tp>::value _CCCL_AND __is_safe_integral_cmp<_Up>::value)
+_CCCL_REQUIRES(__cccl_is_integer_v<_Tp> _CCCL_AND __cccl_is_integer_v<_Up>)
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_less(_Tp __t, _Up __u) noexcept
 {
 #if !defined(_CCCL_NO_IF_CONSTEXPR)
@@ -125,28 +102,28 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_less(_Tp __t, _Up __u) noexcept
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
-_CCCL_REQUIRES(__is_safe_integral_cmp<_Tp>::value _CCCL_AND __is_safe_integral_cmp<_Up>::value)
+_CCCL_REQUIRES(__cccl_is_integer_v<_Tp> _CCCL_AND __cccl_is_integer_v<_Up>)
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_greater(_Tp __t, _Up __u) noexcept
 {
   return _CUDA_VSTD::cmp_less(__u, __t);
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
-_CCCL_REQUIRES(__is_safe_integral_cmp<_Tp>::value _CCCL_AND __is_safe_integral_cmp<_Up>::value)
+_CCCL_REQUIRES(__cccl_is_integer_v<_Tp> _CCCL_AND __cccl_is_integer_v<_Up>)
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_less_equal(_Tp __t, _Up __u) noexcept
 {
   return !_CUDA_VSTD::cmp_greater(__t, __u);
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
-_CCCL_REQUIRES(__is_safe_integral_cmp<_Tp>::value _CCCL_AND __is_safe_integral_cmp<_Up>::value)
+_CCCL_REQUIRES(__cccl_is_integer_v<_Tp> _CCCL_AND __cccl_is_integer_v<_Up>)
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_greater_equal(_Tp __t, _Up __u) noexcept
 {
   return !_CUDA_VSTD::cmp_less(__t, __u);
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
-_CCCL_REQUIRES(__is_safe_integral_cmp<_Tp>::value _CCCL_AND __is_safe_integral_cmp<_Up>::value)
+_CCCL_REQUIRES(__cccl_is_integer_v<_Tp> _CCCL_AND __cccl_is_integer_v<_Up>)
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool in_range(_Up __u) noexcept
 {
   return _CUDA_VSTD::cmp_less_equal(__u, numeric_limits<_Tp>::max())
