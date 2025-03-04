@@ -12,6 +12,7 @@ Extended API
    extended_api/synchronization_primitives
    extended_api/asynchronous_operations
    extended_api/memory_access_properties
+   extended_api/data_movement
    extended_api/functional
    extended_api/streams
    extended_api/memory_resource
