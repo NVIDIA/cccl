@@ -25,9 +25,8 @@
  *
  ******************************************************************************/
 
+#include <cub/detail/choose_offset.cuh>
 #include <cub/device/device_scan.cuh>
-
-#include <cuda/std/type_traits>
 
 #include <look_back_helper.cuh>
 #include <nvbench_helper.cuh>
