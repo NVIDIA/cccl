@@ -53,7 +53,7 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/tuple>
-#include <cuda/std/type_traits>
+#include <cuda/type_traits>
 #include <cuda/type_traits>
 
 CUB_NAMESPACE_BEGIN
@@ -77,8 +77,7 @@ CUB_NAMESPACE_BEGIN
 template <typename KeyT, bool IsFP = ::cuda::is_floating_point_v<KeyT>>
 struct BaseDigitExtractor
 {
-  using TraitsT      = Traits<KeyT>;
-  using UnsignedBits = typename TraitsT::UnsignedBits;
+  using UnsignedBits = typename key_traits<KeyT>::unsigned_bits;
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits ProcessFloatMinusZero(UnsignedBits key)
   {
@@ -89,14 +88,13 @@ struct BaseDigitExtractor
 template <typename KeyT>
 struct BaseDigitExtractor<KeyT, true>
 {
-  using TraitsT      = Traits<KeyT>;
-  using UnsignedBits = typename TraitsT::UnsignedBits;
+  using UnsignedBits = typename key_traits<KeyT>::unsigned_bits;
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits ProcessFloatMinusZero(UnsignedBits key)
   {
     UnsignedBits TWIDDLED_MINUS_ZERO_BITS =
-      TraitsT::TwiddleIn(UnsignedBits(1) << UnsignedBits(8 * sizeof(UnsignedBits) - 1));
-    UnsignedBits TWIDDLED_ZERO_BITS = TraitsT::TwiddleIn(0);
+      key_traits<KeyT>::twiddle_in(UnsignedBits(1) << UnsignedBits(8 * sizeof(UnsignedBits) - 1));
+    UnsignedBits TWIDDLED_ZERO_BITS = key_traits<KeyT>::twiddle_in(0);
     return key == TWIDDLED_MINUS_ZERO_BITS ? TWIDDLED_ZERO_BITS : key;
   }
 };
@@ -209,7 +207,7 @@ struct is_fundamental_type
 };
 
 template <class T>
-struct is_fundamental_type<T, ::cuda::std::void_t<typename Traits<T>::UnsignedBits>>
+struct is_fundamental_type<T, ::cuda::std::void_t<typename key_traits<T>::unsigned_bits>>
 {
   static constexpr bool value = true;
 };
@@ -233,23 +231,23 @@ using decomposer_check_t = is_tuple_of_references_to_fundamental_types_t<invoke_
 template <class T>
 struct bit_ordered_conversion_policy_t
 {
-  using bit_ordered_type = typename Traits<T>::UnsignedBits;
+  using bit_ordered_type = typename key_traits<T>::unsigned_bits;
 
   static _CCCL_HOST_DEVICE bit_ordered_type to_bit_ordered(detail::identity_decomposer_t, bit_ordered_type val)
   {
-    return Traits<T>::TwiddleIn(val);
+    return key_traits<T>::twiddle_in(val);
   }
 
   static _CCCL_HOST_DEVICE bit_ordered_type from_bit_ordered(detail::identity_decomposer_t, bit_ordered_type val)
   {
-    return Traits<T>::TwiddleOut(val);
+    return key_traits<T>::twiddle_out(val);
   }
 };
 
 template <class T>
 struct bit_ordered_inversion_policy_t
 {
-  using bit_ordered_type = typename Traits<T>::UnsignedBits;
+  using bit_ordered_type = typename key_traits<T>::unsigned_bits;
 
   static _CCCL_HOST_DEVICE bit_ordered_type inverse(detail::identity_decomposer_t, bit_ordered_type val)
   {
@@ -260,7 +258,7 @@ struct bit_ordered_inversion_policy_t
 template <class T, bool = is_fundamental_type<T>::value>
 struct traits_t
 {
-  using bit_ordered_type              = typename Traits<T>::UnsignedBits;
+  using bit_ordered_type              = typename key_traits<T>::unsigned_bits;
   using bit_ordered_conversion_policy = bit_ordered_conversion_policy_t<T>;
   using bit_ordered_inversion_policy  = bit_ordered_inversion_policy_t<T>;
 
@@ -269,12 +267,20 @@ struct traits_t
 
   static _CCCL_HOST_DEVICE bit_ordered_type min_raw_binary_key(detail::identity_decomposer_t)
   {
-    return Traits<T>::LOWEST_KEY;
+    // TODO(bgruber): sanity check, remove eventually
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
+    static_assert(key_traits<T>::lowest_key == Traits<T>::LOWEST_KEY, "");
+    _CCCL_SUPPRESS_DEPRECATED_POP
+    return key_traits<T>::lowest_key;
   }
 
   static _CCCL_HOST_DEVICE bit_ordered_type max_raw_binary_key(detail::identity_decomposer_t)
   {
-    return Traits<T>::MAX_KEY;
+    // TODO(bgruber): sanity check, remove eventually
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
+    static_assert(key_traits<T>::max_key == Traits<T>::MAX_KEY, "");
+    _CCCL_SUPPRESS_DEPRECATED_POP
+    return key_traits<T>::max_key;
   }
 
   static _CCCL_HOST_DEVICE int default_end_bit(detail::identity_decomposer_t)
