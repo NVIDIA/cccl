@@ -186,6 +186,9 @@ struct counting_iterator_equal<Difference,
   }
 };
 
+struct empty
+{};
+
 template <typename T>
 struct value_holder
 {
@@ -280,10 +283,10 @@ template <typename Incrementable,
           typename System     = use_default,
           typename Traversal  = use_default,
           typename Difference = use_default,
-          typename Step       = ::cuda::std::monostate>
+          typename Step       = detail::empty>
 class _CCCL_DECLSPEC_EMPTY_BASES counting_iterator
     : public detail::make_counting_iterator_base<Incrementable, System, Traversal, Difference, Step>::type
-    , public Step
+    , Step
 {
   //! \cond
   using super_t =
@@ -330,16 +333,16 @@ public:
 
 private:
   template <typename S = Step>
-  auto step() const -> Incrementable
+  auto step() const
   {
-    static_assert(!::cuda::std::is_same_v<Step, ::cuda::std::monostate>);
+    static_assert(!::cuda::std::is_same_v<Step, detail::empty>);
     return static_cast<const Step&>(*this)();
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE void advance(difference_type n)
   {
-    if constexpr (::cuda::std::is_same_v<Step, ::cuda::std::monostate>)
+    if constexpr (::cuda::std::is_same_v<Step, detail::empty>)
     {
       this->base_reference() = static_cast<Incrementable>(this->base_reference() + n);
     }
@@ -352,7 +355,7 @@ private:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE void increment()
   {
-    if constexpr (::cuda::std::is_same_v<Step, ::cuda::std::monostate>)
+    if constexpr (::cuda::std::is_same_v<Step, detail::empty>)
     {
       ++this->base_reference();
     }
@@ -365,7 +368,7 @@ private:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE void decrement()
   {
-    if constexpr (::cuda::std::is_same_v<Step, ::cuda::std::monostate>)
+    if constexpr (::cuda::std::is_same_v<Step, detail::empty>)
     {
       --this->base_reference();
     }
@@ -381,17 +384,21 @@ private:
   }
 
   // note that we implement equal specially for floating point counting_iterator
-  template <typename OtherIncrementable, typename OtherSystem, typename OtherTraversal, typename OtherDifference>
+  template <typename OtherIncrementable,
+            typename OtherSystem,
+            typename OtherTraversal,
+            typename OtherDifference,
+            typename OtherStep>
   _CCCL_HOST_DEVICE bool
-  equal(counting_iterator<OtherIncrementable, OtherSystem, OtherTraversal, OtherDifference> const& y) const
+  equal(counting_iterator<OtherIncrementable, OtherSystem, OtherTraversal, OtherDifference, OtherStep> const& y) const
   {
     using e = detail::counting_iterator_equal<difference_type, Incrementable, OtherIncrementable>;
     return e::equal(this->base(), y.base());
   }
 
-  template <class OtherIncrementable>
+  template <class OtherIncrementable, typename OtherStep>
   _CCCL_HOST_DEVICE difference_type
-  distance_to(counting_iterator<OtherIncrementable, System, Traversal, Difference> const& y) const
+  distance_to(counting_iterator<OtherIncrementable, System, Traversal, Difference, OtherStep> const& y) const
   {
     using d = typename detail::eval_if<
       detail::is_numeric<Incrementable>::value,
@@ -418,8 +425,11 @@ inline _CCCL_HOST_DEVICE counting_iterator<Incrementable> make_counting_iterator
 template <typename Incrementable, typename Stride>
 inline _CCCL_HOST_DEVICE auto make_counting_iterator(Incrementable x, Stride stride)
 {
-  return counting_iterator<Incrementable, use_default, use_default, use_default, detail::value_holder<Stride>>(
-    x, {stride});
+  return counting_iterator<Incrementable,
+                           use_default,
+                           random_access_traversal_tag,
+                           use_default,
+                           detail::value_holder<Stride>>(x, {stride});
 }
 
 template <typename Incrementable, typename Stride, Stride Value>
@@ -428,7 +438,7 @@ make_counting_iterator(Incrementable x, ::cuda::std::integral_constant<Stride, V
 {
   return counting_iterator<Incrementable,
                            use_default,
-                           use_default,
+                           random_access_traversal_tag,
                            use_default,
                            ::cuda::std::integral_constant<Stride, Value>>(x, stride);
 }

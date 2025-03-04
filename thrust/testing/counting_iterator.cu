@@ -3,10 +3,13 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/sort.h>
 
+#include <cuda/std/__algorithm_>
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 
+#include <complex>
 #include <cstdint>
+#include <numeric>
 
 #include <unittest/unittest.h>
 
@@ -260,7 +263,7 @@ DECLARE_UNITTEST(TestCountingIteratorDifference);
 void TestCountingIteratorDynamicStride()
 {
   auto iter = thrust::make_counting_iterator(0, 2);
-  // static_assert(sizeof(iter) == 2 * sizeof(int));
+  static_assert(sizeof(iter) == 2 * sizeof(int));
 
   ASSERT_EQUAL(*iter, 0);
   iter++;
@@ -292,5 +295,45 @@ void TestCountingIteratorStaticStride()
   ASSERT_EQUAL(*iter, -4);
 }
 DECLARE_UNITTEST(TestCountingIteratorStaticStride);
+
+void TestCountingIteratorPointer()
+{
+  int arr[11];
+  std::iota(arr, arr + 11, 0);
+
+  auto iter = thrust::make_counting_iterator(&arr[2]);
+
+  ASSERT_EQUAL(*iter, &arr[2]);
+  ASSERT_EQUAL(**iter, 2);
+  iter++;
+  ASSERT_EQUAL(*iter, &arr[3]);
+  ASSERT_EQUAL(**iter, 3);
+  iter++;
+  iter++;
+  ASSERT_EQUAL(*iter, &arr[5]);
+  ASSERT_EQUAL(**iter, 5);
+  iter += 5;
+  ASSERT_EQUAL(*iter, &arr[10]);
+  ASSERT_EQUAL(**iter, 10);
+  iter -= 10;
+  ASSERT_EQUAL(*iter, &arr[0]);
+  ASSERT_EQUAL(**iter, 0);
+}
+DECLARE_UNITTEST(TestCountingIteratorPointer);
+
+void TestCountingIteratorStridedPointer()
+{
+  ::cuda::std::array<std::pair<int, double>, 4> arr{{{1, 2}, {3, 4}, {5, 6}, {7, 8}}};
+
+  // iterate over all second elements
+  auto iter = thrust::make_counting_iterator(
+    &arr[0].second, ::cuda::std::integral_constant<int, sizeof(std::pair<int, double>)>{});
+
+  cuda::std::fill(iter, iter + 4, 1337);
+
+  const ::cuda::std::array<std::pair<int, double>, 4> reference{{{1, 1337}, {3, 1337}, {5, 1337}, {7, 1337}}};
+  ASSERT_EQUAL(arr, reference);
+}
+DECLARE_UNITTEST(TestCountingIteratorStridedPointer);
 
 _CCCL_DIAG_POP
