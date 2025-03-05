@@ -843,11 +843,6 @@ public:
    * ForEachInExtents
    ********************************************************************************************************************/
 
-#ifdef _CCCL_DOXYGEN_INVOKED // Otherwise doxygen doesn't document the functions
-#  undef __cccl_lib_mdspan
-#  define __cccl_lib_mdspan 1
-#endif
-
 #if __cccl_lib_mdspan
 
   //! @rst
