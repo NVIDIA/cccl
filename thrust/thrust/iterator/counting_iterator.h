@@ -57,21 +57,8 @@ class counting_iterator;
 namespace detail
 {
 template <typename Number>
-using counting_iterator_difference_type = ::cuda::std::_If<
-  ::cuda::std::is_integral_v<Number>,
-  // the difference between two int values can be larger than what an int can represent
-  ::cuda::std::_If<sizeof(Number) < sizeof(int), int, ::cuda::std::ptrdiff_t>,
-  // floating points use ptrdiff_t
-  ::cuda::std::_If<::cuda::std::is_floating_point_v<Number>,
-                   ::cuda::std::ptrdiff_t,
-                   // any other type, if it can represent the difference, can be used as difference type,
-                   // otherwise also ptrdiff_t
-                   ::cuda::std::_If<::cuda::std::numeric_limits<Number>::is_signed
-                                      && (!::cuda::std::numeric_limits<Number>::is_bounded
-                                          || ::cuda::std::numeric_limits<Number>::digits
-                                               > ::cuda::std::numeric_limits<::cuda::std::ptrdiff_t>::digits),
-                                    Number,
-                                    ::cuda::std::ptrdiff_t>>>;
+using counting_iterator_difference_type =
+  ::cuda::std::_If<::cuda::std::is_integral_v<Number> && sizeof(Number) < sizeof(int), int, ::cuda::std::ptrdiff_t>;
 
 template <typename Incrementable, typename System, typename Traversal, typename Difference>
 struct make_counting_iterator_base
