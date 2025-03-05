@@ -181,7 +181,7 @@ public:
   //! Device on which this resource allocates memory can be included in the vector.
   //!
   //! @param __devices A vector of `device_ref`s listing devices to enable access for
-  void enable_access_from(const ::std::vector<device_ref>& __devices)
+  void enable_peer_access_from(const ::std::vector<device_ref>& __devices)
   {
     ::cuda::experimental::__mempool_set_access(
       __pool_, {__devices.data(), __devices.size()}, cudaMemAccessFlagsProtReadWrite);
@@ -193,7 +193,7 @@ public:
   //! setting is shared between all memory resources created from the same pool.
   //!
   //! @param __device device_ref indicating for which device the access should be enabled
-  void enable_access_from(device_ref __device)
+  void enable_peer_access_from(device_ref __device)
   {
     ::cuda::experimental::__mempool_set_access(__pool_, {&__device, 1}, cudaMemAccessFlagsProtReadWrite);
   }
@@ -205,7 +205,7 @@ public:
   //! Device on which this resource allocates memory can be included in the vector.
   //!
   //! @param __devices A vector of `device_ref`s listing devices to disable access for
-  void disable_access_from(const ::std::vector<device_ref>& __devices)
+  void disable_peer_access_from(const ::std::vector<device_ref>& __devices)
   {
     ::cuda::experimental::__mempool_set_access(
       __pool_, {__devices.data(), __devices.size()}, cudaMemAccessFlagsProtNone);
@@ -217,7 +217,7 @@ public:
   //! setting is shared between all memory resources created from the same pool.
   //!
   //! @param __device device_ref indicating for which device the access should be enabled
-  void disable_access_from(device_ref __device)
+  void disable_peer_access_from(device_ref __device)
   {
     ::cuda::experimental::__mempool_set_access(__pool_, {&__device, 1}, cudaMemAccessFlagsProtNone);
   }
@@ -246,6 +246,23 @@ public:
   }
 #endif // _CCCL_STD_VER >= 2017
 
+private:
+  // This code is defunct, TODO remove it
+  template <class _Resource>
+  _CCCL_NODISCARD bool __equal_to(_Resource const& __rhs) const noexcept
+  {
+    if constexpr (has_property<_Resource, device_accessible>)
+    {
+      return resource_ref<device_accessible>{*const_cast<__memory_resource_base*>(this)}
+          == __cudax::__as_resource_ref<device_accessible>(const_cast<_Resource&>(__rhs));
+    }
+    else
+    {
+      return false;
+    }
+  }
+
+public:
 // TODO Should this be declared in general for two things that satisfy resource concept?
 #if _CCCL_STD_VER >= 2020
   //! @brief Equality comparison between a \c __memory_resource_base and another resource.
@@ -256,7 +273,7 @@ public:
     requires _CUDA_VMR::__different_resource<__memory_resource_base, _Resource> && __non_polymorphic<_Resource>
   _CCCL_NODISCARD bool operator==([[maybe_unused]] _Resource const& __rhs) const noexcept
   {
-    return false;
+    return this->__equal_to(__rhs);
   }
 #else // ^^^ C++20 ^^^ / vvv C++17
   template <class _Resource>
@@ -265,7 +282,7 @@ public:
     _CCCL_TRAILING_REQUIRES(bool)(
       _CUDA_VMR::__different_resource<__memory_resource_base, _Resource>&& __non_polymorphic<_Resource>)
   {
-    return false;
+    return __lhs.__equal_to(__rhs);
   }
 
   template <class _Resource>
@@ -274,7 +291,7 @@ public:
     _CCCL_TRAILING_REQUIRES(bool)(
       _CUDA_VMR::__different_resource<__memory_resource_base, _Resource>&& __non_polymorphic<_Resource>)
   {
-    return false;
+    return __rhs.__equal_to(__lhs);
   }
 
   template <class _Resource>
@@ -283,7 +300,7 @@ public:
     _CCCL_TRAILING_REQUIRES(bool)(
       _CUDA_VMR::__different_resource<__memory_resource_base, _Resource>&& __non_polymorphic<_Resource>)
   {
-    return true;
+    return !__lhs.__equal_to(__rhs);
   }
 
   template <class _Resource>
@@ -292,7 +309,7 @@ public:
     _CCCL_TRAILING_REQUIRES(bool)(
       _CUDA_VMR::__different_resource<__memory_resource_base, _Resource>&& __non_polymorphic<_Resource>)
   {
-    return true;
+    return !__rhs.__equal_to(__lhs);
   }
 #endif // _CCCL_STD_VER <= 2017
 
