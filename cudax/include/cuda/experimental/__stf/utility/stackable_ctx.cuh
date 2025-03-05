@@ -878,8 +878,6 @@ public:
     return get_ctx(offset).get_dot();
   }
 
-
-
   template <typename... Pack>
   void push_affinity(Pack&&... pack) const
   {
@@ -932,15 +930,15 @@ public:
     get_root_ctx().finalize();
   }
 
-    ::std::shared_lock<::std::shared_mutex> get_read_lock() const
-    {
-      return pimpl->get_read_lock();
-    }
+  ::std::shared_lock<::std::shared_mutex> get_read_lock() const
+  {
+    return pimpl->get_read_lock();
+  }
 
-    ::std::unique_lock<::std::shared_mutex> get_write_lock()
-    {
-      return pimpl->get_write_lock();
-    }
+  ::std::unique_lock<::std::shared_mutex> get_write_lock()
+  {
+    return pimpl->get_write_lock();
+  }
 
 public:
   ::std::shared_ptr<impl> pimpl;
