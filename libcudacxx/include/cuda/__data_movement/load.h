@@ -185,7 +185,7 @@ load(const _Tp* __ptr,
   static_assert(_Align >= alignof(_Tp), "'ptr' must be aligned to at least 'alignof(_Tp)'");
   static_assert(sizeof(_Tp) * _Np % _Align == 0, "Np * sizeof(_Tp) must be a multiple of _Align");
   _CCCL_ASSERT(__ptr != nullptr, "cuda::device::load: 'ptr' must not be null");
-  _CCCL_ASSERT(reinterpret_cast<size_t>(__ptr) % alignof(_Tp) == 0, "cuda::device::load: 'ptr' must be aligned");
+  _CCCL_ASSERT(reinterpret_cast<size_t>(__ptr) % _Align == 0, "cuda::device::load: 'ptr' must be aligned");
   _CCCL_ASSERT(__isGlobal(__ptr), "cuda::device::load: 'ptr' must point to global memory");
   constexpr auto __count = sizeof(_Tp) * _Np / _Align;
   using __load_type      = __DataNBytes<_Align>;
