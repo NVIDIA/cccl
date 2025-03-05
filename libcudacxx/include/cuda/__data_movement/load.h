@@ -146,7 +146,7 @@ load(const _Tp* __ptr,
   {
     static_assert(_CUDA_VSTD::has_single_bit(sizeof(_Tp)), "'sizeof(_Tp)' must be a power of 2");
     static_assert(_CUDA_VSTD::has_single_bit(alignof(_Tp)), "'alignof(_Tp)' must be a power of 2");
-    constexpr auto __num_bytes = _CUDA_VSTD::min(alignof(_Tp), sizeof(_Tp));
+    constexpr auto __num_bytes = alignof(_Tp);
     if constexpr (__num_bytes > 16)
     {
       constexpr auto __num_16_bytes = __num_bytes / 16;
