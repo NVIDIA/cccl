@@ -20,6 +20,12 @@
 
 #include <testing.cuh>
 
+#if _CCCL_CUDACC_AT_LEAST(12, 6)
+#  define TEST_TYPES cudax::device_memory_pool, cudax::pinned_memory_pool
+#else
+#  define TEST_TYPES cudax::device_memory_pool
+#endif
+
 namespace cudax = cuda::experimental;
 
 template <typename PoolType>
@@ -93,14 +99,7 @@ static bool ensure_export_handle(::cudaMemPool_t pool, const ::cudaMemAllocation
   return allocation_handle == ::cudaMemHandleTypeNone ? status == ::cudaErrorInvalidValue : status == ::cudaSuccess;
 }
 
-TEMPLATE_TEST_CASE("device_memory_pool construction",
-                   "[memory_resource]",
-                   cudax::device_memory_pool
-#if _CCCL_CUDACC_AT_LEAST(12, 6)
-                   ,
-                   cudax::pinned_memory_pool
-#endif
-)
+TEMPLATE_TEST_CASE("device_memory_pool construction", "[memory_resource]", TEST_TYPES)
 {
   int current_device{};
   {
@@ -221,14 +220,7 @@ TEMPLATE_TEST_CASE("device_memory_pool construction",
   }
 }
 
-TEMPLATE_TEST_CASE("device_memory_pool comparison",
-                   "[memory_resource]",
-                   cudax::device_memory_pool
-#if _CCCL_CUDACC_AT_LEAST(12, 6)
-                   ,
-                   cudax::pinned_memory_pool
-#endif
-)
+TEMPLATE_TEST_CASE("device_memory_pool comparison", "[memory_resource]", TEST_TYPES)
 {
   int current_device{};
   {
@@ -264,14 +256,7 @@ TEMPLATE_TEST_CASE("device_memory_pool comparison",
   }
 }
 
-TEMPLATE_TEST_CASE("device_memory_pool accessors",
-                   "[memory_resource]",
-                   cudax::device_memory_pool
-#if _CCCL_CUDACC_AT_LEAST(12, 6)
-                   ,
-                   cudax::pinned_memory_pool
-#endif
-)
+TEMPLATE_TEST_CASE("device_memory_pool accessors", "[memory_resource]", TEST_TYPES)
 {
   int current_device{};
   {
