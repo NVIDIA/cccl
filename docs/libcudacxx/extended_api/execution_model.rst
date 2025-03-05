@@ -3,7 +3,7 @@
 Execution model
 ===============
 
-CUDA C++ aims to provide `*parallel forward progress* [intro.progress.9] <https://eel.is/c++draft/intro.progress#9>`__
+CUDA C++ aims to provide `parallel forward progress [intro.progress.9] <https://eel.is/c++draft/intro.progress#9>`__
 for all device threads of execution, facilitating the parallelization of pre-existing C++ applications with CUDA C++.
 
 .. dropdown:: `[intro.progress] <https://eel.is/c++draft/intro.progress>`__
@@ -40,10 +40,10 @@ The forward progress provided by threads of execution created by the host implem
 execute `main <https://en.cppreference.com/w/cpp/language/main_function>`__, `std::thread <https://en.cppreference.com/w/cpp/thread/thread>`__,
 and `std::jthread <https://en.cppreference.com/w/cpp/thread/jthread>`__ is implementation-defined behavior of the host
 implementation `[intro.progress] <https://eel.is/c++draft/intro.progress>`__.
-General-purpose host implementations should provide *concurrent forward progress*.
+General-purpose host implementations should provide concurrent forward progress.
 
-If the host implementation provides `*concurrent forward progress* [intro.progress.7] <https://eel.is/c++draft/intro.progress#7>`__,
-then CUDA C++ provides `*parallel forward progress* [intro.progress.9] <https://eel.is/c++draft/intro.progress#9>`__ for device threads.
+If the host implementation provides `concurrent forward progress [intro.progress.7] <https://eel.is/c++draft/intro.progress#7>`__,
+then CUDA C++ provides `parallel forward progress [intro.progress.9] <https://eel.is/c++draft/intro.progress#9>`__ for device threads.
 
 
 .. _libcudacxx-extended-api-execution-model-device-threads:
