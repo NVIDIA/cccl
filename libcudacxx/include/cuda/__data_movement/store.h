@@ -29,7 +29,7 @@
 #  include <cuda/__ptx/instructions/st.h>
 #  include <cuda/std/__bit/has_single_bit.h>
 #  include <cuda/std/__type_traits/is_const.h>
-#  include <cuda/std/array>
+#  include <cuda/std/span>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
@@ -128,11 +128,12 @@ store(_Tp __data, _Tp* __ptr, __eviction_policy_t<_Ep> __eviction_policy = evict
 
 template <size_t _Np, typename _Tp, size_t _Align = alignof(_Tp), _EvictionPolicyEnum _Ep = _EvictionPolicyEnum::_None>
 _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void
-store(_CUDA_VSTD::array<_Tp, _Np>,
+store(_CUDA_VSTD::array<_Tp, _Np> __data,
       _Tp* __ptr,
       ::cuda::aligned_size_t<_Align>             = {},
       __eviction_policy_t<_Ep> __eviction_policy = eviction_none) noexcept
 {
+  static_assert(_Np > 0 && _Np != _CUDA_VSTD::dynamic_extent);
   static_assert(_CUDA_VSTD::has_single_bit(_Align), "_Align must be a power of 2");
   static_assert(_Align >= alignof(_Tp), "_Align must be greater than or equal to alignof(_Tp)");
   static_assert(sizeof(_Tp) * _Np % _Align == 0, "Np * sizeof(_Tp) must be a multiple of _Align");
@@ -143,7 +144,25 @@ store(_CUDA_VSTD::array<_Tp, _Np>,
   using __store_type     = _AlignedData<_Align>;
   auto __ptr_gmem        = _CUDA_VSTD::bit_cast<__store_type*>(__cvta_generic_to_global(__ptr));
   auto __index_seq       = _CUDA_VSTD::make_index_sequence<__count>{};
-  _CUDA_VDEV::__unroll_store(__ptr_gmem, __eviction_policy, __index_seq);
+  using __result_t       = _CUDA_VSTD::array<__store_type, __count>;
+  auto __tmp             = _CUDA_VSTD::bit_cast<__result_t>(__data);
+  _CUDA_VDEV::__unroll_store(__tmp, __ptr_gmem, __eviction_policy, __index_seq);
+}
+
+template <size_t _Np, typename _Tp, size_t _Align = alignof(_Tp), _EvictionPolicyEnum _Ep = _EvictionPolicyEnum::_None>
+_CCCL_HIDE_FROM_ABI _CCCL_DEVICE void
+store(_CUDA_VSTD::span<_Tp, _Np> __data,
+      _Tp* __ptr,
+      ::cuda::aligned_size_t<_Align> __align     = {},
+      __eviction_policy_t<_Ep> __eviction_policy = eviction_none) noexcept
+{
+  _CUDA_VSTD::array<_Tp, _Np> __tmp;
+#  pragma unroll
+  for (size_t i = 0; i < _Np; ++i)
+  {
+    __tmp[i] = __data[i];
+  }
+  _CUDA_VDEV::store(__tmp, __ptr, __align, __eviction_policy);
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE

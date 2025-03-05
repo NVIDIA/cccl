@@ -30,7 +30,6 @@
 #  include <cuda/std/__bit/bit_cast.h>
 #  include <cuda/std/__bit/has_single_bit.h>
 #  include <cuda/std/__memory/assume_aligned.h>
-#  include <cuda/std/__type_traits/integral_constant.h>
 #  include <cuda/std/__utility/integer_sequence.h>
 #  include <cuda/std/array>
 #  include <cuda/std/cstddef>
