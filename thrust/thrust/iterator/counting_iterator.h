@@ -53,7 +53,7 @@
 THRUST_NAMESPACE_BEGIN
 
 // forward declaration of counting_iterator
-template <typename Incrementable, typename System, typename Traversal, typename Difference, typename Step>
+template <typename Incrementable, typename System, typename Traversal, typename Difference, typename StrideHolder>
 class counting_iterator;
 
 namespace detail
@@ -110,7 +110,7 @@ _CCCL_HOST_DEVICE typename numeric_difference<Number>::type numeric_distance(Num
   return difference_type(y) - difference_type(x);
 } // end numeric_distance
 
-template <typename Incrementable, typename System, typename Traversal, typename Difference, typename Step>
+template <typename Incrementable, typename System, typename Traversal, typename Difference, typename StrideHolder>
 struct make_counting_iterator_base
 {
   using system =
@@ -135,7 +135,7 @@ struct make_counting_iterator_base
   // to the internal state of an iterator causes subtle bugs (consider the temporary
   // iterator created in the expression *(iter + i)) and has no compelling use case
   using type =
-    iterator_adaptor<counting_iterator<Incrementable, System, Traversal, Difference, Step>,
+    iterator_adaptor<counting_iterator<Incrementable, System, Traversal, Difference, StrideHolder>,
                      Incrementable,
                      Incrementable,
                      system,
@@ -269,17 +269,17 @@ struct empty
 //!
 //! \see make_counting_iterator
 template <typename Incrementable,
-          typename System     = use_default,
-          typename Traversal  = use_default,
-          typename Difference = use_default,
-          typename Step       = detail::empty>
+          typename System       = use_default,
+          typename Traversal    = use_default,
+          typename Difference   = use_default,
+          typename StrideHolder = detail::empty>
 class _CCCL_DECLSPEC_EMPTY_BASES counting_iterator
-    : public detail::make_counting_iterator_base<Incrementable, System, Traversal, Difference, Step>::type
-    , Step
+    : public detail::make_counting_iterator_base<Incrementable, System, Traversal, Difference, StrideHolder>::type
+    , StrideHolder
 {
   //! \cond
   using super_t =
-    typename detail::make_counting_iterator_base<Incrementable, System, Traversal, Difference, Step>::type;
+    typename detail::make_counting_iterator_base<Incrementable, System, Traversal, Difference, StrideHolder>::type;
   friend class iterator_core_access;
 
 public:
@@ -295,13 +295,14 @@ public:
   //! Copy constructor copies the value of another counting_iterator with related System type.
   //!
   //! \param rhs The \p counting_iterator to copy.
-  template <class OtherSystem,
-            detail::enable_if_convertible_t<
-              typename iterator_system<counting_iterator<Incrementable, OtherSystem, Traversal, Difference, Step>>::type,
-              typename iterator_system<super_t>::type,
-              int> = 0>
+  template <
+    class OtherSystem,
+    detail::enable_if_convertible_t<
+      typename iterator_system<counting_iterator<Incrementable, OtherSystem, Traversal, Difference, StrideHolder>>::type,
+      typename iterator_system<super_t>::type,
+      int> = 0>
   _CCCL_HOST_DEVICE
-  counting_iterator(counting_iterator<Incrementable, OtherSystem, Traversal, Difference, Step> const& rhs)
+  counting_iterator(counting_iterator<Incrementable, OtherSystem, Traversal, Difference, StrideHolder> const& rhs)
       : super_t(rhs.base())
   {}
 
@@ -313,57 +314,56 @@ public:
       : super_t(x)
   {}
 
-  _CCCL_HOST_DEVICE explicit counting_iterator(Incrementable x, Step step)
+  _CCCL_HOST_DEVICE explicit counting_iterator(Incrementable x, StrideHolder stride)
       : super_t(x)
-      , Step(step)
+      , StrideHolder(stride)
   {}
 
   //! \cond
 
 private:
-  template <typename S = Step>
-  auto step() const
+  template <typename S = StrideHolder>
+  auto stride() const
   {
-    static_assert(!::cuda::std::is_same_v<Step, detail::empty>);
-    return static_cast<const Step&>(*this).value;
+    return static_cast<const S&>(*this).value;
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE void advance(difference_type n)
   {
-    if constexpr (::cuda::std::is_same_v<Step, detail::empty>)
+    if constexpr (::cuda::std::is_same_v<StrideHolder, detail::empty>)
     {
       this->base_reference() = static_cast<Incrementable>(this->base_reference() + n);
     }
     else
     {
-      this->base_reference() += n * step();
+      this->base_reference() += n * stride();
     }
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE void increment()
   {
-    if constexpr (::cuda::std::is_same_v<Step, detail::empty>)
+    if constexpr (::cuda::std::is_same_v<StrideHolder, detail::empty>)
     {
       ++this->base_reference();
     }
     else
     {
-      this->base_reference() += step();
+      this->base_reference() += stride();
     }
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE void decrement()
   {
-    if constexpr (::cuda::std::is_same_v<Step, detail::empty>)
+    if constexpr (::cuda::std::is_same_v<StrideHolder, detail::empty>)
     {
       --this->base_reference();
     }
     else
     {
-      this->base_reference() -= step();
+      this->base_reference() -= stride();
     }
   }
 
@@ -377,17 +377,18 @@ private:
             typename OtherSystem,
             typename OtherTraversal,
             typename OtherDifference,
-            typename OtherStep>
+            typename OtherStrideHolder>
   _CCCL_HOST_DEVICE bool
-  equal(counting_iterator<OtherIncrementable, OtherSystem, OtherTraversal, OtherDifference, OtherStep> const& y) const
+  equal(counting_iterator<OtherIncrementable, OtherSystem, OtherTraversal, OtherDifference, OtherStrideHolder> const& y)
+    const
   {
     using e = detail::counting_iterator_equal<difference_type, Incrementable, OtherIncrementable>;
     return e::equal(this->base(), y.base());
   }
 
-  template <class OtherIncrementable, typename OtherStep>
+  template <class OtherIncrementable, typename OtherStrideHolder>
   _CCCL_HOST_DEVICE difference_type
-  distance_to(counting_iterator<OtherIncrementable, System, Traversal, Difference, OtherStep> const& y) const
+  distance_to(counting_iterator<OtherIncrementable, System, Traversal, Difference, OtherStrideHolder> const& y) const
   {
     using d = typename detail::eval_if<
       detail::is_numeric<Incrementable>::value,
@@ -413,19 +414,19 @@ inline _CCCL_HOST_DEVICE counting_iterator<Incrementable> make_counting_iterator
 
 namespace detail
 {
-// Holds a runtime step
+// Holds a runtime stride
 template <typename T>
-struct runtime_step_holder
+struct runtime_stride_holder
 {
   T value;
 };
 
-// Holds a compile-time step
+// Holds a compile-time stride
 // (we cannot use ::cuda::std::integral_constant, because it has a conversion operator to T that causes an ambiguity
 // with operator+(counting_iterator, counting_iterator::difference_type) in any expression `counting_iterator +
 // integral`.
 template <typename T, T Value>
-struct compile_time_step_holder
+struct compile_time_stride_holder
 {
   static constexpr T value = Value;
 };
@@ -439,18 +440,18 @@ _CCCL_HOST_DEVICE auto make_counting_iterator(Incrementable x, Stride stride)
                            use_default,
                            random_access_traversal_tag,
                            use_default,
-                           detail::runtime_step_holder<Stride>>(x, {stride});
+                           detail::runtime_stride_holder<Stride>>(x, {stride});
 }
 
 //! Constructs a counting_iterator with a compile-time stride
-template <typename Incrementable, typename Stride, Stride Value>
-_CCCL_HOST_DEVICE auto make_counting_iterator(Incrementable x, ::cuda::std::integral_constant<Stride, Value>)
+template <auto Stride, typename Incrementable>
+_CCCL_HOST_DEVICE auto make_counting_iterator(Incrementable x)
 {
   return counting_iterator<Incrementable,
                            use_default,
                            random_access_traversal_tag,
                            use_default,
-                           detail::compile_time_step_holder<Stride, Value>>(x, {});
+                           detail::compile_time_stride_holder<decltype(Stride), Stride>>(x, {});
 }
 
 //! \} // end fancyiterators

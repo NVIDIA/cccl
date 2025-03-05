@@ -280,7 +280,7 @@ DECLARE_UNITTEST(TestCountingIteratorDynamicStride);
 
 void TestCountingIteratorStaticStride()
 {
-  auto iter = thrust::make_counting_iterator(0, ::cuda::std::integral_constant<int, 2>{});
+  auto iter = thrust::make_counting_iterator<2>(0);
   static_assert(sizeof(decltype(iter)) == sizeof(int));
 
   ASSERT_EQUAL(*iter, 0);
