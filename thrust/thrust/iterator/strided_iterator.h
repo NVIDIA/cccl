@@ -37,30 +37,25 @@ struct deref
 //! \ingroup iterators
 //! \{
 
-template <typename Iterator, typename Step = detail::empty>
+template <typename Iterator, typename StrideHolder = detail::empty>
 using strided_iterator =
-  transform_iterator<detail::deref, counting_iterator<Iterator, use_default, use_default, use_default, Step>>;
+  transform_iterator<detail::deref,
+                     counting_iterator<Iterator, use_default, random_access_traversal_tag, use_default, StrideHolder>>;
 
 //! Constructs a strided_iterator with a runtime stride
 template <typename Iterator, typename Stride>
 _CCCL_HOST_DEVICE auto make_strided_iterator(Iterator it, Stride stride)
 {
-  using CI = counting_iterator<Iterator, use_default, use_default, use_default, detail::runtime_step_holder<Stride>>;
-  return strided_iterator<Iterator, detail::runtime_step_holder<Stride>>(CI{it, {stride}}, detail::deref{});
+  return strided_iterator<Iterator, detail::runtime_stride_holder<Stride>>(
+    make_counting_iterator(it, stride), detail::deref{});
 }
 
 //! Constructs a strided_iterator with a compile-time stride
-template <auto Value, typename Iterator>
-_CCCL_HOST_DEVICE auto make_ct_strided_iterator(Iterator it)
+template <auto Stride, typename Iterator>
+_CCCL_HOST_DEVICE auto make_strided_iterator(Iterator it)
 {
-  using CI =
-    counting_iterator<Iterator,
-                      use_default,
-                      use_default,
-                      use_default,
-                      detail::compile_time_step_holder<decltype(Value), Value>>;
-  return strided_iterator<Iterator, detail::compile_time_step_holder<decltype(Value), Value>>(
-    CI{it, {}}, detail::deref{});
+  return strided_iterator<Iterator, detail::compile_time_stride_holder<decltype(Stride), Stride>>(
+    make_counting_iterator<Stride>(it), detail::deref{});
 }
 
 //! \} // end fancyiterators

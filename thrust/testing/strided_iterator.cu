@@ -20,7 +20,7 @@ void TestStridedIterator()
   // iterate over all second elements (static stride)
   {
     thrust::device_vector<int> v(10);
-    auto iter = thrust::make_ct_strided_iterator<2>(v.begin());
+    auto iter = thrust::make_strided_iterator<2>(v.begin());
     cuda::std::fill(iter, iter + 3, 42);
     ASSERT_EQUAL(v, (thrust::device_vector{42, 0, 42, 0, 42, 0, 0, 0, 0, 0}));
   }
@@ -45,7 +45,7 @@ void TestStridedIteratorStruct()
   // iterate over all second elements (static stride)
   {
     auto arr  = ::cuda::std::array<::cuda::std::pair<int, double>, 4>{{{1, 2}, {3, 4}, {5, 6}, {7, 8}}};
-    auto iter = thrust::make_ct_strided_iterator<sizeof(::cuda::std::pair<int, double>)>(&arr[0].second);
+    auto iter = thrust::make_strided_iterator<sizeof(::cuda::std::pair<int, double>)>(&arr[0].second);
 
     cuda::std::fill(iter, iter + 4, 1337);
 
