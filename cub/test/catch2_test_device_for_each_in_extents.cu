@@ -28,7 +28,7 @@
 
 // TODO: remove _CCCL_COMPILER(MSVC) check after MSVC bug related to vector comparison is fixed:
 //       "error C3546: '...': there are no parameter packs available to expand"
-#if __cccl_lib_mdspan && !_CCCL_COMPILER(MSVC)
+#if __cccl_lib_mdspan
 
 #  include <cub/device/device_for.cuh>
 
@@ -181,4 +181,4 @@ C2H_TEST("DeviceForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][devic
   REQUIRE(h_output == h_output_gpu);
 }
 
-#endif // __cccl_lib_mdspan && !_CCCL_COMPILER(MSVC)
+#endif // __cccl_lib_mdspan

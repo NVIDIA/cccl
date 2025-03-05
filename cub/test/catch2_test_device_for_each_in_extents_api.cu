@@ -30,7 +30,7 @@
 
 #include <cub/config.cuh>
 
-#if __cccl_lib_mdspan
+#if __cccl_lib_mdspan && !_CCCL_COMPILER(MSVC)
 
 #  include <cub/device/device_for.cuh>
 
@@ -88,4 +88,4 @@ C2H_TEST("Device ForEachInExtents", "[ForEachInExtents][device]")
 }
 // clang-format on
 
-#endif // __cccl_lib_mdspan
+#endif // __cccl_lib_mdspan && !_CCCL_COMPILER(MSVC)
