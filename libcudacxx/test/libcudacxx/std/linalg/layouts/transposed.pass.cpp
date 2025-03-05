@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: msvc && c++17
-
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
 #include <cuda/std/linalg>
