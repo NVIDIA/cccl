@@ -870,6 +870,16 @@ public:
     return get_ctx(offset).task_fence();
   }
 
+  auto get_dot()
+  {
+    auto lock = pimpl->get_read_lock();
+
+    int offset = get_head_offset();
+    return get_ctx(offset).get_dot();
+  }
+
+
+
   template <typename... Pack>
   void push_affinity(Pack&&... pack) const
   {
@@ -921,6 +931,16 @@ public:
 
     get_root_ctx().finalize();
   }
+
+    ::std::shared_lock<::std::shared_mutex> get_read_lock() const
+    {
+      return pimpl->get_read_lock();
+    }
+
+    ::std::unique_lock<::std::shared_mutex> get_write_lock()
+    {
+      return pimpl->get_write_lock();
+    }
 
 public:
   ::std::shared_ptr<impl> pimpl;
@@ -1189,6 +1209,8 @@ class stackable_logical_data
       {
         return;
       }
+
+      auto ctx_lock = sctx.get_write_lock(); // to protect retained_data
 
       int data_root_offset = impl_state->get_data_root_offset();
 
