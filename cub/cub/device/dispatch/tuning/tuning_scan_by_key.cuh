@@ -1010,9 +1010,4 @@ struct policy_hub
 } // namespace scan_by_key
 } // namespace detail
 
-template <typename KeysInputIteratorT, typename AccumT, typename ValueT = AccumT, typename ScanOpT = ::cuda::std::plus<>>
-using DeviceScanByKeyPolicy CCCL_DEPRECATED_BECAUSE(
-  "This class is considered an implementation detail and it will be "
-  "removed.") = detail::scan_by_key::policy_hub<KeysInputIteratorT, AccumT, ValueT, ScanOpT>;
-
 CUB_NAMESPACE_END

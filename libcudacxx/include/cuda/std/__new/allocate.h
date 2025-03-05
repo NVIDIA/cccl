@@ -24,9 +24,9 @@
 
 #include <cuda/std/cstddef>
 
-#if !defined(_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION) && !_CCCL_COMPILER(NVRTC)
+#if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION() && !_CCCL_COMPILER(NVRTC)
 #  include <new> // for align_val_t
-#endif // !_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION !_CCCL_COMPILER(NVRTC)
+#endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION() !_CCCL_COMPILER(NVRTC)
 
 #if !defined(__cpp_sized_deallocation) || __cpp_sized_deallocation < 201309L
 #  define _LIBCUDACXX_HAS_NO_LANGUAGE_SIZED_DEALLOCATION
@@ -69,19 +69,19 @@ _LIBCUDACXX_HIDE_FROM_ABI void __cccl_operator_delete(_Args... __args)
 #endif // !_CCCL_BUILTIN_OPERATOR_DELETE
 }
 
-#ifndef _LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION
+#if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
 using ::std::align_val_t;
-#endif // !_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION
+#endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
 
 _LIBCUDACXX_HIDE_FROM_ABI void* __cccl_allocate(size_t __size, size_t __align)
 {
-#ifndef _LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION
+#if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
   if (__is_overaligned_for_new(__align))
   {
     const align_val_t __align_val = static_cast<align_val_t>(__align);
     return __cccl_operator_new(__size, __align_val);
   }
-#endif // !_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION
+#endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
   (void) __align;
   return __cccl_operator_new(__size);
 }
@@ -99,26 +99,26 @@ _LIBCUDACXX_HIDE_FROM_ABI void __do_deallocate_handle_size(void* __ptr, size_t _
 
 _LIBCUDACXX_HIDE_FROM_ABI void __cccl_deallocate(void* __ptr, size_t __size, size_t __align)
 {
-#ifndef _LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION
+#if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
   if (__is_overaligned_for_new(__align))
   {
     const align_val_t __align_val = static_cast<align_val_t>(__align);
     return __do_deallocate_handle_size(__ptr, __size, __align_val);
   }
-#endif // !_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION
+#endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
   (void) __align;
   return __do_deallocate_handle_size(__ptr, __size);
 }
 
 _LIBCUDACXX_HIDE_FROM_ABI void __cccl_deallocate_unsized(void* __ptr, size_t __align)
 {
-#ifndef _LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION
+#if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
   if (__is_overaligned_for_new(__align))
   {
     const align_val_t __align_val = static_cast<align_val_t>(__align);
     return __cccl_operator_delete(__ptr, __align_val);
   }
-#endif // !_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION
+#endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
   (void) __align;
   return __cccl_operator_delete(__ptr);
 }

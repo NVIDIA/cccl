@@ -16,10 +16,15 @@
 #include <cuda/std/cassert>
 #include <cuda/std/optional>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #include "archetypes.h"
 #include "test_convertible.h"
 #include "test_macros.h"
+
+#if defined(TEST_COMPILER_MSVC)
+#  pragma warning(disable : 4244) // conversion from 'const From' to 'short', possible loss of data
+#endif // TEST_COMPILER_MSVC
 
 using cuda::std::optional;
 
@@ -30,61 +35,141 @@ struct ImplicitAny
   {}
 };
 
-template <class To, class From>
-__host__ __device__ constexpr bool implicit_conversion(optional<To>&& opt, const From& v)
+#ifdef CCCL_ENABLE_OPTIONAL_REF
+template <class T>
+struct ConvertibleToReference
 {
-  using O = optional<To>;
-  static_assert(test_convertible<O, From>(), "");
-  static_assert(!test_convertible<O, void*>(), "");
-  static_assert(!test_convertible<O, From, int>(), "");
-  return opt && *opt == static_cast<To>(v);
+  T val_;
+
+  __host__ __device__ constexpr operator T&() noexcept
+  {
+    return val_;
+  }
+
+  __host__ __device__ constexpr operator const T&() const noexcept
+  {
+    return val_;
+  }
+};
+
+template <class T>
+struct ExplicitlyConvertibleToReference
+{
+  T val_;
+
+  __host__ __device__ explicit constexpr operator T&() noexcept
+  {
+    return val_;
+  }
+
+  __host__ __device__ explicit constexpr operator const T&() const noexcept
+  {
+    return val_;
+  }
+};
+#endif // CCCL_ENABLE_OPTIONAL_REF
+
+template <class To>
+__host__ __device__ constexpr optional<To> implicit_conversion(optional<To>&& opt)
+{
+  return opt;
 }
 
-template <class To, class Input, class Expect>
-__host__ __device__ constexpr bool explicit_conversion(Input&& in, const Expect& v)
+enum class IsExplicit
 {
-  using O = optional<To>;
-  static_assert(cuda::std::is_constructible<O, Input>::value, "");
-  static_assert(!cuda::std::is_convertible<Input, O>::value, "");
-  static_assert(!cuda::std::is_constructible<O, void*>::value, "");
-  static_assert(!cuda::std::is_constructible<O, Input, int>::value, "");
-  optional<To> opt(cuda::std::forward<Input>(in));
-  return opt && *opt == static_cast<To>(v);
+  Yes,
+  No
+};
+
+template <IsExplicit is_explicit, class To, class From>
+__host__ __device__ constexpr void test(From input)
+{
+  (void) input;
+  if constexpr (cuda::std::is_convertible_v<const From&, optional<To>>)
+  {
+    static_assert(is_explicit == IsExplicit::No);
+    optional<To> opt = implicit_conversion<To>(cuda::std::as_const(input));
+    assert(opt.has_value());
+    assert(*opt == static_cast<To>(input));
+  }
+  else if constexpr (cuda::std::is_constructible_v<const From&, optional<To>>)
+  {
+    static_assert(is_explicit == IsExplicit::Yes);
+    optional<To> opt{cuda::std::as_const(input)};
+    assert(opt.has_value());
+    assert(*opt == static_cast<To>(input));
+  }
+  else if constexpr (cuda::std::is_convertible_v<From, optional<To>>)
+  {
+    static_assert(is_explicit == IsExplicit::No);
+    optional<To> opt = implicit_conversion<To>(cuda::std::move(input));
+    assert(opt.has_value());
+    assert(*opt == static_cast<To>(input));
+  }
+  else if constexpr (cuda::std::is_constructible_v<From, optional<To>>)
+  {
+    static_assert(is_explicit == IsExplicit::Yes);
+    optional<To> opt{cuda::std::move(input)};
+    assert(opt.has_value());
+    assert(*opt == static_cast<To>(input));
+  }
+  else
+  {
+    optional<To> opt{input};
+    assert(opt.has_value());
+    assert(*opt == static_cast<To>(input));
+    if constexpr (cuda::std::is_reference_v<To>)
+    {
+      assert(cuda::std::addressof(static_cast<To>(input)) == opt.operator->());
+    }
+  }
 }
 
-__host__ __device__ void test_implicit()
+__host__ __device__ constexpr bool test()
 {
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+  // implicit conversions
+  test<IsExplicit::No, int>(42);
+  test<IsExplicit::No, double>(3.14);
+
+  test<IsExplicit::No, short>(42);
+  test<IsExplicit::No, float>(3.14);
+
+  test<IsExplicit::No, TrivialTestTypes::TestType>(42);
+  test<IsExplicit::No, ConstexprTestTypes::TestType>(42);
+
+  // explicit conversions
+  test<IsExplicit::Yes, ExplicitTrivialTestTypes::TestType>(42);
+  test<IsExplicit::Yes, ExplicitConstexprTestTypes::TestType>(42);
+
+#ifdef CCCL_ENABLE_OPTIONAL_REF
   {
-    static_assert(implicit_conversion<long long>(42, 42), "");
+    int val{42};
+    test<IsExplicit::Yes, int&>(val);
+    test<IsExplicit::No, const int&>(val);
   }
   {
-    static_assert(implicit_conversion<double>(3.14, 3.14), "");
-  }
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-  {
-    int x = 42;
-    optional<void* const> o(&x);
-    assert(*o == &x);
-  }
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-  {
-    using T = TrivialTestTypes::TestType;
-    static_assert(implicit_conversion<T>(42, 42), "");
-  }
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-  {
-    using T = TestTypes::TestType;
-    assert(implicit_conversion<T>(3, T(3)));
+    ConvertibleToReference<int> val{42};
+    test<IsExplicit::No, int&>(val);
+    test<IsExplicit::No, const int&>(val);
   }
   {
-    using O = optional<ImplicitAny>;
-    static_assert(!test_convertible<O, cuda::std::in_place_t>(), "");
-    static_assert(!test_convertible<O, cuda::std::in_place_t&>(), "");
-    static_assert(!test_convertible<O, const cuda::std::in_place_t&>(), "");
-    static_assert(!test_convertible<O, cuda::std::in_place_t&&>(), "");
-    static_assert(!test_convertible<O, const cuda::std::in_place_t&&>(), "");
+    const ConvertibleToReference<int> val{42};
+    test<IsExplicit::No, int&>(val);
+    test<IsExplicit::No, const int&>(val);
   }
+  {
+    ExplicitlyConvertibleToReference<int> val{42};
+    test<IsExplicit::Yes, int&>(val);
+    test<IsExplicit::Yes, const int&>(val);
+  }
+  {
+    const ExplicitlyConvertibleToReference<int> val{42};
+    test<IsExplicit::Yes, int&>(val);
+    test<IsExplicit::Yes, const int&>(val);
+  }
+#endif // CCCL_ENABLE_OPTIONAL_REF
+
+  return true;
 }
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
@@ -99,38 +184,67 @@ struct ImplicitThrow
   }
 };
 
-void test_exceptions_implicit()
+struct ExplicitThrow
+{
+  constexpr explicit ExplicitThrow(int x)
+  {
+    if (x != -1)
+    {
+      TEST_THROW(6);
+    }
+  }
+};
+
+template <class T>
+void test_exceptions()
 {
   try
   {
-    using T       = ImplicitThrow;
-    optional<T> t = 42;
-    assert(false);
-    ((void) t);
+    if constexpr (cuda::std::is_convertible_v<int, optional<T>>)
+    {
+      optional<T> t = implicit_conversion<T>(42);
+      unused(t);
+      assert(false);
+    }
+    else
+    {
+      optional<T> t{42};
+      unused(t);
+      assert(false);
+    }
   }
   catch (int)
   {}
 }
+
+void test_exceptions()
+{
+  test_exceptions<ImplicitThrow>();
+  test_exceptions<ExplicitThrow>();
+}
 #endif // !TEST_HAS_NO_EXCEPTIONS
 
-__host__ __device__ void test_explicit()
+int main(int, char**)
 {
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+  test();
+#if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
+  static_assert(test(), "");
+#endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
+
   {
-    using T = ExplicitTrivialTestTypes::TestType;
-    static_assert(explicit_conversion<T>(42, 42), "");
+    using O = optional<ImplicitAny>;
+    static_assert(!test_convertible<O, cuda::std::in_place_t>(), "");
+    static_assert(!test_convertible<O, cuda::std::in_place_t&>(), "");
+    static_assert(!test_convertible<O, const cuda::std::in_place_t&>(), "");
+    static_assert(!test_convertible<O, cuda::std::in_place_t&&>(), "");
+    static_assert(!test_convertible<O, const cuda::std::in_place_t&&>(), "");
   }
-  {
-    using T = ExplicitConstexprTestTypes::TestType;
-    static_assert(explicit_conversion<T>(42, 42), "");
-    static_assert(!cuda::std::is_convertible<int, T>::value, "");
-  }
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
   {
     using T = ExplicitTestTypes::TestType;
     T::reset();
     {
-      assert(explicit_conversion<T>(42, 42));
+      test<IsExplicit::Yes, T>(42);
       assert(T::alive() == 0);
     }
     T::reset();
@@ -144,40 +258,9 @@ __host__ __device__ void test_explicit()
     }
     assert(T::alive() == 0);
   }
-}
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
-struct ExplicitThrow
-{
-  constexpr explicit ExplicitThrow(int x)
-  {
-    if (x != -1)
-    {
-      TEST_THROW(6);
-    }
-  }
-};
-void test_exceptions_explicit()
-{
-  try
-  {
-    using T = ExplicitThrow;
-    optional<T> t(42);
-    assert(false);
-  }
-  catch (int)
-  {}
-}
-#endif // !TEST_HAS_NO_EXCEPTIONS
-
-int main(int, char**)
-{
-  test_implicit();
-  test_explicit();
-
-#ifndef TEST_HAS_NO_EXCEPTIONS
-  NV_IF_TARGET(NV_IS_HOST, (test_exceptions_implicit();))
-  NV_IF_TARGET(NV_IS_HOST, (test_exceptions_explicit();))
+  NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
 #endif // !TEST_HAS_NO_EXCEPTIONS
 
   return 0;

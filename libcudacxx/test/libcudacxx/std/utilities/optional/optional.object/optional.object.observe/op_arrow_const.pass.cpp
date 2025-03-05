@@ -29,7 +29,7 @@ struct X
 
 struct Y
 {
-  __host__ __device__ int test() const noexcept
+  __host__ __device__ constexpr int test() const noexcept
   {
     return 2;
   }
@@ -37,17 +37,17 @@ struct Y
 
 struct Z
 {
-  __host__ __device__ const Z* operator&() const;
+  __host__ __device__ constexpr const Z* operator&() const;
   __host__ __device__ constexpr int test() const
   {
     return 1;
   }
 };
 
-int main(int, char**)
+__host__ __device__ constexpr bool test()
 {
   {
-    const cuda::std::optional<X> opt;
+    const cuda::std::optional<X> opt{};
     unused(opt);
     ASSERT_SAME_TYPE(decltype(opt.operator->()), X const*);
     // ASSERT_NOT_NOEXCEPT(opt.operator->());
@@ -58,29 +58,57 @@ int main(int, char**)
     // operator.
     // Regardless this function should still be noexcept(false) because
     // it has a narrow contract.
+
+    const cuda::std::optional<X&> optref;
+    unused(optref);
+    ASSERT_SAME_TYPE(decltype(optref.operator->()), X*);
+    ASSERT_NOEXCEPT(optref.operator->());
   }
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
   {
-    constexpr optional<X> opt(X{});
-#  if defined(_CCCL_BUILTIN_ADDRESSOF)
-    static_assert(opt->test() == 3, "");
-#  else
-    unused(opt);
-#  endif
+    const optional<X> opt(X{});
+    assert(opt->test() == 3);
   }
+
   {
-    constexpr optional<Y> opt(Y{});
+    X val{};
+    const optional<X&> opt(val);
+    assert(opt->test() == 3);
+    assert(cuda::std::addressof(val) == opt.operator->());
+  }
+
+  {
+    const optional<Y> opt(Y{});
     assert(opt->test() == 2);
   }
+
   {
-    constexpr optional<Z> opt(Z{});
-#  if defined(_CCCL_BUILTIN_ADDRESSOF)
-    static_assert(opt->test() == 1, "");
-#  else
-    unused(opt);
-#  endif
+    Y val{};
+    const optional<Y&> opt(val);
+    assert(opt->test() == 2);
+    assert(cuda::std::addressof(val) == opt.operator->());
   }
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
+  {
+    const optional<Z> opt(Z{});
+    assert(opt->test() == 1);
+  }
+
+  {
+    Z val{};
+    const optional<Z> opt(val);
+    assert(opt->test() == 1);
+  }
+
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+#if defined(_CCCL_BUILTIN_ADDRESSOF)
+  static_assert(test(), "");
+#endif // _CCCL_BUILTIN_ADDRESSOF
 
   return 0;
 }

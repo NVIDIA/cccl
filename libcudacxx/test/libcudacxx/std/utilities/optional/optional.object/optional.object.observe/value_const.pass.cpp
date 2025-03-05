@@ -32,7 +32,7 @@ struct X
   {
     return 3;
   }
-  __host__ __device__ int test() &
+  __host__ __device__ constexpr int test() &
   {
     return 4;
   }
@@ -40,7 +40,7 @@ struct X
   {
     return 5;
   }
-  __host__ __device__ int test() &&
+  __host__ __device__ constexpr int test() &&
   {
     return 6;
   }
@@ -49,7 +49,7 @@ struct X
 #ifndef TEST_HAS_NO_EXCEPTIONS
 void test_exceptions()
 {
-  const optional<X> opt;
+  const optional<X> opt{};
   try
   {
     (void) opt.value();
@@ -60,24 +60,40 @@ void test_exceptions()
 }
 #endif // !TEST_HAS_NO_EXCEPTIONS
 
-int main(int, char**)
+__host__ __device__ constexpr bool test()
 {
   {
-    const optional<X> opt;
+    const optional<X> opt{};
     unused(opt);
     ASSERT_NOT_NOEXCEPT(opt.value());
-    ASSERT_SAME_TYPE(decltype(opt.value()), X const&);
+    ASSERT_SAME_TYPE(decltype(opt.value()), const X&);
+
+    const optional<X&> optref;
+    unused(optref);
+    ASSERT_NOEXCEPT(optref.value());
+    ASSERT_SAME_TYPE(decltype(optref.value()), X&);
   }
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
   {
-    constexpr optional<X> opt(in_place);
-    static_assert(opt.value().test() == 3, "");
-  }
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-  {
-    const optional<X> opt(in_place);
+    const optional<X> opt{cuda::std::in_place};
     assert(opt.value().test() == 3);
   }
+
+  {
+    X val{};
+    const optional<X&> opt{val};
+    assert(opt.value().test() == 4);
+    assert(cuda::std::addressof(val) == cuda::std::addressof(opt.value()));
+  }
+
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test(), "");
+
 #ifndef TEST_HAS_NO_EXCEPTIONS
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
 #endif // !TEST_HAS_NO_EXCEPTIONS

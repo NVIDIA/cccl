@@ -3,6 +3,8 @@
 
 #include <cub/device/device_select.cuh>
 
+#include <cuda/std/__algorithm_>
+
 #include <limits>
 
 #include <look_back_helper.cuh>
@@ -34,14 +36,9 @@ struct policy_hub_t
 {
   struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
   {
-    static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = TUNE_ITEMS_PER_THREAD;
-
-    static constexpr int ITEMS_PER_THREAD =
-      CUB_MIN(NOMINAL_4B_ITEMS_PER_THREAD, CUB_MAX(1, (NOMINAL_4B_ITEMS_PER_THREAD * 4 / sizeof(InputT))));
-
     using SelectIfPolicyT =
       cub::AgentSelectIfPolicy<TUNE_THREADS_PER_BLOCK,
-                               ITEMS_PER_THREAD,
+                               TUNE_ITEMS_PER_THREAD,
                                TUNE_LOAD_ALGORITHM,
                                TUNE_LOAD_MODIFIER,
                                cub::BLOCK_SCAN_WARP_SCANS,

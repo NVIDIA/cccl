@@ -56,9 +56,9 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
   test<Iter, UserDefinedIntegral<unsigned>>();
   test<Iter, float>();
   test<Iter, double>();
-#ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#if _CCCL_HAS_LONG_DOUBLE()
   test<Iter, long double>();
-#endif // _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 TEST_CONSTEXPR_CXX14 __host__ __device__ bool test()
@@ -75,7 +75,6 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ bool test()
 int main(int, char**)
 {
   test();
-
   static_assert(test(), "");
 
   return 0;

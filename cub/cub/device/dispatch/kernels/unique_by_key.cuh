@@ -26,6 +26,35 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::unique_by_key
 {
+
+// TODO: this class should be templated on `typename... Ts` to avoid repetition,
+// but due to an issue with NVCC 12.0 we currently template each member function
+// individually instead.
+struct VSMemHelper
+{
+  template <typename ActivePolicyT, typename... Ts>
+  using VSMemHelperDefaultFallbackPolicyT =
+    vsmem_helper_default_fallback_policy_t<ActivePolicyT, detail::unique_by_key::AgentUniqueByKey, Ts...>;
+
+  template <typename ActivePolicyT, typename... Ts>
+  _CCCL_HOST_DEVICE static constexpr int BlockThreads(ActivePolicyT /*policy*/)
+  {
+    return VSMemHelperDefaultFallbackPolicyT<ActivePolicyT, Ts...>::agent_policy_t::BLOCK_THREADS;
+  }
+
+  template <typename ActivePolicyT, typename... Ts>
+  _CCCL_HOST_DEVICE static constexpr int ItemsPerThread(ActivePolicyT /*policy*/)
+  {
+    return VSMemHelperDefaultFallbackPolicyT<ActivePolicyT, Ts...>::agent_policy_t::ITEMS_PER_THREAD;
+  }
+
+  template <typename ActivePolicyT, typename... Ts>
+  _CCCL_HOST_DEVICE static constexpr ::cuda::std::size_t VSMemPerBlock(ActivePolicyT /*policy*/)
+  {
+    return VSMemHelperDefaultFallbackPolicyT<ActivePolicyT, Ts...>::vsmem_per_block;
+  }
+};
+
 /**
  * @brief Unique by key kernel entry point (multi-block)
  *
@@ -93,11 +122,11 @@ template <typename ChainedPolicyT,
           typename NumSelectedIteratorT,
           typename ScanTileStateT,
           typename EqualityOpT,
-          typename OffsetT>
+          typename OffsetT,
+          typename VSMemHelperT = VSMemHelper>
 __launch_bounds__(int(
-  vsmem_helper_default_fallback_policy_t<
+  VSMemHelperT::template VSMemHelperDefaultFallbackPolicyT<
     typename ChainedPolicyT::ActivePolicy::UniqueByKeyPolicyT,
-    AgentUniqueByKey,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyOutputIteratorT,
@@ -116,9 +145,8 @@ __launch_bounds__(int(
     int num_tiles,
     vsmem_t vsmem)
 {
-  using VsmemHelperT = vsmem_helper_default_fallback_policy_t<
+  using VsmemHelperT = typename VSMemHelperT::template VSMemHelperDefaultFallbackPolicyT<
     typename ChainedPolicyT::ActivePolicy::UniqueByKeyPolicyT,
-    AgentUniqueByKey,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyOutputIteratorT,

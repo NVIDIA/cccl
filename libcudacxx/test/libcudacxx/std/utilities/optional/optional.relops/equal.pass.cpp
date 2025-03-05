@@ -15,6 +15,7 @@
 #include <cuda/std/optional>
 #include <cuda/std/type_traits>
 
+#include "cuda/std/__type_traits/reference_constructs_from_temporary.h"
 #include "test_macros.h"
 
 using cuda::std::optional;
@@ -33,17 +34,19 @@ __host__ __device__ constexpr bool operator==(const X& lhs, const X& rhs)
   return lhs.i_ == rhs.i_;
 }
 
-__host__ __device__ constexpr bool test()
+template <class T>
+__host__ __device__ constexpr void test()
 {
   {
-    typedef X T;
-    typedef optional<T> O;
+    using O = optional<T>;
+    cuda::std::remove_reference_t<T> one{1};
+    cuda::std::remove_reference_t<T> two{2};
 
-    O o1; // disengaged
-    O o2; // disengaged
-    O o3{1}; // engaged
-    O o4{2}; // engaged
-    O o5{1}; // engaged
+    O o1{}; // disengaged
+    O o2{}; // disengaged
+    O o3{one}; // engaged
+    O o4{two}; // engaged
+    O o5{one}; // engaged
 
     assert(o1 == o1);
     assert(o1 == o2);
@@ -89,6 +92,14 @@ __host__ __device__ constexpr bool test()
     assert(o1 == O2(42));
     assert(!(O2(101) == o1));
   }
+}
+
+__host__ __device__ constexpr bool test()
+{
+  test<int>();
+#ifdef CCCL_ENABLE_OPTIONAL_REF
+  test<int&>();
+#endif // CCCL_ENABLE_OPTIONAL_REF
 
   return true;
 }
@@ -96,10 +107,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
   static_assert(test());
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 
   return 0;
 }

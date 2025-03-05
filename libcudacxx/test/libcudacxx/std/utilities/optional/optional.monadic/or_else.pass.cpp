@@ -23,23 +23,9 @@ struct NonMovable
   NonMovable(NonMovable&&) = delete;
 };
 
-#if TEST_STD_VER > 2017
-
 template <class Opt, class F>
-concept has_or_else = requires(Opt&& opt, F&& f) {
-  { cuda::std::forward<Opt>(opt).or_else(cuda::std::forward<F>(f)) };
-};
-
-#else
-
-template <class Opt, class F>
-_CCCL_CONCEPT_FRAGMENT(HasOrElse,
-                       requires(Opt&& opt, F&& f)(cuda::std::forward<Opt>(opt).or_else(cuda::std::forward<F>(f))));
-
-template <class Opt, class F>
-_CCCL_CONCEPT has_or_else = _CCCL_FRAGMENT(HasOrElse, Opt, F);
-
-#endif
+_CCCL_CONCEPT has_or_else =
+  _CCCL_REQUIRES_EXPR((Opt, F), Opt&& opt, F&& f)((cuda::std::forward<Opt>(opt).or_else(cuda::std::forward<F>(f))));
 
 template <class T>
 __host__ __device__ cuda::std::optional<T> return_optional();
@@ -82,7 +68,7 @@ static_assert(!has_or_else<cuda::std::optional<int>&, int>, "");
 __host__ __device__ TEST_CONSTEXPR_CXX17 bool test()
 {
   {
-    cuda::std::optional<int> opt;
+    cuda::std::optional<int> opt{};
     assert(opt.or_else([] {
       return cuda::std::optional<int>{0};
     }) == 0);
@@ -97,13 +83,30 @@ __host__ __device__ TEST_CONSTEXPR_CXX17 bool test()
     });
   }
 
+  {
+    int val = 42;
+    cuda::std::optional<int&> opt{};
+    assert(opt.or_else([&val] {
+      return cuda::std::optional<int&>{val};
+    }) == 42);
+    opt = val;
+    opt.or_else([] {
+#if defined(TEST_COMPILER_GCC) && __GNUC__ < 9
+      _CCCL_UNREACHABLE();
+#else
+      assert(false);
+#endif
+      return cuda::std::optional<int&>{};
+    });
+  }
+
   return true;
 }
 
 __host__ __device__ TEST_CONSTEXPR_CXX17 bool test_nontrivial()
 {
   {
-    cuda::std::optional<MoveOnly> opt;
+    cuda::std::optional<MoveOnly> opt{};
     opt = cuda::std::move(opt).or_else([] {
       return cuda::std::optional<MoveOnly>{MoveOnly{}};
     });
@@ -120,16 +123,16 @@ int main(int, char**)
 {
   test();
   test_nontrivial();
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
   // GCC <9 incorrectly trips on the assertions in this, so disable it there
-#  if (!defined(TEST_COMPILER_GCC) || __GNUC__ < 9)
+#if (!defined(TEST_COMPILER_GCC) || __GNUC__ < 9)
   static_assert(test(), "");
-#  endif // (!defined(TEST_COMPILER_GCC) || __GNUC__ < 9)
-#  if TEST_STD_VER > 2017
-#    if defined(_CCCL_BUILTIN_ADDRESSOF)
+#endif // (!defined(TEST_COMPILER_GCC) || __GNUC__ < 9)
+#if TEST_STD_VER > 2017
+#  if defined(_CCCL_BUILTIN_ADDRESSOF)
   static_assert(test_nontrivial());
-#    endif // defined(_CCCL_BUILTIN_ADDRESSOF)
-#  endif // TEST_STD_VER > 2017
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+#  endif // defined(_CCCL_BUILTIN_ADDRESSOF)
+#endif // TEST_STD_VER > 2017
+
   return 0;
 }
