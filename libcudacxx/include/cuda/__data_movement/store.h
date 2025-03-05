@@ -65,8 +65,9 @@ template <typename _Tp, _EvictionPolicyEnum _Ep>
 _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void
 store(_Tp __data, _Tp* __ptr, __eviction_policy_t<_Ep> __eviction_policy = eviction_none) noexcept
 {
-  _CCCL_ASSERT(__ptr != nullptr, "cuda::store: 'ptr' must not be null");
-  _CCCL_ASSERT(__isGlobal(__ptr), "cuda::store: 'ptr' must point to global memory");
+  _CCCL_ASSERT(__ptr != nullptr, "cuda::device::store: 'ptr' must not be null");
+  _CCCL_ASSERT(reinterpret_cast<size_t>(__ptr) % alignof(_Tp) == 0, "cuda::device::load: 'ptr' must be aligned");
+  _CCCL_ASSERT(__isGlobal(__ptr), "cuda::device::store: 'ptr' must point to global memory");
   static_assert(!_CUDA_VSTD::is_const_v<_Tp>);
   if constexpr (__eviction_policy == eviction_none)
   {
@@ -74,7 +75,8 @@ store(_Tp __data, _Tp* __ptr, __eviction_policy_t<_Ep> __eviction_policy = evict
   }
   else
   {
-    static_assert(sizeof(_Tp) <= 16, "cuda::store with non-default properties only supports types up to 16 bytes");
+    static_assert(sizeof(_Tp) <= 16,
+                  "cuda::device::store with non-default properties only supports types up to 16 bytes");
     ::cuda::device::__store(__data, __ptr, __eviction_policy);
   }
 }
