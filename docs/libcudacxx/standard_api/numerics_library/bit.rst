@@ -26,6 +26,7 @@ Additional Notes
 - All functions are marked ``[[nodiscard]]`` and ``noexcept``
 - All functions support 128-bit integer types
 - ``bit_ceil()`` checks for overflow in debug mode
+- ``rotl()/rotr()`` checks for invalid count value (``INT_MIN``) in debug mode
 
 .. note::
 

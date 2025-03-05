@@ -256,9 +256,4 @@ struct BlockReduceWarpReductions
 };
 } // namespace detail
 
-template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z>
-using BlockReduceWarpReductions CCCL_DEPRECATED_BECAUSE(
-  "This class is considered an implementation detail and the public interface will be "
-  "removed.") = detail::BlockReduceWarpReductions<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
-
 CUB_NAMESPACE_END

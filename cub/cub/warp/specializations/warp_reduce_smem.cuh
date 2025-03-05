@@ -408,8 +408,4 @@ struct WarpReduceSmem
 };
 } // namespace detail
 
-template <typename T, int LOGICAL_WARP_THREADS>
-using WarpReduceSmem CCCL_DEPRECATED_BECAUSE(
-  "This class is considered an implementation detail and the public interface will be "
-  "removed.") = detail::WarpReduceSmem<T, LOGICAL_WARP_THREADS>;
 CUB_NAMESPACE_END
