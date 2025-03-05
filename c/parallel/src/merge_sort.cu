@@ -289,7 +289,7 @@ CUresult cccl_device_merge_sort_build(
     const auto input_items_it_value_t  = cccl_type_enum_to_name(input_items_it.value_type.type);
     const auto output_keys_it_value_t  = cccl_type_enum_to_name(output_keys_it.value_type.type);
     const auto output_items_it_value_t = cccl_type_enum_to_name(output_items_it.value_type.type);
-    const auto offset_t                = cccl_type_enum_to_name(cccl_type_enum::CCCL_INT64);
+    const auto offset_t                = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
 
     const std::string input_keys_iterator_src = make_kernel_input_iterator(
       offset_t,
