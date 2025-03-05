@@ -25,6 +25,7 @@
 #  include <cuda_runtime_api.h>
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
@@ -33,8 +34,6 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
-// __concept_macros.h is not self-contained
-#include <cuda/std/__concepts/__concept_macros.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
