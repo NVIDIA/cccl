@@ -152,7 +152,7 @@ public:
 
     _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_exhaustive() noexcept
     {
-      return __nested_mapping_type::is_always_contiguous();
+      return __nested_mapping_type::is_always_exhaustive();
     }
 
     _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_strided() noexcept
