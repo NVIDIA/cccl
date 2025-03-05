@@ -48,7 +48,7 @@ enum class __memory_location_type
 //! @param __device_id The id of the device for which to query support.
 //! @throws cuda_error if \c cudaDeviceGetAttribute failed.
 //! @returns true if \c cudaDevAttrMemoryPoolsSupported is not zero.
-inline void __device_supports_stream_ordered_allocations(const int __device_id)
+inline void __verify_device_supports_stream_ordered_allocations(const int __device_id)
 {
   int __pool_is_supported = 0;
   _CCCL_TRY_CUDA_API(
@@ -127,7 +127,6 @@ private:
   static void __cuda_supports_export_handle_type(const int __device_id, cudaMemAllocationHandleType __handle_type)
   {
     int __supported_handles = static_cast<int>(cudaMemAllocationHandleType::cudaMemHandleTypeNone);
-#if _CCCL_CUDACC_AT_LEAST(11, 3)
     if (__handle_type != cudaMemAllocationHandleType::cudaMemHandleTypeNone)
     {
       const ::cudaError_t __status =
@@ -146,7 +145,6 @@ private:
           ::cuda::__throw_cuda_error(__status, "Failed to call cudaDeviceGetAttribute");
       }
     }
-#endif // _CCCL_CUDACC_BELOW(11, 3)
     if ((static_cast<int>(__handle_type) & __supported_handles) != static_cast<int>(__handle_type))
     {
       ::cuda::__throw_cuda_error(
@@ -162,7 +160,7 @@ private:
   {
     if (__kind == __memory_location_type::__device)
     {
-      ::cuda::experimental::__device_supports_stream_ordered_allocations(__id);
+      ::cuda::experimental::__verify_device_supports_stream_ordered_allocations(__id);
       __memory_pool_base::__cuda_supports_export_handle_type(__id, __properties.allocation_handle_type);
     }
 
@@ -180,10 +178,10 @@ private:
       // Construct on NUMA node 0 only for now
       __pool_properties.location.type = ::cudaMemLocationTypeHostNuma;
       __pool_properties.location.id   = __id;
-#else
+#else // _CCCL_CUDACC_BELOW(12, 6)
       _CCCL_ASSERT(false, "Host pinned memory pools unavailable");
       _CUDA_VSTD_NOVERSION::terminate();
-#endif
+#endif // _CCCL_CUDACC_AT_LEAST(12, 6)
     }
     ::cudaMemPool_t __cuda_pool_handle{};
     _CCCL_TRY_CUDA_API(::cudaMemPoolCreate, "Failed to call cudaMemPoolCreate", &__cuda_pool_handle, &__pool_properties);

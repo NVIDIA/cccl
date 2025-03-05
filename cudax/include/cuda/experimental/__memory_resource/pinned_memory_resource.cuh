@@ -95,7 +95,7 @@ public:
   friend constexpr void get_property(pinned_memory_resource const&, host_accessible) noexcept {}
 #  endif // _CCCL_DOXYGEN_INVOKED
 };
-#else
+#else // _CCCL_CUDACC_BELOW(12, 6)
 
 //! @brief pinned_memory_resource uses `cudaMallocHost` / `cudaFreeHost` for allocation / deallocation.
 class pinned_memory_resource
