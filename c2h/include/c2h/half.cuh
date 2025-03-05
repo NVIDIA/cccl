@@ -328,8 +328,11 @@ inline std::ostream& operator<<(std::ostream& out, const __half& x)
  * Traits overloads
  ******************************************************************************/
 
+namespace cuda
+{
 template <>
-_CCCL_INLINE_VAR constexpr bool ::cuda::is_floating_point_v<half_t> = true;
+_CCCL_INLINE_VAR constexpr bool is_floating_point_v<half_t> = true;
+}
 
 template <>
 class ::cuda::std::numeric_limits<half_t>
