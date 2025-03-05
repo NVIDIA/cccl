@@ -10,7 +10,7 @@ changelog:
     - title: 🐍 Python - 🤝 cuda.cooperative
       labels:
         - "cuda.cooperative"
-    - title: 🐍 Python - ⚡ cuda.parallel 
+    - title: 🐍 Python - ⚡ cuda.parallel
       labels:
         - "cuda.parallel"
     - title: 📝 Documentation
