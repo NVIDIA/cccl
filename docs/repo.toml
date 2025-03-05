@@ -32,6 +32,7 @@ project_build_order = [ "libcudacxx", "cudax", "cub", "thrust", "cccl", "cuda_co
 # deps can be used to link to other projects' documentation
 deps = [
     [ "libcudacxx", "_build/docs/libcudacxx/latest" ],
+    [ "cudax", "_build/docs/cudax/latest" ],
     [ "cub", "_build/docs/cub/latest" ],
     [ "thrust", "_build/docs/thrust/latest" ],
     [ "cuda_cooperative", "_build/docs/cuda_cooperative/latest" ],
@@ -429,6 +430,7 @@ doxygen_predefined = [
   "_CCCL_STD_VER=2020",
   "_CCCL_TRAIT(x, y)=x<y>::value",
   "_CUDA_VMR=cuda::mr",
+  "_CUDA_VRANGES=cuda::std::ranges",
   "_CUDA_VSTD=cuda::std",
   "_CCCL_SUPPRESS_DEPRECATED_PUSH",
   "_CCCL_SUPPRESS_DEPRECATED_POP",
@@ -448,6 +450,8 @@ doxygen_predefined = [
   "_CUDAX_TRIVIAL_HOST_API",
   "_CUDAX_TRIVIAL_DEVICE_API",
   "_CUDAX_PUBLIC_API",
+  "_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()",
+  "_LIBCUDACXX_HIDE_FROM_ABI=inline",
   "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE=",
 ]
 

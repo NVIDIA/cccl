@@ -41,6 +41,7 @@ It searches through a space of parameters to find the combination for a given co
 
 * **Search** - a process consisting of covering all variants for all compile-time workloads to find a variant with maximal score.
 
+.. _cub-tuning-authoring-benchmarks:
 
 Authoring Benchmarks
 --------------------------------------------------------------------------------
@@ -90,6 +91,9 @@ and compiling a variant for a given set of tuning parameters.
 When base is used, no policy is specified, so that the default one CUB provides is used.
 If :code:`TUNE_BASE` is not defined, we specify a custom policy
 using the parameter macros defined in the :code:`%RANGE%` comments which specify the search space.
+
+..
+    The following code is repeated further down as well. Please keep in sync!
 
 .. code:: c++
 
@@ -382,11 +386,129 @@ If all those three values are larger than 1.0, the variant is strictly better th
 If only the mean or max are larger than 1.0, the variant may perform better in most runtime workloads, but regress in others.
 This information can be used to change the existing tuning policies in CUB.
 
+
+Variant plots
+--------------------------------------------------------------------------------
+
+The reported score for a tuning aggregates the performance across all runtime workloads.
+Even though the min, mean and max score are given as well, it may be necessary to view the distribution of scores across variants.
+
 ..
-    TODO(bgruber): the following is outdated:
+    TODO(bgruber): the following is outdated and should be rewroted
 
 .. code:: bash
 
   $ ../benchmarks/scripts/analyze.py --variant='ipt_(18|19).tpb_512'
 
 The last command plots distribution of the elapsed times for the specified variants.
+
+
+Creating tuning policies
+--------------------------------------------------------------------------------
+
+Once a suitable tuning result has been selected, we have to translate it into C++ code that is picked up by CUB.
+The tuning variant name shown by :code:`analyze.py` gives us all the information on the selected tuning values.
+Here is an example:
+
+.. code:: bash
+
+  $ ../benchmarks/scripts/analyze.py --top=1
+    cub.bench.radix_sort.keys[T{ct}=I8, OffsetT{ct}=I64]:
+              variant     score      mins     means      maxs
+    71  ipt_19.tpb_512  1.250941  1.155738  1.321665  1.647868
+
+Assume we have determined this tuning to be the best one for sorting I8 keys using radix_sort using I64 offsets.
+The ``variant`` can be decoded using the ``// %RANGE%`` comments in the C++ source code of the benchmark,
+since the names of the reported parameters in the variant are derived from these:
+
+.. code::  c++
+
+    // %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
+    // %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
+
+The variant ``ipt_19.tpb_512``, which stands for 19 items per thread (``ipt``) and 512 threads per block (``tpb``),
+was thus compiled with ``-DTUNE_ITEMS_PER_THREAD=19 -DTUNE_THREADS_PER_BLOCK=512``.
+The meaning of these values is specific to the benchmark definition,
+and we have to check the benchmark’s source code for how they are applied.
+Equally named tuning parameters may not translate to different benchmarks (please double check).
+These tuning parameters are then typically used to create a policy hub,
+which is passed to the algorithm’s dispatcher, as :ref:`sketched above <cub-tuning-authoring-benchmarks>`,
+and repeated here:
+
+.. code:: c++
+
+  #if !TUNE_BASE
+    template <typename AccumT, typename OffsetT>
+    struct policy_hub_t {
+      struct MaxPolicy : cub::ChainedPolicy<300, policy_t, policy_t> {
+        static constexpr int threads_per_block  = TUNE_THREADS_PER_BLOCK;
+        static constexpr int items_per_thread   = TUNE_ITEMS_PER_THREAD;
+        using AlgorithmPolicy = AgentAlgorithmPolicy<threads_per_block, items_per_thread, ...>;
+      };
+  #endif
+
+The tunings defined in CUB’s source are similar.
+However, they take predefined tuning values based on the template arguments of a CUB algorithm
+to build an agent policy for the policy hub.
+How the tuning values are selected is different for each CUB algorithm and requires studying the corresponding code.
+The general principles of the policy hub and tunings are documented in the :ref:`CUB device layer documentation <cub-developer-policies>`.
+There is typically a tuning class template specialization per variant or group of variants and per PTX version.
+For example, signed and unsigned integers of the same size are often represented by the same tuning.
+In general, variants for which the algorithmic behavior is expected to be the same
+(same arithmetic intensity, no special instructions for one of the data types, same amount of bytes to load/store, etc.)
+are covered by the same tuning.
+
+When new tuning values have been found and an existing tuning specialization exists for this variant,
+the tuning values can simply be updated in the corresponding CUB tuning header.
+This is usually the case when a CUB algorithm has been reengineered and shows different performance characteristics,
+or more tuning parameters are exposed (e.g., a new load algorithm is available).
+For example, this existing radix sort tuning may exist:
+
+.. code:: c++
+
+    template <typename ValueT, size_t KeySize, size_t ValueSize, size_t OffsetSize>
+    struct sm100_small_key_tuning : sm90_small_key_tuning<KeySize, ValueSize, OffsetSize> {};
+    ...
+    template <typename ValueT>
+    struct sm100_small_key_tuning<ValueT, 1, 0, 8> {
+      static constexpr int threads = 256; // better value from tuning analysis: 512
+      static constexpr int items = 14;    // better value from tuning analysis: 19
+    };
+
+The template specialization applies when sorting 1-byte keys without values 8-byte offsets.
+However, the concrete value type is disregarded.
+Since we have found that 512 threads per block and 19 items per thread is better, we can update the values in place.
+
+A different case is when we tune beyond what's currently supported by CUB's existing tunings.
+This may be because we tune for a new hardware architecture,
+in which case a new tuning class template and specializations should be added.
+Or we tune for new key, value or offset types, etc.,
+in which case the existing policy hub and tuning class templates may need to be extended.
+There is no general rule on how this extension is done, though.
+
+In the seldom case, that no tuning better than the existing one (baseline) has been found,
+it must be ensured that either the old tuning values are replicated in the new tuning specialization,
+or the new tuning specialization defers to the old one,
+or the tuning selection mechanism falls back accordingly.
+There is no general rule on how this is implemented.
+
+
+Verification
+--------------------------------------------------------------------------------
+
+Once we have selected tunings and implemented them in CUB, we need to verify them.
+That is, we must benchmark and compare the performance of the tuned algorithm before and after the tunings have been applied.
+This extra step is needed, because the score shown during the tuning analysis is just an aggregated result.
+Individual benchmarks may still have regressed for some compile-time workloads.
+Fortunately, this is no different than :ref:`running <cub-benchmarking-running>` the corresponding CUB benchmark with and without the changes,
+and :ref:`comparing <cub-benchmarking-comparing>` the resulting JSON files.
+Such a diff should be supplied to any request to change CUB tunings.
+
+If verification fails for some compile-time workloads (there are regressions), there are two options:
+
+1. Discard the tuning entirely and ensure the tuning selection falls back to the baseline tuning.
+2. Narrow down the tuning template specialization to only apply to the workloads where it improves performance,
+   and fallback where it regressed.
+
+The latter is more complex and may not be justified, if the improvements are small or the use case too narrow.
+Use your judgement. Good luck!

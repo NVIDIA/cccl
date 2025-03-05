@@ -41,8 +41,6 @@
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 
-#include <cstdint>
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail

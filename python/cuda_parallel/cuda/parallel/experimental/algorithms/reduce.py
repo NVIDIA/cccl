@@ -56,7 +56,7 @@ class _Reduce:
             self.d_in_cccl,
             self.d_out_cccl,
             self.op_wrapper,
-            cccl.to_cccl_value(h_init),
+            self.h_init_cccl,
             cc_major,
             cc_minor,
             ctypes.c_char_p(cub_path),

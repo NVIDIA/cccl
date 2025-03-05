@@ -17,8 +17,6 @@
 
 #include "test_macros.h"
 
-TEST_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
-
 template <class T>
 __host__ __device__ void test_is_floating_point()
 {
@@ -79,7 +77,9 @@ int main(int, char**)
 {
   test_is_floating_point<float>();
   test_is_floating_point<double>();
+#if _CCCL_HAS_LONG_DOUBLE()
   test_is_floating_point<long double>();
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
   test_is_not_floating_point<short>();
   test_is_not_floating_point<unsigned short>();

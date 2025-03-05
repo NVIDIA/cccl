@@ -10,11 +10,11 @@
 
 #include <cuda_runtime.h>
 
-#include <iostream>
+#include <cstdint>
 
 #include "test_util.h"
 
-void scan(cccl_iterator_t input, cccl_iterator_t output, unsigned long long num_items, cccl_op_t op, cccl_value_t init)
+void scan(cccl_iterator_t input, cccl_iterator_t output, uint64_t num_items, cccl_op_t op, cccl_value_t init)
 {
   cudaDeviceProp deviceProp;
   cudaGetDeviceProperties(&deviceProp, 0);

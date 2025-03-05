@@ -9,11 +9,11 @@
 template <typename T, typename VectorT>
 void TestComplexAlignment()
 {
-  THRUST_STATIC_ASSERT(sizeof(thrust::complex<T>) == sizeof(VectorT));
-  THRUST_STATIC_ASSERT(alignof(thrust::complex<T>) == alignof(VectorT));
+  static_assert(sizeof(thrust::complex<T>) == sizeof(VectorT));
+  static_assert(alignof(thrust::complex<T>) == alignof(VectorT));
 
-  THRUST_STATIC_ASSERT(sizeof(thrust::complex<T const>) == sizeof(VectorT));
-  THRUST_STATIC_ASSERT(alignof(thrust::complex<T const>) == alignof(VectorT));
+  static_assert(sizeof(thrust::complex<T const>) == sizeof(VectorT));
+  static_assert(alignof(thrust::complex<T const>) == alignof(VectorT));
 }
 DECLARE_UNITTEST_WITH_NAME(THRUST_PP_EXPAND_ARGS(TestComplexAlignment<char, char2>), TestComplexCharAlignment);
 DECLARE_UNITTEST_WITH_NAME(THRUST_PP_EXPAND_ARGS(TestComplexAlignment<short, short2>), TestComplexShortAlignment);

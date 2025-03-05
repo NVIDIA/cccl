@@ -22,10 +22,10 @@
 #  pragma system_header
 #endif // no system header
 
-#ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/__compare/compare_three_way_result.h>
 #  include <cuda/std/__compare/three_way_comparable.h>
-#endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #include <cuda/std/__concepts/assignable.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/derived_from.h>
@@ -324,7 +324,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator!=(const move_iterator<_Iter1>&
 }
 #endif // _CCCL_STD_VER <= 2017
 
-#ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 template <class _Iter1, three_way_comparable_with<_Iter1> _Iter2>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator<=>(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
@@ -333,7 +333,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator<=>(const move_iterator<_Iter1>
   return __x.base() <=> __y.base();
 }
 
-#else // ^^^ !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR ^^^ / vvv _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR vvv
+#else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
 template <class _Iter1, class _Iter2>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator<(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
 {
@@ -357,7 +357,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator>=(const move_iterator<_Iter1>&
 {
   return __x.base() >= __y.base();
 }
-#endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 template <class _Iter1, class _Iter2>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator-(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)

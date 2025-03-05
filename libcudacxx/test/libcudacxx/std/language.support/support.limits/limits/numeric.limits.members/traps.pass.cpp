@@ -57,29 +57,33 @@ int main(int, char**)
 #endif // _CCCL_HAS_INT128()
   test<float, false>();
   test<double, false>();
-#ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#if _CCCL_HAS_LONG_DOUBLE()
   test<long double, false>();
-#endif
+#endif // _CCCL_HAS_LONG_DOUBLE()
 #if _CCCL_HAS_NVFP16()
   test<__half, false>();
 #endif // _CCCL_HAS_NVFP16
 #if _CCCL_HAS_NVBF16()
   test<__nv_bfloat16, false>();
 #endif // _CCCL_HAS_NVBF16
-#if _CCCL_HAS_NVFP8()
+#if _CCCL_HAS_NVFP8_E4M3()
   test<__nv_fp8_e4m3, false>();
+#endif // _CCCL_HAS_NVFP8_E4M3()
+#if _CCCL_HAS_NVFP8_E5M2()
   test<__nv_fp8_e5m2, false>();
-#  if _CCCL_CUDACC_AT_LEAST(12, 8)
+#endif // _CCCL_HAS_NVFP8_E5M2()
+#if _CCCL_HAS_NVFP8_E8M0()
   test<__nv_fp8_e8m0, false>();
-#  endif // _CCCL_CUDACC_AT_LEAST(12, 8)
-#endif // _CCCL_HAS_NVFP8()
-#if _CCCL_HAS_NVFP6()
+#endif // _CCCL_HAS_NVFP8_E8M0()
+#if _CCCL_HAS_NVFP6_E2M3()
   test<__nv_fp6_e2m3, false>();
+#endif // _CCCL_HAS_NVFP6_E2M3()
+#if _CCCL_HAS_NVFP6_E3M2()
   test<__nv_fp6_e3m2, false>();
-#endif // _CCCL_HAS_NVFP6()
-#if _CCCL_HAS_NVFP4()
+#endif // _CCCL_HAS_NVFP6_E3M2()
+#if _CCCL_HAS_NVFP4_E2M1()
   test<__nv_fp4_e2m1, false>();
-#endif // _CCCL_HAS_NVFP4()
+#endif // _CCCL_HAS_NVFP4_E2M1()
 
   return 0;
 }

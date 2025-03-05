@@ -56,7 +56,7 @@ __host__ __device__ void test()
   assert(cuda::std::lerp(T(0.0), T(0.0), T(23)) == T(0.0));
 
   // __half and __nvbfloat have precision issues here
-  if (!cuda::std::__is_extended_floating_point<T>::value)
+  if constexpr (!cuda::std::__is_extended_floating_point_v<T>)
   {
     assert(cuda::std::isnan(cuda::std::lerp(T(0.0), T(0.0), T(inf))));
   }
@@ -66,16 +66,15 @@ int main(int, char**)
 {
   test<float>();
   test<double>();
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
   test<long double>();
-#endif //!_LIBCUDACXX_HAS_NO_LONG_DOUBLE
-
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#endif // _CCCL_HAS_LONG_DOUBLE()
+#if _LIBCUDACXX_HAS_NVFP16()
   test<__half>();
-#endif // _LIBCUDACXX_HAS_NVFP16
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
   static_assert(constexpr_test<float>(), "");
   static_assert(constexpr_test<double>(), "");

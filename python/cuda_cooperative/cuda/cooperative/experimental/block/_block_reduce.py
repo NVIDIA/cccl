@@ -4,7 +4,10 @@
 
 import numba
 
-from cuda.cooperative.experimental._common import make_binary_tempfile
+from cuda.cooperative.experimental._common import (
+    make_binary_tempfile,
+    normalize_dtype_param,
+)
 from cuda.cooperative.experimental._types import (
     Algorithm,
     Dependency,
@@ -28,8 +31,8 @@ def reduce(dtype, threads_per_block, binary_op, items_per_thread=1, methods=None
 
     - `(item: dtype) -> dtype)`: Each thread contributes a single item to the reduction.
     - `(items: numba.types.Array) -> dtype`: Each thread contributes an array of items to the
-        reduction. The array must be 1D and contain at least `items_per_thread` items; only the
-        first `items_per_thread` items will be included in the reduction.
+        reduction. The array must contain at least `items_per_thread` items; only the first
+        `items_per_thread` items will be included in the reduction.
     - `(item: dtype, num_valid: int) -> dtype`: The first `num_valid` threads contribute a
         single item to the reduction. The items contributed by all other threads are ignored.
 
@@ -62,6 +65,9 @@ def reduce(dtype, threads_per_block, binary_op, items_per_thread=1, methods=None
         Suppose the set of inputs across the block of threads is ``{ 0, 1, 2, 3, ..., 127 }``.
         The corresponding output in the threads thread\ :sub:`0` will be ``{ 127 }``.
     """
+    # Normalize the dtype parameter.
+    dtype = normalize_dtype_param(dtype)
+
     template = Algorithm(
         "BlockReduce",
         "Reduce",
@@ -135,7 +141,7 @@ def sum(dtype, threads_per_block, items_per_thread=1, methods=None):
 
     - `(item: dtype) -> dtype)`: Each thread contributes a single item to the reduction.
     - `(items: numba.types.Array) -> dtype`: Each thread contributes an array of items to the
-        reduction. The array must be 1D and contain at least `items_per_thread` items; only the
+        reduction. The array must contain at least `items_per_thread` items; only the
         first `items_per_thread` items will be included in the reduction.
     - `(item: dtype, num_valid: int) -> dtype`: The first `num_valid` threads contribute a
         single item to the reduction. The items contributed by all other threads are ignored.
@@ -168,6 +174,9 @@ def sum(dtype, threads_per_block, items_per_thread=1, methods=None):
         Suppose the set of inputs across the block of threads is ``{ 1, 1, 1, 1, ..., 1 }``.
         The corresponding output in the threads thread\ :sub:`0` will be ``{ 128 }``.
     """
+    # Normalize the dtype parameter.
+    dtype = normalize_dtype_param(dtype)
+
     template = Algorithm(
         "BlockReduce",
         "Sum",

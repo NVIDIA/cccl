@@ -79,11 +79,6 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
   SampleT* d_input      = thrust::raw_pointer_cast(input.data());
   CounterT* d_histogram = thrust::raw_pointer_cast(hist.data());
 
-  CounterT* d_histogram1[1] = {d_histogram};
-  int num_levels1[1]        = {num_levels};
-  SampleT lower_level1[1]   = {lower_level};
-  SampleT upper_level1[1]   = {upper_level};
-
   std::uint8_t* d_temp_storage = nullptr;
   std::size_t temp_storage_bytes{};
 
@@ -100,10 +95,10 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
     d_temp_storage,
     temp_storage_bytes,
     d_input,
-    d_histogram1,
-    num_levels1,
-    lower_level1,
-    upper_level1,
+    {d_histogram},
+    {num_levels},
+    {lower_level},
+    {upper_level},
     num_row_pixels,
     num_rows,
     row_stride_samples,
@@ -118,10 +113,10 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
       d_temp_storage,
       temp_storage_bytes,
       d_input,
-      d_histogram1,
-      num_levels1,
-      lower_level1,
-      upper_level1,
+      {d_histogram},
+      {num_levels},
+      {lower_level},
+      {upper_level},
       num_row_pixels,
       num_rows,
       row_stride_samples,

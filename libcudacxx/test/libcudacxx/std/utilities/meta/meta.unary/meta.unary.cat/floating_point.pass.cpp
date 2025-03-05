@@ -14,8 +14,6 @@
 
 #include "test_macros.h"
 
-TEST_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
-
 template <class T>
 __host__ __device__ void test_floating_point_imp()
 {
@@ -50,7 +48,9 @@ int main(int, char**)
 {
   test_floating_point<float>();
   test_floating_point<double>();
+#if _CCCL_HAS_LONG_DOUBLE()
   test_floating_point<long double>();
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
   //  LWG#2582
   static_assert(!cuda::std::is_floating_point<incomplete_type>::value, "");

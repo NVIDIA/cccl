@@ -49,6 +49,8 @@
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__algorithm_>
+
 CUB_NAMESPACE_BEGIN
 
 /**
@@ -131,12 +133,12 @@ public:
     this->block_end         = num_items_; // Initialize past-the-end
     this->num_items         = num_items_;
     this->total_tiles       = static_cast<int>(::cuda::ceil_div(num_items_, tile_items));
-    this->grid_size         = CUB_MIN(total_tiles, max_grid_size);
+    this->grid_size         = _CUDA_VSTD::min(total_tiles, max_grid_size);
     int avg_tiles_per_block = total_tiles / grid_size;
     // leftover grains go to big blocks:
     this->big_shares         = total_tiles - (avg_tiles_per_block * grid_size);
-    this->normal_share_items = avg_tiles_per_block * tile_items;
-    this->normal_base_offset = big_shares * tile_items;
+    this->normal_share_items = static_cast<OffsetT>(avg_tiles_per_block) * tile_items;
+    this->normal_base_offset = static_cast<OffsetT>(big_shares) * tile_items;
     this->big_share_items    = normal_share_items + tile_items;
   }
 
@@ -160,7 +162,7 @@ public:
       // This thread block gets a normal share of grains (avg_tiles_per_block)
       block_offset = normal_base_offset + (block_id * normal_share_items);
       // Avoid generating values greater than num_items, as it may cause overflow
-      block_end = block_offset + CUB_MIN(num_items - block_offset, normal_share_items);
+      block_end = block_offset + _CUDA_VSTD::min(num_items - block_offset, normal_share_items);
     }
     // Else default past-the-end
   }

@@ -88,10 +88,6 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
   SampleT* d_input      = thrust::raw_pointer_cast(input.data());
   CounterT* d_histogram = thrust::raw_pointer_cast(hist.data());
 
-  CounterT* d_histogram1[1] = {d_histogram};
-  int num_levels1[1]        = {num_levels};
-  SampleT* d_levels1[1]     = {d_levels};
-
   std::uint8_t* d_temp_storage = nullptr;
   std::size_t temp_storage_bytes{};
 
@@ -108,9 +104,9 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
     d_temp_storage,
     temp_storage_bytes,
     d_input,
-    d_histogram1,
-    num_levels1,
-    d_levels1,
+    {d_histogram},
+    {num_levels},
+    {d_levels},
     num_row_pixels,
     num_rows,
     row_stride_samples,
@@ -125,9 +121,9 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
       d_temp_storage,
       temp_storage_bytes,
       d_input,
-      d_histogram1,
-      num_levels1,
-      d_levels1,
+      {d_histogram},
+      {num_levels},
+      {d_levels},
       num_row_pixels,
       num_rows,
       row_stride_samples,

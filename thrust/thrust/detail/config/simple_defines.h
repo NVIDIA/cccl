@@ -34,6 +34,7 @@
 #define THRUST_FALSE   0
 #define THRUST_TRUE    1
 
+//! Deprecated [Since 3.0]
 #define THRUST_UNUSED_VAR(expr) \
   do                            \
   {                             \

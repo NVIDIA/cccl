@@ -52,9 +52,9 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/cmath>
+#include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
-
-#include <cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -171,9 +171,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE PointerRange<VectorT>
 GetAlignedPtrs(const void* in_begin, void* out_begin, ByteOffsetT num_bytes)
 {
   // Data type size used for vectorized stores
-  constexpr size_t out_datatype_size = sizeof(VectorT);
+  constexpr auto out_datatype_size = uint32_t{sizeof(VectorT)};
   // Data type size used for type-aliased loads
-  constexpr size_t in_datatype_size = sizeof(uint32_t);
+  constexpr auto in_datatype_size = uint32_t{sizeof(uint32_t)};
 
   // char-aliased ptrs to simplify pointer arithmetic
   char* out_ptr      = reinterpret_cast<char*>(out_begin);
@@ -194,8 +194,7 @@ GetAlignedPtrs(const void* in_begin, void* out_begin, ByteOffsetT num_bytes)
   uint32_t in_offset_req = in_extra_bytes;
 
   // Bytes after `out_chars_aligned` to the first VectorT-aligned address at or after `out_begin`
-  uint32_t out_start_aligned =
-    CUB_QUOTIENT_CEILING(in_offset_req + alignment_offset, out_datatype_size) * out_datatype_size;
+  uint32_t out_start_aligned = ::cuda::round_up(in_offset_req + alignment_offset, out_datatype_size);
 
   // Compute the beginning of the aligned ranges (output and input pointers)
   VectorT* out_aligned_begin   = reinterpret_cast<VectorT*>(out_chars_aligned + out_start_aligned);
@@ -398,7 +397,7 @@ private:
   static constexpr uint32_t USED_BITS_PER_UNIT = ITEMS_PER_UNIT * BITS_PER_ITEM;
 
   /// The number of backing data types required to store the given number of items
-  static constexpr uint32_t NUM_TOTAL_UNITS = CUB_QUOTIENT_CEILING(NumItems, ITEMS_PER_UNIT);
+  static constexpr uint32_t NUM_TOTAL_UNITS = ::cuda::ceil_div(NumItems, ITEMS_PER_UNIT);
 
   /// This is the net number of bit-storage provided by each unit (remainder bits are unused)
   static constexpr uint32_t UNIT_MASK =
@@ -803,7 +802,7 @@ private:
       if (blev_buffer_offset < num_blev_buffers)
       {
         BlockBufferOffsetT tile_buffer_id = buffers_by_size_class[blev_buffer_offset].buffer_id;
-        block_offset[i] = CUB_QUOTIENT_CEILING(tile_buffer_sizes[tile_buffer_id], BLOCK_LEVEL_TILE_SIZE);
+        block_offset[i]                   = ::cuda::ceil_div(+tile_buffer_sizes[tile_buffer_id], BLOCK_LEVEL_TILE_SIZE);
       }
       else
       {

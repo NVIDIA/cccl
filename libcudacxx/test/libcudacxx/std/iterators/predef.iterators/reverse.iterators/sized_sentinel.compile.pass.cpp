@@ -14,16 +14,8 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-#if TEST_STD_VER > 2017
 template <class T>
-concept HasMinus = requires(T t) { t - t; };
-#else
-template <class T>
-_CCCL_CONCEPT_FRAGMENT(HasMinus_, requires(T t)(t - t));
-
-template <class T>
-_CCCL_CONCEPT HasMinus = _CCCL_FRAGMENT(HasMinus_, T);
-#endif
+_CCCL_CONCEPT HasMinus = _CCCL_REQUIRES_EXPR((T), T t)((t - t));
 
 using sized_it = random_access_iterator<int*>;
 static_assert(cuda::std::sized_sentinel_for<sized_it, sized_it>);

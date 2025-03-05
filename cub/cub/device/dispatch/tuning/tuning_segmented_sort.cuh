@@ -246,9 +246,4 @@ struct policy_hub
 } // namespace segmented_sort
 } // namespace detail
 
-template <typename KeyT, typename ValueT>
-using DeviceSegmentedSortPolicy CCCL_DEPRECATED_BECAUSE(
-  "This class is considered an implementation detail and it will "
-  "be removed.") = detail::segmented_sort::policy_hub<KeyT, ValueT>;
-
 CUB_NAMESPACE_END

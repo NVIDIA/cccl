@@ -2,12 +2,6 @@ cccl_get_catch2()
 
 find_package(cudax) # already found, bring in version info.
 
-find_package(Thrust ${cudax_VERSION} EXACT CONFIG
-  NO_DEFAULT_PATH # Only check the explicit path in HINTS:
-  HINTS "${CCCL_SOURCE_DIR}/lib/cmake/thrust/"
-)
-thrust_create_target(cudax.test.thrust)
-
 ## cudax_add_test
 #
 # Add a catch2 test executable and register it with ctest.
@@ -30,7 +24,6 @@ function(cudax_add_catch2_test target_name_var test_name cn_target) # ARGN=test 
   target_include_directories(${test_target} PRIVATE "common")
   target_link_libraries(${test_target} PRIVATE
     ${cn_target}
-    cudax.test.thrust
     Catch2::Catch2WithMain
   )
   target_compile_options(${test_target} PRIVATE
@@ -103,6 +96,16 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   cudax_add_catch2_test(test_target containers ${cn_target}
     containers/uninitialized_buffer.cu
     containers/uninitialized_async_buffer.cu
+    containers/async_buffer/access.cu
+    containers/async_buffer/assign.cu
+    containers/async_buffer/capacity.cu
+    containers/async_buffer/comparison.cu
+    containers/async_buffer/constructor.cu
+    containers/async_buffer/conversion.cu
+    containers/async_buffer/copy.cu
+    containers/async_buffer/iterators.cu
+    containers/async_buffer/properties.cu
+    containers/async_buffer/swap.cu
   )
 
   cudax_add_catch2_test(test_target memory_resource ${cn_target}

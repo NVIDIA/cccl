@@ -48,10 +48,9 @@ RandomAccessIterator for_each_n(execution_policy<DerivedPolicy>&, RandomAccessIt
   // X Note to the user: If you've found this line due to a compiler error, X
   // X you need to enable OpenMP support in your compiler.                  X
   // ========================================================================
-  THRUST_STATIC_ASSERT_MSG(
-    (thrust::detail::depend_on_instantiation<RandomAccessIterator,
-                                             (THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE == THRUST_TRUE)>::value),
-    "OpenMP compiler support is not enabled");
+  static_assert(thrust::detail::depend_on_instantiation<RandomAccessIterator,
+                                                        (THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE == THRUST_TRUE)>::value,
+                "OpenMP compiler support is not enabled");
 
   if (n <= 0)
   {

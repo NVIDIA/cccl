@@ -86,15 +86,59 @@
 #  define _CCCL_BUILTIN_ARRAY_EXTENT(...) __array_extent(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__array_extent)
 
-#if _CCCL_HAS_BUILTIN(__builtin_assume_aligned) || _CCCL_COMPILER(MSVC, >=, 19, 23) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_ASSUME_ALIGNED(...) __builtin_assume_aligned(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__builtin_assume_aligned)
+#if _CCCL_CHECK_BUILTIN(builtin_acos) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ACOSF(...) __builtin_acosf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ACOS(...)  __builtin_acos(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ACOSL(...) __builtin_acosl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_acos)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_ACOSF
+#  undef _CCCL_BUILTIN_ACOS
+#  undef _CCCL_BUILTIN_ACOSL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
+#if _CCCL_CHECK_BUILTIN(builtin_acosh) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ACOSHF(...) __builtin_acoshf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ACOSH(...)  __builtin_acosh(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ACOSHL(...) __builtin_acoshl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_acosh)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_ACOSHF
+#  undef _CCCL_BUILTIN_ACOSH
+#  undef _CCCL_BUILTIN_ACOSHL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 // nvhpc has a bug where it supports __builtin_addressof but does not mark it via _CCCL_CHECK_BUILTIN
 #if _CCCL_CHECK_BUILTIN(builtin_addressof) || _CCCL_COMPILER(GCC, >=, 7) || _CCCL_COMPILER(MSVC) \
   || _CCCL_COMPILER(NVHPC)
 #  define _CCCL_BUILTIN_ADDRESSOF(...) __builtin_addressof(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_addressof)
+
+#if _CCCL_CHECK_BUILTIN(builtin_asin) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ASINF(...) __builtin_asinf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ASIN(...)  __builtin_asin(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ASINL(...) __builtin_asinl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_asin)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_ASINF
+#  undef _CCCL_BUILTIN_ASIN
+#  undef _CCCL_BUILTIN_ASINL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
+#if _CCCL_CHECK_BUILTIN(builtin_asinh) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ASINHF(...) __builtin_asinhf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ASINH(...)  __builtin_asinh(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ASINHL(...) __builtin_asinhl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_asin)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_ASINHF
+#  undef _CCCL_BUILTIN_ASINH
+#  undef _CCCL_BUILTIN_ASINHL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 #if _CCCL_CHECK_BUILTIN(builtin_assume) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
 #  define _CCCL_BUILTIN_ASSUME(...) __builtin_assume(__VA_ARGS__)
@@ -108,11 +152,45 @@
 #  define _CCCL_BUILTIN_ASSUME(...)
 #endif // _CCCL_CHECK_BUILTIN(builtin_assume)
 
-#if _CCCL_CHECK_BUILTIN(builtin_prefetch) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_PREFETCH(...) NV_IF_TARGET(NV_IS_HOST, __builtin_prefetch(__VA_ARGS__);)
-#else
-#  define _CCCL_BUILTIN_PREFETCH(...)
-#endif // _CCCL_CHECK_BUILTIN(builtin_prefetch)
+#if _CCCL_HAS_BUILTIN(__builtin_assume_aligned) || _CCCL_COMPILER(MSVC, >=, 19, 23) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ASSUME_ALIGNED(...) __builtin_assume_aligned(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__builtin_assume_aligned)
+
+#if _CCCL_CHECK_BUILTIN(builtin_atan) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ATANF(...) __builtin_atanf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ATAN(...)  __builtin_atan(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ATANL(...) __builtin_atanl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_atan)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_ATANF
+#  undef _CCCL_BUILTIN_ATAN
+#  undef _CCCL_BUILTIN_ATANL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
+#if _CCCL_CHECK_BUILTIN(builtin_atan2) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ATAN2F(...) __builtin_atan2f(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ATAN2(...)  __builtin_atan2(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ATAN2L(...) __builtin_atan2l(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_atan2)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_ATAN2F
+#  undef _CCCL_BUILTIN_ATAN2
+#  undef _CCCL_BUILTIN_ATAN2L
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
+#if _CCCL_CHECK_BUILTIN(builtin_atanh) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ATANHF(...) __builtin_atanhf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ATANH(...)  __builtin_atanh(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ATANHL(...) __builtin_atanhl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_atanh)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_ATANHF
+#  undef _CCCL_BUILTIN_ATANH
+#  undef _CCCL_BUILTIN_ATANHL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 // MSVC supports __builtin_bit_cast from 19.25 on
 #if _CCCL_CHECK_BUILTIN(builtin_bit_cast) || _CCCL_COMPILER(MSVC, >, 19, 25)
@@ -188,6 +266,36 @@
 #  define _CCCL_BUILTIN_CONSTANT_P(...) __builtin_constant_p(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_constant_p)
 
+#if _CCCL_CHECK_BUILTIN(builtin_copysign) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_COPYSIGNF(...) __builtin_copysignf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_COPYSIGN(...)  __builtin_copysign(__VA_ARGS__)
+#  define _CCCL_BUILTIN_COPYSIGNL(...) __builtin_copysignl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_copysign)
+
+#if _CCCL_CHECK_BUILTIN(builtin_cos) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_COSF(...) __builtin_cosf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_COS(...)  __builtin_cos(__VA_ARGS__)
+#  define _CCCL_BUILTIN_COSL(...) __builtin_cosl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_cos)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_COSF
+#  undef _CCCL_BUILTIN_COS
+#  undef _CCCL_BUILTIN_COSL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
+#if _CCCL_CHECK_BUILTIN(builtin_cosh) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_COSHF(...) __builtin_coshf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_COSH(...)  __builtin_cosh(__VA_ARGS__)
+#  define _CCCL_BUILTIN_COSHL(...) __builtin_coshl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_cosh)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_COSHF
+#  undef _CCCL_BUILTIN_COSH
+#  undef _CCCL_BUILTIN_COSHL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
 #if _CCCL_CHECK_BUILTIN(builtin_exp) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_EXPF(...) __builtin_expf(__VA_ARGS__)
 #  define _CCCL_BUILTIN_EXP(...)  __builtin_exp(__VA_ARGS__)
@@ -231,6 +339,12 @@
 #  define _CCCL_BUILTIN_EXPECT(...) __builtin_expect(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_expect)
 
+#if _CCCL_CHECK_BUILTIN(builtin_fabs) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_FABSF(...) __builtin_fabsf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_FABS(...)  __builtin_fabs(__VA_ARGS__)
+#  define _CCCL_BUILTIN_FABSL(...) __builtin_fabsl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_fabs)
+
 #if _CCCL_CHECK_BUILTIN(builtin_floor) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_FLOORF(...) __builtin_floorf(__VA_ARGS__)
 #  define _CCCL_BUILTIN_FLOOR(...)  __builtin_floor(__VA_ARGS__)
@@ -258,6 +372,11 @@
 #if _CCCL_CHECK_BUILTIN(builtin_fpclassify) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_FPCLASSIFY(...) __builtin_fpclassify(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_fpclassify)
+
+// nvcc does not implement __builtin_fpclassify
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  undef _CCCL_BUILTIN_FPCLASSIFY
+#endif // _CCCL_CUDA_COMPILER(NVCC)
 
 #if _CCCL_CHECK_BUILTIN(builtin_frexp) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_FREXPF(...) __builtin_frexpf(__VA_ARGS__)
@@ -292,6 +411,18 @@
 #  define _CCCL_BUILTIN_HUGE_VALL() static_cast<long double>(__builtin_huge_val())
 #endif // _CCCL_CHECK_BUILTIN(builtin_huge_vall)
 
+#if _CCCL_CHECK_BUILTIN(builtin_hypot) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_HYPOTF(...) __builtin_hypotf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_HYPOT(...)  __builtin_hypot(__VA_ARGS__)
+#  define _CCCL_BUILTIN_HYPOTL(...) __builtin_hypotl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_hypot)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_HYPOTF
+#  undef _CCCL_BUILTIN_HYPOT
+#  undef _CCCL_BUILTIN_HYPOTL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
 #if _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated) || _CCCL_COMPILER(GCC, >=, 9) || _CCCL_COMPILER(MSVC, >, 19, 24)
 #  define _CCCL_BUILTIN_IS_CONSTANT_EVALUATED(...) __builtin_is_constant_evaluated(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated)
@@ -308,6 +439,15 @@
 #  define _CCCL_BUILTIN_ISNAN(...) __builtin_isnan(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(isnan)
 
+#if _CCCL_CHECK_BUILTIN(builtin_isnormal) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ISNORMAL(...) __builtin_isnormal(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(isnormal)
+
+// nvcc does not implement __builtin_isnormal
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  undef _CCCL_BUILTIN_ISNORMAL
+#endif // _CCCL_CUDA_COMPILER(NVCC)
+
 #if _CCCL_CHECK_BUILTIN(builtin_launder) || _CCCL_COMPILER(GCC, >=, 7)
 #  define _CCCL_BUILTIN_LAUNDER(...) __builtin_launder(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_launder) && gcc >= 7
@@ -323,6 +463,18 @@
 #  undef _CCCL_BUILTIN_LDEXPF
 #  undef _CCCL_BUILTIN_LDEXP
 #  undef _CCCL_BUILTIN_LDEXPL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
+#if _CCCL_CHECK_BUILTIN(builtin_lgamma) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_LGAMMAF(...) __builtin_lgammaf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LGAMMA(...)  __builtin_lgamma(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LGAMMAL(...) __builtin_lgammal(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_lgamma)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_LGAMMAF
+#  undef _CCCL_BUILTIN_LGAMMA
+#  undef _CCCL_BUILTIN_LGAMMAL
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
 #if _CCCL_HAS_BUILTIN(__builtin_LINE) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC, >=, 19, 27)
@@ -551,6 +703,12 @@
 #  undef _CCCL_BUILTIN_POWL
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
+#if _CCCL_CHECK_BUILTIN(builtin_prefetch) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_PREFETCH(...) NV_IF_TARGET(NV_IS_HOST, __builtin_prefetch(__VA_ARGS__);)
+#else
+#  define _CCCL_BUILTIN_PREFETCH(...)
+#endif // _CCCL_CHECK_BUILTIN(builtin_prefetch)
+
 #if _CCCL_CHECK_BUILTIN(builtin_rint) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_RINTF(...) __builtin_rintf(__VA_ARGS__)
 #  define _CCCL_BUILTIN_RINT(...)  __builtin_rint(__VA_ARGS__)
@@ -593,11 +751,71 @@
 #  define _CCCL_BUILTIN_SIGNBIT(...) __builtin_signbit(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_signbit)
 
+#if _CCCL_CHECK_BUILTIN(builtin_sin) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_SINF(...) __builtin_sinf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_SIN(...)  __builtin_sin(__VA_ARGS__)
+#  define _CCCL_BUILTIN_SINL(...) __builtin_sinl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_sin)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_SINF
+#  undef _CCCL_BUILTIN_SIN
+#  undef _CCCL_BUILTIN_SINL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
+#if _CCCL_CHECK_BUILTIN(builtin_sinh) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_SINHF(...) __builtin_sinhf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_SINH(...)  __builtin_sinh(__VA_ARGS__)
+#  define _CCCL_BUILTIN_SINHL(...) __builtin_sinhl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_sin)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_SINHF
+#  undef _CCCL_BUILTIN_SINH
+#  undef _CCCL_BUILTIN_SINHL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
 #if _CCCL_CHECK_BUILTIN(builtin_sqrt) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_SQRTF(...) __builtin_sqrtf(__VA_ARGS__)
 #  define _CCCL_BUILTIN_SQRT(...)  __builtin_sqrt(__VA_ARGS__)
 #  define _CCCL_BUILTIN_SQRTL(...) __builtin_sqrtl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_sqrt)
+
+#if _CCCL_CHECK_BUILTIN(builtin_tan) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_TANF(...) __builtin_tanf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_TAN(...)  __builtin_tan(__VA_ARGS__)
+#  define _CCCL_BUILTIN_TANL(...) __builtin_tanl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_tan)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_TANF
+#  undef _CCCL_BUILTIN_TAN
+#  undef _CCCL_BUILTIN_TANL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
+#if _CCCL_CHECK_BUILTIN(builtin_tanh) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_TANHF(...) __builtin_tanhf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_TANH(...)  __builtin_tanh(__VA_ARGS__)
+#  define _CCCL_BUILTIN_TANHL(...) __builtin_tanhl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_tan)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_TANHF
+#  undef _CCCL_BUILTIN_TANH
+#  undef _CCCL_BUILTIN_TANHL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
+#if _CCCL_CHECK_BUILTIN(builtin_tgamma) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_TGAMMAF(...) __builtin_tgammaf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_TGAMMA(...)  __builtin_tgamma(__VA_ARGS__)
+#  define _CCCL_BUILTIN_TGAMMAL(...) __builtin_tgammal(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_tgamma)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_TGAMMAF
+#  undef _CCCL_BUILTIN_TGAMMA
+#  undef _CCCL_BUILTIN_TGAMMAL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 #if _CCCL_CHECK_BUILTIN(builtin_trunc) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_TRUNCF(...) __builtin_truncf(__VA_ARGS__)
@@ -866,6 +1084,14 @@
 #if 0 // _CCCL_HAS_BUILTIN(__make_unsigned)
 #  define _CCCL_BUILTIN_MAKE_UNSIGNED(...) __make_unsigned(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__make_unsigned)
+
+#if _CCCL_HAS_BUILTIN(__reference_constructs_from_temporary)
+#  define _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY(...) __reference_constructs_from_temporary(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__reference_constructs_from_temporary)
+
+#if _CCCL_HAS_BUILTIN(__reference_converts_from_temporary)
+#  define _CCCL_BUILTIN_REFERENCE_CONVERTS_FROM_TEMPORARY(...) __reference_converts_from_temporary(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__reference_converts_from_temporary)
 
 #if _CCCL_HAS_BUILTIN(__remove_all_extents) && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_REMOVE_ALL_EXTENTS(...) __remove_all_extents(__VA_ARGS__)

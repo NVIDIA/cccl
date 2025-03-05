@@ -26,11 +26,8 @@
 #include "test_macros.h"
 
 template <class T, class... Args>
-_CCCL_CONCEPT_FRAGMENT(
-  HasMakeUniqueForOverwrite_,
-  requires(Args&&... args)((cuda::std::make_unique_for_overwrite<T>(cuda::std::forward<Args>(args)...))));
-template <class T, class... Args>
-constexpr bool HasMakeUniqueForOverwrite = _CCCL_FRAGMENT(HasMakeUniqueForOverwrite_, T, Args...);
+_CCCL_CONCEPT HasMakeUniqueForOverwrite = _CCCL_REQUIRES_EXPR((T, variadic Args), T t, Args&&... args)(
+  (cuda::std::make_unique_for_overwrite<T>(cuda::std::forward<Args>(args)...)));
 
 struct Foo
 {

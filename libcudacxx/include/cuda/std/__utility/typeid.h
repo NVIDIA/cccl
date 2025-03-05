@@ -37,9 +37,9 @@
 //                          - A macro that returns a reference to the `const`
 //                            `cuda::std::__type_info` object for the specified type.
 
-#ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/compare>
-#endif
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #include <cuda/std/__cccl/preprocessor.h>
 #include <cuda/std/__string/string_view.h>
 #include <cuda/std/__type_traits/enable_if.h>

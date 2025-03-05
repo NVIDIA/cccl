@@ -33,18 +33,18 @@ __host__ __device__ void test_construction()
 
 __host__ __device__ void test()
 {
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _LIBCUDACXX_HAS_NVFP16()
   test_construction<__half, float>();
   test_construction<__half, double>();
   test_construction<float, __half>();
   test_construction<double, __half>();
-#endif // _LIBCUDACXX_HAS_NVFP16
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test_construction<__nv_bfloat16, float>();
   test_construction<__nv_bfloat16, double>();
   test_construction<float, __nv_bfloat16>();
   test_construction<double, __nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 }
 
 int main(int arg, char** argv)

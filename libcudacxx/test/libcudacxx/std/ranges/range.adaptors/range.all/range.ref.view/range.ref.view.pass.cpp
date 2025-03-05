@@ -182,31 +182,14 @@ struct Cpp20InputRange
 template <>
 inline constexpr bool cuda::std::ranges::enable_borrowed_range<Cpp20InputRange> = true;
 
-#if TEST_STD_VER >= 2020
 template <class R>
-concept EmptyIsInvocable = requires(cuda::std::ranges::ref_view<R> view) { view.empty(); };
+_CCCL_CONCEPT EmptyIsInvocable = _CCCL_REQUIRES_EXPR((R), cuda::std::ranges::ref_view<R> view)((view.empty()));
 
 template <class R>
-concept SizeIsInvocable = requires(cuda::std::ranges::ref_view<R> view) { view.size(); };
+_CCCL_CONCEPT SizeIsInvocable = _CCCL_REQUIRES_EXPR((R), cuda::std::ranges::ref_view<R> view)((view.size()));
 
 template <class R>
-concept DataIsInvocable = requires(cuda::std::ranges::ref_view<R> view) { view.data(); };
-#else // ^^^ C++20 ^^^ / vvv C++17 vvv
-template <class R>
-_CCCL_CONCEPT_FRAGMENT(EmptyIsInvocable_, requires(cuda::std::ranges::ref_view<R> view)((view.empty())));
-template <class R>
-_CCCL_CONCEPT EmptyIsInvocable = _CCCL_FRAGMENT(EmptyIsInvocable_, R);
-
-template <class R>
-_CCCL_CONCEPT_FRAGMENT(SizeIsInvocable_, requires(cuda::std::ranges::ref_view<R> view)((view.size())));
-template <class R>
-_CCCL_CONCEPT SizeIsInvocable = _CCCL_FRAGMENT(SizeIsInvocable_, R);
-
-template <class R>
-_CCCL_CONCEPT_FRAGMENT(DataIsInvocable_, requires(cuda::std::ranges::ref_view<R> view)((view.data())));
-template <class R>
-_CCCL_CONCEPT DataIsInvocable = _CCCL_FRAGMENT(DataIsInvocable_, R);
-#endif // TEST_STD_VER <= 2017
+_CCCL_CONCEPT DataIsInvocable = _CCCL_REQUIRES_EXPR((R), cuda::std::ranges::ref_view<R> view)((view.data()));
 
 // Testing ctad.
 static_assert(cuda::std::same_as<decltype(cuda::std::ranges::ref_view(cuda::std::declval<Range&>())),

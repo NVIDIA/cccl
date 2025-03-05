@@ -96,20 +96,20 @@ int main(int, char**)
   //  test<long double, float>();
   //  test<long double, double>();
 
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _LIBCUDACXX_HAS_NVFP16()
   test<__half, float>();
   test<__half, double>();
   test<int, __half>();
   test<unsigned, __half>();
   test<long long, __half>();
-#endif // _LIBCUDACXX_HAS_NVFP16
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16, float>();
   test<__nv_bfloat16, double>();
   test<int, __nv_bfloat16>();
   test<unsigned, __nv_bfloat16>();
   test<long long, __nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
   return 0;
 }

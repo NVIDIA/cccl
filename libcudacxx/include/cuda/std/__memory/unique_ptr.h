@@ -23,11 +23,11 @@
 #endif // no system header
 
 #include <cuda/std/cstddef>
-#ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/__compare/compare_three_way.h>
 #  include <cuda/std/__compare/compare_three_way_result.h>
 #  include <cuda/std/__compare/three_way_comparable.h>
-#endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #include <cuda/std/__functional/hash.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__memory/allocator_traits.h> // __pointer
@@ -574,7 +574,7 @@ _LIBCUDACXX_HIDE_FROM_ABI
   return !(__x < __y);
 }
 
-#ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  if _CCCL_STD_VER >= 2020
 template <class _T1, class _D1, class _T2, class _D2>
   requires three_way_comparable_with<typename unique_ptr<_T1, _D1>::pointer, typename unique_ptr<_T2, _D2>::pointer>
@@ -585,7 +585,7 @@ operator<=>(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
   return compare_three_way()(__x.get(), __y.get());
 }
 #  endif // _CCCL_STD_VER >= 2020
-#endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 template <class _T1, class _D1>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator==(const unique_ptr<_T1, _D1>& __x, nullptr_t) noexcept
@@ -672,7 +672,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator>=(nullptr_t, const
   return !(nullptr < __x);
 }
 
-#ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  if _CCCL_STD_VER >= 2020
 template <class _T1, class _D1>
   requires three_way_comparable<typename unique_ptr<_T1, _D1>::pointer>
@@ -682,7 +682,7 @@ operator<=>(const unique_ptr<_T1, _D1>& __x, nullptr_t)
   return compare_three_way()(__x.get(), static_cast<typename unique_ptr<_T1, _D1>::pointer>(nullptr));
 }
 #  endif // _CCCL_STD_VER >= 2020
-#endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 template <class _Tp>
 struct __unique_if

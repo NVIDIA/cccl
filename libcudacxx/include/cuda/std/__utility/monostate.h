@@ -20,9 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
-#ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/__compare/ordering.h>
-#endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #include <cuda/std/__functional/hash.h>
 #include <cuda/std/cstddef>
 
@@ -45,14 +45,14 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator!=(monostate, monostate) noexce
 
 #endif // _CCCL_STD_VER < 2020
 
-#if _CCCL_STD_VER >= 2020 && !defined(_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR)
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 _LIBCUDACXX_HIDE_FROM_ABI constexpr strong_ordering operator<=>(monostate, monostate) noexcept
 {
   return strong_ordering::equal;
 }
 
-#else // _CCCL_STD_VER >= 2020
+#else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator<(monostate, monostate) noexcept
 {
@@ -74,7 +74,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator>=(monostate, monostate) noexce
   return true;
 }
 
-#endif // _CCCL_STD_VER >= 2020
+#endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 #ifndef __cuda_std__
 template <>

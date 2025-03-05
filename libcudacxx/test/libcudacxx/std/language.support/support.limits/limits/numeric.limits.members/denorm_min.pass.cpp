@@ -55,16 +55,16 @@ int main(int, char**)
 #if defined(__FLT_DENORM_MIN__) // guarded because these macros are extensions.
   test<float>(__FLT_DENORM_MIN__);
   test<double>(__DBL_DENORM_MIN__);
-#  ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#  if _CCCL_HAS_LONG_DOUBLE()
   test<long double>(__LDBL_DENORM_MIN__);
-#  endif
+#  endif // _CCCL_HAS_LONG_DOUBLE()
 #endif
 #if defined(FLT_TRUE_MIN) // not currently provided on linux.
   test<float>(FLT_TRUE_MIN);
   test<double>(DBL_TRUE_MIN);
-#  ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#  if _CCCL_HAS_LONG_DOUBLE()
   test<long double>(LDBL_TRUE_MIN);
-#  endif
+#  endif // _CCCL_HAS_LONG_DOUBLE()
 #endif
 #if _CCCL_HAS_NVFP16()
   test<__half>(__double2half(5.9604644775390625e-08));
@@ -72,20 +72,24 @@ int main(int, char**)
 #if _CCCL_HAS_NVBF16()
   test<__nv_bfloat16>(__double2bfloat16(9.18354961579912115600575419705e-41));
 #endif // _CCCL_HAS_NVBF16
-#if _CCCL_HAS_NVFP8()
+#if _CCCL_HAS_NVFP8_E4M3()
   test<__nv_fp8_e4m3>(make_fp8_e4m3(0.001953125));
+#endif // _CCCL_HAS_NVFP8_E4M3()
+#if _CCCL_HAS_NVFP8_E5M2()
   test<__nv_fp8_e5m2>(make_fp8_e5m2(0.0000152587890625));
-#  if _CCCL_CUDACC_AT_LEAST(12, 8)
+#endif // _CCCL_HAS_NVFP8_E5M2()
+#if _CCCL_HAS_NVFP8_E8M0()
   test<__nv_fp8_e8m0>(__nv_fp8_e8m0{});
-#  endif // _CCCL_CUDACC_AT_LEAST(12, 8)
-#endif // _CCCL_HAS_NVFP8()
-#if _CCCL_HAS_NVFP6()
+#endif // _CCCL_HAS_NVFP8_E8M0()
+#if _CCCL_HAS_NVFP6_E2M3()
   test<__nv_fp6_e2m3>(make_fp6_e2m3(0.125));
+#endif // _CCCL_HAS_NVFP6_E2M3()
+#if _CCCL_HAS_NVFP6_E3M2()
   test<__nv_fp6_e3m2>(make_fp6_e3m2(0.0625));
-#endif // _CCCL_HAS_NVFP6
-#if _CCCL_HAS_NVFP4()
+#endif // _CCCL_HAS_NVFP6_E3M2()
+#if _CCCL_HAS_NVFP4_E2M1()
   test<__nv_fp4_e2m1>(make_fp4_e2m1(0.5));
-#endif // _CCCL_HAS_NVFP4
+#endif // _CCCL_HAS_NVFP4_E2M1()
 
 #if !defined(__FLT_DENORM_MIN__) && !defined(FLT_TRUE_MIN)
 #  error Test has no expected values for floating point types

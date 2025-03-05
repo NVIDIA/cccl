@@ -12,7 +12,7 @@
 void segmented_reduce(
   cccl_iterator_t input,
   cccl_iterator_t output,
-  unsigned long long num_segments,
+  uint64_t num_segments,
   cccl_iterator_t start_offsets,
   cccl_iterator_t end_offsets,
   cccl_op_t op,

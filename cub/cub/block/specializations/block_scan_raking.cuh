@@ -787,9 +787,4 @@ struct BlockScanRaking
 };
 } // namespace detail
 
-template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z, bool MEMOIZE>
-using BlockScanRaking CCCL_DEPRECATED_BECAUSE(
-  "This class is considered an implementation detail and the public interface will be "
-  "removed.") = detail::BlockScanRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z, MEMOIZE>;
-
 CUB_NAMESPACE_END

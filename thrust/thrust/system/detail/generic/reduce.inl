@@ -62,8 +62,8 @@ template <typename ExecutionPolicy, typename RandomAccessIterator, typename Outp
 _CCCL_HOST_DEVICE OutputType reduce(
   thrust::execution_policy<ExecutionPolicy>&, RandomAccessIterator, RandomAccessIterator, OutputType, BinaryFunction)
 {
-  THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<RandomAccessIterator, false>::value),
-                           "unimplemented for this system");
+  static_assert(thrust::detail::depend_on_instantiation<RandomAccessIterator, false>::value,
+                "unimplemented for this system");
   return OutputType();
 } // end reduce()
 

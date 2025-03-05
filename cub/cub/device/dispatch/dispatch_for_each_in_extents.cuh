@@ -47,9 +47,9 @@
 
 #  include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#  include <cuda/std/__type_traits/integral_constant.h> // std::integral_constant
-#  include <cuda/std/__utility/integer_sequence.h> // std::index_sequence
-#  include <cuda/std/array> // std::array
+#  include <cuda/std/__type_traits/integral_constant.h> // cuda::std::integral_constant
+#  include <cuda/std/__utility/integer_sequence.h> // cuda::std::index_sequence
+#  include <cuda/std/array> // cuda::std::array
 #  include <cuda/std/cstddef> // size_t
 
 #  define _CUB_RETURN_IF_ERROR(STATUS)       \

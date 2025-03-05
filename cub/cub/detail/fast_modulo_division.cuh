@@ -41,7 +41,7 @@
 #include <cub/util_type.cuh> // _CCCL_HAS_INT128()
 
 #include <cuda/cmath> // cuda::std::ceil_div
-#include <cuda/std/bit> // std::has_single_bit
+#include <cuda/std/bit> // cuda::std::has_single_bit
 #include <cuda/std/climits> // CHAR_BIT
 #include <cuda/std/cstdint> // uint64_t
 #include <cuda/std/limits> // numeric_limits

@@ -86,10 +86,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits
   typedef _CharT char_type;
   typedef int int_type;
   typedef streamoff off_type;
-#ifndef _LIBCUDACXX_HAS_NO_WCHAR_H
+#if _LIBCUDACXX_HAS_WCHAR_H()
   typedef streampos pos_type;
   typedef mbstate_t state_type;
-#endif // !_LIBCUDACXX_HAS_NO_WCHAR_H
+#endif // _LIBCUDACXX_HAS_WCHAR_H()
 
   _LIBCUDACXX_HIDE_FROM_ABI static void constexpr assign(char_type& __c1, const char_type& __c2) noexcept
   {
@@ -236,10 +236,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char>
   typedef char char_type;
   typedef int int_type;
   typedef streamoff off_type;
-#ifndef _LIBCUDACXX_HAS_NO_WCHAR_H
+#if _LIBCUDACXX_HAS_WCHAR_H()
   typedef streampos pos_type;
   typedef mbstate_t state_type;
-#endif // !_LIBCUDACXX_HAS_NO_WCHAR_H
+#endif // _LIBCUDACXX_HAS_WCHAR_H()
 
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr void assign(char_type& __c1, const char_type& __c2) noexcept
   {
@@ -370,7 +370,7 @@ char_traits<char>::find(const char_type* __s, size_t __n, const char_type& __a) 
 
 // char_traits<wchar_t>
 
-#ifndef _LIBCUDACXX_HAS_NO_WCHAR_H
+#if _LIBCUDACXX_HAS_WCHAR_H()
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<wchar_t>
 {
@@ -460,7 +460,7 @@ char_traits<wchar_t>::compare(const char_type* __s1, const char_type* __s2, size
   return 0;
 #  endif
 }
-#endif // !_LIBCUDACXX_HAS_NO_WCHAR_H
+#endif // _LIBCUDACXX_HAS_WCHAR_H()
 
 template <class _Traits>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t __char_traits_length_checked(const typename _Traits::char_type* __s) noexcept
@@ -476,7 +476,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t __char_traits_length_checked(const ty
 #endif
 }
 
-#ifndef _LIBCUDACXX_HAS_NO_WCHAR_H
+#if _LIBCUDACXX_HAS_WCHAR_H()
 _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t char_traits<wchar_t>::length(const char_type* __s) noexcept
 {
 #  if _CCCL_HAS_FEATURE(cxx_constexpr_string_builtins)
@@ -512,9 +512,9 @@ char_traits<wchar_t>::find(const char_type* __s, size_t __n, const char_type& __
   return nullptr;
 #  endif
 }
-#endif // !_LIBCUDACXX_HAS_NO_WCHAR_H
+#endif // _LIBCUDACXX_HAS_WCHAR_H()
 
-#ifndef _LIBCUDACXX_HAS_NO_CHAR8_T
+#if _LIBCUDACXX_HAS_CHAR8_T()
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char8_t>
@@ -522,10 +522,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char8_t>
   typedef char8_t char_type;
   typedef unsigned int int_type;
   typedef streamoff off_type;
-#  ifndef _LIBCUDACXX_HAS_NO_WCHAR_H
+#  if _LIBCUDACXX_HAS_WCHAR_H()
   typedef u8streampos pos_type;
   typedef mbstate_t state_type;
-#  endif // !_LIBCUDACXX_HAS_NO_WCHAR_H
+#  endif // _LIBCUDACXX_HAS_WCHAR_H()
 
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr void assign(char_type& __c1, const char_type& __c2) noexcept
   {
@@ -636,7 +636,7 @@ char_traits<char8_t>::find(const char_type* __s, size_t __n, const char_type& __
   return 0;
 }
 
-#endif // #_LIBCUDACXX_HAS_NO_CHAR8_T
+#endif // _LIBCUDACXX_HAS_CHAR8_T()
 
 #ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
 
@@ -646,10 +646,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char16_t>
   typedef char16_t char_type;
   typedef uint_least16_t int_type;
   typedef streamoff off_type;
-#  ifndef _LIBCUDACXX_HAS_NO_WCHAR_H
+#  if _LIBCUDACXX_HAS_WCHAR_H()
   typedef u16streampos pos_type;
   typedef mbstate_t state_type;
-#  endif // !_LIBCUDACXX_HAS_NO_WCHAR_H
+#  endif // _LIBCUDACXX_HAS_WCHAR_H()
 
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr void assign(char_type& __c1, const char_type& __c2) noexcept
   {
@@ -787,10 +787,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char32_t>
   typedef char32_t char_type;
   typedef uint_least32_t int_type;
   typedef streamoff off_type;
-#  ifndef _LIBCUDACXX_HAS_NO_WCHAR_H
+#  if _LIBCUDACXX_HAS_WCHAR_H()
   typedef u32streampos pos_type;
   typedef mbstate_t state_type;
-#  endif // !_LIBCUDACXX_HAS_NO_WCHAR_H
+#  endif // _LIBCUDACXX_HAS_WCHAR_H()
 
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr void assign(char_type& __c1, const char_type& __c2) noexcept
   {

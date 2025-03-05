@@ -12,7 +12,7 @@ import numba
 import numpy as np
 from numba import cuda, types
 
-from ._utils.protocols import get_dtype, is_contiguous
+from ._utils.protocols import get_data_pointer, get_dtype, is_contiguous
 from .iterators._iterators import IteratorBase
 from .typing import DeviceArrayLike, GpuStruct
 
@@ -47,8 +47,8 @@ class IteratorKind(ctypes.c_int):
 # MUST match `cccl_type_info` in c/include/cccl/c/types.h
 class TypeInfo(ctypes.Structure):
     _fields_ = [
-        ("size", ctypes.c_int),
-        ("alignment", ctypes.c_int),
+        ("size", ctypes.c_size_t),
+        ("alignment", ctypes.c_size_t),
         ("type", TypeEnum),
     ]
 
@@ -60,8 +60,8 @@ class Op(ctypes.Structure):
         ("name", ctypes.c_char_p),
         ("ltoir", ctypes.c_char_p),
         ("ltoir_size", ctypes.c_int),
-        ("size", ctypes.c_int),
-        ("alignment", ctypes.c_int),
+        ("size", ctypes.c_size_t),
+        ("alignment", ctypes.c_size_t),
         ("state", ctypes.c_void_p),
     ]
 
@@ -69,8 +69,8 @@ class Op(ctypes.Structure):
 # MUST match `cccl_iterator_t` in c/include/cccl/c/types.h
 class Iterator(ctypes.Structure):
     _fields_ = [
-        ("size", ctypes.c_int),
-        ("alignment", ctypes.c_int),
+        ("size", ctypes.c_size_t),
+        ("alignment", ctypes.c_size_t),
         ("type", IteratorKind),
         ("advance", Op),
         ("dereference", Op),
@@ -99,7 +99,7 @@ class DeviceReduceBuildResult(ctypes.Structure):
         ("cubin", ctypes.c_void_p),
         ("cubin_size", ctypes.c_size_t),
         ("library", ctypes.c_void_p),
-        ("accumulator_size", ctypes.c_ulonglong),
+        ("accumulator_size", ctypes.c_uint64),
         ("single_tile_kernel", ctypes.c_void_p),
         ("single_tile_second_kernel", ctypes.c_void_p),
         ("reduction_kernel", ctypes.c_void_p),
@@ -118,6 +118,18 @@ class DeviceScanBuildResult(ctypes.Structure):
         ("scan_kernel", ctypes.c_void_p),
         ("description_bytes_per_tile", ctypes.c_size_t),
         ("payload_bytes_per_tile", ctypes.c_size_t),
+    ]
+
+
+# MUST match `cccl_device_segmented_reduce_build_result_t` in c/include/cccl/c/segmented_reduce.h
+class DeviceSegmentedReduceBuildResult(ctypes.Structure):
+    _fields_ = [
+        ("cc", ctypes.c_int),
+        ("cubin", ctypes.c_void_p),
+        ("cubin_size", ctypes.c_size_t),
+        ("library", ctypes.c_void_p),
+        ("accumulator_size", ctypes.c_uint64),
+        ("segmented_reduce_kernel", ctypes.c_void_p),
     ]
 
 
@@ -171,9 +183,12 @@ def _device_array_to_cccl_iter(array: DeviceArrayLike) -> Iterator:
     if not is_contiguous(array):
         raise ValueError("Non-contiguous arrays are not supported.")
     info = _numpy_type_to_info(get_dtype(array))
+    # state is a pointer, size and alignment of iterator
+    # is that of a integral type that holds a pointer
+    state_info = _numpy_type_to_info(np.dtype(np.uintp))
     return Iterator(
-        info.size,
-        info.alignment,
+        state_info.size,
+        state_info.alignment,
         IteratorKind.POINTER,
         Op(),
         Op(),
@@ -283,3 +298,10 @@ def to_cccl_op(op: Callable, sig) -> Op:
         None,
         _data=(ltoir, name),  # keep a reference to these in a _data attribute
     )
+
+
+def set_cccl_iterator_state(cccl_it: Iterator, input_it):
+    if cccl_it.type.value == IteratorKind.POINTER:
+        cccl_it.state = get_data_pointer(input_it)
+    else:
+        cccl_it.state = input_it.state

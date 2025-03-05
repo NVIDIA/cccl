@@ -47,7 +47,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     State* state_;
   };
   {
-    optional<int> opt;
+    optional<int> opt{};
     static_assert(noexcept(opt = nullopt) == true, "");
     opt = nullopt;
     assert(static_cast<bool>(opt) == false);
@@ -57,8 +57,22 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     opt = nullopt;
     assert(static_cast<bool>(opt) == false);
   }
+#ifdef CCCL_ENABLE_OPTIONAL_REF
   {
-    optional<StateTracker> opt;
+    optional<int&> opt{};
+    static_assert(noexcept(opt = nullopt) == true, "");
+    opt = nullopt;
+    assert(static_cast<bool>(opt) == false);
+  }
+  {
+    int val{3};
+    optional<int&> opt(val);
+    opt = nullopt;
+    assert(static_cast<bool>(opt) == false);
+  }
+#endif // CCCL_ENABLE_OPTIONAL_REF
+  {
+    optional<StateTracker> opt{};
     opt = nullopt;
     assert(state == State::inactive);
     assert(static_cast<bool>(opt) == false);
@@ -82,7 +96,7 @@ int main(int, char**)
   using TT = TestTypes::TestType;
   TT::reset();
   {
-    optional<TT> opt;
+    optional<TT> opt{};
     static_assert(noexcept(opt = nullopt) == true, "");
     assert(TT::destroyed() == 0);
     opt = nullopt;

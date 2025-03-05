@@ -73,8 +73,7 @@ template <typename ExecutionPolicy, typename InputIterator, typename OutputItera
 _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
   thrust::execution_policy<ExecutionPolicy>&, InputIterator, InputIterator, OutputIterator result, BinaryFunction)
 {
-  THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<InputIterator, false>::value),
-                           "unimplemented for this system");
+  static_assert(thrust::detail::depend_on_instantiation<InputIterator, false>::value, "unimplemented for this system");
   return result;
 } // end inclusive_scan
 
@@ -82,8 +81,7 @@ template <typename ExecutionPolicy, typename InputIterator, typename OutputItera
 _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
   thrust::execution_policy<ExecutionPolicy>&, InputIterator, InputIterator, OutputIterator result, T, BinaryFunction)
 {
-  THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<InputIterator, false>::value),
-                           "unimplemented for this system");
+  static_assert(thrust::detail::depend_on_instantiation<InputIterator, false>::value, "unimplemented for this system");
   return result;
 } // end exclusive_scan()
 
