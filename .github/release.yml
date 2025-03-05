@@ -1,24 +1,18 @@
 changelog:
   categories:
-    - title: 💻 C++
-      labels: []
-      sections:
-        - title: 🚀 Thrust / CUB
-          labels:
-            - "thrust"
-            - "cub"
-        - title: 📚 Libcudacxx
-          labels:
-            - "libcu++"
-    - title: 🐍 Python
-      labels: []
-      sections:
-        - title: 🤝 cuda.cooperative
-          labels:
-            - "cuda.cooperative"
-        - title: ⚡ cuda.parallel
-          labels:
-            - "cuda.parallel"
+    - title: 💻 C++ - 🚀 Thrust / CUB
+      labels:
+        - "thrust"
+        - "cub"
+    - title: 💻 C++ - 📚 Libcudacxx
+      labels:
+        - "libcu++"
+    - title: 🐍 Python - 🤝 cuda.cooperative
+      labels:
+        - "cuda.cooperative"
+    - title: 🐍 Python - ⚡ cuda.parallel 
+      labels:
+        - "cuda.parallel"
     - title: 📝 Documentation
       labels:
         - "doc"
