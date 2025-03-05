@@ -23,29 +23,27 @@
 
 using namespace cuda::experimental::stf;
 
-void worker(stackable_ctx sctx,
-            int id,
-            int main_head,
-            stackable_logical_data<slice<int>> lAi,
-            stackable_logical_data<slice<int>> lB)
+void worker(
+  stackable_ctx sctx, int main_head, stackable_logical_data<slice<int>> lAi, stackable_logical_data<slice<int>> lB)
 {
-  fprintf(stderr, "launching thread %d\n", id);
   sctx.set_head_offset(main_head);
+  sctx.push();
 
-  for (size_t k = 0; k < 3; k++)
-  {
-    sctx.push();
+  auto lC = sctx.logical_data_no_export(lB.shape());
 
-    sctx.parallel_for(lAi.shape(), lAi.write())->*[] __device__(size_t k, auto ai) {
-      ai(k) = k;
-    };
+  sctx.parallel_for(lC.shape(), lC.write(), lB.read())->*[] __device__(size_t k, auto c, auto b) {
+    c(k) = b(k);
+  };
 
-    sctx.parallel_for(lAi.shape(), lAi.rw(), lB.read())->*[] __device__(size_t k, auto ai, auto b) {
-      ai(k) += int(cos(10.0 * b(k)));
-    };
+  sctx.parallel_for(lAi.shape(), lAi.write())->*[] __device__(size_t k, auto ai) {
+    ai(k) = k;
+  };
 
-    sctx.pop();
-  }
+  sctx.parallel_for(lAi.shape(), lAi.rw(), lC.read())->*[] __device__(size_t k, auto ai, auto c) {
+    ai(k) += int(sin(cos(cos(10.0 * c(k)))));
+  };
+
+  sctx.pop();
 }
 
 int main()
@@ -65,21 +63,28 @@ int main()
 
   int main_head = sctx.get_head_offset();
 
-  ::std::vector<::std::thread> threads;
   ::std::vector<stackable_logical_data<slice<int>>> lA;
 
-  const int NTHREADS = 4;
+  const int NTHREADS = 8;
 
   for (int i = 0; i < NTHREADS; ++i)
   {
     lA.push_back(sctx.logical_data(shape_of<slice<int>>(N)));
-
-    threads.emplace_back(worker, sctx, i, main_head, lA[i], lB);
   }
 
-  for (int i = 0; i < NTHREADS; ++i)
+  for (int k = 0; k < 30; k++)
   {
-    threads[i].join();
+    ::std::vector<::std::thread> threads;
+
+    for (int i = 0; i < NTHREADS; ++i)
+    {
+      threads.emplace_back(worker, sctx, main_head, lA[i], lB);
+    }
+
+    for (int i = 0; i < NTHREADS; ++i)
+    {
+      threads[i].join();
+    }
   }
 
   sctx.finalize();
