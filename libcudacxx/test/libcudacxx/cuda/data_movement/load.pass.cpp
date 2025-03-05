@@ -29,34 +29,26 @@ template <typename Access, typename Eviction>
 __device__ void load_call(Access access, Eviction eviction)
 {
   load_call(access, eviction, cuda::device::prefetch_spatial_none);
-#if __CUDA_ARCH__ >= 750
   load_call(access, eviction, cuda::device::prefetch_64B);
   load_call(access, eviction, cuda::device::prefetch_128B);
-#  if __CUDA_ARCH__ >= 800
   load_call(access, eviction, cuda::device::prefetch_256B);
-#  endif
-#endif
 }
 
 template <typename Access>
 __device__ void load_call(Access access)
 {
   load_call(access, cuda::device::eviction_none);
-#if __CUDA_ARCH__ >= 700
   load_call(access, cuda::device::eviction_normal);
   load_call(access, cuda::device::eviction_unchanged);
   load_call(access, cuda::device::eviction_first);
   load_call(access, cuda::device::eviction_last);
   load_call(access, cuda::device::eviction_no_alloc);
-#endif
 }
 
 __global__ void load_kernel()
 {
   load_call(cuda::device::read_write);
-#if __CUDA_ARCH__ >= 700
   load_call(cuda::device::read_only);
-#endif
 }
 
 //----------------------------------------------------------------------------------------------------------------------

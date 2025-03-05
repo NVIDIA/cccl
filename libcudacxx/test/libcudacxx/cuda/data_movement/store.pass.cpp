@@ -26,13 +26,11 @@ __device__ void store_call(Eviction eviction)
 __global__ void store_kernel()
 {
   store_call(cuda::device::eviction_none);
-#if __CUDA_ARCH__ >= 700
   store_call(cuda::device::eviction_normal);
   store_call(cuda::device::eviction_unchanged);
   store_call(cuda::device::eviction_first);
   store_call(cuda::device::eviction_last);
   store_call(cuda::device::eviction_no_alloc);
-#endif
 }
 
 //----------------------------------------------------------------------------------------------------------------------
