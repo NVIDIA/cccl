@@ -50,6 +50,9 @@ using _BoolConstant _LIBCUDACXX_DEPRECATED _CCCL_NODEBUG_ALIAS = integral_consta
 template <bool __b>
 using bool_constant = integral_constant<bool, __b>;
 
+template <size_t __v>
+using __index_constant = integral_constant<size_t, __v>;
+
 // deprecated [Since 2.7.0]
 #define _LIBCUDACXX_BOOL_CONSTANT(__b) bool_constant<(__b)>
 
