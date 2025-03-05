@@ -83,7 +83,7 @@ public:
   }
 
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI
-    typename offset_policy::data_handle_type constexpr offset(data_handle_type __p, size_t __i) const
+  typename offset_policy::data_handle_type constexpr offset(data_handle_type __p, size_t __i) const
   {
     return __nested_accessor_.offset(__p, __i);
   }
@@ -112,10 +112,11 @@ using __scaled_element_type = add_const_t<typename scaled_accessor<_ScalingFacto
 } // namespace __detail
 
 template <class _ScalingFactor, class _ElementType, class _Extents, class _Layout, class _Accessor>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr mdspan<__detail::__scaled_element_type<_ScalingFactor, _Accessor>,
-                                                           _Extents,
-                                                           _Layout,
-                                                           scaled_accessor<_ScalingFactor, _Accessor>>
+_CCCL_NODISCARD
+_LIBCUDACXX_HIDE_FROM_ABI constexpr mdspan<__detail::__scaled_element_type<_ScalingFactor, _Accessor>,
+                                           _Extents,
+                                           _Layout,
+                                           scaled_accessor<_ScalingFactor, _Accessor>>
 scaled(_ScalingFactor __scaling_factor, mdspan<_ElementType, _Extents, _Layout, _Accessor> __x)
 {
   using __acc_type = scaled_accessor<_ScalingFactor, _Accessor>;
