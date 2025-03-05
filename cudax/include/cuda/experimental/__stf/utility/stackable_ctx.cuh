@@ -312,9 +312,9 @@ public:
     impl(const impl&)            = delete;
     impl& operator=(const impl&) = delete;
 
-    // Define move constructor and move assignment operator
-    impl(impl&&) noexcept            = default;
-    impl& operator=(impl&&) noexcept = default;
+    // Non movable
+    impl(impl&&) noexcept            = delete;
+    impl& operator=(impl&&) noexcept = delete;
 
     /**
      * @brief Create a new nested level
@@ -1243,9 +1243,9 @@ class stackable_logical_data
     impl(const impl&)            = delete;
     impl& operator=(const impl&) = delete;
 
-    // Define move constructor and move assignment operator
-    impl(impl&&) noexcept            = default;
-    impl& operator=(impl&&) noexcept = default;
+    // Non movable
+    impl(impl&&) noexcept            = delete;
+    impl& operator=(impl&&) noexcept = delete;
 
     ::std::shared_lock<::std::shared_mutex> get_read_lock() const
     {
