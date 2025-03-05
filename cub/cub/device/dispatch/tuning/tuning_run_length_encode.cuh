@@ -46,7 +46,8 @@
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/std/__algorithm/max.h>
+#include <cuda/cmath>
+#include <cuda/std/__algorithm_>
 
 CUB_NAMESPACE_BEGIN
 
@@ -315,9 +316,8 @@ struct policy_hub
     static constexpr int items =
       (max_input_bytes <= 8)
         ? 6
-        // TODO(bgruber): use clamp() and ceil_div in C++14
-        : CUB_MIN(nominal_4B_items_per_thread,
-                  CUB_MAX(1, ((nominal_4B_items_per_thread * 8) + combined_input_bytes - 1) / combined_input_bytes));
+        : ::cuda::std::clamp(
+            ::cuda::ceil_div(nominal_4B_items_per_thread * 8, combined_input_bytes), 1, nominal_4B_items_per_thread);
     using ReduceByKeyPolicyT =
       AgentReduceByKeyPolicy<128,
                              items,
@@ -603,7 +603,7 @@ struct policy_hub
     static constexpr int nominal_4B_items_per_thread = 15;
     // TODO(bgruber): use clamp() in C++14
     static constexpr int ITEMS_PER_THREAD =
-      CUB_MIN(nominal_4B_items_per_thread, CUB_MAX(1, (nominal_4B_items_per_thread * 4 / sizeof(KeyT))));
+      _CUDA_VSTD::clamp(nominal_4B_items_per_thread * 4 / int{sizeof(KeyT)}, 1, nominal_4B_items_per_thread);
     using RleSweepPolicyT =
       AgentRlePolicy<96,
                      ITEMS_PER_THREAD,

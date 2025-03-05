@@ -54,8 +54,7 @@ _CCCL_HOST_DEVICE OutputIterator merge(
   OutputIterator result,
   StrictWeakOrdering)
 {
-  THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<InputIterator1, false>::value),
-                           "unimplemented for this system");
+  static_assert(thrust::detail::depend_on_instantiation<InputIterator1, false>::value, "unimplemented for this system");
   return result;
 } // end merge()
 
@@ -68,7 +67,7 @@ _CCCL_HOST_DEVICE OutputIterator merge(
   InputIterator2 last2,
   OutputIterator result)
 {
-  using value_type = typename thrust::iterator_value<InputIterator1>::type;
+  using value_type = thrust::detail::it_value_t<InputIterator1>;
   return thrust::merge(exec, first1, last1, first2, last2, result, thrust::less<value_type>());
 } // end merge()
 
@@ -135,7 +134,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
   OutputIterator1 keys_result,
   OutputIterator2 values_result)
 {
-  using value_type = typename thrust::iterator_value<InputIterator1>::type;
+  using value_type = thrust::detail::it_value_t<InputIterator1>;
   return thrust::merge_by_key(
     exec,
     keys_first1,

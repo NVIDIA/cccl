@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cmath/common.h>
+#include <cuda/std/__cmath/fp_utils.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/promote.h>
@@ -61,28 +61,28 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr double lerp(double __a, doub
   return _CUDA_VSTD::__lerp(__a, __b, __t);
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr long double
 lerp(long double __a, long double __b, long double __t) noexcept
 {
   return _CUDA_VSTD::__lerp(__a, __b, __t);
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half lerp(__half __a, __half __b, __half __t) noexcept
 {
   return __float2half(_CUDA_VSTD::__lerp(__half2float(__a), __half2float(__b), __half2float(__t)));
 }
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#if _LIBCUDACXX_HAS_NVBF16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16
 lerp(__nv_bfloat16 __a, __nv_bfloat16 __b, __nv_bfloat16 __t) noexcept
 {
   return __float2bfloat16(_CUDA_VSTD::__lerp(__bfloat162float(__a), __bfloat162float(__b), __bfloat162float(__t)));
 }
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _A1, class _A2, class _A3>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<

@@ -56,8 +56,6 @@
 
 #include <cuda/std/type_traits>
 
-#include <iterator>
-
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -227,10 +225,10 @@ struct AgentSelectIf
   using MemoryOrderedTileStateT = tile_state_with_memory_order<ScanTileStateT, memory_order>;
 
   // The input value type
-  using InputT = value_t<InputIteratorT>;
+  using InputT = it_value_t<InputIteratorT>;
 
   // The flag value type
-  using FlagT = value_t<FlagsInputIteratorT>;
+  using FlagT = it_value_t<FlagsInputIteratorT>;
 
   // Constants
   enum

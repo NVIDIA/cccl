@@ -77,6 +77,8 @@ Feature availability:
 
 -  C++20 ``std::assume_aligned`` in ``<memory>`` is available in C++11.
 
+-  C++20 ``<numbers>`` are available in C++14.
+
 -  C++20 ``<ranges>`` are available in C++17.
 
    -  all ``<ranges>`` concepts are available in C++17. However, they

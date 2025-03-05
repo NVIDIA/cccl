@@ -61,8 +61,8 @@ struct swap_f
   ItemsIt1 items1;
   ItemsIt2 items2;
 
-  using value1_type = typename iterator_traits<ItemsIt1>::value_type;
-  using value2_type = typename iterator_traits<ItemsIt2>::value_type;
+  using value1_type = thrust::detail::it_value_t<ItemsIt1>;
+  using value2_type = thrust::detail::it_value_t<ItemsIt2>;
 
   THRUST_FUNCTION
   swap_f(ItemsIt1 items1_, ItemsIt2 items2_)
@@ -88,7 +88,7 @@ template <class Derived, class ItemsIt1, class ItemsIt2>
 ItemsIt2 _CCCL_HOST_DEVICE
 swap_ranges(execution_policy<Derived>& policy, ItemsIt1 first1, ItemsIt1 last1, ItemsIt2 first2)
 {
-  using size_type = typename iterator_traits<ItemsIt1>::difference_type;
+  using size_type = thrust::detail::it_difference_t<ItemsIt1>;
 
   size_type num_items = static_cast<size_type>(thrust::distance(first1, last1));
 

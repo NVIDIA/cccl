@@ -6,6 +6,8 @@ Extended API
 .. toctree::
    :maxdepth: 2
 
+   extended_api/bit
+   extended_api/execution_model
    extended_api/memory_model
    extended_api/thread_groups
    extended_api/shapes

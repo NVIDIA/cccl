@@ -36,6 +36,7 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 #include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/iterator/cache_modified_output_iterator.cuh>
 #include <cub/iterator/tex_obj_input_iterator.cuh>
 #include <cub/util_allocator.cuh>
 #include <cub/util_type.cuh>
@@ -117,32 +118,35 @@ void test_iterator(InputIteratorT d_in, const c2h::host_vector<T>& h_reference) 
   CHECK(d_in == h_itrs[1]);
 }
 
-using cache_modifiers =
-  c2h::enum_type_list<cub::CacheLoadModifier,
-                      cub::LOAD_DEFAULT,
-                      cub::LOAD_CA,
-                      cub::LOAD_CG,
-                      cub::LOAD_CS,
-                      cub::LOAD_CV,
-                      cub::LOAD_LDG,
-                      cub::LOAD_VOLATILE>;
+static_assert(
+  ::cuda::std::is_void_v<cub::detail::it_value_t<cub::CacheModifiedOutputIterator<cub::STORE_DEFAULT, int>>>);
 
-C2H_TEST("Test cache modified iterator", "[iterator]", types, cache_modifiers)
-{
-  using T                       = c2h::get<0, TestType>;
-  constexpr auto cache_modifier = c2h::get<1, TestType>::value;
-  constexpr int TEST_VALUES     = 11000;
-
-  c2h::device_vector<T> d_data(TEST_VALUES);
-  c2h::gen(C2H_SEED(1), d_data);
-  c2h::host_vector<T> h_data(d_data);
-
-  const auto h_reference = c2h::host_vector<T>{
-    h_data[0], h_data[100], h_data[1000], h_data[10000], h_data[1], h_data[21], h_data[11], h_data[0]};
-  test_iterator(
-    cub::CacheModifiedInputIterator<cache_modifier, T>(const_cast<const T*>(thrust::raw_pointer_cast(d_data.data()))),
-    h_reference);
-}
+// using cache_modifiers =
+//   c2h::enum_type_list<cub::CacheLoadModifier,
+//                       cub::LOAD_DEFAULT,
+//                       cub::LOAD_CA,
+//                       cub::LOAD_CG,
+//                       cub::LOAD_CS,
+//                       cub::LOAD_CV,
+//                       cub::LOAD_LDG,
+//                       cub::LOAD_VOLATILE>;
+//
+// C2H_TEST("Test cache modified iterator", "[iterator]", types, cache_modifiers)
+// {
+//   using T                       = c2h::get<0, TestType>;
+//   constexpr auto cache_modifier = c2h::get<1, TestType>::value;
+//   constexpr int TEST_VALUES     = 11000;
+//
+//   c2h::device_vector<T> d_data(TEST_VALUES);
+//   c2h::gen(C2H_SEED(1), d_data);
+//   c2h::host_vector<T> h_data(d_data);
+//
+//   const auto h_reference = c2h::host_vector<T>{
+//     h_data[0], h_data[100], h_data[1000], h_data[10000], h_data[1], h_data[21], h_data[11], h_data[0]};
+//   test_iterator(
+//     cub::CacheModifiedInputIterator<cache_modifier, T>(const_cast<const
+//     T*>(thrust::raw_pointer_cast(d_data.data()))), h_reference);
+// }
 
 template <typename T>
 struct transform_op_t

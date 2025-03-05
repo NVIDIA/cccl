@@ -116,21 +116,19 @@ struct make_counting_iterator_base
   using system =
     typename eval_if<::cuda::std::is_same<System, use_default>::value, identity_<any_system_tag>, identity_<System>>::type;
 
-  using traversal =
-    typename ia_dflt_help<Traversal,
-                          eval_if<is_numeric<Incrementable>::value,
-                                  identity_<random_access_traversal_tag>,
-                                  iterator_traversal<Incrementable>>>::type;
+  using traversal = replace_if_use_default<
+    Traversal,
+    eval_if<is_numeric<Incrementable>::value, identity_<random_access_traversal_tag>, iterator_traversal<Incrementable>>>;
 
   // unlike Boost, we explicitly use std::ptrdiff_t as the difference type
   // for floating point counting_iterators
   using difference =
-    typename ia_dflt_help<Difference,
-                          eval_if<is_numeric<Incrementable>::value,
-                                  eval_if<::cuda::std::is_integral<Incrementable>::value,
-                                          numeric_difference<Incrementable>,
-                                          identity_<::cuda::std::ptrdiff_t>>,
-                                  iterator_difference<Incrementable>>>::type;
+    replace_if_use_default<Difference,
+                           eval_if<is_numeric<Incrementable>::value,
+                                   eval_if<::cuda::std::is_integral<Incrementable>::value,
+                                           numeric_difference<Incrementable>,
+                                           identity_<::cuda::std::ptrdiff_t>>,
+                                   lazy_trait<it_difference_t, Incrementable>>>;
 
   // our implementation departs from Boost's in that counting_iterator::dereference
   // returns a copy of its counter, rather than a reference to it. returning a reference

@@ -40,11 +40,11 @@
 
 #include <thrust/advance.h>
 #include <thrust/detail/type_traits.h>
-#include <thrust/iterator/detail/minimum_category.h>
 #include <thrust/iterator/detail/minimum_system.h>
 #include <thrust/iterator/detail/tuple_of_iterator_references.h>
 #include <thrust/iterator/iterator_facade.h>
 #include <thrust/iterator/iterator_traits.h>
+#include <thrust/type_traits/integer_sequence.h>
 
 #include <cuda/std/tuple>
 
@@ -55,6 +55,9 @@ class zip_iterator;
 
 namespace detail
 {
+template <typename... Ts>
+using minimum_category = minimum_type<Ts...>;
+
 template <typename IteratorTuple>
 struct make_zip_iterator_base
 {
@@ -64,14 +67,14 @@ struct make_zip_iterator_base
 template <typename... Its>
 struct make_zip_iterator_base<::cuda::std::tuple<Its...>>
 {
-  // reference type is the type of the tuple obtained from the iterators' reference types.
-  using reference = tuple_of_iterator_references<iterator_reference_t<Its>...>;
+  // reference type is the type of the tuple obtained from the iterator's reference types.
+  using reference = tuple_of_iterator_references<it_reference_t<Its>...>;
 
   // Boost's Value type is the same as reference type. using value_type = reference;
-  using value_type = ::cuda::std::tuple<iterator_value_t<Its>...>;
+  using value_type = ::cuda::std::tuple<it_value_t<Its>...>;
 
   // Difference type is the first iterator's difference type
-  using difference_type = iterator_difference_t<::cuda::std::tuple_element_t<0, ::cuda::std::tuple<Its...>>>;
+  using difference_type = it_difference_t<::cuda::std::tuple_element_t<0, ::cuda::std::tuple<Its...>>>;
 
   // Iterator system is the minimum system tag in the iterator tuple
   using system = ::cuda::std::__type_fold_left<::cuda::std::__type_list<iterator_system_t<Its>...>,
@@ -322,3 +325,21 @@ inline _CCCL_HOST_DEVICE zip_iterator<_CUDA_VSTD::tuple<Iterators...>> make_zip_
 //! \} // end iterators
 
 THRUST_NAMESPACE_END
+
+// libcu++ iterator traits fail for complex zip_iterators in C++17, see e.g.: https://godbolt.org/z/7jb4qG3bb
+// The reason is that libcu++ backported the C++20 range iterator machinery to C++17, but C++17 has slightly different
+// language rules, especially regarding `void`. We deemed to it too hard to work around the issues.
+#if _CCCL_STD_VER < 2020
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
+template <typename IteratorTuple>
+struct iterator_traits<THRUST_NS_QUALIFIER::zip_iterator<IteratorTuple>>
+{
+  using It                = THRUST_NS_QUALIFIER::zip_iterator<IteratorTuple>;
+  using value_type        = typename It::value_type;
+  using reference         = typename It::reference;
+  using pointer           = void;
+  using iterator_category = typename It::iterator_category;
+  using difference_type   = typename It::difference_type;
+};
+_LIBCUDACXX_END_NAMESPACE_STD
+#endif // _CCCL_STD_VER < 2020

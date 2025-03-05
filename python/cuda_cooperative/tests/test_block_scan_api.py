@@ -19,11 +19,11 @@ patch.patch_numba_linker(lto=True)
 def test_block_exclusive_sum():
     # example-begin exclusive-sum
     items_per_thread = 4
-    threads_in_block = 128
+    threads_per_block = 128
 
     # Specialize exclusive sum for a 1D block of 128 threads owning 4 integer items each
     block_exclusive_sum = cudax.block.exclusive_sum(
-        numba.int32, threads_in_block, items_per_thread
+        numba.int32, threads_per_block, items_per_thread
     )
 
     # Link the exclusive sum to a CUDA kernel
@@ -43,11 +43,11 @@ def test_block_exclusive_sum():
 
     # example-end exclusive-sum
 
-    tile_size = threads_in_block * items_per_thread
+    tile_size = threads_per_block * items_per_thread
 
     h_keys = np.ones(tile_size, dtype=np.int32)
     d_keys = cuda.to_device(h_keys)
-    kernel[1, threads_in_block](d_keys)
+    kernel[1, threads_per_block](d_keys)
     h_keys = d_keys.copy_to_host()
     for i in range(tile_size):
         assert h_keys[i] == i
@@ -55,11 +55,11 @@ def test_block_exclusive_sum():
 
 def test_block_exclusive_sum_single_input_per_thread():
     # example-begin exclusive-sum-single-input-per-thread
-    threads_in_block = 128
+    threads_per_block = 128
 
     # Specialize exclusive sum for a 1D block of 128 threads.  Each thread
     # owns a single integer item.
-    block_exclusive_sum = cudax.block.exclusive_sum(numba.int32, threads_in_block)
+    block_exclusive_sum = cudax.block.exclusive_sum(numba.int32, threads_per_block)
 
     # Link the exclusive sum to a CUDA kernel
     @cuda.jit(link=block_exclusive_sum.files)
@@ -74,11 +74,11 @@ def test_block_exclusive_sum_single_input_per_thread():
 
     # example-end exclusive-sum-single-input-per-thread
 
-    tile_size = threads_in_block
+    tile_size = threads_per_block
 
     h_keys = np.ones(tile_size, dtype=np.int32)
     d_keys = cuda.to_device(h_keys)
-    kernel[1, threads_in_block](d_keys)
+    kernel[1, threads_per_block](d_keys)
     h_keys = d_keys.copy_to_host()
     for i in range(tile_size):
         assert h_keys[i] == i

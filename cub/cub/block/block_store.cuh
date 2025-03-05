@@ -175,7 +175,7 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ITEMS_PER_
   enum
   {
     // Maximum CUDA vector size is 4 elements
-    MAX_VEC_SIZE = CUB_MIN(4, ITEMS_PER_THREAD),
+    MAX_VEC_SIZE = _CUDA_VSTD::min(4, ITEMS_PER_THREAD),
 
     // Vector size must be a power of two and an even divisor of the items per thread
     VEC_SIZE =
@@ -1227,7 +1227,7 @@ public:
 };
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-template <class Policy, class It, class T = cub::detail::value_t<It>>
+template <class Policy, class It, class T = cub::detail::it_value_t<It>>
 struct BlockStoreType
 {
   using type = cub::BlockStore<T, Policy::BLOCK_THREADS, Policy::ITEMS_PER_THREAD, Policy::STORE_ALGORITHM>;

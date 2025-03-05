@@ -34,10 +34,14 @@ template <class Iter>
 using rev_rev_iter = rev_iter<rev_iter<Iter>>;
 
 static_assert(cuda::std::is_same<UnwrapT<int*>, int*>::value, "");
+#ifndef _LIBCUDACXX_ENABLE_DEBUG_MODE
 static_assert(cuda::std::is_same<UnwrapT<cuda::std::__wrap_iter<int*>>, int*>::value, "");
+#endif // _LIBCUDACXX_ENABLE_DEBUG_MODE
 static_assert(cuda::std::is_same<UnwrapT<rev_iter<int*>>, cuda::std::reverse_iterator<int*>>::value, "");
 static_assert(cuda::std::is_same<UnwrapT<rev_rev_iter<int*>>, int*>::value, "");
+#ifndef _LIBCUDACXX_ENABLE_DEBUG_MODE
 static_assert(cuda::std::is_same<UnwrapT<rev_rev_iter<cuda::std::__wrap_iter<int*>>>, int*>::value, "");
+#endif // _LIBCUDACXX_ENABLE_DEBUG_MODE
 static_assert(cuda::std::is_same<UnwrapT<rev_rev_iter<rev_iter<cuda::std::__wrap_iter<int*>>>>,
                                  rev_iter<cuda::std::__wrap_iter<int*>>>::value,
               "");

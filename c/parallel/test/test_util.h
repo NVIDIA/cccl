@@ -321,11 +321,13 @@ struct pointer_t
   operator cccl_iterator_t()
   {
     cccl_iterator_t it;
-    it.size       = sizeof(T);
-    it.alignment  = alignof(T);
-    it.type       = cccl_iterator_kind_t::CCCL_POINTER;
-    it.state      = ptr;
-    it.value_type = get_type_info<T>();
+    it.size        = sizeof(T);
+    it.alignment   = alignof(T);
+    it.type        = cccl_iterator_kind_t::CCCL_POINTER;
+    it.state       = ptr;
+    it.value_type  = get_type_info<T>();
+    it.advance     = {};
+    it.dereference = {};
     return it;
   }
 
@@ -349,6 +351,9 @@ struct operation_t
     op.name       = name.c_str();
     op.ltoir      = code.c_str();
     op.ltoir_size = code.size();
+    op.size       = 1;
+    op.alignment  = 1;
+    op.state      = nullptr;
     return op;
   }
 };

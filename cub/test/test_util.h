@@ -45,6 +45,8 @@
 
 #include <thrust/iterator/discard_iterator.h>
 
+#include <cuda/std/__algorithm_>
+
 #include <cfloat>
 #include <cmath>
 #include <cstddef>
@@ -505,8 +507,8 @@ void RandomBits(K& key, int entropy_reduction = 0, int begin_bit = 0, int end_bi
       int current_bit = j * WORD_BYTES * 8;
 
       unsigned int word = 0xffffffff;
-      word &= 0xffffffff << CUB_MAX(0, begin_bit - current_bit);
-      word &= 0xffffffff >> CUB_MAX(0, (current_bit + (WORD_BYTES * 8)) - end_bit);
+      word &= 0xffffffff << ::cuda::std::max(0, begin_bit - current_bit);
+      word &= 0xffffffff >> ::cuda::std::max(0, (current_bit + (WORD_BYTES * 8)) - end_bit);
 
       for (int i = 0; i <= entropy_reduction; i++)
       {
@@ -966,31 +968,6 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, TestFoo& va
   InitValue(gen_mode, value.w, index);
 }
 
-/// numeric_limits<TestFoo> specialization
-CUB_NAMESPACE_BEGIN
-template <>
-struct NumericTraits<TestFoo>
-{
-  __host__ __device__ static TestFoo Max()
-  {
-    return TestFoo::MakeTestFoo(
-      NumericTraits<long long>::Max(),
-      NumericTraits<int>::Max(),
-      NumericTraits<short>::Max(),
-      NumericTraits<char>::Max());
-  }
-
-  __host__ __device__ static TestFoo Lowest()
-  {
-    return TestFoo::MakeTestFoo(
-      NumericTraits<long long>::Lowest(),
-      NumericTraits<int>::Lowest(),
-      NumericTraits<short>::Lowest(),
-      NumericTraits<char>::Lowest());
-  }
-};
-CUB_NAMESPACE_END
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <>
 class numeric_limits<TestFoo>
@@ -1120,23 +1097,6 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, TestBar& va
   InitValue(gen_mode, value.x, index);
   InitValue(gen_mode, value.y, index);
 }
-
-/// numeric_limits<TestBar> specialization
-CUB_NAMESPACE_BEGIN
-template <>
-struct NumericTraits<TestBar>
-{
-  __host__ __device__ static TestBar Max()
-  {
-    return TestBar(NumericTraits<long long>::Max(), NumericTraits<int>::Max());
-  }
-
-  __host__ __device__ static TestBar Lowest()
-  {
-    return TestBar(NumericTraits<long long>::Lowest(), NumericTraits<int>::Lowest());
-  }
-};
-CUB_NAMESPACE_END
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <>
@@ -1434,7 +1394,7 @@ void InitializeSegments(OffsetT num_items, int num_segments, OffsetT* h_segment_
 
     OffsetT segment_length = RandomValue((expected_segment_length * 2) + 1);
     offset += segment_length;
-    offset = CUB_MIN(offset, num_items);
+    offset = ::cuda::std::min(offset, num_items);
   }
   h_segment_offsets[num_segments] = num_items;
 

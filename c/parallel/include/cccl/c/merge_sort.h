@@ -18,6 +18,7 @@
 
 #include <cccl/c/extern_c.h>
 #include <cccl/c/types.h>
+#include <stdint.h>
 
 CCCL_C_EXTERN_C_BEGIN
 
@@ -54,7 +55,7 @@ CCCL_C_API CUresult cccl_device_merge_sort(
   cccl_iterator_t d_in_items,
   cccl_iterator_t d_out_keys,
   cccl_iterator_t d_out_items,
-  unsigned long long num_items,
+  uint64_t num_items,
   cccl_op_t op,
   CUstream stream);
 

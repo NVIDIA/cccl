@@ -41,6 +41,7 @@ It searches through a space of parameters to find the combination for a given co
 
 * **Search** - a process consisting of covering all variants for all compile-time workloads to find a variant with maximal score.
 
+.. _cub-tuning-authoring-benchmarks:
 
 Authoring Benchmarks
 --------------------------------------------------------------------------------
@@ -90,6 +91,9 @@ and compiling a variant for a given set of tuning parameters.
 When base is used, no policy is specified, so that the default one CUB provides is used.
 If :code:`TUNE_BASE` is not defined, we specify a custom policy
 using the parameter macros defined in the :code:`%RANGE%` comments which specify the search space.
+
+..
+    The following code is repeated further down as well. Please keep in sync!
 
 .. code:: c++
 
@@ -265,20 +269,21 @@ You can then run the tuning search for a specific algorithm and compile-time wor
   cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_11.tpb_10 1.0774560502969677
   ...
 
-This will tune merge sort for key-value pairs, for the key type :code:`int128_t` on :code:`2^28` elements.
+This will search the space of merge sort for key-value pairs, for the key type :code:`int128_t` on :code:`2^28` elements.
 The :code:`-R` and :code:`-a` options are optional. If not specified, all benchmarks are going to be tuned.
 The :code:`-R` option can select multiple benchmarks using a regular expression.
 For the axis option :code:`-a`, you can also specify a range of values like :code:`-a 'KeyT{ct}=[I32,I64]'`.
 Any axis values not supported by a selected benchmark will be ignored.
-The first variant :code:`cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_13.tpb_6` has a score <1 and is thus generally slower than baseline,
+The first variant :code:`cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_13.tpb_6` has a score <1 and is thus generally slower than the baseline,
 whereas the second variant :code:`cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_11.tpb_10` has a score of >1 and is thus an improvement over the baseline.
 
 Notice there is currently a limitation in :code:`search.py`
 which will only execute runs for the first axis value for each axis
 (independently of whether the axis is specified on the command line or not).
+Tuning for multiple axis values requires multiple runs of :code:`search.py`.
 Please see `this issue <https://github.com/NVIDIA/cccl/issues/2267>`_ for more information.
 
-The tuning framework will handle building the benchmarks (base and variants) by itself.
+The tuning framework will handle building the benchmarks (base and variants) and running them by itself.
 It will keep track of the build time for base and variants.
 Sometimes, a tuning variant may lead the compiler to hang or take exceptionally long to compile.
 To keep the tuning process going, if the build time of a variant exceeds a threshold, the build is cancelled.
@@ -302,13 +307,51 @@ you can add the :code:`-l` option:
 It will list all selected benchmarks as well as the total number of variants (the magnitude of the search space)
 as a result of the Cartesian product of all its tuning parameter spaces.
 
+The tuning infrastructure stores results in an SQLite database called :code:`cccl_meta_bench.db` in the build directory.
+This database persists across tuning runs.
+If you interrupt the benchmark script and then launch it again, only missing benchmark variants will be run.
+
+Tuning on multiple GPUs
+--------------------------------------------------------------------------------
+
+Because the search process computes scores by comparing the performance of a variant to the baseline,
+it has to store the baseline result in the tuning database.
+The baseline is specific to the physical GPU on which it was obtained.
+Therefore, a single tuning database should not be used to run the tuning search on two different GPUs, even of the same architecture.
+Similarly, you should also not interrupt the search and resume it on a different GPU.
+Be careful when sharing build directories over network file systems.
+Check whether a build directory already contains a :code:`cccl_meta_bench.db` from a previous run before starting a new search.
+
+..
+    TODO(bgruber): I don't yet understand whether we can tune a single variant on multiple GPUs.
+    I think this is possible, but would it then create a database per GPU (because 1 baseline per GPU)?
+    Does search.py do this automatically, or do I need to pass a flag? Or does this only work with our "internal extensions"?
+
+Because the search space can be separated based on different axis values,
+a tuning search can be run on multiple GPUs in parallel, even across multiple physical machines (e.g., on a cluster).
+To do this, :code:`search.py` is invoked in parallel, one invocation/process per GPU,
+with different axis values specified for each invocation.
+A dedicated tuning database will be created per physical GPU.
+If a shared filesystem is in use, make sure that :code:`search.py` is run from different directories,
+so the :code:`cccl_meta_bench.db` files are placed into distinct paths.
+
+It is recommended to drive a multi-GPU/multi-node search process from a script,
+iterating the axis values and invoking :code:`search.py` for each variant.
+This integrates nicely with workload managers on clusters, which allow submitting batch jobs.
+In such a scenario, it is recommended to submit a job per variant.
+
+After tuning on multiple GPUs, the results are available in multiple tuning databases, which can be analyzed together.
+
 
 Analyzing the results
 --------------------------------------------------------------------------------
 
-The result of the search is stored in the :code:`build/cccl_meta_bench.db` file. To analyze the
+The result of the search is stored in one or more :code:`cccl_meta_bench.db` files. To analyze the
 result you can use the :code:`analyze.py` script.
 The :code:`--coverage` flag will show the amount of variants that were covered per compile-time workload:
+
+..
+    TODO(bgruber): also show analysis using multiple tuning databases
 
 .. code:: bash
 
@@ -343,11 +386,129 @@ If all those three values are larger than 1.0, the variant is strictly better th
 If only the mean or max are larger than 1.0, the variant may perform better in most runtime workloads, but regress in others.
 This information can be used to change the existing tuning policies in CUB.
 
+
+Variant plots
+--------------------------------------------------------------------------------
+
+The reported score for a tuning aggregates the performance across all runtime workloads.
+Even though the min, mean and max score are given as well, it may be necessary to view the distribution of scores across variants.
+
 ..
-    TODO(bgruber): the following is outdated:
+    TODO(bgruber): the following is outdated and should be rewroted
 
 .. code:: bash
 
   $ ../benchmarks/scripts/analyze.py --variant='ipt_(18|19).tpb_512'
 
 The last command plots distribution of the elapsed times for the specified variants.
+
+
+Creating tuning policies
+--------------------------------------------------------------------------------
+
+Once a suitable tuning result has been selected, we have to translate it into C++ code that is picked up by CUB.
+The tuning variant name shown by :code:`analyze.py` gives us all the information on the selected tuning values.
+Here is an example:
+
+.. code:: bash
+
+  $ ../benchmarks/scripts/analyze.py --top=1
+    cub.bench.radix_sort.keys[T{ct}=I8, OffsetT{ct}=I64]:
+              variant     score      mins     means      maxs
+    71  ipt_19.tpb_512  1.250941  1.155738  1.321665  1.647868
+
+Assume we have determined this tuning to be the best one for sorting I8 keys using radix_sort using I64 offsets.
+The ``variant`` can be decoded using the ``// %RANGE%`` comments in the C++ source code of the benchmark,
+since the names of the reported parameters in the variant are derived from these:
+
+.. code::  c++
+
+    // %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
+    // %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
+
+The variant ``ipt_19.tpb_512``, which stands for 19 items per thread (``ipt``) and 512 threads per block (``tpb``),
+was thus compiled with ``-DTUNE_ITEMS_PER_THREAD=19 -DTUNE_THREADS_PER_BLOCK=512``.
+The meaning of these values is specific to the benchmark definition,
+and we have to check the benchmark’s source code for how they are applied.
+Equally named tuning parameters may not translate to different benchmarks (please double check).
+These tuning parameters are then typically used to create a policy hub,
+which is passed to the algorithm’s dispatcher, as :ref:`sketched above <cub-tuning-authoring-benchmarks>`,
+and repeated here:
+
+.. code:: c++
+
+  #if !TUNE_BASE
+    template <typename AccumT, typename OffsetT>
+    struct policy_hub_t {
+      struct MaxPolicy : cub::ChainedPolicy<300, policy_t, policy_t> {
+        static constexpr int threads_per_block  = TUNE_THREADS_PER_BLOCK;
+        static constexpr int items_per_thread   = TUNE_ITEMS_PER_THREAD;
+        using AlgorithmPolicy = AgentAlgorithmPolicy<threads_per_block, items_per_thread, ...>;
+      };
+  #endif
+
+The tunings defined in CUB’s source are similar.
+However, they take predefined tuning values based on the template arguments of a CUB algorithm
+to build an agent policy for the policy hub.
+How the tuning values are selected is different for each CUB algorithm and requires studying the corresponding code.
+The general principles of the policy hub and tunings are documented in the :ref:`CUB device layer documentation <cub-developer-policies>`.
+There is typically a tuning class template specialization per variant or group of variants and per PTX version.
+For example, signed and unsigned integers of the same size are often represented by the same tuning.
+In general, variants for which the algorithmic behavior is expected to be the same
+(same arithmetic intensity, no special instructions for one of the data types, same amount of bytes to load/store, etc.)
+are covered by the same tuning.
+
+When new tuning values have been found and an existing tuning specialization exists for this variant,
+the tuning values can simply be updated in the corresponding CUB tuning header.
+This is usually the case when a CUB algorithm has been reengineered and shows different performance characteristics,
+or more tuning parameters are exposed (e.g., a new load algorithm is available).
+For example, this existing radix sort tuning may exist:
+
+.. code:: c++
+
+    template <typename ValueT, size_t KeySize, size_t ValueSize, size_t OffsetSize>
+    struct sm100_small_key_tuning : sm90_small_key_tuning<KeySize, ValueSize, OffsetSize> {};
+    ...
+    template <typename ValueT>
+    struct sm100_small_key_tuning<ValueT, 1, 0, 8> {
+      static constexpr int threads = 256; // better value from tuning analysis: 512
+      static constexpr int items = 14;    // better value from tuning analysis: 19
+    };
+
+The template specialization applies when sorting 1-byte keys without values 8-byte offsets.
+However, the concrete value type is disregarded.
+Since we have found that 512 threads per block and 19 items per thread is better, we can update the values in place.
+
+A different case is when we tune beyond what's currently supported by CUB's existing tunings.
+This may be because we tune for a new hardware architecture,
+in which case a new tuning class template and specializations should be added.
+Or we tune for new key, value or offset types, etc.,
+in which case the existing policy hub and tuning class templates may need to be extended.
+There is no general rule on how this extension is done, though.
+
+In the seldom case, that no tuning better than the existing one (baseline) has been found,
+it must be ensured that either the old tuning values are replicated in the new tuning specialization,
+or the new tuning specialization defers to the old one,
+or the tuning selection mechanism falls back accordingly.
+There is no general rule on how this is implemented.
+
+
+Verification
+--------------------------------------------------------------------------------
+
+Once we have selected tunings and implemented them in CUB, we need to verify them.
+That is, we must benchmark and compare the performance of the tuned algorithm before and after the tunings have been applied.
+This extra step is needed, because the score shown during the tuning analysis is just an aggregated result.
+Individual benchmarks may still have regressed for some compile-time workloads.
+Fortunately, this is no different than :ref:`running <cub-benchmarking-running>` the corresponding CUB benchmark with and without the changes,
+and :ref:`comparing <cub-benchmarking-comparing>` the resulting JSON files.
+Such a diff should be supplied to any request to change CUB tunings.
+
+If verification fails for some compile-time workloads (there are regressions), there are two options:
+
+1. Discard the tuning entirely and ensure the tuning selection falls back to the baseline tuning.
+2. Narrow down the tuning template specialization to only apply to the workloads where it improves performance,
+   and fallback where it regressed.
+
+The latter is more complex and may not be justified, if the improvements are small or the use case too narrow.
+Use your judgement. Good luck!

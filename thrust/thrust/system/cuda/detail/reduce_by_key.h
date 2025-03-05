@@ -58,6 +58,8 @@
 #  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/iterator>
+
 #  include <cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -148,8 +150,8 @@ template <class KeysInputIt,
           class Size>
 struct ReduceByKeyAgent
 {
-  using key_type   = typename iterator_traits<KeysInputIt>::value_type;
-  using value_type = typename iterator_traits<ValuesInputIt>::value_type;
+  using key_type   = thrust::detail::it_value_t<KeysInputIt>;
+  using value_type = thrust::detail::it_value_t<ValuesInputIt>;
   using size_type  = Size;
 
   using size_value_pair_t = cub::KeyValuePair<size_type, value_type>;
@@ -758,11 +760,11 @@ THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
 
   size_t allocation_sizes[2] = {9, vshmem_size};
   status                     = ScanTileState::AllocationSize(static_cast<int>(num_tiles), allocation_sizes[0]);
-  CUDA_CUB_RET_IF_FAIL(status);
+  _CUDA_CUB_RET_IF_FAIL(status);
 
   void* allocations[2] = {nullptr, nullptr};
   status = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
-  CUDA_CUB_RET_IF_FAIL(status);
+  _CUDA_CUB_RET_IF_FAIL(status);
 
   if (d_temp_storage == nullptr)
   {
@@ -771,11 +773,11 @@ THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
 
   ScanTileState tile_state;
   status = tile_state.Init(static_cast<int>(num_tiles), allocations[0], allocation_sizes[0]);
-  CUDA_CUB_RET_IF_FAIL(status);
+  _CUDA_CUB_RET_IF_FAIL(status);
 
   init_agent ia(init_plan, num_tiles, stream, "reduce_by_key::init_agent");
   ia.launch(tile_state, num_tiles, num_runs_output_it);
-  CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
+  _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
 
   char* vshmem_ptr = vshmem_size > 0 ? (char*) allocations[1] : nullptr;
 
@@ -791,7 +793,7 @@ THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
     reduction_op,
     num_items,
     num_tiles);
-  CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
+  _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
   return status;
 }
 
@@ -891,7 +893,7 @@ THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> reduce_by_key(
   EqualityOp equality_op,
   ReductionOp reduction_op)
 {
-  using size_type = typename iterator_traits<KeysInputIt>::difference_type;
+  using size_type = thrust::detail::it_difference_t<KeysInputIt>;
 
   size_type num_items = thrust::distance(keys_first, keys_last);
 
@@ -961,9 +963,9 @@ pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
   ValOutputIt values_output,
   BinaryPred binary_pred)
 {
-  using value_type = typename thrust::detail::eval_if<thrust::detail::is_output_iterator<ValOutputIt>::value,
-                                                      thrust::iterator_value<ValInputIt>,
-                                                      thrust::iterator_value<ValOutputIt>>::type;
+  using value_type = ::cuda::std::_If<thrust::detail::is_output_iterator<ValOutputIt>,
+                                      thrust::detail::it_value_t<ValInputIt>,
+                                      thrust::detail::it_value_t<ValOutputIt>>;
   return cuda_cub::reduce_by_key(
     policy, keys_first, keys_last, values_first, keys_output, values_output, binary_pred, plus<value_type>());
 }
@@ -977,7 +979,7 @@ pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
   KeyOutputIt keys_output,
   ValOutputIt values_output)
 {
-  using KeyT = typename thrust::iterator_value<KeyInputIt>::type;
+  using KeyT = thrust::detail::it_value_t<KeyInputIt>;
   return cuda_cub::reduce_by_key(
     policy, keys_first, keys_last, values_first, keys_output, values_output, equal_to<KeyT>());
 }

@@ -186,9 +186,9 @@ template <class... Types>
 #include <cuda/std/version>
 
 // [tuple.syn]
-#ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/compare>
-#endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 _CCCL_PUSH_MACROS
 
@@ -1239,7 +1239,7 @@ template <class... _Types, class _Tuple0, class _Tuple1, class... _Tuples>
 struct __tuple_cat_return_1<tuple<_Types...>, true, _Tuple0, _Tuple1, _Tuples...>
     : public __tuple_cat_return_1<
         typename __tuple_cat_type<tuple<_Types...>, __make_tuple_types_t<remove_cvref_t<_Tuple0>>>::type,
-        __tuple_like<remove_reference_t<_Tuple1>>::value,
+        __tuple_like_impl<remove_reference_t<_Tuple1>>::value,
         _Tuple1,
         _Tuples...>
 {};
@@ -1249,7 +1249,7 @@ struct __tuple_cat_return;
 
 template <class _Tuple0, class... _Tuples>
 struct __tuple_cat_return<_Tuple0, _Tuples...>
-    : public __tuple_cat_return_1<tuple<>, __tuple_like<remove_reference_t<_Tuple0>>::value, _Tuple0, _Tuples...>
+    : public __tuple_cat_return_1<tuple<>, __tuple_like_impl<remove_reference_t<_Tuple0>>::value, _Tuple0, _Tuples...>
 {};
 
 template <>

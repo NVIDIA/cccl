@@ -29,16 +29,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/version>
-
-#if defined(__cccl_lib_mdspan)
-
-#  include <cuda/std/__linalg/conj_if_needed.h>
-#  include <cuda/std/__type_traits/add_const.h>
-#  include <cuda/std/__type_traits/is_arithmetic.h>
-#  include <cuda/std/__type_traits/remove_const.h>
-#  include <cuda/std/__utility/declval.h>
-#  include <cuda/std/mdspan>
+#include <cuda/std/__linalg/conj_if_needed.h>
+#include <cuda/std/__type_traits/add_const.h>
+#include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/remove_const.h>
+#include <cuda/std/__utility/declval.h>
+#include <cuda/std/mdspan>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -138,5 +134,4 @@ conjugated(mdspan<_ElementType, _Extents, _Layout, conjugated_accessor<_NestedAc
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // defined(__cccl_lib_mdspan)
 #endif // _LIBCUDACXX___LINALG_CONJUGATED_HPP

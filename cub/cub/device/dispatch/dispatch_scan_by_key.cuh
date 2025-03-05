@@ -53,6 +53,7 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/std/__algorithm_>
 #include <cuda/std/type_traits>
 
 #include <iterator>
@@ -136,7 +137,7 @@ template <typename ChainedPolicyT,
           typename InitValueT,
           typename OffsetT,
           typename AccumT,
-          typename KeyT = cub::detail::value_t<KeysInputIteratorT>>
+          typename KeyT = cub::detail::it_value_t<KeysInputIteratorT>>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanByKeyPolicyT::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanByKeyKernel(
     KeysInputIteratorT d_keys_in,
@@ -176,7 +177,7 @@ template <typename ScanTileStateT, typename KeysInputIteratorT, typename OffsetT
 CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanByKeyInitKernel(
   ScanTileStateT tile_state,
   KeysInputIteratorT d_keys_in,
-  cub::detail::value_t<KeysInputIteratorT>* d_keys_prev_in,
+  cub::detail::it_value_t<KeysInputIteratorT>* d_keys_prev_in,
   OffsetT items_per_tile,
   int num_tiles)
 {
@@ -233,12 +234,16 @@ template <
   typename OffsetT,
   typename AccumT = ::cuda::std::__accumulator_t<
     ScanOpT,
-    cub::detail::value_t<ValuesInputIteratorT>,
-    ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>, cub::detail::value_t<ValuesInputIteratorT>, InitValueT>>,
+    cub::detail::it_value_t<ValuesInputIteratorT>,
+    ::cuda::std::
+      _If<::cuda::std::is_same_v<InitValueT, NullType>, cub::detail::it_value_t<ValuesInputIteratorT>, InitValueT>>,
   typename PolicyHub =
-    detail::scan_by_key::policy_hub<KeysInputIteratorT, AccumT, cub::detail::value_t<ValuesInputIteratorT>, ScanOpT>>
+    detail::scan_by_key::policy_hub<KeysInputIteratorT, AccumT, cub::detail::it_value_t<ValuesInputIteratorT>, ScanOpT>>
 struct DispatchScanByKey
 {
+  static_assert(::cuda::std::is_unsigned_v<OffsetT> && sizeof(OffsetT) >= 4,
+                "DispatchScan only supports unsigned offset types of at least 4-bytes");
+
   //---------------------------------------------------------------------
   // Constants and Types
   //---------------------------------------------------------------------
@@ -246,10 +251,10 @@ struct DispatchScanByKey
   static constexpr int INIT_KERNEL_THREADS = 128;
 
   // The input key type
-  using KeyT = cub::detail::value_t<KeysInputIteratorT>;
+  using KeyT = cub::detail::it_value_t<KeysInputIteratorT>;
 
   // The input value type
-  using InputT = cub::detail::value_t<ValuesInputIteratorT>;
+  using InputT = cub::detail::it_value_t<ValuesInputIteratorT>;
 
   // Tile state used for the decoupled look-back
   using ScanByKeyTileStateT = ReduceByKeyScanTileState<AccumT, int>;
@@ -441,7 +446,7 @@ struct DispatchScanByKey
       }
 
       // Run grids in epochs (in case number of tiles exceeds max x-dimension
-      int scan_grid_size = CUB_MIN(num_tiles, max_dim_x);
+      int scan_grid_size = _CUDA_VSTD::min(num_tiles, max_dim_x);
       for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
       {
 // Log scan_kernel configuration

@@ -34,31 +34,10 @@
 #include <cuda/experimental/__stf/internal/parallel_for_scope.cuh>
 #include <cuda/experimental/__stf/places/blocked_partition.cuh> // for unit test!
 
+#include <mutex>
+
 namespace cuda::experimental::stf
 {
-
-namespace reserved
-{
-
-// For counters
-class graph_tag
-{
-public:
-  class launch
-  {};
-  class instantiate
-  {};
-  class update
-  {
-  public:
-    class success
-    {};
-    class failure
-    {};
-  };
-};
-
-} // end namespace reserved
 
 /**
  * @brief Uncached allocator (used as a base for other allocators)
@@ -233,6 +212,11 @@ class graph_ctx : public backend_ctx<graph_ctx>
       return *_graph;
     }
 
+    executable_graph_cache_stat* graph_get_cache_stat() override
+    {
+      return &cache_stats;
+    }
+
     size_t epoch() const override
     {
       return graph_epoch;
@@ -255,6 +239,11 @@ class graph_ctx : public backend_ctx<graph_ctx>
     size_t graph_epoch                            = 0;
     bool submitted                                = false; // did we submit ?
     mutable bool explicit_graph                   = false;
+
+    // To protect _graph against concurrent modifications
+    ::std::mutex graph_mutex;
+
+    executable_graph_cache_stat cache_stats;
 
     /* By default, the finalize operation is blocking, unless user provided
      * a stream when creating the context */
@@ -304,7 +293,8 @@ public:
   auto task(exec_place e_place, task_dep<Deps>... deps)
   {
     auto dump_hooks = reserved::get_dump_hooks(this, deps...);
-    auto result     = graph_task<Deps...>(*this, get_graph(), get_graph_epoch(), mv(e_place), mv(deps)...);
+    auto result =
+      graph_task<Deps...>(*this, get_graph(), this->state().graph_mutex, get_graph_epoch(), mv(e_place), mv(deps)...);
     result.add_post_submission_hook(dump_hooks);
     return result;
   }
@@ -335,23 +325,6 @@ public:
     state.submitted_stream = nullptr;
     state.cleanup();
     set_phase(backend_ctx_untyped::phase::finalized);
-
-#ifdef CUDASTF_DEBUG
-    const char* display_stats_env = getenv("CUDASTF_DISPLAY_STATS");
-    if (!display_stats_env || atoi(display_stats_env) == 0)
-    {
-      return;
-    }
-
-    fprintf(
-      stderr, "[STATS CUDA GRAPHS] instantiated=%lu\n", reserved::counter<reserved::graph_tag::instantiate>.load());
-    fprintf(stderr, "[STATS CUDA GRAPHS] launched=%lu\n", reserved::counter<reserved::graph_tag::launch>.load());
-    fprintf(stderr,
-            "[STATS CUDA GRAPHS] updated=%lu success=%ld failed=%ld\n",
-            reserved::counter<reserved::graph_tag::update>.load(),
-            reserved::counter<reserved::graph_tag::update::success>.load(),
-            reserved::counter<reserved::graph_tag::update::failure>.load());
-#endif
   }
 
   void submit(cudaStream_t stream = nullptr)
@@ -380,10 +353,6 @@ public:
     // cuda_safe_call(cudaStreamSynchronize(state.submitted_stream));
 
     cuda_try(cudaGraphLaunch(*state.exec_graph, state.submitted_stream));
-
-#ifdef CUDASTF_DEBUG
-    reserved::counter<reserved::graph_tag::launch>.increment();
-#endif
 
     // Note that we comment this out for now, so that it is possible to use
     // the print_to_dot method; but we may perhaps discard this graph to
@@ -480,11 +449,46 @@ public:
       print_to_dot("instantiated_graph" + ::std::to_string(instantiated_graph++) + ".dot");
     }
 
-    /* This will lookup in the cache (if any) and update an existing entry, or
-     * instantiate a graph if none is found. */
-    auto cache_exec_g = async_resources().cached_graphs_query(nnodes, nedges, g);
-    state.exec_graph  = cache_exec_g;
-    return cache_exec_g;
+    bool use_cache = true;
+    bool hit       = false;
+
+    // If there is a policy, check whether it enables or disables the use of
+    // the cache
+    if (get_graph_cache_policy().has_value())
+    {
+      ::std::function<bool()> policy = get_graph_cache_policy().value();
+      use_cache                      = policy();
+    }
+
+    if (use_cache)
+    {
+      /* This will lookup in the cache (if any) and update an existing entry, or
+       * instantiate a graph if none is found. */
+      auto query_result = async_resources().cached_graphs_query(nnodes, nedges, g);
+      state.exec_graph  = query_result.first;
+
+      hit = query_result.second; // indicate if this was a hit or miss in the cache
+    }
+    else
+    {
+      state.exec_graph = reserved::graph_instantiate(*g);
+    }
+
+    // Update the statistics associated to the context
+    auto* stats = graph_get_cache_stat();
+    if (hit)
+    {
+      stats->update_cnt++;
+    }
+    else
+    {
+      stats->instantiate_cnt++;
+    }
+
+    stats->nnodes += nnodes;
+    stats->nedges += nedges;
+
+    return state.exec_graph;
   }
 
   void display_graph_info(cudaGraph_t g)
@@ -565,10 +569,6 @@ private:
     ::std::shared_ptr<cudaGraphExec_t> res(new cudaGraphExec_t, cudaGraphExecDeleter);
 
     cuda_try(cudaGraphInstantiateWithFlags(res.get(), g, 0));
-
-#ifdef CUDASTF_DEBUG
-    reserved::counter<reserved::graph_tag::instantiate>.increment();
-#endif
 
     return res;
   }
@@ -663,10 +663,6 @@ private:
     }
 
     cuda_try(cudaGraphLaunch(local_exec_graph, state.submitted_stream));
-
-#ifdef CUDASTF_DEBUG
-    reserved::counter<reserved::graph_tag::launch>.increment();
-#endif
 
     return state.submitted_stream;
   }

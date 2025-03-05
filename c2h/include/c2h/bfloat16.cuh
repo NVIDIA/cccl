@@ -233,18 +233,14 @@ inline std::ostream& operator<<(std::ostream& out, const __nv_bfloat16& x)
  * Traits overloads
  ******************************************************************************/
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+namespace cuda
+{
 template <>
-struct __is_extended_floating_point<bfloat16_t> : true_type
-{};
-
-#ifndef _CCCL_NO_VARIABLE_TEMPLATES
-template <>
-_CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v<bfloat16_t> = true;
-#endif // _CCCL_NO_VARIABLE_TEMPLATES
+_CCCL_INLINE_VAR constexpr bool is_floating_point_v<bfloat16_t> = true;
+}
 
 template <>
-class numeric_limits<bfloat16_t>
+class ::cuda::std::numeric_limits<bfloat16_t>
 {
 public:
   static constexpr bool is_specialized = true;
@@ -264,14 +260,10 @@ public:
     return bfloat16_t(numeric_limits<__nv_bfloat16>::lowest());
   }
 };
-_LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <>
-struct CUB_NS_QUALIFIER::NumericTraits<bfloat16_t>
-    : CUB_NS_QUALIFIER::BaseTraits<FLOATING_POINT, unsigned short, bfloat16_t>
+struct CUB_NS_QUALIFIER::NumericTraits<bfloat16_t> : BaseTraits<FLOATING_POINT, true, unsigned short, bfloat16_t>
 {};
-_CCCL_SUPPRESS_DEPRECATED_POP
 
 #ifdef __GNUC__
 #  pragma GCC diagnostic pop

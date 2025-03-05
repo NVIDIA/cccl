@@ -6,6 +6,12 @@ PTX Instructions
 .. toctree::
    :maxdepth: 1
 
+   instructions/ld
+   instructions/st
+   instructions/shr
+   instructions/shl
+   instructions/bmsk
+   instructions/prmt
    instructions/barrier_cluster
    instructions/bfind
    instructions/clusterlaunchcontrol
@@ -29,6 +35,7 @@ PTX Instructions
    instructions/multimem_red
    instructions/multimem_st
    instructions/red_async
+   instructions/shfl_sync
    instructions/st_async
    instructions/st_bulk
    instructions/tcgen05_alloc
@@ -87,7 +94,7 @@ Instructions by section
    * - `szext <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-szext>`__
      - No
    * - `bmsk <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-bmsk>`__
-     - No
+     - Yes, CCCL 3.0.0 / CUDA 13.0
    * - `dp4a <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-dp4a>`__
      - No
    * - `dp2a <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-dp2a>`__
@@ -237,9 +244,9 @@ Instructions by section
    * - `shf <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#logic-and-shift-instructions-shf>`__
      - No
    * - `shl <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#logic-and-shift-instructions-shl>`__
-     - No
+     - Yes, CCCL 3.0.0 / CUDA 13.0
    * - `shr <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#logic-and-shift-instructions-shr>`__
-     - No
+     - Yes, CCCL 3.0.0 / CUDA 13.0
 
 .. list-table:: `Data Movement and Conversion Instructions <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions>`__
    :widths: 50 50
@@ -251,18 +258,18 @@ Instructions by section
      - No
    * - `shfl <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-shfl-deprecated>`__
      - No
-   * - `shfl.s <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-shfl-sync>`__
-     - No
+   * - `shfl.sync <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-shfl-sync>`__
+     - Yes, CCCL 2.9.0 / CUDA 12.9
    * - `prmt <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-prmt>`__
-     - No
+     - Yes, CCCL 3.0.0 / CUDA 13.0
    * - `ld <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-ld>`__
-     - No
+     - Yes, CCCL 3.0.0 / CUDA 13.0
    * - `ld.global.nc <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-ld-global-nc>`__
-     - No
+     - Yes, CCCL 3.0.0 / CUDA 13.0
    * - `ldu <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-ldu>`__
      - No
    * - `st <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-st>`__
-     - No
+     - Yes, CCCL 3.0.0 / CUDA 13.0
    * - :ref:`st.async <libcudacxx-ptx-instructions-st-async>`
      - CCCL 2.3.0 / CUDA 12.4
    * - :ref:`st.bulk <libcudacxx-ptx-instructions-st-bulk>`

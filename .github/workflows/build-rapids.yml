@@ -1,8 +1,35 @@
 name: Build all RAPIDS repositories
 
 on:
+  workflow_dispatch:
+    inputs:
+      override_cccl_tag:
+        description: "If set, override the tag used when pulling the CCCL repository into RAPIDS."
+        required: false
+        default: ""
+        type: string
+      override_cccl_version:
+        description: "If set, override the version used by rapids-cmake to patch CCCL."
+        required: false
+        default: ""
+        type: string
+      enable_slack_alerts:
+        description: "If true, a message will be posted to the CCCL GHA CI Alert channel if the workflow fails."
+        required: false
+        default: false
+        type: boolean
   workflow_call:
     inputs:
+      override_cccl_tag:
+        description: "If set, override the tag used when pulling the CCCL repository into RAPIDS."
+        required: false
+        default: ""
+        type: string
+      override_cccl_version:
+        description: "If set, override the version used by rapids-cmake to patch CCCL."
+        required: false
+        default: ""
+        type: string
       enable_slack_alerts:
         description: "If true, a message will be posted to the CCCL GHA CI Alert channel if the workflow fails."
         required: false
@@ -57,6 +84,8 @@ jobs:
           role-duration-seconds: 43200 # 12h
       - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
         env:
+          CCCL_TAG: ${{ inputs.override_cccl_tag }}
+          CCCL_VERSION: ${{ inputs.override_cccl_version }}
           CI: true
           RAPIDS_LIBS: ${{ matrix.libs }}
           # Uncomment any of these to customize the git repo and branch for a RAPIDS lib:
@@ -146,6 +175,8 @@ jobs:
             --docker \
             --cuda ${{matrix.cuda}} \
             --host rapids-conda \
+            --env "CCCL_TAG=${CCCL_TAG}" \
+            --env "CCCL_VERSION=${CCCL_VERSION}" \
             --env "AWS_ROLE_ARN=" \
             --env "AWS_REGION=$AWS_REGION" \
             --env "SCCACHE_REGION=$AWS_REGION" \

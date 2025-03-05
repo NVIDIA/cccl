@@ -25,6 +25,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/advance.h>
 #include <thrust/detail/copy.h>
 #include <thrust/detail/overlapped_copy.h>
@@ -37,6 +38,7 @@
 
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/type_traits>
 
 #include <stdexcept>
 
@@ -248,27 +250,21 @@ template <typename T, typename Alloc>
 template <typename InputIterator>
 void vector_base<T, Alloc>::range_init(InputIterator first, InputIterator last)
 {
-  range_init(first, last, typename thrust::iterator_traversal<InputIterator>::type());
-} // end vector_base::range_init()
-
-template <typename T, typename Alloc>
-template <typename InputIterator>
-void vector_base<T, Alloc>::range_init(InputIterator first, InputIterator last, thrust::incrementable_traversal_tag)
-{
-  for (; first != last; ++first)
+  using traversal = typename iterator_traversal<InputIterator>::type;
+  if constexpr (::cuda::std::is_convertible_v<traversal, random_access_traversal_tag>)
   {
-    push_back(*first);
+    size_type new_size = thrust::distance(first, last);
+
+    allocate_and_copy(new_size, first, last, m_storage);
+    m_size = new_size;
   }
-} // end vector_base::range_init()
-
-template <typename T, typename Alloc>
-template <typename ForwardIterator>
-void vector_base<T, Alloc>::range_init(ForwardIterator first, ForwardIterator last, thrust::random_access_traversal_tag)
-{
-  size_type new_size = thrust::distance(first, last);
-
-  allocate_and_copy(new_size, first, last, m_storage);
-  m_size = new_size;
+  else
+  {
+    for (; first != last; ++first)
+    {
+      push_back(*first);
+    }
+  }
 } // end vector_base::range_init()
 
 template <typename T, typename Alloc>
@@ -951,86 +947,77 @@ template <typename T, typename Alloc>
 template <typename InputIterator>
 void vector_base<T, Alloc>::range_assign(InputIterator first, InputIterator last)
 {
-  // dispatch on traversal
-  range_assign(first, last, typename thrust::iterator_traversal<InputIterator>::type());
+  using traversal = typename iterator_traversal<InputIterator>::type;
+  if constexpr (::cuda::std::is_convertible_v<traversal, random_access_traversal_tag>)
+  {
+    const size_type n = thrust::distance(first, last);
+    if (n > capacity())
+    {
+      storage_type new_storage(copy_allocator_t(), m_storage);
+      allocate_and_copy(n, first, last, new_storage);
+
+      // call destructors on the elements in the old storage
+      m_storage.destroy(begin(), end());
+
+      // record the vector's new state
+      m_storage.swap(new_storage);
+      m_size = n;
+    } // end if
+    else if (size() >= n)
+    {
+      // we can already accommodate the new range
+      iterator new_end = thrust::copy(first, last, begin());
+
+      // destroy the elements we don't need
+      m_storage.destroy(new_end, end());
+
+      // update size
+      m_size = n;
+    } // end else if
+    else
+    {
+      // range fits inside allocated storage, but some elements
+      // have not been constructed yet
+
+      // XXX TODO we could possibly implement this with one call
+      // to transform rather than copy + uninitialized_copy
+
+      // copy to elements which already exist
+      InputIterator mid = first;
+      thrust::advance(mid, size());
+      thrust::copy(first, mid, begin());
+
+      // uninitialize_copy to elements which must be constructed
+      m_storage.uninitialized_copy(mid, last, end());
+
+      // update size
+      m_size = n;
+    } // end else
+  }
+  else // for less than random access iterators
+  {
+    iterator current(begin());
+
+    // assign to elements which already exist
+    for (; first != last && current != end(); ++current, ++first)
+    {
+      *current = *first;
+    } // end for
+
+    // either just the input was exhausted or both
+    // the input and vector elements were exhausted
+    if (first == last)
+    {
+      // if we exhausted the input, erase leftover elements
+      erase(current, end());
+    } // end if
+    else
+    {
+      // insert the rest of the input at the end of the vector
+      insert(end(), first, last);
+    } // end else
+  }
 } // end range_assign()
-
-template <typename T, typename Alloc>
-template <typename InputIterator>
-void vector_base<T, Alloc>::range_assign(InputIterator first, InputIterator last, thrust::incrementable_traversal_tag)
-{
-  iterator current(begin());
-
-  // assign to elements which already exist
-  for (; first != last && current != end(); ++current, ++first)
-  {
-    *current = *first;
-  } // end for
-
-  // either just the input was exhausted or both
-  // the input and vector elements were exhausted
-  if (first == last)
-  {
-    // if we exhausted the input, erase leftover elements
-    erase(current, end());
-  } // end if
-  else
-  {
-    // insert the rest of the input at the end of the vector
-    insert(end(), first, last);
-  } // end else
-} // end vector_base::range_assign()
-
-template <typename T, typename Alloc>
-template <typename RandomAccessIterator>
-void vector_base<T, Alloc>::range_assign(
-  RandomAccessIterator first, RandomAccessIterator last, thrust::random_access_traversal_tag)
-{
-  const size_type n = thrust::distance(first, last);
-
-  if (n > capacity())
-  {
-    storage_type new_storage(copy_allocator_t(), m_storage);
-    allocate_and_copy(n, first, last, new_storage);
-
-    // call destructors on the elements in the old storage
-    m_storage.destroy(begin(), end());
-
-    // record the vector's new state
-    m_storage.swap(new_storage);
-    m_size = n;
-  } // end if
-  else if (size() >= n)
-  {
-    // we can already accommodate the new range
-    iterator new_end = thrust::copy(first, last, begin());
-
-    // destroy the elements we don't need
-    m_storage.destroy(new_end, end());
-
-    // update size
-    m_size = n;
-  } // end else if
-  else
-  {
-    // range fits inside allocated storage, but some elements
-    // have not been constructed yet
-
-    // XXX TODO we could possibly implement this with one call
-    // to transform rather than copy + uninitialized_copy
-
-    // copy to elements which already exist
-    RandomAccessIterator mid = first;
-    thrust::advance(mid, size());
-    thrust::copy(first, mid, begin());
-
-    // uninitialize_copy to elements which must be constructed
-    m_storage.uninitialized_copy(mid, last, end());
-
-    // update size
-    m_size = n;
-  } // end else
-} // end vector_base::assign()
 
 template <typename T, typename Alloc>
 void vector_base<T, Alloc>::fill_assign(size_type n, const T& x)
@@ -1117,7 +1104,7 @@ bool vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 fi
 template <typename InputIterator1, typename InputIterator2>
 bool vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, thrust::detail::false_type)
 {
-  typename thrust::iterator_difference<InputIterator1>::type n = thrust::distance(first1, last1);
+  it_difference_t<InputIterator1> n = thrust::distance(first1, last1);
 
   using FromSystem1 = typename thrust::iterator_system<InputIterator1>::type;
   using FromSystem2 = typename thrust::iterator_system<InputIterator2>::type;
