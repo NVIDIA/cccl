@@ -100,9 +100,21 @@ public:
     copy_scalar(a, *this);
   }
 
+  scalar& operator=(scalar const& rhs)
+  {
+    copy_scalar(rhs, *this);
+    return *this;
+  }
+
+  scalar& operator=(scalar&& rhs)
+  {
+    handle = mv(rhs.handle);
+    return *this;
+  }
+
   scalar operator/(scalar const& rhs) const
   {
-    // Submit a task that computes this/rhs
+      // Submit a task that computes this/rhs
     scalar res;
     ctx.parallel_for(handle.shape(), handle.read(), rhs.handle.read(), res.handle.write())
         ->*[] _CCCL_DEVICE(size_t i, auto dthis, auto drhs, auto dres) {
