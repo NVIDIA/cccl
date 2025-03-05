@@ -518,7 +518,7 @@ public:
 template <>
 class __numeric_limits_impl<long double, __numeric_limits_type::__floating_point>
 {
-#ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#if _CCCL_HAS_LONG_DOUBLE()
 
 public:
   using type = long double;
@@ -588,7 +588,7 @@ public:
   static constexpr bool traps                    = false;
   static constexpr bool tinyness_before          = false;
   static constexpr float_round_style round_style = round_to_nearest;
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 };
 
 template <class _Tp>

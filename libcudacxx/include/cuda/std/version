@@ -48,6 +48,10 @@
 #define __cccl_lib_is_swappable                 201603L
 #define __cccl_lib_launder                      201606L
 #define __cccl_lib_logical_traits               201510L
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY) \
+  && defined(_CCCL_BUILTIN_REFERENCE_CONVERTS_FROM_TEMPORARY)
+#  define __cpp_lib_reference_from_temporary 202202L
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY && _CCCL_BUILTIN_REFERENCE_CONVERTS_FROM_TEMPORARY
 #define __cccl_lib_shift                        201806L
 #define __cccl_lib_to_address                   201711L
 #define __cccl_lib_to_array                     201907L
@@ -62,7 +66,8 @@
 
 #if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 #  define __cccl_lib_type_trait_variable_templates 201510L
-#endif
+#  define __cccl_lib_math_constants                201907L
+#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #define __cccl_lib_as_const     201510L
 #define __cccl_lib_bit_cast     201806L
@@ -85,6 +90,9 @@
 #endif // _CCCL_COMPILER(MSVC) && _CCCL_STD_VER >= 2020
 #define __cccl_lib_null_iterators 201304L
 #define __cccl_lib_optional       202110L
+#ifdef CCCL_ENABLE_OPTIONAL_REF
+#  define __cpp_lib_optional_ref 202602L
+#endif // CCCL_ENABLE_OPTIONAL_REF
 // # define __cccl_lib_quoted_string_io                     201304L
 #define __cccl_lib_result_of_sfinae            201210L
 #define __cccl_lib_robust_nonmodifying_seq_ops 201304L
@@ -95,6 +103,7 @@
 #define __cccl_lib_span                  202311L
 #define __cccl_lib_span_initializer_list 202311L
 // # define __cccl_lib_string_udls                          201304L
+#define __cccl_lib_submdspan      202207L
 #define __cccl_lib_tuples_by_type 201304L
 
 #ifdef _CCCL_BUILTIN_ADDRESSOF
@@ -161,9 +170,9 @@
 #    define __cccl_lib_barrier 201907L
 #  endif // !_LIBCUDACXX_HAS_NO_THREADS
 #  define __cccl_lib_bit_cast 201806L
-#  ifndef _LIBCUDACXX_HAS_NO_CHAR8_T
+#  if _LIBCUDACXX_HAS_CHAR8_T()
 #    define __cccl_lib_char8_t 201811L
-#  endif // !_LIBCUDACXX_HAS_NO_CHAR8_T
+#  endif // _LIBCUDACXX_HAS_CHAR8_T()
 // # define __cccl_lib_constexpr_algorithms                 201806L
 // # define __cccl_lib_constexpr_dynamic_alloc              201907L
 #  define __cccl_lib_constexpr_functional 201907L
@@ -201,7 +210,6 @@
 // #   define __cccl_lib_latch                              201907L
 #  endif // !_LIBCUDACXX_HAS_NO_THREADS
 // # define __cccl_lib_list_remove_return_type              201806L
-// # define __cccl_lib_math_constants                       201907L
 // # define __cccl_lib_polymorphic_allocator                201902L
 // # define __cccl_lib_ranges                               201811L
 // # define __cccl_lib_remove_cvref                         201711L
