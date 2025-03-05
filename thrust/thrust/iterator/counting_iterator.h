@@ -188,17 +188,6 @@ struct counting_iterator_equal<Difference,
 
 struct empty
 {};
-
-template <typename T>
-struct value_holder
-{
-  T value;
-
-  _CCCL_HOST_DEVICE auto operator()() const
-  {
-    return value;
-  }
-};
 } // namespace detail
 
 //! \addtogroup iterators
@@ -336,7 +325,7 @@ private:
   auto step() const
   {
     static_assert(!::cuda::std::is_same_v<Step, detail::empty>);
-    return static_cast<const Step&>(*this)();
+    return static_cast<const Step&>(*this).value;
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -422,25 +411,46 @@ inline _CCCL_HOST_DEVICE counting_iterator<Incrementable> make_counting_iterator
   return counting_iterator<Incrementable>(x);
 }
 
+namespace detail
+{
+// Holds a runtime step
+template <typename T>
+struct runtime_step_holder
+{
+  T value;
+};
+
+// Holds a compile-time step
+// (we cannot use ::cuda::std::integral_constant, because it has a conversion operator to T that causes an ambiguity
+// with operator+(counting_iterator, counting_iterator::difference_type) in any expression `counting_iterator +
+// integral`.
+template <typename T, T Value>
+struct compile_time_step_holder
+{
+  static constexpr T value = Value;
+};
+} // namespace detail
+
+//! Constructs a counting_iterator with a runtime stride
 template <typename Incrementable, typename Stride>
-inline _CCCL_HOST_DEVICE auto make_counting_iterator(Incrementable x, Stride stride)
+_CCCL_HOST_DEVICE auto make_counting_iterator(Incrementable x, Stride stride)
 {
   return counting_iterator<Incrementable,
                            use_default,
                            random_access_traversal_tag,
                            use_default,
-                           detail::value_holder<Stride>>(x, {stride});
+                           detail::runtime_step_holder<Stride>>(x, {stride});
 }
 
+//! Constructs a counting_iterator with a compile-time stride
 template <typename Incrementable, typename Stride, Stride Value>
-inline _CCCL_HOST_DEVICE auto
-make_counting_iterator(Incrementable x, ::cuda::std::integral_constant<Stride, Value> stride)
+_CCCL_HOST_DEVICE auto make_counting_iterator(Incrementable x, ::cuda::std::integral_constant<Stride, Value>)
 {
   return counting_iterator<Incrementable,
                            use_default,
                            random_access_traversal_tag,
                            use_default,
-                           ::cuda::std::integral_constant<Stride, Value>>(x, stride);
+                           detail::compile_time_step_holder<Stride, Value>>(x, {});
 }
 
 //! \} // end fancyiterators

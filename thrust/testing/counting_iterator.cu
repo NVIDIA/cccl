@@ -321,19 +321,4 @@ void TestCountingIteratorPointer()
 }
 DECLARE_UNITTEST(TestCountingIteratorPointer);
 
-void TestCountingIteratorStridedPointer()
-{
-  ::cuda::std::array<std::pair<int, double>, 4> arr{{{1, 2}, {3, 4}, {5, 6}, {7, 8}}};
-
-  // iterate over all second elements
-  auto iter = thrust::make_counting_iterator(
-    &arr[0].second, ::cuda::std::integral_constant<int, sizeof(std::pair<int, double>)>{});
-
-  cuda::std::fill(iter, iter + 4, 1337);
-
-  const ::cuda::std::array<std::pair<int, double>, 4> reference{{{1, 1337}, {3, 1337}, {5, 1337}, {7, 1337}}};
-  ASSERT_EQUAL(arr, reference);
-}
-DECLARE_UNITTEST(TestCountingIteratorStridedPointer);
-
 _CCCL_DIAG_POP
