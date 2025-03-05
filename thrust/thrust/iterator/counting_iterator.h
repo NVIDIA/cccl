@@ -81,7 +81,7 @@ struct make_counting_iterator_base
 
   using traversal = replace_if_use_default<Traversal, ::cuda::std::type_identity<random_access_traversal_tag>>;
   using difference =
-    typename replace_if_use_default<Difference, ::cuda::std::type_identity<counting_iterator_difference_type<Incrementable>>>::type;
+    replace_if_use_default<Difference, ::cuda::std::type_identity<counting_iterator_difference_type<Incrementable>>>;
 
   // our implementation departs from Boost's in that counting_iterator::dereference
   // returns a copy of its counter, rather than a reference to it. returning a reference
