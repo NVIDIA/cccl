@@ -37,6 +37,7 @@
 #include <cuda/experimental/__stf/internal/constants.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
+#include <cuda/experimental/__stf/utility/nvtx.cuh>
 #include <cuda/experimental/__stf/utility/threads.cuh>
 #include <cuda/experimental/__stf/utility/unique_id.cuh>
 
@@ -508,6 +509,10 @@ public:
 
     static void push(int per_ctx_id, ::std::string symbol)
     {
+#if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
+      nvtxRangePushA(symbol.c_str());
+#endif
+
       // We first create a section object, with its unique id
       auto sec = ::std::make_shared<section>(mv(symbol));
       int id   = sec->get_id();
@@ -537,6 +542,10 @@ public:
     {
       _CCCL_ASSERT(current(per_ctx_id).size() > 0, "Cannot pop, no section was pushed.");
       current(per_ctx_id).pop();
+
+#if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
+      nvtxRangePop();
+#endif
     }
 
     /**
