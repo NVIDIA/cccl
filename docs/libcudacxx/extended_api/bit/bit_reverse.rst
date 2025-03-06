@@ -19,7 +19,7 @@ The function reverses the order of bits in a value.
 
 - Value with reversed bits
 
-**Mandates**
+**Constraints**
 
 - ``T`` is an unsigned integer type.
 

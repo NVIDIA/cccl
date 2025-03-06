@@ -22,7 +22,7 @@ The function extracts the lower bitfield of size ``width`` from ``source`` and i
 
 - ``((value << start) & mask) | (source & ~mask)``, where ``mask`` is a bitmask of width ``width``.
 
-**Mandates**
+**Constraints**
 
 - ``T`` is an unsigned integer type.
 

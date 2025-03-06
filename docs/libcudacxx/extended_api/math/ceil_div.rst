@@ -20,9 +20,9 @@ The function computes the ceiling division between two integral or enumerator va
 
 Divides ``value`` by ``divisor``. If ``value`` is not a multiple of ``divisor`` rounds the result up to the next integer value.
 
-**Mandates**
+**Constraints**
 
-- ``T`` and ``U`` are integral types or enumerators.
+- ``T`` and ``U`` are integer types or enumerators.
 
 **Preconditions**
 

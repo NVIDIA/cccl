@@ -20,9 +20,9 @@ The function computes the round down to the largest multiple of an integral or e
 
 ``value`` rounded down to the largest multiple of ``base_multiple`` less than or equal to ``value``. If ``value`` is already a multiple of ``base_multiple``, returns ``value``.
 
-**Mandates**
+**Constraints**
 
-- ``T`` and ``U`` are integral types or enumerators.
+- ``T`` and ``U`` are integer types or enumerators.
 
 **Preconditions**
 

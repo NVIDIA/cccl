@@ -24,9 +24,9 @@ The function computes the round up to the smallest multiple of an integral or en
 
     The result can overflow if ``ceil(value / base_multiple) * base_multiple`` exceeds the maximum value of the common type of ``value`` and ``base_multiple``. The condition is checked in debug mode.
 
-**Mandates**
+**Constraints**
 
-- ``T`` and ``U`` are integral types or enumerators.
+- ``T`` and ``U`` are integer types or enumerators.
 
 **Preconditions**
 
