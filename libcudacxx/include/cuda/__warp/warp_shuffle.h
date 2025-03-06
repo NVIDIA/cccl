@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___WARP_COMMUNICATION_SHFL_H
-#define _CUDA___WARP_COMMUNICATION_SHFL_H
+#ifndef _CUDA___WARP_WARP_SHUFFLE_H
+#define _CUDA___WARP_WARP_SHUFFLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -36,7 +36,7 @@
 
 #if __cccl_ptx_isa >= 600
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
 template <typename _Tp>
 struct WarpShuffleResult
@@ -91,7 +91,7 @@ template <int _Width, typename _Tp, typename _Up = _CUDA_VSTD::remove_cv_t<_Tp>>
 _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Up>
 warp_shuffle_idx(const _Tp& __data, int __src_lane, _CUDA_VSTD::integral_constant<int, _Width> __width)
 {
-  return ::cuda::warp_shuffle_idx(__data, __src_lane, 0xFFFFFFFF, __width);
+  return ::cuda::device::warp_shuffle_idx(__data, __src_lane, 0xFFFFFFFF, __width);
 }
 
 template <int _Width = 32, typename _Tp, typename _Up = _CUDA_VSTD::remove_cv_t<_Tp>>
@@ -139,7 +139,7 @@ template <int _Width, typename _Tp, typename _Up = _CUDA_VSTD::remove_cv_t<_Tp>>
 _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Up>
 warp_shuffle_up(const _Tp& __data, int __src_lane, _CUDA_VSTD::integral_constant<int, _Width> __width)
 {
-  return ::cuda::warp_shuffle_up(__data, __src_lane, 0xFFFFFFFF, __width);
+  return ::cuda::device::warp_shuffle_up(__data, __src_lane, 0xFFFFFFFF, __width);
 }
 
 template <int _Width = 32, typename _Tp, typename _Up = _CUDA_VSTD::remove_cv_t<_Tp>>
@@ -187,7 +187,7 @@ template <int _Width, typename _Tp, typename _Up = _CUDA_VSTD::remove_cv_t<_Tp>>
 _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Tp>
 warp_shuffle_down(const _Tp& __data, int __src_lane, _CUDA_VSTD::integral_constant<int, _Width> __width)
 {
-  return ::cuda::warp_shuffle_down(__data, __src_lane, 0xFFFFFFFF, __width);
+  return ::cuda::device::warp_shuffle_down(__data, __src_lane, 0xFFFFFFFF, __width);
 }
 
 template <int _Width = 32, typename _Tp, typename _Up = _CUDA_VSTD::remove_cv_t<_Tp>>
@@ -235,10 +235,10 @@ template <int _Width, typename _Tp, typename _Up = _CUDA_VSTD::remove_cv_t<_Tp>>
 _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Up>
 warp_shuffle_xor(const _Tp& __data, int __src_lane, _CUDA_VSTD::integral_constant<int, _Width> __width)
 {
-  return ::cuda::warp_shuffle_xor(__data, __src_lane, 0xFFFFFFFF, __width);
+  return ::cuda::device::warp_shuffle_xor(__data, __src_lane, 0xFFFFFFFF, __width);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
 
 #endif // __cccl_ptx_isa >= 600
-#endif // _CUDA___WARP_COMMUNICATION_SHFL_H
+#endif // _CUDA___WARP_WARP_SHUFFLE_H

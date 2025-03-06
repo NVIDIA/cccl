@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_WARP_COMM
-#define _CUDA_WARP_COMM
+#ifndef _CUDA_WARP
+#define _CUDA_WARP
 
 #include <cuda/std/detail/__config>
 
@@ -21,6 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__warp_communication/warp_shuffle.h>
+#include <cuda/__warp/warp_shuffle.h>
 
-#endif // _CUDA_WARP_COMM
+#endif // _CUDA_WARP

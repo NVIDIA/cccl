@@ -1,4 +1,4 @@
-.. _libcudacxx-extended-api-warp-communication-warp-shuffle:
+.. _libcudacxx-extended-api-warp-warp-shuffle:
 
 Warp Shuffle
 ============
@@ -84,7 +84,7 @@ Result type:
     };
 
 The functionality provides a generalized and safe alternative to CUDA warp shuffle intrinsics.
-The functions allow to exchange data of any data size, including raw arrays and structs.
+The functions allow to exchange data of any data size, including raw arrays, pointers, and structs.
 
 **Parameters**
 
@@ -100,14 +100,12 @@ The functions allow to exchange data of any data size, including raw arrays and 
 - ``data``: data of the destination lane.
 - ``pred``: ``true`` if the destination lane is within the source lane window. ``false`` otherwise.
 
-**Preconditions**
-
-*Compile-time checks*:
+**Constrains**
 
 - ``Width`` must be a power of two in the range [1, 32]
 - ``T``: only ``void`` pointers are allowed to avoid bug-prone code
 
-*Run-time check in in debug mode*:
+**Preconditions**
 
 - ``lane_mask`` must be a subset of the active mask
 - The destination lane must be a member of the ``lane_mask``
@@ -130,7 +128,7 @@ Example
 
     #include <cuda/std/array>
     #include <cuda/std/type_traits>
-    #include <cuda/warp_comm>
+    #include <cuda/warp>
     #include <cstdio>
 
     struct MyStruct {
@@ -146,16 +144,16 @@ Example
         MyStruct                 my_structs{static_cast<double>(threadIdx.x), threadIdx.x + 1};
         if (laneid < 16) {
             // lanes [0, 15] get an array with values {5, 6, 7}
-            auto ret = cuda::warp_shuffle_idx(raw_array, 5, 0xFFFF, half_warp);
+            auto ret = cuda::device::warp_shuffle_idx(raw_array, 5, 0xFFFF, half_warp);
             printf("lane %2d: [%d, %d, %d]\n", laneid, ret.data[0], ret.data[1], ret.data[2]);
 
             // lanes [1, 15] get an array with values {threadIdx.x - 1, threadIdx.x, threadIdx.x + 1}
             // lane 0 keeps the original values
-            auto array_ret = cuda::warp_shuffle_up(array, 1, half_warp).data;
+            auto array_ret = cuda::device::warp_shuffle_up(array, 1, half_warp).data;
             printf("lane %2d: [%d, %d, %d]\n", laneid, array[0], array[1], array_ret[2]);
         }
         // lanes [0, 13] get my_structs with values {threadIdx.x + 2, threadIdx.x + 3} and pred=true
-        auto ret = cuda::warp_shuffle_down<16>(my_structs, 2);
+        auto ret = cuda::device::warp_shuffle_down<16>(my_structs, 2);
         printf("lane %2d: {%f, %d}, pred %d\n", laneid, ret.data.x, ret.data.y, ret.pred);
     }
 
