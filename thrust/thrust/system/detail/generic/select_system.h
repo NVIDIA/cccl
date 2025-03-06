@@ -32,28 +32,20 @@
 #include <thrust/iterator/detail/any_system_tag.h>
 #include <thrust/iterator/detail/device_system_tag.h>
 #include <thrust/iterator/detail/minimum_system.h>
-#include <thrust/system/detail/generic/select_system_exists.h>
 
 THRUST_NAMESPACE_BEGIN
+
+// forward declaration of any_system_tag for any_conversion below
+struct any_system_tag;
+
 namespace system::detail::generic
 {
-namespace select_system_detail
-{
-template <typename System1, typename System2>
-_CCCL_HOST_DEVICE auto&
-min_system(thrust::execution_policy<System1>& system1, thrust::execution_policy<System2>& system2)
-{
-  if constexpr (::cuda::std::is_same_v<System1, System2>
-                || ::cuda::std::is_same_v<System1, thrust::detail::minimum_system<System1, System2>>)
-  {
-    return thrust::detail::derived_cast(system1);
-  }
-  else if constexpr (::cuda::std::is_same_v<System2, thrust::detail::minimum_system<System1, System2>>)
-  {
-    return thrust::detail::derived_cast(system2);
-  }
-}
-} // namespace select_system_detail
+template <typename, typename... Tags>
+inline constexpr bool select_system_exists = false;
+
+template <typename... Tags>
+inline constexpr bool
+  select_system_exists<::cuda::std::void_t<decltype(select_system(::cuda::std::declval<Tags>()...))>, Tags...> = true;
 
 template <typename System>
 _CCCL_HOST_DEVICE typename thrust::detail::disable_if<select_system_exists<System>, System&>::type
@@ -66,7 +58,15 @@ template <typename System1, typename System2>
 _CCCL_HOST_DEVICE thrust::detail::minimum_system<System1, System2>&
 select_system(thrust::execution_policy<System1>& system1, thrust::execution_policy<System2>& system2)
 {
-  return select_system_detail::min_system(system1, system2);
+  if constexpr (::cuda::std::is_same_v<System1, System2>
+                || ::cuda::std::is_same_v<System1, thrust::detail::minimum_system<System1, System2>>)
+  {
+    return thrust::detail::derived_cast(system1);
+  }
+  else if constexpr (::cuda::std::is_same_v<System2, thrust::detail::minimum_system<System1, System2>>)
+  {
+    return thrust::detail::derived_cast(system2);
+  }
 }
 
 template <typename System1, typename System2, typename... Systems>
