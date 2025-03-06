@@ -108,12 +108,11 @@ Feature availability:
 
 -  C++23 ``invoke_r`` in ``<functional>`` is available in C++14.
 
--  C++23 ``<mdspan>`` is available in C++14.
+-  C++23 ``<mdspan>`` is available in C++17.
 
-   -  ``mdspan`` is feature complete in C++14 onwards.
-   -  ``mdspan`` on msvc is only supported in C++20 and onwards.
+   -  ``mdspan`` is feature complete in C++17 onwards.
 
--  C++26 ``std::dims`` is available in C++14.
+-  C++26 ``std::dims`` is available in C++17.
 
 -  C++26 ``std::linalg`` accessors, transposed layout, and related functions are available in C++17.
 
