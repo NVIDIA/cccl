@@ -281,8 +281,7 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeys: bit windows",
   const int end_bit   = GENERATE_COPY(values<int>({0, num_bits / 3, 3 * num_bits / 4, num_bits}));
   if (end_bit <= begin_bit || (begin_bit == 0 && end_bit == num_bits))
   {
-    // SKIP(); Not available until Catch2 3.3.0
-    return;
+    SKIP();
   }
   c2h::device_vector<key_t> in_keys(num_items);
   const int num_key_seeds = 1;
