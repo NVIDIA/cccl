@@ -5,6 +5,7 @@
 import re
 import tempfile
 from collections import namedtuple
+from enum import Enum
 from typing import TYPE_CHECKING, Union
 
 # Import for type checking only
@@ -16,6 +17,19 @@ version = namedtuple("version", ("major", "minor"))
 code = namedtuple("code", ("kind", "version", "data"))
 symbol = namedtuple("symbol", ("kind", "name"))
 dim3 = namedtuple("dim3", ("x", "y", "z"))
+
+
+class CudaSharedMemConfig(Enum):
+    """
+    CUDA shared memory configuration.
+    """
+
+    Default = 0
+    FourByte = 1
+    EightByte = 2
+
+    def __str__(self):
+        return f"cudaSharedMemBankSize{self.name}"
 
 
 def make_binary_tempfile(content, suffix):

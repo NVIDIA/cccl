@@ -6,7 +6,10 @@ import numba
 import numpy as np
 import pytest
 
-from cuda.cooperative.experimental._common import normalize_dtype_param
+from cuda.cooperative.experimental._common import (
+    CudaSharedMemConfig,
+    normalize_dtype_param,
+)
 
 
 class TestNormalizeDtypeParam:
@@ -138,3 +141,74 @@ class TestNormalizeDtypeParam:
         with pytest.raises(ValueError) as excinfo:
             normalize_dtype_param(dtype)
         assert "Unrecognized dtype format:" in str(excinfo.value)
+
+
+class TestCudaSharedMemConfig:
+    @pytest.mark.parametrize(
+        "enum_member, expected_value",
+        [
+            (CudaSharedMemConfig.Default, 0),
+            (CudaSharedMemConfig.FourByte, 1),
+            (CudaSharedMemConfig.EightByte, 2),
+        ],
+    )
+    def test_enum_values(self, enum_member, expected_value):
+        """Test that enum values are correctly defined."""
+        assert enum_member.value == expected_value
+
+    @pytest.mark.parametrize(
+        "enum_member, expected_name",
+        [
+            (CudaSharedMemConfig.Default, "Default"),
+            (CudaSharedMemConfig.FourByte, "FourByte"),
+            (CudaSharedMemConfig.EightByte, "EightByte"),
+        ],
+    )
+    def test_enum_names(self, enum_member, expected_name):
+        """Test that enum names are correctly defined."""
+        assert enum_member.name == expected_name
+
+    @pytest.mark.parametrize(
+        "enum_member, expected_str",
+        [
+            (CudaSharedMemConfig.Default, "cudaSharedMemBankSizeDefault"),
+            (CudaSharedMemConfig.FourByte, "cudaSharedMemBankSizeFourByte"),
+            (CudaSharedMemConfig.EightByte, "cudaSharedMemBankSizeEightByte"),
+        ],
+    )
+    def test_string_representation(self, enum_member, expected_str):
+        """Test the string representation of enum values."""
+        assert str(enum_member) == expected_str
+
+    def test_enum_iteration(self):
+        """Test that we can iterate through all enum values."""
+        expected_values = [
+            CudaSharedMemConfig.Default,
+            CudaSharedMemConfig.FourByte,
+            CudaSharedMemConfig.EightByte,
+        ]
+        assert list(CudaSharedMemConfig) == expected_values
+
+    @pytest.mark.parametrize(
+        "name, expected_enum",
+        [
+            ("Default", CudaSharedMemConfig.Default),
+            ("FourByte", CudaSharedMemConfig.FourByte),
+            ("EightByte", CudaSharedMemConfig.EightByte),
+        ],
+    )
+    def test_enum_lookup_by_name(self, name, expected_enum):
+        """Test that we can look up enum values by name."""
+        assert CudaSharedMemConfig[name] == expected_enum
+
+    @pytest.mark.parametrize(
+        "value, expected_enum",
+        [
+            (0, CudaSharedMemConfig.Default),
+            (1, CudaSharedMemConfig.FourByte),
+            (2, CudaSharedMemConfig.EightByte),
+        ],
+    )
+    def test_enum_lookup_by_value(self, value, expected_enum):
+        """Test that we can look up enum values by value."""
+        assert CudaSharedMemConfig(value) == expected_enum
