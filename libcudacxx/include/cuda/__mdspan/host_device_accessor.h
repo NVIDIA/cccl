@@ -169,9 +169,6 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr data_handle_type offset(data_handle_type __p, size_t __i) const
     noexcept(__is_offset_noexcept)
   {
-    NV_IF_ELSE_TARGET(NV_IS_HOST,
-                      (__check_host_pointer(__p);), //
-                      (static_assert(false, "cuda::__host_accessor cannot be used in DEVICE code");))
     return _Accessor::offset(__p, __i);
   }
 
@@ -254,7 +251,6 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr data_handle_type offset(data_handle_type __p, size_t __i) const
     noexcept(__is_offset_noexcept)
   {
-    NV_IF_TARGET(NV_IS_HOST, (__prevent_host_instantiation();))
     return _Accessor::offset(__p, __i);
   }
 
@@ -344,7 +340,6 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr data_handle_type offset(data_handle_type __p, size_t __i) const
     noexcept(__is_offset_noexcept)
   {
-    NV_IF_TARGET(NV_IS_HOST, (__check_managed_pointer(__p);))
     return _Accessor::offset(__p, __i);
   }
 
