@@ -25,23 +25,26 @@
  *
  ******************************************************************************/
 
-#include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
-
 #include <cub/config.cuh>
 
-#include <cub/device/device_for.cuh>
+// MSVC doesn't support __device__ lambdas
+#if !_CCCL_COMPILER(MSVC)
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/device_vector.h>
-#include <thrust/fill.h>
-#include <thrust/host_vector.h>
+#  include "insert_nested_NVTX_range_guard.h"
+// above header needs to be included first
 
-#include <cuda/std/array>
-#include <cuda/std/mdspan>
-#include <cuda/std/span>
+#  include <cub/device/device_for.cuh>
 
-#include <c2h/catch2_test_helper.h>
+#  include <thrust/detail/raw_pointer_cast.h>
+#  include <thrust/device_vector.h>
+#  include <thrust/fill.h>
+#  include <thrust/host_vector.h>
+
+#  include <cuda/std/array>
+#  include <cuda/std/mdspan>
+#  include <cuda/std/span>
+
+#  include <c2h/catch2_test_helper.h>
 
 // example-begin for-each-in-extents-op
 struct linear_store_3D
@@ -85,3 +88,5 @@ C2H_TEST("Device ForEachInExtents", "[ForEachInExtents][device]")
   // example-end for-each-in-extents-example
 }
 // clang-format on
+
+#endif // !_CCCL_COMPILER(MSVC)
