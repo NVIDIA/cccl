@@ -19,6 +19,13 @@ symbol = namedtuple("symbol", ("kind", "name"))
 dim3 = namedtuple("dim3", ("x", "y", "z"))
 
 
+CUB_BLOCK_SCAN_ALGOS = {
+    "raking": "::cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING",
+    "raking_memoize": "::cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING_MEMOIZE",
+    "warp_scans": "::cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS",
+}
+
+
 class CudaSharedMemConfig(Enum):
     """
     CUDA shared memory configuration.  This is intended to mirror the C++
