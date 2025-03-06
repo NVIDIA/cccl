@@ -26,9 +26,9 @@
  ******************************************************************************/
 #include <cub/config.cuh>
 
-// MSVC in C++20 is not able to compile Catch2 tests with many large type lists. Error:
+// MSVC is not able to compile Catch2 tests with many large type lists. Error:
 // error C3546: '...': there are no parameter packs available to expand in make_tuple_types.h:__make_tuple_types_flat
-#if !(_CCCL_COMPILER(MSVC) && _CCCL_STD_VERSION == 2020)
+#if !_CCCL_COMPILER(MSVC)
 
 #  include <cub/device/device_for.cuh>
 
@@ -181,4 +181,4 @@ C2H_TEST("DeviceForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][devic
   REQUIRE(h_output == h_output_gpu);
 }
 
-#endif // !(_CCCL_COMPILER(MSVC) && _CCCL_STD_VERSION == 2020)
+#endif // !_CCCL_COMPILER(MSVC)
