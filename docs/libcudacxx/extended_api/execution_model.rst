@@ -241,7 +241,7 @@ return ``cudaErrorNotReady`` without a device thread making progress.
             return cudaDeviceSynchronize();
         }
 
-.. _libcudacxx-extended-api-execution-model-stream-ordering:
+.. _libcudacxx-extended-api-execution-model-cuda-dependencies:
 
 Dependencies
 ~~~~~~~~~~~~
