@@ -15,7 +15,7 @@ Any Standard C++ header not listed below is omitted.
      - **CUDA Toolkit Availability**
      - **C++ Reference**
 
-   * - ``cuda/std/cassert``
+   * - ``<cuda/std/cassert>``
      - Lightweight assumption testing
      - CCCL 2.0.0
      - CUDA 10.2
@@ -27,11 +27,11 @@ Any Standard C++ header not listed below is omitted.
      - CUDA 11.4
      - `\<ccomplex\> <https://en.cppreference.com/w/cpp/header/ccomplex>`_
 
-   * - ``cuda/std/cfloat``
+   * - ``<cuda/std/cfloat>``
      - Type support library
      - CCCL 2.2.0
      - CUDA 12.3
-     - `\<cuda/std/cfloat\> <https://en.cppreference.com/w/cpp/header/cfloat>`_
+     - `\<cfloat\> <https://en.cppreference.com/w/cpp/header/cfloat>`_
 
    * - ``<cuda/std/cfloat>``
      - Limits of floating point types
@@ -45,19 +45,19 @@ Any Standard C++ header not listed below is omitted.
      - CUDA 10.2
      - `\<climits\> <https://en.cppreference.com/w/cpp/header/climits>`_
 
-   * - ``cuda/std/cmath``
+   * - ``<cuda/std/cmath>``
      - Common math functions
      - CCCL 2.2.0
      - CUDA 12.3
      - `\<cmath\> <https://en.cppreference.com/w/cpp/header/cmath>`_
 
-   * - ``cuda/std/cstddef``
+   * - ``<cuda/std/cstddef>``
      - Fundamental types
      - CCCL 2.0.0
      - CUDA 10.2
      - `\<cstddef\> <https://en.cppreference.com/w/cpp/header/cstddef>`_
 
-   * - ``cuda/std/cstdint``
+   * - ``<cuda/std/cstdint>``
      - Fundamental integer types
      - CCCL 2.2.0
      - CUDA 12.3
@@ -69,13 +69,13 @@ Any Standard C++ header not listed below is omitted.
      - CUDA 10.2
      - `\<cstdint\> <https://en.cppreference.com/w/cpp/header/cstdint>`_
 
-   * - ``cuda/std/cstdlib``
+   * - ``<cuda/std/cstdlib>``
      - Common utilities
      - CCCL 2.2.0
      - CUDA 12.3
      - `\<cstdlib\> <https://en.cppreference.com/w/cpp/header/cstdlib>`_
 
-   * - ``cuda/std/cstring``
+   * - ``<cuda/std/cstring>``
      - Provides array manipulation functions such as ``memcpy``, ``memset`` and ``memcmp``
      - CCCL 3.0.0
      - CUDA 13.0
