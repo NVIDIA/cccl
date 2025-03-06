@@ -156,7 +156,7 @@ The implementation may assume that any **host** thread will eventually do one of
 CUDA APIs
 ---------
 
-A host or device thread CUDA API call shall eventually either return or ensure at least once device thread makes progress.
+A CUDA API call shall eventually either return or ensure at least one device thread makes progress.
 
 CUDA query functions (e.g. `cudaStreamQuery <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__STREAM.html#group__CUDART__STREAM_1g2021adeb17905c7ec2a3c1bf125c5435>`__,
 `cudaEventQuery <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__EVENT.html#group__CUDART__EVENT_1g2bf738909b4a059023537eaa29d8a5b7>`__, etc.) shall not consistently
@@ -241,17 +241,17 @@ return ``cudaErrorNotReady`` without a device thread making progress.
             return cudaDeviceSynchronize();
         }
 
-.. _libcudacxx-extended-api-execution-model-stream-ordering:
+.. _libcudacxx-extended-api-execution-model-cuda-dependencies:
 
-Stream and event ordering
--------------------------
+Dependencies
+~~~~~~~~~~~~
 
 A device thread shall not start until all its dependencies have completed.
 
-[Note: Dependencies that prevent device threads from starting to make progress can be created, for example, via `CUDA Stream Commands <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#streams>`__ .
-These may include dependencies on the completion of, among others, `CUDA Events <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#events>`__ and `CUDA Kernels <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#kernels>`__ . - end note.]
+  [Note: Dependencies that prevent device threads from starting to make progress can be created, for example, via `CUDA Stream Commands <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#streams>`__ .
+  These may include dependencies on the completion of, among others, `CUDA Events <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#events>`__ and `CUDA Kernels <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#kernels>`__ . - end note.]
 
-.. dropdown:: Examples of CUDA API forward progress guarantees due to stream and event ordering
+.. dropdown:: Examples of CUDA API forward progress guarantees due to dependencies
 
     .. code:: cuda
 	:number-lines:
