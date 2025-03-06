@@ -4,7 +4,10 @@
 
 import numba
 
-from cuda.cooperative.experimental._common import make_binary_tempfile
+from cuda.cooperative.experimental._common import (
+    make_binary_tempfile,
+    normalize_dtype_param,
+)
 from cuda.cooperative.experimental._types import (
     Algorithm,
     Dependency,
@@ -51,6 +54,9 @@ def radix_sort_keys(dtype, threads_per_block, items_per_thread):
     Returns:
         A callable object that can be linked to and invoked from a CUDA kernel
     """
+    # Normalize the dtype parameter.
+    dtype = normalize_dtype_param(dtype)
+
     template = Algorithm(
         "BlockRadixSort",
         "Sort",
