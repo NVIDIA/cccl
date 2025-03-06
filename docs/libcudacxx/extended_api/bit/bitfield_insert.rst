@@ -1,7 +1,7 @@
 .. _libcudacxx-extended-api-bit-bitfield_insert:
 
-``bitfield_insert``
-===================
+``cuda::bitfield_insert``
+=========================
 
 .. code:: cpp
 

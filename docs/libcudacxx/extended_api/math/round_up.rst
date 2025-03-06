@@ -1,7 +1,7 @@
 .. _libcudacxx-extended-api-math-round-up:
 
-``round_up`` Round to the next multiple
-=======================================
+``cuda::round_up``
+==================
 
 .. code:: cuda
 

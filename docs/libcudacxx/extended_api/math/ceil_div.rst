@@ -1,7 +1,7 @@
 .. _libcudacxx-extended-api-math-ceil-div:
 
-``ceil_div`` Ceiling division
-=============================
+``cuda::ceil_div``
+==================
 
 .. code:: cuda
 

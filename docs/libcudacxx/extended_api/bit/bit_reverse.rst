@@ -1,7 +1,7 @@
 .. _libcudacxx-extended-api-bit-bit_reverse:
 
-``bit_reverse``
-===============
+``cuda::bit_reverse``
+=====================
 
 .. code:: cpp
 

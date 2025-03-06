@@ -1,7 +1,7 @@
 .. _libcudacxx-extended-api-bit-bitmask:
 
-``bitmask``
-===========
+``cuda::bitmask``
+=================
 
 .. code:: cpp
 

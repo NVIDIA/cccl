@@ -7,9 +7,9 @@ Math
    :hidden:
    :maxdepth: 1
 
-   cuda::ceil_div <math/ceil_div>
-   cuda::round_up <math/round_up>
-   cuda::round_down <math/round_down>
+   math/ceil_div
+   math/round_up
+   math/round_down
 
 .. list-table::
    :widths: 25 45 30 30

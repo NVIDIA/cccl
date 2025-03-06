@@ -1,7 +1,7 @@
 .. _libcudacxx-extended-api-bit-bitfield_extract:
 
-``bitfield_extract``
-====================
+``cuda::bitfield_extract``
+==========================
 
 .. code:: cpp
 
