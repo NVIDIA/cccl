@@ -1026,12 +1026,172 @@ _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> log(const complex<_Tp>& __x)
   return complex<_Tp>(_CUDA_VSTD::log(_CUDA_VSTD::abs(__x)), _CUDA_VSTD::arg(__x));
 }
 
+template <>
+_LIBCUDACXX_HIDE_FROM_ABI complex<double> log(const complex<double>& __x)
+{
+  // Make sure __r^2 + __i^2 doesn't underflow or overflow
+  const double __real_abs = _CUDA_VSTD::fabs(__x.real());
+  const double __imag_abs = _CUDA_VSTD::fabs(__x.imag());
+
+  double __max = (__real_abs > __imag_abs) ? __real_abs : __imag_abs;
+  double __min = (__real_abs > __imag_abs) ? __imag_abs : __real_abs;
+
+  // We would like to range reduce these values so abs(x) ~ 1, as we'll take the log of this.
+  // The below code inlines and removes these two calls:
+  //    double __max_reduced = _CUDA_VSTD::frexp(__max, &__exp);
+  //    double __min_reduced = _CUDA_VSTD::ldexp(__min, -__exp);
+  int __exp = int(reinterpret_cast<uint64_t&>(__max) >> 52) - 1023 + 1;
+
+  uint64_t __max_reduced_as_uint = (reinterpret_cast<uint64_t&>(__max) & 0x000FFFFFFFFFFFFFULL) | 0x3FE0000000000000ULL;
+  double __max_reduced = reinterpret_cast<double&>(__max_reduced_as_uint);
+
+  // Create an exponent for an inline ldexp(__min, -__exp)
+  uint64_t __exp_neg_as_uint = (uint64_t(1023 - __exp) << 52);
+  double __exp_neg = reinterpret_cast<double&>(__exp_neg_as_uint);
+
+  double __min_reduced = __min * __exp_neg;
+
+  // Slowpath, denormal/nan/zero/rare-underflow:
+  if((__exp == -1022) || __exp >= 1023){
+    if(__max == 0.0 || __exp == 1025){
+      // NaN/Inf/0.0 (Inf doesn't matter, gets fixed later by hypot)
+      __max_reduced = __max;
+    }else{
+      if(__exp >= 1023){ //Only 1023 or 1024
+        // Creating a fast ldexp power of 2 as above underflows.
+        // Split it into two seperate mul's.
+        // Inlined version of this code:
+        //   __min_reduced = _CUDA_VSTD::ldexp(__min, -__exp);
+        uint64_t __ldexp_factor_2_uint = (uint64_t(1023 + 52 - __exp) << 52);
+        // 2^-52 Can change this to whatever, maybe pick a number that's in cache.
+        double __ldexp_factor_1 = 2.220446049250313e-16;
+        double __ldexp_factor_2 = reinterpret_cast<double&>(__ldexp_factor_2_uint);
+        __min_reduced = (__min * __ldexp_factor_1) * __ldexp_factor_2;
+      }else{
+        // __max is denormal (so __min is also denormal or 0.0)
+        // Scale things up by 2^52 then do the fast ldexp.
+        __max_reduced = __max * 4.503599627370496e15; // 2^52
+        __min_reduced = __min * 4.503599627370496e15; // 2^52;
+
+        int __exp_no_denorm_bias = int(reinterpret_cast<uint64_t&>(__max_reduced) >> 52) - 1023 + 1;
+        uint64_t ldexp_factor_no_denorm_bias = uint64_t(1023 - __exp_no_denorm_bias) << 52;
+
+        __max_reduced *= reinterpret_cast<double&>(ldexp_factor_no_denorm_bias);
+        __min_reduced *= reinterpret_cast<double&>(ldexp_factor_no_denorm_bias);
+
+        __exp = __exp_no_denorm_bias - 52;
+      }
+    }
+  }
+
+  // We now have __max and __min reduced according to the exponent of __max.
+  // However, we need to have it reduced according to hypot(__max, __min).
+  // At the moment we have:
+  //   0.5 <= hypot(__min_reduced, __max_reduced) <= sqrt(2)
+  // We will take the logarithm of this, for the most accuracy (and to reduce log1p polynomial length),
+  // we would like to make sure that __hypot_sq_scaled is close to 1 for accuracy.
+  double __hypot_sq_scaled = _CUDA_VSTD::fma(__max_reduced, __max_reduced, __min_reduced*__min_reduced);
+
+  // Quick scaling that simlifies later scaling:
+  if(__hypot_sq_scaled < 0.5){
+    __max_reduced *= 2.0;
+    __min_reduced *= 2.0;
+    __exp -= 1;
+  }
+
+  double __exp_d = double(__exp);
+
+  // hypot(__max_reduced, __min_reduced) is close to 1.0, after we get log(hypot())).
+  // We can end up with large ulp errors due to catastrophic cancellation with hypot.
+  // To prevent this we should instead calculate:
+  //        ((real^2 +  imag^2) - 1)
+  // accurately, then use log1p. This keeps it accurate around log(hypot()) = 0.
+  double max_2_hi = __max_reduced*__max_reduced;
+  double max_2_lo =  _CUDA_VSTD::fma(__max_reduced, __max_reduced, -max_2_hi);
+
+  double min_2_hi = __min_reduced*__min_reduced;
+  double min_2_lo =  _CUDA_VSTD::fma(__min_reduced, __min_reduced, -min_2_hi);
+
+  double sum_hi = max_2_hi + min_2_hi;
+  double sum_lo = min_2_hi + (max_2_hi - sum_hi);
+
+  sum_hi -= 1.0; // exact where it matters, with the previous range reduction.
+
+  // Let compiler rearrange the sum in brackets, same max error all ways. Needs all terms.
+  __hypot_sq_scaled = sum_hi + (sum_lo + max_2_lo + min_2_lo);
+
+  // We now need log1p(__hypot_sq_scaled)
+  // The range of __hypot_sq_scaled is too large for a simple polynomial at the moment,
+  // and the log1p function inself is quite heavy. We do some other reduction using:
+  //    log1p(x) = -ln(C) + log1p(C-1 + C*x)
+
+  // C = 2: log1p = ln(1/2) + log1p(1 + 2*x)
+  if(__hypot_sq_scaled < -0.25){
+    __hypot_sq_scaled =  _CUDA_VSTD::fma(2.0, __hypot_sq_scaled, 1.0);
+    __exp_d -= 0.5;
+  }
+
+  // C = 0.5: log1p = ln(2) + log1p(0.5 + 0.5*x)
+  if(__hypot_sq_scaled >= 0.5){
+    __hypot_sq_scaled =  _CUDA_VSTD::fma(0.5, __hypot_sq_scaled, -0.5);
+    __exp_d += 0.5;
+  }
+
+  // __hypot_sq_scaled is now in [-0.25, 0.5], we can use a log1p polynomial estimate.
+  // (Might be better to split into two seperate polynomials)
+  // fpminimax(log1p(x), [|3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21|], [|D...|] ,[-0.25, 0.5], floating, relative, x + -0.5*x^2);
+  double __log1p_poly = 0.5 * -7.0911163073315332250334819264026009477674961090088e-3;
+  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __hypot_sq_scaled, 0.5 * 2.6602230803402567710369552855809160973876714706421e-2);
+  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __hypot_sq_scaled, 0.5 * -4.7222450601136278791614131478127092123031616210937e-2);
+  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __hypot_sq_scaled, 0.5 * 5.6597222129139437840628090725658694282174110412598e-2);
+  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __hypot_sq_scaled, 0.5 * -5.7782400501809896842253522208920912817120552062988e-2);
+  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __hypot_sq_scaled, 0.5 * 5.8918170723403356925373941521684173494577407836914e-2);
+  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __hypot_sq_scaled, 0.5 * -6.2247035665701382078918157958469237200915813446045e-2);
+  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __hypot_sq_scaled, 0.5 * 6.6607114464846448043111593051435193046927452087402e-2);
+  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __hypot_sq_scaled, 0.5 * -7.1439299437086684063658026389020960777997970581055e-2);
+  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __hypot_sq_scaled, 0.5 * 7.692821470788910320770526141131995245814323425293e-2);
+  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __hypot_sq_scaled, 0.5 * -8.3333294918203598689032673973997589200735092163086e-2);
+  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __hypot_sq_scaled, 0.5 * 9.0908879181783558420804070010490249842405319213867e-2);
+  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __hypot_sq_scaled, 0.5 * -9.9999988370645248592083476069092284888029098510742e-2);
+  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __hypot_sq_scaled, 0.5 * 0.111111115835399135165495465571439126506447792053223);
+  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __hypot_sq_scaled, 0.5 * -0.12500000038299266535979370473796734586358070373535);
+  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __hypot_sq_scaled, 0.5 * 0.14285714280067426940057373485615244135260581970215);
+  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __hypot_sq_scaled, 0.5 * -0.16666666666197160751039518800098448991775512695312);
+  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __hypot_sq_scaled, 0.5 * 0.20000000000032358560275724812527187168598175048828);
+  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __hypot_sq_scaled, 0.5 * -0.25000000000001904032487232143466826528310775756836);
+  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __hypot_sq_scaled, 0.5 * 0.33333333333333270420695271241129375994205474853516);
+  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __hypot_sq_scaled, 0.5 * -0.5);
+  __log1p_poly=  _CUDA_VSTD::fma(__log1p_poly, __hypot_sq_scaled, 0.5 * 1.0);
+  __log1p_poly *= __hypot_sq_scaled;
+
+  double __abs_rescaled = _CUDA_VSTD::fma(0.6931471805599453094, __exp_d, __log1p_poly); // ln(2)
+
+  // Fix x == 0.0
+  if(__x.real() == 0.0 && __x.imag() == 0.0){
+    __abs_rescaled = -INFINITY;
+  }
+
+  // Fix hypot inf/nan case:
+  if((__max == INFINITY) || (__min == INFINITY)){
+    __abs_rescaled = INFINITY;
+  }
+
+  return complex<double>(__abs_rescaled, _CUDA_VSTD::atan2(__x.imag(), __x.real()));
+}
+
 // log10
 
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> log10(const complex<_Tp>& __x)
 {
   return _CUDA_VSTD::log(__x) / _CUDA_VSTD::log(_Tp(10));
+}
+
+template <>
+_LIBCUDACXX_HIDE_FROM_ABI complex<double> log10(const complex<double>& __x)
+{
+  // Should have no overflow issues, log(x) is never large enough.
+  return _CUDA_VSTD::log(__x) * 0.434294481903251827651128918916605; // 1/ln(10)
 }
 
 // sqrt
@@ -1054,6 +1214,94 @@ _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> sqrt(const complex<_Tp>& __x)
                         _CUDA_VSTD::__constexpr_copysign(__x.real(), __x.imag()));
   }
   return _CUDA_VSTD::polar(_CUDA_VSTD::sqrt(_CUDA_VSTD::abs(__x)), _CUDA_VSTD::arg(__x) / _Tp(2));
+}
+
+// double sqrt
+
+template <>
+_LIBCUDACXX_HIDE_FROM_ABI complex<double> sqrt(const complex<double>& __x)
+{
+  const double __re = __x.real();
+  const double __im = __x.imag();
+
+  if(_CUDA_VSTD::isinf(__im)){
+    return complex<double>(INFINITY, __im);
+  }
+
+  if((__re == 0.0) && (__im == 0.0)){
+    return complex<double>(0.0, __im);
+  }
+
+  // pre-check to see if we over/undeflow:
+  double __x_abs_sq = _CUDA_VSTD::fma(__re, __re, __im*__im);
+
+  // Some range-reduction that simplifies the calculation and avoids needing the full hypot function.
+  // Alas there is not a single splitting point that works for all values, so we split into 3 intervals:
+  // (denormals are to blame)
+  double __ldexp_factor_1 = 2.0; // Power of 2 of the form 2^(2m + 1)
+  double __ldexp_factor_2 = 0.5; // 1/sqrt(2*ldexp_factor_1)
+  double __ldexp_combined = 1.0; // __ldexp_factor_1*__ldexp_factor_2
+
+  // 1e100 is a guesstimate, don't need exact values.
+  if(__x_abs_sq > 1.0e100){
+    __ldexp_factor_1 = 9.32292591400025842911370664433e-156; // 2^-515
+    __ldexp_factor_2 = 2.31584178474632390847141970017e77;   // 1/sqrt(2*ldexp_factor_1)
+    __ldexp_combined = 2.1590421387736111563465879657e-78;  // __ldexp_factor_1*__ldexp_factor_2
+  }
+
+  if(__x_abs_sq < 1.0e-100){
+    __ldexp_factor_1 = 1.20766797594289323271729746592e170; // 2^565
+    __ldexp_factor_2 = 6.43444698683503614767369021684e-86; // 1/sqrt(2*ldexp_factor_1)
+    __ldexp_combined = 7.77067556890291628367784762729e84;  // __ldexp_factor_1*__ldexp_factor_2
+  }
+
+  const double __re_scaled = __re*__ldexp_factor_1;
+  const double __im_scaled = __im*__ldexp_factor_1;
+
+  // An inlined hypot, as we have the inputs scaled anyway.
+  // We don't need to check which of__im/__re is bigger for a more accurate hypot,
+  // the final result is not asymmetrical in __im/__re and the __re accuracy is more important.
+  // Surprisingly the final accuracy actually gets worse if you try and make the hypot part more
+  // accurate when __im >> __re via swapping the fma inputs.
+  double __x_abs_scaled = _CUDA_VSTD::sqrt(_CUDA_VSTD::fma(__re_scaled, __re_scaled, __im_scaled*__im_scaled));
+
+  // We can add in the hypot inf-nan override here to avoid a complicated inf check at the start.
+  if(_CUDA_VSTD::isinf(__im) || _CUDA_VSTD::isinf(__re)){
+    __x_abs_scaled = INFINITY;
+  }
+
+  // These would be the ideal terms we want to compute, however we can get catastrophic
+  // cancellation in either (depending on if __re_scaled > 0 or not).
+  const double __ans_re_sq = __x_abs_scaled + __re_scaled;
+  const double __ans_im_sq = __x_abs_scaled - __re_scaled;
+
+  // Get rid of catastrophic cancellation issues by using conjugate:
+  //  for x > 0:
+  //  x - sqrt(x^2 + y^2) = (x - sqrt(x^2 + y^2))(x + sqrt(x^2 + y^2))/(x + sqrt(x^2 + y^2))
+  //                      = (x - sqrt(x^2 + y^2))(x + sqrt(x^2 + y^2)) (x^2 - (x^2 + y^2))/(x + sqrt(x^2 + y^2))
+  //                      = (x^2 - (x^2 + y^2))/(x + sqrt(x^2 + y^2))
+  //                      = -y^2 / (x + sqrt(x^2 + y^2))
+  //
+  // With the same calculation for x < 0
+  // We have:
+  //        x +- sqrt(x^2 + y^2) = -y^2/(x -+ sqrt(x^2 + y^2))
+
+  const bool __im_part_is_hard =  (__re_scaled > 0.0);
+  double __easy_part = __im_part_is_hard ? __ans_re_sq : __ans_im_sq;
+
+  // __im_scaled can have under/overflowed so we go back to using __im, and scale appropriately:
+  // Integrate the scaling so we can use the possibly faster 1/sqrt():
+  // TODO make sure this gets optimized to some kind of rsqrt()
+  // Probably more opts to be found here, possibly get rid of __ldexp_combined entirely.
+  // Here we must be sure to multiply by __im last for over/underflow reasons:
+  const double __hard_part = (__im)*(__ldexp_combined * (1.0/(_CUDA_VSTD::sqrt(__easy_part))));
+
+  __easy_part = __ldexp_factor_2*_CUDA_VSTD::sqrt(__easy_part);
+
+  const double __ans_re = __im_part_is_hard ?  __easy_part : _CUDA_VSTD::fabs(__hard_part);
+  const double __ans_im = __im_part_is_hard ?  _CUDA_VSTD::fabs(__hard_part) : __easy_part; // don't need the fabs
+
+  return complex<double>(__ans_re, _CUDA_VSTD::__constexpr_copysign(__ans_im, __im));
 }
 
 // exp
@@ -1086,6 +1334,89 @@ _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> exp(const complex<_Tp>& __x)
   }
   _Tp __e = _CUDA_VSTD::exp(__x.real());
   return complex<_Tp>(__e * _CUDA_VSTD::cos(__i), __e * _CUDA_VSTD::sin(__i));
+}
+
+// exp(double specialization)
+
+template <>
+_LIBCUDACXX_HIDE_FROM_ABI complex<double> exp(const complex<double>& __x)
+{
+  const double __r = __x.real();
+  const double __i = __x.imag();
+
+  // Special cases that don't filter through:
+  if((__r == -INFINITY) && !isfinite(__i)){return {0.0, 0.0};}
+  if((__r ==  INFINITY) && !isfinite(__i)){return {INFINITY, NAN};}
+  if(isnan(__r) && (__i == 0.0)){return __x;}
+
+  // e^real, deal with overflow after:
+  double __j = _CUDA_VSTD::round(__r * 1.442695040888963407);
+  double __exp_mant;
+
+  // exp() range reduction.
+  // https://arxiv.org/PS_cache/arxiv/pdf/0708/0708.3722v1.pdf
+  double __r_reduced;
+  __r_reduced = _CUDA_VSTD::fma (-__j, 0.6931471805599453972491, __r);
+  __r_reduced = _CUDA_VSTD::fma (-__j, -8.78318343240526554e-17, __r_reduced);
+  __r_reduced = _CUDA_VSTD::fma (-__j, -2.51071706717795650e-33, __r_reduced);
+
+  // __r_reduced is in [log(sqrt(0.5)), log(sqrt(2))].
+  __exp_mant = 2.5022322536502990E-008;
+  __exp_mant = _CUDA_VSTD::fma (__exp_mant, __r_reduced, 2.7630903488173108E-007);
+  __exp_mant = _CUDA_VSTD::fma (__exp_mant, __r_reduced, 2.7557514545882439E-006);
+  __exp_mant = _CUDA_VSTD::fma (__exp_mant, __r_reduced, 2.4801491039099165E-005);
+  __exp_mant = _CUDA_VSTD::fma (__exp_mant, __r_reduced, 1.9841269589115497E-004);
+  __exp_mant = _CUDA_VSTD::fma (__exp_mant, __r_reduced, 1.3888888945916380E-003);
+  __exp_mant = _CUDA_VSTD::fma (__exp_mant, __r_reduced, 8.3333333334550432E-003);
+  __exp_mant = _CUDA_VSTD::fma (__exp_mant, __r_reduced, 4.1666666666519754E-002);
+  __exp_mant = _CUDA_VSTD::fma (__exp_mant, __r_reduced, 1.6666666666666477E-001);
+  __exp_mant = _CUDA_VSTD::fma (__exp_mant, __r_reduced, 5.0000000000000122E-001);
+  __exp_mant = _CUDA_VSTD::fma (__exp_mant, __r_reduced, 1.0000000000000000E+000);
+  __exp_mant = _CUDA_VSTD::fma (__exp_mant, __r_reduced, 1.0000000000000000E+000);
+
+  if(_CUDA_VSTD::fabs(__r) >= 1457.0){
+    // real/imag return value must always underflow or overflow.
+    // This helps to avoid other checks later:
+    __exp_mant = (__r < 0.0) ? 0.0 : 1e10;
+  }
+
+  // Make sure this compiles to sincos:
+  double __sin_r = _CUDA_VSTD::sin(__i);
+  double __cos_r = _CUDA_VSTD::cos(__i);
+
+  // Our answer now is: (ldexp(__exp_mant * __sin_r, __j_int), ldexp(__exp_mant * __sin_r, __j_int))
+  // However we don't need a full ldexp here, and if __exp_mant*__sin_r is denormal we may lose bits.
+  // Instead, do an inlined/simplified ldexp.
+
+  // With fabs(sin or cos) <= 1, the unbiased exponent of sin or cos is in [-1074, 0]
+  // So for ldexp, we only care about an integer inputs in [-1076, 2098], otherwise we under/overflow.
+  // (Need to go as low as -1076 for underflow to 0 denormal rounding.)
+
+  // __j converted to int32, clamp so nothing bad happens. Will not change any results.
+  if(__j >  2098.0){__j =  2098.0;}
+  if(__j < -1076.0){__j = -1076.0;}
+
+  const int __j_int = int(__j);
+
+  // We can split this j up into three parts to fit it into three double exponents's.
+  // j can be in a set of 3174 values.
+  // (Splitting j into 4 is much better than splitting into 3).
+  uint64_t __j_quarter  = (__j / 4);
+  uint64_t __j_remainder = __j_int - (3*__j_quarter);
+
+  // Pack these into exponents:
+  __j_quarter = (__j_quarter + 1023) << 52;
+  __j_remainder = (__j_remainder + 1023) << 52;
+
+  const double __ldexp_factor_1 = reinterpret_cast<double&>(__j_quarter);
+  const double __ldexp_factor_2 = reinterpret_cast<double&>(__j_remainder);
+
+  // Need to order our multiplications to avoid intermediate under/overflow, including when __sin_r is denormal.
+  // Experiment suggests this is (one of) the best way to do it:
+  const double __ans_i = ((__sin_r * __ldexp_factor_1) * (__exp_mant * __ldexp_factor_2)) * __ldexp_factor_1 * __ldexp_factor_1;
+  const double __ans_r = ((__cos_r * __ldexp_factor_1) * (__exp_mant * __ldexp_factor_2)) * __ldexp_factor_1 * __ldexp_factor_1;
+
+  return complex<double>(__ans_r, __ans_i);
 }
 
 // pow
@@ -1298,6 +1629,86 @@ _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> cosh(const complex<_Tp>& __x)
   }
   return complex<_Tp>(_CUDA_VSTD::cosh(__x.real()) * _CUDA_VSTD::cos(__x.imag()),
                       _CUDA_VSTD::sinh(__x.real()) * _CUDA_VSTD::sin(__x.imag()));
+}
+
+template <>
+_LIBCUDACXX_HIDE_FROM_ABI complex<double> cosh(const complex<double>& __x)
+{
+  // Get real >= +0
+  double __real_part = __x.real();
+  uint64_t __real_part_bits = reinterpret_cast<uint64_t&>(__real_part);
+
+  double __in_imag = (__real_part_bits < 0x8000000000000000ULL) ? __x.imag() : -__x.imag();
+  double __in_real =  _CUDA_VSTD::fabs(__x.real());
+
+  // Special cases that don't fall through the rest of the algo:
+  if(_CUDA_VSTD::isnan(__in_real) || !(_CUDA_VSTD::isfinite(__in_imag))){
+    if(!(_CUDA_VSTD::isfinite(__in_imag)) && (__in_real == INFINITY)){
+      return complex<double>(INFINITY, NAN);
+    }
+
+    if(!(_CUDA_VSTD::isfinite(__in_imag)) && __in_real == 0.0){
+      // Real part sign is unspecified
+    return complex<double>(NAN, 0.0);
+    }
+
+    if(_CUDA_VSTD::isnan(__in_real) && (__in_imag == 0.0)){
+      // Real part sign is unspecified
+    return complex<double>(NAN, 0.0);
+    }
+  }
+
+  // Make sure this get's compiled to sincos:
+  double __sin =  _CUDA_VSTD::sin(__in_imag);
+  double __cos =  _CUDA_VSTD::cos(__in_imag);
+
+  // The math functions cosh(real) and sinh(real) will have overflowed too early for complex(cosh),
+  // We scale them in this case. We would still like to use the local sinh/cosh functions, which will
+  // presumably have been optimised for whatever architecture we are compiling on.
+  //
+  // with sin(smallest denormal) = smallest denormal = 4.94065645841246544176568792868E-324,
+  // We are only guarenteed cosh(complex) overflows if cosh(real) is >= 3.63857141251215733008468631e631,
+  // aka |real| >= 1454.916...
+  // Now the real functions cosh(real) and sin(real) overflow for real > 710.475, so to use these library functions
+  // we must make sure their input is less than this.
+  //
+  // Unfortunately we can't scale according to a single criteria due to sin(x) being able to take on the smallest
+  // denormal value, so instead we do a slowpath calculation and split it three ways.
+  double __in_scale  = 0.0;
+  double __out_scale = 1.0;
+
+  // This does incur a small accuracy penalty so we keep the intervals fairly tight.
+  if(__in_real > 710.0){
+    // sinh and cosh will overflow, but the final result may not.
+    __in_scale = 300;
+    __out_scale =  1.39370958066637969029387812939e65; // exp(150)
+
+    // Here both sinh and the final answer will always overflow.
+    // However, if imag == 0.0, we would end up multiplying inf * 0.0 to get NaN,
+    // while the correct answer is 0.0.
+    // This is the most efficient place to correct this. We clamp the value to a value that still
+    // always overflows the final answer, however the intermediate calculation with our scaling will not.
+    // Note that __real == inf has already been purged.
+    if(__in_real > 1455.0){
+      __in_real = 1455;
+    }
+
+    // This also takes the large values that have been clamped above, and makes sure intermediate results
+    // don't do anything funny.
+    if(__in_real > 1000.0){
+      __in_scale  = 800.0;
+      __out_scale =  5.22146968976414425470418128918e173; // exp(400)
+    }
+  }
+
+  double __cosh_re_scaled = _CUDA_VSTD::cosh(__in_real - __in_scale);
+  double __sinh_re_scaled = _CUDA_VSTD::sinh(__in_real - __in_scale);
+
+  // Order of multiplication matters:
+  double __ans_re = (__cosh_re_scaled * (__cos * __out_scale)) * __out_scale;
+  double __ans_im = (__sinh_re_scaled * (__sin * __out_scale)) * __out_scale;
+
+  return complex<double>(__ans_re, __ans_im);
 }
 
 // tanh
