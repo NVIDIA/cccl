@@ -81,7 +81,7 @@ struct make_zip_iterator_base<::cuda::std::tuple<Its...>>
   using difference_type = it_difference_t<::cuda::std::tuple_element_t<0, ::cuda::std::tuple<Its...>>>;
 
   // Iterator system is the minimum system tag in the iterator tuple
-  using system = typename minimum_system<iterator_system_t<Its>...>::type;
+  using system = minimum_system<iterator_system_t<Its>...>;
 
   // Traversal category is the minimum traversal category in the iterator tuple
   using traversal_category = minimum_type<iterator_traversal_t<Its>...>;
