@@ -18,11 +18,11 @@ Any Standard C++ header not listed below is omitted.
    :widths: 25 45 30 30 20
    :header-rows: 1
 
-   * - Header
-     - Content
-     - CCCL Availability
-     - CUDA Toolkit Availability
-     - C++ Reference
+   * - **Header**
+     - **Content**
+     - **CCCL Availability**
+     - **CUDA Toolkit Availability**
+     - **C++ Reference**
 
    * - :ref: `\<cuda/std/array\> <libcudacxx-standard-api-container-array>`
      - Fixed size array

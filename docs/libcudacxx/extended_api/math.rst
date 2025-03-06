@@ -15,10 +15,10 @@ Math
    :widths: 25 45 30 30
    :header-rows: 0
 
-   * - Header
-     - Content
-     - CCCL Availability
-     - CUDA Toolkit Availability
+   * - **Header**
+     - **Content**
+     - **CCCL Availability**
+     - **CUDA Toolkit Availability**
 
    * - :ref:`ceil_div <libcudacxx-extended-api-math-ceil-div>`
      - Ceiling division

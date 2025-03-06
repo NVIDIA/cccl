@@ -19,11 +19,11 @@ Any Standard C++ header not listed below is omitted.
    :widths: 25 45 30 30 20
    :header-rows: 1
 
-   * - Header
-     - Content
-     - CCCL Availability
-     - CUDA Toolkit Availability
-     - C++ Reference
+   * - **Header**
+     - **Content**
+     - **CCCL Availability**
+     - **CUDA Toolkit Availability**
+     - **C++ Reference**
 
    * - ``<cuda/std/ratio>``
      - Compile-time rational arthimetic

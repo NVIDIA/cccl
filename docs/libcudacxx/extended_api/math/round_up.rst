@@ -6,8 +6,8 @@
 .. code:: cuda
 
    template <typename T, typename U>
-   [[nodiscard]] __host__ __device__ inline
-   constexpr cuda::std::common_type_t<T, U> round_up(T value, U base_multiple) noexcept;
+   [[nodiscard]] __host__ __device__ inline constexpr
+   cuda::std::common_type_t<T, U> round_up(T value, U base_multiple) noexcept;
 
 The function computes the round up to the smallest multiple of an integral or enumerator value :math:`ceil(\frac{value}{base\_multiple}) * base\_multiple`
 
@@ -24,10 +24,14 @@ The function computes the round up to the smallest multiple of an integral or en
 
     The result can overflow if ``ceil(value / base_multiple) * base_multiple`` exceeds the maximum value of the common type of ``value`` and ``base_multiple``. The condition is checked in debug mode.
 
+**Mandates**
+
+- ``T`` and ``U`` are integral types or enumerators.
+
 **Preconditions**
 
-- *Compile-time*: ``T`` and ``U`` are integral types (including 128-bit integers) or enumerators.
-- *Run-time*: ``value >= 0`` and ``base_multiple > 0``.
+- ``value >= 0``
+- ``base_multiple > 0``
 
 **Performance considerations**
 
