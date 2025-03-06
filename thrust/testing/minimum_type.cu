@@ -6,7 +6,7 @@
 #include <unittest/unittest.h>
 
 template <typename... Ts>
-using mt = typename thrust::detail::minimum_type<Ts...>::type;
+using mt = thrust::detail::minimum_type<Ts...>;
 
 template <typename, typename... Ts>
 inline constexpr bool mt_fails_impl = true;
