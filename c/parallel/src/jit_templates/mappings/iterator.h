@@ -54,16 +54,24 @@ struct parameter_mapping<cccl_iterator_t>
   template <typename Traits>
   static std::string aux(template_id<Traits>, cccl_iterator_t arg)
   {
-    return std::format(
-      std::is_same_v<Traits, output_iterator_traits>
-        ? R"(
+    if constexpr (std::is_same_v<Traits, output_iterator_traits>)
+    {
+      return std::format(
+        R"output(
 extern "C" __device__ void {0}(void *, {1});
 extern "C" __device__ void {2}(const void *, {3});
-)"
-        : R"(
+)output",
+        arg.advance.name,
+        cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64),
+        arg.dereference.name,
+        cccl_type_enum_to_name(arg.value_type.type));
+    }
+
+    return std::format(
+      R"input(
 extern "C" __device__ void {0}(void *, {1});
 extern "C" __device__ {3} {2}(const void *);
-)",
+)input",
       arg.advance.name,
       cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64),
       arg.dereference.name,
