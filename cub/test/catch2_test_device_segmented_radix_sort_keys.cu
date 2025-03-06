@@ -275,6 +275,15 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeys: bit windows",
   const std::size_t num_items         = GENERATE_COPY(take(2, random(min_num_items, max_num_items)));
   const std::size_t num_segments      = GENERATE_COPY(take(1, random(std::size_t{2}, num_items / 2)));
 
+  constexpr int num_bits = sizeof(key_t) * CHAR_BIT;
+  // Explicitly use values<>({}) to workaround bug catchorg/Catch2#2040:
+  const int begin_bit = GENERATE_COPY(values<int>({0, num_bits / 3, 3 * num_bits / 4, num_bits}));
+  const int end_bit   = GENERATE_COPY(values<int>({0, num_bits / 3, 3 * num_bits / 4, num_bits}));
+  if (end_bit <= begin_bit || (begin_bit == 0 && end_bit == num_bits))
+  {
+    // SKIP(); Not available until Catch2 3.3.0
+    return;
+  }
   c2h::device_vector<key_t> in_keys(num_items);
   const int num_key_seeds = 1;
   c2h::gen(C2H_SEED(num_key_seeds), in_keys);
@@ -285,16 +294,6 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeys: bit windows",
   c2h::device_vector<offset_t> offsets(num_segments + 1);
   const int num_segment_seeds = 1;
   generate_segment_offsets(C2H_SEED(num_segment_seeds), offsets, static_cast<offset_t>(num_items));
-
-  constexpr int num_bits = sizeof(key_t) * CHAR_BIT;
-  // Explicitly use values<>({}) to workaround bug catchorg/Catch2#2040:
-  const int begin_bit = GENERATE_COPY(values<int>({0, num_bits / 3, 3 * num_bits / 4, num_bits}));
-  const int end_bit   = GENERATE_COPY(values<int>({0, num_bits / 3, 3 * num_bits / 4, num_bits}));
-  if (end_bit < begin_bit || (begin_bit == 0 && end_bit == num_bits))
-  {
-    // SKIP(); Not available until Catch2 3.3.0
-    return;
-  }
 
   const bool is_descending = GENERATE(false, true);
 
