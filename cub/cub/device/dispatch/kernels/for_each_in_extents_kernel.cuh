@@ -37,16 +37,14 @@
 #  pragma system_header
 #endif // no system header
 
-#if __cccl_lib_mdspan
+#include <cub/detail/fast_modulo_division.cuh> // fast_div_mod
+#include <cub/detail/mdspan_utils.cuh> // is_sub_size_static
+#include <cub/detail/type_traits.cuh> // implicit_prom_t
 
-#  include <cub/detail/fast_modulo_division.cuh> // fast_div_mod
-#  include <cub/detail/mdspan_utils.cuh> // is_sub_size_static
-#  include <cub/detail/type_traits.cuh> // implicit_prom_t
-
-#  include <cuda/std/cstddef> // size_t
-#  include <cuda/std/mdspan> // dynamic_extent
-#  include <cuda/std/type_traits> // enable_if
-#  include <cuda/std/utility> // index_sequence
+#include <cuda/std/cstddef> // size_t
+#include <cuda/std/mdspan> // dynamic_extent
+#include <cuda/std/type_traits> // enable_if
+#include <cuda/std/utility> // index_sequence
 
 CUB_NAMESPACE_BEGIN
 
@@ -131,11 +129,11 @@ computation(IndexType id, IndexType, Func func, ExtendType, FastDivModArrayType,
  **********************************************************************************************************************/
 
 // GCC6/7/8/9 raises unused parameter warning
-#  if _CCCL_COMPILER(GCC, <, 10)
-#    define _CUB_UNUSED_ATTRIBUTE __attribute__((unused))
-#  else
-#    define _CUB_UNUSED_ATTRIBUTE
-#  endif
+#if _CCCL_COMPILER(GCC, <, 10)
+#  define _CUB_UNUSED_ATTRIBUTE __attribute__((unused))
+#else
+#  define _CUB_UNUSED_ATTRIBUTE
+#endif
 
 template <typename ChainedPolicyT,
           typename Func,
@@ -186,5 +184,3 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(
 } // namespace detail
 
 CUB_NAMESPACE_END
-
-#endif // __cccl_lib_mdspan

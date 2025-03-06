@@ -30,20 +30,18 @@
 
 #include <cub/config.cuh>
 
-#if __cccl_lib_mdspan && !_CCCL_COMPILER(MSVC)
+#include <cub/device/device_for.cuh>
 
-#  include <cub/device/device_for.cuh>
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/device_vector.h>
+#include <thrust/fill.h>
+#include <thrust/host_vector.h>
 
-#  include <thrust/detail/raw_pointer_cast.h>
-#  include <thrust/device_vector.h>
-#  include <thrust/fill.h>
-#  include <thrust/host_vector.h>
+#include <cuda/std/array>
+#include <cuda/std/mdspan>
+#include <cuda/std/span>
 
-#  include <cuda/std/array>
-#  include <cuda/std/mdspan>
-#  include <cuda/std/span>
-
-#  include <c2h/catch2_test_helper.h>
+#include <c2h/catch2_test_helper.h>
 
 // example-begin for-each-in-extents-op
 struct linear_store_3D
@@ -87,5 +85,3 @@ C2H_TEST("Device ForEachInExtents", "[ForEachInExtents][device]")
   // example-end for-each-in-extents-example
 }
 // clang-format on
-
-#endif // __cccl_lib_mdspan && !_CCCL_COMPILER(MSVC)
