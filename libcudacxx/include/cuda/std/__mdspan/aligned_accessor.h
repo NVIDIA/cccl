@@ -37,7 +37,6 @@
 #include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_object.h>
-#include <cuda/std/version>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
