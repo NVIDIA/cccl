@@ -535,14 +535,34 @@ public:
       fprintf(stderr, "Executable Graph Cache Statistics Summary\n");
       fprintf(stderr, "=========================================\n");
 
+      // Convert unordered map to ordered map for sorting by filename and line number
+      using location_key_t = ::std::tuple<::std::string, int, ::std::string>; // (filename, line, function)
+      ::std::map<location_key_t, stored_type_t> sorted_stats_map;
+
       for (const auto& [location, stat_map] : stats_map)
       {
-        fprintf(stderr, "Call-Site: %s:%d (%s)\n", location.file_name(), location.line(), location.function_name());
+        sorted_stats_map[{location.file_name(), location.line(), location.function_name()}] = stat_map;
+      }
+
+      for (const auto& [loc_key, stat_map] : sorted_stats_map)
+      {
+        const auto& [filename, line, function] = loc_key;
+
+        fprintf(stderr, "Call-Site: %s:%d (%s)\n", filename.c_str(), line, function.c_str());
+
+        // Convert unordered map to vector and sort by (nodes, edges)
+        ::std::vector<::std::pair<::std::pair<size_t, size_t>, executable_graph_cache_stat>> sorted_stats(
+          stat_map.begin(), stat_map.end());
+
+        ::std::sort(sorted_stats.begin(), sorted_stats.end(), [](const auto& a, const auto& b) {
+          return (a.first.first < b.first.first) || // Sort by nodes
+                 (a.first.first == b.first.first && a.first.second < b.first.second); // Then by edges
+        });
 
         fprintf(stderr, "  Nodes  Edges  InstantiateCnt  UpdateCnt\n");
         fprintf(stderr, "  --------------------------------------\n");
 
-        for (const auto& [key, stat] : stat_map)
+        for (const auto& [key, stat] : sorted_stats)
         {
           fprintf(stderr, "  %5zu  %5zu  %13zu  %9zu\n", key.first, key.second, stat.instantiate_cnt, stat.update_cnt);
         }
