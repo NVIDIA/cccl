@@ -5,9 +5,6 @@
 
 #include <cub/config.cuh>
 
-#include "cub/detail/detect_cuda_runtime.cuh"
-#include "cuda/std/__type_traits/integral_constant.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -16,6 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/device/dispatch/kernels/transform.cuh>
@@ -32,6 +30,7 @@
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/array>
 #include <cuda/std/expected>
 #include <cuda/std/tuple>
