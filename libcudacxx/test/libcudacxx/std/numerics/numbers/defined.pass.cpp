@@ -75,6 +75,11 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
+__global__ void test_kernel()
+{
+  test();
+}
+
 int main(int, char**)
 {
   test();

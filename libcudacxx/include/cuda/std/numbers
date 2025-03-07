@@ -107,104 +107,103 @@ namespace numbers
 {
 
 template <class _Tp>
-inline constexpr _Tp e_v = __numbers<_Tp>::__e;
+_CCCL_DEVICE_VARIABLE constexpr _Tp e_v = __numbers<_Tp>::__e;
 template <class _Tp>
-inline constexpr _Tp log2e_v = __numbers<_Tp>::__log2e;
+_CCCL_DEVICE_VARIABLE constexpr _Tp log2e_v = __numbers<_Tp>::__log2e;
 template <class _Tp>
-inline constexpr _Tp log10e_v = __numbers<_Tp>::__log10e;
+_CCCL_DEVICE_VARIABLE constexpr _Tp log10e_v = __numbers<_Tp>::__log10e;
 template <class _Tp>
-inline constexpr _Tp pi_v = __numbers<_Tp>::__pi;
+_CCCL_DEVICE_VARIABLE constexpr _Tp pi_v = __numbers<_Tp>::__pi;
 template <class _Tp>
-inline constexpr _Tp inv_pi_v = __numbers<_Tp>::__inv_pi;
+_CCCL_DEVICE_VARIABLE constexpr _Tp inv_pi_v = __numbers<_Tp>::__inv_pi;
 template <class _Tp>
-inline constexpr _Tp inv_sqrtpi_v = __numbers<_Tp>::__inv_sqrtpi;
+_CCCL_DEVICE_VARIABLE constexpr _Tp inv_sqrtpi_v = __numbers<_Tp>::__inv_sqrtpi;
 template <class _Tp>
-inline constexpr _Tp ln2_v = __numbers<_Tp>::__ln2;
+_CCCL_DEVICE_VARIABLE constexpr _Tp ln2_v = __numbers<_Tp>::__ln2;
 template <class _Tp>
-inline constexpr _Tp ln10_v = __numbers<_Tp>::__ln10;
+_CCCL_DEVICE_VARIABLE constexpr _Tp ln10_v = __numbers<_Tp>::__ln10;
 template <class _Tp>
-inline constexpr _Tp sqrt2_v = __numbers<_Tp>::__sqrt2;
+_CCCL_DEVICE_VARIABLE constexpr _Tp sqrt2_v = __numbers<_Tp>::__sqrt2;
 template <class _Tp>
-inline constexpr _Tp sqrt3_v = __numbers<_Tp>::__sqrt3;
+_CCCL_DEVICE_VARIABLE constexpr _Tp sqrt3_v = __numbers<_Tp>::__sqrt3;
 template <class _Tp>
-inline constexpr _Tp inv_sqrt3_v = __numbers<_Tp>::__inv_sqrt3;
+_CCCL_DEVICE_VARIABLE constexpr _Tp inv_sqrt3_v = __numbers<_Tp>::__inv_sqrt3;
 template <class _Tp>
-inline constexpr _Tp egamma_v = __numbers<_Tp>::__egamma;
+_CCCL_DEVICE_VARIABLE constexpr _Tp egamma_v = __numbers<_Tp>::__egamma;
 template <class _Tp>
-inline constexpr _Tp phi_v = __numbers<_Tp>::__phi;
+_CCCL_DEVICE_VARIABLE constexpr _Tp phi_v = __numbers<_Tp>::__phi;
 
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
-_CCCL_DEVICE_VARIABLE inline constexpr __half e_v<__half> = __numbers<__half>::__e;
+_CCCL_DEVICE_VARIABLE constexpr __half e_v<__half> = __numbers<__half>::__e;
 template <>
-_CCCL_DEVICE_VARIABLE inline constexpr __half log2e_v<__half> = __numbers<__half>::__log2e;
+_CCCL_DEVICE_VARIABLE constexpr __half log2e_v<__half> = __numbers<__half>::__log2e;
 template <>
-_CCCL_DEVICE_VARIABLE inline constexpr __half log10e_v<__half> = __numbers<__half>::__log10e;
+_CCCL_DEVICE_VARIABLE constexpr __half log10e_v<__half> = __numbers<__half>::__log10e;
 template <>
-_CCCL_DEVICE_VARIABLE inline constexpr __half pi_v<__half> = __numbers<__half>::__pi;
+_CCCL_DEVICE_VARIABLE constexpr __half pi_v<__half> = __numbers<__half>::__pi;
 template <>
-_CCCL_DEVICE_VARIABLE inline constexpr __half inv_pi_v<__half> = __numbers<__half>::__inv_pi;
+_CCCL_DEVICE_VARIABLE constexpr __half inv_pi_v<__half> = __numbers<__half>::__inv_pi;
 template <>
-_CCCL_DEVICE_VARIABLE inline constexpr __half inv_sqrtpi_v<__half> = __numbers<__half>::__inv_sqrtpi;
+_CCCL_DEVICE_VARIABLE constexpr __half inv_sqrtpi_v<__half> = __numbers<__half>::__inv_sqrtpi;
 template <>
-_CCCL_DEVICE_VARIABLE inline constexpr __half ln2_v<__half> = __numbers<__half>::__ln2;
+_CCCL_DEVICE_VARIABLE constexpr __half ln2_v<__half> = __numbers<__half>::__ln2;
 template <>
-_CCCL_DEVICE_VARIABLE inline constexpr __half ln10_v<__half> = __numbers<__half>::__ln10;
+_CCCL_DEVICE_VARIABLE constexpr __half ln10_v<__half> = __numbers<__half>::__ln10;
 template <>
-_CCCL_DEVICE_VARIABLE inline constexpr __half sqrt2_v<__half> = __numbers<__half>::__sqrt2;
+_CCCL_DEVICE_VARIABLE constexpr __half sqrt2_v<__half> = __numbers<__half>::__sqrt2;
 template <>
-_CCCL_DEVICE_VARIABLE inline constexpr __half sqrt3_v<__half> = __numbers<__half>::__sqrt3;
+_CCCL_DEVICE_VARIABLE constexpr __half sqrt3_v<__half> = __numbers<__half>::__sqrt3;
 template <>
-_CCCL_DEVICE_VARIABLE inline constexpr __half inv_sqrt3_v<__half> = __numbers<__half>::__inv_sqrt3;
+_CCCL_DEVICE_VARIABLE constexpr __half inv_sqrt3_v<__half> = __numbers<__half>::__inv_sqrt3;
 template <>
-_CCCL_DEVICE_VARIABLE inline constexpr __half egamma_v<__half> = __numbers<__half>::__egamma;
+_CCCL_DEVICE_VARIABLE constexpr __half egamma_v<__half> = __numbers<__half>::__egamma;
 template <>
-_CCCL_DEVICE_VARIABLE inline constexpr __half phi_v<__half> = __numbers<__half>::__phi;
+_CCCL_DEVICE_VARIABLE constexpr __half phi_v<__half> = __numbers<__half>::__phi;
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 template <>
-_CCCL_DEVICE_VARIABLE inline constexpr __nv_bfloat16 e_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__e;
+_CCCL_DEVICE_VARIABLE constexpr __nv_bfloat16 e_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__e;
 template <>
-_CCCL_DEVICE_VARIABLE inline constexpr __nv_bfloat16 log2e_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__log2e;
+_CCCL_DEVICE_VARIABLE constexpr __nv_bfloat16 log2e_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__log2e;
 template <>
-_CCCL_DEVICE_VARIABLE inline constexpr __nv_bfloat16 log10e_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__log10e;
+_CCCL_DEVICE_VARIABLE constexpr __nv_bfloat16 log10e_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__log10e;
 template <>
-_CCCL_DEVICE_VARIABLE inline constexpr __nv_bfloat16 pi_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__pi;
+_CCCL_DEVICE_VARIABLE constexpr __nv_bfloat16 pi_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__pi;
 template <>
-_CCCL_DEVICE_VARIABLE inline constexpr __nv_bfloat16 inv_pi_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__inv_pi;
+_CCCL_DEVICE_VARIABLE constexpr __nv_bfloat16 inv_pi_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__inv_pi;
 template <>
-_CCCL_DEVICE_VARIABLE inline constexpr __nv_bfloat16 inv_sqrtpi_v<__nv_bfloat16> =
-  __numbers<__nv_bfloat16>::__inv_sqrtpi;
+_CCCL_DEVICE_VARIABLE constexpr __nv_bfloat16 inv_sqrtpi_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__inv_sqrtpi;
 template <>
-_CCCL_DEVICE_VARIABLE inline constexpr __nv_bfloat16 ln2_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__ln2;
+_CCCL_DEVICE_VARIABLE constexpr __nv_bfloat16 ln2_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__ln2;
 template <>
-_CCCL_DEVICE_VARIABLE inline constexpr __nv_bfloat16 ln10_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__ln10;
+_CCCL_DEVICE_VARIABLE constexpr __nv_bfloat16 ln10_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__ln10;
 template <>
-_CCCL_DEVICE_VARIABLE inline constexpr __nv_bfloat16 sqrt2_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__sqrt2;
+_CCCL_DEVICE_VARIABLE constexpr __nv_bfloat16 sqrt2_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__sqrt2;
 template <>
-_CCCL_DEVICE_VARIABLE inline constexpr __nv_bfloat16 sqrt3_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__sqrt3;
+_CCCL_DEVICE_VARIABLE constexpr __nv_bfloat16 sqrt3_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__sqrt3;
 template <>
-_CCCL_DEVICE_VARIABLE inline constexpr __nv_bfloat16 inv_sqrt3_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__inv_sqrt3;
+_CCCL_DEVICE_VARIABLE constexpr __nv_bfloat16 inv_sqrt3_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__inv_sqrt3;
 template <>
-_CCCL_DEVICE_VARIABLE inline constexpr __nv_bfloat16 egamma_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__egamma;
+_CCCL_DEVICE_VARIABLE constexpr __nv_bfloat16 egamma_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__egamma;
 template <>
-_CCCL_DEVICE_VARIABLE inline constexpr __nv_bfloat16 phi_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__phi;
+_CCCL_DEVICE_VARIABLE constexpr __nv_bfloat16 phi_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__phi;
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-inline constexpr double e          = e_v<double>;
-inline constexpr double log2e      = log2e_v<double>;
-inline constexpr double log10e     = log10e_v<double>;
-inline constexpr double pi         = pi_v<double>;
-inline constexpr double inv_pi     = inv_pi_v<double>;
-inline constexpr double inv_sqrtpi = inv_sqrtpi_v<double>;
-inline constexpr double ln2        = ln2_v<double>;
-inline constexpr double ln10       = ln10_v<double>;
-inline constexpr double sqrt2      = sqrt2_v<double>;
-inline constexpr double sqrt3      = sqrt3_v<double>;
-inline constexpr double inv_sqrt3  = inv_sqrt3_v<double>;
-inline constexpr double egamma     = egamma_v<double>;
-inline constexpr double phi        = phi_v<double>;
+_CCCL_DEVICE_VARIABLE constexpr double e          = e_v<double>;
+_CCCL_DEVICE_VARIABLE constexpr double log2e      = log2e_v<double>;
+_CCCL_DEVICE_VARIABLE constexpr double log10e     = log10e_v<double>;
+_CCCL_DEVICE_VARIABLE constexpr double pi         = pi_v<double>;
+_CCCL_DEVICE_VARIABLE constexpr double inv_pi     = inv_pi_v<double>;
+_CCCL_DEVICE_VARIABLE constexpr double inv_sqrtpi = inv_sqrtpi_v<double>;
+_CCCL_DEVICE_VARIABLE constexpr double ln2        = ln2_v<double>;
+_CCCL_DEVICE_VARIABLE constexpr double ln10       = ln10_v<double>;
+_CCCL_DEVICE_VARIABLE constexpr double sqrt2      = sqrt2_v<double>;
+_CCCL_DEVICE_VARIABLE constexpr double sqrt3      = sqrt3_v<double>;
+_CCCL_DEVICE_VARIABLE constexpr double inv_sqrt3  = inv_sqrt3_v<double>;
+_CCCL_DEVICE_VARIABLE constexpr double egamma     = egamma_v<double>;
+_CCCL_DEVICE_VARIABLE constexpr double phi        = phi_v<double>;
 
 } // namespace numbers
 

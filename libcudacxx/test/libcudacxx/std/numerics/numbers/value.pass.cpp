@@ -120,6 +120,12 @@ __host__ __device__ void test_ext_fp()
 #endif // _LIBCUDACXX_HAS_NVBF16()
 }
 
+__global__ void test_kernel()
+{
+  test();
+  test_ext_fp();
+}
+
 int main(int, char**)
 {
   test();

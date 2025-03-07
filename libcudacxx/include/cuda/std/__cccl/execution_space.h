@@ -38,8 +38,8 @@
 #if defined(__CUDA_ARCH__)
 #  define _CCCL_DEVICE_VARIABLE __device__
 #else
-#  define _CCCL_DEVICE_VARIABLE
-#endif //
+#  define _CCCL_DEVICE_VARIABLE inline
+#endif
 
 /// In device code, _CCCL_PTX_ARCH expands to the PTX version for which we are compiling.
 /// In host code, _CCCL_PTX_ARCH's value is implementation defined.
