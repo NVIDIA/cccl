@@ -127,3 +127,5 @@ Feature availability:
 -  C++23 ``is_scoped_enum`` in ``<type_traits>`` is available in C++11.
 
 -  C++26 tuple protocol to ``complex`` is available in C++11.
+
+-  C++26 saturation arithmetic functions in ``<numeric>`` are available in C++17.

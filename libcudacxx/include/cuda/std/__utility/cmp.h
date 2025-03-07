@@ -33,20 +33,12 @@
 
 _CCCL_PUSH_MACROS
 
-#if defined(_CCCL_NO_IF_CONSTEXPR)
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4018) // required cast from signed to unsigned
-_CCCL_DIAG_SUPPRESS_MSVC(4388) // required cast from signed to larger unsigned
-_CCCL_DIAG_SUPPRESS_MSVC(4389) // signed/unsigned mismatch for == and !=
-#endif // _CCCL_NO_IF_CONSTEXPR
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
 _CCCL_REQUIRES(__cccl_is_integer_v<_Tp> _CCCL_AND __cccl_is_integer_v<_Up>)
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_equal(_Tp __t, _Up __u) noexcept
 {
-#if !defined(_CCCL_NO_IF_CONSTEXPR)
   if constexpr (_CCCL_TRAIT(is_signed, _Tp) == _CCCL_TRAIT(is_signed, _Up))
   {
     return __t == __u;
@@ -60,12 +52,6 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_equal(_Tp __t, _Up __u) noexcept
     return __u < 0 ? false : __t == make_unsigned_t<_Up>(__u);
   }
   _CCCL_UNREACHABLE();
-#else // ^^^ !_CCCL_NO_IF_CONSTEXPR ^^^ / vvv _CCCL_NO_IF_CONSTEXPR vvv
-  return ((_CCCL_TRAIT(is_signed, _Tp) == _CCCL_TRAIT(is_signed, _Up))
-            ? (__t == __u)
-            : (_CCCL_TRAIT(is_signed, _Tp) ? (__t < 0 ? false : make_unsigned_t<_Tp>(__t) == __u)
-                                           : (__u < 0 ? false : __t == make_unsigned_t<_Up>(__u))));
-#endif // _CCCL_NO_IF_CONSTEXPR
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
@@ -79,7 +65,6 @@ _CCCL_TEMPLATE(class _Tp, class _Up)
 _CCCL_REQUIRES(__cccl_is_integer_v<_Tp> _CCCL_AND __cccl_is_integer_v<_Up>)
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_less(_Tp __t, _Up __u) noexcept
 {
-#if !defined(_CCCL_NO_IF_CONSTEXPR)
   if constexpr (_CCCL_TRAIT(is_signed, _Tp) == _CCCL_TRAIT(is_signed, _Up))
   {
     return __t < __u;
@@ -93,12 +78,6 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_less(_Tp __t, _Up __u) noexcept
     return __u < 0 ? false : __t < make_unsigned_t<_Up>(__u);
   }
   _CCCL_UNREACHABLE();
-#else // ^^^ !_CCCL_NO_IF_CONSTEXPR ^^^ / vvv _CCCL_NO_IF_CONSTEXPR vvv
-  return ((_CCCL_TRAIT(is_signed, _Tp) == _CCCL_TRAIT(is_signed, _Up))
-            ? (__t < __u)
-            : (_CCCL_TRAIT(is_signed, _Tp) ? (__t < 0 ? true : make_unsigned_t<_Tp>(__t) < __u)
-                                           : (__u < 0 ? false : __t < make_unsigned_t<_Up>(__u))));
-#endif // _CCCL_NO_IF_CONSTEXPR
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
@@ -131,10 +110,6 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool in_range(_Up __u) noexcept
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
-
-#if defined(_CCCL_NO_IF_CONSTEXPR)
-_CCCL_DIAG_POP
-#endif // _CCCL_NO_IF_CONSTEXPR
 
 _CCCL_POP_MACROS
 
