@@ -53,6 +53,10 @@ public:
   //! @brief Constructs a \c pinned_memory_pool with the specified NUMA node id and initial pool size and release
   //! threshold. If the pool size grows beyond the release threshold, unused memory held by the pool will be released at
   //! the next synchronization event.
+  //!
+  //! @note Memory from this pool is accessible from all devices right away, which differs from the default behavior of
+  //! pinned memory pools where memory is not accessible from devices until `cudaMemPoolSetAccess` is called.
+  //!
   //! @param __numa_id The NUMA node id of the NUMA node the pool is constructed on.
   //! @param __pool_properties Optional, additional properties of the pool to be created.
   explicit pinned_memory_pool(int __numa_id, memory_pool_properties __properties)
@@ -62,6 +66,11 @@ public:
   }
 
   //! @brief Constructs a \c pinned_memory_pool on the host with the specified NUMA node id.
+  //! @param __numa_id The NUMA node id of the NUMA node the pool is constructed on.
+  //!
+  //! @note Memory from this pool is accessible from all devices right away, which differs from the default behavior of
+  //! pinned memory pools where memory is not accessible from devices until `cudaMemPoolSetAccess` is called.
+  //!
   //! @param __numa_id The NUMA node id of the NUMA node the pool is constructed on.
   explicit pinned_memory_pool(int __numa_id = 0)
       : pinned_memory_pool(__numa_id, {})
