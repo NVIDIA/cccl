@@ -29,15 +29,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/version>
-
-#if defined(__cccl_lib_mdspan)
-
-#  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__type_traits/is_convertible.h>
-#  include <cuda/std/__type_traits/is_same.h>
-#  include <cuda/std/array>
-#  include <cuda/std/mdspan>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/array>
+#include <cuda/std/mdspan>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -156,7 +152,7 @@ public:
 
     _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_exhaustive() noexcept
     {
-      return __nested_mapping_type::is_always_contiguous();
+      return __nested_mapping_type::is_always_exhaustive();
     }
 
     _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_strided() noexcept
@@ -326,5 +322,4 @@ transposed(mdspan<_ElementType, _Extents, _Layout, _Accessor> __a)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // defined(__cccl_lib_mdspan)
 #endif // _LIBCUDACXX___LINALG_TRANSPOSED_HPP

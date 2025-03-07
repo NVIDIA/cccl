@@ -139,7 +139,7 @@ CUresult cccl_device_for_build(
 }
 
 CUresult cccl_device_for(
-  cccl_device_for_build_result_t build, cccl_iterator_t d_data, int64_t num_items, cccl_op_t op, CUstream stream)
+  cccl_device_for_build_result_t build, cccl_iterator_t d_data, uint64_t num_items, cccl_op_t op, CUstream stream)
 {
   bool pushed    = false;
   CUresult error = CUDA_SUCCESS;

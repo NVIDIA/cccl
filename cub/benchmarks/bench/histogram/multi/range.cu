@@ -99,10 +99,6 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
   CounterT* d_histogram_g = thrust::raw_pointer_cast(hist_g.data());
   CounterT* d_histogram_b = thrust::raw_pointer_cast(hist_b.data());
 
-  CounterT* d_histogram[num_active_channels] = {d_histogram_r, d_histogram_g, d_histogram_b};
-  int num_levels[num_active_channels]        = {num_levels_r, num_levels_g, num_levels_b};
-  SampleT* d_levels[num_active_channels]     = {d_levels_r, d_levels_g, d_levels_b};
-
   std::uint8_t* d_temp_storage = nullptr;
   std::size_t temp_storage_bytes{};
 
@@ -119,9 +115,9 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
     d_temp_storage,
     temp_storage_bytes,
     d_input,
-    d_histogram,
-    num_levels,
-    d_levels,
+    {d_histogram_r, d_histogram_g, d_histogram_b},
+    {num_levels_r, num_levels_g, num_levels_b},
+    {d_levels_r, d_levels_g, d_levels_b},
     num_row_pixels,
     num_rows,
     row_stride_samples,
@@ -136,9 +132,9 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
       d_temp_storage,
       temp_storage_bytes,
       d_input,
-      d_histogram,
-      num_levels,
-      d_levels,
+      {d_histogram_r, d_histogram_g, d_histogram_b},
+      {num_levels_r, num_levels_g, num_levels_b},
+      {d_levels_r, d_levels_g, d_levels_b},
       num_row_pixels,
       num_rows,
       row_stride_samples,

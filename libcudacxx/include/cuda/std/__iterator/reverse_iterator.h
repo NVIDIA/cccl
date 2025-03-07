@@ -22,10 +22,10 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/unwrap_iter.h>
-#ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/__compare/compare_three_way_result.h>
 #  include <cuda/std/__compare/three_way_comparable.h>
-#endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__iterator/concepts.h>
@@ -331,14 +331,14 @@ operator<=(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& 
   return __x.base() >= __y.base();
 }
 
-#ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 template <class _Iter1, three_way_comparable_with<_Iter1> _Iter2>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr compare_three_way_result_t<_Iter1, _Iter2>
 operator<=>(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& __y)
 {
   return __y.base() <=> __x.base();
 }
-#endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 template <class _Iter1, class _Iter2>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr auto

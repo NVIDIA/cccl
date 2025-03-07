@@ -17,8 +17,6 @@
 #  include <stdio.h>
 #endif // TEST_COMPILER_NVRTC
 
-TEST_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
-
 int main(int, char**)
 {
 #if TEST_STD_VER > 2017
@@ -33,9 +31,11 @@ int main(int, char**)
   static_assert((cuda::std::alignment_of<cuda::std::max_align_t>::value >= cuda::std::alignment_of<long long>::value),
                 "cuda::std::alignment_of<cuda::std::max_align_t>::value >= "
                 "cuda::std::alignment_of<long long>::value");
+#if _CCCL_HAS_LONG_DOUBLE()
   static_assert(cuda::std::alignment_of<cuda::std::max_align_t>::value >= cuda::std::alignment_of<long double>::value,
                 "cuda::std::alignment_of<cuda::std::max_align_t>::value >= "
                 "cuda::std::alignment_of<long double>::value");
+#endif // _CCCL_HAS_LONG_DOUBLE()
   static_assert(cuda::std::alignment_of<cuda::std::max_align_t>::value >= cuda::std::alignment_of<void*>::value,
                 "cuda::std::alignment_of<cuda::std::max_align_t>::value >= "
                 "cuda::std::alignment_of<void*>::value");

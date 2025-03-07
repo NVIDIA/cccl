@@ -161,7 +161,7 @@ private:
   //! @brief Replaces the content of the async_buffer with the sequence `[__first, __last)`
   //! @param __first Iterator to the first element of the input sequence.
   //! @param __last Iterator after the last element of the input sequence.
-  template <class _Iter, cudaMemcpyKind __kind = __detect_transfer_kind<__is_host_only, _Iter>>
+  template <class _Iter>
   _CCCL_HIDE_FROM_ABI void __assign_impl(const size_type __count, _Iter __first, _Iter __last)
   {
     if (__size_ < __count)
@@ -169,7 +169,7 @@ private:
       (void) __buf_.__replace_allocation(__count);
     }
 
-    this->__copy_cross<_Iter, __kind>(__first, __last, __unwrapped_begin(), __count);
+    this->__copy_cross<_Iter>(__first, __last, __unwrapped_begin(), __count);
     __size_ = __count;
   }
 
@@ -181,7 +181,7 @@ private:
   //! @param __count The number of elements to be copied.
   //! @note This function is inherently asynchronous. We need to ensure that the memory pointed to by \p __first and
   //! \p __last lives long enough
-  template <class _Iter, cudaMemcpyKind __kind = __is_host_only ? cudaMemcpyHostToHost : cudaMemcpyHostToDevice>
+  template <class _Iter>
   _CCCL_HIDE_FROM_ABI void __copy_cross(_Iter __first, _Iter __last, pointer __dest, size_type __count)
   {
     if (__count == 0)
@@ -192,7 +192,6 @@ private:
     if constexpr (!_CUDA_VSTD::contiguous_iterator<_Iter>)
     { // For non-coniguous iterators we need to copy into temporary host storage to use cudaMemcpy
       // Currently only supported from host because no one should use non-contiguous data on device
-      static_assert(__kind == cudaMemcpyHostToDevice || __kind == cudaMemcpyHostToHost, "Invalid use case!");
       auto __temp = _CUDA_VSTD::get_temporary_buffer<_Tp>(__count).first;
       ::cuda::experimental::host_launch(__buf_.get_stream(), _CUDA_VSTD::copy<_Iter, pointer>, __first, __last, __temp);
       // FIXME: Something is fishy here. We need to wait otherwise the data is not properly set.
@@ -205,7 +204,7 @@ private:
         __dest,
         __temp,
         sizeof(_Tp) * __count,
-        __kind,
+        ::cudaMemcpyDefault,
         __buf_.get_stream().get());
       // We need to free the temporary buffer in stream order to ensure the memory survives
       ::cuda::experimental::host_launch(__buf_.get_stream(), _CUDA_VSTD::return_temporary_buffer<_Tp>, __temp);
@@ -219,7 +218,7 @@ private:
         __dest,
         _CUDA_VSTD::to_address(__first),
         sizeof(_Tp) * __count,
-        __kind,
+        ::cudaMemcpyDefault,
         __buf_.get_stream().get());
     }
   }
@@ -300,7 +299,7 @@ public:
       , __size_(__other.__size_)
       , __policy_(__other.__policy_)
   {
-    this->__copy_cross<const_pointer, __transfer_kind<_OtherProperties...>>(
+    this->__copy_cross<const_pointer>(
       __other.__unwrapped_begin(), __other.__unwrapped_end(), __unwrapped_begin(), __other.__size_);
   }
 
@@ -367,8 +366,7 @@ public:
   _CCCL_HIDE_FROM_ABI async_buffer(const __env_t& __env, _Iter __first, _Iter __last)
       : async_buffer(__env, static_cast<size_type>(_CUDA_VSTD::distance(__first, __last)), ::cuda::experimental::uninit)
   {
-    this->__copy_cross<_Iter, __detect_transfer_kind<__is_host_only, _Iter>>(
-      __first, __last, __unwrapped_begin(), __size_);
+    this->__copy_cross<_Iter>(__first, __last, __unwrapped_begin(), __size_);
   }
 
   //! @brief Constructs a async_buffer using a memory resource and copy-constructs all elements from \p __ilist
@@ -392,7 +390,7 @@ public:
       : async_buffer(__env, static_cast<size_type>(_CUDA_VRANGES::size(__range)), ::cuda::experimental::uninit)
   {
     using _Iter = _CUDA_VRANGES::iterator_t<_Range>;
-    this->__copy_cross<_Iter, __detect_transfer_kind<__is_host_only, _Range>>(
+    this->__copy_cross<_Iter>(
       _CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __unwrapped_begin(), __size_);
   }
 
@@ -407,7 +405,7 @@ public:
           ::cuda::experimental::uninit)
   {
     using _Iter = _CUDA_VRANGES::iterator_t<_Range>;
-    this->__copy_cross<_Iter, __detect_transfer_kind<__is_host_only, _Range>>(
+    this->__copy_cross<_Iter>(
       _CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __unwrapped_begin(), __size_);
   }
 #endif // _CCCL_DOXYGEN_INVOKED
@@ -707,8 +705,7 @@ public:
   {
     const auto __count = _CUDA_VRANGES::size(__range);
     using _Iter        = _CUDA_VRANGES::iterator_t<_Range>;
-    this->__assign_impl<_Iter, __detect_transfer_kind<__is_host_only, _Range>>(
-      __count, _CUDA_VSTD::begin(__range), _CUDA_VRANGES::__unwrap_end(__range));
+    this->__assign_impl<_Iter>(__count, _CUDA_VSTD::begin(__range), _CUDA_VRANGES::__unwrap_end(__range));
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // doxygen conflates the overloads
@@ -725,7 +722,7 @@ public:
     const auto __count = static_cast<size_type>(_CUDA_VRANGES::distance(__first, __last));
 
     using _Iter = _CUDA_VRANGES::iterator_t<_Range>;
-    this->__assign_impl<_Iter, __detect_transfer_kind<__is_host_only, _Range>>(__count, __first, __last);
+    this->__assign_impl<_Iter>(__count, __first, __last);
   }
 #endif // _CCCL_DOXYGEN_INVOKED
   //! @}

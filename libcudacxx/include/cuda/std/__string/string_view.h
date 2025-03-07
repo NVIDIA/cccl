@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/compare>
 #endif
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
@@ -167,7 +167,7 @@ public:
     return __lhs.__len_ == __rhs.__len_ && __lhs.compare(__rhs) == 0;
   }
 
-#ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
   _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
   operator<=>(__string_view const& __lhs, __string_view const& __rhs) noexcept
@@ -175,7 +175,7 @@ public:
     return __lhs.compare(__rhs) <=> 0;
   }
 
-#else // ^^^ !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR ^^^ / vvv _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
   _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
   operator!=(__string_view const& __lhs, __string_view const& __rhs) noexcept
@@ -207,7 +207,7 @@ public:
     return __lhs.compare(__rhs) >= 0;
   }
 
-#endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 private:
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __min_(size_t __x, size_t __y) noexcept

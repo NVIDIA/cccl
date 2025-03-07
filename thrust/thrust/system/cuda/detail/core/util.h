@@ -156,7 +156,7 @@ struct specialize_plan_impl_match<P, typelist<SM, SMs...>>
     : ::cuda::std::conditional<has_sm_tuning<P, SM>::value, P<SM>, specialize_plan_impl_match<P, typelist<SMs...>>>::type
 {};
 
-#ifdef _NVHPC_CUDA
+#if _CCCL_CUDA_COMPILER(NVHPC)
 #  if (__NVCOMPILER_CUDA_ARCH__ >= 600)
 #    define _THRUST_TUNING_ARCH sm60
 #  else
@@ -334,11 +334,10 @@ struct get_agent_plan_impl<Agent, typelist<lowest_supported_sm_arch>>
 };
 
 template <class Agent>
-THRUST_RUNTIME_FUNCTION typename get_plan<Agent>::type get_agent_plan(int ptx_version)
+THRUST_RUNTIME_FUNCTION typename get_plan<Agent>::type get_agent_plan([[maybe_unused]] int ptx_version)
 {
   NV_IF_TARGET(NV_IS_DEVICE,
-               (THRUST_UNUSED_VAR(ptx_version); using plan_type = typename get_plan<Agent>::type;
-                using ptx_plan                                  = typename Agent::ptx_plan;
+               (using plan_type = typename get_plan<Agent>::type; using ptx_plan = typename Agent::ptx_plan;
                 return plan_type{ptx_plan{}};), // NV_IS_HOST:
                (return get_agent_plan_impl<Agent, sm_list>::get(ptx_version);));
 }

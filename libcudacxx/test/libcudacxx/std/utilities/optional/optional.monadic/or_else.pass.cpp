@@ -68,7 +68,7 @@ static_assert(!has_or_else<cuda::std::optional<int>&, int>, "");
 __host__ __device__ TEST_CONSTEXPR_CXX17 bool test()
 {
   {
-    cuda::std::optional<int> opt;
+    cuda::std::optional<int> opt{};
     assert(opt.or_else([] {
       return cuda::std::optional<int>{0};
     }) == 0);
@@ -83,13 +83,30 @@ __host__ __device__ TEST_CONSTEXPR_CXX17 bool test()
     });
   }
 
+  {
+    int val = 42;
+    cuda::std::optional<int&> opt{};
+    assert(opt.or_else([&val] {
+      return cuda::std::optional<int&>{val};
+    }) == 42);
+    opt = val;
+    opt.or_else([] {
+#if defined(TEST_COMPILER_GCC) && __GNUC__ < 9
+      _CCCL_UNREACHABLE();
+#else
+      assert(false);
+#endif
+      return cuda::std::optional<int&>{};
+    });
+  }
+
   return true;
 }
 
 __host__ __device__ TEST_CONSTEXPR_CXX17 bool test_nontrivial()
 {
   {
-    cuda::std::optional<MoveOnly> opt;
+    cuda::std::optional<MoveOnly> opt{};
     opt = cuda::std::move(opt).or_else([] {
       return cuda::std::optional<MoveOnly>{MoveOnly{}};
     });

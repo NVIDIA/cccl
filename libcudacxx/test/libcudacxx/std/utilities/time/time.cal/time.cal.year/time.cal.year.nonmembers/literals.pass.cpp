@@ -23,7 +23,7 @@
 
 int main(int, char**)
 {
-#ifndef _LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS
+#if _LIBCUDACXX_HAS_CXX20_CHRONO_LITERALS()
   {
     using namespace cuda::std::chrono;
     ASSERT_NOEXCEPT(4y);
@@ -42,7 +42,7 @@ int main(int, char**)
     cuda::std::chrono::year y1 = 2020y;
     assert(y1 == cuda::std::chrono::year(2020));
   }
-#endif // !_LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS
+#endif // _LIBCUDACXX_HAS_CXX20_CHRONO_LITERALS()
 
   return 0;
 }

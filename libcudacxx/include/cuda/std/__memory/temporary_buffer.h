@@ -47,7 +47,7 @@ get_temporary_buffer(ptrdiff_t __n) noexcept
   }
   while (__n > 0)
   {
-#if !defined(_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION)
+#if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
     if (__is_overaligned_for_new(_LIBCUDACXX_ALIGNOF(_Tp)))
     {
       _CUDA_VSTD::align_val_t __al = _CUDA_VSTD::align_val_t(_CUDA_VSTD::alignment_of<_Tp>::value);
@@ -57,7 +57,7 @@ get_temporary_buffer(ptrdiff_t __n) noexcept
     {
       __r.first = static_cast<_Tp*>(::operator new(__n * sizeof(_Tp)));
     }
-#else // ^^^ !_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION ^^^ / vvv _LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION vvv
+#else // ^^^ _LIBCUDACXX_HAS_ALIGNED_ALLOCATION() ^^^ / vvv !_LIBCUDACXX_HAS_ALIGNED_ALLOCATION() vvv
     if (__is_overaligned_for_new(_LIBCUDACXX_ALIGNOF(_Tp)))
     {
       // Since aligned operator new is unavailable, return an empty
@@ -66,7 +66,7 @@ get_temporary_buffer(ptrdiff_t __n) noexcept
     }
 
     __r.first = static_cast<_Tp*>(::operator new(__n * sizeof(_Tp)));
-#endif // _LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION
+#endif // !_LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
 
     if (__r.first)
     {

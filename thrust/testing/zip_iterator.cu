@@ -10,6 +10,35 @@
 
 using namespace unittest;
 
+// ensure that we properly support thrust::reverse_iterator from cuda::std
+void TestZipIteratorTraits()
+{
+  using base_it = thrust::host_vector<int>::iterator;
+
+  using it        = thrust::zip_iterator<thrust::tuple<base_it, base_it>>;
+  using traits    = cuda::std::iterator_traits<it>;
+  using reference = thrust::detail::tuple_of_iterator_references<int&, int&>;
+
+  static_assert(cuda::std::is_same_v<traits::difference_type, ptrdiff_t>);
+  static_assert(cuda::std::is_same_v<traits::value_type, thrust::tuple<int, int>>);
+  static_assert(cuda::std::is_same_v<traits::pointer, void>);
+
+  static_assert(cuda::std::is_same_v<traits::reference, reference>);
+  static_assert(cuda::std::is_same_v<traits::iterator_category, ::cuda::std::random_access_iterator_tag>);
+
+  static_assert(cuda::std::is_same_v<thrust::iterator_traversal_t<it>, thrust::random_access_traversal_tag>);
+
+  static_assert(cuda::std::__is_cpp17_random_access_iterator<it>::value);
+
+  static_assert(!cuda::std::output_iterator<it, int>);
+  static_assert(cuda::std::input_iterator<it>);
+  static_assert(cuda::std::forward_iterator<it>);
+  static_assert(cuda::std::bidirectional_iterator<it>);
+  static_assert(cuda::std::random_access_iterator<it>);
+  static_assert(!cuda::std::contiguous_iterator<it>);
+}
+DECLARE_UNITTEST(TestZipIteratorTraits);
+
 template <typename T>
 struct TestZipIteratorManipulation
 {

@@ -29,13 +29,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/version>
-
-#if defined(__cccl_lib_mdspan)
-
-#  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__type_traits/is_arithmetic.h>
-#  include <cuda/std/complex>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/complex>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -75,5 +71,4 @@ _CCCL_GLOBAL_CONSTANT auto conj_if_needed = __conj_if_needed::__conj_if_needed{}
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // defined(__cccl_lib_mdspan)
 #endif // _LIBCUDACXX___LINALG_CONJUGATED_HPP

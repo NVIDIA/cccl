@@ -47,12 +47,9 @@
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
-
-#if __cccl_lib_mdspan
-#  include <cuda/std/__mdspan/extents.h>
-#endif // __cccl_lib_mdspan
 
 CUB_NAMESPACE_BEGIN
 
@@ -843,8 +840,6 @@ public:
    * ForEachInExtents
    ********************************************************************************************************************/
 
-#if __cccl_lib_mdspan
-
   //! @rst
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -875,7 +870,7 @@ public:
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_each_in_extents_api.cu
   //!     :language: c++
   //!     :dedent:
-  //!     :start-after:example-begin for-each-in-extents-example
+  //!     :start-after: example-begin for-each-in-extents-example
   //!     :end-before: example-end for-each-in-extents-example
   //!
   //! @endrst
@@ -955,7 +950,7 @@ public:
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_each_in_extents_api.cu
   //!     :language: c++
   //!     :dedent:
-  //!     :start-after:example-begin for-each-in-extents-example
+  //!     :start-after: example-begin for-each-in-extents-example
   //!     :end-before: example-end for-each-in-extents-example
   //!
   //! @endrst
@@ -990,8 +985,6 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachInExtents");
     return detail::for_each_in_extents::dispatch_t<extents_type, OpType>::dispatch(extents, op, stream);
   }
-
-#endif // __cccl_lib_mdspan
 };
 
 CUB_NAMESPACE_END

@@ -7,30 +7,11 @@ tcgen05.mma.cta_group::1.kind::f16
 
    // tcgen05.mma.cta_group.kind [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d, scale_input_d; // PTX ISA 86, SM_100a
    // .kind      = { .kind::f16, .kind::tf32 }
-   // .cta_group = { .cta_group::1, .cta_group::2 }
-   template <int N32, cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
+   // .cta_group = { .cta_group::1 }
+   template <int N32, cuda::ptx::dot_kind Kind>
    __device__ static inline void tcgen05_mma(
      cuda::ptx::kind_t<Kind> kind,
-     cuda::ptx::cta_group_t<Cta_Group> cta_group,
-     uint32_t d_tmem,
-     uint64_t a_desc,
-     uint64_t b_desc,
-     uint32_t idesc,
-     const uint32_t (&disable_output_lane)[4],
-     bool enable_input_d,
-     cuda::ptx::n32_t<N32> scale_input_d);
-
-tcgen05.mma.cta_group::2.kind::f16
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
-
-   // tcgen05.mma.cta_group.kind [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d, scale_input_d; // PTX ISA 86, SM_100a
-   // .kind      = { .kind::f16, .kind::tf32 }
-   // .cta_group = { .cta_group::1, .cta_group::2 }
-   template <int N32, cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
-   __device__ static inline void tcgen05_mma(
-     cuda::ptx::kind_t<Kind> kind,
-     cuda::ptx::cta_group_t<Cta_Group> cta_group,
+     cuda::ptx::cta_group_1_t,
      uint32_t d_tmem,
      uint64_t a_desc,
      uint64_t b_desc,
@@ -45,16 +26,35 @@ tcgen05.mma.cta_group::1.kind::tf32
 
    // tcgen05.mma.cta_group.kind [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d, scale_input_d; // PTX ISA 86, SM_100a
    // .kind      = { .kind::f16, .kind::tf32 }
-   // .cta_group = { .cta_group::1, .cta_group::2 }
-   template <int N32, cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
+   // .cta_group = { .cta_group::1 }
+   template <int N32, cuda::ptx::dot_kind Kind>
    __device__ static inline void tcgen05_mma(
      cuda::ptx::kind_t<Kind> kind,
-     cuda::ptx::cta_group_t<Cta_Group> cta_group,
+     cuda::ptx::cta_group_1_t,
      uint32_t d_tmem,
      uint64_t a_desc,
      uint64_t b_desc,
      uint32_t idesc,
      const uint32_t (&disable_output_lane)[4],
+     bool enable_input_d,
+     cuda::ptx::n32_t<N32> scale_input_d);
+
+tcgen05.mma.cta_group::2.kind::f16
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. code:: cuda
+
+   // tcgen05.mma.cta_group.kind [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d, scale_input_d; // PTX ISA 86, SM_100a
+   // .kind      = { .kind::f16, .kind::tf32 }
+   // .cta_group = { .cta_group::2 }
+   template <int N32, cuda::ptx::dot_kind Kind>
+   __device__ static inline void tcgen05_mma(
+     cuda::ptx::kind_t<Kind> kind,
+     cuda::ptx::cta_group_2_t,
+     uint32_t d_tmem,
+     uint64_t a_desc,
+     uint64_t b_desc,
+     uint32_t idesc,
+     const uint32_t (&disable_output_lane)[8],
      bool enable_input_d,
      cuda::ptx::n32_t<N32> scale_input_d);
 
@@ -64,16 +64,16 @@ tcgen05.mma.cta_group::2.kind::tf32
 
    // tcgen05.mma.cta_group.kind [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d, scale_input_d; // PTX ISA 86, SM_100a
    // .kind      = { .kind::f16, .kind::tf32 }
-   // .cta_group = { .cta_group::1, .cta_group::2 }
-   template <int N32, cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
+   // .cta_group = { .cta_group::2 }
+   template <int N32, cuda::ptx::dot_kind Kind>
    __device__ static inline void tcgen05_mma(
      cuda::ptx::kind_t<Kind> kind,
-     cuda::ptx::cta_group_t<Cta_Group> cta_group,
+     cuda::ptx::cta_group_2_t,
      uint32_t d_tmem,
      uint64_t a_desc,
      uint64_t b_desc,
      uint32_t idesc,
-     const uint32_t (&disable_output_lane)[4],
+     const uint32_t (&disable_output_lane)[8],
      bool enable_input_d,
      cuda::ptx::n32_t<N32> scale_input_d);
 
@@ -83,29 +83,11 @@ tcgen05.mma.cta_group::1.kind::f16
 
    // tcgen05.mma.cta_group.kind [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
-   // .cta_group = { .cta_group::1, .cta_group::2 }
-   template <cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
+   // .cta_group = { .cta_group::1 }
+   template <cuda::ptx::dot_kind Kind>
    __device__ static inline void tcgen05_mma(
      cuda::ptx::kind_t<Kind> kind,
-     cuda::ptx::cta_group_t<Cta_Group> cta_group,
-     uint32_t d_tmem,
-     uint64_t a_desc,
-     uint64_t b_desc,
-     uint32_t idesc,
-     const uint32_t (&disable_output_lane)[4],
-     bool enable_input_d);
-
-tcgen05.mma.cta_group::2.kind::f16
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
-
-   // tcgen05.mma.cta_group.kind [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
-   // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
-   // .cta_group = { .cta_group::1, .cta_group::2 }
-   template <cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
-   __device__ static inline void tcgen05_mma(
-     cuda::ptx::kind_t<Kind> kind,
-     cuda::ptx::cta_group_t<Cta_Group> cta_group,
+     cuda::ptx::cta_group_1_t,
      uint32_t d_tmem,
      uint64_t a_desc,
      uint64_t b_desc,
@@ -119,29 +101,11 @@ tcgen05.mma.cta_group::1.kind::tf32
 
    // tcgen05.mma.cta_group.kind [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
-   // .cta_group = { .cta_group::1, .cta_group::2 }
-   template <cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
+   // .cta_group = { .cta_group::1 }
+   template <cuda::ptx::dot_kind Kind>
    __device__ static inline void tcgen05_mma(
      cuda::ptx::kind_t<Kind> kind,
-     cuda::ptx::cta_group_t<Cta_Group> cta_group,
-     uint32_t d_tmem,
-     uint64_t a_desc,
-     uint64_t b_desc,
-     uint32_t idesc,
-     const uint32_t (&disable_output_lane)[4],
-     bool enable_input_d);
-
-tcgen05.mma.cta_group::2.kind::tf32
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
-
-   // tcgen05.mma.cta_group.kind [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
-   // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
-   // .cta_group = { .cta_group::1, .cta_group::2 }
-   template <cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
-   __device__ static inline void tcgen05_mma(
-     cuda::ptx::kind_t<Kind> kind,
-     cuda::ptx::cta_group_t<Cta_Group> cta_group,
+     cuda::ptx::cta_group_1_t,
      uint32_t d_tmem,
      uint64_t a_desc,
      uint64_t b_desc,
@@ -155,29 +119,11 @@ tcgen05.mma.cta_group::1.kind::f8f6f4
 
    // tcgen05.mma.cta_group.kind [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
-   // .cta_group = { .cta_group::1, .cta_group::2 }
-   template <cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
+   // .cta_group = { .cta_group::1 }
+   template <cuda::ptx::dot_kind Kind>
    __device__ static inline void tcgen05_mma(
      cuda::ptx::kind_t<Kind> kind,
-     cuda::ptx::cta_group_t<Cta_Group> cta_group,
-     uint32_t d_tmem,
-     uint64_t a_desc,
-     uint64_t b_desc,
-     uint32_t idesc,
-     const uint32_t (&disable_output_lane)[4],
-     bool enable_input_d);
-
-tcgen05.mma.cta_group::2.kind::f8f6f4
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
-
-   // tcgen05.mma.cta_group.kind [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
-   // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
-   // .cta_group = { .cta_group::1, .cta_group::2 }
-   template <cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
-   __device__ static inline void tcgen05_mma(
-     cuda::ptx::kind_t<Kind> kind,
-     cuda::ptx::cta_group_t<Cta_Group> cta_group,
+     cuda::ptx::cta_group_1_t,
      uint32_t d_tmem,
      uint64_t a_desc,
      uint64_t b_desc,
@@ -191,16 +137,70 @@ tcgen05.mma.cta_group::1.kind::i8
 
    // tcgen05.mma.cta_group.kind [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
-   // .cta_group = { .cta_group::1, .cta_group::2 }
-   template <cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
+   // .cta_group = { .cta_group::1 }
+   template <cuda::ptx::dot_kind Kind>
    __device__ static inline void tcgen05_mma(
      cuda::ptx::kind_t<Kind> kind,
-     cuda::ptx::cta_group_t<Cta_Group> cta_group,
+     cuda::ptx::cta_group_1_t,
      uint32_t d_tmem,
      uint64_t a_desc,
      uint64_t b_desc,
      uint32_t idesc,
      const uint32_t (&disable_output_lane)[4],
+     bool enable_input_d);
+
+tcgen05.mma.cta_group::2.kind::f16
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. code:: cuda
+
+   // tcgen05.mma.cta_group.kind [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
+   // .cta_group = { .cta_group::2 }
+   template <cuda::ptx::dot_kind Kind>
+   __device__ static inline void tcgen05_mma(
+     cuda::ptx::kind_t<Kind> kind,
+     cuda::ptx::cta_group_2_t,
+     uint32_t d_tmem,
+     uint64_t a_desc,
+     uint64_t b_desc,
+     uint32_t idesc,
+     const uint32_t (&disable_output_lane)[8],
+     bool enable_input_d);
+
+tcgen05.mma.cta_group::2.kind::tf32
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. code:: cuda
+
+   // tcgen05.mma.cta_group.kind [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
+   // .cta_group = { .cta_group::2 }
+   template <cuda::ptx::dot_kind Kind>
+   __device__ static inline void tcgen05_mma(
+     cuda::ptx::kind_t<Kind> kind,
+     cuda::ptx::cta_group_2_t,
+     uint32_t d_tmem,
+     uint64_t a_desc,
+     uint64_t b_desc,
+     uint32_t idesc,
+     const uint32_t (&disable_output_lane)[8],
+     bool enable_input_d);
+
+tcgen05.mma.cta_group::2.kind::f8f6f4
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. code:: cuda
+
+   // tcgen05.mma.cta_group.kind [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
+   // .cta_group = { .cta_group::2 }
+   template <cuda::ptx::dot_kind Kind>
+   __device__ static inline void tcgen05_mma(
+     cuda::ptx::kind_t<Kind> kind,
+     cuda::ptx::cta_group_2_t,
+     uint32_t d_tmem,
+     uint64_t a_desc,
+     uint64_t b_desc,
+     uint32_t idesc,
+     const uint32_t (&disable_output_lane)[8],
      bool enable_input_d);
 
 tcgen05.mma.cta_group::2.kind::i8
@@ -209,16 +209,16 @@ tcgen05.mma.cta_group::2.kind::i8
 
    // tcgen05.mma.cta_group.kind [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
-   // .cta_group = { .cta_group::1, .cta_group::2 }
-   template <cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
+   // .cta_group = { .cta_group::2 }
+   template <cuda::ptx::dot_kind Kind>
    __device__ static inline void tcgen05_mma(
      cuda::ptx::kind_t<Kind> kind,
-     cuda::ptx::cta_group_t<Cta_Group> cta_group,
+     cuda::ptx::cta_group_2_t,
      uint32_t d_tmem,
      uint64_t a_desc,
      uint64_t b_desc,
      uint32_t idesc,
-     const uint32_t (&disable_output_lane)[4],
+     const uint32_t (&disable_output_lane)[8],
      bool enable_input_d);
 
 tcgen05.mma.cta_group::1.kind::f16
@@ -435,30 +435,11 @@ tcgen05.mma.cta_group::1.kind::f16
 
    // tcgen05.mma.cta_group.kind [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d, scale_input_d; // PTX ISA 86, SM_100a
    // .kind      = { .kind::f16, .kind::tf32 }
-   // .cta_group = { .cta_group::1, .cta_group::2 }
-   template <int N32, cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
+   // .cta_group = { .cta_group::1 }
+   template <int N32, cuda::ptx::dot_kind Kind>
    __device__ static inline void tcgen05_mma_tmem_a(
      cuda::ptx::kind_t<Kind> kind,
-     cuda::ptx::cta_group_t<Cta_Group> cta_group,
-     uint32_t d_tmem,
-     uint32_t a_tmem,
-     uint64_t b_desc,
-     uint32_t idesc,
-     const uint32_t (&disable_output_lane)[4],
-     bool enable_input_d,
-     cuda::ptx::n32_t<N32> scale_input_d);
-
-tcgen05.mma.cta_group::2.kind::f16
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
-
-   // tcgen05.mma.cta_group.kind [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d, scale_input_d; // PTX ISA 86, SM_100a
-   // .kind      = { .kind::f16, .kind::tf32 }
-   // .cta_group = { .cta_group::1, .cta_group::2 }
-   template <int N32, cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
-   __device__ static inline void tcgen05_mma_tmem_a(
-     cuda::ptx::kind_t<Kind> kind,
-     cuda::ptx::cta_group_t<Cta_Group> cta_group,
+     cuda::ptx::cta_group_1_t,
      uint32_t d_tmem,
      uint32_t a_tmem,
      uint64_t b_desc,
@@ -473,16 +454,35 @@ tcgen05.mma.cta_group::1.kind::tf32
 
    // tcgen05.mma.cta_group.kind [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d, scale_input_d; // PTX ISA 86, SM_100a
    // .kind      = { .kind::f16, .kind::tf32 }
-   // .cta_group = { .cta_group::1, .cta_group::2 }
-   template <int N32, cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
+   // .cta_group = { .cta_group::1 }
+   template <int N32, cuda::ptx::dot_kind Kind>
    __device__ static inline void tcgen05_mma_tmem_a(
      cuda::ptx::kind_t<Kind> kind,
-     cuda::ptx::cta_group_t<Cta_Group> cta_group,
+     cuda::ptx::cta_group_1_t,
      uint32_t d_tmem,
      uint32_t a_tmem,
      uint64_t b_desc,
      uint32_t idesc,
      const uint32_t (&disable_output_lane)[4],
+     bool enable_input_d,
+     cuda::ptx::n32_t<N32> scale_input_d);
+
+tcgen05.mma.cta_group::2.kind::f16
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. code:: cuda
+
+   // tcgen05.mma.cta_group.kind [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d, scale_input_d; // PTX ISA 86, SM_100a
+   // .kind      = { .kind::f16, .kind::tf32 }
+   // .cta_group = { .cta_group::2 }
+   template <int N32, cuda::ptx::dot_kind Kind>
+   __device__ static inline void tcgen05_mma_tmem_a(
+     cuda::ptx::kind_t<Kind> kind,
+     cuda::ptx::cta_group_2_t,
+     uint32_t d_tmem,
+     uint32_t a_tmem,
+     uint64_t b_desc,
+     uint32_t idesc,
+     const uint32_t (&disable_output_lane)[8],
      bool enable_input_d,
      cuda::ptx::n32_t<N32> scale_input_d);
 
@@ -492,16 +492,16 @@ tcgen05.mma.cta_group::2.kind::tf32
 
    // tcgen05.mma.cta_group.kind [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d, scale_input_d; // PTX ISA 86, SM_100a
    // .kind      = { .kind::f16, .kind::tf32 }
-   // .cta_group = { .cta_group::1, .cta_group::2 }
-   template <int N32, cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
+   // .cta_group = { .cta_group::2 }
+   template <int N32, cuda::ptx::dot_kind Kind>
    __device__ static inline void tcgen05_mma_tmem_a(
      cuda::ptx::kind_t<Kind> kind,
-     cuda::ptx::cta_group_t<Cta_Group> cta_group,
+     cuda::ptx::cta_group_2_t,
      uint32_t d_tmem,
      uint32_t a_tmem,
      uint64_t b_desc,
      uint32_t idesc,
-     const uint32_t (&disable_output_lane)[4],
+     const uint32_t (&disable_output_lane)[8],
      bool enable_input_d,
      cuda::ptx::n32_t<N32> scale_input_d);
 
@@ -511,29 +511,11 @@ tcgen05.mma.cta_group::1.kind::f16
 
    // tcgen05.mma.cta_group.kind [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
-   // .cta_group = { .cta_group::1, .cta_group::2 }
-   template <cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
+   // .cta_group = { .cta_group::1 }
+   template <cuda::ptx::dot_kind Kind>
    __device__ static inline void tcgen05_mma_tmem_a(
      cuda::ptx::kind_t<Kind> kind,
-     cuda::ptx::cta_group_t<Cta_Group> cta_group,
-     uint32_t d_tmem,
-     uint32_t a_tmem,
-     uint64_t b_desc,
-     uint32_t idesc,
-     const uint32_t (&disable_output_lane)[4],
-     bool enable_input_d);
-
-tcgen05.mma.cta_group::2.kind::f16
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
-
-   // tcgen05.mma.cta_group.kind [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
-   // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
-   // .cta_group = { .cta_group::1, .cta_group::2 }
-   template <cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
-   __device__ static inline void tcgen05_mma_tmem_a(
-     cuda::ptx::kind_t<Kind> kind,
-     cuda::ptx::cta_group_t<Cta_Group> cta_group,
+     cuda::ptx::cta_group_1_t,
      uint32_t d_tmem,
      uint32_t a_tmem,
      uint64_t b_desc,
@@ -547,29 +529,11 @@ tcgen05.mma.cta_group::1.kind::tf32
 
    // tcgen05.mma.cta_group.kind [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
-   // .cta_group = { .cta_group::1, .cta_group::2 }
-   template <cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
+   // .cta_group = { .cta_group::1 }
+   template <cuda::ptx::dot_kind Kind>
    __device__ static inline void tcgen05_mma_tmem_a(
      cuda::ptx::kind_t<Kind> kind,
-     cuda::ptx::cta_group_t<Cta_Group> cta_group,
-     uint32_t d_tmem,
-     uint32_t a_tmem,
-     uint64_t b_desc,
-     uint32_t idesc,
-     const uint32_t (&disable_output_lane)[4],
-     bool enable_input_d);
-
-tcgen05.mma.cta_group::2.kind::tf32
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
-
-   // tcgen05.mma.cta_group.kind [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
-   // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
-   // .cta_group = { .cta_group::1, .cta_group::2 }
-   template <cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
-   __device__ static inline void tcgen05_mma_tmem_a(
-     cuda::ptx::kind_t<Kind> kind,
-     cuda::ptx::cta_group_t<Cta_Group> cta_group,
+     cuda::ptx::cta_group_1_t,
      uint32_t d_tmem,
      uint32_t a_tmem,
      uint64_t b_desc,
@@ -583,29 +547,11 @@ tcgen05.mma.cta_group::1.kind::f8f6f4
 
    // tcgen05.mma.cta_group.kind [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
-   // .cta_group = { .cta_group::1, .cta_group::2 }
-   template <cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
+   // .cta_group = { .cta_group::1 }
+   template <cuda::ptx::dot_kind Kind>
    __device__ static inline void tcgen05_mma_tmem_a(
      cuda::ptx::kind_t<Kind> kind,
-     cuda::ptx::cta_group_t<Cta_Group> cta_group,
-     uint32_t d_tmem,
-     uint32_t a_tmem,
-     uint64_t b_desc,
-     uint32_t idesc,
-     const uint32_t (&disable_output_lane)[4],
-     bool enable_input_d);
-
-tcgen05.mma.cta_group::2.kind::f8f6f4
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
-
-   // tcgen05.mma.cta_group.kind [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
-   // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
-   // .cta_group = { .cta_group::1, .cta_group::2 }
-   template <cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
-   __device__ static inline void tcgen05_mma_tmem_a(
-     cuda::ptx::kind_t<Kind> kind,
-     cuda::ptx::cta_group_t<Cta_Group> cta_group,
+     cuda::ptx::cta_group_1_t,
      uint32_t d_tmem,
      uint32_t a_tmem,
      uint64_t b_desc,
@@ -619,16 +565,70 @@ tcgen05.mma.cta_group::1.kind::i8
 
    // tcgen05.mma.cta_group.kind [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
-   // .cta_group = { .cta_group::1, .cta_group::2 }
-   template <cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
+   // .cta_group = { .cta_group::1 }
+   template <cuda::ptx::dot_kind Kind>
    __device__ static inline void tcgen05_mma_tmem_a(
      cuda::ptx::kind_t<Kind> kind,
-     cuda::ptx::cta_group_t<Cta_Group> cta_group,
+     cuda::ptx::cta_group_1_t,
      uint32_t d_tmem,
      uint32_t a_tmem,
      uint64_t b_desc,
      uint32_t idesc,
      const uint32_t (&disable_output_lane)[4],
+     bool enable_input_d);
+
+tcgen05.mma.cta_group::2.kind::f16
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. code:: cuda
+
+   // tcgen05.mma.cta_group.kind [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
+   // .cta_group = { .cta_group::2 }
+   template <cuda::ptx::dot_kind Kind>
+   __device__ static inline void tcgen05_mma_tmem_a(
+     cuda::ptx::kind_t<Kind> kind,
+     cuda::ptx::cta_group_2_t,
+     uint32_t d_tmem,
+     uint32_t a_tmem,
+     uint64_t b_desc,
+     uint32_t idesc,
+     const uint32_t (&disable_output_lane)[8],
+     bool enable_input_d);
+
+tcgen05.mma.cta_group::2.kind::tf32
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. code:: cuda
+
+   // tcgen05.mma.cta_group.kind [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
+   // .cta_group = { .cta_group::2 }
+   template <cuda::ptx::dot_kind Kind>
+   __device__ static inline void tcgen05_mma_tmem_a(
+     cuda::ptx::kind_t<Kind> kind,
+     cuda::ptx::cta_group_2_t,
+     uint32_t d_tmem,
+     uint32_t a_tmem,
+     uint64_t b_desc,
+     uint32_t idesc,
+     const uint32_t (&disable_output_lane)[8],
+     bool enable_input_d);
+
+tcgen05.mma.cta_group::2.kind::f8f6f4
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. code:: cuda
+
+   // tcgen05.mma.cta_group.kind [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
+   // .cta_group = { .cta_group::2 }
+   template <cuda::ptx::dot_kind Kind>
+   __device__ static inline void tcgen05_mma_tmem_a(
+     cuda::ptx::kind_t<Kind> kind,
+     cuda::ptx::cta_group_2_t,
+     uint32_t d_tmem,
+     uint32_t a_tmem,
+     uint64_t b_desc,
+     uint32_t idesc,
+     const uint32_t (&disable_output_lane)[8],
      bool enable_input_d);
 
 tcgen05.mma.cta_group::2.kind::i8
@@ -637,16 +637,16 @@ tcgen05.mma.cta_group::2.kind::i8
 
    // tcgen05.mma.cta_group.kind [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
-   // .cta_group = { .cta_group::1, .cta_group::2 }
-   template <cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
+   // .cta_group = { .cta_group::2 }
+   template <cuda::ptx::dot_kind Kind>
    __device__ static inline void tcgen05_mma_tmem_a(
      cuda::ptx::kind_t<Kind> kind,
-     cuda::ptx::cta_group_t<Cta_Group> cta_group,
+     cuda::ptx::cta_group_2_t,
      uint32_t d_tmem,
      uint32_t a_tmem,
      uint64_t b_desc,
      uint32_t idesc,
-     const uint32_t (&disable_output_lane)[4],
+     const uint32_t (&disable_output_lane)[8],
      bool enable_input_d);
 
 tcgen05.mma.cta_group::1.kind::f16

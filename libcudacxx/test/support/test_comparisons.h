@@ -24,9 +24,9 @@
 #define TEST_COMPARISONS_H
 
 #include <cuda/std/cassert>
-#ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/compare>
-#endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #include <cuda/std/concepts>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>

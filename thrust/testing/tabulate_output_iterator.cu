@@ -76,6 +76,38 @@ struct index_to_gather_index_op
   }
 };
 
+// ensure that we properly support thrust::reverse_iterator from cuda::std
+void TestTabulateOutputIteratorTraits()
+{
+  using base_it = thrust::host_vector<int>::iterator;
+  using Op      = host_write_op<base_it>;
+
+  using it       = thrust::tabulate_output_iterator<Op>;
+  using traits   = cuda::std::iterator_traits<it>;
+  using category = thrust::detail::iterator_category_with_system_and_traversal<::cuda::std::random_access_iterator_tag,
+                                                                               thrust::any_system_tag,
+                                                                               thrust::random_access_traversal_tag>;
+
+  static_assert(cuda::std::is_same_v<traits::difference_type, ptrdiff_t>);
+  static_assert(cuda::std::is_same_v<traits::value_type, void>);
+  static_assert(cuda::std::is_same_v<traits::pointer, void>);
+  static_assert(cuda::std::is_same_v<traits::reference, thrust::detail::tabulate_output_iterator_proxy<Op, ptrdiff_t>>);
+  static_assert(cuda::std::is_same_v<traits::iterator_category, category>);
+
+  static_assert(cuda::std::is_same_v<thrust::iterator_traversal_t<it>, thrust::random_access_traversal_tag>);
+
+  static_assert(cuda::std::__is_cpp17_random_access_iterator<it>::value);
+
+  // FIXME(bgruber): all up to and including random access should be true
+  static_assert(!cuda::std::output_iterator<it, int>);
+  static_assert(!cuda::std::input_iterator<it>);
+  static_assert(!cuda::std::forward_iterator<it>);
+  static_assert(!cuda::std::bidirectional_iterator<it>);
+  static_assert(!cuda::std::random_access_iterator<it>);
+  static_assert(!cuda::std::contiguous_iterator<it>);
+}
+DECLARE_UNITTEST(TestTabulateOutputIteratorTraits);
+
 template <class Vector>
 void TestTabulateOutputIterator()
 {

@@ -21,16 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_LIBCUDACXX_HAS_NVBF16)
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
-#  include <cuda_bf16.h>
-_CCCL_DIAG_POP
+#if _LIBCUDACXX_HAS_NVBF16()
 
 #  include <cuda/std/__cmath/nvbf16.h>
 #  include <cuda/std/__complex/vector_support.h>
 #  include <cuda/std/__fwd/get.h>
+#  include <cuda/std/__internal/nvfp_types.h>
 #  include <cuda/std/__type_traits/enable_if.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
 #  include <cuda/std/__type_traits/is_constructible.h>
@@ -348,6 +344,6 @@ operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const complex<__nv_bfloa
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif /// _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 #endif // _LIBCUDACXX___COMPLEX_NVBF16_H

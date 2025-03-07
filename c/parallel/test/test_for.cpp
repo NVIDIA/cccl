@@ -14,8 +14,9 @@
 
 #include "test_util.h"
 #include <cccl/c/for.h>
+#include <stdint.h>
 
-void for_each(cccl_iterator_t input, unsigned long long num_items, cccl_op_t op)
+void for_each(cccl_iterator_t input, uint64_t num_items, cccl_op_t op)
 {
   cudaDeviceProp deviceProp;
   cudaGetDeviceProperties(&deviceProp, 0);
@@ -43,7 +44,7 @@ void for_each(cccl_iterator_t input, unsigned long long num_items, cccl_op_t op)
 using integral_types = std::tuple<int32_t, uint32_t, int64_t, uint64_t>;
 TEMPLATE_LIST_TEST_CASE("for works with integral types", "[for]", integral_types)
 {
-  const int num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
+  const uint64_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
   operation_t op = make_operation("op", get_for_op(get_type_info<TestType>().type));
   std::vector<TestType> input(num_items, TestType(1));

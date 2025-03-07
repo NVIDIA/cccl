@@ -47,27 +47,8 @@ struct X
   }
 };
 
-int main(int, char**)
+__host__ __device__ constexpr bool test()
 {
-  {
-    constexpr optional<X> opt(2);
-    constexpr Y y(3);
-    static_assert(opt.value_or(y) == 2, "");
-  }
-  {
-    constexpr optional<X> opt(2);
-    static_assert(opt.value_or(Y(3)) == 2, "");
-  }
-  {
-    constexpr optional<X> opt;
-    constexpr Y y(3);
-    static_assert(opt.value_or(y) == 3, "");
-  }
-  {
-    constexpr optional<X> opt;
-    static_assert(opt.value_or(Y(3)) == 4, "");
-  }
-
   {
     const optional<X> opt(2);
     const Y y(3);
@@ -78,14 +59,47 @@ int main(int, char**)
     assert(opt.value_or(Y(3)) == 2);
   }
   {
-    const optional<X> opt;
+    const optional<X> opt{};
     const Y y(3);
     assert(opt.value_or(y) == 3);
   }
   {
-    const optional<X> opt;
+    const optional<X> opt{};
     assert(opt.value_or(Y(3)) == 4);
+    ASSERT_SAME_TYPE(decltype(cuda::std::declval<const optional<X>>().value_or(Y(3))), X);
   }
+
+  X val{2};
+  {
+    const optional<X&> opt(val);
+    const Y y(3);
+    assert(opt.value_or(y) == 2);
+    ASSERT_SAME_TYPE(decltype(cuda::std::declval<const optional<X&>>().value_or(y)), X);
+  }
+  {
+    const optional<X&> opt(val);
+    assert(opt.value_or(Y(3)) == 2);
+    ASSERT_SAME_TYPE(decltype(cuda::std::declval<const optional<X&>>().value_or(Y(3))), X);
+  }
+  {
+    const optional<X&> opt{};
+    const Y y(3);
+    assert(opt.value_or(y) == 3);
+    ASSERT_SAME_TYPE(decltype(cuda::std::declval<const optional<X>>().value_or(y)), X);
+  }
+  {
+    const optional<X&> opt{};
+    assert(opt.value_or(Y(3)) == 4);
+    ASSERT_SAME_TYPE(decltype(cuda::std::declval<const optional<X&>>().value_or(Y(3))), X);
+  }
+
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test(), "");
 
   return 0;
 }

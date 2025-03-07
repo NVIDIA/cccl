@@ -64,7 +64,7 @@ constexpr bool compare_value(const T& value, const T& expected)
       cuda::std::addressof(host_value),
       cuda::std::addressof(value),
       sizeof(T),
-      ::cudaMemcpyDeviceToHost);
+      ::cudaMemcpyDefault);
     return host_value == expected;
   }
 }
@@ -85,7 +85,7 @@ void assign_value(T& value, const T& input)
       cuda::std::addressof(value),
       cuda::std::addressof(input),
       sizeof(T),
-      ::cudaMemcpyHostToDevice);
+      ::cudaMemcpyDefault);
   }
 }
 

@@ -18,8 +18,6 @@
 
 #include "test_macros.h"
 
-TEST_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
-
 // NVRTC doesn't include host atomic making this feature test invalid
 // TODO: Should we define __cccl_lib_atomic_is_always_lock_free for NVRTC?
 #if !defined(TEST_COMPILER_NVRTC)

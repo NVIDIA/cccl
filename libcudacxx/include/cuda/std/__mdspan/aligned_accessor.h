@@ -29,18 +29,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/version>
-
-#if defined(__cccl_lib_mdspan)
-
-#  include <cuda/std/__bit/has_single_bit.h>
-#  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__mdspan/default_accessor.h>
-#  include <cuda/std/__memory/assume_aligned.h>
-#  include <cuda/std/__type_traits/is_abstract.h>
-#  include <cuda/std/__type_traits/is_array.h>
-#  include <cuda/std/__type_traits/is_convertible.h>
-#  include <cuda/std/__type_traits/is_object.h>
+#include <cuda/std/__bit/has_single_bit.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__mdspan/default_accessor.h>
+#include <cuda/std/__memory/assume_aligned.h>
+#include <cuda/std/__type_traits/is_abstract.h>
+#include <cuda/std/__type_traits/is_array.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_object.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -97,5 +93,4 @@ public:
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // defined(__cccl_lib_mdspan)
 #endif // _LIBCUDACXX___MDSPAN_ALIGNED_ACCESSOR_H

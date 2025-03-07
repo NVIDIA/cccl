@@ -25,6 +25,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/detail/type_traits.h>
 #include <thrust/iterator/detail/iterator_traversal_tags.h>
 #include <thrust/iterator/iterator_categories.h>
@@ -33,59 +34,29 @@ THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-template <typename Category>
-using host_system_category_to_traversal = ::cuda::std::_If<
-  ::cuda::std::is_convertible_v<Category, random_access_host_iterator_tag>,
-  random_access_traversal_tag,
-  ::cuda::std::_If<
-    ::cuda::std::is_convertible_v<Category, bidirectional_host_iterator_tag>,
-    bidirectional_traversal_tag,
-    ::cuda::std::_If<::cuda::std::is_convertible_v<Category, forward_host_iterator_tag>,
-                     forward_traversal_tag,
-                     ::cuda::std::_If<::cuda::std::is_convertible_v<Category, input_host_iterator_tag>,
-                                      single_pass_traversal_tag,
-                                      ::cuda::std::_If<::cuda::std::is_convertible_v<Category, output_host_iterator_tag>,
-                                                       incrementable_traversal_tag,
-                                                       void>>>>>;
+_CCCL_HOST_DEVICE auto cat_to_traversal_impl(...) -> void;
 
-template <typename Category>
-using device_system_category_to_traversal = ::cuda::std::_If<
-  ::cuda::std::is_convertible_v<Category, random_access_device_iterator_tag>,
-  random_access_traversal_tag,
-  ::cuda::std::_If<
-    ::cuda::std::is_convertible_v<Category, bidirectional_device_iterator_tag>,
-    bidirectional_traversal_tag,
-    ::cuda::std::_If<::cuda::std::is_convertible_v<Category, forward_device_iterator_tag>,
-                     forward_traversal_tag,
-                     ::cuda::std::_If<::cuda::std::is_convertible_v<Category, input_device_iterator_tag>,
-                                      single_pass_traversal_tag,
-                                      ::cuda::std::_If<::cuda::std::is_convertible_v<Category, output_device_iterator_tag>,
-                                                       incrementable_traversal_tag,
-                                                       void>>>>>;
+// host
+_CCCL_HOST_DEVICE auto cat_to_traversal_impl(const random_access_host_iterator_tag&) -> random_access_traversal_tag;
+_CCCL_HOST_DEVICE auto cat_to_traversal_impl(const bidirectional_host_iterator_tag&) -> bidirectional_traversal_tag;
+_CCCL_HOST_DEVICE auto cat_to_traversal_impl(const forward_host_iterator_tag&) -> forward_traversal_tag;
+_CCCL_HOST_DEVICE auto cat_to_traversal_impl(const input_host_iterator_tag&) -> single_pass_traversal_tag;
+_CCCL_HOST_DEVICE auto cat_to_traversal_impl(const output_host_iterator_tag&) -> incrementable_traversal_tag;
 
-template <typename Category>
-using category_to_traversal =
-  // check for host system
-  ::cuda::std::_If<::cuda::std::is_convertible_v<Category, input_host_iterator_tag>
-                     || ::cuda::std::is_convertible_v<Category, output_host_iterator_tag>,
-                   host_system_category_to_traversal<Category>,
-                   // check for device system
-                   ::cuda::std::_If<::cuda::std::is_convertible_v<Category, input_device_iterator_tag>
-                                      || ::cuda::std::is_convertible_v<Category, output_device_iterator_tag>,
-                                    device_system_category_to_traversal<Category>,
-                                    // unknown category
-                                    void>>;
-
-template <typename T>
-_CCCL_INLINE_VAR constexpr bool is_iterator_traversal = ::cuda::std::is_convertible_v<T, incrementable_traversal_tag>;
+// device
+_CCCL_HOST_DEVICE auto cat_to_traversal_impl(const random_access_device_iterator_tag&) -> random_access_traversal_tag;
+_CCCL_HOST_DEVICE auto cat_to_traversal_impl(const bidirectional_device_iterator_tag&) -> bidirectional_traversal_tag;
+_CCCL_HOST_DEVICE auto cat_to_traversal_impl(const forward_device_iterator_tag&) -> forward_traversal_tag;
+_CCCL_HOST_DEVICE auto cat_to_traversal_impl(const input_device_iterator_tag&) -> single_pass_traversal_tag;
+_CCCL_HOST_DEVICE auto cat_to_traversal_impl(const output_device_iterator_tag&) -> incrementable_traversal_tag;
 
 template <typename CategoryOrTraversal>
 struct iterator_category_to_traversal
 {
-  using type = ::cuda::std::
-    _If<is_iterator_traversal<CategoryOrTraversal>, CategoryOrTraversal, category_to_traversal<CategoryOrTraversal>>;
+  using type = ::cuda::std::_If<::cuda::std::is_convertible_v<CategoryOrTraversal, incrementable_traversal_tag>,
+                                CategoryOrTraversal,
+                                decltype(cat_to_traversal_impl(CategoryOrTraversal{}))>;
 };
-
 } // namespace detail
 
 THRUST_NAMESPACE_END

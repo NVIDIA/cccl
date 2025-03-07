@@ -37,15 +37,13 @@
 #  pragma system_header
 #endif // no system header
 
-#if __cccl_lib_mdspan
+#include <cub/detail/fast_modulo_division.cuh> // fast_div_mod
 
-#  include <cub/detail/fast_modulo_division.cuh> // fast_div_mod
-
-#  include <cuda/std/array> // cuda::std::array
-#  include <cuda/std/cstddef> // size_t
-#  include <cuda/std/mdspan>
-#  include <cuda/std/type_traits> // make_unsigned_t
-#  include <cuda/std/utility> // ::cuda::std::index_sequence
+#include <cuda/std/array> // cuda::std::array
+#include <cuda/std/cstddef> // size_t
+#include <cuda/std/mdspan>
+#include <cuda/std/type_traits> // make_unsigned_t
+#include <cuda/std/utility> // ::cuda::std::index_sequence
 
 CUB_NAMESPACE_BEGIN
 
@@ -118,5 +116,3 @@ _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr bool is_sub_size_s
 } // namespace detail
 
 CUB_NAMESPACE_END
-
-#endif // if __cccl_lib_mdspan

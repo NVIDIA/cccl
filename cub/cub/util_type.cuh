@@ -745,14 +745,10 @@ struct DoubleBuffer
 #  define CUB_DEFINE_DETECT_NESTED_TYPE(detector_name, nested_type_name)                                \
     template <typename T, typename = void>                                                              \
     struct detector_name : ::cuda::std::false_type                                                      \
-    {                                                                                                   \
-      CCCL_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool VALUE = false;               \
-    };                                                                                                  \
+    {};                                                                                                 \
     template <typename T>                                                                               \
     struct detector_name<T, ::cuda::std::void_t<typename T::nested_type_name>> : ::cuda::std::true_type \
-    {                                                                                                   \
-      CCCL_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool VALUE = true;                \
-    };
+    {};
 
 /******************************************************************************
  * Typedef-detection
