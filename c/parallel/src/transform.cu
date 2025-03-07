@@ -79,7 +79,7 @@ struct transform_runtime_tuning_policy
     return max_items_per_thread;
   }
 
-  static constexpr int min_bif = 1024 * 24; // TODO: this should be computed based on CC
+  static constexpr int min_bif = 1024 * 12; // TODO: this should be computed based on CC
 };
 
 transform_runtime_tuning_policy get_policy()
