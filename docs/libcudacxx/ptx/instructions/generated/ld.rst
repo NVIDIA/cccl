@@ -187,7 +187,7 @@ ld.global.L1::evict_normal.b8
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.L1::evict_normal.b8 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.L1::evict_normal.b8 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
    __device__ static inline B8 ld_global_L1_evict_normal(
      const B8* addr);
@@ -196,7 +196,7 @@ ld.global.L1::evict_normal.b16
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.L1::evict_normal.b16 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.L1::evict_normal.b16 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B16, enable_if_t<sizeof(B16) == 2, bool> = true>
    __device__ static inline B16 ld_global_L1_evict_normal(
      const B16* addr);
@@ -205,7 +205,7 @@ ld.global.L1::evict_normal.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.L1::evict_normal.b32 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.L1::evict_normal.b32 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
    __device__ static inline B32 ld_global_L1_evict_normal(
      const B32* addr);
@@ -214,7 +214,7 @@ ld.global.L1::evict_normal.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.L1::evict_normal.b64 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.L1::evict_normal.b64 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B64, enable_if_t<sizeof(B64) == 8, bool> = true>
    __device__ static inline B64 ld_global_L1_evict_normal(
      const B64* addr);
@@ -223,7 +223,7 @@ ld.global.L1::evict_normal.b128
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.L1::evict_normal.b128 dest, [addr]; // PTX ISA 83, SM_75
+   // ld.global.L1::evict_normal.b128 dest, [addr]; // PTX ISA 83, SM_70
    template <typename B128, enable_if_t<sizeof(B128) == 16, bool> = true>
    __device__ static inline B128 ld_global_L1_evict_normal(
      const B128* addr);
@@ -367,7 +367,7 @@ ld.global.L1::evict_unchanged.b8
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.L1::evict_unchanged.b8 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.L1::evict_unchanged.b8 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
    __device__ static inline B8 ld_global_L1_evict_unchanged(
      const B8* addr);
@@ -376,7 +376,7 @@ ld.global.L1::evict_unchanged.b16
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.L1::evict_unchanged.b16 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.L1::evict_unchanged.b16 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B16, enable_if_t<sizeof(B16) == 2, bool> = true>
    __device__ static inline B16 ld_global_L1_evict_unchanged(
      const B16* addr);
@@ -385,7 +385,7 @@ ld.global.L1::evict_unchanged.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.L1::evict_unchanged.b32 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.L1::evict_unchanged.b32 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
    __device__ static inline B32 ld_global_L1_evict_unchanged(
      const B32* addr);
@@ -394,7 +394,7 @@ ld.global.L1::evict_unchanged.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.L1::evict_unchanged.b64 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.L1::evict_unchanged.b64 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B64, enable_if_t<sizeof(B64) == 8, bool> = true>
    __device__ static inline B64 ld_global_L1_evict_unchanged(
      const B64* addr);
@@ -403,7 +403,7 @@ ld.global.L1::evict_unchanged.b128
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.L1::evict_unchanged.b128 dest, [addr]; // PTX ISA 83, SM_75
+   // ld.global.L1::evict_unchanged.b128 dest, [addr]; // PTX ISA 83, SM_70
    template <typename B128, enable_if_t<sizeof(B128) == 16, bool> = true>
    __device__ static inline B128 ld_global_L1_evict_unchanged(
      const B128* addr);
@@ -547,7 +547,7 @@ ld.global.L1::evict_first.b8
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.L1::evict_first.b8 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.L1::evict_first.b8 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
    __device__ static inline B8 ld_global_L1_evict_first(
      const B8* addr);
@@ -556,7 +556,7 @@ ld.global.L1::evict_first.b16
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.L1::evict_first.b16 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.L1::evict_first.b16 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B16, enable_if_t<sizeof(B16) == 2, bool> = true>
    __device__ static inline B16 ld_global_L1_evict_first(
      const B16* addr);
@@ -565,7 +565,7 @@ ld.global.L1::evict_first.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.L1::evict_first.b32 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.L1::evict_first.b32 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
    __device__ static inline B32 ld_global_L1_evict_first(
      const B32* addr);
@@ -574,7 +574,7 @@ ld.global.L1::evict_first.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.L1::evict_first.b64 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.L1::evict_first.b64 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B64, enable_if_t<sizeof(B64) == 8, bool> = true>
    __device__ static inline B64 ld_global_L1_evict_first(
      const B64* addr);
@@ -583,7 +583,7 @@ ld.global.L1::evict_first.b128
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.L1::evict_first.b128 dest, [addr]; // PTX ISA 83, SM_75
+   // ld.global.L1::evict_first.b128 dest, [addr]; // PTX ISA 83, SM_70
    template <typename B128, enable_if_t<sizeof(B128) == 16, bool> = true>
    __device__ static inline B128 ld_global_L1_evict_first(
      const B128* addr);
@@ -727,7 +727,7 @@ ld.global.L1::evict_last.b8
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.L1::evict_last.b8 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.L1::evict_last.b8 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
    __device__ static inline B8 ld_global_L1_evict_last(
      const B8* addr);
@@ -736,7 +736,7 @@ ld.global.L1::evict_last.b16
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.L1::evict_last.b16 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.L1::evict_last.b16 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B16, enable_if_t<sizeof(B16) == 2, bool> = true>
    __device__ static inline B16 ld_global_L1_evict_last(
      const B16* addr);
@@ -745,7 +745,7 @@ ld.global.L1::evict_last.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.L1::evict_last.b32 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.L1::evict_last.b32 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
    __device__ static inline B32 ld_global_L1_evict_last(
      const B32* addr);
@@ -754,7 +754,7 @@ ld.global.L1::evict_last.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.L1::evict_last.b64 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.L1::evict_last.b64 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B64, enable_if_t<sizeof(B64) == 8, bool> = true>
    __device__ static inline B64 ld_global_L1_evict_last(
      const B64* addr);
@@ -763,7 +763,7 @@ ld.global.L1::evict_last.b128
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.L1::evict_last.b128 dest, [addr]; // PTX ISA 83, SM_75
+   // ld.global.L1::evict_last.b128 dest, [addr]; // PTX ISA 83, SM_70
    template <typename B128, enable_if_t<sizeof(B128) == 16, bool> = true>
    __device__ static inline B128 ld_global_L1_evict_last(
      const B128* addr);
@@ -907,7 +907,7 @@ ld.global.L1::no_allocate.b8
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.L1::no_allocate.b8 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.L1::no_allocate.b8 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
    __device__ static inline B8 ld_global_L1_no_allocate(
      const B8* addr);
@@ -916,7 +916,7 @@ ld.global.L1::no_allocate.b16
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.L1::no_allocate.b16 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.L1::no_allocate.b16 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B16, enable_if_t<sizeof(B16) == 2, bool> = true>
    __device__ static inline B16 ld_global_L1_no_allocate(
      const B16* addr);
@@ -925,7 +925,7 @@ ld.global.L1::no_allocate.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.L1::no_allocate.b32 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.L1::no_allocate.b32 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
    __device__ static inline B32 ld_global_L1_no_allocate(
      const B32* addr);
@@ -934,7 +934,7 @@ ld.global.L1::no_allocate.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.L1::no_allocate.b64 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.L1::no_allocate.b64 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B64, enable_if_t<sizeof(B64) == 8, bool> = true>
    __device__ static inline B64 ld_global_L1_no_allocate(
      const B64* addr);
@@ -943,7 +943,7 @@ ld.global.L1::no_allocate.b128
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.L1::no_allocate.b128 dest, [addr]; // PTX ISA 83, SM_75
+   // ld.global.L1::no_allocate.b128 dest, [addr]; // PTX ISA 83, SM_70
    template <typename B128, enable_if_t<sizeof(B128) == 16, bool> = true>
    __device__ static inline B128 ld_global_L1_no_allocate(
      const B128* addr);
@@ -1267,7 +1267,7 @@ ld.global.nc.L1::evict_normal.b8
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.nc.L1::evict_normal.b8 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.nc.L1::evict_normal.b8 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
    __device__ static inline B8 ld_global_nc_L1_evict_normal(
      const B8* addr);
@@ -1276,7 +1276,7 @@ ld.global.nc.L1::evict_normal.b16
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.nc.L1::evict_normal.b16 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.nc.L1::evict_normal.b16 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B16, enable_if_t<sizeof(B16) == 2, bool> = true>
    __device__ static inline B16 ld_global_nc_L1_evict_normal(
      const B16* addr);
@@ -1285,7 +1285,7 @@ ld.global.nc.L1::evict_normal.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.nc.L1::evict_normal.b32 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.nc.L1::evict_normal.b32 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
    __device__ static inline B32 ld_global_nc_L1_evict_normal(
      const B32* addr);
@@ -1294,7 +1294,7 @@ ld.global.nc.L1::evict_normal.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.nc.L1::evict_normal.b64 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.nc.L1::evict_normal.b64 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B64, enable_if_t<sizeof(B64) == 8, bool> = true>
    __device__ static inline B64 ld_global_nc_L1_evict_normal(
      const B64* addr);
@@ -1303,7 +1303,7 @@ ld.global.nc.L1::evict_normal.b128
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.nc.L1::evict_normal.b128 dest, [addr]; // PTX ISA 83, SM_75
+   // ld.global.nc.L1::evict_normal.b128 dest, [addr]; // PTX ISA 83, SM_70
    template <typename B128, enable_if_t<sizeof(B128) == 16, bool> = true>
    __device__ static inline B128 ld_global_nc_L1_evict_normal(
      const B128* addr);
@@ -1447,7 +1447,7 @@ ld.global.nc.L1::evict_unchanged.b8
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.nc.L1::evict_unchanged.b8 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.nc.L1::evict_unchanged.b8 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
    __device__ static inline B8 ld_global_nc_L1_evict_unchanged(
      const B8* addr);
@@ -1456,7 +1456,7 @@ ld.global.nc.L1::evict_unchanged.b16
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.nc.L1::evict_unchanged.b16 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.nc.L1::evict_unchanged.b16 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B16, enable_if_t<sizeof(B16) == 2, bool> = true>
    __device__ static inline B16 ld_global_nc_L1_evict_unchanged(
      const B16* addr);
@@ -1465,7 +1465,7 @@ ld.global.nc.L1::evict_unchanged.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.nc.L1::evict_unchanged.b32 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.nc.L1::evict_unchanged.b32 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
    __device__ static inline B32 ld_global_nc_L1_evict_unchanged(
      const B32* addr);
@@ -1474,7 +1474,7 @@ ld.global.nc.L1::evict_unchanged.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.nc.L1::evict_unchanged.b64 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.nc.L1::evict_unchanged.b64 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B64, enable_if_t<sizeof(B64) == 8, bool> = true>
    __device__ static inline B64 ld_global_nc_L1_evict_unchanged(
      const B64* addr);
@@ -1483,7 +1483,7 @@ ld.global.nc.L1::evict_unchanged.b128
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.nc.L1::evict_unchanged.b128 dest, [addr]; // PTX ISA 83, SM_75
+   // ld.global.nc.L1::evict_unchanged.b128 dest, [addr]; // PTX ISA 83, SM_70
    template <typename B128, enable_if_t<sizeof(B128) == 16, bool> = true>
    __device__ static inline B128 ld_global_nc_L1_evict_unchanged(
      const B128* addr);
@@ -1627,7 +1627,7 @@ ld.global.nc.L1::evict_first.b8
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.nc.L1::evict_first.b8 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.nc.L1::evict_first.b8 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
    __device__ static inline B8 ld_global_nc_L1_evict_first(
      const B8* addr);
@@ -1636,7 +1636,7 @@ ld.global.nc.L1::evict_first.b16
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.nc.L1::evict_first.b16 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.nc.L1::evict_first.b16 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B16, enable_if_t<sizeof(B16) == 2, bool> = true>
    __device__ static inline B16 ld_global_nc_L1_evict_first(
      const B16* addr);
@@ -1645,7 +1645,7 @@ ld.global.nc.L1::evict_first.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.nc.L1::evict_first.b32 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.nc.L1::evict_first.b32 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
    __device__ static inline B32 ld_global_nc_L1_evict_first(
      const B32* addr);
@@ -1654,7 +1654,7 @@ ld.global.nc.L1::evict_first.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.nc.L1::evict_first.b64 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.nc.L1::evict_first.b64 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B64, enable_if_t<sizeof(B64) == 8, bool> = true>
    __device__ static inline B64 ld_global_nc_L1_evict_first(
      const B64* addr);
@@ -1663,7 +1663,7 @@ ld.global.nc.L1::evict_first.b128
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.nc.L1::evict_first.b128 dest, [addr]; // PTX ISA 83, SM_75
+   // ld.global.nc.L1::evict_first.b128 dest, [addr]; // PTX ISA 83, SM_70
    template <typename B128, enable_if_t<sizeof(B128) == 16, bool> = true>
    __device__ static inline B128 ld_global_nc_L1_evict_first(
      const B128* addr);
@@ -1807,7 +1807,7 @@ ld.global.nc.L1::evict_last.b8
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.nc.L1::evict_last.b8 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.nc.L1::evict_last.b8 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
    __device__ static inline B8 ld_global_nc_L1_evict_last(
      const B8* addr);
@@ -1816,7 +1816,7 @@ ld.global.nc.L1::evict_last.b16
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.nc.L1::evict_last.b16 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.nc.L1::evict_last.b16 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B16, enable_if_t<sizeof(B16) == 2, bool> = true>
    __device__ static inline B16 ld_global_nc_L1_evict_last(
      const B16* addr);
@@ -1825,7 +1825,7 @@ ld.global.nc.L1::evict_last.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.nc.L1::evict_last.b32 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.nc.L1::evict_last.b32 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
    __device__ static inline B32 ld_global_nc_L1_evict_last(
      const B32* addr);
@@ -1834,7 +1834,7 @@ ld.global.nc.L1::evict_last.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.nc.L1::evict_last.b64 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.nc.L1::evict_last.b64 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B64, enable_if_t<sizeof(B64) == 8, bool> = true>
    __device__ static inline B64 ld_global_nc_L1_evict_last(
      const B64* addr);
@@ -1843,7 +1843,7 @@ ld.global.nc.L1::evict_last.b128
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.nc.L1::evict_last.b128 dest, [addr]; // PTX ISA 83, SM_75
+   // ld.global.nc.L1::evict_last.b128 dest, [addr]; // PTX ISA 83, SM_70
    template <typename B128, enable_if_t<sizeof(B128) == 16, bool> = true>
    __device__ static inline B128 ld_global_nc_L1_evict_last(
      const B128* addr);
@@ -1987,7 +1987,7 @@ ld.global.nc.L1::no_allocate.b8
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.nc.L1::no_allocate.b8 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.nc.L1::no_allocate.b8 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
    __device__ static inline B8 ld_global_nc_L1_no_allocate(
      const B8* addr);
@@ -1996,7 +1996,7 @@ ld.global.nc.L1::no_allocate.b16
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.nc.L1::no_allocate.b16 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.nc.L1::no_allocate.b16 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B16, enable_if_t<sizeof(B16) == 2, bool> = true>
    __device__ static inline B16 ld_global_nc_L1_no_allocate(
      const B16* addr);
@@ -2005,7 +2005,7 @@ ld.global.nc.L1::no_allocate.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.nc.L1::no_allocate.b32 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.nc.L1::no_allocate.b32 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
    __device__ static inline B32 ld_global_nc_L1_no_allocate(
      const B32* addr);
@@ -2014,7 +2014,7 @@ ld.global.nc.L1::no_allocate.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.nc.L1::no_allocate.b64 dest, [addr]; // PTX ISA 74, SM_75
+   // ld.global.nc.L1::no_allocate.b64 dest, [addr]; // PTX ISA 74, SM_70
    template <typename B64, enable_if_t<sizeof(B64) == 8, bool> = true>
    __device__ static inline B64 ld_global_nc_L1_no_allocate(
      const B64* addr);
@@ -2023,7 +2023,7 @@ ld.global.nc.L1::no_allocate.b128
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // ld.global.nc.L1::no_allocate.b128 dest, [addr]; // PTX ISA 83, SM_75
+   // ld.global.nc.L1::no_allocate.b128 dest, [addr]; // PTX ISA 83, SM_70
    template <typename B128, enable_if_t<sizeof(B128) == 16, bool> = true>
    __device__ static inline B128 ld_global_nc_L1_no_allocate(
      const B128* addr);

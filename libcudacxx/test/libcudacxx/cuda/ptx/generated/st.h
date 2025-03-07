@@ -59,7 +59,7 @@ __global__ void test_st(void** fn_ptr)
 #endif // __libcuda_ptx_isa >= 830
 
 #if __libcuda_ptx_isa >= 740
-  NV_IF_TARGET(NV_PROVIDES_SM_75,
+  NV_IF_TARGET(NV_PROVIDES_SM_70,
                (
                    // st.global.L1::evict_normal.b8 [addr], src;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -67,7 +67,7 @@ __global__ void test_st(void** fn_ptr)
 #endif // __libcuda_ptx_isa >= 740
 
 #if __libcuda_ptx_isa >= 740
-  NV_IF_TARGET(NV_PROVIDES_SM_75,
+  NV_IF_TARGET(NV_PROVIDES_SM_70,
                (
                    // st.global.L1::evict_normal.b16 [addr], src;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -75,7 +75,7 @@ __global__ void test_st(void** fn_ptr)
 #endif // __libcuda_ptx_isa >= 740
 
 #if __libcuda_ptx_isa >= 740
-  NV_IF_TARGET(NV_PROVIDES_SM_75,
+  NV_IF_TARGET(NV_PROVIDES_SM_70,
                (
                    // st.global.L1::evict_normal.b32 [addr], src;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -83,7 +83,7 @@ __global__ void test_st(void** fn_ptr)
 #endif // __libcuda_ptx_isa >= 740
 
 #if __libcuda_ptx_isa >= 740
-  NV_IF_TARGET(NV_PROVIDES_SM_75,
+  NV_IF_TARGET(NV_PROVIDES_SM_70,
                (
                    // st.global.L1::evict_normal.b64 [addr], src;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -91,7 +91,7 @@ __global__ void test_st(void** fn_ptr)
 #endif // __libcuda_ptx_isa >= 740
 
 #if __libcuda_ptx_isa >= 830
-  NV_IF_TARGET(NV_PROVIDES_SM_75,
+  NV_IF_TARGET(NV_PROVIDES_SM_70,
                (
                    // st.global.L1::evict_normal.b128 [addr], src;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -99,7 +99,7 @@ __global__ void test_st(void** fn_ptr)
 #endif // __libcuda_ptx_isa >= 830
 
 #if __libcuda_ptx_isa >= 740
-  NV_IF_TARGET(NV_PROVIDES_SM_75,
+  NV_IF_TARGET(NV_PROVIDES_SM_70,
                (
                    // st.global.L1::evict_unchanged.b8 [addr], src;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -107,7 +107,7 @@ __global__ void test_st(void** fn_ptr)
 #endif // __libcuda_ptx_isa >= 740
 
 #if __libcuda_ptx_isa >= 740
-  NV_IF_TARGET(NV_PROVIDES_SM_75,
+  NV_IF_TARGET(NV_PROVIDES_SM_70,
                (
                    // st.global.L1::evict_unchanged.b16 [addr], src;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -115,7 +115,7 @@ __global__ void test_st(void** fn_ptr)
 #endif // __libcuda_ptx_isa >= 740
 
 #if __libcuda_ptx_isa >= 740
-  NV_IF_TARGET(NV_PROVIDES_SM_75,
+  NV_IF_TARGET(NV_PROVIDES_SM_70,
                (
                    // st.global.L1::evict_unchanged.b32 [addr], src;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -123,7 +123,7 @@ __global__ void test_st(void** fn_ptr)
 #endif // __libcuda_ptx_isa >= 740
 
 #if __libcuda_ptx_isa >= 740
-  NV_IF_TARGET(NV_PROVIDES_SM_75,
+  NV_IF_TARGET(NV_PROVIDES_SM_70,
                (
                    // st.global.L1::evict_unchanged.b64 [addr], src;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -131,7 +131,7 @@ __global__ void test_st(void** fn_ptr)
 #endif // __libcuda_ptx_isa >= 740
 
 #if __libcuda_ptx_isa >= 830
-  NV_IF_TARGET(NV_PROVIDES_SM_75,
+  NV_IF_TARGET(NV_PROVIDES_SM_70,
                (
                    // st.global.L1::evict_unchanged.b128 [addr], src;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -139,7 +139,7 @@ __global__ void test_st(void** fn_ptr)
 #endif // __libcuda_ptx_isa >= 830
 
 #if __libcuda_ptx_isa >= 740
-  NV_IF_TARGET(NV_PROVIDES_SM_75,
+  NV_IF_TARGET(NV_PROVIDES_SM_70,
                (
                    // st.global.L1::evict_first.b8 [addr], src;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -147,7 +147,7 @@ __global__ void test_st(void** fn_ptr)
 #endif // __libcuda_ptx_isa >= 740
 
 #if __libcuda_ptx_isa >= 740
-  NV_IF_TARGET(NV_PROVIDES_SM_75,
+  NV_IF_TARGET(NV_PROVIDES_SM_70,
                (
                    // st.global.L1::evict_first.b16 [addr], src;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -155,7 +155,7 @@ __global__ void test_st(void** fn_ptr)
 #endif // __libcuda_ptx_isa >= 740
 
 #if __libcuda_ptx_isa >= 740
-  NV_IF_TARGET(NV_PROVIDES_SM_75,
+  NV_IF_TARGET(NV_PROVIDES_SM_70,
                (
                    // st.global.L1::evict_first.b32 [addr], src;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -163,7 +163,7 @@ __global__ void test_st(void** fn_ptr)
 #endif // __libcuda_ptx_isa >= 740
 
 #if __libcuda_ptx_isa >= 740
-  NV_IF_TARGET(NV_PROVIDES_SM_75,
+  NV_IF_TARGET(NV_PROVIDES_SM_70,
                (
                    // st.global.L1::evict_first.b64 [addr], src;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -171,7 +171,7 @@ __global__ void test_st(void** fn_ptr)
 #endif // __libcuda_ptx_isa >= 740
 
 #if __libcuda_ptx_isa >= 830
-  NV_IF_TARGET(NV_PROVIDES_SM_75,
+  NV_IF_TARGET(NV_PROVIDES_SM_70,
                (
                    // st.global.L1::evict_first.b128 [addr], src;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -179,7 +179,7 @@ __global__ void test_st(void** fn_ptr)
 #endif // __libcuda_ptx_isa >= 830
 
 #if __libcuda_ptx_isa >= 740
-  NV_IF_TARGET(NV_PROVIDES_SM_75,
+  NV_IF_TARGET(NV_PROVIDES_SM_70,
                (
                    // st.global.L1::evict_last.b8 [addr], src;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -187,7 +187,7 @@ __global__ void test_st(void** fn_ptr)
 #endif // __libcuda_ptx_isa >= 740
 
 #if __libcuda_ptx_isa >= 740
-  NV_IF_TARGET(NV_PROVIDES_SM_75,
+  NV_IF_TARGET(NV_PROVIDES_SM_70,
                (
                    // st.global.L1::evict_last.b16 [addr], src;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -195,7 +195,7 @@ __global__ void test_st(void** fn_ptr)
 #endif // __libcuda_ptx_isa >= 740
 
 #if __libcuda_ptx_isa >= 740
-  NV_IF_TARGET(NV_PROVIDES_SM_75,
+  NV_IF_TARGET(NV_PROVIDES_SM_70,
                (
                    // st.global.L1::evict_last.b32 [addr], src;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -203,7 +203,7 @@ __global__ void test_st(void** fn_ptr)
 #endif // __libcuda_ptx_isa >= 740
 
 #if __libcuda_ptx_isa >= 740
-  NV_IF_TARGET(NV_PROVIDES_SM_75,
+  NV_IF_TARGET(NV_PROVIDES_SM_70,
                (
                    // st.global.L1::evict_last.b64 [addr], src;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -211,7 +211,7 @@ __global__ void test_st(void** fn_ptr)
 #endif // __libcuda_ptx_isa >= 740
 
 #if __libcuda_ptx_isa >= 830
-  NV_IF_TARGET(NV_PROVIDES_SM_75,
+  NV_IF_TARGET(NV_PROVIDES_SM_70,
                (
                    // st.global.L1::evict_last.b128 [addr], src;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -219,7 +219,7 @@ __global__ void test_st(void** fn_ptr)
 #endif // __libcuda_ptx_isa >= 830
 
 #if __libcuda_ptx_isa >= 740
-  NV_IF_TARGET(NV_PROVIDES_SM_75,
+  NV_IF_TARGET(NV_PROVIDES_SM_70,
                (
                    // st.global.L1::no_allocate.b8 [addr], src;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -227,7 +227,7 @@ __global__ void test_st(void** fn_ptr)
 #endif // __libcuda_ptx_isa >= 740
 
 #if __libcuda_ptx_isa >= 740
-  NV_IF_TARGET(NV_PROVIDES_SM_75,
+  NV_IF_TARGET(NV_PROVIDES_SM_70,
                (
                    // st.global.L1::no_allocate.b16 [addr], src;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -235,7 +235,7 @@ __global__ void test_st(void** fn_ptr)
 #endif // __libcuda_ptx_isa >= 740
 
 #if __libcuda_ptx_isa >= 740
-  NV_IF_TARGET(NV_PROVIDES_SM_75,
+  NV_IF_TARGET(NV_PROVIDES_SM_70,
                (
                    // st.global.L1::no_allocate.b32 [addr], src;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -243,7 +243,7 @@ __global__ void test_st(void** fn_ptr)
 #endif // __libcuda_ptx_isa >= 740
 
 #if __libcuda_ptx_isa >= 740
-  NV_IF_TARGET(NV_PROVIDES_SM_75,
+  NV_IF_TARGET(NV_PROVIDES_SM_70,
                (
                    // st.global.L1::no_allocate.b64 [addr], src;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -251,7 +251,7 @@ __global__ void test_st(void** fn_ptr)
 #endif // __libcuda_ptx_isa >= 740
 
 #if __libcuda_ptx_isa >= 830
-  NV_IF_TARGET(NV_PROVIDES_SM_75,
+  NV_IF_TARGET(NV_PROVIDES_SM_70,
                (
                    // st.global.L1::no_allocate.b128 [addr], src;
                    * fn_ptr++ = reinterpret_cast<void*>(
