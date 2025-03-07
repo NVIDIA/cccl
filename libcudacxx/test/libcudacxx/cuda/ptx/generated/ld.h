@@ -53,7 +53,7 @@ __global__ void test_ld(void** fn_ptr)
     NV_PROVIDES_SM_70,
     (
         // ld.global.b128 dest, [addr];
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global));));
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -89,11 +89,11 @@ __global__ void test_ld(void** fn_ptr)
 #endif // __cccl_ptx_isa >= 740
 
 #if __cccl_ptx_isa >= 830
-  NV_IF_TARGET(
-    NV_PROVIDES_SM_75,
-    (
-        // ld.global.L2::64B.b128 dest, [addr];
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_L2_64B));));
+  NV_IF_TARGET(NV_PROVIDES_SM_75,
+               (
+                   // ld.global.L2::64B.b128 dest, [addr];
+                   * fn_ptr++ = reinterpret_cast<void*>(
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_L2_64B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -133,7 +133,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.L2::128B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_L2_128B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_L2_128B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -173,7 +173,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.L2::256B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_L2_256B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_L2_256B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -213,7 +213,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.L1::evict_normal.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_L1_evict_normal));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_L1_evict_normal));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -253,7 +253,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.L1::evict_normal.L2::64B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_L1_evict_normal_L2_64B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_L1_evict_normal_L2_64B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -293,7 +293,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.L1::evict_normal.L2::128B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_L1_evict_normal_L2_128B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_L1_evict_normal_L2_128B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -333,7 +333,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.L1::evict_normal.L2::256B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_L1_evict_normal_L2_256B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_L1_evict_normal_L2_256B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -373,7 +373,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.L1::evict_unchanged.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_L1_evict_unchanged));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_L1_evict_unchanged));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -413,7 +413,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.L1::evict_unchanged.L2::64B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_L1_evict_unchanged_L2_64B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_L1_evict_unchanged_L2_64B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -453,7 +453,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.L1::evict_unchanged.L2::128B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_L1_evict_unchanged_L2_128B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_L1_evict_unchanged_L2_128B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -493,7 +493,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.L1::evict_unchanged.L2::256B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_L1_evict_unchanged_L2_256B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_L1_evict_unchanged_L2_256B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -533,7 +533,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.L1::evict_first.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_L1_evict_first));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_L1_evict_first));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -573,7 +573,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.L1::evict_first.L2::64B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_L1_evict_first_L2_64B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_L1_evict_first_L2_64B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -613,7 +613,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.L1::evict_first.L2::128B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_L1_evict_first_L2_128B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_L1_evict_first_L2_128B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -653,7 +653,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.L1::evict_first.L2::256B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_L1_evict_first_L2_256B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_L1_evict_first_L2_256B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -693,7 +693,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.L1::evict_last.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_L1_evict_last));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_L1_evict_last));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -733,7 +733,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.L1::evict_last.L2::64B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_L1_evict_last_L2_64B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_L1_evict_last_L2_64B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -773,7 +773,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.L1::evict_last.L2::128B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_L1_evict_last_L2_128B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_L1_evict_last_L2_128B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -813,7 +813,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.L1::evict_last.L2::256B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_L1_evict_last_L2_256B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_L1_evict_last_L2_256B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -853,7 +853,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.L1::no_allocate.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_L1_no_allocate));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_L1_no_allocate));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -893,7 +893,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.L1::no_allocate.L2::64B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_L1_no_allocate_L2_64B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_L1_no_allocate_L2_64B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -933,7 +933,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.L1::no_allocate.L2::128B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_L1_no_allocate_L2_128B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_L1_no_allocate_L2_128B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -973,7 +973,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.L1::no_allocate.L2::256B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_L1_no_allocate_L2_256B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_L1_no_allocate_L2_256B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 100
@@ -1013,7 +1013,7 @@ __global__ void test_ld(void** fn_ptr)
     NV_PROVIDES_SM_70,
     (
         // ld.global.nc.b128 dest, [addr];
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_nc));));
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_nc));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -1053,7 +1053,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.nc.L2::64B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_nc_L2_64B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_nc_L2_64B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -1093,7 +1093,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.nc.L2::128B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_nc_L2_128B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_nc_L2_128B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -1133,7 +1133,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.nc.L2::256B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_nc_L2_256B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_nc_L2_256B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -1173,7 +1173,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.nc.L1::evict_normal.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_nc_L1_evict_normal));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_nc_L1_evict_normal));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -1213,7 +1213,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.nc.L1::evict_normal.L2::64B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_nc_L1_evict_normal_L2_64B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_nc_L1_evict_normal_L2_64B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -1253,7 +1253,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.nc.L1::evict_normal.L2::128B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_nc_L1_evict_normal_L2_128B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_nc_L1_evict_normal_L2_128B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -1293,7 +1293,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.nc.L1::evict_normal.L2::256B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_nc_L1_evict_normal_L2_256B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_nc_L1_evict_normal_L2_256B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -1333,7 +1333,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.nc.L1::evict_unchanged.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_nc_L1_evict_unchanged));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_nc_L1_evict_unchanged));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -1372,8 +1372,8 @@ __global__ void test_ld(void** fn_ptr)
   NV_IF_TARGET(NV_PROVIDES_SM_75,
                (
                    // ld.global.nc.L1::evict_unchanged.L2::64B.b128 dest, [addr];
-                   * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_nc_L1_evict_unchanged_L2_64B));));
+                   * fn_ptr++ = reinterpret_cast<void*>(static_cast<longlong2 (*)(const longlong2*)>(
+                     cuda::ptx::ld_global_nc_L1_evict_unchanged_L2_64B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -1412,8 +1412,8 @@ __global__ void test_ld(void** fn_ptr)
   NV_IF_TARGET(NV_PROVIDES_SM_75,
                (
                    // ld.global.nc.L1::evict_unchanged.L2::128B.b128 dest, [addr];
-                   * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_nc_L1_evict_unchanged_L2_128B));));
+                   * fn_ptr++ = reinterpret_cast<void*>(static_cast<longlong2 (*)(const longlong2*)>(
+                     cuda::ptx::ld_global_nc_L1_evict_unchanged_L2_128B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -1452,8 +1452,8 @@ __global__ void test_ld(void** fn_ptr)
   NV_IF_TARGET(NV_PROVIDES_SM_80,
                (
                    // ld.global.nc.L1::evict_unchanged.L2::256B.b128 dest, [addr];
-                   * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_nc_L1_evict_unchanged_L2_256B));));
+                   * fn_ptr++ = reinterpret_cast<void*>(static_cast<longlong2 (*)(const longlong2*)>(
+                     cuda::ptx::ld_global_nc_L1_evict_unchanged_L2_256B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -1493,7 +1493,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.nc.L1::evict_first.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_nc_L1_evict_first));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_nc_L1_evict_first));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -1533,7 +1533,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.nc.L1::evict_first.L2::64B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_nc_L1_evict_first_L2_64B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_nc_L1_evict_first_L2_64B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -1573,7 +1573,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.nc.L1::evict_first.L2::128B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_nc_L1_evict_first_L2_128B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_nc_L1_evict_first_L2_128B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -1613,7 +1613,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.nc.L1::evict_first.L2::256B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_nc_L1_evict_first_L2_256B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_nc_L1_evict_first_L2_256B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -1653,7 +1653,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.nc.L1::evict_last.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_nc_L1_evict_last));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_nc_L1_evict_last));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -1693,7 +1693,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.nc.L1::evict_last.L2::64B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_nc_L1_evict_last_L2_64B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_nc_L1_evict_last_L2_64B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -1733,7 +1733,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.nc.L1::evict_last.L2::128B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_nc_L1_evict_last_L2_128B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_nc_L1_evict_last_L2_128B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -1773,7 +1773,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.nc.L1::evict_last.L2::256B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_nc_L1_evict_last_L2_256B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_nc_L1_evict_last_L2_256B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -1813,7 +1813,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.nc.L1::no_allocate.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_nc_L1_no_allocate));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_nc_L1_no_allocate));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -1853,7 +1853,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.nc.L1::no_allocate.L2::64B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_nc_L1_no_allocate_L2_64B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_nc_L1_no_allocate_L2_64B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -1893,7 +1893,7 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.nc.L1::no_allocate.L2::128B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_nc_L1_no_allocate_L2_128B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_nc_L1_no_allocate_L2_128B));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -1933,6 +1933,6 @@ __global__ void test_ld(void** fn_ptr)
                (
                    // ld.global.nc.L1::no_allocate.L2::256B.b128 dest, [addr];
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<__int128 (*)(const __int128*)>(cuda::ptx::ld_global_nc_L1_no_allocate_L2_256B));));
+                     static_cast<longlong2 (*)(const longlong2*)>(cuda::ptx::ld_global_nc_L1_no_allocate_L2_256B));));
 #endif // __cccl_ptx_isa >= 830
 }

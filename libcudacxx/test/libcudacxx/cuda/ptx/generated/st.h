@@ -53,7 +53,7 @@ __global__ void test_st(void** fn_ptr)
     NV_PROVIDES_SM_70,
     (
         // st.global.b128 [addr], src;
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(__int128*, __int128)>(cuda::ptx::st_global));));
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(longlong2*, longlong2)>(cuda::ptx::st_global));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -93,7 +93,7 @@ __global__ void test_st(void** fn_ptr)
                (
                    // st.global.L1::evict_normal.b128 [addr], src;
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<void (*)(__int128*, __int128)>(cuda::ptx::st_global_L1_evict_normal));));
+                     static_cast<void (*)(longlong2*, longlong2)>(cuda::ptx::st_global_L1_evict_normal));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -133,7 +133,7 @@ __global__ void test_st(void** fn_ptr)
                (
                    // st.global.L1::evict_unchanged.b128 [addr], src;
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<void (*)(__int128*, __int128)>(cuda::ptx::st_global_L1_evict_unchanged));));
+                     static_cast<void (*)(longlong2*, longlong2)>(cuda::ptx::st_global_L1_evict_unchanged));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -173,7 +173,7 @@ __global__ void test_st(void** fn_ptr)
                (
                    // st.global.L1::evict_first.b128 [addr], src;
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<void (*)(__int128*, __int128)>(cuda::ptx::st_global_L1_evict_first));));
+                     static_cast<void (*)(longlong2*, longlong2)>(cuda::ptx::st_global_L1_evict_first));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -213,7 +213,7 @@ __global__ void test_st(void** fn_ptr)
                (
                    // st.global.L1::evict_last.b128 [addr], src;
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<void (*)(__int128*, __int128)>(cuda::ptx::st_global_L1_evict_last));));
+                     static_cast<void (*)(longlong2*, longlong2)>(cuda::ptx::st_global_L1_evict_last));));
 #endif // __cccl_ptx_isa >= 830
 
 #if __cccl_ptx_isa >= 740
@@ -253,6 +253,6 @@ __global__ void test_st(void** fn_ptr)
                (
                    // st.global.L1::no_allocate.b128 [addr], src;
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<void (*)(__int128*, __int128)>(cuda::ptx::st_global_L1_no_allocate));));
+                     static_cast<void (*)(longlong2*, longlong2)>(cuda::ptx::st_global_L1_no_allocate));));
 #endif // __cccl_ptx_isa >= 830
 }

@@ -5,9 +5,9 @@
 
 /*
 // ld.global.b8 dest, [addr]; // PTX ISA 10, SM_50
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 100
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_is_not_supported_before_SM_50__();
@@ -137,9 +137,9 @@ _CCCL_DEVICE static inline _B128 ld_global(const _B128* __addr)
 
 /*
 // ld.global.L2::64B.b8 dest, [addr]; // PTX ISA 74, SM_75
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_L2_64B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_L2_64B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_L2_64B_is_not_supported_before_SM_75__();
@@ -269,9 +269,9 @@ _CCCL_DEVICE static inline _B128 ld_global_L2_64B(const _B128* __addr)
 
 /*
 // ld.global.L2::128B.b8 dest, [addr]; // PTX ISA 74, SM_75
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_L2_128B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_L2_128B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_L2_128B_is_not_supported_before_SM_75__();
@@ -401,9 +401,9 @@ _CCCL_DEVICE static inline _B128 ld_global_L2_128B(const _B128* __addr)
 
 /*
 // ld.global.L2::256B.b8 dest, [addr]; // PTX ISA 74, SM_80
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_L2_256B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_L2_256B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_L2_256B_is_not_supported_before_SM_80__();
@@ -533,9 +533,9 @@ _CCCL_DEVICE static inline _B128 ld_global_L2_256B(const _B128* __addr)
 
 /*
 // ld.global.L1::evict_normal.b8 dest, [addr]; // PTX ISA 74, SM_70
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_L1_evict_normal(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_L1_evict_normal(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_L1_evict_normal_is_not_supported_before_SM_70__();
@@ -665,9 +665,9 @@ _CCCL_DEVICE static inline _B128 ld_global_L1_evict_normal(const _B128* __addr)
 
 /*
 // ld.global.L1::evict_normal.L2::64B.b8 dest, [addr]; // PTX ISA 74, SM_75
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_L1_evict_normal_L2_64B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_L1_evict_normal_L2_64B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_L1_evict_normal_L2_64B_is_not_supported_before_SM_75__();
@@ -809,9 +809,9 @@ _CCCL_DEVICE static inline _B128 ld_global_L1_evict_normal_L2_64B(const _B128* _
 
 /*
 // ld.global.L1::evict_normal.L2::128B.b8 dest, [addr]; // PTX ISA 74, SM_75
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_L1_evict_normal_L2_128B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_L1_evict_normal_L2_128B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_L1_evict_normal_L2_128B_is_not_supported_before_SM_75__();
@@ -953,9 +953,9 @@ _CCCL_DEVICE static inline _B128 ld_global_L1_evict_normal_L2_128B(const _B128* 
 
 /*
 // ld.global.L1::evict_normal.L2::256B.b8 dest, [addr]; // PTX ISA 74, SM_80
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_L1_evict_normal_L2_256B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_L1_evict_normal_L2_256B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_L1_evict_normal_L2_256B_is_not_supported_before_SM_80__();
@@ -1097,9 +1097,9 @@ _CCCL_DEVICE static inline _B128 ld_global_L1_evict_normal_L2_256B(const _B128* 
 
 /*
 // ld.global.L1::evict_unchanged.b8 dest, [addr]; // PTX ISA 74, SM_70
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_L1_evict_unchanged(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_L1_evict_unchanged(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_L1_evict_unchanged_is_not_supported_before_SM_70__();
@@ -1229,9 +1229,9 @@ _CCCL_DEVICE static inline _B128 ld_global_L1_evict_unchanged(const _B128* __add
 
 /*
 // ld.global.L1::evict_unchanged.L2::64B.b8 dest, [addr]; // PTX ISA 74, SM_75
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_L1_evict_unchanged_L2_64B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_L1_evict_unchanged_L2_64B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_L1_evict_unchanged_L2_64B_is_not_supported_before_SM_75__();
@@ -1373,9 +1373,9 @@ _CCCL_DEVICE static inline _B128 ld_global_L1_evict_unchanged_L2_64B(const _B128
 
 /*
 // ld.global.L1::evict_unchanged.L2::128B.b8 dest, [addr]; // PTX ISA 74, SM_75
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_L1_evict_unchanged_L2_128B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_L1_evict_unchanged_L2_128B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_L1_evict_unchanged_L2_128B_is_not_supported_before_SM_75__();
@@ -1517,9 +1517,9 @@ _CCCL_DEVICE static inline _B128 ld_global_L1_evict_unchanged_L2_128B(const _B12
 
 /*
 // ld.global.L1::evict_unchanged.L2::256B.b8 dest, [addr]; // PTX ISA 74, SM_80
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_L1_evict_unchanged_L2_256B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_L1_evict_unchanged_L2_256B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_L1_evict_unchanged_L2_256B_is_not_supported_before_SM_80__();
@@ -1661,9 +1661,9 @@ _CCCL_DEVICE static inline _B128 ld_global_L1_evict_unchanged_L2_256B(const _B12
 
 /*
 // ld.global.L1::evict_first.b8 dest, [addr]; // PTX ISA 74, SM_70
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_L1_evict_first(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_L1_evict_first(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_L1_evict_first_is_not_supported_before_SM_70__();
@@ -1793,9 +1793,9 @@ _CCCL_DEVICE static inline _B128 ld_global_L1_evict_first(const _B128* __addr)
 
 /*
 // ld.global.L1::evict_first.L2::64B.b8 dest, [addr]; // PTX ISA 74, SM_75
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_L1_evict_first_L2_64B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_L1_evict_first_L2_64B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_L1_evict_first_L2_64B_is_not_supported_before_SM_75__();
@@ -1934,9 +1934,9 @@ _CCCL_DEVICE static inline _B128 ld_global_L1_evict_first_L2_64B(const _B128* __
 
 /*
 // ld.global.L1::evict_first.L2::128B.b8 dest, [addr]; // PTX ISA 74, SM_75
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_L1_evict_first_L2_128B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_L1_evict_first_L2_128B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_L1_evict_first_L2_128B_is_not_supported_before_SM_75__();
@@ -2078,9 +2078,9 @@ _CCCL_DEVICE static inline _B128 ld_global_L1_evict_first_L2_128B(const _B128* _
 
 /*
 // ld.global.L1::evict_first.L2::256B.b8 dest, [addr]; // PTX ISA 74, SM_80
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_L1_evict_first_L2_256B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_L1_evict_first_L2_256B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_L1_evict_first_L2_256B_is_not_supported_before_SM_80__();
@@ -2222,9 +2222,9 @@ _CCCL_DEVICE static inline _B128 ld_global_L1_evict_first_L2_256B(const _B128* _
 
 /*
 // ld.global.L1::evict_last.b8 dest, [addr]; // PTX ISA 74, SM_70
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_L1_evict_last(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_L1_evict_last(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_L1_evict_last_is_not_supported_before_SM_70__();
@@ -2354,9 +2354,9 @@ _CCCL_DEVICE static inline _B128 ld_global_L1_evict_last(const _B128* __addr)
 
 /*
 // ld.global.L1::evict_last.L2::64B.b8 dest, [addr]; // PTX ISA 74, SM_75
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_L1_evict_last_L2_64B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_L1_evict_last_L2_64B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_L1_evict_last_L2_64B_is_not_supported_before_SM_75__();
@@ -2486,9 +2486,9 @@ _CCCL_DEVICE static inline _B128 ld_global_L1_evict_last_L2_64B(const _B128* __a
 
 /*
 // ld.global.L1::evict_last.L2::128B.b8 dest, [addr]; // PTX ISA 74, SM_75
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_L1_evict_last_L2_128B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_L1_evict_last_L2_128B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_L1_evict_last_L2_128B_is_not_supported_before_SM_75__();
@@ -2627,9 +2627,9 @@ _CCCL_DEVICE static inline _B128 ld_global_L1_evict_last_L2_128B(const _B128* __
 
 /*
 // ld.global.L1::evict_last.L2::256B.b8 dest, [addr]; // PTX ISA 74, SM_80
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_L1_evict_last_L2_256B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_L1_evict_last_L2_256B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_L1_evict_last_L2_256B_is_not_supported_before_SM_80__();
@@ -2768,9 +2768,9 @@ _CCCL_DEVICE static inline _B128 ld_global_L1_evict_last_L2_256B(const _B128* __
 
 /*
 // ld.global.L1::no_allocate.b8 dest, [addr]; // PTX ISA 74, SM_70
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_L1_no_allocate(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_L1_no_allocate(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_L1_no_allocate_is_not_supported_before_SM_70__();
@@ -2900,9 +2900,9 @@ _CCCL_DEVICE static inline _B128 ld_global_L1_no_allocate(const _B128* __addr)
 
 /*
 // ld.global.L1::no_allocate.L2::64B.b8 dest, [addr]; // PTX ISA 74, SM_75
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_L1_no_allocate_L2_64B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_L1_no_allocate_L2_64B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_L1_no_allocate_L2_64B_is_not_supported_before_SM_75__();
@@ -3041,9 +3041,9 @@ _CCCL_DEVICE static inline _B128 ld_global_L1_no_allocate_L2_64B(const _B128* __
 
 /*
 // ld.global.L1::no_allocate.L2::128B.b8 dest, [addr]; // PTX ISA 74, SM_75
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_L1_no_allocate_L2_128B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_L1_no_allocate_L2_128B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_L1_no_allocate_L2_128B_is_not_supported_before_SM_75__();
@@ -3185,9 +3185,9 @@ _CCCL_DEVICE static inline _B128 ld_global_L1_no_allocate_L2_128B(const _B128* _
 
 /*
 // ld.global.L1::no_allocate.L2::256B.b8 dest, [addr]; // PTX ISA 74, SM_80
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_L1_no_allocate_L2_256B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_L1_no_allocate_L2_256B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_L1_no_allocate_L2_256B_is_not_supported_before_SM_80__();
@@ -3329,9 +3329,9 @@ _CCCL_DEVICE static inline _B128 ld_global_L1_no_allocate_L2_256B(const _B128* _
 
 /*
 // ld.global.nc.b8 dest, [addr]; // PTX ISA 10, SM_50
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_nc(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_nc(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 100
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_nc_is_not_supported_before_SM_50__();
@@ -3461,9 +3461,9 @@ _CCCL_DEVICE static inline _B128 ld_global_nc(const _B128* __addr)
 
 /*
 // ld.global.nc.L2::64B.b8 dest, [addr]; // PTX ISA 74, SM_75
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_nc_L2_64B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_nc_L2_64B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_nc_L2_64B_is_not_supported_before_SM_75__();
@@ -3593,9 +3593,9 @@ _CCCL_DEVICE static inline _B128 ld_global_nc_L2_64B(const _B128* __addr)
 
 /*
 // ld.global.nc.L2::128B.b8 dest, [addr]; // PTX ISA 74, SM_75
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_nc_L2_128B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_nc_L2_128B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_nc_L2_128B_is_not_supported_before_SM_75__();
@@ -3725,9 +3725,9 @@ _CCCL_DEVICE static inline _B128 ld_global_nc_L2_128B(const _B128* __addr)
 
 /*
 // ld.global.nc.L2::256B.b8 dest, [addr]; // PTX ISA 74, SM_80
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_nc_L2_256B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_nc_L2_256B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_nc_L2_256B_is_not_supported_before_SM_80__();
@@ -3857,9 +3857,9 @@ _CCCL_DEVICE static inline _B128 ld_global_nc_L2_256B(const _B128* __addr)
 
 /*
 // ld.global.nc.L1::evict_normal.b8 dest, [addr]; // PTX ISA 74, SM_70
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_nc_L1_evict_normal(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_nc_L1_evict_normal(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_nc_L1_evict_normal_is_not_supported_before_SM_70__();
@@ -3989,9 +3989,9 @@ _CCCL_DEVICE static inline _B128 ld_global_nc_L1_evict_normal(const _B128* __add
 
 /*
 // ld.global.nc.L1::evict_normal.L2::64B.b8 dest, [addr]; // PTX ISA 74, SM_75
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_nc_L1_evict_normal_L2_64B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_nc_L1_evict_normal_L2_64B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_nc_L1_evict_normal_L2_64B_is_not_supported_before_SM_75__();
@@ -4133,9 +4133,9 @@ _CCCL_DEVICE static inline _B128 ld_global_nc_L1_evict_normal_L2_64B(const _B128
 
 /*
 // ld.global.nc.L1::evict_normal.L2::128B.b8 dest, [addr]; // PTX ISA 74, SM_75
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_nc_L1_evict_normal_L2_128B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_nc_L1_evict_normal_L2_128B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_nc_L1_evict_normal_L2_128B_is_not_supported_before_SM_75__();
@@ -4277,9 +4277,9 @@ _CCCL_DEVICE static inline _B128 ld_global_nc_L1_evict_normal_L2_128B(const _B12
 
 /*
 // ld.global.nc.L1::evict_normal.L2::256B.b8 dest, [addr]; // PTX ISA 74, SM_80
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_nc_L1_evict_normal_L2_256B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_nc_L1_evict_normal_L2_256B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_nc_L1_evict_normal_L2_256B_is_not_supported_before_SM_80__();
@@ -4421,9 +4421,9 @@ _CCCL_DEVICE static inline _B128 ld_global_nc_L1_evict_normal_L2_256B(const _B12
 
 /*
 // ld.global.nc.L1::evict_unchanged.b8 dest, [addr]; // PTX ISA 74, SM_70
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_nc_L1_evict_unchanged(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_nc_L1_evict_unchanged(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_nc_L1_evict_unchanged_is_not_supported_before_SM_70__();
@@ -4553,9 +4553,9 @@ _CCCL_DEVICE static inline _B128 ld_global_nc_L1_evict_unchanged(const _B128* __
 
 /*
 // ld.global.nc.L1::evict_unchanged.L2::64B.b8 dest, [addr]; // PTX ISA 74, SM_75
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_nc_L1_evict_unchanged_L2_64B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_nc_L1_evict_unchanged_L2_64B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_nc_L1_evict_unchanged_L2_64B_is_not_supported_before_SM_75__();
@@ -4697,9 +4697,9 @@ _CCCL_DEVICE static inline _B128 ld_global_nc_L1_evict_unchanged_L2_64B(const _B
 
 /*
 // ld.global.nc.L1::evict_unchanged.L2::128B.b8 dest, [addr]; // PTX ISA 74, SM_75
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_nc_L1_evict_unchanged_L2_128B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_nc_L1_evict_unchanged_L2_128B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_nc_L1_evict_unchanged_L2_128B_is_not_supported_before_SM_75__();
@@ -4841,9 +4841,9 @@ _CCCL_DEVICE static inline _B128 ld_global_nc_L1_evict_unchanged_L2_128B(const _
 
 /*
 // ld.global.nc.L1::evict_unchanged.L2::256B.b8 dest, [addr]; // PTX ISA 74, SM_80
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_nc_L1_evict_unchanged_L2_256B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_nc_L1_evict_unchanged_L2_256B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_nc_L1_evict_unchanged_L2_256B_is_not_supported_before_SM_80__();
@@ -4985,9 +4985,9 @@ _CCCL_DEVICE static inline _B128 ld_global_nc_L1_evict_unchanged_L2_256B(const _
 
 /*
 // ld.global.nc.L1::evict_first.b8 dest, [addr]; // PTX ISA 74, SM_70
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_nc_L1_evict_first(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_nc_L1_evict_first(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_nc_L1_evict_first_is_not_supported_before_SM_70__();
@@ -5117,9 +5117,9 @@ _CCCL_DEVICE static inline _B128 ld_global_nc_L1_evict_first(const _B128* __addr
 
 /*
 // ld.global.nc.L1::evict_first.L2::64B.b8 dest, [addr]; // PTX ISA 74, SM_75
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_nc_L1_evict_first_L2_64B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_nc_L1_evict_first_L2_64B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_nc_L1_evict_first_L2_64B_is_not_supported_before_SM_75__();
@@ -5261,9 +5261,9 @@ _CCCL_DEVICE static inline _B128 ld_global_nc_L1_evict_first_L2_64B(const _B128*
 
 /*
 // ld.global.nc.L1::evict_first.L2::128B.b8 dest, [addr]; // PTX ISA 74, SM_75
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_nc_L1_evict_first_L2_128B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_nc_L1_evict_first_L2_128B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_nc_L1_evict_first_L2_128B_is_not_supported_before_SM_75__();
@@ -5405,9 +5405,9 @@ _CCCL_DEVICE static inline _B128 ld_global_nc_L1_evict_first_L2_128B(const _B128
 
 /*
 // ld.global.nc.L1::evict_first.L2::256B.b8 dest, [addr]; // PTX ISA 74, SM_80
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_nc_L1_evict_first_L2_256B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_nc_L1_evict_first_L2_256B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_nc_L1_evict_first_L2_256B_is_not_supported_before_SM_80__();
@@ -5549,9 +5549,9 @@ _CCCL_DEVICE static inline _B128 ld_global_nc_L1_evict_first_L2_256B(const _B128
 
 /*
 // ld.global.nc.L1::evict_last.b8 dest, [addr]; // PTX ISA 74, SM_70
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_nc_L1_evict_last(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_nc_L1_evict_last(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_nc_L1_evict_last_is_not_supported_before_SM_70__();
@@ -5681,9 +5681,9 @@ _CCCL_DEVICE static inline _B128 ld_global_nc_L1_evict_last(const _B128* __addr)
 
 /*
 // ld.global.nc.L1::evict_last.L2::64B.b8 dest, [addr]; // PTX ISA 74, SM_75
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_nc_L1_evict_last_L2_64B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_nc_L1_evict_last_L2_64B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_nc_L1_evict_last_L2_64B_is_not_supported_before_SM_75__();
@@ -5825,9 +5825,9 @@ _CCCL_DEVICE static inline _B128 ld_global_nc_L1_evict_last_L2_64B(const _B128* 
 
 /*
 // ld.global.nc.L1::evict_last.L2::128B.b8 dest, [addr]; // PTX ISA 74, SM_75
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_nc_L1_evict_last_L2_128B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_nc_L1_evict_last_L2_128B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_nc_L1_evict_last_L2_128B_is_not_supported_before_SM_75__();
@@ -5969,9 +5969,9 @@ _CCCL_DEVICE static inline _B128 ld_global_nc_L1_evict_last_L2_128B(const _B128*
 
 /*
 // ld.global.nc.L1::evict_last.L2::256B.b8 dest, [addr]; // PTX ISA 74, SM_80
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_nc_L1_evict_last_L2_256B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_nc_L1_evict_last_L2_256B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_nc_L1_evict_last_L2_256B_is_not_supported_before_SM_80__();
@@ -6113,9 +6113,9 @@ _CCCL_DEVICE static inline _B128 ld_global_nc_L1_evict_last_L2_256B(const _B128*
 
 /*
 // ld.global.nc.L1::no_allocate.b8 dest, [addr]; // PTX ISA 74, SM_70
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_nc_L1_no_allocate(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_nc_L1_no_allocate(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_nc_L1_no_allocate_is_not_supported_before_SM_70__();
@@ -6245,9 +6245,9 @@ _CCCL_DEVICE static inline _B128 ld_global_nc_L1_no_allocate(const _B128* __addr
 
 /*
 // ld.global.nc.L1::no_allocate.L2::64B.b8 dest, [addr]; // PTX ISA 74, SM_75
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_nc_L1_no_allocate_L2_64B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_nc_L1_no_allocate_L2_64B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_nc_L1_no_allocate_L2_64B_is_not_supported_before_SM_75__();
@@ -6389,9 +6389,9 @@ _CCCL_DEVICE static inline _B128 ld_global_nc_L1_no_allocate_L2_64B(const _B128*
 
 /*
 // ld.global.nc.L1::no_allocate.L2::128B.b8 dest, [addr]; // PTX ISA 74, SM_75
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_nc_L1_no_allocate_L2_128B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_nc_L1_no_allocate_L2_128B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_nc_L1_no_allocate_L2_128B_is_not_supported_before_SM_75__();
@@ -6533,9 +6533,9 @@ _CCCL_DEVICE static inline _B128 ld_global_nc_L1_no_allocate_L2_128B(const _B128
 
 /*
 // ld.global.nc.L1::no_allocate.L2::256B.b8 dest, [addr]; // PTX ISA 74, SM_80
-template <typename _B8, enable_if_t<sizeof(_B8) == 1, bool> = true>
-__device__ static inline _B8 ld_global_nc_L1_no_allocate_L2_256B(
-  const _B8* addr);
+template <typename B8, enable_if_t<sizeof(B8) == 1, bool> = true>
+__device__ static inline B8 ld_global_nc_L1_no_allocate_L2_256B(
+  const B8* addr);
 */
 #if __cccl_ptx_isa >= 740
 extern "C" _CCCL_DEVICE void __cuda_ptx_ld_global_nc_L1_no_allocate_L2_256B_is_not_supported_before_SM_80__();
