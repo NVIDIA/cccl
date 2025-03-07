@@ -1,7 +1,5 @@
-st
-=============
-
--  PTX ISA: ```st`` <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-st>`__
+..
+   This file was automatically generated. Do not edit.
 
 st.global.b8
 ^^^^^^^^^^^^

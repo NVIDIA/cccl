@@ -1,7 +1,5 @@
-ld
-=============
-
--  PTX ISA: ```ld`` <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-ld>`__
+..
+   This file was automatically generated. Do not edit.
 
 ld.global.b8
 ^^^^^^^^^^^^
