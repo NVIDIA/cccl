@@ -171,7 +171,7 @@ struct dynamic_unique_by_key_policy_t
     return op.template Invoke<unique_by_key_runtime_tuning_policy>(GetPolicy(device_ptx_version, key_size));
   }
 
-  int key_size;
+  uint64_t key_size;
 };
 
 struct unique_by_key_kernel_source

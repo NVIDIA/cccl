@@ -36,7 +36,7 @@ void transform(cccl_iterator_t input, cccl_iterator_t output, unsigned long long
   REQUIRE(CUDA_SUCCESS == cccl_device_transform_cleanup(&build));
 }
 
-using integral_types = std::tuple<int32_t>;
+using integral_types = std::tuple<int32_t, uint32_t, int64_t, uint64_t>;
 TEMPLATE_LIST_TEST_CASE("Transform works with integral types", "[transform]", integral_types)
 {
   const std::size_t num_items       = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
