@@ -49,6 +49,7 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/ptx>
+#include <cuda/std/__algorithm_>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
@@ -551,7 +552,7 @@ struct WarpScanShfl
     ballot = ballot & ::cuda::ptx::get_sreg_lanemask_le();
 
     // Find index of first set bit
-    int segment_first_lane = CUB_MAX(0, 31 - __clz(ballot));
+    int segment_first_lane = _CUDA_VSTD::max(0, 31 - __clz(ballot));
 
     // Iterate scan steps
 #pragma unroll
@@ -683,10 +684,5 @@ struct WarpScanShfl
   }
 };
 } // namespace detail
-
-template <typename T, int LOGICAL_WARP_THREADS>
-using WarpScanShfl CCCL_DEPRECATED_BECAUSE(
-  "This class is considered an implementation detail and the public interface will be "
-  "removed.") = detail::WarpScanShfl<T, LOGICAL_WARP_THREADS>;
 
 CUB_NAMESPACE_END

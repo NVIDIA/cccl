@@ -46,6 +46,13 @@ struct SpecialMemberTest
                       || (cuda::std::is_copy_constructible_v<T> && cuda::std::is_copy_assignable_v<T>) ),
                 "optional<T> is move assignable if and only if T is both move constructible and "
                 "move assignable, or both copy constructible and copy assignable.");
+
+  using ORef = cuda::std::optional<T&>;
+  static_assert(cuda::std::is_default_constructible_v<ORef>, "optional is always default constructible.");
+  static_assert(cuda::std::is_copy_constructible_v<ORef>, "optional<T&> is copy constructible.");
+  static_assert(cuda::std::is_move_constructible_v<ORef>, "optional<T&> is move constructible");
+  static_assert(cuda::std::is_copy_assignable_v<ORef>, "optional<T&> is copy assignable.");
+  static_assert(cuda::std::is_move_assignable_v<ORef>, "optional<T&> is move assignable.");
 };
 
 template <class... Args>

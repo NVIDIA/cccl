@@ -93,7 +93,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool check_X()
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool check_Y()
 {
-  optional<Y> opt;
+  optional<Y> opt{};
   auto& v = opt.emplace({1, 2});
   static_assert(cuda::std::is_same_v<Y&, decltype(v)>, "");
   assert(static_cast<bool>(opt) == true);
@@ -164,7 +164,7 @@ int main(int, char**)
   }
 #ifdef _LIBCUDACXX_HAS_VECTOR
   {
-    optional<cuda::std::vector<int>> opt;
+    optional<cuda::std::vector<int>> opt{};
     auto& v = opt.emplace({1, 2, 3}, cuda::std::allocator<int>());
     static_assert(cuda::std::is_same_v<cuda::std::vector<int>&, decltype(v)>, "");
     assert(static_cast<bool>(opt) == true);

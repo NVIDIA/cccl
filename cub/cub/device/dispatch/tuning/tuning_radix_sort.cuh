@@ -1002,20 +1002,4 @@ struct policy_hub
 } // namespace radix
 } // namespace detail
 
-/**
- * @brief Tuning policy for kernel specialization
- *
- * @tparam KeyT
- *   Key type
- *
- * @tparam ValueT
- *   Value type
- *
- * @tparam OffsetT
- *   Signed integer type for global offsets
- */
-template <typename KeyT, typename ValueT, typename OffsetT>
-using DeviceRadixSortPolicy CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and it will be "
-                                                    "removed.") = detail::radix::policy_hub<KeyT, ValueT, OffsetT>;
-
 CUB_NAMESPACE_END
