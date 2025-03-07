@@ -15,8 +15,6 @@
 
 #include "test_macros.h"
 
-TEST_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
-
 template <class T>
 __host__ __device__ void test_is_fundamental()
 {
@@ -94,7 +92,9 @@ int main(int, char**)
   test_is_fundamental<double>();
   test_is_fundamental<float>();
   test_is_fundamental<double>();
+#if _CCCL_HAS_LONG_DOUBLE()
   test_is_fundamental<long double>();
+#endif // _CCCL_HAS_LONG_DOUBLE()
   test_is_fundamental<char16_t>();
   test_is_fundamental<char32_t>();
 

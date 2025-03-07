@@ -277,7 +277,7 @@ using char32_t = unsigned int;
 #  endif
 
 #  if (!defined(_LIBCUDACXX_HAS_C_ATOMIC_IMP) && !defined(_LIBCUDACXX_HAS_GCC_ATOMIC_IMP) \
-       && !defined(_LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP))                                  \
+       && !_LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP())                                         \
     || defined(_LIBCUDACXX_HAS_NO_THREADS)
 #    define _LIBCUDACXX_HAS_NO_ATOMIC_HEADER
 #  else

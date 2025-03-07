@@ -18,6 +18,7 @@
 #include "kernels/operators.h"
 #include "util/context.h"
 #include "util/indirect_arg.h"
+#include "util/tuning.h"
 #include "util/types.h"
 #include <cccl/c/merge_sort.h>
 #include <nvrtc/command_list.h>
@@ -25,8 +26,8 @@
 
 struct op_wrapper;
 struct device_merge_sort_policy;
-using OffsetT = int64_t;
-static_assert(std::is_same_v<cub::detail::choose_signed_offset_t<OffsetT>, OffsetT>, "OffsetT must be int64");
+using OffsetT = unsigned long long;
+static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "OffsetT must be unsigned long long");
 
 struct input_keys_iterator_state_t;
 struct input_items_iterator_state_t;
@@ -114,11 +115,6 @@ std::string get_iterator_name(cccl_iterator_t iterator, merge_sort_iterator_t wh
 
     return iterator_t;
   }
-}
-
-int nominal_4b_items_to_items(int nominal_4b_items_per_thread, int key_size)
-{
-  return std::min(nominal_4b_items_per_thread, std::max(1, nominal_4b_items_per_thread * 4 / key_size));
 }
 
 merge_sort_runtime_tuning_policy get_policy(int cc, int key_size)
@@ -233,29 +229,28 @@ struct merge_sort_kernel_source
 
 struct dynamic_vsmem_helper_t
 {
-  ::cuda::std::size_t block_sort_vsmem_per_block = 0;
-  ::cuda::std::size_t merge_vsmem_per_block      = 0;
-
-  ::cuda::std::size_t BlockSortVSMemPerBlock() const
+  template <typename PolicyT>
+  static ::cuda::std::size_t BlockSortVSMemPerBlock(PolicyT /*policy*/)
   {
-    return block_sort_vsmem_per_block;
-  }
-
-  ::cuda::std::size_t MergeVSMemPerBlock() const
-  {
-    return merge_vsmem_per_block;
+    return 0;
   }
 
   template <typename PolicyT>
-  int BlockThreads(PolicyT policy) const
+  static ::cuda::std::size_t MergeVSMemPerBlock(PolicyT /*policy*/)
   {
-    return uses_fallback_policy() ? fallback_policy.block_size : policy.block_size;
+    return 0;
   }
 
   template <typename PolicyT>
-  int ItemsPerTile(PolicyT policy) const
+  static int BlockThreads(PolicyT policy)
   {
-    return uses_fallback_policy() ? fallback_policy.items_per_tile : policy.items_per_tile;
+    return policy.block_size;
+  }
+
+  template <typename PolicyT>
+  static int ItemsPerTile(PolicyT policy)
+  {
+    return policy.items_per_tile;
   }
 
 private:
@@ -293,7 +288,7 @@ CUresult cccl_device_merge_sort_build(
     const auto input_items_it_value_t  = cccl_type_enum_to_name(input_items_it.value_type.type);
     const auto output_keys_it_value_t  = cccl_type_enum_to_name(output_keys_it.value_type.type);
     const auto output_items_it_value_t = cccl_type_enum_to_name(output_items_it.value_type.type);
-    const auto offset_t                = cccl_type_enum_to_name(cccl_type_enum::CCCL_INT64);
+    const auto offset_t                = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
 
     const std::string input_keys_iterator_src = make_kernel_input_iterator(
       offset_t,
@@ -462,7 +457,7 @@ CUresult cccl_device_merge_sort(
       indirect_arg_t,
       indirect_arg_t,
       indirect_arg_t,
-      ::cuda::std::size_t,
+      OffsetT,
       indirect_arg_t,
       merge_sort::dynamic_merge_sort_policy_t<&merge_sort::get_policy>,
       merge_sort::merge_sort_kernel_source,
@@ -480,8 +475,7 @@ CUresult cccl_device_merge_sort(
                                 stream,
                                 {build},
                                 cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
-                                {d_out_keys.value_type.size},
-                                {});
+                                {d_out_keys.value_type.size});
   }
   catch (const std::exception& exc)
   {

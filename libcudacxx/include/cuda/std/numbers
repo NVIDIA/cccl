@@ -21,19 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__internal/nvfp_types.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/version>
-
-#if defined(_LIBCUDACXX_HAS_NVFP16)
-#  include <cuda_fp16.h>
-#endif // _LIBCUDACXX_HAS_NVFP16
-#if defined(_LIBCUDACXX_HAS_NVBF16)
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
-#  include <cuda_bf16.h>
-_CCCL_DIAG_POP
-#endif // _LIBCUDACXX_HAS_NVBF16
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -72,7 +63,7 @@ struct __numbers<_Tp, enable_if_t<_CCCL_TRAIT(is_floating_point, _Tp)>>
 
 _CCCL_DIAG_POP
 
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#if _LIBCUDACXX_HAS_NVFP16()
 template <>
 struct __numbers<__half>
 {
@@ -90,9 +81,9 @@ struct __numbers<__half>
   static constexpr __half __egamma     = __half_raw{0x389eu};
   static constexpr __half __phi        = __half_raw{0x3e79u};
 };
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#if _LIBCUDACXX_HAS_NVBF16()
 template <>
 struct __numbers<__nv_bfloat16>
 {
@@ -110,7 +101,7 @@ struct __numbers<__nv_bfloat16>
   static constexpr __nv_bfloat16 __egamma     = __nv_bfloat16_raw{0x3f14u};
   static constexpr __nv_bfloat16 __phi        = __nv_bfloat16_raw{0x3fcfu};
 };
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 namespace numbers
 {
@@ -142,7 +133,7 @@ inline constexpr _Tp egamma_v = __numbers<_Tp>::__egamma;
 template <class _Tp>
 inline constexpr _Tp phi_v = __numbers<_Tp>::__phi;
 
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#if _LIBCUDACXX_HAS_NVFP16()
 template <>
 _CCCL_DEVICE_VARIABLE inline constexpr __half e_v<__half> = __numbers<__half>::__e;
 template <>
@@ -169,9 +160,9 @@ template <>
 _CCCL_DEVICE_VARIABLE inline constexpr __half egamma_v<__half> = __numbers<__half>::__egamma;
 template <>
 _CCCL_DEVICE_VARIABLE inline constexpr __half phi_v<__half> = __numbers<__half>::__phi;
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#if _LIBCUDACXX_HAS_NVBF16()
 template <>
 _CCCL_DEVICE_VARIABLE inline constexpr __nv_bfloat16 e_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__e;
 template <>
@@ -199,7 +190,7 @@ template <>
 _CCCL_DEVICE_VARIABLE inline constexpr __nv_bfloat16 egamma_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__egamma;
 template <>
 _CCCL_DEVICE_VARIABLE inline constexpr __nv_bfloat16 phi_v<__nv_bfloat16> = __numbers<__nv_bfloat16>::__phi;
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 inline constexpr double e          = e_v<double>;
 inline constexpr double log2e      = log2e_v<double>;
