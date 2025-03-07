@@ -237,6 +237,22 @@
 #  undef _CCCL_BUILTIN_BSWAP128
 #endif // _CCCL_CUDA_COMPILER(NVCC)
 
+#if _CCCL_CHECK_BUILTIN(builtin_bitreverse8) && !_CCCL_HAS_CUDA_COMPILER
+#  define _CCCL_BUILTIN_BITREVERSE8(...) __builtin_bitreverse8(__VA_ARGS__)
+#endif
+
+#if _CCCL_CHECK_BUILTIN(builtin_bitreverse16) && !_CCCL_HAS_CUDA_COMPILER
+#  define _CCCL_BUILTIN_BITREVERSE16(...) __builtin_bitreverse16(__VA_ARGS__)
+#endif
+
+#if _CCCL_CHECK_BUILTIN(builtin_bitreverse32) && !_CCCL_HAS_CUDA_COMPILER
+#  define _CCCL_BUILTIN_BITREVERSE32(...) __builtin_bitreverse32(__VA_ARGS__)
+#endif
+
+#if _CCCL_CHECK_BUILTIN(builtin_bitreverse64) && !_CCCL_HAS_CUDA_COMPILER
+#  define _CCCL_BUILTIN_BITREVERSE64(...) __builtin_bitreverse64(__VA_ARGS__)
+#endif
+
 #if _CCCL_CHECK_BUILTIN(builtin_cbrt) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_CBRTF(...) __builtin_cbrtf(__VA_ARGS__)
 #  define _CCCL_BUILTIN_CBRT(...)  __builtin_cbrt(__VA_ARGS__)
