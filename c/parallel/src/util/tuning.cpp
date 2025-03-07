@@ -14,5 +14,5 @@
 
 int nominal_4b_items_to_items(int nominal_4b_items_per_thread, int key_size)
 {
-  return std::min(nominal_4b_items_per_thread, std::max(1, nominal_4b_items_per_thread * 4 / key_size));
+  return std::clamp(nominal_4b_items_per_thread * 4 / key_size, 1, nominal_4b_items_per_thread);
 }
