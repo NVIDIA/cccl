@@ -244,7 +244,7 @@ struct device_transform_policy {{
       output_iterator_src, // 7
       op_src); // 8
 
-#if false // CCCL_DEBUGGING_SWITCH
+#if true // CCCL_DEBUGGING_SWITCH
     fflush(stderr);
     printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", src.c_str());
     fflush(stdout);
