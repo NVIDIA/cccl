@@ -41,7 +41,7 @@ jobs:
       rc_tag: ${{ steps.prepare.outputs.rc_tag }}
       release_tag: ${{ steps.prepare.outputs.release_tag }}
       working_branch: ${{ steps.prepare.outputs.working_branch }}
-      next_patch_version: ${{ steps.prepare.outputs.next_patch_version }}
+      next_full_version: ${{ steps.prepare.outputs.next_full_version }}
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
@@ -75,9 +75,9 @@ jobs:
 
           # Create next point release version number as this point release is finalized.
           declare -i next_patch_version=$patch_version
-          next_patch_version=$((next_patch_version + 1))
+          next_full_version="${major_version}.${minor_version}.$((next_patch_version + 1))"
 
-          log_and_export_vars full_version major_version minor_version patch_version rc release_tag rc_tag repo_version working_branch next_patch_version
+          log_and_export_vars full_version major_version minor_version patch_version rc release_tag rc_tag repo_version working_branch next_full_version
 
           if [[ "${repo_version}" != "${full_version}" ]]; then
             echo "::error::cccl-version.json (${repo_version}) does not match release candidate tag (${rc_tag})."
@@ -219,5 +219,5 @@ jobs:
       - name: Create patch version PR
         uses: ./.github/actions/version-update
         with:
-          new_version: ${{ needs.create-release.outputs.next_patch_version }}
+          new_version: ${{ needs.create-release.outputs.next_full_version }}
           target_branch: ${{ needs.create-release.outputs.working_branch }}
