@@ -644,6 +644,11 @@ protected:
      */
     void erase_all_logical_data();
 
+    void print_logical_data_summary() const
+    {
+      stack.print_logical_data_summary();
+    }
+
     /**
      * @brief Add an allocator to the vector of allocators which will be
      * deinitialized when the context is finalized
@@ -924,6 +929,11 @@ public:
   bool generate_event_symbols() const
   {
     return pimpl->generate_event_symbols;
+  }
+
+  void print_logical_data_summary() const
+  {
+    pimpl->print_logical_data_summary();
   }
 
   cudaGraph_t graph() const

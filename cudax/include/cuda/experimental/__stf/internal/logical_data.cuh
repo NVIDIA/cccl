@@ -2160,6 +2160,27 @@ inline void backend_ctx_untyped::impl::erase_all_logical_data()
   }
 }
 
+inline void reserved::ctx_stack::print_logical_data_summary() const
+{
+  ::std::lock_guard<::std::mutex> guard(logical_data_ids_mutex);
+
+  fprintf(stderr, "Context current logical data summary\n");
+  fprintf(stderr, "====================================\n");
+
+  // TODO sort by symbol or shape size ? print location ?
+  for (auto [id, data_impl] : logical_data_ids)
+  {
+    // data_impl :
+    // const ::std::string& get_symbol() const
+    // const shape_t& shape() const => shape has a size_t size() const method
+    fprintf(stderr,
+            "ID: %d, Symbol: %s, Shape Size: %zu\n",
+            id,
+            data_impl.get_symbol().c_str(),
+            data_impl.dinterface->data_footprint());
+  }
+}
+
 // Defined here to avoid circular dependencies
 inline logical_data_untyped task_dep_untyped::get_data() const
 {

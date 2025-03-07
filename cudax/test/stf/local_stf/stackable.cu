@@ -70,6 +70,8 @@ int main()
     c(i) += b(i);
   };
 
+  sctx.print_logical_data_summary();
+
   sctx.pop();
 
   sctx.host_launch(lA2.read())->*[](auto a2) {

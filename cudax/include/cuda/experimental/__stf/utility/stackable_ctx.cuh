@@ -524,6 +524,29 @@ public:
       return node_tree.get_children(parent);
     }
 
+    void print_logical_data_summary() const
+    {
+      ::std::stack<int> node_stack;
+      // Iterate from root node
+      node_stack.push(root_offset);
+      while (!node_stack.empty())
+      {
+        int offset = node_stack.top();
+        node_stack.pop();
+
+        auto& ctx = get_ctx(offset);
+        fprintf(stderr, "[context %d (%s)] logical data summary:\n", offset, ctx.to_string().c_str());
+        ctx.print_logical_data_summary();
+
+        // Push children to stack (reverse order to maintain left-to-right order)
+        const auto& children = get_children_offsets(offset);
+        for (auto it = children.rbegin(); it != children.rend(); ++it)
+        {
+          node_stack.push(*it);
+        }
+      }
+    }
+
   private:
     void print_cache_stats_summary() const
     {
@@ -948,6 +971,13 @@ public:
                  "Can only finalize if there is no pending contexts");
 
     get_root_ctx().finalize();
+  }
+
+  void print_logical_data_summary() const
+  {
+    auto lock = pimpl->get_read_lock();
+
+    pimpl->print_logical_data_summary();
   }
 
   ::std::shared_lock<::std::shared_mutex> get_read_lock() const

@@ -686,6 +686,16 @@ public:
       payload);
   }
 
+  void print_logical_data_summary() const
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    ::std::visit(
+      [&](auto& self) {
+        self.print_logical_data_summary();
+      },
+      payload);
+  }
+
   /**
    * @brief RAII-style description of a new section in the DOT file identified by its symbol
    */
