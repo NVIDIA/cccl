@@ -20,7 +20,7 @@
 #include "test_macros.h"
 
 template <class T>
-_CCCL_CONCEPT HasSize = _CCCL_REQUIRES_EXPR((T), T t)((t.size()));
+_CCCL_CONCEPT HasSize = _CCCL_REQUIRES_EXPR((T), T t)(unused(t.size()));
 
 struct SubtractableIters
 {

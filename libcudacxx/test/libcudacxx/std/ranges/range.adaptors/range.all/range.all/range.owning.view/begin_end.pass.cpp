@@ -58,10 +58,10 @@ struct DecayChecker
 };
 
 template <class T>
-_CCCL_CONCEPT HasBegin = _CCCL_REQUIRES_EXPR((T), T t)((t.begin()));
+_CCCL_CONCEPT HasBegin = _CCCL_REQUIRES_EXPR((T), T t)(unused(t.begin()));
 
 template <class T>
-_CCCL_CONCEPT HasEnd = _CCCL_REQUIRES_EXPR((T), T t)((t.end()));
+_CCCL_CONCEPT HasEnd = _CCCL_REQUIRES_EXPR((T), T t)(unused(t.end()));
 
 __host__ __device__ constexpr bool test()
 {
