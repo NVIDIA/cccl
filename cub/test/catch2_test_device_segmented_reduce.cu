@@ -268,14 +268,15 @@ C2H_TEST("Device fixed size segmented reduce works with all device interfaces",
 
   const int max_items = 1 << 22;
 
-  const int segment_size = GENERATE_COPY(
+  const offset_t segment_size = GENERATE_COPY(
     take(2, random(1 << 0, 1 << 5)),
     take(2, random(1 << 5, 1 << 10)),
     take(2, random(1 << 10, 1 << 15)),
     take(2, random(1 << 15, 1 << 20)));
 
   const int num_segments = max_items / segment_size;
-  const int num_items    = std::min(num_segments * segment_size, max_items);
+  const int items        = num_segments * segment_size;
+  const int num_items    = std::min(items, max_items);
 
   // Number of items
   INFO("Test num_items: " << num_items);

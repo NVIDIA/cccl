@@ -972,7 +972,6 @@ template <typename MaxPolicyT,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
-          typename SegmentSizeT,
           typename ReductionOpT,
           typename InitT,
           typename AccumT>
@@ -980,15 +979,7 @@ struct DeviceFixedSizeSegmentedReduceKernelSource
 {
   CUB_DEFINE_KERNEL_GETTER(
     FixedSizeSegmentedReduceKernel,
-    DeviceFixedSizeSegmentedReduceKernel<
-      MaxPolicyT,
-      InputIteratorT,
-      OutputIteratorT,
-      OffsetT,
-      SegmentSizeT,
-      ReductionOpT,
-      InitT,
-      AccumT>)
+    DeviceFixedSizeSegmentedReduceKernel<MaxPolicyT, InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, InitT, AccumT>)
 
   CUB_RUNTIME_FUNCTION static constexpr std::size_t AccumSize()
   {
@@ -999,7 +990,6 @@ struct DeviceFixedSizeSegmentedReduceKernelSource
 template <typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
-          typename SegmentSizeT,
           typename ReductionOpT,
           typename InitT,
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::it_value_t<InputIteratorT>, InitT>,
@@ -1009,7 +999,6 @@ template <typename InputIteratorT,
             InputIteratorT,
             OutputIteratorT,
             OffsetT,
-            SegmentSizeT,
             ReductionOpT,
             InitT,
             AccumT>,
@@ -1038,7 +1027,7 @@ struct DispatchFixedSizeSegmentedReduce
   int num_segments;
 
   /// The fixed segment size for each segment
-  SegmentSizeT segment_size;
+  OffsetT segment_size;
 
   /// Binary reduction functor
   ReductionOpT reduction_op;
@@ -1066,7 +1055,7 @@ struct DispatchFixedSizeSegmentedReduce
     InputIteratorT d_in,
     OutputIteratorT d_out,
     int num_segments,
-    SegmentSizeT segment_size,
+    OffsetT segment_size,
     ReductionOpT reduction_op,
     InitT init,
     cudaStream_t stream,
@@ -1123,11 +1112,11 @@ struct DispatchFixedSizeSegmentedReduce
       int blocks = num_segments;
       if (segment_size <= ActivePolicyT::SmallReducePolicy::ITEMS_PER_TILE)
       {
-        blocks = cuda::ceil_div(num_segments, ActivePolicyT::SmallReducePolicy::SEGMENTS_PER_BLOCK);
+        blocks = ::cuda::ceil_div(num_segments, ActivePolicyT::SmallReducePolicy::SEGMENTS_PER_BLOCK);
       }
       else if (segment_size <= ActivePolicyT::MediumReducePolicy::ITEMS_PER_TILE)
       {
-        blocks = cuda::ceil_div(num_segments, ActivePolicyT::MediumReducePolicy::SEGMENTS_PER_BLOCK);
+        blocks = ::cuda::ceil_div(num_segments, ActivePolicyT::MediumReducePolicy::SEGMENTS_PER_BLOCK);
       }
 
       // Invoke DeviceReduceKernel
@@ -1203,7 +1192,7 @@ struct DispatchFixedSizeSegmentedReduce
     InputIteratorT d_in,
     OutputIteratorT d_out,
     int num_segments,
-    SegmentSizeT segment_size,
+    OffsetT segment_size,
     ReductionOpT reduction_op,
     InitT init,
     cudaStream_t stream,
@@ -1213,7 +1202,10 @@ struct DispatchFixedSizeSegmentedReduce
   {
     if (num_segments <= 0)
     {
-      temp_storage_bytes = 0;
+      if (d_temp_storage == nullptr)
+      {
+        temp_storage_bytes = 1;
+      }
       return cudaSuccess;
     }
 

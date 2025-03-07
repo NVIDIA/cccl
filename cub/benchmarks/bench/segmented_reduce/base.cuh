@@ -88,10 +88,10 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Of
 #if !TUNE_BASE
   using policy_t   = policy_hub_t<accum_t>;
   using dispatch_t = cub::detail::reduce::
-    DispatchFixedSizeSegmentedReduce<input_it_t, output_it_t, offset_t, segment_size_t, op_t, init_t, accum_t, policy_t>;
+    DispatchFixedSizeSegmentedReduce<input_it_t, output_it_t, segment_size_t, op_t, init_t, accum_t, policy_t>;
 #else // TUNE_BASE
-  using dispatch_t = cub::detail::reduce::
-    DispatchFixedSizeSegmentedReduce<input_it_t, output_it_t, offset_t, segment_size_t, op_t, init_t, accum_t>;
+  using dispatch_t =
+    cub::detail::reduce::DispatchFixedSizeSegmentedReduce<input_it_t, output_it_t, segment_size_t, op_t, init_t, accum_t>;
 #endif // TUNE_BASE
 
   // Retrieve axis parameters

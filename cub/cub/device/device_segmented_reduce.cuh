@@ -169,22 +169,14 @@ private:
     InputIteratorT d_in,
     OutputIteratorT d_out,
     int num_segments,
-    SegmentSizeT segment_size,
+    OffsetT segment_size,
     ReductionOpT reduction_op,
     InitT initial_value,
     cudaStream_t stream)
   {
     return detail::reduce::
-      DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, OffsetT, SegmentSizeT, ReductionOpT, InitT>::
-        Dispatch(d_temp_storage,
-                 temp_storage_bytes,
-                 d_in,
-                 d_out,
-                 num_segments,
-                 segment_size,
-                 reduction_op,
-                 initial_value,
-                 stream);
+      DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, InitT>::Dispatch(
+        d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, reduction_op, initial_value, stream);
   }
 
 public:
@@ -409,14 +401,14 @@ public:
     static_assert(integral_segment_size_check::value, "Segment Size type should be integral.");
 
     using offset_t = detail::choose_offset_t<SegmentSizeT>;
-    return segmented_reduce<InputIteratorT, OutputIteratorT, offset_t, SegmentSizeT, ReductionOpT>(
+    return segmented_reduce<InputIteratorT, OutputIteratorT, offset_t, ReductionOpT>(
       integral_segment_size_check{},
       d_temp_storage,
       temp_storage_bytes,
       d_in,
       d_out,
       num_segments,
-      segment_size,
+      static_cast<offset_t>(segment_size),
       reduction_op,
       initial_value,
       stream);

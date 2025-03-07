@@ -92,29 +92,45 @@ struct AgentReducePolicy : ScalingType
   static constexpr CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;
 };
 
-template <
-  int NOMINAL_BLOCK_THREADS_4B,
-  int NOMINAL_WARP_THREADS_4B,
-  int NOMINAL_ITEMS_PER_THREAD_4B,
-  typename ComputeT,
-  int _VECTOR_LOAD_LENGTH,
-  CacheLoadModifier _LOAD_MODIFIER,
-  typename ScalingType = detail::MemBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
-struct AgentWarpReducePolicy : ScalingType
+/**
+ * Parameterizable tuning policy type for AgentReduce
+ * @tparam NOMINAL_BLOCK_THREADS Threads per thread block
+ * @tparam NOMINAL_WARP_THREADS_4B Threads per warp
+ * @tparam NOMINAL_ITEMS_PER_THREAD_4B Items per thread (per tile of input)
+ * @tparam ComputeT Dominant compute type
+ * @tparam _VECTOR_LOAD_LENGTH Number of items per vectorized load
+ * @tparam _LOAD_MODIFIER Cache load modifier for reading input elements
+ */
+template <int NOMINAL_BLOCK_THREADS,
+          int NOMINAL_WARP_THREADS_4B,
+          int NOMINAL_ITEMS_PER_THREAD_4B,
+          typename ComputeT,
+          int _VECTOR_LOAD_LENGTH,
+          CacheLoadModifier _LOAD_MODIFIER,
+          typename ScalingType = detail::MemBoundScaling<NOMINAL_BLOCK_THREADS, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
+struct AgentWarpReducePolicy
 {
   static constexpr int WARP_THREADS = NOMINAL_WARP_THREADS_4B;
 
   /// Number of items per vectorized load
   static constexpr int VECTOR_LOAD_LENGTH = _VECTOR_LOAD_LENGTH;
 
+  /// Number of threads per block
+  static constexpr int BLOCK_THREADS = NOMINAL_BLOCK_THREADS;
+
+  /// Number of items per thread
+  static constexpr int ITEMS_PER_THREAD = ScalingType::ITEMS_PER_THREAD;
+
   /// Cache load modifier for reading input elements
   static constexpr CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;
 
-  constexpr static int ITEMS_PER_TILE = ScalingType::ITEMS_PER_THREAD * WARP_THREADS;
+  /// Number of items per tile
+  constexpr static int ITEMS_PER_TILE = ITEMS_PER_THREAD * WARP_THREADS;
 
-  constexpr static int SEGMENTS_PER_BLOCK = ScalingType::BLOCK_THREADS / WARP_THREADS;
+  /// Number of segments per block
+  constexpr static int SEGMENTS_PER_BLOCK = BLOCK_THREADS / WARP_THREADS;
 
-  static_assert((ScalingType::BLOCK_THREADS % WARP_THREADS) == 0, "Block should be multiple of warp");
+  static_assert((BLOCK_THREADS % WARP_THREADS) == 0, "Block should be multiple of warp");
 };
 
 /******************************************************************************
@@ -506,7 +522,7 @@ struct AgentReduce
                     BlockReduce<AccumT, AgentReducePolicy::BLOCK_THREADS, AgentReducePolicy::BLOCK_ALGORITHM>,
                     AgentReducePolicy::BLOCK_THREADS>;
 
-  __device__ __forceinline__ AgentReduce(
+  _CCCL_DEVICE _CCCL_FORCEINLINE AgentReduce(
     typename base_t::TempStorage& temp_storage,
     InputIteratorT d_in,
     ReductionOp reduction_op,
@@ -544,7 +560,7 @@ struct AgentWarpReduce
                     WarpReduce<AccumT, AgentReducePolicy::WARP_THREADS>,
                     AgentReducePolicy::WARP_THREADS>;
 
-  __device__ __forceinline__ AgentWarpReduce(
+  _CCCL_DEVICE _CCCL_FORCEINLINE AgentWarpReduce(
     typename base_t::TempStorage& temp_storage,
     InputIteratorT d_in,
     ReductionOp reduction_op,

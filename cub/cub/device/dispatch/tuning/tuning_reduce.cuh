@@ -276,25 +276,11 @@ struct policy_hub
   struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
   {
     static constexpr int threads_per_block  = 256;
-    static constexpr int items_per_thread   = 16;
     static constexpr int items_per_vec_load = 4;
 
-    // TODO Tune
-    using SmallReducePolicy =
-      AgentWarpReducePolicy<threads_per_block,
-                            1 /* threads per warp */,
-                            16 /* items_per_thread */,
-                            AccumT,
-                            items_per_vec_load,
-                            LOAD_LDG>;
-    // TODO Tune
-    using MediumReducePolicy =
-      AgentWarpReducePolicy<threads_per_block,
-                            16 /* threads per warp */,
-                            16 /* items_per_thread */,
-                            AccumT,
-                            items_per_vec_load,
-                            LOAD_LDG>;
+    static constexpr int items_per_thread        = 16;
+    static constexpr int small_items_per_thread  = 16;
+    static constexpr int medium_items_per_thread = 16;
 
     using ReducePolicy =
       AgentReducePolicy<threads_per_block,
@@ -303,6 +289,23 @@ struct policy_hub
                         items_per_vec_load,
                         BLOCK_REDUCE_WARP_REDUCTIONS,
                         LOAD_LDG>;
+
+    // TODO Tune
+    using SmallReducePolicy =
+      AgentWarpReducePolicy<ReducePolicy::BLOCK_THREADS,
+                            1 /* threads per warp */,
+                            small_items_per_thread,
+                            AccumT,
+                            items_per_vec_load,
+                            LOAD_LDG>;
+    // TODO Tune
+    using MediumReducePolicy =
+      AgentWarpReducePolicy<ReducePolicy::BLOCK_THREADS,
+                            32 /* threads per warp */,
+                            medium_items_per_thread,
+                            AccumT,
+                            items_per_vec_load,
+                            LOAD_LDG>;
   };
 
   using MaxPolicy = Policy500;

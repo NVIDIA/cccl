@@ -109,7 +109,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void NormalizeReductionOutput(
  *   considered empty.
  *
  * @param[in] num_segments
- *   The number of segments that comprise the sorting data
+ *   The number of segments on which the reduction is performed
  *
  * @param[in] reduction_op
  *   Binary reduction functor
@@ -187,8 +187,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
- * @tparam SegmentSizeT
- *   Integral type for the fixed size of each segment
  *
  * @tparam ReductionOpT
  *   Binary reduction functor type having member
@@ -207,7 +205,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
  *   The fixed segment size of each the segments
  *
  * @param[in] num_segments
- *   The number of segments that comprise the sorting data
+ *   The number of segments on which the reduction is performed
  *
  * @param[in] reduction_op
  *   Binary reduction functor
@@ -219,7 +217,6 @@ template <typename ChainedPolicyT,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
-          typename SegmentSizeT,
           typename ReductionOpT,
           typename InitT,
           typename AccumT>
@@ -227,7 +224,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)) void DeviceFixedSizeSegmentedReduceKernel(
   InputIteratorT d_in,
   OutputIteratorT d_out,
-  SegmentSizeT segment_size,
+  OffsetT segment_size,
   int num_segments,
   ReductionOpT reduction_op,
   InitT init)
@@ -236,23 +233,13 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
 
   // Thread block type for reducing input tiles
   using AgentReduceT =
-    AgentReduce<typename ActivePolicyT::ReducePolicy, InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, AccumT>;
+    AgentReduce<typename ActivePolicyT::ReducePolicy, InputIteratorT, OutputIteratorT, int, ReductionOpT, AccumT>;
 
   using AgentMediumReduceT =
-    AgentWarpReduce<typename ActivePolicyT::MediumReducePolicy,
-                    InputIteratorT,
-                    OutputIteratorT,
-                    OffsetT,
-                    ReductionOpT,
-                    AccumT>;
+    AgentWarpReduce<typename ActivePolicyT::MediumReducePolicy, InputIteratorT, OutputIteratorT, int, ReductionOpT, AccumT>;
 
   using AgentSmallReduceT =
-    AgentWarpReduce<typename ActivePolicyT::SmallReducePolicy,
-                    InputIteratorT,
-                    OutputIteratorT,
-                    OffsetT,
-                    ReductionOpT,
-                    AccumT>;
+    AgentWarpReduce<typename ActivePolicyT::SmallReducePolicy, InputIteratorT, OutputIteratorT, int, ReductionOpT, AccumT>;
 
   constexpr auto segments_per_medium_block = ActivePolicyT::MediumReducePolicy::SEGMENTS_PER_BLOCK;
   constexpr auto medium_threads_per_warp   = ActivePolicyT::MediumReducePolicy::WARP_THREADS;
@@ -279,15 +266,14 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
     const int lane_id           = tid % small_threads_per_warp;
     const int global_segment_id = bid * segments_per_small_block + sid_within_block;
 
-    const OffsetT block_begin   = bid * segments_per_small_block * segment_size;
-    const OffsetT segment_begin = block_begin + sid_within_block * segment_size;
-    const OffsetT segment_end   = segment_begin + segment_size;
+    const OffsetT segment_begin = global_segment_id * segment_size;
 
     if (global_segment_id < num_segments)
     {
       // Consume input tiles
-      AccumT warp_aggregate = AgentSmallReduceT(temp_storage.small_storage[sid_within_block], d_in, reduction_op)
-                                .ConsumeRange(segment_begin, segment_end);
+      AccumT warp_aggregate =
+        AgentSmallReduceT(temp_storage.small_storage[sid_within_block], d_in + segment_begin, reduction_op)
+          .ConsumeRange({}, static_cast<int>(segment_size));
 
       // Normalize as needed
       NormalizeReductionOutput(warp_aggregate, segment_begin, d_in);
@@ -304,15 +290,14 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
     const int lane_id           = tid % medium_threads_per_warp;
     const int global_segment_id = bid * segments_per_medium_block + sid_within_block;
 
-    const OffsetT block_begin   = bid * segments_per_medium_block * segment_size;
-    const OffsetT segment_begin = block_begin + sid_within_block * segment_size;
-    const OffsetT segment_end   = segment_begin + segment_size;
+    const OffsetT segment_begin = global_segment_id * segment_size;
 
     if (global_segment_id < num_segments)
     {
       // Consume input tiles
-      AccumT warp_aggregate = AgentMediumReduceT(temp_storage.medium_storage[sid_within_block], d_in, reduction_op)
-                                .ConsumeRange(segment_begin, segment_end);
+      AccumT warp_aggregate =
+        AgentMediumReduceT(temp_storage.medium_storage[sid_within_block], d_in + segment_begin, reduction_op)
+          .ConsumeRange({}, static_cast<int>(segment_size));
 
       // Normalize as needed
       NormalizeReductionOutput(warp_aggregate, segment_begin, d_in);
@@ -325,12 +310,11 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   }
   else
   {
-    OffsetT segment_begin = bid * segment_size;
-    OffsetT segment_end   = segment_begin + segment_size;
+    const OffsetT segment_begin = bid * segment_size;
 
     // Consume input tiles
-    AccumT block_aggregate =
-      AgentReduceT(temp_storage.large_storage, d_in, reduction_op).ConsumeRange(segment_begin, segment_end);
+    AccumT block_aggregate = AgentReduceT(temp_storage.large_storage, d_in + segment_begin, reduction_op)
+                               .ConsumeRange({}, static_cast<int>(segment_size));
 
     // Normalize as needed
     NormalizeReductionOutput(block_aggregate, segment_begin, d_in);
