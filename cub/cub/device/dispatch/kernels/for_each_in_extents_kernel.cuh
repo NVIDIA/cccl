@@ -37,16 +37,14 @@
 #  pragma system_header
 #endif // no system header
 
-#if __cccl_lib_mdspan
+#include <cub/detail/fast_modulo_division.cuh> // fast_div_mod
+#include <cub/detail/mdspan_utils.cuh> // is_sub_size_static
+#include <cub/detail/type_traits.cuh> // implicit_prom_t
 
-#  include <cub/detail/fast_modulo_division.cuh> // fast_div_mod
-#  include <cub/detail/mdspan_utils.cuh> // is_sub_size_static
-#  include <cub/detail/type_traits.cuh> // implicit_prom_t
-
-#  include <cuda/std/cstddef> // size_t
-#  include <cuda/std/mdspan> // dynamic_extent
-#  include <cuda/std/type_traits> // enable_if
-#  include <cuda/std/utility> // index_sequence
+#include <cuda/std/cstddef> // size_t
+#include <cuda/std/mdspan> // dynamic_extent
+#include <cuda/std/type_traits> // enable_if
+#include <cuda/std/utility> // index_sequence
 
 CUB_NAMESPACE_BEGIN
 
@@ -177,5 +175,3 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(
 } // namespace detail
 
 CUB_NAMESPACE_END
-
-#endif // __cccl_lib_mdspan
