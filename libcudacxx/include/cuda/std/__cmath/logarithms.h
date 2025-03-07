@@ -21,12 +21,17 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cmath/common.h>
+#include <cuda/std/__cmath/fp_utils.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/cstdint>
 
 #include <nv/target>
+
+// MSVC and clang cuda need the host side functions included
+#if _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
+#  include <math.h>
+#endif // _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -59,7 +64,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double log(double __x) noexcept
 #endif // !_CCCL_BUILTIN_LOG
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double log(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_LOGL)
@@ -77,9 +82,9 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double logl(long double __x) noex
   return ::logl(__x);
 #  endif // !_CCCL_BUILTIN_LOGL
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half log(__half __x) noexcept
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (return ::hlog(__x);), ({
@@ -87,7 +92,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half log(__half __x) noexcept
                       __vf                  = _CUDA_VSTD::logf(__vf);
                       __half_raw __ret_repr = ::__float2half_rn(__vf);
 
-                      _CUDA_VSTD::uint16_t __repr = __half_raw(__x).x;
+                      _CUDA_VSTD::uint16_t __repr = _CUDA_VSTD::__cccl_fp_get_storage(__x);
                       switch (__repr)
                       {
                         case 7544:
@@ -100,15 +105,15 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half log(__half __x) noexcept
                       return __ret_repr;
                     }))
 }
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#if _LIBCUDACXX_HAS_NVBF16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 log(__nv_bfloat16 __x) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE, (return ::hlog(__x);), (return __float2bfloat16(_CUDA_VSTD::logf(__bfloat162float(__x)));))
 }
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double log(_Integer __x) noexcept
@@ -149,7 +154,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double log10(double __x) noexcept
 #endif // !_CCCL_BUILTIN_LOG10
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double log10(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_LOG10L)
@@ -167,23 +172,23 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double log10l(long double __x) no
   return ::log10l(__x);
 #  endif // !_CCCL_BUILTIN_LOG10L
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half log10(__half __x) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_53, (return ::hlog10(__x);), (return __float2half(_CUDA_VSTD::log10f(__half2float(__x)));))
 }
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#if _LIBCUDACXX_HAS_NVBF16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 log10(__nv_bfloat16 __x) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE, (return ::hlog10(__x);), (return __float2bfloat16(_CUDA_VSTD::log10f(__bfloat162float(__x)));))
 }
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double log10(_Integer __x) noexcept
@@ -224,7 +229,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI int ilogb(double __x) noexcept
 #endif // !_CCCL_BUILTIN_ILOGB
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI int ilogb(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_ILOGBL)
@@ -242,21 +247,21 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI int ilogbl(long double __x) noexcept
   return ::ilogbl(__x);
 #  endif // !_CCCL_BUILTIN_ILOGBL
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI int ilogb(__half __x) noexcept
 {
   return _CUDA_VSTD::ilogbf(__half2float(__x));
 }
-#endif // defined(_LIBCUDACXX_HAS_NVFP16)
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#if _LIBCUDACXX_HAS_NVBF16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI int ilogb(__nv_bfloat16 __x) noexcept
 {
   return _CUDA_VSTD::ilogbf(__bfloat162float(__x));
 }
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI int ilogb(_Integer __x) noexcept
@@ -297,7 +302,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double log1p(double __x) noexcept
 #endif // !_CCCL_BUILTIN_LOG1P
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double log1p(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_LOG1PL)
@@ -315,21 +320,21 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double log1pl(long double __x) no
   return ::log1pl(__x);
 #  endif // !_CCCL_BUILTIN_LOG1PL
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half log1p(__half __x) noexcept
 {
   return __float2half(_CUDA_VSTD::log1pf(__half2float(__x)));
 }
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#if _LIBCUDACXX_HAS_NVBF16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 log1p(__nv_bfloat16 __x) noexcept
 {
   return __float2bfloat16(_CUDA_VSTD::log1pf(__bfloat162float(__x)));
 }
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double log1p(_Integer __x) noexcept
@@ -370,7 +375,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double log2(double __x) noexcept
 #endif // !_CCCL_BUILTIN_LOG2
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double log2(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_LOG2L)
@@ -388,23 +393,23 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double log2l(long double __x) noe
   return ::log2l(__x);
 #  endif // !_CCCL_BUILTIN_LOG2L
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half log2(__half __x) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_53, (return ::hlog2(__x);), (return __float2half(_CUDA_VSTD::log2f(__half2float(__x)));))
 }
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#if _LIBCUDACXX_HAS_NVBF16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 log2(__nv_bfloat16 __x) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE, (return ::hlog2(__x);), (return __float2bfloat16(_CUDA_VSTD::log2f(__bfloat162float(__x)));))
 }
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double log2(_Integer __x) noexcept
@@ -445,7 +450,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double logb(double __x) noexcept
 #endif // !_CCCL_BUILTIN_LOGB
 }
 
-#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if _CCCL_HAS_LONG_DOUBLE()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double logb(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_LOGBL)
@@ -463,21 +468,21 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double logbl(long double __x) noe
   return ::logbl(__x);
 #  endif // !_CCCL_BUILTIN_LOGBL
 }
-#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
-#if defined(_LIBCUDACXX_HAS_NVFP16)
+#if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half logb(__half __x) noexcept
 {
   return __float2half(_CUDA_VSTD::logbf(__half2float(__x)));
 }
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#if _LIBCUDACXX_HAS_NVBF16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 logb(__nv_bfloat16 __x) noexcept
 {
   return __float2bfloat16(_CUDA_VSTD::logbf(__bfloat162float(__x)));
 }
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double logb(_Integer __x) noexcept

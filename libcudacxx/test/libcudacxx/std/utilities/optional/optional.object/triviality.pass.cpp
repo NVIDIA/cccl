@@ -62,6 +62,12 @@ struct SpecialMemberTest
                 "trivially move constructible, "
                 "trivially move assignable, and"
                 "trivially destructible.");
+
+  using ORef = cuda::std::optional<T&>;
+  static_assert(cuda::std::is_trivially_copy_constructible_v<ORef>, "optional<T&> is trivially copy constructible.");
+  static_assert(cuda::std::is_trivially_move_constructible_v<ORef>, "optional<T&> is trivially move constructible.");
+  static_assert(cuda::std::is_trivially_copy_assignable_v<ORef>, "optional<T> is trivially copy assignable.");
+  static_assert(cuda::std::is_trivially_move_assignable_v<ORef>, "optional<T> is trivially move assignable.");
 };
 
 template <class... Args>

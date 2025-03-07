@@ -26,8 +26,6 @@
 
 #include "test_macros.h"
 
-TEST_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
-
 #if defined(TEST_COMPILER_MSVC)
 #  pragma warning(disable : 4324) // structure was padded due to alignment specifier
 #endif // TEST_COMPILER_MSVC
@@ -75,7 +73,9 @@ int main(int, char**)
   test_type<char>();
   test_type<int>();
   test_type<double>();
+#if _CCCL_HAS_LONG_DOUBLE()
   test_type<long double>();
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
   test_type<cuda::std::max_align_t>();
   test_type<TestType1>();

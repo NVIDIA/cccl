@@ -345,41 +345,6 @@ struct CachingDeviceAllocator
   {}
 
   /**
-   * @brief Constructor.
-   *
-   * @param bin_growth
-   *   Geometric growth factor for bin-sizes
-   *
-   * @param min_bin
-   *   Minimum bin (default is bin_growth ^ 1)
-   *
-   * @param max_bin
-   *   Maximum bin (default is no max bin)
-   *
-   * @param max_cached_bytes
-   *   Maximum aggregate cached bytes per device (default is no limit)
-   *
-   * @param skip_cleanup
-   *   Whether or not to skip a call to @p FreeAllCached() when the destructor is called (default
-   *   is to deallocate)
-   *
-   * @param debug
-   *   Whether or not to print (de)allocation events to stdout (default is no stderr output)
-   */
-  CCCL_DEPRECATED_BECAUSE("CUB no longer accepts `debug` parameter. "
-                          "Define CUB_DEBUG_LOG instead, or silence this message with "
-                          "CCCL_IGNORE_DEPRECATED_API.")
-  CachingDeviceAllocator(
-    unsigned int bin_growth,
-    unsigned int min_bin,
-    unsigned int max_bin,
-    size_t max_cached_bytes,
-    bool skip_cleanup,
-    bool /* debug */)
-      : CachingDeviceAllocator(bin_growth, min_bin, max_bin, max_cached_bytes, skip_cleanup)
-  {}
-
-  /**
    * @brief Default constructor.
    *
    * Configured with:

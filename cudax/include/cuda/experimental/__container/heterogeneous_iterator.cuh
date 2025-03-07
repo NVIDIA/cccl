@@ -356,13 +356,13 @@ public:
   }
 #  endif // _CCCL_STD_VER <= 2017
 
-#  ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#  if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::strong_ordering
   operator<=>(const heterogeneous_iterator& __lhs, const heterogeneous_iterator& __rhs) noexcept
   {
     return __lhs.__ptr_ <=> __rhs.__ptr_;
   }
-#  else // ^^^ _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR ^^^ /  vvv !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR vvv
+#  else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ /  vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
   //! @brief Less than relation between two heterogeneous_iterator
   //! @param __lhs A heterogeneous_iterator.
   //! @param __rhs Another heterogeneous_iterator.
@@ -403,7 +403,7 @@ public:
   {
     return __lhs.__ptr_ >= __rhs.__ptr_;
   }
-#  endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#  endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr pointer __unwrap() const noexcept
   {

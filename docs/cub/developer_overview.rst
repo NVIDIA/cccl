@@ -592,7 +592,15 @@ The kernels in the dispatch layer shouldn't contain a lot of code.
 Usually, the functionality is extracted into the agent layer.
 All the kernel does is derive the proper policy type,
 unwrap the policy to initialize the agent and call one of its ``Consume`` / ``Process`` functions.
-Agents are frequently reused by unrelated device-scope algorithms.
+Agents hold kernel bodies and are frequently reused by unrelated device-scope algorithms.
+
+.. _cub-developer-policies:
+
+Policies
+====================================
+
+Policies describe the configuration of agents wrt. to their execution.
+They do not change functional behavior, but usually affect how work is mapped to the hardware by defining certain compile-time parameters (items per thread, block size, etc.).
 
 An agent policy could look like this:
 
@@ -612,8 +620,11 @@ An agent policy could look like this:
 
 It's typically a collection of configuration values for the kernel launch configuration,
 work distribution setting, load and store algorithms to use, as well as load instruction cache modifiers.
+A CUB algorithm can have multiple agents and thus use multiple agent policies.
 
-Finally, the tuning policy hub looks like:
+Since the device code of CUB algorithms is compiled for each PTX version, a different agent policy may be used.
+Therefore, all agent policies of a CUB algorithm, called a policy, may be replicated for several minimum PTX versions.
+A chained collection of such policies finally forms a policy hub:
 
 .. code-block:: c++
 
@@ -635,13 +646,74 @@ Finally, the tuning policy hub looks like:
       using MaxPolicy = Policy600; // alias where policy selection is started by ChainedPolicy
     };
 
-The tuning (hub) consists of a class template, possibly parameterized by tuning-relevant compile-time parameters,
-containing a list of policies.
-These policies are chained by inheriting from ChainedPolicy
+The policy hub is a class template, possibly parameterized by tuning-relevant compile-time parameters,
+containing a list of policies, one per minimum PTX version (i.e., SM architecture) they target.
+These policies are chained by inheriting from ``ChainedPolicy``
 and passing the minimum PTX version where they should be used,
-as well as their own policy type and next lower policy type.
+as well as their own policy type and the next lower policy type.
 An alias ``MaxPolicy`` serves as entry point into the chain of tuning policies.
-Each policy then defines sub policies for each agent, since a CUB algorithm may use multiple kernels/agents.
+
+
+Tunings
+====================================
+
+Because the values to parameterize an agent may vary a lot for different compile-time parameters,
+the selection of values can be further delegated to tunings.
+Often, such tunings are found by experimentation or heuristic search.
+See also :ref:`cub-tuning`.
+
+Tunings are usually organized as a class template, one per PTX version,
+with a template specialization for each combination of the compile-time parameters,
+for which better values for an agent policy are known.
+An example set of tunings could look like this:
+
+.. code-block:: c++
+
+    template <int ValueSize, bool IsPlus>
+    struct sm60_tuning { // default tuning
+        static constexpr int threads = 128;
+        static constexpr int items = 16;
+    };
+
+    template <>
+    struct sm60_tuning<4, true> { // tuning for summing 4-byte values
+        static constexpr int threads = 256;
+        static constexpr int items = 20;
+    };
+
+    template <int ValueSize>
+    struct sm60_tuning<ValueSize, true> { // tuning for summing values of other sizes
+        static constexpr int threads = 128;
+        static constexpr int items = 12;
+    };
+
+    ...
+
+    template <typename ValueType, typename Operation>
+    struct policy_hub {
+      struct Policy600 : ChainedPolicy<600, Policy600, Policy500> {
+
+        using tuning = sm60_tuning<sizeof(ValueType), is_same_v<Operation, plus>>;
+        using AlgorithmPolicy = AgentAlgorithmPolicy<tuning::threads, tuning::items, BLOCK_LOAD_DIRECT, LOAD_LDG>;
+      };
+    };
+
+Here, ``sm60_tuning`` provides defaults for the tuning values ``threads`` and ``items``.
+``sm60_tuning`` is instantiated with the size of the value type and with a boolean indicating whether the operation is a sum.
+Template specializations of ``sm60_tuning`` then provide different tuning values for summing value types of 4-byte size,
+and for summing any other value types.
+Notice how partial template specializations are used to pattern match the compile-time parameters.
+Independent of which template specializations (or the base template) of the tuning is chose,
+the agent policy is then parameterized by the nested ``threads`` and ``items`` values from this tuning.
+
+The logic to select tunings varies, and different mechanisms are used for different algorithms.
+Some algorithms provide a generic default policy if no tuning is available,
+others implement a fallback logic to select the previous PTX version's agent policy,
+if no tuning is available for the current PTX version.
+In general, tunings are not exhaustive and usually only apply for specific combinations of parameter values and a single PTX version,
+falling back to generic policies when no tuning matches.
+Tunings for CUB algorithms reside in ``cub/device/dispatch/tuning/tuning_<algorithm>.cuh``.
+
 
 Temporary storage usage
 ====================================
