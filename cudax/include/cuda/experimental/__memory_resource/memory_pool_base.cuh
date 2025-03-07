@@ -13,6 +13,8 @@
 
 #include <cuda/std/detail/__config>
 
+#include <stdexcept>
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -61,6 +63,14 @@ inline void __verify_device_supports_stream_ordered_allocations(const int __devi
   }
 }
 
+//! @brief Enable peer access to this memory pool from the supplied devices
+//!
+//! Device on which this pool resides can be included in the vector.
+//!
+//! @param __pool The memory pool to set access for
+//! @param __devices A vector of `device_ref`s listing devices to enable access for
+//! @param __flags The access flags to set
+//! @throws cuda_error if ``cudaMemPoolSetAccess`` fails.
 inline void
 __mempool_set_access(cudaMemPool_t __pool, ::cuda::std::span<const device_ref> __devices, cudaMemAccessFlags __flags)
 {
@@ -68,12 +78,17 @@ __mempool_set_access(cudaMemPool_t __pool, ::cuda::std::span<const device_ref> _
   __descs.reserve(__devices.size());
   for (size_t __i = 0; __i < __devices.size(); ++__i)
   {
-    __descs.emplace_back(__flags, cudaMemLocation {__devices[__i].get(), cudaMemLocationTypeDevice});
+    __descs.push_back({cudaMemLocation{cudaMemLocationTypeDevice, __devices[__i].get()}, __flags});
   }
   _CCCL_TRY_CUDA_API(
     ::cudaMemPoolSetAccess, "Failed to set access of a memory pool", __pool, __descs.data(), __descs.size());
 }
 
+//! @brief Query if memory from a pool is accessible by the supplied device
+//!
+//! @param __pool The memory pool to query access for
+//! @param __dev The device to query access for
+//! @returns true if the memory pool is accessible from the device
 _CCCL_NODISCARD inline bool __mempool_get_access(cudaMemPool_t __pool, device_ref __dev)
 {
   cudaMemAccessFlags __result;
@@ -87,7 +102,8 @@ _CCCL_NODISCARD inline bool __mempool_get_access(cudaMemPool_t __pool, device_re
 //! @brief Internal redefinition of ``cudaMemAllocationHandleType``.
 //! @note We need to define our own enum here because the earliest CUDA runtime version that supports asynchronous
 //! memory pools (CUDA 11.2) did not support these flags. See the <a
-//! href="https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html">cudaMemAllocationHandleType</a> docs.
+//! href="https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html">cudaMemAllocationHandleType</a>
+//! docs.
 enum class cudaMemAllocationHandleType
 {
   cudaMemHandleTypeNone                = 0x0, ///< Does not allow any export mechanism.
@@ -115,6 +131,7 @@ private:
   //! CUDA driver/runtime version.
   //! @param __device_id The id of the device to check for support.
   //! @param __handle_type An IPC export handle type to check for support.
+  //! @throws cuda_error if the specified `cudaMemAllocationHandleType` is not supported on the specified device.
   static void __cuda_supports_export_handle_type(const int __device_id, cudaMemAllocationHandleType __handle_type)
   {
     int __supported_handles = static_cast<int>(cudaMemAllocationHandleType::cudaMemHandleTypeNone);
@@ -149,31 +166,35 @@ private:
   _CCCL_NODISCARD static cudaMemPool_t
   __create_cuda_mempool(__memory_location_type __kind, memory_pool_properties __properties, int __id) noexcept
   {
-    if (__kind == __memory_location_type::__device)
-    {
-      ::cuda::experimental::__verify_device_supports_stream_ordered_allocations(__id);
-      __memory_pool_base::__cuda_supports_export_handle_type(__id, __properties.allocation_handle_type);
-    }
-
     ::cudaMemPoolProps __pool_properties{};
     __pool_properties.allocType   = ::cudaMemAllocationTypePinned;
     __pool_properties.handleTypes = ::cudaMemAllocationHandleType(__properties.allocation_handle_type);
-    if (__kind == __memory_location_type::__device)
+
+    switch (__kind)
     {
-      __pool_properties.location.type = ::cudaMemLocationTypeDevice;
-      __pool_properties.location.id   = __id;
-    }
-    else
-    {
+      case __memory_location_type::__device: {
+        ::cuda::experimental::__verify_device_supports_stream_ordered_allocations(__id);
+        __memory_pool_base::__cuda_supports_export_handle_type(__id, __properties.allocation_handle_type);
+        __pool_properties.location.type = ::cudaMemLocationTypeDevice;
+        __pool_properties.location.id   = __id;
+        break;
+      }
+      case __memory_location_type::__host: {
 #if _CCCL_CUDACC_AT_LEAST(12, 6)
-      // Construct on NUMA node 0 only for now
-      __pool_properties.location.type = ::cudaMemLocationTypeHostNuma;
-      __pool_properties.location.id   = __id;
+        // Construct on NUMA node 0 only for now
+        __pool_properties.location.type = ::cudaMemLocationTypeHostNuma;
+        __pool_properties.location.id   = __id;
 #else // _CCCL_CUDACC_BELOW(12, 6)
-      _CCCL_ASSERT(false, "Host pinned memory pools unavailable");
-      _CUDA_VSTD_NOVERSION::terminate();
+        _CUDA_VSTD_NOVERSION::__throw_invalid_argument(
+          "Host pinned memory pools are unavailable in this CUDA "
+          "version");
 #endif // _CCCL_CUDACC_AT_LEAST(12, 6)
+        break;
+      }
+      default:
+        _CUDA_VSTD_NOVERSION::__throw_invalid_argument("Invalid memory pool location type");
     }
+
     ::cudaMemPool_t __cuda_pool_handle{};
     _CCCL_TRY_CUDA_API(::cudaMemPoolCreate, "Failed to call cudaMemPoolCreate", &__cuda_pool_handle, &__pool_properties);
 
@@ -194,13 +215,13 @@ private:
         "__memory_pool_base failed to allocate the initial pool size",
         &__ptr,
         __properties.initial_pool_size,
-        __allocation_stream().get());
+        __cccl_allocation_stream().get());
 
       _CCCL_ASSERT_CUDA_API(
         ::cudaFreeAsync,
         "__memory_pool_base failed to free the initial pool allocation",
         __ptr,
-        __allocation_stream().get());
+        __cccl_allocation_stream().get());
     }
     return __cuda_pool_handle;
   }
@@ -238,8 +259,8 @@ public:
 
   //! @brief Tries to release memory.
   //! @param __min_bytes_to_keep the minimal guaranteed size of the pool.
-  //! @note If the pool has less than \p __minBytesToKeep reserved, the trim_to operation is a no-op. Otherwise the pool
-  //! will be guaranteed to have at least \p __minBytesToKeep bytes reserved after the operation.
+  //! @note If the pool has less than \p __minBytesToKeep reserved, the trim_to operation is a no-op. Otherwise the
+  //! pool will be guaranteed to have at least \p __minBytesToKeep bytes reserved after the operation.
   void trim_to(const size_t __min_bytes_to_keep)
   {
     _CCCL_TRY_CUDA_API(::cudaMemPoolTrimTo,
@@ -269,15 +290,23 @@ public:
   //! @note For boolean attributes any non-zero value equates to true.
   void set_attribute(::cudaMemPoolAttr __attr, size_t __value)
   {
-    if (__attr == ::cudaMemPoolAttrReservedMemCurrent || __attr == cudaMemPoolAttrUsedMemCurrent)
+    switch (__attr)
     {
-      _CUDA_VSTD_NOVERSION::__throw_invalid_argument("Invalid attribute passed to set_attribute.");
-    }
-    else if ((__attr == ::cudaMemPoolAttrReservedMemHigh || __attr == cudaMemPoolAttrUsedMemHigh) && __value != 0)
-    {
-      _CUDA_VSTD_NOVERSION::__throw_invalid_argument(
-        "set_attribute: It is illegal to set this "
-        "attribute to a non-zero value.");
+      case ::cudaMemPoolAttrReservedMemCurrent:
+      case ::cudaMemPoolAttrUsedMemCurrent:
+        _CUDA_VSTD_NOVERSION::__throw_invalid_argument("Invalid attribute passed to set_attribute.");
+        break;
+      case ::cudaMemPoolAttrReservedMemHigh:
+      case ::cudaMemPoolAttrUsedMemHigh:
+        if (__value != 0)
+        {
+          _CUDA_VSTD_NOVERSION::__throw_invalid_argument(
+            "set_attribute: It is illegal to set this "
+            "attribute to a non-zero value.");
+        }
+        break;
+      default:
+        break;
     }
 
     _CCCL_TRY_CUDA_API(
@@ -341,14 +370,14 @@ public:
     return __pool_handle_ == __rhs.__pool_handle_;
   }
 
-#if _CCCL_STD_VER >= 2017
+#if _CCCL_STD_VER <= 2017
   //! @brief Inequality comparison with another \c __memory_pool_base.
   //! @returns true if the stored ``cudaMemPool_t`` are not equal.
   _CCCL_NODISCARD constexpr bool operator!=(__memory_pool_base const& __rhs) const noexcept
   {
     return __pool_handle_ != __rhs.__pool_handle_;
   }
-#endif // _CCCL_STD_VER >= 2017
+#endif // _CCCL_STD_VER <= 2017
 
   //! @brief Equality comparison with a \c cudaMemPool_t.
   //! @param __rhs A \c cudaMemPool_t.

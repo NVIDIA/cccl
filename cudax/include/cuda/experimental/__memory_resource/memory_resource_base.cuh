@@ -87,8 +87,8 @@ public:
       &__ptr,
       __bytes,
       __pool_,
-      __allocation_stream().get());
-    __allocation_stream().wait();
+      __cccl_allocation_stream().get());
+    __cccl_allocation_stream().wait();
     return __ptr;
   }
 
@@ -102,8 +102,8 @@ public:
   {
     _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to __memory_resource_base::deallocate.");
     _CCCL_ASSERT_CUDA_API(
-      ::cudaFreeAsync, "__memory_resource_base::deallocate failed", __ptr, __allocation_stream().get());
-    __allocation_stream().wait();
+      ::cudaFreeAsync, "__memory_resource_base::deallocate failed", __ptr, __cccl_allocation_stream().get());
+    __cccl_allocation_stream().wait();
     (void) __alignment;
   }
 
@@ -237,14 +237,14 @@ public:
     return __pool_ == __rhs.__pool_;
   }
 
-#if _CCCL_STD_VER >= 2017
+#if _CCCL_STD_VER <= 2017
   //! @brief Inequality comparison with another __memory_resource_base.
   //! @returns true if underlying \c cudaMemPool_t are not equal.
   _CCCL_NODISCARD bool operator!=(__memory_resource_base const& __rhs) const noexcept
   {
     return __pool_ != __rhs.__pool_;
   }
-#endif // _CCCL_STD_VER >= 2017
+#endif // _CCCL_STD_VER <= 2017
 
 private:
   // This code is defunct, TODO remove it
