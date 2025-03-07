@@ -47,7 +47,7 @@ static_assert(cuda::std::is_same<cuda::std::uint_least32_t, decltype(empty.colum
 static_assert(cuda::std::is_same<const char*, decltype(empty.file_name())>::value, "");
 static_assert(cuda::std::is_same<const char*, decltype(empty.function_name())>::value, "");
 
-__device__ _CCCL_CONSTEXPR_GLOBAL cuda::std::source_location device_empty{};
+__device__ constexpr cuda::std::source_location device_empty{};
 static_assert(device_empty.line() == 0, "");
 static_assert(device_empty.column() == 0, "");
 static_assert(device_empty.file_name()[0] == '\0', "");
