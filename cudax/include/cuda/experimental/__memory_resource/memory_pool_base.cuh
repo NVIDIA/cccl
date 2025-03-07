@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -12,8 +12,6 @@
 #define _CUDAX__MEMORY_RESOURCE_MEMORY_POOL_BASE
 
 #include <cuda/std/detail/__config>
-
-#include "cuda/std/__internal/namespaces.h"
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -68,13 +66,9 @@ __mempool_set_access(cudaMemPool_t __pool, ::cuda::std::span<const device_ref> _
 {
   ::std::vector<cudaMemAccessDesc> __descs;
   __descs.reserve(__devices.size());
-  cudaMemAccessDesc __desc;
-  __desc.flags         = __flags;
-  __desc.location.type = cudaMemLocationTypeDevice;
   for (size_t __i = 0; __i < __devices.size(); ++__i)
   {
-    __desc.location.id = __devices[__i].get();
-    __descs.push_back(__desc);
+    __descs.emplace_back(__flags, cudaMemLocation {__devices[__i].get(), cudaMemLocationTypeDevice});
   }
   _CCCL_TRY_CUDA_API(
     ::cudaMemPoolSetAccess, "Failed to set access of a memory pool", __pool, __descs.data(), __descs.size());
@@ -119,11 +113,8 @@ private:
 
   //! @brief Check whether the specified `cudaMemAllocationHandleType` is supported on the present
   //! CUDA driver/runtime version.
-  //! @note This query was introduced in CUDA 11.3 so on CUDA 11.2 this function will only return
-  //! true for `cudaMemHandleTypeNone`.
   //! @param __device_id The id of the device to check for support.
   //! @param __handle_type An IPC export handle type to check for support.
-  //! @return true if the handle type is supported by cudaDevAttrMemoryPoolSupportedHandleTypes.
   static void __cuda_supports_export_handle_type(const int __device_id, cudaMemAllocationHandleType __handle_type)
   {
     int __supported_handles = static_cast<int>(cudaMemAllocationHandleType::cudaMemHandleTypeNone);

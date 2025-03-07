@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -42,6 +42,7 @@ namespace cuda::experimental
 //! It handles creation and destruction of the underlying pool utilizing the provided \c memory_pool_properties.
 class pinned_memory_pool : public __memory_pool_base
 {
+private:
   //! @brief Constructs a \c pinned_memory_pool from a handle taking ownership of the pool
   //! @param __handle The handle to the existing pool
   explicit pinned_memory_pool(__memory_pool_base::__from_handle_t, ::cudaMemPool_t __handle) noexcept

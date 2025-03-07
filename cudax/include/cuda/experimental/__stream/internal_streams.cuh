@@ -26,7 +26,7 @@
 
 namespace cuda::experimental
 {
-//! @brief intenral stream used for memory allocations, no real blocking work
+//! @brief internal stream used for memory allocations, no real blocking work
 //! should ever be pushed into it
 inline ::cuda::stream_ref __allocation_stream()
 {
