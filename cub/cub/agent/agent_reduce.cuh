@@ -404,6 +404,9 @@ struct AgentReduceImpl
       int valid_items = even_share.block_end - even_share.block_offset;
       ConsumeTile<true>(
         thread_aggregate, even_share.block_offset, valid_items, ::cuda::std::false_type(), can_vectorize);
+
+      // While Block Reduction handles case when `valid_items` exceeds `TILE_ITEMS`, for
+      // Warp Reduction we need to handle this case explicitly
       int num_valid = (THREADS <= valid_items) ? THREADS : valid_items;
       return CollectiveReduceT(temp_storage.reduce).Reduce(thread_aggregate, reduction_op, num_valid);
     }

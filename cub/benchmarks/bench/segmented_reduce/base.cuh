@@ -47,20 +47,6 @@ struct policy_hub_t
     static constexpr int medium_threads_per_warp = TUNE_M_THREADS_PER_WARP;
     static constexpr int medium_items_per_thread = TUNE_M_ITEMS_PER_THREAD;
 
-    using SmallReducePolicy =
-      cub::AgentWarpReducePolicy<threads_per_block,
-                                 medium_threads_per_warp,
-                                 medium_items_per_thread,
-                                 AccumT,
-                                 items_per_vec_load,
-                                 cub::LOAD_LDG>;
-    using MediumReducePolicy =
-      cub::AgentWarpReducePolicy<threads_per_block,
-                                 small_threads_per_warp,
-                                 small_items_per_thread,
-                                 AccumT,
-                                 items_per_vec_load,
-                                 cub::LOAD_LDG>;
     using ReducePolicy =
       cub::AgentReducePolicy<threads_per_block,
                              items_per_thread,
@@ -68,6 +54,22 @@ struct policy_hub_t
                              items_per_vec_load,
                              cub::BLOCK_REDUCE_WARP_REDUCTIONS,
                              cub::LOAD_LDG>;
+
+    using SmallReducePolicy =
+      cub::AgentWarpReducePolicy<ReducePolicy::BLOCK_THREADS,
+                                 small_threads_per_warp,
+                                 small_items_per_thread,
+                                 AccumT,
+                                 items_per_vec_load,
+                                 cub::LOAD_LDG>;
+
+    using MediumReducePolicy =
+      cub::AgentWarpReducePolicy<ReducePolicy::BLOCK_THREADS,
+                                 medium_threads_per_warp,
+                                 medium_items_per_thread,
+                                 AccumT,
+                                 items_per_vec_load,
+                                 cub::LOAD_LDG>;
   };
 
   using MaxPolicy = policy_t;

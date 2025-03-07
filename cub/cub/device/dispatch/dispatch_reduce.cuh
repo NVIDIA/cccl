@@ -1097,8 +1097,13 @@ struct DispatchFixedSizeSegmentedReduce
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   InvokePasses(DeviceFixedSizeSegmentedReduceKernelT fixed_size_segmented_reduce_kernel)
   {
-    cudaError error = cudaSuccess;
+    constexpr auto small_items_per_tile  = ActivePolicyT::SmallReducePolicy::ITEMS_PER_TILE;
+    constexpr auto medium_items_per_tile = ActivePolicyT::MediumReducePolicy::ITEMS_PER_TILE;
 
+    static_assert((small_items_per_tile < medium_items_per_tile),
+                  "small items per tile must be less than medium items per tile");
+
+    cudaError error = cudaSuccess;
     do
     {
       // Return if the caller is simply requesting the size of the storage
@@ -1110,11 +1115,11 @@ struct DispatchFixedSizeSegmentedReduce
       }
 
       int blocks = num_segments;
-      if (segment_size <= ActivePolicyT::SmallReducePolicy::ITEMS_PER_TILE)
+      if (segment_size <= small_items_per_tile)
       {
         blocks = ::cuda::ceil_div(num_segments, ActivePolicyT::SmallReducePolicy::SEGMENTS_PER_BLOCK);
       }
-      else if (segment_size <= ActivePolicyT::MediumReducePolicy::ITEMS_PER_TILE)
+      else if (segment_size <= medium_items_per_tile)
       {
         blocks = ::cuda::ceil_div(num_segments, ActivePolicyT::MediumReducePolicy::SEGMENTS_PER_BLOCK);
       }
