@@ -207,7 +207,7 @@ CUresult cccl_device_transform_build(
       make_kernel_input_iterator(offset_t, "input_iterator_t", input_it_value_t, input_it);
     const std::string output_iterator_src =
       make_kernel_output_iterator(offset_t, "output_iterator_t", output_it_value_t, output_it);
-    const std::string op_src = make_kernel_user_unary_operator(input_it_value_t, op);
+    const std::string op_src = make_kernel_user_unary_operator(input_it_value_t, output_it_value_t, op);
 
     constexpr std::string_view src_template = R"XXX(
 #define _CUB_HAS_TRANSFORM_UBLKCP 0
@@ -234,8 +234,8 @@ struct device_transform_policy {{
 
     const std::string& src = std::format(
       src_template,
-      input_it.value_type.size, // 0
-      input_it.value_type.alignment, // 1
+      output_it.value_type.size, // 0
+      output_it.value_type.alignment, // 1
       policy.block_threads, // 2
       policy.items_per_thread_no_input, // 3
       policy.min_items_per_thread, // 4
@@ -244,7 +244,7 @@ struct device_transform_policy {{
       output_iterator_src, // 7
       op_src); // 8
 
-#if true // CCCL_DEBUGGING_SWITCH
+#if false // CCCL_DEBUGGING_SWITCH
     fflush(stderr);
     printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", src.c_str());
     fflush(stdout);
