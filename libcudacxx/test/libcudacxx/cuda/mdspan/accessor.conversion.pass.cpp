@@ -254,6 +254,8 @@ __host__ __device__ void test_host_device_accessor_conversions()
     static_assert(cuda::std::is_same_v<decltype(wrapper_acc2), decltype(wrapper_acc1)>);
     WrapperAconst wrapper_acc_const2{wrapper_acc_const1};
     static_assert(cuda::std::is_same_v<decltype(wrapper_acc_const2), decltype(wrapper_acc_const1)>);
+    unused(wrapper_acc2);
+    unused(wrapper_acc_const2);
 
     // Test converting constructor: Wrapper<AccessorA<const T>>(AccessorA<T>)
     WrapperAconst wrapper_acc_const3{wrapper_acc1};

@@ -13,10 +13,9 @@
 #include "test_macros.h"
 
 template <typename Mdspan>
-__host__ __device__ void test_submdspan()
+__host__ __device__ void test_submdspan(int* ptr)
 {
-  int array[] = {1, 2, 3, 4};
-  Mdspan md{array, cuda::std::dims<1>{4}};
+  Mdspan md{ptr, cuda::std::dims<1>{4}};
   auto submd = cuda::std::submdspan(md, cuda::std::pair{1, 3});
 #if defined(__CUDA_ARCH__)
   if constexpr (cuda::is_device_accessible_v<Mdspan>)
@@ -34,10 +33,13 @@ __host__ __device__ void test_submdspan()
   unused(submd);
 }
 
+__device__ __managed__ int managed_array[] = {1, 2, 3, 4};
+
 int main(int, char**)
 {
-  test_submdspan<cuda::host_mdspan<int, cuda::std::dims<1>>>();
-  test_submdspan<cuda::device_mdspan<int, cuda::std::dims<1>>>();
-  test_submdspan<cuda::managed_mdspan<int, cuda::std::dims<1>>>();
+  int array[] = {1, 2, 3, 4};
+  test_submdspan<cuda::host_mdspan<int, cuda::std::dims<1>>>(array);
+  test_submdspan<cuda::device_mdspan<int, cuda::std::dims<1>>>(array);
+  test_submdspan<cuda::managed_mdspan<int, cuda::std::dims<1>>>(managed_array);
   return 0;
 }
