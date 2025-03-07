@@ -151,9 +151,14 @@ jobs:
 
       - name: Draft Github Release
         run: |
+          version_bump=$(git log -n 1 --pretty=format:%H --grep 'Bump [/A-Za-z]* to [0-9]*\.[0-9]*\.[0-9]*')
+          closest_tag=$(git describe --abbrev=0 $version_bump)
+
           gh release create ${release_tag} \
             --draft \
             --generate-notes \
+            --notes-from-tag "${release_tag}" \
+            --notes-start-tag "${closest_tag}"" \
             --title "${release_tag}" \
             "${source_zipfile}#Source Archive (zip)" \
             "${source_tarball}#Source Archive (tar.gz)" \
