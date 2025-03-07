@@ -157,7 +157,7 @@ jobs:
           gh release create ${release_tag} \
             --draft \
             --generate-notes \
-            --notes-start-tag "${closest_tag}"" \
+            --notes-start-tag "${closest_tag}" \
             --title "${release_tag}" \
             "${source_zipfile}#Source Archive (zip)" \
             "${source_tarball}#Source Archive (tar.gz)" \
