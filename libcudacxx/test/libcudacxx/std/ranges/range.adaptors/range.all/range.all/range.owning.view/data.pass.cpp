@@ -19,16 +19,8 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-#if TEST_STD_VER >= 2020
 template <class T>
-concept HasData = requires(T t) { t.data(); };
-#else // ^^^ C++20 ^^^ / vvv C++17 vvv
-template <class T, class = void>
-constexpr bool HasData = false;
-
-template <class T>
-constexpr bool HasData<T, cuda::std::void_t<decltype(cuda::std::declval<T>().data())>> = true;
-#endif // TEST_STD_VER <= 2017
+_CCCL_CONCEPT HasData = _CCCL_REQUIRES_EXPR((T), T t)((t.data()));
 
 struct ContiguousIters
 {
@@ -80,9 +72,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-#if 0 // note #2751-D: access to uninitialized object
   static_assert(test());
-#endif
 
   return 0;
 }

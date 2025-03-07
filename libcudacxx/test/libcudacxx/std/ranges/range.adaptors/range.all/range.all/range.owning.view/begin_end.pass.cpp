@@ -57,25 +57,11 @@ struct DecayChecker
   __host__ __device__ int*& end() const;
 };
 
-#if TEST_STD_VER >= 2020
 template <class T>
-concept HasBegin = requires(T t) { t.begin(); };
+_CCCL_CONCEPT HasBegin = _CCCL_REQUIRES_EXPR((T), T t)((t.begin()));
 
 template <class T>
-concept HasEnd = requires(T t) { t.end(); };
-#else // ^^^ C++20 ^^^ / vvv C++17 vvv
-template <class T, class = void>
-constexpr bool HasBegin = false;
-
-template <class T>
-constexpr bool HasBegin<T, cuda::std::void_t<decltype(cuda::std::declval<T>().begin())>> = true;
-
-template <class T, class = void>
-constexpr bool HasEnd = false;
-
-template <class T>
-constexpr bool HasEnd<T, cuda::std::void_t<decltype(cuda::std::declval<T>().end())>> = true;
-#endif // TEST_STD_VER <= 2017
+_CCCL_CONCEPT HasEnd = _CCCL_REQUIRES_EXPR((T), T t)((t.end()));
 
 __host__ __device__ constexpr bool test()
 {

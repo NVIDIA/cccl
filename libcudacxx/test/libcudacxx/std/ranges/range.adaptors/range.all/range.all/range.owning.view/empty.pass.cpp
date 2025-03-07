@@ -19,16 +19,8 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-#if TEST_STD_VER >= 2020
 template <class T>
-concept HasEmpty = requires(T t) { t.empty(); };
-#else // ^^^ C++20 ^^^ / vvv C++17 vvv
-template <class T, class = void>
-constexpr bool HasEmpty = false;
-
-template <class T>
-constexpr bool HasEmpty<T, cuda::std::void_t<decltype(cuda::std::declval<T>().empty())>> = true;
-#endif // TEST_STD_VER <= 2017
+_CCCL_CONCEPT HasEmpty = _CCCL_REQUIRES_EXPR((T), T t)((t.empty()));
 
 struct ComparableIters
 {
