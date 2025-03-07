@@ -299,15 +299,21 @@ C2H_TEST("Device fixed size segmented reduce works with all device interfaces",
     // Prepare verification data
     using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, output_t>;
     c2h::host_vector<output_t> expected_result(num_segments);
+    accum_t default_constant{};
+    init_default_constant(default_constant);
+
     compute_fixed_size_segmented_problem_reference(
-      in_items, num_segments, segment_size, reduction_op, accum_t{}, expected_result.begin());
+      in_items, num_segments, segment_size, reduction_op, default_constant, expected_result.begin());
 
     // Run test
     c2h::device_vector<output_t> out_result(num_segments);
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
 
-    using init_t = output_t;
-    device_segmented_reduce(unwrap_it(d_in_it), unwrap_it(d_out_it), num_segments, segment_size, reduction_op, init_t{});
+    using init_t = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
+    ;
+    init_t init{};
+    init_default_constant(init);
+    device_segmented_reduce(unwrap_it(d_in_it), unwrap_it(d_out_it), num_segments, segment_size, reduction_op, init);
     // Verify result
     REQUIRE(expected_result == out_result);
   }

@@ -268,6 +268,16 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
 
     const OffsetT segment_begin = global_segment_id * segment_size;
 
+    // If empty segment, write out the initial value
+    if (segment_size == 0)
+    {
+      if (lane_id == 0)
+      {
+        *(d_out + global_segment_id) = init;
+      }
+      return;
+    }
+
     if (global_segment_id < num_segments)
     {
       // Consume input tiles
