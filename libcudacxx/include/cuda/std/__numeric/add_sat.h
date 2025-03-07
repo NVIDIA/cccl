@@ -44,7 +44,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp
-__add_sat_clamp_overflow(_Tp, _Tp __y, _Tp __result, [[maybe_unused]] bool __overflow) noexcept
+__add_sat_clamp_overflow(_Tp, [[maybe_unused]] _Tp __y, _Tp __result, [[maybe_unused]] bool __overflow) noexcept
 {
   if (__overflow)
   {
