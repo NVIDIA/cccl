@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -27,6 +27,7 @@
 #  include <cuda/__data_movement/aligned_data.h>
 #  include <cuda/__data_movement/properties.h>
 #  include <cuda/__ptx/instructions/st.h>
+#  include <cuda/std/__algorithm/min.h>
 #  include <cuda/std/__bit/has_single_bit.h>
 #  include <cuda/std/__type_traits/is_const.h>
 #  include <cuda/std/span>
@@ -80,7 +81,10 @@ __store_dispatch(_Tp __data, _Tp* __ptr, [[maybe_unused]] __eviction_policy_t<_E
 
 template <typename _Tp, size_t _Np, _EvictionPolicyEnum _Ep, size_t... _Ip>
 _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void __unroll_store(
-  _Tp data, _Tp* __ptr, __eviction_policy_t<_Ep> __eviction_policy, _CUDA_VSTD::index_sequence<_Ip...> = {})
+  const _CUDA_VSTD::array<_Tp, _Np>& data,
+  _Tp* __ptr,
+  __eviction_policy_t<_Ep> __eviction_policy,
+  _CUDA_VSTD::index_sequence<_Ip...> = {})
 {
   if constexpr (__eviction_policy == eviction_none)
   {
@@ -88,7 +92,7 @@ _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void __unroll_store(
   }
   else
   {
-    ((_CUDA_VDEV::__store_dispatch(data[_Ip], __ptr[_Ip], __eviction_policy)), ...);
+    ((_CUDA_VDEV::__store_dispatch(data[_Ip], __ptr + _Ip, __eviction_policy)), ...);
   }
 };
 
@@ -96,11 +100,10 @@ _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void __unroll_store(
  * USER API
  **********************************************************************************************************************/
 
-template <typename _Tp, _EvictionPolicyEnum _Ep>
+template <typename _Tp, _EvictionPolicyEnum _Ep = _EvictionPolicyEnum::_None>
 _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void
 store(_Tp __data, _Tp* __ptr, __eviction_policy_t<_Ep> __eviction_policy = eviction_none) noexcept
 {
-  static_assert(!_CUDA_VSTD::is_const_v<_Tp>);
   _CCCL_ASSERT(__ptr != nullptr, "'ptr' must not be null");
   _CCCL_ASSERT(_CUDA_VSTD::bit_cast<uintptr_t>(__ptr) % alignof(_Tp) == 0, "'ptr' must be aligned");
   _CCCL_ASSERT(__isGlobal(__ptr), "'ptr' must point to global memory");
@@ -111,13 +114,17 @@ store(_Tp __data, _Tp* __ptr, __eviction_policy_t<_Ep> __eviction_policy = evict
   }
   else
   {
-    static_assert(_CUDA_VSTD::has_single_bit(sizeof(_Tp)), "'sizeof(_Tp)' must be a power of 2");
+    static_assert(_CUDA_VSTD::has_single_bit(sizeof(_Tp)),
+                  "'sizeof(_Tp)' must be a power of 2 with non-default properties");
     if constexpr (sizeof(_Tp) > 16)
     {
       constexpr auto __num_16_bytes = sizeof(_Tp) / 16;
-      using __store_type            = _CUDA_VSTD::array<_AlignedData<16>, __num_16_bytes>;
-      auto __ptr2                   = reinterpret_cast<__store_type*>(__ptr_gmem);
-      _CUDA_VDEV::__unroll_store(__data, __ptr2, __eviction_policy, _CUDA_VSTD::make_index_sequence<__num_16_bytes>{});
+      using __bytes_16              = _AlignedData<16>;
+      using __store_type            = _CUDA_VSTD::array<__bytes_16, __num_16_bytes>;
+      auto __index_seq              = _CUDA_VSTD::make_index_sequence<__num_16_bytes>{};
+      auto __ptr2                   = reinterpret_cast<__bytes_16*>(__ptr_gmem);
+      auto __data_tmp               = _CUDA_VSTD::bit_cast<__store_type>(__data);
+      _CUDA_VDEV::__unroll_store(__data_tmp, __ptr2, __eviction_policy, __index_seq);
     }
     else
     {
@@ -130,22 +137,25 @@ template <size_t _Np, typename _Tp, size_t _Align = alignof(_Tp), _EvictionPolic
 _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void
 store(_CUDA_VSTD::array<_Tp, _Np> __data,
       _Tp* __ptr,
-      ::cuda::aligned_size_t<_Align>             = {},
+      ::cuda::aligned_size_t<_Align>             = ::cuda::aligned_size_t<_Align>{alignof(_Tp)},
       __eviction_policy_t<_Ep> __eviction_policy = eviction_none) noexcept
 {
-  static_assert(_Np > 0 && _Np != _CUDA_VSTD::dynamic_extent);
+  static_assert(!_CUDA_VSTD::is_const_v<_Tp>, "_Tp must not be const");
+  static_assert(_Np > 0);
   static_assert(_CUDA_VSTD::has_single_bit(_Align), "_Align must be a power of 2");
   static_assert(_Align >= alignof(_Tp), "_Align must be greater than or equal to alignof(_Tp)");
   static_assert(sizeof(_Tp) * _Np % _Align == 0, "Np * sizeof(_Tp) must be a multiple of _Align");
   _CCCL_ASSERT(__ptr != nullptr, "'ptr' must not be null");
   _CCCL_ASSERT(_CUDA_VSTD::bit_cast<uintptr_t>(__ptr) % _Align == 0, "'ptr' must be aligned");
   _CCCL_ASSERT(__isGlobal(__ptr), "'ptr' must point to global memory");
-  constexpr auto __count = (sizeof(_Tp) * _Np) / _Align;
-  using __store_type     = _AlignedData<_Align>;
-  auto __ptr_gmem        = _CUDA_VSTD::bit_cast<__store_type*>(__cvta_generic_to_global(__ptr));
-  auto __index_seq       = _CUDA_VSTD::make_index_sequence<__count>{};
-  using __result_t       = _CUDA_VSTD::array<__store_type, __count>;
-  auto __tmp             = _CUDA_VSTD::bit_cast<__result_t>(__data);
+  constexpr bool __is_default_access = __eviction_policy == eviction_none;
+  constexpr auto __max_align         = __is_default_access ? _Align : _CUDA_VSTD::min(_Align, size_t{16});
+  constexpr auto __count             = (sizeof(_Tp) * _Np) / __max_align;
+  using __store_type                 = _AlignedData<__max_align>;
+  using __pointer_type               = _CUDA_VSTD::array<__store_type, __count>;
+  auto __ptr_gmem                    = _CUDA_VSTD::bit_cast<__store_type*>(__cvta_generic_to_global(__ptr));
+  auto __tmp                         = _CUDA_VSTD::bit_cast<__pointer_type>(__data);
+  auto __index_seq                   = _CUDA_VSTD::make_index_sequence<__count>{};
   _CUDA_VDEV::__unroll_store(__tmp, __ptr_gmem, __eviction_policy, __index_seq);
 }
 
@@ -153,9 +163,10 @@ template <size_t _Np, typename _Tp, size_t _Align = alignof(_Tp), _EvictionPolic
 _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void
 store(_CUDA_VSTD::span<_Tp, _Np> __data,
       _Tp* __ptr,
-      ::cuda::aligned_size_t<_Align> __align     = {},
+      ::cuda::aligned_size_t<_Align> __align     = ::cuda::aligned_size_t<_Align>{alignof(_Tp)},
       __eviction_policy_t<_Ep> __eviction_policy = eviction_none) noexcept
 {
+  static_assert(_Np > 0 && _Np != _CUDA_VSTD::dynamic_extent);
   _CUDA_VSTD::array<_Tp, _Np> __tmp;
 #  pragma unroll
   for (size_t i = 0; i < _Np; ++i)
