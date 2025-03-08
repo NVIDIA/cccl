@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/barrier>
 #include <cuda/data_movement>
 #include <cuda/ptx>
 #include <cuda/std/cassert>
