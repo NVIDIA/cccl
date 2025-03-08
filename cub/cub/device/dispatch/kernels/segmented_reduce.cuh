@@ -187,7 +187,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
- *
  * @tparam ReductionOpT
  *   Binary reduction functor type having member
  *   `T operator()(const T &a, const U &b)`

@@ -138,12 +138,7 @@ private:
                        stream);
   }
 
-  template <typename InputIteratorT,
-            typename OutputIteratorT,
-            typename OffsetT,
-            typename SegmentSizeT,
-            typename ReductionOpT,
-            typename InitT>
+  template <typename InputIteratorT, typename OutputIteratorT, typename OffsetT, typename ReductionOpT, typename InitT>
   CUB_RUNTIME_FUNCTION static cudaError_t segmented_reduce(
     ::cuda::std::false_type,
     void* d_temp_storage,
@@ -151,17 +146,12 @@ private:
     InputIteratorT d_in,
     OutputIteratorT d_out,
     int num_segments,
-    SegmentSizeT segment_size,
+    OffsetT segment_size,
     ReductionOpT reduction_op,
     InitT initial_value,
     cudaStream_t stream);
 
-  template <typename InputIteratorT,
-            typename OutputIteratorT,
-            typename OffsetT,
-            typename SegmentSizeT,
-            typename ReductionOpT,
-            typename InitT>
+  template <typename InputIteratorT, typename OutputIteratorT, typename OffsetT, typename ReductionOpT, typename InitT>
   CUB_RUNTIME_FUNCTION static cudaError_t segmented_reduce(
     ::cuda::std::true_type,
     void* d_temp_storage,
