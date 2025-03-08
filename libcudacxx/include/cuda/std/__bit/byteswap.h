@@ -88,6 +88,8 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __byteswap_impl(_Tp __va
   constexpr auto __shift = numeric_limits<uint8_t>::digits;
 
   _Tp __result{};
+
+  _CCCL_PRAGMA_UNROLL(sizeof(__val))
   for (size_t __i{}; __i < sizeof(__val); ++__i)
   {
     __result <<= __shift;

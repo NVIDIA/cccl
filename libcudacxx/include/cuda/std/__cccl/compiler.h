@@ -125,4 +125,14 @@
 #  endif // !__ELF__
 #endif // _CCCL_COMPILER(NVHPC) || _CCCL_COMPILER(NVRTC)
 
+#if _CCCL_HAS_CUDA_COMPILER || _CCCL_COMPILER(NVHPC) || _CCCL_COMPILER(NVRTC)
+#  define _CCCL_PRAGMA_UNROLL(_N) _CCCL_PRAGMA(unroll _N)
+#elif _CCCL_COMPILER(GCC, >=, 8)
+#  define _CCCL_PRAGMA_UNROLL(_N) _CCCL_PRAGMA(GCC unroll _N)
+#elif _CCCL_COMPILER(CLANG)
+#  define _CCCL_PRAGMA_UNROLL(_N) _CCCL_PRAGMA(clang loop unroll_count(_N))
+#else // ^^^ has pragma unroll support ^^^ / vvv no pragma unroll support vvv
+#  define _CCCL_PRAGMA_UNROLL(_N)
+#endif // ^^^ no pragma unroll support ^^^
+
 #endif // __CCCL_COMPILER_H
