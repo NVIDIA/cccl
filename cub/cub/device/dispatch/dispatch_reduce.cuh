@@ -680,6 +680,8 @@ struct DispatchReduce
         kernel_source,
         launcher_factory);
 
+// Ignore Wmaybe-uninitialized to work around a GCC 13 issue:
+// https://github.com/NVIDIA/cccl/issues/4053
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
       // Dispatch to chained policy
