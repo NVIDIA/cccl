@@ -680,8 +680,11 @@ struct DispatchReduce
         kernel_source,
         launcher_factory);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
       // Dispatch to chained policy
       error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
+#pragma GCC diagnostic pop
       if (cudaSuccess != error)
       {
         break;
