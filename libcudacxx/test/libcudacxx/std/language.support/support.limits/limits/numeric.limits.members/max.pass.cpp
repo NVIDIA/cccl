@@ -89,6 +89,9 @@ int main(int, char**)
 #if _CCCL_HAS_NVFP4_E2M1()
   test<__nv_fp4_e2m1>(make_fp4_e2m1(6.0));
 #endif // _CCCL_HAS_NVFP4_E2M1()
+#if _CCCL_HAS_FLOAT128()
+  test<__float128>(1.18973149535723176508575932662800702e+4932q);
+#endif // _CCCL_HAS_FLOAT128()
 
   return 0;
 }
