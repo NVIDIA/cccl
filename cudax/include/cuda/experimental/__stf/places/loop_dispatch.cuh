@@ -51,6 +51,8 @@ inline size_t customHash(size_t value)
 
 } // end namespace reserved
 
+class stackable_ctx;
+
 /* TODO : introduce a policy to decide whether or not to use threads, and the thread-index mapping (currently random) */
 template <typename context_t, typename exec_place_t, bool use_threads = true>
 inline void loop_dispatch(
@@ -69,6 +71,14 @@ inline void loop_dispatch(
 
   size_t nthreads = ::std::min(place_cnt, cnt);
 
+  int head = -1;
+
+  if constexpr (::std::is_same_v<context_t, stackable_ctx>)
+  {
+    head = ctx.get_head_offset();
+    fprintf(stderr, "LOOP DISPATCH on stackable ctx ... head %d\n", head);
+  }
+
   ::std::vector<::std::thread> threads;
 
   // loop in reversed order so that tid=0 comes last, and we can execute it
@@ -76,7 +86,7 @@ inline void loop_dispatch(
   for (size_t tid = nthreads; tid-- > 0;)
   {
     // Work that should be performed by thread "tid"
-    auto tid_work = [=, &func]() {
+    auto tid_work = [=, &ctx, &func]() {
       // Distribute subplaces in a round robin fashion
       ::std::vector<::std::shared_ptr<exec_place>> thread_affinity;
       for (size_t i = tid; i < place_cnt; i += nthreads)
@@ -85,12 +95,24 @@ inline void loop_dispatch(
       }
       ctx.push_affinity(mv(thread_affinity));
 
+      if constexpr (::std::is_same_v<context_t, stackable_ctx>)
+      {
+        ctx.set_head_offset(head);
+        fprintf(stderr, "LOOP DISPATCH on stackable ctx SET head %d\n", head);
+        ctx.push();
+      }
+
       for (size_t i = start; i < end; i++)
       {
         if (reserved::customHash(i) % nthreads == tid)
         {
           func(i);
         }
+      }
+
+      if constexpr (::std::is_same_v<context_t, stackable_ctx>)
+      {
+        ctx.pop();
       }
 
       ctx.pop_affinity();

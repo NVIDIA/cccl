@@ -939,6 +939,21 @@ public:
     get_ctx(offset).pop_affinity();
   }
 
+  auto& current_affinity() const
+  {
+    auto lock = pimpl->get_read_lock();
+
+    int offset = get_head_offset();
+    return get_ctx(offset).current_affinity();
+  }
+
+  const exec_place& current_exec_place() const
+  {
+    auto lock  = pimpl->get_read_lock();
+    int offset = get_head_offset();
+    return get_ctx(offset).current_exec_place();
+  }
+
   auto& async_resources() const
   {
     auto lock = pimpl->get_read_lock();
