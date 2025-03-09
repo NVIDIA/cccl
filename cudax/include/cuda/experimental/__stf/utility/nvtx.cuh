@@ -39,7 +39,7 @@ namespace cuda::experimental::stf
 class nvtx_range
 {
 public:
-  nvtx_range(const char* message)
+  explicit nvtx_range(const char* message)
   {
 #if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
     nvtxRangePushA(message);
@@ -51,12 +51,27 @@ public:
   nvtx_range(nvtx_range&&)                 = delete;
   nvtx_range& operator=(const nvtx_range&) = delete;
 
-  ~nvtx_range()
+  // Explicitly end the NVTX range
+  void end()
   {
+    if (!active)
+    {
+      return; // Prevent double pop
+    }
+    active = false;
+
 #if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
     nvtxRangePop();
 #endif
   }
+
+  ~nvtx_range()
+  {
+    end();
+  }
+
+private:
+  bool active = true; // Tracks if nvtxRangePop() should be called
 };
 
 } // end namespace cuda::experimental::stf

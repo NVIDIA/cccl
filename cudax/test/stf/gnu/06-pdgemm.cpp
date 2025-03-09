@@ -16,10 +16,8 @@
  * stream_ctx and a graph_ctx backend.
  */
 
-#include <cuda/experimental/__stf/graph/graph_ctx.cuh>
-#include <cuda/experimental/__stf/stream/stream_ctx.cuh>
-
-#include <nvtx3/nvToolsExt.h>
+#include <cuda/experimental/__stf/utility/nvtx.cuh>
+#include <cuda/experimental/stf.cuh>
 
 #define TILED
 

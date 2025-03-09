@@ -356,7 +356,7 @@ int main(int argc, char** argv)
   // compute normalisation factor for error
   auto lbnorm = ctx.logical_data(shape_of<scalar_view<double>>()).set_symbol("bnorm");
 
-  nvtxRangePush("Compute_Normalization");
+  nvtx_range r_norm("Compute_Normalization");
 
   // bnorm = psi * psi
   ctx.parallel_for(lpsi.shape(), lpsi.read(), lbnorm.reduce(reducer::sum<double>{}))
@@ -376,6 +376,8 @@ int main(int argc, char** argv)
             };
   }
 
+  r_norm.end();
+
   double bnorm = ctx.wait(lbnorm);
   bnorm        = sqrt(bnorm);
 
@@ -384,7 +386,7 @@ int main(int argc, char** argv)
   // printf("\nStarting main loop...\n\n");
 
   double tstart = gettime();
-  nvtxRangePush("Overall_Iteration");
+  nvtx_range r_iter("Overall_Iteration");
 
   int iter = 1;
   for (; iter <= numiter; iter++)
@@ -448,7 +450,7 @@ int main(int argc, char** argv)
     //     }
     // }
   }
-  nvtxRangePop(); // pop
+  r_iter.end();
 
   if (iter > numiter)
   {
