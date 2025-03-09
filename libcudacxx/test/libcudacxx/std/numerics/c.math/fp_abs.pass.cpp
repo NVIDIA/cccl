@@ -36,7 +36,7 @@ __host__ __device__ constexpr void test_eq(const T tested, const T expected)
   }
   else
   {
-    assert(cuda::std::__cccl_fp_get_storage(tested) == cuda::std::__cccl_fp_get_storage(expected));
+    assert(cuda::std::__fp_get_storage(tested) == cuda::std::__fp_get_storage(expected));
   }
 }
 
