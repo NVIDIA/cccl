@@ -661,11 +661,19 @@ public:
   static constexpr int max_digits10 = 36;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
   {
+#  if defined(__FLT128_MIN__)
+    return __FLT128_MIN__;
+#  else // ^^^ __FLT128_MIN__ ^^^ // vvv !__FLT128_MIN__ vvv
     return 3.36210314311209350626267781732175260e-4932q;
+#  endif // ^^^ !__FLT128_MIN__ ^^^
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type max() noexcept
   {
+#  if defined(__FLT128_MAX__)
+    return __FLT128_MAX__;
+#  else // ^^^ __FLT128_MAX__ ^^^ // vvv !__FLT128_MAX__ vvv
     return 1.18973149535723176508575932662800702e+4932q;
+#  endif // ^^^ !__FLT128_MAX__ ^^^
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type lowest() noexcept
   {
@@ -677,11 +685,15 @@ public:
   static constexpr int radix       = __FLT_RADIX__;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type epsilon() noexcept
   {
+#  if defined(__FLT128_EPSILON__)
+    return __FLT128_EPSILON__;
+#  else // ^^^ __FLT128_EPSILON__ ^^^ // vvv !__FLT128_EPSILON__ vvv
     return 1.92592994438723585305597794258492732e-34q;
+#  endif // ^^^ !__FLT128_EPSILON__ ^^^
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type round_error() noexcept
   {
-    return 0.5q;
+    return type(0.5);
   }
 
   static constexpr int min_exponent   = -16381;
@@ -703,7 +715,7 @@ public:
 #  else // ^^^ _CCCL_BUILTIN_HUGE_VALF128 ^^^ // vvv !_CCCL_BUILTIN_HUGE_VALF128 vvv
   _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_BIT_CAST type infinity() noexcept
   {
-    return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x7fff000000000000} << 64);
+    return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x7fff'0000'0000'0000} << 64);
   }
 #  endif // ^^^ !_CCCL_BUILTIN_HUGE_VALF128 ^^^
 #  if defined(_CCCL_BUILTIN_NANF128)
@@ -714,7 +726,7 @@ public:
 #  else // ^^^ _CCCL_BUILTIN_NANF128 ^^^ // vvv !_CCCL_BUILTIN_NANF128 vvv
   _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_BIT_CAST type quiet_NaN() noexcept
   {
-    return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x7fff800000000000} << 64);
+    return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x7fff'8000'0000'0000} << 64);
   }
 #  endif // ^^^ !_CCCL_BUILTIN_NANF128 ^^^
 #  if defined(_CCCL_BUILTIN_NANSF128)
@@ -725,12 +737,16 @@ public:
 #  else // ^^^ _CCCL_BUILTIN_NANSF128 ^^^ // vvv !_CCCL_BUILTIN_NANSF128 vvv
   _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_BIT_CAST type signaling_NaN() noexcept
   {
-    return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x7fff400000000000} << 64);
+    return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x7fff'4000'0000'0000} << 64);
   }
 #  endif // ^^^ !_CCCL_BUILTIN_NANSF128 ^^^
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type denorm_min() noexcept
   {
+#  if defined(__FLT128_DENORM_MIN__)
+    return __FLT128_DENORM_MIN__;
+#  else // ^^^ __FLT128_DENORM_MIN__ ^^^ // vvv !__FLT128_DENORM_MIN__ vvv
     return 6.47517511943802511092443895822764655e-4966q;
+#  endif // ^^^ !__FLT128_DENORM_MIN__ ^^^
   }
 
   static constexpr bool is_iec559  = true;
