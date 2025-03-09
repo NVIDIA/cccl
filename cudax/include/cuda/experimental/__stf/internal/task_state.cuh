@@ -166,7 +166,7 @@ public:
         // Add an edge between that leaf task and the fence node in the DOT output
         if (dot_is_tracing)
         {
-          dot.add_edge(t_id, fence_unique_id, 1);
+          dot.add_edge(t_id, fence_unique_id, 2);
         }
       }
 
@@ -219,7 +219,10 @@ public:
 
 public:
   ::std::unordered_map<int, reserved::logical_data_untyped_impl&> logical_data_ids;
-  ::std::mutex logical_data_ids_mutex;
+  mutable ::std::mutex logical_data_ids_mutex;
+
+  // We need logical_data_untyped_impl to be defined to print this
+  void print_logical_data_summary() const;
 
 private:
   // To synchronize with all work submitted in this context, we need to

@@ -11,13 +11,11 @@
 /**
  * @file
  * @brief An example that implements a tiled matrix product over multiple devices using CUBLAS
- *
- * This also illustrates how the same code base can be used both with a
- * stream_ctx and a graph_ctx backend.
  */
 
-#include <cuda/experimental/__stf/utility/nvtx.cuh>
-#include <cuda/experimental/stf.cuh>
+#include "cuda/experimental/__stf/utility/stackable_ctx.cuh"
+#include "cuda/experimental/stf.cuh"
+#include <nvtx3/nvToolsExt.h>
 
 #define TILED
 
@@ -44,9 +42,12 @@ template <typename T>
 class matrix
 {
 public:
-  template <typename Ctx>
-  matrix(
-    Ctx& ctx, size_t NROWS, size_t NCOLS, size_t BLOCKSIZE_ROWS, size_t BLOCKSIZE_COLS, const char* _symbol = "matrix")
+  matrix(stackable_ctx& ctx,
+         size_t NROWS,
+         size_t NCOLS,
+         size_t BLOCKSIZE_ROWS,
+         size_t BLOCKSIZE_COLS,
+         const char* _symbol = "matrix")
   {
     symbol = _symbol;
 
@@ -89,6 +90,7 @@ public:
         std::ignore = ld; // avoid warning #177-D: variable "ld" was declared but never referenced
         auto s      = make_slice(addr_h, std::tuple{mb, nb}, ld);
         auto tile   = ctx.logical_data(s);
+        tile.set_write_back(false);
 
         tile.set_symbol(std::string(symbol) + "_" + std::to_string(rowb) + "_" + std::to_string(colb));
 
@@ -112,12 +114,20 @@ public:
     //           << "p=" << grid_p << " q=" << grid_q << std::endl;
   }
 
+  void push(/*stackable_ctx& ctx, */ access_mode mode)
+  {
+    for (auto& h : handles)
+    {
+      h.push(mode);
+    }
+  }
+
   int get_preferred_devid(int row, int col)
   {
     return (row % grid_p) + (col % grid_q) * grid_p;
   }
 
-  logical_data<slice<T, 2>>& get_handle(int row, int col)
+  auto& get_handle(int row, int col)
   {
     return handles[row + col * mt];
   }
@@ -150,35 +160,28 @@ public:
   }
 
   // Fill with func(Matrix*,row, col)
-  void fill(T (*func)(matrix<T>*, int, int))
+  template <typename Fun>
+  void fill(stackable_ctx& ctx, Fun&& fun)
   {
+    nvtxRangePushA("FILL");
     // Fill blocks by blocks
     for (size_t colb = 0; colb < nt; colb++)
     {
       for (size_t rowb = 0; rowb < mt; rowb++)
       {
-        T* addr_h = get_block_h(rowb, colb);
-#ifdef TILED
-        // tiles are stored contiguously
-        int ld = mb;
-#else
-        int ld = m;
-#endif
+        // Each task fills a block
+        auto& h   = get_handle(rowb, colb);
+        int devid = get_preferred_devid(rowb, colb);
 
-        for (size_t lrow = 0; lrow < mb; lrow++)
-        {
-          for (size_t lcol = 0; lcol < nb; lcol++)
-          {
-            size_t row = lrow + rowb * mb;
-            size_t col = lcol + colb * nb;
-
-            T val = func(this, row, col);
-
-            addr_h[lrow + lcol * ld] = val;
-          }
-        }
+        ctx.parallel_for(exec_place::device(devid), h.shape(), h.write()).set_symbol("INIT")->*
+          [=] _CCCL_DEVICE(size_t lrow, size_t lcol, auto sA) {
+            size_t row     = lrow + rowb * sA.extent(0);
+            size_t col     = lcol + colb * sA.extent(1);
+            sA(lrow, lcol) = fun(row, col);
+          };
       }
     }
+    nvtxRangePop();
   }
 
   T* h_array;
@@ -192,7 +195,7 @@ public:
   size_t nt; // numter of row blocks
 
   // abstract data handles
-  std::vector<logical_data<slice<T, 2>>> handles;
+  std::vector<stackable_logical_data<slice<T, 2>>> handles;
 
   const char* symbol;
 
@@ -201,9 +204,8 @@ public:
   int grid_p, grid_q;
 };
 
-template <typename Ctx>
 void DGEMM(
-  Ctx& ctx,
+  stackable_ctx& ctx,
   cublasOperation_t transa,
   cublasOperation_t transb,
   double alpha,
@@ -245,8 +247,7 @@ void DGEMM(
   };
 }
 
-template <typename Ctx>
-void PDGEMM(Ctx& ctx,
+void PDGEMM(stackable_ctx& ctx,
             cublasOperation_t transa,
             cublasOperation_t transb,
             double alpha,
@@ -322,35 +323,72 @@ void PDGEMM(Ctx& ctx,
   }
 }
 
-double hilbert(matrix<double>* mat, int row, int col)
+void run(stackable_ctx& ctx, size_t N, size_t NB)
 {
-  return 1.0 / (col + row + 1.0) + 2.0 * mat->n * (col == row);
-}
+  /// auto fixed_alloc = block_allocator<fixed_size_allocator>(ctx, NB * NB * sizeof(double));
+  // ctx.set_allocator(fixed_alloc);
 
-template <typename Ctx>
-void run(size_t N, size_t NB)
-{
-  /* This is the CUDASTF context */
-  Ctx ctx;
+  // Set up CUBLAS and CUSOLVER
+  int ndevs;
+  cuda_safe_call(cudaGetDeviceCount(&ndevs));
+
+  /* Warm up allocators */
+  for (int d = 0; d < ndevs; d++)
+  {
+    auto lX = ctx.logical_data(shape_of<slice<double>>(1));
+    ctx.parallel_for(exec_place::device(d), lX.shape(), lX.write())->*[] _CCCL_DEVICE(size_t, auto) {};
+  }
+
+  /* Initializes CUBLAS on all devices */
+  for (int d = 0; d < ndevs; d++)
+  {
+    cuda_safe_call(cudaSetDevice(d));
+    get_cublas_handle();
+  }
 
   matrix<double> A(ctx, N, N, NB, NB, "A");
   matrix<double> B(ctx, N, N, NB, NB, "B");
   matrix<double> C(ctx, N, N, NB, NB, "C");
 
-  // (Hilbert matrix + 2*N*Id) to have a diagonal dominant matrix
-  A.fill(hilbert);
-  B.fill(hilbert);
-  C.fill(hilbert);
+  // (Hilbert matrix + 2*N*Id)
+  auto hilbert = [=] _CCCL_HOST_DEVICE(size_t row, size_t col) {
+    return 1.0 / (col + row + 1.0) + 2.0 * N * (col == row);
+  };
 
+  A.fill(ctx, hilbert);
+  B.fill(ctx, hilbert);
+  C.fill(ctx, hilbert);
+
+  cudaEvent_t startEvent, stopEvent;
+
+  cuda_safe_call(cudaEventCreate(&startEvent));
+  cuda_safe_call(cudaEventCreate(&stopEvent));
+
+  cuda_safe_call(cudaEventRecord(startEvent, ctx.task_fence()));
+
+  ctx.push();
+  A.push(access_mode::read);
+  B.push(access_mode::read);
+  C.push(access_mode::rw);
   PDGEMM(ctx, CUBLAS_OP_N, CUBLAS_OP_N, 1.0, A, B, -2.0, C);
+  ctx.pop();
+
+  cuda_safe_call(cudaEventRecord(stopEvent, ctx.task_fence()));
 
   ctx.finalize();
+
+  float milliseconds;
+  cuda_safe_call(cudaEventElapsedTime(&milliseconds, startEvent, stopEvent));
+
+  double gflops_pdgemm = 2.0 * ((double) N * (double) N * (double) N) / (1000000000.0);
+  std::cout
+    << "[PDDGEMM] ELAPSED: " << milliseconds << " ms, GFLOPS: " << gflops_pdgemm / (milliseconds / 1000.0) << '\n';
 }
 
 int main(int argc, char** argv)
 {
-  size_t N  = 1024;
-  size_t NB = 128;
+  size_t N  = 4096;
+  size_t NB = 512;
 
   if (argc > 1)
   {
@@ -364,6 +402,6 @@ int main(int argc, char** argv)
 
   assert(N % NB == 0);
 
-  run<stream_ctx>(N, NB);
-  run<graph_ctx>(N, NB);
+  stackable_ctx ctx;
+  run(ctx, N, NB);
 }
