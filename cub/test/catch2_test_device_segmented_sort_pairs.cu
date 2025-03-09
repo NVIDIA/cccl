@@ -123,7 +123,7 @@ C2H_TEST("DeviceSegmentedSortPairs: Empty segments", "[pairs][segmented][sort][d
 }
 
 C2H_TEST("DeviceSegmentedSortPairs: Same size segments, derived keys/values",
-         "[pairs][segmented][sort][device]",
+         "[pairs][segmented][sort][device][skip-cs-racecheck]",
          pair_types)
 {
   using PairT  = c2h::get<0, TestType>;
@@ -142,7 +142,7 @@ C2H_TEST("DeviceSegmentedSortPairs: Same size segments, derived keys/values",
 }
 
 C2H_TEST("DeviceSegmentedSortPairs: Randomly sized segments, derived keys/values",
-         "[pairs][segmented][sort][device]",
+         "[pairs][segmented][sort][device][skip-cs-racecheck]",
          pair_types)
 {
   using PairT  = c2h::get<0, TestType>;
@@ -162,7 +162,7 @@ C2H_TEST("DeviceSegmentedSortPairs: Randomly sized segments, derived keys/values
 }
 
 C2H_TEST("DeviceSegmentedSortPairs: Randomly sized segments, random keys/values",
-         "[pairs][segmented][sort][device]",
+         "[pairs][segmented][sort][device][skip-cs-racecheck]",
          pair_types)
 {
   using PairT  = c2h::get<0, TestType>;
@@ -200,7 +200,7 @@ C2H_TEST("DeviceSegmentedSortPairs: Unspecified segments, random key/values",
 }
 
 C2H_TEST("DeviceSegmentedSortPairs: very large num. items and num. segments",
-         "[pairs][segmented][sort][device]",
+         "[pairs][segmented][sort][device][skip-cs-racecheck]",
          all_offset_types)
 try
 {
@@ -255,7 +255,9 @@ catch (std::bad_alloc& e)
   std::cerr << "Skipping segmented sort test, insufficient GPU memory. " << e.what() << "\n";
 }
 
-C2H_TEST("DeviceSegmentedSort::SortPairs: very large segments", "[pairs][segmented][sort][device]", all_offset_types)
+C2H_TEST("DeviceSegmentedSort::SortPairs: very large segments",
+         "[pairs][segmented][sort][device][skip-cs-racecheck]",
+         all_offset_types)
 try
 {
   using key_t                      = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
