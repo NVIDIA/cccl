@@ -320,7 +320,8 @@ inline void cudagraph_callback_dispatcher(void* userData)
 }
 
 // There is likely a more efficient way in the current implementation of callbacks !
-__global__ static void callback_completion_kernel(int* completion_flag)
+template <typename = void>
+__global__ void callback_completion_kernel(int* completion_flag)
 {
   // Loop until *completion_flag == 1
   while (1 != (atomicCAS(completion_flag, 1, 1)))
@@ -513,7 +514,7 @@ inline _CCCL_HOST cudaError_t cudaGraphAddHostNodeWithQueue(
   // Submit completion kernel in the stream ...
   // callback_completion_kernel<<<1,1,0,stream>>>(data->completion_flag);
   cudaKernelNodeParams kernel_node_params;
-  kernel_node_params.func            = (void*) callback_completion_kernel;
+  kernel_node_params.func            = (void*) callback_completion_kernel<>;
   kernel_node_params.gridDim         = 1;
   kernel_node_params.blockDim        = 1;
   kernel_node_params.kernelParams    = new void*[1];
