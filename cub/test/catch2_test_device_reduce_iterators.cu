@@ -35,10 +35,10 @@
 
 #include <cstdint>
 
-#include "c2h/custom_type.cuh"
 #include "catch2_test_device_reduce.cuh"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/custom_type.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, device_sum);
@@ -65,7 +65,7 @@ void test_big_indices_helper(offset_t num_items)
   REQUIRE(result == num_items);
 }
 
-CUB_TEST("Device sum works for big indices", "[reduce][device]")
+C2H_TEST("Device sum works for big indices", "[reduce][device]")
 {
   test_big_indices_helper<std::size_t, std::uint32_t>(1ull << 30);
   test_big_indices_helper<std::size_t, std::uint32_t>(1ull << 31);
@@ -73,7 +73,7 @@ CUB_TEST("Device sum works for big indices", "[reduce][device]")
   test_big_indices_helper<std::size_t, std::uint64_t>(1ull << 33);
 }
 
-CUB_TEST("Device reduce works with fancy input iterators", "[reduce][device]", iterator_type_list)
+C2H_TEST("Device reduce works with fancy input iterators", "[reduce][device]", iterator_type_list)
 {
   using params   = params_t<TestType>;
   using item_t   = typename params::item_t;
@@ -97,7 +97,7 @@ CUB_TEST("Device reduce works with fancy input iterators", "[reduce][device]", i
   init_default_constant(default_constant);
   auto in_it = thrust::make_constant_iterator(default_constant);
 
-  using op_t   = cub::Sum;
+  using op_t   = ::cuda::std::plus<>;
   using init_t = output_t;
 
   // Binary reduction operator
@@ -116,7 +116,7 @@ CUB_TEST("Device reduce works with fancy input iterators", "[reduce][device]", i
   REQUIRE(expected_result == out_result[0]);
 }
 
-CUB_TEST("Device reduce compiles with discard output iterator", "[reduce][device]", iterator_type_list)
+C2H_TEST("Device reduce compiles with discard output iterator", "[reduce][device]", iterator_type_list)
 {
   using params   = params_t<TestType>;
   using item_t   = typename params::item_t;
@@ -136,7 +136,7 @@ CUB_TEST("Device reduce compiles with discard output iterator", "[reduce][device
   init_default_constant(default_constant);
   auto in_it = thrust::make_constant_iterator(default_constant);
 
-  using op_t   = cub::Sum;
+  using op_t   = ::cuda::std::plus<>;
   using init_t = output_t;
 
   // Binary reduction operator

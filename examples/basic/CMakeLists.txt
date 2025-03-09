@@ -22,8 +22,8 @@ project(CCCLDemo CUDA)
 include(cmake/CPM.cmake)
 
 
-# We define these as variables so they can be overriden in CI to pull from a PR instead of CCCL `main`
-# In your project, these variables are unncessary and you can just use the values directly
+# We define these as variables so they can be overridden in CI to pull from a PR instead of CCCL `main`
+# In your project, these variables are unnecessary and you can just use the values directly
 set(CCCL_REPOSITORY "nvidia/cccl" CACHE STRING "GitHub repository to fetch CCCL from")
 set(CCCL_TAG "main" CACHE STRING "Git tag/branch to fetch from CCCL repository")
 
@@ -41,6 +41,7 @@ endif()
 
 # Creates a cmake executable target for the main program
 add_executable(example_project example.cu)
+target_compile_features(example_project PUBLIC cuda_std_17)
 
 # "Links" the CCCL Cmake target to the `example_project` executable. This configures everything needed to use
 # CCCL headers, including setting up include paths, compiler flags, etc.

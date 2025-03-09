@@ -6,7 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: clang-7, clang-8
 
@@ -172,7 +171,6 @@ __host__ __device__ void test_T_assignment_noexcept()
     using V = cuda::std::variant<Dummy, NoThrowT>;
     static_assert(cuda::std::is_nothrow_assignable<V, int>::value, "");
   }
-#if !defined(TEST_COMPILER_ICC)
   {
     using V = cuda::std::variant<Dummy, ThrowsCtorT>;
     static_assert(!cuda::std::is_nothrow_assignable<V, int>::value, "");
@@ -181,7 +179,6 @@ __host__ __device__ void test_T_assignment_noexcept()
     using V = cuda::std::variant<Dummy, ThrowsAssignT>;
     static_assert(!cuda::std::is_nothrow_assignable<V, int>::value, "");
   }
-#endif // !TEST_COMPILER_ICC
 }
 
 __host__ __device__ void test_T_assignment_sfinae()

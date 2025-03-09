@@ -31,6 +31,9 @@
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh> // graph_task<> has-a backend_ctx_untyped
 #include <cuda/experimental/__stf/internal/frozen_logical_data.cuh>
 #include <cuda/experimental/__stf/internal/logical_data.cuh>
+#include <cuda/experimental/__stf/internal/void_interface.cuh>
+
+#include <mutex>
 
 namespace cuda::experimental::stf
 {
@@ -56,9 +59,14 @@ public:
   // A cudaGraph_t is needed
   graph_task() = delete;
 
-  graph_task(backend_ctx_untyped ctx, cudaGraph_t g, size_t epoch, exec_place e_place = exec_place::current_device())
+  graph_task(backend_ctx_untyped ctx,
+             cudaGraph_t g,
+             ::std::mutex& graph_mutex,
+             size_t epoch,
+             exec_place e_place = exec_place::current_device())
       : task(mv(e_place))
       , ctx_graph(EXPECT(g))
+      , graph_mutex(graph_mutex)
       , epoch(epoch)
       , ctx(mv(ctx))
   {
@@ -74,6 +82,8 @@ public:
 
   graph_task& start()
   {
+    ::std::lock_guard<::std::mutex> lock(graph_mutex);
+
     event_list prereqs = acquire(ctx);
 
     // The CUDA graph API does not like duplicate dependencies
@@ -97,35 +107,19 @@ public:
   /* End the task, but do not clear its data structures yet */
   graph_task<>& end_uncleared()
   {
+    ::std::lock_guard<::std::mutex> lock(graph_mutex);
+
     cudaGraphNode_t n;
 
     auto done_prereqs = event_list();
 
-    // We either created independant task nodes, or a child graph. We need
-    // to inject input dependencies, and make the task completion depend on
-    // task nodes or the child graph.
-    if (task_nodes.size() > 0)
+    if (done_nodes.size() > 0)
     {
-      for (auto& node : task_nodes)
+      // We added CUDA graph nodes by hand, dependencies are already set, except the output nodes which define
+      // done_prereqs
+      for (auto& node : done_nodes)
       {
-#ifndef NDEBUG
-        // Ensure the node does not have dependencies yet
-        size_t num_deps;
-        cuda_safe_call(cudaGraphNodeGetDependencies(node, nullptr, &num_deps));
-        assert(num_deps == 0);
-
-        // Ensure there are no output dependencies either (or we could not
-        // add input dependencies later)
-        size_t num_deps_out;
-        cuda_safe_call(cudaGraphNodeGetDependentNodes(node, nullptr, &num_deps_out));
-        assert(num_deps_out == 0);
-#endif
-
-        // Repeat node as many times as there are input dependencies
-        ::std::vector<cudaGraphNode_t> out_array(ready_dependencies.size(), node);
-        cuda_safe_call(
-          cudaGraphAddDependencies(ctx_graph, ready_dependencies.data(), out_array.data(), ready_dependencies.size()));
-        auto gnp = reserved::graph_event(node, epoch);
+        auto gnp = reserved::graph_event(node, epoch, ctx_graph);
         gnp->set_symbol(ctx, "done " + get_symbol());
         /* This node is now the output dependency of the task */
         done_prereqs.add(mv(gnp));
@@ -133,26 +127,71 @@ public:
     }
     else
     {
-      // Note that if nothing was done in the task, this will create a child
-      // graph too, which will be useful as a node to synchronize with anyway.
-      const cudaGraph_t childGraph = get_graph();
-
-      const cudaGraphNode_t* deps = ready_dependencies.data();
-
-      assert(ctx_graph);
-      /* This will duplicate the childGraph so we can destroy it after */
-      cuda_safe_call(cudaGraphAddChildGraphNode(&n, ctx_graph, deps, ready_dependencies.size(), childGraph));
-
-      // Destroy the child graph unless we should not
-      if (must_destroy_child_graph)
+      // We either created independent task nodes, a chain of tasks, or a child
+      // graph. We need to inject input dependencies, and make the task
+      // completion depend on task nodes, task chain, or the child graph.
+      if (task_nodes.size() > 0)
       {
-        cuda_safe_call(cudaGraphDestroy(childGraph));
-      }
+        for (auto& node : task_nodes)
+        {
+#ifndef NDEBUG
+          // Ensure the node does not have dependencies yet
+          size_t num_deps;
+          cuda_safe_call(cudaGraphNodeGetDependencies(node, nullptr, &num_deps));
+          assert(num_deps == 0);
 
-      auto gnp = reserved::graph_event(n, epoch);
-      gnp->set_symbol(ctx, "done " + get_symbol());
-      /* This node is now the output dependency of the task */
-      done_prereqs.add(mv(gnp));
+          // Ensure there are no output dependencies either (or we could not
+          // add input dependencies later)
+          size_t num_deps_out;
+          cuda_safe_call(cudaGraphNodeGetDependentNodes(node, nullptr, &num_deps_out));
+          assert(num_deps_out == 0);
+#endif
+
+          // Repeat node as many times as there are input dependencies
+          ::std::vector<cudaGraphNode_t> out_array(ready_dependencies.size(), node);
+          cuda_safe_call(cudaGraphAddDependencies(
+            ctx_graph, ready_dependencies.data(), out_array.data(), ready_dependencies.size()));
+          auto gnp = reserved::graph_event(node, epoch, ctx_graph);
+          gnp->set_symbol(ctx, "done " + get_symbol());
+          /* This node is now the output dependency of the task */
+          done_prereqs.add(mv(gnp));
+        }
+      }
+      else if (chained_task_nodes.size() > 0)
+      {
+        // First node depends on ready_dependencies
+        ::std::vector<cudaGraphNode_t> out_array(ready_dependencies.size(), chained_task_nodes[0]);
+        cuda_safe_call(
+          cudaGraphAddDependencies(ctx_graph, ready_dependencies.data(), out_array.data(), ready_dependencies.size()));
+
+        // Overall the task depends on the completion of the last node
+        auto gnp = reserved::graph_event(chained_task_nodes.back(), epoch, ctx_graph);
+        gnp->set_symbol(ctx, "done " + get_symbol());
+        done_prereqs.add(mv(gnp));
+      }
+      else
+      {
+        // Note that if nothing was done in the task, this will create a child
+        // graph too, which will be useful as a node to synchronize with anyway.
+        const cudaGraph_t childGraph = get_graph();
+
+        const cudaGraphNode_t* deps = ready_dependencies.data();
+
+        assert(ctx_graph);
+        /* This will duplicate the childGraph so we can destroy it after */
+        cuda_safe_call(cudaGraphAddChildGraphNode(&n, ctx_graph, deps, ready_dependencies.size(), childGraph));
+
+        // Destroy the child graph unless we should not
+        if (must_destroy_child_graph)
+        {
+          cuda_safe_call(cudaGraphDestroy(childGraph));
+        }
+
+        auto gnp = reserved::graph_event(n, epoch, ctx_graph);
+        gnp->set_symbol(ctx, "done " + get_symbol());
+        /* This node is now the output dependency of the task */
+        done_prereqs.add(mv(gnp));
+      }
     }
 
     release(ctx, done_prereqs);
@@ -212,7 +251,7 @@ public:
       calibrate = needs_calibration;
     }
 
-    return dot.is_tracing() || (calibrate && statistics.is_calibrating());
+    return dot.is_timing() || (calibrate && statistics.is_calibrating());
   }
 
   /**
@@ -311,7 +350,8 @@ public:
   cudaGraph_t& get_graph()
   {
     // We either use a child graph or task nodes, not both
-    assert(task_nodes.empty());
+    _CCCL_ASSERT(task_nodes.empty(), "cannot use both get_graph() and get_node()");
+    _CCCL_ASSERT(chained_task_nodes.empty(), "cannot use both get_graph() and get_node_chain()");
 
     // Lazy creation
     if (child_graph == nullptr)
@@ -326,18 +366,42 @@ public:
   // Create a node in the graph
   cudaGraphNode_t& get_node()
   {
-    // We either use a child graph or task nodes, not both
-    assert(!child_graph);
+    _CCCL_ASSERT(!child_graph, "cannot use both get_node() and get_graph()");
+    _CCCL_ASSERT(chained_task_nodes.empty(), "cannot use both get_node() and get_node_chain()");
 
     // Create a new entry and return it
     task_nodes.emplace_back();
     return task_nodes.back();
   }
 
+  // Create a node in the graph
+  ::std::vector<cudaGraphNode_t>& get_node_chain()
+  {
+    _CCCL_ASSERT(!child_graph, "cannot use both get_node_chain() and get_graph()");
+    _CCCL_ASSERT(task_nodes.empty(), "cannot use both get_node_chain() and get_node()");
+
+    return chained_task_nodes;
+  }
+
+  const auto& get_ready_dependencies() const
+  {
+    return ready_dependencies;
+  }
+
+  void add_done_node(cudaGraphNode_t n)
+  {
+    done_nodes.push_back(n);
+  }
+
   // Get the graph associated to the whole context (not the task)
   cudaGraph_t& get_ctx_graph()
   {
     return ctx_graph;
+  }
+
+  [[nodiscard]] auto lock_ctx_graph()
+  {
+    return ::std::unique_lock<::std::mutex>(graph_mutex);
   }
 
   void set_current_place(pos4 p)
@@ -372,15 +436,28 @@ private:
   cudaGraph_t child_graph       = nullptr;
   bool must_destroy_child_graph = false;
 
-  /* If the task corresponds to independant graph nodes, we do not use a
+  /* If the task corresponds to independent graph nodes, we do not use a
    * child graph, but add nodes directly */
   ::std::vector<cudaGraphNode_t> task_nodes;
 
+  ::std::vector<cudaGraphNode_t> chained_task_nodes;
+
   /* This is the support graph associated to the entire context */
   cudaGraph_t ctx_graph = nullptr;
-  size_t epoch          = 0;
+
+  // This protects ctx_graph : it's ok to store a reference to it because the
+  // context and this mutex will outlive the moment when this mutex is needed
+  // (and most likely the graph_task object)
+  // Note that we use a reference_wrapper instead of a mere reference to ensure
+  // the graph_task class remains move assignable.
+  ::std::reference_wrapper<::std::mutex> graph_mutex;
+
+  size_t epoch = 0;
 
   ::std::vector<cudaGraphNode_t> ready_dependencies;
+
+  // If we are building our graph by hand, and using get_ready_dependencies()
+  ::std::vector<cudaGraphNode_t> done_nodes;
 
   backend_ctx_untyped ctx;
 };
@@ -395,8 +472,13 @@ template <typename... Deps>
 class graph_task : public graph_task<>
 {
 public:
-  graph_task(backend_ctx_untyped ctx, cudaGraph_t g, size_t epoch, exec_place e_place, task_dep<Deps>... deps)
-      : graph_task<>(mv(ctx), g, epoch, mv(e_place))
+  graph_task(backend_ctx_untyped ctx,
+             cudaGraph_t g,
+             ::std::mutex& graph_mutex,
+             size_t epoch,
+             exec_place e_place,
+             task_dep<Deps>... deps)
+      : graph_task<>(mv(ctx), g, graph_mutex, epoch, mv(e_place))
   {
     static_assert(sizeof(*this) == sizeof(graph_task<>), "Cannot add state - it would be lost by slicing.");
     add_deps(mv(deps)...);
@@ -420,11 +502,11 @@ public:
     return mv(*this);
   }
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
   // TODO (miscco): figure out why MSVC is complaining about unreachable code here
   _CCCL_DIAG_PUSH
   _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
-#endif // _CCCL_COMPILER_MSVC
+#endif // _CCCL_COMPILER(MSVC)
 
   template <typename Fun>
   void operator->*(Fun&& f)
@@ -480,12 +562,23 @@ public:
       dot.template add_vertex<task, logical_data_untyped>(*this);
     }
 
+    constexpr bool fun_invocable_stream_deps = ::std::is_invocable_v<Fun, cudaStream_t, Deps...>;
+    constexpr bool fun_invocable_stream_non_void_deps =
+      reserved::is_invocable_with_filtered<Fun, cudaStream_t, Deps...>::value;
+
     // Default for the first argument is a `cudaStream_t`.
-    if constexpr (::std::is_invocable_v<Fun, cudaStream_t, Deps...>)
+    if constexpr (fun_invocable_stream_deps || fun_invocable_stream_non_void_deps)
     {
       //
       // CAPTURE the lambda
       //
+
+      // To ensure the same CUDA stream is not used in multiple threads, we
+      // ensure there can't be multiple threads capturing at the same time.
+      //
+      // TODO : provide a per-thread CUDA stream dedicated for capture on that
+      // execution place.
+      auto lock = lock_ctx_graph();
 
       // Get a stream from the pool associated to the execution place
       cudaStream_t capture_stream = get_exec_place().getStream(ctx.async_resources(), true).stream;
@@ -494,7 +587,16 @@ public:
       cuda_safe_call(cudaStreamBeginCapture(capture_stream, cudaStreamCaptureModeThreadLocal));
 
       // Launch the user provided function
-      ::std::apply(f, tuple_prepend(mv(capture_stream), typed_deps()));
+      if constexpr (fun_invocable_stream_deps)
+      {
+        ::std::apply(f, tuple_prepend(mv(capture_stream), typed_deps()));
+      }
+      else if constexpr (fun_invocable_stream_non_void_deps)
+      {
+        // Remove void arguments
+        ::std::apply(::std::forward<Fun>(f),
+                     tuple_prepend(mv(capture_stream), reserved::remove_void_interface_types(typed_deps())));
+      }
 
       cuda_safe_call(cudaStreamEndCapture(capture_stream, &childGraph));
 
@@ -506,7 +608,12 @@ public:
     }
     else
     {
-      static_assert(::std::is_invocable_v<Fun, cudaGraph_t, Deps...>, "Incorrect lambda function signature.");
+      constexpr bool fun_invocable_graph_deps = ::std::is_invocable_v<Fun, cudaGraph_t, Deps...>;
+      constexpr bool fun_invocable_graph_non_void_deps =
+        reserved::is_invocable_with_filtered<Fun, cudaGraph_t, Deps...>::value;
+
+      static_assert(fun_invocable_graph_deps || fun_invocable_graph_non_void_deps,
+                    "Incorrect lambda function signature.");
       //
       // Give the lambda a child graph
       //
@@ -518,9 +625,9 @@ public:
       ::std::apply(f, tuple_prepend(mv(childGraph), typed_deps()));
     }
   }
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
   _CCCL_DIAG_POP
-#endif // _CCCL_COMPILER_MSVC
+#endif // _CCCL_COMPILER(MSVC)
 
 private:
   auto typed_deps()

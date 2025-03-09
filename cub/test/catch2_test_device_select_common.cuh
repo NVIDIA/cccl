@@ -3,11 +3,13 @@
 
 #pragma once
 
+#include <cub/util_type.cuh>
+
 #include <thrust/iterator/constant_iterator.h>
 
 #include <cuda/std/type_traits>
 
-#include "catch2_test_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 template <typename T>
 struct less_than_t
@@ -59,7 +61,7 @@ struct modx_and_add_divy
 template <typename SelectedItT, typename RejectedItT>
 struct index_to_expected_partition_op
 {
-  using value_t = typename ::cuda::std::iterator_traits<SelectedItT>::value_type;
+  using value_t = cub::detail::it_value_t<SelectedItT>;
   SelectedItT expected_selected_it;
   RejectedItT expected_rejected_it;
   std::int64_t expected_num_selected;
@@ -79,46 +81,4 @@ static index_to_expected_partition_op<SelectedItT, RejectedItT> make_index_to_ex
 {
   return index_to_expected_partition_op<SelectedItT, RejectedItT>{
     expected_selected_it, expected_rejected_it, expected_num_selected};
-}
-
-template <typename ExpectedValuesItT>
-struct flag_correct_writes_op
-{
-  ExpectedValuesItT expected_it;
-  std::uint32_t* d_correctness_flags;
-
-  static constexpr auto bits_per_element = 8 * sizeof(std::uint32_t);
-  template <typename OffsetT, typename T>
-  __host__ __device__ void operator()(OffsetT index, T val)
-  {
-    // Set bit-flag if the correct result has been written at the given index
-    if (expected_it[index] == val)
-    {
-      OffsetT uint_index     = index / static_cast<OffsetT>(bits_per_element);
-      std::uint32_t bit_flag = 0x00000001U << (index % bits_per_element);
-      atomicOr(&d_correctness_flags[uint_index], bit_flag);
-    }
-  }
-};
-
-template <typename ExpectedValuesItT>
-flag_correct_writes_op<ExpectedValuesItT> static make_checking_write_op(
-  ExpectedValuesItT expected_it, std::uint32_t* d_correctness_flags)
-{
-  return flag_correct_writes_op<ExpectedValuesItT>{expected_it, d_correctness_flags};
-}
-
-static bool are_all_flags_set(c2h::device_vector<std::uint32_t>& flag_vector, std::size_t num_flags_to_check)
-{
-  static constexpr auto bits_per_element = 8 * sizeof(std::uint32_t);
-  bool all_flags_set                     = thrust::equal(
-    flag_vector.cbegin(),
-    flag_vector.cbegin() + (num_flags_to_check / bits_per_element),
-    thrust::make_constant_iterator(0xFFFFFFFFU));
-  if (num_flags_to_check % bits_per_element != 0)
-  {
-    std::uint32_t last_element_flags = (0x00000001U << (num_flags_to_check % bits_per_element)) - 0x01U;
-    all_flags_set = all_flags_set && (flag_vector[num_flags_to_check / bits_per_element] == last_element_flags);
-  }
-  return all_flags_set;
 }

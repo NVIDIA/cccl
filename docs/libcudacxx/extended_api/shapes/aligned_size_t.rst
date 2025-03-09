@@ -31,7 +31,7 @@ Template Parameters
    :header-rows: 0
 
    * - ``Alignment``
-     - The address and size alignement of the byte extent.
+     - The address and size alignment of the byte extent.
 
 Data Members
 ------------

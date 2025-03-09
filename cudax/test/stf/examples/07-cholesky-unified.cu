@@ -139,7 +139,7 @@ public:
 
     size_t tile_size = mb * nb;
 
-    // Look for the index of the begining of the tile
+    // Look for the index of the beginning of the tile
     size_t tile_start = (tile_row + mt * tile_col) * tile_size;
 
     // Offset within the tile
@@ -178,7 +178,7 @@ public:
               sA(lrow, lcol) = fun(*self, row, col);
             }
           }
-        };
+        }
       }
     }
   }
@@ -650,9 +650,9 @@ int main(int argc, char** argv)
     PDNRM2_HOST(&Bref_potrs, &Bref_nrm2);
   }
 
-  //    for (int row = 0; row < A.mt; row++)
+  //    for (size_t row = 0; row < A.mt; row++)
   //    {
-  //        for (int col = 0; col <= row; col++)
+  //        for (size_t col = 0; col <= row; col++)
   //        {
   //            cuda_safe_call(cudaSetDevice(A.get_preferred_devid(row, col)));
   //            NOOP(A, row, col);

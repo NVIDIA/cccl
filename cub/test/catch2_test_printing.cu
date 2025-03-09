@@ -1,7 +1,7 @@
 #include <sstream>
 
-#include "catch2_test_helper.h"
 #include "test_util.h"
+#include <c2h/catch2_test_helper.h>
 
 template <typename T>
 std::string print(T val)
@@ -11,7 +11,7 @@ std::string print(T val)
   return ss.str();
 }
 
-#if CUB_IS_INT128_ENABLED
+#if _CCCL_HAS_INT128()
 TEST_CASE("Test utils can print __int128", "[test][utils]")
 {
   REQUIRE(print(__int128_t{0}) == "0");

@@ -1,4 +1,4 @@
-.. _libcudacxx-extended-api-synchronization-pipeline-pipeline-producer-aquire:
+.. _libcudacxx-extended-api-synchronization-pipeline-pipeline-producer-acquire:
 
 cuda::pipeline::producer_acquire
 ====================================

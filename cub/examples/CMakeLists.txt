@@ -1,3 +1,7 @@
+# Some of the examples include the `cub/test/test_util.h` header, which
+# depends on c2h:
+cccl_get_c2h()
+
 # Create meta targets that build all examples for a single configuration:
 foreach(cub_target IN LISTS CUB_TARGETS)
   cub_get_target_property(config_prefix ${cub_target} PREFIX)
@@ -30,7 +34,10 @@ function(cub_add_example target_name_var example_name example_src cub_target)
   set(example_meta_target cub.all.example.${example_name})
 
   add_executable(${example_target} "${example_src}")
-  target_link_libraries(${example_target} ${cub_target})
+  target_link_libraries(${example_target} PRIVATE
+    ${cub_target}
+    cccl.c2h
+  )
   cub_clone_target_properties(${example_target} ${cub_target})
   cub_configure_cuda_target(${example_target} RDC ${CUB_FORCE_RDC})
   target_include_directories(${example_target} PRIVATE "${CUB_SOURCE_DIR}/examples")

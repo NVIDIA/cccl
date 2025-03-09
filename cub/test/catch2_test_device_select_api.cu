@@ -36,7 +36,7 @@
 
 #include <cstddef>
 
-#include "catch2_test_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 // example-begin segmented-select-iseven
 struct is_even_t
@@ -48,7 +48,7 @@ struct is_even_t
 };
 // example-end segmented-select-iseven
 
-CUB_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][device]")
+C2H_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][device]")
 {
   // example-begin segmented-select-flaggedif
   constexpr int num_items            = 8;
@@ -92,7 +92,7 @@ CUB_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][
   REQUIRE(d_out == expected);
 }
 
-CUB_TEST("cub::DeviceSelect::FlaggedIf in-place works with int data elements", "[select][device]")
+C2H_TEST("cub::DeviceSelect::FlaggedIf in-place works with int data elements", "[select][device]")
 {
   // example-begin segmented-select-flaggedif-inplace
   constexpr int num_items            = 8;

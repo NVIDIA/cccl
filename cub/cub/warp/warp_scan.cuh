@@ -49,6 +49,7 @@
 #include <cub/warp/specializations/warp_scan_shfl.cuh>
 #include <cub/warp/specializations/warp_scan_smem.cuh>
 
+#include <cuda/ptx>
 #include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
@@ -155,9 +156,7 @@ CUB_NAMESPACE_BEGIN
 //!   hardware warp threads). Default is the warp size associated with the CUDA Compute Capability
 //!   targeted by the compiler (e.g., 32 threads for SM20).
 //!
-//! @tparam LEGACY_PTX_ARCH
-//!   **[optional]** Unused.
-template <typename T, int LOGICAL_WARP_THREADS = CUB_PTX_WARP_THREADS, int LEGACY_PTX_ARCH = 0>
+template <typename T, int LOGICAL_WARP_THREADS = CUB_PTX_WARP_THREADS>
 class WarpScan
 {
 private:
@@ -174,13 +173,13 @@ private:
     IS_POW_OF_TWO = ((LOGICAL_WARP_THREADS & (LOGICAL_WARP_THREADS - 1)) == 0),
 
     /// Whether the data type is an integer (which has fully-associative addition)
-    IS_INTEGER = ((Traits<T>::CATEGORY == SIGNED_INTEGER) || (Traits<T>::CATEGORY == UNSIGNED_INTEGER))
+    IS_INTEGER = cuda::std::is_integral_v<T>
   };
 
   /// Internal specialization.
   /// Use SHFL-based scan if LOGICAL_WARP_THREADS is a power-of-two
-  using InternalWarpScan =
-    ::cuda::std::_If<IS_POW_OF_TWO, WarpScanShfl<T, LOGICAL_WARP_THREADS>, WarpScanSmem<T, LOGICAL_WARP_THREADS>>;
+  using InternalWarpScan = ::cuda::std::
+    _If<IS_POW_OF_TWO, detail::WarpScanShfl<T, LOGICAL_WARP_THREADS>, detail::WarpScanSmem<T, LOGICAL_WARP_THREADS>>;
 
   /// Shared memory storage layout type for WarpScan
   using _TempStorage = typename InternalWarpScan::TempStorage;
@@ -212,7 +211,7 @@ public:
   //!   Reference to memory allocation having layout type TempStorage
   _CCCL_DEVICE _CCCL_FORCEINLINE WarpScan(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , lane_id(IS_ARCH_WARP ? LaneId() : LaneId() % LOGICAL_WARP_THREADS)
+      , lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : ::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS)
   {}
 
   //! @}  end member group
@@ -261,7 +260,7 @@ public:
   //!   Calling thread's output item. May be aliased with `input`.
   _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveSum(T input, T& inclusive_output)
   {
-    InclusiveScan(input, inclusive_output, cub::Sum());
+    InclusiveScan(input, inclusive_output, ::cuda::std::plus<>{});
   }
 
   //! @rst
@@ -314,7 +313,7 @@ public:
   //!   Warp-wide aggregate reduction of input items
   _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveSum(T input, T& inclusive_output, T& warp_aggregate)
   {
-    InclusiveScan(input, inclusive_output, cub::Sum(), warp_aggregate);
+    InclusiveScan(input, inclusive_output, ::cuda::std::plus<>{}, warp_aggregate);
   }
 
   //! @}  end member group
@@ -366,7 +365,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveSum(T input, T& exclusive_output)
   {
     T initial_value{};
-    ExclusiveScan(input, exclusive_output, initial_value, cub::Sum());
+    ExclusiveScan(input, exclusive_output, initial_value, ::cuda::std::plus<>{});
   }
 
   //! @rst
@@ -423,7 +422,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveSum(T input, T& exclusive_output, T& warp_aggregate)
   {
     T initial_value{};
-    ExclusiveScan(input, exclusive_output, initial_value, cub::Sum(), warp_aggregate);
+    ExclusiveScan(input, exclusive_output, initial_value, ::cuda::std::plus<>{}, warp_aggregate);
   }
 
   //! @}  end member group
@@ -459,7 +458,7 @@ public:
   //!
   //!        // Compute inclusive warp-wide prefix max scans
   //!        int warp_id = threadIdx.x / 32;
-  //!        WarpScan(temp_storage[warp_id]).InclusiveScan(thread_data, thread_data, cub::Max());
+  //!        WarpScan(temp_storage[warp_id]).InclusiveScan(thread_data, thread_data, cuda::maximum<>{});
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
@@ -533,7 +532,8 @@ public:
     T exclusive_output;
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
-    internal.Update(input, inclusive_output, exclusive_output, scan_op, initial_value, Int2Type<IS_INTEGER>());
+    internal.Update(
+      input, inclusive_output, exclusive_output, scan_op, initial_value, detail::bool_constant_v<IS_INTEGER>);
   }
 
   //! @rst
@@ -568,7 +568,7 @@ public:
   //!        int warp_aggregate;
   //!        int warp_id = threadIdx.x / 32;
   //!        WarpScan(temp_storage[warp_id]).InclusiveScan(
-  //!            thread_data, thread_data, cub::Max(), warp_aggregate);
+  //!            thread_data, thread_data, cuda::maximum<>{}, warp_aggregate);
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
@@ -656,7 +656,13 @@ public:
     // Update the inclusive_output and warp_aggregate using the Update function
     T exclusive_output;
     internal.Update(
-      input, inclusive_output, exclusive_output, warp_aggregate, scan_op, initial_value, Int2Type<IS_INTEGER>());
+      input,
+      inclusive_output,
+      exclusive_output,
+      warp_aggregate,
+      scan_op,
+      initial_value,
+      detail::bool_constant_v<IS_INTEGER>);
   }
 
   //! @}  end member group
@@ -693,7 +699,7 @@ public:
   //!
   //!        // Compute exclusive warp-wide prefix max scans
   //!        int warp_id = threadIdx.x / 32;
-  //!        WarpScan(temp_storage[warp_id]).ExclusiveScan(thread_data, thread_data, cub::Max());
+  //!        WarpScan(temp_storage[warp_id]).ExclusiveScan(thread_data, thread_data, cuda::maximum<>{});
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
@@ -722,7 +728,7 @@ public:
     T inclusive_output;
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
-    internal.Update(input, inclusive_output, exclusive_output, scan_op, Int2Type<IS_INTEGER>());
+    internal.Update(input, inclusive_output, exclusive_output, scan_op, detail::bool_constant_v<IS_INTEGER>);
   }
 
   //! @rst
@@ -757,7 +763,7 @@ public:
   //!        WarpScan(temp_storage[warp_id]).ExclusiveScan(thread_data,
   //!                                                      thread_data,
   //!                                                      INT_MIN,
-  //!                                                      cub::Max());
+  //!                                                      cuda::maximum<>{});
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
@@ -788,7 +794,8 @@ public:
     T inclusive_output;
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
-    internal.Update(input, inclusive_output, exclusive_output, scan_op, initial_value, Int2Type<IS_INTEGER>());
+    internal.Update(
+      input, inclusive_output, exclusive_output, scan_op, initial_value, detail::bool_constant_v<IS_INTEGER>);
   }
 
   //! @rst
@@ -825,7 +832,7 @@ public:
   //!        int warp_id = threadIdx.x / 32;
   //!        WarpScan(temp_storage[warp_id]).ExclusiveScan(thread_data,
   //!                                                      thread_data,
-  //!                                                      cub::Max(),
+  //!                                                      cuda::maximum<>{},
   //!                                                      warp_aggregate);
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
@@ -859,7 +866,8 @@ public:
     T inclusive_output;
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
-    internal.Update(input, inclusive_output, exclusive_output, warp_aggregate, scan_op, Int2Type<IS_INTEGER>());
+    internal.Update(
+      input, inclusive_output, exclusive_output, warp_aggregate, scan_op, detail::bool_constant_v<IS_INTEGER>);
   }
 
   //! @rst
@@ -896,7 +904,7 @@ public:
   //!        WarpScan(temp_storage[warp_id]).ExclusiveScan(thread_data,
   //!                                                      thread_data,
   //!                                                      INT_MIN,
-  //!                                                      cub::Max(),
+  //!                                                      cuda::maximum<>{},
   //!                                                      warp_aggregate);
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
@@ -935,7 +943,13 @@ public:
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
     internal.Update(
-      input, inclusive_output, exclusive_output, warp_aggregate, scan_op, initial_value, Int2Type<IS_INTEGER>());
+      input,
+      inclusive_output,
+      exclusive_output,
+      warp_aggregate,
+      scan_op,
+      initial_value,
+      detail::bool_constant_v<IS_INTEGER>);
   }
 
   //! @}  end member group
@@ -975,7 +989,7 @@ public:
   //!        WarpScan(temp_storage[warp_id]).Scan(thread_data,
   //!                                             inclusive_partial,
   //!                                             exclusive_partial,
-  //!                                             cub::Max());
+  //!                                             cuda::maximum<>{});
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``inclusive_partial`` in the
@@ -1008,7 +1022,7 @@ public:
 
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
-    internal.Update(input, inclusive_output, exclusive_output, scan_op, Int2Type<IS_INTEGER>());
+    internal.Update(input, inclusive_output, exclusive_output, scan_op, detail::bool_constant_v<IS_INTEGER>);
   }
 
   //! @rst
@@ -1045,7 +1059,7 @@ public:
   //!                                             inclusive_partial,
   //!                                             exclusive_partial,
   //!                                             INT_MIN,
-  //!                                             cub::Max());
+  //!                                             cuda::maximum<>{});
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``inclusive_partial`` in the
@@ -1081,7 +1095,8 @@ public:
 
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
-    internal.Update(input, inclusive_output, exclusive_output, scan_op, initial_value, Int2Type<IS_INTEGER>());
+    internal.Update(
+      input, inclusive_output, exclusive_output, scan_op, initial_value, detail::bool_constant_v<IS_INTEGER>);
   }
 
   //! @}  end member group

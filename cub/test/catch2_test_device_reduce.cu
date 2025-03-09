@@ -33,11 +33,11 @@
 
 #include <cstdint>
 
-#include "c2h/custom_type.cuh"
-#include "c2h/extended_types.cuh"
 #include "catch2_test_device_reduce.cuh"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/custom_type.h>
+#include <c2h/extended_types.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, device_sum);
@@ -45,6 +45,13 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Min, device_min);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Max, device_max);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
+
+// Suppress deprecation warning for the deprecated ArgMin and ArgMax interfaces
+_CCCL_NV_DIAG_SUPPRESS(1444)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min_old);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max_old);
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 // %PARAM% TEST_TYPES types 0:1:2:3:4
@@ -66,14 +73,13 @@ using full_type_list = c2h::type_list<type_pair<uchar3>, type_pair<ulonglong4>>;
 // clang-format off
 using full_type_list = c2h::type_list<
 type_pair<custom_t>
-#if TEST_HALF_T
-, type_pair<half_t> // testing half
-#endif
-#if TEST_BF_T
-, type_pair<bfloat16_t> // testing bf16
-
+#if TEST_HALF_T()
+, type_pair<half_t>
+#endif // TEST_HALF_T()
+#if TEST_BF_T()
+, type_pair<bfloat16_t>
+#endif // TEST_BF_T()
 >;
-#endif
 // clang-format on
 #elif TEST_TYPES == 4
 // DPX SIMD instructions
@@ -91,7 +97,7 @@ enum class gen_data_t : int
   GEN_TYPE_CONST
 };
 
-CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", full_type_list)
+C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", full_type_list)
 {
   using params   = params_t<TestType>;
   using item_t   = typename params::item_t;
@@ -117,7 +123,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
   c2h::device_vector<item_t> in_items(num_items);
   if (data_gen_mode == gen_data_t::GEN_TYPE_RANDOM)
   {
-    c2h::gen(CUB_SEED(2), in_items);
+    c2h::gen(C2H_SEED(2), in_items);
   }
   else
   {
@@ -130,7 +136,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
 #if TEST_TYPES != 4
   SECTION("reduce")
   {
-    using op_t = cub::Sum;
+    using op_t = ::cuda::std::plus<>;
 
     // Binary reduction operator
     auto reduction_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
@@ -143,7 +149,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
     // Run test
     c2h::device_vector<output_t> out_result(num_segments);
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    using init_t  = cub::detail::value_t<decltype(unwrap_it(d_out_it))>;
+    using init_t  = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
     device_reduce(unwrap_it(d_in_it), unwrap_it(d_out_it), num_items, reduction_op, init_t{});
 
     // Verify result
@@ -156,7 +162,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
 #if TEST_TYPES != 3
   SECTION("sum")
   {
-    using op_t    = cub::Sum;
+    using op_t    = ::cuda::std::plus<>;
     using accum_t = ::cuda::std::__accumulator_t<op_t, item_t, output_t>;
 
     // Prepare verification data
@@ -210,16 +216,18 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
     auto expected_result = std::max_element(host_items.cbegin(), host_items.cend());
 
     // Run test
-
-    using result_t = cub::KeyValuePair<int, unwrap_value_t<output_t>>;
+    using result_t = cuda::std::pair<cuda::std::int32_t, unwrap_value_t<output_t>>;
     c2h::device_vector<result_t> out_result(num_segments);
-    device_arg_max(unwrap_it(d_in_it), thrust::raw_pointer_cast(out_result.data()), num_items);
+    auto d_result_ptr   = thrust::raw_pointer_cast(out_result.data());
+    auto d_index_out    = &d_result_ptr->first;
+    auto d_extremum_out = &d_result_ptr->second;
+    device_arg_max(unwrap_it(d_in_it), d_extremum_out, d_index_out, num_items);
 
     // Verify result
-    result_t gpu_result = out_result[0];
-    output_t gpu_value  = static_cast<output_t>(gpu_result.value); // Explicitly rewrap the gpu value
-    REQUIRE(expected_result[0] == gpu_value);
-    REQUIRE((expected_result - host_items.cbegin()) == gpu_result.key);
+    result_t gpu_result   = out_result[0];
+    output_t gpu_extremum = static_cast<output_t>(gpu_result.second); // Explicitly rewrap the gpu value
+    REQUIRE(expected_result[0] == gpu_extremum);
+    REQUIRE((expected_result - host_items.cbegin()) == gpu_result.first);
   }
 
   SECTION("argmin")
@@ -229,11 +237,50 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
     auto expected_result = std::min_element(host_items.cbegin(), host_items.cend());
 
     // Run test
-    using result_t = cub::KeyValuePair<int, unwrap_value_t<output_t>>;
+    using result_t = cuda::std::pair<cuda::std::int32_t, unwrap_value_t<output_t>>;
     c2h::device_vector<result_t> out_result(num_segments);
-    device_arg_min(unwrap_it(d_in_it), thrust::raw_pointer_cast(out_result.data()), num_items);
+    auto d_result_ptr   = thrust::raw_pointer_cast(out_result.data());
+    auto d_index_out    = &d_result_ptr->first;
+    auto d_extremum_out = &d_result_ptr->second;
+    device_arg_min(unwrap_it(d_in_it), d_extremum_out, d_index_out, num_items);
 
     // Verify result
+    result_t gpu_result   = out_result[0];
+    output_t gpu_extremum = static_cast<output_t>(gpu_result.second); // Explicitly rewrap the gpu value
+    REQUIRE(expected_result[0] == gpu_extremum);
+    REQUIRE((expected_result - host_items.cbegin()) == gpu_result.first);
+  }
+
+  SECTION("argmax deprecated interface")
+  {
+    // Prepare verification data
+    c2h::host_vector<item_t> host_items(in_items);
+    auto expected_result = std::max_element(host_items.cbegin(), host_items.cend());
+
+    // Run test using the deprecated interface
+    using result_t = cub::KeyValuePair<int, unwrap_value_t<output_t>>;
+    c2h::device_vector<result_t> out_result(num_segments);
+    device_arg_max_old(unwrap_it(d_in_it), thrust::raw_pointer_cast(out_result.data()), num_items);
+
+    // Verify result for the deprecated interface
+    result_t gpu_result = out_result[0];
+    output_t gpu_value  = static_cast<output_t>(gpu_result.value); // Explicitly rewrap the gpu value
+    REQUIRE(expected_result[0] == gpu_value);
+    REQUIRE((expected_result - host_items.cbegin()) == gpu_result.key);
+  }
+
+  SECTION("argmin deprecated interface")
+  {
+    // Prepare verification data
+    c2h::host_vector<item_t> host_items(in_items);
+    auto expected_result = std::min_element(host_items.cbegin(), host_items.cend());
+
+    // Run test using the deprecated interface
+    using result_t = cub::KeyValuePair<int, unwrap_value_t<output_t>>;
+    c2h::device_vector<result_t> out_result(num_segments);
+    device_arg_min_old(unwrap_it(d_in_it), thrust::raw_pointer_cast(out_result.data()), num_items);
+
+    // Verify result for the deprecated interface
     result_t gpu_result = out_result[0];
     output_t gpu_value  = static_cast<output_t>(gpu_result.value); // Explicitly rewrap the gpu value
     REQUIRE(expected_result[0] == gpu_value);

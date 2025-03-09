@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
-
 // <cuda/std/functional>
 
 // ranges::equal_to
@@ -29,7 +27,7 @@ struct NotEqualityComparable
 };
 
 static_assert(!cuda::std::is_invocable_v<cuda::std::ranges::equal_to, NotEqualityComparable, NotEqualityComparable>);
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC considers implict conversions in C++17
+#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC considers implicit conversions in C++17
 static_assert(!cuda::std::is_invocable_v<cuda::std::ranges::equal_to, int, MoveOnly>);
 #endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017
 static_assert(cuda::std::is_invocable_v<cuda::std::ranges::equal_to, explicit_operators, explicit_operators>);
@@ -48,9 +46,7 @@ __host__ __device__ constexpr bool test()
 {
   auto fn = cuda::std::ranges::equal_to();
 
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_MSVC_2017)
   assert(fn(MoveOnly(42), MoveOnly(42)));
-#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_MSVC_2017
 
   ForwardingTestObject a{};
   ForwardingTestObject b{};

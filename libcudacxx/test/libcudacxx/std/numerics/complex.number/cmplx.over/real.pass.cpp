@@ -38,12 +38,10 @@ __host__ __device__ void test(typename cuda::std::enable_if<cuda::std::is_integr
 
   static_assert((cuda::std::is_same<decltype(cuda::std::real(T(x))), double>::value), "");
   assert(cuda::std::real(x) == x);
-#if TEST_STD_VER > 2011
   constexpr T val{x};
   static_assert(cuda::std::real(val) == val, "");
   constexpr cuda::std::complex<T> t{val, val};
   static_assert(t.real() == x, "");
-#endif
 }
 
 template <class T, int x>
@@ -53,12 +51,10 @@ __host__ __device__ void test(typename cuda::std::enable_if<!cuda::std::is_integ
 
   static_assert((cuda::std::is_same<decltype(cuda::std::real(T(x))), T>::value), "");
   assert(cuda::std::real(x) == x);
-#if TEST_STD_VER > 2011
   constexpr T val{x};
   static_assert(cuda::std::real(val) == val, "");
   constexpr cuda::std::complex<T> t{val, val};
   static_assert(t.real() == x, "");
-#endif
 }
 
 template <class T>
@@ -81,14 +77,15 @@ int main(int, char**)
 {
   test<float>();
   test<double>();
-// CUDA treats long double as double
-//  test<long double>();
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _CCCL_HAS_LONG_DOUBLE()
+  test<long double>();
+#endif // _CCCL_HAS_LONG_DOUBLE()
+#if _LIBCUDACXX_HAS_NVFP16()
   test_nonconstexpr<__half>();
-#endif
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test_nonconstexpr<__nv_bfloat16>();
-#endif
+#endif // _LIBCUDACXX_HAS_NVBF16()
   test<int>();
   test<unsigned>();
   test<long long>();

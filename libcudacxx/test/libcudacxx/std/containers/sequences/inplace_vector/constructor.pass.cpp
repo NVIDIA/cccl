@@ -7,16 +7,14 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++11
-
 #include <cuda/std/__algorithm_>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/initializer_list>
 #include <cuda/std/inplace_vector>
 #include <cuda/std/type_traits>
 
-#include "cuda/std/__type_traits/is_nothrow_default_constructible.h"
 #include "test_iterators.h"
 #include "test_macros.h"
 #include "types.h"
@@ -230,7 +228,7 @@ __host__ __device__ constexpr void test_init_list()
   }
 }
 
-#if TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC)
+#if !defined(TEST_COMPILER_MSVC)
 template <class T, template <class, size_t> class Range>
 __host__ __device__ constexpr void test_range()
 {
@@ -262,7 +260,7 @@ __host__ __device__ constexpr void test_range()
 #  endif // !TEST_COMPILER_GCC < 8
   test_range<T, cuda::std::array>();
 }
-#endif // TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC)
+#endif // !defined(TEST_COMPILER_MSVC)
 
 template <class T, cuda::std::enable_if_t<cuda::std::is_trivial<T>::value, int> = 0>
 __host__ __device__ constexpr void test()
@@ -273,9 +271,9 @@ __host__ __device__ constexpr void test()
   test_size_value<T>();
   test_iter<T>();
   test_init_list<T>();
-#if TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC)
+#if !defined(TEST_COMPILER_MSVC)
   test_range<T>();
-#endif // TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC)
+#endif // !defined(TEST_COMPILER_MSVC)
 }
 
 template <class T, cuda::std::enable_if_t<!cuda::std::is_trivial<T>::value, int> = 0>
@@ -283,16 +281,16 @@ __host__ __device__ constexpr void test()
 {
   test_default<T>();
 
-  if (!cuda::std::__libcpp_is_constant_evaluated())
+  if (!cuda::std::is_constant_evaluated())
   {
     test_copy_move<T>();
     test_size<T>();
     test_size_value<T>();
     test_iter<T>();
     test_init_list<T>();
-#if TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC)
+#if !defined(TEST_COMPILER_MSVC)
     test_range<T>();
-#endif // TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC)
+#endif // !defined(TEST_COMPILER_MSVC)
   }
 }
 
@@ -308,7 +306,7 @@ __host__ __device__ constexpr bool test()
   test<ThrowingMoveAssignment>();
 
   // Due to reinterpret_cast within the destructor a on trivially destructible type cannot be constexpr at all
-  if (!cuda::std::__libcpp_is_constant_evaluated())
+  if (!cuda::std::is_constant_evaluated())
   {
     test<NonTrivialDestructor>();
   }
@@ -386,7 +384,7 @@ void test_exceptions()
     assert(false);
   }
 
-#  if TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC)
+#  if !defined(TEST_COMPILER_MSVC)
   try
   {
     input_range<int, 2 * capacity> input{{0, 1, 2, 3, 4, 5, 6, 7}};
@@ -438,7 +436,7 @@ void test_exceptions()
   {
     assert(false);
   }
-#  endif // TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC)
+#  endif // !TEST_COMPILER_MSVC
 }
 #endif // !TEST_HAS_NO_EXCEPTIONS
 

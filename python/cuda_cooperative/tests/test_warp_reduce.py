@@ -2,24 +2,22 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from pynvjitlink import patch
-import cuda.cooperative.experimental as cudax
-from numba.core.extending import (lower_builtin, make_attribute_wrapper,
-                                  models, register_model, type_callable,
-                                  typeof_impl)
-from numba.core import cgutils
-import numpy as np
-from helpers import random_int, NUMBA_TYPES_TO_NP
-import pytest
-from numba import cuda, types
 import numba
+import numpy as np
+import pytest
+from helpers import NUMBA_TYPES_TO_NP, random_int
+from numba import cuda, types
+from pynvjitlink import patch
+
+import cuda.cooperative.experimental as cudax
+
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 
 patch.patch_numba_linker(lto=True)
 
 
-@pytest.mark.parametrize('T', [types.uint32, types.uint64])
+@pytest.mark.parametrize("T", [types.uint32, types.uint64])
 def test_warp_reduction_of_integral_type(T):
     def op(a, b):
         return a if a < b else b
@@ -29,8 +27,7 @@ def test_warp_reduction_of_integral_type(T):
 
     @cuda.jit(link=warp_reduce.files)
     def kernel(input, output):
-        temp_storage = cuda.shared.array(
-            shape=temp_storage_bytes, dtype='uint8')
+        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
         warp_output = warp_reduce(temp_storage, input[cuda.threadIdx.x])
 
         if cuda.threadIdx.x == 0:
@@ -50,18 +47,18 @@ def test_warp_reduction_of_integral_type(T):
     sig = (T[::1], T[::1])
     sass = kernel.inspect_sass(sig)
 
-    assert 'LDL' not in sass
-    assert 'STL' not in sass
+    assert "LDL" not in sass
+    assert "STL" not in sass
 
 
-@pytest.mark.parametrize('T', [types.uint32, types.uint64])
+@pytest.mark.parametrize("T", [types.uint32, types.uint64])
 def test_warp_sum(T):
     warp_reduce = cudax.warp.sum(T)
     temp_storage_bytes = warp_reduce.temp_storage_bytes
 
     @cuda.jit(link=warp_reduce.files)
     def kernel(input, output):
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype='uint8')
+        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
         warp_output = warp_reduce(temp_storage, input[cuda.threadIdx.x])
 
         if cuda.threadIdx.x == 0:
@@ -81,5 +78,5 @@ def test_warp_sum(T):
     sig = (T[::1], T[::1])
     sass = kernel.inspect_sass(sig)
 
-    assert 'LDL' not in sass
-    assert 'STL' not in sass
+    assert "LDL" not in sass
+    assert "STL" not in sass

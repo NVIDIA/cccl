@@ -49,7 +49,7 @@ struct params_t
 
 } // namespace
 
-CUB_TEST("Blocked to striped works", "[exchange][warp][shfl]", inout_types, items_per_thread)
+C2H_TEST("Blocked to striped works", "[exchange][warp][shfl]", inout_types, items_per_thread)
 {
   using params   = params_t<TestType>;
   using in_type  = typename params::in_type;
@@ -69,7 +69,7 @@ CUB_TEST("Blocked to striped works", "[exchange][warp][shfl]", inout_types, item
   REQUIRE(h_expected_output == d_out);
 }
 
-CUB_TEST("Striped to blocked works", "[exchange][warp][shfl]", inout_types, items_per_thread)
+C2H_TEST("Striped to blocked works", "[exchange][warp][shfl]", inout_types, items_per_thread)
 {
   using params   = params_t<TestType>;
   using in_type  = typename params::in_type;

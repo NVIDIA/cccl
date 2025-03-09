@@ -31,8 +31,8 @@
 
 #include <memory>
 
-#include "catch2_test_helper.h"
 #include "cub/detail/temporary_storage.cuh"
+#include <c2h/catch2_test_helper.h>
 
 using num_storage_slots = c2h::enum_type_list<int, 1, 4, 42>;
 
@@ -41,7 +41,7 @@ std::size_t get_temporary_storage_size(std::size_t (&sizes)[Items])
 {
   void* pointers[Items]{};
   std::size_t temp_storage_bytes{};
-  CubDebugExit(cub::AliasTemporaries(nullptr, temp_storage_bytes, pointers, sizes));
+  CubDebugExit(cub::detail::AliasTemporaries(nullptr, temp_storage_bytes, pointers, sizes));
   return temp_storage_bytes;
 }
 
@@ -52,14 +52,14 @@ std::size_t get_actual_zero()
   return get_temporary_storage_size(sizes);
 }
 
-CUB_TEST("Test empty storage", "[temporary_storage_layout]", num_storage_slots)
+C2H_TEST("Test empty storage", "[temporary_storage_layout]", num_storage_slots)
 {
   constexpr auto storage_slots = c2h::get<0, TestType>::value;
   cub::detail::temporary_storage::layout<storage_slots> temporary_storage;
   CHECK(temporary_storage.get_size() == get_actual_zero());
 }
 
-CUB_TEST("Test partially filled storage", "[temporary_storage_layout]", num_storage_slots)
+C2H_TEST("Test partially filled storage", "[temporary_storage_layout]", num_storage_slots)
 {
   constexpr auto storage_slots             = c2h::get<0, TestType>::value;
   using target_type                        = std::uint64_t;
@@ -104,7 +104,7 @@ CUB_TEST("Test partially filled storage", "[temporary_storage_layout]", num_stor
   }
 }
 
-CUB_TEST("Test grow", "[temporary_storage_layout]", num_storage_slots)
+C2H_TEST("Test grow", "[temporary_storage_layout]", num_storage_slots)
 {
   constexpr auto StorageSlots                  = c2h::get<0, TestType>::value;
   using target_type                            = std::uint64_t;
@@ -143,7 +143,7 @@ CUB_TEST("Test grow", "[temporary_storage_layout]", num_storage_slots)
   }
 }
 
-CUB_TEST("Test double grow", "[temporary_storage_layout]", num_storage_slots)
+C2H_TEST("Test double grow", "[temporary_storage_layout]", num_storage_slots)
 {
   constexpr auto storage_slots                 = c2h::get<0, TestType>::value;
   using target_type                            = std::uint64_t;

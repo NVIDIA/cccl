@@ -51,8 +51,7 @@ __device__ __noinline__ void test_consumer(T* dest, T* source, cuda::pipeline<Pi
 }
 
 template <class T,
-          template <typename, typename>
-          class PipelineSelector,
+          template <typename, typename> class PipelineSelector,
           cuda::thread_scope PipelineScope,
           uint8_t PipelineStages>
 __device__ __noinline__ void test_fully_specialized()

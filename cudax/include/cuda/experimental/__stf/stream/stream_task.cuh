@@ -29,6 +29,7 @@
 
 #include <cuda/experimental/__stf/internal/frozen_logical_data.cuh>
 #include <cuda/experimental/__stf/internal/logical_data.cuh>
+#include <cuda/experimental/__stf/internal/void_interface.cuh>
 #include <cuda/experimental/__stf/stream/internal/event_types.cuh>
 
 #include <deque>
@@ -49,7 +50,7 @@ class stream_task;
  * that task's stream.
  *
  * This task type accepts dynamic dependencies, i.e. dependencies can be added at runtime by calling `add_deps()` or
- * `add_deps()` prior to starting the task with `start()`. In turn, the added depdencies have dynamic types. It is the
+ * `add_deps()` prior to starting the task with `start()`. In turn, the added dependencies have dynamic types. It is the
  * caller's responsibility to access the correct types for each dependency by calling `get<T>(index)`.
  */
 template <>
@@ -122,7 +123,7 @@ public:
       assert(automatic_stream);
 
       // Note: we store grid in a variable to avoid dangling references
-      // because the compiler does not know we are making a refernce to
+      // because the compiler does not know we are making a reference to
       // a vector that remains valid
       const auto& grid   = e_place.as_grid();
       const auto& places = grid.get_places();
@@ -262,7 +263,7 @@ public:
    *
    * The lambda must accept exactly one argument. If the type of the lambda's argument is one of
    * `stream_task<>`, `stream_task<>&`, `auto`, `auto&`, or `auto&&`, then `*this` is passed to the
-   * lambda. Otherwise, `this->get_stream()` is passed to the lambda. Depdendencies would need to be accessed
+   * lambda. Otherwise, `this->get_stream()` is passed to the lambda. Dependencies would need to be accessed
    * separately.
    */
   template <typename Fun>
@@ -271,12 +272,42 @@ public:
     // Apply function to the stream (in the first position) and the data tuple
     nvtx_range nr(get_symbol().c_str());
     start();
-    SCOPE(exit)
-    {
-      end();
-    };
 
     auto& dot = ctx.get_dot();
+
+    bool record_time = reserved::dot::instance().is_timing();
+
+    cudaEvent_t start_event, end_event;
+
+    if (record_time)
+    {
+      // Events must be created here to avoid issues with multi-gpu
+      cuda_safe_call(cudaEventCreate(&start_event));
+      cuda_safe_call(cudaEventCreate(&end_event));
+      cuda_safe_call(cudaEventRecord(start_event, get_stream()));
+    }
+
+    SCOPE(exit)
+    {
+      end_uncleared();
+
+      if (record_time)
+      {
+        cuda_safe_call(cudaEventRecord(end_event, get_stream()));
+        cuda_safe_call(cudaEventSynchronize(end_event));
+
+        float milliseconds = 0;
+        cuda_safe_call(cudaEventElapsedTime(&milliseconds, start_event, end_event));
+
+        if (dot->is_tracing())
+        {
+          dot->template add_vertex_timing<task>(*this, milliseconds);
+        }
+      }
+
+      clear();
+    };
+
     if (dot->is_tracing())
     {
       dot->template add_vertex<task, logical_data_untyped>(*this);
@@ -338,7 +369,7 @@ public:
       calibrate = needs_calibration;
     }
 
-    return dot.is_tracing() || (calibrate && statistics.is_calibrating());
+    return dot.is_timing() || (calibrate && statistics.is_calibrating());
   }
 
 private:
@@ -384,10 +415,6 @@ private:
     cudaEvent_t sync_event;
     // Disable timing to avoid implicit barriers
     cuda_safe_call(cudaEventCreateWithFlags(&sync_event, cudaEventDisableTiming));
-#ifdef CUDASTF_DEBUG
-    reserved::counter<reserved::cuda_event_tag::created> ++;
-    reserved::high_water_mark<reserved::cuda_event_tag>.record(++reserved::counter<cuda_event_tag::alive>);
-#endif
 
     cuda_safe_call(cudaEventRecord(sync_event, streams[0].stream));
 
@@ -399,10 +426,6 @@ private:
 
     // Asynchronously destroy event to avoid a memleak
     cuda_safe_call(cudaEventDestroy(sync_event));
-#ifdef CUDASTF_DEBUG
-    reserved::counter<reserved::cuda_event_tag::destroyed>.increment();
-    reserved::counter<reserved::cuda_event_tag::alive>.decrement();
-#endif
 
     if (current_dev != s0_dev)
     {
@@ -563,12 +586,31 @@ public:
       auto t = tuple_prepend(get_stream(), typed_deps());
       return ::std::apply(::std::forward<Fun>(fun), t);
     }
+    else if constexpr (reserved::is_invocable_with_filtered<Fun, cudaStream_t, Data...>::value)
+    {
+      // Use the filtered tuple
+      auto t = tuple_prepend(get_stream(), reserved::remove_void_interface_types(typed_deps()));
+      return ::std::apply(::std::forward<Fun>(fun), t);
+    }
     else
     {
+      constexpr bool fun_invocable_task_deps = ::std::is_invocable_v<Fun, decltype(*this), Data...>;
+      constexpr bool fun_invocable_task_non_void_deps =
+        reserved::is_invocable_with_filtered<Fun, decltype(*this), Data...>::value;
+
       // Invoke passing `*this` as the first argument, followed by the slices
-      static_assert(::std::is_invocable_v<Fun, decltype(*this), Data...>, "Incorrect lambda function signature.");
-      auto t = tuple_prepend(*this, typed_deps());
-      return ::std::apply(::std::forward<Fun>(fun), t);
+      static_assert(fun_invocable_task_deps || fun_invocable_task_non_void_deps,
+                    "Incorrect lambda function signature.");
+
+      if constexpr (fun_invocable_task_deps)
+      {
+        return ::std::apply(::std::forward<Fun>(fun), tuple_prepend(*this, typed_deps()));
+      }
+      else if constexpr (fun_invocable_task_non_void_deps)
+      {
+        return ::std::apply(::std::forward<Fun>(fun),
+                            tuple_prepend(*this, reserved::remove_void_interface_types(typed_deps())));
+      }
     }
   }
 
@@ -587,7 +629,7 @@ private:
 template <typename... Data>
 class deferred_stream_task;
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen has issues with this code
+#ifndef _CCCL_DOXYGEN_INVOKED // doxygen has issues with this code
 /*
  * Base of all deferred tasks. Stores the needed information for typed deferred tasks to run (see below).
  */
@@ -802,7 +844,7 @@ class deferred_stream_task : public deferred_stream_task<>
 
 public:
   /**
-   * @brief Construct a new deferred stream task object from a context, execution place, and depdenencies.
+   * @brief Construct a new deferred stream task object from a context, execution place, and dependencies.
    *
    * @param ctx the parent context
    * @param e_place the place where the task will execute
@@ -847,6 +889,6 @@ public:
     };
   }
 };
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 } // namespace cuda::experimental::stf

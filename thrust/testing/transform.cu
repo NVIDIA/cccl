@@ -10,7 +10,7 @@
 
 // There is a unfortunate miscompilation of the gcc-11 vectorizer leading to OOB writes
 // Adding this attribute suffices that this miscompilation does not appear anymore
-#if defined(_CCCL_COMPILER_GCC) && __GNUC__ >= 11
+#if _CCCL_COMPILER(GCC, >=, 11)
 #  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER __attribute__((optimize("no-tree-vectorize")))
 #else
 #  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
@@ -81,7 +81,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfUnaryNoStencilSimple()
   Vector output{-1, -2, -3};
   Vector result{-1, 2, -3};
 
-  iter = thrust::transform_if(input.begin(), input.end(), output.begin(), thrust::negate<T>(), thrust::identity<T>());
+  iter = thrust::transform_if(input.begin(), input.end(), output.begin(), thrust::negate<T>(), ::cuda::std::identity{});
 
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
   ASSERT_EQUAL(output, result);
@@ -142,7 +142,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfUnarySimple()
   Vector result{-1, 2, -3};
 
   iter = thrust::transform_if(
-    input.begin(), input.end(), stencil.begin(), output.begin(), thrust::negate<T>(), thrust::identity<T>());
+    input.begin(), input.end(), stencil.begin(), output.begin(), thrust::negate<T>(), ::cuda::std::identity{});
 
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
   ASSERT_EQUAL(output, result);
@@ -201,7 +201,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformBinarySimple()
 
   typename Vector::iterator iter;
 
-  // There is a strange gcc bug here where it belives we would write out of bounds.
+  // There is a strange gcc bug here where it believes we would write out of bounds.
   // It seems to go away if we add one more element that we leave untouched. Luckily 0 - 0 = 0 so all is fine.
   // Note that we still write the element, so it does not hide a functional thrust bug
   Vector input1{1, -2, 3};
@@ -270,7 +270,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfBinarySimple()
   Vector output{1, 2, 3};
   Vector result{5, 2, -3};
 
-  thrust::identity<T> identity;
+  ::cuda::std::identity identity;
 
   iter = thrust::transform_if(
     input1.begin(),
@@ -675,8 +675,8 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformUnaryCountingIterator()
   thrust::host_vector<T> h_result(n);
   thrust::device_vector<T> d_result(n);
 
-  thrust::transform(h_first, h_first + n, h_result.begin(), thrust::identity<T>());
-  thrust::transform(d_first, d_first + n, d_result.begin(), thrust::identity<T>());
+  thrust::transform(h_first, h_first + n, h_result.begin(), ::cuda::std::identity{});
+  thrust::transform(d_first, d_first + n, d_result.begin(), ::cuda::std::identity{});
 
   ASSERT_EQUAL(h_result, d_result);
 }

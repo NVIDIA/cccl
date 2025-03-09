@@ -35,7 +35,7 @@
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/detail/libcxx/include/cstring>
+#include <cuda/std/cstring>
 
 #ifndef __cuda_std__
 
@@ -45,7 +45,7 @@ template <class _Size>
 _LIBCUDACXX_HIDE_FROM_ABI _Size __loadword(const void* __p)
 {
   _Size __r;
-  std::memcpy(&__r, __p, sizeof(__r));
+  _CUDA_VSTD::memcpy(&__r, __p, sizeof(__r));
   return __r;
 }
 
@@ -374,7 +374,7 @@ struct _PairT
 
 _LIBCUDACXX_HIDE_FROM_ABI size_t __hash_combine(size_t __lhs, size_t __rhs) noexcept
 {
-  typedef __scalar_hash<_PairT> _HashT;
+  using _HashT     = __scalar_hash<_PairT>;
   const _PairT __p = {__lhs, __rhs};
   return _HashT()(__p);
 }
@@ -523,7 +523,7 @@ template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<unsigned long long> : public __scalar_hash<unsigned long long>
 {};
 
-#  ifndef _LIBCUDACXX_HAS_NO_INT128
+#  if _CCCL_HAS_INT128()
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__int128_t> : public __scalar_hash<__int128_t>
@@ -533,7 +533,7 @@ template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__uint128_t> : public __scalar_hash<__uint128_t>
 {};
 
-#  endif
+#  endif // _CCCL_HAS_INT128()
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<float> : public __scalar_hash<float>
@@ -573,26 +573,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<long double> : public __scalar_hash<lo
     {
       return 0;
     }
-#  if defined(__i386__) || (defined(__x86_64__) && defined(__ILP32__))
-    // Zero out padding bits
-    union
-    {
-      long double __t;
-      struct
-      {
-        size_t __a;
-        size_t __b;
-        size_t __c;
-        size_t __d;
-      } __s;
-    } __u;
-    __u.__s.__a = 0;
-    __u.__s.__b = 0;
-    __u.__s.__c = 0;
-    __u.__s.__d = 0;
-    __u.__t     = __v;
-    return __u.__s.__a ^ __u.__s.__b ^ __u.__s.__c ^ __u.__s.__d;
-#  elif defined(__x86_64__)
+#  if _CCCL_ARCH(X86_64) && _CCCL_OS(LINUX)
     // Zero out padding bits
     union
     {
@@ -618,7 +599,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __enum_hash : public __unary_function<_Tp, 
 {
   _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(_Tp __v) const noexcept
   {
-    typedef typename underlying_type<_Tp>::type type;
+    using type = typename underlying_type<_Tp>::type;
     return hash<type>()(static_cast<type>(__v));
   }
 };
@@ -634,8 +615,6 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash : public __enum_hash<_Tp>
 {};
 
-#  if _CCCL_STD_VER > 2014
-
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<nullptr_t> : public __unary_function<nullptr_t, size_t>
 {
@@ -644,29 +623,23 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<nullptr_t> : public __unary_function<n
     return 662607004ull;
   }
 };
-#  endif
 
 template <class _Key, class _Hash>
-using __check_hash_requirements _LIBCUDACXX_NODEBUG_TYPE =
+using __check_hash_requirements _CCCL_NODEBUG_ALIAS =
   integral_constant<bool,
                     is_copy_constructible<_Hash>::value && is_move_constructible<_Hash>::value
                       && __invokable_r<size_t, _Hash, _Key const&>::value>;
 
 template <class _Key, class _Hash = hash<_Key>>
-using __has_enabled_hash _LIBCUDACXX_NODEBUG_TYPE =
+using __has_enabled_hash _CCCL_NODEBUG_ALIAS =
   integral_constant<bool, __check_hash_requirements<_Key, _Hash>::value && is_default_constructible<_Hash>::value>;
 
-#  if _CCCL_STD_VER > 2014
 template <class _Type, class>
-using __enable_hash_helper_imp _LIBCUDACXX_NODEBUG_TYPE = _Type;
+using __enable_hash_helper_imp _CCCL_NODEBUG_ALIAS = _Type;
 
 template <class _Type, class... _Keys>
-using __enable_hash_helper _LIBCUDACXX_NODEBUG_TYPE =
-  __enable_hash_helper_imp<_Type, __enable_if_t<__all<__has_enabled_hash<_Keys>::value...>::value>>;
-#  else
-template <class _Type, class...>
-using __enable_hash_helper _LIBCUDACXX_NODEBUG_TYPE = _Type;
-#  endif
+using __enable_hash_helper _CCCL_NODEBUG_ALIAS =
+  __enable_hash_helper_imp<_Type, enable_if_t<__all<__has_enabled_hash<_Keys>::value...>::value>>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

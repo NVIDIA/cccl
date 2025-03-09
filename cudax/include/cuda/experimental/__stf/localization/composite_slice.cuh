@@ -102,7 +102,7 @@ public:
     // Number of pages to assign (note that we will try to make less allocations in practice by grouping pages)
     size_t nblocks = vm_total_size_bytes / alloc_granularity_bytes;
 
-    // Reserve a range of virtual addresses, round up size to accomodate granularity requirements
+    // Reserve a range of virtual addresses, round up size to accommodate granularity requirements
     cuda_try(cuMemAddressReserve(&base_ptr, vm_total_size_bytes, 0ULL, 0ULL, 0ULL));
 
     // fprintf(stderr, "cuMemAddressReserve => %p + %ld (%ld KB)\n", (void *)base_ptr, vm_total_size_bytes,
@@ -272,7 +272,7 @@ private:
       sampled_pos[sample] = index_to_grid_pos(index, delinearize);
     }
 
-    // Count the number of occurences of each pos
+    // Count the number of occurrences of each pos
     ::std::unordered_map<pos4, size_t, hash<pos4>> sample_cnt;
     for (auto& s : sampled_pos)
     {

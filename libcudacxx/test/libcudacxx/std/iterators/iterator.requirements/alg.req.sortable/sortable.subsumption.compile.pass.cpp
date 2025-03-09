@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14, c++17
+// UNSUPPORTED: c++17
 
 // template<class I, class R = ranges::less, class P = identity>
 //   concept sortable = see below;                            // since C++20
@@ -30,7 +30,7 @@ __host__ __device__ constexpr bool test_subsumption()
   return true;
 }
 
-static_assert(test_subsumption<int*, cuda::std::ranges::less, cuda::std::identity>());
+static_assert(test_subsumption<int*, cuda::std::ranges::less, cuda::std::identity>(), "");
 
 int main(int, char**)
 {

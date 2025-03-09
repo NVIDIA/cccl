@@ -21,12 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
-#if !defined(_CCCL_CUDA_COMPILER_NVCC) && !defined(_CCCL_CUDA_COMPILER_NVHPC)
+#if _CCCL_CUDA_COMPILER(CLANG)
 #  include <cuda_runtime_api.h>
-#endif // !_CCCL_CUDA_COMPILER_NVCC && !_CCCL_CUDA_COMPILER_NVHPC
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 #include <cuda/std/__cuda/api_wrapper.h>
-#include <cuda/std/__exception/cuda_error.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -37,7 +36,7 @@ struct __ensure_current_device
   int __target_device_   = 0;
   int __original_device_ = 0;
 
-  //! @brief Querries the current device and if that is different than \p __target_device sets the current device to
+  //! @brief Queries the current device and if that is different than \p __target_device sets the current device to
   //! \p __target_device
   __ensure_current_device(const int __target_device)
       : __target_device_(__target_device)

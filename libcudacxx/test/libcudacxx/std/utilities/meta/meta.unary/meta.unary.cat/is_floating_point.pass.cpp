@@ -6,6 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// keep this test in sync with `is_floating_point.pass.cpp` for `cuda::is_floating_point`
+
 // type_traits
 
 // is_floating_point
@@ -15,8 +17,6 @@
 
 #include "test_macros.h"
 
-TEST_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
-
 template <class T>
 __host__ __device__ void test_is_floating_point()
 {
@@ -24,12 +24,10 @@ __host__ __device__ void test_is_floating_point()
   static_assert(cuda::std::is_floating_point<const T>::value, "");
   static_assert(cuda::std::is_floating_point<volatile T>::value, "");
   static_assert(cuda::std::is_floating_point<const volatile T>::value, "");
-#if TEST_STD_VER > 2011
   static_assert(cuda::std::is_floating_point_v<T>, "");
   static_assert(cuda::std::is_floating_point_v<const T>, "");
   static_assert(cuda::std::is_floating_point_v<volatile T>, "");
   static_assert(cuda::std::is_floating_point_v<const volatile T>, "");
-#endif
 }
 
 template <class T>
@@ -39,12 +37,10 @@ __host__ __device__ void test_is_not_floating_point()
   static_assert(!cuda::std::is_floating_point<const T>::value, "");
   static_assert(!cuda::std::is_floating_point<volatile T>::value, "");
   static_assert(!cuda::std::is_floating_point<const volatile T>::value, "");
-#if TEST_STD_VER > 2011
   static_assert(!cuda::std::is_floating_point_v<T>, "");
   static_assert(!cuda::std::is_floating_point_v<const T>, "");
   static_assert(!cuda::std::is_floating_point_v<volatile T>, "");
   static_assert(!cuda::std::is_floating_point_v<const volatile T>, "");
-#endif
 }
 
 class Empty
@@ -81,7 +77,9 @@ int main(int, char**)
 {
   test_is_floating_point<float>();
   test_is_floating_point<double>();
+#if _CCCL_HAS_LONG_DOUBLE()
   test_is_floating_point<long double>();
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
   test_is_not_floating_point<short>();
   test_is_not_floating_point<unsigned short>();

@@ -59,7 +59,7 @@ private:
 
 public:
   static const bool value = !is_same<decltype(__test((_Tp*) 0)), __two>::value;
-  typedef decltype(__test((_Tp*) 0)) type;
+  using type              = decltype(__test((_Tp*) 0));
 };
 
 template <class _Tp>
@@ -78,7 +78,7 @@ private:
 
 public:
   static const bool value = !is_same<decltype(__test((_Tp*) 0)), __two>::value;
-  typedef decltype(__test((_Tp*) 0)) type;
+  using type              = decltype(__test((_Tp*) 0));
 };
 
 template <class _Tp, bool = __derives_from_unary_function<_Tp>::value>
@@ -105,7 +105,7 @@ struct __weak_result_type_imp // bool is true
     , public __maybe_derive_from_binary_function<_Tp>
 {
 #if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
-  using result_type _LIBCUDACXX_NODEBUG_TYPE _LIBCUDACXX_DEPRECATED_IN_CXX17 = typename _Tp::result_type;
+  using result_type _CCCL_NODEBUG_ALIAS _LIBCUDACXX_DEPRECATED_IN_CXX17 = typename _Tp::result_type;
 #endif
 };
 
@@ -125,7 +125,7 @@ template <class _Rp>
 struct __weak_result_type<_Rp()>
 {
 #if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
-  using result_type _LIBCUDACXX_NODEBUG_TYPE _LIBCUDACXX_DEPRECATED_IN_CXX17 = _Rp;
+  using result_type _CCCL_NODEBUG_ALIAS _LIBCUDACXX_DEPRECATED_IN_CXX17 = _Rp;
 #endif
 };
 
@@ -133,7 +133,7 @@ template <class _Rp>
 struct __weak_result_type<_Rp (&)()>
 {
 #if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
-  using result_type _LIBCUDACXX_NODEBUG_TYPE _LIBCUDACXX_DEPRECATED_IN_CXX17 = _Rp;
+  using result_type _CCCL_NODEBUG_ALIAS _LIBCUDACXX_DEPRECATED_IN_CXX17 = _Rp;
 #endif
 };
 
@@ -141,7 +141,7 @@ template <class _Rp>
 struct __weak_result_type<_Rp (*)()>
 {
 #if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
-  using result_type _LIBCUDACXX_NODEBUG_TYPE _LIBCUDACXX_DEPRECATED_IN_CXX17 = _Rp;
+  using result_type _CCCL_NODEBUG_ALIAS _LIBCUDACXX_DEPRECATED_IN_CXX17 = _Rp;
 #endif
 };
 
@@ -211,7 +211,7 @@ template <class _Rp, class _A1, class _A2, class _A3, class... _A4>
 struct __weak_result_type<_Rp(_A1, _A2, _A3, _A4...)>
 {
 #if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
-  using result_type _LIBCUDACXX_NODEBUG_TYPE _LIBCUDACXX_DEPRECATED_IN_CXX17 = _Rp;
+  using result_type _CCCL_NODEBUG_ALIAS _LIBCUDACXX_DEPRECATED_IN_CXX17 = _Rp;
 #endif
 };
 
@@ -219,7 +219,7 @@ template <class _Rp, class _A1, class _A2, class _A3, class... _A4>
 struct __weak_result_type<_Rp (&)(_A1, _A2, _A3, _A4...)>
 {
 #if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
-  using result_type _LIBCUDACXX_NODEBUG_TYPE _LIBCUDACXX_DEPRECATED_IN_CXX17 = _Rp;
+  using result_type _CCCL_NODEBUG_ALIAS _LIBCUDACXX_DEPRECATED_IN_CXX17 = _Rp;
 #endif
 };
 
@@ -227,7 +227,7 @@ template <class _Rp, class _A1, class _A2, class _A3, class... _A4>
 struct __weak_result_type<_Rp (*)(_A1, _A2, _A3, _A4...)>
 {
 #if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
-  using result_type _LIBCUDACXX_NODEBUG_TYPE _LIBCUDACXX_DEPRECATED_IN_CXX17 = _Rp;
+  using result_type _CCCL_NODEBUG_ALIAS _LIBCUDACXX_DEPRECATED_IN_CXX17 = _Rp;
 #endif
 };
 
@@ -235,7 +235,7 @@ template <class _Rp, class _Cp, class _A1, class _A2, class... _A3>
 struct __weak_result_type<_Rp (_Cp::*)(_A1, _A2, _A3...)>
 {
 #if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
-  using result_type _LIBCUDACXX_NODEBUG_TYPE _LIBCUDACXX_DEPRECATED_IN_CXX17 = _Rp;
+  using result_type _CCCL_NODEBUG_ALIAS _LIBCUDACXX_DEPRECATED_IN_CXX17 = _Rp;
 #endif
 };
 
@@ -243,7 +243,7 @@ template <class _Rp, class _Cp, class _A1, class _A2, class... _A3>
 struct __weak_result_type<_Rp (_Cp::*)(_A1, _A2, _A3...) const>
 {
 #if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
-  using result_type _LIBCUDACXX_NODEBUG_TYPE _LIBCUDACXX_DEPRECATED_IN_CXX17 = _Rp;
+  using result_type _CCCL_NODEBUG_ALIAS _LIBCUDACXX_DEPRECATED_IN_CXX17 = _Rp;
 #endif
 };
 
@@ -251,7 +251,7 @@ template <class _Rp, class _Cp, class _A1, class _A2, class... _A3>
 struct __weak_result_type<_Rp (_Cp::*)(_A1, _A2, _A3...) volatile>
 {
 #if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
-  using result_type _LIBCUDACXX_NODEBUG_TYPE _LIBCUDACXX_DEPRECATED_IN_CXX17 = _Rp;
+  using result_type _CCCL_NODEBUG_ALIAS _LIBCUDACXX_DEPRECATED_IN_CXX17 = _Rp;
 #endif
 };
 
@@ -259,14 +259,14 @@ template <class _Rp, class _Cp, class _A1, class _A2, class... _A3>
 struct __weak_result_type<_Rp (_Cp::*)(_A1, _A2, _A3...) const volatile>
 {
 #if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
-  using result_type _LIBCUDACXX_NODEBUG_TYPE _LIBCUDACXX_DEPRECATED_IN_CXX17 = _Rp;
+  using result_type _CCCL_NODEBUG_ALIAS _LIBCUDACXX_DEPRECATED_IN_CXX17 = _Rp;
 #endif
 };
 
 template <class _Tp, class... _Args>
 struct __invoke_return
 {
-  typedef decltype(_CUDA_VSTD::__invoke(declval<_Tp>(), declval<_Args>()...)) type;
+  using type = decltype(_CUDA_VSTD::__invoke(declval<_Tp>(), declval<_Args>()...));
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD

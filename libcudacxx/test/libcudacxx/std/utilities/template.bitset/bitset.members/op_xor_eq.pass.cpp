@@ -33,11 +33,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test_op_xor_eq()
       cuda::std::bitset<N> v2(cases[c2]);
       cuda::std::bitset<N> v3 = v1;
       v1 ^= v2;
-      _CCCL_DIAG_PUSH
-      _CCCL_DIAG_SUPPRESS_ICC(186)
       for (cuda::std::size_t i = 0; i < v1.size(); ++i)
       {
-        _CCCL_DIAG_POP
         {
           assert(v1[i] == (v3[i] != v2[i]));
         }
@@ -58,8 +55,6 @@ int main(int, char**)
   test_op_xor_eq<64>();
   test_op_xor_eq<65>();
   test_op_xor_eq<1000>(); // not in constexpr because of constexpr evaluation step limits
-// 11.4 added support for constexpr device vars needed here
-#if TEST_STD_VER >= 2014 && !defined(_CCCL_CUDACC_BELOW_11_4)
   static_assert(test_op_xor_eq<0>(), "");
   static_assert(test_op_xor_eq<1>(), "");
   static_assert(test_op_xor_eq<31>(), "");
@@ -71,7 +66,6 @@ int main(int, char**)
   static_assert(test_op_xor_eq<64, 6>(), "");
   static_assert(test_op_xor_eq<65, 0, 6>(), "");
   static_assert(test_op_xor_eq<65, 6>(), "");
-#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

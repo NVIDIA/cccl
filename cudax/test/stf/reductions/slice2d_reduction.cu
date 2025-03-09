@@ -38,7 +38,7 @@ int main()
 
   auto redux_op = std::make_shared<slice_reduction_op_sum<int, 2>>();
 
-  ctx.task(handle.redux(redux_op))->*[](auto stream, auto s) {
+  ctx.task(handle.relaxed(redux_op))->*[](auto stream, auto s) {
     add<<<32, 32, 0, stream>>>(s, 42);
   };
 

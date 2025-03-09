@@ -30,11 +30,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_val_ctor()
     {
       assert(v[i] == ((i & 1) != 0));
     }
-    _CCCL_DIAG_PUSH
-    _CCCL_DIAG_SUPPRESS_ICC(186)
     for (cuda::std::size_t i = M; i < v.size(); ++i)
     {
-      _CCCL_DIAG_POP
       {
         assert(v[i] == false);
       }
@@ -64,9 +61,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

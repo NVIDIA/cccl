@@ -34,13 +34,10 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test_right_shift()
       cuda::std::bitset<N> v1(cases[c]);
       cuda::std::bitset<N> v2 = v1;
       v1 >>= s;
-      _CCCL_DIAG_PUSH
-      _CCCL_DIAG_SUPPRESS_ICC(186)
       for (cuda::std::size_t i = 0; i < v1.size(); ++i)
       {
         if (i + s < v1.size())
         {
-          _CCCL_DIAG_POP
           {
             assert(v1[i] == v2[i + s]);
           }
@@ -66,8 +63,6 @@ __host__ __device__ int main(int, char**)
   test_right_shift<64>();
   test_right_shift<65>();
   test_right_shift<1000>(); // not in constexpr because of constexpr evaluation step limits
-// 11.4 added support for constexpr device vars needed here
-#if TEST_STD_VER >= 2014 && !defined(_CCCL_CUDACC_BELOW_11_4)
   static_assert(test_right_shift<0>(), "");
   static_assert(test_right_shift<1>(), "");
   static_assert(test_right_shift<31>(), "");
@@ -85,7 +80,6 @@ __host__ __device__ int main(int, char**)
   static_assert(test_right_shift<65, 3, 6>(), "");
   static_assert(test_right_shift<65, 6, 9>(), "");
   static_assert(test_right_shift<65, 9>(), "");
-#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

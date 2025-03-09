@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class U, class G>
 //   constexpr explicit(!is_convertible_v<G, E>) expected(expected<U, G>&& rhs);
 //
@@ -61,8 +59,8 @@ static_assert(!canCstrFromExpected<void, NoCtorFromInt, void, int>, "");
 template <class T>
 struct CtorFrom
 {
-  _LIBCUDACXX_TEMPLATE(class T2 = T)
-  _LIBCUDACXX_REQUIRES((!cuda::std::same_as<T2, int>) )
+  _CCCL_TEMPLATE(class T2 = T)
+  _CCCL_REQUIRES((!cuda::std::same_as<T2, int>) )
   __host__ __device__ explicit CtorFrom(int);
   __host__ __device__ explicit CtorFrom(T);
   template <class U>

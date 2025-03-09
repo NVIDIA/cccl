@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14, c++17
+// UNSUPPORTED: c++17
 
 // template<class I1, class I2, class R, class P1, class P2>
 // concept indirectly_comparable;
@@ -44,8 +44,8 @@ template <class F>
   requires cuda::std::indirectly_comparable<int*, char*, F>
 __host__ __device__ void is_subsumed(F);
 
-static_assert(subsumes(cuda::std::less<int>()));
-static_assert(is_subsumed(cuda::std::less<int>()));
+static_assert(subsumes(cuda::std::less<int>()), "");
+static_assert(is_subsumed(cuda::std::less<int>()), "");
 
 int main(int, char**)
 {

@@ -1287,7 +1287,7 @@ CUB 1.4.1 is a minor release.
 - Fix minor CUDA 7.0 performance regressions in `cub::DeviceScan` and
     `cub::DeviceReduceByKey`.
 - Remove requirement for callers to define the `CUB_CDP` macro
-    when invoking CUB device-wide rountines using CUDA dynamic parallelism.
+    when invoking CUB device-wide routines using CUDA dynamic parallelism.
 - Fix headers not being included in the proper order (or missing includes)
     for some block-wide functions.
 
@@ -1374,7 +1374,7 @@ CUB 1.3.0 improves how thread blocks are expressed in block- and warp-wide
     This is useful when aliasing collective storage to shared memory that has
       been allocated dynamically by the host at the kernel call site.
   - Most CUB programs having typical 1D usage should not require any
-      changes to accomodate these updates.
+      changes to accommodate these updates.
 
 ## New Features
 
@@ -1547,7 +1547,7 @@ Numerous other performance and correctness fixes and included.
 ## New Features
 
 - `cub::DeviceRadixSort`.
-  Implements short-circuiting for homogenous digit passes.
+  Implements short-circuiting for homogeneous digit passes.
 - `cub::DeviceScan`.
   Implements single-pass "adaptive-lookback" strategy.
 

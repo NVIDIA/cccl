@@ -39,17 +39,19 @@
 
 #include <cub/agent/agent_adjacent_difference.cuh>
 #include <cub/detail/type_traits.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
+#include <cub/device/dispatch/tuning/tuning_adjacent_difference.cuh>
 #include <cub/util_debug.cuh>
-#include <cub/util_deprecated.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_namespace.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <iterator>
-
 CUB_NAMESPACE_BEGIN
+
+namespace detail::adjacent_difference
+{
 
 template <typename AgentDifferenceInitT, typename InputIteratorT, typename InputT, typename OffsetT>
 CUB_DETAIL_KERNEL_ATTRIBUTES void
@@ -78,7 +80,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceDifferenceKernel(
 
   // It is OK to introspect the return type or parameter types of the
   // `operator()` function of `__device__` extended lambda within device code.
-  using OutputT = detail::invoke_result_t<DifferenceOpT, InputT, InputT>;
+  using OutputT = invoke_result_t<DifferenceOpT, InputT, InputT>;
 
   using Agent =
     AgentDifference<ActivePolicyT,
@@ -101,51 +103,27 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceDifferenceKernel(
   agent.Process(tile_idx, tile_base);
 }
 
-template <typename InputIteratorT, bool MayAlias = true>
-struct DeviceAdjacentDifferencePolicy
+} // namespace detail::adjacent_difference
+
+enum class ReadOption
 {
-  using ValueT = typename std::iterator_traits<InputIteratorT>::value_type;
-
-  //------------------------------------------------------------------------------
-  // Architecture-specific tuning policies
-  //------------------------------------------------------------------------------
-
-  struct Policy300 : ChainedPolicy<300, Policy300, Policy300>
-  {
-    using AdjacentDifferencePolicy =
-      AgentAdjacentDifferencePolicy<128,
-                                    Nominal8BItemsToItems<ValueT>(7),
-                                    BLOCK_LOAD_WARP_TRANSPOSE,
-                                    LOAD_DEFAULT,
-                                    BLOCK_STORE_WARP_TRANSPOSE>;
-  };
-
-  struct Policy350 : ChainedPolicy<350, Policy350, Policy300>
-  {
-    using AdjacentDifferencePolicy =
-      AgentAdjacentDifferencePolicy<128,
-                                    Nominal8BItemsToItems<ValueT>(7),
-                                    BLOCK_LOAD_WARP_TRANSPOSE,
-                                    MayAlias ? LOAD_CA : LOAD_LDG,
-                                    BLOCK_STORE_WARP_TRANSPOSE>;
-  };
-
-  using MaxPolicy = Policy350;
+  Left,
+  Right
 };
 
 template <typename InputIteratorT,
           typename OutputIteratorT,
           typename DifferenceOpT,
           typename OffsetT,
-          bool MayAlias,
-          bool ReadLeft,
-          typename SelectedPolicy = DeviceAdjacentDifferencePolicy<InputIteratorT, MayAlias>>
-struct DispatchAdjacentDifference : public SelectedPolicy
+          MayAlias AliasOpt,
+          ReadOption ReadOpt,
+          typename PolicyHub = detail::adjacent_difference::policy_hub<InputIteratorT, AliasOpt == MayAlias::Yes>>
+struct DispatchAdjacentDifference
 {
-  using InputT = typename std::iterator_traits<InputIteratorT>::value_type;
+  using InputT = detail::it_value_t<InputIteratorT>;
 
   void* d_temp_storage;
-  std::size_t& temp_storage_bytes;
+  size_t& temp_storage_bytes;
   InputIteratorT d_input;
   OutputIteratorT d_output;
   OffsetT num_items;
@@ -154,7 +132,7 @@ struct DispatchAdjacentDifference : public SelectedPolicy
 
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchAdjacentDifference(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     InputIteratorT d_input,
     OutputIteratorT d_output,
     OffsetT num_items,
@@ -169,36 +147,11 @@ struct DispatchAdjacentDifference : public SelectedPolicy
       , stream(stream)
   {}
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_DEPRECATED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchAdjacentDifference(
-    void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
-    InputIteratorT d_input,
-    OutputIteratorT d_output,
-    OffsetT num_items,
-    DifferenceOpT difference_op,
-    cudaStream_t stream,
-    bool debug_synchronous)
-      : d_temp_storage(d_temp_storage)
-      , temp_storage_bytes(temp_storage_bytes)
-      , d_input(d_input)
-      , d_output(d_output)
-      , num_items(num_items)
-      , difference_op(difference_op)
-      , stream(stream)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-  }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
-
   /// Invocation
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     using AdjacentDifferencePolicyT = typename ActivePolicyT::AdjacentDifferencePolicy;
-
-    using MaxPolicyT = typename DispatchAdjacentDifference::MaxPolicy;
 
     cudaError error = cudaSuccess;
 
@@ -207,12 +160,12 @@ struct DispatchAdjacentDifference : public SelectedPolicy
       constexpr int tile_size = AdjacentDifferencePolicyT::ITEMS_PER_TILE;
       const int num_tiles     = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
 
-      std::size_t first_tile_previous_size = MayAlias * num_tiles * sizeof(InputT);
+      size_t first_tile_previous_size = (AliasOpt == MayAlias::Yes) * num_tiles * sizeof(InputT);
 
-      void* allocations[1]            = {nullptr};
-      std::size_t allocation_sizes[1] = {MayAlias * first_tile_previous_size};
+      void* allocations[1]       = {nullptr};
+      size_t allocation_sizes[1] = {(AliasOpt == MayAlias::Yes) * first_tile_previous_size};
 
-      error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
 
       if (cudaSuccess != error)
       {
@@ -239,23 +192,25 @@ struct DispatchAdjacentDifference : public SelectedPolicy
 
       auto first_tile_previous = reinterpret_cast<InputT*>(allocations[0]);
 
-      if (MayAlias)
+      if constexpr (AliasOpt == MayAlias::Yes)
       {
-        using AgentDifferenceInitT = AgentDifferenceInit<InputIteratorT, InputT, OffsetT, ReadLeft>;
+        using AgentDifferenceInitT =
+          detail::adjacent_difference::AgentDifferenceInit<InputIteratorT, InputT, OffsetT, ReadOpt == ReadOption::Left>;
 
         constexpr int init_block_size = AgentDifferenceInitT::BLOCK_THREADS;
         const int init_grid_size      = ::cuda::ceil_div(num_tiles, init_block_size);
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
         _CubLog("Invoking DeviceAdjacentDifferenceInitKernel"
                 "<<<%d, %d, 0, %lld>>>()\n",
                 init_grid_size,
                 init_block_size,
                 reinterpret_cast<long long>(stream));
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
-        THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size, init_block_size, 0, stream)
-          .doit(DeviceAdjacentDifferenceInitKernel<AgentDifferenceInitT, InputIteratorT, InputT, OffsetT>,
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_block_size, 0, stream)
+          .doit(detail::adjacent_difference::
+                  DeviceAdjacentDifferenceInitKernel<AgentDifferenceInitT, InputIteratorT, InputT, OffsetT>,
                 d_input,
                 first_tile_previous,
                 num_tiles,
@@ -276,25 +231,24 @@ struct DispatchAdjacentDifference : public SelectedPolicy
         }
       }
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking DeviceAdjacentDifferenceDifferenceKernel"
               "<<<%d, %d, 0, %lld>>>()\n",
               num_tiles,
               AdjacentDifferencePolicyT::BLOCK_THREADS,
               reinterpret_cast<long long>(stream));
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#endif // CUB_DEBUG_LOG
 
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
         num_tiles, AdjacentDifferencePolicyT::BLOCK_THREADS, 0, stream)
-        .doit(DeviceAdjacentDifferenceDifferenceKernel<
-                MaxPolicyT,
-                InputIteratorT,
-                OutputIteratorT,
-                DifferenceOpT,
-                OffsetT,
-                InputT,
-                MayAlias,
-                ReadLeft>,
+        .doit(detail::adjacent_difference::DeviceAdjacentDifferenceDifferenceKernel < typename PolicyHub::MaxPolicy,
+              InputIteratorT,
+              OutputIteratorT,
+              DifferenceOpT,
+              OffsetT,
+              InputT,
+              AliasOpt == MayAlias::Yes,
+              ReadOpt == ReadOption::Left >,
               d_input,
               first_tile_previous,
               d_output,
@@ -321,15 +275,13 @@ struct DispatchAdjacentDifference : public SelectedPolicy
 
   CUB_RUNTIME_FUNCTION static cudaError_t Dispatch(
     void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    size_t& temp_storage_bytes,
     InputIteratorT d_input,
     OutputIteratorT d_output,
     OffsetT num_items,
     DifferenceOpT difference_op,
     cudaStream_t stream)
   {
-    using MaxPolicyT = typename DispatchAdjacentDifference::MaxPolicy;
-
     cudaError error = cudaSuccess;
     do
     {
@@ -346,7 +298,7 @@ struct DispatchAdjacentDifference : public SelectedPolicy
         d_temp_storage, temp_storage_bytes, d_input, d_output, num_items, difference_op, stream);
 
       // Dispatch to chained policy
-      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+      error = CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
       if (cudaSuccess != error)
       {
         break;
@@ -355,24 +307,6 @@ struct DispatchAdjacentDifference : public SelectedPolicy
 
     return error;
   }
-
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t Dispatch(
-    void* d_temp_storage,
-    std::size_t& temp_storage_bytes,
-    InputIteratorT d_input,
-    OutputIteratorT d_output,
-    OffsetT num_items,
-    DifferenceOpT difference_op,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Dispatch(d_temp_storage, temp_storage_bytes, d_input, d_output, num_items, difference_op, stream);
-  }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
 };
 
 CUB_NAMESPACE_END

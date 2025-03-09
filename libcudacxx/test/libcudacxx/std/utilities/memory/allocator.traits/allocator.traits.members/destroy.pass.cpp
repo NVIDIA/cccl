@@ -17,7 +17,7 @@
 //     ...
 // };
 
-// Currently no suppport for std::allocator
+// Currently no support for std::allocator
 
 #include <cuda/std/__memory_>
 #include <cuda/std/cassert>

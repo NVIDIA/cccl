@@ -126,17 +126,17 @@ template <typename Derived,
           typename Traversal  = use_default,
           typename Reference  = use_default,
           typename Difference = use_default>
-class iterator_adaptor
-    : public detail::iterator_adaptor_base<Derived, Base, Value, System, Traversal, Reference, Difference>::type
+class _CCCL_DECLSPEC_EMPTY_BASES iterator_adaptor
+    : public detail::make_iterator_adaptor_base<Derived, Base, Value, System, Traversal, Reference, Difference>::type
 {
   /*! \cond
    */
 
-  friend class thrust::iterator_core_access;
+  friend class iterator_core_access;
 
 protected:
   using super_t =
-    typename detail::iterator_adaptor_base<Derived, Base, Value, System, Traversal, Reference, Difference>::type;
+    typename detail::make_iterator_adaptor_base<Derived, Base, Value, System, Traversal, Reference, Difference>::type;
 
   /*! \endcond
    */

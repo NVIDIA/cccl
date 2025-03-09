@@ -187,7 +187,7 @@ private:
     {
       // Start from the item after the last found : the rationale is that
       // we want to avoid using a buffer that was recently discarded to
-      // prevent implicit dependencies between presumably independant
+      // prevent implicit dependencies between presumably independent
       // tasks using the same memory buffers
       size_t j = 1 + last_found + i;
       if (j >= entries.size())

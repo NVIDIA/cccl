@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // Older Clangs do not support the C++20 feature to constrain destructors
 
 //  template<class U = T>
@@ -100,12 +98,10 @@ static_assert(
 static_assert(
   cuda::std::is_assignable_v<cuda::std::expected<MaybeNoexcept<true, false>, MaybeNoexcept<false, false>>&, int>, "");
 
-#ifndef TEST_COMPILER_ICC
 // !is_nothrow_constructible_v<T, U> && !is_nothrow_move_constructible_v<T> &&
 // !is_nothrow_move_constructible_v<E>
 static_assert(
   !cuda::std::is_assignable_v<cuda::std::expected<MaybeNoexcept<false, false>, MaybeNoexcept<false, false>>&, int>, "");
-#endif // TEST_COMPILER_ICC
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {

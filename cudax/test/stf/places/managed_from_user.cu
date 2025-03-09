@@ -13,7 +13,7 @@
  *
  * @brief An AXPY kernel implemented with a task of the CUDA stream backend
  * where the task accesses managed memory from the device. This tests
- * explicitely created managed memory, and passes it to a logical data.
+ * explicitly created managed memory, and passes it to a logical data.
  */
 
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>

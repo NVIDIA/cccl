@@ -25,8 +25,6 @@ AlwaysBreakTemplateDeclarations: Yes
 AttributeMacros: [
                   '_CCCL_ALIGNAS_TYPE',
                   '_CCCL_ALIGNAS',
-                  '_CCCL_CONSTEXPR_CXX14',
-                  '_CCCL_CONSTEXPR_CXX17',
                   '_CCCL_CONSTEXPR_CXX20',
                   '_CCCL_CONSTEXPR_CXX23',
                   '_CCCL_DEVICE',
@@ -52,6 +50,12 @@ AttributeMacros: [
                   '_LIBCUDACXX_DEPRECATED_IN_CXX20',
                   '_LIBCUDACXX_DEPRECATED',
                   '_LIBCUDACXX_HIDE_FROM_ABI',
+                  '_CUDAX_API',
+                  '_CUDAX_HOST_API',
+                  '_CUDAX_DEVICE_API',
+                  '_CUDAX_TRIVIAL_API',
+                  '_CUDAX_TRIVIAL_HOST_API',
+                  '_CUDAX_TRIVIAL_DEVICE_API',
                  ]
 BinPackArguments: false
 BinPackParameters: false
@@ -81,14 +85,10 @@ ContinuationIndentWidth: 2
 EmptyLineAfterAccessModifier: Never
 EmptyLineBeforeAccessModifier: Always
 FixNamespaceComments: true
-IfMacros: [
-  '_CCCL_IF_CONSTEXPR',
-  '_CCCL_ELSE_IF_CONSTEXPR',
-]
 IndentWrappedFunctionNames: false
 IncludeBlocks:   Regroup
 IncludeCategories:
-  - Regex:           '^<cuda/experimental/__async/prologue.cuh>'
+  - Regex:           '^<cuda/experimental/__async/sender/prologue.cuh>'
     Priority:            0x7FFFFFFF
     SortPriority:        0x7FFFFFFF
   - Regex:           '^<(cuda/std/detail/__config|cub/config.cuh|thrust/detail/config.h|thrust/system/cuda/config.h)'
@@ -122,8 +122,10 @@ IndentWidth: 2
 KeepEmptyLinesAtTheStartOfBlocks: false
 MaxEmptyLinesToKeep: 1
 Macros:
-- _LIBCUDACXX_TEMPLATE(...)=template<...>
-- _LIBCUDACXX_REQUIRES(...)=requires (...)
+- _CCCL_TEMPLATE(...)=template<...>
+- _CCCL_REQUIRES(...)=requires (...)
+WhitespaceSensitiveMacros:
+- _CCCL_HAS_INCLUDE
 NamespaceIndentation: None
 PackConstructorInitializers: Never
 PenaltyBreakAssignment: 30

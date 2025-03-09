@@ -113,7 +113,8 @@ struct TestVectorRangeInsert
     size_t end   = n > 0 ? (size_t) h_src[n + 1] % n : 0;
     if (end < begin)
     {
-      thrust::swap(begin, end);
+      using ::cuda::std::swap;
+      swap(begin, end);
     }
 
     // choose insertion position at random

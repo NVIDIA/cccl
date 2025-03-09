@@ -37,10 +37,10 @@
 #include <thrust/system/detail/adl/iter_swap.h>
 #include <thrust/system/detail/generic/memory.h>
 #include <thrust/system/detail/generic/select_system.h>
-#include <thrust/type_traits/remove_cvref.h>
+
+#include <cuda/std/type_traits>
 
 #include <ostream>
-#include <type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -61,7 +61,7 @@ private:
 
 public:
   using pointer    = Pointer;
-  using value_type = typename thrust::remove_cvref<Element>::type;
+  using value_type = ::cuda::std::remove_cvref_t<Element>;
 
   reference(reference const&) = default;
 
@@ -491,8 +491,10 @@ class tagged_reference<void const, Tag>
  *  \param x The first \p tagged_reference of interest.
  *  \param y The second \p tagged_reference of interest.
  */
+// note: this is not a hidden friend, because we have template specializations of tagged_reference
 template <typename Element, typename Tag>
-_CCCL_HOST_DEVICE void swap(tagged_reference<Element, Tag>& x, tagged_reference<Element, Tag>& y)
+_CCCL_HOST_DEVICE void
+swap(tagged_reference<Element, Tag>& x, tagged_reference<Element, Tag>& y) noexcept(noexcept(x.swap(y)))
 {
   x.swap(y);
 }

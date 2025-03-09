@@ -24,6 +24,9 @@
 #include <cuda/std/__type_traits/is_const.h>
 #include <cuda/std/__type_traits/is_reference.h>
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4180) // qualifier applied to function type has no meaning; ignored
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_IS_FUNCTION) && !defined(_LIBCUDACXX_USE_IS_FUNCTION_FALLBACK)
@@ -52,5 +55,7 @@ _CCCL_INLINE_VAR constexpr bool is_function_v = is_function<_Tp>::value;
 #endif // defined(_CCCL_BUILTIN_IS_FUNCTION) && !defined(_LIBCUDACXX_USE_IS_FUNCTION_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+_CCCL_DIAG_POP
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_FUNCTIONAL_H

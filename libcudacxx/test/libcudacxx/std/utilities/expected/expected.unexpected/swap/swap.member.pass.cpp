@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // constexpr void swap(unexpected& other) noexcept(is_nothrow_swappable_v<E>);
 //
 // Mandates: is_swappable_v<E> is true.
@@ -42,9 +40,7 @@ constexpr bool
     noexcept(cuda::std::declval<T&>().swap(cuda::std::declval<T&>()));
 
 static_assert(MemberSwapNoexcept<cuda::std::unexpected<NoexceptSwap>>, "");
-#ifndef TEST_COMPILER_ICC
 static_assert(!MemberSwapNoexcept<cuda::std::unexpected<MayThrowSwap>>, "");
-#endif // TEST_COMPILER_ICC
 
 struct ADLSwap
 {

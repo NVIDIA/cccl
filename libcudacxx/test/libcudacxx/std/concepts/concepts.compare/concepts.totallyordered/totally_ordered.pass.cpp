@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class T>
 // concept totally_ordered;
 
@@ -43,8 +41,8 @@ __host__ __device__ constexpr bool models_totally_ordered() noexcept
 
 #else
 
-_LIBCUDACXX_TEMPLATE(class T)
-_LIBCUDACXX_REQUIRES(cuda::std::totally_ordered<T>)
+_CCCL_TEMPLATE(class T)
+_CCCL_REQUIRES(cuda::std::totally_ordered<T>)
 __host__ __device__ constexpr bool models_totally_ordered() noexcept
 {
   return true;
@@ -88,25 +86,25 @@ static_assert(!totally_ordered<int S::*>, "");
 static_assert(!totally_ordered<int (S::*)()>, "");
 static_assert(!totally_ordered<int (S::*)() noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() &>, "");
-static_assert(!totally_ordered<int (S::*)() & noexcept>, "");
+static_assert(!totally_ordered < int(S::*)() & noexcept >, "");
 static_assert(!totally_ordered<int (S::*)() &&>, "");
 static_assert(!totally_ordered < int(S::*)() && noexcept >, "");
 static_assert(!totally_ordered<int (S::*)() const>, "");
 static_assert(!totally_ordered<int (S::*)() const noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() const&>, "");
-static_assert(!totally_ordered<int (S::*)() const & noexcept>, "");
+static_assert(!totally_ordered < int(S::*)() const& noexcept >, "");
 static_assert(!totally_ordered<int (S::*)() const&&>, "");
 static_assert(!totally_ordered < int(S::*)() const&& noexcept >, "");
 static_assert(!totally_ordered<int (S::*)() volatile>, "");
 static_assert(!totally_ordered<int (S::*)() volatile noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() volatile&>, "");
-static_assert(!totally_ordered<int (S::*)() volatile & noexcept>, "");
+static_assert(!totally_ordered < int(S::*)() volatile & noexcept >, "");
 static_assert(!totally_ordered<int (S::*)() volatile&&>, "");
 static_assert(!totally_ordered < int(S::*)() volatile && noexcept >, "");
 static_assert(!totally_ordered<int (S::*)() const volatile>, "");
 static_assert(!totally_ordered<int (S::*)() const volatile noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() const volatile&>, "");
-static_assert(!totally_ordered<int (S::*)() const volatile & noexcept>, "");
+static_assert(!totally_ordered < int(S::*)() const volatile& noexcept >, "");
 static_assert(!totally_ordered<int (S::*)() const volatile&&>, "");
 static_assert(!totally_ordered < int(S::*)() const volatile&& noexcept >, "");
 

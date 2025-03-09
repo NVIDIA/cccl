@@ -2,15 +2,6 @@ cccl_get_catch2()
 
 find_package(cudax) # already found, bring in version info.
 
-find_package(Thrust ${cudax_VERSION} EXACT CONFIG
-  NO_DEFAULT_PATH # Only check the explicit path in HINTS:
-  HINTS "${CCCL_SOURCE_DIR}/lib/cmake/thrust/"
-)
-thrust_create_target(cudax.test.thrust)
-
-add_library(catch2_main STATIC catch2_helpers/catch2_main.cpp)
-target_link_libraries(catch2_main PUBLIC Catch2::Catch2)
-
 ## cudax_add_test
 #
 # Add a catch2 test executable and register it with ctest.
@@ -33,14 +24,13 @@ function(cudax_add_catch2_test target_name_var test_name cn_target) # ARGN=test 
   target_include_directories(${test_target} PRIVATE "common")
   target_link_libraries(${test_target} PRIVATE
     ${cn_target}
-    cudax.test.thrust
-    Catch2::Catch2
-    catch2_main
+    Catch2::Catch2WithMain
   )
   target_compile_options(${test_target} PRIVATE
     "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
     $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
   )
+
   cudax_clone_target_properties(${test_target} ${cn_target})
   set_target_properties(${test_target} PROPERTIES
     CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
@@ -86,12 +76,19 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   )
   target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
 
+  cudax_add_catch2_test(test_target execution ${cn_target}
+    execution/env.cu
+    execution/policies/policies.cu
+    execution/policies/get_execution_policy.cu
+  )
+
   cudax_add_catch2_test(test_target stream ${cn_target}
     stream/get_stream.cu
     stream/stream_smoke.cu
   )
 
   cudax_add_catch2_test(test_target misc ${cn_target}
+    utility/basic_any.cu
     utility/driver_api.cu
     utility/ensure_current_device.cu
   )
@@ -99,13 +96,26 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   cudax_add_catch2_test(test_target containers ${cn_target}
     containers/uninitialized_buffer.cu
     containers/uninitialized_async_buffer.cu
+    containers/async_buffer/access.cu
+    containers/async_buffer/assign.cu
+    containers/async_buffer/capacity.cu
+    containers/async_buffer/comparison.cu
+    containers/async_buffer/constructor.cu
+    containers/async_buffer/conversion.cu
+    containers/async_buffer/copy.cu
+    containers/async_buffer/iterators.cu
+    containers/async_buffer/properties.cu
+    containers/async_buffer/swap.cu
   )
 
   cudax_add_catch2_test(test_target memory_resource ${cn_target}
     memory_resource/any_async_resource.cu
     memory_resource/any_resource.cu
-    memory_resource/async_memory_pool.cu
-    memory_resource/async_memory_resource.cu
+    memory_resource/device_memory_pool.cu
+    memory_resource/device_memory_resource.cu
+    memory_resource/get_memory_resource.cu
+    memory_resource/managed_memory_resource.cu
+    memory_resource/pinned_memory_resource.cu
     memory_resource/shared_resource.cu
   )
 
@@ -122,10 +132,17 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   cudax_add_catch2_test(test_target green_context ${cn_target}
     green_context/green_ctx_smoke.cu
   )
+
+  cudax_add_catch2_test(test_target algorithm ${cn_target}
+    algorithm/fill.cu
+    algorithm/copy.cu
+  )
+
 endforeach()
 
 # FIXME: Enable MSVC
-if (NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}" AND
+if (cudax_ENABLE_CUDASTF AND
+    NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}" AND
     NOT "NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   # STF tests are handled separately:
   add_subdirectory(stf)

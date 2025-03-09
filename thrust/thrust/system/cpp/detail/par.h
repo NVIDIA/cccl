@@ -47,7 +47,7 @@ struct par_t
 
 } // namespace detail
 
-THRUST_INLINE_CONSTANT detail::par_t par;
+_CCCL_GLOBAL_CONSTANT detail::par_t par;
 
 } // namespace cpp
 } // namespace system

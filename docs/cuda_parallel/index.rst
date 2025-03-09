@@ -7,7 +7,24 @@ CUDA Parallel
   Python exposure of parallel algorithms is in public beta.
   The API is subject to change without notice.
 
-.. automodule:: cuda.parallel.experimental
+Algorithms
+----------
+
+.. automodule:: cuda.parallel.experimental.algorithms
   :members:
   :undoc-members:
   :imported-members:
+
+Iterators
+---------
+
+.. automodule:: cuda.parallel.experimental.iterators
+  :members:
+  :undoc-members:
+  :imported-members:
+
+Utilities
+---------
+
+.. automodule:: cuda.parallel.experimental.struct
+   :members:

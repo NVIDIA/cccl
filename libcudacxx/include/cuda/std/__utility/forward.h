@@ -28,13 +28,13 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp&& forward(__libcpp_remove_reference_t<_Tp>& __t) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp&& forward(remove_reference_t<_Tp>& __t) noexcept
 {
   return static_cast<_Tp&&>(__t);
 }
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp&& forward(__libcpp_remove_reference_t<_Tp>&& __t) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp&& forward(remove_reference_t<_Tp>&& __t) noexcept
 {
   static_assert(!is_lvalue_reference<_Tp>::value, "cannot forward an rvalue as an lvalue");
   return static_cast<_Tp&&>(__t);

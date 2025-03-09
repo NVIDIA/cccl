@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++11
-
 #include <cuda/std/cassert>
 #include <cuda/std/initializer_list>
 #include <cuda/std/inplace_vector>
@@ -72,7 +70,7 @@ __host__ __device__ constexpr bool test()
   test<int>();
   test<Trivial>();
 
-  if (!cuda::std::__libcpp_is_constant_evaluated())
+  if (!cuda::std::is_constant_evaluated())
   {
     test<NonTrivial>();
     test<NonTrivialDestructor>();

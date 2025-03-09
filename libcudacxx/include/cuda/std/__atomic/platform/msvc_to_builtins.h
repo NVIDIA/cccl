@@ -21,21 +21,27 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
 
 #  include <cuda/std/__atomic/order.h>
+#  include <cuda/std/__type_traits/enable_if.h>
 #  include <cuda/std/cassert>
 
 #  include <intrin.h>
+
+// MSVC exposed __iso_volatile intrinsics beginning on 1924 for x86
+#  if _CCCL_COMPILER(MSVC, <, 19, 24)
+#    define _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
+#  endif // _CCCL_COMPILER(MSVC, <, 19, 24)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #  define _LIBCUDACXX_COMPILER_BARRIER() _ReadWriteBarrier()
 
-#  if defined(_M_ARM) || defined(_M_ARM64)
+#  if _CCCL_ARCH(ARM64)
 #    define _LIBCUDACXX_MEMORY_BARRIER()             __dmb(0xB) // inner shared data memory barrier
 #    define _LIBCUDACXX_COMPILER_OR_MEMORY_BARRIER() _LIBCUDACXX_MEMORY_BARRIER()
-#  elif defined(_M_IX86) || defined(_M_X64)
+#  elif _CCCL_ARCH(X86_64)
 #    define _LIBCUDACXX_MEMORY_BARRIER()             __faststorefence()
 // x86/x64 hardware only emits memory barriers inside _Interlocked intrinsics
 #    define _LIBCUDACXX_COMPILER_OR_MEMORY_BARRIER() _LIBCUDACXX_COMPILER_BARRIER()
@@ -72,7 +78,7 @@ static inline void __atomic_thread_fence(int __memorder)
 }
 
 template <typename _Type, size_t _Size>
-using __enable_if_sized_as = __enable_if_t<sizeof(_Type) == _Size, int>;
+using __enable_if_sized_as = enable_if_t<sizeof(_Type) == _Size, int>;
 
 template <class _Type, __enable_if_sized_as<_Type, 1> = 0>
 void __atomic_load_relaxed(const volatile _Type* __ptr, _Type* __ret)
@@ -637,6 +643,8 @@ _Type __atomic_fetch_min(_Type volatile* __ptr, _Delta __val, int __memorder)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // defined(_CCCL_COMPILER_MSVC)
+#  undef _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
+
+#endif // _CCCL_COMPILER(MSVC)
 
 #endif // __LIBCUDACXX___ATOMIC_PLATFORM_MSVC_H

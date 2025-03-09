@@ -36,28 +36,49 @@
 #  define _CCCL_HAS_CPP_ATTRIBUTE(__x) 0
 #endif // !__has_cpp_attribute
 
+#ifdef __has_declspec_attribute
+#  define _CCCL_HAS_DECLSPEC_ATTRIBUTE(__x) __has_declspec_attribute(__x)
+#else // ^^^ __has_declspec_attribute ^^^ / vvv !__has_declspec_attribute vvv
+#  define _CCCL_HAS_DECLSPEC_ATTRIBUTE(__x) 0
+#endif // !__has_declspec_attribute
+
+// MSVC needs extra help with empty base classes
+#if _CCCL_COMPILER(MSVC) || _CCCL_HAS_DECLSPEC_ATTRIBUTE(empty_bases)
+#  define _CCCL_DECLSPEC_EMPTY_BASES __declspec(empty_bases)
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
+#  define _CCCL_DECLSPEC_EMPTY_BASES
+#endif // !_CCCL_COMPILER(MSVC)
+
 // Use a function like macro to imply that it must be followed by a semicolon
-#if _CCCL_STD_VER >= 2017 && _CCCL_HAS_CPP_ATTRIBUTE(fallthrough)
+#if _CCCL_HAS_CPP_ATTRIBUTE(fallthrough)
 #  define _CCCL_FALLTHROUGH() [[fallthrough]]
-#elif defined(_CCCL_COMPILER_NVRTC)
+#elif _CCCL_COMPILER(NVRTC)
 #  define _CCCL_FALLTHROUGH() ((void) 0)
 #elif _CCCL_HAS_CPP_ATTRIBUTE(clang::fallthrough)
 #  define _CCCL_FALLTHROUGH() [[clang::fallthrough]]
-#elif defined(_CCCL_COMPILER_NVHPC)
+#elif _CCCL_COMPILER(NVHPC)
 #  define _CCCL_FALLTHROUGH()
-#elif _CCCL_HAS_ATTRIBUTE(fallthough) || _GNUC_VER >= 700
+#elif _CCCL_HAS_ATTRIBUTE(fallthrough) || _CCCL_COMPILER(GCC, >=, 7)
 #  define _CCCL_FALLTHROUGH() __attribute__((__fallthrough__))
 #else
 #  define _CCCL_FALLTHROUGH() ((void) 0)
 #endif
 
-#if _CCCL_HAS_CPP_ATTRIBUTE(msvc::no_unique_address)
-// MSVC implements [[no_unique_address]] as a silent no-op currently.
-// (If/when MSVC breaks its C++ ABI, it will be changed to work as intended.)
-// However, MSVC implements [[msvc::no_unique_address]] which does what
-// [[no_unique_address]] is supposed to do, in general.
-#  define _CCCL_NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
-#elif defined(_CCCL_CUDACC_BELOW_11_3) || (_CCCL_HAS_CPP_ATTRIBUTE(no_unique_address) < 201803L)
+#if _CCCL_HAS_ATTRIBUTE(__nodebug__)
+#  define _CCCL_NODEBUG __attribute__((__nodebug__))
+#else // ^^^ _CCCL_HAS_ATTRIBUTE(__nodebug__) ^^^ / vvv !_CCCL_HAS_ATTRIBUTE(__nodebug__) vvv
+#  define _CCCL_NODEBUG
+#endif // !_CCCL_HAS_ATTRIBUTE(__nodebug__)
+
+// The nodebug attribute flattens aliases down to the actual type rather typename meow<T>::type
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  define _CCCL_NODEBUG_ALIAS _CCCL_NODEBUG
+#else // ^^^ _CCCL_CUDA_COMPILER(CLANG) ^^^ / vvv !_CCCL_CUDA_COMPILER(CLANG) vvv
+#  define _CCCL_NODEBUG_ALIAS
+#endif // !_CCCL_CUDA_COMPILER(CLANG)
+
+#if _CCCL_COMPILER(MSVC) || _CCCL_HAS_CPP_ATTRIBUTE(no_unique_address) < 201803L
+// MSVC implementation has lead to multiple issues with silent runtime corruption when passing data into kernels
 #  define _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 #  define _CCCL_NO_UNIQUE_ADDRESS
 #elif _CCCL_HAS_CPP_ATTRIBUTE(no_unique_address)
@@ -67,7 +88,13 @@
 #  define _CCCL_NO_UNIQUE_ADDRESS
 #endif
 
-#if _CCCL_HAS_CPP_ATTRIBUTE(nodiscard) || (defined(_CCCL_COMPILER_MSVC) && _CCCL_STD_VER >= 2017)
+// Passing objects with nested [[no_unique_address]] to kernels leads to data corruption
+// This happens up to clang18
+#if !defined(_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS) && _CCCL_COMPILER(CLANG)
+#  define _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#endif // !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS && _CCCL_COMPILER(CLANG)
+
+#if _CCCL_HAS_CPP_ATTRIBUTE(nodiscard) || _CCCL_COMPILER(MSVC)
 #  define _CCCL_NODISCARD [[nodiscard]]
 #else // ^^^ has nodiscard ^^^ / vvv no nodiscard vvv
 #  define _CCCL_NODISCARD
@@ -75,20 +102,15 @@
 
 // NVCC below 11.3 does not support nodiscard on friend operators
 // It always fails with clang
-#if defined(_CCCL_CUDACC_BELOW_11_3) || defined(_CCCL_COMPILER_CLANG)
+#if _CCCL_COMPILER(CLANG)
 #  define _CCCL_NODISCARD_FRIEND friend
-#else // ^^^ _CCCL_CUDACC_BELOW_11_3 ^^^ / vvv !_CCCL_CUDACC_BELOW_11_3 vvv
+#else
 #  define _CCCL_NODISCARD_FRIEND _CCCL_NODISCARD friend
-#endif // !_CCCL_CUDACC_BELOW_11_3 && !_CCCL_COMPILER_CLANG
+#endif
 
-// NVCC below 11.3 does not support attributes on alias declarations
-#ifdef _CCCL_CUDACC_BELOW_11_3
-#  define _CCCL_ALIAS_ATTRIBUTE(...)
-#else // ^^^ _CCCL_CUDACC_BELOW_11_3 ^^^ / vvv !_CCCL_CUDACC_BELOW_11_3 vvv
-#  define _CCCL_ALIAS_ATTRIBUTE(...) __VA_ARGS__
-#endif // !_CCCL_CUDACC_BELOW_11_3
+#define _CCCL_ALIAS_ATTRIBUTE(...) __VA_ARGS__
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
 #  define _CCCL_NORETURN __declspec(noreturn)
 #elif _CCCL_HAS_CPP_ATTRIBUTE(noreturn)
 #  define _CCCL_NORETURN [[noreturn]]
@@ -96,10 +118,16 @@
 #  define _CCCL_NORETURN __attribute__((noreturn))
 #endif
 
-#if defined(_CCCL_COMPILER_MSVC) // vvv _CCCL_COMPILER_MSVC vvv
+#if _CCCL_COMPILER(MSVC) // vvv _CCCL_COMPILER(MSVC) vvv
 #  define _CCCL_RESTRICT __restrict
-#else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 #  define _CCCL_RESTRICT __restrict__
-#endif // ^^^ !_CCCL_COMPILER_MSVC ^^^
+#endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
+
+#if _CCCL_HAS_CPP_ATTRIBUTE(assume)
+#  define _CCCL_ASSUME(...) [[assume(__VA_ARGS__)]]
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
+#  define _CCCL_ASSUME(...) _CCCL_BUILTIN_ASSUME(__VA_ARGS__)
+#endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 
 #endif // __CCCL_ATTRIBUTES_H

@@ -20,7 +20,7 @@ using namespace cuda::experimental::stf;
 // determines whether the character is alphabetical
 __host__ __device__ bool is_alpha(const char c)
 {
-  return (c >= 'A' && c <= 'z');
+  return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
 }
 
 int main()
@@ -34,11 +34,6 @@ int main()
     "  Till I scarcely more than muttered `Other friends have flown before -\n"
     "  On the morrow he will leave me, as my hopes have flown before.'\n"
     "  Then the bird said, `Nevermore.'\n";
-
-  // std::cout << "Text sample:" << std::endl;
-  // std::cout << raw_input << std::endl;
-
-  // fprintf(stderr, "TEXT size : %ld\n", sizeof(raw_input));
 
   context ctx;
 

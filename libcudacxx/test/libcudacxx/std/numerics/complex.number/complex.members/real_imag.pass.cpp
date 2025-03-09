@@ -20,7 +20,6 @@
 template <class T>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test_constexpr()
 {
-#if TEST_STD_VER > 2011
   constexpr cuda::std::complex<T> c1;
   static_assert(c1.real() == 0, "");
   static_assert(c1.imag() == 0, "");
@@ -30,7 +29,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_constexpr()
   constexpr cuda::std::complex<T> c3(3, 4);
   static_assert(c3.real() == 3, "");
   static_assert(c3.imag() == 4, "");
-#endif
 }
 
 template <class T>
@@ -80,30 +78,30 @@ int main(int, char**)
 {
   test<float>();
   test<double>();
-// CUDA treats long double as double
-//  test<long double>();
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _CCCL_HAS_LONG_DOUBLE()
+  test<long double>();
+#endif // _CCCL_HAS_LONG_DOUBLE()
+#if _LIBCUDACXX_HAS_NVFP16()
   test_nonconstexpr<__half>();
-#endif
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test_nonconstexpr<__nv_bfloat16>();
-#endif
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
-#if TEST_STD_VER > 2011
   static_assert(test<float>(), "");
   static_assert(test<double>(), "");
-// CUDA treats long double as double
-//  static_assert(test<long double>(), "");
-#endif
+#if _CCCL_HAS_LONG_DOUBLE()
+  static_assert(test<long double>(), "");
+#endif // _CCCL_HAS_LONG_DOUBLE()
   test_constexpr<int>();
 
   // test volatile extensions
   test_volatile<float>();
   test_volatile<double>();
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _LIBCUDACXX_HAS_NVFP16()
   // test_volatile<__half>();
 #endif
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#if _LIBCUDACXX_HAS_NVBF16()
   // test_volatile<__nv_bfloat16>();
 #endif
 

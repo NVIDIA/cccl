@@ -44,11 +44,11 @@ namespace reserved
 template <typename T>
 constexpr ::std::string_view type_name_IMPL()
 {
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
   return __FUNCSIG__;
-#else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
   return __PRETTY_FUNCTION__;
-#endif // !_CCCL_COMPILER_MSVC
+#endif // !_CCCL_COMPILER(MSVC)
 }
 
 // Length of prefix and suffix in __PRETTY_FUNCTION__ when used with `type_name`.
@@ -73,14 +73,14 @@ inline constexpr ::std::pair<size_t, size_t> type_name_affixes = [] {
 template <class T>
 constexpr ::std::string_view type_name_impl()
 {
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
   constexpr ::std::string_view p = __FUNCSIG__;
   // MSVC does not provide constexpr methods so we make this utility much simpler and return __FUNCSIG__ directly
   return p;
-#else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
   ::std::string_view p = __PRETTY_FUNCTION__;
   return p.substr(type_name_affixes.first, p.size() - type_name_affixes.first - type_name_affixes.second);
-#endif // !_CCCL_COMPILER_MSVC
+#endif // !_CCCL_COMPILER(MSVC)
 }
 
 } // namespace reserved
@@ -561,6 +561,22 @@ auto shuffled_array_tuple(ArgTypes... args)
 
 namespace reserved
 {
+
+/**
+ * @brief Trait class to check if a function can be invoked with std::apply using a tuple type
+ */
+template <typename F, typename Tuple>
+struct is_tuple_invocable : ::std::false_type
+{};
+
+// Partial specialization that unpacks the tuple
+template <typename F, typename... Args>
+struct is_tuple_invocable<F, ::std::tuple<Args...>> : ::std::is_invocable<F, Args...>
+{};
+
+// Convenient alias template
+template <typename F, typename Tuple>
+inline constexpr bool is_tuple_invocable_v = is_tuple_invocable<F, Tuple>::value;
 
 /**
  * @brief A compile-time boolean that checks if a type supports streaming with std::ostream <<.

@@ -20,7 +20,7 @@
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/detail/type_deduction.h>
 
-#include <utility>
+#include <cuda/std/utility>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -114,7 +114,7 @@ struct allocator_delete final
 
   void swap(allocator_delete& other) noexcept
   {
-    using std::swap;
+    using ::cuda::std::swap;
     swap(alloc_, other.alloc_);
   }
 
@@ -216,7 +216,7 @@ struct array_allocator_delete final
 
   void swap(array_allocator_delete& other) noexcept
   {
-    using std::swap;
+    using ::cuda::std::swap;
     swap(alloc_, other.alloc_);
     swap(count_, other.count_);
   }

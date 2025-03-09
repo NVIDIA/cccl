@@ -52,11 +52,9 @@
 #include <cub/block/block_store.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/iterator/constant_input_iterator.cuh>
 
+#include <cuda/ptx>
 #include <cuda/std/type_traits>
-
-#include <iterator>
 
 CUB_NAMESPACE_BEGIN
 
@@ -133,6 +131,11 @@ struct AgentRlePolicy
  * Thread block abstractions
  ******************************************************************************/
 
+namespace detail
+{
+namespace rle
+{
+
 /**
  * @brief AgentRle implements a stateful abstraction of CUDA thread blocks for participating in device-wide
  * run-length-encode
@@ -168,7 +171,7 @@ struct AgentRle
   //---------------------------------------------------------------------
 
   /// The input value type
-  using T = cub::detail::value_t<InputIteratorT>;
+  using T = cub::detail::it_value_t<InputIteratorT>;
 
   /// The lengths output value type
   using LengthT = cub::detail::non_void_value_t<LengthsOutputIteratorT, OffsetT>;
@@ -233,7 +236,7 @@ struct AgentRle
   // Wrap the native input pointer with CacheModifiedVLengthnputIterator
   // Directly use the supplied input iterator type
   using WrappedInputIteratorT =
-    ::cuda::std::_If<std::is_pointer<InputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer_v<InputIteratorT>,
                      CacheModifiedInputIterator<AgentRlePolicyT::LOAD_MODIFIER, T, OffsetT>,
                      InputIteratorT>;
 
@@ -248,12 +251,12 @@ struct AgentRle
   using WarpScanPairs = WarpScan<LengthOffsetPair>;
 
   // Reduce-length-by-run scan operator
-  using ReduceBySegmentOpT = ReduceBySegmentOp<cub::Sum>;
+  using ReduceBySegmentOpT = ReduceBySegmentOp<::cuda::std::plus<>>;
 
   // Callback type for obtaining tile prefix during block scan
   using DelayConstructorT = typename AgentRlePolicyT::detail::delay_constructor_t;
   using TilePrefixCallbackOpT =
-    TilePrefixCallbackOp<LengthOffsetPair, ReduceBySegmentOpT, ScanTileStateT, 0, DelayConstructorT>;
+    TilePrefixCallbackOp<LengthOffsetPair, ReduceBySegmentOpT, ScanTileStateT, DelayConstructorT>;
 
   // Warp exchange types
   using WarpExchangePairs = WarpExchange<LengthOffsetPair, ITEMS_PER_THREAD>;
@@ -359,7 +362,7 @@ struct AgentRle
       , d_offsets_out(d_offsets_out)
       , d_lengths_out(d_lengths_out)
       , equality_op(equality_op)
-      , scan_op(cub::Sum())
+      , scan_op(::cuda::std::plus<>{})
       , num_items(num_items)
   {}
 
@@ -465,7 +468,7 @@ struct AgentRle
   {
     // Perform warpscans
     unsigned int warp_id = ((WARPS == 1) ? 0 : threadIdx.x / WARP_THREADS);
-    int lane_id          = LaneId();
+    int lane_id          = ::cuda::ptx::get_sreg_laneid();
 
     LengthOffsetPair identity;
     identity.key   = 0;
@@ -482,7 +485,7 @@ struct AgentRle
     //      number of non-trivial runs starts in this thread
     // `thread_aggregate.val`:
     //      number of items in the last non-trivial run in this thread
-    LengthOffsetPair thread_aggregate = internal::ThreadReduce(lengths_and_num_runs, scan_op);
+    LengthOffsetPair thread_aggregate = cub::ThreadReduce(lengths_and_num_runs, scan_op);
     WarpScanPairs(temp_storage.aliasable.scan_storage.warp_scan[warp_id])
       .Scan(thread_aggregate, thread_inclusive, thread_exclusive_in_warp, identity, scan_op);
 
@@ -501,7 +504,7 @@ struct AgentRle
       temp_storage.aliasable.scan_storage.warp_aggregates.Alias()[warp_id] = thread_inclusive;
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Accumulate total selected and the warp-wide prefix
 
@@ -531,7 +534,7 @@ struct AgentRle
 
     // Ensure all threads have read warp aggregates before temp_storage is repurposed in the
     // subsequent scatter stage
-    CTA_SYNC();
+    __syncthreads();
   }
 
   //---------------------------------------------------------------------
@@ -548,10 +551,10 @@ struct AgentRle
     OffsetT warp_num_runs_exclusive_in_tile,
     OffsetT (&thread_num_runs_exclusive_in_warp)[ITEMS_PER_THREAD],
     LengthOffsetPair (&lengths_and_offsets)[ITEMS_PER_THREAD],
-    Int2Type<true> is_warp_time_slice)
+    ::cuda::std::true_type is_warp_time_slice)
   {
     unsigned int warp_id = ((WARPS == 1) ? 0 : threadIdx.x / WARP_THREADS);
-    int lane_id          = LaneId();
+    int lane_id          = ::cuda::ptx::get_sreg_laneid();
 
     // Locally compact items within the warp (first warp)
     if (warp_id == 0)
@@ -564,7 +567,7 @@ struct AgentRle
 #pragma unroll
     for (int SLICE = 1; SLICE < WARPS; ++SLICE)
     {
-      CTA_SYNC();
+      __syncthreads();
 
       if (warp_id == SLICE)
       {
@@ -605,10 +608,10 @@ struct AgentRle
     OffsetT warp_num_runs_exclusive_in_tile,
     OffsetT (&thread_num_runs_exclusive_in_warp)[ITEMS_PER_THREAD],
     LengthOffsetPair (&lengths_and_offsets)[ITEMS_PER_THREAD],
-    Int2Type<false> is_warp_time_slice)
+    ::cuda::std::false_type is_warp_time_slice)
   {
     unsigned int warp_id = ((WARPS == 1) ? 0 : threadIdx.x / WARP_THREADS);
-    int lane_id          = LaneId();
+    int lane_id          = ::cuda::ptx::get_sreg_laneid();
 
     // Unzip
     OffsetT run_offsets[ITEMS_PER_THREAD];
@@ -624,7 +627,7 @@ struct AgentRle
     WarpExchangeOffsets(temp_storage.aliasable.scatter_aliasable.exchange_offsets[warp_id])
       .ScatterToStriped(run_offsets, thread_num_runs_exclusive_in_warp);
 
-    WARP_SYNC(0xffffffff);
+    __syncwarp(0xffffffff);
 
     WarpExchangeLengths(temp_storage.aliasable.scatter_aliasable.exchange_lengths[warp_id])
       .ScatterToStriped(run_lengths, thread_num_runs_exclusive_in_warp);
@@ -715,7 +718,7 @@ struct AgentRle
         warp_num_runs_exclusive_in_tile,
         thread_num_runs_exclusive_in_warp,
         lengths_and_offsets,
-        Int2Type<STORE_WARP_TIME_SLICING>());
+        bool_constant_v<STORE_WARP_TIME_SLICING>);
     }
   }
 
@@ -762,7 +765,7 @@ struct AgentRle
 
       if (SYNC_AFTER_LOAD)
       {
-        CTA_SYNC();
+        __syncthreads();
       }
 
       // Set flags
@@ -848,7 +851,7 @@ struct AgentRle
 
       if (SYNC_AFTER_LOAD)
       {
-        CTA_SYNC();
+        __syncthreads();
       }
 
       // Set flags
@@ -866,7 +869,8 @@ struct AgentRle
         tile_aggregate, warp_aggregate, warp_exclusive_in_tile, thread_exclusive_in_warp, lengths_and_num_runs);
 
       // First warp computes tile prefix in lane 0
-      TilePrefixCallbackOpT prefix_op(tile_status, temp_storage.aliasable.scan_storage.prefix, Sum(), tile_idx);
+      TilePrefixCallbackOpT prefix_op(
+        tile_status, temp_storage.aliasable.scan_storage.prefix, ::cuda::std::plus<>{}, tile_idx);
       unsigned int warp_id = ((WARPS == 1) ? 0 : threadIdx.x / WARP_THREADS);
       if (warp_id == 0)
       {
@@ -877,7 +881,7 @@ struct AgentRle
         }
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
       LengthOffsetPair tile_exclusive_in_global = temp_storage.tile_exclusive;
 
@@ -987,5 +991,8 @@ struct AgentRle
     }
   }
 };
+
+} // namespace rle
+} // namespace detail
 
 CUB_NAMESPACE_END

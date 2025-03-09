@@ -26,11 +26,11 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/type_traits.h>
-#include <thrust/detail/type_traits/iterator/is_output_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/scan.h>
 #include <thrust/system/detail/generic/transform_scan.h>
-#include <thrust/type_traits/remove_cvref.h>
+
+#include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -54,9 +54,9 @@ _CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
   BinaryFunction binary_op)
 {
   // Use the input iterator's value type per https://wg21.link/P0571
-  using InputType  = typename thrust::iterator_value<InputIterator>::type;
+  using InputType  = thrust::detail::it_value_t<InputIterator>;
   using ResultType = thrust::detail::invoke_result_t<UnaryFunction, InputType>;
-  using ValueType  = thrust::remove_cvref_t<ResultType>;
+  using ValueType  = ::cuda::std::remove_cvref_t<ResultType>;
 
   thrust::transform_iterator<UnaryFunction, InputIterator, ValueType> _first(first, unary_op);
   thrust::transform_iterator<UnaryFunction, InputIterator, ValueType> _last(last, unary_op);
@@ -79,9 +79,9 @@ _CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
   InitialValueType init,
   BinaryFunction binary_op)
 {
-  using InputType  = typename thrust::iterator_value<InputIterator>::type;
+  using InputType  = thrust::detail::it_value_t<InputIterator>;
   using ResultType = thrust::detail::invoke_result_t<UnaryFunction, InputType>;
-  using ValueType  = thrust::remove_cvref_t<ResultType>;
+  using ValueType  = ::cuda::std::remove_cvref_t<ResultType>;
 
   thrust::transform_iterator<UnaryFunction, InputIterator, ValueType> _first(first, unary_op);
   thrust::transform_iterator<UnaryFunction, InputIterator, ValueType> _last(last, unary_op);
@@ -105,7 +105,7 @@ _CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
   AssociativeOperator binary_op)
 {
   // Use the initial value type per https://wg21.link/P0571
-  using ValueType = thrust::remove_cvref_t<InitialValueType>;
+  using ValueType = ::cuda::std::remove_cvref_t<InitialValueType>;
 
   thrust::transform_iterator<UnaryFunction, InputIterator, ValueType> _first(first, unary_op);
   thrust::transform_iterator<UnaryFunction, InputIterator, ValueType> _last(last, unary_op);

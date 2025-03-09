@@ -27,37 +27,17 @@
 
 #include <cuda/experimental/__stf/graph/graph_task.cuh>
 #include <cuda/experimental/__stf/graph/interfaces/slice.cuh>
+#include <cuda/experimental/__stf/graph/interfaces/void_interface.cuh>
 #include <cuda/experimental/__stf/internal/acquire_release.cuh>
 #include <cuda/experimental/__stf/internal/backend_allocator_setup.cuh>
 #include <cuda/experimental/__stf/internal/launch.cuh>
 #include <cuda/experimental/__stf/internal/parallel_for_scope.cuh>
 #include <cuda/experimental/__stf/places/blocked_partition.cuh> // for unit test!
 
+#include <mutex>
+
 namespace cuda::experimental::stf
 {
-
-namespace reserved
-{
-
-// For counters
-class graph_tag
-{
-public:
-  class launch
-  {};
-  class instantiate
-  {};
-  class update
-  {
-  public:
-    class success
-    {};
-    class failure
-    {};
-  };
-};
-
-} // end namespace reserved
 
 /**
  * @brief Uncached allocator (used as a base for other allocators)
@@ -108,7 +88,7 @@ public:
       assert(s > 0);
     }
 
-    reserved::fork_from_graph_node(bctx, out, graph_epoch, prereqs, "alloc");
+    reserved::fork_from_graph_node(bctx, out, graph, graph_epoch, prereqs, "alloc");
     return result;
   }
 
@@ -128,7 +108,7 @@ public:
     {
       cuda_safe_call(cudaGraphAddMemFreeNode(&out, graph, nodes.data(), nodes.size(), ptr));
     }
-    reserved::fork_from_graph_node(bctx, out, graph_epoch, prereqs, "dealloc");
+    reserved::fork_from_graph_node(bctx, out, graph, graph_epoch, prereqs, "dealloc");
   }
 
   ::std::string to_string() const override
@@ -215,6 +195,11 @@ class graph_ctx : public backend_ctx<graph_ctx>
 
     ~impl() override {}
 
+    ::std::string to_string() const override
+    {
+      return "graph backend context";
+    }
+
     // Due to circular dependencies, we need to define it here, and not in backend_ctx_untyped
     void update_uncached_allocator(block_allocator_untyped custom) override
     {
@@ -227,9 +212,21 @@ class graph_ctx : public backend_ctx<graph_ctx>
       return *_graph;
     }
 
+    executable_graph_cache_stat* graph_get_cache_stat() override
+    {
+      return &cache_stats;
+    }
+
     size_t epoch() const override
     {
       return graph_epoch;
+    }
+
+    // The completion of the CUDA graph implies the completion of all nodes in
+    // the graph
+    bool track_dangling_events() const override
+    {
+      return false;
     }
 
     /* Store a vector of previously instantiated graphs, with the number of
@@ -242,6 +239,11 @@ class graph_ctx : public backend_ctx<graph_ctx>
     size_t graph_epoch                            = 0;
     bool submitted                                = false; // did we submit ?
     mutable bool explicit_graph                   = false;
+
+    // To protect _graph against concurrent modifications
+    ::std::mutex graph_mutex;
+
+    executable_graph_cache_stat cache_stats;
 
     /* By default, the finalize operation is blocking, unless user provided
      * a stream when creating the context */
@@ -259,7 +261,7 @@ public:
   template <typename T>
   using data_interface = typename graphed_interface_of<T>::type;
 
-  /// @brief This type is copyable, assignable, and movable. Howeever, copies have reference semantics.
+  /// @brief This type is copyable, assignable, and movable. However, copies have reference semantics.
   ///@{
   graph_ctx(async_resources_handle handle = async_resources_handle(nullptr))
       : backend_ctx<graph_ctx>(::std::make_shared<impl>(mv(handle)))
@@ -282,11 +284,6 @@ public:
   {}
   ///@}
 
-  ::std::string to_string() const
-  {
-    return "graph backend context";
-  }
-
   using backend_ctx<graph_ctx>::task;
 
   /**
@@ -296,9 +293,10 @@ public:
   auto task(exec_place e_place, task_dep<Deps>... deps)
   {
     auto dump_hooks = reserved::get_dump_hooks(this, deps...);
-    auto res        = graph_task<Deps...>(*this, get_graph(), get_graph_epoch(), mv(e_place), mv(deps)...);
-    res.add_post_submission_hook(dump_hooks);
-    return res;
+    auto result =
+      graph_task<Deps...>(*this, get_graph(), this->state().graph_mutex, get_graph_epoch(), mv(e_place), mv(deps)...);
+    result.add_post_submission_hook(dump_hooks);
+    return result;
   }
 
   // submit a new epoch : this will submit a graph in a stream that we return
@@ -327,23 +325,6 @@ public:
     state.submitted_stream = nullptr;
     state.cleanup();
     set_phase(backend_ctx_untyped::phase::finalized);
-
-#ifdef CUDASTF_DEBUG
-    const char* display_stats_env = getenv("CUDASTF_DISPLAY_STATS");
-    if (!display_stats_env || atoi(display_stats_env) == 0)
-    {
-      return;
-    }
-
-    fprintf(
-      stderr, "[STATS CUDA GRAPHS] instantiated=%lu\n", reserved::counter<reserved::graph_tag::instantiate>.load());
-    fprintf(stderr, "[STATS CUDA GRAPHS] launched=%lu\n", reserved::counter<reserved::graph_tag::launch>.load());
-    fprintf(stderr,
-            "[STATS CUDA GRAPHS] updated=%lu success=%ld failed=%ld\n",
-            reserved::counter<reserved::graph_tag::update>.load(),
-            reserved::counter<reserved::graph_tag::update::success>.load(),
-            reserved::counter<reserved::graph_tag::update::failure>.load());
-#endif
   }
 
   void submit(cudaStream_t stream = nullptr)
@@ -372,10 +353,6 @@ public:
     // cuda_safe_call(cudaStreamSynchronize(state.submitted_stream));
 
     cuda_try(cudaGraphLaunch(*state.exec_graph, state.submitted_stream));
-
-#ifdef CUDASTF_DEBUG
-    reserved::counter<reserved::graph_tag::launch>.increment();
-#endif
 
     // Note that we comment this out for now, so that it is possible to use
     // the print_to_dot method; but we may perhaps discard this graph to
@@ -466,32 +443,50 @@ public:
 
     auto& state = this->state();
 
-    for (const auto& [nnodes_cached, nedges_cached, prev_e_ptr] : async_resources().get_cached_graphs())
-    {
-      // Skip the update early if needed
-      if (nnodes_cached != nnodes || nedges_cached != nedges)
-      {
-        continue;
-      }
-      cudaGraphExec_t& prev_e = *prev_e_ptr;
-      if (try_updating_executable_graph(prev_e, *g))
-      {
-        // Return the updated graph
-        state.exec_graph = prev_e_ptr;
-        return prev_e_ptr;
-      }
-    }
-
     if (getenv("CUDASTF_DUMP_GRAPHS"))
     {
       static int instantiated_graph = 0;
       print_to_dot("instantiated_graph" + ::std::to_string(instantiated_graph++) + ".dot");
     }
 
-    state.exec_graph = graph_instantiate(*g);
+    bool use_cache = true;
+    bool hit       = false;
 
-    // Save this graph for later use
-    async_resources().put_graph_in_cache(nnodes, nedges, state.exec_graph);
+    // If there is a policy, check whether it enables or disables the use of
+    // the cache
+    if (get_graph_cache_policy().has_value())
+    {
+      ::std::function<bool()> policy = get_graph_cache_policy().value();
+      use_cache                      = policy();
+    }
+
+    if (use_cache)
+    {
+      /* This will lookup in the cache (if any) and update an existing entry, or
+       * instantiate a graph if none is found. */
+      auto query_result = async_resources().cached_graphs_query(nnodes, nedges, g);
+      state.exec_graph  = query_result.first;
+
+      hit = query_result.second; // indicate if this was a hit or miss in the cache
+    }
+    else
+    {
+      state.exec_graph = reserved::graph_instantiate(*g);
+    }
+
+    // Update the statistics associated to the context
+    auto* stats = graph_get_cache_stat();
+    if (hit)
+    {
+      stats->update_cnt++;
+    }
+    else
+    {
+      stats->instantiate_cnt++;
+    }
+
+    stats->nnodes += nnodes;
+    stats->nedges += nedges;
 
     return state.exec_graph;
   }
@@ -515,6 +510,22 @@ public:
   void print_to_dot(const ::std::string& filename, enum cudaGraphDebugDotFlags flags = cudaGraphDebugDotFlags(0))
   {
     cudaGraphDebugDotPrint(get_graph(), filename.c_str(), flags);
+  }
+
+  template <typename T>
+  auto wait(cuda::experimental::stf::logical_data<T>& ldata)
+  {
+    typename owning_container_of<T>::type out;
+
+    host_launch(ldata.read()).set_symbol("wait")->*[&](auto data) {
+      out = owning_container_of<T>::get_value(data);
+    };
+
+    /* This forces the completion of the host callback, so that the host
+     * thread can use the content for dynamic control flow */
+    cuda_safe_call(cudaStreamSynchronize(task_fence()));
+
+    return out;
   }
 
 private:
@@ -542,7 +553,7 @@ private:
     cudaGraphNode_t n;
     cuda_safe_call(cudaGraphAddEmptyNode(&n, get_graph(), nodes.data(), nodes.size()));
 
-    reserved::fork_from_graph_node(*this, n, graph_epoch, prereq_fence, "fence");
+    reserved::fork_from_graph_node(*this, n, get_graph(), graph_epoch, prereq_fence, "fence");
 
     return nullptr; // for conformity with the stream version
   }
@@ -558,10 +569,6 @@ private:
     ::std::shared_ptr<cudaGraphExec_t> res(new cudaGraphExec_t, cudaGraphExecDeleter);
 
     cuda_try(cudaGraphInstantiateWithFlags(res.get(), g, 0));
-
-#ifdef CUDASTF_DEBUG
-    reserved::counter<reserved::graph_tag::instantiate>.increment();
-#endif
 
     return res;
   }
@@ -632,7 +639,7 @@ private:
         continue;
       }
       cudaGraphExec_t& prev_e = *prev_e_ptr;
-      if (try_updating_executable_graph(prev_e, g))
+      if (reserved::try_updating_executable_graph(prev_e, g))
       {
         local_exec_graph = prev_e;
 
@@ -657,45 +664,10 @@ private:
 
     cuda_try(cudaGraphLaunch(local_exec_graph, state.submitted_stream));
 
-#ifdef CUDASTF_DEBUG
-    reserved::counter<reserved::graph_tag::launch>.increment();
-#endif
-
     return state.submitted_stream;
   }
 
 public:
-  // This tries to instantiate the graph by updating an existing executable graph
-  // the returned value indicates whether the update was successful or not
-  static bool try_updating_executable_graph(cudaGraphExec_t exec_graph, cudaGraph_t graph)
-  {
-#if CUDA_VERSION < 12000
-    cudaGraphNode_t errorNode;
-    cudaGraphExecUpdateResult updateResult;
-    cudaGraphExecUpdate(exec_graph, graph, &errorNode, &updateResult);
-#else
-    cudaGraphExecUpdateResultInfo resultInfo;
-    cudaGraphExecUpdate(exec_graph, graph, &resultInfo);
-#endif
-
-    // Be sure to "erase" the last error
-    cudaError_t res = cudaGetLastError();
-
-#ifdef CUDASTF_DEBUG
-    reserved::counter<reserved::graph_tag::update>.increment();
-    if (res == cudaSuccess)
-    {
-      reserved::counter<reserved::graph_tag::update::success>.increment();
-    }
-    else
-    {
-      reserved::counter<reserved::graph_tag::update::failure>.increment();
-    }
-#endif
-
-    return (res == cudaSuccess);
-  }
-
   friend inline cudaGraph_t ctx_to_graph(backend_ctx_untyped& ctx)
   {
     return ctx.graph();
@@ -745,6 +717,9 @@ UNITTEST("set_symbol on graph_task and graph_task<>")
   auto lX = ctx.logical_data(X);
   auto lY = ctx.logical_data(Y);
 
+  pin_memory(X);
+  pin_memory(Y);
+
   graph_task<> t = ctx.task();
   t.add_deps(lX.rw(), lY.rw());
   t.set_symbol("graph_task<>");
@@ -761,9 +736,12 @@ UNITTEST("set_symbol on graph_task and graph_task<>")
   t2.end();
 
   ctx.finalize();
+
+  unpin_memory(X);
+  unpin_memory(Y);
 };
 
-#  ifdef __CUDACC__
+#  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 namespace reserved
 {
 
@@ -774,13 +752,15 @@ inline void unit_test_graph_epoch()
   const size_t N     = 8;
   const size_t NITER = 10;
 
-  double A[N];
+  ::std::vector<double> A(N);
   for (size_t i = 0; i < N; i++)
   {
     A[i] = 1.0 * i;
   }
 
-  auto lA = ctx.logical_data(A);
+  pin_memory(A);
+
+  auto lA = ctx.logical_data(make_slice(A.data(), N));
 
   for (size_t k = 0; k < NITER; k++)
   {
@@ -804,6 +784,8 @@ inline void unit_test_graph_epoch()
 
     EXPECT(fabs(A[i] - Ai_ref) < 0.01);
   }
+
+  unpin_memory(A);
 }
 
 UNITTEST("graph with epoch")
@@ -823,6 +805,8 @@ inline void unit_test_graph_empty_epoch()
   {
     A[i] = 1.0 * i;
   }
+
+  pin_memory(A);
 
   auto lA = ctx.logical_data(A);
 
@@ -850,6 +834,8 @@ inline void unit_test_graph_empty_epoch()
 
     EXPECT(fabs(A[i] - Ai_ref) < 0.01);
   }
+
+  unpin_memory(A);
 }
 
 UNITTEST("graph with empty epoch")
@@ -869,6 +855,8 @@ inline void unit_test_graph_epoch_2()
   {
     A[i] = 1.0 * i;
   }
+
+  pin_memory(A);
 
   auto lA = ctx.logical_data(A);
 
@@ -904,6 +892,8 @@ inline void unit_test_graph_epoch_2()
 
     EXPECT(fabs(A[i] - Ai_ref) < 0.01);
   }
+
+  unpin_memory(A);
 }
 
 UNITTEST("graph with epoch 2")
@@ -926,6 +916,9 @@ inline void unit_test_graph_epoch_3()
     B[i] = -1.0 * i;
   }
 
+  pin_memory(A);
+  pin_memory(B);
+
   auto lA = ctx.logical_data(A);
   auto lB = ctx.logical_data(B);
 
@@ -934,14 +927,14 @@ inline void unit_test_graph_epoch_3()
     if ((k % 2) == 0)
     {
       ctx.parallel_for(blocked_partition(), exec_place::current_device(), lA.shape(), lA.rw(), lB.read())
-          ->*[] _CCCL_HOST_DEVICE(size_t i, slice<double> A, slice<double> B) {
+          ->*[] _CCCL_HOST_DEVICE(size_t i, slice<double> A, slice<const double> B) {
                 A(i) = cos(B(i));
               };
     }
     else
     {
       ctx.parallel_for(blocked_partition(), exec_place::current_device(), lA.shape(), lA.read(), lB.rw())
-          ->*[] _CCCL_HOST_DEVICE(size_t i, slice<double> A, slice<double> B) {
+          ->*[] _CCCL_HOST_DEVICE(size_t i, slice<const double> A, slice<double> B) {
                 B(i) = sin(A(i));
               };
     }
@@ -970,6 +963,9 @@ inline void unit_test_graph_epoch_3()
     EXPECT(fabs(A[i] - Ai_ref) < 0.01);
     EXPECT(fabs(B[i] - Bi_ref) < 0.01);
   }
+
+  unpin_memory(A);
+  unpin_memory(B);
 }
 
 UNITTEST("graph with epoch 3")
@@ -1006,7 +1002,7 @@ UNITTEST("basic launch test (graph_ctx)")
 
 inline void unit_test_launch_many_graph_ctx()
 {
-  // Stress the allocators and all ressources !
+  // Stress the allocators and all resources !
   for (size_t i = 0; i < 256; i++)
   {
     graph_ctx ctx;
@@ -1028,7 +1024,7 @@ UNITTEST("create many graph ctxs")
 
 } // end namespace reserved
 
-#  endif // __CUDACC__
+#  endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 
 #endif // UNITTESTED_FILE
 } // end namespace cuda::experimental::stf

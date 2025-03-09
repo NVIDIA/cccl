@@ -14,7 +14,7 @@
 # limitations under the License.
 
 # Passes all args directly to execute_process while setting up the following
-# results variables and propogating them to the caller's scope:
+# results variables and propagating them to the caller's scope:
 #
 # - cccl_process_exit_code
 # - cccl_process_stdout

@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-// UNSUPPORTED: nvcc-11.1
 // Older Clangs do not support the C++20 feature to constrain destructors
 
 // template<class U, class... Args>
@@ -53,11 +51,8 @@ template <class T>
 __host__ __device__ void conversion_test(T);
 
 template <class T, class... Args>
-_LIBCUDACXX_CONCEPT_FRAGMENT(ImplicitlyConstructible_,
-                             requires(Args&&... args)((conversion_test<T>({cuda::std::forward<Args>(args)...}))));
-
-template <class T, class... Args>
-constexpr bool ImplicitlyConstructible = _LIBCUDACXX_FRAGMENT(ImplicitlyConstructible_, T, Args...);
+_CCCL_CONCEPT ImplicitlyConstructible = _CCCL_REQUIRES_EXPR((T, variadic Args), T t, Args&&... args)(
+  (conversion_test<T>({cuda::std::forward<Args>(args)...})));
 static_assert(ImplicitlyConstructible<int, int>, "");
 
 #if defined(_LIBCUDACXX_HAS_VECTOR)

@@ -11,10 +11,19 @@ function(cudax_stf_configure_target target_name)
     CUDA::curand
     CUDA::cuda_driver
   )
+
+  if (cudax_ENABLE_CUDASTF_CODE_GENERATION)
+    target_compile_options(${target_name} PRIVATE
+      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
+    )
+  else()
+    target_compile_definitions(${target_name} PRIVATE "CUDASTF_DISABLE_CODE_GENERATION")
+  endif()
+
   target_compile_options(${target_name} PRIVATE
-    $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
     $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>
   )
+
   set_target_properties(${target_name} PROPERTIES
     CUDA_RUNTIME_LIBRARY Static
     CUDA_SEPARABLE_COMPILATION ON
@@ -30,12 +39,6 @@ function(cudax_stf_configure_target target_name)
   if (cudax_ENABLE_CUDASTF_BOUNDSCHECK)
     target_compile_definitions(${target_name} PRIVATE
       "CUDASTF_BOUNDSCHECK"
-    )
-  endif()
-
-  if (cudax_ENABLE_CUDASTF_DEBUG)
-    target_compile_definitions(${target_name} PRIVATE
-      "CUDASTF_DEBUG"
     )
   endif()
 endfunction()

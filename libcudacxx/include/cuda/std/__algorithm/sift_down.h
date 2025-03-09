@@ -27,7 +27,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _AlgPolicy, class _Compare, class _RandomAccessIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void __sift_down(
+_LIBCUDACXX_HIDE_FROM_ABI constexpr void __sift_down(
   _RandomAccessIterator __first,
   _Compare&& __comp,
   typename iterator_traits<_RandomAccessIterator>::difference_type __len,
@@ -35,8 +35,8 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void __sift_down(
 {
   using _Ops = _IterOps<_AlgPolicy>;
 
-  typedef typename iterator_traits<_RandomAccessIterator>::difference_type difference_type;
-  typedef typename iterator_traits<_RandomAccessIterator>::value_type value_type;
+  using difference_type = typename iterator_traits<_RandomAccessIterator>::difference_type;
+  using value_type      = typename iterator_traits<_RandomAccessIterator>::value_type;
   // left-child of __start is at 2 * __start + 1
   // right-child of __start is at 2 * __start + 2
   difference_type __child = __start - __first;
@@ -92,7 +92,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void __sift_down(
 }
 
 template <class _AlgPolicy, class _Compare, class _RandomAccessIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator __floyd_sift_down(
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _RandomAccessIterator __floyd_sift_down(
   _RandomAccessIterator __first,
   _Compare&& __comp,
   typename iterator_traits<_RandomAccessIterator>::difference_type __len)

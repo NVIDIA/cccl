@@ -40,7 +40,7 @@ _CCCL_INLINE_VAR constexpr bool is_void_v = __is_void(_Tp);
 #else
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_void : public is_same<__remove_cv_t<_Tp>, void>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_void : public is_same<remove_cv_t<_Tp>, void>
 {};
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)

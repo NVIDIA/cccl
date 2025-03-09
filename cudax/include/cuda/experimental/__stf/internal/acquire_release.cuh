@@ -137,9 +137,9 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
     const data_place& dplace = it->get_dplace() == data_place::affine ? get_affine_data_place() : it->get_dplace();
 
     const instance_id_t instance_id =
-      mode == access_mode::redux ? d.find_unused_instance_id(dplace) : d.find_instance_id(dplace);
+      mode == access_mode::relaxed ? d.find_unused_instance_id(dplace) : d.find_instance_id(dplace);
 
-    if (mode == access_mode::redux)
+    if (mode == access_mode::relaxed)
     {
       d.get_data_instance(instance_id).set_redux_op(it->get_redux_op());
     }
@@ -187,7 +187,7 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
   {
     logical_data_untyped d = e.get_data();
 
-    if (e.get_access_mode() == access_mode::redux)
+    if (e.get_access_mode() == access_mode::relaxed)
     {
       // Save the last task accessing the instance in with a relaxed coherency mode
       d.get_data_instance(e.get_instance_id()).set_last_task_relaxed(*this);
@@ -324,6 +324,10 @@ inline void task::release(backend_ctx_untyped& ctx, event_list& done_prereqs)
   // This will, in particular, release shared_ptr to logical data captured in
   // the dependencies.
   pimpl->post_submission_hooks.clear();
+
+#ifndef NDEBUG
+  ctx.increment_finished_task_count();
+#endif
 }
 
 } // namespace cuda::experimental::stf

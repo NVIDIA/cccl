@@ -468,7 +468,7 @@ function(llvm_add_library name)
       add_dependencies(${obj_name} ${ARG_DEPENDS})
     endif()
     # Treat link libraries like PUBLIC dependencies.  LINK_LIBS might
-    # result in generating header files.  Add a dependendency so that
+    # result in generating header files.  Add a dependency so that
     # the generated header is created before this object library.
     if(ARG_LINK_LIBS)
       cmake_parse_arguments(LINK_LIBS_ARG
@@ -738,7 +738,7 @@ endfunction()
 #   - LLVM_LINK_COMPONENTS: a list of component this component depends on
 #   - COMPONENT_HAS_JIT: (only for group component) whether this target group
 #     supports JIT compilation
-# Additionnaly, the ADD_TO_COMPONENT <component> option make it possible to add this
+# Additionally, the ADD_TO_COMPONENT <component> option make it possible to add this
 # component to the LLVM_LINK_COMPONENTS of <component>.
 function(add_llvm_component_library name)
   cmake_parse_arguments(ARG
@@ -911,7 +911,7 @@ macro(add_llvm_executable name)
   if (LLVM_PTHREAD_LIB)
     # libpthreads overrides some standard library symbols, so main
     # executable must be linked with it in order to provide consistent
-    # API for all shared libaries loaded by this executable.
+    # API for all shared libraries loaded by this executable.
     target_link_libraries(${name} PRIVATE ${LLVM_PTHREAD_LIB})
   endif()
 
@@ -1452,7 +1452,7 @@ function(add_unittest test_suite test_name)
   set_output_directory(${test_name} BINARY_DIR ${outdir} LIBRARY_DIR ${outdir})
   # libpthreads overrides some standard library symbols, so main
   # executable must be linked with it in order to provide consistent
-  # API for all shared libaries loaded by this executable.
+  # API for all shared libraries loaded by this executable.
   target_link_libraries(${test_name} PRIVATE gtest_main gtest ${LLVM_PTHREAD_LIB})
 
   add_dependencies(${test_suite} ${test_name})
@@ -1742,7 +1742,7 @@ function(add_lit_target target comment)
     list(APPEND LIT_ARGS --param build_mode=${CMAKE_CFG_INTDIR})
   endif ()
 
-  # Get the path to the lit to *run* tests with.  This can be overriden by
+  # Get the path to the lit to *run* tests with.  This can be overridden by
   # the user by specifying -DLLVM_EXTERNAL_LIT=<path-to-lit.py>
   get_llvm_lit_path(
     lit_base_dir

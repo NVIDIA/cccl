@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // <cuda/std/optional>
 
 // constexpr T& optional<T>::value() &;
@@ -33,7 +31,7 @@ struct X
   {
     return 3;
   }
-  __host__ __device__ int test() &
+  __host__ __device__ constexpr int test() &
   {
     return 4;
   }
@@ -41,7 +39,7 @@ struct X
   {
     return 5;
   }
-  __host__ __device__ int test() &&
+  __host__ __device__ constexpr int test() &&
   {
     return 6;
   }
@@ -55,16 +53,10 @@ struct Y
   }
 };
 
-__host__ __device__ constexpr int test()
-{
-  optional<Y> opt{Y{}};
-  return opt.value().test();
-}
-
 #ifndef TEST_HAS_NO_EXCEPTIONS
 void test_exceptions()
 {
-  optional<X> opt;
+  optional<X> opt{};
   try
   {
     (void) opt.value();
@@ -75,25 +67,51 @@ void test_exceptions()
 }
 #endif // !TEST_HAS_NO_EXCEPTIONS
 
-int main(int, char**)
+__host__ __device__ constexpr bool test()
 {
   {
-    optional<X> opt;
+    optional<X> opt{};
     unused(opt);
-#ifndef TEST_COMPILER_ICC
     ASSERT_NOT_NOEXCEPT(opt.value());
-#endif // TEST_COMPILER_ICC
     ASSERT_SAME_TYPE(decltype(opt.value()), X&);
+
+    optional<X&> optref;
+    unused(optref);
+    ASSERT_NOEXCEPT(optref.value());
+    ASSERT_SAME_TYPE(decltype(optref.value()), X&);
   }
+
   {
-    optional<X> opt;
-    opt.emplace();
+    optional<X> opt{cuda::std::in_place};
     assert(opt.value().test() == 4);
   }
-  assert(test() == 7);
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-  static_assert(test() == 7, "");
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
+  {
+    X val{};
+    optional<X&> opt{val};
+    assert(opt.value().test() == 4);
+    assert(cuda::std::addressof(val) == cuda::std::addressof(opt.value()));
+  }
+
+  {
+    optional<Y> opt{cuda::std::in_place};
+    assert(opt.value().test() == 7);
+  }
+
+  {
+    Y val{};
+    optional<Y&> opt{val};
+    assert(opt.value().test() == 7);
+    assert(cuda::std::addressof(val) == cuda::std::addressof(opt.value()));
+  }
+
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test(), "");
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))

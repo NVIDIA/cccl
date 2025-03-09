@@ -83,12 +83,14 @@ inline void free(pointer<void> ptr);
 template <typename T>
 using allocator = thrust::mr::stateless_resource_allocator<T, thrust::system::omp::memory_resource>;
 
-/*! \p omp::universal_allocator allocates memory that can be used by the \p omp
- *  system and host systems.
- */
+//! \p omp::universal_allocator allocates memory that can be used by the \p omp system and host systems.
 template <typename T>
 using universal_allocator = thrust::mr::stateless_resource_allocator<T, thrust::system::omp::universal_memory_resource>;
 
+//! \p omp::universal_host_pinned_allocator allocates memory that can be used by the \p omp system and host systems.
+template <typename T>
+using universal_host_pinned_allocator =
+  thrust::mr::stateless_resource_allocator<T, thrust::system::omp::universal_host_pinned_memory_resource>;
 } // namespace omp
 } // namespace system
 
@@ -101,6 +103,7 @@ using thrust::system::omp::allocator;
 using thrust::system::omp::free;
 using thrust::system::omp::malloc;
 using thrust::system::omp::universal_allocator;
+using thrust::system::omp::universal_host_pinned_allocator;
 } // namespace omp
 
 THRUST_NAMESPACE_END

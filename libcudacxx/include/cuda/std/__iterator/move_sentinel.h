@@ -25,15 +25,13 @@
 #include <cuda/std/__concepts/semiregular.h>
 #include <cuda/std/__utility/move.h>
 
-#if _CCCL_STD_VER > 2014
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#  if _CCCL_STD_VER > 2017
+#if !defined(_CCCL_NO_CONCEPTS)
 template <semiregular _Sent>
-#  else
+#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 template <class _Sent, enable_if_t<semiregular<_Sent>, int> = 0>
-#  endif
+#endif // _CCCL_NO_CONCEPTS
 class _CCCL_TYPE_VISIBILITY_DEFAULT move_sentinel
 {
 public:
@@ -43,14 +41,14 @@ public:
       : __last_(_CUDA_VSTD::move(__s))
   {}
 
-  _LIBCUDACXX_TEMPLATE(class _S2)
-  _LIBCUDACXX_REQUIRES(convertible_to<const _S2&, _Sent>)
+  _CCCL_TEMPLATE(class _S2)
+  _CCCL_REQUIRES(convertible_to<const _S2&, _Sent>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr move_sentinel(const move_sentinel<_S2>& __s)
       : __last_(__s.base())
   {}
 
-  _LIBCUDACXX_TEMPLATE(class _S2)
-  _LIBCUDACXX_REQUIRES(assignable_from<const _S2&, _Sent>)
+  _CCCL_TEMPLATE(class _S2)
+  _CCCL_REQUIRES(assignable_from<const _S2&, _Sent>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr move_sentinel& operator=(const move_sentinel<_S2>& __s)
   {
     __last_ = __s.base();
@@ -67,7 +65,5 @@ private:
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
-
-#endif // _CCCL_STD_VER > 2014
 
 #endif // _LIBCUDACXX___ITERATOR_MOVE_SENTINEL_H

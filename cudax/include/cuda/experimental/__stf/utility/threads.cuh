@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/utility/source_location.cuh>
+#include <cuda/std/source_location>
 
 #include <atomic>
 #include <mutex>
@@ -55,7 +55,8 @@ public:
 
 #ifndef NDEBUG
 
-  explicit single_threaded_section(mutex_type& m, source_location loc = RESERVED_STF_SOURCE_LOCATION())
+  explicit single_threaded_section(mutex_type& m,
+                                   const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
       : mutex(m)
   {
     if (mutex.try_lock())

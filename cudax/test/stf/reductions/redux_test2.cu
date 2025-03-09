@@ -58,7 +58,7 @@ int main()
   };
 
   // REDUX dev1 (18 + 42)
-  ctx.task(exec_place::device(1), handle.redux(redux_op))->*[](auto stream, auto s) {
+  ctx.task(exec_place::device(1), handle.relaxed(redux_op))->*[](auto stream, auto s) {
     add<<<1, 1, 0, stream>>>(s.data_handle(), 42);
   };
 

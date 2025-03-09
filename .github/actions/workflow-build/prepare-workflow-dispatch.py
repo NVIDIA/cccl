@@ -14,12 +14,12 @@ import sys
 
 
 def write_json_file(filename, json_object):
-    with open(filename, 'w') as f:
+    with open(filename, "w") as f:
         json.dump(json_object, f, indent=2)
 
 
 def is_windows(job):
-    return job['runner'].startswith('windows')
+    return job["runner"].startswith("windows")
 
 
 def split_workflow(workflow):
@@ -29,11 +29,11 @@ def split_workflow(workflow):
     windows_two_stage = {}
 
     def strip_extra_info(job):
-        del job['origin']
+        del job["origin"]
 
     for group_name, group_json in workflow.items():
-        standalone = group_json['standalone'] if 'standalone' in group_json else []
-        two_stage = group_json['two_stage'] if 'two_stage' in group_json else []
+        standalone = group_json["standalone"] if "standalone" in group_json else []
+        two_stage = group_json["two_stage"] if "two_stage" in group_json else []
 
         if len(standalone) > 0:
             for job in standalone:
@@ -46,38 +46,44 @@ def split_workflow(workflow):
 
         if len(two_stage) > 0:
             for ts in two_stage:
-                for job in ts['producers']:
+                for job in ts["producers"]:
                     strip_extra_info(job)
-                for job in ts['consumers']:
+                for job in ts["consumers"]:
                     strip_extra_info(job)
 
-            if is_windows(two_stage[0]['producers'][0]):
+            if is_windows(two_stage[0]["producers"][0]):
                 windows_two_stage[group_name] = two_stage
             else:
                 linux_two_stage[group_name] = two_stage
 
     dispatch = {
-        'linux_standalone': {
-            'keys': list(linux_standalone.keys()),
-            'jobs': linux_standalone},
-        'linux_two_stage': {
-            'keys': list(linux_two_stage.keys()),
-            'jobs': linux_two_stage},
-        'windows_standalone': {
-            'keys': list(windows_standalone.keys()),
-            'jobs': windows_standalone},
-        'windows_two_stage': {
-            'keys': list(windows_two_stage.keys()),
-            'jobs': windows_two_stage}
+        "linux_standalone": {
+            "keys": list(linux_standalone.keys()),
+            "jobs": linux_standalone,
+        },
+        "linux_two_stage": {
+            "keys": list(linux_two_stage.keys()),
+            "jobs": linux_two_stage,
+        },
+        "windows_standalone": {
+            "keys": list(windows_standalone.keys()),
+            "jobs": windows_standalone,
+        },
+        "windows_two_stage": {
+            "keys": list(windows_two_stage.keys()),
+            "jobs": windows_two_stage,
+        },
     }
 
-    os.makedirs('workflow', exist_ok=True)
-    write_json_file('workflow/dispatch.json', dispatch)
+    os.makedirs("workflow", exist_ok=True)
+    write_json_file("workflow/dispatch.json", dispatch)
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Prepare a full workflow for GHA dispatch.')
-    parser.add_argument('workflow_json', help='Path to the full workflow.json file')
+    parser = argparse.ArgumentParser(
+        description="Prepare a full workflow for GHA dispatch."
+    )
+    parser.add_argument("workflow_json", help="Path to the full workflow.json file")
     args = parser.parse_args()
 
     # Check if the workflow file exists
@@ -91,5 +97,5 @@ def main():
     split_workflow(workflow)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

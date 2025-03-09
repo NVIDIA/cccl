@@ -73,9 +73,7 @@ CUB_NAMESPACE_BEGIN
 //! @tparam BLOCK_DIM_Z
 //!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
-//! @tparam LEGACY_PTX_ARCH
-//!   **[optional]** Unused
-template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y = 1, int BLOCK_DIM_Z = 1, int LEGACY_PTX_ARCH = 0>
+template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y = 1, int BLOCK_DIM_Z = 1>
 class BlockShuffle
 {
 private:
@@ -164,7 +162,7 @@ public:
   {
     temp_storage[linear_tid] = input;
 
-    CTA_SYNC();
+    __syncthreads();
 
     const int offset_tid = static_cast<int>(linear_tid) + distance;
     if ((offset_tid >= 0) && (offset_tid < BLOCK_THREADS))
@@ -196,7 +194,7 @@ public:
   {
     temp_storage[linear_tid] = input;
 
-    CTA_SYNC();
+    __syncthreads();
 
     unsigned int offset = linear_tid + distance;
     if (offset >= BLOCK_THREADS)
@@ -230,7 +228,7 @@ public:
   {
     temp_storage[linear_tid] = input[ITEMS_PER_THREAD - 1];
 
-    CTA_SYNC();
+    __syncthreads();
 
 #pragma unroll
     for (int ITEM = ITEMS_PER_THREAD - 1; ITEM > 0; --ITEM)
@@ -298,7 +296,7 @@ public:
   {
     temp_storage[linear_tid] = input[0];
 
-    CTA_SYNC();
+    __syncthreads();
 
 #pragma unroll
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD - 1; ITEM++)

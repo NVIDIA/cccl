@@ -10,20 +10,22 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdlib>
 #include <iostream>
 #include <memory>
 #include <string>
 #include <string_view>
 #include <tuple>
+#include <vector>
 
 #include <nvJitLink.h>
 #include <nvrtc.h>
 #include <util/errors.h>
 
-struct nvrtc_cubin
+struct nvrtc_link_result
 {
-  std::unique_ptr<char[]> cubin{};
+  std::unique_ptr<char[]> data{};
   size_t size;
 };
 
@@ -40,6 +42,22 @@ struct nvrtc_get_name
 {
   std::string_view name;
   std::string& lowered_name;
+
+  nvrtc_get_name() = delete;
+  nvrtc_get_name(std::string_view name, std::string& lowered_name)
+      : name(name)
+      , lowered_name(lowered_name)
+  {}
+  ~nvrtc_get_name() noexcept {};
+
+  nvrtc_get_name(const nvrtc_get_name&) = delete;
+  nvrtc_get_name(nvrtc_get_name&& other) noexcept
+      : name(other.name)
+      , lowered_name(other.lowered_name)
+  {}
+
+  nvrtc_get_name& operator=(const nvrtc_get_name&) = delete;
+  nvrtc_get_name& operator=(nvrtc_get_name&&)      = delete;
 };
 struct nvrtc_compile
 {
@@ -51,11 +69,12 @@ struct nvrtc_program_cleanup
 struct nvrtc_ltoir
 {
   const char* ltoir;
-  int ltsz;
+  size_t ltsz;
 };
+using nvrtc_ltoir_list = std::vector<nvrtc_ltoir>;
 struct nvrtc_jitlink_cleanup
 {
-  nvrtc_cubin& cubin_ref;
+  nvrtc_link_result& link_result_ref;
 };
 
 struct nvrtc_jitlink
@@ -129,8 +148,15 @@ struct nvrtc_command_list_visitor
   }
   void execute(nvrtc_ltoir lto)
   {
-    check(nvJitLinkAddData(
-      jitlink.handle, NVJITLINK_INPUT_LTOIR, (const void*) lto.ltoir, (size_t) lto.ltsz, program_name.data()));
+    check(
+      nvJitLinkAddData(jitlink.handle, NVJITLINK_INPUT_LTOIR, (const void*) lto.ltoir, lto.ltsz, program_name.data()));
+  }
+  void execute(const nvrtc_ltoir_list& lto_list)
+  {
+    for (auto lto : lto_list)
+    {
+      execute(lto);
+    }
   }
   void execute(nvrtc_jitlink_cleanup cleanup)
   {
@@ -147,9 +173,23 @@ struct nvrtc_command_list_visitor
 
     check(jitlink_error);
 
-    check(nvJitLinkGetLinkedCubinSize(jitlink.handle, &cleanup.cubin_ref.size));
-    cleanup.cubin_ref.cubin = std::unique_ptr<char[]>(new char[cleanup.cubin_ref.size]);
-    check(nvJitLinkGetLinkedCubin(jitlink.handle, cleanup.cubin_ref.cubin.get()));
+    bool output_ptx = false;
+    auto result     = nvJitLinkGetLinkedCubinSize(jitlink.handle, &cleanup.link_result_ref.size);
+    if (result != NVJITLINK_SUCCESS)
+    {
+      output_ptx = true;
+      check(nvJitLinkGetLinkedPtxSize(jitlink.handle, &cleanup.link_result_ref.size));
+    }
+    cleanup.link_result_ref.data = std::unique_ptr<char[]>(new char[cleanup.link_result_ref.size]);
+
+    if (output_ptx)
+    {
+      check(nvJitLinkGetLinkedPtx(jitlink.handle, cleanup.link_result_ref.data.get()));
+    }
+    else
+    {
+      check(nvJitLinkGetLinkedCubin(jitlink.handle, cleanup.link_result_ref.data.get()));
+    }
   }
 };
 
@@ -215,15 +255,20 @@ struct nvrtc_sm_top_level
   {
     return {nvrtc_command_list_append(std::move(cl), std::move(arg))};
   }
+  // Add linkable units to whole program
+  nvrtc_sm_top_level<Tx..., nvrtc_ltoir_list> add_link_list(nvrtc_ltoir_list arg)
+  {
+    return {nvrtc_command_list_append(std::move(cl), std::move(arg))};
+  }
 
   // Execute steps and link unit
-  nvrtc_cubin finalize_program(uint32_t numLtoOpts, const char** ltoOpts)
+  nvrtc_link_result finalize_program(uint32_t numLtoOpts, const char** ltoOpts)
   {
-    nvrtc_cubin cubin{};
-    nvrtc_jitlink_cleanup cleanup{cubin};
+    nvrtc_link_result link_result{};
+    nvrtc_jitlink_cleanup cleanup{link_result};
     nvrtc_jitlink jl(numLtoOpts, ltoOpts);
     std::apply(nvrtc_command_list_visitor{jl}, nvrtc_command_list_append(std::move(cl), std::move(cleanup)));
-    return cubin;
+    return link_result;
   }
 };
 

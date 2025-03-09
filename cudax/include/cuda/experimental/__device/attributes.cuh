@@ -32,31 +32,8 @@ namespace cuda::experimental
 namespace detail
 {
 
-_CCCL_NODISCARD inline int __get_attr_impl(::cudaDeviceAttr __attr, int __dev)
-{
-  int __value = 0;
-  _CCCL_TRY_CUDA_API(::cudaDeviceGetAttribute, "failed to get device attribute", &__value, __attr, __dev);
-  return __value;
-}
-
-template <::cudaDeviceAttr _Attr>
-struct __dev_attr
-{
-  using type = int;
-
-  _CCCL_NODISCARD constexpr operator ::cudaDeviceAttr() const noexcept
-  {
-    return _Attr;
-  }
-
-  _CCCL_NODISCARD type operator()(device_ref __dev_id) const
-  {
-    return __get_attr_impl(_Attr, __dev_id.get());
-  }
-};
-
 template <::cudaDeviceAttr _Attr, typename _Type>
-struct __dev_attr_with_type
+struct __dev_attr_impl
 {
   using type = _Type;
 
@@ -67,34 +44,40 @@ struct __dev_attr_with_type
 
   _CCCL_NODISCARD type operator()(device_ref __dev_id) const
   {
-    return static_cast<type>(__get_attr_impl(_Attr, __dev_id.get()));
+    int __value = 0;
+    _CCCL_TRY_CUDA_API(::cudaDeviceGetAttribute, "failed to get device attribute", &__value, _Attr, __dev_id.get());
+    return static_cast<type>(__value);
   }
 };
+
+template <::cudaDeviceAttr _Attr>
+struct __dev_attr : __dev_attr_impl<_Attr, int>
+{};
 
 // TODO: give this a strong type for kilohertz
 template <>
 struct __dev_attr<::cudaDevAttrClockRate> //
-    : __dev_attr_with_type<::cudaDevAttrClockRate, int>
+    : __dev_attr_impl<::cudaDevAttrClockRate, int>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrGpuOverlap> //
-    : __dev_attr_with_type<::cudaDevAttrGpuOverlap, bool>
+    : __dev_attr_impl<::cudaDevAttrGpuOverlap, bool>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrKernelExecTimeout> //
-    : __dev_attr_with_type<::cudaDevAttrKernelExecTimeout, bool>
+    : __dev_attr_impl<::cudaDevAttrKernelExecTimeout, bool>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrIntegrated> //
-    : __dev_attr_with_type<::cudaDevAttrIntegrated, bool>
+    : __dev_attr_impl<::cudaDevAttrIntegrated, bool>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrCanMapHostMemory> //
-    : __dev_attr_with_type<::cudaDevAttrCanMapHostMemory, bool>
+    : __dev_attr_impl<::cudaDevAttrCanMapHostMemory, bool>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrComputeMode> //
-    : __dev_attr_with_type<::cudaDevAttrComputeMode, ::cudaComputeMode>
+    : __dev_attr_impl<::cudaDevAttrComputeMode, ::cudaComputeMode>
 {
   static constexpr type default_mode           = cudaComputeModeDefault;
   static constexpr type prohibited_mode        = cudaComputeModeProhibited;
@@ -102,133 +85,133 @@ struct __dev_attr<::cudaDevAttrComputeMode> //
 };
 template <>
 struct __dev_attr<::cudaDevAttrConcurrentKernels> //
-    : __dev_attr_with_type<::cudaDevAttrConcurrentKernels, bool>
+    : __dev_attr_impl<::cudaDevAttrConcurrentKernels, bool>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrEccEnabled> //
-    : __dev_attr_with_type<::cudaDevAttrEccEnabled, bool>
+    : __dev_attr_impl<::cudaDevAttrEccEnabled, bool>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrTccDriver> //
-    : __dev_attr_with_type<::cudaDevAttrTccDriver, bool>
+    : __dev_attr_impl<::cudaDevAttrTccDriver, bool>
 {};
 // TODO: give this a strong type for kilohertz
 template <>
 struct __dev_attr<::cudaDevAttrMemoryClockRate> //
-    : __dev_attr_with_type<::cudaDevAttrMemoryClockRate, int>
+    : __dev_attr_impl<::cudaDevAttrMemoryClockRate, int>
 {};
 // TODO: give this a strong type for bits
 template <>
 struct __dev_attr<::cudaDevAttrGlobalMemoryBusWidth> //
-    : __dev_attr_with_type<::cudaDevAttrGlobalMemoryBusWidth, int>
+    : __dev_attr_impl<::cudaDevAttrGlobalMemoryBusWidth, int>
 {};
 // TODO: give this a strong type for bytes
 template <>
 struct __dev_attr<::cudaDevAttrL2CacheSize> //
-    : __dev_attr_with_type<::cudaDevAttrL2CacheSize, int>
+    : __dev_attr_impl<::cudaDevAttrL2CacheSize, int>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrUnifiedAddressing> //
-    : __dev_attr_with_type<::cudaDevAttrUnifiedAddressing, bool>
+    : __dev_attr_impl<::cudaDevAttrUnifiedAddressing, bool>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrStreamPrioritiesSupported> //
-    : __dev_attr_with_type<::cudaDevAttrStreamPrioritiesSupported, bool>
+    : __dev_attr_impl<::cudaDevAttrStreamPrioritiesSupported, bool>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrGlobalL1CacheSupported> //
-    : __dev_attr_with_type<::cudaDevAttrGlobalL1CacheSupported, bool>
+    : __dev_attr_impl<::cudaDevAttrGlobalL1CacheSupported, bool>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrLocalL1CacheSupported> //
-    : __dev_attr_with_type<::cudaDevAttrLocalL1CacheSupported, bool>
+    : __dev_attr_impl<::cudaDevAttrLocalL1CacheSupported, bool>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrManagedMemory> //
-    : __dev_attr_with_type<::cudaDevAttrManagedMemory, bool>
+    : __dev_attr_impl<::cudaDevAttrManagedMemory, bool>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrIsMultiGpuBoard> //
-    : __dev_attr_with_type<::cudaDevAttrIsMultiGpuBoard, bool>
+    : __dev_attr_impl<::cudaDevAttrIsMultiGpuBoard, bool>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrHostNativeAtomicSupported> //
-    : __dev_attr_with_type<::cudaDevAttrHostNativeAtomicSupported, bool>
+    : __dev_attr_impl<::cudaDevAttrHostNativeAtomicSupported, bool>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrPageableMemoryAccess> //
-    : __dev_attr_with_type<::cudaDevAttrPageableMemoryAccess, bool>
+    : __dev_attr_impl<::cudaDevAttrPageableMemoryAccess, bool>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrConcurrentManagedAccess> //
-    : __dev_attr_with_type<::cudaDevAttrConcurrentManagedAccess, bool>
+    : __dev_attr_impl<::cudaDevAttrConcurrentManagedAccess, bool>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrComputePreemptionSupported> //
-    : __dev_attr_with_type<::cudaDevAttrComputePreemptionSupported, bool>
+    : __dev_attr_impl<::cudaDevAttrComputePreemptionSupported, bool>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrCanUseHostPointerForRegisteredMem> //
-    : __dev_attr_with_type<::cudaDevAttrCanUseHostPointerForRegisteredMem, bool>
+    : __dev_attr_impl<::cudaDevAttrCanUseHostPointerForRegisteredMem, bool>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrCooperativeLaunch> //
-    : __dev_attr_with_type<::cudaDevAttrCooperativeLaunch, bool>
+    : __dev_attr_impl<::cudaDevAttrCooperativeLaunch, bool>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrCooperativeMultiDeviceLaunch> //
-    : __dev_attr_with_type<::cudaDevAttrCooperativeMultiDeviceLaunch, bool>
+    : __dev_attr_impl<::cudaDevAttrCooperativeMultiDeviceLaunch, bool>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrCanFlushRemoteWrites> //
-    : __dev_attr_with_type<::cudaDevAttrCanFlushRemoteWrites, bool>
+    : __dev_attr_impl<::cudaDevAttrCanFlushRemoteWrites, bool>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrHostRegisterSupported> //
-    : __dev_attr_with_type<::cudaDevAttrHostRegisterSupported, bool>
+    : __dev_attr_impl<::cudaDevAttrHostRegisterSupported, bool>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrDirectManagedMemAccessFromHost> //
-    : __dev_attr_with_type<::cudaDevAttrDirectManagedMemAccessFromHost, bool>
+    : __dev_attr_impl<::cudaDevAttrDirectManagedMemAccessFromHost, bool>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrSparseCudaArraySupported> //
-    : __dev_attr_with_type<::cudaDevAttrSparseCudaArraySupported, bool>
+    : __dev_attr_impl<::cudaDevAttrSparseCudaArraySupported, bool>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrMemoryPoolsSupported> //
-    : __dev_attr_with_type<::cudaDevAttrMemoryPoolsSupported, bool>
+    : __dev_attr_impl<::cudaDevAttrMemoryPoolsSupported, bool>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrGPUDirectRDMASupported> //
-    : __dev_attr_with_type<::cudaDevAttrGPUDirectRDMASupported, bool>
+    : __dev_attr_impl<::cudaDevAttrGPUDirectRDMASupported, bool>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrDeferredMappingCudaArraySupported> //
-    : __dev_attr_with_type<::cudaDevAttrDeferredMappingCudaArraySupported, bool>
+    : __dev_attr_impl<::cudaDevAttrDeferredMappingCudaArraySupported, bool>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrIpcEventSupport> //
-    : __dev_attr_with_type<::cudaDevAttrIpcEventSupport, bool>
+    : __dev_attr_impl<::cudaDevAttrIpcEventSupport, bool>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrPageableMemoryAccessUsesHostPageTables>
-    : __dev_attr_with_type<::cudaDevAttrPageableMemoryAccessUsesHostPageTables, bool>
+    : __dev_attr_impl<::cudaDevAttrPageableMemoryAccessUsesHostPageTables, bool>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrHostRegisterReadOnlySupported> //
-    : __dev_attr_with_type<::cudaDevAttrHostRegisterReadOnlySupported, bool>
+    : __dev_attr_impl<::cudaDevAttrHostRegisterReadOnlySupported, bool>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrGPUDirectRDMAFlushWritesOptions> //
-    : __dev_attr_with_type<::cudaDevAttrGPUDirectRDMAFlushWritesOptions, ::cudaFlushGPUDirectRDMAWritesOptions>
+    : __dev_attr_impl<::cudaDevAttrGPUDirectRDMAFlushWritesOptions, ::cudaFlushGPUDirectRDMAWritesOptions>
 {
   static constexpr type host    = ::cudaFlushGPUDirectRDMAWritesOptionHost;
   static constexpr type mem_ops = ::cudaFlushGPUDirectRDMAWritesOptionMemOps;
 };
 template <>
 struct __dev_attr<::cudaDevAttrGPUDirectRDMAWritesOrdering> //
-    : __dev_attr_with_type<::cudaDevAttrGPUDirectRDMAWritesOrdering, ::cudaGPUDirectRDMAWritesOrdering>
+    : __dev_attr_impl<::cudaDevAttrGPUDirectRDMAWritesOrdering, ::cudaGPUDirectRDMAWritesOrdering>
 {
   static constexpr type none        = ::cudaGPUDirectRDMAWritesOrderingNone;
   static constexpr type owner       = ::cudaGPUDirectRDMAWritesOrderingOwner;
@@ -236,7 +219,7 @@ struct __dev_attr<::cudaDevAttrGPUDirectRDMAWritesOrdering> //
 };
 template <>
 struct __dev_attr<::cudaDevAttrMemoryPoolSupportedHandleTypes> //
-    : __dev_attr_with_type<::cudaDevAttrMemoryPoolSupportedHandleTypes, ::cudaMemAllocationHandleType>
+    : __dev_attr_impl<::cudaDevAttrMemoryPoolSupportedHandleTypes, ::cudaMemAllocationHandleType>
 {
   static constexpr type none                  = ::cudaMemHandleTypeNone;
   static constexpr type posix_file_descriptor = ::cudaMemHandleTypePosixFileDescriptor;
@@ -251,7 +234,7 @@ struct __dev_attr<::cudaDevAttrMemoryPoolSupportedHandleTypes> //
 #if CUDART_VERSION >= 12020
 template <>
 struct __dev_attr<::cudaDevAttrNumaConfig> //
-    : __dev_attr_with_type<::cudaDevAttrNumaConfig, ::cudaDeviceNumaConfig>
+    : __dev_attr_impl<::cudaDevAttrNumaConfig, ::cudaDeviceNumaConfig>
 {
   static constexpr type none      = ::cudaDeviceNumaConfigNone;
   static constexpr type numa_node = ::cudaDeviceNumaConfigNumaNode;

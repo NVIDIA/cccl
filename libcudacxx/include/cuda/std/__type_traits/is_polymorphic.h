@@ -42,7 +42,7 @@ _CCCL_INLINE_VAR constexpr bool is_polymorphic_v = _CCCL_BUILTIN_IS_POLYMORPHIC(
 
 template <typename _Tp>
 _CCCL_HOST_DEVICE char& __is_polymorphic_impl(
-  __enable_if_t<sizeof((_Tp*) dynamic_cast<const volatile void*>(_CUDA_VSTD::declval<_Tp*>())) != 0, int>);
+  enable_if_t<sizeof((_Tp*) dynamic_cast<const volatile void*>(_CUDA_VSTD::declval<_Tp*>())) != 0, int>);
 template <typename _Tp>
 _CCCL_HOST_DEVICE __two& __is_polymorphic_impl(...);
 

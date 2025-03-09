@@ -26,10 +26,6 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-#if defined(TEST_COMPILER_MSVC_2017)
-#  pragma warning(disable : 4307) // '+': integral constant overflow
-#endif // TEST_COMPILER_MSVC_2017
-
 struct add_one
 {
   template <typename T>
@@ -184,8 +180,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014
   return 0;
 }

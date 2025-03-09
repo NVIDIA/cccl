@@ -63,7 +63,7 @@ malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, std::si
 }
 
 // XXX WAR nvbug 992955
-#ifdef _CCCL_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER
 #  if CUDART_VERSION < 5000
 
 // cudafe generates unqualified calls to free(int *volatile)

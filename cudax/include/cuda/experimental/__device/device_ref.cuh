@@ -109,6 +109,9 @@ public:
     return attr(detail::__dev_attr<_Attr>());
   }
 
+  //! @brief Retrieve string with the name of this device.
+  //!
+  //! @return String containing the name of this device.
   _CCCL_NODISCARD ::std::string get_name() const
   {
     constexpr int __max_name_length = 256;
@@ -119,7 +122,33 @@ public:
     return __name;
   }
 
-  const arch_traits_t& arch_traits() const;
+  //! @brief Queries if its possible for this device to directly access specified device's memory.
+  //!
+  //! If this function returns true, device supplied to this call can be passed into enable_peer_access
+  //! on memory resource or pool that manages memory on this device. It will make allocations from that
+  //! pool accessible by this device.
+  //!
+  //! @param __other_dev Device to query the peer access
+  //! @return true if its possible for this device to access the specified device's memory
+  bool has_peer_access_to(device_ref __other_dev) const
+  {
+    int __can_access;
+    _CCCL_TRY_CUDA_API(
+      ::cudaDeviceCanAccessPeer,
+      "Could not query if device can be peer accessed",
+      &__can_access,
+      get(),
+      __other_dev.get());
+    return __can_access;
+  }
+
+  //! @brief Retrieve architecture traits of this device.
+  //!
+  //! Architecture traits object contains information about certain traits
+  //! that are shared by all devices belonging to given architecture.
+  //!
+  //! @return A reference to `arch_traits_t` object containing architecture traits of this device
+  const arch_traits_t& get_arch_traits() const;
 
   // TODO this might return some more complex type in the future
   // TODO we might want to include the calling device, depends on what we decide

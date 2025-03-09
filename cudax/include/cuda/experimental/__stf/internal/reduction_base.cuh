@@ -42,7 +42,7 @@ public:
   reduction_operator_base& operator=(const reduction_operator_base&) = delete;
   reduction_operator_base(const reduction_operator_base&)            = delete;
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen fails here
+#ifndef _CCCL_DOXYGEN_INVOKED // doxygen fails here
 
   // Reduction operator (inout, in)
   virtual void op_untyped(
@@ -62,7 +62,7 @@ public:
     const exec_place& e,
     event_list& prereq_in) = 0;
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 private:
   // not used for now ...

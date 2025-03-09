@@ -15,8 +15,6 @@
 
 #include "test_macros.h"
 
-TEST_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
-
 struct NoDefault
 {
   __host__ __device__ TEST_CONSTEXPR NoDefault(int) {}
@@ -222,7 +220,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool with_all_types()
   F().template operator()<long>();
   F().template operator()<float>();
   F().template operator()<double>();
+#if _CCCL_HAS_LONG_DOUBLE()
   F().template operator()<long double>();
+#endif // _CCCL_HAS_LONG_DOUBLE()
   F().template operator()<Empty>();
   F().template operator()<Trivial>();
   F().template operator()<NonTrivial>();
@@ -235,10 +235,8 @@ int main(int, char**)
   with_all_types<test_nondefault_initialization>();
   with_all_types<test_default_initialization>(); // not constexpr
   test_initializer_list();
-#if TEST_STD_VER >= 2014
   static_assert(with_all_types<test_nondefault_initialization>(), "");
   static_assert(test_initializer_list(), "");
-#endif
 
   return 0;
 }

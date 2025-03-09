@@ -41,7 +41,7 @@ int main()
 #if TEST_ERR == 0
   // expected-error {{"Offset iterator type should be integral."}}
   cub::DeviceSegmentedReduce::Reduce(
-    d_temp_storage, temp_storage_bytes, d_in, d_out, 0, d_offsets, d_offsets + 1, cub::Min(), 0);
+    d_temp_storage, temp_storage_bytes, d_in, d_out, 0, d_offsets, d_offsets + 1, ::cuda::minimum<>{}, 0);
 
 #elif TEST_ERR == 1
   // expected-error {{"Offset iterator type should be integral."}}

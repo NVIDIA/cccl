@@ -26,12 +26,6 @@ function(thrust_build_compiler_targets)
     append_option_if_available("/wd4146" cxx_compile_options)
   endif()
 
-  if (THRUST_DISPATCH_TYPE STREQUAL "Force32bit")
-    list(APPEND cxx_compile_definitions "THRUST_FORCE_32_BIT_OFFSET_TYPE")
-  elseif (THRUST_DISPATCH_TYPE STREQUAL "Force64bit")
-    list(APPEND cxx_compile_definitions "THRUST_FORCE_64_BIT_OFFSET_TYPE")
-  endif()
-
   cccl_build_compiler_interface(thrust.compiler_interface
     "${cuda_compile_options}"
     "${cxx_compile_options}"

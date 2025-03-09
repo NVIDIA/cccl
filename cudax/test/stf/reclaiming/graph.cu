@@ -10,19 +10,19 @@
 
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 
-#if !defined(_CCCL_COMPILER_MSVC)
+#if !_CCCL_COMPILER(MSVC)
 using namespace cuda::experimental::stf;
 
 __global__ void kernel()
 {
   // No-op
 }
-#endif // !defined(_CCCL_COMPILER_MSVC)
+#endif // !_CCCL_COMPILER(MSVC)
 
 int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 {
 // TODO fix setenv
-#if !defined(_CCCL_COMPILER_MSVC)
+#if !_CCCL_COMPILER(MSVC)
   int nblocks       = 4;
   size_t block_size = 1024 * 1024;
 
@@ -68,5 +68,5 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   }
 
   ctx.finalize();
-#endif // !defined(_CCCL_COMPILER_MSVC)
+#endif // !_CCCL_COMPILER(MSVC)
 }

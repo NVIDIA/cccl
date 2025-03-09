@@ -50,7 +50,7 @@ int main()
     // We add i (total = N(N-1)/2 + initial_value)
     for (int i = 0; i < N; i++)
     {
-      ctx.task(var_handle.redux(redux_op))->*[=](cudaStream_t stream, auto d_var) {
+      ctx.task(var_handle.relaxed(redux_op))->*[=](cudaStream_t stream, auto d_var) {
         add_val<<<1, 1, 0, stream>>>(d_var.data_handle(), i);
         cuda_safe_call(cudaGetLastError());
       };

@@ -33,9 +33,9 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/cstddef>
 
-#if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION) && !defined(_CCCL_COMPILER_NVRTC)
+#if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION) && !_CCCL_COMPILER(NVRTC)
 #  include <memory>
-#endif // _CCCL_HAS_CONSTEXPR_ALLOCATION && !_CCCL_COMPILER_NVRTC
+#endif // _CCCL_HAS_CONSTEXPR_ALLOCATION && !_CCCL_COMPILER(NVRTC)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -49,14 +49,14 @@ template <>
 class _CCCL_TYPE_VISIBILITY_DEFAULT allocator<void>
 {
 public:
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef void* pointer;
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef const void* const_pointer;
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef void value_type;
+  using pointer _LIBCUDACXX_DEPRECATED_IN_CXX17       = void*;
+  using const_pointer _LIBCUDACXX_DEPRECATED_IN_CXX17 = const void*;
+  using value_type _LIBCUDACXX_DEPRECATED_IN_CXX17    = void;
 
   template <class _Up>
   struct _LIBCUDACXX_DEPRECATED_IN_CXX17 rebind
   {
-    typedef allocator<_Up> other;
+    using other = allocator<_Up>;
   };
 };
 
@@ -64,14 +64,14 @@ template <>
 class _CCCL_TYPE_VISIBILITY_DEFAULT allocator<const void>
 {
 public:
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef const void* pointer;
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef const void* const_pointer;
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef const void value_type;
+  using pointer _LIBCUDACXX_DEPRECATED_IN_CXX17       = const void*;
+  using const_pointer _LIBCUDACXX_DEPRECATED_IN_CXX17 = const void*;
+  using value_type _LIBCUDACXX_DEPRECATED_IN_CXX17    = const void;
 
   template <class _Up>
   struct _LIBCUDACXX_DEPRECATED_IN_CXX17 rebind
   {
-    typedef allocator<_Up> other;
+    using other = allocator<_Up>;
   };
 };
 #endif // _CCCL_STD_VER <= 2017
@@ -109,11 +109,11 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT allocator : private __non_trivial_if<!_CCCL_
   static_assert(!_CCCL_TRAIT(is_volatile, _Tp), "std::allocator does not support volatile types");
 
 public:
-  typedef size_t size_type;
-  typedef ptrdiff_t difference_type;
-  typedef _Tp value_type;
-  typedef true_type propagate_on_container_move_assignment;
-  typedef true_type is_always_equal;
+  using size_type                              = size_t;
+  using difference_type                        = ptrdiff_t;
+  using value_type                             = _Tp;
+  using propagate_on_container_move_assignment = true_type;
+  using is_always_equal                        = true_type;
 
   _CCCL_CONSTEXPR_CXX20 allocator() noexcept = default;
 
@@ -129,13 +129,13 @@ public:
       __throw_bad_array_new_length();
     }
 #if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION)
-    if (__libcpp_is_constant_evaluated())
+    if (_CUDA_VSTD::is_constant_evaluated())
     {
       return ::std::allocator<_Tp>{}.allocate(__n);
     }
 #endif // _CCCL_HAS_CONSTEXPR_ALLOCATION
     {
-      return static_cast<_Tp*>(_CUDA_VSTD::__libcpp_allocate(__n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp)));
+      return static_cast<_Tp*>(_CUDA_VSTD::__cccl_allocate(__n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp)));
     }
   }
 
@@ -150,28 +150,28 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20_ALLOCATION void deallocate(_Tp* __p, size_t __n) noexcept
   {
 #if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION)
-    if (__libcpp_is_constant_evaluated())
+    if (_CUDA_VSTD::is_constant_evaluated())
     {
       return ::std::allocator<_Tp>{}.deallocate(__p, __n);
     }
     else
 #endif // _CCCL_STD_VER >= 2020
     {
-      _CUDA_VSTD::__libcpp_deallocate((void*) __p, __n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp));
+      _CUDA_VSTD::__cccl_deallocate((void*) __p, __n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp));
     }
   }
 
   // C++20 Removed members
 #if _CCCL_STD_VER <= 2017
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef _Tp* pointer;
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef const _Tp* const_pointer;
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef _Tp& reference;
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef const _Tp& const_reference;
+  using pointer _LIBCUDACXX_DEPRECATED_IN_CXX17         = _Tp*;
+  using const_pointer _LIBCUDACXX_DEPRECATED_IN_CXX17   = const _Tp*;
+  using reference _LIBCUDACXX_DEPRECATED_IN_CXX17       = _Tp&;
+  using const_reference _LIBCUDACXX_DEPRECATED_IN_CXX17 = const _Tp&;
 
   template <class _Up>
   struct _LIBCUDACXX_DEPRECATED_IN_CXX17 rebind
   {
-    typedef allocator<_Up> other;
+    using other = allocator<_Up>;
   };
 
   _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_HIDE_FROM_ABI pointer address(reference __x) const noexcept
@@ -213,11 +213,11 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT allocator<const _Tp>
   static_assert(!_CCCL_TRAIT(is_volatile, _Tp), "std::allocator does not support volatile types");
 
 public:
-  typedef size_t size_type;
-  typedef ptrdiff_t difference_type;
-  typedef const _Tp value_type;
-  typedef true_type propagate_on_container_move_assignment;
-  typedef true_type is_always_equal;
+  using size_type                              = size_t;
+  using difference_type                        = ptrdiff_t;
+  using value_type                             = const _Tp;
+  using propagate_on_container_move_assignment = true_type;
+  using is_always_equal                        = true_type;
 
   _CCCL_CONSTEXPR_CXX20 allocator() noexcept = default;
 
@@ -231,13 +231,13 @@ public:
     {
       __throw_bad_array_new_length();
     }
-    if (__libcpp_is_constant_evaluated())
+    if (_CUDA_VSTD::is_constant_evaluated())
     {
       return static_cast<const _Tp*>(::operator new(__n * sizeof(_Tp)));
     }
     else
     {
-      return static_cast<const _Tp*>(_CUDA_VSTD::__libcpp_allocate(__n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp)));
+      return static_cast<const _Tp*>(_CUDA_VSTD::__cccl_allocate(__n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp)));
     }
   }
 
@@ -250,27 +250,27 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void deallocate(const _Tp* __p, size_t __n) noexcept
   {
-    if (__libcpp_is_constant_evaluated())
+    if (_CUDA_VSTD::is_constant_evaluated())
     {
       ::operator delete(const_cast<_Tp*>(__p));
     }
     else
     {
-      _CUDA_VSTD::__libcpp_deallocate((void*) const_cast<_Tp*>(__p), __n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp));
+      _CUDA_VSTD::__cccl_deallocate((void*) const_cast<_Tp*>(__p), __n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp));
     }
   }
 
   // C++20 Removed members
 #if _CCCL_STD_VER <= 2017
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef const _Tp* pointer;
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef const _Tp* const_pointer;
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef const _Tp& reference;
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef const _Tp& const_reference;
+  using pointer _LIBCUDACXX_DEPRECATED_IN_CXX17         = const _Tp*;
+  using const_pointer _LIBCUDACXX_DEPRECATED_IN_CXX17   = const _Tp*;
+  using reference _LIBCUDACXX_DEPRECATED_IN_CXX17       = const _Tp&;
+  using const_reference _LIBCUDACXX_DEPRECATED_IN_CXX17 = const _Tp&;
 
   template <class _Up>
   struct _LIBCUDACXX_DEPRECATED_IN_CXX17 rebind
   {
-    typedef allocator<_Up> other;
+    using other = allocator<_Up>;
   };
 
   _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_HIDE_FROM_ABI const_pointer address(const_reference __x) const noexcept

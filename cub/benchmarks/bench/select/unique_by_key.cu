@@ -53,7 +53,7 @@
 
 struct policy_hub
 {
-  struct Policy350 : cub::ChainedPolicy<350, Policy350, Policy350>
+  struct Policy500 : cub::ChainedPolicy<500, Policy500, Policy500>
   {
     using UniqueByKeyPolicyT =
       cub::AgentUniqueByKeyPolicy<TUNE_THREADS,
@@ -64,7 +64,7 @@ struct policy_hub
                                   delay_constructor_t>;
   };
 
-  using MaxPolicy = Policy350;
+  using MaxPolicy = Policy500;
 };
 #endif // !TUNE_BASE
 
@@ -76,7 +76,7 @@ static void select(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
   using vals_input_it_t            = const ValueT*;
   using vals_output_it_t           = ValueT*;
   using num_runs_output_iterator_t = OffsetT*;
-  using equality_op_t              = cub::Equality;
+  using equality_op_t              = ::cuda::std::equal_to<>;
   using offset_t                   = OffsetT;
 
 #if !TUNE_BASE

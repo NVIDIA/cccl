@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class T, class U>
 // concept same_as;
 
@@ -137,13 +135,13 @@ __host__ __device__ void CheckNotSameAs()
 
 #if TEST_STD_VER > 2017
 // Checks subsumption works as intended
-_LIBCUDACXX_TEMPLATE(class T, class U)
-_LIBCUDACXX_REQUIRES(same_as<T, U>)
+_CCCL_TEMPLATE(class T, class U)
+_CCCL_REQUIRES(same_as<T, U>)
 __host__ __device__ void SubsumptionTest();
 
 // clang-format off
-_LIBCUDACXX_TEMPLATE(class T, class U)
-  _LIBCUDACXX_REQUIRES( same_as<T, U> && true)
+_CCCL_TEMPLATE(class T, class U)
+  _CCCL_REQUIRES( same_as<T, U> && true)
 __host__ __device__ int SubsumptionTest();
 // clang-format on
 

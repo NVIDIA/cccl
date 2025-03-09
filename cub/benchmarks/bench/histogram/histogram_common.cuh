@@ -62,7 +62,7 @@ constexpr cub::BlockHistogramMemoryPreference MEM_PREFERENCE = cub::BLEND;
 template <typename SampleT, int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS>
 struct policy_hub_t
 {
-  struct policy_t : cub::ChainedPolicy<350, policy_t, policy_t>
+  struct policy_t : cub::ChainedPolicy<500, policy_t, policy_t>
   {
     static constexpr cub::BlockLoadAlgorithm load_algorithm =
       (TUNE_LOAD_ALGORITHM == cub::BLOCK_LOAD_STRIPED)
@@ -91,7 +91,7 @@ SampleT get_upper_level(OffsetT bins, OffsetT elements)
   {
     if constexpr (sizeof(SampleT) < sizeof(OffsetT))
     {
-      const SampleT max_key = std::numeric_limits<SampleT>::max();
+      const SampleT max_key = ::cuda::std::numeric_limits<SampleT>::max();
       return static_cast<SampleT>(std::min(bins, static_cast<OffsetT>(max_key)));
     }
     else

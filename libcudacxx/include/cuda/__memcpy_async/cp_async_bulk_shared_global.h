@@ -22,7 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_CCCL_CUDA_COMPILER)
+#if _CCCL_HAS_CUDA_COMPILER
 #  if __cccl_ptx_isa >= 800
 
 #    include <cuda/__ptx/instructions/cp_async_bulk.h>
@@ -36,7 +36,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_shared_global_is_not_supported_before_SM_90__();
 template <typename _Group>
-inline __device__ void __cp_async_bulk_shared_global(
+inline _CCCL_DEVICE void __cp_async_bulk_shared_global(
   const _Group& __g, char* __dest, const char* __src, _CUDA_VSTD::size_t __size, _CUDA_VSTD::uint64_t* __bar_handle)
 {
   // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk

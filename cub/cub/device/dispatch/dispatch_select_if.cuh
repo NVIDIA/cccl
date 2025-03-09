@@ -45,16 +45,18 @@
 #endif // no system header
 
 #include <cub/agent/agent_select_if.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_select_if.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/thread/thread_operators.cuh>
-#include <cub/util_deprecated.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_vsmem.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+
+#include <cuda/std/__algorithm_>
 
 #include <cstdio>
 #include <iterator>
@@ -63,10 +65,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-
-namespace select
+namespace detail::select
 {
 // Offset type used to instantiate the stream compaction-kernel and agent to index the items within one partition
 using per_partition_offset_t = ::cuda::std::int32_t;
@@ -100,7 +99,8 @@ public:
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void advance(TotalNumItemsT num_items, bool next_partition_is_the_last)
   {
-    ::cuda::std::swap(d_num_selected_in, d_num_selected_out);
+    using ::cuda::std::swap;
+    swap(d_num_selected_in, d_num_selected_out);
     first_partition = false;
     last_partition  = next_partition_is_the_last;
     total_previous_num_items += num_items;
@@ -194,7 +194,7 @@ public:
 /**
  * @brief Wrapper that partially specializes the `AgentSelectIf` on the non-type name parameter `KeepRejects`.
  */
-template <bool KeepRejects, bool MayAlias>
+template <SelectImpl SelectionOpt>
 struct agent_select_if_wrapper_t
 {
   // Using an explicit list of template parameters forwarded to AgentSelectIf, since MSVC complains about a template
@@ -216,8 +216,7 @@ struct agent_select_if_wrapper_t
                              EqualityOpT,
                              OffsetT,
                              StreamingContextT,
-                             KeepRejects,
-                             MayAlias>
+                             SelectionOpt>
   {
     using AgentSelectIf<AgentSelectIfPolicyT,
                         InputIteratorT,
@@ -227,12 +226,9 @@ struct agent_select_if_wrapper_t
                         EqualityOpT,
                         OffsetT,
                         StreamingContextT,
-                        KeepRejects,
-                        MayAlias>::AgentSelectIf;
+                        SelectionOpt>::AgentSelectIf;
   };
 };
-} // namespace select
-} // namespace detail
 
 /******************************************************************************
  * Kernel entry points
@@ -280,7 +276,7 @@ struct agent_select_if_wrapper_t
  *    num_total_items() -> total number of items across all partitions (partition only)
  *    update_num_selected(d_num_sel_out, num_selected) -> invoked by last CTA with number of selected
  *
- * @tparam KEEP_REJECTS
+ * @tparam KeepRejects
  *   Whether or not we push rejected items to the back of the output
  *
  * @param[in] d_in
@@ -326,12 +322,11 @@ template <typename ChainedPolicyT,
           typename EqualityOpT,
           typename OffsetT,
           typename StreamingContextT,
-          bool KEEP_REJECTS,
-          bool MayAlias>
+          SelectImpl SelectionOpt>
 __launch_bounds__(int(
-  cub::detail::vsmem_helper_default_fallback_policy_t<
+  vsmem_helper_default_fallback_policy_t<
     typename ChainedPolicyT::ActivePolicy::SelectIfPolicyT,
-    detail::select::agent_select_if_wrapper_t<KEEP_REJECTS, MayAlias>::template agent_t,
+    agent_select_if_wrapper_t<SelectionOpt>::template agent_t,
     InputIteratorT,
     FlagsInputIteratorT,
     SelectedOutputIteratorT,
@@ -350,11 +345,11 @@ __launch_bounds__(int(
     OffsetT num_items,
     int num_tiles,
     _CCCL_GRID_CONSTANT const StreamingContextT streaming_context,
-    cub::detail::vsmem_t vsmem)
+    vsmem_t vsmem)
 {
-  using VsmemHelperT = cub::detail::vsmem_helper_default_fallback_policy_t<
+  using VsmemHelperT = vsmem_helper_default_fallback_policy_t<
     typename ChainedPolicyT::ActivePolicy::SelectIfPolicyT,
-    detail::select::agent_select_if_wrapper_t<KEEP_REJECTS, MayAlias>::template agent_t,
+    agent_select_if_wrapper_t<SelectionOpt>::template agent_t,
     InputIteratorT,
     FlagsInputIteratorT,
     SelectedOutputIteratorT,
@@ -381,6 +376,7 @@ __launch_bounds__(int(
   // If applicable, hints to discard modified cache lines for vsmem
   VsmemHelperT::discard_temp_storage(temp_storage);
 }
+} // namespace detail::select
 
 /******************************************************************************
  * Dispatch
@@ -413,24 +409,28 @@ __launch_bounds__(int(
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
- * @tparam KEEP_REJECTS
- *   Whether or not we push rejected items to the back of the output
+ * @tparam SelectionOpt
+ *   SelectImpl indicating whether to partition, just selection or selection where the memory for the input and
+ *   output may alias each other.
  */
-template <typename InputIteratorT,
-          typename FlagsInputIteratorT,
-          typename SelectedOutputIteratorT,
-          typename NumSelectedIteratorT,
-          typename SelectOpT,
-          typename EqualityOpT,
-          typename OffsetT,
-          bool KEEP_REJECTS,
-          bool MayAlias           = false,
-          typename SelectedPolicy = detail::device_select_policy_hub<cub::detail::value_t<InputIteratorT>,
-                                                                     cub::detail::value_t<FlagsInputIteratorT>,
-                                                                     detail::select::per_partition_offset_t,
-                                                                     MayAlias,
-                                                                     KEEP_REJECTS>>
-struct DispatchSelectIf : SelectedPolicy
+template <
+  typename InputIteratorT,
+  typename FlagsInputIteratorT,
+  typename SelectedOutputIteratorT,
+  typename NumSelectedIteratorT,
+  typename SelectOpT,
+  typename EqualityOpT,
+  typename OffsetT,
+  SelectImpl SelectionOpt,
+  typename PolicyHub = detail::select::policy_hub<
+    detail::it_value_t<InputIteratorT>,
+    detail::it_value_t<FlagsInputIteratorT>,
+    // if/flagged/unique only have a single code path for different offset types, partition has different code paths
+    ::cuda::std::conditional_t<SelectionOpt == SelectImpl::Partition, OffsetT, detail::select::per_partition_offset_t>,
+    detail::select::is_partition_distinct_output_t<SelectedOutputIteratorT>::value,
+    (SelectionOpt == SelectImpl::SelectPotentiallyInPlace),
+    (SelectionOpt == SelectImpl::Partition)>>
+struct DispatchSelectIf
 {
   /******************************************************************************
    * Types and constants
@@ -565,7 +565,7 @@ struct DispatchSelectIf : SelectedPolicy
 
     using VsmemHelperT = cub::detail::vsmem_helper_default_fallback_policy_t<
       Policy,
-      detail::select::agent_select_if_wrapper_t<KEEP_REJECTS, MayAlias>::template agent_t,
+      detail::select::agent_select_if_wrapper_t<SelectionOpt>::template agent_t,
       InputIteratorT,
       FlagsInputIteratorT,
       SelectedOutputIteratorT,
@@ -623,7 +623,7 @@ struct DispatchSelectIf : SelectedPolicy
       // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
       void* allocations[3] = {};
 
-      error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;
@@ -658,9 +658,9 @@ struct DispatchSelectIf : SelectedPolicy
         }
 
         // Log scan_init_kernel configuration
-        int init_grid_size = CUB_MAX(1, ::cuda::ceil_div(current_num_tiles, INIT_KERNEL_THREADS));
+        int init_grid_size = _CUDA_VSTD::max(1, ::cuda::ceil_div(current_num_tiles, INIT_KERNEL_THREADS));
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
         _CubLog("Invoking scan_init_kernel<<<%d, %d, 0, %lld>>>()\n",
                 init_grid_size,
                 INIT_KERNEL_THREADS,
@@ -668,7 +668,7 @@ struct DispatchSelectIf : SelectedPolicy
 #endif
 
         // Invoke scan_init_kernel to initialize tile descriptors
-        THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
           .doit(scan_init_kernel, tile_status, current_num_tiles, d_num_selected_out);
 
         // Check for failure to launch
@@ -693,7 +693,7 @@ struct DispatchSelectIf : SelectedPolicy
         }
 
 // Log select_if_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
         {
           // Get SM occupancy for select_if_kernel
           int range_select_sm_occupancy;
@@ -716,7 +716,7 @@ struct DispatchSelectIf : SelectedPolicy
 #endif
 
         // Invoke select_if_kernel
-        THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(current_num_tiles, block_threads, 0, stream)
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(current_num_tiles, block_threads, 0, stream)
           .doit(select_if_kernel,
                 d_in,
                 d_flags,
@@ -755,12 +755,10 @@ struct DispatchSelectIf : SelectedPolicy
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
-    using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
-
     return Invoke<ActivePolicyT>(
-      DeviceCompactInitKernel<ScanTileStateT, NumSelectedIteratorT>,
-      DeviceSelectSweepKernel<
-        MaxPolicyT,
+      detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumSelectedIteratorT>,
+      detail::select::DeviceSelectSweepKernel<
+        typename PolicyHub::MaxPolicy,
         InputIteratorT,
         FlagsInputIteratorT,
         SelectedOutputIteratorT,
@@ -770,8 +768,7 @@ struct DispatchSelectIf : SelectedPolicy
         EqualityOpT,
         per_partition_offset_t,
         streaming_context_t,
-        KEEP_REJECTS,
-        MayAlias>);
+        SelectionOpt>);
   }
 
   /**
@@ -821,8 +818,6 @@ struct DispatchSelectIf : SelectedPolicy
     OffsetT num_items,
     cudaStream_t stream)
   {
-    using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
-
     int ptx_version = 0;
     if (cudaError_t error = CubDebug(PtxVersion(ptx_version)))
     {
@@ -842,39 +837,8 @@ struct DispatchSelectIf : SelectedPolicy
       stream,
       ptx_version);
 
-    return CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+    return CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
   }
-
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    FlagsInputIteratorT d_flags,
-    SelectedOutputIteratorT d_selected_out,
-    NumSelectedIteratorT d_num_selected_out,
-    SelectOpT select_op,
-    EqualityOpT equality_op,
-    OffsetT num_items,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_flags,
-      d_selected_out,
-      d_num_selected_out,
-      select_op,
-      equality_op,
-      num_items,
-      stream);
-  }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
 };
 
 CUB_NAMESPACE_END

@@ -35,7 +35,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT reference_wrapper : public __weak_result_typ
 {
 public:
   // types
-  typedef _Tp type;
+  using type = _Tp;
 
 private:
   type* __f_;
@@ -45,7 +45,7 @@ private:
 
 public:
   template <class _Up,
-            class = __enable_if_t<!__is_same_uncvref<_Up, reference_wrapper>::value, decltype(__fun(declval<_Up>()))>>
+            class = enable_if_t<!__is_same_uncvref<_Up, reference_wrapper>::value, decltype(__fun(declval<_Up>()))>>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 reference_wrapper(_Up&& __u) noexcept(noexcept(__fun(declval<_Up>())))
   {
     type& __f = static_cast<_Up&&>(__u);
@@ -65,21 +65,16 @@ public:
   // invoke
   template <class... _ArgTypes>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 typename __invoke_of<type&, _ArgTypes...>::type
-  operator()(_ArgTypes&&... __args) const
-#if _CCCL_STD_VER > 2011
-    // Since is_nothrow_invocable requires C++11 LWG3764 is not backported
-    // to earlier versions.
-    noexcept(_CCCL_TRAIT(is_nothrow_invocable, _Tp&, _ArgTypes...))
-#endif
+  operator()(_ArgTypes&&... __args) const noexcept(_CCCL_TRAIT(is_nothrow_invocable, _Tp&, _ArgTypes...))
   {
     return _CUDA_VSTD::__invoke(get(), _CUDA_VSTD::forward<_ArgTypes>(__args)...);
   }
 };
 
-#if _CCCL_STD_VER > 2014 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
+#if !defined(_CCCL_NO_DEDUCTION_GUIDES)
 template <class _Tp>
 _CCCL_HOST_DEVICE reference_wrapper(_Tp&) -> reference_wrapper<_Tp>;
-#endif
+#endif // !_CCCL_NO_DEDUCTION_GUIDES
 
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 reference_wrapper<_Tp> ref(_Tp& __t) noexcept

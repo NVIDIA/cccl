@@ -63,13 +63,39 @@ void TestDeviceDereferenceTransformIterator()
   thrust::device_vector<int> input = unittest::random_integers<int>(100);
   thrust::device_vector<int> output(input.size(), 0);
 
-  simple_copy(thrust::make_transform_iterator(input.begin(), thrust::identity<int>()),
-              thrust::make_transform_iterator(input.end(), thrust::identity<int>()),
+  simple_copy(thrust::make_transform_iterator(input.begin(), ::cuda::std::identity{}),
+              thrust::make_transform_iterator(input.end(), ::cuda::std::identity{}),
               output.begin());
 
   ASSERT_EQUAL(input, output);
 }
 DECLARE_UNITTEST(TestDeviceDereferenceTransformIterator);
+
+void TestDeviceDereferenceTransformIteratorInputConversion()
+{
+  thrust::device_vector<int> input = unittest::random_integers<int>(100);
+  thrust::device_vector<double> output(input.size(), 0);
+
+  simple_copy(thrust::make_transform_iterator(input.begin(), ::cuda::std::identity{}),
+              thrust::make_transform_iterator(input.end(), ::cuda::std::identity{}),
+              output.begin());
+
+  ASSERT_EQUAL(input == output, true);
+}
+DECLARE_UNITTEST(TestDeviceDereferenceTransformIteratorInputConversion);
+
+void TestDeviceDereferenceTransformIteratorOutputConversion()
+{
+  thrust::device_vector<int> input = unittest::random_integers<int>(100);
+  thrust::device_vector<double> output(input.size(), 0);
+
+  simple_copy(thrust::make_transform_iterator(input.begin(), ::cuda::std::identity{}),
+              thrust::make_transform_iterator(input.end(), ::cuda::std::identity{}),
+              output.begin());
+
+  ASSERT_EQUAL(input == output, true);
+}
+DECLARE_UNITTEST(TestDeviceDereferenceTransformIteratorOutputConversion);
 
 void TestDeviceDereferenceCountingIterator()
 {

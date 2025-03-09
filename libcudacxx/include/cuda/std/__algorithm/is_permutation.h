@@ -29,7 +29,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredicate>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool is_permutation(
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_permutation(
   _ForwardIterator1 __first1, _ForwardIterator1 __last1, _ForwardIterator2 __first2, _BinaryPredicate __pred)
 {
   //  shorten sequences as much as possible by lopping of any equal prefix
@@ -100,15 +100,14 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool is_permutat
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
 is_permutation(_ForwardIterator1 __first1, _ForwardIterator1 __last1, _ForwardIterator2 __first2)
 {
   return _CUDA_VSTD::is_permutation(__first1, __last1, __first2, __equal_to{});
 }
 
-#if _CCCL_STD_VER > 2011
 template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterator2>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool __is_permutation(
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_permutation(
   _ForwardIterator1 __first1,
   _ForwardIterator1 __last1,
   _ForwardIterator2 __first2,
@@ -191,7 +190,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool __is_permut
 }
 
 template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAccessIterator2>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool __is_permutation(
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_permutation(
   _RandomAccessIterator1 __first1,
   _RandomAccessIterator2 __last1,
   _RandomAccessIterator1 __first2,
@@ -205,19 +204,19 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool __is_permut
     return false;
   }
   return _CUDA_VSTD::
-    is_permutation<_RandomAccessIterator1, _RandomAccessIterator2, __add_lvalue_reference_t<_BinaryPredicate>>(
+    is_permutation<_RandomAccessIterator1, _RandomAccessIterator2, add_lvalue_reference_t<_BinaryPredicate>>(
       __first1, __last1, __first2, __pred);
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredicate>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool is_permutation(
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_permutation(
   _ForwardIterator1 __first1,
   _ForwardIterator1 __last1,
   _ForwardIterator2 __first2,
   _ForwardIterator2 __last2,
   _BinaryPredicate __pred)
 {
-  return _CUDA_VSTD::__is_permutation<__add_lvalue_reference_t<_BinaryPredicate>>(
+  return _CUDA_VSTD::__is_permutation<add_lvalue_reference_t<_BinaryPredicate>>(
     __first1,
     __last1,
     __first2,
@@ -228,7 +227,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool is_permutat
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool is_permutation(
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_permutation(
   _ForwardIterator1 __first1, _ForwardIterator1 __last1, _ForwardIterator2 __first2, _ForwardIterator2 __last2)
 {
   return _CUDA_VSTD::__is_permutation(
@@ -240,7 +239,6 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool is_permutat
     __iterator_category_type<_ForwardIterator1>{},
     __iterator_category_type<_ForwardIterator2>{});
 }
-#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

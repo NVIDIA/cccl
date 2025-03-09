@@ -94,13 +94,13 @@ int main()
     // device
     for (int d = 0; d < ndevs; d++)
     {
-      ctx.task(exec_place::device(d), var_handle.redux(redux_op))->*[&](cudaStream_t s, auto var) {
+      ctx.task(exec_place::device(d), var_handle.relaxed(redux_op))->*[&](cudaStream_t s, auto var) {
         add_val<int><<<1, 1, 0, s>>>(var.data_handle(), i);
       };
     }
 
     // host
-    ctx.task(exec_place::host, var_handle.redux(redux_op))->*[&](cudaStream_t s, auto var) {
+    ctx.task(exec_place::host, var_handle.relaxed(redux_op))->*[&](cudaStream_t s, auto var) {
       cuda_safe_call(cudaStreamSynchronize(s));
       *var.data_handle() += i;
     };

@@ -30,6 +30,7 @@ foreach(test_path IN LISTS libcudacxx_atomic_codegen_tests)
         atomic_codegen_${test_name}
         PROPERTIES
           CUDA_ARCHITECTURES "80"
+          COMPILE_DEFINITIONS "_LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE=1"
     )
 
     target_compile_options(atomic_codegen_${test_name} PRIVATE "-Wno-comment")

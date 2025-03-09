@@ -52,7 +52,7 @@ _CCCL_INLINE_VAR constexpr bool is_destructible_v = _CCCL_BUILTIN_IS_DESTRUCTIBL
 template <class>
 struct __is_destructible_apply
 {
-  typedef int type;
+  using type = int;
 };
 
 template <typename _Tp>
@@ -73,7 +73,7 @@ struct __destructible_imp;
 
 template <class _Tp>
 struct __destructible_imp<_Tp, false>
-    : public integral_constant<bool, __is_destructor_wellformed<__remove_all_extents_t<_Tp>>::value>
+    : public integral_constant<bool, __is_destructor_wellformed<remove_all_extents_t<_Tp>>::value>
 {};
 
 template <class _Tp>

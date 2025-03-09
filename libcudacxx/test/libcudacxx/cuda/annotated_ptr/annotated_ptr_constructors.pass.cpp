@@ -32,7 +32,7 @@ __host__ __device__ __noinline__ void test_ctor()
   cuda::annotated_ptr<T, P> a(rp);
   assert(!a);
 
-  // cpy ctor & asign to cv
+  // cpy ctor & assign to cv
   cuda::annotated_ptr<const T, P> c(def);
   cuda::annotated_ptr<volatile T, P> d(def);
   cuda::annotated_ptr<const volatile T, P> e(def);

@@ -25,9 +25,9 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/advance.h>
 #include <thrust/detail/copy.h>
-#include <thrust/detail/minmax.h>
 #include <thrust/detail/overlapped_copy.h>
 #include <thrust/detail/temporary_array.h>
 #include <thrust/detail/type_traits.h>
@@ -35,6 +35,10 @@
 #include <thrust/distance.h>
 #include <thrust/equal.h>
 #include <thrust/iterator/iterator_traits.h>
+
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/type_traits>
 
 #include <stdexcept>
 
@@ -246,32 +250,26 @@ template <typename T, typename Alloc>
 template <typename InputIterator>
 void vector_base<T, Alloc>::range_init(InputIterator first, InputIterator last)
 {
-  range_init(first, last, typename thrust::iterator_traversal<InputIterator>::type());
-} // end vector_base::range_init()
-
-template <typename T, typename Alloc>
-template <typename InputIterator>
-void vector_base<T, Alloc>::range_init(InputIterator first, InputIterator last, thrust::incrementable_traversal_tag)
-{
-  for (; first != last; ++first)
+  using traversal = typename iterator_traversal<InputIterator>::type;
+  if constexpr (::cuda::std::is_convertible_v<traversal, random_access_traversal_tag>)
   {
-    push_back(*first);
+    size_type new_size = thrust::distance(first, last);
+
+    allocate_and_copy(new_size, first, last, m_storage);
+    m_size = new_size;
+  }
+  else
+  {
+    for (; first != last; ++first)
+    {
+      push_back(*first);
+    }
   }
 } // end vector_base::range_init()
 
 template <typename T, typename Alloc>
-template <typename ForwardIterator>
-void vector_base<T, Alloc>::range_init(ForwardIterator first, ForwardIterator last, thrust::random_access_traversal_tag)
-{
-  size_type new_size = thrust::distance(first, last);
-
-  allocate_and_copy(new_size, first, last, m_storage);
-  m_size = new_size;
-} // end vector_base::range_init()
-
-template <typename T, typename Alloc>
 template <typename InputIterator,
-          ::cuda::std::__enable_if_t<::cuda::std::__is_cpp17_input_iterator<InputIterator>::value, int>>
+          ::cuda::std::enable_if_t<::cuda::std::__is_cpp17_input_iterator<InputIterator>::value, int>>
 vector_base<T, Alloc>::vector_base(InputIterator first, InputIterator last)
     : m_storage()
     , m_size(0)
@@ -285,7 +283,7 @@ vector_base<T, Alloc>::vector_base(InputIterator first, InputIterator last)
 
 template <typename T, typename Alloc>
 template <typename InputIterator,
-          ::cuda::std::__enable_if_t<::cuda::std::__is_cpp17_input_iterator<InputIterator>::value, int>>
+          ::cuda::std::enable_if_t<::cuda::std::__is_cpp17_input_iterator<InputIterator>::value, int>>
 vector_base<T, Alloc>::vector_base(InputIterator first, InputIterator last, const Alloc& alloc)
     : m_storage(alloc)
     , m_size(0)
@@ -348,7 +346,7 @@ void vector_base<T, Alloc>::reserve(size_type n)
     size_type new_capacity = n;
 
     // do not exceed maximum storage
-    new_capacity = thrust::min THRUST_PREVENT_MACRO_SUBSTITUTION<size_type>(new_capacity, max_size());
+    new_capacity = ::cuda::std::min<size_type>(new_capacity, max_size());
 
     // create new storage
     storage_type new_storage(copy_allocator_t(), m_storage, new_capacity);
@@ -586,13 +584,6 @@ typename vector_base<T, Alloc>::iterator vector_base<T, Alloc>::erase(iterator f
 } // end vector_base::erase()
 
 template <typename T, typename Alloc>
-void vector_base<T, Alloc>::swap(vector_base& v)
-{
-  thrust::swap(m_storage, v.m_storage);
-  thrust::swap(m_size, v.m_size);
-} // end vector_base::swap()
-
-template <typename T, typename Alloc>
 void vector_base<T, Alloc>::assign(size_type n, const T& x)
 {
   fill_assign(n, x);
@@ -733,13 +724,14 @@ void vector_base<T, Alloc>::copy_insert(iterator position, ForwardIterator first
       const size_type old_size = size();
 
       // compute the new capacity after the allocation
-      size_type new_capacity = old_size + thrust::max THRUST_PREVENT_MACRO_SUBSTITUTION(old_size, num_new_elements);
+      size_type new_capacity =
+        old_size + ::cuda::std::max THRUST_PREVENT_MACRO_SUBSTITUTION(old_size, num_new_elements);
 
       // allocate exponentially larger new storage
-      new_capacity = thrust::max THRUST_PREVENT_MACRO_SUBSTITUTION<size_type>(new_capacity, 2 * capacity());
+      new_capacity = ::cuda::std::max<size_type>(new_capacity, 2 * capacity());
 
       // do not exceed maximum storage
-      new_capacity = thrust::min THRUST_PREVENT_MACRO_SUBSTITUTION<size_type>(new_capacity, max_size());
+      new_capacity = ::cuda::std::min<size_type>(new_capacity, max_size());
 
       if (new_capacity > max_size())
       {
@@ -804,13 +796,13 @@ void vector_base<T, Alloc>::append(size_type n)
       const size_type old_size = size();
 
       // compute the new capacity after the allocation
-      size_type new_capacity = old_size + thrust::max THRUST_PREVENT_MACRO_SUBSTITUTION(old_size, n);
+      size_type new_capacity = old_size + ::cuda::std::max THRUST_PREVENT_MACRO_SUBSTITUTION(old_size, n);
 
       // allocate exponentially larger new storage
-      new_capacity = thrust::max THRUST_PREVENT_MACRO_SUBSTITUTION<size_type>(new_capacity, 2 * capacity());
+      new_capacity = ::cuda::std::max<size_type>(new_capacity, 2 * capacity());
 
       // do not exceed maximum storage
-      new_capacity = thrust::min THRUST_PREVENT_MACRO_SUBSTITUTION<size_type>(new_capacity, max_size());
+      new_capacity = ::cuda::std::min<size_type>(new_capacity, max_size());
 
       // create new storage
       storage_type new_storage(copy_allocator_t(), m_storage, new_capacity);
@@ -899,13 +891,13 @@ void vector_base<T, Alloc>::fill_insert(iterator position, size_type n, const T&
       const size_type old_size = size();
 
       // compute the new capacity after the allocation
-      size_type new_capacity = old_size + thrust::max THRUST_PREVENT_MACRO_SUBSTITUTION(old_size, n);
+      size_type new_capacity = old_size + ::cuda::std::max THRUST_PREVENT_MACRO_SUBSTITUTION(old_size, n);
 
       // allocate exponentially larger new storage
-      new_capacity = thrust::max THRUST_PREVENT_MACRO_SUBSTITUTION<size_type>(new_capacity, 2 * capacity());
+      new_capacity = ::cuda::std::max<size_type>(new_capacity, 2 * capacity());
 
       // do not exceed maximum storage
-      new_capacity = thrust::min THRUST_PREVENT_MACRO_SUBSTITUTION<size_type>(new_capacity, max_size());
+      new_capacity = ::cuda::std::min<size_type>(new_capacity, max_size());
 
       if (new_capacity > max_size())
       {
@@ -955,86 +947,77 @@ template <typename T, typename Alloc>
 template <typename InputIterator>
 void vector_base<T, Alloc>::range_assign(InputIterator first, InputIterator last)
 {
-  // dispatch on traversal
-  range_assign(first, last, typename thrust::iterator_traversal<InputIterator>::type());
+  using traversal = typename iterator_traversal<InputIterator>::type;
+  if constexpr (::cuda::std::is_convertible_v<traversal, random_access_traversal_tag>)
+  {
+    const size_type n = thrust::distance(first, last);
+    if (n > capacity())
+    {
+      storage_type new_storage(copy_allocator_t(), m_storage);
+      allocate_and_copy(n, first, last, new_storage);
+
+      // call destructors on the elements in the old storage
+      m_storage.destroy(begin(), end());
+
+      // record the vector's new state
+      m_storage.swap(new_storage);
+      m_size = n;
+    } // end if
+    else if (size() >= n)
+    {
+      // we can already accommodate the new range
+      iterator new_end = thrust::copy(first, last, begin());
+
+      // destroy the elements we don't need
+      m_storage.destroy(new_end, end());
+
+      // update size
+      m_size = n;
+    } // end else if
+    else
+    {
+      // range fits inside allocated storage, but some elements
+      // have not been constructed yet
+
+      // XXX TODO we could possibly implement this with one call
+      // to transform rather than copy + uninitialized_copy
+
+      // copy to elements which already exist
+      InputIterator mid = first;
+      thrust::advance(mid, size());
+      thrust::copy(first, mid, begin());
+
+      // uninitialize_copy to elements which must be constructed
+      m_storage.uninitialized_copy(mid, last, end());
+
+      // update size
+      m_size = n;
+    } // end else
+  }
+  else // for less than random access iterators
+  {
+    iterator current(begin());
+
+    // assign to elements which already exist
+    for (; first != last && current != end(); ++current, ++first)
+    {
+      *current = *first;
+    } // end for
+
+    // either just the input was exhausted or both
+    // the input and vector elements were exhausted
+    if (first == last)
+    {
+      // if we exhausted the input, erase leftover elements
+      erase(current, end());
+    } // end if
+    else
+    {
+      // insert the rest of the input at the end of the vector
+      insert(end(), first, last);
+    } // end else
+  }
 } // end range_assign()
-
-template <typename T, typename Alloc>
-template <typename InputIterator>
-void vector_base<T, Alloc>::range_assign(InputIterator first, InputIterator last, thrust::incrementable_traversal_tag)
-{
-  iterator current(begin());
-
-  // assign to elements which already exist
-  for (; first != last && current != end(); ++current, ++first)
-  {
-    *current = *first;
-  } // end for
-
-  // either just the input was exhausted or both
-  // the input and vector elements were exhausted
-  if (first == last)
-  {
-    // if we exhausted the input, erase leftover elements
-    erase(current, end());
-  } // end if
-  else
-  {
-    // insert the rest of the input at the end of the vector
-    insert(end(), first, last);
-  } // end else
-} // end vector_base::range_assign()
-
-template <typename T, typename Alloc>
-template <typename RandomAccessIterator>
-void vector_base<T, Alloc>::range_assign(
-  RandomAccessIterator first, RandomAccessIterator last, thrust::random_access_traversal_tag)
-{
-  const size_type n = thrust::distance(first, last);
-
-  if (n > capacity())
-  {
-    storage_type new_storage(copy_allocator_t(), m_storage);
-    allocate_and_copy(n, first, last, new_storage);
-
-    // call destructors on the elements in the old storage
-    m_storage.destroy(begin(), end());
-
-    // record the vector's new state
-    m_storage.swap(new_storage);
-    m_size = n;
-  } // end if
-  else if (size() >= n)
-  {
-    // we can already accomodate the new range
-    iterator new_end = thrust::copy(first, last, begin());
-
-    // destroy the elements we don't need
-    m_storage.destroy(new_end, end());
-
-    // update size
-    m_size = n;
-  } // end else if
-  else
-  {
-    // range fits inside allocated storage, but some elements
-    // have not been constructed yet
-
-    // XXX TODO we could possibly implement this with one call
-    // to transform rather than copy + uninitialized_copy
-
-    // copy to elements which already exist
-    RandomAccessIterator mid = first;
-    thrust::advance(mid, size());
-    thrust::copy(first, mid, begin());
-
-    // uninitialize_copy to elements which must be constructed
-    m_storage.uninitialized_copy(mid, last, end());
-
-    // update size
-    m_size = n;
-  } // end else
-} // end vector_base::assign()
 
 template <typename T, typename Alloc>
 void vector_base<T, Alloc>::fill_assign(size_type n, const T& x)
@@ -1079,10 +1062,10 @@ void vector_base<T, Alloc>::allocate_and_copy(
   } // end if
 
   // allocate exponentially larger new storage
-  size_type allocated_size = thrust::max<size_type>(requested_size, 2 * capacity());
+  size_type allocated_size = ::cuda::std::max<size_type>(requested_size, 2 * capacity());
 
   // do not exceed maximum storage
-  allocated_size = thrust::min<size_type>(allocated_size, max_size());
+  allocated_size = ::cuda::std::min<size_type>(allocated_size, max_size());
 
   if (requested_size > allocated_size)
   {
@@ -1110,12 +1093,6 @@ void vector_base<T, Alloc>::allocate_and_copy(
   } // end catch
 } // end vector_base::allocate_and_copy()
 
-template <typename T, typename Alloc>
-void swap(vector_base<T, Alloc>& a, vector_base<T, Alloc>& b)
-{
-  a.swap(b);
-} // end swap()
-
 // iterator tags match
 template <typename InputIterator1, typename InputIterator2>
 bool vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, thrust::detail::true_type)
@@ -1127,7 +1104,7 @@ bool vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 fi
 template <typename InputIterator1, typename InputIterator2>
 bool vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, thrust::detail::false_type)
 {
-  typename thrust::iterator_difference<InputIterator1>::type n = thrust::distance(first1, last1);
+  it_difference_t<InputIterator1> n = thrust::distance(first1, last1);
 
   using FromSystem1 = typename thrust::iterator_system<InputIterator1>::type;
   using FromSystem2 = typename thrust::iterator_system<InputIterator2>::type;

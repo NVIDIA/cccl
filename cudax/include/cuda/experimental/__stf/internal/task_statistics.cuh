@@ -168,7 +168,7 @@ public:
 
   void read_statistics_file(const char* filename)
   {
-    assert(!is_calibrating() && "Cannot calibrate if we read task statistics from a file.");
+    _CCCL_ASSERT(!is_calibrating(), "Cannot calibrate if we read task statistics from a file.");
 
     ::std::ifstream file(filename);
     EXPECT(file, "Failed to read statistics file '", filename, "'.");

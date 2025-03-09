@@ -48,8 +48,12 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-CUB_NAMESPACE_BEGIN
+#include <cuda/ptx>
+#include <cuda/std/__algorithm_>
 
+CUB_NAMESPACE_BEGIN
+namespace detail
+{
 /**
  * @brief WarpScanShfl provides SHFL-based variants of parallel prefix scan of items partitioned
  *        across a CUDA thread warp.
@@ -59,11 +63,8 @@ CUB_NAMESPACE_BEGIN
  *
  * @tparam LOGICAL_WARP_THREADS
  *   Number of threads per logical warp (must be a power-of-two)
- *
- * @tparam LEGACY_PTX_ARCH
- *   The PTX compute capability for which to to specialize this collective
  */
-template <typename T, int LOGICAL_WARP_THREADS, int LEGACY_PTX_ARCH = 0>
+template <typename T, int LOGICAL_WARP_THREADS>
 struct WarpScanShfl
 {
   //---------------------------------------------------------------------
@@ -89,7 +90,8 @@ struct WarpScanShfl
     {
       /// Whether the data type is a small (32b or less) integer for which we can use a single SFHL instruction per
       /// exchange
-      IS_SMALL_UNSIGNED = (Traits<S>::CATEGORY == UNSIGNED_INTEGER) && (sizeof(S) <= sizeof(unsigned int))
+      IS_SMALL_UNSIGNED =
+        ::cuda::std::is_integral_v<S> && ::cuda::std::is_unsigned_v<S> && (sizeof(S) <= sizeof(unsigned int)),
     };
   };
 
@@ -116,7 +118,7 @@ struct WarpScanShfl
 
   /// Constructor
   explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpScanShfl(TempStorage& /*temp_storage*/)
-      : lane_id(LaneId())
+      : lane_id(::cuda::ptx::get_sreg_laneid())
       , warp_id(IS_ARCH_WARP ? 0 : (lane_id / LOGICAL_WARP_THREADS))
       , member_mask(WarpMask<LOGICAL_WARP_THREADS>(warp_id))
   {
@@ -145,7 +147,8 @@ struct WarpScanShfl
    * @param[in] offset
    *   Up-offset to pull from
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE int InclusiveScanStep(int input, cub::Sum /*scan_op*/, int first_lane, int offset)
+  _CCCL_DEVICE _CCCL_FORCEINLINE int
+  InclusiveScanStep(int input, ::cuda::std::plus<> /*scan_op*/, int first_lane, int offset)
   {
     int output;
     int shfl_c = first_lane | SHFL_C; // Shuffle control (mask and first-lane)
@@ -181,7 +184,7 @@ struct WarpScanShfl
    *   Up-offset to pull from
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int
-  InclusiveScanStep(unsigned int input, cub::Sum /*scan_op*/, int first_lane, int offset)
+  InclusiveScanStep(unsigned int input, ::cuda::std::plus<> /*scan_op*/, int first_lane, int offset)
   {
     unsigned int output;
     int shfl_c = first_lane | SHFL_C; // Shuffle control (mask and first-lane)
@@ -216,7 +219,8 @@ struct WarpScanShfl
    * @param[in] offset
    *   Up-offset to pull from
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE float InclusiveScanStep(float input, cub::Sum /*scan_op*/, int first_lane, int offset)
+  _CCCL_DEVICE _CCCL_FORCEINLINE float
+  InclusiveScanStep(float input, ::cuda::std::plus<> /*scan_op*/, int first_lane, int offset)
   {
     float output;
     int shfl_c = first_lane | SHFL_C; // Shuffle control (mask and first-lane)
@@ -252,7 +256,7 @@ struct WarpScanShfl
    *   Up-offset to pull from
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE unsigned long long
-  InclusiveScanStep(unsigned long long input, cub::Sum /*scan_op*/, int first_lane, int offset)
+  InclusiveScanStep(unsigned long long input, ::cuda::std::plus<> /*scan_op*/, int first_lane, int offset)
   {
     unsigned long long output;
     int shfl_c = first_lane | SHFL_C; // Shuffle control (mask and first-lane)
@@ -293,7 +297,7 @@ struct WarpScanShfl
    *   Up-offset to pull from
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE long long
-  InclusiveScanStep(long long input, cub::Sum /*scan_op*/, int first_lane, int offset)
+  InclusiveScanStep(long long input, ::cuda::std::plus<> /*scan_op*/, int first_lane, int offset)
   {
     long long output;
     int shfl_c = first_lane | SHFL_C; // Shuffle control (mask and first-lane)
@@ -333,7 +337,8 @@ struct WarpScanShfl
    * @param[in] offset
    *   Up-offset to pull from
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE double InclusiveScanStep(double input, cub::Sum /*scan_op*/, int first_lane, int offset)
+  _CCCL_DEVICE _CCCL_FORCEINLINE double
+  InclusiveScanStep(double input, ::cuda::std::plus<> /*scan_op*/, int first_lane, int offset)
   {
     double output;
     int shfl_c = first_lane | SHFL_C; // Shuffle control (mask and first-lane)
@@ -359,25 +364,26 @@ struct WarpScanShfl
   }
 
   /*
-      /// Inclusive prefix scan (specialized for ReduceBySegmentOp<cub::Sum> across KeyValuePair<OffsetT, Value> types)
-      template <typename Value, typename OffsetT>
-      _CCCL_DEVICE _CCCL_FORCEINLINE KeyValuePair<OffsetT, Value>InclusiveScanStep(
-          KeyValuePair<OffsetT, Value>    input,              ///< [in] Calling thread's input item.
-          ReduceBySegmentOp<cub::Sum>     scan_op,            ///< [in] Binary scan operator
-          int                             first_lane,         ///< [in] Index of first lane in segment
-          int                             offset)             ///< [in] Up-offset to pull from
-      {
-          KeyValuePair<OffsetT, Value> output;
+  /// Inclusive prefix scan (specialized for ReduceBySegmentOp<::cuda::std::plus<>> across KeyValuePair<OffsetT, Value>
+  /// types)
+  template <typename Value, typename OffsetT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE KeyValuePair<OffsetT, Value> InclusiveScanStep(
+    KeyValuePair<OffsetT, Value> input, ///< [in] Calling thread's input item.
+    ReduceBySegmentOp<::cuda::std::plus<>> scan_op, ///< [in] Binary scan operator
+    int first_lane, ///< [in] Index of first lane in segment
+    int offset) ///< [in] Up-offset to pull from
+  {
+    KeyValuePair<OffsetT, Value> output;
+    output.value = InclusiveScanStep(
+      input.value, ::cuda::std::plus<>{}, first_lane, offset, Int2Type<IntegerTraits<Value>::IS_SMALL_UNSIGNED>());
+    output.key = InclusiveScanStep(
+      input.key, ::cuda::std::plus<>{}, first_lane, offset, Int2Type<IntegerTraits<OffsetT>::IS_SMALL_UNSIGNED>());
 
-          output.value = InclusiveScanStep(input.value, cub::Sum(), first_lane, offset,
-     Int2Type<IntegerTraits<Value>::IS_SMALL_UNSIGNED>()); output.key = InclusiveScanStep(input.key, cub::Sum(),
-     first_lane, offset, Int2Type<IntegerTraits<OffsetT>::IS_SMALL_UNSIGNED>());
+    if (input.key > 0)
+      output.value = input.value;
 
-          if (input.key > 0)
-              output.value = input.value;
-
-          return output;
-      }
+    return output;
+  }
   */
 
   /**
@@ -430,7 +436,7 @@ struct WarpScanShfl
    */
   template <typename _T, typename ScanOpT>
   _CCCL_DEVICE _CCCL_FORCEINLINE _T
-  InclusiveScanStep(_T input, ScanOpT scan_op, int first_lane, int offset, Int2Type<true> /*is_small_unsigned*/)
+  InclusiveScanStep(_T input, ScanOpT scan_op, int first_lane, int offset, ::cuda::std::true_type /*is_small_unsigned*/)
   {
     return InclusiveScanStep(input, scan_op, first_lane, offset);
   }
@@ -455,8 +461,8 @@ struct WarpScanShfl
    *   Marker type indicating whether T is a small integer
    */
   template <typename _T, typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE _T
-  InclusiveScanStep(_T input, ScanOpT scan_op, int first_lane, int offset, Int2Type<false> /*is_small_unsigned*/)
+  _CCCL_DEVICE _CCCL_FORCEINLINE _T InclusiveScanStep(
+    _T input, ScanOpT scan_op, int first_lane, int offset, ::cuda::std::false_type /*is_small_unsigned*/)
   {
     return InclusiveScanStep(input, scan_op, first_lane, offset);
   }
@@ -507,12 +513,16 @@ struct WarpScanShfl
     // Iterate scan steps
     int segment_first_lane = 0;
 
-// Iterate scan steps
+    // Iterate scan steps
 #pragma unroll
     for (int STEP = 0; STEP < STEPS; STEP++)
     {
       inclusive_output = InclusiveScanStep(
-        inclusive_output, scan_op, segment_first_lane, (1 << STEP), Int2Type<IntegerTraits<T>::IS_SMALL_UNSIGNED>());
+        inclusive_output,
+        scan_op,
+        segment_first_lane,
+        (1 << STEP),
+        bool_constant_v<IntegerTraits<T>::IS_SMALL_UNSIGNED>);
     }
   }
 
@@ -536,15 +546,15 @@ struct WarpScanShfl
 
     KeyT pred_key = ShuffleUp<LOGICAL_WARP_THREADS>(inclusive_output.key, 1, 0, member_mask);
 
-    unsigned int ballot = WARP_BALLOT((pred_key != inclusive_output.key), member_mask);
+    unsigned int ballot = __ballot_sync(member_mask, (pred_key != inclusive_output.key));
 
     // Mask away all lanes greater than ours
-    ballot = ballot & LaneMaskLe();
+    ballot = ballot & ::cuda::ptx::get_sreg_lanemask_le();
 
     // Find index of first set bit
-    int segment_first_lane = CUB_MAX(0, 31 - __clz(ballot));
+    int segment_first_lane = _CUDA_VSTD::max(0, 31 - __clz(ballot));
 
-// Iterate scan steps
+    // Iterate scan steps
 #pragma unroll
     for (int STEP = 0; STEP < STEPS; STEP++)
     {
@@ -553,7 +563,7 @@ struct WarpScanShfl
         scan_op.op,
         segment_first_lane,
         (1 << STEP),
-        Int2Type<IntegerTraits<T>::IS_SMALL_UNSIGNED>());
+        bool_constant_v<IntegerTraits<T>::IS_SMALL_UNSIGNED>);
     }
   }
 
@@ -611,7 +621,7 @@ struct WarpScanShfl
    *        integer types)
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  Update(T input, T& inclusive, T& exclusive, cub::Sum /*scan_op*/, Int2Type<true> /*is_integer*/)
+  Update(T input, T& inclusive, T& exclusive, ::cuda::std::plus<> /*scan_op*/, ::cuda::std::true_type /*is_integer*/)
   {
     // initial value presumed 0
     exclusive = inclusive - input;
@@ -638,8 +648,13 @@ struct WarpScanShfl
    * @brief Update inclusive and exclusive using initial value using input and inclusive
    *        (specialized for summation of integer types)
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  Update(T input, T& inclusive, T& exclusive, cub::Sum scan_op, T initial_value, Int2Type<true> /*is_integer*/)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Update(
+    T input,
+    T& inclusive,
+    T& exclusive,
+    ::cuda::std::plus<> scan_op,
+    T initial_value,
+    ::cuda::std::true_type /*is_integer*/)
   {
     inclusive = scan_op(initial_value, inclusive);
     exclusive = inclusive - input;
@@ -668,5 +683,6 @@ struct WarpScanShfl
     Update(input, inclusive, exclusive, scan_op, initial_value, is_integer);
   }
 };
+} // namespace detail
 
 CUB_NAMESPACE_END

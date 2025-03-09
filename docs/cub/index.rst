@@ -10,8 +10,8 @@ CUB
    modules
    developer_overview
    test_overview
-   tuning
    benchmarking
+   tuning
    ${repo_docs_api_path}/cub_api
 
 .. the line below can be used to use the README.md file as the index page

@@ -4,13 +4,14 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
 /**
  * @file
- * @brief Source location
+ *
+ * @brief Utilities for source_location
  */
 
 #pragma once
@@ -25,66 +26,33 @@
 #  pragma system_header
 #endif // no system header
 
-// GCC11 provides non constexpr builtins
-#if defined(__cpp_lib_source_location) && (!defined(_CCCL_COMPILER_GCC) || _CCCL_GCC_VERSION >= 120000)
-// C++20 version using std::source_location
-#  include <source_location>
+#include <cuda/std/source_location>
 
-namespace cuda::experimental::stf
+namespace cuda::experimental::stf::reserved
 {
-using source_location = ::std::source_location;
-}
-#  define RESERVED_STF_SOURCE_LOCATION() ::cuda::experimental::stf::source_location::current()
 
-#elif __has_include(<experimental/source_location>)
-#  include <experimental/source_location>
-namespace cuda::experimental::stf
+struct source_location_hash
 {
-using source_location = ::std::experimental::source_location;
-}
-
-#  define RESERVED_STF_SOURCE_LOCATION() ::cuda::experimental::stf::source_location::current()
-
-#else
-// Custom implementation for C++17 or earlier
-namespace cuda::experimental::stf
-{
-class source_location
-{
-public:
-  constexpr source_location(
-    const char* file = "unknown file", int line = 0, const char* func = "unknown function") noexcept
-      : file_(file)
-      , line_(line)
-      , func_(func)
-  {}
-
-  constexpr const char* file_name() const noexcept
+  /* We use const char * and not string because these are string literals,
+   * and it is safe to assume they are not going to change. We also take the
+   * function name into account because the same callsite could be used in
+   * different instantiation of the same templated class, the name will reflect
+   * the template parameters. */
+  ::std::size_t operator()(const _CUDA_VSTD::source_location& loc) const noexcept
   {
-    return file_;
+    return ::std::hash<const char*>{}(loc.file_name()) ^ (::std::hash<uint_least32_t>{}(loc.line()) << 1)
+         ^ (::std::hash<uint_least32_t>{}(loc.column()) << 2) ^ (::std::hash<const char*>{}(loc.function_name()) << 3);
   }
-  constexpr int line() const noexcept
-  {
-    return line_;
-  }
-  constexpr const char* function_name() const noexcept
-  {
-    return func_;
-  }
-
-  static constexpr source_location
-  current(const char* file = __FILE__, int line = __LINE__, const char* func = __func__) noexcept
-  {
-    return source_location(file, line, func);
-  }
-
-private:
-  const char* file_;
-  int line_;
-  const char* func_;
 };
-} // end namespace cuda::experimental::stf
 
-#  define RESERVED_STF_SOURCE_LOCATION() \
-    ::cuda::experimental::stf::source_location::current(__FILE__, __LINE__, __func__)
-#endif
+struct source_location_equal
+{
+  bool operator()(const _CUDA_VSTD::source_location& lhs, const _CUDA_VSTD::source_location& rhs) const noexcept
+  {
+    // Comparing const char * is legit here because these are string literal constants
+    return lhs.file_name() == rhs.file_name() && lhs.line() == rhs.line() && lhs.column() == rhs.column()
+        && lhs.function_name() == rhs.function_name();
+  }
+};
+
+} // end namespace cuda::experimental::stf::reserved

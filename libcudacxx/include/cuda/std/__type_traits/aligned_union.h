@@ -47,13 +47,11 @@ struct aligned_union
   static const size_t alignment_value =
     __static_max<_LIBCUDACXX_PREFERRED_ALIGNOF(_Type0), _LIBCUDACXX_PREFERRED_ALIGNOF(_Types)...>::value;
   static const size_t __len = __static_max<_Len, sizeof(_Type0), sizeof(_Types)...>::value;
-  typedef typename aligned_storage<__len, alignment_value>::type type;
+  using type                = typename aligned_storage<__len, alignment_value>::type;
 };
 
-#if _CCCL_STD_VER > 2011
 template <size_t _Len, class... _Types>
-using aligned_union_t = typename aligned_union<_Len, _Types...>::type;
-#endif
+using aligned_union_t _CCCL_NODEBUG_ALIAS = typename aligned_union<_Len, _Types...>::type;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

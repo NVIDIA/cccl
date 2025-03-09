@@ -34,86 +34,85 @@ template <class _Iter>
 class __wrap_iter
 {
 public:
-  typedef _Iter iterator_type;
-  typedef typename iterator_traits<iterator_type>::value_type value_type;
-  typedef typename iterator_traits<iterator_type>::difference_type difference_type;
-  typedef typename iterator_traits<iterator_type>::pointer pointer;
-  typedef typename iterator_traits<iterator_type>::reference reference;
-  typedef typename iterator_traits<iterator_type>::iterator_category iterator_category;
-#if _CCCL_STD_VER > 2011
-  typedef contiguous_iterator_tag iterator_concept;
-#endif
+  using iterator_type     = _Iter;
+  using value_type        = typename iterator_traits<iterator_type>::value_type;
+  using difference_type   = typename iterator_traits<iterator_type>::difference_type;
+  using pointer           = typename iterator_traits<iterator_type>::pointer;
+  using reference         = typename iterator_traits<iterator_type>::reference;
+  using iterator_category = typename iterator_traits<iterator_type>::iterator_category;
+
+  using iterator_concept = contiguous_iterator_tag;
 
 private:
   iterator_type __i_;
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __wrap_iter() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __wrap_iter() noexcept
       : __i_()
   {}
   template <class _Up>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14
-  __wrap_iter(const __wrap_iter<_Up>& __u,
-              typename enable_if<is_convertible<_Up, iterator_type>::value>::type* = nullptr) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __wrap_iter(
+    const __wrap_iter<_Up>& __u,
+    typename enable_if<is_convertible<_Up, iterator_type>::value>::type* = nullptr) noexcept
       : __i_(__u.base())
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reference operator*() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator*() const noexcept
   {
     return *__i_;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pointer operator->() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr pointer operator->() const noexcept
   {
     return _CUDA_VSTD::__to_address(__i_);
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __wrap_iter& operator++() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __wrap_iter& operator++() noexcept
   {
     ++__i_;
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __wrap_iter operator++(int) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __wrap_iter operator++(int) noexcept
   {
     __wrap_iter __tmp(*this);
     ++(*this);
     return __tmp;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __wrap_iter& operator--() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __wrap_iter& operator--() noexcept
   {
     --__i_;
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __wrap_iter operator--(int) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __wrap_iter operator--(int) noexcept
   {
     __wrap_iter __tmp(*this);
     --(*this);
     return __tmp;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __wrap_iter operator+(difference_type __n) const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __wrap_iter operator+(difference_type __n) const noexcept
   {
     __wrap_iter __w(*this);
     __w += __n;
     return __w;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __wrap_iter& operator+=(difference_type __n) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __wrap_iter& operator+=(difference_type __n) noexcept
   {
     __i_ += __n;
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __wrap_iter operator-(difference_type __n) const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __wrap_iter operator-(difference_type __n) const noexcept
   {
     return *this + (-__n);
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __wrap_iter& operator-=(difference_type __n) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __wrap_iter& operator-=(difference_type __n) noexcept
   {
     *this += -__n;
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reference operator[](difference_type __n) const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator[](difference_type __n) const noexcept
   {
     return __i_[__n];
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 iterator_type base() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator_type base() const noexcept
   {
     return __i_;
   }
@@ -148,14 +147,14 @@ operator==(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexc
 }
 
 template <class _Iter1>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
 operator<(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter1>& __y) noexcept
 {
   return __x.base() < __y.base();
 }
 
 template <class _Iter1, class _Iter2>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
 operator<(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
 {
   return __x.base() < __y.base();
@@ -218,14 +217,14 @@ operator<=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexc
 }
 
 template <class _Iter1, class _Iter2>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 auto
+_LIBCUDACXX_HIDE_FROM_ABI constexpr auto
 operator-(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept -> decltype(__x.base() - __y.base())
 {
   return __x.base() - __y.base();
 }
 
 template <class _Iter1>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __wrap_iter<_Iter1>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr __wrap_iter<_Iter1>
 operator+(typename __wrap_iter<_Iter1>::difference_type __n, __wrap_iter<_Iter1> __x) noexcept
 {
   __x += __n;
@@ -241,9 +240,9 @@ struct __is_cpp17_contiguous_iterator<__wrap_iter<_It>> : true_type
 template <class _It>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT pointer_traits<__wrap_iter<_It>>
 {
-  typedef __wrap_iter<_It> pointer;
-  typedef typename pointer_traits<_It>::element_type element_type;
-  typedef typename pointer_traits<_It>::difference_type difference_type;
+  using pointer         = __wrap_iter<_It>;
+  using element_type    = typename pointer_traits<_It>::element_type;
+  using difference_type = typename pointer_traits<_It>::difference_type;
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr static element_type* to_address(pointer __w) noexcept
   {

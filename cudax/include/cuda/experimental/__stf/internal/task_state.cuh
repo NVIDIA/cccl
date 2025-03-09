@@ -121,7 +121,7 @@ public:
   ctx_stack()
   {
     // This forces us to call the dtor of the singleton AFTER the destructor of the CUDA runtime.
-    // If all ressources are cleaned up by the time we destroy this ctx_stack singleton, we are "safe"
+    // If all resources are cleaned up by the time we destroy this ctx_stack singleton, we are "safe"
     cudaError_t ret = cudaFree(0);
 
     // If we are running the task in the context of a CUDA callback, we are

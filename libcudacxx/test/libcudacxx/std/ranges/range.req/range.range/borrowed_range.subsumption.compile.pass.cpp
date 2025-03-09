@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14, c++17
+// UNSUPPORTED: c++17
 // UNSUPPORTED: msvc-19.16
 
 // template<class T>
@@ -27,7 +27,7 @@ __host__ __device__ consteval bool check_subsumption()
   return true;
 }
 
-static_assert(check_subsumption<int (&)[8]>());
+static_assert(check_subsumption<int (&)[8]>(), "");
 
 int main(int, char**)
 {

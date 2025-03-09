@@ -105,7 +105,7 @@ public:
   {
     launch_config = p.get_config();
 
-    // If we may synchronize accross multiple devices.
+    // If we may synchronize across multiple devices.
     cg_system = p.cg_system;
 
     size_t i = 0;
@@ -385,7 +385,7 @@ private:
 
   reserved::cooperative_group_system cg_system;
 
-  // witdh of each level
+  // width of each level
   ::std::array<size_t, depth> level_sizes = {};
 
   // What is the memory associated to each level ?
@@ -419,7 +419,7 @@ private:
 };
 
 #ifdef UNITTESTED_FILE
-#  ifdef __CUDACC__
+#  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 namespace reserved
 {
 template <auto... spec>
@@ -525,7 +525,7 @@ UNITTEST("thread hierarchy inner sync")
   cuda_safe_call(cudaDeviceSynchronize());
 };
 
-#  endif // __CUDACC__
+#  endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 #endif // UNITTESTED_FILE
 
 } // end namespace cuda::experimental::stf

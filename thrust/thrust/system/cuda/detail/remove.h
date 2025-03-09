@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#ifdef _CCCL_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER
 #  include <thrust/system/cuda/detail/copy_if.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -50,7 +50,7 @@ template <class Derived, class InputIt, class StencilIt, class Predicate>
 InputIt _CCCL_HOST_DEVICE
 remove_if(execution_policy<Derived>& policy, InputIt first, InputIt last, StencilIt stencil, Predicate predicate)
 {
-  THRUST_CDP_DISPATCH((return cuda_cub::detail::copy_if<cuda_cub::detail::InputMayAliasOutput::yes>(
+  THRUST_CDP_DISPATCH((return cuda_cub::detail::copy_if<cub::SelectImpl::SelectPotentiallyInPlace>(
                                 policy, first, last, stencil, first, thrust::not_fn(predicate));),
                       (return thrust::remove_if(cvt_to_seq(derived_cast(policy)), first, last, stencil, predicate);));
 }
@@ -60,7 +60,7 @@ template <class Derived, class InputIt, class Predicate>
 InputIt _CCCL_HOST_DEVICE remove_if(execution_policy<Derived>& policy, InputIt first, InputIt last, Predicate predicate)
 {
   THRUST_CDP_DISPATCH(
-    (return cuda_cub::detail::copy_if<cuda_cub::detail::InputMayAliasOutput::yes>(
+    (return cuda_cub::detail::copy_if<cub::SelectImpl::SelectPotentiallyInPlace>(
               policy, first, last, static_cast<cub::NullType*>(nullptr), first, thrust::not_fn(predicate));),
     (return thrust::remove_if(cvt_to_seq(derived_cast(policy)), first, last, predicate);));
 }

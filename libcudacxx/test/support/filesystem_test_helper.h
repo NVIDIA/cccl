@@ -224,7 +224,7 @@ struct scoped_test_env
 
   // OS X and FreeBSD doesn't support socket files so we shouldn't even
   // allow tests to call this unguarded.
-#  if !defined(__FreeBSD__) && !defined(__APPLE__)
+#  if !defined(__APPLE__)
   std::string create_socket(std::string file)
   {
     file = sanitize_path(std::move(file));
@@ -481,11 +481,11 @@ inline bool ErrorIs(const std::error_code& ec, std::errc First, ErrcT... Rest)
 void SleepFor(std::chrono::seconds dur)
 {
   using namespace std::chrono;
-#if defined(_LIBCUDACXX_HAS_NO_MONOTONIC_CLOCK)
-  using Clock = system_clock;
-#else
+#if _LIBCUDACXX_HAS_MONOTONIC_CLOCK()
   using Clock = steady_clock;
-#endif
+#else // ^^^ _LIBCUDACXX_HAS_MONOTONIC_CLOCK() ^^^ / vvv !_LIBCUDACXX_HAS_MONOTONIC_CLOCK() vvv
+  using Clock = system_clock;
+#endif // !_LIBCUDACXX_HAS_MONOTONIC_CLOCK()
   const auto wake_time = Clock::now() + dur;
   while (Clock::now() < wake_time)
     ;

@@ -202,7 +202,7 @@ public:
     assert(src_memory_node != dst_memory_node);
     // We support dimensions up to 2, or higher if the slices are contiguous
     // static_assert(dimensions <= 2, "unsupported yet.");
-    // assert(dimensions <= 2 && "unsupported yet.");
+    //_CCCL_ASSERT(dimensions <= 2, "unsupported yet.");
 
     auto decorated_s = dst_memory_node.getDataStream(bctx.async_resources());
     auto op          = stream_async_op(bctx, decorated_s, prereqs);
@@ -261,7 +261,7 @@ public:
       }
       else
       {
-        assert(dimensions == 2 && "Higher dimensions not supported.");
+        _CCCL_ASSERT(dimensions == 2, "Higher dimensions not supported.");
       }
     }
 
@@ -286,7 +286,7 @@ public:
     cudaPointerAttributes attributes{};
     cuda_safe_call(cudaPointerGetAttributes(&attributes, s.data_handle()));
 
-    // Implicitely converted to an optional
+    // Implicitly converted to an optional
     return attributes.type;
   };
 };

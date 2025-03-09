@@ -43,19 +43,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/thread/thread_load.cuh>
-#include <cub/thread/thread_store.cuh>
+#include <cub/util_type.cuh>
 
-#include <thrust/version.h>
+#include <thrust/iterator/iterator_facade.h>
 
-#include <iostream>
-#include <iterator>
-
-#if (THRUST_VERSION >= 100700)
-// This iterator is compatible with Thrust API 1.7 and newer
-#  include <thrust/iterator/iterator_facade.h>
-#  include <thrust/iterator/iterator_traits.h>
-#endif // THRUST_VERSION
+#if !_CCCL_COMPILER(NVRTC)
+#  include <ostream>
+#endif // !_CCCL_COMPILER(NVRTC)
 
 CUB_NAMESPACE_BEGIN
 
@@ -111,7 +105,7 @@ CUB_NAMESPACE_BEGIN
  */
 template <typename InputIteratorT,
           typename OffsetT      = ptrdiff_t,
-          typename OutputValueT = cub::detail::value_t<InputIteratorT>>
+          typename OutputValueT = detail::it_value_t<InputIteratorT>>
 class ArgIndexInputIterator
 {
 public:
@@ -132,19 +126,12 @@ public:
   /// The type of a reference to an element the iterator can point to
   using reference = value_type;
 
-#if (THRUST_VERSION >= 100700)
-  // Use Thrust's iterator categories so we can use these iterators in Thrust 1.7 (or newer) methods
-
   /// The iterator category
   using iterator_category = typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
     THRUST_NS_QUALIFIER::any_system_tag,
     THRUST_NS_QUALIFIER::random_access_traversal_tag,
     value_type,
     reference>::type;
-#else
-  /// The iterator category
-  using iterator_category = std::random_access_iterator_tag;
-#endif // THRUST_VERSION
 
 private:
   InputIteratorT itr;
@@ -258,11 +245,12 @@ public:
     offset = 0;
   }
 
-  /// ostream operator
+#if !_CCCL_COMPILER(NVRTC)
   friend std::ostream& operator<<(std::ostream& os, const self_type& /*itr*/)
   {
     return os;
   }
+#endif // !_CCCL_COMPILER(NVRTC)
 };
 
 CUB_NAMESPACE_END

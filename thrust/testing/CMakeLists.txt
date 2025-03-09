@@ -18,16 +18,6 @@ macro(thrust_declare_test_restrictions test_name)
   list(APPEND ${test_name}_host.device_allowed ${ARGN})
 endmacro()
 
-# Async/future/event tests only support the CUDA backend:
-thrust_declare_test_restrictions(async_copy        CPP.CUDA OMP.CUDA TBB.CUDA)
-thrust_declare_test_restrictions(async_for_each    CPP.CUDA OMP.CUDA TBB.CUDA)
-thrust_declare_test_restrictions(async_reduce      CPP.CUDA OMP.CUDA TBB.CUDA)
-thrust_declare_test_restrictions(async_reduce_into CPP.CUDA OMP.CUDA TBB.CUDA)
-thrust_declare_test_restrictions(async_sort        CPP.CUDA OMP.CUDA TBB.CUDA)
-thrust_declare_test_restrictions(async_transform   CPP.CUDA OMP.CUDA TBB.CUDA)
-thrust_declare_test_restrictions(event             CPP.CUDA OMP.CUDA TBB.CUDA)
-thrust_declare_test_restrictions(future            CPP.CUDA OMP.CUDA TBB.CUDA)
-
 # This test is incompatible with TBB and OMP, since it requires special per-device
 # handling to process exceptions in a device function, which is only implemented
 # for CUDA.
@@ -78,6 +68,16 @@ function(thrust_add_test target_name_var test_name test_src thrust_target)
   if (NOT "Clang" STREQUAL "${CMAKE_CUDA_COMPILER_ID}")
     target_compile_definitions(${test_target} PRIVATE THRUST_TEST_DEVICE_SIDE)
   endif()
+
+  # nvcc < 11.5 generates "error #186-D: pointless comparison of unsigned integer with zero"
+  # when including <cuda_pipeline_primitives.h> in CUB's dispatch_transform.h,
+  # despite explicitly suppressing the warning there
+  if ("NVIDIA" STREQUAL "${CMAKE_CUDA_COMPILER_ID}" AND CMAKE_CUDA_COMPILER_VERSION VERSION_LESS 11.5.0)
+      target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-Xcudafe=--diag_suppress=186>)
+  endif ()
+
+  # Ensure that we test with assertions enabled
+  target_compile_definitions(${test_target} PRIVATE CCCL_ENABLE_ASSERTIONS)
 
   thrust_fix_clang_nvcc_build_for(${test_target})
 
@@ -153,7 +153,6 @@ foreach(thrust_target IN LISTS THRUST_TARGETS)
 endforeach()
 
 # Add specialized tests:
-add_subdirectory(async)
 add_subdirectory(cmake)
 add_subdirectory(cpp)
 add_subdirectory(cuda)

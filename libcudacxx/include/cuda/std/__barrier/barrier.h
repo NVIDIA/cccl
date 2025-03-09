@@ -28,20 +28,17 @@
 #include <cuda/std/chrono>
 #include <cuda/std/cstddef>
 
-#if _LIBCUDACXX_CUDA_ABI_VERSION < 3
-#  define _LIBCUDACXX_BARRIER_ALIGNMENTS alignas(64)
-#else // ^^^ _LIBCUDACXX_CUDA_ABI_VERSION < 3 ^^^ / vvv _LIBCUDACXX_CUDA_ABI_VERSION >= 3 vvv
-#  define _LIBCUDACXX_BARRIER_ALIGNMENTS
-#endif // _LIBCUDACXX_CUDA_ABI_VERSION >= 3
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4324) // structure was padded due to alignment specifier
 
 template <class _CompletionF, thread_scope _Sco = thread_scope_system>
 class __barrier_base
 {
-  _LIBCUDACXX_BARRIER_ALIGNMENTS __atomic_impl<ptrdiff_t, _Sco> __expected, __arrived;
-  _LIBCUDACXX_BARRIER_ALIGNMENTS _CompletionF __completion;
-  _LIBCUDACXX_BARRIER_ALIGNMENTS __atomic_impl<bool, _Sco> __phase;
+  __atomic_impl<ptrdiff_t, _Sco> __expected, __arrived;
+  _CompletionF __completion;
+  __atomic_impl<bool, _Sco> __phase;
 
 public:
   using arrival_token = bool;
@@ -117,6 +114,8 @@ public:
   }
 };
 
+_CCCL_DIAG_POP
+
 template <thread_scope _Sco>
 class __barrier_base<__empty_completion, _Sco>
 {
@@ -126,7 +125,7 @@ class __barrier_base<__empty_completion, _Sco>
   static constexpr uint64_t __phase_bit     = 1ull << 63;
   static constexpr uint64_t __arrived_mask  = (__phase_bit - 1) & ~__expected_mask;
 
-  _LIBCUDACXX_BARRIER_ALIGNMENTS __atomic_impl<uint64_t, _Sco> __phase_arrived_expected;
+  __atomic_impl<uint64_t, _Sco> __phase_arrived_expected;
 
 public:
   using arrival_token = uint64_t;
@@ -143,11 +142,7 @@ private:
 
   static _LIBCUDACXX_HIDE_FROM_ABI constexpr uint64_t __init(ptrdiff_t __count) noexcept
   {
-#if _CCCL_STD_VER >= 2014
-    // This debug assert is not supported in C++11 due to resulting in a
-    // multi-statement constexpr function.
     _CCCL_ASSERT(__count >= 0, "Count must be non-negative.");
-#endif // _CCCL_STD_VER >= 2014
     return (((1u << 31) - __count) << 32) | ((1u << 31) - __count);
   }
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool __try_wait_phase(uint64_t __phase) const
@@ -167,8 +162,7 @@ private:
 public:
   _CCCL_HIDE_FROM_ABI __barrier_base() = default;
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14
-  __barrier_base(ptrdiff_t __count, __empty_completion = __empty_completion())
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __barrier_base(ptrdiff_t __count, __empty_completion = __empty_completion())
       : __phase_arrived_expected(__init(__count))
   {
     _CCCL_ASSERT(__count >= 0, "");
@@ -192,12 +186,12 @@ public:
   }
   _LIBCUDACXX_HIDE_FROM_ABI void wait(arrival_token&& __phase) const
   {
-    _CUDA_VSTD::__libcpp_thread_poll_with_backoff(
+    _CUDA_VSTD::__cccl_thread_poll_with_backoff(
       __barrier_poll_tester_phase<__barrier_base>(this, _CUDA_VSTD::move(__phase)));
   }
   _LIBCUDACXX_HIDE_FROM_ABI void wait_parity(bool __parity) const
   {
-    _CUDA_VSTD::__libcpp_thread_poll_with_backoff(__barrier_poll_tester_parity<__barrier_base>(this, __parity));
+    _CUDA_VSTD::__cccl_thread_poll_with_backoff(__barrier_poll_tester_parity<__barrier_base>(this, __parity));
   }
   _LIBCUDACXX_HIDE_FROM_ABI void arrive_and_wait()
   {

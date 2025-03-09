@@ -34,17 +34,18 @@
 #include <cuda_occupancy.h>
 #include <cuda_runtime.h>
 
-#include <cuda/experimental/__stf/utility/source_location.cuh>
+#include <cuda/std/source_location>
+
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
-#if __has_include(<cusolverDn.h>)
+#if _CCCL_HAS_INCLUDE(<cusolverDn.h>)
 #  include <cusolverDn.h>
 #endif
 
 namespace cuda::experimental::stf
 {
 
-#if __has_include(<cusolverDn.h>)
+#if _CCCL_HAS_INCLUDE(<cusolverDn.h>)
 // Undocumented
 inline const char* cusolverGetErrorString(const cusolverStatus_t status)
 {
@@ -110,14 +111,14 @@ public:
    * @param loc location of the call, defaulted
    */
   template <typename T>
-  cuda_exception(const T status, const source_location loc = RESERVED_STF_SOURCE_LOCATION())
+  cuda_exception(const T status, const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
   {
     // All "success" statuses are zero
     static_assert(cudaSuccess == 0 && CUDA_SUCCESS == 0
-#if __has_include(<cublas_v2.h>)
+#if _CCCL_HAS_INCLUDE(<cublas_v2.h>)
                     && CUBLAS_STATUS_SUCCESS == 0
 #endif
-#if __has_include(<cusolverDn.h>)
+#if _CCCL_HAS_INCLUDE(<cusolverDn.h>)
                     && CUSOLVER_STATUS_SUCCESS == 0
 #endif
                   ,
@@ -132,7 +133,7 @@ public:
     int dev = -1;
     cudaGetDevice(&dev);
 
-#if __has_include(<cusolverDn.h>)
+#if _CCCL_HAS_INCLUDE(<cusolverDn.h>)
     if constexpr (::std::is_same_v<T, cusolverStatus_t>)
     {
       format("%s(%u) [device %d] CUSOLVER error in call %s: %s.",
@@ -143,8 +144,8 @@ public:
              cusolverGetErrorString(status));
     }
     else
-#endif // __has_include(<cusolverDn.h>)
-#if __has_include(<cublas_v2.h>)
+#endif // _CCCL_HAS_INCLUDE(<cusolverDn.h>)
+#if _CCCL_HAS_INCLUDE(<cublas_v2.h>)
       if constexpr (::std::is_same_v<T, cublasStatus_t>)
     {
       format("%s(%u) [device %d] CUBLAS error in %s: %s.",
@@ -155,7 +156,7 @@ public:
              cublasGetStatusString(status));
     }
     else
-#endif // __has_include(<cublas_v2.h>)
+#endif // _CCCL_HAS_INCLUDE(<cublas_v2.h>)
       if constexpr (::std::is_same_v<T, cudaOccError>)
       {
         format("%s(%u) [device %d] CUDA OCC error in %s: %s.",
@@ -225,7 +226,7 @@ UNITTEST("cuda_exception")
 {
   auto e = cuda_exception(CUDA_SUCCESS);
   EXPECT(e.what()[0] == 0);
-#  if __has_include(<cusolverDn.h>)
+#  if _CCCL_HAS_INCLUDE(<cusolverDn.h>)
   auto e1 = cuda_exception(CUSOLVER_STATUS_ZERO_PIVOT);
   EXPECT(strlen(e1.what()) > 0u);
 #  endif
@@ -277,7 +278,7 @@ UNITTEST("first_param")
  * @snippet this cuda_safe_call
  */
 template <typename T>
-void cuda_safe_call(const T status, const source_location loc = RESERVED_STF_SOURCE_LOCATION())
+void cuda_safe_call(const T status, const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
 {
   // Common early exit test for all cases
   if (status == 0)
@@ -318,7 +319,7 @@ UNITTEST("cuda_safe_call")
  * @snippet this cuda_try1
  */
 template <typename Status>
-void cuda_try(Status status, const source_location loc = RESERVED_STF_SOURCE_LOCATION())
+void cuda_try(Status status, const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
 {
   if (status)
   {

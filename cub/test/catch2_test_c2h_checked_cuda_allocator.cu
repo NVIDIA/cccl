@@ -25,13 +25,13 @@
  *
  ******************************************************************************/
 
+#include <thrust/detail/execution_policy.h>
 #include <thrust/execution_policy.h>
 
 #include <algorithm>
 #include <new> // std::bad_alloc
 
-#include "thrust/detail/execution_policy.h"
-#include <catch2_test_helper.h>
+#include <c2h/catch2_test_helper.h>
 
 std::size_t get_alloc_bytes()
 {
@@ -48,7 +48,7 @@ std::size_t get_alloc_bytes()
   return alloc_bytes;
 }
 
-CUB_TEST("c2h::device_vector throws when requested allocations exceed free device memory",
+C2H_TEST("c2h::device_vector throws when requested allocations exceed free device memory",
          "[c2h][checked_cuda_allocator][device_vector]")
 {
   c2h::device_vector<char> vec;
@@ -57,7 +57,7 @@ CUB_TEST("c2h::device_vector throws when requested allocations exceed free devic
   REQUIRE_THROWS_AS(vec.resize(alloc_bytes), std::bad_alloc);
 }
 
-CUB_TEST("c2h::device_policy throws when requested allocations exceed free device memory",
+C2H_TEST("c2h::device_policy throws when requested allocations exceed free device memory",
          "[c2h][checked_cuda_allocator][device_policy]")
 {
   thrust::pair<char*, std::ptrdiff_t> buffer{nullptr, 0};

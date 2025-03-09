@@ -48,11 +48,11 @@ struct TestComplexSizeAndAlignment
 {
   void operator()()
   {
-    THRUST_STATIC_ASSERT(sizeof(thrust::complex<T>) == sizeof(T) * 2);
-    THRUST_STATIC_ASSERT(alignof(thrust::complex<T>) == alignof(T) * 2);
+    static_assert(sizeof(thrust::complex<T>) == sizeof(T) * 2);
+    static_assert(alignof(thrust::complex<T>) == alignof(T) * 2);
 
-    THRUST_STATIC_ASSERT(sizeof(thrust::complex<T const>) == sizeof(T) * 2);
-    THRUST_STATIC_ASSERT(alignof(thrust::complex<T const>) == alignof(T) * 2);
+    static_assert(sizeof(thrust::complex<T const>) == sizeof(T) * 2);
+    static_assert(alignof(thrust::complex<T const>) == alignof(T) * 2);
   }
 };
 SimpleUnitTest<TestComplexSizeAndAlignment, FloatingPointTypes> TestComplexSizeAndAlignmentInstance;
@@ -586,7 +586,7 @@ struct TestComplexPowerFunctions
     {
       using T0       = T;
       using T1       = other_floating_point_type_t<T0>;
-      using promoted = ::cuda::std::__common_type_t<T0, T1>;
+      using promoted = ::cuda::std::common_type_t<T0, T1>;
 
       thrust::host_vector<T0> data = unittest::random_samples<T0>(4);
 

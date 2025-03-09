@@ -20,8 +20,7 @@
 #include "test_macros.h"
 
 template <class T,
-          template <typename, typename>
-          class Selector,
+          template <typename, typename> class Selector,
           cuda::thread_scope ThreadScope,
           bool Signed = cuda::std::is_signed<T>::value>
 struct TestFn

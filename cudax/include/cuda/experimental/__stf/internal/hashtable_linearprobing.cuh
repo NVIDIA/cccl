@@ -235,7 +235,7 @@ public:
   {}
 
   // This size() value does not correspond to the actual amount of bytes
-  // transfered, but this value is only used for stat / scheduling purposes.
+  // transferred, but this value is only used for stat / scheduling purposes.
   // We may just have an approximate reporting ...
   //
   // In practice, the current implementation effectively transfers the whole

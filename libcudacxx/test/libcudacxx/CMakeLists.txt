@@ -42,18 +42,25 @@ endif()
 # enable exceptions and assertions in tests
 string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_ENABLE_ASSERTIONS")
 
+# enable optional<T&>
+string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_ENABLE_OPTIONAL_REF")
+
+# Disable dialect deprecation
+string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_IGNORE_DEPRECATED_CPP_DIALECT")
+string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DLIBCUDACXX_IGNORE_DEPRECATED_ABI")
+
 if (NOT MSVC AND NOT ${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
   set(LIBCUDACXX_WARNING_LEVEL "--compiler-options=-Wall --compiler-options=-Wextra")
 endif()
 
-# sccache cannot handle the -Fd option generationg pdb files
 if (MSVC)
+  # sccache cannot handle the -Fd option generationg pdb files
   set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
-endif()
 
-# Intel OneAPI compiler has fast math enabled by default which breaks almost all floating point tests
-if (${CMAKE_CXX_COMPILER_ID} STREQUAL "IntelLLVM" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
-  string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " --compiler-options=-fno-fast-math")
+  # We want to use cudaLaunchKernelEx which is guarded by __cplusplus
+  if ("${CMAKE_CUDA_COMPILER_VERSION}" LESS "12.3.0")
+    string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -Xcompiler=/Zc:__cplusplus")
+  endif()
 endif()
 
 if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
@@ -74,7 +81,8 @@ if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
 elseif (${CMAKE_CUDA_COMPILER_ID} STREQUAL "NVIDIA")
   string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
     " ${LIBCUDACXX_FORCE_INCLUDE}"
-    " ${LIBCUDACXX_WARNING_LEVEL}")
+    " ${LIBCUDACXX_WARNING_LEVEL}"
+    " -Wno-deprecated-gpu-targets")
 elseif (${CMAKE_CUDA_COMPILER_ID} STREQUAL "NVHPC")
   string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
     " -stdpar")
@@ -136,6 +144,6 @@ add_test(NAME libcudacxx.test.lit COMMAND
 )
 
 set_tests_properties(libcudacxx.test.lit PROPERTIES
-  TIMEOUT 5000
+  TIMEOUT 10800 # 3hr, some CI machines are slow
   RUN_SERIAL TRUE
 )

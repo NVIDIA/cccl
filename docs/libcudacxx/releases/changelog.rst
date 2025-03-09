@@ -170,7 +170,7 @@ Issues Fixed
 ~~~~~~~~~~~~
 
 -  #268: Remove NVIDIA internal paths from CMake includes.
--  #265: Move pipeline into libcudacxx. Previously was a seperate CTK
+-  #265: Move pipeline into libcudacxx. Previously was a separate CTK
    component.
 -  #264: Fix builds using NVHPC by adding a new line.
 
@@ -185,7 +185,7 @@ Issues Fixed
 
    -  Thanks Daniel Lustig for this contribution.
 
--  #258: Lock contrast of our documenation's search text field.
+-  #258: Lock contrast of our documentation's search text field.
 
    -  Thanks Bradley Dice for this contribution.
 

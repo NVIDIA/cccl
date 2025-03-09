@@ -35,7 +35,7 @@ int main()
   for (int i = 0; i < K; i++)
   {
     // Increment the variable by 1
-    ctx.task(exec_place::device(i % ndevs), handle.redux(redux_op))->*[](auto stream, auto s) {
+    ctx.task(exec_place::device(i % ndevs), handle.relaxed(redux_op))->*[](auto stream, auto s) {
       add<<<1, 1, 0, stream>>>(s.data_handle());
     };
   }

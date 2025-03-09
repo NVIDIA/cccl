@@ -33,28 +33,50 @@
 
 #include <thrust/iterator/constant_iterator.h>
 
+#include <cuda/__functional/maximum.h>
+#include <cuda/__functional/minimum.h>
+
 #include <iostream>
 #include <numeric>
 #include <type_traits>
 
-#include "c2h/custom_type.cuh"
-#include "c2h/extended_types.cuh"
-#include "catch2_test_helper.h"
-#include "test_util_vec.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/custom_type.h>
+#include <c2h/extended_types.h>
+#include <c2h/test_util_vec.h>
 #include <nv/target>
 
-CUB_NAMESPACE_BEGIN
-
-#if TEST_HALF_T
+#if TEST_HALF_T()
 // Half support is provided by SM53+. We currently test against a few older architectures.
 // The specializations below can be removed once we drop these architectures.
+
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
 template <>
-__host__ __device__ __forceinline__ //
-  __half
-  Min::operator()(__half& a, __half& b) const
+_LIBCUDACXX_HIDE_FROM_ABI __half minimum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_53, (return CUB_MIN(a, b);), (return CUB_MIN(__half2float(a), __half2float(b));));
+#  if defined(__CUDA_NO_HALF_OPERATORS__)
+  return ::cuda::std::min(__half2float(a), __half2float(b));
+#  else // ^^^ __CUDA_NO_HALF_OPERATORS__ ^^^ / vvv !__CUDA_NO_HALF_OPERATORS__ vvv
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_53, (return ::cuda::std::min(a, b);), (return ::cuda::std::min(__half2float(a), __half2float(b));));
+#  endif // !__CUDA_NO_HALF_OPERATORS__
 }
+
+template <>
+_LIBCUDACXX_HIDE_FROM_ABI __half maximum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
+{
+#  if defined(__CUDA_NO_HALF_OPERATORS__)
+  return ::cuda::std::max(__half2float(a), __half2float(b));
+#  else // ^^^ __CUDA_NO_HALF_OPERATORS__ ^^^ / vvv !__CUDA_NO_HALF_OPERATORS__ vvv
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_53, (return ::cuda::std::max(a, b);), (return ::cuda::std::max(__half2float(a), __half2float(b));));
+#  endif // !__CUDA_NO_HALF_OPERATORS__
+}
+
+_LIBCUDACXX_END_NAMESPACE_CUDA
+
+CUB_NAMESPACE_BEGIN
 
 template <>
 __host__ __device__ __forceinline__ //
@@ -74,14 +96,6 @@ __host__ __device__ __forceinline__ //
 
 template <>
 __host__ __device__ __forceinline__ //
-  __half
-  Max::operator()(__half& a, __half& b) const
-{
-  NV_IF_TARGET(NV_PROVIDES_SM_53, (return CUB_MAX(a, b);), (return CUB_MAX(__half2float(a), __half2float(b));));
-}
-
-template <>
-__host__ __device__ __forceinline__ //
   KeyValuePair<int, __half>
   ArgMax::operator()(const KeyValuePair<int, __half>& a, const KeyValuePair<int, __half>& b) const
 {
@@ -95,37 +109,12 @@ __host__ __device__ __forceinline__ //
 
   return a;
 }
-#endif // TEST_HALF_T
 
-/**
- * @brief Introduces the required NumericTraits for `c2h::custom_type_t`.
- */
-template <template <typename> class... Policies>
-struct NumericTraits<c2h::custom_type_t<Policies...>>
-{
-  using custom_t                     = c2h::custom_type_t<Policies...>;
-  static constexpr Category CATEGORY = NOT_A_NUMBER;
-  enum
-  {
-    PRIMITIVE = false,
-    NULL_TYPE = false,
-  };
-  __host__ __device__ static custom_t Max()
-  {
-    custom_t val{};
-    val.key = NumericTraits<decltype(std::declval<custom_t>().key)>::Max();
-    val.val = NumericTraits<decltype(std::declval<custom_t>().val)>::Max();
-    return val;
-  }
+CUB_NAMESPACE_END
 
-  __host__ __device__ static custom_t Lowest()
-  {
-    custom_t val{};
-    val.key = NumericTraits<decltype(std::declval<custom_t>().key)>::Lowest();
-    val.val = NumericTraits<decltype(std::declval<custom_t>().val)>::Lowest();
-    return val;
-  }
-};
+#endif // TEST_HALF_T()
+
+CUB_NAMESPACE_BEGIN
 
 template <typename Key, typename Value>
 static std::ostream& operator<<(std::ostream& os, const KeyValuePair<Key, Value>& val)
@@ -161,21 +150,21 @@ struct ExtendedFloatSum
     return result;
   }
 
-#if TEST_HALF_T
+#if TEST_HALF_T()
   __host__ __device__ __half operator()(__half a, __half b) const
   {
     uint16_t result = this->operator()(half_t{a}, half_t(b)).raw();
     return reinterpret_cast<__half&>(result);
   }
-#endif
+#endif // TEST_HALF_T()
 
-#if TEST_BF_T
+#if TEST_BF_T()
   __device__ __nv_bfloat16 operator()(__nv_bfloat16 a, __nv_bfloat16 b) const
   {
     uint16_t result = this->operator()(bfloat16_t{a}, bfloat16_t(b)).raw();
     return reinterpret_cast<__nv_bfloat16&>(result);
   }
-#endif
+#endif // TEST_BF_T()
 };
 
 template <class It>
@@ -184,48 +173,48 @@ inline It unwrap_it(It it)
   return it;
 }
 
-#if TEST_HALF_T
+#if TEST_HALF_T()
 inline __half* unwrap_it(half_t* it)
 {
   return reinterpret_cast<__half*>(it);
 }
 
 template <class OffsetT>
-inline cub::ConstantInputIterator<__half, OffsetT> unwrap_it(cub::ConstantInputIterator<half_t, OffsetT> it)
+inline thrust::constant_iterator<__half, OffsetT> unwrap_it(thrust::constant_iterator<half_t, OffsetT> it)
 {
   half_t wrapped_val = *it;
   __half val         = wrapped_val.operator __half();
-  return cub::ConstantInputIterator<__half, OffsetT>(val);
+  return thrust::constant_iterator<__half, OffsetT>(val);
 }
-#endif
+#endif // TEST_HALF_T()
 
-#if TEST_BF_T
+#if TEST_BF_T()
 inline __nv_bfloat16* unwrap_it(bfloat16_t* it)
 {
   return reinterpret_cast<__nv_bfloat16*>(it);
 }
 
 template <class OffsetT>
-cub::ConstantInputIterator<__nv_bfloat16, OffsetT> inline unwrap_it(cub::ConstantInputIterator<bfloat16_t, OffsetT> it)
+thrust::constant_iterator<__nv_bfloat16, OffsetT> inline unwrap_it(thrust::constant_iterator<bfloat16_t, OffsetT> it)
 {
   bfloat16_t wrapped_val = *it;
   __nv_bfloat16 val      = wrapped_val.operator __nv_bfloat16();
-  return cub::ConstantInputIterator<__nv_bfloat16, OffsetT>(val);
+  return thrust::constant_iterator<__nv_bfloat16, OffsetT>(val);
 }
-#endif
+#endif // TEST_BF_T()
 
 template <typename T>
-using unwrap_value_t = typename std::remove_reference<decltype(*unwrap_it(std::declval<T*>()))>::type;
+using unwrap_value_t = std::remove_reference_t<decltype(*unwrap_it(std::declval<T*>()))>;
 
 template <class WrappedItT, //
           class ItT = decltype(unwrap_it(std::declval<WrappedItT>()))>
-std::integral_constant<bool, !std::is_same<WrappedItT, ItT>::value> //
+std::integral_constant<bool, !std::is_same_v<WrappedItT, ItT>> //
   inline reference_extended_fp(WrappedItT)
 {
   return {};
 }
 
-inline ExtendedFloatSum unwrap_op(std::true_type /* extended float */, cub::Sum) //
+inline ExtendedFloatSum unwrap_op(std::true_type /* extended float */, ::cuda::std::plus<>) //
 {
   return {};
 }
@@ -283,7 +272,7 @@ inline void compute_host_reference(
     auto seg_end   = seg_begin + h_sizes_begin[segment];
     // TODO Should this be using cub accumulator t?
     h_data_out[segment] =
-      static_cast<cub::detail::value_t<ResultOutItT>>(std::accumulate(seg_begin, seg_end, init, reduction_op));
+      static_cast<cub::detail::it_value_t<ResultOutItT>>(std::accumulate(seg_begin, seg_end, init, reduction_op));
   }
 }
 
@@ -388,7 +377,7 @@ void compute_segmented_argmin_reference(
   {
     if (h_offsets[seg] >= h_offsets[seg + 1])
     {
-      h_results[seg] = {1, cub::Traits<ItemT>::Max()};
+      h_results[seg] = {1, ::cuda::std::numeric_limits<ItemT>::max()};
     }
     else
     {
@@ -415,7 +404,7 @@ void compute_segmented_argmax_reference(
   {
     if (h_offsets[seg] >= h_offsets[seg + 1])
     {
-      h_results[seg] = {1, cub::Traits<ItemT>::Lowest()};
+      h_results[seg] = {1, ::cuda::std::numeric_limits<ItemT>::lowest()};
     }
     else
     {

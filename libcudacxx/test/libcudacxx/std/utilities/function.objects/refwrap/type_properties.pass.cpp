@@ -58,9 +58,7 @@ __host__ __device__ void test()
   typedef cuda::std::reference_wrapper<T> Wrap;
   static_assert(cuda::std::is_copy_constructible<Wrap>::value, "");
   static_assert(cuda::std::is_copy_assignable<Wrap>::value, "");
-#if TEST_STD_VER >= 2014
   static_assert(cuda::std::is_trivially_copyable<Wrap>::value, "");
-#endif
 }
 
 int main(int, char**)

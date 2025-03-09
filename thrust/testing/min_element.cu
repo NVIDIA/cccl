@@ -102,8 +102,10 @@ void TestMinElementWithBigIndexesHelper(int magnitude)
 void TestMinElementWithBigIndexes()
 {
   TestMinElementWithBigIndexesHelper(30);
+#ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
   TestMinElementWithBigIndexesHelper(31);
   TestMinElementWithBigIndexesHelper(32);
   TestMinElementWithBigIndexesHelper(33);
+#endif
 }
 DECLARE_UNITTEST(TestMinElementWithBigIndexes);

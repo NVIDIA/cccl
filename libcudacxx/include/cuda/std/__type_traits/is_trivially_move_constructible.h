@@ -29,20 +29,20 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_move_constructible
-    : public integral_constant<bool, _CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp, __add_rvalue_reference_t<_Tp>)>
+    : public integral_constant<bool, _CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp, add_rvalue_reference_t<_Tp>)>
 {};
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _CCCL_INLINE_VAR constexpr bool is_trivially_move_constructible_v =
-  _CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp, __add_rvalue_reference_t<_Tp>);
+  _CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp, add_rvalue_reference_t<_Tp>);
 #  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #else
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_move_constructible
-    : public is_trivially_constructible<_Tp, __add_rvalue_reference_t<_Tp>>
+    : public is_trivially_constructible<_Tp, add_rvalue_reference_t<_Tp>>
 {};
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)

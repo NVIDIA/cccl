@@ -8,9 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/std/__type_traits/is_same.h>
+
 #include <cuda/experimental/device.cuh>
 
-#include "cuda/std/__type_traits/is_same.h"
 #include <testing.cuh>
 
 namespace
@@ -315,6 +316,13 @@ TEST_CASE("global devices vector", "[device]")
     CUDAX_REQUIRE(cudax::devices.size() - 1 == (*std::prev(cudax::devices.end())).get());
     CUDAX_REQUIRE(cudax::devices.size() - 1 == std::prev(cudax::devices.end())->get());
     CUDAX_REQUIRE(cudax::devices.size() - 1 == cudax::devices.end()[-1].get());
+
+    auto peers = cudax::devices[0].get_peers();
+    for (auto peer : peers)
+    {
+      CUDAX_REQUIRE(cudax::devices[0].has_peer_access_to(peer))
+      CUDAX_REQUIRE(peer.has_peer_access_to(cudax::devices[0]));
+    }
   }
 
   try

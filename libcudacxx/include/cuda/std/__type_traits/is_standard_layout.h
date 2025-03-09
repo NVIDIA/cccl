@@ -42,7 +42,7 @@ _CCCL_INLINE_VAR constexpr bool is_standard_layout_v = _CCCL_BUILTIN_IS_STANDARD
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_standard_layout
-    : integral_constant<bool, is_scalar<__remove_all_extents_t<_Tp>>::value>
+    : integral_constant<bool, is_scalar<remove_all_extents_t<_Tp>>::value>
 {};
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)

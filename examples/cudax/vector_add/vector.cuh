@@ -61,6 +61,7 @@ public:
 private:
   void sync_host_to_device(::cuda::stream_ref __str, detail::__param_kind __p) const
   {
+    (void) __str;
     if (__dirty_)
     {
       if (__p == detail::__param_kind::_out)
@@ -108,9 +109,7 @@ private:
       __v_.sync_device_to_host(__str_, _Kind);
     }
 
-    using __as_kernel_arg = ::cuda::std::span<_Ty>;
-
-    operator ::cuda::std::span<_Ty>()
+    ::cuda::std::span<_Ty> kernel_transform()
     {
       return {__v_.__d_.data().get(), __v_.__d_.size()};
     }

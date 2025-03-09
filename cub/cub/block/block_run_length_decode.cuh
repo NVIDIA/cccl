@@ -44,8 +44,10 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#include <limits>
-#include <type_traits>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/limits>
+#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -173,7 +175,7 @@ private:
   /// Type used to index into the block's runs
   using RunOffsetT = uint32_t;
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   /// Shared memory type required by this thread block
   union _TempStorage
   {
@@ -184,7 +186,7 @@ private:
       DecodedOffsetT run_offsets[BLOCK_RUNS];
     } runs;
   }; // union TempStorage
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   /// Internal storage allocator (used when the user does not provide pre-allocated shared memory)
   _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
@@ -284,7 +286,7 @@ private:
     for (int i = 0; i <= Log2<MAX_NUM_ITEMS>::VALUE; i++)
     {
       OffsetT mid = cub::MidPoint<OffsetT>(lower_bound, upper_bound);
-      mid         = (cub::min)(mid, num_items - 1);
+      mid         = (::cuda::std::min)(mid, num_items - 1);
 
       if (val < input[mid])
       {
@@ -313,8 +315,8 @@ private:
       thread_dst_offset++;
     }
 
-    // Ensure run offsets and run values have been writen to shared memory
-    CTA_SYNC();
+    // Ensure run offsets and run values have been written to shared memory
+    __syncthreads();
   }
 
   template <typename RunLengthT, typename TotalDecodedSizeT>
@@ -335,7 +337,7 @@ private:
     total_decoded_size = static_cast<TotalDecodedSizeT>(decoded_size_aggregate);
 
     // Ensure the prefix scan's temporary storage can be reused (may be superfluous, but depends on scan implementation)
-    CTA_SYNC();
+    __syncthreads();
 
     InitWithRunOffsets(run_values, run_offsets);
   }

@@ -42,7 +42,7 @@ struct static_mod
 
   _CCCL_HOST_DEVICE T operator()(T x) const
   {
-    _CCCL_IF_CONSTEXPR (a == 1)
+    if constexpr (a == 1)
     {
       x %= m;
     }
@@ -60,7 +60,7 @@ struct static_mod
       }
     }
 
-    _CCCL_IF_CONSTEXPR (c != 0)
+    if constexpr (c != 0)
     {
       const T d = m - x;
       if (d > c)

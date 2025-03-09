@@ -303,7 +303,7 @@ void scatter_if(
  * Iterator</a> and \c InputIterator2's \c value_type must be convertible to \c RandomAccessIterator's \c
  * difference_type. \tparam InputIterator3 must be a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a> and \c InputIterator3's \c
- * value_type must be convertible to \c Predicate's \c argument_type. \tparam RandomAccessIterator must be a model of <a
+ * value_type must be convertible to \c Predicate's argument type. \tparam RandomAccessIterator must be a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/random_access_iterator">Random Access iterator</a>. \tparam
  * Predicate must be a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
@@ -383,7 +383,7 @@ _CCCL_HOST_DEVICE void scatter_if(
  * Iterator</a> and \c InputIterator2's \c value_type must be convertible to \c RandomAccessIterator's \c
  * difference_type. \tparam InputIterator3 must be a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a> and \c InputIterator3's \c
- * value_type must be convertible to \c Predicate's \c argument_type. \tparam RandomAccessIterator must be a model of <a
+ * value_type must be convertible to \c Predicate's argument type. \tparam RandomAccessIterator must be a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/random_access_iterator">Random Access iterator</a>. \tparam
  * Predicate must be a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *

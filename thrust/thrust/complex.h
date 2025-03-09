@@ -39,9 +39,9 @@
 #include <sstream>
 
 #define THRUST_STD_COMPLEX_REAL(z) \
-  reinterpret_cast<const typename ::cuda::std::__libcpp_remove_reference_t<decltype(z)>::value_type(&)[2]>(z)[0]
+  reinterpret_cast<const typename ::cuda::std::remove_reference_t<decltype(z)>::value_type(&)[2]>(z)[0]
 #define THRUST_STD_COMPLEX_IMAG(z) \
-  reinterpret_cast<const typename ::cuda::std::__libcpp_remove_reference_t<decltype(z)>::value_type(&)[2]>(z)[1]
+  reinterpret_cast<const typename ::cuda::std::remove_reference_t<decltype(z)>::value_type(&)[2]>(z)[1]
 #define THRUST_STD_COMPLEX_DEVICE _CCCL_DEVICE
 
 THRUST_NAMESPACE_BEGIN
@@ -339,21 +339,11 @@ public:
   }
 
 private:
-#if defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_CUDACC_VER < 1107000
-  struct __align__(sizeof(T) * 2) storage
-#elif defined(_CCCL_COMPILER_ICC)
-  struct storage
-#else // !(defined(_CCCL_COMPILER_ICC) || (defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_CUDACC_VER < 1107000))
   struct alignas(sizeof(T) * 2) storage
-#endif // !(defined(_CCCL_COMPILER_ICC) || (defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_CUDACC_VER < 1107000))
   {
     T x;
     T y;
-  }
-#ifdef _CCCL_COMPILER_ICC
-  __attribute__((aligned(sizeof(T) * 2)))
-#endif // _CCCL_COMPILER_ICC
-  ;
+  };
   storage data;
 };
 
@@ -393,7 +383,7 @@ _CCCL_HOST_DEVICE complex<T> conj(const complex<T>& z);
  *  \param theta The phase of the returned \p complex in radians.
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> polar(const T0& m, const T1& theta = T1());
+_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> polar(const T0& m, const T1& theta = T1());
 
 /*! Returns the projection of a \p complex on the Riemann sphere.
  *  For all finite \p complex it returns the argument. For \p complexs
@@ -416,7 +406,7 @@ _CCCL_HOST_DEVICE complex<T> proj(const T& z);
  *  \param y The second \p complex.
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator+(const complex<T0>& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator+(const complex<T0>& x, const complex<T1>& y);
 
 /*! Adds a scalar to a \p complex number.
  *
@@ -427,7 +417,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator+(const 
  *  \param y The scalar.
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator+(const complex<T0>& x, const T1& y);
+_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator+(const complex<T0>& x, const T1& y);
 
 /*! Adds a \p complex number to a scalar.
  *
@@ -438,7 +428,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator+(const 
  *  \param y The \p complex.
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator+(const T0& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator+(const T0& x, const complex<T1>& y);
 
 /*! Subtracts two \p complex numbers.
  *
@@ -449,7 +439,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator+(const 
  *  \param y The second \p complex (subtrahend).
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator-(const complex<T0>& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator-(const complex<T0>& x, const complex<T1>& y);
 
 /*! Subtracts a scalar from a \p complex number.
  *
@@ -460,7 +450,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator-(const 
  *  \param y The scalar (subtrahend).
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator-(const complex<T0>& x, const T1& y);
+_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator-(const complex<T0>& x, const T1& y);
 
 /*! Subtracts a \p complex number from a scalar.
  *
@@ -471,7 +461,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator-(const 
  *  \param y The \p complex (subtrahend).
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator-(const T0& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator-(const T0& x, const complex<T1>& y);
 
 /*! Multiplies two \p complex numbers.
  *
@@ -482,7 +472,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator-(const 
  *  \param y The second \p complex.
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator*(const complex<T0>& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator*(const complex<T0>& x, const complex<T1>& y);
 
 /*! Multiplies a \p complex number by a scalar.
  *
@@ -490,7 +480,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator*(const 
  *  \param y The scalar.
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator*(const complex<T0>& x, const T1& y);
+_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator*(const complex<T0>& x, const T1& y);
 
 /*! Multiplies a scalar by a \p complex number.
  *
@@ -501,7 +491,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator*(const 
  *  \param y The \p complex.
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator*(const T0& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator*(const T0& x, const complex<T1>& y);
 
 /*! Divides two \p complex numbers.
  *
@@ -512,7 +502,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator*(const 
  *  \param y The denomimator (divisor).
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator/(const complex<T0>& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator/(const complex<T0>& x, const complex<T1>& y);
 
 /*! Divides a \p complex number by a scalar.
  *
@@ -523,7 +513,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator/(const 
  *  \param y The scalar denomimator (divisor).
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator/(const complex<T0>& x, const T1& y);
+_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator/(const complex<T0>& x, const T1& y);
 
 /*! Divides a scalar by a \p complex number.
  *
@@ -534,7 +524,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator/(const 
  *  \param y The complex denomimator (divisor).
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator/(const T0& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator/(const T0& x, const complex<T1>& y);
 
 /* --- Unary Arithmetic operators --- */
 
@@ -587,7 +577,7 @@ _CCCL_HOST_DEVICE complex<T> log10(const complex<T>& z);
  *  \param y The exponent.
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> pow(const complex<T0>& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> pow(const complex<T0>& x, const complex<T1>& y);
 
 /*! Returns a \p complex number raised to a scalar.
  *
@@ -598,7 +588,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> pow(const comple
  *  \param y The exponent.
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> pow(const complex<T0>& x, const T1& y);
+_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> pow(const complex<T0>& x, const T1& y);
 
 /*! Returns a scalar raised to a \p complex number.
  *
@@ -609,7 +599,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> pow(const comple
  *  \param y The exponent.
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> pow(const T0& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> pow(const T0& x, const complex<T1>& y);
 
 /*! Returns the complex square root of a \p complex number.
  *

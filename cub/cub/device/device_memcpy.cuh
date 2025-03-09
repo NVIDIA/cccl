@@ -175,10 +175,10 @@ struct DeviceMemcpy
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMemcpy::Batched");
-    static_assert(std::is_pointer<cub::detail::value_t<InputBufferIt>>::value,
+    static_assert(::cuda::std::is_pointer_v<cub::detail::it_value_t<InputBufferIt>>,
                   "DeviceMemcpy::Batched only supports copying of memory buffers."
                   "Please consider using DeviceCopy::Batched instead.");
-    static_assert(std::is_pointer<cub::detail::value_t<OutputBufferIt>>::value,
+    static_assert(::cuda::std::is_pointer_v<cub::detail::it_value_t<OutputBufferIt>>,
                   "DeviceMemcpy::Batched only supports copying of memory buffers."
                   "Please consider using DeviceCopy::Batched instead.");
 
@@ -186,24 +186,14 @@ struct DeviceMemcpy
     using BufferOffsetT = uint32_t;
 
     // Integer type large enough to hold any offset in [0, num_thread_blocks_launched), where a safe
-    // uppper bound on num_thread_blocks_launched can be assumed to be given by
+    // upper bound on num_thread_blocks_launched can be assumed to be given by
     // IDIV_CEIL(num_buffers, 64)
     using BlockOffsetT = uint32_t;
 
-    return detail::DispatchBatchMemcpy<
-      InputBufferIt,
-      OutputBufferIt,
-      BufferSizeIteratorT,
-      BufferOffsetT,
-      BlockOffsetT,
-      detail::DeviceBatchMemcpyPolicy<BufferOffsetT, BlockOffsetT>,
-      true>::Dispatch(d_temp_storage,
-                      temp_storage_bytes,
-                      input_buffer_it,
-                      output_buffer_it,
-                      buffer_sizes,
-                      num_buffers,
-                      stream);
+    return detail::
+      DispatchBatchMemcpy<InputBufferIt, OutputBufferIt, BufferSizeIteratorT, BufferOffsetT, BlockOffsetT, CopyAlg::Memcpy>::
+        Dispatch(
+          d_temp_storage, temp_storage_bytes, input_buffer_it, output_buffer_it, buffer_sizes, num_buffers, stream);
   }
 };
 

@@ -43,7 +43,7 @@ template <class _T1, class _T2>
 _CCCL_INLINE_VAR constexpr bool is_convertible_v = _CCCL_BUILTIN_IS_CONVERTIBLE_TO(_T1, _T2);
 #  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
-#  ifdef _CCCL_COMPILER_MSVC // Workaround for DevCom-1627396
+#  if _CCCL_COMPILER(MSVC) // Workaround for DevCom-1627396
 template <class _Ty>
 struct is_convertible<_Ty&, volatile _Ty&> : true_type
 {};
@@ -71,7 +71,7 @@ _CCCL_INLINE_VAR constexpr bool is_convertible_v<_Ty&, const volatile _Ty&> = tr
 
 template <class _Ty>
 _CCCL_INLINE_VAR constexpr bool is_convertible_v<volatile _Ty&, const volatile _Ty&> = true;
-#  endif // _CCCL_COMPILER_MSVC
+#  endif // _CCCL_COMPILER(MSVC)
 
 #else // ^^^ _CCCL_BUILTIN_IS_CONVERTIBLE_TO ^^^ / vvv !_CCCL_BUILTIN_IS_CONVERTIBLE_TO vvv
 
@@ -136,8 +136,7 @@ struct __is_array_function_or_void<_Tp, false, false, true>
 };
 } // namespace __is_convertible_imp
 
-template <class _Tp,
-          unsigned = __is_convertible_imp::__is_array_function_or_void<__libcpp_remove_reference_t<_Tp>>::value>
+template <class _Tp, unsigned = __is_convertible_imp::__is_array_function_or_void<remove_reference_t<_Tp>>::value>
 struct __is_convertible_check
 {
   static const size_t __v = 0;

@@ -109,11 +109,10 @@ template <class _Rollback>
 struct __exception_guard_noexceptions
 {
   __exception_guard_noexceptions() = delete;
-  _LIBCUDACXX_HIDE_FROM_ABI
-  _CCCL_CONSTEXPR_CXX20 _LIBCUDACXX_NODEBUG_TYPE explicit __exception_guard_noexceptions(_Rollback)
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG_ALIAS explicit __exception_guard_noexceptions(_Rollback)
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _LIBCUDACXX_NODEBUG_TYPE __exception_guard_noexceptions(
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG_ALIAS __exception_guard_noexceptions(
     __exception_guard_noexceptions&& __other) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Rollback))
       : __completed_(__other.__completed_)
   {
@@ -124,12 +123,12 @@ struct __exception_guard_noexceptions
   __exception_guard_noexceptions& operator=(__exception_guard_noexceptions const&) = delete;
   __exception_guard_noexceptions& operator=(__exception_guard_noexceptions&&)      = delete;
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _LIBCUDACXX_NODEBUG_TYPE void __complete() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG_ALIAS void __complete() noexcept
   {
     __completed_ = true;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _LIBCUDACXX_NODEBUG_TYPE ~__exception_guard_noexceptions()
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG_ALIAS ~__exception_guard_noexceptions()
   {
     _CCCL_ASSERT(__completed_, "__exception_guard not completed with exceptions disabled");
   }

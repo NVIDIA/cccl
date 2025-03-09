@@ -33,22 +33,22 @@ template <class _IdxType, _IdxType... _Values>
 struct __integer_sequence
 {
   template <template <class _OIdxType, _OIdxType...> class _ToIndexSeq, class _ToIndexType>
-  using __convert _LIBCUDACXX_NODEBUG_TYPE = _ToIndexSeq<_ToIndexType, _Values...>;
+  using __convert _CCCL_NODEBUG_ALIAS = _ToIndexSeq<_ToIndexType, _Values...>;
 
   template <size_t _Sp>
-  using __to_tuple_indices _LIBCUDACXX_NODEBUG_TYPE = __tuple_indices<(_Values + _Sp)...>;
+  using __to_tuple_indices _CCCL_NODEBUG_ALIAS = __tuple_indices<(_Values + _Sp)...>;
 };
 
 #if defined(_CCCL_BUILTIN_MAKE_INTEGER_SEQ)
 
 template <size_t _Ep, size_t _Sp>
-using __make_indices_imp _LIBCUDACXX_NODEBUG_TYPE =
+using __make_indices_imp _CCCL_NODEBUG_ALIAS =
   typename _CCCL_BUILTIN_MAKE_INTEGER_SEQ(__integer_sequence, size_t, _Ep - _Sp)::template __to_tuple_indices<_Sp>;
 
 #elif defined(_CCCL_BUILTIN_INTEGER_PACK)
 
 template <size_t _Ep, size_t _Sp>
-using __make_indices_imp _LIBCUDACXX_NODEBUG_TYPE =
+using __make_indices_imp _CCCL_NODEBUG_ALIAS =
   typename __integer_sequence<size_t, _CCCL_BUILTIN_INTEGER_PACK(_Ep - _Sp)...>::template __to_tuple_indices<_Sp>;
 
 #else // ^^^ _CCCL_BUILTIN_INTEGER_PACK ^^^ / vvv !_CCCL_BUILTIN_INTEGER_PACK vvv
@@ -61,7 +61,7 @@ struct __repeat;
 template <typename _Tp, _Tp... _Np, size_t... _Extra>
 struct __repeat<__integer_sequence<_Tp, _Np...>, _Extra...>
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE __integer_sequence<
+  using type _CCCL_NODEBUG_ALIAS = __integer_sequence<
     _Tp,
     _Np...,
     sizeof...(_Np) + _Np...,
@@ -71,8 +71,7 @@ struct __repeat<__integer_sequence<_Tp, _Np...>, _Extra...>
     5 * sizeof...(_Np) + _Np...,
     6 * sizeof...(_Np) + _Np...,
     7 * sizeof...(_Np) + _Np...,
-    _Extra...>
-    type;
+    _Extra...>;
 };
 
 template <size_t _Np>
@@ -85,42 +84,42 @@ struct __make : __parity<_Np % 8>::template __pmake<_Np>
 template <>
 struct __make<0>
 {
-  typedef __integer_sequence<size_t> type;
+  using type = __integer_sequence<size_t>;
 };
 template <>
 struct __make<1>
 {
-  typedef __integer_sequence<size_t, 0> type;
+  using type = __integer_sequence<size_t, 0>;
 };
 template <>
 struct __make<2>
 {
-  typedef __integer_sequence<size_t, 0, 1> type;
+  using type = __integer_sequence<size_t, 0, 1>;
 };
 template <>
 struct __make<3>
 {
-  typedef __integer_sequence<size_t, 0, 1, 2> type;
+  using type = __integer_sequence<size_t, 0, 1, 2>;
 };
 template <>
 struct __make<4>
 {
-  typedef __integer_sequence<size_t, 0, 1, 2, 3> type;
+  using type = __integer_sequence<size_t, 0, 1, 2, 3>;
 };
 template <>
 struct __make<5>
 {
-  typedef __integer_sequence<size_t, 0, 1, 2, 3, 4> type;
+  using type = __integer_sequence<size_t, 0, 1, 2, 3, 4>;
 };
 template <>
 struct __make<6>
 {
-  typedef __integer_sequence<size_t, 0, 1, 2, 3, 4, 5> type;
+  using type = __integer_sequence<size_t, 0, 1, 2, 3, 4, 5>;
 };
 template <>
 struct __make<7>
 {
-  typedef __integer_sequence<size_t, 0, 1, 2, 3, 4, 5, 6> type;
+  using type = __integer_sequence<size_t, 0, 1, 2, 3, 4, 5, 6>;
 };
 
 template <>
@@ -184,7 +183,7 @@ struct __parity<7>
 } // namespace __detail
 
 template <size_t _Ep, size_t _Sp>
-using __make_indices_imp _LIBCUDACXX_NODEBUG_TYPE =
+using __make_indices_imp _CCCL_NODEBUG_ALIAS =
   typename __detail::__make<_Ep - _Sp>::type::template __to_tuple_indices<_Sp>;
 
 #endif // !_CCCL_BUILTIN_INTEGER_PACK
@@ -192,7 +191,7 @@ using __make_indices_imp _LIBCUDACXX_NODEBUG_TYPE =
 template <class _Tp, _Tp... _Ip>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT integer_sequence
 {
-  typedef _Tp value_type;
+  using value_type = _Tp;
   static_assert(is_integral<_Tp>::value, "std::integer_sequence can only be instantiated with an integral type");
   static _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t size() noexcept
   {
@@ -206,17 +205,17 @@ using index_sequence = integer_sequence<size_t, _Ip...>;
 #if defined(_CCCL_BUILTIN_MAKE_INTEGER_SEQ)
 
 template <class _Tp, _Tp _Ep>
-using __make_integer_sequence _LIBCUDACXX_NODEBUG_TYPE = _CCCL_BUILTIN_MAKE_INTEGER_SEQ(integer_sequence, _Tp, _Ep);
+using __make_integer_sequence _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_MAKE_INTEGER_SEQ(integer_sequence, _Tp, _Ep);
 
 #elif defined(_CCCL_BUILTIN_INTEGER_PACK)
 
 template <class _Tp, _Tp _Ep>
-using __make_integer_sequence _LIBCUDACXX_NODEBUG_TYPE = integer_sequence<_Tp, __integer_pack(_Ep)...>;
+using __make_integer_sequence _CCCL_NODEBUG_ALIAS = integer_sequence<_Tp, __integer_pack(_Ep)...>;
 
 #else // ^^^ _CCCL_BUILTIN_INTEGER_PACK ^^^ / vvv !_CCCL_BUILTIN_INTEGER_PACK vvv
 
 template <typename _Tp, _Tp _Np>
-using __make_integer_sequence_unchecked _LIBCUDACXX_NODEBUG_TYPE =
+using __make_integer_sequence_unchecked _CCCL_NODEBUG_ALIAS =
   typename __detail::__make<_Np>::type::template __convert<integer_sequence, _Tp>;
 
 template <class _Tp, _Tp _Ep>
@@ -226,11 +225,11 @@ struct __make_integer_sequence_checked
   static_assert(0 <= _Ep, "std::make_integer_sequence must have a non-negative sequence length");
   // Workaround GCC bug by preventing bad installations when 0 <= _Ep
   // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=68929
-  typedef _LIBCUDACXX_NODEBUG_TYPE __make_integer_sequence_unchecked<_Tp, 0 <= _Ep ? _Ep : 0> type;
+  using type _CCCL_NODEBUG_ALIAS = __make_integer_sequence_unchecked<_Tp, 0 <= _Ep ? _Ep : 0>;
 };
 
 template <class _Tp, _Tp _Ep>
-using __make_integer_sequence _LIBCUDACXX_NODEBUG_TYPE = typename __make_integer_sequence_checked<_Tp, _Ep>::type;
+using __make_integer_sequence _CCCL_NODEBUG_ALIAS = typename __make_integer_sequence_checked<_Tp, _Ep>::type;
 
 #endif // !_CCCL_BUILTIN_INTEGER_PACK
 

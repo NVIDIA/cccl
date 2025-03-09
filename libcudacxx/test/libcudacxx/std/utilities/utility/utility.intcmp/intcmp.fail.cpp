@@ -6,30 +6,28 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14, c++17
-
 // <utility>
 
 // template<class T, class U>
-//   constexpr bool cmp_equal(T t, U u) noexcept; // C++20
+//   constexpr bool cmp_equal(T t, U u) noexcept;
 
 // template<class T, class U>
-//   constexpr bool cmp_not_equal(T t, U u) noexcept; // C++20
+//   constexpr bool cmp_not_equal(T t, U u) noexcept;
 
 // template<class T, class U>
-//   constexpr bool cmp_less(T t, U u) noexcept; // C++20
+//   constexpr bool cmp_less(T t, U u) noexcept;
 
 // template<class T, class U>
-//   constexpr bool cmp_less_equal(T t, U u) noexcept; // C++20
+//   constexpr bool cmp_less_equal(T t, U u) noexcept;
 
 // template<class T, class U>
-//   constexpr bool cmp_greater(T t, U u) noexcept; // C++20
+//   constexpr bool cmp_greater(T t, U u) noexcept;
 
 // template<class T, class U>
-//   constexpr bool cmp_greater_equal(T t, U u) noexcept; // C++20
+//   constexpr bool cmp_greater_equal(T t, U u) noexcept;
 
 // template<class R, class T>
-//   constexpr bool in_range(T t) noexcept;      // C++20
+//   constexpr bool in_range(T t) noexcept;
 
 #include <cuda/std/cstddef>
 #include <cuda/std/utility>
@@ -66,7 +64,7 @@ struct EmptyT
 {};
 
 template <class T>
-__host__ __device__ constexpr void test()
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
 {
   cuda::std::cmp_equal(T(), T()); // expected-error 10-11 {{no matching function for call to 'cmp_equal'}}
   cuda::std::cmp_equal(T(), int()); // expected-error 10-11 {{no matching function for call to 'cmp_equal'}}
@@ -94,7 +92,7 @@ __host__ __device__ constexpr void test()
 }
 #ifndef TEST_HAS_NO_CHAR8_T
 template <class T>
-__host__ __device__ constexpr void test_char8t()
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test_char8t()
 {
   cuda::std::cmp_equal(T(), T()); // expected-error 1 {{no matching function for call to 'cmp_equal'}}
   cuda::std::cmp_equal(T(), int()); // expected-error 1 {{no matching function for call to 'cmp_equal'}}
@@ -120,7 +118,7 @@ __host__ __device__ constexpr void test_char8t()
 #endif // TEST_HAS_NO_CHAR8_T
 
 template <class T>
-__host__ __device__ constexpr void test_uchars()
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test_uchars()
 {
   cuda::std::cmp_equal(T(), T()); // expected-error 2 {{no matching function for call to 'cmp_equal'}}
   cuda::std::cmp_equal(T(), int()); // expected-error 2 {{no matching function for call to 'cmp_equal'}}

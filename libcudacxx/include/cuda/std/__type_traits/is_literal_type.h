@@ -43,8 +43,8 @@ _LIBCUDACXX_DEPRECATED_IN_CXX17 _CCCL_INLINE_VAR constexpr bool is_literal_type_
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED_IN_CXX17 is_literal_type
     : public integral_constant<bool,
-                               is_scalar<__remove_all_extents_t<_Tp>>::value
-                                 || is_reference<__remove_all_extents_t<_Tp>>::value>
+                               is_scalar<remove_all_extents_t<_Tp>>::value
+                                 || is_reference<remove_all_extents_t<_Tp>>::value>
 {};
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)

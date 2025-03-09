@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cuda/std/__fwd/array.h>
+#include <cuda/std/__fwd/complex.h>
 #include <cuda/std/__fwd/pair.h>
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__tuple_dir/tuple_types.h>
@@ -53,6 +54,10 @@ struct __tuple_like_ext<pair<_T1, _T2>> : true_type
 
 template <class _Tp, size_t _Size>
 struct __tuple_like_ext<array<_Tp, _Size>> : true_type
+{};
+
+template <class _Tp>
+struct __tuple_like_ext<complex<_Tp>> : true_type
 {};
 
 template <class... _Tp>

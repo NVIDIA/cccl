@@ -42,7 +42,7 @@ struct TestTupleScan
 
     // initialize input
     host_vector<tuple<T, T>> h_input(n);
-    transform(h_t1.begin(), h_t1.end(), h_t2.begin(), h_input.begin(), MakeTupleFunctor());
+    thrust::transform(h_t1.begin(), h_t1.end(), h_t2.begin(), h_input.begin(), MakeTupleFunctor());
     device_vector<tuple<T, T>> d_input = h_input;
 
     // allocate output
@@ -51,14 +51,14 @@ struct TestTupleScan
     device_vector<tuple<T, T>> d_output(n, zero);
 
     // inclusive_scan
-    inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), SumTupleFunctor());
-    inclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), SumTupleFunctor());
+    thrust::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), SumTupleFunctor());
+    thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), SumTupleFunctor());
     ASSERT_EQUAL_QUIET(h_output, d_output);
 
     // exclusive_scan
     tuple<T, T> init(13, 17);
-    exclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), init, SumTupleFunctor());
-    exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), init, SumTupleFunctor());
+    thrust::exclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), init, SumTupleFunctor());
+    thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), init, SumTupleFunctor());
 
     ASSERT_EQUAL_QUIET(h_output, d_output);
   }

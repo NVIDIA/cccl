@@ -238,7 +238,7 @@ class scalar DOT(vector& a, class vector& b)
   {
     scalar res(true);
 
-    // Note that it works even if a.handle == b.handle because they have the same acces mode
+    // Note that it works even if a.handle == b.handle because they have the same access mode
     ctx.task(a.handles[bid]->read(), b.handles[bid]->read(), res.handle->write())
         ->*[](cudaStream_t stream, auto da, auto db, auto dres) {
               cuda_safe_call(cublasSetStream(cublas_handle, stream));
@@ -249,7 +249,7 @@ class scalar DOT(vector& a, class vector& b)
 
     if (bid == 0)
     {
-      // First access requires an assigment because it was not initialized
+      // First access requires an assignment because it was not initialized
       global_res = std::move(res);
     }
     else

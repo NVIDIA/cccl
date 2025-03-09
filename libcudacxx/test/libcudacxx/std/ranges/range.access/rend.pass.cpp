@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
 // UNSUPPORTED: msvc-19.16
 
 // cuda::std::ranges::rend
@@ -647,7 +646,6 @@ static_assert(noexcept(cuda::std::ranges::rend(ntare)));
 static_assert(noexcept(cuda::std::ranges::crend(ntare)));
 #endif // !TEST_COMPILER_MSVC_2019
 
-#if !defined(TEST_COMPILER_ICC)
 _CCCL_GLOBAL_CONSTANT struct NoThrowMemberREndReturnsRef
 {
   __host__ __device__ ThrowingIterator<int> rbegin() const;
@@ -655,7 +653,6 @@ _CCCL_GLOBAL_CONSTANT struct NoThrowMemberREndReturnsRef
 } ntmrerr;
 static_assert(!noexcept(cuda::std::ranges::rend(ntmrerr)));
 static_assert(!noexcept(cuda::std::ranges::crend(ntmrerr)));
-#endif // !TEST_COMPILER_ICC
 
 _CCCL_GLOBAL_CONSTANT struct REndReturnsArrayRef
 {
@@ -673,7 +670,6 @@ _CCCL_GLOBAL_CONSTANT struct NoThrowBeginThrowingEnd
 static_assert(noexcept(cuda::std::ranges::rend(ntbte)));
 static_assert(noexcept(cuda::std::ranges::crend(ntbte)));
 
-#if !defined(TEST_COMPILER_ICC)
 _CCCL_GLOBAL_CONSTANT struct NoThrowEndThrowingBegin
 {
   __host__ __device__ int* begin() const;
@@ -681,7 +677,6 @@ _CCCL_GLOBAL_CONSTANT struct NoThrowEndThrowingBegin
 } ntetb;
 static_assert(!noexcept(cuda::std::ranges::rend(ntetb)));
 static_assert(!noexcept(cuda::std::ranges::crend(ntetb)));
-#endif // !TEST_COMPILER_ICC
 
 #if TEST_STD_VER > 2017
 // Test ADL-proofing.
@@ -702,9 +697,7 @@ int main(int, char**)
   static_assert(testReturnTypes());
 
   testArray();
-#ifndef TEST_COMPILER_CUDACC_BELOW_11_3
   static_assert(testArray());
-#endif // TEST_COMPILER_CUDACC_BELOW_11_3
 
   testREndMember();
   static_assert(testREndMember());
@@ -719,14 +712,10 @@ int main(int, char**)
   unused(ntmre);
   unused(ntare);
 #endif // !TEST_COMPILER_MSVC_2019
-#if !defined(TEST_COMPILER_ICC)
   unused(ntmrerr);
-#endif // !TEST_COMPILER_ICC
   unused(rerar);
   unused(ntbte);
-#if !defined(TEST_COMPILER_ICC)
   unused(ntetb);
-#endif // !TEST_COMPILER_ICC
 
   return 0;
 }

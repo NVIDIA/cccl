@@ -42,26 +42,34 @@ namespace sequential
 namespace general_copy_detail
 {
 
-template <typename T1, typename T2>
-struct lazy_is_assignable : ::cuda::std::is_assignable<typename T1::type, typename T2::type>
-{};
-
 // sometimes OutputIterator's reference type is reported as void
 // in that case, just assume that we're able to assign to it OK
 template <typename InputIterator, typename OutputIterator>
 struct reference_is_assignable
-    : thrust::detail::eval_if<
-        ::cuda::std::is_same<typename thrust::iterator_reference<OutputIterator>::type, void>::value,
-        thrust::detail::true_type,
-        lazy_is_assignable<thrust::iterator_reference<OutputIterator>, thrust::iterator_reference<InputIterator>>>::type
-{};
+{
+  template <typename OI>
+  static constexpr bool h()
+  {
+    if constexpr (::cuda::std::is_same_v<thrust::detail::it_reference_t<OI>, void>)
+    {
+      return true;
+    }
+    else
+    {
+      return ::cuda::std::is_assignable_v<thrust::detail::it_reference_t<OI>,
+                                          thrust::detail::it_reference_t<InputIterator>>;
+    }
+  }
+
+  static constexpr bool value = h<OutputIterator>();
+};
 
 // introduce an iterator assign helper to deal with assignments from
 // a wrapped reference
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename OutputIterator, typename InputIterator>
-inline _CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<reference_is_assignable<InputIterator, OutputIterator>::value>
+inline _CCCL_HOST_DEVICE ::cuda::std::enable_if_t<reference_is_assignable<InputIterator, OutputIterator>::value>
 iter_assign(OutputIterator dst, InputIterator src)
 {
   *dst = *src;
@@ -73,7 +81,7 @@ inline _CCCL_HOST_DEVICE
 typename thrust::detail::disable_if<reference_is_assignable<InputIterator, OutputIterator>::value>::type
 iter_assign(OutputIterator dst, InputIterator src)
 {
-  using value_type = typename thrust::iterator_value<InputIterator>::type;
+  using value_type = thrust::detail::it_value_t<InputIterator>;
 
   // insert a temporary and hope for the best
   *dst = static_cast<value_type>(*src);
@@ -88,7 +96,7 @@ _CCCL_HOST_DEVICE OutputIterator general_copy(InputIterator first, InputIterator
   for (; first != last; ++first, (void) ++result)
   {
     // gcc 4.2 crashes while instantiating iter_assign
-#if defined(_CCCL_COMPILER_GCC) && (THRUST_GCC_VERSION < 40300)
+#if _CCCL_COMPILER(GCC, <, 4, 3)
     *result = *first;
 #else
     general_copy_detail::iter_assign(result, first);
@@ -105,7 +113,7 @@ _CCCL_HOST_DEVICE OutputIterator general_copy_n(InputIterator first, Size n, Out
   for (; n > Size(0); ++first, (void) ++result, (void) --n)
   {
     // gcc 4.2 crashes while instantiating iter_assign
-#if defined(_CCCL_COMPILER_GCC) && (THRUST_GCC_VERSION < 40300)
+#if _CCCL_COMPILER(GCC, <, 4, 3)
     *result = *first;
 #else
     general_copy_detail::iter_assign(result, first);

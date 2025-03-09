@@ -40,8 +40,7 @@ _LIBCUDACXX_HIDE_FROM_ABI system_clock::time_point system_clock::now() noexcept
 {
   NV_DISPATCH_TARGET(
     NV_IS_DEVICE,
-    (uint64_t __time; asm volatile("mov.u64 %0, %%globaltimer;"
-                                   : "=l"(__time)::);
+    (uint64_t __time; asm volatile("mov.u64 %0, %%globaltimer;" : "=l"(__time)::);
      return time_point(duration_cast<duration>(nanoseconds(__time)));),
     NV_IS_HOST,
     (return time_point(duration_cast<duration>(nanoseconds(

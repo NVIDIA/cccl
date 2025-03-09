@@ -34,7 +34,7 @@
 #include <limits>
 #include <type_traits>
 
-#include <catch2_test_helper.h>
+#include <c2h/catch2_test_helper.h>
 
 template <typename KeyT>
 struct fundamental_extractor_t
@@ -57,7 +57,7 @@ template <class T>
 c2h::host_vector<std::uint8_t> get_random_buffer()
 {
   c2h::device_vector<std::uint8_t> buffer(sizeof(T));
-  c2h::gen(CUB_SEED(3), buffer);
+  c2h::gen(C2H_SEED(3), buffer);
   return buffer;
 }
 
@@ -95,7 +95,7 @@ using a_few_fundamental_types = c2h::type_list<std::uint8_t, std::uint64_t>;
  *    dst: 0 0 0 0 0 0 1 0 0 1
  *
  */
-CUB_TEST("Radix operations extract digits from fundamental types", "[radix][operations]", fundamental_types)
+C2H_TEST("Radix operations extract digits from fundamental types", "[radix][operations]", fundamental_types)
 {
   using key_t        = typename c2h::get<0, TestType>;
   using traits       = cub::detail::radix::traits_t<key_t>;
@@ -154,20 +154,20 @@ struct tuple_decomposer_t<::cuda::std::tuple<Ts...>>
 
 // clang-format off
 template <std::size_t I, class... Ts>
-typename ::cuda::std::enable_if<I == 0>::type
+::cuda::std::enable_if_t<I == 0>
 buffer_to_tpl_helper(const char *buffer, ::cuda::std::tuple<Ts...> &tpl)
 {
   constexpr std::size_t element_size =
-    sizeof(typename ::cuda::std::tuple_element<I, ::cuda::std::tuple<Ts...>>::type);
+    sizeof(::cuda::std::tuple_element_t<I, ::cuda::std::tuple<Ts...>>);
   std::memcpy(&::cuda::std::get<I>(tpl), buffer, element_size);
 }
 
 template <std::size_t I, class... Ts>
-typename ::cuda::std::enable_if <I != 0>::type
+::cuda::std::enable_if_t <I != 0>
 buffer_to_tpl_helper(const char *buffer, ::cuda::std::tuple<Ts...> &tpl)
 {
   constexpr std::size_t element_size =
-    sizeof(typename ::cuda::std::tuple_element<I, ::cuda::std::tuple<Ts...>>::type);
+    sizeof(::cuda::std::tuple_element_t<I, ::cuda::std::tuple<Ts...>>);
   std::memcpy(&::cuda::std::get<I>(tpl), buffer, element_size);
   buffer_to_tpl_helper<I - 1>(buffer + element_size, tpl);
 }
@@ -179,20 +179,20 @@ void buffer_to_tpl(const char *buffer, ::cuda::std::tuple<Ts...> &tpl)
 }
 
 template <std::size_t I, class... Ts>
-typename ::cuda::std::enable_if<I == 0>::type
+::cuda::std::enable_if_t<I == 0>
 tpl_to_buffer_helper(char *buffer, ::cuda::std::tuple<Ts...> &tpl)
 {
   constexpr std::size_t element_size =
-    sizeof(typename ::cuda::std::tuple_element<I, ::cuda::std::tuple<Ts...>>::type);
+    sizeof(::cuda::std::tuple_element_t<I, ::cuda::std::tuple<Ts...>>);
   std::memcpy(buffer, &::cuda::std::get<I>(tpl), element_size);
 }
 
 template <std::size_t I, class... Ts>
-typename ::cuda::std::enable_if <I != 0>::type
+::cuda::std::enable_if_t <I != 0>
 tpl_to_buffer_helper(char *buffer, ::cuda::std::tuple<Ts...> &tpl)
 {
   constexpr std::size_t element_size =
-    sizeof(typename ::cuda::std::tuple_element<I, ::cuda::std::tuple<Ts...>>::type);
+    sizeof(::cuda::std::tuple_element_t<I, ::cuda::std::tuple<Ts...>>);
   std::memcpy(buffer, &::cuda::std::get<I>(tpl), element_size);
   tpl_to_buffer_helper<I - 1>(buffer + element_size, tpl);
 }
@@ -204,46 +204,46 @@ void tpl_to_buffer(char *buffer, ::cuda::std::tuple<Ts...> &tpl)
 }
 
 template <std::size_t I = 0, class... Ts>
-typename ::cuda::std::enable_if<I >= sizeof...(Ts), int>::type
+::cuda::std::enable_if_t<I >= sizeof...(Ts), int>
 tpl_to_max_bits(::cuda::std::tuple<Ts...> &)
 {
   return 0;
 }
 
 template <std::size_t I = 0, class... Ts>
-typename ::cuda::std::enable_if <I < sizeof...(Ts), int>::type
+ ::cuda::std::enable_if_t <I < sizeof...(Ts), int>
 tpl_to_max_bits(::cuda::std::tuple<Ts...> &tpl)
 {
   constexpr std::size_t element_size =
-    sizeof(typename ::cuda::std::tuple_element<I, ::cuda::std::tuple<Ts...>>::type);
+    sizeof(::cuda::std::tuple_element_t<I, ::cuda::std::tuple<Ts...>>);
   return element_size * CHAR_BIT + tpl_to_max_bits<I + 1>(tpl);
 }
 
 template <std::size_t I = 0, class... Ts>
-typename ::cuda::std::enable_if<I >= sizeof...(Ts)>::type
+ ::cuda::std::enable_if_t<I >= sizeof...(Ts)>
 tpl_to_min(::cuda::std::tuple<Ts...> &)
 {}
 
 template <std::size_t I = 0, class... Ts>
-typename ::cuda::std::enable_if <I < sizeof...(Ts)>::type
+ ::cuda::std::enable_if_t <I < sizeof...(Ts)>
 tpl_to_min(::cuda::std::tuple<Ts...> &tpl)
 {
-  using T = typename ::cuda::std::tuple_element<I, ::cuda::std::tuple<Ts...>>::type;
-  ::cuda::std::get<I>(tpl) = std::numeric_limits<T>::lowest();
+  using T =  ::cuda::std::tuple_element_t<I, ::cuda::std::tuple<Ts...>>;
+  ::cuda::std::get<I>(tpl) = ::cuda::std::numeric_limits<T>::lowest();
   tpl_to_min<I + 1>(tpl);
 }
 
 template <std::size_t I = 0, class... Ts>
-typename ::cuda::std::enable_if<I >= sizeof...(Ts)>::type
+ ::cuda::std::enable_if_t<I >= sizeof...(Ts)>
 tpl_to_max(::cuda::std::tuple<Ts...> &)
 {}
 
 template <std::size_t I = 0, class... Ts>
-typename ::cuda::std::enable_if <I < sizeof...(Ts)>::type
+ ::cuda::std::enable_if_t <I < sizeof...(Ts)>
 tpl_to_max(::cuda::std::tuple<Ts...> &tpl)
 {
-  using T = typename ::cuda::std::tuple_element<I, ::cuda::std::tuple<Ts...>>::type;
-  ::cuda::std::get<I>(tpl) = std::numeric_limits<T>::max();
+  using T =  ::cuda::std::tuple_element_t<I, ::cuda::std::tuple<Ts...>>;
+  ::cuda::std::get<I>(tpl) = ::cuda::std::numeric_limits<T>::max();
   tpl_to_max<I + 1>(tpl);
 }
 // clang-format on
@@ -308,13 +308,13 @@ void test_tuple()
   }
 }
 
-CUB_TEST("Radix operations extract digits from pairs", "[radix][operations]", fundamental_types, fundamental_types)
+C2H_TEST("Radix operations extract digits from pairs", "[radix][operations]", fundamental_types, fundamental_types)
 {
   test_tuple<typename c2h::get<0, TestType>, //
              typename c2h::get<1, TestType>>();
 }
 
-CUB_TEST("Radix operations extract digits from triples",
+C2H_TEST("Radix operations extract digits from triples",
          "[radix][operations]",
          fundamental_types,
          fundamental_types,
@@ -325,7 +325,7 @@ CUB_TEST("Radix operations extract digits from triples",
              typename c2h::get<2, TestType>>();
 }
 
-CUB_TEST("Radix operations extract digits from tetrads",
+C2H_TEST("Radix operations extract digits from tetrads",
          "[radix][operations]",
          a_few_fundamental_types,
          a_few_fundamental_types,
@@ -345,7 +345,7 @@ CUB_TEST("Radix operations extract digits from tetrads",
  *    dst: 0 0 1 1 0 0 1 1 0 0
  *
  */
-CUB_TEST("Radix operations inverse fundamental types", "[radix][operations]", fundamental_types)
+C2H_TEST("Radix operations inverse fundamental types", "[radix][operations]", fundamental_types)
 {
   using key_t        = typename c2h::get<0, TestType>;
   using traits       = cub::detail::radix::traits_t<key_t>;
@@ -385,7 +385,7 @@ CUB_TEST("Radix operations inverse fundamental types", "[radix][operations]", fu
  *      <           <----  higher bits  /  lower bits  ---->           >
  *
  */
-CUB_TEST("Radix operations inverse pairs", "[radix][operations]", fundamental_types, fundamental_types)
+C2H_TEST("Radix operations inverse pairs", "[radix][operations]", fundamental_types, fundamental_types)
 {
   using tpl_t = ::cuda::std::tuple<typename c2h::get<0, TestType>, //
                                    typename c2h::get<1, TestType>>;
@@ -420,7 +420,7 @@ CUB_TEST("Radix operations inverse pairs", "[radix][operations]", fundamental_ty
  * This tests checks that radix operations can get a value that when converted
  * to binary-comparable representation, yields smallest possible value.
  */
-CUB_TEST("Radix operations infere minimal value for fundamental types", "[radix][operations]", fundamental_types)
+C2H_TEST("Radix operations infere minimal value for fundamental types", "[radix][operations]", fundamental_types)
 {
   using key_t        = typename c2h::get<0, TestType>;
   using traits       = cub::detail::radix::traits_t<key_t>;
@@ -429,13 +429,13 @@ CUB_TEST("Radix operations infere minimal value for fundamental types", "[radix]
   c2h::host_vector<char> output_buffer_mem(sizeof(key_t));
   c2h::host_vector<char> input_buffer_mem(sizeof(key_t));
 
-  key_t ref = std::numeric_limits<key_t>::lowest();
+  key_t ref = ::cuda::std::numeric_limits<key_t>::lowest();
   key_t val = traits::min_raw_binary_key(decomposer_t{});
 
   REQUIRE(ref == val);
 }
 
-CUB_TEST(
+C2H_TEST(
   "Radix operations infere minimal value for pair types", "[radix][operations]", fundamental_types, fundamental_types)
 {
   using tpl_t = ::cuda::std::tuple<typename c2h::get<0, TestType>, //
@@ -456,19 +456,19 @@ CUB_TEST(
  * This tests checks that radix operations can get a value that when converted
  * to binary-comparable representation, yields largest possible value.
  */
-CUB_TEST("Radix operations infere maximal value for fundamental types", "[radix][operations]", fundamental_types)
+C2H_TEST("Radix operations infere maximal value for fundamental types", "[radix][operations]", fundamental_types)
 {
   using key_t        = typename c2h::get<0, TestType>;
   using traits       = cub::detail::radix::traits_t<key_t>;
   using decomposer_t = cub::detail::identity_decomposer_t;
 
-  key_t ref = std::numeric_limits<key_t>::max();
+  key_t ref = ::cuda::std::numeric_limits<key_t>::max();
   key_t val = traits::max_raw_binary_key(decomposer_t{});
 
   REQUIRE(ref == val);
 }
 
-CUB_TEST(
+C2H_TEST(
   "Radix operations infere maximal value for pair types", "[radix][operations]", fundamental_types, fundamental_types)
 {
   using tpl_t = ::cuda::std::tuple<typename c2h::get<0, TestType>, //
@@ -489,7 +489,7 @@ using fundamental_signed_types = c2h::type_list<std::int8_t, std::int16_t, std::
 
 /**
  * This tests checks that radix operations can convert a value to a binary-comparable
- * represetation. For example, `42.0f` is larger than `-42.0f`, but if we look at the
+ * representation. For example, `42.0f` is larger than `-42.0f`, but if we look at the
  * binary representation, it's not the case because of the sign bit:
  *
  *         s< exp. ><----- mantissa ------>
@@ -497,15 +497,15 @@ using fundamental_signed_types = c2h::type_list<std::int8_t, std::int16_t, std::
  * -42.0f: 11000010001010000000000000000000
  *
  */
-CUB_TEST("Radix operations reorder values for pair types",
+C2H_TEST("Radix operations reorder values for pair types",
          "[radix][operations]",
          fundamental_signed_types,
          fundamental_signed_types)
 {
   using T1    = typename c2h::get<0, TestType>;
-  using UT1   = typename std::make_unsigned<T1>::type;
+  using UT1   = std::make_unsigned_t<T1>;
   using T2    = typename c2h::get<1, TestType>;
-  using UT2   = typename std::make_unsigned<T2>::type;
+  using UT2   = std::make_unsigned_t<T2>;
   using tpl_t = ::cuda::std::tuple<T1, T2>;
 
   using traits            = cub::detail::radix::traits_t<tpl_t>;
@@ -525,8 +525,8 @@ CUB_TEST("Radix operations reorder values for pair types",
   T1 l_1 = reinterpret_cast<T1&>(ul_1);
   T2 l_2 = reinterpret_cast<T2&>(ul_2);
 
-  REQUIRE(l_1 == std::numeric_limits<T1>::lowest());
-  REQUIRE(l_2 == std::numeric_limits<T2>::lowest());
+  REQUIRE(l_1 == ::cuda::std::numeric_limits<T1>::lowest());
+  REQUIRE(l_2 == ::cuda::std::numeric_limits<T2>::lowest());
 
   {
     tpl_t ref{T1{0}, T2{0}};
@@ -539,8 +539,8 @@ CUB_TEST("Radix operations reorder values for pair types",
     REQUIRE(restored_val == unordered_val);
   }
 
-  ul_1 = static_cast<UT1>(std::numeric_limits<T1>::max());
-  ul_2 = static_cast<UT2>(std::numeric_limits<T2>::max());
+  ul_1 = static_cast<UT1>(::cuda::std::numeric_limits<T1>::max());
+  ul_2 = static_cast<UT2>(::cuda::std::numeric_limits<T2>::max());
 
   l_1 = reinterpret_cast<T1&>(ul_1);
   l_2 = reinterpret_cast<T2&>(ul_2);
@@ -558,8 +558,8 @@ CUB_TEST("Radix operations reorder values for pair types",
     ul_1 = reinterpret_cast<const UT1&>(::cuda::std::get<0>(ordered_val));
     ul_2 = reinterpret_cast<const UT2&>(::cuda::std::get<1>(ordered_val));
 
-    REQUIRE(ul_1 == std::numeric_limits<UT1>::max());
-    REQUIRE(ul_2 == std::numeric_limits<UT2>::max());
+    REQUIRE(ul_1 == ::cuda::std::numeric_limits<UT1>::max());
+    REQUIRE(ul_2 == ::cuda::std::numeric_limits<UT2>::max());
 
     const tpl_t restored_val = conversion_policy::from_bit_ordered(decomposer_t{}, ordered_val);
     REQUIRE(restored_val == unordered_val);

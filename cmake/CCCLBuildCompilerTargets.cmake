@@ -51,8 +51,10 @@ function(cccl_build_compiler_targets)
   set(cxx_compile_definitions)
 
   list(APPEND cuda_compile_options "-Xcudafe=--display_error_number")
-  list(APPEND cuda_compile_options "-Xcudafe=--promote_warnings")
   list(APPEND cuda_compile_options "-Wno-deprecated-gpu-targets")
+  if (CCCL_ENABLE_WERROR)
+    list(APPEND cuda_compile_options "-Xcudafe=--promote_warnings")
+  endif()
 
   # Ensure that we build our tests without treating ourself as system header
   list(APPEND cxx_compile_definitions "_CCCL_NO_SYSTEM_HEADER")
@@ -148,16 +150,6 @@ function(cccl_build_compiler_targets)
     endif()
   endif()
 
-  if ("Intel" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
-    # Do not flush denormal floats to zero
-    append_option_if_available("-no-ftz" cxx_compile_options)
-    # Disable warning that inlining is inhibited by compiler thresholds.
-    append_option_if_available("-diag-disable=11074" cxx_compile_options)
-    append_option_if_available("-diag-disable=11076" cxx_compile_options)
-    # Disable warning about deprecated classic compiler
-    append_option_if_available("-diag-disable=10441" cxx_compile_options)
-  endif()
-
   cccl_build_compiler_interface(cccl.compiler_interface
     "${cuda_compile_options}"
     "${cxx_compile_options}"
@@ -169,20 +161,6 @@ function(cccl_build_compiler_targets)
     add_library(cccl.compiler_interface_cpp${dialect} INTERFACE)
     target_link_libraries(cccl.compiler_interface_cpp${dialect} INTERFACE cccl.compiler_interface)
   endforeach()
-
-  if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    # C4127: conditional expression is constant
-    # Disable this MSVC warning for C++11/C++14. In C++17+, we can use
-    # _CCCL_IF_CONSTEXPR to address these warnings.
-    target_compile_options(cccl.compiler_interface_cpp11 INTERFACE
-      $<$<COMPILE_LANGUAGE:CXX>:/wd4127>
-      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/wd4127>
-    )
-    target_compile_options(cccl.compiler_interface_cpp14 INTERFACE
-      $<$<COMPILE_LANGUAGE:CXX>:/wd4127>
-      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/wd4127>
-    )
-  endif()
 
   # Some of our unit tests unconditionally throw exceptions, and compilers will
   # detect that the following instructions are unreachable. This is intentional

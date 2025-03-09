@@ -3,7 +3,11 @@ Param(
     [Alias("std")]
     [ValidateNotNullOrEmpty()]
     [ValidateSet(11, 14, 17, 20)]
-    [int]$CXX_STANDARD = 17
+    [int]$CXX_STANDARD = 17,
+    [Parameter(Mandatory = $false)]
+    [ValidateNotNullOrEmpty()]
+    [Alias("arch")]
+    [int]$CUDA_ARCH = 0
 )
 
 $ErrorActionPreference = "Stop"
@@ -14,13 +18,13 @@ If($CURRENT_PATH -ne "ci") {
     pushd "$PSScriptRoot/.."
 }
 
-Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList $CXX_STANDARD
+Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList $CXX_STANDARD, $CUDA_ARCH
 
 $PRESET = "cub-cpp$CXX_STANDARD"
 $CMAKE_OPTIONS = ""
 
 if ($CL_VERSION -lt [version]"19.20") {
-    $CMAKE_OPTIONS += "-DCUB_IGNORE_DEPRECATED_COMPILER=ON "
+    $CMAKE_OPTIONS += "-DCCCL_IGNORE_DEPRECATED_COMPILER=ON "
 }
 
 configure_and_build_preset "CUB" "$PRESET" "$CMAKE_OPTIONS"

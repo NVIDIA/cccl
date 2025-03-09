@@ -14,8 +14,11 @@
 #define TEST_CP_ASYNC_BULK_TENSOR_GENERIC_H_
 
 #include <cuda/barrier>
+#include <cuda/ptx>
 #include <cuda/std/array>
 #include <cuda/std/utility> // cuda::std::move
+
+namespace ptx = cuda::ptx;
 
 #include "test_macros.h" // TEST_NV_DIAG_SUPPRESS
 
@@ -173,15 +176,24 @@ test(cuda::std::array<uint32_t, num_dims> smem_coord,
   }
   // Ensure that writes to global memory are visible to others, including
   // those in the async proxy.
+  // ahendriksen: Issuing threadfence and fence.proxy.async.global. The
+  // fence.proxy.async.global should suffice, but I am keeping the threadfence
+  // out of an abundance of caution.
   __threadfence();
+  ptx::fence_proxy_async(ptx::space_global);
   __syncthreads();
 
   // TEST: Add i to buffer[i]
   alignas(128) __shared__ int smem_buffer[smem_len];
-  __shared__ barrier* bar;
+#if _CCCL_CUDA_COMPILER(CLANG)
+  __shared__ char barrier_data[sizeof(barrier)];
+  barrier& bar = cuda::std::bit_cast<barrier>(barrier_data);
+#else // ^^^ _CCCL_CUDA_COMPILER(CLANG) ^^^ / vvv !_CCCL_CUDA_COMPILER(CLANG)
+  __shared__ barrier bar;
+#endif // !_CCCL_CUDA_COMPILER(CLANG)
   if (threadIdx.x == 0)
   {
-    init(bar, blockDim.x);
+    init(&bar, blockDim.x);
   }
   __syncthreads();
 
@@ -190,14 +202,14 @@ test(cuda::std::array<uint32_t, num_dims> smem_coord,
   if (threadIdx.x == 0)
   {
     // Fastest moving coordinate first.
-    cp_tensor_global_to_shared(global_tensor_map, smem_coord, smem_buffer, *bar);
-    token = cuda::device::barrier_arrive_tx(*bar, 1, sizeof(smem_buffer));
+    cp_tensor_global_to_shared(global_tensor_map, smem_coord, smem_buffer, bar);
+    token = cuda::device::barrier_arrive_tx(bar, 1, sizeof(smem_buffer));
   }
   else
   {
-    token = bar->arrive();
+    token = bar.arrive();
   }
-  bar->wait(cuda::std::move(token));
+  bar.wait(cuda::std::move(token));
 
   // Check smem
   for (int i = threadIdx.x; i < static_cast<int>(smem_len); i += blockDim.x)
@@ -223,7 +235,11 @@ test(cuda::std::array<uint32_t, num_dims> smem_coord,
     cde::cp_async_bulk_commit_group();
     cde::cp_async_bulk_wait_group_read<0>();
   }
+  // ahendriksen: Issuing threadfence and fence.proxy.async.global. The
+  // fence.proxy.async.global should suffice, but I am keeping the threadfence
+  // out of an abundance of caution.
   __threadfence();
+  ptx::fence_proxy_async(ptx::space_global);
   __syncthreads();
 
   // // TEAR-DOWN: check that global memory is correct
@@ -258,7 +274,7 @@ CUtensorMap map_encode(T* tensor_ptr,
 
   // The stride is the number of bytes to traverse from the first element of one row to the next.
   // It must be a multiple of 16.
-  // cuTensorMapEncodeTiled requies that the stride array is a valid pointer, so we add one superfluous element
+  // cuTensorMapEncodeTiled requires that the stride array is a valid pointer, so we add one superfluous element
   // This is necessary for num_dims == 1
   cuda::std::array<uint64_t, num_dims> stride;
   uint64_t base_stride = sizeof(T);

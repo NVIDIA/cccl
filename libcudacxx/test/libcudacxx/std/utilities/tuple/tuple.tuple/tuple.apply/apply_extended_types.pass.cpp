@@ -6,7 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11, c++14
 // UNSUPPORTED: gcc-6
 
 // <cuda/std/tuple>
@@ -137,7 +136,7 @@ __host__ __device__ void test_ext_int_0()
   typedef int (T::*mem2_t)() const;
   mem2_t mem2 = &T::mem2;
 
-  typedef int const T::*obj1_t;
+  typedef int const T::* obj1_t;
   obj1_t obj1 = &T::obj1;
 
   // member function w/ref

@@ -31,7 +31,7 @@
 namespace cuda::experimental::stf
 {
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen fails to parse this
+#ifndef _CCCL_DOXYGEN_INVOKED // doxygen fails to parse this
 
 /**
  * @brief Applying "inner" on a mdspan shape returns an explicit shape which extents
@@ -89,7 +89,7 @@ _CCCL_HOST_DEVICE box<rank> inner(const box<rank>& s)
   return box(inner_extents);
 }
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 #ifdef UNITTESTED_FILE
 UNITTEST("inner explicit shape (explicit bounds)")

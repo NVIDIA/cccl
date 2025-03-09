@@ -97,15 +97,8 @@ int main(int, char**)
     test_conversions<int A::*>();
   }
   {
-#ifdef _LIBCUDACXX_HAS_NO_NULLPTR
-    static_assert(!has_less<cuda::std::nullptr_t>::value, "");
-    // FIXME: our C++03 nullptr emulation still allows for comparisons
-    // with other pointer types by way of the conversion operator.
-    // static_assert(!has_less<void*>::value, "");
-#else
     // TODO Enable this assertion when all compilers implement core DR 583.
     // static_assert(!has_less<cuda::std::nullptr_t>::value, "");
-#endif
     test_comparisons<cuda::std::nullptr_t>();
     test_comparisons<void*>();
     test_comparisons<A*>();

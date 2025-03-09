@@ -1,27 +1,13 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
+// Because CUB cannot inspect the transformation function, we cannot add any tunings based on the results of this
+// benchmark. Its main use is to detect regressions.
+
 // %RANGE% TUNE_THREADS tpb 128:1024:128
 // %RANGE% TUNE_ALGORITHM alg 0:1:1
 
-// keep checks at the top so compilation of discarded variants fails really fast
-#if !TUNE_BASE
-#  if TUNE_ALGORITHM == 1 && (__CUDA_ARCH_LIST__) < 900
-#    error "Cannot compile algorithm 4 (ublkcp) below sm90"
-#  endif
-
-#  if TUNE_ALGORITHM == 1 && !defined(_CUB_HAS_TRANSFORM_UBLKCP)
-#    error "Cannot tune for ublkcp algorithm, which is not provided by CUB (old CTK?)"
-#  endif
-#endif
-
-#include "babelstream.h"
-
-#if !TUNE_BASE
-#  if CUB_DETAIL_COUNT(__CUDA_ARCH_LIST__) != 1
-#    error "This benchmark does not support being compiled for multiple architectures"
-#  endif
-#endif
+#include "common.h"
 
 template <typename T, typename OffsetT>
 static void mul(nvbench::state& state, nvbench::type_list<T, OffsetT>)

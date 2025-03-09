@@ -37,22 +37,16 @@ int main(int, char**)
   test(random_access_iterator<const char*>(s + 5), 5, random_access_iterator<const char*>(s + 10));
   test(s + 5, 5, s + 10);
 
-#if TEST_STD_VER > 2011
   {
     constexpr const char* p = "123456789";
     typedef cuda::std::move_iterator<const char*> MI;
     constexpr MI it1 = cuda::std::make_move_iterator(p);
     constexpr MI it2 = cuda::std::make_move_iterator(p + 5);
-#  ifndef TEST_COMPILER_ICC
     constexpr MI it3 = cuda::std::make_move_iterator(p) += 5;
-#  endif // TEST_COMPILER_ICC
     static_assert(it1 != it2, "");
-#  ifndef TEST_COMPILER_ICC
     static_assert(it1 != it3, "");
     static_assert(it2 == it3, "");
-#  endif // TEST_COMPILER_ICC
   }
-#endif
 
   return 0;
 }

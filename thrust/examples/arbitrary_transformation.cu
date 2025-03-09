@@ -3,12 +3,9 @@
 #include <thrust/device_vector.h>
 #include <thrust/for_each.h>
 #include <thrust/iterator/zip_iterator.h>
+#include <thrust/zip_function.h>
 
 #include <iostream>
-
-#if !defined(THRUST_LEGACY_GCC)
-#  include <thrust/zip_function.h>
-#endif // >= C++11
 
 #include "include/host_device.h"
 
@@ -54,7 +51,6 @@ struct arbitrary_functor1
   }
 };
 
-#if !defined(THRUST_LEGACY_GCC)
 struct arbitrary_functor2
 {
   __host__ __device__ void operator()(const float& a, const float& b, const float& c, float& d)
@@ -63,7 +59,6 @@ struct arbitrary_functor2
     d = a + b * c;
   }
 };
-#endif // >= C++11
 
 int main()
 {
@@ -95,7 +90,6 @@ int main()
   }
 
   // apply the transformation using zip_function
-#if !defined(THRUST_LEGACY_GCC)
   thrust::device_vector<float> D2(5);
   thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(A.begin(), B.begin(), C.begin(), D2.begin())),
                    thrust::make_zip_iterator(thrust::make_tuple(A.end(), B.end(), C.end(), D2.end())),
@@ -107,5 +101,4 @@ int main()
   {
     std::cout << A[i] << " + " << B[i] << " * " << C[i] << " = " << D2[i] << std::endl;
   }
-#endif // >= C++11
 }

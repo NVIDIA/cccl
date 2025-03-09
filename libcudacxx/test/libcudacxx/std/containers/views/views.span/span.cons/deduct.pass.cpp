@@ -6,7 +6,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++03, c++11, c++14
 
 // gcc does not support deduction guides until gcc-7 and that is buggy
 // UNSUPPORTED: gcc-6, gcc-7
@@ -52,7 +51,6 @@ __host__ __device__ void test_iterator_sentinel()
     assert(s.data() == cuda::std::data(arr));
   }
 
-#if !defined(TEST_COMPILER_MSVC)
   // P3029R1: deduction from `integral_constant`
   {
     cuda::std::span s{cuda::std::begin(arr), cuda::std::integral_constant<size_t, 3>{}};
@@ -60,7 +58,6 @@ __host__ __device__ void test_iterator_sentinel()
     assert(s.size() == cuda::std::size(arr));
     assert(s.data() == cuda::std::data(arr));
   }
-#endif // !TEST_COMPILER_MSVC
 }
 
 __host__ __device__ void test_c_array()

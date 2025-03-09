@@ -42,6 +42,7 @@
 
 #include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_batch_memcpy.cuh>
+#include <cub/device/dispatch/tuning/tuning_batch_memcpy.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
@@ -178,18 +179,12 @@ struct DeviceCopy
     using RangeOffsetT = uint32_t;
 
     // Integer type large enough to hold any offset in [0, num_thread_blocks_launched), where a safe
-    // uppper bound on num_thread_blocks_launched can be assumed to be given by
+    // upper bound on num_thread_blocks_launched can be assumed to be given by
     // IDIV_CEIL(num_ranges, 64)
     using BlockOffsetT = uint32_t;
 
-    return detail::DispatchBatchMemcpy<
-      InputIt,
-      OutputIt,
-      SizeIteratorT,
-      RangeOffsetT,
-      BlockOffsetT,
-      detail::DeviceBatchMemcpyPolicy<RangeOffsetT, BlockOffsetT>,
-      false>::Dispatch(d_temp_storage, temp_storage_bytes, input_it, output_it, sizes, num_ranges, stream);
+    return detail::DispatchBatchMemcpy<InputIt, OutputIt, SizeIteratorT, RangeOffsetT, BlockOffsetT, CopyAlg::Copy>::
+      Dispatch(d_temp_storage, temp_storage_bytes, input_it, output_it, sizes, num_ranges, stream);
   }
 };
 

@@ -50,7 +50,7 @@ public:
   /* The number of elements in this part */
   size_t size() const
   {
-    assert(mdspan_shape_t::rank() == 1 && "Tiled mdspan shape only implemented in 1D yet");
+    _CCCL_ASSERT(mdspan_shape_t::rank() == 1, "Tiled mdspan shape only implemented in 1D yet");
 
     const size_t n = original_shape.size();
 
@@ -156,16 +156,16 @@ UNITTEST("Composite data place equality")
   using P  = tiled_partition<128>;
   using P2 = tiled_partition<64>;
 
-  /* Same partitionning operator, same execution place */
+  /* Same partitioning operator, same execution place */
   EXPECT(data_place::composite(P(), all) == data_place::composite(P(), all));
 
   /* Make sure we do not have a false positive in the test below */
   EXPECT(all != repeated_dev0);
 
-  /* Same partitionning operator, different execution place */
+  /* Same partitioning operator, different execution place */
   EXPECT(data_place::composite(P(), repeated_dev0) != data_place::composite(P(), all));
 
-  /* Different partitionning operator, same execution place */
+  /* Different partitioning operator, same execution place */
   EXPECT(data_place::composite(P(), all) != data_place::composite(P2(), all));
 };
 #endif // UNITTESTED_FILE

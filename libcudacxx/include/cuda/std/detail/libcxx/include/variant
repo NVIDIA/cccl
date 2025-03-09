@@ -215,11 +215,11 @@ C++20
 #  pragma system_header
 #endif // no system header
 
-#ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/__compare/common_comparison_category.h>
 #  include <cuda/std/__compare/compare_three_way_result.h>
 #  include <cuda/std/__compare/three_way_comparable.h>
-#endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #include <cuda/std/__exception/terminate.h>
 #include <cuda/std/__functional/hash.h>
 #include <cuda/std/__functional/invoke.h>
@@ -252,18 +252,19 @@ C++20
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/__utility/monostate.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
-#include <cuda/std/__variant/monostate.h>
+#include <cuda/std/__utility/unreachable.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/initializer_list>
 #include <cuda/std/tuple>
 #include <cuda/std/version>
 
 // [variant.syn]
-#ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/detail/libcxx/include/compare>
-#endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 #ifndef _CCCL_NO_EXCEPTIONS
 #  ifdef __cpp_lib_variant
@@ -293,18 +294,16 @@ _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
 
 #endif // !_CCCL_NO_EXCEPTIONS
 
-#if _CCCL_STD_VER >= 2014 && !defined(_CCCL_COMPILER_MSVC_2017)
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void __throw_bad_variant_access()
 {
-#  ifndef _CCCL_NO_EXCEPTIONS
+#ifndef _CCCL_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(
     NV_IS_HOST, (throw _CUDA_VSTD_NOVERSION::bad_variant_access();), (_CUDA_VSTD_NOVERSION::terminate();))
-#  else // ^^^ _CCCL_NO_EXCEPTIONS ^^^ / vvv !_CCCL_NO_EXCEPTIONS vvv
+#else // ^^^ _CCCL_NO_EXCEPTIONS ^^^ / vvv !_CCCL_NO_EXCEPTIONS vvv
   _CUDA_VSTD_NOVERSION::terminate();
-#  endif // !_CCCL_NO_EXCEPTIONS
+#endif // !_CCCL_NO_EXCEPTIONS
 }
 
 template <class... _Types>
@@ -361,7 +360,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT variant_alternative<_Ip, variant<_Types...>
 
 _CCCL_INLINE_VAR constexpr size_t variant_npos = static_cast<size_t>(-1);
 
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 int __choose_index_type(unsigned int __num_elem)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __choose_index_type(unsigned int __num_elem)
 {
   constexpr unsigned char __small   = static_cast<unsigned char>(-1);
   constexpr unsigned short __medium = static_cast<unsigned short>(-1);
@@ -378,13 +377,9 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 int __choose_index_type(unsigned
 
 template <size_t _NumAlts>
 using __variant_index_t =
-#  ifndef _LIBCUDACXX_ABI_VARIANT_INDEX_TYPE_OPTIMIZATION
-  unsigned int;
-#  else
-  __conditional_t<__choose_index_type(_NumAlts) == 0,
-                  unsigned char,
-                  __conditional_t<__choose_index_type(_NumAlts) == 1, unsigned short, unsigned int>>;
-#  endif
+  conditional_t<__choose_index_type(_NumAlts) == 0,
+                unsigned char,
+                conditional_t<__choose_index_type(_NumAlts) == 1, unsigned short, unsigned int>>;
 
 template <class _IndexType>
 constexpr _IndexType __variant_npos = static_cast<_IndexType>(-1);
@@ -663,7 +658,7 @@ struct __variant
     const size_t __first_index = __get_runtime_index<sizeof...(_Vs), 0>(__vs...);
     return __visit_impl(
       integer_sequence<size_t>{},
-      integer_sequence<size_t, (__remove_cvref_t<_Vs>::__size() - 1)...>{},
+      integer_sequence<size_t, (remove_cvref_t<_Vs>::__size() - 1)...>{},
       __first_index,
       __make_value_visitor(_CUDA_VSTD::forward<_Visitor>(__visitor)),
       _CUDA_VSTD::forward<_Vs>(__vs)...);
@@ -676,7 +671,7 @@ struct __variant
     const size_t __first_index = __get_runtime_index<sizeof...(_Vs), 0>(__vs...);
     return __visit_impl(
       integer_sequence<size_t>{},
-      integer_sequence<size_t, (__remove_cvref_t<_Vs>::__size() - 1)...>{},
+      integer_sequence<size_t, (remove_cvref_t<_Vs>::__size() - 1)...>{},
       __first_index,
       __make_value_visitor<_Rp>(_CUDA_VSTD::forward<_Visitor>(__visitor)),
       _CUDA_VSTD::forward<_Vs>(__vs)...);
@@ -748,10 +743,22 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __alt
 {
   using __value_type = _Tp;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr __alt(in_place_t, _Args&&... __args)
       : __value(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
+  _CCCL_EXEC_CHECK_DISABLE
+  constexpr __alt(const __alt&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  constexpr __alt(__alt&&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  constexpr __alt& operator=(const __alt&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  constexpr __alt& operator=(__alt&&) = default;
+
+  _CCCL_EXEC_CHECK_DISABLE
+  ~__alt() = default;
 
   __value_type __value;
 };
@@ -763,34 +770,34 @@ template <_Trait _DestructibleTrait, size_t _Index>
 union _CCCL_TYPE_VISIBILITY_DEFAULT __union<_DestructibleTrait, _Index>
 {};
 
-#  define _LIBCUDACXX_VARIANT_UNION_BODY(destructible_trait)                                       \
-                                                                                                   \
-  private:                                                                                         \
-    char __dummy;                                                                                  \
-    __alt<_Index, _Tp> __head;                                                                     \
-    __union<destructible_trait, _Index + 1, _Types...> __tail;                                     \
-                                                                                                   \
-    friend struct __access::__union;                                                               \
-                                                                                                   \
-  public:                                                                                          \
-    _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr __union(__valueless_t) noexcept                   \
-        : __dummy{}                                                                                \
-    {}                                                                                             \
-                                                                                                   \
-    template <class... _Args>                                                                      \
-    _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr __union(in_place_index_t<0>, _Args&&... __args)   \
-        : __head(in_place, _CUDA_VSTD::forward<_Args>(__args)...)                                  \
-    {}                                                                                             \
-                                                                                                   \
-    template <size_t _Ip, class... _Args>                                                          \
-    _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr __union(in_place_index_t<_Ip>, _Args&&... __args) \
-        : __tail(in_place_index<_Ip - 1>, _CUDA_VSTD::forward<_Args>(__args)...)                   \
-    {}                                                                                             \
-                                                                                                   \
-    _CCCL_HIDE_FROM_ABI __union(const __union&)            = default;                              \
-    _CCCL_HIDE_FROM_ABI __union(__union&&)                 = default;                              \
-    _CCCL_HIDE_FROM_ABI __union& operator=(const __union&) = default;                              \
-    _CCCL_HIDE_FROM_ABI __union& operator=(__union&&)      = default;
+#define _LIBCUDACXX_VARIANT_UNION_BODY(destructible_trait)                                       \
+                                                                                                 \
+private:                                                                                         \
+  char __dummy;                                                                                  \
+  __alt<_Index, _Tp> __head;                                                                     \
+  __union<destructible_trait, _Index + 1, _Types...> __tail;                                     \
+                                                                                                 \
+  friend struct __access::__union;                                                               \
+                                                                                                 \
+public:                                                                                          \
+  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr __union(__valueless_t) noexcept                   \
+      : __dummy{}                                                                                \
+  {}                                                                                             \
+                                                                                                 \
+  template <class... _Args>                                                                      \
+  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr __union(in_place_index_t<0>, _Args&&... __args)   \
+      : __head(in_place, _CUDA_VSTD::forward<_Args>(__args)...)                                  \
+  {}                                                                                             \
+                                                                                                 \
+  template <size_t _Ip, class... _Args>                                                          \
+  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr __union(in_place_index_t<_Ip>, _Args&&... __args) \
+      : __tail(in_place_index<_Ip - 1>, _CUDA_VSTD::forward<_Args>(__args)...)                   \
+  {}                                                                                             \
+                                                                                                 \
+  _CCCL_HIDE_FROM_ABI __union(const __union&)            = default;                              \
+  _CCCL_HIDE_FROM_ABI __union(__union&&)                 = default;                              \
+  _CCCL_HIDE_FROM_ABI __union& operator=(const __union&) = default;                              \
+  _CCCL_HIDE_FROM_ABI __union& operator=(__union&&)      = default;
 
 template <size_t _Index, class _Tp, class... _Types>
 union _CCCL_TYPE_VISIBILITY_DEFAULT __union<_Trait::_TriviallyAvailable, _Index, _Tp, _Types...>
@@ -813,7 +820,7 @@ union _CCCL_TYPE_VISIBILITY_DEFAULT __union<_Trait::_Unavailable, _Index, _Tp, _
   _LIBCUDACXX_HIDE_FROM_ABI ~__union() = delete;
 };
 
-#  undef _LIBCUDACXX_VARIANT_UNION_BODY
+#undef _LIBCUDACXX_VARIANT_UNION_BODY
 
 template <_Trait _DestructibleTrait, class... _Types>
 class _CCCL_TYPE_VISIBILITY_DEFAULT __base
@@ -877,18 +884,18 @@ protected:
 template <class _Traits, _Trait = _Traits::__destructible_trait>
 class _CCCL_TYPE_VISIBILITY_DEFAULT __dtor;
 
-#  define _LIBCUDACXX_VARIANT_DESTRUCTOR_BODY(destructible_trait)   \
-    using __base_type = __base<destructible_trait, _Types...>;      \
-    using __index_t   = typename __base_type::__index_t;            \
-                                                                    \
-  public:                                                           \
-    using __base_type::__base_type;                                 \
-    using __base_type::operator=;                                   \
-                                                                    \
-    _CCCL_HIDE_FROM_ABI __dtor(const __dtor&)            = default; \
-    _CCCL_HIDE_FROM_ABI __dtor(__dtor&&)                 = default; \
-    _CCCL_HIDE_FROM_ABI __dtor& operator=(const __dtor&) = default; \
-    _CCCL_HIDE_FROM_ABI __dtor& operator=(__dtor&&)      = default;
+#define _LIBCUDACXX_VARIANT_DESTRUCTOR_BODY(destructible_trait)   \
+  using __base_type = __base<destructible_trait, _Types...>;      \
+  using __index_t   = typename __base_type::__index_t;            \
+                                                                  \
+public:                                                           \
+  using __base_type::__base_type;                                 \
+  using __base_type::operator=;                                   \
+                                                                  \
+  _CCCL_HIDE_FROM_ABI __dtor(const __dtor&)            = default; \
+  _CCCL_HIDE_FROM_ABI __dtor(__dtor&&)                 = default; \
+  _CCCL_HIDE_FROM_ABI __dtor& operator=(const __dtor&) = default; \
+  _CCCL_HIDE_FROM_ABI __dtor& operator=(__dtor&&)      = default;
 
 template <class... _Types>
 class _CCCL_TYPE_VISIBILITY_DEFAULT __dtor<__traits<_Types...>, _Trait::_TriviallyAvailable>
@@ -910,10 +917,11 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __dtor<__traits<_Types...>, _Trait::_Availab
 {
   struct __visitor
   {
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _Alt>
     _LIBCUDACXX_HIDE_FROM_ABI void operator()(_Alt& __alt) const noexcept
     {
-      using __alt_type = __remove_cvref_t<decltype(__alt)>;
+      using __alt_type = remove_cvref_t<decltype(__alt)>;
       __alt.~__alt_type();
     }
   };
@@ -929,7 +937,7 @@ protected:
   {
     if (!this->valueless_by_exception())
     {
-      constexpr size_t __np = __remove_cvref_t<__dtor>::__size();
+      constexpr size_t __np = remove_cvref_t<__dtor>::__size();
       __destroy(integral_constant<size_t, __np - 1>{}, this->__index);
     }
     this->__index = __variant_npos<__index_t>;
@@ -942,7 +950,7 @@ private:
   {
     if (__index == _CurrentIndex)
     {
-      using __alt_type = __remove_cvref_t<decltype(__access::__base::__get_alt<_CurrentIndex>(this->__as_base()))>;
+      using __alt_type = remove_cvref_t<decltype(__access::__base::__get_alt<_CurrentIndex>(this->__as_base()))>;
       __access::__base::__get_alt<_CurrentIndex>(this->__as_base()).~__alt_type();
       return;
     }
@@ -953,7 +961,7 @@ private:
   {
     if (__index == 0)
     {
-      using __alt_type = __remove_cvref_t<decltype(__access::__base::__get_alt<0>(this->__as_base()))>;
+      using __alt_type = remove_cvref_t<decltype(__access::__base::__get_alt<0>(this->__as_base()))>;
       __access::__base::__get_alt<0>(this->__as_base()).~__alt_type();
       return;
     }
@@ -973,7 +981,7 @@ protected:
   _LIBCUDACXX_HIDE_FROM_ABI void __destroy() noexcept = delete;
 };
 
-#  undef _LIBCUDACXX_VARIANT_DESTRUCTOR_BODY
+#undef _LIBCUDACXX_VARIANT_DESTRUCTOR_BODY
 
 template <class _Traits>
 class _CCCL_TYPE_VISIBILITY_DEFAULT __ctor : public __dtor<_Traits>
@@ -1028,7 +1036,7 @@ protected:
     __lhs.__destroy();
     if (!__rhs.valueless_by_exception())
     {
-      constexpr size_t __np = __remove_cvref_t<__ctor>::__size();
+      constexpr size_t __np = remove_cvref_t<__ctor>::__size();
       __generic_construct_impl(
         integral_constant<size_t, __np - 1>{}, __rhs.index(), __lhs, _CUDA_VSTD::forward<_Rhs>(__rhs));
       __lhs.__index = static_cast<decltype(__lhs.__index)>(__rhs.index());
@@ -1039,23 +1047,23 @@ protected:
 template <class _Traits, _Trait = _Traits::__move_constructible_trait>
 class _CCCL_TYPE_VISIBILITY_DEFAULT __move_constructor;
 
-#  define _LIBCUDACXX_VARIANT_MOVE_CONSTRUCTOR(move_constructible_trait, move_constructor)                \
-    template <class... _Types>                                                                            \
-    class _CCCL_TYPE_VISIBILITY_DEFAULT __move_constructor<__traits<_Types...>, move_constructible_trait> \
-        : public __ctor<__traits<_Types...>>                                                              \
-    {                                                                                                     \
-      using __base_type = __ctor<__traits<_Types...>>;                                                    \
-                                                                                                          \
-    public:                                                                                               \
-      using __base_type::__base_type;                                                                     \
-      using __base_type::operator=;                                                                       \
-                                                                                                          \
-      _CCCL_HIDE_FROM_ABI __move_constructor(const __move_constructor&)            = default;             \
-      _CCCL_HIDE_FROM_ABI ~__move_constructor()                                    = default;             \
-      _CCCL_HIDE_FROM_ABI __move_constructor& operator=(const __move_constructor&) = default;             \
-      _CCCL_HIDE_FROM_ABI __move_constructor& operator=(__move_constructor&&)      = default;             \
-      move_constructor                                                                                    \
-    }
+#define _LIBCUDACXX_VARIANT_MOVE_CONSTRUCTOR(move_constructible_trait, move_constructor)                \
+  template <class... _Types>                                                                            \
+  class _CCCL_TYPE_VISIBILITY_DEFAULT __move_constructor<__traits<_Types...>, move_constructible_trait> \
+      : public __ctor<__traits<_Types...>>                                                              \
+  {                                                                                                     \
+    using __base_type = __ctor<__traits<_Types...>>;                                                    \
+                                                                                                        \
+  public:                                                                                               \
+    using __base_type::__base_type;                                                                     \
+    using __base_type::operator=;                                                                       \
+                                                                                                        \
+    _CCCL_HIDE_FROM_ABI __move_constructor(const __move_constructor&)            = default;             \
+    _CCCL_HIDE_FROM_ABI ~__move_constructor()                                    = default;             \
+    _CCCL_HIDE_FROM_ABI __move_constructor& operator=(const __move_constructor&) = default;             \
+    _CCCL_HIDE_FROM_ABI __move_constructor& operator=(__move_constructor&&)      = default;             \
+    move_constructor                                                                                    \
+  }
 
 _LIBCUDACXX_VARIANT_MOVE_CONSTRUCTOR(_Trait::_TriviallyAvailable,
                                      _CCCL_HIDE_FROM_ABI __move_constructor(__move_constructor&& __that) = default;);
@@ -1063,44 +1071,47 @@ _LIBCUDACXX_VARIANT_MOVE_CONSTRUCTOR(_Trait::_TriviallyAvailable,
 _LIBCUDACXX_VARIANT_MOVE_CONSTRUCTOR(
   _Trait::_Available,
   _LIBCUDACXX_HIDE_FROM_ABI __move_constructor(__move_constructor&& __that) noexcept(
-    __all<_CCCL_TRAIT(is_nothrow_move_constructible, _Types)...>::value)
-  : __move_constructor(__valueless_t{}) { this->__generic_construct(*this, _CUDA_VSTD::move(__that)); });
+    __all<_CCCL_TRAIT(is_nothrow_move_constructible, _Types)...>::value) : __move_constructor(__valueless_t{}) {
+    this->__generic_construct(*this, _CUDA_VSTD::move(__that));
+  });
 
 _LIBCUDACXX_VARIANT_MOVE_CONSTRUCTOR(_Trait::_Unavailable, __move_constructor(__move_constructor&&) = delete;);
 
-#  undef _LIBCUDACXX_VARIANT_MOVE_CONSTRUCTOR
+#undef _LIBCUDACXX_VARIANT_MOVE_CONSTRUCTOR
 
 template <class _Traits, _Trait = _Traits::__copy_constructible_trait>
 class _CCCL_TYPE_VISIBILITY_DEFAULT __copy_constructor;
 
-#  define _LIBCUDACXX_VARIANT_COPY_CONSTRUCTOR(copy_constructible_trait, copy_constructor)                \
-    template <class... _Types>                                                                            \
-    class _CCCL_TYPE_VISIBILITY_DEFAULT __copy_constructor<__traits<_Types...>, copy_constructible_trait> \
-        : public __move_constructor<__traits<_Types...>>                                                  \
-    {                                                                                                     \
-      using __base_type = __move_constructor<__traits<_Types...>>;                                        \
-                                                                                                          \
-    public:                                                                                               \
-      using __base_type::__base_type;                                                                     \
-      using __base_type::operator=;                                                                       \
-                                                                                                          \
-      _CCCL_HIDE_FROM_ABI __copy_constructor(__copy_constructor&&)                 = default;             \
-      _CCCL_HIDE_FROM_ABI ~__copy_constructor()                                    = default;             \
-      _CCCL_HIDE_FROM_ABI __copy_constructor& operator=(const __copy_constructor&) = default;             \
-      _CCCL_HIDE_FROM_ABI __copy_constructor& operator=(__copy_constructor&&)      = default;             \
-      copy_constructor                                                                                    \
-    }
+#define _LIBCUDACXX_VARIANT_COPY_CONSTRUCTOR(copy_constructible_trait, copy_constructor)                \
+  template <class... _Types>                                                                            \
+  class _CCCL_TYPE_VISIBILITY_DEFAULT __copy_constructor<__traits<_Types...>, copy_constructible_trait> \
+      : public __move_constructor<__traits<_Types...>>                                                  \
+  {                                                                                                     \
+    using __base_type = __move_constructor<__traits<_Types...>>;                                        \
+                                                                                                        \
+  public:                                                                                               \
+    using __base_type::__base_type;                                                                     \
+    using __base_type::operator=;                                                                       \
+                                                                                                        \
+    _CCCL_HIDE_FROM_ABI __copy_constructor(__copy_constructor&&)                 = default;             \
+    _CCCL_HIDE_FROM_ABI ~__copy_constructor()                                    = default;             \
+    _CCCL_HIDE_FROM_ABI __copy_constructor& operator=(const __copy_constructor&) = default;             \
+    _CCCL_HIDE_FROM_ABI __copy_constructor& operator=(__copy_constructor&&)      = default;             \
+    copy_constructor                                                                                    \
+  }
 
 _LIBCUDACXX_VARIANT_COPY_CONSTRUCTOR(
   _Trait::_TriviallyAvailable, _CCCL_HIDE_FROM_ABI __copy_constructor(const __copy_constructor& __that) = default;);
 
 _LIBCUDACXX_VARIANT_COPY_CONSTRUCTOR(
-  _Trait::_Available, _LIBCUDACXX_HIDE_FROM_ABI __copy_constructor(const __copy_constructor& __that)
-  : __copy_constructor(__valueless_t{}) { this->__generic_construct(*this, __that); });
+  _Trait::_Available,
+  _LIBCUDACXX_HIDE_FROM_ABI __copy_constructor(const __copy_constructor& __that) : __copy_constructor(__valueless_t{}) {
+    this->__generic_construct(*this, __that);
+  });
 
 _LIBCUDACXX_VARIANT_COPY_CONSTRUCTOR(_Trait::_Unavailable, __copy_constructor(const __copy_constructor&) = delete;);
 
-#  undef _LIBCUDACXX_VARIANT_COPY_CONSTRUCTOR
+#undef _LIBCUDACXX_VARIANT_COPY_CONSTRUCTOR
 
 template <class _Traits>
 class _CCCL_TYPE_VISIBILITY_DEFAULT __assignment : public __copy_constructor<_Traits>
@@ -1149,6 +1160,7 @@ public:
   }
 
 protected:
+  _CCCL_EXEC_CHECK_DISABLE
   template <
     size_t _Ip,
     class _Tp,
@@ -1167,6 +1179,7 @@ protected:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <
     size_t _Ip,
     class _Tp,
@@ -1198,7 +1211,7 @@ protected:
     }
     else
     {
-      constexpr size_t __np = __remove_cvref_t<__assignment>::__size();
+      constexpr size_t __np = remove_cvref_t<__assignment>::__size();
       this->__generic_assign(integral_constant<size_t, __np - 1>{}, __that.index(), _CUDA_VSTD::forward<_That>(__that));
     }
   }
@@ -1207,23 +1220,23 @@ protected:
 template <class _Traits, _Trait = _Traits::__move_assignable_trait>
 class _CCCL_TYPE_VISIBILITY_DEFAULT __move_assignment;
 
-#  define _LIBCUDACXX_VARIANT_MOVE_ASSIGNMENT(move_assignable_trait, move_assignment)                 \
-    template <class... _Types>                                                                        \
-    class _CCCL_TYPE_VISIBILITY_DEFAULT __move_assignment<__traits<_Types...>, move_assignable_trait> \
-        : public __assignment<__traits<_Types...>>                                                    \
-    {                                                                                                 \
-      using __base_type = __assignment<__traits<_Types...>>;                                          \
-                                                                                                      \
-    public:                                                                                           \
-      using __base_type::__base_type;                                                                 \
-      using __base_type::operator=;                                                                   \
-                                                                                                      \
-      _CCCL_HIDE_FROM_ABI __move_assignment(const __move_assignment&)            = default;           \
-      _CCCL_HIDE_FROM_ABI __move_assignment(__move_assignment&&)                 = default;           \
-      _CCCL_HIDE_FROM_ABI ~__move_assignment()                                   = default;           \
-      _CCCL_HIDE_FROM_ABI __move_assignment& operator=(const __move_assignment&) = default;           \
-      move_assignment                                                                                 \
-    }
+#define _LIBCUDACXX_VARIANT_MOVE_ASSIGNMENT(move_assignable_trait, move_assignment)                 \
+  template <class... _Types>                                                                        \
+  class _CCCL_TYPE_VISIBILITY_DEFAULT __move_assignment<__traits<_Types...>, move_assignable_trait> \
+      : public __assignment<__traits<_Types...>>                                                    \
+  {                                                                                                 \
+    using __base_type = __assignment<__traits<_Types...>>;                                          \
+                                                                                                    \
+  public:                                                                                           \
+    using __base_type::__base_type;                                                                 \
+    using __base_type::operator=;                                                                   \
+                                                                                                    \
+    _CCCL_HIDE_FROM_ABI __move_assignment(const __move_assignment&)            = default;           \
+    _CCCL_HIDE_FROM_ABI __move_assignment(__move_assignment&&)                 = default;           \
+    _CCCL_HIDE_FROM_ABI ~__move_assignment()                                   = default;           \
+    _CCCL_HIDE_FROM_ABI __move_assignment& operator=(const __move_assignment&) = default;           \
+    move_assignment                                                                                 \
+  }
 
 _LIBCUDACXX_VARIANT_MOVE_ASSIGNMENT(
   _Trait::_TriviallyAvailable, _CCCL_HIDE_FROM_ABI __move_assignment& operator=(__move_assignment&& __that) = default;);
@@ -1240,28 +1253,28 @@ _LIBCUDACXX_VARIANT_MOVE_ASSIGNMENT(
 
 _LIBCUDACXX_VARIANT_MOVE_ASSIGNMENT(_Trait::_Unavailable, __move_assignment& operator=(__move_assignment&&) = delete;);
 
-#  undef _LIBCUDACXX_VARIANT_MOVE_ASSIGNMENT
+#undef _LIBCUDACXX_VARIANT_MOVE_ASSIGNMENT
 
 template <class _Traits, _Trait = _Traits::__copy_assignable_trait>
 class _CCCL_TYPE_VISIBILITY_DEFAULT __copy_assignment;
 
-#  define _LIBCUDACXX_VARIANT_COPY_ASSIGNMENT(copy_assignable_trait, copy_assignment)                 \
-    template <class... _Types>                                                                        \
-    class _CCCL_TYPE_VISIBILITY_DEFAULT __copy_assignment<__traits<_Types...>, copy_assignable_trait> \
-        : public __move_assignment<__traits<_Types...>>                                               \
-    {                                                                                                 \
-      using __base_type = __move_assignment<__traits<_Types...>>;                                     \
-                                                                                                      \
-    public:                                                                                           \
-      using __base_type::__base_type;                                                                 \
-      using __base_type::operator=;                                                                   \
-                                                                                                      \
-      _CCCL_HIDE_FROM_ABI __copy_assignment(const __copy_assignment&)       = default;                \
-      _CCCL_HIDE_FROM_ABI __copy_assignment(__copy_assignment&&)            = default;                \
-      _CCCL_HIDE_FROM_ABI ~__copy_assignment()                              = default;                \
-      _CCCL_HIDE_FROM_ABI __copy_assignment& operator=(__copy_assignment&&) = default;                \
-      copy_assignment                                                                                 \
-    }
+#define _LIBCUDACXX_VARIANT_COPY_ASSIGNMENT(copy_assignable_trait, copy_assignment)                 \
+  template <class... _Types>                                                                        \
+  class _CCCL_TYPE_VISIBILITY_DEFAULT __copy_assignment<__traits<_Types...>, copy_assignable_trait> \
+      : public __move_assignment<__traits<_Types...>>                                               \
+  {                                                                                                 \
+    using __base_type = __move_assignment<__traits<_Types...>>;                                     \
+                                                                                                    \
+  public:                                                                                           \
+    using __base_type::__base_type;                                                                 \
+    using __base_type::operator=;                                                                   \
+                                                                                                    \
+    _CCCL_HIDE_FROM_ABI __copy_assignment(const __copy_assignment&)       = default;                \
+    _CCCL_HIDE_FROM_ABI __copy_assignment(__copy_assignment&&)            = default;                \
+    _CCCL_HIDE_FROM_ABI ~__copy_assignment()                              = default;                \
+    _CCCL_HIDE_FROM_ABI __copy_assignment& operator=(__copy_assignment&&) = default;                \
+    copy_assignment                                                                                 \
+  }
 
 _LIBCUDACXX_VARIANT_COPY_ASSIGNMENT(
   _Trait::_TriviallyAvailable,
@@ -1276,7 +1289,7 @@ _LIBCUDACXX_VARIANT_COPY_ASSIGNMENT(
 _LIBCUDACXX_VARIANT_COPY_ASSIGNMENT(_Trait::_Unavailable,
                                     __copy_assignment& operator=(const __copy_assignment&) = delete;);
 
-#  undef _LIBCUDACXX_VARIANT_COPY_ASSIGNMENT
+#undef _LIBCUDACXX_VARIANT_COPY_ASSIGNMENT
 
 template <class... _Types>
 class _CCCL_TYPE_VISIBILITY_DEFAULT __impl : public __copy_assignment<__traits<_Types...>>
@@ -1332,7 +1345,7 @@ public:
     }
     else if (this->index() == __that.index())
     {
-      constexpr size_t __np = __remove_cvref_t<__impl>::__size();
+      constexpr size_t __np = remove_cvref_t<__impl>::__size();
       __swap_value(integral_constant<size_t, __np - 1>{}, this->index(), *this, __that);
     }
     else
@@ -1360,7 +1373,7 @@ private:
 struct __no_narrowing_check
 {
   template <class _Dest, class _Source>
-  using _Apply = __type_identity<_Dest>;
+  using _Apply = type_identity<_Dest>;
 };
 
 struct __narrowing_check
@@ -1372,18 +1385,18 @@ struct __narrowing_check
   template <class _Dest, class _Source>
   struct __narrowing_check_impl<_Dest, _Source, void_t<decltype(_Dest{_CUDA_VSTD::declval<_Source>()})>>
   {
-    using type = __type_identity<_Dest>;
+    using type = type_identity<_Dest>;
   };
 
   template <class _Dest, class _Source>
-  using _Apply _LIBCUDACXX_NODEBUG_TYPE = typename __narrowing_check_impl<_Dest, _Source>::type;
+  using _Apply _CCCL_NODEBUG_ALIAS = typename __narrowing_check_impl<_Dest, _Source>::type;
 };
 
 template <class _Dest, class _Source>
-using __check_for_narrowing _LIBCUDACXX_NODEBUG_TYPE = typename _If<
-#  ifdef _LIBCUDACXX_ENABLE_NARROWING_CONVERSIONS_IN_VARIANT
+using __check_for_narrowing _CCCL_NODEBUG_ALIAS = typename _If<
+#ifdef _LIBCUDACXX_ENABLE_NARROWING_CONVERSIONS_IN_VARIANT
   false &&
-#  endif // _LIBCUDACXX_ENABLE_NARROWING_CONVERSIONS_IN_VARIANT
+#endif // _LIBCUDACXX_ENABLE_NARROWING_CONVERSIONS_IN_VARIANT
     _CCCL_TRAIT(is_arithmetic, _Dest),
   __narrowing_check,
   __no_narrowing_check>::template _Apply<_Dest, _Source>;
@@ -1398,9 +1411,9 @@ struct __overload
 template <class _Tp, size_t>
 struct __overload_bool
 {
-  template <class _Up, class _Ap = __remove_cvref_t<_Up>>
-  _LIBCUDACXX_HIDE_FROM_ABI auto
-  operator()(bool, _Up&&) const -> enable_if_t<_CCCL_TRAIT(is_same, _Ap, bool), __type_identity<_Tp>>;
+  template <class _Up, class _Ap = remove_cvref_t<_Up>>
+  _LIBCUDACXX_HIDE_FROM_ABI auto operator()(bool, _Up&&) const
+    -> enable_if_t<_CCCL_TRAIT(is_same, _Ap, bool), type_identity<_Tp>>;
 };
 
 template <size_t _Idx>
@@ -1416,32 +1429,12 @@ template <size_t _Idx>
 struct __overload<bool const volatile, _Idx> : __overload_bool<bool const volatile, _Idx>
 {};
 
-#  if _CCCL_STD_VER > 2014
 template <class... _Bases>
 struct __all_overloads : _Bases...
 {
   _LIBCUDACXX_HIDE_FROM_ABI void operator()() const;
   using _Bases::operator()...;
 };
-#  else // ^^^ _CCCL_STD_VER > 2014 ^^^ / vvv _CCCL_STD_VER <= 2014 vvv
-template <class... _Bases>
-struct __all_overloads;
-
-template <class _Head, class _Next, class... _Bases>
-struct __all_overloads<_Head, _Next, _Bases...>
-    : _Head
-    , __all_overloads<_Next, _Bases...>
-{
-  using _Head::operator();
-  using __all_overloads<_Next, _Bases...>::operator();
-};
-
-template <class _Only>
-struct __all_overloads<_Only> : _Only
-{
-  using _Only::operator();
-};
-#  endif // _CCCL_STD_VER <= 2014
 
 template <class IdxSeq>
 struct __make_overloads_imp;
@@ -1450,11 +1443,11 @@ template <size_t... _Idx>
 struct __make_overloads_imp<__tuple_indices<_Idx...>>
 {
   template <class... _Types>
-  using _Apply _LIBCUDACXX_NODEBUG_TYPE = __all_overloads<__overload<_Types, _Idx>...>;
+  using _Apply _CCCL_NODEBUG_ALIAS = __all_overloads<__overload<_Types, _Idx>...>;
 };
 
 template <class... _Types>
-using _MakeOverloads _LIBCUDACXX_NODEBUG_TYPE =
+using _MakeOverloads _CCCL_NODEBUG_ALIAS =
   typename __make_overloads_imp<__make_indices_imp<sizeof...(_Types), 0>>::template _Apply<_Types...>;
 
 template <class _Tp, class... _Types>
@@ -1556,8 +1549,8 @@ public:
 
   template <class _Arg>
   using __match_construct =
-    _If<!_CCCL_TRAIT(is_same, __remove_cvref_t<_Arg>, variant) && !__is_inplace_type<__remove_cvref_t<_Arg>>::value //
-          && !__is_inplace_index<__remove_cvref_t<_Arg>>::value,
+    _If<!_CCCL_TRAIT(is_same, remove_cvref_t<_Arg>, variant) && !__is_inplace_type<remove_cvref_t<_Arg>>::value //
+          && !__is_inplace_index<remove_cvref_t<_Arg>>::value,
         typename __constraints::template __match_construct<_Arg>,
         __variant_detail::__invalid_variant_constraints>;
 
@@ -1629,7 +1622,7 @@ public:
 
   template <class _Arg>
   using __match_assign =
-    _If<!_CCCL_TRAIT(is_same, __remove_cvref_t<_Arg>, variant),
+    _If<!_CCCL_TRAIT(is_same, remove_cvref_t<_Arg>, variant),
         typename __constraints::template __match_assign<_Arg>,
         __variant_detail::__invalid_variant_constraints>;
 
@@ -1897,7 +1890,11 @@ private:
       return __op(_CUDA_VSTD::get<0>(__lhs), _CUDA_VSTD::get<0>(__rhs));
     }
     // We already checked that every variant has a value, so we should never reach this line
+#if _CCCL_COMPILER(MSVC) // MSVC needs this to be wrapped in a function or it will error
+    _CUDA_VSTD::unreachable();
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
     _CCCL_UNREACHABLE();
+#endif // !_CCCL_COMPILER(MSVC)
   }
 };
 
@@ -1917,7 +1914,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const variant<_Types...>& __
   return __variant_binary_visitor::__visit(__index, __convert_to_bool<equal_to<>>{}, __lhs, __rhs);
 }
 
-#  ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 template <class... _Types>
   requires(three_way_comparable<_Types> && ...)
@@ -1947,7 +1944,7 @@ operator<=>(const variant<_Types...>& __lhs, const variant<_Types...>& __rhs)
   return __variant_binary_visitor::__visit(__lhs.index(), __three_way, __lhs, __rhs);
 }
 
-#  endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 template <class... _Types>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator!=(const variant<_Types...>& __lhs, const variant<_Types...>& __rhs)
@@ -2082,13 +2079,14 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _Rp visit(_Visitor&& __visitor, _Vs&&... __v
 }
 
 template <class... _Types>
-_LIBCUDACXX_HIDE_FROM_ABI auto swap(variant<_Types...>& __lhs, variant<_Types...>& __rhs) noexcept(
-  noexcept(__lhs.swap(__rhs))) -> decltype(__lhs.swap(__rhs))
+_LIBCUDACXX_HIDE_FROM_ABI auto
+swap(variant<_Types...>& __lhs, variant<_Types...>& __rhs) noexcept(noexcept(__lhs.swap(__rhs)))
+  -> decltype(__lhs.swap(__rhs))
 {
   return __lhs.swap(__rhs);
 }
 
-#  ifndef __cuda_std__
+#ifndef __cuda_std__
 template <class... _Types>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__enable_hash_helper<variant<_Types...>, remove_const_t<_Types>...>>
 {
@@ -2126,7 +2124,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__enable_hash_helper<variant<_Types...
     return _CUDA_VSTD::__hash_combine(__res, hash<size_t>{}(__v.index()));
   }
 };
-#  endif // __cuda_std__
+#endif // __cuda_std__
 
 // __unchecked_get is the same as _CUDA_VSTD::get, except, it is UB to use it
 // with the wrong type whereas _CUDA_VSTD::get will throw or returning nullptr.
@@ -2151,7 +2149,5 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto&& __unchecked_get(variant<_Types...>& _
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
-
-#endif // _CCCL_STD_VER >= 2014 && !_CCCL_COMPILER_MSVC_2017
 
 #endif // _LIBCUDACXX_VARIANT

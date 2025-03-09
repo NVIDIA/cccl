@@ -29,7 +29,7 @@ int main()
     // We add i (total = N(N-1)/2 + initial_value)
     for (int i = 0; i < N; i++)
     {
-      ctx.parallel_for(var_handle.shape(), var_handle.redux(op))->*[=] _CCCL_DEVICE(size_t ind, auto d_var) {
+      ctx.parallel_for(var_handle.shape(), var_handle.relaxed(op))->*[=] _CCCL_DEVICE(size_t ind, auto d_var) {
         atomicAdd(d_var.data_handle(), i);
       };
     }

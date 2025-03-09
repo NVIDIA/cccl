@@ -15,7 +15,10 @@
 // minimal header possible. If we're testing libc++, we should use `<__config>`.
 // If <__config> isn't available, fall back to <ciso646>.
 #ifdef __has_include
-#  if __has_include("<__config>")
+#  if __has_include(<cuda/__cccl_config>)
+#    include <cuda/__cccl_config>
+#    include <cuda/std/__internal/features.h>
+#  elif __has_include("<__config>")
 #    include <__config>
 #    define TEST_IMP_INCLUDED_HEADER
 #  endif
@@ -63,9 +66,7 @@
 #  define TEST_HAS_BUILTIN_IDENTIFIER(X) 0
 #endif
 
-#if defined(__INTEL_COMPILER)
-#  define TEST_COMPILER_ICC
-#elif defined(__NVCOMPILER)
+#if defined(__NVCOMPILER)
 #  define TEST_COMPILER_NVHPC
 #elif defined(__clang__)
 #  define TEST_COMPILER_CLANG
@@ -82,12 +83,12 @@
 #  define TEST_COMPILER_EDG
 #endif
 
-#if defined(_CCCL_CUDA_COMPILER_NVCC)
+#if _CCCL_CUDA_COMPILER(NVCC)
 #  define TEST_COMPILER_NVCC
 #  define TEST_COMPILER_EDG
-#elif defined(_CCCL_CUDA_COMPILER_NVHPC)
+#elif _CCCL_CUDA_COMPILER(NVHPC)
 #  define TEST_COMPILER_NVHPC_CUDA
-#elif defined(_CCCL_CUDA_COMPILER_CLANG)
+#elif _CCCL_CUDA_COMPILER(CLANG)
 #  define TEST_COMPILER_CLANG_CUDA
 #endif // no cuda compiler
 
@@ -145,9 +146,9 @@
 #  endif
 #endif
 
-#if TEST_HAS_BUILTIN(__builtin_is_constant_evaluated) || (defined(_CCCL_COMPILER_GCC) && _GNUC_VER >= 900) \
-  || (defined(_CCCL_COMPILER_MSVC) && _MSC_VER > 1924 && !defined(_CCCL_CUDACC_BELOW_11_3))
-#  define TEST_IS_CONSTANT_EVALUATED() _CUDA_VSTD::__libcpp_is_constant_evaluated()
+#if TEST_HAS_BUILTIN(__builtin_is_constant_evaluated) || _CCCL_COMPILER(GCC, >=, 9) \
+  || (_CCCL_COMPILER(MSVC) && _MSC_VER > 1924)
+#  define TEST_IS_CONSTANT_EVALUATED() cuda::std::is_constant_evaluated()
 #else
 #  define TEST_IS_CONSTANT_EVALUATED() false
 #endif
@@ -164,11 +165,13 @@
 #define TEST_NOEXCEPT           noexcept
 #define TEST_NOEXCEPT_FALSE     noexcept(false)
 #define TEST_NOEXCEPT_COND(...) noexcept(__VA_ARGS__)
+
 #if TEST_STD_VER >= 2014
 #  define TEST_CONSTEXPR_CXX14 constexpr
 #else
 #  define TEST_CONSTEXPR_CXX14
 #endif
+
 #if TEST_STD_VER >= 2017
 #  define TEST_CONSTEXPR_CXX17 constexpr
 #else
@@ -184,11 +187,7 @@
 #else
 #  define TEST_CONSTEXPR_CXX23
 #endif
-#if TEST_STD_VER > 2014
-#  define TEST_THROW_SPEC(...)
-#else
-#  define TEST_THROW_SPEC(...) throw(__VA_ARGS__)
-#endif
+#define TEST_THROW_SPEC(...)
 
 #if defined(TEST_COMPILER_NVRTC)
 #  define NEW_IS_NOEXCEPT_NVRTC noexcept
@@ -199,14 +198,7 @@
 // Sniff out to see if the underling C library has C11 features
 // Note that at this time (July 2018), MacOS X and iOS do NOT.
 // This is cribbed from __config; but lives here as well because we can't assume libc++
-#if defined(__FreeBSD__)
-//  Specifically, FreeBSD does NOT have timespec_get, even though they have all
-//  the rest of C11 - this is PR#38495
-#  define TEST_HAS_C11_FEATURES
-#elif defined(__Fuchsia__) || defined(__wasi__)
-#  define TEST_HAS_C11_FEATURES
-#  define TEST_HAS_TIMESPEC_GET
-#elif defined(__linux__)
+#if defined(__linux__)
 // This block preserves the old behavior used by include/__config:
 // _LIBCUDACXX_GLIBC_PREREQ would be defined to 0 if __GLIBC_PREREQ was not
 // available. The configuration here may be too vague though, as Bionic, uClibc,
@@ -223,18 +215,8 @@
 #endif
 
 /* Features that were introduced in C++14 */
-#if TEST_STD_VER >= 2014
-#  define TEST_HAS_EXTENDED_CONSTEXPR
-#  define TEST_HAS_VARIABLE_TEMPLATES
-#endif
-
-/* Features that were introduced in C++17 */
-#if TEST_STD_VER >= 2017
-#endif
-
-/* Features that were introduced after C++17 */
-#if TEST_STD_VER > 2017
-#endif
+#define TEST_HAS_EXTENDED_CONSTEXPR
+#define TEST_HAS_VARIABLE_TEMPLATES
 
 #define TEST_ALIGNAS_TYPE(...) TEST_ALIGNAS(TEST_ALIGNOF(__VA_ARGS__))
 
@@ -243,8 +225,8 @@
 #endif
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
-#  if (defined(_CCCL_COMPILER_MSVC) && _HAS_EXCEPTIONS == 0) \
-    || (!defined(_CCCL_COMPILER_MSVC) && !__EXCEPTIONS) // Catches all non msvc based compilers
+#  if (_CCCL_COMPILER(MSVC) && _HAS_EXCEPTIONS == 0) || (!_CCCL_COMPILER(MSVC) && !__EXCEPTIONS) // Catches all non msvc
+                                                                                                 // based compilers
 #    define TEST_HAS_NO_EXCEPTIONS
 #  endif
 #endif // !TEST_HAS_NO_EXCEPTIONS
@@ -257,10 +239,9 @@
 #  define TEST_HAS_SANITIZERS
 #endif
 
-#if defined(_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION) \
-  || (!(TEST_STD_VER > 2014 || (defined(__cpp_aligned_new) && __cpp_aligned_new >= 201606L)))
+#if !_LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
 #  define TEST_HAS_NO_ALIGNED_ALLOCATION
-#endif
+#endif // !_LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
 
 #if defined(_LIBCUDACXX_SAFE_STATIC)
 #  define TEST_SAFE_STATIC _LIBCUDACXX_SAFE_STATIC
@@ -268,7 +249,7 @@
 #  define TEST_SAFE_STATIC
 #endif
 
-#if defined(_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR)
+#if !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  define TEST_HAS_NO_SPACESHIP_OPERATOR
 #endif
 
@@ -276,11 +257,7 @@
 
 #define ASSERT_NOT_NOEXCEPT(...) static_assert(!noexcept(__VA_ARGS__), "Operation must NOT be noexcept")
 
-#if TEST_STD_VER > 2011
-#  define STATIC_ASSERT_CXX14(Pred) static_assert(Pred, "")
-#else
-#  define STATIC_ASSERT_CXX14(Pred) assert(Pred)
-#endif
+#define STATIC_ASSERT_CXX14(Pred) static_assert(Pred, "")
 
 /* Macros for testing libc++ specific behavior and extensions */
 #if defined(_LIBCUDACXX_VERSION)
@@ -347,7 +324,7 @@ struct is_same<T, T>
 #endif
 
 #ifndef TEST_HAS_NO_INT128_T
-#  ifdef _LIBCUDACXX_HAS_NO_INT128
+#  if !_CCCL_HAS_INT128()
 #    define TEST_HAS_NO_INT128_T
 #  endif
 #endif
@@ -356,7 +333,7 @@ struct is_same<T, T>
 #  define TEST_HAS_NO_LOCALIZATION
 #endif
 
-#if defined(_LIBCUDACXX_NO_HAS_CHAR8_T)
+#if !_LIBCUDACXX_HAS_CHAR8_T()
 #  define TEST_HAS_NO_CHAR8_T
 #endif
 
@@ -448,19 +425,16 @@ __host__ __device__ constexpr bool unused(T&&...)
 #  define TEST_NV_DIAG_SUPPRESS(WARNING) _CCCL_PRAGMA(diag_suppress WARNING)
 #endif
 
-#define TEST_CONSTEXPR_GLOBAL _CCCL_CONSTEXPR_GLOBAL
+#define TEST_CONSTEXPR_GLOBAL constexpr
 
 // Some convenience macros for checking nvcc versions
-#if defined(__CUDACC__) && _CCCL_CUDACC_VER < 1103000
-#  define TEST_COMPILER_CUDACC_BELOW_11_3
-#endif // defined(__CUDACC__) && _CCCL_CUDACC_VER < 1103000
-#if defined(__CUDACC__) && _CCCL_CUDACC_VER < 1203000
+#if _CCCL_CUDACC_BELOW(12, 3)
 #  define TEST_COMPILER_CUDACC_BELOW_12_3
-#endif // defined(__CUDACC__) && _CCCL_CUDACC_VER < 1203000
+#endif // _CCCL_CUDACC_BELOW(12, 3)
 
 #if defined(TEST_COMPILER_MSVC)
 #  if _MSC_VER < 1920
-#    define TEST_COMPILER_MSVC_2017
+#    error "MSVC version not supported"
 #  elif _MSC_VER < 1930
 #    define TEST_COMPILER_MSVC_2019
 #  else
@@ -468,9 +442,9 @@ __host__ __device__ constexpr bool unused(T&&...)
 #  endif
 #endif // defined(TEST_COMPILER_MSVC)
 
-#if defined(TEST_COMPILER_NVHPC) || defined(TEST_COMPILER_ICC)
+#if defined(TEST_COMPILER_NVHPC)
 #  define TEST_COMPILER_BROKEN_SMF_NOEXCEPT
-#endif // TEST_COMPILER_NVHPC || TEST_COMPILER_ICC
+#endif // TEST_COMPILER_NVHPC
 
 #if (defined(TEST_WINDOWS_DLL) && !defined(_MSC_VER)) || defined(__MVS__)
 // Normally, a replaced e.g. 'operator new' ends up used if the user code

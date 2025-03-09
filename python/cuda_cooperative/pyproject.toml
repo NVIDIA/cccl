@@ -1,7 +1,43 @@
-# Copyright (c) 2024, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 [build-system]
-requires = ["packaging", "setuptools>=61.0.0", "wheel"]
+requires = ["setuptools>=61.0.0"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "cuda-cooperative"
+description = "Experimental Core Library for CUDA Python"
+authors = [{ name = "NVIDIA Corporation" }]
+classifiers = [
+  "Programming Language :: Python :: 3 :: Only",
+  "Environment :: GPU :: NVIDIA CUDA",
+  "License :: OSI Approved :: Apache Software License",
+]
+requires-python = ">=3.9"
+dependencies = [
+  "cuda-cccl",
+  "numpy",
+  "numba>=0.60.0",
+  "pynvjitlink-cu12>=0.2.4",
+  "cuda-python==12.*",
+  "jinja2",
+]
+dynamic = ["version", "readme"]
+
+[project.optional-dependencies]
+test = ["pytest", "pytest-xdist"]
+
+[project.urls]
+Homepage = "https://developer.nvidia.com/"
+
+[tool.setuptools.dynamic]
+version = { attr = "cuda.cooperative._version.__version__" }
+readme = { file = ["README.md"], content-type = "text/markdown" }
+
+[tool.ruff]
+extend = "../../pyproject.toml"
+
+[tool.ruff.lint.isort]
+known-first-party = ["cuda.cooperative"]

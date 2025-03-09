@@ -24,15 +24,21 @@ template <class Token>
 struct T2 : Common<Token>
 {};
 
+namespace cuda
+{
+namespace std
+{
 template <template <class> class T1Qual, template <class> class T2Qual, class Token>
-struct cuda::std::basic_common_reference<T1<Token>, T2<Token>, T1Qual, T2Qual>
+struct basic_common_reference<T1<Token>, T2<Token>, T1Qual, T2Qual>
 {
   using type = Common<Token>;
 };
 template <template <class> class T2Qual, template <class> class T1Qual, class Token>
-struct cuda::std::basic_common_reference<T2<Token>, T1<Token>, T2Qual, T1Qual>
-    : cuda::std::basic_common_reference<T1<Token>, T2<Token>, T1Qual, T2Qual>
+struct basic_common_reference<T2<Token>, T1<Token>, T2Qual, T1Qual>
+    : basic_common_reference<T1<Token>, T2<Token>, T1Qual, T2Qual>
 {};
+} // namespace std
+} // namespace cuda
 
 template <class Token>
 struct IndirectlyReadable

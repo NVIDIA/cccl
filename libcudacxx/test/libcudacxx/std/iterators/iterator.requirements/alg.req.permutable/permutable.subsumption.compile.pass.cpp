@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14, c++17
+// UNSUPPORTED: c++17
 
 // template<class I>
 //   concept permutable = see below; // Since C++20
@@ -29,7 +29,7 @@ __host__ __device__ constexpr bool test_subsumption()
 {
   return true;
 }
-static_assert(test_subsumption<int*>());
+static_assert(test_subsumption<int*>(), "");
 
 int main(int, char**)
 {

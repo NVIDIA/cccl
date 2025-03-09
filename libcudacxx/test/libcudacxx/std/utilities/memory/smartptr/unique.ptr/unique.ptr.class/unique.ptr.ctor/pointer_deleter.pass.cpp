@@ -67,7 +67,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
     static_assert(cuda::std::is_constructible<U, int*, D const&>::value, "");
     static_assert(cuda::std::is_constructible<U, int*, D&>::value, "");
     static_assert(cuda::std::is_constructible<U, int*, D&&>::value, "");
-    // FIXME: __libcpp_compressed_pair attempts to perform a move even though
+    // FIXME: __cccl_compressed_pair attempts to perform a move even though
     // it should only copy.
     // D d;
     // U u(nullptr, cuda::std::move(d));
@@ -149,7 +149,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae_runtime()
     static_assert(!cuda::std::is_constructible<U, B*, D const&>::value, "");
     static_assert(!cuda::std::is_constructible<U, B*, D&>::value, "");
     static_assert(!cuda::std::is_constructible<U, B*, D&&>::value, "");
-    // FIXME: __libcpp_compressed_pair attempts to perform a move even though
+    // FIXME: __cccl_compressed_pair attempts to perform a move even though
     // it should only copy.
     // D d;
     // U u(nullptr, cuda::std::move(d));
