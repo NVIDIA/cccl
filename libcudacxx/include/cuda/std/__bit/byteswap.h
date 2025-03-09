@@ -89,8 +89,8 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __byteswap_impl(_Tp __va
 
   _Tp __result{};
 
-  _CCCL_PRAGMA_UNROLL(sizeof(__val))
-  for (size_t __i{}; __i < sizeof(__val); ++__i)
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (size_t __i{}; __i < sizeof(_Tp); ++__i)
   {
     __result <<= __shift;
     __result |= (__val >> (__i * __shift)) & _Tp(numeric_limits<uint8_t>::max());
