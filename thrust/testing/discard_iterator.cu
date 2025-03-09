@@ -16,7 +16,7 @@ void TestDiscardIteratorTraits()
   static_assert(cuda::std::is_same_v<traits::difference_type, ptrdiff_t>);
   static_assert(cuda::std::is_same_v<traits::value_type, thrust::detail::any_assign>);
   static_assert(cuda::std::is_same_v<traits::pointer, void>);
-  static_assert(cuda::std::is_same_v<traits::reference, thrust::detail::any_assign&>);
+  static_assert(cuda::std::is_same_v<traits::reference, thrust::detail::any_assign>);
   static_assert(cuda::std::is_same_v<traits::iterator_category, category>);
 
   static_assert(cuda::std::is_same_v<thrust::iterator_traversal_t<it>, thrust::random_access_traversal_tag>);

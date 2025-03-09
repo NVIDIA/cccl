@@ -26,23 +26,23 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/type_traits.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 // a type which may be assigned any other type
 struct any_assign
 {
-  any_assign() = default;
-
   template <typename T>
-  _CCCL_HOST_DEVICE any_assign(T)
-  {}
-
-  template <typename T>
-  _CCCL_HOST_DEVICE any_assign& operator=(T)
+  _CCCL_HOST_DEVICE const any_assign& operator=(T) const
   {
     return *this;
   }
 };
+
+template <>
+struct is_proxy_reference<any_assign> : true_type
+{};
 } // namespace detail
 THRUST_NAMESPACE_END
