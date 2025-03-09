@@ -133,6 +133,20 @@ class DeviceSegmentedReduceBuildResult(ctypes.Structure):
     ]
 
 
+# MUST match `cccl_device_unique_by_key_build_result_t` in c/include/cccl/c/unique_by_key.h
+class DeviceUniqueByKeyBuildResult(ctypes.Structure):
+    _fields_ = [
+        ("cc", ctypes.c_int),
+        ("cubin", ctypes.c_void_p),
+        ("cubin_size", ctypes.c_size_t),
+        ("library", ctypes.c_void_p),
+        ("compact_init_kernel", ctypes.c_void_p),
+        ("sweep_kernel", ctypes.c_void_p),
+        ("description_bytes_per_tile", ctypes.c_size_t),
+        ("payload_bytes_per_tile", ctypes.c_size_t),
+    ]
+
+
 # MUST match `cccl_value_t` in c/include/cccl/c/types.h
 class Value(ctypes.Structure):
     _fields_ = [("type", TypeInfo), ("state", ctypes.c_void_p)]
