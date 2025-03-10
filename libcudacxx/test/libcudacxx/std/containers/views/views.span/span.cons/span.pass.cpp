@@ -69,9 +69,9 @@ __host__ __device__ constexpr bool testConstexprSpan()
   cuda::std::span<T> s0{};
   cuda::std::span<T, 0> s1{};
   cuda::std::span<T> s2(s1); // static -> dynamic
-  ASSERT_NOEXCEPT(cuda::std::span<T>{s0});
-  ASSERT_NOEXCEPT(cuda::std::span<T, 0>{s1});
-  ASSERT_NOEXCEPT(cuda::std::span<T>{s1});
+  static_assert(noexcept(cuda::std::span<T>{s0}));
+  static_assert(noexcept(cuda::std::span<T, 0>{s1}));
+  static_assert(noexcept(cuda::std::span<T>{s1}));
 
   return s0.data() == nullptr && s0.size() == 0 && s1.data() == nullptr && s1.size() == 0 && s2.data() == nullptr
       && s2.size() == 0;
@@ -83,9 +83,9 @@ __host__ __device__ void testRuntimeSpan()
   cuda::std::span<T> s0{};
   cuda::std::span<T, 0> s1{};
   cuda::std::span<T> s2(s1); // static -> dynamic
-  ASSERT_NOEXCEPT(cuda::std::span<T>{s0});
-  ASSERT_NOEXCEPT(cuda::std::span<T, 0>{s1});
-  ASSERT_NOEXCEPT(cuda::std::span<T>{s1});
+  static_assert(noexcept(cuda::std::span<T>{s0}));
+  static_assert(noexcept(cuda::std::span<T, 0>{s1}));
+  static_assert(noexcept(cuda::std::span<T>{s1}));
 
   assert(s0.data() == nullptr && s0.size() == 0);
   assert(s1.data() == nullptr && s1.size() == 0);

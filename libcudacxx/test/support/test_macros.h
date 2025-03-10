@@ -220,10 +220,6 @@
 #  define TEST_HAS_SANITIZERS
 #endif
 
-#define ASSERT_NOEXCEPT(...) static_assert(noexcept(__VA_ARGS__), "Operation must be noexcept")
-
-#define ASSERT_NOT_NOEXCEPT(...) static_assert(!noexcept(__VA_ARGS__), "Operation must NOT be noexcept")
-
 #define STATIC_ASSERT_CXX14(Pred) static_assert(Pred, "")
 
 /* Macros for testing libc++ specific behavior and extensions */

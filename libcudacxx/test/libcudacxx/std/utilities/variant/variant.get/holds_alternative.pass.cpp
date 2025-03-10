@@ -34,7 +34,7 @@ int main(int, char**)
   { // noexcept test
     using V = cuda::std::variant<int>;
     const V v;
-    ASSERT_NOEXCEPT(cuda::std::holds_alternative<int>(v));
+    static_assert(noexcept(cuda::std::holds_alternative<int>(v)));
   }
 
   return 0;

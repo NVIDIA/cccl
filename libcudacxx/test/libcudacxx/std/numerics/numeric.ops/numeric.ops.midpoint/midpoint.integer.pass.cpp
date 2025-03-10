@@ -30,7 +30,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void signed_test()
   constexpr T four{4};
 
   ASSERT_SAME_TYPE(decltype(cuda::std::midpoint(T(), T())), T);
-  ASSERT_NOEXCEPT(cuda::std::midpoint(T(), T()));
+  static_assert(noexcept(cuda::std::midpoint(T(), T())));
   using limits = cuda::std::numeric_limits<T>;
 
   assert(cuda::std::midpoint(one, three) == two);
@@ -79,7 +79,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void unsigned_test()
   constexpr T four{4};
 
   ASSERT_SAME_TYPE(decltype(cuda::std::midpoint(T(), T())), T);
-  ASSERT_NOEXCEPT(cuda::std::midpoint(T(), T()));
+  static_assert(noexcept(cuda::std::midpoint(T(), T())));
   using limits     = cuda::std::numeric_limits<T>;
   const T half_way = (limits::max() - limits::min()) / 2;
 

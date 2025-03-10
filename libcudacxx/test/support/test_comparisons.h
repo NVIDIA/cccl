@@ -273,12 +273,12 @@ template <class T, class Param>
 template <class T, class U = T>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void AssertComparisonsAreNoexcept()
 {
-  ASSERT_NOEXCEPT(cuda::std::declval<const T&>() == cuda::std::declval<const U&>());
-  ASSERT_NOEXCEPT(cuda::std::declval<const T&>() != cuda::std::declval<const U&>());
-  ASSERT_NOEXCEPT(cuda::std::declval<const T&>() < cuda::std::declval<const U&>());
-  ASSERT_NOEXCEPT(cuda::std::declval<const T&>() <= cuda::std::declval<const U&>());
-  ASSERT_NOEXCEPT(cuda::std::declval<const T&>() > cuda::std::declval<const U&>());
-  ASSERT_NOEXCEPT(cuda::std::declval<const T&>() >= cuda::std::declval<const U&>());
+  static_assert(noexcept(cuda::std::declval<const T&>() == cuda::std::declval<const U&>()));
+  static_assert(noexcept(cuda::std::declval<const T&>() != cuda::std::declval<const U&>()));
+  static_assert(noexcept(cuda::std::declval<const T&>() < cuda::std::declval<const U&>()));
+  static_assert(noexcept(cuda::std::declval<const T&>() <= cuda::std::declval<const U&>()));
+  static_assert(noexcept(cuda::std::declval<const T&>() > cuda::std::declval<const U&>()));
+  static_assert(noexcept(cuda::std::declval<const T&>() >= cuda::std::declval<const U&>()));
 }
 
 template <class T, class U = T>
@@ -320,7 +320,7 @@ template <class T, class U = T>
 __host__ __device__ constexpr void AssertOrderAreNoexcept()
 {
   AssertComparisonsAreNoexcept<T, U>();
-  ASSERT_NOEXCEPT(cuda::std::declval<const T&>() <=> cuda::std::declval<const U&>());
+  static_assert(noexcept(cuda::std::declval<const T&>() <=> cuda::std::declval<const U&>()));
 }
 
 template <class Order, class T, class U = T>
@@ -406,8 +406,8 @@ template <class T, class Param>
 template <class T, class U = T>
 __host__ __device__ void AssertEqualityAreNoexcept()
 {
-  ASSERT_NOEXCEPT(cuda::std::declval<const T&>() == cuda::std::declval<const U&>());
-  ASSERT_NOEXCEPT(cuda::std::declval<const T&>() != cuda::std::declval<const U&>());
+  static_assert(noexcept(cuda::std::declval<const T&>() == cuda::std::declval<const U&>()));
+  static_assert(noexcept(cuda::std::declval<const T&>() != cuda::std::declval<const U&>()));
 }
 
 template <class T, class U = T>

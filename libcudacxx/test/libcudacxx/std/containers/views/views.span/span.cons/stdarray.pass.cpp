@@ -64,8 +64,8 @@ template <typename T, typename U>
 __host__ __device__ constexpr bool testConstructorArray()
 {
   cuda::std::array<U, 2> val = {U(), U()};
-  ASSERT_NOEXCEPT(cuda::std::span<T>{val});
-  ASSERT_NOEXCEPT(cuda::std::span<T, 2>{val});
+  static_assert(noexcept(cuda::std::span<T>{val}));
+  static_assert(noexcept(cuda::std::span<T, 2>{val}));
   cuda::std::span<T> s1{val};
   cuda::std::span<T, 2> s2{val};
   return s1.data() == &val[0] && s1.size() == 2 && s2.data() == &val[0] && s2.size() == 2;
@@ -75,8 +75,8 @@ template <typename T, typename U>
 __host__ __device__ constexpr bool testConstructorConstArray()
 {
   const cuda::std::array<U, 2> val = {U(), U()};
-  ASSERT_NOEXCEPT(cuda::std::span<const T>{val});
-  ASSERT_NOEXCEPT(cuda::std::span<const T, 2>{val});
+  static_assert(noexcept(cuda::std::span<const T>{val}));
+  static_assert(noexcept(cuda::std::span<const T, 2>{val}));
   cuda::std::span<const T> s1{val};
   cuda::std::span<const T, 2> s2{val};
   return s1.data() == &val[0] && s1.size() == 2 && s2.data() == &val[0] && s2.size() == 2;

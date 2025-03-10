@@ -110,7 +110,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 
 int main(int, char**)
 {
-  ASSERT_NOEXCEPT(cuda::std::cmp_equal(0, 0));
+  static_assert(noexcept(cuda::std::cmp_equal(0, 0)));
   test();
   static_assert(test(), "");
   return 0;

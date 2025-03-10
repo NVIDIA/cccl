@@ -20,7 +20,7 @@
 template <typename Span>
 __host__ __device__ constexpr bool testConstexprSpan(Span sp, size_t idx)
 {
-  ASSERT_NOEXCEPT(sp[idx]);
+  static_assert(noexcept(sp[idx]));
 
   typename Span::reference r1 = sp[idx];
   typename Span::reference r2 = *(sp.data() + idx);
@@ -30,7 +30,7 @@ __host__ __device__ constexpr bool testConstexprSpan(Span sp, size_t idx)
 template <typename Span>
 __host__ __device__ void testRuntimeSpan(Span sp, size_t idx)
 {
-  ASSERT_NOEXCEPT(sp[idx]);
+  static_assert(noexcept(sp[idx]));
 
   typename Span::reference r1 = sp[idx];
   typename Span::reference r2 = *(sp.data() + idx);

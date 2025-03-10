@@ -23,7 +23,7 @@ using cuda::std::span;
 template <typename T>
 __host__ __device__ constexpr bool doAssign(T lhs, T rhs)
 {
-  ASSERT_NOEXCEPT(cuda::std::declval<T&>() = rhs);
+  static_assert(noexcept(cuda::std::declval<T&>() = rhs));
   lhs = rhs;
   return lhs.data() == rhs.data() && lhs.size() == rhs.size();
 }

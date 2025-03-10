@@ -29,7 +29,7 @@ int main(int, char**)
   constexpr month January   = cuda::std::chrono::January;
   constexpr weekday Tuesday = cuda::std::chrono::Tuesday;
 
-  ASSERT_NOEXCEPT(cuda::std::declval<const year_month_weekday>().ok());
+  static_assert(noexcept(cuda::std::declval<const year_month_weekday>().ok()));
   ASSERT_SAME_TYPE(bool, decltype(cuda::std::declval<const year_month_weekday>().ok()));
 
   static_assert(!year_month_weekday{}.ok(), "");
