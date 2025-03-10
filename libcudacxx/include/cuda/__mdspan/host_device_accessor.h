@@ -26,6 +26,7 @@
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
@@ -107,7 +108,7 @@ private:
     if constexpr (_CUDA_VSTD::is_pointer_v<data_handle_type>)
     {
       ::cudaPointerAttributes __attrib{};
-      _CCCL_VERIFY(::cudaPointerGetAttributes(&__attrib, __p) == ::cudaSuccess, "cudaPointerGetAttributes failed");
+      _CCCL_ASSERT_CUDA_API(::cudaPointerGetAttributes, "cudaPointerGetAttributes failed", &__attrib, __p);
       return __attrib.hostPointer != nullptr || __attrib.type == ::cudaMemoryTypeUnregistered;
     }
     else
@@ -288,7 +289,7 @@ private:
     if constexpr (_CUDA_VSTD::is_pointer_v<data_handle_type>)
     {
       ::cudaPointerAttributes __attrib{};
-      _CCCL_VERIFY(::cudaPointerGetAttributes(&__attrib, __p) == ::cudaSuccess, "cudaPointerGetAttributes failed");
+      _CCCL_ASSERT_CUDA_API(::cudaPointerGetAttributes, "cudaPointerGetAttributes failed", &__attrib, __p);
       return __attrib.devicePointer != nullptr && __attrib.hostPointer == __attrib.devicePointer;
     }
     else
