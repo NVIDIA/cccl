@@ -26,10 +26,10 @@
 #include "test_macros.h"
 
 struct IncompleteType;
-TEST_ACCESSIBLE extern IncompleteType inc1;
-TEST_ACCESSIBLE extern IncompleteType inc2;
-TEST_ACCESSIBLE IncompleteType const& cinc1 = inc1;
-TEST_ACCESSIBLE IncompleteType const& cinc2 = inc2;
+_CCCL_DEVICE extern IncompleteType inc1;
+_CCCL_DEVICE extern IncompleteType inc2;
+_CCCL_DEVICE IncompleteType const& cinc1 = inc1;
+_CCCL_DEVICE IncompleteType const& cinc2 = inc2;
 
 int main(int, char**)
 {
@@ -52,5 +52,5 @@ int main(int, char**)
 
 struct IncompleteType
 {};
-TEST_ACCESSIBLE IncompleteType inc1;
-TEST_ACCESSIBLE IncompleteType inc2;
+_CCCL_DEVICE IncompleteType inc1;
+_CCCL_DEVICE IncompleteType inc2;
