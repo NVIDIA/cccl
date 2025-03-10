@@ -321,11 +321,11 @@ struct DispatchBatchMemcpy
   // Type large enough to index into all the user-provided iterators, i.e., input, output, and size
   using global_buffer_offset_t = ::cuda::std::int64_t;
   using offset_in_buffer_it_t =
-    detail::offset_input_iterator<InputBufferIt, thrust::constant_iterator<global_buffer_offset_t>>;
+    detail::offset_input_iterator<InputBufferIt, THRUST_NS_QUALIFIER::constant_iterator<global_buffer_offset_t>>;
   using offset_out_buffer_it_t =
-    detail::offset_input_iterator<OutputBufferIt, thrust::constant_iterator<global_buffer_offset_t>>;
+    detail::offset_input_iterator<OutputBufferIt, THRUST_NS_QUALIFIER::constant_iterator<global_buffer_offset_t>>;
   using offset_buffer_size_it_t =
-    detail::offset_input_iterator<BufferSizeIteratorT, thrust::constant_iterator<global_buffer_offset_t>>;
+    detail::offset_input_iterator<BufferSizeIteratorT, THRUST_NS_QUALIFIER::constant_iterator<global_buffer_offset_t>>;
 
   //------------------------------------------------------------------------------
   // Member Variables
