@@ -55,7 +55,7 @@ static_assert(common_reference_with<void, void>, "");
 static_assert(CheckCommonReferenceWith<int, int>(), "");
 static_assert(CheckCommonReferenceWith<int, long>(), "");
 static_assert(CheckCommonReferenceWith<int, unsigned char>(), "");
-#ifndef TEST_HAS_NO_INT128_T
+#if _CCCL_HAS_INT128()
 static_assert(CheckCommonReferenceWith<int, __int128_t>(), "");
 #endif
 static_assert(CheckCommonReferenceWith<int, double>(), "");

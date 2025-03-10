@@ -129,10 +129,10 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
   unsigned_test<cuda::std::uint32_t>();
   unsigned_test<cuda::std::uint64_t>();
 
-#ifndef TEST_HAS_NO_INT128_T
+#if _CCCL_HAS_INT128()
   unsigned_test<__uint128_t>();
   signed_test<__int128_t>();
-#endif // !TEST_HAS_NO_INT128_T
+#endif // _CCCL_HAS_INT128()
 
   //     int_test<char>();
   signed_test<cuda::std::ptrdiff_t>();
