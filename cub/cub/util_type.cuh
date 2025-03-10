@@ -265,7 +265,13 @@ struct FutureValue
   explicit _CCCL_HOST_DEVICE _CCCL_FORCEINLINE FutureValue(IterT iter)
       : m_iter(iter)
   {}
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T()
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator const T&() const
+  {
+    return *m_iter;
+  }
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T&()
   {
     return *m_iter;
   }
