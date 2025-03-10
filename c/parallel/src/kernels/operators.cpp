@@ -81,12 +81,29 @@ std::string make_kernel_user_comparison_operator(std::string_view input_t, cccl_
   return make_kernel_binary_operator_full_source(input_t, operation, "bool");
 }
 
-std::string make_kernel_user_unary_operator(std::string_view input_t, cccl_op_t operation)
+std::string make_kernel_user_unary_operator(std::string_view input_t, std::string_view output_t, cccl_op_t operation)
 {
+  constexpr std::string_view unary_op_template = R"XXX(
+#define INPUT_T {0}
+#define OUTPUT_T {1}
+#define OP_NAME {2}
+#define OP_ALIGNMENT {3}
+#define OP_SIZE {4}
+
+// Source
+{5}
+
+#undef INPUT_T
+#undef OUTPUT_T
+#undef OP_NAME
+#undef OP_ALIGNMENT
+#undef OP_SIZE
+)XXX";
+
   constexpr std::string_view stateless_op = R"XXX(
-extern "C" __device__ VALUE_T OP_NAME(VALUE_T val);
+extern "C" __device__ OUTPUT_T OP_NAME(INPUT_T val);
 struct op_wrapper {
-  __device__ VALUE_T operator()(VALUE_T val) const {
+  __device__ OUTPUT_T operator()(INPUT_T val) const {
     return OP_NAME(val);
   }
 };
@@ -96,16 +113,19 @@ struct op_wrapper {
 struct __align__(OP_ALIGNMENT) op_state {
   char data[OP_SIZE];
 };
-extern "C" __device__ VALUE_T OP_NAME(op_state *state, VALUE_T val);
+extern "C" __device__ OUPUT_T OP_NAME(op_state *state, INPUT_T val);
 struct op_wrapper {
   op_state state;
-  __device__ VALUE_T operator()(VALUE_T val) {
+  __device__ OUTPUT_T operator()(INPUT_T val) {
     return OP_NAME(&state, val);
   }
 };
+
+
 )XXX";
 
   return (operation.type == cccl_op_kind_t::CCCL_STATELESS)
-         ? std::format(op_template, input_t, operation.name, "", "", stateless_op)
-         : std::format(op_template, input_t, operation.name, operation.alignment, operation.size, stateful_op);
+         ? std::format(unary_op_template, input_t, output_t, operation.name, "", "", stateless_op)
+         : std::format(
+             unary_op_template, input_t, output_t, operation.name, operation.alignment, operation.size, stateful_op);
 }
