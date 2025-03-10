@@ -7,11 +7,10 @@ import ctypes
 from typing import Callable
 
 import numba
-from numba import cuda
 from numba.cuda.cudadrv import enums
 
 from .. import _cccl as cccl
-from .._bindings import get_bindings, get_paths
+from .._bindings import call_build, get_bindings
 from .._caching import CachableFunction, cache_with_key
 from .._utils import protocols
 from ..iterators._iterators import IteratorBase
@@ -85,10 +84,6 @@ class _UniqueByKey:
         self.d_out_items_cccl = cccl.to_cccl_iter(d_out_items)
         self.d_out_num_selected_cccl = cccl.to_cccl_iter(d_out_num_selected)
 
-        cc_major, cc_minor = cuda.get_current_device().compute_capability
-        cub_path, thrust_path, libcudacxx_path, cuda_include_path = get_paths()
-        bindings = get_bindings()
-
         if isinstance(d_in_keys, IteratorBase):
             value_type = d_in_keys.value_type
         else:
@@ -97,8 +92,10 @@ class _UniqueByKey:
         sig = (value_type, value_type)
         self.op_wrapper = cccl.to_cccl_op(op, sig)
 
+        self.bindings = get_bindings()
         self.build_result = cccl.DeviceUniqueByKeyBuildResult()
-        error = bindings.cccl_device_unique_by_key_build(
+        error = call_build(
+            self.bindings.cccl_device_unique_by_key_build,
             ctypes.byref(self.build_result),
             self.d_in_keys_cccl,
             self.d_in_items_cccl,
@@ -106,12 +103,6 @@ class _UniqueByKey:
             self.d_out_items_cccl,
             self.d_out_num_selected_cccl,
             self.op_wrapper,
-            cc_major,
-            cc_minor,
-            ctypes.c_char_p(cub_path),
-            ctypes.c_char_p(thrust_path),
-            ctypes.c_char_p(libcudacxx_path),
-            ctypes.c_char_p(cuda_include_path),
         )
         if error != enums.CUDA_SUCCESS:
             raise ValueError("Error building unique_by_key")
@@ -127,14 +118,14 @@ class _UniqueByKey:
         num_items: int,
         stream=None,
     ):
-        _update_device_array_pointers(self.d_in_keys_cccl, d_in_keys)
-        _update_device_array_pointers(self.d_in_items_cccl, d_in_items)
-        _update_device_array_pointers(self.d_out_keys_cccl, d_out_keys)
-        _update_device_array_pointers(self.d_out_items_cccl, d_out_items)
-        _update_device_array_pointers(self.d_out_num_selected_cccl, d_out_num_selected)
+        set_state_fn = cccl.set_cccl_iterator_state
+        set_state_fn(self.d_in_keys_cccl, d_in_keys)
+        set_state_fn(self.d_in_items_cccl, d_in_items)
+        set_state_fn(self.d_out_keys_cccl, d_out_keys)
+        set_state_fn(self.d_out_items_cccl, d_out_items)
+        set_state_fn(self.d_out_num_selected_cccl, d_out_num_selected)
 
         stream_handle = protocols.validate_and_get_stream(stream)
-        bindings = get_bindings()
         if temp_storage is None:
             temp_storage_bytes = ctypes.c_size_t()
             d_temp_storage = None
@@ -144,7 +135,7 @@ class _UniqueByKey:
             # TODO: switch to use gpumemoryview once it's ready
             d_temp_storage = temp_storage.__cuda_array_interface__["data"][0]
 
-        error = bindings.cccl_device_unique_by_key(
+        error = self.bindings.cccl_device_unique_by_key(
             self.build_result,
             ctypes.c_void_p(d_temp_storage),
             ctypes.byref(temp_storage_bytes),
@@ -166,8 +157,7 @@ class _UniqueByKey:
     def __del__(self):
         if self.build_result is None:
             return
-        bindings = get_bindings()
-        bindings.cccl_device_unique_by_key_cleanup(ctypes.byref(self.build_result))
+        self.bindings.cccl_device_unique_by_key_cleanup(ctypes.byref(self.build_result))
 
 
 @cache_with_key(make_cache_key)
