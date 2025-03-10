@@ -143,8 +143,8 @@ public:
   _CCCL_TEMPLATE(typename _OtherAccessor)
   _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, _OtherAccessor)
                    _CCCL_AND(_CUDA_VSTD::is_convertible_v<_OtherAccessor, _Accessor>))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __host_accessor(const __host_accessor<_OtherAccessor>& __acc) //
-    noexcept(noexcept(_Accessor{_CUDA_VSTD::declval<_OtherAccessor>()}))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __host_accessor(const __host_accessor<_OtherAccessor>& __acc) noexcept(
+    noexcept(_Accessor{_CUDA_VSTD::declval<_OtherAccessor>()}))
       : _Accessor{__acc}
   {}
 
@@ -334,8 +334,8 @@ public:
       : _Accessor{}
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __managed_accessor(const _Accessor& __acc) //
-    noexcept(_CUDA_VSTD::is_nothrow_copy_constructible_v<_Accessor>)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __managed_accessor(const _Accessor& __acc) noexcept(
+    _CUDA_VSTD::is_nothrow_copy_constructible_v<_Accessor>)
       : _Accessor{__acc}
   {}
 

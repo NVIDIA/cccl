@@ -8,7 +8,7 @@
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: nvrtc
 
-#include <cuda/__mdspan/host_device_mdspan.h>
+#include <cuda/mdspan>
 
 #include "test_macros.h"
 

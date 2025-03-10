@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/__mdspan/host_device_mdspan.h>
+#include <cuda/mdspan>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"
