@@ -55,7 +55,7 @@ void TestMinimumType()
 
   static_assert(mt_fails<C, C2>);
   static_assert(mt_fails<int, A>);
-  // static_assert(mt_fails<int, A, B, C>);
-  //  static_assert(mt_fails<A, B, C, int>);
+  static_assert(mt_fails<int, A, B, C>);
+  static_assert(mt_fails<A, B, C, int>);
 }
 DECLARE_UNITTEST(TestMinimumType);
