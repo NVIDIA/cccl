@@ -217,7 +217,7 @@ private:
   template <typename _Sp = bool> // lazy evaluation
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr void __prevent_host_instantiation() noexcept
   {
-    static_assert(__always_false<_Sp>, "cuda::__device_accessor cannot be used in HOST code");
+    static_assert(_CUDA_VSTD::__always_false<_Sp>, "cuda::__device_accessor cannot be used in HOST code");
   }
 
 public:
