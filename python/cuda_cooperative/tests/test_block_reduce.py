@@ -1,4 +1,4 @@
-# Copyright (c) 2024, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
@@ -83,7 +83,12 @@ def impl_complex(context, builder, sig, args):
 
 
 @pytest.mark.parametrize("threads_per_block", [32, 64, 128, 256, 512, 1024])
-def test_block_reduction_of_user_defined_type_without_temp_storage(threads_per_block):
+@pytest.mark.parametrize(
+    "algorithm", ["raking", "raking_commutative_only", "warp_reductions"]
+)
+def test_block_reduction_of_user_defined_type_without_temp_storage(
+    threads_per_block, algorithm
+):
     def op(result_ptr, lhs_ptr, rhs_ptr):
         real_value = numba.int32(lhs_ptr[0].real + rhs_ptr[0].real)
         imag_value = numba.int32(lhs_ptr[0].imag + rhs_ptr[0].imag)
@@ -93,6 +98,7 @@ def test_block_reduction_of_user_defined_type_without_temp_storage(threads_per_b
         dtype=complex_type,
         binary_op=op,
         threads_per_block=threads_per_block,
+        algorithm=algorithm,
         methods={
             "construct": Complex.construct,
             "assign": Complex.assign,
@@ -133,7 +139,10 @@ def test_block_reduction_of_user_defined_type_without_temp_storage(threads_per_b
 
 
 @pytest.mark.parametrize("threads_per_block", [32, 64, 128, 256, 512, 1024])
-def test_block_reduction_of_user_defined_type(threads_per_block):
+@pytest.mark.parametrize(
+    "algorithm", ["raking", "raking_commutative_only", "warp_reductions"]
+)
+def test_block_reduction_of_user_defined_type(threads_per_block, algorithm):
     def op(result_ptr, lhs_ptr, rhs_ptr):
         real_value = numba.int32(lhs_ptr[0].real + rhs_ptr[0].real)
         imag_value = numba.int32(lhs_ptr[0].imag + rhs_ptr[0].imag)
@@ -143,6 +152,7 @@ def test_block_reduction_of_user_defined_type(threads_per_block):
         dtype=complex_type,
         binary_op=op,
         threads_per_block=threads_per_block,
+        algorithm=algorithm,
         methods={
             "construct": Complex.construct,
             "assign": Complex.assign,
@@ -187,12 +197,15 @@ def test_block_reduction_of_user_defined_type(threads_per_block):
 
 @pytest.mark.parametrize("T", [types.uint32, types.uint64])
 @pytest.mark.parametrize("threads_per_block", [32, 64, 128, 256, 512, 1024])
-def test_block_reduction_of_integral_type(T, threads_per_block):
+@pytest.mark.parametrize(
+    "algorithm", ["raking", "raking_commutative_only", "warp_reductions"]
+)
+def test_block_reduction_of_integral_type(T, threads_per_block, algorithm):
     def op(a, b):
         return a if a < b else b
 
     block_reduce = cudax.block.reduce(
-        dtype=T, binary_op=op, threads_per_block=threads_per_block
+        dtype=T, binary_op=op, threads_per_block=threads_per_block, algorithm=algorithm
     )
     temp_storage_bytes = block_reduce.temp_storage_bytes
 
@@ -224,12 +237,15 @@ def test_block_reduction_of_integral_type(T, threads_per_block):
 
 @pytest.mark.parametrize("T", [types.uint32, types.uint64])
 @pytest.mark.parametrize("threads_per_block", [32, 64, 128, 256, 512, 1024])
-def test_block_reduction_valid(T, threads_per_block):
+@pytest.mark.parametrize(
+    "algorithm", ["raking", "raking_commutative_only", "warp_reductions"]
+)
+def test_block_reduction_valid(T, threads_per_block, algorithm):
     def op(a, b):
         return a if a < b else b
 
     block_reduce = cudax.block.reduce(
-        dtype=T, binary_op=op, threads_per_block=threads_per_block
+        dtype=T, binary_op=op, threads_per_block=threads_per_block, algorithm=algorithm
     )
     temp_storage_bytes = block_reduce.temp_storage_bytes
 
@@ -265,7 +281,10 @@ def test_block_reduction_valid(T, threads_per_block):
 @pytest.mark.parametrize("T", [types.uint32, types.uint64])
 @pytest.mark.parametrize("threads_per_block", [32, 128, 512, 1024])
 @pytest.mark.parametrize("items_per_thread", [1, 2, 4])
-def test_block_reduction_array_local(T, threads_per_block, items_per_thread):
+@pytest.mark.parametrize(
+    "algorithm", ["raking", "raking_commutative_only", "warp_reductions"]
+)
+def test_block_reduction_array_local(T, threads_per_block, items_per_thread, algorithm):
     def op(a, b):
         return a if a < b else b
 
@@ -274,6 +293,7 @@ def test_block_reduction_array_local(T, threads_per_block, items_per_thread):
         binary_op=op,
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,
+        algorithm=algorithm,
     )
     temp_storage_bytes = block_reduce.temp_storage_bytes
 
@@ -285,7 +305,10 @@ def test_block_reduction_array_local(T, threads_per_block, items_per_thread):
         for i in range(items_per_thread):
             thread_items[i] = input[i * threads_per_block + cuda.threadIdx.x]
 
-        block_output = block_reduce(temp_storage, thread_items)
+        if items_per_thread == 1:
+            block_output = block_reduce(temp_storage, thread_items[cuda.threadIdx.x])
+        else:
+            block_output = block_reduce(temp_storage, thread_items)
 
         if cuda.threadIdx.x == 0:
             output[0] = block_output
@@ -311,7 +334,12 @@ def test_block_reduction_array_local(T, threads_per_block, items_per_thread):
 @pytest.mark.parametrize("T", [types.uint32, types.uint64])
 @pytest.mark.parametrize("threads_per_block", [32, 128, 512, 1024])
 @pytest.mark.parametrize("items_per_thread", [1, 2, 4])
-def test_block_reduction_array_global(T, threads_per_block, items_per_thread):
+@pytest.mark.parametrize(
+    "algorithm", ["raking", "raking_commutative_only", "warp_reductions"]
+)
+def test_block_reduction_array_global(
+    T, threads_per_block, items_per_thread, algorithm
+):
     def op(a, b):
         return a if a < b else b
 
@@ -320,6 +348,7 @@ def test_block_reduction_array_global(T, threads_per_block, items_per_thread):
         binary_op=op,
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,
+        algorithm=algorithm,
     )
     temp_storage_bytes = block_reduce.temp_storage_bytes
 
@@ -327,13 +356,11 @@ def test_block_reduction_array_global(T, threads_per_block, items_per_thread):
     def kernel(input, output):
         temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
 
-        # If a scalar (e.g. input[x]) is passed here, the reference overload
-        # will be selected and only one element will be loaded, instead of the
-        # statically sized array overload. This is very subtle and should be
-        # fixed.
-        block_output = block_reduce(
-            temp_storage, input[items_per_thread * cuda.threadIdx.x :]
-        )
+        if items_per_thread == 1:
+            block_output = block_reduce(temp_storage, input[cuda.threadIdx.x])
+        else:
+            block_input = input[items_per_thread * cuda.threadIdx.x :]
+            block_output = block_reduce(temp_storage, block_input)
 
         if cuda.threadIdx.x == 0:
             output[0] = block_output
@@ -358,8 +385,13 @@ def test_block_reduction_array_global(T, threads_per_block, items_per_thread):
 
 @pytest.mark.parametrize("T", [types.uint32, types.uint64])
 @pytest.mark.parametrize("threads_per_block", [32, 64, 128, 256, 512, 1024])
-def test_block_sum(T, threads_per_block):
-    block_reduce = cudax.block.sum(dtype=T, threads_per_block=threads_per_block)
+@pytest.mark.parametrize(
+    "algorithm", ["raking", "raking_commutative_only", "warp_reductions"]
+)
+def test_block_sum(T, threads_per_block, algorithm):
+    block_reduce = cudax.block.sum(
+        dtype=T, threads_per_block=threads_per_block, algorithm=algorithm
+    )
     temp_storage_bytes = block_reduce.temp_storage_bytes
 
     @cuda.jit(link=block_reduce.files)
@@ -390,8 +422,13 @@ def test_block_sum(T, threads_per_block):
 
 @pytest.mark.parametrize("T", [types.uint32, types.uint64])
 @pytest.mark.parametrize("threads_per_block", [32, 64, 128, 256, 512, 1024])
-def test_block_sum_valid(T, threads_per_block):
-    block_reduce = cudax.block.sum(dtype=T, threads_per_block=threads_per_block)
+@pytest.mark.parametrize(
+    "algorithm", ["raking", "raking_commutative_only", "warp_reductions"]
+)
+def test_block_sum_valid(T, threads_per_block, algorithm):
+    block_reduce = cudax.block.sum(
+        dtype=T, threads_per_block=threads_per_block, algorithm=algorithm
+    )
     temp_storage_bytes = block_reduce.temp_storage_bytes
 
     @cuda.jit(link=block_reduce.files)
@@ -426,9 +463,15 @@ def test_block_sum_valid(T, threads_per_block):
 @pytest.mark.parametrize("T", [types.uint32, types.uint64])
 @pytest.mark.parametrize("threads_per_block", [32, 128, 512, 1024])
 @pytest.mark.parametrize("items_per_thread", [1, 2, 4])
-def test_block_sum_array_local(T, threads_per_block, items_per_thread):
+@pytest.mark.parametrize(
+    "algorithm", ["raking", "raking_commutative_only", "warp_reductions"]
+)
+def test_block_sum_array_local(T, threads_per_block, items_per_thread, algorithm):
     block_reduce = cudax.block.sum(
-        dtype=T, threads_per_block=threads_per_block, items_per_thread=items_per_thread
+        dtype=T,
+        threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        algorithm=algorithm,
     )
     temp_storage_bytes = block_reduce.temp_storage_bytes
 
@@ -440,7 +483,12 @@ def test_block_sum_array_local(T, threads_per_block, items_per_thread):
         for i in range(items_per_thread):
             thread_items[i] = input[i * threads_per_block + cuda.threadIdx.x]
 
-        block_output = block_reduce(temp_storage, thread_items)
+        if items_per_thread == 1:
+            block_input = thread_items[cuda.threadIdx.x]
+            block_output = block_reduce(temp_storage, block_input)
+        else:
+            block_input = input[items_per_thread * cuda.threadIdx.x :]
+            block_output = block_reduce(temp_storage, block_input)
 
         if cuda.threadIdx.x == 0:
             output[0] = block_output
@@ -466,9 +514,15 @@ def test_block_sum_array_local(T, threads_per_block, items_per_thread):
 @pytest.mark.parametrize("T", [types.uint32, types.uint64])
 @pytest.mark.parametrize("threads_per_block", [32, 128, 512, 1024])
 @pytest.mark.parametrize("items_per_thread", [1, 2, 4])
-def test_block_sum_array_global(T, threads_per_block, items_per_thread):
+@pytest.mark.parametrize(
+    "algorithm", ["raking", "raking_commutative_only", "warp_reductions"]
+)
+def test_block_sum_array_global(T, threads_per_block, items_per_thread, algorithm):
     block_reduce = cudax.block.sum(
-        dtype=T, threads_per_block=threads_per_block, items_per_thread=items_per_thread
+        dtype=T,
+        threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        algorithm=algorithm,
     )
     temp_storage_bytes = block_reduce.temp_storage_bytes
 
@@ -476,13 +530,11 @@ def test_block_sum_array_global(T, threads_per_block, items_per_thread):
     def kernel(input, output):
         temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
 
-        # If a scalar (e.g. input[x]) is passed here, the reference overload
-        # will be selected and only one element will be loaded, instead of the
-        # statically sized array overload. This is very subtle and should be
-        # fixed.
-        block_output = block_reduce(
-            temp_storage, input[items_per_thread * cuda.threadIdx.x :]
-        )
+        if items_per_thread == 1:
+            block_output = block_reduce(temp_storage, input[cuda.threadIdx.x])
+        else:
+            block_input = input[items_per_thread * cuda.threadIdx.x :]
+            block_output = block_reduce(temp_storage, block_input)
 
         if cuda.threadIdx.x == 0:
             output[0] = block_output
@@ -503,3 +555,51 @@ def test_block_sum_array_global(T, threads_per_block, items_per_thread):
 
     assert "LDL" not in sass
     assert "STL" not in sass
+
+
+@pytest.mark.parametrize("threads_per_block", [32, 64, 128, 256, 512, 1024])
+@pytest.mark.parametrize("items_per_thread", [0, -1, -127])
+def test_block_reduce_invalid_items_per_thread(threads_per_block, items_per_thread):
+    def op(a, b):
+        return a if a < b else b
+
+    with pytest.raises(ValueError):
+        cudax.block.reduce(
+            dtype=numba.int32,
+            binary_op=op,
+            threads_per_block=threads_per_block,
+            items_per_thread=items_per_thread,
+        )
+
+
+@pytest.mark.parametrize("threads_per_block", [32, 64, 128, 256, 512, 1024])
+@pytest.mark.parametrize("items_per_thread", [0, -1, -127])
+def test_block_sum_invalid_items_per_thread(threads_per_block, items_per_thread):
+    with pytest.raises(ValueError):
+        cudax.block.sum(
+            dtype=numba.int32,
+            threads_per_block=threads_per_block,
+            items_per_thread=items_per_thread,
+        )
+
+
+def test_block_reduce_invalid_algorithm():
+    def op(a, b):
+        return a if a < b else b
+
+    with pytest.raises(ValueError):
+        cudax.block.reduce(
+            dtype=numba.int32,
+            binary_op=op,
+            threads_per_block=128,
+            algorithm="invalid_algorithm",
+        )
+
+
+def test_block_sum_invalid_algorithm():
+    with pytest.raises(ValueError):
+        cudax.block.sum(
+            dtype=numba.int32,
+            threads_per_block=128,
+            algorithm="invalid_algorithm",
+        )
