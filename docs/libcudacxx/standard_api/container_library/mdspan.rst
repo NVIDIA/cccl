@@ -20,4 +20,3 @@ Restrictions
 ------------
 
 -  On device no exceptions are thrown in case of a bad access.
--  MSVC is only supported with C++20

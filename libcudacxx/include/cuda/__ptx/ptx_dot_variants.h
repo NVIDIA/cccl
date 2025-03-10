@@ -195,7 +195,7 @@ static constexpr op_exch_t op_exch{};
 template <dot_cta_group __cta_group>
 using cta_group_t   = _CUDA_VSTD::integral_constant<dot_cta_group, __cta_group>;
 using cta_group_1_t = cta_group_t<dot_cta_group::cta_group_1>;
-using cta_group_2_t = cta_group_t<dot_cta_group::cta_group_1>;
+using cta_group_2_t = cta_group_t<dot_cta_group::cta_group_2>;
 
 static constexpr cta_group_1_t cta_group_1{};
 static constexpr cta_group_2_t cta_group_2{};

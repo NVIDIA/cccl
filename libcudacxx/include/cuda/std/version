@@ -85,9 +85,7 @@
 #define __cccl_lib_is_invocable          201703L
 #define __cccl_lib_make_reverse_iterator 201402L
 // # define __cccl_lib_make_unique                          201304L
-#if !_CCCL_COMPILER(MSVC) || _CCCL_STD_VER >= 2020
-#  define __cccl_lib_mdspan 202207L
-#endif // _CCCL_COMPILER(MSVC) && _CCCL_STD_VER >= 2020
+#define __cccl_lib_mdspan         202207L
 #define __cccl_lib_null_iterators 201304L
 #define __cccl_lib_optional       202110L
 #ifdef CCCL_ENABLE_OPTIONAL_REF
