@@ -315,7 +315,7 @@ __host__ __device__ void AssertComparisonsConvertibleToBool()
     "");
 }
 
-#if TEST_STD_VER > 2017 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
+#if TEST_STD_VER > 2017 && _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 template <class T, class U = T>
 __host__ __device__ constexpr void AssertOrderAreNoexcept()
 {
@@ -346,7 +346,7 @@ template <class T, class Param>
   return testOrder(T(val1), T(val2), val1 <=> val2);
 }
 
-#endif // TEST_STD_VER > 2017 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
+#endif // TEST_STD_VER > 2017 && _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 //  Test all two comparison operations for sanity
 template <class T, class U = T>
@@ -447,7 +447,7 @@ struct LessAndEqComp
   }
 };
 
-#if TEST_STD_VER > 2017 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
+#if TEST_STD_VER > 2017 && _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 struct StrongOrder
 {
   int value;
@@ -486,6 +486,6 @@ struct PartialOrder
   }
 };
 
-#endif // TEST_STD_VER > 2017 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
+#endif // TEST_STD_VER > 2017 && _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 #endif // TEST_COMPARISONS_H

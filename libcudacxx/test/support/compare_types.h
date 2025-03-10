@@ -14,9 +14,9 @@
 
 #include "test_macros.h"
 
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <compare>
-#endif // TEST_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 // `noexcept` specifiers deliberately imperfect since not all programmers bother to put the
 // specifiers on their overloads.
@@ -35,7 +35,7 @@ struct cxx20_friend_eq
   __host__ __device__ friend bool operator==(cxx20_friend_eq const&, cxx20_friend_eq const&) = default;
 };
 
-#  ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#  if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 struct member_three_way_comparable
 {
   auto operator<=>(member_three_way_comparable const&) const = default;
@@ -48,7 +48,7 @@ struct friend_three_way_comparable
   operator<=>(friend_three_way_comparable const&, friend_three_way_comparable const&) = default;
 };
 #    endif // !__NVCC__
-#  endif // TEST_HAS_NO_SPACESHIP_OPERATOR
+#  endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #endif // TEST_STD_VER > 2017
 
 struct explicit_operators
@@ -249,7 +249,7 @@ struct cxx20_friend_eq_operator_with_deleted_ne
   operator!=(cxx20_friend_eq_operator_with_deleted_ne const&, cxx20_friend_eq_operator_with_deleted_ne const&) = delete;
 };
 
-#  ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#  if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 struct member_three_way_comparable_with_deleted_eq
 {
   auto operator<=>(member_three_way_comparable_with_deleted_eq const&) const                    = default;
@@ -279,7 +279,7 @@ struct friend_three_way_comparable_with_deleted_ne
                                              friend_three_way_comparable_with_deleted_ne const&)  = delete;
 };
 #    endif // !__NVCC__
-#  endif // TEST_HAS_NO_SPACESHIP_OPERATOR
+#  endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 struct one_way_eq
 {
@@ -305,7 +305,7 @@ struct explicit_bool
   __host__ __device__ explicit operator bool() const noexcept;
 };
 
-#  ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#  if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 struct totally_ordered_with_others
 {
   auto operator<=>(totally_ordered_with_others const&) const = default;
@@ -573,7 +573,7 @@ struct returns_int_ptr
   __host__ __device__ friend int* operator>=(returns_int_ptr, totally_ordered_with_others);
   __host__ __device__ friend int* operator>=(totally_ordered_with_others, returns_int_ptr);
 };
-#  endif // TEST_HAS_NO_SPACESHIP_OPERATOR
+#  endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #endif // TEST_STD_VER > 2017
 
 struct ForwardingTestObject

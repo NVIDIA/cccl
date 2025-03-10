@@ -81,7 +81,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
   test_one<const int*>();
 
   test_one<contiguous_iterator<int*>>();
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   test_one<three_way_contiguous_iterator<int*>>();
 #endif
 

@@ -88,7 +88,7 @@ __host__ __device__ constexpr bool test()
   test_one<bidirectional_iterator<char*>>();
   test_one<random_access_iterator<char*>>();
   test_one<contiguous_iterator<char*>>();
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   test_one<three_way_contiguous_iterator<char*>>();
 #endif
   test_one<char*>();

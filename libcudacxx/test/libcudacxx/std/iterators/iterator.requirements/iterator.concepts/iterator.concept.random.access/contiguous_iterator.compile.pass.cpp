@@ -41,7 +41,7 @@ struct simple_contiguous_iterator
 
   __host__ __device__ reference operator*() const;
   __host__ __device__ pointer operator->() const;
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   auto operator<=>(const self&) const = default;
 #else
   __host__ __device__ friend bool operator==(const self&, const self&)
@@ -106,7 +106,7 @@ struct mismatch_value_iter_ref_t
 
   __host__ __device__ reference operator*() const;
   __host__ __device__ pointer operator->() const;
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   auto operator<=>(const self&) const = default;
 #else
   __host__ __device__ friend bool operator==(const self&, const self&)
@@ -169,7 +169,7 @@ struct wrong_iter_reference_t
 
   __host__ __device__ reference operator*() const;
   __host__ __device__ pointer operator->() const;
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   auto operator<=>(const self&) const = default;
 #else
   __host__ __device__ friend bool operator==(const self&, const self&)
@@ -232,7 +232,7 @@ struct to_address_wrong_return_type
 
   __host__ __device__ reference operator*() const;
   __host__ __device__ pointer operator->() const;
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   auto operator<=>(const self&) const = default;
 #else
   __host__ __device__ friend bool operator==(const self&, const self&)
@@ -308,7 +308,7 @@ struct template_and_no_element_type
 
   __host__ __device__ reference operator*() const;
   __host__ __device__ pointer operator->() const;
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   auto operator<=>(const self&) const = default;
 #else
   __host__ __device__ friend bool operator==(const self&, const self&)
@@ -375,7 +375,7 @@ struct no_operator_arrow
   __host__ __device__ no_operator_arrow();
 
   __host__ __device__ reference operator*() const;
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   __host__ __device__ pointer operator->() const
     requires(!DisableArrow);
   auto operator<=>(const self&) const = default;
