@@ -22,10 +22,10 @@
 #endif // no system header
 
 #include <cuda/std/__bit/bit_cast.h>
-#include <cuda/std/__cmath/fp_utils.h>
 #include <cuda/std/__cmath/isinf.h>
 #include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__internal/fp.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/limits>
 
@@ -89,14 +89,14 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int fpclassify(float __x) no
   {
     NV_IF_TARGET(NV_IS_HOST, (return ::fpclassify(__x);))
   }
-  const auto __storage = _CUDA_VSTD::__cccl_fp_get_storage(__x);
-  if ((__storage & __cccl_fp32_exp_mask) == 0)
+  const auto __storage = _CUDA_VSTD::__fp_get_storage(__x);
+  if ((__storage & __fp_exp_mask_v<float>) == 0)
   {
-    return (__storage & __cccl_fp32_mant_mask) ? FP_SUBNORMAL : FP_ZERO;
+    return (__storage & __fp_mant_mask_v<float>) ? FP_SUBNORMAL : FP_ZERO;
   }
-  if ((__storage & __cccl_fp32_exp_mask) == __cccl_fp32_exp_mask)
+  if ((__storage & __fp_exp_mask_v<float>) == __fp_exp_mask_v<float>)
   {
-    return (__storage & __cccl_fp32_mant_mask) ? FP_NAN : FP_INFINITE;
+    return (__storage & __fp_mant_mask_v<float>) ? FP_NAN : FP_INFINITE;
   }
   return FP_NORMAL;
 #else // ^^^ _CCCL_BUILTIN_FPCLASSIFY ^^^ / vvv !_CCCL_BUILTIN_FPCLASSIFY vvv
@@ -113,14 +113,14 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int fpclassify(double __x) n
   {
     NV_IF_TARGET(NV_IS_HOST, (return ::fpclassify(__x);))
   }
-  const auto __storage = _CUDA_VSTD::__cccl_fp_get_storage(__x);
-  if ((__storage & __cccl_fp64_exp_mask) == 0)
+  const auto __storage = _CUDA_VSTD::__fp_get_storage(__x);
+  if ((__storage & __fp_exp_mask_v<double>) == 0)
   {
-    return (__storage & __cccl_fp64_mant_mask) ? FP_SUBNORMAL : FP_ZERO;
+    return (__storage & __fp_mant_mask_v<double>) ? FP_SUBNORMAL : FP_ZERO;
   }
-  if ((__storage & __cccl_fp64_exp_mask) == __cccl_fp64_exp_mask)
+  if ((__storage & __fp_exp_mask_v<double>) == __fp_exp_mask_v<double>)
   {
-    return (__storage & __cccl_fp64_mant_mask) ? FP_NAN : FP_INFINITE;
+    return (__storage & __fp_mant_mask_v<double>) ? FP_NAN : FP_INFINITE;
   }
   return FP_NORMAL;
 #else // ^^^ _CCCL_BUILTIN_FPCLASSIFY ^^^ / vvv !_CCCL_BUILTIN_FPCLASSIFY vvv
@@ -142,14 +142,14 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int fpclassify(long double _
 #if _LIBCUDACXX_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int fpclassify(__half __x) noexcept
 {
-  const auto __storage = _CUDA_VSTD::__cccl_fp_get_storage(__x);
-  if ((__storage & __cccl_nvfp16_exp_mask) == 0)
+  const auto __storage = _CUDA_VSTD::__fp_get_storage(__x);
+  if ((__storage & __fp_exp_mask_v<__half>) == 0)
   {
-    return (__storage & __cccl_nvfp16_mant_mask) ? FP_SUBNORMAL : FP_ZERO;
+    return (__storage & __fp_mant_mask_v<__half>) ? FP_SUBNORMAL : FP_ZERO;
   }
-  if ((__storage & __cccl_nvfp16_exp_mask) == __cccl_nvfp16_exp_mask)
+  if ((__storage & __fp_exp_mask_v<__half>) == __fp_exp_mask_v<__half>)
   {
-    return (__storage & __cccl_nvfp16_mant_mask) ? FP_NAN : FP_INFINITE;
+    return (__storage & __fp_mant_mask_v<__half>) ? FP_NAN : FP_INFINITE;
   }
   return FP_NORMAL;
 }
@@ -158,14 +158,14 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int fpclassify(__half __x) n
 #if _LIBCUDACXX_HAS_NVBF16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int fpclassify(__nv_bfloat16 __x) noexcept
 {
-  const auto __storage = _CUDA_VSTD::__cccl_fp_get_storage(__x);
-  if ((__storage & __cccl_nvbf16_exp_mask) == 0)
+  const auto __storage = _CUDA_VSTD::__fp_get_storage(__x);
+  if ((__storage & __fp_exp_mask_v<__nv_bfloat16>) == 0)
   {
-    return (__storage & __cccl_nvbf16_mant_mask) ? FP_SUBNORMAL : FP_ZERO;
+    return (__storage & __fp_mant_mask_v<__nv_bfloat16>) ? FP_SUBNORMAL : FP_ZERO;
   }
-  if ((__storage & __cccl_nvbf16_exp_mask) == __cccl_nvbf16_exp_mask)
+  if ((__storage & __fp_exp_mask_v<__nv_bfloat16>) == __fp_exp_mask_v<__nv_bfloat16>)
   {
-    return (__storage & __cccl_nvbf16_mant_mask) ? FP_NAN : FP_INFINITE;
+    return (__storage & __fp_mant_mask_v<__nv_bfloat16>) ? FP_NAN : FP_INFINITE;
   }
   return FP_NORMAL;
 }
@@ -174,24 +174,24 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int fpclassify(__nv_bfloat16
 #if _CCCL_HAS_NVFP8_E4M3()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int fpclassify(__nv_fp8_e4m3 __x) noexcept
 {
-  if ((__x.__x & __cccl_nvfp8_e4m3_exp_mask) == 0)
+  if ((__x.__x & __fp_exp_mask_v<__nv_fp8_e4m3>) == 0)
   {
-    return (__x.__x & __cccl_nvfp8_e4m3_mant_mask) ? FP_SUBNORMAL : FP_ZERO;
+    return (__x.__x & __fp_mant_mask_v<__nv_fp8_e4m3>) ? FP_SUBNORMAL : FP_ZERO;
   }
-  return ((__x.__x & __cccl_nvfp8_e4m3_exp_mant_mask) == __cccl_nvfp8_e4m3_exp_mant_mask) ? FP_NAN : FP_NORMAL;
+  return ((__x.__x & __fp_exp_mant_mask_v<__nv_fp8_e4m3>) == __fp_exp_mant_mask_v<__nv_fp8_e4m3>) ? FP_NAN : FP_NORMAL;
 }
 #endif // _CCCL_HAS_NVFP8_E4M3()
 
 #if _CCCL_HAS_NVFP8_E5M2()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int fpclassify(__nv_fp8_e5m2 __x) noexcept
 {
-  if ((__x.__x & __cccl_nvfp8_e5m2_exp_mask) == 0)
+  if ((__x.__x & __fp_exp_mask_v<__nv_fp8_e5m2>) == 0)
   {
-    return (__x.__x & __cccl_nvfp8_e5m2_mant_mask) ? FP_SUBNORMAL : FP_ZERO;
+    return (__x.__x & __fp_mant_mask_v<__nv_fp8_e5m2>) ? FP_SUBNORMAL : FP_ZERO;
   }
-  if ((__x.__x & __cccl_nvfp8_e5m2_exp_mask) == __cccl_nvfp8_e5m2_exp_mask)
+  if ((__x.__x & __fp_exp_mask_v<__nv_fp8_e5m2>) == __fp_exp_mask_v<__nv_fp8_e5m2>)
   {
-    return (__x.__x & __cccl_nvfp8_e5m2_mant_mask) ? FP_NAN : FP_INFINITE;
+    return (__x.__x & __fp_mant_mask_v<__nv_fp8_e5m2>) ? FP_NAN : FP_INFINITE;
   }
   return FP_NORMAL;
 }
@@ -200,16 +200,16 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int fpclassify(__nv_fp8_e5m2
 #if _CCCL_HAS_NVFP8_E8M0()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int fpclassify(__nv_fp8_e8m0 __x) noexcept
 {
-  return ((__x.__x & __cccl_nvfp8_e8m0_exp_mask) == __cccl_nvfp8_e8m0_exp_mask) ? FP_NAN : FP_NORMAL;
+  return ((__x.__x & __fp_exp_mask_v<__nv_fp8_e8m0>) == __fp_exp_mask_v<__nv_fp8_e8m0>) ? FP_NAN : FP_NORMAL;
 }
 #endif // _CCCL_HAS_NVFP8_E8M0()
 
 #if _CCCL_HAS_NVFP6_E2M3()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int fpclassify(__nv_fp6_e2m3 __x) noexcept
 {
-  if ((__x.__x & __cccl_nvfp6_e2m3_exp_mask) == 0)
+  if ((__x.__x & __fp_exp_mask_v<__nv_fp6_e2m3>) == 0)
   {
-    return (__x.__x & __cccl_nvfp6_e2m3_mant_mask) ? FP_SUBNORMAL : FP_ZERO;
+    return (__x.__x & __fp_mant_mask_v<__nv_fp6_e2m3>) ? FP_SUBNORMAL : FP_ZERO;
   }
   return FP_NORMAL;
 }
@@ -218,9 +218,9 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int fpclassify(__nv_fp6_e2m3
 #if _CCCL_HAS_NVFP6_E3M2()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int fpclassify(__nv_fp6_e3m2 __x) noexcept
 {
-  if ((__x.__x & __cccl_nvfp6_e3m2_exp_mask) == 0)
+  if ((__x.__x & __fp_exp_mask_v<__nv_fp6_e3m2>) == 0)
   {
-    return (__x.__x & __cccl_nvfp6_e3m2_mant_mask) ? FP_SUBNORMAL : FP_ZERO;
+    return (__x.__x & __fp_mant_mask_v<__nv_fp6_e3m2>) ? FP_SUBNORMAL : FP_ZERO;
   }
   return FP_NORMAL;
 }
@@ -229,9 +229,9 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int fpclassify(__nv_fp6_e3m2
 #if _CCCL_HAS_NVFP4_E2M1()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int fpclassify(__nv_fp4_e2m1 __x) noexcept
 {
-  if ((__x.__x & __cccl_nvfp4_e2m1_exp_mask) == 0)
+  if ((__x.__x & __fp_exp_mask_v<__nv_fp4_e2m1>) == 0)
   {
-    return (__x.__x & __cccl_nvfp4_e2m1_mant_mask) ? FP_SUBNORMAL : FP_ZERO;
+    return (__x.__x & __fp_mant_mask_v<__nv_fp4_e2m1>) ? FP_SUBNORMAL : FP_ZERO;
   }
   return FP_NORMAL;
 }

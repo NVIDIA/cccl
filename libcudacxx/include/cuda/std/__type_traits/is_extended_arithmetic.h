@@ -1,4 +1,3 @@
-// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -8,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CMATH_NVFP16_H
-#define _LIBCUDACXX___CMATH_NVFP16_H
+#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_EXTENDED_ARITHMETIC_H
+#define _LIBCUDACXX___TYPE_TRAITS_IS_EXTENDED_ARITHMETIC_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,34 +20,15 @@
 #  pragma system_header
 #endif // no system header
 
-#if _LIBCUDACXX_HAS_NVFP16()
-
-#  include <cuda/std/__cmath/copysign.h>
-#  include <cuda/std/__internal/nvfp_types.h>
-#  include <cuda/std/cstdint>
-
-#  include <nv/target>
+#include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/is_extended_floating_point.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-// floating point helper
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __half __constexpr_copysign(__half __x, __half __y) noexcept
-{
-  return _CUDA_VSTD::copysign(__x, __y);
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI __half __constexpr_fabs(__half __x) noexcept
-{
-  return ::__habs(__x);
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI __half __constexpr_fmax(__half __x, __half __y) noexcept
-{
-  return ::__hmax(__x, __y);
-}
+template <class _Tp>
+_CCCL_INLINE_VAR constexpr bool __is_extended_arithmetic_v =
+  _CCCL_TRAIT(is_arithmetic, _Tp) || _CCCL_TRAIT(__is_extended_floating_point, _Tp);
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _LIBCUDACXX_HAS_NVFP16()
-
-#endif // _LIBCUDACXX___CMATH_NVFP16_H
+#endif // _LIBCUDACXX___TYPE_TRAITS_IS_EXTENDED_ARITHMETIC_H
