@@ -280,6 +280,9 @@ private:
   IterT m_iter;
 };
 
+template <typename IterT>
+FutureValue(IterT) -> FutureValue<detail::it_value_t<IterT>, IterT>;
+
 namespace detail
 {
 
