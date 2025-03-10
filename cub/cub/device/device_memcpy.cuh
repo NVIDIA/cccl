@@ -171,7 +171,7 @@ struct DeviceMemcpy
     InputBufferIt input_buffer_it,
     OutputBufferIt output_buffer_it,
     BufferSizeIteratorT buffer_sizes,
-    uint32_t num_buffers,
+    ::cuda::std::int64_t num_buffers,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMemcpy::Batched");
@@ -183,7 +183,7 @@ struct DeviceMemcpy
                   "Please consider using DeviceCopy::Batched instead.");
 
     // Integer type large enough to hold any offset in [0, num_buffers)
-    using BufferOffsetT = uint32_t;
+    using BufferOffsetT = ::cuda::std::int64_t;
 
     // Integer type large enough to hold any offset in [0, num_thread_blocks_launched), where a safe
     // upper bound on num_thread_blocks_launched can be assumed to be given by
