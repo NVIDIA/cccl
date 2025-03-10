@@ -120,8 +120,8 @@ def test_segmented_reduce_for_columnwise_max():
         return max(a, b)
 
     n_rows, n_cols = 123456, 78
-    rng = np.random.default_rng()
-    mat = rng.integers(low=-31, high=32, dtype=np.int32, size=(n_rows, n_cols))
+    rng = cp.random.default_rng()
+    mat = rng.integers(low=-31, high=32, dtype=np.int16, size=(n_rows, n_cols))
 
     def make_scaler(step):
         def scale(col_id):
@@ -139,7 +139,7 @@ def test_segmented_reduce_for_columnwise_max():
 
     d_input = cp.asarray(mat)
     # identity of max operator is the smallest value held by a type
-    h_init = np.full(tuple(), fill_value=np.iinfo(np.int32).min, dtype=np.int32)
+    h_init = np.asarray(np.iinfo(np.int16).min, dtype=np.int16)
     d_output = cp.empty(n_cols, dtype=d_input.dtype)
 
     # iterator input array permutted so that columns are traversed first
@@ -158,7 +158,7 @@ def test_segmented_reduce_for_columnwise_max():
     alg(temp_storage, input_it, d_output, n_cols, start_offsets, end_offsets, h_init)
 
     # Verify correctness
-    expected = cp.asarray(np.max(mat, axis=0))
+    expected = cp.max(mat, axis=0)
     assert cp.all(d_output == expected)
     # example-end segmented-reduce-columnwise-maximum
 
@@ -178,7 +178,7 @@ def test_segmented_reduce_for_multiaxis_sum():
         return a + b
 
     n0, n1, n2, n3 = 123, 18, 231, 17
-    rng = np.random.default_rng()
+    rng = cp.random.default_rng()
     arr = rng.integers(low=-31, high=32, dtype=np.int32, size=(n0, n1, n2, n3))
 
     def make_scaler(step):
@@ -201,9 +201,9 @@ def test_segmented_reduce_for_multiaxis_sum():
 
     end_offsets = start_offsets + 1
 
-    d_input = cp.asarray(arr)
-    # identity of max operator is the smallest value held by a type
-    h_init = np.full(tuple(), fill_value=0, dtype=np.int32)
+    d_input = arr
+    # identity of plus operator is 0
+    h_init = np.zeros(tuple(), dtype=np.int32)
     d_output = cp.empty(iter_nelems, dtype=d_input.dtype)
 
     # iterator input array permutted so that columns are traversed first
@@ -231,7 +231,7 @@ def test_segmented_reduce_for_multiaxis_sum():
 
     # Verify correctness
     actual = cp.reshape(d_output, tuple(arr.shape[i] for i in iterate_axis))
-    expected = cp.asarray(np.sum(arr, axis=reduce_axis))
+    expected = cp.sum(arr, axis=reduce_axis)
 
     assert cp.all(actual == expected)
     # example-end segmented-reduce-multiaxis-sum
