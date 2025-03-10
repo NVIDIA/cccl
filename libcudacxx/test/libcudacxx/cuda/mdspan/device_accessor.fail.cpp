@@ -17,8 +17,6 @@ int main(int, char**)
   int array[] = {1, 2, 3, 4};
   using ext_t = cuda::std::extents<int, 4>;
   cuda::device_mdspan<int, ext_t> d_md{array, ext_t{}};
-#if !defined(__CUDA_ARCH__)
   unused(d_md[0]);
-#endif
   return 0;
 }
