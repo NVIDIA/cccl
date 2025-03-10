@@ -63,7 +63,7 @@ template <typename T>
 __host__ __device__ void runtime_test()
 {
   ASSERT_SAME_TYPE(int, decltype(cuda::std::countr_zero(T(0))));
-  ASSERT_NOEXCEPT(cuda::std::countr_zero(T(0)));
+  static_assert(noexcept(cuda::std::countr_zero(T(0))));
 
   assert_countr_zero(T(121), 0);
   assert_countr_zero(T(122), 1);

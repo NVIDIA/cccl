@@ -25,7 +25,7 @@ __host__ __device__ constexpr long long check_duration(Duration d)
 {
   using HMS = cuda::std::chrono::hh_mm_ss<Duration>;
   ASSERT_SAME_TYPE(typename HMS::precision, decltype(cuda::std::declval<HMS>().to_duration()));
-  ASSERT_NOEXCEPT(cuda::std::declval<HMS>().to_duration());
+  static_assert(noexcept(cuda::std::declval<HMS>().to_duration()));
 
   return HMS(d).to_duration().count();
 }

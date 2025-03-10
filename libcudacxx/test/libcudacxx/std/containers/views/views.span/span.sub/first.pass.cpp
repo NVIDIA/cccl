@@ -24,8 +24,8 @@
 template <typename Span, size_t Count>
 __host__ __device__ constexpr bool testConstexprSpan(Span sp)
 {
-  ASSERT_NOEXCEPT(sp.template first<Count>());
-  ASSERT_NOEXCEPT(sp.first(Count));
+  static_assert(noexcept(sp.template first<Count>()));
+  static_assert(noexcept(sp.first(Count)));
   auto s1  = sp.template first<Count>();
   auto s2  = sp.first(Count);
   using S1 = decltype(s1);
@@ -40,8 +40,8 @@ __host__ __device__ constexpr bool testConstexprSpan(Span sp)
 template <typename Span, size_t Count>
 __host__ __device__ void testRuntimeSpan(Span sp)
 {
-  ASSERT_NOEXCEPT(sp.template first<Count>());
-  ASSERT_NOEXCEPT(sp.first(Count));
+  static_assert(noexcept(sp.template first<Count>()));
+  static_assert(noexcept(sp.first(Count)));
   auto s1  = sp.template first<Count>();
   auto s2  = sp.first(Count);
   using S1 = decltype(s1);

@@ -233,7 +233,7 @@ __host__ __device__ void test_noexcept()
     Tup t;
     LIBCPP_ASSERT_NOEXCEPT(cuda::std::apply(nec, t));
 #ifndef TEST_COMPILER_NVHPC
-    ASSERT_NOT_NOEXCEPT(cuda::std::apply(tc, t));
+    static_assert(!noexcept(cuda::std::apply(tc, t)));
 #endif // TEST_COMPILER_NVHPC
     unused(t);
     unused(tc);
@@ -243,7 +243,7 @@ __host__ __device__ void test_noexcept()
     using Tup = cuda::std::tuple<NothrowMoveable, int>;
     Tup t;
 #ifndef TEST_COMPILER_NVHPC
-    ASSERT_NOT_NOEXCEPT(cuda::std::apply(nec, t));
+    static_assert(!noexcept(cuda::std::apply(nec, t)));
 #endif // TEST_COMPILER_NVHPC
     LIBCPP_ASSERT_NOEXCEPT(cuda::std::apply(nec, cuda::std::move(t)));
     unused(t);

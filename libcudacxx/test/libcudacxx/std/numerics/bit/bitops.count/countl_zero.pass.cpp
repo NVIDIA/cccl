@@ -63,7 +63,7 @@ template <typename T>
 __host__ __device__ void runtime_test()
 {
   ASSERT_SAME_TYPE(int, decltype(cuda::std::countl_zero(T(0))));
-  ASSERT_NOEXCEPT(cuda::std::countl_zero(T(0)));
+  static_assert(noexcept(cuda::std::countl_zero(T(0))));
   const int dig = cuda::std::numeric_limits<T>::digits;
 
   assert_countl_zero(T(121), dig - 7);

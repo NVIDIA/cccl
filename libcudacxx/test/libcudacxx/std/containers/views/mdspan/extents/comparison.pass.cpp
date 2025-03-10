@@ -27,7 +27,7 @@
 template <class To, class From>
 __host__ __device__ constexpr void test_comparison(bool equal, To dest, From src)
 {
-  ASSERT_NOEXCEPT(dest == src);
+  static_assert(noexcept(dest == src));
   assert((dest == src) == equal);
   assert((dest != src) == !equal);
 }

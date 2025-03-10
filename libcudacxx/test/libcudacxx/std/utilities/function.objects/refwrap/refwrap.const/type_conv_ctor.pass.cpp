@@ -65,9 +65,9 @@ int main(int, char**)
   }
   {
     using Ref = cuda::std::reference_wrapper<int>;
-    ASSERT_NOEXCEPT(Ref(nothrow_convertible<true>()));
+    static_assert(noexcept(Ref(nothrow_convertible<true>())));
 #ifndef TEST_COMPILER_NVHPC
-    ASSERT_NOT_NOEXCEPT(Ref(nothrow_convertible<false>()));
+    static_assert(!noexcept(Ref(nothrow_convertible<false>())));
 #endif // !TEST_COMPILER_NVHPC
   }
   {

@@ -52,7 +52,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_num(T in, T expected)
 
   assert(static_cast<U>(cuda::std::byteswap(in)) == static_cast<U>(expected));
   ASSERT_SAME_TYPE(decltype(cuda::std::byteswap(in)), decltype(in));
-  ASSERT_NOEXCEPT(cuda::std::byteswap(in));
+  static_assert(noexcept(cuda::std::byteswap(in)));
 }
 
 template <class T>

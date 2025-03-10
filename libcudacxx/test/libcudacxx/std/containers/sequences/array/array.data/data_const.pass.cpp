@@ -29,7 +29,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
     typedef double T;
     typedef cuda::std::array<T, 3> C;
     const C c = {1, 2, 3.5};
-    ASSERT_NOEXCEPT(c.data());
+    static_assert(noexcept(c.data()));
     const T* p = c.data();
     assert(p[0] == 1);
     assert(p[1] == 2);
@@ -39,7 +39,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
     typedef double T;
     typedef cuda::std::array<T, 0> C;
     const C c = {};
-    ASSERT_NOEXCEPT(c.data());
+    static_assert(noexcept(c.data()));
     const T* p = c.data();
     unused(p);
   }
@@ -47,7 +47,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
     typedef NoDefault T;
     typedef cuda::std::array<T, 0> C;
     const C c = {};
-    ASSERT_NOEXCEPT(c.data());
+    static_assert(noexcept(c.data()));
     const T* p = c.data();
     unused(p);
   }

@@ -42,7 +42,7 @@ int main(int, char**)
   using weekday_indexed    = cuda::std::chrono::weekday_indexed;
   using year_month_weekday = cuda::std::chrono::year_month_weekday;
 
-  ASSERT_NOEXCEPT(year_month_weekday{cuda::std::declval<const sys_days>()});
+  static_assert(noexcept(year_month_weekday{cuda::std::declval<const sys_days>()}));
 
   {
     constexpr sys_days sd{}; // 1-Jan-1970 was a Thursday

@@ -22,14 +22,14 @@
 template <typename Span>
 __host__ __device__ constexpr bool testConstexprSpan(Span sp)
 {
-  ASSERT_NOEXCEPT(sp.back());
+  static_assert(noexcept(sp.back()));
   return &sp.back() == sp.data() + (sp.size() - 1);
 }
 
 template <typename Span>
 __host__ __device__ void testRuntimeSpan(Span sp)
 {
-  ASSERT_NOEXCEPT(sp.back());
+  static_assert(noexcept(sp.back()));
   assert(&sp.back() == sp.data() + (sp.size() - 1));
 }
 

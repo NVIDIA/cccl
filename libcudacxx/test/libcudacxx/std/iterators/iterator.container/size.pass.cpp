@@ -62,7 +62,7 @@ __host__ __device__ void test_container(cuda::std::initializer_list<T>& c)
 template <typename T, size_t Sz>
 __host__ __device__ void test_const_array(const T (&array)[Sz])
 {
-  ASSERT_NOEXCEPT(cuda::std::size(array));
+  static_assert(noexcept(cuda::std::size(array)));
   assert(cuda::std::size(array) == Sz);
 }
 

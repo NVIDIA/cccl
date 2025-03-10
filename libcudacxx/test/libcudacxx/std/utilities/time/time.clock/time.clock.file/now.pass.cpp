@@ -26,7 +26,7 @@
 int main(int, char**)
 {
   typedef cuda::std::chrono::file_clock C;
-  ASSERT_NOEXCEPT(C::now());
+  static_assert(noexcept(C::now()));
 
   C::time_point t1 = C::now();
   assert(t1.time_since_epoch().count() != 0);

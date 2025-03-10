@@ -59,7 +59,7 @@ template <class M, class... Args, cuda::std::enable_if_t<(M::extents_type::rank(
 __host__ __device__ constexpr void
 iterate_stride(M m, const cuda::std::array<int, M::extents_type::rank()>& strides, Args... args)
 {
-  ASSERT_NOEXCEPT(m(args...));
+  static_assert(noexcept(m(args...)));
   const size_t expected_val =
     get_strides<M>(strides, cuda::std::make_index_sequence<M::extents_type::rank()>(), args...);
   assert(expected_val == static_cast<size_t>(m(args...)));

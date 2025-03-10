@@ -48,7 +48,7 @@ struct ArrayCtorTest
   __host__ __device__ static constexpr void
   test_construction(cuda::std::array<T, N> all_ext, Extents ext, cuda::std::index_sequence<Indices...>)
   {
-    ASSERT_NOEXCEPT(E(ext));
+    static_assert(noexcept(E(ext)));
     test_implicit_construction_call<E>(ext, all_ext);
     test_runtime_observers(E(ext), all_ext);
   }
@@ -62,7 +62,7 @@ struct ArrayCtorTest
   __host__ __device__ static constexpr void
   test_construction(cuda::std::array<T, N> all_ext, Extents ext, cuda::std::index_sequence<Indices...>)
   {
-    ASSERT_NOEXCEPT(E(ext));
+    static_assert(noexcept(E(ext)));
     test_runtime_observers(E(ext), all_ext);
   }
 };

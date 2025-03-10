@@ -40,8 +40,8 @@ __host__ __device__ constexpr bool testConstexpr()
 int main(int, char**)
 {
   using month = cuda::std::chrono::month;
-  ASSERT_NOEXCEPT(++(cuda::std::declval<month&>()));
-  ASSERT_NOEXCEPT((cuda::std::declval<month&>())++);
+  static_assert(noexcept(++(cuda::std::declval<month&>())));
+  static_assert(noexcept((cuda::std::declval<month&>())++));
 
   ASSERT_SAME_TYPE(month, decltype(cuda::std::declval<month&>()++));
   ASSERT_SAME_TYPE(month&, decltype(++cuda::std::declval<month&>()));

@@ -22,7 +22,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void constexpr_test()
 {
   constexpr T array[1000] = {};
   ASSERT_SAME_TYPE(decltype(cuda::std::midpoint(array, array)), const T*);
-  ASSERT_NOEXCEPT(cuda::std::midpoint(array, array));
+  static_assert(noexcept(cuda::std::midpoint(array, array)));
 
   static_assert(cuda::std::midpoint(array, array) == array, "");
   static_assert(cuda::std::midpoint(array, array + 1000) == array + 500, "");
@@ -40,7 +40,7 @@ __host__ __device__ void runtime_test()
 {
   T array[1000] = {}; // we need an array to make valid pointers
   ASSERT_SAME_TYPE(decltype(cuda::std::midpoint(array, array)), T*);
-  ASSERT_NOEXCEPT(cuda::std::midpoint(array, array));
+  static_assert(noexcept(cuda::std::midpoint(array, array)));
 
   assert(cuda::std::midpoint(array, array) == array);
   assert(cuda::std::midpoint(array, array + 1000) == array + 500);
@@ -54,7 +54,7 @@ __host__ __device__ void runtime_test()
 
   // explicit instantiation
   ASSERT_SAME_TYPE(decltype(cuda::std::midpoint<T>(array, array)), T*);
-  ASSERT_NOEXCEPT(cuda::std::midpoint<T>(array, array));
+  static_assert(noexcept(cuda::std::midpoint<T>(array, array)));
   assert(cuda::std::midpoint<T>(array, array) == array);
   assert(cuda::std::midpoint<T>(array, array + 1000) == array + 500);
 }

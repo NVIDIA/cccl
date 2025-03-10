@@ -23,7 +23,7 @@ int main(int, char**)
 {
   using year = cuda::std::chrono::year;
 
-  ASSERT_NOEXCEPT(year(1).is_leap());
+  static_assert(noexcept(year(1).is_leap()));
   ASSERT_SAME_TYPE(bool, decltype(year(1).is_leap()));
 
   static_assert(!year{1}.is_leap(), "");

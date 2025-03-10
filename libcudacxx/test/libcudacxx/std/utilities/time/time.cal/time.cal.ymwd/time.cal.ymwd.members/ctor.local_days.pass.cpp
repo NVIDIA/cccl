@@ -43,7 +43,7 @@ int main(int, char**)
   using weekday_indexed    = cuda::std::chrono::weekday_indexed;
   using year_month_weekday = cuda::std::chrono::year_month_weekday;
 
-  ASSERT_NOEXCEPT(year_month_weekday{cuda::std::declval<const local_days>()});
+  static_assert(noexcept(year_month_weekday{cuda::std::declval<const local_days>()}));
 
   auto constexpr January = cuda::std::chrono::January;
 

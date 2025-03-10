@@ -45,9 +45,9 @@ int main(int, char**)
   constexpr month February = cuda::std::chrono::February;
 
   { // operator/(const month& m, const day& d) (and switched)
-    ASSERT_NOEXCEPT(February / day{1});
+    static_assert(noexcept(February / day{1}));
     ASSERT_SAME_TYPE(month_day, decltype(February / day{1}));
-    ASSERT_NOEXCEPT(day{1} / February);
+    static_assert(noexcept(day{1} / February));
     ASSERT_SAME_TYPE(month_day, decltype(day{1} / February));
 
     for (int i = 1; i <= 12; ++i)
@@ -68,7 +68,7 @@ int main(int, char**)
   }
 
   { // operator/(const month& m, int d) (NOT switched)
-    ASSERT_NOEXCEPT(February / 2);
+    static_assert(noexcept(February / 2));
     ASSERT_SAME_TYPE(month_day, decltype(February / 2));
 
     for (int i = 1; i <= 12; ++i)
@@ -85,9 +85,9 @@ int main(int, char**)
   }
 
   { // operator/(const day& d, int m) (and switched)
-    ASSERT_NOEXCEPT(day{2} / 2);
+    static_assert(noexcept(day{2} / 2));
     ASSERT_SAME_TYPE(month_day, decltype(day{2} / 2));
-    ASSERT_NOEXCEPT(2 / day{2});
+    static_assert(noexcept(2 / day{2}));
     ASSERT_SAME_TYPE(month_day, decltype(2 / day{2}));
 
     for (int i = 1; i <= 12; ++i)

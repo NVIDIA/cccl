@@ -24,7 +24,7 @@
 template <typename Span>
 __host__ __device__ void testRuntimeSpan(Span sp)
 {
-  ASSERT_NOEXCEPT(cuda::std::as_bytes(sp));
+  static_assert(noexcept(cuda::std::as_bytes(sp)));
 
   auto spBytes = cuda::std::as_bytes(sp);
   using SB     = decltype(spBytes);

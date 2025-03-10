@@ -50,7 +50,7 @@ int main(int, char**)
   { // operator/(const year_month& ym, last_spec)
     constexpr year_month Feb2018{year{2018}, February};
 
-    ASSERT_NOEXCEPT(Feb2018 / last);
+    static_assert(noexcept(Feb2018 / last));
     ASSERT_SAME_TYPE(year_month_day_last, decltype(Feb2018 / last));
 
     static_assert((Feb2018 / last).year() == year{2018}, "");
@@ -70,9 +70,9 @@ int main(int, char**)
   }
 
   { // operator/(const year& y, const month_day_last& mdl) (and switched)
-    ASSERT_NOEXCEPT(year{2018} / month_day_last{February});
+    static_assert(noexcept(year{2018} / month_day_last{February}));
     ASSERT_SAME_TYPE(year_month_day_last, decltype(year{2018} / month_day_last{February}));
-    ASSERT_NOEXCEPT(month_day_last{February} / year{2018});
+    static_assert(noexcept(month_day_last{February} / year{2018}));
     ASSERT_SAME_TYPE(year_month_day_last, decltype(month_day_last{February} / year{2018}));
 
     static_assert((year{2018} / month_day_last{February}).month() == February, "");
@@ -98,9 +98,9 @@ int main(int, char**)
   }
 
   { // operator/(int y, const month_day_last& mdl) (and switched)
-    ASSERT_NOEXCEPT(2018 / month_day_last{February});
+    static_assert(noexcept(2018 / month_day_last{February}));
     ASSERT_SAME_TYPE(year_month_day_last, decltype(2018 / month_day_last{February}));
-    ASSERT_NOEXCEPT(month_day_last{February} / 2018);
+    static_assert(noexcept(month_day_last{February} / 2018));
     ASSERT_SAME_TYPE(year_month_day_last, decltype(month_day_last{February} / 2018));
 
     static_assert((2018 / month_day_last{February}).month() == February, "");

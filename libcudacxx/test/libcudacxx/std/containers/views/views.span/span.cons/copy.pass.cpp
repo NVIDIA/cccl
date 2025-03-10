@@ -19,7 +19,7 @@
 template <typename T>
 __host__ __device__ constexpr bool doCopy(const T& rhs)
 {
-  ASSERT_NOEXCEPT(T{rhs});
+  static_assert(noexcept(T{rhs}));
   T lhs{rhs};
   return lhs.data() == rhs.data() && lhs.size() == rhs.size();
 }

@@ -76,7 +76,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 
 int main(int, char**)
 {
-  ASSERT_NOEXCEPT(cuda::std::in_range<int>(-1));
+  static_assert(noexcept(cuda::std::in_range<int>(-1)));
   test();
   static_assert(test(), "");
   return 0;

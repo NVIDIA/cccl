@@ -38,7 +38,7 @@ int main(int, char**)
   constexpr month January   = cuda::std::chrono::January;
   constexpr weekday Tuesday = cuda::std::chrono::Tuesday;
 
-  ASSERT_NOEXCEPT(year_month_weekday_last{year{1}, month{1}, weekday_last{Tuesday}});
+  static_assert(noexcept(year_month_weekday_last{year{1}, month{1}, weekday_last{Tuesday}}));
 
   constexpr year_month_weekday_last ym1{year{2019}, January, weekday_last{Tuesday}};
   static_assert(ym1.year() == year{2019}, "");

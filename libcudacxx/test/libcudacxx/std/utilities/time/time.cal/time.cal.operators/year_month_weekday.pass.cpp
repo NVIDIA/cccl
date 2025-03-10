@@ -53,7 +53,7 @@ int main(int, char**)
   { // operator/(const year_month& ym, const weekday_indexed& wdi)
     constexpr year_month Feb2018{year{2018}, February};
 
-    ASSERT_NOEXCEPT(Feb2018 / weekday_indexed{Tuesday, 2});
+    static_assert(noexcept(Feb2018 / weekday_indexed{Tuesday, 2}));
     ASSERT_SAME_TYPE(year_month_weekday, decltype(Feb2018 / weekday_indexed{Tuesday, 2}));
 
     static_assert((Feb2018 / weekday_indexed{Tuesday, 2}).year() == year{2018}, "");
@@ -83,9 +83,9 @@ int main(int, char**)
 
   { // operator/(const year& y, const month_weekday& mwd) (and switched)
     constexpr month_weekday Feb1stTues{February, weekday_indexed{Tuesday, 1}};
-    ASSERT_NOEXCEPT(year{2018} / Feb1stTues);
+    static_assert(noexcept(year{2018} / Feb1stTues));
     ASSERT_SAME_TYPE(year_month_weekday, decltype(year{2018} / Feb1stTues));
-    ASSERT_NOEXCEPT(Feb1stTues / year{2018});
+    static_assert(noexcept(Feb1stTues / year{2018}));
     ASSERT_SAME_TYPE(year_month_weekday, decltype(Feb1stTues / year{2018}));
 
     static_assert((year{2018} / Feb1stTues).year() == year{2018}, "");
@@ -121,9 +121,9 @@ int main(int, char**)
 
   { // operator/(int y, const month_weekday& mwd) (and switched)
     constexpr month_weekday Feb1stTues{February, weekday_indexed{Tuesday, 1}};
-    ASSERT_NOEXCEPT(2018 / Feb1stTues);
+    static_assert(noexcept(2018 / Feb1stTues));
     ASSERT_SAME_TYPE(year_month_weekday, decltype(2018 / Feb1stTues));
-    ASSERT_NOEXCEPT(Feb1stTues / 2018);
+    static_assert(noexcept(Feb1stTues / 2018));
     ASSERT_SAME_TYPE(year_month_weekday, decltype(Feb1stTues / 2018));
 
     static_assert((2018 / Feb1stTues).year() == year{2018}, "");

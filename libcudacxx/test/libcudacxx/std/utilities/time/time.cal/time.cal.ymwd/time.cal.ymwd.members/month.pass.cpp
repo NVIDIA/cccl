@@ -25,7 +25,7 @@ int main(int, char**)
   using weekday_indexed    = cuda::std::chrono::weekday_indexed;
   using year_month_weekday = cuda::std::chrono::year_month_weekday;
 
-  ASSERT_NOEXCEPT(cuda::std::declval<const year_month_weekday>().month());
+  static_assert(noexcept(cuda::std::declval<const year_month_weekday>().month()));
   ASSERT_SAME_TYPE(month, decltype(cuda::std::declval<const year_month_weekday>().month()));
 
   static_assert(year_month_weekday{}.month() == month{}, "");
