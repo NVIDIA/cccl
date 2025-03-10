@@ -231,7 +231,7 @@ __host__ __device__ void test_noexcept()
     // test that the functions noexcept-ness is propagated
     using Tup = cuda::std::tuple<int, const char*, long>;
     Tup t;
-    LIBCPP_ASSERT_NOEXCEPT(cuda::std::apply(nec, t));
+    static_assert(noexcept(cuda::std::apply(nec, t)));
 #ifndef TEST_COMPILER_NVHPC
     static_assert(!noexcept(cuda::std::apply(tc, t)));
 #endif // TEST_COMPILER_NVHPC
@@ -245,7 +245,7 @@ __host__ __device__ void test_noexcept()
 #ifndef TEST_COMPILER_NVHPC
     static_assert(!noexcept(cuda::std::apply(nec, t)));
 #endif // TEST_COMPILER_NVHPC
-    LIBCPP_ASSERT_NOEXCEPT(cuda::std::apply(nec, cuda::std::move(t)));
+    static_assert(noexcept(cuda::std::apply(nec, cuda::std::move(t))));
     unused(t);
   }
 }

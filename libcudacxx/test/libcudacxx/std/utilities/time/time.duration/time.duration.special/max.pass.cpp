@@ -22,7 +22,7 @@
 template <class D>
 __host__ __device__ void test()
 {
-  LIBCPP_ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<typename D::rep>::max());
+  static_assert(noexcept(cuda::std::chrono::duration_values<typename D::rep>::max()));
 #if TEST_STD_VER > 2017
   static_assert(noexcept(cuda::std::chrono::duration_values<typename D::rep>::max()));
 #endif
