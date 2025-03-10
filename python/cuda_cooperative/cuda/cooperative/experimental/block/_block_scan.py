@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Callable, Literal, Union
 import numba
 
 from cuda.cooperative.experimental._common import (
+    CUB_BLOCK_SCAN_ALGOS,
     make_binary_tempfile,
     normalize_dtype_param,
 )
@@ -23,12 +24,6 @@ from cuda.cooperative.experimental._types import (
 
 if TYPE_CHECKING:
     import numpy as np
-
-CUB_BLOCK_SCAN_ALGOS = {
-    "raking": "::cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING",
-    "raking_memoize": "::cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING_MEMOIZE",
-    "warp_scans": "::cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS",
-}
 
 
 def _scan(
