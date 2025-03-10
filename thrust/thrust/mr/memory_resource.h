@@ -204,7 +204,7 @@ _CCCL_HOST_DEVICE bool operator!=(const memory_resource<Pointer>& lhs, const mem
  *  \return a pointer to a global instance of \p MR.
  */
 template <typename MR>
-_CCCL_HOST MR* get_global_resource()
+_CCCL_HOST_DEVICE MR* get_global_resource()
 {
   static MR resource;
   return &resource;
