@@ -8,16 +8,6 @@ if(CMAKE_GENERATOR MATCHES "^Visual Studio")
   endif()
 endif()
 
-if ("NVHPC" STREQUAL "${CMAKE_CUDA_COMPILER_ID}")
-  # NVBugs 200770766
-  set(CUB_SEPARATE_CATCH2 ON)
-else()
-  option(CUB_SEPARATE_CATCH2
-    "Build each catch2 test as a separate executable."
-    OFF
-  )
-endif()
-
 cccl_get_c2h()
 cccl_get_nvtx()
 
@@ -186,45 +176,11 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
       )
     endif() # config_c2h_target
 
-    if (CUB_SEPARATE_CATCH2)
-      add_executable(${test_target} "${test_src}")
-      target_link_libraries(${test_target} PRIVATE cccl.c2h.main)
-      add_dependencies(${config_meta_target} ${test_target})
+    add_executable(${test_target} "${test_src}")
+    target_link_libraries(${test_target} PRIVATE cccl.c2h.main)
+    add_dependencies(${config_meta_target} ${test_target})
 
-      add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>")
-    else() # Not CUB_SEPARATE_CATCH2
-      # Per config catch2 runner
-      set(config_c2run_target ${config_prefix}.catch2_test.lid_${launcher_id})
-      if (NOT TARGET ${config_c2run_target})
-        add_executable(${config_c2run_target})
-        target_link_libraries(${config_c2run_target} PRIVATE
-          cccl.c2h.main
-          ${cub_target}
-          ${config_c2h_target}
-          Catch2::Catch2)
-        cub_clone_target_properties(${config_c2run_target} ${cub_target})
-        cub_configure_cuda_target(${config_c2run_target} RDC ${cdp_val})
-        add_dependencies(${config_meta_target} ${config_c2run_target})
-        target_include_directories(${config_c2run_target} PRIVATE
-          "${CUB_SOURCE_DIR}/test"
-        )
-        if ("NVHPC" STREQUAL "${CMAKE_CUDA_COMPILER_ID}")
-          target_link_options(${config_c2run_target} PRIVATE "-cuda")
-        endif()
-
-        add_test(NAME ${config_c2run_target}
-          COMMAND "$<TARGET_FILE:${config_c2run_target}>"
-        )
-      endif() # per config catch2 runner
-
-      add_library(${test_target} OBJECT "${test_src}")
-
-      if(CMAKE_GENERATOR MATCHES "^Visual Studio")
-        target_link_libraries(${config_c2run_target} PRIVATE $<TARGET_OBJECTS:${test_target}>)
-      else()
-        target_link_libraries(${config_c2run_target} PRIVATE ${test_target})
-      endif()
-    endif() # CUB_SEPARATE_CATCH2
+    add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>")
 
     if ("${test_target}" MATCHES "nvrtc")
       configure_file("cmake/nvrtc_args.h.in" ${CMAKE_CURRENT_BINARY_DIR}/nvrtc_args.h)

@@ -116,6 +116,30 @@ inline _CCCL_DEVICE _CUDA_VSTD::uint64_t __as_b64(_Tp __val)
   return *reinterpret_cast<_CUDA_VSTD::uint64_t*>(&__val);
 }
 
+/*************************************************************
+ *
+ * Conversion to and from b8 type
+ *
+ **************************************************************/
+
+template <typename _B8>
+inline _CCCL_DEVICE uint32_t __b8_as_u32(_B8 __val)
+{
+  static_assert(sizeof(_B8) == 1);
+  _CUDA_VSTD::uint32_t __u32 = 0;
+  ::memcpy(&__u32, &__val, 1);
+  return __u32;
+}
+
+template <typename _B8>
+inline _CCCL_DEVICE _B8 __u32_as_b8(uint32_t __u32)
+{
+  static_assert(sizeof(_B8) == 1);
+  _B8 b8;
+  ::memcpy(&b8, &__u32, 1);
+  return b8;
+}
+
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
 
 #endif // _CCCL_HAS_CUDA_COMPILER
