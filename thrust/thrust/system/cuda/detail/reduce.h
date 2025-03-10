@@ -28,6 +28,8 @@
 
 #include <thrust/detail/config.h>
 
+#include "cuda/std/__functional/operations.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -56,14 +58,16 @@
 #  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
 
-#  include <cstdint>
+#  include <cuda/std/__functional/invoke.h>
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 
 // forward declare generic reduce
 // to circumvent circular dependency
 template <typename DerivedPolicy, typename InputIterator, typename T, typename BinaryFunction>
-T _CCCL_HOST_DEVICE
+::cuda::std::__accumulator_t<BinaryFunction, InputIterator, T> _CCCL_HOST_DEVICE
 reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
        InputIterator first,
        InputIterator last,
@@ -733,7 +737,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
 } // func doit_step
 
 template <typename Derived, typename InputIt, typename Size, typename T, typename BinaryOp>
-THRUST_RUNTIME_FUNCTION T
+THRUST_RUNTIME_FUNCTION ::cuda::std::__accumulator_t<BinaryOp, InputIt, T>
 reduce(execution_policy<Derived>& policy, InputIt first, Size num_items, T init, BinaryOp binary_op)
 {
   if (num_items == 0)
@@ -844,7 +848,7 @@ reduce_n_impl(execution_policy<Derived>& policy, InputIt first, Size num_items, 
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Derived, typename InputIt, typename Size, typename T, typename BinaryOp>
-_CCCL_HOST_DEVICE T
+_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<BinaryOp, InputIt, T>
 reduce_n(execution_policy<Derived>& policy, InputIt first, Size num_items, T init, BinaryOp binary_op)
 {
   THRUST_CDP_DISPATCH(
@@ -854,7 +858,8 @@ reduce_n(execution_policy<Derived>& policy, InputIt first, Size num_items, T ini
 }
 
 template <class Derived, class InputIt, class T, class BinaryOp>
-_CCCL_HOST_DEVICE T reduce(execution_policy<Derived>& policy, InputIt first, InputIt last, T init, BinaryOp binary_op)
+_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<BinaryOp, InputIt, T>
+reduce(execution_policy<Derived>& policy, InputIt first, InputIt last, T init, BinaryOp binary_op)
 {
   using size_type = thrust::detail::it_difference_t<InputIt>;
   // FIXME: Check for RA iterator.
@@ -863,13 +868,14 @@ _CCCL_HOST_DEVICE T reduce(execution_policy<Derived>& policy, InputIt first, Inp
 }
 
 template <class Derived, class InputIt, class T>
-_CCCL_HOST_DEVICE T reduce(execution_policy<Derived>& policy, InputIt first, InputIt last, T init)
+_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<::cuda::std::plus<>, InputIt, T>
+reduce(execution_policy<Derived>& policy, InputIt first, InputIt last, T init)
 {
   return cuda_cub::reduce(policy, first, last, init, plus<T>());
 }
 
 template <class Derived, class InputIt>
-_CCCL_HOST_DEVICE thrust::detail::it_value_t<InputIt>
+_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<::cuda::std::plus<>, InputIt>
 reduce(execution_policy<Derived>& policy, InputIt first, InputIt last)
 {
   using value_type = thrust::detail::it_value_t<InputIt>;

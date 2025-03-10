@@ -32,6 +32,9 @@
 #include <thrust/reduce.h>
 #include <thrust/system/detail/generic/reduce.h>
 
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__functional/operations.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace system
 {
@@ -41,21 +44,19 @@ namespace generic
 {
 
 template <typename ExecutionPolicy, typename InputIterator>
-_CCCL_HOST_DEVICE thrust::detail::it_value_t<InputIterator>
+_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<::cuda::std::plus<>, InputIterator>
 reduce(thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last)
 {
-  using InputType = thrust::detail::it_value_t<InputIterator>;
-
-  // use InputType(0) as init by default
-  return thrust::reduce(exec, first, last, InputType(0));
+  using AccType = ::cuda::std::__accumulator_t<::cuda::std::plus<>, InputIterator>;
+  return thrust::reduce(exec, first, last, AccType{});
 } // end reduce()
 
 template <typename ExecutionPolicy, typename InputIterator, typename T>
-_CCCL_HOST_DEVICE T
+_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<::cuda::std::plus<>, InputIterator, T>
 reduce(thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last, T init)
 {
-  // use plus<T> by default
-  return thrust::reduce(exec, first, last, init, thrust::plus<T>());
+  // use plus<> by default
+  return thrust::reduce(exec, first, last, init, thrust::plus<>{});
 } // end reduce()
 
 template <typename ExecutionPolicy, typename RandomAccessIterator, typename OutputType, typename BinaryFunction>

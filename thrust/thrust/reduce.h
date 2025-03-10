@@ -33,6 +33,9 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/pair.h>
 
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__functional/operations.h>
+
 THRUST_NAMESPACE_BEGIN
 
 /*! \addtogroup reductions
@@ -83,7 +86,7 @@ THRUST_NAMESPACE_BEGIN
  *  \see https://en.cppreference.com/w/cpp/algorithm/accumulate
  */
 template <typename DerivedPolicy, typename InputIterator>
-_CCCL_HOST_DEVICE detail::it_value_t<InputIterator>
+_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<::cuda::std::plus<>, InputIterator>
 reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, InputIterator last);
 
 /*! \p reduce is a generalization of summation: it computes the sum (or some
@@ -125,7 +128,7 @@ reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIt
  *  \see https://en.cppreference.com/w/cpp/algorithm/accumulate
  */
 template <typename InputIterator>
-detail::it_value_t<InputIterator> reduce(InputIterator first, InputIterator last);
+::cuda::std::__accumulator_t<::cuda::std::plus<>, InputIterator> reduce(InputIterator first, InputIterator last);
 
 /*! \p reduce is a generalization of summation: it computes the sum (or some
  *  other binary operation) of all the elements in the range <tt>[first,
@@ -172,7 +175,7 @@ detail::it_value_t<InputIterator> reduce(InputIterator first, InputIterator last
  *  \see https://en.cppreference.com/w/cpp/algorithm/accumulate
  */
 template <typename DerivedPolicy, typename InputIterator, typename T>
-_CCCL_HOST_DEVICE T reduce(
+_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<::cuda::std::plus<>, InputIterator, T> reduce(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, InputIterator last, T init);
 
 /*! \p reduce is a generalization of summation: it computes the sum (or some
@@ -214,7 +217,8 @@ _CCCL_HOST_DEVICE T reduce(
  *  \see https://en.cppreference.com/w/cpp/algorithm/accumulate
  */
 template <typename InputIterator, typename T>
-T reduce(InputIterator first, InputIterator last, T init);
+::cuda::std::__accumulator_t<::cuda::std::plus<>, InputIterator, T>
+reduce(InputIterator first, InputIterator last, T init);
 
 /*! \p reduce is a generalization of summation: it computes the sum (or some
  *  other binary operation) of all the elements in the range <tt>[first,
@@ -268,12 +272,12 @@ T reduce(InputIterator first, InputIterator last, T init);
  *  \see transform_reduce
  */
 template <typename DerivedPolicy, typename InputIterator, typename T, typename BinaryFunction>
-_CCCL_HOST_DEVICE T reduce(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-  InputIterator first,
-  InputIterator last,
-  T init,
-  BinaryFunction binary_op);
+_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<BinaryFunction, InputIterator, T>
+reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+       InputIterator first,
+       InputIterator last,
+       T init,
+       BinaryFunction binary_op);
 
 /*! \p reduce is a generalization of summation: it computes the sum (or some
  *  other binary operation) of all the elements in the range <tt>[first,
@@ -320,7 +324,8 @@ _CCCL_HOST_DEVICE T reduce(
  *  \see transform_reduce
  */
 template <typename InputIterator, typename T, typename BinaryFunction>
-T reduce(InputIterator first, InputIterator last, T init, BinaryFunction binary_op);
+::cuda::std::__accumulator_t<BinaryFunction, InputIterator, T>
+reduce(InputIterator first, InputIterator last, T init, BinaryFunction binary_op);
 
 /*! \p reduce_by_key is a generalization of \p reduce to key-value pairs.
  *  For each group of consecutive keys in the range <tt>[keys_first, keys_last)</tt>

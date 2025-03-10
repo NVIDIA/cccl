@@ -31,6 +31,8 @@
 #endif // no system header
 #include <thrust/system/tbb/detail/execution_policy.h>
 
+#include <cuda/std/__functional/invoke.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace system
 {
@@ -40,11 +42,12 @@ namespace detail
 {
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputType, typename BinaryFunction>
-OutputType reduce(execution_policy<DerivedPolicy>& exec,
-                  InputIterator begin,
-                  InputIterator end,
-                  OutputType init,
-                  BinaryFunction binary_op);
+::cuda::std::__accumulator_t<BinaryFunction, InputIterator, OutputType>
+reduce(execution_policy<DerivedPolicy>& exec,
+       InputIterator begin,
+       InputIterator end,
+       OutputType init,
+       BinaryFunction binary_op);
 
 } // end namespace detail
 } // end namespace tbb

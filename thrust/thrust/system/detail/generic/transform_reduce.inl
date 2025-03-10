@@ -29,6 +29,10 @@
 #include <thrust/reduce.h>
 #include <thrust/system/detail/generic/transform_reduce.h>
 
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__type_traits/decay.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace system
 {
@@ -37,21 +41,24 @@ namespace detail
 namespace generic
 {
 
-template <typename DerivedPolicy,
-          typename InputIterator,
-          typename UnaryFunction,
-          typename OutputType,
-          typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputType transform_reduce(
-  thrust::execution_policy<DerivedPolicy>& exec,
-  InputIterator first,
-  InputIterator last,
-  UnaryFunction unary_op,
-  OutputType init,
-  BinaryFunction binary_op)
+template <typename DerivedPolicy, typename InputIterator, typename UnaryFunction, typename InitType, typename BinaryFunction>
+_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<
+  BinaryFunction,
+  decltype(UnaryFunction{}(::cuda::std::declval<::cuda::std::iter_value_t<InputIterator>>())),
+  decltype(UnaryFunction{}(::cuda::std::declval<InitType>()))>
+transform_reduce(thrust::execution_policy<DerivedPolicy>& exec,
+                 InputIterator first,
+                 InputIterator last,
+                 UnaryFunction unary_op,
+                 InitType init,
+                 BinaryFunction binary_op)
 {
-  thrust::transform_iterator<UnaryFunction, InputIterator, OutputType> xfrm_first(first, unary_op);
-  thrust::transform_iterator<UnaryFunction, InputIterator, OutputType> xfrm_last(last, unary_op);
+  using AccType = ::cuda::std::__accumulator_t<
+    BinaryFunction,
+    decltype(UnaryFunction(::cuda::std::declval<::cuda::std::iter_value_t<InputIterator>>())),
+    decltype(UnaryFunction(::cuda::std::declval<InitType>()))>;
+  thrust::transform_iterator<UnaryFunction, InputIterator, AccType> xfrm_first(first, unary_op);
+  thrust::transform_iterator<UnaryFunction, InputIterator, AccType> xfrm_last(last, unary_op);
 
   return thrust::reduce(exec, xfrm_first, xfrm_last, init, binary_op);
 } // end transform_reduce()

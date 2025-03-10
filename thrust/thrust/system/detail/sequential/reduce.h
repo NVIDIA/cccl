@@ -32,6 +32,8 @@
 #include <thrust/detail/function.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
+#include <cuda/std/__functional/invoke.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace system
 {
@@ -49,11 +51,12 @@ _CCCL_HOST_DEVICE OutputType reduce(
   OutputType init,
   BinaryFunction binary_op)
 {
+  using AccType = ::cuda::std::__accumulator_t<BinaryFunction, InputIterator, OutputType>;
   // wrap binary_op
   thrust::detail::wrapped_function<BinaryFunction, OutputType> wrapped_binary_op{binary_op};
 
   // initialize the result
-  OutputType result = init;
+  AccType result = init;
 
   while (begin != end)
   {
@@ -61,7 +64,7 @@ _CCCL_HOST_DEVICE OutputType reduce(
     ++begin;
   } // end while
 
-  return result;
+  return static_cast<OutputType>(result);
 }
 
 } // end namespace sequential

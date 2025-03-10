@@ -55,6 +55,8 @@
 #  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/__functional/invoke.h>
+
 #  include <cstdint>
 #  include <iterator>
 
@@ -66,9 +68,17 @@ namespace detail
 {
 
 template <typename Derived, typename InputIt, typename Size, typename UnaryOp, typename T, typename BinaryOp>
-THRUST_RUNTIME_FUNCTION T transform_reduce_n_impl(
+THRUST_RUNTIME_FUNCTION ::cuda::std::__accumulator_t<
+  BinaryOp,
+  decltype(UnaryOp{}(::cuda::std::declval<::cuda::std::iter_value_t<InputIt>>())),
+  decltype(UnaryOp{}(::cuda::std::declval<T>()))>
+transform_reduce_n_impl(
   execution_policy<Derived>& policy, InputIt first, Size num_items, UnaryOp unary_op, T init, BinaryOp binary_op)
 {
+  using AccType =
+    ::cuda::std::__accumulator_t<BinaryOp,
+                                 decltype(UnaryOp{}(::cuda::std::declval<::cuda::std::iter_value_t<InputIt>>())),
+                                 decltype(UnaryOp{}(::cuda::std::declval<T>()))>;
   cudaStream_t stream = cuda_cub::stream(policy);
   cudaError_t status;
 
@@ -80,12 +90,12 @@ THRUST_RUNTIME_FUNCTION T transform_reduce_n_impl(
     status,
     cub::DeviceReduce::TransformReduce,
     num_items,
-    (nullptr, tmp_size, first, static_cast<T*>(nullptr), num_items_fixed, binary_op, unary_op, init, stream));
+    (nullptr, tmp_size, first, static_cast<AccType*>(nullptr), num_items_fixed, binary_op, unary_op, init, stream));
   cuda_cub::throw_on_error(status, "after reduction step 1");
 
   // Allocate temporary storage.
 
-  thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, sizeof(T) + tmp_size);
+  thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, sizeof(AccType) + tmp_size);
 
   // Run reduction.
 
@@ -97,8 +107,8 @@ THRUST_RUNTIME_FUNCTION T transform_reduce_n_impl(
   // The array was dynamically allocated, so we assume that it's suitably
   // aligned for any type of data. `malloc`/`cudaMalloc`/`new`/`std::allocator`
   // make this guarantee.
-  T* ret_ptr    = thrust::detail::aligned_reinterpret_cast<T*>(tmp.data().get());
-  void* tmp_ptr = static_cast<void*>((tmp.data() + sizeof(T)).get());
+  AccType* ret_ptr = thrust::detail::aligned_reinterpret_cast<AccType*>(tmp.data().get());
+  void* tmp_ptr    = static_cast<void*>((tmp.data() + sizeof(AccType)).get());
   THRUST_INDEX_TYPE_DISPATCH(
     status,
     cub::DeviceReduce::TransformReduce,
@@ -119,14 +129,18 @@ THRUST_RUNTIME_FUNCTION T transform_reduce_n_impl(
   // The array was dynamically allocated, so we assume that it's suitably
   // aligned for any type of data. `malloc`/`cudaMalloc`/`new`/`std::allocator`
   // make this guarantee.
-  return thrust::cuda_cub::get_value(policy, thrust::detail::aligned_reinterpret_cast<T*>(tmp.data().get()));
+  return thrust::cuda_cub::get_value(policy, thrust::detail::aligned_reinterpret_cast<AccType*>(tmp.data().get()));
 }
 
 } // namespace detail
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class InputIt, class TransformOp, class T, class ReduceOp>
-T _CCCL_HOST_DEVICE transform_reduce(
+_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<
+  ReduceOp,
+  decltype(TransformOp{}(::cuda::std::declval<::cuda::std::iter_value_t<InputIt>>())),
+  decltype(TransformOp{}(::cuda::std::declval<T>()))>
+transform_reduce(
   execution_policy<Derived>& policy, InputIt first, InputIt last, TransformOp transform_op, T init, ReduceOp reduce_op)
 {
   using size_type           = thrust::detail::it_difference_t<InputIt>;

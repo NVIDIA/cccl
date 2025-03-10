@@ -32,6 +32,8 @@
 #include <thrust/system/omp/detail/reduce.h>
 #include <thrust/system/omp/detail/reduce_intervals.h>
 
+#include <cuda/std/__functional/invoke.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace system
 {
@@ -41,14 +43,15 @@ namespace detail
 {
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputType, typename BinaryFunction>
-OutputType reduce(execution_policy<DerivedPolicy>& exec,
-                  InputIterator first,
-                  InputIterator last,
-                  OutputType init,
-                  BinaryFunction binary_op)
+::cuda::std::__accumulator_t<BinaryFunction, InputIterator, OutputType>
+reduce(execution_policy<DerivedPolicy>& exec,
+       InputIterator first,
+       InputIterator last,
+       OutputType init,
+       BinaryFunction binary_op)
 {
-  using difference_type = thrust::detail::it_difference_t<InputIterator>;
-
+  using AccType           = ::cuda::std::__accumulator_t<BinaryFunction, InputIterator, OutputType>;
+  using difference_type   = thrust::detail::it_difference_t<InputIterator>;
   const difference_type n = thrust::distance(first, last);
 
   // determine first and second level decomposition
@@ -58,10 +61,10 @@ OutputType reduce(execution_policy<DerivedPolicy>& exec,
 
   // allocate storage for the initializer and partial sums
   // XXX use select_system for Tag
-  thrust::detail::temporary_array<OutputType, DerivedPolicy> partial_sums(exec, decomp1.size() + 1);
+  thrust::detail::temporary_array<AccType, DerivedPolicy> partial_sums(exec, decomp1.size() + 1);
 
   // set first element of temp array to init
-  partial_sums[0] = init;
+  partial_sums[0] = static_cast<AccType>(init);
 
   // accumulate partial sums (first level reduction)
   thrust::system::omp::detail::reduce_intervals(exec, first, partial_sums.begin() + 1, binary_op, decomp1);
@@ -69,7 +72,7 @@ OutputType reduce(execution_policy<DerivedPolicy>& exec,
   // reduce partial sums (second level reduction)
   thrust::system::omp::detail::reduce_intervals(exec, partial_sums.begin(), partial_sums.begin(), binary_op, decomp2);
 
-  return partial_sums[0];
+  return static_cast<OutputType>(partial_sums[0]);
 } // end reduce()
 
 } // namespace detail
