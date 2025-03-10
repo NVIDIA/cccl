@@ -44,12 +44,29 @@ public:
 #if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
     nvtxRangePushA(message);
 #endif
+    static_assert(::std::is_move_constructible_v<nvtx_range>, "nvtx_range must be move constructible");
+    static_assert(::std::is_move_assignable_v<nvtx_range>, "nvtx_range must be move assignable");
   }
 
-  // Noncopyable and nonassignable to avoid multiple pops
+  // Noncopyable to avoid multiple pops
   nvtx_range(const nvtx_range&)            = delete;
-  nvtx_range(nvtx_range&&)                 = delete;
   nvtx_range& operator=(const nvtx_range&) = delete;
+
+  // Move constructor
+  nvtx_range(nvtx_range&& other) noexcept
+      : active(::std::exchange(other.active, false))
+  {}
+
+  // Move assignment
+  nvtx_range& operator=(nvtx_range&& other) noexcept
+  {
+    if (this != &other)
+    {
+      end(); // Ensure the current range is properly closed
+      active = std::exchange(other.active, false);
+    }
+    return *this;
+  }
 
   // Explicitly end the NVTX range
   void end()

@@ -353,6 +353,7 @@ public:
     // Constructor to initialize symbol and children
     section(::std::string sym)
         : symbol(mv(sym))
+        , r(symbol.c_str())
     {
       static_assert(::std::is_move_constructible_v<section>, "section must be move constructible");
       static_assert(::std::is_move_assignable_v<section>, "section must be move assignable");
@@ -421,10 +422,6 @@ public:
 
     static void push(::std::string symbol)
     {
-#if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
-      nvtxRangePushA(symbol.c_str());
-#endif
-
       // We first create a section object, with its unique id
       auto sec = ::std::make_shared<section>(mv(symbol));
       int id   = sec->get_id();
@@ -452,10 +449,6 @@ public:
     {
       _CCCL_ASSERT(current().size() > 0, "Cannot pop, no section was pushed.");
       current().pop();
-
-#if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
-      nvtxRangePop();
-#endif
     }
 
     /**
@@ -487,6 +480,9 @@ public:
     int depth = ::std::numeric_limits<int>::min();
 
     ::std::string symbol;
+
+    // An annotation that has the lifetime of the section
+    nvtx_range r;
 
     // An identifier for that section. This is movable, but non
     // copyable, but we manipulate section by the means of shared_ptr.
