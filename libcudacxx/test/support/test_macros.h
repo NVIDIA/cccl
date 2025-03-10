@@ -425,11 +425,6 @@ __host__ __device__ constexpr bool unused(T&&...)
 #  define TEST_NV_DIAG_SUPPRESS(WARNING) _CCCL_PRAGMA(diag_suppress WARNING)
 #endif
 
-// Some convenience macros for checking nvcc versions
-#if _CCCL_CUDACC_BELOW(12, 3)
-#  define TEST_COMPILER_CUDACC_BELOW_12_3
-#endif // _CCCL_CUDACC_BELOW(12, 3)
-
 #if defined(TEST_COMPILER_MSVC)
 #  if _MSC_VER < 1920
 #    error "MSVC version not supported"
