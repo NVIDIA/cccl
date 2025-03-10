@@ -29,9 +29,6 @@
 
 #include <cub/config.cuh>
 
-#include "cub/detail/detect_cuda_runtime.cuh"
-#include "cuda/std/__cccl/execution_space.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -40,11 +37,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/util_device.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
+#include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/bit>
 
 // The ublkcp kernel needs PTX features that are only available and understood by nvcc >=12.

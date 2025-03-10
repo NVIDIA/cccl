@@ -83,7 +83,7 @@ struct TransformKernelSource<Offset,
   };
 
   template <typename It>
-  CUB_RUNTIME_FUNCTION constexpr kernel_arg<It> make_iterator_kernel_arg(It it)
+  CUB_RUNTIME_FUNCTION constexpr kernel_arg<It> MakeIteratorKernelArg(It it)
   {
     return detail::transform::make_iterator_kernel_arg(it);
   }
@@ -118,25 +118,6 @@ _CCCL_HOST_DEVICE inline cuda_expected<int> get_max_shared_memory()
   }
 
   return max_smem;
-}
-
-_CCCL_HOST_DEVICE inline cuda_expected<int> get_sm_count()
-{
-  int device = 0;
-  auto error = CubDebug(cudaGetDevice(&device));
-  if (error != cudaSuccess)
-  {
-    return error;
-  }
-
-  int sm_count = 0;
-  error        = CubDebug(cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device));
-  if (error != cudaSuccess)
-  {
-    return error;
-  }
-
-  return sm_count;
 }
 
 struct elem_counts
@@ -356,7 +337,7 @@ struct dispatch_t<StableAddress,
               items_per_thread_clamped,
               op,
               out,
-              kernel_source.make_iterator_kernel_arg(
+              kernel_source.MakeIteratorKernelArg(
                 THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(::cuda::std::get<Is>(in)))...));
   }
 
