@@ -527,7 +527,7 @@ struct policy_hub
               // benchmark). Input- and OutputType only impact loading and storing data (all arithmetic is done in the
               // accumulator type), so let's check that they are the same size and dispatch the size in the tunings.
               ::cuda::std::enable_if_t<sizeof(AccumT) == sizeof(::cuda::std::__accumulator_t<ScanOpT, IVT, IVT>)
-                                         && sizeof(IVT) == sizeof(OutputValueT),
+                                         && sizeof(IVT) == size_of<OutputValueT>,
                                        int> = 0>
     static auto select_agent_policy100(int)
       -> AgentScanPolicy<Tuning::threads,
