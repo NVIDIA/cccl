@@ -284,14 +284,6 @@
 #  define TEST_NODISCARD
 #endif
 
-#if defined(TEST_COMPILER_MSVC)
-#  define TEST_NORETURN __declspec(noreturn)
-#elif __has_cpp_attribute(noreturn)
-#  define TEST_NORETURN [[noreturn]]
-#else
-#  define TEST_NORETURN __attribute__((noreturn))
-#endif
-
 #define TEST_IGNORE_NODISCARD (void)
 
 namespace test_macros_detail
