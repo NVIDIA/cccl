@@ -1,10 +1,11 @@
-# Copyright (c) 2024, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import re
 import tempfile
 from collections import namedtuple
+from enum import Enum
 from typing import TYPE_CHECKING, Union
 
 # Import for type checking only
@@ -16,6 +17,33 @@ version = namedtuple("version", ("major", "minor"))
 code = namedtuple("code", ("kind", "version", "data"))
 symbol = namedtuple("symbol", ("kind", "name"))
 dim3 = namedtuple("dim3", ("x", "y", "z"))
+
+
+CUB_BLOCK_SCAN_ALGOS = {
+    "raking": "::cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING",
+    "raking_memoize": "::cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING_MEMOIZE",
+    "warp_scans": "::cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS",
+}
+
+
+CUB_BLOCK_REDUCE_ALGOS = {
+    "raking_commutative_only": "::cub::BlockReduceAlgorithm::BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY",
+    "raking": "::cub::BlockReduceAlgorithm::BLOCK_REDUCE_RAKING",
+    "warp_reductions": "::cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS",
+}
+
+
+class CudaSharedMemConfig(Enum):
+    """
+    CUDA shared memory configuration.
+    """
+
+    Default = 0
+    FourByte = 1
+    EightByte = 2
+
+    def __str__(self):
+        return f"cudaSharedMemBankSize{self.name}"
 
 
 def make_binary_tempfile(content, suffix):
