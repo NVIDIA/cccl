@@ -329,16 +329,8 @@ struct is_same<T, T>
 #  endif
 #endif
 
-#if defined(_LIBCUDACXX_HAS_NO_LOCALIZATION)
-#  define TEST_HAS_NO_LOCALIZATION
-#endif
-
 #if !_LIBCUDACXX_HAS_CHAR8_T()
 #  define TEST_HAS_NO_CHAR8_T
-#endif
-
-#if defined(_LIBCUDACXX_HAS_NO_UNICODE_CHARS)
-#  define TEST_HAS_NO_UNICODE_CHARS
 #endif
 
 #if defined(__GNUC__) || defined(__clang__) || defined(TEST_COMPILER_NVRTC)
@@ -366,17 +358,6 @@ inline void DoNotOptimize(Tp const& value)
   static_cast<void>(unused);
   _ReadWriteBarrier();
 }
-#endif
-
-#if defined(__GNUC__)
-#  define TEST_ALWAYS_INLINE __attribute__((always_inline))
-#  define TEST_NOINLINE      __attribute__((noinline))
-#elif defined(_MSC_VER)
-#  define TEST_ALWAYS_INLINE __forceinline
-#  define TEST_NOINLINE      __declspec(noinline)
-#else
-#  define TEST_ALWAYS_INLINE
-#  define TEST_NOINLINE
 #endif
 
 // NVCC can't handle static member variables, so with a little care
