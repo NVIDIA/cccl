@@ -1,7 +1,7 @@
 .. _libcudacxx-extended-api-bit-bitmask:
 
-``bitmask``
-===========
+``cuda::bitmask``
+=================
 
 .. code:: cpp
 
@@ -20,7 +20,7 @@ The function generates a bitmask of size ``width`` starting at position ``start`
 
 - Bitmask of size ``width`` starting at ``start``
 
-**Mandates**
+**Constraints**
 
 - ``T`` is an unsigned integral type.
 
