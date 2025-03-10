@@ -682,10 +682,17 @@ public:
     return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x7ffe'ffff'ffff'ffff} << 64 | 0xffff'ffff'ffff'ffff);
   }
 #  endif // ^^^ !_CCCL_HAS_FLOAT128_LITERAL() ^^^
+#  if _CCCL_HAS_FLOAT128_LITERAL()
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type lowest() noexcept
   {
     return -max();
   }
+#  else // ^^^ _CCCL_HAS_FLOAT128_LITERAL() ^^^ // vvv !_CCCL_HAS_FLOAT128_LITERAL() vvv
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_BIT_CAST type lowest() noexcept
+  {
+    return -max();
+  }
+#  endif // ^^^ !_CCCL_HAS_FLOAT128_LITERAL() ^^^
 
   static constexpr bool is_integer = false;
   static constexpr bool is_exact   = false;
