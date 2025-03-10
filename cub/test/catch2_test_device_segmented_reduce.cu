@@ -258,17 +258,16 @@ void compute_fixed_size_segmented_problem_reference(
 
 C2H_TEST("Device fixed size segmented reduce works with all device interfaces",
          "[segmented][reduce][device]",
-         full_type_list,
-         offsets)
+         full_type_list)
 {
-  using type_pair_t = typename c2h::get<0, TestType>;
-  using input_t     = typename type_pair_t::input_t;
-  using output_t    = typename type_pair_t::output_t;
-  using offset_t    = typename c2h::get<1, TestType>;
+  using type_pair_t    = typename c2h::get<0, TestType>;
+  using input_t        = typename type_pair_t::input_t;
+  using output_t       = typename type_pair_t::output_t;
+  using segment_size_t = int;
 
   const int max_items = 1 << 22;
 
-  const offset_t segment_size = GENERATE_COPY(
+  const segment_size_t segment_size = GENERATE_COPY(
     take(2, random(1 << 0, 1 << 5)),
     take(2, random(1 << 5, 1 << 10)),
     take(2, random(1 << 10, 1 << 15)),

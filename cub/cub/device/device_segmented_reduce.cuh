@@ -334,9 +334,6 @@ public:
   //! @tparam OutputIteratorT
   //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
   //!
-  //! @tparam SegmentSizeT
-  //!  **[inferred]** Segment size type that is integral
-  //!
   //! @tparam ReductionOpT
   //!   **[inferred]** Binary reduction functor type having member `T operator()(const T &a, const T &b)`
   //!
@@ -372,33 +369,32 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename SegmentSizeT, typename ReductionOpT, typename T>
+  template <typename InputIteratorT, typename OutputIteratorT, typename ReductionOpT, typename T>
   CUB_RUNTIME_FUNCTION static cudaError_t Reduce(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
     int num_segments,
-    SegmentSizeT segment_size,
+    int segment_size,
     ReductionOpT reduction_op,
     T initial_value,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Reduce");
 
-    // Integer type for segment size
-    using integral_segment_size_check = ::cuda::std::is_integral<SegmentSizeT>;
-    static_assert(integral_segment_size_check::value, "Segment Size type should be integral.");
+    // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
+    // integral constant or larger integral types
+    using offset_t = int;
 
-    using offset_t = detail::choose_offset_t<SegmentSizeT>;
     return segmented_reduce<InputIteratorT, OutputIteratorT, offset_t, ReductionOpT>(
-      integral_segment_size_check{},
+      ::cuda::std::true_type{},
       d_temp_storage,
       temp_storage_bytes,
       d_in,
       d_out,
       num_segments,
-      static_cast<offset_t>(segment_size),
+      segment_size,
       reduction_op,
       initial_value,
       stream);
