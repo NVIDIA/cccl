@@ -34,9 +34,6 @@
 #  pragma GCC diagnostic ignored "-Wvariadic-macros"
 #endif
 
-#define TEST_CONCAT1(X, Y) X##Y
-#define TEST_CONCAT(X, Y)  TEST_CONCAT1(X, Y)
-
 #ifdef _CCCL_HAS_FEATURE
 #  define TEST_HAS_FEATURE(X) _CCCL_HAS_FEATURE(X)
 #else
@@ -45,12 +42,6 @@
 
 #ifndef __has_include
 #  define __has_include(...) 0
-#endif
-
-#ifdef __has_extension
-#  define TEST_HAS_EXTENSION(X) __has_extension(X)
-#else
-#  define TEST_HAS_EXTENSION(X) 0
 #endif
 
 #ifdef __has_builtin
