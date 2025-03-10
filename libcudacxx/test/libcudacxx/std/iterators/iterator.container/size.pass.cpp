@@ -48,14 +48,14 @@ __host__ __device__ void test_const_container(const C& c)
 template <typename T>
 __host__ __device__ void test_const_container(const cuda::std::initializer_list<T>& c)
 {
-  LIBCPP_ASSERT_NOEXCEPT(cuda::std::size(c)); // our cuda::std::size is conditionally noexcept
+  static_assert(noexcept(cuda::std::size(c))); // our cuda::std::size is conditionally noexcept
   assert(cuda::std::size(c) == c.size());
 }
 
 template <typename T>
 __host__ __device__ void test_container(cuda::std::initializer_list<T>& c)
 {
-  LIBCPP_ASSERT_NOEXCEPT(cuda::std::size(c)); // our cuda::std::size is conditionally noexcept
+  static_assert(noexcept(cuda::std::size(c))); // our cuda::std::size is conditionally noexcept
   assert(cuda::std::size(c) == c.size());
 }
 
