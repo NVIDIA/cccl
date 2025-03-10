@@ -36,7 +36,7 @@
 
 // Test the consistency of the six basic comparison operators for values that are ordered or unordered.
 template <class T, class U = T>
-TEST_NODISCARD __host__ __device__ TEST_CONSTEXPR_CXX14 bool
+[[nodiscard]] __host__ __device__ TEST_CONSTEXPR_CXX14 bool
 testComparisonsComplete(const T& t1, const U& t2, bool isEqual, bool isLess, bool isGreater)
 {
   assert(((isEqual ? 1 : 0) + (isLess ? 1 : 0) + (isGreater ? 1 : 0) <= 1)
@@ -251,7 +251,7 @@ testComparisonsComplete(const T& t1, const U& t2, bool isEqual, bool isLess, boo
 
 // Test the six basic comparison operators for ordered values.
 template <class T, class U = T>
-TEST_NODISCARD __host__ __device__ TEST_CONSTEXPR_CXX14 bool
+[[nodiscard]] __host__ __device__ TEST_CONSTEXPR_CXX14 bool
 testComparisons(const T& t1, const U& t2, bool isEqual, bool isLess)
 {
   assert(!(isEqual && isLess) && "isEqual and isLess cannot be both true");
@@ -261,7 +261,7 @@ testComparisons(const T& t1, const U& t2, bool isEqual, bool isLess)
 
 //  Easy call when you can init from something already comparable.
 template <class T, class Param>
-TEST_NODISCARD __host__ __device__ TEST_CONSTEXPR_CXX14 bool testComparisonsValues(Param val1, Param val2)
+[[nodiscard]] __host__ __device__ TEST_CONSTEXPR_CXX14 bool testComparisonsValues(Param val1, Param val2)
 {
   const bool isEqual   = val1 == val2;
   const bool isLess    = val1 < val2;
@@ -331,7 +331,7 @@ __host__ __device__ constexpr void AssertOrderReturn()
 }
 
 template <class Order, class T, class U = T>
-TEST_NODISCARD __host__ __device__ constexpr bool testOrder(const T& t1, const U& t2, Order order)
+[[nodiscard]] __host__ __device__ constexpr bool testOrder(const T& t1, const U& t2, Order order)
 {
   bool equal   = order == Order::equivalent;
   bool less    = order == Order::less;
@@ -341,7 +341,7 @@ TEST_NODISCARD __host__ __device__ constexpr bool testOrder(const T& t1, const U
 }
 
 template <class T, class Param>
-TEST_NODISCARD __host__ __device__ constexpr bool testOrderValues(Param val1, Param val2)
+[[nodiscard]] __host__ __device__ constexpr bool testOrderValues(Param val1, Param val2)
 {
   return testOrder(T(val1), T(val2), val1 <=> val2);
 }
@@ -350,7 +350,7 @@ TEST_NODISCARD __host__ __device__ constexpr bool testOrderValues(Param val1, Pa
 
 //  Test all two comparison operations for sanity
 template <class T, class U = T>
-TEST_NODISCARD __host__ __device__ TEST_CONSTEXPR_CXX14 bool testEquality(const T& t1, const U& t2, bool isEqual)
+[[nodiscard]] __host__ __device__ TEST_CONSTEXPR_CXX14 bool testEquality(const T& t1, const U& t2, bool isEqual)
 {
   if (isEqual)
   {
@@ -396,7 +396,7 @@ TEST_NODISCARD __host__ __device__ TEST_CONSTEXPR_CXX14 bool testEquality(const 
 
 //  Easy call when you can init from something already comparable.
 template <class T, class Param>
-TEST_NODISCARD __host__ __device__ TEST_CONSTEXPR_CXX14 bool testEqualityValues(Param val1, Param val2)
+[[nodiscard]] __host__ __device__ TEST_CONSTEXPR_CXX14 bool testEqualityValues(Param val1, Param val2)
 {
   const bool isEqual = val1 == val2;
 

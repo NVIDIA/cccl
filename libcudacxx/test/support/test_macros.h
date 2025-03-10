@@ -225,8 +225,9 @@
 #endif
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
-#  if (_CCCL_COMPILER(MSVC) && _HAS_EXCEPTIONS == 0) || (!_CCCL_COMPILER(MSVC) && !__EXCEPTIONS) // Catches all non msvc
-                                                                                                 // based compilers
+#  if (_CCCL_COMPILER(MSVC) && _HAS_EXCEPTIONS == 0) || (!_CCCL_COMPILER(MSVC) && !__EXCEPTIONS) // Catches all non
+                                                                                                 // msvc based
+                                                                                                 // compilers
 #    define TEST_HAS_NO_EXCEPTIONS
 #  endif
 #endif // !TEST_HAS_NO_EXCEPTIONS
@@ -277,12 +278,6 @@
 #ifndef __has_cpp_attribute
 #  define __has_cpp_attribute(__x) 0
 #endif // !__has_cpp_attribute
-
-#if __has_cpp_attribute(nodiscard)
-#  define TEST_NODISCARD [[nodiscard]]
-#else
-#  define TEST_NODISCARD
-#endif
 
 #define TEST_IGNORE_NODISCARD (void)
 
