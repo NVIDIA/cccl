@@ -2,13 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import TYPE_CHECKING, Callable, Literal, Union
+from typing import TYPE_CHECKING, Callable, Literal, Tuple, Union
 
 import numba
 
 from cuda.cooperative.experimental._common import (
     CUB_BLOCK_REDUCE_ALGOS,
     make_binary_tempfile,
+    normalize_dim_param,
     normalize_dtype_param,
 )
 from cuda.cooperative.experimental._types import (
@@ -30,7 +31,7 @@ if TYPE_CHECKING:
 
 def _reduce(
     dtype: Union[str, type, "np.dtype", "numba.types.Type"],
-    threads_per_block: int,
+    threads_per_block: Union[int, Tuple[int, int], Tuple[int, int, int]],
     items_per_thread: int,
     binary_op: Callable,
     algorithm: Literal["raking", "raking_commutative_only", "warp_reductions"],
@@ -42,18 +43,23 @@ def _reduce(
     if items_per_thread < 1:
         raise ValueError("items_per_thread must be greater than or equal to 1")
 
+    dim = normalize_dim_param(threads_per_block)
     dtype = normalize_dtype_param(dtype)
 
     specialization_kwds = {
         "T": dtype,
-        "BLOCK_DIM_X": threads_per_block,
+        "BLOCK_DIM_X": dim[0],
         "ALGORITHM": CUB_BLOCK_REDUCE_ALGOS[algorithm],
+        "BLOCK_DIM_Y": dim[1],
+        "BLOCK_DIM_Z": dim[2],
     }
 
     template_parameters = [
         TemplateParameter("T"),
         TemplateParameter("BLOCK_DIM_X"),
         TemplateParameter("ALGORITHM"),
+        TemplateParameter("BLOCK_DIM_Y"),
+        TemplateParameter("BLOCK_DIM_Z"),
     ]
 
     if binary_op is None:
@@ -186,7 +192,8 @@ def reduce(
 
     Args:
         dtype: Data type being reduced
-        threads_per_block: The number of threads in a block
+        threads_per_block: The number of threads in a block, either an integer
+            or a tuple of 2 or 3 integers
         binary_op: Binary reduction function
         items_per_thread: The number of items each thread contributes to the reduction
         algorithm: Algorithm to use for the reduction (one of "raking",
@@ -247,7 +254,8 @@ def sum(
 
     Args:
         dtype: Data type being reduced
-        threads_per_block: The number of threads in a block
+        threads_per_block: The number of threads in a block, either an integer
+            or a tuple of 2 or 3 integers
         items_per_thread: The number of items each thread owns
         algorithm: Algorithm to use for the reduction (one of "raking",
             "raking_commutative_only", "warp_reductions")
