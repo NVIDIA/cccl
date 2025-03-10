@@ -51,23 +51,23 @@ struct __rcvr_with_env_t : _Rcvr
   template <class _Query>
   _CUDAX_TRIVIAL_API constexpr decltype(auto) __get_1st(_Query) const noexcept
   {
-    if constexpr (__queryable<_Env, _Query>)
+    if constexpr (__queryable_with<_Env, _Query>)
     {
       return (__env_);
     }
-    else if constexpr (__queryable<env_of_t<_Rcvr>, _Query>)
+    else if constexpr (__queryable_with<env_of_t<_Rcvr>, _Query>)
     {
       return __async::get_env(static_cast<const _Rcvr&>(*this));
     }
   }
 
   template <class _Query, class _Self = __rcvr_with_env_t>
-  using _1st_env_t = decltype(__declval<const _Self&>().__get_1st(_Query{}));
+  using __1st_env_t = decltype(declval<const _Self&>().__get_1st(_Query{}));
 
   template <class _Query>
   _CUDAX_TRIVIAL_API constexpr auto query(_Query __query) const
-    noexcept(__nothrow_queryable<_1st_env_t<_Query>, _Query>) //
-    -> __query_result_t<_1st_env_t<_Query>, _Query>
+    noexcept(__nothrow_queryable_with<__1st_env_t<_Query>, _Query>) //
+    -> __query_result_t<__1st_env_t<_Query>, _Query>
   {
     return __get_1st(__query).query(__query);
   }
@@ -110,23 +110,23 @@ struct __rcvr_with_env_t<_Rcvr*, _Env>
   template <class _Query>
   _CUDAX_TRIVIAL_API constexpr decltype(auto) __get_1st(_Query) const noexcept
   {
-    if constexpr (__queryable<_Env, _Query>)
+    if constexpr (__queryable_with<_Env, _Query>)
     {
       return (__env_);
     }
-    else if constexpr (__queryable<env_of_t<_Rcvr>, _Query>)
+    else if constexpr (__queryable_with<env_of_t<_Rcvr>, _Query>)
     {
       return __async::get_env(__rcvr_);
     }
   }
 
   template <class _Query, class _Self = __rcvr_with_env_t>
-  using _1st_env_t = decltype(__declval<const _Self&>().__get_1st(_Query{}));
+  using __1st_env_t = decltype(declval<const _Self&>().__get_1st(_Query{}));
 
   template <class _Query>
   _CUDAX_TRIVIAL_API constexpr auto query(_Query __query) const
-    noexcept(__nothrow_queryable<_1st_env_t<_Query>, _Query>) //
-    -> __query_result_t<_1st_env_t<_Query>, _Query>
+    noexcept(__nothrow_queryable_with<__1st_env_t<_Query>, _Query>) //
+    -> __query_result_t<__1st_env_t<_Query>, _Query>
   {
     return __get_1st(__query).query(__query);
   }

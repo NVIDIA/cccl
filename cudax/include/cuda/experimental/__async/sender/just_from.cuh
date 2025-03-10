@@ -21,11 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/unreachable.h>
 #include <cuda/std/__type_traits/conditional.h>
 
 #include <cuda/experimental/__async/sender/completion_signatures.cuh>
 #include <cuda/experimental/__async/sender/cpos.cuh>
-#include <cuda/experimental/__async/sender/rcvr_ref.cuh>
 #include <cuda/experimental/__async/sender/tuple.cuh>
 #include <cuda/experimental/__async/sender/utility.cuh>
 #include <cuda/experimental/__detail/config.cuh>
@@ -56,17 +56,13 @@ struct _AN_ERROR_COMPLETION_MUST_HAVE_EXACTLY_ONE_ERROR_ARGUMENT;
 struct _A_STOPPED_COMPLETION_MUST_HAVE_NO_ARGUMENTS;
 
 template <__disposition_t _Disposition>
-struct __just_from
+struct __just_from_t
 {
-#if !_CCCL_CUDA_COMPILER(NVCC)
-
 private:
-#endif // !_CCCL_CUDA_COMPILER(NVCC)
-
   using _JustTag = decltype(__detail::__just_from_tag<_Disposition>());
   using _SetTag  = decltype(__detail::__set_tag<_Disposition>());
 
-  using __diag_t = _CUDA_VSTD::conditional_t<_CUDA_VSTD::is_same_v<_SetTag, set_error_t>,
+  using __diag_t = _CUDA_VSTD::conditional_t<_SetTag() == set_error,
                                              _AN_ERROR_COMPLETION_MUST_HAVE_EXACTLY_ONE_ERROR_ARGUMENT,
                                              _A_STOPPED_COMPLETION_MUST_HAVE_NO_ARGUMENTS>;
 
@@ -83,7 +79,7 @@ private:
                                    __error_t<_Ts...>>;
   };
 
-  template <class _Rcvr = receiver_archetype>
+  template <class _Rcvr>
   struct __complete_fn
   {
     _Rcvr& __rcvr_;
@@ -99,8 +95,6 @@ private:
   struct __opstate
   {
     using operation_state_concept = operation_state_t;
-    using completion_signatures   = __call_result_t<_Fn, __probe_fn>;
-    static_assert(__is_completion_signatures<completion_signatures>);
 
     _Rcvr __rcvr_;
     _Fn __fn_;
@@ -111,50 +105,64 @@ private:
     }
   };
 
-  template <class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t
-  {
-    using sender_concept = sender_t;
-
-    _CCCL_NO_UNIQUE_ADDRESS _JustTag __tag_;
-    _Fn __fn_;
-
-    template <class _Rcvr>
-    _CUDAX_API __opstate<_Rcvr, _Fn> connect(_Rcvr __rcvr) && //
-      noexcept(__nothrow_decay_copyable<_Rcvr, _Fn>)
-    {
-      return __opstate<_Rcvr, _Fn>{static_cast<_Rcvr&&>(__rcvr), static_cast<_Fn&&>(__fn_)};
-    }
-
-    template <class _Rcvr>
-    _CUDAX_API __opstate<_Rcvr, _Fn> connect(_Rcvr __rcvr) const& //
-      noexcept(__nothrow_decay_copyable<_Rcvr, _Fn const&>)
-    {
-      return __opstate<_Rcvr, _Fn>{static_cast<_Rcvr&&>(__rcvr), __fn_};
-    }
-  };
-
 public:
   template <class _Fn>
-  _CUDAX_TRIVIAL_API auto operator()(_Fn __fn) const noexcept
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
+
+  template <class _Fn>
+  _CUDAX_TRIVIAL_API auto operator()(_Fn __fn) const noexcept -> __sndr_t<_Fn>;
+};
+
+template <__disposition_t _Disposition>
+template <class _Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t<_Disposition>::__sndr_t
+{
+  using sender_concept = sender_t;
+
+  _CCCL_NO_UNIQUE_ADDRESS _JustTag __tag_;
+  _Fn __fn_;
+
+  template <class _Self, class...>
+  _CUDAX_API static constexpr auto get_completion_signatures() noexcept
   {
-    using __completions = __call_result_t<_Fn, __probe_fn>;
-    static_assert(__is_completion_signatures<__completions>,
-                  "The function passed to just_from must return an instance of a specialization of "
-                  "completion_signatures<>.");
-    return __sndr_t<_Fn>{{}, static_cast<_Fn&&>(__fn)};
+    return __call_result_t<_Fn, __probe_fn>{};
+  }
+
+  template <class _Rcvr>
+  _CUDAX_API __opstate<_Rcvr, _Fn> connect(_Rcvr __rcvr) && //
+    noexcept(__nothrow_decay_copyable<_Rcvr, _Fn>)
+  {
+    return __opstate<_Rcvr, _Fn>{static_cast<_Rcvr&&>(__rcvr), static_cast<_Fn&&>(__fn_)};
+  }
+
+  template <class _Rcvr>
+  _CUDAX_API __opstate<_Rcvr, _Fn> connect(_Rcvr __rcvr) const& //
+    noexcept(__nothrow_decay_copyable<_Rcvr, _Fn const&>)
+  {
+    return __opstate<_Rcvr, _Fn>{static_cast<_Rcvr&&>(__rcvr), __fn_};
   }
 };
 
-_CCCL_GLOBAL_CONSTANT struct just_from_t : __just_from<__value>
+template <__disposition_t _Disposition>
+template <class _Fn>
+_CUDAX_TRIVIAL_API auto __just_from_t<_Disposition>::operator()(_Fn __fn) const noexcept -> __sndr_t<_Fn>
+{
+  using __completions = __call_result_t<_Fn, __probe_fn>;
+  static_assert(__valid_completion_signatures<__completions>,
+                "The function passed to just_from must return an instance of a specialization of "
+                "completion_signatures<>.");
+  return __sndr_t<_Fn>{{}, static_cast<_Fn&&>(__fn)};
+}
+
+_CCCL_GLOBAL_CONSTANT struct just_from_t : __just_from_t<__value>
 {
 } just_from{};
 
-_CCCL_GLOBAL_CONSTANT struct just_error_from_t : __just_from<__error>
+_CCCL_GLOBAL_CONSTANT struct just_error_from_t : __just_from_t<__error>
 {
 } just_error_from{};
 
-_CCCL_GLOBAL_CONSTANT struct just_stopped_from_t : __just_from<__stopped>
+_CCCL_GLOBAL_CONSTANT struct just_stopped_from_t : __just_from_t<__stopped>
 {
 } just_stopped_from{};
 } // namespace cuda::experimental::__async
