@@ -110,10 +110,10 @@ private:
   {
     if constexpr (_CUDA_VSTD::contiguous_iterator<data_handle_type>)
     {
-      ::cudaPointerAttributes __attrib{};
+      ::cudaPointerAttributes __ptr_attrib{};
       auto __p1 = _CUDA_VSTD::to_address(__p);
-      _CCCL_ASSERT_CUDA_API(::cudaPointerGetAttributes, "cudaPointerGetAttributes failed", &__attrib, __p1);
-      return __attrib.hostPointer != nullptr || __attrib.type == ::cudaMemoryTypeUnregistered;
+      _CCCL_ASSERT_CUDA_API(::cudaPointerGetAttributes, "cudaPointerGetAttributes failed", &__ptr_attrib, __p1);
+      return __ptr_attrib.hostPointer != nullptr || __ptr_attrib.type == ::cudaMemoryTypeUnregistered;
     }
     else
     {
@@ -312,10 +312,10 @@ private:
   {
     if constexpr (_CUDA_VSTD::contiguous_iterator<data_handle_type>)
     {
-      ::cudaPointerAttributes __attrib{};
+      ::cudaPointerAttributes __ptr_attrib{};
       auto __p1 = _CUDA_VSTD::to_address(__p);
-      _CCCL_ASSERT_CUDA_API(::cudaPointerGetAttributes, "cudaPointerGetAttributes failed", &__attrib, __p1);
-      return __attrib.devicePointer != nullptr && __attrib.hostPointer == __attrib.devicePointer;
+      _CCCL_ASSERT_CUDA_API(::cudaPointerGetAttributes, "cudaPointerGetAttributes failed", &__ptr_attrib, __p1);
+      return __ptr_attrib.devicePointer != nullptr && __ptr_attrib.hostPointer == __ptr_attrib.devicePointer;
     }
     else
     {
