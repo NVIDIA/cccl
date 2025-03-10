@@ -41,6 +41,8 @@
 #define _CCCL_HAS_NVBF16()      0
 #define _CCCL_HAS_FLOAT128()    0
 
+#define _CCCL_HAS_FLOAT128_LITERAL() _CCCL_HAS_FLOAT128()
+
 #if !defined(CCCL_DISABLE_INT128_SUPPORT) && _CCCL_OS(LINUX) \
   && ((_CCCL_COMPILER(NVRTC) && defined(__CUDACC_RTC_INT128__)) || defined(__SIZEOF_INT128__))
 #  undef _CCCL_HAS_INT128
@@ -87,5 +89,17 @@
 #  undef _CCCL_HAS_FLOAT128
 #  define _CCCL_HAS_FLOAT128() 1
 #endif
+
+// gcc does not allow to use 'operator""q' when __STRICT_ANSI__ is defined, it may be allowed by
+// -fext-numeric-literals, but we have no way to detect it. However, from gcc 13, we can use 'operator""f128' and cast
+// it to __float128.
+#if _CCCL_COMPILER(GCC, >=, 13)
+#  define _CCCL_FLOAT128_LITERAL(_X) __float128(_X##f128)
+#elif !(_CCCL_COMPILER(GCC) && defined(__STRICT_ANSI__))
+#  define _CCCL_FLOAT128_LITERAL(_X) __float128(_X##q)
+#else // ^^^ has __float128 literal ^^^ // vvv no __float128 literal vvv
+#  undef _CCCL_HAS_FLOAT128_LITERAL
+#  define _CCCL_HAS_FLOAT128_LITERAL() 0
+#endif // ^^^ no __float128 literal ^^^
 
 #endif // __CCCL_EXTENDED_DATA_TYPES_H

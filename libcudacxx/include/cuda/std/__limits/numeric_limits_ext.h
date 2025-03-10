@@ -644,6 +644,134 @@ public:
 };
 #endif // _CCCL_HAS_NVFP4_E2M1()
 
+// __fp128
+
+#if _CCCL_HAS_FLOAT128()
+template <>
+class __numeric_limits_impl<__float128, __numeric_limits_type::__floating_point>
+{
+public:
+  using type = __float128;
+
+  static constexpr bool is_specialized = true;
+
+  static constexpr bool is_signed   = true;
+  static constexpr int digits       = 113;
+  static constexpr int digits10     = 33;
+  static constexpr int max_digits10 = 36;
+
+#  if _CCCL_HAS_FLOAT128_LITERAL()
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
+  {
+    return _CCCL_FLOAT128_LITERAL(3.36210314311209350626267781732175260e-4932);
+  }
+#  else // ^^^ _CCCL_HAS_FLOAT128_LITERAL() ^^^ // vvv !_CCCL_HAS_FLOAT128_LITERAL() vvv
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_BIT_CAST type min() noexcept
+  {
+    return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x0001'0000'0000'0000} << 64);
+  }
+#  endif // ^^^ !_CCCL_HAS_FLOAT128_LITERAL() ^^^
+#  if _CCCL_HAS_FLOAT128_LITERAL()
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type max() noexcept
+  {
+    return _CCCL_FLOAT128_LITERAL(1.18973149535723176508575932662800702e+4932);
+  }
+#  else // ^^^ _CCCL_HAS_FLOAT128_LITERAL() ^^^ // vvv !_CCCL_HAS_FLOAT128_LITERAL() vvv
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_BIT_CAST type max() noexcept
+  {
+    return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x7ffe'ffff'ffff'ffff} << 64 | 0xffff'ffff'ffff'ffff);
+  }
+#  endif // ^^^ !_CCCL_HAS_FLOAT128_LITERAL() ^^^
+#  if _CCCL_HAS_FLOAT128_LITERAL()
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type lowest() noexcept
+  {
+    return -max();
+  }
+#  else // ^^^ _CCCL_HAS_FLOAT128_LITERAL() ^^^ // vvv !_CCCL_HAS_FLOAT128_LITERAL() vvv
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_BIT_CAST type lowest() noexcept
+  {
+    return -max();
+  }
+#  endif // ^^^ !_CCCL_HAS_FLOAT128_LITERAL() ^^^
+
+  static constexpr bool is_integer = false;
+  static constexpr bool is_exact   = false;
+  static constexpr int radix       = __FLT_RADIX__;
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type epsilon() noexcept
+  {
+    return type(1.92592994438723585305597794258492732e-34);
+  }
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type round_error() noexcept
+  {
+    return type(0.5);
+  }
+
+  static constexpr int min_exponent   = -16381;
+  static constexpr int min_exponent10 = -4931;
+  static constexpr int max_exponent   = 16384;
+  static constexpr int max_exponent10 = 4932;
+
+  static constexpr bool has_infinity             = true;
+  static constexpr bool has_quiet_NaN            = true;
+  static constexpr bool has_signaling_NaN        = true;
+  static constexpr float_denorm_style has_denorm = denorm_present;
+  static constexpr bool has_denorm_loss          = false;
+
+#  if defined(_CCCL_BUILTIN_HUGE_VALF128)
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type infinity() noexcept
+  {
+    return _CCCL_BUILTIN_HUGE_VALF128();
+  }
+#  else // ^^^ _CCCL_BUILTIN_HUGE_VALF128 ^^^ // vvv !_CCCL_BUILTIN_HUGE_VALF128 vvv
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_BIT_CAST type infinity() noexcept
+  {
+    return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x7fff'0000'0000'0000} << 64);
+  }
+#  endif // ^^^ !_CCCL_BUILTIN_HUGE_VALF128 ^^^
+#  if defined(_CCCL_BUILTIN_NANF128)
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type quiet_NaN() noexcept
+  {
+    return _CCCL_BUILTIN_NANF128("");
+  }
+#  else // ^^^ _CCCL_BUILTIN_NANF128 ^^^ // vvv !_CCCL_BUILTIN_NANF128 vvv
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_BIT_CAST type quiet_NaN() noexcept
+  {
+    return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x7fff'8000'0000'0000} << 64);
+  }
+#  endif // ^^^ !_CCCL_BUILTIN_NANF128 ^^^
+#  if defined(_CCCL_BUILTIN_NANSF128)
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type signaling_NaN() noexcept
+  {
+    return _CCCL_BUILTIN_NANSF128("");
+  }
+#  else // ^^^ _CCCL_BUILTIN_NANSF128 ^^^ // vvv !_CCCL_BUILTIN_NANSF128 vvv
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_BIT_CAST type signaling_NaN() noexcept
+  {
+    return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x7fff'4000'0000'0000} << 64);
+  }
+#  endif // ^^^ !_CCCL_BUILTIN_NANSF128 ^^^
+#  if _CCCL_HAS_FLOAT128_LITERAL()
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr type denorm_min() noexcept
+  {
+    return _CCCL_FLOAT128_LITERAL(6.47517511943802511092443895822764655e-4966);
+  }
+#  else // ^^^ _CCCL_HAS_FLOAT128_LITERAL() ^^^ // vvv !_CCCL_HAS_FLOAT128_LITERAL() vvv
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_BIT_CAST type denorm_min() noexcept
+  {
+    return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x1});
+  }
+#  endif // ^^^ !_CCCL_HAS_FLOAT128_LITERAL() ^^^
+
+  static constexpr bool is_iec559  = true;
+  static constexpr bool is_bounded = true;
+  static constexpr bool is_modulo  = false;
+
+  static constexpr bool traps                    = false;
+  static constexpr bool tinyness_before          = false;
+  static constexpr float_round_style round_style = round_to_nearest;
+};
+#endif // _CCCL_HAS_FLOAT128()
+
 _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif // _LIBCUDACXX___LIMITS_NUMERIC_LIMITS_EXT_H

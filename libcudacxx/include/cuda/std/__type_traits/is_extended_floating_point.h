@@ -125,6 +125,18 @@ _CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v<__nv_fp4_e2m1> = 
 #  endif // _CCCL_HAS_NVFP4_E2M1()
 #endif // !_CCCL_NO_INLINE_VARIABLES
 
+#if _CCCL_HAS_FLOAT128()
+template <>
+struct __is_extended_floating_point<__float128> : true_type
+{};
+#endif // _CCCL_HAS_FLOAT128()
+#ifndef _CCCL_NO_INLINE_VARIABLES
+#  if _CCCL_HAS_FLOAT128()
+template <>
+_CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v<__float128> = true;
+#  endif // _CCCL_HAS_FLOAT128()
+#endif // !_CCCL_NO_INLINE_VARIABLES
+
 _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_EXTENDED_FLOATING_POINT_H
