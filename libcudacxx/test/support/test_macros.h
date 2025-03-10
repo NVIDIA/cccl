@@ -189,12 +189,6 @@
 #endif
 #define TEST_THROW_SPEC(...)
 
-#if defined(TEST_COMPILER_NVRTC)
-#  define NEW_IS_NOEXCEPT_NVRTC noexcept
-#else
-#  define NEW_IS_NOEXCEPT_NVRTC
-#endif // TEST_COMPILER_NVRTC
-
 // Sniff out to see if the underling C library has C11 features
 // Note that at this time (July 2018), MacOS X and iOS do NOT.
 // This is cribbed from __config; but lives here as well because we can't assume libc++
@@ -213,10 +207,6 @@
 #    define TEST_HAS_TIMESPEC_GET
 #  endif
 #endif
-
-/* Features that were introduced in C++14 */
-#define TEST_HAS_EXTENDED_CONSTEXPR
-#define TEST_HAS_VARIABLE_TEMPLATES
 
 #define TEST_ALIGNAS_TYPE(...) TEST_ALIGNAS(TEST_ALIGNOF(__VA_ARGS__))
 
@@ -243,12 +233,6 @@
 #if !_LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
 #  define TEST_HAS_NO_ALIGNED_ALLOCATION
 #endif // !_LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
-
-#if defined(_LIBCUDACXX_SAFE_STATIC)
-#  define TEST_SAFE_STATIC _LIBCUDACXX_SAFE_STATIC
-#else
-#  define TEST_SAFE_STATIC
-#endif
 
 #if !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  define TEST_HAS_NO_SPACESHIP_OPERATOR
@@ -394,25 +378,6 @@ __host__ __device__ constexpr bool unused(T&&...)
 #if defined(TEST_COMPILER_NVHPC)
 #  define TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 #endif // TEST_COMPILER_NVHPC
-
-#if (defined(TEST_WINDOWS_DLL) && !defined(_MSC_VER)) || defined(__MVS__)
-// Normally, a replaced e.g. 'operator new' ends up used if the user code
-// does a call to e.g. 'operator new[]'; it's enough to replace the base
-// versions and have it override all of them.
-//
-// When the fallback operators are located within the libc++ library and we
-// can't override the calls within it (see above), this fallback mechanism
-// doesn't work either.
-//
-// On Windows, when using the MSVC vcruntime, the operator new/delete fallbacks
-// are linked separately from the libc++ library, linked statically into
-// the end user executable, and these fallbacks work even in DLL configurations.
-// In MinGW configurations when built as a DLL, and on zOS, these fallbacks
-// don't work though.
-#  define ASSERT_WITH_OPERATOR_NEW_FALLBACKS(...) ((void) (__VA_ARGS__))
-#else
-#  define ASSERT_WITH_OPERATOR_NEW_FALLBACKS(...) assert(__VA_ARGS__)
-#endif
 
 #if defined(__GNUC__)
 #  pragma GCC diagnostic pop
