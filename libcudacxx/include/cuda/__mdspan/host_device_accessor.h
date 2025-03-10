@@ -121,9 +121,9 @@ private:
   }
 
 public:
-  _CCCL_TEMPLATE(typename _NotUsed = void)
-  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_default_constructible, _Accessor))
-  _LIBCUDACXX_HIDE_FROM_ABI __host_accessor() noexcept(_CUDA_VSTD::is_nothrow_default_constructible_v<_Accessor>)
+  _CCCL_TEMPLATE(class _Accessor2 = _Accessor)
+  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_default_constructible, _Accessor2))
+  _LIBCUDACXX_HIDE_FROM_ABI __host_accessor() noexcept(_CUDA_VSTD::is_nothrow_default_constructible_v<_Accessor2>)
       : _Accessor{}
   {}
 
