@@ -54,8 +54,8 @@ __host__ __device__ void testRuntimeSpan(Span sp)
   assert(s1.size() == s2.size());
 }
 
-STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int carr1[] = {1, 2, 3, 4};
-__device__ int arr[]                                     = {5, 6, 7};
+STATIC_TEST_GLOBAL_VAR constexpr int carr1[] = {1, 2, 3, 4};
+__device__ int arr[]                         = {5, 6, 7};
 
 int main(int, char**)
 {

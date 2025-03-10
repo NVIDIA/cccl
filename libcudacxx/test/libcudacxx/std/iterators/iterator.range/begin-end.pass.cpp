@@ -126,8 +126,8 @@ __host__ __device__ void test_const_array(const T (&array)[Sz])
   assert(cuda::std::cend(array) == array + Sz);
 }
 
-STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int global_array[]{1, 2, 3};
-STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int global_const_array[] = {0, 1, 2, 3, 4};
+STATIC_TEST_GLOBAL_VAR constexpr int global_array[]{1, 2, 3};
+STATIC_TEST_GLOBAL_VAR constexpr int global_const_array[] = {0, 1, 2, 3, 4};
 
 __host__ __device__ void test_ambiguous_std()
 {
