@@ -26,8 +26,8 @@
 template <typename Span, size_t Offset, size_t Count>
 __host__ __device__ constexpr bool testConstexprSpan(Span sp)
 {
-  ASSERT_NOEXCEPT(sp.template subspan<Offset, Count>());
-  ASSERT_NOEXCEPT(sp.subspan(Offset, Count));
+  static_assert(noexcept(sp.template subspan<Offset, Count>()));
+  static_assert(noexcept(sp.subspan(Offset, Count)));
   auto s1  = sp.template subspan<Offset, Count>();
   auto s2  = sp.subspan(Offset, Count);
   using S1 = decltype(s1);
@@ -42,8 +42,8 @@ __host__ __device__ constexpr bool testConstexprSpan(Span sp)
 template <typename Span, size_t Offset>
 __host__ __device__ constexpr bool testConstexprSpan(Span sp)
 {
-  ASSERT_NOEXCEPT(sp.template subspan<Offset>());
-  ASSERT_NOEXCEPT(sp.subspan(Offset));
+  static_assert(noexcept(sp.template subspan<Offset>()));
+  static_assert(noexcept(sp.subspan(Offset)));
   auto s1  = sp.template subspan<Offset>();
   auto s2  = sp.subspan(Offset);
   using S1 = decltype(s1);
@@ -59,8 +59,8 @@ __host__ __device__ constexpr bool testConstexprSpan(Span sp)
 template <typename Span, size_t Offset, size_t Count>
 __host__ __device__ void testRuntimeSpan(Span sp)
 {
-  ASSERT_NOEXCEPT(sp.template subspan<Offset, Count>());
-  ASSERT_NOEXCEPT(sp.subspan(Offset, Count));
+  static_assert(noexcept(sp.template subspan<Offset, Count>()));
+  static_assert(noexcept(sp.subspan(Offset, Count)));
   auto s1  = sp.template subspan<Offset, Count>();
   auto s2  = sp.subspan(Offset, Count);
   using S1 = decltype(s1);
@@ -76,8 +76,8 @@ __host__ __device__ void testRuntimeSpan(Span sp)
 template <typename Span, size_t Offset>
 __host__ __device__ void testRuntimeSpan(Span sp)
 {
-  ASSERT_NOEXCEPT(sp.template subspan<Offset>());
-  ASSERT_NOEXCEPT(sp.subspan(Offset));
+  static_assert(noexcept(sp.template subspan<Offset>()));
+  static_assert(noexcept(sp.subspan(Offset)));
   auto s1  = sp.template subspan<Offset>();
   auto s2  = sp.subspan(Offset);
   using S1 = decltype(s1);
@@ -91,8 +91,8 @@ __host__ __device__ void testRuntimeSpan(Span sp)
   assert(s1.size() == s2.size());
 }
 
-STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int carr1[] = {1, 2, 3, 4};
-__device__ int arr1[]                                    = {5, 6, 7};
+STATIC_TEST_GLOBAL_VAR constexpr int carr1[] = {1, 2, 3, 4};
+__device__ int arr1[]                        = {5, 6, 7};
 
 int main(int, char**)
 {

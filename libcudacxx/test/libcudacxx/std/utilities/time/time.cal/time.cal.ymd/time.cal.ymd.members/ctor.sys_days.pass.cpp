@@ -42,7 +42,7 @@ int main(int, char**)
   using days           = cuda::std::chrono::days;
   using year_month_day = cuda::std::chrono::year_month_day;
 
-  ASSERT_NOEXCEPT(year_month_day{cuda::std::declval<sys_days>()});
+  static_assert(noexcept(year_month_day{cuda::std::declval<sys_days>()}));
 
   auto constexpr January = cuda::std::chrono::January;
 

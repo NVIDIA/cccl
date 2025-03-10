@@ -80,7 +80,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_one()
 
     auto i = cuda::std::move_iterator<It>(It(a));
     ASSERT_SAME_TYPE(decltype(i.base()), const It&);
-    ASSERT_NOEXCEPT(i.base());
+    static_assert(noexcept(i.base()));
 
     assert(i.base() == It(a));
 
@@ -94,7 +94,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_one()
 
     const auto i = cuda::std::move_iterator<It>(It(a));
     ASSERT_SAME_TYPE(decltype(i.base()), const It&);
-    ASSERT_NOEXCEPT(i.base());
+    static_assert(noexcept(i.base()));
     assert(i.base() == It(a));
   }
 

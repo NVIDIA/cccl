@@ -84,12 +84,12 @@ namespace types_fit_for_purpose
 #if TEST_STD_VER > 2017
 static_assert(equality_comparable<cxx20_member_eq>, "");
 static_assert(equality_comparable<cxx20_friend_eq>, "");
-#  ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#  if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 static_assert(equality_comparable<member_three_way_comparable>, "");
 #    ifndef __NVCC__ // nvbug3908399
 static_assert(equality_comparable<friend_three_way_comparable>, "");
 #    endif // !__NVCC_
-#  endif // TEST_HAS_NO_SPACESHIP_OPERATOR
+#  endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 static_assert(equality_comparable<explicit_operators>, "");
 static_assert(equality_comparable<different_return_types>, "");
 static_assert(equality_comparable<one_member_one_friend>, "");
@@ -114,7 +114,7 @@ static_assert(!equality_comparable<wrong_return_type>, "");
 #if TEST_STD_VER > 2017
 static_assert(!equality_comparable<cxx20_member_eq_operator_with_deleted_ne>, "");
 static_assert(!equality_comparable<cxx20_friend_eq_operator_with_deleted_ne>, "");
-#  ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#  if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 static_assert(!equality_comparable<member_three_way_comparable_with_deleted_eq>, "");
 static_assert(!equality_comparable<member_three_way_comparable_with_deleted_ne>, "");
 static_assert(!equality_comparable<friend_three_way_comparable_with_deleted_eq>, "");
@@ -130,7 +130,7 @@ static_assert(equality_comparable<le_returns_explicit_bool>, "");
 static_assert(equality_comparable<ge_returns_explicit_bool>, "");
 static_assert(equality_comparable<returns_true_type>, "");
 static_assert(equality_comparable<returns_int_ptr>, "");
-#  endif // TEST_HAS_NO_SPACESHIP_OPERATOR
+#  endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #endif // TEST_STD_VER > 2017
 } // namespace types_fit_for_purpose
 

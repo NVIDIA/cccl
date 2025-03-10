@@ -23,7 +23,7 @@ int main(int, char**)
   using month          = cuda::std::chrono::month;
   using month_day_last = cuda::std::chrono::month_day_last;
 
-  ASSERT_NOEXCEPT(cuda::std::declval<const month_day_last>().ok());
+  static_assert(noexcept(cuda::std::declval<const month_day_last>().ok()));
   ASSERT_SAME_TYPE(bool, decltype(cuda::std::declval<const month_day_last>().ok()));
 
   static_assert(!month_day_last{month{}}.ok(), "");

@@ -30,13 +30,13 @@ int main(int, char**)
   static_assert(cuda::std::chrono::duration_values<double>::max() == cuda::std::numeric_limits<double>::max(), "");
   static_assert(cuda::std::chrono::duration_values<Rep>::max() == cuda::std::numeric_limits<Rep>::max(), "");
 
-  LIBCPP_ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<int>::max());
-  LIBCPP_ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<double>::max());
-  LIBCPP_ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<Rep>::max());
+  static_assert(noexcept(cuda::std::chrono::duration_values<int>::max()));
+  static_assert(noexcept(cuda::std::chrono::duration_values<double>::max()));
+  static_assert(noexcept(cuda::std::chrono::duration_values<Rep>::max()));
 #if TEST_STD_VER > 2017
-  ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<int>::max());
-  ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<double>::max());
-  ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<Rep>::max());
+  static_assert(noexcept(cuda::std::chrono::duration_values<int>::max()));
+  static_assert(noexcept(cuda::std::chrono::duration_values<double>::max()));
+  static_assert(noexcept(cuda::std::chrono::duration_values<Rep>::max()));
 #endif
 
   return 0;

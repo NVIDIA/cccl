@@ -47,23 +47,23 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
   {
     A1 a{};
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
-    ASSERT_NOT_NOEXCEPT(implicitly_convert(a));
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#ifndef TEST_COMPILER_NVHPC
+    static_assert(!noexcept(implicitly_convert(a)));
+#endif // TEST_COMPILER_NVHPC
     cuda::std::reference_wrapper<B> b1 = a;
     assert(&b1.get() == &a.b_);
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
-    ASSERT_NOT_NOEXCEPT(b1 = a);
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#ifndef TEST_COMPILER_NVHPC
+    static_assert(!noexcept(b1 = a));
+#endif // TEST_COMPILER_NVHPC
     b1 = a;
     assert(&b1.get() == &a.b_);
   }
   {
     A2 a{};
-    ASSERT_NOEXCEPT(implicitly_convert(a));
+    static_assert(noexcept(implicitly_convert(a)));
     cuda::std::reference_wrapper<B> b2 = a;
     assert(&b2.get() == &a.b_);
-    ASSERT_NOEXCEPT(b2 = a);
+    static_assert(noexcept(b2 = a));
     b2 = a;
     assert(&b2.get() == &a.b_);
   }

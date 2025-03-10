@@ -33,7 +33,7 @@ __host__ __device__ void test_const_get_if()
   {
     using V = cuda::std::variant<int, const long>;
     constexpr V v(42);
-    ASSERT_NOEXCEPT(cuda::std::get_if<int>(&v));
+    static_assert(noexcept(cuda::std::get_if<int>(&v)));
     ASSERT_SAME_TYPE(decltype(cuda::std::get_if<int>(&v)), const int*);
 #if defined(_CCCL_BUILTIN_ADDRESSOF)
     static_assert(*cuda::std::get_if<int>(&v) == 42, "");
@@ -85,7 +85,7 @@ __host__ __device__ void test_get_if()
   {
     using V = cuda::std::variant<int, const long>;
     V v(42);
-    ASSERT_NOEXCEPT(cuda::std::get_if<int>(&v));
+    static_assert(noexcept(cuda::std::get_if<int>(&v)));
     ASSERT_SAME_TYPE(decltype(cuda::std::get_if<int>(&v)), int*);
     assert(*cuda::std::get_if<int>(&v) == 42);
     assert(cuda::std::get_if<const long>(&v) == nullptr);

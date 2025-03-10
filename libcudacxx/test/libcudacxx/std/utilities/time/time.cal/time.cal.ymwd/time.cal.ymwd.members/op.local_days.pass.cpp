@@ -40,7 +40,7 @@ int main(int, char**)
   using days               = cuda::std::chrono::days;
   using year_month_weekday = cuda::std::chrono::year_month_weekday;
 
-  ASSERT_NOEXCEPT(local_days(cuda::std::declval<year_month_weekday>()));
+  static_assert(noexcept(local_days(cuda::std::declval<year_month_weekday>())));
 
   {
     constexpr year_month_weekday ymwd{year{1970}, month{1}, weekday_indexed{cuda::std::chrono::Thursday, 1}};

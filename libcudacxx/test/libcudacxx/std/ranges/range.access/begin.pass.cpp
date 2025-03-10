@@ -382,8 +382,8 @@ __host__ __device__ constexpr bool testBeginFunction()
 
   return true;
 }
-ASSERT_NOEXCEPT(cuda::std::ranges::begin(cuda::std::declval<int (&)[10]>()));
-ASSERT_NOEXCEPT(cuda::std::ranges::cbegin(cuda::std::declval<int (&)[10]>()));
+static_assert(noexcept(cuda::std::ranges::begin(cuda::std::declval<int (&)[10]>())));
+static_assert(noexcept(cuda::std::ranges::cbegin(cuda::std::declval<int (&)[10]>())));
 
 // needs c++17's guaranteed copy elision
 #if !defined(TEST_COMPILER_MSVC_2019) // broken noexcept

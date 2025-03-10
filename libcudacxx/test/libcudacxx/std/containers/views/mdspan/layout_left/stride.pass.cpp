@@ -29,7 +29,7 @@ __host__ __device__ constexpr void test_stride(cuda::std::array<typename E::inde
 {
   cuda::std::layout_left::mapping<E> m{E{args...}};
 
-  ASSERT_NOEXCEPT(m.stride(0));
+  static_assert(noexcept(m.stride(0)));
   for (size_t r = 0; r < E::rank(); r++)
   {
     assert(strides[r] == m.stride(r));

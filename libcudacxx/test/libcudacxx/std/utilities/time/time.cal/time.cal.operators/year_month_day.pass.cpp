@@ -53,7 +53,7 @@ int main(int, char**)
   constexpr year_month Feb2018{year{2018}, February};
 
   { // operator/(const year_month& ym, const day& d)
-    ASSERT_NOEXCEPT(Feb2018 / day{2});
+    static_assert(noexcept(Feb2018 / day{2}));
     ASSERT_SAME_TYPE(year_month_day, decltype(Feb2018 / day{2}));
 
     static_assert((Feb2018 / day{2}).month() == February, "");
@@ -79,7 +79,7 @@ int main(int, char**)
   }
 
   { // operator/(const year_month& ym, int d)
-    ASSERT_NOEXCEPT(Feb2018 / 2);
+    static_assert(noexcept(Feb2018 / 2));
     ASSERT_SAME_TYPE(year_month_day, decltype(Feb2018 / 2));
 
     static_assert((Feb2018 / 2).month() == February, "");
@@ -105,7 +105,7 @@ int main(int, char**)
   }
 
   { // operator/(const year_month& ym, int d)
-    ASSERT_NOEXCEPT(Feb2018 / 2);
+    static_assert(noexcept(Feb2018 / 2));
     ASSERT_SAME_TYPE(year_month_day, decltype(Feb2018 / 2));
 
     static_assert((Feb2018 / 2).month() == February, "");
@@ -131,9 +131,9 @@ int main(int, char**)
   }
 
   { // operator/(const year& y, const month_day& md) (and switched)
-    ASSERT_NOEXCEPT(year{2018} / month_day{February, day{2}});
+    static_assert(noexcept(year{2018} / month_day{February, day{2}}));
     ASSERT_SAME_TYPE(year_month_day, decltype(year{2018} / month_day{February, day{2}}));
-    ASSERT_NOEXCEPT(month_day{February, day{2}} / year{2018});
+    static_assert(noexcept(month_day{February, day{2}} / year{2018}));
     ASSERT_SAME_TYPE(year_month_day, decltype(month_day{February, day{2}} / year{2018}));
 
     static_assert((year{2018} / month_day{February, day{2}}).month() == February, "");
@@ -166,9 +166,9 @@ int main(int, char**)
   }
 
   { // operator/(const month_day& md, int y) (and switched)
-    ASSERT_NOEXCEPT(2018 / month_day{February, day{2}});
+    static_assert(noexcept(2018 / month_day{February, day{2}}));
     ASSERT_SAME_TYPE(year_month_day, decltype(2018 / month_day{February, day{2}}));
-    ASSERT_NOEXCEPT(month_day{February, day{2}} / 2018);
+    static_assert(noexcept(month_day{February, day{2}} / 2018));
     ASSERT_SAME_TYPE(year_month_day, decltype(month_day{February, day{2}} / 2018));
 
     static_assert((2018 / month_day{February, day{2}}).month() == February, "");

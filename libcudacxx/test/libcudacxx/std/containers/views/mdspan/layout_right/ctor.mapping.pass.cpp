@@ -37,7 +37,7 @@ __host__ __device__ constexpr void test_conversion(FromExt src_exts)
   using From = cuda::std::layout_right::mapping<FromExt>;
   From src(src_exts);
 
-  ASSERT_NOEXCEPT(To(src));
+  static_assert(noexcept(To(src)));
   To dest(src);
 
   assert(dest == src);
@@ -53,7 +53,7 @@ __host__ __device__ constexpr void test_conversion(FromExt src_exts)
   using From = cuda::std::layout_right::mapping<FromExt>;
   From src(src_exts);
 
-  ASSERT_NOEXCEPT(To(src));
+  static_assert(noexcept(To(src)));
   To dest(src);
 
   assert(dest == src);

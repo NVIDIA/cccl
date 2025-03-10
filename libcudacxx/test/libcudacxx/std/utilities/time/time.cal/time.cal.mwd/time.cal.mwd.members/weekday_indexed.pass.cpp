@@ -27,7 +27,7 @@ int main(int, char**)
 
   constexpr weekday Sunday = cuda::std::chrono::Sunday;
 
-  ASSERT_NOEXCEPT(cuda::std::declval<const month_weekday>().weekday_indexed());
+  static_assert(noexcept(cuda::std::declval<const month_weekday>().weekday_indexed()));
   ASSERT_SAME_TYPE(weekday_indexed, decltype(cuda::std::declval<const month_weekday>().weekday_indexed()));
 
   static_assert(month_weekday{month{}, weekday_indexed{}}.weekday_indexed() == weekday_indexed{}, "");

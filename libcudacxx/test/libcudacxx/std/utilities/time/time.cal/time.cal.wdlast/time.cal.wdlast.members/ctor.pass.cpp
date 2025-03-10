@@ -27,7 +27,7 @@ int main(int, char**)
   using weekday      = cuda::std::chrono::weekday;
   using weekday_last = cuda::std::chrono::weekday_last;
 
-  ASSERT_NOEXCEPT(weekday_last{weekday{}});
+  static_assert(noexcept(weekday_last{weekday{}}));
 
   constexpr weekday_last wdl0{weekday{}};
   static_assert(wdl0.weekday() == weekday{}, "");

@@ -54,8 +54,8 @@ int main(int, char**)
   using year  = cuda::std::chrono::year;
   using years = cuda::std::chrono::years;
 
-  ASSERT_NOEXCEPT(cuda::std::declval<year&>() += cuda::std::declval<years>());
-  ASSERT_NOEXCEPT(cuda::std::declval<year&>() -= cuda::std::declval<years>());
+  static_assert(noexcept(cuda::std::declval<year&>() += cuda::std::declval<years>()));
+  static_assert(noexcept(cuda::std::declval<year&>() -= cuda::std::declval<years>()));
 
   ASSERT_SAME_TYPE(year&, decltype(cuda::std::declval<year&>() += cuda::std::declval<years>()));
   ASSERT_SAME_TYPE(year&, decltype(cuda::std::declval<year&>() -= cuda::std::declval<years>()));

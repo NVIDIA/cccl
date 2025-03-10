@@ -282,19 +282,19 @@ int main(int, char**)
   static_assert(clang_disallows_valid_static_cast_bug, "bug still exists");
   // FIXME Clang disallows this construction because it thinks that
   // 'static_cast<int&&>(declval<ExplicitTo<int&&>>())' is ill-formed.
-  LIBCPP_STATIC_ASSERT(
+  static_assert(
     clang_disallows_valid_static_cast_bug != cuda::std::__cccl_is_constructible<int&&, ExplicitTo<int&&>>::value, "");
   ((void) clang_disallows_valid_static_cast_bug); // Prevent unused warning
 #  else
   static_assert(clang_disallows_valid_static_cast_bug == false, "");
-  LIBCPP_STATIC_ASSERT(cuda::std::__cccl_is_constructible<int&&, ExplicitTo<int&&>>::value, "");
+  static_assert(cuda::std::__cccl_is_constructible<int&&, ExplicitTo<int&&>>::value, "");
 #  endif
 #endif
 
 // FIXME Compilers disagree about the validity of these tests.
 #if defined(TEST_CLANG_VER) && !defined(TEST_COMPILER_NVCC)
   test_is_constructible<const int&, ExplicitTo<int>>();
-  LIBCPP_STATIC_ASSERT(
+  static_assert(
     clang_disallows_valid_static_cast_bug != cuda::std::__cccl_is_constructible<int&&, ExplicitTo<int>>::value, "");
   static_assert(cuda::std::is_constructible<int&&, ExplicitTo<int>>::value, "");
 #elif defined(TEST_COMPILER_MSVC) && defined(TEST_COMPILER_NVCC)

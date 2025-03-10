@@ -26,16 +26,16 @@ __host__ __device__ void test_is_nothrow_move_constructible()
 template <class T>
 __host__ __device__ void test_has_not_nothrow_move_constructor()
 {
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#ifndef TEST_COMPILER_NVHPC
   static_assert(!cuda::std::is_nothrow_move_constructible<T>::value, "");
   static_assert(!cuda::std::is_nothrow_move_constructible<const T>::value, "");
-#endif // !TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // !TEST_COMPILER_NVHPC
   static_assert(!cuda::std::is_nothrow_move_constructible<volatile T>::value, "");
   static_assert(!cuda::std::is_nothrow_move_constructible<const volatile T>::value, "");
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#ifndef TEST_COMPILER_NVHPC
   static_assert(!cuda::std::is_nothrow_move_constructible_v<T>, "");
   static_assert(!cuda::std::is_nothrow_move_constructible_v<const T>, "");
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // TEST_COMPILER_NVHPC
   static_assert(!cuda::std::is_nothrow_move_constructible_v<volatile T>, "");
   static_assert(!cuda::std::is_nothrow_move_constructible_v<const volatile T>, "");
 }

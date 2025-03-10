@@ -99,10 +99,10 @@ using character_types =
             ,
             wchar_t
 #endif // !TEST_HAS_NO_WIDE_CHARACTERS
-#ifndef TEST_HAS_NO_CHAR8_T
+#if _LIBCUDACXX_HAS_CHAR8_T()
             ,
             char8_t
-#endif // !TEST_HAS_NO_CHAR8_T
+#endif // !_LIBCUDACXX_HAS_CHAR8_T()
             ,
             char16_t,
             char32_t>;

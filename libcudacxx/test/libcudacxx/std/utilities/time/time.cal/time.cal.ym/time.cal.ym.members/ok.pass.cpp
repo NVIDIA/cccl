@@ -26,7 +26,7 @@ int main(int, char**)
 
   constexpr month January = cuda::std::chrono::January;
 
-  ASSERT_NOEXCEPT(cuda::std::declval<const year_month>().ok());
+  static_assert(noexcept(cuda::std::declval<const year_month>().ok()));
   ASSERT_SAME_TYPE(bool, decltype(cuda::std::declval<const year_month>().ok()));
 
   static_assert(!year_month{year{-32768}, January}.ok(), ""); // Bad year

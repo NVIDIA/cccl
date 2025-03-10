@@ -67,7 +67,7 @@ template <typename T>
 __host__ __device__ void runtime_test()
 {
   ASSERT_SAME_TYPE(int, decltype(cuda::std::popcount(T(0))));
-  ASSERT_NOEXCEPT(cuda::std::popcount(T(0)));
+  static_assert(noexcept(cuda::std::popcount(T(0))));
 
   assert_popcount(T(121), 5);
   assert_popcount(T(122), 5);

@@ -25,7 +25,7 @@ __host__ __device__ constexpr auto check_subseconds(Duration d)
 {
   using HMS = cuda::std::chrono::hh_mm_ss<Duration>;
   ASSERT_SAME_TYPE(typename HMS::precision, decltype(cuda::std::declval<HMS>().subseconds()));
-  ASSERT_NOEXCEPT(cuda::std::declval<HMS>().subseconds());
+  static_assert(noexcept(cuda::std::declval<HMS>().subseconds()));
   return HMS(d).subseconds().count();
 }
 

@@ -57,7 +57,7 @@ int main(int, char**)
   constexpr weekday Tuesday = cuda::std::chrono::Tuesday;
 
   { // year_month_weekday - years
-    ASSERT_NOEXCEPT(cuda::std::declval<year_month_weekday>() - cuda::std::declval<years>());
+    static_assert(noexcept(cuda::std::declval<year_month_weekday>() - cuda::std::declval<years>()));
     ASSERT_SAME_TYPE(year_month_weekday,
                      decltype(cuda::std::declval<year_month_weekday>() - cuda::std::declval<years>()));
 
@@ -75,7 +75,7 @@ int main(int, char**)
   }
 
   { // year_month_weekday - months
-    ASSERT_NOEXCEPT(cuda::std::declval<year_month_weekday>() - cuda::std::declval<months>());
+    static_assert(noexcept(cuda::std::declval<year_month_weekday>() - cuda::std::declval<months>()));
     ASSERT_SAME_TYPE(year_month_weekday,
                      decltype(cuda::std::declval<year_month_weekday>() - cuda::std::declval<months>()));
 

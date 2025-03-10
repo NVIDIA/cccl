@@ -39,7 +39,7 @@ __host__ __device__ void test_const_lvalue_get()
     using V = cuda::std::variant<int, const long>;
     constexpr V v(42);
 #if !defined(TEST_COMPILER_MSVC) && !(defined(TEST_COMPILER_GCC) && __GNUC__ < 9)
-    ASSERT_NOT_NOEXCEPT(cuda::std::get<0>(v));
+    static_assert(!noexcept(cuda::std::get<0>(v)));
 #endif // !TEST_COMPILER_MSVC && !TEST_COMPILER_GCC
     ASSERT_SAME_TYPE(decltype(cuda::std::get<0>(v)), const int&);
     static_assert(cuda::std::get<0>(v) == 42, "");
@@ -47,7 +47,7 @@ __host__ __device__ void test_const_lvalue_get()
   {
     using V = cuda::std::variant<int, const long>;
     const V v(42);
-    ASSERT_NOT_NOEXCEPT(cuda::std::get<0>(v));
+    static_assert(!noexcept(cuda::std::get<0>(v)));
     ASSERT_SAME_TYPE(decltype(cuda::std::get<0>(v)), const int&);
     assert(cuda::std::get<0>(v) == 42);
   }
@@ -55,7 +55,7 @@ __host__ __device__ void test_const_lvalue_get()
     using V = cuda::std::variant<int, const long>;
     constexpr V v(42l);
 #if !defined(TEST_COMPILER_MSVC) && !(defined(TEST_COMPILER_GCC) && __GNUC__ < 9)
-    ASSERT_NOT_NOEXCEPT(cuda::std::get<1>(v));
+    static_assert(!noexcept(cuda::std::get<1>(v)));
 #endif // !TEST_COMPILER_MSVC && !TEST_COMPILER_GCC
     ASSERT_SAME_TYPE(decltype(cuda::std::get<1>(v)), const long&);
     static_assert(cuda::std::get<1>(v) == 42, "");
@@ -63,7 +63,7 @@ __host__ __device__ void test_const_lvalue_get()
   {
     using V = cuda::std::variant<int, const long>;
     const V v(42l);
-    ASSERT_NOT_NOEXCEPT(cuda::std::get<1>(v));
+    static_assert(!noexcept(cuda::std::get<1>(v)));
     ASSERT_SAME_TYPE(decltype(cuda::std::get<1>(v)), const long&);
     assert(cuda::std::get<1>(v) == 42);
   }
@@ -98,7 +98,7 @@ __host__ __device__ void test_lvalue_get()
   {
     using V = cuda::std::variant<int, const long>;
     V v(42);
-    ASSERT_NOT_NOEXCEPT(cuda::std::get<0>(v));
+    static_assert(!noexcept(cuda::std::get<0>(v)));
     ASSERT_SAME_TYPE(decltype(cuda::std::get<0>(v)), int&);
     assert(cuda::std::get<0>(v) == 42);
   }
@@ -146,7 +146,7 @@ __host__ __device__ void test_rvalue_get()
   {
     using V = cuda::std::variant<int, const long>;
     V v(42);
-    ASSERT_NOT_NOEXCEPT(cuda::std::get<0>(cuda::std::move(v)));
+    static_assert(!noexcept(cuda::std::get<0>(cuda::std::move(v))));
     ASSERT_SAME_TYPE(decltype(cuda::std::get<0>(cuda::std::move(v))), int&&);
     assert(cuda::std::get<0>(cuda::std::move(v)) == 42);
   }
@@ -196,7 +196,7 @@ __host__ __device__ void test_const_rvalue_get()
   {
     using V = cuda::std::variant<int, const long>;
     const V v(42);
-    ASSERT_NOT_NOEXCEPT(cuda::std::get<0>(cuda::std::move(v)));
+    static_assert(!noexcept(cuda::std::get<0>(cuda::std::move(v))));
     ASSERT_SAME_TYPE(decltype(cuda::std::get<0>(cuda::std::move(v))), const int&&);
     assert(cuda::std::get<0>(cuda::std::move(v)) == 42);
   }

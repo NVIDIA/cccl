@@ -11,7 +11,7 @@
 
 #include "test_macros.h"
 
-TEST_NORETURN void unreachable()
+[[noreturn]] void unreachable()
 {
   cuda::std::unreachable();
 } // expected-no-diagnostics

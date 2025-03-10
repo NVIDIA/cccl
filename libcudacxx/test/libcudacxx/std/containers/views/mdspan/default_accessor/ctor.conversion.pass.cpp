@@ -33,7 +33,7 @@ template <class FromT, class ToT>
 __host__ __device__ constexpr void test_conversion()
 {
   cuda::std::default_accessor<FromT> acc_from{};
-  ASSERT_NOEXCEPT(cuda::std::default_accessor<ToT>(acc_from));
+  static_assert(noexcept(cuda::std::default_accessor<ToT>(acc_from)));
   cuda::std::default_accessor<ToT> acc_to(acc_from);
   unused(acc_to);
 }

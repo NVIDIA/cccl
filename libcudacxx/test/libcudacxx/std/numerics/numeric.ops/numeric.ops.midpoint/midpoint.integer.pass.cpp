@@ -30,7 +30,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void signed_test()
   constexpr T four{4};
 
   ASSERT_SAME_TYPE(decltype(cuda::std::midpoint(T(), T())), T);
-  ASSERT_NOEXCEPT(cuda::std::midpoint(T(), T()));
+  static_assert(noexcept(cuda::std::midpoint(T(), T())));
   using limits = cuda::std::numeric_limits<T>;
 
   assert(cuda::std::midpoint(one, three) == two);
@@ -79,7 +79,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void unsigned_test()
   constexpr T four{4};
 
   ASSERT_SAME_TYPE(decltype(cuda::std::midpoint(T(), T())), T);
-  ASSERT_NOEXCEPT(cuda::std::midpoint(T(), T()));
+  static_assert(noexcept(cuda::std::midpoint(T(), T())));
   using limits     = cuda::std::numeric_limits<T>;
   const T half_way = (limits::max() - limits::min()) / 2;
 
@@ -129,10 +129,10 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
   unsigned_test<cuda::std::uint32_t>();
   unsigned_test<cuda::std::uint64_t>();
 
-#ifndef TEST_HAS_NO_INT128_T
+#if _CCCL_HAS_INT128()
   unsigned_test<__uint128_t>();
   signed_test<__int128_t>();
-#endif // !TEST_HAS_NO_INT128_T
+#endif // _CCCL_HAS_INT128()
 
   //     int_test<char>();
   signed_test<cuda::std::ptrdiff_t>();

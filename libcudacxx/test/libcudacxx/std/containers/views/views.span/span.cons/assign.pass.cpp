@@ -23,7 +23,7 @@ using cuda::std::span;
 template <typename T>
 __host__ __device__ constexpr bool doAssign(T lhs, T rhs)
 {
-  ASSERT_NOEXCEPT(cuda::std::declval<T&>() = rhs);
+  static_assert(noexcept(cuda::std::declval<T&>() = rhs));
   lhs = rhs;
   return lhs.data() == rhs.data() && lhs.size() == rhs.size();
 }
@@ -31,10 +31,10 @@ __host__ __device__ constexpr bool doAssign(T lhs, T rhs)
 struct A
 {};
 
-STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int carr1[] = {1, 2, 3, 4};
-STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int carr2[] = {3, 4, 5};
-STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int carr3[] = {7, 8};
-__device__ int arr[]                                     = {5, 6, 7, 9};
+STATIC_TEST_GLOBAL_VAR constexpr int carr1[] = {1, 2, 3, 4};
+STATIC_TEST_GLOBAL_VAR constexpr int carr2[] = {3, 4, 5};
+STATIC_TEST_GLOBAL_VAR constexpr int carr3[] = {7, 8};
+__device__ int arr[]                         = {5, 6, 7, 9};
 
 int main(int, char**)
 {
@@ -68,111 +68,111 @@ int main(int, char**)
     // static_assert(cuda::std::size(spans) == 13 );
 
     //  No for loops in constexpr land :-(
-    STATIC_ASSERT_CXX14(doAssign(spans[0], spans[0]));
-    STATIC_ASSERT_CXX14(doAssign(spans[0], spans[1]));
-    STATIC_ASSERT_CXX14(doAssign(spans[0], spans[2]));
-    STATIC_ASSERT_CXX14(doAssign(spans[0], spans[3]));
-    STATIC_ASSERT_CXX14(doAssign(spans[0], spans[4]));
-    STATIC_ASSERT_CXX14(doAssign(spans[0], spans[5]));
-    STATIC_ASSERT_CXX14(doAssign(spans[0], spans[6]));
-    STATIC_ASSERT_CXX14(doAssign(spans[0], spans[7]));
-    STATIC_ASSERT_CXX14(doAssign(spans[0], spans[8]));
-    STATIC_ASSERT_CXX14(doAssign(spans[0], spans[9]));
-    STATIC_ASSERT_CXX14(doAssign(spans[0], spans[10]));
-    STATIC_ASSERT_CXX14(doAssign(spans[0], spans[11]));
-    STATIC_ASSERT_CXX14(doAssign(spans[0], spans[12]));
+    static_assert(doAssign(spans[0], spans[0]));
+    static_assert(doAssign(spans[0], spans[1]));
+    static_assert(doAssign(spans[0], spans[2]));
+    static_assert(doAssign(spans[0], spans[3]));
+    static_assert(doAssign(spans[0], spans[4]));
+    static_assert(doAssign(spans[0], spans[5]));
+    static_assert(doAssign(spans[0], spans[6]));
+    static_assert(doAssign(spans[0], spans[7]));
+    static_assert(doAssign(spans[0], spans[8]));
+    static_assert(doAssign(spans[0], spans[9]));
+    static_assert(doAssign(spans[0], spans[10]));
+    static_assert(doAssign(spans[0], spans[11]));
+    static_assert(doAssign(spans[0], spans[12]));
 
-    STATIC_ASSERT_CXX14(doAssign(spans[1], spans[1]));
-    STATIC_ASSERT_CXX14(doAssign(spans[1], spans[2]));
-    STATIC_ASSERT_CXX14(doAssign(spans[1], spans[3]));
-    STATIC_ASSERT_CXX14(doAssign(spans[1], spans[4]));
-    STATIC_ASSERT_CXX14(doAssign(spans[1], spans[5]));
-    STATIC_ASSERT_CXX14(doAssign(spans[1], spans[6]));
-    STATIC_ASSERT_CXX14(doAssign(spans[1], spans[7]));
-    STATIC_ASSERT_CXX14(doAssign(spans[1], spans[8]));
-    STATIC_ASSERT_CXX14(doAssign(spans[1], spans[9]));
-    STATIC_ASSERT_CXX14(doAssign(spans[1], spans[10]));
-    STATIC_ASSERT_CXX14(doAssign(spans[1], spans[11]));
-    STATIC_ASSERT_CXX14(doAssign(spans[1], spans[12]));
+    static_assert(doAssign(spans[1], spans[1]));
+    static_assert(doAssign(spans[1], spans[2]));
+    static_assert(doAssign(spans[1], spans[3]));
+    static_assert(doAssign(spans[1], spans[4]));
+    static_assert(doAssign(spans[1], spans[5]));
+    static_assert(doAssign(spans[1], spans[6]));
+    static_assert(doAssign(spans[1], spans[7]));
+    static_assert(doAssign(spans[1], spans[8]));
+    static_assert(doAssign(spans[1], spans[9]));
+    static_assert(doAssign(spans[1], spans[10]));
+    static_assert(doAssign(spans[1], spans[11]));
+    static_assert(doAssign(spans[1], spans[12]));
 
-    STATIC_ASSERT_CXX14(doAssign(spans[2], spans[2]));
-    STATIC_ASSERT_CXX14(doAssign(spans[2], spans[3]));
-    STATIC_ASSERT_CXX14(doAssign(spans[2], spans[4]));
-    STATIC_ASSERT_CXX14(doAssign(spans[2], spans[5]));
-    STATIC_ASSERT_CXX14(doAssign(spans[2], spans[6]));
-    STATIC_ASSERT_CXX14(doAssign(spans[2], spans[7]));
-    STATIC_ASSERT_CXX14(doAssign(spans[2], spans[8]));
-    STATIC_ASSERT_CXX14(doAssign(spans[2], spans[9]));
-    STATIC_ASSERT_CXX14(doAssign(spans[2], spans[10]));
-    STATIC_ASSERT_CXX14(doAssign(spans[2], spans[11]));
-    STATIC_ASSERT_CXX14(doAssign(spans[2], spans[12]));
+    static_assert(doAssign(spans[2], spans[2]));
+    static_assert(doAssign(spans[2], spans[3]));
+    static_assert(doAssign(spans[2], spans[4]));
+    static_assert(doAssign(spans[2], spans[5]));
+    static_assert(doAssign(spans[2], spans[6]));
+    static_assert(doAssign(spans[2], spans[7]));
+    static_assert(doAssign(spans[2], spans[8]));
+    static_assert(doAssign(spans[2], spans[9]));
+    static_assert(doAssign(spans[2], spans[10]));
+    static_assert(doAssign(spans[2], spans[11]));
+    static_assert(doAssign(spans[2], spans[12]));
 
-    STATIC_ASSERT_CXX14(doAssign(spans[3], spans[3]));
-    STATIC_ASSERT_CXX14(doAssign(spans[3], spans[4]));
-    STATIC_ASSERT_CXX14(doAssign(spans[3], spans[4]));
-    STATIC_ASSERT_CXX14(doAssign(spans[3], spans[4]));
-    STATIC_ASSERT_CXX14(doAssign(spans[3], spans[4]));
-    STATIC_ASSERT_CXX14(doAssign(spans[3], spans[4]));
-    STATIC_ASSERT_CXX14(doAssign(spans[3], spans[4]));
-    STATIC_ASSERT_CXX14(doAssign(spans[3], spans[4]));
-    STATIC_ASSERT_CXX14(doAssign(spans[3], spans[4]));
-    STATIC_ASSERT_CXX14(doAssign(spans[3], spans[10]));
-    STATIC_ASSERT_CXX14(doAssign(spans[3], spans[11]));
-    STATIC_ASSERT_CXX14(doAssign(spans[3], spans[12]));
+    static_assert(doAssign(spans[3], spans[3]));
+    static_assert(doAssign(spans[3], spans[4]));
+    static_assert(doAssign(spans[3], spans[4]));
+    static_assert(doAssign(spans[3], spans[4]));
+    static_assert(doAssign(spans[3], spans[4]));
+    static_assert(doAssign(spans[3], spans[4]));
+    static_assert(doAssign(spans[3], spans[4]));
+    static_assert(doAssign(spans[3], spans[4]));
+    static_assert(doAssign(spans[3], spans[4]));
+    static_assert(doAssign(spans[3], spans[10]));
+    static_assert(doAssign(spans[3], spans[11]));
+    static_assert(doAssign(spans[3], spans[12]));
 
-    STATIC_ASSERT_CXX14(doAssign(spans[4], spans[4]));
-    STATIC_ASSERT_CXX14(doAssign(spans[4], spans[5]));
-    STATIC_ASSERT_CXX14(doAssign(spans[4], spans[6]));
-    STATIC_ASSERT_CXX14(doAssign(spans[4], spans[7]));
-    STATIC_ASSERT_CXX14(doAssign(spans[4], spans[8]));
-    STATIC_ASSERT_CXX14(doAssign(spans[4], spans[9]));
-    STATIC_ASSERT_CXX14(doAssign(spans[4], spans[10]));
-    STATIC_ASSERT_CXX14(doAssign(spans[4], spans[11]));
-    STATIC_ASSERT_CXX14(doAssign(spans[4], spans[12]));
+    static_assert(doAssign(spans[4], spans[4]));
+    static_assert(doAssign(spans[4], spans[5]));
+    static_assert(doAssign(spans[4], spans[6]));
+    static_assert(doAssign(spans[4], spans[7]));
+    static_assert(doAssign(spans[4], spans[8]));
+    static_assert(doAssign(spans[4], spans[9]));
+    static_assert(doAssign(spans[4], spans[10]));
+    static_assert(doAssign(spans[4], spans[11]));
+    static_assert(doAssign(spans[4], spans[12]));
 
-    STATIC_ASSERT_CXX14(doAssign(spans[5], spans[5]));
-    STATIC_ASSERT_CXX14(doAssign(spans[5], spans[6]));
-    STATIC_ASSERT_CXX14(doAssign(spans[5], spans[7]));
-    STATIC_ASSERT_CXX14(doAssign(spans[5], spans[8]));
-    STATIC_ASSERT_CXX14(doAssign(spans[5], spans[9]));
-    STATIC_ASSERT_CXX14(doAssign(spans[5], spans[10]));
-    STATIC_ASSERT_CXX14(doAssign(spans[5], spans[11]));
-    STATIC_ASSERT_CXX14(doAssign(spans[5], spans[12]));
+    static_assert(doAssign(spans[5], spans[5]));
+    static_assert(doAssign(spans[5], spans[6]));
+    static_assert(doAssign(spans[5], spans[7]));
+    static_assert(doAssign(spans[5], spans[8]));
+    static_assert(doAssign(spans[5], spans[9]));
+    static_assert(doAssign(spans[5], spans[10]));
+    static_assert(doAssign(spans[5], spans[11]));
+    static_assert(doAssign(spans[5], spans[12]));
 
-    STATIC_ASSERT_CXX14(doAssign(spans[6], spans[6]));
-    STATIC_ASSERT_CXX14(doAssign(spans[6], spans[7]));
-    STATIC_ASSERT_CXX14(doAssign(spans[6], spans[8]));
-    STATIC_ASSERT_CXX14(doAssign(spans[6], spans[9]));
-    STATIC_ASSERT_CXX14(doAssign(spans[6], spans[10]));
-    STATIC_ASSERT_CXX14(doAssign(spans[6], spans[11]));
-    STATIC_ASSERT_CXX14(doAssign(spans[6], spans[12]));
+    static_assert(doAssign(spans[6], spans[6]));
+    static_assert(doAssign(spans[6], spans[7]));
+    static_assert(doAssign(spans[6], spans[8]));
+    static_assert(doAssign(spans[6], spans[9]));
+    static_assert(doAssign(spans[6], spans[10]));
+    static_assert(doAssign(spans[6], spans[11]));
+    static_assert(doAssign(spans[6], spans[12]));
 
-    STATIC_ASSERT_CXX14(doAssign(spans[7], spans[7]));
-    STATIC_ASSERT_CXX14(doAssign(spans[7], spans[8]));
-    STATIC_ASSERT_CXX14(doAssign(spans[7], spans[9]));
-    STATIC_ASSERT_CXX14(doAssign(spans[7], spans[10]));
-    STATIC_ASSERT_CXX14(doAssign(spans[7], spans[11]));
-    STATIC_ASSERT_CXX14(doAssign(spans[7], spans[12]));
+    static_assert(doAssign(spans[7], spans[7]));
+    static_assert(doAssign(spans[7], spans[8]));
+    static_assert(doAssign(spans[7], spans[9]));
+    static_assert(doAssign(spans[7], spans[10]));
+    static_assert(doAssign(spans[7], spans[11]));
+    static_assert(doAssign(spans[7], spans[12]));
 
-    STATIC_ASSERT_CXX14(doAssign(spans[8], spans[8]));
-    STATIC_ASSERT_CXX14(doAssign(spans[8], spans[9]));
-    STATIC_ASSERT_CXX14(doAssign(spans[8], spans[10]));
-    STATIC_ASSERT_CXX14(doAssign(spans[8], spans[11]));
-    STATIC_ASSERT_CXX14(doAssign(spans[8], spans[12]));
+    static_assert(doAssign(spans[8], spans[8]));
+    static_assert(doAssign(spans[8], spans[9]));
+    static_assert(doAssign(spans[8], spans[10]));
+    static_assert(doAssign(spans[8], spans[11]));
+    static_assert(doAssign(spans[8], spans[12]));
 
-    STATIC_ASSERT_CXX14(doAssign(spans[9], spans[9]));
-    STATIC_ASSERT_CXX14(doAssign(spans[9], spans[10]));
-    STATIC_ASSERT_CXX14(doAssign(spans[9], spans[11]));
-    STATIC_ASSERT_CXX14(doAssign(spans[9], spans[12]));
+    static_assert(doAssign(spans[9], spans[9]));
+    static_assert(doAssign(spans[9], spans[10]));
+    static_assert(doAssign(spans[9], spans[11]));
+    static_assert(doAssign(spans[9], spans[12]));
 
-    STATIC_ASSERT_CXX14(doAssign(spans[10], spans[10]));
-    STATIC_ASSERT_CXX14(doAssign(spans[10], spans[11]));
-    STATIC_ASSERT_CXX14(doAssign(spans[10], spans[12]));
+    static_assert(doAssign(spans[10], spans[10]));
+    static_assert(doAssign(spans[10], spans[11]));
+    static_assert(doAssign(spans[10], spans[12]));
 
-    STATIC_ASSERT_CXX14(doAssign(spans[11], spans[11]));
-    STATIC_ASSERT_CXX14(doAssign(spans[11], spans[12]));
+    static_assert(doAssign(spans[11], spans[11]));
+    static_assert(doAssign(spans[11], spans[12]));
 
-    STATIC_ASSERT_CXX14(doAssign(spans[12], spans[12]));
+    static_assert(doAssign(spans[12], spans[12]));
 
     //      for (size_t i = 0; i < cuda::std::size(spans); ++i)
     //          for (size_t j = i; j < cuda::std::size(spans); ++j)
@@ -190,35 +190,35 @@ int main(int, char**)
       spanType{carr2, 2},
       spanType{carr2 + 1, 2},
       spanType{carr3, 2}};
-    STATIC_ASSERT_CXX14(cuda::std::size(spans) == 6);
+    static_assert(cuda::std::size(spans) == 6);
 
     //  No for loops in constexpr land :-(
-    STATIC_ASSERT_CXX14(doAssign(spans[0], spans[0]));
-    STATIC_ASSERT_CXX14(doAssign(spans[0], spans[1]));
-    STATIC_ASSERT_CXX14(doAssign(spans[0], spans[2]));
-    STATIC_ASSERT_CXX14(doAssign(spans[0], spans[3]));
-    STATIC_ASSERT_CXX14(doAssign(spans[0], spans[4]));
-    STATIC_ASSERT_CXX14(doAssign(spans[0], spans[5]));
+    static_assert(doAssign(spans[0], spans[0]));
+    static_assert(doAssign(spans[0], spans[1]));
+    static_assert(doAssign(spans[0], spans[2]));
+    static_assert(doAssign(spans[0], spans[3]));
+    static_assert(doAssign(spans[0], spans[4]));
+    static_assert(doAssign(spans[0], spans[5]));
 
-    STATIC_ASSERT_CXX14(doAssign(spans[1], spans[1]));
-    STATIC_ASSERT_CXX14(doAssign(spans[1], spans[2]));
-    STATIC_ASSERT_CXX14(doAssign(spans[1], spans[3]));
-    STATIC_ASSERT_CXX14(doAssign(spans[1], spans[4]));
-    STATIC_ASSERT_CXX14(doAssign(spans[1], spans[5]));
+    static_assert(doAssign(spans[1], spans[1]));
+    static_assert(doAssign(spans[1], spans[2]));
+    static_assert(doAssign(spans[1], spans[3]));
+    static_assert(doAssign(spans[1], spans[4]));
+    static_assert(doAssign(spans[1], spans[5]));
 
-    STATIC_ASSERT_CXX14(doAssign(spans[2], spans[2]));
-    STATIC_ASSERT_CXX14(doAssign(spans[2], spans[3]));
-    STATIC_ASSERT_CXX14(doAssign(spans[2], spans[4]));
-    STATIC_ASSERT_CXX14(doAssign(spans[2], spans[5]));
+    static_assert(doAssign(spans[2], spans[2]));
+    static_assert(doAssign(spans[2], spans[3]));
+    static_assert(doAssign(spans[2], spans[4]));
+    static_assert(doAssign(spans[2], spans[5]));
 
-    STATIC_ASSERT_CXX14(doAssign(spans[3], spans[3]));
-    STATIC_ASSERT_CXX14(doAssign(spans[3], spans[4]));
-    STATIC_ASSERT_CXX14(doAssign(spans[3], spans[5]));
+    static_assert(doAssign(spans[3], spans[3]));
+    static_assert(doAssign(spans[3], spans[4]));
+    static_assert(doAssign(spans[3], spans[5]));
 
-    STATIC_ASSERT_CXX14(doAssign(spans[4], spans[4]));
-    STATIC_ASSERT_CXX14(doAssign(spans[4], spans[5]));
+    static_assert(doAssign(spans[4], spans[4]));
+    static_assert(doAssign(spans[4], spans[5]));
 
-    STATIC_ASSERT_CXX14(doAssign(spans[5], spans[5]));
+    static_assert(doAssign(spans[5], spans[5]));
 
     //      for (size_t i = 0; i < cuda::std::size(spans); ++i)
     //          for (size_t j = i; j < cuda::std::size(spans); ++j)

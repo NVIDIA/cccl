@@ -74,10 +74,10 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
   test<T, std::uint64_t>();
 #endif // !TEST_COMPILER_NVRTC
 
-#if !defined(TEST_HAS_NO_INT128_T)
+#if _CCCL_HAS_INT128()
   test<T, __int128_t>();
   test<T, __uint128_t>();
-#endif // !TEST_HAS_NO_INT128_T
+#endif // _CCCL_HAS_INT128()
 }
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
@@ -117,10 +117,10 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
   test<std::uint64_t>();
 #endif // !TEST_COMPILER_NVRTC
 
-#if !defined(TEST_HAS_NO_INT128_T)
+#if _CCCL_HAS_INT128()
   test<__int128_t>();
   test<__uint128_t>();
-#endif // !TEST_HAS_NO_INT128_T
+#endif // _CCCL_HAS_INT128()
 
   return true;
 }

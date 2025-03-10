@@ -29,7 +29,7 @@ int main(int, char**)
   constexpr weekday Tuesday          = cuda::std::chrono::Tuesday;
   constexpr weekday_last lastTuesday = weekday_last{Tuesday};
 
-  ASSERT_NOEXCEPT(cuda::std::declval<const month_weekday_last>().weekday_last());
+  static_assert(noexcept(cuda::std::declval<const month_weekday_last>().weekday_last()));
   ASSERT_SAME_TYPE(weekday_last, decltype(cuda::std::declval<const month_weekday_last>().weekday_last()));
 
   static_assert(month_weekday_last{month{}, lastTuesday}.weekday_last() == lastTuesday, "");

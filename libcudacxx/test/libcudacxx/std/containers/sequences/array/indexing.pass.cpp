@@ -23,7 +23,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
     typedef double T;
     typedef cuda::std::array<T, 3> C;
     C c = {1, 2, 3.5};
-    LIBCPP_ASSERT_NOEXCEPT(c[0]);
+    static_assert(noexcept(c[0]));
     ASSERT_SAME_TYPE(C::reference, decltype(c[0]));
     C::reference r1 = c[0];
     assert(r1 == 1);
@@ -42,7 +42,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
       typedef double T;
       typedef cuda::std::array<T, 0> C;
       C c = {};
-      LIBCPP_ASSERT_NOEXCEPT(c[0]);
+      static_assert(noexcept(c[0]));
       ASSERT_SAME_TYPE(C::reference, decltype(c[0]));
       if (c.size() > (0))
       { // always false
@@ -56,7 +56,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
       typedef double T;
       typedef cuda::std::array<const T, 0> C;
       C c = {};
-      LIBCPP_ASSERT_NOEXCEPT(c[0]);
+      static_assert(noexcept(c[0]));
       ASSERT_SAME_TYPE(C::reference, decltype(c[0]));
       if (c.size() > (0))
       { // always false

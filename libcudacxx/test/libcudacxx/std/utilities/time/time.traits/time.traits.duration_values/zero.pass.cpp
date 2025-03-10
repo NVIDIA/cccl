@@ -23,11 +23,11 @@ int main(int, char**)
   static_assert(cuda::std::chrono::duration_values<int>::zero() == 0, "");
   static_assert(cuda::std::chrono::duration_values<Rep>::zero() == 0, "");
 
-  LIBCPP_ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<int>::zero());
-  LIBCPP_ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<Rep>::zero());
+  static_assert(noexcept(cuda::std::chrono::duration_values<int>::zero()));
+  static_assert(noexcept(cuda::std::chrono::duration_values<Rep>::zero()));
 #if TEST_STD_VER > 2017
-  ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<int>::zero());
-  ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<Rep>::zero());
+  static_assert(noexcept(cuda::std::chrono::duration_values<int>::zero()));
+  static_assert(noexcept(cuda::std::chrono::duration_values<Rep>::zero()));
 #endif
 
   return 0;

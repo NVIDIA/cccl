@@ -30,8 +30,8 @@ int main(int, char**)
   using month     = cuda::std::chrono::month;
   using month_day = cuda::std::chrono::month_day;
 
-  ASSERT_NOEXCEPT(month_day{});
-  ASSERT_NOEXCEPT(month_day{month{1}, day{1}});
+  static_assert(noexcept(month_day{}));
+  static_assert(noexcept(month_day{month{1}, day{1}}));
 
   constexpr month_day md0{};
   static_assert(md0.month() == month{}, "");

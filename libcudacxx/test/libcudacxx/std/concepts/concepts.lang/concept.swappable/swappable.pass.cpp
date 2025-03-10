@@ -71,14 +71,14 @@ __host__ __device__ constexpr bool check_lvalue_adl_swappable()
 {
   auto x = lvalue_adl_swappable(0);
   auto y = lvalue_adl_swappable(1);
-  ASSERT_NOEXCEPT(cuda::std::ranges::swap(x, y));
+  static_assert(noexcept(cuda::std::ranges::swap(x, y)));
   assert(check_swap_21(x, y));
   return true;
 }
 
 __host__ __device__ constexpr bool check_rvalue_adl_swappable()
 {
-  ASSERT_NOEXCEPT(cuda::std::ranges::swap(rvalue_adl_swappable(0), rvalue_adl_swappable(1)));
+  static_assert(noexcept(cuda::std::ranges::swap(rvalue_adl_swappable(0), rvalue_adl_swappable(1))));
 #if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 10)
   assert(check_swap_21(rvalue_adl_swappable(0), rvalue_adl_swappable(1)));
 #endif
@@ -88,7 +88,7 @@ __host__ __device__ constexpr bool check_rvalue_adl_swappable()
 __host__ __device__ constexpr bool check_lvalue_rvalue_adl_swappable()
 {
   auto x = lvalue_rvalue_adl_swappable(0);
-  ASSERT_NOEXCEPT(cuda::std::ranges::swap(x, lvalue_rvalue_adl_swappable(1)));
+  static_assert(noexcept(cuda::std::ranges::swap(x, lvalue_rvalue_adl_swappable(1))));
   assert(check_swap_21(x, lvalue_rvalue_adl_swappable(1)));
   return true;
 }
@@ -96,7 +96,7 @@ __host__ __device__ constexpr bool check_lvalue_rvalue_adl_swappable()
 __host__ __device__ constexpr bool check_rvalue_lvalue_adl_swappable()
 {
   auto x = rvalue_lvalue_adl_swappable(0);
-  ASSERT_NOEXCEPT(cuda::std::ranges::swap(rvalue_lvalue_adl_swappable(1), x));
+  static_assert(noexcept(cuda::std::ranges::swap(rvalue_lvalue_adl_swappable(1), x)));
   assert(check_swap_21(rvalue_lvalue_adl_swappable(1), x));
   return true;
 }
@@ -105,9 +105,9 @@ __host__ __device__ constexpr bool check_throwable_swappable()
 {
   auto x = throwable_adl_swappable{0};
   auto y = throwable_adl_swappable{1};
-#if !defined(TEST_COMPILER_BROKEN_SMF_NOEXCEPT)
-  ASSERT_NOT_NOEXCEPT(cuda::std::ranges::swap(x, y));
-#endif // !TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#if !defined(TEST_COMPILER_NVHPC)
+  static_assert(!noexcept(cuda::std::ranges::swap(x, y)));
+#endif // !TEST_COMPILER_NVHPC
   assert(check_swap_21(x, y));
   return true;
 }
@@ -116,7 +116,7 @@ __host__ __device__ constexpr bool check_non_move_constructible_adl_swappable()
 {
   auto x = non_move_constructible_adl_swappable{0};
   auto y = non_move_constructible_adl_swappable{1};
-  ASSERT_NOEXCEPT(cuda::std::ranges::swap(x, y));
+  static_assert(noexcept(cuda::std::ranges::swap(x, y)));
   assert(check_swap_21(x, y));
   return true;
 }
@@ -125,7 +125,7 @@ __host__ __device__ constexpr bool check_non_move_assignable_adl_swappable()
 {
   auto x = non_move_assignable_adl_swappable{0};
   auto y = non_move_assignable_adl_swappable{1};
-  ASSERT_NOEXCEPT(cuda::std::ranges::swap(x, y));
+  static_assert(noexcept(cuda::std::ranges::swap(x, y)));
   assert(check_swap_21(x, y));
   return true;
 }
@@ -154,7 +154,7 @@ __host__ __device__ constexpr bool check_swap_arrays()
 {
   int x[] = {0, 1, 2, 3, 4};
   int y[] = {5, 6, 7, 8, 9};
-  ASSERT_NOEXCEPT(cuda::std::ranges::swap(x, y));
+  static_assert(noexcept(cuda::std::ranges::swap(x, y)));
   assert(check_swap_22(x, y));
   return true;
 }
@@ -163,7 +163,7 @@ __host__ __device__ constexpr bool check_lvalue_adl_swappable_arrays()
 {
   lvalue_adl_swappable x[] = {{0}, {1}, {2}, {3}};
   lvalue_adl_swappable y[] = {{4}, {5}, {6}, {7}};
-  ASSERT_NOEXCEPT(cuda::std::ranges::swap(x, y));
+  static_assert(noexcept(cuda::std::ranges::swap(x, y)));
   assert(check_swap_22(x, y));
   return true;
 }
@@ -172,15 +172,15 @@ __host__ __device__ constexpr bool check_throwable_adl_swappable_arrays()
 {
   throwable_adl_swappable x[] = {{0}, {1}, {2}, {3}};
   throwable_adl_swappable y[] = {{4}, {5}, {6}, {7}};
-#if !defined(TEST_COMPILER_BROKEN_SMF_NOEXCEPT)
-  ASSERT_NOT_NOEXCEPT(cuda::std::ranges::swap(x, y));
-#endif // !TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#if !defined(TEST_COMPILER_NVHPC)
+  static_assert(!noexcept(cuda::std::ranges::swap(x, y)));
+#endif // !TEST_COMPILER_NVHPC
   assert(check_swap_22(x, y));
   return true;
 }
 
 __device__ auto global_x = 0;
-ASSERT_NOEXCEPT(cuda::std::ranges::swap(global_x, global_x));
+static_assert(noexcept(cuda::std::ranges::swap(global_x, global_x)));
 static_assert(check_swap_23(0, 0), "");
 static_assert(check_swap_23(0, 1), "");
 static_assert(check_swap_23(1, 0), "");
@@ -189,7 +189,7 @@ __host__ __device__ constexpr bool check_swappable_references()
 {
   int x = 42;
   int y = 64;
-  ASSERT_NOEXCEPT(cuda::std::ranges::swap(x, y));
+  static_assert(noexcept(cuda::std::ranges::swap(x, y)));
   assert(check_swap_23(x, y));
   return true;
 }
@@ -197,7 +197,7 @@ __host__ __device__ constexpr bool check_swappable_references()
 __host__ __device__ constexpr bool check_swappable_pointers()
 {
   char const* x = "hello";
-  ASSERT_NOEXCEPT(cuda::std::ranges::swap(x, x));
+  static_assert(noexcept(cuda::std::ranges::swap(x, x)));
   assert(check_swap_23(x, {}));
   return true;
 }

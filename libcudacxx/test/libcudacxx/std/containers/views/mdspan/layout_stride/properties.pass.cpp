@@ -52,8 +52,8 @@ test_strides(E ext, M& m, const M& c_m, cuda::std::array<typename E::index_type,
   {
     assert(m.stride(r) == strides[r]);
     assert(c_m.stride(r) == strides[r]);
-    ASSERT_NOEXCEPT(m.stride(r));
-    ASSERT_NOEXCEPT(c_m.stride(r));
+    static_assert(noexcept(m.stride(r)));
+    static_assert(noexcept(c_m.stride(r)));
   }
 
   typename E::index_type expected_size = 1;
@@ -68,8 +68,8 @@ test_strides(E ext, M& m, const M& c_m, cuda::std::array<typename E::index_type,
   }
   assert(m.required_span_size() == expected_size);
   assert(c_m.required_span_size() == expected_size);
-  ASSERT_NOEXCEPT(m.required_span_size());
-  ASSERT_NOEXCEPT(c_m.required_span_size());
+  static_assert(noexcept(m.required_span_size()));
+  static_assert(noexcept(c_m.required_span_size()));
 }
 template <class E, class M, cuda::std::enable_if_t<(E::rank() == 0), int> = 0>
 __host__ __device__ constexpr void
@@ -78,8 +78,8 @@ test_strides(E, M& m, const M& c_m, cuda::std::array<typename E::index_type, E::
   typename E::index_type expected_size = 1;
   assert(m.required_span_size() == expected_size);
   assert(c_m.required_span_size() == expected_size);
-  ASSERT_NOEXCEPT(m.required_span_size());
-  ASSERT_NOEXCEPT(c_m.required_span_size());
+  static_assert(noexcept(m.required_span_size()));
+  static_assert(noexcept(c_m.required_span_size()));
 }
 
 template <class E>
@@ -101,17 +101,17 @@ test_layout_mapping_stride(E ext, cuda::std::array<typename E::index_type, E::ra
   assert(M::is_always_exhaustive() == false);
   assert(M::is_always_strided() == true);
 
-  ASSERT_NOEXCEPT(m.strides());
-  ASSERT_NOEXCEPT(c_m.strides());
-  ASSERT_NOEXCEPT(m.extents());
-  ASSERT_NOEXCEPT(c_m.extents());
-  ASSERT_NOEXCEPT(M::is_unique());
-  ASSERT_NOEXCEPT(m.is_exhaustive());
-  ASSERT_NOEXCEPT(c_m.is_exhaustive());
-  ASSERT_NOEXCEPT(M::is_strided());
-  ASSERT_NOEXCEPT(M::is_always_unique());
-  ASSERT_NOEXCEPT(M::is_always_exhaustive());
-  ASSERT_NOEXCEPT(M::is_always_strided());
+  static_assert(noexcept(m.strides()));
+  static_assert(noexcept(c_m.strides()));
+  static_assert(noexcept(m.extents()));
+  static_assert(noexcept(c_m.extents()));
+  static_assert(noexcept(M::is_unique()));
+  static_assert(noexcept(m.is_exhaustive()));
+  static_assert(noexcept(c_m.is_exhaustive()));
+  static_assert(noexcept(M::is_strided()));
+  static_assert(noexcept(M::is_always_unique()));
+  static_assert(noexcept(M::is_always_exhaustive()));
+  static_assert(noexcept(M::is_always_strided()));
 
   test_strides(ext, m, c_m, strides);
 

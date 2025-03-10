@@ -16,7 +16,7 @@
 
 #include "test_macros.h"
 
-#if !defined(TEST_COMPILER_CUDACC_BELOW_12_3)
+#if _CCCL_CUDACC_AT_LEAST(12, 3)
 template <typename ReturnT>
 __host__ __device__ void test_lambda_return_type()
 {
@@ -38,7 +38,7 @@ struct custom_type
 {
   char arr[16];
 };
-#endif // !TEST_COMPILER_CUDACC_BELOW_12_3
+#endif // _CCCL_CUDACC_AT_LEAST(12, 3)
 
 template <class T, class Fn, class... As>
 __host__ __device__ void test_proclaim_return_type(Fn&& fn, T expected, As... as)
@@ -175,7 +175,7 @@ int main(int argc, char** argv)
   unused(f);
   unused(g);
 
-#  if !defined(TEST_COMPILER_CUDACC_BELOW_12_3)
+#  if _CCCL_CUDACC_AT_LEAST(12, 3)
   test_lambda_return_type<int>();
   test_lambda_return_type<long>();
   test_lambda_return_type<bool>();
@@ -183,7 +183,7 @@ int main(int argc, char** argv)
   test_lambda_return_type<double>();
   test_lambda_return_type<char>();
   test_lambda_return_type<custom_type>();
-#  endif // !TEST_COMPILER_CUDACC_BELOW_12_3
+#  endif // _CCCL_CUDACC_AT_LEAST(12, 3)
 #endif // !TEST_COMPILER_NVRTC
 
   return 0;

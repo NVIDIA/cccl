@@ -58,8 +58,8 @@ __host__ __device__ constexpr bool test()
     const optional<X> opt{};
     unused(opt);
     ASSERT_SAME_TYPE(decltype(*cuda::std::move(opt)), X const&&);
-    LIBCPP_STATIC_ASSERT(noexcept(*cuda::std::move(opt)), "");
-    // ASSERT_NOT_NOEXCEPT(*cuda::std::move(opt));
+    static_assert(noexcept(*cuda::std::move(opt)), "");
+    // static_assert(!noexcept(*cuda::std::move(opt)));
     // FIXME: This assertion fails with GCC because it can see that
     // (A) operator*() is constexpr, and
     // (B) there is no path through the function that throws.
@@ -71,8 +71,8 @@ __host__ __device__ constexpr bool test()
     const optional<X&> optref;
     unused(optref);
     ASSERT_SAME_TYPE(decltype(*cuda::std::move(optref)), X&);
-    LIBCPP_STATIC_ASSERT(noexcept(*cuda::std::move(optref)), "");
-    ASSERT_NOEXCEPT(*cuda::std::move(optref));
+    static_assert(noexcept(*cuda::std::move(optref)), "");
+    static_assert(noexcept(*cuda::std::move(optref)));
   }
 
   {

@@ -37,7 +37,7 @@ __host__ __device__ void test_const_container(const C& c)
 template <typename T>
 __host__ __device__ void test_const_container(const cuda::std::initializer_list<T>& c)
 {
-  ASSERT_NOEXCEPT(cuda::std::data(c));
+  static_assert(noexcept(cuda::std::data(c)));
   assert(cuda::std::data(c) == c.begin());
 }
 
@@ -51,18 +51,18 @@ __host__ __device__ void test_container(C& c)
 template <typename T>
 __host__ __device__ void test_container(cuda::std::initializer_list<T>& c)
 {
-  ASSERT_NOEXCEPT(cuda::std::data(c));
+  static_assert(noexcept(cuda::std::data(c)));
   assert(cuda::std::data(c) == c.begin());
 }
 
 template <typename T, size_t Sz>
 __host__ __device__ void test_const_array(const T (&array)[Sz])
 {
-  ASSERT_NOEXCEPT(cuda::std::data(array));
+  static_assert(noexcept(cuda::std::data(array)));
   assert(cuda::std::data(array) == &array[0]);
 }
 
-STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int arrA[]{1, 2, 3};
+STATIC_TEST_GLOBAL_VAR constexpr int arrA[]{1, 2, 3};
 
 int main(int, char**)
 {

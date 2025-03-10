@@ -71,10 +71,10 @@ template <class T>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
 {
   test1<T>();
-#ifndef TEST_HAS_NO_INT128_T
+#if _CCCL_HAS_INT128()
   test2<T, __int128_t>();
   test2<T, __uint128_t>();
-#endif // TEST_HAS_NO_INT128_T
+#endif // _CCCL_HAS_INT128()
   test2<T, unsigned long long>();
   test2<T, long long>();
   test2<T, unsigned long>();
@@ -89,10 +89,10 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 {
-#ifndef TEST_HAS_NO_INT128_T
+#if _CCCL_HAS_INT128()
   test<__int128_t>();
   test<__uint128_t>();
-#endif // TEST_HAS_NO_INT128_T
+#endif // _CCCL_HAS_INT128()
   test<unsigned long long>();
   test<long long>();
   test<unsigned long>();
@@ -108,7 +108,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 
 int main(int, char**)
 {
-  ASSERT_NOEXCEPT(cuda::std::cmp_not_equal(0, 0));
+  static_assert(noexcept(cuda::std::cmp_not_equal(0, 0)));
   test();
   static_assert(test(), "");
   return 0;
