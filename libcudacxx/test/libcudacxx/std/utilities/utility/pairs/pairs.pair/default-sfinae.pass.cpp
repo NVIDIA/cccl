@@ -126,20 +126,20 @@ __host__ __device__ void test_illformed_default()
     typedef cuda::std::pair<IllFormedDefault, int> P;
     static_assert((cuda::std::is_constructible<P, IllFormedDefault, int>::value), "");
     TEST_CONSTEXPR_CXX14 P p(IllFormedDefault(42), -5);
-    STATIC_ASSERT_CXX14(p.first.value == 42 && p.second == -5);
+    static_assert(p.first.value == 42 && p.second == -5);
   }
   {
     typedef cuda::std::pair<int, IllFormedDefault> P;
     static_assert((cuda::std::is_constructible<P, int, IllFormedDefault>::value), "");
     TEST_CONSTEXPR_CXX14 IllFormedDefault dd(-5);
     TEST_CONSTEXPR_CXX14 P p(42, dd);
-    STATIC_ASSERT_CXX14(p.first == 42 && p.second.value == -5);
+    static_assert(p.first == 42 && p.second.value == -5);
   }
   {
     typedef cuda::std::pair<IllFormedDefault, IllFormedDefault> P;
     static_assert((cuda::std::is_constructible<P, IllFormedDefault, IllFormedDefault>::value), "");
     TEST_CONSTEXPR_CXX14 P p(IllFormedDefault(42), IllFormedDefault(-5));
-    STATIC_ASSERT_CXX14(p.first.value == 42 && p.second.value == -5);
+    static_assert(p.first.value == 42 && p.second.value == -5);
   }
 }
 

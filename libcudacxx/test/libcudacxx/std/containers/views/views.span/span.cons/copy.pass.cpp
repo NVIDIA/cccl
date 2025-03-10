@@ -43,16 +43,16 @@ STATIC_TEST_GLOBAL_VAR constexpr int carr[] = {1, 2, 3};
 
 int main(int, char**)
 {
-  STATIC_ASSERT_CXX14(doCopy(cuda::std::span<int>()));
-  STATIC_ASSERT_CXX14(doCopy(cuda::std::span<int, 0>()));
-  STATIC_ASSERT_CXX14(doCopy(cuda::std::span<const int>(&carr[0], 1)));
-  STATIC_ASSERT_CXX14(doCopy(cuda::std::span<const int, 1>(&carr[0], 1)));
-  STATIC_ASSERT_CXX14(doCopy(cuda::std::span<const int>(&carr[0], 2)));
-  STATIC_ASSERT_CXX14(doCopy(cuda::std::span<const int, 2>(&carr[0], 2)));
+  static_assert(doCopy(cuda::std::span<int>()));
+  static_assert(doCopy(cuda::std::span<int, 0>()));
+  static_assert(doCopy(cuda::std::span<const int>(&carr[0], 1)));
+  static_assert(doCopy(cuda::std::span<const int, 1>(&carr[0], 1)));
+  static_assert(doCopy(cuda::std::span<const int>(&carr[0], 2)));
+  static_assert(doCopy(cuda::std::span<const int, 2>(&carr[0], 2)));
 
-  STATIC_ASSERT_CXX14(doCopy(cuda::std::span<long>()));
-  STATIC_ASSERT_CXX14(doCopy(cuda::std::span<double>()));
-  STATIC_ASSERT_CXX14(doCopy(cuda::std::span<A>()));
+  static_assert(doCopy(cuda::std::span<long>()));
+  static_assert(doCopy(cuda::std::span<double>()));
+  static_assert(doCopy(cuda::std::span<A>()));
 
   testCV<int>();
   testCV<const int>();

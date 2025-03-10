@@ -220,8 +220,6 @@
 #  define TEST_HAS_SANITIZERS
 #endif
 
-#define STATIC_ASSERT_CXX14(Pred) static_assert(Pred, "")
-
 /* Macros for testing libc++ specific behavior and extensions */
 #if defined(_LIBCUDACXX_VERSION)
 #  define LIBCPP_ASSERT_NOEXCEPT(...)     ASSERT_NOEXCEPT(__VA_ARGS__)
