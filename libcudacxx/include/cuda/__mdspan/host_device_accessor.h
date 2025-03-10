@@ -101,7 +101,8 @@ private:
   static constexpr bool __is_offset_noexcept = noexcept(_Accessor{}.offset(data_handle_type{}, 0));
 
   template <typename data_handle_type>
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __is_host_accessible_pointer(data_handle_type __p) noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
+  __is_host_accessible_pointer(data_handle_type __p) noexcept
   {
     if constexpr (_CUDA_VSTD::is_pointer_v<data_handle_type>)
     {
@@ -282,7 +283,7 @@ private:
   static_assert(!is_host_device_managed_accessor_v<_Accessor>,
                 "cuda::__host_accessor/cuda::__device_accessor/cuda::__managed_accessor cannot be nested");
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __is_managed_pointer(data_handle_type __p) noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __is_managed_pointer(data_handle_type __p) noexcept
   {
     if constexpr (_CUDA_VSTD::is_pointer_v<data_handle_type>)
     {
