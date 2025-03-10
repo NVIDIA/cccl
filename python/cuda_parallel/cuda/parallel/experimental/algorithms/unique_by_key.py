@@ -58,13 +58,6 @@ def make_cache_key(
     )
 
 
-def _update_device_array_pointers(current_array, passed_array):
-    if current_array.type.value == cccl.IteratorKind.POINTER:
-        current_array.state = protocols.get_data_pointer(passed_array)
-    else:
-        current_array.state = passed_array.state
-
-
 class _UniqueByKey:
     def __init__(
         self,
