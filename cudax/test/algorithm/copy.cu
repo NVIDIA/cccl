@@ -154,13 +154,14 @@ TEST_CASE("Mdspan copy", "[data_manipulation]")
 
   SECTION("Launch transform")
   {
+    auto host_resource = cudax::pinned_memory_resource{};
     auto mixed_extents =
       cuda::std::extents<size_t, 1024, cuda::std::dynamic_extent, 2, cuda::std::dynamic_extent>(1024, 2);
     [[maybe_unused]] auto static_extents = cuda::std::extents<size_t, 1024, 1024, 2, 2>();
     auto mdspan_buffer                   = make_buffer_for_mdspan(mixed_extents, 1);
     cuda::std::mdspan<int, decltype(mixed_extents)> mdspan(mdspan_buffer.data(), mixed_extents);
     cudax::weird_buffer<cuda::std::mdspan<int, decltype(static_extents)>> buffer{
-      cudax::pinned_memory_resource{}, mdspan.mapping().required_span_size()};
+      host_resource, mdspan.mapping().required_span_size()};
 
     cudax::copy_bytes(stream, mdspan, buffer);
     stream.wait();

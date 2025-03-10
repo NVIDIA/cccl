@@ -63,11 +63,11 @@ namespace cuda::experimental
 template <typename AsKernelArg = cuda::std::span<int>>
 struct weird_buffer
 {
-  const pinned_memory_resource& resource;
+  pinned_memory_resource& resource;
   int* data;
   std::size_t size;
 
-  weird_buffer(const pinned_memory_resource& res, std::size_t s)
+  weird_buffer(pinned_memory_resource& res, std::size_t s)
       : resource(res)
       , data((int*) res.allocate(s * sizeof(int)))
       , size(s)
