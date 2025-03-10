@@ -283,11 +283,8 @@ __host__ __device__ void test_host_device_accessor_conversions()
 
     // Test that implicit conversion from AccessorA<T> to AccessorB<T> is forbidden
     auto f3 = [](const WrapperA& wrapper_acc1) -> WrapperB {
-#if _CCCL_STD_VER >= 2020
       return WrapperB{wrapper_acc1};
-#else
-      return wrapper_acc1; // rightfully does not compile
-#endif
+      // return wrapper_acc1; // rightfully does not compile
     };
     unused(f3(WrapperA{}));
   }
@@ -320,11 +317,8 @@ __host__ __device__ void test_conversion()
     // so it inherits AccessorD<T>'s conversion operators.
     WrapperB wrapper_acc1{WrapperD{}};
     auto f1 = [](const WrapperD& w) -> WrapperB {
-#if _CCCL_STD_VER >= 2020
       return WrapperB{};
-#else
-      return w; // rightfully does not compile
-#endif
+      // return w; // rightfully does not compile
     };
     unused(f1(WrapperD{}));
   }
@@ -355,11 +349,8 @@ __host__ __device__ void test_default_to_aligned()
   WrapperDefault wrapper_default_acc{cuda::std::default_accessor<float>{}};
   WrapperAligned wrapper_aligned_acc{wrapper_default_acc};
   auto f = [](const WrapperDefault& w) -> WrapperAligned {
-#if _CCCL_STD_VER >= 2020
     return WrapperAligned{w};
-#else
-    return w; // rightfully does not compile
-#endif
+    // return w; // rightfully does not compile
   };
   unused(wrapper_aligned_acc);
   unused(f(wrapper_default_acc));

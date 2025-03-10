@@ -141,24 +141,34 @@ public:
   __host_accessor(const __device_accessor<_OtherAccessor>&) = delete;
 
   _CCCL_TEMPLATE(typename _OtherAccessor)
-  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, _OtherAccessor))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr
-#if _CCCL_STD_VER >= 2020
-    explicit(!_CUDA_VSTD::is_convertible_v<_OtherAccessor, _Accessor>)
-#endif
-      __host_accessor(const __host_accessor<_OtherAccessor>& __acc) //
+  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, _OtherAccessor)
+                   _CCCL_AND(_CUDA_VSTD::is_convertible_v<_OtherAccessor, _Accessor>))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __host_accessor(const __host_accessor<_OtherAccessor>& __acc) //
     noexcept(noexcept(_Accessor{_CUDA_VSTD::declval<_OtherAccessor>()}))
       : _Accessor{__acc}
   {}
 
   _CCCL_TEMPLATE(typename _OtherAccessor)
-  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, _OtherAccessor))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr
-#if _CCCL_STD_VER >= 2020
-    explicit(!_CUDA_VSTD::is_convertible_v<_OtherAccessor, _Accessor>)
-#endif
-      __host_accessor(const __managed_accessor<_OtherAccessor>& __acc) //
-    noexcept(noexcept(_Accessor{_CUDA_VSTD::declval<_OtherAccessor>()}))
+  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, _OtherAccessor)
+                   _CCCL_AND(!_CUDA_VSTD::is_convertible_v<_OtherAccessor, _Accessor>))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __host_accessor(const __host_accessor<_OtherAccessor>& __acc) noexcept(
+    noexcept(_Accessor{_CUDA_VSTD::declval<_OtherAccessor>()}))
+      : _Accessor{__acc}
+  {}
+
+  _CCCL_TEMPLATE(typename _OtherAccessor)
+  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, _OtherAccessor)
+                   _CCCL_AND(_CUDA_VSTD::is_convertible_v<_OtherAccessor, _Accessor>))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __host_accessor(const __managed_accessor<_OtherAccessor>& __acc) noexcept(
+    noexcept(_Accessor{_CUDA_VSTD::declval<_OtherAccessor>()}))
+      : _Accessor{__acc}
+  {}
+
+  _CCCL_TEMPLATE(typename _OtherAccessor)
+  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, _OtherAccessor)
+                   _CCCL_AND(!_CUDA_VSTD::is_convertible_v<_OtherAccessor, _Accessor>))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __host_accessor(
+    const __managed_accessor<_OtherAccessor>& __acc) noexcept(noexcept(_Accessor{_CUDA_VSTD::declval<_OtherAccessor>()}))
       : _Accessor{__acc}
   {}
 
@@ -225,24 +235,34 @@ public:
   __device_accessor(const __host_accessor<_OtherAccessor>&) = delete;
 
   _CCCL_TEMPLATE(typename _OtherAccessor)
-  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, _OtherAccessor))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr
-#if _CCCL_STD_VER >= 2020
-    explicit(!_CUDA_VSTD::is_convertible_v<_OtherAccessor, _Accessor>)
-#endif
-      __device_accessor(const __device_accessor<_OtherAccessor>& __acc) noexcept(
-        _CUDA_VSTD::is_nothrow_copy_constructible_v<_Accessor>)
+  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, _OtherAccessor)
+                   _CCCL_AND(_CUDA_VSTD::is_convertible_v<_OtherAccessor, _Accessor>))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __device_accessor(const __device_accessor<_OtherAccessor>& __acc) noexcept(
+    _CUDA_VSTD::is_nothrow_copy_constructible_v<_Accessor>)
       : _Accessor{__acc}
   {}
 
   _CCCL_TEMPLATE(typename _OtherAccessor)
-  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, _OtherAccessor))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr
-#if _CCCL_STD_VER >= 2020
-    explicit(!_CUDA_VSTD::is_convertible_v<_OtherAccessor, _Accessor>)
-#endif
-      __device_accessor(const __managed_accessor<_OtherAccessor>& __acc) //
-    noexcept(noexcept(_Accessor{_CUDA_VSTD::declval<_OtherAccessor>()}))
+  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, _OtherAccessor)
+                   _CCCL_AND(!_CUDA_VSTD::is_convertible_v<_OtherAccessor, _Accessor>))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __device_accessor(
+    const __device_accessor<_OtherAccessor>& __acc) noexcept(_CUDA_VSTD::is_nothrow_copy_constructible_v<_Accessor>)
+      : _Accessor{__acc}
+  {}
+
+  _CCCL_TEMPLATE(typename _OtherAccessor)
+  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, _OtherAccessor)
+                   _CCCL_AND(_CUDA_VSTD::is_convertible_v<_OtherAccessor, _Accessor>))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __device_accessor(const __managed_accessor<_OtherAccessor>& __acc) noexcept(
+    noexcept(_Accessor{_CUDA_VSTD::declval<_OtherAccessor>()}))
+      : _Accessor{__acc}
+  {}
+
+  _CCCL_TEMPLATE(typename _OtherAccessor)
+  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, _OtherAccessor)
+                   _CCCL_AND(!_CUDA_VSTD::is_convertible_v<_OtherAccessor, _Accessor>))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __device_accessor(
+    const __managed_accessor<_OtherAccessor>& __acc) noexcept(noexcept(_Accessor{_CUDA_VSTD::declval<_OtherAccessor>()}))
       : _Accessor{__acc}
   {}
 
@@ -326,13 +346,18 @@ public:
   __managed_accessor(const __device_accessor<_OtherAccessor>&) = delete;
 
   _CCCL_TEMPLATE(typename _OtherAccessor)
-  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, _OtherAccessor))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr
-#if _CCCL_STD_VER >= 2020
-    explicit(!_CUDA_VSTD::is_convertible_v<_OtherAccessor, _Accessor>)
-#endif
-      __managed_accessor(const __managed_accessor<_OtherAccessor>& __acc) noexcept(noexcept(_Accessor{
-        _CUDA_VSTD::declval<_OtherAccessor>()}))
+  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, _OtherAccessor)
+                   _CCCL_AND(_CUDA_VSTD::is_convertible_v<_OtherAccessor, _Accessor>))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __managed_accessor(const __managed_accessor<_OtherAccessor>& __acc) noexcept(
+    noexcept(_Accessor{_CUDA_VSTD::declval<_OtherAccessor>()}))
+      : _Accessor{__acc}
+  {}
+
+  _CCCL_TEMPLATE(typename _OtherAccessor)
+  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, _OtherAccessor)
+                   _CCCL_AND(!_CUDA_VSTD::is_convertible_v<_OtherAccessor, _Accessor>))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __managed_accessor(
+    const __managed_accessor<_OtherAccessor>& __acc) noexcept(noexcept(_Accessor{_CUDA_VSTD::declval<_OtherAccessor>()}))
       : _Accessor{__acc}
   {}
 
