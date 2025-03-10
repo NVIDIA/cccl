@@ -26,9 +26,9 @@
  ******************************************************************************/
 #include <cub/config.cuh>
 
-// TODO: remove _CCCL_COMPILER(MSVC) check after MSVC bug related to vector comparison is fixed:
-//       "error C3546: '...': there are no parameter packs available to expand"
-#if __cccl_lib_mdspan && !_CCCL_COMPILER(MSVC)
+// MSVC is not able to compile Catch2 tests with many large type lists. Error:
+// error C3546: '...': there are no parameter packs available to expand in make_tuple_types.h:__make_tuple_types_flat
+#if !_CCCL_COMPILER(MSVC)
 
 #  include <cub/device/device_for.cuh>
 
@@ -181,4 +181,4 @@ C2H_TEST("DeviceForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][devic
   REQUIRE(h_output == h_output_gpu);
 }
 
-#endif // __cccl_lib_mdspan && !_CCCL_COMPILER(MSVC)
+#endif // !_CCCL_COMPILER(MSVC)

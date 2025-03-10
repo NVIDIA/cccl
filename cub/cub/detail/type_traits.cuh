@@ -48,11 +48,9 @@
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 #include <cuda/std/functional>
 _CCCL_SUPPRESS_DEPRECATED_POP
-#include <cuda/std/array>
-#if __cccl_lib_mdspan
-#  include <cuda/std/mdspan>
-#endif // __cccl_lib_mdspan
 #include <cuda/std/__concepts/concept_macros.h> // IWYU pragma: keep
+#include <cuda/std/array>
+#include <cuda/std/mdspan>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 
@@ -103,15 +101,11 @@ template <typename T, ::cuda::std::size_t N>
 struct is_fixed_size_random_access_range<::cuda::std::array<T, N>, void> : ::cuda::std::true_type
 {};
 
-#if __cccl_lib_mdspan
-
 template <typename T, typename E, typename L, typename A>
 struct is_fixed_size_random_access_range<
   ::cuda::std::mdspan<T, E, L, A>,
   ::cuda::std::enable_if_t<E::rank == 1 && E::static_extent(0) != ::cuda::std::dynamic_extent>> : ::cuda::std::true_type
 {};
-
-#endif // __cccl_lib_mdspan
 
 template <typename T>
 using is_fixed_size_random_access_range_t = typename is_fixed_size_random_access_range<T>::type;
@@ -143,15 +137,11 @@ template <typename T, ::cuda::std::size_t N>
 struct static_size<::cuda::std::span<T, N>, void> : ::cuda::std::integral_constant<int, N>
 {};
 
-#if __cccl_lib_mdspan
-
 template <typename T, typename E, typename L, typename A>
 struct static_size<::cuda::std::mdspan<T, E, L, A>,
                    ::cuda::std::enable_if_t<E::rank == 1 && E::static_extent(0) != ::cuda::std::dynamic_extent>>
     : ::cuda::std::integral_constant<int, E::static_extent(1)>
 {};
-
-#endif // __cccl_lib_mdspan
 
 template <typename T>
 _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::size_t static_size_v()

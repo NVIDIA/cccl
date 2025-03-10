@@ -10,7 +10,7 @@ Thrust: The C++ Parallel Algorithms Library
    :ref:`Overview <thrust-module>`
    setup
    releases
-   contributing
+   release_process
    api
    ${repo_docs_api_path}/thrust_api
 

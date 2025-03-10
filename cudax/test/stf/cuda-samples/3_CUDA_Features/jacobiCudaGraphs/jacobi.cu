@@ -267,7 +267,13 @@ double JacobiMethodGpuCudaGraphExecKernelSetParams(
   NodeParams0.gridDim        = nblocks;
   NodeParams0.blockDim       = nthreads;
   NodeParams0.sharedMemBytes = 0;
-  void* kernelArgs0[6] = {(void*) &A, (void*) &b, (void*) &conv_threshold, (void*) &x, (void*) &x_new, (void*) &d_sum};
+  void* kernelArgs0[6]       = {
+    (void*) &A,
+    const_cast<double**>(&b),
+    const_cast<float*>(&conv_threshold),
+    (void*) &x,
+    (void*) &x_new,
+    (void*) &d_sum};
   NodeParams0.kernelParams = kernelArgs0;
   NodeParams0.extra        = NULL;
 
@@ -295,7 +301,13 @@ double JacobiMethodGpuCudaGraphExecKernelSetParams(
   NodeParams1.gridDim        = nblocks;
   NodeParams1.blockDim       = nthreads;
   NodeParams1.sharedMemBytes = 0;
-  void* kernelArgs1[6] = {(void*) &A, (void*) &b, (void*) &conv_threshold, (void*) &x_new, (void*) &x, (void*) &d_sum};
+  void* kernelArgs1[6]       = {
+    (void*) &A,
+    const_cast<double**>(&b),
+    const_cast<float*>(&conv_threshold),
+    (void*) &x_new,
+    (void*) &x,
+    (void*) &d_sum};
   NodeParams1.kernelParams = kernelArgs1;
   NodeParams1.extra        = NULL;
 

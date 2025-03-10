@@ -37,11 +37,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/util_device.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
+#include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/bit>
 
 // The ublkcp kernel needs PTX features that are only available and understood by nvcc >=12.
@@ -129,6 +131,53 @@ _CCCL_HOST_DEVICE constexpr int arch_to_min_bytes_in_flight(int sm_arch)
   return sm_arch >= 900 ? 48 * 1024 // 32 for H100, 48 for H200
        : sm_arch >= 800 ? 16 * 1024 // A100
                         : 12 * 1024; // V100 and below
+}
+
+template <typename PolicyT, typename = void>
+struct TransformPolicyWrapper : PolicyT
+{
+  _CCCL_HOST_DEVICE TransformPolicyWrapper(PolicyT base)
+      : PolicyT(base)
+  {}
+};
+
+template <typename StaticPolicyT>
+struct TransformPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<decltype(StaticPolicyT::algorithm)>> : StaticPolicyT
+{
+  _CCCL_HOST_DEVICE TransformPolicyWrapper(StaticPolicyT base)
+      : StaticPolicyT(base)
+  {}
+
+  _CCCL_HOST_DEVICE static constexpr Algorithm GetAlgorithm()
+  {
+    return StaticPolicyT::algorithm;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int BlockThreads()
+  {
+    return StaticPolicyT::algo_policy::block_threads;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int ItemsPerThreadNoInput()
+  {
+    return StaticPolicyT::algo_policy::items_per_thread_no_input;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int MinItemsPerThread()
+  {
+    return StaticPolicyT::algo_policy::min_items_per_thread;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int MaxItemsPerThread()
+  {
+    return StaticPolicyT::algo_policy::max_items_per_thread;
+  }
+};
+
+template <typename PolicyT>
+_CCCL_HOST_DEVICE TransformPolicyWrapper<PolicyT> MakeTransformPolicyWrapper(PolicyT base)
+{
+  return TransformPolicyWrapper<PolicyT>(base);
 }
 
 template <bool RequiresStableAddress, typename RandomAccessIteratorTupleIn>

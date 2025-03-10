@@ -42,10 +42,7 @@ enum class __dot_shfl_mode
 
 [[maybe_unused]]
 _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t __shfl_sync_dst_lane(
-  __dot_shfl_mode __shfl_mode,
-  _CUDA_VSTD::uint32_t __lane_idx_offset,
-  _CUDA_VSTD::uint32_t __clamp_segmask,
-  _CUDA_VSTD::uint32_t __lane_mask)
+  __dot_shfl_mode __shfl_mode, _CUDA_VSTD::uint32_t __lane_idx_offset, _CUDA_VSTD::uint32_t __clamp_segmask)
 {
   auto __lane              = ::cuda::ptx::get_sreg_laneid();
   auto __clamp             = __clamp_segmask & 0b11111;
@@ -59,7 +56,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t __shfl_sync_dst_lane(
   }
   else if (__shfl_mode == __dot_shfl_mode::__up)
   {
-    __j = __lane - __lane_idx_offset;
+    __j = __lane_idx_offset >= __lane ? 0 : __lane - __lane_idx_offset;
   }
   else if (__shfl_mode == __dot_shfl_mode::__down)
   {
@@ -91,9 +88,12 @@ _CCCL_DEVICE static inline void __shfl_sync_checks(
   _CCCL_ASSERT((__clamp_segmask | 0b1111100011111) == 0b1111100011111,
                "clamp value + segmentation mask must use the bit positions [0:4] and [8:12]");
   _CCCL_ASSERT((__lane_mask & __activemask()) == __lane_mask, "lane mask must be a subset of the active mask");
-  _CCCL_ASSERT(
-    ::cuda::ptx::__shfl_sync_dst_lane(__shfl_mode, __lane_idx_offset, __clamp_segmask, __lane_mask) & __lane_mask,
-    "the destination lane must be a member of the lane mask");
+#  if __CUDA_ARCH__ >= 700
+  [[maybe_unused]] int __pred;
+  _CCCL_ASSERT(__match_all_sync(__activemask(), __lane_mask, &__pred), "all active lanes must have the same lane mask");
+#  endif
+  _CCCL_ASSERT(::cuda::ptx::__shfl_sync_dst_lane(__shfl_mode, __lane_idx_offset, __clamp_segmask) & __lane_mask,
+               "the destination lane must be a member of the lane mask");
 }
 
 template <typename _Tp>

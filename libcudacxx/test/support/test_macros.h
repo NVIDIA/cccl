@@ -425,7 +425,7 @@ __host__ __device__ constexpr bool unused(T&&...)
 #  define TEST_NV_DIAG_SUPPRESS(WARNING) _CCCL_PRAGMA(diag_suppress WARNING)
 #endif
 
-#define TEST_CONSTEXPR_GLOBAL _CCCL_CONSTEXPR_GLOBAL
+#define TEST_CONSTEXPR_GLOBAL constexpr
 
 // Some convenience macros for checking nvcc versions
 #if _CCCL_CUDACC_BELOW(12, 3)

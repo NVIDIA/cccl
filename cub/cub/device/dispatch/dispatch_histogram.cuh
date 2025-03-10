@@ -271,45 +271,16 @@ struct dispatch_histogram
   void* d_temp_storage;
   size_t& temp_storage_bytes;
   SampleIteratorT d_samples;
-  CounterT** d_output_histograms;
-  const int* num_privatized_levels;
-  PrivatizedDecodeOpT* privatized_decode_op;
-  const int* num_output_levels;
-  OutputDecodeOpT* output_decode_op;
+  ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms;
+  ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_levels;
+  ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op;
+  ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels;
+  ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op;
   int max_num_output_bins;
   OffsetT num_row_pixels;
   OffsetT num_rows;
   OffsetT row_stride_samples;
   cudaStream_t stream;
-
-  CUB_RUNTIME_FUNCTION dispatch_histogram(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_output_histograms[NUM_ACTIVE_CHANNELS],
-    const int num_privatized_levels[NUM_ACTIVE_CHANNELS],
-    PrivatizedDecodeOpT privatized_decode_op[NUM_ACTIVE_CHANNELS],
-    const int num_output_levels[NUM_ACTIVE_CHANNELS],
-    OutputDecodeOpT output_decode_op[NUM_ACTIVE_CHANNELS],
-    int max_num_output_bins,
-    OffsetT num_row_pixels,
-    OffsetT num_rows,
-    OffsetT row_stride_samples,
-    cudaStream_t stream)
-      : d_temp_storage(d_temp_storage)
-      , temp_storage_bytes(temp_storage_bytes)
-      , d_samples(d_samples)
-      , d_output_histograms(d_output_histograms)
-      , num_privatized_levels(num_privatized_levels)
-      , privatized_decode_op(privatized_decode_op)
-      , num_output_levels(num_output_levels)
-      , output_decode_op(output_decode_op)
-      , max_num_output_bins(max_num_output_bins)
-      , num_row_pixels(num_row_pixels)
-      , num_rows(num_rows)
-      , row_stride_samples(row_stride_samples)
-      , stream(stream)
-  {}
 
   template <typename ActivePolicyT, typename DeviceHistogramInitKernelT, typename DeviceHistogramSweepKernelT>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
@@ -403,33 +374,21 @@ struct dispatch_histogram
       GridQueue<int> tile_queue(allocations[NUM_ALLOCATIONS - 1]);
 
       // Wrap arrays so we can pass them by-value to the kernel
-      ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms_wrapper;
       ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_privatized_histograms_wrapper;
-      ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op_wrapper;
-      ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op_wrapper;
       ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_bins_wrapper;
       ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_bins_wrapper;
 
       auto* typedAllocations = reinterpret_cast<CounterT**>(allocations);
       ::cuda::std::copy(
-        d_output_histograms, d_output_histograms + NUM_ACTIVE_CHANNELS, d_output_histograms_wrapper.begin());
-      ::cuda::std::copy(
         typedAllocations, typedAllocations + NUM_ACTIVE_CHANNELS, d_privatized_histograms_wrapper.begin());
-      // TODO(bgruber): we can probably skip copying the function objects when they are empty
-      ::cuda::std::copy(
-        privatized_decode_op, privatized_decode_op + NUM_ACTIVE_CHANNELS, privatized_decode_op_wrapper.begin());
-      ::cuda::std::copy(output_decode_op, output_decode_op + NUM_ACTIVE_CHANNELS, output_decode_op_wrapper.begin());
 
       auto minus_one = ::cuda::proclaim_return_type<int>([](int levels) {
         return levels - 1;
       });
       ::cuda::std::transform(
-        num_privatized_levels,
-        num_privatized_levels + NUM_ACTIVE_CHANNELS,
-        num_privatized_bins_wrapper.begin(),
-        minus_one);
+        num_privatized_levels.begin(), num_privatized_levels.end(), num_privatized_bins_wrapper.begin(), minus_one);
       ::cuda::std::transform(
-        num_output_levels, num_output_levels + NUM_ACTIVE_CHANNELS, num_output_bins_wrapper.begin(), minus_one);
+        num_output_levels.begin(), num_output_levels.end(), num_output_bins_wrapper.begin(), minus_one);
       int histogram_init_block_threads = 256;
 
       int histogram_init_grid_dims =
@@ -446,7 +405,7 @@ struct dispatch_histogram
       // Invoke histogram_init_kernel
       THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
         histogram_init_grid_dims, histogram_init_block_threads, 0, stream)
-        .doit(histogram_init_kernel, num_output_bins_wrapper, d_output_histograms_wrapper, tile_queue);
+        .doit(histogram_init_kernel, num_output_bins_wrapper, d_output_histograms, tile_queue);
 
       // Return if empty problem
       if ((blocks_per_row == 0) || (blocks_per_col == 0))
@@ -473,10 +432,10 @@ struct dispatch_histogram
               d_samples,
               num_output_bins_wrapper,
               num_privatized_bins_wrapper,
-              d_output_histograms_wrapper,
+              d_output_histograms,
               d_privatized_histograms_wrapper,
-              output_decode_op_wrapper,
-              privatized_decode_op_wrapper,
+              output_decode_op,
+              privatized_decode_op,
               num_row_pixels,
               num_rows,
               row_stride_samples,
@@ -913,9 +872,9 @@ public:
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
-    CounterT* d_output_histograms[NUM_ACTIVE_CHANNELS],
-    const int num_output_levels[NUM_ACTIVE_CHANNELS],
-    const LevelT* const d_levels[NUM_ACTIVE_CHANNELS],
+    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms,
+    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels,
+    ::cuda::std::array<const LevelT*, NUM_ACTIVE_CHANNELS> d_levels,
     OffsetT num_row_pixels,
     OffsetT num_rows,
     OffsetT row_stride_samples,
@@ -947,8 +906,8 @@ public:
       // Use the pass-thru transform op for converting privatized bins to output bins
       using OutputDecodeOpT = PassThruTransform;
 
-      PrivatizedDecodeOpT privatized_decode_op[NUM_ACTIVE_CHANNELS]{};
-      OutputDecodeOpT output_decode_op[NUM_ACTIVE_CHANNELS]{};
+      ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
+      ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op{};
       int max_levels = num_output_levels[0];
 
       for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
@@ -977,7 +936,7 @@ public:
           OutputDecodeOpT,
           OffsetT,
           MaxPolicyT>
-          dispatch(
+          dispatch{
             d_temp_storage,
             temp_storage_bytes,
             d_samples,
@@ -990,7 +949,7 @@ public:
             num_row_pixels,
             num_rows,
             row_stride_samples,
-            stream);
+            stream};
 
         error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
         if (cudaSuccess != error)
@@ -1013,7 +972,7 @@ public:
           OutputDecodeOpT,
           OffsetT,
           MaxPolicyT>
-          dispatch(
+          dispatch{
             d_temp_storage,
             temp_storage_bytes,
             d_samples,
@@ -1026,7 +985,7 @@ public:
             num_row_pixels,
             num_rows,
             row_stride_samples,
-            stream);
+            stream};
 
         error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
         if (cudaSuccess != error)
@@ -1090,9 +1049,9 @@ public:
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
-    CounterT* d_output_histograms[NUM_ACTIVE_CHANNELS],
-    const int num_output_levels[NUM_ACTIVE_CHANNELS],
-    const LevelT* const d_levels[NUM_ACTIVE_CHANNELS],
+    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms,
+    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels,
+    ::cuda::std::array<const LevelT*, NUM_ACTIVE_CHANNELS> d_levels,
     OffsetT num_row_pixels,
     OffsetT num_rows,
     OffsetT row_stride_samples,
@@ -1123,9 +1082,9 @@ public:
       // Use the search transform op for converting privatized bins to output bins
       using OutputDecodeOpT = SearchTransform<const LevelT*>;
 
-      int num_privatized_levels[NUM_ACTIVE_CHANNELS];
-      PrivatizedDecodeOpT privatized_decode_op[NUM_ACTIVE_CHANNELS]{};
-      OutputDecodeOpT output_decode_op[NUM_ACTIVE_CHANNELS]{};
+      ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_levels;
+      ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
+      ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op{};
       int max_levels = num_output_levels[0]; // Maximum number of levels in any channel
 
       for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
@@ -1152,7 +1111,7 @@ public:
         OutputDecodeOpT,
         OffsetT,
         MaxPolicyT>
-        dispatch(
+        dispatch{
           d_temp_storage,
           temp_storage_bytes,
           d_samples,
@@ -1165,7 +1124,7 @@ public:
           num_row_pixels,
           num_rows,
           row_stride_samples,
-          stream);
+          stream};
 
       error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
       if (cudaSuccess != error)
@@ -1229,10 +1188,10 @@ public:
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
-    CounterT* d_output_histograms[NUM_ACTIVE_CHANNELS],
-    const int num_output_levels[NUM_ACTIVE_CHANNELS],
-    const LevelT lower_level[NUM_ACTIVE_CHANNELS],
-    const LevelT upper_level[NUM_ACTIVE_CHANNELS],
+    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms,
+    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels,
+    ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> lower_level,
+    ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> upper_level,
     OffsetT num_row_pixels,
     OffsetT num_rows,
     OffsetT row_stride_samples,
@@ -1263,8 +1222,8 @@ public:
       // Use the pass-thru transform op for converting privatized bins to output bins
       using OutputDecodeOpT = PassThruTransform;
 
-      PrivatizedDecodeOpT privatized_decode_op[NUM_ACTIVE_CHANNELS]{};
-      OutputDecodeOpT output_decode_op[NUM_ACTIVE_CHANNELS]{};
+      ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
+      ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op{};
       int max_levels = num_output_levels[0];
 
       for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
@@ -1305,7 +1264,7 @@ public:
           OutputDecodeOpT,
           OffsetT,
           MaxPolicyT>
-          dispatch(
+          dispatch{
             d_temp_storage,
             temp_storage_bytes,
             d_samples,
@@ -1318,7 +1277,7 @@ public:
             num_row_pixels,
             num_rows,
             row_stride_samples,
-            stream);
+            stream};
 
         error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
         if (cudaSuccess != error)
@@ -1341,7 +1300,7 @@ public:
           OutputDecodeOpT,
           OffsetT,
           MaxPolicyT>
-          dispatch(
+          dispatch{
             d_temp_storage,
             temp_storage_bytes,
             d_samples,
@@ -1354,7 +1313,7 @@ public:
             num_row_pixels,
             num_rows,
             row_stride_samples,
-            stream);
+            stream};
 
         error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
         if (cudaSuccess != error)
@@ -1420,10 +1379,10 @@ public:
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
-    CounterT* d_output_histograms[NUM_ACTIVE_CHANNELS],
-    const int num_output_levels[NUM_ACTIVE_CHANNELS],
-    const LevelT lower_level[NUM_ACTIVE_CHANNELS],
-    const LevelT upper_level[NUM_ACTIVE_CHANNELS],
+    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms,
+    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels,
+    ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> lower_level,
+    ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> upper_level,
     OffsetT num_row_pixels,
     OffsetT num_rows,
     OffsetT row_stride_samples,
@@ -1454,9 +1413,9 @@ public:
       // Use the scale transform op for converting privatized bins to output bins
       using OutputDecodeOpT = ScaleTransform;
 
-      int num_privatized_levels[NUM_ACTIVE_CHANNELS];
-      PrivatizedDecodeOpT privatized_decode_op[NUM_ACTIVE_CHANNELS]{};
-      OutputDecodeOpT output_decode_op[NUM_ACTIVE_CHANNELS]{};
+      ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_levels;
+      ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
+      ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op{};
       int max_levels = num_output_levels[0];
 
       for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
@@ -1484,7 +1443,7 @@ public:
         OutputDecodeOpT,
         OffsetT,
         MaxPolicyT>
-        dispatch(
+        dispatch{
           d_temp_storage,
           temp_storage_bytes,
           d_samples,
@@ -1497,7 +1456,7 @@ public:
           num_row_pixels,
           num_rows,
           row_stride_samples,
-          stream);
+          stream};
 
       error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
       if (cudaSuccess != error)
