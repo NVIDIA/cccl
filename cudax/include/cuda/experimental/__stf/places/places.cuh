@@ -230,7 +230,7 @@ public:
 
   /**
    * @brief Returns an index guaranteed to be >= 0 (0 for managed CPU, 1 for pinned CPU,  2 for device 0, 3 for device
-   * 1, ...). Requires that `p` is initialized and different from `data_place::invalid`.
+   * 1, ...). Requires that `p` is initialized and different from `data_place::invalid()`.
    */
   friend inline size_t to_index(const data_place& p)
   {
@@ -1321,7 +1321,7 @@ data_place data_place::composite(partitioner_t, const exec_place_grid& g)
 inline exec_place data_place::get_affine_exec_place() const
 {
   //    EXPECT(*this != affine);
-  //    EXPECT(*this != data_place::invalid);
+  //    EXPECT(*this != data_place::invalid());
 
   if (is_host())
   {
