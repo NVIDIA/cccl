@@ -1,35 +1,82 @@
 .. _libcudacxx-standard-api-c-compat:
 
 C Library
-=======================
+=========
 
 Any Standard C++ header not listed below is omitted.
 
 .. list-table::
-   :widths: 25 45 30
+   :widths: 25 45 30 30 20
    :header-rows: 1
 
-   * - Header
-     - Content
-     - Availability
-   * - `\<cuda/std/cassert\> <https://en.cppreference.com/w/cpp/header/cassert>`_
+   * - **Header**
+     - **Content**
+     - **CCCL Availability**
+     - **CUDA Toolkit Availability**
+     - **C++ Reference**
+
+   * - ``<cuda/std/cassert>``
      - Lightweight assumption testing
-     - libcu++ 1.0.0 / CCCL 2.0.0 / CUDA 10.2
-   * - `\<cuda/std/cfloat\> <https://en.cppreference.com/w/cpp/header/cfloat>`_
+     - CCCL 2.0.0
+     - CUDA 10.2
+     - `\<cassert\> <https://en.cppreference.com/w/cpp/header/cassert>`_
+
+   * - ``<cuda/std/ccomplex>``
+     - C complex number arithmetic
+     - CCCL 2.0.0
+     - CUDA 11.4
+     - `\<ccomplex\> <https://en.cppreference.com/w/cpp/header/ccomplex>`_
+
+   * - ``<cuda/std/cfloat>``
      - Type support library
-     - libcu++ 2.2.0 / CCCL 2.2.0 / CUDA 12.3
-   * - `\<cuda/std/cmath\> <https://en.cppreference.com/w/cpp/header/cmath>`_
+     - CCCL 2.2.0
+     - CUDA 12.3
+     - `\<cfloat\> <https://en.cppreference.com/w/cpp/header/cfloat>`_
+
+   * - ``<cuda/std/cfloat>``
+     - Limits of floating point types
+     - CCCL 2.0.0
+     - CUDA 10.2
+     - `\<cfloat\> <https://en.cppreference.com/w/cpp/header/cfloat>`_
+
+   * - ``<cuda/std/climits>``
+     - Limits of integral types
+     - CCCL 2.0.0
+     - CUDA 10.2
+     - `\<climits\> <https://en.cppreference.com/w/cpp/header/climits>`_
+
+   * - ``<cuda/std/cmath>``
      - Common math functions
-     - libcu++ 2.2.0 / CCCL 2.2.0 / CUDA 12.3
-   * - `\<cuda/std/cstddef\> <https://en.cppreference.com/w/cpp/header/cstddef>`_
+     - CCCL 2.2.0
+     - CUDA 12.3
+     - `\<cmath\> <https://en.cppreference.com/w/cpp/header/cmath>`_
+
+   * - ``<cuda/std/cstddef>``
      - Fundamental types
-     - libcu++ 1.0.0 / CCCL 2.0.0 / CUDA 10.2
-   * - `\<cuda/std/cstdint\> <https://en.cppreference.com/w/cpp/header/cstdint>`_
+     - CCCL 2.0.0
+     - CUDA 10.2
+     - `\<cstddef\> <https://en.cppreference.com/w/cpp/header/cstddef>`_
+
+   * - ``<cuda/std/cstdint>``
      - Fundamental integer types
-     - libcu++ 2.2.0 / CCCL 2.2.0 / CUDA 12.3
-   * - `\<cuda/std/cstdlib\> <https://en.cppreference.com/w/cpp/header/cstdlib>`_
+     - CCCL 2.2.0
+     - CUDA 12.3
+     - `\<cstdint\> <https://en.cppreference.com/w/cpp/header/cstdint>`_
+
+   * - ``<cuda/std/cstdint>``
+     - Fixed-width integer types
+     - CCCL 2.0.0
+     - CUDA 10.2
+     - `\<cstdint\> <https://en.cppreference.com/w/cpp/header/cstdint>`_
+
+   * - ``<cuda/std/cstdlib>``
      - Common utilities
-     - libcu++ 2.2.0 / CCCL 2.2.0 / CUDA 12.3
-   * - `\<cuda/std/cstring\> <https://en.cppreference.com/w/cpp/header/cstring>`_
+     - CCCL 2.2.0
+     - CUDA 12.3
+     - `\<cstdlib\> <https://en.cppreference.com/w/cpp/header/cstdlib>`_
+
+   * - ``<cuda/std/cstring>``
      - Provides array manipulation functions such as ``memcpy``, ``memset`` and ``memcmp``
      - CCCL 3.0.0
+     - CUDA 13.0
+     - `\<cstring\> <https://en.cppreference.com/w/cpp/header/cstring>`_

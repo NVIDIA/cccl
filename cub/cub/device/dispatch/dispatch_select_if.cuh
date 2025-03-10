@@ -383,14 +383,14 @@ __launch_bounds__(int(
  ******************************************************************************/
 
 /**
- * Utility class for dispatching the appropriately-tuned kernels for DeviceSelect
+ * Utility class for dispatching the appropriately-tuned kernels for DeviceSelect and DevicePartition
  *
  * @tparam InputIteratorT
  *   Random-access input iterator type for reading input items
  *
  * @tparam FlagsInputIteratorT
- *   Random-access input iterator type for reading selection flags
- *   (NullType* if a selection functor or discontinuity flagging is to be used for selection)
+ *   Random-access input iterator type for reading selection flags (NullType* if a selection functor or discontinuity
+ *   flagging is used for selection)
  *
  * @tparam SelectedOutputIteratorT
  *   Random-access output iterator type for writing selected items
@@ -399,12 +399,10 @@ __launch_bounds__(int(
  *   Output iterator type for recording the number of items selected
  *
  * @tparam SelectOpT
- *   Selection operator type (NullType if selection flags or discontinuity flagging is
- *   to be used for selection)
+ *   Selection operator type (NullType if selection flags or discontinuity flagging is used for selection)
  *
  * @tparam EqualityOpT
- *   Equality operator type (NullType if selection functor or selection flags is to
- *   be used for selection)
+ *   Equality operator type (NullType if selection functor or selection flags are used for selection)
  *
  * @tparam OffsetT
  *   Signed integer type for global offsets
@@ -428,8 +426,7 @@ template <
     // if/flagged/unique only have a single code path for different offset types, partition has different code paths
     ::cuda::std::conditional_t<SelectionOpt == SelectImpl::Partition, OffsetT, detail::select::per_partition_offset_t>,
     detail::select::is_partition_distinct_output_t<SelectedOutputIteratorT>::value,
-    (SelectionOpt == SelectImpl::SelectPotentiallyInPlace),
-    (SelectionOpt == SelectImpl::Partition)>>
+    SelectionOpt>>
 struct DispatchSelectIf
 {
   /******************************************************************************

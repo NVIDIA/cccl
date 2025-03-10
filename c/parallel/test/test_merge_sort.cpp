@@ -221,33 +221,19 @@ TEST_CASE("DeviceMergeSort:SortPairsCopy works with custom types", "[merge_sort]
     }));
 }
 
-struct random_access_iterator_state_t
-{
-  int* d_input;
-};
-
 TEST_CASE("DeviceMergeSort::SortKeys works with input iterators", "[merge_sort]")
 {
   using TestType      = int;
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
 
   operation_t op = make_operation("op", get_merge_sort_op(get_type_info<TestType>().type));
-  iterator_t<TestType, random_access_iterator_state_t> input_keys_it =
-    make_iterator<TestType, random_access_iterator_state_t>(
-      "struct random_access_iterator_state_t { int* d_input; };\n",
-      {"advance",
-       "extern \"C\" __device__ void advance(random_access_iterator_state_t* state, unsigned long long offset) {\n"
-       "  state->d_input += offset;\n"
-       "}"},
-      {"dereference",
-       "extern \"C\" __device__ int dereference(random_access_iterator_state_t* state) {\n"
-       "  return *state->d_input;\n"
-       "}"});
+  iterator_t<TestType, random_access_iterator_state_t<TestType>> input_keys_it =
+    make_random_access_iterator<TestType>(iterator_kind::INPUT, "int");
   std::vector<TestType> input_keys    = make_shuffled_sequence<TestType>(num_items);
   std::vector<TestType> expected_keys = input_keys;
 
   pointer_t<TestType> input_keys_ptr(input_keys);
-  input_keys_it.state.d_input = input_keys_ptr.ptr;
+  input_keys_it.state.data = input_keys_ptr.ptr;
   pointer_t<TestType> input_items_it;
 
   merge_sort(input_keys_it, input_items_it, input_keys_ptr, input_items_it, num_items, op);
@@ -256,11 +242,6 @@ TEST_CASE("DeviceMergeSort::SortKeys works with input iterators", "[merge_sort]"
   REQUIRE(expected_keys == std::vector<TestType>(input_keys_ptr));
 }
 
-struct item_random_access_iterator_state_t
-{
-  int* d_input;
-};
-
 TEST_CASE("DeviceMergeSort::SortPairs works with input iterators", "[merge_sort]")
 {
   using TestType      = int;
@@ -268,29 +249,10 @@ TEST_CASE("DeviceMergeSort::SortPairs works with input iterators", "[merge_sort]
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
 
   operation_t op = make_operation("op", get_merge_sort_op(get_type_info<TestType>().type));
-  iterator_t<TestType, random_access_iterator_state_t> input_keys_it =
-    make_iterator<TestType, random_access_iterator_state_t>(
-      "struct random_access_iterator_state_t { int* d_input; };\n",
-      {"key_advance",
-       "extern \"C\" __device__ void key_advance(random_access_iterator_state_t* state, unsigned long long offset) {\n"
-       "  state->d_input += offset;\n"
-       "}"},
-      {"key_dereference",
-       "extern \"C\" __device__ int key_dereference(random_access_iterator_state_t* state) {\n"
-       "  return *state->d_input;\n"
-       "}"});
-  iterator_t<TestType, random_access_iterator_state_t> input_items_it =
-    make_iterator<TestType, random_access_iterator_state_t>(
-      "struct item_random_access_iterator_state_t { int* d_input; };\n",
-      {"item_advance",
-       "extern \"C\" __device__ void item_advance(item_random_access_iterator_state_t* state, unsigned long long "
-       "offset) {\n"
-       "  state->d_input += offset;\n"
-       "}"},
-      {"item_dereference",
-       "extern \"C\" __device__ int item_dereference(item_random_access_iterator_state_t* state) {\n"
-       "  return *state->d_input;\n"
-       "}"});
+  iterator_t<TestType, random_access_iterator_state_t<TestType>> input_keys_it =
+    make_random_access_iterator<TestType>(iterator_kind::INPUT, "int", "key");
+  iterator_t<TestType, random_access_iterator_state_t<TestType>> input_items_it =
+    make_random_access_iterator<TestType>(iterator_kind::INPUT, "int", "item");
 
   std::vector<TestType> input_keys = make_shuffled_sequence<TestType>(num_items);
   std::vector<item_t> input_items(num_items);
@@ -302,9 +264,9 @@ TEST_CASE("DeviceMergeSort::SortPairs works with input iterators", "[merge_sort]
   std::vector<item_t> expected_items  = input_items;
 
   pointer_t<TestType> input_keys_ptr(input_keys);
-  input_keys_it.state.d_input = input_keys_ptr.ptr;
+  input_keys_it.state.data = input_keys_ptr.ptr;
   pointer_t<TestType> input_items_ptr(input_items);
-  input_items_it.state.d_input = input_items_ptr.ptr;
+  input_items_it.state.data = input_items_ptr.ptr;
 
   merge_sort(input_keys_it, input_items_it, input_keys_ptr, input_items_ptr, num_items, op);
 

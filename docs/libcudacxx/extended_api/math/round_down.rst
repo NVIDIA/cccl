@@ -1,13 +1,13 @@
 .. _libcudacxx-extended-api-math-round-down:
 
-``round_down`` Round to the previous multiple
-=============================================
+``cuda::round_down``
+====================
 
 .. code:: cuda
 
    template <typename T, typename U>
-   [[nodiscard]] __host__ __device__ inline
-   constexpr cuda::std::common_type_t<T, U> round_down(T value, U base_multiple) noexcept;
+   [[nodiscard]] __host__ __device__ inline constexpr
+   cuda::std::common_type_t<T, U> round_down(T value, U base_multiple) noexcept;
 
 The function computes the round down to the largest multiple of an integral or enumerator value :math:`floor(\frac{value}{base\_multiple}) * base\_multiple`
 
@@ -20,10 +20,14 @@ The function computes the round down to the largest multiple of an integral or e
 
 ``value`` rounded down to the largest multiple of ``base_multiple`` less than or equal to ``value``. If ``value`` is already a multiple of ``base_multiple``, returns ``value``.
 
+**Constraints**
+
+- ``T`` and ``U`` are integer types or enumerators.
+
 **Preconditions**
 
-- *Compile-time*: ``T`` and ``U`` are integral types (including 128-bit integers) or enumerators.
-- *Run-time*: ``value >= 0`` and ``base_multiple > 0``.
+- ``value >= 0``
+- ``base_multiple > 0``
 
 **Performance considerations**
 
