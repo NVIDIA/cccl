@@ -61,10 +61,10 @@ struct A
 
 int main(int, char**)
 {
-  STATIC_ASSERT_CXX14(testConstexprSpan<int>());
-  STATIC_ASSERT_CXX14(testConstexprSpan<long>());
-  STATIC_ASSERT_CXX14(testConstexprSpan<double>());
-  STATIC_ASSERT_CXX14(testConstexprSpan<A>());
+  static_assert(testConstexprSpan<int>());
+  static_assert(testConstexprSpan<long>());
+  static_assert(testConstexprSpan<double>());
+  static_assert(testConstexprSpan<A>());
 
   testRuntimeSpan<int>();
   testRuntimeSpan<long>();

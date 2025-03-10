@@ -85,12 +85,12 @@ __host__ __device__ constexpr bool testConstructorConstArray()
 template <typename T>
 __host__ __device__ constexpr bool testConstructors()
 {
-  STATIC_ASSERT_CXX14((testConstructorArray<T, T>()));
-  STATIC_ASSERT_CXX14((testConstructorArray<const T, const T>()));
-  STATIC_ASSERT_CXX14((testConstructorArray<const T, T>()));
-  STATIC_ASSERT_CXX14((testConstructorConstArray<T, T>()));
-  STATIC_ASSERT_CXX14((testConstructorConstArray<const T, const T>()));
-  STATIC_ASSERT_CXX14((testConstructorConstArray<const T, T>()));
+  static_assert((testConstructorArray<T, T>()));
+  static_assert((testConstructorArray<const T, const T>()));
+  static_assert((testConstructorArray<const T, T>()));
+  static_assert((testConstructorConstArray<T, T>()));
+  static_assert((testConstructorConstArray<const T, const T>()));
+  static_assert((testConstructorConstArray<const T, T>()));
 
   return testConstructorArray<T, T>() && testConstructorArray<const T, const T>() && testConstructorArray<const T, T>()
       && testConstructorConstArray<T, T>() && testConstructorConstArray<const T, const T>()
