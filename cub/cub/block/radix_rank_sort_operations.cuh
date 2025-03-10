@@ -49,6 +49,7 @@
 
 #include <thrust/type_traits/integer_sequence.h>
 
+#include <cuda/bit>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/cstdint>
@@ -119,7 +120,7 @@ struct BFEDigitExtractor : BaseDigitExtractor<KeyT>
 
   _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t Digit(UnsignedBits key) const
   {
-    return BFE(this->ProcessFloatMinusZero(key), bit_start, num_bits);
+    return ::cuda::bitfield_extract(this->ProcessFloatMinusZero(key), bit_start, num_bits);
   }
 };
 
