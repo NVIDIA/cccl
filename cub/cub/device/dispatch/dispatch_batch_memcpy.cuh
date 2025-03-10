@@ -411,7 +411,7 @@ struct DispatchBatchMemcpy
     const auto max_num_buffers = ::cuda::std::min(max_num_buffers_per_invocation, num_buffers);
 
     // The number of thread blocks (or tiles) required to process all of the given buffers
-    BlockOffsetT max_num_tiles = ::cuda::ceil_div(max_num_buffers, TILE_SIZE);
+    auto max_num_tiles = static_cast<BlockOffsetT>(::cuda::ceil_div(max_num_buffers, TILE_SIZE));
 
     using BlevBufferSrcsOutT =
       ::cuda::std::_If<MemcpyOpt == CopyAlg::Memcpy, const void*, cub::detail::it_value_t<InputBufferIt>>;
@@ -552,10 +552,10 @@ struct DispatchBatchMemcpy
       const auto current_buffer_offset = invocation_index * max_num_buffers_per_invocation;
       const auto num_current_buffers =
         ::cuda::std::min(max_num_buffers_per_invocation, num_buffers - current_buffer_offset);
-      const auto num_current_tiles = ::cuda::ceil_div(num_current_buffers, TILE_SIZE);
+      const auto num_current_tiles = static_cast<BlockOffsetT>(::cuda::ceil_div(num_current_buffers, TILE_SIZE));
 
       // Kernels' grid sizes
-      BlockOffsetT init_grid_size         = ::cuda::ceil_div(num_current_tiles, INIT_KERNEL_THREADS);
+      const auto init_grid_size = static_cast<BlockOffsetT>(::cuda::ceil_div(num_current_tiles, INIT_KERNEL_THREADS));
       BlockOffsetT batch_memcpy_grid_size = num_current_tiles;
 
       // Construct the tile status for the buffer prefix sum
