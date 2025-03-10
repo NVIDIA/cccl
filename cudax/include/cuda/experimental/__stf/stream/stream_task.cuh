@@ -353,7 +353,7 @@ public:
     reserved::dot& dot = reserved::dot::instance();
     auto& statistics   = reserved::task_statistics::instance();
 
-    const bool is_auto = get_exec_place().affine_data_place() == data_place::device_auto;
+    const bool is_auto = get_exec_place().affine_data_place() == data_place::device_auto();
     bool calibrate     = false;
 
     // We need to know the data footprint if scheduling or calibrating tasks

@@ -63,11 +63,11 @@ public:
     void* result = nullptr;
 
     // That is a miss, we need to do an allocation
-    if (memory_node == data_place::host)
+    if (memory_node.is_host())
     {
       cuda_safe_call(cudaMallocHost(&result, s));
     }
-    else if (memory_node == data_place::managed)
+    else if (memory_node.is_managed())
     {
       cuda_safe_call(cudaMallocManaged(&result, s));
     }
@@ -120,13 +120,13 @@ public:
       op.set_symbol("cudaFreeAsync");
     }
 
-    if (memory_node == data_place::host)
+    if (memory_node.is_host())
     {
       // XXX TODO defer to deinit (or implement a blocking policy)?
       cuda_safe_call(cudaStreamSynchronize(dstream.stream));
       cuda_safe_call(cudaFreeHost(ptr));
     }
-    else if (memory_node == data_place::managed)
+    else if (memory_node.is_managed())
     {
       cuda_safe_call(cudaStreamSynchronize(dstream.stream));
       cuda_safe_call(cudaFree(ptr));
@@ -812,7 +812,7 @@ UNITTEST("logical_data_untyped moveable")
       size_t s       = sizeof(double);
       double* h_addr = (double*) malloc(s);
       cuda_safe_call(cudaHostRegister(h_addr, s, cudaHostRegisterPortable));
-      handle = ctx.logical_data(h_addr, 1);
+      handle = ctx.logical_data(h_addr, 1, data_place::host());
     }
 
     scalar& operator=(scalar&& rhs)

@@ -45,7 +45,7 @@ class scalar_sum_t : public stream_reduction_operator<scalar_t>
 public:
   void op(const scalar_t& in, scalar_t& inout, const exec_place& e, cudaStream_t s) override
   {
-    if (e.affine_data_place() == data_place::host)
+    if (e.affine_data_place().is_host())
     {
       // TODO make a callback when the situation gets better
       cuda_safe_call(cudaStreamSynchronize(s));
@@ -60,7 +60,7 @@ public:
 
   void init_op(scalar_t& out, const exec_place& e, cudaStream_t s) override
   {
-    if (e.affine_data_place() == data_place::host)
+    if (e.affine_data_place().is_host())
     {
       // TODO make a callback when the situation gets better
       cuda_safe_call(cudaStreamSynchronize(s));

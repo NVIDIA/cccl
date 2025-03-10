@@ -74,29 +74,45 @@ public:
   data_place() = default;
 
   /**
-   * @brief Constant representing an invalid `data_place` object.
+   * @brief Represents an invalid `data_place` object.
    */
-  static const data_place invalid;
+  static data_place invalid()
+  {
+    return data_place(invalid_devid);
+  }
 
   /**
-   * @brief Constant representing the host CPU as the `data_place`.
+   * @brief Represents the host CPU as the `data_place` (pinned host memory, or
+   * memory which should be pinned by CUDASTF).
    */
-  static const data_place host;
+  static data_place host()
+  {
+    return data_place(host_devid);
+  }
 
   /**
-   * @brief Constant representing a managed memory location as the `data_place`.
+   * @brief Represents a managed memory location as the `data_place`.
    */
-  static const data_place managed;
+  static data_place managed()
+  {
+    return data_place(managed_devid);
+  }
 
   /// This actually does not define a data_place, but means that we should use
   /// the data place affine to the execution place
-  static const data_place affine;
+  static data_place affine()
+  {
+    return data_place(affine_devid);
+  }
 
   /**
    * @brief Constant representing a placeholder that lets the library automatically select a GPU device as the
    * `data_place`.
    */
-  static const data_place device_auto;
+  static data_place device_auto()
+  {
+    return data_place(device_auto_devid);
+  }
 
   /** @brief Data is placed on device with index dev_id. Two relaxations are allowed: -1 can be passed to create a
    * placeholder for the host, and -2 can be used to create a placeholder for a managed device.
@@ -154,6 +170,26 @@ public:
 #endif
   }
 
+  bool is_invalid() const
+  {
+    return devid == invalid_devid;
+  }
+
+  bool is_host() const
+  {
+    return devid == host_devid;
+  }
+
+  bool is_managed() const
+  {
+    return devid == managed_devid;
+  }
+
+  bool is_affine() const
+  {
+    return devid == affine_devid;
+  }
+
   /// checks if this data place corresponds to a specific device
   bool is_device() const
   {
@@ -162,19 +198,19 @@ public:
 
   ::std::string to_string() const
   {
-    if (*this == host)
+    if (devid == host_devid)
     {
       return "host";
     }
-    if (*this == managed)
+    if (devid == managed_devid)
     {
       return "managed";
     }
-    if (*this == device_auto)
+    if (devid == device_auto_devid)
     {
       return "auto";
     }
-    if (*this == invalid)
+    if (devid == invalid_devid)
     {
       return "invalid";
     }
@@ -252,7 +288,7 @@ public:
   //} state
 
 private:
-  /* Constants to implement data_place::invalid, data_place::host, etc. */
+  /* Constants to implement data_place::invalid(), data_place::host(), etc. */
   enum devid : int
   {
     invalid_devid     = ::std::numeric_limits<int>::min(),
@@ -262,12 +298,6 @@ private:
     host_devid        = -1,
   };
 };
-
-inline const data_place data_place::invalid(invalid_devid);
-inline const data_place data_place::host(host_devid);
-inline const data_place data_place::managed(managed_devid);
-inline const data_place data_place::device_auto(device_auto_devid);
-inline const data_place data_place::affine(affine_devid);
 
 /**
  * @brief Indicates where a computation takes place (CPU, dev0, dev1, ...)
@@ -323,7 +353,7 @@ public:
       }
     }
 
-    virtual const data_place& affine_data_place() const
+    virtual const data_place affine_data_place() const
     {
       return affine;
     }
@@ -386,14 +416,15 @@ public:
     explicit impl(int devid)
         : affine(data_place::device(devid))
     {}
-    data_place affine = data_place::invalid;
+    data_place affine = data_place::invalid();
   };
 
   exec_place() = default;
   exec_place(const data_place& affine)
       : pimpl(affine.is_device() ? device(device_ordinal(affine)).pimpl : ::std::make_shared<impl>(affine))
   {
-    EXPECT(pimpl->affine != data_place::host, "To create an execution place for the host, use exec_place::host.");
+    _CCCL_ASSERT(pimpl->affine != data_place::host(),
+                 "To create an execution place for the host, use exec_place::host.");
   }
 
   bool operator==(const exec_place& rhs) const
@@ -463,7 +494,7 @@ public:
   /**
    * @brief Returns the `data_place` naturally associated with this execution place.
    */
-  const data_place& affine_data_place() const
+  const data_place affine_data_place() const
   {
     return pimpl->affine_data_place();
   }
@@ -635,7 +666,7 @@ public:
   {
   public:
     impl()
-        : exec_place::impl(data_place::host)
+        : exec_place::impl(data_place::host())
     {}
     exec_place activate(backend_ctx_untyped&) const override
     {
@@ -643,11 +674,11 @@ public:
     } // no-op
     void deactivate(backend_ctx_untyped&, const exec_place& p) const override
     {
-      EXPECT(!p.get_impl());
+      _CCCL_ASSERT(!p.get_impl(), "");
     } // no-op
-    virtual const data_place& affine_data_place() const override
+    virtual const data_place affine_data_place() const override
     {
-      return data_place::host;
+      return data_place::host();
     }
     virtual stream_pool& get_stream_pool(async_resources_handle& async_resources, bool for_computation) const override
     {
@@ -677,7 +708,7 @@ private:
 };
 
 inline const exec_place_host exec_place::host{};
-inline const exec_place exec_place::device_auto{data_place::device_auto};
+inline const exec_place exec_place::device_auto{data_place::device_auto()};
 
 UNITTEST("exec_place_host::operator->*")
 {
@@ -767,9 +798,9 @@ public:
         : dims(static_cast<int>(_places.size()), 1, 1, 1)
         , places(mv(_places))
     {
-      assert(!places.empty());
-      assert(dims.x > 0);
-      assert(affine == data_place::invalid);
+      _CCCL_ASSERT(!places.empty(), "");
+      _CCCL_ASSERT(dims.x > 0, "");
+      _CCCL_ASSERT(affine.is_invalid(), "");
     }
 
     // With a "dim4 shape"
@@ -777,8 +808,8 @@ public:
         : dims(_dims)
         , places(mv(_places))
     {
-      assert(dims.x > 0);
-      assert(affine == data_place::invalid);
+      _CCCL_ASSERT(dims.x > 0, "");
+      _CCCL_ASSERT(affine.is_invalid(), "");
     }
 
     // TODO improve with a better description
@@ -1292,13 +1323,13 @@ inline exec_place data_place::get_affine_exec_place() const
   //    EXPECT(*this != affine);
   //    EXPECT(*this != data_place::invalid);
 
-  if (*this == host)
+  if (is_host())
   {
     return exec_place::host;
   }
 
   // This is debatable !
-  if (*this == managed)
+  if (is_managed())
   {
     return exec_place::host;
   }
@@ -1337,6 +1368,9 @@ inline const get_executor_func_t& data_place::get_partitioner() const
 
 inline bool data_place::operator==(const data_place& rhs) const
 {
+  fprintf(stderr, "SANITY data_place::managed.devid: %d\n", data_place::managed().devid);
+  fprintf(stderr, "SANITY data_place::host.devid: %d\n", data_place::host().devid);
+
   if (is_composite() != rhs.is_composite())
   {
     return false;
@@ -1367,8 +1401,8 @@ inline bool data_place::operator==(const data_place& rhs) const
 #ifdef UNITTESTED_FILE
 UNITTEST("Data place equality")
 {
-  EXPECT(data_place::managed == data_place::managed);
-  EXPECT(data_place::managed != data_place::host);
+  EXPECT(data_place::managed() == data_place::managed());
+  EXPECT(data_place::managed() != data_place::host());
 };
 #endif // UNITTESTED_FILE
 
@@ -1385,7 +1419,7 @@ enum class instance_id_t : size_t
 #ifdef UNITTESTED_FILE
 UNITTEST("places to_symbol")
 {
-  EXPECT(data_place::host.to_string() == ::std::string("host"));
+  EXPECT(data_place::host().to_string() == ::std::string("host"));
   EXPECT(exec_place::current_device().to_string() == ::std::string("exec(dev0)"));
   EXPECT(exec_place::host.to_string() == ::std::string("exec(host)"));
 };
