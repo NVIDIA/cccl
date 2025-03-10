@@ -72,7 +72,7 @@ Removed functions and classes
 * ``cub::CTA_SYNC_OR``: Use ``__syncthreads_or()`` instead
 * ``cub::CTA_SYNC``: Use ``__syncthreads()`` instead
 * ``cub::Device*Policy``: Those policy hubs are considered implementation details. No public exposure is provided.
-* ``cub::DeviceSpmv``: Use [cuSPARSE](https://docs.nvidia.com/cuda/cusparse/) instead
+* ``cub::DeviceSpmv``: Use `cuSPARSE <https://docs.nvidia.com/cuda/cusparse>`_ instead
 * ``cub::Difference``: Use ``cuda::std::minus`` instead
 * ``cub::DivideAndRoundUp``: Use ``cuda::round_up`` instead
 * ``cub::Division``: Use ``cuda::std::divides`` instead
