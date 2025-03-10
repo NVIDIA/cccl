@@ -178,7 +178,6 @@
 #else
 #  define TEST_CONSTEXPR_CXX23
 #endif
-#define TEST_THROW_SPEC(...)
 
 // Sniff out to see if the underling C library has C11 features
 // Note that at this time (July 2018), MacOS X and iOS do NOT.
