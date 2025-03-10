@@ -53,7 +53,7 @@ __host__ __device__ constexpr bool test()
     const optional<X> opt{};
     unused(opt);
     ASSERT_SAME_TYPE(decltype(*opt), X const&);
-    LIBCPP_STATIC_ASSERT(noexcept(*opt), "");
+    static_assert(noexcept(*opt), "");
     // ASSERT_NOT_NOEXCEPT(*opt);
     // FIXME: This assertion fails with GCC because it can see that
     // (A) operator*() is constexpr, and
@@ -66,7 +66,7 @@ __host__ __device__ constexpr bool test()
     const optional<X&> optref;
     unused(optref);
     ASSERT_SAME_TYPE(decltype(*optref), X&);
-    LIBCPP_STATIC_ASSERT(noexcept(*optref), "");
+    static_assert(noexcept(*optref), "");
     ASSERT_NOEXCEPT(*optref);
   }
 
