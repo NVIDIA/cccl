@@ -63,8 +63,9 @@ select_system(thrust::execution_policy<System1>& system1, thrust::execution_poli
   {
     return thrust::detail::derived_cast(system1);
   }
-  else if constexpr (::cuda::std::is_same_v<System2, thrust::detail::minimum_system<System1, System2>>)
+  else
   {
+    static_assert(::cuda::std::is_same_v<System2, thrust::detail::minimum_system<System1, System2>>);
     return thrust::detail::derived_cast(system2);
   }
 }
