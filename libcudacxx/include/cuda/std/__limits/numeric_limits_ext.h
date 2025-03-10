@@ -194,9 +194,9 @@ public:
   static constexpr bool is_specialized = true;
 
   static constexpr bool is_signed   = true;
-  static constexpr int digits       = 3;
+  static constexpr int digits       = 4;
   static constexpr int digits10     = 0;
-  static constexpr int max_digits10 = 2;
+  static constexpr int max_digits10 = 3;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
   {
     return _CUDA_VSTD::__cccl_make_nvfp8_e4m3_from_storage(0x08u);
@@ -271,7 +271,7 @@ public:
   static constexpr bool is_specialized = true;
 
   static constexpr bool is_signed   = true;
-  static constexpr int digits       = 2;
+  static constexpr int digits       = 3;
   static constexpr int digits10     = 0;
   static constexpr int max_digits10 = 2;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
@@ -348,9 +348,9 @@ public:
   static constexpr bool is_specialized = true;
 
   static constexpr bool is_signed   = false;
-  static constexpr int digits       = 0;
+  static constexpr int digits       = 1;
   static constexpr int digits10     = 0;
-  static constexpr int max_digits10 = 1;
+  static constexpr int max_digits10 = 2;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
   {
     return _CUDA_VSTD::__cccl_make_nvfp8_e8m0_from_storage(0x00u);
@@ -425,9 +425,9 @@ public:
   static constexpr bool is_specialized = true;
 
   static constexpr bool is_signed   = true;
-  static constexpr int digits       = 3;
+  static constexpr int digits       = 4;
   static constexpr int digits10     = 0;
-  static constexpr int max_digits10 = 2;
+  static constexpr int max_digits10 = 3;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
   {
     return _CUDA_VSTD::__cccl_make_nvfp6_e2m3_from_storage(0x08u);
@@ -502,7 +502,7 @@ public:
   static constexpr bool is_specialized = true;
 
   static constexpr bool is_signed   = true;
-  static constexpr int digits       = 2;
+  static constexpr int digits       = 3;
   static constexpr int digits10     = 0;
   static constexpr int max_digits10 = 2;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
@@ -579,7 +579,7 @@ public:
   static constexpr bool is_specialized = true;
 
   static constexpr bool is_signed   = true;
-  static constexpr int digits       = 1;
+  static constexpr int digits       = 2;
   static constexpr int digits10     = 0;
   static constexpr int max_digits10 = 2;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
