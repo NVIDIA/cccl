@@ -69,10 +69,26 @@ _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void
 __store_dispatch(_Tp __data, _Tp* __ptr, [[maybe_unused]] __eviction_policy_t<_Ep> __eviction_policy) noexcept
 {
   static_assert(sizeof(_Tp) <= 16);
+#  if __cccl_ptx_isa >= 830
   // clang-format off
   NV_DISPATCH_TARGET(NV_PROVIDES_SM_70, (return _CUDA_VDEV::__store_sm70(__data, __ptr, __eviction_policy);),
                      NV_IS_DEVICE,      (*__ptr = __data;)); // fallback
   // clang-format on
+#  elif __cccl_ptx_isa >= 740 // __cccl_ptx_isa >= 740 && __cccl_ptx_isa < 830
+  if constexpr (sizeof(_Tp) <= 8)
+  {
+    // clang-format off
+    NV_DISPATCH_TARGET(NV_PROVIDES_SM_70, (return _CUDA_VDEV::__store_sm70(__data, __ptr, __eviction_policy);),
+                       NV_IS_DEVICE,      (*__ptr = __data;)); // fallback
+    // clang-format on
+  }
+  else
+  {
+    *__ptr = __data;
+  }
+#  else // __cccl_ptx_isa < 740
+  *__ptr = __data;
+#  endif
 }
 
 /***********************************************************************************************************************

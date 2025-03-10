@@ -153,12 +153,32 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp __load_dispatch(
   [[maybe_unused]] __prefetch_spatial_t<_Pp> __prefetch) noexcept
 {
   static_assert(sizeof(_Tp) <= 16);
+#  if __cccl_ptx_isa >= 830
   // clang-format off
-  NV_DISPATCH_TARGET(NV_PROVIDES_SM_70, (return __load_sm70(__ptr, __memory_access, __eviction_policy);),
-                     NV_PROVIDES_SM_75, (return __load_sm75(__ptr, __memory_access, __eviction_policy, __prefetch);),
-                     NV_PROVIDES_SM_80, (return __load_sm80(__ptr, __memory_access, __eviction_policy, __prefetch);),
-                     NV_IS_DEVICE, (return *__ptr;)); // fallback
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (return _CUDA_VDEV::__load_sm70(__ptr, __memory_access, __eviction_policy);),
+    NV_PROVIDES_SM_75, (return _CUDA_VDEV::__load_sm75(__ptr, __memory_access, __eviction_policy, __prefetch);),
+    NV_PROVIDES_SM_80, (return _CUDA_VDEV::__load_sm80(__ptr, __memory_access, __eviction_policy, __prefetch);),
+    NV_IS_DEVICE, (return *__ptr;)); // fallback
   // clang-format on
+#  elif __cccl_ptx_isa >= 740 // __cccl_ptx_isa >= 740 && __cccl_ptx_isa < 830
+  if constexpr (sizeof(_Tp) <= 8)
+  {
+    // clang-format off
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (return _CUDA_VDEV::__load_sm70(__ptr, __memory_access, __eviction_policy);),
+      NV_PROVIDES_SM_75, (return _CUDA_VDEV::__load_sm75(__ptr, __memory_access, __eviction_policy, __prefetch);),
+      NV_PROVIDES_SM_80, (return _CUDA_VDEV::__load_sm80(__ptr, __memory_access, __eviction_policy, __prefetch);),
+      NV_IS_DEVICE, (return *__ptr;)); // fallback
+    // clang-format on
+  }
+  else
+  {
+    return *__ptr;
+  }
+#  else // __cccl_ptx_isa < 740
+  return *__ptr;
+#  endif
 }
 
 /***********************************************************************************************************************
@@ -217,7 +237,6 @@ load(const _Tp* __ptr,
     {
       constexpr auto __num_16_bytes = sizeof(_Tp) / 16;
       using __bytes_16              = _AlignedData<16>;
-      using __load_type             = _CUDA_VSTD::array<__bytes_16, __num_16_bytes>;
       auto __ptr2                   = reinterpret_cast<const __bytes_16*>(__ptr_gmem);
       auto __index_seq              = _CUDA_VSTD::make_index_sequence<__num_16_bytes>{};
       auto __tmp = _CUDA_VDEV::__unroll_load(__ptr2, __memory_access, __eviction_policy, __prefetch, __index_seq);
