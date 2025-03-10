@@ -275,10 +275,6 @@
 #  define LIBCPP_ONLY(...)                ((void) 0)
 #endif
 
-#ifndef __has_cpp_attribute
-#  define __has_cpp_attribute(__x) 0
-#endif // !__has_cpp_attribute
-
 #define TEST_IGNORE_NODISCARD (void)
 
 namespace test_macros_detail
