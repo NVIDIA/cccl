@@ -267,12 +267,12 @@ struct FutureValue
       : m_iter(iter)
   {}
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator const T&() const
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator const T&() const noexcept
   {
     return *m_iter;
   }
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T&()
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T&() noexcept
   {
     return *m_iter;
   }
