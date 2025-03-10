@@ -105,9 +105,9 @@ __host__ __device__ constexpr bool check_throwable_swappable()
 {
   auto x = throwable_adl_swappable{0};
   auto y = throwable_adl_swappable{1};
-#if !defined(TEST_COMPILER_BROKEN_SMF_NOEXCEPT)
+#if !defined(TEST_COMPILER_NVHPC)
   ASSERT_NOT_NOEXCEPT(cuda::std::ranges::swap(x, y));
-#endif // !TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // !TEST_COMPILER_NVHPC
   assert(check_swap_21(x, y));
   return true;
 }
@@ -172,9 +172,9 @@ __host__ __device__ constexpr bool check_throwable_adl_swappable_arrays()
 {
   throwable_adl_swappable x[] = {{0}, {1}, {2}, {3}};
   throwable_adl_swappable y[] = {{4}, {5}, {6}, {7}};
-#if !defined(TEST_COMPILER_BROKEN_SMF_NOEXCEPT)
+#if !defined(TEST_COMPILER_NVHPC)
   ASSERT_NOT_NOEXCEPT(cuda::std::ranges::swap(x, y));
-#endif // !TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // !TEST_COMPILER_NVHPC
   assert(check_swap_22(x, y));
   return true;
 }

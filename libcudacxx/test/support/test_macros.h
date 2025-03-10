@@ -375,10 +375,6 @@ __host__ __device__ constexpr bool unused(T&&...)
 #  endif
 #endif // defined(TEST_COMPILER_MSVC)
 
-#if defined(TEST_COMPILER_NVHPC)
-#  define TEST_COMPILER_BROKEN_SMF_NOEXCEPT
-#endif // TEST_COMPILER_NVHPC
-
 #if defined(__GNUC__)
 #  pragma GCC diagnostic pop
 #endif

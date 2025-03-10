@@ -647,13 +647,13 @@ __host__ __device__ void call_operator_noexcept_test()
     using T = ConstCallable<bool>;
     T value(true);
     auto ret = cuda::std::not_fn(value);
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#ifndef TEST_COMPILER_NVHPC
     static_assert(!noexcept(ret()), "call should not be noexcept");
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // TEST_COMPILER_NVHPC
     auto const& cret = ret;
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#ifndef TEST_COMPILER_NVHPC
     static_assert(!noexcept(cret()), "call should not be noexcept");
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // TEST_COMPILER_NVHPC
     unused(cret);
   }
   {
@@ -692,13 +692,13 @@ __host__ __device__ void call_operator_noexcept_test()
     using T = NoExceptCallable<EvilBool>;
     T value(true);
     auto ret = cuda::std::not_fn(value);
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#ifndef TEST_COMPILER_NVHPC
     static_assert(!noexcept(ret()), "call should not be noexcept");
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // TEST_COMPILER_NVHPC
     auto const& cret = ret;
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#ifndef TEST_COMPILER_NVHPC
     static_assert(!noexcept(cret()), "call should not be noexcept");
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // TEST_COMPILER_NVHPC
     unused(cret);
   }
 }

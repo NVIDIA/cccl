@@ -232,9 +232,9 @@ __host__ __device__ void test_noexcept()
     using Tup = cuda::std::tuple<int, const char*, long>;
     Tup t;
     LIBCPP_ASSERT_NOEXCEPT(cuda::std::apply(nec, t));
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#ifndef TEST_COMPILER_NVHPC
     ASSERT_NOT_NOEXCEPT(cuda::std::apply(tc, t));
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // TEST_COMPILER_NVHPC
     unused(t);
     unused(tc);
   }
@@ -242,9 +242,9 @@ __host__ __device__ void test_noexcept()
     // test that the noexcept-ness of the argument conversions is checked.
     using Tup = cuda::std::tuple<NothrowMoveable, int>;
     Tup t;
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#ifndef TEST_COMPILER_NVHPC
     ASSERT_NOT_NOEXCEPT(cuda::std::apply(nec, t));
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // TEST_COMPILER_NVHPC
     LIBCPP_ASSERT_NOEXCEPT(cuda::std::apply(nec, cuda::std::move(t)));
     unused(t);
   }
