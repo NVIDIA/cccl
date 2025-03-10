@@ -1,4 +1,3 @@
-#include <cub/util_type.cuh>
 
 #include <thrust/distance.h>
 #include <thrust/iterator/offset_iterator.h>
@@ -126,17 +125,3 @@ void TestOffsetIteratorComparisonAndDistance()
   ASSERT_EQUAL(thrust::distance(iter1, iter2), 5);
 }
 DECLARE_VECTOR_UNITTEST(TestOffsetIteratorComparisonAndDistance);
-
-template <typename Vector>
-void TestOffsetIteratorIndirectValue()
-{
-  typename Vector::difference_type offset;
-  Vector v{0, 1, 2, 3, 4, 5, 6, 7, 8};
-  thrust::offset_iterator iter(v.begin(), cub::FutureValue{&offset});
-  offset = 2;
-
-  ASSERT_EQUAL(*iter, 2);
-  iter++;
-  ASSERT_EQUAL(*iter, 3);
-}
-DECLARE_VECTOR_UNITTEST(TestOffsetIteratorIndirectValue);

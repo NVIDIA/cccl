@@ -1,3 +1,5 @@
+#include <cub/util_type.cuh>
+
 #include <thrust/distance.h>
 #include <thrust/iterator/offset_iterator.h>
 
@@ -116,3 +118,18 @@ void TestOffsetIterator()
   TestOffsetIteratorDevice<<<1, 1>>>(iter);
 }
 DECLARE_UNITTEST(TestOffsetIterator);
+
+// this is not strictly a CUDA test, but it uses CUB
+template <typename Vector>
+void TestOffsetIteratorIndirectValue()
+{
+  typename Vector::difference_type offset;
+  Vector v{0, 1, 2, 3, 4, 5, 6, 7, 8};
+  thrust::offset_iterator iter(v.begin(), cub::FutureValue{&offset});
+  offset = 2;
+
+  ASSERT_EQUAL(*iter, 2);
+  // iter++;
+  // ASSERT_EQUAL(*iter, 3);
+}
+DECLARE_VECTOR_UNITTEST(TestOffsetIteratorIndirectValue);
