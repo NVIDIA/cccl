@@ -1,4 +1,4 @@
-# Copyright (c) 2024, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
@@ -23,6 +23,13 @@ CUB_BLOCK_SCAN_ALGOS = {
     "raking": "::cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING",
     "raking_memoize": "::cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING_MEMOIZE",
     "warp_scans": "::cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS",
+}
+
+
+CUB_BLOCK_REDUCE_ALGOS = {
+    "raking_commutative_only": "::cub::BlockReduceAlgorithm::BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY",
+    "raking": "::cub::BlockReduceAlgorithm::BLOCK_REDUCE_RAKING",
+    "warp_reductions": "::cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS",
 }
 
 
