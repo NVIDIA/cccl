@@ -27,6 +27,8 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cuda/api_wrapper.h>
+#include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
@@ -105,10 +107,11 @@ private:
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
   __is_host_accessible_pointer(data_handle_type __p) noexcept
   {
-    if constexpr (_CUDA_VSTD::is_pointer_v<data_handle_type>)
+    if constexpr (_CUDA_VSTD::contiguous_iterator<data_handle_type>)
     {
       ::cudaPointerAttributes __attrib{};
-      _CCCL_ASSERT_CUDA_API(::cudaPointerGetAttributes, "cudaPointerGetAttributes failed", &__attrib, __p);
+      auto __p1 = _CUDA_VSTD::to_address(__p);
+      _CCCL_ASSERT_CUDA_API(::cudaPointerGetAttributes, "cudaPointerGetAttributes failed", &__attrib, __p1);
       return __attrib.hostPointer != nullptr || __attrib.type == ::cudaMemoryTypeUnregistered;
     }
     else
@@ -286,10 +289,11 @@ private:
 
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __is_managed_pointer(data_handle_type __p) noexcept
   {
-    if constexpr (_CUDA_VSTD::is_pointer_v<data_handle_type>)
+    if constexpr (_CUDA_VSTD::contiguous_iterator<data_handle_type>)
     {
       ::cudaPointerAttributes __attrib{};
-      _CCCL_ASSERT_CUDA_API(::cudaPointerGetAttributes, "cudaPointerGetAttributes failed", &__attrib, __p);
+      auto __p1 = _CUDA_VSTD::to_address(__p);
+      _CCCL_ASSERT_CUDA_API(::cudaPointerGetAttributes, "cudaPointerGetAttributes failed", &__attrib, __p1);
       return __attrib.devicePointer != nullptr && __attrib.hostPointer == __attrib.devicePointer;
     }
     else
