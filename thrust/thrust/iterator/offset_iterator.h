@@ -53,29 +53,29 @@ THRUST_NAMESPACE_BEGIN
 //!   return 0;
 //! }
 //! \endcode
-template <typename Iterator>
-class offset_iterator : public iterator_adaptor<offset_iterator<Iterator>, Iterator>
+template <typename Iterator, typename Offset = typename ::cuda::std::iterator_traits<Iterator>::difference_type>
+class offset_iterator : public iterator_adaptor<offset_iterator<Iterator, Offset>, Iterator>
 {
   //! \cond
   friend class iterator_core_access;
-  using super_t = iterator_adaptor<offset_iterator<Iterator>, Iterator>;
+  using super_t = iterator_adaptor<offset_iterator<Iterator, Offset>, Iterator>;
 
 public:
   using reference       = typename super_t::reference;
   using difference_type = typename super_t::difference_type;
   //! \endcond
 
-  _CCCL_HOST_DEVICE offset_iterator(Iterator it = {}, difference_type offset = {})
+  _CCCL_HOST_DEVICE offset_iterator(Iterator it = {}, Offset offset = {})
       : super_t(::cuda::std::move(it))
       , m_offset(offset)
   {}
 
-  _CCCL_HOST_DEVICE const difference_type& offset() const
+  _CCCL_HOST_DEVICE const Offset& offset() const
   {
     return m_offset;
   }
 
-  _CCCL_HOST_DEVICE difference_type& offset()
+  _CCCL_HOST_DEVICE Offset& offset()
   {
     return m_offset;
   }
@@ -85,13 +85,14 @@ public:
 private:
   _CCCL_HOST_DEVICE reference dereference() const
   {
-    return *(this->base() + m_offset);
+    return *(this->base() + static_cast<difference_type>(m_offset));
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE bool equal(const offset_iterator& other) const
   {
-    return (this->base() + m_offset) == (other.base() + other.m_offset);
+    return (this->base() + static_cast<difference_type>(m_offset))
+        == (other.base() + static_cast<difference_type>(other.m_offset));
   }
 
   _CCCL_HOST_DEVICE void advance(difference_type n)
@@ -112,10 +113,11 @@ private:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE difference_type distance_to(const offset_iterator& other) const
   {
-    return (other.base() + other.m_offset) - (this->base() + m_offset);
+    return (other.base() + static_cast<difference_type>(other.m_offset))
+         - (this->base() + static_cast<difference_type>(m_offset));
   }
 
-  difference_type m_offset;
+  Offset m_offset;
   //! \endcond
 };
 
