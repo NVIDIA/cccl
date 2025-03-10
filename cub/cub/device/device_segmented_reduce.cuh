@@ -236,7 +236,7 @@ public:
   //!   Pointer to the output aggregate
   //!
   //! @param[in] num_segments
-  //!   The number of segments that comprise the sorting data
+  //!   The number of segments that comprise the segmented reduction data
   //!
   //! @param[in] d_begin_offsets
   //!   @rst
@@ -357,7 +357,7 @@ public:
   //!   Pointer to the output aggregate
   //!
   //! @param[in] num_segments
-  //!   The number of segments that comprise the sorting data
+  //!   The number of segments that comprise the segmented reduction data
   //!
   //! @param[in] segment_size
   //!   The fixed segment size of each segment
@@ -459,7 +459,7 @@ public:
   //!   Pointer to the output aggregate
   //!
   //! @param[in] num_segments
-  //!   The number of segments that comprise the sorting data
+  //!   The number of segments that comprise the segmented reduction data
   //!
   //! @param[in] d_begin_offsets
   //!   @rst
@@ -583,7 +583,7 @@ public:
   //!   Pointer to the output aggregate
   //!
   //! @param[in] num_segments
-  //!   The number of segments that comprise the sorting data
+  //!   The number of segments that comprise the segmented reduction data
   //!
   //! @param[in] d_begin_offsets
   //!   @rst
@@ -710,7 +710,7 @@ public:
   //!   Pointer to the output aggregate
   //!
   //! @param[in] num_segments
-  //!   The number of segments that comprise the sorting data
+  //!   The number of segments that comprise the segmented reduction data
   //!
   //! @param[in] d_begin_offsets
   //!   @rst
@@ -849,7 +849,7 @@ public:
   //!   Pointer to the output aggregate
   //!
   //! @param[in] num_segments
-  //!   The number of segments that comprise the sorting data
+  //!   The number of segments that comprise the segmented reduction data
   //!
   //! @param[in] d_begin_offsets
   //!   @rst
@@ -974,7 +974,7 @@ public:
   //!   Pointer to the output aggregate
   //!
   //! @param[in] num_segments
-  //!   The number of segments that comprise the sorting data
+  //!   The number of segments that comprise the segmented reduction data
   //!
   //! @param[in] d_begin_offsets
   //!   @rst

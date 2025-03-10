@@ -707,7 +707,7 @@ struct DispatchSegmentedReduce
   /// Pointer to the output aggregate
   OutputIteratorT d_out;
 
-  /// The number of segments that comprise the sorting data
+  /// The number of segments that comprise the segmented reduction data
   int num_segments;
 
   /// Random-access input iterator to the sequence of beginning offsets of
@@ -1023,7 +1023,7 @@ struct DispatchFixedSizeSegmentedReduce
   /// Pointer to the output aggregate
   OutputIteratorT d_out;
 
-  /// The number of segments that comprise the sorting data
+  /// The number of segments that comprise the segmented reduction data
   int num_segments;
 
   /// The fixed segment size for each segment
@@ -1175,7 +1175,7 @@ struct DispatchFixedSizeSegmentedReduce
    *   Pointer to the output aggregate
    *
    * @param[in] num_segments
-   *   The number of segments that comprise the sorting data
+   *   The number of segments that comprise the segmented reduction data
    *
    * @param[in] segment_size
    *   The fixed segment size for each segment

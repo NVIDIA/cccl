@@ -110,6 +110,7 @@ template <int NOMINAL_BLOCK_THREADS,
           typename ScalingType = detail::MemBoundScaling<NOMINAL_BLOCK_THREADS, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
 struct AgentWarpReducePolicy
 {
+  /// Number of threads per warp
   static constexpr int WARP_THREADS = NOMINAL_WARP_THREADS_4B;
 
   /// Number of items per vectorized load
@@ -143,8 +144,8 @@ namespace reduce
 {
 
 /**
- * @brief AgentReduce implements a stateful abstraction of CUDA thread blocks
- *        for participating in device-wide reduction .
+ * @brief AgentReduceImpl implements a stateful abstraction of CUDA thread blocks
+ *        and warps, for participating in device-wide reduction .
  *
  * Each thread reduces only the values it loads. If `FIRST_TILE`, this partial
  * reduction is stored into `thread_aggregate`. Otherwise it is accumulated
@@ -168,6 +169,12 @@ namespace reduce
  *
  * @tparam AccumT
  *   The type of intermediate accumulator (according to P2322R6)
+ *
+ * @tparam TransformOp
+ *    Unary operator type having member `auto operator()(T &&a)`
+ *
+ * @tparam CollectiveReduceT
+ *   Block or Warp reduction type
  */
 template <typename AgentReducePolicy,
           typename InputIteratorT,
@@ -230,7 +237,8 @@ struct AgentReduceImpl
   WrappedInputIteratorT d_wrapped_in; ///< Wrapped input data to reduce
   ReductionOp reduction_op; ///< Binary reduction operator
   TransformOp transform_op; ///< Transform operator
-  unsigned int lane_id;
+  unsigned int lane_id; ///< Local thread index inside a Warp or Block
+
   //---------------------------------------------------------------------
   // Utility
   //---------------------------------------------------------------------
@@ -496,6 +504,36 @@ private:
   }
 };
 
+/**
+ * @brief AgentReduce implements a stateful abstraction of CUDA thread blocks
+ *        and warps, for participating in device-wide reduction .
+ *
+ * Each thread reduces only the values it loads. If `FIRST_TILE`, this partial
+ * reduction is stored into `thread_aggregate`. Otherwise it is accumulated
+ * into `thread_aggregate`.
+ *
+ * @tparam AgentReducePolicy
+ *   Parameterized AgentReducePolicy tuning policy type
+ *
+ * @tparam InputIteratorT
+ *   Random-access iterator type for input
+ *
+ * @tparam OutputIteratorT
+ *   Random-access iterator type for output
+ *
+ * @tparam OffsetT
+ *   Signed integer type for global offsets
+ *
+ * @tparam ReductionOp
+ *   Binary reduction operator type having member
+ *   `auto operator()(T &&a, U &&b)`
+ *
+ * @tparam AccumT
+ *   The type of intermediate accumulator (according to P2322R6)
+ *
+ * @tparam TransformOp
+ *    Unary operator type having member `auto operator()(T &&a)`
+ */
 template <typename AgentReducePolicy,
           typename InputIteratorT,
           typename OutputIteratorT,
@@ -534,6 +572,36 @@ struct AgentReduce
   {}
 };
 
+/**
+ * @brief AgentWarpReduce implements a stateful abstraction of CUDA warps,
+ *        for participating in device-wide reduction .
+ *
+ * Each thread reduces only the values it loads. If `FIRST_TILE`, this partial
+ * reduction is stored into `thread_aggregate`. Otherwise it is accumulated
+ * into `thread_aggregate`.
+ *
+ * @tparam AgentReducePolicy
+ *   Parameterized AgentReducePolicy tuning policy type
+ *
+ * @tparam InputIteratorT
+ *   Random-access iterator type for input
+ *
+ * @tparam OutputIteratorT
+ *   Random-access iterator type for output
+ *
+ * @tparam OffsetT
+ *   Signed integer type for global offsets
+ *
+ * @tparam ReductionOp
+ *   Binary reduction operator type having member
+ *   `auto operator()(T &&a, U &&b)`
+ *
+ * @tparam AccumT
+ *   The type of intermediate accumulator (according to P2322R6)
+ *
+ * @tparam TransformOp
+ *    Unary operator type having member `auto operator()(T &&a)`
+ */
 template <typename AgentReducePolicy,
           typename InputIteratorT,
           typename OutputIteratorT,

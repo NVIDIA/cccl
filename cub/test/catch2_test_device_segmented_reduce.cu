@@ -310,9 +310,7 @@ C2H_TEST("Device fixed size segmented reduce works with all device interfaces",
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
 
     using init_t = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
-    ;
-    init_t init{};
-    init_default_constant(init);
+    init_t init  = static_cast<init_t>(*unwrap_it(&default_constant));
     device_segmented_reduce(unwrap_it(d_in_it), unwrap_it(d_out_it), num_segments, segment_size, reduction_op, init);
     // Verify result
     REQUIRE(expected_result == out_result);
