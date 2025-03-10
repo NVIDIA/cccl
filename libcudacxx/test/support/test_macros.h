@@ -284,16 +284,6 @@ struct is_same<T, T>
 #  define TEST_THROW(...) assert(#__VA_ARGS__)
 #endif
 
-#ifndef TEST_HAS_NO_INT128_T
-#  if !_CCCL_HAS_INT128()
-#    define TEST_HAS_NO_INT128_T
-#  endif
-#endif
-
-#if !_LIBCUDACXX_HAS_CHAR8_T()
-#  define TEST_HAS_NO_CHAR8_T
-#endif
-
 #if defined(__GNUC__) || defined(__clang__) || defined(TEST_COMPILER_NVRTC)
 template <class Tp>
 __host__ __device__ inline void DoNotOptimize(Tp const& value)
