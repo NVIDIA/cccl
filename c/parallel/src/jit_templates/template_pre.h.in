@@ -1,0 +1,2 @@
+const char * jit_template_header_contents = R"unlikelystring(
+#include <cuda/std/type_traits>
