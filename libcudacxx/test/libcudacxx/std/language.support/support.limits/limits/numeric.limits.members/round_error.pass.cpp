@@ -82,7 +82,7 @@ int main(int, char**)
   test<__nv_fp4_e2m1>(make_fp4_e2m1(0.5));
 #endif // _CCCL_HAS_NVFP4_E2M1()
 #if _CCCL_HAS_FLOAT128()
-  test<__float128>(0.5q);
+  test<__float128>(__float128(0.5));
 #endif // _CCCL_HAS_FLOAT128()
 
   return 0;

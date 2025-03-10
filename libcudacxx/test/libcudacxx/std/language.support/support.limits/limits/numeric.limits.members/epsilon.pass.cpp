@@ -10,6 +10,7 @@
 
 // epsilon()
 
+#include <cuda/std/bit>
 #include <cuda/std/cassert>
 #include <cuda/std/cfloat>
 #include <cuda/std/limits>
@@ -82,7 +83,7 @@ int main(int, char**)
   test<__nv_fp4_e2m1>(make_fp4_e2m1(0.5));
 #endif // _CCCL_HAS_NVFP4_E2M1()
 #if _CCCL_HAS_FLOAT128()
-  test<__float128>(1.92592994438723585305597794258492732e-34q);
+  test<__float128>(cuda::std::bit_cast<__float128>(__uint128_t{0x3f8f000000000000} << 64));
 #endif // _CCCL_HAS_FLOAT128()
 
   return 0;

@@ -659,22 +659,29 @@ public:
   static constexpr int digits       = 113;
   static constexpr int digits10     = 33;
   static constexpr int max_digits10 = 36;
+
+#  if _CCCL_HAS_FLOAT128_LITERAL()
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
   {
-#  if defined(__FLT128_MIN__)
-    return __FLT128_MIN__;
-#  else // ^^^ __FLT128_MIN__ ^^^ // vvv !__FLT128_MIN__ vvv
-    return 3.36210314311209350626267781732175260e-4932q;
-#  endif // ^^^ !__FLT128_MIN__ ^^^
+    return _CCCL_FLOAT128_LITERAL(3.36210314311209350626267781732175260e-4932);
   }
+#  else // ^^^ _CCCL_HAS_FLOAT128_LITERAL() ^^^ // vvv !_CCCL_HAS_FLOAT128_LITERAL() vvv
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_BIT_CAST type min() noexcept
+  {
+    return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x0001'0000'0000'0000} << 64);
+  }
+#  endif // ^^^ !_CCCL_HAS_FLOAT128_LITERAL() ^^^
+#  if _CCCL_HAS_FLOAT128_LITERAL()
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type max() noexcept
   {
-#  if defined(__FLT128_MAX__)
-    return __FLT128_MAX__;
-#  else // ^^^ __FLT128_MAX__ ^^^ // vvv !__FLT128_MAX__ vvv
-    return 1.18973149535723176508575932662800702e+4932q;
-#  endif // ^^^ !__FLT128_MAX__ ^^^
+    return _CCCL_FLOAT128_LITERAL(1.18973149535723176508575932662800702e+4932);
   }
+#  else // ^^^ _CCCL_HAS_FLOAT128_LITERAL() ^^^ // vvv !_CCCL_HAS_FLOAT128_LITERAL() vvv
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_BIT_CAST type max() noexcept
+  {
+    return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x7ffe'ffff'ffff'ffff} << 64 | 0xffff'ffff'ffff'ffff);
+  }
+#  endif // ^^^ !_CCCL_HAS_FLOAT128_LITERAL() ^^^
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type lowest() noexcept
   {
     return -max();
@@ -685,11 +692,7 @@ public:
   static constexpr int radix       = __FLT_RADIX__;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type epsilon() noexcept
   {
-#  if defined(__FLT128_EPSILON__)
-    return __FLT128_EPSILON__;
-#  else // ^^^ __FLT128_EPSILON__ ^^^ // vvv !__FLT128_EPSILON__ vvv
-    return 1.92592994438723585305597794258492732e-34q;
-#  endif // ^^^ !__FLT128_EPSILON__ ^^^
+    return type(1.92592994438723585305597794258492732e-34);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type round_error() noexcept
   {
@@ -740,14 +743,17 @@ public:
     return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x7fff'4000'0000'0000} << 64);
   }
 #  endif // ^^^ !_CCCL_BUILTIN_NANSF128 ^^^
+#  if _CCCL_HAS_FLOAT128_LITERAL()
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type denorm_min() noexcept
   {
-#  if defined(__FLT128_DENORM_MIN__)
-    return __FLT128_DENORM_MIN__;
-#  else // ^^^ __FLT128_DENORM_MIN__ ^^^ // vvv !__FLT128_DENORM_MIN__ vvv
-    return 6.47517511943802511092443895822764655e-4966q;
-#  endif // ^^^ !__FLT128_DENORM_MIN__ ^^^
+    return _CCCL_FLOAT128_LITERAL(6.47517511943802511092443895822764655e-4966);
   }
+#  else // ^^^ _CCCL_HAS_FLOAT128_LITERAL() ^^^ // vvv !_CCCL_HAS_FLOAT128_LITERAL() vvv
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_BIT_CAST type denorm_min() noexcept
+  {
+    return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x1});
+  }
+#  endif // ^^^ !_CCCL_HAS_FLOAT128_LITERAL() ^^^
 
   static constexpr bool is_iec559  = true;
   static constexpr bool is_bounded = true;
