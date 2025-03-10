@@ -29,6 +29,7 @@
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
@@ -216,7 +217,7 @@ private:
   template <typename _Sp = bool> // lazy evaluation
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr void __prevent_host_instantiation() noexcept
   {
-    static_assert(sizeof(_Sp) != sizeof(_Sp), "cuda::__device_accessor cannot be used in HOST code");
+    static_assert(__always_false<_Sp>, "cuda::__device_accessor cannot be used in HOST code");
   }
 
 public:
