@@ -234,10 +234,6 @@
 #  define TEST_HAS_NO_ALIGNED_ALLOCATION
 #endif // !_LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
 
-#if !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-#  define TEST_HAS_NO_SPACESHIP_OPERATOR
-#endif
-
 #define ASSERT_NOEXCEPT(...) static_assert(noexcept(__VA_ARGS__), "Operation must be noexcept")
 
 #define ASSERT_NOT_NOEXCEPT(...) static_assert(!noexcept(__VA_ARGS__), "Operation must NOT be noexcept")

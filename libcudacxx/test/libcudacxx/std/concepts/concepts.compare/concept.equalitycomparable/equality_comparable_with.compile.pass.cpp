@@ -657,13 +657,13 @@ static_assert(check_equality_comparable_with<cxx20_member_eq, cxx20_member_eq>()
 static_assert(check_equality_comparable_with<cxx20_friend_eq, cxx20_friend_eq>(), "");
 static_assert(!check_equality_comparable_with<cxx20_member_eq, cxx20_friend_eq>(), "");
 
-#  ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#  if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 static_assert(check_equality_comparable_with<member_three_way_comparable, member_three_way_comparable>(), "");
 #    ifndef __NVCC__ // nvbug3908399
 static_assert(check_equality_comparable_with<friend_three_way_comparable, friend_three_way_comparable>(), "");
 static_assert(!check_equality_comparable_with<member_three_way_comparable, friend_three_way_comparable>(), "");
 #    endif // !__NVCC__
-#  endif // TEST_HAS_NO_SPACESHIP_OPERATOR
+#  endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #endif // TEST_STD_VER > 2017
 
 static_assert(check_equality_comparable_with<explicit_operators, explicit_operators>(), "");
