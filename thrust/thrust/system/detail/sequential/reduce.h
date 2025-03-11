@@ -33,6 +33,7 @@
 #include <thrust/system/detail/sequential/execution_policy.h>
 
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__iterator/readable_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -44,14 +45,14 @@ namespace sequential
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename OutputType, typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputType reduce(
-  sequential::execution_policy<DerivedPolicy>&,
-  InputIterator begin,
-  InputIterator end,
-  OutputType init,
-  BinaryFunction binary_op)
+_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<BinaryFunction, ::cuda::std::iter_value_t<InputIterator>, OutputType>
+reduce(sequential::execution_policy<DerivedPolicy>&,
+       InputIterator begin,
+       InputIterator end,
+       OutputType init,
+       BinaryFunction binary_op)
 {
-  using AccType = ::cuda::std::__accumulator_t<BinaryFunction, InputIterator, OutputType>;
+  using AccType = ::cuda::std::__accumulator_t<BinaryFunction, ::cuda::std::iter_value_t<InputIterator>, OutputType>;
   // wrap binary_op
   thrust::detail::wrapped_function<BinaryFunction, OutputType> wrapped_binary_op{binary_op};
 

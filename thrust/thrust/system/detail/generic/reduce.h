@@ -30,6 +30,7 @@
 
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__iterator/readable_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -40,15 +41,15 @@ namespace generic
 {
 
 template <typename DerivedPolicy, typename InputIterator>
-_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<::cuda::std::plus<>, InputIterator>
+_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<::cuda::std::plus<>, ::cuda::std::iter_value_t<InputIterator>>
 reduce(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last);
 
 template <typename DerivedPolicy, typename InputIterator, typename T>
-_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<::cuda::std::plus<>, InputIterator, T>
+_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<::cuda::std::plus<>, ::cuda::std::iter_value_t<InputIterator>, T>
 reduce(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, T init);
 
 template <typename DerivedPolicy, typename InputIterator, typename T, typename BinaryFunction>
-_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<BinaryFunction, InputIterator, T>
+_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<BinaryFunction, ::cuda::std::iter_value_t<InputIterator>, T>
 reduce(thrust::execution_policy<DerivedPolicy>& exec,
        InputIterator first,
        InputIterator last,

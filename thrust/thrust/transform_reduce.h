@@ -31,6 +31,9 @@
 #endif // no system header
 #include <thrust/detail/execution_policy.h>
 
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__iterator/readable_traits.h>
+
 THRUST_NAMESPACE_BEGIN
 
 /*! \addtogroup reductions
@@ -110,13 +113,16 @@ template <typename DerivedPolicy,
           typename UnaryFunction,
           typename OutputType,
           typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputType transform_reduce(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-  InputIterator first,
-  InputIterator last,
-  UnaryFunction unary_op,
-  OutputType init,
-  BinaryFunction binary_op);
+_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<
+  BinaryFunction,
+  decltype(::cuda::std::declval<UnaryFunction>()(::cuda::std::declval<::cuda::std::iter_value_t<InputIterator>>())),
+  decltype(::cuda::std::declval<UnaryFunction>()(::cuda::std::declval<OutputType>()))>
+transform_reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+                 InputIterator first,
+                 InputIterator last,
+                 UnaryFunction unary_op,
+                 OutputType init,
+                 BinaryFunction binary_op);
 
 /*! \p transform_reduce fuses the \p transform and \p reduce operations.
  *  \p transform_reduce is equivalent to performing a transformation defined by
@@ -178,7 +184,11 @@ _CCCL_HOST_DEVICE OutputType transform_reduce(
  *  \see \c reduce
  */
 template <typename InputIterator, typename UnaryFunction, typename OutputType, typename BinaryFunction>
-OutputType transform_reduce(
+::cuda::std::__accumulator_t<
+  BinaryFunction,
+  decltype(::cuda::std::declval<UnaryFunction>()(::cuda::std::declval<::cuda::std::iter_value_t<InputIterator>>())),
+  decltype(::cuda::std::declval<UnaryFunction>()(::cuda::std::declval<OutputType>()))>
+transform_reduce(
   InputIterator first, InputIterator last, UnaryFunction unary_op, OutputType init, BinaryFunction binary_op);
 
 /*! \} // end transformed_reductions

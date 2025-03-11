@@ -27,6 +27,10 @@
 #endif // no system header
 #include <thrust/system/detail/generic/tag.h>
 
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__iterator/readable_traits.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace system
 {
@@ -36,12 +40,16 @@ namespace generic
 {
 
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputType>
-_CCCL_HOST_DEVICE OutputType inner_product(
-  thrust::execution_policy<DerivedPolicy>& exec,
-  InputIterator1 first1,
-  InputIterator1 last1,
-  InputIterator2 first2,
-  OutputType init);
+_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<::cuda::std::plus<>,
+                                               ::cuda::std::__accumulator_t<::cuda::std::multiplies<>,
+                                                                            ::cuda::std::iter_value_t<InputIterator1>,
+                                                                            ::cuda::std::iter_value_t<InputIterator2>>,
+                                               OutputType>
+inner_product(thrust::execution_policy<DerivedPolicy>& exec,
+              InputIterator1 first1,
+              InputIterator1 last1,
+              InputIterator2 first2,
+              OutputType init);
 
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -49,14 +57,18 @@ template <typename DerivedPolicy,
           typename OutputType,
           typename BinaryFunction1,
           typename BinaryFunction2>
-_CCCL_HOST_DEVICE OutputType inner_product(
-  thrust::execution_policy<DerivedPolicy>& exec,
-  InputIterator1 first1,
-  InputIterator1 last1,
-  InputIterator2 first2,
-  OutputType init,
-  BinaryFunction1 binary_op1,
-  BinaryFunction2 binary_op2);
+_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<BinaryFunction1,
+                                               ::cuda::std::__accumulator_t<BinaryFunction2,
+                                                                            ::cuda::std::iter_value_t<InputIterator1>,
+                                                                            ::cuda::std::iter_value_t<InputIterator2>>,
+                                               OutputType>
+inner_product(thrust::execution_policy<DerivedPolicy>& exec,
+              InputIterator1 first1,
+              InputIterator1 last1,
+              InputIterator2 first2,
+              OutputType init,
+              BinaryFunction1 binary_op1,
+              BinaryFunction2 binary_op2);
 
 } // end namespace generic
 } // end namespace detail

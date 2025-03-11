@@ -32,6 +32,7 @@
 #include <thrust/reduce.h>
 
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__iterator/readable_traits.h>
 
 #include <tbb/blocked_range.h>
 #include <tbb/parallel_reduce.h>
@@ -113,11 +114,11 @@ struct body
 } // namespace reduce_detail
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputType, typename BinaryFunction>
-::cuda::std::__accumulator_t<BinaryFunction, InputIterator, OutputType> reduce(
+::cuda::std::__accumulator_t<BinaryFunction, ::cuda::std::iter_value_t<InputIterator>, OutputType> reduce(
   execution_policy<DerivedPolicy>&, InputIterator begin, InputIterator end, OutputType init, BinaryFunction binary_op)
 {
   using Size    = thrust::detail::it_difference_t<InputIterator>;
-  using AccType = ::cuda::std::__accumulator_t<BinaryFunction, InputIterator, OutputType>;
+  using AccType = ::cuda::std::__accumulator_t<BinaryFunction, ::cuda::std::iter_value_t<InputIterator>, OutputType>;
   Size n        = thrust::distance(begin, end);
 
   if (n == 0)

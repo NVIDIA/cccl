@@ -44,15 +44,15 @@ namespace generic
 {
 
 template <typename ExecutionPolicy, typename InputIterator>
-_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<::cuda::std::plus<>, InputIterator>
+_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<::cuda::std::plus<>, ::cuda::std::iter_value_t<InputIterator>>
 reduce(thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last)
 {
-  using AccType = ::cuda::std::__accumulator_t<::cuda::std::plus<>, InputIterator>;
+  using AccType = ::cuda::std::__accumulator_t<::cuda::std::plus<>, ::cuda::std::iter_value_t<InputIterator>>;
   return thrust::reduce(exec, first, last, AccType{});
 } // end reduce()
 
 template <typename ExecutionPolicy, typename InputIterator, typename T>
-_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<::cuda::std::plus<>, InputIterator, T>
+_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<::cuda::std::plus<>, ::cuda::std::iter_value_t<InputIterator>, T>
 reduce(thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last, T init)
 {
   // use plus<> by default
@@ -60,7 +60,8 @@ reduce(thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, Inp
 } // end reduce()
 
 template <typename ExecutionPolicy, typename RandomAccessIterator, typename OutputType, typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputType reduce(
+_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<BinaryFunction, ::cuda::std::iter_value_t<RandomAccessIterator>, OutputType>
+reduce(
   thrust::execution_policy<ExecutionPolicy>&, RandomAccessIterator, RandomAccessIterator, OutputType, BinaryFunction)
 {
   static_assert(thrust::detail::depend_on_instantiation<RandomAccessIterator, false>::value,

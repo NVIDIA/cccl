@@ -34,11 +34,15 @@
 #include <thrust/system/detail/generic/reduce_by_key.h>
 #include <thrust/system/detail/generic/select_system.h>
 
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__iterator/readable_traits.h>
+
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator>
-_CCCL_HOST_DEVICE detail::it_value_t<InputIterator>
+_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<::cuda::std::plus<>, ::cuda::std::iter_value_t<InputIterator>>
 reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, InputIterator last)
 {
   using thrust::system::detail::generic::reduce;
@@ -47,7 +51,7 @@ reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIt
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename T>
-_CCCL_HOST_DEVICE T reduce(
+_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<::cuda::std::plus<>, ::cuda::std::iter_value_t<InputIterator>, T> reduce(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, InputIterator last, T init)
 {
   using thrust::system::detail::generic::reduce;
@@ -56,12 +60,12 @@ _CCCL_HOST_DEVICE T reduce(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename T, typename BinaryFunction>
-_CCCL_HOST_DEVICE T reduce(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-  InputIterator first,
-  InputIterator last,
-  T init,
-  BinaryFunction binary_op)
+_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<BinaryFunction, ::cuda::std::iter_value_t<InputIterator>, T>
+reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+       InputIterator first,
+       InputIterator last,
+       T init,
+       BinaryFunction binary_op)
 {
   using thrust::system::detail::generic::reduce;
   return reduce(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, init, binary_op);

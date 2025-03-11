@@ -56,6 +56,8 @@
 #  include <thrust/system/cuda/detail/util.h>
 
 #  include <cuda/std/__functional/invoke.h>
+#  include <cuda/std/__iterator/readable_traits.h>
+#  include <cuda/std/__utility/declval.h>
 
 #  include <cstdint>
 #  include <iterator>
@@ -70,8 +72,8 @@ namespace detail
 template <typename Derived, typename InputIt, typename Size, typename UnaryOp, typename T, typename BinaryOp>
 THRUST_RUNTIME_FUNCTION ::cuda::std::__accumulator_t<
   BinaryOp,
-  decltype(UnaryOp{}(::cuda::std::declval<::cuda::std::iter_value_t<InputIt>>())),
-  decltype(UnaryOp{}(::cuda::std::declval<T>()))>
+  decltype(::cuda::std::declval<UnaryOp>()(::cuda::std::declval<::cuda::std::iter_value_t<InputIt>>())),
+  decltype(::cuda::std::declval<UnaryOp>()(::cuda::std::declval<T>()))>
 transform_reduce_n_impl(
   execution_policy<Derived>& policy, InputIt first, Size num_items, UnaryOp unary_op, T init, BinaryOp binary_op)
 {
@@ -138,8 +140,8 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class InputIt, class TransformOp, class T, class ReduceOp>
 _CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<
   ReduceOp,
-  decltype(TransformOp{}(::cuda::std::declval<::cuda::std::iter_value_t<InputIt>>())),
-  decltype(TransformOp{}(::cuda::std::declval<T>()))>
+  decltype(::cuda::std::declval<TransformOp>()(::cuda::std::declval<::cuda::std::iter_value_t<InputIt>>())),
+  decltype(::cuda::std::declval<TransformOp>()(::cuda::std::declval<T>()))>
 transform_reduce(
   execution_policy<Derived>& policy, InputIt first, InputIt last, TransformOp transform_op, T init, ReduceOp reduce_op)
 {

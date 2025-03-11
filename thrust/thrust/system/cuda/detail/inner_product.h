@@ -43,19 +43,28 @@
 #  include <thrust/system/cuda/detail/reduce.h>
 #  include <thrust/zip_function.h>
 
+#  include <cuda/std/__functional/invoke.h>
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__iterator/readable_traits.h>
+
 THRUST_NAMESPACE_BEGIN
 
 namespace cuda_cub
 {
 template <class Derived, class InputIt1, class InputIt2, class T, class ReduceOp, class ProductOp>
-T _CCCL_HOST_DEVICE inner_product(
-  execution_policy<Derived>& policy,
-  InputIt1 first1,
-  InputIt1 last1,
-  InputIt2 first2,
-  T init,
-  ReduceOp reduce_op,
-  ProductOp product_op)
+::cuda::std::__accumulator_t<
+  ReduceOp,
+  ::cuda::std::__accumulator_t<ProductOp, ::cuda::std::iter_value_t<InputIt1>, ::cuda::std::iter_value_t<InputIt2>>,
+  T>
+
+  _CCCL_HOST_DEVICE inner_product(
+    execution_policy<Derived>& policy,
+    InputIt1 first1,
+    InputIt1 last1,
+    InputIt2 first2,
+    T init,
+    ReduceOp reduce_op,
+    ProductOp product_op)
 {
   const auto n     = thrust::distance(first1, last1);
   const auto first = make_transform_iterator(make_zip_iterator(first1, first2), make_zip_function(product_op));
@@ -63,7 +72,11 @@ T _CCCL_HOST_DEVICE inner_product(
 }
 
 template <class Derived, class InputIt1, class InputIt2, class T>
-T _CCCL_HOST_DEVICE
+::cuda::std::__accumulator_t<
+  ::cuda::std::plus<>,
+  ::cuda::std::
+    __accumulator_t<::cuda::std::multiplies<>, ::cuda::std::iter_value_t<InputIt1>, ::cuda::std::iter_value_t<InputIt2>>,
+  T> _CCCL_HOST_DEVICE
 inner_product(execution_policy<Derived>& policy, InputIt1 first1, InputIt1 last1, InputIt2 first2, T init)
 {
   return cuda_cub::inner_product(policy, first1, last1, first2, init, plus<T>(), multiplies<T>());

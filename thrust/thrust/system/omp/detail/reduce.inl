@@ -33,6 +33,7 @@
 #include <thrust/system/omp/detail/reduce_intervals.h>
 
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__iterator/readable_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -43,14 +44,14 @@ namespace detail
 {
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputType, typename BinaryFunction>
-::cuda::std::__accumulator_t<BinaryFunction, InputIterator, OutputType>
+::cuda::std::__accumulator_t<BinaryFunction, ::cuda::std::iter_value_t<InputIterator>, OutputType>
 reduce(execution_policy<DerivedPolicy>& exec,
        InputIterator first,
        InputIterator last,
        OutputType init,
        BinaryFunction binary_op)
 {
-  using AccType           = ::cuda::std::__accumulator_t<BinaryFunction, InputIterator, OutputType>;
+  using AccType = ::cuda::std::__accumulator_t<BinaryFunction, ::cuda::std::iter_value_t<InputIterator>, OutputType>;
   using difference_type   = thrust::detail::it_difference_t<InputIterator>;
   const difference_type n = thrust::distance(first, last);
 
