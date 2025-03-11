@@ -13,8 +13,6 @@
 
 #include <cuda/std/detail/__config>
 
-#include <stdexcept>
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -22,6 +20,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <stdexcept>
 
 #if _CCCL_CUDA_COMPILER(CLANG)
 #  include <cuda_runtime.h>
