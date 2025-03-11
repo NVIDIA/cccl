@@ -1437,7 +1437,7 @@ UNITTEST("exec place equality")
   auto c2 = exec_place::current_device();
   EXPECT(c1 == c2);
 
-  EXPECT(exec_place::host != exec_place::current_device());
+  EXPECT(exec_place::host() != exec_place::current_device());
 
   cuda_safe_call(cudaSetDevice(0)); // just in case the environment was somehow messed up
   EXPECT(exec_place::device(0) == exec_place::current_device());
