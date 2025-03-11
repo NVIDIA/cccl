@@ -108,25 +108,52 @@ public:
     ::cuda::std::_If<uses_fallback_policy, fallback_block_sort_agent_t, default_block_sort_agent_t>;
   using merge_agent_t = ::cuda::std::_If<uses_fallback_policy, fallback_merge_agent_t, default_merge_agent_t>;
 };
-template <typename ChainedPolicyT,
-          typename KeyInputIteratorT,
-          typename ValueInputIteratorT,
-          typename KeyIteratorT,
-          typename ValueIteratorT,
-          typename OffsetT,
-          typename CompareOpT,
-          typename KeyT,
-          typename ValueT>
-__launch_bounds__(
-  merge_sort_vsmem_helper_t<typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
-                            KeyInputIteratorT,
-                            ValueInputIteratorT,
-                            KeyIteratorT,
-                            ValueIteratorT,
-                            OffsetT,
-                            CompareOpT,
-                            KeyT,
-                            ValueT>::policy_t::BLOCK_THREADS)
+
+template <typename... Ts>
+struct VSMemHelper
+{
+  template <typename ActivePolicyT>
+  using MergeSortVSMemHelperT = merge_sort_vsmem_helper_t<ActivePolicyT, Ts...>;
+
+  template <typename ActivePolicyT>
+  CUB_RUNTIME_FUNCTION static constexpr int BlockThreads(ActivePolicyT /*policy*/)
+  {
+    return MergeSortVSMemHelperT<ActivePolicyT>::policy_t::BLOCK_THREADS;
+  }
+
+  template <typename ActivePolicyT>
+  CUB_RUNTIME_FUNCTION static constexpr int ItemsPerTile(ActivePolicyT /*policy*/)
+  {
+    return MergeSortVSMemHelperT<ActivePolicyT>::policy_t::ITEMS_PER_TILE;
+  }
+
+  template <typename ActivePolicyT>
+  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t BlockSortVSMemPerBlock(ActivePolicyT /*policy*/)
+  {
+    return detail::vsmem_helper_impl<typename MergeSortVSMemHelperT<ActivePolicyT>::block_sort_agent_t>::vsmem_per_block;
+  }
+
+  template <typename ActivePolicyT>
+  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t MergeVSMemPerBlock(ActivePolicyT /*policy*/)
+  {
+    return detail::vsmem_helper_impl<typename MergeSortVSMemHelperT<ActivePolicyT>::merge_agent_t>::vsmem_per_block;
+  }
+};
+
+template <
+  typename ChainedPolicyT,
+  typename KeyInputIteratorT,
+  typename ValueInputIteratorT,
+  typename KeyIteratorT,
+  typename ValueIteratorT,
+  typename OffsetT,
+  typename CompareOpT,
+  typename KeyT,
+  typename ValueT,
+  typename VSMemHelperT =
+    VSMemHelper<KeyInputIteratorT, ValueInputIteratorT, KeyIteratorT, ValueIteratorT, OffsetT, CompareOpT, KeyT, ValueT>>
+__launch_bounds__(VSMemHelperT::template MergeSortVSMemHelperT<
+                  typename ChainedPolicyT::ActivePolicy::MergeSortPolicy>::policy_t::BLOCK_THREADS)
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortBlockSortKernel(
     bool ping,
     KeyInputIteratorT keys_in,
@@ -139,16 +166,8 @@ __launch_bounds__(
     CompareOpT compare_op,
     vsmem_t vsmem)
 {
-  using MergeSortHelperT = merge_sort_vsmem_helper_t<
-    typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
-    KeyInputIteratorT,
-    ValueInputIteratorT,
-    KeyIteratorT,
-    ValueIteratorT,
-    OffsetT,
-    CompareOpT,
-    KeyT,
-    ValueT>;
+  using MergeSortHelperT =
+    VSMemHelperT::template MergeSortVSMemHelperT<typename ChainedPolicyT::ActivePolicy::MergeSortPolicy>;
 
   using ActivePolicyT = typename MergeSortHelperT::policy_t;
 
@@ -214,25 +233,20 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortPartitionKernel(
   }
 }
 
-template <typename ChainedPolicyT,
-          typename KeyInputIteratorT,
-          typename ValueInputIteratorT,
-          typename KeyIteratorT,
-          typename ValueIteratorT,
-          typename OffsetT,
-          typename CompareOpT,
-          typename KeyT,
-          typename ValueT>
-__launch_bounds__(
-  merge_sort_vsmem_helper_t<typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
-                            KeyInputIteratorT,
-                            ValueInputIteratorT,
-                            KeyIteratorT,
-                            ValueIteratorT,
-                            OffsetT,
-                            CompareOpT,
-                            KeyT,
-                            ValueT>::policy_t::BLOCK_THREADS)
+template <
+  typename ChainedPolicyT,
+  typename KeyInputIteratorT,
+  typename ValueInputIteratorT,
+  typename KeyIteratorT,
+  typename ValueIteratorT,
+  typename OffsetT,
+  typename CompareOpT,
+  typename KeyT,
+  typename ValueT,
+  typename VSMemHelperT =
+    VSMemHelper<KeyInputIteratorT, ValueInputIteratorT, KeyIteratorT, ValueIteratorT, OffsetT, CompareOpT, KeyT, ValueT>>
+__launch_bounds__(VSMemHelperT::template MergeSortVSMemHelperT<
+                  typename ChainedPolicyT::ActivePolicy::MergeSortPolicy>::policy_t::BLOCK_THREADS)
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortMergeKernel(
     bool ping,
     KeyIteratorT keys_ping,
@@ -245,16 +259,8 @@ __launch_bounds__(
     OffsetT target_merged_tiles_number,
     vsmem_t vsmem)
 {
-  using MergeSortHelperT = merge_sort_vsmem_helper_t<
-    typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
-    KeyInputIteratorT,
-    ValueInputIteratorT,
-    KeyIteratorT,
-    ValueIteratorT,
-    OffsetT,
-    CompareOpT,
-    KeyT,
-    ValueT>;
+  using MergeSortHelperT =
+    VSMemHelperT::template MergeSortVSMemHelperT<typename ChainedPolicyT::ActivePolicy::MergeSortPolicy>;
 
   using ActivePolicyT = typename MergeSortHelperT::policy_t;
 

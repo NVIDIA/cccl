@@ -95,36 +95,6 @@ struct DeviceMergeSortKernelSource
                                KeyT,
                                ValueT>);
 };
-
-template <typename... Ts>
-struct VSMemHelper
-{
-  template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION static constexpr int BlockThreads(ActivePolicyT /*policy*/)
-  {
-    return merge_sort_vsmem_helper_t<ActivePolicyT, Ts...>::policy_t::BLOCK_THREADS;
-  }
-
-  template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION static constexpr int ItemsPerTile(ActivePolicyT /*policy*/)
-  {
-    return merge_sort_vsmem_helper_t<ActivePolicyT, Ts...>::policy_t::ITEMS_PER_TILE;
-  }
-
-  template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t BlockSortVSMemPerBlock(ActivePolicyT /*policy*/)
-  {
-    using merge_sort_helper_t = detail::merge_sort::merge_sort_vsmem_helper_t<ActivePolicyT, Ts...>;
-    return detail::vsmem_helper_impl<typename merge_sort_helper_t::block_sort_agent_t>::vsmem_per_block;
-  }
-
-  template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t MergeVSMemPerBlock(ActivePolicyT /*policy*/)
-  {
-    using merge_sort_helper_t = detail::merge_sort::merge_sort_vsmem_helper_t<ActivePolicyT, Ts...>;
-    return detail::vsmem_helper_impl<typename merge_sort_helper_t::merge_agent_t>::vsmem_per_block;
-  }
-};
 } // namespace detail::merge_sort
 
 /*******************************************************************************
