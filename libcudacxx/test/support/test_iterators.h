@@ -1002,7 +1002,7 @@ struct NonThrowingIterator
       , current_(rhs.current_)
   {}
 
-  __host__ __device__ NonThrowingIterator& operator=(const NonThrowingIterator& rhs) TEST_NOEXCEPT
+  __host__ __device__ NonThrowingIterator& operator=(const NonThrowingIterator& rhs) noexcept
   {
     begin_   = rhs.begin_;
     end_     = rhs.end_;
@@ -1010,38 +1010,38 @@ struct NonThrowingIterator
     return *this;
   }
 
-  __host__ __device__ reference operator*() const TEST_NOEXCEPT
+  __host__ __device__ reference operator*() const noexcept
   {
     return *current_;
   }
 
-  __host__ __device__ NonThrowingIterator& operator++() TEST_NOEXCEPT
+  __host__ __device__ NonThrowingIterator& operator++() noexcept
   {
     ++current_;
     return *this;
   }
 
-  __host__ __device__ NonThrowingIterator operator++(int) TEST_NOEXCEPT
+  __host__ __device__ NonThrowingIterator operator++(int) noexcept
   {
     NonThrowingIterator temp = *this;
     ++(*this);
     return temp;
   }
 
-  __host__ __device__ NonThrowingIterator& operator--() TEST_NOEXCEPT
+  __host__ __device__ NonThrowingIterator& operator--() noexcept
   {
     --current_;
     return *this;
   }
 
-  __host__ __device__ NonThrowingIterator operator--(int) TEST_NOEXCEPT
+  __host__ __device__ NonThrowingIterator operator--(int) noexcept
   {
     NonThrowingIterator temp = *this;
     --(*this);
     return temp;
   }
 
-  __host__ __device__ friend bool operator==(const NonThrowingIterator& a, const NonThrowingIterator& b) TEST_NOEXCEPT
+  __host__ __device__ friend bool operator==(const NonThrowingIterator& a, const NonThrowingIterator& b) noexcept
   {
     bool atEndL = a.current_ == a.end_;
     bool atEndR = b.current_ == b.end_;
@@ -1056,7 +1056,7 @@ struct NonThrowingIterator
     return a.current_ == b.current_;
   }
 
-  __host__ __device__ friend bool operator!=(const NonThrowingIterator& a, const NonThrowingIterator& b) TEST_NOEXCEPT
+  __host__ __device__ friend bool operator!=(const NonThrowingIterator& a, const NonThrowingIterator& b) noexcept
   {
     return !(a == b);
   }

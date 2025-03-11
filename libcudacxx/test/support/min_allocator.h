@@ -23,10 +23,10 @@ class bare_allocator
 public:
   typedef T value_type;
 
-  __host__ __device__ bare_allocator() TEST_NOEXCEPT {}
+  __host__ __device__ bare_allocator() noexcept {}
 
   template <class U>
-  __host__ __device__ bare_allocator(bare_allocator<U>) TEST_NOEXCEPT
+  __host__ __device__ bare_allocator(bare_allocator<U>) noexcept
   {}
 
   __host__ __device__ T* allocate(cuda::std::size_t n)
@@ -68,7 +68,7 @@ public:
   typedef T value_type;
 
   template <class U>
-  __host__ __device__ no_default_allocator(no_default_allocator<U>) TEST_NOEXCEPT
+  __host__ __device__ no_default_allocator(no_default_allocator<U>) noexcept
   {}
 
   __host__ __device__ T* allocate(cuda::std::size_t n)
@@ -120,13 +120,13 @@ class malloc_allocator : public malloc_allocator_base
 public:
   typedef T value_type;
 
-  __host__ __device__ malloc_allocator() TEST_NOEXCEPT
+  __host__ __device__ malloc_allocator() noexcept
   {
     assert(!malloc_allocator_base_disable_default_constructor);
   }
 
   template <class U>
-  __host__ __device__ malloc_allocator(malloc_allocator<U>) TEST_NOEXCEPT
+  __host__ __device__ malloc_allocator(malloc_allocator<U>) noexcept
   {}
 
   __host__ __device__ T* allocate(cuda::std::size_t n)
@@ -221,10 +221,13 @@ class min_pointer<const void, ID>
   const void* ptr_;
 
 public:
-  min_pointer() TEST_NOEXCEPT = default;
-  __host__ __device__ min_pointer(cuda::std::nullptr_t) TEST_NOEXCEPT : ptr_(nullptr) {}
+  min_pointer() noexcept = default;
+  __host__ __device__ min_pointer(cuda::std::nullptr_t) noexcept
+      : ptr_(nullptr)
+  {}
   template <class T>
-  __host__ __device__ min_pointer(min_pointer<T, ID> p) TEST_NOEXCEPT : ptr_(p.ptr_)
+  __host__ __device__ min_pointer(min_pointer<T, ID> p) noexcept
+      : ptr_(p.ptr_)
   {}
 
   __host__ __device__ explicit operator bool() const
@@ -250,10 +253,13 @@ class min_pointer<void, ID>
   void* ptr_;
 
 public:
-  min_pointer() TEST_NOEXCEPT = default;
-  __host__ __device__ min_pointer(cuda::std::nullptr_t) TEST_NOEXCEPT : ptr_(nullptr) {}
+  min_pointer() noexcept = default;
+  __host__ __device__ min_pointer(cuda::std::nullptr_t) noexcept
+      : ptr_(nullptr)
+  {}
   template <class T, class = typename cuda::std::enable_if<!cuda::std::is_const<T>::value>::type>
-  __host__ __device__ min_pointer(min_pointer<T, ID> p) TEST_NOEXCEPT : ptr_(p.ptr_)
+  __host__ __device__ min_pointer(min_pointer<T, ID> p) noexcept
+      : ptr_(p.ptr_)
   {}
 
   __host__ __device__ explicit operator bool() const
@@ -278,12 +284,18 @@ class min_pointer
 {
   T* ptr_;
 
-  __host__ __device__ explicit min_pointer(T* p) TEST_NOEXCEPT : ptr_(p) {}
+  __host__ __device__ explicit min_pointer(T* p) noexcept
+      : ptr_(p)
+  {}
 
 public:
-  min_pointer() TEST_NOEXCEPT = default;
-  __host__ __device__ min_pointer(cuda::std::nullptr_t) TEST_NOEXCEPT : ptr_(nullptr) {}
-  __host__ __device__ explicit min_pointer(min_pointer<void, ID> p) TEST_NOEXCEPT : ptr_(static_cast<T*>(p.ptr_)) {}
+  min_pointer() noexcept = default;
+  __host__ __device__ min_pointer(cuda::std::nullptr_t) noexcept
+      : ptr_(nullptr)
+  {}
+  __host__ __device__ explicit min_pointer(min_pointer<void, ID> p) noexcept
+      : ptr_(static_cast<T*>(p.ptr_))
+  {}
 
   __host__ __device__ explicit operator bool() const
   {
@@ -415,7 +427,7 @@ class min_pointer<const T, ID>
   {}
 
 public:
-  min_pointer() TEST_NOEXCEPT = default;
+  min_pointer() noexcept = default;
   __host__ __device__ min_pointer(cuda::std::nullptr_t)
       : ptr_(nullptr)
   {}
@@ -606,10 +618,10 @@ class explicit_allocator
 public:
   typedef T value_type;
 
-  __host__ __device__ explicit_allocator() TEST_NOEXCEPT {}
+  __host__ __device__ explicit_allocator() noexcept {}
 
   template <class U>
-  __host__ __device__ explicit explicit_allocator(explicit_allocator<U>) TEST_NOEXCEPT
+  __host__ __device__ explicit explicit_allocator(explicit_allocator<U>) noexcept
   {}
 
   __host__ __device__ T* allocate(cuda::std::size_t n)

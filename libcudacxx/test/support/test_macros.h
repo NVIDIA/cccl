@@ -60,12 +60,9 @@
 #  define TEST_IS_CONSTANT_EVALUATED_CXX23() false
 #endif // ^^^ TEST_STD_VER <= 2020
 
-#define TEST_ALIGNOF(...)       alignof(__VA_ARGS__)
-#define TEST_ALIGNAS(...)       alignas(__VA_ARGS__)
-#define TEST_CONSTEXPR          constexpr
-#define TEST_NOEXCEPT           noexcept
-#define TEST_NOEXCEPT_FALSE     noexcept(false)
-#define TEST_NOEXCEPT_COND(...) noexcept(__VA_ARGS__)
+#define TEST_ALIGNOF(...) alignof(__VA_ARGS__)
+#define TEST_ALIGNAS(...) alignas(__VA_ARGS__)
+#define TEST_CONSTEXPR    constexpr
 
 #if TEST_STD_VER >= 2014
 #  define TEST_CONSTEXPR_CXX14 constexpr

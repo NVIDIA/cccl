@@ -371,14 +371,14 @@ void* operator new(cuda::std::size_t s)
   return ret;
 }
 
-void operator delete(void* p) TEST_NOEXCEPT
+void operator delete(void* p) noexcept
 {
   getGlobalMemCounter()->deleteCalled(p);
   free(p);
 }
 
 #  if TEST_COMPILER(GCC)
-void operator delete(void* p, cuda::std::size_t) TEST_NOEXCEPT
+void operator delete(void* p, cuda::std::size_t) noexcept
 {
   getGlobalMemCounter()->deleteCalled(p);
   free(p);
@@ -391,14 +391,14 @@ void* operator new[](cuda::std::size_t s)
   return operator new(s);
 }
 
-void operator delete[](void* p) TEST_NOEXCEPT
+void operator delete[](void* p) noexcept
 {
   getGlobalMemCounter()->deleteArrayCalled(p);
   operator delete(p);
 }
 
 #  if TEST_COMPILER(GCC)
-void operator delete[](void* p, cuda::std::size_t) TEST_NOEXCEPT
+void operator delete[](void* p, cuda::std::size_t) noexcept
 {
   getGlobalMemCounter()->deleteArrayCalled(p);
   operator delete(p);
@@ -427,7 +427,7 @@ void* operator new(cuda::std::size_t s, cuda::std::align_val_t av)
   return ret;
 }
 
-void operator delete(void* p, cuda::std::align_val_t av) TEST_NOEXCEPT
+void operator delete(void* p, cuda::std::align_val_t av) noexcept
 {
   const cuda::std::size_t a = static_cast<cuda::std::size_t>(av);
   getGlobalMemCounter()->alignedDeleteCalled(p, a);
@@ -448,7 +448,7 @@ void* operator new[](cuda::std::size_t s, cuda::std::align_val_t av)
   return operator new(s, av);
 }
 
-void operator delete[](void* p, cuda::std::align_val_t av) TEST_NOEXCEPT
+void operator delete[](void* p, cuda::std::align_val_t av) noexcept
 {
   const cuda::std::size_t a = static_cast<cuda::std::size_t>(av);
   getGlobalMemCounter()->alignedDeleteArrayCalled(p, a);

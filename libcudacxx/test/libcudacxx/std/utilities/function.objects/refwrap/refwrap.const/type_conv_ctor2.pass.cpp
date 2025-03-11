@@ -35,13 +35,13 @@ struct A1
 struct A2
 {
   mutable B b_;
-  __host__ __device__ TEST_CONSTEXPR operator B&() const TEST_NOEXCEPT
+  __host__ __device__ TEST_CONSTEXPR operator B&() const noexcept
   {
     return b_;
   }
 };
 
-__host__ __device__ void implicitly_convert(cuda::std::reference_wrapper<B>) TEST_NOEXCEPT;
+__host__ __device__ void implicitly_convert(cuda::std::reference_wrapper<B>) noexcept;
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {

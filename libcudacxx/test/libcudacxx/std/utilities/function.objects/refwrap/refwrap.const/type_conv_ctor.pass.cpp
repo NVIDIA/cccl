@@ -37,7 +37,7 @@ template <bool IsNothrow>
 struct nothrow_convertible
 {
   int val = 0;
-  __host__ __device__ operator int&() TEST_NOEXCEPT_COND(IsNothrow)
+  __host__ __device__ operator int&() noexcept(IsNothrow)
   {
     return val;
   }
