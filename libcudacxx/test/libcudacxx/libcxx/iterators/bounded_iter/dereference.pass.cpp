@@ -25,7 +25,7 @@
 struct Foo
 {
   int x;
-  __host__ __device__ TEST_CONSTEXPR bool operator==(Foo const& other) const
+  __host__ __device__ constexpr bool operator==(Foo const& other) const
   {
     return x == other.x;
   }

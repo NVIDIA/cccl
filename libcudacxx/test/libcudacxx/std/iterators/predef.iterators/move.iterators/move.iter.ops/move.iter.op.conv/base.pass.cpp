@@ -30,7 +30,7 @@ struct MoveOnlyIterator
   using difference_type   = cuda::std::ptrdiff_t;
   using reference         = int&;
 
-  __host__ __device__ TEST_CONSTEXPR explicit MoveOnlyIterator(It it)
+  __host__ __device__ constexpr explicit MoveOnlyIterator(It it)
       : it_(it)
   {}
   MoveOnlyIterator(MoveOnlyIterator&&)                 = default;
@@ -38,7 +38,7 @@ struct MoveOnlyIterator
   MoveOnlyIterator(const MoveOnlyIterator&)            = delete;
   MoveOnlyIterator& operator=(const MoveOnlyIterator&) = delete;
 
-  __host__ __device__ TEST_CONSTEXPR reference operator*() const
+  __host__ __device__ constexpr reference operator*() const
   {
     return *it_;
   }
@@ -53,16 +53,16 @@ struct MoveOnlyIterator
     return MoveOnlyIterator(it_++);
   }
 
-  __host__ __device__ friend TEST_CONSTEXPR bool operator==(const MoveOnlyIterator& x, const MoveOnlyIterator& y)
+  __host__ __device__ friend constexpr bool operator==(const MoveOnlyIterator& x, const MoveOnlyIterator& y)
   {
     return x.it_ == y.it_;
   }
-  __host__ __device__ friend TEST_CONSTEXPR bool operator!=(const MoveOnlyIterator& x, const MoveOnlyIterator& y)
+  __host__ __device__ friend constexpr bool operator!=(const MoveOnlyIterator& x, const MoveOnlyIterator& y)
   {
     return x.it_ != y.it_;
   }
 
-  __host__ __device__ friend TEST_CONSTEXPR It base(const MoveOnlyIterator& i)
+  __host__ __device__ friend constexpr It base(const MoveOnlyIterator& i)
   {
     return i.it_;
   }

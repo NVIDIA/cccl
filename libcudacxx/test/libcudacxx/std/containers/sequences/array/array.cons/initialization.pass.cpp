@@ -17,7 +17,7 @@
 
 struct NoDefault
 {
-  __host__ __device__ TEST_CONSTEXPR NoDefault(int) {}
+  __host__ __device__ constexpr NoDefault(int) {}
 };
 
 // Test default initialization
@@ -195,18 +195,18 @@ struct Trivial
 };
 struct NonTrivial
 {
-  __host__ __device__ TEST_CONSTEXPR NonTrivial() {}
-  __host__ __device__ TEST_CONSTEXPR NonTrivial(NonTrivial const&) {}
+  __host__ __device__ constexpr NonTrivial() {}
+  __host__ __device__ constexpr NonTrivial(NonTrivial const&) {}
 };
 struct NonEmptyNonTrivial
 {
   int i;
   int j;
-  __host__ __device__ TEST_CONSTEXPR NonEmptyNonTrivial()
+  __host__ __device__ constexpr NonEmptyNonTrivial()
       : i(22)
       , j(33)
   {}
-  __host__ __device__ TEST_CONSTEXPR NonEmptyNonTrivial(NonEmptyNonTrivial const&)
+  __host__ __device__ constexpr NonEmptyNonTrivial(NonEmptyNonTrivial const&)
       : i(22)
       , j(33)
   {}

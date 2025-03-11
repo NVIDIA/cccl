@@ -97,16 +97,16 @@ class C
   int data_;
 
 public:
-  __host__ __device__ TEST_CONSTEXPR C()
+  __host__ __device__ constexpr C()
       : data_(1)
   {}
 
-  __host__ __device__ TEST_CONSTEXPR int get() const
+  __host__ __device__ constexpr int get() const
   {
     return data_;
   }
 
-  __host__ __device__ friend TEST_CONSTEXPR bool operator==(const C& x, const C& y)
+  __host__ __device__ friend constexpr bool operator==(const C& x, const C& y)
   {
     return x.data_ == y.data_;
   }

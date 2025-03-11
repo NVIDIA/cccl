@@ -19,7 +19,7 @@
 
 struct NonSwappable
 {
-  __host__ __device__ TEST_CONSTEXPR NonSwappable() {}
+  __host__ __device__ constexpr NonSwappable() {}
 
 private:
   __host__ __device__ NonSwappable(NonSwappable const&);

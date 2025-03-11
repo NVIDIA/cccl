@@ -23,7 +23,7 @@ template <cuda::std::size_t N>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test_val_ctor()
 {
   {
-    TEST_CONSTEXPR cuda::std::bitset<N> v(0xAAAAAAAAAAAAAAAAULL);
+    constexpr cuda::std::bitset<N> v(0xAAAAAAAAAAAAAAAAULL);
     assert(v.size() == N);
     cuda::std::size_t M = cuda::std::min<cuda::std::size_t>(v.size(), 64);
     for (cuda::std::size_t i = 0; i < M; ++i)

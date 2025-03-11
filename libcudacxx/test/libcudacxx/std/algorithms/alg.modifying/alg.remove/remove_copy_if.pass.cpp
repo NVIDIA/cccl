@@ -21,7 +21,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR bool equalToTwo(const int v) noexcept
+__host__ __device__ constexpr bool equalToTwo(const int v) noexcept
 {
   return v == 2;
 }

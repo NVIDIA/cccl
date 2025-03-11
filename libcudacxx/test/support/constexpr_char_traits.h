@@ -30,12 +30,12 @@ struct constexpr_char_traits
     __c1 = __c2;
   }
 
-  static TEST_CONSTEXPR bool eq(char_type __c1, char_type __c2) noexcept
+  static constexpr bool eq(char_type __c1, char_type __c2) noexcept
   {
     return __c1 == __c2;
   }
 
-  static TEST_CONSTEXPR bool lt(char_type __c1, char_type __c2) noexcept
+  static constexpr bool lt(char_type __c1, char_type __c2) noexcept
   {
     return __c1 < __c2;
   }
@@ -47,27 +47,27 @@ struct constexpr_char_traits
   static TEST_CONSTEXPR_CXX14 char_type* copy(char_type* __s1, const char_type* __s2, size_t __n);
   static TEST_CONSTEXPR_CXX14 char_type* assign(char_type* __s, size_t __n, char_type __a);
 
-  static TEST_CONSTEXPR int_type not_eof(int_type __c) noexcept
+  static constexpr int_type not_eof(int_type __c) noexcept
   {
     return eq_int_type(__c, eof()) ? ~eof() : __c;
   }
 
-  static TEST_CONSTEXPR char_type to_char_type(int_type __c) noexcept
+  static constexpr char_type to_char_type(int_type __c) noexcept
   {
     return char_type(__c);
   }
 
-  static TEST_CONSTEXPR int_type to_int_type(char_type __c) noexcept
+  static constexpr int_type to_int_type(char_type __c) noexcept
   {
     return int_type(__c);
   }
 
-  static TEST_CONSTEXPR bool eq_int_type(int_type __c1, int_type __c2) noexcept
+  static constexpr bool eq_int_type(int_type __c1, int_type __c2) noexcept
   {
     return __c1 == __c2;
   }
 
-  static TEST_CONSTEXPR int_type eof() noexcept
+  static constexpr int_type eof() noexcept
   {
     return int_type(EOF);
   }

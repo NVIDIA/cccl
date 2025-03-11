@@ -26,7 +26,7 @@ struct B
 struct A1
 {
   mutable B b_;
-  __host__ __device__ TEST_CONSTEXPR operator B&() const
+  __host__ __device__ constexpr operator B&() const
   {
     return b_;
   }
@@ -35,7 +35,7 @@ struct A1
 struct A2
 {
   mutable B b_;
-  __host__ __device__ TEST_CONSTEXPR operator B&() const noexcept
+  __host__ __device__ constexpr operator B&() const noexcept
   {
     return b_;
   }

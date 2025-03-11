@@ -20,7 +20,7 @@ class MoveOnly
   int data_;
 
 public:
-  __host__ __device__ TEST_CONSTEXPR MoveOnly(int data = 1)
+  __host__ __device__ constexpr MoveOnly(int data = 1)
       : data_(data)
   {}
 
@@ -39,32 +39,32 @@ public:
     return *this;
   }
 
-  __host__ __device__ TEST_CONSTEXPR int get() const
+  __host__ __device__ constexpr int get() const
   {
     return data_;
   }
 
-  __host__ __device__ friend TEST_CONSTEXPR bool operator==(const MoveOnly& x, const MoveOnly& y)
+  __host__ __device__ friend constexpr bool operator==(const MoveOnly& x, const MoveOnly& y)
   {
     return x.data_ == y.data_;
   }
-  __host__ __device__ friend TEST_CONSTEXPR bool operator!=(const MoveOnly& x, const MoveOnly& y)
+  __host__ __device__ friend constexpr bool operator!=(const MoveOnly& x, const MoveOnly& y)
   {
     return x.data_ != y.data_;
   }
-  __host__ __device__ friend TEST_CONSTEXPR bool operator<(const MoveOnly& x, const MoveOnly& y)
+  __host__ __device__ friend constexpr bool operator<(const MoveOnly& x, const MoveOnly& y)
   {
     return x.data_ < y.data_;
   }
-  __host__ __device__ friend TEST_CONSTEXPR bool operator<=(const MoveOnly& x, const MoveOnly& y)
+  __host__ __device__ friend constexpr bool operator<=(const MoveOnly& x, const MoveOnly& y)
   {
     return x.data_ <= y.data_;
   }
-  __host__ __device__ friend TEST_CONSTEXPR bool operator>(const MoveOnly& x, const MoveOnly& y)
+  __host__ __device__ friend constexpr bool operator>(const MoveOnly& x, const MoveOnly& y)
   {
     return x.data_ > y.data_;
   }
-  __host__ __device__ friend TEST_CONSTEXPR bool operator>=(const MoveOnly& x, const MoveOnly& y)
+  __host__ __device__ friend constexpr bool operator>=(const MoveOnly& x, const MoveOnly& y)
   {
     return x.data_ >= y.data_;
   }
@@ -92,7 +92,7 @@ struct cuda::std::hash<MoveOnly>
 {
     typedef MoveOnly argument_type;
     typedef size_t result_type;
-    __host__ __device__ TEST_CONSTEXPR size_t operator()(const MoveOnly& x) const {return x.get();}
+    __host__ __device__ constexpr size_t operator()(const MoveOnly& x) const {return x.get();}
 };
 */
 

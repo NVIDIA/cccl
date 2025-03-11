@@ -45,7 +45,7 @@ struct NoDestroy
 template <class T>
 struct CountDestroy
 {
-  __host__ __device__ TEST_CONSTEXPR explicit CountDestroy(int* counter)
+  __host__ __device__ constexpr explicit CountDestroy(int* counter)
       : counter_(counter)
   {}
 
@@ -85,7 +85,7 @@ struct CountDestroy
 
 struct CountDestructor
 {
-  __host__ __device__ TEST_CONSTEXPR explicit CountDestructor(int* counter)
+  __host__ __device__ constexpr explicit CountDestructor(int* counter)
       : counter_(counter)
   {}
 

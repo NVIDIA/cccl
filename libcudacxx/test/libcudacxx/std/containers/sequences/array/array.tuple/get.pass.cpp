@@ -17,7 +17,7 @@
 #include "test_macros.h"
 
 template <typename... T>
-__host__ __device__ TEST_CONSTEXPR cuda::std::array<int, sizeof...(T)> tempArray(T... args)
+__host__ __device__ constexpr cuda::std::array<int, sizeof...(T)> tempArray(T... args)
 {
   return {args...};
 }

@@ -62,7 +62,6 @@
 
 #define TEST_ALIGNOF(...) alignof(__VA_ARGS__)
 #define TEST_ALIGNAS(...) alignas(__VA_ARGS__)
-#define TEST_CONSTEXPR    constexpr
 
 #if TEST_STD_VER >= 2014
 #  define TEST_CONSTEXPR_CXX14 constexpr
