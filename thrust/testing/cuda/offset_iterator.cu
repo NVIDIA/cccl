@@ -129,7 +129,5 @@ void TestOffsetIteratorIndirectValue()
   offset = 2;
 
   ASSERT_EQUAL(*iter, 2);
-  // iter++;
-  // ASSERT_EQUAL(*iter, 3);
 }
 DECLARE_VECTOR_UNITTEST(TestOffsetIteratorIndirectValue);
