@@ -22,10 +22,7 @@
 
 #include "test_macros.h"
 
-#if TEST_COMPILER(MSVC, <, 19, 27)
-// MSVC 14.12 erroneously notices an integer overflow
-#  pragma warning(disable : 4307)
-#endif // TEST_COMPILER(MSVC, <, 19, 27)
+TEST_DIAG_SUPPRESS_MSVC(4307) // integer overflow
 
 class A
 {};

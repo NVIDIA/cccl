@@ -17,11 +17,9 @@
 #include "comparison.h"
 #include "test_macros.h"
 
-#if TEST_COMPILER(MSVC)
-#  pragma warning(disable : 4244) // conversion from 'double' to 'float', possible loss of data
-#  pragma warning(disable : 4305) // 'argument': truncation from 'T' to 'float'
-#  pragma warning(disable : 4146) // unary minus operator applied to unsigned type, result still unsigned
-#endif // TEST_COMPILER(MSVC)
+TEST_DIAG_SUPPRESS_MSVC(4244) // conversion from 'double' to 'float', possible loss of data
+TEST_DIAG_SUPPRESS_MSVC(4305) // 'argument': truncation from 'T' to 'float'
+TEST_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type, result still unsigned
 
 template <typename T>
 __host__ __device__ void test_hypot(T val)

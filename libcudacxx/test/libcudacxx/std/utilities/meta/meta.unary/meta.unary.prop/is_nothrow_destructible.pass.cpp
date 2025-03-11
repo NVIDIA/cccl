@@ -15,9 +15,7 @@
 #include "test_macros.h"
 
 // Prevent warning when testing the Abstract test type.
-#if TEST_COMPILER(CLANG)
-#  pragma clang diagnostic ignored "-Wdelete-non-virtual-dtor"
-#endif // TEST_COMPILER(CLANG)
+TEST_DIAG_SUPPRESS_CLANG("-Wdelete-non-virtual-dtor")
 
 template <class T>
 __host__ __device__ void test_is_nothrow_destructible()

@@ -23,9 +23,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-#if TEST_COMPILER(MSVC)
-#  pragma warning(disable : 4018) // signed/unsigned mismatch
-#endif // TEST_COMPILER(MSVC)
+TEST_DIAG_SUPPRESS_MSVC(4018) // signed/unsigned mismatch
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 {

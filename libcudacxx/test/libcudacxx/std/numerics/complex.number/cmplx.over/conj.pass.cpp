@@ -22,9 +22,7 @@
 #include "../cases.h"
 #include "test_macros.h"
 
-#if TEST_COMPILER(MSVC)
-#  pragma warning(disable : 4244) // conversion from 'const double' to 'int', possible loss of data
-#endif // TEST_COMPILER(MSVC)
+TEST_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const double' to 'int', possible loss of data
 
 template <class T>
 __host__ __device__ void test(T x, typename cuda::std::enable_if<cuda::std::is_integral<T>::value>::type* = 0)

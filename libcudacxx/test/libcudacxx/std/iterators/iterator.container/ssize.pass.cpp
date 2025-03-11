@@ -26,11 +26,9 @@
 #  include <cuda/std/string_view>
 #endif
 
-#if TEST_COMPILER(GCC)
-#  pragma GCC diagnostic ignored "-Wtype-limits"
-#endif // TEST_COMPILER(GCC)
-
 #include "test_macros.h"
+
+TEST_DIAG_SUPPRESS_GCC("-Wtype-limits")
 
 struct short_container
 {

@@ -14,7 +14,7 @@
 
 #include <test_macros.h>
 
-_CCCL_NV_DIAG_SUPPRESS(1046) // Suppress "floating-point value cannot be represented exactly"
+TEST_NV_DIAG_SUPPRESS(1046) // Suppress "floating-point value cannot be represented exactly"
 
 __host__ __device__ constexpr bool test()
 {

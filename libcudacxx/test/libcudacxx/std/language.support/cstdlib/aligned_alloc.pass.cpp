@@ -19,9 +19,7 @@
 #include "test_macros.h"
 #include <nv/target>
 
-#if TEST_COMPILER(MSVC)
-#  pragma warning(disable : 4324) // padding was added at the end of a structure because of an alignment specifier
-#endif // TEST_COMPILER(MSVC)
+TEST_DIAG_SUPPRESS_MSVC(4324) // padding was added at the end of a structure because of an alignment specifier
 
 template <class T>
 __host__ __device__ void

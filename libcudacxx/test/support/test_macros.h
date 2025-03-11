@@ -18,6 +18,13 @@
 #define TEST_CUDA_COMPILER(...) _CCCL_CUDA_COMPILER(__VA_ARGS__)
 #define TEST_HAS_CUDA_COMPILER  _CCCL_HAS_CUDA_COMPILER
 
+// Use the CCCL diagnostic suppression
+#define TEST_DIAG_SUPPRESS_CLANG(...) _CCCL_DIAG_SUPPRESS_CLANG(__VA_ARGS__)
+#define TEST_DIAG_SUPPRESS_GCC(...)   _CCCL_DIAG_SUPPRESS_GCC(__VA_ARGS__)
+#define TEST_DIAG_SUPPRESS_NVHPC(...) _CCCL_DIAG_SUPPRESS_NVHPC(__VA_ARGS__)
+#define TEST_DIAG_SUPPRESS_MSVC(...)  _CCCL_DIAG_SUPPRESS_MSVC(__VA_ARGS__)
+#define TEST_NV_DIAG_SUPPRESS(...)    _CCCL_NV_DIAG_SUPPRESS(__VA_ARGS__)
+
 #ifdef _CCCL_HAS_FEATURE
 #  define TEST_HAS_FEATURE(X) _CCCL_HAS_FEATURE(X)
 #else
@@ -252,16 +259,5 @@ __host__ __device__ constexpr bool unused(T&&...)
 {
   return true;
 }
-
-// Define a helper macro to properly suppress warnings
-#define _TEST_TOSTRING2(x) #x
-#define _TEST_TOSTRING(x)  _TEST_TOSTRING2(x)
-#if TEST_COMPILER(CLANG_CUDA)
-#  define TEST_NV_DIAG_SUPPRESS(WARNING)
-#elif defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
-#  define TEST_NV_DIAG_SUPPRESS(WARNING) _CCCL_PRAGMA(nv_diag_suppress WARNING)
-#else // ^^^ __NVCC_DIAG_PRAGMA_SUPPORT__ ^^^ / vvv !__NVCC_DIAG_PRAGMA_SUPPORT__ vvv
-#  define TEST_NV_DIAG_SUPPRESS(WARNING) _CCCL_PRAGMA(diag_suppress WARNING)
-#endif
 
 #endif // SUPPORT_TEST_MACROS_HPP

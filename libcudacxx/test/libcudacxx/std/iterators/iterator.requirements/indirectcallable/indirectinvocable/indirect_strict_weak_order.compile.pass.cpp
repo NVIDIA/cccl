@@ -52,9 +52,7 @@ struct GoodOrder
 static_assert(cuda::std::indirect_strict_weak_order<GoodOrder<It1, It2>, It1, It2>, "");
 static_assert(cuda::std::indirect_strict_weak_order<bool (*)(int, long), int*, long*>, "");
 
-#if TEST_CUDA_COMPILER(CLANG)
-#  pragma clang diagnostic ignored "-Wunneeded-internal-declaration"
-#endif // TEST_COMPILER(CLANG_CUDA)
+TEST_DIAG_SUPPRESS_CLANG("-Wunneeded-internal-declaration")
 #ifndef __CUDA_ARCH__
 auto lambda = [](int i, long j) {
   return i == j;

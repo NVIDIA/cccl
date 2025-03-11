@@ -19,9 +19,7 @@
 
 #include "test_macros.h"
 
-// TEST_MSVC_DIAGNOSTIC_IGNORED(6294) // Ill-defined for-loop:  initial condition does not satisfy test.  Loop body not
-// executed.
-_CCCL_NV_DIAG_SUPPRESS(186)
+TEST_NV_DIAG_SUPPRESS(186)
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
 template <cuda::std::size_t N>

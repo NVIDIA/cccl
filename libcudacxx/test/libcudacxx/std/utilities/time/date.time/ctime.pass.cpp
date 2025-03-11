@@ -27,10 +27,7 @@
 #  endif
 #endif
 
-#if TEST_COMPILER(GCC)
-#  pragma GCC diagnostic ignored "-Wformat-zero-length"
-#endif // TEST_COMPILER(GCC)
-
+TEST_DIAG_SUPPRESS_GCC("-Wformat-zero-length")
 TEST_NV_DIAG_SUPPRESS(set_but_not_used)
 
 int main(int, char**)

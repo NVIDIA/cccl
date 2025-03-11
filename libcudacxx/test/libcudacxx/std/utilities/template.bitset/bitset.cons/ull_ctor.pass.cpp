@@ -17,7 +17,7 @@
 
 // TEST_MSVC_DIAGNOSTIC_IGNORED(6294) // Ill-defined for-loop:  initial condition does not satisfy test.  Loop body not
 // executed.
-_CCCL_NV_DIAG_SUPPRESS(186)
+TEST_NV_DIAG_SUPPRESS(186)
 
 template <cuda::std::size_t N>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test_val_ctor()

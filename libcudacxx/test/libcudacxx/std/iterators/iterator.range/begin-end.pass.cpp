@@ -50,7 +50,8 @@
 
 // cuda::std::array is explicitly allowed to be initialized with A a = { init-list };.
 // Disable the missing braces warning for this reason.
-#include "disable_missing_braces_warning.h"
+TEST_DIAG_SUPPRESS_GCC("-Wmissing-braces")
+TEST_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 
 template <typename C>
 __host__ __device__ void test_const_container(const C& c, typename C::value_type val)

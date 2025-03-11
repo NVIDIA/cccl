@@ -14,7 +14,7 @@
 
 #include "test_macros.h"
 
-_CCCL_NV_DIAG_SUPPRESS(186)
+TEST_NV_DIAG_SUPPRESS(186)
 
 template <cuda::std::size_t N>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test_set_all()

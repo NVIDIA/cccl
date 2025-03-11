@@ -18,11 +18,8 @@
 #if TEST_CUDA_COMPILER(NVCC) || TEST_COMPILER(NVRTC)
 TEST_NV_DIAG_SUPPRESS(3060) // call to __builtin_is_constant_evaluated appearing in a non-constexpr function
 #endif // TEST_CUDA_COMPILER(NVCC) || TEST_COMPILER(NVRTC)
-#if TEST_COMPILER(GCC)
-#  pragma GCC diagnostic ignored "-Wtautological-compare"
-#elif TEST_COMPILER(CLANG)
-#  pragma clang diagnostic ignored "-Wtautological-compare"
-#endif
+TEST_DIAG_SUPPRESS_GCC("-Wtautological-compare")
+TEST_DIAG_SUPPRESS_CLANG("-Wtautological-compare")
 
 STATIC_TEST_GLOBAL_VAR int A_count = 0;
 
@@ -180,20 +177,11 @@ __host__ __device__ void doIncompleteTypeTest(int expect_alive, Args&&... ctor_a
   __host__ __device__ StoresIncomplete<IncompleteT, Del>::~StoresIncomplete() \
   {}
 
-#if TEST_COMPILER(GCC)
-#  pragma GCC diagnostic push
-#  pragma GCC diagnostic ignored "-Wvariadic-macros"
-#endif // TEST_COMPILER(GCC)
-
 #define DEFINE_AND_RUN_IS_INCOMPLETE_TEST(...)                  \
   __host__ __device__ static constexpr int is_incomplete_test() \
   {                                                             \
     __VA_ARGS__ return 0;                                       \
   }                                                             \
   INCOMPLETE_TEST_EPILOGUE()
-
-#if TEST_COMPILER(GCC)
-#  pragma GCC diagnostic pop
-#endif // TEST_COMPILER(GCC)
 
 #endif // TEST_SUPPORT_UNIQUE_PTR_TEST_HELPER_H

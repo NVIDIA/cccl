@@ -20,17 +20,9 @@
 #include "test_macros.h"
 #include "user_defined_integral.h"
 
-#if TEST_COMPILER(MSVC)
-#  pragma warning(disable : 4018) // signed/unsigned mismatch
-#endif // TEST_COMPILER(MSVC)
-
-#if TEST_COMPILER(GCC)
-#  pragma GCC diagnostic ignored "-Wsign-compare"
-#endif // TEST_COMPILER(GCC)
-
-#if TEST_COMPILER(CLANG)
-#  pragma clang diagnostic ignored "-Wsign-compare"
-#endif // TEST_COMPILER(CLANG)
+TEST_DIAG_SUPPRESS_MSVC(4018) // signed/unsigned mismatch
+TEST_DIAG_SUPPRESS_GCC("-Wsign-compare")
+TEST_DIAG_SUPPRESS_CLANG("-Wsign-compare")
 
 struct count_equal
 {

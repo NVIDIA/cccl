@@ -39,9 +39,8 @@ struct S5
   int* p;
 };
 
-#if TEST_CUDA_COMPILER(CLANG)
-#  pragma clang diagnostic ignored "-Wunused-private-field"
-#endif // TEST_COMPILER(CLANG_CUDA)
+TEST_DIAG_SUPPRESS_CLANG("-Wunused-private-field")
+
 class C1
 {};
 class C2

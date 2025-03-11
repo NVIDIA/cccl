@@ -22,9 +22,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-#if TEST_COMPILER(MSVC)
-#  pragma warning(disable : 4172) // returning address of local variable or temporary
-#endif // TEST_COMPILER(MSVC)
+TEST_DIAG_SUPPRESS_MSVC(4172) // returning address of local variable or temporary
 
 template <class It>
 __host__ __device__ void test(It i,

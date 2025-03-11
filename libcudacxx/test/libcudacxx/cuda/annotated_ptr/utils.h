@@ -9,9 +9,8 @@
 //===----------------------------------------------------------------------===//
 
 #include "test_macros.h"
-#if TEST_COMPILER(MSVC)
-#  pragma warning(disable : 4505)
-#endif // TEST_COMPILER(MSVC)
+
+TEST_DIAG_SUPPRESS_MSVC(4505)
 
 #include <cuda/annotated_ptr>
 #include <cuda/std/cassert>

@@ -61,10 +61,7 @@ __host__ __device__ void test_comparisons()
   (void) p; // GCC spuriously claims that p is unused, probably due to optimizations?
 }
 
-#if TEST_COMPILER(CLANG)
-#  pragma clang diagnostic push
-#  pragma clang diagnostic ignored "-Wnull-conversion"
-#endif
+TEST_DIAG_SUPPRESS_CLANG("-Wnull-conversion")
 __host__ __device__ void test_nullptr_conversions()
 {
 // GCC does not accept this due to CWG Defect #1423
@@ -80,9 +77,6 @@ __host__ __device__ void test_nullptr_conversions()
     assert(!b);
   }
 }
-#if TEST_COMPILER(CLANG)
-#  pragma clang diagnostic pop
-#endif
 
 int main(int, char**)
 {

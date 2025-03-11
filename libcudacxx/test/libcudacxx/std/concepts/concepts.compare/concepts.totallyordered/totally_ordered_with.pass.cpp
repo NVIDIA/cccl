@@ -10,15 +10,14 @@
 // template<class T>
 // concept totally_ordered_with;
 
+#include "test_macros.h"
+
+TEST_DIAG_SUPPRESS_CLANG("-Wordered-compare-function-pointers")
+
 #include <cuda/std/array>
 #include <cuda/std/concepts>
 
 #include "compare_types.h"
-#include "test_macros.h"
-
-#if TEST_COMPILER(CLANG)
-#  pragma clang diagnostic ignored "-Wordered-compare-function-pointers"
-#endif // TEST_COMPILER(CLANG)
 
 using cuda::std::equality_comparable_with;
 using cuda::std::nullptr_t;

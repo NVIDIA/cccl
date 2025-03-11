@@ -29,9 +29,7 @@
 
 #include "test_macros.h"
 
-#if TEST_COMPILER(MSVC)
-#  pragma warning(disable : 4310) // cast truncates constant value
-#endif // TEST_COMPILER(MSVC)
+TEST_DIAG_SUPPRESS_MSVC(4310) // cast truncates constant value
 
 constexpr char pattern = (char) 0xDE;
 

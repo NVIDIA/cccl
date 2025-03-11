@@ -16,14 +16,12 @@
 // template<class I, sized_sentinel_for<decay_t<I>> S>
 //   constexpr iter_difference_t<I> ranges::distance(const I& first, S last);
 
-#if TEST_COMPILER(GCC)
-#  pragma GCC diagnostic ignored "-Wnon-template-friend"
-#endif // TEST_COMPILER(GCC)
-
 #include <cuda/std/cassert>
 #include <cuda/std/iterator>
 
 #include "test_iterators.h"
+
+TEST_DIAG_SUPPRESS_GCC("-Wnon-template-friend")
 
 template <class It>
 struct EvilSentinel

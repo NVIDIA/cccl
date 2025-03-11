@@ -21,9 +21,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-#if TEST_COMPILER(MSVC)
-#  pragma warning(disable : 4244)
-#endif // TEST_COMPILER(MSVC)
+TEST_DIAG_SUPPRESS_MSVC(4244) // conversion possible loss of data
 
 struct Foo
 {

@@ -23,11 +23,8 @@
 #if TEST_CUDA_COMPILER(NVCC) || TEST_COMPILER(NVRTC)
 TEST_NV_DIAG_SUPPRESS(3060) // call to __builtin_is_constant_evaluated appearing in a non-constexpr function
 #endif // TEST_CUDA_COMPILER(NVCC) || TEST_COMPILER(NVRTC)
-#if TEST_COMPILER(GCC)
-#  pragma GCC diagnostic ignored "-Wtautological-compare"
-#elif TEST_COMPILER(CLANG)
-#  pragma clang diagnostic ignored "-Wtautological-compare"
-#endif
+TEST_DIAG_SUPPRESS_GCC("-Wtautological-compare")
+TEST_DIAG_SUPPRESS_CLANG("-Wtautological-compare")
 
 STATIC_TEST_GLOBAL_VAR int A_next_ = 0;
 class A

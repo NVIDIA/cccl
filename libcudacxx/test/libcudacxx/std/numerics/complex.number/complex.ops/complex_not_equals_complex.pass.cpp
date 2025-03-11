@@ -18,16 +18,11 @@
 
 #include "test_macros.h"
 
-#if TEST_COMPILER(CLANG)
-#  pragma clang diagnostic ignored "-Wliteral-conversion"
-#endif // TEST_COMPILER(CLANG)
+TEST_DIAG_SUPPRESS_CLANG("-Wliteral-conversion")
+TEST_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const double' to 'int', possible loss of data
 
-#if TEST_COMPILER(MSVC)
-#  pragma warning(disable : 4244) // conversion from 'const double' to 'int', possible loss of data
-#endif // TEST_COMPILER(MSVC)
-
-template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_constexpr()
+  template <class T>
+  __host__ __device__ TEST_CONSTEXPR_CXX14 void test_constexpr()
 {
   {
     constexpr cuda::std::complex<T> lhs(1.5, 2.5);

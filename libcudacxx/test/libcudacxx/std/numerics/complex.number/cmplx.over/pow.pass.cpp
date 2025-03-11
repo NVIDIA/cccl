@@ -28,9 +28,7 @@
 #include "../cases.h"
 #include "test_macros.h"
 
-#if TEST_COMPILER(MSVC)
-#  pragma warning(disable : 4244) // conversion from 'const double' to 'int', possible loss of data
-#endif // TEST_COMPILER(MSVC)
+TEST_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const double' to 'int', possible loss of data
 
 template <class T, class U>
 __host__ __device__ void test(T x, const cuda::std::complex<U>& y)
