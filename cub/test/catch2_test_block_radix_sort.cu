@@ -132,8 +132,8 @@ C2H_TEST("Block radix sort can sort keys",
   c2h::gen(C2H_SEED(2), d_input);
 
   constexpr int key_size = sizeof(type) * 8;
-  const int begin_bit    = GENERATE_COPY(take(2, random(0, key_size - 1)));
-  const int end_bit      = GENERATE_COPY(take(2, random(begin_bit + 1, key_size)));
+  const int begin_bit    = GENERATE_COPY(take(2, random(0, key_size)));
+  const int end_bit      = GENERATE_COPY(take(2, random(begin_bit, key_size)));
   const bool striped     = GENERATE_COPY(false, true);
 
   constexpr bool is_descending = false;
@@ -176,8 +176,8 @@ C2H_TEST("Block radix sort can sort keys in descending order",
   c2h::gen(C2H_SEED(2), d_input);
 
   constexpr int key_size = sizeof(type) * 8;
-  const int begin_bit    = GENERATE_COPY(take(2, random(0, key_size - 1)));
-  const int end_bit      = GENERATE_COPY(take(2, random(begin_bit + 1, key_size)));
+  const int begin_bit    = GENERATE_COPY(take(2, random(0, key_size)));
+  const int end_bit      = GENERATE_COPY(take(2, random(begin_bit, key_size)));
   const bool striped     = GENERATE_COPY(false, true);
 
   constexpr bool is_descending = true;
@@ -224,8 +224,8 @@ C2H_TEST("Block radix sort can sort pairs",
   c2h::gen(C2H_SEED(2), d_input_values);
 
   constexpr int key_size = sizeof(key_type) * 8;
-  const int begin_bit    = GENERATE_COPY(take(2, random(0, key_size - 1)));
-  const int end_bit      = GENERATE_COPY(take(2, random(begin_bit + 1, key_size)));
+  const int begin_bit    = GENERATE_COPY(take(2, random(0, key_size)));
+  const int end_bit      = GENERATE_COPY(take(2, random(begin_bit, key_size)));
   const bool striped     = GENERATE_COPY(false, true);
 
   constexpr bool is_descending = false;
@@ -276,8 +276,8 @@ C2H_TEST("Block radix sort can sort pairs in descending order",
   c2h::gen(C2H_SEED(2), d_input_values);
 
   constexpr int key_size = sizeof(key_type) * 8;
-  const int begin_bit    = GENERATE_COPY(take(2, random(0, key_size - 1)));
-  const int end_bit      = GENERATE_COPY(take(2, random(begin_bit + 1, key_size)));
+  const int begin_bit    = GENERATE_COPY(take(2, random(0, key_size)));
+  const int end_bit      = GENERATE_COPY(take(2, random(begin_bit, key_size)));
   const bool striped     = GENERATE_COPY(false, true);
 
   constexpr bool is_descending = true;
@@ -328,8 +328,8 @@ C2H_TEST("Block radix sort can sort mixed pairs",
   c2h::gen(C2H_SEED(2), d_input_values);
 
   constexpr int key_size = sizeof(key_type) * 8;
-  const int begin_bit    = GENERATE_COPY(take(2, random(0, key_size - 1)));
-  const int end_bit      = GENERATE_COPY(take(2, random(begin_bit + 1, key_size)));
+  const int begin_bit    = GENERATE_COPY(take(2, random(0, key_size)));
+  const int end_bit      = GENERATE_COPY(take(2, random(begin_bit, key_size)));
   const bool striped     = GENERATE_COPY(false, true);
 
   constexpr bool is_descending = false;
@@ -380,8 +380,8 @@ C2H_TEST("Block radix sort can sort mixed pairs in descending order",
   c2h::gen(C2H_SEED(2), d_input_values);
 
   constexpr int key_size = sizeof(key_type) * 8;
-  const int begin_bit    = GENERATE_COPY(take(2, random(0, key_size - 1)));
-  const int end_bit      = GENERATE_COPY(take(2, random(begin_bit + 1, key_size)));
+  const int begin_bit    = GENERATE_COPY(take(2, random(0, key_size)));
+  const int end_bit      = GENERATE_COPY(take(2, random(begin_bit, key_size)));
   const bool striped     = GENERATE_COPY(false, true);
 
   constexpr bool is_descending = true;
