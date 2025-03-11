@@ -17,9 +17,12 @@
 
 #include <cuda/std/__functional/identity.h>
 
-#include <cuda/experimental/container.cuh>
-#include <cuda/experimental/memory_resource.cuh>
-#include <cuda/experimental/stream.cuh>
+// CMake defines this if CUDAX is available
+#ifdef LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+#  include <cuda/experimental/container.cuh>
+#  include <cuda/experimental/memory_resource.cuh>
+#  include <cuda/experimental/stream.cuh>
+#endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #include <sstream>
 
@@ -623,6 +626,8 @@ C2H_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][device_transfo
   STATIC_REQUIRE(::cuda::std::is_copy_constructible_v<kernel_arg>);
 }
 
+// CMake defines this if CUDAX is available
+#ifdef LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 namespace cudax = cuda::experimental;
 
 C2H_TEST("DeviceTransform::Transform cudax::async_device_buffer", "[device][device_transform]", algorithms)
@@ -663,3 +668,4 @@ C2H_TEST("DeviceTransform::Transform cudax::async_device_buffer", "[device][devi
   std::transform(a_h.begin(), a_h.end(), b_h.begin(), reference_h.begin(), std::plus<type>{});
   REQUIRE(reference_h == result_h);
 }
+#endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
