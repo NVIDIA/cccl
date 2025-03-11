@@ -118,10 +118,6 @@ C2H_TEST("Test FutureValue", "[util][type]")
   value = 43;
   CHECK(fv == 43);
 
-  // write
-  ++fv;
-  CHECK(value == 44);
-
   // CTAD
   cub::FutureValue fv2{&value};
   STATIC_REQUIRE(::cuda::std::is_same_v<decltype(fv2), cub::FutureValue<int, int*>>);

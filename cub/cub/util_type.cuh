@@ -272,11 +272,6 @@ struct FutureValue
     return *m_iter;
   }
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T&() noexcept
-  {
-    return *m_iter;
-  }
-
 private:
   IterT m_iter;
 };
