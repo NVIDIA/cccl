@@ -283,12 +283,12 @@ __host__ __device__ constexpr void AssertComparisonsAreNoexcept()
 template <class T, class U = T>
 __host__ __device__ constexpr void AssertComparisonsReturnBool()
 {
-  ASSERT_SAME_TYPE(decltype(cuda::std::declval<const T&>() == cuda::std::declval<const U&>()), bool);
-  ASSERT_SAME_TYPE(decltype(cuda::std::declval<const T&>() != cuda::std::declval<const U&>()), bool);
-  ASSERT_SAME_TYPE(decltype(cuda::std::declval<const T&>() < cuda::std::declval<const U&>()), bool);
-  ASSERT_SAME_TYPE(decltype(cuda::std::declval<const T&>() <= cuda::std::declval<const U&>()), bool);
-  ASSERT_SAME_TYPE(decltype(cuda::std::declval<const T&>() > cuda::std::declval<const U&>()), bool);
-  ASSERT_SAME_TYPE(decltype(cuda::std::declval<const T&>() >= cuda::std::declval<const U&>()), bool);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const T&>() == cuda::std::declval<const U&>()), bool>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const T&>() != cuda::std::declval<const U&>()), bool>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const T&>() < cuda::std::declval<const U&>()), bool>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const T&>() <= cuda::std::declval<const U&>()), bool>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const T&>() > cuda::std::declval<const U&>()), bool>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const T&>() >= cuda::std::declval<const U&>()), bool>);
 }
 
 template <class T, class U = T>
@@ -326,7 +326,8 @@ template <class Order, class T, class U = T>
 __host__ __device__ constexpr void AssertOrderReturn()
 {
   AssertComparisonsReturnBool<T, U>();
-  ASSERT_SAME_TYPE(decltype(cuda::std::declval<const T&>() <=> cuda::std::declval<const U&>()), Order);
+  static_assert(
+    cuda::std::is_same_v<decltype(cuda::std::declval<const T&>() <=> cuda::std::declval<const U&>()), Order>);
 }
 
 template <class Order, class T, class U = T>
@@ -412,8 +413,8 @@ __host__ __device__ void AssertEqualityAreNoexcept()
 template <class T, class U = T>
 __host__ __device__ void AssertEqualityReturnBool()
 {
-  ASSERT_SAME_TYPE(decltype(cuda::std::declval<const T&>() == cuda::std::declval<const U&>()), bool);
-  ASSERT_SAME_TYPE(decltype(cuda::std::declval<const T&>() != cuda::std::declval<const U&>()), bool);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const T&>() == cuda::std::declval<const U&>()), bool>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const T&>() != cuda::std::declval<const U&>()), bool>);
 }
 
 template <class T, class U = T>

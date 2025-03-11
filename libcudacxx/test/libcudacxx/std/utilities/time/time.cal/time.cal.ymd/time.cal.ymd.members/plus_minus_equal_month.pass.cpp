@@ -63,8 +63,10 @@ int main(int, char**)
   static_assert(noexcept(cuda::std::declval<year_month_day&>() += cuda::std::declval<months>()));
   static_assert(noexcept(cuda::std::declval<year_month_day&>() -= cuda::std::declval<months>()));
 
-  ASSERT_SAME_TYPE(year_month_day&, decltype(cuda::std::declval<year_month_day&>() += cuda::std::declval<months>()));
-  ASSERT_SAME_TYPE(year_month_day&, decltype(cuda::std::declval<year_month_day&>() -= cuda::std::declval<months>()));
+  static_assert(cuda::std::is_same_v<year_month_day&,
+                                     decltype(cuda::std::declval<year_month_day&>() += cuda::std::declval<months>())>);
+  static_assert(cuda::std::is_same_v<year_month_day&,
+                                     decltype(cuda::std::declval<year_month_day&>() -= cuda::std::declval<months>())>);
 
   static_assert(testConstexpr<year_month_day, months>(year_month_day{year{1234}, month{1}, day{1}}), "");
 

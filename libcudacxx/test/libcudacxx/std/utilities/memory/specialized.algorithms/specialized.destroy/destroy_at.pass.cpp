@@ -67,7 +67,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test_arrays()
     assert(counter == 3);
 
     cuda::std::destroy_at(&arr);
-    ASSERT_SAME_TYPE(decltype(cuda::std::destroy_at(&arr)), void);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::destroy_at(&arr)), void>);
     assert(counter == 0);
 
     // We need to reconstruct here, as we are dealing with stack variables and they get destroyed at the end of scope
@@ -82,7 +82,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test_arrays()
     assert(counter == 3 * 2);
 
     cuda::std::destroy_at(&arr);
-    ASSERT_SAME_TYPE(decltype(cuda::std::destroy_at(&arr)), void);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::destroy_at(&arr)), void>);
     assert(counter == 0);
 
     // We need to reconstruct here, as we are dealing with stack variables and they get destroyed at the end of scope
@@ -106,7 +106,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     assert(counter == 2);
 
     cuda::std::destroy_at(cuda::std::addressof(first));
-    ASSERT_SAME_TYPE(decltype(cuda::std::destroy_at(cuda::std::addressof(first))), void);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::destroy_at(cuda::std::addressof(first))), void>);
     assert(counter == 1);
 
     cuda::std::destroy_at(cuda::std::addressof(second));
@@ -123,7 +123,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     assert(counter == 2);
 
     cuda::std::destroy_at(cuda::std::addressof(first));
-    ASSERT_SAME_TYPE(decltype(cuda::std::destroy_at(cuda::std::addressof(first))), void);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::destroy_at(cuda::std::addressof(first))), void>);
     assert(counter == 1);
 
     cuda::std::destroy_at(cuda::std::addressof(second));

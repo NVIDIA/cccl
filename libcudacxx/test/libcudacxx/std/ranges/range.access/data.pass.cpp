@@ -76,35 +76,35 @@ __host__ __device__ constexpr bool testReturnTypes()
   {
     int* x[2] = {};
     unused(x);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::data(x)), int**);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::cdata(x)), int* const*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::data(x)), int**>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::cdata(x)), int* const*>);
   }
   {
     int x[2][2] = {};
     unused(x);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::data(x)), int(*)[2]);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::cdata(x)), const int(*)[2]);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::data(x)), int(*)[2]>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::cdata(x)), const int(*)[2]>);
   }
   {
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::data(cuda::std::declval<D&>())), char*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::data(cuda::std::declval<D&>())), char*>);
     static_assert(!cuda::std::is_invocable_v<RangeDataT, D&&>, "");
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::data(cuda::std::declval<const D&>())), short*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::data(cuda::std::declval<const D&>())), short*>);
     static_assert(!cuda::std::is_invocable_v<RangeDataT, const D&&>, "");
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::cdata(cuda::std::declval<D&>())), short*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::cdata(cuda::std::declval<D&>())), short*>);
     static_assert(!cuda::std::is_invocable_v<RangeCDataT, D&&>, "");
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::cdata(cuda::std::declval<const D&>())), short*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::cdata(cuda::std::declval<const D&>())), short*>);
     static_assert(!cuda::std::is_invocable_v<RangeCDataT, const D&&>, "");
   }
   {
     static_assert(!cuda::std::ranges::contiguous_range<NC>, "");
     static_assert(cuda::std::ranges::contiguous_range<const NC>, "");
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::data(cuda::std::declval<NC&>())), int*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::data(cuda::std::declval<NC&>())), int*>);
     static_assert(!cuda::std::is_invocable_v<RangeDataT, NC&&>, "");
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::data(cuda::std::declval<const NC&>())), char*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::data(cuda::std::declval<const NC&>())), char*>);
     static_assert(!cuda::std::is_invocable_v<RangeDataT, const NC&&>, "");
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::cdata(cuda::std::declval<NC&>())), char*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::cdata(cuda::std::declval<NC&>())), char*>);
     static_assert(!cuda::std::is_invocable_v<RangeCDataT, NC&&>, "");
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::cdata(cuda::std::declval<const NC&>())), char*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::cdata(cuda::std::declval<const NC&>())), char*>);
     static_assert(!cuda::std::is_invocable_v<RangeCDataT, const NC&&>, "");
   }
   return true;

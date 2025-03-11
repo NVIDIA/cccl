@@ -68,11 +68,11 @@ struct WithBitfieldEnums
 __host__ __device__ constexpr bool test()
 {
   static_assert(noexcept(cuda::std::to_underlying(e_default::a)));
-  ASSERT_SAME_TYPE(int, decltype(cuda::std::to_underlying(e_default::a)));
-  ASSERT_SAME_TYPE(unsigned short, decltype(cuda::std::to_underlying(e_ushort::d)));
-  ASSERT_SAME_TYPE(long long, decltype(cuda::std::to_underlying(e_longlong::low)));
-  ASSERT_SAME_TYPE(int, decltype(cuda::std::to_underlying(enum_min)));
-  ASSERT_SAME_TYPE(int, decltype(cuda::std::to_underlying(enum_max)));
+  static_assert(cuda::std::is_same_v<int, decltype(cuda::std::to_underlying(e_default::a))>);
+  static_assert(cuda::std::is_same_v<unsigned short, decltype(cuda::std::to_underlying(e_ushort::d))>);
+  static_assert(cuda::std::is_same_v<long long, decltype(cuda::std::to_underlying(e_longlong::low))>);
+  static_assert(cuda::std::is_same_v<int, decltype(cuda::std::to_underlying(enum_min))>);
+  static_assert(cuda::std::is_same_v<int, decltype(cuda::std::to_underlying(enum_max))>);
 
   assert(0 == cuda::std::to_underlying(e_default::a));
   assert(1 == cuda::std::to_underlying(e_default::b));

@@ -44,7 +44,7 @@ __host__ __device__ constexpr long double fp_error_pct<long double>()
 template <typename T>
 __host__ __device__ void fp_test()
 {
-  ASSERT_SAME_TYPE(T, decltype(cuda::std::midpoint(T(), T())));
+  static_assert(cuda::std::is_same_v<T, decltype(cuda::std::midpoint(T(), T()))>);
   static_assert(noexcept(cuda::std::midpoint(T(), T())));
 
   constexpr T maxV = cuda::std::numeric_limits<T>::max();

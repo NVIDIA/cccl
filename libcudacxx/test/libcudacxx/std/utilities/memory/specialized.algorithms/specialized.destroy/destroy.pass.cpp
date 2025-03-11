@@ -50,7 +50,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test_arrays()
     assert(counter == 3);
 
     cuda::std::destroy(pool, pool + 3);
-    ASSERT_SAME_TYPE(decltype(cuda::std::destroy(pool, pool + 3)), void);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::destroy(pool, pool + 3)), void>);
     assert(counter == 0);
 
     // We need to reconstruct here, as we are dealing with stack variables and they get destroyed at the end of scope
@@ -66,7 +66,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test_arrays()
     assert(counter == 3 * 2);
 
     cuda::std::destroy(pool, pool + 3);
-    ASSERT_SAME_TYPE(decltype(cuda::std::destroy(pool, pool + 3)), void);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::destroy(pool, pool + 3)), void>);
     assert(counter == 0);
 
     // We need to reconstruct here, as we are dealing with stack variables and they get destroyed at the end of scope
@@ -90,7 +90,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 void test()
   assert(counter == 5);
 
   cuda::std::destroy(It(pool), It(pool + 5));
-  ASSERT_SAME_TYPE(decltype(cuda::std::destroy(It(pool), It(pool + 5))), void);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::destroy(It(pool), It(pool + 5))), void>);
   assert(counter == 0);
 
   // We need to reconstruct here, as we are dealing with stack variables and they get destroyed at the end of scope

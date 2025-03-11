@@ -21,9 +21,9 @@
 template <class Ret, class Fn>
 __host__ __device__ void test_lambda(Fn&&)
 {
-  ASSERT_SAME_TYPE(Ret, typename cuda::std::result_of<Fn()>::type);
+  static_assert(cuda::std::is_same_v<Ret, typename cuda::std::result_of<Fn()>::type>);
 
-  ASSERT_SAME_TYPE(Ret, typename cuda::std::invoke_result<Fn>::type);
+  static_assert(cuda::std::is_same_v<Ret, typename cuda::std::invoke_result<Fn>::type>);
 }
 
 int main(int, char**)

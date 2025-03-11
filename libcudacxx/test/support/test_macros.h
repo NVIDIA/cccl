@@ -99,29 +99,6 @@
 
 #define TEST_IGNORE_NODISCARD (void)
 
-namespace test_macros_detail
-{
-template <class T, class U>
-struct is_same
-{
-  enum
-  {
-    value = 0
-  };
-};
-template <class T>
-struct is_same<T, T>
-{
-  enum
-  {
-    value = 1
-  };
-};
-} // namespace test_macros_detail
-
-#define ASSERT_SAME_TYPE(...) \
-  static_assert((test_macros_detail::is_same<__VA_ARGS__>::value), "Types differ unexpectedly")
-
 #ifndef TEST_HAS_NO_EXCEPTIONS
 #  define TEST_THROW(...) throw __VA_ARGS__
 #else

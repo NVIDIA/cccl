@@ -31,7 +31,7 @@ __host__ __device__ constexpr bool constexpr_test()
 template <typename T>
 __host__ __device__ void test()
 {
-  ASSERT_SAME_TYPE(T, decltype(cuda::std::lerp(T(), T(), T())));
+  static_assert(cuda::std::is_same_v<T, decltype(cuda::std::lerp(T(), T(), T()))>);
   static_assert(noexcept(cuda::std::lerp(T(), T(), T())), "");
 
   const T maxV = cuda::std::numeric_limits<T>::max();

@@ -62,14 +62,14 @@ struct test_invoke_result<Fn(Args...), Ret>
   {
     static_assert(cuda::std::is_invocable<Fn, Args...>::value, "");
     static_assert(cuda::std::is_invocable_r<Ret, Fn, Args...>::value, "");
-    ASSERT_SAME_TYPE(Ret, typename cuda::std::invoke_result<Fn, Args...>::type);
+    static_assert(cuda::std::is_same_v<Ret, typename cuda::std::invoke_result<Fn, Args...>::type>);
   }
 };
 
 template <class T, class U>
 __host__ __device__ void test_result_of()
 {
-  ASSERT_SAME_TYPE(U, typename cuda::std::result_of<T>::type);
+  static_assert(cuda::std::is_same_v<U, typename cuda::std::result_of<T>::type>);
   test_invoke_result<T, U>::call();
 }
 
@@ -97,8 +97,8 @@ __host__ __device__ void test_no_result()
 template <class Ret, class Fn>
 __host__ __device__ void test_lambda(Fn&&)
 {
-  ASSERT_SAME_TYPE(Ret, typename cuda::std::result_of<Fn()>::type);
-  ASSERT_SAME_TYPE(Ret, typename cuda::std::invoke_result<Fn>::type);
+  static_assert(cuda::std::is_same_v<Ret, typename cuda::std::result_of<Fn()>::type>);
+  static_assert(cuda::std::is_same_v<Ret, typename cuda::std::invoke_result<Fn>::type>);
 }
 #endif // TEST_CUDA_COMPILER(NVCC)
 

@@ -76,7 +76,7 @@ int main(int, char**)
 #if !TEST_COMPILER(MSVC) && !TEST_COMPILER(NVRTC)
   {
     extern cuda::std::reference_wrapper<int> purr();
-    ASSERT_SAME_TYPE(decltype(true ? purr() : 0), int);
+    static_assert(cuda::std::is_same_v<decltype(true ? purr() : 0), int>);
   }
 #endif // !TEST_COMPILER(MSVC)
 #if !TEST_COMPILER(GCC, <, 8) // gcc-7 is broken wrt ctad

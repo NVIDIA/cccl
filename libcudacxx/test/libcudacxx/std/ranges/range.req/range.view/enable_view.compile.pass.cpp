@@ -95,8 +95,8 @@ static_assert(!cuda::std::ranges::enable_view<const EnableViewTrue&>, "");
 static_assert(!cuda::std::ranges::enable_view<const EnableViewTrue&&>, "");
 
 // Make sure that enable_view is a bool, not some other contextually-convertible-to-bool type.
-ASSERT_SAME_TYPE(decltype(cuda::std::ranges::enable_view<Empty>), const bool);
-ASSERT_SAME_TYPE(decltype(cuda::std::ranges::enable_view<PublicViewBase>), const bool);
+static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::enable_view<Empty>), const bool>);
+static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::enable_view<PublicViewBase>), const bool>);
 
 // view_interface requires c++17
 

@@ -44,7 +44,7 @@ __host__ __device__ constexpr void test_index()
       assert(r == false);
       assert(v1.test(N / 2) == false);
     }
-    ASSERT_SAME_TYPE(decltype(v1[0]), typename cuda::std::bitset<N>::reference);
+    static_assert(cuda::std::is_same_v<decltype(v1[0]), typename cuda::std::bitset<N>::reference>);
   }
 }
 

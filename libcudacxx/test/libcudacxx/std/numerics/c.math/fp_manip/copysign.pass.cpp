@@ -30,12 +30,14 @@ __host__ __device__ constexpr void test_copysign(const T mag, const T sign, bool
 
   if constexpr (cuda::std::is_same_v<T, float>)
   {
+    static_assert(cuda::std::is_same_v<T, decltype(cuda::std::copysignf(T{}, T{}))>);
     const auto resultf = cuda::std::copysignf(mag, sign);
     assert(cuda::std::signbit(resultf) == expected);
   }
 #if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
+    static_assert(cuda::std::is_same_v<T, decltype(cuda::std::copysignl(T{}, T{}))>);
     const auto resultl = cuda::std::copysignl(mag, sign);
     assert(cuda::std::signbit(resultl) == expected);
   }
@@ -47,7 +49,7 @@ __host__ __device__ constexpr void test_copysign(const T pos)
 {
   using Result = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
 
-  ASSERT_SAME_TYPE(Result, decltype(cuda::std::copysign(T{}, T{})));
+  static_assert(cuda::std::is_same_v<Result, decltype(cuda::std::copysign(T{}, T{}))>);
 
   // 1. positive -> positive
   test_copysign<T>(pos, cuda::std::numeric_limits<T>::max(), false);

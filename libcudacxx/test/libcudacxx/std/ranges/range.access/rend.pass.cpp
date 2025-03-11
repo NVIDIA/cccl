@@ -72,22 +72,24 @@ __host__ __device__ constexpr bool testReturnTypes()
   {
     int* x[2] = {};
     unused(x);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::rend(x)), cuda::std::reverse_iterator<int**>);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::crend(x)), cuda::std::reverse_iterator<int* const*>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::rend(x)), cuda::std::reverse_iterator<int**>>);
+    static_assert(
+      cuda::std::is_same_v<decltype(cuda::std::ranges::crend(x)), cuda::std::reverse_iterator<int* const*>>);
   }
 
   {
     int x[2][2] = {};
     unused(x);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::rend(x)), cuda::std::reverse_iterator<int(*)[2]>);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::crend(x)), cuda::std::reverse_iterator<const int(*)[2]>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::rend(x)), cuda::std::reverse_iterator<int(*)[2]>>);
+    static_assert(
+      cuda::std::is_same_v<decltype(cuda::std::ranges::crend(x)), cuda::std::reverse_iterator<const int(*)[2]>>);
   }
 
   {
     Different x{};
     unused(x);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::rend(x)), sentinel_wrapper<char*>);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::crend(x)), sentinel_wrapper<short*>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::rend(x)), sentinel_wrapper<char*>>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::crend(x)), sentinel_wrapper<short*>>);
   }
 
   return true;

@@ -50,7 +50,7 @@ __host__ __device__ constexpr void test_one()
   int a[]                               = {3, 1, 4};
   const cuda::std::move_iterator<It> r1 = cuda::std::move_iterator<It>(It(a));
   const cuda::std::move_iterator<It> r2 = cuda::std::move_iterator<It>(It(a + 2));
-  ASSERT_SAME_TYPE(decltype(r1 < r2), bool);
+  static_assert(cuda::std::is_same_v<decltype(r1 < r2), bool>);
   assert(!(r1 < r1));
   assert((r1 < r2));
   assert(!(r2 < r1));

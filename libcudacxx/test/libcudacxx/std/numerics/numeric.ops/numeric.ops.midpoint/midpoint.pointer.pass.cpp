@@ -21,7 +21,7 @@ template <typename T>
 __host__ __device__ constexpr void constexpr_test()
 {
   constexpr T array[1000] = {};
-  ASSERT_SAME_TYPE(decltype(cuda::std::midpoint(array, array)), const T*);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::midpoint(array, array)), const T*>);
   static_assert(noexcept(cuda::std::midpoint(array, array)));
 
   static_assert(cuda::std::midpoint(array, array) == array, "");
@@ -39,7 +39,7 @@ template <typename T>
 __host__ __device__ void runtime_test()
 {
   T array[1000] = {}; // we need an array to make valid pointers
-  ASSERT_SAME_TYPE(decltype(cuda::std::midpoint(array, array)), T*);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::midpoint(array, array)), T*>);
   static_assert(noexcept(cuda::std::midpoint(array, array)));
 
   assert(cuda::std::midpoint(array, array) == array);
@@ -53,7 +53,7 @@ __host__ __device__ void runtime_test()
   assert(cuda::std::midpoint(array + 11, array) == array + 6);
 
   // explicit instantiation
-  ASSERT_SAME_TYPE(decltype(cuda::std::midpoint<T>(array, array)), T*);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::midpoint<T>(array, array)), T*>);
   static_assert(noexcept(cuda::std::midpoint<T>(array, array)));
   assert(cuda::std::midpoint<T>(array, array) == array);
   assert(cuda::std::midpoint<T>(array, array + 1000) == array + 500);

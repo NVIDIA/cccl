@@ -55,7 +55,7 @@ __host__ __device__ void test()
   static_assert(
     cuda::std::is_base_of<cuda::std::integral_constant<bool, Expected>, cuda::std::uses_allocator<T, A>>::value, "");
 
-  ASSERT_SAME_TYPE(decltype(cuda::std::uses_allocator_v<T, A>), const bool);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::uses_allocator_v<T, A>), const bool>);
   static_assert((cuda::std::uses_allocator_v<T, A> == Expected), "");
 }
 

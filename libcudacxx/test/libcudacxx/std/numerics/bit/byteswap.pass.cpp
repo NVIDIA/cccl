@@ -51,7 +51,7 @@ __host__ __device__ constexpr void test_num(T in, T expected)
   using U = typename MakeUnsigned<T>::type;
 
   assert(static_cast<U>(cuda::std::byteswap(in)) == static_cast<U>(expected));
-  ASSERT_SAME_TYPE(decltype(cuda::std::byteswap(in)), decltype(in));
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::byteswap(in)), decltype(in)>);
   static_assert(noexcept(cuda::std::byteswap(in)));
 }
 

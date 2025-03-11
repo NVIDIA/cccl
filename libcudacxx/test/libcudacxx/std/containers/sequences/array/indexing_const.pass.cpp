@@ -24,7 +24,7 @@ __host__ __device__ constexpr bool tests()
     typedef cuda::std::array<T, 3> C;
     C const c = {1, 2, 3.5};
     static_assert(noexcept(c[0]));
-    ASSERT_SAME_TYPE(C::const_reference, decltype(c[0]));
+    static_assert(cuda::std::is_same_v<C::const_reference, decltype(c[0])>);
     C::const_reference r1 = c[0];
     assert(r1 == 1);
     C::const_reference r2 = c[2];
@@ -37,7 +37,7 @@ __host__ __device__ constexpr bool tests()
       typedef cuda::std::array<T, 0> C;
       C const c = {};
       static_assert(noexcept(c[0]));
-      ASSERT_SAME_TYPE(C::const_reference, decltype(c[0]));
+      static_assert(cuda::std::is_same_v<C::const_reference, decltype(c[0])>);
       if (c.size() > (0))
       { // always false
 #if !TEST_COMPILER(MSVC)
@@ -51,7 +51,7 @@ __host__ __device__ constexpr bool tests()
       typedef cuda::std::array<T const, 0> C;
       C const c = {};
       static_assert(noexcept(c[0]));
-      ASSERT_SAME_TYPE(C::const_reference, decltype(c[0]));
+      static_assert(cuda::std::is_same_v<C::const_reference, decltype(c[0])>);
       if (c.size() > (0))
       { // always false
 #if !TEST_COMPILER(MSVC)

@@ -84,13 +84,13 @@ __host__ __device__ bool constexpr testArrayType()
   SizeFunction d[4] = {};
 
   assert(cuda::std::ranges::size(a) == 4);
-  ASSERT_SAME_TYPE(decltype(cuda::std::ranges::size(a)), size_t);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::size(a)), size_t>);
   assert(cuda::std::ranges::size(b) == 1);
-  ASSERT_SAME_TYPE(decltype(cuda::std::ranges::size(b)), size_t);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::size(b)), size_t>);
   assert(cuda::std::ranges::size(c) == 4);
-  ASSERT_SAME_TYPE(decltype(cuda::std::ranges::size(c)), size_t);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::size(c)), size_t>);
   assert(cuda::std::ranges::size(d) == 4);
-  ASSERT_SAME_TYPE(decltype(cuda::std::ranges::size(d)), size_t);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::size(d)), size_t>);
 
   return true;
 }
@@ -114,7 +114,7 @@ struct SizeMemberSigned
 __host__ __device__ bool constexpr testHasSizeMember()
 {
   assert(cuda::std::ranges::size(SizeMember()) == 42);
-  ASSERT_SAME_TYPE(decltype(cuda::std::ranges::size(SizeMember())), size_t);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::size(SizeMember())), size_t>);
 
   const SizeMemberConst sizeMemberConst{};
   assert(cuda::std::ranges::size(sizeMemberConst) == 42);
@@ -122,10 +122,10 @@ __host__ __device__ bool constexpr testHasSizeMember()
   assert(cuda::std::ranges::size(SizeMemberAndFunction()) == 42);
 
   assert(cuda::std::ranges::size(SizeMemberSigned()) == 42);
-  ASSERT_SAME_TYPE(decltype(cuda::std::ranges::size(SizeMemberSigned())), long);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::size(SizeMemberSigned())), long>);
 
   assert(cuda::std::ranges::size(StaticSizeMember()) == 42);
-  ASSERT_SAME_TYPE(decltype(cuda::std::ranges::size(StaticSizeMember())), size_t);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::size(StaticSizeMember())), size_t>);
 
   return true;
 }
@@ -188,7 +188,7 @@ struct SizeFunctionSigned
 __host__ __device__ bool constexpr testHasSizeFunction()
 {
   assert(cuda::std::ranges::size(SizeFunction()) == 42);
-  ASSERT_SAME_TYPE(decltype(cuda::std::ranges::size(SizeFunction())), size_t);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::size(SizeFunction())), size_t>);
   static_assert(!cuda::std::is_invocable_v<RangeSizeT, MoveOnlySizeFunction>, "");
   assert(cuda::std::ranges::size(EnumSizeFunction()) == 42);
   assert(cuda::std::ranges::size(SizeFunctionConst()) == 42);
@@ -200,7 +200,7 @@ __host__ __device__ bool constexpr testHasSizeFunction()
   assert(cuda::std::ranges::size(b) == 42);
 
   assert(cuda::std::ranges::size(SizeFunctionSigned()) == 42);
-  ASSERT_SAME_TYPE(decltype(cuda::std::ranges::size(SizeFunctionSigned())), long);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::size(SizeFunctionSigned())), long>);
 
   return true;
 }
@@ -513,7 +513,7 @@ __host__ __device__ constexpr bool testRanges()
   HasMinusBeginEnd a{};
   assert(cuda::std::ranges::size(a) == 2);
   // Ensure that this is converted to an *unsigned* type.
-  ASSERT_SAME_TYPE(decltype(cuda::std::ranges::size(a)), size_t);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::size(a)), size_t>);
 
   IntPtrBeginAndEnd b{};
   assert(cuda::std::ranges::size(b) == 8);
@@ -523,7 +523,7 @@ __host__ __device__ constexpr bool testRanges()
 
   RandomAccessRange d{};
   assert(cuda::std::ranges::size(d) == 2);
-  ASSERT_SAME_TYPE(decltype(cuda::std::ranges::size(d)), size_t);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::size(d)), size_t>);
 
   SizeBeginAndEndMembers e{};
   assert(cuda::std::ranges::size(e) == 1);

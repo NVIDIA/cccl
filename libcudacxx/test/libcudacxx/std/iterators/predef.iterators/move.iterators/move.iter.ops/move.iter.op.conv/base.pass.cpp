@@ -79,7 +79,7 @@ __host__ __device__ constexpr void test_one()
     int a[] = {1, 2, 3};
 
     auto i = cuda::std::move_iterator<It>(It(a));
-    ASSERT_SAME_TYPE(decltype(i.base()), const It&);
+    static_assert(cuda::std::is_same_v<decltype(i.base()), const It&>);
     static_assert(noexcept(i.base()));
 
     assert(i.base() == It(a));
@@ -93,7 +93,7 @@ __host__ __device__ constexpr void test_one()
     int a[] = {1, 2, 3};
 
     const auto i = cuda::std::move_iterator<It>(It(a));
-    ASSERT_SAME_TYPE(decltype(i.base()), const It&);
+    static_assert(cuda::std::is_same_v<decltype(i.base()), const It&>);
     static_assert(noexcept(i.base()));
     assert(i.base() == It(a));
   }
@@ -103,7 +103,7 @@ __host__ __device__ constexpr void test_one()
     int a[] = {1, 2, 3};
 
     auto i = cuda::std::move_iterator<It>(It(a));
-    ASSERT_SAME_TYPE(decltype(cuda::std::move(i).base()), It);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::move(i).base()), It>);
     assert(cuda::std::move(i).base() == It(a));
   }
 }

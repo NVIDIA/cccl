@@ -50,7 +50,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test_arrays()
     assert(counter == 3);
 
     Counted* p = cuda::std::destroy_n(pool, 3);
-    ASSERT_SAME_TYPE(decltype(cuda::std::destroy_n(pool, 3)), Counted*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::destroy_n(pool, 3)), Counted*>);
     assert(p == pool + 3);
     assert(counter == 0);
   }
@@ -61,7 +61,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test_arrays()
     assert(counter == 3 * 2);
 
     Array* p = cuda::std::destroy_n(pool, 3);
-    ASSERT_SAME_TYPE(decltype(cuda::std::destroy_n(pool, 3)), Array*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::destroy_n(pool, 3)), Array*>);
     assert(p == pool + 3);
     assert(counter == 0);
   }
@@ -78,7 +78,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 void test()
   assert(counter == 5);
 
   It it = cuda::std::destroy_n(It(pool), 5);
-  ASSERT_SAME_TYPE(decltype(cuda::std::destroy_n(It(pool), 5)), It);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::destroy_n(It(pool), 5)), It>);
   assert(it == It(pool + 5));
   assert(counter == 0);
 
