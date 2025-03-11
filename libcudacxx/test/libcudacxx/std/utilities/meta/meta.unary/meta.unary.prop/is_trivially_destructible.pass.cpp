@@ -145,7 +145,7 @@ int main(int, char**)
   test_is_not_trivially_destructible<PureProtectedDestructor>();
   test_is_not_trivially_destructible<PurePrivateDestructor>();
 
-#if TEST_HAS_BUILTIN_IDENTIFIER(_Atomic)
+#if !_CCCL_IS_IDENTIFIER(_Atomic)
   test_is_trivially_destructible<_Atomic int>();
   test_is_trivially_destructible<_Atomic float>();
   test_is_trivially_destructible<_Atomic int*>();

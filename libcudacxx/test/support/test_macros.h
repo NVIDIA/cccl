@@ -35,19 +35,6 @@
 #  define __has_include(...) 0
 #endif
 
-#ifdef __has_builtin
-#  define TEST_HAS_BUILTIN(X) __has_builtin(X)
-#else
-#  define TEST_HAS_BUILTIN(X) 0
-#endif
-#ifdef __is_identifier
-// '__is_identifier' returns '0' if '__x' is a reserved identifier provided by
-// the compiler and '1' otherwise.
-#  define TEST_HAS_BUILTIN_IDENTIFIER(X) !__is_identifier(X)
-#else
-#  define TEST_HAS_BUILTIN_IDENTIFIER(X) 0
-#endif
-
 /* Make a nice name for the standard version */
 #ifndef TEST_STD_VER
 #  if TEST_COMPILER(MSVC)
@@ -93,7 +80,7 @@
 #  endif
 #endif
 
-#if TEST_HAS_BUILTIN(__builtin_is_constant_evaluated) || _CCCL_COMPILER(GCC, >=, 9) || TEST_COMPILER(MSVC, >, 19, 24)
+#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
 #  define TEST_IS_CONSTANT_EVALUATED() cuda::std::is_constant_evaluated()
 #else
 #  define TEST_IS_CONSTANT_EVALUATED() false

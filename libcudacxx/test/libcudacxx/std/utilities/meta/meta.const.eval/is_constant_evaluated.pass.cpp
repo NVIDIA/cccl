@@ -17,9 +17,9 @@
 
 #if TEST_STD_VER > 2017
 #  ifndef __cccl_lib_is_constant_evaluated
-#    if TEST_HAS_BUILTIN(__builtin_is_constant_evaluated)
+#    if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
 #      error __cccl_lib_is_constant_evaluated should be defined
-#    endif
+#    endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #  endif // __cccl_lib_is_constant_evaluated
 #endif // TEST_STD_VER > 2017
 
