@@ -45,7 +45,7 @@ template <typename DerivedPolicy, typename InputIterator, typename UnaryFunction
 _CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<
   BinaryFunction,
   ::cuda::std::invoke_result_t<UnaryFunction, ::cuda::std::iter_value_t<InputIterator>>,
-  ::cuda::std::invoke_result_t<UnaryFunction, InitType>>
+  InitType>
 transform_reduce(thrust::execution_policy<DerivedPolicy>& exec,
                  InputIterator first,
                  InputIterator last,
@@ -56,7 +56,7 @@ transform_reduce(thrust::execution_policy<DerivedPolicy>& exec,
   using AccType =
     ::cuda::std::__accumulator_t<BinaryFunction,
                                  ::cuda::std::invoke_result_t<UnaryFunction, ::cuda::std::iter_value_t<InputIterator>>,
-                                 ::cuda::std::invoke_result_t<UnaryFunction, InitType>>;
+                                 InitType>;
   thrust::transform_iterator<UnaryFunction, InputIterator, AccType> xfrm_first(first, unary_op);
   thrust::transform_iterator<UnaryFunction, InputIterator, AccType> xfrm_last(last, unary_op);
 

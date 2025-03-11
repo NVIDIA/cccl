@@ -47,7 +47,7 @@ template <typename ExecutionPolicy,
 _CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<
   BinaryFunction,
   ::cuda::std::invoke_result_t<UnaryFunction, ::cuda::std::iter_value_t<InputIterator>>,
-  ::cuda::std::invoke_result_t<UnaryFunction, OutputType>>
+  OutputType>
 transform_reduce(thrust::execution_policy<ExecutionPolicy>& exec,
                  InputIterator first,
                  InputIterator last,

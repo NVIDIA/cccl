@@ -153,7 +153,8 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
 } // end reduce_by_key()
 
 template <typename InputIterator>
-detail::it_value_t<InputIterator> reduce(InputIterator first, InputIterator last)
+::cuda::std::__accumulator_t<::cuda::std::plus<>, ::cuda::std::iter_value_t<InputIterator>>
+reduce(InputIterator first, InputIterator last)
 {
   using thrust::system::detail::generic::select_system;
 
@@ -165,7 +166,8 @@ detail::it_value_t<InputIterator> reduce(InputIterator first, InputIterator last
 }
 
 template <typename InputIterator, typename T>
-T reduce(InputIterator first, InputIterator last, T init)
+::cuda::std::__accumulator_t<::cuda::std::plus<>, ::cuda::std::iter_value_t<InputIterator>, T>
+reduce(InputIterator first, InputIterator last, T init)
 {
   using thrust::system::detail::generic::select_system;
 
@@ -177,7 +179,8 @@ T reduce(InputIterator first, InputIterator last, T init)
 }
 
 template <typename InputIterator, typename T, typename BinaryFunction>
-T reduce(InputIterator first, InputIterator last, T init, BinaryFunction binary_op)
+::cuda::std::__accumulator_t<BinaryFunction, ::cuda::std::iter_value_t<InputIterator>, T>
+reduce(InputIterator first, InputIterator last, T init, BinaryFunction binary_op)
 {
   using thrust::system::detail::generic::select_system;
 

@@ -55,9 +55,7 @@ inner_product(thrust::execution_policy<DerivedPolicy>& exec,
               InputIterator2 first2,
               OutputType init)
 {
-  thrust::plus<> binary_op1;
-  thrust::multiplies<> binary_op2;
-  return thrust::inner_product(exec, first1, last1, first2, init, binary_op1, binary_op2);
+  return thrust::inner_product(exec, first1, last1, first2, init, thrust::plus<>{}, thrust::multiplies<>{});
 } // end inner_product()
 
 template <typename DerivedPolicy,

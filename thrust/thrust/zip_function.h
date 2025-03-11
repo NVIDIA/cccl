@@ -131,11 +131,11 @@ public:
 
   // Add workaround for decltype(auto) on C++11-only compilers:
 
-  // template <typename Tuple>
-  //_CCCL_HOST_DEVICE decltype(auto) operator()(Tuple&& args) const
-  //{
-  //   return detail::zip_detail::apply(func, THRUST_FWD(args));
-  // }
+  template <typename Tuple>
+  _CCCL_HOST_DEVICE decltype(auto) operator()(Tuple&& args) const
+  {
+    return detail::zip_detail::apply(func, THRUST_FWD(args));
+  }
 
   //! Returns a reference to the underlying function.
   _CCCL_HOST_DEVICE Function& underlying_function() const
@@ -158,7 +158,7 @@ template <typename Function>
 _CCCL_HOST_DEVICE zip_function<typename std::decay<Function>::type> make_zip_function(Function&& fun)
 {
   using func_t = typename std::decay<Function>::type;
-  return zip_function<func_t>{THRUST_FWD(fun)};
+  return zip_function<func_t>(THRUST_FWD(fun));
 }
 
 /*! \} // end function_object_adaptors

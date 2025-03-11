@@ -70,17 +70,13 @@ namespace detail
 {
 
 template <typename Derived, typename InputIt, typename Size, typename UnaryOp, typename T, typename BinaryOp>
-THRUST_RUNTIME_FUNCTION ::cuda::std::__accumulator_t<
-  BinaryOp,
-  ::cuda::std::invoke_result_t<UnaryOp, ::cuda::std::iter_value_t<InputIt>>,
-  ::cuda::std::invoke_result_t<UnaryOp, T>>
-transform_reduce_n_impl(
-  execution_policy<Derived>& policy, InputIt first, Size num_items, UnaryOp unary_op, T init, BinaryOp binary_op)
+THRUST_RUNTIME_FUNCTION ::cuda::std::
+  __accumulator_t<BinaryOp, ::cuda::std::invoke_result_t<UnaryOp, ::cuda::std::iter_value_t<InputIt>>, T>
+  transform_reduce_n_impl(
+    execution_policy<Derived>& policy, InputIt first, Size num_items, UnaryOp unary_op, T init, BinaryOp binary_op)
 {
   using AccType =
-    ::cuda::std::__accumulator_t<BinaryOp,
-                                 decltype(UnaryOp{}(::cuda::std::declval<::cuda::std::iter_value_t<InputIt>>())),
-                                 decltype(UnaryOp{}(::cuda::std::declval<T>()))>;
+    ::cuda::std::__accumulator_t<BinaryOp, ::cuda::std::invoke_result_t<UnaryOp, ::cuda::std::iter_value_t<InputIt>>, T>;
   cudaStream_t stream = cuda_cub::stream(policy);
   cudaError_t status;
 
@@ -138,12 +134,10 @@ transform_reduce_n_impl(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class InputIt, class TransformOp, class T, class ReduceOp>
-_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<
-  ReduceOp,
-  ::cuda::std::invoke_result_t<TransformOp, ::cuda::std::iter_value_t<InputIt>>,
-  ::cuda::std::invoke_result_t<TransformOp, T>>
-transform_reduce(
-  execution_policy<Derived>& policy, InputIt first, InputIt last, TransformOp transform_op, T init, ReduceOp reduce_op)
+_CCCL_HOST_DEVICE ::cuda::std::
+  __accumulator_t<ReduceOp, ::cuda::std::invoke_result_t<TransformOp, ::cuda::std::iter_value_t<InputIt>>, T>
+  transform_reduce(
+    execution_policy<Derived>& policy, InputIt first, InputIt last, TransformOp transform_op, T init, ReduceOp reduce_op)
 {
   using size_type           = thrust::detail::it_difference_t<InputIt>;
   const size_type num_items = static_cast<size_type>(thrust::distance(first, last));
