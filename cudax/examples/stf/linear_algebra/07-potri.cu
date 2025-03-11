@@ -1470,7 +1470,7 @@ void run(int N, int NB)
       get_cusolver_handle();
     };
 
-    ctx.task(exec_place::host, ldummy.write(data_place::managed()))->*[](cudaStream_t, auto) {};
+    ctx.task(exec_place::host(), ldummy.write(data_place::managed()))->*[](cudaStream_t, auto) {};
   }
 
   cuda_try(cudaSetDevice(0));

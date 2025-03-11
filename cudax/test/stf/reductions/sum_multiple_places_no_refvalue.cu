@@ -100,14 +100,14 @@ int main()
     }
 
     // host
-    ctx.task(exec_place::host, var_handle.relaxed(redux_op))->*[&](cudaStream_t s, auto var) {
+    ctx.task(exec_place::host(), var_handle.relaxed(redux_op))->*[&](cudaStream_t s, auto var) {
       cuda_safe_call(cudaStreamSynchronize(s));
       *var.data_handle() += i;
     };
   }
 
   // Check result
-  ctx.task(exec_place::host, var_handle.read())->*[&](cudaStream_t s, auto var) {
+  ctx.task(exec_place::host(), var_handle.read())->*[&](cudaStream_t s, auto var) {
     cuda_safe_call(cudaStreamSynchronize(s));
     int value    = *var.data_handle();
     int expected = (N * (N - 1)) / 2 * (ndevs + 1);

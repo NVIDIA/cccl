@@ -500,6 +500,7 @@ public:
   {
     return used_instances[size_t(instance_id)];
   }
+
   data_instance& get_data_instance(instance_id_t instance_id)
   {
     return used_instances[size_t(instance_id)];

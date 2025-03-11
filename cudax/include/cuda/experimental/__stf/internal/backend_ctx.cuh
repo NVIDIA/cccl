@@ -124,7 +124,7 @@ public:
     auto& dot        = *ctx.get_dot();
     auto& statistics = reserved::task_statistics::instance();
 
-    auto t = ctx.task(exec_place::host);
+    auto t = ctx.task(exec_place::host());
     t.add_deps(deps);
     if (!symbol.empty())
     {

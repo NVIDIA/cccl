@@ -172,7 +172,7 @@ public:
 
   bool is_invalid() const
   {
-    return devid == invalid_devid;
+    return devid == invalid_devid && !is_composite();
   }
 
   bool is_host() const
@@ -424,7 +424,7 @@ public:
       : pimpl(affine.is_device() ? device(device_ordinal(affine)).pimpl : ::std::make_shared<impl>(affine))
   {
     _CCCL_ASSERT(pimpl->affine != data_place::host(),
-                 "To create an execution place for the host, use exec_place::host.");
+                 "To create an execution place for the host, use exec_place::host().");
   }
 
   bool operator==(const exec_place& rhs) const
@@ -567,8 +567,9 @@ public:
   /* These helper methods provide convenient way to express execution places,
    * for example exec_place::host or exec_place::device(4).
    */
-  static const exec_place_host host;
-  static const exec_place device_auto;
+  static exec_place_host host();
+  static exec_place device_auto();
+
   static exec_place device(int devid);
 
 // Green contexts are only supported since CUDA 12.4
@@ -707,13 +708,20 @@ private:
   }
 };
 
-inline const exec_place_host exec_place::host{};
-inline const exec_place exec_place::device_auto{data_place::device_auto()};
+inline exec_place_host exec_place::host()
+{
+  return exec_place_host();
+}
+
+inline exec_place exec_place::device_auto()
+{
+  return exec_place(data_place::device_auto());
+}
 
 UNITTEST("exec_place_host::operator->*")
 {
   bool witness = false;
-  exec_place::host->*[&] {
+  exec_place::host()->*[&] {
     witness = true;
   };
   EXPECT(witness);
@@ -767,7 +775,7 @@ UNITTEST("exec_place assignments")
   {
     e = exec_place::device(1);
   }
-  e = exec_place::host;
+  e = exec_place::host();
 };
 
 UNITTEST("exec_place movable")
@@ -1325,13 +1333,13 @@ inline exec_place data_place::get_affine_exec_place() const
 
   if (is_host())
   {
-    return exec_place::host;
+    return exec_place::host();
   }
 
   // This is debatable !
   if (is_managed())
   {
-    return exec_place::host;
+    return exec_place::host();
   }
 
   if (is_composite())
@@ -1368,9 +1376,6 @@ inline const get_executor_func_t& data_place::get_partitioner() const
 
 inline bool data_place::operator==(const data_place& rhs) const
 {
-  fprintf(stderr, "SANITY data_place::managed.devid: %d\n", data_place::managed().devid);
-  fprintf(stderr, "SANITY data_place::host.devid: %d\n", data_place::host().devid);
-
   if (is_composite() != rhs.is_composite())
   {
     return false;
@@ -1421,7 +1426,7 @@ UNITTEST("places to_symbol")
 {
   EXPECT(data_place::host().to_string() == ::std::string("host"));
   EXPECT(exec_place::current_device().to_string() == ::std::string("exec(dev0)"));
-  EXPECT(exec_place::host.to_string() == ::std::string("exec(host)"));
+  EXPECT(exec_place::host().to_string() == ::std::string("exec(host)"));
 };
 
 UNITTEST("exec place equality")
@@ -1526,7 +1531,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
 {
   constexpr size_t pdepth = sizeof...(spec) / 2;
 
-  if (where == exec_place::host)
+  if (where == exec_place::host())
   {
     // XXX this may not match the type of the spec if we are not using the default spec ...
     for (size_t d = 0; d < pdepth; d++)

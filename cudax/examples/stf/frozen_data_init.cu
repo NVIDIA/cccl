@@ -41,7 +41,7 @@ int main()
     x(i, j) = d_buf(i, j);
   };
 
-  ctx.parallel_for(exec_place::host, lX.shape(), lX.read()).set_symbol("check buf")
+  ctx.parallel_for(exec_place::host(), lX.shape(), lX.read()).set_symbol("check buf")
       ->*[h_buf](size_t i, size_t j, auto x) {
             EXPECT(fabs(x(i, j) - h_buf(i, j)) < 0.0001);
           };

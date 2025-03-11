@@ -198,7 +198,7 @@ void initMonteCarloGPU(Ctx& ctx, TOptionPlan* plan)
 template <typename Ctx>
 void closeMonteCarloGPU(Ctx& ctx, TOptionPlan* plan)
 {
-  auto t = ctx.task(exec_place::host, plan->callValue_handle.rw());
+  auto t = ctx.task(exec_place::host(), plan->callValue_handle.rw());
   t.set_symbol("compute_stats");
   t->*[&](cudaStream_t stream, auto h_CallValue) {
     cuda_safe_call(cudaStreamSynchronize(stream));
@@ -230,7 +230,7 @@ void MonteCarloGPU(Ctx& ctx, TOptionPlan* plan, cudaStream_t /*unused*/ = 0)
   }
 
   // Preprocess computations on the host
-  auto t_host = ctx.task(exec_place::host, plan->preproc_optionData_handle.rw());
+  auto t_host = ctx.task(exec_place::host(), plan->preproc_optionData_handle.rw());
   t_host.set_symbol("preprocess");
   t_host->*[&](cudaStream_t stream, auto h_preproc_OptionData) {
     cuda_safe_call(cudaStreamSynchronize(stream));

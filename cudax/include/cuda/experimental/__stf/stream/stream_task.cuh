@@ -489,7 +489,7 @@ public:
    * @param deps A list of `task_dep` objects that this task depends on
    */
   stream_task(stream_ctx* ctx, task_dep<Data>... deps)
-      : stream_task(exec_place::host, ctx, mv(deps)...)
+      : stream_task(exec_place::host(), ctx, mv(deps)...)
   {}
 
   /**

@@ -51,7 +51,7 @@ namespace cuda::experimental::stf
  *         prerequisites for the task to start execution.
  *
  * @note The function `EXPECT`s the task to be in the setup phase and the execution place
- *       not to be `exec_place::device_auto`.
+ *       not to be `exec_place::device_auto()`.
  * @note Dependencies are sorted by logical data addresses to prevent deadlocks.
  * @note For tasks with multiple dependencies on the same logical data, only one
  *       instance of the data is used, and its access mode is determined by combining
@@ -62,7 +62,7 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
   EXPECT(get_task_phase() == task::phase::setup);
 
   const auto eplace = get_exec_place();
-  _CCCL_ASSERT(eplace != exec_place::device_auto, "");
+  _CCCL_ASSERT(eplace != exec_place::device_auto(), "");
   // If there are any extra dependencies to fulfill
   auto result = get_input_events();
 
