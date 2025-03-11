@@ -32,12 +32,6 @@
 #define TEST_CONSTEXPR_CXX20 _CCCL_CONSTEXPR_CXX20
 #define TEST_CONSTEXPR_CXX23 _CCCL_CONSTEXPR_CXX23
 
-#ifdef _CCCL_HAS_FEATURE
-#  define TEST_HAS_FEATURE(X) _CCCL_HAS_FEATURE(X)
-#else
-#  define TEST_HAS_FEATURE(X) 0
-#endif
-
 #ifndef __has_include
 #  define __has_include(...) 0
 #endif
@@ -83,7 +77,7 @@
 #  endif
 #endif
 
-#if !TEST_HAS_FEATURE(cxx_rtti) && !defined(__cpp_rtti) && !defined(__GXX_RTTI)
+#if !_CCCL_HAS_FEATURE(cxx_rtti) && !defined(__cpp_rtti) && !defined(__GXX_RTTI)
 #  define TEST_HAS_NO_RTTI
 #endif
 
@@ -99,7 +93,7 @@
 #  define TEST_HAS_NO_EXCEPTIONS
 #endif
 
-#if TEST_HAS_FEATURE(address_sanitizer) || TEST_HAS_FEATURE(memory_sanitizer) || TEST_HAS_FEATURE(thread_sanitizer)
+#if _CCCL_HAS_FEATURE(address_sanitizer) || _CCCL_HAS_FEATURE(memory_sanitizer) || _CCCL_HAS_FEATURE(thread_sanitizer)
 #  define TEST_HAS_SANITIZERS
 #endif
 
