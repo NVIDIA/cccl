@@ -41,7 +41,7 @@ namespace detail
 {
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputType, typename BinaryFunction>
-thrust::detail::__iter_accumulator_t<InputIterator, OutputType, BinaryFunction>;
+thrust::detail::__iter_accumulator_t<InputIterator, OutputType, BinaryFunction>
 reduce(execution_policy<DerivedPolicy>& exec,
        InputIterator begin,
        InputIterator end,
