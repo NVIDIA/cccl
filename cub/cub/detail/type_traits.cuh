@@ -97,8 +97,6 @@ template <typename T, size_t N>
 struct is_fixed_size_random_access_range<::cuda::std::span<T, N>, void> : ::cuda::std::true_type
 {};
 
-#if __cccl_lib_mdspan
-
 template <typename T, typename E, typename L, typename A>
 struct is_fixed_size_random_access_range<
   ::cuda::std::mdspan<T, E, L, A>,
