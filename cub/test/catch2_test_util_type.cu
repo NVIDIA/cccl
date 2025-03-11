@@ -107,3 +107,23 @@ C2H_TEST("Test CustomHalf", "[util][type]")
   CHECK(cuda::std::numeric_limits<half_t>::max() == half_t::max());
   CHECK(cuda::std::numeric_limits<half_t>::lowest() == half_t::lowest());
 }
+
+C2H_TEST("Test FutureValue", "[util][type]")
+{
+  // read
+  int value;
+  cub::FutureValue<int> fv{&value};
+  value = 42;
+  CHECK(fv == 42);
+  value = 43;
+  CHECK(fv == 43);
+
+  // CTAD
+  cub::FutureValue fv2{&value};
+  STATIC_REQUIRE(::cuda::std::is_same_v<decltype(fv2), cub::FutureValue<int, int*>>);
+
+  c2h::device_vector<int> v(0);
+  cub::FutureValue fv3{v.begin()};
+  STATIC_REQUIRE(
+    ::cuda::std::is_same_v<decltype(fv3), cub::FutureValue<int, typename c2h::device_vector<int>::iterator>>);
+}
