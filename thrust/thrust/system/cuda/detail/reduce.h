@@ -46,7 +46,6 @@
 #  include <thrust/detail/alignment.h>
 #  include <thrust/detail/raw_reference_cast.h>
 #  include <thrust/detail/temporary_array.h>
-#  include <thrust/detail/type_traits/iterator/is_output_iterator.h>
 #  include <thrust/distance.h>
 #  include <thrust/functional.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
@@ -639,13 +638,13 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
 
     reduce_agent ra(reduce_plan, num_items, stream, vshmem_ptr, "reduce_agent: single_tile only");
     ra.launch(input_it, output_it, num_items, reduction_op, init);
-    CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
+    _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
   }
   else
   {
     // regular size
     cuda_optional<int> sm_count = core::detail::get_sm_count();
-    CUDA_CUB_RET_IF_FAIL(sm_count.status());
+    _CUDA_CUB_RET_IF_FAIL(sm_count.status());
 
     // reduction will not use more cta counts than requested
     cuda_optional<int> max_blocks_per_sm = reduce_agent::template get_max_blocks_per_sm<
@@ -655,7 +654,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
       cub::GridEvenShare<Size>,
       cub::GridQueue<UnsignedSize>,
       ReductionOp>(reduce_plan);
-    CUDA_CUB_RET_IF_FAIL(max_blocks_per_sm.status());
+    _CUDA_CUB_RET_IF_FAIL(max_blocks_per_sm.status());
 
     int reduce_device_occupancy = (int) max_blocks_per_sm * sm_count;
 
@@ -678,7 +677,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
       vshmem_size // size of virtualized shared memory storage
     };
     status = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
-    CUDA_CUB_RET_IF_FAIL(status);
+    _CUDA_CUB_RET_IF_FAIL(status);
     if (d_temp_storage == nullptr)
     {
       return status;
@@ -709,17 +708,17 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
       drain_plan.grid_size = 1;
       drain_agent da(drain_plan, stream, "__reduce::drain_agent");
       da.launch(queue, num_items);
-      CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
+      _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
     }
     else
     {
-      CUDA_CUB_RET_IF_FAIL(cudaErrorNotSupported);
+      _CUDA_CUB_RET_IF_FAIL(cudaErrorNotSupported);
     }
 
     reduce_plan.grid_size = reduce_grid_size;
     reduce_agent ra(reduce_plan, stream, vshmem_ptr, "reduce_agent: regular size reduce");
     ra.launch(input_it, d_block_reductions, num_items, even_share, queue, reduction_op);
-    CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
+    _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
 
     using reduce_agent_single = AgentLauncher<ReduceAgent<T*, OutputIt, T, Size, ReductionOp>>;
 
@@ -727,7 +726,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
     reduce_agent_single ra1(reduce_plan, stream, vshmem_ptr, "reduce_agent: single tile reduce");
 
     ra1.launch(d_block_reductions, output_it, reduce_grid_size, reduction_op, init);
-    CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
+    _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
   }
 
   return status;
@@ -857,7 +856,7 @@ reduce_n(execution_policy<Derived>& policy, InputIt first, Size num_items, T ini
 template <class Derived, class InputIt, class T, class BinaryOp>
 _CCCL_HOST_DEVICE T reduce(execution_policy<Derived>& policy, InputIt first, InputIt last, T init, BinaryOp binary_op)
 {
-  using size_type = typename iterator_traits<InputIt>::difference_type;
+  using size_type = thrust::detail::it_difference_t<InputIt>;
   // FIXME: Check for RA iterator.
   size_type num_items = static_cast<size_type>(thrust::distance(first, last));
   return cuda_cub::reduce_n(policy, first, num_items, init, binary_op);
@@ -870,10 +869,10 @@ _CCCL_HOST_DEVICE T reduce(execution_policy<Derived>& policy, InputIt first, Inp
 }
 
 template <class Derived, class InputIt>
-_CCCL_HOST_DEVICE typename iterator_traits<InputIt>::value_type
+_CCCL_HOST_DEVICE thrust::detail::it_value_t<InputIt>
 reduce(execution_policy<Derived>& policy, InputIt first, InputIt last)
 {
-  using value_type = typename iterator_traits<InputIt>::value_type;
+  using value_type = thrust::detail::it_value_t<InputIt>;
   return cuda_cub::reduce(policy, first, last, value_type(0));
 }
 

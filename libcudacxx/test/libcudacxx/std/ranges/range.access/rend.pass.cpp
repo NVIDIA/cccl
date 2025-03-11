@@ -624,8 +624,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX17 bool testBeginEnd()
 
   return true;
 }
-ASSERT_NOEXCEPT(cuda::std::ranges::rend(cuda::std::declval<int (&)[10]>()));
-ASSERT_NOEXCEPT(cuda::std::ranges::crend(cuda::std::declval<int (&)[10]>()));
+static_assert(noexcept(cuda::std::ranges::rend(cuda::std::declval<int (&)[10]>())));
+static_assert(noexcept(cuda::std::ranges::crend(cuda::std::declval<int (&)[10]>())));
 
 #if !defined(TEST_COMPILER_MSVC_2019)
 _CCCL_GLOBAL_CONSTANT struct NoThrowMemberREnd
@@ -697,9 +697,7 @@ int main(int, char**)
   static_assert(testReturnTypes());
 
   testArray();
-#ifndef TEST_COMPILER_CUDACC_BELOW_11_3
   static_assert(testArray());
-#endif // TEST_COMPILER_CUDACC_BELOW_11_3
 
   testREndMember();
   static_assert(testREndMember());

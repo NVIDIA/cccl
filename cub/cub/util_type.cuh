@@ -49,6 +49,7 @@
 #include <thrust/iterator/discard_iterator.h>
 
 #include <cuda/std/cstdint>
+#include <cuda/std/iterator>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
@@ -70,12 +71,6 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_POP
 #endif // _CCCL_HAS_NVFP8()
 
-#if _CCCL_COMPILER(NVRTC)
-#  include <cuda/std/iterator>
-#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ // vvv !_CCCL_COMPILER(NVRTC) vvv
-#  include <iterator>
-#endif // _CCCL_COMPILER(NVRTC)
-
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -85,16 +80,29 @@ CUB_NAMESPACE_BEGIN
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 namespace detail
 {
-//! Alias to the given iterator's value_type.
-// Aliases to std::iterator_traits, since users can specialize this template to provide traits for their iterators. We
-// only defer to the libcu++ implementation for NVRTC.
-template <typename Iterator>
-using value_t =
-#  if _CCCL_COMPILER(NVRTC)
-  typename ::cuda::std::iterator_traits<Iterator>::value_type;
-#  else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ // vvv !_CCCL_COMPILER(NVRTC) vvv
-  typename std::iterator_traits<Iterator>::value_type;
-#  endif // !_CCCL_COMPILER(NVRTC)
+// the following iterator helpers are not named iter_value_t etc, like the C++20 facilities, because they are defined in
+// terms of C++17 iterator_traits and not the new C++20 indirectly_readable trait etc. This allows them to detect nested
+// value_type, difference_type and reference aliases, which the new C+20 traits do not consider (they only consider
+// specializations of iterator_traits). Also, a value_type of void remains supported (needed by some output iterators).
+
+template <typename It>
+using it_value_t = typename ::cuda::std::iterator_traits<It>::value_type;
+
+template <typename It>
+using it_reference_t = typename ::cuda::std::iterator_traits<It>::reference;
+
+template <typename It>
+using it_difference_t = typename ::cuda::std::iterator_traits<It>::difference_type;
+
+template <typename It>
+using it_pointer_t = typename ::cuda::std::iterator_traits<It>::pointer;
+
+// use this whenever you need to lazily evaluate a trait. E.g., as an alternative in replace_if_use_default.
+template <template <typename...> typename Trait, typename... Args>
+struct lazy_trait
+{
+  using type = Trait<Args...>;
+};
 
 template <typename It, typename FallbackT, bool = ::cuda::std::is_void_v<::cuda::std::remove_pointer_t<It>>>
 struct non_void_value_impl
@@ -108,10 +116,10 @@ struct non_void_value_impl<It, FallbackT, false>
   // we consider thrust::discard_iterator's value_type as `void` as well, so users can switch from
   // cub::DiscardInputIterator to thrust::discard_iterator.
   using type =
-    ::cuda::std::_If<::cuda::std::is_void_v<value_t<It>>
-                       || ::cuda::std::is_same_v<value_t<It>, THRUST_NS_QUALIFIER::discard_iterator<>::value_type>,
+    ::cuda::std::_If<::cuda::std::is_void_v<it_value_t<It>>
+                       || ::cuda::std::is_same_v<it_value_t<It>, THRUST_NS_QUALIFIER::discard_iterator<>::value_type>,
                      FallbackT,
-                     value_t<It>>;
+                     it_value_t<It>>;
 };
 
 /**
@@ -254,10 +262,12 @@ struct FutureValue
 {
   using value_type    = T;
   using iterator_type = IterT;
+
   explicit _CCCL_HOST_DEVICE _CCCL_FORCEINLINE FutureValue(IterT iter)
       : m_iter(iter)
   {}
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T()
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T() const noexcept
   {
     return *m_iter;
   }
@@ -265,6 +275,9 @@ struct FutureValue
 private:
   IterT m_iter;
 };
+
+template <typename IterT>
+FutureValue(IterT) -> FutureValue<detail::it_value_t<IterT>, IterT>;
 
 namespace detail
 {
@@ -737,14 +750,10 @@ struct DoubleBuffer
 #  define CUB_DEFINE_DETECT_NESTED_TYPE(detector_name, nested_type_name)                                \
     template <typename T, typename = void>                                                              \
     struct detector_name : ::cuda::std::false_type                                                      \
-    {                                                                                                   \
-      CCCL_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool VALUE = false;               \
-    };                                                                                                  \
+    {};                                                                                                 \
     template <typename T>                                                                               \
     struct detector_name<T, ::cuda::std::void_t<typename T::nested_type_name>> : ::cuda::std::true_type \
-    {                                                                                                   \
-      CCCL_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool VALUE = true;                \
-    };
+    {};
 
 /******************************************************************************
  * Typedef-detection

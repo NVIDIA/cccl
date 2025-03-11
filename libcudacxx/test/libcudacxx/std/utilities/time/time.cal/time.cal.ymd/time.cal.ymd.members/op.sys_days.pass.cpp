@@ -59,7 +59,7 @@ int main(int, char**)
   using days           = cuda::std::chrono::days;
   using year_month_day = cuda::std::chrono::year_month_day;
 
-  ASSERT_NOEXCEPT(sys_days(cuda::std::declval<year_month_day>()));
+  static_assert(noexcept(sys_days(cuda::std::declval<year_month_day>())));
   RunTheExample();
 
   {

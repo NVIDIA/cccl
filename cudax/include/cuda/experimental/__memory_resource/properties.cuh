@@ -31,6 +31,7 @@
 #  define LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 #endif
 
+#include <cuda/__memory_resource/get_property.h>
 #include <cuda/__memory_resource/properties.h>
 
 namespace cuda::experimental

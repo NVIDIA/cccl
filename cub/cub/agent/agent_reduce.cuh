@@ -51,11 +51,8 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/std/type_traits>
-
-_CCCL_SUPPRESS_DEPRECATED_PUSH
 #include <cuda/std/functional>
-_CCCL_SUPPRESS_DEPRECATED_POP
+#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -142,7 +139,7 @@ struct AgentReduce
   //---------------------------------------------------------------------
 
   /// The input value type
-  using InputT = value_t<InputIteratorT>;
+  using InputT = it_value_t<InputIteratorT>;
 
   /// Vector type of InputT for data movement
   using VectorT = typename CubVector<InputT, AgentReducePolicy::VECTOR_LOAD_LENGTH>::Type;

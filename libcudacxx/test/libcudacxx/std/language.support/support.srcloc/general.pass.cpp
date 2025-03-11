@@ -21,9 +21,9 @@ static_assert(cuda::std::is_nothrow_move_constructible<cuda::std::source_locatio
 static_assert(cuda::std::is_nothrow_move_assignable<cuda::std::source_location>::value, "support.srcloc.cons (1.2)");
 static_assert(cuda::std::is_nothrow_swappable<cuda::std::source_location>::value, "support.srcloc.cons (1.3)");
 
-ASSERT_NOEXCEPT(cuda::std::source_location());
+static_assert(noexcept(cuda::std::source_location()));
 #if !defined(TEST_COMPILER_NVCC)
-ASSERT_NOEXCEPT(cuda::std::source_location::current());
+static_assert(noexcept(cuda::std::source_location::current()));
 #endif // TEST_COMPILER_NVCC
 
 // Note: the standard doesn't strictly require the particular values asserted
@@ -38,25 +38,25 @@ static_assert(empty.column() == 0, "");
 static_assert(empty.file_name()[0] == '\0', "");
 static_assert(empty.function_name()[0] == '\0', "");
 
-ASSERT_NOEXCEPT(empty.line());
-ASSERT_NOEXCEPT(empty.column());
-ASSERT_NOEXCEPT(empty.file_name());
-ASSERT_NOEXCEPT(empty.function_name());
+static_assert(noexcept(empty.line()));
+static_assert(noexcept(empty.column()));
+static_assert(noexcept(empty.file_name()));
+static_assert(noexcept(empty.function_name()));
 static_assert(cuda::std::is_same<cuda::std::uint_least32_t, decltype(empty.line())>::value, "");
 static_assert(cuda::std::is_same<cuda::std::uint_least32_t, decltype(empty.column())>::value, "");
 static_assert(cuda::std::is_same<const char*, decltype(empty.file_name())>::value, "");
 static_assert(cuda::std::is_same<const char*, decltype(empty.function_name())>::value, "");
 
-__device__ _CCCL_CONSTEXPR_GLOBAL cuda::std::source_location device_empty{};
+__device__ constexpr cuda::std::source_location device_empty{};
 static_assert(device_empty.line() == 0, "");
 static_assert(device_empty.column() == 0, "");
 static_assert(device_empty.file_name()[0] == '\0', "");
 static_assert(device_empty.function_name()[0] == '\0', "");
 
-ASSERT_NOEXCEPT(device_empty.line());
-ASSERT_NOEXCEPT(device_empty.column());
-ASSERT_NOEXCEPT(device_empty.file_name());
-ASSERT_NOEXCEPT(device_empty.function_name());
+static_assert(noexcept(device_empty.line()));
+static_assert(noexcept(device_empty.column()));
+static_assert(noexcept(device_empty.file_name()));
+static_assert(noexcept(device_empty.function_name()));
 
 // A simple use of current() outside a function.
 #line 1000 "ss"

@@ -21,7 +21,7 @@
 int main(int, char**)
 {
   using day = cuda::std::chrono::day;
-  ASSERT_NOEXCEPT(cuda::std::declval<const day>().ok());
+  static_assert(noexcept(cuda::std::declval<const day>().ok()));
   ASSERT_SAME_TYPE(bool, decltype(cuda::std::declval<const day>().ok()));
 
   static_assert(!day{0}.ok(), "");

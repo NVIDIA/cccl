@@ -41,10 +41,10 @@ namespace generic
 {
 
 template <typename ExecutionPolicy, typename InputIterator>
-_CCCL_HOST_DEVICE typename thrust::iterator_traits<InputIterator>::value_type
+_CCCL_HOST_DEVICE thrust::detail::it_value_t<InputIterator>
 reduce(thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last)
 {
-  using InputType = typename thrust::iterator_value<InputIterator>::type;
+  using InputType = thrust::detail::it_value_t<InputIterator>;
 
   // use InputType(0) as init by default
   return thrust::reduce(exec, first, last, InputType(0));
@@ -62,8 +62,8 @@ template <typename ExecutionPolicy, typename RandomAccessIterator, typename Outp
 _CCCL_HOST_DEVICE OutputType reduce(
   thrust::execution_policy<ExecutionPolicy>&, RandomAccessIterator, RandomAccessIterator, OutputType, BinaryFunction)
 {
-  THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<RandomAccessIterator, false>::value),
-                           "unimplemented for this system");
+  static_assert(thrust::detail::depend_on_instantiation<RandomAccessIterator, false>::value,
+                "unimplemented for this system");
   return OutputType();
 } // end reduce()
 

@@ -8,7 +8,7 @@
 template <typename InputIterator, typename OutputIterator, typename BinaryFunction, typename Decomposition>
 void reduce_intervals(InputIterator input, OutputIterator output, BinaryFunction binary_op, Decomposition decomp)
 {
-  using OutputType = typename thrust::iterator_value<OutputIterator>::type;
+  using OutputType = thrust::detail::it_value_t<OutputIterator>;
   using index_type = typename Decomposition::index_type;
 
   // wrap binary_op

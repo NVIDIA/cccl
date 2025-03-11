@@ -434,8 +434,8 @@ __host__ __device__ constexpr bool testEndFunction()
 
   return true;
 }
-ASSERT_NOEXCEPT(cuda::std::ranges::end(cuda::std::declval<int (&)[10]>()));
-ASSERT_NOEXCEPT(cuda::std::ranges::cend(cuda::std::declval<int (&)[10]>()));
+static_assert(noexcept(cuda::std::ranges::end(cuda::std::declval<int (&)[10]>())));
+static_assert(noexcept(cuda::std::ranges::cend(cuda::std::declval<int (&)[10]>())));
 
 // needs c++17's guaranteed copy elision
 #if !defined(TEST_COMPILER_MSVC_2019) // broken noexcept
@@ -492,9 +492,7 @@ int main(int, char**)
   static_assert(testReturnTypes(), "");
 
   testArray();
-#ifndef TEST_COMPILER_CUDACC_BELOW_11_3
   static_assert(testArray(), "");
-#endif // TEST_COMPILER_CUDACC_BELOW_11_3
 
   testEndMember();
   static_assert(testEndMember(), "");

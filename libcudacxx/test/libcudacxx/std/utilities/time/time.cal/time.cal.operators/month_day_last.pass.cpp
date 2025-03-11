@@ -58,9 +58,9 @@ int main(int, char**)
   }
 
   { // operator/(const month& m, last_spec) and switched
-    ASSERT_NOEXCEPT(last / February);
+    static_assert(noexcept(last / February));
     ASSERT_SAME_TYPE(month_day_last, decltype(last / February));
-    ASSERT_NOEXCEPT(February / last);
+    static_assert(noexcept(February / last));
     ASSERT_SAME_TYPE(month_day_last, decltype(February / last));
 
     static_assert((last / February).month() == February, "");
@@ -78,9 +78,9 @@ int main(int, char**)
   }
 
   { // operator/(int, last_spec) and switched
-    ASSERT_NOEXCEPT(last / 2);
+    static_assert(noexcept(last / 2));
     ASSERT_SAME_TYPE(month_day_last, decltype(last / 2));
-    ASSERT_NOEXCEPT(2 / last);
+    static_assert(noexcept(2 / last));
     ASSERT_SAME_TYPE(month_day_last, decltype(2 / last));
 
     static_assert((last / 2).month() == February, "");

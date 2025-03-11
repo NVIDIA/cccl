@@ -29,15 +29,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/version>
-
-#if defined(__cccl_lib_mdspan)
-
-#  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__type_traits/add_const.h>
-#  include <cuda/std/__type_traits/remove_const.h>
-#  include <cuda/std/__utility/declval.h>
-#  include <cuda/std/mdspan>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__type_traits/add_const.h>
+#include <cuda/std/__type_traits/remove_const.h>
+#include <cuda/std/__utility/declval.h>
+#include <cuda/std/mdspan>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -131,5 +127,4 @@ scaled(_ScalingFactor __scaling_factor, mdspan<_ElementType, _Extents, _Layout, 
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // defined(__cccl_lib_mdspan)
 #endif // _LIBCUDACXX___LINALG_SCALED_HPP

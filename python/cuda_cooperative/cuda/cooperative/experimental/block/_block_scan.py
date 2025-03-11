@@ -2,11 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import Callable, Literal, Type
+from typing import TYPE_CHECKING, Callable, Literal, Union
 
 import numba
 
-from cuda.cooperative.experimental._common import make_binary_tempfile
+from cuda.cooperative.experimental._common import (
+    make_binary_tempfile,
+    normalize_dtype_param,
+)
 from cuda.cooperative.experimental._types import (
     Algorithm,
     Dependency,
@@ -18,6 +21,9 @@ from cuda.cooperative.experimental._types import (
     TemplateParameter,
 )
 
+if TYPE_CHECKING:
+    import numpy as np
+
 CUB_BLOCK_SCAN_ALGOS = {
     "raking": "::cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING",
     "raking_memoize": "::cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING_MEMOIZE",
@@ -26,10 +32,10 @@ CUB_BLOCK_SCAN_ALGOS = {
 
 
 def _scan(
-    dtype: Type[numba.types.Number],
-    threads_in_block: int,
+    dtype: Union[str, type, "np.dtype", "numba.types.Type"],
+    threads_per_block: int,
     items_per_thread: int = 1,
-    mode: Literal["exclusive"] = "exclusive",
+    mode: Literal["exclusive", "inclusive"] = "exclusive",
     scan_op: Literal["+"] = "+",
     block_prefix_callback_op: Callable = None,
     algorithm: Literal["raking", "raking_memoize", "warp_scans"] = "raking",
@@ -40,12 +46,19 @@ def _scan(
     if items_per_thread < 1:
         raise ValueError("items_per_thread must be greater than or equal to 1")
 
-    if mode != "exclusive":
-        raise ValueError(f"Unsupported mode: {mode}")
+    # Normalize the dtype parameter.
+    dtype = normalize_dtype_param(dtype)
+
+    if mode == "exclusive":
+        cpp_func_prefix = "Exclusive"
+    else:
+        if mode != "inclusive":
+            raise ValueError(f"Unsupported mode: {mode}")
+        cpp_func_prefix = "Inclusive"
 
     specialization_kwds = {
         "T": dtype,
-        "BLOCK_DIM_X": threads_in_block,
+        "BLOCK_DIM_X": threads_per_block,
         "ALGORITHM": CUB_BLOCK_SCAN_ALGOS[algorithm],
     }
 
@@ -152,7 +165,7 @@ def _scan(
 
     template = Algorithm(
         "BlockScan",
-        "ExclusiveSum",
+        f"{cpp_func_prefix}Sum",
         "block_scan",
         ["cub/block/block_scan.cuh"],
         template_parameters,
@@ -175,8 +188,8 @@ def _scan(
 
 
 def exclusive_sum(
-    dtype: Type[numba.types.Number],
-    threads_in_block: int,
+    dtype: Union[str, type, "np.dtype", "numba.types.Type"],
+    threads_per_block: int,
     items_per_thread: int = 1,
     prefix_op: Callable = None,
     algorithm: Literal["raking", "raking_memoize", "warp_scans"] = "raking",
@@ -186,9 +199,30 @@ def exclusive_sum(
     """
     return _scan(
         dtype=dtype,
-        threads_in_block=threads_in_block,
+        threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,
         mode="exclusive",
+        scan_op="+",
+        block_prefix_callback_op=prefix_op,
+        algorithm=algorithm,
+    )
+
+
+def inclusive_sum(
+    dtype: Union[str, type, "np.dtype", "numba.types.Type"],
+    threads_per_block: int,
+    items_per_thread: int = 1,
+    prefix_op: Callable = None,
+    algorithm: Literal["raking", "raking_memoize", "warp_scans"] = "raking",
+) -> Callable:
+    """
+    Computes an inclusive block-wide prefix sum.
+    """
+    return _scan(
+        dtype=dtype,
+        threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        mode="inclusive",
         scan_op="+",
         block_prefix_callback_op=prefix_op,
         algorithm=algorithm,

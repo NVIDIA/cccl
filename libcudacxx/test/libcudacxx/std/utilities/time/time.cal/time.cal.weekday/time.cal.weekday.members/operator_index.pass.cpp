@@ -27,10 +27,10 @@ int main(int, char**)
 
   constexpr weekday Sunday = cuda::std::chrono::Sunday;
 
-  ASSERT_NOEXCEPT(cuda::std::declval<weekday>()[1U]);
+  static_assert(noexcept(cuda::std::declval<weekday>()[1U]));
   ASSERT_SAME_TYPE(weekday_indexed, decltype(cuda::std::declval<weekday>()[1U]));
 
-  ASSERT_NOEXCEPT(cuda::std::declval<weekday>()[cuda::std::chrono::last]);
+  static_assert(noexcept(cuda::std::declval<weekday>()[cuda::std::chrono::last]));
   ASSERT_SAME_TYPE(weekday_last, decltype(cuda::std::declval<weekday>()[cuda::std::chrono::last]));
 
   static_assert(Sunday[2].weekday() == Sunday, "");

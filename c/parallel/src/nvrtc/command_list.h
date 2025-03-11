@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdlib>
 #include <iostream>
 #include <memory>
@@ -41,6 +42,22 @@ struct nvrtc_get_name
 {
   std::string_view name;
   std::string& lowered_name;
+
+  nvrtc_get_name() = delete;
+  nvrtc_get_name(std::string_view name, std::string& lowered_name)
+      : name(name)
+      , lowered_name(lowered_name)
+  {}
+  ~nvrtc_get_name() noexcept {};
+
+  nvrtc_get_name(const nvrtc_get_name&) = delete;
+  nvrtc_get_name(nvrtc_get_name&& other) noexcept
+      : name(other.name)
+      , lowered_name(other.lowered_name)
+  {}
+
+  nvrtc_get_name& operator=(const nvrtc_get_name&) = delete;
+  nvrtc_get_name& operator=(nvrtc_get_name&&)      = delete;
 };
 struct nvrtc_compile
 {
@@ -52,7 +69,7 @@ struct nvrtc_program_cleanup
 struct nvrtc_ltoir
 {
   const char* ltoir;
-  int ltsz;
+  size_t ltsz;
 };
 using nvrtc_ltoir_list = std::vector<nvrtc_ltoir>;
 struct nvrtc_jitlink_cleanup
@@ -131,8 +148,8 @@ struct nvrtc_command_list_visitor
   }
   void execute(nvrtc_ltoir lto)
   {
-    check(nvJitLinkAddData(
-      jitlink.handle, NVJITLINK_INPUT_LTOIR, (const void*) lto.ltoir, (size_t) lto.ltsz, program_name.data()));
+    check(
+      nvJitLinkAddData(jitlink.handle, NVJITLINK_INPUT_LTOIR, (const void*) lto.ltoir, lto.ltsz, program_name.data()));
   }
   void execute(const nvrtc_ltoir_list& lto_list)
   {

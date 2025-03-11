@@ -39,9 +39,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
     typedef cuda::std::array<T, 0> C;
     C c = {};
     ASSERT_SAME_TYPE(decltype(c.back()), C::reference);
-    LIBCPP_ASSERT_NOEXCEPT(c.back());
+    static_assert(noexcept(c.back()));
     ASSERT_SAME_TYPE(decltype(c.front()), C::reference);
-    LIBCPP_ASSERT_NOEXCEPT(c.front());
+    static_assert(noexcept(c.front()));
     if (c.size() > (0))
     { // always false
       TEST_IGNORE_NODISCARD c.front();
@@ -53,9 +53,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
     typedef cuda::std::array<const T, 0> C;
     C c = {};
     ASSERT_SAME_TYPE(decltype(c.back()), C::reference);
-    LIBCPP_ASSERT_NOEXCEPT(c.back());
+    static_assert(noexcept(c.back()));
     ASSERT_SAME_TYPE(decltype(c.front()), C::reference);
-    LIBCPP_ASSERT_NOEXCEPT(c.front());
+    static_assert(noexcept(c.front()));
     if (c.size() > (0))
     {
       TEST_IGNORE_NODISCARD c.front();

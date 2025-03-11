@@ -20,21 +20,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__internal/nvfp_types.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstddef>
-
-#ifdef _LIBCUDACXX_HAS_NVFP16
-#  include <cuda_fp16.h>
-#endif // _LIBCUDACXX_HAS_NVFP16
-
-#ifdef _LIBCUDACXX_HAS_NVBF16
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
-#  include <cuda_bf16.h>
-_CCCL_DIAG_POP
-#endif // _LIBCUDACXX_HAS_NVBF16
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -42,12 +32,12 @@ template <class _Tp>
 struct __numeric_type
 {
   _LIBCUDACXX_HIDE_FROM_ABI static void __test(...);
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _LIBCUDACXX_HAS_NVFP16()
   _LIBCUDACXX_HIDE_FROM_ABI static float __test(__half);
-#endif // _LIBCUDACXX_HAS_NVBF16
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
+#if _LIBCUDACXX_HAS_NVBF16()
   _LIBCUDACXX_HIDE_FROM_ABI static float __test(__nv_bfloat16);
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _LIBCUDACXX_HAS_NVFP16()
   _LIBCUDACXX_HIDE_FROM_ABI static float __test(float);
   _LIBCUDACXX_HIDE_FROM_ABI static double __test(char);
   _LIBCUDACXX_HIDE_FROM_ABI static double __test(int);
@@ -75,7 +65,7 @@ struct __is_mixed_extended_floating_point
   static constexpr bool value = false;
 };
 
-#if defined(_LIBCUDACXX_HAS_NVFP16) && defined(_LIBCUDACXX_HAS_NVBF16)
+#if _LIBCUDACXX_HAS_NVFP16() && _LIBCUDACXX_HAS_NVBF16()
 template <class _A1>
 struct __is_mixed_extended_floating_point<_A1, __half, __nv_bfloat16>
 {
@@ -111,7 +101,7 @@ struct __is_mixed_extended_floating_point<__nv_bfloat16, __half, _A1>
 {
   static constexpr bool value = true;
 };
-#endif // _LIBCUDACXX_HAS_NVFP16 && _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16() && _LIBCUDACXX_HAS_NVBF16()
 
 template <class _A1,
           class _A2 = void,

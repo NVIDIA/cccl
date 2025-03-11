@@ -38,15 +38,15 @@ def gpu_struct(this: type) -> Type[GpuStruct]:
 
     Example:
         The code snippet below shows how to use `gpu_struct` to define
-        a `Pixel` type (composed of `r`, `g` and `b` values),  and perform
-        a reduction on an array of `Pixel` objects to identify the one
-        with the largest `g` component:
+        a `MinMax` type (composed of `min_val`, `max_val` values), and perform
+        a reduction on an input array of floating point values to compute its
+        the smallest and the largest absolute values:
 
         .. literalinclude:: ../../python/cuda_parallel/tests/test_reduce_api.py
             :language: python
             :dedent:
-            :start-after: example-begin reduce-struct
-            :end-before: example-end reduce-struct
+            :start-after: example-begin reduce-minmax
+            :end-before: example-end reduce-minmax
     """
     # Implementation-wise, @gpu_struct creates and registers a
     # corresponding numba type to the given type, so that it can be

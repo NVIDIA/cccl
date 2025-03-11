@@ -171,7 +171,7 @@ template <typename ExecutionPolicy, typename RandomIterator, typename URBG>
 _CCCL_HOST_DEVICE void
 shuffle(thrust::execution_policy<ExecutionPolicy>& exec, RandomIterator first, RandomIterator last, URBG&& g)
 {
-  using InputType = typename thrust::iterator_value_t<RandomIterator>;
+  using InputType = typename thrust::detail::it_value_t<RandomIterator>;
 
   // copy input to temp buffer
   thrust::detail::temporary_array<InputType, ExecutionPolicy> temp(exec, first, last);

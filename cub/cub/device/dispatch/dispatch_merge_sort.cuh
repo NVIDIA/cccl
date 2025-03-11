@@ -64,8 +64,8 @@ template <typename MaxPolicyT,
           typename CompareOpT>
 struct DeviceMergeSortKernelSource
 {
-  using KeyT   = cub::detail::value_t<KeyIteratorT>;
-  using ValueT = cub::detail::value_t<ValueIteratorT>;
+  using KeyT   = cub::detail::it_value_t<KeyIteratorT>;
+  using ValueT = cub::detail::it_value_t<ValueIteratorT>;
 
   CUB_DEFINE_KERNEL_GETTER(
     MergeSortBlockSortKernel,
@@ -96,6 +96,35 @@ struct DeviceMergeSortKernelSource
                                ValueT>);
 };
 
+template <typename... Ts>
+struct VSMemHelper
+{
+  template <typename ActivePolicyT>
+  CUB_RUNTIME_FUNCTION static constexpr int BlockThreads(ActivePolicyT /*policy*/)
+  {
+    return merge_sort_vsmem_helper_t<ActivePolicyT, Ts...>::policy_t::BLOCK_THREADS;
+  }
+
+  template <typename ActivePolicyT>
+  CUB_RUNTIME_FUNCTION static constexpr int ItemsPerTile(ActivePolicyT /*policy*/)
+  {
+    return merge_sort_vsmem_helper_t<ActivePolicyT, Ts...>::policy_t::ITEMS_PER_TILE;
+  }
+
+  template <typename ActivePolicyT>
+  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t BlockSortVSMemPerBlock(ActivePolicyT /*policy*/)
+  {
+    using merge_sort_helper_t = detail::merge_sort::merge_sort_vsmem_helper_t<ActivePolicyT, Ts...>;
+    return detail::vsmem_helper_impl<typename merge_sort_helper_t::block_sort_agent_t>::vsmem_per_block;
+  }
+
+  template <typename ActivePolicyT>
+  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t MergeVSMemPerBlock(ActivePolicyT /*policy*/)
+  {
+    using merge_sort_helper_t = detail::merge_sort::merge_sort_vsmem_helper_t<ActivePolicyT, Ts...>;
+    return detail::vsmem_helper_impl<typename merge_sort_helper_t::merge_agent_t>::vsmem_per_block;
+  }
+};
 } // namespace detail::merge_sort
 
 /*******************************************************************************
@@ -119,18 +148,17 @@ template <
     OffsetT,
     CompareOpT>,
   typename KernelLauncherFactory = detail::TripleChevronFactory,
-  typename VSMemHelperPolicyT    = detail::merge_sort::merge_sort_vsmem_helper_t<
-       typename PolicyHub::MaxPolicy::MergeSortPolicy,
-       KeyInputIteratorT,
-       ValueInputIteratorT,
-       KeyIteratorT,
-       ValueIteratorT,
-       OffsetT,
-       CompareOpT,
-       cub::detail::value_t<KeyIteratorT>,
-       cub::detail::value_t<ValueIteratorT>>,
-  typename KeyT   = cub::detail::value_t<KeyIteratorT>,
-  typename ValueT = cub::detail::value_t<ValueIteratorT>>
+  typename VSMemHelperT          = detail::merge_sort::VSMemHelper<
+             KeyInputIteratorT,
+             ValueInputIteratorT,
+             KeyIteratorT,
+             ValueIteratorT,
+             OffsetT,
+             CompareOpT,
+             cub::detail::it_value_t<KeyIteratorT>,
+             cub::detail::it_value_t<ValueIteratorT>>,
+  typename KeyT   = cub::detail::it_value_t<KeyIteratorT>,
+  typename ValueT = cub::detail::it_value_t<ValueIteratorT>>
 struct DispatchMergeSort
 {
   /// Whether or not there are values to be trucked along with keys
@@ -173,8 +201,6 @@ struct DispatchMergeSort
 
   KernelLauncherFactory launcher_factory;
 
-  VSMemHelperPolicyT vsmem_helper;
-
   // Constructor
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchMergeSort(
     void* d_temp_storage,
@@ -188,8 +214,7 @@ struct DispatchMergeSort
     cudaStream_t stream,
     int ptx_version,
     KernelSource kernel_source             = {},
-    KernelLauncherFactory launcher_factory = {},
-    VSMemHelperPolicyT vsmem_helper        = {})
+    KernelLauncherFactory launcher_factory = {})
       : d_temp_storage(d_temp_storage)
       , temp_storage_bytes(temp_storage_bytes)
       , d_input_keys(d_input_keys)
@@ -202,7 +227,6 @@ struct DispatchMergeSort
       , ptx_version(ptx_version)
       , kernel_source(kernel_source)
       , launcher_factory(launcher_factory)
-      , vsmem_helper(vsmem_helper)
   {}
 
   // Invocation
@@ -223,7 +247,7 @@ struct DispatchMergeSort
     do
     {
       auto wrapped_policy  = detail::merge_sort::MakeMergeSortPolicyWrapper(policy);
-      const auto tile_size = vsmem_helper.ItemsPerTile(wrapped_policy.MergeSort());
+      const auto tile_size = VSMemHelperT::ItemsPerTile(wrapped_policy.MergeSort());
       const auto num_tiles = ::cuda::ceil_div(num_items, tile_size);
 
       const auto merge_partitions_size         = static_cast<size_t>(1 + num_tiles) * sizeof(OffsetT);
@@ -234,9 +258,11 @@ struct DispatchMergeSort
        * Merge sort supports large types, which can lead to excessive shared memory size requirements. In these cases,
        * merge sort allocates virtual shared memory that resides in global memory.
        */
-      const std::size_t block_sort_smem_size       = num_tiles * vsmem_helper.BlockSortVSMemPerBlock();
-      const std::size_t merge_smem_size            = num_tiles * vsmem_helper.MergeVSMemPerBlock();
-      const std::size_t virtual_shared_memory_size = (::cuda::std::max)(block_sort_smem_size, merge_smem_size);
+      const ::cuda::std::size_t block_sort_smem_size =
+        num_tiles * VSMemHelperT::BlockSortVSMemPerBlock(wrapped_policy.MergeSort());
+      const ::cuda::std::size_t merge_smem_size =
+        num_tiles * VSMemHelperT::MergeVSMemPerBlock(wrapped_policy.MergeSort());
+      const ::cuda::std::size_t virtual_shared_memory_size = (::cuda::std::max)(block_sort_smem_size, merge_smem_size);
 
       void* allocations[4]       = {nullptr, nullptr, nullptr, nullptr};
       size_t allocation_sizes[4] = {
@@ -275,7 +301,7 @@ struct DispatchMergeSort
 
       // Invoke DeviceMergeSortBlockSortKernel
       launcher_factory(
-        static_cast<int>(num_tiles), vsmem_helper.BlockThreads(wrapped_policy.MergeSort()), 0, stream, true)
+        static_cast<int>(num_tiles), VSMemHelperT::BlockThreads(wrapped_policy.MergeSort()), 0, stream, true)
         .doit(kernel_source.MergeSortBlockSortKernel(),
               ping,
               d_input_keys,
@@ -350,7 +376,7 @@ struct DispatchMergeSort
 
         // Merge
         launcher_factory(
-          static_cast<int>(num_tiles), vsmem_helper.BlockThreads(wrapped_policy.MergeSort()), 0, stream, true)
+          static_cast<int>(num_tiles), VSMemHelperT::BlockThreads(wrapped_policy.MergeSort()), 0, stream, true)
           .doit(kernel_source.MergeSortMergeKernel(),
                 ping,
                 d_output_keys,
@@ -394,8 +420,7 @@ struct DispatchMergeSort
     cudaStream_t stream,
     KernelSource kernel_source             = {},
     KernelLauncherFactory launcher_factory = {},
-    MaxPolicyT max_policy                  = {},
-    VSMemHelperPolicyT vsmem_helper        = {})
+    MaxPolicyT max_policy                  = {})
   {
     cudaError error = cudaSuccess;
     do
@@ -421,8 +446,7 @@ struct DispatchMergeSort
         stream,
         ptx_version,
         kernel_source,
-        launcher_factory,
-        vsmem_helper);
+        launcher_factory);
 
       // Dispatch to chained policy
       error = CubDebug(max_policy.Invoke(ptx_version, dispatch));

@@ -90,7 +90,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
   cuda::std::in_range<T>(int()); // expected-error 10-11 {{no matching function for call to 'in_range'}}
   cuda::std::in_range<int>(T()); // expected-error 10-11 {{no matching function for call to 'in_range'}}
 }
-#ifndef TEST_HAS_NO_CHAR8_T
+#if _LIBCUDACXX_HAS_CHAR8_T()
 template <class T>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test_char8t()
 {
@@ -115,7 +115,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_char8t()
   cuda::std::in_range<T>(int()); // expected-error 1 {{no matching function for call to 'in_range'}}
   cuda::std::in_range<int>(T()); // expected-error 1 {{no matching function for call to 'in_range'}}
 }
-#endif // TEST_HAS_NO_CHAR8_T
+#endif // _LIBCUDACXX_HAS_CHAR8_T()
 
 template <class T>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test_uchars()
@@ -158,9 +158,9 @@ int main(int, char**)
   test<cuda::std::nullptr_t>();
   test<EmptyT>();
 
-#ifndef TEST_HAS_NO_CHAR8_T
+#if _LIBCUDACXX_HAS_CHAR8_T()
   test_char8t<char8_t>();
-#endif // TEST_HAS_NO_CHAR8_T
+#endif // _LIBCUDACXX_HAS_CHAR8_T()
 
   test_uchars<char16_t>();
   test_uchars<char32_t>();

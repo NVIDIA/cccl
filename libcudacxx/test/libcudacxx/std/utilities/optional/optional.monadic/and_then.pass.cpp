@@ -216,6 +216,50 @@ struct NonConst
   }
 };
 
+struct LValRef
+{
+  __host__ __device__ constexpr cuda::std::optional<int&> operator()(int& val)
+  {
+    return {val};
+  }
+  cuda::std::optional<int&> operator()(const int&)  = delete;
+  cuda::std::optional<int&> operator()(int&&)       = delete;
+  cuda::std::optional<int&> operator()(const int&&) = delete;
+};
+
+struct NOLValRef
+{
+  __host__ __device__ constexpr cuda::std::optional<int&> operator()(int&)
+  {
+    return cuda::std::nullopt;
+  }
+  cuda::std::optional<int&> operator()(const int&)  = delete;
+  cuda::std::optional<int&> operator()(int&&)       = delete;
+  cuda::std::optional<int&> operator()(const int&&) = delete;
+};
+
+struct RefQualRef
+{
+  __host__ __device__ constexpr cuda::std::optional<int&> operator()(int& val) &
+  {
+    return {val};
+  }
+  cuda::std::optional<int&> operator()(int&) const&  = delete;
+  cuda::std::optional<int&> operator()(int&) &&      = delete;
+  cuda::std::optional<int&> operator()(int&) const&& = delete;
+};
+
+struct NORefQualRef
+{
+  __host__ __device__ constexpr cuda::std::optional<int&> operator()(int&) &
+  {
+    return cuda::std::nullopt;
+  }
+  cuda::std::optional<int&> operator()(int&) const&  = delete;
+  cuda::std::optional<int&> operator()(int&) &&      = delete;
+  cuda::std::optional<int&> operator()(int&) const&& = delete;
+};
+
 __host__ __device__ constexpr void test_val_types()
 {
   // Test & overload
@@ -297,6 +341,28 @@ __host__ __device__ constexpr void test_val_types()
       const NORVCRefQual nl{};
       assert(i.and_then(cuda::std::move(nl)) == cuda::std::nullopt);
       ASSERT_SAME_TYPE(decltype(i.and_then(cuda::std::move(l))), cuda::std::optional<int>);
+    }
+  }
+
+  // Test optional<T&> overload
+  {
+    int value = 42;
+    // Without qualifier on F's operator()
+    {
+      cuda::std::optional<int&> i{value};
+      assert(i.and_then(LValRef{}) == 42);
+      assert(i.and_then(NOLValRef{}) == cuda::std::nullopt);
+      ASSERT_SAME_TYPE(decltype(i.and_then(LValRef{})), cuda::std::optional<int&>);
+    }
+
+    // With & qualifier on F's operator()
+    {
+      cuda::std::optional<int&> i{value};
+      RefQualRef l{};
+      assert(i.and_then(l) == 42);
+      NORefQualRef nl{};
+      assert(i.and_then(nl) == cuda::std::nullopt);
+      ASSERT_SAME_TYPE(decltype(i.and_then(l)), cuda::std::optional<int&>);
     }
   }
 }

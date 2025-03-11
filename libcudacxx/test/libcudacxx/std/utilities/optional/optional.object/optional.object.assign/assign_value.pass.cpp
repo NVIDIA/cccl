@@ -14,13 +14,9 @@
 #include <cuda/std/cassert>
 #include <cuda/std/optional>
 #include <cuda/std/type_traits>
-#ifdef _LIBCUDACXX_HAS_MEMORY
-#  include <cuda/std/memory>
-#else
-#  include "MoveOnly.h"
-#endif
 
 #include "archetypes.h"
+#include "MoveOnly.h"
 #include "test_macros.h"
 
 using cuda::std::optional;
@@ -66,6 +62,15 @@ struct FromOptionalType
   }
 };
 
+#ifdef CCCL_ENABLE_OPTIONAL_REF
+struct Base
+{
+  int val_;
+};
+struct Derived : Base
+{};
+#endif // CCCL_ENABLE_OPTIONAL_REF
+
 __host__ __device__ void test_sfinae()
 {
   using I = TestTypes::TestType;
@@ -73,22 +78,50 @@ __host__ __device__ void test_sfinae()
   assert_assignable<int>();
   assert_assignable<int, int&>();
   assert_assignable<int, int const&>();
+
+#ifdef CCCL_ENABLE_OPTIONAL_REF
+  assert_assignable<int&, int&>();
+  assert_assignable<const int&, int&>();
+  assert_assignable<const int&, const int&>();
+#endif // CCCL_ENABLE_OPTIONAL_REF
+
   // Implicit test type
   assert_assignable<I, I const&>();
   assert_assignable<I, I&&>();
   assert_assignable<I, int>();
   assert_assignable<I, void*, false>();
+
+#ifdef CCCL_ENABLE_OPTIONAL_REF
+  assert_assignable<I&, I&>();
+  assert_assignable<const I&, I&>();
+  assert_assignable<const I&, const I&>();
+#endif // CCCL_ENABLE_OPTIONAL_REF
+
   // Explicit test type
   assert_assignable<E, E const&>();
   assert_assignable<E, E&&>();
   assert_assignable<E, int>();
   assert_assignable<E, void*, false>();
+
+#ifdef CCCL_ENABLE_OPTIONAL_REF
+  assert_assignable<E&, E&>();
+  assert_assignable<const E&, E&>();
+  assert_assignable<const E&, const E&>();
+#endif // CCCL_ENABLE_OPTIONAL_REF
+
   // Mismatch type
   assert_assignable<MismatchType, int>();
   assert_assignable<MismatchType, int*, false>();
   assert_assignable<MismatchType, char*, false>();
   // Type constructible from optional
   assert_assignable<FromOptionalType, cuda::std::optional<FromOptionalType>&, false>();
+
+  // Convertible references
+#ifdef CCCL_ENABLE_OPTIONAL_REF
+  assert_assignable<Base&, Derived&>();
+  assert_assignable<const Base&, Derived&>();
+  assert_assignable<const Base&, const Derived&>();
+#endif // CCCL_ENABLE_OPTIONAL_REF
 }
 
 __host__ __device__ void test_with_test_type()
@@ -96,7 +129,7 @@ __host__ __device__ void test_with_test_type()
   using T = TestTypes::TestType;
   T::reset();
   { // to empty
-    optional<T> opt;
+    optional<T> opt{};
     opt = 3;
     assert(T::alive() == 1);
     assert(T::constructed() == 1);
@@ -119,7 +152,7 @@ __host__ __device__ void test_with_test_type()
     assert(*opt == T(3));
   }
   { // test default argument
-    optional<T> opt;
+    optional<T> opt{};
     T::reset_constructors();
     opt = {1, 2};
     assert(T::alive() == 1);
@@ -145,7 +178,7 @@ __host__ __device__ void test_with_test_type()
     assert(*opt == T(1, 2));
   }
   { // test default argument
-    optional<T> opt;
+    optional<T> opt{};
     T::reset_constructors();
     opt = {1};
     assert(T::alive() == 1);
@@ -173,7 +206,7 @@ template <class T, class Value = int>
 __host__ __device__ void test_with_type()
 {
   { // to empty
-    optional<T> opt;
+    optional<T> opt{};
     opt = Value(3);
     assert(static_cast<bool>(opt) == true);
     assert(*opt == T(3));
@@ -192,7 +225,7 @@ __host__ __device__ void test_with_type()
     assert(*opt == T(3));
   }
   { // test default argument
-    optional<T> opt;
+    optional<T> opt{};
     opt = {Value(1)};
     assert(static_cast<bool>(opt) == true);
     assert(*opt == T(1));
@@ -209,7 +242,7 @@ __host__ __device__ void test_with_type_multi()
 {
   test_with_type<T>();
   { // test default argument
-    optional<T> opt;
+    optional<T> opt{};
     opt = {1, 2};
     assert(static_cast<bool>(opt) == true);
     assert(*opt == T(1, 2));
@@ -246,7 +279,7 @@ void test_exceptions()
 {
   using T = ThrowAssign;
   {
-    optional<T> opt;
+    optional<T> opt{};
     try
     {
       opt = 42;
@@ -307,22 +340,8 @@ int main(int, char**)
   // Test types with multi argument constructors
   test_with_type_multi<ConstexprTestTypes::TestType>();
   test_with_type_multi<TrivialTestTypes::TestType>();
-#ifdef _LIBCUDACXX_HAS_MEMORY
   {
-    optional<cuda::std::unique_ptr<int>> opt;
-    opt = cuda::std::unique_ptr<int>(new int(3));
-    assert(static_cast<bool>(opt) == true);
-    assert(**opt == 3);
-  }
-  {
-    optional<cuda::std::unique_ptr<int>> opt(cuda::std::unique_ptr<int>(new int(2)));
-    opt = cuda::std::unique_ptr<int>(new int(3));
-    assert(static_cast<bool>(opt) == true);
-    assert(**opt == 3);
-  }
-#else
-  {
-    optional<MoveOnly> opt;
+    optional<MoveOnly> opt{};
     opt = MoveOnly(3);
     assert(static_cast<bool>(opt) == true);
     assert(*opt == 3);
@@ -333,16 +352,13 @@ int main(int, char**)
     assert(static_cast<bool>(opt) == true);
     assert(*opt == 3);
   }
-#endif
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
 #endif // !TEST_HAS_NO_EXCEPTIONS
 
 #if !defined(TEST_COMPILER_GCC) || __GNUC__ > 6
-#  if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
   static_assert(pr38638(3) == 5, "");
-#  endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 #endif // !defined(TEST_COMPILER_GCC) || __GNUC__ > 6
 
   return 0;

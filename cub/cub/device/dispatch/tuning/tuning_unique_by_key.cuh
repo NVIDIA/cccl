@@ -47,10 +47,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-
-namespace unique_by_key
+namespace detail::unique_by_key
 {
 
 enum class primitive_key
@@ -770,6 +767,35 @@ struct sm100_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_si
 // };
 #endif
 
+template <typename PolicyT, typename = void>
+struct UniqueByKeyPolicyWrapper : PolicyT
+{
+  CUB_RUNTIME_FUNCTION UniqueByKeyPolicyWrapper(PolicyT base)
+      : PolicyT(base)
+  {}
+};
+
+template <typename StaticPolicyT>
+struct UniqueByKeyPolicyWrapper<StaticPolicyT,
+                                ::cuda::std::void_t<decltype(StaticPolicyT::UniqueByKeyPolicyT::LOAD_MODIFIER)>>
+    : StaticPolicyT
+{
+  CUB_RUNTIME_FUNCTION UniqueByKeyPolicyWrapper(StaticPolicyT base)
+      : StaticPolicyT(base)
+  {}
+
+  CUB_RUNTIME_FUNCTION static constexpr PolicyWrapper<typename StaticPolicyT::UniqueByKeyPolicyT> UniqueByKey()
+  {
+    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::UniqueByKeyPolicyT());
+  }
+};
+
+template <typename PolicyT>
+CUB_RUNTIME_FUNCTION UniqueByKeyPolicyWrapper<PolicyT> MakeUniqueByKeyPolicyWrapper(PolicyT policy)
+{
+  return UniqueByKeyPolicyWrapper<PolicyT>{policy};
+}
+
 template <class KeyT, class ValueT>
 struct policy_hub
 {
@@ -843,12 +869,6 @@ struct policy_hub
   using MaxPolicy = Policy1000;
 };
 
-} // namespace unique_by_key
-} // namespace detail
-
-template <typename KeyInputIteratorT, typename ValueInputIteratorT = unsigned long long int*>
-using DeviceUniqueByKeyPolicy CCCL_DEPRECATED_BECAUSE("This class is considered an implementation detail and it will "
-                                                      "be removed.") =
-  detail::unique_by_key::policy_hub<detail::value_t<KeyInputIteratorT>, detail::value_t<ValueInputIteratorT>>;
+} // namespace detail::unique_by_key
 
 CUB_NAMESPACE_END

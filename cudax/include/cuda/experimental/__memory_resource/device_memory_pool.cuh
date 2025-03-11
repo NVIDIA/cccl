@@ -36,8 +36,6 @@
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
 #include <cuda/experimental/__stream/stream.cuh>
 
-#if _CCCL_STD_VER >= 2014
-
 //! @file
 //! The \c device_memory_pool class provides a wrapper around a `cudaMempool_t`.
 namespace cuda::experimental
@@ -356,14 +354,14 @@ public:
     return __pool_handle_ == __rhs.__pool_handle_;
   }
 
-#  if _CCCL_STD_VER <= 2017
+#if _CCCL_STD_VER <= 2017
   //! @brief Inequality comparison with another \c device_memory_pool.
   //! @returns true if the stored ``cudaMemPool_t`` are not equal.
   _CCCL_NODISCARD constexpr bool operator!=(device_memory_pool const& __rhs) const noexcept
   {
     return __pool_handle_ != __rhs.__pool_handle_;
   }
-#  endif // _CCCL_STD_VER <= 2017
+#endif // _CCCL_STD_VER <= 2017
 
   //! @brief Equality comparison with a \c cudaMemPool_t.
   //! @param __rhs A \c cudaMemPool_t.
@@ -373,7 +371,7 @@ public:
     return __lhs.__pool_handle_ == __rhs;
   }
 
-#  if _CCCL_STD_VER <= 2017
+#if _CCCL_STD_VER <= 2017
   //! @copydoc device_memory_pool::operator==(device_memory_pool const&, ::cudaMemPool_t)
   _CCCL_NODISCARD_FRIEND constexpr bool operator==(::cudaMemPool_t __lhs, device_memory_pool const& __rhs) noexcept
   {
@@ -391,7 +389,7 @@ public:
   {
     return __rhs.__pool_handle_ != __lhs;
   }
-#  endif // _CCCL_STD_VER <= 2017
+#endif // _CCCL_STD_VER <= 2017
 
   //! @brief Returns the underlying handle to the CUDA memory pool.
   _CCCL_NODISCARD constexpr cudaMemPool_t get() const noexcept
@@ -419,7 +417,5 @@ public:
 };
 
 } // namespace cuda::experimental
-
-#endif // _CCCL_STD_VER >= 2014
 
 #endif // _CUDAX__MEMORY_RESOURCE_DEVICE_MEMORY_POOL
