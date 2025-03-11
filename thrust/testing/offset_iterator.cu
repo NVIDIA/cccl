@@ -37,7 +37,7 @@ template <typename Vector>
 void TestOffsetConstructor()
 {
   thrust::offset_iterator<int*> iter0;
-  ASSERT_EQUAL(iter0.base(), nullptr);
+  ASSERT_EQUAL(iter0.base(), static_cast<int*>(nullptr));
   ASSERT_EQUAL(iter0.offset(), 0);
 
   Vector v{42, 43};
