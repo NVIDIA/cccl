@@ -24,14 +24,14 @@
 
 // All checks return true when disable_checking is enabled.
 #ifdef DISABLE_NEW_COUNT
-STATIC_TEST_GLOBAL_VAR const bool MemCounter_disable_checking = true;
+TEST_GLOBAL_VARIABLE const bool MemCounter_disable_checking = true;
 #else
-STATIC_TEST_GLOBAL_VAR const bool MemCounter_disable_checking = false;
+TEST_GLOBAL_VARIABLE const bool MemCounter_disable_checking = false;
 #endif
 
 // number of allocations to throw after. Default (unsigned)-1. If
 // throw_after has the default value it will never be decremented.
-STATIC_TEST_GLOBAL_VAR const unsigned MemCounter_never_throw_value = static_cast<unsigned>(-1);
+TEST_GLOBAL_VARIABLE const unsigned MemCounter_never_throw_value = static_cast<unsigned>(-1);
 
 class MemCounter
 {
@@ -350,14 +350,14 @@ public:
   }
 };
 
-STATIC_TEST_GLOBAL_VAR MemCounter counter{};
+TEST_GLOBAL_VARIABLE MemCounter counter{};
 
 __host__ __device__ inline constexpr MemCounter* getGlobalMemCounter()
 {
   return &counter;
 }
 
-STATIC_TEST_GLOBAL_VAR MemCounter& globalMemCounter = *getGlobalMemCounter();
+TEST_GLOBAL_VARIABLE MemCounter& globalMemCounter = *getGlobalMemCounter();
 
 #ifndef DISABLE_NEW_COUNT
 void* operator new(cuda::std::size_t s)

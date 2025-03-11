@@ -28,7 +28,7 @@
 TEST_DIAG_SUPPRESS_GCC("-Wmissing-braces")
 TEST_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 
-STATIC_TEST_GLOBAL_VAR int count = 0;
+TEST_GLOBAL_VARIABLE int count = 0;
 
 struct A_int_0
 {

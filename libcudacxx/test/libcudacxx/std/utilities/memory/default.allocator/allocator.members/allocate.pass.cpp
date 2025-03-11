@@ -31,14 +31,14 @@ static const bool UsingAlignedNew = false;
 #endif
 
 #ifdef __STDCPP_DEFAULT_NEW_ALIGNMENT__
-STATIC_TEST_GLOBAL_VAR const cuda::std::size_t MaxAligned = __STDCPP_DEFAULT_NEW_ALIGNMENT__;
+TEST_GLOBAL_VARIABLE const cuda::std::size_t MaxAligned = __STDCPP_DEFAULT_NEW_ALIGNMENT__;
 #else
-STATIC_TEST_GLOBAL_VAR const cuda::std::size_t MaxAligned = cuda::std::alignment_of<cuda::std::max_align_t>::value;
+TEST_GLOBAL_VARIABLE const cuda::std::size_t MaxAligned = cuda::std::alignment_of<cuda::std::max_align_t>::value;
 #endif
 
-STATIC_TEST_GLOBAL_VAR const cuda::std::size_t OverAligned = MaxAligned * 2;
+TEST_GLOBAL_VARIABLE const cuda::std::size_t OverAligned = MaxAligned * 2;
 
-STATIC_TEST_GLOBAL_VAR int AlignedType_constructed = 0;
+TEST_GLOBAL_VARIABLE int AlignedType_constructed = 0;
 
 template <cuda::std::size_t Align>
 struct alignas(Align) AlignedType

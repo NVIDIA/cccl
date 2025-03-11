@@ -19,7 +19,7 @@
 using RangeDataT  = decltype(cuda::std::ranges::data);
 using RangeCDataT = decltype(cuda::std::ranges::cdata);
 
-STATIC_TEST_GLOBAL_VAR int globalBuff[2] = {};
+TEST_GLOBAL_VARIABLE int globalBuff[2] = {};
 
 struct Incomplete;
 

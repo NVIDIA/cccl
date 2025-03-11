@@ -21,7 +21,7 @@
 using RangeRBeginT  = decltype(cuda::std::ranges::rbegin);
 using RangeCRBeginT = decltype(cuda::std::ranges::crbegin);
 
-STATIC_TEST_GLOBAL_VAR int globalBuff[8];
+TEST_GLOBAL_VARIABLE int globalBuff[8];
 
 static_assert(!cuda::std::is_invocable_v<RangeRBeginT, int (&&)[10]>);
 static_assert(cuda::std::is_invocable_v<RangeRBeginT, int (&)[10]>);

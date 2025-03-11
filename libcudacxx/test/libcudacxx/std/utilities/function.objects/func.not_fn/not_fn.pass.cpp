@@ -199,8 +199,8 @@ __host__ __device__ inline constexpr CallType operator|(CallType LHS, CallType R
 
 #if 0
 
-STATIC_TEST_GLOBAL_VAR CallType      ForwardingCallObject_last_call_type = CT_None;
-STATIC_TEST_GLOBAL_VAR TypeID const* ForwardingCallObject_last_call_args = nullptr;
+TEST_GLOBAL_VARIABLE CallType      ForwardingCallObject_last_call_type = CT_None;
+TEST_GLOBAL_VARIABLE TypeID const* ForwardingCallObject_last_call_args = nullptr;
 
 struct ForwardingCallObject {
 
@@ -261,7 +261,7 @@ struct ForwardingCallObject {
 //                        BOOL TEST TYPES
 ///////////////////////////////////////////////////////////////////////////////
 
-STATIC_TEST_GLOBAL_VAR int EvilBool_bang_called = 0;
+TEST_GLOBAL_VARIABLE int EvilBool_bang_called = 0;
 struct EvilBool
 {
   EvilBool(EvilBool const&) = default;

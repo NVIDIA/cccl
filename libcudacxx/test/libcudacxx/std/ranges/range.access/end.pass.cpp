@@ -20,7 +20,7 @@
 using RangeEndT  = decltype(cuda::std::ranges::end);
 using RangeCEndT = decltype(cuda::std::ranges::cend);
 
-STATIC_TEST_GLOBAL_VAR int globalBuff[8] = {};
+TEST_GLOBAL_VARIABLE int globalBuff[8] = {};
 
 #if !TEST_COMPILER(MSVC, <, 19, 23)
 // old MSVC has a bug where it doesn't properly handle rvalue arrays

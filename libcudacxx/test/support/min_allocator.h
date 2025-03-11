@@ -91,10 +91,10 @@ public:
   }
 };
 
-STATIC_TEST_GLOBAL_VAR size_t malloc_allocator_base_outstanding_bytes         = 0;
-STATIC_TEST_GLOBAL_VAR size_t malloc_allocator_base_alloc_count               = 0;
-STATIC_TEST_GLOBAL_VAR size_t malloc_allocator_base_dealloc_count             = 0;
-STATIC_TEST_GLOBAL_VAR bool malloc_allocator_base_disable_default_constructor = false;
+TEST_GLOBAL_VARIABLE size_t malloc_allocator_base_outstanding_bytes         = 0;
+TEST_GLOBAL_VARIABLE size_t malloc_allocator_base_alloc_count               = 0;
+TEST_GLOBAL_VARIABLE size_t malloc_allocator_base_dealloc_count             = 0;
+TEST_GLOBAL_VARIABLE bool malloc_allocator_base_disable_default_constructor = false;
 
 struct malloc_allocator_base
 {
@@ -155,7 +155,7 @@ public:
   }
 };
 
-STATIC_TEST_GLOBAL_VAR bool cpp03_allocator_construct_called = false;
+TEST_GLOBAL_VARIABLE bool cpp03_allocator_construct_called = false;
 template <class T>
 struct cpp03_allocator : bare_allocator<T>
 {
@@ -176,7 +176,7 @@ struct cpp03_allocator : bare_allocator<T>
   }
 };
 
-STATIC_TEST_GLOBAL_VAR bool cpp03_overload_allocator_construct_called = false;
+TEST_GLOBAL_VARIABLE bool cpp03_overload_allocator_construct_called = false;
 template <class T>
 struct cpp03_overload_allocator : bare_allocator<T>
 {

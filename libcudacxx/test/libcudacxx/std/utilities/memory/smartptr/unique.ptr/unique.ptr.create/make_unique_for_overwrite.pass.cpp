@@ -112,8 +112,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
 // The standard specifically says to use `new (p) T`, which means that we should pick up any
 // custom in-class operator new if there is one.
 
-STATIC_TEST_GLOBAL_VAR bool WithCustomNew_customNewCalled    = false;
-STATIC_TEST_GLOBAL_VAR bool WithCustomNew_customNewArrCalled = false;
+TEST_GLOBAL_VARIABLE bool WithCustomNew_customNewCalled    = false;
+TEST_GLOBAL_VARIABLE bool WithCustomNew_customNewArrCalled = false;
 
 struct WithCustomNew
 {

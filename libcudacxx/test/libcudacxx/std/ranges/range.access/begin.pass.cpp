@@ -20,7 +20,7 @@
 using RangeBeginT  = decltype(cuda::std::ranges::begin);
 using RangeCBeginT = decltype(cuda::std::ranges::cbegin);
 
-STATIC_TEST_GLOBAL_VAR int globalBuff[8] = {};
+TEST_GLOBAL_VARIABLE int globalBuff[8] = {};
 
 // This has been made valid as a defect report for C++17 onwards, however both clang and gcc below 11.0 does not
 // implement it

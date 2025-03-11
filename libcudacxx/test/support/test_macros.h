@@ -32,6 +32,9 @@
 #define TEST_CONSTEXPR_CXX20 _CCCL_CONSTEXPR_CXX20
 #define TEST_CONSTEXPR_CXX23 _CCCL_CONSTEXPR_CXX23
 
+// Use the CCCL global variable hack
+#define TEST_GLOBAL_VARIABLE static _CCCL_GLOBAL_VARIABLE
+
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
 #  define TEST_IS_CONSTANT_EVALUATED() cuda::std::is_constant_evaluated()
 #else
@@ -133,12 +136,6 @@ __host__ __device__ inline void DoNotOptimize(Tp& value)
 #  define _STATIC_MEMBER_IMPL(type) __shared__ type v;
 #else
 #  define _STATIC_MEMBER_IMPL(type) static type v;
-#endif
-
-#if defined(__CUDA_ARCH__)
-#  define STATIC_TEST_GLOBAL_VAR static __device__
-#else
-#  define STATIC_TEST_GLOBAL_VAR
 #endif
 
 #define STATIC_MEMBER_VAR(name, type)     \

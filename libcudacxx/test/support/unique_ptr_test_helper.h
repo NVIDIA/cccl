@@ -21,7 +21,7 @@ TEST_NV_DIAG_SUPPRESS(3060) // call to __builtin_is_constant_evaluated appearing
 TEST_DIAG_SUPPRESS_GCC("-Wtautological-compare")
 TEST_DIAG_SUPPRESS_CLANG("-Wtautological-compare")
 
-STATIC_TEST_GLOBAL_VAR int A_count = 0;
+TEST_GLOBAL_VARIABLE int A_count = 0;
 
 struct A
 {
@@ -39,7 +39,7 @@ struct A
   }
 };
 
-STATIC_TEST_GLOBAL_VAR int B_count = 0;
+TEST_GLOBAL_VARIABLE int B_count = 0;
 
 struct B : public A
 {
@@ -143,7 +143,7 @@ __host__ __device__ void doIncompleteTypeTest(int expect_alive, Args&&... ctor_a
 #define INCOMPLETE_TEST_EPILOGUE()                                            \
   _LIBCUDACXX_DEVICE int is_incomplete_test_anchor = is_incomplete_test();    \
                                                                               \
-  STATIC_TEST_GLOBAL_VAR int IncompleteType_count = 0;                        \
+  TEST_GLOBAL_VARIABLE int IncompleteType_count = 0;                          \
   struct IncompleteType                                                       \
   {                                                                           \
     __host__ __device__ IncompleteType()                                      \

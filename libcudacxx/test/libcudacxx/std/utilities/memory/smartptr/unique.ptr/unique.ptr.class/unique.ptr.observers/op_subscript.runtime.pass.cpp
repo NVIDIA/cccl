@@ -26,7 +26,7 @@ TEST_NV_DIAG_SUPPRESS(3060) // call to __builtin_is_constant_evaluated appearing
 TEST_DIAG_SUPPRESS_GCC("-Wtautological-compare")
 TEST_DIAG_SUPPRESS_CLANG("-Wtautological-compare")
 
-STATIC_TEST_GLOBAL_VAR int A_next_ = 0;
+TEST_GLOBAL_VARIABLE int A_next_ = 0;
 class A
 {
   int state_;

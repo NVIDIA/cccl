@@ -22,7 +22,7 @@
 using RangeREndT  = decltype(cuda::std::ranges::rend);
 using RangeCREndT = decltype(cuda::std::ranges::crend);
 
-STATIC_TEST_GLOBAL_VAR int globalBuff[8];
+TEST_GLOBAL_VARIABLE int globalBuff[8];
 
 static_assert(!cuda::std::is_invocable_v<RangeREndT, int (&&)[]>);
 static_assert(!cuda::std::is_invocable_v<RangeREndT, int (&)[]>);

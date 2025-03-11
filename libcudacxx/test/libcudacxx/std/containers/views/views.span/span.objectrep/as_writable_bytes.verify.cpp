@@ -20,7 +20,7 @@
 
 #include "test_macros.h"
 
-STATIC_TEST_GLOBAL_VAR constexpr int iArr2[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+TEST_GLOBAL_VARIABLE constexpr int iArr2[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
 struct A
 {};

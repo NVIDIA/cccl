@@ -50,8 +50,8 @@ __host__ __device__ QualInt get() noexcept
   return static_cast<QualInt>(global_var);
 }
 
-STATIC_TEST_GLOBAL_VAR int copy_ctor = 0;
-STATIC_TEST_GLOBAL_VAR int move_ctor = 0;
+TEST_GLOBAL_VARIABLE int copy_ctor = 0;
+TEST_GLOBAL_VARIABLE int move_ctor = 0;
 
 struct A
 {

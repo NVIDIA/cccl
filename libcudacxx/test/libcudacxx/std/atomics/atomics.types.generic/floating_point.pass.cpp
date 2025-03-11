@@ -133,9 +133,9 @@ __host__ __device__ __noinline__ void do_test()
 #if TEST_STD_VER > 2017
   NV_DISPATCH_TARGET(
     NV_IS_HOST,
-    (alignas(alignof(A) char storage[sizeof(A)] = {23}; A& zero = *new (storage) A(); assert(zero == 0); zero.~A();),
+    (alignas(alignof(A)) char storage[sizeof(A)] = {23}; A& zero = *new (storage) A(); assert(zero == 0); zero.~A();),
     NV_PROVIDES_SM_70,
-    (alignas(alignof(A) char storage[sizeof(A)] = {23}; A& zero = *new (storage) A(); assert(zero == 0); zero.~A();))
+    (alignas(alignof(A)) char storage[sizeof(A)] = {23}; A& zero = *new (storage) A(); assert(zero == 0); zero.~A();))
 #endif // TEST_STD_VER > 2017
 }
 
