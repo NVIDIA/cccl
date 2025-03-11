@@ -13,4 +13,4 @@ This living document serves to describe the internal details and the development
 
 Documentation:
 
-- `CCCL Internal Macros <https://nvidia.github.io/cccl/cccl_development/macro.html>`__
+- `CCCL Internal Macros <https://nvidia.github.io/cccl/cccl/development/macro.html>`__
