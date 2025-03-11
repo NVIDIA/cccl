@@ -1226,7 +1226,9 @@ private:
       // `NV_IF_TARGET`.
 #ifndef CUB_RDC_ENABLED
 
-#  define CUB_TEMP_DEVICE_CODE
+#  define CUB_TEMP_DEVICE_CODE   \
+    (void) current_begin_offset; \
+    (void) current_end_offset;
 
 #else // CUB_RDC_ENABLED
 
