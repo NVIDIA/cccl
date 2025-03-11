@@ -65,7 +65,7 @@ static_assert(!has_or_else<cuda::std::optional<int>&, decltype(take_int_return_v
 static_assert(!has_or_else<cuda::std::optional<int>&, int>, "");
 #endif
 
-__host__ __device__ TEST_CONSTEXPR_CXX17 bool test()
+__host__ __device__ constexpr bool test()
 {
   {
     cuda::std::optional<int> opt{};
@@ -103,7 +103,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX17 bool test()
   return true;
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX17 bool test_nontrivial()
+__host__ __device__ constexpr bool test_nontrivial()
 {
   {
     cuda::std::optional<MoveOnly> opt{};

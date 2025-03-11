@@ -93,7 +93,7 @@ __host__ __device__ constexpr bool testReturnTypes()
   return true;
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX17 bool testArray()
+__host__ __device__ constexpr bool testArray()
 {
   int a[2] = {};
   assert(cuda::std::ranges::rend(a).base() == a);
@@ -592,7 +592,7 @@ static_assert(cuda::std::is_invocable_v<RangeCREndT, MemberBeginAndRBegin&>);
 static_assert(cuda::std::same_as<cuda::std::invoke_result_t<RangeREndT, MemberBeginAndRBegin&>, int*>);
 static_assert(cuda::std::same_as<cuda::std::invoke_result_t<RangeCREndT, MemberBeginAndRBegin&>, int*>);
 
-__host__ __device__ TEST_CONSTEXPR_CXX17 bool testBeginEnd()
+__host__ __device__ constexpr bool testBeginEnd()
 {
   MemberBeginEnd a{};
   const MemberBeginEnd aa{};

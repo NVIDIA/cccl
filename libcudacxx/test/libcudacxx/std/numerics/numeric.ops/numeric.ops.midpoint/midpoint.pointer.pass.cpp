@@ -18,7 +18,7 @@
 #include "test_macros.h"
 
 template <typename T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void constexpr_test()
+__host__ __device__ constexpr void constexpr_test()
 {
   constexpr T array[1000] = {};
   ASSERT_SAME_TYPE(decltype(cuda::std::midpoint(array, array)), const T*);

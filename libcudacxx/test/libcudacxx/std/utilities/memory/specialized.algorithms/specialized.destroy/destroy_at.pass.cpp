@@ -24,7 +24,7 @@
 struct Counted
 {
   int* counter_;
-  __host__ __device__ TEST_CONSTEXPR_CXX14 Counted(int* counter)
+  __host__ __device__ constexpr Counted(int* counter)
       : counter_(counter)
   {
     ++*counter_;
@@ -39,7 +39,7 @@ struct Counted
 struct VirtualCounted
 {
   int* counter_;
-  __host__ __device__ TEST_CONSTEXPR_CXX14 VirtualCounted(int* counter)
+  __host__ __device__ constexpr VirtualCounted(int* counter)
       : counter_(counter)
   {
     ++*counter_;
@@ -53,7 +53,7 @@ struct VirtualCounted
 
 struct DerivedCounted : VirtualCounted
 {
-  __host__ __device__ TEST_CONSTEXPR_CXX14 DerivedCounted(int* counter)
+  __host__ __device__ constexpr DerivedCounted(int* counter)
       : VirtualCounted(counter)
   {}
   __host__ __device__ TEST_CONSTEXPR_CXX20 ~DerivedCounted() override {}

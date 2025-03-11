@@ -39,7 +39,7 @@ __host__ __device__ constexpr ILL abs_overload(ILL value)
 }
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test_abs(T in, T ref, T zero_value)
+__host__ __device__ constexpr bool test_abs(T in, T ref, T zero_value)
 {
   assert(abs_overload(zero_value + in) == ref);
   assert(cuda::std::abs(zero_value + in) == ref);
@@ -47,7 +47,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test_abs(T in, T ref, T zero_value
 }
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test_abs(T zero_value)
+__host__ __device__ constexpr bool test_abs(T zero_value)
 {
   test_abs(T{0}, T{0}, zero_value);
   test_abs(T{1}, T{1}, zero_value);
@@ -63,7 +63,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test_abs(T zero_value)
   return true;
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test(int zero_value)
+__host__ __device__ constexpr bool test(int zero_value)
 {
   test_abs(zero_value);
   test_abs(static_cast<IL>(zero_value));

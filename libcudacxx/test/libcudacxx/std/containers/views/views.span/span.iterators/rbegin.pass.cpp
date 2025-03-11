@@ -17,7 +17,7 @@
 #include "test_macros.h"
 
 template <typename Span>
-__host__ __device__ TEST_CONSTEXPR_CXX17 bool testConstexprSpan(Span s)
+__host__ __device__ constexpr bool testConstexprSpan(Span s)
 {
   bool ret                          = true;
   typename Span::reverse_iterator b = s.rbegin();

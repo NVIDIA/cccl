@@ -23,7 +23,7 @@ struct NoDefault
   __host__ __device__ constexpr NoDefault(int) {}
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
+__host__ __device__ constexpr bool tests()
 {
   {
     typedef double T;

@@ -22,7 +22,7 @@
 #include "test_macros.h"
 
 template <typename T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool constexpr_test()
+__host__ __device__ constexpr bool constexpr_test()
 {
   return cuda::std::lerp(T(0.0), T(12), T(0.0)) == T(0.0) && cuda::std::lerp(T(12), T(0.0), T(0.5)) == T(6)
       && cuda::std::lerp(T(0.0), T(12), T(2)) == T(24);

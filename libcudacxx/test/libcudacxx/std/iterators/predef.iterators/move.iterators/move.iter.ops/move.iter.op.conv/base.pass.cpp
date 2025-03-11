@@ -43,12 +43,12 @@ struct MoveOnlyIterator
     return *it_;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 MoveOnlyIterator& operator++()
+  __host__ __device__ constexpr MoveOnlyIterator& operator++()
   {
     ++it_;
     return *this;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX14 MoveOnlyIterator operator++(int)
+  __host__ __device__ constexpr MoveOnlyIterator operator++(int)
   {
     return MoveOnlyIterator(it_++);
   }
@@ -72,7 +72,7 @@ static_assert(cuda::std::input_iterator<MoveOnlyIterator>, "");
 static_assert(!cuda::std::is_copy_constructible<MoveOnlyIterator>::value, "");
 
 template <class It>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_one()
+__host__ __device__ constexpr void test_one()
 {
   // Non-const lvalue.
   {
@@ -108,7 +108,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_one()
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test_one<cpp17_input_iterator<int*>>();
   test_one<forward_iterator<int*>>();

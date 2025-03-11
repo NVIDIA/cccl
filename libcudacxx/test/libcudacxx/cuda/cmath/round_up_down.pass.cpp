@@ -23,7 +23,7 @@
 #endif // !TEST_COMPILER(NVRTC)
 
 template <class T, class U>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
   constexpr auto maxv = cuda::std::numeric_limits<T>::max();
   using CommonType    = cuda::std::common_type_t<T, U>;
@@ -59,7 +59,7 @@ struct relaxed_underlying_type<T, cuda::std::void_t<cuda::std::underlying_type_t
 };
 
 template <class T1, class U1>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_enum()
+__host__ __device__ constexpr void test_enum()
 {
   using T          = typename relaxed_underlying_type<T1>::type;
   using U          = typename relaxed_underlying_type<U1>::type;
@@ -93,7 +93,7 @@ enum class Enum2 : long
 };
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
   // Builtin integer types:
   test<T, char>();
@@ -141,7 +141,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
 #endif // _CCCL_HAS_INT128()
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   // Builtin integer types:
   test<char>();

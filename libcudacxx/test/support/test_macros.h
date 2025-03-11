@@ -28,6 +28,10 @@
 // Use the CCCL C++ dialect detection
 #define TEST_STD_VER _CCCL_STD_VER
 
+// Use the CCCL constexpr macros
+#define TEST_CONSTEXPR_CXX20 _CCCL_CONSTEXPR_CXX20
+#define TEST_CONSTEXPR_CXX23 _CCCL_CONSTEXPR_CXX23
+
 #ifdef _CCCL_HAS_FEATURE
 #  define TEST_HAS_FEATURE(X) _CCCL_HAS_FEATURE(X)
 #else
@@ -59,28 +63,6 @@
 #else // ^^^ C++23 ^^^ / vvv C++20 vvv
 #  define TEST_IS_CONSTANT_EVALUATED_CXX23() false
 #endif // ^^^ TEST_STD_VER <= 2020
-
-#if TEST_STD_VER >= 2014
-#  define TEST_CONSTEXPR_CXX14 constexpr
-#else
-#  define TEST_CONSTEXPR_CXX14
-#endif
-
-#if TEST_STD_VER >= 2017
-#  define TEST_CONSTEXPR_CXX17 constexpr
-#else
-#  define TEST_CONSTEXPR_CXX17
-#endif
-#if TEST_STD_VER >= 2020
-#  define TEST_CONSTEXPR_CXX20 constexpr
-#else
-#  define TEST_CONSTEXPR_CXX20
-#endif
-#if TEST_STD_VER >= 2023
-#  define TEST_CONSTEXPR_CXX23 constexpr
-#else
-#  define TEST_CONSTEXPR_CXX23
-#endif
 
 // Sniff out to see if the underling C library has C11 features
 // Note that at this time (July 2018), MacOS X and iOS do NOT.

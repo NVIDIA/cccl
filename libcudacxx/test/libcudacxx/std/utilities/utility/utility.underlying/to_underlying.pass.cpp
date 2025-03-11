@@ -65,7 +65,7 @@ struct WithBitfieldEnums
 };
 #endif // !OMIT_BITFIELD_ENUMS
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   static_assert(noexcept(cuda::std::to_underlying(e_default::a)));
   ASSERT_SAME_TYPE(int, decltype(cuda::std::to_underlying(e_default::a)));

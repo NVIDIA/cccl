@@ -25,7 +25,7 @@
 #include "test_macros.h"
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
   using iter_value_t = typename cuda::std::remove_reference<decltype(*cuda::std::declval<Iter>())>::type;
   iter_value_t ia[]  = {0};
@@ -85,7 +85,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
   assert(ii[2] == 2);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test<forward_iterator<int*>>();
   test<bidirectional_iterator<int*>>();

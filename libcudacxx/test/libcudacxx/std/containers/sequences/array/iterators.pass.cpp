@@ -37,7 +37,7 @@ struct NoDefault
 };
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void check_noexcept(T& c)
+__host__ __device__ constexpr void check_noexcept(T& c)
 {
   static_assert(noexcept(c.begin()));
   static_assert(noexcept(c.end()));
@@ -59,7 +59,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void check_noexcept(T& c)
 // gcc-7 and gcc-8 are really helpful here
 __host__ __device__
 #if !TEST_COMPILER(GCC, <, 8)
-  TEST_CONSTEXPR_CXX14
+  constexpr
 #endif // !TEST_COMPILER(GCC, <, 8)
   bool
   tests()

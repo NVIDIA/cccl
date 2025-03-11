@@ -13,7 +13,7 @@
 #include "test_macros.h"
 
 template <class VType, size_t Size>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
   static_assert(cuda::std::tuple_size<VType>::value == Size, "");
   static_assert(cuda::std::tuple_size<const VType>::value == Size, "");
@@ -27,7 +27,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
   test<Type##3, 3>();            \
   test<Type##4, 4>();
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   EXPAND_VECTOR_TYPE(char);
   EXPAND_VECTOR_TYPE(uchar);
@@ -47,7 +47,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 
 __host__ __device__
 #if !TEST_COMPILER(MSVC)
-  TEST_CONSTEXPR_CXX14
+  constexpr
 #endif // !TEST_COMPILER(MSVC)
   bool
   test_dim3()

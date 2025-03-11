@@ -24,7 +24,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test_constexpr()
+__host__ __device__ constexpr bool test_constexpr()
 {
   int v = 12;
 
@@ -55,7 +55,7 @@ struct TestNoexcept
   __host__ __device__ TestNoexcept& operator=(TestNoexcept&&) noexcept(Assign);
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test_noexcept()
+__host__ __device__ constexpr bool test_noexcept()
 {
   {
     int x = 42;

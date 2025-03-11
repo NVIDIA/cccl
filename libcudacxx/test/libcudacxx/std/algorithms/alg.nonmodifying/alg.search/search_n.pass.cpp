@@ -25,7 +25,7 @@ TEST_DIAG_SUPPRESS_GCC("-Wsign-compare")
 TEST_DIAG_SUPPRESS_CLANG("-Wsign-compare")
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
   int ia[]          = {0, 1, 2, 3, 4, 5};
   const unsigned sa = sizeof(ia) / sizeof(ia[0]);
@@ -72,7 +72,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
   (void) cuda::std::search_n(Iter(ic), Iter(ic + sc), UserDefinedIntegral<unsigned>(0), 0);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test<forward_iterator<const int*>>();
   test<bidirectional_iterator<const int*>>();

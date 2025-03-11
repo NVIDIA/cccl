@@ -21,7 +21,7 @@
 #include "test_macros.h"
 
 template <typename T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void signed_test()
+__host__ __device__ constexpr void signed_test()
 {
   constexpr T zero{0};
   constexpr T one{1};
@@ -70,7 +70,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void signed_test()
 }
 
 template <typename T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void unsigned_test()
+__host__ __device__ constexpr void unsigned_test()
 {
   constexpr T zero{0};
   constexpr T one{1};
@@ -105,7 +105,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void unsigned_test()
   assert(cuda::std::midpoint(T(6), limits::max()) == half_way + 3);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   signed_test<signed char>();
   signed_test<short>();

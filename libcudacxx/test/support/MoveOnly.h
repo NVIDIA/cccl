@@ -27,12 +27,12 @@ public:
   MoveOnly(const MoveOnly&)            = delete;
   MoveOnly& operator=(const MoveOnly&) = delete;
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 MoveOnly(MoveOnly&& x)
+  __host__ __device__ constexpr MoveOnly(MoveOnly&& x)
       : data_(x.data_)
   {
     x.data_ = 0;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX14 MoveOnly& operator=(MoveOnly&& x)
+  __host__ __device__ constexpr MoveOnly& operator=(MoveOnly&& x)
   {
     data_   = x.data_;
     x.data_ = 0;
@@ -73,11 +73,11 @@ public:
   __host__ __device__ friend constexpr auto operator<=>(const MoveOnly&, const MoveOnly&) = default;
 #endif // TEST_STD_VER > 2017 && _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 MoveOnly operator+(const MoveOnly& x) const
+  __host__ __device__ constexpr MoveOnly operator+(const MoveOnly& x) const
   {
     return MoveOnly(data_ + x.data_);
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX14 MoveOnly operator*(const MoveOnly& x) const
+  __host__ __device__ constexpr MoveOnly operator*(const MoveOnly& x) const
   {
     return MoveOnly(data_ * x.data_);
   }

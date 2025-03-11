@@ -315,7 +315,7 @@ struct nvrtc_workaround
 };
 
 // check that the lambda body is not instantiated during overload resolution
-__host__ __device__ TEST_CONSTEXPR_CXX17 void test_sfinae()
+__host__ __device__ constexpr void test_sfinae()
 {
   cuda::std::optional<NonConst> opt{};
   auto l = nvrtc_workaround(); // [](auto&& x) { return x.non_const(); };
@@ -323,7 +323,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX17 void test_sfinae()
   cuda::std::move(opt).transform(l);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX17 bool test()
+__host__ __device__ constexpr bool test()
 {
   test_sfinae();
   test_val_types();

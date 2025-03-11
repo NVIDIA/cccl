@@ -25,12 +25,12 @@
 struct Counted
 {
   int* counter_ = nullptr;
-  __host__ __device__ TEST_CONSTEXPR_CXX14 Counted(int* counter)
+  __host__ __device__ constexpr Counted(int* counter)
       : counter_(counter)
   {
     ++*counter_;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX14 Counted(Counted const& other)
+  __host__ __device__ constexpr Counted(Counted const& other)
       : counter_(other.counter_)
   {
     ++*counter_;

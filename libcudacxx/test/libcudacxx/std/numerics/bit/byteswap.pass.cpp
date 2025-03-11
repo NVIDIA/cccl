@@ -46,7 +46,7 @@ struct MakeUnsigned<bool>
 };
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_num(T in, T expected)
+__host__ __device__ constexpr void test_num(T in, T expected)
 {
   using U = typename MakeUnsigned<T>::type;
 
@@ -63,7 +63,7 @@ struct TestData
 };
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 TestData<T> get_test_data()
+__host__ __device__ constexpr TestData<T> get_test_data()
 {
   switch (sizeof(T))
   {
@@ -80,13 +80,13 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 TestData<T> get_test_data()
 }
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_implementation_defined_size()
+__host__ __device__ constexpr void test_implementation_defined_size()
 {
   const auto test_data = get_test_data<T>();
   test_num<T>(test_data.in, test_data.expected);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test_num<cuda::std::uint8_t>(0xAB, 0xAB);
   test_num<cuda::std::uint16_t>(0xCDEF, 0xEFCD);

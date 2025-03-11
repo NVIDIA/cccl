@@ -45,7 +45,7 @@ struct test_default_initialization
 struct test_nondefault_initialization
 {
   template <typename T>
-  __host__ __device__ TEST_CONSTEXPR_CXX14 void operator()() const
+  __host__ __device__ constexpr void operator()() const
   {
     // Check direct-list-initialization syntax (introduced in C++11)
     {
@@ -156,7 +156,7 @@ struct test_nondefault_initialization
 };
 
 // Test construction from an initializer-list
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test_initializer_list()
+__host__ __device__ constexpr bool test_initializer_list()
 {
   {
     cuda::std::array<double, 3> const a3_0 = {};
@@ -213,7 +213,7 @@ struct NonEmptyNonTrivial
 };
 
 template <typename F>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool with_all_types()
+__host__ __device__ constexpr bool with_all_types()
 {
   F().template operator()<char>();
   F().template operator()<int>();
