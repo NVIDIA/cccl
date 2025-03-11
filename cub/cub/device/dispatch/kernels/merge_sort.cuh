@@ -167,7 +167,7 @@ __launch_bounds__(VSMemHelperT::template MergeSortVSMemHelperT<
     vsmem_t vsmem)
 {
   using MergeSortHelperT =
-    VSMemHelperT::template MergeSortVSMemHelperT<typename ChainedPolicyT::ActivePolicy::MergeSortPolicy>;
+    typename VSMemHelperT::template MergeSortVSMemHelperT<typename ChainedPolicyT::ActivePolicy::MergeSortPolicy>;
 
   using ActivePolicyT = typename MergeSortHelperT::policy_t;
 
@@ -260,7 +260,7 @@ __launch_bounds__(VSMemHelperT::template MergeSortVSMemHelperT<
     vsmem_t vsmem)
 {
   using MergeSortHelperT =
-    VSMemHelperT::template MergeSortVSMemHelperT<typename ChainedPolicyT::ActivePolicy::MergeSortPolicy>;
+    typename VSMemHelperT::template MergeSortVSMemHelperT<typename ChainedPolicyT::ActivePolicy::MergeSortPolicy>;
 
   using ActivePolicyT = typename MergeSortHelperT::policy_t;
 
