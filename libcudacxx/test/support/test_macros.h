@@ -32,6 +32,18 @@
 #define TEST_CONSTEXPR_CXX20 _CCCL_CONSTEXPR_CXX20
 #define TEST_CONSTEXPR_CXX23 _CCCL_CONSTEXPR_CXX23
 
+#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+#  define TEST_IS_CONSTANT_EVALUATED() cuda::std::is_constant_evaluated()
+#else
+#  define TEST_IS_CONSTANT_EVALUATED() false
+#endif
+
+#if TEST_STD_VER >= 2023
+#  define TEST_IS_CONSTANT_EVALUATED_CXX23() TEST_IS_CONSTANT_EVALUATED()
+#else // ^^^ C++23 ^^^ / vvv C++20 vvv
+#  define TEST_IS_CONSTANT_EVALUATED_CXX23() false
+#endif // ^^^ TEST_STD_VER <= 2020
+
 #ifndef __has_include
 #  define __has_include(...) 0
 #endif
@@ -45,18 +57,6 @@
 #    define TEST_GLIBC_PREREQ(major, minor) __GLIBC_PREREQ(major, minor)
 #  endif
 #endif
-
-#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-#  define TEST_IS_CONSTANT_EVALUATED() cuda::std::is_constant_evaluated()
-#else
-#  define TEST_IS_CONSTANT_EVALUATED() false
-#endif
-
-#if TEST_STD_VER >= 2023
-#  define TEST_IS_CONSTANT_EVALUATED_CXX23() TEST_IS_CONSTANT_EVALUATED()
-#else // ^^^ C++23 ^^^ / vvv C++20 vvv
-#  define TEST_IS_CONSTANT_EVALUATED_CXX23() false
-#endif // ^^^ TEST_STD_VER <= 2020
 
 // Sniff out to see if the underling C library has C11 features
 // Note that at this time (July 2018), MacOS X and iOS do NOT.
@@ -93,17 +93,17 @@
 #  define TEST_HAS_NO_EXCEPTIONS
 #endif
 
-#if _CCCL_HAS_FEATURE(address_sanitizer) || _CCCL_HAS_FEATURE(memory_sanitizer) || _CCCL_HAS_FEATURE(thread_sanitizer)
-#  define TEST_HAS_SANITIZERS
-#endif
-
-#define TEST_IGNORE_NODISCARD (void)
-
 #ifndef TEST_HAS_NO_EXCEPTIONS
 #  define TEST_THROW(...) throw __VA_ARGS__
 #else
 #  define TEST_THROW(...) assert(#__VA_ARGS__)
 #endif
+
+#if _CCCL_HAS_FEATURE(address_sanitizer) || _CCCL_HAS_FEATURE(memory_sanitizer) || _CCCL_HAS_FEATURE(thread_sanitizer)
+#  define TEST_HAS_SANITIZERS
+#endif
+
+#define TEST_IGNORE_NODISCARD (void)
 
 #if TEST_COMPILER(MSVC)
 #  include <intrin.h>
