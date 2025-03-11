@@ -28,8 +28,6 @@
 
 #include <thrust/detail/config.h>
 
-#include "cuda/std/__functional/operations.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)

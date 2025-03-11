@@ -44,8 +44,8 @@ namespace generic
 template <typename DerivedPolicy, typename InputIterator, typename UnaryFunction, typename InitType, typename BinaryFunction>
 _CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<
   BinaryFunction,
-  decltype(::cuda::std::declval<UnaryFunction>()(::cuda::std::declval<::cuda::std::iter_value_t<InputIterator>>())),
-  decltype(::cuda::std::declval<UnaryFunction>()(::cuda::std::declval<InitType>()))>
+  ::cuda::std::invoke_result_t<UnaryFunction, ::cuda::std::iter_value_t<InputIterator>>,
+  ::cuda::std::invoke_result_t<UnaryFunction, InitType>>
 transform_reduce(thrust::execution_policy<DerivedPolicy>& exec,
                  InputIterator first,
                  InputIterator last,
@@ -53,10 +53,10 @@ transform_reduce(thrust::execution_policy<DerivedPolicy>& exec,
                  InitType init,
                  BinaryFunction binary_op)
 {
-  using AccType = ::cuda::std::__accumulator_t<
-    BinaryFunction,
-    decltype(::cuda::std::declval<UnaryFunction>()(::cuda::std::declval<::cuda::std::iter_value_t<InputIterator>>())),
-    decltype(::cuda::std::declval<UnaryFunction>()(::cuda::std::declval<InitType>()))>;
+  using AccType =
+    ::cuda::std::__accumulator_t<BinaryFunction,
+                                 ::cuda::std::invoke_result_t<UnaryFunction, ::cuda::std::iter_value_t<InputIterator>>,
+                                 ::cuda::std::invoke_result_t<UnaryFunction, InitType>>;
   thrust::transform_iterator<UnaryFunction, InputIterator, AccType> xfrm_first(first, unary_op);
   thrust::transform_iterator<UnaryFunction, InputIterator, AccType> xfrm_last(last, unary_op);
 
