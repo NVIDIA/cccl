@@ -63,7 +63,7 @@ _CCCL_HOST_DEVICE thrust::detail::__iter_accumulator_t<RandomAccessIterator, Out
 {
   static_assert(thrust::detail::depend_on_instantiation<RandomAccessIterator, false>::value,
                 "unimplemented for this system");
-  return OutputType();
+  return thrust::detail::__iter_accumulator_t<RandomAccessIterator, OutputType, BinaryFunction>{};
 } // end reduce()
 
 } // end namespace generic

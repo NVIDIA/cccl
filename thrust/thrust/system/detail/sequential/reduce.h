@@ -50,9 +50,9 @@ reduce(sequential::execution_policy<DerivedPolicy>&,
        OutputType init,
        BinaryFunction binary_op)
 {
-  using AccType = ::cuda::std::__accumulator_t<BinaryFunction, ::cuda::std::iter_value_t<InputIterator>, OutputType>;
+  using AccType = thrust::detail::__iter_accumulator_t<InputIterator, OutputType, BinaryFunction>;
   // wrap binary_op
-  thrust::detail::wrapped_function<BinaryFunction, OutputType> wrapped_binary_op{binary_op};
+  thrust::detail::wrapped_function<BinaryFunction, AccType> wrapped_binary_op{binary_op};
 
   // initialize the result
   AccType result = init;
