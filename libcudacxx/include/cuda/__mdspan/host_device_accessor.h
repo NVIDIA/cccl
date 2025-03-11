@@ -176,9 +176,11 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr reference access(data_handle_type __p, size_t __i) const
     noexcept(__is_access_noexcept)
   {
-    NV_IF_ELSE_TARGET(NV_IS_HOST,
-                      (__check_host_pointer(__p);), //
-                      (static_assert(false, "cuda::__host_accessor cannot be used in DEVICE code");))
+#if _CCCL_COMPILER(NVHPC)
+    __check_host_pointer(__p);
+#elif defined(__CUDA_ARCH__)
+    static_assert(false, "cuda::__host_accessor cannot be used in DEVICE code");
+#endif
     return _Accessor::access(__p, __i);
   }
 
@@ -270,7 +272,9 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr reference access(data_handle_type __p, size_t __i) const
     noexcept(__is_access_noexcept)
   {
-    NV_IF_TARGET(NV_IS_HOST, (__prevent_host_instantiation();))
+#if !_CCCL_COMPILER(NVHPC) && !defined(__CUDA_ARCH__)
+    __prevent_host_instantiation();
+#endif
     return _Accessor::access(__p, __i);
   }
 
