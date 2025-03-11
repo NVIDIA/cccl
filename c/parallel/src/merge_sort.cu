@@ -45,6 +45,8 @@ struct merge_sort_runtime_tuning_policy
   {
     return *this;
   }
+
+  using MergeSortPolicy = merge_sort_runtime_tuning_policy;
 };
 
 struct merge_sort_tuning_t
@@ -229,25 +231,25 @@ struct merge_sort_kernel_source
 
 struct dynamic_vsmem_helper_t
 {
-  template <typename PolicyT>
+  template <typename PolicyT, typename... Ts>
   static ::cuda::std::size_t BlockSortVSMemPerBlock(PolicyT /*policy*/)
   {
     return 0;
   }
 
-  template <typename PolicyT>
+  template <typename PolicyT, typename... Ts>
   static ::cuda::std::size_t MergeVSMemPerBlock(PolicyT /*policy*/)
   {
     return 0;
   }
 
-  template <typename PolicyT>
+  template <typename PolicyT, typename... Ts>
   static int BlockThreads(PolicyT policy)
   {
     return policy.block_size;
   }
 
-  template <typename PolicyT>
+  template <typename PolicyT, typename... Ts>
   static int ItemsPerTile(PolicyT policy)
   {
     return policy.items_per_tile;
