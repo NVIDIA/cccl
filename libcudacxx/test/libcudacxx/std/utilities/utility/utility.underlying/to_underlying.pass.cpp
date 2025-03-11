@@ -67,7 +67,7 @@ struct WithBitfieldEnums
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 {
-  ASSERT_NOEXCEPT(cuda::std::to_underlying(e_default::a));
+  static_assert(noexcept(cuda::std::to_underlying(e_default::a)));
   ASSERT_SAME_TYPE(int, decltype(cuda::std::to_underlying(e_default::a)));
   ASSERT_SAME_TYPE(unsigned short, decltype(cuda::std::to_underlying(e_ushort::d)));
   ASSERT_SAME_TYPE(long long, decltype(cuda::std::to_underlying(e_longlong::low)));

@@ -41,7 +41,7 @@ __host__ __device__ constexpr bool test()
     cuda::std::optional<X> opt{};
     unused(opt);
     ASSERT_SAME_TYPE(decltype(opt.operator->()), X*);
-    // ASSERT_NOT_NOEXCEPT(opt.operator->());
+    // static_assert(!noexcept(opt.operator->()));
     // FIXME: This assertion fails with GCC because it can see that
     // (A) operator->() is constexpr, and
     // (B) there is no path through the function that throws.
@@ -53,7 +53,7 @@ __host__ __device__ constexpr bool test()
     cuda::std::optional<X&> optref;
     unused(optref);
     ASSERT_SAME_TYPE(decltype(optref.operator->()), X*);
-    ASSERT_NOEXCEPT(optref.operator->());
+    static_assert(noexcept(optref.operator->()));
   }
 
   {

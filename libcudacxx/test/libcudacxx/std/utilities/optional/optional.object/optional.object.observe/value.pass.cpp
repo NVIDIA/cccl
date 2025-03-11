@@ -72,12 +72,12 @@ __host__ __device__ constexpr bool test()
   {
     optional<X> opt{};
     unused(opt);
-    ASSERT_NOT_NOEXCEPT(opt.value());
+    static_assert(!noexcept(opt.value()));
     ASSERT_SAME_TYPE(decltype(opt.value()), X&);
 
     optional<X&> optref;
     unused(optref);
-    ASSERT_NOEXCEPT(optref.value());
+    static_assert(noexcept(optref.value()));
     ASSERT_SAME_TYPE(decltype(optref.value()), X&);
   }
 

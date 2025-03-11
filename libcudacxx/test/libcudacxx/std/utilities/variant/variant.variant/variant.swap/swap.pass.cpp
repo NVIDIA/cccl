@@ -353,7 +353,7 @@ __host__ __device__ void test_swap_different_alternatives()
     assert(T::swap_called() == 0);
     // The libc++ implementation double copies the argument, and not
     // the variant swap is called on.
-    LIBCPP_ASSERT(T::move_called() == 1);
+    assert(T::move_called() == 1);
     assert(T::move_called() <= 2);
     assert(T::move_assign_called() == 0);
     assert(cuda::std::get<1>(v1) == 100);
@@ -361,7 +361,7 @@ __host__ __device__ void test_swap_different_alternatives()
     T::reset();
     swap(v1, v2);
     assert(T::swap_called() == 0);
-    LIBCPP_ASSERT(T::move_called() == 2);
+    assert(T::move_called() == 2);
     assert(T::move_called() <= 2);
     assert(T::move_assign_called() == 0);
     assert(cuda::std::get<0>(v1).value == 42);
@@ -391,7 +391,7 @@ void test_exceptions_different_alternatives()
     assert(T1::move_called() == 1); // throws
     assert(T1::move_assign_called() == 0);
     // FIXME: libc++ shouldn't move from T2 here.
-    LIBCPP_ASSERT(T2::move_called() == 1);
+    assert(T2::move_called() == 1);
     assert(T2::move_called() <= 1);
     assert(cuda::std::get<0>(v1).value == 42);
     if (T2::move_called() != 0)
@@ -418,7 +418,7 @@ void test_exceptions_different_alternatives()
     }
     catch (int)
     {}
-    LIBCPP_ASSERT(T1::move_called() == 0);
+    assert(T1::move_called() == 0);
     assert(T1::move_called() <= 1);
     assert(T2::swap_called() == 0);
     assert(T2::move_called() == 1); // throws
@@ -496,22 +496,22 @@ __host__ __device__ void test_swap_sfinae()
     // but is still swappable via the generic swap algorithm, since the
     // variant is move constructible and move assignable.
     using V = cuda::std::variant<int, NotSwappable>;
-    LIBCPP_STATIC_ASSERT(!has_swap_member<V>(), "");
+    static_assert(!has_swap_member<V>(), "");
     static_assert(cuda::std::is_swappable_v<V>, "");
   }
   {
     using V = cuda::std::variant<int, NotCopyable>;
-    LIBCPP_STATIC_ASSERT(!has_swap_member<V>(), "");
+    static_assert(!has_swap_member<V>(), "");
     static_assert(!cuda::std::is_swappable_v<V>, "");
   }
   {
     using V = cuda::std::variant<int, NotCopyableWithSwap>;
-    LIBCPP_STATIC_ASSERT(!has_swap_member<V>(), "");
+    static_assert(!has_swap_member<V>(), "");
     static_assert(!cuda::std::is_swappable_v<V>, "");
   }
   {
     using V = cuda::std::variant<int, NotMoveAssignable>;
-    LIBCPP_STATIC_ASSERT(!has_swap_member<V>(), "");
+    static_assert(!has_swap_member<V>(), "");
     static_assert(!cuda::std::is_swappable_v<V>, "");
   }
 }
@@ -577,7 +577,7 @@ __host__ __device__ void test_swap_noexcept()
     // but is still swappable via the generic swap algorithm, since the
     // variant is move constructible and move assignable.
     using V = cuda::std::variant<int, NotSwappable>;
-    LIBCPP_STATIC_ASSERT(!has_swap_member<V>(), "");
+    static_assert(!has_swap_member<V>(), "");
     static_assert(cuda::std::is_swappable_v<V>, "");
     static_assert(cuda::std::is_nothrow_swappable_v<V>, "");
     V v1, v2;

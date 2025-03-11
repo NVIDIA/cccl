@@ -49,7 +49,7 @@ __host__ __device__ constexpr bool testConstexprSpan()
 template <typename T>
 __host__ __device__ void testRuntimeSpan()
 {
-  ASSERT_NOEXCEPT(T{});
+  static_assert(noexcept(T{}));
   cuda::std::span<const T> s1;
   cuda::std::span<const T, 0> s2;
   assert(s1.data() == nullptr && s1.size() == 0);
@@ -61,10 +61,10 @@ struct A
 
 int main(int, char**)
 {
-  STATIC_ASSERT_CXX14(testConstexprSpan<int>());
-  STATIC_ASSERT_CXX14(testConstexprSpan<long>());
-  STATIC_ASSERT_CXX14(testConstexprSpan<double>());
-  STATIC_ASSERT_CXX14(testConstexprSpan<A>());
+  static_assert(testConstexprSpan<int>());
+  static_assert(testConstexprSpan<long>());
+  static_assert(testConstexprSpan<double>());
+  static_assert(testConstexprSpan<A>());
 
   testRuntimeSpan<int>();
   testRuntimeSpan<long>();

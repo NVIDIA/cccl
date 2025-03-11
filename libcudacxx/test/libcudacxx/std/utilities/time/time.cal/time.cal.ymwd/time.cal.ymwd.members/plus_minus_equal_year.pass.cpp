@@ -62,11 +62,11 @@ int main(int, char**)
   using year_month_weekday = cuda::std::chrono::year_month_weekday;
   using years              = cuda::std::chrono::years;
 
-  ASSERT_NOEXCEPT(cuda::std::declval<year_month_weekday&>() += cuda::std::declval<years>());
+  static_assert(noexcept(cuda::std::declval<year_month_weekday&>() += cuda::std::declval<years>()));
   ASSERT_SAME_TYPE(year_month_weekday&,
                    decltype(cuda::std::declval<year_month_weekday&>() += cuda::std::declval<years>()));
 
-  ASSERT_NOEXCEPT(cuda::std::declval<year_month_weekday&>() -= cuda::std::declval<years>());
+  static_assert(noexcept(cuda::std::declval<year_month_weekday&>() -= cuda::std::declval<years>()));
   ASSERT_SAME_TYPE(year_month_weekday&,
                    decltype(cuda::std::declval<year_month_weekday&>() -= cuda::std::declval<years>()));
 

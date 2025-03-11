@@ -33,7 +33,7 @@ int main(int, char**)
   // Test the signature
   {
     ASSERT_SAME_TYPE(decltype(cuda::std::is_constant_evaluated()), bool);
-    ASSERT_NOEXCEPT(cuda::std::is_constant_evaluated());
+    static_assert(noexcept(cuda::std::is_constant_evaluated()));
     constexpr bool p = cuda::std::is_constant_evaluated();
     assert(p);
   }

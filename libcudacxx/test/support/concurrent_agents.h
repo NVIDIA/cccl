@@ -19,7 +19,7 @@
 
 #include "test_macros.h"
 
-TEST_EXEC_CHECK_DISABLE
+_CCCL_EXEC_CHECK_DISABLE
 template <class Fun>
 __host__ __device__ void execute_on_main_thread(Fun&& fun)
 {

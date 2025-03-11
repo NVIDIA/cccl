@@ -75,7 +75,7 @@ __host__ __device__ constexpr void test_conversion(FromExt src_exts)
   using From = typename FromL::template mapping<FromExt>;
 
   From src(get_strides<FromL>(src_exts));
-  ASSERT_NOEXCEPT(To(src));
+  static_assert(noexcept(To(src)));
   To dest(src);
   assert(dest == src);
 
@@ -90,7 +90,7 @@ __host__ __device__ constexpr void test_conversion(FromExt src_exts)
   using From = typename FromL::template mapping<FromExt>;
 
   From src(get_strides<FromL>(src_exts));
-  ASSERT_NOEXCEPT(To(src));
+  static_assert(noexcept(To(src)));
   To dest(src);
   assert(dest == src);
   assert((!cuda::std::is_convertible_v<From, To>) );

@@ -32,7 +32,7 @@ int main(int, char**)
   // Use a builtin type so we don't get ADL lookup.
   typedef double T[17][29];
   {
-    LIBCPP_STATIC_ASSERT(cuda::std::__is_swappable<T>::value, "");
+    static_assert(cuda::std::__is_swappable<T>::value, "");
     static_assert(cuda::std::is_swappable_v<T>, "");
   }
   {

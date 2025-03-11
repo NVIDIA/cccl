@@ -31,7 +31,7 @@ __host__ __device__ constexpr void test_offset()
     static_assert(
       cuda::std::is_same<decltype(acc.offset(ptr, i)), typename cuda::std::default_accessor<T>::data_handle_type>::value,
       "");
-    ASSERT_NOEXCEPT(acc.offset(ptr, i));
+    static_assert(noexcept(acc.offset(ptr, i)));
     assert(acc.offset(ptr, i) == ptr + i);
   }
 }

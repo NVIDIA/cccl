@@ -71,7 +71,7 @@ __host__ __device__ constexpr void test_conversion(FromExt src_exts)
   const cuda::std::array<typename FromExt::index_type, FromExt::rank()> strides = get_strides(src_exts);
   From src(src_exts, strides);
 
-  ASSERT_NOEXCEPT(To(src));
+  static_assert(noexcept(To(src)));
   To dest(src);
   assert(dest == src);
   test_implicit_conversion<implicit, To, From>(src);
