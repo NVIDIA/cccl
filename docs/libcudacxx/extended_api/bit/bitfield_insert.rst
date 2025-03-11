@@ -29,7 +29,7 @@ The function extracts the lower bitfield of size ``width`` from ``source`` and i
 **Preconditions**
 
     - ``start >= 0 && start < num_bits(T)``
-    - ``width >  0 && width <= num_bits(T)``
+    - ``width >= 0 && width <= num_bits(T)``
     - ``start + width <= num_bits(T)``
 
 **Performance considerations**
