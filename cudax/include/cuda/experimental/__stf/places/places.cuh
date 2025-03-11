@@ -157,14 +157,19 @@ public:
   /// checks if this data place is a composite data place
   bool is_composite() const
   {
-    return (composite_desc != nullptr);
+    // If the devid indicates composite_devid then we must have a descriptor
+    _CCCL_ASSERT(devid != composite_devid || composite_desc != nullptr, "invalid state");
+    return (devid == composite_devid);
   }
 
   /// checks if this data place is a green context data place
   bool is_green_ctx() const
   {
 #if CUDA_VERSION >= 12040
-    return gc_view != nullptr;
+    // If the devid indicates green_ctx_devid then we must have a descriptor
+    _CCCL_ASSERT(devid != green_ctx_devid || gc_view != nullptr, "invalid state");
+
+    return (devid == green_ctx_devid);
 #else
     return false;
 #endif
@@ -172,7 +177,7 @@ public:
 
   bool is_invalid() const
   {
-    return devid == invalid_devid && !is_composite();
+    return devid == invalid_devid;
   }
 
   bool is_host() const
@@ -292,6 +297,8 @@ private:
   enum devid : int
   {
     invalid_devid     = ::std::numeric_limits<int>::min(),
+    green_ctx_devid   = -6,
+    composite_devid   = -5,
     device_auto_devid = -4,
     affine_devid      = -3,
     managed_devid     = -2,
@@ -1303,6 +1310,9 @@ inline data_place data_place::composite(get_executor_func_t f, const exec_place_
 {
   data_place result;
 
+  // Flags this is a composite data place
+  result.devid = composite_devid;
+
   // Save the state that is specific to a composite data place into the
   // data_place object.
   result.composite_desc = ::std::make_shared<composite_state>(grid, f);
@@ -1314,6 +1324,7 @@ inline data_place data_place::composite(get_executor_func_t f, const exec_place_
 inline data_place data_place::green_ctx(const green_ctx_view& gc_view)
 {
   data_place result;
+  result.devid   = green_ctx_devid;
   result.gc_view = ::std::make_shared<green_ctx_view>(gc_view);
   return result;
 }
@@ -1394,7 +1405,8 @@ inline bool data_place::operator==(const data_place& rhs) const
   if (is_green_ctx())
   {
 #if CUDA_VERSION >= 12040
-    return *gc_view == *rhs.gc_view;
+    _CCCL_ASSERT(devid == green_ctx_devid, "");
+    return (rhs.devid == green_ctx_devid && *gc_view == *rhs.gc_view);
 #else
     assert(0);
 #endif
