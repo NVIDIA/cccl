@@ -53,6 +53,33 @@ THRUST_NAMESPACE_BEGIN
 //!   return 0;
 //! }
 //! \endcode
+//!
+//! Combining a \p offset_iterator with \p cub::FutureValue can also be used to retrieve the offset from an iterator.
+//! However, such an \p offset_iterator cannot be moved anymore, since changes to the offset can not be written back.
+//!
+//! \code
+//! #include <thrust/iterator/offset_iterator.h>
+//! #include <thrust/fill.h>
+//! #include <thrust/functional.h>
+//! #include <thrust/device_vector.h>
+//! #include <cub/util_type.h>
+//!
+//! int main()
+//! {
+//!   using thrust::placeholders::_1;
+//!   thrust::device_vector<int> data{1, 2, 3, 4};
+//!
+//!   thrust::device_vector<ptrdiff> offsets{1}; // offset is only available on device
+//!   auto offset = cub::FutureValue{thrust::make_transform_iterator(offsets.begin(), _1 * 2)};
+//!   thrust::offset_iterator iter(v.begin(), offset); // load and transform offset upon access
+//!   // iter is at position 2 (= 1 * 2) in data, and would return 3 in device code
+//!
+//!   return 0;
+//! }
+//! \endcode
+//!
+//! In the above example, the offset is loaded from a device vector, transformed by a \p transform_iterator, and then
+//! applied to the underlying iterator, when the \p offset_iterator is accessed.
 template <typename Iterator, typename Offset = typename ::cuda::std::iterator_traits<Iterator>::difference_type>
 class offset_iterator : public iterator_adaptor<offset_iterator<Iterator, Offset>, Iterator>
 {

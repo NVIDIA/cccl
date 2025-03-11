@@ -1,7 +1,9 @@
 #include <cub/util_type.cuh>
 
 #include <thrust/distance.h>
+#include <thrust/functional.h>
 #include <thrust/iterator/offset_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
 
 #include <cuda/std/iterator>
 
@@ -131,3 +133,18 @@ void TestOffsetIteratorIndirectValue()
   ASSERT_EQUAL(*iter, 2);
 }
 DECLARE_VECTOR_UNITTEST(TestOffsetIteratorIndirectValue);
+
+// this is not strictly a CUDA test, but it uses CUB
+template <typename Vector>
+void TestOffsetIteratorIndirectValueFancyIterator()
+{
+  using thrust::placeholders::_1;
+
+  Vector v{0, 1, 2, 3, 4, 5, 6, 7, 8};
+  thrust::device_vector<typename Vector::difference_type> offsets{2};
+  auto it = thrust::make_transform_iterator(offsets.begin(), _1 * 3);
+  thrust::offset_iterator iter(v.begin(), cub::FutureValue{it});
+
+  ASSERT_EQUAL(*iter, 6);
+}
+DECLARE_VECTOR_UNITTEST(TestOffsetIteratorIndirectValueFancyIterator);
