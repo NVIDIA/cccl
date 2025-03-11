@@ -89,6 +89,7 @@ __store_dispatch(_Tp __data, _Tp* __ptr, [[maybe_unused]] __eviction_policy_t<_E
 #  else // __cccl_ptx_isa < 740
   *__ptr = __data;
 #  endif
+  _CCCL_UNREACHABLE();
 }
 
 /***********************************************************************************************************************

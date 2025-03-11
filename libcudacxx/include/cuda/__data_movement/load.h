@@ -13,6 +13,8 @@
 
 #include <cuda/__cccl_config>
 
+#include "cuda/std/__cccl/unreachable.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -179,6 +181,7 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp __load_dispatch(
 #  else // __cccl_ptx_isa < 740
   return *__ptr;
 #  endif
+  _CCCL_UNREACHABLE();
 }
 
 /***********************************************************************************************************************
