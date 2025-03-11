@@ -22,5 +22,6 @@
 #endif // no system header
 
 #include <cuda/__mdspan/host_device_mdspan.h>
+#include <cuda/std/mdspan>
 
 #endif // _CUDA_MDSPAN
