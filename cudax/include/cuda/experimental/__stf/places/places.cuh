@@ -198,7 +198,12 @@ public:
   /// checks if this data place corresponds to a specific device
   bool is_device() const
   {
-    return !is_composite() && !is_green_ctx() && (devid >= 0);
+    // All other type of data places have a specific negative devid value.
+    return (devid >= 0);
+  }
+
+  bool is_device_auto() const {
+      return devid == device_auto_devid;
   }
 
   ::std::string to_string() const
