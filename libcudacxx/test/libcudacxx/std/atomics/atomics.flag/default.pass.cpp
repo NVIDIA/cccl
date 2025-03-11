@@ -35,11 +35,11 @@ __host__ __device__ void test()
 
   NV_DISPATCH_TARGET(
     NV_IS_HOST,
-    (typedef cuda::std::atomic_flag A; TEST_ALIGNAS_TYPE(A) char storage[sizeof(A)] = {1}; A& zero = *new (storage) A();
+    (typedef cuda::std::atomic_flag A; alignas(alignof(A) char storage[sizeof(A)] = {1}; A& zero = *new (storage) A();
      assert(!zero.test_and_set());
      zero.~A();),
     NV_PROVIDES_SM_70,
-    (typedef cuda::std::atomic_flag A; TEST_ALIGNAS_TYPE(A) char storage[sizeof(A)] = {1}; A& zero = *new (storage) A();
+    (typedef cuda::std::atomic_flag A; alignas(alignof(A) char storage[sizeof(A)] = {1}; A& zero = *new (storage) A();
      assert(!zero.test_and_set());
      zero.~A();))
 }
