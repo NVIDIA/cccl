@@ -239,15 +239,15 @@ inclusive_scan(tag, InputIterator first, InputIterator last, OutputIterator resu
 {
   using namespace thrust::detail;
 
-  // Use the input iterator's value type per https://wg21.link/P0571
   using ValueType = thrust::detail::it_value_t<InputIterator>;
+  using AccumT    = ::cuda::std::__accumulator_t<BinaryFunction, ValueType>;
 
   using Size = thrust::detail::it_difference_t<InputIterator>;
   Size n     = thrust::distance(first, last);
 
   if (n != 0)
   {
-    using Body = typename scan_detail::inclusive_body<InputIterator, OutputIterator, BinaryFunction, ValueType, false>;
+    using Body = typename scan_detail::inclusive_body<InputIterator, OutputIterator, BinaryFunction, AccumT, false>;
     Body scan_body(first, result, binary_op, *first);
     ::tbb::parallel_scan(::tbb::blocked_range<Size>(0, n), scan_body);
   }
@@ -290,13 +290,14 @@ OutputIterator exclusive_scan(
 
   // Use the initial value type per https://wg21.link/P0571
   using ValueType = InitialValueType;
+  using AccumT    = ::cuda::std::__accumulator_t<BinaryFunction, ValueType>;
 
   using Size = thrust::detail::it_difference_t<InputIterator>;
   Size n     = thrust::distance(first, last);
 
   if (n != 0)
   {
-    using Body = typename scan_detail::exclusive_body<InputIterator, OutputIterator, BinaryFunction, ValueType>;
+    using Body = typename scan_detail::exclusive_body<InputIterator, OutputIterator, BinaryFunction, AccumT>;
     Body scan_body(first, result, binary_op, init);
     ::tbb::parallel_scan(::tbb::blocked_range<Size>(0, n), scan_body);
   }

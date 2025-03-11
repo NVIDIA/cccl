@@ -877,8 +877,8 @@ template <class Derived, class InputIt>
 _CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<::cuda::std::plus<>, ::cuda::std::iter_value_t<InputIt>>
 reduce(execution_policy<Derived>& policy, InputIt first, InputIt last)
 {
-  using value_type = thrust::detail::it_value_t<InputIt>;
-  return cuda_cub::reduce(policy, first, last, value_type(0));
+  using value_type = ::cuda::std::__accumulator_t<::cuda::std::plus<>, ::cuda::std::iter_value_t<InputIt>>;
+  return cuda_cub::reduce(policy, first, last, value_type{});
 }
 
 } // namespace cuda_cub
