@@ -17,19 +17,14 @@ __host__ __device__ void test_submdspan(int* ptr)
 {
   Mdspan md{ptr, cuda::std::dims<1>{4}};
   auto submd = cuda::std::submdspan(md, cuda::std::pair{1, 3});
-#if defined(__CUDA_ARCH__)
   if constexpr (cuda::is_device_accessible_v<Mdspan>)
   {
-    assert(submd(0) == 2);
-    assert(submd(1) == 3);
+    NV_IF_TARGET(NV_IS_DEVICE, (assert(submd(0) == 2); assert(submd(1) == 3);))
   }
-#else
   if constexpr (cuda::is_host_accessible_v<Mdspan>)
   {
-    assert(submd(0) == 2);
-    assert(submd(1) == 3);
+    NV_IF_TARGET(NV_IS_HOST, (assert(submd(0) == 2); assert(submd(1) == 3);))
   }
-#endif
   unused(submd);
 }
 
