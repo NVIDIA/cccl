@@ -23,7 +23,7 @@ TEST_DIAG_SUPPRESS_MSVC(4324) // padding was added at the end of a structure bec
 
 template <class T>
 __host__ __device__ void
-test_aligned_alloc(bool expect_success, cuda::std::size_t n, cuda::std::size_t align = TEST_ALIGNOF(T))
+test_aligned_alloc(bool expect_success, cuda::std::size_t n, cuda::std::size_t align = alignof(T))
 {
   static_assert(noexcept(cuda::std::aligned_alloc(n * sizeof(T), align)), "");
   T* ptr = static_cast<T*>(cuda::std::aligned_alloc(n * sizeof(T), align));
@@ -47,12 +47,12 @@ struct BigStruct
   int data[32];
 };
 
-struct TEST_ALIGNAS(cuda::std::max_align_t) AlignedStruct
+struct alignas(cuda::std::max_align_t) AlignedStruct
 {
   char data[32];
 };
 
-struct TEST_ALIGNAS(128) OverAlignedStruct
+struct alignas(128) OverAlignedStruct
 {
   char data[32];
 };

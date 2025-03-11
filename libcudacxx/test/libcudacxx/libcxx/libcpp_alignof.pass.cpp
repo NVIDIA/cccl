@@ -21,7 +21,7 @@ template <class T>
 __host__ __device__ void test()
 {
   static_assert(_LIBCUDACXX_ALIGNOF(T) == cuda::std::alignment_of<T>::value, "");
-  static_assert(_LIBCUDACXX_ALIGNOF(T) == TEST_ALIGNOF(T), "");
+  static_assert(_LIBCUDACXX_ALIGNOF(T) == alignof(T), "");
   static_assert(_LIBCUDACXX_ALIGNOF(T) == alignof(T), "");
 #if TEST_COMPILER(CLANG)
   static_assert(_LIBCUDACXX_ALIGNOF(T) == _Alignof(T), "");

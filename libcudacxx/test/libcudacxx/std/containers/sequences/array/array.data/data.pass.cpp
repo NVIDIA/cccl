@@ -81,7 +81,7 @@ int main(int, char**)
     const C c                 = {};
     const T* p                = c.data();
     cuda::std::uintptr_t pint = reinterpret_cast<cuda::std::uintptr_t>(p);
-    assert(pint % TEST_ALIGNOF(T) == 0);
+    assert(pint % alignof(T) == 0);
   }
   return 0;
 }

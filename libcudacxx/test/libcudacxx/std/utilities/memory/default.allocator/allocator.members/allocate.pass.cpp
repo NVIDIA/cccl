@@ -41,7 +41,7 @@ STATIC_TEST_GLOBAL_VAR const cuda::std::size_t OverAligned = MaxAligned * 2;
 STATIC_TEST_GLOBAL_VAR int AlignedType_constructed = 0;
 
 template <cuda::std::size_t Align>
-struct TEST_ALIGNAS(Align) AlignedType
+struct alignas(Align) AlignedType
 {
   char data;
   __host__ __device__ AlignedType()

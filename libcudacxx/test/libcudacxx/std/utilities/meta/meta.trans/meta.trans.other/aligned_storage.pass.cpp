@@ -189,7 +189,7 @@ int main(int, char**)
     ASSERT_SAME_TYPE(T1, cuda::std::aligned_storage_t<16>);
     static_assert(cuda::std::is_trivial<T1>::value, "");
     static_assert(cuda::std::is_standard_layout<T1>::value, "");
-    static_assert(cuda::std::alignment_of<T1>::value == TEST_ALIGNOF(cuda::std::max_align_t), "");
+    static_assert(cuda::std::alignment_of<T1>::value == alignof(cuda::std::max_align_t), "");
     static_assert(sizeof(T1) == 16, "");
   }
   {
@@ -197,8 +197,8 @@ int main(int, char**)
     ASSERT_SAME_TYPE(T1, cuda::std::aligned_storage_t<17>);
     static_assert(cuda::std::is_trivial<T1>::value, "");
     static_assert(cuda::std::is_standard_layout<T1>::value, "");
-    static_assert(cuda::std::alignment_of<T1>::value == TEST_ALIGNOF(cuda::std::max_align_t), "");
-    static_assert(sizeof(T1) == 16 + TEST_ALIGNOF(cuda::std::max_align_t), "");
+    static_assert(cuda::std::alignment_of<T1>::value == alignof(cuda::std::max_align_t), "");
+    static_assert(sizeof(T1) == 16 + alignof(cuda::std::max_align_t), "");
   }
   {
     typedef cuda::std::aligned_storage<10>::type T1;

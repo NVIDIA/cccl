@@ -60,9 +60,6 @@
 #  define TEST_IS_CONSTANT_EVALUATED_CXX23() false
 #endif // ^^^ TEST_STD_VER <= 2020
 
-#define TEST_ALIGNOF(...) alignof(__VA_ARGS__)
-#define TEST_ALIGNAS(...) alignas(__VA_ARGS__)
-
 #if TEST_STD_VER >= 2014
 #  define TEST_CONSTEXPR_CXX14 constexpr
 #else
@@ -104,7 +101,7 @@
 #  endif
 #endif
 
-#define TEST_ALIGNAS_TYPE(...) TEST_ALIGNAS(TEST_ALIGNOF(__VA_ARGS__))
+#define TEST_ALIGNAS_TYPE(...) alignas(alignof(__VA_ARGS__))
 
 #if !TEST_HAS_FEATURE(cxx_rtti) && !defined(__cpp_rtti) && !defined(__GXX_RTTI)
 #  define TEST_HAS_NO_RTTI

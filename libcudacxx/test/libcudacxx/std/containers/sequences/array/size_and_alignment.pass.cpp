@@ -37,7 +37,7 @@ __host__ __device__ void test()
   typedef MyArray<T, Size == 0 ? 1 : Size> MyArrayT;
   static_assert(sizeof(ArrayT) == sizeof(CArrayT), "");
   static_assert(sizeof(ArrayT) == sizeof(MyArrayT), "");
-  static_assert(TEST_ALIGNOF(ArrayT) == TEST_ALIGNOF(MyArrayT), "");
+  static_assert(alignof(ArrayT) == alignof(MyArrayT), "");
 }
 
 template <class T>
