@@ -14,18 +14,19 @@
 __device__ int device_array[]              = {1, 2, 3, 4};
 __device__ __managed__ int managed_array[] = {1, 2, 3, 4};
 
-int main(int, char**)
+__host__ __device__ void basic_mdspan_access_test()
 {
   int array[] = {1, 2, 3, 4};
   using ext_t = cuda::std::extents<int, 4>;
   cuda::host_mdspan<int, ext_t> h_md{array, ext_t{}};
   cuda::device_mdspan<int, ext_t> d_md{device_array, ext_t{}};
   cuda::managed_mdspan<int, ext_t> m_md{managed_array, ext_t{}};
-#if !defined(__CUDA_ARCH__)
-  unused(h_md[0]);
-#else
-  unused(d_md[0]);
-#endif
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (unused(h_md[0]);), unused(d_md[0]);)
   unused(m_md[0]);
+}
+
+int main(int, char**)
+{
+  basic_mdspan_access_test();
   return 0;
 }

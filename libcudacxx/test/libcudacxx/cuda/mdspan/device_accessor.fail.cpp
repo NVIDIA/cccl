@@ -6,17 +6,22 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: nvrtc
+// UNSUPPORTED: nvhpc, nvrtc
 
 #include <cuda/mdspan>
 
 #include "test_macros.h"
 
-int main(int, char**)
+__host__ __device__ void device_accessor_test()
 {
   int array[] = {1, 2, 3, 4};
   using ext_t = cuda::std::extents<int, 4>;
   cuda::device_mdspan<int, ext_t> d_md{array, ext_t{}};
   unused(d_md[0]);
+}
+
+int main(int, char**)
+{
+  device_accessor_test();
   return 0;
 }

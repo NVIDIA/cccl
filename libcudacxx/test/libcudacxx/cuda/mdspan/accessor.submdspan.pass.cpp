@@ -35,11 +35,16 @@ __host__ __device__ void test_submdspan(int* ptr)
 
 __device__ __managed__ int managed_array[] = {1, 2, 3, 4};
 
-int main(int, char**)
+__host__ __device__ void test_submdspan()
 {
   int array[] = {1, 2, 3, 4};
   test_submdspan<cuda::host_mdspan<int, cuda::std::dims<1>>>(array);
   test_submdspan<cuda::device_mdspan<int, cuda::std::dims<1>>>(array);
   test_submdspan<cuda::managed_mdspan<int, cuda::std::dims<1>>>(managed_array);
+}
+
+int main(int, char**)
+{
+  test_submdspan();
   return 0;
 }

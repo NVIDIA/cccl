@@ -12,16 +12,17 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
+__host__ void host_accessor_runtime_fail()
 {
-#if !defined(__CUDA_ARCH__)
   int* device_ptr = nullptr;
   assert(cudaMalloc(&device_ptr, 4) == cudaSuccess);
   using ext_t = cuda::std::extents<int, 4>;
   cuda::host_mdspan<int, ext_t> h_md{device_ptr, ext_t{}};
-  unused(h_md[0]);
-  return 0;
-#else
-  return 1;
-#endif
+  NV_IF_TARGET(NV_IS_HOST, (unused(h_md[0]);))
+}
+
+int main(int, char**)
+{
+  NV_IF_TARGET(NV_IS_HOST, host_accessor_runtime_fail();)
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (return 0;), (return 1;))
 }

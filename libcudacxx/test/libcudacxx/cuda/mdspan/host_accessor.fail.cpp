@@ -6,18 +6,22 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+// UNSUPPORTED: nvhpc
 
 #include <cuda/mdspan>
 
 #include "test_macros.h"
 
-int main(int, char**)
+__host__ __device__ void host_accessor_compile_fail()
 {
   int array[] = {1, 2, 3, 4};
   using ext_t = cuda::std::extents<int, 4>;
   cuda::host_mdspan<int, ext_t> h_md{array, ext_t{}};
-#if defined(__CUDA_ARCH__)
   unused(h_md[0]);
-#endif
+}
+
+int main(int, char**)
+{
+  host_accessor_compile_fail();
   return 0;
 }
