@@ -26,9 +26,9 @@
 #  include <cuda/std/string_view>
 #endif
 
-#if defined(__GNUC__)
+#if TEST_COMPILER(GCC)
 #  pragma GCC diagnostic ignored "-Wtype-limits"
-#endif
+#endif // TEST_COMPILER(GCC)
 
 #include "test_macros.h"
 

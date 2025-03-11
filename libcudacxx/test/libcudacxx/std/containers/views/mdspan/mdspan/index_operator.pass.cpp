@@ -335,6 +335,6 @@ int main(int, char**)
   return 0;
 }
 
-#if defined(TEST_COMPILER_GCC)
+#if TEST_COMPILER(GCC)
 #  pragma GCC diagnostic pop
-#endif // TEST_COMPILER_GCC
+#endif // TEST_COMPILER(GCC)

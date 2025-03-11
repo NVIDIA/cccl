@@ -188,9 +188,9 @@ __host__ __device__ void test_noexcept()
     unused(tup);
     Tuple const& ctup = tup;
     unused(ctup);
-#ifndef TEST_COMPILER_NVHPC
+#if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(cuda::std::make_from_tuple<TestType>(ctup)));
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER(NVHPC)
     static_assert(noexcept(cuda::std::make_from_tuple<TestType>(cuda::std::move(tup))));
   }
   {
@@ -199,12 +199,12 @@ __host__ __device__ void test_noexcept()
     unused(tup);
     Tuple const& ctup = tup;
     unused(ctup);
-#ifndef TEST_COMPILER_NVHPC
+#if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(cuda::std::make_from_tuple<TestType>(ctup)));
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER(NVHPC)
     static_assert(noexcept(cuda::std::make_from_tuple<TestType>(cuda::std::move(tup))));
   }
-#ifndef TEST_COMPILER_NVHPC
+#if !TEST_COMPILER(NVHPC)
   {
     using Tuple = cuda::std::tuple<int, int, int>;
     Tuple tup;
@@ -224,7 +224,7 @@ __host__ __device__ void test_noexcept()
     unused(tup);
     static_assert(!noexcept(cuda::std::make_from_tuple<TestType>(tup)));
   }
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER(NVHPC)
   {
     using Tuple = cuda::std::array<long, 3>;
     Tuple tup;

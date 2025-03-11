@@ -46,9 +46,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 }
 
 __host__ __device__
-#if !defined(TEST_COMPILER_MSVC)
+#if !TEST_COMPILER(MSVC)
   TEST_CONSTEXPR_CXX14
-#endif // !TEST_COMPILER_MSVC
+#endif // !TEST_COMPILER(MSVC)
   bool
   test_dim3()
 {
@@ -61,9 +61,9 @@ int main(int arg, char** argv)
   test();
   test_dim3();
   static_assert(test(), "");
-#if !defined(TEST_COMPILER_MSVC)
+#if !TEST_COMPILER(MSVC)
   static_assert(test_dim3(), "");
-#endif // !TEST_COMPILER_MSVC
+#endif // !TEST_COMPILER(MSVC)
 
   return 0;
 }

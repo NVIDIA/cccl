@@ -16,9 +16,9 @@
 
 #include "test_macros.h"
 
-#if defined(TEST_COMPILER_MSVC)
+#if TEST_COMPILER(MSVC)
 #  pragma warning(disable : 4702) // unreachable code
-#endif // TEST_COMPILER_MSVC
+#endif // TEST_COMPILER(MSVC)
 
 #if 0 // Wait until terminate handler is available
 __host__ __device__ void f1()

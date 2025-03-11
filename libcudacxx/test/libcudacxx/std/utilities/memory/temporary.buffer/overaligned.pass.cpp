@@ -27,9 +27,9 @@
 
 #include "test_macros.h"
 
-#if defined(TEST_COMPILER_MSVC)
+#if TEST_COMPILER(MSVC)
 #  pragma warning(disable : 4324) // structure was padded due to alignment specifier
-#endif // TEST_COMPILER_MSVC
+#endif // TEST_COMPILER(MSVC)
 
 struct alignas(32) A
 {

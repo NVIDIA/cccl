@@ -26,10 +26,10 @@
 #include "test_macros.h"
 #include "type_algorithms.h"
 
-#ifdef TEST_COMPILER_MSVC
+#if TEST_COMPILER(MSVC)
 #  pragma warning(disable : 4244) // conversion possible loss of data
 #  pragma warning(disable : 4310) // cast truncates constant value
-#endif // TEST_COMPILER_MSVC
+#endif // TEST_COMPILER(MSVC)
 
 template <class UnderlyingType, class Iter1>
 struct Test

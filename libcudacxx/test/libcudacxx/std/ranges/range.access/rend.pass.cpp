@@ -627,7 +627,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX17 bool testBeginEnd()
 static_assert(noexcept(cuda::std::ranges::rend(cuda::std::declval<int (&)[10]>())));
 static_assert(noexcept(cuda::std::ranges::crend(cuda::std::declval<int (&)[10]>())));
 
-#if !defined(TEST_COMPILER_MSVC_2019)
+#if !TEST_COMPILER(MSVC2019)
 _CCCL_GLOBAL_CONSTANT struct NoThrowMemberREnd
 {
   __host__ __device__ ThrowingIterator<int> rbegin() const;
@@ -644,7 +644,7 @@ _CCCL_GLOBAL_CONSTANT struct NoThrowADLREnd
 } ntare;
 static_assert(noexcept(cuda::std::ranges::rend(ntare)));
 static_assert(noexcept(cuda::std::ranges::crend(ntare)));
-#endif // !TEST_COMPILER_MSVC_2019
+#endif // !TEST_COMPILER(MSVC2019)
 
 _CCCL_GLOBAL_CONSTANT struct NoThrowMemberREndReturnsRef
 {
@@ -708,10 +708,10 @@ int main(int, char**)
   testBeginEnd();
   static_assert(testBeginEnd());
 
-#if !defined(TEST_COMPILER_MSVC_2019)
+#if !TEST_COMPILER(MSVC2019)
   unused(ntmre);
   unused(ntare);
-#endif // !TEST_COMPILER_MSVC_2019
+#endif // !TEST_COMPILER(MSVC2019)
   unused(ntmrerr);
   unused(rerar);
   unused(ntbte);

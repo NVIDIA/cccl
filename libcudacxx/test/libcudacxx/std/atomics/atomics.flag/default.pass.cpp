@@ -20,9 +20,9 @@
 
 #include "test_macros.h"
 
-#if !defined(TEST_COMPILER_MSVC)
+#if !TEST_COMPILER(MSVC)
 #  include "placement_new.h"
-#endif
+#endif // !TEST_COMPILER(MSVC)
 #include "cuda_space_selector.h"
 
 template <template <typename, typename> class Selector>

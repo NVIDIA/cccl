@@ -22,9 +22,9 @@
 #include "count_new.h"
 #include "test_macros.h"
 
-#if defined(TEST_COMPILER_MSVC)
+#if TEST_COMPILER(MSVC)
 #  pragma warning(disable : 4324) // structure was padded due to alignment specifier
-#endif // TEST_COMPILER_MSVC
+#endif // TEST_COMPILER(MSVC)
 
 #if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
 static const bool UsingAlignedNew = true;
@@ -75,12 +75,12 @@ __host__ __device__ void test_aligned()
     globalMemCounter.last_new_size  = 0;
     globalMemCounter.last_new_align = 0;
     T* ap                           = a.allocate(3);
-#if !defined(TEST_COMPILER_NVCC) && !defined(TEST_COMPILER_NVRTC)
+#if !TEST_CUDA_COMPILER(NVCC) && !TEST_COMPILER(NVRTC)
     DoNotOptimize(ap);
 #else
     const auto meow = reinterpret_cast<uintptr_t>(ap) + 2;
     (void) meow;
-#endif // !TEST_COMPILER_NVCC && !TEST_COMPILER_NVRTC
+#endif // !TEST_CUDA_COMPILER(NVCC) && !TEST_COMPILER(NVRTC)
     // assert(globalMemCounter.checkOutstandingNewEq(1));
     assert(globalMemCounter.checkNewCalledEq(1));
     assert(globalMemCounter.checkAlignedNewCalledEq(ExpectAligned));

@@ -10,9 +10,9 @@
 
 // std::array is explicitly allowed to be initialized with A a = { init-list };.
 // Disable the missing braces warning for this reason.
-#if defined(__GNUC__)
+#if TEST_COMPILER(GCC)
 #  pragma GCC diagnostic ignored "-Wmissing-braces"
-#elif defined(__clang__)
+#elif TEST_COMPILER(CLANG)
 #  pragma clang diagnostic ignored "-Wmissing-braces"
 #endif
 

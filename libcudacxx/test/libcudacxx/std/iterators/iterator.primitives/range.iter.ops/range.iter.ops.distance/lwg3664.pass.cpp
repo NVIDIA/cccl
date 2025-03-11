@@ -16,9 +16,9 @@
 // template<class I, sized_sentinel_for<decay_t<I>> S>
 //   constexpr iter_difference_t<I> ranges::distance(const I& first, S last);
 
-#if defined(__GNUC__) && !defined(__clang__)
+#if TEST_COMPILER(GCC)
 #  pragma GCC diagnostic ignored "-Wnon-template-friend"
-#endif
+#endif // TEST_COMPILER(GCC)
 
 #include <cuda/std/cassert>
 #include <cuda/std/iterator>
@@ -56,15 +56,14 @@ struct EvilSentinel
     return p - s.p_;
   }
 // Older clang confuses the all deleted overloads
-#if (!defined(TEST_CLANG_VER) || TEST_CLANG_VER >= 1000)
+#if !TEST_COMPILER(CLANG, <, 10)
   __host__ __device__ friend constexpr void operator-(EvilSentinel s, int (&)[3])       = delete;
   __host__ __device__ friend constexpr void operator-(EvilSentinel s, const int (&)[3]) = delete;
 // Older gcc confuses the rvalue overloads with the lvalue overloads and complains about duplicated function definitions
-#  if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 10)
+#elif !TEST_COMPILER(GCC, <, 10)
   __host__ __device__ friend constexpr void operator-(EvilSentinel s, int (&&)[3])       = delete;
   __host__ __device__ friend constexpr void operator-(EvilSentinel s, const int (&&)[3]) = delete;
-#  endif
-#endif
+#endif // !TEST_COMPILER(GCC, <, 10)
 };
 static_assert(cuda::std::sized_sentinel_for<EvilSentinel<int*>, int*>);
 static_assert(!cuda::std::sized_sentinel_for<EvilSentinel<int*>, const int*>);

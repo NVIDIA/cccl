@@ -117,7 +117,7 @@ struct TestBase
     ++value_assigned();
     return *this;
   }
-#if !defined(TEST_WORKAROUND_C1XX_BROKEN_ZA_CTOR_CHECK) && !defined(TEST_COMPILER_NVRTC)
+#if !defined(TEST_WORKAROUND_C1XX_BROKEN_ZA_CTOR_CHECK) && !TEST_COMPILER(NVRTC)
 
 protected:
 #endif // !TEST_WORKAROUND_C1XX_BROKEN_ZA_CTOR_CHECK

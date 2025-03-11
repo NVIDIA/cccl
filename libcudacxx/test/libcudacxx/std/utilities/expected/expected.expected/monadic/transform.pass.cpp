@@ -236,7 +236,7 @@ __host__ __device__ constexpr void test_val_types()
   }
 }
 
-#if !defined(TEST_COMPILER_GCC) || __GNUC__ > 8 // GCC7 and GCC8 seem to be too eager to instantiate the world
+#if !TEST_COMPILER(GCC, <, 9) // GCC7 and GCC8 seem to be too eager to instantiate the world
 struct NonConst
 {
   __host__ __device__ constexpr int non_const()
@@ -264,7 +264,7 @@ __host__ __device__ constexpr void test_sfinae()
   expect.transform(l);
   cuda::std::move(expect).transform(l);
 }
-#endif // !defined(TEST_COMPILER_GCC) || __GNUC__ > 8
+#endif // !TEST_COMPILER(GCC, <, 9)
 
 struct NoCopy
 {
@@ -298,9 +298,9 @@ struct NeverCalled
 __host__ __device__ constexpr bool test()
 {
   test_val_types();
-#if !defined(TEST_COMPILER_GCC) || __GNUC__ > 8 // GCC7 and GCC8 seem to be too eager to instantiate the world
+#if !TEST_COMPILER(GCC, <, 9) // GCC7 and GCC8 seem to be too eager to instantiate the world
   test_sfinae();
-#endif // !defined(TEST_COMPILER_GCC) || __GNUC__ > 8
+#endif // !TEST_COMPILER(GCC, <, 9)
 
   cuda::std::expected<int, TestError> expect{cuda::std::unexpect, 42};
   const auto& cexpect = expect;

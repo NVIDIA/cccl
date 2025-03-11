@@ -47,14 +47,14 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
   {
     A1 a{};
-#ifndef TEST_COMPILER_NVHPC
+#if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(implicitly_convert(a)));
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER(NVHPC)
     cuda::std::reference_wrapper<B> b1 = a;
     assert(&b1.get() == &a.b_);
-#ifndef TEST_COMPILER_NVHPC
+#if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(b1 = a));
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER(NVHPC)
     b1 = a;
     assert(&b1.get() == &a.b_);
   }
@@ -73,9 +73,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER > 2017 && !defined(TEST_COMPILER_NVRTC)
+#if TEST_STD_VER > 2017 && !TEST_COMPILER(NVRTC)
   static_assert(test());
-#endif
+#endif // TEST_STD_VER > 2017 && !TEST_COMPILER(NVRTC)
 
   return 0;
 }

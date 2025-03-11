@@ -133,7 +133,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void basic_tests()
     }
   }
 
-#if !defined(TEST_COMPILER_NVHPC) // NVHPC seems unable to silence the warning
+#if !TEST_COMPILER(NVHPC) // NVHPC seems unable to silence the warning
   TEST_NV_DIAG_SUPPRESS(expr_has_no_effect)
   {
     cuda::std::array<cuda::std::size_t, 0> v{};
@@ -142,7 +142,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void basic_tests()
       v.begin(), v.end(), res.begin(), cuda::std::plus<>(), add_one{}, cuda::std::size_t{1});
     assert(res.empty());
   }
-#endif // !TEST_COMPILER_NVHPC
+#endif // !TEST_COMPILER(NVHPC)
 
   //  Make sure that the calculations are done using the init typedef
   {

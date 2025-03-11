@@ -18,9 +18,9 @@
 
 #include "test_macros.h"
 
-#if defined(TEST_COMPILER_GCC) && ((TEST_GCC_VER >= 900 && TEST_GCC_VER < 903) || TEST_GCC_VER < 804)
+#if TEST_COMPILER(GCC, <, 10)
 #  define OMIT_BITFIELD_ENUMS 1
-#endif
+#endif // TEST_COMPILER(GCC, <, 10)
 
 enum class e_default
 {

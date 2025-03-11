@@ -26,17 +26,17 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-#ifdef TEST_COMPILER_MSVC
+#if TEST_COMPILER(MSVC)
 #  pragma warning(disable : 4018) // signed/unsigned mismatch
-#endif // TEST_COMPILER_MSVC
+#endif // TEST_COMPILER(MSVC)
 
-#ifdef TEST_COMPILER_GCC
+#if TEST_COMPILER(GCC)
 #  pragma GCC diagnostic ignored "-Wsign-compare"
-#endif // TEST_COMPILER_GCC
+#endif // TEST_COMPILER(GCC)
 
-#ifdef TEST_COMPILER_CLANG
+#if TEST_COMPILER(CLANG)
 #  pragma clang diagnostic ignored "-Wsign-compare"
-#endif // TEST_COMPILER_CLANG
+#endif // TEST_COMPILER(CLANG)
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 {

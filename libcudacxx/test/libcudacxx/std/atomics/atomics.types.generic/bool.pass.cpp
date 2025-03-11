@@ -57,9 +57,9 @@
 
 #include "test_macros.h"
 #include <cmpxchg_loop.h>
-#if !defined(TEST_COMPILER_MSVC)
+#if !TEST_COMPILER(MSVC)
 #  include "placement_new.h"
-#endif
+#endif // !TEST_COMPILER(MSVC)
 #include "cuda_space_selector.h"
 
 template <template <cuda::thread_scope> class Atomic,

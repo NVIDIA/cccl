@@ -27,7 +27,7 @@ static_assert(!cuda::std::is_invocable_v<RangeSizeT, Incomplete[]>, "");
 static_assert(!cuda::std::is_invocable_v<RangeSizeT, Incomplete (&)[]>, "");
 static_assert(!cuda::std::is_invocable_v<RangeSizeT, Incomplete (&&)[]>, "");
 
-#ifndef TEST_COMPILER_NVRTC
+#if !TEST_COMPILER(NVRTC)
 extern Incomplete array_of_incomplete[42];
 static_assert(cuda::std::ranges::size(array_of_incomplete) == 42, "");
 static_assert(cuda::std::ranges::size(cuda::std::move(array_of_incomplete)) == 42, "");
@@ -35,7 +35,7 @@ static_assert(cuda::std::ranges::size(cuda::std::move(array_of_incomplete)) == 4
 extern const Incomplete const_array_of_incomplete[42];
 static_assert(cuda::std::ranges::size(const_array_of_incomplete) == 42, "");
 static_assert(cuda::std::ranges::size(static_cast<const Incomplete (&&)[42]>(array_of_incomplete)) == 42, "");
-#endif // !TEST_COMPILER_NVRTC
+#endif // !TEST_COMPILER(NVRTC)
 
 struct SizeMember
 {

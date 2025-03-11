@@ -28,7 +28,7 @@ __host__ __device__ void test_lambda(Fn&&)
 
 int main(int, char**)
 {
-#if defined(TEST_COMPILER_NVCC) || defined(TEST_COMPILER_NVRTC)
+#if TEST_CUDA_COMPILER(NVCC) || TEST_COMPILER(NVRTC)
   { // extended device lambda
     test_lambda<int>([] __device__() {
       return 42;
@@ -37,7 +37,7 @@ int main(int, char**)
       return 42.0;
     });
   }
-#endif
+#endif // TEST_CUDA_COMPILER(NVCC) || TEST_COMPILER(NVRTC)
 
   return 0;
 }

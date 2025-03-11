@@ -93,14 +93,14 @@ __host__ __device__ void test_no_result()
   test_invoke_no_result<T>::call();
 }
 
-#if defined(__NVCC__)
+#if TEST_CUDA_COMPILER(NVCC)
 template <class Ret, class Fn>
 __host__ __device__ void test_lambda(Fn&&)
 {
   ASSERT_SAME_TYPE(Ret, typename cuda::std::result_of<Fn()>::type);
   ASSERT_SAME_TYPE(Ret, typename cuda::std::invoke_result<Fn>::type);
 }
-#endif
+#endif // TEST_CUDA_COMPILER(NVCC)
 
 int main(int, char**)
 {
@@ -415,7 +415,7 @@ int main(int, char**)
     test_result_of<PMD(cuda::std::reference_wrapper<S const>), const char&>();
     test_no_result<PMD(ND&)>();
   }
-#if defined(TEST_COMPILER_NVCC)
+#if TEST_CUDA_COMPILER(NVCC)
   { // extended lambda
     NV_IF_TARGET(
       NV_IS_DEVICE,
@@ -432,7 +432,7 @@ int main(int, char**)
       return 42.0;
     }));
   }
-#endif
+#endif // TEST_CUDA_COMPILER(NVCC)
 
   return 0;
 }

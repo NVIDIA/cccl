@@ -341,7 +341,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX17 bool test()
   cuda::std::move(copt).transform(never_called);
 
 // the code below depends on guaranteed copy/move elision
-#if (!defined(TEST_COMPILER_MSVC) || TEST_STD_VER >= 2020)
+#if (!TEST_COMPILER(MSVC) || TEST_STD_VER >= 2020)
   cuda::std::optional<NoCopy> nc;
   const auto& cnc = nc;
   cuda::std::move(nc).transform(NoCopy{});

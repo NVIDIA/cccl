@@ -18,10 +18,10 @@
 #include "fp_compare.h"
 #include "test_macros.h"
 
-#if defined(TEST_COMPILER_MSVC)
+#if TEST_COMPILER(MSVC)
 #  pragma warning(disable : 4244) // conversion from 'double' to 'float', possible loss of data
 #  pragma warning(disable : 4146) // unary minus operator applied to unsigned type, result still unsigned
-#endif // TEST_COMPILER_MSVC
+#endif // TEST_COMPILER(MSVC)
 
 template <typename T>
 __host__ __device__ void test_sqrt(T val)

@@ -377,13 +377,13 @@ void operator delete(void* p) TEST_NOEXCEPT
   free(p);
 }
 
-#  ifdef TEST_COMPILER_GCC
+#  if TEST_COMPILER(GCC)
 void operator delete(void* p, cuda::std::size_t) TEST_NOEXCEPT
 {
   getGlobalMemCounter()->deleteCalled(p);
   free(p);
 }
-#  endif // TEST_COMPILER_GCC
+#  endif // TEST_COMPILER(GCC)
 
 void* operator new[](cuda::std::size_t s)
 {
@@ -397,13 +397,13 @@ void operator delete[](void* p) TEST_NOEXCEPT
   operator delete(p);
 }
 
-#  ifdef TEST_COMPILER_GCC
+#  if TEST_COMPILER(GCC)
 void operator delete[](void* p, cuda::std::size_t) TEST_NOEXCEPT
 {
   getGlobalMemCounter()->deleteArrayCalled(p);
   operator delete(p);
 }
-#  endif // TEST_COMPILER_GCC
+#  endif // TEST_COMPILER(GCC)
 
 #  if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
 #    if defined(_WIN32)

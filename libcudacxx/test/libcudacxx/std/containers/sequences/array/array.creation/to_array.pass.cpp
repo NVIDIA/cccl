@@ -86,7 +86,7 @@ __host__ __device__ constexpr bool tests()
     }
   }
 
-#if defined(TEST_COMPILER_NVRTC) && defined(TEST_COMPILER_MSVC)
+#if TEST_COMPILER(NVRTC) && TEST_COMPILER(MSVC)
   // Test C99 compound literal.
   {
     auto arr = cuda::std::to_array((int[]) {3, 4});
@@ -94,7 +94,7 @@ __host__ __device__ constexpr bool tests()
     assert(arr[0] == 3);
     assert(arr[1] == 4);
   }
-#endif // !TEST_COMPILER_NVRTC && !TEST_COMPILER_MSVC
+#endif // !TEST_COMPILER(NVRTC) && !TEST_COMPILER(MSVC)
 
   //  Test explicit type.
   {

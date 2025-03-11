@@ -20,13 +20,13 @@
 
 #  include "test_macros.h"
 
-#  if defined(TEST_COMPILER_CLANG)
+#  if TEST_COMPILER(CLANG)
 #    pragma clang diagnostic ignored "-Wliteral-conversion"
-#  endif
+#  endif // TEST_COMPILER(CLANG)
 
-#  ifdef TEST_COMPILER_MSVC
+#  if TEST_COMPILER(MSVC)
 #    pragma warning(disable : 4244) // conversion from 'X' to 'Y', possible loss of data
-#  endif
+#  endif // TEST_COMPILER(CLANG)
 
 int main(int, char**)
 {

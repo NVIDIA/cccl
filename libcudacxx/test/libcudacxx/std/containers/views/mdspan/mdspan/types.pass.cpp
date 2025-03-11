@@ -133,9 +133,7 @@ __host__ __device__ constexpr void test_mdspan_types()
 
   // This miserably failed with clang-cl - likely because it doesn't honor/enable
   // no-unique-address fully by default
-  // #ifndef TEST_COMPILER_MSVC
   test_mdspan_no_unique_address<L, MDS>();
-  // #endif // TEST_COMPILER_MSVC
 
   // check default template parameters:
   ASSERT_SAME_TYPE(cuda::std::mdspan<T, E>,

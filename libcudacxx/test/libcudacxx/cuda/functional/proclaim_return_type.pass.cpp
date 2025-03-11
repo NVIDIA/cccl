@@ -74,7 +74,7 @@ struct hd_callable
   }
 };
 
-#if !defined(TEST_COMPILER_NVRTC)
+#if !TEST_COMPILER(NVRTC)
 struct h_callable
 {
   __host__ int operator()() const&
@@ -86,7 +86,7 @@ struct h_callable
     return 42;
   }
 };
-#endif
+#endif // !TEST_COMPILER(NVRTC)
 
 struct d_callable
 {
@@ -128,7 +128,7 @@ int main(int argc, char** argv)
                     (test_proclaim_return_type<int>(h_callable{}, 42);))
 
   // execution space annotations on lambda require --extended-lambda flag with nvrtc
-#if !defined(TEST_COMPILER_NVRTC)
+#if !TEST_COMPILER(NVRTC)
   NV_IF_TARGET(
     NV_IS_DEVICE,
     (test_proclaim_return_type<double>(
@@ -184,7 +184,7 @@ int main(int argc, char** argv)
   test_lambda_return_type<char>();
   test_lambda_return_type<custom_type>();
 #  endif // _CCCL_CUDACC_AT_LEAST(12, 3)
-#endif // !TEST_COMPILER_NVRTC
+#endif // !TEST_COMPILER(NVRTC)
 
   return 0;
 }

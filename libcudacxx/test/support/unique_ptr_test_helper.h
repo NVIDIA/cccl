@@ -15,12 +15,12 @@
 #include "deleter_types.h"
 #include "test_macros.h"
 
-#if defined(TEST_COMPILER_NVCC) || defined(TEST_COMPILER_NVRTC)
+#if TEST_CUDA_COMPILER(NVCC) || TEST_COMPILER(NVRTC)
 TEST_NV_DIAG_SUPPRESS(3060) // call to __builtin_is_constant_evaluated appearing in a non-constexpr function
-#endif // TEST_COMPILER_NVCC || TEST_COMPILER_NVRTC
-#if defined(TEST_COMPILER_GCC)
+#endif // TEST_CUDA_COMPILER(NVCC) || TEST_COMPILER(NVRTC)
+#if TEST_COMPILER(GCC)
 #  pragma GCC diagnostic ignored "-Wtautological-compare"
-#elif defined(TEST_COMPILER_CLANG)
+#elif TEST_COMPILER(CLANG)
 #  pragma clang diagnostic ignored "-Wtautological-compare"
 #endif
 
@@ -180,10 +180,10 @@ __host__ __device__ void doIncompleteTypeTest(int expect_alive, Args&&... ctor_a
   __host__ __device__ StoresIncomplete<IncompleteT, Del>::~StoresIncomplete() \
   {}
 
-#if defined(__GNUC__)
+#if TEST_COMPILER(GCC)
 #  pragma GCC diagnostic push
 #  pragma GCC diagnostic ignored "-Wvariadic-macros"
-#endif
+#endif // TEST_COMPILER(GCC)
 
 #define DEFINE_AND_RUN_IS_INCOMPLETE_TEST(...)                  \
   __host__ __device__ static constexpr int is_incomplete_test() \
@@ -192,8 +192,8 @@ __host__ __device__ void doIncompleteTypeTest(int expect_alive, Args&&... ctor_a
   }                                                             \
   INCOMPLETE_TEST_EPILOGUE()
 
-#if defined(__GNUC__)
+#if TEST_COMPILER(GCC)
 #  pragma GCC diagnostic pop
-#endif
+#endif // TEST_COMPILER(GCC)
 
 #endif // TEST_SUPPORT_UNIQUE_PTR_TEST_HELPER_H

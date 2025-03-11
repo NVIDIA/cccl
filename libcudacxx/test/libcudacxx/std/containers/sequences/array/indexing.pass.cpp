@@ -46,10 +46,10 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
       ASSERT_SAME_TYPE(C::reference, decltype(c[0]));
       if (c.size() > (0))
       { // always false
-#if !defined(TEST_COMPILER_MSVC)
+#if !TEST_COMPILER(MSVC)
         C::reference r = c[0];
         unused(r);
-#endif // !TEST_COMPILER_MSVC
+#endif // !TEST_COMPILER(MSVC)
       }
     }
     {
@@ -60,10 +60,10 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
       ASSERT_SAME_TYPE(C::reference, decltype(c[0]));
       if (c.size() > (0))
       { // always false
-#if !defined(TEST_COMPILER_MSVC)
+#if !TEST_COMPILER(MSVC)
         C::reference r = c[0];
         unused(r);
-#endif // !TEST_COMPILER_MSVC
+#endif // !TEST_COMPILER(MSVC)
       }
     }
   }

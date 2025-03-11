@@ -99,9 +99,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
   }
 
 // NVCC believes `copy = array` accesses uninitialized memory
-#if defined(TEST_COMPILER_NVCC) || defined(TEST_COMPILER_NVRTC)
+#if TEST_CUDA_COMPILER(NVCC) || TEST_COMPILER(NVRTC)
   if (!TEST_IS_CONSTANT_EVALUATED())
-#endif // TEST_COMPILER_NVCC
+#endif // TEST_CUDA_COMPILER(NVCC)
   {
     typedef cuda::std::array<NonTrivialCopy, 1> Array;
     Array array = {};
@@ -111,9 +111,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
     unused(copy);
   }
 // NVCC believes `copy = array` accesses uninitialized memory
-#if defined(TEST_COMPILER_NVCC) || defined(TEST_COMPILER_NVRTC)
+#if TEST_CUDA_COMPILER(NVCC) || TEST_COMPILER(NVRTC)
   if (!TEST_IS_CONSTANT_EVALUATED())
-#endif // TEST_COMPILER_NVCC
+#endif // TEST_CUDA_COMPILER(NVCC)
   {
     typedef cuda::std::array<NonTrivialCopy, 2> Array;
     Array array = {};

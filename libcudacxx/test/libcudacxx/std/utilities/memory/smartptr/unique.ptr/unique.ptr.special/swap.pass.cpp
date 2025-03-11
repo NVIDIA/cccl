@@ -19,12 +19,12 @@
 #include "deleter_types.h"
 #include "test_macros.h"
 
-#if defined(TEST_COMPILER_NVCC) || defined(TEST_COMPILER_NVRTC)
+#if TEST_CUDA_COMPILER(NVCC) || TEST_COMPILER(NVRTC)
 TEST_NV_DIAG_SUPPRESS(3060) // call to __builtin_is_constant_evaluated appearing in a non-constexpr function
-#endif // TEST_COMPILER_NVCC || TEST_COMPILER_NVRTC
-#if defined(TEST_COMPILER_GCC)
+#endif // TEST_CUDA_COMPILER(NVCC) || TEST_COMPILER(NVRTC)
+#if TEST_COMPILER(GCC)
 #  pragma GCC diagnostic ignored "-Wtautological-compare"
-#elif defined(TEST_COMPILER_CLANG)
+#elif TEST_COMPILER(CLANG)
 #  pragma clang diagnostic ignored "-Wtautological-compare"
 #endif
 

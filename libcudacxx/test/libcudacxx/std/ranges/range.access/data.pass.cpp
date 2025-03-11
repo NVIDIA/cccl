@@ -23,13 +23,13 @@ STATIC_TEST_GLOBAL_VAR int globalBuff[2] = {};
 
 struct Incomplete;
 
-#if (!defined(_MSC_VER) || _MSC_VER >= 1923)
+#if !TEST_COMPILER(MSVC, <, 19, 23)
 // old MSVC has a bug where it doesn't properly handle rvalue arrays
 static_assert(!cuda::std::is_invocable_v<RangeDataT, int[1]>, "");
 static_assert(!cuda::std::is_invocable_v<RangeDataT, int (&&)[1]>, "");
 static_assert(!cuda::std::is_invocable_v<RangeCDataT, int[1]>, "");
 static_assert(!cuda::std::is_invocable_v<RangeCDataT, int (&&)[1]>, "");
-#endif
+#endif // !TEST_COMPILER(MSVC, <, 19, 23)
 
 static_assert(!cuda::std::is_invocable_v<RangeDataT, Incomplete[]>, "");
 static_assert(!cuda::std::is_invocable_v<RangeDataT, Incomplete (&&)[2]>, "");

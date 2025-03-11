@@ -150,14 +150,14 @@ int main(int, char**)
   }
 #endif // defined(_LIBCUDACXX_HAS_LIST)
 
-#if !defined(TEST_COMPILER_NVRTC) && defined(_CCCL_BUILTIN_ADDRESSOF)
+#if !TEST_COMPILER(NVRTC) && defined(_CCCL_BUILTIN_ADDRESSOF)
   {
     typedef cuda::std::reverse_iterator<const C*> RI;
     constexpr RI it1 = cuda::std::make_reverse_iterator(gC + 1);
 
     static_assert(it1->get() == gC[0].get(), "");
   }
-#endif // !TEST_COMPILER_NVRTC && _CCCL_BUILTIN_ADDRESSOF
+#endif // !TEST_COMPILER(NVRTC) && _CCCL_BUILTIN_ADDRESSOF
   {
     unused(gC);
   }

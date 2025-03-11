@@ -11,28 +11,12 @@
 #ifndef SUPPORT_TEST_MACROS_HPP
 #define SUPPORT_TEST_MACROS_HPP
 
-// Attempt to get STL specific macros like _LIBCUDACXX_VERSION using the most
-// minimal header possible. If we're testing libc++, we should use `<__config>`.
-// If <__config> isn't available, fall back to <ciso646>.
-#ifdef __has_include
-#  if __has_include(<cuda/__cccl_config>)
-#    include <cuda/__cccl_config>
-#    include <cuda/std/__internal/features.h>
-#  elif __has_include("<__config>")
-#    include <__config>
-#    define TEST_IMP_INCLUDED_HEADER
-#  endif
-#endif
-#ifndef TEST_IMP_INCLUDED_HEADER
-#  ifndef __CUDACC_RTC__
-#    include <ciso646>
-#  endif // __CUDACC_RTC__
-#endif
+#include <cuda/std/detail/__config>
 
-#if defined(__GNUC__)
-#  pragma GCC diagnostic push
-#  pragma GCC diagnostic ignored "-Wvariadic-macros"
-#endif
+// Use the CCCL compiler detection
+#define TEST_COMPILER(...)      _CCCL_COMPILER(__VA_ARGS__)
+#define TEST_CUDA_COMPILER(...) _CCCL_CUDA_COMPILER(__VA_ARGS__)
+#define TEST_HAS_CUDA_COMPILER  _CCCL_HAS_CUDA_COMPILER
 
 #ifdef _CCCL_HAS_FEATURE
 #  define TEST_HAS_FEATURE(X) _CCCL_HAS_FEATURE(X)
@@ -57,44 +41,9 @@
 #  define TEST_HAS_BUILTIN_IDENTIFIER(X) 0
 #endif
 
-#if defined(__NVCOMPILER)
-#  define TEST_COMPILER_NVHPC
-#elif defined(__clang__)
-#  define TEST_COMPILER_CLANG
-#  if defined(__apple_build_version__)
-#    define TEST_COMPILER_APPLE_CLANG
-#  endif
-#elif defined(__GNUC__)
-#  define TEST_COMPILER_GCC
-#elif defined(_MSC_VER)
-#  define TEST_COMPILER_MSVC
-#elif defined(__CUDACC_RTC__)
-#  define TEST_COMPILER_NVRTC
-#elif defined(__EDG__)
-#  define TEST_COMPILER_EDG
-#endif
-
-#if _CCCL_CUDA_COMPILER(NVCC)
-#  define TEST_COMPILER_NVCC
-#  define TEST_COMPILER_EDG
-#elif _CCCL_CUDA_COMPILER(NVHPC)
-#  define TEST_COMPILER_NVHPC_CUDA
-#elif _CCCL_CUDA_COMPILER(CLANG)
-#  define TEST_COMPILER_CLANG_CUDA
-#endif // no cuda compiler
-
-#if defined(__apple_build_version__)
-#  define TEST_APPLE_CLANG_VER (__clang_major__ * 100) + __clang_minor__
-#elif defined(__clang_major__)
-#  define TEST_CLANG_VER (__clang_major__ * 100) + __clang_minor__
-#elif defined(__GNUC__)
-#  define TEST_GCC_VER     (__GNUC__ * 100 + __GNUC_MINOR__)
-#  define TEST_GCC_VER_NEW (TEST_GCC_VER * 10 + __GNUC_PATCHLEVEL__)
-#endif
-
 /* Make a nice name for the standard version */
 #ifndef TEST_STD_VER
-#  if defined(TEST_COMPILER_MSVC)
+#  if TEST_COMPILER(MSVC)
 #    if !defined(_MSVC_LANG)
 #      define TEST_STD_VER 2003
 #    elif _MSVC_LANG <= 201103L
@@ -137,8 +86,7 @@
 #  endif
 #endif
 
-#if TEST_HAS_BUILTIN(__builtin_is_constant_evaluated) || _CCCL_COMPILER(GCC, >=, 9) \
-  || (_CCCL_COMPILER(MSVC) && _MSC_VER > 1924)
+#if TEST_HAS_BUILTIN(__builtin_is_constant_evaluated) || _CCCL_COMPILER(GCC, >=, 9) || TEST_COMPILER(MSVC, >, 19, 24)
 #  define TEST_IS_CONSTANT_EVALUATED() cuda::std::is_constant_evaluated()
 #else
 #  define TEST_IS_CONSTANT_EVALUATED() false
@@ -212,7 +160,7 @@
 #  endif
 #endif // !TEST_HAS_NO_EXCEPTIONS
 
-#if defined(TEST_COMPILER_NVCC) || defined(TEST_COMPILER_NVRTC)
+#if TEST_CUDA_COMPILER(NVCC) || TEST_COMPILER(NVRTC)
 #  define TEST_HAS_NO_EXCEPTIONS
 #endif
 
@@ -251,7 +199,16 @@ struct is_same<T, T>
 #  define TEST_THROW(...) assert(#__VA_ARGS__)
 #endif
 
-#if defined(__GNUC__) || defined(__clang__) || defined(TEST_COMPILER_NVRTC)
+#if TEST_COMPILER(MSVC)
+#  include <intrin.h>
+template <class Tp>
+inline void DoNotOptimize(Tp const& value)
+{
+  const volatile void* volatile unused = __builtin_addressof(value);
+  static_cast<void>(unused);
+  _ReadWriteBarrier();
+}
+#else // ^^^ TEST_COMPILER(MSVC) ^^^ / vvv !TEST_COMPILER(MSVC) vvv
 template <class Tp>
 __host__ __device__ inline void DoNotOptimize(Tp const& value)
 {
@@ -261,22 +218,13 @@ __host__ __device__ inline void DoNotOptimize(Tp const& value)
 template <class Tp>
 __host__ __device__ inline void DoNotOptimize(Tp& value)
 {
-#  if defined(__clang__)
+#  if TEST_COMPILER(CLANG)
   asm volatile("" : "+r,m"(value) : : "memory");
 #  else
   asm volatile("" : "+m,r"(value) : : "memory");
 #  endif
 }
-#else
-#  include <intrin.h>
-template <class Tp>
-inline void DoNotOptimize(Tp const& value)
-{
-  const volatile void* volatile unused = __builtin_addressof(value);
-  static_cast<void>(unused);
-  _ReadWriteBarrier();
-}
-#endif
+#endif // !TEST_COMPILER(MSVC)
 
 // NVCC can't handle static member variables, so with a little care
 // a function returning a reference will result in the same thing
@@ -308,26 +256,12 @@ __host__ __device__ constexpr bool unused(T&&...)
 // Define a helper macro to properly suppress warnings
 #define _TEST_TOSTRING2(x) #x
 #define _TEST_TOSTRING(x)  _TEST_TOSTRING2(x)
-#if defined(TEST_COMPILER_CLANG_CUDA)
+#if TEST_COMPILER(CLANG_CUDA)
 #  define TEST_NV_DIAG_SUPPRESS(WARNING)
 #elif defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
 #  define TEST_NV_DIAG_SUPPRESS(WARNING) _CCCL_PRAGMA(nv_diag_suppress WARNING)
 #else // ^^^ __NVCC_DIAG_PRAGMA_SUPPORT__ ^^^ / vvv !__NVCC_DIAG_PRAGMA_SUPPORT__ vvv
 #  define TEST_NV_DIAG_SUPPRESS(WARNING) _CCCL_PRAGMA(diag_suppress WARNING)
-#endif
-
-#if defined(TEST_COMPILER_MSVC)
-#  if _MSC_VER < 1920
-#    error "MSVC version not supported"
-#  elif _MSC_VER < 1930
-#    define TEST_COMPILER_MSVC_2019
-#  else
-#    define TEST_COMPILER_MSVC_2022
-#  endif
-#endif // defined(TEST_COMPILER_MSVC)
-
-#if defined(__GNUC__)
-#  pragma GCC diagnostic pop
 #endif
 
 #endif // SUPPORT_TEST_MACROS_HPP

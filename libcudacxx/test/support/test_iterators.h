@@ -1140,10 +1140,10 @@ public:
       : it_(it)
   {}
 
-#ifndef TEST_COMPILER_MSVC_2017 // MSVC2017 has issues determining common_reference
+#if !TEST_COMPILER(MSVC2017) // MSVC2017 has issues determining common_reference
   cpp20_output_iterator(cpp20_output_iterator&&)            = default;
   cpp20_output_iterator& operator=(cpp20_output_iterator&&) = default;
-#endif // !TEST_COMPILER_MSVC_2017
+#endif // !TEST_COMPILER(MSVC2017)
 
   __host__ __device__ constexpr decltype(auto) operator*() const
   {
@@ -1682,9 +1682,9 @@ struct Proxy
     return *this;
   }
 
-#if defined(TEST_COMPILER_MSVC)
+#if TEST_COMPILER(MSVC)
   TEST_NV_DIAG_SUPPRESS(1805) // MSVC complains that if we pass a pointer type, adding const is useless
-#endif // TEST_COMPILER_MSVC
+#endif // TEST_COMPILER(MSVC)
 
   // const assignment required to make ProxyIterator model cuda::std::indirectly_writable
   _CCCL_TEMPLATE(class Other)

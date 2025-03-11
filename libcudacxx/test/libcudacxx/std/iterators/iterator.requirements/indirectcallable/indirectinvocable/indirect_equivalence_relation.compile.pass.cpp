@@ -52,9 +52,9 @@ struct GoodRelation
 static_assert(cuda::std::indirect_equivalence_relation<GoodRelation<It1, It2>, It1, It2>, "");
 static_assert(cuda::std::indirect_equivalence_relation<bool (*)(int, long), int*, long*>, "");
 
-#ifdef TEST_COMPILER_CLANG_CUDA
+#if TEST_CUDA_COMPILER(CLANG)
 #  pragma clang diagnostic ignored "-Wunneeded-internal-declaration"
-#endif // TEST_COMPILER_CLANG_CUDA
+#endif // TEST_COMPILER(CLANG_CUDA)
 #ifndef __CUDA_ARCH__
 auto lambda = [](int i, long j) {
   return i == j;

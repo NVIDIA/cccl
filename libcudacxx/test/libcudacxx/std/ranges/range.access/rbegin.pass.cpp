@@ -569,7 +569,7 @@ __host__ __device__ constexpr bool testBeginEnd()
 static_assert(noexcept(cuda::std::ranges::rbegin(cuda::std::declval<int (&)[10]>())));
 static_assert(noexcept(cuda::std::ranges::crbegin(cuda::std::declval<int (&)[10]>())));
 
-#if !defined(TEST_COMPILER_MSVC_2019) // broken noexcept
+#if !TEST_COMPILER(MSVC2019) // broken noexcept
 _CCCL_GLOBAL_CONSTANT struct NoThrowMemberRBegin
 {
   __host__ __device__ ThrowingIterator<int> rbegin() const noexcept; // auto(t.rbegin()) doesn't throw
@@ -584,7 +584,7 @@ _CCCL_GLOBAL_CONSTANT struct NoThrowADLRBegin
 } ntab;
 static_assert(noexcept(cuda::std::ranges::rbegin(ntab)));
 static_assert(noexcept(cuda::std::ranges::crbegin(ntab)));
-#endif // !TEST_COMPILER_MSVC_2019
+#endif // !TEST_COMPILER(MSVC2019)
 
 _CCCL_GLOBAL_CONSTANT struct NoThrowMemberRBeginReturnsRef
 {
@@ -646,10 +646,10 @@ int main(int, char**)
   testBeginEnd();
   static_assert(testBeginEnd());
 
-#if !defined(TEST_COMPILER_MSVC_2019)
+#if !TEST_COMPILER(MSVC2019)
   unused(ntmb);
   unused(ntab);
-#endif // !TEST_COMPILER_MSVC_2019
+#endif // !TEST_COMPILER(MSVC2019)
   unused(ntmbrr);
   unused(brar);
   unused(ntbte);

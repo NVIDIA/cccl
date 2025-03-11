@@ -20,10 +20,10 @@
 
 // MSVC warns about unsigned/signed comparisons and addition/subtraction
 // Silence these warnings, but not the ones within the header itself.
-#if defined(_MSC_VER)
+#if TEST_COMPILER(MSVC)
 #  pragma warning(disable : 4307)
 #  pragma warning(disable : 4308)
-#endif
+#endif // TEST_COMPILER(MSVC)
 
 template <typename D, typename Ds>
 __host__ __device__ constexpr bool testConstexpr()

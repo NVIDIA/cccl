@@ -30,9 +30,9 @@ struct GoodPredicate
 static_assert(cuda::std::indirect_unary_predicate<GoodPredicate<It>, It>, "");
 static_assert(cuda::std::indirect_unary_predicate<bool (*)(int), int*>, "");
 
-#ifdef TEST_COMPILER_CLANG_CUDA
+#if TEST_CUDA_COMPILER(CLANG)
 #  pragma clang diagnostic ignored "-Wunneeded-internal-declaration"
-#endif // TEST_COMPILER_CLANG_CUDA
+#endif // TEST_COMPILER(CLANG_CUDA)
 #ifndef __CUDA_ARCH__
 auto lambda = [](int i) {
   return i % 2 == 0;

@@ -71,10 +71,10 @@ __host__ __device__ void pointer_test()
   constexpr_test<T>();
   constexpr_test<const T>();
 
-#if !defined(TEST_COMPILER_GCC)
+#if !TEST_COMPILER(GCC)
   constexpr_test<volatile T>();
   constexpr_test<const volatile T>();
-#endif // !TEST_COMPILER_GCC
+#endif // !TEST_COMPILER(GCC)
 }
 
 int main(int, char**)

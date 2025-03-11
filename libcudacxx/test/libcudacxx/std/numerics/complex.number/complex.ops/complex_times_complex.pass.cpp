@@ -157,13 +157,13 @@ int main(int, char**)
   test<long double>();
 #endif // _CCCL_HAS_LONG_DOUBLE()
 #if _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
-#  if !defined(__GNUC__) || (__GNUC__ > 7) // GCC 7 does not support constexpr is_nan and friends
+#  if !TEST_COMPILER(GCC, <, 8) // GCC 7 does not support constexpr is_nan and friends
   static_assert(test<float>(), "");
   static_assert(test<double>(), "");
 #    if _CCCL_HAS_LONG_DOUBLE()
   static_assert(test<long double>(), "");
 #    endif // _CCCL_HAS_LONG_DOUBLE()
-#  endif
+#  endif // !TEST_COMPILER(GCC, <, 8)
 #endif // _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
 #if _LIBCUDACXX_HAS_NVFP16()
   test<__half>();
