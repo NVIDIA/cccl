@@ -38,7 +38,7 @@ struct wrong_iterator_category
 
   __host__ __device__ reference operator*() const;
   __host__ __device__ pointer operator->() const;
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   auto operator<=>(const self&) const = default;
 #else
   __host__ __device__ friend bool operator==(const self&, const self&)
@@ -102,7 +102,7 @@ struct common_base
   __host__ __device__ self operator++(int);
   __host__ __device__ self& operator--();
   __host__ __device__ self operator--(int);
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   auto operator<=>(const common_base&) const = default;
 #else
   __host__ __device__ friend bool operator==(const common_base&, const common_base&)
@@ -141,7 +141,7 @@ struct simple_random_access_iterator : common_base<simple_random_access_iterator
   __host__ __device__ self operator-(difference_type n) const;
   __host__ __device__ difference_type operator-(const self&) const;
   __host__ __device__ reference operator[](difference_type n) const;
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   auto operator<=>(const self&) const = default;
 #else
   __host__ __device__ friend bool operator==(const self&, const self&)
@@ -182,7 +182,7 @@ struct no_plus_equals : common_base<no_plus_equals>
   __host__ __device__ self operator-(difference_type n) const;
   __host__ __device__ difference_type operator-(const self&) const;
   __host__ __device__ reference operator[](difference_type n) const;
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   auto operator<=>(const self&) const = default;
 #else
   __host__ __device__ friend bool operator==(const self&, const self&)
@@ -223,7 +223,7 @@ struct no_plus_difference_type : common_base<no_plus_difference_type>
   __host__ __device__ self operator-(difference_type n) const;
   __host__ __device__ difference_type operator-(const self&) const;
   __host__ __device__ reference operator[](difference_type n) const;
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   auto operator<=>(const self&) const = default;
 #else
   __host__ __device__ friend bool operator==(const self&, const self&)
@@ -264,7 +264,7 @@ struct difference_type_no_plus : common_base<difference_type_no_plus>
   __host__ __device__ self operator-(difference_type n) const;
   __host__ __device__ difference_type operator-(const self&) const;
   __host__ __device__ reference operator[](difference_type n) const;
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   auto operator<=>(const self&) const = default;
 #else
   __host__ __device__ friend bool operator==(const self&, const self&)
@@ -305,7 +305,7 @@ struct no_minus_equals : common_base<no_minus_equals>
   __host__ __device__ self operator-(difference_type n) const;
   __host__ __device__ difference_type operator-(const self&) const;
   __host__ __device__ reference operator[](difference_type n) const;
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   auto operator<=>(const self&) const = default;
 #else
   __host__ __device__ friend bool operator==(const self&, const self&)
@@ -346,7 +346,7 @@ struct no_minus : common_base<no_minus>
   /*  __host__ __device__ self operator-(difference_type n) const; */
   __host__ __device__ difference_type operator-(const self&) const;
   __host__ __device__ reference operator[](difference_type n) const;
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   auto operator<=>(const self&) const = default;
 #else
   __host__ __device__ friend bool operator==(const self&, const self&)
@@ -387,7 +387,7 @@ struct not_sized_sentinel : common_base<not_sized_sentinel>
   __host__ __device__ self operator-(difference_type n) const;
   /*  __host__ __device__ difference_type operator-(const self&) const; */
   __host__ __device__ reference operator[](difference_type n) const;
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   auto operator<=>(const self&) const = default;
 #else
   __host__ __device__ friend bool operator==(const self&, const self&)
@@ -428,7 +428,7 @@ struct no_subscript : common_base<no_subscript>
   __host__ __device__ self operator-(difference_type n) const;
   __host__ __device__ difference_type operator-(const self&) const;
   /* __host__ __device__ reference operator[](difference_type n) const; */
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   auto operator<=>(const self&) const = default;
 #else
   __host__ __device__ friend bool operator==(const self&, const self&)

@@ -52,7 +52,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_num(T in, T expected)
 
   assert(static_cast<U>(cuda::std::byteswap(in)) == static_cast<U>(expected));
   ASSERT_SAME_TYPE(decltype(cuda::std::byteswap(in)), decltype(in));
-  ASSERT_NOEXCEPT(cuda::std::byteswap(in));
+  static_assert(noexcept(cuda::std::byteswap(in)));
 }
 
 template <class T>
@@ -100,12 +100,12 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
   test_num<cuda::std::int64_t>(
     static_cast<cuda::std::int64_t>(0x0123456789ABCDEF), static_cast<cuda::std::int64_t>(0xEFCDAB8967452301));
 
-#if !defined(TEST_HAS_NO_INT128_T)
+#if _CCCL_HAS_INT128()
   const auto in       = static_cast<__uint128_t>(0x0123456789ABCDEF) << 64 | 0x13579BDF02468ACE;
   const auto expected = static_cast<__uint128_t>(0xCE8A4602DF9B5713) << 64 | 0xEFCDAB8967452301;
   test_num<__uint128_t>(in, expected);
   test_num<__int128_t>(in, expected);
-#endif // !defined(TEST_HAS_NO_INT128_T)
+#endif // _CCCL_HAS_INT128()
 
   test_num<bool>(true, true);
   test_num<bool>(false, false);

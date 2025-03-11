@@ -48,7 +48,7 @@ template <typename T>
 __host__ __device__ void runtime_test()
 {
   ASSERT_SAME_TYPE(T, decltype(cuda::std::rotl(T(0), 0)));
-  ASSERT_NOEXCEPT(cuda::std::rotl(T(0), 0));
+  static_assert(noexcept(cuda::std::rotl(T(0), 0)));
   const T val = cuda::std::numeric_limits<T>::max() - 1;
 
   assert(cuda::std::rotl(val, 0) == val);

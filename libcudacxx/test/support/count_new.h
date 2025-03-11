@@ -405,7 +405,7 @@ void operator delete[](void* p, cuda::std::size_t) TEST_NOEXCEPT
 }
 #  endif // TEST_COMPILER_GCC
 
-#  ifndef TEST_HAS_NO_ALIGNED_ALLOCATION
+#  if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
 #    if defined(_WIN32)
 #      define USE_ALIGNED_ALLOC
 #    endif
@@ -455,7 +455,7 @@ void operator delete[](void* p, cuda::std::align_val_t av) TEST_NOEXCEPT
   return operator delete(p, av);
 }
 
-#  endif // TEST_HAS_NO_ALIGNED_ALLOCATION
+#  endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
 
 #endif // DISABLE_NEW_COUNT
 
