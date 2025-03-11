@@ -202,8 +202,9 @@ public:
     return (devid >= 0);
   }
 
-  bool is_device_auto() const {
-      return devid == device_auto_devid;
+  bool is_device_auto() const
+  {
+    return devid == device_auto_devid;
   }
 
   ::std::string to_string() const

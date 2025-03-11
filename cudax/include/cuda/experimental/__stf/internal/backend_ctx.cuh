@@ -563,7 +563,7 @@ protected:
     virtual ~impl()
     {
 #ifndef NDEBUG
-      // _CCCL_ASSERT(total_task_cnt == total_finished_task_cnt, "Not all tasks were finished.");
+      _CCCL_ASSERT(total_task_cnt == total_finished_task_cnt, "Not all tasks were finished.");
 #endif
 
       if (!is_recording_stats)
