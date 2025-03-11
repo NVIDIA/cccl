@@ -19,7 +19,6 @@
 
 #include <cublas_v2.h>
 #include <cusolverDn.h>
-#include <nvtx3/nvToolsExt.h>
 
 #define TILED
 
@@ -171,11 +170,12 @@ public:
   template <typename Fun>
   void fill(Fun&& fun)
   {
-    nvtxRangePushA("FILL");
+    nvtx_range r("fill");
+
     // Fill blocks by blocks
     for (size_t colb = 0; colb < nt; colb++)
     {
-      int low_rowb = sym_matrix ? colb : 0;
+      size_t low_rowb = sym_matrix ? colb : 0;
       for (size_t rowb = low_rowb; rowb < mt; rowb++)
       {
         // Each task fills a block
@@ -190,7 +190,6 @@ public:
           };
       }
     }
-    nvtxRangePop();
   }
 
   // Print blocks
@@ -826,6 +825,8 @@ void PDNRM2_HOST(matrix<double>* A, double* result)
 
 void PDPOTRF(matrix<double>& A)
 {
+  nvtx_range r("PDPOTRF");
+
 #ifdef HAVE_DOT
   ctx.get_dot()->set_current_color("yellow");
 #endif
@@ -836,7 +837,6 @@ void PDPOTRF(matrix<double>& A)
   int NBLOCKS = A.mt;
   assert(A.mb == A.nb);
 
-  nvtxRangePushA("SUBMIT_PDPOTRF");
   for (int K = 0; K < NBLOCKS; K++)
   {
     cuda_try(cudaSetDevice(A.get_preferred_devid(K, K)));
@@ -857,8 +857,6 @@ void PDPOTRF(matrix<double>& A)
       DSYRK(CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_N, -1.0, A, row, K, 1.0, A, row, row);
     }
   }
-
-  nvtxRangePop();
 }
 
 // Algorithm from PLASMA
@@ -870,9 +868,8 @@ void PDTRSM(cublasSideMode_t side,
             matrix<double>& A,
             matrix<double>& B)
 {
+  nvtx_range r("PDTRSM");
   //    std::cout << "[PDTRSM] START B MT " << B.mt << " NT " << B.nt << std::endl;
-
-  nvtxRangePushA("SUBMIT_PDTRSM");
 
   if (side == CUBLAS_SIDE_LEFT)
   {
@@ -938,13 +935,11 @@ void PDTRSM(cublasSideMode_t side,
     abort();
   }
   //    std::cout << "[PDTRSM] END" << std::endl;
-
-  nvtxRangePop();
 }
 
 void PDPOTRS(matrix<double>& A, matrix<double>& B, cublasFillMode_t uplo)
 {
-  nvtxRangePushA("SUBMIT_PDPOTRS");
+  nvtx_range r("PDPOTRS");
 
 #ifdef HAVE_DOT
   ctx.get_dot()->set_current_color("green");
@@ -962,8 +957,6 @@ void PDPOTRS(matrix<double>& A, matrix<double>& B, cublasFillMode_t uplo)
   PDTRSM(
     CUBLAS_SIDE_LEFT, uplo, uplo == CUBLAS_FILL_MODE_UPPER ? CUBLAS_OP_N : CUBLAS_OP_T, CUBLAS_DIAG_NON_UNIT, 1.0, A, B);
   //    std::cout << "[PDPOTRS] END" << std::endl;
-
-  nvtxRangePop();
 }
 
 /***************************************************************************/ /**
@@ -979,6 +972,8 @@ void PDGEMM(cublasOperation_t transa,
             double beta,
             matrix<double>& C)
 {
+  nvtx_range r("PDGEMM");
+
 #ifdef HAVE_DOT
   reserved::dot::set_current_color("blue");
 #endif
@@ -1058,9 +1053,9 @@ void PDGEMM(cublasOperation_t transa,
 // We assume a lower triangular matrix (uplo == CUBLAS_FILL_MODE_LOWER)
 void PDTRTRI(matrix<double>& A, cublasFillMode_t uplo, cublasDiagType_t diag)
 {
-  assert(uplo == CUBLAS_FILL_MODE_LOWER);
+  nvtx_range r("PDTRTRI");
 
-  nvtxRangePushA("SUBMIT_PDTRTRI");
+  assert(uplo == CUBLAS_FILL_MODE_LOWER);
 
   for (size_t k = 0; k < A.nt; k++)
   {
@@ -1087,8 +1082,6 @@ void PDTRTRI(matrix<double>& A, cublasFillMode_t uplo, cublasDiagType_t diag)
     cuda_try(cudaSetDevice(A.get_preferred_devid(k, k)));
     DTRTRI(uplo, diag, A, k, k);
   }
-
-  nvtxRangePop();
 }
 
 /*
@@ -1097,9 +1090,8 @@ void PDTRTRI(matrix<double>& A, cublasFillMode_t uplo, cublasDiagType_t diag)
 // We assume a lower triangular matrix (uplo == CUBLAS_FILL_MODE_LOWER)
 void PDLAUUM(matrix<double>& A, cublasFillMode_t uplo)
 {
+  nvtx_range r("PDLAUUM");
   assert(uplo == CUBLAS_FILL_MODE_LOWER);
-
-  nvtxRangePushA("SUBMIT_PDLAUUM");
 
   for (size_t k = 0; k < A.mt; k++)
   {
@@ -1124,8 +1116,6 @@ void PDLAUUM(matrix<double>& A, cublasFillMode_t uplo)
     cuda_try(cudaSetDevice(A.get_preferred_devid(k, k)));
     DLAAUM(uplo, A, k, k);
   }
-
-  nvtxRangePop();
 }
 
 void PDSYMM(cublasSideMode_t side,
@@ -1136,6 +1126,8 @@ void PDSYMM(cublasSideMode_t side,
             double beta,
             matrix<double>& C)
 {
+  nvtx_range r("PDSYMM");
+
   size_t k, m, n;
   double zbeta;
   double zone = (double) 1.0;
@@ -1292,7 +1284,7 @@ void PDTRMM(cublasSideMode_t side,
       //================================================
       else
       {
-        for (int m = B.mt - 1; m > -1; m--)
+        for (ssize_t m = B.mt - 1; m > -1; m--)
         {
           for (size_t n = 0; n < B.nt; n++)
           {
@@ -1300,7 +1292,7 @@ void PDTRMM(cublasSideMode_t side,
 
             DTRMM(side, uplo, trans, diag, alpha, A, m, m, B, m, n);
 
-            for (int k = 0; k < m; k++)
+            for (ssize_t k = 0; k < m; k++)
             {
               DGEMM(trans, CUBLAS_OP_N, alpha, A, k, m, B, k, n, 1.0, B, m, n);
             }
@@ -1315,7 +1307,7 @@ void PDTRMM(cublasSideMode_t side,
       //===========================================
       if (trans == CUBLAS_OP_N)
       {
-        for (int m = B.mt - 1; m > -1; m--)
+        for (ssize_t m = B.mt - 1; m > -1; m--)
         {
           for (size_t n = 0; n < B.nt; n++)
           {
@@ -1323,7 +1315,7 @@ void PDTRMM(cublasSideMode_t side,
 
             DTRMM(side, uplo, trans, diag, alpha, A, m, m, B, m, n);
 
-            for (int k = 0; k < m; k++)
+            for (ssize_t k = 0; k < m; k++)
             {
               DGEMM(trans, CUBLAS_OP_N, alpha, A, m, k, B, k, n, 1.0, B, m, n);
             }
@@ -1359,7 +1351,7 @@ void PDTRMM(cublasSideMode_t side,
       //============================================
       if (trans == CUBLAS_OP_N)
       {
-        for (int n = B.nt - 1; n > -1; n--)
+        for (ssize_t n = B.nt - 1; n > -1; n--)
         {
           for (size_t m = 0; m < B.mt; m++)
           {
@@ -1367,7 +1359,7 @@ void PDTRMM(cublasSideMode_t side,
 
             DTRMM(side, uplo, trans, diag, alpha, A, n, n, B, m, n);
 
-            for (int k = 0; k < n; k++)
+            for (ssize_t k = 0; k < n; k++)
             {
               DGEMM(CUBLAS_OP_N, trans, alpha, B, m, k, A, k, n, 1.0, B, m, n);
             }
@@ -1422,7 +1414,7 @@ void PDTRMM(cublasSideMode_t side,
       //=================================================
       else
       {
-        for (int n = B.nt - 1; n > -1; n--)
+        for (ssize_t n = B.nt - 1; n > -1; n--)
         {
           for (size_t m = 0; m < B.mt; m++)
           {
@@ -1430,7 +1422,7 @@ void PDTRMM(cublasSideMode_t side,
 
             DTRMM(side, uplo, trans, diag, alpha, A, n, n, B, m, n);
 
-            for (int k = 0; k < n; k++)
+            for (ssize_t k = 0; k < n; k++)
             {
               DGEMM(CUBLAS_OP_N, trans, alpha, B, m, k, A, n, k, 1.0, B, m, n);
             }

@@ -78,13 +78,13 @@ int main(int, char**)
 {
   { // Test return type and noexcept.
     static_assert(cuda::std::is_same<decltype(cuda::std::move(global_var)), int&&>::value, "");
-    ASSERT_NOEXCEPT(cuda::std::move(global_var));
+    static_assert(noexcept(cuda::std::move(global_var)));
     static_assert(cuda::std::is_same<decltype(cuda::std::move(global_reference)), const int&&>::value, "");
-    ASSERT_NOEXCEPT(cuda::std::move(global_reference));
+    static_assert(noexcept(cuda::std::move(global_reference)));
     static_assert(cuda::std::is_same<decltype(cuda::std::move(42)), int&&>::value, "");
-    ASSERT_NOEXCEPT(cuda::std::move(42));
+    static_assert(noexcept(cuda::std::move(42)));
     static_assert(cuda::std::is_same<decltype(cuda::std::move(get<const int&&>())), const int&&>::value, "");
-    ASSERT_NOEXCEPT(cuda::std::move(get<int const&&>()));
+    static_assert(noexcept(cuda::std::move(get<int const&&>())));
   }
   { // test copy and move semantics
     A a;

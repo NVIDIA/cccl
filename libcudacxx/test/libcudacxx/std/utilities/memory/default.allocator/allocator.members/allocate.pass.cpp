@@ -26,10 +26,10 @@
 #  pragma warning(disable : 4324) // structure was padded due to alignment specifier
 #endif // TEST_COMPILER_MSVC
 
-#ifdef TEST_HAS_NO_ALIGNED_ALLOCATION
-static const bool UsingAlignedNew = false;
-#else
+#if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
 static const bool UsingAlignedNew = true;
+#else
+static const bool UsingAlignedNew = false;
 #endif
 
 #ifdef __STDCPP_DEFAULT_NEW_ALIGNMENT__

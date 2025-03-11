@@ -10,7 +10,7 @@ It also provides a number of general-purpose facilities similar to those found
   in the C++ Standard Library.
 
 Thrust is an open source project; it is available on
-  [GitHub] and included in the NVIDIA HPC SDK and CUDA Toolkit.
+  [GitHub](https://github.com/NVIDIA/cccl) and included in the NVIDIA HPC SDK and CUDA Toolkit.
 If you have one of those SDKs installed, no additional installation or compiler
   flags are needed to use Thrust.
 

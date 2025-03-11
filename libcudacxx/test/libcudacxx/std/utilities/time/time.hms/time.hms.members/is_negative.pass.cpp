@@ -22,7 +22,7 @@ template <typename Duration>
 __host__ __device__ constexpr bool check_neg(Duration d)
 {
   ASSERT_SAME_TYPE(bool, decltype(cuda::std::declval<cuda::std::chrono::hh_mm_ss<Duration>>().is_negative()));
-  ASSERT_NOEXCEPT(cuda::std::declval<cuda::std::chrono::hh_mm_ss<Duration>>().is_negative());
+  static_assert(noexcept(cuda::std::declval<cuda::std::chrono::hh_mm_ss<Duration>>().is_negative()));
   return cuda::std::chrono::hh_mm_ss<Duration>(d).is_negative();
 }
 

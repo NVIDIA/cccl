@@ -126,10 +126,10 @@ __host__ __device__ constexpr bool test()
   test_type<unsigned long>();
   test_type<signed long long>();
   test_type<unsigned long long>();
-#if !defined(TEST_HAS_NO_INT128_T)
+#if _CCCL_HAS_INT128()
   test_type<__int128_t>();
   test_type<__uint128_t>();
-#endif // !TEST_HAS_NO_INT128_T
+#endif // _CCCL_HAS_INT128()
 
   return true;
 }

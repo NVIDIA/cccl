@@ -56,9 +56,9 @@
 CUB_NAMESPACE_BEGIN
 
 //! @rst
-//! DeviceSelect provides device-wide, parallel operations for compacting
-//! selected items from sequences of data items residing within
-//! device-accessible memory.
+//! DeviceSelect provides device-wide, parallel operations for compacting selected items from sequences of data items
+//! residing within device-accessible memory. It is similar to DevicePartition, except that non-selected items are
+//! discarded, whereas DevicePartition retains them.
 //!
 //! Overview
 //! +++++++++++++++++++++++++++++++++++++++++++++

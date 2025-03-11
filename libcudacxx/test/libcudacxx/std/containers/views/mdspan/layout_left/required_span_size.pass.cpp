@@ -25,7 +25,7 @@ __host__ __device__ constexpr void test_required_span_size(E e, typename E::inde
   using M = cuda::std::layout_left::mapping<E>;
   const M m(e);
 
-  ASSERT_NOEXCEPT(m.required_span_size());
+  static_assert(noexcept(m.required_span_size()));
   assert(m.required_span_size() == expected_size);
 }
 

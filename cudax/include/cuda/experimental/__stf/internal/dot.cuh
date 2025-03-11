@@ -36,6 +36,7 @@
 #include <cuda/experimental/__stf/internal/constants.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
+#include <cuda/experimental/__stf/utility/nvtx.cuh>
 #include <cuda/experimental/__stf/utility/threads.cuh>
 #include <cuda/experimental/__stf/utility/unique_id.cuh>
 
@@ -352,6 +353,7 @@ public:
     // Constructor to initialize symbol and children
     section(::std::string sym)
         : symbol(mv(sym))
+        , r(symbol.c_str())
     {
       static_assert(::std::is_move_constructible_v<section>, "section must be move constructible");
       static_assert(::std::is_move_assignable_v<section>, "section must be move assignable");
@@ -478,6 +480,9 @@ public:
     int depth = ::std::numeric_limits<int>::min();
 
     ::std::string symbol;
+
+    // An annotation that has the lifetime of the section
+    nvtx_range r;
 
     // An identifier for that section. This is movable, but non
     // copyable, but we manipulate section by the means of shared_ptr.

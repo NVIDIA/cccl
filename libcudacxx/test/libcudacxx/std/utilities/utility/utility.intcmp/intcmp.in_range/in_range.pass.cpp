@@ -57,10 +57,10 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_in_range()
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 {
   test_in_range();
-#ifndef TEST_HAS_NO_INT128_T
+#if _CCCL_HAS_INT128()
   test_in_range1<__int128_t>();
   test_in_range1<__uint128_t>();
-#endif // TEST_HAS_NO_INT128_T
+#endif // _CCCL_HAS_INT128()
   test_in_range1<unsigned long long>();
   test_in_range1<long long>();
   test_in_range1<unsigned long>();
@@ -76,7 +76,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 
 int main(int, char**)
 {
-  ASSERT_NOEXCEPT(cuda::std::in_range<int>(-1));
+  static_assert(noexcept(cuda::std::in_range<int>(-1)));
   test();
   static_assert(test(), "");
   return 0;
