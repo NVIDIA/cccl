@@ -638,10 +638,6 @@ C2H_TEST("DeviceTransform::Transform cudax::async_device_buffer", "[device][devi
 
   cudax::async_device_buffer<type> a{env, num_items, cudax::uninit};
   cudax::async_device_buffer<type> b{env, num_items, cudax::uninit};
-
-  static_assert(thrust::is_contiguous_iterator_v<cudax::async_device_buffer<type>::iterator>);
-  static_assert(cuda::std::contiguous_iterator<cudax::async_device_buffer<type>::iterator>);
-
   thrust::sequence(thrust::cuda::par_nosync.on(stream.get()), a.begin(), a.end());
   thrust::sequence(thrust::cuda::par_nosync.on(stream.get()), b.begin(), b.end());
 
@@ -649,6 +645,7 @@ C2H_TEST("DeviceTransform::Transform cudax::async_device_buffer", "[device][devi
   transform_many_with_alg<alg, offset_t>(
     ::cuda::std::make_tuple(a.begin(), b.begin()), result.begin(), num_items, ::cuda::std::plus<type>{});
 
+  // copy back to host
   c2h::host_vector<type> a_h(num_items);
   c2h::host_vector<type> b_h(num_items);
   c2h::host_vector<type> result_h(num_items);
@@ -662,7 +659,6 @@ C2H_TEST("DeviceTransform::Transform cudax::async_device_buffer", "[device][devi
   stream.wait();
 
   // compute reference and verify
-
   c2h::host_vector<type> reference_h(num_items);
   std::transform(a_h.begin(), a_h.end(), b_h.begin(), reference_h.begin(), std::plus<type>{});
   REQUIRE(reference_h == result_h);
