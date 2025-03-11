@@ -26,29 +26,22 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/inner_product.h>
+#include <thrust/iterator/detail/accumulator_traits.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/adl/inner_product.h>
 #include <thrust/system/detail/generic/inner_product.h>
 #include <thrust/system/detail/generic/select_system.h>
 
-#include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__iterator/readable_traits.h>
-
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename InitType>
-_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<::cuda::std::plus<>,
-                                               ::cuda::std::__accumulator_t<::cuda::std::multiplies<>,
-                                                                            ::cuda::std::iter_value_t<InputIterator1>,
-                                                                            ::cuda::std::iter_value_t<InputIterator2>>,
-                                               InitType>
-inner_product(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-              InputIterator1 first1,
-              InputIterator1 last1,
-              InputIterator2 first2,
-              InitType init)
+_CCCL_HOST_DEVICE thrust::detail::__inner_product_accumulator_t<InputIterator1, InputIterator2, InitType> inner_product(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator1 first1,
+  InputIterator1 last1,
+  InputIterator2 first2,
+  InitType init)
 {
   using thrust::system::detail::generic::inner_product;
   return inner_product(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first1, last1, first2, init);
@@ -61,11 +54,8 @@ template <typename DerivedPolicy,
           typename InitType,
           typename BinaryFunction1,
           typename BinaryFunction2>
-_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<BinaryFunction1,
-                                               ::cuda::std::__accumulator_t<BinaryFunction2,
-                                                                            ::cuda::std::iter_value_t<InputIterator1>,
-                                                                            ::cuda::std::iter_value_t<InputIterator2>>,
-                                               InitType>
+_CCCL_HOST_DEVICE
+thrust::detail::__inner_product_accumulator_t<InputIterator1, InputIterator2, InitType, BinaryFunction1, BinaryFunction2>
 inner_product(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
               InputIterator1 first1,
               InputIterator1 last1,
@@ -86,11 +76,7 @@ inner_product(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
 } // end inner_product()
 
 template <typename InputIterator1, typename InputIterator2, typename InitType>
-::cuda::std::__accumulator_t<::cuda::std::plus<>,
-                             ::cuda::std::__accumulator_t<::cuda::std::multiplies<>,
-                                                          ::cuda::std::iter_value_t<InputIterator1>,
-                                                          ::cuda::std::iter_value_t<InputIterator2>>,
-                             InitType>
+thrust::detail::__inner_product_accumulator_t<InputIterator1, InputIterator2, InitType>
 inner_product(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InitType init)
 {
   using thrust::system::detail::generic::select_system;
@@ -109,11 +95,7 @@ template <typename InputIterator1,
           typename InitType,
           typename BinaryFunction1,
           typename BinaryFunction2>
-::cuda::std::__accumulator_t<BinaryFunction1,
-                             ::cuda::std::__accumulator_t<BinaryFunction2,
-                                                          ::cuda::std::iter_value_t<InputIterator1>,
-                                                          ::cuda::std::iter_value_t<InputIterator2>>,
-                             InitType>
+thrust::detail::__inner_product_accumulator_t<InputIterator1, InputIterator2, InitType, BinaryFunction1, BinaryFunction2>
 inner_product(InputIterator1 first1,
               InputIterator1 last1,
               InputIterator2 first2,

@@ -28,12 +28,10 @@
 
 #include <thrust/detail/static_assert.h>
 #include <thrust/functional.h>
+#include <thrust/iterator/detail/accumulator_traits.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/reduce.h>
 #include <thrust/system/detail/generic/reduce.h>
-
-#include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__functional/operations.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -44,15 +42,15 @@ namespace generic
 {
 
 template <typename ExecutionPolicy, typename InputIterator>
-_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<::cuda::std::plus<>, ::cuda::std::iter_value_t<InputIterator>>
+_CCCL_HOST_DEVICE thrust::detail::__iter_accumulator_t<InputIterator>
 reduce(thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last)
 {
-  using AccType = ::cuda::std::__accumulator_t<::cuda::std::plus<>, ::cuda::std::iter_value_t<InputIterator>>;
+  using AccType = thrust::detail::__iter_accumulator_t<InputIterator>;
   return thrust::reduce(exec, first, last, AccType{});
 } // end reduce()
 
 template <typename ExecutionPolicy, typename InputIterator, typename T>
-_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<::cuda::std::plus<>, ::cuda::std::iter_value_t<InputIterator>, T>
+_CCCL_HOST_DEVICE thrust::detail::__iter_accumulator_t<InputIterator, T>
 reduce(thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last, T init)
 {
   // use plus<> by default
@@ -60,8 +58,7 @@ reduce(thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, Inp
 } // end reduce()
 
 template <typename ExecutionPolicy, typename RandomAccessIterator, typename OutputType, typename BinaryFunction>
-_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<BinaryFunction, ::cuda::std::iter_value_t<RandomAccessIterator>, OutputType>
-reduce(
+_CCCL_HOST_DEVICE thrust::detail::__iter_accumulator_t<RandomAccessIterator, OutputType, BinaryFunction> reduce(
   thrust::execution_policy<ExecutionPolicy>&, RandomAccessIterator, RandomAccessIterator, OutputType, BinaryFunction)
 {
   static_assert(thrust::detail::depend_on_instantiation<RandomAccessIterator, false>::value,

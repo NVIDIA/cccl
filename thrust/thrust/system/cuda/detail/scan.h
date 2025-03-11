@@ -46,12 +46,11 @@
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/detail/type_traits.h>
 #  include <thrust/distance.h>
+#  include <thrust/iterator/detail/accumulator_traits.h>
 #  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
 
-#  include <cuda/std/__functional/invoke.h>
-#  include <cuda/std/__iterator/readable_traits.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -331,7 +330,7 @@ template <typename Derived, typename InputIt, typename OutputIt>
 _CCCL_HOST_DEVICE OutputIt
 exclusive_scan(thrust::cuda_cub::execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result)
 {
-  using init_type = ::cuda::std::__accumulator_t<::cuda::std::plus<>, ::cuda::std::iter_value_t<InputIt>>;
+  using init_type = thrust::detail::__iter_accumulator_t<InputIt>;
   return cuda_cub::exclusive_scan(policy, first, last, result, init_type{});
 };
 

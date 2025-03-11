@@ -47,6 +47,7 @@
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/distance.h>
 #  include <thrust/functional.h>
+#  include <thrust/iterator/detail/accumulator_traits.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/core/agent_launcher.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
@@ -54,10 +55,6 @@
 #  include <thrust/system/cuda/detail/make_unsigned_special.h>
 #  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
-
-#  include <cuda/std/__functional/invoke.h>
-#  include <cuda/std/__iterator/readable_traits.h>
-#  include <cuda/std/__utility/declval.h>
 
 #  include <cstdint>
 #  include <iterator>
@@ -70,13 +67,11 @@ namespace detail
 {
 
 template <typename Derived, typename InputIt, typename Size, typename UnaryOp, typename T, typename BinaryOp>
-THRUST_RUNTIME_FUNCTION ::cuda::std::
-  __accumulator_t<BinaryOp, ::cuda::std::invoke_result_t<UnaryOp, ::cuda::std::iter_value_t<InputIt>>, T>
-  transform_reduce_n_impl(
-    execution_policy<Derived>& policy, InputIt first, Size num_items, UnaryOp unary_op, T init, BinaryOp binary_op)
+THRUST_RUNTIME_FUNCTION thrust::detail::__iter_unary_accumulator_t<InputIt, T, UnaryOp, BinaryOp>
+transform_reduce_n_impl(
+  execution_policy<Derived>& policy, InputIt first, Size num_items, UnaryOp unary_op, T init, BinaryOp binary_op)
 {
-  using AccType =
-    ::cuda::std::__accumulator_t<BinaryOp, ::cuda::std::invoke_result_t<UnaryOp, ::cuda::std::iter_value_t<InputIt>>, T>;
+  using AccType       = thrust::detail::__iter_unary_accumulator_t<InputIt, T, UnaryOp, BinaryOp>;
   cudaStream_t stream = cuda_cub::stream(policy);
   cudaError_t status;
 
@@ -134,10 +129,8 @@ THRUST_RUNTIME_FUNCTION ::cuda::std::
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class InputIt, class TransformOp, class T, class ReduceOp>
-_CCCL_HOST_DEVICE ::cuda::std::
-  __accumulator_t<ReduceOp, ::cuda::std::invoke_result_t<TransformOp, ::cuda::std::iter_value_t<InputIt>>, T>
-  transform_reduce(
-    execution_policy<Derived>& policy, InputIt first, InputIt last, TransformOp transform_op, T init, ReduceOp reduce_op)
+_CCCL_HOST_DEVICE thrust::detail::__iter_unary_accumulator_t<InputIt, T, TransformOp, ReduceOp> transform_reduce(
+  execution_policy<Derived>& policy, InputIt first, InputIt last, TransformOp transform_op, T init, ReduceOp reduce_op)
 {
   using size_type           = thrust::detail::it_difference_t<InputIt>;
   const size_type num_items = static_cast<size_type>(thrust::distance(first, last));

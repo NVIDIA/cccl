@@ -27,13 +27,11 @@
 #endif // no system header
 #include <thrust/detail/temporary_array.h>
 #include <thrust/distance.h>
+#include <thrust/iterator/detail/accumulator_traits.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/omp/detail/default_decomposition.h>
 #include <thrust/system/omp/detail/reduce.h>
 #include <thrust/system/omp/detail/reduce_intervals.h>
-
-#include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__iterator/readable_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -44,14 +42,14 @@ namespace detail
 {
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputType, typename BinaryFunction>
-::cuda::std::__accumulator_t<BinaryFunction, ::cuda::std::iter_value_t<InputIterator>, OutputType>
+thrust::detail::__iter_accumulator_t<InputIterator, OutputType, BinaryFunction>
 reduce(execution_policy<DerivedPolicy>& exec,
        InputIterator first,
        InputIterator last,
        OutputType init,
        BinaryFunction binary_op)
 {
-  using AccType = ::cuda::std::__accumulator_t<BinaryFunction, ::cuda::std::iter_value_t<InputIterator>, OutputType>;
+  using AccType           = thrust::detail::__iter_accumulator_t<InputIterator, OutputType, BinaryFunction>;
   using difference_type   = thrust::detail::it_difference_t<InputIterator>;
   const difference_type n = thrust::distance(first, last);
 

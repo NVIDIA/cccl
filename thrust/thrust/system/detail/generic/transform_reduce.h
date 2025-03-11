@@ -25,11 +25,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/iterator/detail/accumulator_traits.h>
 #include <thrust/system/detail/generic/tag.h>
-
-#include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__iterator/readable_traits.h>
-#include <cuda/std/__utility/declval.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -44,10 +41,7 @@ template <typename ExecutionPolicy,
           typename UnaryFunction,
           typename OutputType,
           typename BinaryFunction>
-_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<
-  BinaryFunction,
-  ::cuda::std::invoke_result_t<UnaryFunction, ::cuda::std::iter_value_t<InputIterator>>,
-  OutputType>
+_CCCL_HOST_DEVICE thrust::detail::__iter_unary_accumulator_t<InputIterator, OutputType, UnaryFunction, BinaryFunction>
 transform_reduce(thrust::execution_policy<ExecutionPolicy>& exec,
                  InputIterator first,
                  InputIterator last,

@@ -30,10 +30,8 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/function.h>
+#include <thrust/iterator/detail/accumulator_traits.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
-
-#include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__iterator/readable_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -45,7 +43,7 @@ namespace sequential
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename OutputType, typename BinaryFunction>
-_CCCL_HOST_DEVICE ::cuda::std::__accumulator_t<BinaryFunction, ::cuda::std::iter_value_t<InputIterator>, OutputType>
+_CCCL_HOST_DEVICE thrust::detail::__iter_accumulator_t<InputIterator, OutputType, BinaryFunction>
 reduce(sequential::execution_policy<DerivedPolicy>&,
        InputIterator begin,
        InputIterator end,

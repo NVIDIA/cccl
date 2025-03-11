@@ -18,8 +18,6 @@
 
 #include <thrust/detail/config.h>
 
-#include <fcntl.h>
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -28,13 +26,13 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/seq.h>
+#include <thrust/iterator/detail/accumulator_traits.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/reduce.h>
 #include <thrust/system/cpp/memory.h>
 #include <thrust/system/tbb/detail/execution_policy.h>
 
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__functional/invoke.h>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 
