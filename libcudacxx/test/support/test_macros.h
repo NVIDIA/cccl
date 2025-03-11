@@ -25,6 +25,9 @@
 #define TEST_DIAG_SUPPRESS_MSVC(...)  _CCCL_DIAG_SUPPRESS_MSVC(__VA_ARGS__)
 #define TEST_NV_DIAG_SUPPRESS(...)    _CCCL_NV_DIAG_SUPPRESS(__VA_ARGS__)
 
+// Use the CCCL C++ dialect detection
+#define TEST_STD_VER _CCCL_STD_VER
+
 #ifdef _CCCL_HAS_FEATURE
 #  define TEST_HAS_FEATURE(X) _CCCL_HAS_FEATURE(X)
 #else
@@ -34,41 +37,6 @@
 #ifndef __has_include
 #  define __has_include(...) 0
 #endif
-
-/* Make a nice name for the standard version */
-#ifndef TEST_STD_VER
-#  if TEST_COMPILER(MSVC)
-#    if !defined(_MSVC_LANG)
-#      define TEST_STD_VER 2003
-#    elif _MSVC_LANG <= 201103L
-#      define TEST_STD_VER 2011
-#    elif _MSVC_LANG <= 201402L
-#      define TEST_STD_VER 2014
-#    elif _MSVC_LANG <= 201703L
-#      define TEST_STD_VER 2017
-#    elif _MSVC_LANG <= 202002L
-#      define TEST_STD_VER 2020
-#    else
-#      define TEST_STD_VER 2099 // Greater than current standard.
-// This is deliberately different than _CCCL_STD_VER to discourage matching them up.
-#    endif
-#  else
-#    if __cplusplus <= 199711L
-#      define TEST_STD_VER 2003
-#    elif __cplusplus <= 201103L
-#      define TEST_STD_VER 2011
-#    elif __cplusplus <= 201402L
-#      define TEST_STD_VER 2014
-#    elif __cplusplus <= 201703L
-#      define TEST_STD_VER 2017
-#    elif __cplusplus <= 202002L
-#      define TEST_STD_VER 2020
-#    else
-#      define TEST_STD_VER 2099 // Greater than current standard.
-// This is deliberately different than _CCCL_STD_VER to discourage matching them up.
-#    endif
-#  endif
-#endif // TEST_STD_VER
 
 // Attempt to deduce the GLIBC version
 #if (defined(__has_include) && __has_include(<features.h>)) || \
