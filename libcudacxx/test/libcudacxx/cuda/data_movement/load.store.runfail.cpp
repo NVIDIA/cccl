@@ -24,7 +24,8 @@ __global__ void load_kernel()
   __shared__ uint32_t smem[16];
   unused(cuda::device::load(smem)); // shared memory
 
-  auto ptr2 = reinterpret_cast<const uint32_t*>(static_cast<const uint8_t*>(nullptr) + 2);
+  auto null_ptr = static_cast<const void*>(nullptr);
+  auto ptr2     = reinterpret_cast<const uint32_t*>(static_cast<const uint8_t*>(null_ptr) + 2);
   unused(cuda::device::load(ptr2)); // non aligned
 }
 
@@ -37,7 +38,8 @@ __global__ void store_kernel()
   //__shared__ uint32_t smem[16];
   // cuda::device::store(2u, static_cast<uint32_t*>(smem + 1)); // shared memory
 
-  auto ptr2 = reinterpret_cast<uint32_t*>(static_cast<uint8_t*>(nullptr) + 2);
+  auto null_ptr = static_cast<void*>(nullptr);
+  auto ptr2     = reinterpret_cast<uint32_t*>(static_cast<uint8_t*>(null_ptr) + 2);
   cuda::device::store(2u, ptr2); // non aligned
 }
 
