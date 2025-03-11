@@ -44,13 +44,8 @@
 #  define TEST_IS_CONSTANT_EVALUATED_CXX23() false
 #endif // ^^^ TEST_STD_VER <= 2020
 
-#ifndef __has_include
-#  define __has_include(...) 0
-#endif
-
 // Attempt to deduce the GLIBC version
-#if (defined(__has_include) && __has_include(<features.h>)) || \
-    defined(__linux__)
+#if _CCCL_HAS_INCLUDE(<features.h>) || defined(__linux__)
 #  include <features.h>
 #  if defined(__GLIBC_PREREQ)
 #    define TEST_HAS_GLIBC
