@@ -15,8 +15,8 @@
 
 #include "test_macros.h"
 
-STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int gi   = 5;
-STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL float gf = 8.f;
+STATIC_TEST_GLOBAL_VAR constexpr int gi   = 5;
+STATIC_TEST_GLOBAL_VAR constexpr float gf = 8.f;
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 {

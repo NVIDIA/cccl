@@ -45,7 +45,7 @@ template <typename T>
 __host__ __device__ void runtime_test()
 {
   ASSERT_SAME_TYPE(T, decltype(cuda::std::bit_floor(T(0))));
-  ASSERT_NOEXCEPT(cuda::std::bit_floor(T(0)));
+  static_assert(noexcept(cuda::std::bit_floor(T(0))));
 
   assert(cuda::std::bit_floor(T(121)) == T(64));
   assert(cuda::std::bit_floor(T(122)) == T(64));

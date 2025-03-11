@@ -49,7 +49,7 @@ int main(int, char**)
   constexpr month December = cuda::std::chrono::December;
 
   { // year_month_day_last - years
-    ASSERT_NOEXCEPT(cuda::std::declval<year_month_day_last>() - cuda::std::declval<years>());
+    static_assert(noexcept(cuda::std::declval<year_month_day_last>() - cuda::std::declval<years>()));
     ASSERT_SAME_TYPE(year_month_day_last,
                      decltype(cuda::std::declval<year_month_day_last>() - cuda::std::declval<years>()));
 
@@ -64,7 +64,7 @@ int main(int, char**)
   }
 
   { // year_month_day_last - months
-    ASSERT_NOEXCEPT(cuda::std::declval<year_month_day_last>() - cuda::std::declval<months>());
+    static_assert(noexcept(cuda::std::declval<year_month_day_last>() - cuda::std::declval<months>()));
     ASSERT_SAME_TYPE(year_month_day_last,
                      decltype(cuda::std::declval<year_month_day_last>() - cuda::std::declval<months>()));
 

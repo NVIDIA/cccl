@@ -26,7 +26,7 @@ int main(int, char**)
   using month_day_last      = cuda::std::chrono::month_day_last;
   using year_month_day_last = cuda::std::chrono::year_month_day_last;
 
-  ASSERT_NOEXCEPT(cuda::std::declval<const year_month_day_last>().day());
+  static_assert(noexcept(cuda::std::declval<const year_month_day_last>().day()));
   ASSERT_SAME_TYPE(day, decltype(cuda::std::declval<const year_month_day_last>().day()));
 
   //  Some months have a 31st

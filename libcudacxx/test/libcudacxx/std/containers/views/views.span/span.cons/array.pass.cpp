@@ -78,10 +78,10 @@ __host__ __device__ constexpr bool testSpan()
 {
   T val[2] = {};
 
-  ASSERT_NOEXCEPT(cuda::std::span<T>{val});
-  ASSERT_NOEXCEPT(cuda::std::span<T, 2>{val});
-  ASSERT_NOEXCEPT(cuda::std::span<const T>{val});
-  ASSERT_NOEXCEPT(cuda::std::span<const T, 2>{val});
+  static_assert(noexcept(cuda::std::span<T>{val}));
+  static_assert(noexcept(cuda::std::span<T, 2>{val}));
+  static_assert(noexcept(cuda::std::span<const T>{val}));
+  static_assert(noexcept(cuda::std::span<const T, 2>{val}));
 
   cuda::std::span<T> s1          = val;
   cuda::std::span<T, 2> s2       = val;

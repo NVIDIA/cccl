@@ -144,7 +144,7 @@ public:
   static const constexpr cuda::std::size_t prefix_size   = Provider<T, SharedOffset>::prefix_size;
   static const constexpr cuda::std::size_t shared_offset = Provider<T, SharedOffset>::shared_offset;
 
-  TEST_EXEC_CHECK_DISABLE
+  _CCCL_EXEC_CHECK_DISABLE
   template <typename... Ts>
   __host__ __device__ T* construct(Ts&&... ts)
   {
@@ -157,7 +157,7 @@ public:
     return ptr;
   }
 
-  TEST_EXEC_CHECK_DISABLE
+  _CCCL_EXEC_CHECK_DISABLE
   __host__ __device__ ~memory_selector()
   {
     execute_on_main_thread([&] {

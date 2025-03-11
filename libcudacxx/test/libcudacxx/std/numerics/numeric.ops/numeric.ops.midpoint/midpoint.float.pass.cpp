@@ -45,7 +45,7 @@ template <typename T>
 __host__ __device__ void fp_test()
 {
   ASSERT_SAME_TYPE(T, decltype(cuda::std::midpoint(T(), T())));
-  ASSERT_NOEXCEPT(cuda::std::midpoint(T(), T()));
+  static_assert(noexcept(cuda::std::midpoint(T(), T())));
 
   constexpr T maxV = cuda::std::numeric_limits<T>::max();
   constexpr T minV = cuda::std::numeric_limits<T>::min();
