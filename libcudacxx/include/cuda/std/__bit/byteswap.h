@@ -59,6 +59,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Full __byteswap_impl_recurs
 template <class _Tp>
 _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp __byteswap_impl_device(_Tp __val) noexcept
 {
+#if __cccl_ptx_isa >= 200
   if constexpr (sizeof(_Tp) == sizeof(uint16_t))
   {
     return static_cast<uint16_t>(_CUDA_VPTX::prmt(static_cast<uint32_t>(__val), uint32_t{0}, uint32_t{0x3201}));
@@ -77,6 +78,7 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp __byteswap_impl_device(_Tp 
     return static_cast<uint64_t>(__new_hi) << 32 | static_cast<uint64_t>(__new_lo);
   }
   else
+#endif // __cccl_ptx_isa >= 200
   {
     return _CUDA_VSTD::__byteswap_impl_recursive(__val);
   }
@@ -109,9 +111,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr uint16_t __byteswap_impl(uin
 #  if _CCCL_COMPILER(MSVC)
     NV_IF_TARGET(NV_IS_HOST, return ::_byteswap_ushort(__val);)
 #  endif // _CCCL_COMPILER(MSVC)
-#  if __cccl_ptx_isa >= 200
     NV_IF_TARGET(NV_IS_DEVICE, return _CUDA_VSTD::__byteswap_impl_device(__val);)
-#  endif // __cccl_ptx_isa >= 200
   }
   return _CUDA_VSTD::__byteswap_impl_recursive(__val);
 #endif // !_CCCL_BUILTIN_BSWAP16
@@ -127,9 +127,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr uint32_t __byteswap_impl(uin
 #  if _CCCL_COMPILER(MSVC)
     NV_IF_TARGET(NV_IS_HOST, return ::_byteswap_ulong(__val);)
 #  endif // _CCCL_COMPILER(MSVC)
-#  if __cccl_ptx_isa >= 200
     NV_IF_TARGET(NV_IS_DEVICE, return _CUDA_VSTD::__byteswap_impl_device(__val);)
-#  endif // __cccl_ptx_isa >= 200
   }
   return _CUDA_VSTD::__byteswap_impl_recursive(__val);
 #endif // !_CCCL_BUILTIN_BSWAP32
@@ -145,9 +143,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr uint64_t __byteswap_impl(uin
 #  if _CCCL_COMPILER(MSVC)
     NV_IF_TARGET(NV_IS_HOST, return ::_byteswap_uint64(__val);)
 #  endif // _CCCL_COMPILER(MSVC)
-#  if __cccl_ptx_isa >= 200
     NV_IF_TARGET(NV_IS_DEVICE, return _CUDA_VSTD::__byteswap_impl_device(__val);)
-#  endif // __cccl_ptx_isa >= 200
   }
   return _CUDA_VSTD::__byteswap_impl_recursive(__val);
 #endif // !_CCCL_BUILTIN_BSWAP64
