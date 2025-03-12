@@ -16,8 +16,6 @@
 #include <cub/util_type.cuh>
 
 #include <format>
-#include <iostream>
-#include <optional>
 #include <string>
 #include <type_traits>
 
@@ -308,7 +306,7 @@ struct device_transform_policy {{
   catch (const std::exception& exc)
   {
     fflush(stderr);
-    printf("\nEXCEPTION in cccl_device_transform_build(): %s\n", exc.what());
+    printf("\nEXCEPTION in cccl_device_unary_transform_build(): %s\n", exc.what());
     fflush(stdout);
     error = CUDA_ERROR_UNKNOWN;
   }
@@ -334,7 +332,7 @@ CUresult cccl_device_unary_transform(
     check(cuCtxGetDevice(&cu_device));
     auto cuda_error = cub::detail::transform::dispatch_t<
       cub::detail::transform::requires_stable_address::no, // TODO implement yes
-      ::cuda::std::int64_t,
+      OffsetT,
       ::cuda::std::tuple<indirect_arg_t>,
       indirect_arg_t,
       indirect_arg_t,
@@ -351,7 +349,7 @@ CUresult cccl_device_unary_transform(
   catch (const std::exception& exc)
   {
     fflush(stderr);
-    printf("\nEXCEPTION in cccl_device_transform(): %s\n", exc.what());
+    printf("\nEXCEPTION in cccl_device_unary_transform(): %s\n", exc.what());
     fflush(stdout);
     error = CUDA_ERROR_UNKNOWN;
   }
@@ -498,7 +496,7 @@ struct device_transform_policy {{
   catch (const std::exception& exc)
   {
     fflush(stderr);
-    printf("\nEXCEPTION in cccl_device_transform_build(): %s\n", exc.what());
+    printf("\nEXCEPTION in cccl_device_binary_transform_build(): %s\n", exc.what());
     fflush(stdout);
     error = CUDA_ERROR_UNKNOWN;
   }
@@ -525,7 +523,7 @@ CUresult cccl_device_binary_transform(
     check(cuCtxGetDevice(&cu_device));
     auto cuda_error = cub::detail::transform::dispatch_t<
       cub::detail::transform::requires_stable_address::no, // TODO implement yes
-      ::cuda::std::int64_t,
+      OffsetT,
       ::cuda::std::tuple<indirect_arg_t, indirect_arg_t>,
       indirect_arg_t,
       indirect_arg_t,
@@ -548,7 +546,7 @@ CUresult cccl_device_binary_transform(
   catch (const std::exception& exc)
   {
     fflush(stderr);
-    printf("\nEXCEPTION in cccl_device_transform(): %s\n", exc.what());
+    printf("\nEXCEPTION in cccl_device_binary_transform(): %s\n", exc.what());
     fflush(stdout);
     error = CUDA_ERROR_UNKNOWN;
   }
