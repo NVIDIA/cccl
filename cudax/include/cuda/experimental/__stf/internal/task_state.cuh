@@ -221,6 +221,8 @@ public:
   ::std::unordered_map<int, reserved::logical_data_untyped_impl&> logical_data_ids;
   mutable ::std::mutex logical_data_ids_mutex;
 
+  ::std::vector<::std::pair<::std::string, size_t>> previous_logical_data_stats;
+
   // We need logical_data_untyped_impl to be defined to print this
   void print_logical_data_summary() const;
 

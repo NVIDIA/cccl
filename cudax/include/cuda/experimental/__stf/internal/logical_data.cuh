@@ -30,7 +30,9 @@
 #include <cuda/experimental/__stf/internal/constants.cuh>
 #include <cuda/experimental/__stf/internal/data_interface.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
+#include <cuda/experimental/__stf/utility/pretty_print.cuh>
 
+#include <map>
 #include <mutex>
 #include <optional>
 
@@ -1855,6 +1857,8 @@ inline void reserved::logical_data_untyped_impl::erase()
   auto erased = logical_data_ids.erase(get_unique_id());
   EXPECT(erased == 1UL, "ERROR: prematurely destroyed data");
 
+  cs.previous_logical_data_stats.push_back(::std::make_pair(get_symbol(), dinterface->data_footprint()));
+
   cs.logical_data_ids_mutex.unlock();
 
   // fprintf(stderr, "AFTER REMOVE %d from logical_data_ids %p (id count %zu)\n", get_unique_id(),
@@ -2168,18 +2172,84 @@ inline void reserved::ctx_stack::print_logical_data_summary() const
   fprintf(stderr, "Context current logical data summary\n");
   fprintf(stderr, "====================================\n");
 
-  // TODO sort by symbol or shape size ? print location ?
-  for (auto [id, data_impl] : logical_data_ids)
+  size_t total_footprint = 0;
+
+  // Map to aggregate counts based on (symbol, footprint)
+  ::std::map<::std::string, ::std::map<size_t, size_t>> data_summary;
+
+  for (const auto& [id, data_impl] : logical_data_ids)
   {
-    // data_impl :
-    // const ::std::string& get_symbol() const
-    // const shape_t& shape() const => shape has a size_t size() const method
-    fprintf(stderr,
-            "ID: %d, Symbol: %s, Shape Size: %zu\n",
-            id,
-            data_impl.get_symbol().c_str(),
-            data_impl.dinterface->data_footprint());
+    size_t footprint = data_impl.dinterface->data_footprint();
+    total_footprint += footprint;
+
+    ::std::string symbol = data_impl.get_symbol();
+    data_summary[symbol][footprint]++;
   }
+
+  // Print summary
+  for (const auto& [symbol, footprints] : data_summary)
+  {
+    fprintf(stderr, "- %s,", symbol.c_str());
+    bool first = true;
+    for (const auto& [footprint, count] : footprints)
+    {
+      if (!first)
+      {
+        fprintf(stderr, " |");
+      }
+      first = false;
+
+      fprintf(stderr, " %s", pretty_print_bytes(footprint).c_str());
+      if (count > 1)
+      {
+        fprintf(stderr, " (x%zu)", count);
+      }
+    }
+    fprintf(stderr, "\n");
+  }
+
+  fprintf(stderr, "====================================\n");
+  fprintf(stderr, "Current footprint : %s\n", pretty_print_bytes(total_footprint).c_str());
+  fprintf(stderr, "====================================\n");
+
+  size_t total_footprint_destroyed = 0;
+
+  // Map to aggregate counts based on (symbol, footprint)
+  ::std::map<::std::string, ::std::map<size_t, size_t>> destroyed_data_summary;
+
+  for (const auto& [symbol, footprint] : previous_logical_data_stats)
+  {
+    total_footprint_destroyed += footprint;
+    destroyed_data_summary[symbol][footprint]++;
+  }
+
+  // Print summary
+  for (const auto& [symbol, footprints] : destroyed_data_summary)
+  {
+    fprintf(stderr, "- %s,", symbol.c_str());
+    bool first = true;
+    for (const auto& [footprint, count] : footprints)
+    {
+      if (!first)
+      {
+        fprintf(stderr, " |");
+      }
+      first = false;
+
+      fprintf(stderr, " %s", pretty_print_bytes(footprint).c_str());
+      if (count > 1)
+      {
+        fprintf(stderr, " (x%zu)", count);
+      }
+    }
+    fprintf(stderr, "\n");
+  }
+
+  fprintf(stderr, "====================================\n");
+  fprintf(stderr, "Destroyed footprint : %s\n", pretty_print_bytes(total_footprint_destroyed).c_str());
+  fprintf(stderr, "====================================\n");
+  fprintf(stderr, "Total footprint : %s\n", pretty_print_bytes(total_footprint + total_footprint_destroyed).c_str());
+  fprintf(stderr, "====================================\n");
 }
 
 // Defined here to avoid circular dependencies

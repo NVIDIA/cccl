@@ -85,34 +85,6 @@ task_dep<T, reduce_op, initialize> to_task_dep(stackable_task_dep<T, reduce_op, 
 
 } // end namespace reserved
 
-#if 0
-template <typename ScopeT>
-class locked_scope
-{
-public:
-  locked_scope(ScopeT&& s, ::std::unique_lock<::std::mutex>&& guard)
-      : inner_scope(::std::move(s))
-      , lock(mv(guard))
-  {}
-
-  template <typename Fun>
-  void operator->*(Fun&& func)
-  {
-    inner_scope->*::std::forward<Fun>(func);
-  }
-
-  auto& set_symbol(::std::string s)
-  {
-    inner_scope.set_symbol(s);
-    return *this;
-  }
-
-private:
-  ScopeT inner_scope;
-  ::std::unique_lock<::std::mutex> lock;
-};
-#endif
-
 /**
  * @brief Base class with a virtual pop method to enable type erasure
  *
@@ -365,7 +337,8 @@ public:
 
         // Useful for tools
         gctx.set_parent_ctx(parent_node.ctx);
-        gctx.get_dot()->set_ctx_symbol("stacked_ctx_" + ::std::to_string(node_offset));
+        gctx.get_dot()->set_ctx_symbol("graph[" + ::std::string(loc.file_name()) + ":" + ::std::to_string(loc.line())
+                                       + "(" + loc.function_name() + ")]");
 
         auto wrapper = ::std::make_shared<stream_adapter>(gctx, stream);
 
@@ -392,6 +365,13 @@ public:
       _CCCL_ASSERT(nodes[head_offset].has_value(), "invalid state");
 
       auto& current_node = nodes[head_offset].value();
+
+      const char* display_mem_stats_env = getenv("CUDASTF_DISPLAY_MEM_STATS");
+      if (display_mem_stats_env && atoi(display_mem_stats_env) != 0)
+      {
+        fprintf(stderr, "PRINT DATA SUMMARY ctx %s\n", current_node.ctx.get_dot()->get_ctx_symbol().c_str());
+        current_node.ctx.print_logical_data_summary();
+      }
 
       // Automatically pop data if needed
       for (auto& d_impl : current_node.pushed_data)
@@ -506,7 +486,7 @@ public:
       fprintf(stderr, "set_head_offset => from %d to %d\n", current_head_offset, offset);
       current_head_offset = offset;
 #else
-      fprintf(stderr, "set_head_offset => from %d to %d\n", head_map[::std::this_thread::get_id()], offset);
+      // fprintf(stderr, "set_head_offset => from %d to %d\n", head_map[::std::this_thread::get_id()], offset);
       head_map[::std::this_thread::get_id()] = offset;
 #endif
     }
@@ -524,19 +504,19 @@ public:
       return node_tree.get_children(parent);
     }
 
-    void print_logical_data_summary() const
+    template <typename Func>
+    void traverse_nodes(Func&& func) const
     {
       ::std::stack<int> node_stack;
-      // Iterate from root node
       node_stack.push(root_offset);
+
       while (!node_stack.empty())
       {
         int offset = node_stack.top();
         node_stack.pop();
 
-        auto& ctx = get_ctx(offset);
-        fprintf(stderr, "[context %d (%s)] logical data summary:\n", offset, ctx.to_string().c_str());
-        ctx.print_logical_data_summary();
+        // Call the provided function on the current node
+        func(offset);
 
         // Push children to stack (reverse order to maintain left-to-right order)
         const auto& children = get_children_offsets(offset);
@@ -545,6 +525,15 @@ public:
           node_stack.push(*it);
         }
       }
+    }
+
+    void print_logical_data_summary() const
+    {
+      traverse_nodes([this](int offset) {
+        auto& ctx = get_ctx(offset);
+        fprintf(stderr, "[context %d (%s)] logical data summary:\n", offset, ctx.to_string().c_str());
+        ctx.print_logical_data_summary();
+      });
     }
 
   private:
@@ -707,7 +696,6 @@ public:
     int head     = get_head_offset();
     int new_head = pimpl->push(head, loc);
     pimpl->set_head_offset(new_head);
-    fprintf(stderr, "ctx.push (head %d new head %d)\n", head, new_head);
   }
 
   void pop()
@@ -1139,10 +1127,38 @@ class stackable_logical_data
         return data_nodes[offset].value();
       }
 
+      template <typename Func>
+      void traverse_data_nodes(Func&& func) const
+      {
+        ::std::stack<int> node_stack;
+        node_stack.push(data_root_offset);
+
+        while (!node_stack.empty())
+        {
+          int offset = node_stack.top();
+          node_stack.pop();
+
+          // Call the provided function on the current node
+          func(offset);
+
+          // Push children to stack (reverse order to maintain left-to-right order)
+          const auto& children = sctx.get_children_offsets(offset);
+          for (auto it = children.rbegin(); it != children.rend(); ++it)
+          {
+            if (was_imported(*it))
+            {
+              node_stack.push(*it);
+            }
+          }
+        }
+      }
+
       void set_symbol(::std::string symbol_)
       {
         symbol = mv(symbol_);
-        get_data_node(data_root_offset).set_symbol(symbol);
+        traverse_data_nodes([this](int offset) {
+          get_data_node(offset).ld.set_symbol(this->symbol);
+        });
       }
 
       int get_data_root_offset() const
