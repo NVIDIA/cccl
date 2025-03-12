@@ -30,14 +30,14 @@ __host__ __device__ constexpr void test_copysign(const T mag, const T sign, bool
 
   if constexpr (cuda::std::is_same_v<T, float>)
   {
-    const auto result = cuda::std::copysignf(mag, sign);
-    assert(cuda::std::signbit(result) == expected);
+    const auto resultf = cuda::std::copysignf(mag, sign);
+    assert(cuda::std::signbit(resultf) == expected);
   }
 #if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
-    const auto result = cuda::std::copysignl(mag, sign);
-    assert(cuda::std::signbit(result) == expected);
+    const auto resultl = cuda::std::copysignl(mag, sign);
+    assert(cuda::std::signbit(resultl) == expected);
   }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 }
