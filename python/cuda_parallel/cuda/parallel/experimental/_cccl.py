@@ -59,7 +59,7 @@ class Op(ctypes.Structure):
         ("type", OpKind),
         ("name", ctypes.c_char_p),
         ("ltoir", ctypes.c_char_p),
-        ("ltoir_size", ctypes.c_int),
+        ("ltoir_size", ctypes.c_size_t),
         ("size", ctypes.c_size_t),
         ("alignment", ctypes.c_size_t),
         ("state", ctypes.c_void_p),
