@@ -13,6 +13,11 @@
 
 #include <cuda/std/detail/__config>
 
+#include <cstdint>
+
+#include "cuda/std/__cccl/dialect.h"
+#include "cuda/std/__type_traits/is_constant_evaluated.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -22,35 +27,71 @@
 #endif // no system header
 
 #include <cuda/std/__bit/integral.h>
+#include <cuda/std/__cmath/rounding_functions.h>
+#include <cuda/std/__concepts/__concept_macros.h>
 #include <cuda/std/__limits/numeric_limits.h>
-#include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-template <typename _Tp>
+_CCCL_TEMPLATE(typename _Tp)
+_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_integer, _Tp))
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int ilog2(_Tp __t) noexcept
 {
-  static_assert(_CUDA_VSTD::__cccl_is_integer_v<_Tp>,
-                "ilog2() argument type must be an integer type");
   using _Up = _CUDA_VSTD::make_unsigned_t<_Tp>;
   _CCCL_ASSERT(__t > 0, "ilog2() argument must be strictly positive");
-  auto __ret = _CUDA_VSTD::__bit_log2(static_cast<_Up>(__t));
-  _CCCL_ASSUME(__ret <= _CUDA_VSTD::numeric_limits<_Tp>::digits);
-  return __ret;
+  auto __log10_approx = _CUDA_VSTD::__bit_log2(static_cast<_Up>(__t));
+  _CCCL_ASSUME(__log10_approx <= _CUDA_VSTD::numeric_limits<_Tp>::digits);
+  return __log10_approx;
 }
 
-template <typename _Tp>
+static _CCCL_GLOBAL_CONSTANT uint32_t __power_of_10_32bit[] = {
+  1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000};
+
+static _CCCL_GLOBAL_CONSTANT uint64_t __power_of_10_64bit[] = {
+  1,
+  10,
+  100,
+  1'000,
+  10'000,
+  100'000,
+  1'000'000,
+  10'000'000,
+  100'000'000,
+  1'000'000'000,
+  10'000'000'000,
+  100'000'000'000,
+  1'000'000'000'000,
+  10'000'000'000'000,
+  100'000'000'000'000,
+  1'000'000'000'000'000,
+  10'000'000'000'000'000,
+  100'000'000'000'000'000,
+  1'000'000'000'000'000'000,
+  10'000'000'000'000'000'000u};
+
+_CCCL_TEMPLATE(typename _Tp)
+_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_integer, _Tp))
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int ilog10(_Tp __t) noexcept
 {
-  static_assert(_CUDA_VSTD::__cccl_is_integer_v<_Tp>,
-                "ilog10() argument type must be an integer type");
   _CCCL_ASSERT(__t > 0, "ilog10() argument must be strictly positive");
   constexpr auto __reciprocal_log2_10 = 1.0f / 3.321928094f; // 1 / log2(10)
-  auto __log2                         = _CUDA_VSTD::__bit_log2(__t);
-  auto __ret                          = static_cast<int>(__log2 * __reciprocal_log2_10);
-  _CCCL_ASSUME(__ret <= _CUDA_VSTD::numeric_limits<_Tp>::digits / 3);
-  return __ret;
+  auto __log2                         = ::cuda::ilog2(__t) * __reciprocal_log2_10;
+  auto __log10_f      = _CUDA_VSTD::__cccl_default_is_constant_evaluated() ? __log2 + 0.5f : _CUDA_VSTD::ceil(__log2);
+  auto __log10_approx = static_cast<int>(__log10_f);
+  if constexpr (sizeof(_Tp) <= 4)
+  {
+    auto __ret = __log10_approx - (static_cast<uint32_t>(__t) < ::cuda::__power_of_10_32bit[__log10_approx]);
+    _CCCL_ASSUME(__ret <= _CUDA_VSTD::numeric_limits<_Tp>::digits / 3); // 2^X < 10^(x/3) -> 8^X < 10^x
+    return __ret;
+  }
+  else
+  {
+    auto __ret = __log10_approx - (static_cast<uint64_t>(__t) < ::cuda::__power_of_10_64bit[__log10_approx]);
+    _CCCL_ASSUME(__ret <= _CUDA_VSTD::numeric_limits<_Tp>::digits / 3);
+    return __ret;
+  }
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
