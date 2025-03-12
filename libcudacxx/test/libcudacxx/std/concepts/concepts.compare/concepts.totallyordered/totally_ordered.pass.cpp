@@ -119,12 +119,12 @@ static_assert(models_totally_ordered<cuda::std::array<int, 10>>(), "");
 namespace types_fit_for_purpose
 {
 #if TEST_STD_VER > 2017
-#  ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#  if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 static_assert(models_totally_ordered<member_three_way_comparable>(), "");
 #    ifndef __NVCC__ // nvbug3908399
 static_assert(models_totally_ordered<friend_three_way_comparable>(), "");
 #    endif // !__NVCC__
-#  endif // TEST_HAS_NO_SPACESHIP_OPERATOR
+#  endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 static_assert(models_totally_ordered<explicit_operators>(), "");
 static_assert(models_totally_ordered<different_return_types>(), "");
@@ -152,7 +152,7 @@ static_assert(!totally_ordered<wrong_return_type>, "");
 #if TEST_STD_VER > 2017
 static_assert(!totally_ordered<cxx20_member_eq_operator_with_deleted_ne>, "");
 static_assert(!totally_ordered<cxx20_friend_eq_operator_with_deleted_ne>, "");
-#  ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#  if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 static_assert(!totally_ordered<member_three_way_comparable_with_deleted_eq>, "");
 static_assert(!totally_ordered<member_three_way_comparable_with_deleted_ne>, "");
 static_assert(!totally_ordered<friend_three_way_comparable_with_deleted_eq>, "");
@@ -172,7 +172,7 @@ static_assert(totally_ordered<returns_int_ptr>, "");
 static_assert(totally_ordered<partial_ordering_totally_ordered_with>, "");
 static_assert(totally_ordered<weak_ordering_totally_ordered_with>, "");
 static_assert(totally_ordered<strong_ordering_totally_ordered_with>, "");
-#  endif // TEST_HAS_NO_SPACESHIP_OPERATOR
+#  endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #endif // TEST_STD_VER > 2017
 } // namespace types_fit_for_purpose
 

@@ -712,7 +712,7 @@ public:
 };
 static_assert(cuda::std::random_access_iterator<contiguous_iterator<int*>>, "");
 
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 template <class It>
 class three_way_contiguous_iterator
@@ -836,7 +836,7 @@ public:
   template <class T>
   void operator,(T const&) = delete;
 };
-#endif // TEST_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 template <class Iter> // ADL base() for everything else (including pointers)
 __host__ __device__ TEST_CONSTEXPR Iter base(Iter i)
@@ -1580,7 +1580,7 @@ public:
   {
     return lhs.ptr_ == rhs.ptr_;
   }
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   __host__ __device__ constexpr friend auto operator<=>(const Iterator& lhs, const Iterator& rhs)
   {
     return lhs.ptr_ <=> rhs.ptr_;
@@ -1731,7 +1731,7 @@ struct Proxy
     return lhs.data == rhs.data;
   }
 
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   __host__ __device__ friend constexpr auto operator<=>(const Proxy&, const Proxy&)
     requires(cuda::std::three_way_comparable<T> && !cuda::std::is_reference_v<T>)
   = default;
@@ -1744,7 +1744,7 @@ struct Proxy
   {
     return lhs.data <=> rhs.data;
   }
-#endif // TEST_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 };
 
 namespace cuda
@@ -1962,14 +1962,14 @@ struct ProxyIterator : ProxyIteratorBase<Base>
     return x.base_ >= y.base_;
   }
 
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   _CCCL_TEMPLATE(class B2 = Base)
   _CCCL_REQUIRES(cuda::std::random_access_iterator<B2>&& cuda::std::three_way_comparable<B2>)
   __host__ __device__ friend constexpr auto operator<=>(const ProxyIterator& x, const ProxyIterator& y)
   {
     return x.base_ <=> y.base_;
   }
-#endif // TEST_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
   _CCCL_TEMPLATE(class B2 = Base)
   _CCCL_REQUIRES(cuda::std::random_access_iterator<B2>)

@@ -55,10 +55,10 @@ int main(int, char**)
   using weekday = cuda::std::chrono::weekday;
   using days    = cuda::std::chrono::days;
 
-  ASSERT_NOEXCEPT(cuda::std::declval<weekday>() + cuda::std::declval<days>());
+  static_assert(noexcept(cuda::std::declval<weekday>() + cuda::std::declval<days>()));
   ASSERT_SAME_TYPE(weekday, decltype(cuda::std::declval<weekday>() + cuda::std::declval<days>()));
 
-  ASSERT_NOEXCEPT(cuda::std::declval<days>() + cuda::std::declval<weekday>());
+  static_assert(noexcept(cuda::std::declval<days>() + cuda::std::declval<weekday>()));
   ASSERT_SAME_TYPE(weekday, decltype(cuda::std::declval<days>() + cuda::std::declval<weekday>()));
 
   static_assert(testConstexpr<weekday, days>(), "");

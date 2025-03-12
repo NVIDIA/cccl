@@ -68,7 +68,7 @@ int main()
   };
 
   // READ
-  ctx.task(exec_place::host, handle.read())->*[](auto stream, auto s) {
+  ctx.task(exec_place::host(), handle.read())->*[](auto stream, auto s) {
     cuda_safe_call(cudaStreamSynchronize(stream));
     EXPECT(s(0) == 18 + 42);
     // printf("VALUE %d expected %d\n", s(0), 18 + 42);

@@ -27,7 +27,7 @@ The function generates a bitmask of size ``width`` starting at position ``start`
 **Preconditions**
 
     - ``start >= 0 && start < num_bits(T)``
-    - ``width >  0 && width <= num_bits(T)``
+    - ``width >= 0 && width <= num_bits(T)``
     - ``start + width <= num_bits(T)``
 
 **Performance considerations**

@@ -64,8 +64,8 @@ template <typename T, typename U>
 __host__ __device__ constexpr bool testConstructorArray()
 {
   cuda::std::array<U, 2> val = {U(), U()};
-  ASSERT_NOEXCEPT(cuda::std::span<T>{val});
-  ASSERT_NOEXCEPT(cuda::std::span<T, 2>{val});
+  static_assert(noexcept(cuda::std::span<T>{val}));
+  static_assert(noexcept(cuda::std::span<T, 2>{val}));
   cuda::std::span<T> s1{val};
   cuda::std::span<T, 2> s2{val};
   return s1.data() == &val[0] && s1.size() == 2 && s2.data() == &val[0] && s2.size() == 2;
@@ -75,8 +75,8 @@ template <typename T, typename U>
 __host__ __device__ constexpr bool testConstructorConstArray()
 {
   const cuda::std::array<U, 2> val = {U(), U()};
-  ASSERT_NOEXCEPT(cuda::std::span<const T>{val});
-  ASSERT_NOEXCEPT(cuda::std::span<const T, 2>{val});
+  static_assert(noexcept(cuda::std::span<const T>{val}));
+  static_assert(noexcept(cuda::std::span<const T, 2>{val}));
   cuda::std::span<const T> s1{val};
   cuda::std::span<const T, 2> s2{val};
   return s1.data() == &val[0] && s1.size() == 2 && s2.data() == &val[0] && s2.size() == 2;
@@ -85,12 +85,12 @@ __host__ __device__ constexpr bool testConstructorConstArray()
 template <typename T>
 __host__ __device__ constexpr bool testConstructors()
 {
-  STATIC_ASSERT_CXX14((testConstructorArray<T, T>()));
-  STATIC_ASSERT_CXX14((testConstructorArray<const T, const T>()));
-  STATIC_ASSERT_CXX14((testConstructorArray<const T, T>()));
-  STATIC_ASSERT_CXX14((testConstructorConstArray<T, T>()));
-  STATIC_ASSERT_CXX14((testConstructorConstArray<const T, const T>()));
-  STATIC_ASSERT_CXX14((testConstructorConstArray<const T, T>()));
+  static_assert((testConstructorArray<T, T>()));
+  static_assert((testConstructorArray<const T, const T>()));
+  static_assert((testConstructorArray<const T, T>()));
+  static_assert((testConstructorConstArray<T, T>()));
+  static_assert((testConstructorConstArray<const T, const T>()));
+  static_assert((testConstructorConstArray<const T, T>()));
 
   return testConstructorArray<T, T>() && testConstructorArray<const T, const T>() && testConstructorArray<const T, T>()
       && testConstructorConstArray<T, T>() && testConstructorConstArray<const T, const T>()

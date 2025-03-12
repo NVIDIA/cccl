@@ -71,7 +71,7 @@ __host__ __device__ constexpr void test_comparison(
 {
   cuda::std::layout_stride::mapping<To> dest(dest_exts, dest_strides);
   cuda::std::layout_stride::mapping<From> src(src_exts, src_strides);
-  ASSERT_NOEXCEPT(dest == src);
+  static_assert(noexcept(dest == src));
   assert((dest == src) == equal);
   assert((dest != src) == !equal);
 }

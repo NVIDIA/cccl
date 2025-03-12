@@ -43,10 +43,10 @@ __host__ __device__ constexpr bool test()
   assert(&b1 == &b3);
   assert(&b1 == &b4);
 
-  ASSERT_NOEXCEPT(static_cast<OwningView&>(ov).base());
-  ASSERT_NOEXCEPT(static_cast<OwningView&&>(ov).base());
-  ASSERT_NOEXCEPT(static_cast<const OwningView&>(ov).base());
-  ASSERT_NOEXCEPT(static_cast<const OwningView&&>(ov).base());
+  static_assert(noexcept(static_cast<OwningView&>(ov).base()));
+  static_assert(noexcept(static_cast<OwningView&&>(ov).base()));
+  static_assert(noexcept(static_cast<const OwningView&>(ov).base()));
+  static_assert(noexcept(static_cast<const OwningView&&>(ov).base()));
 
   return true;
 }
