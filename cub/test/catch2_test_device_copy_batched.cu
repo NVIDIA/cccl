@@ -49,6 +49,15 @@ struct offset_to_constant_it
   }
 };
 
+struct offset_to_gaussian_sum_offset_op
+{
+  template <typename OffsetT>
+  __host__ __device__ __forceinline__ auto operator()(OffsetT offset) const
+  {
+    return offset > 0 ? (offset * (offset - 1) / 2) : OffsetT{0};
+  }
+};
+
 struct object_with_non_trivial_ctor
 {
   static constexpr std::int32_t magic_constant = 923390;
@@ -226,4 +235,48 @@ C2H_TEST("DeviceCopy::Batched works for non-trivial ctors", "[copy]")
   copy_batched(in_iter.begin(), out_iter.begin(), sizes, num_buffers);
 
   REQUIRE(in == out);
+}
+
+C2H_TEST("DeviceMemcpy::Batched works for a very large number of ranges", "[copy]")
+try
+{
+  using item_offset_t = uint64_t;
+  using range_size_t  = int32_t;
+
+  constexpr auto num_ranges = 10;
+  // constexpr auto num_ranges = static_cast<item_offset_t>(std::numeric_limits<uint32_t>::max()) - (3 << 20);
+
+  // Generate the range sizes
+  auto range_sizes_it        = thrust::make_counting_iterator(range_size_t{0});
+  const auto num_total_items = static_cast<item_offset_t>(num_ranges * (num_ranges - 1) / 2);
+
+  // Iterator to be used to provide input data
+  auto in_it = thrust::make_counting_iterator(item_offset_t{42});
+
+  // Prepare helper to check results
+  auto check_result_helper = detail::large_problem_test_helper(num_total_items);
+  auto check_result_it     = check_result_helper.get_flagging_output_iterator(in_it);
+
+  // Fancy iterator to provide offsets into in_it, given that the range sizes is a series of increasing integers (0, 1,
+  // 2, ...)
+  auto range_offsets_it = thrust::make_transform_iterator(
+    thrust::make_counting_iterator(item_offset_t{0}), offset_to_gaussian_sum_offset_op{});
+
+  // Helper iterator that offsets the checking output iterator by the offset of a given range
+  offset_to_ptr_op<decltype(in_it)> src_transform_op{in_it};
+  auto ranges_src_it = thrust::make_transform_iterator(range_offsets_it, src_transform_op);
+
+  // Helper iterator that offsets the checking output iterator by the offset for a given range
+  offset_to_ptr_op<decltype(check_result_it)> dst_transform_op{check_result_it};
+  auto ranges_dst_it = thrust::make_transform_iterator(range_offsets_it, dst_transform_op);
+
+  // Invoke device-side algorithm
+  copy_batched(ranges_src_it, ranges_dst_it, range_sizes_it, num_ranges);
+
+  // Verify result
+  check_result_helper.check_all_results_correct();
+}
+catch (std::bad_alloc& e)
+{
+  std::cerr << "Caught bad_alloc: " << e.what() << std::endl;
 }
