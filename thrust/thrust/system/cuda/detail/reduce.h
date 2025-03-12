@@ -614,6 +614,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   using core::detail::cuda_optional;
   using core::detail::get_agent_plan;
 
+  using AccType      = thrust::detail::__iter_accumulator_t<InputIt, T, ReductionOp>;
   using UnsignedSize = typename detail::make_unsigned_special<Size>::type;
 
   if (num_items == 0)
@@ -621,7 +622,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
     return cudaErrorNotSupported;
   }
 
-  using reduce_agent = AgentLauncher<ReduceAgent<InputIt, OutputIt, T, Size, ReductionOp>>;
+  using reduce_agent = AgentLauncher<ReduceAgent<InputIt, OutputIt, AccType, Size, ReductionOp>>;
 
   typename reduce_agent::Plan reduce_plan = reduce_agent::get_plan(stream);
 
@@ -675,7 +676,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
     // Temporary storage allocation requirements
     void* allocations[3]       = {nullptr, nullptr, nullptr};
     size_t allocation_sizes[3] = {
-      max_blocks * sizeof(T), // bytes needed for privatized block reductions
+      max_blocks * sizeof(AccType), // bytes needed for privatized block reductions
       cub::GridQueue<UnsignedSize>::AllocationSize(), // bytes needed for grid queue descriptor0
       vshmem_size // size of virtualized shared memory storage
     };
@@ -686,7 +687,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
       return status;
     }
 
-    T* d_block_reductions = (T*) allocations[0];
+    auto d_block_reductions = (AccType*) allocations[0];
     cub::GridQueue<UnsignedSize> queue(allocations[1]);
     char* vshmem_ptr = vshmem_size > 0 ? (char*) allocations[2] : nullptr;
 
@@ -723,7 +724,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
     ra.launch(input_it, d_block_reductions, num_items, even_share, queue, reduction_op);
     _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
 
-    using reduce_agent_single = AgentLauncher<ReduceAgent<T*, OutputIt, T, Size, ReductionOp>>;
+    using reduce_agent_single = AgentLauncher<ReduceAgent<AccType*, OutputIt, AccType, Size, ReductionOp>>;
 
     reduce_plan.grid_size = 1;
     reduce_agent_single ra1(reduce_plan, stream, vshmem_ptr, "reduce_agent: single tile reduce");
@@ -739,6 +740,7 @@ template <typename Derived, typename InputIt, typename Size, typename T, typenam
 THRUST_RUNTIME_FUNCTION thrust::detail::__iter_accumulator_t<InputIt, T, BinaryOp>
 reduce(execution_policy<Derived>& policy, InputIt first, Size num_items, T init, BinaryOp binary_op)
 {
+  using AccType = thrust::detail::__iter_accumulator_t<InputIt, T, BinaryOp>;
   if (num_items == 0)
   {
     return init;
@@ -748,10 +750,11 @@ reduce(execution_policy<Derived>& policy, InputIt first, Size num_items, T init,
   cudaStream_t stream       = cuda_cub::stream(policy);
 
   cudaError_t status;
-  status = doit_step(nullptr, temp_storage_bytes, first, num_items, init, binary_op, static_cast<T*>(nullptr), stream);
+  status =
+    doit_step(nullptr, temp_storage_bytes, first, num_items, init, binary_op, static_cast<AccType*>(nullptr), stream);
   cuda_cub::throw_on_error(status, "reduce failed on 1st step");
 
-  size_t allocation_sizes[2] = {sizeof(T*), temp_storage_bytes};
+  size_t allocation_sizes[2] = {sizeof(AccType*), temp_storage_bytes};
   void* allocations[2]       = {nullptr, nullptr};
 
   size_t storage_size = 0;
@@ -765,7 +768,7 @@ reduce(execution_policy<Derived>& policy, InputIt first, Size num_items, T init,
   status = core::detail::alias_storage(ptr, storage_size, allocations, allocation_sizes);
   cuda_cub::throw_on_error(status, "reduce failed on 2nd alias_storage");
 
-  T* d_result = thrust::detail::aligned_reinterpret_cast<T*>(allocations[0]);
+  auto d_result = thrust::detail::aligned_reinterpret_cast<AccType*>(allocations[0]);
 
   status = doit_step(allocations[1], temp_storage_bytes, first, num_items, init, binary_op, d_result, stream);
   cuda_cub::throw_on_error(status, "reduce failed on 2nd step");
@@ -773,7 +776,7 @@ reduce(execution_policy<Derived>& policy, InputIt first, Size num_items, T init,
   status = cuda_cub::synchronize(policy);
   cuda_cub::throw_on_error(status, "reduce failed to synchronize");
 
-  T result = cuda_cub::get_value(policy, d_result);
+  AccType result = cuda_cub::get_value(policy, d_result);
 
   return result;
 }
@@ -786,6 +789,7 @@ template <typename Derived, typename InputIt, typename Size, typename T, typenam
 THRUST_RUNTIME_FUNCTION T
 reduce_n_impl(execution_policy<Derived>& policy, InputIt first, Size num_items, T init, BinaryOp binary_op)
 {
+  using AccType       = thrust::detail::__iter_accumulator_t<InputIt, T, BinaryOp>;
   cudaStream_t stream = cuda_cub::stream(policy);
   cudaError_t status;
 
@@ -797,12 +801,12 @@ reduce_n_impl(execution_policy<Derived>& policy, InputIt first, Size num_items, 
     status,
     cub::DeviceReduce::Reduce,
     num_items,
-    (nullptr, tmp_size, first, static_cast<T*>(nullptr), num_items_fixed, binary_op, init, stream));
+    (nullptr, tmp_size, first, static_cast<AccType*>(nullptr), num_items_fixed, binary_op, init, stream));
   cuda_cub::throw_on_error(status, "after reduction step 1");
 
   // Allocate temporary storage.
 
-  thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, sizeof(T) + tmp_size);
+  thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, sizeof(AccType) + tmp_size);
 
   // Run reduction.
 
@@ -814,8 +818,8 @@ reduce_n_impl(execution_policy<Derived>& policy, InputIt first, Size num_items, 
   // The array was dynamically allocated, so we assume that it's suitably
   // aligned for any type of data. `malloc`/`cudaMalloc`/`new`/`std::allocator`
   // make this guarantee.
-  T* ret_ptr    = thrust::detail::aligned_reinterpret_cast<T*>(tmp.data().get());
-  void* tmp_ptr = static_cast<void*>((tmp.data() + sizeof(T)).get());
+  auto ret_ptr  = thrust::detail::aligned_reinterpret_cast<AccType*>(tmp.data().get());
+  void* tmp_ptr = static_cast<void*>((tmp.data() + sizeof(AccType)).get());
   THRUST_INDEX_TYPE_DISPATCH(
     status,
     cub::DeviceReduce::Reduce,
@@ -836,7 +840,7 @@ reduce_n_impl(execution_policy<Derived>& policy, InputIt first, Size num_items, 
   // The array was dynamically allocated, so we assume that it's suitably
   // aligned for any type of data. `malloc`/`cudaMalloc`/`new`/`std::allocator`
   // make this guarantee.
-  return thrust::cuda_cub::get_value(policy, thrust::detail::aligned_reinterpret_cast<T*>(tmp.data().get()));
+  return thrust::cuda_cub::get_value(policy, thrust::detail::aligned_reinterpret_cast<AccType*>(tmp.data().get()));
 }
 
 } // namespace detail
@@ -870,7 +874,7 @@ template <class Derived, class InputIt, class T>
 _CCCL_HOST_DEVICE thrust::detail::__iter_accumulator_t<InputIt, T>
 reduce(execution_policy<Derived>& policy, InputIt first, InputIt last, T init)
 {
-  return cuda_cub::reduce(policy, first, last, init, plus<T>());
+  return cuda_cub::reduce(policy, first, last, init, plus<>());
 }
 
 template <class Derived, class InputIt>

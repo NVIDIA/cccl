@@ -238,8 +238,7 @@ inclusive_scan(tag, InputIterator first, InputIterator last, OutputIterator resu
 {
   using namespace thrust::detail;
 
-  using ValueType = thrust::detail::it_value_t<InputIterator>;
-  using AccumT    = ::cuda::std::__accumulator_t<BinaryFunction, ValueType>;
+  using AccumT = ::cuda::std::__accumulator_t<BinaryFunction, thrust::detail::it_value_t<InputIterator>>;
 
   using Size = thrust::detail::it_difference_t<InputIterator>;
   Size n     = thrust::distance(first, last);
@@ -262,15 +261,14 @@ OutputIterator inclusive_scan(
 {
   using namespace thrust::detail;
 
-  // Use the input iterator's value type and the initial value type per wg21.link/p2322
-  using ValueType = thrust::detail::__iter_accumulator_t<InputIterator, InitialValueType, BinaryFunction>;
+  using AccType = thrust::detail::__iter_accumulator_t<InputIterator, InitialValueType, BinaryFunction>;
 
   using Size = thrust::detail::it_difference_t<InputIterator>;
   Size n     = thrust::distance(first, last);
 
   if (n != 0)
   {
-    using Body = typename scan_detail::inclusive_body<InputIterator, OutputIterator, BinaryFunction, ValueType, true>;
+    using Body = typename scan_detail::inclusive_body<InputIterator, OutputIterator, BinaryFunction, AccType, true>;
     Body scan_body(first, result, binary_op, init);
     ::tbb::parallel_scan(::tbb::blocked_range<Size>(0, n), scan_body);
   }
@@ -285,10 +283,7 @@ OutputIterator exclusive_scan(
   tag, InputIterator first, InputIterator last, OutputIterator result, InitialValueType init, BinaryFunction binary_op)
 {
   using namespace thrust::detail;
-
-  // Use the initial value type per https://wg21.link/P0571
-  using ValueType = InitialValueType;
-  using AccumT    = ::cuda::std::__accumulator_t<BinaryFunction, ValueType>;
+  using AccumT = ::cuda::std::__accumulator_t<BinaryFunction, InitialValueType>;
 
   using Size = thrust::detail::it_difference_t<InputIterator>;
   Size n     = thrust::distance(first, last);
