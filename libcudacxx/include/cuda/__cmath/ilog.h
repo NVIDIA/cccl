@@ -43,7 +43,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int ilog2(_Tp __t) noexcept
 template <typename _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int ilog10(_Tp __t) noexcept
 {
-  static_assert(_CUDA_VSTD::is_integral_v<_Tp> && !_CUDA_VSTD::is_same_v<_Tp, bool>,
+  static_assert(_CUDA_VSTD::__cccl_is_integer_v<_Tp>,
                 "ilog2() argument type must be an integer type");
   _CCCL_ASSERT(__t > 0, "ilog10() argument must be strictly positive");
   constexpr auto __reciprocal_log2_10 = 1.0f / 3.321928094f; // 1 / log2(10)
