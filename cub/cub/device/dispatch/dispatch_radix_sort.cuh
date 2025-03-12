@@ -169,7 +169,8 @@ template <SortOrder Order,
           typename DecomposerT  = detail::identity_decomposer_t,
           typename PolicyHub    = detail::radix::policy_hub<KeyT, ValueT, OffsetT>,
           typename KernelSource = detail::radix_sort::
-            DeviceRadixSortKernelSource<typename PolicyHub::MaxPolicy, Order, KeyT, ValueT, OffsetT, DecomposerT>>
+            DeviceRadixSortKernelSource<typename PolicyHub::MaxPolicy, Order, KeyT, ValueT, OffsetT, DecomposerT>,
+          typename KernelLauncherFactory = detail::TripleChevronFactory>
 struct DispatchRadixSort
 {
   //------------------------------------------------------------------------------
@@ -223,6 +224,8 @@ struct DispatchRadixSort
 
   KernelSource kernel_source;
 
+  KernelLauncherFactory launcher_factory;
+
   //------------------------------------------------------------------------------
   // Constructor
   //------------------------------------------------------------------------------
@@ -239,8 +242,9 @@ struct DispatchRadixSort
     bool is_overwrite_okay,
     cudaStream_t stream,
     int ptx_version,
-    DecomposerT decomposer     = {},
-    KernelSource kernel_source = {})
+    DecomposerT decomposer                 = {},
+    KernelSource kernel_source             = {},
+    KernelLauncherFactory launcher_factory = {})
       : d_temp_storage(d_temp_storage)
       , temp_storage_bytes(temp_storage_bytes)
       , d_keys(d_keys)
@@ -253,6 +257,7 @@ struct DispatchRadixSort
       , is_overwrite_okay(is_overwrite_okay)
       , decomposer(decomposer)
       , kernel_source(kernel_source)
+      , launcher_factory(launcher_factory)
   {}
 
   //------------------------------------------------------------------------------
@@ -299,7 +304,7 @@ struct DispatchRadixSort
 #endif
 
       // Invoke upsweep_kernel with same grid size as downsweep_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
+      launcher_factory(1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
         .doit(single_tile_kernel,
               d_keys.Current(),
               d_keys.Alternate(),
@@ -372,8 +377,7 @@ struct DispatchRadixSort
       int pass_spine_length = pass_config.even_share.grid_size * pass_config.radix_digits;
 
       // Invoke upsweep_kernel with same grid size as downsweep_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-        pass_config.even_share.grid_size, pass_config.upsweep_config.block_threads, 0, stream)
+      launcher_factory(pass_config.even_share.grid_size, pass_config.upsweep_config.block_threads, 0, stream)
         .doit(pass_config.upsweep_kernel,
               d_keys_in,
               d_spine,
@@ -407,7 +411,7 @@ struct DispatchRadixSort
 #endif
 
       // Invoke scan_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, pass_config.scan_config.block_threads, 0, stream)
+      launcher_factory(1, pass_config.scan_config.block_threads, 0, stream)
         .doit(pass_config.scan_kernel, d_spine, pass_spine_length);
 
       // Check for failure to launch
@@ -435,8 +439,7 @@ struct DispatchRadixSort
 #endif
 
       // Invoke downsweep_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-        pass_config.even_share.grid_size, pass_config.downsweep_config.block_threads, 0, stream)
+      launcher_factory(pass_config.even_share.grid_size, pass_config.downsweep_config.block_threads, 0, stream)
         .doit(pass_config.downsweep_kernel,
               d_keys_in,
               d_keys_out,
@@ -636,8 +639,7 @@ struct DispatchRadixSort
               ActivePolicyT::HistogramPolicy::RADIX_BITS);
 #endif
 
-      error = THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-                histo_blocks_per_sm * num_sms, HISTO_BLOCK_THREADS, 0, stream)
+      error = launcher_factory(histo_blocks_per_sm * num_sms, HISTO_BLOCK_THREADS, 0, stream)
                 .doit(histogram_kernel, d_bins, d_keys.Current(), num_items, begin_bit, end_bit, decomposer);
       error = CubDebug(error);
       if (cudaSuccess != error)
@@ -663,7 +665,7 @@ struct DispatchRadixSort
               ActivePolicyT::ExclusiveSumPolicy::RADIX_BITS);
 #endif
 
-      error = THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_passes, SCAN_BLOCK_THREADS, 0, stream)
+      error = launcher_factory(num_passes, SCAN_BLOCK_THREADS, 0, stream)
                 .doit(kernel_source.RadixSortExclusiveSumKernel(), d_bins);
       error = CubDebug(error);
       if (cudaSuccess != error)
@@ -719,7 +721,7 @@ struct DispatchRadixSort
           auto onesweep_kernel = kernel_source.RadixSortOnesweepKernel();
 
           error =
-            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_blocks, ONESWEEP_BLOCK_THREADS, 0, stream)
+            launcher_factory(num_blocks, ONESWEEP_BLOCK_THREADS, 0, stream)
               .doit(onesweep_kernel,
                     d_lookback,
                     d_ctrs + portion * num_passes + pass,
@@ -1118,8 +1120,9 @@ struct DispatchRadixSort
     int end_bit,
     bool is_overwrite_okay,
     cudaStream_t stream,
-    DecomposerT decomposer     = {},
-    KernelSource kernel_source = {})
+    DecomposerT decomposer                 = {},
+    KernelSource kernel_source             = {},
+    KernelLauncherFactory launcher_factory = {})
   {
     cudaError_t error;
     do
@@ -1127,7 +1130,7 @@ struct DispatchRadixSort
       // Get PTX version
       int ptx_version = 0;
 
-      error = CubDebug(PtxVersion(ptx_version));
+      error = CubDebug(launcher_factory.PtxVersion(ptx_version));
       if (cudaSuccess != error)
       {
         break;
@@ -1146,7 +1149,8 @@ struct DispatchRadixSort
         stream,
         ptx_version,
         decomposer,
-        kernel_source);
+        kernel_source,
+        launcher_factory);
 
       // Dispatch to chained policy
       error = CubDebug(max_policy_t::Invoke(ptx_version, dispatch));
@@ -1202,7 +1206,8 @@ template <SortOrder Order,
             BeginOffsetIteratorT,
             EndOffsetIteratorT,
             OffsetT,
-            DecomposerT>>
+            DecomposerT>,
+          typename KernelLauncherFactory = detail::TripleChevronFactory>
 struct DispatchSegmentedRadixSort
 {
   //------------------------------------------------------------------------------
@@ -1269,6 +1274,8 @@ struct DispatchSegmentedRadixSort
 
   KernelSource kernel_source;
 
+  KernelLauncherFactory launcher_factory;
+
   //------------------------------------------------------------------------------
   // Constructors
   //------------------------------------------------------------------------------
@@ -1288,8 +1295,9 @@ struct DispatchSegmentedRadixSort
     bool is_overwrite_okay,
     cudaStream_t stream,
     int ptx_version,
-    DecomposerT decomposer     = {},
-    KernelSource kernel_source = {})
+    DecomposerT decomposer                 = {},
+    KernelSource kernel_source             = {},
+    KernelLauncherFactory launcher_factory = {})
       : d_temp_storage(d_temp_storage)
       , temp_storage_bytes(temp_storage_bytes)
       , d_keys(d_keys)
@@ -1305,6 +1313,7 @@ struct DispatchSegmentedRadixSort
       , is_overwrite_okay(is_overwrite_okay)
       , decomposer(decomposer)
       , kernel_source(kernel_source)
+      , launcher_factory(launcher_factory)
   {}
 
   //------------------------------------------------------------------------------
@@ -1340,8 +1349,7 @@ struct DispatchSegmentedRadixSort
               pass_bits);
 #endif
 
-      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-        num_segments, pass_config.segmented_config.block_threads, 0, stream)
+      launcher_factory(num_segments, pass_config.segmented_config.block_threads, 0, stream)
         .doit(pass_config.segmented_kernel,
               d_keys_in,
               d_keys_out,
@@ -1617,7 +1625,8 @@ struct DispatchSegmentedRadixSort
     int end_bit,
     bool is_overwrite_okay,
     cudaStream_t stream,
-    KernelSource kernel_source = {})
+    KernelSource kernel_source             = {},
+    KernelLauncherFactory launcher_factory = {})
   {
     cudaError_t error;
     do
@@ -1625,7 +1634,7 @@ struct DispatchSegmentedRadixSort
       // Get PTX version
       int ptx_version = 0;
 
-      error = CubDebug(PtxVersion(ptx_version));
+      error = CubDebug(launcher_factory.PtxVersion(ptx_version));
       if (cudaSuccess != error)
       {
         break;
@@ -1647,7 +1656,8 @@ struct DispatchSegmentedRadixSort
         stream,
         ptx_version,
         {},
-        kernel_source);
+        kernel_source,
+        launcher_factory);
 
       // Dispatch to chained policy
       error = CubDebug(max_policy_t::Invoke(ptx_version, dispatch));
