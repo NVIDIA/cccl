@@ -148,11 +148,9 @@ std::string get_sweep_kernel_name(
   std::string equality_op_t;
   check(nvrtcGetTypeName<op_wrapper>(&equality_op_t));
 
-  std::string vsmem_helper_t;
-  check(nvrtcGetTypeName<device_unique_by_key_vsmem_helper>(&vsmem_helper_t));
-
   return std::format(
-    "cub::detail::unique_by_key::DeviceUniqueByKeySweepKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}>",
+    "cub::detail::unique_by_key::DeviceUniqueByKeySweepKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, "
+    "device_unique_by_key_vsmem_helper>",
     chained_policy_t,
     input_keys_iterator_t,
     input_values_iterator_t,
@@ -161,8 +159,7 @@ std::string get_sweep_kernel_name(
     output_num_selected_iterator_t,
     tile_state_t,
     equality_op_t,
-    offset_t,
-    vsmem_helper_t);
+    offset_t);
 }
 
 template <auto* GetPolicy>

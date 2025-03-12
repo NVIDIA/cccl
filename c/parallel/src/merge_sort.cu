@@ -162,11 +162,8 @@ std::string get_merge_sort_kernel_name(
       ? "cub::NullType"
       : cccl_type_enum_to_name<items_storage_t>(output_items_it.value_type.type);
 
-  std::string vsmem_helper_t;
-  check(nvrtcGetTypeName<device_merge_sort_vsmem_helper>(&vsmem_helper_t));
-
   return std::format(
-    "cub::detail::merge_sort::{0}<{1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}>",
+    "cub::detail::merge_sort::{0}<{1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, device_merge_sort_vsmem_helper>",
     kernel_name,
     chained_policy_t,
     input_keys_iterator_t,
@@ -176,8 +173,7 @@ std::string get_merge_sort_kernel_name(
     offset_t,
     compare_op_t,
     key_t,
-    value_t,
-    vsmem_helper_t);
+    value_t);
 }
 
 std::string get_partition_kernel_name(cccl_iterator_t output_keys_it)
