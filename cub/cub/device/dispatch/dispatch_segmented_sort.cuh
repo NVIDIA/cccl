@@ -77,37 +77,6 @@ using local_segment_index_t = ::cuda::std::uint32_t;
 // Type used for total number of segments and to index within segments globally
 using global_segment_offset_t = ::cuda::std::int64_t;
 
-template <typename Iterator, typename OffsetItT>
-class OffsetIteratorT : public THRUST_NS_QUALIFIER::iterator_adaptor<OffsetIteratorT<Iterator, OffsetItT>, Iterator>
-{
-public:
-  using super_t = THRUST_NS_QUALIFIER::iterator_adaptor<OffsetIteratorT<Iterator, OffsetItT>, Iterator>;
-
-  OffsetIteratorT() = default;
-
-  _CCCL_HOST_DEVICE OffsetIteratorT(const Iterator& it, OffsetItT offset_it)
-      : super_t(it)
-      , offset_it(offset_it)
-  {}
-
-  // befriend thrust::iterator_core_access to allow it access to the private interface below
-  friend class THRUST_NS_QUALIFIER::iterator_core_access;
-
-private:
-  OffsetItT offset_it;
-
-  _CCCL_HOST_DEVICE typename super_t::reference dereference() const
-  {
-    return *(this->base() + (*offset_it));
-  }
-};
-
-template <typename Iterator, typename OffsetItT>
-_CCCL_HOST_DEVICE OffsetIteratorT<Iterator, OffsetItT> make_offset_iterator(const Iterator& it, OffsetItT offset_it)
-{
-  return OffsetIteratorT<Iterator, OffsetItT>{it, offset_it};
-}
-
 /**
  * @brief Fallback kernel, in case there's not enough segments to
  *        take advantage of partitioning.
@@ -760,13 +729,6 @@ struct DispatchSegmentedSort
   using local_segment_index_t   = detail::segmented_sort::local_segment_index_t;
   using global_segment_offset_t = detail::segmented_sort::global_segment_offset_t;
 
-  using StreamingBeginOffsetIteratorT =
-    detail::segmented_sort::OffsetIteratorT<BeginOffsetIteratorT,
-                                            THRUST_NS_QUALIFIER::constant_iterator<global_segment_offset_t>>;
-  using StreamingEndOffsetIteratorT =
-    detail::segmented_sort::OffsetIteratorT<EndOffsetIteratorT,
-                                            THRUST_NS_QUALIFIER::constant_iterator<global_segment_offset_t>>;
-
   static constexpr int KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
   struct LargeSegmentsSelectorT
@@ -1082,16 +1044,16 @@ struct DispatchSegmentedSort
             MaxPolicyT,
             KeyT,
             ValueT,
-            StreamingBeginOffsetIteratorT,
-            StreamingEndOffsetIteratorT,
+            BeginOffsetIteratorT,
+            EndOffsetIteratorT,
             OffsetT>,
           detail::segmented_sort::DeviceSegmentedSortKernelSmall<
             Order,
             MaxPolicyT,
             KeyT,
             ValueT,
-            StreamingBeginOffsetIteratorT,
-            StreamingEndOffsetIteratorT,
+            BeginOffsetIteratorT,
+            EndOffsetIteratorT,
             OffsetT>,
           three_way_partition_temp_storage_bytes,
           d_keys_double_buffer,
@@ -1236,10 +1198,8 @@ private:
 
       large_segments_selector.base_segment_offset = current_seg_offset;
       small_segments_selector.base_segment_offset = current_seg_offset;
-      auto current_begin_offset                   = detail::segmented_sort::make_offset_iterator(
-        d_begin_offsets, THRUST_NS_QUALIFIER::constant_iterator<global_segment_offset_t>{current_seg_offset});
-      auto current_end_offset = detail::segmented_sort::make_offset_iterator(
-        d_end_offsets, THRUST_NS_QUALIFIER::constant_iterator<global_segment_offset_t>{current_seg_offset});
+      auto current_begin_offset                   = d_begin_offsets + current_seg_offset;
+      auto current_end_offset                     = d_end_offsets + current_seg_offset;
 
       auto medium_indices_iterator =
         THRUST_NS_QUALIFIER::make_reverse_iterator(large_and_medium_segments_indices.get() + current_num_segments);
@@ -1266,7 +1226,9 @@ private:
       // `NV_IF_TARGET`.
 #ifndef CUB_RDC_ENABLED
 
-#  define CUB_TEMP_DEVICE_CODE
+#  define CUB_TEMP_DEVICE_CODE    \
+    (void) &current_begin_offset; \
+    (void) &current_end_offset;
 
 #else // CUB_RDC_ENABLED
 
@@ -1280,8 +1242,8 @@ private:
             SmallKernelT,                                                    \
             KeyT,                                                            \
             ValueT,                                                          \
-            StreamingBeginOffsetIteratorT,                                   \
-            StreamingEndOffsetIteratorT>,                                    \
+            BeginOffsetIteratorT,                                            \
+            EndOffsetIteratorT>,                                             \
           large_kernel,                                                      \
           small_kernel,                                                      \
           current_num_segments,                                              \
