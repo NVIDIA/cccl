@@ -68,6 +68,77 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wpass-failed")
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail::radix_sort
+{
+template <typename MaxPolicyT, SortOrder Order, typename KeyT, typename ValueT, typename OffsetT, typename DecomposerT>
+struct DeviceRadixSortKernelSource
+{
+  CUB_DEFINE_KERNEL_GETTER(RadixSortSingleTileKernel,
+                           DeviceRadixSortSingleTileKernel<MaxPolicyT, Order, KeyT, ValueT, OffsetT, DecomposerT>);
+
+  CUB_DEFINE_KERNEL_GETTER(RadixSortUpsweepKernel,
+                           DeviceRadixSortUpsweepKernel<MaxPolicyT, false, Order, KeyT, OffsetT, DecomposerT>);
+
+  CUB_DEFINE_KERNEL_GETTER(RadixSortAltUpsweepKernel,
+                           DeviceRadixSortUpsweepKernel<MaxPolicyT, true, Order, KeyT, OffsetT, DecomposerT>);
+
+  CUB_DEFINE_KERNEL_GETTER(DeviceRadixSortScanBinsKernel, RadixSortScanBinsKernel<MaxPolicyT, OffsetT>);
+
+  CUB_DEFINE_KERNEL_GETTER(RadixSortDownsweepKernel,
+                           DeviceRadixSortDownsweepKernel<MaxPolicyT, false, Order, KeyT, ValueT, OffsetT, DecomposerT>);
+
+  CUB_DEFINE_KERNEL_GETTER(RadixSortAltDownsweepKernel,
+                           DeviceRadixSortDownsweepKernel<MaxPolicyT, true, Order, KeyT, ValueT, OffsetT, DecomposerT>);
+
+  CUB_DEFINE_KERNEL_GETTER(RadixSortHistogramKernel,
+                           DeviceRadixSortHistogramKernel<MaxPolicyT, Order, KeyT, OffsetT, DecomposerT>);
+
+  CUB_DEFINE_KERNEL_GETTER(RadixSortExclusiveSumKernel, DeviceRadixSortExclusiveSumKernel<MaxPolicyT, OffsetT>);
+
+  CUB_DEFINE_KERNEL_GETTER(
+    RadixSortOnesweepKernel,
+    DeviceRadixSortOnesweepKernel<MaxPolicyT, Order, KeyT, ValueT, OffsetT, int, int, DecomposerT>);
+};
+
+template <typename MaxPolicyT,
+          SortOrder Order,
+          typename KeyT,
+          typename ValueT,
+          typename BeginOffsetIteratorT,
+          typename EndOffsetIteratorT,
+          typename OffsetT,
+          typename DecomposerT>
+struct DeviceSegmentedRadixSortKernelSource
+{
+  CUB_DEFINE_KERNEL_GETTER(
+    SegmentedRadixSortKernel,
+    DeviceSegmentedRadixSortKernel<
+      MaxPolicyT,
+      false,
+      Order,
+      KeyT,
+      ValueT,
+      BeginOffsetIteratorT,
+      EndOffsetIteratorT,
+      OffsetT,
+      DecomposerT>);
+
+  CUB_DEFINE_KERNEL_GETTER(
+    AltSegmentedRadixSortKernel,
+    DeviceSegmentedRadixSortKernel<
+      MaxPolicyT,
+      true,
+      Order,
+      KeyT,
+      ValueT,
+      BeginOffsetIteratorT,
+      EndOffsetIteratorT,
+      OffsetT,
+      DecomposerT>);
+};
+
+} // namespace detail::radix_sort
+
 /******************************************************************************
  * Single-problem dispatch
  ******************************************************************************/
@@ -95,8 +166,10 @@ template <SortOrder Order,
           typename KeyT,
           typename ValueT,
           typename OffsetT,
-          typename DecomposerT = detail::identity_decomposer_t,
-          typename PolicyHub   = detail::radix::policy_hub<KeyT, ValueT, OffsetT>>
+          typename DecomposerT  = detail::identity_decomposer_t,
+          typename PolicyHub    = detail::radix::policy_hub<KeyT, ValueT, OffsetT>,
+          typename KernelSource = detail::radix_sort::
+            DeviceRadixSortKernelSource<typename PolicyHub::MaxPolicy, Order, KeyT, ValueT, OffsetT, DecomposerT>>
 struct DispatchRadixSort
 {
   //------------------------------------------------------------------------------
@@ -148,6 +221,8 @@ struct DispatchRadixSort
 
   DecomposerT decomposer;
 
+  KernelSource kernel_source;
+
   //------------------------------------------------------------------------------
   // Constructor
   //------------------------------------------------------------------------------
@@ -164,7 +239,8 @@ struct DispatchRadixSort
     bool is_overwrite_okay,
     cudaStream_t stream,
     int ptx_version,
-    DecomposerT decomposer = {})
+    DecomposerT decomposer     = {},
+    KernelSource kernel_source = {})
       : d_temp_storage(d_temp_storage)
       , temp_storage_bytes(temp_storage_bytes)
       , d_keys(d_keys)
@@ -176,6 +252,7 @@ struct DispatchRadixSort
       , ptx_version(ptx_version)
       , is_overwrite_okay(is_overwrite_okay)
       , decomposer(decomposer)
+      , kernel_source(kernel_source)
   {}
 
   //------------------------------------------------------------------------------
@@ -538,8 +615,7 @@ struct DispatchRadixSort
 
       constexpr int HISTO_BLOCK_THREADS = ActivePolicyT::HistogramPolicy::BLOCK_THREADS;
       int histo_blocks_per_sm           = 1;
-      auto histogram_kernel =
-        detail::radix_sort::DeviceRadixSortHistogramKernel<max_policy_t, Order, KeyT, OffsetT, DecomposerT>;
+      auto histogram_kernel             = kernel_source.RadixSortHistogramKernel();
 
       error = CubDebug(
         cudaOccupancyMaxActiveBlocksPerMultiprocessor(&histo_blocks_per_sm, histogram_kernel, HISTO_BLOCK_THREADS, 0));
@@ -588,7 +664,7 @@ struct DispatchRadixSort
 #endif
 
       error = THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_passes, SCAN_BLOCK_THREADS, 0, stream)
-                .doit(detail::radix_sort::DeviceRadixSortExclusiveSumKernel<max_policy_t, OffsetT>, d_bins);
+                .doit(kernel_source.RadixSortExclusiveSumKernel(), d_bins);
       error = CubDebug(error);
       if (cudaSuccess != error)
       {
@@ -640,15 +716,7 @@ struct DispatchRadixSort
                   static_cast<int>(num_portions));
 #endif
 
-          auto onesweep_kernel = detail::radix_sort::DeviceRadixSortOnesweepKernel<
-            max_policy_t,
-            Order,
-            KeyT,
-            ValueT,
-            OffsetT,
-            PortionOffsetT,
-            AtomicOffsetT,
-            DecomposerT>;
+          auto onesweep_kernel = kernel_source.RadixSortOnesweepKernel();
 
           error =
             THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_blocks, ONESWEEP_BLOCK_THREADS, 0, stream)
@@ -891,11 +959,11 @@ struct DispatchRadixSort
   {
     // Invoke upsweep-downsweep
     return InvokePasses<ActivePolicyT>(
-      detail::radix_sort::DeviceRadixSortUpsweepKernel<max_policy_t, false, Order, KeyT, OffsetT, DecomposerT>,
-      detail::radix_sort::DeviceRadixSortUpsweepKernel<max_policy_t, true, Order, KeyT, OffsetT, DecomposerT>,
-      detail::radix_sort::RadixSortScanBinsKernel<max_policy_t, OffsetT>,
-      detail::radix_sort::DeviceRadixSortDownsweepKernel<max_policy_t, false, Order, KeyT, ValueT, OffsetT, DecomposerT>,
-      detail::radix_sort::DeviceRadixSortDownsweepKernel<max_policy_t, true, Order, KeyT, ValueT, OffsetT, DecomposerT>);
+      kernel_source.RadixSortUpsweepKernel(),
+      kernel_source.RadixSortAltUpsweepKernel(),
+      kernel_source.DeviceRadixSortScanBinsKernel(),
+      kernel_source.RadixSortDownsweepKernel(),
+      kernel_source.RadixSortAltDownsweepKernel());
   }
 
   template <typename ActivePolicyT>
@@ -994,8 +1062,7 @@ struct DispatchRadixSort
     if (num_items <= (SingleTilePolicyT::BLOCK_THREADS * SingleTilePolicyT::ITEMS_PER_THREAD))
     {
       // Small, single tile size
-      return InvokeSingleTile<ActivePolicyT>(
-        detail::radix_sort::DeviceRadixSortSingleTileKernel<max_policy_t, Order, KeyT, ValueT, OffsetT, DecomposerT>);
+      return InvokeSingleTile<ActivePolicyT>(kernel_source.RadixSortSingleTileKernel());
     }
     else
     {
@@ -1051,7 +1118,8 @@ struct DispatchRadixSort
     int end_bit,
     bool is_overwrite_okay,
     cudaStream_t stream,
-    DecomposerT decomposer = {})
+    DecomposerT decomposer     = {},
+    KernelSource kernel_source = {})
   {
     cudaError_t error;
     do
@@ -1077,7 +1145,8 @@ struct DispatchRadixSort
         is_overwrite_okay,
         stream,
         ptx_version,
-        decomposer);
+        decomposer,
+        kernel_source);
 
       // Dispatch to chained policy
       error = CubDebug(max_policy_t::Invoke(ptx_version, dispatch));
@@ -1123,8 +1192,17 @@ template <SortOrder Order,
           typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
           typename OffsetT,
-          typename PolicyHub   = detail::radix::policy_hub<KeyT, ValueT, OffsetT>,
-          typename DecomposerT = detail::identity_decomposer_t>
+          typename PolicyHub    = detail::radix::policy_hub<KeyT, ValueT, OffsetT>,
+          typename DecomposerT  = detail::identity_decomposer_t,
+          typename KernelSource = detail::radix_sort::DeviceSegmentedRadixSortKernelSource<
+            typename PolicyHub::MaxPolicy,
+            Order,
+            KeyT,
+            ValueT,
+            BeginOffsetIteratorT,
+            EndOffsetIteratorT,
+            OffsetT,
+            DecomposerT>>
 struct DispatchSegmentedRadixSort
 {
   //------------------------------------------------------------------------------
@@ -1189,6 +1267,8 @@ struct DispatchSegmentedRadixSort
 
   DecomposerT decomposer;
 
+  KernelSource kernel_source;
+
   //------------------------------------------------------------------------------
   // Constructors
   //------------------------------------------------------------------------------
@@ -1208,7 +1288,8 @@ struct DispatchSegmentedRadixSort
     bool is_overwrite_okay,
     cudaStream_t stream,
     int ptx_version,
-    DecomposerT decomposer = {})
+    DecomposerT decomposer     = {},
+    KernelSource kernel_source = {})
       : d_temp_storage(d_temp_storage)
       , temp_storage_bytes(temp_storage_bytes)
       , d_keys(d_keys)
@@ -1223,6 +1304,7 @@ struct DispatchSegmentedRadixSort
       , ptx_version(ptx_version)
       , is_overwrite_okay(is_overwrite_okay)
       , decomposer(decomposer)
+      , kernel_source(kernel_source)
   {}
 
   //------------------------------------------------------------------------------
@@ -1467,26 +1549,7 @@ struct DispatchSegmentedRadixSort
 
     // Force kernel code-generation in all compiler passes
     return InvokePasses<ActivePolicyT>(
-      detail::radix_sort::DeviceSegmentedRadixSortKernel<
-        max_policy_t,
-        false,
-        Order,
-        KeyT,
-        ValueT,
-        BeginOffsetIteratorT,
-        EndOffsetIteratorT,
-        OffsetT,
-        DecomposerT>,
-      detail::radix_sort::DeviceSegmentedRadixSortKernel<
-        max_policy_t,
-        true,
-        Order,
-        KeyT,
-        ValueT,
-        BeginOffsetIteratorT,
-        EndOffsetIteratorT,
-        OffsetT,
-        DecomposerT>);
+      kernel_source.SegmentedRadixSortKernel(), kernel_source.AltSegmentedRadixSortKernel());
   }
 
   //------------------------------------------------------------------------------
@@ -1553,7 +1616,8 @@ struct DispatchSegmentedRadixSort
     int begin_bit,
     int end_bit,
     bool is_overwrite_okay,
-    cudaStream_t stream)
+    cudaStream_t stream,
+    KernelSource kernel_source = {})
   {
     cudaError_t error;
     do
@@ -1581,7 +1645,9 @@ struct DispatchSegmentedRadixSort
         end_bit,
         is_overwrite_okay,
         stream,
-        ptx_version);
+        ptx_version,
+        {},
+        kernel_source);
 
       // Dispatch to chained policy
       error = CubDebug(max_policy_t::Invoke(ptx_version, dispatch));
