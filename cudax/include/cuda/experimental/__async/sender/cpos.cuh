@@ -21,26 +21,35 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
+
 #include <cuda/experimental/__async/sender/env.cuh>
 #include <cuda/experimental/__async/sender/meta.cuh>
 #include <cuda/experimental/__async/sender/type_traits.cuh>
 #include <cuda/experimental/__async/sender/utility.cuh>
 #include <cuda/experimental/__detail/config.cuh>
+#include <cuda/experimental/__detail/utility.cuh>
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
-struct receiver_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT dependent_sender_error;
+
+template <class... _Sigs>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures;
+
+struct _CCCL_TYPE_VISIBILITY_DEFAULT receiver_t
 {};
 
-struct operation_state_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT operation_state_t
 {};
 
-struct sender_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT sender_t
 {};
 
-struct scheduler_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT scheduler_t
 {};
 
 template <class _Ty>
@@ -61,7 +70,34 @@ inline constexpr bool __is_receiver = __type_valid_v<__receiver_concept_t, _Ty>;
 template <class _Ty>
 inline constexpr bool __is_scheduler = __type_valid_v<__scheduler_concept_t, _Ty>;
 
-_CCCL_GLOBAL_CONSTANT struct set_value_t
+// handy enumerations for keeping type names readable
+enum __disposition_t
+{
+  __value,
+  __error,
+  __stopped
+};
+
+// make the completion tags equality comparable
+template <__disposition_t _Disposition>
+struct __completion_tag
+{
+  template <__disposition_t _OtherDisposition>
+  _CUDAX_TRIVIAL_API constexpr auto operator==(__completion_tag<_OtherDisposition>) const noexcept -> bool
+  {
+    return _Disposition == _OtherDisposition;
+  }
+
+  template <__disposition_t _OtherDisposition>
+  _CUDAX_TRIVIAL_API constexpr auto operator!=(__completion_tag<_OtherDisposition>) const noexcept -> bool
+  {
+    return _Disposition != _OtherDisposition;
+  }
+
+  static constexpr __disposition_t __disposition = _Disposition;
+};
+
+_CCCL_GLOBAL_CONSTANT struct set_value_t : __completion_tag<__value>
 {
   template <class _Rcvr, class... _Ts>
   _CUDAX_TRIVIAL_API auto operator()(_Rcvr&& __rcvr, _Ts&&... __ts) const noexcept
@@ -72,19 +108,9 @@ _CCCL_GLOBAL_CONSTANT struct set_value_t
     static_assert(noexcept(static_cast<_Rcvr&&>(__rcvr).set_value(static_cast<_Ts&&>(__ts)...)));
     static_cast<_Rcvr&&>(__rcvr).set_value(static_cast<_Ts&&>(__ts)...);
   }
-
-  template <class _Rcvr, class... _Ts>
-  _CUDAX_TRIVIAL_API auto operator()(_Rcvr* __rcvr, _Ts&&... __ts) const noexcept
-    -> decltype(static_cast<_Rcvr&&>(*__rcvr).set_value(static_cast<_Ts&&>(__ts)...))
-  {
-    static_assert(
-      _CUDA_VSTD::is_same_v<decltype(static_cast<_Rcvr&&>(*__rcvr).set_value(static_cast<_Ts&&>(__ts)...)), void>);
-    static_assert(noexcept(static_cast<_Rcvr&&>(*__rcvr).set_value(static_cast<_Ts&&>(__ts)...)));
-    static_cast<_Rcvr&&>(*__rcvr).set_value(static_cast<_Ts&&>(__ts)...);
-  }
 } set_value{};
 
-_CCCL_GLOBAL_CONSTANT struct set_error_t
+_CCCL_GLOBAL_CONSTANT struct set_error_t : __completion_tag<__error>
 {
   template <class _Rcvr, class _Ey>
   _CUDAX_TRIVIAL_API auto operator()(_Rcvr&& __rcvr, _Ey&& __e) const noexcept
@@ -95,19 +121,9 @@ _CCCL_GLOBAL_CONSTANT struct set_error_t
     static_assert(noexcept(static_cast<_Rcvr&&>(__rcvr).set_error(static_cast<_Ey&&>(__e))));
     static_cast<_Rcvr&&>(__rcvr).set_error(static_cast<_Ey&&>(__e));
   }
-
-  template <class _Rcvr, class _Ey>
-  _CUDAX_TRIVIAL_API auto operator()(_Rcvr* __rcvr, _Ey&& __e) const noexcept
-    -> decltype(static_cast<_Rcvr&&>(*__rcvr).set_error(static_cast<_Ey&&>(__e)))
-  {
-    static_assert(
-      _CUDA_VSTD::is_same_v<decltype(static_cast<_Rcvr&&>(*__rcvr).set_error(static_cast<_Ey&&>(__e))), void>);
-    static_assert(noexcept(static_cast<_Rcvr&&>(*__rcvr).set_error(static_cast<_Ey&&>(__e))));
-    static_cast<_Rcvr&&>(*__rcvr).set_error(static_cast<_Ey&&>(__e));
-  }
 } set_error{};
 
-_CCCL_GLOBAL_CONSTANT struct set_stopped_t
+_CCCL_GLOBAL_CONSTANT struct set_stopped_t : __completion_tag<__stopped>
 {
   template <class _Rcvr>
   _CUDAX_TRIVIAL_API auto operator()(_Rcvr&& __rcvr) const noexcept
@@ -117,15 +133,6 @@ _CCCL_GLOBAL_CONSTANT struct set_stopped_t
     static_assert(noexcept(static_cast<_Rcvr&&>(__rcvr).set_stopped()));
     static_cast<_Rcvr&&>(__rcvr).set_stopped();
   }
-
-  template <class _Rcvr>
-  _CUDAX_TRIVIAL_API auto operator()(_Rcvr* __rcvr) const noexcept
-    -> decltype(static_cast<_Rcvr&&>(*__rcvr).set_stopped())
-  {
-    static_assert(_CUDA_VSTD::is_same_v<decltype(static_cast<_Rcvr&&>(*__rcvr).set_stopped()), void>);
-    static_assert(noexcept(static_cast<_Rcvr&&>(*__rcvr).set_stopped()));
-    static_cast<_Rcvr&&>(*__rcvr).set_stopped();
-  }
 } set_stopped{};
 
 _CCCL_GLOBAL_CONSTANT struct start_t
@@ -133,13 +140,18 @@ _CCCL_GLOBAL_CONSTANT struct start_t
   template <class _OpState>
   _CUDAX_TRIVIAL_API auto operator()(_OpState& __opstate) const noexcept -> decltype(__opstate.start())
   {
-    static_assert(!__type_is_error<typename _OpState::completion_signatures>);
+    // static_assert(!__type_is_error<typename _OpState::completion_signatures>);
     static_assert(_CUDA_VSTD::is_same_v<decltype(__opstate.start()), void>);
     static_assert(noexcept(__opstate.start()));
     __opstate.start();
   }
 } start{};
 
+// get_completion_signatures
+template <class _Sndr, class... _Env>
+_CUDAX_TRIVIAL_API _CUDAX_CONSTEVAL auto get_completion_signatures();
+
+// connect
 _CCCL_GLOBAL_CONSTANT struct connect_t
 {
   template <class _Sndr, class _Rcvr>
@@ -147,10 +159,6 @@ _CCCL_GLOBAL_CONSTANT struct connect_t
     noexcept(noexcept(static_cast<_Sndr&&>(__sndr).connect(static_cast<_Rcvr&&>(__rcvr))))
       -> decltype(static_cast<_Sndr&&>(__sndr).connect(static_cast<_Rcvr&&>(__rcvr)))
   {
-    // using __opstate_t     = decltype(static_cast<_Sndr&&>(__sndr).connect(static_cast<_Rcvr&&>(__rcvr)));
-    // using completions_t = typename __opstate_t::completion_signatures;
-    // static_assert(__is_completion_signatures<completions_t>);
-
     return static_cast<_Sndr&&>(__sndr).connect(static_cast<_Rcvr&&>(__rcvr));
   }
 } connect{};
@@ -165,40 +173,17 @@ _CCCL_GLOBAL_CONSTANT struct schedule_t
   }
 } schedule{};
 
-struct receiver_archetype
-{
-  using receiver_concept = receiver_t;
-
-  template <class... _Ts>
-  void set_value(_Ts&&...) noexcept;
-
-  template <class _Error>
-  void set_error(_Error&&) noexcept;
-
-  void set_stopped() noexcept;
-
-  env<> get_env() const noexcept;
-};
-
 template <class _Sndr, class _Rcvr>
-using connect_result_t = decltype(connect(__declval<_Sndr>(), __declval<_Rcvr>()));
+using connect_result_t = decltype(connect(declval<_Sndr>(), declval<_Rcvr>()));
 
-template <class _Sndr, class _Rcvr = receiver_archetype>
-using completion_signatures_of_t = typename connect_result_t<_Sndr, _Rcvr>::completion_signatures;
+template <class _Sndr, class... _Env>
+using completion_signatures_of_t = decltype(get_completion_signatures<_Sndr, _Env...>());
 
 template <class _Sch>
-using schedule_result_t = decltype(schedule(__declval<_Sch>()));
+using schedule_result_t = decltype(schedule(declval<_Sch>()));
 
 template <class _Sndr, class _Rcvr>
-inline constexpr bool __nothrow_connectable = noexcept(connect(__declval<_Sndr>(), __declval<_Rcvr>()));
-
-// handy enumerations for keeping type names readable
-enum __disposition_t
-{
-  __value,
-  __error,
-  __stopped
-};
+inline constexpr bool __nothrow_connectable = noexcept(connect(declval<_Sndr>(), declval<_Rcvr>()));
 
 namespace __detail
 {
