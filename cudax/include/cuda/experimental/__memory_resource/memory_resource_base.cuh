@@ -246,23 +246,6 @@ public:
   }
 #endif // _CCCL_STD_VER <= 2017
 
-private:
-  // This code is defunct, TODO remove it
-  template <class _Resource>
-  _CCCL_NODISCARD bool __equal_to(_Resource const& __rhs) const noexcept
-  {
-    if constexpr (has_property<_Resource, device_accessible>)
-    {
-      return resource_ref<device_accessible>{*const_cast<__memory_resource_base*>(this)}
-          == __cudax::__as_resource_ref<device_accessible>(const_cast<_Resource&>(__rhs));
-    }
-    else
-    {
-      return false;
-    }
-  }
-
-public:
 // TODO Should this be declared in general for two things that satisfy resource concept?
 #if _CCCL_STD_VER >= 2020
   //! @brief Equality comparison between a \c __memory_resource_base and another resource.
@@ -273,7 +256,7 @@ public:
     requires _CUDA_VMR::__different_resource<__memory_resource_base, _Resource> && __non_polymorphic<_Resource>
   _CCCL_NODISCARD bool operator==([[maybe_unused]] _Resource const& __rhs) const noexcept
   {
-    return this->__equal_to(__rhs);
+    return false;
   }
 #else // ^^^ C++20 ^^^ / vvv C++17
   template <class _Resource>
@@ -282,7 +265,7 @@ public:
     _CCCL_TRAILING_REQUIRES(bool)(
       _CUDA_VMR::__different_resource<__memory_resource_base, _Resource>&& __non_polymorphic<_Resource>)
   {
-    return __lhs.__equal_to(__rhs);
+    return false;
   }
 
   template <class _Resource>
@@ -291,7 +274,7 @@ public:
     _CCCL_TRAILING_REQUIRES(bool)(
       _CUDA_VMR::__different_resource<__memory_resource_base, _Resource>&& __non_polymorphic<_Resource>)
   {
-    return __rhs.__equal_to(__lhs);
+    return false;
   }
 
   template <class _Resource>
@@ -300,7 +283,7 @@ public:
     _CCCL_TRAILING_REQUIRES(bool)(
       _CUDA_VMR::__different_resource<__memory_resource_base, _Resource>&& __non_polymorphic<_Resource>)
   {
-    return !__lhs.__equal_to(__rhs);
+    return true;
   }
 
   template <class _Resource>
@@ -309,7 +292,7 @@ public:
     _CCCL_TRAILING_REQUIRES(bool)(
       _CUDA_VMR::__different_resource<__memory_resource_base, _Resource>&& __non_polymorphic<_Resource>)
   {
-    return !__rhs.__equal_to(__lhs);
+    return true;
   }
 #endif // _CCCL_STD_VER <= 2017
 
