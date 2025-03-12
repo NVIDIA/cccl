@@ -1233,7 +1233,7 @@ class stackable_logical_data
          bool ld_from_shape,
          logical_data<T> ld,
          bool can_export,
-         data_place where = data_place::invalid)
+         data_place where = data_place::invalid())
         : sctx(mv(sctx_))
     {
       impl_state = ::std::make_shared<state>(sctx);
@@ -1356,7 +1356,7 @@ class stackable_logical_data
     }
 
     /* Import data into the ctx at this offset */
-    void push(int ctx_offset, access_mode m, data_place where = data_place::invalid) const
+    void push(int ctx_offset, access_mode m, data_place where = data_place::invalid()) const
     {
       int parent_offset = sctx.get_parent_offset(ctx_offset);
       _CCCL_ASSERT(parent_offset != -1, "");
@@ -1377,13 +1377,13 @@ class stackable_logical_data
 
       auto& from_data_node = impl_state->data_nodes[parent_offset].value();
 
-      if (where == data_place::invalid)
+      if (where.is_invalid())
       {
         // use the default place
         where = from_ctx.default_exec_place().affine_data_place();
       }
 
-      _CCCL_ASSERT(where != data_place::invalid, "Invalid data place");
+      _CCCL_ASSERT(!where.is_invalid(), "Invalid data place");
 
       // Freeze the logical data of the parent node if it wasn't yet
       if (!from_data_node.frozen_ld.has_value())
@@ -1531,12 +1531,12 @@ public:
     return pimpl->get_unique_id();
   }
 
-  void push(int ctx_offset, access_mode m, data_place where = data_place::invalid) const
+  void push(int ctx_offset, access_mode m, data_place where = data_place::invalid()) const
   {
     pimpl->push(ctx_offset, m, mv(where));
   }
 
-  void push(access_mode m, data_place where = data_place::invalid) const
+  void push(access_mode m, data_place where = data_place::invalid()) const
   {
     int ctx_offset = pimpl->get_ctx_head_offset();
     pimpl->push(ctx_offset, m, mv(where));
