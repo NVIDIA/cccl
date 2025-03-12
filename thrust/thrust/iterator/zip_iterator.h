@@ -203,9 +203,11 @@ public:
   //! \param iterators A pack of iterators to zip.
   template <
     typename... Iterators,
-    ::cuda::std::enable_if_t<(::cuda::std::input_or_output_iterator<::cuda::std::remove_reference_t<Iterators>> && ...)
-                               && ::cuda::std::is_constructible_v<IteratorTuple, Iterators...>,
-                             int> = 0>
+    ::cuda::std::enable_if_t<!(::cuda::std::is_same_v<::cuda::std::decay_t<Iterators>, zip_iterator> || ...), int> = 0,
+    ::cuda::std::enable_if_t<
+      (::cuda::std::input_or_output_iterator<::cuda::std::remove_reference_t<Iterators>> && ...)
+        && ::cuda::std::is_constructible_v<_CUDA_VSTD::tuple<::cuda::std::remove_reference_t<Iterators>...>, Iterators...>,
+      int> = 0>
   _CCCL_HOST_DEVICE zip_iterator(Iterators&&... iterators)
       : m_iterator_tuple(::cuda::std::forward<Iterators>(iterators)...)
   {}
