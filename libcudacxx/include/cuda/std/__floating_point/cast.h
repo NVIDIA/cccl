@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___INTERNAL_FP_CAST_H
-#define _LIBCUDACXX___INTERNAL_FP_CAST_H
+#ifndef _LIBCUDACXX___FLOATING_POINT_CAST_H
+#define _LIBCUDACXX___FLOATING_POINT_CAST_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,8 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__internal/fp/storage.h>
-#include <cuda/std/__internal/nvfp_types.h>
+#include <cuda/std/__floating_point/nvfp_types.h>
+#include <cuda/std/__floating_point/storage.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_same.h>
 
@@ -238,9 +238,9 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _To __fp_cast(_From __v) noexcept
     }
   }
 #endif // _CCCL_HAS_LONG_DOUBLE()
+#if _CCCL_HAS_NVFP16()
   else if constexpr (_CCCL_TRAIT(is_same, _From, __half))
   {
-#if _CCCL_HAS_NVFP16()
     if constexpr (_CCCL_TRAIT(is_same, _To, float))
     {
       return ::__half2float(__v);
@@ -318,14 +318,12 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _To __fp_cast(_From __v) noexcept
     {
       return _CUDA_VSTD::__fp_cast<double>(_CUDA_VSTD::__fp_cast<float>(__v));
     }
-
 #  if _CCCL_HAS_LONG_DOUBLE()
     else if constexpr (_CCCL_TRAIT(is_same, _To, long double))
     {
       return _CUDA_VSTD::__fp_cast<long double>(_CUDA_VSTD::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_LONG_DOUBLE()
-
 #  if _CCCL_HAS_NVFP16()
     else if constexpr (_CCCL_TRAIT(is_same, _To, __half))
     {
@@ -336,21 +334,18 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _To __fp_cast(_From __v) noexcept
     {
       return __v;
     }
-
 #  if _CCCL_HAS_NVFP8_E4M3()
     else if constexpr (_CCCL_TRAIT(is_same, _To, __nv_fp8_e4m3))
     {
       return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e4m3>(::__nv_cvt_bfloat16raw_to_fp8(__v, __NV_NOSAT, __NV_E4M3));
     }
 #  endif // _CCCL_HAS_NVFP8_E4M3()
-
 #  if _CCCL_HAS_NVFP8_E5M2()
     else if constexpr (_CCCL_TRAIT(is_same, _To, __nv_fp8_e5m2))
     {
       return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e5m2>(::__nv_cvt_bfloat16raw_to_fp8(__v, __NV_NOSAT, __NV_E5M2));
     }
 #  endif // _CCCL_HAS_NVFP8_E5M2()
-
 #  if _CCCL_HAS_NVFP8_E8M0()
     else if constexpr (_CCCL_TRAIT(is_same, _To, __nv_fp8_e8m0))
     {
@@ -358,7 +353,6 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _To __fp_cast(_From __v) noexcept
         ::__nv_cvt_bfloat16raw_to_e8m0(__v, __NV_NOSAT, cudaRoundZero));
     }
 #  endif // _CCCL_HAS_NVFP8_E8M0()
-
 #  if _CCCL_HAS_NVFP6_E2M3()
     else if constexpr (_CCCL_TRAIT(is_same, _To, __nv_fp6_e2m3))
     {
@@ -366,7 +360,6 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _To __fp_cast(_From __v) noexcept
         ::__nv_cvt_bfloat16raw_to_fp6(__v, __NV_E2M3, cudaRoundNearest));
     }
 #  endif // _CCCL_HAS_NVFP6_E2M3()
-
 #  if _CCCL_HAS_NVFP6_E3M2()
     else if constexpr (_CCCL_TRAIT(is_same, _To, __nv_fp6_e3m2))
     {
@@ -374,7 +367,6 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _To __fp_cast(_From __v) noexcept
         ::__nv_cvt_bfloat16raw_to_fp6(__v, __NV_E3M2, cudaRoundNearest));
     }
 #  endif // _CCCL_HAS_NVFP6_E3M2()
-
 #  if _CCCL_HAS_NVFP4_E2M1()
     else if constexpr (_CCCL_TRAIT(is_same, _To, __nv_fp4_e2m1))
     {
@@ -810,4 +802,4 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _To __fp_cast(_From __v) noexcept
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _LIBCUDACXX___INTERNAL_FP_CAST_H
+#endif // _LIBCUDACXX___FLOATING_POINT_CAST_H

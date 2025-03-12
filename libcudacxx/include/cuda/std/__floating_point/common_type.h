@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___INTERNAL_FP_COMMON_TYPE_H
-#define _LIBCUDACXX___INTERNAL_FP_COMMON_TYPE_H
+#ifndef _LIBCUDACXX___FLOATING_POINT_COMMON_TYPE_H
+#define _LIBCUDACXX___FLOATING_POINT_COMMON_TYPE_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,34 +21,18 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__internal/fp/conversion_rank_order.h>
+#include <cuda/std/__floating_point/conversion_rank_order.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Lhs, class _Rhs>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr auto __fp_common_type_impl()
-{
-  constexpr auto __order = __fp_conv_rank_order_v<_Lhs, _Rhs>;
-
-  if constexpr (__order == __fp_conv_rank_order::__greater)
-  {
-    return _Lhs{};
-  }
-  else if constexpr (__order != __fp_conv_rank_order::__unordered)
-  {
-    return _Rhs{};
-  }
-  else
-  {
-    static_assert(__always_false_v<_Lhs>, "No common type");
-  }
-}
-
-template <class _Lhs, class _Rhs>
-using __fp_common_type_t = decltype(__fp_common_type_impl<_Lhs, _Rhs>());
+using __fp_common_type_t =
+  enable_if_t<__fp_conv_rank_order_v<_Lhs, _Rhs> != __fp_conv_rank_order::__unordered,
+              conditional_t<__fp_conv_rank_order_v<_Lhs, _Rhs> == __fp_conv_rank_order::__greater, _Lhs, _Rhs>>;
 
 template <class _Lhs, class _Rhs>
 using __fp_int_ext_common_type_t =
@@ -57,4 +41,4 @@ using __fp_int_ext_common_type_t =
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _LIBCUDACXX___INTERNAL_FP_COMMON_TYPE_H
+#endif // _LIBCUDACXX___FLOATING_POINT_COMMON_TYPE_H

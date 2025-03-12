@@ -23,7 +23,7 @@
 
 #include <cuda/std/__cmath/signbit.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__internal/fp.h>
+#include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/cstdint>
@@ -37,7 +37,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // fabs
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float fabsf(float __x) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float fabs(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_FABSF)
   return _CCCL_BUILTIN_FABSF(__x);
@@ -46,9 +46,13 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float fabsf(float __x) noexcept
 #endif // ^^^ !_CCCL_BUILTIN_FABSF ^^^
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float fabs(float __x) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float fabsf(float __x) noexcept
 {
-  return _CUDA_VSTD::fabsf(__x);
+#if defined(_CCCL_BUILTIN_FABSF)
+  return _CCCL_BUILTIN_FABSF(__x);
+#else // ^^^ _CCCL_BUILTIN_FABSF ^^^ / vvv !_CCCL_BUILTIN_FABSF vvv
+  return ::fabsf(__x);
+#endif // ^^^ !_CCCL_BUILTIN_FABSF ^^^
 }
 
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double fabs(double __x) noexcept
@@ -61,7 +65,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double fabs(double __x) noexcept
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double fabsl(long double __x) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double fabs(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_FABSL)
   return _CCCL_BUILTIN_FABSL(__x);
@@ -70,9 +74,13 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double fabsl(long double __x) noe
 #  endif // ^^^ !_CCCL_BUILTIN_FABSL ^^^
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double fabs(long double __x) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double fabsl(long double __x) noexcept
 {
-  return _CUDA_VSTD::fabsl(__x);
+#  if defined(_CCCL_BUILTIN_FABSL)
+  return _CCCL_BUILTIN_FABSL(__x);
+#  else // ^^^ _CCCL_BUILTIN_FABSL ^^^ / vvv !_CCCL_BUILTIN_FABSL vvv
+  return ::fabsl(__x);
+#  endif // ^^^ !_CCCL_BUILTIN_FABSL ^^^
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 

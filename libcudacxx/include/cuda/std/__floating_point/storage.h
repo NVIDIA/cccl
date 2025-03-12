@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___INTERNAL_FP_MASK_H
-#define _LIBCUDACXX___INTERNAL_FP_MASK_H
+#ifndef _LIBCUDACXX___FLOATING_POINT_STORAGE_H
+#define _LIBCUDACXX___FLOATING_POINT_STORAGE_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,70 +21,71 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__internal/fp/storage.h>
-#include <cuda/std/__internal/nvfp_types.h>
+#include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__floating_point/nvfp_types.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/cstdint>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __fp_sign_mask_impl() noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __fp_storage_type_impl() noexcept
 {
   if constexpr (_CCCL_TRAIT(is_same, _Tp, float))
   {
-    return __fp_storage_t<float>{0x80000000u};
+    return uint32_t{};
   }
   else if constexpr (_CCCL_TRAIT(is_same, _Tp, double))
   {
-    return __fp_storage_t<double>{0x8000000000000000ull};
+    return uint64_t{};
   }
 #if _CCCL_HAS_NVFP16()
   else if constexpr (_CCCL_TRAIT(is_same, _Tp, __half))
   {
-    return __fp_storage_t<__half>{0x8000u};
+    return uint16_t{};
   }
 #endif // _CCCL_HAS_NVFP16()
 #if _CCCL_HAS_NVBF16()
   else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_bfloat16))
   {
-    return __fp_storage_t<__nv_bfloat16>{0x8000u};
+    return uint16_t{};
   }
 #endif // _CCCL_HAS_NVBF16()
 #if _CCCL_HAS_NVFP8_E4M3()
   else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp8_e4m3))
   {
-    return __fp_storage_t<__nv_fp8_e4m3>{0x80u};
+    return uint8_t{};
   }
 #endif // _CCCL_HAS_NVFP8_E4M3()
 #if _CCCL_HAS_NVFP8_E5M2()
   else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp8_e5m2))
   {
-    return __fp_storage_t<__nv_fp8_e5m2>{0x80u};
+    return uint8_t{};
   }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 #if _CCCL_HAS_NVFP8_E8M0()
   else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp8_e8m0))
   {
-    return __fp_storage_t<__nv_fp8_e8m0>{0x00u};
+    return uint8_t{};
   }
 #endif // _CCCL_HAS_NVFP8_E8M0()
 #if _CCCL_HAS_NVFP6_E2M3()
   else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp6_e2m3))
   {
-    return __fp_storage_t<__nv_fp6_e2m3>{0x20u};
+    return uint8_t{};
   }
 #endif // _CCCL_HAS_NVFP6_E2M3()
 #if _CCCL_HAS_NVFP6_E3M2()
   else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp6_e3m2))
   {
-    return __fp_storage_t<__nv_fp6_e3m2>{0x20u};
+    return uint8_t{};
   }
 #endif // _CCCL_HAS_NVFP6_E3M2()
 #if _CCCL_HAS_NVFP4_E2M1()
   else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp4_e2m1))
   {
-    return __fp_storage_t<__nv_fp4_e2m1>{0x8u};
+    return uint8_t{};
   }
 #endif // _CCCL_HAS_NVFP4_E2M1()
   else
@@ -94,65 +95,94 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __fp_sign_mask_impl() n
 }
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr __fp_storage_t<_Tp> __fp_sign_mask_v = __fp_sign_mask_impl<_Tp>();
+using __fp_storage_t = decltype(__fp_storage_type_impl<_Tp>());
+
+#if _CCCL_HAS_NVFP16()
+struct __cccl_nvfp16_manip_helper : __half
+{
+  using __half::__x;
+};
+#endif // _CCCL_HAS_NVFP16()
+
+#if _CCCL_HAS_NVBF16()
+struct __cccl_nvbf16_manip_helper : __nv_bfloat16
+{
+  using __nv_bfloat16::__x;
+};
+#endif // _CCCL_HAS_NVBF16()
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __fp_exp_mask_impl() noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_from_storage(__fp_storage_t<_Tp> __v) noexcept
 {
-  if constexpr (_CCCL_TRAIT(is_same, _Tp, float))
+  if constexpr (_CCCL_TRAIT(is_floating_point, _Tp))
   {
-    return __fp_storage_t<float>{0x7f800000u};
-  }
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, double))
-  {
-    return __fp_storage_t<double>{0x7ff0000000000000ull};
+    return _CUDA_VSTD::bit_cast<_Tp>(__v);
   }
 #if _CCCL_HAS_NVFP16()
   else if constexpr (_CCCL_TRAIT(is_same, _Tp, __half))
   {
-    return __fp_storage_t<__half>{0x7c00u};
+    __cccl_nvfp16_manip_helper __helper{};
+    __helper.__x = __v;
+    return __helper;
   }
 #endif // _CCCL_HAS_NVFP16()
 #if _CCCL_HAS_NVBF16()
   else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_bfloat16))
   {
-    return __fp_storage_t<__nv_bfloat16>{0x7f80u};
+    __cccl_nvbf16_manip_helper __helper{};
+    __helper.__x = __v;
+    return __helper;
   }
 #endif // _CCCL_HAS_NVBF16()
 #if _CCCL_HAS_NVFP8_E4M3()
   else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp8_e4m3))
   {
-    return __fp_storage_t<__nv_fp8_e4m3>{0x78u};
+    __nv_fp8_e4m3 __ret{};
+    __ret.__x = __v;
+    return __ret;
   }
 #endif // _CCCL_HAS_NVFP8_E4M3()
 #if _CCCL_HAS_NVFP8_E5M2()
   else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp8_e5m2))
   {
-    return __fp_storage_t<__nv_fp8_e5m2>{0x7cu};
+    __nv_fp8_e5m2 __ret{};
+    __ret.__x = __v;
+    return __ret;
   }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 #if _CCCL_HAS_NVFP8_E8M0()
   else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp8_e8m0))
   {
-    return __fp_storage_t<__nv_fp8_e8m0>{0xffu};
+    __nv_fp8_e8m0 __ret{};
+    __ret.__x = __v;
+    return __ret;
   }
 #endif // _CCCL_HAS_NVFP8_E8M0()
 #if _CCCL_HAS_NVFP6_E2M3()
   else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp6_e2m3))
   {
-    return __fp_storage_t<__nv_fp6_e2m3>{0x18u};
+    _CCCL_ASSERT((__v & 0xc0u) == 0u, "Invalid __nv_fp6_e2m3 storage value");
+    __nv_fp6_e2m3 __ret{};
+    __ret.__x = __v;
+    return __ret;
   }
 #endif // _CCCL_HAS_NVFP6_E2M3()
 #if _CCCL_HAS_NVFP6_E3M2()
   else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp6_e3m2))
   {
-    return __fp_storage_t<__nv_fp6_e3m2>{0x1cu};
+    _CCCL_ASSERT((__v & 0xc0u) == 0u, "Invalid __nv_fp6_e3m2 storage value");
+    __nv_fp6_e3m2 __ret{};
+    __ret.__x = __v;
+    return __ret;
   }
 #endif // _CCCL_HAS_NVFP6_E3M2()
 #if _CCCL_HAS_NVFP4_E2M1()
   else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp4_e2m1))
   {
-    return __fp_storage_t<__nv_fp4_e2m1>{0x6u};
+    _CCCL_ASSERT((__v & 0xf0u) == 0u, "Invalid __nv_fp4_e2m1 storage value");
+    __nv_fp4_e2m1 __ret{};
+    __ret.__x = __v;
+    return __ret;
   }
 #endif // _CCCL_HAS_NVFP4_E2M1()
   else
@@ -162,65 +192,58 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __fp_exp_mask_impl() no
 }
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr __fp_storage_t<_Tp> __fp_exp_mask_v = __fp_exp_mask_impl<_Tp>();
-
-template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __fp_mant_mask_impl() noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Tp> __fp_get_storage(_Tp __v) noexcept
 {
-  if constexpr (_CCCL_TRAIT(is_same, _Tp, float))
+  if constexpr (_CCCL_TRAIT(is_floating_point, _Tp))
   {
-    return __fp_storage_t<float>{0x007fffffu};
-  }
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, double))
-  {
-    return __fp_storage_t<double>{0x000fffffffffffffull};
+    return _CUDA_VSTD::bit_cast<__fp_storage_t<_Tp>>(__v);
   }
 #if _CCCL_HAS_NVFP16()
   else if constexpr (_CCCL_TRAIT(is_same, _Tp, __half))
   {
-    return __fp_storage_t<__half>{0x03ffu};
+    return __cccl_nvfp16_manip_helper{__v}.__x;
   }
 #endif // _CCCL_HAS_NVFP16()
 #if _CCCL_HAS_NVBF16()
   else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_bfloat16))
   {
-    return __fp_storage_t<__nv_bfloat16>{0x007fu};
+    return __cccl_nvbf16_manip_helper{__v}.__x;
   }
 #endif // _CCCL_HAS_NVBF16()
 #if _CCCL_HAS_NVFP8_E4M3()
   else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp8_e4m3))
   {
-    return __fp_storage_t<__nv_fp8_e4m3>{0x07u};
+    return __v.__x;
   }
 #endif // _CCCL_HAS_NVFP8_E4M3()
 #if _CCCL_HAS_NVFP8_E5M2()
   else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp8_e5m2))
   {
-    return __fp_storage_t<__nv_fp8_e5m2>{0x03u};
+    return __v.__x;
   }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 #if _CCCL_HAS_NVFP8_E8M0()
   else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp8_e8m0))
   {
-    return __fp_storage_t<__nv_fp8_e8m0>{0x00u};
+    return __v.__x;
   }
 #endif // _CCCL_HAS_NVFP8_E8M0()
 #if _CCCL_HAS_NVFP6_E2M3()
   else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp6_e2m3))
   {
-    return __fp_storage_t<__nv_fp6_e2m3>{0x07u};
+    return __v.__x;
   }
 #endif // _CCCL_HAS_NVFP6_E2M3()
 #if _CCCL_HAS_NVFP6_E3M2()
   else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp6_e3m2))
   {
-    return __fp_storage_t<__nv_fp6_e3m2>{0x03u};
+    return __v.__x;
   }
 #endif // _CCCL_HAS_NVFP6_E3M2()
 #if _CCCL_HAS_NVFP4_E2M1()
   else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp4_e2m1))
   {
-    return __fp_storage_t<__nv_fp4_e2m1>{0x01u};
+    return __v.__x;
   }
 #endif // _CCCL_HAS_NVFP4_E2M1()
   else
@@ -228,14 +251,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __fp_mant_mask_impl() n
     static_assert(__always_false_v<_Tp>, "Unsupported floating-point type");
   }
 }
-
-template <class _Tp>
-_CCCL_INLINE_VAR constexpr __fp_storage_t<_Tp> __fp_mant_mask_v = __fp_mant_mask_impl<_Tp>();
-
-template <class _Tp>
-_CCCL_INLINE_VAR constexpr __fp_storage_t<_Tp> __fp_exp_mant_mask_v =
-  static_cast<__fp_storage_t<_Tp>>(__fp_exp_mask_v<_Tp> | __fp_mant_mask_v<_Tp>);
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _LIBCUDACXX___INTERNAL_FP_MASK_H
+#endif // _LIBCUDACXX___FLOATING_POINT_STORAGE_H

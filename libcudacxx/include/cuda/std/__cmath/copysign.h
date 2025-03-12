@@ -24,7 +24,7 @@
 #include <cuda/std/__cmath/isinf.h>
 #include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__internal/fp.h>
+#include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_signed.h>
@@ -38,18 +38,22 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float copysign(float __x, float __y) noexcept
+{
+#if defined(_CCCL_BUILTIN_COPYSIGNF)
+  return _CCCL_BUILTIN_COPYSIGNF(__x, __y);
+#else // ^^^ _CCCL_BUILTIN_COPYSIGNF ^^^ / vvv !_CCCL_BUILTIN_COPYSIGNF vvv
+  return ::copysignf(__x, __y);
+#endif // !_CCCL_BUILTIN_COPYSIGNF
+}
+
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float copysignf(float __x, float __y) noexcept
 {
 #if defined(_CCCL_BUILTIN_COPYSIGNF)
   return _CCCL_BUILTIN_COPYSIGNF(__x, __y);
-#else // ^^^ _CCCL_BUILTIN_COPYSIGN ^^^ / vvv !_CCCL_BUILTIN_COPYSIGN vvv
+#else // ^^^ _CCCL_BUILTIN_COPYSIGNF ^^^ / vvv !_CCCL_BUILTIN_COPYSIGNF vvv
   return ::copysignf(__x, __y);
-#endif // !_CCCL_BUILTIN_COPYSIGN
-}
-
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float copysign(float __x, float __y) noexcept
-{
-  return _CUDA_VSTD::copysignf(__x, __y);
+#endif // !_CCCL_BUILTIN_COPYSIGNF
 }
 
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double copysign(double __x, double __y) noexcept
@@ -62,7 +66,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double copysign(double __x, double __y
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double copysignl(long double __x, long double __y) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double copysign(long double __x, long double __y) noexcept
 {
 #  if defined(_CCCL_BUILTIN_COPYSIGNL)
   return _CCCL_BUILTIN_COPYSIGNL(__x, __y);
@@ -71,9 +75,13 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double copysignl(long double __x,
 #  endif // !_CCCL_BUILTIN_COPYSIGNL
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double copysign(long double __x, long double __y) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double copysignl(long double __x, long double __y) noexcept
 {
-  return _CUDA_VSTD::copysignl(__x, __y);
+#  if defined(_CCCL_BUILTIN_COPYSIGNL)
+  return _CCCL_BUILTIN_COPYSIGNL(__x, __y);
+#  else // ^^^ _CCCL_BUILTIN_COPYSIGNL ^^^ / vvv !_CCCL_BUILTIN_COPYSIGNL vvv
+  return ::copysignl(__x, __y);
+#  endif // !_CCCL_BUILTIN_COPYSIGNL
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 

@@ -7,8 +7,8 @@
 //
 //===---------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___INTERNAL_FP_H
-#define _LIBCUDACXX___INTERNAL_FP_H
+#ifndef _LIBCUDACXX___FLOATING_POINT_FP_H
+#define _LIBCUDACXX___FLOATING_POINT_FP_H
 
 #include <cuda/__cccl_config>
 
@@ -20,10 +20,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__internal/fp/cast.h>
-#include <cuda/std/__internal/fp/common_type.h>
-#include <cuda/std/__internal/fp/conversion_rank_order.h>
-#include <cuda/std/__internal/fp/mask.h>
-#include <cuda/std/__internal/fp/storage.h>
+#include <cuda/std/__floating_point/cast.h>
+#include <cuda/std/__floating_point/common_type.h>
+#include <cuda/std/__floating_point/conversion_rank_order.h>
+#include <cuda/std/__floating_point/mask.h>
+#include <cuda/std/__floating_point/nvfp_types.h>
+#include <cuda/std/__floating_point/storage.h>
 
-#endif // _LIBCUDACXX___INTERNAL_FP_H
+#endif // _LIBCUDACXX___FLOATING_POINT_FP_H

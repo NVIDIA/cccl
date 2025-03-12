@@ -12,7 +12,7 @@
 #include <disable_nvfp_conversions_and_operators.h>
 // clang-format on
 
-#include <cuda/std/__internal/fp.h>
+#include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/cassert>
 #include <cuda/std/limits>
 

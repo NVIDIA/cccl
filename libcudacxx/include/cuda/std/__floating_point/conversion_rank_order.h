@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___INTERNAL_FP_CONVERSION_RANK_ORDER_H
-#define _LIBCUDACXX___INTERNAL_FP_CONVERSION_RANK_ORDER_H
+#ifndef _LIBCUDACXX___FLOATING_POINT_CONVERSION_RANK_ORDER_H
+#define _LIBCUDACXX___FLOATING_POINT_CONVERSION_RANK_ORDER_H
 
 #include <cuda/std/detail/__config>
 
@@ -110,4 +110,4 @@ _CCCL_INLINE_VAR constexpr bool __fp_is_implicit_conversion_v = __fp_is_implicit
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _LIBCUDACXX___INTERNAL_FP_CONVERSION_RANK_ORDER_H
+#endif // _LIBCUDACXX___FLOATING_POINT_CONVERSION_RANK_ORDER_H
