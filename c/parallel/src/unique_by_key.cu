@@ -28,7 +28,6 @@
 
 struct op_wrapper;
 struct device_unique_by_key_policy;
-struct device_unique_by_key_vsmem_helper;
 using OffsetT = unsigned long long;
 static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "OffsetT must be unsigned long long");
 
@@ -314,7 +313,10 @@ struct device_unique_by_key_policy {{
 }};
 struct device_unique_by_key_vsmem_helper {{
   template<typename ActivePolicyT, typename... Ts>
-  using VSMemHelperDefaultFallbackPolicyT = cub::detail::unique_by_key::VSMemHelper::VSMemHelperDefaultFallbackPolicyT<ActivePolicyT, Ts...>;
+  struct VSMemHelperDefaultFallbackPolicyT : public cub::detail::vsmem_helper_impl<cub::detail::unique_by_key::AgentUniqueByKey<agent_policy_t, Ts...>> {{
+    using agent_policy_t = agent_policy_t;
+    using agent_t = cub::detail::unique_by_key::AgentUniqueByKey<agent_policy_t, Ts...>;
+  }};
 }};
 {13}
 )XXX";

@@ -26,7 +26,6 @@
 
 struct op_wrapper;
 struct device_merge_sort_policy;
-struct device_merge_sort_vsmem_helper;
 using OffsetT = unsigned long long;
 static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "OffsetT must be unsigned long long");
 
@@ -343,8 +342,12 @@ struct device_merge_sort_policy {{
   }};
 }};
 struct device_merge_sort_vsmem_helper {{
-  template<typename ActivePolicyT, typename... Ts>
-  using MergeSortVSMemHelperT = cub::detail::merge_sort::VSMemHelper::MergeSortVSMemHelperT<ActivePolicyT, Ts...>;
+  template<typename ActivePolicyT, typename KeyInputIteratorT, typename ValueInputIteratorT, typename... Ts>
+  struct MergeSortVSMemHelperT {{
+    using policy_t = agent_policy_t;
+    using block_sort_agent_t = cub::detail::merge_sort::AgentBlockSort<agent_policy_t, KeyInputIteratorT, ValueInputIteratorT, Ts...>;
+    using merge_agent_t = cub::detail::merge_sort::AgentMerge<agent_policy_t, Ts...>;
+  }};
 }};
 {11};
 )XXX";
