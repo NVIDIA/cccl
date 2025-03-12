@@ -631,15 +631,6 @@ public:
       : pimpl(::std::make_shared<impl>())
   {}
 
-// TODO redo
-#if 0
-  const auto& get_node(size_t level) const
-  {
-    return pimpl->get_node(level);
-  }
-
-#endif
-
   auto& get_node(size_t offset)
   {
     return pimpl->get_node(offset);
