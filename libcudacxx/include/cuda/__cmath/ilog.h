@@ -31,7 +31,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 template <typename _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int ilog2(_Tp __t) noexcept
 {
-  static_assert(_CUDA_VSTD::is_integral_v<_Tp> && !_CUDA_VSTD::is_same_v<_Tp, bool>,
+  static_assert(_CUDA_VSTD::__cccl_is_integer_v<_Tp>,
                 "ilog2() argument type must be an integer type");
   using _Up = _CUDA_VSTD::make_unsigned_t<_Tp>;
   _CCCL_ASSERT(__t > 0, "ilog2() argument must be strictly positive");
