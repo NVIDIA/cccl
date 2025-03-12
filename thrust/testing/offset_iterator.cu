@@ -58,8 +58,11 @@ void TestOffsetIteratorCopyConstructorAndAssignment()
 {
   Vector v{42, 43};
   thrust::offset_iterator iter0(v.begin());
+#if _CCCL_COMPILER(MSVC) // MSVC cannot deduce the template arguments from the copy ctor
+  decltype(iter0) iter1(iter0);
+#else // _CCCL_COMPILER(MSVC)
   thrust::offset_iterator iter1(iter0);
-
+#endif // _CCCL_COMPILER(MSVC)
   ASSERT_EQUAL(iter0 == iter1, true);
   ASSERT_EQUAL(*iter0 == *iter1, true);
 
