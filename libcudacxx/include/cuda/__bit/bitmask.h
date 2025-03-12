@@ -42,16 +42,6 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __shl(const _Tp __value,
                          (using _Up = _CUDA_VSTD::_If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
                           return _CUDA_VPTX::shl(static_cast<_Up>(__value), __shift);))
     }
-#if _CCCL_HAS_INT128()
-    else
-    {
-      // the compiler should generate exactly four 32-bit shl instructions
-      NV_DISPATCH_TARGET(NV_IS_DEVICE,
-                         (auto __low  = _CUDA_VPTX::shl(static_cast<uint64_t>(__value), __shift);
-                          auto __high = _CUDA_VPTX::shl(static_cast<uint64_t>(__value >> 64), __shift);
-                          return __low | (static_cast<__uint128_t>(__high) >> __shift);))
-    }
-#endif // _CCCL_HAS_INT128()
   }
   return (__shift >= _CUDA_VSTD::numeric_limits<_Tp>::digits) ? _Tp{0} : __value << __shift;
 }
@@ -67,16 +57,6 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __shr(const _Tp __value,
                          (using _Up = _CUDA_VSTD::_If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
                           return _CUDA_VPTX::shr(static_cast<_Up>(__value), __shift);))
     }
-#if _CCCL_HAS_INT128()
-    else
-    {
-      // the compiler should generate exactly four 32-bit shl instructions
-      NV_DISPATCH_TARGET(NV_IS_DEVICE,
-                         (auto __low  = _CUDA_VPTX::shr(static_cast<uint64_t>(__value), __shift);
-                          auto __high = _CUDA_VPTX::shr(static_cast<uint64_t>(__value >> 64), __shift);
-                          return __low | (static_cast<__uint128_t>(__high) << 64);))
-    }
-#endif // _CCCL_HAS_INT128()
   }
   return (__shift >= _CUDA_VSTD::numeric_limits<_Tp>::digits) ? _Tp{0} : __value >> __shift;
 }
@@ -95,13 +75,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp bitmask(int __start, int
     {
       NV_IF_TARGET(NV_PROVIDES_SM_70, (return _CUDA_VPTX::bmsk_clamp(__start, __width);))
     }
-    // else
-    //{
-    //   NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::__shl(::cuda::__shl(_Tp{1}, __width) - 1, __start);))
-    // }
   }
-  // constexpr auto __all_ones = static_cast<_Tp>(~_Tp{0});
-  // return __width == __digits ? __all_ones : (static_cast<_Tp>((_Tp{1} << __width) - 1) << __start);
   return ::cuda::__shl(static_cast<_Tp>(::cuda::__shl(_Tp{1}, __width) - 1), __start);
 }
 
