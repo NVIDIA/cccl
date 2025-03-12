@@ -91,17 +91,22 @@ struct TestZipIteratorManipulation
     sequence(v2.begin(), v2.end());
 
     using IteratorTuple = tuple<typename Vector::iterator, typename Vector::iterator>;
+    IteratorTuple t     = make_tuple(v0.begin(), v1.begin());
+    using ZipIterator   = zip_iterator<IteratorTuple>;
 
-    IteratorTuple t = make_tuple(v0.begin(), v1.begin());
-
-    using ZipIterator = zip_iterator<IteratorTuple>;
-
-    // test construction
+    // test construction from tuple
     ZipIterator iter0 = make_zip_iterator(t);
     ASSERT_EQUAL(true, iter0 == ZipIterator{t});
-
     ASSERT_EQUAL_QUIET(v0.begin(), get<0>(iter0.get_iterator_tuple()));
     ASSERT_EQUAL_QUIET(v1.begin(), get<1>(iter0.get_iterator_tuple()));
+    static_assert(::cuda::std::is_same_v<decltype(zip_iterator{t}), ZipIterator>); // CTAD
+
+    // test construction from pack
+    ZipIterator iter0_pack = make_zip_iterator(v0.begin(), v1.begin());
+    ASSERT_EQUAL(true, (iter0_pack == ZipIterator{v0.begin(), v1.begin()}));
+    ASSERT_EQUAL_QUIET(v0.begin(), get<0>(iter0_pack.get_iterator_tuple()));
+    ASSERT_EQUAL_QUIET(v1.begin(), get<1>(iter0_pack.get_iterator_tuple()));
+    static_assert(::cuda::std::is_same_v<decltype(zip_iterator{v0.begin(), v1.begin()}), ZipIterator>); // CTAD
 
     // test dereference
     ASSERT_EQUAL(*v0.begin(), get<0>(*iter0));
@@ -463,7 +468,7 @@ void TestZipIteratorCopyAoSToSoA()
 
   thrust::copy(d_aos.begin(), d_aos.end(), h_soa);
   ASSERT_EQUAL_QUIET(make_tuple(7, 13), h_soa[0]);
-};
+}
 DECLARE_UNITTEST(TestZipIteratorCopyAoSToSoA);
 
 void TestZipIteratorCopySoAToAoS()
