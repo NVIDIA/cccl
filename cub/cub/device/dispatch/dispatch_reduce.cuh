@@ -57,9 +57,7 @@
 #include <cub/util_temporary_storage.cuh>
 #include <cub/util_type.cuh> // for cub::detail::non_void_value_t, cub::detail::value_t
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
 #include <cuda/std/functional>
-_CCCL_SUPPRESS_DEPRECATED_POP
 
 #include <stdio.h>
 

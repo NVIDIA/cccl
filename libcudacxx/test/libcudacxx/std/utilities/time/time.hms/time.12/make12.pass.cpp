@@ -21,7 +21,7 @@ int main(int, char**)
 {
   using hours = cuda::std::chrono::hours;
   ASSERT_SAME_TYPE(hours, decltype(cuda::std::chrono::make12(cuda::std::declval<hours>())));
-  ASSERT_NOEXCEPT(cuda::std::chrono::make12(cuda::std::declval<hours>()));
+  static_assert(noexcept(cuda::std::chrono::make12(cuda::std::declval<hours>())));
 
   static_assert(cuda::std::chrono::make12(hours(0)) == hours(12), "");
   static_assert(cuda::std::chrono::make12(hours(11)) == hours(11), "");

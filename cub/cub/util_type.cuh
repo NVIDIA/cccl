@@ -262,10 +262,12 @@ struct FutureValue
 {
   using value_type    = T;
   using iterator_type = IterT;
+
   explicit _CCCL_HOST_DEVICE _CCCL_FORCEINLINE FutureValue(IterT iter)
       : m_iter(iter)
   {}
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T()
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T() const noexcept
   {
     return *m_iter;
   }
@@ -273,6 +275,9 @@ struct FutureValue
 private:
   IterT m_iter;
 };
+
+template <typename IterT>
+FutureValue(IterT) -> FutureValue<detail::it_value_t<IterT>, IterT>;
 
 namespace detail
 {

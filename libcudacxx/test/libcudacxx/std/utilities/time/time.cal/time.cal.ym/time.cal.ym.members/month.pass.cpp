@@ -24,7 +24,7 @@ int main(int, char**)
   using month      = cuda::std::chrono::month;
   using year_month = cuda::std::chrono::year_month;
 
-  ASSERT_NOEXCEPT(cuda::std::declval<const year_month>().month());
+  static_assert(noexcept(cuda::std::declval<const year_month>().month()));
   ASSERT_SAME_TYPE(month, decltype(cuda::std::declval<const year_month>().month()));
 
   static_assert(year_month{}.month() == month{}, "");

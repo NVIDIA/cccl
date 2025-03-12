@@ -313,7 +313,7 @@ __host__ __device__ constexpr bool testEmpty()
   BoolConvertibleComparison boolConv{};
   // old GCC seems to fall over the noexcept clauses here
 #if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 9) && (!defined(TEST_COMPILER_MSVC))
-  ASSERT_NOT_NOEXCEPT(boolConv.empty());
+  static_assert(!noexcept(boolConv.empty()));
 #endif
 
   assert(!boolConv.empty());

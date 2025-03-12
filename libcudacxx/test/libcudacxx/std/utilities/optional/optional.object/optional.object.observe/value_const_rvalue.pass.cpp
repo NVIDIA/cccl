@@ -65,12 +65,12 @@ __host__ __device__ constexpr bool test()
   {
     const optional<X> opt{};
     unused(opt);
-    ASSERT_NOT_NOEXCEPT(cuda::std::move(opt).value());
+    static_assert(!noexcept(cuda::std::move(opt).value()));
     ASSERT_SAME_TYPE(decltype(cuda::std::move(opt).value()), const X&&);
 
     const optional<X&> optref;
     unused(optref);
-    ASSERT_NOEXCEPT(cuda::std::move(optref).value());
+    static_assert(noexcept(cuda::std::move(optref).value()));
     ASSERT_SAME_TYPE(decltype(cuda::std::move(optref).value()), X&);
   }
 

@@ -1,7 +1,7 @@
 .. _libcudacxx-extended-api-bit-bitfield_insert:
 
-``bitfield_insert``
-===================
+``cuda::bitfield_insert``
+=========================
 
 .. code:: cpp
 
@@ -22,14 +22,14 @@ The function extracts the lower bitfield of size ``width`` from ``source`` and i
 
 - ``((value << start) & mask) | (source & ~mask)``, where ``mask`` is a bitmask of width ``width``.
 
-**Mandates**
+**Constraints**
 
 - ``T`` is an unsigned integer type.
 
 **Preconditions**
 
     - ``start >= 0 && start < num_bits(T)``
-    - ``width >  0 && width <= num_bits(T)``
+    - ``width >= 0 && width <= num_bits(T)``
     - ``start + width <= num_bits(T)``
 
 **Performance considerations**

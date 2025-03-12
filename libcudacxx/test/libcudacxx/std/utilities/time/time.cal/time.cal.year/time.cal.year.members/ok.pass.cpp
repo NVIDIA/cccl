@@ -27,13 +27,13 @@ int main(int, char**)
 {
   using year = cuda::std::chrono::year;
 
-  ASSERT_NOEXCEPT(cuda::std::declval<const year>().ok());
+  static_assert(noexcept(cuda::std::declval<const year>().ok()));
   ASSERT_SAME_TYPE(bool, decltype(cuda::std::declval<const year>().ok()));
 
-  ASSERT_NOEXCEPT(year::max());
+  static_assert(noexcept(year::max()));
   ASSERT_SAME_TYPE(year, decltype(year::max()));
 
-  ASSERT_NOEXCEPT(year::min());
+  static_assert(noexcept(year::min()));
   ASSERT_SAME_TYPE(year, decltype(year::min()));
 
   static_assert(static_cast<int>(year::min()) == -32767, "");

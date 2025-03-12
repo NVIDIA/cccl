@@ -135,19 +135,19 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int fpclassify(long double _
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
-#if _LIBCUDACXX_HAS_NVFP16()
+#if _CCCL_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int fpclassify(__half __x) noexcept
 {
   return _CUDA_VSTD::__fpclassify_impl(__x);
 }
-#endif // _LIBCUDACXX_HAS_NVFP16()
+#endif // _CCCL_HAS_NVFP16()
 
-#if _LIBCUDACXX_HAS_NVBF16()
+#if _CCCL_HAS_NVBF16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int fpclassify(__nv_bfloat16 __x) noexcept
 {
   return _CUDA_VSTD::__fpclassify_impl(__x);
 }
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // _CCCL_HAS_NVBF16()
 
 #if _CCCL_HAS_NVFP8_E4M3()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int fpclassify(__nv_fp8_e4m3 __x) noexcept

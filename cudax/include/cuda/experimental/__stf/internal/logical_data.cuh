@@ -171,7 +171,7 @@ public:
     ctx.get_stack().logical_data_ids_mutex.unlock();
 
     // It is possible that there is no valid copy (e.g. with temporary accesses)
-    if (memory_node == data_place::invalid)
+    if (memory_node.is_invalid())
     {
       return; // no data instance present, so nothing to do for the time being
     }
@@ -187,7 +187,7 @@ public:
     auto& inst = get_data_instance(instance_id);
 
     // If this is host memory, try to pin it
-    if (memory_node == data_place::host)
+    if (memory_node.is_host())
     {
       // ret may be false if we detected that the instance was already pinned, for example
       inst.automatically_pinned = dinterface->pin_host_memory(instance_id);
@@ -196,7 +196,7 @@ public:
 #ifndef NDEBUG
     auto mem_type = dinterface->get_memory_type(instance_id);
 
-    if (memory_node == data_place::managed)
+    if (memory_node.is_managed())
     {
       assert(!mem_type || *mem_type == cudaMemoryTypeManaged);
     }
@@ -253,14 +253,14 @@ public:
   // (transfers, allocations etc.) or to have data specific accessors.
   ::std::shared_ptr<data_interface> dinterface;
 
-  void freeze(access_mode freeze_mode, data_place place = data_place::invalid)
+  void freeze(access_mode freeze_mode, data_place place = data_place::invalid())
   {
     // We cannot freeze some logical data that is already frozen
     assert(!frozen_flag);
 
     if (freeze_mode != access_mode::read)
     {
-      assert(place != data_place::invalid);
+      _CCCL_ASSERT(!place.is_invalid(), "invalid data place");
     }
 
     frozen_flag  = true;
@@ -500,6 +500,7 @@ public:
   {
     return used_instances[size_t(instance_id)];
   }
+
   data_instance& get_data_instance(instance_id_t instance_id)
   {
     return used_instances[size_t(instance_id)];
@@ -516,8 +517,8 @@ public:
                 void** extra_args,
                 event_list& prereqs)
   {
-    assert(memory_node != data_place::invalid);
-    assert(has_interface());
+    _CCCL_ASSERT(!memory_node.is_invalid(), "invalid data place");
+    _CCCL_ASSERT(has_interface(), "");
     // nvtx_range r("allocate");
     // Get the allocator for this logical data
     return dinterface->data_allocate(ctx, get_allocator(), memory_node, instance_id, s, extra_args, prereqs);
@@ -525,7 +526,7 @@ public:
 
   void deallocate(const data_place& memory_node, instance_id_t instance_id, void* extra_args, event_list& prereqs)
   {
-    assert(memory_node != data_place::invalid);
+    _CCCL_ASSERT(!memory_node.is_invalid(), "invalid data place");
     assert(has_interface());
     // nvtx_range r("deallocate");
     return dinterface->data_deallocate(ctx, get_allocator(), memory_node, instance_id, extra_args, prereqs);
@@ -537,9 +538,9 @@ public:
                  instance_id_t src_instance_id,
                  event_list& prereqs)
   {
-    assert(src_node != data_place::invalid);
-    assert(dst_node != data_place::invalid);
-    assert(has_interface());
+    _CCCL_ASSERT(!src_node.is_invalid(), "invalid data place");
+    _CCCL_ASSERT(!dst_node.is_invalid(), "invalid data place");
+    _CCCL_ASSERT(has_interface(), "");
     // nvtx_range r("data_copy");
     ctx.add_transfer(src_node, dst_node, dinterface->data_footprint());
     return dinterface->data_copy(ctx, dst_node, dst_instance_id, src_node, src_instance_id, prereqs);
@@ -1054,7 +1055,7 @@ public:
   }
   ///@}
 
-  void freeze(access_mode freeze_mode, data_place place = data_place::invalid)
+  void freeze(access_mode freeze_mode, data_place place = data_place::invalid())
   {
     pimpl->freeze(freeze_mode, place);
   }
@@ -1230,22 +1231,22 @@ public:
    * @return task_dep_untyped The dependency object corresponding to this logical data
    */
   ///@{
-  task_dep_untyped read(data_place dp = data_place::affine)
+  task_dep_untyped read(data_place dp = data_place::affine())
   {
     return task_dep_untyped(*this, access_mode::read, mv(dp));
   }
 
-  task_dep_untyped write(data_place dp = data_place::affine)
+  task_dep_untyped write(data_place dp = data_place::affine())
   {
     return task_dep_untyped(*this, access_mode::write, mv(dp));
   }
 
-  task_dep_untyped rw(data_place dp = data_place::affine)
+  task_dep_untyped rw(data_place dp = data_place::affine())
   {
     return task_dep_untyped(*this, access_mode::rw, mv(dp));
   }
 
-  task_dep_untyped relaxed(::std::shared_ptr<reduction_operator_base> op, data_place dp = data_place::affine)
+  task_dep_untyped relaxed(::std::shared_ptr<reduction_operator_base> op, data_place dp = data_place::affine())
   {
     return task_dep_untyped(*this, access_mode::relaxed, mv(dp), op);
   }
@@ -1801,8 +1802,8 @@ inline void reserved::logical_data_untyped_impl::erase()
     // Unpin an instance if if was automatically pinned
     if (inst_i.automatically_pinned)
     {
-      assert(inst_i.get_dplace() == data_place::host);
-      assert(dinterface);
+      _CCCL_ASSERT(inst_i.get_dplace().is_host(), "");
+      _CCCL_ASSERT(dinterface, "");
       dinterface->unpin_host_memory(i);
     }
 

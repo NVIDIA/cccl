@@ -84,7 +84,7 @@ public:
     s                = this->shape.size() * sizeof(T);
     auto& local_desc = this->instance(instance_id);
 
-    assert(memory_node != data_place::invalid);
+    _CCCL_ASSERT(!memory_node.is_invalid(), "invalid data place");
 
     T* base_ptr;
 

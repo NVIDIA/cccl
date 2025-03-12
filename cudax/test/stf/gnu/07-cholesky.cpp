@@ -17,8 +17,7 @@
  */
 
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
-
-#include <nvtx3/nvToolsExt.h>
+#include <cuda/experimental/__stf/utility/nvtx.cuh>
 
 #define TILED
 
@@ -373,6 +372,8 @@ void PDNRM2_HOST(matrix<double>* A, double* result)
 
 void PDPOTRF(matrix<double>& A)
 {
+  nvtx_range r("PDPOTRF");
+
 #ifdef HAVE_DOT
   reserved::dot::set_current_color("yellow");
 #endif
@@ -385,7 +386,6 @@ void PDPOTRF(matrix<double>& A)
 
   cuda_safe_call(cudaSetDevice(0));
 
-  nvtxRangePushA("SUBMIT_PDPOTRF");
   for (int K = 0; K < NBLOCKS; K++)
   {
     cuda_safe_call(cudaSetDevice(A.get_preferred_devid(K, K)));
@@ -407,8 +407,6 @@ void PDPOTRF(matrix<double>& A)
     }
   }
   cuda_safe_call(cudaSetDevice(0));
-
-  nvtxRangePop();
 }
 
 // Algorithm from PLASMA
@@ -420,6 +418,8 @@ void PDTRSM(cublasSideMode_t side,
             class matrix<double>& A,
             class matrix<double>& B)
 {
+  nvtx_range r("PDTRSM");
+
   //    std::cout << "[PDTRSM] START B MT " << B.mt << " NT " << B.nt << std::endl;
 
   if (side == CUBLAS_SIDE_LEFT)
@@ -492,6 +492,8 @@ void PDTRSM(cublasSideMode_t side,
 
 void PDPOTRS(matrix<double>& A, class matrix<double>& B, cublasFillMode_t uplo)
 {
+  nvtx_range r("PDPOTRS");
+
 #ifdef HAVE_DOT
   reserved::dot::set_current_color("green");
 #endif
@@ -523,6 +525,8 @@ void PDGEMM(cublasOperation_t transa,
             double beta,
             class matrix<double>& C)
 {
+  nvtx_range r("PDGEMM");
+
 #ifdef HAVE_DOT
   reserved::dot::set_current_color("blue");
 #endif

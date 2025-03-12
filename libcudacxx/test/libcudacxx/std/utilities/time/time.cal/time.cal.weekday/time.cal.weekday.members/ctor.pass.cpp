@@ -29,9 +29,9 @@ int main(int, char**)
 {
   using weekday = cuda::std::chrono::weekday;
 
-  ASSERT_NOEXCEPT(weekday{});
-  ASSERT_NOEXCEPT(weekday(1));
-  ASSERT_NOEXCEPT(weekday(1).c_encoding());
+  static_assert(noexcept(weekday{}));
+  static_assert(noexcept(weekday(1)));
+  static_assert(noexcept(weekday(1).c_encoding()));
 
   constexpr weekday m0{};
   static_assert(m0.c_encoding() == 0, "");

@@ -147,11 +147,9 @@
 #  define _CCCL_TRAIT(__TRAIT, ...) __TRAIT##_v<__VA_ARGS__>
 #endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
-#define _CCCL_CONSTEXPR_GLOBAL constexpr
-
 // We need to treat host and device separately
 #if defined(__CUDA_ARCH__)
-#  define _CCCL_GLOBAL_CONSTANT _CCCL_DEVICE _CCCL_CONSTEXPR_GLOBAL
+#  define _CCCL_GLOBAL_CONSTANT _CCCL_DEVICE constexpr
 #else // ^^^ __CUDA_ARCH__ ^^^ / vvv !__CUDA_ARCH__ vvv
 #  define _CCCL_GLOBAL_CONSTANT _CCCL_INLINE_VAR constexpr
 #endif // __CUDA_ARCH__
