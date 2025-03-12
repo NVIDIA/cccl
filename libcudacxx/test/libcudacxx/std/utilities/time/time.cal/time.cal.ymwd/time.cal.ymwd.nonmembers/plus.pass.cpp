@@ -78,8 +78,8 @@ int main(int, char**)
   constexpr month January   = cuda::std::chrono::January;
 
   { // year_month_weekday + months (and switched)
-    ASSERT_NOEXCEPT(cuda::std::declval<year_month_weekday>() + cuda::std::declval<months>());
-    ASSERT_NOEXCEPT(cuda::std::declval<months>() + cuda::std::declval<year_month_weekday>());
+    static_assert(noexcept(cuda::std::declval<year_month_weekday>() + cuda::std::declval<months>()));
+    static_assert(noexcept(cuda::std::declval<months>() + cuda::std::declval<year_month_weekday>()));
 
     ASSERT_SAME_TYPE(year_month_weekday,
                      decltype(cuda::std::declval<year_month_weekday>() + cuda::std::declval<months>()));
@@ -106,8 +106,8 @@ int main(int, char**)
   }
 
   { // year_month_weekday + years (and switched)
-    ASSERT_NOEXCEPT(cuda::std::declval<year_month_weekday>() + cuda::std::declval<years>());
-    ASSERT_NOEXCEPT(cuda::std::declval<years>() + cuda::std::declval<year_month_weekday>());
+    static_assert(noexcept(cuda::std::declval<year_month_weekday>() + cuda::std::declval<years>()));
+    static_assert(noexcept(cuda::std::declval<years>() + cuda::std::declval<year_month_weekday>()));
 
     ASSERT_SAME_TYPE(year_month_weekday,
                      decltype(cuda::std::declval<year_month_weekday>() + cuda::std::declval<years>()));

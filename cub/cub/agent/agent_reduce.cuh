@@ -51,11 +51,8 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/std/type_traits>
-
-_CCCL_SUPPRESS_DEPRECATED_PUSH
 #include <cuda/std/functional>
-_CCCL_SUPPRESS_DEPRECATED_POP
+#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 

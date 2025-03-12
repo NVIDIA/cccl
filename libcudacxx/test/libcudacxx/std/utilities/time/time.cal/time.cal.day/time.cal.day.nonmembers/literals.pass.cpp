@@ -26,7 +26,7 @@ int main(int, char**)
 #if _LIBCUDACXX_HAS_CXX20_CHRONO_LITERALS()
   {
     using namespace cuda::std::chrono;
-    ASSERT_NOEXCEPT(4d);
+    static_assert(noexcept(4d));
     ASSERT_SAME_TYPE(day, decltype(4d));
 
     static_assert(7d == day(7), "");
@@ -36,7 +36,7 @@ int main(int, char**)
 
   {
     using namespace cuda::std::literals;
-    ASSERT_NOEXCEPT(4d);
+    static_assert(noexcept(4d));
     ASSERT_SAME_TYPE(cuda::std::chrono::day, decltype(4d));
 
     static_assert(7d == cuda::std::chrono::day(7), "");

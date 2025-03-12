@@ -435,6 +435,7 @@ public:
     // Constructor to initialize symbol and children
     section(::std::string sym)
         : symbol(mv(sym))
+        , r(symbol.c_str())
     {
       static_assert(::std::is_move_constructible_v<section>, "section must be move constructible");
       static_assert(::std::is_move_assignable_v<section>, "section must be move assignable");
@@ -577,6 +578,9 @@ public:
     int depth = ::std::numeric_limits<int>::min();
 
     ::std::string symbol;
+
+    // An annotation that has the lifetime of the section
+    nvtx_range r;
 
     // An identifier for that section. This is movable, but non
     // copyable, but we manipulate section by the means of shared_ptr.

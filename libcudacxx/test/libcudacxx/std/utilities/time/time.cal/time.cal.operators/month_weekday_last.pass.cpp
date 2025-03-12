@@ -45,9 +45,9 @@ int main(int, char**)
   constexpr cuda::std::chrono::last_spec last = cuda::std::chrono::last;
 
   { // operator/(const month& m, const weekday_last& wdi) (and switched)
-    ASSERT_NOEXCEPT(February / Tuesday[last]);
+    static_assert(noexcept(February / Tuesday[last]));
     ASSERT_SAME_TYPE(month_weekday_last, decltype(February / Tuesday[last]));
-    ASSERT_NOEXCEPT(Tuesday[last] / February);
+    static_assert(noexcept(Tuesday[last] / February));
     ASSERT_SAME_TYPE(month_weekday_last, decltype(Tuesday[last] / February));
 
     //  Run the example
@@ -75,9 +75,9 @@ int main(int, char**)
   }
 
   { // operator/(int m, const weekday_last& wdi) (and switched)
-    ASSERT_NOEXCEPT(2 / Tuesday[2]);
+    static_assert(noexcept(2 / Tuesday[2]));
     ASSERT_SAME_TYPE(month_weekday_last, decltype(2 / Tuesday[last]));
-    ASSERT_NOEXCEPT(Tuesday[2] / 2);
+    static_assert(noexcept(Tuesday[2] / 2));
     ASSERT_SAME_TYPE(month_weekday_last, decltype(Tuesday[last] / 2));
 
     //  Run the example

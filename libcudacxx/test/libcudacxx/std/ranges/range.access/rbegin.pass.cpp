@@ -566,8 +566,8 @@ __host__ __device__ constexpr bool testBeginEnd()
 
   return true;
 }
-ASSERT_NOEXCEPT(cuda::std::ranges::rbegin(cuda::std::declval<int (&)[10]>()));
-ASSERT_NOEXCEPT(cuda::std::ranges::crbegin(cuda::std::declval<int (&)[10]>()));
+static_assert(noexcept(cuda::std::ranges::rbegin(cuda::std::declval<int (&)[10]>())));
+static_assert(noexcept(cuda::std::ranges::crbegin(cuda::std::declval<int (&)[10]>())));
 
 #if !defined(TEST_COMPILER_MSVC_2019) // broken noexcept
 _CCCL_GLOBAL_CONSTANT struct NoThrowMemberRBegin

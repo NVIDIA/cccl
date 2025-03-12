@@ -45,11 +45,9 @@
 #include <cub/util_cpp_dialect.cuh>
 #include <cub/util_namespace.cuh>
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-#include <cuda/std/functional>
-_CCCL_SUPPRESS_DEPRECATED_POP
 #include <cuda/std/__concepts/concept_macros.h> // IWYU pragma: keep
 #include <cuda/std/array>
+#include <cuda/std/functional>
 #include <cuda/std/mdspan>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>

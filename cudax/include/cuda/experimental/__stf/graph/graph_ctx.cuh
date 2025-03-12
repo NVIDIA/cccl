@@ -65,7 +65,7 @@ public:
     const ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(prereqs, graph_epoch);
     cudaGraphNode_t out                        = nullptr;
 
-    if (memory_node == data_place::host)
+    if (memory_node.is_host())
     {
       cuda_try(cudaMallocHost(&result, s));
       SCOPE(fail)
@@ -99,7 +99,7 @@ public:
     const size_t graph_epoch                   = bctx.epoch();
     cudaGraphNode_t out                        = nullptr;
     const ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(prereqs, graph_epoch);
-    if (memory_node == data_place::host)
+    if (memory_node.is_host())
     {
       // fprintf(stderr, "TODO deallocate host memory (graph_ctx)\n");
       cuda_safe_call(cudaGraphAddEmptyNode(&out, graph, nodes.data(), nodes.size()));
