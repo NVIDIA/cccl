@@ -352,7 +352,9 @@ struct dispatch_t<StableAddress,
     }
     else
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
+    {
       return invoke_prefetch_algorithm(::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{}, wrapped_policy);
+    }
   }
 
   template <typename MaxPolicyT = typename PolicyHub::max_policy>
