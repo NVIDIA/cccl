@@ -144,7 +144,7 @@ struct TrackedMove
   }
 };
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 struct Except
 {};
 
@@ -206,7 +206,7 @@ struct ThrowOnMove
   }
 };
 
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 struct TestError
 {

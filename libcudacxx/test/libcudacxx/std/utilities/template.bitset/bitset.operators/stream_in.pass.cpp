@@ -49,7 +49,7 @@ int main(int, char**)
     assert(!in.eof());
     assert(in.good());
   }
-#  ifndef TEST_HAS_NO_EXCEPTIONS
+#  if TEST_HAS_EXCEPTIONS()
   {
     cuda::std::stringbuf sb;
     cuda::std::istream is(&sb);
@@ -92,7 +92,7 @@ int main(int, char**)
     assert(is.eof());
     assert(threw);
   }
-#  endif // TEST_HAS_NO_EXCEPTIONS
+#  endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }

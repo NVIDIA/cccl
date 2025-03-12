@@ -97,7 +97,7 @@ protected:
   {
     if (C.throw_on_alloc)
     {
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
       throw TestException{};
 #else
       assert(false);
@@ -181,7 +181,7 @@ struct BufferProvider
     void* ret = std::align(s, a, next, space);
     if (ret == nullptr)
     {
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
       throw std::bad_alloc();
 #else
       assert(false);
