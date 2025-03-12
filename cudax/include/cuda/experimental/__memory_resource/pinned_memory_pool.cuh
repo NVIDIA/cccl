@@ -62,7 +62,7 @@ public:
   explicit pinned_memory_pool(int __numa_id, memory_pool_properties __properties)
       : __memory_pool_base(__memory_location_type::__host, __properties, __numa_id)
   {
-    enable_peer_access_from(devices);
+    enable_access_from(devices);
   }
 
   //! @brief Constructs a \c pinned_memory_pool on the host with the specified NUMA node id.
