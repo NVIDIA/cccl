@@ -91,7 +91,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
 {
   using namespace thrust::detail;
 
-  using AccumT = thrust::detail::__iter_accumulator_t<BinaryFunction, InputIterator, InitialValueType>;
+  using AccumT = thrust::detail::__iter_accumulator_t<InputIterator, InitialValueType, BinaryFunction>;
 
   // wrap binary_op
   thrust::detail::wrapped_function<BinaryFunction, AccumT> wrapped_binary_op{binary_op};
