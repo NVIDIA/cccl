@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -44,14 +44,14 @@ TEST_CASE("1d Copy", "[data_manipulation]")
     }
   }
 
-  SECTION("Host and managed resource")
+  SECTION("Host and uninfied resource")
   {
-    cudax::managed_memory_resource managed_resource;
+    cudax::unified_memory_resource unified_resource;
     cudax::pinned_memory_resource host_resource;
 
     {
       cudax::uninitialized_buffer<int, cuda::mr::host_accessible> host_buffer(host_resource, buffer_size);
-      cudax::uninitialized_buffer<int, cuda::mr::device_accessible> device_buffer(managed_resource, buffer_size);
+      cudax::uninitialized_buffer<int, cuda::mr::device_accessible> device_buffer(unified_resource, buffer_size);
 
       cudax::fill_bytes(_stream, host_buffer, fill_byte);
 
@@ -64,7 +64,7 @@ TEST_CASE("1d Copy", "[data_manipulation]")
 
     {
       cudax::uninitialized_buffer<int, cuda::mr::host_accessible> not_yet_const_host_buffer(host_resource, buffer_size);
-      cudax::uninitialized_buffer<int, cuda::mr::device_accessible> device_buffer(managed_resource, buffer_size);
+      cudax::uninitialized_buffer<int, cuda::mr::device_accessible> device_buffer(unified_resource, buffer_size);
       cudax::fill_bytes(_stream, not_yet_const_host_buffer, fill_byte);
 
       const auto& const_host_buffer = not_yet_const_host_buffer;
