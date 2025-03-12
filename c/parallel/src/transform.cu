@@ -269,6 +269,9 @@ struct device_transform_policy {{
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
+    // Note: `-default-device` is needed because of the use of lambdas
+    // in the transform kernel code. Qualifying those explicitly with
+    // `__device__` seems not to be supported by NVRTC.
     constexpr size_t num_args  = 8;
     const char* args[num_args] = {
       arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-default-device"};
