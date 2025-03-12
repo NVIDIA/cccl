@@ -473,11 +473,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
     {
       construct(__a,
                 _CUDA_VSTD::__to_raw_pointer(__begin2),
-#ifdef _CCCL_NO_EXCEPTIONS
+#if !_CCCL_HAS_EXCEPTIONS()
                 _CUDA_VSTD::move(*__begin1)
-#else // ^^^ _CCCL_NO_EXCEPTIONS ^^^ / vvv !_CCCL_NO_EXCEPTIONS vvv
+#else // ^^^ !_CCCL_HAS_EXCEPTIONS() ^^^ / vvv _CCCL_HAS_EXCEPTIONS() vvv
                 _CUDA_VSTD::move_if_noexcept(*__begin1)
-#endif // !_CCCL_NO_EXCEPTIONS
+#endif // _CCCL_HAS_EXCEPTIONS()
       );
     }
   }
@@ -535,11 +535,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
     {
       construct(__a,
                 _CUDA_VSTD::__to_raw_pointer(__end2 - 1),
-#ifdef _CCCL_NO_EXCEPTIONS
+#if !_CCCL_HAS_EXCEPTIONS()
                 _CUDA_VSTD::move(*--__end1)
-#else // ^^^ _CCCL_NO_EXCEPTIONS ^^^ / vvv !_CCCL_NO_EXCEPTIONS vvv
+#else // ^^^ !_CCCL_HAS_EXCEPTIONS() ^^^ / vvv _CCCL_HAS_EXCEPTIONS() vvv
                 _CUDA_VSTD::move_if_noexcept(*--__end1)
-#endif // !_CCCL_NO_EXCEPTIONS
+#endif // _CCCL_HAS_EXCEPTIONS()
       );
       --__end2;
     }
