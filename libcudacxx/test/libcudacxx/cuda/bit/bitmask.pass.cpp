@@ -31,6 +31,7 @@ __host__ __device__ constexpr bool test()
   assert(cuda::bitmask<T>(3, 2) == 0b11000);
   assert(cuda::bitmask<T>(nl::digits - 1, 1) == (T{1} << (nl::digits - 1u)));
   assert(cuda::bitmask<T>(0, nl::digits) == all_ones);
+  assert(cuda::bitmask<T>(nl::digits, 0) == 0);
   return true;
 }
 
