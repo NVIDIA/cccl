@@ -33,6 +33,7 @@ THRUST_NAMESPACE_BEGIN
 //! underlying iterator cannot be incremented, decremented, or advanced (e.g., because those operations are only
 //! supported in device code).
 //!
+//!
 //! The following code snippet demonstrates how to create a \p offset_iterator:
 //!
 //! \code
@@ -54,15 +55,14 @@ THRUST_NAMESPACE_BEGIN
 //! }
 //! \endcode
 //!
-//! Combining a \p offset_iterator with \p cub::FutureValue can also be used to retrieve the offset from an iterator.
-//! However, such an \p offset_iterator cannot be moved anymore, since changes to the offset can not be written back.
+//! Alternatively, an \p offset_iterator can also use an iterator to retrieve the offset from an iterator. However, such
+//! an \p offset_iterator cannot be moved anymore by changing the offset, so it will move the base iterator instead.
 //!
 //! \code
 //! #include <thrust/iterator/offset_iterator.h>
 //! #include <thrust/fill.h>
 //! #include <thrust/functional.h>
 //! #include <thrust/device_vector.h>
-//! #include <cub/util_type.h>
 //!
 //! int main()
 //! {
@@ -70,7 +70,7 @@ THRUST_NAMESPACE_BEGIN
 //!   thrust::device_vector<int> data{1, 2, 3, 4};
 //!
 //!   thrust::device_vector<ptrdiff> offsets{1}; // offset is only available on device
-//!   auto offset = cub::FutureValue{thrust::make_transform_iterator(offsets.begin(), _1 * 2)};
+//!   auto offset = thrust::make_transform_iterator(offsets.begin(), _1 * 2);
 //!   thrust::offset_iterator iter(v.begin(), offset); // load and transform offset upon access
 //!   // iter is at position 2 (= 1 * 2) in data, and would return 3 in device code
 //!
@@ -110,38 +110,73 @@ public:
   //! \cond
 
 private:
+  static constexpr bool indirect_offset = ::cuda::std::indirectly_readable<Offset>;
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE auto offset_value() const
+  {
+    if constexpr (indirect_offset)
+    {
+      return static_cast<difference_type>(*m_offset);
+    }
+    else
+    {
+      return static_cast<difference_type>(m_offset);
+    }
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE reference dereference() const
   {
-    return *(this->base() + static_cast<difference_type>(m_offset));
+    return *(this->base() + offset_value());
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE bool equal(const offset_iterator& other) const
   {
-    return (this->base() + static_cast<difference_type>(m_offset))
-        == (other.base() + static_cast<difference_type>(other.m_offset));
+    return this->base() + offset_value() == other.base() + other.offset_value();
   }
 
   _CCCL_HOST_DEVICE void advance(difference_type n)
   {
-    m_offset += n;
+    if constexpr (indirect_offset)
+    {
+      this->base_reference() += n;
+    }
+    else
+    {
+      m_offset += n;
+    }
   }
 
   _CCCL_HOST_DEVICE void increment()
   {
-    ++m_offset;
+    if constexpr (indirect_offset)
+    {
+      ++this->base_reference();
+    }
+    else
+    {
+      ++m_offset;
+    }
   }
 
   _CCCL_HOST_DEVICE void decrement()
   {
-    --m_offset;
+    if constexpr (indirect_offset)
+    {
+      --this->base_reference();
+    }
+    else
+    {
+      --m_offset;
+    }
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE difference_type distance_to(const offset_iterator& other) const
   {
-    return (other.base() + static_cast<difference_type>(other.m_offset))
-         - (this->base() + static_cast<difference_type>(m_offset));
+    return (other.base() + other.offset_value()) - (this->base() + offset_value());
   }
 
   Offset m_offset;

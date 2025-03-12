@@ -1,5 +1,3 @@
-#include <cub/util_type.cuh>
-
 #include <thrust/distance.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/offset_iterator.h>
@@ -111,7 +109,7 @@ __global__ void TestOffsetIteratorDevice(thrust::offset_iterator<device_only_ite
   assert(iter2 != iter);
 }
 
-void TestOffsetIterator()
+void TestOffsetIteratorWithDeviceOnlyIterator()
 {
   thrust::device_vector<int> v{1, 2, 3, 4, 5};
   device_only_iterator base(thrust::raw_pointer_cast(v.data()));
@@ -119,32 +117,4 @@ void TestOffsetIterator()
   TestOffsetIteratorBoth(iter);
   TestOffsetIteratorDevice<<<1, 1>>>(iter);
 }
-DECLARE_UNITTEST(TestOffsetIterator);
-
-// this is not strictly a CUDA test, but it uses CUB
-template <typename Vector>
-void TestOffsetIteratorIndirectValue()
-{
-  typename Vector::difference_type offset;
-  Vector v{0, 1, 2, 3, 4, 5, 6, 7, 8};
-  thrust::offset_iterator iter(v.begin(), cub::FutureValue{&offset});
-  offset = 2;
-
-  ASSERT_EQUAL(*iter, 2);
-}
-DECLARE_VECTOR_UNITTEST(TestOffsetIteratorIndirectValue);
-
-// this is not strictly a CUDA test, but it uses CUB
-template <typename Vector>
-void TestOffsetIteratorIndirectValueFancyIterator()
-{
-  using thrust::placeholders::_1;
-
-  Vector v{0, 1, 2, 3, 4, 5, 6, 7, 8};
-  thrust::device_vector<typename Vector::difference_type> offsets{2};
-  auto it = thrust::make_transform_iterator(offsets.begin(), _1 * 3);
-  thrust::offset_iterator iter(v.begin(), cub::FutureValue{it});
-
-  ASSERT_EQUAL(*iter, 6);
-}
-DECLARE_VECTOR_UNITTEST(TestOffsetIteratorIndirectValueFancyIterator);
+DECLARE_UNITTEST(TestOffsetIteratorWithDeviceOnlyIterator);
