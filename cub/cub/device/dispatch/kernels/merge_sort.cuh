@@ -118,26 +118,26 @@ struct VSMemHelper
   using MergeSortVSMemHelperT = merge_sort_vsmem_helper_t<ActivePolicyT, Ts...>;
 
   template <typename ActivePolicyT, typename... Ts>
-  CUB_RUNTIME_FUNCTION static constexpr int BlockThreads(ActivePolicyT /*policy*/)
+  _CCCL_HOST_DEVICE static constexpr int BlockThreads(ActivePolicyT /*policy*/)
   {
     return MergeSortVSMemHelperT<ActivePolicyT, Ts...>::policy_t::BLOCK_THREADS;
   }
 
   template <typename ActivePolicyT, typename... Ts>
-  CUB_RUNTIME_FUNCTION static constexpr int ItemsPerTile(ActivePolicyT /*policy*/)
+  _CCCL_HOST_DEVICE static constexpr int ItemsPerTile(ActivePolicyT /*policy*/)
   {
     return MergeSortVSMemHelperT<ActivePolicyT, Ts...>::policy_t::ITEMS_PER_TILE;
   }
 
   template <typename ActivePolicyT, typename... Ts>
-  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t BlockSortVSMemPerBlock(ActivePolicyT /*policy*/)
+  _CCCL_HOST_DEVICE static constexpr ::cuda::std::size_t BlockSortVSMemPerBlock(ActivePolicyT /*policy*/)
   {
     return detail::vsmem_helper_impl<
       typename MergeSortVSMemHelperT<ActivePolicyT, Ts...>::block_sort_agent_t>::vsmem_per_block;
   }
 
   template <typename ActivePolicyT, typename... Ts>
-  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t MergeVSMemPerBlock(ActivePolicyT /*policy*/)
+  _CCCL_HOST_DEVICE static constexpr ::cuda::std::size_t MergeVSMemPerBlock(ActivePolicyT /*policy*/)
   {
     return detail::vsmem_helper_impl<
       typename MergeSortVSMemHelperT<ActivePolicyT, Ts...>::merge_agent_t>::vsmem_per_block;
