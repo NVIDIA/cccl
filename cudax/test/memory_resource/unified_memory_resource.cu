@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -22,15 +22,15 @@
 
 namespace cudax = cuda::experimental;
 
-using managed_resource = cudax::managed_memory_resource;
-static_assert(!cuda::std::is_trivial<managed_resource>::value, "");
-static_assert(!cuda::std::is_trivially_default_constructible<managed_resource>::value, "");
-static_assert(cuda::std::is_trivially_copy_constructible<managed_resource>::value, "");
-static_assert(cuda::std::is_trivially_move_constructible<managed_resource>::value, "");
-static_assert(cuda::std::is_trivially_copy_assignable<managed_resource>::value, "");
-static_assert(cuda::std::is_trivially_move_assignable<managed_resource>::value, "");
-static_assert(cuda::std::is_trivially_destructible<managed_resource>::value, "");
-static_assert(!cuda::std::is_empty<managed_resource>::value, "");
+using unified_resource = cudax::unified_memory_resource;
+static_assert(!cuda::std::is_trivial<unified_resource>::value, "");
+static_assert(!cuda::std::is_trivially_default_constructible<unified_resource>::value, "");
+static_assert(cuda::std::is_trivially_copy_constructible<unified_resource>::value, "");
+static_assert(cuda::std::is_trivially_move_constructible<unified_resource>::value, "");
+static_assert(cuda::std::is_trivially_copy_assignable<unified_resource>::value, "");
+static_assert(cuda::std::is_trivially_move_assignable<unified_resource>::value, "");
+static_assert(cuda::std::is_trivially_destructible<unified_resource>::value, "");
+static_assert(!cuda::std::is_empty<unified_resource>::value, "");
 
 static void ensure_managed_ptr(void* ptr)
 {
@@ -41,24 +41,24 @@ static void ensure_managed_ptr(void* ptr)
   CHECK(attributes.type == cudaMemoryTypeManaged);
 }
 
-TEST_CASE("managed_memory_resource construction", "[memory_resource]")
+TEST_CASE("unified_memory_resource construction", "[memory_resource]")
 {
   SECTION("Default construction")
   {
-    STATIC_REQUIRE(cuda::std::is_default_constructible_v<managed_resource>);
+    STATIC_REQUIRE(cuda::std::is_default_constructible_v<unified_resource>);
   }
 
   SECTION("Construct with flag")
   {
-    managed_resource defaulted{};
-    managed_resource with_flag{cudaMemAttachHost};
+    unified_resource defaulted{};
+    unified_resource with_flag{cudaMemAttachHost};
     CHECK(defaulted != with_flag);
   }
 }
 
-TEST_CASE("managed_memory_resource allocation", "[memory_resource]")
+TEST_CASE("unified_memory_resource allocation", "[memory_resource]")
 {
-  managed_resource res{};
+  unified_resource res{};
   cudax::stream stream{};
 
   { // allocate / deallocate
@@ -203,29 +203,29 @@ static_assert(cuda::mr::async_resource<async_resource<AccessibilityType::Host>>,
 static_assert(cuda::mr::async_resource<async_resource<AccessibilityType::Device>>, "");
 
 // test for cccl#2214: https://github.com/NVIDIA/cccl/issues/2214
-struct derived_managed_resource : cudax::managed_memory_resource
+struct derived_unified_resource : cudax::unified_memory_resource
 {
-  using cudax::managed_memory_resource::managed_memory_resource;
+  using cudax::unified_memory_resource::unified_memory_resource;
 };
-static_assert(cuda::mr::resource<derived_managed_resource>, "");
+static_assert(cuda::mr::resource<derived_unified_resource>, "");
 
-TEST_CASE("managed_memory_resource comparison", "[memory_resource]")
+TEST_CASE("unified_memory_resource comparison", "[memory_resource]")
 {
-  managed_resource first{};
-  { // comparison against a plain managed_memory_resource
-    managed_resource second{};
+  unified_resource first{};
+  { // comparison against a plain unified_memory_resource
+    unified_resource second{};
     CHECK((first == second));
     CHECK(!(first != second));
   }
 
-  { // comparison against a plain managed_memory_resource with a different pool
-    managed_resource second{cudaMemAttachHost};
+  { // comparison against a plain unified_memory_resource with a different pool
+    unified_resource second{cudaMemAttachHost};
     CHECK((first != second));
     CHECK(!(first == second));
   }
 
-  { // comparison against a managed_memory_resource wrapped inside a resource_ref<device_accessible>
-    managed_resource second{};
+  { // comparison against a unified_memory_resource wrapped inside a resource_ref<device_accessible>
+    unified_resource second{};
     cuda::mr::resource_ref<cudax::device_accessible> second_ref{second};
     CHECK((first == second_ref));
     CHECK(!(first != second_ref));
@@ -233,8 +233,8 @@ TEST_CASE("managed_memory_resource comparison", "[memory_resource]")
     CHECK(!(second_ref != first));
   }
 
-  { // comparison against a managed_memory_resource wrapped inside a async_resource_ref
-    managed_resource second{};
+  { // comparison against a unified_memory_resource wrapped inside a async_resource_ref
+    unified_resource second{};
     cuda::mr::async_resource_ref<cudax::device_accessible> second_ref{second};
 
     CHECK((first == second_ref));
@@ -243,7 +243,7 @@ TEST_CASE("managed_memory_resource comparison", "[memory_resource]")
     CHECK(!(second_ref != first));
   }
 
-  { // comparison against a different managed_resource through resource_ref
+  { // comparison against a different unified_resource through resource_ref
     resource<AccessibilityType::Host> host_resource{};
     resource<AccessibilityType::Device> device_resource{};
     CHECK(!(first == host_resource));
@@ -257,7 +257,7 @@ TEST_CASE("managed_memory_resource comparison", "[memory_resource]")
     CHECK((device_resource != first));
   }
 
-  { // comparison against a different managed_resource through resource_ref
+  { // comparison against a different unified_resource through resource_ref
     resource<AccessibilityType::Host> host_async_resource{};
     resource<AccessibilityType::Device> device_async_resource{};
     CHECK(!(first == host_async_resource));

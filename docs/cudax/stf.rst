@@ -327,7 +327,7 @@ high-bandwidth memory used by GPUs). CUDASTF refers to such conceptual
 data as *logical data*, an abstract handle for data that may get
 transparently transferred to or replicated over the different places
 used by CUDASTF tasks. When user code creates a logical data object from
-a user-provided object (e.g. an array of ``double``), they transfer the
+a user-provided object (e.g. an array of ``double``), they transfer the
 ownership of the original data to CUDASTF. As a result, any access to
 the original data should be performed through the logical data
 interface, as CUDASTF may transfer the logical data to a CUDA device
@@ -407,7 +407,7 @@ Write-back policy
 
 When a logical data object is destroyed, the original data instance is
 updated (unless the logical data was created without a reference value,
-e.g. from a shape). The result is only guaranteed to be available on the
+e.g. from a shape). The result is only guaranteed to be available on the
 corresponding data place when after the ``finalize()`` method was called
 on the context. Likewise, when calling ``finalize()`` a write-back
 mechanism is automatically issued on all logical data associated to the

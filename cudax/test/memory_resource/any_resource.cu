@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -116,10 +116,10 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::managed_memory_resource managed1{}, managed2{};
-      CHECK(managed1 == managed2);
-      cudax::any_resource<cudax::device_accessible> mr{managed1};
-      CHECK(mr == managed1);
+      cudax::unified_memory_resource unified1{}, unified2{};
+      CHECK(unified1 == unified2);
+      cudax::any_resource<cudax::device_accessible> mr{unified1};
+      CHECK(mr == unified1);
     }
     CHECK(this->counts == expected);
   }

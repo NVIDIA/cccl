@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -123,7 +123,7 @@ TEMPLATE_TEST_CASE(
   {
     static_assert(!cuda::std::is_copy_assignable<uninitialized_buffer>::value, "");
     {
-      cudax::managed_memory_resource other_resource{};
+      cudax::unified_memory_resource other_resource{};
       uninitialized_buffer input{other_resource, 42};
       uninitialized_buffer buf{resource, 1337};
       const auto* old_ptr       = buf.data();

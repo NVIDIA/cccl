@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -37,11 +37,19 @@
 #include <cuda/experimental/__memory_resource/properties.cuh>
 
 //! @file
-//! The \c managed_memory_resource class provides a memory resource that allocates pinned memory.
+//! The \c pinned_memory_resource class provides a memory resource that allocates pinned memory.
 namespace cuda::experimental
 {
 
-//! @brief pinned_memory_resource uses `cudaMallocHost` / `cudaFreeHost` for allocation / deallocation.
+//! @rst
+//! .. _cudax-memory-resource-pinned-memory-resource:
+//!
+//! Pinned memory resource
+//! ----------------------
+//!
+//! ``pinned_memory_resource`` uses `cudaMallocHost` / `cudaFreeHost` for allocation / deallocation.
+//!
+//! @endrst
 class pinned_memory_resource
 {
 private:
