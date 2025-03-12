@@ -82,16 +82,14 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int ilog10(_Tp __t) noexcept
   auto __log10_approx = static_cast<int>(__log10_f);
   if constexpr (sizeof(_Tp) <= 4)
   {
-    auto __ret = __log10_approx - (static_cast<uint32_t>(__t) < ::cuda::__power_of_10_32bit[__log10_approx]);
-    _CCCL_ASSUME(__ret <= _CUDA_VSTD::numeric_limits<_Tp>::digits / 3); // 2^X < 10^(x/3) -> 8^X < 10^x
-    return __ret;
+    __log10_approx -= static_cast<uint32_t>(__t) < ::cuda::__power_of_10_32bit[__log10_approx];
   }
   else
   {
-    auto __ret = __log10_approx - (static_cast<uint64_t>(__t) < ::cuda::__power_of_10_64bit[__log10_approx]);
-    _CCCL_ASSUME(__ret <= _CUDA_VSTD::numeric_limits<_Tp>::digits / 3);
-    return __ret;
+    __log10_approx -= static_cast<uint64_t>(__t) < ::cuda::__power_of_10_64bit[__log10_approx];
   }
+  _CCCL_ASSUME(__log10_approx <= _CUDA_VSTD::numeric_limits<_Tp>::digits / 3); // 2^X < 10^(x/3) -> 8^X < 10^x
+  return __log10_approx;
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
