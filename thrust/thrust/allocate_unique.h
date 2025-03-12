@@ -199,15 +199,14 @@ _CCCL_HOST_DEVICE tagged_deleter<Pointer, Lambda> make_tagged_deleter(Lambda&& l
 //! Creates a \p std::unique_ptr holding a new object of type \p T, constructed with \p args, using \p alloc as the
 //! allocator.
 template <typename T, typename Allocator, typename... Args>
-_CCCL_HOST std::unique_ptr<
-  T,
-  allocator_delete<T,
-                   typename detail::allocator_traits<
-                     ::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>::allocator_type>>
+_CCCL_HOST
+std::unique_ptr<T,
+                allocator_delete<T,
+                                 typename detail::allocator_traits<
+                                   ::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>::allocator_type>>
 allocate_unique(Allocator const& alloc, Args&&... args)
 {
-  using traits =
-    typename detail::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>;
+  using traits = typename detail::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>;
 
   typename traits::allocator_type alloc_T(alloc);
 
@@ -227,12 +226,12 @@ allocate_unique(Allocator const& alloc, Args&&... args)
 template <typename T, typename Allocator>
 _CCCL_HOST std::unique_ptr<
   T,
-  uninitialized_allocator_delete<T,
-                                 typename detail::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>::allocator_type>>
+  uninitialized_allocator_delete<
+    T,
+    typename detail::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>::allocator_type>>
 uninitialized_allocate_unique(Allocator const& alloc)
 {
-  using traits =
-    typename detail::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>;
+  using traits = typename detail::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>;
 
   typename traits::allocator_type alloc_T(alloc);
 
@@ -256,8 +255,7 @@ _CCCL_HOST std::unique_ptr<
                            Allocator>::type>::type>::template rebind_traits<T>::allocator_type>>
 allocate_unique_n(Allocator const& alloc, Size n, Args&&... args)
 {
-  using traits =
-    typename detail::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>;
+  using traits = typename detail::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>;
 
   typename traits::allocator_type alloc_T(alloc);
 
@@ -275,16 +273,14 @@ allocate_unique_n(Allocator const& alloc, Size n, Args&&... args)
 //! Creates a \p std::unique_ptr holding storage for an array of objects of type \p T without constructing them, using
 //! \p alloc as the allocator.
 template <typename T, typename Allocator, typename Size>
-_CCCL_HOST
-std::unique_ptr<T[],
-                uninitialized_array_allocator_delete<
-                  T,
-                  typename detail::allocator_traits<
-                    std::remove_cv_t<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>::allocator_type>>
-uninitialized_allocate_unique_n(Allocator const& alloc, Size n)
+  _CCCL_HOST std::unique_ptr < T[],
+  uninitialized_array_allocator_delete<
+    T,
+    typename detail::allocator_traits<
+      std::remove_cv_t<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>::allocator_type>>
+  uninitialized_allocate_unique_n(Allocator const& alloc, Size n)
 {
-  using traits =
-    typename detail::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>;
+  using traits = typename detail::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>;
 
   typename traits::allocator_type alloc_T(alloc);
 
