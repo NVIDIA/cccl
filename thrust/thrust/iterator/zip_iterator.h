@@ -195,6 +195,15 @@ public:
       : m_iterator_tuple(iterator_tuple)
   {}
 
+  //! This constructor creates a new \p zip_iterator from a pack of iterators.
+  //!
+  //! \param iterators A pack of iterators to zip.
+  template <typename... Iterators,
+            ::cuda::std::enable_if_t<(::cuda::std::input_or_output_iterator<Iterators> && ...), int> = 0>
+  _CCCL_HOST_DEVICE zip_iterator(Iterators... iterators)
+      : m_iterator_tuple(::cuda::std::move(iterators)...)
+  {}
+
   //! This copy constructor creates a new \p zip_iterator from another \p zip_iterator.
   //!
   //! \param other The \p zip_iterator to copy.
@@ -296,6 +305,13 @@ private:
   //! \endcond
 };
 
+template <typename... Iterators>
+_CCCL_HOST_DEVICE zip_iterator(_CUDA_VSTD::tuple<Iterators...>) -> zip_iterator<_CUDA_VSTD::tuple<Iterators...>>;
+
+template <typename... Iterators,
+          ::cuda::std::enable_if_t<(::cuda::std::input_or_output_iterator<Iterators> && ...), int> = 0>
+_CCCL_HOST_DEVICE zip_iterator(Iterators...) -> zip_iterator<_CUDA_VSTD::tuple<Iterators...>>;
+
 //! \p make_zip_iterator creates a \p zip_iterator from a \p tuple of iterators.
 //!
 //! \param t The \p tuple of iterators to copy.
@@ -308,17 +324,17 @@ make_zip_iterator(_CUDA_VSTD::tuple<Iterators...> t)
   return zip_iterator<_CUDA_VSTD::tuple<Iterators...>>(t);
 }
 
-//! \p make_zip_iterator creates a \p zip_iterator from
-//! iterators.
+//! \p make_zip_iterator creates a \p zip_iterator from iterators.
 //!
 //! \param its The iterators to copy.
 //! \return A newly created \p zip_iterator which zips the iterators.
 //!
 //! \see zip_iterator
-template <typename... Iterators>
+template <typename... Iterators,
+          ::cuda::std::enable_if_t<(::cuda::std::input_or_output_iterator<Iterators> && ...), int> = 0>
 inline _CCCL_HOST_DEVICE zip_iterator<_CUDA_VSTD::tuple<Iterators...>> make_zip_iterator(Iterators... its)
 {
-  return make_zip_iterator(_CUDA_VSTD::make_tuple(its...));
+  return zip_iterator<_CUDA_VSTD::tuple<Iterators...>>(::cuda::std::move(its)...);
 }
 
 //! \} // end fancyiterators
