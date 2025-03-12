@@ -21,7 +21,7 @@
 
 TEST_NV_DIAG_SUPPRESS(186)
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 template <cuda::std::size_t N>
 void test_char_pointer_ctor_throw()
 {
@@ -132,7 +132,7 @@ __host__ __device__ constexpr bool test()
 
 int main(int, char**)
 {
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
 #endif
 

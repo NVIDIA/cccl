@@ -26,7 +26,7 @@
 #include "test_macros.h"
 #include "variant_test_helpers.h"
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 void test_exceptions()
 {
   using V = cuda::std::variant<int, MakeEmptyT>;
@@ -35,7 +35,7 @@ void test_exceptions()
   makeEmpty(v);
   assert(v.valueless_by_exception());
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
@@ -56,9 +56,9 @@ int main(int, char**)
     assert(!v.valueless_by_exception());
   }
 #endif // _LIBCUDACXX_HAS_STRING
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }
