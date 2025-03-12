@@ -40,11 +40,6 @@ using OffsetT = long;
 static_assert(std::is_same_v<cub::detail::choose_signed_offset_t<OffsetT>, OffsetT>,
               "OffsetT must be signed int32 or int64");
 
-struct input_iterator_t;
-struct input1_iterator_t;
-struct input2_iterator_t;
-struct output_iterator_t;
-
 struct input_storage_t;
 struct input1_storage_t;
 struct input2_storage_t;
@@ -52,6 +47,11 @@ struct output_storage_t;
 
 namespace transform
 {
+
+constexpr auto input_iterator_name  = "input_iterator_t";
+constexpr auto input1_iterator_name = "input1_iterator_t";
+constexpr auto input2_iterator_name = "input2_iterator_t";
+constexpr auto output_iterator_name = "output_iterator_t";
 
 struct transform_runtime_tuning_policy
 {
@@ -95,32 +95,14 @@ transform_runtime_tuning_policy get_policy()
   return {256, 2, 1, 32};
 }
 
-std::string get_input_iterator_name()
+template <typename StorageT>
+const std::string get_iterator_name(cccl_iterator_t iterator, const std::string& name)
 {
-  std::string iterator_t;
-  check(nvrtcGetTypeName<input_iterator_t>(&iterator_t));
-  return iterator_t;
-}
-
-std::string get_input1_iterator_name()
-{
-  std::string iterator_t;
-  check(nvrtcGetTypeName<input1_iterator_t>(&iterator_t));
-  return iterator_t;
-}
-
-std::string get_input2_iterator_name()
-{
-  std::string iterator_t;
-  check(nvrtcGetTypeName<input2_iterator_t>(&iterator_t));
-  return iterator_t;
-}
-
-std::string get_output_iterator_name()
-{
-  std::string iterator_t;
-  check(nvrtcGetTypeName<output_iterator_t>(&iterator_t));
-  return iterator_t;
+  if (iterator.type == cccl_iterator_kind_t::CCCL_POINTER)
+  {
+    return cccl_type_enum_to_name<StorageT>(iterator.value_type.type, true);
+  }
+  return name;
 }
 
 std::string get_kernel_name(cccl_iterator_t input_it, cccl_iterator_t output_it, cccl_op_t /*op*/)
@@ -128,15 +110,8 @@ std::string get_kernel_name(cccl_iterator_t input_it, cccl_iterator_t output_it,
   std::string chained_policy_t;
   check(nvrtcGetTypeName<device_transform_policy>(&chained_policy_t));
 
-  const std::string input_iterator_t =
-    input_it.type == cccl_iterator_kind_t::CCCL_POINTER //
-      ? cccl_type_enum_to_name<input_storage_t>(input_it.value_type.type, true) //
-      : transform::get_input_iterator_name();
-
-  const std::string output_iterator_t =
-    (output_it.type == cccl_iterator_kind_t::CCCL_POINTER //
-       ? cccl_type_enum_to_name<output_storage_t>(output_it.value_type.type, true) //
-       : transform::get_output_iterator_name());
+  const std::string input_iterator_t  = get_iterator_name<input_storage_t>(input_it, input_iterator_name);
+  const std::string output_iterator_t = get_iterator_name<output_storage_t>(output_it, output_iterator_name);
 
   std::string offset_t;
   check(nvrtcGetTypeName<OffsetT>(&offset_t));
@@ -159,20 +134,9 @@ get_kernel_name(cccl_iterator_t input1_it, cccl_iterator_t input2_it, cccl_itera
   std::string chained_policy_t;
   check(nvrtcGetTypeName<device_transform_policy>(&chained_policy_t));
 
-  const std::string input1_iterator_t =
-    input1_it.type == cccl_iterator_kind_t::CCCL_POINTER //
-      ? cccl_type_enum_to_name<input1_storage_t>(input1_it.value_type.type, true) //
-      : transform::get_input1_iterator_name();
-
-  const std::string input2_iterator_t =
-    input2_it.type == cccl_iterator_kind_t::CCCL_POINTER //
-      ? cccl_type_enum_to_name<input2_storage_t>(input2_it.value_type.type, true) //
-      : transform::get_input2_iterator_name();
-
-  const std::string output_iterator_t =
-    (output_it.type == cccl_iterator_kind_t::CCCL_POINTER //
-       ? cccl_type_enum_to_name<output_storage_t>(output_it.value_type.type, true) //
-       : transform::get_output_iterator_name());
+  const std::string input1_iterator_t = get_iterator_name<input1_storage_t>(input1_it, input1_iterator_name);
+  const std::string input2_iterator_t = get_iterator_name<input2_storage_t>(input2_it, input2_iterator_name);
+  const std::string output_iterator_t = get_iterator_name<output_storage_t>(output_it, output_iterator_name);
 
   std::string offset_t;
   check(nvrtcGetTypeName<OffsetT>(&offset_t));
@@ -249,9 +213,9 @@ CUresult cccl_device_unary_transform_build(
     const auto output_it_value_t = cccl_type_enum_to_name<output_storage_t>(output_it.value_type.type);
     const auto offset_t          = cccl_type_enum_to_name(cccl_type_enum::CCCL_INT64);
     const std::string input_iterator_src =
-      make_kernel_input_iterator(offset_t, "input_iterator_t", input_it_value_t, input_it);
+      make_kernel_input_iterator(offset_t, transform::input_iterator_name, input_it_value_t, input_it);
     const std::string output_iterator_src =
-      make_kernel_output_iterator(offset_t, "output_iterator_t", output_it_value_t, output_it);
+      make_kernel_output_iterator(offset_t, transform::output_iterator_name, output_it_value_t, output_it);
     const std::string op_src = make_kernel_user_unary_operator(input_it_value_t, output_it_value_t, op);
 
     constexpr std::string_view src_template = R"XXX(
@@ -422,14 +386,13 @@ CUresult cccl_device_binary_transform_build(
 
     const auto output_it_value_t = cccl_type_enum_to_name<output_storage_t>(output_it.value_type.type);
     const auto offset_t          = cccl_type_enum_to_name(cccl_type_enum::CCCL_INT64);
-
     const std::string input1_iterator_src =
-      make_kernel_input_iterator(offset_t, "input1_iterator_t", input1_it_value_t, input1_it);
+      make_kernel_input_iterator(offset_t, transform::input1_iterator_name, input1_it_value_t, input1_it);
     const std::string input2_iterator_src =
-      make_kernel_input_iterator(offset_t, "input2_iterator_t", input2_it_value_t, input2_it);
+      make_kernel_input_iterator(offset_t, transform::input2_iterator_name, input2_it_value_t, input2_it);
 
     const std::string output_iterator_src =
-      make_kernel_output_iterator(offset_t, "output_iterator_t", output_it_value_t, output_it);
+      make_kernel_output_iterator(offset_t, transform::output_iterator_name, output_it_value_t, output_it);
     const std::string op_src =
       make_kernel_user_binary_operator(input1_it_value_t, input2_it_value_t, output_it_value_t, op);
 
