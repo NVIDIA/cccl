@@ -177,10 +177,7 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
     endif() # config_c2h_target
 
     add_executable(${test_target} "${test_src}")
-    if (CCCL_ENABLE_CUDAX)
-      target_link_libraries(${test_target} PRIVATE cccl.c2h.main CCCL::cudax)
-      target_compile_definitions(${test_target} PRIVATE _CUDA_MEMORY_RESOURCE LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
-    endif()
+    target_link_libraries(${test_target} PRIVATE cccl.c2h.main)
     add_dependencies(${config_meta_target} ${test_target})
 
     add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>")
