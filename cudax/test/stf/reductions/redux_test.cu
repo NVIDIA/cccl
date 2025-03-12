@@ -33,7 +33,7 @@ int main()
     add<<<1, 1, 0, stream>>>(s.data_handle(), 1);
   };
 
-  ctx.task(exec_place::host, handle.read())->*[](auto stream, auto s) {
+  ctx.task(exec_place::host(), handle.read())->*[](auto stream, auto s) {
     cuda_safe_call(cudaStreamSynchronize(stream));
     EXPECT(s(0) == 17 + 42 + 1);
   };
