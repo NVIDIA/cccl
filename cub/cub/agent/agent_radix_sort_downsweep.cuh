@@ -742,7 +742,7 @@ struct AgentRadixSortDownsweep
     else
     {
       // Process full tiles of tile_items
-      _CCCL_PRAGMA_UNROLL(1)
+      _CCCL_PRAGMA_NOUNROLL()
       while (block_end - block_offset >= TILE_ITEMS)
       {
         ProcessTile<true>(block_offset);

@@ -291,7 +291,7 @@ struct AgentUniqueByKey
 
     // Preventing loop unrolling helps avoid perf degradation when switching from signed to unsigned 32-bit offset
     // types
-    _CCCL_PRAGMA_UNROLL(1)
+    _CCCL_PRAGMA_NOUNROLL()
     for (int item = threadIdx.x; item < num_tile_selections; item += BLOCK_THREADS)
     {
       items_out[num_selections_prefix + item] = GetShared(tag)[item];
