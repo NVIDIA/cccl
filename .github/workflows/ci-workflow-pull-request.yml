@@ -211,6 +211,16 @@ jobs:
       contents: read
     uses: ./.github/workflows/build-matx.yml
 
+  build-stdpar:
+    name: Build NVHPC stdpar
+    secrets: inherit
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/build-stdpar.yml
+    with:
+      enable_slack_alerts: true
+
   # Check all other job statuses. This job gates branch protection checks.
   ci:
     name: CI
