@@ -212,9 +212,9 @@ void cpuConjugateGrad(int* I, int* J, float* val, float* x, float* Ax, float* p,
 
 template <typename thread_hierarchy_t>
 __device__ void gpuSpMV(
-  slice<int> I,
-  slice<int> J,
-  slice<float> val,
+  slice<const int> I,
+  slice<const int> J,
+  slice<const float> val,
   int nnz,
   int num_rows,
   float alpha,
