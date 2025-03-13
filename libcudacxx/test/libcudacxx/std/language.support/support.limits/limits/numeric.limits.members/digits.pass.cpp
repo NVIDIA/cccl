@@ -62,8 +62,8 @@ int main(int, char**)
   test<__nv_bfloat16, 8>();
 #endif // _CCCL_HAS_NVBF16
 #if _CCCL_HAS_NVFP8()
-  test<__nv_fp8_e4m3, 3>();
-  test<__nv_fp8_e5m2, 2>();
+  test<__nv_fp8_e4m3, 4>();
+  test<__nv_fp8_e5m2, 3>();
 #endif // _CCCL_HAS_NVFP8()
 
   return 0;
