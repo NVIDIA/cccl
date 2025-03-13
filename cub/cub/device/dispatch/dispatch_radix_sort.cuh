@@ -546,17 +546,17 @@ struct DispatchRadixSort
     using AtomicOffsetT  = PortionOffsetT;
 
     // compute temporary storage size
-    constexpr int RADIX_BITS                = policy.RadixBits(policy.Onesweep());
-    constexpr int RADIX_DIGITS              = 1 << RADIX_BITS;
-    constexpr int ONESWEEP_ITEMS_PER_THREAD = policy.Onesweep().ItemsPerThread();
-    constexpr int ONESWEEP_BLOCK_THREADS    = policy.Onesweep().BlockThreads();
-    constexpr int ONESWEEP_TILE_ITEMS       = ONESWEEP_ITEMS_PER_THREAD * ONESWEEP_BLOCK_THREADS;
+    const int RADIX_BITS                = policy.RadixBits(policy.Onesweep());
+    const int RADIX_DIGITS              = 1 << RADIX_BITS;
+    const int ONESWEEP_ITEMS_PER_THREAD = policy.Onesweep().ItemsPerThread();
+    const int ONESWEEP_BLOCK_THREADS    = policy.Onesweep().BlockThreads();
+    const int ONESWEEP_TILE_ITEMS       = ONESWEEP_ITEMS_PER_THREAD * ONESWEEP_BLOCK_THREADS;
     // portions handle inputs with >=2**30 elements, due to the way lookback works
     // for testing purposes, one portion is <= 2**28 elements
-    constexpr PortionOffsetT PORTION_SIZE = ((1 << 28) - 1) / ONESWEEP_TILE_ITEMS * ONESWEEP_TILE_ITEMS;
-    int num_passes                        = ::cuda::ceil_div(end_bit - begin_bit, RADIX_BITS);
-    OffsetT num_portions                  = static_cast<OffsetT>(::cuda::ceil_div(num_items, PORTION_SIZE));
-    PortionOffsetT max_num_blocks         = ::cuda::ceil_div(
+    const PortionOffsetT PORTION_SIZE = ((1 << 28) - 1) / ONESWEEP_TILE_ITEMS * ONESWEEP_TILE_ITEMS;
+    int num_passes                    = ::cuda::ceil_div(end_bit - begin_bit, RADIX_BITS);
+    OffsetT num_portions              = static_cast<OffsetT>(::cuda::ceil_div(num_items, PORTION_SIZE));
+    PortionOffsetT max_num_blocks     = ::cuda::ceil_div(
       static_cast<int>(_CUDA_VSTD::min(num_items, static_cast<OffsetT>(PORTION_SIZE))), ONESWEEP_TILE_ITEMS);
 
     size_t value_size         = KEYS_ONLY ? 0 : sizeof(ValueT);
@@ -619,9 +619,9 @@ struct DispatchRadixSort
         break;
       }
 
-      constexpr int HISTO_BLOCK_THREADS = policy.Histogram().BlockThreads();
-      int histo_blocks_per_sm           = 1;
-      auto histogram_kernel             = kernel_source.RadixSortHistogramKernel();
+      const int HISTO_BLOCK_THREADS = policy.Histogram().BlockThreads();
+      int histo_blocks_per_sm       = 1;
+      auto histogram_kernel         = kernel_source.RadixSortHistogramKernel();
 
       error = CubDebug(
         cudaOccupancyMaxActiveBlocksPerMultiprocessor(&histo_blocks_per_sm, histogram_kernel, HISTO_BLOCK_THREADS, 0));
@@ -657,7 +657,7 @@ struct DispatchRadixSort
       }
 
       // exclusive sums to determine starts
-      constexpr int SCAN_BLOCK_THREADS = policy.ExclusiveSum().BlockThreads();
+      const int SCAN_BLOCK_THREADS = policy.BlockThreads(policy.ExclusiveSum());
 
 // log exclusive_sum_kernel configuration
 #ifdef CUB_DEBUG_LOG
@@ -696,8 +696,8 @@ struct DispatchRadixSort
         int num_bits = _CUDA_VSTD::min(end_bit - current_bit, RADIX_BITS);
         for (OffsetT portion = 0; portion < num_portions; ++portion)
         {
-          PortionOffsetT portion_num_items =
-            static_cast<PortionOffsetT>(_CUDA_VSTD::min(num_items - portion * PORTION_SIZE, OffsetT{PORTION_SIZE}));
+          PortionOffsetT portion_num_items = static_cast<PortionOffsetT>(
+            _CUDA_VSTD::min(num_items - portion * PORTION_SIZE, static_cast<OffsetT>(PORTION_SIZE)));
 
           PortionOffsetT num_blocks = ::cuda::ceil_div(portion_num_items, ONESWEEP_TILE_ITEMS);
 

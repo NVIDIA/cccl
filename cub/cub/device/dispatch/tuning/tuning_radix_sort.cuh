@@ -317,6 +317,12 @@ struct RadixSortPolicyWrapper<
     return PolicyT::RADIX_BITS;
   }
 
+  template <typename PolicyT>
+  CUB_RUNTIME_FUNCTION static constexpr int BlockThreads(PolicyT /*policy*/)
+  {
+    return PolicyT::BLOCK_THREADS;
+  }
+
   CUB_DEFINE_SUB_POLICY_GETTER(SingleTile);
   CUB_DEFINE_SUB_POLICY_GETTER(Onesweep);
   CUB_DEFINE_SUB_POLICY_GETTER(Upsweep);
