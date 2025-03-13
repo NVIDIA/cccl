@@ -65,9 +65,10 @@ TEST_CASE("Mdspan Fill", "[data_manipulation]")
     check_result_and_erase(stream, cuda::std::span(buffer.data(), buffer.size()));
   }
   {
+    cudax::pinned_memory_resource host_resource;
     using static_extents = cuda::std::extents<size_t, 2, 3, 4>;
     auto size            = cuda::std::layout_left::mapping<static_extents>().required_span_size();
-    cudax::weird_buffer<cuda::std::mdspan<int, static_extents>> buffer(cudax::pinned_memory_resource{}, size);
+    cudax::weird_buffer<cuda::std::mdspan<int, static_extents>> buffer(host_resource, size);
 
     cudax::fill_bytes(stream, buffer, fill_byte);
     check_result_and_erase(stream, cuda::std::span(buffer.data, buffer.size));

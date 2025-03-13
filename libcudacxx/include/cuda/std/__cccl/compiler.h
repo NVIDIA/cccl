@@ -125,4 +125,20 @@
 #  endif // !__ELF__
 #endif // _CCCL_COMPILER(NVHPC) || _CCCL_COMPILER(NVRTC)
 
+#if (_CCCL_COMPILER(NVCC) && defined(__CUDA_ARCH__)) || _CCCL_COMPILER(NVHPC) || _CCCL_COMPILER(NVRTC) \
+  || _CCCL_COMPILER(CLANG)
+#  define _CCCL_PRAGMA_UNROLL(_N)    _CCCL_PRAGMA(unroll _N)
+#  define _CCCL_PRAGMA_UNROLL_FULL() _CCCL_PRAGMA(unroll)
+#elif _CCCL_COMPILER(GCC, >=, 8)
+// gcc supports only #pragma GCC unroll, but that causes problems when compiling with nvcc. So, we use #pragma unroll
+// when compiling device code, and #pragma GCC unroll when compiling host code, but we need to suppress the warning
+// about the unknown pragma for nvcc.
+// #pragma GCC unroll does not support full unrolling, so we use the maximum value that it supports.
+#  define _CCCL_PRAGMA_UNROLL(_N)    _CCCL_NV_DIAG_SUPPRESS(1675) _CCCL_PRAGMA(GCC unroll _N) _CCCL_NV_DIAG_DEFAULT(1675)
+#  define _CCCL_PRAGMA_UNROLL_FULL() _CCCL_PRAGMA_UNROLL(65534)
+#else // ^^^ has pragma unroll support ^^^ / vvv no pragma unroll support vvv
+#  define _CCCL_PRAGMA_UNROLL(_N)
+#  define _CCCL_PRAGMA_UNROLL_FULL()
+#endif // ^^^ no pragma unroll support ^^^
+
 #endif // __CCCL_COMPILER_H

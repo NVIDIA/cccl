@@ -8,10 +8,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__MEMORY_RESOURCE_PROPERTIES_CUH
-#define _CUDAX__MEMORY_RESOURCE_PROPERTIES_CUH
+#ifndef _CUDAX__STREAM_INTERNAL_STREAMS
+#define _CUDAX__STREAM_INTERNAL_STREAMS
 
 #include <cuda/std/detail/__config>
+#include <cuda_runtime_api.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -21,15 +22,17 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__memory_resource/get_property.h>
-#include <cuda/__memory_resource/properties.h>
+#include <cuda/experimental/__stream/stream.cuh>
 
 namespace cuda::experimental
 {
-
-using ::cuda::mr::device_accessible;
-using ::cuda::mr::host_accessible;
+//! @brief internal stream used for memory allocations, no real blocking work
+//! should ever be pushed into it
+inline ::cuda::stream_ref __cccl_allocation_stream()
+{
+  static ::cuda::experimental::stream __stream{};
+  return __stream;
+}
 
 } // namespace cuda::experimental
-
-#endif //_CUDAX__MEMORY_RESOURCE_PROPERTIES_CUH
+#endif // _CUDAX__STREAM_INTERNAL_STREAMS
