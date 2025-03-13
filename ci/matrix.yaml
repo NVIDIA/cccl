@@ -8,7 +8,8 @@ workflows:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'clang16']}
   #
   override:
-    - {jobs: ['build'], std: 'max', ctk: '12.5', cxx: 'nvhpc'}
+    - {jobs: ['test'], project: 'stdpar', std: 'all', ctk: '12.5', cxx: 'nvhpc'}
+    - {jobs: ['test'], project: 'stdpar', std: 'all', ctk: '12.5', cxx: 'nvhpc', cpu: 'arm64'}
 
   pull_request:
     # Old CTK/compiler
@@ -239,6 +240,9 @@ projects:
     stds: [17, 20]
     job_map: { test: ['test_cpu', 'test_gpu'] }
   cudax:
+    stds: [17, 20]
+  stdpar:
+    name: 'NVHPC stdpar'
     stds: [17, 20]
   python:
     name: "cuda (python)"

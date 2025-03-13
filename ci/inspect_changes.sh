@@ -26,6 +26,7 @@ subprojects=(
   cub
   thrust
   cudax
+  stdpar
   python
   cccl_c_parallel
   c2h
@@ -38,6 +39,7 @@ declare -A dependencies=(
   [cub]="cccl libcudacxx thrust c2h"
   [thrust]="cccl libcudacxx cub"
   [cudax]="cccl libcudacxx"
+  [stdpar]="cccl libcudacxx cub thrust"
   [python]="cccl libcudacxx cub thrust cccl_c_parallel"
   [cccl_c_parallel]="cccl libcudacxx cub thrust"
   [c2h]="cccl libcudacxx cub thrust"
