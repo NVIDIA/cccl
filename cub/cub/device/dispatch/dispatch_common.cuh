@@ -13,9 +13,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/iterator/iterator_adaptor.h>
-#include <thrust/iterator/iterator_facade.h>
-
 CUB_NAMESPACE_BEGIN
 
 // Options for specifying memory aliasing
