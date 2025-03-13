@@ -75,8 +75,8 @@ __device__ double grid_dot_result = 0.0;
 void genTridiag(slice<int> I, slice<int> J, slice<float> val, int N, int nz)
 {
   I(0) = 0, J(0) = 0, J(1) = 1;
-  val(0) = (float) rand() / RAND_MAX + 10.0f;
-  val(1) = (float) rand() / RAND_MAX;
+  val(0) = (float) rand() / (float) RAND_MAX + 10.0f;
+  val(1) = (float) rand() / (float) RAND_MAX;
   int start;
 
   for (int i = 1; i < N; i++)
@@ -100,11 +100,11 @@ void genTridiag(slice<int> I, slice<int> J, slice<float> val, int N, int nz)
     }
 
     val(start)     = val(start - 1);
-    val(start + 1) = (float) rand() / RAND_MAX + 10.0f;
+    val(start + 1) = (float) rand() / (float) RAND_MAX + 10.0f;
 
     if (i < N - 1)
     {
-      val(start + 2) = (float) rand() / RAND_MAX;
+      val(start + 2) = (float) rand() / (float) RAND_MAX;
     }
   }
 
@@ -212,9 +212,9 @@ void cpuConjugateGrad(int* I, int* J, float* val, float* x, float* Ax, float* p,
 
 template <typename thread_hierarchy_t>
 __device__ void gpuSpMV(
-  slice<int> I,
-  slice<int> J,
-  slice<float> val,
+  slice<const int> I,
+  slice<const int> J,
+  slice<const float> val,
   int nnz,
   int num_rows,
   float alpha,
@@ -316,9 +316,9 @@ gpuScaleVectorAndSaxpy(slice<float> x, slice<float> y, float a, float scale, int
 template <typename thread_hierarchy_t>
 __device__ void multiGpuConjugateGradient(
   thread_hierarchy_t t,
-  slice<int> I,
-  slice<int> J,
-  slice<float> val,
+  slice<const int> I,
+  slice<const int> J,
+  slice<const float> val,
   slice<float> x,
   slice<float> Ax,
   slice<float> p,
@@ -458,9 +458,9 @@ int main()
     handle_dot_result.write())
       ->*[=]
     _CCCL_DEVICE(auto t,
-                 slice<int> I,
-                 slice<int> J,
-                 slice<float> val,
+                 slice<const int> I,
+                 slice<const int> J,
+                 slice<const float> val,
                  slice<float> x,
                  slice<float> Ax,
                  slice<float> p,
