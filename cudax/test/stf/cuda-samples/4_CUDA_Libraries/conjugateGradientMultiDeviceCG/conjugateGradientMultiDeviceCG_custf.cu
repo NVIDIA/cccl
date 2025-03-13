@@ -316,9 +316,9 @@ gpuScaleVectorAndSaxpy(slice<float> x, slice<float> y, float a, float scale, int
 template <typename thread_hierarchy_t>
 __device__ void multiGpuConjugateGradient(
   thread_hierarchy_t t,
-  slice<int> I,
-  slice<int> J,
-  slice<float> val,
+  slice<const int> I,
+  slice<const int> J,
+  slice<const float> val,
   slice<float> x,
   slice<float> Ax,
   slice<float> p,
