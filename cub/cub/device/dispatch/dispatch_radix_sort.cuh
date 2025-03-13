@@ -1088,10 +1088,14 @@ struct DispatchRadixSort
       // Small, single tile size
       return InvokeSingleTile(kernel_source.RadixSortSingleTileKernel(), wrapped_policy);
     }
-    else
+    else if (wrapped_policy.IsOnesweep())
     {
       // Regular size
-      return InvokeManyTiles(detail::bool_constant_v<wrapped_policy.IsOnesweep()>, wrapped_policy);
+      return InvokeManyTiles(detail::bool_constant_v<true>, wrapped_policy);
+    }
+    else
+    {
+      return InvokeManyTiles(detail::bool_constant_v<false>, wrapped_policy);
     }
   }
 
