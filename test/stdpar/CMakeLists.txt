@@ -12,7 +12,7 @@ enable_testing()
 
 find_package(CCCL CONFIG REQUIRED
   NO_DEFAULT_PATH # Only check the explicit HINTS below:
-  HINTS "${CMAKE_CURRENT_LIST_DIR}/../../../lib/cmake/cccl/"
+  HINTS "${CMAKE_CURRENT_LIST_DIR}/../../lib/cmake/cccl/"
 )
 
 file(GLOB test_files
