@@ -3,7 +3,7 @@
 Execution model
 ===============
 
-CUDA C++ aims to provide `_parallel forward progress_ [intro.progress.9] <https://eel.is/c++draft/intro.progress#9>`__
+CUDA C++ aims to provide `parallel forward progress [intro.progress.9] <https://eel.is/c++draft/intro.progress#9>`__
 for all device threads of execution, facilitating the parallelization of pre-existing C++ applications with CUDA C++.
 
 .. dropdown:: `[intro.progress] <https://eel.is/c++draft/intro.progress>`__
@@ -20,10 +20,10 @@ for all device threads of execution, facilitating the parallelization of pre-exi
       the thread will eventually make progress if it has not yet executed any execution step; once this thread has executed a step,
       it provides concurrent forward progress guarantees.
 
-      [Note 6: This does not specify a requirement for when to start this thread of execution, which will typically be specified by the entity
-      that creates this thread of execution. For example, a thread of execution that provides concurrent forward progress guarantees and executes
-      tasks from a set of tasks in an arbitrary order, one after the other, satisfies the requirements of parallel forward progress for these
-      tasks. — end note]
+        [Note 6: This does not specify a requirement for when to start this thread of execution, which will typically be specified by the entity
+        that creates this thread of execution. For example, a thread of execution that provides concurrent forward progress guarantees and executes
+        tasks from a set of tasks in an arbitrary order, one after the other, satisfies the requirements of parallel forward progress for these
+        tasks. — end note]
 
 
 The CUDA C++ Programming Language is an extension of the C++ Programming Language.
@@ -40,10 +40,10 @@ The forward progress provided by threads of execution created by the host implem
 execute `main <https://en.cppreference.com/w/cpp/language/main_function>`__, `std::thread <https://en.cppreference.com/w/cpp/thread/thread>`__,
 and `std::jthread <https://en.cppreference.com/w/cpp/thread/jthread>`__ is implementation-defined behavior of the host
 implementation `[intro.progress] <https://eel.is/c++draft/intro.progress>`__.
-General-purpose host implementations should provide _concurrent forward progress _.
+General-purpose host implementations should provide concurrent forward progress.
 
-If the host implementation provides `_concurrent forward progress_ [intro.progress.7] <https://eel.is/c++draft/intro.progress#7>`__,
-then CUDA C++ provides `_parallel forward progress_ [intro.progress.9] <https://eel.is/c++draft/intro.progress#9>`__ for device threads.
+If the host implementation provides `concurrent forward progress [intro.progress.7] <https://eel.is/c++draft/intro.progress#7>`__,
+then CUDA C++ provides `parallel forward progress [intro.progress.9] <https://eel.is/c++draft/intro.progress#9>`__ for device threads.
 
 
 .. _libcudacxx-extended-api-execution-model-device-threads:
@@ -58,8 +58,9 @@ Once a device thread makes progress:
 - Otherwise, all device threads in its `thread-block cluster <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#thread-block-clusters>`__
   shall eventually make progress.
 
-  [Note: Threads in other thread-block clusters are not guaranteed to eventually make progress. - end note.]
-  [Note: This implies that all device threads within its thread block shall eventually make progress. - end note.]
+    [Note: Threads in other thread-block clusters are not guaranteed to eventually make progress. - end note.]
+
+    [Note: This implies that all device threads within its thread block shall eventually make progress. - end note.]
 
 
 Modify `[intro.progress.1] <https://eel.is/c++draft/intro.progress>`__ as follows (modifications in **bold**):
@@ -80,19 +81,19 @@ The implementation may assume that any **host** thread will eventually do one of
     3. **perform an access through a volatile glvalue except if the designated object has automatic storage duration, or**
     4. **perform a synchronization operation or an atomic read operation except if the designated object has automatic storage duration.**
 
-  [Note: Some current limitations of device threads relative to host threads
-  are implementation defects known to us, that we may fix over time.
-  Examples include the undefined behavior that arises from device threads
-  that eventually only perform volatile or atomic operations
-  on automatic storage duration objects.
-  However, other limitations of device threads relative to host threads
-  are intentional choices.  They enable performance optimizations
-  that would not be possible if device threads followed the C++ Standard strictly.
-  For example, providing forward progress to programs
-  that eventually only perform atomic writes or fences
-  would degrade overall performance for little practical benefit. - end note.]
+    [Note: Some current limitations of device threads relative to host threads
+    are implementation defects known to us, that we may fix over time.
+    Examples include the undefined behavior that arises from device threads
+    that eventually only perform volatile or atomic operations
+    on automatic storage duration objects.
+    However, other limitations of device threads relative to host threads
+    are intentional choices.  They enable performance optimizations
+    that would not be possible if device threads followed the C++ Standard strictly.
+    For example, providing forward progress to programs
+    that eventually only perform atomic writes or fences
+    would degrade overall performance for little practical benefit. - end note.]
 
-.. dropdown:: Examples of forward progress guarantee differences between host and device threads due to modifications to [intro.progress.1].
+.. dropdown:: Examples of forward progress guarantee differences between host and device threads due to modifications to `[intro.progress.1] <https://eel.is/c++draft/intro.progress#1>`__.
 
     The following examples refer to the itemized sub-clauses of the implementation assumptions for host and device threads above
     using "host.threads.<id>" and "device.threads.<id>", respectively.
@@ -155,17 +156,17 @@ The implementation may assume that any **host** thread will eventually do one of
 CUDA APIs
 ---------
 
-A host or device thread CUDA API call shall eventually either return or ensure at least once device thread makes progress.
+A CUDA API call shall eventually either return or ensure at least one device thread makes progress.
 
 CUDA query functions (e.g. `cudaStreamQuery <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__STREAM.html#group__CUDART__STREAM_1g2021adeb17905c7ec2a3c1bf125c5435>`__,
 `cudaEventQuery <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__EVENT.html#group__CUDART__EVENT_1g2bf738909b4a059023537eaa29d8a5b7>`__, etc.) shall not consistently
 return ``cudaErrorNotReady`` without a device thread making progress.
 
-[Note: The device thread need not be "related" to the API call, e.g., an API operating on one stream or process may ensure progress of a device thread on another stream or process. - end note.]
+  [Note: The device thread need not be "related" to the API call, e.g., an API operating on one stream or process may ensure progress of a device thread on another stream or process. - end note.]
 
-[Note: A simple but not sufficient method to test a program for CUDA API Forward Progress conformance is to run them with following environment variables set: ``CUDA_DEVICE_MAX_CONNECTIONS=1 CUDA_LAUNCH_BLOCKING=1``, and then check that the program still terminates.
-If it does not, the program has a bug.
-This method is not sufficient because it does not catch all Forward Progress bugs, but it does catch many such bugs. - end note.]
+  [Note: A simple but not sufficient method to test a program for CUDA API Forward Progress conformance is to run them with following environment variables set: ``CUDA_DEVICE_MAX_CONNECTIONS=1 CUDA_LAUNCH_BLOCKING=1``, and then check that the program still terminates.
+  If it does not, the program has a bug.
+  This method is not sufficient because it does not catch all Forward Progress bugs, but it does catch many such bugs. - end note.]
 
 .. dropdown:: Examples of CUDA API forward progress guarantees.
 
@@ -240,17 +241,17 @@ This method is not sufficient because it does not catch all Forward Progress bug
             return cudaDeviceSynchronize();
         }
 
-.. _libcudacxx-extended-api-execution-model-stream-ordering:
+.. _libcudacxx-extended-api-execution-model-cuda-dependencies:
 
-Stream and event ordering
--------------------------
+Dependencies
+~~~~~~~~~~~~
 
 A device thread shall not start until all its dependencies have completed.
 
-[Note: Dependencies that prevent device threads from starting to make progress can be created, for example, via CUDA Stream `Command <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#streams>`__s.
-These may include dependencies on the completion of, among others, `CUDA Events <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#events>`__ and `CUDA Kernels <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#kernels>`__. - end note.]
+  [Note: Dependencies that prevent device threads from starting to make progress can be created, for example, via `CUDA Stream Commands <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#streams>`__ .
+  These may include dependencies on the completion of, among others, `CUDA Events <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#events>`__ and `CUDA Kernels <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#kernels>`__ . - end note.]
 
-.. dropdown:: Examples of CUDA API forward progress guarantees due to stream and event ordering
+.. dropdown:: Examples of CUDA API forward progress guarantees due to dependencies
 
     .. code:: cuda
 	:number-lines:

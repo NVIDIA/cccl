@@ -30,9 +30,12 @@
 #  pragma system_header
 #endif // no system header
 
+//! Deprecated [Since 3.0]
 #define THRUST_UNKNOWN 0
-#define THRUST_FALSE   0
-#define THRUST_TRUE    1
+//! Deprecated [Since 3.0]
+#define THRUST_FALSE 0
+//! Deprecated [Since 3.0]
+#define THRUST_TRUE 1
 
 //! Deprecated [Since 3.0]
 #define THRUST_UNUSED_VAR(expr) \
@@ -41,4 +44,5 @@
     (void) (expr);              \
   } while (0)
 
+//! Deprecated [Since 3.0]
 #define THRUST_PREVENT_MACRO_SUBSTITUTION

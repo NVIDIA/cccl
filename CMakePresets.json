@@ -67,7 +67,6 @@
         "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": true,
         "CUB_ENABLE_TESTING": true,
         "CUB_ENABLE_EXAMPLES": true,
-        "CUB_SEPARATE_CATCH2": true,
         "CUB_ENABLE_DIALECT_CPP17": true,
         "CUB_ENABLE_DIALECT_CPP20": true,
         "THRUST_ENABLE_MULTICONFIG": true,
@@ -180,7 +179,6 @@
         "CCCL_ENABLE_CUB": true,
         "CUB_ENABLE_TESTING": true,
         "CUB_ENABLE_EXAMPLES": true,
-        "CUB_SEPARATE_CATCH2": true,
         "CUB_ENABLE_DIALECT_CPP17": false,
         "CUB_ENABLE_DIALECT_CPP20": false
       }

@@ -63,11 +63,11 @@ public:
     void* result = nullptr;
 
     // That is a miss, we need to do an allocation
-    if (memory_node == data_place::host)
+    if (memory_node.is_host())
     {
       cuda_safe_call(cudaMallocHost(&result, s));
     }
-    else if (memory_node == data_place::managed)
+    else if (memory_node.is_managed())
     {
       cuda_safe_call(cudaMallocManaged(&result, s));
     }
@@ -120,13 +120,13 @@ public:
       op.set_symbol("cudaFreeAsync");
     }
 
-    if (memory_node == data_place::host)
+    if (memory_node.is_host())
     {
       // XXX TODO defer to deinit (or implement a blocking policy)?
       cuda_safe_call(cudaStreamSynchronize(dstream.stream));
       cuda_safe_call(cudaFreeHost(ptr));
     }
-    else if (memory_node == data_place::managed)
+    else if (memory_node.is_managed())
     {
       cuda_safe_call(cudaStreamSynchronize(dstream.stream));
       cuda_safe_call(cudaFree(ptr));
@@ -617,7 +617,7 @@ public:
   {
     typename owning_container_of<T>::type out;
 
-    task(exec_place::host, ldata.read()).set_symbol("wait")->*[&](cudaStream_t stream, auto data) {
+    task(exec_place::host(), ldata.read()).set_symbol("wait")->*[&](cudaStream_t stream, auto data) {
       cuda_safe_call(cudaStreamSynchronize(stream));
       out = owning_container_of<T>::get_value(data);
     };
@@ -1146,7 +1146,7 @@ inline void unit_test_host_pfor()
 {
   stream_ctx ctx;
   auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
-  ctx.parallel_for(exec_place::host, lA.shape(), lA.write())->*[](size_t i, slice<size_t> A) {
+  ctx.parallel_for(exec_place::host(), lA.shape(), lA.write())->*[](size_t i, slice<size_t> A) {
     A(i) = 2 * i;
   };
   ctx.host_launch(lA.read())->*[](auto A) {
@@ -1176,7 +1176,7 @@ inline void unit_test_pfor_mix_host_dev()
     sx(pos) = 17 * pos + 4;
   };
 
-  ctx.parallel_for(exec_place::host, lx.shape(), lx.rw())->*[=](size_t pos, auto sx) {
+  ctx.parallel_for(exec_place::host(), lx.shape(), lx.rw())->*[=](size_t pos, auto sx) {
     sx(pos) = sx(pos) * sx(pos);
   };
 
@@ -1203,7 +1203,7 @@ inline void unit_test_untyped_place_pfor()
 {
   stream_ctx ctx;
 
-  exec_place where = exec_place::host;
+  exec_place where = exec_place::host();
 
   auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
   // We have to put both __host__ __device__ qualifiers as this is resolved

@@ -818,7 +818,7 @@ host.
 The first argument passed to ``ctx.task`` is called an *execution place*
 and tells CUDASTF where the task is expected to execute.
 ``exec_place::device(id)`` means that the task will run on device
-``id``, and ``exec_place::host`` specifies that the task will execute on
+``id``, and ``exec_place::host()`` specifies that the task will execute on
 the host.
 
 Regardless of the *execution place*, it is important to note that the
@@ -826,7 +826,7 @@ task’s body (i.e., the contents of the lambda function) corresponds to
 CPU code that is expected to launch computation asynchronously. When
 using ``exec_place::device(id)``, CUDASTF will automatically set the
 current CUDA device to ``id`` when the task is started, and restore the
-previous current device when the task ends. ``exec_place::host`` does
+previous current device when the task ends. ``exec_place::host()`` does
 not affect the current CUDA device.
 
 .. code:: cpp
@@ -845,7 +845,7 @@ not affect the current CUDA device.
        inc_kernel<<<1, 1, 0, stream>>>(sX);
    };
 
-   ctx.task(exec_place::host, lX.read())->*[](cudaStream_t stream, auto sX) {
+   ctx.task(exec_place::host(), lX.read())->*[](cudaStream_t stream, auto sX) {
        cudaStreamSynchronize(stream);
        assert(sX(0) == 44);
    };
@@ -897,7 +897,7 @@ for the second task.
        ...
    };
 
-   ctx.task(exec_place::host, lA.rw())->*[](cudaStream_t s, auto a) {
+   ctx.task(exec_place::host(), lA.rw())->*[](cudaStream_t s, auto a) {
        ...
    };
 
@@ -905,11 +905,11 @@ The code above is equivalent with:
 
 .. code:: cpp
 
-   ctx.task(exec_place::device(0), lA.rw(data_place::affine))->*[](cudaStream_t s, auto a) {
+   ctx.task(exec_place::device(0), lA.rw(data_place::affine()))->*[](cudaStream_t s, auto a) {
        ...
    };
 
-   ctx.task(exec_place::device(0), lA.rw(data_place::affine))->*[](cudaStream_t s, auto a) {
+   ctx.task(exec_place::device(0), lA.rw(data_place::affine()))->*[](cudaStream_t s, auto a) {
        ...
    };
 
@@ -921,7 +921,7 @@ The affinity can also be made explicit:
        ...
    };
 
-   ctx.task(exec_place::device(0), lA.rw(data_place::host))->*[](cudaStream_t s, auto a) {
+   ctx.task(exec_place::device(0), lA.rw(data_place::host()))->*[](cudaStream_t s, auto a) {
        ...
    };
 
@@ -932,7 +932,7 @@ device ``0``:
 
 .. code:: cpp
 
-   ctx.task(exec_place::device(0), lA.rw(data_place::host))->*[](cudaStream_t s, auto a) {
+   ctx.task(exec_place::device(0), lA.rw(data_place::host()))->*[](cudaStream_t s, auto a) {
        ...
    };
 
@@ -947,7 +947,7 @@ on a device:
 
 .. code:: cpp
 
-   ctx.task(exec_place::host, lA.rw(data_place::device(0)))->*[](cudaStream_t s, auto a) {
+   ctx.task(exec_place::host(), lA.rw(data_place::device(0)))->*[](cudaStream_t s, auto a) {
        ...
    };
 
@@ -1814,7 +1814,7 @@ when calling ``get``.
 
     // Get a read-only copy of the frozen data on other data places
     auto dX1 = frozen_ld.get(data_place::device(1), stream);
-    auto hX = frozen_ld.get(data_place::host, stream);
+    auto hX = frozen_ld.get(data_place::host(), stream);
 
     fx.unfreeze(stream);
 
@@ -2249,8 +2249,8 @@ Syntax:
 
 - **Data Places**: Specify where a logical data in the data dependencies should be located:
 
-  - `data_place::affine` (default): Locate data on the data place affine to the execution place (e.g., device memory when running on a CUDA device).
-  - `data_place::managed`: Use managed memory.
+  - `data_place::affine()` (default): Locate data on the data place affine to the execution place (e.g., device memory when running on a CUDA device).
+  - `data_place::managed()`: Use managed memory.
   - `data_place::device(i)`: Put data in the memory of the i-th CUDA device (which may be different from the current device or the device of the execution place).
 
 - **Access Modes**:
@@ -2277,7 +2277,7 @@ Syntax:
 
   - `exec_place::current_device()` (default): Run on current CUDA device.
   - `exec_place::device(ID)`: Run on CUDA device identified by its index.
-  - `exec_place::host`: Run on the host (Note: this is providing a CUDA stream which should be used to submit CUDA callbacks. For example, users should typically use the `host_launch` API instead).
+  - `exec_place::host()`: Run on the host (Note: this is providing a CUDA stream which should be used to submit CUDA callbacks. For example, users should typically use the `host_launch` API instead).
 
 Examples:
 

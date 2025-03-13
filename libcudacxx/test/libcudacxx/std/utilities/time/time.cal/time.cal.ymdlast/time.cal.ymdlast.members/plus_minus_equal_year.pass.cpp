@@ -63,8 +63,8 @@ int main(int, char**)
   using year_month_day_last = cuda::std::chrono::year_month_day_last;
   using years               = cuda::std::chrono::years;
 
-  ASSERT_NOEXCEPT(cuda::std::declval<year_month_day_last&>() += cuda::std::declval<years>());
-  ASSERT_NOEXCEPT(cuda::std::declval<year_month_day_last&>() -= cuda::std::declval<years>());
+  static_assert(noexcept(cuda::std::declval<year_month_day_last&>() += cuda::std::declval<years>()));
+  static_assert(noexcept(cuda::std::declval<year_month_day_last&>() -= cuda::std::declval<years>()));
 
   ASSERT_SAME_TYPE(year_month_day_last&,
                    decltype(cuda::std::declval<year_month_day_last&>() += cuda::std::declval<years>()));

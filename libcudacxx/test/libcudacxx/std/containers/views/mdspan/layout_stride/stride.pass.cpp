@@ -30,13 +30,13 @@ __host__ __device__ constexpr void test_stride(cuda::std::array<typename E::inde
   using M = cuda::std::layout_stride::mapping<E>;
   M m(E(args...), strides);
 
-  ASSERT_NOEXCEPT(m.stride(0));
+  static_assert(noexcept(m.stride(0)));
   for (size_t r = 0; r < E::rank(); r++)
   {
     assert(strides[r] == m.stride(r));
   }
 
-  ASSERT_NOEXCEPT(m.strides());
+  static_assert(noexcept(m.strides()));
   auto strides_out = m.strides();
   static_assert(cuda::std::is_same<decltype(strides_out), cuda::std::array<typename E::index_type, E::rank()>>::value,
                 "");

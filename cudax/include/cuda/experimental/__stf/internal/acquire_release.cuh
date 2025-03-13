@@ -51,7 +51,7 @@ namespace cuda::experimental::stf
  *         prerequisites for the task to start execution.
  *
  * @note The function `EXPECT`s the task to be in the setup phase and the execution place
- *       not to be `exec_place::device_auto`.
+ *       not to be `exec_place::device_auto()`.
  * @note Dependencies are sorted by logical data addresses to prevent deadlocks.
  * @note For tasks with multiple dependencies on the same logical data, only one
  *       instance of the data is used, and its access mode is determined by combining
@@ -62,7 +62,7 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
   EXPECT(get_task_phase() == task::phase::setup);
 
   const auto eplace = get_exec_place();
-  EXPECT(eplace != exec_place::device_auto);
+  _CCCL_ASSERT(eplace != exec_place::device_auto(), "");
   // If there are any extra dependencies to fulfill
   auto result = get_input_events();
 
@@ -134,7 +134,7 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
     // The affine data place is set at the task level, it can be inherited
     // from the execution place, or be some composite data place set up in
     // a parallel_for construct, for example
-    const data_place& dplace = it->get_dplace() == data_place::affine ? get_affine_data_place() : it->get_dplace();
+    const data_place& dplace = it->get_dplace().is_affine() ? get_affine_data_place() : it->get_dplace();
 
     const instance_id_t instance_id =
       mode == access_mode::relaxed ? d.find_unused_instance_id(dplace) : d.find_instance_id(dplace);

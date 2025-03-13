@@ -46,69 +46,19 @@
 #include <thrust/iterator/iterator_traits.h>
 
 #include <cuda/std/cstddef>
-#include <cuda/std/limits>
 #include <cuda/std/type_traits>
 #include <cuda/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
-// forward declaration of counting_iterator
 template <typename Incrementable, typename System, typename Traversal, typename Difference>
 class counting_iterator;
 
 namespace detail
 {
-template <typename T>
-struct num_digits
-    : eval_if<::cuda::std::numeric_limits<T>::is_specialized,
-              integral_constant<int, ::cuda::std::numeric_limits<T>::digits>,
-              integral_constant<int,
-                                sizeof(T) * ::cuda::std::numeric_limits<unsigned char>::digits
-                                  - (::cuda::std::numeric_limits<T>::is_signed ? 1 : 0)>>::type
-{}; // end num_digits
-
-template <typename Integer>
-struct integer_difference
-//: eval_if<
-//    sizeof(Integer) >= sizeof(intmax_t),
-//    eval_if<
-//      is_signed<Integer>::value,
-//      identity_<Integer>,
-//      identity_<intmax_t>
-//    >,
-//    eval_if<
-//      sizeof(Integer) < sizeof(std::ptrdiff_t),
-//      identity_<std::ptrdiff_t>,
-//      identity_<intmax_t>
-//    >
-//  >
-{
-private:
-
-public:
-  using type =
-    typename eval_if<::cuda::std::numeric_limits<Integer>::is_signed
-                       && (!::cuda::std::numeric_limits<Integer>::is_bounded
-                           || (int(::cuda::std::numeric_limits<Integer>::digits) + 1 >= num_digits<intmax_t>::value)),
-                     identity_<Integer>,
-                     eval_if<int(::cuda::std::numeric_limits<Integer>::digits) + 1 < num_digits<int>::value,
-                             identity_<int>,
-                             eval_if<int(::cuda::std::numeric_limits<Integer>::digits) + 1 < num_digits<long>::value,
-                                     identity_<long>,
-                                     identity_<intmax_t>>>>::type;
-}; // end integer_difference
-
 template <typename Number>
-struct numeric_difference
-    : eval_if<::cuda::std::is_integral<Number>::value, integer_difference<Number>, identity_<Number>>
-{}; // end numeric_difference
-
-template <typename Number>
-_CCCL_HOST_DEVICE typename numeric_difference<Number>::type numeric_distance(Number x, Number y)
-{
-  using difference_type = typename numeric_difference<Number>::type;
-  return difference_type(y) - difference_type(x);
-} // end numeric_distance
+using counting_iterator_difference_type =
+  ::cuda::std::_If<::cuda::std::is_integral_v<Number> && sizeof(Number) < sizeof(int), int, ::cuda::std::ptrdiff_t>;
 
 template <typename Incrementable, typename System, typename Traversal, typename Difference>
 struct make_counting_iterator_base
@@ -116,19 +66,9 @@ struct make_counting_iterator_base
   using system =
     typename eval_if<::cuda::std::is_same<System, use_default>::value, identity_<any_system_tag>, identity_<System>>::type;
 
-  using traversal = replace_if_use_default<
-    Traversal,
-    eval_if<is_numeric<Incrementable>::value, identity_<random_access_traversal_tag>, iterator_traversal<Incrementable>>>;
-
-  // unlike Boost, we explicitly use std::ptrdiff_t as the difference type
-  // for floating point counting_iterators
+  using traversal = replace_if_use_default<Traversal, ::cuda::std::type_identity<random_access_traversal_tag>>;
   using difference =
-    replace_if_use_default<Difference,
-                           eval_if<is_numeric<Incrementable>::value,
-                                   eval_if<::cuda::std::is_integral<Incrementable>::value,
-                                           numeric_difference<Incrementable>,
-                                           identity_<::cuda::std::ptrdiff_t>>,
-                                   lazy_trait<it_difference_t, Incrementable>>>;
+    replace_if_use_default<Difference, ::cuda::std::type_identity<counting_iterator_difference_type<Incrementable>>>;
 
   // our implementation departs from Boost's in that counting_iterator::dereference
   // returns a copy of its counter, rather than a reference to it. returning a reference
@@ -142,50 +82,7 @@ struct make_counting_iterator_base
                      traversal,
                      Incrementable,
                      difference>;
-}; // end counting_iterator_base
-
-template <typename Difference, typename Incrementable1, typename Incrementable2>
-struct iterator_distance
-{
-  _CCCL_HOST_DEVICE static Difference distance(Incrementable1 x, Incrementable2 y)
-  {
-    return y - x;
-  }
 };
-
-template <typename Difference, typename Incrementable1, typename Incrementable2>
-struct number_distance
-{
-  _CCCL_HOST_DEVICE static Difference distance(Incrementable1 x, Incrementable2 y)
-  {
-    return static_cast<Difference>(numeric_distance(x, y));
-  }
-};
-
-template <typename Difference, typename Incrementable1, typename Incrementable2, typename Enable = void>
-struct counting_iterator_equal
-{
-  _CCCL_HOST_DEVICE static bool equal(Incrementable1 x, Incrementable2 y)
-  {
-    return x == y;
-  }
-};
-
-// specialization for floating point equality
-template <typename Difference, typename Incrementable1, typename Incrementable2>
-struct counting_iterator_equal<Difference,
-                               Incrementable1,
-                               Incrementable2,
-                               ::cuda::std::enable_if_t<::cuda::std::is_floating_point<Incrementable1>::value
-                                                        || ::cuda::std::is_floating_point<Incrementable2>::value>>
-{
-  _CCCL_HOST_DEVICE static bool equal(Incrementable1 x, Incrementable2 y)
-  {
-    using d = number_distance<Difference, Incrementable1, Incrementable2>;
-    return d::distance(x, y) == 0;
-  }
-};
-
 } // namespace detail
 
 //! \addtogroup iterators
@@ -316,24 +213,32 @@ private:
   }
 
   // note that we implement equal specially for floating point counting_iterator
-  template <typename OtherIncrementable, typename OtherSystem, typename OtherTraversal, typename OtherDifference>
+  template <typename OtherSystem, typename OtherTraversal, typename OtherDifference>
   _CCCL_HOST_DEVICE bool
-  equal(counting_iterator<OtherIncrementable, OtherSystem, OtherTraversal, OtherDifference> const& y) const
+  equal(counting_iterator<Incrementable, OtherSystem, OtherTraversal, OtherDifference> const& y) const
   {
-    using e = detail::counting_iterator_equal<difference_type, Incrementable, OtherIncrementable>;
-    return e::equal(this->base(), y.base());
+    if constexpr (::cuda::is_floating_point_v<Incrementable>)
+    {
+      return distance_to(y) == 0;
+    }
+    else
+    {
+      return this->base() == y.base();
+    }
   }
 
-  template <class OtherIncrementable>
+  template <typename OtherSystem, typename OtherTraversal, typename OtherDifference>
   _CCCL_HOST_DEVICE difference_type
-  distance_to(counting_iterator<OtherIncrementable, System, Traversal, Difference> const& y) const
+  distance_to(counting_iterator<Incrementable, OtherSystem, OtherTraversal, OtherDifference> const& y) const
   {
-    using d = typename detail::eval_if<
-      detail::is_numeric<Incrementable>::value,
-      detail::identity_<detail::number_distance<difference_type, Incrementable, OtherIncrementable>>,
-      detail::identity_<detail::iterator_distance<difference_type, Incrementable, OtherIncrementable>>>::type;
-
-    return d::distance(this->base(), y.base());
+    if constexpr (::cuda::std::is_integral<Incrementable>::value)
+    {
+      return static_cast<difference_type>(y.base()) - static_cast<difference_type>(this->base());
+    }
+    else
+    {
+      return y.base() - this->base();
+    }
   }
 
   //! \endcond

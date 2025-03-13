@@ -1,13 +1,13 @@
 .. _libcudacxx-extended-api-math-ceil-div:
 
-``ceil_div`` Ceiling division
-=============================
+``cuda::ceil_div``
+==================
 
 .. code:: cuda
 
    template <typename T, typename U>
-   [[nodiscard]] __host__ __device__ inline
-   constexpr cuda::std::common_type_t<T, U> ceil_div(T value, U divisor) noexcept;
+   [[nodiscard]] __host__ __device__ inline constexpr
+   cuda::std::common_type_t<T, U> ceil_div(T value, U divisor) noexcept;
 
 The function computes the ceiling division between two integral or enumerator values :math:`ceil(\frac{value}{base\_multiple})`.
 
@@ -20,10 +20,14 @@ The function computes the ceiling division between two integral or enumerator va
 
 Divides ``value`` by ``divisor``. If ``value`` is not a multiple of ``divisor`` rounds the result up to the next integer value.
 
+**Constraints**
+
+- ``T`` and ``U`` are integer types or enumerators.
+
 **Preconditions**
 
-- *Compile-time*: ``T`` and ``U`` are integral types (including 128-bit integers) or enumerators.
-- *Run-time*: ``value >= 0`` and ``divisor > 0``.
+- ``value >= 0``
+- ``divisor > 0``
 
 **Performance considerations**
 

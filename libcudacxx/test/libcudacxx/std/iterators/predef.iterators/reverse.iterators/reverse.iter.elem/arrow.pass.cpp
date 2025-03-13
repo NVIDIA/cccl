@@ -112,7 +112,7 @@ public:
   }
 };
 
-STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL C gC[1];
+STATIC_TEST_GLOBAL_VAR constexpr C gC[1];
 
 int main(int, char**)
 {

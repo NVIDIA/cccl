@@ -171,6 +171,7 @@ doxygen_predefined = [
     "__forceinline__",
     "__declspec(x)=",
     "__align__(x)=",
+    "__cccl_lib_mdspan",
     "CCCL_IGNORE_DEPRECATED_CPP_DIALECT",
     "CUB_DISABLE_NAMESPACE_MAGIC",
     "CUB_IGNORE_NAMESPACE_MAGIC_ERROR",

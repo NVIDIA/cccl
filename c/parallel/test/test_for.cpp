@@ -164,12 +164,6 @@ extern "C" __device__ void op(large_state_t* state, int* a) {
   REQUIRE(invocation_count == num_items);
 }
 
-template <class T>
-struct constant_iterator_state_t
-{
-  T value;
-};
-
 // TODO:
 /*
 TEST_CASE("for works with iterators", "[for]")
