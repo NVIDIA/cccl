@@ -51,6 +51,7 @@ declare -A project_names=(
   [cub]="CUB"
   [thrust]="Thrust"
   [cudax]="CUDA Experimental"
+  [stdpar]="stdpar"
   [python]="python"
   [cccl_c_parallel]="CCCL C Parallel Library"
   [c2h]="Catch2Helper"
@@ -61,6 +62,7 @@ declare -A project_names=(
 # of any subproject directory.
 declare -A project_dirs=(
   [cccl_c_parallel]="c/parallel"
+  [stdpar]="test/stdpar"
 )
 
 # Changes to files / directories listed here are ignored when checking if the

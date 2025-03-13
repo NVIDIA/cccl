@@ -7,7 +7,7 @@ cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/../..";
 
 # Get the current CCCL info:
 readonly cccl_repo="${PWD}"
-readonly workdir="${cccl_repo}/libcudacxx/test/stdpar"
+readonly workdir="${cccl_repo}/test/stdpar"
 
 mkdir -p "${workdir}"
 cd "${workdir}"

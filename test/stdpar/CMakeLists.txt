@@ -3,6 +3,10 @@ cmake_minimum_required(VERSION 3.21)
 # NOTE: this is build outside of the libcu++ test harness
 project(CCCL_STDPAR_TESTS LANGUAGES CXX)
 
+if (NOT CMAKE_CXX_COMPILER_ID STREQUAL NVHPC)
+  message(FATAL_ERROR "The stdpar tests require nvc++ for CMAKE_CXX_COMPILER.")
+endif()
+
 # Enable testing for the project
 enable_testing()
 
