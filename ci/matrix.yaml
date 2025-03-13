@@ -244,6 +244,8 @@ projects:
   stdpar:
     name: 'NVHPC stdpar'
     stds: [17, 20]
+    # These jobs are small enough that we just build on the GPU runner.
+    job_map: { build: [], test: ['test_nobuild'] }
   python:
     name: "cuda (python)"
     job_map: { build: [], test: ['test_nobuild'] }
