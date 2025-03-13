@@ -46,7 +46,6 @@
 #include <cub/detail/device_double_buffer.cuh>
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/device/device_partition.cuh>
-#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_sort.cuh>
 #include <cub/thread/thread_sort.cuh>
 #include <cub/util_debug.cuh>
