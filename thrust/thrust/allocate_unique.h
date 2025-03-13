@@ -273,12 +273,12 @@ allocate_unique_n(Allocator const& alloc, Size n, Args&&... args)
 //! Creates a \p std::unique_ptr holding storage for an array of objects of type \p T without constructing them, using
 //! \p alloc as the allocator.
 template <typename T, typename Allocator, typename Size>
-  _CCCL_HOST std::unique_ptr < T[],
+_CCCL_HOST std::unique_ptr<
+  T[],
   uninitialized_array_allocator_delete<
     T,
-    typename detail::allocator_traits<
-      std::remove_cv_t<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>::allocator_type>>
-  uninitialized_allocate_unique_n(Allocator const& alloc, Size n)
+    typename detail::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>::allocator_type>>
+uninitialized_allocate_unique_n(Allocator const& alloc, Size n)
 {
   using traits = typename detail::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>;
 
