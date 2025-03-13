@@ -46,7 +46,6 @@
 
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/type_traits.cuh> // for cub::detail::invoke_result_t
-#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/reduce.cuh>
 #include <cub/device/dispatch/kernels/segmented_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
@@ -666,28 +665,26 @@ struct DeviceSegmentedReduceKernelSource
  *   value type
  */
 
-template <
-  typename InputIteratorT,
-  typename OutputIteratorT,
-  typename BeginOffsetIteratorT,
-  typename EndOffsetIteratorT,
-  typename OffsetT,
-  typename ReductionOpT,
-  typename InitT        = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>,
-  typename AccumT       = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::it_value_t<InputIteratorT>, InitT>,
-  typename PolicyHub    = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
-  typename KernelSource = detail::reduce::DeviceSegmentedReduceKernelSource<
-    typename PolicyHub::MaxPolicy,
-    InputIteratorT,
-    detail::offset_iterator<OutputIteratorT, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>>,
-    detail::offset_input_iterator<BeginOffsetIteratorT,
-                                  THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>>,
-    detail::offset_input_iterator<EndOffsetIteratorT, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>>,
-    OffsetT,
-    ReductionOpT,
-    InitT,
-    AccumT>,
-  typename KernelLauncherFactory = detail::TripleChevronFactory>
+template <typename InputIteratorT,
+          typename OutputIteratorT,
+          typename BeginOffsetIteratorT,
+          typename EndOffsetIteratorT,
+          typename OffsetT,
+          typename ReductionOpT,
+          typename InitT  = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>,
+          typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::it_value_t<InputIteratorT>, InitT>,
+          typename PolicyHub    = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
+          typename KernelSource = detail::reduce::DeviceSegmentedReduceKernelSource<
+            typename PolicyHub::MaxPolicy,
+            InputIteratorT,
+            OutputIteratorT,
+            BeginOffsetIteratorT,
+            EndOffsetIteratorT,
+            OffsetT,
+            ReductionOpT,
+            InitT,
+            AccumT>,
+          typename KernelLauncherFactory = detail::TripleChevronFactory>
 struct DispatchSegmentedReduce
 {
   //---------------------------------------------------------------------------
@@ -825,12 +822,6 @@ struct DispatchSegmentedReduce
         const auto num_current_segments =
           ::cuda::std::min(num_segments_per_invocation, num_segments - current_seg_offset);
 
-        auto current_begin_offset = detail::offset_input_iterator{
-          d_begin_offsets, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>{current_seg_offset}};
-        auto current_end_offset = detail::offset_input_iterator{
-          d_end_offsets, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>{current_seg_offset}};
-        auto current_out_it = detail::offset_iterator{
-          d_out, THRUST_NS_QUALIFIER::constant_iterator<const ::cuda::std::int64_t>{current_seg_offset}};
 // Log device_reduce_sweep_kernel configuration
 #ifdef CUB_DEBUG_LOG
         _CubLog("Invoking SegmentedDeviceReduceKernel<<<%ld, %d, 0, %lld>>>(), "
@@ -845,8 +836,13 @@ struct DispatchSegmentedReduce
         // Invoke DeviceReduceKernel
         launcher_factory(
           static_cast<::cuda::std::uint32_t>(num_current_segments), policy.SegmentedReduce().BlockThreads(), 0, stream)
-          .doit(
-            segmented_reduce_kernel, d_in, current_out_it, current_begin_offset, current_end_offset, reduction_op, init);
+          .doit(segmented_reduce_kernel,
+                d_in,
+                d_out + current_seg_offset,
+                d_begin_offsets + current_seg_offset,
+                d_end_offsets + current_seg_offset,
+                reduction_op,
+                init);
 
         // Check for failure to launch
         error = CubDebug(cudaPeekAtLastError());
