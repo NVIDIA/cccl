@@ -801,9 +801,9 @@ public:
   static constexpr bool is_specialized = true;
 
   static constexpr bool is_signed   = true;
-  static constexpr int digits       = 3;
+  static constexpr int digits       = 4;
   static constexpr int digits10     = 0;
-  static constexpr int max_digits10 = 2;
+  static constexpr int max_digits10 = 3;
   _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_FP8_LIMITS type min() noexcept
   {
     return __make_value(static_cast<__nv_fp8_storage_t>(0x08u));
@@ -885,7 +885,7 @@ public:
   static constexpr bool is_specialized = true;
 
   static constexpr bool is_signed   = true;
-  static constexpr int digits       = 2;
+  static constexpr int digits       = 3;
   static constexpr int digits10     = 0;
   static constexpr int max_digits10 = 2;
   _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_FP8_LIMITS type min() noexcept
