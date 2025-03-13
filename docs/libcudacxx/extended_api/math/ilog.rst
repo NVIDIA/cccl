@@ -1,9 +1,9 @@
 .. _libcudacxx-extended-api-math-ilog:
 
-``cuda::ceil_div``
-==================
+``cuda::ilog2`` and ``cuda::ilog10``
+====================================
 
-.. code:: cuda
+.. code:: cpp
 
    template <typename T>
    [[nodiscard]] __host__ __device__ inline constexpr
@@ -38,16 +38,21 @@ The functions compute the logarithm to the base 2 and 10 respectively of an inte
 The function performs the following operations in device code:
 
 - ``ilog2``: ``FLO``
-- ``ilog10``: ``FLO``, ``FMUL``, ``FRND.CEIL``, ``F2I``, constant memory lookup
+- ``ilog10``: ``FLO``, ``FMUL``, ``F2I``, constant memory lookup, ``SEL``, ``IADD``
 
 Example
 -------
 
-.. code:: cuda
+.. code:: cpp
 
     #include <cuda/cmath>
+    #include <cuda/std/cassert>
 
     __global__ void ilog_kernel() {
+        assert(cuda::ilog2(20) == 4);
+        assert(cuda::ilog2(32) == 5);
+        assert(cuda::ilog10(100) == 2);
+        assert(cuda::ilog2(2000) == 3);
     }
 
     int main() {
