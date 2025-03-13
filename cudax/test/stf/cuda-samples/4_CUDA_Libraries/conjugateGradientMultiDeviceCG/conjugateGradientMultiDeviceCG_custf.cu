@@ -458,9 +458,9 @@ int main()
     handle_dot_result.write())
       ->*[=]
     _CCCL_DEVICE(auto t,
-                 slice<int> I,
-                 slice<int> J,
-                 slice<float> val,
+                 slice<const int> I,
+                 slice<const int> J,
+                 slice<const float> val,
                  slice<float> x,
                  slice<float> Ax,
                  slice<float> p,
