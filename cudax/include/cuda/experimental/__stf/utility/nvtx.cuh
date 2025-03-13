@@ -30,6 +30,8 @@
 #  include <nvtx3/nvToolsExt.h>
 #endif
 
+#include <cuda/std/utility>
+
 namespace cuda::experimental::stf
 {
 
@@ -54,7 +56,7 @@ public:
 
   // Move constructor
   nvtx_range(nvtx_range&& other) noexcept
-      : active(::std::exchange(other.active, false))
+      : active(::cuda::std::exchange(other.active, false))
   {}
 
   // Move assignment
@@ -63,7 +65,7 @@ public:
     if (this != &other)
     {
       end(); // Ensure the current range is properly closed
-      active = std::exchange(other.active, false);
+      active = ::cuda::std::exchange(other.active, false);
     }
     return *this;
   }
