@@ -20,11 +20,6 @@ from ..iterators._iterators import IteratorBase
 from ..typing import DeviceArrayLike, GpuStruct
 
 
-def _dtype_validation(dt1, dt2):
-    if dt1 != dt2:
-        raise TypeError(f"dtype mismatch: __init__={dt1}, __call__={dt2}")
-
-
 class _Reduce:
     # TODO: constructor shouldn't require concrete `d_in`, `d_out`:
     def __init__(

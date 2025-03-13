@@ -17,12 +17,14 @@ from ._cy_bindings import (
     CommonData,
     Iterator,
     IteratorKind,
+    IteratorStateView,
     Op,
     OpKind,
+    Pointer,
+    PointerProxy,
     TypeEnum,
     TypeInfo,
     Value,
-    pointer_as_bytes,
 )
 from ._utils.protocols import get_data_pointer, get_dtype, is_contiguous
 from .iterators._iterators import IteratorBase
@@ -83,7 +85,7 @@ def _device_array_to_cccl_iter(array: DeviceArrayLike) -> Iterator:
         # Note: this is slightly slower, but supports all ndarray-like objects
         # as long as they support CAI
         # TODO: switch to use gpumemoryview once it's ready
-        pointer_as_bytes(array.__cuda_array_interface__["data"][0]),
+        state=array.__cuda_array_interface__["data"][0],
     )
 
 
@@ -110,11 +112,11 @@ def _iterator_to_cccl_iter(it: IteratorBase) -> Iterator:
     )
     return Iterator(
         alignment,
-        OpKind.STATEFUL,
+        IteratorKind.ITERATOR,
         advance_op,
         deref_op,
         _numba_type_to_info(it.value_type),
-        state=bytes(it.state),
+        state=IteratorStateView(it.state, size, it),
     )
 
 
@@ -150,6 +152,7 @@ def to_cccl_iter(array_or_iterator) -> Iterator:
 
 def to_cccl_value_state(array_or_struct: np.ndarray | GpuStruct) -> bytes:
     if isinstance(array_or_struct, np.ndarray):
+        # makes a copy here
         data = bytes(np.atleast_1d(array_or_struct).view(np.uint8))
         return data
     else:
@@ -181,9 +184,9 @@ def to_cccl_op(op: Callable, sig) -> Op:
 def set_cccl_iterator_state(cccl_it: Iterator, input_it):
     if cccl_it.type == IteratorKind.POINTER:
         ptr = get_data_pointer(input_it)
-        cccl_it.state = pointer_as_bytes(ptr)
+        cccl_it.state = Pointer(PointerProxy(ptr, input_it))
     else:
-        cccl_it.state = input_it.state
+        cccl_it.state = Pointer(PointerProxy(input_it.state, input_it))
 
 
 @functools.lru_cache()

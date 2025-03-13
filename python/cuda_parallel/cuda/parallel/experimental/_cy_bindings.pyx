@@ -2,10 +2,16 @@
 # cython: language_level=3
 # cython: linetrace=True
 
-from libc.string cimport memset
+from libc.string cimport memset, memcpy
 from libc.stdint cimport uint8_t, uint32_t
 from cpython.bytes cimport PyBytes_FromStringAndSize
 
+from cpython.buffer cimport (
+    Py_buffer, PyBUF_SIMPLE, PyBUF_ANY_CONTIGUOUS,
+    PyBuffer_Release, PyObject_CheckBuffer, PyObject_GetBuffer
+)
+
+import ctypes
 
 cdef extern from "<cuda.h>":
     cdef struct OpaqueCUstream_st
@@ -41,17 +47,17 @@ cdef extern from "cccl/c/types.h":
        cy_CCCL_ITERATOR 'CCCL_ITERATOR'
 
     cdef struct cy_cccl_type_info 'cccl_type_info':
-        int size
-        int alignment
+        size_t size
+        size_t alignment
         cy_cccl_type_enum type
 
     cdef struct cy_cccl_op_t 'cccl_op_t':
         cy_cccl_op_kind_t type
         const char* name
         const char* ltoir
-        int ltoir_size
-        int size
-        int alignment
+        size_t ltoir_size
+        size_t size
+        size_t alignment
         void *state
 
     cdef struct cy_cccl_value_t 'cccl_value_t':
@@ -59,8 +65,8 @@ cdef extern from "cccl/c/types.h":
         void *state
 
     cdef struct cy_cccl_iterator_t 'cccl_iterator_t':
-        int size
-        int alignment
+        size_t size
+        size_t alignment
         cy_cccl_iterator_kind_t type
         cy_cccl_op_t advance
         cy_cccl_op_t dereference
@@ -489,6 +495,11 @@ cdef class Op:
     def state_typenum(self):
         return self.op_data.type
 
+    def as_bytes(self):
+        cdef uint8_t[:] mem_view = bytearray(sizeof(self.op_data))
+        memcpy(&mem_view[0], &self.op_data, sizeof(self.op_data))
+        return bytes(mem_view)
+
 
 cdef class TypeInfo:
     cdef cy_cccl_type_info type_info
@@ -523,6 +534,11 @@ cdef class TypeInfo:
     cdef cy_cccl_type_info get(self):
         return self.type_info
 
+    def as_bytes(self):
+        cdef uint8_t[:] mem_view = bytearray(sizeof(self.type_info))
+        memcpy(&mem_view[0], &self.type_info, sizeof(self.type_info))
+        return bytes(mem_view)
+
 
 cdef class Value:
     cdef bytes state_bytes
@@ -556,11 +572,187 @@ cdef class Value:
             else:
                 raise ValueError("Size mismatch")
 
+    def as_bytes(self):
+        cdef uint8_t[:] mem_view = bytearray(sizeof(self.value_data))
+        memcpy(&mem_view[0], &self.value_data, sizeof(self.value_data))
+        return bytes(mem_view)
+
+
+cdef void * get_buffer_pointer(object o):
+    cdef int status = 0
+    cdef void *ptr = NULL
+    cdef Py_buffer view
+
+    if not PyObject_CheckBuffer(o):
+        raise TypeError(
+            "Object with buffer protocol expected, "
+            f"got {type(o)}"
+        )
+
+    status = PyObject_GetBuffer(o, &view, PyBUF_SIMPLE | PyBUF_ANY_CONTIGUOUS)
+    if status != 0:  # pragma: no cover
+        raise RuntimeError(
+            "Can not access simple contiguous buffer"
+        )
+
+    ptr = view.buf
+    PyBuffer_Release(&view)
+
+    return ptr
+
+
+cdef void * ctypes_type_pointer_payload_ptr(object ctypes_typed_ptr):
+    "Get pointer to the value buffer represented by ctypes.pointer(ctypes_val)"
+    cdef size_t* ptr_ref = <size_t *>get_buffer_pointer(ctypes_typed_ptr)
+    return <void *>(ptr_ref[0])
+
+
+cdef inline void * int_as_ptr(size_t ptr_val):
+    return <void *>(ptr_val)
+
+
+cdef class PointerProxy:
+    cdef void * ptr
+    cdef object owner
+
+    def __cinit__(self, ptr, owner):
+        if isinstance(ptr, ctypes.c_void_p):
+            self.ptr = int_as_ptr(ptr.value)
+        elif isinstance(ptr, int):
+            self.ptr = int_as_ptr(ptr)
+        else:
+            raise TypeError
+        self.owner = owner
+
+    @property
+    def pointer(self):
+        return <size_t>self.ptr
+
+    @property
+    def reference(self):
+        return self.owner
+
+
+cdef class IteratorStateView:
+    cdef void * ptr
+    cdef size_t size
+    cdef object owner
+
+    def __cinit__(self, ptr, size_t size, owner):
+        if isinstance(ptr, int):
+            self.ptr = int_as_ptr(ptr)
+            self.size = size
+        elif isinstance(ptr, ctypes._Pointer):
+            self.ptr = ctypes_type_pointer_payload_ptr(ptr)
+            self.size = ctypes.sizeof(ptr.contents)
+        elif isinstance(ptr, ctypes.c_void_p):
+            self.ptr = int_as_ptr(ptr.value)
+            self.size = size
+        else:
+            raise TypeError("First argument must be int, type ctypes pointer, or ctypes.c_void_p")
+        self.owner = owner
+
+    @property
+    def pointer(self):
+        return <size_t>self.ptr
+
+    @property
+    def size(self):
+        return self.size
+
+    @property
+    def reference(self):
+        return self.owner
+
+
+cdef class StateBase:
+    cdef void *ptr
+    cdef object ref
+
+    def __cinit__(self):
+        self.ptr = NULL
+        self.ref = None
+
+    cdef void set_state(self, void *ptr, object ref):
+        self.ptr = ptr
+        self.ref = ref
+
+    cdef void * get(self):
+        return self.ptr
+
+    @property
+    def pointer(self):
+        return <size_t>self.ptr
+
+    @property
+    def reference(self):
+        return self.ref
+
+
+cdef class Pointer(StateBase):
+    "Represents the pointer value"
+
+    def __cinit__(self, arg):
+        cdef void *ptr
+        cdef object ref
+
+        super().__init__()
+        if isinstance(arg, int):
+            ptr = int_as_ptr(arg)
+            ref = None
+        elif isinstance(arg, PointerProxy):
+            ptr = (<PointerProxy>arg).ptr
+            ref = arg.reference
+        elif isinstance(arg, ctypes._Pointer):
+            ptr = ctypes_type_pointer_payload_ptr(arg)
+            ref = arg
+        elif isinstance(arg, ctypes.c_void_p):
+            ptr = int_as_ptr(arg.value)
+            ref = arg
+        else:
+            raise TypeError(
+                "Expect ctypes pointer, integers, or PointerProxy, "
+                f"got type {type(arg)}"
+            )
+        self.set_state(ptr, ref)
+
+
+cdef class IteratorState(StateBase):
+    "Represents blob referenced by pointer"
+    cdef size_t size
+
+    def __cinit__(self, arg):
+        cdef void *ptr
+        cdef object ref
+
+        super().__init__()
+        if isinstance(arg, ctypes._Pointer):
+            ptr = ctypes_type_pointer_payload_ptr(arg)
+            ref = arg.contents
+            self.size = ctypes.sizeof(ref)
+        elif isinstance(arg, (bytes, bytearray)):
+            ptr = <void *><const char *>arg
+            ref = arg
+            self.size = len(arg)
+        else:
+            raise TypeError(
+                "Expected a ctypes pointer with content, or object of type bytes or bytearray, "
+                f"got type {type(arg)}"
+            )
+        self.set_state(ptr, ref)
+
+    cdef size_t get_size(self):
+        return self.size
+
+    @property
+    def size(self):
+        return self.size
+
 
 cdef class Iterator:
     cdef Op advance
     cdef Op dereference
-    cdef bytes state_bytes
+    cdef object state_obj
     cdef cy_cccl_iterator_t iter_data
 
     def __cinit__(self,
@@ -569,20 +761,54 @@ cdef class Iterator:
         Op advance_fn,
         Op dereference_fn,
         TypeInfo value_type,
-        bytes state = None
+        state = None
     ):
         _validate_alignment(alignment)
         if not is_IteratorKind(iterator_type):
             raise TypeError("iterator_type must describe iterator kind")
-        if state is None:
-            state = b""
+        it_kind = iterator_type.value
+        if it_kind == cy_cccl_iterator_kind_t.cy_CCCL_POINTER:
+            if state is None:
+                self.state_obj = None
+                self.iter_data.size = 0
+                self.iter_data.state = NULL
+            elif isinstance(state, int):
+                self.state_obj = None
+                self.iter_data.size = 0
+                self.iter_data.state = int_as_ptr(state)
+            elif isinstance(state, Pointer):
+                self.state_obj = state.reference
+                self.iter_data.size = 0
+                self.iter_data.state = (<Pointer>state).get()
+            else:
+                raise TypeError(
+                    "Expect for Iterator of kind POINTER, state must have type Pointer or int, "
+                    f"got {type(state)}"
+                )
+        elif it_kind == cy_cccl_iterator_kind_t.cy_CCCL_ITERATOR:
+            if state is None:
+                self.state_obj = None
+                self.iter_data.size = 0
+                self.iter_data.state = NULL
+            elif isinstance(state, IteratorState):
+                self.state_obj = state.reference
+                self.iter_data.size = (<IteratorState>state).get_size()
+                self.iter_data.state = (<IteratorState>state).get()
+            elif isinstance(state, IteratorStateView):
+                self.state_obj = state.reference
+                self.iter_data.size = <size_t>state.size
+                self.iter_data.state = <void *>((<IteratorStateView>state).ptr)
+            else:
+                raise TypeError(
+                    "For Iterator of kind ITERATOR, state must have type IteratorState or IteratorStateView, "
+                    f"got type {type(state)}"
+                )
+        else:  # pragma: no cover
+            raise ValueError("Unrecognized iterator kind")
         self.advance = advance_fn
         self.dereference = dereference_fn
-        self.state_bytes = state
-        self.iter_data.size = len(state)
-        self.iter_data.state = <void *><const char *>(state)
         self.iter_data.alignment = alignment
-        self.iter_data.type = <cy_cccl_iterator_kind_t> iterator_type.value
+        self.iter_data.type = <cy_cccl_iterator_kind_t> it_kind
         self.iter_data.advance = self.advance.get()
         self.iter_data.dereference = self.dereference.get()
         self.iter_data.value_type = value_type.get()
@@ -603,13 +829,54 @@ cdef class Iterator:
 
     property state:
         def __get__(self):
-            return self.state_bytes
+            if self.iter_data.type == cy_cccl_iterator_kind_t.cy_CCCL_POINTER:
+                return <size_t>self.iter_data.state
+            else:
+                return self.state_obj
 
-        def __set__(self, bytes new_value):
-            cdef ssize_t state_sz = len(new_value)
-            self.state_bytes = new_value
-            self.iter_data.size = state_sz
-            self.iter_data.state = <void *><const char *>(self.state_bytes)
+        def __set__(self, new_value):
+            cdef ssize_t state_sz = 0
+            cdef size_t ptr = 0
+            if self.iter_data.type == cy_cccl_iterator_kind_t.cy_CCCL_POINTER:
+                if isinstance(new_value, Pointer):
+                    self.state_obj = new_value.reference
+                    self.iter_data.size = state_sz
+                    self.iter_data.state = (<Pointer>new_value).get()
+                elif isinstance(new_value, int):
+                    self.state_obj = None
+                    self.iter_data.size = state_sz
+                    self.iter_data.state = int_as_ptr(new_value)
+                else:
+                    raise TypeError(
+                        "For iterator with type POINTER, state value must have type int or type Pointer, "
+                        f"got type {type(new_value)}"
+                    )
+            elif self.iter_data.type == cy_cccl_iterator_kind_t.cy_CCCL_ITERATOR:
+                if isinstance(new_value, IteratorState):
+                    self.state_obj = new_value.reference
+                    self.iter_data.size = (<IteratorState>new_value).get_size()
+                    self.iter_data.state = (<IteratorState>new_value).get()
+                elif isinstance(new_value, (bytes, bytearray)):
+                    state_sz = len(new_value)
+                    self.state_obj = new_value
+                    self.iter_data.size = state_sz
+                    self.iter_data.state = <void *><const char *>(self.state_bytes)
+                elif isinstance(new_value, IteratorStateView):
+                    self.state_obj = new_value.reference
+                    self.iter_data.size = (<IteratorStateView>new_value).size
+                    self.iter_data.state = (<IteratorStateView>new_value).ptr
+                elif isinstance(new_value, Pointer):
+                    self.state_obj = new_value.reference
+                    if self.iter_data.size == 0:
+                        raise ValueError("Assigning incomplete state value to iterator without state size information")
+                    self.iter_data.state = (<Pointer>new_value).get()
+                else:
+                    raise TypeError(
+                        "For iterator with type ITERATOR, state value must have type IteratorState or type bytes, "
+                        f"got type {type(new_value)}"
+                    )
+            else:
+                raise TypeError("The new value should be an integer for iterators of POINTER kind, and bytes for ITERATOR kind")
 
     @property
     def type(self):
@@ -618,6 +885,11 @@ cdef class Iterator:
             return IteratorKind.POINTER
         else:
             return IteratorKind.ITERATOR
+
+    def as_bytes(self):
+        cdef uint8_t[:] mem_view = bytearray(sizeof(self.iter_data))
+        memcpy(&mem_view[0], &self.iter_data, sizeof(self.iter_data))
+        return bytes(mem_view)
 
 
 cdef class CommonData:
@@ -653,6 +925,26 @@ cdef class CommonData:
 
     cdef const char * ctk_path_get_c_str(self):
         return <const char *>self.encoded_ctk_path
+
+    @property
+    def compute_capability(self):
+        return (self.cc_major, self.cc_minor)
+
+    @property
+    def cub_path(self):
+        return self.encoded_cub_path.decode("utf-8")
+
+    @property
+    def ctk_path(self):
+        return self.encoded_ctk_path.decode("utf-8")
+
+    @property
+    def thrust_path(self):
+        return self.encoded_thrust_path.decode("utf-8")
+
+    @property
+    def libcudacxx_path(self):
+        return self.encoded_libcudacxx_path.decode("utf-8")
 
 
 cdef class DeviceReduceBuildResult:
@@ -705,13 +997,13 @@ cpdef device_reduce(
     stream
 ):
     cdef CUresult status
-    cdef void *t_ptr = (<void *><size_t>temp_storage_ptr) if temp_storage_ptr else NULL
-    cdef size_t t_sz = <size_t>temp_storage_bytes
+    cdef void *storage_ptr = (<void *><size_t>temp_storage_ptr) if temp_storage_ptr else NULL
+    cdef size_t storage_sz = <size_t>temp_storage_bytes
     cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
     status = cccl_device_reduce(
         build.get(),
-        t_ptr,
-        &t_sz,
+        storage_ptr,
+        &storage_sz,
         d_in.get(),
         d_out.get(),
         num_items,
@@ -719,7 +1011,7 @@ cpdef device_reduce(
         h_init.get(),
         c_stream
     )
-    return status, <object>t_sz
+    return status, <object>storage_sz
 
 
 cpdef CUresult device_reduce_cleanup(DeviceReduceBuildResult build):
@@ -727,3 +1019,8 @@ cpdef CUresult device_reduce_cleanup(DeviceReduceBuildResult build):
 
     status = cccl_device_reduce_cleanup(build.get_ptr())
     return status
+
+
+def read_size_t_from_ptr(size_t ptr):
+    cdef size_t * a = <size_t *><void *>ptr
+    return a[0]
