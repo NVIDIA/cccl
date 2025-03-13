@@ -120,7 +120,7 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   ScanOp scan_op)
 {
   using InputValueT = cub::detail::InputValue<InitValueT>;
-  using AccumT      = thrust::detail::__iter_accumulator_t<InputIt, InputValueT, ScanOp>;
+  using AccumT      = ::cuda::std::__accumulator_t<ScanOp, InitValueT>;
 
   using Dispatch32 =
     cub::DispatchScan<InputIt, OutputIt, ScanOp, InputValueT, std::uint32_t, AccumT, cub::ForceInclusive::Yes>;
