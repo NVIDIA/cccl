@@ -101,7 +101,7 @@ jobs:
           # RAPIDS_kvikio_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.04"}'
           # RAPIDS_raft_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.04"}'
           # RAPIDS_rmm_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.04"}'
-          # RAPIDS_ucxx_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-0.42"}'
+          # RAPIDS_ucxx_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-0.43"}'
         run: |
           cat <<"EOF" > "$RUNNER_TEMP/ci-entrypoint.sh"
           #! /usr/bin/env bash
