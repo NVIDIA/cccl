@@ -13,11 +13,6 @@
 
 #include <cuda/std/detail/__config>
 
-#include <cstdint>
-
-#include "cuda/std/__cccl/dialect.h"
-#include "cuda/std/__type_traits/is_constant_evaluated.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -30,8 +25,10 @@
 #include <cuda/std/__cmath/rounding_functions.h>
 #include <cuda/std/__concepts/__concept_macros.h>
 #include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
+#include <cuda/std/cstdint>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
