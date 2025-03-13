@@ -75,6 +75,9 @@ namespace detail
 {
 namespace batch_memcpy
 {
+// Type used to specialize the kernel templates for indexing the buffers processed within a single kernel invocation
+using per_invocation_buffer_offset_t = ::cuda::std::uint32_t;
+
 /**
  * Initialization kernel for tile status initialization (multi-block)
  */
@@ -291,25 +294,26 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentSmallBufferPolicyT::BLO
  * to the destination memory buffers
  * @tparam BufferSizeIteratorT **[inferred]** Random-access input iterator type providing the
  * number of bytes to be copied for each pair of buffers
- * @tparam BufferOffsetT Integer type large enough to hold any offset in [0, num_buffers)
  * @tparam BlockOffsetT Integer type large enough to hold any offset in [0,
  * num_thread_blocks_launched)
  */
-template <typename InputBufferIt,
-          typename OutputBufferIt,
-          typename BufferSizeIteratorT,
-          typename BufferOffsetT,
-          typename BlockOffsetT,
-          CopyAlg MemcpyOpt  = CopyAlg::Memcpy,
-          typename PolicyHub = batch_memcpy::policy_hub<BufferOffsetT, BlockOffsetT>>
+template <
+  typename InputBufferIt,
+  typename OutputBufferIt,
+  typename BufferSizeIteratorT,
+  typename BlockOffsetT,
+  CopyAlg MemcpyOpt  = CopyAlg::Memcpy,
+  typename PolicyHub = batch_memcpy::policy_hub<detail::batch_memcpy::per_invocation_buffer_offset_t, BlockOffsetT>>
 struct DispatchBatchMemcpy
 {
   //------------------------------------------------------------------------------
   // TYPE ALIASES
   //------------------------------------------------------------------------------
+  using per_invocation_buffer_offset_t = detail::batch_memcpy::per_invocation_buffer_offset_t;
+
   // Tile state for the single-pass prefix scan to "stream compact" (aka "select") the buffers
   // requiring block-level collaboration
-  using BufferPartitionScanTileStateT = typename cub::ScanTileState<BufferOffsetT>;
+  using BufferPartitionScanTileStateT = typename cub::ScanTileState<per_invocation_buffer_offset_t>;
 
   // Tile state for the single-pass prefix scan to keep track of how many blocks are assigned to
   // each of the buffers requiring block-level collaboration
@@ -326,7 +330,7 @@ struct DispatchBatchMemcpy
   InputBufferIt input_buffer_it;
   OutputBufferIt output_buffer_it;
   BufferSizeIteratorT buffer_sizes;
-  BufferOffsetT num_buffers;
+  ::cuda::std::int64_t num_buffers;
   cudaStream_t stream;
 
   //------------------------------------------------------------------------------
@@ -338,7 +342,7 @@ struct DispatchBatchMemcpy
     InputBufferIt input_buffer_it,
     OutputBufferIt output_buffer_it,
     BufferSizeIteratorT buffer_sizes,
-    BufferOffsetT num_buffers,
+    ::cuda::std::int64_t num_buffers,
     cudaStream_t stream)
       : d_temp_storage(d_temp_storage)
       , temp_storage_bytes(temp_storage_bytes)
@@ -361,7 +365,7 @@ struct DispatchBatchMemcpy
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     // Single-pass prefix scan tile states for the prefix-sum over the number of block-level buffers
-    using BLevBufferOffsetTileState = cub::ScanTileState<BufferOffsetT>;
+    using BLevBufferOffsetTileState = cub::ScanTileState<per_invocation_buffer_offset_t>;
 
     // Single-pass prefix scan tile states for the prefix sum over the number of thread blocks
     // assigned to each of the block-level buffers
@@ -399,8 +403,9 @@ struct DispatchBatchMemcpy
     // The upper bound of buffers that a single kernel invocation will process
     // Memory requirements are a multiple of the number of buffers. Hence, we cap the number of buffers per
     // invocation to 512 M, which is large enough to easily saturate the GPU and also hide tail effects
-    const auto max_num_buffers_per_invocation = static_cast<BufferOffsetT>(512 * 1024 * 1024);
-    const auto max_num_buffers                = ::cuda::std::min(max_num_buffers_per_invocation, num_buffers);
+    constexpr auto max_num_buffers_per_invocation = static_cast<::cuda::std::int64_t>(512 * 1024 * 1024);
+    static_assert(max_num_buffers_per_invocation <= ::cuda::std::numeric_limits<per_invocation_buffer_offset_t>::max());
+    const auto max_num_buffers = ::cuda::std::min(max_num_buffers_per_invocation, num_buffers);
 
     // The number of thread blocks (or tiles) required to process all of the given buffers
     auto max_num_tiles = static_cast<BlockOffsetT>(::cuda::ceil_div(max_num_buffers, TILE_SIZE));
@@ -487,7 +492,7 @@ struct DispatchBatchMemcpy
       InputBufferIt,
       OutputBufferIt,
       BufferSizeIteratorT,
-      BufferOffsetT,
+      per_invocation_buffer_offset_t,
       BlevBufferSrcsOutItT,
       BlevBufferDstsOutItT,
       BlevBufferSizesOutItT,
@@ -499,7 +504,7 @@ struct DispatchBatchMemcpy
 
     auto multi_block_memcpy_kernel = detail::batch_memcpy::MultiBlockBatchMemcpyKernel<
       typename PolicyHub::MaxPolicy,
-      BufferOffsetT,
+      per_invocation_buffer_offset_t,
       BlevBufferSrcsOutItT,
       BlevBufferDstsOutItT,
       BlevBufferSizesOutItT,
@@ -537,9 +542,9 @@ struct DispatchBatchMemcpy
     const int batch_memcpy_blev_grid_size =
       static_cast<int>(sm_count * batch_memcpy_blev_occupancy * CUB_SUBSCRIPTION_FACTOR(0));
 
-    const BufferOffsetT num_invocations = ::cuda::ceil_div(num_buffers, max_num_buffers_per_invocation);
+    const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_buffers, max_num_buffers_per_invocation);
 
-    for (BufferOffsetT invocation_index = 0; invocation_index < num_invocations; invocation_index++)
+    for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
     {
       const auto current_buffer_offset = invocation_index * max_num_buffers_per_invocation;
       const auto num_current_buffers =
@@ -613,7 +618,7 @@ struct DispatchBatchMemcpy
                 input_buffer_it + current_buffer_offset,
                 output_buffer_it + current_buffer_offset,
                 buffer_sizes + current_buffer_offset,
-                num_current_buffers,
+                static_cast<per_invocation_buffer_offset_t>(num_current_buffers),
                 d_blev_src_buffers,
                 d_blev_dst_buffers,
                 d_blev_buffer_sizes,
@@ -682,7 +687,7 @@ struct DispatchBatchMemcpy
     InputBufferIt input_buffer_it,
     OutputBufferIt output_buffer_it,
     BufferSizeIteratorT buffer_sizes,
-    BufferOffsetT num_buffers,
+    ::cuda::std::int64_t num_buffers,
     cudaStream_t stream)
   {
     cudaError_t error = cudaSuccess;
