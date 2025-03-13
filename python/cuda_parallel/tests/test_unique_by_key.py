@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import List
 
 import cupy as cp
 import numba.cuda
@@ -26,6 +25,12 @@ DTYPE_LIST = [
     np.float64,
 ]
 
+PROBLEM_SIZES = [2, 8, 16, 24]
+
+DTYPE_SIZE_PAIRS = [
+    (dt, 2**log_size) for dt in DTYPE_LIST for log_size in PROBLEM_SIZES
+]
+
 
 def random_array(size, dtype, max_value=None) -> np.typing.NDArray:
     rng = np.random.default_rng()
@@ -37,19 +42,6 @@ def random_array(size, dtype, max_value=None) -> np.typing.NDArray:
         return rng.random(size=size, dtype=dtype)
     else:
         raise ValueError(f"Unsupported dtype {dtype}")
-
-
-def type_to_problem_sizes(dtype) -> List[int]:
-    if dtype in [np.uint8, np.int8]:
-        return [2, 4, 5, 6]
-    elif dtype in [np.uint16, np.int16]:
-        return [4, 8, 14]
-    elif dtype in [np.uint32, np.int32, np.float32]:
-        return [4, 10, 20]
-    elif dtype in [np.uint64, np.int64, np.float64]:
-        return [4, 10, 20]
-    else:
-        raise ValueError("Unsupported dtype")
 
 
 def unique_by_key_device(
@@ -100,7 +92,7 @@ def unique_by_key_host(keys, items, is_equal=is_equal_func):
     # unique elements across the entire array, while cub::UniqueByKey
     # de-duplicates consecutive keys that are equal.
     if len(keys) == 0:
-        return np.empty(0), np.empty(0)
+        return np.empty(0, dtype=keys.dtype), np.empty(0, dtype=items.dtype)
 
     prev_key = keys[0]
     keys_out = [prev_key]
@@ -121,92 +113,86 @@ def compare_op(lhs, rhs):
 
 
 @pytest.mark.parametrize(
-    "dtype",
-    DTYPE_LIST,
+    "dtype, num_items",
+    DTYPE_SIZE_PAIRS,
 )
-def test_unique_by_key(dtype):
-    for num_items_pow2 in type_to_problem_sizes(dtype):
-        num_items = 2**num_items_pow2
+def test_unique_by_key(dtype, num_items):
+    h_in_keys = random_array(num_items, dtype, max_value=20)
+    h_in_items = random_array(num_items, np.float32)
+    h_out_keys = np.empty(num_items, dtype=dtype)
+    h_out_items = np.empty(num_items, dtype=np.float32)
+    h_out_num_selected = np.empty(1, np.int32)
 
-        h_in_keys = random_array(num_items, dtype, max_value=20)
-        h_in_items = random_array(num_items, np.float32)
-        h_out_keys = np.empty(num_items, dtype=dtype)
-        h_out_items = np.empty(num_items, dtype=np.float32)
-        h_out_num_selected = np.empty(1, np.int32)
+    d_in_keys = numba.cuda.to_device(h_in_keys)
+    d_in_items = numba.cuda.to_device(h_in_items)
+    d_out_keys = numba.cuda.to_device(h_out_keys)
+    d_out_items = numba.cuda.to_device(h_out_items)
+    d_out_num_selected = numba.cuda.to_device(h_out_num_selected)
 
-        d_in_keys = numba.cuda.to_device(h_in_keys)
-        d_in_items = numba.cuda.to_device(h_in_items)
-        d_out_keys = numba.cuda.to_device(h_out_keys)
-        d_out_items = numba.cuda.to_device(h_out_items)
-        d_out_num_selected = numba.cuda.to_device(h_out_num_selected)
+    unique_by_key_device(
+        d_in_keys,
+        d_in_items,
+        d_out_keys,
+        d_out_items,
+        d_out_num_selected,
+        compare_op,
+        num_items,
+    )
 
-        unique_by_key_device(
-            d_in_keys,
-            d_in_items,
-            d_out_keys,
-            d_out_items,
-            d_out_num_selected,
-            compare_op,
-            num_items,
-        )
+    h_out_num_selected = d_out_num_selected.copy_to_host()
+    num_selected = h_out_num_selected[0]
+    h_out_keys = d_out_keys.copy_to_host()[:num_selected]
+    h_out_items = d_out_items.copy_to_host()[:num_selected]
 
-        h_out_num_selected = d_out_num_selected.copy_to_host()
-        num_selected = h_out_num_selected[0]
-        h_out_keys = d_out_keys.copy_to_host()[:num_selected]
-        h_out_items = d_out_items.copy_to_host()[:num_selected]
+    expected_keys, expected_items = unique_by_key_host(h_in_keys, h_in_items)
 
-        expected_keys, expected_items = unique_by_key_host(h_in_keys, h_in_items)
-
-        np.testing.assert_array_equal(h_out_keys, expected_keys)
-        np.testing.assert_array_equal(h_out_items, expected_items)
+    np.testing.assert_array_equal(h_out_keys, expected_keys)
+    np.testing.assert_array_equal(h_out_items, expected_items)
 
 
 @pytest.mark.parametrize(
-    "dtype",
-    DTYPE_LIST,
+    "dtype, num_items",
+    DTYPE_SIZE_PAIRS,
 )
-def test_unique_by_key_iterators(dtype):
-    for num_items_pow2 in type_to_problem_sizes(dtype):
-        num_items = 2**num_items_pow2
+def test_unique_by_key_iterators(dtype, num_items):
+    h_in_keys = random_array(num_items, dtype, max_value=20)
+    h_in_items = random_array(num_items, np.float32)
+    h_out_keys = np.empty(num_items, dtype=dtype)
+    h_out_items = np.empty(num_items, dtype=np.float32)
+    h_out_num_selected = np.empty(1, np.int64)
 
-        h_in_keys = random_array(num_items, dtype, max_value=20)
-        h_in_items = random_array(num_items, np.float32)
-        h_out_keys = np.empty(num_items, dtype=dtype)
-        h_out_items = np.empty(num_items, dtype=np.float32)
-        h_out_num_selected = np.empty(1, np.int32)
+    d_in_keys = numba.cuda.to_device(h_in_keys)
+    d_in_items = numba.cuda.to_device(h_in_items)
+    d_out_keys = numba.cuda.to_device(h_out_keys)
+    d_out_items = numba.cuda.to_device(h_out_items)
+    d_out_num_selected = numba.cuda.to_device(h_out_num_selected)
 
-        d_in_keys = numba.cuda.to_device(h_in_keys)
-        d_in_items = numba.cuda.to_device(h_in_items)
-        d_out_keys = numba.cuda.to_device(h_out_keys)
-        d_out_items = numba.cuda.to_device(h_out_items)
-        d_out_num_selected = numba.cuda.to_device(h_out_num_selected)
+    i_in_keys = iterators.CacheModifiedInputIterator(
+        d_in_keys, modifier="stream", prefix="keys"
+    )
+    i_in_items = iterators.CacheModifiedInputIterator(
+        d_in_items, modifier="stream", prefix="items"
+    )
 
-        i_in_keys = iterators.CacheModifiedInputIterator(
-            d_in_keys, modifier="stream", prefix="keys"
-        )
-        i_in_items = iterators.CacheModifiedInputIterator(
-            d_in_items, modifier="stream", prefix="items"
-        )
+    unique_by_key_device(
+        i_in_keys,
+        i_in_items,
+        d_out_keys,
+        d_out_items,
+        d_out_num_selected,
+        compare_op,
+        num_items,
+    )
 
-        unique_by_key_device(
-            i_in_keys,
-            i_in_items,
-            d_out_keys,
-            d_out_items,
-            d_out_num_selected,
-            compare_op,
-            num_items,
-        )
+    h_out_num_selected = d_out_num_selected.copy_to_host()
+    num_selected = h_out_num_selected[0]
+    h_out_keys = d_out_keys.copy_to_host()[:num_selected]
+    h_out_items = d_out_items.copy_to_host()[:num_selected]
 
-        h_out_num_selected = d_out_num_selected.copy_to_host()
-        num_selected = h_out_num_selected[0]
-        h_out_keys = d_out_keys.copy_to_host()[:num_selected]
-        h_out_items = d_out_items.copy_to_host()[:num_selected]
+    expected_keys, expected_items = unique_by_key_host(h_in_keys, h_in_items)
 
-        expected_keys, expected_items = unique_by_key_host(h_in_keys, h_in_items)
-
-        np.testing.assert_array_equal(h_out_keys, expected_keys)
-        np.testing.assert_array_equal(h_out_items, expected_items)
+    np.testing.assert_array_equal(h_out_keys, expected_keys)
+    np.testing.assert_array_equal(h_out_items, expected_items)
 
 
 def test_unique_by_key_complex():
@@ -280,7 +266,7 @@ def test_unique_by_key_struct_types():
 
     h_in_keys = np.empty(num_items, dtype=key_pair.dtype)
     h_in_items = np.empty(num_items, dtype=item_pair.dtype)
-    h_out_num_selected = np.empty(1, np.int32)
+    h_out_num_selected = np.empty(1, np.int64)
 
     h_in_keys["a"] = a_keys
     h_in_keys["b"] = b_keys
