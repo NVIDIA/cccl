@@ -25,7 +25,7 @@ __host__ __device__ void test_fp_cast()
   const From in     = cuda::std::__fp_cast<From>(1.f);
   const To expected = cuda::std::__fp_cast<To>(1.f);
 
-  ASSERT_SAME_TYPE(To, decltype(cuda::std::__fp_cast<To>(From{})));
+  static_assert(cuda::std::is_same_v<To, decltype(cuda::std::__fp_cast<To>(From{}))>);
   const To out = cuda::std::__fp_cast<To>(in);
   assert(cuda::std::memcmp(&out, &expected, sizeof(To)) == 0);
 }

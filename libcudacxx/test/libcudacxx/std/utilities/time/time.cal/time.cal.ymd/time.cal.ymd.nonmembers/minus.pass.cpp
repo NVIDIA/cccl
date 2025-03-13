@@ -36,7 +36,8 @@ int main(int, char**)
   using years          = cuda::std::chrono::years;
 
   static_assert(noexcept(cuda::std::declval<year_month_day>() - cuda::std::declval<years>()));
-  ASSERT_SAME_TYPE(year_month_day, decltype(cuda::std::declval<year_month_day>() - cuda::std::declval<years>()));
+  static_assert(
+    cuda::std::is_same_v<year_month_day, decltype(cuda::std::declval<year_month_day>() - cuda::std::declval<years>())>);
 
   constexpr month January = cuda::std::chrono::January;
 

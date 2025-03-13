@@ -21,16 +21,14 @@
 //   complex<promote<T, U>::type>
 //   pow(const complex<T>& x, const complex<U>& y);
 
-#if defined(_MSC_VER)
-#  pragma warning(disable : 4244) // conversion from 'const double' to 'int', possible loss of data
-#endif
-
 #include <cuda/std/cassert>
 #include <cuda/std/complex>
 #include <cuda/std/type_traits>
 
 #include "../cases.h"
 #include "test_macros.h"
+
+TEST_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const double' to 'int', possible loss of data
 
 template <class T, class U>
 __host__ __device__ void test(T x, const cuda::std::complex<U>& y)

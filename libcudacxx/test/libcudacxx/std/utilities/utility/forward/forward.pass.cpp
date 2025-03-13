@@ -18,11 +18,11 @@
 struct A
 {};
 
-__host__ __device__ A source() TEST_NOEXCEPT
+__host__ __device__ A source() noexcept
 {
   return A();
 }
-__host__ __device__ const A csource() TEST_NOEXCEPT
+__host__ __device__ const A csource() noexcept
 {
   return A();
 }

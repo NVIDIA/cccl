@@ -28,12 +28,12 @@ __host__ __device__ void test_fp_storage()
   static_assert(sizeof(Storage) == sizeof(T));
   static_assert(alignof(Storage) == alignof(T));
 
-  ASSERT_SAME_TYPE(Storage, decltype(cuda::std::__fp_get_storage(T{})));
+  static_assert(cuda::std::is_same_v<Storage, decltype(cuda::std::__fp_get_storage(T{}))>);
   const T max            = cuda::std::numeric_limits<T>::max();
   const Storage max_bits = cuda::std::__fp_get_storage(max);
   assert(cuda::std::memcmp(&max, &max_bits, sizeof(T)) == 0);
 
-  ASSERT_SAME_TYPE(T, decltype(cuda::std::__fp_from_storage<T>(Storage{})));
+  static_assert(cuda::std::is_same_v<T, decltype(cuda::std::__fp_from_storage<T>(Storage{}))>);
   const T max_back = cuda::std::__fp_from_storage<T>(max_bits);
   assert(cuda::std::memcmp(&max, &max_back, sizeof(T)) == 0);
 }

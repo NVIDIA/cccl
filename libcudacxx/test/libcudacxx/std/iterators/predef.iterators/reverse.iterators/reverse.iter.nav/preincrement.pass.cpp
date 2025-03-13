@@ -20,7 +20,7 @@
 #include "test_macros.h"
 
 template <class It>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(It i, It x)
+__host__ __device__ constexpr void test(It i, It x)
 {
   cuda::std::reverse_iterator<It> r(i);
   cuda::std::reverse_iterator<It>& rr = ++r;
@@ -28,7 +28,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test(It i, It x)
   assert(&rr == &r);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
+__host__ __device__ constexpr bool tests()
 {
   const char* s = "123";
   test(bidirectional_iterator<const char*>(s + 1), bidirectional_iterator<const char*>(s));

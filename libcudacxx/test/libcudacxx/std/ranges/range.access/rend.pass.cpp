@@ -22,7 +22,7 @@
 using RangeREndT  = decltype(cuda::std::ranges::rend);
 using RangeCREndT = decltype(cuda::std::ranges::crend);
 
-STATIC_TEST_GLOBAL_VAR int globalBuff[8];
+TEST_GLOBAL_VARIABLE int globalBuff[8];
 
 static_assert(!cuda::std::is_invocable_v<RangeREndT, int (&&)[]>);
 static_assert(!cuda::std::is_invocable_v<RangeREndT, int (&)[]>);
@@ -72,28 +72,30 @@ __host__ __device__ constexpr bool testReturnTypes()
   {
     int* x[2] = {};
     unused(x);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::rend(x)), cuda::std::reverse_iterator<int**>);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::crend(x)), cuda::std::reverse_iterator<int* const*>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::rend(x)), cuda::std::reverse_iterator<int**>>);
+    static_assert(
+      cuda::std::is_same_v<decltype(cuda::std::ranges::crend(x)), cuda::std::reverse_iterator<int* const*>>);
   }
 
   {
     int x[2][2] = {};
     unused(x);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::rend(x)), cuda::std::reverse_iterator<int(*)[2]>);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::crend(x)), cuda::std::reverse_iterator<const int(*)[2]>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::rend(x)), cuda::std::reverse_iterator<int(*)[2]>>);
+    static_assert(
+      cuda::std::is_same_v<decltype(cuda::std::ranges::crend(x)), cuda::std::reverse_iterator<const int(*)[2]>>);
   }
 
   {
     Different x{};
     unused(x);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::rend(x)), sentinel_wrapper<char*>);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::crend(x)), sentinel_wrapper<short*>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::rend(x)), sentinel_wrapper<char*>>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::crend(x)), sentinel_wrapper<short*>>);
   }
 
   return true;
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX17 bool testArray()
+__host__ __device__ constexpr bool testArray()
 {
   int a[2] = {};
   assert(cuda::std::ranges::rend(a).base() == a);
@@ -592,7 +594,7 @@ static_assert(cuda::std::is_invocable_v<RangeCREndT, MemberBeginAndRBegin&>);
 static_assert(cuda::std::same_as<cuda::std::invoke_result_t<RangeREndT, MemberBeginAndRBegin&>, int*>);
 static_assert(cuda::std::same_as<cuda::std::invoke_result_t<RangeCREndT, MemberBeginAndRBegin&>, int*>);
 
-__host__ __device__ TEST_CONSTEXPR_CXX17 bool testBeginEnd()
+__host__ __device__ constexpr bool testBeginEnd()
 {
   MemberBeginEnd a{};
   const MemberBeginEnd aa{};
@@ -627,7 +629,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX17 bool testBeginEnd()
 static_assert(noexcept(cuda::std::ranges::rend(cuda::std::declval<int (&)[10]>())));
 static_assert(noexcept(cuda::std::ranges::crend(cuda::std::declval<int (&)[10]>())));
 
-#if !defined(TEST_COMPILER_MSVC_2019)
+#if !TEST_COMPILER(MSVC2019)
 _CCCL_GLOBAL_CONSTANT struct NoThrowMemberREnd
 {
   __host__ __device__ ThrowingIterator<int> rbegin() const;
@@ -644,7 +646,7 @@ _CCCL_GLOBAL_CONSTANT struct NoThrowADLREnd
 } ntare;
 static_assert(noexcept(cuda::std::ranges::rend(ntare)));
 static_assert(noexcept(cuda::std::ranges::crend(ntare)));
-#endif // !TEST_COMPILER_MSVC_2019
+#endif // !TEST_COMPILER(MSVC2019)
 
 _CCCL_GLOBAL_CONSTANT struct NoThrowMemberREndReturnsRef
 {
@@ -708,10 +710,10 @@ int main(int, char**)
   testBeginEnd();
   static_assert(testBeginEnd());
 
-#if !defined(TEST_COMPILER_MSVC_2019)
+#if !TEST_COMPILER(MSVC2019)
   unused(ntmre);
   unused(ntare);
-#endif // !TEST_COMPILER_MSVC_2019
+#endif // !TEST_COMPILER(MSVC2019)
   unused(ntmrerr);
   unused(rerar);
   unused(ntbte);

@@ -24,15 +24,15 @@
 
 int main(int, char**)
 {
-#if !defined(TEST_COMPILER_GCC) || __GNUC__ >= 7
+#if !TEST_COMPILER(GCC, <, 7)
   static_assert(!cuda::std::is_assignable<cuda::std::variant<int, int>, int>::value, "");
-#endif // !gcc-6
+#endif // !TEST_COMPILER(GCC, <, 7)
   static_assert(!cuda::std::is_assignable<cuda::std::variant<long, long long>, int>::value, "");
 
-#if !defined(TEST_COMPILER_NVHPC)
+#if !TEST_COMPILER(NVHPC)
   static_assert(cuda::std::is_assignable<cuda::std::variant<char>, int>::value == VariantAllowsNarrowingConversions,
                 "");
-#endif // !TEST_COMPILER_NVHPC
+#endif // !TEST_COMPILER(NVHPC)
 
   // static_assert(cuda::std::is_assignable<cuda::std::variant<cuda::std::string, float>, int>::value ==
   // VariantAllowsNarrowingConversions, "");

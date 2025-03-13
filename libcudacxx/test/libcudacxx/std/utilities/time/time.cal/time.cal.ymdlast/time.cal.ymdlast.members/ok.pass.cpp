@@ -28,7 +28,7 @@ int main(int, char**)
   constexpr month January = cuda::std::chrono::January;
 
   static_assert(noexcept(cuda::std::declval<const year_month_day_last>().ok()));
-  ASSERT_SAME_TYPE(bool, decltype(cuda::std::declval<const year_month_day_last>().ok()));
+  static_assert(cuda::std::is_same_v<bool, decltype(cuda::std::declval<const year_month_day_last>().ok())>);
 
   static_assert(!year_month_day_last{year{-32768}, month_day_last{month{}}}.ok(), ""); // both bad
   static_assert(!year_month_day_last{year{-32768}, month_day_last{January}}.ok(), ""); // Bad year

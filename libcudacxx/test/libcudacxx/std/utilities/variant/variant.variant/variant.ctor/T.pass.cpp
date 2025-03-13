@@ -214,10 +214,10 @@ struct Baz
 __host__ __device__ void test_construction_with_repeated_types()
 {
   using V = cuda::std::variant<int, Bar, Baz, int, Baz, int, int>;
-#if !defined(TEST_COMPILER_GCC) || __GNUC__ >= 7
+#if !TEST_COMPILER(GCC, <, 7)
   static_assert(!cuda::std::is_constructible<V, int>::value, "");
   static_assert(!cuda::std::is_constructible<V, Baz>::value, "");
-#endif // !gcc-6
+#endif // !TEST_COMPILER(GCC, <, 7)
   // OK, the selected type appears only once and so it shouldn't
   // be affected by the duplicate types.
   static_assert(cuda::std::is_constructible<V, Bar>::value, "");

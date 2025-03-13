@@ -23,22 +23,14 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-#ifdef TEST_COMPILER_MSVC
-#  pragma warning(disable : 4018) // signed/unsigned mismatch
-#endif // TEST_COMPILER_MSVC
-
-#ifdef TEST_COMPILER_GCC
-#  pragma GCC diagnostic ignored "-Wsign-compare"
-#endif // TEST_COMPILER_GCC
-
-#ifdef TEST_COMPILER_CLANG
-#  pragma clang diagnostic ignored "-Wsign-compare"
-#endif // TEST_COMPILER_CLANG
+TEST_DIAG_SUPPRESS_MSVC(4018) // signed/unsigned mismatch
+TEST_DIAG_SUPPRESS_GCC("-Wsign-compare")
+TEST_DIAG_SUPPRESS_CLANG("-Wsign-compare")
 
 struct MySearcherC
 {
   template <typename Iterator>
-  __host__ __device__ cuda::std::pair<Iterator, Iterator> TEST_CONSTEXPR_CXX14 operator()(Iterator b, Iterator e) const
+  __host__ __device__ cuda::std::pair<Iterator, Iterator> constexpr operator()(Iterator b, Iterator e) const
   {
     return cuda::std::make_pair(b, e);
   }
@@ -46,12 +38,12 @@ struct MySearcherC
 
 struct MySearcher
 {
-  __host__ __device__ TEST_CONSTEXPR_CXX14 MySearcher(int& searcher_called) noexcept
+  __host__ __device__ constexpr MySearcher(int& searcher_called) noexcept
       : searcher_called(searcher_called)
   {}
 
   template <typename Iterator>
-  __host__ __device__ cuda::std::pair<Iterator, Iterator> TEST_CONSTEXPR_CXX14 operator()(Iterator b, Iterator e) const
+  __host__ __device__ cuda::std::pair<Iterator, Iterator> constexpr operator()(Iterator b, Iterator e) const
   {
     ++searcher_called;
     return cuda::std::make_pair(b, e);
@@ -79,7 +71,7 @@ void make_pair(T&&, U&&) = delete;
 } // namespace User
 
 template <class Iter1, class Iter2>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
   int ia[]          = {0, 1, 2, 3, 4, 5};
   const unsigned sa = sizeof(ia) / sizeof(ia[0]);
@@ -117,13 +109,13 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
 }
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void adl_test()
+__host__ __device__ constexpr void adl_test()
 {
   User::S ua[] = {1};
   assert(cuda::std::search(Iter(ua), Iter(ua), Iter(ua), Iter(ua)) == Iter(ua));
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test<forward_iterator<const int*>, forward_iterator<const int*>>();
   test<forward_iterator<const int*>, bidirectional_iterator<const int*>>();

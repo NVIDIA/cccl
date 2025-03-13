@@ -26,7 +26,7 @@ int main(int, char**)
   using year_month_weekday = cuda::std::chrono::year_month_weekday;
 
   static_assert(noexcept(cuda::std::declval<const year_month_weekday>().year()));
-  ASSERT_SAME_TYPE(year, decltype(cuda::std::declval<const year_month_weekday>().year()));
+  static_assert(cuda::std::is_same_v<year, decltype(cuda::std::declval<const year_month_weekday>().year())>);
 
   static_assert(year_month_weekday{}.year() == year{}, "");
 

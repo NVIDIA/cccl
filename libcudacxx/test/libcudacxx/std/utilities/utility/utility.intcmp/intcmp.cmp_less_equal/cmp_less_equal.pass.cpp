@@ -28,7 +28,7 @@ struct Tuple
 };
 
 template <typename T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test1()
+__host__ __device__ constexpr void test1()
 {
   constexpr Tuple<T> tup{};
   assert(cuda::std::cmp_less_equal(T(0), T(0)));
@@ -53,7 +53,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test1()
 }
 
 template <typename T, typename U>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test2()
+__host__ __device__ constexpr void test2()
 {
   assert(cuda::std::cmp_less_equal(T(0), U(1)));
   assert(cuda::std::cmp_less_equal(T(0), U(0)));
@@ -61,7 +61,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test2()
 }
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
   test1<T>();
 #if _CCCL_HAS_INT128()
@@ -80,7 +80,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
   test2<T, signed char>();
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
 #if _CCCL_HAS_INT128()
   test<__int128_t>();

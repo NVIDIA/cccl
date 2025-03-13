@@ -40,9 +40,9 @@ int main(int, char**)
 
   test<signed char>(SCHAR_MIN);
   test<unsigned char>(0);
-#ifndef TEST_COMPILER_NVRTC
+#if !TEST_COMPILER(NVRTC)
   test<wchar_t>(WCHAR_MIN);
-#endif
+#endif // !TEST_COMPILER(NVRTC)
 #if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
   test<char8_t>(0);
 #endif

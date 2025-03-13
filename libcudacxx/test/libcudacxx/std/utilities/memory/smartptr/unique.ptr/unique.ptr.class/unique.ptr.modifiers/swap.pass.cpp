@@ -19,7 +19,7 @@
 #include "test_macros.h"
 #include "unique_ptr_test_helper.h"
 
-STATIC_TEST_GLOBAL_VAR int TT_count = 0;
+TEST_GLOBAL_VARIABLE int TT_count = 0;
 
 struct TT
 {
