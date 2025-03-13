@@ -90,8 +90,8 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int __fpclassify_impl(_Tp __
     {
       return (__storage & __fp_mant_mask_v<_Tp>) ? FP_SUBNORMAL : FP_ZERO;
     }
+    return FP_NORMAL;
   }
-  return FP_NORMAL;
 }
 
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int fpclassify(float __x) noexcept
