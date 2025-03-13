@@ -175,6 +175,12 @@ namespace reduce
  *
  * @tparam CollectiveReduceT
  *   Block or Warp reduction type
+ *
+ * @tparam THREADS
+ *   Number of threads participating in the collective reduction
+ *
+ * @tparam IsWarpReduction
+ *   Whether or not this is a warp reduction
  */
 template <typename AgentReducePolicy,
           typename InputIteratorT,
@@ -184,7 +190,8 @@ template <typename AgentReducePolicy,
           typename AccumT,
           typename TransformOp,
           typename CollectiveReduceT,
-          int THREADS>
+          int THREADS,
+          bool IsWarpReduction = false>
 struct AgentReduceImpl
 {
   //---------------------------------------------------------------------
@@ -413,10 +420,13 @@ struct AgentReduceImpl
       ConsumeTile<true>(
         thread_aggregate, even_share.block_offset, valid_items, ::cuda::std::false_type(), can_vectorize);
 
-      // While Block Reduction handles case when `valid_items` exceeds `TILE_ITEMS`, for
-      // Warp Reduction we need to handle this case explicitly
-      int num_valid = (THREADS <= valid_items) ? THREADS : valid_items;
-      return CollectiveReduceT(temp_storage.reduce).Reduce(thread_aggregate, reduction_op, num_valid);
+      // For Warp Reduction, we need to explicitly handle the valid_items,
+      // whereas for Block Reduction it is implicitly handled
+      if constexpr (IsWarpReduction)
+      {
+        valid_items = (THREADS <= valid_items) ? THREADS : valid_items;
+      }
+      return CollectiveReduceT(temp_storage.reduce).Reduce(thread_aggregate, reduction_op, valid_items);
     }
 
     // Extracting this into a function saves 8% of generated kernel size by allowing to reuse
@@ -618,7 +628,8 @@ struct AgentWarpReduce
                       AccumT,
                       TransformOp,
                       WarpReduce<AccumT, AgentReducePolicy::WARP_THREADS>,
-                      AgentReducePolicy::WARP_THREADS>
+                      AgentReducePolicy::WARP_THREADS,
+                      true>
 {
   using base_t =
     AgentReduceImpl<AgentReducePolicy,
@@ -629,7 +640,8 @@ struct AgentWarpReduce
                     AccumT,
                     TransformOp,
                     WarpReduce<AccumT, AgentReducePolicy::WARP_THREADS>,
-                    AgentReducePolicy::WARP_THREADS>;
+                    AgentReducePolicy::WARP_THREADS,
+                    true>;
 
   _CCCL_DEVICE _CCCL_FORCEINLINE AgentWarpReduce(
     typename base_t::TempStorage& temp_storage,
