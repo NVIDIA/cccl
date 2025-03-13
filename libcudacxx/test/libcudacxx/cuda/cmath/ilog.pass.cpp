@@ -13,6 +13,7 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
+#include "cuda/std/__type_traits/is_constant_evaluated.h"
 #include "test_macros.h"
 
 template <class T>
@@ -49,7 +50,7 @@ __host__ __device__ constexpr void test_log10()
     }
     i++;
   }
-  if (!cuda::std::is_constant_evaluated())
+  if (!cuda::std::__cccl_default_is_constant_evaluated())
   {
     constexpr auto max_v = cuda::std::numeric_limits<T>::max();
     assert(cuda::ilog10(max_v) == static_cast<int>(cuda::std::floor(cuda::std::log10(max_v))));
