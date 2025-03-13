@@ -59,7 +59,7 @@ struct __restrict_accessor : public _Accessor
   static_assert(_CUDA_VSTD::is_pointer_v<typename _Accessor::data_handle_type>, "Accessor must be pointer based");
 
   using offset_policy = __restrict_accessor<typename _Accessor::offset_policy>;
-#if _CCCL_COMPILER(GCC, <, 12)
+#if _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC)
   using data_handle_type = typename _Accessor::data_handle_type;
 #else
   using data_handle_type = _CCCL_RESTRICT typename _Accessor::data_handle_type;
