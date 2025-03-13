@@ -46,7 +46,7 @@ CCCL_C_API CUresult cccl_device_unique_by_key_build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path) noexcept;
+  const char* ctk_path);
 
 CCCL_C_API CUresult cccl_device_unique_by_key(
   cccl_device_unique_by_key_build_result_t build,
@@ -59,8 +59,8 @@ CCCL_C_API CUresult cccl_device_unique_by_key(
   cccl_iterator_t d_num_selected_out,
   cccl_op_t op,
   unsigned long long num_items,
-  CUstream stream) noexcept;
+  CUstream stream);
 
-CCCL_C_API CUresult cccl_device_unique_by_key_cleanup(cccl_device_unique_by_key_build_result_t* bld_ptr) noexcept;
+CCCL_C_API CUresult cccl_device_unique_by_key_cleanup(cccl_device_unique_by_key_build_result_t* bld_ptr);
 
 CCCL_C_EXTERN_C_END

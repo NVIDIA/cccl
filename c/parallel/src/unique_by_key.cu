@@ -218,7 +218,7 @@ struct dynamic_vsmem_helper_t
 } // namespace unique_by_key
 
 CUresult cccl_device_unique_by_key_build(
-  cccl_device_unique_by_key_build_result_t* build,
+  cccl_device_unique_by_key_build_result_t* build_ptr,
   cccl_iterator_t input_keys_it,
   cccl_iterator_t input_values_it,
   cccl_iterator_t output_keys_it,
@@ -230,7 +230,7 @@ CUresult cccl_device_unique_by_key_build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path) noexcept
+  const char* ctk_path)
 {
   CUresult error = CUDA_SUCCESS;
 
@@ -373,18 +373,19 @@ struct device_unique_by_key_policy {{
         .add_link_list(ltoir_list)
         .finalize_program(num_lto_args, lopts);
 
-    cuLibraryLoadData(&build->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-    check(cuLibraryGetKernel(&build->compact_init_kernel, build->library, compact_init_kernel_lowered_name.c_str()));
-    check(cuLibraryGetKernel(&build->sweep_kernel, build->library, sweep_kernel_lowered_name.c_str()));
+    cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+    check(cuLibraryGetKernel(
+      &build_ptr->compact_init_kernel, build_ptr->library, compact_init_kernel_lowered_name.c_str()));
+    check(cuLibraryGetKernel(&build_ptr->sweep_kernel, build_ptr->library, sweep_kernel_lowered_name.c_str()));
 
     auto [description_bytes_per_tile,
           payload_bytes_per_tile] = get_tile_state_bytes_per_tile(offset_t, offset_cpp, args, num_args, arch);
 
-    build->cc                         = cc;
-    build->cubin                      = (void*) result.data.release();
-    build->cubin_size                 = result.size;
-    build->description_bytes_per_tile = description_bytes_per_tile;
-    build->payload_bytes_per_tile     = payload_bytes_per_tile;
+    build_ptr->cc                         = cc;
+    build_ptr->cubin                      = (void*) result.data.release();
+    build_ptr->cubin_size                 = result.size;
+    build_ptr->description_bytes_per_tile = description_bytes_per_tile;
+    build_ptr->payload_bytes_per_tile     = payload_bytes_per_tile;
   }
   catch (const std::exception& exc)
   {
@@ -408,7 +409,7 @@ CUresult cccl_device_unique_by_key(
   cccl_iterator_t d_num_selected_out,
   cccl_op_t op,
   unsigned long long num_items,
-  CUstream stream) noexcept
+  CUstream stream)
 {
   CUresult error = CUDA_SUCCESS;
   bool pushed    = false;
@@ -463,7 +464,7 @@ CUresult cccl_device_unique_by_key(
   return error;
 }
 
-CUresult cccl_device_unique_by_key_cleanup(cccl_device_unique_by_key_build_result_t* build_ptr) noexcept
+CUresult cccl_device_unique_by_key_cleanup(cccl_device_unique_by_key_build_result_t* build_ptr)
 {
   try
   {
