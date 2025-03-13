@@ -61,7 +61,7 @@ public:
       : devid(devid)
       , numsm(sm_count)
   {
-    assert(devid >= 0);
+    _CCCL_VERIFY(devid >= 0, "Invalid device id");
     const int old_device = cuda_try<cudaGetDevice>();
     // Change device only if necessary.
     if (devid != old_device)
@@ -72,7 +72,7 @@ public:
     /* Make sure we aren't requesting more SMs than the GPU has available */
     int max_SMs;
     cuda_safe_call(cudaDeviceGetAttribute(&max_SMs, cudaDevAttrMultiProcessorCount, devid));
-    assert(max_SMs >= int(numsm));
+    _CCCL_VERIFY(max_SMs >= numsm, "Cannot request more SM than available");
 
     /* Determine the device's resources */
     CUdevice device;
@@ -157,7 +157,7 @@ private:
   int devid               = -1;
 
   // Number of SMs requested per green context
-  size_t numsm = 0;
+  int numsm = 0;
 
   ::std::vector<CUgreenCtx> ctxs;
 };
