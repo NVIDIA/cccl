@@ -28,13 +28,13 @@ THRUST_NAMESPACE_BEGIN
 //! \ingroup iterators
 //! \{
 
-//! \p offset_iterator wraps another iterator and an integral offset, apply the offset to the iterator when
+//! \p offset_iterator wraps another iterator and an integral offset, applies the offset to the iterator when
 //! dereferencing, comparing, or computing the distance between two offset_iterators. This is useful, when the
 //! underlying iterator cannot be incremented, decremented, or advanced (e.g., because those operations are only
 //! supported in device code).
 //!
 //!
-//! The following code snippet demonstrates how to create a \p offset_iterator:
+//! The following code snippet demonstrates how to create an \p offset_iterator:
 //!
 //! \code
 //! #include <thrust/iterator/offset_iterator.h>
@@ -71,7 +71,7 @@ THRUST_NAMESPACE_BEGIN
 //!
 //!   thrust::device_vector<ptrdiff> offsets{1}; // offset is only available on device
 //!   auto offset = thrust::make_transform_iterator(offsets.begin(), _1 * 2);
-//!   thrust::offset_iterator iter(v.begin(), offset); // load and transform offset upon access
+//!   thrust::offset_iterator iter(data.begin(), offset); // load and transform offset upon access
 //!   // iter is at position 2 (= 1 * 2) in data, and would return 3 in device code
 //!
 //!   return 0;
