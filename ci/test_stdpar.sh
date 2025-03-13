@@ -9,6 +9,16 @@ cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/../..";
 readonly cccl_repo="${PWD}"
 readonly workdir="${cccl_repo}/test/stdpar"
 
+CXX_STANDARD=17
+
+args=("$@")
+while [ "${#args[@]}" -ne 0 ]; do
+    case "${args[0]}" in
+    -std)  CXX_STANDARD="${args[1]}";  args=("${args[@]:2}");;
+    *) echo "Unrecognized option: ${args[0]}"; exit 1 ;;
+    esac
+done
+
 mkdir -p "${workdir}"
 cd "${workdir}"
 
@@ -16,6 +26,6 @@ cd "${workdir}"
 rm -rf build
 mkdir build
 cd build
-cmake -G Ninja ..
+cmake -G Ninja .. -DCMAKE_CXX_STANDARD="${CXX_STANDARD}"
 cmake --build .
 ctest .
