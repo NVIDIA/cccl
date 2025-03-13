@@ -8,8 +8,7 @@ workflows:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'clang16']}
   #
   override:
-    - {jobs: ['test'], project: 'stdpar', std: 'all', ctk: '12.5', cxx: 'nvhpc'}
-    - {jobs: ['test'], project: 'stdpar', std: 'all', ctk: '12.5', cxx: 'nvhpc', cpu: 'arm64'}
+    - {jobs: ['build'], project: 'stdpar', std: 'all', ctk: '12.5', cxx: 'nvhpc', cpu: ['amd64', 'arm64']}
 
   pull_request:
     # Old CTK/compiler
@@ -244,8 +243,6 @@ projects:
   stdpar:
     name: 'NVHPC stdpar'
     stds: [17, 20]
-    # These jobs are small enough that we just build on the GPU runner.
-    job_map: { build: [], test: ['test_nobuild'] }
   python:
     name: "cuda (python)"
     job_map: { build: [], test: ['test_nobuild'] }
