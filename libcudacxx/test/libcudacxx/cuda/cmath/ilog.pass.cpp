@@ -9,6 +9,7 @@
 
 #include <cuda/cmath>
 #include <cuda/std/cassert>
+#include <cuda/std/cmath>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
@@ -20,15 +21,14 @@ __host__ __device__ constexpr void test_log2()
   int i = 0;
   for (T value = 1; value <= cuda::std::numeric_limits<T>::max() / 2; value *= 2)
   {
+    assert(cuda::ilog2(value) == i);
     if (i >= 1)
     {
       assert(cuda::ilog2(static_cast<T>(value - 1)) == i - 1);
       assert(cuda::ilog2(static_cast<T>(value + 1)) == i); // not true if value == 1
     }
-    assert(cuda::ilog2(value) == i);
     i++;
   }
-  assert(cuda::ilog2(T{1}) == 0);
   assert(cuda::ilog2(cuda::std::numeric_limits<T>::max()) == cuda::std::numeric_limits<T>::digits - 1);
 }
 
@@ -38,20 +38,22 @@ __host__ __device__ constexpr void test_log10()
   int i = 0;
   for (T value = 1; value <= cuda::std::numeric_limits<T>::max() / 10; value *= 10)
   {
+    assert(cuda::ilog10(value) == i);
+    assert(cuda::ilog10(value + value / 2) == i);
     if (i >= 1)
     {
       assert(cuda::ilog10(static_cast<T>(value - 1)) == i - 1);
       assert(cuda::ilog10(static_cast<T>(value + 1)) == i);
+      assert(cuda::ilog10(value - value / 2) == i - 1);
+      assert(cuda::ilog10(value - value / 2 - 1) == i - 1);
     }
-    assert(cuda::ilog10(value) == i);
     i++;
   }
-  static_assert(cuda::ilog10(T{1}) == 0);
-  static_assert(cuda::ilog10(T{9}) == 0);
-  static_assert(cuda::ilog10(T{10}) == 1);
-  static_assert(cuda::ilog10(T{100}) == 2);
-  static_assert(cuda::ilog10(T{10}) == 1);
-  static_assert(cuda::ilog10(cuda::std::numeric_limits<T>::max()) <= cuda::std::numeric_limits<T>::digits / 3);
+  if (!cuda::std::is_constant_evaluated())
+  {
+    constexpr auto max_v = cuda::std::numeric_limits<T>::max();
+    assert(cuda::ilog10(max_v) == static_cast<int>(cuda::std::floor(cuda::std::log10(max_v))));
+  }
 }
 
 template <class T>
@@ -97,10 +99,10 @@ __host__ __device__ constexpr bool test()
   test<std::uint64_t>();
 #endif // !TEST_COMPILER_NVRTC
 
-  // #if _CCCL_HAS_INT128()
-  //   test<__int128_t>();
-  //   test<__uint128_t>();
-  // #endif // _CCCL_HAS_INT128()
+#if _CCCL_HAS_INT128()
+  test<__int128_t>();
+  test<__uint128_t>();
+#endif // _CCCL_HAS_INT128()
   return true;
 }
 
