@@ -509,7 +509,7 @@ TEMPLATE_TEST_CASE("device_memory_pool accessors", "[memory_resource]", TEST_TYP
   }
 }
 
-TEST_CASE("device_memory_pool::enable_peer_access", "[memory_resource]")
+TEST_CASE("device_memory_pool::enable_access", "[memory_resource]")
 {
   if (cudax::devices.size() > 1)
   {
@@ -519,10 +519,10 @@ TEST_CASE("device_memory_pool::enable_peer_access", "[memory_resource]")
       cudax::device_memory_pool pool{cudax::devices[0]};
       CUDAX_CHECK(pool.is_accessible_from(cudax::devices[0]));
 
-      pool.enable_peer_access_from(peers);
+      pool.enable_access_from(peers);
       CUDAX_CHECK(pool.is_accessible_from(peers.front()));
 
-      pool.disable_peer_access_from(peers.front());
+      pool.disable_access_from(peers.front());
       CUDAX_CHECK(!pool.is_accessible_from(peers.front()));
 
       if (peers.size() > 1)
@@ -534,16 +534,16 @@ TEST_CASE("device_memory_pool::enable_peer_access", "[memory_resource]")
 }
 
 #if _CCCL_CUDACC_AT_LEAST(12, 6)
-TEST_CASE("pinned_memory_pool::enable_peer_access", "[memory_resource]")
+TEST_CASE("pinned_memory_pool::enable_access", "[memory_resource]")
 {
   cudax::pinned_memory_pool pool{};
   CUDAX_CHECK(pool.is_accessible_from(cudax::devices[0]));
 
   // Currently bugged, need to wait for driver fix
-  // pool.disable_peer_access_from(cudax::devices[0]);
+  // pool.disable_access_from(cudax::devices[0]);
   // CUDAX_CHECK(!pool.is_accessible_from(cudax::devices[0]));
 
-  // pool.enable_peer_access_from(cudax::devices[0]);
+  // pool.enable_access_from(cudax::devices[0]);
   // CUDAX_CHECK(pool.is_accessible_from(cudax::devices[0]));
 }
 #endif
