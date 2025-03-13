@@ -180,8 +180,6 @@ struct DispatchRadixSort
   // Whether this is a keys-only (or key-value) sort
   static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
-  using max_policy_t = typename PolicyHub::MaxPolicy;
-
   //------------------------------------------------------------------------------
   // Problem state
   //------------------------------------------------------------------------------
@@ -278,7 +276,7 @@ struct DispatchRadixSort
    */
   template <typename ActivePolicyT, typename SingleTileKernelT>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
-  InvokeSingleTile(SingleTileKernelT single_tile_kernel)
+  InvokeSingleTile(SingleTileKernelT single_tile_kernel, ActivePolicyT policy = {})
   {
     cudaError error = cudaSuccess;
     do
@@ -304,7 +302,7 @@ struct DispatchRadixSort
 #endif
 
       // Invoke upsweep_kernel with same grid size as downsweep_kernel
-      launcher_factory(1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
+      launcher_factory(1, policy.SingleTile().BlockThreads(), 0, stream)
         .doit(single_tile_kernel,
               d_keys.Current(),
               d_keys.Alternate(),
@@ -489,14 +487,19 @@ struct DispatchRadixSort
     GridEvenShare<OffsetT> even_share;
 
     /// Initialize pass configuration
-    template <typename UpsweepPolicyT, typename ScanPolicyT, typename DownsweepPolicyT>
+    template <typename ActivePolicyT, typename UpsweepPolicyT, typename ScanPolicyT, typename DownsweepPolicyT>
     CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t InitPassConfig(
       UpsweepKernelT upsweep_kernel,
       ScanKernelT scan_kernel,
       DownsweepKernelT downsweep_kernel,
       int /*ptx_version*/,
       int sm_count,
-      OffsetT num_items)
+      OffsetT num_items,
+      ActivePolicyT policy                   = {},
+      UpsweepPolicyT upsweep_policy          = {},
+      ScanPolicyT scan_policy                = {},
+      DownsweepPolicyT downsweep_policy      = {},
+      KernelLauncherFactory launcher_factory = {})
     {
       cudaError error = cudaSuccess;
       do
@@ -504,22 +507,22 @@ struct DispatchRadixSort
         this->upsweep_kernel   = upsweep_kernel;
         this->scan_kernel      = scan_kernel;
         this->downsweep_kernel = downsweep_kernel;
-        radix_bits             = DownsweepPolicyT::RADIX_BITS;
+        radix_bits             = policy.RadixBits(downsweep_policy);
         radix_digits           = 1 << radix_bits;
 
-        error = CubDebug(upsweep_config.Init<UpsweepPolicyT>(upsweep_kernel));
+        error = CubDebug(upsweep_config.Init(upsweep_kernel, upsweep_policy, launcher_factory));
         if (cudaSuccess != error)
         {
           break;
         }
 
-        error = CubDebug(scan_config.Init<ScanPolicyT>(scan_kernel));
+        error = CubDebug(scan_config.Init(scan_kernel, scan_policy, launcher_factory));
         if (cudaSuccess != error)
         {
           break;
         }
 
-        error = CubDebug(downsweep_config.Init<DownsweepPolicyT>(downsweep_kernel));
+        error = CubDebug(downsweep_config.Init(downsweep_kernel, downsweep_policy, launcher_factory));
         if (cudaSuccess != error)
         {
           break;
@@ -536,17 +539,17 @@ struct DispatchRadixSort
   };
 
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokeOnesweep()
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokeOnesweep(ActivePolicyT policy = {})
   {
     // PortionOffsetT is used for offsets within a portion, and must be signed.
     using PortionOffsetT = int;
     using AtomicOffsetT  = PortionOffsetT;
 
     // compute temporary storage size
-    constexpr int RADIX_BITS                = ActivePolicyT::ONESWEEP_RADIX_BITS;
+    constexpr int RADIX_BITS                = policy.RadixBits(policy.Onesweep());
     constexpr int RADIX_DIGITS              = 1 << RADIX_BITS;
-    constexpr int ONESWEEP_ITEMS_PER_THREAD = ActivePolicyT::OnesweepPolicy::ITEMS_PER_THREAD;
-    constexpr int ONESWEEP_BLOCK_THREADS    = ActivePolicyT::OnesweepPolicy::BLOCK_THREADS;
+    constexpr int ONESWEEP_ITEMS_PER_THREAD = policy.Onesweep().ItemsPerThread();
+    constexpr int ONESWEEP_BLOCK_THREADS    = policy.Onesweep().BlockThreads();
     constexpr int ONESWEEP_TILE_ITEMS       = ONESWEEP_ITEMS_PER_THREAD * ONESWEEP_BLOCK_THREADS;
     // portions handle inputs with >=2**30 elements, due to the way lookback works
     // for testing purposes, one portion is <= 2**28 elements
@@ -616,7 +619,7 @@ struct DispatchRadixSort
         break;
       }
 
-      constexpr int HISTO_BLOCK_THREADS = ActivePolicyT::HistogramPolicy::BLOCK_THREADS;
+      constexpr int HISTO_BLOCK_THREADS = policy.Histogram().BlockThreads();
       int histo_blocks_per_sm           = 1;
       auto histogram_kernel             = kernel_source.RadixSortHistogramKernel();
 
@@ -634,9 +637,9 @@ struct DispatchRadixSort
               histo_blocks_per_sm * num_sms,
               HISTO_BLOCK_THREADS,
               reinterpret_cast<long long>(stream),
-              ActivePolicyT::HistogramPolicy::ITEMS_PER_THREAD,
+              policy.Histogram().ItemsPerThread(),
               histo_blocks_per_sm,
-              ActivePolicyT::HistogramPolicy::RADIX_BITS);
+              policy.RadixBits(policy.Histogram()));
 #endif
 
       error = launcher_factory(histo_blocks_per_sm * num_sms, HISTO_BLOCK_THREADS, 0, stream)
@@ -654,7 +657,7 @@ struct DispatchRadixSort
       }
 
       // exclusive sums to determine starts
-      constexpr int SCAN_BLOCK_THREADS = ActivePolicyT::ExclusiveSumPolicy::BLOCK_THREADS;
+      constexpr int SCAN_BLOCK_THREADS = policy.ExclusiveSum().BlockThreads();
 
 // log exclusive_sum_kernel configuration
 #ifdef CUB_DEBUG_LOG
@@ -662,7 +665,7 @@ struct DispatchRadixSort
               num_passes,
               SCAN_BLOCK_THREADS,
               reinterpret_cast<long long>(stream),
-              ActivePolicyT::ExclusiveSumPolicy::RADIX_BITS);
+              policy.RadixBits(policy.ExclusiveSum()));
 #endif
 
       error = launcher_factory(num_passes, SCAN_BLOCK_THREADS, 0, stream)
@@ -711,7 +714,7 @@ struct DispatchRadixSort
                   num_blocks,
                   ONESWEEP_BLOCK_THREADS,
                   reinterpret_cast<long long>(stream),
-                  ActivePolicyT::OnesweepPolicy::ITEMS_PER_THREAD,
+                  policy.Onesweep().ItemsPerThread(),
                   current_bit,
                   num_bits,
                   static_cast<int>(portion),
@@ -806,7 +809,8 @@ struct DispatchRadixSort
     UpsweepKernelT alt_upsweep_kernel,
     ScanKernelT scan_kernel,
     DownsweepKernelT downsweep_kernel,
-    DownsweepKernelT alt_downsweep_kernel)
+    DownsweepKernelT alt_downsweep_kernel,
+    ActivePolicyT policy = {})
   {
     cudaError error = cudaSuccess;
     do
@@ -829,19 +833,35 @@ struct DispatchRadixSort
 
       // Init regular and alternate-digit kernel configurations
       PassConfig<UpsweepKernelT, ScanKernelT, DownsweepKernelT> pass_config, alt_pass_config;
-      error = pass_config.template InitPassConfig<typename ActivePolicyT::UpsweepPolicy,
-                                                  typename ActivePolicyT::ScanPolicy,
-                                                  typename ActivePolicyT::DownsweepPolicy>(
-        upsweep_kernel, scan_kernel, downsweep_kernel, ptx_version, sm_count, num_items);
+      error = pass_config.InitPassConfig(
+        upsweep_kernel,
+        scan_kernel,
+        downsweep_kernel,
+        ptx_version,
+        sm_count,
+        num_items,
+        policy,
+        policy.Upsweep(),
+        policy.Scan(),
+        policy.Downsweep(),
+        launcher_factory);
       if (error)
       {
         break;
       }
 
-      error = alt_pass_config.template InitPassConfig<typename ActivePolicyT::AltUpsweepPolicy,
-                                                      typename ActivePolicyT::ScanPolicy,
-                                                      typename ActivePolicyT::AltDownsweepPolicy>(
-        alt_upsweep_kernel, scan_kernel, alt_downsweep_kernel, ptx_version, sm_count, num_items);
+      error = alt_pass_config.InitPassConfig(
+        alt_upsweep_kernel,
+        scan_kernel,
+        alt_downsweep_kernel,
+        ptx_version,
+        sm_count,
+        num_items,
+        policy,
+        policy.AltUpsweep(),
+        policy.Scan(),
+        policy.AltDownsweep(),
+        launcher_factory);
       if (error)
       {
         break;
@@ -957,22 +977,23 @@ struct DispatchRadixSort
   //------------------------------------------------------------------------------
 
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokeManyTiles(::cuda::std::false_type)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokeManyTiles(::cuda::std::false_type, ActivePolicyT policy = {})
   {
     // Invoke upsweep-downsweep
-    return InvokePasses<ActivePolicyT>(
+    return InvokePasses(
       kernel_source.RadixSortUpsweepKernel(),
       kernel_source.RadixSortAltUpsweepKernel(),
       kernel_source.DeviceRadixSortScanBinsKernel(),
       kernel_source.RadixSortDownsweepKernel(),
-      kernel_source.RadixSortAltDownsweepKernel());
+      kernel_source.RadixSortAltDownsweepKernel(),
+      policy);
   }
 
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokeManyTiles(::cuda::std::true_type)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokeManyTiles(::cuda::std::true_type, ActivePolicyT policy = {})
   {
     // Invoke onesweep
-    return InvokeOnesweep<ActivePolicyT>();
+    return InvokeOnesweep(policy);
   }
 
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokeCopy()
@@ -1031,9 +1052,9 @@ struct DispatchRadixSort
 
   /// Invocation
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT policy = {})
   {
-    using SingleTilePolicyT = typename ActivePolicyT::SingleTilePolicy;
+    auto wrapped_policy = detail::radix::MakeRadixSortPolicyWrapper(policy);
 
     // Return if empty problem, or if no bits to sort and double-buffering is used
     if (num_items == 0 || (begin_bit == end_bit && is_overwrite_okay))
@@ -1061,15 +1082,16 @@ struct DispatchRadixSort
     }
 
     // Force kernel code-generation in all compiler passes
-    if (num_items <= (SingleTilePolicyT::BLOCK_THREADS * SingleTilePolicyT::ITEMS_PER_THREAD))
+    if (num_items <= static_cast<OffsetT>(
+          wrapped_policy.SingleTile().BlockThreads() * wrapped_policy.SingleTile().ItemsPerThread()))
     {
       // Small, single tile size
-      return InvokeSingleTile<ActivePolicyT>(kernel_source.RadixSortSingleTileKernel());
+      return InvokeSingleTile(kernel_source.RadixSortSingleTileKernel(), wrapped_policy);
     }
     else
     {
       // Regular size
-      return InvokeManyTiles<ActivePolicyT>(detail::bool_constant_v<ActivePolicyT::ONESWEEP>);
+      return InvokeManyTiles(detail::bool_constant_v<wrapped_policy.IsOnesweep()>, wrapped_policy);
     }
   }
 
@@ -1110,6 +1132,7 @@ struct DispatchRadixSort
    * @param[in] stream
    *   CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
    */
+  template <typename MaxPolicyT = typename PolicyHub::MaxPolicy>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1122,7 +1145,8 @@ struct DispatchRadixSort
     cudaStream_t stream,
     DecomposerT decomposer                 = {},
     KernelSource kernel_source             = {},
-    KernelLauncherFactory launcher_factory = {})
+    KernelLauncherFactory launcher_factory = {},
+    MaxPolicyT max_policy                  = {})
   {
     cudaError_t error;
     do
@@ -1153,7 +1177,7 @@ struct DispatchRadixSort
         launcher_factory);
 
       // Dispatch to chained policy
-      error = CubDebug(max_policy_t::Invoke(ptx_version, dispatch));
+      error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
       if (cudaSuccess != error)
       {
         break;
@@ -1216,8 +1240,6 @@ struct DispatchSegmentedRadixSort
 
   // Whether this is a keys-only (or key-value) sort
   static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
-
-  using max_policy_t = typename PolicyHub::MaxPolicy;
 
   //------------------------------------------------------------------------------
   // Parameter members
@@ -1394,14 +1416,17 @@ struct DispatchSegmentedRadixSort
 
     /// Initialize pass configuration
     template <typename SegmentedPolicyT>
-    CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
-    InitPassConfig(SegmentedKernelT segmented_kernel)
+    CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t InitPassConfig(
+      SegmentedKernelT segmented_kernel,
+      int radix_bits,
+      SegmentedPolicyT policy                = {},
+      KernelLauncherFactory launcher_factory = {})
     {
       this->segmented_kernel = segmented_kernel;
-      this->radix_bits       = SegmentedPolicyT::RADIX_BITS;
+      this->radix_bits       = radix_bits;
       this->radix_digits     = 1 << radix_bits;
 
-      return CubDebug(segmented_config.Init<SegmentedPolicyT>(segmented_kernel));
+      return CubDebug(segmented_config.Init(segmented_kernel, policy, launcher_factory));
     }
   };
 
@@ -1423,19 +1448,20 @@ struct DispatchSegmentedRadixSort
    */
   template <typename ActivePolicyT, typename SegmentedKernelT>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
-  InvokePasses(SegmentedKernelT segmented_kernel, SegmentedKernelT alt_segmented_kernel)
+  InvokePasses(SegmentedKernelT segmented_kernel, SegmentedKernelT alt_segmented_kernel, ActivePolicyT policy = {})
   {
     cudaError error = cudaSuccess;
     do
     {
       // Init regular and alternate kernel configurations
       PassConfig<SegmentedKernelT> pass_config, alt_pass_config;
-      if ((error = pass_config.template InitPassConfig<typename ActivePolicyT::SegmentedPolicy>(segmented_kernel)))
+      if ((error = pass_config.InitPassConfig(
+             segmented_kernel, policy.RadixBits(policy.Segmented()), policy.Segmented(), launcher_factory)))
       {
         break;
       }
-      if ((error =
-             alt_pass_config.template InitPassConfig<typename ActivePolicyT::AltSegmentedPolicy>(alt_segmented_kernel)))
+      if ((error = alt_pass_config.InitPassConfig(
+             alt_segmented_kernel, policy.RadixBits(policy.AltSegmented()), policy.AltSegmented(), launcher_factory)))
       {
         break;
       }
@@ -1469,8 +1495,8 @@ struct DispatchSegmentedRadixSort
 
       // Pass planning.  Run passes of the alternate digit-size configuration until we have an even multiple of our
       // preferred digit size
-      int radix_bits         = ActivePolicyT::SegmentedPolicy::RADIX_BITS;
-      int alt_radix_bits     = ActivePolicyT::AltSegmentedPolicy::RADIX_BITS;
+      int radix_bits         = policy.RadixBits(policy.Segmented());
+      int alt_radix_bits     = policy.RadixBits(policy.AltSegmented());
       int num_bits           = end_bit - begin_bit;
       int num_passes         = _CUDA_VSTD::max(::cuda::ceil_div(num_bits, radix_bits), 1); // num_bits may be zero
       bool is_num_passes_odd = num_passes & 1;
@@ -1543,7 +1569,7 @@ struct DispatchSegmentedRadixSort
 
   /// Invocation
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT policy = {})
   {
     // Return if empty problem, or if no bits to sort and double-buffering is used
     if (num_items == 0 || num_segments == 0 || (begin_bit == end_bit && is_overwrite_okay))
@@ -1556,8 +1582,9 @@ struct DispatchSegmentedRadixSort
     }
 
     // Force kernel code-generation in all compiler passes
-    return InvokePasses<ActivePolicyT>(
-      kernel_source.SegmentedRadixSortKernel(), kernel_source.AltSegmentedRadixSortKernel());
+    return InvokePasses(kernel_source.SegmentedRadixSortKernel(),
+                        kernel_source.AltSegmentedRadixSortKernel(),
+                        detail::radix::MakeRadixSortPolicyWrapper(policy));
   }
 
   //------------------------------------------------------------------------------
@@ -1612,6 +1639,7 @@ struct DispatchSegmentedRadixSort
    * @param[in] stream
    *   CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
    */
+  template <typename MaxPolicyT = typename PolicyHub::MaxPolicy>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1626,7 +1654,8 @@ struct DispatchSegmentedRadixSort
     bool is_overwrite_okay,
     cudaStream_t stream,
     KernelSource kernel_source             = {},
-    KernelLauncherFactory launcher_factory = {})
+    KernelLauncherFactory launcher_factory = {},
+    MaxPolicyT max_policy                  = {})
   {
     cudaError_t error;
     do
@@ -1660,7 +1689,7 @@ struct DispatchSegmentedRadixSort
         launcher_factory);
 
       // Dispatch to chained policy
-      error = CubDebug(max_policy_t::Invoke(ptx_version, dispatch));
+      error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
       if (cudaSuccess != error)
       {
         break;
