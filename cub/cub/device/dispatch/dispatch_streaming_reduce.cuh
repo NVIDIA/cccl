@@ -197,10 +197,7 @@ struct dispatch_streaming_arg_reduce_t
 
     // Wrapped input iterator to produce index-value tuples, i.e., <PerPartitionOffsetT, InputT>-tuples
     // We make sure to offset the user-provided input iterator by the current partition's offset
-    using arg_index_input_iterator_t =
-      ArgIndexInputIterator<detail::offset_input_iterator<InputIteratorT, constant_offset_it_t>,
-                            PerPartitionOffsetT,
-                            InitT>;
+    using arg_index_input_iterator_t = ArgIndexInputIterator<InputIteratorT, PerPartitionOffsetT, InitT>;
 
     // The type used for the aggregate that the user wants to find the extremum for
     using output_aggregate_t = InitT;
@@ -239,7 +236,7 @@ struct dispatch_streaming_arg_reduce_t
     // The current partition's input iterator is an ArgIndex iterator that generates indices relative to the beginning
     // of the current partition, i.e., [0, partition_size) along with an OffsetIterator that offsets the user-provided
     // input iterator by the current partition's offset
-    arg_index_input_iterator_t d_indexed_offset_in{offset_input_iterator(d_in, constant_offset_it_t{GlobalOffsetT{0}})};
+    arg_index_input_iterator_t d_indexed_offset_in(d_in);
 
     // Transforms the per-partition result to a global result by adding the current partition's offset to the arg result
     // of a partition
@@ -311,8 +308,7 @@ struct dispatch_streaming_arg_reduce_t
       const GlobalOffsetT current_num_items =
         (remaining_items < max_partition_size) ? remaining_items : max_partition_size;
 
-      d_indexed_offset_in =
-        arg_index_input_iterator_t{detail::offset_input_iterator{d_in, constant_offset_it_t{current_partition_offset}}};
+      d_indexed_offset_in = arg_index_input_iterator_t(d_in + current_partition_offset);
 
       error = dispatch_reduce_t::Dispatch(
         d_temp_storage,

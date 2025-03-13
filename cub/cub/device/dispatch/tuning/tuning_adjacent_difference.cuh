@@ -67,9 +67,4 @@ struct policy_hub
 } // namespace adjacent_difference
 } // namespace detail
 
-template <typename InputIteratorT, bool MayAlias = true>
-using DeviceAdjacentDifferencePolicy CCCL_DEPRECATED_BECAUSE(
-  "This class is considered an implementation detail and it "
-  "will be removed.") = detail::adjacent_difference::policy_hub<InputIteratorT, MayAlias>;
-
 CUB_NAMESPACE_END

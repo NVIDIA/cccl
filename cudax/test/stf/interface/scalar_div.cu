@@ -51,7 +51,7 @@ public:
       cuda_safe_call(cudaHostRegister(h_addr, s, cudaHostRegisterPortable));
     }
 
-    data_place d = is_tmp ? data_place::invalid : data_place::host;
+    data_place d = is_tmp ? data_place::invalid() : data_place::host();
     handle       = ctx->logical_data(make_slice(h_addr), d);
   }
 

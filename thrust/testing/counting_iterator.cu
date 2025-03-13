@@ -10,25 +10,64 @@
 
 #include <unittest/unittest.h>
 
+template <typename ValueType, typename DifferenceType>
+inline constexpr bool diff_type_is =
+  ::cuda::std::is_same_v<typename thrust::counting_iterator<ValueType>::difference_type, DifferenceType>;
+
+static_assert(diff_type_is<int8_t, int>);
+static_assert(diff_type_is<uint8_t, int>);
+static_assert(diff_type_is<int16_t, int>);
+static_assert(diff_type_is<uint16_t, int>);
+static_assert(diff_type_is<int32_t, ptrdiff_t>);
+static_assert(diff_type_is<uint32_t, ptrdiff_t>);
+static_assert(diff_type_is<int64_t, ptrdiff_t>);
+static_assert(diff_type_is<uint64_t, ptrdiff_t>);
+#if _CCCL_HAS_INT128()
+static_assert(diff_type_is<__int128_t, ptrdiff_t>);
+static_assert(diff_type_is<__uint128_t, ptrdiff_t>);
+#endif
+static_assert(diff_type_is<float, ptrdiff_t>);
+static_assert(diff_type_is<double, ptrdiff_t>);
+
+struct custom_int
+{
+  _CCCL_HOST_DEVICE custom_int(int) {}
+  _CCCL_HOST_DEVICE operator int() const;
+};
+static_assert(thrust::detail::is_numeric<custom_int>::value);
+
+static_assert(diff_type_is<custom_int, ptrdiff_t>);
+
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
 
 // ensure that we properly support thrust::counting_iterator from cuda::std
-void test_iterator_traits()
+void TestCountingIteratorTraits()
 {
-  using It       = cuda::std::iterator_traits<thrust::counting_iterator<int>>;
+  using it       = thrust::counting_iterator<int>;
+  using traits   = cuda::std::iterator_traits<it>;
   using category = thrust::detail::iterator_category_with_system_and_traversal<::cuda::std::random_access_iterator_tag,
                                                                                thrust::any_system_tag,
                                                                                thrust::random_access_traversal_tag>;
 
-  static_assert(cuda::std::is_same<It::difference_type, ptrdiff_t>::value, "");
-  static_assert(cuda::std::is_same<It::value_type, int>::value, "");
-  static_assert(cuda::std::is_same<It::pointer, void>::value, "");
-  static_assert(cuda::std::is_same<It::reference, signed int>::value, "");
-  static_assert(cuda::std::is_same<It::iterator_category, category>::value, "");
+  static_assert(cuda::std::is_same_v<traits::difference_type, ptrdiff_t>);
+  static_assert(cuda::std::is_same_v<traits::value_type, int>);
+  static_assert(cuda::std::is_same_v<traits::pointer, void>);
+  static_assert(cuda::std::is_same_v<traits::reference, signed int>);
+  static_assert(cuda::std::is_same_v<traits::iterator_category, category>);
 
-  static_assert(cuda::std::__is_cpp17_random_access_iterator<thrust::counting_iterator<int>>::value, "");
+  static_assert(cuda::std::is_same_v<thrust::iterator_traversal_t<it>, thrust::random_access_traversal_tag>);
+
+  static_assert(cuda::std::__is_cpp17_random_access_iterator<it>::value);
+
+  static_assert(!cuda::std::output_iterator<it, int>);
+  static_assert(cuda::std::input_iterator<it>);
+  static_assert(cuda::std::forward_iterator<it>);
+  static_assert(cuda::std::bidirectional_iterator<it>);
+  static_assert(cuda::std::random_access_iterator<it>);
+  static_assert(!cuda::std::contiguous_iterator<it>);
 }
+DECLARE_UNITTEST(TestCountingIteratorTraits);
 
 template <typename T>
 void TestCountingDefaultConstructor()

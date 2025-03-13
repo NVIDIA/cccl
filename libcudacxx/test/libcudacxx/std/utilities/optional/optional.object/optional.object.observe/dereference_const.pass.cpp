@@ -25,7 +25,7 @@ struct X
   {
     return 3;
   }
-  __host__ __device__ int test() &
+  __host__ __device__ constexpr int test() &
   {
     return 4;
   }
@@ -33,7 +33,7 @@ struct X
   {
     return 5;
   }
-  __host__ __device__ int test() &&
+  __host__ __device__ constexpr int test() &&
   {
     return 6;
   }
@@ -41,20 +41,20 @@ struct X
 
 struct Y
 {
-  __host__ __device__ int test() const
+  __host__ __device__ constexpr int test() const
   {
     return 2;
   }
 };
 
-int main(int, char**)
+__host__ __device__ constexpr bool test()
 {
   {
-    const optional<X> opt;
+    const optional<X> opt{};
     unused(opt);
     ASSERT_SAME_TYPE(decltype(*opt), X const&);
-    LIBCPP_STATIC_ASSERT(noexcept(*opt), "");
-    // ASSERT_NOT_NOEXCEPT(*opt);
+    static_assert(noexcept(*opt), "");
+    // static_assert(!noexcept(*opt));
     // FIXME: This assertion fails with GCC because it can see that
     // (A) operator*() is constexpr, and
     // (B) there is no path through the function that throws.
@@ -62,16 +62,45 @@ int main(int, char**)
     // operator.
     // Regardless this function should still be noexcept(false) because
     // it has a narrow contract.
+
+    const optional<X&> optref;
+    unused(optref);
+    ASSERT_SAME_TYPE(decltype(*optref), X&);
+    static_assert(noexcept(*optref), "");
+    static_assert(noexcept(*optref));
   }
 
   {
-    constexpr optional<X> opt(X{});
-    static_assert((*opt).test() == 3, "");
+    const optional<X> opt(X{});
+    assert((*opt).test() == 3);
   }
+
   {
-    constexpr optional<Y> opt(Y{});
+    X val{};
+    const optional<X&> opt(val);
+    assert((*opt).test() == 4); // returns a X&
+    assert(cuda::std::addressof(val) == cuda::std::addressof(*opt));
+  }
+
+  {
+    const optional<Y> opt(Y{});
     assert((*opt).test() == 2);
   }
+
+  {
+    Y val{};
+    const optional<Y&> opt(val);
+    assert((*opt).test() == 2);
+    assert(cuda::std::addressof(val) == cuda::std::addressof(*opt));
+  }
+
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test(), "");
 
   return 0;
 }

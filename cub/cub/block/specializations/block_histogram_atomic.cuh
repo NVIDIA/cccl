@@ -83,9 +83,4 @@ struct BlockHistogramAtomic
 };
 } // namespace detail
 
-template <int BINS>
-using BlockHistogramAtomic CCCL_DEPRECATED_BECAUSE(
-  "This class is considered an implementation detail and the public interface will be "
-  "removed.") = detail::BlockHistogramAtomic<BINS>;
-
 CUB_NAMESPACE_END

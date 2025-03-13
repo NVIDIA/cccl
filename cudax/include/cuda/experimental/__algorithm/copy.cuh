@@ -22,6 +22,8 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/mdspan>
+#include <cuda/std/span>
 
 #include <cuda/experimental/__algorithm/common.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
@@ -40,7 +42,6 @@ void __copy_bytes_impl(stream_ref __stream, _CUDA_VSTD::span<_SrcTy> __src, _CUD
     _CUDA_VSTD::__throw_invalid_argument("Copy destination is too small to fit the source data");
   }
 
-  // TODO pass copy direction hint once we have span with properties
   _CCCL_TRY_CUDA_API(
     ::cudaMemcpyAsync,
     "Failed to perform a copy",

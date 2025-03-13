@@ -262,10 +262,12 @@ struct FutureValue
 {
   using value_type    = T;
   using iterator_type = IterT;
+
   explicit _CCCL_HOST_DEVICE _CCCL_FORCEINLINE FutureValue(IterT iter)
       : m_iter(iter)
   {}
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T()
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T() const noexcept
   {
     return *m_iter;
   }
@@ -273,6 +275,9 @@ struct FutureValue
 private:
   IterT m_iter;
 };
+
+template <typename IterT>
+FutureValue(IterT) -> FutureValue<detail::it_value_t<IterT>, IterT>;
 
 namespace detail
 {
@@ -745,14 +750,10 @@ struct DoubleBuffer
 #  define CUB_DEFINE_DETECT_NESTED_TYPE(detector_name, nested_type_name)                                \
     template <typename T, typename = void>                                                              \
     struct detector_name : ::cuda::std::false_type                                                      \
-    {                                                                                                   \
-      CCCL_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool VALUE = false;               \
-    };                                                                                                  \
+    {};                                                                                                 \
     template <typename T>                                                                               \
     struct detector_name<T, ::cuda::std::void_t<typename T::nested_type_name>> : ::cuda::std::true_type \
-    {                                                                                                   \
-      CCCL_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool VALUE = true;                \
-    };
+    {};
 
 /******************************************************************************
  * Typedef-detection

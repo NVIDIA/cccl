@@ -176,19 +176,19 @@ typedef basic_ifstream<wchar_t> wifstream;
 typedef basic_ofstream<wchar_t> wofstream;
 typedef basic_fstream<wchar_t> wfstream;
 
-#if !defined(_LIBCUDACXX_HAS_NO_WCHAR_H)
+#if _LIBCUDACXX_HAS_WCHAR_H()
 template <class _State>
 class _CCCL_TYPE_VISIBILITY_DEFAULT fpos;
 typedef fpos<mbstate_t> streampos;
 typedef fpos<mbstate_t> wstreampos;
-#  ifndef _LIBCUDACXX_HAS_NO_CHAR8_T
+#  if _LIBCUDACXX_HAS_CHAR8_T()
 typedef fpos<mbstate_t> u8streampos;
-#  endif
+#  endif // _LIBCUDACXX_HAS_CHAR8_T()
 #  ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
 typedef fpos<mbstate_t> u16streampos;
 typedef fpos<mbstate_t> u32streampos;
 #  endif // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
-#endif
+#endif // _LIBCUDACXX_HAS_WCHAR_H()
 
 #if defined(_NEWLIB_VERSION)
 // On newlib, off_t is 'long int'

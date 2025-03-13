@@ -21,13 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_LIBCUDACXX_HAS_NVFP16)
-
-#  include <cuda_fp16.h>
+#if _LIBCUDACXX_HAS_NVFP16()
 
 #  include <cuda/std/__cmath/nvfp16.h>
 #  include <cuda/std/__complex/vector_support.h>
 #  include <cuda/std/__fwd/get.h>
+#  include <cuda/std/__internal/nvfp_types.h>
 #  include <cuda/std/__type_traits/enable_if.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
 #  include <cuda/std/__type_traits/is_constructible.h>
@@ -344,6 +343,6 @@ operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const complex<__half>& _
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif /// _LIBCUDACXX_HAS_NVFP16
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
 #endif // _LIBCUDACXX___CUDA_COMPLEX_NVFP16_H

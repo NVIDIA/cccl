@@ -730,11 +730,6 @@ struct DispatchSegmentedSort
   using local_segment_index_t   = detail::segmented_sort::local_segment_index_t;
   using global_segment_offset_t = detail::segmented_sort::global_segment_offset_t;
 
-  using StreamingBeginOffsetIteratorT =
-    detail::offset_input_iterator<BeginOffsetIteratorT, THRUST_NS_QUALIFIER::constant_iterator<global_segment_offset_t>>;
-  using StreamingEndOffsetIteratorT =
-    detail::offset_input_iterator<EndOffsetIteratorT, THRUST_NS_QUALIFIER::constant_iterator<global_segment_offset_t>>;
-
   static constexpr int KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
   struct LargeSegmentsSelectorT
@@ -1050,16 +1045,16 @@ struct DispatchSegmentedSort
             MaxPolicyT,
             KeyT,
             ValueT,
-            StreamingBeginOffsetIteratorT,
-            StreamingEndOffsetIteratorT,
+            BeginOffsetIteratorT,
+            EndOffsetIteratorT,
             OffsetT>,
           detail::segmented_sort::DeviceSegmentedSortKernelSmall<
             Order,
             MaxPolicyT,
             KeyT,
             ValueT,
-            StreamingBeginOffsetIteratorT,
-            StreamingEndOffsetIteratorT,
+            BeginOffsetIteratorT,
+            EndOffsetIteratorT,
             OffsetT>,
           three_way_partition_temp_storage_bytes,
           d_keys_double_buffer,
@@ -1204,10 +1199,8 @@ private:
 
       large_segments_selector.base_segment_offset = current_seg_offset;
       small_segments_selector.base_segment_offset = current_seg_offset;
-      auto current_begin_offset                   = detail::offset_input_iterator{
-        d_begin_offsets, THRUST_NS_QUALIFIER::constant_iterator<global_segment_offset_t>{current_seg_offset}};
-      auto current_end_offset = detail::offset_input_iterator{
-        d_end_offsets, THRUST_NS_QUALIFIER::constant_iterator<global_segment_offset_t>{current_seg_offset}};
+      auto current_begin_offset                   = d_begin_offsets + current_seg_offset;
+      auto current_end_offset                     = d_end_offsets + current_seg_offset;
 
       auto medium_indices_iterator =
         THRUST_NS_QUALIFIER::make_reverse_iterator(large_and_medium_segments_indices.get() + current_num_segments);
@@ -1234,7 +1227,9 @@ private:
       // `NV_IF_TARGET`.
 #ifndef CUB_RDC_ENABLED
 
-#  define CUB_TEMP_DEVICE_CODE
+#  define CUB_TEMP_DEVICE_CODE    \
+    (void) &current_begin_offset; \
+    (void) &current_end_offset;
 
 #else // CUB_RDC_ENABLED
 
@@ -1248,8 +1243,8 @@ private:
             SmallKernelT,                                                    \
             KeyT,                                                            \
             ValueT,                                                          \
-            StreamingBeginOffsetIteratorT,                                   \
-            StreamingEndOffsetIteratorT>,                                    \
+            BeginOffsetIteratorT,                                            \
+            EndOffsetIteratorT>,                                             \
           large_kernel,                                                      \
           small_kernel,                                                      \
           current_num_segments,                                              \

@@ -62,7 +62,7 @@ struct CountAssign
 };
 
 struct Incomplete;
-TEST_ACCESSIBLE extern Incomplete inc_obj;
+_CCCL_GLOBAL_VARIABLE extern Incomplete inc_obj;
 
 int main(int, char**)
 {
@@ -116,4 +116,4 @@ int main(int, char**)
 
 struct Incomplete
 {};
-TEST_ACCESSIBLE Incomplete inc_obj;
+_CCCL_GLOBAL_VARIABLE Incomplete inc_obj;

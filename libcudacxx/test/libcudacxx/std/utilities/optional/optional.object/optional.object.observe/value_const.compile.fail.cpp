@@ -32,7 +32,7 @@ struct X
 int main(int, char**)
 {
   {
-    constexpr optional<X> opt;
+    constexpr optional<X> opt{};
     static_assert(opt.value().test() == 3, "");
   }
 

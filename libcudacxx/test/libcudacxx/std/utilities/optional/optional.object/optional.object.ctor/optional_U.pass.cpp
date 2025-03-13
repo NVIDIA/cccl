@@ -21,14 +21,6 @@
 
 using cuda::std::optional;
 
-template <class T, class U>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(optional<U>&& rhs)
-{
-  bool rhs_engaged = static_cast<bool>(rhs);
-  optional<T> lhs  = cuda::std::move(rhs);
-  assert(static_cast<bool>(lhs) == rhs_engaged);
-}
-
 class X
 {
   int i_;
@@ -49,6 +41,67 @@ public:
     return x.i_ == y.i_;
   }
 };
+
+struct B
+{
+  int val_;
+
+  __host__ __device__ constexpr bool operator==(const int& other) const noexcept
+  {
+    return other == val_;
+  }
+};
+class D : public B
+{};
+
+#ifdef CCCL_ENABLE_OPTIONAL_REF
+template <class T>
+struct ConvertibleToReference
+{
+  T val_;
+
+  __host__ __device__ constexpr operator T&() noexcept
+  {
+    return val_;
+  }
+};
+#endif // CCCL_ENABLE_OPTIONAL_REF
+
+template <class T, class U>
+__host__ __device__ constexpr void test()
+{
+  { // constructed from empty
+    optional<U> input{};
+    optional<T> opt = cuda::std::move(input);
+    assert(!input.has_value());
+    assert(!opt.has_value());
+  }
+  { // constructed from non-empty
+    cuda::std::remove_reference_t<U> val{42};
+    optional<U> input{val};
+    optional<T> opt = cuda::std::move(input);
+    assert(input.has_value());
+    assert(opt.has_value());
+    assert(*opt == 42);
+    if constexpr (cuda::std::is_reference_v<T>)
+    {
+      assert(cuda::std::addressof(static_cast<T>(val)) == opt.operator->());
+    }
+  }
+}
+
+__host__ __device__ constexpr bool test()
+{
+  test<int, short>();
+  test<X, int>();
+
+#ifdef CCCL_ENABLE_OPTIONAL_REF
+  test<B&, D&>();
+  test<int&, ConvertibleToReference<int>&>();
+#endif // CCCL_ENABLE_OPTIONAL_REF
+
+  return true;
+}
 
 struct TerminatesOnConstruction
 {
@@ -89,36 +142,23 @@ void test_exceptions()
 }
 #endif // !TEST_HAS_NO_EXCEPTIONS
 
-template <class T, class U>
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test_all()
-{
-  {
-    optional<T> rhs;
-    test<U>(cuda::std::move(rhs));
-  }
-  {
-    optional<T> rhs(short{3});
-    test<U>(cuda::std::move(rhs));
-  }
-  return true;
-}
-
 int main(int, char**)
 {
-  test_all<short, int>();
-  test_all<int, X>();
+  test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test_all<short, int>());
-  static_assert(test_all<int, X>());
-#endif
+  static_assert(test(), "");
+#endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
+
   {
-    optional<int> rhs;
-    test<TerminatesOnConstruction>(cuda::std::move(rhs));
+    using T = TerminatesOnConstruction;
+    optional<int> input{};
+    optional<T> lhs{cuda::std::move(input)};
+    assert(!input.has_value());
+    assert(!lhs.has_value());
   }
+
 #ifndef TEST_HAS_NO_EXCEPTIONS
-  {
-    NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-  }
+  NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
 #endif // !TEST_HAS_NO_EXCEPTIONS
 
   static_assert(!(cuda::std::is_constructible<optional<X>, optional<TerminatesOnConstruction>>::value), "");

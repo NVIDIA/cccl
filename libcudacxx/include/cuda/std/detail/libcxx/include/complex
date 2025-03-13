@@ -255,6 +255,7 @@ template<class T> complex<T> tanh (const complex<T>&);
 #include <cuda/std/climits>
 #include <cuda/std/cmath>
 #include <cuda/std/cstdint>
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
 #include <cuda/std/version>
 
@@ -604,8 +605,8 @@ operator*(const complex<_Tp>& __z, const complex<_Tp>& __w)
     {
       __partials = __complex_calculate_partials(__a, __b, __c, __d);
 
-      __x = _Tp(INFINITY) * (__partials.__ac - __partials.__bd);
-      __y = _Tp(INFINITY) * (__partials.__ad + __partials.__bc);
+      __x = numeric_limits<_Tp>::infinity() * (__partials.__ac - __partials.__bd);
+      __y = numeric_limits<_Tp>::infinity() * (__partials.__ad + __partials.__bc);
     }
   }
 #endif // LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_MULTIPLICATION
@@ -704,16 +705,16 @@ operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
   {
     if ((__denom == _Tp(0)) && (!_CUDA_VSTD::isnan(__a) || !_CUDA_VSTD::isnan(__b)))
     {
-      __x = _CUDA_VSTD::__constexpr_copysign(_Tp(INFINITY), __c) * __a;
-      __y = _CUDA_VSTD::__constexpr_copysign(_Tp(INFINITY), __c) * __b;
+      __x = _CUDA_VSTD::__constexpr_copysign(numeric_limits<_Tp>::infinity(), __c) * __a;
+      __y = _CUDA_VSTD::__constexpr_copysign(numeric_limits<_Tp>::infinity(), __c) * __b;
     }
     else if ((_CUDA_VSTD::isinf(__a) || _CUDA_VSTD::isinf(__b)) && _CUDA_VSTD::isfinite(__c)
              && _CUDA_VSTD::isfinite(__d))
     {
       __a = _CUDA_VSTD::__constexpr_copysign(_CUDA_VSTD::isinf(__a) ? _Tp(1) : _Tp(0), __a);
       __b = _CUDA_VSTD::__constexpr_copysign(_CUDA_VSTD::isinf(__b) ? _Tp(1) : _Tp(0), __b);
-      __x = _Tp(INFINITY) * (__a * __c + __b * __d);
-      __y = _Tp(INFINITY) * (__b * __c - __a * __d);
+      __x = numeric_limits<_Tp>::infinity() * (__a * __c + __b * __d);
+      __y = numeric_limits<_Tp>::infinity() * (__b * __c - __a * __d);
     }
     else if (_CUDA_VSTD::isinf(__logbw) && __logbw > _Tp(0) && _CUDA_VSTD::isfinite(__a) && _CUDA_VSTD::isfinite(__b))
     {
@@ -893,13 +894,13 @@ _LIBCUDACXX_HIDE_FROM_ABI _Tp arg(const complex<_Tp>& __c)
   return _CUDA_VSTD::atan2(__c.imag(), __c.real());
 }
 
-#ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
+#if _CCCL_HAS_LONG_DOUBLE()
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_same<_Tp, long double>::value, long double> arg(_Tp __re)
 {
   return _CUDA_VSTD::atan2l(0.L, __re);
 }
-#endif // _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_integral<_Tp>::value || is_same<_Tp, double>::value, double> arg(_Tp __re)
@@ -958,7 +959,7 @@ _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> proj(const complex<_Tp>& __c)
   complex<_Tp> __r = __c;
   if (_CUDA_VSTD::isinf(__c.real()) || _CUDA_VSTD::isinf(__c.imag()))
   {
-    __r = complex<_Tp>(INFINITY, __constexpr_copysign(_Tp(0), __c.imag()));
+    __r = complex<_Tp>(numeric_limits<_Tp>::infinity(), _CUDA_VSTD::__constexpr_copysign(_Tp(0), __c.imag()));
   }
   return __r;
 }
@@ -986,7 +987,7 @@ _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> polar(const _Tp& __rho, const _Tp& __thet
 {
   if (_CUDA_VSTD::isnan(__rho) || _CUDA_VSTD::signbit(__rho))
   {
-    return complex<_Tp>(_Tp(NAN), _Tp(NAN));
+    return complex<_Tp>(numeric_limits<_Tp>::quiet_NaN(), numeric_limits<_Tp>::quiet_NaN());
   }
   if (_CUDA_VSTD::isnan(__theta))
   {
@@ -1000,9 +1001,9 @@ _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> polar(const _Tp& __rho, const _Tp& __thet
   {
     if (_CUDA_VSTD::isinf(__rho))
     {
-      return complex<_Tp>(__rho, _Tp(NAN));
+      return complex<_Tp>(__rho, numeric_limits<_Tp>::quiet_NaN());
     }
-    return complex<_Tp>(_Tp(NAN), _Tp(NAN));
+    return complex<_Tp>(numeric_limits<_Tp>::quiet_NaN(), numeric_limits<_Tp>::quiet_NaN());
   }
   _Tp __x = __rho * _CUDA_VSTD::cos(__theta);
   if (_CUDA_VSTD::isnan(__x))
@@ -1040,17 +1041,17 @@ _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> sqrt(const complex<_Tp>& __x)
 {
   if (_CUDA_VSTD::isinf(__x.imag()))
   {
-    return complex<_Tp>(_Tp(INFINITY), __x.imag());
+    return complex<_Tp>(numeric_limits<_Tp>::infinity(), __x.imag());
   }
   if (_CUDA_VSTD::isinf(__x.real()))
   {
     if (__x.real() > _Tp(0))
     {
-      return complex<_Tp>(__x.real(),
-                          _CUDA_VSTD::isnan(__x.imag()) ? __x.imag() : __constexpr_copysign(_Tp(0), __x.imag()));
+      return complex<_Tp>(
+        __x.real(), _CUDA_VSTD::isnan(__x.imag()) ? __x.imag() : _CUDA_VSTD::__constexpr_copysign(_Tp(0), __x.imag()));
     }
     return complex<_Tp>(_CUDA_VSTD::isnan(__x.imag()) ? __x.imag() : _Tp(0),
-                        __constexpr_copysign(__x.real(), __x.imag()));
+                        _CUDA_VSTD::__constexpr_copysign(__x.real(), __x.imag()));
   }
   return _CUDA_VSTD::polar(_CUDA_VSTD::sqrt(_CUDA_VSTD::abs(__x)), _CUDA_VSTD::arg(__x) / _Tp(2));
 }
@@ -1063,7 +1064,7 @@ _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> exp(const complex<_Tp>& __x)
   _Tp __i = __x.imag();
   if (__i == _Tp(0))
   {
-    return complex<_Tp>(_CUDA_VSTD::exp(__x.real()), __constexpr_copysign(_Tp(0), __x.imag()));
+    return complex<_Tp>(_CUDA_VSTD::exp(__x.real()), _CUDA_VSTD::__constexpr_copysign(_Tp(0), __x.imag()));
   }
   if (_CUDA_VSTD::isinf(__x.real()))
   {
@@ -1078,7 +1079,7 @@ _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> exp(const complex<_Tp>& __x)
     {
       if (_CUDA_VSTD::isinf(__i))
       {
-        __i = _Tp(NAN);
+        __i = numeric_limits<_Tp>::quiet_NaN();
       }
       return complex<_Tp>(__x.real(), __i);
     }
@@ -1143,9 +1144,9 @@ _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> asinh(const complex<_Tp>& __x)
     }
     if (_CUDA_VSTD::isinf(__x.imag()))
     {
-      return complex<_Tp>(__x.real(), __constexpr_copysign(__pi * _Tp(0.25), __x.imag()));
+      return complex<_Tp>(__x.real(), _CUDA_VSTD::__constexpr_copysign(__pi * _Tp(0.25), __x.imag()));
     }
-    return complex<_Tp>(__x.real(), __constexpr_copysign(_Tp(0), __x.imag()));
+    return complex<_Tp>(__x.real(), _CUDA_VSTD::__constexpr_copysign(_Tp(0), __x.imag()));
   }
   if (_CUDA_VSTD::isnan(__x.real()))
   {
@@ -1161,10 +1162,12 @@ _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> asinh(const complex<_Tp>& __x)
   }
   if (_CUDA_VSTD::isinf(__x.imag()))
   {
-    return complex<_Tp>(__constexpr_copysign(__x.imag(), __x.real()), __constexpr_copysign(__pi / _Tp(2), __x.imag()));
+    return complex<_Tp>(_CUDA_VSTD::__constexpr_copysign(__x.imag(), __x.real()),
+                        _CUDA_VSTD::__constexpr_copysign(__pi / _Tp(2), __x.imag()));
   }
   complex<_Tp> __z = _CUDA_VSTD::log(__x + _CUDA_VSTD::sqrt(_CUDA_VSTD::__sqr(__x) + _Tp(1)));
-  return complex<_Tp>(__constexpr_copysign(__z.real(), __x.real()), __constexpr_copysign(__z.imag(), __x.imag()));
+  return complex<_Tp>(_CUDA_VSTD::__constexpr_copysign(__z.real(), __x.real()),
+                      _CUDA_VSTD::__constexpr_copysign(__z.imag(), __x.imag()));
 }
 
 // acosh
@@ -1183,18 +1186,18 @@ _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> acosh(const complex<_Tp>& __x)
     {
       if (__x.real() > _Tp(0))
       {
-        return complex<_Tp>(__x.real(), __constexpr_copysign(__pi * _Tp(0.25), __x.imag()));
+        return complex<_Tp>(__x.real(), _CUDA_VSTD::__constexpr_copysign(__pi * _Tp(0.25), __x.imag()));
       }
       else
       {
-        return complex<_Tp>(-__x.real(), __constexpr_copysign(__pi * _Tp(0.75), __x.imag()));
+        return complex<_Tp>(-__x.real(), _CUDA_VSTD::__constexpr_copysign(__pi * _Tp(0.75), __x.imag()));
       }
     }
     if (__x.real() < _Tp(0))
     {
-      return complex<_Tp>(-__x.real(), __constexpr_copysign(__pi, __x.imag()));
+      return complex<_Tp>(-__x.real(), _CUDA_VSTD::__constexpr_copysign(__pi, __x.imag()));
     }
-    return complex<_Tp>(__x.real(), __constexpr_copysign(_Tp(0), __x.imag()));
+    return complex<_Tp>(__x.real(), _CUDA_VSTD::__constexpr_copysign(_Tp(0), __x.imag()));
   }
   if (_CUDA_VSTD::isnan(__x.real()))
   {
@@ -1206,10 +1209,11 @@ _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> acosh(const complex<_Tp>& __x)
   }
   if (_CUDA_VSTD::isinf(__x.imag()))
   {
-    return complex<_Tp>(_CUDA_VSTD::abs(__x.imag()), __constexpr_copysign(__pi / _Tp(2), __x.imag()));
+    return complex<_Tp>(_CUDA_VSTD::abs(__x.imag()), _CUDA_VSTD::__constexpr_copysign(__pi / _Tp(2), __x.imag()));
   }
   complex<_Tp> __z = _CUDA_VSTD::log(__x + _CUDA_VSTD::sqrt(_CUDA_VSTD::__sqr(__x) - _Tp(1)));
-  return complex<_Tp>(__constexpr_copysign(__z.real(), _Tp(0)), __constexpr_copysign(__z.imag(), __x.imag()));
+  return complex<_Tp>(_CUDA_VSTD::__constexpr_copysign(__z.real(), _Tp(0)),
+                      _CUDA_VSTD::__constexpr_copysign(__z.imag(), __x.imag()));
 }
 
 // atanh
@@ -1220,13 +1224,14 @@ _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> atanh(const complex<_Tp>& __x)
   const _Tp __pi(static_cast<_Tp>(atan2(+0., -0.)));
   if (_CUDA_VSTD::isinf(__x.imag()))
   {
-    return complex<_Tp>(__constexpr_copysign(_Tp(0), __x.real()), __constexpr_copysign(__pi / _Tp(2), __x.imag()));
+    return complex<_Tp>(_CUDA_VSTD::__constexpr_copysign(_Tp(0), __x.real()),
+                        _CUDA_VSTD::__constexpr_copysign(__pi / _Tp(2), __x.imag()));
   }
   if (_CUDA_VSTD::isnan(__x.imag()))
   {
     if (_CUDA_VSTD::isinf(__x.real()) || __x.real() == _Tp(0))
     {
-      return complex<_Tp>(__constexpr_copysign(_Tp(0), __x.real()), __x.imag());
+      return complex<_Tp>(_CUDA_VSTD::__constexpr_copysign(_Tp(0), __x.real()), __x.imag());
     }
     return complex<_Tp>(__x.imag(), __x.imag());
   }
@@ -1236,14 +1241,17 @@ _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> atanh(const complex<_Tp>& __x)
   }
   if (_CUDA_VSTD::isinf(__x.real()))
   {
-    return complex<_Tp>(__constexpr_copysign(_Tp(0), __x.real()), __constexpr_copysign(__pi / _Tp(2), __x.imag()));
+    return complex<_Tp>(_CUDA_VSTD::__constexpr_copysign(_Tp(0), __x.real()),
+                        _CUDA_VSTD::__constexpr_copysign(__pi / _Tp(2), __x.imag()));
   }
   if (_CUDA_VSTD::abs(__x.real()) == _Tp(1) && __x.imag() == _Tp(0))
   {
-    return complex<_Tp>(__constexpr_copysign(_Tp(INFINITY), __x.real()), __constexpr_copysign(_Tp(0), __x.imag()));
+    return complex<_Tp>(_CUDA_VSTD::__constexpr_copysign(numeric_limits<_Tp>::infinity(), __x.real()),
+                        _CUDA_VSTD::__constexpr_copysign(_Tp(0), __x.imag()));
   }
   complex<_Tp> __z = _CUDA_VSTD::log((_Tp(1) + __x) / (_Tp(1) - __x)) / _Tp(2);
-  return complex<_Tp>(__constexpr_copysign(__z.real(), __x.real()), __constexpr_copysign(__z.imag(), __x.imag()));
+  return complex<_Tp>(_CUDA_VSTD::__constexpr_copysign(__z.real(), __x.real()),
+                      _CUDA_VSTD::__constexpr_copysign(__z.imag(), __x.imag()));
 }
 
 // sinh
@@ -1253,11 +1261,11 @@ _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> sinh(const complex<_Tp>& __x)
 {
   if (_CUDA_VSTD::isinf(__x.real()) && !_CUDA_VSTD::isfinite(__x.imag()))
   {
-    return complex<_Tp>(__x.real(), _Tp(NAN));
+    return complex<_Tp>(__x.real(), numeric_limits<_Tp>::quiet_NaN());
   }
   if (__x.real() == _Tp(0) && !_CUDA_VSTD::isfinite(__x.imag()))
   {
-    return complex<_Tp>(__x.real(), _Tp(NAN));
+    return complex<_Tp>(__x.real(), numeric_limits<_Tp>::quiet_NaN());
   }
   if (__x.imag() == _Tp(0) && !_CUDA_VSTD::isfinite(__x.real()))
   {
@@ -1274,11 +1282,11 @@ _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> cosh(const complex<_Tp>& __x)
 {
   if (_CUDA_VSTD::isinf(__x.real()) && !_CUDA_VSTD::isfinite(__x.imag()))
   {
-    return complex<_Tp>(_CUDA_VSTD::abs(__x.real()), _Tp(NAN));
+    return complex<_Tp>(_CUDA_VSTD::abs(__x.real()), numeric_limits<_Tp>::quiet_NaN());
   }
   if (__x.real() == _Tp(0) && !_CUDA_VSTD::isfinite(__x.imag()))
   {
-    return complex<_Tp>(_Tp(NAN), __x.real());
+    return complex<_Tp>(numeric_limits<_Tp>::quiet_NaN(), __x.real());
   }
   if (__x.real() == _Tp(0) && __x.imag() == _Tp(0))
   {
@@ -1301,10 +1309,10 @@ _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> tanh(const complex<_Tp>& __x)
   {
     if (!_CUDA_VSTD::isfinite(__x.imag()))
     {
-      return complex<_Tp>(__constexpr_copysign(_Tp(1), __x.real()), _Tp(0));
+      return complex<_Tp>(_CUDA_VSTD::__constexpr_copysign(_Tp(1), __x.real()), _Tp(0));
     }
-    return complex<_Tp>(__constexpr_copysign(_Tp(1), __x.real()),
-                        __constexpr_copysign(_Tp(0), _CUDA_VSTD::sin(_Tp(2) * __x.imag())));
+    return complex<_Tp>(_CUDA_VSTD::__constexpr_copysign(_Tp(1), __x.real()),
+                        _CUDA_VSTD::__constexpr_copysign(_Tp(0), _CUDA_VSTD::sin(_Tp(2) * __x.imag())));
   }
   if (_CUDA_VSTD::isnan(__x.real()) && __x.imag() == _Tp(0))
   {
@@ -1512,7 +1520,7 @@ inline namespace literals
 {
 inline namespace complex_literals
 {
-#  ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
+#  if !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(NVRTC)
 // NOTE: if you get a warning from GCC <7 here that "literal operator suffixes not preceded by ‘_’ are reserved for
 // future standardization" then we are sorry. The warning was implemented before GCC 7, but can only be disabled since
 // GCC 7. See also: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=69523
@@ -1544,7 +1552,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr complex<float> operator""if(unsigned long lo
 {
   return {0.0f, static_cast<float>(__im)};
 }
-#  else // ^^^ _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE ^^^ / vvv !_LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE vvv
+#  else // ^^^ !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(NVRTC) ^^^ / vvv other compilers vvv
 _LIBCUDACXX_HIDE_FROM_ABI constexpr complex<double> operator""i(double __im)
 {
   return {0.0, static_cast<double>(__im)};
@@ -1564,7 +1572,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr complex<float> operator""if(unsigned long lo
 {
   return {0.0f, static_cast<float>(__im)};
 }
-#  endif // !_LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
+#  endif // other compilers
 } // namespace complex_literals
 } // namespace literals
 
@@ -1574,13 +1582,13 @@ _CCCL_DIAG_POP
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _LIBCUDACXX_HAS_NVFP16()
 #  include <cuda/std/__complex/nvfp16.h>
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#if _LIBCUDACXX_HAS_NVBF16()
 #  include <cuda/std/__complex/nvbf16.h>
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 #undef _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL
 #undef _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG

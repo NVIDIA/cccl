@@ -26,6 +26,11 @@
  *
  ******************************************************************************/
 
+// FIXME(bgruber): I found no way to suppress the deprecations for the _lid_1 build
+#if TEST_LAUNCH == 1
+#  define CCCL_IGNORE_DEPRECATED_API
+#endif
+
 #include <cub/device/device_histogram.cuh>
 
 #include <thrust/iterator/counting_iterator.h>
@@ -50,6 +55,7 @@
 DECLARE_LAUNCH_WRAPPER(cub::DeviceHistogram::HistogramEven, histogram_even);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceHistogram::HistogramRange, histogram_range);
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 DECLARE_TMPL_LAUNCH_WRAPPER(cub::DeviceHistogram::MultiHistogramEven,
                             multi_histogram_even,
                             ESCAPE_LIST(int Channels, int ActiveChannels),
@@ -59,6 +65,7 @@ DECLARE_TMPL_LAUNCH_WRAPPER(cub::DeviceHistogram::MultiHistogramRange,
                             multi_histogram_range,
                             ESCAPE_LIST(int Channels, int ActiveChannels),
                             ESCAPE_LIST(Channels, ActiveChannels));
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 namespace cs = cuda::std;
 using cs::array;
@@ -82,6 +89,29 @@ auto cast_if_half_pointer(const half_t* p) -> const __half*
 }
 #endif // TEST_HALF_T()
 
+template <typename T, size_t N>
+auto cast_if_half(array<T, N> a)
+{
+  return a;
+}
+
+#if TEST_HALF_T()
+template <size_t N>
+#  if _CCCL_COMPILER(GCC)
+__attribute__((optimize("no-tree-vectorize")))
+#  endif
+auto cast_if_half(array<half_t, N> a)
+{
+  __half* p = cast_if_half_pointer(a.data()); // cast to avoid ambiguous conversion from half_t -> __half
+  array<__half, N> r;
+  for (size_t i = 0; i < N; i++)
+  {
+    r[i] = p[i];
+  }
+  return r;
+}
+#endif // TEST_HALF_T()
+
 template <typename T>
 using caller_vector = c2h::
 #if TEST_LAUNCH == 1
@@ -95,6 +125,28 @@ auto to_caller_vector_of_ptrs(array<c2h::device_vector<T>, N>& in)
   -> caller_vector<decltype(cast_if_half_pointer(cs::declval<T*>()))>
 {
   c2h::host_vector<decltype(cast_if_half_pointer(cs::declval<T*>()))> r(N);
+  for (size_t i = 0; i < N; i++)
+  {
+    r[i] = cast_if_half_pointer(thrust::raw_pointer_cast(in[i].data()));
+  }
+  return r;
+}
+
+template <typename T, size_t N>
+auto to_array_of_ptrs(array<c2h::device_vector<T>, N>& in)
+{
+  array<decltype(cast_if_half_pointer(cs::declval<T*>())), N> r;
+  for (size_t i = 0; i < N; i++)
+  {
+    r[i] = cast_if_half_pointer(thrust::raw_pointer_cast(in[i].data()));
+  }
+  return r;
+}
+
+template <typename T, size_t N>
+auto to_array_of_const_ptrs(array<c2h::device_vector<T>, N>& in)
+{
+  array<decltype(cast_if_half_pointer(cs::declval<const T*>())), N> r;
   for (size_t i = 0; i < N; i++)
   {
     r[i] = cast_if_half_pointer(thrust::raw_pointer_cast(in[i].data()));
@@ -272,7 +324,7 @@ void test_even_and_range(LevelT max_level, int max_level_count, OffsetT width, O
   {
     // Setup levels
     const auto levels       = setup_bin_levels_for_even(num_levels, max_level, max_level_count);
-    const auto& lower_level = levels[0]; // TODO(bgruber): use structured bindings in C++17
+    const auto& lower_level = levels[0]; // TODO(bgruber): use structured bindings in C++20 (lambda capture below)
     const auto& upper_level = levels[1];
     CAPTURE(lower_level, upper_level);
 
@@ -317,31 +369,65 @@ void test_even_and_range(LevelT max_level, int max_level_count, OffsetT width, O
       const auto* sample_ptr = cast_if_half_pointer(thrust::raw_pointer_cast(d_samples.data()));
       if constexpr (ActiveChannels == 1 && Channels == 1)
       {
-        histogram_even(
-          sample_ptr,
-          cast_if_half_pointer(thrust::raw_pointer_cast(d_histogram[0].data())),
-          num_levels[0],
-          cast_if_half_pointer(lower_level.data())[0],
-          cast_if_half_pointer(upper_level.data())[0],
-          width,
-          height,
-          row_pitch);
+        if (true)
+        {
+          // call new API entry-point
+          histogram_even(
+            sample_ptr,
+            to_array_of_ptrs(d_histogram)[0],
+            num_levels[0],
+            cast_if_half(lower_level)[0],
+            cast_if_half(upper_level)[0],
+            width,
+            height,
+            row_pitch);
+        }
+        else
+        {
+          // compile old API entry-point
+          histogram_even(
+            sample_ptr,
+            cast_if_half_pointer(thrust::raw_pointer_cast(d_histogram[0].data())),
+            num_levels[0],
+            cast_if_half_pointer(lower_level.data())[0],
+            cast_if_half_pointer(upper_level.data())[0],
+            width,
+            height,
+            row_pitch);
+        }
       }
       else
       {
-        auto d_histogram_ptrs    = to_caller_vector_of_ptrs(d_histogram);
-        const auto d_num_levels  = caller_vector<int>(num_levels.begin(), num_levels.end());
-        const auto d_lower_level = caller_vector<LevelT>(lower_level.begin(), lower_level.end());
-        const auto d_upper_level = caller_vector<LevelT>(upper_level.begin(), upper_level.end());
-        multi_histogram_even<Channels, ActiveChannels>(
-          sample_ptr,
-          cast_if_half_pointer(thrust::raw_pointer_cast(d_histogram_ptrs.data())),
-          thrust::raw_pointer_cast(d_num_levels.data()),
-          cast_if_half_pointer(thrust::raw_pointer_cast(d_lower_level.data())),
-          cast_if_half_pointer(thrust::raw_pointer_cast(d_upper_level.data())),
-          width,
-          height,
-          row_pitch);
+        if (true)
+        {
+          // new API entry-point
+          multi_histogram_even<Channels, ActiveChannels>(
+            sample_ptr,
+            to_array_of_ptrs(d_histogram),
+            num_levels,
+            cast_if_half(lower_level),
+            cast_if_half(upper_level),
+            width,
+            height,
+            row_pitch);
+        }
+        else
+        {
+          // call new API entry-point
+          auto d_histogram_ptrs    = to_caller_vector_of_ptrs(d_histogram);
+          const auto d_num_levels  = caller_vector<int>(num_levels.begin(), num_levels.end());
+          const auto d_lower_level = caller_vector<LevelT>(lower_level.begin(), lower_level.end());
+          const auto d_upper_level = caller_vector<LevelT>(upper_level.begin(), upper_level.end());
+          multi_histogram_even<Channels, ActiveChannels>(
+            sample_ptr,
+            cast_if_half_pointer(thrust::raw_pointer_cast(d_histogram_ptrs.data())),
+            thrust::raw_pointer_cast(d_num_levels.data()),
+            cast_if_half_pointer(thrust::raw_pointer_cast(d_lower_level.data())),
+            cast_if_half_pointer(thrust::raw_pointer_cast(d_upper_level.data())),
+            width,
+            height,
+            row_pitch);
+        }
       }
     }
     for (size_t c = 0; c < ActiveChannels; ++c)
@@ -373,28 +459,56 @@ void test_even_and_range(LevelT max_level, int max_level_count, OffsetT width, O
       std::copy(h_levels.begin(), h_levels.end(), d_levels.begin());
       if constexpr (ActiveChannels == 1 && Channels == 1)
       {
-        histogram_range(
-          sample_ptr,
-          cast_if_half_pointer(thrust::raw_pointer_cast(d_histogram[0].data())),
-          num_levels[0],
-          cast_if_half_pointer(thrust::raw_pointer_cast(d_levels[0].data())),
-          width,
-          height,
-          row_pitch);
+        if (true)
+        {
+          // call new API entry-point
+          histogram_range(
+            sample_ptr,
+            to_array_of_ptrs(d_histogram)[0],
+            num_levels[0],
+            to_array_of_const_ptrs(d_levels)[0],
+            width,
+            height,
+            row_pitch);
+        }
+        else
+        {
+          // compile old API entry-point
+          histogram_range(
+            sample_ptr,
+            cast_if_half_pointer(thrust::raw_pointer_cast(d_histogram[0].data())),
+            num_levels[0],
+            cast_if_half_pointer(thrust::raw_pointer_cast(d_levels[0].data())),
+            width,
+            height,
+            row_pitch);
+        }
       }
       else
       {
-        auto d_histogram_ptrs   = to_caller_vector_of_ptrs(d_histogram);
-        const auto d_num_levels = caller_vector<int>(num_levels.begin(), num_levels.end());
-        const auto level_ptrs   = to_caller_vector_of_ptrs(d_levels);
-        multi_histogram_range<Channels, ActiveChannels>(
-          sample_ptr,
-          cast_if_half_pointer(thrust::raw_pointer_cast(d_histogram_ptrs.data())),
-          thrust::raw_pointer_cast(d_num_levels.data()),
-          cast_if_half_pointer(thrust::raw_pointer_cast(level_ptrs.data())),
-          width,
-          height,
-          row_pitch);
+        if (true)
+        {
+          // call new API entry-point
+          auto d_histogram_ptrs = to_array_of_ptrs(d_histogram);
+          auto level_ptrs       = to_array_of_const_ptrs(d_levels);
+          multi_histogram_range<Channels, ActiveChannels>(
+            sample_ptr, d_histogram_ptrs, num_levels, level_ptrs, width, height, row_pitch);
+        }
+        else
+        {
+          // compile old API entry-point
+          auto d_histogram_ptrs   = to_caller_vector_of_ptrs(d_histogram);
+          const auto d_num_levels = caller_vector<int>(num_levels.begin(), num_levels.end());
+          const auto level_ptrs   = to_caller_vector_of_ptrs(d_levels);
+          multi_histogram_range<Channels, ActiveChannels>(
+            sample_ptr,
+            cast_if_half_pointer(thrust::raw_pointer_cast(d_histogram_ptrs.data())),
+            thrust::raw_pointer_cast(d_num_levels.data()),
+            cast_if_half_pointer(thrust::raw_pointer_cast(level_ptrs.data())),
+            width,
+            height,
+            row_pitch);
+        }
       }
     }
     for (size_t c = 0; c < ActiveChannels; ++c)
@@ -493,8 +607,8 @@ C2H_TEST("DeviceHistogram::HistogramEven sample iterator", "[histogram_even][dev
   const auto total_values        = (width + padding) * channels * height;
 
   const auto num_levels  = array<int, active_channels>{11, 3, 2};
-  const auto lower_level = caller_vector<int>{0, -10, cs::numeric_limits<int>::lowest()};
-  const auto upper_level = caller_vector<int>{total_values, 10, cs::numeric_limits<int>::max()};
+  const auto lower_level = array<int, active_channels>{0, -10, cs::numeric_limits<int>::lowest()};
+  const auto upper_level = array<int, active_channels>{total_values, 10, cs::numeric_limits<int>::max()};
 
   auto sample_iterator = thrust::counting_iterator<sample_t>(0);
 
@@ -510,14 +624,7 @@ C2H_TEST("DeviceHistogram::HistogramEven sample iterator", "[histogram_even][dev
   }
 
   multi_histogram_even<channels, active_channels>(
-    sample_iterator,
-    thrust::raw_pointer_cast(to_caller_vector_of_ptrs(d_histogram).data()),
-    thrust::raw_pointer_cast(caller_vector<int>(num_levels.begin(), num_levels.end()).data()),
-    thrust::raw_pointer_cast(lower_level.data()),
-    thrust::raw_pointer_cast(upper_level.data()),
-    width,
-    height,
-    row_pitch);
+    sample_iterator, to_array_of_ptrs(d_histogram), num_levels, lower_level, upper_level, width, height, row_pitch);
 
   CHECK(d_histogram[0] == c2h::host_vector<int>(10, (width * height) / 10));
   CHECK(d_histogram[1] == c2h::host_vector<int>{0, 3});
