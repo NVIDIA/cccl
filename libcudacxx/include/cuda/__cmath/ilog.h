@@ -28,6 +28,7 @@
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_integer.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/cstdint>
 
@@ -134,8 +135,15 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int ilog10(_Tp __t) noexcept
   if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
   {
     _CCCL_ASSERT(__log10_approx < int{_CUDA_VSTD::size(__power_of_10_32bit)}, "out of bounds");
-    // don't replace +1 with >= because wraparound behavior is needed here
-    __log10_approx += static_cast<uint32_t>(__t) + 1 > __power_of_10_32bit[__log10_approx];
+    if constexpr (_CUDA_VSTD::is_same_v<_Tp, uint32_t>)
+    {
+      // don't replace +1 with >= because wraparound behavior is needed here
+      __log10_approx += static_cast<uint32_t>(__t) + 1 > __power_of_10_32bit[__log10_approx];
+    }
+    else
+    {
+      __log10_approx += static_cast<uint32_t>(__t) >= __power_of_10_32bit[__log10_approx];
+    }
   }
   else if constexpr (sizeof(_Tp) == sizeof(uint64_t))
   {
@@ -147,8 +155,15 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int ilog10(_Tp __t) noexcept
   else
   {
     _CCCL_ASSERT(__log10_approx < int{_CUDA_VSTD::size(__power_of_10_128bit)}, "out of bounds");
-    // don't replace +1 with >= because wraparound behavior is needed here
-    __log10_approx += static_cast<__uint128_t>(__t) + 1 > __power_of_10_128bit[__log10_approx];
+    if constexpr (_CUDA_VSTD::is_same_v<_Tp, __uint128_t>)
+    {
+      // don't replace +1 with >= because wraparound behavior is needed here
+      __log10_approx += static_cast<__uint128_t>(__t) + 1 > __power_of_10_128bit[__log10_approx];
+    }
+    else
+    {
+      __log10_approx += static_cast<__uint128_t>(__t) >= __power_of_10_128bit[__log10_approx];
+    }
   }
 #endif // _CCCL_HAS_INT128()
   _CCCL_ASSUME(__log10_approx <= _CUDA_VSTD::numeric_limits<_Tp>::digits / 3); // 2^X < 10^(x/3) -> 8^X < 10^x

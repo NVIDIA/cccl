@@ -38,7 +38,7 @@ The functions compute the logarithm to the base 2 and 10 respectively of an inte
 The function performs the following operations in device code:
 
 - ``ilog2``: ``FLO``
-- ``ilog10``: ``FLO``, ``FMUL``, ``F2I``, constant memory lookup, ``SEL``, ``IADD``
+- ``ilog10``: ``FLO``, ``FMUL``, ``F2I``, constant memory lookup, ``SEL`` + ``IADD`` only if ``T == uint32_t`` or ``T == __uint128_t``
 
 Example
 -------
