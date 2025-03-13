@@ -318,15 +318,6 @@ struct DispatchBatchMemcpy
   // Internal type used to keep track of a buffer's size
   using BufferSizeT = cub::detail::it_value_t<BufferSizeIteratorT>;
 
-  // Type large enough to index into all the user-provided iterators, i.e., input, output, and size
-  using global_buffer_offset_t = ::cuda::std::int64_t;
-  using offset_in_buffer_it_t =
-    detail::offset_input_iterator<InputBufferIt, THRUST_NS_QUALIFIER::constant_iterator<global_buffer_offset_t>>;
-  using offset_out_buffer_it_t =
-    detail::offset_input_iterator<OutputBufferIt, THRUST_NS_QUALIFIER::constant_iterator<global_buffer_offset_t>>;
-  using offset_buffer_size_it_t =
-    detail::offset_input_iterator<BufferSizeIteratorT, THRUST_NS_QUALIFIER::constant_iterator<global_buffer_offset_t>>;
-
   //------------------------------------------------------------------------------
   // Member Variables
   //------------------------------------------------------------------------------
@@ -406,9 +397,10 @@ struct DispatchBatchMemcpy
                                  * ActivePolicyT::AgentSmallBufferPolicyT::BUFFERS_PER_THREAD;
 
     // The upper bound of buffers that a single kernel invocation will process
-    const auto max_num_buffers_per_invocation =
-      static_cast<BufferOffsetT>(::cuda::std::numeric_limits<::cuda::std::int32_t>::max());
-    const auto max_num_buffers = ::cuda::std::min(max_num_buffers_per_invocation, num_buffers);
+    // Memory requirements are a multiple of the number of buffers. Hence, we cap the number of buffers per
+    // invocation to 512 M, which is large enough to easily saturate the GPU and also hide tail effects
+    const auto max_num_buffers_per_invocation = static_cast<BufferOffsetT>(512 * 1024 * 1024);
+    const auto max_num_buffers                = ::cuda::std::min(max_num_buffers_per_invocation, num_buffers);
 
     // The number of thread blocks (or tiles) required to process all of the given buffers
     auto max_num_tiles = static_cast<BlockOffsetT>(::cuda::ceil_div(max_num_buffers, TILE_SIZE));
@@ -492,9 +484,9 @@ struct DispatchBatchMemcpy
       detail::batch_memcpy::InitTileStateKernel<BLevBufferOffsetTileState, BLevBlockOffsetTileState, BlockOffsetT>;
     auto batch_memcpy_non_blev_kernel = detail::batch_memcpy::BatchMemcpyKernel<
       typename PolicyHub::MaxPolicy,
-      offset_in_buffer_it_t,
-      offset_out_buffer_it_t,
-      offset_buffer_size_it_t,
+      InputBufferIt,
+      OutputBufferIt,
+      BufferSizeIteratorT,
       BufferOffsetT,
       BlevBufferSrcsOutItT,
       BlevBufferDstsOutItT,
@@ -612,21 +604,15 @@ struct DispatchBatchMemcpy
               (long long) stream);
 #endif
 
-      auto current_buffer_offset_it =
-        THRUST_NS_QUALIFIER::constant_iterator<global_buffer_offset_t>{current_buffer_offset};
-      auto current_input_buffer_it  = offset_in_buffer_it_t{input_buffer_it, current_buffer_offset_it};
-      auto current_output_buffer_it = offset_out_buffer_it_t{output_buffer_it, current_buffer_offset_it};
-      auto current_size_it          = offset_buffer_size_it_t{buffer_sizes, current_buffer_offset_it};
-
       // Invoke kernel to copy small buffers and put the larger ones into a queue that will get picked
       // up by next kernel
       error =
         THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
           batch_memcpy_grid_size, ActivePolicyT::AgentSmallBufferPolicyT::BLOCK_THREADS, 0, stream)
           .doit(batch_memcpy_non_blev_kernel,
-                current_input_buffer_it,
-                current_output_buffer_it,
-                current_size_it,
+                input_buffer_it + current_buffer_offset,
+                output_buffer_it + current_buffer_offset,
+                buffer_sizes + current_buffer_offset,
                 num_current_buffers,
                 d_blev_src_buffers,
                 d_blev_dst_buffers,
