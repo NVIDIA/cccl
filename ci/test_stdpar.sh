@@ -3,7 +3,7 @@
 set -euo pipefail
 
 # Ensure the script is being executed in the root cccl directory:
-cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/../..";
+cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/..";
 
 # Get the current CCCL info:
 readonly cccl_repo="${PWD}"
