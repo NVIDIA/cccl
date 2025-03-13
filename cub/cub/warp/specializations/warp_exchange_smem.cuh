@@ -144,7 +144,7 @@ public:
     OutputT (&output_items)[ITEMS_PER_THREAD],
     OffsetT (&ranks)[ITEMS_PER_THREAD])
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
     {
       if (INSERT_PADDING)
@@ -157,7 +157,7 @@ public:
 
     __syncwarp(member_mask);
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
     {
       int item_offset = (ITEM * LOGICAL_WARP_THREADS) + lane_id;

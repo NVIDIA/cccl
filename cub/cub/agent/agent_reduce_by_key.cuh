@@ -402,8 +402,8 @@ struct AgentReduceByKey
     OffsetT (&segment_flags)[ITEMS_PER_THREAD],
     OffsetT (&segment_indices)[ITEMS_PER_THREAD])
   {
-// Scatter flagged keys and values
-#pragma unroll
+    // Scatter flagged keys and values
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       if (segment_flags[ITEM])
@@ -430,8 +430,8 @@ struct AgentReduceByKey
   {
     __syncthreads();
 
-// Compact and scatter pairs
-#pragma unroll
+    // Compact and scatter pairs
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       if (segment_flags[ITEM])
@@ -579,7 +579,7 @@ struct AgentReduceByKey
     }
 
     // Zip values and head flags
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       scan_items[ITEM].value = values[ITEM];
@@ -620,8 +620,8 @@ struct AgentReduceByKey
       total_aggregate     = prefix_op.GetInclusivePrefix();
     }
 
-// Rezip scatter items and segment indices
-#pragma unroll
+    // Rezip scatter items and segment indices
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       scatter_items[ITEM].key   = prev_keys[ITEM];

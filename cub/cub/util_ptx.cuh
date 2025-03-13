@@ -251,7 +251,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleUp(T input, int src_offset, int first_th
   shuffle_word    = SHFL_UP_SYNC((unsigned int) input_alias[0], src_offset, first_thread | SHFL_C, member_mask);
   output_alias[0] = shuffle_word;
 
-#pragma unroll
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int WORD = 1; WORD < WORDS; ++WORD)
   {
     shuffle_word       = SHFL_UP_SYNC((unsigned int) input_alias[WORD], src_offset, first_thread | SHFL_C, member_mask);
@@ -332,7 +332,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleDown(T input, int src_offset, int last_t
   shuffle_word    = SHFL_DOWN_SYNC((unsigned int) input_alias[0], src_offset, last_thread | SHFL_C, member_mask);
   output_alias[0] = shuffle_word;
 
-#pragma unroll
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int WORD = 1; WORD < WORDS; ++WORD)
   {
     shuffle_word = SHFL_DOWN_SYNC((unsigned int) input_alias[WORD], src_offset, last_thread | SHFL_C, member_mask);
@@ -405,7 +405,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleIndex(T input, int src_lane, unsigned in
   unsigned int shuffle_word;
   shuffle_word    = __shfl_sync(member_mask, (unsigned int) input_alias[0], src_lane, LOGICAL_WARP_THREADS);
   output_alias[0] = shuffle_word;
-#pragma unroll
+
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int WORD = 1; WORD < WORDS; ++WORD)
   {
     shuffle_word       = __shfl_sync(member_mask, (unsigned int) input_alias[WORD], src_lane, LOGICAL_WARP_THREADS);
@@ -451,8 +452,8 @@ struct warp_matcher_t<LABEL_BITS, CUB_PTX_WARP_THREADS>
   {
     unsigned int retval;
 
-// Extract masks of common threads for each bit
-#  pragma unroll
+    // Extract masks of common threads for each bit
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int BIT = 0; BIT < LABEL_BITS; ++BIT)
     {
       unsigned int mask;
