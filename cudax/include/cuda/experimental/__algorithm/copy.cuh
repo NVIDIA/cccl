@@ -106,8 +106,8 @@ void __nd_copy_bytes_impl(stream_ref __stream,
   static_assert(_CUDA_VSTD::is_same_v<_SrcLayout, _DstLayout>,
                 "Multidimensional copy requires both source and destination layouts to match");
 
-  // Check only source, because the layout of destination is the same as source
-  if (!__src.is_exhaustive())
+  // Check only destination, because the layout of destination is the same as source
+  if (!__dst.is_exhaustive())
   {
     _CUDA_VSTD::__throw_invalid_argument("copy_bytes supports only exhaustive mdspans");
   }
