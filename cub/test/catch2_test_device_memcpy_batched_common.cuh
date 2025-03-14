@@ -18,7 +18,7 @@
  * offset relative to a fixed base iterator.
  */
 template <typename IteratorT>
-struct offset_to_ptr_op
+struct prepend_n_constants_op
 {
   IteratorT base_it;
 

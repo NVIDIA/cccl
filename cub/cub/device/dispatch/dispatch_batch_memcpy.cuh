@@ -403,7 +403,7 @@ struct DispatchBatchMemcpy
     // The upper bound of buffers that a single kernel invocation will process
     // Memory requirements are a multiple of the number of buffers. Hence, we cap the number of buffers per
     // invocation to 512 M, which is large enough to easily saturate the GPU and also hide tail effects
-    constexpr auto max_num_buffers_per_invocation = static_cast<::cuda::std::int64_t>(512 * 1024 * 1024);
+    constexpr auto max_num_buffers_per_invocation = ::cuda::std::int64_t{512 * 1024 * 1024};
     static_assert(max_num_buffers_per_invocation <= ::cuda::std::numeric_limits<per_invocation_buffer_offset_t>::max());
     const auto max_num_buffers = ::cuda::std::min(max_num_buffers_per_invocation, num_buffers);
 
