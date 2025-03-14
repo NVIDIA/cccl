@@ -142,6 +142,6 @@
 #  define _CCCL_PRAGMA_UNROLL_FULL()
 #endif // ^^^ no pragma unroll support ^^^
 
-#define _CCCL_PRAGMA_NOUNTROLL() _CCCL_PRAGMA_UNROLL(1)
+#define _CCCL_PRAGMA_NOUNROLL() _CCCL_PRAGMA_UNROLL(1)
 
 #endif // __CCCL_COMPILER_H
