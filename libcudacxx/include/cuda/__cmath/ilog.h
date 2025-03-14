@@ -30,6 +30,7 @@
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
+#include <cuda/std/array>
 #include <cuda/std/cstdint>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
@@ -45,83 +46,90 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int ilog2(_Tp __t) noexcept
   return __log10_approx;
 }
 
-static _CCCL_GLOBAL_CONSTANT uint32_t __power_of_10_32bit[] = {
-  10,
-  100,
-  1'000,
-  10'000,
-  100'000,
-  1'000'000,
-  10'000'000,
-  100'000'000,
-  1'000'000'000,
-  _CUDA_VSTD::numeric_limits<uint32_t>::max()};
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::array<uint32_t, 10> __power_of_10_32bit() noexcept
+{
+  return {10,
+          100,
+          1'000,
+          10'000,
+          100'000,
+          1'000'000,
+          10'000'000,
+          100'000'000,
+          1'000'000'000,
+          _CUDA_VSTD::numeric_limits<uint32_t>::max()};
+}
 
-static _CCCL_GLOBAL_CONSTANT uint64_t __power_of_10_64bit[] = {
-  10,
-  100,
-  1'000,
-  10'000,
-  100'000,
-  1'000'000,
-  10'000'000,
-  100'000'000,
-  1'000'000'000,
-  10'000'000'000,
-  100'000'000'000,
-  1'000'000'000'000,
-  10'000'000'000'000,
-  100'000'000'000'000,
-  1'000'000'000'000'000,
-  10'000'000'000'000'000,
-  100'000'000'000'000'000,
-  1'000'000'000'000'000'000,
-  10'000'000'000'000'000'000ull,
-  _CUDA_VSTD::numeric_limits<uint64_t>::max()};
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::array<uint64_t, 20> __power_of_10_64bit() noexcept
+{
+  return {
+    10,
+    100,
+    1'000,
+    10'000,
+    100'000,
+    1'000'000,
+    10'000'000,
+    100'000'000,
+    1'000'000'000,
+    10'000'000'000,
+    100'000'000'000,
+    1'000'000'000'000,
+    10'000'000'000'000,
+    100'000'000'000'000,
+    1'000'000'000'000'000,
+    10'000'000'000'000'000,
+    100'000'000'000'000'000,
+    1'000'000'000'000'000'000,
+    10'000'000'000'000'000'000ull,
+    _CUDA_VSTD::numeric_limits<uint64_t>::max()};
+}
 
 #if _CCCL_HAS_INT128()
 
-static _CCCL_GLOBAL_CONSTANT __uint128_t __power_of_10_128bit[] = {
-  10,
-  100,
-  1'000,
-  10'000,
-  100'000,
-  1'000'000,
-  10'000'000,
-  100'000'000,
-  1'000'000'000,
-  10'000'000'000,
-  100'000'000'000,
-  1'000'000'000'000,
-  10'000'000'000'000,
-  100'000'000'000'000,
-  1'000'000'000'000'000,
-  10'000'000'000'000'000,
-  100'000'000'000'000'000,
-  1'000'000'000'000'000'000,
-  10'000'000'000'000'000'000ull,
-  __uint128_t{10'000'000'000'000'000'000ull} * 10,
-  __uint128_t{10'000'000'000'000'000'000ull} * 100,
-  __uint128_t{10'000'000'000'000'000'000ull} * 1'000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 10'000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 100'000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 1'000'000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 10'000'000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 100'000'000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 1'000'000'000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 10'000'000'000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 100'000'000'000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 1'000'000'000'000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 10'000'000'000'000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 100'000'000'000'000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 1'000'000'000'000'000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 1'000'000'000'000'0000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 10'000'000'000'000'0000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 100'000'000'000'000'0000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 1'000'000'000'000'000'0000ull,
-  _CUDA_VSTD::numeric_limits<__uint128_t>::max()};
-
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::array<__uint128_t, 39> __power_of_10_128bit() noexcept
+{
+  return {
+    10,
+    100,
+    1'000,
+    10'000,
+    100'000,
+    1'000'000,
+    10'000'000,
+    100'000'000,
+    1'000'000'000,
+    10'000'000'000,
+    100'000'000'000,
+    1'000'000'000'000,
+    10'000'000'000'000,
+    100'000'000'000'000,
+    1'000'000'000'000'000,
+    10'000'000'000'000'000,
+    100'000'000'000'000'000,
+    1'000'000'000'000'000'000,
+    10'000'000'000'000'000'000ull,
+    __uint128_t{10'000'000'000'000'000'000ull} * 10,
+    __uint128_t{10'000'000'000'000'000'000ull} * 100,
+    __uint128_t{10'000'000'000'000'000'000ull} * 1'000,
+    __uint128_t{10'000'000'000'000'000'000ull} * 10'000,
+    __uint128_t{10'000'000'000'000'000'000ull} * 100'000,
+    __uint128_t{10'000'000'000'000'000'000ull} * 1'000'000,
+    __uint128_t{10'000'000'000'000'000'000ull} * 10'000'000,
+    __uint128_t{10'000'000'000'000'000'000ull} * 100'000'000,
+    __uint128_t{10'000'000'000'000'000'000ull} * 1'000'000'000,
+    __uint128_t{10'000'000'000'000'000'000ull} * 10'000'000'000,
+    __uint128_t{10'000'000'000'000'000'000ull} * 100'000'000'000,
+    __uint128_t{10'000'000'000'000'000'000ull} * 1'000'000'000'000,
+    __uint128_t{10'000'000'000'000'000'000ull} * 10'000'000'000'000,
+    __uint128_t{10'000'000'000'000'000'000ull} * 100'000'000'000'000,
+    __uint128_t{10'000'000'000'000'000'000ull} * 1'000'000'000'000'000,
+    __uint128_t{10'000'000'000'000'000'000ull} * 1'000'000'000'000'0000,
+    __uint128_t{10'000'000'000'000'000'000ull} * 10'000'000'000'000'0000,
+    __uint128_t{10'000'000'000'000'000'000ull} * 100'000'000'000'000'0000,
+    __uint128_t{10'000'000'000'000'000'000ull} * 1'000'000'000'000'000'0000ull,
+    _CUDA_VSTD::numeric_limits<__uint128_t>::max()};
+}
 #endif // _CCCL_HAS_INT128()
 
 _CCCL_TEMPLATE(typename _Tp)
@@ -134,35 +142,35 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int ilog10(_Tp __t) noexcept
   auto __log10_approx                 = static_cast<int>(__log2);
   if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
   {
-    _CCCL_ASSERT(__log10_approx < int{_CUDA_VSTD::size(__power_of_10_32bit)}, "out of bounds");
+    _CCCL_ASSERT(__log10_approx < int{_CUDA_VSTD::size(__power_of_10_32bit())}, "out of bounds");
     if constexpr (_CUDA_VSTD::is_same_v<_Tp, uint32_t>)
     {
       // don't replace +1 with >= because wraparound behavior is needed here
-      __log10_approx += static_cast<uint32_t>(__t) + 1 > __power_of_10_32bit[__log10_approx];
+      __log10_approx += static_cast<uint32_t>(__t) + 1 > __power_of_10_32bit()[__log10_approx];
     }
     else
     {
-      __log10_approx += static_cast<uint32_t>(__t) >= __power_of_10_32bit[__log10_approx];
+      __log10_approx += static_cast<uint32_t>(__t) >= __power_of_10_32bit()[__log10_approx];
     }
   }
   else if constexpr (sizeof(_Tp) == sizeof(uint64_t))
   {
-    _CCCL_ASSERT(__log10_approx < int{_CUDA_VSTD::size(__power_of_10_64bit)}, "out of bounds");
+    _CCCL_ASSERT(__log10_approx < int{_CUDA_VSTD::size(__power_of_10_64bit())}, "out of bounds");
     // +1 is not needed here
-    __log10_approx += static_cast<uint64_t>(__t) >= __power_of_10_64bit[__log10_approx];
+    __log10_approx += static_cast<uint64_t>(__t) >= __power_of_10_64bit()[__log10_approx];
   }
 #if _CCCL_HAS_INT128()
   else
   {
-    _CCCL_ASSERT(__log10_approx < int{_CUDA_VSTD::size(__power_of_10_128bit)}, "out of bounds");
+    _CCCL_ASSERT(__log10_approx < int{_CUDA_VSTD::size(__power_of_10_128bit())}, "out of bounds");
     if constexpr (_CUDA_VSTD::is_same_v<_Tp, __uint128_t>)
     {
       // don't replace +1 with >= because wraparound behavior is needed here
-      __log10_approx += static_cast<__uint128_t>(__t) + 1 > __power_of_10_128bit[__log10_approx];
+      __log10_approx += static_cast<__uint128_t>(__t) + 1 > __power_of_10_128bit()[__log10_approx];
     }
     else
     {
-      __log10_approx += static_cast<__uint128_t>(__t) >= __power_of_10_128bit[__log10_approx];
+      __log10_approx += static_cast<__uint128_t>(__t) >= __power_of_10_128bit()[__log10_approx];
     }
   }
 #endif // _CCCL_HAS_INT128()
