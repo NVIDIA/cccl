@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#include <type_traits>
+#include <cuda/std/type_traits>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -45,11 +45,12 @@ enum class SelectImpl
 namespace detail
 {
 template <typename T, typename U, typename = void>
-struct has_plus_operator : std::false_type
+struct has_plus_operator : ::cuda::std::false_type
 {};
 
 template <typename T, typename U>
-struct has_plus_operator<T, U, std::void_t<decltype(std::declval<T>() + std::declval<U>())>> : std::true_type
+struct has_plus_operator<T, U, ::cuda::std::void_t<decltype(::cuda::std::declval<T>() + ::cuda::std::declval<U>())>>
+    : ::cuda::std::true_type
 {};
 
 template <typename T, typename U>
