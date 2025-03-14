@@ -6,8 +6,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: msvc && c++17
-
 #include <cuda/std/mdspan>
 
 #include <test_macros.h>
