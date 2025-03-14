@@ -25,6 +25,11 @@ of the CUDA programming model:
 
 * **Parallel primitives**
 
+  * :ref:`Thread <thread-module>` primitives
+
+    * Thread-level reduction, etc.
+    * Safely specialized for each underlying CUDA architecture
+
   * :ref:`Warp-wide <warp-module>` "collective" primitives
 
     * Cooperative warp-wide prefix scan, reduction, etc.
