@@ -116,6 +116,7 @@ class DeviceScanBuildResult(ctypes.Structure):
         ("accumulator_type", TypeInfo),
         ("init_kernel", ctypes.c_void_p),
         ("scan_kernel", ctypes.c_void_p),
+        ("force_inclusive", ctypes.c_bool),
         ("description_bytes_per_tile", ctypes.c_size_t),
         ("payload_bytes_per_tile", ctypes.c_size_t),
     ]

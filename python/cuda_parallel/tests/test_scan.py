@@ -7,22 +7,33 @@ import cupy as cp
 import numba.cuda
 import numba.types
 import numpy as np
+import pytest
 
 import cuda.parallel.experimental.algorithms as algorithms
 import cuda.parallel.experimental.iterators as iterators
 from cuda.parallel.experimental.struct import gpu_struct
 
 
-def exclusive_scan_host(h_input: np.ndarray, op, h_init):
+def scan_host(h_input: np.ndarray, op, h_init, force_inclusive):
     result = h_input.copy()
-    result[0] = h_init[0]
+    if force_inclusive:
+        result[0] = op(h_init[0], result[0])
+    else:
+        result[0] = h_init[0]
+
     for i in range(1, len(result)):
-        result[i] = op(result[i - 1], h_input[i - 1])
+        if force_inclusive:
+            result[i] = op(result[i - 1], h_input[i])
+        else:
+            result[i] = op(result[i - 1], h_input[i - 1])
     return result
 
 
-def exclusive_scan_device(d_input, d_output, num_items, op, h_init, stream=None):
-    scan = algorithms.scan(d_input, d_output, op, h_init)
+def scan_device(d_input, d_output, num_items, op, h_init, force_inclusive, stream=None):
+    scan_algorithm = (
+        algorithms.inclusive_scan if force_inclusive else algorithms.exclusive_scan
+    )
+    scan = scan_algorithm(d_input, d_output, op, h_init)
     temp_storage_size = scan(None, d_input, d_output, num_items, h_init, stream=stream)
     d_temp_storage = numba.cuda.device_array(
         temp_storage_size, dtype=np.uint8, stream=stream.ptr if stream else 0
@@ -30,7 +41,11 @@ def exclusive_scan_device(d_input, d_output, num_items, op, h_init, stream=None)
     scan(d_temp_storage, d_input, d_output, num_items, h_init, stream=stream)
 
 
-def test_scan_array_input(input_array):
+@pytest.mark.parametrize(
+    "force_inclusive",
+    [True, False],
+)
+def test_scan_array_input(force_inclusive, input_array):
     def op(a, b):
         return a + b
 
@@ -43,15 +58,19 @@ def test_scan_array_input(input_array):
     h_init = np.array([42], dtype=dtype)
     d_output = cp.empty_like(d_input)
 
-    exclusive_scan_device(d_input, d_output, len(d_input), op, h_init)
+    scan_device(d_input, d_output, len(d_input), op, h_init, force_inclusive)
 
     got = d_output.get()
-    expected = exclusive_scan_host(d_input.get(), op, h_init)
+    expected = scan_host(d_input.get(), op, h_init, force_inclusive)
 
     np.testing.assert_allclose(expected, got, rtol=1e-5)
 
 
-def test_scan_iterator_input():
+@pytest.mark.parametrize(
+    "force_inclusive",
+    [True, False],
+)
+def test_scan_iterator_input(force_inclusive):
     def op(a, b):
         return a + b
 
@@ -61,15 +80,21 @@ def test_scan_iterator_input():
     h_init = np.array([42], dtype=dtype)
     d_output = cp.empty(num_items, dtype=dtype)
 
-    exclusive_scan_device(d_input, d_output, num_items, op, h_init)
+    scan_device(d_input, d_output, num_items, op, h_init, force_inclusive)
 
     got = d_output.get()
-    expected = exclusive_scan_host(np.arange(1, num_items + 1, dtype=dtype), op, h_init)
+    expected = scan_host(
+        np.arange(1, num_items + 1, dtype=dtype), op, h_init, force_inclusive
+    )
 
     np.testing.assert_allclose(expected, got, rtol=1e-5)
 
 
-def test_scan_struct_type():
+@pytest.mark.parametrize(
+    "force_inclusive",
+    [True, False],
+)
+def test_scan_struct_type(force_inclusive):
     @gpu_struct
     class XY:
         x: np.int32
@@ -83,21 +108,25 @@ def test_scan_struct_type():
 
     h_init = XY(0, 0)
 
-    exclusive_scan_device(d_input, d_output, len(d_input), op, h_init)
+    scan_device(d_input, d_output, len(d_input), op, h_init, force_inclusive)
 
     got = d_output.get()
-    expected_x = exclusive_scan_host(
-        d_input.get()["x"], lambda a, b: a + b, np.asarray([h_init.x])
+    expected_x = scan_host(
+        d_input.get()["x"], lambda a, b: a + b, np.asarray([h_init.x]), force_inclusive
     )
-    expected_y = exclusive_scan_host(
-        d_input.get()["y"], lambda a, b: a + b, np.asarray([h_init.y])
+    expected_y = scan_host(
+        d_input.get()["y"], lambda a, b: a + b, np.asarray([h_init.y]), force_inclusive
     )
 
     np.testing.assert_allclose(expected_x, got["x"], rtol=1e-5)
     np.testing.assert_allclose(expected_y, got["y"], rtol=1e-5)
 
 
-def test_scan_with_stream(cuda_stream):
+@pytest.mark.parametrize(
+    "force_inclusive",
+    [True, False],
+)
+def test_scan_with_stream(force_inclusive, cuda_stream):
     def op(a, b):
         return a + b
 
@@ -109,11 +138,11 @@ def test_scan_with_stream(cuda_stream):
 
     h_init = np.array([42], dtype=np.int32)
 
-    exclusive_scan_device(
-        d_input, d_output, len(d_input), op, h_init, stream=cuda_stream
+    scan_device(
+        d_input, d_output, len(d_input), op, h_init, force_inclusive, stream=cuda_stream
     )
 
     got = d_output.get()
-    expected = exclusive_scan_host(d_input.get(), op, h_init)
+    expected = scan_host(d_input.get(), op, h_init, force_inclusive)
 
     np.testing.assert_allclose(expected, got, rtol=1e-5)
