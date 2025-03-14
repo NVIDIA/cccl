@@ -386,7 +386,7 @@ template <typename It>
 _CCCL_HOST_DEVICE auto make_iterator_kernel_arg(It it) -> kernel_arg<It>
 {
   kernel_arg<It> arg;
-  arg.iterator = it;
+  ::cuda::std::__construct_at(&arg.iterator, it);
   return arg;
 }
 
