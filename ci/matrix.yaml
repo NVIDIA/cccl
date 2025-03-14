@@ -8,7 +8,6 @@ workflows:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'clang16']}
   #
   override:
-    - {jobs: ['build'], project: 'stdpar', std: 'all', ctk: '12.6', cxx: 'nvhpc', cpu: ['amd64', 'arm64']}
 
   pull_request:
     # Old CTK/compiler
@@ -59,6 +58,8 @@ workflows:
     # cccl-infra:
     - {jobs: ['infra'], project: 'cccl', ctk: '12.0', cxx: ['gcc12', 'clang14'], gpu: 'rtx2080'}
     - {jobs: ['infra'], project: 'cccl', ctk: 'curr', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
+    # NVHPC stdpar smoke tests
+    - {jobs: ['build'], project: 'stdpar', std: 'all', ctk: '12.6', cxx: 'nvhpc', cpu: ['amd64', 'arm64']}
 
   nightly:
     # Edge-case jobs
