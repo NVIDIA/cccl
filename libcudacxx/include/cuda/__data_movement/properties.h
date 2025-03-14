@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/cstdint>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
@@ -99,6 +100,18 @@ inline constexpr auto prefetch_spatial_none = __prefetch_spatial_none_t{};
 inline constexpr auto prefetch_64B          = __prefetch_64B_t{};
 inline constexpr auto prefetch_128B         = __prefetch_128B_t{};
 inline constexpr auto prefetch_256B         = __prefetch_256B_t{};
+
+/***********************************************************************************************************************
+ * Cache Hint
+ **********************************************************************************************************************/
+
+template <bool _Enabled = true>
+struct _CacheHint
+{
+  uint64_t __property;
+};
+
+inline constexpr auto __no_cache_hint = _CacheHint<false>{};
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
 
