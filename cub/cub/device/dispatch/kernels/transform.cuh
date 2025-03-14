@@ -386,6 +386,8 @@ template <typename It>
 _CCCL_HOST_DEVICE auto make_iterator_kernel_arg(It it) -> kernel_arg<It>
 {
   kernel_arg<It> arg;
+  // constructor of It, which works in more cases than assignment (e.g. thrust::transform_iterator with
+  // non-copy-assignable functor, e.g. in merge sort tests)
   ::cuda::std::__construct_at(&arg.iterator, it);
   return arg;
 }
