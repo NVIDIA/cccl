@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
@@ -55,12 +54,18 @@ inline constexpr bool is_restrict_accessor_v<__restrict_accessor<_Accessor>> = t
  **********************************************************************************************************************/
 
 template <typename _Accessor>
-struct __restrict_accessor : public _Accessor
+class __restrict_accessor : public _Accessor
 {
   static_assert(_CUDA_VSTD::is_pointer_v<typename _Accessor::data_handle_type>, "Accessor must be pointer based");
 
-private:
-  using __element_type = _CUDA_VSTD::remove_pointer_t<typename _Accessor::data_handle_type>;
+  using __data_handle_type = typename _Accessor::data_handle_type;
+  using __element_type     = _CUDA_VSTD::remove_pointer_t<__data_handle_type>;
+
+  static constexpr bool __is_access_noexcept =
+    noexcept(_CUDA_VSTD::declval<_Accessor>().access(_CUDA_VSTD::declval<__data_handle_type>(), 0));
+
+  static constexpr bool __is_offset_noexcept =
+    noexcept(_CUDA_VSTD::declval<_Accessor>().offset(_CUDA_VSTD::declval<__data_handle_type>(), 0));
 
 public:
   using offset_policy    = __restrict_accessor<typename _Accessor::offset_policy>;
@@ -68,11 +73,6 @@ public:
   using reference        = typename _Accessor::reference;
   using element_type     = typename _Accessor::element_type;
 
-private:
-  static constexpr bool __is_access_noexcept = noexcept(_Accessor{}.access(data_handle_type{}, 0));
-  static constexpr bool __is_offset_noexcept = noexcept(_Accessor{}.offset(data_handle_type{}, 0));
-
-public:
   _CCCL_TEMPLATE(class _Accessor2 = _Accessor)
   _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_default_constructible, _Accessor2))
   _LIBCUDACXX_HIDE_FROM_ABI __restrict_accessor() noexcept(_CUDA_VSTD::is_nothrow_default_constructible_v<_Accessor2>)
