@@ -28,6 +28,7 @@
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstddef>
 
@@ -58,14 +59,14 @@ struct __restrict_accessor : public _Accessor
 {
   static_assert(_CUDA_VSTD::is_pointer_v<typename _Accessor::data_handle_type>, "Accessor must be pointer based");
 
-  using offset_policy = __restrict_accessor<typename _Accessor::offset_policy>;
-#if _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC)
-  using data_handle_type = typename _Accessor::data_handle_type;
-#else
-  using data_handle_type = _CCCL_RESTRICT typename _Accessor::data_handle_type;
-#endif
-  using reference    = typename _Accessor::reference;
-  using element_type = typename _Accessor::element_type;
+private:
+  using __element_type = _CUDA_VSTD::remove_pointer_t<typename _Accessor::data_handle_type>;
+
+public:
+  using offset_policy    = __restrict_accessor<typename _Accessor::offset_policy>;
+  using data_handle_type = __element_type* _CCCL_RESTRICT;
+  using reference        = typename _Accessor::reference;
+  using element_type     = typename _Accessor::element_type;
 
 private:
   static constexpr bool __is_access_noexcept = noexcept(_Accessor{}.access(data_handle_type{}, 0));
@@ -100,13 +101,13 @@ public:
       : _Accessor{__acc}
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference access(_CCCL_RESTRICT data_handle_type __p, size_t __i) const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference access(__element_type* _CCCL_RESTRICT __p, size_t __i) const
     noexcept(__is_access_noexcept)
   {
     return _Accessor::access(__p, __i);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr data_handle_type offset(_CCCL_RESTRICT data_handle_type __p, size_t __i) const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr data_handle_type offset(__element_type* _CCCL_RESTRICT __p, size_t __i) const
     noexcept(__is_offset_noexcept)
   {
     return _Accessor::offset(__p, __i);
