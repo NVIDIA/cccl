@@ -46,6 +46,7 @@
 
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/type_traits.cuh> // for cub::detail::invoke_result_t
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/reduce.cuh>
 #include <cub/device/dispatch/kernels/segmented_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
@@ -816,6 +817,16 @@ struct DispatchSegmentedReduce
       const auto num_segments_per_invocation =
         static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<::cuda::std::int32_t>::max());
       const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation);
+
+      // If we need multiple passes over the segments but the iterators do not support the + operator, we cannot use the
+      // streaming approach and have to fail, returning cudaErrorInvalidValue. This is because c.parallel passes
+      // indirect_arg_t as the iterator type, which does not support the + operator.
+      if (num_invocations > 1
+          && !detail::all_iterators_support_plus_operator(::cuda::std::int64_t{}, d_out, d_begin_offsets, d_end_offsets))
+      {
+        return cudaErrorInvalidValue;
+      }
+
       for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
       {
         const auto current_seg_offset = invocation_index * num_segments_per_invocation;
@@ -838,9 +849,9 @@ struct DispatchSegmentedReduce
           static_cast<::cuda::std::uint32_t>(num_current_segments), policy.SegmentedReduce().BlockThreads(), 0, stream)
           .doit(segmented_reduce_kernel,
                 d_in,
-                d_out + current_seg_offset,
-                d_begin_offsets + current_seg_offset,
-                d_end_offsets + current_seg_offset,
+                detail::advance_iterators_if_supported(d_out, current_seg_offset),
+                detail::advance_iterators_if_supported(d_begin_offsets, current_seg_offset),
+                detail::advance_iterators_if_supported(d_end_offsets, current_seg_offset),
                 reduction_op,
                 init);
 
