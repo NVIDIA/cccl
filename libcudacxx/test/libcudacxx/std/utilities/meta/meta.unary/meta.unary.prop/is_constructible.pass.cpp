@@ -136,11 +136,11 @@ template <class T, class A0>
 __host__ __device__ void test_is_not_constructible()
 {
   static_assert((!cuda::std::is_constructible<T, A0>::value), "");
-#if !TEST_COMPILER(MSVC) && !TEST_COMPILER(CLANG) && !TEST_COMPILER(NVRTC)
-  // The fallback SFINAE version doesn't work reliable with Clang/MSVC/NVRTC, and we don't
+#if !TEST_COMPILER(MSVC) && !TEST_COMPILER(CLANG) && !TEST_COMPILER(NVRTC) && !TEST_COMPILER(NVHPC)
+  // The fallback SFINAE version doesn't work reliable with Clang/MSVC/NVRTC/NVHPC, and we don't
   // use it, so waive it.
   static_assert((!cuda::std::__cccl_is_constructible<T, A0>::type::value), "");
-#endif // !TEST_COMPILER(MSVC) && !TEST_COMPILER(CLANG) && !TEST_COMPILER(NVRTC)
+#endif // !TEST_COMPILER(MSVC) && !TEST_COMPILER(CLANG) && !TEST_COMPILER(NVRTC) && !TEST_COMPILER(NVHPC)
   static_assert((!cuda::std::is_constructible_v<T, A0>), "");
 }
 
