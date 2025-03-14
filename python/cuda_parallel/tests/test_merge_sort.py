@@ -41,14 +41,8 @@ def random_array(size, dtype, max_value=None) -> np.typing.NDArray:
 
 
 def type_to_problem_sizes(dtype) -> List[int]:
-    if dtype in [np.uint8, np.int8]:
-        return [2, 4, 5, 6]
-    elif dtype in [np.uint16, np.int16]:
-        return [4, 8, 14]
-    elif dtype in [np.uint32, np.int32, np.float32]:
-        return [4, 10, 20]
-    elif dtype in [np.uint64, np.int64, np.float64]:
-        return [4, 10, 20]
+    if dtype in DTYPE_LIST:
+        return [2, 4, 6, 8, 10, 16, 20]
     else:
         raise ValueError("Unsupported dtype")
 
