@@ -121,7 +121,7 @@ void test_exceptions()
 
   struct ThrowingInt
   {
-    __host__ __device__ ThrowingInt(int)
+    ThrowingInt(int)
     {
       throw Except{};
     }

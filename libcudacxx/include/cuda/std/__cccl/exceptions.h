@@ -24,7 +24,7 @@
 
 #if defined(CCCL_DISABLE_EXCEPTIONS) // Escape hatch for users to manually disable exceptions
 #  define _CCCL_HAS_EXCEPTIONS() 0
-#elif _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC) || (_CCCL_COMPILER(MSVC) && _HAS_EXCEPTIONS == 0) \
+#elif _CCCL_COMPILER(NVRTC) || (_CCCL_COMPILER(MSVC) && _HAS_EXCEPTIONS == 0) \
   || (_CCCL_COMPILER(MSVC) && _CPPUNWIND == 0) || (!_CCCL_COMPILER(MSVC) && !__EXCEPTIONS)
 #  define _CCCL_HAS_EXCEPTIONS() 0
 #else // ^^^ no exceptions ^^^ / vvv has exceptions vvv

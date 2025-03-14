@@ -35,12 +35,12 @@ struct NotNoexcept
 #if TEST_HAS_EXCEPTIONS()
 struct DefaultCtorThrows
 {
-  __host__ __device__ DefaultCtorThrows()
+  DefaultCtorThrows()
   {
     throw 42;
   }
 };
-#endif
+#endif // TEST_HAS_EXCEPTIONS()
 
 __host__ __device__ void test_default_ctor_sfinae()
 {

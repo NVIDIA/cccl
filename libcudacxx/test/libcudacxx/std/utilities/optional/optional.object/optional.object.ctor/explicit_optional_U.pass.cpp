@@ -129,14 +129,14 @@ struct TerminatesOnConstruction
 class Z
 {
 public:
-  __host__ __device__ explicit Z(int)
+  explicit Z(int)
   {
     TEST_THROW(6);
   }
 };
 
 template <class T, class U>
-__host__ __device__ void test_exception(optional<U>&& rhs)
+void test_exception(optional<U>&& rhs)
 {
   static_assert(!(cuda::std::is_convertible<optional<U>&&, optional<T>>::value), "");
   try
