@@ -125,6 +125,11 @@ public:
 
   void ctx_add_input_id(int prereq_unique_id)
   {
+    if (!is_tracing())
+    {
+      return;
+    }
+
     // If this is the first input we select the ID of the proxy start
     if (!proxy_start_unique_id.has_value())
     {
@@ -137,6 +142,11 @@ public:
 
   void ctx_add_output_id(int prereq_unique_id)
   {
+    if (!is_tracing())
+    {
+      return;
+    }
+
     if (!proxy_end_unique_id.has_value())
     {
       proxy_end_unique_id = get_next_prereq_unique_id();
