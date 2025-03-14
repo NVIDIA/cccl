@@ -168,3 +168,20 @@ TEST_CASE("Mdspan copy", "[data_manipulation]")
     CUDAX_REQUIRE(!memcmp(mdspan_buffer.data(), buffer.data, mdspan_buffer.size()));
   }
 }
+
+TEST_CASE("Non exhaustive mdspan copy_bytes", "[data_manipulation]")
+{
+  cudax::stream stream;
+  {
+    auto fake_strided_mdspan = create_fake_strided_mdspan();
+
+    try
+    {
+      cudax::copy_bytes(stream, fake_strided_mdspan, fake_strided_mdspan);
+    }
+    catch (const ::std::invalid_argument& e)
+    {
+      CHECK(e.what() == ::std::string("copy_bytes supports only exhaustive mdspans"));
+    }
+  }
+}

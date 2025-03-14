@@ -56,6 +56,14 @@ auto make_buffer_for_mdspan(Extents extents, char value = 0)
   return buffer;
 }
 
+inline auto create_fake_strided_mdspan()
+{
+  cuda::std::dextents<size_t, 3> dynamic_extents{1, 2, 3};
+  cuda::std::array<size_t, 3> strides{12, 4, 1};
+  cuda::std::layout_stride::mapping map{dynamic_extents, strides};
+  return cuda::std::mdspan<int, decltype(dynamic_extents), cuda::std::layout_stride>(nullptr, map);
+};
+
 namespace cuda::experimental
 {
 

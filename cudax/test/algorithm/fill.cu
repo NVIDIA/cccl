@@ -74,3 +74,20 @@ TEST_CASE("Mdspan Fill", "[data_manipulation]")
     check_result_and_erase(stream, cuda::std::span(buffer.data, buffer.size));
   }
 }
+
+TEST_CASE("Non exhaustive mdspan fill_bytes", "[data_manipulation]")
+{
+  cudax::stream stream;
+  {
+    auto fake_strided_mdspan = create_fake_strided_mdspan();
+
+    try
+    {
+      cudax::fill_bytes(stream, fake_strided_mdspan, fill_byte);
+    }
+    catch (const ::std::invalid_argument& e)
+    {
+      CHECK(e.what() == ::std::string("fill_bytes supports only exhaustive mdspans"));
+    }
+  }
+}
