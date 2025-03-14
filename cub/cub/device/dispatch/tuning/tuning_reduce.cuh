@@ -267,6 +267,50 @@ struct policy_hub
   using MaxPolicy = Policy1000;
 };
 } // namespace reduce
+
+namespace fixed_size_segmented_reduce
+{
+template <typename AccumT, typename OffsetT, typename ReductionOpT>
+struct policy_hub
+{
+  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
+  {
+    static constexpr int threads_per_block  = 256;
+    static constexpr int items_per_vec_load = 4;
+
+    static constexpr int items_per_thread        = 16;
+    static constexpr int small_items_per_thread  = 16;
+    static constexpr int medium_items_per_thread = 16;
+
+    using ReducePolicy =
+      AgentReducePolicy<threads_per_block,
+                        items_per_thread,
+                        AccumT,
+                        items_per_vec_load,
+                        BLOCK_REDUCE_WARP_REDUCTIONS,
+                        LOAD_LDG>;
+
+    // TODO Tune
+    using SmallReducePolicy =
+      AgentWarpReducePolicy<ReducePolicy::BLOCK_THREADS,
+                            1 /* threads per warp */,
+                            small_items_per_thread,
+                            AccumT,
+                            items_per_vec_load,
+                            LOAD_LDG>;
+    // TODO Tune
+    using MediumReducePolicy =
+      AgentWarpReducePolicy<ReducePolicy::BLOCK_THREADS,
+                            32 /* threads per warp */,
+                            medium_items_per_thread,
+                            AccumT,
+                            items_per_vec_load,
+                            LOAD_LDG>;
+  };
+
+  using MaxPolicy = Policy500;
+};
+} // namespace fixed_size_segmented_reduce
 } // namespace detail
 
 CUB_NAMESPACE_END
