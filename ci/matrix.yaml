@@ -8,7 +8,7 @@ workflows:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'clang16']}
   #
   override:
-    - {jobs: ['build'], project: 'stdpar', std: 'all', ctk: '12.5', cxx: 'nvhpc', cpu: ['amd64', 'arm64']}
+    - {jobs: ['build'], project: 'stdpar', std: 'all', ctk: '12.6', cxx: 'nvhpc', cpu: ['amd64', 'arm64']}
 
   pull_request:
     # Old CTK/compiler
