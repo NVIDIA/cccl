@@ -175,16 +175,13 @@ struct DeviceCopy
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceCopy::Batched");
 
-    // Integer type large enough to hold any offset in [0, num_ranges)
-    using RangeOffsetT = uint32_t;
-
     // Integer type large enough to hold any offset in [0, num_thread_blocks_launched), where a safe
     // upper bound on num_thread_blocks_launched can be assumed to be given by
     // IDIV_CEIL(num_ranges, 64)
     using BlockOffsetT = uint32_t;
 
-    return detail::DispatchBatchMemcpy<InputIt, OutputIt, SizeIteratorT, RangeOffsetT, BlockOffsetT, CopyAlg::Copy>::
-      Dispatch(d_temp_storage, temp_storage_bytes, input_it, output_it, sizes, num_ranges, stream);
+    return detail::DispatchBatchMemcpy<InputIt, OutputIt, SizeIteratorT, BlockOffsetT, CopyAlg::Copy>::Dispatch(
+      d_temp_storage, temp_storage_bytes, input_it, output_it, sizes, num_ranges, stream);
   }
 };
 

@@ -13,6 +13,7 @@
 
 #include "catch2_test_device_memcpy_batched_common.cuh"
 #include "catch2_test_launch_helper.h"
+#include "thrust/iterator/transform_iterator.h"
 #include <c2h/catch2_test_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -74,26 +75,26 @@ try
   auto d_buffer_dst_offsets = get_shuffled_buffer_offsets<buffer_offset_t, byte_offset_t>(d_buffer_sizes, C2H_SEED(1));
 
   // Generate random input data and initialize output data
-  c2h::device_vector<std::uint8_t> d_in(num_total_bytes);
-  c2h::device_vector<std::uint8_t> d_out(num_total_bytes, 42);
+  c2h::device_vector<cuda::std::uint8_t> d_in(num_total_bytes);
+  c2h::device_vector<cuda::std::uint8_t> d_out(num_total_bytes, 42);
   c2h::gen(C2H_SEED(1), d_in);
 
   // Prepare host-side input data for verification
-  c2h::host_vector<std::uint8_t> h_in(d_in);
-  c2h::host_vector<std::uint8_t> h_out(num_total_bytes);
+  c2h::host_vector<cuda::std::uint8_t> h_in(d_in);
+  c2h::host_vector<cuda::std::uint8_t> h_out(num_total_bytes);
   c2h::host_vector<buffer_size_t> h_buffer_sizes(d_buffer_sizes);
   c2h::host_vector<byte_offset_t> h_src_offsets(d_buffer_src_offsets);
   c2h::host_vector<byte_offset_t> h_dst_offsets(d_buffer_dst_offsets);
 
   // Prepare d_buffer_srcs
-  offset_to_ptr_op<src_ptr_t> src_transform_op{static_cast<src_ptr_t>(thrust::raw_pointer_cast(d_in.data()))};
-  thrust::transform_iterator<offset_to_ptr_op<src_ptr_t>, byte_offset_t*> d_buffer_srcs(
-    thrust::raw_pointer_cast(d_buffer_src_offsets.data()), src_transform_op);
+  prepend_n_constants_op<src_ptr_t> src_transform_op{thrust::raw_pointer_cast(d_in.data())};
+  auto d_buffer_srcs =
+    thrust::make_transform_iterator(thrust::raw_pointer_cast(d_buffer_src_offsets.data()), src_transform_op);
 
   // Prepare d_buffer_dsts
-  offset_to_ptr_op<dst_ptr_t> dst_transform_op{static_cast<dst_ptr_t>(thrust::raw_pointer_cast(d_out.data()))};
-  thrust::transform_iterator<offset_to_ptr_op<dst_ptr_t>, byte_offset_t*> d_buffer_dsts(
-    thrust::raw_pointer_cast(d_buffer_dst_offsets.data()), dst_transform_op);
+  prepend_n_constants_op<dst_ptr_t> dst_transform_op{thrust::raw_pointer_cast(d_out.data())};
+  auto d_buffer_dsts =
+    thrust::make_transform_iterator(thrust::raw_pointer_cast(d_buffer_dst_offsets.data()), dst_transform_op);
 
   // Invoke device-side algorithm
   memcpy_batched(d_buffer_srcs, d_buffer_dsts, d_buffer_sizes.begin(), num_buffers);
@@ -101,9 +102,7 @@ try
   // Prepare CPU-side result for verification
   for (buffer_offset_t i = 0; i < num_buffers; i++)
   {
-    std::memcpy(thrust::raw_pointer_cast(h_out.data()) + h_dst_offsets[i],
-                thrust::raw_pointer_cast(h_in.data()) + h_src_offsets[i],
-                h_buffer_sizes[i]);
+    std::memcpy(h_out.data() + h_dst_offsets[i], h_in.data() + h_src_offsets[i], h_buffer_sizes[i]);
   }
 
   REQUIRE(d_out == h_out);
@@ -138,6 +137,85 @@ try
 
   const bool all_equal = thrust::equal(d_out.cbegin(), d_out.cend(), input_data_it);
   REQUIRE(all_equal == true);
+}
+catch (std::bad_alloc& e)
+{
+  std::cerr << "Caught bad_alloc: " << e.what() << std::endl;
+}
+
+C2H_TEST("DeviceMemcpy::Batched works for a very large number of buffer", "[memcpy]")
+try
+{
+  using src_ptr_t       = const cuda::std::uint8_t*;
+  using dst_ptr_t       = cuda::std::uint8_t*;
+  using byte_offset_t   = cuda::std::uint64_t;
+  using buffer_size_t   = cuda::std::int32_t;
+  using buffer_offset_t = cuda::std::uint64_t;
+
+  constexpr auto num_empty_buffers     = static_cast<buffer_offset_t>(std::numeric_limits<uint32_t>::max()) - (1 << 20);
+  constexpr auto num_non_empty_buffers = buffer_offset_t{3 << 20};
+  constexpr auto num_buffers           = num_empty_buffers + num_non_empty_buffers;
+
+  buffer_size_t min_buffer_size = 1;
+  buffer_size_t max_buffer_size = 100;
+
+  // Generate the buffer sizes
+  c2h::device_vector<buffer_size_t> d_buffer_sizes(num_non_empty_buffers);
+  c2h::gen(C2H_SEED(2), d_buffer_sizes, min_buffer_size, max_buffer_size);
+  byte_offset_t num_total_bytes = thrust::reduce(d_buffer_sizes.cbegin(), d_buffer_sizes.cend());
+
+  // Shuffle buffer offsets
+  auto d_buffer_src_offsets = get_shuffled_buffer_offsets<buffer_offset_t, byte_offset_t>(d_buffer_sizes, C2H_SEED(1));
+  auto d_buffer_dst_offsets = get_shuffled_buffer_offsets<buffer_offset_t, byte_offset_t>(d_buffer_sizes, C2H_SEED(1));
+
+  // Generate random input data and initialize output data
+  c2h::device_vector<cuda::std::uint8_t> d_in(num_total_bytes);
+  c2h::device_vector<cuda::std::uint8_t> d_out(num_total_bytes, 42);
+  c2h::gen(C2H_SEED(1), d_in);
+
+  // Prepare host-side input data for verification
+  c2h::host_vector<cuda::std::uint8_t> h_in(d_in);
+  c2h::host_vector<cuda::std::uint8_t> h_out(num_total_bytes);
+  c2h::host_vector<buffer_size_t> h_buffer_sizes(d_buffer_sizes);
+  c2h::host_vector<byte_offset_t> h_src_offsets(d_buffer_src_offsets);
+  c2h::host_vector<byte_offset_t> h_dst_offsets(d_buffer_dst_offsets);
+
+  // Prepare d_buffer_srcs
+  prepend_n_constants_op<src_ptr_t> src_transform_op{thrust::raw_pointer_cast(d_in.data())};
+  auto d_buffer_srcs =
+    thrust::make_transform_iterator(thrust::raw_pointer_cast(d_buffer_src_offsets.data()), src_transform_op);
+
+  // Return nullptr for the first num_empty_buffers and only the actual destination pointers for the rest
+  skip_first_n_op<decltype(d_buffer_srcs), src_ptr_t> src_skip_first_n_op{d_buffer_srcs, nullptr, num_empty_buffers};
+  auto d_buffer_srcs_skipped =
+    thrust::make_transform_iterator(thrust::make_counting_iterator(buffer_offset_t{0}), src_skip_first_n_op);
+
+  // Prepare d_buffer_dsts
+  prepend_n_constants_op<dst_ptr_t> dst_transform_op{thrust::raw_pointer_cast(d_out.data())};
+  thrust::transform_iterator<prepend_n_constants_op<dst_ptr_t>, byte_offset_t*> d_buffer_dsts(
+    thrust::raw_pointer_cast(d_buffer_dst_offsets.data()), dst_transform_op);
+
+  // Return nullptr for the first num_empty_buffers and only the actual destination pointers for the rest
+  skip_first_n_op<decltype(d_buffer_dsts), dst_ptr_t> dst_skip_first_n_op{d_buffer_dsts, nullptr, num_empty_buffers};
+  auto d_buffer_dsts_skipped =
+    thrust::make_transform_iterator(thrust::make_counting_iterator(buffer_offset_t{0}), dst_skip_first_n_op);
+
+  // Return 0 for the first num_empty_buffers and only the actual buffer sizes for the rest
+  auto d_buffer_sizes_skipped = thrust::make_transform_iterator(
+    thrust::make_counting_iterator(buffer_offset_t{0}),
+    skip_first_n_op<decltype(d_buffer_sizes.cbegin()), buffer_size_t>{
+      d_buffer_sizes.cbegin(), buffer_size_t{0}, num_empty_buffers});
+
+  // Invoke device-side algorithm
+  memcpy_batched(d_buffer_srcs_skipped, d_buffer_dsts_skipped, d_buffer_sizes_skipped, num_buffers);
+
+  // Prepare CPU-side result for verification
+  for (buffer_offset_t i = 0; i < num_non_empty_buffers; i++)
+  {
+    std::memcpy(h_out.data() + h_dst_offsets[i], h_in.data() + h_src_offsets[i], h_buffer_sizes[i]);
+  }
+
+  REQUIRE(d_out == h_out);
 }
 catch (std::bad_alloc& e)
 {

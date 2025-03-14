@@ -18,7 +18,7 @@
  * offset relative to a fixed base iterator.
  */
 template <typename IteratorT>
-struct offset_to_ptr_op
+struct prepend_n_constants_op
 {
   IteratorT base_it;
 
@@ -26,6 +26,19 @@ struct offset_to_ptr_op
   __host__ __device__ __forceinline__ IteratorT operator()(T offset) const
   {
     return base_it + offset;
+  }
+};
+
+template <typename IteratorT, typename ValueT>
+struct skip_first_n_op
+{
+  IteratorT base_it;
+  ValueT value_for_first_n;
+  ::cuda::std::size_t num_items_to_skip;
+
+  __host__ __device__ __forceinline__ auto operator()(::cuda::std::size_t offset) const
+  {
+    return offset < num_items_to_skip ? value_for_first_n : base_it[offset - num_items_to_skip];
   }
 };
 
