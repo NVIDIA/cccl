@@ -129,6 +129,7 @@
   || _CCCL_COMPILER(CLANG)
 #  define _CCCL_PRAGMA_UNROLL(_N)    _CCCL_PRAGMA(unroll _N)
 #  define _CCCL_PRAGMA_UNROLL_FULL() _CCCL_PRAGMA(unroll)
+
 #elif _CCCL_COMPILER(GCC, >=, 8)
 // gcc supports only #pragma GCC unroll, but that causes problems when compiling with nvcc. So, we use #pragma unroll
 // when compiling device code, and #pragma GCC unroll when compiling host code, but we need to suppress the warning
@@ -140,5 +141,7 @@
 #  define _CCCL_PRAGMA_UNROLL(_N)
 #  define _CCCL_PRAGMA_UNROLL_FULL()
 #endif // ^^^ no pragma unroll support ^^^
+
+#define _CCCL_PRAGMA_NOUNROLL() _CCCL_PRAGMA_UNROLL(1)
 
 #endif // __CCCL_COMPILER_H

@@ -219,7 +219,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
       d_values_double_buffer.current());
     current_bit += pass_bits;
 
-#pragma unroll 1
+    _CCCL_PRAGMA_NOUNROLL()
     while (current_bit < end_bit)
     {
       pass_bits = (::cuda::std::min)(int{LargeSegmentPolicyT::RADIX_BITS}, (end_bit - current_bit));
@@ -499,7 +499,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
       d_values_double_buffer.current());
     current_bit += pass_bits;
 
-#pragma unroll 1
+    _CCCL_PRAGMA_NOUNROLL()
     while (current_bit < end_bit)
     {
       pass_bits = (::cuda::std::min)(int{LargeSegmentPolicyT::RADIX_BITS}, (end_bit - current_bit));
