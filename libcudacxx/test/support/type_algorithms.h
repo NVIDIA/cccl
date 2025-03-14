@@ -28,7 +28,7 @@ using concatenate_t = typename concatenate<Types...>::type;
 
 // for_each takes a type_list calls f with each element as the first template argument
 template <class... Types, class Functor>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void for_each(type_list<Types...>, Functor f);
+__host__ __device__ constexpr void for_each(type_list<Types...>, Functor f);
 
 // impl
 template <class... Types>
@@ -50,11 +50,11 @@ struct concatenate<type_list<Types1...>, type_list<Types2...>, Rest...>
 };
 
 template <class... Types>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void swallow(Types...)
+__host__ __device__ constexpr void swallow(Types...)
 {}
 
 template <class... Types, class Functor>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void for_each(type_list<Types...>, Functor f)
+__host__ __device__ constexpr void for_each(type_list<Types...>, Functor f)
 {
   swallow((f.template operator()<Types>(), 0)...);
 }

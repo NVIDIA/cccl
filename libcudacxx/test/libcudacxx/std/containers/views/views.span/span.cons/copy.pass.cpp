@@ -39,7 +39,7 @@ __host__ __device__ void testCV()
   assert((doCopy(cuda::std::span<T, 2>(&arr[0], 2))));
 }
 
-STATIC_TEST_GLOBAL_VAR constexpr int carr[] = {1, 2, 3};
+TEST_GLOBAL_VARIABLE constexpr int carr[] = {1, 2, 3};
 
 int main(int, char**)
 {

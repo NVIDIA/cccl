@@ -11,7 +11,7 @@
 
 #include "test_macros.h"
 
-#if TEST_HAS_FEATURE(address_sanitizer)
+#if _CCCL_HAS_FEATURE(address_sanitizer)
 extern "C" int __sanitizer_verify_contiguous_container(const void* beg, const void* mid, const void* end);
 
 template <typename T, typename Alloc>

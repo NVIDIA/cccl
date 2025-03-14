@@ -66,10 +66,10 @@ int main(int, char**)
 {
   test_has_not_nothrow_default_constructor<void>();
   test_has_not_nothrow_default_constructor<int&>();
-#ifndef TEST_COMPILER_NVHPC
+#if !TEST_COMPILER(NVHPC)
   test_has_not_nothrow_default_constructor<A>();
   test_has_not_nothrow_default_constructor<DThrows>(); // This is LWG2116
-#endif // !TEST_COMPILER_NVHPC
+#endif // !TEST_COMPILER(NVHPC)
 
   test_is_nothrow_default_constructible<Union>();
   test_is_nothrow_default_constructible<Empty>();

@@ -26,7 +26,8 @@
 
 // std::array is explicitly allowed to be initialized with A a = { init-list };.
 // Disable the missing braces warning for this reason.
-#include "disable_missing_braces_warning.h"
+TEST_DIAG_SUPPRESS_GCC("-Wmissing-braces")
+TEST_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 
 template <class Tuple>
 struct ConstexprConstructibleFromTuple
@@ -188,9 +189,9 @@ __host__ __device__ void test_noexcept()
     unused(tup);
     Tuple const& ctup = tup;
     unused(ctup);
-#ifndef TEST_COMPILER_NVHPC
+#if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(cuda::std::make_from_tuple<TestType>(ctup)));
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER(NVHPC)
     static_assert(noexcept(cuda::std::make_from_tuple<TestType>(cuda::std::move(tup))));
   }
   {
@@ -199,12 +200,12 @@ __host__ __device__ void test_noexcept()
     unused(tup);
     Tuple const& ctup = tup;
     unused(ctup);
-#ifndef TEST_COMPILER_NVHPC
+#if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(cuda::std::make_from_tuple<TestType>(ctup)));
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER(NVHPC)
     static_assert(noexcept(cuda::std::make_from_tuple<TestType>(cuda::std::move(tup))));
   }
-#ifndef TEST_COMPILER_NVHPC
+#if !TEST_COMPILER(NVHPC)
   {
     using Tuple = cuda::std::tuple<int, int, int>;
     Tuple tup;
@@ -224,7 +225,7 @@ __host__ __device__ void test_noexcept()
     unused(tup);
     static_assert(!noexcept(cuda::std::make_from_tuple<TestType>(tup)));
   }
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER(NVHPC)
   {
     using Tuple = cuda::std::array<long, 3>;
     Tuple tup;

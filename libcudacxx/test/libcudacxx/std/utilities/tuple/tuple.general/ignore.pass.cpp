@@ -25,7 +25,7 @@ static_assert(cuda::std::is_trivially_default_constructible<decltype(cuda::std::
   return 8294;
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   {
     auto& ignore_v = cuda::std::ignore;

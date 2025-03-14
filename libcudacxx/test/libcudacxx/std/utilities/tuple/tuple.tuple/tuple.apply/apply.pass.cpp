@@ -15,12 +15,9 @@
 
 // Test with different ref/ptr/cv qualified argument types.
 
-#include <cuda/std/tuple>
-
-// Array tests are disabled
-// #include <cuda/std/array>
-
+#include <cuda/std/array>
 #include <cuda/std/cassert>
+#include <cuda/std/tuple>
 #include <cuda/std/utility>
 
 #include "test_macros.h"
@@ -28,7 +25,8 @@
 
 // cuda::std::array is explicitly allowed to be initialized with A a = { init-list };.
 // Disable the missing braces warning for this reason.
-#include "disable_missing_braces_warning.h"
+TEST_DIAG_SUPPRESS_GCC("-Wmissing-braces")
+TEST_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 
 __host__ __device__ constexpr int constexpr_sum_fn()
 {
@@ -90,15 +88,13 @@ __host__ __device__ void test_constexpr_evaluation()
     static_assert(cuda::std::apply(static_cast<Fn>(constexpr_sum_fn), t) == 142, "");
     static_assert(cuda::std::apply(sum_obj, t) == 142, "");
   }
-  /* TODO: enable cuda::std::array
   {
-      using Tup = cuda::std::array<int, 3>;
-      using Fn = int(&)(int, int, int);
-      constexpr Tup t = {42, 101, -1};
-      static_assert(cuda::std::apply(static_cast<Fn>(constexpr_sum_fn), t) == 142, "");
-      static_assert(cuda::std::apply(sum_obj, t) == 142, "");
+    using Tup       = cuda::std::array<int, 3>;
+    using Fn        = int (&)(int, int, int);
+    constexpr Tup t = {42, 101, -1};
+    static_assert(cuda::std::apply(static_cast<Fn>(constexpr_sum_fn), t) == 142, "");
+    static_assert(cuda::std::apply(sum_obj, t) == 142, "");
   }
-  */
 }
 
 enum CallQuals
@@ -232,9 +228,9 @@ __host__ __device__ void test_noexcept()
     using Tup = cuda::std::tuple<int, const char*, long>;
     Tup t;
     static_assert(noexcept(cuda::std::apply(nec, t)));
-#ifndef TEST_COMPILER_NVHPC
+#if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(cuda::std::apply(tc, t)));
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER(NVHPC)
     unused(t);
     unused(tc);
   }
@@ -242,9 +238,9 @@ __host__ __device__ void test_noexcept()
     // test that the noexcept-ness of the argument conversions is checked.
     using Tup = cuda::std::tuple<NothrowMoveable, int>;
     Tup t;
-#ifndef TEST_COMPILER_NVHPC
+#if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(cuda::std::apply(nec, t)));
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER(NVHPC)
     static_assert(noexcept(cuda::std::apply(nec, cuda::std::move(t))));
     unused(t);
   }

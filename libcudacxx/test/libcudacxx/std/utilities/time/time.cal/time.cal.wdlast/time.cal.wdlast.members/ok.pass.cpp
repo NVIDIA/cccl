@@ -24,7 +24,7 @@ int main(int, char**)
   using weekday_last = cuda::std::chrono::weekday_last;
 
   static_assert(noexcept(cuda::std::declval<const weekday_last>().ok()));
-  ASSERT_SAME_TYPE(bool, decltype(cuda::std::declval<const weekday_last>().ok()));
+  static_assert(cuda::std::is_same_v<bool, decltype(cuda::std::declval<const weekday_last>().ok())>);
 
   static_assert(weekday_last{weekday{0}}.ok(), "");
   static_assert(weekday_last{weekday{1}}.ok(), "");

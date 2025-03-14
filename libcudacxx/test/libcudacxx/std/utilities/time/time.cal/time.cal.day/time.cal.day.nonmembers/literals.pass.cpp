@@ -27,7 +27,7 @@ int main(int, char**)
   {
     using namespace cuda::std::chrono;
     static_assert(noexcept(4d));
-    ASSERT_SAME_TYPE(day, decltype(4d));
+    static_assert(cuda::std::is_same_v<day, decltype(4d)>);
 
     static_assert(7d == day(7), "");
     day d1 = 4d;
@@ -37,7 +37,7 @@ int main(int, char**)
   {
     using namespace cuda::std::literals;
     static_assert(noexcept(4d));
-    ASSERT_SAME_TYPE(cuda::std::chrono::day, decltype(4d));
+    static_assert(cuda::std::is_same_v<cuda::std::chrono::day, decltype(4d)>);
 
     static_assert(7d == cuda::std::chrono::day(7), "");
 

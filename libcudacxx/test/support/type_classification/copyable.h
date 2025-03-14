@@ -28,7 +28,7 @@ struct no_copy_assignment
   no_copy_assignment& operator=(no_copy_assignment&&)      = default;
 };
 
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC chokes on multiple definitions of SMF
+#if !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017 // MSVC chokes on multiple definitions of SMF
 struct no_copy_assignment_mutable
 {
   no_copy_assignment_mutable() = default;
@@ -37,7 +37,7 @@ struct no_copy_assignment_mutable
   no_copy_assignment_mutable& operator=(no_copy_assignment_mutable&)       = delete;
   no_copy_assignment_mutable& operator=(no_copy_assignment_mutable&&)      = default;
 };
-#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017
+#endif // !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017
 
 struct non_copyable
 {

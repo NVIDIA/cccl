@@ -52,7 +52,7 @@ __host__ __device__ constexpr void test_fpclassify(T val, int expected)
 template <class T, cuda::std::enable_if_t<cuda::is_floating_point_v<T>, int> = 0>
 __host__ __device__ constexpr void test_type()
 {
-  ASSERT_SAME_TYPE(int, decltype(cuda::std::fpclassify(T{})));
+  static_assert(cuda::std::is_same_v<int, decltype(cuda::std::fpclassify(T{}))>);
 
   // __nv_fp8_e8m0 cannot represent 0
 #if _CCCL_HAS_NVFP8_E8M0()
@@ -89,7 +89,7 @@ __host__ __device__ constexpr void test_type()
 template <class T, cuda::std::enable_if_t<cuda::std::is_integral_v<T>, int> = 0>
 __host__ __device__ constexpr void test_type()
 {
-  ASSERT_SAME_TYPE(int, decltype(cuda::std::fpclassify(T{})));
+  static_assert(cuda::std::is_same_v<int, decltype(cuda::std::fpclassify(T{}))>);
 
   test_fpclassify(T(1), FP_NORMAL);
   test_fpclassify(T(0), FP_ZERO);

@@ -40,38 +40,38 @@ public:
   typedef It pointer;
   typedef typename cuda::std::iterator_traits<It>::reference reference;
 
-  __host__ __device__ TEST_CONSTEXPR explicit cpp17_output_iterator(It it)
+  __host__ __device__ constexpr explicit cpp17_output_iterator(It it)
       : it_(cuda::std::move(it))
   {}
 
   template <class U>
-  __host__ __device__ TEST_CONSTEXPR cpp17_output_iterator(const cpp17_output_iterator<U>& u)
+  __host__ __device__ constexpr cpp17_output_iterator(const cpp17_output_iterator<U>& u)
       : it_(u.it_)
   {}
 
   template <class U, class = typename cuda::std::enable_if<cuda::std::is_default_constructible<U>::value>::type>
-  __host__ __device__ TEST_CONSTEXPR_CXX14 cpp17_output_iterator(cpp17_output_iterator<U>&& u)
+  __host__ __device__ constexpr cpp17_output_iterator(cpp17_output_iterator<U>&& u)
       : it_(u.it_)
   {
     u.it_ = U();
   }
 
-  __host__ __device__ TEST_CONSTEXPR reference operator*() const
+  __host__ __device__ constexpr reference operator*() const
   {
     return *it_;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 cpp17_output_iterator& operator++()
+  __host__ __device__ constexpr cpp17_output_iterator& operator++()
   {
     ++it_;
     return *this;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX14 cpp17_output_iterator operator++(int)
+  __host__ __device__ constexpr cpp17_output_iterator operator++(int)
   {
     return cpp17_output_iterator(it_++);
   }
 
-  __host__ __device__ friend TEST_CONSTEXPR It base(const cpp17_output_iterator& i)
+  __host__ __device__ friend constexpr It base(const cpp17_output_iterator& i)
   {
     return i.it_;
   }
@@ -99,47 +99,47 @@ public:
   typedef It pointer;
   typedef typename Traits::reference reference;
 
-  __host__ __device__ TEST_CONSTEXPR explicit cpp17_input_iterator(It it)
+  __host__ __device__ constexpr explicit cpp17_input_iterator(It it)
       : it_(it)
   {}
 
   template <class U, class T>
-  __host__ __device__ TEST_CONSTEXPR cpp17_input_iterator(const cpp17_input_iterator<U, T>& u)
+  __host__ __device__ constexpr cpp17_input_iterator(const cpp17_input_iterator<U, T>& u)
       : it_(u.it_)
   {}
 
   template <class U, class T, class = typename cuda::std::enable_if<cuda::std::is_default_constructible<U>::value>::type>
-  __host__ __device__ TEST_CONSTEXPR_CXX14 cpp17_input_iterator(cpp17_input_iterator<U, T>&& u)
+  __host__ __device__ constexpr cpp17_input_iterator(cpp17_input_iterator<U, T>&& u)
       : it_(u.it_)
   {
     u.it_ = U();
   }
 
-  __host__ __device__ TEST_CONSTEXPR reference operator*() const
+  __host__ __device__ constexpr reference operator*() const
   {
     return *it_;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 cpp17_input_iterator& operator++()
+  __host__ __device__ constexpr cpp17_input_iterator& operator++()
   {
     ++it_;
     return *this;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX14 cpp17_input_iterator operator++(int)
+  __host__ __device__ constexpr cpp17_input_iterator operator++(int)
   {
     return cpp17_input_iterator(it_++);
   }
 
-  __host__ __device__ friend TEST_CONSTEXPR bool operator==(const cpp17_input_iterator& x, const cpp17_input_iterator& y)
+  __host__ __device__ friend constexpr bool operator==(const cpp17_input_iterator& x, const cpp17_input_iterator& y)
   {
     return x.it_ == y.it_;
   }
-  __host__ __device__ friend TEST_CONSTEXPR bool operator!=(const cpp17_input_iterator& x, const cpp17_input_iterator& y)
+  __host__ __device__ friend constexpr bool operator!=(const cpp17_input_iterator& x, const cpp17_input_iterator& y)
   {
     return x.it_ != y.it_;
   }
 
-  __host__ __device__ friend TEST_CONSTEXPR It base(const cpp17_input_iterator& i)
+  __host__ __device__ friend constexpr It base(const cpp17_input_iterator& i)
   {
     return i.it_;
   }
@@ -166,50 +166,50 @@ public:
   typedef It pointer;
   typedef typename cuda::std::iterator_traits<It>::reference reference;
 
-  __host__ __device__ TEST_CONSTEXPR forward_iterator()
+  __host__ __device__ constexpr forward_iterator()
       : it_()
   {}
-  __host__ __device__ TEST_CONSTEXPR explicit forward_iterator(It it)
+  __host__ __device__ constexpr explicit forward_iterator(It it)
       : it_(it)
   {}
 
   template <class U>
-  __host__ __device__ TEST_CONSTEXPR forward_iterator(const forward_iterator<U>& u)
+  __host__ __device__ constexpr forward_iterator(const forward_iterator<U>& u)
       : it_(u.it_)
   {}
 
   template <class U, class = typename cuda::std::enable_if<cuda::std::is_default_constructible<U>::value>::type>
-  __host__ __device__ TEST_CONSTEXPR_CXX14 forward_iterator(forward_iterator<U>&& other)
+  __host__ __device__ constexpr forward_iterator(forward_iterator<U>&& other)
       : it_(other.it_)
   {
     other.it_ = U();
   }
 
-  __host__ __device__ TEST_CONSTEXPR reference operator*() const
+  __host__ __device__ constexpr reference operator*() const
   {
     return *it_;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 forward_iterator& operator++()
+  __host__ __device__ constexpr forward_iterator& operator++()
   {
     ++it_;
     return *this;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX14 forward_iterator operator++(int)
+  __host__ __device__ constexpr forward_iterator operator++(int)
   {
     return forward_iterator(it_++);
   }
 
-  __host__ __device__ friend TEST_CONSTEXPR bool operator==(const forward_iterator& x, const forward_iterator& y)
+  __host__ __device__ friend constexpr bool operator==(const forward_iterator& x, const forward_iterator& y)
   {
     return x.it_ == y.it_;
   }
-  __host__ __device__ friend TEST_CONSTEXPR bool operator!=(const forward_iterator& x, const forward_iterator& y)
+  __host__ __device__ friend constexpr bool operator!=(const forward_iterator& x, const forward_iterator& y)
   {
     return x.it_ != y.it_;
   }
 
-  __host__ __device__ friend TEST_CONSTEXPR It base(const forward_iterator& i)
+  __host__ __device__ friend constexpr It base(const forward_iterator& i)
   {
     return i.it_;
   }
@@ -234,61 +234,59 @@ public:
   typedef It pointer;
   typedef typename cuda::std::iterator_traits<It>::reference reference;
 
-  __host__ __device__ TEST_CONSTEXPR bidirectional_iterator()
+  __host__ __device__ constexpr bidirectional_iterator()
       : it_()
   {}
-  __host__ __device__ TEST_CONSTEXPR explicit bidirectional_iterator(It it)
+  __host__ __device__ constexpr explicit bidirectional_iterator(It it)
       : it_(it)
   {}
 
   template <class U>
-  __host__ __device__ TEST_CONSTEXPR bidirectional_iterator(const bidirectional_iterator<U>& u)
+  __host__ __device__ constexpr bidirectional_iterator(const bidirectional_iterator<U>& u)
       : it_(u.it_)
   {}
 
   template <class U, class = typename cuda::std::enable_if<cuda::std::is_default_constructible<U>::value>::type>
-  __host__ __device__ TEST_CONSTEXPR_CXX14 bidirectional_iterator(bidirectional_iterator<U>&& u)
+  __host__ __device__ constexpr bidirectional_iterator(bidirectional_iterator<U>&& u)
       : it_(u.it_)
   {
     u.it_ = U();
   }
 
-  __host__ __device__ TEST_CONSTEXPR reference operator*() const
+  __host__ __device__ constexpr reference operator*() const
   {
     return *it_;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 bidirectional_iterator& operator++()
+  __host__ __device__ constexpr bidirectional_iterator& operator++()
   {
     ++it_;
     return *this;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX14 bidirectional_iterator& operator--()
+  __host__ __device__ constexpr bidirectional_iterator& operator--()
   {
     --it_;
     return *this;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX14 bidirectional_iterator operator++(int)
+  __host__ __device__ constexpr bidirectional_iterator operator++(int)
   {
     return bidirectional_iterator(it_++);
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX14 bidirectional_iterator operator--(int)
+  __host__ __device__ constexpr bidirectional_iterator operator--(int)
   {
     return bidirectional_iterator(it_--);
   }
 
-  __host__ __device__ friend TEST_CONSTEXPR bool
-  operator==(const bidirectional_iterator& x, const bidirectional_iterator& y)
+  __host__ __device__ friend constexpr bool operator==(const bidirectional_iterator& x, const bidirectional_iterator& y)
   {
     return x.it_ == y.it_;
   }
-  __host__ __device__ friend TEST_CONSTEXPR bool
-  operator!=(const bidirectional_iterator& x, const bidirectional_iterator& y)
+  __host__ __device__ friend constexpr bool operator!=(const bidirectional_iterator& x, const bidirectional_iterator& y)
   {
     return x.it_ != y.it_;
   }
 
-  __host__ __device__ friend TEST_CONSTEXPR It base(const bidirectional_iterator& i)
+  __host__ __device__ friend constexpr It base(const bidirectional_iterator& i)
   {
     return i.it_;
   }
@@ -313,118 +311,109 @@ public:
   typedef It pointer;
   typedef typename cuda::std::iterator_traits<It>::reference reference;
 
-  __host__ __device__ TEST_CONSTEXPR random_access_iterator()
+  __host__ __device__ constexpr random_access_iterator()
       : it_()
   {}
-  __host__ __device__ TEST_CONSTEXPR explicit random_access_iterator(It it)
+  __host__ __device__ constexpr explicit random_access_iterator(It it)
       : it_(it)
   {}
 
   template <class U>
-  __host__ __device__ TEST_CONSTEXPR random_access_iterator(const random_access_iterator<U>& u)
+  __host__ __device__ constexpr random_access_iterator(const random_access_iterator<U>& u)
       : it_(u.it_)
   {}
 
   template <class U, class = typename cuda::std::enable_if<cuda::std::is_default_constructible<U>::value>::type>
-  __host__ __device__ TEST_CONSTEXPR_CXX14 random_access_iterator(random_access_iterator<U>&& u)
+  __host__ __device__ constexpr random_access_iterator(random_access_iterator<U>&& u)
       : it_(u.it_)
   {
     u.it_ = U();
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 reference operator*() const
+  __host__ __device__ constexpr reference operator*() const
   {
     return *it_;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX14 reference operator[](difference_type n) const
+  __host__ __device__ constexpr reference operator[](difference_type n) const
   {
     return it_[n];
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 random_access_iterator& operator++()
+  __host__ __device__ constexpr random_access_iterator& operator++()
   {
     ++it_;
     return *this;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX14 random_access_iterator& operator--()
+  __host__ __device__ constexpr random_access_iterator& operator--()
   {
     --it_;
     return *this;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX14 random_access_iterator operator++(int)
+  __host__ __device__ constexpr random_access_iterator operator++(int)
   {
     return random_access_iterator(it_++);
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX14 random_access_iterator operator--(int)
+  __host__ __device__ constexpr random_access_iterator operator--(int)
   {
     return random_access_iterator(it_--);
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 random_access_iterator& operator+=(difference_type n)
+  __host__ __device__ constexpr random_access_iterator& operator+=(difference_type n)
   {
     it_ += n;
     return *this;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX14 random_access_iterator& operator-=(difference_type n)
+  __host__ __device__ constexpr random_access_iterator& operator-=(difference_type n)
   {
     it_ -= n;
     return *this;
   }
-  __host__ __device__ friend TEST_CONSTEXPR_CXX14 random_access_iterator
-  operator+(random_access_iterator x, difference_type n)
+  __host__ __device__ friend constexpr random_access_iterator operator+(random_access_iterator x, difference_type n)
   {
     x += n;
     return x;
   }
-  __host__ __device__ friend TEST_CONSTEXPR_CXX14 random_access_iterator
-  operator+(difference_type n, random_access_iterator x)
+  __host__ __device__ friend constexpr random_access_iterator operator+(difference_type n, random_access_iterator x)
   {
     x += n;
     return x;
   }
-  __host__ __device__ friend TEST_CONSTEXPR_CXX14 random_access_iterator
-  operator-(random_access_iterator x, difference_type n)
+  __host__ __device__ friend constexpr random_access_iterator operator-(random_access_iterator x, difference_type n)
   {
     x -= n;
     return x;
   }
-  __host__ __device__ friend TEST_CONSTEXPR difference_type operator-(random_access_iterator x, random_access_iterator y)
+  __host__ __device__ friend constexpr difference_type operator-(random_access_iterator x, random_access_iterator y)
   {
     return x.it_ - y.it_;
   }
 
-  __host__ __device__ friend TEST_CONSTEXPR bool
-  operator==(const random_access_iterator& x, const random_access_iterator& y)
+  __host__ __device__ friend constexpr bool operator==(const random_access_iterator& x, const random_access_iterator& y)
   {
     return x.it_ == y.it_;
   }
-  __host__ __device__ friend TEST_CONSTEXPR bool
-  operator!=(const random_access_iterator& x, const random_access_iterator& y)
+  __host__ __device__ friend constexpr bool operator!=(const random_access_iterator& x, const random_access_iterator& y)
   {
     return x.it_ != y.it_;
   }
-  __host__ __device__ friend TEST_CONSTEXPR bool
-  operator<(const random_access_iterator& x, const random_access_iterator& y)
+  __host__ __device__ friend constexpr bool operator<(const random_access_iterator& x, const random_access_iterator& y)
   {
     return x.it_ < y.it_;
   }
-  __host__ __device__ friend TEST_CONSTEXPR bool
-  operator<=(const random_access_iterator& x, const random_access_iterator& y)
+  __host__ __device__ friend constexpr bool operator<=(const random_access_iterator& x, const random_access_iterator& y)
   {
     return x.it_ <= y.it_;
   }
-  __host__ __device__ friend TEST_CONSTEXPR bool
-  operator>(const random_access_iterator& x, const random_access_iterator& y)
+  __host__ __device__ friend constexpr bool operator>(const random_access_iterator& x, const random_access_iterator& y)
   {
     return x.it_ > y.it_;
   }
-  __host__ __device__ friend TEST_CONSTEXPR bool
-  operator>=(const random_access_iterator& x, const random_access_iterator& y)
+  __host__ __device__ friend constexpr bool operator>=(const random_access_iterator& x, const random_access_iterator& y)
   {
     return x.it_ >= y.it_;
   }
 
-  __host__ __device__ friend TEST_CONSTEXPR It base(const random_access_iterator& i)
+  __host__ __device__ friend constexpr It base(const random_access_iterator& i)
   {
     return i.it_;
   }
@@ -589,20 +578,20 @@ public:
   typedef typename cuda::std::iterator_traits<It>::reference reference;
   typedef typename cuda::std::remove_pointer<It>::type element_type;
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 It base() const
+  __host__ __device__ constexpr It base() const
   {
     return it_;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 contiguous_iterator()
+  __host__ __device__ constexpr contiguous_iterator()
       : it_()
   {}
-  __host__ __device__ TEST_CONSTEXPR_CXX14 explicit contiguous_iterator(It it)
+  __host__ __device__ constexpr explicit contiguous_iterator(It it)
       : it_(it)
   {}
 
   template <class U, class = cuda::std::enable_if_t<cuda::std::is_constructible<It, const U&>::value>>
-  __host__ __device__ TEST_CONSTEXPR_CXX14 contiguous_iterator(const contiguous_iterator<U>& u)
+  __host__ __device__ constexpr contiguous_iterator(const contiguous_iterator<U>& u)
       : it_(u.it_)
   {}
 
@@ -615,94 +604,94 @@ public:
     u.it_ = U();
   }
 
-  __host__ __device__ TEST_CONSTEXPR reference operator*() const
+  __host__ __device__ constexpr reference operator*() const
   {
     return *it_;
   }
-  __host__ __device__ TEST_CONSTEXPR pointer operator->() const
+  __host__ __device__ constexpr pointer operator->() const
   {
     return it_;
   }
-  __host__ __device__ TEST_CONSTEXPR reference operator[](difference_type n) const
+  __host__ __device__ constexpr reference operator[](difference_type n) const
   {
     return it_[n];
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 contiguous_iterator& operator++()
+  __host__ __device__ constexpr contiguous_iterator& operator++()
   {
     ++it_;
     return *this;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX14 contiguous_iterator& operator--()
+  __host__ __device__ constexpr contiguous_iterator& operator--()
   {
     --it_;
     return *this;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX14 contiguous_iterator operator++(int)
+  __host__ __device__ constexpr contiguous_iterator operator++(int)
   {
     return contiguous_iterator(it_++);
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX14 contiguous_iterator operator--(int)
+  __host__ __device__ constexpr contiguous_iterator operator--(int)
   {
     return contiguous_iterator(it_--);
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 contiguous_iterator& operator+=(difference_type n)
+  __host__ __device__ constexpr contiguous_iterator& operator+=(difference_type n)
   {
     it_ += n;
     return *this;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX14 contiguous_iterator& operator-=(difference_type n)
+  __host__ __device__ constexpr contiguous_iterator& operator-=(difference_type n)
   {
     it_ -= n;
     return *this;
   }
-  __host__ __device__ friend TEST_CONSTEXPR_CXX14 contiguous_iterator operator+(contiguous_iterator x, difference_type n)
+  __host__ __device__ friend constexpr contiguous_iterator operator+(contiguous_iterator x, difference_type n)
   {
     x += n;
     return x;
   }
-  __host__ __device__ friend TEST_CONSTEXPR_CXX14 contiguous_iterator operator+(difference_type n, contiguous_iterator x)
+  __host__ __device__ friend constexpr contiguous_iterator operator+(difference_type n, contiguous_iterator x)
   {
     x += n;
     return x;
   }
-  __host__ __device__ friend TEST_CONSTEXPR_CXX14 contiguous_iterator operator-(contiguous_iterator x, difference_type n)
+  __host__ __device__ friend constexpr contiguous_iterator operator-(contiguous_iterator x, difference_type n)
   {
     x -= n;
     return x;
   }
-  __host__ __device__ friend TEST_CONSTEXPR difference_type operator-(contiguous_iterator x, contiguous_iterator y)
+  __host__ __device__ friend constexpr difference_type operator-(contiguous_iterator x, contiguous_iterator y)
   {
     return x.it_ - y.it_;
   }
 
-  __host__ __device__ friend TEST_CONSTEXPR bool operator==(const contiguous_iterator& x, const contiguous_iterator& y)
+  __host__ __device__ friend constexpr bool operator==(const contiguous_iterator& x, const contiguous_iterator& y)
   {
     return x.it_ == y.it_;
   }
-  __host__ __device__ friend TEST_CONSTEXPR bool operator!=(const contiguous_iterator& x, const contiguous_iterator& y)
+  __host__ __device__ friend constexpr bool operator!=(const contiguous_iterator& x, const contiguous_iterator& y)
   {
     return x.it_ != y.it_;
   }
-  __host__ __device__ friend TEST_CONSTEXPR bool operator<(const contiguous_iterator& x, const contiguous_iterator& y)
+  __host__ __device__ friend constexpr bool operator<(const contiguous_iterator& x, const contiguous_iterator& y)
   {
     return x.it_ < y.it_;
   }
-  __host__ __device__ friend TEST_CONSTEXPR bool operator<=(const contiguous_iterator& x, const contiguous_iterator& y)
+  __host__ __device__ friend constexpr bool operator<=(const contiguous_iterator& x, const contiguous_iterator& y)
   {
     return x.it_ <= y.it_;
   }
-  __host__ __device__ friend TEST_CONSTEXPR bool operator>(const contiguous_iterator& x, const contiguous_iterator& y)
+  __host__ __device__ friend constexpr bool operator>(const contiguous_iterator& x, const contiguous_iterator& y)
   {
     return x.it_ > y.it_;
   }
-  __host__ __device__ friend TEST_CONSTEXPR bool operator>=(const contiguous_iterator& x, const contiguous_iterator& y)
+  __host__ __device__ friend constexpr bool operator>=(const contiguous_iterator& x, const contiguous_iterator& y)
   {
     return x.it_ >= y.it_;
   }
 
-  __host__ __device__ friend TEST_CONSTEXPR It base(const contiguous_iterator& i)
+  __host__ __device__ friend constexpr It base(const contiguous_iterator& i)
   {
     return i.it_;
   }
@@ -839,7 +828,7 @@ public:
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 template <class Iter> // ADL base() for everything else (including pointers)
-__host__ __device__ TEST_CONSTEXPR Iter base(Iter i)
+__host__ __device__ constexpr Iter base(Iter i)
 {
   return i;
 }
@@ -862,14 +851,14 @@ struct ThrowingIterator
     TAComparison
   };
 
-  __host__ __device__ TEST_CONSTEXPR ThrowingIterator()
+  __host__ __device__ constexpr ThrowingIterator()
       : begin_(nullptr)
       , end_(nullptr)
       , current_(nullptr)
       , action_(TADereference)
       , index_(0)
   {}
-  __host__ __device__ TEST_CONSTEXPR explicit ThrowingIterator(
+  __host__ __device__ constexpr explicit ThrowingIterator(
     const T* first, const T* last, int index = 0, ThrowingAction action = TADereference)
       : begin_(first)
       , end_(last)
@@ -877,7 +866,7 @@ struct ThrowingIterator
       , action_(action)
       , index_(index)
   {}
-  __host__ __device__ TEST_CONSTEXPR ThrowingIterator(const ThrowingIterator& rhs)
+  __host__ __device__ constexpr ThrowingIterator(const ThrowingIterator& rhs)
       : begin_(rhs.begin_)
       , end_(rhs.end_)
       , current_(rhs.current_)
@@ -885,7 +874,7 @@ struct ThrowingIterator
       , index_(rhs.index_)
   {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 ThrowingIterator& operator=(const ThrowingIterator& rhs)
+  __host__ __device__ constexpr ThrowingIterator& operator=(const ThrowingIterator& rhs)
   {
     if (action_ == TAAssignment && --index_ < 0)
     {
@@ -899,7 +888,7 @@ struct ThrowingIterator
     return *this;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 reference operator*() const
+  __host__ __device__ constexpr reference operator*() const
   {
     if (action_ == TADereference && --index_ < 0)
     {
@@ -908,7 +897,7 @@ struct ThrowingIterator
     return *current_;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 ThrowingIterator& operator++()
+  __host__ __device__ constexpr ThrowingIterator& operator++()
   {
     if (action_ == TAIncrement && --index_ < 0)
     {
@@ -918,14 +907,14 @@ struct ThrowingIterator
     return *this;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 ThrowingIterator operator++(int)
+  __host__ __device__ constexpr ThrowingIterator operator++(int)
   {
     ThrowingIterator temp = *this;
     ++(*this);
     return temp;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 ThrowingIterator& operator--()
+  __host__ __device__ constexpr ThrowingIterator& operator--()
   {
     if (action_ == TADecrement && --index_ < 0)
     {
@@ -935,14 +924,14 @@ struct ThrowingIterator
     return *this;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 ThrowingIterator operator--(int)
+  __host__ __device__ constexpr ThrowingIterator operator--(int)
   {
     ThrowingIterator temp = *this;
     --(*this);
     return temp;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 friend bool operator==(const ThrowingIterator& a, const ThrowingIterator& b)
+  __host__ __device__ constexpr friend bool operator==(const ThrowingIterator& a, const ThrowingIterator& b)
   {
     if (a.action_ == TAComparison && --a.index_ < 0)
     {
@@ -961,7 +950,7 @@ struct ThrowingIterator
     return a.current_ == b.current_;
   }
 
-  __host__ __device__ TEST_CONSTEXPR friend bool operator!=(const ThrowingIterator& a, const ThrowingIterator& b)
+  __host__ __device__ constexpr friend bool operator!=(const ThrowingIterator& a, const ThrowingIterator& b)
   {
     return !(a == b);
   }
@@ -1002,7 +991,7 @@ struct NonThrowingIterator
       , current_(rhs.current_)
   {}
 
-  __host__ __device__ NonThrowingIterator& operator=(const NonThrowingIterator& rhs) TEST_NOEXCEPT
+  __host__ __device__ NonThrowingIterator& operator=(const NonThrowingIterator& rhs) noexcept
   {
     begin_   = rhs.begin_;
     end_     = rhs.end_;
@@ -1010,38 +999,38 @@ struct NonThrowingIterator
     return *this;
   }
 
-  __host__ __device__ reference operator*() const TEST_NOEXCEPT
+  __host__ __device__ reference operator*() const noexcept
   {
     return *current_;
   }
 
-  __host__ __device__ NonThrowingIterator& operator++() TEST_NOEXCEPT
+  __host__ __device__ NonThrowingIterator& operator++() noexcept
   {
     ++current_;
     return *this;
   }
 
-  __host__ __device__ NonThrowingIterator operator++(int) TEST_NOEXCEPT
+  __host__ __device__ NonThrowingIterator operator++(int) noexcept
   {
     NonThrowingIterator temp = *this;
     ++(*this);
     return temp;
   }
 
-  __host__ __device__ NonThrowingIterator& operator--() TEST_NOEXCEPT
+  __host__ __device__ NonThrowingIterator& operator--() noexcept
   {
     --current_;
     return *this;
   }
 
-  __host__ __device__ NonThrowingIterator operator--(int) TEST_NOEXCEPT
+  __host__ __device__ NonThrowingIterator operator--(int) noexcept
   {
     NonThrowingIterator temp = *this;
     --(*this);
     return temp;
   }
 
-  __host__ __device__ friend bool operator==(const NonThrowingIterator& a, const NonThrowingIterator& b) TEST_NOEXCEPT
+  __host__ __device__ friend bool operator==(const NonThrowingIterator& a, const NonThrowingIterator& b) noexcept
   {
     bool atEndL = a.current_ == a.end_;
     bool atEndR = b.current_ == b.end_;
@@ -1056,7 +1045,7 @@ struct NonThrowingIterator
     return a.current_ == b.current_;
   }
 
-  __host__ __device__ friend bool operator!=(const NonThrowingIterator& a, const NonThrowingIterator& b) TEST_NOEXCEPT
+  __host__ __device__ friend bool operator!=(const NonThrowingIterator& a, const NonThrowingIterator& b) noexcept
   {
     return !(a == b);
   }
@@ -1140,10 +1129,10 @@ public:
       : it_(it)
   {}
 
-#ifndef TEST_COMPILER_MSVC_2017 // MSVC2017 has issues determining common_reference
+#if !TEST_COMPILER(MSVC2017) // MSVC2017 has issues determining common_reference
   cpp20_output_iterator(cpp20_output_iterator&&)            = default;
   cpp20_output_iterator& operator=(cpp20_output_iterator&&) = default;
-#endif // !TEST_COMPILER_MSVC_2017
+#endif // !TEST_COMPILER(MSVC2017)
 
   __host__ __device__ constexpr decltype(auto) operator*() const
   {
@@ -1682,9 +1671,9 @@ struct Proxy
     return *this;
   }
 
-#if defined(TEST_COMPILER_MSVC)
+#if TEST_COMPILER(MSVC)
   TEST_NV_DIAG_SUPPRESS(1805) // MSVC complains that if we pass a pointer type, adding const is useless
-#endif // TEST_COMPILER_MSVC
+#endif // TEST_COMPILER(MSVC)
 
   // const assignment required to make ProxyIterator model cuda::std::indirectly_writable
   _CCCL_TEMPLATE(class Other)
