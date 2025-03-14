@@ -9,6 +9,7 @@ set(stf_test_sources
   dot/graph_print_to_dot.cu
   dot/sections.cu
   dot/sections_2.cu
+  dot/sections_stackable.cu
   dot/section_movable.cu
   dot/with_events.cu
   error_checks/ctx_mismatch.cu
