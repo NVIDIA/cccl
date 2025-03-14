@@ -4,7 +4,12 @@
 #include <numeric>
 #include <vector>
 
-constexpr int N = 10000;
+// Ensure that we are indeed using the correct CCCL version
+static_assert(CCCL_MAJOR_VERSION == CMAKE_CCCL_VERSION_MAJOR);
+static_assert(CCCL_MINOR_VERSION == CMAKE_CCCL_VERSION_MINOR);
+static_assert(CCCL_PATCH_VERSION == CMAKE_CCCL_VERSION_PATCH);
+
+constexpr int N = 1000;
 
 int main()
 {

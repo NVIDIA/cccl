@@ -32,6 +32,11 @@ function(cccl_add_stdpar_test test_file)
   target_compile_options(stdpar_test_${test_name} PUBLIC -stdpar=gpu)
   target_link_options(stdpar_test_${test_name} PUBLIC -stdpar=gpu)
 
+  # Ensure that we are indeed testing the same CCCL version
+  target_compile_definitions(stdpar_test_${test_name} PUBLIC CMAKE_CCCL_VERSION_MAJOR=${CCCL_VERSION_MAJOR})
+  target_compile_definitions(stdpar_test_${test_name} PUBLIC CMAKE_CCCL_VERSION_MINOR=${CCCL_VERSION_MINOR})
+  target_compile_definitions(stdpar_test_${test_name} PUBLIC CMAKE_CCCL_VERSION_PATCH=${CCCL_VERSION_PATCH})
+
   # Register with ctest
   add_test(NAME stdpar_test_${test_name} COMMAND stdpar_test_${test_name})
 endfunction()
