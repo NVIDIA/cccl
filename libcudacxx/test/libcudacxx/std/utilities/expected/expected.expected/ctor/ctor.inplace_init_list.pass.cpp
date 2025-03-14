@@ -141,7 +141,7 @@ void test_exceptions()
 
   struct Throwing
   {
-    __host__ __device__ Throwing(cuda::std::initializer_list<int>, int)
+    Throwing(cuda::std::initializer_list<int>, int)
     {
       throw Except{};
     };

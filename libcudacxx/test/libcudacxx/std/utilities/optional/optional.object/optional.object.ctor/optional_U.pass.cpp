@@ -121,7 +121,7 @@ struct Z
 };
 
 template <class T, class U>
-__host__ __device__ void test_exception(optional<U>&& rhs)
+void test_exception(optional<U>&& rhs)
 {
   try
   {

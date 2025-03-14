@@ -203,13 +203,13 @@ class Z
   int i_;
 
 public:
-  __host__ __device__ explicit Z(int i)
+  explicit Z(int i)
       : i_(i)
   {
     TEST_THROW(6);
   }
 
-  __host__ __device__ friend bool operator==(const Z& x, const Z& y)
+  friend bool operator==(const Z& x, const Z& y)
   {
     return x.i_ == y.i_;
   }

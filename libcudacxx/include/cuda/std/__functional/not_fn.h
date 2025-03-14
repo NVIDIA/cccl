@@ -33,6 +33,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct __not_fn_op
 {
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 auto operator()(_Args&&... __args) const
     noexcept(noexcept(!_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Args>(__args)...)))
