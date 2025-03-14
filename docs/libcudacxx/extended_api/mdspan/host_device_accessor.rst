@@ -16,6 +16,8 @@
 
 Alias types to create accessors tailored for the *host*, *device*, or *managed* memory spaces.
 
+----
+
 .. code:: cpp
 
   template <typename ElementType,
@@ -37,6 +39,27 @@ Alias types to create accessors tailored for the *host*, *device*, or *managed* 
   using managed_mdspan = cuda::std::mdspan<ElementType, Extents, LayoutPolicy, managed_accessor<AccessorPolicy>>;
 
 Alias types to create ``mdspan`` with *host*, *device*, or *managed* accessors.
+
+----
+
+Traits:
+
+.. code:: cpp
+
+  template <typename T>
+  inline constexpr bool is_host_accessor_v = /* true if T is a host accessor, false otherwise */
+
+  template <typename T>
+  inline constexpr bool is_device_accessor_v = /* true if T is a device accessor, false otherwise */
+
+  template <typename T>
+  inline constexpr bool is_managed_accessor_v = /* true if T is a managed accessor, false otherwise */
+
+  template <typename T>
+  inline constexpr bool is_host_accessible_v = /* true if T is a mdspan/accessor accessible from the host, false otherwise */
+
+  template <typename T>
+  inline constexpr bool is_device_accessible_v = /* true if T is a mdspan/accessor accessible from the device, false otherwise */
 
 ----
 
@@ -171,7 +194,7 @@ Conversion from other accessors:
 
         cuda::std::mdspan<int, dim, layout_right, aligned_accessor<int, 8>> md_a{h_ptr, 4};
         // cuda::host_mdspan<int, dim> h_md = md_a; // compile-error
-        cuda::host_mdspan<int, dim>    h_md{md_a};     // ok
+        cuda::host_mdspan<int, dim>    h_md{md_a};  // ok
     }
 
 `See example 3 on Godbolt 🔗 <https://godbolt.org/z/ja89roofx>`_
