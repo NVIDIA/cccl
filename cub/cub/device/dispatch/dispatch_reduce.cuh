@@ -821,6 +821,7 @@ struct DispatchSegmentedReduce
       // If we need multiple passes over the segments but the iterators do not support the + operator, we cannot use the
       // streaming approach and have to fail, returning cudaErrorInvalidValue. This is because c.parallel passes
       // indirect_arg_t as the iterator type, which does not support the + operator.
+      // TODO (elstehle): Remove this check once https://github.com/NVIDIA/cccl/issues/4148 is resolved.
       if (num_invocations > 1
           && !detail::all_iterators_support_plus_operator(::cuda::std::int64_t{}, d_out, d_begin_offsets, d_end_offsets))
       {
