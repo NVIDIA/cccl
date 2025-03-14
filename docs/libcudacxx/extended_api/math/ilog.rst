@@ -52,7 +52,7 @@ Example
         assert(cuda::ilog2(20) == 4);
         assert(cuda::ilog2(32) == 5);
         assert(cuda::ilog10(100) == 2);
-        assert(cuda::ilog2(2000) == 3);
+        assert(cuda::ilog10(2000) == 3);
     }
 
     int main() {
@@ -61,4 +61,4 @@ Example
         return 0;
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/hbxscWGT9>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/nndYnTWer>`_
