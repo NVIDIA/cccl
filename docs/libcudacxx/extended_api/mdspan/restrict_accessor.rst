@@ -1,7 +1,7 @@
 .. _libcudacxx-extended-api-mdspan-restrict-accessor:
 
-``restrict_accessor``
-=====================
+``restrict`` ``mdspan`` and ``accessor``
+========================================
 
 .. code:: cpp
 
@@ -10,7 +10,7 @@
 
 An alias type to create an accessor with the *restrict aliasing policy* starting from an existing accessor.
 
-More information related to the *restrict aliasing policy* can be found in the CUDA programming guide `__restrict__ keyword <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#restrict>`_.
+More information related to the *restrict aliasing policy* can be found in the CUDA programming guide: `__restrict__ keyword <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#restrict>`_.
 
 ----
 
@@ -24,13 +24,28 @@ More information related to the *restrict aliasing policy* can be found in the C
 
 An alias type to create an ``mdspan`` with a *restrict aliasing policy* accessor.
 
+----
+
+Traits:
+
+.. code:: cpp
+
+    template <typename T>
+    inline constexpr bool is_restrict_accessor_v = /*true if T is a restrict accessor, false otherwise*/;
+
+    template <typename T>
+    inline constexpr bool is_restrict_mdspan_v = /*true if T is a restrict mdspan, false otherwise*/;
+
+----
+
 **Constraints**:
 
 - Accessor ``data_handle_type`` must be a pointer type.
 
-**Example**:
+Example
+-------
 
-.. code:: cpp
+.. code:: cuda
 
     #include <cuda/mdspan>
 

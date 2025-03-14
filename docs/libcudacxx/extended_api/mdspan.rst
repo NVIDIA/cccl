@@ -18,7 +18,7 @@ Mdspan
      - **CCCL Availability**
      - **CUDA Toolkit Availability**
 
-   * - :ref:`restrict_accessor <libcudacxx-extended-api-mdspan-restrict-accessor>`
-     - Accessor with the *restrict* aliasing policy
+   * - :ref:`restrict mdspan and accessor <libcudacxx-extended-api-mdspan-restrict-accessor>`
+     - ``mdspan`` and accessor with the *restrict* aliasing policy
      - CCCL 3.0.0
      - CUDA 13.0
