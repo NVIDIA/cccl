@@ -58,6 +58,8 @@ workflows:
     # cccl-infra:
     - {jobs: ['infra'], project: 'cccl', ctk: '12.0', cxx: ['gcc12', 'clang14'], gpu: 'rtx2080'}
     - {jobs: ['infra'], project: 'cccl', ctk: 'curr', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
+    # NVHPC stdpar smoke tests
+    - {jobs: ['build'], project: 'stdpar', std: 'all', ctk: '12.6', cxx: 'nvhpc', cpu: ['amd64', 'arm64']}
 
   nightly:
     # Edge-case jobs
@@ -238,6 +240,9 @@ projects:
     stds: [17, 20]
     job_map: { test: ['test_cpu', 'test_gpu'] }
   cudax:
+    stds: [17, 20]
+  stdpar:
+    name: 'NVHPC stdpar'
     stds: [17, 20]
   python:
     name: "cuda (python)"
