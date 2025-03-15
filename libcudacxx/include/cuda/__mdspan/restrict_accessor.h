@@ -34,7 +34,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <typename _Accessor>
-struct __restrict_accessor;
+class __restrict_accessor;
 
 template <typename _Accessor>
 using restrict_accessor = __restrict_accessor<_Accessor>;
