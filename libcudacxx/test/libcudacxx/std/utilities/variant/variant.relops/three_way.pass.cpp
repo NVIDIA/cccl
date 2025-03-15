@@ -29,7 +29,7 @@
 #include "test_comparisons.h"
 #include "test_macros.h"
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 // MakeEmptyT throws in operator=(&&), so we can move to it to create valueless-by-exception variants.
 struct MakeEmptyT
 {
@@ -94,7 +94,7 @@ void test_empty()
     assert(testOrder(v1, v2, cuda::std::weak_ordering::equivalent));
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 template <class T1, class T2, class Order>
 constexpr bool test_with_types()
@@ -209,9 +209,9 @@ int main(int, char**)
   test_three_way();
   static_assert(test_three_way());
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   test_empty();
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }

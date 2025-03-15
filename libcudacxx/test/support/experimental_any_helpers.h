@@ -239,7 +239,7 @@ struct my_any_exception
 
 void throwMyAnyExpression()
 {
-#if !defined(TEST_HAS_NO_EXCEPTIONS)
+#if TEST_HAS_EXCEPTIONS()
   throw my_any_exception();
 #else
   assert(false && "Exceptions are disabled");

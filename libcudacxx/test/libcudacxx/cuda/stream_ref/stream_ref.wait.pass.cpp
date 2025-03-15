@@ -17,6 +17,8 @@
 #include <chrono>
 #include <thread>
 
+#include "test_macros.h"
+
 void CUDART_CB callback(cudaStream_t, cudaError_t, void* flag)
 {
   std::chrono::milliseconds sleep_duration{1000};
@@ -26,7 +28,7 @@ void CUDART_CB callback(cudaStream_t, cudaError_t, void* flag)
 
 void test_wait(cuda::stream_ref& ref)
 {
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   try
   {
     ref.wait();
@@ -37,7 +39,7 @@ void test_wait(cuda::stream_ref& ref)
   }
 #else
   ref.wait();
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 }
 
 int main(int argc, char** argv)

@@ -32,15 +32,15 @@ struct NotNoexcept
   __host__ __device__ NotNoexcept() noexcept(false) {}
 };
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 struct DefaultCtorThrows
 {
-  __host__ __device__ DefaultCtorThrows()
+  DefaultCtorThrows()
   {
     throw 42;
   }
 };
-#endif
+#endif // TEST_HAS_EXCEPTIONS()
 
 __host__ __device__ void test_default_ctor_sfinae()
 {
@@ -72,7 +72,7 @@ __host__ __device__ void test_default_ctor_noexcept()
   }
 }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 void test_default_ctor_throws()
 {
   using V = cuda::std::variant<DefaultCtorThrows, int>;
@@ -90,7 +90,7 @@ void test_default_ctor_throws()
     assert(false);
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 __host__ __device__ void test_default_ctor_basic()
 {
@@ -134,9 +134,9 @@ int main(int, char**)
   test_default_ctor_basic();
   test_default_ctor_sfinae();
   test_default_ctor_noexcept();
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_default_ctor_throws();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }

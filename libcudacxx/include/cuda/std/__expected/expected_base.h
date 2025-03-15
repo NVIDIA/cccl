@@ -153,6 +153,7 @@ union __expected_union_t<_Tp, _Err, true>
       : __val_(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __expected_union_t(unexpect_t, _Args&&... __args) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _Err, _Args...))
@@ -742,6 +743,7 @@ struct __expected_move_assign<_Tp, _Err, __smf_availability::__available> : __ex
   _CCCL_HIDE_FROM_ABI __expected_move_assign(__expected_move_assign&&)                 = default;
   _CCCL_HIDE_FROM_ABI __expected_move_assign& operator=(const __expected_move_assign&) = default;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __expected_move_assign&
   operator=(__expected_move_assign&& __other) noexcept(
     _CCCL_TRAIT(is_nothrow_move_assignable, _Tp) && _CCCL_TRAIT(is_nothrow_move_constructible, _Tp)
@@ -798,12 +800,14 @@ struct __expected_destruct<void, _Err, false, false>
         : __empty_()
     {}
 
+    _CCCL_EXEC_CHECK_DISABLE
     template <class... _Args>
     _LIBCUDACXX_HIDE_FROM_ABI constexpr __expected_union_t(unexpect_t, _Args&&... __args) noexcept(
       _CCCL_TRAIT(is_nothrow_constructible, _Err, _Args...))
         : __unex_(_CUDA_VSTD::forward<_Args>(__args)...)
     {}
 
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _Fun, class... _Args>
     _LIBCUDACXX_HIDE_FROM_ABI constexpr __expected_union_t(
       __expected_construct_from_invoke_tag,
@@ -828,6 +832,7 @@ struct __expected_destruct<void, _Err, false, false>
       : __has_val_(__has_val)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __expected_destruct(unexpect_t, _Args&&... __args) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _Err, _Args...))
@@ -835,6 +840,7 @@ struct __expected_destruct<void, _Err, false, false>
       , __has_val_(false)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fun, class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __expected_destruct(
     __expected_construct_from_invoke_tag,
@@ -871,12 +877,14 @@ struct __expected_destruct<void, _Err, false, true>
         : __empty_()
     {}
 
+    _CCCL_EXEC_CHECK_DISABLE
     template <class... _Args>
     _LIBCUDACXX_HIDE_FROM_ABI constexpr __expected_union_t(unexpect_t, _Args&&... __args) noexcept(
       _CCCL_TRAIT(is_nothrow_constructible, _Err, _Args...))
         : __unex_(_CUDA_VSTD::forward<_Args>(__args)...)
     {}
 
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _Fun, class... _Args>
     _LIBCUDACXX_HIDE_FROM_ABI constexpr __expected_union_t(
       __expected_construct_from_invoke_tag,
@@ -893,6 +901,7 @@ struct __expected_destruct<void, _Err, false, true>
 
   _CCCL_HIDE_FROM_ABI constexpr __expected_destruct() = default;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __expected_destruct(in_place_t) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _Err, _Args...))
@@ -900,6 +909,7 @@ struct __expected_destruct<void, _Err, false, true>
       , __has_val_(true)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __expected_destruct(unexpect_t, _Args&&... __args) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _Err, _Args...))
@@ -907,6 +917,7 @@ struct __expected_destruct<void, _Err, false, true>
       , __has_val_(false)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fun, class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __expected_destruct(
     __expected_construct_from_invoke_tag,
@@ -993,6 +1004,7 @@ struct __expected_copy_assign<void, _Err, __smf_availability::__available> : __e
   _CCCL_HIDE_FROM_ABI __expected_copy_assign(const __expected_copy_assign&) = default;
   _CCCL_HIDE_FROM_ABI __expected_copy_assign(__expected_copy_assign&&)      = default;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __expected_copy_assign&
   operator=(const __expected_copy_assign& __other) noexcept(
     _CCCL_TRAIT(is_nothrow_copy_assignable, _Err) && _CCCL_TRAIT(is_nothrow_copy_constructible, _Err)) // strengthened
@@ -1030,6 +1042,7 @@ struct __expected_move_assign<void, _Err, __smf_availability::__available> : __e
   _CCCL_HIDE_FROM_ABI __expected_move_assign(__expected_move_assign&&)                 = default;
   _CCCL_HIDE_FROM_ABI __expected_move_assign& operator=(const __expected_move_assign&) = default;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __expected_move_assign&
   operator=(__expected_move_assign&& __other) noexcept(
     _CCCL_TRAIT(is_nothrow_move_assignable, _Err) && _CCCL_TRAIT(is_nothrow_move_constructible, _Err)) // strengthened

@@ -13,9 +13,11 @@
 #include <cuda/std/cassert>
 #include <cuda/stream_ref>
 
+#include "test_macros.h"
+
 void test_ready(cuda::stream_ref& ref)
 {
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   try
   {
     assert(ref.ready());
@@ -26,7 +28,7 @@ void test_ready(cuda::stream_ref& ref)
   }
 #else
   assert(ref.ready());
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 }
 
 int main(int argc, char** argv)
