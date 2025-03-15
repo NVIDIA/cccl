@@ -53,17 +53,21 @@
 
 THRUST_NAMESPACE_BEGIN
 
-template <class UnaryFunction, class Iterator, class Reference, class Value>
+template <class UnaryFunction, class Iterator, class Reference, class Value, class System>
 class transform_iterator;
 
 namespace detail
 {
-
 template <class UnaryFunc, class Iterator>
 struct transform_iterator_reference
 {
+  static constexpr bool base_iter_ref_needs_decay =
+    !::cuda::std::is_same_v<it_reference_t<Iterator>, it_value_t<Iterator>&>;
+
+  using func_input_t = ::cuda::std::_If<base_iter_ref_needs_decay, it_value_t<Iterator>, it_reference_t<Iterator>>;
+
   // by default, dereferencing the iterator yields the same as the function.
-  using type = decltype(::cuda::std::declval<UnaryFunc>()(::cuda::std::declval<it_value_t<Iterator>>()));
+  using type = decltype(::cuda::std::declval<UnaryFunc>()(::cuda::std::declval<func_input_t>()));
 };
 
 // for certain function objects, we need to tweak the reference type. Notably, identity functions must decay to values.
@@ -81,7 +85,7 @@ struct transform_iterator_reference<functional::actor<Eval>, Iterator>
 };
 
 // Type function to compute the iterator_adaptor instantiation to be used for transform_iterator
-template <class UnaryFunc, class Iterator, class Reference, class Value>
+template <class UnaryFunc, class Iterator, class Reference, class Value, class System>
 struct make_transform_iterator_base
 {
 private:
@@ -90,11 +94,17 @@ private:
 
 public:
   using type =
-    iterator_adaptor<transform_iterator<UnaryFunc, Iterator, Reference, Value>,
+    iterator_adaptor<transform_iterator<UnaryFunc, Iterator, Reference, Value, System>,
                      Iterator,
                      value_type,
-                     use_default,
-                     typename ::cuda::std::iterator_traits<Iterator>::iterator_category,
+                     System,
+                     use_default, // FIXME(bgruber): this should probably be
+                     // `typename ::cuda::std::iterator_traits<Iterator>::iterator_category` but with the system
+                     // replaced by System. Something like (doesn't work):
+                     // iterator_category_with_system_and_traversal<typename
+                     // ::cuda::std::iterator_traits<Iterator>::iterator_category,
+                     //                                             System,
+                     //                                             iterator_traversal_t<Iterator>>,
                      reference>;
 };
 
@@ -228,15 +238,19 @@ public:
 //! \endcode
 //!
 //! \see make_transform_iterator
-template <class AdaptableUnaryFunction, class Iterator, class Reference = use_default, class Value = use_default>
+template <class AdaptableUnaryFunction,
+          class Iterator,
+          class Reference = use_default,
+          class Value     = use_default,
+          class System    = use_default>
 class transform_iterator
-    : public detail::make_transform_iterator_base<AdaptableUnaryFunction, Iterator, Reference, Value>::type
+    : public detail::make_transform_iterator_base<AdaptableUnaryFunction, Iterator, Reference, Value, System>::type
 {
   //! \cond
 
 public:
   using super_t =
-    typename detail::make_transform_iterator_base<AdaptableUnaryFunction, Iterator, Reference, Value>::type;
+    typename detail::make_transform_iterator_base<AdaptableUnaryFunction, Iterator, Reference, Value, System>::type;
 
   friend class iterator_core_access;
   //! \endcond
@@ -306,10 +320,6 @@ public:
   //! \cond
 
 private:
-  // MSVC 2013 and 2015 incorrectly warning about returning a reference to
-  // a local/temporary here.
-  // See goo.gl/LELTNp
-
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE typename super_t::reference dereference() const
   {
@@ -326,14 +336,24 @@ private:
     //     std::cout << e << '\n';
     // See: https://godbolt.org/z/jrKcnMqhK
 
-    // The workaround is to create a temporary to allow iterators with wrapped/proxy references to convert to their
-    // value type before calling m_f. This also loads values from a different memory space (cf. `device_reference`).
-    // Note that this disallows mutable operations through m_f.
-    detail::it_value_t<Iterator> const& x = *this->base();
-    // FIXME(bgruber): x may be a reference to a temporary (e.g. if the base iterator is a counting_iterator). If `m_f`
-    // does not produce an independent copy and super_t::reference is a reference, we return a dangling reference (e.g.
-    // for any `[thrust|::cuda::std]::identity` functor).
-    return m_f(x);
+    static constexpr bool base_iter_ref_needs_decay =
+      !::cuda::std::is_same_v<detail::it_reference_t<Iterator>, detail::it_value_t<Iterator>&>;
+
+    if constexpr (base_iter_ref_needs_decay)
+    {
+      // The workaround is to create a temporary to allow iterators with wrapped/proxy references to convert to their
+      // value type before calling m_f. This also loads values from a different memory space (cf. `device_reference`).
+      // Note that this disallows mutable operations through m_f.
+      detail::it_value_t<Iterator> const& x = *this->base();
+      // FIXME(bgruber): x may be a reference to a temporary (e.g. if the base iterator is a counting_iterator). If
+      // `m_f` does not produce an independent copy and super_t::reference is a reference, we return a dangling
+      // reference (e.g. for any `[thrust|::cuda::std]::identity` functor).
+      return m_f(x);
+    }
+    else
+    {
+      return ::cuda::std::invoke(m_f, *this->base());
+    }
   }
 
   // tag this as mutable per Dave Abrahams in this thread:
