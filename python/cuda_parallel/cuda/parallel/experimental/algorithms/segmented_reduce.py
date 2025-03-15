@@ -17,8 +17,9 @@ class _SegmentedReduce:
     def __del__(self):
         if self.build_result is None:
             return
-        bindings = get_bindings()
-        bindings.cccl_device_segmented_reduce_cleanup(ctypes.byref(self.build_result))
+        self.bindings.cccl_device_segmented_reduce_cleanup(
+            ctypes.byref(self.build_result)
+        )
 
     def __init__(
         self,
