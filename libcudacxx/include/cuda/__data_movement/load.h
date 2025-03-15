@@ -229,9 +229,9 @@ _CCCL_HIDE_FROM_ABI _CCCL_DEVICE auto __unroll_load(
 template <typename _Tp, _MemoryAccess _Bp, _EvictionPolicyEnum _Ep, _PrefetchSpatialEnum _Pp, bool _Enable>
 _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp __load_element(
   const _Tp* __ptr,
-  [[maybe_unused]] __memory_access_t<_Bp> __memory_access,
-  [[maybe_unused]] __eviction_policy_t<_Ep> __eviction_policy,
-  [[maybe_unused]] __prefetch_spatial_t<_Pp> __prefetch,
+  __memory_access_t<_Bp> __memory_access,
+  __eviction_policy_t<_Ep> __eviction_policy,
+  __prefetch_spatial_t<_Pp> __prefetch,
   [[maybe_unused]] _CacheHint<_Enable> __cache_hint) noexcept
 {
   _CCCL_ASSERT(__ptr != nullptr, "'ptr' must not be null");

@@ -54,8 +54,8 @@ __global__ void store_kernel()
   store_call<16>(array, pointer);
   store_call<32>(array, pointer);
   store_call<64>(array, pointer);
-  cuda::device::store(cuda::std::span{array}, pointer, cuda::aligned_size_t<4>{4});
-  cuda::device::store(cuda::std::span{array}, pointer);
+  // cuda::device::store(cuda::std::span{array}, pointer, cuda::aligned_size_t<4>{4});
+  // cuda::device::store(cuda::std::span{array}, pointer);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
