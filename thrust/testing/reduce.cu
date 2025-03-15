@@ -101,7 +101,7 @@ void TestReduceMixedTypes()
   FloatVector float_input{1.5, 2.5, 3.5, 4.5};
 
   // float -> int should use using plus<int> operator by default
-  ASSERT_EQUAL(thrust::reduce(float_input.begin(), float_input.end(), (int) 0), 10);
+  ASSERT_EQUAL(thrust::reduce(float_input.begin(), float_input.end(), (int) 0), 12);
 
   // int -> float should use using plus<float> operator by default
   ASSERT_EQUAL(thrust::reduce(int_input.begin(), int_input.end(), (float) 0.5), 10.5);

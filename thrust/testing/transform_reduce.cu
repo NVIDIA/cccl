@@ -18,7 +18,7 @@ void TestTransformReduceDispatchExplicit()
   thrust::device_vector<int> vec(1);
 
   my_system sys(0);
-  thrust::transform_reduce(sys, vec.begin(), vec.begin(), 0, 0, 0);
+  thrust::transform_reduce(sys, vec.begin(), vec.begin(), thrust::negate<int>(), 0, thrust::plus<int>());
 
   ASSERT_EQUAL(true, sys.is_valid());
 }
@@ -35,7 +35,12 @@ void TestTransformReduceDispatchImplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  thrust::transform_reduce(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0, 0, 0);
+  thrust::transform_reduce(
+    thrust::retag<my_tag>(vec.begin()),
+    thrust::retag<my_tag>(vec.begin()),
+    thrust::negate<int>(),
+    0,
+    thrust::plus<int>());
 
   ASSERT_EQUAL(13, vec.front());
 }
