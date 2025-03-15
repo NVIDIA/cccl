@@ -148,7 +148,8 @@ std::string get_sweep_kernel_name(
   check(nvrtcGetTypeName<op_wrapper>(&equality_op_t));
 
   return std::format(
-    "cub::detail::unique_by_key::DeviceUniqueByKeySweepKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}>",
+    "cub::detail::unique_by_key::DeviceUniqueByKeySweepKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, "
+    "device_unique_by_key_vsmem_helper>",
     chained_policy_t,
     input_keys_iterator_t,
     input_values_iterator_t,
@@ -308,6 +309,13 @@ struct agent_policy_t {{
 struct device_unique_by_key_policy {{
   struct ActivePolicy {{
     using UniqueByKeyPolicyT = agent_policy_t;
+  }};
+}};
+struct device_unique_by_key_vsmem_helper {{
+  template<typename ActivePolicyT, typename... Ts>
+  struct VSMemHelperDefaultFallbackPolicyT : public cub::detail::vsmem_helper_impl<cub::detail::unique_by_key::AgentUniqueByKey<agent_policy_t, Ts...>> {{
+    using agent_policy_t = agent_policy_t;
+    using agent_t = cub::detail::unique_by_key::AgentUniqueByKey<agent_policy_t, Ts...>;
   }};
 }};
 {13}
