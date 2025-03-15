@@ -39,8 +39,9 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_integer, _To)
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr overflow_result<_To> overflow_cast(const _From& __from) noexcept
 {
   bool __overflow = false;
-  if constexpr (_CUDA_VSTD::cmp_greater(numeric_limits<From>::max(), numeric_limits<To>::max())
-                || _CUDA_VSTD::cmp_less(numeric_limits<From>::min(), numeric_limits<To>::min()))
+  if constexpr (_CUDA_VSTD::cmp_greater(_CUDA_VSTD::numeric_limits<_From>::max(), _CUDA_VSTD::numeric_limits<_To>::max())
+                || _CUDA_VSTD::cmp_less(_CUDA_VSTD::numeric_limits<_From>::min(),
+                                        _CUDA_VSTD::numeric_limits<_To>::min()))
   {
     __overflow = !_CUDA_VSTD::in_range<_To>(__from);
   }
