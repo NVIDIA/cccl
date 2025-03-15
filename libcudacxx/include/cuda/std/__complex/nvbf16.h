@@ -24,6 +24,7 @@
 #if _LIBCUDACXX_HAS_NVBF16()
 
 #  include <cuda/std/__cmath/nvbf16.h>
+#  include <cuda/std/__complex/std_complex_access.h>
 #  include <cuda/std/__complex/vector_support.h>
 #  include <cuda/std/__floating_point/nvfp_types.h>
 #  include <cuda/std/__fwd/get.h>
@@ -149,14 +150,14 @@ public:
 #  if !_CCCL_COMPILER(NVRTC)
   template <class _Up>
   _LIBCUDACXX_HIDE_FROM_ABI complex(const ::std::complex<_Up>& __other)
-      : __repr_(_LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__other), _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__other))
+      : __repr_(_CUDA_VSTD::__get_std_complex_real(__other), _CUDA_VSTD::__get_std_complex_imag(__other))
   {}
 
   template <class _Up>
   _LIBCUDACXX_HIDE_FROM_ABI complex& operator=(const ::std::complex<_Up>& __other)
   {
-    __repr_.x = _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__other);
-    __repr_.y = _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__other);
+    __repr_.x = _CUDA_VSTD::__get_std_complex_real(__other);
+    __repr_.y = _CUDA_VSTD::__get_std_complex_imag(__other);
     return *this;
   }
 

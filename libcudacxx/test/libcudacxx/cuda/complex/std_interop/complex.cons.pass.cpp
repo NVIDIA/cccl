@@ -17,16 +17,21 @@
 #include "test_macros.h"
 #include <nv/target>
 
-template <class T, class U>
-void test_construction()
-{
-  const ::std::complex<U> only_real{static_cast<U>(42.0), 0};
-  const ::std::complex<U> only_imag{0, static_cast<U>(42.0)};
-  const ::std::complex<U> real_imag{static_cast<U>(42.0), static_cast<U>(1337.0)};
+template <class T>
+_CCCL_GLOBAL_CONSTANT ::std::complex<T> only_real{static_cast<T>(42.0), 0};
 
-  const ::cuda::std::complex<T> from_only_real{only_real};
-  const ::cuda::std::complex<T> from_only_imag{only_imag};
-  const ::cuda::std::complex<T> from_real_imag{real_imag};
+template <class T>
+_CCCL_GLOBAL_CONSTANT ::std::complex<T> only_imag{0, static_cast<T>(42.0)};
+
+template <class T>
+_CCCL_GLOBAL_CONSTANT ::std::complex<T> real_imag{static_cast<T>(42.0), static_cast<T>(1337.0)};
+
+template <class T, class U>
+__host__ __device__ _LIBCUDACXX_CONSTEXPR_STD_COMPLEX_ACCESS void test_construction()
+{
+  const ::cuda::std::complex<T> from_only_real{only_real<U>};
+  const ::cuda::std::complex<T> from_only_imag{only_imag<U>};
+  const ::cuda::std::complex<T> from_real_imag{real_imag<U>};
 
   assert(from_only_real.real() == static_cast<T>(42.0));
   assert(from_only_real.imag() == 0);
@@ -36,16 +41,21 @@ void test_construction()
   assert(from_real_imag.imag() == static_cast<T>(1337.0));
 }
 
-void test()
+__host__ __device__ _LIBCUDACXX_CONSTEXPR_STD_COMPLEX_ACCESS bool test()
 {
   test_construction<float, float>();
   test_construction<double, float>();
   test_construction<double, double>();
+
+  return true;
 }
 
 int main(int arg, char** argv)
 {
-  NV_IF_TARGET(NV_IS_HOST, (test();));
+  test();
+#if _LIBCUDACXX_HAS_CONSTEXPR_STD_COMPLEX_ACCESS()
+  static_assert(test());
+#endif // _LIBCUDACXX_HAS_CONSTEXPR_STD_COMPLEX_ACCESS()
 
   return 0;
 }
