@@ -281,7 +281,7 @@ CUresult cccl_device_reduce_build(
     const std::string output_iterator_src =
       make_kernel_output_iterator(offset_t, output_iterator_typename, accum_cpp, output_it);
 
-    const std::string op_src = make_kernel_user_binary_operator(accum_cpp, op);
+    const std::string op_src = make_kernel_user_binary_operator(accum_cpp, accum_cpp, accum_cpp, op);
 
     const std::string src = std::format(
       R"XXX(
