@@ -170,7 +170,7 @@ struct DeviceCopy
     InputIt input_it,
     OutputIt output_it,
     SizeIteratorT sizes,
-    uint32_t num_ranges,
+    ::cuda::std::int64_t num_ranges,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceCopy::Batched");
