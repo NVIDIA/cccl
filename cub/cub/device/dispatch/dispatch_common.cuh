@@ -7,6 +7,8 @@
 
 #include <cuda/std/type_traits>
 
+#include "cuda/std/__cccl/execution_space.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -58,7 +60,7 @@ constexpr bool has_plus_operator_v = has_plus_operator<T, U>::value;
 
 // Helper function that advances a given iterator only if it supports being advanced by the given offset
 template <typename IteratorT, typename OffsetT>
-IteratorT advance_iterators_if_supported(IteratorT iter, OffsetT offset)
+_CCCL_HOST_DEVICE IteratorT advance_iterators_if_supported(IteratorT iter, OffsetT offset)
 {
   if constexpr (has_plus_operator_v<IteratorT, OffsetT>)
   {
@@ -75,7 +77,7 @@ IteratorT advance_iterators_if_supported(IteratorT iter, OffsetT offset)
 
 // Helper function that checks whether all of the given iterators support the + operator with the given offset
 template <typename OffsetT, typename... Iterators>
-bool all_iterators_support_plus_operator(OffsetT /*offset*/, Iterators... /*iters*/)
+_CCCL_HOST_DEVICE bool all_iterators_support_plus_operator(OffsetT /*offset*/, Iterators... /*iters*/)
 {
   if constexpr ((has_plus_operator_v<Iterators, OffsetT> && ...))
   {
