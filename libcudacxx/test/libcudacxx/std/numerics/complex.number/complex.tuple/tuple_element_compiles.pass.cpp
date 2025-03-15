@@ -40,24 +40,23 @@ __host__ __device__ void test()
   static_assert(HasTupleElement<0, C>::value, "");
   static_assert(HasTupleElement<1, C>::value, "");
 
-  ASSERT_SAME_TYPE(T, typename cuda::std::tuple_element<0, C>::type);
-  ASSERT_SAME_TYPE(T, typename cuda::std::tuple_element<1, C>::type);
+  static_assert(cuda::std::is_same_v<T, typename cuda::std::tuple_element<0, C>::type>);
+  static_assert(cuda::std::is_same_v<T, typename cuda::std::tuple_element<1, C>::type>);
 }
 
 __host__ __device__ void test()
 {
   test<float>();
   test<double>();
-
-  // CUDA treats long double as double
-  // test<long double>();
-
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _CCCL_HAS_LONG_DOUBLE()
+  test<long double>();
+#endif // _CCCL_HAS_LONG_DOUBLE()
+#if _LIBCUDACXX_HAS_NVFP16()
   test<__half>();
-#endif
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16>();
-#endif
+#endif // _LIBCUDACXX_HAS_NVBF16()
 }
 
 int main(int, char**)

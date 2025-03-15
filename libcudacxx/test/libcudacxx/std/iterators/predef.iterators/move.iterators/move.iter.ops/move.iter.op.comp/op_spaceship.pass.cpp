@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14, c++17
+// UNSUPPORTED: c++17
 // UNSUPPORTED: LIBCUDACXX-has-no-concepts
 // XFAIL: c++20
 
@@ -86,11 +86,11 @@ __host__ __device__ constexpr void test_two()
   const cuda::std::move_iterator<It> i2 = cuda::std::move_iterator<It>(It(a + 2));
   const cuda::std::move_iterator<Jt> j1 = cuda::std::move_iterator<Jt>(Jt(a));
   const cuda::std::move_iterator<Jt> j2 = cuda::std::move_iterator<Jt>(Jt(a + 2));
-  ASSERT_SAME_TYPE(decltype(i1 <=> i2), cuda::std::strong_ordering);
+  static_assert(cuda::std::is_same_v<decltype(i1 <=> i2), cuda::std::strong_ordering>);
   assert((i1 <=> i1) == cuda::std::strong_ordering::equal);
   assert((i1 <=> i2) == cuda::std::strong_ordering::less);
   assert((i2 <=> i1) == cuda::std::strong_ordering::greater);
-  ASSERT_SAME_TYPE(decltype(i1 <=> j2), cuda::std::strong_ordering);
+  static_assert(cuda::std::is_same_v<decltype(i1 <=> j2), cuda::std::strong_ordering>);
   assert((i1 <=> j1) == cuda::std::strong_ordering::equal);
   assert((i1 <=> j2) == cuda::std::strong_ordering::less);
   assert((i2 <=> j1) == cuda::std::strong_ordering::greater);

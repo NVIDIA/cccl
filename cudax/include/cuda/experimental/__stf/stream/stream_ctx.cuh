@@ -36,6 +36,7 @@
 #include <cuda/experimental/__stf/stream/interfaces/slice.cuh> // For implicit logical_data_untyped constructors
 #include <cuda/experimental/__stf/stream/interfaces/void_interface.cuh>
 #include <cuda/experimental/__stf/stream/stream_task.cuh>
+#include <cuda/experimental/__stf/utility/threads.cuh> // for reserved::counter
 
 namespace cuda::experimental::stf
 {
@@ -62,11 +63,11 @@ public:
     void* result = nullptr;
 
     // That is a miss, we need to do an allocation
-    if (memory_node == data_place::host)
+    if (memory_node.is_host())
     {
       cuda_safe_call(cudaMallocHost(&result, s));
     }
-    else if (memory_node == data_place::managed)
+    else if (memory_node.is_managed())
     {
       cuda_safe_call(cudaMallocManaged(&result, s));
     }
@@ -119,13 +120,13 @@ public:
       op.set_symbol("cudaFreeAsync");
     }
 
-    if (memory_node == data_place::host)
+    if (memory_node.is_host())
     {
       // XXX TODO defer to deinit (or implement a blocking policy)?
       cuda_safe_call(cudaStreamSynchronize(dstream.stream));
       cuda_safe_call(cudaFreeHost(ptr));
     }
-    else if (memory_node == data_place::managed)
+    else if (memory_node.is_managed())
     {
       cuda_safe_call(cudaStreamSynchronize(dstream.stream));
       cuda_safe_call(cudaFree(ptr));
@@ -220,11 +221,6 @@ public:
 
   // Indicate if the finalize() call should be blocking or not
   bool blocking_finalize = true;
-
-  ::std::string to_string() const
-  {
-    return "stream backend context";
-  }
 
   using backend_ctx<stream_ctx>::task;
 
@@ -521,38 +517,6 @@ public:
     }
     state.cleanup();
     set_phase(backend_ctx_untyped::phase::finalized);
-
-#ifdef CUDASTF_DEBUG
-    // Ensure that the total number of CUDA events created corresponds to
-    // the number of events destroyed
-    const auto alive = reserved::counter<reserved::cuda_event_tag::alive>.load();
-    if (alive != 0)
-    {
-      fprintf(stderr,
-              "WARNING!!! %lu CUDA events leaked (approx %lu created vs. %lu destroyed).\n",
-              alive,
-              reserved::counter<reserved::cuda_event_tag::created>.load(),
-              reserved::counter<reserved::cuda_event_tag::destroyed>.load());
-    }
-
-    assert(alive == 0);
-
-    const char* display_stats_env = getenv("CUDASTF_DISPLAY_STATS");
-    if (!display_stats_env || atoi(display_stats_env) == 0)
-    {
-      return;
-    }
-
-    fprintf(stderr,
-            "[STATS CUDA EVENTS] created=%lu destroyed=%lu alive=%lu reserved::high_water_mark=%lu\n",
-            reserved::counter<reserved::cuda_event_tag::created>.load(),
-            reserved::counter<reserved::cuda_event_tag::destroyed>.load(),
-            alive,
-            reserved::high_water_mark<reserved::cuda_event_tag>.load());
-    fprintf(stderr,
-            "[STATS CUDA EVENTS] cuda_stream_wait_event=%lu\n",
-            reserved::counter<reserved::cuda_stream_wait_event_tag>.load());
-#endif
   }
 
   float get_submission_time_ms() const
@@ -653,7 +617,7 @@ public:
   {
     typename owning_container_of<T>::type out;
 
-    task(exec_place::host, ldata.read()).set_symbol("wait")->*[&](cudaStream_t stream, auto data) {
+    task(exec_place::host(), ldata.read()).set_symbol("wait")->*[&](cudaStream_t stream, auto data) {
       cuda_safe_call(cudaStreamSynchronize(stream));
       out = owning_container_of<T>::get_value(data);
     };
@@ -693,6 +657,11 @@ private:
       auto e = reserved::record_event_in_stream(decorated_stream(stream));
       /// e->set_symbol(mv(event_symbol));
       return event_list(mv(e));
+    }
+
+    ::std::string to_string() const override
+    {
+      return "stream backend context";
     }
 
     // We need to ensure all dangling events have been completed (eg. by having
@@ -1177,7 +1146,7 @@ inline void unit_test_host_pfor()
 {
   stream_ctx ctx;
   auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
-  ctx.parallel_for(exec_place::host, lA.shape(), lA.write())->*[](size_t i, slice<size_t> A) {
+  ctx.parallel_for(exec_place::host(), lA.shape(), lA.write())->*[](size_t i, slice<size_t> A) {
     A(i) = 2 * i;
   };
   ctx.host_launch(lA.read())->*[](auto A) {
@@ -1207,7 +1176,7 @@ inline void unit_test_pfor_mix_host_dev()
     sx(pos) = 17 * pos + 4;
   };
 
-  ctx.parallel_for(exec_place::host, lx.shape(), lx.rw())->*[=](size_t pos, auto sx) {
+  ctx.parallel_for(exec_place::host(), lx.shape(), lx.rw())->*[=](size_t pos, auto sx) {
     sx(pos) = sx(pos) * sx(pos);
   };
 
@@ -1234,7 +1203,7 @@ inline void unit_test_untyped_place_pfor()
 {
   stream_ctx ctx;
 
-  exec_place where = exec_place::host;
+  exec_place where = exec_place::host();
 
   auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
   // We have to put both __host__ __device__ qualifiers as this is resolved

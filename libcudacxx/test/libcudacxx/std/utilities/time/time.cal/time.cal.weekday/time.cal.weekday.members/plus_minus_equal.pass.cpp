@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11
 
 // <chrono>
 // class weekday;
@@ -56,11 +55,13 @@ int main(int, char**)
   using weekday = cuda::std::chrono::weekday;
   using days    = cuda::std::chrono::days;
 
-  ASSERT_NOEXCEPT(cuda::std::declval<weekday&>() += cuda::std::declval<days&>());
-  ASSERT_SAME_TYPE(weekday&, decltype(cuda::std::declval<weekday&>() += cuda::std::declval<days&>()));
+  static_assert(noexcept(cuda::std::declval<weekday&>() += cuda::std::declval<days&>()));
+  static_assert(
+    cuda::std::is_same_v<weekday&, decltype(cuda::std::declval<weekday&>() += cuda::std::declval<days&>())>);
 
-  ASSERT_NOEXCEPT(cuda::std::declval<weekday&>() -= cuda::std::declval<days&>());
-  ASSERT_SAME_TYPE(weekday&, decltype(cuda::std::declval<weekday&>() -= cuda::std::declval<days&>()));
+  static_assert(noexcept(cuda::std::declval<weekday&>() -= cuda::std::declval<days&>()));
+  static_assert(
+    cuda::std::is_same_v<weekday&, decltype(cuda::std::declval<weekday&>() -= cuda::std::declval<days&>())>);
 
   static_assert(testConstexpr<weekday, days>(), "");
 

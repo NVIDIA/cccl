@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11, c++14, c++17
+// UNSUPPORTED: c++17
 
 // <cuda/std/chrono>
 
@@ -19,8 +19,8 @@
 template <class Dur>
 __host__ __device__ void test()
 {
-  ASSERT_SAME_TYPE(cuda::std::chrono::file_time<Dur>,
-                   cuda::std::chrono::time_point<cuda::std::chrono::file_clock, Dur>);
+  static_assert(cuda::std::is_same_v<cuda::std::chrono::file_time<Dur>,
+                                     cuda::std::chrono::time_point<cuda::std::chrono::file_clock, Dur>>);
 }
 
 int main(int, char**)

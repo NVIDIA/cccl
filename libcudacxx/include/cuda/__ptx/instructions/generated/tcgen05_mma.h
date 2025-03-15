@@ -4,14 +4,14 @@
 #define _CUDA_PTX_GENERATED_TCGEN05_MMA_H_
 
 /*
-// tcgen05.mma.cta_group.kind [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d, scale_input_d; //
-PTX ISA 86, SM_100a
+// tcgen05.mma.cta_group.kind [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d, scale_input_d;
+// PTX ISA 86, SM_100a
 // .kind      = { .kind::f16, .kind::tf32 }
-// .cta_group = { .cta_group::1, .cta_group::2 }
-template <int N32, cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
+// .cta_group = { .cta_group::1 }
+template <int N32, cuda::ptx::dot_kind Kind>
 __device__ static inline void tcgen05_mma(
   cuda::ptx::kind_t<Kind> kind,
-  cuda::ptx::cta_group_t<Cta_Group> cta_group,
+  cuda::ptx::cta_group_1_t,
   uint32_t d_tmem,
   uint64_t a_desc,
   uint64_t b_desc,
@@ -22,10 +22,10 @@ __device__ static inline void tcgen05_mma(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_mma_is_not_supported_before_SM_100a__();
-template <int _N32, dot_kind _Kind, dot_cta_group _Cta_Group>
+template <int _N32, dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma(
   kind_t<_Kind> __kind,
-  cta_group_t<_Cta_Group> __cta_group,
+  cta_group_1_t,
   _CUDA_VSTD::uint32_t __d_tmem,
   _CUDA_VSTD::uint64_t __a_desc,
   _CUDA_VSTD::uint64_t __b_desc,
@@ -35,9 +35,9 @@ _CCCL_DEVICE static inline void tcgen05_mma(
   n32_t<_N32> __scale_input_d)
 {
   static_assert(__kind == kind_f16 || __kind == kind_tf32, "");
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+// __cta_group == cta_group_1 (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16 && __cta_group == cta_group_1)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -57,52 +57,12 @@ _CCCL_DEVICE static inline void tcgen05_mma(
         "n"(__scale_input_d.value)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f16 && __cta_group == cta_group_2)
-  {
-    asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %8, 0;\n\t"
-      "tcgen05.mma.cta_group::2.kind::f16 [%0], %1, %2, %3, {%4, %5, %6, %7}, PRED_enable_input_d, %9;\n\t"
-      "}"
-      :
-      : "r"(__d_tmem),
-        "l"(__a_desc),
-        "l"(__b_desc),
-        "r"(__idesc),
-        "r"(__disable_output_lane[0]),
-        "r"(__disable_output_lane[1]),
-        "r"(__disable_output_lane[2]),
-        "r"(__disable_output_lane[3]),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
-        "n"(__scale_input_d.value)
-      : "memory");
-  }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32 && __cta_group == cta_group_1)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
       "setp.ne.b32 PRED_enable_input_d, %8, 0;\n\t"
       "tcgen05.mma.cta_group::1.kind::tf32 [%0], %1, %2, %3, {%4, %5, %6, %7}, PRED_enable_input_d, %9;\n\t"
-      "}"
-      :
-      : "r"(__d_tmem),
-        "l"(__a_desc),
-        "l"(__b_desc),
-        "r"(__idesc),
-        "r"(__disable_output_lane[0]),
-        "r"(__disable_output_lane[1]),
-        "r"(__disable_output_lane[2]),
-        "r"(__disable_output_lane[3]),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
-        "n"(__scale_input_d.value)
-      : "memory");
-  }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32 && __cta_group == cta_group_2)
-  {
-    asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %8, 0;\n\t"
-      "tcgen05.mma.cta_group::2.kind::tf32 [%0], %1, %2, %3, {%4, %5, %6, %7}, PRED_enable_input_d, %9;\n\t"
       "}"
       :
       : "r"(__d_tmem),
@@ -125,14 +85,105 @@ _CCCL_DEVICE static inline void tcgen05_mma(
 #endif // __cccl_ptx_isa >= 860
 
 /*
+// tcgen05.mma.cta_group.kind [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d, scale_input_d;
+// PTX ISA 86, SM_100a
+// .kind      = { .kind::f16, .kind::tf32 }
+// .cta_group = { .cta_group::2 }
+template <int N32, cuda::ptx::dot_kind Kind>
+__device__ static inline void tcgen05_mma(
+  cuda::ptx::kind_t<Kind> kind,
+  cuda::ptx::cta_group_2_t,
+  uint32_t d_tmem,
+  uint64_t a_desc,
+  uint64_t b_desc,
+  uint32_t idesc,
+  const uint32_t (&disable_output_lane)[8],
+  bool enable_input_d,
+  cuda::ptx::n32_t<N32> scale_input_d);
+*/
+#if __cccl_ptx_isa >= 860
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_mma_is_not_supported_before_SM_100a__();
+template <int _N32, dot_kind _Kind>
+_CCCL_DEVICE static inline void tcgen05_mma(
+  kind_t<_Kind> __kind,
+  cta_group_2_t,
+  _CUDA_VSTD::uint32_t __d_tmem,
+  _CUDA_VSTD::uint64_t __a_desc,
+  _CUDA_VSTD::uint64_t __b_desc,
+  _CUDA_VSTD::uint32_t __idesc,
+  const _CUDA_VSTD::uint32_t (&__disable_output_lane)[8],
+  bool __enable_input_d,
+  n32_t<_N32> __scale_input_d)
+{
+  static_assert(__kind == kind_f16 || __kind == kind_tf32, "");
+// __cta_group == cta_group_2 (due to parameter type constraint)
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL
+  if constexpr (__kind == kind_f16)
+  {
+    asm volatile(
+      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %12, 0;\n\t"
+      "tcgen05.mma.cta_group::2.kind::f16 [%0], %1, %2, %3, {%4, %5, %6, %7, %8, %9, %10, %11}, PRED_enable_input_d, "
+      "%13;\n\t"
+      "}"
+      :
+      : "r"(__d_tmem),
+        "l"(__a_desc),
+        "l"(__b_desc),
+        "r"(__idesc),
+        "r"(__disable_output_lane[0]),
+        "r"(__disable_output_lane[1]),
+        "r"(__disable_output_lane[2]),
+        "r"(__disable_output_lane[3]),
+        "r"(__disable_output_lane[4]),
+        "r"(__disable_output_lane[5]),
+        "r"(__disable_output_lane[6]),
+        "r"(__disable_output_lane[7]),
+        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "n"(__scale_input_d.value)
+      : "memory");
+  }
+  else if constexpr (__kind == kind_tf32)
+  {
+    asm volatile(
+      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %12, 0;\n\t"
+      "tcgen05.mma.cta_group::2.kind::tf32 [%0], %1, %2, %3, {%4, %5, %6, %7, %8, %9, %10, %11}, PRED_enable_input_d, "
+      "%13;\n\t"
+      "}"
+      :
+      : "r"(__d_tmem),
+        "l"(__a_desc),
+        "l"(__b_desc),
+        "r"(__idesc),
+        "r"(__disable_output_lane[0]),
+        "r"(__disable_output_lane[1]),
+        "r"(__disable_output_lane[2]),
+        "r"(__disable_output_lane[3]),
+        "r"(__disable_output_lane[4]),
+        "r"(__disable_output_lane[5]),
+        "r"(__disable_output_lane[6]),
+        "r"(__disable_output_lane[7]),
+        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "n"(__scale_input_d.value)
+      : "memory");
+  }
+#  else
+  // Unsupported architectures will have a linker error with a semi-decent error message
+  __cuda_ptx_tcgen05_mma_is_not_supported_before_SM_100a__();
+#  endif
+}
+#endif // __cccl_ptx_isa >= 860
+
+/*
 // tcgen05.mma.cta_group.kind [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d; // PTX ISA 86,
 SM_100a, SM_101a
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
-// .cta_group = { .cta_group::1, .cta_group::2 }
-template <cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
+// .cta_group = { .cta_group::1 }
+template <cuda::ptx::dot_kind Kind>
 __device__ static inline void tcgen05_mma(
   cuda::ptx::kind_t<Kind> kind,
-  cuda::ptx::cta_group_t<Cta_Group> cta_group,
+  cuda::ptx::cta_group_1_t,
   uint32_t d_tmem,
   uint64_t a_desc,
   uint64_t b_desc,
@@ -142,10 +193,10 @@ __device__ static inline void tcgen05_mma(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_mma_is_not_supported_before_SM_100a_SM_101a__();
-template <dot_kind _Kind, dot_cta_group _Cta_Group>
+template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma(
   kind_t<_Kind> __kind,
-  cta_group_t<_Cta_Group> __cta_group,
+  cta_group_1_t,
   _CUDA_VSTD::uint32_t __d_tmem,
   _CUDA_VSTD::uint64_t __a_desc,
   _CUDA_VSTD::uint64_t __b_desc,
@@ -154,9 +205,9 @@ _CCCL_DEVICE static inline void tcgen05_mma(
   bool __enable_input_d)
 {
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+// __cta_group == cta_group_1 (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16 && __cta_group == cta_group_1)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -175,26 +226,7 @@ _CCCL_DEVICE static inline void tcgen05_mma(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f16 && __cta_group == cta_group_2)
-  {
-    asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %8, 0;\n\t"
-      "tcgen05.mma.cta_group::2.kind::f16 [%0], %1, %2, %3, {%4, %5, %6, %7}, PRED_enable_input_d;\n\t"
-      "}"
-      :
-      : "r"(__d_tmem),
-        "l"(__a_desc),
-        "l"(__b_desc),
-        "r"(__idesc),
-        "r"(__disable_output_lane[0]),
-        "r"(__disable_output_lane[1]),
-        "r"(__disable_output_lane[2]),
-        "r"(__disable_output_lane[3]),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
-      : "memory");
-  }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32 && __cta_group == cta_group_1)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -213,26 +245,7 @@ _CCCL_DEVICE static inline void tcgen05_mma(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32 && __cta_group == cta_group_2)
-  {
-    asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %8, 0;\n\t"
-      "tcgen05.mma.cta_group::2.kind::tf32 [%0], %1, %2, %3, {%4, %5, %6, %7}, PRED_enable_input_d;\n\t"
-      "}"
-      :
-      : "r"(__d_tmem),
-        "l"(__a_desc),
-        "l"(__b_desc),
-        "r"(__idesc),
-        "r"(__disable_output_lane[0]),
-        "r"(__disable_output_lane[1]),
-        "r"(__disable_output_lane[2]),
-        "r"(__disable_output_lane[3]),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
-      : "memory");
-  }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4 && __cta_group == cta_group_1)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -251,26 +264,7 @@ _CCCL_DEVICE static inline void tcgen05_mma(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4 && __cta_group == cta_group_2)
-  {
-    asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %8, 0;\n\t"
-      "tcgen05.mma.cta_group::2.kind::f8f6f4 [%0], %1, %2, %3, {%4, %5, %6, %7}, PRED_enable_input_d;\n\t"
-      "}"
-      :
-      : "r"(__d_tmem),
-        "l"(__a_desc),
-        "l"(__b_desc),
-        "r"(__idesc),
-        "r"(__disable_output_lane[0]),
-        "r"(__disable_output_lane[1]),
-        "r"(__disable_output_lane[2]),
-        "r"(__disable_output_lane[3]),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
-      : "memory");
-  }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8 && __cta_group == cta_group_1)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -289,12 +283,52 @@ _CCCL_DEVICE static inline void tcgen05_mma(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8 && __cta_group == cta_group_2)
+#  else
+  // Unsupported architectures will have a linker error with a semi-decent error message
+  __cuda_ptx_tcgen05_mma_is_not_supported_before_SM_100a_SM_101a__();
+#  endif
+}
+#endif // __cccl_ptx_isa >= 860
+
+/*
+// tcgen05.mma.cta_group.kind [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d; // PTX ISA 86,
+SM_100a, SM_101a
+// .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
+// .cta_group = { .cta_group::2 }
+template <cuda::ptx::dot_kind Kind>
+__device__ static inline void tcgen05_mma(
+  cuda::ptx::kind_t<Kind> kind,
+  cuda::ptx::cta_group_2_t,
+  uint32_t d_tmem,
+  uint64_t a_desc,
+  uint64_t b_desc,
+  uint32_t idesc,
+  const uint32_t (&disable_output_lane)[8],
+  bool enable_input_d);
+*/
+#if __cccl_ptx_isa >= 860
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_mma_is_not_supported_before_SM_100a_SM_101a__();
+template <dot_kind _Kind>
+_CCCL_DEVICE static inline void tcgen05_mma(
+  kind_t<_Kind> __kind,
+  cta_group_2_t,
+  _CUDA_VSTD::uint32_t __d_tmem,
+  _CUDA_VSTD::uint64_t __a_desc,
+  _CUDA_VSTD::uint64_t __b_desc,
+  _CUDA_VSTD::uint32_t __idesc,
+  const _CUDA_VSTD::uint32_t (&__disable_output_lane)[8],
+  bool __enable_input_d)
+{
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
+// __cta_group == cta_group_2 (due to parameter type constraint)
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %8, 0;\n\t"
-      "tcgen05.mma.cta_group::2.kind::i8 [%0], %1, %2, %3, {%4, %5, %6, %7}, PRED_enable_input_d;\n\t"
+      "setp.ne.b32 PRED_enable_input_d, %12, 0;\n\t"
+      "tcgen05.mma.cta_group::2.kind::f16 [%0], %1, %2, %3, {%4, %5, %6, %7, %8, %9, %10, %11}, "
+      "PRED_enable_input_d;\n\t"
       "}"
       :
       : "r"(__d_tmem),
@@ -305,6 +339,81 @@ _CCCL_DEVICE static inline void tcgen05_mma(
         "r"(__disable_output_lane[1]),
         "r"(__disable_output_lane[2]),
         "r"(__disable_output_lane[3]),
+        "r"(__disable_output_lane[4]),
+        "r"(__disable_output_lane[5]),
+        "r"(__disable_output_lane[6]),
+        "r"(__disable_output_lane[7]),
+        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+      : "memory");
+  }
+  else if constexpr (__kind == kind_tf32)
+  {
+    asm volatile(
+      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %12, 0;\n\t"
+      "tcgen05.mma.cta_group::2.kind::tf32 [%0], %1, %2, %3, {%4, %5, %6, %7, %8, %9, %10, %11}, "
+      "PRED_enable_input_d;\n\t"
+      "}"
+      :
+      : "r"(__d_tmem),
+        "l"(__a_desc),
+        "l"(__b_desc),
+        "r"(__idesc),
+        "r"(__disable_output_lane[0]),
+        "r"(__disable_output_lane[1]),
+        "r"(__disable_output_lane[2]),
+        "r"(__disable_output_lane[3]),
+        "r"(__disable_output_lane[4]),
+        "r"(__disable_output_lane[5]),
+        "r"(__disable_output_lane[6]),
+        "r"(__disable_output_lane[7]),
+        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+      : "memory");
+  }
+  else if constexpr (__kind == kind_f8f6f4)
+  {
+    asm volatile(
+      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %12, 0;\n\t"
+      "tcgen05.mma.cta_group::2.kind::f8f6f4 [%0], %1, %2, %3, {%4, %5, %6, %7, %8, %9, %10, %11}, "
+      "PRED_enable_input_d;\n\t"
+      "}"
+      :
+      : "r"(__d_tmem),
+        "l"(__a_desc),
+        "l"(__b_desc),
+        "r"(__idesc),
+        "r"(__disable_output_lane[0]),
+        "r"(__disable_output_lane[1]),
+        "r"(__disable_output_lane[2]),
+        "r"(__disable_output_lane[3]),
+        "r"(__disable_output_lane[4]),
+        "r"(__disable_output_lane[5]),
+        "r"(__disable_output_lane[6]),
+        "r"(__disable_output_lane[7]),
+        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+      : "memory");
+  }
+  else if constexpr (__kind == kind_i8)
+  {
+    asm volatile(
+      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %12, 0;\n\t"
+      "tcgen05.mma.cta_group::2.kind::i8 [%0], %1, %2, %3, {%4, %5, %6, %7, %8, %9, %10, %11}, PRED_enable_input_d;\n\t"
+      "}"
+      :
+      : "r"(__d_tmem),
+        "l"(__a_desc),
+        "l"(__b_desc),
+        "r"(__idesc),
+        "r"(__disable_output_lane[0]),
+        "r"(__disable_output_lane[1]),
+        "r"(__disable_output_lane[2]),
+        "r"(__disable_output_lane[3]),
+        "r"(__disable_output_lane[4]),
+        "r"(__disable_output_lane[5]),
+        "r"(__disable_output_lane[6]),
+        "r"(__disable_output_lane[7]),
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
@@ -346,7 +455,7 @@ _CCCL_DEVICE static inline void tcgen05_mma(
   static_assert(__kind == kind_f16 || __kind == kind_tf32, "");
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16 && __cta_group == cta_group_1)
+  if constexpr (__kind == kind_f16 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -362,7 +471,7 @@ _CCCL_DEVICE static inline void tcgen05_mma(
         "n"(__scale_input_d.value)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f16 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_f16 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -378,7 +487,7 @@ _CCCL_DEVICE static inline void tcgen05_mma(
         "n"(__scale_input_d.value)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32 && __cta_group == cta_group_1)
+  else if constexpr (__kind == kind_tf32 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -394,7 +503,7 @@ _CCCL_DEVICE static inline void tcgen05_mma(
         "n"(__scale_input_d.value)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_tf32 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -446,7 +555,7 @@ _CCCL_DEVICE static inline void tcgen05_mma(
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16 && __cta_group == cta_group_1)
+  if constexpr (__kind == kind_f16 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -461,7 +570,7 @@ _CCCL_DEVICE static inline void tcgen05_mma(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f16 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_f16 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -476,7 +585,7 @@ _CCCL_DEVICE static inline void tcgen05_mma(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32 && __cta_group == cta_group_1)
+  else if constexpr (__kind == kind_tf32 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -491,7 +600,7 @@ _CCCL_DEVICE static inline void tcgen05_mma(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_tf32 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -506,7 +615,7 @@ _CCCL_DEVICE static inline void tcgen05_mma(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4 && __cta_group == cta_group_1)
+  else if constexpr (__kind == kind_f8f6f4 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -521,7 +630,7 @@ _CCCL_DEVICE static inline void tcgen05_mma(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_f8f6f4 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -536,7 +645,7 @@ _CCCL_DEVICE static inline void tcgen05_mma(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8 && __cta_group == cta_group_1)
+  else if constexpr (__kind == kind_i8 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -551,7 +660,7 @@ _CCCL_DEVICE static inline void tcgen05_mma(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_i8 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -574,14 +683,14 @@ _CCCL_DEVICE static inline void tcgen05_mma(
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.mma.cta_group.kind [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d, scale_input_d; //
-PTX ISA 86, SM_100a
+// tcgen05.mma.cta_group.kind [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d, scale_input_d;
+// PTX ISA 86, SM_100a
 // .kind      = { .kind::f16, .kind::tf32 }
-// .cta_group = { .cta_group::1, .cta_group::2 }
-template <int N32, cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
+// .cta_group = { .cta_group::1 }
+template <int N32, cuda::ptx::dot_kind Kind>
 __device__ static inline void tcgen05_mma_tmem_a(
   cuda::ptx::kind_t<Kind> kind,
-  cuda::ptx::cta_group_t<Cta_Group> cta_group,
+  cuda::ptx::cta_group_1_t,
   uint32_t d_tmem,
   uint32_t a_tmem,
   uint64_t b_desc,
@@ -592,10 +701,10 @@ __device__ static inline void tcgen05_mma_tmem_a(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_mma_tmem_a_is_not_supported_before_SM_100a__();
-template <int _N32, dot_kind _Kind, dot_cta_group _Cta_Group>
+template <int _N32, dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
   kind_t<_Kind> __kind,
-  cta_group_t<_Cta_Group> __cta_group,
+  cta_group_1_t,
   _CUDA_VSTD::uint32_t __d_tmem,
   _CUDA_VSTD::uint32_t __a_tmem,
   _CUDA_VSTD::uint64_t __b_desc,
@@ -605,9 +714,9 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
   n32_t<_N32> __scale_input_d)
 {
   static_assert(__kind == kind_f16 || __kind == kind_tf32, "");
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+// __cta_group == cta_group_1 (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16 && __cta_group == cta_group_1)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -627,52 +736,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
         "n"(__scale_input_d.value)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f16 && __cta_group == cta_group_2)
-  {
-    asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %8, 0;\n\t"
-      "tcgen05.mma.cta_group::2.kind::f16 [%0], [%1], %2, %3, {%4, %5, %6, %7}, PRED_enable_input_d, %9;\n\t"
-      "}"
-      :
-      : "r"(__d_tmem),
-        "r"(__a_tmem),
-        "l"(__b_desc),
-        "r"(__idesc),
-        "r"(__disable_output_lane[0]),
-        "r"(__disable_output_lane[1]),
-        "r"(__disable_output_lane[2]),
-        "r"(__disable_output_lane[3]),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
-        "n"(__scale_input_d.value)
-      : "memory");
-  }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32 && __cta_group == cta_group_1)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
       "setp.ne.b32 PRED_enable_input_d, %8, 0;\n\t"
       "tcgen05.mma.cta_group::1.kind::tf32 [%0], [%1], %2, %3, {%4, %5, %6, %7}, PRED_enable_input_d, %9;\n\t"
-      "}"
-      :
-      : "r"(__d_tmem),
-        "r"(__a_tmem),
-        "l"(__b_desc),
-        "r"(__idesc),
-        "r"(__disable_output_lane[0]),
-        "r"(__disable_output_lane[1]),
-        "r"(__disable_output_lane[2]),
-        "r"(__disable_output_lane[3]),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
-        "n"(__scale_input_d.value)
-      : "memory");
-  }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32 && __cta_group == cta_group_2)
-  {
-    asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %8, 0;\n\t"
-      "tcgen05.mma.cta_group::2.kind::tf32 [%0], [%1], %2, %3, {%4, %5, %6, %7}, PRED_enable_input_d, %9;\n\t"
       "}"
       :
       : "r"(__d_tmem),
@@ -695,14 +764,105 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
 #endif // __cccl_ptx_isa >= 860
 
 /*
+// tcgen05.mma.cta_group.kind [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d, scale_input_d;
+// PTX ISA 86, SM_100a
+// .kind      = { .kind::f16, .kind::tf32 }
+// .cta_group = { .cta_group::2 }
+template <int N32, cuda::ptx::dot_kind Kind>
+__device__ static inline void tcgen05_mma_tmem_a(
+  cuda::ptx::kind_t<Kind> kind,
+  cuda::ptx::cta_group_2_t,
+  uint32_t d_tmem,
+  uint32_t a_tmem,
+  uint64_t b_desc,
+  uint32_t idesc,
+  const uint32_t (&disable_output_lane)[8],
+  bool enable_input_d,
+  cuda::ptx::n32_t<N32> scale_input_d);
+*/
+#if __cccl_ptx_isa >= 860
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_mma_tmem_a_is_not_supported_before_SM_100a__();
+template <int _N32, dot_kind _Kind>
+_CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
+  kind_t<_Kind> __kind,
+  cta_group_2_t,
+  _CUDA_VSTD::uint32_t __d_tmem,
+  _CUDA_VSTD::uint32_t __a_tmem,
+  _CUDA_VSTD::uint64_t __b_desc,
+  _CUDA_VSTD::uint32_t __idesc,
+  const _CUDA_VSTD::uint32_t (&__disable_output_lane)[8],
+  bool __enable_input_d,
+  n32_t<_N32> __scale_input_d)
+{
+  static_assert(__kind == kind_f16 || __kind == kind_tf32, "");
+// __cta_group == cta_group_2 (due to parameter type constraint)
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL
+  if constexpr (__kind == kind_f16)
+  {
+    asm volatile(
+      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %12, 0;\n\t"
+      "tcgen05.mma.cta_group::2.kind::f16 [%0], [%1], %2, %3, {%4, %5, %6, %7, %8, %9, %10, %11}, PRED_enable_input_d, "
+      "%13;\n\t"
+      "}"
+      :
+      : "r"(__d_tmem),
+        "r"(__a_tmem),
+        "l"(__b_desc),
+        "r"(__idesc),
+        "r"(__disable_output_lane[0]),
+        "r"(__disable_output_lane[1]),
+        "r"(__disable_output_lane[2]),
+        "r"(__disable_output_lane[3]),
+        "r"(__disable_output_lane[4]),
+        "r"(__disable_output_lane[5]),
+        "r"(__disable_output_lane[6]),
+        "r"(__disable_output_lane[7]),
+        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "n"(__scale_input_d.value)
+      : "memory");
+  }
+  else if constexpr (__kind == kind_tf32)
+  {
+    asm volatile(
+      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %12, 0;\n\t"
+      "tcgen05.mma.cta_group::2.kind::tf32 [%0], [%1], %2, %3, {%4, %5, %6, %7, %8, %9, %10, %11}, "
+      "PRED_enable_input_d, %13;\n\t"
+      "}"
+      :
+      : "r"(__d_tmem),
+        "r"(__a_tmem),
+        "l"(__b_desc),
+        "r"(__idesc),
+        "r"(__disable_output_lane[0]),
+        "r"(__disable_output_lane[1]),
+        "r"(__disable_output_lane[2]),
+        "r"(__disable_output_lane[3]),
+        "r"(__disable_output_lane[4]),
+        "r"(__disable_output_lane[5]),
+        "r"(__disable_output_lane[6]),
+        "r"(__disable_output_lane[7]),
+        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "n"(__scale_input_d.value)
+      : "memory");
+  }
+#  else
+  // Unsupported architectures will have a linker error with a semi-decent error message
+  __cuda_ptx_tcgen05_mma_tmem_a_is_not_supported_before_SM_100a__();
+#  endif
+}
+#endif // __cccl_ptx_isa >= 860
+
+/*
 // tcgen05.mma.cta_group.kind [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d; // PTX ISA 86,
 SM_100a, SM_101a
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
-// .cta_group = { .cta_group::1, .cta_group::2 }
-template <cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
+// .cta_group = { .cta_group::1 }
+template <cuda::ptx::dot_kind Kind>
 __device__ static inline void tcgen05_mma_tmem_a(
   cuda::ptx::kind_t<Kind> kind,
-  cuda::ptx::cta_group_t<Cta_Group> cta_group,
+  cuda::ptx::cta_group_1_t,
   uint32_t d_tmem,
   uint32_t a_tmem,
   uint64_t b_desc,
@@ -712,10 +872,10 @@ __device__ static inline void tcgen05_mma_tmem_a(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_mma_tmem_a_is_not_supported_before_SM_100a_SM_101a__();
-template <dot_kind _Kind, dot_cta_group _Cta_Group>
+template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
   kind_t<_Kind> __kind,
-  cta_group_t<_Cta_Group> __cta_group,
+  cta_group_1_t,
   _CUDA_VSTD::uint32_t __d_tmem,
   _CUDA_VSTD::uint32_t __a_tmem,
   _CUDA_VSTD::uint64_t __b_desc,
@@ -724,9 +884,9 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
   bool __enable_input_d)
 {
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+// __cta_group == cta_group_1 (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16 && __cta_group == cta_group_1)
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -745,26 +905,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f16 && __cta_group == cta_group_2)
-  {
-    asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %8, 0;\n\t"
-      "tcgen05.mma.cta_group::2.kind::f16 [%0], [%1], %2, %3, {%4, %5, %6, %7}, PRED_enable_input_d;\n\t"
-      "}"
-      :
-      : "r"(__d_tmem),
-        "r"(__a_tmem),
-        "l"(__b_desc),
-        "r"(__idesc),
-        "r"(__disable_output_lane[0]),
-        "r"(__disable_output_lane[1]),
-        "r"(__disable_output_lane[2]),
-        "r"(__disable_output_lane[3]),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
-      : "memory");
-  }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32 && __cta_group == cta_group_1)
+  else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -783,26 +924,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32 && __cta_group == cta_group_2)
-  {
-    asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %8, 0;\n\t"
-      "tcgen05.mma.cta_group::2.kind::tf32 [%0], [%1], %2, %3, {%4, %5, %6, %7}, PRED_enable_input_d;\n\t"
-      "}"
-      :
-      : "r"(__d_tmem),
-        "r"(__a_tmem),
-        "l"(__b_desc),
-        "r"(__idesc),
-        "r"(__disable_output_lane[0]),
-        "r"(__disable_output_lane[1]),
-        "r"(__disable_output_lane[2]),
-        "r"(__disable_output_lane[3]),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
-      : "memory");
-  }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4 && __cta_group == cta_group_1)
+  else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -821,26 +943,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4 && __cta_group == cta_group_2)
-  {
-    asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %8, 0;\n\t"
-      "tcgen05.mma.cta_group::2.kind::f8f6f4 [%0], [%1], %2, %3, {%4, %5, %6, %7}, PRED_enable_input_d;\n\t"
-      "}"
-      :
-      : "r"(__d_tmem),
-        "r"(__a_tmem),
-        "l"(__b_desc),
-        "r"(__idesc),
-        "r"(__disable_output_lane[0]),
-        "r"(__disable_output_lane[1]),
-        "r"(__disable_output_lane[2]),
-        "r"(__disable_output_lane[3]),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
-      : "memory");
-  }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8 && __cta_group == cta_group_1)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -859,12 +962,52 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8 && __cta_group == cta_group_2)
+#  else
+  // Unsupported architectures will have a linker error with a semi-decent error message
+  __cuda_ptx_tcgen05_mma_tmem_a_is_not_supported_before_SM_100a_SM_101a__();
+#  endif
+}
+#endif // __cccl_ptx_isa >= 860
+
+/*
+// tcgen05.mma.cta_group.kind [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d; // PTX ISA 86,
+SM_100a, SM_101a
+// .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
+// .cta_group = { .cta_group::2 }
+template <cuda::ptx::dot_kind Kind>
+__device__ static inline void tcgen05_mma_tmem_a(
+  cuda::ptx::kind_t<Kind> kind,
+  cuda::ptx::cta_group_2_t,
+  uint32_t d_tmem,
+  uint32_t a_tmem,
+  uint64_t b_desc,
+  uint32_t idesc,
+  const uint32_t (&disable_output_lane)[8],
+  bool enable_input_d);
+*/
+#if __cccl_ptx_isa >= 860
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_mma_tmem_a_is_not_supported_before_SM_100a_SM_101a__();
+template <dot_kind _Kind>
+_CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
+  kind_t<_Kind> __kind,
+  cta_group_2_t,
+  _CUDA_VSTD::uint32_t __d_tmem,
+  _CUDA_VSTD::uint32_t __a_tmem,
+  _CUDA_VSTD::uint64_t __b_desc,
+  _CUDA_VSTD::uint32_t __idesc,
+  const _CUDA_VSTD::uint32_t (&__disable_output_lane)[8],
+  bool __enable_input_d)
+{
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
+// __cta_group == cta_group_2 (due to parameter type constraint)
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+  if constexpr (__kind == kind_f16)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %8, 0;\n\t"
-      "tcgen05.mma.cta_group::2.kind::i8 [%0], [%1], %2, %3, {%4, %5, %6, %7}, PRED_enable_input_d;\n\t"
+      "setp.ne.b32 PRED_enable_input_d, %12, 0;\n\t"
+      "tcgen05.mma.cta_group::2.kind::f16 [%0], [%1], %2, %3, {%4, %5, %6, %7, %8, %9, %10, %11}, "
+      "PRED_enable_input_d;\n\t"
       "}"
       :
       : "r"(__d_tmem),
@@ -875,6 +1018,82 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
         "r"(__disable_output_lane[1]),
         "r"(__disable_output_lane[2]),
         "r"(__disable_output_lane[3]),
+        "r"(__disable_output_lane[4]),
+        "r"(__disable_output_lane[5]),
+        "r"(__disable_output_lane[6]),
+        "r"(__disable_output_lane[7]),
+        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+      : "memory");
+  }
+  else if constexpr (__kind == kind_tf32)
+  {
+    asm volatile(
+      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %12, 0;\n\t"
+      "tcgen05.mma.cta_group::2.kind::tf32 [%0], [%1], %2, %3, {%4, %5, %6, %7, %8, %9, %10, %11}, "
+      "PRED_enable_input_d;\n\t"
+      "}"
+      :
+      : "r"(__d_tmem),
+        "r"(__a_tmem),
+        "l"(__b_desc),
+        "r"(__idesc),
+        "r"(__disable_output_lane[0]),
+        "r"(__disable_output_lane[1]),
+        "r"(__disable_output_lane[2]),
+        "r"(__disable_output_lane[3]),
+        "r"(__disable_output_lane[4]),
+        "r"(__disable_output_lane[5]),
+        "r"(__disable_output_lane[6]),
+        "r"(__disable_output_lane[7]),
+        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+      : "memory");
+  }
+  else if constexpr (__kind == kind_f8f6f4)
+  {
+    asm volatile(
+      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %12, 0;\n\t"
+      "tcgen05.mma.cta_group::2.kind::f8f6f4 [%0], [%1], %2, %3, {%4, %5, %6, %7, %8, %9, %10, %11}, "
+      "PRED_enable_input_d;\n\t"
+      "}"
+      :
+      : "r"(__d_tmem),
+        "r"(__a_tmem),
+        "l"(__b_desc),
+        "r"(__idesc),
+        "r"(__disable_output_lane[0]),
+        "r"(__disable_output_lane[1]),
+        "r"(__disable_output_lane[2]),
+        "r"(__disable_output_lane[3]),
+        "r"(__disable_output_lane[4]),
+        "r"(__disable_output_lane[5]),
+        "r"(__disable_output_lane[6]),
+        "r"(__disable_output_lane[7]),
+        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+      : "memory");
+  }
+  else if constexpr (__kind == kind_i8)
+  {
+    asm volatile(
+      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %12, 0;\n\t"
+      "tcgen05.mma.cta_group::2.kind::i8 [%0], [%1], %2, %3, {%4, %5, %6, %7, %8, %9, %10, %11}, "
+      "PRED_enable_input_d;\n\t"
+      "}"
+      :
+      : "r"(__d_tmem),
+        "r"(__a_tmem),
+        "l"(__b_desc),
+        "r"(__idesc),
+        "r"(__disable_output_lane[0]),
+        "r"(__disable_output_lane[1]),
+        "r"(__disable_output_lane[2]),
+        "r"(__disable_output_lane[3]),
+        "r"(__disable_output_lane[4]),
+        "r"(__disable_output_lane[5]),
+        "r"(__disable_output_lane[6]),
+        "r"(__disable_output_lane[7]),
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
@@ -916,7 +1135,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
   static_assert(__kind == kind_f16 || __kind == kind_tf32, "");
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16 && __cta_group == cta_group_1)
+  if constexpr (__kind == kind_f16 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -932,7 +1151,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
         "n"(__scale_input_d.value)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f16 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_f16 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -948,7 +1167,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
         "n"(__scale_input_d.value)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32 && __cta_group == cta_group_1)
+  else if constexpr (__kind == kind_tf32 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -964,7 +1183,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
         "n"(__scale_input_d.value)
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_tf32 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1016,7 +1235,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_f16 && __cta_group == cta_group_1)
+  if constexpr (__kind == kind_f16 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1031,7 +1250,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f16 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_f16 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1046,7 +1265,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32 && __cta_group == cta_group_1)
+  else if constexpr (__kind == kind_tf32 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1061,7 +1280,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_tf32 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_tf32 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1076,7 +1295,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4 && __cta_group == cta_group_1)
+  else if constexpr (__kind == kind_f8f6f4 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1091,7 +1310,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_f8f6f4 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_f8f6f4 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1106,7 +1325,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8 && __cta_group == cta_group_1)
+  else if constexpr (__kind == kind_i8 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1121,7 +1340,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_i8 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_i8 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1177,7 +1396,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x(
   // __kind == kind_mxf8f6f4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1195,7 +1414,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1254,7 +1473,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x(
   static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_mxf4 && __cta_group == cta_group_1)
+  if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1272,7 +1491,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_mxf4 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1290,7 +1509,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_mxf4nvf4 && __cta_group == cta_group_1)
+  else if constexpr (__kind == kind_mxf4nvf4 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1308,7 +1527,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_mxf4nvf4 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_mxf4nvf4 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1367,7 +1586,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x(
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1385,7 +1604,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1445,7 +1664,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a(
   // __kind == kind_mxf8f6f4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1463,7 +1682,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1522,7 +1741,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a(
   static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_mxf4 && __cta_group == cta_group_1)
+  if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1540,7 +1759,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_mxf4 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1558,7 +1777,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_mxf4nvf4 && __cta_group == cta_group_1)
+  else if constexpr (__kind == kind_mxf4nvf4 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1576,7 +1795,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_mxf4nvf4 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_mxf4nvf4 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1636,7 +1855,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a(
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1654,7 +1873,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1714,7 +1933,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_collector_a_fill(
   // __kind == kind_mxf8f6f4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1732,7 +1951,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_collector_a_fill(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1792,7 +2011,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_fill(
   static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_mxf4 && __cta_group == cta_group_1)
+  if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1810,7 +2029,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_fill(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_mxf4 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1828,7 +2047,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_fill(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_mxf4nvf4 && __cta_group == cta_group_1)
+  else if constexpr (__kind == kind_mxf4nvf4 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1846,7 +2065,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_fill(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_mxf4nvf4 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_mxf4nvf4 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1906,7 +2125,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_collector_a_fill(
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1924,7 +2143,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_collector_a_fill(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -1984,7 +2203,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_
   // __kind == kind_mxf8f6f4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2002,7 +2221,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2062,7 +2281,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a
   static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_mxf4 && __cta_group == cta_group_1)
+  if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2080,7 +2299,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_mxf4 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2098,7 +2317,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_mxf4nvf4 && __cta_group == cta_group_1)
+  else if constexpr (__kind == kind_mxf4nvf4 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2116,7 +2335,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_mxf4nvf4 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_mxf4nvf4 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2176,7 +2395,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2194,7 +2413,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2254,7 +2473,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_collector_a_use(
   // __kind == kind_mxf8f6f4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2272,7 +2491,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_collector_a_use(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2332,7 +2551,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_use(
   static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_mxf4 && __cta_group == cta_group_1)
+  if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2350,7 +2569,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_use(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_mxf4 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2368,7 +2587,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_use(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_mxf4nvf4 && __cta_group == cta_group_1)
+  else if constexpr (__kind == kind_mxf4nvf4 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2386,7 +2605,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_use(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_mxf4nvf4 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_mxf4nvf4 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2446,7 +2665,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_collector_a_use(
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2464,7 +2683,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_collector_a_use(
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2524,7 +2743,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_
   // __kind == kind_mxf8f6f4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2542,7 +2761,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2602,7 +2821,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a
   static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_mxf4 && __cta_group == cta_group_1)
+  if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2620,7 +2839,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_mxf4 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2638,7 +2857,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_mxf4nvf4 && __cta_group == cta_group_1)
+  else if constexpr (__kind == kind_mxf4nvf4 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2656,7 +2875,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_mxf4nvf4 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_mxf4nvf4 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2716,7 +2935,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2734,7 +2953,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2794,7 +3013,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_collector_a_lastu
   // __kind == kind_mxf8f6f4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2812,7 +3031,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_collector_a_lastu
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2872,7 +3091,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_lastu
   static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_mxf4 && __cta_group == cta_group_1)
+  if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2890,7 +3109,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_lastu
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_mxf4 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2908,7 +3127,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_lastu
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_mxf4nvf4 && __cta_group == cta_group_1)
+  else if constexpr (__kind == kind_mxf4nvf4 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2926,7 +3145,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_lastu
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_mxf4nvf4 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_mxf4nvf4 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -2986,7 +3205,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_collector_a_lastu
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3004,7 +3223,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_collector_a_lastu
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3064,7 +3283,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_
   // __kind == kind_mxf8f6f4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3082,7 +3301,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3142,7 +3361,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a
   static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_mxf4 && __cta_group == cta_group_1)
+  if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3160,7 +3379,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_mxf4 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3178,7 +3397,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_mxf4nvf4 && __cta_group == cta_group_1)
+  else if constexpr (__kind == kind_mxf4nvf4 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3196,7 +3415,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_mxf4nvf4 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_mxf4nvf4 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3256,7 +3475,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3274,7 +3493,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3334,7 +3553,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_collector_a_disca
   // __kind == kind_mxf8f6f4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3352,7 +3571,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_collector_a_disca
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3412,7 +3631,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_disca
   static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_mxf4 && __cta_group == cta_group_1)
+  if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3430,7 +3649,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_disca
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_mxf4 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3448,7 +3667,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_disca
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_mxf4nvf4 && __cta_group == cta_group_1)
+  else if constexpr (__kind == kind_mxf4nvf4 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3466,7 +3685,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_disca
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_mxf4nvf4 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_mxf4nvf4 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3526,7 +3745,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_collector_a_disca
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3544,7 +3763,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_collector_a_disca
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3604,7 +3823,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_
   // __kind == kind_mxf8f6f4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3622,7 +3841,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3682,7 +3901,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a
   static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__kind == kind_mxf4 && __cta_group == cta_group_1)
+  if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3700,7 +3919,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_mxf4 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3718,7 +3937,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_mxf4nvf4 && __cta_group == cta_group_1)
+  else if constexpr (__kind == kind_mxf4nvf4 && __cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3736,7 +3955,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__kind == kind_mxf4nvf4 && __cta_group == cta_group_2)
+  else if constexpr (__kind == kind_mxf4nvf4 && __cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3796,7 +4015,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
-  _CCCL_IF_CONSTEXPR (__cta_group == cta_group_1)
+  if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"
@@ -3814,7 +4033,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_
         "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
       : "memory");
   }
-  else _CCCL_IF_CONSTEXPR (__cta_group == cta_group_2)
+  else if constexpr (__cta_group == cta_group_2)
   {
     asm volatile(
       "{\n\t .reg .pred PRED_enable_input_d; \n\t"

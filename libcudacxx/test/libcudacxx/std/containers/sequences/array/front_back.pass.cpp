@@ -17,7 +17,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
+__host__ __device__ constexpr bool tests()
 {
   {
     typedef double T;
@@ -38,10 +38,10 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
     typedef double T;
     typedef cuda::std::array<T, 0> C;
     C c = {};
-    ASSERT_SAME_TYPE(decltype(c.back()), C::reference);
-    LIBCPP_ASSERT_NOEXCEPT(c.back());
-    ASSERT_SAME_TYPE(decltype(c.front()), C::reference);
-    LIBCPP_ASSERT_NOEXCEPT(c.front());
+    static_assert(cuda::std::is_same_v<decltype(c.back()), C::reference>);
+    static_assert(noexcept(c.back()));
+    static_assert(cuda::std::is_same_v<decltype(c.front()), C::reference>);
+    static_assert(noexcept(c.front()));
     if (c.size() > (0))
     { // always false
       TEST_IGNORE_NODISCARD c.front();
@@ -52,10 +52,10 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
     typedef double T;
     typedef cuda::std::array<const T, 0> C;
     C c = {};
-    ASSERT_SAME_TYPE(decltype(c.back()), C::reference);
-    LIBCPP_ASSERT_NOEXCEPT(c.back());
-    ASSERT_SAME_TYPE(decltype(c.front()), C::reference);
-    LIBCPP_ASSERT_NOEXCEPT(c.front());
+    static_assert(cuda::std::is_same_v<decltype(c.back()), C::reference>);
+    static_assert(noexcept(c.back()));
+    static_assert(cuda::std::is_same_v<decltype(c.front()), C::reference>);
+    static_assert(noexcept(c.front()));
     if (c.size() > (0))
     {
       TEST_IGNORE_NODISCARD c.front();
@@ -69,8 +69,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
 int main(int, char**)
 {
   tests();
-#if TEST_STD_VER >= 2014
   static_assert(tests(), "");
-#endif
   return 0;
 }

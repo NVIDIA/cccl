@@ -33,6 +33,8 @@
 #include <thrust/reverse.h>
 #include <thrust/sequence.h>
 
+#include <cuda/cmath>
+
 #include <type_traits>
 
 #include <c2h/catch2_test_helper.h>
@@ -42,11 +44,7 @@ template <typename InputT, typename OutputT, int ItemsPerThread, cub::WarpExchan
 struct exchange_data_t;
 
 template <typename InputT, typename OutputT, int ItemsPerThread, cub::WarpExchangeAlgorithm Alg>
-struct exchange_data_t<InputT,
-                       OutputT,
-                       ItemsPerThread,
-                       Alg,
-                       typename std::enable_if<std::is_same<InputT, OutputT>::value>::type>
+struct exchange_data_t<InputT, OutputT, ItemsPerThread, Alg, std::enable_if_t<std::is_same_v<InputT, OutputT>>>
 {
   InputT input[ItemsPerThread];
   OutputT (&output)[ItemsPerThread] = input;
@@ -60,11 +58,7 @@ struct exchange_data_t<InputT,
 };
 
 template <typename InputT, typename OutputT, int ItemsPerThread, cub::WarpExchangeAlgorithm Alg>
-struct exchange_data_t<InputT,
-                       OutputT,
-                       ItemsPerThread,
-                       Alg,
-                       typename std::enable_if<!std::is_same<InputT, OutputT>::value>::type>
+struct exchange_data_t<InputT, OutputT, ItemsPerThread, Alg, std::enable_if_t<!std::is_same_v<InputT, OutputT>>>
 {
   InputT input[ItemsPerThread];
   OutputT output[ItemsPerThread];
@@ -232,7 +226,7 @@ c2h::host_vector<T> compute_host_reference(const c2h::device_vector<T>& d_input,
 {
   c2h::host_vector<T> input = d_input;
 
-  int num_warps = CUB_QUOTIENT_CEILING(static_cast<int>(d_input.size()), tile_size);
+  int num_warps = cuda::ceil_div(static_cast<int>(d_input.size()), tile_size);
   for (int warp_id = 0; warp_id < num_warps; warp_id++)
   {
     const int warp_data_begin = tile_size * warp_id;

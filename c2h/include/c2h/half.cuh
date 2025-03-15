@@ -328,20 +328,18 @@ inline std::ostream& operator<<(std::ostream& out, const __half& x)
  * Traits overloads
  ******************************************************************************/
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+namespace cuda
+{
 template <>
-struct __is_extended_floating_point<half_t> : true_type
-{};
-
-#ifndef _CCCL_NO_VARIABLE_TEMPLATES
-template <>
-_CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v<half_t> = true;
-#endif // _CCCL_NO_VARIABLE_TEMPLATES
+_CCCL_INLINE_VAR constexpr bool is_floating_point_v<half_t> = true;
+}
 
 template <>
-class __numeric_limits_impl<half_t, __numeric_limits_type::__floating_point>
+class ::cuda::std::numeric_limits<half_t>
 {
 public:
+  static constexpr bool is_specialized = true;
+
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE half_t max()
   {
     return half_t(numeric_limits<__half>::max());
@@ -357,13 +355,10 @@ public:
     return half_t(numeric_limits<__half>::lowest());
   }
 };
-_LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <>
-struct CUB_NS_QUALIFIER::NumericTraits<half_t> : CUB_NS_QUALIFIER::BaseTraits<FLOATING_POINT, unsigned short, half_t>
+struct CUB_NS_QUALIFIER::NumericTraits<half_t> : BaseTraits<FLOATING_POINT, true, unsigned short, half_t>
 {};
-_CCCL_SUPPRESS_DEPRECATED_POP
 
 #ifdef __GNUC__
 #  pragma GCC diagnostic pop

@@ -191,7 +191,7 @@ struct DeviceScan
 
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
-    using InitT   = cub::detail::value_t<InputIteratorT>;
+    using InitT   = cub::detail::it_value_t<InputIteratorT>;
 
     // Initial value
     InitT init_value{};
@@ -1156,7 +1156,7 @@ struct DeviceScan
 
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
-    using AccumT  = ::cuda::std::__accumulator_t<ScanOpT, cub::detail::value_t<InputIteratorT>, InitValueT>;
+    using AccumT  = ::cuda::std::__accumulator_t<ScanOpT, cub::detail::it_value_t<InputIteratorT>, InitValueT>;
 
     return DispatchScan<
       InputIteratorT,
@@ -1390,7 +1390,7 @@ struct DeviceScan
 
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
-    using InitT   = cub::detail::value_t<ValuesInputIteratorT>;
+    using InitT   = cub::detail::it_value_t<ValuesInputIteratorT>;
 
     // Initial value
     InitT init_value{};

@@ -19,7 +19,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   typedef bidirectional_iterator<int*> Iter;
   int i = 0;
@@ -33,8 +33,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER > 2011
   static_assert(test(), "");
-#endif
   return 0;
 }

@@ -36,8 +36,7 @@ struct add_one
 };
 
 template <class Iter1, class BOp, class UOp, class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void
-test(Iter1 first, Iter1 last, BOp bop, UOp uop, const T* rFirst, const T* rLast)
+__host__ __device__ constexpr void test(Iter1 first, Iter1 last, BOp bop, UOp uop, const T* rFirst, const T* rLast)
 {
   assert((rLast - rFirst) <= 5); // or else increase the size of "out"
   T out[5] = {};
@@ -57,7 +56,7 @@ test(Iter1 first, Iter1 last, BOp bop, UOp uop, const T* rFirst, const T* rLast)
 }
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
   int ia[]           = {1, 3, 5, 7, 9};
   const int pResI0[] = {2, 6, 12, 20, 30}; // with add_one
@@ -85,7 +84,7 @@ __host__ __device__ constexpr cuda::std::size_t triangle(size_t n)
 }
 
 //  Basic sanity
-__host__ __device__ TEST_CONSTEXPR_CXX14 void basic_tests()
+__host__ __device__ constexpr void basic_tests()
 {
   {
     cuda::std::array<cuda::std::size_t, 10> v{};
@@ -117,7 +116,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void basic_tests()
     }
   }
 
-#if !defined(TEST_COMPILER_NVHPC) // NVHPC seems unable to silence the warning
+#if !TEST_COMPILER(NVHPC) // NVHPC seems unable to silence the warning
   TEST_NV_DIAG_SUPPRESS(expr_has_no_effect)
   {
     cuda::std::array<cuda::std::size_t, 0> v{};
@@ -125,10 +124,10 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void basic_tests()
     cuda::std::transform_inclusive_scan(v.begin(), v.end(), res.begin(), cuda::std::plus<>(), add_one{});
     assert(res.empty());
   }
-#endif // !TEST_COMPILER_NVHPC
+#endif // !TEST_COMPILER(NVHPC)
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   basic_tests();
 
@@ -146,8 +145,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014
   return 0;
 }

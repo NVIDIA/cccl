@@ -21,16 +21,14 @@
 //   complex<promote<T, U>::type>
 //   pow(const complex<T>& x, const complex<U>& y);
 
-#if defined(_MSC_VER)
-#  pragma warning(disable : 4244) // conversion from 'const double' to 'int', possible loss of data
-#endif
-
 #include <cuda/std/cassert>
 #include <cuda/std/complex>
 #include <cuda/std/type_traits>
 
 #include "../cases.h"
 #include "test_macros.h"
+
+TEST_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const double' to 'int', possible loss of data
 
 template <class T, class U>
 __host__ __device__ void test(T x, const cuda::std::complex<U>& y)
@@ -96,20 +94,20 @@ int main(int, char**)
   //  test<long double, float>();
   //  test<long double, double>();
 
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _LIBCUDACXX_HAS_NVFP16()
   test<__half, float>();
   test<__half, double>();
   test<int, __half>();
   test<unsigned, __half>();
   test<long long, __half>();
-#endif // _LIBCUDACXX_HAS_NVFP16
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16, float>();
   test<__nv_bfloat16, double>();
   test<int, __nv_bfloat16>();
   test<unsigned, __nv_bfloat16>();
   test<long long, __nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
   return 0;
 }

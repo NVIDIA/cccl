@@ -52,8 +52,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
     const Deleter d;
     UPtr p(nullptr, d);
     const UPtr& cp = p;
-    ASSERT_SAME_TYPE(decltype(p.get_deleter()), const Deleter&);
-    ASSERT_SAME_TYPE(decltype(cp.get_deleter()), const Deleter&);
+    static_assert(cuda::std::is_same_v<decltype(p.get_deleter()), const Deleter&>);
+    static_assert(cuda::std::is_same_v<decltype(cp.get_deleter()), const Deleter&>);
     assert(p.get_deleter().test() == 6);
     assert(cp.get_deleter().test() == 6);
   }
@@ -62,8 +62,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
     Deleter d;
     UPtr p(nullptr, d);
     const UPtr& cp = p;
-    ASSERT_SAME_TYPE(decltype(p.get_deleter()), Deleter&);
-    ASSERT_SAME_TYPE(decltype(cp.get_deleter()), Deleter&);
+    static_assert(cuda::std::is_same_v<decltype(p.get_deleter()), Deleter&>);
+    static_assert(cuda::std::is_same_v<decltype(cp.get_deleter()), Deleter&>);
     assert(p.get_deleter().test() == 5);
     assert(cp.get_deleter().test() == 5);
   }

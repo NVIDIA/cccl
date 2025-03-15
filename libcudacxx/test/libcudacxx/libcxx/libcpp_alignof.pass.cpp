@@ -17,17 +17,15 @@
 
 #include "test_macros.h"
 
-TEST_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
-
 template <class T>
 __host__ __device__ void test()
 {
   static_assert(_LIBCUDACXX_ALIGNOF(T) == cuda::std::alignment_of<T>::value, "");
-  static_assert(_LIBCUDACXX_ALIGNOF(T) == TEST_ALIGNOF(T), "");
   static_assert(_LIBCUDACXX_ALIGNOF(T) == alignof(T), "");
-#ifdef TEST_COMPILER_CLANG
+  static_assert(_LIBCUDACXX_ALIGNOF(T) == alignof(T), "");
+#if TEST_COMPILER(CLANG)
   static_assert(_LIBCUDACXX_ALIGNOF(T) == _Alignof(T), "");
-#endif
+#endif // TEST_COMPILER(CLANG)
 }
 
 int main(int, char**)
@@ -35,6 +33,8 @@ int main(int, char**)
   test<int>();
   test<long long>();
   test<double>();
+#if _CCCL_HAS_LONG_DOUBLE()
   test<long double>();
+#endif // _CCCL_HAS_LONG_DOUBLE()
   return 0;
 }

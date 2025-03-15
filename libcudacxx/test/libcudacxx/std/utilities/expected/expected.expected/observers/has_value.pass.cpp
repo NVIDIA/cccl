@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // constexpr bool has_value() const noexcept;
 
 #include <cuda/std/cassert>

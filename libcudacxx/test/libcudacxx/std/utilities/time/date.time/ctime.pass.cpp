@@ -15,22 +15,19 @@
 #  error NULL not defined
 #endif
 
-#ifndef TEST_COMPILER_NVRTC
+#if !TEST_COMPILER(NVRTC)
 #  ifndef CLOCKS_PER_SEC
 #    error CLOCKS_PER_SEC not defined
 #  endif
 #endif
 
-#if TEST_STD_VER > 2014 && defined(TEST_HAS_C11_FEATURES)
+#if defined(TEST_HAS_C11_FEATURES)
 #  ifndef TIME_UTC
 #    error TIME_UTC not defined
 #  endif
 #endif
 
-#if defined(__GNUC__)
-#  pragma GCC diagnostic ignored "-Wformat-zero-length"
-#endif
-
+TEST_DIAG_SUPPRESS_GCC("-Wformat-zero-length")
 TEST_NV_DIAG_SUPPRESS(set_but_not_used)
 
 int main(int, char**)
@@ -41,25 +38,25 @@ int main(int, char**)
   unused(c); // Prevent unused warning
   unused(s); // Prevent unused warning
   unused(t); // Prevent unused warning
-#ifndef TEST_COMPILER_NVRTC
+#if !TEST_COMPILER(NVRTC)
   cuda::std::tm tm = {};
   char str[3];
   unused(tm); // Prevent unused warning
   unused(str); // Prevent unused warning
-#  if TEST_STD_VER > 2014 && defined(TEST_HAS_C11_FEATURES)
+#  if defined(TEST_HAS_C11_FEATURES)
   cuda::std::timespec tmspec = {};
   unused(tmspec); // Prevent unused warning
-#  endif
+#  endif // TEST_HAS_C11_FEATURES
 
-#  ifndef TEST_COMPILER_CLANG_CUDA
+#  if !TEST_CUDA_COMPILER(CLANG)
   static_assert((cuda::std::is_same<decltype(cuda::std::clock()), cuda::std::clock_t>::value), "");
-#  endif // TEST_COMPILER_CLANG_CUDA
+#  endif // TEST_CUDA_COMPILER(CLANG)
   static_assert((cuda::std::is_same<decltype(cuda::std::difftime(t, t)), double>::value), "");
   static_assert((cuda::std::is_same<decltype(cuda::std::mktime(&tm)), cuda::std::time_t>::value), "");
   static_assert((cuda::std::is_same<decltype(cuda::std::time(&t)), cuda::std::time_t>::value), "");
-#  if TEST_STD_VER > 2014 && defined(TEST_HAS_TIMESPEC_GET)
+#  if defined(TEST_HAS_TIMESPEC_GET)
   static_assert((cuda::std::is_same<decltype(cuda::std::timespec_get(&tmspec, 0)), int>::value), "");
-#  endif
+#  endif // TEST_HAS_TIMESPEC_GET
 #  ifndef _LIBCUDACXX_HAS_NO_THREAD_UNSAFE_C_FUNCTIONS
   static_assert((cuda::std::is_same<decltype(cuda::std::asctime(&tm)), char*>::value), "");
   static_assert((cuda::std::is_same<decltype(cuda::std::ctime(&t)), char*>::value), "");

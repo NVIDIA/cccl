@@ -269,8 +269,6 @@ But we will not invest significant time in triaging or fixing issues for older c
 In the spirit of "You only support what you test", see our [CI Overview](https://github.com/NVIDIA/cccl/blob/main/ci-overview.md) for more information on exactly what we test.
 
 ### C++ Dialects
-- C++11 (only libcu++)
-- C++14 (only libcu++)
 - C++17
 - C++20
 
@@ -427,7 +425,27 @@ The deprecation period will depend on the impact of the change, but will usually
 
 ## Mapping to CTK Versions
 
-Coming soon!
+| CCCL version | CTK version |
+|--------------|-------------|
+| 3.0          | 13.0        |
+| ...          | ...         |
+| 2.8          | 12.9        |
+| 2.7          | 12.8        |
+| 2.5          | 12.6        |
+| 2.4          | 12.5        |
+| 2.3          | 12.4        |
+
+Test yourself: https://cuda.godbolt.org/z/K818M4Y9f
+
+CTKs before 12.4 shipped Thrust, CUB and libcudacxx as individual libraries.
+
+| Thrust/CUB/libcudacxx version | CTK version |
+|-------------------------------|-------------|
+| 2.2                           | 12.3        |
+| 2.1                           | 12.2        |
+| 2.0/2.0/1.9                   | 12.1        |
+| 2.0/2.0/1.9                   | 12.0        |
+
 
 ## CI Pipeline Overview
 

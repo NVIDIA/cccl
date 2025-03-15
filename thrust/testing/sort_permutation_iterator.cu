@@ -10,7 +10,7 @@ template <typename Iterator>
 class strided_range
 {
 public:
-  using difference_type = typename thrust::iterator_difference<Iterator>::type;
+  using difference_type = thrust::detail::it_difference_t<Iterator>;
 
   struct stride_functor
   {

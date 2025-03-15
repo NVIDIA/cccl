@@ -22,12 +22,10 @@ __host__ __device__ void test_is_array()
   static_assert(cuda::std::is_array<const T>::value, "");
   static_assert(cuda::std::is_array<volatile T>::value, "");
   static_assert(cuda::std::is_array<const volatile T>::value, "");
-#if TEST_STD_VER > 2011
   static_assert(cuda::std::is_array_v<T>, "");
   static_assert(cuda::std::is_array_v<const T>, "");
   static_assert(cuda::std::is_array_v<volatile T>, "");
   static_assert(cuda::std::is_array_v<const volatile T>, "");
-#endif
 }
 
 template <class T>
@@ -37,12 +35,10 @@ __host__ __device__ void test_is_not_array()
   static_assert(!cuda::std::is_array<const T>::value, "");
   static_assert(!cuda::std::is_array<volatile T>::value, "");
   static_assert(!cuda::std::is_array<const volatile T>::value, "");
-#if TEST_STD_VER > 2011
   static_assert(!cuda::std::is_array_v<T>, "");
   static_assert(!cuda::std::is_array_v<const T>, "");
   static_assert(!cuda::std::is_array_v<volatile T>, "");
   static_assert(!cuda::std::is_array_v<const volatile T>, "");
-#endif
 }
 
 class Empty

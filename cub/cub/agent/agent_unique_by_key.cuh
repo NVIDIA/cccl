@@ -49,9 +49,6 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/thread/thread_operators.cuh>
 
-#include <iterator>
-#include <type_traits>
-
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -136,8 +133,8 @@ struct AgentUniqueByKey
   //---------------------------------------------------------------------
 
   // The input key and value type
-  using KeyT   = typename std::iterator_traits<KeyInputIteratorT>::value_type;
-  using ValueT = typename std::iterator_traits<ValueInputIteratorT>::value_type;
+  using KeyT   = cub::detail::it_value_t<KeyInputIteratorT>;
+  using ValueT = cub::detail::it_value_t<ValueInputIteratorT>;
 
   // Tile status descriptor interface type
   using ScanTileStateT = ScanTileState<OffsetT>;
@@ -151,20 +148,20 @@ struct AgentUniqueByKey
   };
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier) for keys
-  using WrappedKeyInputIteratorT = typename ::cuda::std::conditional<
-    ::cuda::std::is_pointer<KeyInputIteratorT>::value,
+  using WrappedKeyInputIteratorT = ::cuda::std::conditional_t<
+    ::cuda::std::is_pointer_v<KeyInputIteratorT>,
     CacheModifiedInputIterator<AgentUniqueByKeyPolicyT::LOAD_MODIFIER, KeyT, OffsetT>, // Wrap the native input pointer
                                                                                        // with
                                                                                        // CacheModifiedValuesInputIterator
-    KeyInputIteratorT>::type; // Directly use the supplied input iterator type
+    KeyInputIteratorT>; // Directly use the supplied input iterator type
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier) for values
-  using WrappedValueInputIteratorT = typename ::cuda::std::conditional<
-    ::cuda::std::is_pointer<ValueInputIteratorT>::value,
+  using WrappedValueInputIteratorT = ::cuda::std::conditional_t<
+    ::cuda::std::is_pointer_v<ValueInputIteratorT>,
     CacheModifiedInputIterator<AgentUniqueByKeyPolicyT::LOAD_MODIFIER, ValueT, OffsetT>, // Wrap the native input
                                                                                          // pointer with
                                                                                          // CacheModifiedValuesInputIterator
-    ValueInputIteratorT>::type; // Directly use the supplied input iterator type
+    ValueInputIteratorT>; // Directly use the supplied input iterator type
 
   // Parameterized BlockLoad type for input data
   using BlockLoadKeys = BlockLoad<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentUniqueByKeyPolicyT::LOAD_ALGORITHM>;
@@ -280,7 +277,7 @@ struct AgentUniqueByKey
     OffsetT num_selections_prefix,
     OffsetT /*num_selections*/)
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       int local_scatter_offset = selection_indices[ITEM] - num_selections_prefix;
@@ -292,9 +289,9 @@ struct AgentUniqueByKey
 
     __syncthreads();
 
-// Preventing loop unrolling helps avoid perf degradation when switching from signed to unsigned 32-bit offset
-// types
-#pragma unroll 1
+    // Preventing loop unrolling helps avoid perf degradation when switching from signed to unsigned 32-bit offset
+    // types
+    _CCCL_PRAGMA_NOUNROLL()
     for (int item = threadIdx.x; item < num_tile_selections; item += BLOCK_THREADS)
     {
       items_out[num_selections_prefix + item] = GetShared(tag)[item];
@@ -359,7 +356,8 @@ struct AgentUniqueByKey
     __syncthreads();
 
     BlockDiscontinuityKeys(temp_storage.scan_storage.discontinuity).FlagHeads(selection_flags, keys, inequality_op);
-#pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       // Set selection_flags for out-of-bounds items
@@ -479,7 +477,7 @@ struct AgentUniqueByKey
     BlockDiscontinuityKeys(temp_storage.scan_storage.discontinuity)
       .FlagHeads(selection_flags, keys, inequality_op, tile_predecessor);
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       // Set selection_flags for out-of-bounds items

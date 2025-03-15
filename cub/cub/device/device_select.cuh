@@ -56,9 +56,9 @@
 CUB_NAMESPACE_BEGIN
 
 //! @rst
-//! DeviceSelect provides device-wide, parallel operations for compacting
-//! selected items from sequences of data items residing within
-//! device-accessible memory.
+//! DeviceSelect provides device-wide, parallel operations for compacting selected items from sequences of data items
+//! residing within device-accessible memory. It is similar to DevicePartition, except that non-selected items are
+//! discarded, whereas DevicePartition retains them.
 //!
 //! Overview
 //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -1049,9 +1049,9 @@ struct DeviceSelect
             typename NumItemsT,
             typename EqualityOpT>
   CUB_RUNTIME_FUNCTION __forceinline__ static //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<EqualityOpT, cudaStream_t>::value, //
-      cudaError_t>::type
+    ::cuda::std::enable_if_t< //
+      !::cuda::std::is_convertible_v<EqualityOpT, cudaStream_t>, //
+      cudaError_t>
     UniqueByKey(
       void* d_temp_storage,
       size_t& temp_storage_bytes,

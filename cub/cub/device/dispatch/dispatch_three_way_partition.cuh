@@ -46,6 +46,8 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/std/__algorithm_>
+
 #include <iterator>
 
 #include <nv/target>
@@ -241,7 +243,7 @@ template <typename InputIteratorT,
           typename SelectSecondPartOp,
           typename OffsetT,
           typename PolicyHub = detail::three_way_partition::
-            policy_hub<cub::detail::value_t<InputIteratorT>, detail::three_way_partition::per_partition_offset_t>>
+            policy_hub<cub::detail::it_value_t<InputIteratorT>, detail::three_way_partition::per_partition_offset_t>>
 struct DispatchThreeWayPartitionIf
 {
   /*****************************************************************************
@@ -381,7 +383,7 @@ struct DispatchThreeWayPartitionIf
       }
 
       // Log three_way_partition_init_kernel configuration
-      int init_grid_size = CUB_MAX(1, ::cuda::ceil_div(current_num_tiles, INIT_KERNEL_THREADS));
+      int init_grid_size = _CUDA_VSTD::max(1, ::cuda::ceil_div(current_num_tiles, INIT_KERNEL_THREADS));
 
 #ifdef CUB_DEBUG_LOG
       _CubLog("Invoking three_way_partition_init_kernel<<<%d, %d, 0, %lld>>>()\n",

@@ -6,7 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: clang-7, clang-8
 
@@ -45,7 +44,7 @@ __host__ __device__ void test()
 
 int main(int, char**)
 {
-#ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#if _CCCL_HAS_LONG_DOUBLE()
   {
     using V = cuda::std::variant<int, void*, const void*, long double>;
     test<V, 0, int>();
@@ -54,7 +53,7 @@ int main(int, char**)
 
     test<V, 3, long double>();
   }
-#endif // _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 #if !defined(TEST_VARIANT_HAS_NO_REFERENCES)
   {
     using V = cuda::std::variant<int, int&, const int&, int&&, long double>;

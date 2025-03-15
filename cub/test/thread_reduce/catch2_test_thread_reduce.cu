@@ -64,7 +64,7 @@ __global__ void thread_reduce_kernel(const T* __restrict__ d_in, T* __restrict__
   auto d_in_aligned = static_cast<T*>(__builtin_assume_aligned(d_in, (sizeof(T) < 4) ? 4 : sizeof(T)));
   ::memcpy(thread_data, d_in_aligned, sizeof(thread_data));
 #else
-#  pragma unroll
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < NUM_ITEMS; ++i)
   {
     thread_data[i] = d_in[i];
@@ -77,7 +77,8 @@ template <int NUM_ITEMS, typename T, typename ReduceOperator>
 __global__ void thread_reduce_kernel_array(const T* d_in, T* d_out, ReduceOperator reduce_operator)
 {
   ::cuda::std::array<T, NUM_ITEMS> thread_data;
-#pragma unroll
+
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < NUM_ITEMS; ++i)
   {
     thread_data[i] = d_in[i];
@@ -89,7 +90,8 @@ template <int NUM_ITEMS, typename T, typename ReduceOperator>
 __global__ void thread_reduce_kernel_span(const T* d_in, T* d_out, ReduceOperator reduce_operator)
 {
   T thread_data[NUM_ITEMS];
-#pragma unroll
+
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < NUM_ITEMS; ++i)
   {
     thread_data[i] = d_in[i];
@@ -104,7 +106,8 @@ template <int NUM_ITEMS, typename T, typename ReduceOperator>
 __global__ void thread_reduce_kernel_mdspan(const T* d_in, T* d_out, ReduceOperator reduce_operator)
 {
   T thread_data[NUM_ITEMS];
-#  pragma unroll
+
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < NUM_ITEMS; ++i)
   {
     thread_data[i] = d_in[i];
@@ -279,14 +282,14 @@ using cub_operator_fp_list =
  **********************************************************************************************************************/
 
 _CCCL_TEMPLATE(typename T)
-_CCCL_REQUIRES((::cuda::std::is_floating_point<T>::value))
+_CCCL_REQUIRES((::cuda::std::is_floating_point_v<T>) )
 void verify_results(const T& expected_data, const T& test_results)
 {
   REQUIRE_THAT(expected_data, Catch::Matchers::WithinRel(test_results, T{0.05}));
 }
 
 _CCCL_TEMPLATE(typename T)
-_CCCL_REQUIRES((!::cuda::std::is_floating_point<T>::value))
+_CCCL_REQUIRES((!::cuda::std::is_floating_point_v<T>) )
 void verify_results(const T& expected_data, const T& test_results)
 {
   REQUIRE(expected_data == test_results);
@@ -399,7 +402,7 @@ C2H_TEST("ThreadReduce Integral Type Tests", "[reduce][thread]", integral_type_l
   CAPTURE(c2h::type_name<value_t>(), max_size, c2h::type_name<decltype(reduce_op)>());
   c2h::device_vector<value_t> d_in(max_size);
   c2h::device_vector<value_t> d_out(1);
-  c2h::gen(C2H_SEED(num_seeds), d_in, std::numeric_limits<value_t>::min());
+  c2h::gen(C2H_SEED(num_seeds), d_in, ::cuda::std::numeric_limits<value_t>::min());
   c2h::host_vector<value_t> h_in = d_in;
   for (int num_items = min_size; num_items <= max_size; ++num_items)
   {
@@ -418,7 +421,7 @@ C2H_TEST("ThreadReduce Floating-Point Type Tests", "[reduce][thread]", fp_type_l
   CAPTURE(c2h::type_name<value_t>(), max_size, c2h::type_name<decltype(reduce_op)>());
   c2h::device_vector<value_t> d_in(max_size);
   c2h::device_vector<value_t> d_out(1);
-  c2h::gen(C2H_SEED(num_seeds), d_in, std::numeric_limits<value_t>::min());
+  c2h::gen(C2H_SEED(num_seeds), d_in, ::cuda::std::numeric_limits<value_t>::min());
   c2h::host_vector<value_t> h_in = d_in;
   for (int num_items = min_size; num_items <= max_size; ++num_items)
   {

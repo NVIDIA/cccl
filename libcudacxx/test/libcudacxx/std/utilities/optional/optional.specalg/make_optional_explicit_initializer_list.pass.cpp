@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // <cuda/std/optional>
 
 // template <class T, class U, class... Args>
@@ -41,7 +40,7 @@ __host__ __device__ constexpr bool test()
 {
   {
     auto opt = cuda::std::make_optional<TestT>({42, 2, 3});
-    ASSERT_SAME_TYPE(decltype(opt), cuda::std::optional<TestT>);
+    static_assert(cuda::std::is_same_v<decltype(opt), cuda::std::optional<TestT>>);
     assert(opt->x == 42);
     assert(opt->size == 3);
     assert(opt->ptr == nullptr);
@@ -49,7 +48,7 @@ __host__ __device__ constexpr bool test()
   {
     int i    = 42;
     auto opt = cuda::std::make_optional<TestT>({42, 2, 3}, &i);
-    ASSERT_SAME_TYPE(decltype(opt), cuda::std::optional<TestT>);
+    static_assert(cuda::std::is_same_v<decltype(opt), cuda::std::optional<TestT>>);
     assert(opt->x == 42);
     assert(opt->size == 3);
     assert(opt->ptr == &i);
@@ -61,10 +60,8 @@ int main(int, char**)
 {
   test();
 #if defined(_CCCL_BUILTIN_ADDRESSOF)
-#  if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
   static_assert(test(), "");
-#  endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-#endif
+#endif // _CCCL_BUILTIN_ADDRESSOF
   /*
   {
     auto opt = cuda::std::make_optional<cuda::std::string>({'1', '2', '3'});

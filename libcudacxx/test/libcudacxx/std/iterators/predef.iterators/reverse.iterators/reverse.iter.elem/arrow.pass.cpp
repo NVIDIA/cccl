@@ -97,22 +97,22 @@ class C
   int data_;
 
 public:
-  __host__ __device__ TEST_CONSTEXPR C()
+  __host__ __device__ constexpr C()
       : data_(1)
   {}
 
-  __host__ __device__ TEST_CONSTEXPR int get() const
+  __host__ __device__ constexpr int get() const
   {
     return data_;
   }
 
-  __host__ __device__ friend TEST_CONSTEXPR bool operator==(const C& x, const C& y)
+  __host__ __device__ friend constexpr bool operator==(const C& x, const C& y)
   {
     return x.data_ == y.data_;
   }
 };
 
-STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL C gC[1];
+TEST_GLOBAL_VARIABLE constexpr C gC[1];
 
 int main(int, char**)
 {
@@ -150,15 +150,14 @@ int main(int, char**)
   }
 #endif // defined(_LIBCUDACXX_HAS_LIST)
 
-#if TEST_STD_VER > 2011 && !defined(TEST_COMPILER_NVRTC) && !defined(TEST_COMPILER_CUDACC_BELOW_11_3) \
-  && defined(_CCCL_BUILTIN_ADDRESSOF)
+#if !TEST_COMPILER(NVRTC) && defined(_CCCL_BUILTIN_ADDRESSOF)
   {
     typedef cuda::std::reverse_iterator<const C*> RI;
     constexpr RI it1 = cuda::std::make_reverse_iterator(gC + 1);
 
     static_assert(it1->get() == gC[0].get(), "");
   }
-#endif // TEST_STD_VER > 2011 && !TEST_COMPILER_NVRTC && !TEST_COMPILER_CUDACC_BELOW_11_3 && _CCCL_BUILTIN_ADDRESSOF
+#endif // !TEST_COMPILER(NVRTC) && _CCCL_BUILTIN_ADDRESSOF
   {
     unused(gC);
   }

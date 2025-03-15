@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // <cuda/std/optional>
 
 // constexpr optional(nullopt_t) noexcept;
@@ -23,70 +22,49 @@ using cuda::std::nullopt;
 using cuda::std::nullopt_t;
 using cuda::std::optional;
 
-template <class Opt>
-__host__ __device__ constexpr bool test_constexpr()
+template <class T>
+__host__ __device__ constexpr void test()
 {
-  static_assert(cuda::std::is_nothrow_constructible<Opt, nullopt_t&>::value, "");
-  static_assert(cuda::std::is_trivially_destructible<Opt>::value, "");
-  static_assert(cuda::std::is_trivially_destructible<typename Opt::value_type>::value, "");
-
-  Opt opt(nullopt);
-  assert(static_cast<bool>(opt) == false);
-
-  struct test_constexpr_ctor : public Opt
+  static_assert(cuda::std::is_nothrow_constructible<optional<T>, nullopt_t&>::value, "");
+  static_assert(
+    cuda::std::is_trivially_destructible<optional<T>>::value == cuda::std::is_trivially_destructible<T>::value, "");
   {
-    __host__ __device__ constexpr test_constexpr_ctor() {}
-  };
+    optional<T> opt{nullopt};
+    assert(static_cast<bool>(opt) == false);
+  }
+  {
+    const optional<T> opt{nullopt};
+    assert(static_cast<bool>(opt) == false);
+  }
+}
+
+__host__ __device__ constexpr bool test()
+{
+  test<int>();
+  test<int*>();
+  test<const int>();
+
+  test<ImplicitTypes::NoCtors>();
+  test<NonTrivialTypes::NoCtors>();
+  test<NonConstexprTypes::NoCtors>();
+
+#ifdef CCCL_ENABLE_OPTIONAL_REF
+  test<int&>();
+#endif // CCCL_ENABLE_OPTIONAL_REF
 
   return true;
 }
 
-template <class Opt>
-__host__ __device__ void test()
-{
-  static_assert(cuda::std::is_nothrow_constructible<Opt, nullopt_t&>::value, "");
-  static_assert(!cuda::std::is_trivially_destructible<Opt>::value, "");
-  static_assert(!cuda::std::is_trivially_destructible<typename Opt::value_type>::value, "");
-  {
-    Opt opt(nullopt);
-    assert(static_cast<bool>(opt) == false);
-  }
-  {
-    const Opt opt(nullopt);
-    assert(static_cast<bool>(opt) == false);
-  }
-  struct test_constexpr_ctor : public Opt
-  {
-    __host__ __device__ constexpr test_constexpr_ctor() {}
-  };
-}
-
 __global__ void test_global_visibility()
 {
-  cuda::std::optional<int> meow = cuda::std::nullopt;
+  cuda::std::optional<int> meow{cuda::std::nullopt};
   unused(meow);
 }
 
 int main(int, char**)
 {
-  test_constexpr<optional<int>>();
-  test_constexpr<optional<int*>>();
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER >= 2017
-  test_constexpr<optional<ImplicitTypes::NoCtors>>();
-  test_constexpr<optional<NonTrivialTypes::NoCtors>>();
-  test_constexpr<optional<NonConstexprTypes::NoCtors>>();
-#endif
-  test<optional<NonLiteralTypes::NoCtors>>();
-
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-  static_assert(test_constexpr<optional<int>>(), "");
-  static_assert(test_constexpr<optional<int*>>(), "");
-#  if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER >= 2017
-  static_assert(test_constexpr<optional<ImplicitTypes::NoCtors>>(), "");
-  static_assert(test_constexpr<optional<NonTrivialTypes::NoCtors>>(), "");
-  static_assert(test_constexpr<optional<NonConstexprTypes::NoCtors>>(), "");
-#  endif
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+  test();
+  static_assert(test(), "");
 
   return 0;
 }

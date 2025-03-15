@@ -61,10 +61,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, __tuple_types<_Types...>
   using type _CCCL_NODEBUG_ALIAS = __type_index_c<_Ip, _Types...>;
 };
 
-#if _CCCL_STD_VER > 2011
 template <size_t _Ip, class... _Tp>
 using tuple_element_t _CCCL_NODEBUG_ALIAS = typename tuple_element<_Ip, _Tp...>::type;
-#endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

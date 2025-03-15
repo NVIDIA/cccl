@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <cuda::std::size_t N>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_any()
+__host__ __device__ constexpr void test_any()
 {
   cuda::std::bitset<N> v;
   v.reset();
@@ -32,7 +32,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_any()
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test_any<0>();
   test_any<1>();
@@ -50,9 +50,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2014 && (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 7)
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014 && !gcc-6
 
   return 0;
 }

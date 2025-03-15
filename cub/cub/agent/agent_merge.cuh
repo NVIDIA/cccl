@@ -61,8 +61,8 @@ struct agent_t
   using policy = Policy;
 
   // key and value type are taken from the first input sequence (consistent with old Thrust behavior)
-  using key_type  = typename ::cuda::std::iterator_traits<KeysIt1>::value_type;
-  using item_type = typename ::cuda::std::iterator_traits<ItemsIt1>::value_type;
+  using key_type  = it_value_t<KeysIt1>;
+  using item_type = it_value_t<ItemsIt1>;
 
   using keys_load_it1  = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeysIt1>::type;
   using keys_load_it2  = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeysIt2>::type;
@@ -172,8 +172,8 @@ struct agent_t
     }
 
     // if items are provided, merge them
-    static constexpr bool have_items = !::cuda::std::is_same<item_type, NullType>::value;
-    _CCCL_IF_CONSTEXPR (have_items)
+    static constexpr bool have_items = !::cuda::std::is_same_v<item_type, NullType>;
+    if constexpr (have_items)
     {
       item_type items_loc[items_per_thread];
       merge_sort::gmem_to_reg<threads_per_block, IsFullTile>(
@@ -184,7 +184,7 @@ struct agent_t
       __syncthreads();
 
       // gather items from shared mem
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < items_per_thread; ++i)
       {
         items_loc[i] = storage.items_shared[indices[i]];

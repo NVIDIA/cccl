@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11
 
 // <chrono>
 // class month_weekday;
@@ -31,7 +30,7 @@ int main(int, char**)
   using weekday         = cuda::std::chrono::weekday;
   using weekday_indexed = cuda::std::chrono::weekday_indexed;
 
-  ASSERT_NOEXCEPT(month_weekday{month{1}, weekday_indexed{weekday{}, 1}});
+  static_assert(noexcept(month_weekday{month{1}, weekday_indexed{weekday{}, 1}}));
 
   constexpr month_weekday md0{month{}, weekday_indexed{}};
   static_assert(md0.month() == month{}, "");

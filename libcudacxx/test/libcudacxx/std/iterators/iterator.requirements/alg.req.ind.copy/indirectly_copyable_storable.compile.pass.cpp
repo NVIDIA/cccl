@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class In, class Out>
 // concept indirectly_copyable_storable;
 
@@ -190,8 +188,9 @@ struct DeletedCopyCtor
   DeletedCopyCtor& operator=(DeletedCopyCtor const&) = default;
 };
 
-#if TEST_STD_VER > 2017 || !defined(TEST_COMPILER_MSVC) //  multiple versions of a defaulted special member functions
-                                                        //  are not allowed
+#if TEST_STD_VER > 2017 || !TEST_COMPILER(MSVC) //  multiple versions of a defaulted
+                                                //  special member functions
+//  are not allowed
 struct DeletedNonconstCopyCtor
 {
   DeletedNonconstCopyCtor(DeletedNonconstCopyCtor const&)            = default;
@@ -199,7 +198,7 @@ struct DeletedNonconstCopyCtor
   DeletedNonconstCopyCtor& operator=(DeletedNonconstCopyCtor const&) = default;
 };
 static_assert(!cuda::std::indirectly_copyable_storable<DeletedNonconstCopyCtor*, DeletedNonconstCopyCtor*>, "");
-#endif // TEST_STD_VER > 2017 || !defined(TEST_COMPILER_MSVC)
+#endif // TEST_STD_VER > 2017 || !TEST_COMPILER(MSVC)
 
 struct DeletedMoveCtor
 {
@@ -207,8 +206,9 @@ struct DeletedMoveCtor
   DeletedMoveCtor& operator=(DeletedMoveCtor&&) = default;
 };
 
-#if TEST_STD_VER > 2017 || !defined(TEST_COMPILER_MSVC) //  multiple versions of a defaulted special member functions
-                                                        //  are not allowed
+#if TEST_STD_VER > 2017 || !TEST_COMPILER(MSVC) //  multiple versions of a defaulted
+                                                //  special member functions
+//  are not allowed
 struct DeletedConstMoveCtor
 {
   DeletedConstMoveCtor(DeletedConstMoveCtor&&)            = default;
@@ -216,7 +216,7 @@ struct DeletedConstMoveCtor
   DeletedConstMoveCtor& operator=(DeletedConstMoveCtor&&) = default;
 };
 static_assert(!cuda::std::indirectly_copyable_storable<DeletedConstMoveCtor*, DeletedConstMoveCtor*>, "");
-#endif // TEST_STD_VER > 2017 || !defined(TEST_COMPILER_MSVC)
+#endif // TEST_STD_VER > 2017 || !TEST_COMPILER(MSVC)
 
 struct DeletedCopyAssignment
 {
@@ -224,8 +224,9 @@ struct DeletedCopyAssignment
   DeletedCopyAssignment& operator=(DeletedCopyAssignment const&) = delete;
 };
 
-#if TEST_STD_VER > 2017 || !defined(TEST_COMPILER_MSVC) //  multiple versions of a defaulted special member functions
-                                                        //  are not allowed
+#if TEST_STD_VER > 2017 || !TEST_COMPILER(MSVC) //  multiple versions of a defaulted
+                                                //  special member functions
+//  are not allowed
 struct DeletedNonconstCopyAssignment
 {
   DeletedNonconstCopyAssignment(DeletedNonconstCopyAssignment const&)            = default;
@@ -234,7 +235,7 @@ struct DeletedNonconstCopyAssignment
 };
 static_assert(!cuda::std::indirectly_copyable_storable<DeletedNonconstCopyAssignment*, DeletedNonconstCopyAssignment*>,
               "");
-#endif // TEST_STD_VER > 2017 || !defined(TEST_COMPILER_MSVC)
+#endif // TEST_STD_VER > 2017 || !TEST_COMPILER(MSVC)
 
 struct DeletedMoveAssignment
 {

@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
 // UNSUPPORTED: msvc-19.16
 
 // template<class D>
@@ -313,9 +312,9 @@ __host__ __device__ constexpr bool testEmpty()
 
   BoolConvertibleComparison boolConv{};
   // old GCC seems to fall over the noexcept clauses here
-#if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 9) && (!defined(TEST_COMPILER_MSVC))
-  ASSERT_NOT_NOEXCEPT(boolConv.empty());
-#endif
+#if !TEST_COMPILER(GCC, <, 9) && !TEST_COMPILER(MSVC)
+  static_assert(!noexcept(boolConv.empty()));
+#endif // !TEST_COMPILER(GCC, <, 9) && !TEST_COMPILER(MSVC)
 
   assert(!boolConv.empty());
   assert(!static_cast<const BoolConvertibleComparison&>(boolConv).empty());

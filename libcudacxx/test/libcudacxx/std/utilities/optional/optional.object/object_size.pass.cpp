@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // <cuda/std/optional>
 
 #include <cuda/std/optional>
@@ -22,5 +21,7 @@ int main(int, char**)
   static_assert(sizeof(optional<short>) == 2 * sizeof(short), "");
   static_assert(sizeof(optional<int>) == 2 * sizeof(int), "");
   static_assert(sizeof(optional<long long>) == 2 * sizeof(long long), "");
+
+  static_assert(sizeof(optional<int&>) == sizeof(void*), "");
   return 0;
 }

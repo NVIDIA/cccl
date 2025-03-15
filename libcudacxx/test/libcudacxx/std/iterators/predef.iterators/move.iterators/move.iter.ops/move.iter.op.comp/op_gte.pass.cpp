@@ -31,13 +31,13 @@ struct CustomIt
   using pointer           = int*;
   using iterator_category = cuda::std::input_iterator_tag;
   CustomIt()              = default;
-  __host__ __device__ TEST_CONSTEXPR_CXX14 explicit CustomIt(int* p)
+  __host__ __device__ constexpr explicit CustomIt(int* p)
       : p_(p)
   {}
   __host__ __device__ int& operator*() const;
   __host__ __device__ CustomIt& operator++();
   __host__ __device__ CustomIt operator++(int);
-  __host__ __device__ TEST_CONSTEXPR_CXX14 friend bool operator>=(const CustomIt& a, const CustomIt& b)
+  __host__ __device__ constexpr friend bool operator>=(const CustomIt& a, const CustomIt& b)
   {
     return a.p_ >= b.p_;
   }
@@ -45,35 +45,31 @@ struct CustomIt
 };
 
 template <class It>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_one()
+__host__ __device__ constexpr void test_one()
 {
   int a[]                               = {3, 1, 4};
   const cuda::std::move_iterator<It> r1 = cuda::std::move_iterator<It>(It(a));
   const cuda::std::move_iterator<It> r2 = cuda::std::move_iterator<It>(It(a + 2));
-  ASSERT_SAME_TYPE(decltype(r1 >= r2), bool);
+  static_assert(cuda::std::is_same_v<decltype(r1 >= r2), bool>);
   assert((r1 >= r1));
   assert(!(r1 >= r2));
   assert((r2 >= r1));
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test_one<CustomIt>();
   test_one<int*>();
   test_one<const int*>();
   test_one<random_access_iterator<int*>>();
-#if TEST_STD_VER > 2014
   test_one<contiguous_iterator<int*>>();
-#endif
   return true;
 }
 
 int main(int, char**)
 {
   assert(test());
-#if TEST_STD_VER > 2011
   static_assert(test(), "");
-#endif
 
   return 0;
 }

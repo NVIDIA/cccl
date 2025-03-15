@@ -26,18 +26,18 @@
 #include "test_macros.h"
 
 template <typename T>
-TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
+constexpr __host__ __device__ void test()
 {
   // &
   {
     cuda::std::complex<T> c{T{27}, T{28}};
 
     auto& r = cuda::std::get<0>(c);
-    ASSERT_SAME_TYPE(T&, decltype(cuda::std::get<0>(c)));
+    static_assert(cuda::std::is_same_v<T&, decltype(cuda::std::get<0>(c))>);
     static_assert(noexcept(cuda::std::get<0>(c)), "");
     assert(r == T{27});
     auto& i = cuda::std::get<1>(c);
-    ASSERT_SAME_TYPE(T&, decltype(cuda::std::get<1>(c)));
+    static_assert(cuda::std::is_same_v<T&, decltype(cuda::std::get<1>(c))>);
     static_assert(noexcept(cuda::std::get<1>(c)), "");
     assert(i == T{28});
   }
@@ -46,7 +46,7 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
     cuda::std::complex<T> c{T{27}, T{28}};
 
     auto&& r = cuda::std::get<0>(cuda::std::move(c));
-    ASSERT_SAME_TYPE(T&&, decltype(cuda::std::get<0>(cuda::std::move(c))));
+    static_assert(cuda::std::is_same_v<T&&, decltype(cuda::std::get<0>(cuda::std::move(c)))>);
     static_assert(noexcept(cuda::std::get<0>(cuda::std::move(c))), "");
     assert(r == T{27});
   }
@@ -54,7 +54,7 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
     cuda::std::complex<T> c{T{27}, T{28}};
 
     auto&& i = cuda::std::get<1>(cuda::std::move(c));
-    ASSERT_SAME_TYPE(T&&, decltype(cuda::std::get<1>(cuda::std::move(c))));
+    static_assert(cuda::std::is_same_v<T&&, decltype(cuda::std::get<1>(cuda::std::move(c)))>);
     static_assert(noexcept(cuda::std::get<1>(cuda::std::move(c))), "");
     assert(i == T{28});
   }
@@ -63,11 +63,11 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
     const cuda::std::complex<T> c{T{27}, T{28}};
 
     const auto& r = cuda::std::get<0>(c);
-    ASSERT_SAME_TYPE(const T&, decltype(cuda::std::get<0>(c)));
+    static_assert(cuda::std::is_same_v<const T&, decltype(cuda::std::get<0>(c))>);
     static_assert(noexcept(cuda::std::get<0>(c)), "");
     assert(r == T{27});
     const auto& i = cuda::std::get<1>(c);
-    ASSERT_SAME_TYPE(const T&, decltype(cuda::std::get<1>(c)));
+    static_assert(cuda::std::is_same_v<const T&, decltype(cuda::std::get<1>(c))>);
     static_assert(noexcept(cuda::std::get<1>(c)), "");
     assert(i == T{28});
   }
@@ -76,7 +76,7 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
     const cuda::std::complex<T> c{T{27}, T{28}};
 
     const auto&& r = cuda::std::get<0>(cuda::std::move(c));
-    ASSERT_SAME_TYPE(const T&&, decltype(cuda::std::get<0>(cuda::std::move(c))));
+    static_assert(cuda::std::is_same_v<const T&&, decltype(cuda::std::get<0>(cuda::std::move(c)))>);
     static_assert(noexcept(cuda::std::get<0>(cuda::std::move(c))), "");
     assert(r == T{27});
   }
@@ -84,35 +84,33 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
     const cuda::std::complex<T> c{T{27}, T{28}};
 
     const auto&& i = cuda::std::get<1>(cuda::std::move(c));
-    ASSERT_SAME_TYPE(const T&&, decltype(cuda::std::get<1>(cuda::std::move(c))));
+    static_assert(cuda::std::is_same_v<const T&&, decltype(cuda::std::get<1>(cuda::std::move(c)))>);
     static_assert(noexcept(cuda::std::get<1>(cuda::std::move(c))), "");
     assert(i == T{28});
   }
 
-#if TEST_STD_VER >= 2017
   // `get()` allows using `complex` with structured bindings
   {
     cuda::std::complex<T> c{T{27}, T{28}};
 
     auto [r, i]{c};
-    ASSERT_SAME_TYPE(T, decltype(r));
+    static_assert(cuda::std::is_same_v<T, decltype(r)>);
     assert(r == T{27});
-    ASSERT_SAME_TYPE(T, decltype(i));
+    static_assert(cuda::std::is_same_v<T, decltype(i)>);
     assert(i == T{28});
   }
   {
     cuda::std::complex<T> c{T{27}, T{28}};
 
     auto& [r, i]{c};
-    ASSERT_SAME_TYPE(T, decltype(r));
+    static_assert(cuda::std::is_same_v<T, decltype(r)>);
     assert(r == T{27});
-    ASSERT_SAME_TYPE(T, decltype(i));
+    static_assert(cuda::std::is_same_v<T, decltype(i)>);
     assert(i == T{28});
   }
-#endif // TEST_STD_VER >= 2017
 
   // TODO: Re-enable this test when we have cuda::ranges::views
-  // #if TEST_STD_VER >= 2017
+  //
   //   // `get()` allows using `complex` with ranges
   //   {
   //     cuda::std::complex<T> arr[]{{T{27}, T{28}}, {T{82}, T{94}}};
@@ -127,34 +125,33 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
   //     assert(cuda::std::ranges::size(imags) == 2);
   //     assert(cuda::std::ranges::equal(imags, std::array<T, 2>{28, 94}));
   //   }
-  // #endif // TEST_STD_VER >= 2017
+  //
 }
 
 __host__ __device__ bool test()
 {
   test<float>();
   test<double>();
-
-  // CUDA treats long double as double
-  // test<long double>();
-
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _CCCL_HAS_LONG_DOUBLE()
+  test<long double>();
+#endif // _CCCL_HAS_LONG_DOUBLE()
+#if _LIBCUDACXX_HAS_NVFP16()
   test<__half>();
-#endif
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16>();
-#endif
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
   return true;
 }
 
-TEST_CONSTEXPR_CXX14 __host__ __device__ bool test_constexpr()
+constexpr __host__ __device__ bool test_constexpr()
 {
   test<float>();
   test<double>();
-
-  // CUDA treats long double as double
-  // test<long double>();
+#if _CCCL_HAS_LONG_DOUBLE()
+  test<long double>();
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
   return true;
 }
@@ -162,10 +159,7 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ bool test_constexpr()
 int main(int, char**)
 {
   test();
-
-#if TEST_STD_VER >= 2014
   static_assert(test_constexpr(), "");
-#endif
 
   return 0;
 }

@@ -142,11 +142,7 @@ private:
 
   static _LIBCUDACXX_HIDE_FROM_ABI constexpr uint64_t __init(ptrdiff_t __count) noexcept
   {
-#if _CCCL_STD_VER >= 2014
-    // This debug assert is not supported in C++11 due to resulting in a
-    // multi-statement constexpr function.
     _CCCL_ASSERT(__count >= 0, "Count must be non-negative.");
-#endif // _CCCL_STD_VER >= 2014
     return (((1u << 31) - __count) << 32) | ((1u << 31) - __count);
   }
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool __try_wait_phase(uint64_t __phase) const
@@ -166,8 +162,7 @@ private:
 public:
   _CCCL_HIDE_FROM_ABI __barrier_base() = default;
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14
-  __barrier_base(ptrdiff_t __count, __empty_completion = __empty_completion())
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __barrier_base(ptrdiff_t __count, __empty_completion = __empty_completion())
       : __phase_arrived_expected(__init(__count))
   {
     _CCCL_ASSERT(__count >= 0, "");

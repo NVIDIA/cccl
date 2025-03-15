@@ -12,7 +12,6 @@
 
 // template <class... Tuples> tuple<CTypes...> tuple_cat(Tuples&&... tpls);
 
-// UNSUPPORTED: c++98, c++03
 // UNSUPPORTED: nvhpc-23.1
 
 #include <cuda/std/tuple>
@@ -54,7 +53,6 @@ int main(int, char**)
     assert(cuda::std::get<0>(t) == 1);
   }
 
-#if TEST_STD_VER > 2011
   {
     constexpr cuda::std::tuple<> t = cuda::std::tuple_cat();
     unused(t); // Prevent unused warning
@@ -86,7 +84,6 @@ int main(int, char**)
     static_assert(cuda::std::get<0>(t) == 1, "");
     static_assert(cuda::std::get<1>(t) == 1, "");
   }
-#endif
   {
     cuda::std::tuple<int, MoveOnly> t = cuda::std::tuple_cat(cuda::std::tuple<int, MoveOnly>(1, 2));
     assert(cuda::std::get<0>(t) == 1);
@@ -242,27 +239,27 @@ int main(int, char**)
 
     auto r = cuda::std::tuple_cat(cuda::std::move(t), cuda::std::move(ct), t2, ct2);
 
-    ASSERT_SAME_TYPE(
-      decltype(r),
-      cuda::std::tuple<
-        int,
-        const int,
-        int&,
-        const int&,
-        int&&,
-        int,
-        const int,
-        int&,
-        const int&,
-        int&&,
-        int,
-        const int,
-        int&,
-        const int&,
-        int,
-        const int,
-        int&,
-        const int&>);
+    static_assert(
+      cuda::std::is_same_v<
+        decltype(r),
+        cuda::std::tuple<int,
+                         const int,
+                         int&,
+                         const int&,
+                         int&&,
+                         int,
+                         const int,
+                         int&,
+                         const int&,
+                         int&&,
+                         int,
+                         const int,
+                         int&,
+                         const int&,
+                         int,
+                         const int,
+                         int&,
+                         const int&>>);
     unused(r);
   }
   return 0;

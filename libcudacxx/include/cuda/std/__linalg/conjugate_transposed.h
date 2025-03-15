@@ -29,12 +29,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/version>
-
-#if defined(__cccl_lib_mdspan) && _CCCL_STD_VER >= 2017
-
-#  include <cuda/std/__linalg/conjugated.h>
-#  include <cuda/std/__linalg/transposed.h>
+#include <cuda/std/__linalg/conjugated.h>
+#include <cuda/std/__linalg/transposed.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -52,5 +48,4 @@ conjugate_transposed(mdspan<_ElementType, _Extents, _Layout, _Accessor> __a)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // defined(__cccl_lib_mdspan) && _CCCL_STD_VER >= 2017
 #endif // _LIBCUDACXX___LINALG_CONJUGATE_TRANSPOSED_HPP

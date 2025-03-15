@@ -50,7 +50,7 @@ namespace adjacent_difference
 template <typename InputIteratorT, bool MayAlias>
 struct policy_hub
 {
-  using ValueT = typename std::iterator_traits<InputIteratorT>::value_type;
+  using ValueT = it_value_t<InputIteratorT>;
 
   struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
   {
@@ -66,10 +66,5 @@ struct policy_hub
 };
 } // namespace adjacent_difference
 } // namespace detail
-
-template <typename InputIteratorT, bool MayAlias = true>
-using DeviceAdjacentDifferencePolicy CCCL_DEPRECATED_BECAUSE(
-  "This class is considered an implementation detail and it "
-  "will be removed.") = detail::adjacent_difference::policy_hub<InputIteratorT, MayAlias>;
 
 CUB_NAMESPACE_END

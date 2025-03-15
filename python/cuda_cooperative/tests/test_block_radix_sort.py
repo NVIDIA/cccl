@@ -2,9 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from functools import reduce
+from operator import mul
+
 import numba
 import pytest
-from helpers import NUMBA_TYPES_TO_NP, random_int
+from helpers import NUMBA_TYPES_TO_NP, random_int, row_major_tid
 from numba import cuda, types
 from pynvjitlink import patch
 
@@ -15,19 +18,26 @@ numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 
 @pytest.mark.parametrize("T", [types.int8, types.int16, types.uint32, types.uint64])
-@pytest.mark.parametrize("threads_in_block", [32, 128, 256, 1024])
+@pytest.mark.parametrize("threads_per_block", [32, 128, 256, 1024, (4, 8), (2, 4, 8)])
 @pytest.mark.parametrize("items_per_thread", [1, 3])
-def test_block_radix_sort_descending(T, threads_in_block, items_per_thread):
+def test_block_radix_sort_descending(T, threads_per_block, items_per_thread):
     begin_bit = numba.int32(0)
     end_bit = numba.int32(T.bitwidth)
+
+    num_threads_per_block = (
+        threads_per_block
+        if type(threads_per_block) is int
+        else reduce(mul, threads_per_block)
+    )
+
     block_radix_sort = cudax.block.radix_sort_keys_descending(
-        dtype=T, threads_in_block=threads_in_block, items_per_thread=items_per_thread
+        dtype=T, threads_per_block=threads_per_block, items_per_thread=items_per_thread
     )
     temp_storage_bytes = block_radix_sort.temp_storage_bytes
 
     @cuda.jit(link=block_radix_sort.files)
     def kernel(input, output):
-        tid = cuda.threadIdx.x
+        tid = row_major_tid()
         temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
         thread_data = cuda.local.array(shape=items_per_thread, dtype=dtype)
         for i in range(items_per_thread):
@@ -37,11 +47,11 @@ def test_block_radix_sort_descending(T, threads_in_block, items_per_thread):
             output[tid * items_per_thread + i] = thread_data[i]
 
     dtype = NUMBA_TYPES_TO_NP[T]
-    items_per_tile = threads_in_block * items_per_thread
+    items_per_tile = num_threads_per_block * items_per_thread
     input = random_int(items_per_tile, dtype)
     d_input = cuda.to_device(input)
     d_output = cuda.device_array(items_per_tile, dtype=dtype)
-    kernel[1, threads_in_block](d_input, d_output)
+    kernel[1, threads_per_block](d_input, d_output)
     cuda.synchronize()
 
     output = d_output.copy_to_host()
@@ -57,19 +67,23 @@ def test_block_radix_sort_descending(T, threads_in_block, items_per_thread):
 
 
 @pytest.mark.parametrize("T", [types.int8, types.int16, types.uint32, types.uint64])
-@pytest.mark.parametrize("threads_in_block", [32, 128, 256, 1024])
+@pytest.mark.parametrize("threads_per_block", [32, 128, 256, 1024, (4, 8), (2, 4, 8)])
 @pytest.mark.parametrize("items_per_thread", [1, 3])
-def test_block_radix_sort(T, threads_in_block, items_per_thread):
-    items_per_tile = threads_in_block * items_per_thread
+def test_block_radix_sort(T, threads_per_block, items_per_thread):
+    items_per_tile = (
+        threads_per_block * items_per_thread
+        if type(threads_per_block) is int
+        else reduce(mul, threads_per_block) * items_per_thread
+    )
 
     block_radix_sort = cudax.block.radix_sort_keys(
-        dtype=T, threads_in_block=threads_in_block, items_per_thread=items_per_thread
+        dtype=T, threads_per_block=threads_per_block, items_per_thread=items_per_thread
     )
     temp_storage_bytes = block_radix_sort.temp_storage_bytes
 
     @cuda.jit(link=block_radix_sort.files)
     def kernel(input, output):
-        tid = cuda.threadIdx.x
+        tid = row_major_tid()
         temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
         thread_data = cuda.local.array(shape=items_per_thread, dtype=dtype)
         for i in range(items_per_thread):
@@ -82,7 +96,7 @@ def test_block_radix_sort(T, threads_in_block, items_per_thread):
     input = random_int(items_per_tile, dtype)
     d_input = cuda.to_device(input)
     d_output = cuda.device_array(items_per_tile, dtype=dtype)
-    kernel[1, threads_in_block](d_input, d_output)
+    kernel[1, threads_per_block](d_input, d_output)
     cuda.synchronize()
 
     output = d_output.copy_to_host()
@@ -99,12 +113,12 @@ def test_block_radix_sort(T, threads_in_block, items_per_thread):
 
 def test_block_radix_sort_overloads_work():
     T = numba.int32
-    threads_in_block = 128
+    threads_per_block = 128
     items_per_thread = 3
-    items_per_tile = threads_in_block * items_per_thread
+    items_per_tile = threads_per_block * items_per_thread
 
     block_radix_sort = cudax.block.radix_sort_keys(
-        dtype=T, threads_in_block=threads_in_block, items_per_thread=items_per_thread
+        dtype=T, threads_per_block=threads_per_block, items_per_thread=items_per_thread
     )
     temp_storage_bytes = block_radix_sort.temp_storage_bytes
 
@@ -123,7 +137,7 @@ def test_block_radix_sort_overloads_work():
     input = random_int(items_per_tile, dtype)
     d_input = cuda.to_device(input)
     d_output = cuda.device_array(items_per_tile, dtype=dtype)
-    kernel[1, threads_in_block](d_input, d_output)
+    kernel[1, threads_per_block](d_input, d_output)
     cuda.synchronize()
 
     output = d_output.copy_to_host()
@@ -134,20 +148,20 @@ def test_block_radix_sort_overloads_work():
 
 def test_block_radix_sort_mangling():
     return  # TODO Return to linker issue
-    threads_in_block = 128
+    threads_per_block = 128
     items_per_thread = 3
-    items_per_tile = threads_in_block * items_per_thread
+    items_per_tile = threads_per_block * items_per_thread
 
     int_block_radix_sort = cudax.block.radix_sort_keys(
         dtype=numba.int32,
-        threads_in_block=threads_in_block,
+        threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,
     )
     int_temp_storage_bytes = int_block_radix_sort.temp_storage_bytes
 
     double_block_radix_sort = cudax.block.radix_sort_keys(
         dtype=numba.float64,
-        threads_in_block=threads_in_block,
+        threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,
     )
     double_temp_storage_bytes = double_block_radix_sort.temp_storage_bytes
@@ -182,7 +196,7 @@ def test_block_radix_sort_mangling():
     double_input = random_int(items_per_tile, "float64")
     d_double_input = cuda.to_device(double_input)
     d_double_output = cuda.device_array(items_per_tile, dtype="float64")
-    kernel[1, threads_in_block](
+    kernel[1, threads_per_block](
         d_int_input, d_int_output, d_double_input, d_double_output
     )
     cuda.synchronize()

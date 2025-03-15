@@ -27,18 +27,15 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_floating_point
-    : _CUDA_VSTD::bool_constant<_CUDA_VSTD::is_floating_point<_CUDA_VSTD::remove_cv_t<_Tp>>::value
-                                || _CUDA_VSTD::__is_extended_floating_point<_CUDA_VSTD::remove_cv_t<_Tp>>::value>
-{};
-
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
+//! Tells whether a type is a floating point type. Users are allowed to specialize this template for their own types.
 template <class _Tp>
 _CCCL_INLINE_VAR constexpr bool is_floating_point_v =
   _CUDA_VSTD::is_floating_point_v<_CUDA_VSTD::remove_cv_t<_Tp>>
   || _CUDA_VSTD::__is_extended_floating_point_v<_CUDA_VSTD::remove_cv_t<_Tp>>;
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
+
+// we define the trait as alias, so users cannot specialize it (they should specialize the variable template instead)
+template <class _Tp>
+using is_floating_point = _CUDA_VSTD::bool_constant<is_floating_point_v<_Tp>>;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 

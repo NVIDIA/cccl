@@ -18,9 +18,9 @@
 
 #include "test_macros.h"
 
-#if defined(TEST_COMPILER_GCC) && ((TEST_GCC_VER >= 900 && TEST_GCC_VER < 903) || TEST_GCC_VER < 804)
+#if TEST_COMPILER(GCC, <, 10)
 #  define OMIT_BITFIELD_ENUMS 1
-#endif
+#endif // TEST_COMPILER(GCC, <, 10)
 
 enum class e_default
 {
@@ -65,14 +65,14 @@ struct WithBitfieldEnums
 };
 #endif // !OMIT_BITFIELD_ENUMS
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
-  ASSERT_NOEXCEPT(cuda::std::to_underlying(e_default::a));
-  ASSERT_SAME_TYPE(int, decltype(cuda::std::to_underlying(e_default::a)));
-  ASSERT_SAME_TYPE(unsigned short, decltype(cuda::std::to_underlying(e_ushort::d)));
-  ASSERT_SAME_TYPE(long long, decltype(cuda::std::to_underlying(e_longlong::low)));
-  ASSERT_SAME_TYPE(int, decltype(cuda::std::to_underlying(enum_min)));
-  ASSERT_SAME_TYPE(int, decltype(cuda::std::to_underlying(enum_max)));
+  static_assert(noexcept(cuda::std::to_underlying(e_default::a)));
+  static_assert(cuda::std::is_same_v<int, decltype(cuda::std::to_underlying(e_default::a))>);
+  static_assert(cuda::std::is_same_v<unsigned short, decltype(cuda::std::to_underlying(e_ushort::d))>);
+  static_assert(cuda::std::is_same_v<long long, decltype(cuda::std::to_underlying(e_longlong::low))>);
+  static_assert(cuda::std::is_same_v<int, decltype(cuda::std::to_underlying(enum_min))>);
+  static_assert(cuda::std::is_same_v<int, decltype(cuda::std::to_underlying(enum_max))>);
 
   assert(0 == cuda::std::to_underlying(e_default::a));
   assert(1 == cuda::std::to_underlying(e_default::b));
@@ -108,10 +108,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

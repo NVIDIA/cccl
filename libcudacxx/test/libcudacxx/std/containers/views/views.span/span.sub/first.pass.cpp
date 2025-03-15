@@ -6,7 +6,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++03, c++11
 
 // <span>
 
@@ -25,14 +24,14 @@
 template <typename Span, size_t Count>
 __host__ __device__ constexpr bool testConstexprSpan(Span sp)
 {
-  ASSERT_NOEXCEPT(sp.template first<Count>());
-  ASSERT_NOEXCEPT(sp.first(Count));
+  static_assert(noexcept(sp.template first<Count>()));
+  static_assert(noexcept(sp.first(Count)));
   auto s1  = sp.template first<Count>();
   auto s2  = sp.first(Count);
   using S1 = decltype(s1);
   using S2 = decltype(s2);
-  ASSERT_SAME_TYPE(typename Span::value_type, typename S1::value_type);
-  ASSERT_SAME_TYPE(typename Span::value_type, typename S2::value_type);
+  static_assert(cuda::std::is_same_v<typename Span::value_type, typename S1::value_type>);
+  static_assert(cuda::std::is_same_v<typename Span::value_type, typename S2::value_type>);
   static_assert(S1::extent == Count, "");
   static_assert(S2::extent == cuda::std::dynamic_extent, "");
   return s1.data() == s2.data() && s1.size() == s2.size();
@@ -41,22 +40,22 @@ __host__ __device__ constexpr bool testConstexprSpan(Span sp)
 template <typename Span, size_t Count>
 __host__ __device__ void testRuntimeSpan(Span sp)
 {
-  ASSERT_NOEXCEPT(sp.template first<Count>());
-  ASSERT_NOEXCEPT(sp.first(Count));
+  static_assert(noexcept(sp.template first<Count>()));
+  static_assert(noexcept(sp.first(Count)));
   auto s1  = sp.template first<Count>();
   auto s2  = sp.first(Count);
   using S1 = decltype(s1);
   using S2 = decltype(s2);
-  ASSERT_SAME_TYPE(typename Span::value_type, typename S1::value_type);
-  ASSERT_SAME_TYPE(typename Span::value_type, typename S2::value_type);
+  static_assert(cuda::std::is_same_v<typename Span::value_type, typename S1::value_type>);
+  static_assert(cuda::std::is_same_v<typename Span::value_type, typename S2::value_type>);
   static_assert(S1::extent == Count, "");
   static_assert(S2::extent == cuda::std::dynamic_extent, "");
   assert(s1.data() == s2.data());
   assert(s1.size() == s2.size());
 }
 
-STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int carr1[] = {1, 2, 3, 4};
-__device__ int arr[]                                     = {5, 6, 7};
+TEST_GLOBAL_VARIABLE constexpr int carr1[] = {1, 2, 3, 4};
+__device__ int arr[]                       = {5, 6, 7};
 
 int main(int, char**)
 {

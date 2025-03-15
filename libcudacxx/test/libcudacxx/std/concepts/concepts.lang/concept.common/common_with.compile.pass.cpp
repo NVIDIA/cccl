@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // template<class From, class To>
 // concept common_with;
 
@@ -68,7 +66,7 @@ static_assert(cuda::std::common_with<void, void>, "");
 static_assert(CheckCommonWith<int, int>(), "");
 static_assert(CheckCommonWith<int, long>(), "");
 static_assert(CheckCommonWith<int, unsigned char>(), "");
-#ifndef TEST_HAS_NO_INT128_T
+#if _CCCL_HAS_INT128()
 static_assert(CheckCommonWith<int, __int128_t>(), "");
 #endif
 static_assert(CheckCommonWith<int, double>(), "");
@@ -92,9 +90,9 @@ static_assert(CheckCommonWith<const volatile int*, volatile int*>(), "");
 static_assert(CheckCommonWith<const volatile int*, const volatile int*>(), "");
 
 static_assert(CheckCommonWith<int (*)(), int (*)()>(), "");
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#if !TEST_COMPILER(NVHPC)
 static_assert(CheckCommonWith<int (*)(), int (*)() noexcept>(), "");
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // !TEST_COMPILER(NVHPC)
 #ifdef INVESTIGATE_COMPILER_BUG
 static_assert(CheckCommonWith<int (&)(), int (&)()>(), "");
 #endif // INVESTIGATE_COMPILER_BUG
@@ -102,30 +100,30 @@ static_assert(CheckCommonWith<int (&)(), int (&)()>(), "");
 static_assert(CheckCommonWith<int (&)(), int (&)() noexcept>(), "");
 #endif // TEST_STD_VER > 2017
 static_assert(CheckCommonWith<int (&)(), int (*)()>(), "");
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#if !TEST_COMPILER(NVHPC)
 static_assert(CheckCommonWith<int (&)(), int (*)() noexcept>(), "");
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // !TEST_COMPILER(NVHPC)
 
 struct S
 {};
 static_assert(CheckCommonWith<int S::*, int S::*>(), "");
 static_assert(CheckCommonWith<int S::*, const int S::*>(), "");
 static_assert(CheckCommonWith<int (S::*)(), int (S::*)()>(), "");
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#if !TEST_COMPILER(NVHPC)
 static_assert(CheckCommonWith<int (S::*)(), int (S::*)() noexcept>(), "");
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // !TEST_COMPILER(NVHPC)
 static_assert(CheckCommonWith<int (S::*)() const, int (S::*)() const>(), "");
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#if !TEST_COMPILER(NVHPC)
 static_assert(CheckCommonWith<int (S::*)() const, int (S::*)() const noexcept>(), "");
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // !TEST_COMPILER(NVHPC)
 static_assert(CheckCommonWith<int (S::*)() volatile, int (S::*)() volatile>(), "");
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#if !TEST_COMPILER(NVHPC)
 static_assert(CheckCommonWith<int (S::*)() volatile, int (S::*)() volatile noexcept>(), "");
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // !TEST_COMPILER(NVHPC)
 static_assert(CheckCommonWith<int (S::*)() const volatile, int (S::*)() const volatile>(), "");
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#if !TEST_COMPILER(NVHPC)
 static_assert(CheckCommonWith<int (S::*)() const volatile, int (S::*)() const volatile noexcept>(), "");
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // !TEST_COMPILER(NVHPC)
 
 // nonsense
 static_assert(!CheckCommonWith<double, float*>(), "");
@@ -857,10 +855,10 @@ struct common_type<const volatile int&, const volatile T7&>
 static_assert(HasValidCommonType<T7, int>(), "");
 static_assert(HasValidCommonType<const T7&, const int&>(), "");
 static_assert(HasCommonReference<const T7&, const int&>(), "");
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // Unspecified MSVC bug
+#if !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017 // Unspecified MSVC bug
 static_assert(
   !HasCommonReference<cuda::std::common_type_t<T7, int>&, cuda::std::common_reference_t<const T7&, const int&>>(), "");
-#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017
+#endif // !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017
 static_assert(!CheckCommonWith<T7, int>(), "");
 
 struct CommonWithInt

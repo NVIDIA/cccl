@@ -83,7 +83,7 @@ struct AgentSegmentedRadixSort
   static constexpr int BLOCK_THREADS    = SegmentedPolicyT::BLOCK_THREADS;
   static constexpr int RADIX_BITS       = SegmentedPolicyT::RADIX_BITS;
   static constexpr int RADIX_DIGITS     = 1 << RADIX_BITS;
-  static constexpr int KEYS_ONLY        = ::cuda::std::is_same<ValueT, NullType>::value;
+  static constexpr int KEYS_ONLY        = ::cuda::std::is_same_v<ValueT, NullType>;
 
   using traits           = radix::traits_t<KeyT>;
   using bit_ordered_type = typename traits::bit_ordered_type;
@@ -208,8 +208,8 @@ struct AgentSegmentedRadixSort
 
     if (IS_DESCENDING)
     {
-// Reverse bin counts
-#pragma unroll
+      // Reverse bin counts
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
       {
         int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
@@ -222,7 +222,7 @@ struct AgentSegmentedRadixSort
 
       __syncthreads();
 
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
       {
         int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
@@ -242,8 +242,8 @@ struct AgentSegmentedRadixSort
 
     if (IS_DESCENDING)
     {
-// Reverse bin offsets
-#pragma unroll
+      // Reverse bin offsets
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
       {
         int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
@@ -256,7 +256,7 @@ struct AgentSegmentedRadixSort
 
       __syncthreads();
 
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
       {
         int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;

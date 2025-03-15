@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
-
 // reverse_iterator
 
 #include <cuda/std/iterator>
@@ -64,12 +62,12 @@ static_assert(
 static_assert(
   cuda::std::totally_ordered_with<cuda::std::reverse_iterator<int*>, cuda::std::reverse_iterator<const int*>>);
 static_assert(!cuda::std::totally_ordered_with<cuda::std::reverse_iterator<int*>, cuda::std::reverse_iterator<char*>>);
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 static_assert(
   cuda::std::three_way_comparable_with<cuda::std::reverse_iterator<int*>, cuda::std::reverse_iterator<const int*>>);
 static_assert(
   !cuda::std::three_way_comparable_with<cuda::std::reverse_iterator<int*>, cuda::std::reverse_iterator<char*>>);
-#endif // TEST_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 int main(int, char**)
 {

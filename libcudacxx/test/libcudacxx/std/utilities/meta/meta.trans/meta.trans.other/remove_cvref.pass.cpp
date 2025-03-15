@@ -6,8 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11
-
 // type_traits
 
 // remove_cvref
@@ -19,8 +17,8 @@
 template <class T, class U>
 __host__ __device__ void test_remove_cvref()
 {
-  ASSERT_SAME_TYPE(U, typename cuda::std::remove_cvref<T>::type);
-  ASSERT_SAME_TYPE(U, cuda::std::remove_cvref_t<T>);
+  static_assert(cuda::std::is_same_v<U, typename cuda::std::remove_cvref<T>::type>);
+  static_assert(cuda::std::is_same_v<U, cuda::std::remove_cvref_t<T>>);
 }
 
 int main(int, char**)

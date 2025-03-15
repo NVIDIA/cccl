@@ -11,8 +11,6 @@
 
 // struct contiguous_iterator_tag : public random_access_iterator_tag {};
 
-// UNSUPPORTED: c++03, c++11
-
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 

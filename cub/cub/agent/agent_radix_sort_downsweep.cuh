@@ -53,9 +53,7 @@
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_type.cuh>
 
-#include <type_traits>
-
-#include <stdint.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -178,7 +176,7 @@ struct AgentRadixSortDownsweep
     TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD,
 
     RADIX_DIGITS      = 1 << RADIX_BITS,
-    KEYS_ONLY         = ::cuda::std::is_same<ValueT, NullType>::value,
+    KEYS_ONLY         = ::cuda::std::is_same_v<ValueT, NullType>,
     LOAD_WARP_STRIPED = RANK_ALGORITHM == RADIX_RANK_MATCH || RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ANY
                      || RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR,
   };
@@ -276,7 +274,7 @@ struct AgentRadixSortDownsweep
     int (&ranks)[ITEMS_PER_THREAD],
     OffsetT valid_items)
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       temp_storage.keys_and_offsets.exchange_keys[ranks[ITEM]] = twiddled_keys[ITEM];
@@ -284,7 +282,7 @@ struct AgentRadixSortDownsweep
 
     __syncthreads();
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       bit_ordered_type key       = temp_storage.keys_and_offsets.exchange_keys[threadIdx.x + (ITEM * BLOCK_THREADS)];
@@ -314,7 +312,7 @@ struct AgentRadixSortDownsweep
 
     ValueExchangeT& exchange_values = temp_storage.exchange_values.Alias();
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       exchange_values[ranks[ITEM]] = values[ITEM];
@@ -322,7 +320,7 @@ struct AgentRadixSortDownsweep
 
     __syncthreads();
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       ValueT value = exchange_values[threadIdx.x + (ITEM * BLOCK_THREADS)];
@@ -516,7 +514,7 @@ struct AgentRadixSortDownsweep
     LoadKeys(
       keys, block_offset, valid_items, default_key, bool_constant_v<FULL_TILE>, bool_constant_v<LOAD_WARP_STRIPED>);
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int KEY = 0; KEY < ITEMS_PER_THREAD; KEY++)
     {
       keys[KEY] = bit_ordered_conversion::to_bit_ordered(decomposer, keys[KEY]);
@@ -528,8 +526,8 @@ struct AgentRadixSortDownsweep
 
     __syncthreads();
 
-// Share exclusive digit prefix
-#pragma unroll
+    // Share exclusive digit prefix
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
     {
       int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
@@ -545,7 +543,7 @@ struct AgentRadixSortDownsweep
     // Get inclusive digit prefix
     int inclusive_digit_prefix[BINS_TRACKED_PER_THREAD];
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
     {
       int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
@@ -570,8 +568,8 @@ struct AgentRadixSortDownsweep
 
     __syncthreads();
 
-// Update global scatter base offsets for each digit
-#pragma unroll
+    // Update global scatter base offsets for each digit
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
     {
       int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
@@ -663,7 +661,7 @@ struct AgentRadixSortDownsweep
       , short_circuit(1)
       , decomposer(decomposer)
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
     {
       this->bin_offset[track] = bin_offset[track];
@@ -703,7 +701,7 @@ struct AgentRadixSortDownsweep
       , short_circuit(1)
       , decomposer(decomposer)
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
     {
       int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
@@ -743,8 +741,8 @@ struct AgentRadixSortDownsweep
     }
     else
     {
-// Process full tiles of tile_items
-#pragma unroll 1
+      // Process full tiles of tile_items
+      _CCCL_PRAGMA_NOUNROLL()
       while (block_end - block_offset >= TILE_ITEMS)
       {
         ProcessTile<true>(block_offset);

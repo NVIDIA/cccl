@@ -79,7 +79,7 @@ void TestUniqueCopyDispatchImplicit()
 DECLARE_UNITTEST(TestUniqueCopyDispatchImplicit);
 
 template <typename ForwardIterator>
-typename thrust::iterator_traits<ForwardIterator>::difference_type
+typename ::cuda::std::iterator_traits<ForwardIterator>::difference_type
 unique_count(my_system& system, ForwardIterator, ForwardIterator)
 {
   system.validate_dispatch();
@@ -98,7 +98,8 @@ void TestUniqueCountDispatchExplicit()
 DECLARE_UNITTEST(TestUniqueCountDispatchExplicit);
 
 template <typename ForwardIterator>
-typename thrust::iterator_traits<ForwardIterator>::difference_type unique_count(my_tag, ForwardIterator, ForwardIterator)
+typename ::cuda::std::iterator_traits<ForwardIterator>::difference_type
+unique_count(my_tag, ForwardIterator, ForwardIterator)
 {
   return 13;
 }

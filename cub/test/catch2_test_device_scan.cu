@@ -143,7 +143,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     REQUIRE(expected_result == out_result);
 
     // Run test in-place
-    _CCCL_IF_CONSTEXPR (std::is_same<input_t, output_t>::value)
+    if constexpr (std::is_same<input_t, output_t>::value)
     {
       device_inclusive_sum(d_in_it, d_in_it, num_items);
 
@@ -171,7 +171,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     REQUIRE(expected_result == out_result);
 
     // Run test in-place
-    _CCCL_IF_CONSTEXPR (std::is_same<input_t, output_t>::value)
+    if constexpr (std::is_same<input_t, output_t>::value)
     {
       device_exclusive_sum(d_in_it, d_in_it, num_items);
 
@@ -190,7 +190,11 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     c2h::host_vector<input_t> host_items(in_items);
     c2h::host_vector<output_t> expected_result(num_items);
     compute_inclusive_scan_reference(
-      host_items.cbegin(), host_items.cend(), expected_result.begin(), op_t{}, cub::NumericTraits<accum_t>::Max());
+      host_items.cbegin(),
+      host_items.cend(),
+      expected_result.begin(),
+      op_t{},
+      ::cuda::std::numeric_limits<accum_t>::max());
 
     // Run test
     c2h::device_vector<output_t> out_result(num_items);
@@ -201,7 +205,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     REQUIRE(expected_result == out_result);
 
     // Run test in-place
-    _CCCL_IF_CONSTEXPR (std::is_same<input_t, output_t>::value)
+    if constexpr (std::is_same<input_t, output_t>::value)
     {
       device_inclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), op_t{}, num_items);
 
@@ -236,7 +240,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     REQUIRE(expected_result == out_result);
 
     // Run test in-place
-    _CCCL_IF_CONSTEXPR (std::is_same<input_t, output_t>::value)
+    if constexpr (std::is_same<input_t, output_t>::value)
     {
       device_inclusive_scan_with_init(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, init_value, num_items);
 
@@ -262,14 +266,14 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     // Run test
     c2h::device_vector<output_t> out_result(num_items);
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    using init_t  = cub::detail::value_t<decltype(unwrap_it(d_out_it))>;
+    using init_t  = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
     device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_out_it), scan_op, init_t{}, num_items);
 
     // Verify result
     REQUIRE(expected_result == out_result);
 
     // Run test in-place
-    _CCCL_IF_CONSTEXPR (std::is_same<input_t, output_t>::value)
+    if constexpr (std::is_same<input_t, output_t>::value)
     {
       device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, init_t{}, num_items);
 
@@ -297,7 +301,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     // Run test
     c2h::device_vector<output_t> out_result(num_items);
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    using init_t  = cub::detail::value_t<decltype(unwrap_it(d_out_it))>;
+    using init_t  = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
     c2h::device_vector<init_t> d_initial_value(1);
     d_initial_value[0]     = static_cast<init_t>(*unwrap_it(&init_value));
     auto future_init_value = cub::FutureValue<init_t>(thrust::raw_pointer_cast(d_initial_value.data()));
@@ -307,7 +311,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     REQUIRE(expected_result == out_result);
 
     // Run test in-place
-    _CCCL_IF_CONSTEXPR (std::is_same<input_t, output_t>::value)
+    if constexpr (std::is_same<input_t, output_t>::value)
     {
       device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, future_init_value, num_items);
 

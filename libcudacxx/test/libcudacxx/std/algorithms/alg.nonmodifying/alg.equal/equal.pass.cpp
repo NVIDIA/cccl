@@ -26,16 +26,14 @@
 #include "test_macros.h"
 #include "type_algorithms.h"
 
-#ifdef TEST_COMPILER_MSVC
-#  pragma warning(disable : 4244) // conversion possible loss of data
-#  pragma warning(disable : 4310) // cast truncates constant value
-#endif // TEST_COMPILER_MSVC
+TEST_DIAG_SUPPRESS_MSVC(4244) // conversion possible loss of data
+TEST_DIAG_SUPPRESS_MSVC(4310) // cast truncates constant value
 
 template <class UnderlyingType, class Iter1>
 struct Test
 {
   template <class Iter2>
-  __host__ __device__ TEST_CONSTEXPR_CXX14 void operator()()
+  __host__ __device__ constexpr void operator()()
   {
     UnderlyingType a[]  = {0, 1, 2, 3, 4, 5};
     const unsigned s    = sizeof(a) / sizeof(a[0]);
@@ -44,7 +42,6 @@ struct Test
     assert(cuda::std::equal(Iter1(a), Iter1(a + s), Iter2(a)));
     assert(!cuda::std::equal(Iter1(a), Iter1(a + s), Iter2(b)));
 
-#if TEST_STD_VER >= 2014
     assert(cuda::std::equal(Iter1(a), Iter1(a + s), Iter2(a), cuda::std::equal_to<>()));
     assert(!cuda::std::equal(Iter1(a), Iter1(a + s), Iter2(b), cuda::std::equal_to<>()));
 
@@ -55,14 +52,13 @@ struct Test
     assert(cuda::std::equal(Iter1(a), Iter1(a + s), Iter2(a), Iter2(a + s), cuda::std::equal_to<>()));
     assert(!cuda::std::equal(Iter1(a), Iter1(a + s), Iter2(a), Iter2(a + s - 1), cuda::std::equal_to<>()));
     assert(!cuda::std::equal(Iter1(a), Iter1(a + s), Iter2(b), Iter2(b + s), cuda::std::equal_to<>()));
-#endif
   }
 };
 
 struct TestNarrowingEqualTo
 {
   template <class UnderlyingType>
-  __host__ __device__ TEST_CONSTEXPR_CXX14 void operator()()
+  __host__ __device__ constexpr void operator()()
   {
     UnderlyingType a[] = {
       UnderlyingType(0x1000),
@@ -78,9 +74,7 @@ struct TestNarrowingEqualTo
       UnderlyingType(0x1604)};
 
     assert(cuda::std::equal(a, a + 5, b, cuda::std::equal_to<char>()));
-#if TEST_STD_VER >= 2014
     assert(cuda::std::equal(a, a + 5, b, b + 5, cuda::std::equal_to<char>()));
-#endif
   }
 };
 
@@ -88,7 +82,7 @@ template <class UnderlyingType, class TypeList>
 struct TestIter2
 {
   template <class Iter1>
-  __host__ __device__ TEST_CONSTEXPR_CXX14 void operator()()
+  __host__ __device__ constexpr void operator()()
   {
     types::for_each(TypeList(), Test<UnderlyingType, Iter1>());
   }
@@ -97,25 +91,24 @@ struct TestIter2
 struct AddressCompare
 {
   int i = 0;
-  __host__ __device__ TEST_CONSTEXPR_CXX14 AddressCompare(int) {}
+  __host__ __device__ constexpr AddressCompare(int) {}
 
   __host__ __device__ operator char()
   {
     return static_cast<char>(i);
   }
 
-  __host__ __device__ friend TEST_CONSTEXPR_CXX14 bool operator==(const AddressCompare& lhs, const AddressCompare& rhs)
+  __host__ __device__ friend constexpr bool operator==(const AddressCompare& lhs, const AddressCompare& rhs)
   {
     return &lhs == &rhs;
   }
 
-  __host__ __device__ friend TEST_CONSTEXPR_CXX14 bool operator!=(const AddressCompare& lhs, const AddressCompare& rhs)
+  __host__ __device__ friend constexpr bool operator!=(const AddressCompare& lhs, const AddressCompare& rhs)
   {
     return &lhs != &rhs;
   }
 };
 
-#if TEST_STD_VER >= 2014
 class trivially_equality_comparable
 {
 public:
@@ -131,9 +124,7 @@ private:
   int i_;
 };
 
-#endif // TEST_STD_VER >= 2014
-
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   types::for_each(types::cpp17_input_iterator_list<int*>(), TestIter2<int, types::cpp17_input_iterator_list<int*>>());
   types::for_each(types::cpp17_input_iterator_list<char*>(),
@@ -143,11 +134,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 
   types::for_each(types::integral_types(), TestNarrowingEqualTo());
 
-#if TEST_STD_VER >= 2014
   types::for_each(
     types::cpp17_input_iterator_list<trivially_equality_comparable*>{},
     TestIter2<trivially_equality_comparable, types::cpp17_input_iterator_list<trivially_equality_comparable*>>{});
-#endif // TEST_STD_VER >= 2014
 
   return true;
 }
@@ -160,9 +149,7 @@ struct Derived : virtual Base
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014
 
   types::for_each(types::as_pointers<types::cv_qualified_versions<int>>(),
                   TestIter2<int, types::as_pointers<types::cv_qualified_versions<int>>>());
@@ -175,9 +162,7 @@ int main(int, char**)
     Base* b[]    = {&d, nullptr};
 
     assert(cuda::std::equal(a, a + 2, b));
-#if TEST_STD_VER >= 2014
     assert(cuda::std::equal(a, a + 2, b, b + 2));
-#endif // TEST_STD_VER >= 2014
   }
 
   return 0;

@@ -33,34 +33,34 @@
 
 struct NoDefault
 {
-  __host__ __device__ TEST_CONSTEXPR NoDefault(int) {}
+  __host__ __device__ constexpr NoDefault(int) {}
 };
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void check_noexcept(T& c)
+__host__ __device__ constexpr void check_noexcept(T& c)
 {
-  ASSERT_NOEXCEPT(c.begin());
-  ASSERT_NOEXCEPT(c.end());
-  ASSERT_NOEXCEPT(c.cbegin());
-  ASSERT_NOEXCEPT(c.cend());
-  ASSERT_NOEXCEPT(c.rbegin());
-  ASSERT_NOEXCEPT(c.rend());
-  ASSERT_NOEXCEPT(c.crbegin());
-  ASSERT_NOEXCEPT(c.crend());
+  static_assert(noexcept(c.begin()));
+  static_assert(noexcept(c.end()));
+  static_assert(noexcept(c.cbegin()));
+  static_assert(noexcept(c.cend()));
+  static_assert(noexcept(c.rbegin()));
+  static_assert(noexcept(c.rend()));
+  static_assert(noexcept(c.crbegin()));
+  static_assert(noexcept(c.crend()));
 
   const T& cc = c;
   unused(cc);
-  ASSERT_NOEXCEPT(cc.begin());
-  ASSERT_NOEXCEPT(cc.end());
-  ASSERT_NOEXCEPT(cc.rbegin());
-  ASSERT_NOEXCEPT(cc.rend());
+  static_assert(noexcept(cc.begin()));
+  static_assert(noexcept(cc.end()));
+  static_assert(noexcept(cc.rbegin()));
+  static_assert(noexcept(cc.rend()));
 }
 
 // gcc-7 and gcc-8 are really helpful here
 __host__ __device__
-#if TEST_STD_VER >= 2014 && (!defined(TEST_COMPILER_GCC) || __GNUC__ > 8)
-  TEST_CONSTEXPR_CXX14
-#endif // TEST_STD_VER >= 2014 && (!defined(TEST_COMPILER_GCC) || __GNUC__ > 8)
+#if !TEST_COMPILER(GCC, <, 8)
+  constexpr
+#endif // !TEST_COMPILER(GCC, <, 8)
   bool
   tests()
 {
@@ -78,12 +78,7 @@ __host__ __device__
     check_noexcept(array);
     typename C::iterator i       = array.begin();
     typename C::const_iterator j = array.cbegin();
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) // seems there are different nullptr's
     assert(i == j);
-#else // ^^^ !TEST_COMPILER_CUDACC_BELOW_11_3 ^^^ / vvv TEST_COMPILER_CUDACC_BELOW_11_3 vvv
-    assert(i == nullptr);
-    assert(j == nullptr);
-#endif // TEST_COMPILER_CUDACC_BELOW_11_3
   }
 
   {
@@ -136,7 +131,6 @@ __host__ __device__
     assert(ib == ie);
   }
 
-#if TEST_STD_VER >= 2014
   { // N3644 testing
     {
       typedef cuda::std::array<int, 5> C;
@@ -147,34 +141,23 @@ __host__ __device__
       assert(ii1 == ii4);
       static_assert(cuda::std::is_same_v<decltype(ii1), int*>, "");
       static_assert(cuda::std::is_same_v<decltype(cii), const int*>, "");
-#  if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) // old NVCC has issues comparing int* with const int*
       assert(ii1 == cii);
-#  else // ^^^ !TEST_COMPILER_CUDACC_BELOW_11_3 ^^^ / vvv TEST_COMPILER_CUDACC_BELOW_11_3 vvv
-      assert(ii1 == nullptr);
-      assert(cii == nullptr);
-#  endif // TEST_COMPILER_CUDACC_BELOW_11_3
 
       assert(!(ii1 != ii2));
-#  if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) // old NVCC has issues comparing int* with const int*
       assert(!(ii1 != cii));
-#  endif // TEST_COMPILER_CUDACC_BELOW_11_3
 
       C c = {};
       check_noexcept(c);
       assert(c.begin() == cuda::std::begin(c));
       assert(c.cbegin() == cuda::std::cbegin(c));
-#  if TEST_STD_VER < 2017
       if (!TEST_IS_CONSTANT_EVALUATED())
-#  endif // TEST_STD_VER < 2017
       {
         assert(c.rbegin() == cuda::std::rbegin(c));
         assert(c.crbegin() == cuda::std::crbegin(c));
       }
       assert(c.end() == cuda::std::end(c));
       assert(c.cend() == cuda::std::cend(c));
-#  if TEST_STD_VER < 2017
       if (!TEST_IS_CONSTANT_EVALUATED())
-#  endif // TEST_STD_VER < 2017
       {
         assert(c.rend() == cuda::std::rend(c));
         assert(c.crend() == cuda::std::crend(c));
@@ -182,9 +165,7 @@ __host__ __device__
 
       assert(cuda::std::begin(c) != cuda::std::end(c));
       assert(cuda::std::cbegin(c) != cuda::std::cend(c));
-#  if TEST_STD_VER < 2017
       if (!TEST_IS_CONSTANT_EVALUATED())
-#  endif // TEST_STD_VER < 2017
       {
         assert(cuda::std::rbegin(c) != cuda::std::rend(c));
         assert(cuda::std::crbegin(c) != cuda::std::crend(c));
@@ -200,16 +181,11 @@ __host__ __device__
 
       assert(!(ii1 != ii2));
 
-#  ifndef TEST_COMPILER_CUDACC_BELOW_11_3 // old NVCC has issues comparing int* with const int*
       assert((ii1 == cii));
       assert((cii == ii1));
       assert(!(ii1 != cii));
       assert(!(cii != ii1));
-#  else // ^^^ !TEST_COMPILER_CUDACC_BELOW_11_3 ^^^ / vvv TEST_COMPILER_CUDACC_BELOW_11_3 vvv
-      assert(ii1 == nullptr);
-      assert(cii == nullptr);
-#  endif // TEST_COMPILER_CUDACC_BELOW_11_3
-         // This breaks NVCCs constexpr evaluator
+      // This breaks NVCCs constexpr evaluator
       if (!TEST_IS_CONSTANT_EVALUATED())
       {
         assert(!(ii1 < cii));
@@ -228,18 +204,14 @@ __host__ __device__
       check_noexcept(c);
       assert(c.begin() == cuda::std::begin(c));
       assert(c.cbegin() == cuda::std::cbegin(c));
-#  if TEST_STD_VER < 2017
       if (!TEST_IS_CONSTANT_EVALUATED())
-#  endif // TEST_STD_VER < 2017
       {
         assert(c.rbegin() == cuda::std::rbegin(c));
         assert(c.crbegin() == cuda::std::crbegin(c));
       }
       assert(c.end() == cuda::std::end(c));
       assert(c.cend() == cuda::std::cend(c));
-#  if TEST_STD_VER < 2017
       if (!TEST_IS_CONSTANT_EVALUATED())
-#  endif // TEST_STD_VER < 2017
       {
         assert(c.rend() == cuda::std::rend(c));
         assert(c.crend() == cuda::std::crend(c));
@@ -247,25 +219,21 @@ __host__ __device__
 
       assert(cuda::std::begin(c) == cuda::std::end(c));
       assert(cuda::std::cbegin(c) == cuda::std::cend(c));
-#  if TEST_STD_VER < 2017
       if (!TEST_IS_CONSTANT_EVALUATED())
-#  endif // TEST_STD_VER < 2017
       {
         assert(cuda::std::rbegin(c) == cuda::std::rend(c));
         assert(cuda::std::crbegin(c) == cuda::std::crend(c));
       }
     }
   }
-#endif
   return true;
 }
 
 int main(int, char**)
 {
   tests();
-#if TEST_STD_VER >= 2014 && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) \
-  && (!defined(TEST_COMPILER_GCC) || __GNUC__ > 8)
+#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && !TEST_COMPILER(GCC, <, 8)
   static_assert(tests(), "");
-#endif // TEST_STD_VER >= 2014 && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+#endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED && !TEST_COMPILER(GCC, <, 8)
   return 0;
 }

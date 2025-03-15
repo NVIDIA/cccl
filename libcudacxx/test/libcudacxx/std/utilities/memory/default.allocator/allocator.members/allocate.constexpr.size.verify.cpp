@@ -13,7 +13,7 @@
 // allocator:
 // constexpr T* allocate(size_type n);
 
-// UNSUPPORTED: c++03, c++11, c++14, c++17
+// UNSUPPORTED: c++17
 
 #include <cuda/std/__memory_>
 #include <cuda/std/cstddef>
@@ -38,8 +38,8 @@ __host__ __device__ void f()
 {
   static_assert(test<double>()); // expected-error-re {{{{(static_assert|static assertion)}} expression is not an
                                  // integral constant expression}}
-  LIBCPP_STATIC_ASSERT(test<const double>()); // expected-error-re {{{{(static_assert|static assertion)}} expression is
-                                              // not an integral constant expression}}
+  static_assert(test<const double>()); // expected-error-re {{{{(static_assert|static assertion)}} expression is
+                                       // not an integral constant expression}}
 }
 
 int main(int, char**)

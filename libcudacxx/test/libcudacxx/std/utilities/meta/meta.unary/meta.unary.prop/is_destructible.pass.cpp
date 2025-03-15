@@ -10,14 +10,12 @@
 
 // is_destructible
 
-// Prevent warning when testing the Abstract test type.
-#if defined(__clang__)
-#  pragma clang diagnostic ignored "-Wdelete-non-virtual-dtor"
-#endif
-
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"
+
+// Prevent warning when testing the Abstract test type.
+TEST_DIAG_SUPPRESS_CLANG("-Wdelete-non-virtual-dtor")
 
 template <class T>
 __host__ __device__ void test_is_destructible()
@@ -26,12 +24,10 @@ __host__ __device__ void test_is_destructible()
   static_assert(cuda::std::is_destructible<const T>::value, "");
   static_assert(cuda::std::is_destructible<volatile T>::value, "");
   static_assert(cuda::std::is_destructible<const volatile T>::value, "");
-#if TEST_STD_VER > 2011
   static_assert(cuda::std::is_destructible_v<T>, "");
   static_assert(cuda::std::is_destructible_v<const T>, "");
   static_assert(cuda::std::is_destructible_v<volatile T>, "");
   static_assert(cuda::std::is_destructible_v<const volatile T>, "");
-#endif
 }
 
 template <class T>
@@ -41,12 +37,10 @@ __host__ __device__ void test_is_not_destructible()
   static_assert(!cuda::std::is_destructible<const T>::value, "");
   static_assert(!cuda::std::is_destructible<volatile T>::value, "");
   static_assert(!cuda::std::is_destructible<const volatile T>::value, "");
-#if TEST_STD_VER > 2011
   static_assert(!cuda::std::is_destructible_v<T>, "");
   static_assert(!cuda::std::is_destructible_v<const T>, "");
   static_assert(!cuda::std::is_destructible_v<volatile T>, "");
   static_assert(!cuda::std::is_destructible_v<const volatile T>, "");
-#endif
 }
 
 class Empty

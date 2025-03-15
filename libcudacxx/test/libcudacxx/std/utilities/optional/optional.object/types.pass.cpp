@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // <cuda/std/optional>
 
 // template <class T>
@@ -36,6 +35,8 @@ int main(int, char**)
   test<optional<const int>, const int>();
   test<optional<double>, double>();
   test<optional<const double>, const double>();
+
+  test<optional<int&>, int&>();
 
   return 0;
 }

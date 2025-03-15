@@ -20,7 +20,7 @@
 #include "test_macros.h"
 
 template <class Iter1, class Iter2>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   int ia[]          = {0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 0, 1, 2, 3, 0, 1, 2, 0, 1, 0};
   const unsigned sa = sizeof(ia) / sizeof(ia[0]);
@@ -56,7 +56,6 @@ int main(int, char**)
   test<random_access_iterator<const int*>, bidirectional_iterator<const int*>>();
   test<random_access_iterator<const int*>, random_access_iterator<const int*>>();
 
-#if TEST_STD_VER > 2011
   static_assert(test<forward_iterator<const int*>, forward_iterator<const int*>>(), "");
   static_assert(test<forward_iterator<const int*>, bidirectional_iterator<const int*>>(), "");
   static_assert(test<forward_iterator<const int*>, random_access_iterator<const int*>>(), "");
@@ -66,7 +65,6 @@ int main(int, char**)
   static_assert(test<random_access_iterator<const int*>, forward_iterator<const int*>>(), "");
   static_assert(test<random_access_iterator<const int*>, bidirectional_iterator<const int*>>(), "");
   static_assert(test<random_access_iterator<const int*>, random_access_iterator<const int*>>(), "");
-#endif
 
   return 0;
 }

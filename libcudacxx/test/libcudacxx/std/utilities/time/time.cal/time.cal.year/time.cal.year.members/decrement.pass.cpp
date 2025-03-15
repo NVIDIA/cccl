@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11
 
 // <chrono>
 // class year;
@@ -41,11 +40,11 @@ __host__ __device__ constexpr bool testConstexpr()
 int main(int, char**)
 {
   using year = cuda::std::chrono::year;
-  ASSERT_NOEXCEPT(--(cuda::std::declval<year&>()));
-  ASSERT_NOEXCEPT((cuda::std::declval<year&>())--);
+  static_assert(noexcept(--(cuda::std::declval<year&>())));
+  static_assert(noexcept((cuda::std::declval<year&>())--));
 
-  ASSERT_SAME_TYPE(year, decltype(cuda::std::declval<year&>()--));
-  ASSERT_SAME_TYPE(year&, decltype(--cuda::std::declval<year&>()));
+  static_assert(cuda::std::is_same_v<year, decltype(cuda::std::declval<year&>()--)>);
+  static_assert(cuda::std::is_same_v<year&, decltype(--cuda::std::declval<year&>())>);
 
   static_assert(testConstexpr<year>(), "");
 

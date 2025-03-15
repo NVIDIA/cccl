@@ -46,6 +46,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/type_traits>
+
 CUB_NAMESPACE_BEGIN
 
 //-----------------------------------------------------------------------------
@@ -150,9 +152,6 @@ struct iterate_thread_store<MAX, MAX>
   {}
 };
 } // namespace detail
-
-template <int COUNT, int MAX>
-using IterateThreadStore CCCL_DEPRECATED = detail::iterate_thread_store<COUNT, MAX>;
 
 /**
  * Define a uint4 (16B) ThreadStore specialization for the given Cache load modifier
@@ -305,7 +304,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStoreVolatilePtr(T* ptr, T val, ::cuda
 
   VolatileWord words[VOLATILE_MULTIPLE];
 
-#  pragma unroll
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < SHUFFLE_MULTIPLE; ++i)
   {
     reinterpret_cast<ShuffleWord*>(words)[i] = reinterpret_cast<ShuffleWord*>(&val)[i];
@@ -340,7 +339,7 @@ ThreadStore(T* ptr, T val, detail::constant_t<MODIFIER> /*modifier*/, ::cuda::st
 
   DeviceWord words[DEVICE_MULTIPLE];
 
-#  pragma unroll
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < SHUFFLE_MULTIPLE; ++i)
   {
     reinterpret_cast<ShuffleWord*>(words)[i] = reinterpret_cast<ShuffleWord*>(&val)[i];

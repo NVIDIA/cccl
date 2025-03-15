@@ -56,8 +56,6 @@
 
 #include <cuda/std/type_traits>
 
-#include <iterator>
-
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -227,10 +225,10 @@ struct AgentSelectIf
   using MemoryOrderedTileStateT = tile_state_with_memory_order<ScanTileStateT, memory_order>;
 
   // The input value type
-  using InputT = value_t<InputIteratorT>;
+  using InputT = it_value_t<InputIteratorT>;
 
   // The flag value type
-  using FlagT = value_t<FlagsInputIteratorT>;
+  using FlagT = it_value_t<FlagsInputIteratorT>;
 
   // Constants
   enum
@@ -246,8 +244,8 @@ struct AgentSelectIf
   static constexpr ::cuda::std::int32_t TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
   static constexpr bool TWO_PHASE_SCATTER                = (ITEMS_PER_THREAD > 1);
 
-  static constexpr bool has_select_op       = (!::cuda::std::is_same<SelectOpT, NullType>::value);
-  static constexpr bool has_flags_it        = (!::cuda::std::is_same<FlagT, NullType>::value);
+  static constexpr bool has_select_op       = (!::cuda::std::is_same_v<SelectOpT, NullType>);
+  static constexpr bool has_flags_it        = (!::cuda::std::is_same_v<FlagT, NullType>);
   static constexpr bool use_stencil_with_op = has_select_op && has_flags_it;
   static constexpr auto SELECT_METHOD =
     use_stencil_with_op ? USE_STENCIL_WITH_OP
@@ -259,7 +257,7 @@ struct AgentSelectIf
   // Wrap the native input pointer with CacheModifiedValuesInputIterator
   // or directly use the supplied input iterator type
   using WrappedInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer<InputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer_v<InputIteratorT>,
                      CacheModifiedInputIterator<AgentSelectIfPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
                      InputIteratorT>;
 
@@ -267,7 +265,7 @@ struct AgentSelectIf
   // Wrap the native input pointer with CacheModifiedValuesInputIterator
   // or directly use the supplied input iterator type
   using WrappedFlagsInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer<FlagsInputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer_v<FlagsInputIteratorT>,
                      CacheModifiedInputIterator<AgentSelectIfPolicyT::LOAD_MODIFIER, FlagT, OffsetT>,
                      FlagsInputIteratorT>;
 
@@ -398,7 +396,7 @@ struct AgentSelectIf
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
     constant_t<USE_SELECT_OP> /*select_method*/)
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       // Out-of-bounds items are selection_flags
@@ -428,7 +426,7 @@ struct AgentSelectIf
     if (IS_LAST_TILE)
     {
       // Initialize the out-of-bounds flags
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
         selection_flags[ITEM] = true;
@@ -442,7 +440,7 @@ struct AgentSelectIf
       BlockLoadFlags(temp_storage.load_flags).Load((d_flags_in + streaming_context.input_offset()) + tile_offset, flags);
     }
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       // Set selection_flags for out-of-bounds items
@@ -479,8 +477,8 @@ struct AgentSelectIf
       BlockLoadFlags(temp_storage.load_flags).Load((d_flags_in + streaming_context.input_offset()) + tile_offset, flags);
     }
 
-// Convert flag type to selection_flags type
-#pragma unroll
+    // Convert flag type to selection_flags type
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       selection_flags[ITEM] = static_cast<bool>(flags[ITEM]);
@@ -519,8 +517,8 @@ struct AgentSelectIf
         .FlagHeads(selection_flags, items, inequality_op, tile_predecessor);
     }
 
-// Set selection flags for out-of-bounds items
-#pragma unroll
+    // Set selection flags for out-of-bounds items
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       // Set selection_flags for out-of-bounds items
@@ -545,8 +543,8 @@ struct AgentSelectIf
     OffsetT (&selection_indices)[ITEMS_PER_THREAD],
     OffsetT num_selections)
   {
-// Scatter flagged items
-#pragma unroll
+    // Scatter flagged items
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       if (selection_flags[ITEM])
@@ -587,8 +585,8 @@ struct AgentSelectIf
   {
     __syncthreads();
 
-// Compact and scatter items
-#pragma unroll
+    // Compact and scatter items
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       int local_scatter_offset = selection_indices[ITEM] - num_selections_prefix;
@@ -685,8 +683,8 @@ struct AgentSelectIf
 
     int tile_num_rejections = num_tile_items - num_tile_selections;
 
-// Scatter items to shared memory (rejections first)
-#pragma unroll
+    // Scatter items to shared memory (rejections first)
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       int item_idx            = (threadIdx.x * ITEMS_PER_THREAD) + ITEM;
@@ -721,7 +719,7 @@ struct AgentSelectIf
     auto selected_out_it = partitioned_out_wrapper.selected_it + streaming_context.num_previously_selected();
     auto rejected_out_it = partitioned_out_wrapper.rejected_it + streaming_context.num_previously_rejected();
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       int item_idx      = (ITEM * BLOCK_THREADS) + threadIdx.x;
@@ -761,7 +759,7 @@ struct AgentSelectIf
   {
     using total_offset_t = typename StreamingContextT::total_num_items_t;
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       int item_idx      = (ITEM * BLOCK_THREADS) + threadIdx.x;

@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11, c++14, c++17
+// UNSUPPORTED: c++17
 // XFAIL: dylib-has-no-filesystem
 
 // File clock is unsupported in NVRTC
@@ -26,7 +26,7 @@
 int main(int, char**)
 {
   typedef cuda::std::chrono::file_clock C;
-  ASSERT_NOEXCEPT(C::now());
+  static_assert(noexcept(C::now()));
 
   C::time_point t1 = C::now();
   assert(t1.time_since_epoch().count() != 0);

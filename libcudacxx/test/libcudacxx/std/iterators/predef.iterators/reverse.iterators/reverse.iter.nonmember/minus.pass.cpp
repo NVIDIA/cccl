@@ -32,14 +32,14 @@ struct HasMinus<R1, R2, decltype((R1() - R2(), void()))> : cuda::std::true_type
 {};
 
 template <class It1, class It2>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(It1 l, It2 r, cuda::std::ptrdiff_t x)
+__host__ __device__ constexpr void test(It1 l, It2 r, cuda::std::ptrdiff_t x)
 {
   const cuda::std::reverse_iterator<It1> r1(l);
   const cuda::std::reverse_iterator<It2> r2(r);
   assert((r1 - r2) == x);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
+__host__ __device__ constexpr bool tests()
 {
   using PC  = const char*;
   char s[3] = {0};
@@ -68,8 +68,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
 int main(int, char**)
 {
   tests();
-#if TEST_STD_VER > 2011
   static_assert(tests(), "");
-#endif
   return 0;
 }

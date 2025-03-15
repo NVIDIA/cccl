@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
 // UNSUPPORTED: msvc-19.16
 
 // template <class _Tp>
@@ -21,8 +20,8 @@
 template <class T>
 __host__ __device__ constexpr void testType()
 {
-  ASSERT_SAME_TYPE(decltype(cuda::std::views::empty<T>), const cuda::std::ranges::empty_view<T>);
-  ASSERT_SAME_TYPE(decltype((cuda::std::views::empty<T>) ), const cuda::std::ranges::empty_view<T>&);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::views::empty<T>), const cuda::std::ranges::empty_view<T>>);
+  static_assert(cuda::std::is_same_v<decltype((cuda::std::views::empty<T>) ), const cuda::std::ranges::empty_view<T>&>);
 
   auto v = cuda::std::views::empty<T>;
   assert(cuda::std::ranges::empty(v));

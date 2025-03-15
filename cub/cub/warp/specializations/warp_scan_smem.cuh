@@ -247,7 +247,7 @@ struct WarpScanSmem
   template <typename ScanOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, ScanOp scan_op)
   {
-    InclusiveScan(input, inclusive_output, scan_op, bool_constant_v<detail::is_primitive<T>::value>);
+    InclusiveScan(input, inclusive_output, scan_op, bool_constant_v<is_primitive<T>::value>);
   }
 
   /**
@@ -433,10 +433,5 @@ struct WarpScanSmem
   }
 };
 } // namespace detail
-
-template <typename T, int LOGICAL_WARP_THREADS>
-using WarpScanSmem CCCL_DEPRECATED_BECAUSE(
-  "This class is considered an implementation detail and the public interface will be "
-  "removed.") = detail::WarpScanSmem<T, LOGICAL_WARP_THREADS>;
 
 CUB_NAMESPACE_END

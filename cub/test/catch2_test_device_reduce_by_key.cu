@@ -149,7 +149,7 @@ C2H_TEST("Device reduce-by-key works", "[by_key][reduce][device]", full_type_lis
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_segments);
     compute_segmented_problem_reference(
-      in_values, segment_offsets, op_t{}, cub::NumericTraits<value_t>::Max(), expected_result.begin());
+      in_values, segment_offsets, op_t{}, ::cuda::std::numeric_limits<value_t>::max(), expected_result.begin());
     c2h::host_vector<key_t> expected_keys = compute_unique_keys_reference(segment_keys);
 
     // Run test

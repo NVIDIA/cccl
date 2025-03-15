@@ -56,11 +56,11 @@ struct __cccl_is_integral<unsigned char> : public true_type
 template <>
 struct __cccl_is_integral<wchar_t> : public true_type
 {};
-#  ifndef _LIBCUDACXX_HAS_NO_CHAR8_T
+#  if _LIBCUDACXX_HAS_CHAR8_T()
 template <>
 struct __cccl_is_integral<char8_t> : public true_type
 {};
-#  endif
+#  endif // _LIBCUDACXX_HAS_CHAR8_T()
 #  ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
 template <>
 struct __cccl_is_integral<char16_t> : public true_type
@@ -93,14 +93,14 @@ struct __cccl_is_integral<long long> : public true_type
 template <>
 struct __cccl_is_integral<unsigned long long> : public true_type
 {};
-#  ifndef _LIBCUDACXX_HAS_NO_INT128
+#  if _CCCL_HAS_INT128()
 template <>
 struct __cccl_is_integral<__int128_t> : public true_type
 {};
 template <>
 struct __cccl_is_integral<__uint128_t> : public true_type
 {};
-#  endif
+#  endif // _CCCL_HAS_INT128()
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_integral

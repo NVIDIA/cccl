@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // projected
 
 #include <cuda/std/concepts>
@@ -55,16 +53,8 @@ static_assert(cuda::std::same_as<ContiguousIterator::value_type, S>, "");
 static_assert(cuda::std::same_as<decltype(*cuda::std::declval<ContiguousIterator>()), S&>, "");
 static_assert(cuda::std::same_as<cuda::std::iter_difference_t<ContiguousIterator>, cuda::std::ptrdiff_t>, "");
 
-#if TEST_STD_VER > 2017
 template <class I, class F>
-constexpr bool projectable = requires { typename cuda::std::projected<I, F>; };
-#else
-template <class I, class F>
-_CCCL_CONCEPT_FRAGMENT(projectable_, requires()(typename(cuda::std::projected<I, F>)));
-
-template <class I, class F>
-_CCCL_CONCEPT projectable = _CCCL_FRAGMENT(projectable_, I, F);
-#endif
+_CCCL_CONCEPT projectable = _CCCL_REQUIRES_EXPR((I, F))(typename(cuda::std::projected<I, F>));
 
 static_assert(!projectable<int, void (*)(int)>, ""); // int isn't indirectly_readable
 static_assert(!projectable<S, void (*)(int)>, ""); // S isn't weakly_incrementable

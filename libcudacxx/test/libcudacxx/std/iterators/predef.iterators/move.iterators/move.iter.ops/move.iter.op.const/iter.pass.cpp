@@ -22,7 +22,7 @@
 #include "test_macros.h"
 
 template <class It>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   static_assert(cuda::std::is_constructible<cuda::std::move_iterator<It>, const It&>::value, "");
   static_assert(cuda::std::is_constructible<cuda::std::move_iterator<It>, It&&>::value, "");
@@ -44,7 +44,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 }
 
 template <class It>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test_moveonly()
+__host__ __device__ constexpr bool test_moveonly()
 {
   static_assert(!cuda::std::is_constructible<cuda::std::move_iterator<It>, const It&>::value, "");
   static_assert(cuda::std::is_constructible<cuda::std::move_iterator<It>, It&&>::value, "");
@@ -69,21 +69,17 @@ int main(int, char**)
   test<char*>();
   test<const char*>();
 
-#if TEST_STD_VER > 2011
   static_assert(test<cpp17_input_iterator<char*>>(), "");
   static_assert(test<forward_iterator<char*>>(), "");
   static_assert(test<bidirectional_iterator<char*>>(), "");
   static_assert(test<random_access_iterator<char*>>(), "");
   static_assert(test<char*>(), "");
   static_assert(test<const char*>(), "");
-#endif // TEST_STD_VER > 2011
 
-#if TEST_STD_VER > 2014
   test<contiguous_iterator<char*>>();
   test_moveonly<cpp20_input_iterator<char*>>();
   static_assert(test<contiguous_iterator<char*>>(), "");
   static_assert(test_moveonly<cpp20_input_iterator<char*>>(), "");
-#endif // TEST_STD_VER > 2014
 
   return 0;
 }

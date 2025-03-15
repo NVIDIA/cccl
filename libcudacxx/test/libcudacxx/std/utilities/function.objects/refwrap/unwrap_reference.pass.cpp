@@ -15,7 +15,7 @@
 // template <class T>
 // using unwrap_reference_t = typename unwrap_reference<T>::type;
 
-// UNSUPPORTED: c++03, c++11, c++14, c++17
+// UNSUPPORTED: c++17
 
 // #include <cuda/std/functional>
 #include <cuda/std/type_traits>

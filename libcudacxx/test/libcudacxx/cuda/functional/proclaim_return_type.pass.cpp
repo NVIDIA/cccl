@@ -8,7 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03
 // UNSUPPORTED: gcc-4
 
 #include <cuda/functional>
@@ -17,7 +16,7 @@
 
 #include "test_macros.h"
 
-#if !defined(TEST_COMPILER_CUDACC_BELOW_12_3) && TEST_STD_VER >= 2017
+#if _CCCL_CUDACC_AT_LEAST(12, 3)
 template <typename ReturnT>
 __host__ __device__ void test_lambda_return_type()
 {
@@ -29,8 +28,8 @@ __host__ __device__ void test_lambda_return_type()
   using Td   = decltype(d_lm);
   using Thd  = decltype(hd_lm);
 
-  ASSERT_SAME_TYPE(cuda::std::invoke_result_t<Td>, ReturnT);
-  ASSERT_SAME_TYPE(cuda::std::invoke_result_t<Thd>, ReturnT);
+  static_assert(cuda::std::is_same_v<cuda::std::invoke_result_t<Td>, ReturnT>);
+  static_assert(cuda::std::is_same_v<cuda::std::invoke_result_t<Thd>, ReturnT>);
   unused(d_lm);
   unused(hd_lm);
 }
@@ -39,7 +38,7 @@ struct custom_type
 {
   char arr[16];
 };
-#endif // !TEST_COMPILER_CUDACC_BELOW_12_3 && TEST_STD_VER >= 2017
+#endif // _CCCL_CUDACC_AT_LEAST(12, 3)
 
 template <class T, class Fn, class... As>
 __host__ __device__ void test_proclaim_return_type(Fn&& fn, T expected, As... as)
@@ -75,7 +74,7 @@ struct hd_callable
   }
 };
 
-#if !defined(TEST_COMPILER_NVRTC)
+#if !TEST_COMPILER(NVRTC)
 struct h_callable
 {
   __host__ int operator()() const&
@@ -87,7 +86,7 @@ struct h_callable
     return 42;
   }
 };
-#endif
+#endif // !TEST_COMPILER(NVRTC)
 
 struct d_callable
 {
@@ -129,7 +128,7 @@ int main(int argc, char** argv)
                     (test_proclaim_return_type<int>(h_callable{}, 42);))
 
   // execution space annotations on lambda require --extended-lambda flag with nvrtc
-#if !defined(TEST_COMPILER_NVRTC)
+#if !TEST_COMPILER(NVRTC)
   NV_IF_TARGET(
     NV_IS_DEVICE,
     (test_proclaim_return_type<double>(
@@ -176,7 +175,7 @@ int main(int argc, char** argv)
   unused(f);
   unused(g);
 
-#  if !defined(TEST_COMPILER_CUDACC_BELOW_12_3) && TEST_STD_VER >= 2017
+#  if _CCCL_CUDACC_AT_LEAST(12, 3)
   test_lambda_return_type<int>();
   test_lambda_return_type<long>();
   test_lambda_return_type<bool>();
@@ -184,8 +183,8 @@ int main(int argc, char** argv)
   test_lambda_return_type<double>();
   test_lambda_return_type<char>();
   test_lambda_return_type<custom_type>();
-#  endif // !TEST_COMPILER_CUDACC_BELOW_12_3 && TEST_STD_VER >= 2017
-#endif // !TEST_COMPILER_NVRTC
+#  endif // _CCCL_CUDACC_AT_LEAST(12, 3)
+#endif // !TEST_COMPILER(NVRTC)
 
   return 0;
 }

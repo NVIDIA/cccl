@@ -52,8 +52,6 @@
 
 #include <cuda/std/type_traits>
 
-#include <iterator>
-
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -145,8 +143,8 @@ struct AgentScanByKey
   // Types and constants
   //---------------------------------------------------------------------
 
-  using KeyT               = value_t<KeysInputIteratorT>;
-  using InputT             = value_t<ValuesInputIteratorT>;
+  using KeyT               = it_value_t<KeysInputIteratorT>;
+  using InputT             = it_value_t<ValuesInputIteratorT>;
   using FlagValuePairT     = KeyValuePair<int, AccumT>;
   using ReduceBySegmentOpT = ScanBySegmentOp<ScanOpT>;
 
@@ -154,18 +152,18 @@ struct AgentScanByKey
 
   // Constants
   // Inclusive scan if no init_value type is provided
-  static constexpr int IS_INCLUSIVE     = ::cuda::std::is_same<InitValueT, NullType>::value;
+  static constexpr int IS_INCLUSIVE     = ::cuda::std::is_same_v<InitValueT, NullType>;
   static constexpr int BLOCK_THREADS    = AgentScanByKeyPolicyT::BLOCK_THREADS;
   static constexpr int ITEMS_PER_THREAD = AgentScanByKeyPolicyT::ITEMS_PER_THREAD;
   static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
 
   using WrappedKeysInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer<KeysInputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer_v<KeysInputIteratorT>,
                      CacheModifiedInputIterator<AgentScanByKeyPolicyT::LOAD_MODIFIER, KeyT, OffsetT>,
                      KeysInputIteratorT>;
 
   using WrappedValuesInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer<ValuesInputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer_v<ValuesInputIteratorT>,
                      CacheModifiedInputIterator<AgentScanByKeyPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
                      ValuesInputIteratorT>;
 
@@ -273,8 +271,8 @@ struct AgentScanByKey
     OffsetT (&segment_flags)[ITEMS_PER_THREAD],
     FlagValuePairT (&scan_items)[ITEMS_PER_THREAD])
   {
-// Zip values and segment_flags
-#pragma unroll
+    // Zip values and segment_flags
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       // Set segment_flags for first out-of-bounds item, zero for others
@@ -291,28 +289,26 @@ struct AgentScanByKey
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   UnzipValues(AccumT (&values)[ITEMS_PER_THREAD], FlagValuePairT (&scan_items)[ITEMS_PER_THREAD])
   {
-// Unzip values and segment_flags
-#pragma unroll
+    // Unzip values and segment_flags
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       values[ITEM] = scan_items[ITEM].value;
     }
   }
 
-  template <bool IsNull                                         = ::cuda::std::is_same<InitValueT, NullType>::value,
-            typename ::cuda::std::enable_if<!IsNull, int>::type = 0>
+  template <bool IsNull = ::cuda::std::is_same_v<InitValueT, NullType>, ::cuda::std::enable_if_t<!IsNull, int> = 0>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   AddInitToScan(AccumT (&items)[ITEMS_PER_THREAD], OffsetT (&flags)[ITEMS_PER_THREAD])
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       items[ITEM] = flags[ITEM] ? init_value : scan_op(init_value, items[ITEM]);
     }
   }
 
-  template <bool IsNull                                        = ::cuda::std::is_same<InitValueT, NullType>::value,
-            typename ::cuda::std::enable_if<IsNull, int>::type = 0>
+  template <bool IsNull = ::cuda::std::is_same_v<InitValueT, NullType>, ::cuda::std::enable_if_t<IsNull, int> = 0>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   AddInitToScan(AccumT (& /*items*/)[ITEMS_PER_THREAD], OffsetT (& /*flags*/)[ITEMS_PER_THREAD])
   {}

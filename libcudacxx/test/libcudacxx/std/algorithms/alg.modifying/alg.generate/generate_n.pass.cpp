@@ -23,14 +23,14 @@
 
 struct gen_test
 {
-  TEST_CONSTEXPR_CXX14 __host__ __device__ int operator()() const noexcept
+  constexpr __host__ __device__ int operator()() const noexcept
   {
     return 1;
   }
 };
 
 template <class Iter, class Size>
-TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
+constexpr __host__ __device__ void test()
 {
   constexpr int N = 5;
   int ia[N + 1]   = {0};
@@ -47,7 +47,7 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
 }
 
 template <class Iter>
-TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
+constexpr __host__ __device__ void test()
 {
   test<Iter, int>();
   test<Iter, unsigned int>();
@@ -56,12 +56,12 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
   test<Iter, UserDefinedIntegral<unsigned>>();
   test<Iter, float>();
   test<Iter, double>();
-#ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#if _CCCL_HAS_LONG_DOUBLE()
   test<Iter, long double>();
-#endif // _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
-TEST_CONSTEXPR_CXX14 __host__ __device__ bool test()
+constexpr __host__ __device__ bool test()
 {
   test<cpp17_input_iterator<int*>>();
   test<forward_iterator<int*>>();
@@ -75,10 +75,7 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ bool test()
 int main(int, char**)
 {
   test();
-
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

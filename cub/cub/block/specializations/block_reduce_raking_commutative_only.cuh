@@ -96,7 +96,7 @@ struct BlockReduceRakingCommutativeOnly
     RAKING_THREADS = WARP_THREADS,
 
     /// Number of threads actually sharing items with the raking threads
-    SHARING_THREADS = CUB_MAX(1, BLOCK_THREADS - RAKING_THREADS),
+    SHARING_THREADS = _CUDA_VSTD::max(1, BLOCK_THREADS - RAKING_THREADS),
 
     /// Number of raking elements per warp synchronous raking thread
     SEGMENT_LENGTH = SHARING_THREADS / WARP_THREADS,
@@ -230,10 +230,5 @@ struct BlockReduceRakingCommutativeOnly
   }
 };
 } // namespace detail
-
-template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z>
-using BlockReduceRakingCommutativeOnly CCCL_DEPRECATED_BECAUSE(
-  "This class is considered an implementation detail and the public interface will be "
-  "removed.") = detail::BlockReduceRakingCommutativeOnly<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
 CUB_NAMESPACE_END
