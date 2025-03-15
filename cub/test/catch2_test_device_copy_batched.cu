@@ -51,15 +51,6 @@ struct offset_to_constant_it
   }
 };
 
-struct offset_to_gaussian_sum_offset_op
-{
-  template <typename OffsetT>
-  __host__ __device__ __forceinline__ auto operator()(OffsetT offset) const
-  {
-    return offset > 0 ? (offset * (offset - 1) / 2) : OffsetT{0};
-  }
-};
-
 struct object_with_non_trivial_ctor
 {
   static constexpr std::int32_t magic_constant = 923390;
@@ -257,7 +248,7 @@ try
   const item_offset_t num_total_items = thrust::reduce(d_range_sizes.cbegin(), d_range_sizes.cend());
 
   // Prepare iterator that returns empty ranges for the first num_empty_ranges
-  skip_first_n_op<decltype(d_range_sizes.cbegin()), range_size_t> skip_first_n_sizes_op{
+  prepend_n_constants_op<decltype(d_range_sizes.cbegin()), range_size_t> skip_first_n_sizes_op{
     d_range_sizes.cbegin(), range_size_t{0}, num_empty_ranges};
   auto d_range_sizes_it_skipped =
     thrust::make_transform_iterator(thrust::make_counting_iterator(range_offset_t{0}), skip_first_n_sizes_op);
@@ -276,7 +267,8 @@ try
     thrust::make_transform_iterator(thrust::raw_pointer_cast(d_range_offsets.data()), src_transform_op);
 
   // Wrap the iterator into an iterator that returns empty ranges for the first num_empty_ranges
-  skip_first_n_op<decltype(d_ranges_src_it), range_it_t> src_skip_first_n_op{d_ranges_src_it, in_it, num_empty_ranges};
+  prepend_n_constants_op<decltype(d_ranges_src_it), range_it_t> src_skip_first_n_op{
+    d_ranges_src_it, in_it, num_empty_ranges};
   auto d_ranges_src_it_skipped =
     thrust::make_transform_iterator(thrust::make_counting_iterator(range_offset_t{0}), src_skip_first_n_op);
 
@@ -288,7 +280,7 @@ try
   // Helper iterator that offsets the checking output iterator by the offset for a given range
   offset_to_ptr_op<decltype(check_result_it)> dst_transform_op{check_result_it};
   auto ranges_dst_it = thrust::make_transform_iterator(d_range_offsets.cbegin(), dst_transform_op);
-  skip_first_n_op<decltype(ranges_dst_it), range_out_it_t> dst_skip_first_n_op{
+  prepend_n_constants_op<decltype(ranges_dst_it), range_out_it_t> dst_skip_first_n_op{
     ranges_dst_it, check_result_it, num_empty_ranges};
   auto d_ranges_dst_it_skipped =
     thrust::make_transform_iterator(thrust::make_counting_iterator(range_offset_t{0}), dst_skip_first_n_op);
