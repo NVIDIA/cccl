@@ -4,11 +4,29 @@
 
 set -e;
 
-devcontainer-utils-post-create-command;
-devcontainer-utils-init-git;
-devcontainer-utils-post-attach-command;
+SKIP_INIT=false
 
-cd /home/coder/cccl/
+echo "$@"
+
+while true; do
+    case "$1" in
+        --skip-init)
+            echo "Skipping initializing devcontainer"
+            SKIP_INIT=true;
+            shift 1;
+            ;;
+        *)
+            break;
+    esac
+done
+
+if ! $SKIP_INIT; then
+    devcontainer-utils-post-create-command;
+    devcontainer-utils-init-git;
+    devcontainer-utils-post-attach-command;
+
+    cd /home/coder/cccl/;
+fi
 
 if test $# -gt 0; then
     exec "$@";
