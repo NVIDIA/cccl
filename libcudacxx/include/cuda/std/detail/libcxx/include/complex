@@ -242,6 +242,7 @@ template<class T> complex<T> tanh (const complex<T>&);
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__complex/std_complex_access.h>
 #include <cuda/std/__complex/vector_support.h>
 #include <cuda/std/__fwd/get.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
@@ -263,9 +264,6 @@ template<class T> complex<T> tanh (const complex<T>&);
 #if !_CCCL_COMPILER(NVRTC)
 #  include <complex>
 #  include <sstream> // for std::basic_ostringstream
-
-#  define _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__c) reinterpret_cast<const _Up(&)[2]>(__c)[0]
-#  define _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__c) reinterpret_cast<const _Up(&)[2]>(__c)[1]
 #endif // !_CCCL_COMPILER(NVRTC)
 
 _CCCL_PUSH_MACROS
@@ -333,16 +331,17 @@ public:
 
 #if !_CCCL_COMPILER(NVRTC)
   template <class _Up>
-  _LIBCUDACXX_HIDE_FROM_ABI complex(const ::std::complex<_Up>& __other)
-      : __re_(_LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__other))
-      , __im_(_LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__other))
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_STD_COMPLEX_ACCESS complex(const ::std::complex<_Up>& __other)
+      : __re_(_CUDA_VSTD::__get_std_complex_real(__other))
+      , __im_(_CUDA_VSTD::__get_std_complex_imag(__other))
   {}
 
   template <class _Up>
-  _LIBCUDACXX_HIDE_FROM_ABI complex& operator=(const ::std::complex<_Up>& __other)
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_STD_COMPLEX_ACCESS complex&
+  operator=(const ::std::complex<_Up>& __other)
   {
-    __re_ = _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__other);
-    __im_ = _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__other);
+    __re_ = _CUDA_VSTD::__get_std_complex_real(__other);
+    __im_ = _CUDA_VSTD::__get_std_complex_imag(__other);
     return *this;
   }
 
@@ -766,7 +765,6 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const complex<_Tp>& __x, con
   return __x.real() == __y && __x.imag() == _Tp(0);
 }
 
-#if _CCCL_STD_VER <= 2017
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const _Tp& __x, const complex<_Tp>& __y)
 {
@@ -790,36 +788,35 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator!=(const _Tp& __x, const comple
 {
   return !(__x == __y);
 }
-#endif // _CCCL_STD_VER <= 2017
 
 #if !_CCCL_COMPILER(NVRTC)
 template <class _Tp, class _Up>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const complex<_Tp>& __x, const ::std::complex<_Up>& __y)
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_STD_COMPLEX_ACCESS bool
+operator==(const complex<_Tp>& __x, const ::std::complex<_Up>& __y)
 {
-  return __x.real() == _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__y)
-      && __x.imag() == _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__y);
-}
-
-#  if _CCCL_STD_VER <= 2017
-template <class _Tp, class _Up>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const ::std::complex<_Up>& __x, const complex<_Tp>& __y)
-{
-  return __y.real() == _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__x)
-      && __y.imag() == _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__x);
+  return __x.real() == _CUDA_VSTD::__get_std_complex_real(__y) && __x.imag() == _CUDA_VSTD::__get_std_complex_imag(__y);
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator!=(const complex<_Tp>& __x, const ::std::complex<_Up>& __y)
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_STD_COMPLEX_ACCESS bool
+operator==(const ::std::complex<_Up>& __x, const complex<_Tp>& __y)
+{
+  return __y.real() == _CUDA_VSTD::__get_std_complex_real(__x) && __y.imag() == _CUDA_VSTD::__get_std_complex_imag(__x);
+}
+
+template <class _Tp, class _Up>
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_STD_COMPLEX_ACCESS bool
+operator!=(const complex<_Tp>& __x, const ::std::complex<_Up>& __y)
 {
   return !(__x == __y);
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator!=(const ::std::complex<_Up>& __x, const complex<_Tp>& __y)
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_STD_COMPLEX_ACCESS bool
+operator!=(const ::std::complex<_Up>& __x, const complex<_Tp>& __y)
 {
   return !(__x == __y);
 }
-#  endif // _CCCL_STD_VER <= 2017
 #endif // !_CCCL_COMPILER(NVRTC)
 
 // real
@@ -1589,9 +1586,6 @@ _LIBCUDACXX_END_NAMESPACE_STD
 #if _LIBCUDACXX_HAS_NVBF16()
 #  include <cuda/std/__complex/nvbf16.h>
 #endif // _LIBCUDACXX_HAS_NVBF16()
-
-#undef _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL
-#undef _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG
 
 _CCCL_POP_MACROS
 
