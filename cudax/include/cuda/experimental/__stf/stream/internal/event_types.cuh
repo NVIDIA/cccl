@@ -154,7 +154,7 @@ public:
   /**
    * @brief Remove implicit dependencies already induced by more recent events using the same stream.
    */
-  bool factorize(backend_ctx_untyped& bctx, reserved::event_vector& events) override
+  bool factorize(backend_ctx_untyped&, reserved::event_vector& events) override
   {
     assert(events.size() >= 2);
     assert([&] {
