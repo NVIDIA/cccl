@@ -1244,32 +1244,6 @@ struct DispatchSegmentedRadixSort
     {
       int pass_bits = _CUDA_VSTD::min(pass_config.radix_bits, (end_bit - current_bit));
 
-      int device_ordinal{};
-      error = CubDebug(cudaGetDevice(&device_ordinal));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-
-      int max_grid_dim_x{};
-      int max_grid_dim_y{};
-      error = CubDebug(cudaDeviceGetAttribute(&max_grid_dim_x, cudaDevAttrMaxGridDimX, device_ordinal));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-      error = CubDebug(cudaDeviceGetAttribute(&max_grid_dim_y, cudaDevAttrMaxGridDimY, device_ordinal));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-
-      // Calculate grid dimensions
-      const auto grid_dim_x = ::cuda::std::min(num_segments, static_cast<::cuda::std::int64_t>(max_grid_dim_x));
-      const auto grid_dim_y = ::cuda::std::min(
-        ((num_segments + max_grid_dim_x - 1) / max_grid_dim_x), static_cast<::cuda::std::int64_t>(max_grid_dim_y));
-      const auto grid_dim_z = (num_segments + max_grid_dim_x * max_grid_dim_y - 1) / (max_grid_dim_x * max_grid_dim_y);
-
 // Log kernel configuration
 #ifdef CUB_DEBUG_LOG
       _CubLog("Invoking segmented_kernels<<<%lld, %lld, 0, %lld>>>(), "
@@ -1283,11 +1257,8 @@ struct DispatchSegmentedRadixSort
               current_bit,
               pass_bits);
 #endif
-      dim3 grid_dim = dim3(static_cast<unsigned int>(grid_dim_x),
-                           static_cast<unsigned int>(grid_dim_y),
-                           static_cast<unsigned int>(grid_dim_z));
       THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-        grid_dim, pass_config.segmented_config.block_threads, 0, stream)
+        num_segments, pass_config.segmented_config.block_threads, 0, stream)
         .doit(pass_config.segmented_kernel,
               d_keys_in,
               d_keys_out,
